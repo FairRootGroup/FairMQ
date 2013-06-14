@@ -22,8 +22,8 @@ FairMQSampler::FairMQSampler() :
   fFairRunAna(new FairRunAna()),
   fSamplerTask(NULL),
   fInputFile(""),
-  fBranch(""),
   fParFile(""),
+  fBranch(""),
   fEventRate(1)
 {
 }
@@ -40,10 +40,6 @@ void FairMQSampler::Init()
 
   fSamplerTask->SetBranch(fBranch);
 
-  /*TString rootlogon_macro = TString(getenv("VMCWORKDIR")) + "/gconfig/rootlogon.C";
-  gROOT->LoadMacro(rootlogon_macro.Data());
-  gROOT->ProcessLine("rootlogon()");
-  */
   fFairRunAna->SetInputFile(TString(fInputFile));
   fFairRunAna->SetOutputFile("dummy.out");
 
