@@ -91,4 +91,9 @@ ADD_EXECUTABLE(RunSink runSink.cxx)
 SET_TARGET_PROPERTIES(RunSink PROPERTIES OUTPUT_NAME sink)
 TARGET_LINK_LIBRARIES(RunSink FairMQ)
 
-
+Install(TARGETS FairMQ FairMQStatic RunBenchmarkSampler 
+                RunBuffer RunSplitter RunMerger RunSink
+         RUNTIME DESTINATION bin
+         LIBRARY DESTINATION lib
+         ARCHIVE DESTINATION lib
+        )
