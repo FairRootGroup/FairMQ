@@ -59,10 +59,6 @@ SET(LINK_LIBRARIES
 )
 
 
-#ADD_LIBRARY(FairMQ SHARED ${HEADERS} ${SOURCES})
-#SET_TARGET_PROPERTIES(FairMQ PROPERTIES  ${FAIRROOT_LIBRARY_PROPERTIES})
-#TARGET_LINK_LIBRARIES(FairMQ ${LINK_LIBRARIES})
-
 Set(SRCS ${SOURCES})
 Set(LIBRARY_NAME FairMQ)
 Set(LINKDEF)
@@ -70,33 +66,17 @@ Set(DEPENDENCIES Core Cint)
 
 GENERATE_LIBRARY()
 
-ADD_LIBRARY(FairMQStatic STATIC ${HEADERS} ${SOURCES})
-#SET_TARGET_PROPERTIES(FairMQStatic PROPERTIES OUTPUT_NAME FairMQ)
-TARGET_LINK_LIBRARIES(FairMQStatic ${LINK_LIBRARIES})
+Set(Exe_Names bsampler buffer splitter merger sink)
+Set(Exe_Source runBenchmarkSampler.cxx runBuffer.cxx runSplitter.cxx runMerger.cxx runSink.cxx)
 
-ADD_EXECUTABLE(RunBenchmarkSampler runBenchmarkSampler.cxx)
-SET_TARGET_PROPERTIES(RunBenchmarkSampler PROPERTIES OUTPUT_NAME bsampler)
-TARGET_LINK_LIBRARIES(RunBenchmarkSampler FairMQ)
+List(LENGTH Exe_Names _length)
+Math(EXPR _length ${_length}-1)
 
-ADD_EXECUTABLE(RunBuffer runBuffer.cxx)
-SET_TARGET_PROPERTIES(RunBuffer PROPERTIES OUTPUT_NAME buffer)
-TARGET_LINK_LIBRARIES(RunBuffer FairMQ)
-
-ADD_EXECUTABLE(RunSplitter runSplitter.cxx)
-SET_TARGET_PROPERTIES(RunSplitter PROPERTIES OUTPUT_NAME splitter)
-TARGET_LINK_LIBRARIES(RunSplitter FairMQ)
-
-ADD_EXECUTABLE(RunMerger runMerger.cxx)
-SET_TARGET_PROPERTIES(RunMerger PROPERTIES OUTPUT_NAME merger)
-TARGET_LINK_LIBRARIES(RunMerger FairMQ)
-
-ADD_EXECUTABLE(RunSink runSink.cxx)
-SET_TARGET_PROPERTIES(RunSink PROPERTIES OUTPUT_NAME sink)
-TARGET_LINK_LIBRARIES(RunSink FairMQ)
-
-Install(TARGETS FairMQ FairMQStatic RunBenchmarkSampler 
-                RunBuffer RunSplitter RunMerger RunSink
-         RUNTIME DESTINATION bin
-         LIBRARY DESTINATION lib
-         ARCHIVE DESTINATION lib
-        )
+ForEach(_file RANGE 0 ${_length})
+  List(GET Exe_Names ${_file} _name)
+  List(GET Exe_Source ${_file} _src)
+  Set(EXE_NAME ${_name})
+  Set(SRCS ${_src})
+  Set(DEPENDENCIES FairMQ)
+  GENERATE_EXECUTABLE()
+EndForEach(_file RANGE 0 ${_length})
