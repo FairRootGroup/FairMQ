@@ -12,20 +12,20 @@ FairMQConfigurable::FairMQConfigurable()
 {
 }
 
-void FairMQConfigurable::SetProperty(Int_t key, TString value, Int_t slot/*= 0*/)
+void FairMQConfigurable::SetProperty(const Int_t& key, const TString& value, const Int_t& slot/*= 0*/)
 {
 }
 
-TString FairMQConfigurable::GetProperty(Int_t key, TString default_/*= ""*/, Int_t slot/*= 0*/)
+TString FairMQConfigurable::GetProperty(const Int_t& key, const TString& default_/*= ""*/, const Int_t& slot/*= 0*/)
 {
   return default_;
 }
 
-void FairMQConfigurable::SetProperty(Int_t key, Int_t value, Int_t slot/*= 0*/)
+void FairMQConfigurable::SetProperty(const Int_t& key, const Int_t& value, const Int_t& slot/*= 0*/)
 {
 }
 
-Int_t FairMQConfigurable::GetProperty(Int_t key, Int_t default_/*= 0*/, Int_t slot/*= 0*/)
+Int_t FairMQConfigurable::GetProperty(const Int_t& key, const Int_t& default_/*= 0*/, const Int_t& slot/*= 0*/)
 {
   return default_;
 }

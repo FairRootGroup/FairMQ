@@ -5,79 +5,106 @@
  *      Author: dklein
  */
 
-#include <sstream>
-#include <sys/types.h>
-#include <unistd.h>
-#include "FairMQLogger.h"
-#include <zmq.hpp>
-#include <stdio.h>
 #include <iostream>
+#include <csignal>
+
+#include "FairMQLogger.h"
 #include "FairMQBenchmarkSampler.h"
 
 
+FairMQBenchmarkSampler sampler;
+
+static void s_signal_handler (int signal)
+{
+  std::cout << std::endl << "Caught signal " << signal << std::endl;
+
+  sampler.ChangeState(FairMQBenchmarkSampler::STOP);
+  sampler.ChangeState(FairMQBenchmarkSampler::END);
+
+  std::cout << "Shutdown complete. Bye!" << std::endl;
+  exit(1);
+}
+
+static void s_catch_signals (void)
+{
+  struct sigaction action;
+  action.sa_handler = s_signal_handler;
+  action.sa_flags = 0;
+  sigemptyset(&action.sa_mask);
+  sigaction(SIGINT, &action, NULL);
+  sigaction(SIGTERM, &action, NULL);
+}
+
 int main(int argc, char** argv)
 {
-  if( argc != 8 ) {
-    std::cout << "Usage: bsampler ID eventSize eventRate numIoTreads\n" <<
-              "\t\tbindSocketType bindSndBufferSize BindAddress\n" << std::endl;
+  if ( argc != 9 ) {
+    std::cout << "Usage: bsampler ID eventSize eventRate numIoTreads\n"
+              << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n"
+              << std::endl;
     return 1;
   }
 
-  pid_t pid = getpid();
+  s_catch_signals();
+
   std::stringstream logmsg;
-  logmsg << "PID: " << pid;
+  logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
   int i = 1;
 
-  FairMQBenchmarkSampler* sampler = new FairMQBenchmarkSampler();
-
-  sampler->SetProperty(FairMQBenchmarkSampler::Id, argv[i]);
+  sampler.SetProperty(FairMQBenchmarkSampler::Id, argv[i]);
   ++i;
 
   int eventSize;
   std::stringstream(argv[i]) >> eventSize;
-  sampler->SetProperty(FairMQBenchmarkSampler::EventSize, eventSize);
+  sampler.SetProperty(FairMQBenchmarkSampler::EventSize, eventSize);
   ++i;
 
   int eventRate;
   std::stringstream(argv[i]) >> eventRate;
-  sampler->SetProperty(FairMQBenchmarkSampler::EventRate, eventRate);
+  sampler.SetProperty(FairMQBenchmarkSampler::EventRate, eventRate);
   ++i;
 
   int numIoThreads;
   std::stringstream(argv[i]) >> numIoThreads;
-  sampler->SetProperty(FairMQBenchmarkSampler::NumIoThreads, numIoThreads);
+  sampler.SetProperty(FairMQBenchmarkSampler::NumIoThreads, numIoThreads);
   ++i;
 
-  int numInputs = 0;
-  sampler->SetProperty(FairMQBenchmarkSampler::NumInputs, numInputs);
+  sampler.SetProperty(FairMQBenchmarkSampler::NumInputs, 0);
+  sampler.SetProperty(FairMQBenchmarkSampler::NumOutputs, 1);
 
-  int numOutputs = 1;
-  sampler->SetProperty(FairMQBenchmarkSampler::NumOutputs, numOutputs);
 
-  sampler->Init();
+  sampler.ChangeState(FairMQBenchmarkSampler::INIT);
 
-  int bindSocketType = ZMQ_PUB;
+
+  int outputSocketType = ZMQ_PUB;
   if (strcmp(argv[i], "push") == 0) {
-    bindSocketType = ZMQ_PUSH;
+    outputSocketType = ZMQ_PUSH;
   }
-  sampler->SetProperty(FairMQBenchmarkSampler::BindSocketType, bindSocketType, 0);
+  sampler.SetProperty(FairMQBenchmarkSampler::OutputSocketType, outputSocketType, 0);
+  ++i;
+  int outputSndBufSize;
+  std::stringstream(argv[i]) >> outputSndBufSize;
+  sampler.SetProperty(FairMQBenchmarkSampler::OutputSndBufSize, outputSndBufSize, 0);
+  ++i;
+  sampler.SetProperty(FairMQBenchmarkSampler::OutputMethod, argv[i], 0);
+  ++i;
+  sampler.SetProperty(FairMQBenchmarkSampler::OutputAddress, argv[i], 0);
   ++i;
 
-  int bindSndBufferSize;
-  std::stringstream(argv[i]) >> bindSndBufferSize;
-  sampler->SetProperty(FairMQBenchmarkSampler::BindSndBufferSize, bindSndBufferSize, 0);
-  ++i;
 
-  sampler->SetProperty(FairMQBenchmarkSampler::BindAddress, argv[i], 0);
-  ++i;
+  sampler.ChangeState(FairMQBenchmarkSampler::SETOUTPUT);
+  sampler.ChangeState(FairMQBenchmarkSampler::SETINPUT);
+  sampler.ChangeState(FairMQBenchmarkSampler::RUN);
 
 
-  sampler->Bind();
-  sampler->Connect();
-  sampler->Run();
 
-  exit(0);
+  char ch;
+  std::cin.get(ch);
+
+  sampler.ChangeState(FairMQBenchmarkSampler::STOP);
+  sampler.ChangeState(FairMQBenchmarkSampler::END);
+
+  return 0;
 }
 

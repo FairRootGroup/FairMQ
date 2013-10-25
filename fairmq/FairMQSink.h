@@ -19,8 +19,9 @@ class FairMQSink: public FairMQDevice
 {
   public:
     FairMQSink();
-    virtual void Run();
     virtual ~FairMQSink();
+  protected:
+    virtual void Run();
 };
 
 #endif /* FAIRMQSINK_H_ */

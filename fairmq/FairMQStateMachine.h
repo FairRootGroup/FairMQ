@@ -5,28 +5,37 @@
  *      Author: dklein
  */
 
+
+
 #ifndef FAIRMQSTATEMACHINE_H_
 #define FAIRMQSTATEMACHINE_H_
+
+#include <boost/thread.hpp>
 
 
 class FairMQStateMachine
 {
-  private:
-    int fState;
   public:
-    enum {
-      START, INIT, BIND, CONNECT, RUN, PAUSE, SHUTDOWN, END
+    enum State {
+      IDLE, INITIALIZING, SETTINGOUTPUT, SETTINGINPUT, WAITING, RUNNING
+    };
+    enum Event {
+      INIT, SETOUTPUT, SETINPUT, PAUSE, RUN, STOP, END
     };
     FairMQStateMachine();
-    virtual void Init() = 0;
-    virtual void Bind() = 0;
-    virtual void Connect() = 0;
-    virtual void Run() = 0;
-    virtual void Pause() = 0;
-    virtual void Shutdown() = 0;
-    bool ChangeState(int new_state);
-    void RunStateMachine();
+    void ChangeState(int event);
     virtual ~FairMQStateMachine();
+
+  protected:
+    State fState;
+    Event fEvent;
+    virtual void Init();
+    virtual void Run();
+    virtual void Pause();
+    virtual void Shutdown();
+    virtual void InitOutput();
+    virtual void InitInput();
+    boost::thread running_state;
 };
 
 #endif /* FAIRMQSTATEMACHINE_H_ */

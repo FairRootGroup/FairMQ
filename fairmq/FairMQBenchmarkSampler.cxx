@@ -5,7 +5,9 @@
  *      Author: dklein
  */
 #include <vector>
-#include <unistd.h>
+
+#include <boost/thread.hpp>
+#include <boost/bind.hpp>
 
 #include "FairMQBenchmarkSampler.h"
 #include "FairMQLogger.h"
@@ -28,20 +30,16 @@ void FairMQBenchmarkSampler::Init()
 
 void FairMQBenchmarkSampler::Run()
 {
-  void* status; //necessary for pthread_join
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> Run <<<<<<<");
-  usleep(1000000);
+  //boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
-  pthread_t logger;
-  pthread_create(&logger, NULL, &FairMQDevice::callLogSocketRates, this);
-
-  pthread_t resetEventCounter;
-  pthread_create(&resetEventCounter, NULL, &FairMQBenchmarkSampler::callResetEventCounter, this);
+  boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
+  boost::thread resetEventCounter(boost::bind(&FairMQBenchmarkSampler::ResetEventCounter, this));
 
   void* buffer = operator new[](fEventSize);
   FairMQMessage* base_event = new FairMQMessage(buffer, fEventSize, NULL);
 
-  while (true) {
+  while ( fState == RUNNING ) {
     FairMQMessage event;
     event.Copy(base_event);
 
@@ -50,22 +48,28 @@ void FairMQBenchmarkSampler::Run()
     --fEventCounter;
 
     while (fEventCounter == 0) {
-      usleep(1000);
+      boost::this_thread::sleep(boost::posix_time::milliseconds(1));
     }
   }
 
   delete base_event;
 
-  pthread_join(logger, &status);
-  pthread_join(resetEventCounter, &status);
+  rateLogger.interrupt();
+  resetEventCounter.interrupt();
+
+  rateLogger.join();
+  resetEventCounter.join();
 }
 
-void* FairMQBenchmarkSampler::ResetEventCounter()
+void FairMQBenchmarkSampler::ResetEventCounter()
 {
-  while (true) {
-    fEventCounter = fEventRate / 100;
-
-    usleep(10000);
+  while ( true ) {
+    try {
+      fEventCounter = fEventRate / 100;
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    } catch (boost::thread_interrupted&) {
+      break;
+    }
   }
 }
 
@@ -83,7 +87,7 @@ void FairMQBenchmarkSampler::Log(Int_t intervalInMs)
   t0 = get_timestamp();
 
   while (true) {
-    usleep(intervalInMs * 1000);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(intervalInMs));
 
     t1 = get_timestamp();
 
@@ -105,7 +109,7 @@ void FairMQBenchmarkSampler::Log(Int_t intervalInMs)
   }
 }
 
-void FairMQBenchmarkSampler::SetProperty(Int_t key, TString value, Int_t slot/*= 0*/)
+void FairMQBenchmarkSampler::SetProperty(const Int_t& key, const TString& value, const Int_t& slot/*= 0*/)
 {
   switch (key) {
   default:
@@ -114,7 +118,7 @@ void FairMQBenchmarkSampler::SetProperty(Int_t key, TString value, Int_t slot/*=
   }
 }
 
-TString FairMQBenchmarkSampler::GetProperty(Int_t key, TString default_/*= ""*/, Int_t slot/*= 0*/)
+TString FairMQBenchmarkSampler::GetProperty(const Int_t& key, const TString& default_/*= ""*/, const Int_t& slot/*= 0*/)
 {
   switch (key) {
   default:
@@ -122,7 +126,7 @@ TString FairMQBenchmarkSampler::GetProperty(Int_t key, TString default_/*= ""*/,
   }
 }
 
-void FairMQBenchmarkSampler::SetProperty(Int_t key, Int_t value, Int_t slot/*= 0*/)
+void FairMQBenchmarkSampler::SetProperty(const Int_t& key, const Int_t& value, const Int_t& slot/*= 0*/)
 {
   switch (key) {
   case EventSize:
@@ -137,7 +141,7 @@ void FairMQBenchmarkSampler::SetProperty(Int_t key, Int_t value, Int_t slot/*= 0
   }
 }
 
-Int_t FairMQBenchmarkSampler::GetProperty(Int_t key, Int_t default_/*= 0*/, Int_t slot/*= 0*/)
+Int_t FairMQBenchmarkSampler::GetProperty(const Int_t& key, const Int_t& default_/*= 0*/, const Int_t& slot/*= 0*/)
 {
   switch (key) {
   case EventSize:

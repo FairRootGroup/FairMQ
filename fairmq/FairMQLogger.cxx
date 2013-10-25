@@ -62,6 +62,8 @@ void FairMQLogger::Log(Int_t type, TString logmsg)
   case ERROR:
     type_str = "\033[01;31mERROR\033[0m";
     break;
+  case STATE:
+    type_str = "\033[01;33mSTATE\033[0m";
   default:
     break;
   }

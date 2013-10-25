@@ -1,71 +1,99 @@
 /*
  * runSink.cxx
  *
- *  Created on: Jan 21, 2013
- *      Author: dklein
+ *  @since: Jan 21, 2013
+ *  @author: dklein
  */
 
-#include "FairMQSink.h"
-#include <sys/types.h>
-#include <unistd.h>
-#include "FairMQLogger.h"
-#include <zmq.hpp>
-#include <stdio.h>
 #include <iostream>
+#include <csignal>
 
+#include "FairMQLogger.h"
+#include "FairMQSink.h"
+
+
+FairMQSink sink;
+
+static void s_signal_handler (int signal)
+{
+  std::cout << std::endl << "Caught signal " << signal << std::endl;
+
+  sink.ChangeState(FairMQSink::STOP);
+  sink.ChangeState(FairMQSink::END);
+
+  std::cout << "Shutdown complete. Bye!" << std::endl;
+  exit(1);
+}
+
+static void s_catch_signals (void)
+{
+  struct sigaction action;
+  action.sa_handler = s_signal_handler;
+  action.sa_flags = 0;
+  sigemptyset(&action.sa_mask);
+  sigaction(SIGINT, &action, NULL);
+  sigaction(SIGTERM, &action, NULL);
+}
 
 int main(int argc, char** argv)
 {
-  if( argc != 6 ) {
-    std::cout << "Usage: sink \tID numIoTreads\n" <<
-              "\t\tconnectSocketType connectRcvBufferSize ConnectAddress\n" << std::endl;
+  if ( argc != 7 ) {
+    std::cout << "Usage: sink \tID numIoTreads\n"
+              << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
+              << std::endl;
     return 1;
   }
 
-  pid_t pid = getpid();
+  s_catch_signals();
+
   std::stringstream logmsg;
-  logmsg << "PID: " << pid;
+  logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
   int i = 1;
 
-  FairMQSink* sink = new FairMQSink();
-  sink->SetProperty(FairMQSink::Id, argv[i]);
+  sink.SetProperty(FairMQSink::Id, argv[i]);
   ++i;
 
   int numIoThreads;
   std::stringstream(argv[i]) >> numIoThreads;
-  sink->SetProperty(FairMQSink::NumIoThreads, numIoThreads);
+  sink.SetProperty(FairMQSink::NumIoThreads, numIoThreads);
   ++i;
 
-  int numInputs = 1;
-  sink->SetProperty(FairMQSink::NumInputs, numInputs);
+  sink.SetProperty(FairMQSink::NumInputs, 1);
+  sink.SetProperty(FairMQSink::NumOutputs, 0);
 
-  int numOutputs = 0;
-  sink->SetProperty(FairMQSink::NumOutputs, numOutputs);
 
-  sink->Init();
+  sink.ChangeState(FairMQSink::INIT);
 
-  int connectSocketType = ZMQ_SUB;
+
+  int inputSocketType = ZMQ_SUB;
   if (strcmp(argv[i], "pull") == 0) {
-    connectSocketType = ZMQ_PULL;
+    inputSocketType = ZMQ_PULL;
   }
-  sink->SetProperty(FairMQSink::ConnectSocketType, connectSocketType, 0);
+  sink.SetProperty(FairMQSink::InputSocketType, inputSocketType, 0);
+  ++i;
+  int inputRcvBufSize;
+  std::stringstream(argv[i]) >> inputRcvBufSize;
+  sink.SetProperty(FairMQSink::InputRcvBufSize, inputRcvBufSize, 0);
+  ++i;
+  sink.SetProperty(FairMQSink::InputMethod, argv[i], 0);
+  ++i;
+  sink.SetProperty(FairMQSink::InputAddress, argv[i], 0);
   ++i;
 
-  int connectRcvBufferSize;
-  std::stringstream(argv[i]) >> connectRcvBufferSize;
-  sink->SetProperty(FairMQSink::ConnectRcvBufferSize, connectRcvBufferSize, 0);
-  ++i;
 
-  sink->SetProperty(FairMQSink::ConnectAddress, argv[i], 0);
-  ++i;
+  sink.ChangeState(FairMQSink::SETOUTPUT);
+  sink.ChangeState(FairMQSink::SETINPUT);
+  sink.ChangeState(FairMQSink::RUN);
 
 
-  sink->Bind();
-  sink->Connect();
-  sink->Run();
+  char ch;
+  std::cin.get(ch);
 
-  exit(0);
+  sink.ChangeState(FairMQSink::STOP);
+  sink.ChangeState(FairMQSink::END);
+
+  return 0;
 }
 

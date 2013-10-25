@@ -5,10 +5,13 @@
  *      Author: dklein
  */
 
-#include "FairMQBuffer.h"
 #include <iostream>
-#include "FairMQLogger.h"
 
+#include <boost/thread.hpp>
+#include <boost/bind.hpp>
+
+#include "FairMQBuffer.h"
+#include "FairMQLogger.h"
 
 FairMQBuffer::FairMQBuffer()
 {
@@ -16,11 +19,9 @@ FairMQBuffer::FairMQBuffer()
 
 void FairMQBuffer::Run()
 {
-  void* status; //necessary for pthread_join
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> Run <<<<<<<");
 
-  pthread_t logger;
-  pthread_create(&logger, NULL, &FairMQDevice::callLogSocketRates, this);
+  boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
   // Initialize poll set
   zmq_pollitem_t items[] = {
@@ -28,10 +29,10 @@ void FairMQBuffer::Run()
   };
 
   Bool_t received = false;
-  while (true) {
+  while ( fState == RUNNING ) {
     FairMQMessage msg;
 
-    zmq_poll(items, 1, -1);
+    zmq_poll(items, 1, 100);
 
     if (items[0].revents & ZMQ_POLLIN) {
       received = fPayloadInputs->at(0)->Receive(&msg);
@@ -39,10 +40,12 @@ void FairMQBuffer::Run()
 
     if (received) {
       fPayloadOutputs->at(0)->Send(&msg);
+      received = false;
     }
   }
 
-  pthread_join(logger, &status);
+  rateLogger.interrupt();
+  rateLogger.join();
 }
 
 FairMQBuffer::~FairMQBuffer()

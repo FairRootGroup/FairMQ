@@ -12,8 +12,7 @@ FairMQSamplerTask::FairMQSamplerTask(const Text_t* name, Int_t iVerbose) :
   FairTask(name, iVerbose),
   fInput(NULL),
   fBranch(""),
-  fMessageSize(32768),
-  fOutput(new std::vector<FairMQMessage*>)
+  fOutput(new FairMQMessage)
 {
 }
 
@@ -21,16 +20,14 @@ FairMQSamplerTask::FairMQSamplerTask() :
   FairTask( "Abstract base task used for loading a branch from a root file into memory"),
   fInput(NULL),
   fBranch(""),
-  fMessageSize(32768),
-  fOutput(new std::vector<FairMQMessage*>)
+  fOutput(new FairMQMessage)
 {
 }
 
 FairMQSamplerTask::~FairMQSamplerTask()
 {
   delete fInput;
-
-  // leave fOutput in memory, because it is needed even after FairMQSamplerTask is terminated.
+  //delete fOutput; // leave fOutput in memory, because it is needed even after FairMQSamplerTask is terminated. ClearOutput will clean it when it is no longer needed.
 }
 
 InitStatus FairMQSamplerTask::Init()
@@ -46,13 +43,13 @@ void FairMQSamplerTask::SetBranch(TString branch)
   fBranch = branch;
 }
 
-void FairMQSamplerTask::SetMessageSize(int size)
-{
-  fMessageSize = size;
-}
-
-std::vector<FairMQMessage*> *FairMQSamplerTask::GetOutput()
+FairMQMessage* FairMQSamplerTask::GetOutput()
 {
   return fOutput;
+}
+
+void FairMQSamplerTask::ClearOutput(void* data, void* hint)
+{
+  free (data);
 }
 

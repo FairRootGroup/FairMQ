@@ -1,35 +1,14 @@
-INCLUDE_DIRECTORIES(
+include_directories(
   ${BASE_INCLUDE_DIRECTORIES}
   ${CMAKE_SOURCE_DIR}/fairmq
   ${ZMQ_INCLUDE_DIR}
   ${ROOT_INCLUDE_DIR}
 )
 
-include_directories(${INCLUDE_DIRECTORIES})
-
-SET(HEADERS
-  "FairMQSampler.h"
-  "FairMQBenchmarkSampler.h"
-  #"FairMQStateMachine.h"
-  "FairMQConfigurable.h"
-  "FairMQDevice.h"
-  "FairMQBuffer.h"
-  "FairMQSamplerTask.h"
-  "FairMQLogger.h"
-  "FairMQContext.h"
-  "FairMQMessage.h"
-  "FairMQSocket.h"
-  "FairMQBalancedStandaloneSplitter.h"
-  "FairMQStandaloneMerger.h"
-  "FairMQProcessor.h"
-  "FairMQProcessorTask.h"
-  "FairMQSink.h"
-)
-
-SET(SOURCES
+Set(SRCS
   "FairMQSampler.cxx"
   "FairMQBenchmarkSampler.cxx"
-  #"FairMQStateMachine.cxx"
+  "FairMQStateMachine.cxx"
   "FairMQConfigurable.cxx"
   "FairMQBuffer.cxx"
   "FairMQSamplerTask.cxx"
@@ -43,31 +22,28 @@ SET(SOURCES
   "FairMQProcessorTask.cxx"
   "FairMQSink.cxx"
   "FairMQDevice.cxx"
+  "FairMQProxy.cxx"
 )
 
-set(LINK_DIRECTORIES
-${ROOT_LIBRARY_DIR}
+Set(LINK_DIRECTORIES
+  ${ROOT_LIBRARY_DIR}
+  ${Boost_LIBRARY_DIRS}
 )
 
-link_directories( ${LINK_DIRECTORIES})
+link_directories(${LINK_DIRECTORIES})
 
-SET(LINK_LIBRARIES
-)
-
-
-Set(SRCS ${SOURCES})
 Set(LIBRARY_NAME FairMQ)
 Set(LINKDEF)
-Set(DEPENDENCIES   
+Set(DEPENDENCIES 
   ${CMAKE_THREAD_LIBS_INIT}
   ${ZMQ_LIBRARY_SHARED}
-  Base ParBase FairTools GeoBase 
-  )
+  Base ParBase FairTools GeoBase boost_thread boost_timer boost_system
+)
 
 GENERATE_LIBRARY()
 
-Set(Exe_Names bsampler buffer splitter merger sink)
-Set(Exe_Source runBenchmarkSampler.cxx runBuffer.cxx runSplitter.cxx runMerger.cxx runSink.cxx)
+Set(Exe_Names bsampler buffer splitter merger sink proxy)
+Set(Exe_Source runBenchmarkSampler.cxx runBuffer.cxx runSplitter.cxx runMerger.cxx runSink.cxx runProxy.cxx)
 
 List(LENGTH Exe_Names _length)
 Math(EXPR _length ${_length}-1)

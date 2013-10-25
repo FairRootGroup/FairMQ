@@ -5,98 +5,125 @@
  *      Author: dklein
  */
 
-#include "FairMQBalancedStandaloneSplitter.h"
-#include <sys/types.h>
-#include <unistd.h>
-#include "FairMQLogger.h"
-#include <zmq.hpp>
-#include <stdio.h>
 #include <iostream>
+#include <csignal>
 
+#include "FairMQLogger.h"
+#include "FairMQBalancedStandaloneSplitter.h"
+
+
+FairMQBalancedStandaloneSplitter splitter;
+
+static void s_signal_handler (int signal)
+{
+  std::cout << std::endl << "Caught signal " << signal << std::endl;
+
+  splitter.ChangeState(FairMQBalancedStandaloneSplitter::STOP);
+  splitter.ChangeState(FairMQBalancedStandaloneSplitter::END);
+
+  std::cout << "Shutdown complete. Bye!" << std::endl;
+  exit(1);
+}
+
+static void s_catch_signals (void)
+{
+  struct sigaction action;
+  action.sa_handler = s_signal_handler;
+  action.sa_flags = 0;
+  sigemptyset(&action.sa_mask);
+  sigaction(SIGINT, &action, NULL);
+  sigaction(SIGTERM, &action, NULL);
+}
 
 int main(int argc, char** argv)
 {
-  if( argc != 12 ) {
-    std::cout << "Usage: splitter \tID numIoTreads\n" <<
-              "\t\tconnectSocketType connectRcvBufferSize ConnectAddress\n" <<
-              "\t\tbindSocketType bindSndBufferSize BindAddress\n" <<
-              "\t\tbindSocketType bindSndBufferSize BindAddress\n" << std::endl;
+  if ( argc != 15 ) {
+    std::cout << "Usage: splitter \tID numIoTreads\n"
+              << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
+              << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n"
+              << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n" << std::endl;
     return 1;
   }
 
-  pid_t pid = getpid();
+  s_catch_signals();
+
   std::stringstream logmsg;
-  logmsg << "PID: " << pid;
+  logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
   int i = 1;
 
-  FairMQBalancedStandaloneSplitter* splitter = new FairMQBalancedStandaloneSplitter();
-  splitter->SetProperty(FairMQBalancedStandaloneSplitter::Id, argv[i]);
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::Id, argv[i]);
   ++i;
 
   int numIoThreads;
   std::stringstream(argv[i]) >> numIoThreads;
-  splitter->SetProperty(FairMQBalancedStandaloneSplitter::NumIoThreads, numIoThreads);
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::NumIoThreads, numIoThreads);
   ++i;
 
-  int numInputs = 1;
-  splitter->SetProperty(FairMQBalancedStandaloneSplitter::NumInputs, numInputs);
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::NumInputs, 1);
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::NumOutputs, 2);
 
-  int numOutputs = 2;
-  splitter->SetProperty(FairMQBalancedStandaloneSplitter::NumOutputs, numOutputs);
 
-  splitter->Init();
+  splitter.ChangeState(FairMQBalancedStandaloneSplitter::INIT);
 
-  int connectSocketType = ZMQ_SUB;
+
+  int inputSocketType = ZMQ_SUB;
   if (strcmp(argv[i], "pull") == 0) {
-    connectSocketType = ZMQ_PULL;
+    inputSocketType = ZMQ_PULL;
   }
-  splitter->SetProperty(FairMQBalancedStandaloneSplitter::ConnectSocketType, connectSocketType, 0);
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::InputSocketType, inputSocketType, 0);
+  ++i;
+  int inputRcvBufSize;
+  std::stringstream(argv[i]) >> inputRcvBufSize;
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::InputRcvBufSize, inputRcvBufSize, 0);
+  ++i;
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::InputMethod, argv[i], 0);
+  ++i;
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::InputAddress, argv[i], 0);
   ++i;
 
-  int connectRcvBufferSize;
-  std::stringstream(argv[i]) >> connectRcvBufferSize;
-  splitter->SetProperty(FairMQBalancedStandaloneSplitter::ConnectRcvBufferSize, connectRcvBufferSize, 0);
-  ++i;
-
-  splitter->SetProperty(FairMQBalancedStandaloneSplitter::ConnectAddress, argv[i], 0);
-  ++i;
-
-  int bindSocketType = ZMQ_PUB;
+  int outputSocketType = ZMQ_PUB;
   if (strcmp(argv[i], "push") == 0) {
-    bindSocketType = ZMQ_PUSH;
+    outputSocketType = ZMQ_PUSH;
   }
-  splitter->SetProperty(FairMQBalancedStandaloneSplitter::BindSocketType, bindSocketType, 0);
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::OutputSocketType, outputSocketType, 0);
+  ++i;
+  int outputSndBufSize;
+  std::stringstream(argv[i]) >> outputSndBufSize;
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::OutputSndBufSize, outputSndBufSize, 0);
+  ++i;
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::OutputMethod, argv[i], 0);
+  ++i;
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::OutputAddress, argv[i], 0);
   ++i;
 
-  int bindSndBufferSize;
-  std::stringstream(argv[i]) >> bindSndBufferSize;
-  splitter->SetProperty(FairMQBalancedStandaloneSplitter::BindSndBufferSize, bindSndBufferSize, 0);
-  ++i;
-
-  splitter->SetProperty(FairMQBalancedStandaloneSplitter::BindAddress, argv[i], 0);
-  ++i;
-
-  bindSocketType = ZMQ_PUB;
+  outputSocketType = ZMQ_PUB;
   if (strcmp(argv[i], "push") == 0) {
-    bindSocketType = ZMQ_PUSH;
+    outputSocketType = ZMQ_PUSH;
   }
-  splitter->SetProperty(FairMQBalancedStandaloneSplitter::BindSocketType, bindSocketType, 1);
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::OutputSocketType, outputSocketType, 1);
+  ++i;
+  std::stringstream(argv[i]) >> outputSndBufSize;
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::OutputSndBufSize, outputSndBufSize, 1);
+  ++i;
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::OutputMethod, argv[i], 1);
+  ++i;
+  splitter.SetProperty(FairMQBalancedStandaloneSplitter::OutputAddress, argv[i], 1);
   ++i;
 
-  std::stringstream(argv[i]) >> bindSndBufferSize;
-  splitter->SetProperty(FairMQBalancedStandaloneSplitter::BindSndBufferSize, bindSndBufferSize, 1);
-  ++i;
 
-  splitter->SetProperty(FairMQBalancedStandaloneSplitter::BindAddress, argv[i], 1);
-  ++i;
+  splitter.ChangeState(FairMQBalancedStandaloneSplitter::SETOUTPUT);
+  splitter.ChangeState(FairMQBalancedStandaloneSplitter::SETINPUT);
+  splitter.ChangeState(FairMQBalancedStandaloneSplitter::RUN);
 
 
-  splitter->Bind();
-  splitter->Connect();
-  splitter->Run();
+  char ch;
+  std::cin.get(ch);
 
-  exit(0);
+  splitter.ChangeState(FairMQBalancedStandaloneSplitter::STOP);
+  splitter.ChangeState(FairMQBalancedStandaloneSplitter::END);
+
+  return 0;
 }
 

@@ -14,11 +14,11 @@
 
 class FairMQBuffer: public FairMQDevice
 {
-  private:
   public:
     FairMQBuffer();
-    virtual void Run();
     virtual ~FairMQBuffer();
+  protected:
+    virtual void Run();
 };
 
 #endif /* FAIRMQBUFFER_H_ */

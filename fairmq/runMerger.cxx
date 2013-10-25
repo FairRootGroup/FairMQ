@@ -5,98 +5,125 @@
  *      Author: dklein
  */
 
-#include "FairMQStandaloneMerger.h"
-#include <sys/types.h>
-#include <unistd.h>
-#include "FairMQLogger.h"
-#include <zmq.hpp>
-#include <stdio.h>
 #include <iostream>
+#include <csignal>
 
+#include "FairMQLogger.h"
+#include "FairMQStandaloneMerger.h"
+
+
+FairMQStandaloneMerger merger;
+
+static void s_signal_handler (int signal)
+{
+  std::cout << std::endl << "Caught signal " << signal << std::endl;
+
+  merger.ChangeState(FairMQStandaloneMerger::STOP);
+  merger.ChangeState(FairMQStandaloneMerger::END);
+
+  std::cout << "Shutdown complete. Bye!" << std::endl;
+  exit(1);
+}
+
+static void s_catch_signals (void)
+{
+  struct sigaction action;
+  action.sa_handler = s_signal_handler;
+  action.sa_flags = 0;
+  sigemptyset(&action.sa_mask);
+  sigaction(SIGINT, &action, NULL);
+  sigaction(SIGTERM, &action, NULL);
+}
 
 int main(int argc, char** argv)
 {
-  if( argc != 12 ) {
-    std::cout << "Usage: merger \tID numIoTreads\n" <<
-              "\t\tconnectSocketType connectRcvBufferSize ConnectAddress\n" <<
-              "\t\tconnectSocketType connectRcvBufferSize ConnectAddress\n" <<
-              "\t\tbindSocketType bindSndBufferSize BindAddress\n" << std::endl;
+  if ( argc != 15 ) {
+    std::cout << "Usage: merger \tID numIoTreads\n"
+              << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
+              << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
+              << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n" << std::endl;
     return 1;
   }
 
-  pid_t pid = getpid();
+  s_catch_signals();
+
   std::stringstream logmsg;
-  logmsg << "PID: " << pid;
+  logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
   int i = 1;
 
-  FairMQStandaloneMerger* merger = new FairMQStandaloneMerger();
-  merger->SetProperty(FairMQStandaloneMerger::Id, argv[i]);
+  merger.SetProperty(FairMQStandaloneMerger::Id, argv[i]);
   ++i;
 
   int numIoThreads;
   std::stringstream(argv[i]) >> numIoThreads;
-  merger->SetProperty(FairMQStandaloneMerger::NumIoThreads, numIoThreads);
+  merger.SetProperty(FairMQStandaloneMerger::NumIoThreads, numIoThreads);
   ++i;
 
-  int numInputs = 2;
-  merger->SetProperty(FairMQStandaloneMerger::NumInputs, numInputs);
+  merger.SetProperty(FairMQStandaloneMerger::NumInputs, 2);
+  merger.SetProperty(FairMQStandaloneMerger::NumOutputs, 1);
 
-  int numOutputs = 1;
-  merger->SetProperty(FairMQStandaloneMerger::NumOutputs, numOutputs);
 
-  merger->Init();
+  merger.ChangeState(FairMQStandaloneMerger::INIT);
 
-  int connectSocketType = ZMQ_SUB;
+
+  int inputSocketType = ZMQ_SUB;
   if (strcmp(argv[i], "pull") == 0) {
-    connectSocketType = ZMQ_PULL;
+    inputSocketType = ZMQ_PULL;
   }
-  merger->SetProperty(FairMQStandaloneMerger::ConnectSocketType, connectSocketType, 0);
+  merger.SetProperty(FairMQStandaloneMerger::InputSocketType, inputSocketType, 0);
+  ++i;
+  int inputRcvBufSize;
+  std::stringstream(argv[i]) >> inputRcvBufSize;
+  merger.SetProperty(FairMQStandaloneMerger::InputRcvBufSize, inputRcvBufSize, 0);
+  ++i;
+  merger.SetProperty(FairMQStandaloneMerger::InputMethod, argv[i], 0);
+  ++i;
+  merger.SetProperty(FairMQStandaloneMerger::InputAddress, argv[i], 0);
   ++i;
 
-  int connectRcvBufferSize;
-  std::stringstream(argv[i]) >> connectRcvBufferSize;
-  merger->SetProperty(FairMQStandaloneMerger::ConnectRcvBufferSize, connectRcvBufferSize, 0);
-  ++i;
-
-  merger->SetProperty(FairMQStandaloneMerger::ConnectAddress, argv[i], 0);
-  ++i;
-
-  connectSocketType = ZMQ_SUB;
+  inputSocketType = ZMQ_SUB;
   if (strcmp(argv[i], "pull") == 0) {
-    connectSocketType = ZMQ_PULL;
+    inputSocketType = ZMQ_PULL;
   }
-  merger->SetProperty(FairMQStandaloneMerger::ConnectSocketType, connectSocketType, 1);
+  merger.SetProperty(FairMQStandaloneMerger::InputSocketType, inputSocketType, 1);
+  ++i;
+  std::stringstream(argv[i]) >> inputRcvBufSize;
+  merger.SetProperty(FairMQStandaloneMerger::InputRcvBufSize, inputRcvBufSize, 1);
+  ++i;
+  merger.SetProperty(FairMQStandaloneMerger::InputMethod, argv[i], 1);
+  ++i;
+  merger.SetProperty(FairMQStandaloneMerger::InputAddress, argv[i], 1);
   ++i;
 
-  std::stringstream(argv[i]) >> connectRcvBufferSize;
-  merger->SetProperty(FairMQStandaloneMerger::ConnectRcvBufferSize, connectRcvBufferSize, 1);
-  ++i;
-
-  merger->SetProperty(FairMQStandaloneMerger::ConnectAddress, argv[i], 1);
-  ++i;
-
-  int bindSocketType = ZMQ_PUB;
+  int outputSocketType = ZMQ_PUB;
   if (strcmp(argv[i], "push") == 0) {
-    bindSocketType = ZMQ_PUSH;
+    outputSocketType = ZMQ_PUSH;
   }
-  merger->SetProperty(FairMQStandaloneMerger::BindSocketType, bindSocketType, 0);
+  merger.SetProperty(FairMQStandaloneMerger::OutputSocketType, outputSocketType, 0);
+  ++i;
+  int outputSndBufSize;
+  std::stringstream(argv[i]) >> outputSndBufSize;
+  merger.SetProperty(FairMQStandaloneMerger::OutputSndBufSize, outputSndBufSize, 0);
+  ++i;
+  merger.SetProperty(FairMQStandaloneMerger::OutputMethod, argv[i], 0);
+  ++i;
+  merger.SetProperty(FairMQStandaloneMerger::OutputAddress, argv[i], 0);
   ++i;
 
-  int bindSndBufferSize;
-  std::stringstream(argv[i]) >> bindSndBufferSize;
-  merger->SetProperty(FairMQStandaloneMerger::BindSndBufferSize, bindSndBufferSize, 0);
-  ++i;
 
-  merger->SetProperty(FairMQStandaloneMerger::BindAddress, argv[i], 0);
-  ++i;
+  merger.ChangeState(FairMQStandaloneMerger::SETOUTPUT);
+  merger.ChangeState(FairMQStandaloneMerger::SETINPUT);
+  merger.ChangeState(FairMQStandaloneMerger::RUN);
 
 
-  merger->Bind();
-  merger->Connect();
-  merger->Run();
+  char ch;
+  std::cin.get(ch);
 
-  exit(0);
+  merger.ChangeState(FairMQStandaloneMerger::STOP);
+  merger.ChangeState(FairMQStandaloneMerger::END);
+
+  return 0;
 }
 

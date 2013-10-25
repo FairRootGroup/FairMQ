@@ -18,6 +18,7 @@ class FairMQStandaloneMerger: public FairMQDevice
   public:
     FairMQStandaloneMerger();
     virtual ~FairMQStandaloneMerger();
+  protected:
     virtual void Run();
 };
 

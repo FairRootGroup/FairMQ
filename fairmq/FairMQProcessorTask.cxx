@@ -16,3 +16,7 @@ FairMQProcessorTask::~FairMQProcessorTask()
 {
 }
 
+void FairMQProcessorTask::ClearOutput(void* data, void* hint)
+{
+  free (data);
+}

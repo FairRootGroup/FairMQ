@@ -9,9 +9,7 @@
 #define FAIRMQLOGGER_H_
 #include <string>
 #include <sstream>
-//#ifndef _MAKECINT_
 #include <sys/time.h>
-//#endif
 #include "Rtypes.h"
 #include "TString.h"
 
@@ -23,7 +21,7 @@ class FairMQLogger
     TString fBindAddress;
   public:
     enum {
-      DEBUG, INFO, ERROR
+      DEBUG, INFO, ERROR, STATE
     };
     FairMQLogger();
     FairMQLogger(TString bindAdress);

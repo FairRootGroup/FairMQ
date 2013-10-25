@@ -17,6 +17,7 @@ class FairMQBalancedStandaloneSplitter: public FairMQDevice
   public:
     FairMQBalancedStandaloneSplitter();
     virtual ~FairMQBalancedStandaloneSplitter();
+  protected:
     virtual void Run();
 };
 

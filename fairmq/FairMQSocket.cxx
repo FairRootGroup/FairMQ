@@ -109,7 +109,7 @@ Bool_t FairMQSocket::Send(FairMQMessage* msg)
   try {
     fBytesTx += msg->Size();
     ++fMessagesTx;
-    result = fSocket->send(*msg->GetMessage());
+    result = fSocket->send(*msg->GetMessage()); // use send(*msg->GetMessage(), ZMQ_DONTWAIT) for non-blocking call
   } catch (zmq::error_t& e) {
     std::stringstream logmsg;
     logmsg << "failed sending on socket #" << fId << ", reason: " << e.what();

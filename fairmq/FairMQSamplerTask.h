@@ -25,13 +25,12 @@ class FairMQSamplerTask: public FairTask
     virtual InitStatus Init();
     virtual void Exec(Option_t* opt) = 0;
     void SetBranch(TString branch);
-    void SetMessageSize(Int_t size);
-    std::vector<FairMQMessage*> *GetOutput();
+    FairMQMessage* GetOutput();
+    static void ClearOutput(void* data, void* hint);
   protected:
     TClonesArray* fInput;
     TString fBranch;
-    Int_t fMessageSize;
-    std::vector<FairMQMessage*> *fOutput;
+    FairMQMessage* fOutput;
 };
 
 #endif /* FAIRMQSAMPLERTASK_H_ */

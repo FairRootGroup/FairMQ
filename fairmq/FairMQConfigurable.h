@@ -19,10 +19,10 @@ class FairMQConfigurable
       Last = 1
     };
     FairMQConfigurable();
-    virtual void SetProperty(Int_t key, TString value, Int_t slot = 0);
-    virtual TString GetProperty(Int_t key, TString default_ = "", Int_t slot = 0);
-    virtual void SetProperty(Int_t key, Int_t value, Int_t slot = 0);
-    virtual Int_t GetProperty(Int_t key, Int_t default_ = 0, Int_t slot = 0);
+    virtual void SetProperty(const Int_t& key, const TString& value, const Int_t& slot = 0);
+    virtual TString GetProperty(const Int_t& key, const TString& default_ = "", const Int_t& slot = 0);
+    virtual void SetProperty(const Int_t& key, const Int_t& value, const Int_t& slot = 0);
+    virtual Int_t GetProperty(const Int_t& key, const Int_t& default_ = 0, const Int_t& slot = 0);
     virtual ~FairMQConfigurable();
 };
 

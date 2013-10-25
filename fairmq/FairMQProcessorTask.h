@@ -19,6 +19,7 @@ class FairMQProcessorTask : public FairTask
     FairMQProcessorTask();
     virtual ~FairMQProcessorTask();
     virtual void Exec(FairMQMessage* msg, Option_t* opt) = 0;
+    static void ClearOutput(void* data, void* hint);
 };
 
 #endif /* FAIRMQPROCESSORTASK_H_ */
