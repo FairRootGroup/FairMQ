@@ -27,7 +27,7 @@ void FairMQStandaloneMerger::Run()
 
   zmq_pollitem_t items[fNumInputs];
   for (Int_t iInput = 0; iInput < fNumInputs; iInput++) {
-    zmq_pollitem_t tempitem( {*(fPayloadInputs->at(iInput)->GetSocket()), 0, ZMQ_POLLIN, 0});
+    zmq_pollitem_t tempitem= {*(fPayloadInputs->at(iInput)->GetSocket()), 0, ZMQ_POLLIN, 0};
     items[iInput] =  tempitem;
   }
 
