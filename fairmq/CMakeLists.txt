@@ -43,7 +43,7 @@ Set(DEPENDENCIES
 GENERATE_LIBRARY()
 
 Set(Exe_Names bsampler buffer splitter merger sink proxy)
-Set(Exe_Source runBenchmarkSampler.cxx runBuffer.cxx runSplitter.cxx runMerger.cxx runSink.cxx runProxy.cxx)
+Set(Exe_Source runBenchmarkSampler.cxx runBuffer.cxx runSplitter.cxx runMerger.cxx runSink.cxx runProxy.cxx runNToOneMerger.cxx runOneToNSplitter.cxx)
 
 List(LENGTH Exe_Names _length)
 Math(EXPR _length ${_length}-1)

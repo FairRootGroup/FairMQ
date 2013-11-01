@@ -25,11 +25,11 @@ void FairMQStandaloneMerger::Run()
 
   boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-  // Initialize poll set
-  zmq_pollitem_t items[] = {
-    { *(fPayloadInputs->at(0)->GetSocket()), 0, ZMQ_POLLIN, 0 },
-    { *(fPayloadInputs->at(1)->GetSocket()), 0, ZMQ_POLLIN, 0 }
-  };
+  zmq_pollitem_t items[fNumInputs];
+  for (Int_t iInput = 0; iInput < fNumInputs; iInput++) {
+    zmq_pollitem_t tempitem( {*(fPayloadInputs->at(iInput)->GetSocket()), 0, ZMQ_POLLIN, 0});
+    items[iInput] =  tempitem;
+  }
 
   Bool_t received = false;
 
@@ -38,24 +38,15 @@ void FairMQStandaloneMerger::Run()
 
     zmq_poll(items, fNumInputs, 100);
 
-    if (items[0].revents & ZMQ_POLLIN) {
-      received = fPayloadInputs->at(0)->Receive(&msg);
+    for(Int_t iItem = 0; iItem < fNumInputs; iItem++) {
+      if (items[iItem].revents & ZMQ_POLLIN) {
+        received = fPayloadInputs->at(iItem)->Receive(&msg);
+      }
+      if (received) {
+        fPayloadOutputs->at(0)->Send(&msg);
+        received = false;
+      }
     }
-
-    if (received) {
-      fPayloadOutputs->at(0)->Send(&msg);
-      received = false;
-    }
-
-    if (items[1].revents & ZMQ_POLLIN) {
-      received = fPayloadInputs->at(1)->Receive(&msg);
-    }
-
-    if (received) {
-      fPayloadOutputs->at(0)->Send(&msg);
-      received = false;
-    }
-
   }
 
   rateLogger.interrupt();
