@@ -2,7 +2,7 @@
  * FairMQMessageZMQ.cxx
  *
  * @since 2012-12-05
- * @author D. Klein, A. Rybalchenko
+ * @author D. Klein, A. Rybalchenko, N. Winckler
  */
 
 #include <cstdlib>
@@ -11,9 +11,10 @@
 #include "FairMQLogger.h"
 
 
-FairMQMessageZMQ::FairMQMessageZMQ()
+FairMQMessageZMQ::FairMQMessageZMQ() :
+  fMessage(new zmq_msg_t())
 {
-  int rc = zmq_msg_init (&fMessage);
+  int rc = zmq_msg_init (fMessage);
   if (rc != 0) {
     stringstream logmsg;
     logmsg << "failed initializing message, reason: " << zmq_strerror(errno);
@@ -21,9 +22,10 @@ FairMQMessageZMQ::FairMQMessageZMQ()
   }
 }
 
-FairMQMessageZMQ::FairMQMessageZMQ(size_t size)
+FairMQMessageZMQ::FairMQMessageZMQ(size_t size) :
+  fMessage(new zmq_msg_t())
 {
-  int rc = zmq_msg_init_size (&fMessage, size);
+  int rc = zmq_msg_init_size (fMessage, size);
   if (rc != 0) {
     stringstream logmsg;
     logmsg << "failed initializing message with size, reason: " << zmq_strerror(errno);
@@ -31,9 +33,10 @@ FairMQMessageZMQ::FairMQMessageZMQ(size_t size)
   }
 }
 
-FairMQMessageZMQ::FairMQMessageZMQ(void* data, size_t size)
+FairMQMessageZMQ::FairMQMessageZMQ(void* data, size_t size) :
+  fMessage(new zmq_msg_t())
 {
-  int rc = zmq_msg_init_data (&fMessage, data, size, &CleanUp, NULL);
+  int rc = zmq_msg_init_data (fMessage, data, size, &CleanUp, NULL);
   if (rc != 0) {
     stringstream logmsg;
     logmsg << "failed initializing message with data, reason: " << zmq_strerror(errno);
@@ -43,14 +46,8 @@ FairMQMessageZMQ::FairMQMessageZMQ(void* data, size_t size)
 
 void FairMQMessageZMQ::Rebuild()
 {
-  int rc = zmq_msg_close (&fMessage);
-  if (rc != 0) {
-    stringstream logmsg;
-    logmsg << "failed closing message, reason: " << zmq_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
-  }
-
-  rc = zmq_msg_init (&fMessage);
+  CloseMessage();
+  int rc = zmq_msg_init (fMessage);
   if (rc != 0) {
     stringstream logmsg;
     logmsg << "failed initializing message, reason: " << zmq_strerror(errno);
@@ -60,14 +57,8 @@ void FairMQMessageZMQ::Rebuild()
 
 void FairMQMessageZMQ::Rebuild(size_t size)
 {
-  int rc = zmq_msg_close (&fMessage);
-  if (rc != 0) {
-    stringstream logmsg;
-    logmsg << "failed closing message, reason: " << zmq_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
-  }
-
-  rc = zmq_msg_init_size (&fMessage, size);
+  CloseMessage();
+  int rc = zmq_msg_init_size (fMessage, size);
   if (rc != 0) {
     stringstream logmsg;
     logmsg << "failed initializing message with size, reason: " << zmq_strerror(errno);
@@ -77,34 +68,28 @@ void FairMQMessageZMQ::Rebuild(size_t size)
 
 void FairMQMessageZMQ::Rebuild(void* data, size_t size)
 {
-  int rc = zmq_msg_close (&fMessage);
+  CloseMessage();
+  int rc = zmq_msg_init_data (fMessage, data, size, &CleanUp, NULL);
   if (rc != 0) {
     stringstream logmsg;
-    logmsg << "failed closing message, reason: " << zmq_strerror(errno);
+    logmsg << "failed initializing message with data, reason: " << zmq_strerror(errno);
     FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
-  }
-
-  rc = zmq_msg_init_data (&fMessage, data, size, &CleanUp, NULL);
-  if (rc != 0) {
-    stringstream logmsg2;
-    logmsg2 << "failed initializing message with data, reason: " << zmq_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg2.str());
   }
 }
 
 void* FairMQMessageZMQ::GetMessage()
 {
-  return &fMessage;
+  return fMessage;
 }
 
 void* FairMQMessageZMQ::GetData()
 {
-  return zmq_msg_data (&fMessage);
+  return zmq_msg_data (fMessage);
 }
 
 size_t FairMQMessageZMQ::GetSize()
 {
-  return zmq_msg_size (&fMessage);
+  return zmq_msg_size (fMessage);
 }
 
 void FairMQMessageZMQ::SetMessage(void* data, size_t size)
@@ -112,9 +97,19 @@ void FairMQMessageZMQ::SetMessage(void* data, size_t size)
   // dummy method to comply with the interface. functionality not allowed in zeromq.
 }
 
+inline void FairMQMessageZMQ::CloseMessage()
+{
+  int rc = zmq_msg_close (fMessage);
+  if (rc != 0) {
+    stringstream logmsg;
+    logmsg << "failed closing message, reason: " << zmq_strerror(errno);
+    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+  }
+}
+
 void FairMQMessageZMQ::Copy(FairMQMessage* msg)
 {
-  int rc = zmq_msg_copy (&fMessage, &(static_cast<FairMQMessageZMQ*>(msg)->fMessage));
+  int rc = zmq_msg_copy (fMessage, (static_cast<FairMQMessageZMQ*>(msg)->fMessage));
   if (rc != 0) {
     stringstream logmsg;
     logmsg << "failed copying message, reason: " << zmq_strerror(errno);
@@ -129,7 +124,7 @@ void FairMQMessageZMQ::CleanUp(void* data, void* hint)
 
 FairMQMessageZMQ::~FairMQMessageZMQ()
 {
-  int rc = zmq_msg_close (&fMessage);
+  int rc = zmq_msg_close (fMessage);
   if (rc != 0) {
     stringstream logmsg;
     logmsg << "failed closing message with data, reason: " << zmq_strerror(errno);

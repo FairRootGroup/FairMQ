@@ -25,11 +25,11 @@ class FairMQLogger
       DEBUG, INFO, ERROR, STATE
     };
     FairMQLogger();
-    FairMQLogger(const string& bindAdress); // TODO: check this for const ref
+    FairMQLogger(const string& bindAdress);
     virtual ~FairMQLogger();
     void Log(int type, const string& logmsg);
     static FairMQLogger* GetInstance();
-    static FairMQLogger* InitInstance(const string& bindAddress); // TODO: check this for const ref
+    static FairMQLogger* InitInstance(const string& bindAddress);
 };
 
 typedef unsigned long long timestamp_t;

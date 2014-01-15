@@ -13,6 +13,7 @@
 #include "FairMQMessage.h"
 #include "FairMQSocket.h"
 #include "FairMQPoller.h"
+#include "FairMQLogger.h"
 
 using std::vector;
 

@@ -12,7 +12,6 @@
 #include "FairMQMessageNN.h"
 #include "FairMQLogger.h"
 
-
 FairMQMessageNN::FairMQMessageNN() :
   fSize(0),
   fMessage(NULL)
@@ -22,7 +21,7 @@ FairMQMessageNN::FairMQMessageNN() :
 FairMQMessageNN::FairMQMessageNN(size_t size)
 {
   fMessage = nn_allocmsg(size, 0);
-  if(!fMessage){
+  if (!fMessage){
     stringstream logmsg;
     logmsg << "failed allocating message, reason: " << nn_strerror(errno);
     FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
@@ -33,7 +32,7 @@ FairMQMessageNN::FairMQMessageNN(size_t size)
 FairMQMessageNN::FairMQMessageNN(void* data, size_t size)
 {
   fMessage = nn_allocmsg(size, 0);
-  if(!fMessage){
+  if (!fMessage){
     stringstream logmsg;
     logmsg << "failed allocating message, reason: " << nn_strerror(errno);
     FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
@@ -53,7 +52,7 @@ void FairMQMessageNN::Rebuild(size_t size)
 {
   Clear();
   fMessage = nn_allocmsg(size, 0);
-  if(!fMessage){
+  if (!fMessage){
     stringstream logmsg;
     logmsg << "failed allocating message, reason: " << nn_strerror(errno);
     FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
@@ -65,11 +64,12 @@ void FairMQMessageNN::Rebuild(void* data, size_t size)
 {
   Clear();
   fMessage = nn_allocmsg(size, 0);
-  if(!fMessage){
+  if (!fMessage){
     stringstream logmsg;
     logmsg << "failed allocating message, reason: " << nn_strerror(errno);
     FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
   }
+  memcpy (fMessage, data, size);
   fSize = size;
 }
 
@@ -96,9 +96,9 @@ void FairMQMessageNN::SetMessage(void* data, size_t size)
 
 void FairMQMessageNN::Copy(FairMQMessage* msg)
 {
-  if(fMessage){
+  if (fMessage){
     int rc = nn_freemsg(fMessage);
-    if( rc < 0 ){
+    if ( rc < 0 ){
       stringstream logmsg;
       logmsg << "failed freeing message, reason: " << nn_strerror(errno);
       FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
@@ -108,7 +108,7 @@ void FairMQMessageNN::Copy(FairMQMessage* msg)
   size_t size = msg->GetSize();
 
   fMessage = nn_allocmsg(size, 0);
-  if(!fMessage){
+  if (!fMessage){
     stringstream logmsg;
     logmsg << "failed allocating message, reason: " << nn_strerror(errno);
     FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
@@ -117,7 +117,7 @@ void FairMQMessageNN::Copy(FairMQMessage* msg)
   fSize = size;
 }
 
-void FairMQMessageNN::Clear()
+inline void FairMQMessageNN::Clear()
 {
   int rc = nn_freemsg(fMessage);
   if (rc < 0) {

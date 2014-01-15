@@ -19,7 +19,7 @@ class FairMQMessageNN : public FairMQMessage
     FairMQMessageNN();
     FairMQMessageNN(size_t size);
     FairMQMessageNN(void* data, size_t size);
-
+    
     virtual void Rebuild();
     virtual void Rebuild(size_t size);
     virtual void Rebuild(void* data, size_t site);
@@ -28,16 +28,18 @@ class FairMQMessageNN : public FairMQMessage
     virtual void* GetData();
     virtual size_t GetSize();
 
-    virtual void Copy(FairMQMessage* msg);
+    virtual void SetMessage(void* data, size_t size);
 
-    void SetMessage(void* data, size_t size);
-    void Clear();
+    virtual void CloseMessage() {};
+    virtual void Copy(FairMQMessage* msg);
 
     virtual ~FairMQMessageNN();
 
   private:
     void* fMessage;
     size_t fSize;
+
+    void Clear();
 };
 
 #endif /* FAIRMQMESSAGENN_H_ */

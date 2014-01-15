@@ -1,8 +1,6 @@
 set(INCLUDE_DIRECTORIES
-  ${BASE_INCLUDE_DIRECTORIES}
   ${CMAKE_SOURCE_DIR}/fairmq
   ${Boost_INCLUDE_DIR}
-  ${ROOT_INCLUDE_DIR}
 )
 
 if(NANOMSG_FOUND)
@@ -20,7 +18,6 @@ endif(NANOMSG_FOUND)
 include_directories(${INCLUDE_DIRECTORIES})
 
 set(LINK_DIRECTORIES
-  ${ROOT_LIBRARY_DIR}
   ${Boost_LIBRARY_DIRS}
 )
 
@@ -34,17 +31,13 @@ set(SRCS
   "FairMQMessage.cxx"
   "FairMQSocket.cxx"
   "FairMQDevice.cxx"
-  "FairMQSampler.cxx"
   "FairMQBenchmarkSampler.cxx"
-  "FairMQProcessor.cxx"
   "FairMQSink.cxx"
   "FairMQBuffer.cxx"
   "FairMQProxy.cxx"
   "FairMQSplitter.cxx"
   "FairMQMerger.cxx"
   "FairMQPoller.cxx"
-  "FairMQSamplerTask.cxx"
-  "FairMQProcessorTask.cxx"
 )
 
 if(NANOMSG_FOUND)
@@ -75,7 +68,7 @@ endif(NANOMSG_FOUND)
 set(DEPENDENCIES
   ${DEPENDENCIES}
   ${CMAKE_THREAD_LIBS_INIT}
-  Base ParBase FairTools GeoBase boost_thread boost_timer boost_system
+  boost_thread boost_timer boost_system
 )
 
 set(LIBRARY_NAME FairMQ)

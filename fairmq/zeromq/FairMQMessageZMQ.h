@@ -24,13 +24,15 @@ class FairMQMessageZMQ : public FairMQMessage
 
     virtual void Rebuild();
     virtual void Rebuild(size_t size);
-    virtual void Rebuild(void* data, size_t site);
+    virtual void Rebuild(void* data, size_t size);
 
     virtual void* GetMessage();
     virtual void* GetData();
     virtual size_t GetSize();
+
     virtual void SetMessage(void* data, size_t size);
 
+    virtual void CloseMessage();
     virtual void Copy(FairMQMessage* msg);
 
     static void CleanUp(void* data, void* hint);
@@ -38,7 +40,7 @@ class FairMQMessageZMQ : public FairMQMessage
     virtual ~FairMQMessageZMQ();
 
   private:
-    zmq_msg_t fMessage;
+    zmq_msg_t* fMessage;
 };
 
 #endif /* FAIRMQMESSAGEZMQ_H_ */

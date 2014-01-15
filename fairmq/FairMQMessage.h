@@ -16,13 +16,14 @@ class FairMQMessage
   public:
     virtual void Rebuild() = 0;
     virtual void Rebuild(size_t size) = 0;
-    virtual void Rebuild(void* data, size_t site) = 0;
+    virtual void Rebuild(void* data, size_t size) = 0;
 
     virtual void* GetMessage() = 0;
     virtual void* GetData() = 0;
     virtual size_t GetSize() = 0;
     virtual void SetMessage(void* data, size_t size) = 0;
 
+    virtual void CloseMessage() = 0;
     virtual void Copy(FairMQMessage* msg) = 0;
 
     virtual ~FairMQMessage() {};

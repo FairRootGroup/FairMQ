@@ -81,7 +81,7 @@ size_t FairMQSocketNN::Send(FairMQMessage* msg)
 
 size_t FairMQSocketNN::Receive(FairMQMessage* msg)
 {
-  void* ptr = msg->GetMessage();
+  void* ptr = NULL;
   int rc = nn_recv(fSocket, &ptr, NN_MSG, 0);
   if (rc < 0) {
     stringstream logmsg;
@@ -98,7 +98,7 @@ size_t FairMQSocketNN::Receive(FairMQMessage* msg)
 
 void* FairMQSocketNN::GetSocket()
 {
-  return NULL;// dummy method to compy with the interface. functionality not possible in zeromq.
+  return NULL; // dummy method to comply with the interface. functionality not possible in zeromq.
 }
 
 int FairMQSocketNN::GetSocket(int nothing)
