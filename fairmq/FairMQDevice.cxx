@@ -1,8 +1,8 @@
 /**
  * FairMQDevice.cxx
  *
- *  @since Oct 25, 2012
- *  @authors: D. Klein, A. Rybalchenko
+ * @since 2012-10-25
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include <iostream>
@@ -30,7 +30,7 @@ void FairMQDevice::Init()
   logmsg << "numIoThreads: " << fNumIoThreads;
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
-  fPayloadContext = new FairMQContext(fId, FairMQContext::PAYLOAD, fNumIoThreads);
+  fPayloadContext = new FairMQContext(fNumIoThreads);
 
   fInputAddress = new std::vector<TString>(fNumInputs);
   fInputMethod = new std::vector<TString>();
@@ -65,9 +65,12 @@ void FairMQDevice::InitInput()
 
   for (Int_t i = 0; i < fNumInputs; ++i) {
     FairMQSocket* socket = new FairMQSocket(fPayloadContext, fInputSocketType->at(i), i);
-    socket->GetSocket()->setsockopt(ZMQ_SNDHWM, &fInputSndBufSize->at(i), sizeof(fInputSndBufSize->at(i)));
-    socket->GetSocket()->setsockopt(ZMQ_RCVHWM, &fInputRcvBufSize->at(i), sizeof(fInputRcvBufSize->at(i)));
+
+    socket->SetOption(ZMQ_SNDHWM, &fInputSndBufSize->at(i), sizeof(fInputSndBufSize->at(i)));
+    socket->SetOption(ZMQ_RCVHWM, &fInputRcvBufSize->at(i), sizeof(fInputRcvBufSize->at(i)));
+
     fPayloadInputs->push_back(socket);
+
     try {
       if (fInputMethod->at(i) == "bind") {
         fPayloadInputs->at(i)->Bind(fInputAddress->at(i));
@@ -85,8 +88,8 @@ void FairMQDevice::InitOutput()
 
   for (Int_t i = 0; i < fNumOutputs; ++i) {
     FairMQSocket* socket = new FairMQSocket(fPayloadContext, fOutputSocketType->at(i), i);
-    socket->GetSocket()->setsockopt(ZMQ_SNDHWM, &fOutputSndBufSize->at(i), sizeof(fOutputSndBufSize->at(i)));
-    socket->GetSocket()->setsockopt(ZMQ_RCVHWM, &fOutputRcvBufSize->at(i), sizeof(fOutputRcvBufSize->at(i)));
+    socket->SetOption(ZMQ_SNDHWM, &fOutputSndBufSize->at(i), sizeof(fOutputSndBufSize->at(i)));
+    socket->SetOption(ZMQ_RCVHWM, &fOutputRcvBufSize->at(i), sizeof(fOutputRcvBufSize->at(i)));
     fPayloadOutputs->push_back(socket);
     try {
       if (fOutputMethod->at(i) == "bind") {
@@ -290,7 +293,7 @@ void FairMQDevice::LogSocketRates()
         messagesInput[i] = messagesInputNew[i];
 
         std::stringstream logmsg;
-        logmsg << "#" << (*itr)->GetId() << ": " << messagesPerSecondInput[i] << " msg/s, " << megabytesPerSecondInput[i] << " MB/s";
+        logmsg << "#" << fId << "." << (*itr)->GetId() << ": " << messagesPerSecondInput[i] << " msg/s, " << megabytesPerSecondInput[i] << " MB/s";
         FairMQLogger::GetInstance()->Log(FairMQLogger::DEBUG, logmsg.str());
 
         // Temp stuff for process termination
@@ -318,7 +321,7 @@ void FairMQDevice::LogSocketRates()
         messagesOutput[i] = messagesOutputNew[i];
 
         std::stringstream logmsg;
-        logmsg << "#" << (*itr)->GetId() << ": " << messagesPerSecondOutput[i] << " msg/s, " << megabytesPerSecondOutput[i] << " MB/s";
+        logmsg << "#" << fId << "." << (*itr)->GetId() << ": " << messagesPerSecondOutput[i] << " msg/s, " << megabytesPerSecondOutput[i] << " MB/s";
         FairMQLogger::GetInstance()->Log(FairMQLogger::DEBUG, logmsg.str());
 
         // Temp stuff for process termination

@@ -1,14 +1,15 @@
-/*
+/**
  * FairMQBenchmarkSampler.h
  *
- *  Created on: Apr 23, 2013
- *      Author: dklein
+ * @since 2013-04-23
+ * @author D. Klein, A. Rybalchenko
  */
 
 #ifndef FAIRMQBENCHMARKSAMPLER_H_
 #define FAIRMQBENCHMARKSAMPLER_H_
 
 #include <string>
+
 #include "FairMQDevice.h"
 #include "TString.h"
 

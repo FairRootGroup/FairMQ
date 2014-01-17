@@ -1,8 +1,8 @@
-/*
+/**
  * FairMQSamplerTask.cxx
  *
- *  Created on: Nov 22, 2012
- *      Author: dklein
+ * @since 2012-11-22
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include "FairMQSamplerTask.h"
@@ -48,8 +48,4 @@ FairMQMessage* FairMQSamplerTask::GetOutput()
   return fOutput;
 }
 
-void FairMQSamplerTask::ClearOutput(void* data, void* hint)
-{
-  free (data);
-}
 

@@ -1,14 +1,14 @@
-/*
+/**
  * FairMQSocket.h
  *
- *  Created on: Dec 5, 2012
- *      Author: dklein
+ * @since 2012-12-05
+ * @author D. Klein, A. Rybalchenko
  */
 
 #ifndef FAIRMQSOCKET_H_
 #define FAIRMQSOCKET_H_
 
-#include <zmq.hpp>
+#include <zmq.h>
 #include <string>
 #include "FairMQContext.h"
 #include "FairMQMessage.h"
@@ -18,30 +18,32 @@
 
 class FairMQSocket
 {
-  private:
-    zmq::socket_t* fSocket;
-    TString fId;
-    ULong_t fBytesTx;
-    ULong_t fBytesRx;
-    ULong_t fMessagesTx;
-    ULong_t fMessagesRx;
   public:
-    const static TString TCP, IPC, INPROC;
-    FairMQSocket(FairMQContext* context, Int_t type, Int_t num);
+    FairMQSocket(FairMQContext* context, int type, int num);
     virtual ~FairMQSocket();
     TString GetId();
-    static TString GetTypeString(Int_t type);
-    Bool_t Send(FairMQMessage* msg);
-    Bool_t Receive(FairMQMessage* msg);
+    static TString GetTypeString(int type);
+    size_t Send(FairMQMessage* msg);
+    size_t Receive(FairMQMessage* msg);
     void Close();
-    Bool_t Bind(TString address);
-    Bool_t Connect(TString address);
-    zmq::socket_t* GetSocket();
+    void Bind(TString address);
+    void Connect(TString address);
+    void* GetSocket();
+
+    void SetOption(int option, const void* value, size_t valueSize);
+
     ULong_t GetBytesTx();
     ULong_t GetBytesRx();
     ULong_t GetMessagesTx();
     ULong_t GetMessagesRx();
 
+  private:
+    void* fSocket;
+    TString fId;
+    ULong_t fBytesTx;
+    ULong_t fBytesRx;
+    ULong_t fMessagesTx;
+    ULong_t fMessagesRx;
 };
 
 #endif /* FAIRMQSOCKET_H_ */

@@ -1,8 +1,8 @@
-/*
+/**
  * FairMQLogger.cxx
  *
- *  Created on: Dec 4, 2012
- *      Author: dklein
+ * @since 2012-12-04
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include "FairMQLogger.h"

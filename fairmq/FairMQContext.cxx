@@ -1,44 +1,52 @@
-/*
+/**
  * FairMQContext.cxx
  *
- *  Created on: Dec 5, 2012
- *      Author: dklein
+ * @since 2012-12-05
+ * @author D. Klein, A. Rybalchenko
  */
 
+#include "FairMQLogger.h"
 #include "FairMQContext.h"
 #include <sstream>
 
-
-const TString FairMQContext::PAYLOAD = "payload";
-const TString FairMQContext::LOG = "log";
-const TString FairMQContext::CONFIG = "config";
-const TString FairMQContext::CONTROL = "control";
-
-FairMQContext::FairMQContext(TString deviceId, TString contextId, Int_t numIoThreads)
+FairMQContext::FairMQContext(int numIoThreads)
 {
-  std::stringstream id;
-  id << deviceId << "." << contextId;
-  fId = id.str();
+  fContext = zmq_ctx_new ();
+  if (fContext == NULL){
+    std::stringstream logmsg;
+    logmsg << "failed creating context, reason: " << zmq_strerror(errno);
+    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+  }
 
-  fContext = new zmq::context_t(numIoThreads);
+  int rc = zmq_ctx_set (fContext, ZMQ_IO_THREADS, numIoThreads);
+  if (rc != 0){
+    std::stringstream logmsg;
+    logmsg << "failed configuring context, reason: " << zmq_strerror(errno);
+    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+  }
 }
 
 FairMQContext::~FairMQContext()
 {
 }
 
-TString FairMQContext::GetId()
-{
-  return fId;
-}
-
-zmq::context_t* FairMQContext::GetContext()
+void* FairMQContext::GetContext()
 {
   return fContext;
 }
 
 void FairMQContext::Close()
 {
-  fContext->close();
-}
+  if (fContext == NULL){
+    return;
+  }
 
+  int rc = zmq_ctx_destroy (fContext);
+  if (rc != 0) {
+    std::stringstream logmsg;
+    logmsg << "failed closing context, reason: " << zmq_strerror(errno);
+    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+  }
+
+  fContext = NULL;
+}

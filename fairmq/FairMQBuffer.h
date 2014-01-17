@@ -1,15 +1,14 @@
-/*
+/**
  * FairMQBuffer.h
  *
- *  Created on: Oct 25, 2012
- *      Author: dklein
+ * @since 2012-10-25
+ * @author D. Klein, A. Rybalchenko
  */
 
 #ifndef FAIRMQBUFFER_H_
 #define FAIRMQBUFFER_H_
 
 #include "FairMQDevice.h"
-#include "Rtypes.h"
 
 
 class FairMQBuffer: public FairMQDevice

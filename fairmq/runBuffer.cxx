@@ -1,8 +1,8 @@
 /**
  * runBuffer.cxx
  *
- *  @since Oct 26, 2012
- *  @authors: D. Klein, A. Rybalchenko
+ * @since 2012-10-26
+ * @author: D. Klein, A. Rybalchenko
  */
 
 #include <iostream>

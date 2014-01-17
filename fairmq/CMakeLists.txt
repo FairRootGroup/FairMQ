@@ -2,6 +2,8 @@ include_directories(
   ${BASE_INCLUDE_DIRECTORIES}
   ${CMAKE_SOURCE_DIR}/fairmq
   ${ZMQ_INCLUDE_DIR}
+  ${NANOMSG_INCLUDE_DIR}
+  ${Boost_INCLUDE_DIR}
   ${ROOT_INCLUDE_DIR}
 )
 
@@ -15,9 +17,13 @@ Set(SRCS
   "FairMQLogger.cxx"
   "FairMQContext.cxx"
   "FairMQMessage.cxx"
+  "FairMQMessageZMQ.cxx"
+  "FairMQMessageNN.cxx"
   "FairMQSocket.cxx"
-  "FairMQBalancedStandaloneSplitter.cxx"
-  "FairMQStandaloneMerger.cxx"
+  "FairMQSocketZMQ.cxx"
+  "FairMQSocketNN.cxx"
+  "FairMQSplitter.cxx"
+  "FairMQMerger.cxx"
   "FairMQProcessor.cxx"
   "FairMQProcessorTask.cxx"
   "FairMQSink.cxx"
@@ -37,6 +43,7 @@ Set(LINKDEF)
 Set(DEPENDENCIES 
   ${CMAKE_THREAD_LIBS_INIT}
   ${ZMQ_LIBRARY_SHARED}
+  ${NANOMSG_LIBRARY_SHARED}
   Base ParBase FairTools GeoBase boost_thread boost_timer boost_system
 )
 

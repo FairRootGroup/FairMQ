@@ -1,8 +1,8 @@
 /**
  * FairMQDevice.h
  *
- *  @since Oct 25, 2012
- *  @authors: D. Klein, A. Rybalchenko
+ * @since 2012-10-25
+ * @author D. Klein, A. Rybalchenko
  */
 
 #ifndef FAIRMQDEVICE_H_

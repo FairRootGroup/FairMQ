@@ -1,25 +1,23 @@
-/*
- * FairMQStandaloneMerger.h
+/**
+ * FairMQMerger.h
  *
- *  Created on: Dec 6, 2012
- *      Author: dklein
+ * @since 2012-12-06
+ * @author D. Klein, A. Rybalchenko
  */
 
-#ifndef FAIRMQSTANDALONEMERGER_H_
-#define FAIRMQSTANDALONEMERGER_H_
+#ifndef FAIRMQMERGER_H_
+#define FAIRMQMERGER_H_
 
 #include "FairMQDevice.h"
-#include "Rtypes.h"
-#include "TString.h"
 
 
-class FairMQStandaloneMerger: public FairMQDevice
+class FairMQMerger: public FairMQDevice
 {
   public:
-    FairMQStandaloneMerger();
-    virtual ~FairMQStandaloneMerger();
+    FairMQMerger();
+    virtual ~FairMQMerger();
   protected:
     virtual void Run();
 };
 
-#endif /* FAIRMQSTANDALONEMERGER_H_ */
+#endif /* FAIRMQMERGER_H_ */

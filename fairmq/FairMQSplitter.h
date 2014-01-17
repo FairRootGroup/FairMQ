@@ -1,24 +1,23 @@
-/*
- * FairMQBalancedStandaloneSplitter.h
+/**
+ * FairMQSplitter.h
  *
- *  Created on: Dec 6, 2012
- *      Author: dklein
+ * @since 2012-12-06
+ * @author D. Klein, A. Rybalchenko
  */
 
-#ifndef FAIRMQBALANCEDSTANDALONESPLITTER_H_
-#define FAIRMQBALANCEDSTANDALONESPLITTER_H_
+#ifndef FAIRMQSPLITTER_H_
+#define FAIRMQSPLITTER_H_
 
 #include "FairMQDevice.h"
-#include "Rtypes.h"
 
 
-class FairMQBalancedStandaloneSplitter: public FairMQDevice
+class FairMQSplitter: public FairMQDevice
 {
   public:
-    FairMQBalancedStandaloneSplitter();
-    virtual ~FairMQBalancedStandaloneSplitter();
+    FairMQSplitter();
+    virtual ~FairMQSplitter();
   protected:
     virtual void Run();
 };
 
-#endif /* FAIRMQBALANCEDSTANDALONESPLITTER_H_ */
+#endif /* FAIRMQSPLITTER_H_ */

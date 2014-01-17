@@ -1,8 +1,8 @@
 /**
  * runProxy.cxx
  *
- *  @since: Oct 07, 2013
- *  @authors: A. Rybalchenko
+ * @since 2013-10-07
+ * @author A. Rybalchenko
  */
 
 #include <iostream>

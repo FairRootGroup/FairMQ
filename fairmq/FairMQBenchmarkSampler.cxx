@@ -1,9 +1,10 @@
-/*
+/**
  * FairMQBenchmarkSampler.cpp
  *
- *  Created on: Apr 23, 2013
- *      Author: dklein
+ * @since 2013-04-23
+ * @author D. Klein, A. Rybalchenko
  */
+
 #include <vector>
 
 #include <boost/thread.hpp>
@@ -11,6 +12,7 @@
 
 #include "FairMQBenchmarkSampler.h"
 #include "FairMQLogger.h"
+
 
 FairMQBenchmarkSampler::FairMQBenchmarkSampler() :
   fEventSize(10000),
@@ -37,7 +39,7 @@ void FairMQBenchmarkSampler::Run()
   boost::thread resetEventCounter(boost::bind(&FairMQBenchmarkSampler::ResetEventCounter, this));
 
   void* buffer = operator new[](fEventSize);
-  FairMQMessage* base_event = new FairMQMessage(buffer, fEventSize, NULL);
+  FairMQMessage* base_event = new FairMQMessage(buffer, fEventSize);
 
   while ( fState == RUNNING ) {
     FairMQMessage event;

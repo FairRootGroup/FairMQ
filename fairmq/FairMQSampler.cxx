@@ -1,8 +1,8 @@
-/*
+/**
  * FairMQSampler.cpp
  *
- *  Created on: Sep 27, 2012
- *      Author: A. Rybalchenko, D. Klein
+ * @since 2012-09-27
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include <vector>
@@ -135,21 +135,13 @@ void FairMQSampler::ListenToCommands()
 {
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> ListenToCommands <<<<<<<");
 
-  // Initialize poll set
-  zmq_pollitem_t items[] = {
-    { *(fPayloadInputs->at(0)->GetSocket()), 0, ZMQ_POLLIN, 0 }
-  };
+  bool received = false;
 
-  Bool_t received = false;
   while ( true ) {
     try {
       FairMQMessage msg;
 
-      zmq_poll(items, 1, 100);
-
-      if (items[0].revents & ZMQ_POLLIN) {
-        received = fPayloadInputs->at(0)->Receive(&msg);
-      }
+      received = fPayloadInputs->at(0)->Receive(&msg);
 
       if (received) {
         //command handling goes here.

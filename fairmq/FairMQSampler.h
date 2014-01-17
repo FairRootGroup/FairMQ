@@ -1,8 +1,8 @@
-/*
+/**
  * FairMQSampler.h
  *
- *  Created on: Sep 27, 2012
- *      Author: dklein
+ * @since 2012-09-27
+ * @author D. Klein, A. Rybalchenko
  */
 
 #ifndef FAIRMQSAMPLER_H_

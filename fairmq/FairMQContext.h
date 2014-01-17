@@ -1,31 +1,25 @@
-/*
+/**
  * FairMQContext.h
  *
- *  Created on: Dec 5, 2012
- *      Author: dklein
+ * @since 2012-12-05
+ * @author D. Klein, A. Rybalchenko
  */
 
 #ifndef FAIRMQCONTEXT_H_
 #define FAIRMQCONTEXT_H_
 
-#include <string>
-#include <zmq.hpp>
-#include "Rtypes.h"
-#include "TString.h"
-
+#include <zmq.h>
 
 class FairMQContext
 {
-  private:
-    TString fId;
-    zmq::context_t* fContext;
   public:
-    const static TString PAYLOAD, LOG, CONFIG, CONTROL;
-    FairMQContext(TString deviceId, TString contextId, Int_t numIoThreads);
+    FairMQContext(int numIoThreads);
     virtual ~FairMQContext();
-    TString GetId();
-    zmq::context_t* GetContext();
+    void* GetContext();
     void Close();
+
+  private:
+    void* fContext;
 };
 
 #endif /* FAIRMQCONTEXT_H_ */

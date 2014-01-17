@@ -1,8 +1,8 @@
-/*
+/**
  * FairMQConfigurable.h
  *
- *  Created on: Oct 25, 2012
- *      Author: dklein
+ * @since 2012-10-25
+ * @author D. Klein, A. Rybalchenko
  */
 
 #ifndef FAIRMQCONFIGURABLE_H_

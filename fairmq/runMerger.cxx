@@ -1,25 +1,25 @@
-/*
+/**
  * runMerger.cxx
  *
- *  Created on: Dec 6, 2012
- *      Author: dklein
+ * @since 2012-12-06
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include <iostream>
 #include <csignal>
 
 #include "FairMQLogger.h"
-#include "FairMQStandaloneMerger.h"
+#include "FairMQMerger.h"
 
 
-FairMQStandaloneMerger merger;
+FairMQMerger merger;
 
 static void s_signal_handler (int signal)
 {
   std::cout << std::endl << "Caught signal " << signal << std::endl;
 
-  merger.ChangeState(FairMQStandaloneMerger::STOP);
-  merger.ChangeState(FairMQStandaloneMerger::END);
+  merger.ChangeState(FairMQMerger::STOP);
+  merger.ChangeState(FairMQMerger::END);
 
   std::cout << "Shutdown complete. Bye!" << std::endl;
   exit(1);
@@ -53,76 +53,76 @@ int main(int argc, char** argv)
 
   int i = 1;
 
-  merger.SetProperty(FairMQStandaloneMerger::Id, argv[i]);
+  merger.SetProperty(FairMQMerger::Id, argv[i]);
   ++i;
 
   int numIoThreads;
   std::stringstream(argv[i]) >> numIoThreads;
-  merger.SetProperty(FairMQStandaloneMerger::NumIoThreads, numIoThreads);
+  merger.SetProperty(FairMQMerger::NumIoThreads, numIoThreads);
   ++i;
 
-  merger.SetProperty(FairMQStandaloneMerger::NumInputs, 2);
-  merger.SetProperty(FairMQStandaloneMerger::NumOutputs, 1);
+  merger.SetProperty(FairMQMerger::NumInputs, 2);
+  merger.SetProperty(FairMQMerger::NumOutputs, 1);
 
 
-  merger.ChangeState(FairMQStandaloneMerger::INIT);
+  merger.ChangeState(FairMQMerger::INIT);
 
 
   int inputSocketType = ZMQ_SUB;
   if (strcmp(argv[i], "pull") == 0) {
     inputSocketType = ZMQ_PULL;
   }
-  merger.SetProperty(FairMQStandaloneMerger::InputSocketType, inputSocketType, 0);
+  merger.SetProperty(FairMQMerger::InputSocketType, inputSocketType, 0);
   ++i;
   int inputRcvBufSize;
   std::stringstream(argv[i]) >> inputRcvBufSize;
-  merger.SetProperty(FairMQStandaloneMerger::InputRcvBufSize, inputRcvBufSize, 0);
+  merger.SetProperty(FairMQMerger::InputRcvBufSize, inputRcvBufSize, 0);
   ++i;
-  merger.SetProperty(FairMQStandaloneMerger::InputMethod, argv[i], 0);
+  merger.SetProperty(FairMQMerger::InputMethod, argv[i], 0);
   ++i;
-  merger.SetProperty(FairMQStandaloneMerger::InputAddress, argv[i], 0);
+  merger.SetProperty(FairMQMerger::InputAddress, argv[i], 0);
   ++i;
 
   inputSocketType = ZMQ_SUB;
   if (strcmp(argv[i], "pull") == 0) {
     inputSocketType = ZMQ_PULL;
   }
-  merger.SetProperty(FairMQStandaloneMerger::InputSocketType, inputSocketType, 1);
+  merger.SetProperty(FairMQMerger::InputSocketType, inputSocketType, 1);
   ++i;
   std::stringstream(argv[i]) >> inputRcvBufSize;
-  merger.SetProperty(FairMQStandaloneMerger::InputRcvBufSize, inputRcvBufSize, 1);
+  merger.SetProperty(FairMQMerger::InputRcvBufSize, inputRcvBufSize, 1);
   ++i;
-  merger.SetProperty(FairMQStandaloneMerger::InputMethod, argv[i], 1);
+  merger.SetProperty(FairMQMerger::InputMethod, argv[i], 1);
   ++i;
-  merger.SetProperty(FairMQStandaloneMerger::InputAddress, argv[i], 1);
+  merger.SetProperty(FairMQMerger::InputAddress, argv[i], 1);
   ++i;
 
   int outputSocketType = ZMQ_PUB;
   if (strcmp(argv[i], "push") == 0) {
     outputSocketType = ZMQ_PUSH;
   }
-  merger.SetProperty(FairMQStandaloneMerger::OutputSocketType, outputSocketType, 0);
+  merger.SetProperty(FairMQMerger::OutputSocketType, outputSocketType, 0);
   ++i;
   int outputSndBufSize;
   std::stringstream(argv[i]) >> outputSndBufSize;
-  merger.SetProperty(FairMQStandaloneMerger::OutputSndBufSize, outputSndBufSize, 0);
+  merger.SetProperty(FairMQMerger::OutputSndBufSize, outputSndBufSize, 0);
   ++i;
-  merger.SetProperty(FairMQStandaloneMerger::OutputMethod, argv[i], 0);
+  merger.SetProperty(FairMQMerger::OutputMethod, argv[i], 0);
   ++i;
-  merger.SetProperty(FairMQStandaloneMerger::OutputAddress, argv[i], 0);
+  merger.SetProperty(FairMQMerger::OutputAddress, argv[i], 0);
   ++i;
 
 
-  merger.ChangeState(FairMQStandaloneMerger::SETOUTPUT);
-  merger.ChangeState(FairMQStandaloneMerger::SETINPUT);
-  merger.ChangeState(FairMQStandaloneMerger::RUN);
+  merger.ChangeState(FairMQMerger::SETOUTPUT);
+  merger.ChangeState(FairMQMerger::SETINPUT);
+  merger.ChangeState(FairMQMerger::RUN);
 
 
   char ch;
   std::cin.get(ch);
 
-  merger.ChangeState(FairMQStandaloneMerger::STOP);
-  merger.ChangeState(FairMQStandaloneMerger::END);
+  merger.ChangeState(FairMQMerger::STOP);
+  merger.ChangeState(FairMQMerger::END);
 
   return 0;
 }

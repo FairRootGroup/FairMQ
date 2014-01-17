@@ -1,11 +1,9 @@
-/*
+/**
  * FairMQStateMachine.h
  *
- *  Created on: Oct 25, 2012
- *      Author: dklein
+ * @since 2012-10-25
+ * @author D. Klein, A. Rybalchenko
  */
-
-
 
 #ifndef FAIRMQSTATEMACHINE_H_
 #define FAIRMQSTATEMACHINE_H_

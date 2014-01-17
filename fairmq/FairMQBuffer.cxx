@@ -1,8 +1,8 @@
-/*
+/**
  * FairMQBuffer.cxx
  *
- *  Created on: Oct 25, 2012
- *      Author: dklein
+ * @since 2012-10-25
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include <iostream>
@@ -12,6 +12,7 @@
 
 #include "FairMQBuffer.h"
 #include "FairMQLogger.h"
+
 
 FairMQBuffer::FairMQBuffer()
 {
@@ -23,20 +24,11 @@ void FairMQBuffer::Run()
 
   boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-  // Initialize poll set
-  zmq_pollitem_t items[] = {
-    { *(fPayloadInputs->at(0)->GetSocket()), 0, ZMQ_POLLIN, 0 }
-  };
-
-  Bool_t received = false;
+  bool received = false;
   while ( fState == RUNNING ) {
     FairMQMessage msg;
 
-    zmq_poll(items, 1, 100);
-
-    if (items[0].revents & ZMQ_POLLIN) {
-      received = fPayloadInputs->at(0)->Receive(&msg);
-    }
+    received = fPayloadInputs->at(0)->Receive(&msg);
 
     if (received) {
       fPayloadOutputs->at(0)->Send(&msg);

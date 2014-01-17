@@ -1,8 +1,8 @@
-/*
+/**
  * FairMQConfigurable.cxx
  *
- *  Created on: Oct 25, 2012
- *      Author: dklein
+ * @since 2012-10-25
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include "FairMQConfigurable.h"

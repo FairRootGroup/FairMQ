@@ -1,8 +1,8 @@
-/*
+/**
  * FairMQSamplerTask.h
  *
- *  Created on: Nov 22, 2012
- *      Author: dklein
+ * @since 2012-11-22
+ * @author D. Klein, A. Rybalchenko
  */
 
 #ifndef FAIRMQSAMPLERTASK_H_
@@ -26,7 +26,6 @@ class FairMQSamplerTask: public FairTask
     virtual void Exec(Option_t* opt) = 0;
     void SetBranch(TString branch);
     FairMQMessage* GetOutput();
-    static void ClearOutput(void* data, void* hint);
   protected:
     TClonesArray* fInput;
     TString fBranch;

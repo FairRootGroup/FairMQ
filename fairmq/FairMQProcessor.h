@@ -1,8 +1,8 @@
-/*
+/**
  * FairMQProcessor.h
  *
- *  Created on: Dec 6, 2012
- *      Author: dklein
+ * @since 2012-12-06
+ * @author D. Klein, A. Rybalchenko
  */
 
 #ifndef FAIRMQPROCESSOR_H_

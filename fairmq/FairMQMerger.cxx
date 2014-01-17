@@ -1,34 +1,38 @@
-/*
- * FairMQStandaloneMerger.cxx
+/**
+ * FairMQMerger.cxx
  *
- *  Created on: Dec 6, 2012
- *      Author: dklein
+ * @since 2012-12-06
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 
 #include "FairMQLogger.h"
-#include "FairMQStandaloneMerger.h"
+#include "FairMQMerger.h"
 
-FairMQStandaloneMerger::FairMQStandaloneMerger()
+
+FairMQMerger::FairMQMerger()
 {
 }
 
-FairMQStandaloneMerger::~FairMQStandaloneMerger()
+FairMQMerger::~FairMQMerger()
 {
 }
 
-void FairMQStandaloneMerger::Run()
+void FairMQMerger::Run()
 {
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> Run <<<<<<<");
 
   boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
   zmq_pollitem_t items[fNumInputs];
-  for (Int_t iInput = 0; iInput < fNumInputs; iInput++) {
-    zmq_pollitem_t tempitem= {*(fPayloadInputs->at(iInput)->GetSocket()), 0, ZMQ_POLLIN, 0};
-    items[iInput] =  tempitem;
+
+  for (int i = 0; i < fNumInputs; i++) {
+    items[i].socket = fPayloadInputs->at(i)->GetSocket();
+    items[i].fd = 0;
+    items[i].events = ZMQ_POLLIN;
+    items[i].revents = 0;
   }
 
   Bool_t received = false;
@@ -38,9 +42,9 @@ void FairMQStandaloneMerger::Run()
 
     zmq_poll(items, fNumInputs, 100);
 
-    for(Int_t iItem = 0; iItem < fNumInputs; iItem++) {
-      if (items[iItem].revents & ZMQ_POLLIN) {
-        received = fPayloadInputs->at(iItem)->Receive(&msg);
+    for(int i = 0; i < fNumInputs; i++) {
+      if (items[i].revents & ZMQ_POLLIN) {
+        received = fPayloadInputs->at(i)->Receive(&msg);
       }
       if (received) {
         fPayloadOutputs->at(0)->Send(&msg);

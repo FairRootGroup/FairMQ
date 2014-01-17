@@ -1,8 +1,8 @@
-/*
+/**
  * runBenchmarkSampler.cxx
  *
- *  Created on: Apr 23, 2013
- *      Author: dklein
+ * @since Apr 23, 2013-04-23
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include <iostream>

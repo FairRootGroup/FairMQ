@@ -1,8 +1,8 @@
-/*
+/**
  * runSink.cxx
  *
- *  @since: Jan 21, 2013
- *  @author: dklein
+ * @since 2013-01-21
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include <iostream>
