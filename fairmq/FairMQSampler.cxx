@@ -47,7 +47,7 @@ void FairMQSampler::Init()
   fSamplerTask->SetBranch(fBranch);
 
   fFairRunAna->SetInputFile(TString(fInputFile));
-  TString output=fInputFile;
+  TString output = fInputFile;
   output.Append(".out.root");
   fFairRunAna->SetOutputFile(output.Data());
 
