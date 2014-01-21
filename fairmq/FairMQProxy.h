@@ -9,8 +9,6 @@
 #define FAIRMQPROXY_H_
 
 #include "FairMQDevice.h"
-#include "Rtypes.h"
-#include "TString.h"
 
 
 class FairMQProxy: public FairMQDevice

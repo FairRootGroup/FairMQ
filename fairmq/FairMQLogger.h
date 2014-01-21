@@ -7,28 +7,27 @@
 
 #ifndef FAIRMQLOGGER_H_
 #define FAIRMQLOGGER_H_
+
 #include <string>
 #include <sstream>
 #include <sys/time.h>
-#include "Rtypes.h"
-#include "TString.h"
 
 
 class FairMQLogger
 {
   private:
     static FairMQLogger* instance;
-    TString fBindAddress;
+    std::string fBindAddress;
   public:
     enum {
       DEBUG, INFO, ERROR, STATE
     };
     FairMQLogger();
-    FairMQLogger(TString bindAdress);
+    FairMQLogger(std::string bindAdress);
     virtual ~FairMQLogger();
-    void Log(Int_t type, TString logmsg);
+    void Log(int type, std::string logmsg);
     static FairMQLogger* GetInstance();
-    static FairMQLogger* InitInstance(TString bindAddress);
+    static FairMQLogger* InitInstance(std::string bindAddress);
 };
 
 typedef unsigned long long timestamp_t;

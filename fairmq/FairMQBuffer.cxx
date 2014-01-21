@@ -26,14 +26,16 @@ void FairMQBuffer::Run()
 
   bool received = false;
   while ( fState == RUNNING ) {
-    FairMQMessage msg;
+    FairMQMessage* msg = new FairMQMessageZMQ();
 
-    received = fPayloadInputs->at(0)->Receive(&msg);
+    received = fPayloadInputs->at(0)->Receive(msg);
 
     if (received) {
-      fPayloadOutputs->at(0)->Send(&msg);
+      fPayloadOutputs->at(0)->Send(msg);
       received = false;
     }
+
+    delete msg;
   }
 
   rateLogger.interrupt();

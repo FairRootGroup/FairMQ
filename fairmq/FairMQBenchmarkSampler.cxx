@@ -39,19 +39,21 @@ void FairMQBenchmarkSampler::Run()
   boost::thread resetEventCounter(boost::bind(&FairMQBenchmarkSampler::ResetEventCounter, this));
 
   void* buffer = operator new[](fEventSize);
-  FairMQMessage* base_event = new FairMQMessage(buffer, fEventSize);
+  FairMQMessage* base_event = new FairMQMessageZMQ(buffer, fEventSize);
 
   while ( fState == RUNNING ) {
-    FairMQMessage event;
-    event.Copy(base_event);
+    FairMQMessage* event = new FairMQMessageZMQ();
+    event->Copy(base_event);
 
-    fPayloadOutputs->at(0)->Send(&event);
+    fPayloadOutputs->at(0)->Send(event);
 
     --fEventCounter;
 
     while (fEventCounter == 0) {
       boost::this_thread::sleep(boost::posix_time::milliseconds(1));
     }
+
+    delete event;
   }
 
   delete base_event;
@@ -75,16 +77,16 @@ void FairMQBenchmarkSampler::ResetEventCounter()
   }
 }
 
-void FairMQBenchmarkSampler::Log(Int_t intervalInMs)
+void FairMQBenchmarkSampler::Log(int intervalInMs)
 {
   timestamp_t t0;
   timestamp_t t1;
-  ULong_t bytes = fPayloadOutputs->at(0)->GetBytesTx();
-  ULong_t messages = fPayloadOutputs->at(0)->GetMessagesTx();
-  ULong_t bytesNew;
-  ULong_t messagesNew;
-  Double_t megabytesPerSecond = (bytesNew - bytes) / (1024 * 1024);
-  Double_t messagesPerSecond = (messagesNew - messages);
+  unsigned long bytes = fPayloadOutputs->at(0)->GetBytesTx();
+  unsigned long messages = fPayloadOutputs->at(0)->GetMessagesTx();
+  unsigned long bytesNew = 0;
+  unsigned long messagesNew = 0;
+  double megabytesPerSecond = 0;
+  double messagesPerSecond = 0;
 
   t0 = get_timestamp();
 
@@ -98,8 +100,8 @@ void FairMQBenchmarkSampler::Log(Int_t intervalInMs)
 
     timestamp_t timeSinceLastLog_ms = (t1 - t0) / 1000.0L;
 
-    megabytesPerSecond = ((Double_t) (bytesNew - bytes) / (1024. * 1024.)) / (Double_t) timeSinceLastLog_ms * 1000.;
-    messagesPerSecond = (Double_t) (messagesNew - messages) / (Double_t) timeSinceLastLog_ms * 1000.;
+    megabytesPerSecond = ((double) (bytesNew - bytes) / (1024. * 1024.)) / (double) timeSinceLastLog_ms * 1000.;
+    messagesPerSecond = (double) (messagesNew - messages) / (double) timeSinceLastLog_ms * 1000.;
 
     std::stringstream logmsg;
     logmsg << "send " << messagesPerSecond << " msg/s, " << megabytesPerSecond << " MB/s";
@@ -111,7 +113,7 @@ void FairMQBenchmarkSampler::Log(Int_t intervalInMs)
   }
 }
 
-void FairMQBenchmarkSampler::SetProperty(const Int_t& key, const TString& value, const Int_t& slot/*= 0*/)
+void FairMQBenchmarkSampler::SetProperty(const int& key, const std::string& value, const int& slot/*= 0*/)
 {
   switch (key) {
   default:
@@ -120,7 +122,7 @@ void FairMQBenchmarkSampler::SetProperty(const Int_t& key, const TString& value,
   }
 }
 
-TString FairMQBenchmarkSampler::GetProperty(const Int_t& key, const TString& default_/*= ""*/, const Int_t& slot/*= 0*/)
+std::string FairMQBenchmarkSampler::GetProperty(const int& key, const std::string& default_/*= ""*/, const int& slot/*= 0*/)
 {
   switch (key) {
   default:
@@ -128,7 +130,7 @@ TString FairMQBenchmarkSampler::GetProperty(const Int_t& key, const TString& def
   }
 }
 
-void FairMQBenchmarkSampler::SetProperty(const Int_t& key, const Int_t& value, const Int_t& slot/*= 0*/)
+void FairMQBenchmarkSampler::SetProperty(const int& key, const int& value, const int& slot/*= 0*/)
 {
   switch (key) {
   case EventSize:
@@ -143,7 +145,7 @@ void FairMQBenchmarkSampler::SetProperty(const Int_t& key, const Int_t& value, c
   }
 }
 
-Int_t FairMQBenchmarkSampler::GetProperty(const Int_t& key, const Int_t& default_/*= 0*/, const Int_t& slot/*= 0*/)
+int FairMQBenchmarkSampler::GetProperty(const int& key, const int& default_/*= 0*/, const int& slot/*= 0*/)
 {
   switch (key) {
   case EventSize:

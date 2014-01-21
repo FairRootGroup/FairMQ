@@ -7,6 +7,13 @@ include_directories(
   ${ROOT_INCLUDE_DIR}
 )
 
+Set(LINK_DIRECTORIES
+  ${ROOT_LIBRARY_DIR}
+  ${Boost_LIBRARY_DIRS}
+)
+
+link_directories(${LINK_DIRECTORIES})
+
 Set(SRCS
   "FairMQSampler.cxx"
   "FairMQBenchmarkSampler.cxx"
@@ -17,6 +24,8 @@ Set(SRCS
   "FairMQLogger.cxx"
   "FairMQContext.cxx"
   "FairMQMessage.cxx"
+  "FairMQTransportFactory.cxx"
+  "FairMQTransportFactoryZMQ.cxx"
   "FairMQMessageZMQ.cxx"
   "FairMQMessageNN.cxx"
   "FairMQSocket.cxx"
@@ -31,15 +40,8 @@ Set(SRCS
   "FairMQProxy.cxx"
 )
 
-Set(LINK_DIRECTORIES
-  ${ROOT_LIBRARY_DIR}
-  ${Boost_LIBRARY_DIRS}
-)
-
-link_directories(${LINK_DIRECTORIES})
-
 Set(LIBRARY_NAME FairMQ)
-Set(LINKDEF)
+
 Set(DEPENDENCIES 
   ${CMAKE_THREAD_LIBS_INIT}
   ${ZMQ_LIBRARY_SHARED}

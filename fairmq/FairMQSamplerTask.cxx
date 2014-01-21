@@ -8,11 +8,11 @@
 #include "FairMQSamplerTask.h"
 
 
-FairMQSamplerTask::FairMQSamplerTask(const Text_t* name, Int_t iVerbose) :
+FairMQSamplerTask::FairMQSamplerTask(const Text_t* name, int iVerbose) :
   FairTask(name, iVerbose),
   fInput(NULL),
   fBranch(""),
-  fOutput(new FairMQMessage)
+  fOutput(new FairMQMessageZMQ)
 {
 }
 
@@ -20,7 +20,7 @@ FairMQSamplerTask::FairMQSamplerTask() :
   FairTask( "Abstract base task used for loading a branch from a root file into memory"),
   fInput(NULL),
   fBranch(""),
-  fOutput(new FairMQMessage)
+  fOutput(new FairMQMessageZMQ)
 {
 }
 

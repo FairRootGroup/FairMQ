@@ -10,6 +10,7 @@
 
 #include "FairMQLogger.h"
 #include "FairMQBuffer.h"
+#include "FairMQTransportFactoryZMQ.h"
 
 
 FairMQBuffer buffer;
@@ -49,6 +50,9 @@ int main(int argc, char** argv)
   std::stringstream logmsg;
   logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
+
+  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+  buffer.SetTransport(transportFactory);
 
   int i = 1;
 

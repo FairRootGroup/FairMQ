@@ -62,7 +62,7 @@ void FairMQSampler::Init()
   fFairRunAna->Init();
   //fFairRunAna->Run(0, 0);
   FairRootManager* ioman = FairRootManager::Instance();
-  fNumEvents = Int_t((ioman->GetInChain())->GetEntries());
+  fNumEvents = int((ioman->GetInChain())->GetEntries());
 }
 
 void FairMQSampler::Run()
@@ -139,15 +139,17 @@ void FairMQSampler::ListenToCommands()
 
   while ( true ) {
     try {
-      FairMQMessage msg;
+      FairMQMessage* msg = new FairMQMessageZMQ();
 
-      received = fPayloadInputs->at(0)->Receive(&msg);
+      received = fPayloadInputs->at(0)->Receive(msg);
 
       if (received) {
         //command handling goes here.
         FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, "> received command <");
         received = false;
       }
+
+      delete msg;
 
       boost::this_thread::interruption_point();
     } catch (boost::thread_interrupted&) {
@@ -158,7 +160,7 @@ void FairMQSampler::ListenToCommands()
   FairMQLogger::GetInstance()->Log(FairMQLogger::DEBUG, ">>>>>>> stopping commandListener <<<<<<<");
 }
 
-void FairMQSampler::SetProperty(const Int_t& key, const TString& value, const Int_t& slot/*= 0*/)
+void FairMQSampler::SetProperty(const int& key, const std::string& value, const int& slot/*= 0*/)
 {
   switch (key) {
   case InputFile:
@@ -176,7 +178,7 @@ void FairMQSampler::SetProperty(const Int_t& key, const TString& value, const In
   }
 }
 
-TString FairMQSampler::GetProperty(const Int_t& key, const TString& default_/*= ""*/, const Int_t& slot/*= 0*/)
+std::string FairMQSampler::GetProperty(const int& key, const std::string& default_/*= ""*/, const int& slot/*= 0*/)
 {
   switch (key) {
   case InputFile:
@@ -190,7 +192,7 @@ TString FairMQSampler::GetProperty(const Int_t& key, const TString& default_/*= 
   }
 }
 
-void FairMQSampler::SetProperty(const Int_t& key, const Int_t& value, const Int_t& slot/*= 0*/)
+void FairMQSampler::SetProperty(const int& key, const int& value, const int& slot/*= 0*/)
 {
   switch (key) {
   case EventRate:
@@ -202,7 +204,7 @@ void FairMQSampler::SetProperty(const Int_t& key, const Int_t& value, const Int_
   }
 }
 
-Int_t FairMQSampler::GetProperty(const Int_t& key, const Int_t& default_/*= 0*/, const Int_t& slot/*= 0*/)
+int FairMQSampler::GetProperty(const int& key, const int& default_/*= 0*/, const int& slot/*= 0*/)
 {
   switch (key) {
   case EventRate:

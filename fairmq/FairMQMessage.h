@@ -8,34 +8,23 @@
 #ifndef FAIRMQMESSAGE_H_
 #define FAIRMQMESSAGE_H_
 
-#include <cstddef>
-
-#include <zmq.h>
+#include <cstddef> // for size_t
 
 
 class FairMQMessage
 {
   public:
-    FairMQMessage();
-    FairMQMessage(size_t size);
-    FairMQMessage(void* data, size_t size);
+    virtual void Rebuild() = 0;
+    virtual void Rebuild(size_t size) = 0;
+    virtual void Rebuild(void* data, size_t site) = 0;
 
-    void Rebuild();
-    void Rebuild(size_t size);
-    void Rebuild(void* data, size_t site);
+    virtual void* GetMessage() = 0;
+    virtual void* GetData() = 0;
+    virtual size_t GetSize() = 0;
 
-    zmq_msg_t* GetMessage();
-    void* GetData();
-    size_t GetSize();
+    virtual void Copy(FairMQMessage* msg) = 0;
 
-    void Copy(FairMQMessage* msg);
-
-    static void CleanUp(void* data, void* hint);
-
-    virtual ~FairMQMessage();
-
-  private:
-    zmq_msg_t fMessage;
+    virtual ~FairMQMessage() {};
 };
 
 #endif /* FAIRMQMESSAGE_H_ */

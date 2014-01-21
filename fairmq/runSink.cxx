@@ -10,6 +10,7 @@
 
 #include "FairMQLogger.h"
 #include "FairMQSink.h"
+#include "FairMQTransportFactoryZMQ.h"
 
 
 FairMQSink sink;
@@ -49,6 +50,9 @@ int main(int argc, char** argv)
   std::stringstream logmsg;
   logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
+
+  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+  sink.SetTransport(transportFactory);
 
   int i = 1;
 

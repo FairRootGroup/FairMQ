@@ -10,7 +10,6 @@
 
 #include "FairMQDevice.h"
 #include "FairMQProcessorTask.h"
-#include "Rtypes.h"
 
 
 class FairMQProcessor: public FairMQDevice

@@ -42,21 +42,23 @@ void FairMQProcessor::Run()
   int receivedMsgs = 0;
   int sentMsgs = 0;
 
-  Bool_t received = false;
+  bool received = false;
 
   while ( fState == RUNNING ) {
-    FairMQMessage msg;
+    FairMQMessage* msg = new FairMQMessageZMQ();
 
-    received = fPayloadInputs->at(0)->Receive(&msg);
+    received = fPayloadInputs->at(0)->Receive(msg);
     receivedMsgs++;
 
     if (received) {
-      fTask->Exec(&msg, NULL);
+      fTask->Exec(msg, NULL);
 
-      fPayloadOutputs->at(0)->Send(&msg);
+      fPayloadOutputs->at(0)->Send(msg);
       sentMsgs++;
       received = false;
     }
+
+    delete msg;
   }
 
   std::cout << "I've received " << receivedMsgs << " and sent " << sentMsgs << " messages!" << std::endl;

@@ -9,6 +9,7 @@
 #define FAIRMQPROCESSORTASK_H_
 
 #include <vector>
+
 #include "FairMQMessage.h"
 #include "FairTask.h"
 

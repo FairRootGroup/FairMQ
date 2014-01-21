@@ -35,22 +35,24 @@ void FairMQMerger::Run()
     items[i].revents = 0;
   }
 
-  Bool_t received = false;
+  bool received = false;
 
   while ( fState == RUNNING ) {
-    FairMQMessage msg;
+    FairMQMessage* msg = new FairMQMessageZMQ();
 
     zmq_poll(items, fNumInputs, 100);
 
     for(int i = 0; i < fNumInputs; i++) {
       if (items[i].revents & ZMQ_POLLIN) {
-        received = fPayloadInputs->at(i)->Receive(&msg);
+        received = fPayloadInputs->at(i)->Receive(msg);
       }
       if (received) {
-        fPayloadOutputs->at(0)->Send(&msg);
+        fPayloadOutputs->at(0)->Send(msg);
         received = false;
       }
     }
+
+    delete msg;
   }
 
   rateLogger.interrupt();

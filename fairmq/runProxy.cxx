@@ -10,6 +10,7 @@
 
 #include "FairMQLogger.h"
 #include "FairMQProxy.h"
+#include "FairMQTransportFactoryZMQ.h"
 
 
 FairMQProxy proxy;
@@ -49,6 +50,9 @@ int main(int argc, char** argv)
   std::stringstream logmsg;
   logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
+
+  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+  proxy.SetTransport(transportFactory);
 
   int i = 1;
 

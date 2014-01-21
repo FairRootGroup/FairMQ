@@ -10,6 +10,7 @@
 
 #include "FairMQLogger.h"
 #include "FairMQMerger.h"
+#include "FairMQTransportFactoryZMQ.h"
 
 
 FairMQMerger merger;
@@ -50,6 +51,9 @@ int main(int argc, char** argv)
   std::stringstream logmsg;
   logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
+
+  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+  merger.SetTransport(transportFactory);
 
   int i = 1;
 

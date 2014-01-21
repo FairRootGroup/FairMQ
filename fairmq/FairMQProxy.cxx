@@ -25,12 +25,14 @@ void FairMQProxy::Run()
 
   boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-  FairMQMessage msg;
+  FairMQMessage* msg = new FairMQMessageZMQ();
 
   while ( fState == RUNNING ) {
-    fPayloadInputs->at(0)->Receive(&msg);
-    fPayloadOutputs->at(0)->Send(&msg);
+    fPayloadInputs->at(0)->Receive(msg);
+    fPayloadOutputs->at(0)->Send(msg);
   }
+
+  delete msg;
 
   rateLogger.interrupt();
   rateLogger.join();

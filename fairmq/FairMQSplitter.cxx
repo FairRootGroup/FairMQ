@@ -30,18 +30,20 @@ void FairMQSplitter::Run()
   int direction = 0;
 
   while ( fState == RUNNING ) {
-    FairMQMessage msg;
+    FairMQMessage* msg = new FairMQMessageZMQ();
 
-    received = fPayloadInputs->at(0)->Receive(&msg);
+    received = fPayloadInputs->at(0)->Receive(msg);
 
     if (received) {
-      fPayloadOutputs->at(direction)->Send(&msg);
+      fPayloadOutputs->at(direction)->Send(msg);
       direction++;
       if (direction >= fNumOutputs) {
         direction = 0;
       }
       received = false;
     }
+
+    delete msg;
   }
 
   rateLogger.interrupt();

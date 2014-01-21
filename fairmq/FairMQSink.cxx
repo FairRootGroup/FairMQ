@@ -17,15 +17,16 @@ FairMQSink::FairMQSink()
 
 void FairMQSink::Run()
 {
-  void* status; //necessary for pthread_join
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> Run <<<<<<<");
 
   boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
   while ( fState == RUNNING ) {
-    FairMQMessage msg;
+    FairMQMessage* msg = new FairMQMessageZMQ();
 
-    fPayloadInputs->at(0)->Receive(&msg);
+    fPayloadInputs->at(0)->Receive(msg);
+
+    delete msg;
   }
 
   rateLogger.interrupt();

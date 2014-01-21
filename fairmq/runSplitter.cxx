@@ -10,6 +10,7 @@
 
 #include "FairMQLogger.h"
 #include "FairMQSplitter.h"
+#include "FairMQTransportFactoryZMQ.h"
 
 
 FairMQSplitter splitter;
@@ -50,6 +51,9 @@ int main(int argc, char** argv)
   std::stringstream logmsg;
   logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
+
+  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+  splitter.SetTransport(transportFactory);
 
   int i = 1;
 
