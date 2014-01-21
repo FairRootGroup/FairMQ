@@ -38,7 +38,7 @@ void FairMQMerger::Run()
   bool received = false;
 
   while ( fState == RUNNING ) {
-    FairMQMessage* msg = new FairMQMessageZMQ();
+    FairMQMessage* msg = fTransportFactory->CreateMessage();
 
     zmq_poll(items, fNumInputs, 100);
 

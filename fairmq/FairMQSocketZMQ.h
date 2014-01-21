@@ -12,7 +12,6 @@
 
 #include "FairMQSocket.h"
 #include "FairMQContext.h"
-#include "FairMQMessageZMQ.h"
 
 
 class FairMQSocketZMQ : public FairMQSocket

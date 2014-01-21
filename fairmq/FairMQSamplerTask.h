@@ -13,7 +13,7 @@
 #include "TClonesArray.h"
 #include <string>
 #include "FairMQMessage.h"
-#include "FairMQMessageZMQ.h"
+#include "FairMQTransportFactory.h"
 #include "TString.h"
 
 
@@ -27,10 +27,13 @@ class FairMQSamplerTask: public FairTask
     virtual void Exec(Option_t* opt) = 0;
     void SetBranch(TString branch);
     FairMQMessage* GetOutput();
+    void SetTransport(FairMQTransportFactory* factory);
+
   protected:
     TClonesArray* fInput;
     TString fBranch;
     FairMQMessage* fOutput;
+    FairMQTransportFactory* fTransportFactory;
 };
 
 #endif /* FAIRMQSAMPLERTASK_H_ */

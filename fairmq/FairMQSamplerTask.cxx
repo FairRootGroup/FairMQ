@@ -12,7 +12,7 @@ FairMQSamplerTask::FairMQSamplerTask(const Text_t* name, int iVerbose) :
   FairTask(name, iVerbose),
   fInput(NULL),
   fBranch(""),
-  fOutput(new FairMQMessageZMQ)
+  fOutput(NULL)
 {
 }
 
@@ -20,7 +20,7 @@ FairMQSamplerTask::FairMQSamplerTask() :
   FairTask( "Abstract base task used for loading a branch from a root file into memory"),
   fInput(NULL),
   fBranch(""),
-  fOutput(new FairMQMessageZMQ)
+  fOutput(NULL)
 {
 }
 
@@ -48,4 +48,7 @@ FairMQMessage* FairMQSamplerTask::GetOutput()
   return fOutput;
 }
 
-
+void FairMQSamplerTask::SetTransport(FairMQTransportFactory* factory)
+{
+  fTransportFactory = factory;
+}

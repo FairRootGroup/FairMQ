@@ -45,6 +45,7 @@ void FairMQSampler::Init()
   FairMQDevice::Init();
 
   fSamplerTask->SetBranch(fBranch);
+  fSamplerTask->SetTransport(fTransportFactory); // TODO: simplify message creation for sampler task?
 
   fFairRunAna->SetInputFile(TString(fInputFile));
   TString output = fInputFile;
@@ -139,7 +140,7 @@ void FairMQSampler::ListenToCommands()
 
   while ( true ) {
     try {
-      FairMQMessage* msg = new FairMQMessageZMQ();
+      FairMQMessage* msg = fTransportFactory->CreateMessage();
 
       received = fPayloadInputs->at(0)->Receive(msg);
 

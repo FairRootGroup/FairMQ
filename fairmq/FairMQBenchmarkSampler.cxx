@@ -39,10 +39,10 @@ void FairMQBenchmarkSampler::Run()
   boost::thread resetEventCounter(boost::bind(&FairMQBenchmarkSampler::ResetEventCounter, this));
 
   void* buffer = operator new[](fEventSize);
-  FairMQMessage* base_event = new FairMQMessageZMQ(buffer, fEventSize);
+  FairMQMessage* base_event = fTransportFactory->CreateMessage(buffer, fEventSize);
 
   while ( fState == RUNNING ) {
-    FairMQMessage* event = new FairMQMessageZMQ();
+    FairMQMessage* event = fTransportFactory->CreateMessage();
     event->Copy(base_event);
 
     fPayloadOutputs->at(0)->Send(event);

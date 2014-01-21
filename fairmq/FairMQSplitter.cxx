@@ -30,7 +30,7 @@ void FairMQSplitter::Run()
   int direction = 0;
 
   while ( fState == RUNNING ) {
-    FairMQMessage* msg = new FairMQMessageZMQ();
+    FairMQMessage* msg = fTransportFactory->CreateMessage();
 
     received = fPayloadInputs->at(0)->Receive(msg);
 

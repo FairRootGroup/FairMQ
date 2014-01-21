@@ -26,7 +26,7 @@ void FairMQBuffer::Run()
 
   bool received = false;
   while ( fState == RUNNING ) {
-    FairMQMessage* msg = new FairMQMessageZMQ();
+    FairMQMessage* msg = fTransportFactory->CreateMessage();
 
     received = fPayloadInputs->at(0)->Receive(msg);
 

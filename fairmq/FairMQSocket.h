@@ -11,7 +11,6 @@
 #include <string>
 #include "FairMQContext.h"
 #include "FairMQMessage.h"
-#include "FairMQMessageZMQ.h"
 
 
 class FairMQSocket

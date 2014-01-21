@@ -15,6 +15,8 @@ class FairMQTransportFactory
 {
   public:
     virtual FairMQMessage* CreateMessage() = 0;
+    virtual FairMQMessage* CreateMessage(size_t size) = 0;
+    virtual FairMQMessage* CreateMessage(void* data, size_t size) = 0;
     virtual FairMQSocket* CreateSocket(FairMQContext* context, int type, int num) = 0;
 
     virtual ~FairMQTransportFactory() {};
