@@ -22,7 +22,7 @@ class FairMQProcessor: public FairMQDevice
     virtual void Init();
     virtual void Run();
   private:
-    FairMQProcessorTask* fTask;
+    FairMQProcessorTask* fProcessorTask;
 };
 
 #endif /* FAIRMQPROCESSOR_H_ */

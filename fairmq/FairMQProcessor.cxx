@@ -12,25 +12,25 @@
 #include "FairMQLogger.h"
 
 FairMQProcessor::FairMQProcessor() :
-  fTask(NULL)
+  fProcessorTask(NULL)
 {
 }
 
 FairMQProcessor::~FairMQProcessor()
 {
-  delete fTask;
+  delete fProcessorTask;
 }
 
 void FairMQProcessor::SetTask(FairMQProcessorTask* task)
 {
-  fTask = task;
+  fProcessorTask = task;
 }
 
 void FairMQProcessor::Init()
 {
   FairMQDevice::Init();
 
-  fTask->InitTask();
+  fProcessorTask->InitTask();
 }
 
 void FairMQProcessor::Run()
@@ -51,7 +51,7 @@ void FairMQProcessor::Run()
     receivedMsgs++;
 
     if (received) {
-      fTask->Exec(msg, NULL);
+      fProcessorTask->Exec(msg, NULL);
 
       fPayloadOutputs->at(0)->Send(msg);
       sentMsgs++;
