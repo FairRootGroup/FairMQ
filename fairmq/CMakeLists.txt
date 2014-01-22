@@ -1,4 +1,4 @@
-include_directories(
+set(INCLUDE_DIRECTORIES
   ${BASE_INCLUDE_DIRECTORIES}
   ${CMAKE_SOURCE_DIR}/fairmq
   ${ZMQ_INCLUDE_DIR}
@@ -6,6 +6,8 @@ include_directories(
   ${Boost_INCLUDE_DIR}
   ${ROOT_INCLUDE_DIR}
 )
+
+include_directories(${INCLUDE_DIRECTORIES})
 
 Set(LINK_DIRECTORIES
   ${ROOT_LIBRARY_DIR}
@@ -40,14 +42,14 @@ Set(SRCS
   "FairMQProxy.cxx"
 )
 
-Set(LIBRARY_NAME FairMQ)
-
 Set(DEPENDENCIES 
   ${CMAKE_THREAD_LIBS_INIT}
   ${ZMQ_LIBRARY_SHARED}
   ${NANOMSG_LIBRARY_SHARED}
   Base ParBase FairTools GeoBase boost_thread boost_timer boost_system
 )
+
+Set(LIBRARY_NAME FairMQ)
 
 GENERATE_LIBRARY()
 
