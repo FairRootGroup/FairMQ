@@ -72,3 +72,9 @@ void FairMQLogger::Log(int type, std::string logmsg)
   std::cout << "[\033[01;36m" <<  mbstr << fractional_seconds << "\033[0m]" << "[" << type_str << "]" << " " << logmsg << std::endl;
 }
 
+timestamp_t get_timestamp ()
+{
+  struct timeval now;
+  gettimeofday (&now, NULL);
+  return now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
+}
