@@ -8,7 +8,6 @@
 #ifndef FAIRMQSAMPLER_H_
 #define FAIRMQSAMPLER_H_
 
-#include <string>
 #include "FairRunAna.h"
 #include "FairTask.h"
 #include "FairMQDevice.h"
@@ -40,17 +39,17 @@ class FairMQSampler: public FairMQDevice
 
     void ResetEventCounter();
     virtual void ListenToCommands();
-    virtual void SetProperty(const int& key, const std::string& value, const int& slot = 0);
-    virtual std::string GetProperty(const int& key, const std::string& default_ = "", const int& slot = 0);
+    virtual void SetProperty(const int& key, const string& value, const int& slot = 0);
+    virtual string GetProperty(const int& key, const string& default_ = "", const int& slot = 0);
     virtual void SetProperty(const int& key, const int& value, const int& slot = 0);
     virtual int GetProperty(const int& key, const int& default_ = 0, const int& slot = 0);
   protected:
     FairRunAna* fFairRunAna;
     int fNumEvents;
     FairMQSamplerTask* fSamplerTask;
-    std::string fInputFile; // Filename of a root file containing the simulated digis.
-    std::string fParFile;
-    std::string fBranch; // The name of the sub-detector branch to stream the digis from.
+    string fInputFile; // Filename of a root file containing the simulated digis.
+    string fParFile;
+    string fBranch; // The name of the sub-detector branch to stream the digis from.
     int fEventRate;
     int fEventCounter;
     virtual void Init();

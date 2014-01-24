@@ -15,7 +15,7 @@
 #include "FairMQMessage.h"
 
 
-class FairMQMessageZMQ: public FairMQMessage
+class FairMQMessageZMQ : public FairMQMessage
 {
   public:
     FairMQMessageZMQ();
@@ -29,6 +29,7 @@ class FairMQMessageZMQ: public FairMQMessage
     virtual void* GetMessage();
     virtual void* GetData();
     virtual size_t GetSize();
+    virtual void SetMessage(void* data, size_t size);
 
     virtual void Copy(FairMQMessage* msg);
 

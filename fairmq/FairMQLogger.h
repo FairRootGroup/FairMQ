@@ -12,22 +12,24 @@
 #include <sstream>
 #include <sys/time.h>
 
+using std::string;
+using std::stringstream;
 
 class FairMQLogger
 {
   private:
     static FairMQLogger* instance;
-    std::string fBindAddress;
+    string fBindAddress;
   public:
     enum {
       DEBUG, INFO, ERROR, STATE
     };
     FairMQLogger();
-    FairMQLogger(std::string bindAdress);
+    FairMQLogger(const string& bindAdress); // TODO: check this for const ref
     virtual ~FairMQLogger();
-    void Log(int type, std::string logmsg);
+    void Log(int type, const string& logmsg);
     static FairMQLogger* GetInstance();
-    static FairMQLogger* InitInstance(std::string bindAddress);
+    static FairMQLogger* InitInstance(const string& bindAddress); // TODO: check this for const ref
 };
 
 typedef unsigned long long timestamp_t;

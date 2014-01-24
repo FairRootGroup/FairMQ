@@ -8,8 +8,13 @@
 #ifndef FAIRMQTRANSPORTFACTORY_H_
 #define FAIRMQTRANSPORTFACTORY_H_
 
+#include <string>
+
 #include "FairMQMessage.h"
 #include "FairMQSocket.h"
+#include "FairMQPoller.h"
+
+using std::vector;
 
 class FairMQTransportFactory
 {
@@ -17,7 +22,8 @@ class FairMQTransportFactory
     virtual FairMQMessage* CreateMessage() = 0;
     virtual FairMQMessage* CreateMessage(size_t size) = 0;
     virtual FairMQMessage* CreateMessage(void* data, size_t size) = 0;
-    virtual FairMQSocket* CreateSocket(FairMQContext* context, int type, int num) = 0;
+    virtual FairMQSocket* CreateSocket(string type, int num) = 0;
+    virtual FairMQPoller* CreatePoller(const vector<FairMQSocket*>& inputs) = 0;
 
     virtual ~FairMQTransportFactory() {};
 };

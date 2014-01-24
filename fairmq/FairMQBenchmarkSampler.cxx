@@ -103,7 +103,7 @@ void FairMQBenchmarkSampler::Log(int intervalInMs)
     megabytesPerSecond = ((double) (bytesNew - bytes) / (1024. * 1024.)) / (double) timeSinceLastLog_ms * 1000.;
     messagesPerSecond = (double) (messagesNew - messages) / (double) timeSinceLastLog_ms * 1000.;
 
-    std::stringstream logmsg;
+    stringstream logmsg;
     logmsg << "send " << messagesPerSecond << " msg/s, " << megabytesPerSecond << " MB/s";
     FairMQLogger::GetInstance()->Log(FairMQLogger::DEBUG, logmsg.str());
 
@@ -113,7 +113,7 @@ void FairMQBenchmarkSampler::Log(int intervalInMs)
   }
 }
 
-void FairMQBenchmarkSampler::SetProperty(const int& key, const std::string& value, const int& slot/*= 0*/)
+void FairMQBenchmarkSampler::SetProperty(const int& key, const string& value, const int& slot/*= 0*/)
 {
   switch (key) {
   default:
@@ -122,7 +122,7 @@ void FairMQBenchmarkSampler::SetProperty(const int& key, const std::string& valu
   }
 }
 
-std::string FairMQBenchmarkSampler::GetProperty(const int& key, const std::string& default_/*= ""*/, const int& slot/*= 0*/)
+string FairMQBenchmarkSampler::GetProperty(const int& key, const string& default_/*= ""*/, const int& slot/*= 0*/)
 {
   switch (key) {
   default:

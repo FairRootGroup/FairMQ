@@ -9,25 +9,30 @@
 
 FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ()
 {
-    
+
 }
 
 FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage()
 {
-    return new FairMQMessageZMQ();
+  return new FairMQMessageZMQ();
 }
 
 FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage(size_t size)
 {
-    return new FairMQMessageZMQ(size);
+  return new FairMQMessageZMQ(size);
 }
 
 FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage(void* data, size_t size)
 {
-    return new FairMQMessageZMQ(data, size);
+  return new FairMQMessageZMQ(data, size);
 }
 
-FairMQSocket* FairMQTransportFactoryZMQ::CreateSocket(FairMQContext* context, int type, int num)
+FairMQSocket* FairMQTransportFactoryZMQ::CreateSocket(string type, int num)
 {
-    return new FairMQSocketZMQ(context, type, num);
+  return new FairMQSocketZMQ(type, num);
+}
+
+FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQSocket*>& inputs)
+{
+  return new FairMQPollerZMQ(inputs);
 }

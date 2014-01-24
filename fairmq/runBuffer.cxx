@@ -11,18 +11,24 @@
 #include "FairMQLogger.h"
 #include "FairMQBuffer.h"
 #include "FairMQTransportFactoryZMQ.h"
+// #include "FairMQTransportFactoryNN.h"
+
+using std::cout;
+using std::cin;
+using std::endl;
+using std::stringstream;
 
 
 FairMQBuffer buffer;
 
 static void s_signal_handler (int signal)
 {
-  std::cout << std::endl << "Caught signal " << signal << std::endl;
+  cout << endl << "Caught signal " << signal << endl;
 
   buffer.ChangeState(FairMQBuffer::STOP);
   buffer.ChangeState(FairMQBuffer::END);
 
-  std::cout << "Shutdown complete. Bye!" << std::endl;
+  cout << "Shutdown complete. Bye!" << endl;
   exit(1);
 }
 
@@ -39,19 +45,20 @@ static void s_catch_signals (void)
 int main(int argc, char** argv)
 {
   if ( argc != 11 ) {
-    std::cout << "Usage: buffer \tID numIoTreads\n"
+    cout << "Usage: buffer \tID numIoTreads\n"
               << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
-              << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n" << std::endl;
+              << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n" << endl;
     return 1;
   }
 
   s_catch_signals();
 
-  std::stringstream logmsg;
+  stringstream logmsg;
   logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
   FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+  // FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
   buffer.SetTransport(transportFactory);
 
   int i = 1;
@@ -60,7 +67,7 @@ int main(int argc, char** argv)
   ++i;
 
   int numIoThreads;
-  std::stringstream(argv[i]) >> numIoThreads;
+  stringstream(argv[i]) >> numIoThreads;
   buffer.SetProperty(FairMQBuffer::NumIoThreads, numIoThreads);
   ++i;
   buffer.SetProperty(FairMQBuffer::NumInputs, 1);
@@ -70,14 +77,10 @@ int main(int argc, char** argv)
   buffer.ChangeState(FairMQBuffer::INIT);
 
 
-  int inputSocketType = ZMQ_SUB;
-  if (strcmp(argv[i], "pull") == 0) {
-    inputSocketType = ZMQ_PULL;
-  }
-  buffer.SetProperty(FairMQBuffer::InputSocketType, inputSocketType, 0);
+  buffer.SetProperty(FairMQBuffer::InputSocketType, argv[i], 0);
   ++i;
   int inputRcvBufSize;
-  std::stringstream(argv[i]) >> inputRcvBufSize;
+  stringstream(argv[i]) >> inputRcvBufSize;
   buffer.SetProperty(FairMQBuffer::InputRcvBufSize, inputRcvBufSize, 0);
   ++i;
   buffer.SetProperty(FairMQBuffer::InputMethod, argv[i], 0);
@@ -85,15 +88,10 @@ int main(int argc, char** argv)
   buffer.SetProperty(FairMQBuffer::InputAddress, argv[i], 0);
   ++i;
 
-
-  int outputSocketType = ZMQ_PUB;
-  if (strcmp(argv[i], "push") == 0) {
-    outputSocketType = ZMQ_PUSH;
-  }
-  buffer.SetProperty(FairMQBuffer::OutputSocketType, outputSocketType, 0);
+  buffer.SetProperty(FairMQBuffer::OutputSocketType, argv[i], 0);
   ++i;
   int outputSndBufSize;
-  std::stringstream(argv[i]) >> outputSndBufSize;
+  stringstream(argv[i]) >> outputSndBufSize;
   buffer.SetProperty(FairMQBuffer::OutputSndBufSize, outputSndBufSize, 0);
   ++i;
   buffer.SetProperty(FairMQBuffer::OutputMethod, argv[i], 0);
@@ -109,7 +107,7 @@ int main(int argc, char** argv)
 
 
   char ch;
-  std::cin.get(ch);
+  cin.get(ch);
 
   buffer.ChangeState(FairMQBuffer::STOP);
   buffer.ChangeState(FairMQBuffer::END);

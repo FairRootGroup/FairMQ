@@ -61,7 +61,7 @@ void FairMQProcessor::Run()
     delete msg;
   }
 
-  std::cout << "I've received " << receivedMsgs << " and sent " << sentMsgs << " messages!" << std::endl;
+  cout << "I've received " << receivedMsgs << " and sent " << sentMsgs << " messages!" << endl;
 
   boost::this_thread::sleep(boost::posix_time::milliseconds(5000));
 

@@ -11,18 +11,24 @@
 #include "FairMQLogger.h"
 #include "FairMQSplitter.h"
 #include "FairMQTransportFactoryZMQ.h"
+// #include "FairMQTransportFactoryNN.h"
+
+using std::cout;
+using std::cin;
+using std::endl;
+using std::stringstream;
 
 
 FairMQSplitter splitter;
 
 static void s_signal_handler (int signal)
 {
-  std::cout << std::endl << "Caught signal " << signal << std::endl;
+  cout << endl << "Caught signal " << signal << endl;
 
   splitter.ChangeState(FairMQSplitter::STOP);
   splitter.ChangeState(FairMQSplitter::END);
 
-  std::cout << "Shutdown complete. Bye!" << std::endl;
+  cout << "Shutdown complete. Bye!" << endl;
   exit(1);
 }
 
@@ -39,21 +45,22 @@ static void s_catch_signals (void)
 int main(int argc, char** argv)
 {
   if ( argc < 16 || (argc - 8) % 4 != 0 ) { // argc{ name, id, threads, nout, insock, inbuff, inmet, inadd, ... out}
-    std::cout << "Usage: splitter \tID numIoTreads numOutputs\n"
+    cout << "Usage: splitter \tID numIoTreads numOutputs\n"
               << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
               << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n"
               << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n"
-              << "\t\t..." << argc << " arguments provided" << std::endl;
+              << "\t\t..." << argc << " arguments provided" << endl;
     return 1;
   }
 
   s_catch_signals();
 
-  std::stringstream logmsg;
+  stringstream logmsg;
   logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
   FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+  // FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
   splitter.SetTransport(transportFactory);
 
   int i = 1;
@@ -62,14 +69,14 @@ int main(int argc, char** argv)
   ++i;
 
   int numIoThreads;
-  std::stringstream(argv[i]) >> numIoThreads;
+  stringstream(argv[i]) >> numIoThreads;
   splitter.SetProperty(FairMQSplitter::NumIoThreads, numIoThreads);
   ++i;
 
   splitter.SetProperty(FairMQSplitter::NumInputs, 1);
 
   int numOutputs;
-  std::stringstream(argv[i]) >> numOutputs;
+  stringstream(argv[i]) >> numOutputs;
   splitter.SetProperty(FairMQSplitter::NumOutputs, numOutputs);
   ++i;
 
@@ -77,14 +84,10 @@ int main(int argc, char** argv)
   splitter.ChangeState(FairMQSplitter::INIT);
 
 
-  int inputSocketType = ZMQ_SUB;
-  if (strcmp(argv[i], "pull") == 0) {
-    inputSocketType = ZMQ_PULL;
-  }
-  splitter.SetProperty(FairMQSplitter::InputSocketType, inputSocketType, 0);
+  splitter.SetProperty(FairMQSplitter::InputSocketType, argv[i], 0);
   ++i;
   int inputRcvBufSize;
-  std::stringstream(argv[i]) >> inputRcvBufSize;
+  stringstream(argv[i]) >> inputRcvBufSize;
   splitter.SetProperty(FairMQSplitter::InputRcvBufSize, inputRcvBufSize, 0);
   ++i;
   splitter.SetProperty(FairMQSplitter::InputMethod, argv[i], 0);
@@ -92,16 +95,11 @@ int main(int argc, char** argv)
   splitter.SetProperty(FairMQSplitter::InputAddress, argv[i], 0);
   ++i;
 
-  int outputSocketType;
   int outputSndBufSize;
   for (int iOutput = 0; iOutput < numOutputs; iOutput++) {
-    outputSocketType = ZMQ_PUB;
-    if (strcmp(argv[i], "push") == 0) {
-      outputSocketType = ZMQ_PUSH;
-    }
-    splitter.SetProperty(FairMQSplitter::OutputSocketType, outputSocketType, iOutput);
+    splitter.SetProperty(FairMQSplitter::OutputSocketType, argv[i], iOutput);
     ++i;
-    std::stringstream(argv[i]) >> outputSndBufSize;
+    stringstream(argv[i]) >> outputSndBufSize;
     splitter.SetProperty(FairMQSplitter::OutputSndBufSize, outputSndBufSize, iOutput);
     ++i;
     splitter.SetProperty(FairMQSplitter::OutputMethod, argv[i], iOutput);
@@ -116,7 +114,7 @@ int main(int argc, char** argv)
 
 
   char ch;
-  std::cin.get(ch);
+  cin.get(ch);
 
   splitter.ChangeState(FairMQSplitter::STOP);
   splitter.ChangeState(FairMQSplitter::END);

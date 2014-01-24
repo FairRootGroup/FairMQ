@@ -10,83 +10,68 @@
 #include "FairMQSocketZMQ.h"
 #include "FairMQLogger.h"
 
+boost::shared_ptr<FairMQContextZMQ> FairMQSocketZMQ::fContext = boost::shared_ptr<FairMQContextZMQ>(new FairMQContextZMQ(1)); // TODO: numIoThreads!
 
-FairMQSocketZMQ::FairMQSocketZMQ(FairMQContext* context, int type, int num) :
+FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num) :
   fBytesTx(0),
   fBytesRx(0),
   fMessagesTx(0),
   fMessagesRx(0)
 {
-  std::stringstream id;
-  id << GetTypeString(type) << "." << num;
+  stringstream id; // TODO
+  id << type << "." << num;
   fId = id.str();
 
-  fSocket = zmq_socket(context->GetContext(), type);
+  fSocket = zmq_socket(fContext->GetContext(), GetConstant(type));
   int rc = zmq_setsockopt(fSocket, ZMQ_IDENTITY, &fId, fId.length());
   if (rc != 0) {
-    std::stringstream logmsg;
+    stringstream logmsg;
     logmsg << "failed setting socket option, reason: " << zmq_strerror(errno);
     FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
   }
 
-  if (type == ZMQ_SUB) {
+  if (type == "sub") {
     rc = zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, NULL, 0);
     if (rc != 0) {
-      std::stringstream logmsg2;
+      stringstream logmsg2;
       logmsg2 << "failed setting socket option, reason: " << zmq_strerror(errno);
       FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg2.str());
     }
   }
 
-  std::stringstream logmsg3;
+  stringstream logmsg3;
   logmsg3 << "created socket #" << fId;
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg3.str());
 }
 
-std::string FairMQSocketZMQ::GetId()
+string FairMQSocketZMQ::GetId()
 {
   return fId;
 }
 
-std::string FairMQSocketZMQ::GetTypeString(int type)
+void FairMQSocketZMQ::Bind(const string& address)
 {
-  switch (type) {
-    case ZMQ_SUB:
-      return "sub";
-    case ZMQ_PUB:
-      return "pub";
-    case ZMQ_PUSH:
-      return "push";
-    case ZMQ_PULL:
-      return "pull";
-    default:
-      return "";
-  }
-}
-
-void FairMQSocketZMQ::Bind(std::string address)
-{
-  std::stringstream logmsg;
+  stringstream logmsg;
   logmsg << "bind socket #" << fId << " on " << address;
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
   int rc = zmq_bind (fSocket, address.c_str());
   if (rc != 0) {
-    std::stringstream logmsg2;
+    stringstream logmsg2;
     logmsg2 << "failed binding socket #" << fId << ", reason: " << zmq_strerror(errno);
     FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg2.str());
   }
 }
 
-void FairMQSocketZMQ::Connect(std::string address)
+void FairMQSocketZMQ::Connect(const string& address)
 {
-  std::stringstream logmsg;
+  stringstream logmsg;
   logmsg << "connect socket #" << fId << " on " << address;
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
   int rc = zmq_connect (fSocket, address.c_str());
   if (rc != 0) {
-    std::stringstream logmsg2;
+    stringstream logmsg2;
     logmsg2 << "failed connecting socket #" << fId << ", reason: " << zmq_strerror(errno);
     FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg2.str());
   }
@@ -103,7 +88,7 @@ size_t FairMQSocketZMQ::Send(FairMQMessage* msg)
   if (zmq_errno() == EAGAIN){
     return false;
   }
-  std::stringstream logmsg;
+  stringstream logmsg;
   logmsg << "failed sending on socket #" << fId << ", reason: " << zmq_strerror(errno);
   FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
   return nbytes;
@@ -120,20 +105,10 @@ size_t FairMQSocketZMQ::Receive(FairMQMessage* msg)
   if (zmq_errno() == EAGAIN){
     return false;
   }
-  std::stringstream logmsg;
+  stringstream logmsg;
   logmsg << "failed receiving on socket #" << fId << ", reason: " << zmq_strerror(errno);
   FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
   return nbytes;
-}
-
-void FairMQSocketZMQ::SetOption(int option, const void* value, size_t valueSize)
-{
-  int rc = zmq_setsockopt(fSocket, option, value, valueSize);
-  if (rc < 0) {
-    std::stringstream logmsg;
-    logmsg << "failed setting socket option, reason: " << zmq_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
-  }
 }
 
 void FairMQSocketZMQ::Close()
@@ -144,7 +119,7 @@ void FairMQSocketZMQ::Close()
 
   int rc = zmq_close (fSocket);
   if (rc != 0) {
-    std::stringstream logmsg;
+    stringstream logmsg;
     logmsg << "failed closing socket, reason: " << zmq_strerror(errno);
     FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
   }
@@ -155,6 +130,21 @@ void FairMQSocketZMQ::Close()
 void* FairMQSocketZMQ::GetSocket()
 {
   return fSocket;
+}
+
+int FairMQSocketZMQ::GetSocket(int nothing)
+{
+  // dummy method to compy with the interface. functionality not possible in zeromq.
+}
+
+void FairMQSocketZMQ::SetOption(const string& option, const void* value, size_t valueSize)
+{
+  int rc = zmq_setsockopt(fSocket, GetConstant(option), value, valueSize);
+  if (rc < 0) {
+    stringstream logmsg;
+    logmsg << "failed setting socket option, reason: " << zmq_strerror(errno);
+    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+  }
 }
 
 unsigned long FairMQSocketZMQ::GetBytesTx()
@@ -175,6 +165,20 @@ unsigned long FairMQSocketZMQ::GetMessagesTx()
 unsigned long FairMQSocketZMQ::GetMessagesRx()
 {
   return fMessagesRx;
+}
+
+int FairMQSocketZMQ::GetConstant(const string& constant)
+{
+  if (constant == "sub") return ZMQ_SUB;
+  if (constant == "pub") return ZMQ_PUB;
+  if (constant == "xsub") return ZMQ_XSUB;
+  if (constant == "xpub") return ZMQ_XPUB;
+  if (constant == "push") return ZMQ_PUSH;
+  if (constant == "pull") return ZMQ_PULL;
+  if (constant == "snd-hwm") return ZMQ_SNDHWM;
+  if (constant == "rcv-hwm") return ZMQ_RCVHWM;
+
+  return -1;
 }
 
 FairMQSocketZMQ::~FairMQSocketZMQ()

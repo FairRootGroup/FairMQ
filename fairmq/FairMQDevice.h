@@ -10,13 +10,17 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 
 #include "FairMQConfigurable.h"
 #include "FairMQStateMachine.h"
 #include "FairMQTransportFactory.h"
-#include "FairMQContext.h"
 #include "FairMQSocket.h"
 
+using std::vector;
+using std::cin;
+using std::cout;
+using std::endl;
 
 class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 {
@@ -45,38 +49,37 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     virtual void LogSocketRates();
     virtual void ListenToCommands();
 
-    virtual void SetProperty(const int& key, const std::string& value, const int& slot = 0);
-    virtual std::string GetProperty(const int& key, const std::string& default_ = "", const int& slot = 0);
-    virtual void SetProperty(const int& key, const int& value, const int& slot = 0);
-    virtual int GetProperty(const int& key, const int& default_ = 0, const int& slot = 0);
+    virtual void SetProperty(const int key, const string& value, const int slot = 0);
+    virtual string GetProperty(const int key, const string& default_ = "", const int slot = 0);
+    virtual void SetProperty(const int key, const int value, const int slot = 0);
+    virtual int GetProperty(const int key, const int default_ = 0, const int slot = 0);
 
     virtual void SetTransport(FairMQTransportFactory* factory);
 
     virtual ~FairMQDevice();
 
   protected:
-    std::string fId;
+    string fId;
     int fNumIoThreads;
-    FairMQContext* fPayloadContext;
     FairMQTransportFactory* fTransportFactory;
 
     int fNumInputs;
     int fNumOutputs;
 
-    std::vector<std::string> *fInputAddress;
-    std::vector<std::string> *fInputMethod;
-    std::vector<int> *fInputSocketType;
-    std::vector<int> *fInputSndBufSize;
-    std::vector<int> *fInputRcvBufSize;
+    vector<string> *fInputAddress;
+    vector<string> *fInputMethod;
+    vector<string> *fInputSocketType;
+    vector<int> *fInputSndBufSize;
+    vector<int> *fInputRcvBufSize;
 
-    std::vector<std::string> *fOutputAddress;
-    std::vector<std::string> *fOutputMethod;
-    std::vector<int> *fOutputSocketType;
-    std::vector<int> *fOutputSndBufSize;
-    std::vector<int> *fOutputRcvBufSize;
+    vector<string> *fOutputAddress;
+    vector<string> *fOutputMethod;
+    vector<string> *fOutputSocketType;
+    vector<int> *fOutputSndBufSize;
+    vector<int> *fOutputRcvBufSize;
 
-    std::vector<FairMQSocket*> *fPayloadInputs;
-    std::vector<FairMQSocket*> *fPayloadOutputs;
+    vector<FairMQSocket*> *fPayloadInputs;
+    vector<FairMQSocket*> *fPayloadOutputs;
 
     int fLogIntervalInMs;
 

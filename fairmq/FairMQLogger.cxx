@@ -11,6 +11,9 @@
 
 #include "FairMQLogger.h"
 
+using std::cin;
+using std::cout;
+using std::endl;
 
 FairMQLogger* FairMQLogger::instance = NULL;
 
@@ -22,7 +25,7 @@ FairMQLogger* FairMQLogger::GetInstance()
   return instance;
 }
 
-FairMQLogger* FairMQLogger::InitInstance(std::string bindAddress)
+FairMQLogger* FairMQLogger::InitInstance(const string& bindAddress)
 {
   instance = new FairMQLogger(bindAddress);
   return instance;
@@ -33,7 +36,7 @@ FairMQLogger::FairMQLogger() :
 {
 }
 
-FairMQLogger::FairMQLogger(std::string bindAddress) :
+FairMQLogger::FairMQLogger(const string& bindAddress) :
   fBindAddress(bindAddress)
 {
 }
@@ -42,7 +45,7 @@ FairMQLogger::~FairMQLogger()
 {
 }
 
-void FairMQLogger::Log(int type, std::string logmsg)
+void FairMQLogger::Log(int type, const string& logmsg)
 {
   timestamp_t tm = get_timestamp();
   timestamp_t ms = tm / 1000.0L;
@@ -52,7 +55,7 @@ void FairMQLogger::Log(int type, std::string logmsg)
   char mbstr[100];
   std::strftime(mbstr, 100, "%H:%M:%S:", std::localtime(&t));
 
-  std::string type_str;
+  string type_str;
   switch (type) {
     case DEBUG:
       type_str = "\033[01;34mDEBUG\033[0m";
@@ -69,7 +72,7 @@ void FairMQLogger::Log(int type, std::string logmsg)
       break;
   }
 
-  std::cout << "[\033[01;36m" <<  mbstr << fractional_seconds << "\033[0m]" << "[" << type_str << "]" << " " << logmsg << std::endl;
+  cout << "[\033[01;36m" <<  mbstr << fractional_seconds << "\033[0m]" << "[" << type_str << "]" << " " << logmsg << endl;
 }
 
 timestamp_t get_timestamp ()

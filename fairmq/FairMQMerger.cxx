@@ -10,6 +10,7 @@
 
 #include "FairMQLogger.h"
 #include "FairMQMerger.h"
+#include "FairMQPoller.h"
 
 
 FairMQMerger::FairMQMerger()
@@ -26,24 +27,17 @@ void FairMQMerger::Run()
 
   boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-  zmq_pollitem_t items[fNumInputs];
-
-  for (int i = 0; i < fNumInputs; i++) {
-    items[i].socket = fPayloadInputs->at(i)->GetSocket();
-    items[i].fd = 0;
-    items[i].events = ZMQ_POLLIN;
-    items[i].revents = 0;
-  }
+  FairMQPoller* poller = fTransportFactory->CreatePoller(*fPayloadInputs);
 
   bool received = false;
 
   while ( fState == RUNNING ) {
     FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-    zmq_poll(items, fNumInputs, 100);
+    poller->Poll(100);
 
     for(int i = 0; i < fNumInputs; i++) {
-      if (items[i].revents & ZMQ_POLLIN) {
+      if (poller->CheckInput(i)){
         received = fPayloadInputs->at(i)->Receive(msg);
       }
       if (received) {
@@ -54,6 +48,8 @@ void FairMQMerger::Run()
 
     delete msg;
   }
+
+  delete poller;
 
   rateLogger.interrupt();
   rateLogger.join();

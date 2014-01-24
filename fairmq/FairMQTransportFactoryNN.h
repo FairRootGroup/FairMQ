@@ -1,25 +1,24 @@
 /**
- * FairMQTransportFactoryZMQ.h
+ * FairMQTransportFactoryNN.h
  *
  * @since 2014-01-20
  * @author: A. Rybalchenko
  */
 
-#ifndef FAIRMQTRANSPORTFACTORYZMQ_H_
-#define FAIRMQTRANSPORTFACTORYZMQ_H_
+#ifndef FAIRMQTRANSPORTFACTORYNN_H_
+#define FAIRMQTRANSPORTFACTORYNN_H_
 
 #include <vector>
 
 #include "FairMQTransportFactory.h"
-#include "FairMQContextZMQ.h"
-#include "FairMQMessageZMQ.h"
-#include "FairMQSocketZMQ.h"
-#include "FairMQPollerZMQ.h"
+#include "FairMQMessageNN.h"
+#include "FairMQSocketNN.h"
+#include "FairMQPollerNN.h"
 
-class FairMQTransportFactoryZMQ : public FairMQTransportFactory
+class FairMQTransportFactoryNN : public FairMQTransportFactory
 {
   public:
-    FairMQTransportFactoryZMQ();
+    FairMQTransportFactoryNN();
 
     virtual FairMQMessage* CreateMessage();
     virtual FairMQMessage* CreateMessage(size_t size);
@@ -28,7 +27,7 @@ class FairMQTransportFactoryZMQ : public FairMQTransportFactory
     virtual FairMQPoller* CreatePoller(const vector<FairMQSocket*>& inputs);
 
 
-    virtual ~FairMQTransportFactoryZMQ() {};
+    virtual ~FairMQTransportFactoryNN() {};
 };
 
-#endif /* FAIRMQTRANSPORTFACTORYZMQ_H_ */
+#endif /* FAIRMQTRANSPORTFACTORYNN_H_ */

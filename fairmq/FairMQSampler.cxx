@@ -45,7 +45,7 @@ void FairMQSampler::Init()
   FairMQDevice::Init();
 
   fSamplerTask->SetBranch(fBranch);
-  fSamplerTask->SetTransport(fTransportFactory); // TODO: simplify message creation for sampler task?
+  fSamplerTask->SetTransport(fTransportFactory);
 
   fFairRunAna->SetInputFile(TString(fInputFile));
   TString output = fInputFile;
@@ -79,7 +79,7 @@ void FairMQSampler::Run()
 
   boost::timer::auto_cpu_timer timer;
 
-  std::cout << "Number of events to process: " << fNumEvents << std::endl;
+  cout << "Number of events to process: " << fNumEvents << endl;
 
   Long64_t eventNr = 0;
 
@@ -105,8 +105,8 @@ void FairMQSampler::Run()
 
   boost::timer::cpu_times const elapsed_time(timer.elapsed());
 
-  std::cout << "Sent everything in:\n" << boost::timer::format(elapsed_time, 2) << std::endl;
-  std::cout << "Sent " << sentMsgs << " messages!" << std::endl;
+  cout << "Sent everything in:\n" << boost::timer::format(elapsed_time, 2) << endl;
+  cout << "Sent " << sentMsgs << " messages!" << endl;
 
   //boost::this_thread::sleep(boost::posix_time::milliseconds(5000));
 
@@ -125,7 +125,7 @@ void FairMQSampler::ResetEventCounter()
       fEventCounter = fEventRate / 100;
       boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     } catch (boost::thread_interrupted&) {
-      std::cout << "resetEventCounter interrupted" << std::endl;
+      cout << "resetEventCounter interrupted" << endl;
       break;
     }
   }
@@ -154,14 +154,14 @@ void FairMQSampler::ListenToCommands()
 
       boost::this_thread::interruption_point();
     } catch (boost::thread_interrupted&) {
-      std::cout << "commandListener interrupted" << std::endl;
+      cout << "commandListener interrupted" << endl;
       break;
     }
   }
   FairMQLogger::GetInstance()->Log(FairMQLogger::DEBUG, ">>>>>>> stopping commandListener <<<<<<<");
 }
 
-void FairMQSampler::SetProperty(const int& key, const std::string& value, const int& slot/*= 0*/)
+void FairMQSampler::SetProperty(const int& key, const string& value, const int& slot/*= 0*/)
 {
   switch (key) {
   case InputFile:
@@ -179,7 +179,7 @@ void FairMQSampler::SetProperty(const int& key, const std::string& value, const 
   }
 }
 
-std::string FairMQSampler::GetProperty(const int& key, const std::string& default_/*= ""*/, const int& slot/*= 0*/)
+string FairMQSampler::GetProperty(const int& key, const string& default_/*= ""*/, const int& slot/*= 0*/)
 {
   switch (key) {
   case InputFile:

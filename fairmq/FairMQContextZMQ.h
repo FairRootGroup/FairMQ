@@ -5,16 +5,16 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#ifndef FAIRMQCONTEXT_H_
-#define FAIRMQCONTEXT_H_
+#ifndef FAIRMQCONTEXTZMQ_H_
+#define FAIRMQCONTEXTZMQ_H_
 
 #include <zmq.h>
 
-class FairMQContext
+class FairMQContextZMQ
 {
   public:
-    FairMQContext(int numIoThreads);
-    virtual ~FairMQContext();
+    FairMQContextZMQ(int numIoThreads);
+    virtual ~FairMQContextZMQ();
     void* GetContext();
     void Close();
 
@@ -22,4 +22,4 @@ class FairMQContext
     void* fContext;
 };
 
-#endif /* FAIRMQCONTEXT_H_ */
+#endif /* FAIRMQCONTEXTZMQ_H_ */

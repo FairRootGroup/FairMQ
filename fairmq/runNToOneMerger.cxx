@@ -11,18 +11,24 @@
 #include "FairMQLogger.h"
 #include "FairMQMerger.h"
 #include "FairMQTransportFactoryZMQ.h"
+// #include "FairMQTransportFactoryNN.h"
+
+using std::cout;
+using std::cin;
+using std::endl;
+using std::stringstream;
 
 
 FairMQMerger merger;
 
 static void s_signal_handler (int signal)
 {
-  std::cout << std::endl << "Caught signal " << signal << std::endl;
+  cout << endl << "Caught signal " << signal << endl;
 
   merger.ChangeState(FairMQMerger::STOP);
   merger.ChangeState(FairMQMerger::END);
 
-  std::cout << "Shutdown complete. Bye!" << std::endl;
+  cout << "Shutdown complete. Bye!" << endl;
   exit(1);
 }
 
@@ -39,22 +45,23 @@ static void s_catch_signals (void)
 int main(int argc, char** argv)
 {
   if ( argc < 16 || (argc-8)%4!=0 ) {
-    std::cout << "Usage: merger \tID numIoTreads numInputs\n"
+    cout << "Usage: merger \tID numIoTreads numInputs\n"
               << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
               << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
               << "\t\t...\n"
               << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n"
-              << argc << std::endl;
+              << argc << endl;
     return 1;
   }
 
   s_catch_signals();
 
-  std::stringstream logmsg;
+  stringstream logmsg;
   logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
   FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+  // FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
   merger.SetTransport(transportFactory);
 
   int i = 1;
@@ -63,12 +70,12 @@ int main(int argc, char** argv)
   ++i;
 
   int numIoThreads;
-  std::stringstream(argv[i]) >> numIoThreads;
+  stringstream(argv[i]) >> numIoThreads;
   merger.SetProperty(FairMQMerger::NumIoThreads, numIoThreads);
   ++i;
 
   int numInputs;
-  std::stringstream(argv[i]) >> numInputs;
+  stringstream(argv[i]) >> numInputs;
   merger.SetProperty(FairMQMerger::NumInputs, numInputs);
   ++i;
 
@@ -78,16 +85,11 @@ int main(int argc, char** argv)
   merger.ChangeState(FairMQMerger::INIT);
 
 
-  int inputSocketType;
   for (int iInput = 0; iInput < numInputs; iInput++ ) {
-    inputSocketType = ZMQ_SUB;
-    if (strcmp(argv[i], "pull") == 0) {
-      inputSocketType = ZMQ_PULL;
-    }
-    merger.SetProperty(FairMQMerger::InputSocketType, inputSocketType, iInput);
+    merger.SetProperty(FairMQMerger::InputSocketType, argv[i], iInput);
     ++i;
     int inputRcvBufSize;
-    std::stringstream(argv[i]) >> inputRcvBufSize;
+    stringstream(argv[i]) >> inputRcvBufSize;
     merger.SetProperty(FairMQMerger::InputRcvBufSize, inputRcvBufSize, iInput);
     ++i;
     merger.SetProperty(FairMQMerger::InputMethod, argv[i], iInput);
@@ -96,14 +98,10 @@ int main(int argc, char** argv)
     ++i;
   }
 
-  int outputSocketType = ZMQ_PUB;
-  if (strcmp(argv[i], "push") == 0) {
-    outputSocketType = ZMQ_PUSH;
-  }
-  merger.SetProperty(FairMQMerger::OutputSocketType, outputSocketType, 0);
+  merger.SetProperty(FairMQMerger::OutputSocketType, argv[i], 0);
   ++i;
   int outputSndBufSize;
-  std::stringstream(argv[i]) >> outputSndBufSize;
+  stringstream(argv[i]) >> outputSndBufSize;
   merger.SetProperty(FairMQMerger::OutputSndBufSize, outputSndBufSize, 0);
   ++i;
   merger.SetProperty(FairMQMerger::OutputMethod, argv[i], 0);
@@ -118,7 +116,7 @@ int main(int argc, char** argv)
 
 
   char ch;
-  std::cin.get(ch);
+  cin.get(ch);
 
   merger.ChangeState(FairMQMerger::STOP);
   merger.ChangeState(FairMQMerger::END);

@@ -8,45 +8,51 @@
 #ifndef FAIRMQSOCKETZMQ_H_
 #define FAIRMQSOCKETZMQ_H_
 
+#include <boost/shared_ptr.hpp>
+
 #include <zmq.h>
 
 #include "FairMQSocket.h"
-#include "FairMQContext.h"
+#include "FairMQContextZMQ.h"
 
 
 class FairMQSocketZMQ : public FairMQSocket
 {
   public:
-    FairMQSocketZMQ(FairMQContext* context, int type, int num);
+    FairMQSocketZMQ(const string& type, int num);
 
-    virtual std::string GetId();
+    virtual string GetId();
 
-    virtual void Bind(std::string address);
-    virtual void Connect(std::string address);
+    virtual void Bind(const string& address);
+    virtual void Connect(const string& address);
 
     virtual size_t Send(FairMQMessage* msg);
     virtual size_t Receive(FairMQMessage* msg);
-    virtual void Close();
-    virtual void* GetSocket();
 
-    virtual void SetOption(int option, const void* value, size_t valueSize);
+    virtual void* GetSocket();
+    virtual int GetSocket(int nothing);
+    virtual void Close();
+
+    virtual void SetOption(const string& option, const void* value, size_t valueSize);
 
     virtual unsigned long GetBytesTx();
     virtual unsigned long GetBytesRx();
     virtual unsigned long GetMessagesTx();
     virtual unsigned long GetMessagesRx();
 
-    static std::string GetTypeString(int type);
+    static int GetConstant(const string& constant);
 
     virtual ~FairMQSocketZMQ();
 
   private:
     void* fSocket;
-    std::string fId;
+    string fId;
     unsigned long fBytesTx;
     unsigned long fBytesRx;
     unsigned long fMessagesTx;
     unsigned long fMessagesRx;
+
+    static boost::shared_ptr<FairMQContextZMQ> fContext;
 };
 
 #endif /* FAIRMQSOCKETZMQ_H_ */
