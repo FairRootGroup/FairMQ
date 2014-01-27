@@ -24,8 +24,6 @@ class FairMQConfigurable
     virtual void SetProperty(const int key, const int value, const int slot = 0);
     virtual int GetProperty(const int key, const int default_ = 0, const int slot = 0);
     virtual ~FairMQConfigurable();
-
-    // TODO: by value for integers
 };
 
 #endif /* FAIRMQCONFIGURABLE_H_ */

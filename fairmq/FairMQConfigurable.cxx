@@ -33,5 +33,3 @@ int FairMQConfigurable::GetProperty(const int key, const int default_/*= 0*/, co
 FairMQConfigurable::~FairMQConfigurable()
 {
 }
-
-

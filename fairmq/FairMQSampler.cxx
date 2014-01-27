@@ -161,7 +161,7 @@ void FairMQSampler::ListenToCommands()
   FairMQLogger::GetInstance()->Log(FairMQLogger::DEBUG, ">>>>>>> stopping commandListener <<<<<<<");
 }
 
-void FairMQSampler::SetProperty(const int& key, const string& value, const int& slot/*= 0*/)
+void FairMQSampler::SetProperty(const int key, const string& value, const int slot/*= 0*/)
 {
   switch (key) {
   case InputFile:
@@ -179,7 +179,7 @@ void FairMQSampler::SetProperty(const int& key, const string& value, const int& 
   }
 }
 
-string FairMQSampler::GetProperty(const int& key, const string& default_/*= ""*/, const int& slot/*= 0*/)
+string FairMQSampler::GetProperty(const int key, const string& default_/*= ""*/, const int slot/*= 0*/)
 {
   switch (key) {
   case InputFile:
@@ -193,7 +193,7 @@ string FairMQSampler::GetProperty(const int& key, const string& default_/*= ""*/
   }
 }
 
-void FairMQSampler::SetProperty(const int& key, const int& value, const int& slot/*= 0*/)
+void FairMQSampler::SetProperty(const int key, const int value, const int slot/*= 0*/)
 {
   switch (key) {
   case EventRate:
@@ -205,7 +205,7 @@ void FairMQSampler::SetProperty(const int& key, const int& value, const int& slo
   }
 }
 
-int FairMQSampler::GetProperty(const int& key, const int& default_/*= 0*/, const int& slot/*= 0*/)
+int FairMQSampler::GetProperty(const int key, const int default_/*= 0*/, const int slot/*= 0*/)
 {
   switch (key) {
   case EventRate:

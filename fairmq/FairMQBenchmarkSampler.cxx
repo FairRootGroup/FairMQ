@@ -113,7 +113,7 @@ void FairMQBenchmarkSampler::Log(int intervalInMs)
   }
 }
 
-void FairMQBenchmarkSampler::SetProperty(const int& key, const string& value, const int& slot/*= 0*/)
+void FairMQBenchmarkSampler::SetProperty(const int key, const string& value, const int slot/*= 0*/)
 {
   switch (key) {
   default:
@@ -122,7 +122,7 @@ void FairMQBenchmarkSampler::SetProperty(const int& key, const string& value, co
   }
 }
 
-string FairMQBenchmarkSampler::GetProperty(const int& key, const string& default_/*= ""*/, const int& slot/*= 0*/)
+string FairMQBenchmarkSampler::GetProperty(const int key, const string& default_/*= ""*/, const int slot/*= 0*/)
 {
   switch (key) {
   default:
@@ -130,7 +130,7 @@ string FairMQBenchmarkSampler::GetProperty(const int& key, const string& default
   }
 }
 
-void FairMQBenchmarkSampler::SetProperty(const int& key, const int& value, const int& slot/*= 0*/)
+void FairMQBenchmarkSampler::SetProperty(const int key, const int value, const int slot/*= 0*/)
 {
   switch (key) {
   case EventSize:
@@ -145,7 +145,7 @@ void FairMQBenchmarkSampler::SetProperty(const int& key, const int& value, const
   }
 }
 
-int FairMQBenchmarkSampler::GetProperty(const int& key, const int& default_/*= 0*/, const int& slot/*= 0*/)
+int FairMQBenchmarkSampler::GetProperty(const int key, const int default_/*= 0*/, const int slot/*= 0*/)
 {
   switch (key) {
   case EventSize:
@@ -156,4 +156,3 @@ int FairMQBenchmarkSampler::GetProperty(const int& key, const int& default_/*= 0
     return FairMQDevice::GetProperty(key, default_, slot);
   }
 }
-

@@ -135,6 +135,7 @@ void* FairMQSocketZMQ::GetSocket()
 int FairMQSocketZMQ::GetSocket(int nothing)
 {
   // dummy method to compy with the interface. functionality not possible in zeromq.
+  return -1;
 }
 
 void FairMQSocketZMQ::SetOption(const string& option, const void* value, size_t valueSize)
