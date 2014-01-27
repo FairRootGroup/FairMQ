@@ -134,7 +134,7 @@ void* FairMQSocketZMQ::GetSocket()
 
 int FairMQSocketZMQ::GetSocket(int nothing)
 {
-  // dummy method to compy with the interface. functionality not possible in zeromq.
+  // dummy method to comply with the interface. functionality not possible in zeromq.
   return -1;
 }
 
