@@ -1,17 +1,16 @@
 /**
- * runProxy.cxx
+ * runBuffer.cxx
  *
- * @since 2013-10-07
- * @author A. Rybalchenko
+ * @since 2012-10-26
+ * @author: D. Klein, A. Rybalchenko
  */
 
 #include <iostream>
 #include <csignal>
 
 #include "FairMQLogger.h"
-#include "FairMQProxy.h"
+#include "FairMQBuffer.h"
 #include "FairMQTransportFactoryZMQ.h"
-// #include "FairMQTransportFactoryNN.h"
 
 using std::cout;
 using std::cin;
@@ -19,14 +18,14 @@ using std::endl;
 using std::stringstream;
 
 
-FairMQProxy proxy;
+FairMQBuffer buffer;
 
 static void s_signal_handler (int signal)
 {
   cout << endl << "Caught signal " << signal << endl;
 
-  proxy.ChangeState(FairMQProxy::STOP);
-  proxy.ChangeState(FairMQProxy::END);
+  buffer.ChangeState(FairMQBuffer::STOP);
+  buffer.ChangeState(FairMQBuffer::END);
 
   cout << "Shutdown complete. Bye!" << endl;
   exit(1);
@@ -45,7 +44,7 @@ static void s_catch_signals (void)
 int main(int argc, char** argv)
 {
   if ( argc != 11 ) {
-    cout << "Usage: proxy \tID numIoTreads\n"
+    cout << "Usage: buffer \tID numIoTreads\n"
               << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
               << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n" << endl;
     return 1;
@@ -58,59 +57,58 @@ int main(int argc, char** argv)
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
   FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-  // FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
-  proxy.SetTransport(transportFactory);
+  buffer.SetTransport(transportFactory);
 
   int i = 1;
 
-  proxy.SetProperty(FairMQProxy::Id, argv[i]);
+  buffer.SetProperty(FairMQBuffer::Id, argv[i]);
   ++i;
 
   int numIoThreads;
   stringstream(argv[i]) >> numIoThreads;
-  proxy.SetProperty(FairMQProxy::NumIoThreads, numIoThreads);
+  buffer.SetProperty(FairMQBuffer::NumIoThreads, numIoThreads);
   ++i;
-
-  proxy.SetProperty(FairMQProxy::NumInputs, 1);
-  proxy.SetProperty(FairMQProxy::NumOutputs, 1);
-
-
-  proxy.ChangeState(FairMQProxy::INIT);
+  buffer.SetProperty(FairMQBuffer::NumInputs, 1);
+  buffer.SetProperty(FairMQBuffer::NumOutputs, 1);
 
 
-  proxy.SetProperty(FairMQProxy::InputSocketType, argv[i], 0);
+  buffer.ChangeState(FairMQBuffer::INIT);
+
+
+  buffer.SetProperty(FairMQBuffer::InputSocketType, argv[i], 0);
   ++i;
   int inputRcvBufSize;
   stringstream(argv[i]) >> inputRcvBufSize;
-  proxy.SetProperty(FairMQProxy::InputRcvBufSize, inputRcvBufSize, 0);
+  buffer.SetProperty(FairMQBuffer::InputRcvBufSize, inputRcvBufSize, 0);
   ++i;
-  proxy.SetProperty(FairMQProxy::InputMethod, argv[i], 0);
+  buffer.SetProperty(FairMQBuffer::InputMethod, argv[i], 0);
   ++i;
-  proxy.SetProperty(FairMQProxy::InputAddress, argv[i], 0);
+  buffer.SetProperty(FairMQBuffer::InputAddress, argv[i], 0);
   ++i;
 
-  proxy.SetProperty(FairMQProxy::OutputSocketType, argv[i], 0);
+  buffer.SetProperty(FairMQBuffer::OutputSocketType, argv[i], 0);
   ++i;
   int outputSndBufSize;
   stringstream(argv[i]) >> outputSndBufSize;
-  proxy.SetProperty(FairMQProxy::OutputSndBufSize, outputSndBufSize, 0);
+  buffer.SetProperty(FairMQBuffer::OutputSndBufSize, outputSndBufSize, 0);
   ++i;
-  proxy.SetProperty(FairMQProxy::OutputMethod, argv[i], 0);
+  buffer.SetProperty(FairMQBuffer::OutputMethod, argv[i], 0);
   ++i;
-  proxy.SetProperty(FairMQProxy::OutputAddress, argv[i], 0);
+  buffer.SetProperty(FairMQBuffer::OutputAddress, argv[i], 0);
   ++i;
 
 
-  proxy.ChangeState(FairMQProxy::SETOUTPUT);
-  proxy.ChangeState(FairMQProxy::SETINPUT);
-  proxy.ChangeState(FairMQProxy::RUN);
+  buffer.ChangeState(FairMQBuffer::SETOUTPUT);
+  buffer.ChangeState(FairMQBuffer::SETINPUT);
+  buffer.ChangeState(FairMQBuffer::RUN);
+
 
 
   char ch;
   cin.get(ch);
 
-  proxy.ChangeState(FairMQProxy::STOP);
-  proxy.ChangeState(FairMQProxy::END);
+  buffer.ChangeState(FairMQBuffer::STOP);
+  buffer.ChangeState(FairMQBuffer::END);
 
   return 0;
 }

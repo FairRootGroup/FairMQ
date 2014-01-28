@@ -50,10 +50,10 @@ set(SRCS
 if(NANOMSG_FOUND)
   set(SRCS
     ${SRCS}
-    "FairMQTransportFactoryNN.cxx"
-    "FairMQMessageNN.cxx"
-    "FairMQSocketNN.cxx"
-    "FairMQPollerNN.cxx"
+    "nanomsg/FairMQTransportFactoryNN.cxx"
+    "nanomsg/FairMQMessageNN.cxx"
+    "nanomsg/FairMQSocketNN.cxx"
+    "nanomsg/FairMQPollerNN.cxx"
   )
   set(DEPENDENCIES
     ${NANOMSG_LIBRARY_SHARED}
@@ -61,11 +61,11 @@ if(NANOMSG_FOUND)
 else(NANOMSG_FOUND)
   set(SRCS
     ${SRCS}
-    "FairMQTransportFactoryZMQ.cxx"
-    "FairMQMessageZMQ.cxx"
-    "FairMQSocketZMQ.cxx"
-    "FairMQPollerZMQ.cxx"
-    "FairMQContextZMQ.cxx"
+    "zeromq/FairMQTransportFactoryZMQ.cxx"
+    "zeromq/FairMQMessageZMQ.cxx"
+    "zeromq/FairMQSocketZMQ.cxx"
+    "zeromq/FairMQPollerZMQ.cxx"
+    "zeromq/FairMQContextZMQ.cxx"
   )
   set(DEPENDENCIES
     ${ZMQ_LIBRARY_SHARED}
@@ -83,7 +83,30 @@ set(LIBRARY_NAME FairMQ)
 GENERATE_LIBRARY()
 
 set(Exe_Names bsampler buffer splitter merger sink proxy n_one_merger one_n_splitter)
-set(Exe_Source runBenchmarkSampler.cxx runBuffer.cxx runSplitter.cxx runMerger.cxx runSink.cxx runProxy.cxx runNToOneMerger.cxx runOneToNSplitter.cxx)
+
+if(NANOMSG_FOUND)
+  set(Exe_Source 
+    nanomsg/runBenchmarkSampler.cxx
+    nanomsg/runBuffer.cxx
+    nanomsg/runSplitter.cxx
+    nanomsg/runMerger.cxx
+    nanomsg/runSink.cxx
+    nanomsg/runProxy.cxx
+    nanomsg/runNToOneMerger.cxx
+    nanomsg/runOneToNSplitter.cxx
+  )
+else(NANOMSG_FOUND)
+  set(Exe_Source 
+    zeromq/runBenchmarkSampler.cxx
+    zeromq/runBuffer.cxx
+    zeromq/runSplitter.cxx
+    zeromq/runMerger.cxx
+    zeromq/runSink.cxx
+    zeromq/runProxy.cxx
+    zeromq/runNToOneMerger.cxx
+    zeromq/runOneToNSplitter.cxx
+  )
+endif(NANOMSG_FOUND)
 
 list(LENGTH Exe_Names _length)
 math(EXPR _length ${_length}-1)

@@ -1,7 +1,7 @@
 /**
  * runBenchmarkSampler.cxx
  *
- * @since Apr 23, 2013-04-23
+ * @since 2013-04-23
  * @author D. Klein, A. Rybalchenko
  */
 
@@ -10,8 +10,7 @@
 
 #include "FairMQLogger.h"
 #include "FairMQBenchmarkSampler.h"
-#include "FairMQTransportFactoryZMQ.h"
-// #include "FairMQTransportFactoryNN.h"
+#include "FairMQTransportFactoryNN.h"
 
 using std::cout;
 using std::cin;
@@ -57,8 +56,7 @@ int main(int argc, char** argv)
   logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
-  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-  // FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
+  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
   sampler.SetTransport(transportFactory);
 
   int i = 1;

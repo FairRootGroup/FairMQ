@@ -1,5 +1,5 @@
 /**
- * runNToOneMerger.cxx
+ * runMerger.cxx
  *
  * @since 2012-12-06
  * @author D. Klein, A. Rybalchenko
@@ -10,8 +10,7 @@
 
 #include "FairMQLogger.h"
 #include "FairMQMerger.h"
-#include "FairMQTransportFactoryZMQ.h"
-// #include "FairMQTransportFactoryNN.h"
+#include "FairMQTransportFactoryNN.h"
 
 using std::cout;
 using std::cin;
@@ -44,13 +43,11 @@ static void s_catch_signals (void)
 
 int main(int argc, char** argv)
 {
-  if ( argc < 16 || (argc-8)%4!=0 ) {
-    cout << "Usage: merger \tID numIoTreads numInputs\n"
+  if ( argc != 15 ) {
+    cout << "Usage: merger \tID numIoTreads\n"
               << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
               << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
-              << "\t\t...\n"
-              << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n"
-              << argc << endl;
+              << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n" << endl;
     return 1;
   }
 
@@ -60,8 +57,7 @@ int main(int argc, char** argv)
   logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
-  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-  // FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
+  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
   merger.SetTransport(transportFactory);
 
   int i = 1;
@@ -74,29 +70,33 @@ int main(int argc, char** argv)
   merger.SetProperty(FairMQMerger::NumIoThreads, numIoThreads);
   ++i;
 
-  int numInputs;
-  stringstream(argv[i]) >> numInputs;
-  merger.SetProperty(FairMQMerger::NumInputs, numInputs);
-  ++i;
-
+  merger.SetProperty(FairMQMerger::NumInputs, 2);
   merger.SetProperty(FairMQMerger::NumOutputs, 1);
 
 
   merger.ChangeState(FairMQMerger::INIT);
 
 
-  for (int iInput = 0; iInput < numInputs; iInput++ ) {
-    merger.SetProperty(FairMQMerger::InputSocketType, argv[i], iInput);
-    ++i;
-    int inputRcvBufSize;
-    stringstream(argv[i]) >> inputRcvBufSize;
-    merger.SetProperty(FairMQMerger::InputRcvBufSize, inputRcvBufSize, iInput);
-    ++i;
-    merger.SetProperty(FairMQMerger::InputMethod, argv[i], iInput);
-    ++i;
-    merger.SetProperty(FairMQMerger::InputAddress, argv[i], iInput);
-    ++i;
-  }
+  merger.SetProperty(FairMQMerger::InputSocketType, argv[i], 0);
+  ++i;
+  int inputRcvBufSize;
+  stringstream(argv[i]) >> inputRcvBufSize;
+  merger.SetProperty(FairMQMerger::InputRcvBufSize, inputRcvBufSize, 0);
+  ++i;
+  merger.SetProperty(FairMQMerger::InputMethod, argv[i], 0);
+  ++i;
+  merger.SetProperty(FairMQMerger::InputAddress, argv[i], 0);
+  ++i;
+
+  merger.SetProperty(FairMQMerger::InputSocketType, argv[i], 1);
+  ++i;
+  stringstream(argv[i]) >> inputRcvBufSize;
+  merger.SetProperty(FairMQMerger::InputRcvBufSize, inputRcvBufSize, 1);
+  ++i;
+  merger.SetProperty(FairMQMerger::InputMethod, argv[i], 1);
+  ++i;
+  merger.SetProperty(FairMQMerger::InputAddress, argv[i], 1);
+  ++i;
 
   merger.SetProperty(FairMQMerger::OutputSocketType, argv[i], 0);
   ++i;

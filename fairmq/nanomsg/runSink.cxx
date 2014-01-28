@@ -10,8 +10,7 @@
 
 #include "FairMQLogger.h"
 #include "FairMQSink.h"
-#include "FairMQTransportFactoryZMQ.h"
-// #include "FairMQTransportFactoryNN.h"
+#include "FairMQTransportFactoryNN.h"
 
 using std::cout;
 using std::cin;
@@ -57,8 +56,7 @@ int main(int argc, char** argv)
   logmsg << "PID: " << getpid();
   FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
 
-  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-  // FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
+  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
   sink.SetTransport(transportFactory);
 
   int i = 1;
