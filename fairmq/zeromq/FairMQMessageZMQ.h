@@ -2,7 +2,7 @@
  * FairMQMessageZMQ.h
  *
  * @since 2014-01-17
- * @author: A. Rybalchenko
+ * @author A. Rybalchenko
  */
 
 #ifndef FAIRMQMESSAGEZMQ_H_

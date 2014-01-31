@@ -2,7 +2,7 @@
  * FairMQMessageNN.cxx
  *
  * @since 2013-12-05
- * @author: A. Rybalchenko
+ * @author A. Rybalchenko
  */
 
 #include <cstring>

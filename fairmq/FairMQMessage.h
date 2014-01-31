@@ -2,7 +2,7 @@
  * FairMQMessage.h
  *
  * @since 2012-12-05
- * @author: D. Klein, A. Rybalchenko
+ * @author D. Klein, A. Rybalchenko
  */
 
 #ifndef FAIRMQMESSAGE_H_
