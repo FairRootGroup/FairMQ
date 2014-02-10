@@ -25,13 +25,13 @@ void FairMQStateMachine::ChangeState(int event)
     switch(event) {
 
     case INIT:
-      FairMQLogger::GetInstance()->Log(FairMQLogger::STATE, "IDLE --init--> INITIALIZING");
+      LOG(STATE) << "IDLE --init--> INITIALIZING";
       fState = INITIALIZING;
       Init();
       return;
 
     case END:
-      FairMQLogger::GetInstance()->Log(FairMQLogger::STATE, "IDLE --end--> (o)");
+      LOG(STATE) << "IDLE --end--> (o)";
       return;
 
     default:
@@ -44,7 +44,7 @@ void FairMQStateMachine::ChangeState(int event)
     switch(event) {
 
     case SETOUTPUT:
-      FairMQLogger::GetInstance()->Log(FairMQLogger::STATE, "INITIALIZING --bind--> SETTINGOUTPUT");
+      LOG(STATE) << "INITIALIZING --bind--> SETTINGOUTPUT";
       fState = SETTINGOUTPUT;
       InitOutput();
       return;
@@ -59,7 +59,7 @@ void FairMQStateMachine::ChangeState(int event)
     switch(event) {
 
     case SETINPUT:
-      FairMQLogger::GetInstance()->Log(FairMQLogger::STATE, "SETTINGOUTPUT --connect--> SETTINGINPUT");
+      LOG(STATE) << "SETTINGOUTPUT --connect--> SETTINGINPUT";
       fState = SETTINGINPUT;
       InitInput();
       return;
@@ -74,13 +74,13 @@ void FairMQStateMachine::ChangeState(int event)
     switch(event) {
 
     case PAUSE:
-      FairMQLogger::GetInstance()->Log(FairMQLogger::STATE, "SETTINGINPUT --pause--> WAITING");
+      LOG(STATE) << "SETTINGINPUT --pause--> WAITING";
       fState = WAITING;
       Pause();
       return;
 
     case RUN:
-      FairMQLogger::GetInstance()->Log(FairMQLogger::STATE, "SETTINGINPUT --run--> RUNNING");
+      LOG(STATE) << "SETTINGINPUT --run--> RUNNING";
       fState = RUNNING;
       running_state = boost::thread(boost::bind(&FairMQStateMachine::Run, this));
       return;
@@ -95,13 +95,13 @@ void FairMQStateMachine::ChangeState(int event)
     switch(event) {
 
     case RUN:
-      FairMQLogger::GetInstance()->Log(FairMQLogger::STATE, "WAITING --run--> RUNNING");
+      LOG(STATE) << "WAITING --run--> RUNNING";
       fState = RUNNING;
       running_state = boost::thread(boost::bind(&FairMQStateMachine::Run, this));
       return;
 
     case STOP:
-      FairMQLogger::GetInstance()->Log(FairMQLogger::STATE, "WAITING --stop--> IDLE");
+      LOG(STATE) << "WAITING --stop--> IDLE";
       fState = IDLE;
       Shutdown();
       return;
@@ -116,13 +116,13 @@ void FairMQStateMachine::ChangeState(int event)
     switch(event) {
 
     case PAUSE:
-      FairMQLogger::GetInstance()->Log(FairMQLogger::STATE, "RUNNING --pause--> WAITING");
+      LOG(STATE) << "RUNNING --pause--> WAITING";
       fState = WAITING;
       running_state.join();
       return;
 
     case STOP:
-      FairMQLogger::GetInstance()->Log(FairMQLogger::STATE, "RUNNING --stop--> IDLE");
+      LOG(STATE) << "RUNNING --stop--> IDLE";
       fState = IDLE;
       running_state.join();
       Shutdown();

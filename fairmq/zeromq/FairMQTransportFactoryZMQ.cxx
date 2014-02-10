@@ -9,7 +9,7 @@
 
 FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ()
 {
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, "Using ZeroMQ library");
+  LOG(INFO) << "Using ZeroMQ library";
 }
 
 FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage()

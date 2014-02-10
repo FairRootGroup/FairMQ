@@ -9,7 +9,7 @@
 
 FairMQTransportFactoryNN::FairMQTransportFactoryNN()
 {
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, "Using nanomsg library");
+  LOG(INFO) << "Using nanonsg library";
 }
 
 FairMQMessage* FairMQTransportFactoryNN::CreateMessage()

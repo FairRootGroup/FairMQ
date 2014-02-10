@@ -32,7 +32,7 @@ void FairMQBenchmarkSampler::Init()
 
 void FairMQBenchmarkSampler::Run()
 {
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> Run <<<<<<<");
+  LOG(INFO) << ">>>>>>> Run <<<<<<<";
   //boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
   boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
@@ -103,9 +103,7 @@ void FairMQBenchmarkSampler::Log(int intervalInMs)
     megabytesPerSecond = ((double) (bytesNew - bytes) / (1024. * 1024.)) / (double) timeSinceLastLog_ms * 1000.;
     messagesPerSecond = (double) (messagesNew - messages) / (double) timeSinceLastLog_ms * 1000.;
 
-    stringstream logmsg;
-    logmsg << "send " << messagesPerSecond << " msg/s, " << megabytesPerSecond << " MB/s";
-    FairMQLogger::GetInstance()->Log(FairMQLogger::DEBUG, logmsg.str());
+    LOG(DEBUG) << "send " << messagesPerSecond << " msg/s, " << megabytesPerSecond << " MB/s";
 
     bytes = bytesNew;
     messages = messagesNew;

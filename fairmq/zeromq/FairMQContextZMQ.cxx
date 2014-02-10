@@ -13,16 +13,12 @@ FairMQContextZMQ::FairMQContextZMQ(int numIoThreads)
 {
   fContext = zmq_ctx_new ();
   if (fContext == NULL){
-    stringstream logmsg;
-    logmsg << "failed creating context, reason: " << zmq_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+    LOG(ERROR) << "failed creating context, reason: " << zmq_strerror(errno);
   }
 
   int rc = zmq_ctx_set (fContext, ZMQ_IO_THREADS, numIoThreads);
   if (rc != 0){
-    stringstream logmsg;
-    logmsg << "failed configuring context, reason: " << zmq_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+    LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
   }
 }
 
@@ -44,9 +40,7 @@ void FairMQContextZMQ::Close()
 
   int rc = zmq_ctx_destroy (fContext);
   if (rc != 0) {
-    stringstream logmsg;
-    logmsg << "failed closing context, reason: " << zmq_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+    LOG(ERROR) << "failed closing context, reason: " << zmq_strerror(errno);
   }
 
   fContext = NULL;

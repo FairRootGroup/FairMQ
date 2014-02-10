@@ -18,30 +18,25 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num) :
   fMessagesTx(0),
   fMessagesRx(0)
 {
-  stringstream id; // TODO
+  stringstream id;
   id << type << "." << num;
   fId = id.str();
 
   fSocket = zmq_socket(fContext->GetContext(), GetConstant(type));
+
   int rc = zmq_setsockopt(fSocket, ZMQ_IDENTITY, &fId, fId.length());
   if (rc != 0) {
-    stringstream logmsg;
-    logmsg << "failed setting socket option, reason: " << zmq_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+    LOG(ERROR) << "failed setting socket option, reason: " << zmq_strerror(errno);
   }
 
   if (type == "sub") {
     rc = zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, NULL, 0);
     if (rc != 0) {
-      stringstream logmsg2;
-      logmsg2 << "failed setting socket option, reason: " << zmq_strerror(errno);
-      FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg2.str());
+      LOG(ERROR) << "failed setting socket option, reason: " << zmq_strerror(errno);
     }
   }
 
-  stringstream logmsg3;
-  logmsg3 << "created socket #" << fId;
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg3.str());
+  LOG(INFO) << "created socket #" << fId;
 }
 
 string FairMQSocketZMQ::GetId()
@@ -51,29 +46,21 @@ string FairMQSocketZMQ::GetId()
 
 void FairMQSocketZMQ::Bind(const string& address)
 {
-  stringstream logmsg;
-  logmsg << "bind socket #" << fId << " on " << address;
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
+  LOG(INFO) << "bind socket #" << fId << " on " << address;
 
   int rc = zmq_bind (fSocket, address.c_str());
   if (rc != 0) {
-    stringstream logmsg2;
-    logmsg2 << "failed binding socket #" << fId << ", reason: " << zmq_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg2.str());
+    LOG(ERROR) << "failed binding socket #" << fId << ", reason: " << zmq_strerror(errno);
   }
 }
 
 void FairMQSocketZMQ::Connect(const string& address)
 {
-  stringstream logmsg;
-  logmsg << "connect socket #" << fId << " on " << address;
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
+  LOG(INFO) << "connect socket #" << fId << " on " << address;
 
   int rc = zmq_connect (fSocket, address.c_str());
   if (rc != 0) {
-    stringstream logmsg2;
-    logmsg2 << "failed connecting socket #" << fId << ", reason: " << zmq_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg2.str());
+    LOG(ERROR) << "failed connecting socket #" << fId << ", reason: " << zmq_strerror(errno);
   }
 }
 
@@ -88,9 +75,7 @@ size_t FairMQSocketZMQ::Send(FairMQMessage* msg)
   if (zmq_errno() == EAGAIN){
     return false;
   }
-  stringstream logmsg;
-  logmsg << "failed sending on socket #" << fId << ", reason: " << zmq_strerror(errno);
-  FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+  LOG(ERROR) << "failed sending on socket #" << fId << ", reason: " << zmq_strerror(errno);
   return nbytes;
 }
 
@@ -105,9 +90,7 @@ size_t FairMQSocketZMQ::Receive(FairMQMessage* msg)
   if (zmq_errno() == EAGAIN){
     return false;
   }
-  stringstream logmsg;
-  logmsg << "failed receiving on socket #" << fId << ", reason: " << zmq_strerror(errno);
-  FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+  LOG(ERROR) << "failed receiving on socket #" << fId << ", reason: " << zmq_strerror(errno);
   return nbytes;
 }
 
@@ -119,9 +102,7 @@ void FairMQSocketZMQ::Close()
 
   int rc = zmq_close (fSocket);
   if (rc != 0) {
-    stringstream logmsg;
-    logmsg << "failed closing socket, reason: " << zmq_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+    LOG(ERROR) << "failed closing socket, reason: " << zmq_strerror(errno);
   }
 
   fSocket = NULL;
@@ -142,9 +123,7 @@ void FairMQSocketZMQ::SetOption(const string& option, const void* value, size_t 
 {
   int rc = zmq_setsockopt(fSocket, GetConstant(option), value, valueSize);
   if (rc < 0) {
-    stringstream logmsg;
-    logmsg << "failed setting socket option, reason: " << zmq_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+    LOG(ERROR) << "failed setting socket option, reason: " << zmq_strerror(errno);
   }
 }
 

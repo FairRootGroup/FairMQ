@@ -23,7 +23,7 @@ FairMQMerger::~FairMQMerger()
 
 void FairMQMerger::Run()
 {
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> Run <<<<<<<");
+  LOG(INFO) << ">>>>>>> Run <<<<<<<";
 
   boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 

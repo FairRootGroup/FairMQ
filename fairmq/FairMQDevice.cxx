@@ -22,10 +22,8 @@ FairMQDevice::FairMQDevice() :
 
 void FairMQDevice::Init()
 {
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> Init <<<<<<<");
-  stringstream logmsg;
-  logmsg << "numIoThreads: " << fNumIoThreads;
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
+  LOG(INFO) << ">>>>>>> Init <<<<<<<";
+  LOG(INFO) << "numIoThreads: " << fNumIoThreads;
 
   // fPayloadContext = new FairMQContextZMQ(fNumIoThreads);
 
@@ -59,7 +57,7 @@ void FairMQDevice::Init()
 
 void FairMQDevice::InitInput()
 {
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> InitInput <<<<<<<");
+  LOG(INFO) << ">>>>>>> InitInput <<<<<<<";
 
   for (int i = 0; i < fNumInputs; ++i) {
     FairMQSocket* socket = fTransportFactory->CreateSocket(fInputSocketType->at(i), i);
@@ -82,7 +80,7 @@ void FairMQDevice::InitInput()
 
 void FairMQDevice::InitOutput()
 {
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> InitOutput <<<<<<<");
+  LOG(INFO) << ">>>>>>> InitOutput <<<<<<<";
 
   for (int i = 0; i < fNumOutputs; ++i) {
     FairMQSocket* socket = fTransportFactory->CreateSocket(fOutputSocketType->at(i), i);
@@ -298,9 +296,7 @@ void FairMQDevice::LogSocketRates()
         messagesPerSecondInput[i] = (double) (messagesInputNew[i] - messagesInput[i]) / (double) timeSinceLastLog_ms * 1000.;
         messagesInput[i] = messagesInputNew[i];
 
-        stringstream logmsg;
-        logmsg << "#" << fId << "." << (*itr)->GetId() << ": " << messagesPerSecondInput[i] << " msg/s, " << megabytesPerSecondInput[i] << " MB/s";
-        FairMQLogger::GetInstance()->Log(FairMQLogger::DEBUG, logmsg.str());
+        LOG(DEBUG) << "#" << fId << "." << (*itr)->GetId() << ": " << messagesPerSecondInput[i] << " msg/s, " << megabytesPerSecondInput[i] << " MB/s";
 
         // Temp stuff for process termination
         if ( !receivedSomething && messagesPerSecondInput[i] > 0 ) {
@@ -326,9 +322,7 @@ void FairMQDevice::LogSocketRates()
         messagesPerSecondOutput[i] = (double) (messagesOutputNew[i] - messagesOutput[i]) / (double) timeSinceLastLog_ms * 1000.;
         messagesOutput[i] = messagesOutputNew[i];
 
-        stringstream logmsg;
-        logmsg << "#" << fId << "." << (*itr)->GetId() << ": " << messagesPerSecondOutput[i] << " msg/s, " << megabytesPerSecondOutput[i] << " MB/s";
-        FairMQLogger::GetInstance()->Log(FairMQLogger::DEBUG, logmsg.str());
+        LOG(DEBUG) << "#" << fId << "." << (*itr)->GetId() << ": " << messagesPerSecondOutput[i] << " msg/s, " << megabytesPerSecondOutput[i] << " MB/s";
 
         // Temp stuff for process termination
         if ( !sentSomething && messagesPerSecondOutput[i] > 0 ) {
@@ -377,7 +371,7 @@ void FairMQDevice::LogSocketRates()
   delete[] megabytesPerSecondOutput;
   delete[] messagesPerSecondOutput;
 
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> stopping rateLogger <<<<<<<");
+  LOG(INFO) << ">>>>>>> stopping rateLogger <<<<<<<";
 }
 
 void FairMQDevice::ListenToCommands()
@@ -386,18 +380,18 @@ void FairMQDevice::ListenToCommands()
 
 void FairMQDevice::Shutdown()
 {
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> closing inputs <<<<<<<");
+  LOG(INFO) << ">>>>>>> closing inputs <<<<<<<";
   for( vector<FairMQSocket*>::iterator itr = fPayloadInputs->begin(); itr != fPayloadInputs->end(); itr++ ) {
     (*itr)->Close();
   }
 
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> closing outputs <<<<<<<");
+  LOG(INFO) << ">>>>>>> closing outputs <<<<<<<";
   for( vector<FairMQSocket*>::iterator itr = fPayloadOutputs->begin(); itr != fPayloadOutputs->end(); itr++ ) {
     (*itr)->Close();
   }
 
-  //FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, ">>>>>>> closing context <<<<<<<");
-  //fPayloadContext->Close();
+  // LOG(INFO) << ">>>>>>> closing context <<<<<<<";
+  // fPayloadContext->Close();
 }
 
 FairMQDevice::~FairMQDevice()

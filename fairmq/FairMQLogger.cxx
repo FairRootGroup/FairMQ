@@ -5,47 +5,25 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include <iostream>
-#include <iomanip>
-#include <ctime>
+#include <string>
+#include <stdio.h>
 
 #include "FairMQLogger.h"
 
-using std::cin;
+using std::string;
 using std::cout;
 using std::endl;
 
-FairMQLogger* FairMQLogger::instance = NULL;
-
-FairMQLogger* FairMQLogger::GetInstance()
-{
-  if (instance == NULL) {
-    instance = new FairMQLogger();
-  }
-  return instance;
-}
-
-FairMQLogger* FairMQLogger::InitInstance(const string& bindAddress)
-{
-  instance = new FairMQLogger(bindAddress);
-  return instance;
-}
-
-FairMQLogger::FairMQLogger() :
-  fBindAddress("")
-{
-}
-
-FairMQLogger::FairMQLogger(const string& bindAddress) :
-  fBindAddress(bindAddress)
+FairMQLogger::FairMQLogger()
 {
 }
 
 FairMQLogger::~FairMQLogger()
 {
+  cout << os.str() << endl;
 }
 
-void FairMQLogger::Log(int type, const string& logmsg)
+std::ostringstream& FairMQLogger::Log(int type)
 {
   timestamp_t tm = get_timestamp();
   timestamp_t ms = tm / 1000.0L;
@@ -72,7 +50,9 @@ void FairMQLogger::Log(int type, const string& logmsg)
       break;
   }
 
-  cout << "[\033[01;36m" <<  mbstr << fractional_seconds << "\033[0m]" << "[" << type_str << "]" << " " << logmsg << endl;
+  os << "[\033[01;36m" <<  mbstr << fractional_seconds << "\033[0m]" << "[" << type_str << "]" << " ";
+
+  return os;
 }
 
 timestamp_t get_timestamp ()

@@ -25,9 +25,7 @@ FairMQSocketNN::FairMQSocketNN(const string& type, int num) :
     nn_setsockopt(fSocket, NN_SUB, NN_SUB_SUBSCRIBE, NULL, 0);
   }
 
-  stringstream logmsg;
-  logmsg << "created socket #" << fId;
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
+  LOG(INFO) << "created socket #" << fId;
 }
 
 string FairMQSocketNN::GetId()
@@ -37,29 +35,21 @@ string FairMQSocketNN::GetId()
 
 void FairMQSocketNN::Bind(const string& address)
 {
-  stringstream logmsg;
-  logmsg << "bind socket #" << fId << " on " << address;
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
+  LOG(INFO) << "bind socket #" << fId << " on " << address;
 
   int eid = nn_bind(fSocket, address.c_str());
   if (eid < 0) {
-    stringstream logmsg2;
-    logmsg2 << "failed binding socket #" << fId << ", reason: " << nn_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg2.str());
+    LOG(ERROR) << "failed binding socket #" << fId << ", reason: " << nn_strerror(errno);
   }
 }
 
 void FairMQSocketNN::Connect(const string& address)
 {
-  stringstream logmsg;
-  logmsg << "connect socket #" << fId << " to " << address;
-  FairMQLogger::GetInstance()->Log(FairMQLogger::INFO, logmsg.str());
+  LOG(INFO) << "connect socket #" << fId << " to " << address;
 
   int eid = nn_connect(fSocket, address.c_str());
   if (eid < 0) {
-    stringstream logmsg2;
-    logmsg2 << "failed connecting socket #" << fId << ", reason: " << nn_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg2.str());
+    LOG(ERROR) << "failed connecting socket #" << fId << ", reason: " << nn_strerror(errno);
   }
 }
 
@@ -68,9 +58,7 @@ size_t FairMQSocketNN::Send(FairMQMessage* msg)
   void* ptr = msg->GetMessage();
   int rc = nn_send(fSocket, &ptr, NN_MSG, 0);
   if (rc < 0) {
-    stringstream logmsg;
-    logmsg << "failed sending on socket #" << fId << ", reason: " << nn_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+    LOG(ERROR) << "failed sending on socket #" << fId << ", reason: " << nn_strerror(errno);
   } else {
     fBytesTx += rc;
     ++fMessagesTx;
@@ -84,9 +72,7 @@ size_t FairMQSocketNN::Receive(FairMQMessage* msg)
   void* ptr = NULL;
   int rc = nn_recv(fSocket, &ptr, NN_MSG, 0);
   if (rc < 0) {
-    stringstream logmsg;
-    logmsg << "failed receiving on socket #" << fId << ", reason: " << nn_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+    LOG(ERROR) << "failed receiving on socket #" << fId << ", reason: " << nn_strerror(errno);
   } else {
     fBytesRx += rc;
     ++fMessagesRx;
@@ -115,9 +101,7 @@ void FairMQSocketNN::SetOption(const string& option, const void* value, size_t v
 {
   int rc = nn_setsockopt(fSocket, NN_SOL_SOCKET, GetConstant(option), value, valueSize);
   if (rc < 0) {
-    stringstream logmsg;
-    logmsg << "failed setting socket option, reason: " << nn_strerror(errno);
-    FairMQLogger::GetInstance()->Log(FairMQLogger::ERROR, logmsg.str());
+    LOG(ERROR) << "failed setting socket option, reason: " << nn_strerror(errno);
   }
 }
 
