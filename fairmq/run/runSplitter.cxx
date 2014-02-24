@@ -10,7 +10,12 @@
 
 #include "FairMQLogger.h"
 #include "FairMQSplitter.h"
-#include "FairMQTransportFactoryZMQ.h"
+
+#ifdef NANOMSG
+  #include "FairMQTransportFactoryNN.h"
+#else
+  #include "FairMQTransportFactoryZMQ.h"
+#endif
 
 using std::cout;
 using std::cin;
@@ -43,11 +48,13 @@ static void s_catch_signals (void)
 
 int main(int argc, char** argv)
 {
-  if ( argc != 15 ) {
-    cout << "Usage: splitter \tID numIoTreads\n"
+  if ( argc < 16 || (argc - 8) % 4 != 0 ) {
+    cout << "Usage: splitter \tID numIoTreads numOutputs\n"
               << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
               << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n"
-              << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n" << endl;
+              << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n"
+              << "\t\t..."
+              << argc << " arguments provided" << endl;
     return 1;
   }
 
@@ -55,7 +62,12 @@ int main(int argc, char** argv)
 
   LOG(INFO) << "PID: " << getpid();
 
+#ifdef NANOMSG
+  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
+#else
   FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+#endif
+
   splitter.SetTransport(transportFactory);
 
   int i = 1;
@@ -69,11 +81,13 @@ int main(int argc, char** argv)
   ++i;
 
   splitter.SetProperty(FairMQSplitter::NumInputs, 1);
-  splitter.SetProperty(FairMQSplitter::NumOutputs, 2);
 
+  int numOutputs;
+  stringstream(argv[i]) >> numOutputs;
+  splitter.SetProperty(FairMQSplitter::NumOutputs, numOutputs);
+  ++i;
 
   splitter.ChangeState(FairMQSplitter::INIT);
-
 
   splitter.SetProperty(FairMQSplitter::InputSocketType, argv[i], 0);
   ++i;
@@ -86,27 +100,18 @@ int main(int argc, char** argv)
   splitter.SetProperty(FairMQSplitter::InputAddress, argv[i], 0);
   ++i;
 
-  splitter.SetProperty(FairMQSplitter::OutputSocketType, argv[i], 0);
-  ++i;
   int outputSndBufSize;
-  stringstream(argv[i]) >> outputSndBufSize;
-  splitter.SetProperty(FairMQSplitter::OutputSndBufSize, outputSndBufSize, 0);
-  ++i;
-  splitter.SetProperty(FairMQSplitter::OutputMethod, argv[i], 0);
-  ++i;
-  splitter.SetProperty(FairMQSplitter::OutputAddress, argv[i], 0);
-  ++i;
-
-  splitter.SetProperty(FairMQSplitter::OutputSocketType, argv[i], 1);
-  ++i;
-  stringstream(argv[i]) >> outputSndBufSize;
-  splitter.SetProperty(FairMQSplitter::OutputSndBufSize, outputSndBufSize, 1);
-  ++i;
-  splitter.SetProperty(FairMQSplitter::OutputMethod, argv[i], 1);
-  ++i;
-  splitter.SetProperty(FairMQSplitter::OutputAddress, argv[i], 1);
-  ++i;
-
+  for (int iOutput = 0; iOutput < numOutputs; iOutput++) {
+    splitter.SetProperty(FairMQSplitter::OutputSocketType, argv[i], iOutput);
+    ++i;
+    stringstream(argv[i]) >> outputSndBufSize;
+    splitter.SetProperty(FairMQSplitter::OutputSndBufSize, outputSndBufSize, iOutput);
+    ++i;
+    splitter.SetProperty(FairMQSplitter::OutputMethod, argv[i], iOutput);
+    ++i;
+    splitter.SetProperty(FairMQSplitter::OutputAddress, argv[i], iOutput);
+    ++i;
+  }
 
   splitter.ChangeState(FairMQSplitter::SETOUTPUT);
   splitter.ChangeState(FairMQSplitter::SETINPUT);

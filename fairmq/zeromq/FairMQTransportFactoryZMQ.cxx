@@ -5,11 +5,15 @@
  * @author: A. Rybalchenko
  */
 
+#include "zmq.h"
+
 #include "FairMQTransportFactoryZMQ.h"
 
 FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ()
 {
-  LOG(INFO) << "Using ZeroMQ library";
+  int major, minor, patch;
+  zmq_version (&major, &minor, &patch);
+  LOG(INFO) << "Using ZeroMQ library, version: " << major << "." << minor << "." << patch;
 }
 
 FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage()

@@ -315,6 +315,11 @@ void FairMQDevice::LogSocketRates()
       i = 0;
 
       for ( vector<FairMQSocket*>::iterator itr = fPayloadOutputs->begin(); itr != fPayloadOutputs->end(); itr++ ) {
+
+        // #ifdef NANOMSG
+        //   LOG(ERROR) << "OK THEN";
+        // #endif
+
         bytesOutputNew[i] = (*itr)->GetBytesTx();
         megabytesPerSecondOutput[i] = ((double) (bytesOutputNew[i] - bytesOutput[i]) / (1024. * 1024.)) / (double) timeSinceLastLog_ms * 1000.;
         bytesOutput[i] = bytesOutputNew[i];

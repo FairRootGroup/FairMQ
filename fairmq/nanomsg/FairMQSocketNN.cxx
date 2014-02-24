@@ -8,6 +8,7 @@
 #include <sstream>
 
 #include "FairMQSocketNN.h"
+#include "FairMQMessageNN.h"
 #include "FairMQLogger.h"
 
 FairMQSocketNN::FairMQSocketNN(const string& type, int num) :
@@ -62,6 +63,7 @@ size_t FairMQSocketNN::Send(FairMQMessage* msg)
   } else {
     fBytesTx += rc;
     ++fMessagesTx;
+    static_cast<FairMQMessageNN*>(msg)->fReceiving = false;
   }
 
   return rc;
@@ -77,6 +79,7 @@ size_t FairMQSocketNN::Receive(FairMQMessage* msg)
     fBytesRx += rc;
     ++fMessagesRx;
     msg->SetMessage(ptr, rc);
+    static_cast<FairMQMessageNN*>(msg)->fReceiving = true;
   }
 
   return rc;

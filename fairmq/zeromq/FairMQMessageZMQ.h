@@ -40,7 +40,7 @@ class FairMQMessageZMQ : public FairMQMessage
     virtual ~FairMQMessageZMQ();
 
   private:
-    zmq_msg_t* fMessage;
+    zmq_msg_t fMessage;
 };
 
 #endif /* FAIRMQMESSAGEZMQ_H_ */

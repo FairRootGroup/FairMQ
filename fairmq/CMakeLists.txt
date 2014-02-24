@@ -3,15 +3,25 @@ set(INCLUDE_DIRECTORIES
   ${Boost_INCLUDE_DIR}
 )
 
+if(PROTOBUF_FOUND)
+  set(INCLUDE_DIRECTORIES
+    ${INCLUDE_DIRECTORIES}
+    ${PROTOBUF_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}/fairmq/prototest
+  )
+endif(PROTOBUF_FOUND)
+
 if(NANOMSG_FOUND)
   set(INCLUDE_DIRECTORIES
     ${INCLUDE_DIRECTORIES}
     ${NANOMSG_LIBRARY_SHARED}
+    ${CMAKE_SOURCE_DIR}/fairmq/nanomsg
   )
 else(NANOMSG_FOUND)
   set(INCLUDE_DIRECTORIES
     ${INCLUDE_DIRECTORIES}
     ${ZMQ_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}/fairmq/zeromq
   )
 endif(NANOMSG_FOUND)
 
@@ -40,6 +50,21 @@ set(SRCS
   "FairMQPoller.cxx"
 )
 
+if(PROTOBUF_FOUND)
+  set(SRCS
+    ${SRCS}
+    "prototest/payload.pb.cc"
+    "prototest/FairMQProtoSampler.cxx"
+    "prototest/FairMQBinSampler.cxx"
+    "prototest/FairMQBinSink.cxx"
+    "prototest/FairMQProtoSink.cxx"
+  )
+  set(DEPENDENCIES
+    ${DEPENDENCIES}
+    ${PROTOBUF_LIBRARY}
+  )
+endif(PROTOBUF_FOUND)
+
 if(NANOMSG_FOUND)
   set(SRCS
     ${SRCS}
@@ -49,6 +74,7 @@ if(NANOMSG_FOUND)
     "nanomsg/FairMQPollerNN.cxx"
   )
   set(DEPENDENCIES
+    ${DEPENDENCIES}
     ${NANOMSG_LIBRARY_SHARED}
   )
 else(NANOMSG_FOUND)
@@ -61,6 +87,7 @@ else(NANOMSG_FOUND)
     "zeromq/FairMQContextZMQ.cxx"
   )
   set(DEPENDENCIES
+    ${DEPENDENCIES}
     ${ZMQ_LIBRARY_SHARED}
   )
 endif(NANOMSG_FOUND)
@@ -75,31 +102,36 @@ set(LIBRARY_NAME FairMQ)
 
 GENERATE_LIBRARY()
 
-set(Exe_Names bsampler buffer splitter merger sink proxy n_one_merger one_n_splitter)
+set(Exe_Names bsampler buffer splitter merger sink proxy)
 
-if(NANOMSG_FOUND)
-  set(Exe_Source 
-    nanomsg/runBenchmarkSampler.cxx
-    nanomsg/runBuffer.cxx
-    nanomsg/runSplitter.cxx
-    nanomsg/runMerger.cxx
-    nanomsg/runSink.cxx
-    nanomsg/runProxy.cxx
-    nanomsg/runNToOneMerger.cxx
-    nanomsg/runOneToNSplitter.cxx
-  )
-else(NANOMSG_FOUND)
-  set(Exe_Source 
-    zeromq/runBenchmarkSampler.cxx
-    zeromq/runBuffer.cxx
-    zeromq/runSplitter.cxx
-    zeromq/runMerger.cxx
-    zeromq/runSink.cxx
-    zeromq/runProxy.cxx
-    zeromq/runNToOneMerger.cxx
-    zeromq/runOneToNSplitter.cxx
-  )
-endif(NANOMSG_FOUND)
+if(PROTOBUF_FOUND)
+  set(Exe_Names
+      ${Exe_Names}
+      binsampler
+      protosampler
+      binsink
+      protosink
+      )
+endif(PROTOBUF_FOUND)
+
+set(Exe_Source 
+  run/runBenchmarkSampler.cxx
+  run/runBuffer.cxx
+  run/runSplitter.cxx
+  run/runMerger.cxx
+  run/runSink.cxx
+  run/runProxy.cxx
+)
+
+if(PROTOBUF_FOUND)
+  set(Exe_Source
+      ${Exe_Source}
+      run/runBinSampler.cxx
+      run/runProtoSampler.cxx
+      run/runBinSink.cxx
+      run/runProtoSink.cxx
+      )
+endif(PROTOBUF_FOUND)
 
 list(LENGTH Exe_Names _length)
 math(EXPR _length ${_length}-1)

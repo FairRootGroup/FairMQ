@@ -1,22 +1,26 @@
 /**
- * FairMQBenchmarkSampler.h
+ * FairMQBinSampler.h
  *
- * @since 2013-04-23
- * @author D. Klein, A. Rybalchenko
+ * @since 2014-02-24
+ * @author A. Rybalchenko
  */
 
-#ifndef FAIRMQBENCHMARKSAMPLER_H_
-#define FAIRMQBENCHMARKSAMPLER_H_
+#ifndef FAIRMQBINSAMPLER_H_
+#define FAIRMQBINSAMPLER_H_
 
 #include <string>
 
 #include "FairMQDevice.h"
 
-/**
- * Sampler to generate traffic for benchmarking.
- */
+struct Content {
+  double a;
+  double b;
+  int x;
+  int y;
+  int z;
+};
 
-class FairMQBenchmarkSampler: public FairMQDevice
+class FairMQBinSampler: public FairMQDevice
 {
   public:
     enum {
@@ -25,8 +29,8 @@ class FairMQBenchmarkSampler: public FairMQDevice
       EventSize,
       Last
     };
-    FairMQBenchmarkSampler();
-    virtual ~FairMQBenchmarkSampler();
+    FairMQBinSampler();
+    virtual ~FairMQBinSampler();
     void Log(int intervalInMs);
     void ResetEventCounter();
     virtual void SetProperty(const int key, const string& value, const int slot = 0);
@@ -42,4 +46,4 @@ class FairMQBenchmarkSampler: public FairMQDevice
     virtual void Run();
 };
 
-#endif /* FAIRMQBENCHMARKSAMPLER_H_ */
+#endif /* FAIRMQBINSAMPLER_H_ */

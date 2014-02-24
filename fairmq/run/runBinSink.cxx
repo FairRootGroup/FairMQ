@@ -9,8 +9,13 @@
 #include <csignal>
 
 #include "FairMQLogger.h"
-#include "FairMQSink.h"
-#include "FairMQTransportFactoryZMQ.h"
+#include "FairMQBinSink.h"
+
+#ifdef NANOMSG
+  #include "FairMQTransportFactoryNN.h"
+#else
+  #include "FairMQTransportFactoryZMQ.h"
+#endif
 
 using std::cout;
 using std::cin;
@@ -18,14 +23,14 @@ using std::endl;
 using std::stringstream;
 
 
-FairMQSink sink;
+FairMQBinSink sink;
 
 static void s_signal_handler (int signal)
 {
   cout << endl << "Caught signal " << signal << endl;
 
-  sink.ChangeState(FairMQSink::STOP);
-  sink.ChangeState(FairMQSink::END);
+  sink.ChangeState(FairMQBinSink::STOP);
+  sink.ChangeState(FairMQBinSink::END);
 
   cout << "Shutdown complete. Bye!" << endl;
   exit(1);
@@ -54,48 +59,53 @@ int main(int argc, char** argv)
 
   LOG(INFO) << "PID: " << getpid();
 
+#ifdef NANOMSG
+  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
+#else
   FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+#endif
+
   sink.SetTransport(transportFactory);
 
   int i = 1;
 
-  sink.SetProperty(FairMQSink::Id, argv[i]);
+  sink.SetProperty(FairMQBinSink::Id, argv[i]);
   ++i;
 
   int numIoThreads;
   stringstream(argv[i]) >> numIoThreads;
-  sink.SetProperty(FairMQSink::NumIoThreads, numIoThreads);
+  sink.SetProperty(FairMQBinSink::NumIoThreads, numIoThreads);
   ++i;
 
-  sink.SetProperty(FairMQSink::NumInputs, 1);
-  sink.SetProperty(FairMQSink::NumOutputs, 0);
+  sink.SetProperty(FairMQBinSink::NumInputs, 1);
+  sink.SetProperty(FairMQBinSink::NumOutputs, 0);
 
 
-  sink.ChangeState(FairMQSink::INIT);
+  sink.ChangeState(FairMQBinSink::INIT);
 
 
-  sink.SetProperty(FairMQSink::InputSocketType, argv[i], 0);
+  sink.SetProperty(FairMQBinSink::InputSocketType, argv[i], 0);
   ++i;
   int inputRcvBufSize;
   stringstream(argv[i]) >> inputRcvBufSize;
-  sink.SetProperty(FairMQSink::InputRcvBufSize, inputRcvBufSize, 0);
+  sink.SetProperty(FairMQBinSink::InputRcvBufSize, inputRcvBufSize, 0);
   ++i;
-  sink.SetProperty(FairMQSink::InputMethod, argv[i], 0);
+  sink.SetProperty(FairMQBinSink::InputMethod, argv[i], 0);
   ++i;
-  sink.SetProperty(FairMQSink::InputAddress, argv[i], 0);
+  sink.SetProperty(FairMQBinSink::InputAddress, argv[i], 0);
   ++i;
 
 
-  sink.ChangeState(FairMQSink::SETOUTPUT);
-  sink.ChangeState(FairMQSink::SETINPUT);
-  sink.ChangeState(FairMQSink::RUN);
+  sink.ChangeState(FairMQBinSink::SETOUTPUT);
+  sink.ChangeState(FairMQBinSink::SETINPUT);
+  sink.ChangeState(FairMQBinSink::RUN);
 
 
   char ch;
   cin.get(ch);
 
-  sink.ChangeState(FairMQSink::STOP);
-  sink.ChangeState(FairMQSink::END);
+  sink.ChangeState(FairMQBinSink::STOP);
+  sink.ChangeState(FairMQBinSink::END);
 
   return 0;
 }

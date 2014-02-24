@@ -35,9 +35,12 @@ class FairMQMessageNN : public FairMQMessage
 
     virtual ~FairMQMessageNN();
 
+    friend class FairMQSocketNN;
+
   private:
     void* fMessage;
     size_t fSize;
+    bool fReceiving;
 
     void Clear();
 };

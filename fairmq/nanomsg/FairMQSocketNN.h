@@ -41,7 +41,6 @@ class FairMQSocketNN : public FairMQSocket
 
     static int GetConstant(const string& constant);
 
-
     virtual ~FairMQSocketNN();
 
   private:

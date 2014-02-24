@@ -1,5 +1,5 @@
 /**
- * runNToOneMerger.cxx
+ * runMerger.cxx
  *
  * @since 2012-12-06
  * @author D. Klein, A. Rybalchenko
@@ -10,7 +10,12 @@
 
 #include "FairMQLogger.h"
 #include "FairMQMerger.h"
-#include "FairMQTransportFactoryZMQ.h"
+
+#ifdef NANOMSG
+  #include "FairMQTransportFactoryNN.h"
+#else
+  #include "FairMQTransportFactoryZMQ.h"
+#endif
 
 using std::cout;
 using std::cin;
@@ -43,13 +48,13 @@ static void s_catch_signals (void)
 
 int main(int argc, char** argv)
 {
-  if ( argc < 16 || (argc-8)%4!=0 ) {
+  if ( argc < 16 || (argc - 8) % 4 != 0 ) {
     cout << "Usage: merger \tID numIoTreads numInputs\n"
               << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
               << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n"
               << "\t\t...\n"
               << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n"
-              << argc << endl;
+              << argc << " arguments provided" << endl;
     return 1;
   }
 
@@ -57,7 +62,12 @@ int main(int argc, char** argv)
 
   LOG(INFO) << "PID: " << getpid();
 
+#ifdef NANOMSG
+  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
+#else
   FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+#endif
+
   merger.SetTransport(transportFactory);
 
   int i = 1;
@@ -77,9 +87,7 @@ int main(int argc, char** argv)
 
   merger.SetProperty(FairMQMerger::NumOutputs, 1);
 
-
   merger.ChangeState(FairMQMerger::INIT);
-
 
   for (int iInput = 0; iInput < numInputs; iInput++ ) {
     merger.SetProperty(FairMQMerger::InputSocketType, argv[i], iInput);
@@ -104,7 +112,6 @@ int main(int argc, char** argv)
   ++i;
   merger.SetProperty(FairMQMerger::OutputAddress, argv[i], 0);
   ++i;
-
 
   merger.ChangeState(FairMQMerger::SETOUTPUT);
   merger.ChangeState(FairMQMerger::SETINPUT);

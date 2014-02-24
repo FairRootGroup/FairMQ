@@ -1,49 +1,64 @@
 /**
- * FairMQBenchmarkSampler.cpp
+ * FairMQBinSampler.cpp
  *
  * @since 2013-04-23
  * @author D. Klein, A. Rybalchenko
  */
 
 #include <vector>
+#include <stdlib.h>     /* srand, rand */
+#include <time.h>       /* time */
 
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 
-#include "FairMQBenchmarkSampler.h"
+#include "FairMQBinSampler.h"
 #include "FairMQLogger.h"
 
 
-FairMQBenchmarkSampler::FairMQBenchmarkSampler() :
+FairMQBinSampler::FairMQBinSampler() :
   fEventSize(10000),
   fEventRate(1),
   fEventCounter(0)
 {
 }
 
-FairMQBenchmarkSampler::~FairMQBenchmarkSampler()
+FairMQBinSampler::~FairMQBinSampler()
 {
 }
 
-void FairMQBenchmarkSampler::Init()
+void FairMQBinSampler::Init()
 {
   FairMQDevice::Init();
 }
 
-void FairMQBenchmarkSampler::Run()
+void FairMQBinSampler::Run()
 {
   LOG(INFO) << ">>>>>>> Run <<<<<<<";
   //boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
   boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
-  boost::thread resetEventCounter(boost::bind(&FairMQBenchmarkSampler::ResetEventCounter, this));
+  boost::thread resetEventCounter(boost::bind(&FairMQBinSampler::ResetEventCounter, this));
 
-  void* buffer = operator new[](fEventSize);
-  FairMQMessage* base_msg = fTransportFactory->CreateMessage(buffer, fEventSize);
+  srand(time(NULL));
+
+  LOG(DEBUG) << "Message size: " << fEventSize * sizeof(Content) << " bytes.";
 
   while ( fState == RUNNING ) {
-    FairMQMessage* msg = fTransportFactory->CreateMessage();
-    msg->Copy(base_msg);
+
+    Content* payload = new Content[fEventSize];
+
+    for (int i = 0; i < fEventSize; ++i) {
+      (&payload[i])->x = rand() % 100 + 1;
+      (&payload[i])->y = rand() % 100 + 1;
+      (&payload[i])->z = rand() % 100 + 1;
+      (&payload[i])->a = (rand() % 100 + 1) / (rand() % 100 + 1);
+      (&payload[i])->b = (rand() % 100 + 1) / (rand() % 100 + 1);
+      // LOG(INFO) << (&payload[i])->x << " " << (&payload[i])->y << " " << (&payload[i])->z << " " << (&payload[i])->a << " " << (&payload[i])->b;
+    }
+
+    FairMQMessage* msg = fTransportFactory->CreateMessage(fEventSize * sizeof(Content));
+    memcpy(msg->GetData(), payload, fEventSize * sizeof(Content));
 
     fPayloadOutputs->at(0)->Send(msg);
 
@@ -53,10 +68,9 @@ void FairMQBenchmarkSampler::Run()
       boost::this_thread::sleep(boost::posix_time::milliseconds(1));
     }
 
+    delete[] payload;
     delete msg;
   }
-
-  delete base_msg;
 
   rateLogger.interrupt();
   resetEventCounter.interrupt();
@@ -65,7 +79,7 @@ void FairMQBenchmarkSampler::Run()
   resetEventCounter.join();
 }
 
-void FairMQBenchmarkSampler::ResetEventCounter()
+void FairMQBinSampler::ResetEventCounter()
 {
   while ( true ) {
     try {
@@ -77,7 +91,7 @@ void FairMQBenchmarkSampler::ResetEventCounter()
   }
 }
 
-void FairMQBenchmarkSampler::Log(int intervalInMs)
+void FairMQBinSampler::Log(int intervalInMs)
 {
   timestamp_t t0;
   timestamp_t t1;
@@ -111,7 +125,7 @@ void FairMQBenchmarkSampler::Log(int intervalInMs)
   }
 }
 
-void FairMQBenchmarkSampler::SetProperty(const int key, const string& value, const int slot/*= 0*/)
+void FairMQBinSampler::SetProperty(const int key, const string& value, const int slot/*= 0*/)
 {
   switch (key) {
   default:
@@ -120,7 +134,7 @@ void FairMQBenchmarkSampler::SetProperty(const int key, const string& value, con
   }
 }
 
-string FairMQBenchmarkSampler::GetProperty(const int key, const string& default_/*= ""*/, const int slot/*= 0*/)
+string FairMQBinSampler::GetProperty(const int key, const string& default_/*= ""*/, const int slot/*= 0*/)
 {
   switch (key) {
   default:
@@ -128,7 +142,7 @@ string FairMQBenchmarkSampler::GetProperty(const int key, const string& default_
   }
 }
 
-void FairMQBenchmarkSampler::SetProperty(const int key, const int value, const int slot/*= 0*/)
+void FairMQBinSampler::SetProperty(const int key, const int value, const int slot/*= 0*/)
 {
   switch (key) {
   case EventSize:
@@ -143,7 +157,7 @@ void FairMQBenchmarkSampler::SetProperty(const int key, const int value, const i
   }
 }
 
-int FairMQBenchmarkSampler::GetProperty(const int key, const int default_/*= 0*/, const int slot/*= 0*/)
+int FairMQBinSampler::GetProperty(const int key, const int default_/*= 0*/, const int slot/*= 0*/)
 {
   switch (key) {
   case EventSize:

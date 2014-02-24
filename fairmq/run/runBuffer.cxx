@@ -10,7 +10,12 @@
 
 #include "FairMQLogger.h"
 #include "FairMQBuffer.h"
-#include "FairMQTransportFactoryNN.h"
+
+#ifdef NANOMSG
+  #include "FairMQTransportFactoryNN.h"
+#else
+  #include "FairMQTransportFactoryZMQ.h"
+#endif
 
 using std::cout;
 using std::cin;
@@ -54,7 +59,12 @@ int main(int argc, char** argv)
 
   LOG(INFO) << "PID: " << getpid();
 
+#ifdef NANOMSG
   FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
+#else
+  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+#endif
+
   buffer.SetTransport(transportFactory);
 
   int i = 1;

@@ -31,7 +31,7 @@ std::ostringstream& FairMQLogger::Log(int type)
   std::time_t t = s;
   std::size_t fractional_seconds = ms % 1000;
   char mbstr[100];
-  std::strftime(mbstr, 100, "%H:%M:%S:", std::localtime(&t));
+  std::strftime(mbstr, 100, "%H:%M:%S", std::localtime(&t));
 
   string type_str;
   switch (type) {
@@ -50,7 +50,7 @@ std::ostringstream& FairMQLogger::Log(int type)
       break;
   }
 
-  os << "[\033[01;36m" <<  mbstr << fractional_seconds << "\033[0m]" << "[" << type_str << "]" << " ";
+  os << "[\033[01;36m" <<  mbstr << "\033[0m]" << "[" << type_str << "]" << " ";
 
   return os;
 }

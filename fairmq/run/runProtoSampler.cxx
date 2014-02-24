@@ -9,8 +9,13 @@
 #include <csignal>
 
 #include "FairMQLogger.h"
-#include "FairMQBenchmarkSampler.h"
-#include "FairMQTransportFactoryNN.h"
+#include "FairMQProtoSampler.h"
+
+#ifdef NANOMSG
+  #include "FairMQTransportFactoryNN.h"
+#else
+  #include "FairMQTransportFactoryZMQ.h"
+#endif
 
 using std::cout;
 using std::cin;
@@ -18,14 +23,14 @@ using std::endl;
 using std::stringstream;
 
 
-FairMQBenchmarkSampler sampler;
+FairMQProtoSampler sampler;
 
 static void s_signal_handler (int signal)
 {
   cout << endl << "Caught signal " << signal << endl;
 
-  sampler.ChangeState(FairMQBenchmarkSampler::STOP);
-  sampler.ChangeState(FairMQBenchmarkSampler::END);
+  sampler.ChangeState(FairMQProtoSampler::STOP);
+  sampler.ChangeState(FairMQProtoSampler::END);
 
   cout << "Shutdown complete. Bye!" << endl;
   exit(1);
@@ -54,59 +59,64 @@ int main(int argc, char** argv)
 
   LOG(INFO) << "PID: " << getpid();
 
+#ifdef NANOMSG
   FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
+#else
+  FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+#endif
+
   sampler.SetTransport(transportFactory);
 
   int i = 1;
 
-  sampler.SetProperty(FairMQBenchmarkSampler::Id, argv[i]);
+  sampler.SetProperty(FairMQProtoSampler::Id, argv[i]);
   ++i;
 
   int eventSize;
   stringstream(argv[i]) >> eventSize;
-  sampler.SetProperty(FairMQBenchmarkSampler::EventSize, eventSize);
+  sampler.SetProperty(FairMQProtoSampler::EventSize, eventSize);
   ++i;
 
   int eventRate;
   stringstream(argv[i]) >> eventRate;
-  sampler.SetProperty(FairMQBenchmarkSampler::EventRate, eventRate);
+  sampler.SetProperty(FairMQProtoSampler::EventRate, eventRate);
   ++i;
 
   int numIoThreads;
   stringstream(argv[i]) >> numIoThreads;
-  sampler.SetProperty(FairMQBenchmarkSampler::NumIoThreads, numIoThreads);
+  sampler.SetProperty(FairMQProtoSampler::NumIoThreads, numIoThreads);
   ++i;
 
-  sampler.SetProperty(FairMQBenchmarkSampler::NumInputs, 0);
-  sampler.SetProperty(FairMQBenchmarkSampler::NumOutputs, 1);
+  sampler.SetProperty(FairMQProtoSampler::NumInputs, 0);
+  sampler.SetProperty(FairMQProtoSampler::NumOutputs, 1);
 
 
-  sampler.ChangeState(FairMQBenchmarkSampler::INIT);
+  sampler.ChangeState(FairMQProtoSampler::INIT);
 
 
-  sampler.SetProperty(FairMQBenchmarkSampler::OutputSocketType, argv[i], 0);
+  sampler.SetProperty(FairMQProtoSampler::OutputSocketType, argv[i], 0);
   ++i;
   int outputSndBufSize;
   stringstream(argv[i]) >> outputSndBufSize;
-  sampler.SetProperty(FairMQBenchmarkSampler::OutputSndBufSize, outputSndBufSize, 0);
+  sampler.SetProperty(FairMQProtoSampler::OutputSndBufSize, outputSndBufSize, 0);
   ++i;
-  sampler.SetProperty(FairMQBenchmarkSampler::OutputMethod, argv[i], 0);
+  sampler.SetProperty(FairMQProtoSampler::OutputMethod, argv[i], 0);
   ++i;
-  sampler.SetProperty(FairMQBenchmarkSampler::OutputAddress, argv[i], 0);
+  sampler.SetProperty(FairMQProtoSampler::OutputAddress, argv[i], 0);
   ++i;
 
 
-  sampler.ChangeState(FairMQBenchmarkSampler::SETOUTPUT);
-  sampler.ChangeState(FairMQBenchmarkSampler::SETINPUT);
-  sampler.ChangeState(FairMQBenchmarkSampler::RUN);
+  sampler.ChangeState(FairMQProtoSampler::SETOUTPUT);
+  sampler.ChangeState(FairMQProtoSampler::SETINPUT);
+  sampler.ChangeState(FairMQProtoSampler::RUN);
 
 
 
   char ch;
   cin.get(ch);
 
-  sampler.ChangeState(FairMQBenchmarkSampler::STOP);
-  sampler.ChangeState(FairMQBenchmarkSampler::END);
+  sampler.ChangeState(FairMQProtoSampler::STOP);
+  sampler.ChangeState(FairMQProtoSampler::END);
 
   return 0;
 }

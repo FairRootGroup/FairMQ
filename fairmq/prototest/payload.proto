@@ -1,0 +1,13 @@
+package sampler;
+
+message Content {
+    optional double a = 1;
+    optional double b = 2;
+    optional int32 x = 3;
+    optional int32 y = 4;
+    optional int32 z = 5;
+}
+
+message Payload {
+    repeated Content data = 1;
+}
