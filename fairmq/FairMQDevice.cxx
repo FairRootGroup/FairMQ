@@ -256,10 +256,10 @@ void FairMQDevice::LogSocketRates()
   double* messagesPerSecondOutput = new double[fNumOutputs];
 
   // Temp stuff for process termination
-  bool receivedSomething = false;
-  bool sentSomething = false;
-  int didNotReceiveFor = 0;
-  int didNotSendFor = 0;
+  // bool receivedSomething = false;
+  // bool sentSomething = false;
+  // int didNotReceiveFor = 0;
+  // int didNotSendFor = 0;
   // End of temp stuff
 
   int i = 0;
@@ -299,14 +299,14 @@ void FairMQDevice::LogSocketRates()
         LOG(DEBUG) << "#" << fId << "." << (*itr)->GetId() << ": " << messagesPerSecondInput[i] << " msg/s, " << megabytesPerSecondInput[i] << " MB/s";
 
         // Temp stuff for process termination
-        if ( !receivedSomething && messagesPerSecondInput[i] > 0 ) {
-          receivedSomething = true;
-        }
-        if ( receivedSomething && messagesPerSecondInput[i] == 0 ) {
-          cout << "Did not receive anything on socket " << i << " for " << didNotReceiveFor++ << " seconds." << endl;
-        } else {
-          didNotReceiveFor = 0;
-        }
+        // if ( !receivedSomething && messagesPerSecondInput[i] > 0 ) {
+     //      receivedSomething = true;
+     //    }
+     //    if ( receivedSomething && messagesPerSecondInput[i] == 0 ) {
+     //      cout << "Did not receive anything on socket " << i << " for " << didNotReceiveFor++ << " seconds." << endl;
+     //    } else {
+     //      didNotReceiveFor = 0;
+     //    }
         // End of temp stuff
 
         ++i;
@@ -330,28 +330,28 @@ void FairMQDevice::LogSocketRates()
         LOG(DEBUG) << "#" << fId << "." << (*itr)->GetId() << ": " << messagesPerSecondOutput[i] << " msg/s, " << megabytesPerSecondOutput[i] << " MB/s";
 
         // Temp stuff for process termination
-        if ( !sentSomething && messagesPerSecondOutput[i] > 0 ) {
-          sentSomething = true;
-        }
-        if ( sentSomething && messagesPerSecondOutput[i] == 0 ) {
-          cout << "Did not send anything on socket " << i << " for " << didNotSendFor++ << " seconds." << endl;
-        } else {
-          didNotSendFor = 0;
-        }
+        // if ( !sentSomething && messagesPerSecondOutput[i] > 0 ) {
+     //      sentSomething = true;
+     //    }
+     //    if ( sentSomething && messagesPerSecondOutput[i] == 0 ) {
+     //      cout << "Did not send anything on socket " << i << " for " << didNotSendFor++ << " seconds." << endl;
+     //    } else {
+     //      didNotSendFor = 0;
+     //    }
         // End of temp stuff
 
         ++i;
       }
 
       // Temp stuff for process termination
-      if (receivedSomething && didNotReceiveFor > 5) {
-        cout << "stopping because nothing was received for 5 seconds." << endl;
-        ChangeState(STOP);
-      }
-      if (sentSomething && didNotSendFor > 5) {
-        cout << "stopping because nothing was sent for 5 seconds." << endl;
-        ChangeState(STOP);
-      }
+      // if (receivedSomething && didNotReceiveFor > 5) {
+     //    cout << "stopping because nothing was received for 5 seconds." << endl;
+     //    ChangeState(STOP);
+     //  }
+     //  if (sentSomething && didNotSendFor > 5) {
+     //    cout << "stopping because nothing was sent for 5 seconds." << endl;
+     //    ChangeState(STOP);
+     //  }
       // End of temp stuff
 
       t0 = t1;
