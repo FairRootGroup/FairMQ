@@ -280,8 +280,6 @@ void FairMQDevice::LogSocketRates()
 
   while ( true ) {
     try {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(fLogIntervalInMs));
-
       t1 = get_timestamp();
 
       timeSinceLastLog_ms = (t1 - t0) / 1000.0L;
@@ -314,12 +312,8 @@ void FairMQDevice::LogSocketRates()
 
       i = 0;
 
-      for ( vector<FairMQSocket*>::iterator itr = fPayloadOutputs->begin(); itr != fPayloadOutputs->end(); itr++ ) {
-
-        // #ifdef NANOMSG
-        //   LOG(ERROR) << "OK THEN";
-        // #endif
-
+      for ( vector<FairMQSocket*>::iterator itr = fPayloadOutputs->begin(); itr != fPayloadOutputs->end(); itr++ )
+      {
         bytesOutputNew[i] = (*itr)->GetBytesTx();
         megabytesPerSecondOutput[i] = ((double) (bytesOutputNew[i] - bytesOutput[i]) / (1024. * 1024.)) / (double) timeSinceLastLog_ms * 1000.;
         bytesOutput[i] = bytesOutputNew[i];
@@ -355,6 +349,7 @@ void FairMQDevice::LogSocketRates()
       // End of temp stuff
 
       t0 = t1;
+      boost::this_thread::sleep(boost::posix_time::milliseconds(fLogIntervalInMs));
     } catch (boost::thread_interrupted&) {
       cout << "rateLogger interrupted" << endl;
       break;

@@ -102,7 +102,13 @@ set(LIBRARY_NAME FairMQ)
 
 GENERATE_LIBRARY()
 
-set(Exe_Names bsampler buffer splitter merger sink proxy)
+set(Exe_Names
+  bsampler
+  buffer
+  splitter
+  merger
+  sink
+  proxy)
 
 if(PROTOBUF_FOUND)
   set(Exe_Names
