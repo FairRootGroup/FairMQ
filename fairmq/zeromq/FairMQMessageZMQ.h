@@ -14,7 +14,6 @@
 
 #include "FairMQMessage.h"
 
-
 class FairMQMessageZMQ : public FairMQMessage
 {
   public:

@@ -15,11 +15,10 @@
 
 #include "payload.pb.h"
 
-
-FairMQProtoSampler::FairMQProtoSampler() :
-  fEventSize(10000),
-  fEventRate(1),
-  fEventCounter(0)
+FairMQProtoSampler::FairMQProtoSampler()
+    : fEventSize(10000)
+    , fEventRate(1)
+    , fEventCounter(0)
 {
 }
 
@@ -29,145 +28,157 @@ FairMQProtoSampler::~FairMQProtoSampler()
 
 void FairMQProtoSampler::Init()
 {
-  FairMQDevice::Init();
+    FairMQDevice::Init();
 }
 
 void FairMQProtoSampler::Run()
 {
-  LOG(INFO) << ">>>>>>> Run <<<<<<<";
-  //boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+    LOG(INFO) << ">>>>>>> Run <<<<<<<";
+    // boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
-  boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
-  boost::thread resetEventCounter(boost::bind(&FairMQProtoSampler::ResetEventCounter, this));
+    boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
+    boost::thread resetEventCounter(boost::bind(&FairMQProtoSampler::ResetEventCounter, this));
 
-  srand(time(NULL));
+    srand(time(NULL));
 
-  while ( fState == RUNNING ) {
+    while (fState == RUNNING)
+    {
 
-    sampler::Payload p;
+        sampler::Payload p;
 
-    for (int i = 0; i < fEventSize; ++i) {
-      sampler::Content* content = p.add_data();
+        for (int i = 0; i < fEventSize; ++i)
+        {
+            sampler::Content* content = p.add_data();
 
-      content->set_x(rand() % 100 + 1);
-      content->set_y(rand() % 100 + 1);
-      content->set_z(rand() % 100 + 1);
-      content->set_a((rand() % 100 + 1) / (rand() % 100 + 1));
-      content->set_b((rand() % 100 + 1) / (rand() % 100 + 1));
-      // LOG(INFO) << content->x() << " " << content->y() << " " << content->z() << " " << content->a() << " " << content->b();
+            content->set_x(rand() % 100 + 1);
+            content->set_y(rand() % 100 + 1);
+            content->set_z(rand() % 100 + 1);
+            content->set_a((rand() % 100 + 1) / (rand() % 100 + 1));
+            content->set_b((rand() % 100 + 1) / (rand() % 100 + 1));
+            // LOG(INFO) << content->x() << " " << content->y() << " " << content->z() << " " << content->a() << " " << content->b();
+        }
+
+        std::string str;
+        p.SerializeToString(&str);
+        size_t size = str.length();
+
+        FairMQMessage* msg = fTransportFactory->CreateMessage(size);
+        memcpy(msg->GetData(), str.c_str(), size);
+
+        fPayloadOutputs->at(0)->Send(msg);
+
+        --fEventCounter;
+
+        while (fEventCounter == 0)
+        {
+            boost::this_thread::sleep(boost::posix_time::milliseconds(1));
+        }
+
+        delete msg;
     }
 
-    std::string str;
-    p.SerializeToString(&str);
-    size_t size = str.length();
+    rateLogger.interrupt();
+    resetEventCounter.interrupt();
 
-    FairMQMessage* msg = fTransportFactory->CreateMessage(size);
-    memcpy(msg->GetData(), str.c_str(), size);
-
-    fPayloadOutputs->at(0)->Send(msg);
-
-    --fEventCounter;
-
-    while (fEventCounter == 0) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(1));
-    }
-
-    delete msg;
-  }
-
-  rateLogger.interrupt();
-  resetEventCounter.interrupt();
-
-  rateLogger.join();
-  resetEventCounter.join();
+    rateLogger.join();
+    resetEventCounter.join();
 }
 
 void FairMQProtoSampler::ResetEventCounter()
 {
-  while ( true ) {
-    try {
-      fEventCounter = fEventRate / 100;
-      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-    } catch (boost::thread_interrupted&) {
-      break;
+    while (true)
+    {
+        try
+        {
+            fEventCounter = fEventRate / 100;
+            boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+        }
+        catch (boost::thread_interrupted&)
+        {
+            break;
+        }
     }
-  }
 }
 
 void FairMQProtoSampler::Log(int intervalInMs)
 {
-  timestamp_t t0;
-  timestamp_t t1;
-  unsigned long bytes = fPayloadOutputs->at(0)->GetBytesTx();
-  unsigned long messages = fPayloadOutputs->at(0)->GetMessagesTx();
-  unsigned long bytesNew = 0;
-  unsigned long messagesNew = 0;
-  double megabytesPerSecond = 0;
-  double messagesPerSecond = 0;
+    timestamp_t t0;
+    timestamp_t t1;
+    unsigned long bytes = fPayloadOutputs->at(0)->GetBytesTx();
+    unsigned long messages = fPayloadOutputs->at(0)->GetMessagesTx();
+    unsigned long bytesNew = 0;
+    unsigned long messagesNew = 0;
+    double megabytesPerSecond = 0;
+    double messagesPerSecond = 0;
 
-  t0 = get_timestamp();
+    t0 = get_timestamp();
 
-  while (true) {
-    boost::this_thread::sleep(boost::posix_time::milliseconds(intervalInMs));
+    while (true)
+    {
+        boost::this_thread::sleep(boost::posix_time::milliseconds(intervalInMs));
 
-    t1 = get_timestamp();
+        t1 = get_timestamp();
 
-    bytesNew = fPayloadOutputs->at(0)->GetBytesTx();
-    messagesNew = fPayloadOutputs->at(0)->GetMessagesTx();
+        bytesNew = fPayloadOutputs->at(0)->GetBytesTx();
+        messagesNew = fPayloadOutputs->at(0)->GetMessagesTx();
 
-    timestamp_t timeSinceLastLog_ms = (t1 - t0) / 1000.0L;
+        timestamp_t timeSinceLastLog_ms = (t1 - t0) / 1000.0L;
 
-    megabytesPerSecond = ((double) (bytesNew - bytes) / (1024. * 1024.)) / (double) timeSinceLastLog_ms * 1000.;
-    messagesPerSecond = (double) (messagesNew - messages) / (double) timeSinceLastLog_ms * 1000.;
+        megabytesPerSecond = ((double)(bytesNew - bytes) / (1024. * 1024.)) / (double)timeSinceLastLog_ms * 1000.;
+        messagesPerSecond = (double)(messagesNew - messages) / (double)timeSinceLastLog_ms * 1000.;
 
-    LOG(DEBUG) << "send " << messagesPerSecond << " msg/s, " << megabytesPerSecond << " MB/s";
+        LOG(DEBUG) << "send " << messagesPerSecond << " msg/s, " << megabytesPerSecond << " MB/s";
 
-    bytes = bytesNew;
-    messages = messagesNew;
-    t0 = t1;
-  }
+        bytes = bytesNew;
+        messages = messagesNew;
+        t0 = t1;
+    }
 }
 
-void FairMQProtoSampler::SetProperty(const int key, const string& value, const int slot/*= 0*/)
+void FairMQProtoSampler::SetProperty(const int key, const string& value, const int slot /*= 0*/)
 {
-  switch (key) {
-  default:
-    FairMQDevice::SetProperty(key, value, slot);
-    break;
-  }
+    switch (key)
+    {
+        default:
+            FairMQDevice::SetProperty(key, value, slot);
+            break;
+    }
 }
 
-string FairMQProtoSampler::GetProperty(const int key, const string& default_/*= ""*/, const int slot/*= 0*/)
+string FairMQProtoSampler::GetProperty(const int key, const string& default_ /*= ""*/, const int slot /*= 0*/)
 {
-  switch (key) {
-  default:
-    return FairMQDevice::GetProperty(key, default_, slot);
-  }
+    switch (key)
+    {
+        default:
+            return FairMQDevice::GetProperty(key, default_, slot);
+    }
 }
 
-void FairMQProtoSampler::SetProperty(const int key, const int value, const int slot/*= 0*/)
+void FairMQProtoSampler::SetProperty(const int key, const int value, const int slot /*= 0*/)
 {
-  switch (key) {
-  case EventSize:
-    fEventSize = value;
-    break;
-  case EventRate:
-    fEventRate = value;
-    break;
-  default:
-    FairMQDevice::SetProperty(key, value, slot);
-    break;
-  }
+    switch (key)
+    {
+        case EventSize:
+            fEventSize = value;
+            break;
+        case EventRate:
+            fEventRate = value;
+            break;
+        default:
+            FairMQDevice::SetProperty(key, value, slot);
+            break;
+    }
 }
 
-int FairMQProtoSampler::GetProperty(const int key, const int default_/*= 0*/, const int slot/*= 0*/)
+int FairMQProtoSampler::GetProperty(const int key, const int default_ /*= 0*/, const int slot /*= 0*/)
 {
-  switch (key) {
-  case EventSize:
-    return fEventSize;
-  case EventRate:
-    return fEventRate;
-  default:
-    return FairMQDevice::GetProperty(key, default_, slot);
-  }
+    switch (key)
+    {
+        case EventSize:
+            return fEventSize;
+        case EventRate:
+            return fEventRate;
+        default:
+            return FairMQDevice::GetProperty(key, default_, slot);
+    }
 }

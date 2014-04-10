@@ -10,12 +10,12 @@
 
 #include "FairMQDevice.h"
 
-
-class FairMQSink: public FairMQDevice
+class FairMQSink : public FairMQDevice
 {
   public:
     FairMQSink();
     virtual ~FairMQSink();
+
   protected:
     virtual void Run();
 };

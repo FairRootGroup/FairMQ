@@ -16,14 +16,15 @@
  * Sampler to generate traffic for benchmarking.
  */
 
-class FairMQBenchmarkSampler: public FairMQDevice
+class FairMQBenchmarkSampler : public FairMQDevice
 {
   public:
-    enum {
-      InputFile = FairMQDevice::Last,
-      EventRate,
-      EventSize,
-      Last
+    enum
+    {
+        InputFile = FairMQDevice::Last,
+        EventRate,
+        EventSize,
+        Last
     };
     FairMQBenchmarkSampler();
     virtual ~FairMQBenchmarkSampler();

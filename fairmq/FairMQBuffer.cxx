@@ -13,36 +13,36 @@
 #include "FairMQBuffer.h"
 #include "FairMQLogger.h"
 
-
 FairMQBuffer::FairMQBuffer()
 {
 }
 
 void FairMQBuffer::Run()
 {
-  LOG(INFO) << ">>>>>>> Run <<<<<<<";
+    LOG(INFO) << ">>>>>>> Run <<<<<<<";
 
-  boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
+    boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-  bool received = false;
-  while ( fState == RUNNING ) {
-    FairMQMessage* msg = fTransportFactory->CreateMessage();
+    bool received = false;
+    while (fState == RUNNING)
+    {
+        FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-    received = fPayloadInputs->at(0)->Receive(msg);
+        received = fPayloadInputs->at(0)->Receive(msg);
 
-    if (received) {
-      fPayloadOutputs->at(0)->Send(msg);
-      received = false;
+        if (received)
+        {
+            fPayloadOutputs->at(0)->Send(msg);
+            received = false;
+        }
+
+        delete msg;
     }
 
-    delete msg;
-  }
-
-  rateLogger.interrupt();
-  rateLogger.join();
+    rateLogger.interrupt();
+    rateLogger.join();
 }
 
 FairMQBuffer::~FairMQBuffer()
 {
 }
-

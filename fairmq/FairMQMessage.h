@@ -10,7 +10,6 @@
 
 #include <cstddef> // for size_t
 
-
 class FairMQMessage
 {
   public:

@@ -15,7 +15,6 @@
 #include "FairMQSocket.h"
 #include "FairMQContextZMQ.h"
 
-
 class FairMQSocketZMQ : public FairMQSocket
 {
   public:

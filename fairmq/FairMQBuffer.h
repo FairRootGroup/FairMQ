@@ -10,12 +10,12 @@
 
 #include "FairMQDevice.h"
 
-
-class FairMQBuffer: public FairMQDevice
+class FairMQBuffer : public FairMQDevice
 {
   public:
     FairMQBuffer();
     virtual ~FairMQBuffer();
+
   protected:
     virtual void Run();
 };

@@ -11,31 +11,33 @@
 
 FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQSocket*>& inputs)
 {
-  fNumItems = inputs.size();
-  items = new zmq_pollitem_t[fNumItems];
+    fNumItems = inputs.size();
+    items = new zmq_pollitem_t[fNumItems];
 
-  for (int i = 0; i < fNumItems; i++) {
-    items[i].socket = inputs.at(i)->GetSocket();
-    items[i].fd = 0;
-    items[i].events = ZMQ_POLLIN;
-    items[i].revents = 0;
-  }
+    for (int i = 0; i < fNumItems; i++)
+    {
+        items[i].socket = inputs.at(i)->GetSocket();
+        items[i].fd = 0;
+        items[i].events = ZMQ_POLLIN;
+        items[i].revents = 0;
+    }
 }
 
 void FairMQPollerZMQ::Poll(int timeout)
 {
-  zmq_poll(items, fNumItems, timeout);
+    zmq_poll(items, fNumItems, timeout);
 }
 
 bool FairMQPollerZMQ::CheckInput(int index)
 {
-  if (items[index].revents & ZMQ_POLLIN) 
-    return true;
+    if (items[index].revents & ZMQ_POLLIN)
+        return true;
 
-  return false;
+    return false;
 }
 
 FairMQPollerZMQ::~FairMQPollerZMQ()
 {
-  if (items != NULL) delete [] items;
+    if (items != NULL)
+        delete[] items;
 }

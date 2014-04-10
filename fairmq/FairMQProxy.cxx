@@ -21,19 +21,20 @@ FairMQProxy::~FairMQProxy()
 
 void FairMQProxy::Run()
 {
-  LOG(INFO) << ">>>>>>> Run <<<<<<<";
+    LOG(INFO) << ">>>>>>> Run <<<<<<<";
 
-  boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
+    boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-  FairMQMessage* msg = fTransportFactory->CreateMessage();
+    FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-  while ( fState == RUNNING ) {
-    fPayloadInputs->at(0)->Receive(msg);
-    fPayloadOutputs->at(0)->Send(msg);
-  }
+    while (fState == RUNNING)
+    {
+        fPayloadInputs->at(0)->Receive(msg);
+        fPayloadOutputs->at(0)->Send(msg);
+    }
 
-  delete msg;
+    delete msg;
 
-  rateLogger.interrupt();
-  rateLogger.join();
+    rateLogger.interrupt();
+    rateLogger.join();
 }

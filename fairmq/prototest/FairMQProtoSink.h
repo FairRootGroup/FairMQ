@@ -10,19 +10,21 @@
 
 #include "FairMQDevice.h"
 
-struct Content {
-  double a;
-  double b;
-  int x;
-  int y;
-  int z;
+struct Content
+{
+    double a;
+    double b;
+    int x;
+    int y;
+    int z;
 };
 
-class FairMQProtoSink: public FairMQDevice
+class FairMQProtoSink : public FairMQDevice
 {
   public:
     FairMQProtoSink();
     virtual ~FairMQProtoSink();
+
   protected:
     virtual void Run();
 };

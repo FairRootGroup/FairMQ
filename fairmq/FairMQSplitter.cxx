@@ -11,7 +11,6 @@
 #include "FairMQLogger.h"
 #include "FairMQSplitter.h"
 
-
 FairMQSplitter::FairMQSplitter()
 {
 }
@@ -22,30 +21,33 @@ FairMQSplitter::~FairMQSplitter()
 
 void FairMQSplitter::Run()
 {
-  LOG(INFO) << ">>>>>>> Run <<<<<<<";
+    LOG(INFO) << ">>>>>>> Run <<<<<<<";
 
-  boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
+    boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-  bool received = false;
-  int direction = 0;
+    bool received = false;
+    int direction = 0;
 
-  while ( fState == RUNNING ) {
-    FairMQMessage* msg = fTransportFactory->CreateMessage();
+    while (fState == RUNNING)
+    {
+        FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-    received = fPayloadInputs->at(0)->Receive(msg);
+        received = fPayloadInputs->at(0)->Receive(msg);
 
-    if (received) {
-      fPayloadOutputs->at(direction)->Send(msg);
-      direction++;
-      if (direction >= fNumOutputs) {
-        direction = 0;
-      }
-      received = false;
+        if (received)
+        {
+            fPayloadOutputs->at(direction)->Send(msg);
+            direction++;
+            if (direction >= fNumOutputs)
+            {
+                direction = 0;
+            }
+            received = false;
+        }
+
+        delete msg;
     }
 
-    delete msg;
-  }
-
-  rateLogger.interrupt();
-  rateLogger.join();
+    rateLogger.interrupt();
+    rateLogger.join();
 }

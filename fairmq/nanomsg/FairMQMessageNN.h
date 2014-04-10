@@ -12,14 +12,13 @@
 
 #include "FairMQMessage.h"
 
-
 class FairMQMessageNN : public FairMQMessage
 {
   public:
     FairMQMessageNN();
     FairMQMessageNN(size_t size);
     FairMQMessageNN(void* data, size_t size);
-    
+
     virtual void Rebuild();
     virtual void Rebuild(size_t size);
     virtual void Rebuild(void* data, size_t site);

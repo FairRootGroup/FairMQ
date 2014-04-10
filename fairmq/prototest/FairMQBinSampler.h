@@ -12,22 +12,24 @@
 
 #include "FairMQDevice.h"
 
-struct Content {
-  double a;
-  double b;
-  int x;
-  int y;
-  int z;
+struct Content
+{
+    double a;
+    double b;
+    int x;
+    int y;
+    int z;
 };
 
-class FairMQBinSampler: public FairMQDevice
+class FairMQBinSampler : public FairMQDevice
 {
   public:
-    enum {
-      InputFile = FairMQDevice::Last,
-      EventRate,
-      EventSize,
-      Last
+    enum
+    {
+        InputFile = FairMQDevice::Last,
+        EventRate,
+        EventSize,
+        Last
     };
     FairMQBinSampler();
     virtual ~FairMQBinSampler();

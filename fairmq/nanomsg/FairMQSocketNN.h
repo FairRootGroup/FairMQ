@@ -14,7 +14,6 @@
 
 #include "FairMQSocket.h"
 
-
 class FairMQSocketNN : public FairMQSocket
 {
   public:

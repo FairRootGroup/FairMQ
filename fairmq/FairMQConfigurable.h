@@ -15,8 +15,9 @@ using std::string;
 class FairMQConfigurable
 {
   public:
-    enum {
-      Last = 1
+    enum
+    {
+        Last = 1
     };
     FairMQConfigurable();
     virtual void SetProperty(const int key, const string& value, const int slot = 0);

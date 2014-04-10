@@ -10,12 +10,12 @@
 
 #include "FairMQDevice.h"
 
-
-class FairMQProxy: public FairMQDevice
+class FairMQProxy : public FairMQDevice
 {
   public:
     FairMQProxy();
     virtual ~FairMQProxy();
+
   protected:
     virtual void Run();
 };

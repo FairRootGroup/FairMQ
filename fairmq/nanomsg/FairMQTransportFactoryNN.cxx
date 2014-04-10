@@ -9,22 +9,22 @@
 
 FairMQTransportFactoryNN::FairMQTransportFactoryNN()
 {
-  LOG(INFO) << "Using nanonsg library";
+    LOG(INFO) << "Using nanonsg library";
 }
 
 FairMQMessage* FairMQTransportFactoryNN::CreateMessage()
 {
-  return new FairMQMessageNN();
+    return new FairMQMessageNN();
 }
 
 FairMQMessage* FairMQTransportFactoryNN::CreateMessage(size_t size)
 {
-  return new FairMQMessageNN(size);
+    return new FairMQMessageNN(size);
 }
 
 FairMQMessage* FairMQTransportFactoryNN::CreateMessage(void* data, size_t size)
 {
-  return new FairMQMessageNN(data, size);
+    return new FairMQMessageNN(data, size);
 }
 
 FairMQSocket* FairMQTransportFactoryNN::CreateSocket(const string& type, int num, int numIoThreads)
@@ -34,5 +34,5 @@ FairMQSocket* FairMQTransportFactoryNN::CreateSocket(const string& type, int num
 
 FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const vector<FairMQSocket*>& inputs)
 {
-  return new FairMQPollerNN(inputs);
+    return new FairMQPollerNN(inputs);
 }

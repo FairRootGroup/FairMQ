@@ -12,14 +12,15 @@
 
 #include "FairMQDevice.h"
 
-class FairMQProtoSampler: public FairMQDevice
+class FairMQProtoSampler : public FairMQDevice
 {
   public:
-    enum {
-      InputFile = FairMQDevice::Last,
-      EventRate,
-      EventSize,
-      Last
+    enum
+    {
+        InputFile = FairMQDevice::Last,
+        EventRate,
+        EventSize,
+        Last
     };
     FairMQProtoSampler();
     virtual ~FairMQProtoSampler();

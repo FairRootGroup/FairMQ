@@ -17,28 +17,29 @@ FairMQBinSink::FairMQBinSink()
 
 void FairMQBinSink::Run()
 {
-  LOG(INFO) << ">>>>>>> Run <<<<<<<";
+    LOG(INFO) << ">>>>>>> Run <<<<<<<";
 
-  boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
+    boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-  while ( fState == RUNNING ) {
-    FairMQMessage* msg = fTransportFactory->CreateMessage();
+    while (fState == RUNNING)
+    {
+        FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-    fPayloadInputs->at(0)->Receive(msg);
+        fPayloadInputs->at(0)->Receive(msg);
 
-    int inputSize = msg->GetSize();
-    int numInput = inputSize / sizeof(Content);
-    Content* input = reinterpret_cast<Content*>(msg->GetData());
+        int inputSize = msg->GetSize();
+        int numInput = inputSize / sizeof(Content);
+        Content* input = reinterpret_cast<Content*>(msg->GetData());
 
-    // for (int i = 0; i < numInput; ++i) {
-    //     LOG(INFO) << (&input[i])->x << " " << (&input[i])->y << " " << (&input[i])->z << " " << (&input[i])->a << " " << (&input[i])->b;
-    // }
+        // for (int i = 0; i < numInput; ++i) {
+        //     LOG(INFO) << (&input[i])->x << " " << (&input[i])->y << " " << (&input[i])->z << " " << (&input[i])->a << " " << (&input[i])->b;
+        // }
 
-    delete msg;
-  }
+        delete msg;
+    }
 
-  rateLogger.interrupt();
-  rateLogger.join();
+    rateLogger.interrupt();
+    rateLogger.join();
 }
 
 FairMQBinSink::~FairMQBinSink()

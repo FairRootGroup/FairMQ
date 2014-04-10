@@ -27,7 +27,6 @@ class FairMQTransportFactoryZMQ : public FairMQTransportFactory
     virtual FairMQSocket* CreateSocket(const string& type, int num, int numIoThreads);
     virtual FairMQPoller* CreatePoller(const vector<FairMQSocket*>& inputs);
 
-
     virtual ~FairMQTransportFactoryZMQ() {};
 };
 

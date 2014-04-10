@@ -21,21 +21,25 @@ using std::ostringstream;
 class FairMQLogger
 {
   public:
-    enum {
-      DEBUG, INFO, ERROR, STATE
+    enum
+    {
+        DEBUG,
+        INFO,
+        ERROR,
+        STATE
     };
     FairMQLogger();
     virtual ~FairMQLogger();
     ostringstream& Log(int type);
+
   private:
     ostringstream os;
 };
 
 typedef unsigned long long timestamp_t;
 
-timestamp_t get_timestamp ();
+timestamp_t get_timestamp();
 
-#define LOG(type) \
-  FairMQLogger().Log(FairMQLogger::type)
+#define LOG(type) FairMQLogger().Log(FairMQLogger::type)
 
 #endif /* FAIRMQLOGGER_H_ */

@@ -25,23 +25,24 @@ using std::endl;
 class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 {
   public:
-    enum {
-      Id = FairMQConfigurable::Last,
-      NumIoThreads,
-      NumInputs,
-      NumOutputs,
-      InputAddress,
-      InputMethod,
-      InputSocketType,
-      InputSndBufSize,
-      InputRcvBufSize,
-      OutputAddress,
-      OutputMethod,
-      OutputSocketType,
-      OutputSndBufSize,
-      OutputRcvBufSize,
-      LogIntervalInMs,
-      Last
+    enum
+    {
+        Id = FairMQConfigurable::Last,
+        NumIoThreads,
+        NumInputs,
+        NumOutputs,
+        InputAddress,
+        InputMethod,
+        InputSocketType,
+        InputSndBufSize,
+        InputRcvBufSize,
+        OutputAddress,
+        OutputMethod,
+        OutputSocketType,
+        OutputSndBufSize,
+        OutputRcvBufSize,
+        LogIntervalInMs,
+        Last
     };
 
     FairMQDevice();
@@ -66,20 +67,20 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     int fNumInputs;
     int fNumOutputs;
 
-    vector<string> *fInputAddress;
-    vector<string> *fInputMethod;
-    vector<string> *fInputSocketType;
-    vector<int> *fInputSndBufSize;
-    vector<int> *fInputRcvBufSize;
+    vector<string>* fInputAddress;
+    vector<string>* fInputMethod;
+    vector<string>* fInputSocketType;
+    vector<int>* fInputSndBufSize;
+    vector<int>* fInputRcvBufSize;
 
-    vector<string> *fOutputAddress;
-    vector<string> *fOutputMethod;
-    vector<string> *fOutputSocketType;
-    vector<int> *fOutputSndBufSize;
-    vector<int> *fOutputRcvBufSize;
+    vector<string>* fOutputAddress;
+    vector<string>* fOutputMethod;
+    vector<string>* fOutputSocketType;
+    vector<int>* fOutputSndBufSize;
+    vector<int>* fOutputRcvBufSize;
 
-    vector<FairMQSocket*> *fPayloadInputs;
-    vector<FairMQSocket*> *fPayloadOutputs;
+    vector<FairMQSocket*>* fPayloadInputs;
+    vector<FairMQSocket*>* fPayloadOutputs;
 
     int fLogIntervalInMs;
 

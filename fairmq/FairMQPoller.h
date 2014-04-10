@@ -15,7 +15,6 @@ class FairMQPoller
     virtual bool CheckInput(int index) = 0;
 
     virtual ~FairMQPoller() {};
-
 };
 
 #endif /* FAIRMQPOLLER_H_ */

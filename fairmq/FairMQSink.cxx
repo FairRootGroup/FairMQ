@@ -17,23 +17,23 @@ FairMQSink::FairMQSink()
 
 void FairMQSink::Run()
 {
-  LOG(INFO) << ">>>>>>> Run <<<<<<<";
+    LOG(INFO) << ">>>>>>> Run <<<<<<<";
 
-  boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
+    boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-  while ( fState == RUNNING ) {
-    FairMQMessage* msg = fTransportFactory->CreateMessage();
+    while (fState == RUNNING)
+    {
+        FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-    fPayloadInputs->at(0)->Receive(msg);
+        fPayloadInputs->at(0)->Receive(msg);
 
-    delete msg;
-  }
+        delete msg;
+    }
 
-  rateLogger.interrupt();
-  rateLogger.join();
+    rateLogger.interrupt();
+    rateLogger.join();
 }
 
 FairMQSink::~FairMQSink()
 {
 }
-
