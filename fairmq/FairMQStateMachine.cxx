@@ -5,166 +5,43 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include <boost/bind.hpp>
-#include <boost/thread.hpp>
-
 #include "FairMQStateMachine.h"
 #include "FairMQLogger.h"
 
-
-FairMQStateMachine::FairMQStateMachine() :
-  fState(IDLE)
+FairMQStateMachine::FairMQStateMachine()
 {
-}
-
-void FairMQStateMachine::ChangeState(int event)
-{
-  switch(fState) {
-
-  case IDLE:
-    switch(event) {
-
-    case INIT:
-      LOG(STATE) << "IDLE --init--> INITIALIZING";
-      fState = INITIALIZING;
-      Init();
-      return;
-
-    case END:
-      LOG(STATE) << "IDLE --end--> (o)";
-      return;
-
-    default:
-      return;
-    }
-    break;
-
-
-  case INITIALIZING:
-    switch(event) {
-
-    case SETOUTPUT:
-      LOG(STATE) << "INITIALIZING --bind--> SETTINGOUTPUT";
-      fState = SETTINGOUTPUT;
-      InitOutput();
-      return;
-
-    default:
-      return;
-    }
-    break;
-
-
-  case SETTINGOUTPUT:
-    switch(event) {
-
-    case SETINPUT:
-      LOG(STATE) << "SETTINGOUTPUT --connect--> SETTINGINPUT";
-      fState = SETTINGINPUT;
-      InitInput();
-      return;
-
-    default:
-      return;
-    }
-    break;
-
-
-  case SETTINGINPUT:
-    switch(event) {
-
-    case PAUSE:
-      LOG(STATE) << "SETTINGINPUT --pause--> WAITING";
-      fState = WAITING;
-      Pause();
-      return;
-
-    case RUN:
-      LOG(STATE) << "SETTINGINPUT --run--> RUNNING";
-      fState = RUNNING;
-      running_state = boost::thread(boost::bind(&FairMQStateMachine::Run, this));
-      return;
-
-    default:
-      return;
-    }
-    break;
-
-
-  case WAITING:
-    switch(event) {
-
-    case RUN:
-      LOG(STATE) << "WAITING --run--> RUNNING";
-      fState = RUNNING;
-      running_state = boost::thread(boost::bind(&FairMQStateMachine::Run, this));
-      return;
-
-    case STOP:
-      LOG(STATE) << "WAITING --stop--> IDLE";
-      fState = IDLE;
-      Shutdown();
-      return;
-
-    default:
-      return;
-    }
-    break;
-
-
-  case RUNNING:
-    switch(event) {
-
-    case PAUSE:
-      LOG(STATE) << "RUNNING --pause--> WAITING";
-      fState = WAITING;
-      running_state.join();
-      return;
-
-    case STOP:
-      LOG(STATE) << "RUNNING --stop--> IDLE";
-      fState = IDLE;
-      running_state.join();
-      Shutdown();
-      return;
-
-    default:
-      return;
-    }
-    break;
-
-
-  default:
-    break;
-
-  }//switch fState
-}
-
-void FairMQStateMachine::Init()
-{
-}
-
-void FairMQStateMachine::Run()
-{
-}
-
-void FairMQStateMachine::Pause()
-{
-}
-
-void FairMQStateMachine::Shutdown()
-{
-}
-
-void FairMQStateMachine::InitOutput()
-{
-}
-
-void FairMQStateMachine::InitInput()
-{
+    start();
 }
 
 FairMQStateMachine::~FairMQStateMachine()
 {
+    stop();
 }
 
+void FairMQStateMachine::ChangeState(int event)
+{
+    switch (event)
+    {
+        case INIT:
+            process_event(FairMQFSM::INIT());
+            return;
+        case SETOUTPUT:
+            process_event(FairMQFSM::SETOUTPUT());
+            return;
+        case SETINPUT:
+            process_event(FairMQFSM::SETINPUT());
+            return;
+        case RUN:
+            process_event(FairMQFSM::RUN());
+            return;
+        case PAUSE:
+            process_event(FairMQFSM::PAUSE());
+            return;
+        case STOP:
+            process_event(FairMQFSM::STOP());
+            return;
+        case END:
+            process_event(FairMQFSM::END());
+            return;
+    }
+}
