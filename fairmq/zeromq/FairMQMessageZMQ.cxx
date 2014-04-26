@@ -31,7 +31,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(size_t size)
 
 FairMQMessageZMQ::FairMQMessageZMQ(void* data, size_t size)
 {
-    int rc = zmq_msg_init_data(&fMessage, data, size, &CleanUp, NULL);
+    int rc = zmq_msg_init_data(&fMessage, data, size, &CleanUp, NULL); // TODO: expose the cleanup function part in the interface?
     if (rc != 0)
     {
         LOG(ERROR) << "failed initializing message with data, reason: " << zmq_strerror(errno);
@@ -61,7 +61,7 @@ void FairMQMessageZMQ::Rebuild(size_t size)
 void FairMQMessageZMQ::Rebuild(void* data, size_t size)
 {
     CloseMessage();
-    int rc = zmq_msg_init_data(&fMessage, data, size, &CleanUp, NULL);
+    int rc = zmq_msg_init_data(&fMessage, data, size, &CleanUp, NULL); // TODO: expose the cleanup function part in the interface?
     if (rc != 0)
     {
         LOG(ERROR) << "failed initializing message with data, reason: " << zmq_strerror(errno);
@@ -90,10 +90,19 @@ void FairMQMessageZMQ::SetMessage(void* data, size_t size)
 
 void FairMQMessageZMQ::Copy(FairMQMessage* msg)
 {
-    CloseMessage();
-    size_t size = msg->GetSize();
-    zmq_msg_init_size(&fMessage, size);
-    std::memcpy(zmq_msg_data(&fMessage), msg->GetData(), size);
+    // Shares the message buffer between msg and this fMessage.
+    int rc = zmq_msg_copy(&fMessage, (zmq_msg_t*)msg->GetMessage());
+    if (rc != 0)
+    {
+        LOG(ERROR) << "failed copying message, reason: " << zmq_strerror(errno);
+    }
+
+    // Alternatively, following code does a hard copy of the message, which allows to modify the original after making a copy, without affecting the new msg.
+
+    // CloseMessage();
+    // size_t size = msg->GetSize();
+    // zmq_msg_init_size(&fMessage, size);
+    // std::memcpy(zmq_msg_data(&fMessage), msg->GetData(), size);
 }
 
 inline void FairMQMessageZMQ::CloseMessage()
