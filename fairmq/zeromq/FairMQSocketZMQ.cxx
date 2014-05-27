@@ -10,9 +10,9 @@
 #include "FairMQSocketZMQ.h"
 #include "FairMQLogger.h"
 
-boost::shared_ptr<FairMQContextZMQ> FairMQSocketZMQ::fContext = boost::shared_ptr<FairMQContextZMQ>(new FairMQContextZMQ(1)); // TODO: numIoThreads!
+boost::shared_ptr<FairMQContextZMQ> FairMQSocketZMQ::fContext = boost::shared_ptr<FairMQContextZMQ>(new FairMQContextZMQ(1));
 
-FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num) :
+FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num, int numIoThreads) :
   fBytesTx(0),
   fBytesRx(0),
   fMessagesTx(0),
@@ -22,9 +22,14 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num) :
   id << type << "." << num;
   fId = id.str();
 
+  int rc = zmq_ctx_set (fContext->GetContext(), ZMQ_IO_THREADS, numIoThreads);
+  if (rc != 0){
+    LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
+  }
+
   fSocket = zmq_socket(fContext->GetContext(), GetConstant(type));
 
-  int rc = zmq_setsockopt(fSocket, ZMQ_IDENTITY, &fId, fId.length());
+  rc = zmq_setsockopt(fSocket, ZMQ_IDENTITY, &fId, fId.length());
   if (rc != 0) {
     LOG(ERROR) << "failed setting socket option, reason: " << zmq_strerror(errno);
   }

@@ -23,7 +23,7 @@ class FairMQTransportFactoryNN : public FairMQTransportFactory
     virtual FairMQMessage* CreateMessage();
     virtual FairMQMessage* CreateMessage(size_t size);
     virtual FairMQMessage* CreateMessage(void* data, size_t size);
-    virtual FairMQSocket* CreateSocket(const string& type, int num);
+    virtual FairMQSocket* CreateSocket(const string& type, int num, int numIoThreads);
     virtual FairMQPoller* CreatePoller(const vector<FairMQSocket*>& inputs);
 
 

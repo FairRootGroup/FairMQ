@@ -19,7 +19,7 @@
 class FairMQSocketZMQ : public FairMQSocket
 {
   public:
-    FairMQSocketZMQ(const string& type, int num);
+    FairMQSocketZMQ(const string& type, int num, int numIoThreads);
 
     virtual string GetId();
 

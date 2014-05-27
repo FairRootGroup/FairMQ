@@ -25,9 +25,6 @@ void FairMQDevice::Init()
   LOG(INFO) << ">>>>>>> Init <<<<<<<";
   LOG(INFO) << "numIoThreads: " << fNumIoThreads;
 
-  // fPayloadContext = new FairMQContextZMQ(fNumIoThreads);
-
-  // TODO: nafiga?
   fInputAddress = new vector<string>(fNumInputs);
   fInputMethod = new vector<string>();
   fInputSocketType = new vector<string>();
@@ -60,7 +57,7 @@ void FairMQDevice::InitInput()
   LOG(INFO) << ">>>>>>> InitInput <<<<<<<";
 
   for (int i = 0; i < fNumInputs; ++i) {
-    FairMQSocket* socket = fTransportFactory->CreateSocket(fInputSocketType->at(i), i);
+    FairMQSocket* socket = fTransportFactory->CreateSocket(fInputSocketType->at(i), i, fNumIoThreads);
 
     socket->SetOption("snd-hwm", &fInputSndBufSize->at(i), sizeof(fInputSndBufSize->at(i)));
     socket->SetOption("rcv-hwm", &fInputRcvBufSize->at(i), sizeof(fInputRcvBufSize->at(i)));
@@ -83,7 +80,7 @@ void FairMQDevice::InitOutput()
   LOG(INFO) << ">>>>>>> InitOutput <<<<<<<";
 
   for (int i = 0; i < fNumOutputs; ++i) {
-    FairMQSocket* socket = fTransportFactory->CreateSocket(fOutputSocketType->at(i), i);
+    FairMQSocket* socket = fTransportFactory->CreateSocket(fOutputSocketType->at(i), i, fNumIoThreads);
 
     socket->SetOption("snd-hwm", &fOutputSndBufSize->at(i), sizeof(fOutputSndBufSize->at(i)));
     socket->SetOption("rcv-hwm", &fOutputRcvBufSize->at(i), sizeof(fOutputRcvBufSize->at(i)));

@@ -27,9 +27,9 @@ FairMQMessage* FairMQTransportFactoryNN::CreateMessage(void* data, size_t size)
   return new FairMQMessageNN(data, size);
 }
 
-FairMQSocket* FairMQTransportFactoryNN::CreateSocket(const string& type, int num)
+FairMQSocket* FairMQTransportFactoryNN::CreateSocket(const string& type, int num, int numIoThreads)
 {
-  return new FairMQSocketNN(type, num);
+  return new FairMQSocketNN(type, num, numIoThreads);
 }
 
 FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const vector<FairMQSocket*>& inputs)

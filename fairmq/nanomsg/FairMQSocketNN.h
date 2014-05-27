@@ -18,7 +18,7 @@
 class FairMQSocketNN : public FairMQSocket
 {
   public:
-    FairMQSocketNN(const string& type, int num);
+    FairMQSocketNN(const string& type, int num, int numIoThreads); // numIoThreads is not used in nanomsg.
 
     virtual string GetId();
 
