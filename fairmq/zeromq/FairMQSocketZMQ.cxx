@@ -39,17 +39,9 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num, int numIoThreads) 
     if (rc != 0) {
       LOG(ERROR) << "failed setting socket option, reason: " << zmq_strerror(errno);
     }
+  }
 
-    if (type == "sub")
-    {
-        rc = zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, NULL, 0);
-        if (rc != 0)
-        {
-            LOG(ERROR) << "failed setting socket option, reason: " << zmq_strerror(errno);
-        }
-    }
-
-    LOG(INFO) << "created socket #" << fId;
+  LOG(INFO) << "created socket #" << fId;
 }
 
 string FairMQSocketZMQ::GetId()

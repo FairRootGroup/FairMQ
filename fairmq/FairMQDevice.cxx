@@ -73,6 +73,7 @@ void FairMQDevice::InitInput()
       }
     } catch (std::out_of_range& e) {
     }
+  }
 }
 
 void FairMQDevice::InitOutput()
@@ -95,6 +96,7 @@ void FairMQDevice::InitOutput()
       }
     } catch (std::out_of_range& e) {
     }
+  }
 }
 
 void FairMQDevice::Run()
