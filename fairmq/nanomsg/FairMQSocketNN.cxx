@@ -11,24 +11,26 @@
 #include "FairMQMessageNN.h"
 #include "FairMQLogger.h"
 
-FairMQSocketNN::FairMQSocketNN(const string& type, int num, int numIoThreads) :
-  fBytesTx(0),
-  fBytesRx(0),
-  fMessagesTx(0),
-  fMessagesRx(0)
+FairMQSocketNN::FairMQSocketNN(const string& type, int num, int numIoThreads)
+    : fBytesTx(0)
+    , fBytesRx(0)
+    , fMessagesTx(0)
+    , fMessagesRx(0)
 {
     stringstream id;
     id << type << "." << num;
     fId = id.str();
 
-  if ( numIoThreads > 1 ) {
-    LOG(INFO) << "number of I/O threads is not used in nanomsg";
-  }
+    if (numIoThreads > 1)
+    {
+        LOG(INFO) << "number of I/O threads is not used in nanomsg";
+    }
 
-  fSocket = nn_socket (AF_SP, GetConstant(type));
-  if (type == "sub") {
-    nn_setsockopt(fSocket, NN_SUB, NN_SUB_SUBSCRIBE, NULL, 0);
-  }
+    fSocket = nn_socket(AF_SP, GetConstant(type));
+    if (type == "sub")
+    {
+        nn_setsockopt(fSocket, NN_SUB, NN_SUB_SUBSCRIBE, NULL, 0);
+    }
 
     LOG(INFO) << "created socket #" << fId;
 }

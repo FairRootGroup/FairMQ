@@ -33,7 +33,7 @@ FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage(void* data, size_t size)
 
 FairMQSocket* FairMQTransportFactoryZMQ::CreateSocket(const string& type, int num, int numIoThreads)
 {
-  return new FairMQSocketZMQ(type, num, numIoThreads);
+    return new FairMQSocketZMQ(type, num, numIoThreads);
 }
 
 FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQSocket*>& inputs)

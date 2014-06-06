@@ -23,80 +23,96 @@ FairMQDevice::FairMQDevice()
 
 void FairMQDevice::Init()
 {
-  LOG(INFO) << ">>>>>>> Init <<<<<<<";
-  LOG(INFO) << "numIoThreads: " << fNumIoThreads;
+    LOG(INFO) << ">>>>>>> Init <<<<<<<";
+    LOG(INFO) << "numIoThreads: " << fNumIoThreads;
 
-  fInputAddress = new vector<string>(fNumInputs);
-  fInputMethod = new vector<string>();
-  fInputSocketType = new vector<string>();
-  fInputSndBufSize = new vector<int>();
-  fInputRcvBufSize = new vector<int>();
+    fInputAddress = new vector<string>(fNumInputs);
+    fInputMethod = new vector<string>();
+    fInputSocketType = new vector<string>();
+    fInputSndBufSize = new vector<int>();
+    fInputRcvBufSize = new vector<int>();
 
-  for (int i = 0; i < fNumInputs; ++i) {
-    fInputMethod->push_back("connect"); // default value, can be overwritten in configuration
-    fInputSocketType->push_back("sub"); // default value, can be overwritten in configuration
-    fInputSndBufSize->push_back(10000); // default value, can be overwritten in configuration
-    fInputRcvBufSize->push_back(10000); // default value, can be overwritten in configuration
-  }
+    for (int i = 0; i < fNumInputs; ++i)
+    {
+        fInputMethod->push_back("connect"); // default value, can be overwritten in configuration
+        fInputSocketType->push_back("sub"); // default value, can be overwritten in configuration
+        fInputSndBufSize->push_back(10000); // default value, can be overwritten in configuration
+        fInputRcvBufSize->push_back(10000); // default value, can be overwritten in configuration
+    }
 
-  fOutputAddress = new vector<string>(fNumOutputs);
-  fOutputMethod = new vector<string>();
-  fOutputSocketType = new vector<string>();
-  fOutputSndBufSize = new vector<int>();
-  fOutputRcvBufSize = new vector<int>();
+    fOutputAddress = new vector<string>(fNumOutputs);
+    fOutputMethod = new vector<string>();
+    fOutputSocketType = new vector<string>();
+    fOutputSndBufSize = new vector<int>();
+    fOutputRcvBufSize = new vector<int>();
 
-  for (int i = 0; i < fNumOutputs; ++i) {
-    fOutputMethod->push_back("bind"); // default value, can be overwritten in configuration
-    fOutputSocketType->push_back("pub"); // default value, can be overwritten in configuration
-    fOutputSndBufSize->push_back(10000); // default value, can be overwritten in configuration
-    fOutputRcvBufSize->push_back(10000); // default value, can be overwritten in configuration
-  }
+    for (int i = 0; i < fNumOutputs; ++i)
+    {
+        fOutputMethod->push_back("bind");    // default value, can be overwritten in configuration
+        fOutputSocketType->push_back("pub"); // default value, can be overwritten in configuration
+        fOutputSndBufSize->push_back(10000); // default value, can be overwritten in configuration
+        fOutputRcvBufSize->push_back(10000); // default value, can be overwritten in configuration
+    }
 }
 
 void FairMQDevice::InitInput()
 {
-  LOG(INFO) << ">>>>>>> InitInput <<<<<<<";
+    LOG(INFO) << ">>>>>>> InitInput <<<<<<<";
 
-  for (int i = 0; i < fNumInputs; ++i) {
-    FairMQSocket* socket = fTransportFactory->CreateSocket(fInputSocketType->at(i), i, fNumIoThreads);
+    for (int i = 0; i < fNumInputs; ++i)
+    {
+        FairMQSocket* socket = fTransportFactory->CreateSocket(fInputSocketType->at(i), i, fNumIoThreads);
 
-    socket->SetOption("snd-hwm", &fInputSndBufSize->at(i), sizeof(fInputSndBufSize->at(i)));
-    socket->SetOption("rcv-hwm", &fInputRcvBufSize->at(i), sizeof(fInputRcvBufSize->at(i)));
+        socket->SetOption("snd-hwm", &fInputSndBufSize->at(i), sizeof(fInputSndBufSize->at(i)));
+        socket->SetOption("rcv-hwm", &fInputRcvBufSize->at(i), sizeof(fInputRcvBufSize->at(i)));
 
-    fPayloadInputs->push_back(socket);
+        fPayloadInputs->push_back(socket);
 
-    try {
-      if (fInputMethod->at(i) == "bind") {
-        fPayloadInputs->at(i)->Bind(fInputAddress->at(i));
-      } else {
-        fPayloadInputs->at(i)->Connect(fInputAddress->at(i));
-      }
-    } catch (std::out_of_range& e) {
+        try
+        {
+            if (fInputMethod->at(i) == "bind")
+            {
+                fPayloadInputs->at(i)->Bind(fInputAddress->at(i));
+            }
+            else
+            {
+                fPayloadInputs->at(i)->Connect(fInputAddress->at(i));
+            }
+        }
+        catch (std::out_of_range& e)
+        {
+        }
     }
-  }
 }
 
 void FairMQDevice::InitOutput()
 {
-  LOG(INFO) << ">>>>>>> InitOutput <<<<<<<";
+    LOG(INFO) << ">>>>>>> InitOutput <<<<<<<";
 
-  for (int i = 0; i < fNumOutputs; ++i) {
-    FairMQSocket* socket = fTransportFactory->CreateSocket(fOutputSocketType->at(i), i, fNumIoThreads);
+    for (int i = 0; i < fNumOutputs; ++i)
+    {
+        FairMQSocket* socket = fTransportFactory->CreateSocket(fOutputSocketType->at(i), i, fNumIoThreads);
 
-    socket->SetOption("snd-hwm", &fOutputSndBufSize->at(i), sizeof(fOutputSndBufSize->at(i)));
-    socket->SetOption("rcv-hwm", &fOutputRcvBufSize->at(i), sizeof(fOutputRcvBufSize->at(i)));
+        socket->SetOption("snd-hwm", &fOutputSndBufSize->at(i), sizeof(fOutputSndBufSize->at(i)));
+        socket->SetOption("rcv-hwm", &fOutputRcvBufSize->at(i), sizeof(fOutputRcvBufSize->at(i)));
 
-    fPayloadOutputs->push_back(socket);
+        fPayloadOutputs->push_back(socket);
 
-    try {
-      if (fOutputMethod->at(i) == "bind") {
-        fPayloadOutputs->at(i)->Bind(fOutputAddress->at(i));
-      } else {
-        fPayloadOutputs->at(i)->Connect(fOutputAddress->at(i));
-      }
-    } catch (std::out_of_range& e) {
+        try
+        {
+            if (fOutputMethod->at(i) == "bind")
+            {
+                fPayloadOutputs->at(i)->Bind(fOutputAddress->at(i));
+            }
+            else
+            {
+                fPayloadOutputs->at(i)->Connect(fOutputAddress->at(i));
+            }
+        }
+        catch (std::out_of_range& e)
+        {
+        }
     }
-  }
 }
 
 void FairMQDevice::Run()
