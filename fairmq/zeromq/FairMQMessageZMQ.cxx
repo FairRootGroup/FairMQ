@@ -36,9 +36,9 @@ FairMQMessageZMQ::FairMQMessageZMQ(size_t size)
     }
 }
 
-FairMQMessageZMQ::FairMQMessageZMQ(void* data, size_t size)
+FairMQMessageZMQ::FairMQMessageZMQ(void* data, size_t size, fairmq_free_fn *ffn, void* hint)
 {
-    int rc = zmq_msg_init_data(&fMessage, data, size, &CleanUp, NULL); // TODO: expose the cleanup function part in the interface?
+    int rc = zmq_msg_init_data(&fMessage, data, size, ffn ? ffn : &CleanUp, hint);
     if (rc != 0)
     {
         LOG(ERROR) << "failed initializing message with data, reason: " << zmq_strerror(errno);
@@ -65,10 +65,10 @@ void FairMQMessageZMQ::Rebuild(size_t size)
     }
 }
 
-void FairMQMessageZMQ::Rebuild(void* data, size_t size)
+void FairMQMessageZMQ::Rebuild(void* data, size_t size, fairmq_free_fn *ffn, void* hint)
 {
     CloseMessage();
-    int rc = zmq_msg_init_data(&fMessage, data, size, &CleanUp, NULL); // TODO: expose the cleanup function part in the interface?
+    int rc = zmq_msg_init_data(&fMessage, data, size, ffn ? ffn : &CleanUp, hint);
     if (rc != 0)
     {
         LOG(ERROR) << "failed initializing message with data, reason: " << zmq_strerror(errno);

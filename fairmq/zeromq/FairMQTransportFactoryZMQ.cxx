@@ -33,9 +33,9 @@ FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage(size_t size)
     return new FairMQMessageZMQ(size);
 }
 
-FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage(void* data, size_t size)
+FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage(void* data, size_t size, fairmq_free_fn *ffn, void* hint)
 {
-    return new FairMQMessageZMQ(data, size);
+    return new FairMQMessageZMQ(data, size, ffn, hint);
 }
 
 FairMQSocket* FairMQTransportFactoryZMQ::CreateSocket(const string& type, int num, int numIoThreads)

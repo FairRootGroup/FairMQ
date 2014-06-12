@@ -37,7 +37,7 @@ FairMQMessageNN::FairMQMessageNN(size_t size)
     fReceiving = false;
 }
 
-FairMQMessageNN::FairMQMessageNN(void* data, size_t size)
+FairMQMessageNN::FairMQMessageNN(void* data, size_t size, fairmq_free_fn *ffn, void* hint)
 {
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
@@ -47,6 +47,15 @@ FairMQMessageNN::FairMQMessageNN(void* data, size_t size)
     memcpy(fMessage, data, size);
     fSize = size;
     fReceiving = false;
+
+    if(ffn)
+    {
+        ffn(data, hint);
+    }
+    else
+    {
+        if(data) free(data);
+    }
 }
 
 void FairMQMessageNN::Rebuild()
@@ -69,7 +78,7 @@ void FairMQMessageNN::Rebuild(size_t size)
     fReceiving = false;
 }
 
-void FairMQMessageNN::Rebuild(void* data, size_t size)
+void FairMQMessageNN::Rebuild(void* data, size_t size, fairmq_free_fn *ffn, void* hint)
 {
     Clear();
     fMessage = nn_allocmsg(size, 0);
@@ -80,6 +89,15 @@ void FairMQMessageNN::Rebuild(void* data, size_t size)
     memcpy(fMessage, data, size);
     fSize = size;
     fReceiving = false;
+
+    if(ffn)
+    {
+        ffn(data, hint);
+    }
+    else
+    {
+        if(data) free(data);
+    }
 }
 
 void* FairMQMessageNN::GetMessage()

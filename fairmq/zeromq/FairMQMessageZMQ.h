@@ -26,11 +26,11 @@ class FairMQMessageZMQ : public FairMQMessage
   public:
     FairMQMessageZMQ();
     FairMQMessageZMQ(size_t size);
-    FairMQMessageZMQ(void* data, size_t size);
+    FairMQMessageZMQ(void* data, size_t size, fairmq_free_fn *ffn = &CleanUp, void* hint = NULL);
 
     virtual void Rebuild();
     virtual void Rebuild(size_t size);
-    virtual void Rebuild(void* data, size_t size);
+    virtual void Rebuild(void* data, size_t size, fairmq_free_fn *ffn = &CleanUp, void* hint = NULL);
 
     virtual void* GetMessage();
     virtual void* GetData();

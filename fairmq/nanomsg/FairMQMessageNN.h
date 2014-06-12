@@ -24,11 +24,11 @@ class FairMQMessageNN : public FairMQMessage
   public:
     FairMQMessageNN();
     FairMQMessageNN(size_t size);
-    FairMQMessageNN(void* data, size_t size);
+    FairMQMessageNN(void* data, size_t size, fairmq_free_fn *ffn = NULL, void* hint = NULL);
 
     virtual void Rebuild();
     virtual void Rebuild(size_t size);
-    virtual void Rebuild(void* data, size_t site);
+    virtual void Rebuild(void* data, size_t size, fairmq_free_fn *ffn = NULL, void* hint = NULL);
 
     virtual void* GetMessage();
     virtual void* GetData();
