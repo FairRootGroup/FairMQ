@@ -27,28 +27,37 @@ FairMQStateMachine::~FairMQStateMachine()
 
 void FairMQStateMachine::ChangeState(int event)
 {
-    switch (event)
+    try
     {
-        case INIT:
-            process_event(FairMQFSM::INIT());
-            return;
-        case SETOUTPUT:
-            process_event(FairMQFSM::SETOUTPUT());
-            return;
-        case SETINPUT:
-            process_event(FairMQFSM::SETINPUT());
-            return;
-        case RUN:
-            process_event(FairMQFSM::RUN());
-            return;
-        case PAUSE:
-            process_event(FairMQFSM::PAUSE());
-            return;
-        case STOP:
-            process_event(FairMQFSM::STOP());
-            return;
-        case END:
-            process_event(FairMQFSM::END());
-            return;
+        switch (event)
+        {
+            case INIT:
+                process_event(FairMQFSM::INIT());
+                return;
+            case SETOUTPUT:
+                process_event(FairMQFSM::SETOUTPUT());
+                return;
+            case SETINPUT:
+                process_event(FairMQFSM::SETINPUT());
+                return;
+            case RUN:
+                process_event(FairMQFSM::RUN());
+                return;
+            case PAUSE:
+                process_event(FairMQFSM::PAUSE());
+                return;
+            case STOP:
+                process_event(FairMQFSM::STOP());
+                return;
+            case END:
+                process_event(FairMQFSM::END());
+                return;
+        }
     }
-}
+    catch (boost::bad_function_call& e)
+    {
+        LOG(ERROR) << e.what();
+    }
+
+
+    }

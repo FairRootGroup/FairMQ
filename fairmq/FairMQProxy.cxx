@@ -34,10 +34,16 @@ void FairMQProxy::Run()
 
     FairMQMessage* msg = fTransportFactory->CreateMessage();
 
+    size_t bytes_received = 0;
+
     while (fState == RUNNING)
     {
-        fPayloadInputs->at(0)->Receive(msg);
-        fPayloadOutputs->at(0)->Send(msg);
+        bytes_received = fPayloadInputs->at(0)->Receive(msg);
+        if (bytes_received)
+        {
+            fPayloadOutputs->at(0)->Send(msg);
+            bytes_received = 0;
+        }
     }
 
     delete msg;

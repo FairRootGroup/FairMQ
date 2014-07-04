@@ -20,11 +20,10 @@
 
 FairMQDevice::FairMQDevice()
     : fNumIoThreads(1)
-    ,
-    // fPayloadContext(NULL),
-    fPayloadInputs(new vector<FairMQSocket*>())
+    , fPayloadInputs(new vector<FairMQSocket*>())
     , fPayloadOutputs(new vector<FairMQSocket*>())
     , fLogIntervalInMs(1000)
+    , fTransportFactory(NULL)
 {
 }
 

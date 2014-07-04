@@ -21,8 +21,6 @@
 #include <iomanip>
 #include <ctime>
 
-#include "FairMQLogger.h"
-
 using std::ostringstream;
 
 class FairMQLogger

@@ -28,11 +28,13 @@ void FairMQSink::Run()
 
     boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
+    size_t bytes_received = 0;
+
     while (fState == RUNNING)
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-        fPayloadInputs->at(0)->Receive(msg);
+        bytes_received = fPayloadInputs->at(0)->Receive(msg);
 
         delete msg;
     }
