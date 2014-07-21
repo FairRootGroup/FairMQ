@@ -6,50 +6,47 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * FairMQBuffer.cxx
+ * FairMQSink.cxx
  *
- * @since 2012-10-25
+ * @since 2013-01-09
  * @author D. Klein, A. Rybalchenko
  */
-
-#include <iostream>
 
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 
-#include "FairMQBuffer.h"
+#include "FairMQSink.h"
 #include "FairMQLogger.h"
 
-FairMQBuffer::FairMQBuffer()
+FairMQSink::FairMQSink()
 {
 }
 
-void FairMQBuffer::Run()
+void FairMQSink::Run()
 {
     LOG(INFO) << ">>>>>>> Run <<<<<<<";
 
     boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-    bool received = false;
+    size_t bytes_received = 0;
+
     while (fState == RUNNING)
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-        received = fPayloadInputs->at(0)->Receive(msg);
-
-        if (received)
-        {
-            fPayloadOutputs->at(0)->Send(msg);
-            received = false;
-        }
+        bytes_received = fPayloadInputs->at(0)->Receive(msg);
 
         delete msg;
     }
 
-    rateLogger.interrupt();
-    rateLogger.join();
+    try {
+        rateLogger.interrupt();
+        rateLogger.join();
+    } catch(boost::thread_resource_error& e) {
+        LOG(ERROR) << e.what();
+    }
 }
 
-FairMQBuffer::~FairMQBuffer()
+FairMQSink::~FairMQSink()
 {
 }

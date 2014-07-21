@@ -69,27 +69,28 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
   protected:
     string fId;
     int fNumIoThreads;
-    FairMQTransportFactory* fTransportFactory;
 
     int fNumInputs;
     int fNumOutputs;
 
-    vector<string>* fInputAddress;
-    vector<string>* fInputMethod;
-    vector<string>* fInputSocketType;
-    vector<int>* fInputSndBufSize;
-    vector<int>* fInputRcvBufSize;
+    vector<string> fInputAddress;
+    vector<string> fInputMethod;
+    vector<string> fInputSocketType;
+    vector<int> fInputSndBufSize;
+    vector<int> fInputRcvBufSize;
 
-    vector<string>* fOutputAddress;
-    vector<string>* fOutputMethod;
-    vector<string>* fOutputSocketType;
-    vector<int>* fOutputSndBufSize;
-    vector<int>* fOutputRcvBufSize;
+    vector<string> fOutputAddress;
+    vector<string> fOutputMethod;
+    vector<string> fOutputSocketType;
+    vector<int> fOutputSndBufSize;
+    vector<int> fOutputRcvBufSize;
 
     vector<FairMQSocket*>* fPayloadInputs;
     vector<FairMQSocket*>* fPayloadOutputs;
 
     int fLogIntervalInMs;
+
+    FairMQTransportFactory* fTransportFactory;
 
     virtual void Init();
     virtual void Run();

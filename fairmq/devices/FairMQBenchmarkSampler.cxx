@@ -66,11 +66,14 @@ void FairMQBenchmarkSampler::Run()
 
     delete base_msg;
 
-    rateLogger.interrupt();
-    resetEventCounter.interrupt();
-
-    rateLogger.join();
-    resetEventCounter.join();
+    try {
+        rateLogger.interrupt();
+        resetEventCounter.interrupt();
+        rateLogger.join();
+        resetEventCounter.join();
+    } catch(boost::thread_resource_error& e) {
+        LOG(ERROR) << e.what();
+    }
 }
 
 void FairMQBenchmarkSampler::ResetEventCounter()

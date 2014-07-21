@@ -48,6 +48,10 @@ void FairMQProxy::Run()
 
     delete msg;
 
-    rateLogger.interrupt();
-    rateLogger.join();
+    try {
+        rateLogger.interrupt();
+        rateLogger.join();
+    } catch(boost::thread_resource_error& e) {
+        LOG(ERROR) << e.what();
+    }
 }

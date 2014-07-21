@@ -7,6 +7,7 @@
  ################################################################################
 set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
+  ${CMAKE_SOURCE_DIR}/fairmq/devices
   ${Boost_INCLUDE_DIR}
 )
 
@@ -48,12 +49,12 @@ set(SRCS
   "FairMQMessage.cxx"
   "FairMQSocket.cxx"
   "FairMQDevice.cxx"
-  "FairMQBenchmarkSampler.cxx"
-  "FairMQSink.cxx"
-  "FairMQBuffer.cxx"
-  "FairMQProxy.cxx"
-  "FairMQSplitter.cxx"
-  "FairMQMerger.cxx"
+  "devices/FairMQBenchmarkSampler.cxx"
+  "devices/FairMQSink.cxx"
+  "devices/FairMQBuffer.cxx"
+  "devices/FairMQProxy.cxx"
+  "devices/FairMQSplitter.cxx"
+  "devices/FairMQMerger.cxx"
   "FairMQPoller.cxx"
 )
 
@@ -101,7 +102,6 @@ endif(NANOMSG_FOUND)
 
 set(DEPENDENCIES
   ${DEPENDENCIES}
-  ${CMAKE_THREAD_LIBS_INIT}
   boost_thread boost_timer boost_system
 )
 

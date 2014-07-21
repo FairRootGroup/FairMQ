@@ -16,7 +16,7 @@
 
 FairMQTransportFactoryNN::FairMQTransportFactoryNN()
 {
-    LOG(INFO) << "Using nanonsg library";
+    LOG(INFO) << "Using nanomsg library";
 }
 
 FairMQMessage* FairMQTransportFactoryNN::CreateMessage()

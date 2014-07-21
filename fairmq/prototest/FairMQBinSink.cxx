@@ -35,8 +35,8 @@ void FairMQBinSink::Run()
         fPayloadInputs->at(0)->Receive(msg);
 
         int inputSize = msg->GetSize();
-        int numInput = inputSize / sizeof(Content);
-        Content* input = reinterpret_cast<Content*>(msg->GetData());
+        // int numInput = inputSize / sizeof(Content);
+        // Content* input = reinterpret_cast<Content*>(msg->GetData());
 
         // for (int i = 0; i < numInput; ++i) {
         //     LOG(INFO) << (&input[i])->x << " " << (&input[i])->y << " " << (&input[i])->z << " " << (&input[i])->a << " " << (&input[i])->b;

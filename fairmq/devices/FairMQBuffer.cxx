@@ -6,35 +6,31 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * FairMQSplitter.cxx
+ * FairMQBuffer.cxx
  *
- * @since 2012-12-06
+ * @since 2012-10-25
  * @author D. Klein, A. Rybalchenko
  */
+
+#include <iostream>
 
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 
+#include "FairMQBuffer.h"
 #include "FairMQLogger.h"
-#include "FairMQSplitter.h"
 
-FairMQSplitter::FairMQSplitter()
+FairMQBuffer::FairMQBuffer()
 {
 }
 
-FairMQSplitter::~FairMQSplitter()
-{
-}
-
-void FairMQSplitter::Run()
+void FairMQBuffer::Run()
 {
     LOG(INFO) << ">>>>>>> Run <<<<<<<";
 
     boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
     bool received = false;
-    int direction = 0;
-
     while (fState == RUNNING)
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
@@ -43,18 +39,21 @@ void FairMQSplitter::Run()
 
         if (received)
         {
-            fPayloadOutputs->at(direction)->Send(msg);
-            direction++;
-            if (direction >= fNumOutputs)
-            {
-                direction = 0;
-            }
+            fPayloadOutputs->at(0)->Send(msg);
             received = false;
         }
 
         delete msg;
     }
 
-    rateLogger.interrupt();
-    rateLogger.join();
+    try {
+        rateLogger.interrupt();
+        rateLogger.join();
+    } catch(boost::thread_resource_error& e) {
+        LOG(ERROR) << e.what();
+    }
+}
+
+FairMQBuffer::~FairMQBuffer()
+{
 }

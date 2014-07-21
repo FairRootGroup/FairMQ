@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * FairMQMerger.cxx
+ * FairMQSplitter.cxx
  *
  * @since 2012-12-06
  * @author D. Klein, A. Rybalchenko
@@ -16,51 +16,49 @@
 #include <boost/bind.hpp>
 
 #include "FairMQLogger.h"
-#include "FairMQMerger.h"
-#include "FairMQPoller.h"
+#include "FairMQSplitter.h"
 
-FairMQMerger::FairMQMerger()
+FairMQSplitter::FairMQSplitter()
 {
 }
 
-FairMQMerger::~FairMQMerger()
+FairMQSplitter::~FairMQSplitter()
 {
 }
 
-void FairMQMerger::Run()
+void FairMQSplitter::Run()
 {
     LOG(INFO) << ">>>>>>> Run <<<<<<<";
 
     boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-    FairMQPoller* poller = fTransportFactory->CreatePoller(*fPayloadInputs);
-
     bool received = false;
+    int direction = 0;
 
     while (fState == RUNNING)
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-        poller->Poll(100);
+        received = fPayloadInputs->at(0)->Receive(msg);
 
-        for (int i = 0; i < fNumInputs; i++)
+        if (received)
         {
-            if (poller->CheckInput(i))
+            fPayloadOutputs->at(direction)->Send(msg);
+            direction++;
+            if (direction >= fNumOutputs)
             {
-                received = fPayloadInputs->at(i)->Receive(msg);
+                direction = 0;
             }
-            if (received)
-            {
-                fPayloadOutputs->at(0)->Send(msg);
-                received = false;
-            }
+            received = false;
         }
 
         delete msg;
     }
 
-    delete poller;
-
-    rateLogger.interrupt();
-    rateLogger.join();
+    try {
+        rateLogger.interrupt();
+        rateLogger.join();
+    } catch(boost::thread_resource_error& e) {
+        LOG(ERROR) << e.what();
+    }
 }
