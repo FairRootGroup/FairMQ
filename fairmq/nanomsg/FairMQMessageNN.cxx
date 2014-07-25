@@ -37,6 +37,12 @@ FairMQMessageNN::FairMQMessageNN(size_t size)
     fReceiving = false;
 }
 
+
+/* nanomsg does not offer support for creating a message out of an existing buffer,
+ * therefore the following method is using memcpy. For more efficient handling,
+ * create FairMQMessage object only with size parameter and fill it with data.
+ * possible TODO: make this zero copy (will should then be as efficient as ZeroMQ).
+*/
 FairMQMessageNN::FairMQMessageNN(void* data, size_t size, fairmq_free_fn *ffn, void* hint)
 {
     fMessage = nn_allocmsg(size, 0);

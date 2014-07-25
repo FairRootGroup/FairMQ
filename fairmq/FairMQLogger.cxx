@@ -52,8 +52,11 @@ std::ostringstream& FairMQLogger::Log(int type)
         case ERROR:
             type_str = "\033[01;31mERROR\033[0m";
             break;
+        case WARN:
+            type_str = "\033[01;33mWARN\033[0m";
+            break;
         case STATE:
-            type_str = "\033[01;33mSTATE\033[0m";
+            type_str = "\033[01;35mSTATE\033[0m";
         default:
             break;
     }

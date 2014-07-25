@@ -176,18 +176,18 @@ namespace FairMQFSM
         }
         // Transition table for FairMQFMS
         struct transition_table : mpl::vector<
-            //    Start     Event     Next    Action    Guard
-            //  +---------+---------+-------+---------+--------+
-            msmf::Row<IDLE_FSM, INIT, INITIALIZING_FSM, InitFct, msmf::none>,
-            msmf::Row<IDLE_FSM, END, msmf::none, TestFct, msmf::none>, // this is an invalid transition...
-            msmf::Row<INITIALIZING_FSM, SETOUTPUT, SETTINGOUTPUT_FSM, SetOutputFct, msmf::none>,
-            msmf::Row<SETTINGOUTPUT_FSM, SETINPUT, SETTINGINPUT_FSM, SetInputFct, msmf::none>,
-            msmf::Row<SETTINGINPUT_FSM, PAUSE, WAITING_FSM, PauseFct, msmf::none>,
-            msmf::Row<SETTINGINPUT_FSM, RUN, RUNNING_FSM, RunFct, msmf::none>,
-            msmf::Row<WAITING_FSM, RUN, RUNNING_FSM, RunFct, msmf::none>,
-            msmf::Row<WAITING_FSM, STOP, IDLE_FSM, StopFct, msmf::none>,
-            msmf::Row<RUNNING_FSM, PAUSE, WAITING_FSM, PauseFct, msmf::none>,
-            msmf::Row<RUNNING_FSM, STOP, IDLE_FSM, StopFct, msmf::none> >
+            //        Start              Event      Next               Action        Guard
+            //       +------------------+----------+------------------+-------------+---------+
+            msmf::Row<IDLE_FSM,          INIT,      INITIALIZING_FSM,  InitFct,      msmf::none>,
+            msmf::Row<IDLE_FSM,          END,       msmf::none,        TestFct,      msmf::none>, // this is an invalid transition...
+            msmf::Row<INITIALIZING_FSM,  SETOUTPUT, SETTINGOUTPUT_FSM, SetOutputFct, msmf::none>,
+            msmf::Row<SETTINGOUTPUT_FSM, SETINPUT,  SETTINGINPUT_FSM,  SetInputFct,  msmf::none>,
+            msmf::Row<SETTINGINPUT_FSM,  PAUSE,     WAITING_FSM,       PauseFct,     msmf::none>,
+            msmf::Row<SETTINGINPUT_FSM,  RUN,       RUNNING_FSM,       RunFct,       msmf::none>,
+            msmf::Row<WAITING_FSM,       RUN,       RUNNING_FSM,       RunFct,       msmf::none>,
+            msmf::Row<WAITING_FSM,       STOP,      IDLE_FSM,          StopFct,      msmf::none>,
+            msmf::Row<RUNNING_FSM,       PAUSE,     WAITING_FSM,       PauseFct,     msmf::none>,
+            msmf::Row<RUNNING_FSM,       STOP,      IDLE_FSM,          StopFct,      msmf::none> >
         {
         };
         // Replaces the default no-transition response.

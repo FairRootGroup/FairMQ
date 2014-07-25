@@ -29,14 +29,15 @@ class FairMQSocket
     virtual void Bind(const string& address) = 0;
     virtual void Connect(const string& address) = 0;
 
-    virtual size_t Send(FairMQMessage* msg) = 0;
-    virtual size_t Receive(FairMQMessage* msg) = 0;
+    virtual size_t Send(FairMQMessage* msg, const string& flag="") = 0;
+    virtual size_t Receive(FairMQMessage* msg, const string& flag="") = 0;
 
     virtual void* GetSocket() = 0;
     virtual int GetSocket(int nothing) = 0;
     virtual void Close() = 0;
 
     virtual void SetOption(const string& option, const void* value, size_t valueSize) = 0;
+    virtual void GetOption(const string& option, void* value, size_t* valueSize) = 0;
 
     virtual unsigned long GetBytesTx() = 0;
     virtual unsigned long GetBytesRx() = 0;

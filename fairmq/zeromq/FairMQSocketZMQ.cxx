@@ -82,9 +82,9 @@ void FairMQSocketZMQ::Connect(const string& address)
     }
 }
 
-size_t FairMQSocketZMQ::Send(FairMQMessage* msg)
+size_t FairMQSocketZMQ::Send(FairMQMessage* msg, const string& flag)
 {
-    int nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, 0);
+    int nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, GetConstant(flag));
     if (nbytes >= 0)
     {
         fBytesTx += nbytes;
@@ -99,9 +99,9 @@ size_t FairMQSocketZMQ::Send(FairMQMessage* msg)
     return nbytes;
 }
 
-size_t FairMQSocketZMQ::Receive(FairMQMessage* msg)
+size_t FairMQSocketZMQ::Receive(FairMQMessage* msg, const string& flag)
 {
-    int nbytes = zmq_msg_recv(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, 0);
+    int nbytes = zmq_msg_recv(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, GetConstant(flag));
     if (nbytes >= 0)
     {
         fBytesRx += nbytes;
@@ -152,6 +152,14 @@ void FairMQSocketZMQ::SetOption(const string& option, const void* value, size_t 
     }
 }
 
+void FairMQSocketZMQ::GetOption(const string& option, void* value, size_t* valueSize)
+{
+    int rc = zmq_getsockopt(fSocket, GetConstant(option), value, valueSize);
+    if (rc < 0) {
+        LOG(ERROR) << "failed getting socket option, reason: " << zmq_strerror(errno);
+    }
+}
+
 unsigned long FairMQSocketZMQ::GetBytesTx()
 {
     return fBytesTx;
@@ -174,6 +182,8 @@ unsigned long FairMQSocketZMQ::GetMessagesRx()
 
 int FairMQSocketZMQ::GetConstant(const string& constant)
 {
+    if (constant == "")
+        return 0;
     if (constant == "sub")
         return ZMQ_SUB;
     if (constant == "pub")
@@ -190,6 +200,10 @@ int FairMQSocketZMQ::GetConstant(const string& constant)
         return ZMQ_SNDHWM;
     if (constant == "rcv-hwm")
         return ZMQ_RCVHWM;
+    if (constant == "snd-more")
+        return ZMQ_SNDMORE;
+    if (constant == "rcv-more")
+        return ZMQ_RCVMORE;
 
     return -1;
 }
