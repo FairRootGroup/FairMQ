@@ -69,7 +69,7 @@ void FairMQSocketNN::Connect(const string& address)
     }
 }
 
-size_t FairMQSocketNN::Send(FairMQMessage* msg, const string& flag)
+int FairMQSocketNN::Send(FairMQMessage* msg, const string& flag)
 {
     void* ptr = msg->GetMessage();
     int rc = nn_send(fSocket, &ptr, NN_MSG, 0);
@@ -87,7 +87,7 @@ size_t FairMQSocketNN::Send(FairMQMessage* msg, const string& flag)
     return rc;
 }
 
-size_t FairMQSocketNN::Receive(FairMQMessage* msg, const string& flag)
+int FairMQSocketNN::Receive(FairMQMessage* msg, const string& flag)
 {
     void* ptr = NULL;
     int rc = nn_recv(fSocket, &ptr, NN_MSG, 0);
@@ -106,6 +106,16 @@ size_t FairMQSocketNN::Receive(FairMQMessage* msg, const string& flag)
     return rc;
 }
 
+void FairMQSocketNN::Close()
+{
+    nn_close(fSocket);
+}
+
+void FairMQSocketNN::Terminate()
+{
+    nn_term();
+}
+
 void* FairMQSocketNN::GetSocket()
 {
     return NULL; // dummy method to comply with the interface. functionality not possible in zeromq.
@@ -114,11 +124,6 @@ void* FairMQSocketNN::GetSocket()
 int FairMQSocketNN::GetSocket(int nothing)
 {
     return fSocket;
-}
-
-void FairMQSocketNN::Close()
-{
-    nn_close(fSocket);
 }
 
 void FairMQSocketNN::SetOption(const string& option, const void* value, size_t valueSize)
@@ -186,6 +191,8 @@ int FairMQSocketNN::GetConstant(const string& constant)
         LOG(ERROR) << "Multipart messages functionality currently not supported by nanomsg!";
         return -1;
     }
+    if (constant == "linger")
+        return NN_LINGER;
 
     return -1;
 }

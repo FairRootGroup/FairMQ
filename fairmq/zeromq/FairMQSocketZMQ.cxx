@@ -40,7 +40,16 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num, int numIoThreads)
     rc = zmq_setsockopt(fSocket, ZMQ_IDENTITY, &fId, fId.length());
     if (rc != 0)
     {
-        LOG(ERROR) << "failed setting socket option, reason: " << zmq_strerror(errno);
+        LOG(ERROR) << "failed setting ZMQ_IDENTITY socket option, reason: " << zmq_strerror(errno);
+    }
+
+    // Tell socket to try and send/receive outstanding messages for <linger> milliseconds before terminating.
+    // Default value for ZeroMQ is -1, which is to wait forever.
+    int linger = 500;
+    rc = zmq_setsockopt(fSocket, ZMQ_LINGER, &linger, sizeof(linger));
+    if (rc != 0)
+    {
+        LOG(ERROR) << "failed setting ZMQ_LINGER socket option, reason: " << zmq_strerror(errno);
     }
 
     if (type == "sub")
@@ -48,7 +57,7 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num, int numIoThreads)
         rc = zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, NULL, 0);
         if (rc != 0)
         {
-            LOG(ERROR) << "failed setting socket option, reason: " << zmq_strerror(errno);
+            LOG(ERROR) << "failed setting ZMQ_SUBSCRIBE socket option, reason: " << zmq_strerror(errno);
         }
     }
 
@@ -82,7 +91,7 @@ void FairMQSocketZMQ::Connect(const string& address)
     }
 }
 
-size_t FairMQSocketZMQ::Send(FairMQMessage* msg, const string& flag)
+int FairMQSocketZMQ::Send(FairMQMessage* msg, const string& flag)
 {
     int nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, GetConstant(flag));
     if (nbytes >= 0)
@@ -93,13 +102,18 @@ size_t FairMQSocketZMQ::Send(FairMQMessage* msg, const string& flag)
     }
     if (zmq_errno() == EAGAIN)
     {
-        return false;
+        return 0;
+    }
+    if (zmq_errno() == ETERM)
+    {
+        LOG(INFO) << "terminating socket #" << fId;
+        return -1;
     }
     LOG(ERROR) << "failed sending on socket #" << fId << ", reason: " << zmq_strerror(errno);
     return nbytes;
 }
 
-size_t FairMQSocketZMQ::Receive(FairMQMessage* msg, const string& flag)
+int FairMQSocketZMQ::Receive(FairMQMessage* msg, const string& flag)
 {
     int nbytes = zmq_msg_recv(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, GetConstant(flag));
     if (nbytes >= 0)
@@ -110,7 +124,12 @@ size_t FairMQSocketZMQ::Receive(FairMQMessage* msg, const string& flag)
     }
     if (zmq_errno() == EAGAIN)
     {
-        return false;
+        return 0;
+    }
+    if (zmq_errno() == ETERM)
+    {
+        LOG(INFO) << "terminating socket #" << fId;
+        return -1;
     }
     LOG(ERROR) << "failed receiving on socket #" << fId << ", reason: " << zmq_strerror(errno);
     return nbytes;
@@ -130,6 +149,15 @@ void FairMQSocketZMQ::Close()
     }
 
     fSocket = NULL;
+}
+
+void FairMQSocketZMQ::Terminate()
+{
+    int rc = zmq_ctx_destroy(fContext->GetContext());
+    if (rc != 0)
+    {
+        LOG(ERROR) << "failed terminating context, reason: " << zmq_strerror(errno);
+    }
 }
 
 void* FairMQSocketZMQ::GetSocket()
@@ -204,6 +232,8 @@ int FairMQSocketZMQ::GetConstant(const string& constant)
         return ZMQ_SNDMORE;
     if (constant == "rcv-more")
         return ZMQ_RCVMORE;
+    if (constant == "linger")
+        return ZMQ_LINGER;
 
     return -1;
 }

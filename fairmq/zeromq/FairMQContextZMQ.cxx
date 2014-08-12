@@ -51,8 +51,11 @@ void FairMQContextZMQ::Close()
     int rc = zmq_ctx_destroy(fContext);
     if (rc != 0)
     {
-        LOG(ERROR) << "failed closing context, reason: " << zmq_strerror(errno);
+        if (errno == EINTR) {
+            LOG(ERROR) << " failed closing context, reason: " << zmq_strerror(errno);
+        } else {
+            fContext = NULL;
+            return;
+        }
     }
-
-    fContext = NULL;
 }

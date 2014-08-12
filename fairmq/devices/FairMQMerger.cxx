@@ -35,7 +35,7 @@ void FairMQMerger::Run()
 
     FairMQPoller* poller = fTransportFactory->CreatePoller(*fPayloadInputs);
 
-    bool received = false;
+    int received = 0;
 
     while (fState == RUNNING)
     {
@@ -49,10 +49,10 @@ void FairMQMerger::Run()
             {
                 received = fPayloadInputs->at(i)->Receive(msg);
             }
-            if (received)
+            if (received > 0)
             {
                 fPayloadOutputs->at(0)->Send(msg);
-                received = false;
+                received = 0;
             }
         }
 
@@ -67,4 +67,6 @@ void FairMQMerger::Run()
     } catch(boost::thread_resource_error& e) {
         LOG(ERROR) << e.what();
     }
+
+    FairMQDevice::Shutdown();
 }

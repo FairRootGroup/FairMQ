@@ -15,7 +15,8 @@ if(PROTOBUF_FOUND)
   set(INCLUDE_DIRECTORIES
     ${INCLUDE_DIRECTORIES}
     ${PROTOBUF_INCLUDE_DIR}
-    ${CMAKE_SOURCE_DIR}/fairmq/prototest
+    # # following directory is only for protobuf tests and is not essential part of FairMQ
+    #${CMAKE_SOURCE_DIR}/fairmq/prototest
   )
 endif(PROTOBUF_FOUND)
 
@@ -59,14 +60,15 @@ set(SRCS
 )
 
 if(PROTOBUF_FOUND)
-  set(SRCS
-    ${SRCS}
-    "prototest/payload.pb.cc"
-    "prototest/FairMQProtoSampler.cxx"
-    "prototest/FairMQBinSampler.cxx"
-    "prototest/FairMQBinSink.cxx"
-    "prototest/FairMQProtoSink.cxx"
-  )
+  # following source files are only for protobuf tests and are not essential part of FairMQ
+  # set(SRCS
+  #   ${SRCS}
+  #   "prototest/payload.pb.cc"
+  #   "prototest/FairMQProtoSampler.cxx"
+  #   "prototest/FairMQBinSampler.cxx"
+  #   "prototest/FairMQBinSink.cxx"
+  #   "prototest/FairMQProtoSink.cxx"
+  # )
   set(DEPENDENCIES
     ${DEPENDENCIES}
     ${PROTOBUF_LIBRARY}
@@ -117,15 +119,16 @@ set(Exe_Names
   sink
   proxy)
 
-if(PROTOBUF_FOUND)
-  set(Exe_Names
-      ${Exe_Names}
-      binsampler
-      protosampler
-      binsink
-      protosink
-      )
-endif(PROTOBUF_FOUND)
+# following executables are only for protobuf tests and are not essential part of FairMQ
+# if(PROTOBUF_FOUND)
+#   set(Exe_Names
+#       ${Exe_Names}
+#       binsampler
+#       protosampler
+#       binsink
+#       protosink
+#       )
+# endif(PROTOBUF_FOUND)
 
 set(Exe_Source 
   run/runBenchmarkSampler.cxx
@@ -136,15 +139,16 @@ set(Exe_Source
   run/runProxy.cxx
 )
 
-if(PROTOBUF_FOUND)
-  set(Exe_Source
-      ${Exe_Source}
-      run/runBinSampler.cxx
-      run/runProtoSampler.cxx
-      run/runBinSink.cxx
-      run/runProtoSink.cxx
-      )
-endif(PROTOBUF_FOUND)
+# following source files are only for protobuf tests and are not essential part of FairMQ
+# if(PROTOBUF_FOUND)
+#   set(Exe_Source
+#       ${Exe_Source}
+#       run/runBinSampler.cxx
+#       run/runProtoSampler.cxx
+#       run/runBinSink.cxx
+#       run/runProtoSink.cxx
+#       )
+# endif(PROTOBUF_FOUND)
 
 list(LENGTH Exe_Names _length)
 math(EXPR _length ${_length}-1)

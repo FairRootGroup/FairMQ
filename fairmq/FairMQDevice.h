@@ -88,6 +88,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     vector<FairMQSocket*>* fPayloadInputs;
     vector<FairMQSocket*>* fPayloadOutputs;
 
+    FairMQSocket* fCommandSocket;
+
     int fLogIntervalInMs;
 
     FairMQTransportFactory* fTransportFactory;
@@ -98,6 +100,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     virtual void Shutdown();
     virtual void InitOutput();
     virtual void InitInput();
+
+    virtual void Terminate();
 };
 
 #endif /* FAIRMQDEVICE_H_ */

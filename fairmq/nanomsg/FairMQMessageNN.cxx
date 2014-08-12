@@ -13,6 +13,7 @@
  */
 
 #include <cstring>
+#include <stdlib.h>
 
 #include <nanomsg/nn.h>
 

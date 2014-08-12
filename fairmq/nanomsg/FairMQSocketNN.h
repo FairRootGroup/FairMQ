@@ -31,12 +31,13 @@ class FairMQSocketNN : public FairMQSocket
     virtual void Bind(const string& address);
     virtual void Connect(const string& address);
 
-    virtual size_t Send(FairMQMessage* msg, const string& flag="");
-    virtual size_t Receive(FairMQMessage* msg, const string& flag="");
+    virtual int Send(FairMQMessage* msg, const string& flag="");
+    virtual int Receive(FairMQMessage* msg, const string& flag="");
 
     virtual void* GetSocket();
     virtual int GetSocket(int nothing);
     virtual void Close();
+    virtual void Terminate();
 
     virtual void SetOption(const string& option, const void* value, size_t valueSize);
     virtual void GetOption(const string& option, void* value, size_t* valueSize);

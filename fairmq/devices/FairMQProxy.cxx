@@ -34,15 +34,15 @@ void FairMQProxy::Run()
 
     FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-    size_t bytes_received = 0;
+    int received = 0;
 
     while (fState == RUNNING)
     {
-        bytes_received = fPayloadInputs->at(0)->Receive(msg);
-        if (bytes_received)
+        received = fPayloadInputs->at(0)->Receive(msg);
+        if (received > 0)
         {
             fPayloadOutputs->at(0)->Send(msg);
-            bytes_received = 0;
+            received = 0;
         }
     }
 
@@ -54,4 +54,6 @@ void FairMQProxy::Run()
     } catch(boost::thread_resource_error& e) {
         LOG(ERROR) << e.what();
     }
+
+    FairMQDevice::Shutdown();
 }

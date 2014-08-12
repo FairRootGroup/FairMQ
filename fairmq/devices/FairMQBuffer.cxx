@@ -30,17 +30,17 @@ void FairMQBuffer::Run()
 
     boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-    bool received = false;
+    int received = 0;
     while (fState == RUNNING)
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
 
         received = fPayloadInputs->at(0)->Receive(msg);
 
-        if (received)
+        if (received > 0)
         {
             fPayloadOutputs->at(0)->Send(msg);
-            received = false;
+            received = 0;
         }
 
         delete msg;
@@ -52,6 +52,8 @@ void FairMQBuffer::Run()
     } catch(boost::thread_resource_error& e) {
         LOG(ERROR) << e.what();
     }
+
+    FairMQDevice::Shutdown();
 }
 
 FairMQBuffer::~FairMQBuffer()

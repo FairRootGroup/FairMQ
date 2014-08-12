@@ -32,7 +32,7 @@ void FairMQSplitter::Run()
 
     boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-    bool received = false;
+    int received = 0;
     int direction = 0;
 
     while (fState == RUNNING)
@@ -41,7 +41,7 @@ void FairMQSplitter::Run()
 
         received = fPayloadInputs->at(0)->Receive(msg);
 
-        if (received)
+        if (received > 0)
         {
             fPayloadOutputs->at(direction)->Send(msg);
             direction++;
@@ -49,7 +49,7 @@ void FairMQSplitter::Run()
             {
                 direction = 0;
             }
-            received = false;
+            received = 0;
         }
 
         delete msg;
@@ -61,4 +61,6 @@ void FairMQSplitter::Run()
     } catch(boost::thread_resource_error& e) {
         LOG(ERROR) << e.what();
     }
+
+    FairMQDevice::Shutdown();
 }

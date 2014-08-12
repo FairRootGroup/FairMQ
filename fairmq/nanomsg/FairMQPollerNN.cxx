@@ -41,6 +41,14 @@ bool FairMQPollerNN::CheckInput(int index)
     return false;
 }
 
+bool FairMQPollerNN::CheckOutput(int index)
+{
+    if (items[index].revents & NN_POLLOUT)
+        return true;
+
+    return false;
+}
+
 FairMQPollerNN::~FairMQPollerNN()
 {
     if (items != NULL)

@@ -29,6 +29,7 @@ class FairMQPollerNN : public FairMQPoller
 
     virtual void Poll(int timeout);
     virtual bool CheckInput(int index);
+    virtual bool CheckOutput(int index);
 
     virtual ~FairMQPollerNN();
 

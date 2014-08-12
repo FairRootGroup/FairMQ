@@ -33,27 +33,13 @@ namespace msmf = boost::msm::front;
 namespace FairMQFSM
 {
     // defining events for the boost MSM state machine
-    struct INIT
-    {
-    };
-    struct SETOUTPUT
-    {
-    };
-    struct SETINPUT
-    {
-    };
-    struct PAUSE
-    {
-    };
-    struct RUN
-    {
-    };
-    struct STOP
-    {
-    };
-    struct END
-    {
-    };
+    struct INIT {};
+    struct SETOUTPUT {};
+    struct SETINPUT {};
+    struct PAUSE {};
+    struct RUN {};
+    struct STOP {};
+    struct END {};
 
     // defining the boost MSM state machine
     struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
@@ -70,24 +56,12 @@ namespace FairMQFSM
             LOG(STATE) << "Exiting FairMQ state machine";
         }
         // The list of FSM states
-        struct IDLE_FSM : public msm::front::state<>
-        {
-        };
-        struct INITIALIZING_FSM : public msm::front::state<>
-        {
-        };
-        struct SETTINGOUTPUT_FSM : public msm::front::state<>
-        {
-        };
-        struct SETTINGINPUT_FSM : public msm::front::state<>
-        {
-        };
-        struct WAITING_FSM : public msm::front::state<>
-        {
-        };
-        struct RUNNING_FSM : public msm::front::state<>
-        {
-        };
+        struct IDLE_FSM : public msm::front::state<> {};
+        struct INITIALIZING_FSM : public msm::front::state<> {};
+        struct SETTINGOUTPUT_FSM : public msm::front::state<> {};
+        struct SETTINGINPUT_FSM : public msm::front::state<> {};
+        struct WAITING_FSM : public msm::front::state<> {};
+        struct RUNNING_FSM : public msm::front::state<> {};
         // Define initial state
         typedef IDLE_FSM initial_state;
         // Actions
@@ -141,8 +115,8 @@ namespace FairMQFSM
             void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
             {
                 fsm.fState = IDLE;
+                fsm.Terminate();
                 fsm.running_state.join();
-                fsm.Shutdown();
             }
         };
         struct PauseFct
@@ -156,24 +130,13 @@ namespace FairMQFSM
             }
         };
         // actions to be overwritten by derived classes
-        virtual void Init()
-        {
-        }
-        virtual void Run()
-        {
-        }
-        virtual void Pause()
-        {
-        }
-        virtual void Shutdown()
-        {
-        }
-        virtual void InitOutput()
-        {
-        }
-        virtual void InitInput()
-        {
-        }
+        virtual void Init() {}
+        virtual void Run() {}
+        virtual void Pause() {}
+        virtual void Shutdown() {}
+        virtual void InitOutput() {}
+        virtual void InitInput() {}
+        virtual void Terminate() {} // Termination method called during StopFct action.
         // Transition table for FairMQFMS
         struct transition_table : mpl::vector<
             //        Start              Event      Next               Action        Guard

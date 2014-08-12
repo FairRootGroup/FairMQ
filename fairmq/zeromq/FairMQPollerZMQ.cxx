@@ -15,6 +15,7 @@
 #include <zmq.h>
 
 #include "FairMQPollerZMQ.h"
+#include "FairMQLogger.h"
 
 FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQSocket*>& inputs)
 {
@@ -32,12 +33,24 @@ FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQSocket*>& inputs)
 
 void FairMQPollerZMQ::Poll(int timeout)
 {
-    zmq_poll(items, fNumItems, timeout);
+    int rc = zmq_poll(items, fNumItems, timeout);
+    if (rc < 0)
+    {
+        LOG(ERROR) << "polling failed, reason: " << zmq_strerror(errno);
+    }
 }
 
 bool FairMQPollerZMQ::CheckInput(int index)
 {
     if (items[index].revents & ZMQ_POLLIN)
+        return true;
+
+    return false;
+}
+
+bool FairMQPollerZMQ::CheckOutput(int index)
+{
+    if (items[index].revents & ZMQ_POLLOUT)
         return true;
 
     return false;
