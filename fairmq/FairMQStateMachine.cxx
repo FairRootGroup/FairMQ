@@ -16,6 +16,7 @@
 #include "FairMQLogger.h"
 
 FairMQStateMachine::FairMQStateMachine()
+    : fRunningFinished(false)
 {
     start();
 }

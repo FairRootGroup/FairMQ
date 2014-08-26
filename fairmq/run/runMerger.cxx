@@ -124,8 +124,12 @@ int main(int argc, char** argv)
     merger.ChangeState(FairMQMerger::SETINPUT);
     merger.ChangeState(FairMQMerger::RUN);
 
-    char ch;
-    cin.get(ch);
+    // wait until the running thread has finished processing.
+    boost::unique_lock<boost::mutex> lock(merger.fRunningMutex);
+    while (!merger.fRunningFinished)
+    {
+        merger.fRunningCondition.wait(lock);
+    }
 
     merger.ChangeState(FairMQMerger::STOP);
     merger.ChangeState(FairMQMerger::END);

@@ -69,4 +69,9 @@ void FairMQMerger::Run()
     }
 
     FairMQDevice::Shutdown();
+
+    // notify parent thread about end of processing.
+    boost::lock_guard<boost::mutex> lock(fRunningMutex);
+    fRunningFinished = true;
+    fRunningCondition.notify_one();
 }

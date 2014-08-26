@@ -114,8 +114,12 @@ int main(int argc, char** argv)
     buffer.ChangeState(FairMQBuffer::SETINPUT);
     buffer.ChangeState(FairMQBuffer::RUN);
 
-    char ch;
-    cin.get(ch);
+    // wait until the running thread has finished processing.
+    boost::unique_lock<boost::mutex> lock(buffer.fRunningMutex);
+    while (!buffer.fRunningFinished)
+    {
+        buffer.fRunningCondition.wait(lock);
+    }
 
     buffer.ChangeState(FairMQBuffer::STOP);
     buffer.ChangeState(FairMQBuffer::END);

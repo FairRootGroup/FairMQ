@@ -16,13 +16,16 @@
 #define FAIRMQSTATEMACHINE_H_
 
 #include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/condition_variable.hpp>
 #include <boost/bind.hpp>
+#include <boost/function.hpp>
+
 #include <boost/msm/back/state_machine.hpp>
 #include <boost/msm/front/state_machine_def.hpp>
 #include <boost/msm/front/functor_row.hpp>
 #include <boost/msm/front/euml/common.hpp>
 #include <boost/msm/front/euml/operator.hpp>
-#include <boost/function.hpp>
 
 #include "FairMQLogger.h"
 
@@ -192,6 +195,11 @@ class FairMQStateMachine : public FairMQFSM::FairMQFSM
     FairMQStateMachine();
     virtual ~FairMQStateMachine();
     void ChangeState(int event);
+
+    // condition variable to notify parent thread about end of running state.
+    boost::condition_variable fRunningCondition;
+    boost::mutex fRunningMutex;
+    bool fRunningFinished;
 };
 
 #endif /* FAIRMQSTATEMACHINE_H_ */
