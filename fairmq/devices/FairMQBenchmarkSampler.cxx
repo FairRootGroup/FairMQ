@@ -39,7 +39,6 @@ void FairMQBenchmarkSampler::Init()
 void FairMQBenchmarkSampler::Run()
 {
     LOG(INFO) << ">>>>>>> Run <<<<<<<";
-    // boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
     boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
     boost::thread resetEventCounter(boost::bind(&FairMQBenchmarkSampler::ResetEventCounter, this));

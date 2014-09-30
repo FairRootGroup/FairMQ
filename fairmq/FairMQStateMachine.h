@@ -73,7 +73,7 @@ namespace FairMQFSM
             template <class EVT, class FSM, class SourceState, class TargetState>
             void operator()(EVT const&, FSM&, SourceState&, TargetState&)
             {
-                LOG(STATE) << "Transition from " << typeid(SourceState).name() << " to " << typeid(TargetState).name() << " with event:" << typeid(EVT).name();
+                // LOG(STATE) << "Transition from " << typeid(SourceState).name() << " to " << typeid(TargetState).name() << " with event:" << typeid(EVT).name();
             }
         };
         struct InitFct

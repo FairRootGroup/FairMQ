@@ -32,7 +32,6 @@ FairMQDevice::FairMQDevice()
 void FairMQDevice::Init()
 {
     LOG(INFO) << ">>>>>>> Init <<<<<<<";
-    LOG(INFO) << "numIoThreads: " << fNumIoThreads;
 
     for (int i = 0; i < fNumInputs; ++i)
     {

@@ -15,6 +15,8 @@
 #include <iostream>
 #include <csignal>
 
+#include "boost/program_options.hpp"
+
 #include "FairMQLogger.h"
 #include "FairMQBinSampler.h"
 
@@ -24,10 +26,7 @@
 #include "FairMQTransportFactoryZMQ.h"
 #endif
 
-using std::cout;
-using std::cin;
-using std::endl;
-using std::stringstream;
+using namespace std;
 
 FairMQBinSampler sampler;
 
@@ -52,18 +51,93 @@ static void s_catch_signals(void)
     sigaction(SIGTERM, &action, NULL);
 }
 
+typedef struct DeviceOptions
+{
+    string id;
+    int eventSize;
+    int eventRate;
+    int ioThreads;
+    string outputSocketType;
+    int outputBufSize;
+    string outputMethod;
+    string outputAddress;
+} DeviceOptions_t;
+
+inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
+{
+    if (_options == NULL)
+        throw std::runtime_error("Internal error: options' container is empty.");
+
+    namespace bpo = boost::program_options;
+    bpo::options_description desc("Options");
+    desc.add_options()
+        ("id", bpo::value<string>()->required(), "Device ID")
+        ("event-size", bpo::value<int>()->default_value(1000), "Event size in bytes")
+        ("event-rate", bpo::value<int>()->default_value(0), "Event rate limit in maximum number of events per second")
+        ("io-threads", bpo::value<int>()->default_value(1), "Number of I/O threads")
+        ("output-socket-type", bpo::value<string>()->required(), "Output socket type: pub/push")
+        ("output-buff-size", bpo::value<int>()->required(), "Output buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
+        ("output-method", bpo::value<string>()->required(), "Output method: bind/connect")
+        ("output-address", bpo::value<string>()->required(), "Output address, e.g.: \"tcp://*:5555\"")
+        ("help", "Print help messages");
+
+    bpo::variables_map vm;
+    bpo::store(bpo::parse_command_line(_argc, _argv, desc), vm);
+
+    if ( vm.count("help") )
+    {
+        LOG(INFO) << "FairMQ Bin Sampler" << endl << desc;
+        return false;
+    }
+
+    bpo::notify(vm);
+
+    if ( vm.count("id") )
+        _options->id = vm["id"].as<string>();
+
+    if ( vm.count("event-size") )
+        _options->eventSize = vm["event-size"].as<int>();
+
+    if ( vm.count("event-rate") )
+        _options->eventRate = vm["event-rate"].as<int>();
+
+    if ( vm.count("io-threads") )
+        _options->ioThreads = vm["io-threads"].as<int>();
+
+    if ( vm.count("output-socket-type") )
+        _options->outputSocketType = vm["output-socket-type"].as<string>();
+
+    if ( vm.count("output-buff-size") )
+        _options->outputBufSize = vm["output-buff-size"].as<int>();
+
+    if ( vm.count("output-method") )
+        _options->outputMethod = vm["output-method"].as<string>();
+
+    if ( vm.count("output-address") )
+        _options->outputAddress = vm["output-address"].as<string>();
+
+    return true;
+}
+
 int main(int argc, char** argv)
 {
-    if (argc != 9)
+    s_catch_signals();
+
+    DeviceOptions_t options;
+    try
     {
-        cout << "Usage: bsampler ID eventSize eventRate numIoTreads\n"
-             << "\t\toutputSocketType outputSndBufSize outputMethod outputAddress\n" << endl;
+        if (!parse_cmd_line(argc, argv, &options))
+            return 0;
+    }
+    catch (exception& e)
+    {
+        LOG(ERROR) << e.what();
         return 1;
     }
 
-    s_catch_signals();
-
     LOG(INFO) << "PID: " << getpid();
+    LOG(INFO) << "CONFIG: " << "id: " << options.id << ", event size: " << options.eventSize << ", event rate: " << options.eventRate << ", I/O threads: " << options.ioThreads;
+    LOG(INFO) << "OUTPUT: " << options.outputSocketType << " " << options.outputBufSize << " " << options.outputMethod << " " << options.outputAddress;
 
 #ifdef NANOMSG
     FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
@@ -73,41 +147,20 @@ int main(int argc, char** argv)
 
     sampler.SetTransport(transportFactory);
 
-    int i = 1;
-
-    sampler.SetProperty(FairMQBinSampler::Id, argv[i]);
-    ++i;
-
-    int eventSize;
-    stringstream(argv[i]) >> eventSize;
-    sampler.SetProperty(FairMQBinSampler::EventSize, eventSize);
-    ++i;
-
-    int eventRate;
-    stringstream(argv[i]) >> eventRate;
-    sampler.SetProperty(FairMQBinSampler::EventRate, eventRate);
-    ++i;
-
-    int numIoThreads;
-    stringstream(argv[i]) >> numIoThreads;
-    sampler.SetProperty(FairMQBinSampler::NumIoThreads, numIoThreads);
-    ++i;
+    sampler.SetProperty(FairMQBinSampler::Id, options.id);
+    sampler.SetProperty(FairMQBinSampler::EventSize, options.eventSize);
+    sampler.SetProperty(FairMQBinSampler::EventRate, options.eventRate);
+    sampler.SetProperty(FairMQBinSampler::NumIoThreads, options.ioThreads);
 
     sampler.SetProperty(FairMQBinSampler::NumInputs, 0);
     sampler.SetProperty(FairMQBinSampler::NumOutputs, 1);
 
     sampler.ChangeState(FairMQBinSampler::INIT);
 
-    sampler.SetProperty(FairMQBinSampler::OutputSocketType, argv[i], 0);
-    ++i;
-    int outputSndBufSize;
-    stringstream(argv[i]) >> outputSndBufSize;
-    sampler.SetProperty(FairMQBinSampler::OutputSndBufSize, outputSndBufSize, 0);
-    ++i;
-    sampler.SetProperty(FairMQBinSampler::OutputMethod, argv[i], 0);
-    ++i;
-    sampler.SetProperty(FairMQBinSampler::OutputAddress, argv[i], 0);
-    ++i;
+    sampler.SetProperty(FairMQBinSampler::OutputSocketType, options.outputSocketType);
+    sampler.SetProperty(FairMQBinSampler::OutputSndBufSize, options.outputBufSize);
+    sampler.SetProperty(FairMQBinSampler::OutputMethod, options.outputMethod);
+    sampler.SetProperty(FairMQBinSampler::OutputAddress, options.outputAddress);
 
     sampler.ChangeState(FairMQBinSampler::SETOUTPUT);
     sampler.ChangeState(FairMQBinSampler::SETINPUT);

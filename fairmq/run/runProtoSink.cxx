@@ -15,6 +15,8 @@
 #include <iostream>
 #include <csignal>
 
+#include "boost/program_options.hpp"
+
 #include "FairMQLogger.h"
 #include "FairMQProtoSink.h"
 
@@ -24,10 +26,7 @@
 #include "FairMQTransportFactoryZMQ.h"
 #endif
 
-using std::cout;
-using std::cin;
-using std::endl;
-using std::stringstream;
+using namespace std;
 
 FairMQProtoSink sink;
 
@@ -52,16 +51,79 @@ static void s_catch_signals(void)
     sigaction(SIGTERM, &action, NULL);
 }
 
-int main(int argc, char** argv)
+typedef struct DeviceOptions
 {
-    if (argc != 7)
+    string id;
+    int ioThreads;
+    string inputSocketType;
+    int inputBufSize;
+    string inputMethod;
+    string inputAddress;
+} DeviceOptions_t;
+
+inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
+{
+    if (_options == NULL)
+        throw std::runtime_error("Internal error: options' container is empty.");
+
+    namespace bpo = boost::program_options;
+    bpo::options_description desc("Options");
+    desc.add_options()
+        ("id", bpo::value<string>()->required(), "Device ID")
+        ("io-threads", bpo::value<int>()->default_value(1), "Number of I/O threads")
+        ("input-socket-type", bpo::value<string>()->required(), "Input socket type: sub/pull")
+        ("input-buff-size", bpo::value<int>()->required(), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
+        ("input-method", bpo::value<string>()->required(), "Input method: bind/connect")
+        ("input-address", bpo::value<string>()->required(), "Input address, e.g.: \"tcp://*:5555\"")
+        ("help", "Print help messages");
+
+    bpo::variables_map vm;
+    bpo::store(bpo::parse_command_line(_argc, _argv, desc), vm);
+
+    if ( vm.count("help") )
     {
-        cout << "Usage: sink \tID numIoTreads\n"
-             << "\t\tinputSocketType inputRcvBufSize inputMethod inputAddress\n" << endl;
-        return 1;
+        LOG(INFO) << "FairMQ Proto Sink" << endl << desc;
+        return false;
     }
 
+    bpo::notify(vm);
+
+    if ( vm.count("id") )
+        _options->id = vm["id"].as<string>();
+
+    if ( vm.count("io-threads") )
+        _options->ioThreads = vm["io-threads"].as<int>();
+
+    if ( vm.count("input-socket-type") )
+        _options->inputSocketType = vm["input-socket-type"].as<string>();
+
+    if ( vm.count("input-buff-size") )
+        _options->inputBufSize = vm["input-buff-size"].as<int>();
+
+    if ( vm.count("input-method") )
+        _options->inputMethod = vm["input-method"].as<string>();
+
+    if ( vm.count("input-address") )
+        _options->inputAddress = vm["input-address"].as<string>();
+
+    return true;
+}
+
+int main(int argc, char** argv)
+{
     s_catch_signals();
+
+    DeviceOptions_t options;
+    try
+    {
+        if (!parse_cmd_line(argc, argv, &options))
+            return 0;
+    }
+    catch (exception& e)
+    {
+        LOG(ERROR) << e.what();
+        return 1;
+    }
 
     LOG(INFO) << "PID: " << getpid();
 
@@ -73,31 +135,18 @@ int main(int argc, char** argv)
 
     sink.SetTransport(transportFactory);
 
-    int i = 1;
-
-    sink.SetProperty(FairMQProtoSink::Id, argv[i]);
-    ++i;
-
-    int numIoThreads;
-    stringstream(argv[i]) >> numIoThreads;
-    sink.SetProperty(FairMQProtoSink::NumIoThreads, numIoThreads);
-    ++i;
+    sink.SetProperty(FairMQProtoSink::Id, options.id);
+    sink.SetProperty(FairMQProtoSink::NumIoThreads, options.ioThreads);
 
     sink.SetProperty(FairMQProtoSink::NumInputs, 1);
     sink.SetProperty(FairMQProtoSink::NumOutputs, 0);
 
     sink.ChangeState(FairMQProtoSink::INIT);
 
-    sink.SetProperty(FairMQProtoSink::InputSocketType, argv[i], 0);
-    ++i;
-    int inputRcvBufSize;
-    stringstream(argv[i]) >> inputRcvBufSize;
-    sink.SetProperty(FairMQProtoSink::InputRcvBufSize, inputRcvBufSize, 0);
-    ++i;
-    sink.SetProperty(FairMQProtoSink::InputMethod, argv[i], 0);
-    ++i;
-    sink.SetProperty(FairMQProtoSink::InputAddress, argv[i], 0);
-    ++i;
+    sink.SetProperty(FairMQProtoSink::InputSocketType, options.inputSocketType);
+    sink.SetProperty(FairMQProtoSink::InputSndBufSize, options.inputBufSize);
+    sink.SetProperty(FairMQProtoSink::InputMethod, options.inputMethod);
+    sink.SetProperty(FairMQProtoSink::InputAddress, options.inputAddress);
 
     sink.ChangeState(FairMQProtoSink::SETOUTPUT);
     sink.ChangeState(FairMQProtoSink::SETINPUT);
