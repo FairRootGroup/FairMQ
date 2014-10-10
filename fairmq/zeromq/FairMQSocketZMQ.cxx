@@ -224,6 +224,10 @@ int FairMQSocketZMQ::GetConstant(const string& constant)
         return ZMQ_PUSH;
     if (constant == "pull")
         return ZMQ_PULL;
+    if (constant == "req")
+        return ZMQ_REQ;
+    if (constant == "rep")
+        return ZMQ_REP;
     if (constant == "snd-hwm")
         return ZMQ_SNDHWM;
     if (constant == "rcv-hwm")

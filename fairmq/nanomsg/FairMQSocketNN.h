@@ -18,6 +18,7 @@
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
 #include <nanomsg/pubsub.h>
+#include <nanomsg/reqrep.h>
 
 #include "FairMQSocket.h"
 

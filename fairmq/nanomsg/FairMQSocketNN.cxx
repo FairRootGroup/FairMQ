@@ -179,6 +179,10 @@ int FairMQSocketNN::GetConstant(const string& constant)
         return NN_PUSH;
     if (constant == "pull")
         return NN_PULL;
+    if (constant == "req")
+        return NN_REQ;
+    if (constant == "rep")
+        return NN_REP;
     if (constant == "snd-hwm")
         return NN_SNDBUF;
     if (constant == "rcv-hwm")

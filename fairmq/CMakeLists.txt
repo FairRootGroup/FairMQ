@@ -15,6 +15,7 @@ if(PROTOBUF_FOUND)
   set(INCLUDE_DIRECTORIES
     ${INCLUDE_DIRECTORIES}
     ${PROTOBUF_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}/fairmq/examples/req-rep
     # # following directory is only for protobuf tests and is not essential part of FairMQ
     #${CMAKE_SOURCE_DIR}/fairmq/prototest
   )
@@ -57,6 +58,8 @@ set(SRCS
   "devices/FairMQSplitter.cxx"
   "devices/FairMQMerger.cxx"
   "FairMQPoller.cxx"
+  "examples/req-rep/FairMQExampleClient.cxx"
+  "examples/req-rep/FairMQExampleServer.cxx"
 )
 
 if(PROTOBUF_FOUND)
@@ -104,7 +107,7 @@ endif(NANOMSG_FOUND)
 
 set(DEPENDENCIES
   ${DEPENDENCIES}
-  boost_thread boost_timer boost_system
+  boost_thread boost_timer boost_system boost_program_options
 )
 
 set(LIBRARY_NAME FairMQ)
@@ -117,7 +120,10 @@ set(Exe_Names
   splitter
   merger
   sink
-  proxy)
+  proxy
+  example_client
+  example_server
+)
 
 # following executables are only for protobuf tests and are not essential part of FairMQ
 # if(PROTOBUF_FOUND)
@@ -137,6 +143,8 @@ set(Exe_Source
   run/runMerger.cxx
   run/runSink.cxx
   run/runProxy.cxx
+  examples/req-rep/runExampleClient.cxx
+  examples/req-rep/runExampleServer.cxx
 )
 
 # following source files are only for protobuf tests and are not essential part of FairMQ
