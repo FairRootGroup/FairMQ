@@ -228,6 +228,13 @@ int FairMQSocketZMQ::GetConstant(const string& constant)
         return ZMQ_REQ;
     if (constant == "rep")
         return ZMQ_REP;
+    if (constant == "dealer")
+        return ZMQ_DEALER;
+    if (constant == "router")
+        return ZMQ_ROUTER;
+    if (constant == "pair")
+        return ZMQ_PAIR;
+
     if (constant == "snd-hwm")
         return ZMQ_SNDHWM;
     if (constant == "rcv-hwm")
@@ -236,6 +243,7 @@ int FairMQSocketZMQ::GetConstant(const string& constant)
         return ZMQ_SNDMORE;
     if (constant == "rcv-more")
         return ZMQ_RCVMORE;
+
     if (constant == "linger")
         return ZMQ_LINGER;
 
