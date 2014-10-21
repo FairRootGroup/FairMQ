@@ -219,6 +219,8 @@ int FairMQSocketNN::GetConstant(const string& constant)
 
     if (constant == "linger")
         return NN_LINGER;
+    if (constant == "no-block")
+        return NN_DONTWAIT;
 
     return -1;
 }

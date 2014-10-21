@@ -246,6 +246,8 @@ int FairMQSocketZMQ::GetConstant(const string& constant)
 
     if (constant == "linger")
         return ZMQ_LINGER;
+    if (constant == "no-block")
+        return ZMQ_DONTWAIT;
 
     return -1;
 }
