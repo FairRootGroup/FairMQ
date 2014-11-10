@@ -49,6 +49,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         OutputSndBufSize,
         OutputRcvBufSize,
         LogIntervalInMs,
+        LogInputRate,
+        LogOutputRate,
         Last
     };
 
@@ -78,12 +80,14 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     vector<string> fInputSocketType;
     vector<int> fInputSndBufSize;
     vector<int> fInputRcvBufSize;
+    vector<int> fLogInputRate;
 
     vector<string> fOutputAddress;
     vector<string> fOutputMethod;
     vector<string> fOutputSocketType;
     vector<int> fOutputSndBufSize;
     vector<int> fOutputRcvBufSize;
+    vector<int> fLogOutputRate;
 
     vector<FairMQSocket*>* fPayloadInputs;
     vector<FairMQSocket*>* fPayloadOutputs;

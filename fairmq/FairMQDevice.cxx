@@ -40,6 +40,7 @@ void FairMQDevice::Init()
         fInputSocketType.push_back("sub"); // default value, can be overwritten in configuration
         fInputSndBufSize.push_back(10000); // default value, can be overwritten in configuration
         fInputRcvBufSize.push_back(10000); // default value, can be overwritten in configuration
+        fLogInputRate.push_back(1); // default value, can be overwritten in configuration
     }
 
     for (int i = 0; i < fNumOutputs; ++i)
@@ -49,6 +50,7 @@ void FairMQDevice::Init()
         fOutputSocketType.push_back("pub"); // default value, can be overwritten in configuration
         fOutputSndBufSize.push_back(10000); // default value, can be overwritten in configuration
         fOutputRcvBufSize.push_back(10000); // default value, can be overwritten in configuration
+        fLogOutputRate.push_back(1); // default value, can be overwritten in configuration
     }
 }
 
@@ -193,6 +195,14 @@ void FairMQDevice::SetProperty(const int key, const int value, const int slot /*
             fOutputRcvBufSize.erase(fOutputRcvBufSize.begin() + slot);
             fOutputRcvBufSize.insert(fOutputRcvBufSize.begin() + slot, value);
             break;
+        case LogInputRate:
+            fLogInputRate.erase(fLogInputRate.begin() + slot);
+            fLogInputRate.insert(fLogInputRate.begin() + slot, value);
+            break;
+        case LogOutputRate:
+            fLogOutputRate.erase(fLogOutputRate.begin() + slot);
+            fLogOutputRate.insert(fLogOutputRate.begin() + slot, value);
+            break;
         default:
             FairMQConfigurable::SetProperty(key, value, slot);
             break;
@@ -240,6 +250,10 @@ int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/, const i
             return fOutputSndBufSize.at(slot);
         case OutputRcvBufSize:
             return fOutputRcvBufSize.at(slot);
+        case LogInputRate:
+            return fLogInputRate.at(slot);
+        case LogOutputRate:
+            return fLogOutputRate.at(slot);
         default:
             return FairMQConfigurable::GetProperty(key, default_, slot);
     }
@@ -257,23 +271,50 @@ void FairMQDevice::LogSocketRates()
 
     timestamp_t msSinceLastLog;
 
-    vector<unsigned long> bytesIn(fNumInputs);
-    vector<unsigned long> msgIn(fNumInputs);
-    vector<unsigned long> bytesOut(fNumOutputs);
-    vector<unsigned long> msgOut(fNumOutputs);
-
-    vector<unsigned long> bytesInNew(fNumInputs);
-    vector<unsigned long> msgInNew(fNumInputs);
-    vector<unsigned long> bytesOutNew(fNumOutputs);
-    vector<unsigned long> msgOutNew(fNumOutputs);
-
-    vector<double> mbPerSecIn(fNumInputs);
-    vector<double> msgPerSecIn(fNumInputs);
-    vector<double> mbPerSecOut(fNumOutputs);
-    vector<double> msgPerSecOut(fNumOutputs);
+    int numFilteredInputs = 0;
+    int numFilteredOutputs = 0;
+    vector<FairMQSocket*> filteredInputs;
+    vector<FairMQSocket*> filteredOutputs;
 
     int i = 0;
     for (vector<FairMQSocket*>::iterator itr = fPayloadInputs->begin(); itr != fPayloadInputs->end(); itr++)
+    {
+        if (fLogInputRate.at(i) > 0)
+        {
+            filteredInputs.push_back((*itr));
+            ++numFilteredInputs;
+        }
+        ++i;
+    }
+
+    i = 0;
+    for (vector<FairMQSocket*>::iterator itr = fPayloadOutputs->begin(); itr != fPayloadOutputs->end(); itr++)
+    {
+        if (fLogOutputRate.at(i) > 0)
+        {
+            filteredOutputs.push_back((*itr));
+            ++numFilteredOutputs;
+        }
+        ++i;
+    }
+
+    vector<unsigned long> bytesIn(numFilteredInputs);
+    vector<unsigned long> msgIn(numFilteredInputs);
+    vector<unsigned long> bytesOut(numFilteredOutputs);
+    vector<unsigned long> msgOut(numFilteredOutputs);
+
+    vector<unsigned long> bytesInNew(numFilteredInputs);
+    vector<unsigned long> msgInNew(numFilteredInputs);
+    vector<unsigned long> bytesOutNew(numFilteredOutputs);
+    vector<unsigned long> msgOutNew(numFilteredOutputs);
+
+    vector<double> mbPerSecIn(numFilteredInputs);
+    vector<double> msgPerSecIn(numFilteredInputs);
+    vector<double> mbPerSecOut(numFilteredOutputs);
+    vector<double> msgPerSecOut(numFilteredOutputs);
+
+    i = 0;
+    for (vector<FairMQSocket*>::iterator itr = filteredInputs.begin(); itr != filteredInputs.end(); itr++)
     {
         bytesIn.at(i) = (*itr)->GetBytesRx();
         msgIn.at(i) = (*itr)->GetMessagesRx();
@@ -281,7 +322,7 @@ void FairMQDevice::LogSocketRates()
     }
 
     i = 0;
-    for (vector<FairMQSocket*>::iterator itr = fPayloadOutputs->begin(); itr != fPayloadOutputs->end(); itr++)
+    for (vector<FairMQSocket*>::iterator itr = filteredOutputs.begin(); itr != filteredOutputs.end(); itr++)
     {
         bytesOut.at(i) = (*itr)->GetBytesTx();
         msgOut.at(i) = (*itr)->GetMessagesTx();
@@ -300,7 +341,7 @@ void FairMQDevice::LogSocketRates()
 
             i = 0;
 
-            for (vector<FairMQSocket*>::iterator itr = fPayloadInputs->begin(); itr != fPayloadInputs->end(); itr++)
+            for (vector<FairMQSocket*>::iterator itr = filteredInputs.begin(); itr != filteredInputs.end(); itr++)
             {
                 bytesInNew.at(i) = (*itr)->GetBytesRx();
                 mbPerSecIn.at(i) = ((double)(bytesInNew.at(i) - bytesIn.at(i)) / (1024. * 1024.)) / (double)msSinceLastLog * 1000.;
@@ -316,7 +357,7 @@ void FairMQDevice::LogSocketRates()
 
             i = 0;
 
-            for (vector<FairMQSocket*>::iterator itr = fPayloadOutputs->begin(); itr != fPayloadOutputs->end(); itr++)
+            for (vector<FairMQSocket*>::iterator itr = filteredOutputs.begin(); itr != filteredOutputs.end(); itr++)
             {
                 bytesOutNew.at(i) = (*itr)->GetBytesTx();
                 mbPerSecOut.at(i) = ((double)(bytesOutNew.at(i) - bytesOut.at(i)) / (1024. * 1024.)) / (double)msSinceLastLog * 1000.;
