@@ -164,7 +164,7 @@ int main(int argc, char** argv)
     buffer.ChangeState(FairMQBuffer::INIT);
 
     buffer.SetProperty(FairMQBuffer::InputSocketType, options.inputSocketType);
-    buffer.SetProperty(FairMQBuffer::InputSndBufSize, options.inputBufSize);
+    buffer.SetProperty(FairMQBuffer::InputRcvBufSize, options.inputBufSize);
     buffer.SetProperty(FairMQBuffer::InputMethod, options.inputMethod);
     buffer.SetProperty(FairMQBuffer::InputAddress, options.inputAddress);
 

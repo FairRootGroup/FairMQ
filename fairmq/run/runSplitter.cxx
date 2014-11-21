@@ -169,14 +169,14 @@ int main(int argc, char** argv)
     splitter.ChangeState(FairMQSplitter::INIT);
 
     splitter.SetProperty(FairMQSplitter::InputSocketType, options.inputSocketType);
-    splitter.SetProperty(FairMQSplitter::InputSndBufSize, options.inputBufSize);
+    splitter.SetProperty(FairMQSplitter::InputRcvBufSize, options.inputBufSize);
     splitter.SetProperty(FairMQSplitter::InputMethod, options.inputMethod);
     splitter.SetProperty(FairMQSplitter::InputAddress, options.inputAddress);
 
     for (int i = 0; i < options.numOutputs; ++i)
     {
         splitter.SetProperty(FairMQSplitter::OutputSocketType, options.outputSocketType.at(i), i);
-        splitter.SetProperty(FairMQSplitter::OutputRcvBufSize, options.outputBufSize.at(i), i);
+        splitter.SetProperty(FairMQSplitter::OutputSndBufSize, options.outputBufSize.at(i), i);
         splitter.SetProperty(FairMQSplitter::OutputMethod, options.outputMethod.at(i), i);
         splitter.SetProperty(FairMQSplitter::OutputAddress, options.outputAddress.at(i), i);
     }

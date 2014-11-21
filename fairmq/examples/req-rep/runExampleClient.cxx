@@ -119,6 +119,7 @@ int main(int argc, char** argv)
 
     client.SetProperty(FairMQExampleClient::OutputSocketType, "req", 0);
     client.SetProperty(FairMQExampleClient::OutputSndBufSize, 10000, 0);
+    client.SetProperty(FairMQExampleClient::OutputRcvBufSize, 10000, 0);
     client.SetProperty(FairMQExampleClient::OutputMethod, "connect", 0);
     client.SetProperty(FairMQExampleClient::OutputAddress, "tcp://localhost:5005", 0);
 

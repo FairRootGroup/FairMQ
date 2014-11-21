@@ -144,7 +144,7 @@ int main(int argc, char** argv)
     sink.ChangeState(FairMQBinSink::INIT);
 
     sink.SetProperty(FairMQBinSink::InputSocketType, options.inputSocketType);
-    sink.SetProperty(FairMQBinSink::InputSndBufSize, options.inputBufSize);
+    sink.SetProperty(FairMQBinSink::InputRcvBufSize, options.inputBufSize);
     sink.SetProperty(FairMQBinSink::InputMethod, options.inputMethod);
     sink.SetProperty(FairMQBinSink::InputAddress, options.inputAddress);
 

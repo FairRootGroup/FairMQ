@@ -72,6 +72,7 @@ int main(int argc, char** argv)
 
     server.SetProperty(FairMQExampleServer::InputSocketType, "rep", 0);
     server.SetProperty(FairMQExampleServer::InputSndBufSize, 10000, 0);
+    server.SetProperty(FairMQExampleServer::InputRcvBufSize, 10000, 0);
     server.SetProperty(FairMQExampleServer::InputMethod, "bind", 0);
     server.SetProperty(FairMQExampleServer::InputAddress, "tcp://*:5005", 0);
 

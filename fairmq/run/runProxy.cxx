@@ -164,7 +164,7 @@ int main(int argc, char** argv)
     proxy.ChangeState(FairMQProxy::INIT);
 
     proxy.SetProperty(FairMQProxy::InputSocketType, options.inputSocketType);
-    proxy.SetProperty(FairMQProxy::InputSndBufSize, options.inputBufSize);
+    proxy.SetProperty(FairMQProxy::InputRcvBufSize, options.inputBufSize);
     proxy.SetProperty(FairMQProxy::InputMethod, options.inputMethod);
     proxy.SetProperty(FairMQProxy::InputAddress, options.inputAddress);
 
