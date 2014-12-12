@@ -5,43 +5,56 @@
  #         GNU Lesser General Public Licence version 3 (LGPL) version 3,        #  
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
-set(INCLUDE_DIRECTORIES
+Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
   ${CMAKE_SOURCE_DIR}/fairmq/devices
+)
+
+Set(SYSTEM_INCLUDE_DIRECTORIES
   ${Boost_INCLUDE_DIR}
 )
 
-if(PROTOBUF_FOUND)
-  set(INCLUDE_DIRECTORIES
+If(PROTOBUF_FOUND)
+  Set(INCLUDE_DIRECTORIES
     ${INCLUDE_DIRECTORIES}
-    ${PROTOBUF_INCLUDE_DIR}
     ${CMAKE_SOURCE_DIR}/fairmq/examples/req-rep
     # # following directory is only for protobuf tests and is not essential part of FairMQ
     #${CMAKE_SOURCE_DIR}/fairmq/prototest
   )
-endif(PROTOBUF_FOUND)
+  Set(SYSTEM_INCLUDE_DIRECTORIES
+    ${SYSTEM_INCLUDE_DIRECTORIES}
+    ${PROTOBUF_INCLUDE_DIR}
+  )
+EndIf(PROTOBUF_FOUND)
 
-if(NANOMSG_FOUND)
-  set(INCLUDE_DIRECTORIES
+If(NANOMSG_FOUND)
+  Set(INCLUDE_DIRECTORIES
     ${INCLUDE_DIRECTORIES}
-    ${NANOMSG_LIBRARY_SHARED}
     ${CMAKE_SOURCE_DIR}/fairmq/nanomsg
   )
-else(NANOMSG_FOUND)
-  set(INCLUDE_DIRECTORIES
+  Set(SYSTEM_INCLUDE_DIRECTORIES
+    ${SYSTEM_INCLUDE_DIRECTORIES}
+    ${NANOMSG_LIBRARY_SHARED}
+  )
+Else(NANOMSG_FOUND)
+  Set(INCLUDE_DIRECTORIES
     ${INCLUDE_DIRECTORIES}
-    ${ZMQ_INCLUDE_DIR}
     ${CMAKE_SOURCE_DIR}/fairmq/zeromq
   )
-endif(NANOMSG_FOUND)
+  Set(SYSTEM_INCLUDE_DIRECTORIES
+    ${SYSTEM_INCLUDE_DIRECTORIES}
+    ${ZMQ_INCLUDE_DIR}
+  )
+EndIf(NANOMSG_FOUND)
 
-include_directories(${INCLUDE_DIRECTORIES})
+Include_Directories(${INCLUDE_DIRECTORIES})
+Include_Directories(SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 
-set(LINK_DIRECTORIES
+Set(LINK_DIRECTORIES
   ${Boost_LIBRARY_DIRS}
 )
 
-link_directories(${LINK_DIRECTORIES})
+Link_Directories(${LINK_DIRECTORIES})
 
 set(SRCS
   "FairMQLogger.cxx"
