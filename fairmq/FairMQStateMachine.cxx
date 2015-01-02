@@ -17,6 +17,8 @@
 
 FairMQStateMachine::FairMQStateMachine()
     : fRunningFinished(false)
+    , fRunningCondition()
+    , fRunningMutex()
 {
     start();
 }
@@ -59,6 +61,4 @@ void FairMQStateMachine::ChangeState(int event)
     {
         LOG(ERROR) << e.what();
     }
-
-
-    }
+}

@@ -18,6 +18,8 @@
 #include "FairMQLogger.h"
 
 FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQSocket*>& inputs)
+    : items()
+    , fNumItems()
 {
     fNumItems = inputs.size();
     items = new zmq_pollitem_t[fNumItems];

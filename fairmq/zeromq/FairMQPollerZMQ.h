@@ -20,7 +20,7 @@
 #include "FairMQPoller.h"
 #include "FairMQSocket.h"
 
-using std::vector;
+using namespace std;
 
 class FairMQPollerZMQ : public FairMQPoller
 {
@@ -36,6 +36,10 @@ class FairMQPollerZMQ : public FairMQPoller
   private:
     zmq_pollitem_t* items;
     int fNumItems;
+
+    /// Copy Constructor
+    FairMQPollerZMQ(const FairMQPollerZMQ&);
+    FairMQPollerZMQ operator=(const FairMQPollerZMQ&);
 };
 
 #endif /* FAIRMQPOLLERZMQ_H_ */

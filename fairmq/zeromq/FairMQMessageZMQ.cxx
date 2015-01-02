@@ -18,7 +18,10 @@
 #include "FairMQMessageZMQ.h"
 #include "FairMQLogger.h"
 
+using namespace std;
+
 FairMQMessageZMQ::FairMQMessageZMQ()
+    : fMessage()
 {
     int rc = zmq_msg_init(&fMessage);
     if (rc != 0)
@@ -28,6 +31,7 @@ FairMQMessageZMQ::FairMQMessageZMQ()
 }
 
 FairMQMessageZMQ::FairMQMessageZMQ(size_t size)
+    : fMessage()
 {
     int rc = zmq_msg_init_size(&fMessage, size);
     if (rc != 0)
@@ -37,6 +41,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(size_t size)
 }
 
 FairMQMessageZMQ::FairMQMessageZMQ(void* data, size_t size, fairmq_free_fn *ffn, void* hint)
+    : fMessage()
 {
     int rc = zmq_msg_init_data(&fMessage, data, size, ffn ? ffn : &CleanUp, hint);
     if (rc != 0)
@@ -109,7 +114,7 @@ void FairMQMessageZMQ::Copy(FairMQMessage* msg)
     // CloseMessage();
     // size_t size = msg->GetSize();
     // zmq_msg_init_size(&fMessage, size);
-    // std::memcpy(zmq_msg_data(&fMessage), msg->GetData(), size);
+    // memcpy(zmq_msg_data(&fMessage), msg->GetData(), size);
 }
 
 inline void FairMQMessageZMQ::CloseMessage()

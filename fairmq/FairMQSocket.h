@@ -18,8 +18,7 @@
 #include <string>
 #include "FairMQMessage.h"
 
-using std::string;
-using std::stringstream;
+using namespace std;
 
 class FairMQSocket
 {

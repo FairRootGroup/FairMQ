@@ -49,6 +49,10 @@ class FairMQMessageNN : public FairMQMessage
     bool fReceiving;
 
     void Clear();
+
+    /// Copy Constructor
+    FairMQMessageNN(const FairMQMessageNN&);
+    FairMQMessageNN operator=(const FairMQMessageNN&);
 };
 
 #endif /* FAIRMQMESSAGENN_H_ */

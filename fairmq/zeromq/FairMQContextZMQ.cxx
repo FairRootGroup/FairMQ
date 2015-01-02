@@ -17,6 +17,7 @@
 #include <sstream>
 
 FairMQContextZMQ::FairMQContextZMQ(int numIoThreads)
+    : fContext()
 {
     fContext = zmq_ctx_new();
     if (fContext == NULL)

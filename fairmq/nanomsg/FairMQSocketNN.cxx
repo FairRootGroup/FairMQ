@@ -19,7 +19,9 @@
 #include "FairMQLogger.h"
 
 FairMQSocketNN::FairMQSocketNN(const string& type, int num, int numIoThreads)
-    : fBytesTx(0)
+    : fSocket()
+    , fId()
+    , fBytesTx(0)
     , fBytesRx(0)
     , fMessagesTx(0)
     , fMessagesRx(0)

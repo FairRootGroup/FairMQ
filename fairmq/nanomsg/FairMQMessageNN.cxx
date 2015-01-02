@@ -20,14 +20,19 @@
 #include "FairMQMessageNN.h"
 #include "FairMQLogger.h"
 
+using namespace std;
+
 FairMQMessageNN::FairMQMessageNN()
-    : fSize(0)
-    , fMessage(NULL)
+    : fMessage(NULL)
+    , fSize(0)
     , fReceiving(false)
 {
 }
 
 FairMQMessageNN::FairMQMessageNN(size_t size)
+    : fMessage(NULL)
+    , fSize(0)
+    , fReceiving(false)
 {
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
@@ -45,6 +50,9 @@ FairMQMessageNN::FairMQMessageNN(size_t size)
  * possible TODO: make this zero copy (will should then be as efficient as ZeroMQ).
 */
 FairMQMessageNN::FairMQMessageNN(void* data, size_t size, fairmq_free_fn *ffn, void* hint)
+    : fMessage(NULL)
+    , fSize(0)
+    , fReceiving(false)
 {
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
@@ -146,7 +154,7 @@ void FairMQMessageNN::Copy(FairMQMessage* msg)
     {
         LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
     }
-    std::memcpy(fMessage, msg->GetMessage(), size);
+    memcpy(fMessage, msg->GetMessage(), size);
     fSize = size;
 }
 

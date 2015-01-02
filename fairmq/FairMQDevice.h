@@ -24,10 +24,7 @@
 #include "FairMQTransportFactory.h"
 #include "FairMQSocket.h"
 
-using std::vector;
-using std::cin;
-using std::cout;
-using std::endl;
+using namespace std;
 
 class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 {
@@ -92,8 +89,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     vector<FairMQSocket*>* fPayloadInputs;
     vector<FairMQSocket*>* fPayloadOutputs;
 
-    FairMQSocket* fCommandSocket;
-
     int fLogIntervalInMs;
 
     FairMQTransportFactory* fTransportFactory;
@@ -106,6 +101,11 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     virtual void InitInput();
 
     virtual void Terminate();
+
+  private:
+    /// Copy Constructor
+    FairMQDevice(const FairMQDevice&);
+    FairMQDevice operator=(const FairMQDevice&);
 };
 
 #endif /* FAIRMQDEVICE_H_ */

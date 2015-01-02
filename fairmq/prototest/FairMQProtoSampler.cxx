@@ -65,7 +65,7 @@ void FairMQProtoSampler::Run()
             // LOG(INFO) << content->x() << " " << content->y() << " " << content->z() << " " << content->a() << " " << content->b();
         }
 
-        std::string str;
+        string str;
         p.SerializeToString(&str);
         size_t size = str.length();
 

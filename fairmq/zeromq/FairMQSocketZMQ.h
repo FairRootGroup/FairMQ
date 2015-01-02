@@ -61,6 +61,10 @@ class FairMQSocketZMQ : public FairMQSocket
     unsigned long fMessagesRx;
 
     static boost::shared_ptr<FairMQContextZMQ> fContext;
+
+    /// Copy Constructor
+    FairMQSocketZMQ(const FairMQSocketZMQ&);
+    FairMQSocketZMQ operator=(const FairMQSocketZMQ&);
 };
 
 #endif /* FAIRMQSOCKETZMQ_H_ */

@@ -20,7 +20,9 @@
 boost::shared_ptr<FairMQContextZMQ> FairMQSocketZMQ::fContext = boost::shared_ptr<FairMQContextZMQ>(new FairMQContextZMQ(1));
 
 FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num, int numIoThreads)
-    : fBytesTx(0)
+    : fSocket(NULL)
+    , fId()
+    , fBytesTx(0)
     , fBytesRx(0)
     , fMessagesTx(0)
     , fMessagesRx(0)

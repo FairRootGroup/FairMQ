@@ -19,6 +19,7 @@
 #include "FairMQLogger.h"
 
 FairMQExampleClient::FairMQExampleClient()
+    : fText()
 {
 }
 

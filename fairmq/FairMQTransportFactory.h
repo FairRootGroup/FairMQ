@@ -22,7 +22,7 @@
 #include "FairMQPoller.h"
 #include "FairMQLogger.h"
 
-using std::vector;
+using namespace std;
 
 class FairMQTransportFactory
 {

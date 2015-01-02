@@ -46,6 +46,7 @@ class FairMQBenchmarkSampler : public FairMQDevice
     int fEventSize;
     int fEventRate;
     int fEventCounter;
+
     virtual void Init();
     virtual void Run();
 };

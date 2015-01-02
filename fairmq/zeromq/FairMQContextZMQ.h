@@ -20,13 +20,20 @@
 class FairMQContextZMQ
 {
   public:
+
+    /// Constructor
     FairMQContextZMQ(int numIoThreads);
+
     virtual ~FairMQContextZMQ();
     void* GetContext();
     void Close();
 
   private:
     void* fContext;
+
+    /// Copy Constructor
+    FairMQContextZMQ(const FairMQContextZMQ&);
+    FairMQContextZMQ operator=(const FairMQContextZMQ&);
 };
 
 #endif /* FAIRMQCONTEXTZMQ_H_ */

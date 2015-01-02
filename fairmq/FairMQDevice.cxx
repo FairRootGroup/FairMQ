@@ -19,9 +19,22 @@
 #include "FairMQLogger.h"
 
 FairMQDevice::FairMQDevice()
-    : fNumIoThreads(1)
+    : fId()
+    , fNumIoThreads(1)
     , fNumInputs(0)
     , fNumOutputs(0)
+    , fInputAddress()
+    , fInputMethod()
+    , fInputSocketType()
+    , fInputSndBufSize()
+    , fInputRcvBufSize()
+    , fLogInputRate()
+    , fOutputAddress()
+    , fOutputMethod()
+    , fOutputSocketType()
+    , fOutputSndBufSize()
+    , fOutputRcvBufSize()
+    , fLogOutputRate()
     , fPayloadInputs(new vector<FairMQSocket*>())
     , fPayloadOutputs(new vector<FairMQSocket*>())
     , fLogIntervalInMs(1000)
@@ -78,7 +91,7 @@ void FairMQDevice::InitInput()
                 fPayloadInputs->at(i)->Connect(fInputAddress.at(i));
             }
         }
-        catch (std::out_of_range& e)
+        catch (out_of_range& e)
         {
             LOG(ERROR) << e.what();
         }
@@ -109,7 +122,7 @@ void FairMQDevice::InitOutput()
                 fPayloadOutputs->at(i)->Connect(fOutputAddress.at(i));
             }
         }
-        catch (std::out_of_range& e)
+        catch (out_of_range& e)
         {
             LOG(ERROR) << e.what();
         }

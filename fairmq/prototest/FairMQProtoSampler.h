@@ -19,6 +19,8 @@
 
 #include "FairMQDevice.h"
 
+using namespace std;
+
 class FairMQProtoSampler : public FairMQDevice
 {
   public:

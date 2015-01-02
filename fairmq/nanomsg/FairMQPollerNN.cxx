@@ -17,6 +17,8 @@
 #include "FairMQPollerNN.h"
 
 FairMQPollerNN::FairMQPollerNN(const vector<FairMQSocket*>& inputs)
+    : items()
+    , fNumItems()
 {
     fNumItems = inputs.size();
     items = new nn_pollfd[fNumItems];
