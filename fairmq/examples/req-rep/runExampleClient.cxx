@@ -53,6 +53,9 @@ static void s_catch_signals(void)
 
 typedef struct DeviceOptions
 {
+    DeviceOptions() :
+        text() {}
+
     string text;
 } DeviceOptions_t;
 
