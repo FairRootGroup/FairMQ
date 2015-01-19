@@ -118,6 +118,21 @@ else(NANOMSG_FOUND)
   )
 endif(NANOMSG_FOUND)
 
+
+# to copy src that are header-only files (e.g. c++ template) for FairRoot external installation
+# manual install (globbing add not recommended)
+Set(FairMQHDRFiles
+  devices/GenericSampler.h
+  devices/GenericSampler.tpl
+  devices/GenericProcessor.h
+  devices/GenericFileSink.h
+  devices/GenericFileSink.tpl
+)
+install(FILES ${FairMQHDRFiles} DESTINATION include)
+
+
+
+
 set(DEPENDENCIES
   ${DEPENDENCIES}
   boost_thread boost_timer boost_system boost_program_options
