@@ -8,6 +8,8 @@
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
   ${CMAKE_SOURCE_DIR}/fairmq/devices
+  ${CMAKE_SOURCE_DIR}/fairmq/examples/req-rep
+  ${CMAKE_SOURCE_DIR}/fairmq/tools
 )
 
 Set(SYSTEM_INCLUDE_DIRECTORIES
@@ -17,7 +19,6 @@ Set(SYSTEM_INCLUDE_DIRECTORIES
 If(PROTOBUF_FOUND)
   Set(INCLUDE_DIRECTORIES
     ${INCLUDE_DIRECTORIES}
-    ${CMAKE_SOURCE_DIR}/fairmq/examples/req-rep
     # # following directory is only for protobuf tests and is not essential part of FairMQ
     #${CMAKE_SOURCE_DIR}/fairmq/prototest
   )
@@ -129,9 +130,6 @@ Set(FairMQHDRFiles
   devices/GenericFileSink.tpl
 )
 install(FILES ${FairMQHDRFiles} DESTINATION include)
-
-
-
 
 set(DEPENDENCIES
   ${DEPENDENCIES}
