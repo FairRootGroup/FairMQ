@@ -34,7 +34,9 @@ class FairMQSocketNN : public FairMQSocket
     virtual void Connect(const string& address);
 
     virtual int Send(FairMQMessage* msg, const string& flag="");
+    virtual int Send(FairMQMessage* msg, const int flags);
     virtual int Receive(FairMQMessage* msg, const string& flag="");
+    virtual int Receive(FairMQMessage* msg, const int flags);
 
     virtual void* GetSocket();
     virtual int GetSocket(int nothing);

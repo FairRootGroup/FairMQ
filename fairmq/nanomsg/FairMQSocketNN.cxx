@@ -19,7 +19,8 @@
 #include "FairMQLogger.h"
 
 FairMQSocketNN::FairMQSocketNN(const string& type, int num, int numIoThreads)
-    : fSocket()
+    : FairMQSocket(0, 0, NN_DONTWAIT)
+    , fSocket()
     , fId()
     , fBytesTx(0)
     , fBytesRx(0)
@@ -100,10 +101,47 @@ int FairMQSocketNN::Send(FairMQMessage* msg, const string& flag)
     return rc;
 }
 
+int FairMQSocketNN::Send(FairMQMessage* msg, const int flags)
+{
+    void* ptr = msg->GetMessage();
+    int rc = nn_send(fSocket, &ptr, NN_MSG, flags);
+    if (rc < 0)
+    {
+        LOG(ERROR) << "failed sending on socket #" << fId << ", reason: " << nn_strerror(errno);
+    }
+    else
+    {
+        fBytesTx += rc;
+        ++fMessagesTx;
+        static_cast<FairMQMessageNN*>(msg)->fReceiving = false;
+    }
+
+    return rc;
+}
+
 int FairMQSocketNN::Receive(FairMQMessage* msg, const string& flag)
 {
     void* ptr = NULL;
     int rc = nn_recv(fSocket, &ptr, NN_MSG, 0);
+    if (rc < 0)
+    {
+        LOG(ERROR) << "failed receiving on socket #" << fId << ", reason: " << nn_strerror(errno);
+    }
+    else
+    {
+        fBytesRx += rc;
+        ++fMessagesRx;
+        msg->SetMessage(ptr, rc);
+        static_cast<FairMQMessageNN*>(msg)->fReceiving = true;
+    }
+
+    return rc;
+}
+
+int FairMQSocketNN::Receive(FairMQMessage* msg, const int flags)
+{
+    void* ptr = NULL;
+    int rc = nn_recv(fSocket, &ptr, NN_MSG, flags);
     if (rc < 0)
     {
         LOG(ERROR) << "failed receiving on socket #" << fId << ", reason: " << nn_strerror(errno);
@@ -196,12 +234,10 @@ int FairMQSocketNN::GetConstant(const string& constant)
         return NN_REQ;
     if (constant == "rep")
         return NN_REP;
-
     if (constant == "dealer")
         return NN_REQ;
     if (constant == "router")
         return NN_REP;
-
     if (constant == "pair")
         return NN_PAIR;
 
@@ -209,7 +245,6 @@ int FairMQSocketNN::GetConstant(const string& constant)
         return NN_SNDBUF;
     if (constant == "rcv-hwm")
         return NN_RCVBUF;
-
     if (constant == "snd-more") {
         LOG(ERROR) << "Multipart messages functionality currently not supported by nanomsg!";
         return -1;

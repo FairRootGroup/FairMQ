@@ -20,7 +20,8 @@
 boost::shared_ptr<FairMQContextZMQ> FairMQSocketZMQ::fContext = boost::shared_ptr<FairMQContextZMQ>(new FairMQContextZMQ(1));
 
 FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num, int numIoThreads)
-    : fSocket(NULL)
+    : FairMQSocket(ZMQ_SNDMORE, ZMQ_RCVMORE, ZMQ_DONTWAIT)
+    , fSocket(NULL)
     , fId()
     , fBytesTx(0)
     , fBytesRx(0)
@@ -115,9 +116,53 @@ int FairMQSocketZMQ::Send(FairMQMessage* msg, const string& flag)
     return nbytes;
 }
 
+int FairMQSocketZMQ::Send(FairMQMessage* msg, const int flags)
+{
+    int nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, flags);
+    if (nbytes >= 0)
+    {
+        fBytesTx += nbytes;
+        ++fMessagesTx;
+        return nbytes;
+    }
+    if (zmq_errno() == EAGAIN)
+    {
+        return 0;
+    }
+    if (zmq_errno() == ETERM)
+    {
+        LOG(INFO) << "terminating socket #" << fId;
+        return -1;
+    }
+    LOG(ERROR) << "failed sending on socket #" << fId << ", reason: " << zmq_strerror(errno);
+    return nbytes;
+}
+
 int FairMQSocketZMQ::Receive(FairMQMessage* msg, const string& flag)
 {
     int nbytes = zmq_msg_recv(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, GetConstant(flag));
+    if (nbytes >= 0)
+    {
+        fBytesRx += nbytes;
+        ++fMessagesRx;
+        return nbytes;
+    }
+    if (zmq_errno() == EAGAIN)
+    {
+        return 0;
+    }
+    if (zmq_errno() == ETERM)
+    {
+        LOG(INFO) << "terminating socket #" << fId;
+        return -1;
+    }
+    LOG(ERROR) << "failed receiving on socket #" << fId << ", reason: " << zmq_strerror(errno);
+    return nbytes;
+}
+
+int FairMQSocketZMQ::Receive(FairMQMessage* msg, const int flags)
+{
+    int nbytes = zmq_msg_recv(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, flags);
     if (nbytes >= 0)
     {
         fBytesRx += nbytes;
@@ -250,6 +295,8 @@ int FairMQSocketZMQ::GetConstant(const string& constant)
         return ZMQ_LINGER;
     if (constant == "no-block")
         return ZMQ_DONTWAIT;
+    if (constant == "snd-more no-block")
+        return ZMQ_DONTWAIT|ZMQ_SNDMORE;
 
     return -1;
 }
