@@ -154,6 +154,8 @@ int main(int argc, char** argv)
 
     sink.ChangeState(FairMQSink::SETOUTPUT);
     sink.ChangeState(FairMQSink::SETINPUT);
+    sink.ChangeState(FairMQSink::BIND);
+    sink.ChangeState(FairMQSink::CONNECT);
     sink.ChangeState(FairMQSink::RUN);
 
     // wait until the running thread has finished processing.

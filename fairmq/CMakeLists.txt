@@ -128,12 +128,13 @@ Set(FairMQHDRFiles
   devices/GenericProcessor.h
   devices/GenericFileSink.h
   devices/GenericFileSink.tpl
+  tools/FairMQTools.h
 )
 install(FILES ${FairMQHDRFiles} DESTINATION include)
 
 set(DEPENDENCIES
   ${DEPENDENCIES}
-  boost_thread boost_timer boost_system boost_program_options
+  boost_thread boost_timer boost_system boost_program_options boost_random
 )
 
 set(LIBRARY_NAME FairMQ)

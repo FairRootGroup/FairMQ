@@ -168,6 +168,8 @@ int main(int argc, char** argv)
 
     sampler.ChangeState(FairMQBenchmarkSampler::SETOUTPUT);
     sampler.ChangeState(FairMQBenchmarkSampler::SETINPUT);
+    sampler.ChangeState(FairMQBenchmarkSampler::BIND);
+    sampler.ChangeState(FairMQBenchmarkSampler::CONNECT);
     sampler.ChangeState(FairMQBenchmarkSampler::RUN);
 
     // wait until the running thread has finished processing.

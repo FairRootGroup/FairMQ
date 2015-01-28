@@ -29,7 +29,7 @@ class FairMQSocketZMQ : public FairMQSocket
 
     virtual string GetId();
 
-    virtual void Bind(const string& address);
+    virtual bool Bind(const string& address);
     virtual void Connect(const string& address);
 
     virtual int Send(FairMQMessage* msg, const string& flag="");

@@ -35,7 +35,7 @@ class FairMQSocket
 
     virtual string GetId() = 0;
 
-    virtual void Bind(const string& address) = 0;
+    virtual bool Bind(const string& address) = 0;
     virtual void Connect(const string& address) = 0;
 
     virtual int Send(FairMQMessage* msg, const string& flag="") = 0;

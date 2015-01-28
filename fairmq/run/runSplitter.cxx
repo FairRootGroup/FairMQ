@@ -188,6 +188,8 @@ int main(int argc, char** argv)
 
     splitter.ChangeState(FairMQSplitter::SETOUTPUT);
     splitter.ChangeState(FairMQSplitter::SETINPUT);
+    splitter.ChangeState(FairMQSplitter::BIND);
+    splitter.ChangeState(FairMQSplitter::CONNECT);
     splitter.ChangeState(FairMQSplitter::RUN);
 
     // wait until the running thread has finished processing.

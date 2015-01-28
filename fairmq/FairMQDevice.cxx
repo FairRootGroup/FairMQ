@@ -13,6 +13,8 @@
  */
 
 #include <boost/thread.hpp>
+#include <boost/random/mersenne_twister.hpp> // for choosing random port in range
+#include <boost/random/uniform_int_distribution.hpp> // for choosing random port in range
 
 #include "FairMQSocket.h"
 #include "FairMQDevice.h"
@@ -23,6 +25,8 @@ FairMQDevice::FairMQDevice()
     , fNumIoThreads(1)
     , fNumInputs(0)
     , fNumOutputs(0)
+    , fPortRangeMin(22000)
+    , fPortRangeMax(32000)
     , fInputAddress()
     , fInputMethod()
     , fInputSocketType()
@@ -79,22 +83,6 @@ void FairMQDevice::InitInput()
         socket->SetOption("rcv-hwm", &fInputRcvBufSize.at(i), sizeof(fInputRcvBufSize.at(i)));
 
         fPayloadInputs->push_back(socket);
-
-        try
-        {
-            if (fInputMethod.at(i) == "bind")
-            {
-                fPayloadInputs->at(i)->Bind(fInputAddress.at(i));
-            }
-            else
-            {
-                fPayloadInputs->at(i)->Connect(fInputAddress.at(i));
-            }
-        }
-        catch (out_of_range& e)
-        {
-            LOG(ERROR) << e.what();
-        }
     }
 }
 
@@ -110,21 +98,89 @@ void FairMQDevice::InitOutput()
         socket->SetOption("rcv-hwm", &fOutputRcvBufSize.at(i), sizeof(fOutputRcvBufSize.at(i)));
 
         fPayloadOutputs->push_back(socket);
+    }
+}
 
-        try
+void FairMQDevice::Bind()
+{
+    LOG(INFO) << ">>>>>>> binding <<<<<<<";
+
+    int maxAttempts = 1000;
+    int numAttempts = 0;
+
+    boost::random::mt19937 gen(getpid());
+    boost::random::uniform_int_distribution<> randomPort(fPortRangeMin, fPortRangeMax);
+
+    for (int i = 0; i < fNumOutputs; ++i)
+    {
+        if (fOutputMethod.at(i) == "bind")
         {
-            if (fOutputMethod.at(i) == "bind")
+            if (!fPayloadOutputs->at(i)->Bind(fOutputAddress.at(i)))
             {
-                fPayloadOutputs->at(i)->Bind(fOutputAddress.at(i));
-            }
-            else
-            {
-                fPayloadOutputs->at(i)->Connect(fOutputAddress.at(i));
+                do {
+                    LOG(WARN) << "could not bind at " << fOutputAddress.at(i) << ", trying another port in range";
+                    ++numAttempts;
+
+                    size_t pos = fOutputAddress.at(i).rfind(":");
+                    stringstream ss;
+                    ss << (int)randomPort(gen);
+                    string portString = ss.str();
+                    fOutputAddress.at(i) = fOutputAddress.at(i).substr(0, pos + 1) + portString;
+                    if (numAttempts > maxAttempts)
+                    {
+                        LOG(ERROR) << "could not bind output " << i << " to any port in the given range";
+                        break;
+                    }
+                } while (!fPayloadOutputs->at(i)->Bind(fOutputAddress.at(i)));
             }
         }
-        catch (out_of_range& e)
+    }
+
+    numAttempts = 0;
+
+    for (int i = 0; i < fNumInputs; ++i)
+    {
+        if (fInputMethod.at(i) == "bind")
         {
-            LOG(ERROR) << e.what();
+            if (!fPayloadInputs->at(i)->Bind(fInputAddress.at(i)))
+            {
+                do {
+                    LOG(WARN) << "could not bind at " << fInputAddress.at(i) << ", trying another port in range";
+                    ++numAttempts;
+
+                    size_t pos = fInputAddress.at(i).rfind(":");
+                    stringstream ss;
+                    ss << (int)randomPort(gen);
+                    string portString = ss.str();
+                    fInputAddress.at(i) = fInputAddress.at(i).substr(0, pos + 1) + portString;
+                    if (numAttempts > maxAttempts)
+                    {
+                        LOG(ERROR) << "could not bind output " << i << " to any port in the given range";
+                        break;
+                    }
+                } while (!fPayloadInputs->at(i)->Bind(fInputAddress.at(i)));
+            }
+        }
+    }
+}
+
+void FairMQDevice::Connect()
+{
+    LOG(INFO) << ">>>>>>> connecting <<<<<<<";
+
+    for (int i = 0; i < fNumOutputs; ++i)
+    {
+        if (fOutputMethod.at(i) == "connect")
+        {
+            fPayloadOutputs->at(i)->Connect(fOutputAddress.at(i));
+        }
+    }
+
+    for (int i = 0; i < fNumInputs; ++i)
+    {
+        if (fInputMethod.at(i) == "connect")
+        {
+            fPayloadInputs->at(i)->Connect(fInputAddress.at(i));
         }
     }
 }
@@ -188,6 +244,12 @@ void FairMQDevice::SetProperty(const int key, const int value, const int slot /*
             break;
         case NumOutputs:
             fNumOutputs = value;
+            break;
+        case PortRangeMin:
+            fPortRangeMin = value;
+            break;
+        case PortRangeMax:
+            fPortRangeMax = value;
             break;
         case LogIntervalInMs:
             fLogIntervalInMs = value;
@@ -253,6 +315,14 @@ int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/, const i
     {
         case NumIoThreads:
             return fNumIoThreads;
+        case NumInputs:
+            return fNumInputs;
+        case NumOutputs:
+            return fNumOutputs;
+        case PortRangeMin:
+            return fPortRangeMin;
+        case PortRangeMax:
+            return fPortRangeMax;
         case LogIntervalInMs:
             return fLogIntervalInMs;
         case InputSndBufSize:
@@ -395,10 +465,6 @@ void FairMQDevice::LogSocketRates()
     }
 
     LOG(INFO) << ">>>>>>> stopping FairMQDevice::LogSocketRates() <<<<<<<";
-}
-
-void FairMQDevice::ListenToCommands()
-{
 }
 
 void FairMQDevice::Shutdown()

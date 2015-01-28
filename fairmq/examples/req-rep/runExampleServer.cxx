@@ -78,6 +78,8 @@ int main(int argc, char** argv)
 
     server.ChangeState(FairMQExampleServer::SETOUTPUT);
     server.ChangeState(FairMQExampleServer::SETINPUT);
+    server.ChangeState(FairMQExampleServer::BIND);
+    server.ChangeState(FairMQExampleServer::CONNECT);
 
     LOG(INFO) << "Listening for requests!";
 

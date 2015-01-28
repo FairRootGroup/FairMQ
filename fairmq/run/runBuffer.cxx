@@ -180,6 +180,8 @@ int main(int argc, char** argv)
 
     buffer.ChangeState(FairMQBuffer::SETOUTPUT);
     buffer.ChangeState(FairMQBuffer::SETINPUT);
+    buffer.ChangeState(FairMQBuffer::BIND);
+    buffer.ChangeState(FairMQBuffer::CONNECT);
     buffer.ChangeState(FairMQBuffer::RUN);
 
     // wait until the running thread has finished processing.

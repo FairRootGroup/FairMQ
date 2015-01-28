@@ -188,6 +188,8 @@ int main(int argc, char** argv)
 
     merger.ChangeState(FairMQMerger::SETOUTPUT);
     merger.ChangeState(FairMQMerger::SETINPUT);
+    merger.ChangeState(FairMQMerger::BIND);
+    merger.ChangeState(FairMQMerger::CONNECT);
     merger.ChangeState(FairMQMerger::RUN);
 
     // wait until the running thread has finished processing.

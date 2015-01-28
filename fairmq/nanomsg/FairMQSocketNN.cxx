@@ -61,7 +61,7 @@ string FairMQSocketNN::GetId()
     return fId;
 }
 
-void FairMQSocketNN::Bind(const string& address)
+bool FairMQSocketNN::Bind(const string& address)
 {
     LOG(INFO) << "bind socket #" << fId << " on " << address;
 
@@ -69,7 +69,9 @@ void FairMQSocketNN::Bind(const string& address)
     if (eid < 0)
     {
         LOG(ERROR) << "failed binding socket #" << fId << ", reason: " << nn_strerror(errno);
+        return false;
     }
+    return true;
 }
 
 void FairMQSocketNN::Connect(const string& address)

@@ -35,6 +35,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         NumIoThreads,
         NumInputs,
         NumOutputs,
+        PortRangeMin,
+        PortRangeMax,
         InputAddress,
         InputMethod,
         InputSocketType,
@@ -54,7 +56,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     FairMQDevice();
 
     virtual void LogSocketRates();
-    virtual void ListenToCommands();
 
     virtual void SetProperty(const int key, const string& value, const int slot = 0);
     virtual string GetProperty(const int key, const string& default_ = "", const int slot = 0);
@@ -67,10 +68,14 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
   protected:
     string fId;
+
     int fNumIoThreads;
 
     int fNumInputs;
     int fNumOutputs;
+
+    int fPortRangeMin;
+    int fPortRangeMax;
 
     vector<string> fInputAddress;
     vector<string> fInputMethod;
@@ -99,6 +104,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     virtual void Shutdown();
     virtual void InitOutput();
     virtual void InitInput();
+    virtual void Bind();
+    virtual void Connect();
 
     virtual void Terminate();
 

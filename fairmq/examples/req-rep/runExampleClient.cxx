@@ -130,6 +130,8 @@ int main(int argc, char** argv)
 
     client.ChangeState(FairMQExampleClient::SETOUTPUT);
     client.ChangeState(FairMQExampleClient::SETINPUT);
+    client.ChangeState(FairMQExampleClient::BIND);
+    client.ChangeState(FairMQExampleClient::CONNECT);
     client.ChangeState(FairMQExampleClient::RUN);
 
     // wait until the running thread has finished processing.

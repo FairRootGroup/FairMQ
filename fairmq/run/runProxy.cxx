@@ -180,6 +180,8 @@ int main(int argc, char** argv)
 
     proxy.ChangeState(FairMQProxy::SETOUTPUT);
     proxy.ChangeState(FairMQProxy::SETINPUT);
+    proxy.ChangeState(FairMQProxy::BIND);
+    proxy.ChangeState(FairMQProxy::CONNECT);
     proxy.ChangeState(FairMQProxy::RUN);
 
     // wait until the running thread has finished processing.
