@@ -42,8 +42,8 @@
 template <typename SamplerPolicy, typename OutputPolicy>
 class GenericSampler: public FairMQDevice, public SamplerPolicy, public OutputPolicy
 {
-    using SamplerPolicy::GetDataBranch;   // get data from file
-    using OutputPolicy::message;        // serialize method
+    //using SamplerPolicy::GetDataBranch;   // get data from file
+    //using OutputPolicy::message;        // serialize method
     
   public:
     enum {

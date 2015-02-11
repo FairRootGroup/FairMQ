@@ -16,9 +16,9 @@
 template <typename InputPolicy, typename OutputPolicy>
 class GenericFileSink : public FairMQDevice, public InputPolicy, public OutputPolicy
 {
-    using InputPolicy::message;
+    //using InputPolicy::message;
     //using OutputPolicy::InitOutFile;
-    using OutputPolicy::AddToFile;
+    //using OutputPolicy::AddToFile;
     
 public:
     GenericFileSink();

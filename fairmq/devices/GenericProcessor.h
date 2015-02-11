@@ -58,7 +58,7 @@ class GenericProcessor: public FairMQDevice,
 
     void SendPart()
     {
-        fPayloadOutputs->at(0)->Send(OutputPolicy::message(TaskPolicy::GetData()), "snd-more");
+        fPayloadOutputs->at(0)->Send(OutputPolicy::SerializeMsg(TaskPolicy::GetData()), "snd-more");
         OutputPolicy::CloseMessage(); 
     }
 
@@ -108,9 +108,9 @@ class GenericProcessor: public FairMQDevice,
             received = fPayloadInputs->at(0)->Receive(msg);
             receivedMsgs++;
 
-            // InputPolicy::message(msg)      --> deserialize data of msg and fill output container
-            // TaskPolicy::ExecuteTask( ... ) --> process output container
-            TaskPolicy::ExecuteTask(InputPolicy::message(msg));
+            // InputPolicy::DeSerializeMsg(msg) --> deserialize data of msg and fill output container
+            // TaskPolicy::ExecuteTask( ... )   --> process output container
+            TaskPolicy::ExecuteTask(InputPolicy::DeSerializeMsg(msg));
 
             // OutputPolicy::fMessage point to msg
             OutputPolicy::SetMessage(msg);
@@ -119,7 +119,7 @@ class GenericProcessor: public FairMQDevice,
             {
                 // TaskPolicy::GetOutputData() --> Get processed output container
                 // OutputPolicy::message(...)  --> Serialize output container and fill fMessage
-                fPayloadOutputs->at(0)->Send(OutputPolicy::message(TaskPolicy::GetOutputData()));
+                fPayloadOutputs->at(0)->Send(OutputPolicy::SerializeMsg(TaskPolicy::GetOutputData()));
                 sentMsgs++;
                 received = 0;
             }

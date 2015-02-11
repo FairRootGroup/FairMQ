@@ -62,7 +62,8 @@ void GenericSampler<SamplerPolicy,OutputPolicy>::Run()
             //fSamplerTask->SetEventIndex(eventNr);
             FairMQMessage* msg = fTransportFactory->CreateMessage();
             OutputPolicy::SetMessage(msg);
-            fPayloadOutputs->at(0)->Send(message(GetDataBranch(eventNr)));
+            fPayloadOutputs->at(0)->Send(OutputPolicy::SerializeMsg(
+                                            SamplerPolicy::GetDataBranch(eventNr)));
             ++sentMsgs;
 
             if(msg)

@@ -56,7 +56,7 @@ void GenericFileSink<InputPolicy, OutputPolicy>::Run()
         received = fPayloadInputs->at(0)->Receive(msg);
         if(received>0)
         {
-            AddToFile(message(msg));
+            OutputPolicy::AddToFile(InputPolicy::DeSerializeMsg(msg));
             receivedMsg++;
         }
         delete msg;
