@@ -42,16 +42,25 @@ FairMQSocketNN::FairMQSocketNN(const string& type, int num, int numIoThreads)
         // http://250bpm.com/blog:14
         // http://www.freelists.org/post/nanomsg/a-stupid-load-balancing-question,1
         fSocket = nn_socket(AF_SP_RAW, GetConstant(type));
+        if (fSocket == -1)
+        {
+            LOG(ERROR) << "failed creating socket #" << fId << ", reason: " << nn_strerror(errno);
+            exit(EXIT_FAILURE);
+        }
     }
     else
     {
         fSocket = nn_socket(AF_SP, GetConstant(type));
+        if (fSocket == -1)
+        {
+            LOG(ERROR) << "failed creating socket #" << fId << ", reason: " << nn_strerror(errno);
+            exit(EXIT_FAILURE);
+        }
         if (type == "sub")
         {
             nn_setsockopt(fSocket, NN_SUB, NN_SUB_SUBSCRIBE, NULL, 0);
         }
     }
-
 
     LOG(INFO) << "created socket #" << fId;
 }

@@ -40,6 +40,12 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num, int numIoThreads)
 
     fSocket = zmq_socket(fContext->GetContext(), GetConstant(type));
 
+    if (fSocket == NULL)
+    {
+        LOG(ERROR) << "failed creating socket #" << fId << ", reason: " << zmq_strerror(errno);
+        exit(EXIT_FAILURE);
+    }
+
     rc = zmq_setsockopt(fSocket, ZMQ_IDENTITY, &fId, fId.length());
     if (rc != 0)
     {
@@ -79,6 +85,10 @@ bool FairMQSocketZMQ::Bind(const string& address)
     int rc = zmq_bind(fSocket, address.c_str());
     if (rc != 0)
     {
+        if (errno == EADDRINUSE) {
+            // do not print error in this case, this is handled by FairMQDevice in case no connection could be established after trying a number of random ports from a range.
+            return false;
+        }
         LOG(ERROR) << "failed binding socket #" << fId << ", reason: " << zmq_strerror(errno);
         return false;
     }

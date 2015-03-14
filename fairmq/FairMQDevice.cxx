@@ -117,14 +117,16 @@ void FairMQDevice::Bind()
         {
             if (!fPayloadOutputs->at(i)->Bind(fOutputAddress.at(i)))
             {
+                LOG(DEBUG) << "binding output #" << i << " on " << fOutputAddress.at(i) << "failed, trying to find port in range";
+                LOG(INFO) << "port range: " << fPortRangeMin << " - " << fPortRangeMax;
                 do {
-                    LOG(WARN) << "could not bind at " << fOutputAddress.at(i) << ", trying another port in range";
                     ++numAttempts;
 
-                    size_t pos = fOutputAddress.at(i).rfind(":");
                     stringstream ss;
                     ss << (int)randomPort(gen);
                     string portString = ss.str();
+
+                    size_t pos = fOutputAddress.at(i).rfind(":");
                     fOutputAddress.at(i) = fOutputAddress.at(i).substr(0, pos + 1) + portString;
                     if (numAttempts > maxAttempts)
                     {
@@ -144,18 +146,20 @@ void FairMQDevice::Bind()
         {
             if (!fPayloadInputs->at(i)->Bind(fInputAddress.at(i)))
             {
+                LOG(DEBUG) << "binding input #" << i << " on " << fInputAddress.at(i) << "failed, trying to find port in range";
+                LOG(INFO) << "port range: " << fPortRangeMin << " - " << fPortRangeMax;
                 do {
-                    LOG(WARN) << "could not bind at " << fInputAddress.at(i) << ", trying another port in range";
                     ++numAttempts;
 
-                    size_t pos = fInputAddress.at(i).rfind(":");
                     stringstream ss;
                     ss << (int)randomPort(gen);
                     string portString = ss.str();
+
+                    size_t pos = fInputAddress.at(i).rfind(":");
                     fInputAddress.at(i) = fInputAddress.at(i).substr(0, pos + 1) + portString;
                     if (numAttempts > maxAttempts)
                     {
-                        LOG(ERROR) << "could not bind output " << i << " to any port in the given range";
+                        LOG(ERROR) << "could not bind input " << i << " to any port in the given range";
                         break;
                     }
                 } while (!fPayloadInputs->at(i)->Bind(fInputAddress.at(i)));

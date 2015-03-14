@@ -12,9 +12,10 @@
  * @author D. Klein, A. Rybalchenko
  */
 
+#include <sstream>
+
 #include "FairMQLogger.h"
 #include "FairMQContextZMQ.h"
-#include <sstream>
 
 FairMQContextZMQ::FairMQContextZMQ(int numIoThreads)
     : fContext()
@@ -23,9 +24,17 @@ FairMQContextZMQ::FairMQContextZMQ(int numIoThreads)
     if (fContext == NULL)
     {
         LOG(ERROR) << "failed creating context, reason: " << zmq_strerror(errno);
+        exit(EXIT_FAILURE);
     }
 
     int rc = zmq_ctx_set(fContext, ZMQ_IO_THREADS, numIoThreads);
+    if (rc != 0)
+    {
+        LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
+    }
+
+    // Set the maximum number of allowed sockets on the context.
+    rc = zmq_ctx_set(fContext, ZMQ_MAX_SOCKETS, 10000);
     if (rc != 0)
     {
         LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
