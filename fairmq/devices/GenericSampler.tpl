@@ -6,29 +6,25 @@
  */
 
 template <typename SamplerPolicy, typename OutputPolicy>
-    GenericSampler<SamplerPolicy,OutputPolicy>::GenericSampler() :
-      fNumEvents(0),
-      fEventRate(1),
-      fEventCounter(0),
-      fContinuous(false)
-    {
-    }
-
-
-template <typename SamplerPolicy, typename OutputPolicy>
-    GenericSampler<SamplerPolicy,OutputPolicy>::~GenericSampler()
-    {
-    }
-
-
-
+GenericSampler<SamplerPolicy,OutputPolicy>::GenericSampler() :
+  fNumEvents(0),
+  fEventRate(1),
+  fEventCounter(0),
+  fContinuous(false)
+{
+}
 
 template <typename SamplerPolicy, typename OutputPolicy>
-    void GenericSampler<SamplerPolicy,OutputPolicy>::SetTransport(FairMQTransportFactory* factory)
-    {
-        FairMQDevice::SetTransport(factory);
-        //OutputPolicy::SetTransport(factory);
-    }
+GenericSampler<SamplerPolicy,OutputPolicy>::~GenericSampler()
+{
+}
+
+template <typename SamplerPolicy, typename OutputPolicy>
+void GenericSampler<SamplerPolicy,OutputPolicy>::SetTransport(FairMQTransportFactory* factory)
+{
+    FairMQDevice::SetTransport(factory);
+    //OutputPolicy::SetTransport(factory);
+}
 
 template <typename SamplerPolicy, typename OutputPolicy>
 void GenericSampler<SamplerPolicy,OutputPolicy>::Init()
@@ -57,7 +53,7 @@ void GenericSampler<SamplerPolicy,OutputPolicy>::Run()
 
     do 
     {
-        for ( Long64_t eventNr = 0 ; eventNr < fNumEvents; ++eventNr ) 
+        for ( unsigned long eventNr = 0 ; eventNr < fNumEvents; ++eventNr ) 
         {
             //fSamplerTask->SetEventIndex(eventNr);
             FairMQMessage* msg = fTransportFactory->CreateMessage();
@@ -166,7 +162,7 @@ void GenericSampler<SamplerPolicy,OutputPolicy>::ListenToCommands()
 }
 
 template <typename SamplerPolicy, typename OutputPolicy>
-void GenericSampler<SamplerPolicy,OutputPolicy>::SetProperty(const int key, const string& value, const int slot/*= 0*/)
+void GenericSampler<SamplerPolicy,OutputPolicy>::SetProperty(const int key, const std::string& value, const int slot/*= 0*/)
 {
   switch (key)
   {
@@ -186,7 +182,7 @@ void GenericSampler<SamplerPolicy,OutputPolicy>::SetProperty(const int key, cons
 }
 
 template <typename SamplerPolicy, typename OutputPolicy>
-string GenericSampler<SamplerPolicy,OutputPolicy>::GetProperty(const int key, const string& default_/*= ""*/, const int slot/*= 0*/)
+std::string GenericSampler<SamplerPolicy,OutputPolicy>::GetProperty(const int key, const std::string& default_/*= ""*/, const int slot/*= 0*/)
 {
   switch (key)
   {

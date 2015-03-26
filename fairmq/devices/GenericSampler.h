@@ -8,21 +8,12 @@
 #ifndef GENERICSAMPLER_H
 #define	GENERICSAMPLER_H
 
-
-
-
 #include <vector>
 #include <iostream>
 
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 #include <boost/timer/timer.hpp>
-
-#include "TList.h"
-#include "TObjString.h"
-#include "TClonesArray.h"
-#include "TROOT.h"
-
 
 #include "FairMQDevice.h"
 #include "FairMQLogger.h"
@@ -44,7 +35,7 @@ class GenericSampler: public FairMQDevice, public SamplerPolicy, public OutputPo
 {
     //using SamplerPolicy::GetDataBranch;   // get data from file
     //using OutputPolicy::message;        // serialize method
-    
+
   public:
     enum {
       InputFile = FairMQDevice::Last,
@@ -57,15 +48,15 @@ class GenericSampler: public FairMQDevice, public SamplerPolicy, public OutputPo
     virtual void SetTransport(FairMQTransportFactory* factory);
     void ResetEventCounter();
     virtual void ListenToCommands();
-    
+
     template <typename... Args>
         void SetFileProperties(Args&... args)
         {
             SamplerPolicy::SetFileProperties(args...);
         }
 
-    virtual void SetProperty(const int key, const string& value, const int slot = 0);
-    virtual string GetProperty(const int key, const string& default_ = "", const int slot = 0);
+    virtual void SetProperty(const int key, const std::string& value, const int slot = 0);
+    virtual std::string GetProperty(const int key, const std::string& default_ = "", const int slot = 0);
     virtual void SetProperty(const int key, const int value, const int slot = 0);
     virtual int GetProperty(const int key, const int default_ = 0, const int slot = 0);
 
@@ -84,9 +75,9 @@ protected:
   virtual void Run();
 
 protected:
-  string fInputFile; // Filename of a root file containing the simulated digis.
-  string fParFile;
-  string fBranch; // The name of the sub-detector branch to stream the digis from.
+  std::string fInputFile; // Filename of a root file containing the simulated digis.
+  std::string fParFile;
+  std::string fBranch; // The name of the sub-detector branch to stream the digis from.
   int fNumEvents;
   int fEventRate;
   int fEventCounter;

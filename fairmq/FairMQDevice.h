@@ -24,8 +24,6 @@
 #include "FairMQTransportFactory.h"
 #include "FairMQSocket.h"
 
-using namespace std;
-
 class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 {
   public:
@@ -42,14 +40,16 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         InputSocketType,
         InputSndBufSize,
         InputRcvBufSize,
+        InputRateLogging,
         OutputAddress,
         OutputMethod,
         OutputSocketType,
         OutputSndBufSize,
         OutputRcvBufSize,
+        OutputRateLogging,
+        LogInputRate, // keep this for backwards compatibility for a while
+        LogOutputRate, // keep this for backwards compatibility for a while
         LogIntervalInMs,
-        LogInputRate,
-        LogOutputRate,
         Last
     };
 
@@ -57,8 +57,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     virtual void LogSocketRates();
 
-    virtual void SetProperty(const int key, const string& value, const int slot = 0);
-    virtual string GetProperty(const int key, const string& default_ = "", const int slot = 0);
+    virtual void SetProperty(const int key, const std::string& value, const int slot = 0);
+    virtual std::string GetProperty(const int key, const std::string& default_ = "", const int slot = 0);
     virtual void SetProperty(const int key, const int value, const int slot = 0);
     virtual int GetProperty(const int key, const int default_ = 0, const int slot = 0);
 
@@ -67,7 +67,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     virtual ~FairMQDevice();
 
   protected:
-    string fId;
+    std::string fId;
 
     int fNumIoThreads;
 
@@ -77,22 +77,22 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     int fPortRangeMin;
     int fPortRangeMax;
 
-    vector<string> fInputAddress;
-    vector<string> fInputMethod;
-    vector<string> fInputSocketType;
-    vector<int> fInputSndBufSize;
-    vector<int> fInputRcvBufSize;
-    vector<int> fLogInputRate;
+    std::vector<std::string> fInputAddress;
+    std::vector<std::string> fInputMethod;
+    std::vector<std::string> fInputSocketType;
+    std::vector<int> fInputSndBufSize;
+    std::vector<int> fInputRcvBufSize;
+    std::vector<int> fInputRateLogging;
 
-    vector<string> fOutputAddress;
-    vector<string> fOutputMethod;
-    vector<string> fOutputSocketType;
-    vector<int> fOutputSndBufSize;
-    vector<int> fOutputRcvBufSize;
-    vector<int> fLogOutputRate;
+    std::vector<std::string> fOutputAddress;
+    std::vector<std::string> fOutputMethod;
+    std::vector<std::string> fOutputSocketType;
+    std::vector<int> fOutputSndBufSize;
+    std::vector<int> fOutputRcvBufSize;
+    std::vector<int> fOutputRateLogging;
 
-    vector<FairMQSocket*>* fPayloadInputs;
-    vector<FairMQSocket*>* fPayloadOutputs;
+    std::vector<FairMQSocket*>* fPayloadInputs;
+    std::vector<FairMQSocket*>* fPayloadOutputs;
 
     int fLogIntervalInMs;
 

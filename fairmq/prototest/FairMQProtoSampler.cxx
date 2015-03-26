@@ -22,6 +22,8 @@
 
 #include "payload.pb.h"
 
+using namespace std;
+
 FairMQProtoSampler::FairMQProtoSampler()
     : fEventSize(10000)
     , fEventRate(1)

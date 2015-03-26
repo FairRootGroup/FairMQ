@@ -18,6 +18,8 @@
 #include "FairMQMessageNN.h"
 #include "FairMQLogger.h"
 
+using namespace std;
+
 FairMQSocketNN::FairMQSocketNN(const string& type, int num, int numIoThreads)
     : FairMQSocket(0, 0, NN_DONTWAIT)
     , fSocket()

@@ -21,8 +21,6 @@
 #include <iomanip>
 #include <ctime>
 
-using namespace std;
-
 class FairMQLogger
 {
   public:
@@ -36,10 +34,10 @@ class FairMQLogger
     };
     FairMQLogger();
     virtual ~FairMQLogger();
-    ostringstream& Log(int type);
+    std::ostringstream& Log(int type);
 
   private:
-    ostringstream os;
+    std::ostringstream os;
 };
 
 typedef unsigned long long timestamp_t;

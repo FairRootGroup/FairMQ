@@ -18,6 +18,8 @@
 #include "FairMQExampleClient.h"
 #include "FairMQLogger.h"
 
+using namespace std;
+
 FairMQExampleClient::FairMQExampleClient()
     : fText()
 {

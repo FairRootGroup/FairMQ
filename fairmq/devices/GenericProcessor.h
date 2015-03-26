@@ -17,44 +17,39 @@ class GenericProcessor: public FairMQDevice,
                         public TaskPolicy
 {
   public:
-   
     GenericProcessor() : InputPolicy(), OutputPolicy(), TaskPolicy()
     {}
-    
+
     virtual ~GenericProcessor()
     {}
-    
+
     void SetTransport(FairMQTransportFactory* transport)
     {
         FairMQDevice::SetTransport(transport);
         //InputPolicy::SetTransport(transport);
         //OutputPolicy::SetTransport(transport);
     }
-    
-    
+
     template <typename... Args>
         void InitTask(Args... args)
         {
             TaskPolicy::InitTask(std::forward<Args>(args)...);
         }
-    
+
     template <typename... Args>
         void InitInputContainer(Args... args)
         {
             InputPolicy::InitContainer(std::forward<Args>(args)...);
         }
-    
+
     template <typename... Args>
         void InitOutputContainer(Args... args)
         {
             OutputPolicy::InitContainer(std::forward<Args>(args)...);
         }
-    
-    
+
     //void SendPart();
     //bool ReceivePart();
-
-    
 
     void SendPart()
     {
@@ -81,7 +76,7 @@ class GenericProcessor: public FairMQDevice,
         }
     }
     */
-    
+
   protected:
     virtual void Init()
     {
@@ -91,7 +86,7 @@ class GenericProcessor: public FairMQDevice,
         //fProcessorTask->SetSendPart(boost::bind(&FairMQProcessor::SendPart, this));
         //fProcessorTask->SetReceivePart(boost::bind(&FairMQProcessor::ReceivePart, this));
     }
-    
+
     virtual void Run()
     {
         MQLOG(INFO) << ">>>>>>> Run <<<<<<<";
@@ -100,7 +95,7 @@ class GenericProcessor: public FairMQDevice,
         int receivedMsgs = 0;
         int sentMsgs = 0;
         int received = 0;
-      
+
         while ( fState == RUNNING ) 
         {
             FairMQMessage* msg = fTransportFactory->CreateMessage();
@@ -148,7 +143,6 @@ class GenericProcessor: public FairMQDevice,
         fRunningCondition.notify_one();
     }
 
-    
 };
 
 //#include "GenericSampler.tpl"

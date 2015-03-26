@@ -18,8 +18,6 @@
 #include <string>
 #include "FairMQMessage.h"
 
-using namespace std;
-
 class FairMQSocket
 {
   public:
@@ -33,14 +31,14 @@ class FairMQSocket
         , NOBLOCK(noBlock)
         {}
 
-    virtual string GetId() = 0;
+    virtual std::string GetId() = 0;
 
-    virtual bool Bind(const string& address) = 0;
-    virtual void Connect(const string& address) = 0;
+    virtual bool Bind(const std::string& address) = 0;
+    virtual void Connect(const std::string& address) = 0;
 
-    virtual int Send(FairMQMessage* msg, const string& flag="") = 0;
+    virtual int Send(FairMQMessage* msg, const std::string& flag="") = 0;
     virtual int Send(FairMQMessage* msg, const int flags) = 0;
-    virtual int Receive(FairMQMessage* msg, const string& flag="") = 0;
+    virtual int Receive(FairMQMessage* msg, const std::string& flag="") = 0;
     virtual int Receive(FairMQMessage* msg, const int flags) = 0;
 
     virtual void* GetSocket() = 0;
@@ -48,8 +46,8 @@ class FairMQSocket
     virtual void Close() = 0;
     virtual void Terminate() = 0;
 
-    virtual void SetOption(const string& option, const void* value, size_t valueSize) = 0;
-    virtual void GetOption(const string& option, void* value, size_t* valueSize) = 0;
+    virtual void SetOption(const std::string& option, const void* value, size_t valueSize) = 0;
+    virtual void GetOption(const std::string& option, void* value, size_t* valueSize) = 0;
 
     virtual unsigned long GetBytesTx() = 0;
     virtual unsigned long GetBytesRx() = 0;

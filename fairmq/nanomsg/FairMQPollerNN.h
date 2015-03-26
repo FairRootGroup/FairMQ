@@ -20,12 +20,10 @@
 #include "FairMQPoller.h"
 #include "FairMQSocket.h"
 
-using namespace std;
-
 class FairMQPollerNN : public FairMQPoller
 {
   public:
-    FairMQPollerNN(const vector<FairMQSocket*>& inputs);
+    FairMQPollerNN(const std::vector<FairMQSocket*>& inputs);
 
     virtual void Poll(int timeout);
     virtual bool CheckInput(int index);

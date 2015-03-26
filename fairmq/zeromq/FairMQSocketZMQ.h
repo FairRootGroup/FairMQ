@@ -25,16 +25,16 @@
 class FairMQSocketZMQ : public FairMQSocket
 {
   public:
-    FairMQSocketZMQ(const string& type, int num, int numIoThreads);
+    FairMQSocketZMQ(const std::string& type, int num, int numIoThreads);
 
-    virtual string GetId();
+    virtual std::string GetId();
 
-    virtual bool Bind(const string& address);
-    virtual void Connect(const string& address);
+    virtual bool Bind(const std::string& address);
+    virtual void Connect(const std::string& address);
 
-    virtual int Send(FairMQMessage* msg, const string& flag="");
+    virtual int Send(FairMQMessage* msg, const std::string& flag="");
     virtual int Send(FairMQMessage* msg, const int flags);
-    virtual int Receive(FairMQMessage* msg, const string& flag="");
+    virtual int Receive(FairMQMessage* msg, const std::string& flag="");
     virtual int Receive(FairMQMessage* msg, const int flags);
 
     virtual void* GetSocket();
@@ -42,21 +42,21 @@ class FairMQSocketZMQ : public FairMQSocket
     virtual void Close();
     virtual void Terminate();
 
-    virtual void SetOption(const string& option, const void* value, size_t valueSize);
-    virtual void GetOption(const string& option, void* value, size_t* valueSize);
+    virtual void SetOption(const std::string& option, const void* value, size_t valueSize);
+    virtual void GetOption(const std::string& option, void* value, size_t* valueSize);
 
     virtual unsigned long GetBytesTx();
     virtual unsigned long GetBytesRx();
     virtual unsigned long GetMessagesTx();
     virtual unsigned long GetMessagesRx();
 
-    static int GetConstant(const string& constant);
+    static int GetConstant(const std::string& constant);
 
     virtual ~FairMQSocketZMQ();
 
   private:
     void* fSocket;
-    string fId;
+    std::string fId;
     unsigned long fBytesTx;
     unsigned long fBytesRx;
     unsigned long fMessagesTx;

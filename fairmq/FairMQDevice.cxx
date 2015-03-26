@@ -20,6 +20,8 @@
 #include "FairMQDevice.h"
 #include "FairMQLogger.h"
 
+using namespace std;
+
 FairMQDevice::FairMQDevice()
     : fId()
     , fNumIoThreads(1)
@@ -32,13 +34,13 @@ FairMQDevice::FairMQDevice()
     , fInputSocketType()
     , fInputSndBufSize()
     , fInputRcvBufSize()
-    , fLogInputRate()
+    , fInputRateLogging()
     , fOutputAddress()
     , fOutputMethod()
     , fOutputSocketType()
     , fOutputSndBufSize()
     , fOutputRcvBufSize()
-    , fLogOutputRate()
+    , fOutputRateLogging()
     , fPayloadInputs(new vector<FairMQSocket*>())
     , fPayloadOutputs(new vector<FairMQSocket*>())
     , fLogIntervalInMs(1000)
@@ -57,7 +59,7 @@ void FairMQDevice::Init()
         fInputSocketType.push_back("sub"); // default value, can be overwritten in configuration
         fInputSndBufSize.push_back(10000); // default value, can be overwritten in configuration
         fInputRcvBufSize.push_back(10000); // default value, can be overwritten in configuration
-        fLogInputRate.push_back(1); // default value, can be overwritten in configuration
+        fInputRateLogging.push_back(1); // default value, can be overwritten in configuration
     }
 
     for (int i = 0; i < fNumOutputs; ++i)
@@ -67,7 +69,7 @@ void FairMQDevice::Init()
         fOutputSocketType.push_back("pub"); // default value, can be overwritten in configuration
         fOutputSndBufSize.push_back(10000); // default value, can be overwritten in configuration
         fOutputRcvBufSize.push_back(10000); // default value, can be overwritten in configuration
-        fLogOutputRate.push_back(1); // default value, can be overwritten in configuration
+        fOutputRateLogging.push_back(1); // default value, can be overwritten in configuration
     }
 }
 
@@ -117,7 +119,7 @@ void FairMQDevice::Bind()
         {
             if (!fPayloadOutputs->at(i)->Bind(fOutputAddress.at(i)))
             {
-                LOG(DEBUG) << "binding output #" << i << " on " << fOutputAddress.at(i) << "failed, trying to find port in range";
+                LOG(DEBUG) << "binding output #" << i << " on " << fOutputAddress.at(i) << " failed, trying to find port in range";
                 LOG(INFO) << "port range: " << fPortRangeMin << " - " << fPortRangeMax;
                 do {
                     ++numAttempts;
@@ -146,7 +148,7 @@ void FairMQDevice::Bind()
         {
             if (!fPayloadInputs->at(i)->Bind(fInputAddress.at(i)))
             {
-                LOG(DEBUG) << "binding input #" << i << " on " << fInputAddress.at(i) << "failed, trying to find port in range";
+                LOG(DEBUG) << "binding input #" << i << " on " << fInputAddress.at(i) << " failed, trying to find port in range";
                 LOG(INFO) << "port range: " << fPortRangeMin << " - " << fPortRangeMax;
                 do {
                     ++numAttempts;
@@ -266,6 +268,11 @@ void FairMQDevice::SetProperty(const int key, const int value, const int slot /*
             fInputRcvBufSize.erase(fInputRcvBufSize.begin() + slot);
             fInputRcvBufSize.insert(fInputRcvBufSize.begin() + slot, value);
             break;
+        case InputRateLogging:
+        case LogInputRate: // keep this for backwards compatibility for a while
+            fInputRateLogging.erase(fInputRateLogging.begin() + slot);
+            fInputRateLogging.insert(fInputRateLogging.begin() + slot, value);
+            break;
         case OutputSndBufSize:
             fOutputSndBufSize.erase(fOutputSndBufSize.begin() + slot);
             fOutputSndBufSize.insert(fOutputSndBufSize.begin() + slot, value);
@@ -274,13 +281,10 @@ void FairMQDevice::SetProperty(const int key, const int value, const int slot /*
             fOutputRcvBufSize.erase(fOutputRcvBufSize.begin() + slot);
             fOutputRcvBufSize.insert(fOutputRcvBufSize.begin() + slot, value);
             break;
-        case LogInputRate:
-            fLogInputRate.erase(fLogInputRate.begin() + slot);
-            fLogInputRate.insert(fLogInputRate.begin() + slot, value);
-            break;
-        case LogOutputRate:
-            fLogOutputRate.erase(fLogOutputRate.begin() + slot);
-            fLogOutputRate.insert(fLogOutputRate.begin() + slot, value);
+        case OutputRateLogging:
+        case LogOutputRate: // keep this for backwards compatibility for a while
+            fOutputRateLogging.erase(fOutputRateLogging.begin() + slot);
+            fOutputRateLogging.insert(fOutputRateLogging.begin() + slot, value);
             break;
         default:
             FairMQConfigurable::SetProperty(key, value, slot);
@@ -333,14 +337,16 @@ int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/, const i
             return fInputSndBufSize.at(slot);
         case InputRcvBufSize:
             return fInputRcvBufSize.at(slot);
+        case InputRateLogging:
+        case LogInputRate: // keep this for backwards compatibility for a while
+            return fInputRateLogging.at(slot);
         case OutputSndBufSize:
             return fOutputSndBufSize.at(slot);
         case OutputRcvBufSize:
             return fOutputRcvBufSize.at(slot);
-        case LogInputRate:
-            return fLogInputRate.at(slot);
-        case LogOutputRate:
-            return fLogOutputRate.at(slot);
+        case OutputRateLogging:
+        case LogOutputRate: // keep this for backwards compatibility for a while
+            return fOutputRateLogging.at(slot);
         default:
             return FairMQConfigurable::GetProperty(key, default_, slot);
     }
@@ -366,7 +372,7 @@ void FairMQDevice::LogSocketRates()
     int i = 0;
     for (vector<FairMQSocket*>::iterator itr = fPayloadInputs->begin(); itr != fPayloadInputs->end(); itr++)
     {
-        if (fLogInputRate.at(i) > 0)
+        if (fInputRateLogging.at(i) > 0)
         {
             filteredInputs.push_back((*itr));
             ++numFilteredInputs;
@@ -377,7 +383,7 @@ void FairMQDevice::LogSocketRates()
     i = 0;
     for (vector<FairMQSocket*>::iterator itr = fPayloadOutputs->begin(); itr != fPayloadOutputs->end(); itr++)
     {
-        if (fLogOutputRate.at(i) > 0)
+        if (fOutputRateLogging.at(i) > 0)
         {
             filteredOutputs.push_back((*itr));
             ++numFilteredOutputs;

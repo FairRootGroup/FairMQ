@@ -17,6 +17,8 @@
 #include "FairMQPollerZMQ.h"
 #include "FairMQLogger.h"
 
+using namespace std;
+
 FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQSocket*>& inputs)
     : items()
     , fNumItems()

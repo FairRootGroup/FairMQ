@@ -17,6 +17,8 @@
 #include "FairMQSocketZMQ.h"
 #include "FairMQLogger.h"
 
+using namespace std;
+
 boost::shared_ptr<FairMQContextZMQ> FairMQSocketZMQ::fContext = boost::shared_ptr<FairMQContextZMQ>(new FairMQContextZMQ(1));
 
 FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num, int numIoThreads)

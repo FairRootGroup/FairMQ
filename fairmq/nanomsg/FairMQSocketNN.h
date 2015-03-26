@@ -26,16 +26,16 @@
 class FairMQSocketNN : public FairMQSocket
 {
   public:
-    FairMQSocketNN(const string& type, int num, int numIoThreads); // numIoThreads is not used in nanomsg.
+    FairMQSocketNN(const std::string& type, int num, int numIoThreads); // numIoThreads is not used in nanomsg.
 
-    virtual string GetId();
+    virtual std::string GetId();
 
-    virtual bool Bind(const string& address);
-    virtual void Connect(const string& address);
+    virtual bool Bind(const std::string& address);
+    virtual void Connect(const std::string& address);
 
-    virtual int Send(FairMQMessage* msg, const string& flag="");
+    virtual int Send(FairMQMessage* msg, const std::string& flag="");
     virtual int Send(FairMQMessage* msg, const int flags);
-    virtual int Receive(FairMQMessage* msg, const string& flag="");
+    virtual int Receive(FairMQMessage* msg, const std::string& flag="");
     virtual int Receive(FairMQMessage* msg, const int flags);
 
     virtual void* GetSocket();
@@ -43,21 +43,21 @@ class FairMQSocketNN : public FairMQSocket
     virtual void Close();
     virtual void Terminate();
 
-    virtual void SetOption(const string& option, const void* value, size_t valueSize);
-    virtual void GetOption(const string& option, void* value, size_t* valueSize);
+    virtual void SetOption(const std::string& option, const void* value, size_t valueSize);
+    virtual void GetOption(const std::string& option, void* value, size_t* valueSize);
 
     unsigned long GetBytesTx();
     unsigned long GetBytesRx();
     unsigned long GetMessagesTx();
     unsigned long GetMessagesRx();
 
-    static int GetConstant(const string& constant);
+    static int GetConstant(const std::string& constant);
 
     virtual ~FairMQSocketNN();
 
   private:
     int fSocket;
-    string fId;
+    std::string fId;
     unsigned long fBytesTx;
     unsigned long fBytesRx;
     unsigned long fMessagesTx;

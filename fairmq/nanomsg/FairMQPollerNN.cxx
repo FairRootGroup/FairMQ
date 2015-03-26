@@ -16,6 +16,8 @@
 
 #include "FairMQPollerNN.h"
 
+using namespace std;
+
 FairMQPollerNN::FairMQPollerNN(const vector<FairMQSocket*>& inputs)
     : items()
     , fNumItems()

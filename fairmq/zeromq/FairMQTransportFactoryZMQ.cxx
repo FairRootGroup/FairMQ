@@ -16,6 +16,8 @@
 
 #include "FairMQTransportFactoryZMQ.h"
 
+using namespace std;
+
 FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ()
 {
     int major, minor, patch;

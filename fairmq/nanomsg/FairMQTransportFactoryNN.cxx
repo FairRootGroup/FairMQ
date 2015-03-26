@@ -14,6 +14,8 @@
 
 #include "FairMQTransportFactoryNN.h"
 
+using namespace std;
+
 FairMQTransportFactoryNN::FairMQTransportFactoryNN()
 {
     LOG(INFO) << "Using nanomsg library";

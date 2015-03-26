@@ -20,6 +20,8 @@
 #include "FairMQBenchmarkSampler.h"
 #include "FairMQLogger.h"
 
+using namespace std;
+
 FairMQBenchmarkSampler::FairMQBenchmarkSampler()
     : fEventSize(10000)
     , fEventRate(1)

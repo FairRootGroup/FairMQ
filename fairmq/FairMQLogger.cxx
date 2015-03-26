@@ -17,6 +17,8 @@
 
 #include "FairMQLogger.h"
 
+using namespace std;
+
 FairMQLogger::FairMQLogger()
     : os()
 {
