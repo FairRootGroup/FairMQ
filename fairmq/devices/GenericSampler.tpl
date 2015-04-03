@@ -31,7 +31,7 @@ void GenericSampler<SamplerPolicy,OutputPolicy>::Init()
 {
   FairMQDevice::Init();
   SamplerPolicy::InitSampler();
-  fNumEvents=SamplerPolicy::GetDataBunchNumber();
+  fNumEvents=SamplerPolicy::GetNumberOfEvent();
 }
 
 template <typename SamplerPolicy, typename OutputPolicy>
@@ -53,7 +53,7 @@ void GenericSampler<SamplerPolicy,OutputPolicy>::Run()
 
     do 
     {
-        for ( unsigned long eventNr = 0 ; eventNr < fNumEvents; ++eventNr ) 
+        for ( int64_t eventNr = 0 ; eventNr < fNumEvents; ++eventNr ) 
         {
             //fSamplerTask->SetEventIndex(eventNr);
             FairMQMessage* msg = fTransportFactory->CreateMessage();

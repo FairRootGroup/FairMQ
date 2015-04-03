@@ -1,3 +1,10 @@
+/********************************************************************************
+ *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ *                                                                              *
+ *              This software is distributed under the terms of the             * 
+ *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *                  copied verbatim in the file "LICENSE"                       *
+ ********************************************************************************/
 /* 
  * File:   GenericProcessor.h
  * Author: winckler
@@ -10,7 +17,34 @@
 
 #include "FairMQDevice.h"
 
-template <typename InputPolicy, typename OutputPolicy, typename TaskPolicy>
+
+/*********************************************************************
+ * -------------- NOTES -----------------------
+ * All policies must have a default constructor
+ * Function to define in (parent) policy classes :
+ * 
+ *  -------- INPUT POLICY --------
+ *                InputPolicy::InitContainer(...)
+ * CONTAINER_TYPE InputPolicy::DeSerializeMsg(FairMQMessage* msg)
+ *                InputPolicy::InitContainer(...)  // if GenericProcessor::InitInputContainer(...) is used
+ * 
+ * 
+ *  -------- OUTPUT POLICY --------
+ *                OutputPolicy::SerializeMsg(CONTAINER_TYPE)
+ *                OutputPolicy::SetMessage(FairMQMessage* msg)
+ *                OutputPolicy::InitContainer(...)  // if GenericProcessor::InitOutputContainer(...) is used
+ * 
+ *  -------- TASK POLICY --------
+ * CONTAINER_TYPE TaskPolicy::GetOutputData()
+ *                TaskPolicy::ExecuteTask(CONTAINER_TYPE container)
+ *                TaskPolicy::InitTask(...)  // if GenericProcessor::InitTask(...) is used
+ *                
+ **********************************************************************/
+
+
+template <  typename InputPolicy, 
+            typename OutputPolicy, 
+            typename TaskPolicy>
 class GenericProcessor: public FairMQDevice, 
                         public InputPolicy, 
                         public OutputPolicy, 
@@ -22,14 +56,15 @@ class GenericProcessor: public FairMQDevice,
 
     virtual ~GenericProcessor()
     {}
-
+    
+    // the four following methods ensure 
+    // that the correct policy method is called
+    
     void SetTransport(FairMQTransportFactory* transport)
     {
         FairMQDevice::SetTransport(transport);
-        //InputPolicy::SetTransport(transport);
-        //OutputPolicy::SetTransport(transport);
     }
-
+    
     template <typename... Args>
         void InitTask(Args... args)
         {
@@ -48,16 +83,20 @@ class GenericProcessor: public FairMQDevice,
             OutputPolicy::InitContainer(std::forward<Args>(args)...);
         }
 
-    //void SendPart();
-    //bool ReceivePart();
+    
 
+    
+    /*
+     * 
+    // ***********************  TODO: implement multipart features
     void SendPart()
     {
         fPayloadOutputs->at(0)->Send(OutputPolicy::SerializeMsg(TaskPolicy::GetData()), "snd-more");
         OutputPolicy::CloseMessage(); 
     }
 
-    /*
+    //void SendPart();
+    //bool ReceivePart();
     bool ReceivePart()
     {
         int64_t more = 0;
@@ -81,7 +120,7 @@ class GenericProcessor: public FairMQDevice,
     virtual void Init()
     {
         FairMQDevice::Init();
-        // TODO: implement the code below with the new design
+        // TODO: implement multipart features
         //fProcessorTask->InitTask();
         //fProcessorTask->SetSendPart(boost::bind(&FairMQProcessor::SendPart, this));
         //fProcessorTask->SetReceivePart(boost::bind(&FairMQProcessor::ReceivePart, this));
@@ -121,7 +160,6 @@ class GenericProcessor: public FairMQDevice,
 
             if(msg)
                 msg->CloseMessage();
-            //OutputPolicy::CloseMessage();        
         }
 
         MQLOG(INFO) << "Received " << receivedMsgs << " and sent " << sentMsgs << " messages!";
@@ -144,9 +182,6 @@ class GenericProcessor: public FairMQDevice,
     }
 
 };
-
-//#include "GenericSampler.tpl"
-
 
 #endif	/* GENERICPROCESSOR_H */
 

@@ -127,7 +127,6 @@ Set(FairMQHDRFiles
   devices/GenericSampler.tpl
   devices/GenericProcessor.h
   devices/GenericFileSink.h
-  devices/GenericFileSink.tpl
   tools/FairMQTools.h
 )
 install(FILES ${FairMQHDRFiles} DESTINATION include)

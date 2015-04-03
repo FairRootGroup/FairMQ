@@ -1,3 +1,10 @@
+/********************************************************************************
+ *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ *                                                                              *
+ *              This software is distributed under the terms of the             * 
+ *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *                  copied verbatim in the file "LICENSE"                       *
+ ********************************************************************************/
 /* 
  * File:   GenericSampler.h
  * Author: winckler
@@ -5,11 +12,13 @@
  * Created on November 24, 2014, 3:30 PM
  */
 
+
 #ifndef GENERICSAMPLER_H
 #define	GENERICSAMPLER_H
 
 #include <vector>
 #include <iostream>
+#include <stdint.h>
 
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
@@ -18,31 +27,40 @@
 #include "FairMQDevice.h"
 #include "FairMQLogger.h"
 
-/**
- * Reads simulated digis from a root file and samples the digi as a time-series UDP stream.
- * Must be initialized with the filename to the root file and the name of the sub-detector
- * branch, whose digis should be streamed.
- *
- * The purpose of this class is to provide a data source of digis very similar to the
- * future detector output at the point where the detector is connected to the online
- * computing farm. For the development of online analysis algorithms, it is very important
- * to simulate the future detector output as realistic as possible to evaluate the
- * feasibility and quality of the various possible online analysis features.
- */
+/*  GENERIC SAMPLER (data source) MQ-DEVICE */
+/*********************************************************************
+ * -------------- NOTES -----------------------
+ * All policies must have a default constructor
+ * Function to define in (parent) policy classes :
+ * 
+ *  -------- INPUT POLICY (SAMPLER POLICY) --------
+ *                SamplerPolicy::InitSampler()
+ *        int64_t SamplerPolicy::GetNumberOfEvent()
+ * CONTAINER_TYPE SamplerPolicy::GetDataBranch(int64_t eventNr)
+ *                SamplerPolicy::SetFileProperties(Args&... args)
+ * 
+ *  -------- OUTPUT POLICY --------
+ *                OutputPolicy::SerializeMsg(CONTAINER_TYPE)
+ *                OutputPolicy::SetMessage(FairMQMessage* msg)
+ *               
+ **********************************************************************/
 
-template <typename SamplerPolicy, typename OutputPolicy>
-class GenericSampler: public FairMQDevice, public SamplerPolicy, public OutputPolicy
-{
-    //using SamplerPolicy::GetDataBranch;   // get data from file
-    //using OutputPolicy::message;        // serialize method
-
+template <typename SamplerPolicy, 
+          typename OutputPolicy>
+class GenericSampler:   public FairMQDevice, 
+                        public SamplerPolicy, 
+                        public OutputPolicy
+{   
   public:
-    enum {
-      InputFile = FairMQDevice::Last,
-      Branch,
-      ParFile,
-      EventRate
+      
+    enum 
+    {
+        InputFile = FairMQDevice::Last,
+        Branch,
+        ParFile,
+        EventRate
     };
+    
     GenericSampler();
     virtual ~GenericSampler();
     virtual void SetTransport(FairMQTransportFactory* factory);
@@ -66,7 +84,8 @@ class GenericSampler: public FairMQDevice, public SamplerPolicy, public OutputPo
      * This method can be given as a callback to the SamplerTask.
      * The final message part must be sent with normal Send method.
      */
-  void SendPart();
+    // temporary disabled
+    //void SendPart();
 
   void SetContinuous(bool flag) { fContinuous = flag; }
 
@@ -78,7 +97,7 @@ protected:
   std::string fInputFile; // Filename of a root file containing the simulated digis.
   std::string fParFile;
   std::string fBranch; // The name of the sub-detector branch to stream the digis from.
-  int fNumEvents;
+  int64_t fNumEvents;
   int fEventRate;
   int fEventCounter;
   bool fContinuous;
