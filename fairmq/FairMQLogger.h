@@ -20,24 +20,35 @@
 #include <iostream>
 #include <iomanip>
 #include <ctime>
+#include <string>
+#include <stdio.h>
 
 class FairMQLogger
 {
-  public:
-    enum
+  public:      
+    enum Level
     {
         DEBUG,
         INFO,
-        ERROR,
         WARN,
-        STATE
+        ERROR,
+        STATE,
+        NOLOG
     };
+    
     FairMQLogger();
     virtual ~FairMQLogger();
     std::ostringstream& Log(int type);
 
+    static void SetLogLevel(int loglevel)
+    { 
+        FairMQLogger::fMinLogLevel = loglevel; 
+    }
+    
   private:
     std::ostringstream os;
+    int fLogLevel;
+    static int fMinLogLevel;
 };
 
 typedef unsigned long long timestamp_t;
@@ -46,5 +57,6 @@ timestamp_t get_timestamp();
 
 #define LOG(type) FairMQLogger().Log(FairMQLogger::type)
 #define MQLOG(type) FairMQLogger().Log(FairMQLogger::type)
+#define SET_LOG_LEVEL(loglevel) FairMQLogger::SetLogLevel(FairMQLogger::loglevel)
 
 #endif /* FAIRMQLOGGER_H_ */

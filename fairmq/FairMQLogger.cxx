@@ -12,42 +12,52 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include <string>
-#include <stdio.h>
-
 #include "FairMQLogger.h"
 
-using namespace std;
+
+int FairMQLogger::fMinLogLevel = FairMQLogger::DEBUG;
 
 FairMQLogger::FairMQLogger()
-    : os()
+    : os(), fLogLevel(DEBUG)
 {
 }
 
 FairMQLogger::~FairMQLogger()
 {
-    cout << os.str() << endl;
+    if(fLogLevel>=FairMQLogger::fMinLogLevel && fLogLevel<FairMQLogger::NOLOG)
+        std::cout << os.str() << std::endl;
 }
 
-ostringstream& FairMQLogger::Log(int type)
+std::ostringstream& FairMQLogger::Log(int type)
 {
-    string type_str;
+    std::string type_str;
+    fLogLevel=type;
     switch (type)
     {
-        case DEBUG:
+        case DEBUG :
             type_str = "\033[01;34mDEBUG\033[0m";
             break;
-        case INFO:
+            
+        case INFO :
             type_str = "\033[01;32mINFO\033[0m";
             break;
-        case ERROR:
-            type_str = "\033[01;31mERROR\033[0m";
-            break;
-        case WARN:
+                        
+        case WARN :
             type_str = "\033[01;33mWARN\033[0m";
             break;
-        case STATE:
+            
+        case ERROR :
+            type_str = "\033[01;31mERROR\033[0m";
+            break;    
+            
+        case STATE :
             type_str = "\033[01;35mSTATE\033[0m";
+            break;
+            
+        case NOLOG :
+            type_str = "\033[01;31mNOLOG\033[0m";
+            break;
+            
         default:
             break;
     }
