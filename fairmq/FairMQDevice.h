@@ -18,11 +18,13 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <map>
 
 #include "FairMQConfigurable.h"
 #include "FairMQStateMachine.h"
 #include "FairMQTransportFactory.h"
 #include "FairMQSocket.h"
+#include "FairMQChannel.h"
 
 class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 {
@@ -30,25 +32,10 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     enum
     {
         Id = FairMQConfigurable::Last,
+        MaxInitializationTime,
         NumIoThreads,
-        NumInputs,
-        NumOutputs,
         PortRangeMin,
         PortRangeMax,
-        InputAddress,
-        InputMethod,
-        InputSocketType,
-        InputSndBufSize,
-        InputRcvBufSize,
-        InputRateLogging,
-        OutputAddress,
-        OutputMethod,
-        OutputSocketType,
-        OutputSndBufSize,
-        OutputRcvBufSize,
-        OutputRateLogging,
-        LogInputRate, // keep this for backwards compatibility for a while
-        LogOutputRate, // keep this for backwards compatibility for a while
         LogIntervalInMs,
         Last
     };
@@ -57,57 +44,59 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     virtual void LogSocketRates();
 
-    virtual void SetProperty(const int key, const std::string& value, const int slot = 0);
-    virtual std::string GetProperty(const int key, const std::string& default_ = "", const int slot = 0);
-    virtual void SetProperty(const int key, const int value, const int slot = 0);
-    virtual int GetProperty(const int key, const int default_ = 0, const int slot = 0);
+    void SortChannel(const std::string& name, const bool reindex = true);
+    void PrintChannel(const std::string& name);
+
+    virtual void SetProperty(const int key, const std::string& value);
+    virtual std::string GetProperty(const int key, const std::string& default_ = "");
+    virtual void SetProperty(const int key, const int value);
+    virtual int GetProperty(const int key, const int default_ = 0);
 
     virtual void SetTransport(FairMQTransportFactory* factory);
 
     virtual ~FairMQDevice();
 
+    std::map< std::string,std::vector<FairMQChannel> > fChannels;
+
   protected:
     std::string fId;
 
-    int fNumIoThreads;
+    int fMaxInitializationTime;
 
-    int fNumInputs;
-    int fNumOutputs;
+    int fNumIoThreads;
 
     int fPortRangeMin;
     int fPortRangeMax;
 
-    std::vector<std::string> fInputAddress;
-    std::vector<std::string> fInputMethod;
-    std::vector<std::string> fInputSocketType;
-    std::vector<int> fInputSndBufSize;
-    std::vector<int> fInputRcvBufSize;
-    std::vector<int> fInputRateLogging;
-
-    std::vector<std::string> fOutputAddress;
-    std::vector<std::string> fOutputMethod;
-    std::vector<std::string> fOutputSocketType;
-    std::vector<int> fOutputSndBufSize;
-    std::vector<int> fOutputRcvBufSize;
-    std::vector<int> fOutputRateLogging;
-
-    std::vector<FairMQSocket*>* fPayloadInputs;
-    std::vector<FairMQSocket*>* fPayloadOutputs;
-
     int fLogIntervalInMs;
+
+    FairMQSocket* fCommandSocket;
 
     FairMQTransportFactory* fTransportFactory;
 
+    void InitWrapper();
     virtual void Init();
-    virtual void Run();
-    virtual void Pause();
-    virtual void Shutdown();
-    virtual void InitOutput();
-    virtual void InitInput();
-    virtual void Bind();
-    virtual void Connect();
 
-    virtual void Terminate();
+    void InitTaskWrapper();
+    virtual void InitTask();
+
+    void RunWrapper();
+    virtual void Run();
+
+    virtual void Pause();
+
+    void ResetTaskWrapper();
+    virtual void ResetTask();
+
+    void ResetWrapper();
+    virtual void Reset();
+
+    virtual void Shutdown();
+
+    void Terminate();
+    void SendCommand(const std::string& command);
+
+    bool InitChannel(FairMQChannel&);
 
   private:
     /// Copy Constructor

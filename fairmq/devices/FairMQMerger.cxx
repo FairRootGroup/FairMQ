@@ -29,30 +29,22 @@ FairMQMerger::~FairMQMerger()
 
 void FairMQMerger::Run()
 {
-    LOG(INFO) << ">>>>>>> Run <<<<<<<";
+    FairMQPoller* poller = fTransportFactory->CreatePoller(fChannels["data-in"]);
 
-    boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
-
-    FairMQPoller* poller = fTransportFactory->CreatePoller(*fPayloadInputs);
-
-    int received = 0;
-
-    while (fState == RUNNING)
+    while (GetCurrentState() == RUNNING)
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
 
         poller->Poll(100);
 
-        for (int i = 0; i < fNumInputs; i++)
+        for (int i = 0; i < fChannels["data-in"].size(); ++i)
         {
             if (poller->CheckInput(i))
             {
-                received = fPayloadInputs->at(i)->Receive(msg);
-            }
-            if (received > 0)
-            {
-                fPayloadOutputs->at(0)->Send(msg);
-                received = 0;
+                if (fChannels["data-in"].at(i).Receive(msg))
+                {
+                    fChannels["data-out"].at(0).Send(msg);
+                }
             }
         }
 
@@ -60,18 +52,4 @@ void FairMQMerger::Run()
     }
 
     delete poller;
-
-    try {
-        rateLogger.interrupt();
-        rateLogger.join();
-    } catch(boost::thread_resource_error& e) {
-        LOG(ERROR) << e.what();
-    }
-
-    FairMQDevice::Shutdown();
-
-    // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fRunningMutex);
-    fRunningFinished = true;
-    fRunningCondition.notify_one();
 }

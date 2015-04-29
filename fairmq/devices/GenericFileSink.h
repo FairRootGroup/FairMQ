@@ -21,8 +21,6 @@
 #include <boost/bind.hpp>
 #include "FairMQLogger.h"
 
-
-
 /*********************************************************************
  * -------------- NOTES -----------------------
  * All policies must have a default constructor
@@ -38,87 +36,57 @@
  *                OutputPolicy::InitOutputFile()
  **********************************************************************/
 
-
-
 #include "FairMQDevice.h"
 
-template <  typename InputPolicy, 
-            typename OutputPolicy>
-class GenericFileSink : public FairMQDevice, 
-                        public InputPolicy, 
-                        public OutputPolicy
-{    
-public:
-    GenericFileSink(): 
-        InputPolicy(),
-        OutputPolicy()
+template <typename InputPolicy, typename OutputPolicy>
+class GenericFileSink : public FairMQDevice, public InputPolicy, public OutputPolicy
+{
+  public:
+    GenericFileSink()
+        : InputPolicy()
+        , OutputPolicy()
     {}
-        
+
     virtual ~GenericFileSink()
     {}
-    
-    
+
     void SetTransport(FairMQTransportFactory* transport)
     {
         FairMQDevice::SetTransport(transport);
     }
 
     template <typename... Args>
-        void InitInputContainer(Args... args)
-        {
-            InputPolicy::InitContainer(std::forward<Args>(args)...);
-        }
-protected:
-
-    virtual void Init()
+    void InitInputContainer(Args... args)
     {
-        FairMQDevice::Init();
-        OutputPolicy::InitOutputFile();
+        InputPolicy::InitContainer(std::forward<Args>(args)...);
     }
 
   protected:
+    virtual void InitTask()
+    {
+        OutputPolicy::InitOutputFile();
+    }
+
     virtual void Run()
     {
-        MQLOG(INFO) << ">>>>>>> Run <<<<<<<";
-
-        boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
-
-        int received = 0;
         int receivedMsg = 0;
 
-        while (fState == RUNNING)
+        while (GetCurrentState() == RUNNING)
         {
             FairMQMessage* msg = fTransportFactory->CreateMessage();
-            received = fPayloadInputs->at(0)->Receive(msg);
-            if(received>0)
+
+            if (fChannels["data-in"].at(0).Receive(msg) > 0)
             {
                 OutputPolicy::AddToFile(InputPolicy::DeSerializeMsg(msg));
                 receivedMsg++;
             }
+
             delete msg;
         }
 
         MQLOG(INFO) << "Received " << receivedMsg << " messages!";
-        try 
-        {
-            rateLogger.interrupt();
-            rateLogger.join();
-        } 
-        catch(boost::thread_resource_error& e) 
-        {
-            MQLOG(ERROR) << e.what();
-        }
-
-        FairMQDevice::Shutdown();
-
-        // notify parent thread about end of processing.
-        boost::lock_guard<boost::mutex> lock(fRunningMutex);
-        fRunningFinished = true;
-        fRunningCondition.notify_one();
     }
-
-
 };
 
-#endif	/* GENERICFILESINK_H */
+#endif /* GENERICFILESINK_H */
 

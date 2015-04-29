@@ -19,16 +19,16 @@
 
 using namespace std;
 
-FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQSocket*>& inputs)
+FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQChannel>& channels)
     : items()
     , fNumItems()
 {
-    fNumItems = inputs.size();
+    fNumItems = channels.size();
     items = new zmq_pollitem_t[fNumItems];
 
-    for (int i = 0; i < fNumItems; i++)
+    for (int i = 0; i < fNumItems; ++i)
     {
-        items[i].socket = inputs.at(i)->GetSocket();
+        items[i].socket = channels.at(i).fSocket->GetSocket();
         items[i].fd = 0;
         items[i].events = ZMQ_POLLIN;
         items[i].revents = 0;
@@ -37,8 +37,7 @@ FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQSocket*>& inputs)
 
 void FairMQPollerZMQ::Poll(int timeout)
 {
-    int rc = zmq_poll(items, fNumItems, timeout);
-    if (rc < 0)
+    if (zmq_poll(items, fNumItems, timeout) < 0)
     {
         LOG(ERROR) << "polling failed, reason: " << zmq_strerror(errno);
     }
@@ -47,7 +46,9 @@ void FairMQPollerZMQ::Poll(int timeout)
 bool FairMQPollerZMQ::CheckInput(int index)
 {
     if (items[index].revents & ZMQ_POLLIN)
+    {
         return true;
+    }
 
     return false;
 }
@@ -55,7 +56,9 @@ bool FairMQPollerZMQ::CheckInput(int index)
 bool FairMQPollerZMQ::CheckOutput(int index)
 {
     if (items[index].revents & ZMQ_POLLOUT)
+    {
         return true;
+    }
 
     return false;
 }
@@ -63,5 +66,7 @@ bool FairMQPollerZMQ::CheckOutput(int index)
 FairMQPollerZMQ::~FairMQPollerZMQ()
 {
     if (items != NULL)
+    {
         delete[] items;
+    }
 }

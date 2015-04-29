@@ -35,7 +35,6 @@ FairMQBinSampler::~FairMQBinSampler()
 
 void FairMQBinSampler::Init()
 {
-    FairMQDevice::Init();
 }
 
 void FairMQBinSampler::Run()

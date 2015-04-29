@@ -18,20 +18,23 @@
 int FairMQLogger::fMinLogLevel = FairMQLogger::DEBUG;
 
 FairMQLogger::FairMQLogger()
-    : os(), fLogLevel(DEBUG)
+    : os()
+    , fLogLevel(DEBUG)
 {
 }
 
 FairMQLogger::~FairMQLogger()
 {
-    if(fLogLevel>=FairMQLogger::fMinLogLevel && fLogLevel<FairMQLogger::NOLOG)
+    if (fLogLevel >= FairMQLogger::fMinLogLevel && fLogLevel < FairMQLogger::NOLOG)
+    {
         std::cout << os.str() << std::endl;
+    }
 }
 
 std::ostringstream& FairMQLogger::Log(int type)
 {
     std::string type_str;
-    fLogLevel=type;
+    fLogLevel = type;
     switch (type)
     {
         case DEBUG :

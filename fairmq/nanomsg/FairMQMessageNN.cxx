@@ -63,7 +63,7 @@ FairMQMessageNN::FairMQMessageNN(void* data, size_t size, fairmq_free_fn *ffn, v
     fSize = size;
     fReceiving = false;
 
-    if(ffn)
+    if (ffn)
     {
         ffn(data, hint);
     }
@@ -140,8 +140,7 @@ void FairMQMessageNN::Copy(FairMQMessage* msg)
 {
     if (fMessage)
     {
-        int rc = nn_freemsg(fMessage);
-        if (rc < 0)
+        if (nn_freemsg(fMessage) < 0)
         {
             LOG(ERROR) << "failed freeing message, reason: " << nn_strerror(errno);
         }
@@ -160,8 +159,7 @@ void FairMQMessageNN::Copy(FairMQMessage* msg)
 
 inline void FairMQMessageNN::Clear()
 {
-    int rc = nn_freemsg(fMessage);
-    if (rc < 0)
+    if (nn_freemsg(fMessage) < 0)
     {
         LOG(ERROR) << "failed freeing message, reason: " << nn_strerror(errno);
     }

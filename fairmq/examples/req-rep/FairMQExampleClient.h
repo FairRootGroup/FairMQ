@@ -30,12 +30,12 @@ class FairMQExampleClient : public FairMQDevice
     FairMQExampleClient();
     virtual ~FairMQExampleClient();
 
-    static void CustomCleanup(void *data, void* hint);
+    static void CustomCleanup(void* data, void* hint);
 
-    virtual void SetProperty(const int key, const std::string& value, const int slot = 0);
-    virtual std::string GetProperty(const int key, const std::string& default_ = "", const int slot = 0);
-    virtual void SetProperty(const int key, const int value, const int slot = 0);
-    virtual int GetProperty(const int key, const int default_ = 0, const int slot = 0);
+    virtual void SetProperty(const int key, const std::string& value);
+    virtual std::string GetProperty(const int key, const std::string& default_ = "");
+    virtual void SetProperty(const int key, const int value);
+    virtual int GetProperty(const int key, const int default_ = 0);
 
   protected:
     std::string fText;

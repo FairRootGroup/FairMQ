@@ -26,17 +26,17 @@
 class FairMQSocketNN : public FairMQSocket
 {
   public:
-    FairMQSocketNN(const std::string& type, int num, int numIoThreads); // numIoThreads is not used in nanomsg.
+    FairMQSocketNN(const std::string& type, const std::string& name, int numIoThreads); // numIoThreads is not used in nanomsg.
 
     virtual std::string GetId();
 
     virtual bool Bind(const std::string& address);
     virtual void Connect(const std::string& address);
 
-    virtual int Send(FairMQMessage* msg, const std::string& flag="");
-    virtual int Send(FairMQMessage* msg, const int flags);
-    virtual int Receive(FairMQMessage* msg, const std::string& flag="");
-    virtual int Receive(FairMQMessage* msg, const int flags);
+    virtual int Send(FairMQMessage* msg, const std::string& flag = "");
+    virtual int Send(FairMQMessage* msg, const int flags = 0);
+    virtual int Receive(FairMQMessage* msg, const std::string& flag = "");
+    virtual int Receive(FairMQMessage* msg, const int flags = 0);
 
     virtual void* GetSocket();
     virtual int GetSocket(int nothing);

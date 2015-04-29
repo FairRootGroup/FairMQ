@@ -27,15 +27,13 @@ FairMQContextZMQ::FairMQContextZMQ(int numIoThreads)
         exit(EXIT_FAILURE);
     }
 
-    int rc = zmq_ctx_set(fContext, ZMQ_IO_THREADS, numIoThreads);
-    if (rc != 0)
+    if (zmq_ctx_set(fContext, ZMQ_IO_THREADS, numIoThreads) != 0)
     {
         LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
     }
 
     // Set the maximum number of allowed sockets on the context.
-    rc = zmq_ctx_set(fContext, ZMQ_MAX_SOCKETS, 10000);
-    if (rc != 0)
+    if (zmq_ctx_set(fContext, ZMQ_MAX_SOCKETS, 10000) != 0)
     {
         LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
     }
@@ -58,8 +56,7 @@ void FairMQContextZMQ::Close()
         return;
     }
 
-    int rc = zmq_ctx_destroy(fContext);
-    if (rc != 0)
+    if (zmq_ctx_destroy(fContext) != 0)
     {
         if (errno == EINTR) {
             LOG(ERROR) << " failed closing context, reason: " << zmq_strerror(errno);

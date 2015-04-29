@@ -19,9 +19,10 @@
 
 using namespace std;
 
+// Context to hold the ZeroMQ sockets
 boost::shared_ptr<FairMQContextZMQ> FairMQSocketZMQ::fContext = boost::shared_ptr<FairMQContextZMQ>(new FairMQContextZMQ(1));
 
-FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num, int numIoThreads)
+FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, int numIoThreads)
     : FairMQSocket(ZMQ_SNDMORE, ZMQ_RCVMORE, ZMQ_DONTWAIT)
     , fSocket(NULL)
     , fId()
@@ -30,12 +31,9 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num, int numIoThreads)
     , fMessagesTx(0)
     , fMessagesRx(0)
 {
-    stringstream id;
-    id << type << "." << num;
-    fId = id.str();
+    fId = name + "." + type;
 
-    int rc = zmq_ctx_set(fContext->GetContext(), ZMQ_IO_THREADS, numIoThreads);
-    if (rc != 0)
+    if (zmq_ctx_set(fContext->GetContext(), ZMQ_IO_THREADS, numIoThreads) != 0)
     {
         LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
     }
@@ -44,12 +42,11 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num, int numIoThreads)
 
     if (fSocket == NULL)
     {
-        LOG(ERROR) << "failed creating socket #" << fId << ", reason: " << zmq_strerror(errno);
+        LOG(ERROR) << "failed creating socket " << fId << ", reason: " << zmq_strerror(errno);
         exit(EXIT_FAILURE);
     }
 
-    rc = zmq_setsockopt(fSocket, ZMQ_IDENTITY, &fId, fId.length());
-    if (rc != 0)
+    if (zmq_setsockopt(fSocket, ZMQ_IDENTITY, &fId, fId.length()) != 0)
     {
         LOG(ERROR) << "failed setting ZMQ_IDENTITY socket option, reason: " << zmq_strerror(errno);
     }
@@ -57,22 +54,20 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, int num, int numIoThreads)
     // Tell socket to try and send/receive outstanding messages for <linger> milliseconds before terminating.
     // Default value for ZeroMQ is -1, which is to wait forever.
     int linger = 500;
-    rc = zmq_setsockopt(fSocket, ZMQ_LINGER, &linger, sizeof(linger));
-    if (rc != 0)
+    if (zmq_setsockopt(fSocket, ZMQ_LINGER, &linger, sizeof(linger)) != 0)
     {
         LOG(ERROR) << "failed setting ZMQ_LINGER socket option, reason: " << zmq_strerror(errno);
     }
 
     if (type == "sub")
     {
-        rc = zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, NULL, 0);
-        if (rc != 0)
+        if (zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, NULL, 0) != 0)
         {
             LOG(ERROR) << "failed setting ZMQ_SUBSCRIBE socket option, reason: " << zmq_strerror(errno);
         }
     }
 
-    LOG(INFO) << "created socket #" << fId;
+    // LOG(INFO) << "created socket " << fId;
 }
 
 string FairMQSocketZMQ::GetId()
@@ -82,16 +77,15 @@ string FairMQSocketZMQ::GetId()
 
 bool FairMQSocketZMQ::Bind(const string& address)
 {
-    LOG(INFO) << "bind socket #" << fId << " on " << address;
+    // LOG(INFO) << "bind socket " << fId << " on " << address;
 
-    int rc = zmq_bind(fSocket, address.c_str());
-    if (rc != 0)
+    if (zmq_bind(fSocket, address.c_str()) != 0)
     {
         if (errno == EADDRINUSE) {
             // do not print error in this case, this is handled by FairMQDevice in case no connection could be established after trying a number of random ports from a range.
             return false;
         }
-        LOG(ERROR) << "failed binding socket #" << fId << ", reason: " << zmq_strerror(errno);
+        LOG(ERROR) << "failed binding socket " << fId << ", reason: " << zmq_strerror(errno);
         return false;
     }
     return true;
@@ -99,12 +93,11 @@ bool FairMQSocketZMQ::Bind(const string& address)
 
 void FairMQSocketZMQ::Connect(const string& address)
 {
-    LOG(INFO) << "connect socket #" << fId << " on " << address;
+    // LOG(INFO) << "connect socket " << fId << " on " << address;
 
-    int rc = zmq_connect(fSocket, address.c_str());
-    if (rc != 0)
+    if (zmq_connect(fSocket, address.c_str()) != 0)
     {
-        LOG(ERROR) << "failed connecting socket #" << fId << ", reason: " << zmq_strerror(errno);
+        LOG(ERROR) << "failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
     }
 }
 
@@ -123,10 +116,10 @@ int FairMQSocketZMQ::Send(FairMQMessage* msg, const string& flag)
     }
     if (zmq_errno() == ETERM)
     {
-        LOG(INFO) << "terminating socket #" << fId;
+        LOG(INFO) << "terminating socket " << fId;
         return -1;
     }
-    LOG(ERROR) << "failed sending on socket #" << fId << ", reason: " << zmq_strerror(errno);
+    LOG(ERROR) << "failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
     return nbytes;
 }
 
@@ -145,10 +138,10 @@ int FairMQSocketZMQ::Send(FairMQMessage* msg, const int flags)
     }
     if (zmq_errno() == ETERM)
     {
-        LOG(INFO) << "terminating socket #" << fId;
+        LOG(INFO) << "terminating socket " << fId;
         return -1;
     }
-    LOG(ERROR) << "failed sending on socket #" << fId << ", reason: " << zmq_strerror(errno);
+    LOG(ERROR) << "failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
     return nbytes;
 }
 
@@ -167,10 +160,10 @@ int FairMQSocketZMQ::Receive(FairMQMessage* msg, const string& flag)
     }
     if (zmq_errno() == ETERM)
     {
-        LOG(INFO) << "terminating socket #" << fId;
+        LOG(INFO) << "terminating socket " << fId;
         return -1;
     }
-    LOG(ERROR) << "failed receiving on socket #" << fId << ", reason: " << zmq_strerror(errno);
+    LOG(ERROR) << "failed receiving on socket " << fId << ", reason: " << zmq_strerror(errno);
     return nbytes;
 }
 
@@ -189,24 +182,25 @@ int FairMQSocketZMQ::Receive(FairMQMessage* msg, const int flags)
     }
     if (zmq_errno() == ETERM)
     {
-        LOG(INFO) << "terminating socket #" << fId;
+        LOG(INFO) << "terminating socket " << fId;
         return -1;
     }
-    LOG(ERROR) << "failed receiving on socket #" << fId << ", reason: " << zmq_strerror(errno);
+    LOG(ERROR) << "failed receiving on socket " << fId << ", reason: " << zmq_strerror(errno);
     return nbytes;
 }
 
 void FairMQSocketZMQ::Close()
 {
+    // LOG(DEBUG) << "Closing socket " << fId;
+
     if (fSocket == NULL)
     {
         return;
     }
 
-    int rc = zmq_close(fSocket);
-    if (rc != 0)
+    if (zmq_close(fSocket) != 0)
     {
-        LOG(ERROR) << "failed closing socket, reason: " << zmq_strerror(errno);
+        LOG(ERROR) << "failed closing socket " << fId << ", reason: " << zmq_strerror(errno);
     }
 
     fSocket = NULL;
@@ -214,8 +208,7 @@ void FairMQSocketZMQ::Close()
 
 void FairMQSocketZMQ::Terminate()
 {
-    int rc = zmq_ctx_destroy(fContext->GetContext());
-    if (rc != 0)
+    if (zmq_ctx_destroy(fContext->GetContext()) != 0)
     {
         LOG(ERROR) << "failed terminating context, reason: " << zmq_strerror(errno);
     }
@@ -234,8 +227,7 @@ int FairMQSocketZMQ::GetSocket(int nothing)
 
 void FairMQSocketZMQ::SetOption(const string& option, const void* value, size_t valueSize)
 {
-    int rc = zmq_setsockopt(fSocket, GetConstant(option), value, valueSize);
-    if (rc < 0)
+    if (zmq_setsockopt(fSocket, GetConstant(option), value, valueSize) < 0)
     {
         LOG(ERROR) << "failed setting socket option, reason: " << zmq_strerror(errno);
     }
@@ -243,8 +235,8 @@ void FairMQSocketZMQ::SetOption(const string& option, const void* value, size_t 
 
 void FairMQSocketZMQ::GetOption(const string& option, void* value, size_t* valueSize)
 {
-    int rc = zmq_getsockopt(fSocket, GetConstant(option), value, valueSize);
-    if (rc < 0) {
+    if (zmq_getsockopt(fSocket, GetConstant(option), value, valueSize) < 0)
+    {
         LOG(ERROR) << "failed getting socket option, reason: " << zmq_strerror(errno);
     }
 }

@@ -32,12 +32,11 @@ FairMQSink sink;
 
 static void s_signal_handler(int signal)
 {
-    cout << endl << "Caught signal " << signal << endl;
+    LOG(INFO) << "Caught signal " << signal;
 
-    sink.ChangeState(FairMQSink::STOP);
     sink.ChangeState(FairMQSink::END);
 
-    cout << "Shutdown complete. Bye!" << endl;
+    LOG(INFO) << "Shutdown complete.";
     exit(1);
 }
 
@@ -55,7 +54,8 @@ typedef struct DeviceOptions
 {
     DeviceOptions() :
         id(), ioThreads(0),
-        inputSocketType(), inputBufSize(0), inputMethod(), inputAddress() {}
+        inputSocketType(), inputBufSize(0), inputMethod(), inputAddress()
+        {}
 
     string id;
     int ioThreads;
@@ -76,7 +76,7 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
         ("id", bpo::value<string>()->required(), "Device ID")
         ("io-threads", bpo::value<int>()->default_value(1), "Number of I/O threads")
         ("input-socket-type", bpo::value<string>()->required(), "Input socket type: sub/pull")
-        ("input-buff-size", bpo::value<int>()->required(), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
+        ("input-buff-size", bpo::value<int>()->default_value(1000), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
         ("input-method", bpo::value<string>()->required(), "Input method: bind/connect")
         ("input-address", bpo::value<string>()->required(), "Input address, e.g.: \"tcp://*:5555\"")
         ("help", "Print help messages");
@@ -139,33 +139,33 @@ int main(int argc, char** argv)
 
     sink.SetTransport(transportFactory);
 
+    FairMQChannel channel(options.inputSocketType, options.inputMethod, options.inputAddress);
+    channel.fSndBufSize = options.inputBufSize;
+    channel.fRcvBufSize = options.inputBufSize;
+    channel.fRateLogging = 1;
+
+    sink.fChannels["data-in"].push_back(channel);
+
     sink.SetProperty(FairMQSink::Id, options.id);
     sink.SetProperty(FairMQSink::NumIoThreads, options.ioThreads);
 
-    sink.SetProperty(FairMQSink::NumInputs, 1);
-    sink.SetProperty(FairMQSink::NumOutputs, 0);
+    sink.ChangeState(FairMQSink::INIT_DEVICE);
+    sink.WaitForEndOfState(FairMQSink::INIT_DEVICE);
 
-    sink.ChangeState(FairMQSink::INIT);
+    sink.ChangeState(FairMQSink::INIT_TASK);
+    sink.WaitForEndOfState(FairMQSink::INIT_TASK);
 
-    sink.SetProperty(FairMQSink::InputSocketType, options.inputSocketType);
-    sink.SetProperty(FairMQSink::InputRcvBufSize, options.inputBufSize);
-    sink.SetProperty(FairMQSink::InputMethod, options.inputMethod);
-    sink.SetProperty(FairMQSink::InputAddress, options.inputAddress);
-
-    sink.ChangeState(FairMQSink::SETOUTPUT);
-    sink.ChangeState(FairMQSink::SETINPUT);
-    sink.ChangeState(FairMQSink::BIND);
-    sink.ChangeState(FairMQSink::CONNECT);
     sink.ChangeState(FairMQSink::RUN);
-
-    // wait until the running thread has finished processing.
-    boost::unique_lock<boost::mutex> lock(sink.fRunningMutex);
-    while (!sink.fRunningFinished)
-    {
-        sink.fRunningCondition.wait(lock);
-    }
+    sink.WaitForEndOfState(FairMQSink::RUN);
 
     sink.ChangeState(FairMQSink::STOP);
+
+    sink.ChangeState(FairMQSink::RESET_TASK);
+    sink.WaitForEndOfState(FairMQSink::RESET_TASK);
+
+    sink.ChangeState(FairMQSink::RESET_DEVICE);
+    sink.WaitForEndOfState(FairMQSink::RESET_DEVICE);
+
     sink.ChangeState(FairMQSink::END);
 
     return 0;

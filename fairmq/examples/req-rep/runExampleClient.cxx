@@ -32,12 +32,11 @@ FairMQExampleClient client;
 
 static void s_signal_handler(int signal)
 {
-    cout << endl << "Caught signal " << signal << endl;
+    LOG(INFO) << "Caught signal " << signal;
 
-    client.ChangeState(FairMQExampleClient::STOP);
     client.ChangeState(FairMQExampleClient::END);
 
-    cout << "Shutdown complete. Bye!" << endl;
+    LOG(INFO) << "Shutdown complete.";
     exit(1);
 }
 
@@ -115,33 +114,31 @@ int main(int argc, char** argv)
 
     client.SetProperty(FairMQExampleClient::Id, "client");
     client.SetProperty(FairMQExampleClient::NumIoThreads, 1);
-    client.SetProperty(FairMQExampleClient::NumInputs, 0);
-    client.SetProperty(FairMQExampleClient::NumOutputs, 1);
 
-    client.ChangeState(FairMQExampleClient::INIT);
+    FairMQChannel requestChannel("req", "connect", "tcp://localhost:5005");
+    requestChannel.fSndBufSize = 10000;
+    requestChannel.fRcvBufSize = 10000;
+    requestChannel.fRateLogging = 1;
 
-    client.SetProperty(FairMQExampleClient::OutputSocketType, "req", 0);
-    client.SetProperty(FairMQExampleClient::OutputSndBufSize, 10000, 0);
-    client.SetProperty(FairMQExampleClient::OutputRcvBufSize, 10000, 0);
-    client.SetProperty(FairMQExampleClient::OutputMethod, "connect", 0);
-    client.SetProperty(FairMQExampleClient::OutputAddress, "tcp://localhost:5005", 0);
+    client.fChannels["data"].push_back(requestChannel);
 
-    client.SetProperty(FairMQExampleClient::Text, options.text);
+    client.ChangeState(FairMQExampleClient::INIT_DEVICE);
+    client.WaitForEndOfState(FairMQExampleClient::INIT_DEVICE);
 
-    client.ChangeState(FairMQExampleClient::SETOUTPUT);
-    client.ChangeState(FairMQExampleClient::SETINPUT);
-    client.ChangeState(FairMQExampleClient::BIND);
-    client.ChangeState(FairMQExampleClient::CONNECT);
+    client.ChangeState(FairMQExampleClient::INIT_TASK);
+    client.WaitForEndOfState(FairMQExampleClient::INIT_TASK);
+
     client.ChangeState(FairMQExampleClient::RUN);
-
-    // wait until the running thread has finished processing.
-    boost::unique_lock<boost::mutex> lock(client.fRunningMutex);
-    while (!client.fRunningFinished)
-    {
-        client.fRunningCondition.wait(lock);
-    }
+    client.WaitForEndOfState(FairMQExampleClient::RUN);
 
     client.ChangeState(FairMQExampleClient::STOP);
+
+    client.ChangeState(FairMQExampleClient::RESET_TASK);
+    client.WaitForEndOfState(FairMQExampleClient::RESET_TASK);
+
+    client.ChangeState(FairMQExampleClient::RESET_DEVICE);
+    client.WaitForEndOfState(FairMQExampleClient::RESET_DEVICE);
+
     client.ChangeState(FairMQExampleClient::END);
 
     return 0;

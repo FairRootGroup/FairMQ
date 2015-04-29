@@ -12,6 +12,9 @@
  * @author D. Klein, A. Rybalchenko
  */
 
+#include <list>
+#include <algorithm> // for std::sort()
+
 #include <boost/thread.hpp>
 #include <boost/random/mersenne_twister.hpp> // for choosing random port in range
 #include <boost/random/uniform_int_distribution.hpp> // for choosing random port in range
@@ -23,172 +26,231 @@
 using namespace std;
 
 FairMQDevice::FairMQDevice()
-    : fId()
+    : fChannels()
+    , fId()
+    , fMaxInitializationTime(120)
     , fNumIoThreads(1)
-    , fNumInputs(0)
-    , fNumOutputs(0)
     , fPortRangeMin(22000)
     , fPortRangeMax(32000)
-    , fInputAddress()
-    , fInputMethod()
-    , fInputSocketType()
-    , fInputSndBufSize()
-    , fInputRcvBufSize()
-    , fInputRateLogging()
-    , fOutputAddress()
-    , fOutputMethod()
-    , fOutputSocketType()
-    , fOutputSndBufSize()
-    , fOutputRcvBufSize()
-    , fOutputRateLogging()
-    , fPayloadInputs(new vector<FairMQSocket*>())
-    , fPayloadOutputs(new vector<FairMQSocket*>())
     , fLogIntervalInMs(1000)
+    , fCommandSocket()
     , fTransportFactory(NULL)
 {
 }
 
+void FairMQDevice::InitWrapper()
+{
+    LOG(INFO) << "DEVICE: Initializing...";
+
+    fCommandSocket = fTransportFactory->CreateSocket("pair", "device-commands", 1);
+    fCommandSocket->Bind("inproc://commands");
+
+    // List to store the uninitialized channels.
+    list<FairMQChannel*> uninitializedChannels;
+    for (map< string,vector<FairMQChannel> >::iterator mi = fChannels.begin(); mi != fChannels.end(); ++mi)
+    {
+        for (vector<FairMQChannel>::iterator vi = (mi->second).begin(); vi != (mi->second).end(); ++vi)
+        {
+            // set channel name: name + vector index
+            stringstream ss;
+            ss << mi->first << "[" << vi - (mi->second).begin() << "]";
+            vi->fChannelName = ss.str();
+            // fill the uninitialized list
+            uninitializedChannels.push_back(&(*vi));
+        }
+    }
+
+    // go over the list of channels until all are initialized (and removed from the uninitialized list)
+    int numAttempts = 0;
+    int maxAttempts = fMaxInitializationTime;
+    do {
+        list<FairMQChannel*>::iterator itr = uninitializedChannels.begin();
+
+        while (itr != uninitializedChannels.end())
+        {
+            if ((*itr)->ValidateChannel())
+            {
+                if (InitChannel(*(*itr)))
+                {
+                    uninitializedChannels.erase(itr++);
+                }
+                else
+                {
+                    LOG(ERROR) << "failed to initialize channel " << (*itr)->fChannelName;
+                    ++itr;
+                }
+            }
+            else
+            {
+                ++itr;
+            }
+        }
+
+        ++numAttempts;
+        if (numAttempts > maxAttempts)
+        {
+            LOG(ERROR) << "could not initialize all channels after " << maxAttempts << " attempts";
+            // TODO: goto ERROR state;
+            exit(EXIT_FAILURE);
+        }
+
+        if (numAttempts != 0)
+        {
+            boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+        }
+
+    } while (!uninitializedChannels.empty());
+
+    Init();
+
+    // notify parent thread about end of processing.
+    boost::lock_guard<boost::mutex> lock(fInitializingMutex);
+    fInitializingFinished = true;
+    fInitializingCondition.notify_one();
+
+    ChangeState(DEVICE_READY);
+}
+
 void FairMQDevice::Init()
 {
-    LOG(INFO) << ">>>>>>> Init <<<<<<<";
-
-    for (int i = 0; i < fNumInputs; ++i)
-    {
-        fInputAddress.push_back("ipc://default"); // default value, can be overwritten in configuration
-        fInputMethod.push_back("connect"); // default value, can be overwritten in configuration
-        fInputSocketType.push_back("sub"); // default value, can be overwritten in configuration
-        fInputSndBufSize.push_back(10000); // default value, can be overwritten in configuration
-        fInputRcvBufSize.push_back(10000); // default value, can be overwritten in configuration
-        fInputRateLogging.push_back(1); // default value, can be overwritten in configuration
-    }
-
-    for (int i = 0; i < fNumOutputs; ++i)
-    {
-        fOutputAddress.push_back("ipc://default"); // default value, can be overwritten in configuration
-        fOutputMethod.push_back("bind");    // default value, can be overwritten in configuration
-        fOutputSocketType.push_back("pub"); // default value, can be overwritten in configuration
-        fOutputSndBufSize.push_back(10000); // default value, can be overwritten in configuration
-        fOutputRcvBufSize.push_back(10000); // default value, can be overwritten in configuration
-        fOutputRateLogging.push_back(1); // default value, can be overwritten in configuration
-    }
 }
 
-void FairMQDevice::InitInput()
+bool FairMQDevice::InitChannel(FairMQChannel& ch)
 {
-    LOG(INFO) << ">>>>>>> InitInput <<<<<<<";
+    LOG(DEBUG) << "Initializing channel " << ch.fChannelName << " to <" << ch.fType << "> data";
+    // initialize the socket
+    ch.fSocket = fTransportFactory->CreateSocket(ch.fType, ch.fChannelName, 1);
+    // set high water marks
+    ch.fSocket->SetOption("snd-hwm", &(ch.fSndBufSize), sizeof(ch.fSndBufSize));
+    ch.fSocket->SetOption("rcv-hwm", &(ch.fRcvBufSize), sizeof(ch.fRcvBufSize));
 
-    for (int i = 0; i < fNumInputs; ++i)
+    // TODO: make it work with ipc
+
+    if (ch.fMethod == "bind")
     {
-        FairMQSocket* socket = fTransportFactory->CreateSocket(fInputSocketType.at(i), i, fNumIoThreads);
+        // number of attempts when choosing a random port
+        int maxAttempts = 1000;
+        int numAttempts = 0;
 
-        socket->SetOption("snd-hwm", &fInputSndBufSize.at(i), sizeof(fInputSndBufSize.at(i)));
-        socket->SetOption("rcv-hwm", &fInputRcvBufSize.at(i), sizeof(fInputRcvBufSize.at(i)));
+        // initialize random generator
+        boost::random::mt19937 gen(getpid());
+        boost::random::uniform_int_distribution<> randomPort(fPortRangeMin, fPortRangeMax);
 
-        fPayloadInputs->push_back(socket);
-    }
-}
+        LOG(DEBUG) << "Binding channel " << ch.fChannelName << " on " << ch.fAddress;
 
-void FairMQDevice::InitOutput()
-{
-    LOG(INFO) << ">>>>>>> InitOutput <<<<<<<";
-
-    for (int i = 0; i < fNumOutputs; ++i)
-    {
-        FairMQSocket* socket = fTransportFactory->CreateSocket(fOutputSocketType.at(i), i, fNumIoThreads);
-
-        socket->SetOption("snd-hwm", &fOutputSndBufSize.at(i), sizeof(fOutputSndBufSize.at(i)));
-        socket->SetOption("rcv-hwm", &fOutputRcvBufSize.at(i), sizeof(fOutputRcvBufSize.at(i)));
-
-        fPayloadOutputs->push_back(socket);
-    }
-}
-
-void FairMQDevice::Bind()
-{
-    LOG(INFO) << ">>>>>>> binding <<<<<<<";
-
-    int maxAttempts = 1000;
-    int numAttempts = 0;
-
-    boost::random::mt19937 gen(getpid());
-    boost::random::uniform_int_distribution<> randomPort(fPortRangeMin, fPortRangeMax);
-
-    for (int i = 0; i < fNumOutputs; ++i)
-    {
-        if (fOutputMethod.at(i) == "bind")
+        // try to bind to the saved port. In case of failure, try random one.
+        if (!ch.fSocket->Bind(ch.fAddress))
         {
-            if (!fPayloadOutputs->at(i)->Bind(fOutputAddress.at(i)))
+            LOG(DEBUG) << "Could not bind to configured port, trying random port in range " << fPortRangeMin << "-" << fPortRangeMax;
+            do {
+                ++numAttempts;
+
+                if (numAttempts > maxAttempts)
+                {
+                    LOG(ERROR) << "could not bind to any port in the given range after " << maxAttempts << " attempts";
+                    return false;
+                }
+
+                size_t pos = ch.fAddress.rfind(":");
+                stringstream newPort;
+                newPort << (int)randomPort(gen);
+                ch.fAddress = ch.fAddress.substr(0, pos + 1) + newPort.str();
+
+                LOG(DEBUG) << "Binding channel " << ch.fChannelName << " on " << ch.fAddress;
+            } while (!ch.fSocket->Bind(ch.fAddress));
+        }
+    }
+    else
+    {
+        LOG(DEBUG) << "Connecting channel " << ch.fChannelName << " to " << ch.fAddress;
+        ch.fSocket->Connect(ch.fAddress);
+    }
+
+    return true;
+}
+
+void FairMQDevice::InitTaskWrapper()
+{
+    InitTask();
+
+    // notify parent thread about end of processing.
+    boost::lock_guard<boost::mutex> lock(fInitializingTaskMutex);
+    fInitializingTaskFinished = true;
+    fInitializingTaskCondition.notify_one();
+
+    ChangeState(READY);
+}
+
+void FairMQDevice::InitTask()
+{
+}
+
+bool SortSocketsByAddress(const FairMQChannel &lhs, const FairMQChannel &rhs)
+{
+    return lhs.fAddress < rhs.fAddress;
+}
+
+void FairMQDevice::SortChannel(const string& name, const bool reindex)
+{
+    if (fChannels.find(name) != fChannels.end())
+    {
+        sort(fChannels[name].begin(), fChannels[name].end(), SortSocketsByAddress);
+
+        if (reindex)
+        {
+            for (vector<FairMQChannel>::iterator vi = fChannels[name].begin(); vi != fChannels[name].end(); ++vi)
             {
-                LOG(DEBUG) << "binding output #" << i << " on " << fOutputAddress.at(i) << " failed, trying to find port in range";
-                LOG(INFO) << "port range: " << fPortRangeMin << " - " << fPortRangeMax;
-                do {
-                    ++numAttempts;
-
-                    stringstream ss;
-                    ss << (int)randomPort(gen);
-                    string portString = ss.str();
-
-                    size_t pos = fOutputAddress.at(i).rfind(":");
-                    fOutputAddress.at(i) = fOutputAddress.at(i).substr(0, pos + 1) + portString;
-                    if (numAttempts > maxAttempts)
-                    {
-                        LOG(ERROR) << "could not bind output " << i << " to any port in the given range";
-                        break;
-                    }
-                } while (!fPayloadOutputs->at(i)->Bind(fOutputAddress.at(i)));
+                // set channel name: name + vector index
+                stringstream ss;
+                ss << name << "[" << vi - fChannels[name].begin() << "]";
+                vi->fChannelName = ss.str();
             }
         }
     }
-
-    numAttempts = 0;
-
-    for (int i = 0; i < fNumInputs; ++i)
+    else
     {
-        if (fInputMethod.at(i) == "bind")
-        {
-            if (!fPayloadInputs->at(i)->Bind(fInputAddress.at(i)))
-            {
-                LOG(DEBUG) << "binding input #" << i << " on " << fInputAddress.at(i) << " failed, trying to find port in range";
-                LOG(INFO) << "port range: " << fPortRangeMin << " - " << fPortRangeMax;
-                do {
-                    ++numAttempts;
-
-                    stringstream ss;
-                    ss << (int)randomPort(gen);
-                    string portString = ss.str();
-
-                    size_t pos = fInputAddress.at(i).rfind(":");
-                    fInputAddress.at(i) = fInputAddress.at(i).substr(0, pos + 1) + portString;
-                    if (numAttempts > maxAttempts)
-                    {
-                        LOG(ERROR) << "could not bind input " << i << " to any port in the given range";
-                        break;
-                    }
-                } while (!fPayloadInputs->at(i)->Bind(fInputAddress.at(i)));
-            }
-        }
+        LOG(ERROR) << "Sorting failed: no channel with the name \"" << name << "\".";
     }
 }
 
-void FairMQDevice::Connect()
+void FairMQDevice::PrintChannel(const string& name)
 {
-    LOG(INFO) << ">>>>>>> connecting <<<<<<<";
-
-    for (int i = 0; i < fNumOutputs; ++i)
+    if (fChannels.find(name) != fChannels.end())
     {
-        if (fOutputMethod.at(i) == "connect")
+        for (vector<FairMQChannel>::iterator vi = fChannels[name].begin(); vi != fChannels[name].end(); ++vi)
         {
-            fPayloadOutputs->at(i)->Connect(fOutputAddress.at(i));
+            LOG(INFO) << vi->fChannelName << ": "
+                      << vi->fType << " | "
+                      << vi->fMethod << " | "
+                      << vi->fAddress << " | "
+                      << vi->fSndBufSize << " | "
+                      << vi->fRcvBufSize << " | "
+                      << vi->fRateLogging;
         }
     }
-
-    for (int i = 0; i < fNumInputs; ++i)
+    else
     {
-        if (fInputMethod.at(i) == "connect")
-        {
-            fPayloadInputs->at(i)->Connect(fInputAddress.at(i));
-        }
+        LOG(ERROR) << "Printing failed: no channel with the name \"" << name << "\".";
     }
+}
+
+void FairMQDevice::RunWrapper()
+{
+    boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
+
+    Run();
+
+    try {
+        rateLogger.interrupt();
+        rateLogger.join();
+    } catch(boost::thread_resource_error& e) {
+        LOG(ERROR) << e.what();
+    }
+
+    // notify parent thread about end of processing.
+    boost::lock_guard<boost::mutex> lock(fRunningMutex);
+    fRunningFinished = true;
+    fRunningCondition.notify_one();
 }
 
 void FairMQDevice::Run()
@@ -197,59 +259,77 @@ void FairMQDevice::Run()
 
 void FairMQDevice::Pause()
 {
+    while (GetCurrentState() == PAUSED)
+    {
+        try
+        {
+            boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+            LOG(DEBUG) << "paused...";
+        }
+        catch (boost::thread_interrupted&)
+        {
+            LOG(INFO) << "FairMQDevice::Pause() interrupted";
+            break;
+        }
+    }
+}
+
+void FairMQDevice::ResetTaskWrapper()
+{
+    ResetTask();
+
+    // notify parent thread about end of processing.
+    boost::lock_guard<boost::mutex> lock(fResetTaskMutex);
+    fResetTaskFinished = true;
+    fResetTaskCondition.notify_one();
+
+    ChangeState(DEVICE_READY);
+}
+
+void FairMQDevice::ResetTask()
+{
+}
+
+void FairMQDevice::ResetWrapper()
+{
+    Reset();
+
+    // notify parent thread about end of processing.
+    boost::lock_guard<boost::mutex> lock(fResetMutex);
+    fResetFinished = true;
+    fResetCondition.notify_one();
+
+    ChangeState(IDLE);
+}
+
+void FairMQDevice::Reset()
+{
 }
 
 // Method for setting properties represented as a string.
-void FairMQDevice::SetProperty(const int key, const string& value, const int slot /*= 0*/)
+void FairMQDevice::SetProperty(const int key, const string& value)
 {
     switch (key)
     {
         case Id:
             fId = value;
             break;
-        case InputAddress:
-            fInputAddress.erase(fInputAddress.begin() + slot);
-            fInputAddress.insert(fInputAddress.begin() + slot, value);
-            break;
-        case OutputAddress:
-            fOutputAddress.erase(fOutputAddress.begin() + slot);
-            fOutputAddress.insert(fOutputAddress.begin() + slot, value);
-            break;
-        case InputMethod:
-            fInputMethod.erase(fInputMethod.begin() + slot);
-            fInputMethod.insert(fInputMethod.begin() + slot, value);
-            break;
-        case OutputMethod:
-            fOutputMethod.erase(fOutputMethod.begin() + slot);
-            fOutputMethod.insert(fOutputMethod.begin() + slot, value);
-            break;
-        case InputSocketType:
-            fInputSocketType.erase(fInputSocketType.begin() + slot);
-            fInputSocketType.insert(fInputSocketType.begin() + slot, value);
-            break;
-        case OutputSocketType:
-            fOutputSocketType.erase(fOutputSocketType.begin() + slot);
-            fOutputSocketType.insert(fOutputSocketType.begin() + slot, value);
-            break;
         default:
-            FairMQConfigurable::SetProperty(key, value, slot);
+            FairMQConfigurable::SetProperty(key, value);
             break;
     }
 }
 
 // Method for setting properties represented as an integer.
-void FairMQDevice::SetProperty(const int key, const int value, const int slot /*= 0*/)
+void FairMQDevice::SetProperty(const int key, const int value)
 {
     switch (key)
     {
         case NumIoThreads:
             fNumIoThreads = value;
             break;
-        case NumInputs:
-            fNumInputs = value;
-            break;
-        case NumOutputs:
-            fNumOutputs = value;
+        case MaxInitializationTime:
+            fMaxInitializationTime = value;
             break;
         case PortRangeMin:
             fPortRangeMin = value;
@@ -260,95 +340,41 @@ void FairMQDevice::SetProperty(const int key, const int value, const int slot /*
         case LogIntervalInMs:
             fLogIntervalInMs = value;
             break;
-        case InputSndBufSize:
-            fInputSndBufSize.erase(fInputSndBufSize.begin() + slot);
-            fInputSndBufSize.insert(fInputSndBufSize.begin() + slot, value);
-            break;
-        case InputRcvBufSize:
-            fInputRcvBufSize.erase(fInputRcvBufSize.begin() + slot);
-            fInputRcvBufSize.insert(fInputRcvBufSize.begin() + slot, value);
-            break;
-        case InputRateLogging:
-        case LogInputRate: // keep this for backwards compatibility for a while
-            fInputRateLogging.erase(fInputRateLogging.begin() + slot);
-            fInputRateLogging.insert(fInputRateLogging.begin() + slot, value);
-            break;
-        case OutputSndBufSize:
-            fOutputSndBufSize.erase(fOutputSndBufSize.begin() + slot);
-            fOutputSndBufSize.insert(fOutputSndBufSize.begin() + slot, value);
-            break;
-        case OutputRcvBufSize:
-            fOutputRcvBufSize.erase(fOutputRcvBufSize.begin() + slot);
-            fOutputRcvBufSize.insert(fOutputRcvBufSize.begin() + slot, value);
-            break;
-        case OutputRateLogging:
-        case LogOutputRate: // keep this for backwards compatibility for a while
-            fOutputRateLogging.erase(fOutputRateLogging.begin() + slot);
-            fOutputRateLogging.insert(fOutputRateLogging.begin() + slot, value);
-            break;
         default:
-            FairMQConfigurable::SetProperty(key, value, slot);
+            FairMQConfigurable::SetProperty(key, value);
             break;
     }
 }
 
 // Method for getting properties represented as an string.
-string FairMQDevice::GetProperty(const int key, const string& default_ /*= ""*/, const int slot /*= 0*/)
+string FairMQDevice::GetProperty(const int key, const string& default_ /*= ""*/)
 {
     switch (key)
     {
         case Id:
             return fId;
-        case InputAddress:
-            return fInputAddress.at(slot);
-        case OutputAddress:
-            return fOutputAddress.at(slot);
-        case InputMethod:
-            return fInputMethod.at(slot);
-        case OutputMethod:
-            return fOutputMethod.at(slot);
-        case InputSocketType:
-            return fInputSocketType.at(slot);
-        case OutputSocketType:
-            return fOutputSocketType.at(slot);
         default:
-            return FairMQConfigurable::GetProperty(key, default_, slot);
+            return FairMQConfigurable::GetProperty(key, default_);
     }
 }
 
 // Method for getting properties represented as an integer.
-int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/, const int slot /*= 0*/)
+int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/)
 {
     switch (key)
     {
         case NumIoThreads:
             return fNumIoThreads;
-        case NumInputs:
-            return fNumInputs;
-        case NumOutputs:
-            return fNumOutputs;
+        case MaxInitializationTime:
+            return fMaxInitializationTime;
         case PortRangeMin:
             return fPortRangeMin;
         case PortRangeMax:
             return fPortRangeMax;
         case LogIntervalInMs:
             return fLogIntervalInMs;
-        case InputSndBufSize:
-            return fInputSndBufSize.at(slot);
-        case InputRcvBufSize:
-            return fInputRcvBufSize.at(slot);
-        case InputRateLogging:
-        case LogInputRate: // keep this for backwards compatibility for a while
-            return fInputRateLogging.at(slot);
-        case OutputSndBufSize:
-            return fOutputSndBufSize.at(slot);
-        case OutputRcvBufSize:
-            return fOutputRcvBufSize.at(slot);
-        case OutputRateLogging:
-        case LogOutputRate: // keep this for backwards compatibility for a while
-            return fOutputRateLogging.at(slot);
         default:
-            return FairMQConfigurable::GetProperty(key, default_, slot);
+            return FairMQConfigurable::GetProperty(key, default_);
     }
 }
 
@@ -364,67 +390,55 @@ void FairMQDevice::LogSocketRates()
 
     timestamp_t msSinceLastLog;
 
-    int numFilteredInputs = 0;
-    int numFilteredOutputs = 0;
-    vector<FairMQSocket*> filteredInputs;
-    vector<FairMQSocket*> filteredOutputs;
+    int numFilteredSockets = 0;
+    vector<FairMQSocket*> filteredSockets;
+    vector<string> filteredChannelNames;
+
+    // iterate over the channels map
+    for (map< string,vector<FairMQChannel> >::iterator mi = fChannels.begin(); mi != fChannels.end(); ++mi)
+    {
+        // iterate over the channels vector
+        for (vector<FairMQChannel>::iterator vi = (mi->second).begin(); vi != (mi->second).end(); ++vi)
+        {
+            if (vi->fRateLogging == 1)
+            {
+                filteredSockets.push_back(vi->fSocket);
+                stringstream ss;
+                ss << mi->first << "[" << vi - (mi->second).begin() << "]";
+                filteredChannelNames.push_back(ss.str());
+                ++numFilteredSockets;
+            }
+        }
+    }
+
+    vector<unsigned long> bytesIn(numFilteredSockets);
+    vector<unsigned long> msgIn(numFilteredSockets);
+    vector<unsigned long> bytesOut(numFilteredSockets);
+    vector<unsigned long> msgOut(numFilteredSockets);
+
+    vector<unsigned long> bytesInNew(numFilteredSockets);
+    vector<unsigned long> msgInNew(numFilteredSockets);
+    vector<unsigned long> bytesOutNew(numFilteredSockets);
+    vector<unsigned long> msgOutNew(numFilteredSockets);
+
+    vector<double> mbPerSecIn(numFilteredSockets);
+    vector<double> msgPerSecIn(numFilteredSockets);
+    vector<double> mbPerSecOut(numFilteredSockets);
+    vector<double> msgPerSecOut(numFilteredSockets);
 
     int i = 0;
-    for (vector<FairMQSocket*>::iterator itr = fPayloadInputs->begin(); itr != fPayloadInputs->end(); itr++)
-    {
-        if (fInputRateLogging.at(i) > 0)
-        {
-            filteredInputs.push_back((*itr));
-            ++numFilteredInputs;
-        }
-        ++i;
-    }
-
-    i = 0;
-    for (vector<FairMQSocket*>::iterator itr = fPayloadOutputs->begin(); itr != fPayloadOutputs->end(); itr++)
-    {
-        if (fOutputRateLogging.at(i) > 0)
-        {
-            filteredOutputs.push_back((*itr));
-            ++numFilteredOutputs;
-        }
-        ++i;
-    }
-
-    vector<unsigned long> bytesIn(numFilteredInputs);
-    vector<unsigned long> msgIn(numFilteredInputs);
-    vector<unsigned long> bytesOut(numFilteredOutputs);
-    vector<unsigned long> msgOut(numFilteredOutputs);
-
-    vector<unsigned long> bytesInNew(numFilteredInputs);
-    vector<unsigned long> msgInNew(numFilteredInputs);
-    vector<unsigned long> bytesOutNew(numFilteredOutputs);
-    vector<unsigned long> msgOutNew(numFilteredOutputs);
-
-    vector<double> mbPerSecIn(numFilteredInputs);
-    vector<double> msgPerSecIn(numFilteredInputs);
-    vector<double> mbPerSecOut(numFilteredOutputs);
-    vector<double> msgPerSecOut(numFilteredOutputs);
-
-    i = 0;
-    for (vector<FairMQSocket*>::iterator itr = filteredInputs.begin(); itr != filteredInputs.end(); itr++)
+    for (vector<FairMQSocket*>::iterator itr = filteredSockets.begin(); itr != filteredSockets.end(); ++itr)
     {
         bytesIn.at(i) = (*itr)->GetBytesRx();
-        msgIn.at(i) = (*itr)->GetMessagesRx();
-        ++i;
-    }
-
-    i = 0;
-    for (vector<FairMQSocket*>::iterator itr = filteredOutputs.begin(); itr != filteredOutputs.end(); itr++)
-    {
         bytesOut.at(i) = (*itr)->GetBytesTx();
+        msgIn.at(i) = (*itr)->GetMessagesRx();
         msgOut.at(i) = (*itr)->GetMessagesTx();
         ++i;
     }
 
     t0 = get_timestamp();
 
-    while (fState == RUNNING)
+    while (GetCurrentState() == RUNNING)
     {
         try
         {
@@ -434,32 +448,27 @@ void FairMQDevice::LogSocketRates()
 
             i = 0;
 
-            for (vector<FairMQSocket*>::iterator itr = filteredInputs.begin(); itr != filteredInputs.end(); itr++)
+            for (vector<FairMQSocket*>::iterator itr = filteredSockets.begin(); itr != filteredSockets.end(); itr++)
             {
                 bytesInNew.at(i) = (*itr)->GetBytesRx();
                 mbPerSecIn.at(i) = ((double)(bytesInNew.at(i) - bytesIn.at(i)) / (1024. * 1024.)) / (double)msSinceLastLog * 1000.;
                 bytesIn.at(i) = bytesInNew.at(i);
+
                 msgInNew.at(i) = (*itr)->GetMessagesRx();
                 msgPerSecIn.at(i) = (double)(msgInNew.at(i) - msgIn.at(i)) / (double)msSinceLastLog * 1000.;
                 msgIn.at(i) = msgInNew.at(i);
 
-                LOG(DEBUG) << "#" << fId << "." << (*itr)->GetId() << ": " << msgPerSecIn.at(i) << " msg/s, " << mbPerSecIn.at(i) << " MB/s";
-
-                ++i;
-            }
-
-            i = 0;
-
-            for (vector<FairMQSocket*>::iterator itr = filteredOutputs.begin(); itr != filteredOutputs.end(); itr++)
-            {
                 bytesOutNew.at(i) = (*itr)->GetBytesTx();
                 mbPerSecOut.at(i) = ((double)(bytesOutNew.at(i) - bytesOut.at(i)) / (1024. * 1024.)) / (double)msSinceLastLog * 1000.;
                 bytesOut.at(i) = bytesOutNew.at(i);
+
                 msgOutNew.at(i) = (*itr)->GetMessagesTx();
                 msgPerSecOut.at(i) = (double)(msgOutNew.at(i) - msgOut.at(i)) / (double)msSinceLastLog * 1000.;
                 msgOut.at(i) = msgOutNew.at(i);
 
-                LOG(DEBUG) << "#" << fId << "." << (*itr)->GetId() << ": " << msgPerSecOut.at(i) << " msg/s, " << mbPerSecOut.at(i) << " MB/s";
+                LOG(DEBUG) << filteredChannelNames.at(i) << ": "
+                           << "in: " << msgPerSecIn.at(i) << " msg (" << mbPerSecIn.at(i) << " MB), "
+                           << "out: " << msgPerSecOut.at(i) << " msg (" << mbPerSecOut.at(i) << " MB)";
 
                 ++i;
             }
@@ -469,59 +478,57 @@ void FairMQDevice::LogSocketRates()
         }
         catch (boost::thread_interrupted&)
         {
-            LOG(INFO) << "FairMQDevice::LogSocketRates() interrupted";
+            // LOG(DEBUG) << "FairMQDevice::LogSocketRates() interrupted";
             break;
         }
     }
 
-    LOG(INFO) << ">>>>>>> stopping FairMQDevice::LogSocketRates() <<<<<<<";
+    // LOG(DEBUG) << "FairMQDevice::LogSocketRates() stopping";
+}
+
+void FairMQDevice::SendCommand(const string& command)
+{
+    FairMQMessage* cmd = fTransportFactory->CreateMessage(command.size());
+    memcpy(cmd->GetData(), command.c_str(), command.size());
+    fCommandSocket->Send(cmd, 0);
 }
 
 void FairMQDevice::Shutdown()
 {
-    LOG(INFO) << ">>>>>>> closing inputs <<<<<<<";
-    for (vector<FairMQSocket*>::iterator itr = fPayloadInputs->begin(); itr != fPayloadInputs->end(); itr++)
+    LOG(DEBUG) << "Closing sockets...";
+
+    // iterate over the channels map
+    for (map< string,vector<FairMQChannel> >::iterator mi = fChannels.begin(); mi != fChannels.end(); ++mi)
     {
-        (*itr)->Close();
+        // iterate over the channels vector
+        for (vector<FairMQChannel>::iterator vi = (mi->second).begin(); vi != (mi->second).end(); ++vi)
+        {
+            vi->fSocket->Close();
+        }
     }
 
-    LOG(INFO) << ">>>>>>> closing outputs <<<<<<<";
-    for (vector<FairMQSocket*>::iterator itr = fPayloadOutputs->begin(); itr != fPayloadOutputs->end(); itr++)
-    {
-        (*itr)->Close();
-    }
+    fCommandSocket->Close();
+
+    LOG(DEBUG) << "Closed all sockets!";
 }
 
 void FairMQDevice::Terminate()
 {
     // Termination signal has to be sent only once to any socket.
-    // Find available socket and send termination signal to it.
-    if (fPayloadInputs->size() > 0)
-    {
-        fPayloadInputs->at(0)->Terminate();
-    }
-    else if (fPayloadOutputs->size() > 0)
-    {
-        fPayloadOutputs->at(0)->Terminate();
-    }
-    else
-    {
-        LOG(ERROR) << "No sockets available to terminate.";
-    }
+    fCommandSocket->Terminate();
 }
 
 FairMQDevice::~FairMQDevice()
 {
-    for (vector<FairMQSocket*>::iterator itr = fPayloadInputs->begin(); itr != fPayloadInputs->end(); itr++)
+    // iterate over the channels map
+    for (map< string,vector<FairMQChannel> >::iterator mi = fChannels.begin(); mi != fChannels.end(); ++mi)
     {
-        delete (*itr);
+        // iterate over the channels vector
+        for (vector<FairMQChannel>::iterator vi = (mi->second).begin(); vi != (mi->second).end(); ++vi)
+        {
+            delete vi->fSocket;
+        }
     }
 
-    for (vector<FairMQSocket*>::iterator itr = fPayloadOutputs->begin(); itr != fPayloadOutputs->end(); itr++)
-    {
-        delete (*itr);
-    }
-
-    delete fPayloadInputs;
-    delete fPayloadOutputs;
+    delete fCommandSocket;
 }

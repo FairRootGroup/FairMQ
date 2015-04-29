@@ -32,12 +32,11 @@ FairMQBuffer buffer;
 
 static void s_signal_handler(int signal)
 {
-    cout << endl << "Caught signal " << signal << endl;
+    LOG(INFO) << "Caught signal " << signal;
 
-    buffer.ChangeState(FairMQBuffer::STOP);
     buffer.ChangeState(FairMQBuffer::END);
 
-    cout << "Shutdown complete. Bye!" << endl;
+    LOG(INFO) << "Shutdown complete";
     exit(1);
 }
 
@@ -81,11 +80,11 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
         ("id", bpo::value<string>(), "Device ID")
         ("io-threads", bpo::value<int>()->default_value(1), "Number of I/O threads")
         ("input-socket-type", bpo::value<string>()->required(), "Input socket type: sub/pull")
-        ("input-buff-size", bpo::value<int>()->required(), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
+        ("input-buff-size", bpo::value<int>()->default_value(1000), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
         ("input-method", bpo::value<string>()->required(), "Input method: bind/connect")
         ("input-address", bpo::value<string>()->required(), "Input address, e.g.: \"tcp://localhost:5555\"")
         ("output-socket-type", bpo::value<string>()->required(), "Output socket type: pub/push")
-        ("output-buff-size", bpo::value<int>()->required(), "Output buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
+        ("output-buff-size", bpo::value<int>()->default_value(1000), "Output buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
         ("output-method", bpo::value<string>()->required(), "Output method: bind/connect")
         ("output-address", bpo::value<string>()->required(), "Output address, e.g.: \"tcp://localhost:5555\"")
         ("help", "Print help messages");
@@ -160,38 +159,40 @@ int main(int argc, char** argv)
 
     buffer.SetTransport(transportFactory);
 
+    FairMQChannel inputChannel(options.inputSocketType, options.inputMethod, options.inputAddress);
+    inputChannel.fSndBufSize = options.inputBufSize;
+    inputChannel.fRcvBufSize = options.inputBufSize;
+    inputChannel.fRateLogging = 1;
+
+    buffer.fChannels["data-in"].push_back(inputChannel);
+
+    FairMQChannel outputChannel(options.outputSocketType, options.outputMethod, options.outputAddress);
+    outputChannel.fSndBufSize = options.outputBufSize;
+    outputChannel.fRcvBufSize = options.outputBufSize;
+    outputChannel.fRateLogging = 1;
+
+    buffer.fChannels["data-out"].push_back(outputChannel);
+
     buffer.SetProperty(FairMQBuffer::Id, options.id);
     buffer.SetProperty(FairMQBuffer::NumIoThreads, options.ioThreads);
 
-    buffer.SetProperty(FairMQBuffer::NumInputs, 1);
-    buffer.SetProperty(FairMQBuffer::NumOutputs, 1);
+    buffer.ChangeState(FairMQBuffer::INIT_DEVICE);
+    buffer.WaitForEndOfState(FairMQBuffer::INIT_DEVICE);
 
-    buffer.ChangeState(FairMQBuffer::INIT);
+    buffer.ChangeState(FairMQBuffer::INIT_TASK);
+    buffer.WaitForEndOfState(FairMQBuffer::INIT_TASK);
 
-    buffer.SetProperty(FairMQBuffer::InputSocketType, options.inputSocketType);
-    buffer.SetProperty(FairMQBuffer::InputRcvBufSize, options.inputBufSize);
-    buffer.SetProperty(FairMQBuffer::InputMethod, options.inputMethod);
-    buffer.SetProperty(FairMQBuffer::InputAddress, options.inputAddress);
-
-    buffer.SetProperty(FairMQBuffer::OutputSocketType, options.outputSocketType);
-    buffer.SetProperty(FairMQBuffer::OutputSndBufSize, options.outputBufSize);
-    buffer.SetProperty(FairMQBuffer::OutputMethod, options.outputMethod);
-    buffer.SetProperty(FairMQBuffer::OutputAddress, options.outputAddress);
-
-    buffer.ChangeState(FairMQBuffer::SETOUTPUT);
-    buffer.ChangeState(FairMQBuffer::SETINPUT);
-    buffer.ChangeState(FairMQBuffer::BIND);
-    buffer.ChangeState(FairMQBuffer::CONNECT);
     buffer.ChangeState(FairMQBuffer::RUN);
-
-    // wait until the running thread has finished processing.
-    boost::unique_lock<boost::mutex> lock(buffer.fRunningMutex);
-    while (!buffer.fRunningFinished)
-    {
-        buffer.fRunningCondition.wait(lock);
-    }
+    buffer.WaitForEndOfState(FairMQBuffer::RUN);
 
     buffer.ChangeState(FairMQBuffer::STOP);
+
+    buffer.ChangeState(FairMQBuffer::RESET_TASK);
+    buffer.WaitForEndOfState(FairMQBuffer::RESET_TASK);
+
+    buffer.ChangeState(FairMQBuffer::RESET_DEVICE);
+    buffer.WaitForEndOfState(FairMQBuffer::RESET_DEVICE);
+
     buffer.ChangeState(FairMQBuffer::END);
 
     return 0;

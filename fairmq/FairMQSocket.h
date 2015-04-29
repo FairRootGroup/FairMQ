@@ -16,6 +16,7 @@
 #define FAIRMQSOCKET_H_
 
 #include <string>
+
 #include "FairMQMessage.h"
 
 class FairMQSocket
@@ -36,10 +37,10 @@ class FairMQSocket
     virtual bool Bind(const std::string& address) = 0;
     virtual void Connect(const std::string& address) = 0;
 
-    virtual int Send(FairMQMessage* msg, const std::string& flag="") = 0;
-    virtual int Send(FairMQMessage* msg, const int flags) = 0;
-    virtual int Receive(FairMQMessage* msg, const std::string& flag="") = 0;
-    virtual int Receive(FairMQMessage* msg, const int flags) = 0;
+    virtual int Send(FairMQMessage* msg, const std::string& flag = "") = 0;
+    virtual int Send(FairMQMessage* msg, const int flags = 0) = 0;
+    virtual int Receive(FairMQMessage* msg, const std::string& flag = "") = 0;
+    virtual int Receive(FairMQMessage* msg, const int flags = 0) = 0;
 
     virtual void* GetSocket() = 0;
     virtual int GetSocket(int nothing) = 0;

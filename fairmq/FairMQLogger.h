@@ -25,7 +25,7 @@
 
 class FairMQLogger
 {
-  public:      
+  public:
     enum Level
     {
         DEBUG,
@@ -35,16 +35,16 @@ class FairMQLogger
         STATE,
         NOLOG
     };
-    
+
     FairMQLogger();
     virtual ~FairMQLogger();
     std::ostringstream& Log(int type);
 
-    static void SetLogLevel(int loglevel)
-    { 
-        FairMQLogger::fMinLogLevel = loglevel; 
+    static void SetLogLevel(int logLevel)
+    {
+        FairMQLogger::fMinLogLevel = logLevel;
     }
-    
+
   private:
     std::ostringstream os;
     int fLogLevel;

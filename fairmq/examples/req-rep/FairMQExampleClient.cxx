@@ -36,9 +36,7 @@ void FairMQExampleClient::CustomCleanup(void *data, void *hint)
 
 void FairMQExampleClient::Run()
 {
-    // boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
-
-    while (fState == RUNNING)
+    while (GetCurrentState() == RUNNING)
     {
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
@@ -49,26 +47,17 @@ void FairMQExampleClient::Run()
 
         LOG(INFO) << "Sending \"" << fText << "\" to server.";
 
-        fPayloadOutputs->at(0)->Send(request);
-        fPayloadOutputs->at(0)->Receive(reply);
+        fChannels["data"].at(0).Send(request);
+        fChannels["data"].at(0).Receive(reply);
 
         LOG(INFO) << "Received reply from server: \"" << string(static_cast<char*>(reply->GetData()), reply->GetSize()) << "\"";
 
         delete reply;
     }
-
-    // rateLogger.interrupt();
-    // rateLogger.join();
-
-    FairMQDevice::Shutdown();
-
-    boost::lock_guard<boost::mutex> lock(fRunningMutex);
-    fRunningFinished = true;
-    fRunningCondition.notify_one();
 }
 
 
-void FairMQExampleClient::SetProperty(const int key, const string& value, const int slot /*= 0*/)
+void FairMQExampleClient::SetProperty(const int key, const string& value)
 {
     switch (key)
     {
@@ -76,12 +65,12 @@ void FairMQExampleClient::SetProperty(const int key, const string& value, const 
             fText = value;
             break;
         default:
-            FairMQDevice::SetProperty(key, value, slot);
+            FairMQDevice::SetProperty(key, value);
             break;
     }
 }
 
-string FairMQExampleClient::GetProperty(const int key, const string& default_ /*= ""*/, const int slot /*= 0*/)
+string FairMQExampleClient::GetProperty(const int key, const string& default_ /*= ""*/)
 {
     switch (key)
     {
@@ -89,25 +78,25 @@ string FairMQExampleClient::GetProperty(const int key, const string& default_ /*
             return fText;
             break;
         default:
-            return FairMQDevice::GetProperty(key, default_, slot);
+            return FairMQDevice::GetProperty(key, default_);
     }
 }
 
-void FairMQExampleClient::SetProperty(const int key, const int value, const int slot /*= 0*/)
+void FairMQExampleClient::SetProperty(const int key, const int value)
 {
     switch (key)
     {
         default:
-            FairMQDevice::SetProperty(key, value, slot);
+            FairMQDevice::SetProperty(key, value);
             break;
     }
 }
 
-int FairMQExampleClient::GetProperty(const int key, const int default_ /*= 0*/, const int slot /*= 0*/)
+int FairMQExampleClient::GetProperty(const int key, const int default_ /*= 0*/)
 {
     switch (key)
     {
         default:
-            return FairMQDevice::GetProperty(key, default_, slot);
+            return FairMQDevice::GetProperty(key, default_);
     }
 }

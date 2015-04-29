@@ -32,12 +32,11 @@ FairMQMerger merger;
 
 static void s_signal_handler(int signal)
 {
-    cout << endl << "Caught signal " << signal << endl;
+    LOG(INFO) << "Caught signal " << signal;
 
-    merger.ChangeState(FairMQMerger::STOP);
     merger.ChangeState(FairMQMerger::END);
 
-    cout << "Shutdown complete. Bye!" << endl;
+    LOG(INFO) << "Shutdown complete.";
     exit(1);
 }
 
@@ -165,41 +164,43 @@ int main(int argc, char** argv)
 
     merger.SetTransport(transportFactory);
 
+    for (int i = 0; i < options.inputAddress.size(); ++i)
+    {
+        FairMQChannel inputChannel(options.inputSocketType.at(i), options.inputMethod.at(i), options.inputAddress.at(i));
+        inputChannel.fSndBufSize = options.inputBufSize.at(i);
+        inputChannel.fRcvBufSize = options.inputBufSize.at(i);
+        inputChannel.fRateLogging = 1;
+
+        merger.fChannels["data-in"].push_back(inputChannel);
+    }
+
+    FairMQChannel outputChannel(options.outputSocketType, options.outputMethod, options.outputAddress);
+    outputChannel.fSndBufSize = options.outputBufSize;
+    outputChannel.fRcvBufSize = options.outputBufSize;
+    outputChannel.fRateLogging = 1;
+
+    merger.fChannels["data-out"].push_back(outputChannel);
+
     merger.SetProperty(FairMQMerger::Id, options.id);
     merger.SetProperty(FairMQMerger::NumIoThreads, options.ioThreads);
 
-    merger.SetProperty(FairMQMerger::NumInputs, options.numInputs);
-    merger.SetProperty(FairMQMerger::NumOutputs, 1);
+    merger.ChangeState(FairMQMerger::INIT_DEVICE);
+    merger.WaitForEndOfState(FairMQMerger::INIT_DEVICE);
 
-    merger.ChangeState(FairMQMerger::INIT);
+    merger.ChangeState(FairMQMerger::INIT_TASK);
+    merger.WaitForEndOfState(FairMQMerger::INIT_TASK);
 
-    for (int i = 0; i < options.numInputs; ++i)
-    {
-        merger.SetProperty(FairMQMerger::InputSocketType, options.inputSocketType.at(i), i);
-        merger.SetProperty(FairMQMerger::InputRcvBufSize, options.inputBufSize.at(i), i);
-        merger.SetProperty(FairMQMerger::InputMethod, options.inputMethod.at(i), i);
-        merger.SetProperty(FairMQMerger::InputAddress, options.inputAddress.at(i), i);
-    }
-
-    merger.SetProperty(FairMQMerger::OutputSocketType, options.outputSocketType);
-    merger.SetProperty(FairMQMerger::OutputSndBufSize, options.outputBufSize);
-    merger.SetProperty(FairMQMerger::OutputMethod, options.outputMethod);
-    merger.SetProperty(FairMQMerger::OutputAddress, options.outputAddress);
-
-    merger.ChangeState(FairMQMerger::SETOUTPUT);
-    merger.ChangeState(FairMQMerger::SETINPUT);
-    merger.ChangeState(FairMQMerger::BIND);
-    merger.ChangeState(FairMQMerger::CONNECT);
     merger.ChangeState(FairMQMerger::RUN);
-
-    // wait until the running thread has finished processing.
-    boost::unique_lock<boost::mutex> lock(merger.fRunningMutex);
-    while (!merger.fRunningFinished)
-    {
-        merger.fRunningCondition.wait(lock);
-    }
+    merger.WaitForEndOfState(FairMQMerger::RUN);
 
     merger.ChangeState(FairMQMerger::STOP);
+
+    merger.ChangeState(FairMQMerger::RESET_TASK);
+    merger.WaitForEndOfState(FairMQMerger::RESET_TASK);
+
+    merger.ChangeState(FairMQMerger::RESET_DEVICE);
+    merger.WaitForEndOfState(FairMQMerger::RESET_DEVICE);
+
     merger.ChangeState(FairMQMerger::END);
 
     return 0;

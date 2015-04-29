@@ -33,27 +33,19 @@ FairMQBenchmarkSampler::~FairMQBenchmarkSampler()
 {
 }
 
-void FairMQBenchmarkSampler::Init()
-{
-    FairMQDevice::Init();
-}
-
 void FairMQBenchmarkSampler::Run()
 {
-    LOG(INFO) << ">>>>>>> Run <<<<<<<";
-
-    boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
     boost::thread resetEventCounter(boost::bind(&FairMQBenchmarkSampler::ResetEventCounter, this));
 
     void* buffer = operator new[](fEventSize);
-    FairMQMessage* base_msg = fTransportFactory->CreateMessage(buffer, fEventSize);
+    FairMQMessage* baseMsg = fTransportFactory->CreateMessage(buffer, fEventSize);
 
-    while (fState == RUNNING)
+    while (GetCurrentState() == RUNNING)
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
-        msg->Copy(base_msg);
+        msg->Copy(baseMsg);
 
-        fPayloadOutputs->at(0)->Send(msg);
+        fChannels["data-out"].at(0).Send(msg);
 
         --fEventCounter;
 
@@ -65,28 +57,19 @@ void FairMQBenchmarkSampler::Run()
         delete msg;
     }
 
-    delete base_msg;
+    delete baseMsg;
 
     try {
-        rateLogger.interrupt();
-        rateLogger.join();
         resetEventCounter.interrupt();
         resetEventCounter.join();
     } catch(boost::thread_resource_error& e) {
         LOG(ERROR) << e.what();
     }
-
-    FairMQDevice::Shutdown();
-
-    // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fRunningMutex);
-    fRunningFinished = true;
-    fRunningCondition.notify_one();
 }
 
 void FairMQBenchmarkSampler::ResetEventCounter()
 {
-    while (true)
+    while (GetCurrentState() == RUNNING)
     {
         try
         {
@@ -100,61 +83,26 @@ void FairMQBenchmarkSampler::ResetEventCounter()
     }
 }
 
-void FairMQBenchmarkSampler::Log(int intervalInMs)
-{
-    timestamp_t t0;
-    timestamp_t t1;
-    unsigned long bytes = fPayloadOutputs->at(0)->GetBytesTx();
-    unsigned long messages = fPayloadOutputs->at(0)->GetMessagesTx();
-    unsigned long bytesNew = 0;
-    unsigned long messagesNew = 0;
-    double megabytesPerSecond = 0;
-    double messagesPerSecond = 0;
-
-    t0 = get_timestamp();
-
-    while (true)
-    {
-        boost::this_thread::sleep(boost::posix_time::milliseconds(intervalInMs));
-
-        t1 = get_timestamp();
-
-        bytesNew = fPayloadOutputs->at(0)->GetBytesTx();
-        messagesNew = fPayloadOutputs->at(0)->GetMessagesTx();
-
-        timestamp_t timeSinceLastLog_ms = (t1 - t0) / 1000.0L;
-
-        megabytesPerSecond = ((double)(bytesNew - bytes) / (1024. * 1024.)) / (double)timeSinceLastLog_ms * 1000.;
-        messagesPerSecond = (double)(messagesNew - messages) / (double)timeSinceLastLog_ms * 1000.;
-
-        LOG(DEBUG) << "send " << messagesPerSecond << " msg/s, " << megabytesPerSecond << " MB/s";
-
-        bytes = bytesNew;
-        messages = messagesNew;
-        t0 = t1;
-    }
-}
-
-void FairMQBenchmarkSampler::SetProperty(const int key, const string& value, const int slot /*= 0*/)
+void FairMQBenchmarkSampler::SetProperty(const int key, const string& value)
 {
     switch (key)
     {
         default:
-            FairMQDevice::SetProperty(key, value, slot);
+            FairMQDevice::SetProperty(key, value);
             break;
     }
 }
 
-string FairMQBenchmarkSampler::GetProperty(const int key, const string& default_ /*= ""*/, const int slot /*= 0*/)
+string FairMQBenchmarkSampler::GetProperty(const int key, const string& default_ /*= ""*/)
 {
     switch (key)
     {
         default:
-            return FairMQDevice::GetProperty(key, default_, slot);
+            return FairMQDevice::GetProperty(key, default_);
     }
 }
 
-void FairMQBenchmarkSampler::SetProperty(const int key, const int value, const int slot /*= 0*/)
+void FairMQBenchmarkSampler::SetProperty(const int key, const int value)
 {
     switch (key)
     {
@@ -165,12 +113,12 @@ void FairMQBenchmarkSampler::SetProperty(const int key, const int value, const i
             fEventRate = value;
             break;
         default:
-            FairMQDevice::SetProperty(key, value, slot);
+            FairMQDevice::SetProperty(key, value);
             break;
     }
 }
 
-int FairMQBenchmarkSampler::GetProperty(const int key, const int default_ /*= 0*/, const int slot /*= 0*/)
+int FairMQBenchmarkSampler::GetProperty(const int key, const int default_ /*= 0*/)
 {
     switch (key)
     {
@@ -179,6 +127,6 @@ int FairMQBenchmarkSampler::GetProperty(const int key, const int default_ /*= 0*
         case EventRate:
             return fEventRate;
         default:
-            return FairMQDevice::GetProperty(key, default_, slot);
+            return FairMQDevice::GetProperty(key, default_);
     }
 }

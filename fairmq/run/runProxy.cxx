@@ -32,12 +32,11 @@ FairMQProxy proxy;
 
 static void s_signal_handler(int signal)
 {
-    cout << endl << "Caught signal " << signal << endl;
+    LOG(INFO) << "Caught signal " << signal;
 
-    proxy.ChangeState(FairMQProxy::STOP);
     proxy.ChangeState(FairMQProxy::END);
 
-    cout << "Shutdown complete. Bye!" << endl;
+    LOG(INFO) << "Shutdown complete.";
     exit(1);
 }
 
@@ -81,11 +80,11 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
         ("id", bpo::value<string>()->required(), "Device ID")
         ("io-threads", bpo::value<int>()->default_value(1), "Number of I/O threads")
         ("input-socket-type", bpo::value<string>()->required(), "Input socket type: sub/pull")
-        ("input-buff-size", bpo::value<int>()->required(), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
+        ("input-buff-size", bpo::value<int>()->default_value(1000), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
         ("input-method", bpo::value<string>()->required(), "Input method: bind/connect")
         ("input-address", bpo::value<string>()->required(), "Input address, e.g.: \"tcp://localhost:5555\"")
         ("output-socket-type", bpo::value<string>()->required(), "Output socket type: pub/push")
-        ("output-buff-size", bpo::value<int>()->required(), "Output buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
+        ("output-buff-size", bpo::value<int>()->default_value(1000), "Output buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
         ("output-method", bpo::value<string>()->required(), "Output method: bind/connect")
         ("output-address", bpo::value<string>()->required(), "Output address, e.g.: \"tcp://localhost:5555\"")
         ("help", "Print help messages");
@@ -160,38 +159,40 @@ int main(int argc, char** argv)
 
     proxy.SetTransport(transportFactory);
 
+    FairMQChannel inputChannel(options.inputSocketType, options.inputMethod, options.inputAddress);
+    inputChannel.fSndBufSize = options.inputBufSize;
+    inputChannel.fRcvBufSize = options.inputBufSize;
+    inputChannel.fRateLogging = 1;
+
+    proxy.fChannels["data-in"].push_back(inputChannel);
+
+    FairMQChannel outputChannel(options.outputSocketType, options.outputMethod, options.outputAddress);
+    outputChannel.fSndBufSize = options.outputBufSize;
+    outputChannel.fRcvBufSize = options.outputBufSize;
+    outputChannel.fRateLogging = 1;
+
+    proxy.fChannels["data-out"].push_back(outputChannel);
+
     proxy.SetProperty(FairMQProxy::Id, options.id);
     proxy.SetProperty(FairMQProxy::NumIoThreads, options.ioThreads);
 
-    proxy.SetProperty(FairMQProxy::NumInputs, 1);
-    proxy.SetProperty(FairMQProxy::NumOutputs, 1);
+    proxy.ChangeState(FairMQProxy::INIT_DEVICE);
+    proxy.WaitForEndOfState(FairMQProxy::INIT_DEVICE);
 
-    proxy.ChangeState(FairMQProxy::INIT);
+    proxy.ChangeState(FairMQProxy::INIT_TASK);
+    proxy.WaitForEndOfState(FairMQProxy::INIT_TASK);
 
-    proxy.SetProperty(FairMQProxy::InputSocketType, options.inputSocketType);
-    proxy.SetProperty(FairMQProxy::InputRcvBufSize, options.inputBufSize);
-    proxy.SetProperty(FairMQProxy::InputMethod, options.inputMethod);
-    proxy.SetProperty(FairMQProxy::InputAddress, options.inputAddress);
-
-    proxy.SetProperty(FairMQProxy::OutputSocketType, options.outputSocketType);
-    proxy.SetProperty(FairMQProxy::OutputSndBufSize, options.outputBufSize);
-    proxy.SetProperty(FairMQProxy::OutputMethod, options.outputMethod);
-    proxy.SetProperty(FairMQProxy::OutputAddress, options.outputAddress);
-
-    proxy.ChangeState(FairMQProxy::SETOUTPUT);
-    proxy.ChangeState(FairMQProxy::SETINPUT);
-    proxy.ChangeState(FairMQProxy::BIND);
-    proxy.ChangeState(FairMQProxy::CONNECT);
     proxy.ChangeState(FairMQProxy::RUN);
-
-    // wait until the running thread has finished processing.
-    boost::unique_lock<boost::mutex> lock(proxy.fRunningMutex);
-    while (!proxy.fRunningFinished)
-    {
-        proxy.fRunningCondition.wait(lock);
-    }
+    proxy.WaitForEndOfState(FairMQProxy::RUN);
 
     proxy.ChangeState(FairMQProxy::STOP);
+
+    proxy.ChangeState(FairMQProxy::RESET_TASK);
+    proxy.WaitForEndOfState(FairMQProxy::RESET_TASK);
+
+    proxy.ChangeState(FairMQProxy::RESET_DEVICE);
+    proxy.WaitForEndOfState(FairMQProxy::RESET_DEVICE);
+
     proxy.ChangeState(FairMQProxy::END);
 
     return 0;

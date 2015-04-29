@@ -18,12 +18,12 @@
 #include <vector>
 
 #include "FairMQPoller.h"
-#include "FairMQSocket.h"
+#include "FairMQChannel.h"
 
 class FairMQPollerZMQ : public FairMQPoller
 {
   public:
-    FairMQPollerZMQ(const std::vector<FairMQSocket*>& inputs);
+    FairMQPollerZMQ(const std::vector<FairMQChannel>& channels);
 
     virtual void Poll(int timeout);
     virtual bool CheckInput(int index);

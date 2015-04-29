@@ -13,10 +13,9 @@
  */
 
 #ifndef GENERICPROCESSOR_H
-#define	GENERICPROCESSOR_H
+#define GENERICPROCESSOR_H
 
 #include "FairMQDevice.h"
-
 
 /*********************************************************************
  * -------------- NOTES -----------------------
@@ -41,73 +40,67 @@
  *                
  **********************************************************************/
 
-
-template <  typename InputPolicy, 
-            typename OutputPolicy, 
-            typename TaskPolicy>
-class GenericProcessor: public FairMQDevice, 
-                        public InputPolicy, 
-                        public OutputPolicy, 
-                        public TaskPolicy
+template <typename InputPolicy, typename OutputPolicy, typename TaskPolicy>
+class GenericProcessor : public FairMQDevice, public InputPolicy, public OutputPolicy, public TaskPolicy
 {
   public:
-    GenericProcessor() : InputPolicy(), OutputPolicy(), TaskPolicy()
+    GenericProcessor()
+        : InputPolicy()
+        , OutputPolicy()
+        , TaskPolicy()
     {}
 
     virtual ~GenericProcessor()
     {}
-    
+
     // the four following methods ensure 
     // that the correct policy method is called
-    
+
     void SetTransport(FairMQTransportFactory* transport)
     {
         FairMQDevice::SetTransport(transport);
     }
-    
-    template <typename... Args>
-        void InitTask(Args... args)
-        {
-            TaskPolicy::InitTask(std::forward<Args>(args)...);
-        }
 
     template <typename... Args>
-        void InitInputContainer(Args... args)
-        {
-            InputPolicy::InitContainer(std::forward<Args>(args)...);
-        }
+    void InitTask(Args... args)
+    {
+        TaskPolicy::InitTask(std::forward<Args>(args)...);
+    }
 
     template <typename... Args>
-        void InitOutputContainer(Args... args)
-        {
-            OutputPolicy::InitContainer(std::forward<Args>(args)...);
-        }
+    void InitInputContainer(Args... args)
+    {
+        InputPolicy::InitContainer(std::forward<Args>(args)...);
+    }
 
-    
+    template <typename... Args>
+    void InitOutputContainer(Args... args)
+    {
+        OutputPolicy::InitContainer(std::forward<Args>(args)...);
+    }
 
-    
     /*
      * 
     // ***********************  TODO: implement multipart features
     void SendPart()
     {
-        fPayloadOutputs->at(0)->Send(OutputPolicy::SerializeMsg(TaskPolicy::GetData()), "snd-more");
+        fChannels["data-out"].at(0).Send(OutputPolicy::SerializeMsg(TaskPolicy::GetData()), "snd-more");
         OutputPolicy::CloseMessage(); 
     }
 
-    //void SendPart();
-    //bool ReceivePart();
+    // void SendPart();
+    // bool ReceivePart();
     bool ReceivePart()
     {
         int64_t more = 0;
         size_t more_size = sizeof(more);
-        fPayloadInputs->at(0)->GetOption("rcv-more", &more, &more_size);
-        if(more)
+        fChannels["data-in"].at(0).fSocket->GetOption("rcv-more", &more, &more_size);
+        if (more)
         {
             InputPolicy::CloseMessage(); 
-            //fProcessorTask->GetPayload()->CloseMessage();
+            // fProcessorTask->GetPayload()->CloseMessage();
             fProcessorTask->SetPayload(fTransportFactory->CreateMessage());
-            return fPayloadInputs->at(0)->Receive(fProcessorTask->GetPayload());
+            return fChannels["data-in"].at(0).Receive(fProcessorTask->GetPayload());
         }
         else
         {
@@ -117,29 +110,23 @@ class GenericProcessor: public FairMQDevice,
     */
 
   protected:
-    virtual void Init()
+    virtual void InitTask()
     {
-        FairMQDevice::Init();
         // TODO: implement multipart features
-        //fProcessorTask->InitTask();
-        //fProcessorTask->SetSendPart(boost::bind(&FairMQProcessor::SendPart, this));
-        //fProcessorTask->SetReceivePart(boost::bind(&FairMQProcessor::ReceivePart, this));
+        // fProcessorTask->InitTask();
+        // fProcessorTask->SetSendPart(boost::bind(&FairMQProcessor::SendPart, this));
+        // fProcessorTask->SetReceivePart(boost::bind(&FairMQProcessor::ReceivePart, this));
     }
 
     virtual void Run()
     {
-        MQLOG(INFO) << ">>>>>>> Run <<<<<<<";
-
-        boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
         int receivedMsgs = 0;
         int sentMsgs = 0;
-        int received = 0;
 
-        while ( fState == RUNNING ) 
+        while (GetCurrentState() == RUNNING)
         {
             FairMQMessage* msg = fTransportFactory->CreateMessage();
             
-            received = fPayloadInputs->at(0)->Receive(msg);
             receivedMsgs++;
 
             // InputPolicy::DeSerializeMsg(msg) --> deserialize data of msg and fill output container
@@ -148,37 +135,22 @@ class GenericProcessor: public FairMQDevice,
 
             // OutputPolicy::fMessage point to msg
             OutputPolicy::SetMessage(msg);
-            
-            if (received > 0) 
+
+            if (fChannels["data-in"].at(0).Receive(msg) > 0)
             {
                 // TaskPolicy::GetOutputData() --> Get processed output container
                 // OutputPolicy::message(...)  --> Serialize output container and fill fMessage
-                fPayloadOutputs->at(0)->Send(OutputPolicy::SerializeMsg(TaskPolicy::GetOutputData()));
+                fChannels["data-out"].at(0).Send(OutputPolicy::SerializeMsg(TaskPolicy::GetOutputData()));
                 sentMsgs++;
-                received = 0;
             }
 
-            if(msg)
+            if (msg)
+            {
                 msg->CloseMessage();
+            }
         }
 
         MQLOG(INFO) << "Received " << receivedMsgs << " and sent " << sentMsgs << " messages!";
-
-        try 
-        {
-            rateLogger.interrupt();
-            rateLogger.join();
-        } 
-        catch(boost::thread_resource_error& e) 
-        {
-            MQLOG(ERROR) << e.what();
-        }
-
-        FairMQDevice::Shutdown();
-        // notify parent thread about end of processing.
-        boost::lock_guard<boost::mutex> lock(fRunningMutex);
-        fRunningFinished = true;
-        fRunningCondition.notify_one();
     }
 
 };

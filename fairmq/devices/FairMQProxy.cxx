@@ -28,37 +28,15 @@ FairMQProxy::~FairMQProxy()
 
 void FairMQProxy::Run()
 {
-    LOG(INFO) << ">>>>>>> Run <<<<<<<";
-
-    boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
-
     FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-    int received = 0;
-
-    while (fState == RUNNING)
+    while (GetCurrentState() == RUNNING)
     {
-        received = fPayloadInputs->at(0)->Receive(msg);
-        if (received > 0)
+        if (fChannels["data-in"].at(0).Receive(msg) > 0)
         {
-            fPayloadOutputs->at(0)->Send(msg);
-            received = 0;
+            fChannels["data-out"].at(0).Send(msg);
         }
     }
 
     delete msg;
-
-    try {
-        rateLogger.interrupt();
-        rateLogger.join();
-    } catch(boost::thread_resource_error& e) {
-        LOG(ERROR) << e.what();
-    }
-
-    FairMQDevice::Shutdown();
-
-    // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fRunningMutex);
-    fRunningFinished = true;
-    fRunningCondition.notify_one();
 }

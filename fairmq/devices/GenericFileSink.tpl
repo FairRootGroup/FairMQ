@@ -6,9 +6,9 @@
  */
 
 template <typename InputPolicy, typename OutputPolicy>
-GenericFileSink<InputPolicy, OutputPolicy>::GenericFileSink() : 
-    InputPolicy(),
-    OutputPolicy()
+GenericFileSink<InputPolicy, OutputPolicy>::GenericFileSink()
+    : InputPolicy()
+    , OutputPolicy()
 {
 }
 
@@ -21,17 +21,16 @@ template <typename InputPolicy, typename OutputPolicy>
 void GenericFileSink<InputPolicy, OutputPolicy>::SetTransport(FairMQTransportFactory* transport)
 {
     FairMQDevice::SetTransport(transport);
-    //InputPolicy::SetTransport(transport);
+    // InputPolicy::SetTransport(transport);
 }
 
 
 template <typename InputPolicy, typename OutputPolicy>
-void GenericFileSink<InputPolicy, OutputPolicy>::Init()
+void GenericFileSink<InputPolicy, OutputPolicy>::InitTask()
 {
-    FairMQDevice::Init();
     InitOutputFile();
-    //InputPolicy::Init();
-    //OutputPolicy::Init();
+    // InputPolicy::Init();
+    // OutputPolicy::Init();
 }
 
 template <typename InputPolicy, typename OutputPolicy>
@@ -43,18 +42,12 @@ void GenericFileSink<InputPolicy, OutputPolicy>::InitOutputFile()
 template <typename InputPolicy, typename OutputPolicy>
 void GenericFileSink<InputPolicy, OutputPolicy>::Run()
 {
-    MQLOG(INFO) << ">>>>>>> Run <<<<<<<";
-
-    boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
-
-    int received = 0;
     int receivedMsg = 0;
 
-    while (fState == RUNNING)
+    while (GetCurrentState() == RUNNING)
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
-        received = fPayloadInputs->at(0)->Receive(msg);
-        if(received>0)
+        if (fChannels["data-in"].at(0).Receive(msg) > 0)
         {
             OutputPolicy::AddToFile(InputPolicy::DeSerializeMsg(msg));
             receivedMsg++;
@@ -63,20 +56,4 @@ void GenericFileSink<InputPolicy, OutputPolicy>::Run()
     }
 
     MQLOG(INFO) << "Received " << receivedMsg << " messages!";
-    try 
-    {
-        rateLogger.interrupt();
-        rateLogger.join();
-    } 
-    catch(boost::thread_resource_error& e) 
-    {
-        MQLOG(ERROR) << e.what();
-    }
-
-    FairMQDevice::Shutdown();
-
-    // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fRunningMutex);
-    fRunningFinished = true;
-    fRunningCondition.notify_one();
 }

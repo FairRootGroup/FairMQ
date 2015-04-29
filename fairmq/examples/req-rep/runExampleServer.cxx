@@ -30,12 +30,11 @@ FairMQExampleServer server;
 
 static void s_signal_handler(int signal)
 {
-    cout << endl << "Caught signal " << signal << endl;
+    LOG(INFO) << "Caught signal " << signal;
 
-    server.ChangeState(FairMQExampleServer::STOP);
     server.ChangeState(FairMQExampleServer::END);
 
-    cout << "Shutdown complete. Bye!" << endl;
+    LOG(INFO) << "Caught signal " << signal;
     exit(1);
 }
 
@@ -65,34 +64,31 @@ int main(int argc, char** argv)
 
     server.SetProperty(FairMQExampleServer::Id, "server");
     server.SetProperty(FairMQExampleServer::NumIoThreads, 1);
-    server.SetProperty(FairMQExampleServer::NumInputs, 1);
-    server.SetProperty(FairMQExampleServer::NumOutputs, 0);
 
-    server.ChangeState(FairMQExampleServer::INIT);
+    FairMQChannel replyChannel("rep", "bind", "tcp://*:5005");
+    replyChannel.fSndBufSize = 10000;
+    replyChannel.fRcvBufSize = 10000;
+    replyChannel.fRateLogging = 1;
 
-    server.SetProperty(FairMQExampleServer::InputSocketType, "rep", 0);
-    server.SetProperty(FairMQExampleServer::InputSndBufSize, 10000, 0);
-    server.SetProperty(FairMQExampleServer::InputRcvBufSize, 10000, 0);
-    server.SetProperty(FairMQExampleServer::InputMethod, "bind", 0);
-    server.SetProperty(FairMQExampleServer::InputAddress, "tcp://*:5005", 0);
+    server.fChannels["data"].push_back(replyChannel);
 
-    server.ChangeState(FairMQExampleServer::SETOUTPUT);
-    server.ChangeState(FairMQExampleServer::SETINPUT);
-    server.ChangeState(FairMQExampleServer::BIND);
-    server.ChangeState(FairMQExampleServer::CONNECT);
+    server.ChangeState(FairMQExampleServer::INIT_DEVICE);
+    server.WaitForEndOfState(FairMQExampleServer::INIT_DEVICE);
 
-    LOG(INFO) << "Listening for requests!";
+    server.ChangeState(FairMQExampleServer::INIT_TASK);
+    server.WaitForEndOfState(FairMQExampleServer::INIT_TASK);
 
     server.ChangeState(FairMQExampleServer::RUN);
-
-    // wait until the running thread has finished processing.
-    boost::unique_lock<boost::mutex> lock(server.fRunningMutex);
-    while (!server.fRunningFinished)
-    {
-        server.fRunningCondition.wait(lock);
-    }
+    server.WaitForEndOfState(FairMQExampleServer::RUN);
 
     server.ChangeState(FairMQExampleServer::STOP);
+
+    server.ChangeState(FairMQExampleServer::RESET_TASK);
+    server.WaitForEndOfState(FairMQExampleServer::RESET_TASK);
+
+    server.ChangeState(FairMQExampleServer::RESET_DEVICE);
+    server.WaitForEndOfState(FairMQExampleServer::RESET_DEVICE);
+
     server.ChangeState(FairMQExampleServer::END);
 
     return 0;

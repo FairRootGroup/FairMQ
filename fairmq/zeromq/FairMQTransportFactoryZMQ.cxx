@@ -22,7 +22,7 @@ FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ()
 {
     int major, minor, patch;
     zmq_version(&major, &minor, &patch);
-    LOG(INFO) << "Using ZeroMQ library, version: " << major << "." << minor << "." << patch;
+    LOG(DEBUG) << "Using ZeroMQ library, version: " << major << "." << minor << "." << patch;
 }
 
 FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage()
@@ -40,12 +40,12 @@ FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage(void* data, size_t size,
     return new FairMQMessageZMQ(data, size, ffn, hint);
 }
 
-FairMQSocket* FairMQTransportFactoryZMQ::CreateSocket(const string& type, int num, int numIoThreads)
+FairMQSocket* FairMQTransportFactoryZMQ::CreateSocket(const string& type, const std::string& name, int numIoThreads)
 {
-    return new FairMQSocketZMQ(type, num, numIoThreads);
+    return new FairMQSocketZMQ(type, name, numIoThreads);
 }
 
-FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQSocket*>& inputs)
+FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQChannel>& channels)
 {
-    return new FairMQPollerZMQ(inputs);
+    return new FairMQPollerZMQ(channels);
 }

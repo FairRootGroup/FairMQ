@@ -32,12 +32,11 @@ FairMQSplitter splitter;
 
 static void s_signal_handler(int signal)
 {
-    cout << endl << "Caught signal " << signal << endl;
+    LOG(INFO) << "Caught signal " << signal;
 
-    splitter.ChangeState(FairMQSplitter::STOP);
     splitter.ChangeState(FairMQSplitter::END);
 
-    cout << "Shutdown complete. Bye!" << endl;
+    LOG(INFO) << "Shutdown complete.";
     exit(1);
 }
 
@@ -56,7 +55,8 @@ typedef struct DeviceOptions
     DeviceOptions() :
         id(), ioThreads(0), numOutputs(0),
         inputSocketType(), inputBufSize(0), inputMethod(), inputAddress(),
-        outputSocketType(), outputBufSize(), outputMethod(), outputAddress() {}
+        outputSocketType(), outputBufSize(), outputMethod(), outputAddress()
+        {}
 
     string id;
     int ioThreads;
@@ -83,11 +83,11 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
         ("io-threads", bpo::value<int>()->default_value(1), "Number of I/O threads")
         ("num-outputs", bpo::value<int>()->required(), "Number of Splitter output sockets")
         ("input-socket-type", bpo::value<string>()->required(), "Input socket type: sub/pull")
-        ("input-buff-size", bpo::value<int>()->required(), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
+        ("input-buff-size", bpo::value<int>(), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
         ("input-method", bpo::value<string>()->required(), "Input method: bind/connect")
         ("input-address", bpo::value<string>()->required(), "Input address, e.g.: \"tcp://localhost:5555\"")
         ("output-socket-type", bpo::value< vector<string> >()->required(), "Output socket type: pub/push")
-        ("output-buff-size", bpo::value< vector<int> >()->required(), "Output buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
+        ("output-buff-size", bpo::value< vector<int> >(), "Output buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
         ("output-method", bpo::value< vector<string> >()->required(), "Output method: bind/connect")
         ("output-address", bpo::value< vector<string> >()->required(), "Output address, e.g.: \"tcp://localhost:5555\"")
         ("help", "Print help messages");
@@ -165,41 +165,43 @@ int main(int argc, char** argv)
 
     splitter.SetTransport(transportFactory);
 
+    FairMQChannel inputChannel(options.inputSocketType, options.inputMethod, options.inputAddress);
+    inputChannel.fSndBufSize = options.inputBufSize;
+    inputChannel.fRcvBufSize = options.inputBufSize;
+    inputChannel.fRateLogging = 1;
+
+    splitter.fChannels["data-in"].push_back(inputChannel);
+
+    for (int i = 0; i < options.outputAddress.size(); ++i)
+    {
+        FairMQChannel outputChannel(options.outputSocketType.at(i), options.outputMethod.at(i), options.outputAddress.at(i));
+        outputChannel.fSndBufSize = options.outputBufSize.at(i);
+        outputChannel.fRcvBufSize = options.outputBufSize.at(i);
+        outputChannel.fRateLogging = 1;
+
+        splitter.fChannels["data-out"].push_back(outputChannel);
+    }
+
     splitter.SetProperty(FairMQSplitter::Id, options.id);
     splitter.SetProperty(FairMQSplitter::NumIoThreads, options.ioThreads);
 
-    splitter.SetProperty(FairMQSplitter::NumInputs, 1);
-    splitter.SetProperty(FairMQSplitter::NumOutputs, options.numOutputs);
+    splitter.ChangeState(FairMQSplitter::INIT_DEVICE);
+    splitter.WaitForEndOfState(FairMQSplitter::INIT_DEVICE);
 
-    splitter.ChangeState(FairMQSplitter::INIT);
+    splitter.ChangeState(FairMQSplitter::INIT_TASK);
+    splitter.WaitForEndOfState(FairMQSplitter::INIT_TASK);
 
-    splitter.SetProperty(FairMQSplitter::InputSocketType, options.inputSocketType);
-    splitter.SetProperty(FairMQSplitter::InputRcvBufSize, options.inputBufSize);
-    splitter.SetProperty(FairMQSplitter::InputMethod, options.inputMethod);
-    splitter.SetProperty(FairMQSplitter::InputAddress, options.inputAddress);
-
-    for (int i = 0; i < options.numOutputs; ++i)
-    {
-        splitter.SetProperty(FairMQSplitter::OutputSocketType, options.outputSocketType.at(i), i);
-        splitter.SetProperty(FairMQSplitter::OutputSndBufSize, options.outputBufSize.at(i), i);
-        splitter.SetProperty(FairMQSplitter::OutputMethod, options.outputMethod.at(i), i);
-        splitter.SetProperty(FairMQSplitter::OutputAddress, options.outputAddress.at(i), i);
-    }
-
-    splitter.ChangeState(FairMQSplitter::SETOUTPUT);
-    splitter.ChangeState(FairMQSplitter::SETINPUT);
-    splitter.ChangeState(FairMQSplitter::BIND);
-    splitter.ChangeState(FairMQSplitter::CONNECT);
     splitter.ChangeState(FairMQSplitter::RUN);
-
-    // wait until the running thread has finished processing.
-    boost::unique_lock<boost::mutex> lock(splitter.fRunningMutex);
-    while (!splitter.fRunningFinished)
-    {
-        splitter.fRunningCondition.wait(lock);
-    }
+    splitter.WaitForEndOfState(FairMQSplitter::RUN);
 
     splitter.ChangeState(FairMQSplitter::STOP);
+
+    splitter.ChangeState(FairMQSplitter::RESET_TASK);
+    splitter.WaitForEndOfState(FairMQSplitter::RESET_TASK);
+
+    splitter.ChangeState(FairMQSplitter::RESET_DEVICE);
+    splitter.WaitForEndOfState(FairMQSplitter::RESET_DEVICE);
+
     splitter.ChangeState(FairMQSplitter::END);
 
     return 0;

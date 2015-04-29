@@ -37,7 +37,6 @@ FairMQProtoSampler::~FairMQProtoSampler()
 
 void FairMQProtoSampler::Init()
 {
-    FairMQDevice::Init();
 }
 
 void FairMQProtoSampler::Run()

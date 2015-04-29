@@ -20,7 +20,7 @@
 
 using namespace std;
 
-FairMQSocketNN::FairMQSocketNN(const string& type, int num, int numIoThreads)
+FairMQSocketNN::FairMQSocketNN(const string& type, const std::string& name, int numIoThreads)
     : FairMQSocket(0, 0, NN_DONTWAIT)
     , fSocket()
     , fId()
@@ -29,9 +29,7 @@ FairMQSocketNN::FairMQSocketNN(const string& type, int num, int numIoThreads)
     , fMessagesTx(0)
     , fMessagesRx(0)
 {
-    stringstream id;
-    id << type << "." << num;
-    fId = id.str();
+    fId = name + "." + type;
 
     if (numIoThreads > 1)
     {
@@ -46,7 +44,7 @@ FairMQSocketNN::FairMQSocketNN(const string& type, int num, int numIoThreads)
         fSocket = nn_socket(AF_SP_RAW, GetConstant(type));
         if (fSocket == -1)
         {
-            LOG(ERROR) << "failed creating socket #" << fId << ", reason: " << nn_strerror(errno);
+            LOG(ERROR) << "failed creating socket " << fId << ", reason: " << nn_strerror(errno);
             exit(EXIT_FAILURE);
         }
     }
@@ -55,7 +53,7 @@ FairMQSocketNN::FairMQSocketNN(const string& type, int num, int numIoThreads)
         fSocket = nn_socket(AF_SP, GetConstant(type));
         if (fSocket == -1)
         {
-            LOG(ERROR) << "failed creating socket #" << fId << ", reason: " << nn_strerror(errno);
+            LOG(ERROR) << "failed creating socket " << fId << ", reason: " << nn_strerror(errno);
             exit(EXIT_FAILURE);
         }
         if (type == "sub")
@@ -64,7 +62,7 @@ FairMQSocketNN::FairMQSocketNN(const string& type, int num, int numIoThreads)
         }
     }
 
-    LOG(INFO) << "created socket #" << fId;
+    LOG(INFO) << "created socket " << fId;
 }
 
 string FairMQSocketNN::GetId()
@@ -74,12 +72,12 @@ string FairMQSocketNN::GetId()
 
 bool FairMQSocketNN::Bind(const string& address)
 {
-    LOG(INFO) << "bind socket #" << fId << " on " << address;
+    LOG(INFO) << "bind socket " << fId << " on " << address;
 
     int eid = nn_bind(fSocket, address.c_str());
     if (eid < 0)
     {
-        LOG(ERROR) << "failed binding socket #" << fId << ", reason: " << nn_strerror(errno);
+        LOG(ERROR) << "failed binding socket " << fId << ", reason: " << nn_strerror(errno);
         return false;
     }
     return true;
@@ -87,12 +85,12 @@ bool FairMQSocketNN::Bind(const string& address)
 
 void FairMQSocketNN::Connect(const string& address)
 {
-    LOG(INFO) << "connect socket #" << fId << " to " << address;
+    LOG(INFO) << "connect socket " << fId << " to " << address;
 
     int eid = nn_connect(fSocket, address.c_str());
     if (eid < 0)
     {
-        LOG(ERROR) << "failed connecting socket #" << fId << ", reason: " << nn_strerror(errno);
+        LOG(ERROR) << "failed connecting socket " << fId << ", reason: " << nn_strerror(errno);
     }
 }
 
@@ -102,7 +100,7 @@ int FairMQSocketNN::Send(FairMQMessage* msg, const string& flag)
     int rc = nn_send(fSocket, &ptr, NN_MSG, 0);
     if (rc < 0)
     {
-        LOG(ERROR) << "failed sending on socket #" << fId << ", reason: " << nn_strerror(errno);
+        LOG(ERROR) << "failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
     }
     else
     {
@@ -120,7 +118,7 @@ int FairMQSocketNN::Send(FairMQMessage* msg, const int flags)
     int rc = nn_send(fSocket, &ptr, NN_MSG, flags);
     if (rc < 0)
     {
-        LOG(ERROR) << "failed sending on socket #" << fId << ", reason: " << nn_strerror(errno);
+        LOG(ERROR) << "failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
     }
     else
     {
@@ -138,7 +136,7 @@ int FairMQSocketNN::Receive(FairMQMessage* msg, const string& flag)
     int rc = nn_recv(fSocket, &ptr, NN_MSG, 0);
     if (rc < 0)
     {
-        LOG(ERROR) << "failed receiving on socket #" << fId << ", reason: " << nn_strerror(errno);
+        LOG(ERROR) << "failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
     }
     else
     {
@@ -157,7 +155,7 @@ int FairMQSocketNN::Receive(FairMQMessage* msg, const int flags)
     int rc = nn_recv(fSocket, &ptr, NN_MSG, flags);
     if (rc < 0)
     {
-        LOG(ERROR) << "failed receiving on socket #" << fId << ", reason: " << nn_strerror(errno);
+        LOG(ERROR) << "failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
     }
     else
     {

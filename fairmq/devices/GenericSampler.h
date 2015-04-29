@@ -12,7 +12,6 @@
  * Created on November 24, 2014, 3:30 PM
  */
 
-
 #ifndef GENERICSAMPLER_H
 #define	GENERICSAMPLER_H
 
@@ -45,38 +44,34 @@
  *               
  **********************************************************************/
 
-template <typename SamplerPolicy, 
-          typename OutputPolicy>
-class GenericSampler:   public FairMQDevice, 
-                        public SamplerPolicy, 
-                        public OutputPolicy
-{   
+template <typename SamplerPolicy, typename OutputPolicy>
+class GenericSampler : public FairMQDevice, public SamplerPolicy, public OutputPolicy
+{
   public:
-      
-    enum 
+    enum
     {
         InputFile = FairMQDevice::Last,
         Branch,
         ParFile,
         EventRate
     };
-    
+
     GenericSampler();
     virtual ~GenericSampler();
+
     virtual void SetTransport(FairMQTransportFactory* factory);
     void ResetEventCounter();
-    virtual void ListenToCommands();
 
     template <typename... Args>
-        void SetFileProperties(Args&... args)
-        {
-            SamplerPolicy::SetFileProperties(args...);
-        }
+    void SetFileProperties(Args&... args)
+    {
+        SamplerPolicy::SetFileProperties(args...);
+    }
 
-    virtual void SetProperty(const int key, const std::string& value, const int slot = 0);
-    virtual std::string GetProperty(const int key, const std::string& default_ = "", const int slot = 0);
-    virtual void SetProperty(const int key, const int value, const int slot = 0);
-    virtual int GetProperty(const int key, const int default_ = 0, const int slot = 0);
+    virtual void SetProperty(const int key, const std::string& value);
+    virtual std::string GetProperty(const int key, const std::string& default_ = "");
+    virtual void SetProperty(const int key, const int value);
+    virtual int GetProperty(const int key, const int default_ = 0);
 
     /**
      * Sends the currently available output of the Sampler Task as part of a multipart message
@@ -87,23 +82,22 @@ class GenericSampler:   public FairMQDevice,
     // temporary disabled
     //void SendPart();
 
-  void SetContinuous(bool flag) { fContinuous = flag; }
+  void SetContinuous(bool flag);
 
-protected:
-  virtual void Init();
-  virtual void Run();
+  protected:
+    virtual void InitTask();
+    virtual void Run();
 
-protected:
-  std::string fInputFile; // Filename of a root file containing the simulated digis.
-  std::string fParFile;
-  std::string fBranch; // The name of the sub-detector branch to stream the digis from.
-  int64_t fNumEvents;
-  int fEventRate;
-  int fEventCounter;
-  bool fContinuous;
+    int64_t fNumEvents;
+    int fEventRate;
+    int fEventCounter;
+    bool fContinuous;
+    std::string fInputFile; // Filename of a root file containing the simulated digis.
+    std::string fParFile;
+    std::string fBranch; // The name of the sub-detector branch to stream the digis from.
 };
 
 #include "GenericSampler.tpl"
 
-#endif	/* GENERICSAMPLER_H */
+#endif /* GENERICSAMPLER_H */
 

@@ -31,15 +31,13 @@ void FairMQExampleServer::CustomCleanup(void *data, void *hint)
 
 void FairMQExampleServer::Run()
 {
-    // boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
-
-    while (fState == RUNNING)
+    while (GetCurrentState() == RUNNING)
     {
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
         FairMQMessage* request = fTransportFactory->CreateMessage();
 
-        fPayloadInputs->at(0)->Receive(request);
+        fChannels["data"].at(0).Receive(request);
 
         LOG(INFO) << "Received request from client: \"" << string(static_cast<char*>(request->GetData()), request->GetSize()) << "\"";
 
@@ -51,17 +49,8 @@ void FairMQExampleServer::Run()
 
         FairMQMessage* reply = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
 
-        fPayloadInputs->at(0)->Send(reply);
+        fChannels["data"].at(0).Send(reply);
     }
-
-    // rateLogger.interrupt();
-    // rateLogger.join();
-
-    FairMQDevice::Shutdown();
-
-    boost::lock_guard<boost::mutex> lock(fRunningMutex);
-    fRunningFinished = true;
-    fRunningCondition.notify_one();
 }
 
 FairMQExampleServer::~FairMQExampleServer()

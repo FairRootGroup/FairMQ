@@ -15,7 +15,7 @@
 #ifndef FAIRMQSTATEMACHINE_H_
 #define FAIRMQSTATEMACHINE_H_
 
-#define FAIRMQ_INTERFACE_VERSION 1
+#define FAIRMQ_INTERFACE_VERSION 2
 
 #include <string>
 
@@ -28,8 +28,6 @@
 #include <boost/msm/back/state_machine.hpp>
 #include <boost/msm/front/state_machine_def.hpp>
 #include <boost/msm/front/functor_row.hpp>
-#include <boost/msm/front/euml/common.hpp>
-#include <boost/msm/front/euml/operator.hpp>
 
 #include "FairMQLogger.h"
 
@@ -39,199 +37,328 @@ namespace msmf = boost::msm::front;
 
 namespace FairMQFSM
 {
-    // defining events for the boost MSM state machine
-    struct INIT {};
-    struct SETOUTPUT {};
-    struct SETINPUT {};
-    struct BIND {};
-    struct CONNECT {};
-    struct PAUSE {};
-    struct RUN {};
-    struct STOP {};
-    struct END {};
 
-    // defining the boost MSM state machine
-    struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
+// defining events for the boost MSM state machine
+struct INIT_DEVICE {};
+struct DEVICE_READY {};
+struct INIT_TASK {};
+struct READY {};
+struct RUN {};
+struct PAUSE {};
+struct RESUME {};
+struct STOP {};
+struct RESET_TASK {};
+struct RESET_DEVICE {};
+struct IDLE {};
+struct END {};
+
+// defining the boost MSM state machine
+struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
+{
+    FairMQFSM_()
+        : fState()
+        , fStateThread()
+        , fTerminateStateThread()
+        {}
+
+    // Destructor
+    virtual ~FairMQFSM_() {};
+
+    template <class Event, class FSM>
+    void on_entry(Event const&, FSM&)
     {
-        FairMQFSM_()
-            : fState()
-            , fRunningStateThread()
-            {}
+        LOG(STATE) << "Entering FairMQ state machine";
+        fState = IDLE;
+    }
 
-        // Destructor
-        virtual ~FairMQFSM_() {};
+    template <class Event, class FSM>
+    void on_exit(Event const&, FSM&)
+    {
+        LOG(STATE) << "Exiting FairMQ state machine";
+    }
 
-        template <class Event, class FSM>
-        void on_entry(Event const&, FSM&)
+    // The list of FSM states
+    struct IDLE_FSM : public msm::front::state<> {};
+    struct INITIALIZING_DEVICE_FSM : public msm::front::state<> {};
+    struct DEVICE_READY_FSM : public msm::front::state<> {};
+    struct INITIALIZING_TASK_FSM : public msm::front::state<> {};
+    struct READY_FSM : public msm::front::state<> {};
+    struct RUNNING_FSM : public msm::front::state<> {};
+    struct PAUSED_FSM : public msm::front::state<> {};
+    struct RESETTING_TASK_FSM : public msm::front::state<> {};
+    struct RESETTING_DEVICE_FSM : public msm::front::state<> {};
+    struct EXITING_FSM : public msm::front::state<> {};
+
+    // Define initial state
+    typedef IDLE_FSM initial_state;
+
+    // Actions
+    struct IdleFct
+    {
+        template <class EVT, class FSM, class SourceState, class TargetState>
+        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
         {
-            LOG(STATE) << "Entering FairMQ state machine";
-            fState = IDLE;
+            fsm.fState = IDLE;
         }
-        template <class Event, class FSM>
-        void on_exit(Event const&, FSM&)
-        {
-            LOG(STATE) << "Exiting FairMQ state machine";
-        }
-        // The list of FSM states
-        struct IDLE_FSM : public msm::front::state<> {};
-        struct INITIALIZING_FSM : public msm::front::state<> {};
-        struct SETTINGOUTPUT_FSM : public msm::front::state<> {};
-        struct SETTINGINPUT_FSM : public msm::front::state<> {};
-        struct BINDING_FSM : public msm::front::state<> {};
-        struct CONNECTING_FSM : public msm::front::state<> {};
-        struct WAITING_FSM : public msm::front::state<> {};
-        struct RUNNING_FSM : public msm::front::state<> {};
-        // Define initial state
-        typedef IDLE_FSM initial_state;
-        // Actions
-        struct TestFct
-        {
-            template <class EVT, class FSM, class SourceState, class TargetState>
-            void operator()(EVT const&, FSM&, SourceState&, TargetState&)
-            {
-                // LOG(STATE) << "Transition from " << typeid(SourceState).name() << " to " << typeid(TargetState).name() << " with event:" << typeid(EVT).name();
-            }
-        };
-        struct InitFct
-        {
-            template <class EVT, class FSM, class SourceState, class TargetState>
-            void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
-            {
-                fsm.fState = INITIALIZING;
-                fsm.Init();
-            }
-        };
-        struct SetOutputFct
-        {
-            template <class EVT, class FSM, class SourceState, class TargetState>
-            void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
-            {
-                fsm.fState = SETTINGOUTPUT;
-                fsm.InitOutput();
-            }
-        };
-        struct SetInputFct
-        {
-            template <class EVT, class FSM, class SourceState, class TargetState>
-            void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
-            {
-                fsm.fState = SETTINGINPUT;
-                fsm.InitInput();
-            }
-        };
-        struct BindFct
-        {
-            template <class EVT, class FSM, class SourceState, class TargetState>
-            void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
-            {
-                fsm.fState = BINDING;
-                fsm.Bind();
-            }
-        };
-        struct ConnectFct
-        {
-            template <class EVT, class FSM, class SourceState, class TargetState>
-            void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
-            {
-                fsm.fState = CONNECTING;
-                fsm.Connect();
-            }
-        };
-        struct RunFct
-        {
-            template <class EVT, class FSM, class SourceState, class TargetState>
-            void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
-            {
-                fsm.fState = RUNNING;
-                fsm.fRunningStateThread = boost::thread(boost::bind(&FairMQFSM_::Run, &fsm));
-            }
-        };
-        struct StopFct
-        {
-            template <class EVT, class FSM, class SourceState, class TargetState>
-            void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
-            {
-                fsm.fState = IDLE;
-                fsm.Terminate();
-                fsm.fRunningStateThread.join();
-            }
-        };
-        struct PauseFct
-        {
-            template <class EVT, class FSM, class SourceState, class TargetState>
-            void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
-            {
-                fsm.fState = WAITING;
-                fsm.fRunningStateThread.join();
-                fsm.Pause();
-            }
-        };
-        // actions to be overwritten by derived classes
-        virtual void Init() {}
-        virtual void Run() {}
-        virtual void Pause() {}
-        virtual void Shutdown() {}
-        virtual void InitOutput() {}
-        virtual void InitInput() {}
-        virtual void Bind() {}
-        virtual void Connect() {}
-        virtual void Terminate() {} // Termination method called during StopFct action.
-        // Transition table for FairMQFMS
-        struct transition_table : mpl::vector<
-            //        Start              Event      Next               Action        Guard
-            //       +------------------+----------+------------------+-------------+---------+
-            msmf::Row<IDLE_FSM,          INIT,      INITIALIZING_FSM,  InitFct,      msmf::none>,
-            msmf::Row<IDLE_FSM,          END,       msmf::none,        TestFct,      msmf::none>, // this is an invalid transition...
-            msmf::Row<INITIALIZING_FSM,  SETOUTPUT, SETTINGOUTPUT_FSM, SetOutputFct, msmf::none>,
-            msmf::Row<SETTINGOUTPUT_FSM, SETINPUT,  SETTINGINPUT_FSM,  SetInputFct,  msmf::none>,
-            msmf::Row<SETTINGINPUT_FSM,  BIND,      BINDING_FSM,       BindFct,      msmf::none>,
-            msmf::Row<BINDING_FSM,       CONNECT,   CONNECTING_FSM,    ConnectFct,   msmf::none>,
-            msmf::Row<CONNECTING_FSM,    PAUSE,     WAITING_FSM,       PauseFct,     msmf::none>,
-            msmf::Row<CONNECTING_FSM,    RUN,       RUNNING_FSM,       RunFct,       msmf::none>,
-            msmf::Row<WAITING_FSM,       RUN,       RUNNING_FSM,       RunFct,       msmf::none>,
-            msmf::Row<WAITING_FSM,       STOP,      IDLE_FSM,          StopFct,      msmf::none>,
-            msmf::Row<RUNNING_FSM,       PAUSE,     WAITING_FSM,       PauseFct,     msmf::none>,
-            msmf::Row<RUNNING_FSM,       STOP,      IDLE_FSM,          StopFct,      msmf::none> >
-        {
-        };
-        // Replaces the default no-transition response.
-        template <class FSM, class Event>
-        void no_transition(Event const& e, FSM&, int state)
-        {
-            LOG(STATE) << "no transition from state " << state << " on event " << typeid(e).name();
-        }
-        // this is to run certain functions (e.g. Run()) as separate task
-        boost::thread fRunningStateThread;
-        // backward compatibility to FairMQStateMachine
-        enum State
-        {
-            IDLE,
-            INITIALIZING,
-            SETTINGOUTPUT,
-            SETTINGINPUT,
-            BINDING,
-            CONNECTING,
-            WAITING,
-            RUNNING
-        };
-        State fState;
     };
-    typedef msm::back::state_machine<FairMQFSM_> FairMQFSM;
-}
+
+    struct InitDeviceFct
+    {
+        template <class EVT, class FSM, class SourceState, class TargetState>
+        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        {
+            LOG(STATE) << "Entering INITIALIZING DEVICE state";
+            fsm.fState = INITIALIZING_DEVICE;
+            fsm.fStateThread = boost::thread(boost::bind(&FairMQFSM_::InitWrapper, &fsm));
+        }
+    };
+
+    struct DeviceReadyFct
+    {
+        template <class EVT, class FSM, class SourceState, class TargetState>
+        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        {
+            fsm.fState = DEVICE_READY;
+        }
+    };
+
+    struct InitTaskFct
+    {
+        template <class EVT, class FSM, class SourceState, class TargetState>
+        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        {
+            LOG(STATE) << "Entering INITIALIZING TASK state";
+            fsm.fState = INITIALIZING_TASK;
+            fsm.InitTaskWrapper();
+            // fsm.fInitializingTaskThread = boost::thread(boost::bind(&FairMQFSM_::InitTaskWrapper, &fsm));
+        }
+    };
+
+    struct ReadyFct
+    {
+        template <class EVT, class FSM, class SourceState, class TargetState>
+        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        {
+            fsm.fState = READY;
+        }
+    };
+
+    struct RunFct
+    {
+        template <class EVT, class FSM, class SourceState, class TargetState>
+        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        {
+            LOG(STATE) << "Entering RUNNING state";
+            fsm.fState = RUNNING;
+            fsm.fStateThread = boost::thread(boost::bind(&FairMQFSM_::RunWrapper, &fsm));
+        }
+    };
+
+    struct PauseFct
+    {
+        template <class EVT, class FSM, class SourceState, class TargetState>
+        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        {
+            LOG(STATE) << "Entering PAUSED state";
+            fsm.fState = PAUSED;
+            fsm.SendCommand("pause");
+            fsm.fStateThread.join();
+            fsm.fStateThread = boost::thread(boost::bind(&FairMQFSM_::Pause, &fsm));
+        }
+    };
+
+    struct ResumeFct
+    {
+        template <class EVT, class FSM, class SourceState, class TargetState>
+        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        {
+            fsm.fState = RUNNING;
+            fsm.fStateThread.interrupt();
+            fsm.fStateThread.join();
+            LOG(STATE) << "Entering RUNNING state";
+            fsm.fStateThread = boost::thread(boost::bind(&FairMQFSM_::RunWrapper, &fsm));
+        }
+    };
+
+    struct StopFct
+    {
+        template <class EVT, class FSM, class SourceState, class TargetState>
+        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        {
+            fsm.fState = IDLE;
+            // fsm.SendCommand("stop");
+            fsm.fStateThread.join();
+        }
+    };
+
+    struct ResetTaskFct
+    {
+        template <class EVT, class FSM, class SourceState, class TargetState>
+        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        {
+            LOG(STATE) << "Entering RESETTING TASK state";
+            fsm.fState = RESETTING_TASK;
+            fsm.fStateThread = boost::thread(boost::bind(&FairMQFSM_::ResetTaskWrapper, &fsm));
+        }
+    };
+
+    struct ResetDeviceFct
+    {
+        template <class EVT, class FSM, class SourceState, class TargetState>
+        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        {
+            LOG(STATE) << "Entering RESETTING DEVICE state";
+            fsm.fState = RESETTING_DEVICE;
+            fsm.fStateThread = boost::thread(boost::bind(&FairMQFSM_::ResetWrapper, &fsm));
+        }
+    };
+
+    struct ExitingFct
+    {
+        template <class EVT, class FSM, class SourceState, class TargetState>
+        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        {
+            fsm.fState = EXITING;
+
+            fsm.fStateThread = boost::thread(boost::bind(&FairMQFSM_::Terminate, &fsm));
+            fsm.Shutdown();
+            fsm.fStateThread.join();
+        }
+    };
+
+    struct ExitingRunFct
+    {
+        template <class EVT, class FSM, class SourceState, class TargetState>
+        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        {
+            fsm.fState = EXITING;
+
+            fsm.fTerminateStateThread = boost::thread(boost::bind(&FairMQFSM_::Terminate, &fsm));
+            fsm.fStateThread.join();
+            fsm.Shutdown();
+            fsm.fTerminateStateThread.join();
+        }
+    };
+
+    // actions to be overwritten by derived classes
+    virtual void InitWrapper() {}
+    virtual void Init() {}
+    virtual void InitTaskWrapper() {}
+    virtual void InitTask() {}
+    virtual void RunWrapper() {}
+    virtual void Run() {}
+    virtual void Pause() {}
+    virtual void ResetWrapper() {}
+    virtual void Reset() {}
+    virtual void ResetTaskWrapper() {}
+    virtual void ResetTask() {}
+    virtual void Shutdown() {}
+    virtual void Terminate() {} // Termination method called during StopFct action.
+    virtual void SendCommand(const std::string& command) {} // Method to send commands.
+
+    // Transition table for FairMQFMS
+    struct transition_table : mpl::vector<
+        //        Start                    Event         Next                     Action          Guard
+        //       +-------------------------+-------------+------------------------+---------------+---------+
+        msmf::Row<IDLE_FSM,                INIT_DEVICE,  INITIALIZING_DEVICE_FSM, InitDeviceFct,  msmf::none>,
+        msmf::Row<INITIALIZING_DEVICE_FSM, DEVICE_READY, DEVICE_READY_FSM,        DeviceReadyFct, msmf::none>,
+        msmf::Row<DEVICE_READY_FSM,        INIT_TASK,    INITIALIZING_TASK_FSM,   InitTaskFct,    msmf::none>,
+        msmf::Row<INITIALIZING_TASK_FSM,   READY,        READY_FSM,               ReadyFct,       msmf::none>,
+        msmf::Row<READY_FSM,               RUN,          RUNNING_FSM,             RunFct,         msmf::none>,
+        msmf::Row<RUNNING_FSM,             PAUSE,        PAUSED_FSM,              PauseFct,       msmf::none>,
+        msmf::Row<PAUSED_FSM,              RESUME,       RUNNING_FSM,             ResumeFct,      msmf::none>,
+        msmf::Row<RUNNING_FSM,             STOP,         READY_FSM,               StopFct,        msmf::none>,
+        msmf::Row<READY_FSM,               RESET_TASK,   RESETTING_TASK_FSM,      ResetTaskFct,   msmf::none>,
+        msmf::Row<RESETTING_TASK_FSM,      DEVICE_READY, DEVICE_READY_FSM,        DeviceReadyFct, msmf::none>,
+        msmf::Row<DEVICE_READY_FSM,        RESET_DEVICE, RESETTING_DEVICE_FSM,    ResetDeviceFct, msmf::none>,
+        msmf::Row<RESETTING_DEVICE_FSM,    IDLE,         IDLE_FSM,                IdleFct,        msmf::none>,
+        msmf::Row<RUNNING_FSM,             END,          EXITING_FSM,             ExitingRunFct,  msmf::none>, // temporary
+        msmf::Row<IDLE_FSM,                END,          EXITING_FSM,             ExitingFct,     msmf::none> >
+        {};
+
+    // Replaces the default no-transition response.
+    template <class FSM, class Event>
+    void no_transition(Event const& e, FSM&, int state)
+    {
+        LOG(STATE) << "no transition from state " << GetStateName(state) << " on event " << typeid(e).name();
+    }
+
+    // this is to run certain functions in a separate thread
+    boost::thread fStateThread;
+    boost::thread fTerminateStateThread;
+
+    // backward compatibility to FairMQStateMachine
+    enum State
+    {
+        IDLE,
+        INITIALIZING_DEVICE,
+        DEVICE_READY,
+        INITIALIZING_TASK,
+        READY,
+        RUNNING,
+        PAUSED,
+        RESETTING_TASK,
+        RESETTING_DEVICE,
+        EXITING
+    };
+
+    std::string GetStateName(int state)
+    {
+        switch(state)
+        {
+            case IDLE:
+                return "IDLE";
+            case INITIALIZING_DEVICE:
+                return "INITIALIZING_DEVICE";
+            case DEVICE_READY:
+                return "DEVICE_READY";
+            case INITIALIZING_TASK:
+                return "INITIALIZING_TASK";
+            case READY:
+                return "READY";
+            case RUNNING:
+                return "RUNNING";
+            case PAUSED:
+                return "PAUSED";
+            case RESETTING_TASK:
+                return "RESETTING_TASK";
+            case RESETTING_DEVICE:
+                return "RESETTING_DEVICE";
+            case EXITING:
+                return "EXITING";
+            default:
+                return "something went wrong...";
+        }
+    }
+
+    int GetCurrentState()
+    {
+        return fState;
+    }
+
+  private:
+    State fState;
+};
+
+typedef msm::back::state_machine<FairMQFSM_> FairMQFSM;
+} // namespace FairMQFSM
 
 class FairMQStateMachine : public FairMQFSM::FairMQFSM
 {
   public:
     enum Event
     {
-        INIT,
-        SETOUTPUT,
-        SETINPUT,
-        BIND,
-        CONNECT,
-        PAUSE,
+        INIT_DEVICE,
+        DEVICE_READY,
+        INIT_TASK,
+        READY,
         RUN,
+        PAUSE,
+        RESUME,
         STOP,
+        RESET_TASK,
+        RESET_DEVICE,
+        IDLE,
         END
     };
     FairMQStateMachine();
@@ -242,10 +369,29 @@ class FairMQStateMachine : public FairMQFSM::FairMQFSM
     bool ChangeState(int event);
     bool ChangeState(std::string event);
 
-    // condition variable to notify parent thread about end of running state.
+    void WaitForEndOfState(int state);
+    void WaitForEndOfState(std::string state);
+
+    // condition variables to notify parent thread about end of state.
+    bool fInitializingFinished;
+    boost::condition_variable fInitializingCondition;
+    boost::mutex fInitializingMutex;
+
+    bool fInitializingTaskFinished;
+    boost::condition_variable fInitializingTaskCondition;
+    boost::mutex fInitializingTaskMutex;
+
+    bool fRunningFinished;
     boost::condition_variable fRunningCondition;
     boost::mutex fRunningMutex;
-    bool fRunningFinished;
+
+    bool fResetFinished;
+    boost::condition_variable fResetCondition;
+    boost::mutex fResetMutex;
+
+    bool fResetTaskFinished;
+    boost::condition_variable fResetTaskCondition;
+    boost::mutex fResetTaskMutex;
 };
 
 #endif /* FAIRMQSTATEMACHINE_H_ */
