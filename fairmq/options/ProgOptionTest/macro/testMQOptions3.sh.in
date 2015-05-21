@@ -1,0 +1,10 @@
+#!/bin/bash
+
+RUN_TEST="runtestMQOption2"
+
+if [ "$#" -gt 0 ]; then
+  RUN_TEST+=" $*"
+fi
+RUN_TEST+=" --config @CMAKE_BINARY_DIR@/bin/ConfigFileTest.cfg"
+
+@CMAKE_BINARY_DIR@/bin/$RUN_TEST

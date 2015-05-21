@@ -58,5 +58,6 @@ timestamp_t get_timestamp();
 #define LOG(type) FairMQLogger().Log(FairMQLogger::type)
 #define MQLOG(type) FairMQLogger().Log(FairMQLogger::type)
 #define SET_LOG_LEVEL(loglevel) FairMQLogger::SetLogLevel(FairMQLogger::loglevel)
+#define SET_LOGGER_LEVEL(loglevel) FairMQLogger::SetLogLevel(loglevel)
 
 #endif /* FAIRMQLOGGER_H_ */

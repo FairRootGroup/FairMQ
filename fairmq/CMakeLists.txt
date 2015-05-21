@@ -5,10 +5,13 @@
  #         GNU Lesser General Public Licence version 3 (LGPL) version 3,        #  
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
+#Temporary for test
+add_subdirectory (options/ProgOptionTest)
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
   ${CMAKE_SOURCE_DIR}/fairmq/devices
   ${CMAKE_SOURCE_DIR}/fairmq/tools
+  ${CMAKE_SOURCE_DIR}/fairmq/options
 )
 
 Set(SYSTEM_INCLUDE_DIRECTORIES
@@ -71,6 +74,9 @@ set(SRCS
   "devices/FairMQProxy.cxx"
   "devices/FairMQSplitter.cxx"
   "devices/FairMQMerger.cxx"
+  "options/FairProgOptions.cxx"
+  "options/FairMQProgOptions.cxx"
+  "options/FairMQChannel.cxx"
   "FairMQPoller.cxx"
   "examples/req-rep/FairMQExampleClient.cxx"
   "examples/req-rep/FairMQExampleServer.cxx"

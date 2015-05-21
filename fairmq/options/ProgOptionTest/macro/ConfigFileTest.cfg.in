@@ -1,0 +1,38 @@
+#----------------------------------------------------
+# comments : 
+# brackets [] are used to group options. For example :
+#
+# [xml.config]
+# node.root = fairMQOptions
+#
+# is equivalent to 
+# xml.config.node.root = fairMQOptions
+#----------------------------------------------------
+
+config-json-filename = @CMAKE_BINARY_DIR@/bin/testJSON.json
+config-xml-filename = @CMAKE_BINARY_DIR@/bin/testXML.xml
+
+#
+device-id = merger
+
+#-------------------
+[xml.config]
+
+#filename = @CMAKE_BINARY_DIR@/bin/testXML.xml
+node.root = fairMQOptions
+
+
+#-------------------
+[input.file]
+
+name = sampler_file_name.root
+tree = sampler_tree
+branch = sampler_branch
+
+
+#-------------------
+[output.file]
+
+name = sink_filename.root
+tree = sink_tree
+branch = sink_branch

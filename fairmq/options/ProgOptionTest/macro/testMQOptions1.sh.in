@@ -1,0 +1,11 @@
+#!/bin/bash
+
+RUN_TEST="runtestMQOption1"
+
+if [ "$#" -gt 0 ]; then
+  RUN_TEST+=" $*"
+fi
+
+RUN_TEST+=" --config-xml-filename @CMAKE_BINARY_DIR@/bin/testXML.xml"
+
+@CMAKE_BINARY_DIR@/bin/$RUN_TEST
