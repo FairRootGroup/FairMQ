@@ -6,7 +6,9 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 #Temporary for test
-add_subdirectory (options/ProgOptionTest)
+#add_subdirectory (options/ProgOptionTest)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/ProgOptionTest/macro/bsampler-sink.json ${CMAKE_BINARY_DIR}/bin/bsampler-sink.json)
+
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
   ${CMAKE_SOURCE_DIR}/fairmq/devices
@@ -76,7 +78,7 @@ set(SRCS
   "devices/FairMQMerger.cxx"
   "options/FairProgOptions.cxx"
   "options/FairMQProgOptions.cxx"
-  "options/FairMQChannel.cxx"
+  "options/FairMQParser.cxx"
   "FairMQPoller.cxx"
   "examples/req-rep/FairMQExampleClient.cxx"
   "examples/req-rep/FairMQExampleServer.cxx"

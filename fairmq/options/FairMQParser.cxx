@@ -7,7 +7,6 @@
 
 #include "FairMQParser.h"
 #include "FairMQLogger.h"
-#include <boost/property_tree/xml_parser.hpp>
 
 // WARNING : pragma commands to hide boost (1.54.0) warning
 // TODO : remove these pragma commands when boost will fix this issue in future release
@@ -18,11 +17,10 @@
 
 namespace FairMQParser
 {
-    no_id_exception NoIdErr;
     
     // TODO : add key-value map<string,string> parameter  for replacing/updating values from keys
     // function that convert property tree (given the xml or json structure) to FairMQMap
-    FairMQMap boost_ptree_to_MQMap(const boost::property_tree::ptree& pt, const std::string& device_id, const std::string& root_node, const std::string& format_flag)
+    FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& device_id, const std::string& root_node, const std::string& format_flag)
     {
         // Create fair mq map
         FairMQMap MQChannelMap;
@@ -30,10 +28,6 @@ namespace FairMQParser
         // variables to create key for the mq map. Note: maybe device name and id useless here
         std::string kdevice_id;
         std::string kchannel;
-
-        if(device_id.empty())
-            throw NoIdErr;
-        
         
         // do a first loop just to print the device-id in xml/json input
         for(const auto& p : pt.get_child(root_node))
@@ -157,96 +151,18 @@ namespace FairMQParser
     
     
     ////////////////////////////////////////////////////////////////////////////
-    //----------- filename version
-    FairMQMap XML::UserParser(const std::string& filename, const std::string& device_id, const std::string& root_node)
-    {
-        boost::property_tree::ptree pt;
-        boost::property_tree::read_xml(filename, pt);
-        return boost_ptree_to_MQMap(pt,device_id,root_node,"xml");
-    }
-    
-    
-    
-    //----------- stringstream version
-    FairMQMap XML::UserParser(std::stringstream& input_ss, const std::string& device_id, const std::string& root_node)
-    {
-        boost::property_tree::ptree pt;
-        boost::property_tree::read_xml(input_ss, pt);
-        return boost_ptree_to_MQMap(pt,device_id,root_node,"xml");
-    }
-    
-    
-    ////////////////////////////////////////////////////////////////////////////
     FairMQMap JSON::UserParser(const std::string& filename, const std::string& device_id, const std::string& root_node)
     {
         boost::property_tree::ptree pt;
         boost::property_tree::read_json(filename, pt);
-        return boost_ptree_to_MQMap(pt,device_id,root_node,"json");
+        return ptreeToMQMap(pt,device_id,root_node,"json");
     }
     
     FairMQMap JSON::UserParser(std::stringstream& input_ss, const std::string& device_id, const std::string& root_node)
     {
         boost::property_tree::ptree pt;
         boost::property_tree::read_json(input_ss, pt);
-        return boost_ptree_to_MQMap(pt,device_id,root_node,"json");
+        return ptreeToMQMap(pt,device_id,root_node,"json");
     }
-    
-    // other xml examples
-    ////////////////////////////////////////////////////////////////////////////
-    boost::property_tree::ptree MQXML2::UserParser(const std::string& filename)
-    {
-        boost::property_tree::ptree pt;
-        boost::property_tree::read_xml(filename, pt);
-        return pt;
-    }
-    
-    
-    
-    
-    // TODO : finish implementation
-    ////////////////////////////////////////////////////////////////////////////
-    boost::property_tree::ptree MQXML3::UserParser(const std::string& filename, const std::string& devicename)
-    {
-        // Create an empty property tree object
-        boost::property_tree::ptree pt;
-        boost::property_tree::read_xml(filename, pt);
-        
-        
-        // Create fair mq map
-        
-        auto xml =  pt.get_child("");
-        std::vector<std::pair<std::string, boost::property_tree::ptree>> match;
-        std::pair<std::string, boost::property_tree::ptree> device_match;
-        
-        ProcessTree(xml.begin (), xml.end (), std::back_inserter(match),
-        [] (const std::string& key) { return key == "device"; });
-
-        
-        // for each device
-        for (const auto& pair: match)
-        {
-            if(pair.second.get<std::string>("<xmlattr>.name") == devicename)
-            {
-                device_match=pair;
-                
-            }
-            else
-            {
-                //match.erase(std::remove(match.begin(), match.end(), pair), match.end());
-                continue;
-            }
-            
-            //std::cout << "pair.first " << pair.first << std::endl;//device
-            //std::cout   << "\t node = " << pair.first
-            //            << "\t name = " << pair.second.get<std::string>("<xmlattr>.name")
-            //            << "\t id = " << pair.second.get<std::string>("<xmlattr>.id");
-            //std::cout<<std::endl;
-        }
-        
-        return device_match.second;
-    }
-    
-    
-    
     
 } //  end FairMQParser namespace

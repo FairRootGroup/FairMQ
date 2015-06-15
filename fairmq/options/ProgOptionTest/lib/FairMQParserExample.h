@@ -1,15 +1,16 @@
 /* 
- * File:   FairMQParser.h
+ * File:   FairMQParserExample.h
  * Author: winckler
  *
  * Created on May 14, 2015, 5:01 PM
  */
 
-#ifndef FAIRMQPARSER_H
-#define	FAIRMQPARSER_H
+#ifndef FAIRMQPARSEREXAMPLE_H
+#define	FAIRMQPARSEREXAMPLE_H
 
 // FairRoot
 #include "FairMQChannel.h"
+#include "FairMQParser.h"
 
 // Boost
 #include <boost/property_tree/ptree.hpp>
@@ -23,9 +24,6 @@
 namespace FairMQParser
 {
     
-    typedef std::map<std::string, std::vector<FairMQChannel> > FairMQMap;
-    FairMQMap boost_ptree_to_MQMap(const boost::property_tree::ptree& pt, const std::string& device_id, const std::string& root_node, const std::string& format_flag="json");
-
     ////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////// XML ////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -52,14 +50,7 @@ namespace FairMQParser
         boost::property_tree::ptree UserParser(const std::string& filename, const std::string& root_node);
     };
     
-    ////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////// JSON ///////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    struct JSON
-    {
-        FairMQMap UserParser(const std::string& filename, const std::string& device_id, const std::string& root_node="fairMQOptions");
-        FairMQMap UserParser(std::stringstream& input_ss, const std::string& device_id, const std::string& root_node="fairMQOptions");
-    };
+    
     
     
     ////////////////////////////////////////////////////////////////////////////
@@ -94,10 +85,10 @@ namespace FairMQParser
     {
         virtual const char* what() const throw()
         {
-          return "Empty string for the device-id in FairMQParser::boost_ptree_to_MQMap(...) function";
+          return "Empty string for the device-id in FairMQParser::ptreeToMQMap(...) function";
         }
     };
     
 } //  end FairMQParser namespace
-#endif	/* FAIRMQPARSER_H */
+#endif	/* FAIRMQPARSEREXAMPLE_H */
 

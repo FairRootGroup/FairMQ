@@ -52,7 +52,7 @@ ${Boost_LIBRARY_DIRS}
 link_directories(${LINK_DIRECTORIES})
 
 Set(SRCS 
-    lib/FairMQParser.cxx
+    lib/FairMQParserExample.cxx
 )
 
 Set(LIBRARY_NAME ProgOptionTest)
