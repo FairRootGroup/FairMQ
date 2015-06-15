@@ -35,7 +35,7 @@
  *          fVisible_options.add(fCmdline_options);
  *      }
  *      virtual ~MyOptions(){}
- *      virtual int ParseAll(const int argc, char** argv, bool AllowUnregistered=false)
+ *      virtual int ParseAll(const int argc, char** argv, bool AllowUnregistered = false)
  *      {
  *          if(ParseCmdLine(argc,argv,fCmdline_options,fvarmap,AllowUnregistered))
  *              return 1;
@@ -47,50 +47,53 @@
  */
 
 template<class T>
-    std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
-    {
-        std::copy(v.begin(), v.end(), std::ostream_iterator<T>(os, "  ")); 
-        return os;
-    }
-
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
+{
+    std::copy(v.begin(), v.end(), std::ostream_iterator<T>(os, "  "));
+    return os;
+}
 
 namespace po = boost::program_options;
 
-    
-class FairProgOptions 
+class FairProgOptions
 {
 public:
     FairProgOptions();
     virtual ~FairProgOptions();
 
     //  add options_description
-    int AddToCmdLineOptions(const po::options_description& optdesc, bool visible=true);
-    int AddToCfgFileOptions(const po::options_description& optdesc, bool visible=true);
+    int AddToCmdLineOptions(const po::options_description& optdesc, bool visible = true);
+    int AddToCfgFileOptions(const po::options_description& optdesc, bool visible = true);
     int AddToEnvironmentOptions(const po::options_description& optdesc);
 
-    void EnableCfgFile(const std::string& filename="")
+    void EnableCfgFile(const std::string& filename = "")
     {
-        fUseConfigFile=true;
-        if(filename.empty())
+        fUseConfigFile = true;
+        if (filename.empty())
+        {
             fCmdline_options.add_options()
                 ("config,c", po::value<std::string>(&fConfigFile)->required(), "Path to configuration file");
+        }
         else
-            fConfigFile=filename;
-        
+        {
+            fConfigFile = filename;
+        }
     }
-    
-    
-    void UseConfigFile(const std::string& filename="")
+
+    void UseConfigFile(const std::string& filename = "")
     {
-        fUseConfigFile=true;
-        if(filename.empty())
+        fUseConfigFile = true;
+        if (filename.empty())
+        {
             fCmdline_options.add_options()
                 ("config,c", po::value<std::string>(&fConfigFile)->required(), "Path to configuration file");
+        }
         else
-            fConfigFile=filename;
-        
+        {
+            fConfigFile = filename;
+        }
     }
-    
+
     // set value corresponding to the key
     template<typename T>
     T GetValue(const std::string& key) const
@@ -98,11 +101,13 @@ public:
         T val;
         try
         {
-            if ( fvarmap.count(key) )
-                val=fvarmap[key].as<T>();
+            if (fvarmap.count(key))
+            {
+                val = fvarmap[key].as<T>();
+            }
             else
             {
-                LOG(ERROR) <<"Key '"<< key <<"' not found in boost variable map";
+                LOG(ERROR) << "Key '"<< key <<"' not found in boost variable map";
                 LOG(INFO) << "Command line / txt config file options are the following : ";
                 this->PrintHelp();
             }
@@ -113,7 +118,7 @@ public:
             LOG(ERROR) << e.what();
             this->PrintHelp();
         }
-        
+
         return val;
     }
 
@@ -122,24 +127,22 @@ public:
     const po::variables_map& GetVarMap() const {return fvarmap;}
     
     // boost prog options parsers
-    int ParseCmdLine(const int argc, char** argv, const po::options_description& desc, po::variables_map& varmap, bool AllowUnregistered=false);
-    int ParseCmdLine(const int argc, char** argv, const po::options_description& desc, bool AllowUnregistered=false);
+    int ParseCmdLine(const int argc, char** argv, const po::options_description& desc, po::variables_map& varmap, bool AllowUnregistered = false);
+    int ParseCmdLine(const int argc, char** argv, const po::options_description& desc, bool AllowUnregistered = false);
     
-    int ParseCfgFile(const std::string& filename, const po::options_description& desc, po::variables_map& varmap, bool AllowUnregistered=false);
-    int ParseCfgFile(const std::string& filename, const po::options_description& desc, bool AllowUnregistered=false);
-    int ParseCfgFile(std::ifstream& ifs, const po::options_description& desc, po::variables_map& varmap, bool AllowUnregistered=false);
-    int ParseCfgFile(std::ifstream& ifs, const po::options_description& desc, bool AllowUnregistered=false);
-    
-    
+    int ParseCfgFile(const std::string& filename, const po::options_description& desc, po::variables_map& varmap, bool AllowUnregistered = false);
+    int ParseCfgFile(const std::string& filename, const po::options_description& desc, bool AllowUnregistered = false);
+    int ParseCfgFile(std::ifstream& ifs, const po::options_description& desc, po::variables_map& varmap, bool AllowUnregistered = false);
+    int ParseCfgFile(std::ifstream& ifs, const po::options_description& desc, bool AllowUnregistered = false);
+
     int ParseEnvironment(const std::function<std::string(std::string)>&);
-    
-    virtual int ParseAll(const int argc, char** argv, bool AllowUnregistered=false)=0;
+
+    virtual int ParseAll(const int argc, char** argv, bool AllowUnregistered = false) = 0;
 
     virtual int PrintOptions();
     int PrintHelp() const;
 
 protected:
-
     // options container
     po::variables_map fvarmap;
 
@@ -152,7 +155,7 @@ protected:
     // Description of cmd line and simple configuration file (configuration file like txt, but not like xml json ini)
     po::options_description fCmdline_options;
     po::options_description fConfig_file_options;
-    
+
     // Description which is printed in help command line
     po::options_description fVisible_options;
 
@@ -165,17 +168,16 @@ protected:
     template<typename T>
     void UpadateVarMap(const std::string& key, const T& val)
     {
-        replace(fvarmap,key,val);
+        replace(fvarmap, key, val);
     }
-    
+
     template<typename T>
-    void replace(  std::map<std::string, po::variable_value>& vm, const std::string& opt, const T& val)
+    void replace(std::map<std::string, po::variable_value>& vm, const std::string& opt, const T& val)
     {
         vm[opt].value() = boost::any(val);
     }
-    
-private:
 
+private:
     // /////////////////////////////////////////////
     // Methods below are helper functions used in the PrintOptions method
     typedef std::tuple<std::string, std::string,std::string, std::string> VarValInfo_t;
@@ -184,20 +186,24 @@ private:
     VarValInfo_t Get_variable_value_info(const po::variable_value& var_val);
 
     template<typename T>
-        std::string variable_value_to_string(const po::variable_value& var_val)
+    std::string variable_value_to_string(const po::variable_value& var_val)
+    {
+        auto& value = var_val.value();
+        std::ostringstream ostr;
+        if (auto q = boost::any_cast<T>(&value))
         {
-            auto& value = var_val.value();
-            std::ostringstream ostr;
-            if(auto q = boost::any_cast< T >(&value))
-                ostr<<*q;
-            std::string val_str=ostr.str();
-            return val_str;
+            ostr << *q;
         }
+        std::string val_str = ostr.str();
+        return val_str;
+    }
 
     static void Max(int &val, const int &comp)
     {
-        if (comp>val)
-            val=comp;
+        if (comp > val)
+        {
+            val = comp;
+        }
     }
 };
 

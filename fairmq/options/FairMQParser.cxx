@@ -17,152 +17,168 @@
 
 namespace FairMQParser
 {
-    
-    // TODO : add key-value map<string,string> parameter  for replacing/updating values from keys
-    // function that convert property tree (given the xml or json structure) to FairMQMap
-    FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& device_id, const std::string& root_node, const std::string& format_flag)
+
+// TODO : add key-value map<string,string> parameter  for replacing/updating values from keys
+// function that convert property tree (given the xml or json structure) to FairMQMap
+FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& deviceId, const std::string& rootNode, const std::string& formatFlag)
+{
+    // Create fair mq map
+    FairMQMap MQChannelMap;
+
+    // variables to create key for the mq map. Note: maybe device name and id useless here
+    std::string deviceIdKey;
+    std::string channelKey;
+
+    // do a first loop just to print the device-id in xml/json input
+    for(const auto& p : pt.get_child(rootNode))
     {
-        // Create fair mq map
-        FairMQMap MQChannelMap;
-
-        // variables to create key for the mq map. Note: maybe device name and id useless here
-        std::string kdevice_id;
-        std::string kchannel;
-        
-        // do a first loop just to print the device-id in xml/json input
-        for(const auto& p : pt.get_child(root_node))
+        if (p.first != "device")
         {
-            if (p.first != "device")
-                continue;
-
-            //get id attribute to choose the device
-            if(format_flag=="xml")
-            {
-                kdevice_id=p.second.get<std::string>("<xmlattr>.id");
-                MQLOG(DEBUG)<<"Found device id '"<< kdevice_id <<"' in XML input";
-            }
-            
-            if(format_flag=="json")
-            {
-                kdevice_id=p.second.get<std::string>("id");
-                MQLOG(DEBUG)<<"Found device id '"<< kdevice_id <<"' in JSON input";
-            }
+            continue;
         }
-        
-        // Extract value from boost::property_tree
-        // For each device in fairMQOptions
-        for(const auto& p : pt.get_child(root_node))
-        {
-            if (p.first != "device")
-                continue;
 
-            //get id attribute to choose the device
-            if(format_flag=="xml")
-                kdevice_id=p.second.get<std::string>("<xmlattr>.id");
-            
-            if(format_flag=="json")
-                kdevice_id=p.second.get<std::string>("id");
-            // if not correct device id, do not fill MQMap
-            if(device_id != kdevice_id)
+        //get id attribute to choose the device
+        if (formatFlag == "xml")
+        {
+            deviceIdKey = p.second.get<std::string>("<xmlattr>.id");
+            MQLOG(DEBUG) << "Found device id '" << deviceIdKey << "' in XML input";
+        }
+
+        if (formatFlag == "json")
+        {
+            deviceIdKey = p.second.get<std::string>("id");
+            MQLOG(DEBUG) << "Found device id '"<< deviceIdKey << "' in JSON input";
+        }
+    }
+    
+    // Extract value from boost::property_tree
+    // For each device in fairMQOptions
+    for(const auto& p : pt.get_child(rootNode))
+    {
+        if (p.first != "device")
+        {
+            continue;
+        }
+
+        //get id attribute to choose the device
+        if (formatFlag == "xml")
+        {
+            deviceIdKey = p.second.get<std::string>("<xmlattr>.id");
+        }
+
+        if (formatFlag == "json")
+        {
+            deviceIdKey = p.second.get<std::string>("id");
+        }
+
+        // if not correct device id, do not fill MQMap
+        if (deviceId != deviceIdKey)
+        {
+            continue;
+        }
+
+        // print if DEBUG log level set
+        std::stringstream deviceStream;
+        deviceStream << "[node = "     << p.first 
+               << "]   id = "    << deviceIdKey;
+        MQLOG(DEBUG) << deviceStream.str();
+
+        // for each channel in device
+        for(const auto& q : p.second.get_child(""))
+        {
+            if (q.first != "channel")
+            {
                 continue;
-            
+            }
+
+            //get name attribute to form key
+            if (formatFlag == "xml")
+            {
+                channelKey = q.second.get<std::string>("<xmlattr>.name");
+            }
+
+            if (formatFlag=="json")
+            {
+                channelKey = q.second.get<std::string>("name");
+            }
+
             // print if DEBUG log level set
-            std::stringstream ss_device;
-            ss_device << "[node = "     << p.first 
-                      << "]   id = "     << kdevice_id;
-            MQLOG(DEBUG)<<ss_device.str();
+            std::stringstream channelStream;
+            channelStream << "\t [node = " << q.first 
+                    << "]   name = " << channelKey;
+            MQLOG(DEBUG) << channelStream.str();
 
-            // for each channel in device
-            for(const auto& q : p.second.get_child(""))
+            // temporary FairMQChannel container
+            std::vector<FairMQChannel> channelList;
+
+            int socketCounter = 0;
+            // for each socket in channel
+            for (const auto& r : q.second.get_child(""))
             {
-                if (q.first != "channel")
-                    continue;
-                
-                //get name attribute to form key
-                if(format_flag=="xml")
-                    kchannel=q.second.get<std::string>("<xmlattr>.name");
-                
-                if(format_flag=="json")
-                    kchannel=q.second.get<std::string>("name");
-                
-                // print if DEBUG log level set
-                std::stringstream ss_chan;
-                ss_chan << "\t [node = " << q.first 
-                        << "]   name = " << kchannel;
-                MQLOG(DEBUG)<<ss_chan.str();
-
-                // temporary FairMQChannel container
-                std::vector<FairMQChannel> channel_list;
-                
-                int count_socket=0;
-                // for each socket in channel
-                for(const auto& r : q.second.get_child(""))
+                if (r.first != "socket")
                 {
-                    if (r.first != "socket")
-                        continue;
-                    
-                    count_socket++;
-                    FairMQChannel channel;
-                    
-                    // print if DEBUG log level set
-                    std::stringstream ss_sock;
-                    ss_sock << "\t \t [node = " << r.first 
-                            << "]   socket index = " << count_socket;
-                    MQLOG(DEBUG)<<ss_sock.str();
-                    MQLOG(DEBUG)<< "\t \t \t type        = " << r.second.get<std::string>("type",channel.fType);
-                    MQLOG(DEBUG)<< "\t \t \t method      = " << r.second.get<std::string>("method",channel.fMethod);
-                    MQLOG(DEBUG)<< "\t \t \t address     = " << r.second.get<std::string>("address",channel.fAddress);
-                    MQLOG(DEBUG)<< "\t \t \t sndBufSize  = " << r.second.get<int>("sndBufSize",channel.fSndBufSize);
-                    MQLOG(DEBUG)<< "\t \t \t rcvBufSize  = " << r.second.get<int>("rcvBufSize",channel.fRcvBufSize);
-                    MQLOG(DEBUG)<< "\t \t \t rateLogging = " << r.second.get<int>("rateLogging",channel.fRateLogging);
+                    continue;
+                }
 
-                    
-                    channel.fType        = r.second.get<std::string>("type",channel.fType);
-                    channel.fMethod      = r.second.get<std::string>("method",channel.fMethod);
-                    channel.fAddress     = r.second.get<std::string>("address",channel.fAddress);
-                    channel.fSndBufSize  = r.second.get<int>("sndBufSize",channel.fSndBufSize);//int
-                    channel.fRcvBufSize  = r.second.get<int>("rcvBufSize",channel.fRcvBufSize);//int
-                    channel.fRateLogging = r.second.get<int>("rateLogging",channel.fRateLogging);//int
+                ++socketCounter;
+                FairMQChannel channel;
 
-                    channel_list.push_back(channel);
-                }// end socket loop
-                
-                //fill mq map option
-                MQChannelMap.insert(std::make_pair(kchannel,std::move(channel_list)));
-            }
+                // print if DEBUG log level set
+                std::stringstream socket;
+                socket << "\t \t [node = " << r.first 
+                        << "]   socket index = " << socketCounter;
+                MQLOG(DEBUG) << socket.str();
+                MQLOG(DEBUG) <<  "\t \t \t type        = " << r.second.get<std::string>("type", channel.fType);
+                MQLOG(DEBUG) <<  "\t \t \t method      = " << r.second.get<std::string>("method", channel.fMethod);
+                MQLOG(DEBUG) <<  "\t \t \t address     = " << r.second.get<std::string>("address", channel.fAddress);
+                MQLOG(DEBUG) <<  "\t \t \t sndBufSize  = " << r.second.get<int>("sndBufSize", channel.fSndBufSize);
+                MQLOG(DEBUG) <<  "\t \t \t rcvBufSize  = " << r.second.get<int>("rcvBufSize", channel.fRcvBufSize);
+                MQLOG(DEBUG) <<  "\t \t \t rateLogging = " << r.second.get<int>("rateLogging", channel.fRateLogging);
+
+                channel.fType        = r.second.get<std::string>("type", channel.fType);
+                channel.fMethod      = r.second.get<std::string>("method", channel.fMethod);
+                channel.fAddress     = r.second.get<std::string>("address", channel.fAddress);
+                channel.fSndBufSize  = r.second.get<int>("sndBufSize", channel.fSndBufSize); // int
+                channel.fRcvBufSize  = r.second.get<int>("rcvBufSize", channel.fRcvBufSize); // int
+                channel.fRateLogging = r.second.get<int>("rateLogging", channel.fRateLogging); // int
+
+                channelList.push_back(channel);
+            }// end socket loop
+
+            //fill mq map option
+            MQChannelMap.insert(std::make_pair(channelKey,std::move(channelList)));
         }
-        
-        if(MQChannelMap.size()>0)
-        {
-            MQLOG(DEBUG)<<"---- Channel-keys found are :";
-            for(const auto& p : MQChannelMap)
-                MQLOG(DEBUG)<<p.first;
-        }
-        else
-        {
-            MQLOG(WARN)<<"---- No channel-keys found for device-id "<<device_id;
-            MQLOG(WARN)<<"---- Check the "<< format_flag <<" inputs and/or command line inputs";
-        }
-        return MQChannelMap;
     }
-    
-    
-    
-    
-    
-    ////////////////////////////////////////////////////////////////////////////
-    FairMQMap JSON::UserParser(const std::string& filename, const std::string& device_id, const std::string& root_node)
+
+    if (MQChannelMap.size() > 0)
     {
-        boost::property_tree::ptree pt;
-        boost::property_tree::read_json(filename, pt);
-        return ptreeToMQMap(pt,device_id,root_node,"json");
+        MQLOG(DEBUG) << "---- Channel-keys found are :";
+        for (const auto& p : MQChannelMap)
+        {
+            MQLOG(DEBUG) << p.first;
+        }
     }
-    
-    FairMQMap JSON::UserParser(std::stringstream& input_ss, const std::string& device_id, const std::string& root_node)
+    else
     {
-        boost::property_tree::ptree pt;
-        boost::property_tree::read_json(input_ss, pt);
-        return ptreeToMQMap(pt,device_id,root_node,"json");
+        MQLOG(WARN) << "---- No channel-keys found for device-id " << deviceId;
+        MQLOG(WARN) << "---- Check the "<< formatFlag << " inputs and/or command line inputs";
     }
-    
+    return MQChannelMap;
+}
+
+////////////////////////////////////////////////////////////////////////////
+FairMQMap JSON::UserParser(const std::string& filename, const std::string& deviceId, const std::string& rootNode)
+{
+    boost::property_tree::ptree pt;
+    boost::property_tree::read_json(filename, pt);
+    return ptreeToMQMap(pt, deviceId, rootNode,"json");
+}
+
+FairMQMap JSON::UserParser(std::stringstream& input, const std::string& deviceId, const std::string& rootNode)
+{
+    boost::property_tree::ptree pt;
+    boost::property_tree::read_json(input, pt);
+    return ptreeToMQMap(pt, deviceId, rootNode,"json");
+}
+
 } //  end FairMQParser namespace

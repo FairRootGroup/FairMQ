@@ -8,11 +8,11 @@
 #include "FairMQProgOptions.h"
 #include <algorithm>
 
-FairMQProgOptions::FairMQProgOptions() : 
-        FairProgOptions(), 
-        fMQParserOptions("MQ-Device parser options"),
-        fMQtree(),
-        fFairMQmap()
+FairMQProgOptions::FairMQProgOptions()
+    : FairProgOptions()
+    , fMQParserOptions("MQ-Device parser options")
+    , fMQtree()
+    , fFairMQmap()
 {
     InitOptionDescription();
 }
@@ -21,18 +21,16 @@ FairMQProgOptions::~FairMQProgOptions()
 {
 }
 
-
-
 int FairMQProgOptions::ParseAll(const int argc, char** argv, bool AllowUnregistered)
 {
     // before parsing, define cmdline and optionally cfgfile description, 
     // and also what is visible for the user
     AddToCmdLineOptions(fGenericDesc);
     AddToCmdLineOptions(fMQParserOptions);
-    
+
     // if config file option enabled then id non required in cmdline but required in configfile
     // else required in cmdline
-    if(fUseConfigFile)
+    if (fUseConfigFile)
     {
         fCmdline_options.add_options()
             ("device-id", po::value< std::string >(), "Device ID");
@@ -40,38 +38,39 @@ int FairMQProgOptions::ParseAll(const int argc, char** argv, bool AllowUnregiste
             ("device-id", po::value< std::string >()->required(), "Device ID");
     }
     else
+    {
         fCmdline_options.add_options()
             ("device-id", po::value< std::string >()->required(), "Device ID");
-    
+    }
+
     fVisible_options.add_options()
             ("device-id", po::value< std::string >()->required(), "Device ID (required value)");
-    
-    
+
     // parse command line
-    if(ParseCmdLine(argc,argv,fCmdline_options,fvarmap,AllowUnregistered))
+    if (ParseCmdLine(argc,argv,fCmdline_options,fvarmap,AllowUnregistered))
+    {
         return 1;
-    
+    }
+
     // if txt/INI configuration file enabled then parse it
-    if(fUseConfigFile && !fConfigFile.empty())
+    if (fUseConfigFile && !fConfigFile.empty())
     {
         AddToCfgFileOptions(fMQParserOptions,false);
-        
-        if(ParseCfgFile(fConfigFile,fConfig_file_options,fvarmap,AllowUnregistered))
+
+        if (ParseCfgFile(fConfigFile, fConfig_file_options, fvarmap, AllowUnregistered))
+        {
             return 1;
+        }
     }
-    
-    
+
     // set log level before printing (default is 0 = DEBUG level)
     int verbose=GetValue<int>("verbose");
     SET_LOGGER_LEVEL(verbose);
-    
+
     PrintOptions();
-    
+
     return 0;
 }
-
-
-
 
 int FairMQProgOptions::NotifySwitchOption()
 {
@@ -99,8 +98,7 @@ void FairMQProgOptions::InitOptionDescription()
         ("config-json-string",    po::value< std::vector<std::string> >()->multitoken(), "JSON input as command line string.")
         ("config-json-filename",  po::value< std::string >(), "JSON input as file.")
         
-        //("ini.config.string",     po::value< std::vector<std::string> >()->multitoken(), "INI input as command line string.")
-        //("ini.config.filename",   po::value< std::string >(), "INI input as file.")
+        // ("ini.config.string",     po::value< std::vector<std::string> >()->multitoken(), "INI input as command line string.")
+        // ("ini.config.filename",   po::value< std::string >(), "INI input as file.")
     ;
-    
 }

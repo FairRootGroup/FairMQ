@@ -48,14 +48,14 @@ bool FairMQStateMachine::ChangeState(int event)
             case INIT_DEVICE:
                 process_event(FairMQFSM::INIT_DEVICE());
                 return true;
-            case DEVICE_READY:
-                process_event(FairMQFSM::DEVICE_READY());
+            case internal_DEVICE_READY:
+                process_event(FairMQFSM::internal_DEVICE_READY());
                 return true;
             case INIT_TASK:
                 process_event(FairMQFSM::INIT_TASK());
                 return true;
-            case READY:
-                process_event(FairMQFSM::READY());
+            case internal_READY:
+                process_event(FairMQFSM::internal_READY());
                 return true;
             case RUN:
                 process_event(FairMQFSM::RUN());
@@ -75,8 +75,8 @@ bool FairMQStateMachine::ChangeState(int event)
             case RESET_TASK:
                 process_event(FairMQFSM::RESET_TASK());
                 return true;
-            case IDLE:
-                process_event(FairMQFSM::IDLE());
+            case internal_IDLE:
+                process_event(FairMQFSM::internal_IDLE());
                 return true;
             case END:
                 process_event(FairMQFSM::END());
@@ -99,17 +99,9 @@ bool FairMQStateMachine::ChangeState(std::string event)
     {
         return ChangeState(INIT_DEVICE);
     }
-    if (event == "DEVICE_READY")
-    {
-        return ChangeState(DEVICE_READY);
-    }
     if (event == "INIT_TASK")
     {
         return ChangeState(INIT_TASK);
-    }
-    if (event == "READY")
-    {
-        return ChangeState(READY);
     }
     else if (event == "RUN")
     {
@@ -134,10 +126,6 @@ bool FairMQStateMachine::ChangeState(std::string event)
     if (event == "RESET_TASK")
     {
         return ChangeState(RESET_TASK);
-    }
-    else if (event == "IDLE")
-    {
-        return ChangeState(IDLE);
     }
     else if (event == "END")
     {
@@ -212,17 +200,9 @@ void FairMQStateMachine::WaitForEndOfState(std::string event)
     {
         return WaitForEndOfState(INIT_DEVICE);
     }
-    if (event == "DEVICE_READY")
-    {
-        return WaitForEndOfState(DEVICE_READY);
-    }
     if (event == "INIT_TASK")
     {
         return WaitForEndOfState(INIT_TASK);
-    }
-    if (event == "READY")
-    {
-        return WaitForEndOfState(READY);
     }
     else if (event == "RUN")
     {
@@ -247,10 +227,6 @@ void FairMQStateMachine::WaitForEndOfState(std::string event)
     if (event == "RESET_TASK")
     {
         return WaitForEndOfState(RESET_TASK);
-    }
-    else if (event == "IDLE")
-    {
-        return WaitForEndOfState(IDLE);
     }
     else if (event == "END")
     {

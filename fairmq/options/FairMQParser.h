@@ -8,31 +8,30 @@
 #ifndef FAIRMQPARSER_H
 #define	FAIRMQPARSER_H
 
-// FairRoot
-#include "FairMQChannel.h"
-
-// Boost
-#include <boost/property_tree/ptree.hpp>
-
 // std
 #include <string>
 #include <vector>
 #include <map>
 
+// Boost
+#include <boost/property_tree/ptree.hpp>
+
+// FairMQ
+#include "FairMQChannel.h"
 
 namespace FairMQParser
 {
-    
-    typedef std::map<std::string, std::vector<FairMQChannel> > FairMQMap;
-    FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& device_id, const std::string& root_node, const std::string& format_flag="json");
 
-    struct JSON
-    {
-        FairMQMap UserParser(const std::string& filename, const std::string& device_id, const std::string& root_node="fairMQOptions");
-        FairMQMap UserParser(std::stringstream& input_ss, const std::string& device_id, const std::string& root_node="fairMQOptions");
-    };
-    
-    
-} //  end FairMQParser namespace
-#endif	/* FAIRMQPARSER_H */
+typedef std::map< std::string,std::vector<FairMQChannel> > FairMQMap;
+
+FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& deviceId, const std::string& rootNode, const std::string& formatFlag = "json");
+
+struct JSON
+{
+    FairMQMap UserParser(const std::string& filename, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
+    FairMQMap UserParser(std::stringstream& input, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
+};
+
+} // FairMQParser namespace
+#endif /* FAIRMQPARSER_H */
 

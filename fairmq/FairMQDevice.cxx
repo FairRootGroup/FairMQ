@@ -108,7 +108,7 @@ void FairMQDevice::InitWrapper()
     fInitializingFinished = true;
     fInitializingCondition.notify_one();
 
-    ChangeState(DEVICE_READY);
+    ChangeState(internal_DEVICE_READY);
 }
 
 void FairMQDevice::Init()
@@ -178,7 +178,7 @@ void FairMQDevice::InitTaskWrapper()
     fInitializingTaskFinished = true;
     fInitializingTaskCondition.notify_one();
 
-    ChangeState(READY);
+    ChangeState(internal_READY);
 }
 
 void FairMQDevice::InitTask()
@@ -283,7 +283,7 @@ void FairMQDevice::ResetTaskWrapper()
     fResetTaskFinished = true;
     fResetTaskCondition.notify_one();
 
-    ChangeState(DEVICE_READY);
+    ChangeState(internal_DEVICE_READY);
 }
 
 void FairMQDevice::ResetTask()
@@ -299,7 +299,7 @@ void FairMQDevice::ResetWrapper()
     fResetFinished = true;
     fResetCondition.notify_one();
 
-    ChangeState(IDLE);
+    ChangeState(internal_IDLE);
 }
 
 void FairMQDevice::Reset()

@@ -126,18 +126,18 @@ class GenericProcessor : public FairMQDevice, public InputPolicy, public OutputP
         while (GetCurrentState() == RUNNING)
         {
             FairMQMessage* msg = fTransportFactory->CreateMessage();
-            
-            receivedMsgs++;
 
-            // InputPolicy::DeSerializeMsg(msg) --> deserialize data of msg and fill output container
-            // TaskPolicy::ExecuteTask( ... )   --> process output container
-            TaskPolicy::ExecuteTask(InputPolicy::DeSerializeMsg(msg));
-
-            // OutputPolicy::fMessage point to msg
-            OutputPolicy::SetMessage(msg);
+            ++receivedMsgs;
 
             if (fChannels["data-in"].at(0).Receive(msg) > 0)
             {
+                // InputPolicy::DeSerializeMsg(msg) --> deserialize data of msg and fill output container
+                // TaskPolicy::ExecuteTask( ... )   --> process output container
+                TaskPolicy::ExecuteTask(InputPolicy::DeSerializeMsg(msg));
+
+                // OutputPolicy::fMessage point to msg
+                OutputPolicy::SetMessage(msg);
+
                 // TaskPolicy::GetOutputData() --> Get processed output container
                 // OutputPolicy::message(...)  --> Serialize output container and fill fMessage
                 fChannels["data-out"].at(0).Send(OutputPolicy::SerializeMsg(TaskPolicy::GetOutputData()));
@@ -155,5 +155,5 @@ class GenericProcessor : public FairMQDevice, public InputPolicy, public OutputP
 
 };
 
-#endif	/* GENERICPROCESSOR_H */
+#endif /* GENERICPROCESSOR_H */
 

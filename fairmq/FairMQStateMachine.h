@@ -40,16 +40,16 @@ namespace FairMQFSM
 
 // defining events for the boost MSM state machine
 struct INIT_DEVICE {};
-struct DEVICE_READY {};
+struct internal_DEVICE_READY {};
 struct INIT_TASK {};
-struct READY {};
+struct internal_READY {};
 struct RUN {};
 struct PAUSE {};
 struct RESUME {};
 struct STOP {};
 struct RESET_TASK {};
 struct RESET_DEVICE {};
-struct IDLE {};
+struct internal_IDLE {};
 struct END {};
 
 // defining the boost MSM state machine
@@ -258,22 +258,22 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
 
     // Transition table for FairMQFMS
     struct transition_table : mpl::vector<
-        //        Start                    Event         Next                     Action          Guard
-        //       +-------------------------+-------------+------------------------+---------------+---------+
-        msmf::Row<IDLE_FSM,                INIT_DEVICE,  INITIALIZING_DEVICE_FSM, InitDeviceFct,  msmf::none>,
-        msmf::Row<INITIALIZING_DEVICE_FSM, DEVICE_READY, DEVICE_READY_FSM,        DeviceReadyFct, msmf::none>,
-        msmf::Row<DEVICE_READY_FSM,        INIT_TASK,    INITIALIZING_TASK_FSM,   InitTaskFct,    msmf::none>,
-        msmf::Row<INITIALIZING_TASK_FSM,   READY,        READY_FSM,               ReadyFct,       msmf::none>,
-        msmf::Row<READY_FSM,               RUN,          RUNNING_FSM,             RunFct,         msmf::none>,
-        msmf::Row<RUNNING_FSM,             PAUSE,        PAUSED_FSM,              PauseFct,       msmf::none>,
-        msmf::Row<PAUSED_FSM,              RESUME,       RUNNING_FSM,             ResumeFct,      msmf::none>,
-        msmf::Row<RUNNING_FSM,             STOP,         READY_FSM,               StopFct,        msmf::none>,
-        msmf::Row<READY_FSM,               RESET_TASK,   RESETTING_TASK_FSM,      ResetTaskFct,   msmf::none>,
-        msmf::Row<RESETTING_TASK_FSM,      DEVICE_READY, DEVICE_READY_FSM,        DeviceReadyFct, msmf::none>,
-        msmf::Row<DEVICE_READY_FSM,        RESET_DEVICE, RESETTING_DEVICE_FSM,    ResetDeviceFct, msmf::none>,
-        msmf::Row<RESETTING_DEVICE_FSM,    IDLE,         IDLE_FSM,                IdleFct,        msmf::none>,
-        msmf::Row<RUNNING_FSM,             END,          EXITING_FSM,             ExitingRunFct,  msmf::none>, // temporary
-        msmf::Row<IDLE_FSM,                END,          EXITING_FSM,             ExitingFct,     msmf::none> >
+        //        Start                    Event                  Next                     Action          Guard
+        //       +-------------------------+----------------------+------------------------+---------------+---------+
+        msmf::Row<IDLE_FSM,                INIT_DEVICE,           INITIALIZING_DEVICE_FSM, InitDeviceFct,  msmf::none>,
+        msmf::Row<INITIALIZING_DEVICE_FSM, internal_DEVICE_READY, DEVICE_READY_FSM,        DeviceReadyFct, msmf::none>,
+        msmf::Row<DEVICE_READY_FSM,        INIT_TASK,             INITIALIZING_TASK_FSM,   InitTaskFct,    msmf::none>,
+        msmf::Row<INITIALIZING_TASK_FSM,   internal_READY,        READY_FSM,               ReadyFct,       msmf::none>,
+        msmf::Row<READY_FSM,               RUN,                   RUNNING_FSM,             RunFct,         msmf::none>,
+        msmf::Row<RUNNING_FSM,             PAUSE,                 PAUSED_FSM,              PauseFct,       msmf::none>,
+        msmf::Row<PAUSED_FSM,              RESUME,                RUNNING_FSM,             ResumeFct,      msmf::none>,
+        msmf::Row<RUNNING_FSM,             STOP,                  READY_FSM,               StopFct,        msmf::none>,
+        msmf::Row<READY_FSM,               RESET_TASK,            RESETTING_TASK_FSM,      ResetTaskFct,   msmf::none>,
+        msmf::Row<RESETTING_TASK_FSM,      internal_DEVICE_READY, DEVICE_READY_FSM,        DeviceReadyFct, msmf::none>,
+        msmf::Row<DEVICE_READY_FSM,        RESET_DEVICE,          RESETTING_DEVICE_FSM,    ResetDeviceFct, msmf::none>,
+        msmf::Row<RESETTING_DEVICE_FSM,    internal_IDLE,         IDLE_FSM,                IdleFct,        msmf::none>,
+        msmf::Row<RUNNING_FSM,             END,                   EXITING_FSM,             ExitingRunFct,  msmf::none>, // temporary
+        msmf::Row<IDLE_FSM,                END,                   EXITING_FSM,             ExitingFct,     msmf::none> >
         {};
 
     // Replaces the default no-transition response.
@@ -349,16 +349,16 @@ class FairMQStateMachine : public FairMQFSM::FairMQFSM
     enum Event
     {
         INIT_DEVICE,
-        DEVICE_READY,
+        internal_DEVICE_READY,
         INIT_TASK,
-        READY,
+        internal_READY,
         RUN,
         PAUSE,
         RESUME,
         STOP,
         RESET_TASK,
         RESET_DEVICE,
-        IDLE,
+        internal_IDLE,
         END
     };
     FairMQStateMachine();

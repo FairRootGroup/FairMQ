@@ -1,12 +1,11 @@
  ################################################################################
  #    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
  #                                                                              #
- #              This software is distributed under the terms of the             # 
- #         GNU Lesser General Public Licence version 3 (LGPL) version 3,        #  
+ #              This software is distributed under the terms of the             #
+ #         GNU Lesser General Public Licence version 3 (LGPL) version 3,        #
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
-#Temporary for test
-#add_subdirectory (options/ProgOptionTest)
+
 configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/ProgOptionTest/macro/bsampler-sink.json ${CMAKE_BINARY_DIR}/bin/bsampler-sink.json)
 
 Set(INCLUDE_DIRECTORIES

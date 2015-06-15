@@ -9,7 +9,7 @@
  * runSink.cxx
  *
  * @since 2013-01-21
- * @author D. Klein, A. Rybalchenko
+ * @author: D. Klein, A. Rybalchenko
  */
 
 #include <iostream>
@@ -18,6 +18,8 @@
 #include "boost/program_options.hpp"
 
 #include "FairMQLogger.h"
+#include "FairMQParser.h"
+#include "FairMQProgOptions.h"
 #include "FairMQSink.h"
 
 #ifdef NANOMSG
@@ -27,6 +29,8 @@
 #endif
 
 using namespace std;
+using namespace FairMQParser;
+using namespace boost::program_options;
 
 FairMQSink sink;
 
@@ -50,123 +54,74 @@ static void s_catch_signals(void)
     sigaction(SIGTERM, &action, NULL);
 }
 
-typedef struct DeviceOptions
-{
-    DeviceOptions() :
-        id(), ioThreads(0),
-        inputSocketType(), inputBufSize(0), inputMethod(), inputAddress()
-        {}
-
-    string id;
-    int ioThreads;
-    string inputSocketType;
-    int inputBufSize;
-    string inputMethod;
-    string inputAddress;
-} DeviceOptions_t;
-
-inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
-{
-    if (_options == NULL)
-        throw runtime_error("Internal error: options' container is empty.");
-
-    namespace bpo = boost::program_options;
-    bpo::options_description desc("Options");
-    desc.add_options()
-        ("id", bpo::value<string>()->required(), "Device ID")
-        ("io-threads", bpo::value<int>()->default_value(1), "Number of I/O threads")
-        ("input-socket-type", bpo::value<string>()->required(), "Input socket type: sub/pull")
-        ("input-buff-size", bpo::value<int>()->default_value(1000), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
-        ("input-method", bpo::value<string>()->required(), "Input method: bind/connect")
-        ("input-address", bpo::value<string>()->required(), "Input address, e.g.: \"tcp://*:5555\"")
-        ("help", "Print help messages");
-
-    bpo::variables_map vm;
-    bpo::store(bpo::parse_command_line(_argc, _argv, desc), vm);
-
-    if ( vm.count("help") )
-    {
-        LOG(INFO) << "FairMQ Sink" << endl << desc;
-        return false;
-    }
-
-    bpo::notify(vm);
-
-    if ( vm.count("id") )
-        _options->id = vm["id"].as<string>();
-
-    if ( vm.count("io-threads") )
-        _options->ioThreads = vm["io-threads"].as<int>();
-
-    if ( vm.count("input-socket-type") )
-        _options->inputSocketType = vm["input-socket-type"].as<string>();
-
-    if ( vm.count("input-buff-size") )
-        _options->inputBufSize = vm["input-buff-size"].as<int>();
-
-    if ( vm.count("input-method") )
-        _options->inputMethod = vm["input-method"].as<string>();
-
-    if ( vm.count("input-address") )
-        _options->inputAddress = vm["input-address"].as<string>();
-
-    return true;
-}
-
 int main(int argc, char** argv)
 {
     s_catch_signals();
 
-    DeviceOptions_t options;
+    FairMQProgOptions config;
+
     try
     {
-        if (!parse_cmd_line(argc, argv, &options))
+        int ioThreads;
+
+        options_description sink_options("Sink options");
+        sink_options.add_options()
+            ("io-threads", value<int>(&ioThreads)->default_value(1),    "Number of I/O threads");
+
+        config.AddToCmdLineOptions(sink_options);
+
+        if (config.ParseAll(argc, argv))
+        {
             return 0;
+        }
+
+        string filename = config.GetValue<string>("config-json-filename");
+        string id = config.GetValue<string>("device-id");
+
+        config.UserParser<JSON>(filename, id);
+
+        sink.fChannels = config.GetFairMQMap();
+
+        LOG(INFO) << "PID: " << getpid();
+
+#ifdef NANOMSG
+        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
+#else
+        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+#endif
+
+        sink.SetTransport(transportFactory);
+
+        sink.SetProperty(FairMQSink::Id, id);
+        sink.SetProperty(FairMQSink::NumIoThreads, ioThreads);
+
+        sink.ChangeState(FairMQSink::INIT_DEVICE);
+        sink.WaitForEndOfState(FairMQSink::INIT_DEVICE);
+
+        sink.ChangeState(FairMQSink::INIT_TASK);
+        sink.WaitForEndOfState(FairMQSink::INIT_TASK);
+
+        sink.ChangeState(FairMQSink::RUN);
+        sink.WaitForEndOfState(FairMQSink::RUN);
+
+        sink.ChangeState(FairMQSink::STOP);
+
+        sink.ChangeState(FairMQSink::RESET_TASK);
+        sink.WaitForEndOfState(FairMQSink::RESET_TASK);
+
+        sink.ChangeState(FairMQSink::RESET_DEVICE);
+        sink.WaitForEndOfState(FairMQSink::RESET_DEVICE);
+
+        sink.ChangeState(FairMQSink::END);
+
     }
     catch (exception& e)
     {
         LOG(ERROR) << e.what();
+        LOG(INFO) << "Started with: ";
+        config.PrintHelp();
         return 1;
     }
-
-    LOG(INFO) << "PID: " << getpid();
-
-#ifdef NANOMSG
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
-#else
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-#endif
-
-    sink.SetTransport(transportFactory);
-
-    FairMQChannel channel(options.inputSocketType, options.inputMethod, options.inputAddress);
-    channel.fSndBufSize = options.inputBufSize;
-    channel.fRcvBufSize = options.inputBufSize;
-    channel.fRateLogging = 1;
-
-    sink.fChannels["data-in"].push_back(channel);
-
-    sink.SetProperty(FairMQSink::Id, options.id);
-    sink.SetProperty(FairMQSink::NumIoThreads, options.ioThreads);
-
-    sink.ChangeState(FairMQSink::INIT_DEVICE);
-    sink.WaitForEndOfState(FairMQSink::INIT_DEVICE);
-
-    sink.ChangeState(FairMQSink::INIT_TASK);
-    sink.WaitForEndOfState(FairMQSink::INIT_TASK);
-
-    sink.ChangeState(FairMQSink::RUN);
-    sink.WaitForEndOfState(FairMQSink::RUN);
-
-    sink.ChangeState(FairMQSink::STOP);
-
-    sink.ChangeState(FairMQSink::RESET_TASK);
-    sink.WaitForEndOfState(FairMQSink::RESET_TASK);
-
-    sink.ChangeState(FairMQSink::RESET_DEVICE);
-    sink.WaitForEndOfState(FairMQSink::RESET_DEVICE);
-
-    sink.ChangeState(FairMQSink::END);
 
     return 0;
 }
