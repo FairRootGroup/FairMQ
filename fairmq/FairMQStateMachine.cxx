@@ -12,19 +12,12 @@
  * @author D. Klein, A. Rybalchenko
  */
 
+#include <boost/chrono.hpp> // for WaitForEndOfStateForMs()
+
 #include "FairMQStateMachine.h"
 #include "FairMQLogger.h"
 
 FairMQStateMachine::FairMQStateMachine()
-    : fInitializingFinished(false)
-    , fInitializingCondition()
-    , fInitializingMutex()
-    , fInitializingTaskFinished(false)
-    , fInitializingTaskCondition()
-    , fInitializingTaskMutex()
-    , fRunningFinished(false)
-    , fRunningCondition()
-    , fRunningMutex()
 {
     start();
 }
@@ -37,6 +30,22 @@ FairMQStateMachine::~FairMQStateMachine()
 int FairMQStateMachine::GetInterfaceVersion()
 {
     return FAIRMQ_INTERFACE_VERSION;
+}
+
+int FairMQStateMachine::GetEventNumber(std::string event)
+{
+    if (event == "INIT_DEVICE") return INIT_DEVICE;
+    if (event == "INIT_TASK") return INIT_TASK;
+    if (event == "RUN") return RUN;
+    if (event == "PAUSE") return PAUSE;
+    if (event == "RESUME") return RESUME;
+    if (event == "STOP") return STOP;
+    if (event == "RESET_DEVICE") return RESET_DEVICE;
+    if (event == "RESET_TASK") return RESET_TASK;
+    if (event == "END") return END;
+    LOG(ERROR) << "Requested number for non-existent event... " << event << std::endl
+               << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, RESUME, STOP, RESET_DEVICE, RESET_TASK, END";
+    return -1;
 }
 
 bool FairMQStateMachine::ChangeState(int event)
@@ -87,7 +96,7 @@ bool FairMQStateMachine::ChangeState(int event)
                 return false;
         }
     }
-    catch (boost::bad_function_call& e)
+    catch (std::exception& e)
     {
         LOG(ERROR) << e.what();
     }
@@ -95,48 +104,7 @@ bool FairMQStateMachine::ChangeState(int event)
 
 bool FairMQStateMachine::ChangeState(std::string event)
 {
-    if (event == "INIT_DEVICE")
-    {
-        return ChangeState(INIT_DEVICE);
-    }
-    if (event == "INIT_TASK")
-    {
-        return ChangeState(INIT_TASK);
-    }
-    else if (event == "RUN")
-    {
-        return ChangeState(RUN);
-    }
-    else if (event == "PAUSE")
-    {
-        return ChangeState(PAUSE);
-    }
-    else if (event == "RESUME")
-    {
-        return ChangeState(RESUME);
-    }
-    else if (event == "STOP")
-    {
-        return ChangeState(STOP);
-    }
-    if (event == "RESET_DEVICE")
-    {
-        return ChangeState(RESET_DEVICE);
-    }
-    if (event == "RESET_TASK")
-    {
-        return ChangeState(RESET_TASK);
-    }
-    else if (event == "END")
-    {
-        return ChangeState(END);
-    }
-    else
-    {
-        LOG(ERROR) << "Requested unsupported state: " << event << std::endl
-                   << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, RESUME, STOP, RESET_TASK, RESET_DEVICE, END";
-        return false;
-    }
+    return ChangeState(GetEventNumber(event));
 }
 
 void FairMQStateMachine::WaitForEndOfState(int event)
@@ -144,47 +112,15 @@ void FairMQStateMachine::WaitForEndOfState(int event)
     switch (event)
     {
         case INIT_DEVICE:
-        {
-            boost::unique_lock<boost::mutex> lock(fInitializingMutex);
-            while (!fInitializingFinished)
-            {
-                fInitializingCondition.wait(lock);
-            }
-            break;
-        }
         case INIT_TASK:
-        {
-            boost::unique_lock<boost::mutex> initTaskLock(fInitializingTaskMutex);
-            while (!fInitializingTaskFinished)
-            {
-                fInitializingTaskCondition.wait(initTaskLock);
-            }
-            break;
-        }
         case RUN:
-        {
-            boost::unique_lock<boost::mutex> runLock(fRunningMutex);
-            while (!fRunningFinished)
-            {
-                fRunningCondition.wait(runLock);
-            }
-            break;
-        }
         case RESET_TASK:
-        {
-            boost::unique_lock<boost::mutex> runLock(fResetTaskMutex);
-            while (!fResetTaskFinished)
-            {
-                fResetTaskCondition.wait(runLock);
-            }
-            break;
-        }
         case RESET_DEVICE:
         {
-            boost::unique_lock<boost::mutex> runLock(fResetMutex);
-            while (!fResetFinished)
+            boost::unique_lock<boost::mutex> lock(fStateMutex);
+            while (!fStateFinished)
             {
-                fResetCondition.wait(runLock);
+                fStateCondition.wait(lock);
             }
             break;
         }
@@ -196,45 +132,38 @@ void FairMQStateMachine::WaitForEndOfState(int event)
 
 void FairMQStateMachine::WaitForEndOfState(std::string event)
 {
-    if (event == "INIT_DEVICE")
+    return WaitForEndOfState(GetEventNumber(event));
+}
+
+bool FairMQStateMachine::WaitForEndOfStateForMs(int event, int durationInMs)
+{
+    switch (event)
     {
-        return WaitForEndOfState(INIT_DEVICE);
+        case INIT_DEVICE:
+        case INIT_TASK:
+        case RUN:
+        case RESET_TASK:
+        case RESET_DEVICE:
+        {
+            boost::unique_lock<boost::mutex> lock(fStateMutex);
+            while (!fStateFinished)
+            {
+                fStateCondition.wait_until(lock, boost::chrono::system_clock::now() + boost::chrono::milliseconds(durationInMs));
+                if (!fStateFinished)
+                {
+                    return false;
+                }
+            }
+            return true;
+            break;
+        }
+        default:
+            LOG(ERROR) << "Requested state is either synchronous or does not exist.";
+            break;
     }
-    if (event == "INIT_TASK")
-    {
-        return WaitForEndOfState(INIT_TASK);
-    }
-    else if (event == "RUN")
-    {
-        return WaitForEndOfState(RUN);
-    }
-    else if (event == "PAUSE")
-    {
-        return WaitForEndOfState(PAUSE);
-    }
-    else if (event == "RESUME")
-    {
-        return WaitForEndOfState(RESUME);
-    }
-    else if (event == "STOP")
-    {
-        return WaitForEndOfState(STOP);
-    }
-    if (event == "RESET_DEVICE")
-    {
-        return WaitForEndOfState(RESET_DEVICE);
-    }
-    if (event == "RESET_TASK")
-    {
-        return WaitForEndOfState(RESET_TASK);
-    }
-    else if (event == "END")
-    {
-        return WaitForEndOfState(END);
-    }
-    else
-    {
-        LOG(ERROR) << "Requested unsupported state: " << event << std::endl
-                   << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, RESUME, STOP, RESET_TASK, RESET_DEVICE, END";
-    }
+}
+
+bool FairMQStateMachine::WaitForEndOfStateForMs(std::string event, int durationInMs)
+{
+    return WaitForEndOfStateForMs(GetEventNumber(event), durationInMs);
 }

@@ -103,12 +103,12 @@ void FairMQDevice::InitWrapper()
 
     Init();
 
-    // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fInitializingMutex);
-    fInitializingFinished = true;
-    fInitializingCondition.notify_one();
-
     ChangeState(internal_DEVICE_READY);
+
+    // notify parent thread about end of processing.
+    boost::lock_guard<boost::mutex> lock(fStateMutex);
+    fStateFinished = true;
+    fStateCondition.notify_one();
 }
 
 void FairMQDevice::Init()
@@ -173,12 +173,12 @@ void FairMQDevice::InitTaskWrapper()
 {
     InitTask();
 
-    // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fInitializingTaskMutex);
-    fInitializingTaskFinished = true;
-    fInitializingTaskCondition.notify_one();
-
     ChangeState(internal_READY);
+
+    // notify parent thread about end of processing.
+    boost::lock_guard<boost::mutex> lock(fStateMutex);
+    fStateFinished = true;
+    fStateCondition.notify_one();
 }
 
 void FairMQDevice::InitTask()
@@ -248,9 +248,9 @@ void FairMQDevice::RunWrapper()
     }
 
     // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fRunningMutex);
-    fRunningFinished = true;
-    fRunningCondition.notify_one();
+    boost::lock_guard<boost::mutex> lock(fStateMutex);
+    fStateFinished = true;
+    fStateCondition.notify_one();
 }
 
 void FairMQDevice::Run()
@@ -278,12 +278,12 @@ void FairMQDevice::ResetTaskWrapper()
 {
     ResetTask();
 
-    // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fResetTaskMutex);
-    fResetTaskFinished = true;
-    fResetTaskCondition.notify_one();
-
     ChangeState(internal_DEVICE_READY);
+
+    // notify parent thread about end of processing.
+    boost::lock_guard<boost::mutex> lock(fStateMutex);
+    fStateFinished = true;
+    fStateCondition.notify_one();
 }
 
 void FairMQDevice::ResetTask()
@@ -294,12 +294,12 @@ void FairMQDevice::ResetWrapper()
 {
     Reset();
 
-    // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fResetMutex);
-    fResetFinished = true;
-    fResetCondition.notify_one();
-
     ChangeState(internal_IDLE);
+
+    // notify parent thread about end of processing.
+    boost::lock_guard<boost::mutex> lock(fStateMutex);
+    fStateFinished = true;
+    fStateCondition.notify_one();
 }
 
 void FairMQDevice::Reset()
