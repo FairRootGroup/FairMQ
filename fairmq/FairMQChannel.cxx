@@ -19,6 +19,8 @@
 
 using namespace std;
 
+boost::mutex FairMQChannel::channelMutex;
+
 FairMQChannel::FairMQChannel()
     : fType("unspecified")
     , fMethod("unspecified")
@@ -28,6 +30,7 @@ FairMQChannel::FairMQChannel()
     , fRateLogging(1)
     , fSocket()
     , fChannelName("")
+    , fIsValid(false)
 {
 }
 
@@ -40,13 +43,96 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
     , fRateLogging(1)
     , fSocket()
     , fChannelName("")
+    , fIsValid(false)
 {
+}
+
+std::string FairMQChannel::GetType()
+{
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+    return fType;
+}
+
+std::string FairMQChannel::GetMethod()
+{
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+    return fMethod;
+}
+
+std::string FairMQChannel::GetAddress()
+{
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+    return fAddress;
+}
+
+int FairMQChannel::GetSndBufSize()
+{
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+    return fSndBufSize;
+}
+
+int FairMQChannel::GetRcvBufSize()
+{
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+    return fRcvBufSize;
+}
+
+int FairMQChannel::GetRateLogging()
+{
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+    return fRateLogging;
+}
+
+void FairMQChannel::UpdateType(const std::string& type)
+{
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+    fType = type;
+}
+void FairMQChannel::UpdateMethod(const std::string& method)
+{
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+    fMethod = method;
+}
+void FairMQChannel::UpdateAddress(const std::string& address)
+{
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+    fAddress = address;
+}
+void FairMQChannel::UpdateSndBufSize(const int sndBufSize)
+{
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+    fSndBufSize = sndBufSize;
+}
+void FairMQChannel::UpdateRcvBufSize(const int rcvBufSize)
+{
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+    fRcvBufSize = rcvBufSize;
+}
+void FairMQChannel::UpdateRateLogging(const int rateLogging)
+{
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+    fRateLogging = rateLogging;
+}
+
+bool FairMQChannel::IsValid()
+{
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+    return fIsValid;
 }
 
 bool FairMQChannel::ValidateChannel()
 {
+    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+
     stringstream ss;
     ss << "Validating channel " << fChannelName << "... ";
+
+    if (fIsValid)
+    {
+        ss << "ALREADY VALID";
+        LOG(DEBUG) << ss.str();
+        return true;
+    }
 
     const string socketTypeNames[] = { "sub", "pub", "pull", "push", "req", "rep", "xsub", "xpub", "dealer", "router", "pair" };
     const set<string> socketTypes(socketTypeNames, socketTypeNames + sizeof(socketTypeNames) / sizeof(string));
@@ -92,9 +178,15 @@ bool FairMQChannel::ValidateChannel()
         return false;
     }
 
+    fIsValid = true;
     ss << "VALID";
     LOG(DEBUG) << ss.str();
     return true;
+}
+
+void FairMQChannel::ResetChannel()
+{
+    // TODO: implement resetting
 }
 
 int FairMQChannel::Send(FairMQMessage* msg, const string& flag)

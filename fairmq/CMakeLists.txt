@@ -130,14 +130,14 @@ endif(NANOMSG_FOUND)
 
 # to copy src that are header-only files (e.g. c++ template) for FairRoot external installation
 # manual install (globbing add not recommended)
-Set(FairMQHDRFiles
+Set(FAIRMQHEADERS
   devices/GenericSampler.h
   devices/GenericSampler.tpl
   devices/GenericProcessor.h
   devices/GenericFileSink.h
   tools/FairMQTools.h
 )
-install(FILES ${FairMQHDRFiles} DESTINATION include)
+install(FILES ${FAIRMQHEADERS} DESTINATION include)
 
 set(DEPENDENCIES
   ${DEPENDENCIES}

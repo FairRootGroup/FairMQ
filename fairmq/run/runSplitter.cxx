@@ -166,18 +166,18 @@ int main(int argc, char** argv)
     splitter.SetTransport(transportFactory);
 
     FairMQChannel inputChannel(options.inputSocketType, options.inputMethod, options.inputAddress);
-    inputChannel.fSndBufSize = options.inputBufSize;
-    inputChannel.fRcvBufSize = options.inputBufSize;
-    inputChannel.fRateLogging = 1;
+    inputChannel.UpdateSndBufSize(options.inputBufSize);
+    inputChannel.UpdateRcvBufSize(options.inputBufSize);
+    inputChannel.UpdateRateLogging(1);
 
     splitter.fChannels["data-in"].push_back(inputChannel);
 
     for (int i = 0; i < options.outputAddress.size(); ++i)
     {
         FairMQChannel outputChannel(options.outputSocketType.at(i), options.outputMethod.at(i), options.outputAddress.at(i));
-        outputChannel.fSndBufSize = options.outputBufSize.at(i);
-        outputChannel.fRcvBufSize = options.outputBufSize.at(i);
-        outputChannel.fRateLogging = 1;
+        outputChannel.UpdateSndBufSize(options.outputBufSize.at(i));
+        outputChannel.UpdateRcvBufSize(options.outputBufSize.at(i));
+        outputChannel.UpdateRateLogging(1);
 
         splitter.fChannels["data-out"].push_back(outputChannel);
     }

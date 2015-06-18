@@ -116,9 +116,9 @@ int main(int argc, char** argv)
     client.SetProperty(FairMQExampleClient::NumIoThreads, 1);
 
     FairMQChannel requestChannel("req", "connect", "tcp://localhost:5005");
-    requestChannel.fSndBufSize = 10000;
-    requestChannel.fRcvBufSize = 10000;
-    requestChannel.fRateLogging = 1;
+    requestChannel.UpdateSndBufSize(10000);
+    requestChannel.UpdateRcvBufSize(10000);
+    requestChannel.UpdateRateLogging(1);
 
     client.fChannels["data"].push_back(requestChannel);
 

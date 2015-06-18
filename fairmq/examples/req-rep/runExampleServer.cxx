@@ -66,9 +66,9 @@ int main(int argc, char** argv)
     server.SetProperty(FairMQExampleServer::NumIoThreads, 1);
 
     FairMQChannel replyChannel("rep", "bind", "tcp://*:5005");
-    replyChannel.fSndBufSize = 10000;
-    replyChannel.fRcvBufSize = 10000;
-    replyChannel.fRateLogging = 1;
+    replyChannel.UpdateSndBufSize(10000);
+    replyChannel.UpdateRcvBufSize(10000);
+    replyChannel.UpdateRateLogging(1);
 
     server.fChannels["data"].push_back(replyChannel);
 

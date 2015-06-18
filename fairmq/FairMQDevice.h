@@ -54,6 +54,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     virtual void SetTransport(FairMQTransportFactory* factory);
 
+    static bool SortSocketsByAddress(const FairMQChannel &lhs, const FairMQChannel &rhs);
+
     virtual ~FairMQDevice();
 
     std::map< std::string,std::vector<FairMQChannel> > fChannels;

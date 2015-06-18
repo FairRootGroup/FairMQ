@@ -52,7 +52,7 @@ int FairMQProgOptions::ParseAll(const int argc, char** argv, bool AllowUnregiste
     }
 
     fVisible_options.add_options()
-            ("device-id", po::value< std::string >()->required(), "Device ID (required value)");
+        ("device-id", po::value< std::string >()->required(), "Device ID (required value)");
 
     // parse command line
     if (ParseCmdLine(argc,argv,fCmdline_options,fvarmap,AllowUnregistered))

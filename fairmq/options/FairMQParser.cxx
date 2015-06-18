@@ -104,7 +104,7 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string&
                 channelKey = q.second.get<std::string>("<xmlattr>.name");
             }
 
-            if (formatFlag=="json")
+            if (formatFlag == "json")
             {
                 channelKey = q.second.get<std::string>("name");
             }
@@ -135,19 +135,19 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string&
                 socket << "\t \t [node = " << r.first 
                         << "]   socket index = " << socketCounter;
                 MQLOG(DEBUG) << socket.str();
-                MQLOG(DEBUG) <<  "\t \t \t type        = " << r.second.get<std::string>("type", channel.fType);
-                MQLOG(DEBUG) <<  "\t \t \t method      = " << r.second.get<std::string>("method", channel.fMethod);
-                MQLOG(DEBUG) <<  "\t \t \t address     = " << r.second.get<std::string>("address", channel.fAddress);
-                MQLOG(DEBUG) <<  "\t \t \t sndBufSize  = " << r.second.get<int>("sndBufSize", channel.fSndBufSize);
-                MQLOG(DEBUG) <<  "\t \t \t rcvBufSize  = " << r.second.get<int>("rcvBufSize", channel.fRcvBufSize);
-                MQLOG(DEBUG) <<  "\t \t \t rateLogging = " << r.second.get<int>("rateLogging", channel.fRateLogging);
+                MQLOG(DEBUG) <<  "\t \t \t type        = " << r.second.get<std::string>("type", channel.GetType());
+                MQLOG(DEBUG) <<  "\t \t \t method      = " << r.second.get<std::string>("method", channel.GetMethod());
+                MQLOG(DEBUG) <<  "\t \t \t address     = " << r.second.get<std::string>("address", channel.GetAddress());
+                MQLOG(DEBUG) <<  "\t \t \t sndBufSize  = " << r.second.get<int>("sndBufSize", channel.GetSndBufSize());
+                MQLOG(DEBUG) <<  "\t \t \t rcvBufSize  = " << r.second.get<int>("rcvBufSize", channel.GetRcvBufSize());
+                MQLOG(DEBUG) <<  "\t \t \t rateLogging = " << r.second.get<int>("rateLogging", channel.GetRateLogging());
 
-                channel.fType        = r.second.get<std::string>("type", channel.fType);
-                channel.fMethod      = r.second.get<std::string>("method", channel.fMethod);
-                channel.fAddress     = r.second.get<std::string>("address", channel.fAddress);
-                channel.fSndBufSize  = r.second.get<int>("sndBufSize", channel.fSndBufSize); // int
-                channel.fRcvBufSize  = r.second.get<int>("rcvBufSize", channel.fRcvBufSize); // int
-                channel.fRateLogging = r.second.get<int>("rateLogging", channel.fRateLogging); // int
+                channel.UpdateType(r.second.get<std::string>("type", channel.GetType()));
+                channel.UpdateMethod(r.second.get<std::string>("method", channel.GetMethod()));
+                channel.UpdateAddress(r.second.get<std::string>("address", channel.GetAddress()));
+                channel.UpdateSndBufSize(r.second.get<int>("sndBufSize", channel.GetSndBufSize())); // int
+                channel.UpdateRcvBufSize(r.second.get<int>("rcvBufSize", channel.GetRcvBufSize())); // int
+                channel.UpdateRateLogging(r.second.get<int>("rateLogging", channel.GetRateLogging())); // int
 
                 channelList.push_back(channel);
             }// end socket loop

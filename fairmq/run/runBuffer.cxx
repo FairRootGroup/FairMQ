@@ -160,16 +160,16 @@ int main(int argc, char** argv)
     buffer.SetTransport(transportFactory);
 
     FairMQChannel inputChannel(options.inputSocketType, options.inputMethod, options.inputAddress);
-    inputChannel.fSndBufSize = options.inputBufSize;
-    inputChannel.fRcvBufSize = options.inputBufSize;
-    inputChannel.fRateLogging = 1;
+    inputChannel.UpdateSndBufSize(options.inputBufSize);
+    inputChannel.UpdateRcvBufSize(options.inputBufSize);
+    inputChannel.UpdateRateLogging(1);
 
     buffer.fChannels["data-in"].push_back(inputChannel);
 
     FairMQChannel outputChannel(options.outputSocketType, options.outputMethod, options.outputAddress);
-    outputChannel.fSndBufSize = options.outputBufSize;
-    outputChannel.fRcvBufSize = options.outputBufSize;
-    outputChannel.fRateLogging = 1;
+    outputChannel.UpdateSndBufSize(options.outputBufSize);
+    outputChannel.UpdateRcvBufSize(options.outputBufSize);
+    outputChannel.UpdateRateLogging(1);
 
     buffer.fChannels["data-out"].push_back(outputChannel);
 

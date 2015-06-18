@@ -17,6 +17,8 @@
 
 #include <string>
 
+#include <boost/thread/mutex.hpp>
+
 #include "FairMQSocket.h"
 
 class FairMQChannel
@@ -28,7 +30,27 @@ class FairMQChannel
     FairMQChannel(const std::string& type, const std::string& method, const std::string& address);
     virtual ~FairMQChannel();
 
+    std::string GetType();
+    std::string GetMethod();
+    std::string GetAddress();
+    int GetSndBufSize();
+    int GetRcvBufSize();
+    int GetRateLogging();
+
+    void UpdateType(const std::string& type);
+    void UpdateMethod(const std::string& method);
+    void UpdateAddress(const std::string& address);
+    void UpdateSndBufSize(const int sndBufSize);
+    void UpdateRcvBufSize(const int rcvBufSize);
+    void UpdateRateLogging(const int rateLogging);
+
+    bool IsValid();
+
     bool ValidateChannel();
+
+    void ResetChannel();
+
+    FairMQSocket* fSocket;
 
     // Wrappers for the socket methods to simplify the usage of channels
     int Send(FairMQMessage* msg, const std::string& flag = "");
@@ -36,6 +58,7 @@ class FairMQChannel
     int Receive(FairMQMessage* msg, const std::string& flag = "");
     int Receive(FairMQMessage* msg, const int flags);
 
+  private:
     std::string fType;
     std::string fMethod;
     std::string fAddress;
@@ -43,10 +66,14 @@ class FairMQChannel
     int fRcvBufSize;
     int fRateLogging;
 
-    FairMQSocket* fSocket;
-
-  private:
     std::string fChannelName;
+    bool fIsValid;
+
+    // use static mutex to make the class easily copyable
+    // implication: same mutex is used for all instances of the class
+    // this does not hurt much, because mutex is used only during initialization with very low contention
+    // possible TODO: improve this
+    static boost::mutex channelMutex;
 };
 
 #endif /* FAIRMQCHANNEL_H_ */

@@ -167,17 +167,17 @@ int main(int argc, char** argv)
     for (int i = 0; i < options.inputAddress.size(); ++i)
     {
         FairMQChannel inputChannel(options.inputSocketType.at(i), options.inputMethod.at(i), options.inputAddress.at(i));
-        inputChannel.fSndBufSize = options.inputBufSize.at(i);
-        inputChannel.fRcvBufSize = options.inputBufSize.at(i);
-        inputChannel.fRateLogging = 1;
+        inputChannel.UpdateSndBufSize(options.inputBufSize.at(i));
+        inputChannel.UpdateRcvBufSize(options.inputBufSize.at(i));
+        inputChannel.UpdateRateLogging(1);
 
         merger.fChannels["data-in"].push_back(inputChannel);
     }
 
     FairMQChannel outputChannel(options.outputSocketType, options.outputMethod, options.outputAddress);
-    outputChannel.fSndBufSize = options.outputBufSize;
-    outputChannel.fRcvBufSize = options.outputBufSize;
-    outputChannel.fRateLogging = 1;
+    outputChannel.UpdateSndBufSize(options.outputBufSize);
+    outputChannel.UpdateRcvBufSize(options.outputBufSize);
+    outputChannel.UpdateRateLogging(1);
 
     merger.fChannels["data-out"].push_back(outputChannel);
 

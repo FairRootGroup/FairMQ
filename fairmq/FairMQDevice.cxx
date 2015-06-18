@@ -185,7 +185,7 @@ void FairMQDevice::InitTask()
 {
 }
 
-bool SortSocketsByAddress(const FairMQChannel &lhs, const FairMQChannel &rhs)
+bool FairMQDevice::SortSocketsByAddress(const FairMQChannel &lhs, const FairMQChannel &rhs)
 {
     return lhs.fAddress < rhs.fAddress;
 }
