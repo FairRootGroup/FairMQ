@@ -154,7 +154,7 @@ bool FairMQChannel::ValidateChannel()
         return false;
     }
 
-    if (fAddress == "unspecified" && fAddress == "")
+    if (fAddress == "unspecified" || fAddress == "")
     {
         ss << "INVALID";
         LOG(DEBUG) << ss.str();

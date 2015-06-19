@@ -259,10 +259,13 @@ void FairMQDevice::RunWrapper()
 
     Run();
 
-    try {
+    try
+    {
         rateLogger.interrupt();
         rateLogger.join();
-    } catch(boost::thread_resource_error& e) {
+    }
+    catch(boost::thread_resource_error& e)
+    {
         LOG(ERROR) << e.what();
     }
 
