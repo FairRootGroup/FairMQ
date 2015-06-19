@@ -35,6 +35,9 @@ FairMQDevice::FairMQDevice()
     , fLogIntervalInMs(1000)
     , fCommandSocket()
     , fTransportFactory(NULL)
+    , fInitialValidationFinished(false)
+    , fInitialValidationCondition()
+    , fInitialValidationMutex()
 {
 }
 
@@ -86,6 +89,11 @@ void FairMQDevice::InitWrapper()
             }
         }
 
+        // notify parent thread about end of processing.
+        boost::lock_guard<boost::mutex> lock(fInitialValidationMutex);
+        fInitialValidationFinished = true;
+        fInitialValidationCondition.notify_one();
+
         ++numAttempts;
         if (numAttempts > maxAttempts)
         {
@@ -109,6 +117,15 @@ void FairMQDevice::InitWrapper()
     boost::lock_guard<boost::mutex> lock(fStateMutex);
     fStateFinished = true;
     fStateCondition.notify_one();
+}
+
+void FairMQDevice::WaitForInitialValidation()
+{
+    boost::unique_lock<boost::mutex> lock(fInitialValidationMutex);
+    while (!fInitialValidationFinished)
+    {
+        fInitialValidationCondition.wait(lock);
+    }
 }
 
 void FairMQDevice::Init()
@@ -236,6 +253,8 @@ void FairMQDevice::PrintChannel(const string& name)
 
 void FairMQDevice::RunWrapper()
 {
+    LOG(INFO) << "DEVICE: Running...";
+
     boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
     Run();

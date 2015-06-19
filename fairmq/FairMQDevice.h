@@ -47,6 +47,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     void SortChannel(const std::string& name, const bool reindex = true);
     void PrintChannel(const std::string& name);
 
+    void WaitForInitialValidation();
+
     virtual void SetProperty(const int key, const std::string& value);
     virtual std::string GetProperty(const int key, const std::string& default_ = "");
     virtual void SetProperty(const int key, const int value);
@@ -101,6 +103,11 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     bool InitChannel(FairMQChannel&);
 
   private:
+    // condition variable to notify parent thread about end of initial validation.
+    bool fInitialValidationFinished;
+    boost::condition_variable fInitialValidationCondition;
+    boost::mutex fInitialValidationMutex;
+
     /// Copy Constructor
     FairMQDevice(const FairMQDevice&);
     FairMQDevice operator=(const FairMQDevice&);
