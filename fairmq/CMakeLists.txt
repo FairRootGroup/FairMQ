@@ -141,7 +141,7 @@ install(FILES ${FAIRMQHEADERS} DESTINATION include)
 
 set(DEPENDENCIES
   ${DEPENDENCIES}
-  boost_thread boost_timer boost_system boost_program_options boost_random boost_chrono
+  boost_thread boost_timer boost_system boost_program_options boost_random boost_chrono boost_exception
 )
 
 set(LIBRARY_NAME FairMQ)

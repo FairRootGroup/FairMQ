@@ -12,6 +12,8 @@
  * @author D. Klein, A. Rybalchenko
  */
 
+
+#include <boost/exception/all.hpp>
 #include <boost/chrono.hpp> // for WaitForEndOfStateForMs()
 
 #include "FairMQStateMachine.h"
@@ -96,9 +98,9 @@ bool FairMQStateMachine::ChangeState(int event)
                 return false;
         }
     }
-    catch (std::exception& e)
+    catch (boost::exception &e)
     {
-        LOG(ERROR) << e.what();
+        LOG(ERROR) << boost::diagnostic_information(e);
     }
 }
 
@@ -109,24 +111,31 @@ bool FairMQStateMachine::ChangeState(std::string event)
 
 void FairMQStateMachine::WaitForEndOfState(int event)
 {
-    switch (event)
+    try
     {
-        case INIT_DEVICE:
-        case INIT_TASK:
-        case RUN:
-        case RESET_TASK:
-        case RESET_DEVICE:
+        switch (event)
         {
-            boost::unique_lock<boost::mutex> lock(fStateMutex);
-            while (!fStateFinished)
+            case INIT_DEVICE:
+            case INIT_TASK:
+            case RUN:
+            case RESET_TASK:
+            case RESET_DEVICE:
             {
-                fStateCondition.wait(lock);
+                boost::unique_lock<boost::mutex> lock(fStateMutex);
+                while (!fStateFinished)
+                {
+                    fStateCondition.wait(lock);
+                }
+                break;
             }
-            break;
+            default:
+                LOG(ERROR) << "Requested state is either synchronous or does not exist.";
+                break;
         }
-        default:
-            LOG(ERROR) << "Requested state is either synchronous or does not exist.";
-            break;
+    }
+    catch (boost::exception &e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
     }
 }
 
@@ -137,29 +146,36 @@ void FairMQStateMachine::WaitForEndOfState(std::string event)
 
 bool FairMQStateMachine::WaitForEndOfStateForMs(int event, int durationInMs)
 {
-    switch (event)
+    try
     {
-        case INIT_DEVICE:
-        case INIT_TASK:
-        case RUN:
-        case RESET_TASK:
-        case RESET_DEVICE:
+        switch (event)
         {
-            boost::unique_lock<boost::mutex> lock(fStateMutex);
-            while (!fStateFinished)
+            case INIT_DEVICE:
+            case INIT_TASK:
+            case RUN:
+            case RESET_TASK:
+            case RESET_DEVICE:
             {
-                fStateCondition.wait_until(lock, boost::chrono::system_clock::now() + boost::chrono::milliseconds(durationInMs));
-                if (!fStateFinished)
+                boost::unique_lock<boost::mutex> lock(fStateMutex);
+                while (!fStateFinished)
                 {
-                    return false;
+                    fStateCondition.wait_until(lock, boost::chrono::system_clock::now() + boost::chrono::milliseconds(durationInMs));
+                    if (!fStateFinished)
+                    {
+                        return false;
+                    }
                 }
+                return true;
+                break;
             }
-            return true;
-            break;
+            default:
+                LOG(ERROR) << "Requested state is either synchronous or does not exist.";
+                return false;
         }
-        default:
-            LOG(ERROR) << "Requested state is either synchronous or does not exist.";
-            break;
+    }
+    catch (boost::exception &e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
     }
 }
 
