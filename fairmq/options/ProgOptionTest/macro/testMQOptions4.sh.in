@@ -6,6 +6,6 @@ if [ "$#" -gt 0 ]; then
   RUN_TEST+=" $*"
 fi
 
-RUN_TEST+=" --config-json-filename @CMAKE_BINARY_DIR@/bin/testJSON.json"
+RUN_TEST+=" --config-json-file @CMAKE_BINARY_DIR@/bin/testJSON.json"
 
 @CMAKE_BINARY_DIR@/bin/$RUN_TEST

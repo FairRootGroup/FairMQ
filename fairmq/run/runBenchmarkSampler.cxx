@@ -9,7 +9,7 @@
  * runBenchmarkSampler.cxx
  *
  * @since 2013-04-23
- * @author: D. Klein, A. Rybalchenko
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include <iostream>
@@ -80,7 +80,7 @@ int main(int argc, char** argv)
         }
 
         string filename = config.GetValue<string>("config-json-filename");
-        string id = config.GetValue<string>("device-id");
+        string id = config.GetValue<string>("id");
 
         config.UserParser<JSON>(filename, id);
 

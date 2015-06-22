@@ -6,10 +6,10 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * runSink.cxx
+ * runExample2Sink.cxx
  *
- * @since 2013-01-21
- * @author: D. Klein, A. Rybalchenko
+ * @since 2013-04-23
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include <iostream>
@@ -20,7 +20,7 @@
 #include "FairMQLogger.h"
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
-#include "FairMQSink.h"
+#include "FairMQExample2Sink.h"
 
 #ifdef NANOMSG
 #include "FairMQTransportFactoryNN.h"
@@ -28,17 +28,15 @@
 #include "FairMQTransportFactoryZMQ.h"
 #endif
 
-using namespace std;
-using namespace FairMQParser;
 using namespace boost::program_options;
 
-FairMQSink sink;
+FairMQExample2Sink sink;
 
 static void s_signal_handler(int signal)
 {
     LOG(INFO) << "Caught signal " << signal;
 
-    sink.ChangeState(FairMQSink::END);
+    sink.ChangeState(FairMQExample2Sink::END);
 
     LOG(INFO) << "Shutdown complete.";
     exit(1);
@@ -62,23 +60,15 @@ int main(int argc, char** argv)
 
     try
     {
-        int ioThreads;
-
-        options_description sink_options("Sink options");
-        sink_options.add_options()
-            ("io-threads", value<int>(&ioThreads)->default_value(1),    "Number of I/O threads");
-
-        config.AddToCmdLineOptions(sink_options);
-
         if (config.ParseAll(argc, argv))
         {
             return 0;
         }
 
-        string filename = config.GetValue<string>("config-json-filename");
-        string id = config.GetValue<string>("id");
+        std::string filename = config.GetValue<std::string>("config-json-file");
+        std::string id = config.GetValue<std::string>("id");
 
-        config.UserParser<JSON>(filename, id);
+        config.UserParser<FairMQParser::JSON>(filename, id);
 
         sink.fChannels = config.GetFairMQMap();
 
@@ -92,33 +82,32 @@ int main(int argc, char** argv)
 
         sink.SetTransport(transportFactory);
 
-        sink.SetProperty(FairMQSink::Id, id);
-        sink.SetProperty(FairMQSink::NumIoThreads, ioThreads);
+        sink.SetProperty(FairMQExample2Sink::Id, id);
 
-        sink.ChangeState(FairMQSink::INIT_DEVICE);
-        sink.WaitForEndOfState(FairMQSink::INIT_DEVICE);
+        sink.ChangeState("INIT_DEVICE");
+        sink.WaitForEndOfState("INIT_DEVICE");
 
-        sink.ChangeState(FairMQSink::INIT_TASK);
-        sink.WaitForEndOfState(FairMQSink::INIT_TASK);
+        sink.ChangeState("INIT_TASK");
+        sink.WaitForEndOfState("INIT_TASK");
 
-        sink.ChangeState(FairMQSink::RUN);
-        sink.WaitForEndOfState(FairMQSink::RUN);
+        sink.ChangeState("RUN");
+        sink.WaitForEndOfState("RUN");
 
-        sink.ChangeState(FairMQSink::STOP);
+        sink.ChangeState("STOP");
 
-        sink.ChangeState(FairMQSink::RESET_TASK);
-        sink.WaitForEndOfState(FairMQSink::RESET_TASK);
+        sink.ChangeState("RESET_TASK");
+        sink.WaitForEndOfState("RESET_TASK");
 
-        sink.ChangeState(FairMQSink::RESET_DEVICE);
-        sink.WaitForEndOfState(FairMQSink::RESET_DEVICE);
+        sink.ChangeState("RESET_DEVICE");
+        sink.WaitForEndOfState("RESET_DEVICE");
 
-        sink.ChangeState(FairMQSink::END);
+        sink.ChangeState("END");
 
     }
-    catch (exception& e)
+    catch (std::exception& e)
     {
         LOG(ERROR) << e.what();
-        LOG(INFO) << "Started with: ";
+        LOG(INFO) << "Command line options are the following: ";
         config.PrintHelp();
         return 1;
     }

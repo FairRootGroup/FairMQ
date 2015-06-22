@@ -5,14 +5,14 @@ JSONFILE="@CMAKE_BINARY_DIR@/bin/bsampler-sink.json"
 # Note: device-id value must correspond to the device id given in the json file
 
 BSAMPLER="runOptTestSampler"
-BSAMPLER+=" --config-sjson-filename $JSONFILE"
-BSAMPLER+=" --device-id bsampler1"
+BSAMPLER+=" --config-json-file $JSONFILE"
+BSAMPLER+=" --id bsampler1"
 
 xterm -geometry 150x23+0+0 -hold -e @CMAKE_BINARY_DIR@/bin/$BSAMPLER &
 
 
 SINK="runOptTestSink"
-SINK+=" --config-json-filename $JSONFILE"
-SINK+=" --device-id sink1"
+SINK+=" --config-json-file $JSONFILE"
+SINK+=" --id sink1"
 
 xterm -geometry 150x23+0+350 -hold -e @CMAKE_BINARY_DIR@/bin/$SINK &

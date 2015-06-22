@@ -9,8 +9,8 @@
 # xml.config.node.root = fairMQOptions
 #----------------------------------------------------
 
-config-json-filename = @CMAKE_BINARY_DIR@/bin/testJSON.json
-config-xml-filename = @CMAKE_BINARY_DIR@/bin/testXML.xml
+config-json-file = @CMAKE_BINARY_DIR@/bin/testJSON.json
+config-xml-file = @CMAKE_BINARY_DIR@/bin/testXML.xml
 
 #
 device-id = merger

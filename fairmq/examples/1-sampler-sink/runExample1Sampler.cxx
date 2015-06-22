@@ -6,10 +6,10 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * runSink.cxx
+ * runExampleSampler.cxx
  *
- * @since 2013-01-21
- * @author: D. Klein, A. Rybalchenko
+ * @since 2013-04-23
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include <iostream>
@@ -20,7 +20,7 @@
 #include "FairMQLogger.h"
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
-#include "FairMQSink.h"
+#include "FairMQExample1Sampler.h"
 
 #ifdef NANOMSG
 #include "FairMQTransportFactoryNN.h"
@@ -28,17 +28,15 @@
 #include "FairMQTransportFactoryZMQ.h"
 #endif
 
-using namespace std;
-using namespace FairMQParser;
 using namespace boost::program_options;
 
-FairMQSink sink;
+FairMQExample1Sampler sampler;
 
 static void s_signal_handler(int signal)
 {
     LOG(INFO) << "Caught signal " << signal;
 
-    sink.ChangeState(FairMQSink::END);
+    sampler.ChangeState("END");
 
     LOG(INFO) << "Shutdown complete.";
     exit(1);
@@ -62,25 +60,25 @@ int main(int argc, char** argv)
 
     try
     {
-        int ioThreads;
+        std::string text;
 
-        options_description sink_options("Sink options");
-        sink_options.add_options()
-            ("io-threads", value<int>(&ioThreads)->default_value(1),    "Number of I/O threads");
+        options_description samplerOptions("Sampler options");
+        samplerOptions.add_options()
+            ("text", value<std::string>(&text)->default_value("Hello"), "Text to send out");
 
-        config.AddToCmdLineOptions(sink_options);
+        config.AddToCmdLineOptions(samplerOptions);
 
         if (config.ParseAll(argc, argv))
         {
             return 0;
         }
 
-        string filename = config.GetValue<string>("config-json-filename");
-        string id = config.GetValue<string>("id");
+        std::string filename = config.GetValue<std::string>("config-json-file");
+        std::string id = config.GetValue<std::string>("id");
 
-        config.UserParser<JSON>(filename, id);
+        config.UserParser<FairMQParser::JSON>(filename, id);
 
-        sink.fChannels = config.GetFairMQMap();
+        sampler.fChannels = config.GetFairMQMap();
 
         LOG(INFO) << "PID: " << getpid();
 
@@ -90,35 +88,35 @@ int main(int argc, char** argv)
         FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
 #endif
 
-        sink.SetTransport(transportFactory);
+        sampler.SetTransport(transportFactory);
 
-        sink.SetProperty(FairMQSink::Id, id);
-        sink.SetProperty(FairMQSink::NumIoThreads, ioThreads);
+        sampler.SetProperty(FairMQExample1Sampler::Id, id);
+        sampler.SetProperty(FairMQExample1Sampler::Text, text);
 
-        sink.ChangeState(FairMQSink::INIT_DEVICE);
-        sink.WaitForEndOfState(FairMQSink::INIT_DEVICE);
+        sampler.ChangeState("INIT_DEVICE");
+        sampler.WaitForEndOfState("INIT_DEVICE");
 
-        sink.ChangeState(FairMQSink::INIT_TASK);
-        sink.WaitForEndOfState(FairMQSink::INIT_TASK);
+        sampler.ChangeState("INIT_TASK");
+        sampler.WaitForEndOfState("INIT_TASK");
 
-        sink.ChangeState(FairMQSink::RUN);
-        sink.WaitForEndOfState(FairMQSink::RUN);
+        sampler.ChangeState("RUN");
+        sampler.WaitForEndOfState("RUN");
 
-        sink.ChangeState(FairMQSink::STOP);
+        sampler.ChangeState("STOP");
 
-        sink.ChangeState(FairMQSink::RESET_TASK);
-        sink.WaitForEndOfState(FairMQSink::RESET_TASK);
+        sampler.ChangeState("RESET_TASK");
+        sampler.WaitForEndOfState("RESET_TASK");
 
-        sink.ChangeState(FairMQSink::RESET_DEVICE);
-        sink.WaitForEndOfState(FairMQSink::RESET_DEVICE);
+        sampler.ChangeState("RESET_DEVICE");
+        sampler.WaitForEndOfState("RESET_DEVICE");
 
-        sink.ChangeState(FairMQSink::END);
+        sampler.ChangeState("END");
 
     }
-    catch (exception& e)
+    catch (std::exception& e)
     {
         LOG(ERROR) << e.what();
-        LOG(INFO) << "Started with: ";
+        LOG(INFO) << "Command line options are the following: ";
         config.PrintHelp();
         return 1;
     }

@@ -23,9 +23,9 @@ int testXML1(FairMQProgOptions* config)
     std::string filename;
     std::string XMLrootNode;
     
-    filename=config->GetValue<std::string>("config-xml-filename");
+    filename=config->GetValue<std::string>("config-xml-file");
     XMLrootNode=config->GetValue<std::string>("xml.config.node.root");
-    std::string id=config->GetValue<std::string>("device-id");
+    std::string id=config->GetValue<std::string>("id");
     config->UserParser<FairMQParser::XML>(filename,id,XMLrootNode);
     // other xml parser test
     config->UserParser<FairMQParser::MQXML2>(filename);
@@ -42,7 +42,7 @@ int testXML2(FairMQProgOptions* config)
     LOG(INFO)<<"--------- test XML2 ---------\n";
     std::string XML;
     std::string XMLrootNode;
-    std::string id=config->GetValue<std::string>("device-id");
+    std::string id=config->GetValue<std::string>("id");
     XMLrootNode=config->GetValue<std::string>("xml.config.node.root");
     
     // Note: convert the vector<string> into one string with GetStringValue(key)
@@ -62,9 +62,9 @@ int testJSON1(FairMQProgOptions* config)
     LOG(INFO)<<"--------- test JSON1 ---------\n";
     std::string filename;
     std::string JSONrootNode;
-    std::string id=config->GetValue<std::string>("device-id");
+    std::string id=config->GetValue<std::string>("id");
     
-    filename=config->GetValue<std::string>("config-json-filename");
+    filename=config->GetValue<std::string>("config-json-file");
     JSONrootNode=config->GetValue<std::string>("json.config.node.root");
     
     config->UserParser<FairMQParser::JSON>(filename,id,JSONrootNode);
@@ -79,7 +79,7 @@ int testJSON2(FairMQProgOptions* config)
     LOG(INFO)<<"--------- test JSON2 ---------\n";
     std::string JSON;
     std::string JSONrootNode;
-    std::string id=config->GetValue<std::string>("device-id");
+    std::string id=config->GetValue<std::string>("id");
     JSONrootNode=config->GetValue<std::string>("json.config.node.root");
     
     // Note: convert the vector<string> into one string with GetStringValue(key)
@@ -122,13 +122,13 @@ int main(int argc, char** argv)
         
         // Parse xml or json from cmd line or file
         
-        if(config->GetVarMap().count("config-xml-filename"))
+        if(config->GetVarMap().count("config-xml-file"))
             testXML1(config);
         
         if(config->GetVarMap().count("config-xml-string"))
             testXML2(config);
         
-        if(config->GetVarMap().count("config-json-filename"))
+        if(config->GetVarMap().count("config-json-file"))
             testJSON1(config);
         
         if(config->GetVarMap().count("config-json-string"))

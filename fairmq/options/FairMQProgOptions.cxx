@@ -41,18 +41,18 @@ int FairMQProgOptions::ParseAll(const int argc, char** argv, bool AllowUnregiste
     if (fUseConfigFile)
     {
         fCmdline_options.add_options()
-            ("device-id", po::value< std::string >(), "Device ID");
+            ("id", po::value< std::string >(), "Device ID");
         fConfig_file_options.add_options()
-            ("device-id", po::value< std::string >()->required(), "Device ID");
+            ("id", po::value< std::string >()->required(), "Device ID");
     }
     else
     {
         fCmdline_options.add_options()
-            ("device-id", po::value< std::string >()->required(), "Device ID");
+            ("id", po::value< std::string >()->required(), "Device ID");
     }
 
     fVisible_options.add_options()
-        ("device-id", po::value< std::string >()->required(), "Device ID (required value)");
+        ("id", po::value< std::string >()->required(), "Device ID (required value)");
 
     // parse command line
     if (ParseCmdLine(argc,argv,fCmdline_options,fvarmap,AllowUnregistered))
@@ -101,12 +101,12 @@ int FairMQProgOptions::NotifySwitchOption()
 void FairMQProgOptions::InitOptionDescription()
 {
     fMQParserOptions.add_options()
-        ("config-xml-string",     po::value< std::vector<std::string> >()->multitoken(), "XML input as command line string.")
-        ("config-xml-filename",   po::value< std::string >(), "XML input as file.")
-        ("config-json-string",    po::value< std::vector<std::string> >()->multitoken(), "JSON input as command line string.")
-        ("config-json-filename",  po::value< std::string >(), "JSON input as file.")
+        ("config-xml-string",  po::value< std::vector<std::string> >()->multitoken(), "XML input as command line string.")
+        ("config-xml-file",    po::value< std::string >(), "XML input as file.")
+        ("config-json-string", po::value< std::vector<std::string> >()->multitoken(), "JSON input as command line string.")
+        ("config-json-file",   po::value< std::string >(), "JSON input as file.")
         
-        // ("ini.config.string",     po::value< std::vector<std::string> >()->multitoken(), "INI input as command line string.")
-        // ("ini.config.filename",   po::value< std::string >(), "INI input as file.")
+        // ("ini.config.string", po::value< std::vector<std::string> >()->multitoken(), "INI input as command line string.")
+        // ("ini.config.file",   po::value< std::string >(), "INI input as file.")
     ;
 }

@@ -6,13 +6,18 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/ProgOptionTest/macro/bsampler-sink.json ${CMAKE_BINARY_DIR}/bin/bsampler-sink.json)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/ProgOptionTest/macro/bsampler-sink.json ${CMAKE_BINARY_DIR}/bin/config/example-bsampler-sink.json)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/1-sampler-sink/sampler-sink.json ${CMAKE_BINARY_DIR}/bin/config/ex1-sampler-sink.json)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/2-sampler-processor-sink/sampler-processor-sink.json ${CMAKE_BINARY_DIR}/bin/config/ex2-sampler-processor-sink.json)
 
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
   ${CMAKE_SOURCE_DIR}/fairmq/devices
   ${CMAKE_SOURCE_DIR}/fairmq/tools
   ${CMAKE_SOURCE_DIR}/fairmq/options
+  ${CMAKE_SOURCE_DIR}/fairmq/examples/1-sampler-sink
+  ${CMAKE_SOURCE_DIR}/fairmq/examples/2-sampler-processor-sink
+  ${CMAKE_SOURCE_DIR}/fairmq/examples/req-rep
 )
 
 Set(SYSTEM_INCLUDE_DIRECTORIES
@@ -22,7 +27,6 @@ Set(SYSTEM_INCLUDE_DIRECTORIES
 If(PROTOBUF_FOUND)
   Set(INCLUDE_DIRECTORIES
     ${INCLUDE_DIRECTORIES}
-    ${CMAKE_SOURCE_DIR}/fairmq/examples/req-rep
     # # following directory is only for protobuf tests and is not essential part of FairMQ
     #${CMAKE_SOURCE_DIR}/fairmq/prototest
   )
@@ -71,15 +75,25 @@ set(SRCS
   "FairMQChannel.cxx"
   "FairMQDevice.cxx"
   "FairMQPoller.cxx"
+
   "devices/FairMQBenchmarkSampler.cxx"
   "devices/FairMQSink.cxx"
   "devices/FairMQBuffer.cxx"
   "devices/FairMQProxy.cxx"
   "devices/FairMQSplitter.cxx"
   "devices/FairMQMerger.cxx"
+
   "options/FairProgOptions.cxx"
   "options/FairMQProgOptions.cxx"
   "options/FairMQParser.cxx"
+
+  "examples/1-sampler-sink/FairMQExample1Sampler.cxx"
+  "examples/1-sampler-sink/FairMQExample1Sink.cxx"
+
+  "examples/2-sampler-processor-sink/FairMQExample2Sampler.cxx"
+  "examples/2-sampler-processor-sink/FairMQExample2Processor.cxx"
+  "examples/2-sampler-processor-sink/FairMQExample2Sink.cxx"
+
   "examples/req-rep/FairMQExampleClient.cxx"
   "examples/req-rep/FairMQExampleServer.cxx"
 )
@@ -155,8 +169,13 @@ set(Exe_Names
   splitter
   merger
   proxy
-  example_client
-  example_server
+  ex1-sampler
+  ex1-sink
+  ex2-sampler
+  ex2-processor
+  ex2-sink
+  example-client
+  example-server
 )
 
 # following executables are only for protobuf tests and are not essential part of FairMQ
@@ -177,6 +196,11 @@ set(Exe_Source
   run/runSplitter.cxx
   run/runMerger.cxx
   run/runProxy.cxx
+  examples/1-sampler-sink/runExample1Sampler.cxx
+  examples/1-sampler-sink/runExample1Sink.cxx
+  examples/2-sampler-processor-sink/runExample2Sampler.cxx
+  examples/2-sampler-processor-sink/runExample2Processor.cxx
+  examples/2-sampler-processor-sink/runExample2Sink.cxx
   examples/req-rep/runExampleClient.cxx
   examples/req-rep/runExampleServer.cxx
 )

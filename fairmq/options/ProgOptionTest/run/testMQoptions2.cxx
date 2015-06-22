@@ -57,9 +57,9 @@ int main(int argc, char** argv)
         std::string filename;
         std::string XMLrootNode;
 
-        filename=config.GetValue<std::string>("config-xml-filename");
+        filename=config.GetValue<std::string>("config-xml-file");
         XMLrootNode=config.GetValue<std::string>("xml.config.node.root");
-        std::string id=config.GetValue<std::string>("device-id");
+        std::string id=config.GetValue<std::string>("id");
         config.UserParser<FairMQParser::XML>(filename,id,XMLrootNode);
         
         

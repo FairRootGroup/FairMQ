@@ -30,6 +30,7 @@ protected:
 public:
     FairMQProgOptions();
     virtual ~FairMQProgOptions();
+
     virtual int ParseAll(const int argc, char** argv, bool AllowUnregistered = false);
 
     // external parser, store function 

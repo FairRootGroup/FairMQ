@@ -55,8 +55,8 @@ int main(int argc, char** argv)
             return 0;
         
         // keys defined in FairMQProgOptions
-        string filename=config.GetValue<string>("config-json-filename");
-        string deviceID=config.GetValue<string>("device-id");
+        string filename=config.GetValue<string>("config-json-file");
+        string deviceID=config.GetValue<string>("id");
 
         // //////////////////////////////////////////////////////////////
         // User defined parsing method. 
