@@ -73,40 +73,14 @@ public:
     int AddToCmdLineOptions(const po::options_description& optdesc, bool visible = true);
     int AddToCfgFileOptions(const po::options_description& optdesc, bool visible = true);
     int AddToEnvironmentOptions(const po::options_description& optdesc);
-
-    void EnableCfgFile(const std::string& filename = "")
-    {
-        fUseConfigFile = true;
-        if (filename.empty())
-        {
-            fCmdline_options.add_options()
-                ("config,c", po::value<std::string>(&fConfigFile)->required(), "Path to configuration file");
-        }
-        else
-        {
-            fConfigFile = filename;
-        }
-    }
-
-    void UseConfigFile(const std::string& filename = "")
-    {
-        fUseConfigFile = true;
-        if (filename.empty())
-        {
-            fCmdline_options.add_options()
-                ("config,c", po::value<std::string>(&fConfigFile)->required(), "Path to configuration file");
-        }
-        else
-        {
-            fConfigFile = filename;
-        }
-    }
-
-    // set value corresponding to the key
+    
+    void UseConfigFile(const std::string& filename = "");
+    
+    // get value corresponding to the key
     template<typename T>
     T GetValue(const std::string& key) const
     {
-        T val;
+        T val = T();
         try
         {
             if (fvarmap.count(key))
@@ -122,7 +96,7 @@ public:
         }
         catch(std::exception& e)
         {
-            LOG(ERROR) << "Exception thorwn for the key '" << key << "'";
+            LOG(ERROR) << "Exception thrown for the key '" << key << "'";
             LOG(ERROR) << e.what();
             this->PrintHelp();
         }
@@ -132,6 +106,7 @@ public:
 
     // convert value to string that corresponds to the key
     std::string GetStringValue(const std::string& key);
+    
     const po::variables_map& GetVarMap() const {return fvarmap;}
     
     // boost prog options parsers
@@ -172,7 +147,7 @@ protected:
     std::string fConfigFile;
     virtual int NotifySwitchOption();
 
-    // UpadateVarMap() and replace() --> to modify the value of variable map after calling po::store
+    // UpadateVarMap() and replace() --> helper functions to modify the value of variable map after calling po::store
     template<typename T>
     void UpadateVarMap(const std::string& key, const T& val)
     {

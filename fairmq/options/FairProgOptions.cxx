@@ -76,6 +76,21 @@ int FairProgOptions::AddToEnvironmentOptions(const po::options_description& optd
     return 0;
 }
 
+
+void FairProgOptions::UseConfigFile(const std::string& filename)
+{
+        fUseConfigFile = true;
+        if (filename.empty())
+        {
+            fCmdline_options.add_options()
+                ("config,c", po::value<std::string>(&fConfigFile)->required(), "Path to configuration file");
+        }
+        else
+        {
+            fConfigFile = filename;
+        }
+}
+
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Parser
 
@@ -235,25 +250,13 @@ std::string FairProgOptions::GetStringValue(const std::string& key)
         }
         catch(std::exception& e)
         {
-            MQLOG(ERROR) << "Problem in boost variable map for the key '" << key << "'";
+            MQLOG(ERROR) << "Exception thrown for the key '" << key << "'";
             MQLOG(ERROR) << e.what();
         }
         
         return val_str;
     }
 
-
-/*
-int FairProgOptions::ParseAll(const int argc, char** argv, bool AllowUnregistered)
-{
-    // //////////////////////////////////
-    // Method to overload.
-    ParseCmdLine(argc,argv,fGenericDesc,fvarmap,AllowUnregistered);
-    PrintOptions();
-
-    return 0;
-}
-*/
 
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Print/notify options
