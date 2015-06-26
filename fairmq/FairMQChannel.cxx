@@ -14,6 +14,8 @@
 
 #include <set>
 
+#include <boost/exception/all.hpp>
+
 #include "FairMQChannel.h"
 #include "FairMQLogger.h"
 
@@ -49,139 +51,237 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
 
 std::string FairMQChannel::GetType()
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-    return fType;
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        return fType;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
 }
 
 std::string FairMQChannel::GetMethod()
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-    return fMethod;
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        return fMethod;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
 }
 
 std::string FairMQChannel::GetAddress()
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-    return fAddress;
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        return fAddress;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
 }
 
 int FairMQChannel::GetSndBufSize()
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-    return fSndBufSize;
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        return fSndBufSize;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
 }
 
 int FairMQChannel::GetRcvBufSize()
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-    return fRcvBufSize;
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        return fRcvBufSize;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
 }
 
 int FairMQChannel::GetRateLogging()
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-    return fRateLogging;
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        return fRateLogging;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
 }
 
 void FairMQChannel::UpdateType(const std::string& type)
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-    fType = type;
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        fType = type;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
 }
 void FairMQChannel::UpdateMethod(const std::string& method)
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-    fMethod = method;
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        fMethod = method;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
 }
 void FairMQChannel::UpdateAddress(const std::string& address)
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-    fAddress = address;
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        fAddress = address;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
 }
 void FairMQChannel::UpdateSndBufSize(const int sndBufSize)
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-    fSndBufSize = sndBufSize;
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        fSndBufSize = sndBufSize;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
 }
 void FairMQChannel::UpdateRcvBufSize(const int rcvBufSize)
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-    fRcvBufSize = rcvBufSize;
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        fRcvBufSize = rcvBufSize;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
 }
 void FairMQChannel::UpdateRateLogging(const int rateLogging)
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-    fRateLogging = rateLogging;
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        fRateLogging = rateLogging;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
 }
 
 bool FairMQChannel::IsValid()
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-    return fIsValid;
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        return fIsValid;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
 }
 
 bool FairMQChannel::ValidateChannel()
 {
-    boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
-
-    stringstream ss;
-    ss << "Validating channel " << fChannelName << "... ";
-
-    if (fIsValid)
+    try
     {
-        ss << "ALREADY VALID";
+        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+
+        stringstream ss;
+        ss << "Validating channel " << fChannelName << "... ";
+
+        if (fIsValid)
+        {
+            ss << "ALREADY VALID";
+            LOG(DEBUG) << ss.str();
+            return true;
+        }
+
+        const string socketTypeNames[] = { "sub", "pub", "pull", "push", "req", "rep", "xsub", "xpub", "dealer", "router", "pair" };
+        const set<string> socketTypes(socketTypeNames, socketTypeNames + sizeof(socketTypeNames) / sizeof(string));
+        if (socketTypes.find(fType) == socketTypes.end())
+        {
+            ss << "INVALID";
+            LOG(DEBUG) << ss.str();
+            LOG(DEBUG) << "Invalid channel type: " << fType;
+            return false;
+        }
+
+        const string socketMethodNames[] = { "bind", "connect" };
+        const set<string> socketMethods(socketMethodNames, socketMethodNames + sizeof(socketMethodNames) / sizeof(string));
+        if (socketMethods.find(fMethod) == socketMethods.end())
+        {
+            ss << "INVALID";
+            LOG(DEBUG) << ss.str();
+            LOG(DEBUG) << "Invalid channel method: " << fMethod;
+            return false;
+        }
+
+        if (fAddress == "unspecified" || fAddress == "")
+        {
+            ss << "INVALID";
+            LOG(DEBUG) << ss.str();
+            LOG(DEBUG) << "invalid channel address: " << fAddress;
+            return false;
+        }
+
+        if (fSndBufSize < 0)
+        {
+            ss << "INVALID";
+            LOG(DEBUG) << ss.str();
+            LOG(DEBUG) << "invalid channel send buffer size: " << fSndBufSize;
+            return false;
+        }
+
+        if (fRcvBufSize < 0)
+        {
+            ss << "INVALID";
+            LOG(DEBUG) << ss.str();
+            LOG(DEBUG) << "invalid channel receive buffer size: " << fRcvBufSize;
+            return false;
+        }
+
+        fIsValid = true;
+        ss << "VALID";
         LOG(DEBUG) << ss.str();
         return true;
     }
-
-    const string socketTypeNames[] = { "sub", "pub", "pull", "push", "req", "rep", "xsub", "xpub", "dealer", "router", "pair" };
-    const set<string> socketTypes(socketTypeNames, socketTypeNames + sizeof(socketTypeNames) / sizeof(string));
-    if (socketTypes.find(fType) == socketTypes.end())
+    catch (boost::exception& e)
     {
-        ss << "INVALID";
-        LOG(DEBUG) << ss.str();
-        LOG(DEBUG) << "Invalid channel type: " << fType;
-        return false;
+        LOG(ERROR) << boost::diagnostic_information(e);
     }
-
-    const string socketMethodNames[] = { "bind", "connect" };
-    const set<string> socketMethods(socketMethodNames, socketMethodNames + sizeof(socketMethodNames) / sizeof(string));
-    if (socketMethods.find(fMethod) == socketMethods.end())
-    {
-        ss << "INVALID";
-        LOG(DEBUG) << ss.str();
-        LOG(DEBUG) << "Invalid channel method: " << fMethod;
-        return false;
-    }
-
-    if (fAddress == "unspecified" || fAddress == "")
-    {
-        ss << "INVALID";
-        LOG(DEBUG) << ss.str();
-        LOG(DEBUG) << "invalid channel address: " << fAddress;
-        return false;
-    }
-
-    if (fSndBufSize < 0)
-    {
-        ss << "INVALID";
-        LOG(DEBUG) << ss.str();
-        LOG(DEBUG) << "invalid channel send buffer size: " << fSndBufSize;
-        return false;
-    }
-
-    if (fRcvBufSize < 0)
-    {
-        ss << "INVALID";
-        LOG(DEBUG) << ss.str();
-        LOG(DEBUG) << "invalid channel receive buffer size: " << fRcvBufSize;
-        return false;
-    }
-
-    fIsValid = true;
-    ss << "VALID";
-    LOG(DEBUG) << ss.str();
-    return true;
 }
 
 void FairMQChannel::ResetChannel()

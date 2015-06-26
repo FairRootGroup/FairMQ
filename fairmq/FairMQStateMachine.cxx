@@ -98,7 +98,11 @@ bool FairMQStateMachine::ChangeState(int event)
                 return false;
         }
     }
-    catch (boost::exception &e)
+    catch (boost::thread_interrupted& e)
+    {
+        LOG(ERROR) << boost::diagnostic_information(e);
+    }
+    catch (boost::exception& e)
     {
         LOG(ERROR) << boost::diagnostic_information(e);
     }
@@ -121,10 +125,17 @@ void FairMQStateMachine::WaitForEndOfState(int event)
             case RESET_TASK:
             case RESET_DEVICE:
             {
-                boost::unique_lock<boost::mutex> lock(fStateMutex);
-                while (!fStateFinished)
+                try
                 {
-                    fStateCondition.wait(lock);
+                    boost::unique_lock<boost::mutex> lock(fStateMutex);
+                    while (!fStateFinished)
+                    {
+                        fStateCondition.wait(lock);
+                    }
+                }
+                catch (boost::exception& e)
+                {
+                    LOG(ERROR) << boost::diagnostic_information(e);
                 }
                 break;
             }
@@ -133,7 +144,7 @@ void FairMQStateMachine::WaitForEndOfState(int event)
                 break;
         }
     }
-    catch (boost::exception &e)
+    catch (boost::thread_interrupted& e)
     {
         LOG(ERROR) << boost::diagnostic_information(e);
     }
@@ -173,7 +184,7 @@ bool FairMQStateMachine::WaitForEndOfStateForMs(int event, int durationInMs)
                 return false;
         }
     }
-    catch (boost::exception &e)
+    catch (boost::thread_interrupted &e)
     {
         LOG(ERROR) << boost::diagnostic_information(e);
     }
