@@ -32,6 +32,12 @@ struct JSON
     FairMQMap UserParser(std::stringstream& input, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
 };
 
+struct XML 
+{
+    FairMQMap UserParser(const std::string& filename, const std::string& deviceId, const std::string& root_node="fairMQOptions");
+    FairMQMap UserParser(std::stringstream& input, const std::string& deviceId, const std::string& rootNode="fairMQOptions");
+};
+
 } // FairMQParser namespace
 #endif /* FAIRMQPARSER_H */
 

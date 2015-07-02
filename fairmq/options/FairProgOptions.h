@@ -62,6 +62,7 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
 }
 
 namespace po = boost::program_options;
+namespace fs = boost::filesystem;
 
 class FairProgOptions
 {
@@ -86,12 +87,6 @@ public:
             if (fvarmap.count(key))
             {
                 val = fvarmap[key].as<T>();
-            }
-            else
-            {
-                LOG(ERROR) << "Key '"<< key <<"' not found in boost variable map";
-                LOG(INFO) << "Command line / txt config file options are the following : ";
-                this->PrintHelp();
             }
         }
         catch(std::exception& e)
@@ -144,7 +139,7 @@ protected:
 
     int fVerboseLvl;
     bool fUseConfigFile;
-    std::string fConfigFile;
+    boost::filesystem::path fConfigFile;
     virtual int NotifySwitchOption();
 
     // UpadateVarMap() and replace() --> helper functions to modify the value of variable map after calling po::store

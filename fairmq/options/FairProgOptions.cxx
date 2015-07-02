@@ -64,6 +64,10 @@ int FairProgOptions::AddToCmdLineOptions(const po::options_description& optdesc,
 
 int FairProgOptions::AddToCfgFileOptions(const po::options_description& optdesc, bool visible)
 {
+    //if UseConfigFile() not yet called, then enable it with required file name to be provided by command line
+    if(!fUseConfigFile)
+        UseConfigFile();
+    
     fConfig_file_options.add(optdesc);
     if(visible)
         fVisible_options.add(optdesc);
@@ -82,8 +86,9 @@ void FairProgOptions::UseConfigFile(const std::string& filename)
         fUseConfigFile = true;
         if (filename.empty())
         {
-            fCmdline_options.add_options()
-                ("config,c", po::value<std::string>(&fConfigFile)->required(), "Path to configuration file");
+            fConfigDesc.add_options()
+                ("config,c", po::value<boost::filesystem::path>(&fConfigFile)->required(), "Path to configuration file (required argument)");
+            AddToCmdLineOptions(fConfigDesc);
         }
         else
         {
@@ -464,6 +469,7 @@ FairProgOptions::VarValInfo_t FairProgOptions::Get_variable_value_info(const po:
         if(auto q = boost::any_cast<boost::filesystem::path>(&value))
         {
             std::string val_str = (*q).string();
+            //std::string val_str = (*q).filename().generic_string();
             return std::make_tuple(val_str,std::string("  [Type=boost::filesystem::path]"),defaulted_val,empty_val);
         }
 

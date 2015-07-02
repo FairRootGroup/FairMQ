@@ -14,7 +14,7 @@
 
 #include "FairMQParser.h"
 #include "FairMQLogger.h"
-
+#include <boost/property_tree/xml_parser.hpp>
 // WARNING : pragma commands to hide boost (1.54.0) warning
 // TODO : remove these pragma commands when boost will fix this issue in future release
 #pragma clang diagnostic push
@@ -187,5 +187,23 @@ FairMQMap JSON::UserParser(std::stringstream& input, const std::string& deviceId
     boost::property_tree::read_json(input, pt);
     return ptreeToMQMap(pt, deviceId, rootNode,"json");
 }
+
+
+////////////////////////////////////////////////////////////////////////////
+FairMQMap XML::UserParser(const std::string& filename, const std::string& deviceId, const std::string& rootNode)
+{
+    boost::property_tree::ptree pt;
+    boost::property_tree::read_xml(filename, pt);
+    return ptreeToMQMap(pt,deviceId,rootNode,"xml");
+}
+
+FairMQMap XML::UserParser(std::stringstream& input, const std::string& deviceId, const std::string& rootNode)
+{
+    boost::property_tree::ptree pt;
+    boost::property_tree::read_xml(input, pt);
+    return ptreeToMQMap(pt,deviceId,rootNode,"xml");
+}
+
+
 
 } //  end FairMQParser namespace

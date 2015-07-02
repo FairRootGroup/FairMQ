@@ -13,29 +13,6 @@
 namespace FairMQParser
 {
 
-    
-    ////////////////////////////////////////////////////////////////////////////
-    //----------- filename version
-    FairMQMap XML::UserParser(const std::string& filename, const std::string& device_id, const std::string& root_node)
-    {
-        boost::property_tree::ptree pt;
-        boost::property_tree::read_xml(filename, pt);
-        return ptreeToMQMap(pt,device_id,root_node,"xml");
-    }
-    
-    
-    
-    //----------- stringstream version
-    FairMQMap XML::UserParser(std::stringstream& input_ss, const std::string& device_id, const std::string& root_node)
-    {
-        boost::property_tree::ptree pt;
-        boost::property_tree::read_xml(input_ss, pt);
-        return ptreeToMQMap(pt,device_id,root_node,"xml");
-    }
-    
-    
-    
-    
     // other xml examples
     ////////////////////////////////////////////////////////////////////////////
     boost::property_tree::ptree MQXML2::UserParser(const std::string& filename)

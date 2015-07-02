@@ -74,6 +74,8 @@ public:
 
 protected:
     po::options_description fMQParserOptions;
+    po::options_description fMQOptionsInCfg;
+    po::options_description fMQOptionsInCmd;
     pt::ptree fMQtree;
     FairMQMap fFairMQmap;
 
