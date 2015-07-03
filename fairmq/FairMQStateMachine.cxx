@@ -40,13 +40,12 @@ int FairMQStateMachine::GetEventNumber(std::string event)
     if (event == "INIT_TASK") return INIT_TASK;
     if (event == "RUN") return RUN;
     if (event == "PAUSE") return PAUSE;
-    if (event == "RESUME") return RESUME;
     if (event == "STOP") return STOP;
     if (event == "RESET_DEVICE") return RESET_DEVICE;
     if (event == "RESET_TASK") return RESET_TASK;
     if (event == "END") return END;
     LOG(ERROR) << "Requested number for non-existent event... " << event << std::endl
-               << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, RESUME, STOP, RESET_DEVICE, RESET_TASK, END";
+               << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, STOP, RESET_DEVICE, RESET_TASK, END";
     return -1;
 }
 
@@ -74,9 +73,6 @@ bool FairMQStateMachine::ChangeState(int event)
             case PAUSE:
                 process_event(FairMQFSM::PAUSE());
                 return true;
-            case RESUME:
-                process_event(FairMQFSM::RESUME());
-                return true;
             case STOP:
                 process_event(FairMQFSM::STOP());
                 return true;
@@ -94,7 +90,7 @@ bool FairMQStateMachine::ChangeState(int event)
                 return true;
             default:
                 LOG(ERROR) << "Requested unsupported state: " << event << std::endl
-                           << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, RESUME, STOP, RESET_TASK, RESET_DEVICE, END";
+                           << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, STOP, RESET_TASK, RESET_DEVICE, END";
                 return false;
         }
     }

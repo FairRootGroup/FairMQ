@@ -13,7 +13,6 @@
  */
 
 #include <iostream>
-#include <csignal>
 
 #include "FairMQLogger.h"
 #include "FairMQExampleServer.h"
@@ -26,31 +25,10 @@
 
 using namespace std;
 
-FairMQExampleServer server;
-
-static void s_signal_handler(int signal)
-{
-    LOG(INFO) << "Caught signal " << signal;
-
-    server.ChangeState(FairMQExampleServer::END);
-
-    LOG(INFO) << "Caught signal " << signal;
-    exit(1);
-}
-
-static void s_catch_signals(void)
-{
-    struct sigaction action;
-    action.sa_handler = s_signal_handler;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-}
-
 int main(int argc, char** argv)
 {
-    s_catch_signals();
+    FairMQExampleServer server;
+    server.CatchSignals();
 
     LOG(INFO) << "PID: " << getpid();
 
@@ -72,24 +50,14 @@ int main(int argc, char** argv)
 
     server.fChannels["data"].push_back(replyChannel);
 
-    server.ChangeState(FairMQExampleServer::INIT_DEVICE);
-    server.WaitForEndOfState(FairMQExampleServer::INIT_DEVICE);
+    server.ChangeState("INIT_DEVICE");
+    server.WaitForEndOfState("INIT_DEVICE");
 
-    server.ChangeState(FairMQExampleServer::INIT_TASK);
-    server.WaitForEndOfState(FairMQExampleServer::INIT_TASK);
+    server.ChangeState("INIT_TASK");
+    server.WaitForEndOfState("INIT_TASK");
 
-    server.ChangeState(FairMQExampleServer::RUN);
-    server.WaitForEndOfState(FairMQExampleServer::RUN);
-
-    server.ChangeState(FairMQExampleServer::STOP);
-
-    server.ChangeState(FairMQExampleServer::RESET_TASK);
-    server.WaitForEndOfState(FairMQExampleServer::RESET_TASK);
-
-    server.ChangeState(FairMQExampleServer::RESET_DEVICE);
-    server.WaitForEndOfState(FairMQExampleServer::RESET_DEVICE);
-
-    server.ChangeState(FairMQExampleServer::END);
+    server.ChangeState("RUN");
+    server.InteractiveStateLoop();
 
     return 0;
 }

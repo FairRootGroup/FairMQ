@@ -37,7 +37,7 @@ void FairMQExampleServer::Run()
 
         FairMQMessage* request = fTransportFactory->CreateMessage();
 
-        fChannels["data"].at(0).Receive(request);
+        fChannels.at("data").at(0).Receive(request);
 
         LOG(INFO) << "Received request from client: \"" << string(static_cast<char*>(request->GetData()), request->GetSize()) << "\"";
 
@@ -49,7 +49,7 @@ void FairMQExampleServer::Run()
 
         FairMQMessage* reply = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
 
-        fChannels["data"].at(0).Send(reply);
+        fChannels.at("data").at(0).Send(reply);
     }
 }
 

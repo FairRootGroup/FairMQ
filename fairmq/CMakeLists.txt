@@ -6,7 +6,7 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/ProgOptionTest/macro/bsampler-sink.json ${CMAKE_BINARY_DIR}/bin/config/example-bsampler-sink.json)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/ProgOptionTest/macro/bsampler-sink.json ${CMAKE_BINARY_DIR}/bin/config/bsampler-sink.json)
 configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/1-sampler-sink/sampler-sink.json ${CMAKE_BINARY_DIR}/bin/config/ex1-sampler-sink.json)
 configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/2-sampler-processor-sink/sampler-processor-sink.json ${CMAKE_BINARY_DIR}/bin/config/ex2-sampler-processor-sink.json)
 
@@ -18,6 +18,7 @@ Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq/examples/1-sampler-sink
   ${CMAKE_SOURCE_DIR}/fairmq/examples/2-sampler-processor-sink
   ${CMAKE_SOURCE_DIR}/fairmq/examples/req-rep
+  ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 Set(SYSTEM_INCLUDE_DIRECTORIES
@@ -27,8 +28,8 @@ Set(SYSTEM_INCLUDE_DIRECTORIES
 If(PROTOBUF_FOUND)
   Set(INCLUDE_DIRECTORIES
     ${INCLUDE_DIRECTORIES}
-    # # following directory is only for protobuf tests and is not essential part of FairMQ
-    #${CMAKE_SOURCE_DIR}/fairmq/prototest
+    # following directory is only for protobuf tests and is not essential part of FairMQ
+    # ${CMAKE_SOURCE_DIR}/fairmq/prototest
   )
   Set(SYSTEM_INCLUDE_DIRECTORIES
     ${SYSTEM_INCLUDE_DIRECTORIES}
@@ -100,9 +101,18 @@ set(SRCS
 
 if(PROTOBUF_FOUND)
   # following source files are only for protobuf tests and are not essential part of FairMQ
+  # add_custom_command(
+  #   OUTPUT
+  #     ${CMAKE_CURRENT_BINARY_DIR}/payload.pb.h
+  #     ${CMAKE_CURRENT_BINARY_DIR}/payload.pb.cc
+  #   COMMAND
+  #     ${SIMPATH}/bin/protoc -I=. --cpp_out=${CMAKE_CURRENT_BINARY_DIR} payload.proto
+  #   WORKING_DIRECTORY
+  #     ${CMAKE_SOURCE_DIR}/fairmq/prototest
+  #   )
   # set(SRCS
   #   ${SRCS}
-  #   "prototest/payload.pb.cc"
+  #   ${CMAKE_CURRENT_BINARY_DIR}/payload.pb.cc
   #   "prototest/FairMQProtoSampler.cxx"
   #   "prototest/FairMQBinSampler.cxx"
   #   "prototest/FairMQBinSink.cxx"
@@ -209,10 +219,10 @@ set(Exe_Source
 # if(PROTOBUF_FOUND)
 #   set(Exe_Source
 #       ${Exe_Source}
-#       run/runBinSampler.cxx
-#       run/runProtoSampler.cxx
-#       run/runBinSink.cxx
-#       run/runProtoSink.cxx
+#       prototest/runBinSampler.cxx
+#       prototest/runProtoSampler.cxx
+#       prototest/runBinSink.cxx
+#       prototest/runProtoSink.cxx
 #       )
 # endif(PROTOBUF_FOUND)
 

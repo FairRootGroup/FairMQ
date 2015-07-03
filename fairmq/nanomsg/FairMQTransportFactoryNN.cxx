@@ -45,3 +45,13 @@ FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const vector<FairMQChannel>
 {
     return new FairMQPollerNN(channels);
 }
+
+FairMQPoller* FairMQTransportFactoryNN::CreatePoller(std::map< std::string,std::vector<FairMQChannel> >& channelsMap, std::initializer_list<std::string> channelList)
+{
+    return new FairMQPollerNN(channelsMap, channelList);
+}
+
+FairMQPoller* FairMQTransportFactoryNN::CreatePoller(FairMQSocket& dataSocket, FairMQSocket& cmdSocket)
+{
+    return new FairMQPollerNN(dataSocket, cmdSocket);
+}

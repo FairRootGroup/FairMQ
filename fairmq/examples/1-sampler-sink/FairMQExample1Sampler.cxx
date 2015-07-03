@@ -40,7 +40,7 @@ void FairMQExample1Sampler::Run()
 
         LOG(INFO) << "Sending \"" << fText << "\"";
 
-        fChannels["data-out"].at(0).Send(msg);
+        fChannels.at("data-out").at(0).Send(msg);
     }
 }
 

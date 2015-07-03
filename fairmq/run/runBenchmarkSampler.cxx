@@ -13,7 +13,6 @@
  */
 
 #include <iostream>
-#include <csignal>
 
 #include "boost/program_options.hpp"
 
@@ -32,31 +31,10 @@ using namespace std;
 using namespace FairMQParser;
 using namespace boost::program_options;
 
-FairMQBenchmarkSampler sampler;
-
-static void s_signal_handler(int signal)
-{
-    LOG(INFO) << "Caught signal " << signal;
-
-    sampler.ChangeState(FairMQBenchmarkSampler::END);
-
-    LOG(INFO) << "Shutdown complete.";
-    exit(1);
-}
-
-static void s_catch_signals(void)
-{
-    struct sigaction action;
-    action.sa_handler = s_signal_handler;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-}
-
 int main(int argc, char** argv)
 {
-    s_catch_signals();
+    FairMQBenchmarkSampler sampler;
+    sampler.CatchSignals();
 
     FairMQProgOptions config;
 
@@ -79,7 +57,7 @@ int main(int argc, char** argv)
             return 0;
         }
 
-        string filename = config.GetValue<string>("config-json-filename");
+        string filename = config.GetValue<string>("config-json-file");
         string id = config.GetValue<string>("id");
 
         config.UserParser<JSON>(filename, id);
@@ -101,25 +79,14 @@ int main(int argc, char** argv)
         sampler.SetProperty(FairMQBenchmarkSampler::EventRate, eventRate);
         sampler.SetProperty(FairMQBenchmarkSampler::NumIoThreads, ioThreads);
 
-        sampler.ChangeState(FairMQBenchmarkSampler::INIT_DEVICE);
-        sampler.WaitForEndOfState(FairMQBenchmarkSampler::INIT_DEVICE);
+        sampler.ChangeState("INIT_DEVICE");
+        sampler.WaitForEndOfState("INIT_DEVICE");
 
-        sampler.ChangeState(FairMQBenchmarkSampler::INIT_TASK);
-        sampler.WaitForEndOfState(FairMQBenchmarkSampler::INIT_TASK);
+        sampler.ChangeState("INIT_TASK");
+        sampler.WaitForEndOfState("INIT_TASK");
 
-        sampler.ChangeState(FairMQBenchmarkSampler::RUN);
-        sampler.WaitForEndOfState(FairMQBenchmarkSampler::RUN);
-
-        sampler.ChangeState(FairMQBenchmarkSampler::STOP);
-
-        sampler.ChangeState(FairMQBenchmarkSampler::RESET_TASK);
-        sampler.WaitForEndOfState(FairMQBenchmarkSampler::RESET_TASK);
-
-        sampler.ChangeState(FairMQBenchmarkSampler::RESET_DEVICE);
-        sampler.WaitForEndOfState(FairMQBenchmarkSampler::RESET_DEVICE);
-
-        sampler.ChangeState(FairMQBenchmarkSampler::END);
-
+        sampler.ChangeState("RUN");
+        sampler.InteractiveStateLoop();
     }
     catch (exception& e)
     {

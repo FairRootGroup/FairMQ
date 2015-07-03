@@ -23,6 +23,8 @@
 #include "FairMQPoller.h"
 #include "FairMQLogger.h"
 
+class FairMQChannel;
+
 class FairMQTransportFactory
 {
   public:
@@ -31,6 +33,8 @@ class FairMQTransportFactory
     virtual FairMQMessage* CreateMessage(void* data, size_t size, fairmq_free_fn *ffn = NULL, void* hint = NULL) = 0;
     virtual FairMQSocket* CreateSocket(const std::string& type, const std::string& name, int numIoThreads) = 0;
     virtual FairMQPoller* CreatePoller(const std::vector<FairMQChannel>& channels) = 0;
+    virtual FairMQPoller* CreatePoller(std::map< std::string,std::vector<FairMQChannel> >& channelsMap, std::initializer_list<std::string> channelList) = 0;
+    virtual FairMQPoller* CreatePoller(FairMQSocket& dataSocket, FairMQSocket& cmdSocket) = 0;
 
     virtual ~FairMQTransportFactory() {};
 };

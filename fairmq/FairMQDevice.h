@@ -18,7 +18,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include <map>
+#include <unordered_map>
 
 #include "FairMQConfigurable.h"
 #include "FairMQStateMachine.h"
@@ -42,12 +42,17 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     FairMQDevice();
 
+    void CatchSignals();
+
     virtual void LogSocketRates();
 
     void SortChannel(const std::string& name, const bool reindex = true);
     void PrintChannel(const std::string& name);
 
     void WaitForInitialValidation();
+
+    void InteractiveStateLoop();
+    void PrintInteractiveStateLoopHelp();
 
     virtual void SetProperty(const int key, const std::string& value);
     virtual std::string GetProperty(const int key, const std::string& default_ = "");
@@ -60,7 +65,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     virtual ~FairMQDevice();
 
-    std::map< std::string,std::vector<FairMQChannel> > fChannels;
+    std::unordered_map< std::string,std::vector<FairMQChannel> > fChannels;
 
   protected:
     std::string fId;
@@ -74,7 +79,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     int fLogIntervalInMs;
 
-    FairMQSocket* fCommandSocket;
+    FairMQSocket* fCmdSocket;
 
     FairMQTransportFactory* fTransportFactory;
 
@@ -95,7 +100,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     void ResetWrapper();
     virtual void Reset();
 
-    virtual void Shutdown();
+    void Shutdown();
 
     void Terminate();
     void SendCommand(const std::string& command);
@@ -107,6 +112,9 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     bool fInitialValidationFinished;
     boost::condition_variable fInitialValidationCondition;
     boost::mutex fInitialValidationMutex;
+
+    void SignalHandler(int signal);
+    bool fCatchingSignals;
 
     /// Copy Constructor
     FairMQDevice(const FairMQDevice&);

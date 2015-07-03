@@ -24,11 +24,14 @@ FairMQSink::FairMQSink()
 
 void FairMQSink::Run()
 {
-    while (GetCurrentState() == RUNNING)
+    // store the channel reference to avoid traversing the map on every loop iteration
+    const FairMQChannel& dataChannel = fChannels.at("data-in").at(0);
+
+    while (CheckCurrentState(RUNNING))
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-        fChannels["data-in"].at(0).Receive(msg);
+        dataChannel.Receive(msg);
 
         delete msg;
     }

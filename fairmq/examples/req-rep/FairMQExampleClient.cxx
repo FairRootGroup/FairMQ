@@ -47,8 +47,8 @@ void FairMQExampleClient::Run()
 
         LOG(INFO) << "Sending \"" << fText << "\" to server.";
 
-        fChannels["data"].at(0).Send(request);
-        fChannels["data"].at(0).Receive(reply);
+        fChannels.at("data").at(0).Send(request);
+        fChannels.at("data").at(0).Receive(reply);
 
         LOG(INFO) << "Received reply from server: \"" << string(static_cast<char*>(reply->GetData()), reply->GetSize()) << "\"";
 

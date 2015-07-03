@@ -13,7 +13,6 @@
  */
 
 #include <iostream>
-#include <csignal>
 
 #include "boost/program_options.hpp"
 
@@ -30,31 +29,10 @@
 
 using namespace boost::program_options;
 
-FairMQExample1Sink sink;
-
-static void s_signal_handler(int signal)
-{
-    LOG(INFO) << "Caught signal " << signal;
-
-    sink.ChangeState(FairMQExample1Sink::END);
-
-    LOG(INFO) << "Shutdown complete.";
-    exit(1);
-}
-
-static void s_catch_signals(void)
-{
-    struct sigaction action;
-    action.sa_handler = s_signal_handler;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-}
-
 int main(int argc, char** argv)
 {
-    s_catch_signals();
+    FairMQExample1Sink sink;
+    sink.CatchSignals();
 
     FairMQProgOptions config;
 
@@ -91,18 +69,7 @@ int main(int argc, char** argv)
         sink.WaitForEndOfState("INIT_TASK");
 
         sink.ChangeState("RUN");
-        sink.WaitForEndOfState("RUN");
-
-        sink.ChangeState("STOP");
-
-        sink.ChangeState("RESET_TASK");
-        sink.WaitForEndOfState("RESET_TASK");
-
-        sink.ChangeState("RESET_DEVICE");
-        sink.WaitForEndOfState("RESET_DEVICE");
-
-        sink.ChangeState("END");
-
+        sink.InteractiveStateLoop();
     }
     catch (std::exception& e)
     {

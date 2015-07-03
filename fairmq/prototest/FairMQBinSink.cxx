@@ -1,8 +1,8 @@
 /********************************************************************************
  *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *              This software is distributed under the terms of the             *
+ *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
@@ -24,15 +24,13 @@ FairMQBinSink::FairMQBinSink()
 
 void FairMQBinSink::Run()
 {
-    LOG(INFO) << ">>>>>>> Run <<<<<<<";
+    const FairMQChannel& dataInChannel = fChannels.at("data-in").at(0);
 
-    boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
-
-    while (fState == RUNNING)
+    while (CheckCurrentState(RUNNING))
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-        fPayloadInputs->at(0)->Receive(msg);
+        dataInChannel.Receive(msg);
 
         int inputSize = msg->GetSize();
         // int numInput = inputSize / sizeof(Content);
@@ -44,9 +42,6 @@ void FairMQBinSink::Run()
 
         delete msg;
     }
-
-    rateLogger.interrupt();
-    rateLogger.join();
 }
 
 FairMQBinSink::~FairMQBinSink()

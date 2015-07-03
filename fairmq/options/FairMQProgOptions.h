@@ -16,6 +16,8 @@
 #ifndef FAIRMQPROGOPTIONS_H
 #define	FAIRMQPROGOPTIONS_H
 
+#include <unordered_map>
+
 #include "FairProgOptions.h"
 
 #include "FairMQChannel.h"
@@ -25,7 +27,7 @@ namespace pt = boost::property_tree;
 class FairMQProgOptions : public FairProgOptions
 {
 protected:
-    typedef std::map< std::string,std::vector<FairMQChannel> > FairMQMap;
+    typedef std::unordered_map< std::string,std::vector<FairMQChannel> > FairMQMap;
 
 public:
     FairMQProgOptions();

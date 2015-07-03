@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_map>
 
 // Boost
 #include <boost/property_tree/ptree.hpp>
@@ -22,7 +23,7 @@
 namespace FairMQParser
 {
 
-typedef std::map< std::string,std::vector<FairMQChannel> > FairMQMap;
+typedef std::unordered_map< std::string,std::vector<FairMQChannel> > FairMQMap;
 
 FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& deviceId, const std::string& rootNode, const std::string& formatFlag = "json");
 

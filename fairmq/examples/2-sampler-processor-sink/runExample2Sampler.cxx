@@ -13,7 +13,6 @@
  */
 
 #include <iostream>
-#include <csignal>
 
 #include "boost/program_options.hpp"
 
@@ -30,31 +29,10 @@
 
 using namespace boost::program_options;
 
-FairMQExample2Sampler sampler;
-
-static void s_signal_handler(int signal)
-{
-    LOG(INFO) << "Caught signal " << signal;
-
-    sampler.ChangeState("END");
-
-    LOG(INFO) << "Shutdown complete.";
-    exit(1);
-}
-
-static void s_catch_signals(void)
-{
-    struct sigaction action;
-    action.sa_handler = s_signal_handler;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-}
-
 int main(int argc, char** argv)
 {
-    s_catch_signals();
+    FairMQExample2Sampler sampler;
+    sampler.CatchSignals();
 
     FairMQProgOptions config;
 
@@ -100,18 +78,7 @@ int main(int argc, char** argv)
         sampler.WaitForEndOfState("INIT_TASK");
 
         sampler.ChangeState("RUN");
-        sampler.WaitForEndOfState("RUN");
-
-        sampler.ChangeState("STOP");
-
-        sampler.ChangeState("RESET_TASK");
-        sampler.WaitForEndOfState("RESET_TASK");
-
-        sampler.ChangeState("RESET_DEVICE");
-        sampler.WaitForEndOfState("RESET_DEVICE");
-
-        sampler.ChangeState("END");
-
+        sampler.InteractiveStateLoop();
     }
     catch (std::exception& e)
     {

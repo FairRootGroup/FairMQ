@@ -51,8 +51,9 @@ void base_GenericSampler<T,U,K,L>::Run()
     boost::timer::auto_cpu_timer timer;
 
     LOG(INFO) << "Number of events to process: " << fNumEvents;
-    
-    do {
+
+    do
+    {
         for (fCurrentIdx = 0; fCurrentIdx < fNumEvents; fCurrentIdx++)
         {
             for(auto& p : fChannels[fOutChanName])
@@ -75,7 +76,7 @@ void base_GenericSampler<T,U,K,L>::Run()
                 //   boost::this_thread::sleep(boost::posix_time::milliseconds(1));
                 // }
                 
-                if (GetCurrentState() != RUNNING)
+                if (!CheckCurrentState(RUNNING))
                     break;
             }
             // if more than one socket, remove the last incrementation
@@ -83,7 +84,7 @@ void base_GenericSampler<T,U,K,L>::Run()
                     fCurrentIdx--;
         }
     }
-    while ( GetCurrentState() == RUNNING && fContinuous );
+    while (CheckCurrentState(RUNNING) && fContinuous);
 
     boost::timer::cpu_times const elapsed_time(timer.elapsed());
     LOG(INFO) << "Sent everything in:\n" << boost::timer::format(elapsed_time, 2);

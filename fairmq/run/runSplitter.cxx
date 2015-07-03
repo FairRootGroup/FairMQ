@@ -13,7 +13,6 @@
  */
 
 #include <iostream>
-#include <csignal>
 
 #include "boost/program_options.hpp"
 
@@ -27,28 +26,6 @@
 #endif
 
 using namespace std;
-
-FairMQSplitter splitter;
-
-static void s_signal_handler(int signal)
-{
-    LOG(INFO) << "Caught signal " << signal;
-
-    splitter.ChangeState(FairMQSplitter::END);
-
-    LOG(INFO) << "Shutdown complete.";
-    exit(1);
-}
-
-static void s_catch_signals(void)
-{
-    struct sigaction action;
-    action.sa_handler = s_signal_handler;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-}
 
 typedef struct DeviceOptions
 {
@@ -141,7 +118,8 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
 
 int main(int argc, char** argv)
 {
-    s_catch_signals();
+    FairMQSplitter splitter;
+    splitter.CatchSignals();
 
     DeviceOptions_t options;
     try
@@ -185,24 +163,14 @@ int main(int argc, char** argv)
     splitter.SetProperty(FairMQSplitter::Id, options.id);
     splitter.SetProperty(FairMQSplitter::NumIoThreads, options.ioThreads);
 
-    splitter.ChangeState(FairMQSplitter::INIT_DEVICE);
-    splitter.WaitForEndOfState(FairMQSplitter::INIT_DEVICE);
+    splitter.ChangeState("INIT_DEVICE");
+    splitter.WaitForEndOfState("INIT_DEVICE");
 
-    splitter.ChangeState(FairMQSplitter::INIT_TASK);
-    splitter.WaitForEndOfState(FairMQSplitter::INIT_TASK);
+    splitter.ChangeState("INIT_TASK");
+    splitter.WaitForEndOfState("INIT_TASK");
 
-    splitter.ChangeState(FairMQSplitter::RUN);
-    splitter.WaitForEndOfState(FairMQSplitter::RUN);
-
-    splitter.ChangeState(FairMQSplitter::STOP);
-
-    splitter.ChangeState(FairMQSplitter::RESET_TASK);
-    splitter.WaitForEndOfState(FairMQSplitter::RESET_TASK);
-
-    splitter.ChangeState(FairMQSplitter::RESET_DEVICE);
-    splitter.WaitForEndOfState(FairMQSplitter::RESET_DEVICE);
-
-    splitter.ChangeState(FairMQSplitter::END);
+    splitter.ChangeState("RUN");
+    splitter.InteractiveStateLoop();
 
     return 0;
 }

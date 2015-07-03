@@ -89,4 +89,3 @@ class GenericFileSink : public FairMQDevice, public InputPolicy, public OutputPo
 };
 
 #endif /* GENERICFILESINK_H */
-

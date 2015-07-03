@@ -13,7 +13,6 @@
  */
 
 #include <iostream>
-#include <csignal>
 
 #include "boost/program_options.hpp"
 
@@ -27,28 +26,6 @@
 #endif
 
 using namespace std;
-
-FairMQProxy proxy;
-
-static void s_signal_handler(int signal)
-{
-    LOG(INFO) << "Caught signal " << signal;
-
-    proxy.ChangeState(FairMQProxy::END);
-
-    LOG(INFO) << "Shutdown complete.";
-    exit(1);
-}
-
-static void s_catch_signals(void)
-{
-    struct sigaction action;
-    action.sa_handler = s_signal_handler;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-}
 
 typedef struct DeviceOptions
 {
@@ -135,7 +112,8 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
 
 int main(int argc, char** argv)
 {
-    s_catch_signals();
+    FairMQProxy proxy;
+    proxy.CatchSignals();
 
     DeviceOptions_t options;
     try
@@ -176,24 +154,14 @@ int main(int argc, char** argv)
     proxy.SetProperty(FairMQProxy::Id, options.id);
     proxy.SetProperty(FairMQProxy::NumIoThreads, options.ioThreads);
 
-    proxy.ChangeState(FairMQProxy::INIT_DEVICE);
-    proxy.WaitForEndOfState(FairMQProxy::INIT_DEVICE);
+    proxy.ChangeState("INIT_DEVICE");
+    proxy.WaitForEndOfState("INIT_DEVICE");
 
-    proxy.ChangeState(FairMQProxy::INIT_TASK);
-    proxy.WaitForEndOfState(FairMQProxy::INIT_TASK);
+    proxy.ChangeState("INIT_TASK");
+    proxy.WaitForEndOfState("INIT_TASK");
 
-    proxy.ChangeState(FairMQProxy::RUN);
-    proxy.WaitForEndOfState(FairMQProxy::RUN);
-
-    proxy.ChangeState(FairMQProxy::STOP);
-
-    proxy.ChangeState(FairMQProxy::RESET_TASK);
-    proxy.WaitForEndOfState(FairMQProxy::RESET_TASK);
-
-    proxy.ChangeState(FairMQProxy::RESET_DEVICE);
-    proxy.WaitForEndOfState(FairMQProxy::RESET_DEVICE);
-
-    proxy.ChangeState(FairMQProxy::END);
+    proxy.ChangeState("RUN");
+    proxy.InteractiveStateLoop();
 
     return 0;
 }

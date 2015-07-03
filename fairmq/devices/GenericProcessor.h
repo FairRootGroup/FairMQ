@@ -92,10 +92,7 @@ class GenericProcessor : public FairMQDevice, public InputPolicy, public OutputP
     // bool ReceivePart();
     bool ReceivePart()
     {
-        int64_t more = 0;
-        size_t more_size = sizeof(more);
-        fChannels["data-in"].at(0).fSocket->GetOption("rcv-more", &more, &more_size);
-        if (more)
+        if (fChannels["data-in"].at(0).ExpectsAnotherPart())
         {
             InputPolicy::CloseMessage(); 
             // fProcessorTask->GetPayload()->CloseMessage();
@@ -123,7 +120,7 @@ class GenericProcessor : public FairMQDevice, public InputPolicy, public OutputP
         int receivedMsgs = 0;
         int sentMsgs = 0;
 
-        while (GetCurrentState() == RUNNING)
+        while (CheckCurrentState(RUNNING))
         {
             FairMQMessage* msg = fTransportFactory->CreateMessage();
 

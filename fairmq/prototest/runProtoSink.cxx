@@ -1,8 +1,8 @@
 /********************************************************************************
  *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *              This software is distributed under the terms of the             *
+ *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
@@ -13,7 +13,6 @@
  */
 
 #include <iostream>
-#include <csignal>
 
 #include "boost/program_options.hpp"
 
@@ -27,29 +26,6 @@
 #endif
 
 using namespace std;
-
-FairMQProtoSink sink;
-
-static void s_signal_handler(int signal)
-{
-    cout << endl << "Caught signal " << signal << endl;
-
-    sink.ChangeState(FairMQProtoSink::STOP);
-    sink.ChangeState(FairMQProtoSink::END);
-
-    cout << "Shutdown complete. Bye!" << endl;
-    exit(1);
-}
-
-static void s_catch_signals(void)
-{
-    struct sigaction action;
-    action.sa_handler = s_signal_handler;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-}
 
 typedef struct DeviceOptions
 {
@@ -115,7 +91,8 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
 
 int main(int argc, char** argv)
 {
-    s_catch_signals();
+    FairMQProtoSink sink;
+    sink.CatchSignals();
 
     DeviceOptions_t options;
     try
@@ -139,34 +116,24 @@ int main(int argc, char** argv)
 
     sink.SetTransport(transportFactory);
 
+    FairMQChannel inputChannel(options.inputSocketType, options.inputMethod, options.inputAddress);
+    inputChannel.UpdateSndBufSize(options.inputBufSize);
+    inputChannel.UpdateRcvBufSize(options.inputBufSize);
+    inputChannel.UpdateRateLogging(1);
+
+    sink.fChannels["data-in"].push_back(inputChannel);
+
     sink.SetProperty(FairMQProtoSink::Id, options.id);
     sink.SetProperty(FairMQProtoSink::NumIoThreads, options.ioThreads);
 
-    sink.SetProperty(FairMQProtoSink::NumInputs, 1);
-    sink.SetProperty(FairMQProtoSink::NumOutputs, 0);
+    sink.ChangeState("INIT_DEVICE");
+    sink.WaitForEndOfState("INIT_DEVICE");
 
-    sink.ChangeState(FairMQProtoSink::INIT);
+    sink.ChangeState("INIT_TASK");
+    sink.WaitForEndOfState("INIT_TASK");
 
-    sink.SetProperty(FairMQProtoSink::InputSocketType, options.inputSocketType);
-    sink.SetProperty(FairMQProtoSink::InputRcvBufSize, options.inputBufSize);
-    sink.SetProperty(FairMQProtoSink::InputMethod, options.inputMethod);
-    sink.SetProperty(FairMQProtoSink::InputAddress, options.inputAddress);
-
-    sink.ChangeState(FairMQProtoSink::SETOUTPUT);
-    sink.ChangeState(FairMQProtoSink::SETINPUT);
-    sink.ChangeState(FairMQProtoSink::BIND);
-    sink.ChangeState(FairMQProtoSink::CONNECT);
-    sink.ChangeState(FairMQProtoSink::RUN);
-
-    // wait until the running thread has finished processing.
-    boost::unique_lock<boost::mutex> lock(sink.fRunningMutex);
-    while (!sink.fRunningFinished)
-    {
-        sink.fRunningCondition.wait(lock);
-    }
-
-    sink.ChangeState(FairMQProtoSink::STOP);
-    sink.ChangeState(FairMQProtoSink::END);
+    sink.ChangeState("RUN");
+    sink.InteractiveStateLoop();
 
     return 0;
 }

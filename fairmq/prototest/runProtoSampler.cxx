@@ -1,8 +1,8 @@
 /********************************************************************************
  *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *              This software is distributed under the terms of the             *
+ *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
@@ -13,7 +13,6 @@
  */
 
 #include <iostream>
-#include <csignal>
 
 #include "boost/program_options.hpp"
 
@@ -27,29 +26,6 @@
 #endif
 
 using namespace std;
-
-FairMQProtoSampler sampler;
-
-static void s_signal_handler(int signal)
-{
-    cout << endl << "Caught signal " << signal << endl;
-
-    sampler.ChangeState(FairMQProtoSampler::STOP);
-    sampler.ChangeState(FairMQProtoSampler::END);
-
-    cout << "Shutdown complete. Bye!" << endl;
-    exit(1);
-}
-
-static void s_catch_signals(void)
-{
-    struct sigaction action;
-    action.sa_handler = s_signal_handler;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-}
 
 typedef struct DeviceOptions
 {
@@ -125,7 +101,8 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
 
 int main(int argc, char** argv)
 {
-    s_catch_signals();
+    FairMQProtoSampler sampler;
+    sampler.CatchSignals();
 
     DeviceOptions_t options;
     try
@@ -151,36 +128,26 @@ int main(int argc, char** argv)
 
     sampler.SetTransport(transportFactory);
 
+    FairMQChannel outputChannel(options.outputSocketType, options.outputMethod, options.outputAddress);
+    outputChannel.UpdateSndBufSize(options.outputBufSize);
+    outputChannel.UpdateRcvBufSize(options.outputBufSize);
+    outputChannel.UpdateRateLogging(1);
+
+    sampler.fChannels["data-out"].push_back(outputChannel);
+
     sampler.SetProperty(FairMQProtoSampler::Id, options.id);
     sampler.SetProperty(FairMQProtoSampler::EventSize, options.eventSize);
     sampler.SetProperty(FairMQProtoSampler::EventRate, options.eventRate);
     sampler.SetProperty(FairMQProtoSampler::NumIoThreads, options.ioThreads);
 
-    sampler.SetProperty(FairMQProtoSampler::NumInputs, 0);
-    sampler.SetProperty(FairMQProtoSampler::NumOutputs, 1);
+    sampler.ChangeState("INIT_DEVICE");
+    sampler.WaitForEndOfState("INIT_DEVICE");
 
-    sampler.ChangeState(FairMQProtoSampler::INIT);
+    sampler.ChangeState("INIT_TASK");
+    sampler.WaitForEndOfState("INIT_TASK");
 
-    sampler.SetProperty(FairMQProtoSampler::OutputSocketType, options.outputSocketType);
-    sampler.SetProperty(FairMQProtoSampler::OutputSndBufSize, options.outputBufSize);
-    sampler.SetProperty(FairMQProtoSampler::OutputMethod, options.outputMethod);
-    sampler.SetProperty(FairMQProtoSampler::OutputAddress, options.outputAddress);
-
-    sampler.ChangeState(FairMQProtoSampler::SETOUTPUT);
-    sampler.ChangeState(FairMQProtoSampler::SETINPUT);
-    sampler.ChangeState(FairMQProtoSampler::BIND);
-    sampler.ChangeState(FairMQProtoSampler::CONNECT);
-    sampler.ChangeState(FairMQProtoSampler::RUN);
-
-    // wait until the running thread has finished processing.
-    boost::unique_lock<boost::mutex> lock(sampler.fRunningMutex);
-    while (!sampler.fRunningFinished)
-    {
-        sampler.fRunningCondition.wait(lock);
-    }
-
-    sampler.ChangeState(FairMQProtoSampler::STOP);
-    sampler.ChangeState(FairMQProtoSampler::END);
+    sampler.ChangeState("RUN");
+    sampler.InteractiveStateLoop();
 
     return 0;
 }

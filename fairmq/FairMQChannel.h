@@ -19,7 +19,12 @@
 
 #include <boost/thread/mutex.hpp>
 
+#include "FairMQTransportFactory.h"
 #include "FairMQSocket.h"
+#include "FairMQPoller.h"
+
+class FairMQPoller;
+class FairMQTransportFactory;
 
 class FairMQChannel
 {
@@ -30,12 +35,12 @@ class FairMQChannel
     FairMQChannel(const std::string& type, const std::string& method, const std::string& address);
     virtual ~FairMQChannel();
 
-    std::string GetType();
-    std::string GetMethod();
-    std::string GetAddress();
-    int GetSndBufSize();
-    int GetRcvBufSize();
-    int GetRateLogging();
+    std::string GetType() const;
+    std::string GetMethod() const;
+    std::string GetAddress() const;
+    int GetSndBufSize() const;
+    int GetRcvBufSize() const;
+    int GetRateLogging() const;
 
     void UpdateType(const std::string& type);
     void UpdateMethod(const std::string& method);
@@ -44,19 +49,24 @@ class FairMQChannel
     void UpdateRcvBufSize(const int rcvBufSize);
     void UpdateRateLogging(const int rateLogging);
 
-    bool IsValid();
+    bool IsValid() const;
 
     bool ValidateChannel();
+    bool InitCommandInterface(FairMQTransportFactory* factory);
 
     void ResetChannel();
 
     FairMQSocket* fSocket;
 
     // Wrappers for the socket methods to simplify the usage of channels
-    int Send(FairMQMessage* msg, const std::string& flag = "");
-    int Send(FairMQMessage* msg, const int flags);
-    int Receive(FairMQMessage* msg, const std::string& flag = "");
-    int Receive(FairMQMessage* msg, const int flags);
+    int Send(FairMQMessage* msg, const std::string& flag = "") const;
+    int Send(FairMQMessage* msg, const int flags) const;
+    int Receive(FairMQMessage* msg, const std::string& flag = "") const;
+    int Receive(FairMQMessage* msg, const int flags) const;
+
+    /// Checks if the socket is expecting to receive another part of a multipart message.
+    /// \return Return true if the socket expects another part of a multipart message and false otherwise.
+    bool ExpectsAnotherPart() const;
 
   private:
     std::string fType;
@@ -68,6 +78,13 @@ class FairMQChannel
 
     std::string fChannelName;
     bool fIsValid;
+
+    FairMQPoller* fPoller;
+    FairMQSocket* fCmdSocket;
+
+    FairMQTransportFactory* fTransportFactory;
+
+    bool HandleCommand() const;
 
     // use static mutex to make the class easily copyable
     // implication: same mutex is used for all instances of the class

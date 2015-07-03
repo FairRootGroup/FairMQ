@@ -29,21 +29,38 @@ FairMQMerger::~FairMQMerger()
 
 void FairMQMerger::Run()
 {
-    FairMQPoller* poller = fTransportFactory->CreatePoller(fChannels["data-in"]);
+    FairMQPoller* poller = fTransportFactory->CreatePoller(fChannels.at("data-in"));
 
-    while (GetCurrentState() == RUNNING)
+    // store the channel references to avoid traversing the map on every loop iteration
+    const FairMQChannel& dataOutChannel = fChannels.at("data-out").at(0);
+    FairMQChannel* dataInChannels[fChannels.at("data-in").size()];
+    for (int i = 0; i < fChannels.at("data-in").size(); ++i)
+    {
+        dataInChannels[i] = &(fChannels.at("data-in").at(i));
+    }
+
+    while (CheckCurrentState(RUNNING))
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
 
         poller->Poll(100);
 
-        for (int i = 0; i < fChannels["data-in"].size(); ++i)
+        for (int i = 0; i < fChannels.at("data-in").size(); ++i)
         {
             if (poller->CheckInput(i))
             {
-                if (fChannels["data-in"].at(i).Receive(msg))
+                if (dataInChannels[i]->Receive(msg) > 0)
                 {
-                    fChannels["data-out"].at(0).Send(msg);
+                    if (dataOutChannel.Send(msg) < 0)
+                    {
+                        LOG(DEBUG) << "Blocking send interrupted by a command";
+                        break;
+                    }
+                }
+                else
+                {
+                    LOG(DEBUG) << "Blocking receive interrupted by a command";
+                    break;
                 }
             }
         }

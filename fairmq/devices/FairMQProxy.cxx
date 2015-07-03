@@ -30,11 +30,15 @@ void FairMQProxy::Run()
 {
     FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-    while (GetCurrentState() == RUNNING)
+    // store the channel references to avoid traversing the map on every loop iteration
+    const FairMQChannel& dataInChannel = fChannels.at("data-in").at(0);
+    const FairMQChannel& dataOutChannel = fChannels.at("data-out").at(0);
+
+    while (CheckCurrentState(RUNNING))
     {
-        if (fChannels["data-in"].at(0).Receive(msg) > 0)
+        if (dataInChannel.Receive(msg) > 0)
         {
-            fChannels["data-out"].at(0).Send(msg);
+            dataOutChannel.Send(msg);
         }
     }
 

@@ -30,7 +30,7 @@ void FairMQExample1Sink::Run()
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
 
-        fChannels["data-in"].at(0).Receive(msg);
+        fChannels.at("data-in").at(0).Receive(msg);
 
         LOG(INFO) << "Received message: \""
                   << string(static_cast<char*>(msg->GetData()), msg->GetSize())

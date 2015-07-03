@@ -33,7 +33,7 @@ void FairMQExample2Processor::Run()
     while (GetCurrentState() == RUNNING)
     {
         FairMQMessage* input = fTransportFactory->CreateMessage();
-        fChannels["data-in"].at(0).Receive(input);
+        fChannels.at("data-in").at(0).Receive(input);
 
         LOG(INFO) << "Received data, processing...";
 
@@ -43,7 +43,7 @@ void FairMQExample2Processor::Run()
         delete input;
 
         FairMQMessage* msg = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
-        fChannels["data-out"].at(0).Send(msg);
+        fChannels.at("data-out").at(0).Send(msg);
     }
 }
 

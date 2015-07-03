@@ -98,6 +98,8 @@ void FairMQSocketZMQ::Connect(const string& address)
     if (zmq_connect(fSocket, address.c_str()) != 0)
     {
         LOG(ERROR) << "failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
+        // error here means incorrect configuration. exit if it happens.
+        exit(EXIT_FAILURE);
     }
 }
 

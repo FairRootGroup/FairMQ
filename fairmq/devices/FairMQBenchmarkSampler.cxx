@@ -40,12 +40,15 @@ void FairMQBenchmarkSampler::Run()
     void* buffer = operator new[](fEventSize);
     FairMQMessage* baseMsg = fTransportFactory->CreateMessage(buffer, fEventSize);
 
-    while (GetCurrentState() == RUNNING)
+    // store the channel reference to avoid traversing the map on every loop iteration
+    const FairMQChannel& dataChannel = fChannels.at("data-out").at(0);
+
+    while (CheckCurrentState(RUNNING))
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
         msg->Copy(baseMsg);
 
-        fChannels["data-out"].at(0).Send(msg);
+        dataChannel.Send(msg);
 
         --fEventCounter;
 
@@ -69,7 +72,7 @@ void FairMQBenchmarkSampler::Run()
 
 void FairMQBenchmarkSampler::ResetEventCounter()
 {
-    while (GetCurrentState() == RUNNING)
+    while (CheckCurrentState(RUNNING))
     {
         try
         {

@@ -9,11 +9,10 @@
  * runBuffer.cxx
  *
  * @since 2012-10-26
- * @author: D. Klein, A. Rybalchenko
+ * @author D. Klein, A. Rybalchenko
  */
 
 #include <iostream>
-#include <csignal>
 
 #include "boost/program_options.hpp"
 
@@ -27,28 +26,6 @@
 #endif
 
 using namespace std;
-
-FairMQBuffer buffer;
-
-static void s_signal_handler(int signal)
-{
-    LOG(INFO) << "Caught signal " << signal;
-
-    buffer.ChangeState(FairMQBuffer::END);
-
-    LOG(INFO) << "Shutdown complete";
-    exit(1);
-}
-
-static void s_catch_signals(void)
-{
-    struct sigaction action;
-    action.sa_handler = s_signal_handler;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-}
 
 typedef struct DeviceOptions
 {
@@ -135,7 +112,8 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
 
 int main(int argc, char** argv)
 {
-    s_catch_signals();
+    FairMQBuffer buffer;
+    buffer.CatchSignals();
 
     DeviceOptions_t options;
     try
@@ -176,24 +154,14 @@ int main(int argc, char** argv)
     buffer.SetProperty(FairMQBuffer::Id, options.id);
     buffer.SetProperty(FairMQBuffer::NumIoThreads, options.ioThreads);
 
-    buffer.ChangeState(FairMQBuffer::INIT_DEVICE);
-    buffer.WaitForEndOfState(FairMQBuffer::INIT_DEVICE);
+    buffer.ChangeState("INIT_DEVICE");
+    buffer.WaitForEndOfState("INIT_DEVICE");
 
-    buffer.ChangeState(FairMQBuffer::INIT_TASK);
-    buffer.WaitForEndOfState(FairMQBuffer::INIT_TASK);
+    buffer.ChangeState("INIT_TASK");
+    buffer.WaitForEndOfState("INIT_TASK");
 
-    buffer.ChangeState(FairMQBuffer::RUN);
-    buffer.WaitForEndOfState(FairMQBuffer::RUN);
-
-    buffer.ChangeState(FairMQBuffer::STOP);
-
-    buffer.ChangeState(FairMQBuffer::RESET_TASK);
-    buffer.WaitForEndOfState(FairMQBuffer::RESET_TASK);
-
-    buffer.ChangeState(FairMQBuffer::RESET_DEVICE);
-    buffer.WaitForEndOfState(FairMQBuffer::RESET_DEVICE);
-
-    buffer.ChangeState(FairMQBuffer::END);
+    buffer.ChangeState("RUN");
+    buffer.InteractiveStateLoop();
 
     return 0;
 }

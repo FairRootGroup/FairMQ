@@ -44,10 +44,10 @@ void GenericFileSink<InputPolicy, OutputPolicy>::Run()
 {
     int receivedMsg = 0;
 
-    while (GetCurrentState() == RUNNING)
+    while (CheckCurrentState(RUNNING))
     {
         FairMQMessage* msg = fTransportFactory->CreateMessage();
-        if (fChannels["data-in"].at(0).Receive(msg) > 0)
+        if (fChannels.at("data-in").at(0).Receive(msg) > 0)
         {
             OutputPolicy::AddToFile(InputPolicy::DeSerializeMsg(msg));
             receivedMsg++;

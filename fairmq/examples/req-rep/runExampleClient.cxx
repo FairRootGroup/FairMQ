@@ -13,7 +13,6 @@
  */
 
 #include <iostream>
-#include <csignal>
 
 #include "boost/program_options.hpp"
 
@@ -27,28 +26,6 @@
 #endif
 
 using namespace std;
-
-FairMQExampleClient client;
-
-static void s_signal_handler(int signal)
-{
-    LOG(INFO) << "Caught signal " << signal;
-
-    client.ChangeState(FairMQExampleClient::END);
-
-    LOG(INFO) << "Shutdown complete.";
-    exit(1);
-}
-
-static void s_catch_signals(void)
-{
-    struct sigaction action;
-    action.sa_handler = s_signal_handler;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-}
 
 typedef struct DeviceOptions
 {
@@ -72,7 +49,7 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
     bpo::variables_map vm;
     bpo::store(bpo::parse_command_line(_argc, _argv, desc), vm);
 
-    if ( vm.count("help") )
+    if (vm.count("help"))
     {
         LOG(INFO) << "EPN" << endl << desc;
         return false;
@@ -88,7 +65,8 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
 
 int main(int argc, char** argv)
 {
-    s_catch_signals();
+    FairMQExampleClient client;
+    client.CatchSignals();
 
     DeviceOptions_t options;
     try
@@ -122,24 +100,14 @@ int main(int argc, char** argv)
 
     client.fChannels["data"].push_back(requestChannel);
 
-    client.ChangeState(FairMQExampleClient::INIT_DEVICE);
-    client.WaitForEndOfState(FairMQExampleClient::INIT_DEVICE);
+    client.ChangeState("INIT_DEVICE");
+    client.WaitForEndOfState("INIT_DEVICE");
 
-    client.ChangeState(FairMQExampleClient::INIT_TASK);
-    client.WaitForEndOfState(FairMQExampleClient::INIT_TASK);
+    client.ChangeState("INIT_TASK");
+    client.WaitForEndOfState("INIT_TASK");
 
-    client.ChangeState(FairMQExampleClient::RUN);
-    client.WaitForEndOfState(FairMQExampleClient::RUN);
-
-    client.ChangeState(FairMQExampleClient::STOP);
-
-    client.ChangeState(FairMQExampleClient::RESET_TASK);
-    client.WaitForEndOfState(FairMQExampleClient::RESET_TASK);
-
-    client.ChangeState(FairMQExampleClient::RESET_DEVICE);
-    client.WaitForEndOfState(FairMQExampleClient::RESET_DEVICE);
-
-    client.ChangeState(FairMQExampleClient::END);
+    client.ChangeState("RUN");
+    client.InteractiveStateLoop();
 
     return 0;
 }

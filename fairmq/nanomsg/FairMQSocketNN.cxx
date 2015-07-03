@@ -22,7 +22,7 @@ using namespace std;
 
 FairMQSocketNN::FairMQSocketNN(const string& type, const std::string& name, int numIoThreads)
     : FairMQSocket(0, 0, NN_DONTWAIT)
-    , fSocket()
+    , fSocket(-1)
     , fId()
     , fBytesTx(0)
     , fBytesRx(0)

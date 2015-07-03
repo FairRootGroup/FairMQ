@@ -13,7 +13,6 @@
  */
 
 #include <iostream>
-#include <csignal>
 
 #include "boost/program_options.hpp"
 
@@ -32,31 +31,10 @@ using namespace std;
 using namespace FairMQParser;
 using namespace boost::program_options;
 
-FairMQSink sink;
-
-static void s_signal_handler(int signal)
-{
-    LOG(INFO) << "Caught signal " << signal;
-
-    sink.ChangeState(FairMQSink::END);
-
-    LOG(INFO) << "Shutdown complete.";
-    exit(1);
-}
-
-static void s_catch_signals(void)
-{
-    struct sigaction action;
-    action.sa_handler = s_signal_handler;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-}
-
 int main(int argc, char** argv)
 {
-    s_catch_signals();
+    FairMQSink sink;
+    sink.CatchSignals();
 
     FairMQProgOptions config;
 
@@ -75,7 +53,7 @@ int main(int argc, char** argv)
             return 0;
         }
 
-        string filename = config.GetValue<string>("config-json-filename");
+        string filename = config.GetValue<string>("config-json-file");
         string id = config.GetValue<string>("id");
 
         config.UserParser<JSON>(filename, id);
@@ -95,25 +73,14 @@ int main(int argc, char** argv)
         sink.SetProperty(FairMQSink::Id, id);
         sink.SetProperty(FairMQSink::NumIoThreads, ioThreads);
 
-        sink.ChangeState(FairMQSink::INIT_DEVICE);
-        sink.WaitForEndOfState(FairMQSink::INIT_DEVICE);
+        sink.ChangeState("INIT_DEVICE");
+        sink.WaitForEndOfState("INIT_DEVICE");
 
-        sink.ChangeState(FairMQSink::INIT_TASK);
-        sink.WaitForEndOfState(FairMQSink::INIT_TASK);
+        sink.ChangeState("INIT_TASK");
+        sink.WaitForEndOfState("INIT_TASK");
 
-        sink.ChangeState(FairMQSink::RUN);
-        sink.WaitForEndOfState(FairMQSink::RUN);
-
-        sink.ChangeState(FairMQSink::STOP);
-
-        sink.ChangeState(FairMQSink::RESET_TASK);
-        sink.WaitForEndOfState(FairMQSink::RESET_TASK);
-
-        sink.ChangeState(FairMQSink::RESET_DEVICE);
-        sink.WaitForEndOfState(FairMQSink::RESET_DEVICE);
-
-        sink.ChangeState(FairMQSink::END);
-
+        sink.ChangeState("RUN");
+        sink.InteractiveStateLoop();
     }
     catch (exception& e)
     {

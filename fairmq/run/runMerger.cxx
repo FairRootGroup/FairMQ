@@ -13,7 +13,6 @@
  */
 
 #include <iostream>
-#include <csignal>
 
 #include "boost/program_options.hpp"
 
@@ -27,28 +26,6 @@
 #endif
 
 using namespace std;
-
-FairMQMerger merger;
-
-static void s_signal_handler(int signal)
-{
-    LOG(INFO) << "Caught signal " << signal;
-
-    merger.ChangeState(FairMQMerger::END);
-
-    LOG(INFO) << "Shutdown complete.";
-    exit(1);
-}
-
-static void s_catch_signals(void)
-{
-    struct sigaction action;
-    action.sa_handler = s_signal_handler;
-    action.sa_flags = 0;
-    sigemptyset(&action.sa_mask);
-    sigaction(SIGINT, &action, NULL);
-    sigaction(SIGTERM, &action, NULL);
-}
 
 typedef struct DeviceOptions
 {
@@ -94,7 +71,7 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
     bpo::variables_map vm;
     bpo::store(bpo::parse_command_line(_argc, _argv, desc), vm);
 
-    if ( vm.count("help") )
+    if (vm.count("help"))
     {
         LOG(INFO) << "FairMQ Merger" << endl << desc;
         return false;
@@ -102,37 +79,37 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
 
     bpo::notify(vm);
 
-    if ( vm.count("id") )
+    if (vm.count("id"))
         _options->id = vm["id"].as<string>();
 
-    if ( vm.count("io-threads") )
+    if (vm.count("io-threads"))
         _options->ioThreads = vm["io-threads"].as<int>();
 
-    if ( vm.count("num-inputs") )
+    if (vm.count("num-inputs"))
         _options->numInputs = vm["num-inputs"].as<int>();
 
-    if ( vm.count("input-socket-type") )
+    if (vm.count("input-socket-type"))
         _options->inputSocketType = vm["input-socket-type"].as< vector<string> >();
 
-    if ( vm.count("input-buff-size") )
+    if (vm.count("input-buff-size"))
         _options->inputBufSize = vm["input-buff-size"].as< vector<int> >();
 
-    if ( vm.count("input-method") )
+    if (vm.count("input-method"))
         _options->inputMethod = vm["input-method"].as< vector<string> >();
 
-    if ( vm.count("input-address") )
+    if (vm.count("input-address"))
         _options->inputAddress = vm["input-address"].as< vector<string> >();
 
-    if ( vm.count("output-socket-type") )
+    if (vm.count("output-socket-type"))
         _options->outputSocketType = vm["output-socket-type"].as<string>();
 
-    if ( vm.count("output-buff-size") )
+    if (vm.count("output-buff-size"))
         _options->outputBufSize = vm["output-buff-size"].as<int>();
 
-    if ( vm.count("output-method") )
+    if (vm.count("output-method"))
         _options->outputMethod = vm["output-method"].as<string>();
 
-    if ( vm.count("output-address") )
+    if (vm.count("output-address"))
         _options->outputAddress = vm["output-address"].as<string>();
 
     return true;
@@ -140,7 +117,8 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
 
 int main(int argc, char** argv)
 {
-    s_catch_signals();
+    FairMQMerger merger;
+    merger.CatchSignals();
 
     DeviceOptions_t options;
     try
@@ -184,24 +162,14 @@ int main(int argc, char** argv)
     merger.SetProperty(FairMQMerger::Id, options.id);
     merger.SetProperty(FairMQMerger::NumIoThreads, options.ioThreads);
 
-    merger.ChangeState(FairMQMerger::INIT_DEVICE);
-    merger.WaitForEndOfState(FairMQMerger::INIT_DEVICE);
+    merger.ChangeState("INIT_DEVICE");
+    merger.WaitForEndOfState("INIT_DEVICE");
 
-    merger.ChangeState(FairMQMerger::INIT_TASK);
-    merger.WaitForEndOfState(FairMQMerger::INIT_TASK);
+    merger.ChangeState("INIT_TASK");
+    merger.WaitForEndOfState("INIT_TASK");
 
-    merger.ChangeState(FairMQMerger::RUN);
-    merger.WaitForEndOfState(FairMQMerger::RUN);
-
-    merger.ChangeState(FairMQMerger::STOP);
-
-    merger.ChangeState(FairMQMerger::RESET_TASK);
-    merger.WaitForEndOfState(FairMQMerger::RESET_TASK);
-
-    merger.ChangeState(FairMQMerger::RESET_DEVICE);
-    merger.WaitForEndOfState(FairMQMerger::RESET_DEVICE);
-
-    merger.ChangeState(FairMQMerger::END);
+    merger.ChangeState("RUN");
+    merger.InteractiveStateLoop();
 
     return 0;
 }
