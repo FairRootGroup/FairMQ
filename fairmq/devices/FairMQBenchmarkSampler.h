@@ -28,8 +28,7 @@ class FairMQBenchmarkSampler : public FairMQDevice
   public:
     enum
     {
-        InputFile = FairMQDevice::Last,
-        EventSize,
+        EventSize = FairMQDevice::Last,
         EventRate,
         Last
     };

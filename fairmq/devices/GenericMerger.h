@@ -38,22 +38,25 @@ class GenericMerger : public FairMQDevice, public MergerPolicy, public InputPoli
 
     virtual void Run()
     {
-        FairMQPoller* poller = fTransportFactory->CreatePoller(fChannels["data-in"]);
+        std::unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels["data-in"]));
 
         int received = 0;
 
         while (GetCurrentState() == RUNNING)
         {
-            FairMQMessage* msg = fTransportFactory->CreateMessage();
+            std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
             // MergerPolicy::
             poller->Poll(fBlockingTime);
 
-            for (int i = 0; i < fChannels["datain"].size(); i++)
+            for (int i = 0; i < fChannels.at("data-in").size(); i++)
             {
                 if (poller->CheckInput(i))
                 {
-                    received = fChannels["data-in"].at(i).Receive(msg)
-                    MergerPolicy::Merge(InputPolicy::DeSerializeMsg(msg));
+                    received = fChannels.at("data-in").at(i).Receive(msg)
+                    if (received > 0)
+                    {
+                        MergerPolicy::Merge(InputPolicy::DeSerializeMsg(msg));
+                    }
                 }
 
                 OutputPolicy::SetMessage(msg);
@@ -64,11 +67,7 @@ class GenericMerger : public FairMQDevice, public MergerPolicy, public InputPoli
                     received = 0;
                 }
             }
-
-            delete msg;
         }
-
-        delete poller;
     }
 };
 

@@ -29,28 +29,32 @@ FairMQMerger::~FairMQMerger()
 
 void FairMQMerger::Run()
 {
-    FairMQPoller* poller = fTransportFactory->CreatePoller(fChannels.at("data-in"));
+    std::unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels.at("data-in")));
 
     // store the channel references to avoid traversing the map on every loop iteration
     const FairMQChannel& dataOutChannel = fChannels.at("data-out").at(0);
-    FairMQChannel* dataInChannels[fChannels.at("data-in").size()];
+    std::vector<FairMQChannel*> dataInChannels(fChannels.at("data-in").size());
     for (int i = 0; i < fChannels.at("data-in").size(); ++i)
     {
-        dataInChannels[i] = &(fChannels.at("data-in").at(i));
+        dataInChannels.at(i) = &(fChannels.at("data-in").at(i));
     }
 
     while (CheckCurrentState(RUNNING))
     {
-        FairMQMessage* msg = fTransportFactory->CreateMessage();
+        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
 
         poller->Poll(100);
 
+        // Loop over the data input channels.
         for (int i = 0; i < fChannels.at("data-in").size(); ++i)
         {
+            // Check if the channel has data ready to be received.
             if (poller->CheckInput(i))
             {
+                // Try receiving the data.
                 if (dataInChannels[i]->Receive(msg) > 0)
                 {
+                    // If data was received, send it to output.
                     if (dataOutChannel.Send(msg) < 0)
                     {
                         LOG(DEBUG) << "Blocking send interrupted by a command";
@@ -64,9 +68,5 @@ void FairMQMerger::Run()
                 }
             }
         }
-
-        delete msg;
     }
-
-    delete poller;
 }

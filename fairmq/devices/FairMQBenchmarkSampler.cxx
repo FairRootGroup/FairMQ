@@ -38,14 +38,15 @@ void FairMQBenchmarkSampler::Run()
     boost::thread resetEventCounter(boost::bind(&FairMQBenchmarkSampler::ResetEventCounter, this));
 
     void* buffer = operator new[](fEventSize);
-    FairMQMessage* baseMsg = fTransportFactory->CreateMessage(buffer, fEventSize);
+
+    unique_ptr<FairMQMessage> baseMsg(fTransportFactory->CreateMessage(buffer, fEventSize));
 
     // store the channel reference to avoid traversing the map on every loop iteration
     const FairMQChannel& dataChannel = fChannels.at("data-out").at(0);
 
     while (CheckCurrentState(RUNNING))
     {
-        FairMQMessage* msg = fTransportFactory->CreateMessage();
+        unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
         msg->Copy(baseMsg);
 
         dataChannel.Send(msg);
@@ -56,11 +57,7 @@ void FairMQBenchmarkSampler::Run()
         {
             boost::this_thread::sleep(boost::posix_time::milliseconds(1));
         }
-
-        delete msg;
     }
-
-    delete baseMsg;
 
     try {
         resetEventCounter.interrupt();

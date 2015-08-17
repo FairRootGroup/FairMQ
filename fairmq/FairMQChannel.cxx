@@ -36,6 +36,8 @@ FairMQChannel::FairMQChannel()
     , fPoller(nullptr)
     , fCmdSocket(nullptr)
     , fTransportFactory(nullptr)
+    , fNoBlockFlag(0)
+    , fSndMoreFlag(0)
 {
 }
 
@@ -52,6 +54,8 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
     , fPoller(nullptr)
     , fCmdSocket(nullptr)
     , fTransportFactory(nullptr)
+    , fNoBlockFlag(0)
+    , fSndMoreFlag(0)
 {
 }
 
@@ -347,16 +351,78 @@ bool FairMQChannel::InitCommandInterface(FairMQTransportFactory* factory)
     fTransportFactory = factory;
 
     fCmdSocket = fTransportFactory->CreateSocket("sub", "device-commands", 1);
-    fCmdSocket->Connect("inproc://commands");
+    if (fCmdSocket)
+    {
+        fCmdSocket->Connect("inproc://commands");
 
-    fPoller = fTransportFactory->CreatePoller(*fSocket, *fCmdSocket);
-    return true;
+        fNoBlockFlag = fCmdSocket->NOBLOCK;
+        fSndMoreFlag = fCmdSocket->SNDMORE;
+
+        fPoller = fTransportFactory->CreatePoller(*fSocket, *fCmdSocket);
+
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 void FairMQChannel::ResetChannel()
 {
     fIsValid = false;
     // TODO: implement channel resetting
+}
+
+int FairMQChannel::Send(const unique_ptr<FairMQMessage>& msg) const
+{
+    fPoller->Poll(-1);
+
+    if (fPoller->CheckInput(0))
+    {
+        HandleCommand();
+        return -1;
+    }
+
+    if (fPoller->CheckOutput(1))
+    {
+        return fSocket->Send(msg.get(), 0);
+    }
+
+    return -1;
+}
+
+int FairMQChannel::SendAsync(const unique_ptr<FairMQMessage>& msg) const
+{
+    return fSocket->Send(msg.get(), fNoBlockFlag);
+}
+
+int FairMQChannel::SendPart(const unique_ptr<FairMQMessage>& msg) const
+{
+    return fSocket->Send(msg.get(), fSndMoreFlag);
+}
+
+int FairMQChannel::Receive(const unique_ptr<FairMQMessage>& msg) const
+{
+    fPoller->Poll(-1);
+
+    if (fPoller->CheckInput(0))
+    {
+        HandleCommand();
+        return -1;
+    }
+
+    if (fPoller->CheckInput(1))
+    {
+        return fSocket->Receive(msg.get(), 0);
+    }
+
+    return -1;
+}
+
+int FairMQChannel::ReceiveAsync(const unique_ptr<FairMQMessage>& msg) const
+{
+    return fSocket->Receive(msg.get(), fNoBlockFlag);
 }
 
 int FairMQChannel::Send(FairMQMessage* msg, const string& flag) const

@@ -67,12 +67,11 @@ int main(int argc, char** argv)
         LOG(INFO) << "PID: " << getpid();
 
 #ifdef NANOMSG
-        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
+        sampler.SetTransport(new FairMQTransportFactoryNN());
 #else
-        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+        sampler.SetTransport(new FairMQTransportFactoryZMQ());
 #endif
 
-        sampler.SetTransport(transportFactory);
 
         sampler.SetProperty(FairMQBenchmarkSampler::Id, id);
         sampler.SetProperty(FairMQBenchmarkSampler::EventSize, eventSize);

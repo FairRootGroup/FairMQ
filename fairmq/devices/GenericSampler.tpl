@@ -33,13 +33,10 @@ void base_GenericSampler<T,U,K,L>::InitTask()
     BindingSendPart();
     BindingGetSocketNumber();
     BindingGetCurrentIndex();
-    
+
     source_type::InitSampler();
     fNumEvents = source_type::GetNumberOfEvent();
 }
-
-
-
 
 template <typename T, typename U, typename K, typename L>
 void base_GenericSampler<T,U,K,L>::Run()
@@ -47,7 +44,7 @@ void base_GenericSampler<T,U,K,L>::Run()
     // boost::thread resetEventCounter(boost::bind(&GenericSampler::ResetEventCounter, this));
 
     int sentMsgs = 0;
-    
+
     boost::timer::auto_cpu_timer timer;
 
     LOG(INFO) << "Number of events to process: " << fNumEvents;
@@ -56,32 +53,36 @@ void base_GenericSampler<T,U,K,L>::Run()
     {
         for (fCurrentIdx = 0; fCurrentIdx < fNumEvents; fCurrentIdx++)
         {
-            for(auto& p : fChannels[fOutChanName])
+            for (auto& p : fChannels[fOutChanName])
             {
-                FairMQMessage* msg = fTransportFactory->CreateMessage();
-                serialization_type::SetMessage(msg);
+                std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
+                serialization_type::SetMessage(msg.get());
                 source_type::SetIndex(fCurrentIdx);
                 ExecuteTasks();
                 p.Send(serialization_type::SerializeMsg(source_type::GetOutData()));
-                if (msg)
-                    msg->CloseMessage();
                 sentMsgs++;
 
-                if(fChannels[fOutChanName].size()>1)
+                if (fChannels[fOutChanName].size() > 1)
+                {
                     fCurrentIdx++;
-                
+                }
+
                 // Optional event rate limiting
                 // --fEventCounter;
                 // while (fEventCounter == 0) {
                 //   boost::this_thread::sleep(boost::posix_time::milliseconds(1));
                 // }
-                
+
                 if (!CheckCurrentState(RUNNING))
+                {
                     break;
+                }
             }
             // if more than one socket, remove the last incrementation
-            if(fChannels[fOutChanName].size()>1)
+            if (fChannels[fOutChanName].size() > 1)
+            {
                     fCurrentIdx--;
+            }
         }
     }
     while (CheckCurrentState(RUNNING) && fContinuous);
@@ -96,14 +97,12 @@ template <typename T, typename U, typename K, typename L>
 void base_GenericSampler<T,U,K,L>::SendPart(int socketIdx)
 {
     fCurrentIdx++;
-    if(fCurrentIdx<fNumEvents)
+    if (fCurrentIdx < fNumEvents)
     {
-        FairMQMessage* msg = fTransportFactory->CreateMessage();
-        serialization_type::SetMessage(msg);
+        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
+        serialization_type::SetMessage(msg.get());
         source_type::SetIndex(fCurrentIdx);
         fChannels[fOutChanName].at(socketIdx).Send(serialization_type::SerializeMsg(source_type::GetOutData()), "snd-more");
-        if (msg)
-            msg->CloseMessage();
     }
 }
 
@@ -129,7 +128,7 @@ void base_GenericSampler<T,U,K,L>::SetContinuous(bool flag)
 template <typename T, typename U, typename K, typename L>
 void base_GenericSampler<T,U,K,L>::ResetEventCounter()
 {
-    while (GetCurrentState() == RUNNING)
+    while (CheckCurrentState(RUNNING))
     {
         try
         {
@@ -196,8 +195,6 @@ std::string base_GenericSampler<T,U,K,L>::GetProperty(const int key, const std::
             return FairMQDevice::GetProperty(key, default_);
     }
 }
-
-
 
 template<typename T, typename U>
 using GenericSampler = base_GenericSampler<T,U,int,std::function<void()> >;

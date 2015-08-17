@@ -16,6 +16,7 @@
 #define FAIRMQMESSAGE_H_
 
 #include <cstddef> // for size_t
+#include <memory> // unique_ptr
 
 typedef void (fairmq_free_fn) (void *data, void *hint);
 
@@ -33,6 +34,7 @@ class FairMQMessage
 
     virtual void CloseMessage() = 0;
     virtual void Copy(FairMQMessage* msg) = 0;
+    virtual void Copy(const std::unique_ptr<FairMQMessage>& msg) = 0;
 
     virtual ~FairMQMessage() {};
 };

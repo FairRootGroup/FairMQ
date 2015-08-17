@@ -16,6 +16,7 @@
 #define FAIRMQCHANNEL_H_
 
 #include <string>
+#include <memory> // unique_ptr
 
 #include <boost/thread/mutex.hpp>
 
@@ -59,6 +60,14 @@ class FairMQChannel
     FairMQSocket* fSocket;
 
     // Wrappers for the socket methods to simplify the usage of channels
+    int Send(const std::unique_ptr<FairMQMessage>& msg) const;
+    int SendAsync(const std::unique_ptr<FairMQMessage>& msg) const;
+    int SendPart(const std::unique_ptr<FairMQMessage>& msg) const;
+
+    int Receive(const std::unique_ptr<FairMQMessage>& msg) const;
+    int ReceiveAsync(const std::unique_ptr<FairMQMessage>& msg) const;
+
+    // DEPRECATED socket method wrappers with raw pointers and flag checks
     int Send(FairMQMessage* msg, const std::string& flag = "") const;
     int Send(FairMQMessage* msg, const int flags) const;
     int Receive(FairMQMessage* msg, const std::string& flag = "") const;
@@ -83,6 +92,9 @@ class FairMQChannel
     FairMQSocket* fCmdSocket;
 
     FairMQTransportFactory* fTransportFactory;
+
+    int fNoBlockFlag;
+    int fSndMoreFlag;
 
     bool HandleCommand() const;
 

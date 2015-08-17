@@ -418,6 +418,11 @@ int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/)
     }
 }
 
+void FairMQDevice::SetTransport(unique_ptr<FairMQTransportFactory>& factory)
+{
+    fTransportFactory = factory.get();
+}
+
 void FairMQDevice::SetTransport(FairMQTransportFactory* factory)
 {
     fTransportFactory = factory;
@@ -637,8 +642,6 @@ void FairMQDevice::ResetWrapper()
 
 void FairMQDevice::Reset()
 {
-    LOG(DEBUG) << "Resetting Device...";
-
     // iterate over the channels map
     for (auto mi = fChannels.begin(); mi != fChannels.end(); ++mi)
     {
@@ -657,8 +660,6 @@ void FairMQDevice::Reset()
             vi->fCmdSocket = nullptr;
         }
     }
-
-    LOG(DEBUG) << "Device reset finished!";
 }
 
 void FairMQDevice::Terminate()
@@ -725,4 +726,6 @@ FairMQDevice::~FairMQDevice()
         delete fCmdSocket;
         fCmdSocket = nullptr;
     }
+
+    delete fTransportFactory;
 }

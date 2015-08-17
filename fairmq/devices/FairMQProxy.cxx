@@ -28,7 +28,7 @@ FairMQProxy::~FairMQProxy()
 
 void FairMQProxy::Run()
 {
-    FairMQMessage* msg = fTransportFactory->CreateMessage();
+    std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
 
     // store the channel references to avoid traversing the map on every loop iteration
     const FairMQChannel& dataInChannel = fChannels.at("data-in").at(0);
@@ -41,6 +41,4 @@ void FairMQProxy::Run()
             dataOutChannel.Send(msg);
         }
     }
-
-    delete msg;
 }

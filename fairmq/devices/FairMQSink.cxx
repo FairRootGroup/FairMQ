@@ -29,11 +29,9 @@ void FairMQSink::Run()
 
     while (CheckCurrentState(RUNNING))
     {
-        FairMQMessage* msg = fTransportFactory->CreateMessage();
+        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
 
         dataChannel.Receive(msg);
-
-        delete msg;
     }
 }
 

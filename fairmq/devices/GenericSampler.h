@@ -13,7 +13,7 @@
  */
 
 #ifndef GENERICSAMPLER_H
-#define	GENERICSAMPLER_H
+#define GENERICSAMPLER_H
 
 #include <vector>
 #include <iostream>
@@ -62,7 +62,7 @@ class base_GenericSampler : public FairMQDevice, public T, public U
     typedef K                                                    key_type;
     typedef L                                                   task_type;
     typedef base_GenericSampler<T,U,K,L>                        self_type;
-    
+
   public:
     enum
     {
@@ -82,7 +82,6 @@ class base_GenericSampler : public FairMQDevice, public T, public U
         typedef source_type source_type;
         typedef serialization_type serialization_type;
     };
-    
     */
 
     virtual void SetTransport(FairMQTransportFactory* factory);
@@ -98,14 +97,12 @@ class base_GenericSampler : public FairMQDevice, public T, public U
     virtual int GetProperty(const int key, const int default_ = 0);
     virtual void SetProperty(const int key, const std::string& value);
     virtual std::string GetProperty(const int key, const std::string& default_ = "");
-    
+
     void SendPart(int socketIdx);
     int GetSocketNumber() const;
     int GetCurrentIndex() const;
     void SetContinuous(bool flag);
-    
-    
-    /// ///////////////////////////////////////////////////////////////////////////////////////
+
     /*
        register the tasks you want to process and, which will be
        called by ExecuteTasks() member function. The registration is done by filling
@@ -130,29 +127,27 @@ class base_GenericSampler : public FairMQDevice, public T, public U
      
      To communicate with the Host derived class via callback, three methods from the host class are callable (only
      after binding these methods in the GenericSampler<I,O>::InitTask() )
-     
     */
     template<typename RegistrationManager>
     void RegisterTask(RegistrationManager manage)
     {
-        manage(this,fTaskList);
-        LOG(DEBUG)<<"Current Number of registered tasks = "<<fTaskList.size();
+        manage(this, fTaskList);
+        LOG(DEBUG) << "Current Number of registered tasks = " << fTaskList.size();
     }
-    /// ///////////////////////////////////////////////////////////////////////////////////////
+
     void ExecuteTasks()
     {
         for(const auto& p : fTaskList)
         {
-            LOG(DEBUG)<<"Execute Task "<< p.first;
+            LOG(DEBUG) << "Execute Task " << p.first;
             p.second();
         }
     }
-    
-    
+
   protected:
     virtual void InitTask();
     virtual void Run();
-    
+
   private:
     std::string fOutChanName;
     int64_t fNumEvents;
@@ -160,30 +155,29 @@ class base_GenericSampler : public FairMQDevice, public T, public U
     int fEventRate;
     int fEventCounter;
     bool fContinuous;
-    std::map<key_type, task_type > fTaskList; // to handle Task list
-    
-    
+    std::map<key_type, task_type> fTaskList; // to handle Task list
+
     // automatically enable or disable the call of policy function members for binding of host functions.
     // this template functions use SFINAE to detect the existence of the policy function signature.
-    template<typename S = source_type ,FairMQ::tools::enable_if_hasNot_BindSendPart<S> = 0 >
-    void BindingSendPart(){}
-    template<typename S = source_type ,FairMQ::tools::enable_if_has_BindSendPart<S> = 0 >
+    template<typename S = source_type,FairMQ::tools::enable_if_hasNot_BindSendPart<S> = 0>
+    void BindingSendPart() {}
+    template<typename S = source_type,FairMQ::tools::enable_if_has_BindSendPart<S> = 0>
     void BindingSendPart()
     {
         source_type::BindSendPart(std::bind(&base_GenericSampler::SendPart,this,std::placeholders::_1) );
     }
-    
-    template<typename S = source_type ,FairMQ::tools::enable_if_hasNot_BindGetSocketNumber<S> = 0 >
-    void BindingGetSocketNumber(){}
-    template<typename S = source_type ,FairMQ::tools::enable_if_has_BindGetSocketNumber<S> = 0 >
+
+    template<typename S = source_type,FairMQ::tools::enable_if_hasNot_BindGetSocketNumber<S> = 0>
+    void BindingGetSocketNumber() {}
+    template<typename S = source_type,FairMQ::tools::enable_if_has_BindGetSocketNumber<S> = 0>
     void BindingGetSocketNumber()
     {
         source_type::BindGetSocketNumber(std::bind(&base_GenericSampler::GetSocketNumber,this) );
     }
-    
-    template<typename S = source_type ,FairMQ::tools::enable_if_hasNot_BindGetCurrentIndex<S> = 0 >
-    void BindingGetCurrentIndex(){}
-    template<typename S = source_type ,FairMQ::tools::enable_if_has_BindGetCurrentIndex<S> = 0 >
+
+    template<typename S = source_type,FairMQ::tools::enable_if_hasNot_BindGetCurrentIndex<S> = 0>
+    void BindingGetCurrentIndex() {}
+    template<typename S = source_type,FairMQ::tools::enable_if_has_BindGetCurrentIndex<S> = 0>
     void BindingGetCurrentIndex()
     {
         source_type::BindGetCurrentIndex(std::bind(&base_GenericSampler::GetCurrentIndex,this) );
@@ -193,4 +187,3 @@ class base_GenericSampler : public FairMQDevice, public T, public U
 #include "GenericSampler.tpl"
 
 #endif /* GENERICSAMPLER_H */
-

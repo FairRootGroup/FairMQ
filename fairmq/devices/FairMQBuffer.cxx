@@ -32,14 +32,12 @@ void FairMQBuffer::Run()
 
     while (CheckCurrentState(RUNNING))
     {
-        FairMQMessage* msg = fTransportFactory->CreateMessage();
+        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
 
         if (dataInChannel.Receive(msg) > 0)
         {
             dataOutChannel.Send(msg);
         }
-
-        delete msg;
     }
 }
 

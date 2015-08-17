@@ -41,7 +41,7 @@ void FairMQSplitter::Run()
 
     while (CheckCurrentState(RUNNING))
     {
-        FairMQMessage* msg = fTransportFactory->CreateMessage();
+        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
 
         if (dataInChannel.Receive(msg) > 0)
         {
@@ -52,7 +52,5 @@ void FairMQSplitter::Run()
                 direction = 0;
             }
         }
-
-        delete msg;
     }
 }

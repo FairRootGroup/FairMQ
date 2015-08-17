@@ -96,6 +96,24 @@ void FairMQMessageZMQ::SetMessage(void* data, size_t size)
 
 void FairMQMessageZMQ::Copy(FairMQMessage* msg)
 {
+    // DEPRECATED: Use Copy(const unique_ptr<FairMQMessage>&)
+
+    // Shares the message buffer between msg and this fMessage.
+    if (zmq_msg_copy(&fMessage, (zmq_msg_t*)msg->GetMessage()) != 0)
+    {
+        LOG(ERROR) << "failed copying message, reason: " << zmq_strerror(errno);
+    }
+
+    // Alternatively, following code does a hard copy of the message, which allows to modify the original after making a copy, without affecting the new msg.
+
+    // CloseMessage();
+    // size_t size = msg->GetSize();
+    // zmq_msg_init_size(&fMessage, size);
+    // memcpy(zmq_msg_data(&fMessage), msg->GetData(), size);
+}
+
+void FairMQMessageZMQ::Copy(const unique_ptr<FairMQMessage>& msg)
+{
     // Shares the message buffer between msg and this fMessage.
     if (zmq_msg_copy(&fMessage, (zmq_msg_t*)msg->GetMessage()) != 0)
     {

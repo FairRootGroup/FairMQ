@@ -120,30 +120,28 @@ class GenericProcessor : public FairMQDevice, public InputPolicy, public OutputP
         int receivedMsgs = 0;
         int sentMsgs = 0;
 
+        const FairMQChannel& inputChannel = fChannels["data-in"].at(0);
+        const FairMQChannel& outputChannel = fChannels["data-out"].at(0);
+
         while (CheckCurrentState(RUNNING))
         {
-            FairMQMessage* msg = fTransportFactory->CreateMessage();
+            std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
 
             ++receivedMsgs;
 
-            if (fChannels["data-in"].at(0).Receive(msg) > 0)
+            if (inputChannel.Receive(msg) > 0)
             {
                 // InputPolicy::DeSerializeMsg(msg) --> deserialize data of msg and fill output container
                 // TaskPolicy::ExecuteTask( ... )   --> process output container
-                TaskPolicy::ExecuteTask(InputPolicy::DeSerializeMsg(msg));
+                TaskPolicy::ExecuteTask(InputPolicy::DeSerializeMsg(msg.get()));
 
                 // OutputPolicy::fMessage point to msg
-                OutputPolicy::SetMessage(msg);
+                OutputPolicy::SetMessage(msg.get());
 
                 // TaskPolicy::GetOutputData() --> Get processed output container
                 // OutputPolicy::message(...)  --> Serialize output container and fill fMessage
-                fChannels["data-out"].at(0).Send(OutputPolicy::SerializeMsg(TaskPolicy::GetOutputData()));
+                outputChannel.Send(OutputPolicy::SerializeMsg(TaskPolicy::GetOutputData()));
                 sentMsgs++;
-            }
-
-            if (msg)
-            {
-                msg->CloseMessage();
             }
         }
 

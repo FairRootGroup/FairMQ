@@ -44,15 +44,18 @@ void GenericFileSink<InputPolicy, OutputPolicy>::Run()
 {
     int receivedMsg = 0;
 
+    // store the channel reference to avoid traversing the map on every loop iteration
+    const FairMQChannel& inputChannel = fChannels["data-in"].at(0);
+
     while (CheckCurrentState(RUNNING))
     {
-        FairMQMessage* msg = fTransportFactory->CreateMessage();
-        if (fChannels.at("data-in").at(0).Receive(msg) > 0)
+        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
+
+        if (inputChannel.Receive(msg) > 0)
         {
-            OutputPolicy::AddToFile(InputPolicy::DeSerializeMsg(msg));
+            OutputPolicy::AddToFile(InputPolicy::DeSerializeMsg(msg.get()));
             receivedMsg++;
         }
-        delete msg;
     }
 
     MQLOG(INFO) << "Received " << receivedMsg << " messages!";
