@@ -6,27 +6,36 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * FairMQExampleServer.h
+ * FairMQExample4Sink.cxx
  *
  * @since 2014-10-10
  * @author A. Rybalchenko
  */
 
-#ifndef FAIRMQEXAMPLESERVER_H_
-#define FAIRMQEXAMPLESERVER_H_
+#include <memory>
 
-#include "FairMQDevice.h"
+#include <boost/thread.hpp>
+#include <boost/bind.hpp>
 
-class FairMQExampleServer : public FairMQDevice
+#include "FairMQExample4Sink.h"
+#include "FairMQLogger.h"
+
+FairMQExample4Sink::FairMQExample4Sink()
 {
-  public:
-    FairMQExampleServer();
-    virtual ~FairMQExampleServer();
+}
 
-    static void CustomCleanup(void *data, void* hint);
+void FairMQExample4Sink::Run()
+{
+    while (CheckCurrentState(RUNNING))
+    {
+        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
 
-  protected:
-    virtual void Run();
-};
+        fChannels.at("data-in").at(0).Receive(msg);
 
-#endif /* FAIRMQEXAMPLESERVER_H_ */
+        LOG(INFO) << "Received message: \"" << *(static_cast<int*>(msg->GetData())) << "\"";
+    }
+}
+
+FairMQExample4Sink::~FairMQExample4Sink()
+{
+}

@@ -42,7 +42,7 @@ namespace FairMQParser
 FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& deviceId, const std::string& rootNode, const std::string& formatFlag)
 {
     // Create fair mq map
-    FairMQMap MQChannelMap;
+    FairMQMap channelMap;
 
     // variables to create key for the mq map. Note: maybe device name and id useless here
     std::string deviceIdKey;
@@ -69,7 +69,7 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string&
             LOG(DEBUG) << "Found device id '"<< deviceIdKey << "' in JSON input";
         }
     }
-    
+
     // Extract value from boost::property_tree
     // For each device in fairMQOptions
     for(const auto& p : pt.get_child(rootNode))
@@ -110,7 +110,7 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string&
                 continue;
             }
 
-            //get name attribute to form key
+            // get name attribute to form key
             if (formatFlag == "xml")
             {
                 channelKey = q.second.get<std::string>("<xmlattr>.name");
@@ -165,11 +165,11 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string&
             }// end socket loop
 
             //fill mq map option
-            MQChannelMap.insert(std::make_pair(channelKey,std::move(channelList)));
+            channelMap.insert(std::make_pair(channelKey,std::move(channelList)));
         }
     }
 
-    if (MQChannelMap.size() > 0)
+    if (channelMap.size() > 0)
     {
         LOG(DEBUG) << "---- Channel-keys found are :";
         for (const auto& p : MQChannelMap)
@@ -182,7 +182,7 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string&
         LOG(WARN) << "---- No channel-keys found for device-id " << deviceId;
         LOG(WARN) << "---- Check the "<< formatFlag << " inputs and/or command line inputs";
     }
-    return MQChannelMap;
+    return channelMap;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -200,7 +200,6 @@ FairMQMap JSON::UserParser(std::stringstream& input, const std::string& deviceId
     return ptreeToMQMap(pt, deviceId, rootNode,"json");
 }
 
-
 ////////////////////////////////////////////////////////////////////////////
 FairMQMap XML::UserParser(const std::string& filename, const std::string& deviceId, const std::string& rootNode)
 {
@@ -215,7 +214,5 @@ FairMQMap XML::UserParser(std::stringstream& input, const std::string& deviceId,
     boost::property_tree::read_xml(input, pt);
     return ptreeToMQMap(pt,deviceId,rootNode,"xml");
 }
-
-
 
 } //  end FairMQParser namespace

@@ -6,29 +6,30 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * FairMQExampleClient.h
+ * FairMQExample3Processor.h
  *
  * @since 2014-10-10
  * @author A. Rybalchenko
  */
 
-#ifndef FAIRMQEXAMPLECLIENT_H_
-#define FAIRMQEXAMPLECLIENT_H_
+#ifndef FAIRMQEXAMPLE3PROCESSOR_H_
+#define FAIRMQEXAMPLE3PROCESSOR_H_
 
 #include <string>
 
 #include "FairMQDevice.h"
 
-class FairMQExampleClient : public FairMQDevice
+class FairMQExample3Processor : public FairMQDevice
 {
   public:
     enum
     {
         Text = FairMQDevice::Last,
+        TaskIndex,
         Last
     };
-    FairMQExampleClient();
-    virtual ~FairMQExampleClient();
+    FairMQExample3Processor();
+    virtual ~FairMQExample3Processor();
 
     static void CustomCleanup(void* data, void* hint);
 
@@ -38,9 +39,9 @@ class FairMQExampleClient : public FairMQDevice
     virtual int GetProperty(const int key, const int default_ = 0);
 
   protected:
-    std::string fText;
+    int fTaskIndex;
 
     virtual void Run();
 };
 
-#endif /* FAIRMQEXAMPLECLIENT_H_ */
+#endif /* FAIRMQEXAMPLE3PROCESSOR_H_ */

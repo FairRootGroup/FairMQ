@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * runExample1Sink.cxx
+ * runExample4Sampler.cxx
  *
  * @since 2013-04-23
  * @author D. Klein, A. Rybalchenko
@@ -19,7 +19,7 @@
 #include "FairMQLogger.h"
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
-#include "FairMQExample1Sink.h"
+#include "FairMQExample4Sampler.h"
 
 #ifdef NANOMSG
 #include "FairMQTransportFactoryNN.h"
@@ -31,8 +31,8 @@ using namespace boost::program_options;
 
 int main(int argc, char** argv)
 {
-    FairMQExample1Sink sink;
-    sink.CatchSignals();
+    FairMQExample4Sampler sampler;
+    sampler.CatchSignals();
 
     FairMQProgOptions config;
 
@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 
         config.UserParser<FairMQParser::JSON>(filename, id);
 
-        sink.fChannels = config.GetFairMQMap();
+        sampler.fChannels = config.GetFairMQMap();
 
         LOG(INFO) << "PID: " << getpid();
 
@@ -58,18 +58,18 @@ int main(int argc, char** argv)
         FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
 #endif
 
-        sink.SetTransport(transportFactory);
+        sampler.SetTransport(transportFactory);
 
-        sink.SetProperty(FairMQExample1Sink::Id, id);
+        sampler.SetProperty(FairMQExample4Sampler::Id, id);
 
-        sink.ChangeState("INIT_DEVICE");
-        sink.WaitForEndOfState("INIT_DEVICE");
+        sampler.ChangeState("INIT_DEVICE");
+        sampler.WaitForEndOfState("INIT_DEVICE");
 
-        sink.ChangeState("INIT_TASK");
-        sink.WaitForEndOfState("INIT_TASK");
+        sampler.ChangeState("INIT_TASK");
+        sampler.WaitForEndOfState("INIT_TASK");
 
-        sink.ChangeState("RUN");
-        sink.InteractiveStateLoop();
+        sampler.ChangeState("RUN");
+        sampler.InteractiveStateLoop();
     }
     catch (std::exception& e)
     {

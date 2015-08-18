@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * FairMQExample2Sampler.cpp
+ * FairMQExample3Processor.cpp
  *
  * @since 2014-10-10
  * @author A. Rybalchenko
@@ -15,65 +15,39 @@
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 
-#include "FairMQExample2Sampler.h"
+#include "FairMQExample3Processor.h"
 #include "FairMQLogger.h"
 
-FairMQExample2Sampler::FairMQExample2Sampler()
-    : fText()
+FairMQExample3Processor::FairMQExample3Processor()
+    : fTaskIndex(0)
 {
 }
 
-void FairMQExample2Sampler::CustomCleanup(void *data, void *object)
+void FairMQExample3Processor::CustomCleanup(void *data, void *object)
 {
     delete (std::string*)object;
 }
 
-void FairMQExample2Sampler::Run()
+void FairMQExample3Processor::Run()
 {
     while (CheckCurrentState(RUNNING))
     {
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+        FairMQMessage* input = fTransportFactory->CreateMessage();
+        fChannels.at("data-in").at(0).Receive(input);
 
-        std::string* text = new std::string(fText);
+        LOG(INFO) << "Received data, processing...";
+
+        std::string* text = new std::string(static_cast<char*>(input->GetData()), input->GetSize());
+        *text += " (modified by " + fId + std::to_string(fTaskIndex) + ")";
+
+        delete input;
 
         FairMQMessage* msg = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
-
-        LOG(INFO) << "Sending \"" << fText << "\"";
-
         fChannels.at("data-out").at(0).Send(msg);
     }
 }
 
-FairMQExample2Sampler::~FairMQExample2Sampler()
-{
-}
-
-void FairMQExample2Sampler::SetProperty(const int key, const std::string& value)
-{
-    switch (key)
-    {
-        case Text:
-            fText = value;
-            break;
-        default:
-            FairMQDevice::SetProperty(key, value);
-            break;
-    }
-}
-
-std::string FairMQExample2Sampler::GetProperty(const int key, const std::string& default_ /*= ""*/)
-{
-    switch (key)
-    {
-        case Text:
-            return fText;
-            break;
-        default:
-            return FairMQDevice::GetProperty(key, default_);
-    }
-}
-
-void FairMQExample2Sampler::SetProperty(const int key, const int value)
+void FairMQExample3Processor::SetProperty(const int key, const std::string& value)
 {
     switch (key)
     {
@@ -83,11 +57,40 @@ void FairMQExample2Sampler::SetProperty(const int key, const int value)
     }
 }
 
-int FairMQExample2Sampler::GetProperty(const int key, const int default_ /*= 0*/)
+std::string FairMQExample3Processor::GetProperty(const int key, const std::string& default_ /*= ""*/)
 {
     switch (key)
     {
         default:
             return FairMQDevice::GetProperty(key, default_);
     }
+}
+
+void FairMQExample3Processor::SetProperty(const int key, const int value)
+{
+    switch (key)
+    {
+        case TaskIndex:
+            fTaskIndex = value;
+            break;
+        default:
+            FairMQDevice::SetProperty(key, value);
+            break;
+    }
+}
+
+int FairMQExample3Processor::GetProperty(const int key, const int default_ /*= 0*/)
+{
+    switch (key)
+    {
+        case TaskIndex:
+            return fTaskIndex;
+            break;
+        default:
+            return FairMQDevice::GetProperty(key, default_);
+    }
+}
+
+FairMQExample3Processor::~FairMQExample3Processor()
+{
 }

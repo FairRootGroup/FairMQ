@@ -6,20 +6,25 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * runExample1Sampler.cxx
+ * runExample2Sampler.cxx
  *
  * @since 2013-04-23
  * @author D. Klein, A. Rybalchenko
  */
 
 #include <iostream>
+#include <mutex>
+#include <condition_variable>
+#include <map>
 
 #include "boost/program_options.hpp"
+#include <boost/asio.hpp> // for DDS
 
 #include "FairMQLogger.h"
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
-#include "FairMQExample1Sampler.h"
+#include "FairMQExample3Sampler.h"
+#include "FairMQTools.h"
 
 #ifdef NANOMSG
 #include "FairMQTransportFactoryNN.h"
@@ -27,11 +32,13 @@
 #include "FairMQTransportFactoryZMQ.h"
 #endif
 
+#include "KeyValue.h" // DDS
+
 using namespace boost::program_options;
 
 int main(int argc, char** argv)
 {
-    FairMQExample1Sampler sampler;
+    FairMQExample3Sampler sampler;
     sampler.CatchSignals();
 
     FairMQProgOptions config;
@@ -68,17 +75,54 @@ int main(int argc, char** argv)
 
         sampler.SetTransport(transportFactory);
 
-        sampler.SetProperty(FairMQExample1Sampler::Id, id);
-        sampler.SetProperty(FairMQExample1Sampler::Text, text);
+        sampler.SetProperty(FairMQExample3Sampler::Id, id);
+        sampler.SetProperty(FairMQExample3Sampler::Text, text);
+
+        // Get the IP of the current host and store it for binding.
+        map<string,string> IPs;
+        FairMQ::tools::getHostIPs(IPs);
+        stringstream ss;
+        // Check if ib0 (infiniband) interface is available, otherwise try eth0 or wlan0.
+        if (IPs.count("ib0")) {
+          ss << "tcp://" << IPs["ib0"] << ":1";
+        } else if (IPs.count("eth0")) {
+          ss << "tcp://" << IPs["eth0"] << ":1";
+        } else if (IPs.count("wlan0")) {
+          ss << "tcp://" << IPs["wlan0"] << ":1";
+        } else {
+            LOG(INFO) << ss.str();
+            LOG(ERROR) << "Could not find ib0, eth0 or wlan0";
+            exit(EXIT_FAILURE);
+        }
+        string initialOutputAddress = ss.str();
+
+        // Configure the found host IP for the channel.
+        // TCP port will be chosen randomly during the initialization (binding).
+        sampler.fChannels.at("data-out").at(0).UpdateAddress(initialOutputAddress);
 
         sampler.ChangeState("INIT_DEVICE");
+        sampler.WaitForInitialValidation();
+
+        // Advertise the bound addresses via DDS property
+        LOG(INFO) << "Giving sampler output address to DDS.";
+        dds::key_value::CKeyValue ddsKeyValue;
+        ddsKeyValue.putValue("SamplerOutputAddress", sampler.fChannels.at("data-out").at(0).GetAddress());
+
         sampler.WaitForEndOfState("INIT_DEVICE");
 
         sampler.ChangeState("INIT_TASK");
         sampler.WaitForEndOfState("INIT_TASK");
 
         sampler.ChangeState("RUN");
-        sampler.InteractiveStateLoop();
+        sampler.WaitForEndOfState("RUN");
+
+        sampler.ChangeState("RESET_TASK");
+        sampler.WaitForEndOfState("RESET_TASK");
+
+        sampler.ChangeState("RESET_DEVICE");
+        sampler.WaitForEndOfState("RESET_DEVICE");
+
+        sampler.ChangeState("END");
     }
     catch (std::exception& e)
     {

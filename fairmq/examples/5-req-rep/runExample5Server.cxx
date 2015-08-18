@@ -15,7 +15,7 @@
 #include <iostream>
 
 #include "FairMQLogger.h"
-#include "FairMQExampleServer.h"
+#include "FairMQExample5Server.h"
 
 #ifdef NANOMSG
 #include "FairMQTransportFactoryNN.h"
@@ -27,7 +27,7 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-    FairMQExampleServer server;
+    FairMQExample5Server server;
     server.CatchSignals();
 
     LOG(INFO) << "PID: " << getpid();
@@ -40,8 +40,8 @@ int main(int argc, char** argv)
 
     server.SetTransport(transportFactory);
 
-    server.SetProperty(FairMQExampleServer::Id, "server");
-    server.SetProperty(FairMQExampleServer::NumIoThreads, 1);
+    server.SetProperty(FairMQExample5Server::Id, "server");
+    server.SetProperty(FairMQExample5Server::NumIoThreads, 1);
 
     FairMQChannel replyChannel("rep", "bind", "tcp://*:5005");
     replyChannel.UpdateSndBufSize(10000);

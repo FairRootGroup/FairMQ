@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * FairMQExampleServer.cxx
+ * FairMQExample5Server.cxx
  *
  * @since 2014-10-10
  * @author A. Rybalchenko
@@ -15,44 +15,45 @@
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 
-#include "FairMQExampleServer.h"
+#include "FairMQExample5Server.h"
 #include "FairMQLogger.h"
 
 using namespace std;
 
-FairMQExampleServer::FairMQExampleServer()
+FairMQExample5Server::FairMQExample5Server()
 {
 }
 
-void FairMQExampleServer::CustomCleanup(void *data, void *hint)
+void FairMQExample5Server::CustomCleanup(void *data, void *hint)
 {
     delete (string*)hint;
 }
 
-void FairMQExampleServer::Run()
+void FairMQExample5Server::Run()
 {
-    while (GetCurrentState() == RUNNING)
+    while (CheckCurrentState(RUNNING))
     {
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
         FairMQMessage* request = fTransportFactory->CreateMessage();
 
-        fChannels.at("data").at(0).Receive(request);
+        if (fChannels.at("data").at(0).Receive(request) > 0)
+        {
+            LOG(INFO) << "Received request from client: \"" << string(static_cast<char*>(request->GetData()), request->GetSize()) << "\"";
 
-        LOG(INFO) << "Received request from client: \"" << string(static_cast<char*>(request->GetData()), request->GetSize()) << "\"";
+            string* text = new string("Thank you for the \"" + string(static_cast<char*>(request->GetData()), request->GetSize()) + "\"!");
 
-        string* text = new string("Thank you for the \"" + string(static_cast<char*>(request->GetData()), request->GetSize()) + "\"!");
+            delete request;
 
-        delete request;
+            LOG(INFO) << "Sending reply to client.";
 
-        LOG(INFO) << "Sending reply to client.";
+            FairMQMessage* reply = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
 
-        FairMQMessage* reply = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
-
-        fChannels.at("data").at(0).Send(reply);
+            fChannels.at("data").at(0).Send(reply);
+        }
     }
 }
 
-FairMQExampleServer::~FairMQExampleServer()
+FairMQExample5Server::~FairMQExample5Server()
 {
 }

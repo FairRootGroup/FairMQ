@@ -17,7 +17,7 @@
 #include "boost/program_options.hpp"
 
 #include "FairMQLogger.h"
-#include "FairMQExampleClient.h"
+#include "FairMQExample5Client.h"
 
 #ifdef NANOMSG
 #include "FairMQTransportFactoryNN.h"
@@ -65,7 +65,7 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
 
 int main(int argc, char** argv)
 {
-    FairMQExampleClient client;
+    FairMQExample5Client client;
     client.CatchSignals();
 
     DeviceOptions_t options;
@@ -90,8 +90,8 @@ int main(int argc, char** argv)
 
     client.SetTransport(transportFactory);
 
-    client.SetProperty(FairMQExampleClient::Id, "client");
-    client.SetProperty(FairMQExampleClient::NumIoThreads, 1);
+    client.SetProperty(FairMQExample5Client::Id, "client");
+    client.SetProperty(FairMQExample5Client::NumIoThreads, 1);
 
     FairMQChannel requestChannel("req", "connect", "tcp://localhost:5005");
     requestChannel.UpdateSndBufSize(10000);

@@ -59,84 +59,65 @@ int getHostIPs(map<string, string>& addressMap)
     return 0;
 }
 
-
-
 // below are SFINAE template functions to check for function member signatures of class
-namespace details 
+namespace details
 {
-    ///////////////////////////////////////////////////////////////////////////
-    // test, at compile time, whether T has BindSendPart member function with returned type R and argument ...Args type
-    template<class T, class Sig, class=void>
-    struct has_BindSendPart:std::false_type{};
+// test, at compile time, whether T has BindSendPart member function with returned type R and argument ...Args type
+template<class T, class Sig, class=void>
+struct has_BindSendPart : false_type {};
 
-    template<class T, class R, class... Args>
-    struct has_BindSendPart
-        <T, R(Args...),
-            typename std::enable_if
-            <
-                std::is_convertible< decltype(std::declval<T>().BindSendPart(std::declval<Args>()...)), R >::value
-                || std::is_same<R, void>::value 
-            >::type
-        >:std::true_type{};
+template<class T, class R, class... Args>
+struct has_BindSendPart
+    <T, R(Args...), typename enable_if<
+        is_convertible<decltype(declval<T>().BindSendPart(declval<Args>()...)), R>::value || is_same<R, void>::value>::type
+    >:true_type {};
 
-    ///////////////////////////////////////////////////////////////////////////
-    // test, at compile time, whether T has BindGetSocketNumber member function with returned type R and argument ...Args type
-    template<class T, class Sig, class=void>
-    struct has_BindGetSocketNumber:std::false_type{};
+// test, at compile time, whether T has BindGetSocketNumber member function with returned type R and argument ...Args type
+template<class T, class Sig, class=void>
+struct has_BindGetSocketNumber : false_type {};
 
-    template<class T, class R, class... Args>
-    struct has_BindGetSocketNumber
-        <T, R(Args...),
-            typename std::enable_if
-            <
-                std::is_convertible< decltype(std::declval<T>().BindGetSocketNumber(std::declval<Args>()...)), R >::value
-                || std::is_same<R, void>::value 
-            >::type
-        >:std::true_type{};
-        
-    ///////////////////////////////////////////////////////////////////////////
-    // test, at compile time, whether T has BindGetCurrentIndex member function with returned type R and argument ...Args type
-    template<class T, class Sig, class=void>
-    struct has_BindGetCurrentIndex:std::false_type{};
+template<class T, class R, class... Args>
+struct has_BindGetSocketNumber
+    <T, R(Args...), typename enable_if<
+        is_convertible<decltype(declval<T>().BindGetSocketNumber(declval<Args>()...)), R>::value || is_same<R, void>::value>::type
+    >:true_type {};
 
-    template<class T, class R, class... Args>
-    struct has_BindGetCurrentIndex
-        <T, R(Args...),
-            typename std::enable_if
-            <
-                std::is_convertible< decltype(std::declval<T>().BindGetCurrentIndex(std::declval<Args>()...)), R >::value
-                || std::is_same<R, void>::value 
-            >::type
-        >:std::true_type{};
+// test, at compile time, whether T has BindGetCurrentIndex member function with returned type R and argument ...Args type
+template<class T, class Sig, class=void>
+struct has_BindGetCurrentIndex : false_type {};
 
-}// end namespace details
+template<class T, class R, class... Args>
+struct has_BindGetCurrentIndex
+    <T, R(Args...), typename enable_if<
+        is_convertible<decltype(declval<T>().BindGetCurrentIndex(declval<Args>()...)), R>::value || is_same<R, void>::value>::type
+    >:true_type {};
+} // end namespace details
 
-///////////////////////////////////////////////////////////////////////////
 // Alias template of the above structs
 template<class T, class Sig>
-using has_BindSendPart = std::integral_constant<bool, details::has_BindSendPart<T, Sig>::value>;
+using has_BindSendPart = integral_constant<bool, details::has_BindSendPart<T, Sig>::value>;
 
 template<class T, class Sig>
-using has_BindGetSocketNumber = std::integral_constant<bool, details::has_BindGetSocketNumber<T, Sig>::value>;
+using has_BindGetSocketNumber = integral_constant<bool, details::has_BindGetSocketNumber<T, Sig>::value>;
 
 template<class T, class Sig>
-using has_BindGetCurrentIndex = std::integral_constant<bool, details::has_BindGetCurrentIndex<T, Sig>::value>;
+using has_BindGetCurrentIndex = integral_constant<bool, details::has_BindGetCurrentIndex<T, Sig>::value>;
 
 // enable_if Alias template
 template<typename T>
-using enable_if_has_BindSendPart = typename std::enable_if<has_BindSendPart<T,void(int)>::value,int>::type;
+using enable_if_has_BindSendPart = typename enable_if<has_BindSendPart<T, void(int)>::value, int>::type;
 template<typename T>
-using enable_if_hasNot_BindSendPart = typename std::enable_if<!has_BindSendPart<T,void(int)>::value,int>::type;
+using enable_if_hasNot_BindSendPart = typename enable_if<!has_BindSendPart<T, void(int)>::value, int>::type;
 
 template<typename T>
-using enable_if_has_BindGetSocketNumber = typename std::enable_if<has_BindGetSocketNumber<T,int()>::value,int>::type;
+using enable_if_has_BindGetSocketNumber = typename enable_if<has_BindGetSocketNumber<T, int()>::value, int>::type;
 template<typename T>
-using enable_if_hasNot_BindGetSocketNumber = typename std::enable_if<!has_BindGetSocketNumber<T,int()>::value,int>::type;
+using enable_if_hasNot_BindGetSocketNumber = typename enable_if<!has_BindGetSocketNumber<T, int()>::value, int>::type;
 
 template<typename T>
-using enable_if_has_BindGetCurrentIndex = typename std::enable_if<has_BindGetCurrentIndex<T,int()>::value,int>::type;
+using enable_if_has_BindGetCurrentIndex = typename enable_if<has_BindGetCurrentIndex<T, int()>::value, int>::type;
 template<typename T>
-using enable_if_hasNot_BindGetCurrentIndex = typename std::enable_if<!has_BindGetCurrentIndex<T,int()>::value,int>::type;
+using enable_if_hasNot_BindGetCurrentIndex = typename enable_if<!has_BindGetCurrentIndex<T, int()>::value, int>::type;
 
 } // namespace tools
 } // namespace FairMQ

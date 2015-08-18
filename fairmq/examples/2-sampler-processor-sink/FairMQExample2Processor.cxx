@@ -30,7 +30,7 @@ void FairMQExample2Processor::CustomCleanup(void *data, void *object)
 
 void FairMQExample2Processor::Run()
 {
-    while (GetCurrentState() == RUNNING)
+    while (CheckCurrentState(RUNNING))
     {
         FairMQMessage* input = fTransportFactory->CreateMessage();
         fChannels.at("data-in").at(0).Receive(input);

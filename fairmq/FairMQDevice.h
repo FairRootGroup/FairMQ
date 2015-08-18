@@ -65,7 +65,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     virtual ~FairMQDevice();
 
-    std::unordered_map< std::string,std::vector<FairMQChannel> > fChannels;
+    std::unordered_map<std::string, std::vector<FairMQChannel>> fChannels;
 
   protected:
     std::string fId;

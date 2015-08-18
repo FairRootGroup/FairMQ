@@ -6,40 +6,25 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * FairMQExample2Sink.cxx
+ * FairMQExample3Sink.h
  *
  * @since 2014-10-10
  * @author A. Rybalchenko
  */
 
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
+#ifndef FAIRMQEXAMPLE3SINK_H_
+#define FAIRMQEXAMPLE3SINK_H_
 
-#include "FairMQExample2Sink.h"
-#include "FairMQLogger.h"
+#include "FairMQDevice.h"
 
-using namespace std;
-
-FairMQExample2Sink::FairMQExample2Sink()
+class FairMQExample3Sink : public FairMQDevice
 {
-}
+  public:
+    FairMQExample3Sink();
+    virtual ~FairMQExample3Sink();
 
-void FairMQExample2Sink::Run()
-{
-    while (CheckCurrentState(RUNNING))
-    {
-        FairMQMessage* msg = fTransportFactory->CreateMessage();
+  protected:
+    virtual void Run();
+};
 
-        fChannels.at("data-in").at(0).Receive(msg);
-
-        LOG(INFO) << "Received message: \""
-                  << string(static_cast<char*>(msg->GetData()), msg->GetSize())
-                  << "\"";
-
-        delete msg;
-    }
-}
-
-FairMQExample2Sink::~FairMQExample2Sink()
-{
-}
+#endif /* FAIRMQEXAMPLE3SINK_H_ */

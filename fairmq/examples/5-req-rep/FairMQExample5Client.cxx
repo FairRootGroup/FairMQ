@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * FairMQExample2Sampler.cpp
+ * FairMQExample5Client.cpp
  *
  * @since 2014-10-10
  * @author A. Rybalchenko
@@ -15,40 +15,51 @@
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 
-#include "FairMQExample2Sampler.h"
+#include "FairMQExample5Client.h"
 #include "FairMQLogger.h"
 
-FairMQExample2Sampler::FairMQExample2Sampler()
+using namespace std;
+
+FairMQExample5Client::FairMQExample5Client()
     : fText()
 {
 }
 
-void FairMQExample2Sampler::CustomCleanup(void *data, void *object)
+FairMQExample5Client::~FairMQExample5Client()
 {
-    delete (std::string*)object;
 }
 
-void FairMQExample2Sampler::Run()
+void FairMQExample5Client::CustomCleanup(void *data, void *hint)
+{
+    delete (string*)hint;
+}
+
+void FairMQExample5Client::Run()
 {
     while (CheckCurrentState(RUNNING))
     {
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
-        std::string* text = new std::string(fText);
+        string* text = new string(fText);
 
-        FairMQMessage* msg = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
+        FairMQMessage* request = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
+        FairMQMessage* reply = fTransportFactory->CreateMessage();
 
-        LOG(INFO) << "Sending \"" << fText << "\"";
+        LOG(INFO) << "Sending \"" << fText << "\" to server.";
 
-        fChannels.at("data-out").at(0).Send(msg);
+        if (fChannels.at("data").at(0).Send(request) > 0)
+        {
+            fChannels.at("data").at(0).Receive(reply);
+        }
+
+        LOG(INFO) << "Received reply from server: \"" << string(static_cast<char*>(reply->GetData()), reply->GetSize()) << "\"";
+
+        delete reply;
     }
 }
 
-FairMQExample2Sampler::~FairMQExample2Sampler()
-{
-}
 
-void FairMQExample2Sampler::SetProperty(const int key, const std::string& value)
+void FairMQExample5Client::SetProperty(const int key, const string& value)
 {
     switch (key)
     {
@@ -61,7 +72,7 @@ void FairMQExample2Sampler::SetProperty(const int key, const std::string& value)
     }
 }
 
-std::string FairMQExample2Sampler::GetProperty(const int key, const std::string& default_ /*= ""*/)
+string FairMQExample5Client::GetProperty(const int key, const string& default_ /*= ""*/)
 {
     switch (key)
     {
@@ -73,7 +84,7 @@ std::string FairMQExample2Sampler::GetProperty(const int key, const std::string&
     }
 }
 
-void FairMQExample2Sampler::SetProperty(const int key, const int value)
+void FairMQExample5Client::SetProperty(const int key, const int value)
 {
     switch (key)
     {
@@ -83,7 +94,7 @@ void FairMQExample2Sampler::SetProperty(const int key, const int value)
     }
 }
 
-int FairMQExample2Sampler::GetProperty(const int key, const int default_ /*= 0*/)
+int FairMQExample5Client::GetProperty(const int key, const int default_ /*= 0*/)
 {
     switch (key)
     {

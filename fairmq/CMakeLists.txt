@@ -7,9 +7,15 @@
  ################################################################################
 
 configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/ProgOptionTest/macro/bsampler-sink.json ${CMAKE_BINARY_DIR}/bin/config/bsampler-sink.json)
-configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/1-sampler-sink/sampler-sink.json ${CMAKE_BINARY_DIR}/bin/config/ex1-sampler-sink.json)
-configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/2-sampler-processor-sink/sampler-processor-sink.json ${CMAKE_BINARY_DIR}/bin/config/ex2-sampler-processor-sink.json)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/1-sampler-sink/ex1-sampler-sink.json ${CMAKE_BINARY_DIR}/bin/config/ex1-sampler-sink.json)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/2-sampler-processor-sink/ex2-sampler-processor-sink.json ${CMAKE_BINARY_DIR}/bin/config/ex2-sampler-processor-sink.json)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/3-dds/ex3-devices.json ${CMAKE_BINARY_DIR}/bin/config/ex3-devices.json)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/3-dds/ex3-dds-topology.xml ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-topology.xml)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/3-dds/ex3-dds-hosts.cfg ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-hosts.cfg COPYONLY)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/4-copypush/ex4-copypush.json ${CMAKE_BINARY_DIR}/bin/config/ex4-copypush.json)
+
 add_subdirectory(logger)
+
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
   ${CMAKE_SOURCE_DIR}/fairmq/devices
@@ -18,13 +24,28 @@ Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq/logger
   ${CMAKE_SOURCE_DIR}/fairmq/examples/1-sampler-sink
   ${CMAKE_SOURCE_DIR}/fairmq/examples/2-sampler-processor-sink
-  ${CMAKE_SOURCE_DIR}/fairmq/examples/req-rep
+  ${CMAKE_SOURCE_DIR}/fairmq/examples/4-copypush
+  ${CMAKE_SOURCE_DIR}/fairmq/examples/5-req-rep
   ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+if(DDS_PATH)
+  Set(INCLUDE_DIRECTORIES
+    ${INCLUDE_DIRECTORIES}
+    ${CMAKE_SOURCE_DIR}/fairmq/examples/3-dds
+  )
+endif(DDS_PATH)
 
 Set(SYSTEM_INCLUDE_DIRECTORIES
   ${Boost_INCLUDE_DIR}
 )
+
+If(DDS_PATH)
+  Set(SYSTEM_INCLUDE_DIRECTORIES
+    ${SYSTEM_INCLUDE_DIRECTORIES}
+    ${DDS_PATH}/include
+    )
+EndIf(DDS_PATH)
 
 If(PROTOBUF_FOUND)
   Set(INCLUDE_DIRECTORIES
@@ -65,6 +86,13 @@ Set(LINK_DIRECTORIES
   ${Boost_LIBRARY_DIRS}
 )
 
+if(DDS_PATH)
+  set(LINK_DIRECTORIES
+    ${LINK_DIRECTORIES}
+    ${DDS_PATH}/lib
+  )
+endif(DDS_PATH)
+
 Link_Directories(${LINK_DIRECTORIES})
 
 set(SRCS
@@ -96,9 +124,25 @@ set(SRCS
   "examples/2-sampler-processor-sink/FairMQExample2Processor.cxx"
   "examples/2-sampler-processor-sink/FairMQExample2Sink.cxx"
 
-  "examples/req-rep/FairMQExampleClient.cxx"
-  "examples/req-rep/FairMQExampleServer.cxx"
+  "examples/4-copypush/FairMQExample4Sampler.cxx"
+  "examples/4-copypush/FairMQExample4Sink.cxx"
+
+  "examples/5-req-rep/FairMQExample5Client.cxx"
+  "examples/5-req-rep/FairMQExample5Server.cxx"
 )
+
+if(DDS_PATH)
+  set(SRCS
+    ${SRCS}
+    "examples/3-dds/FairMQExample3Sampler.cxx"
+    "examples/3-dds/FairMQExample3Processor.cxx"
+    "examples/3-dds/FairMQExample3Sink.cxx"
+  )
+  set(DEPENDENCIES
+    ${DEPENDENCIES}
+    dds-key-value-lib
+  )
+endif(DDS_PATH)
 
 if(PROTOBUF_FOUND)
   # following source files are only for protobuf tests and are not essential part of FairMQ
@@ -152,7 +196,6 @@ else(NANOMSG_FOUND)
   )
 endif(NANOMSG_FOUND)
 
-
 # to copy src that are header-only files (e.g. c++ template) for FairRoot external installation
 # manual install (globbing add not recommended)
 Set(FAIRMQHEADERS
@@ -165,8 +208,16 @@ Set(FAIRMQHEADERS
 install(FILES ${FAIRMQHEADERS} DESTINATION include)
 
 set(DEPENDENCIES
-  ${DEPENDENCIES} fairmq_logger
-  boost_thread boost_timer boost_system boost_filesystem boost_program_options boost_random boost_chrono boost_exception
+  ${DEPENDENCIES}
+  boost_thread
+  fairmq_logger
+  boost_timer
+  boost_system
+  boost_filesystem
+  boost_program_options
+  boost_random
+  boost_chrono
+  boost_exception
 )
 
 set(LIBRARY_NAME FairMQ)
@@ -185,9 +236,20 @@ set(Exe_Names
   ex2-sampler
   ex2-processor
   ex2-sink
-  example-client
-  example-server
+  ex4-sampler
+  ex4-sink
+  ex5-client
+  ex5-server
 )
+
+if(DDS_PATH)
+  set(Exe_Names
+    ${Exe_Names}
+    ex3-sampler-dds
+    ex3-processor-dds
+    ex3-sink-dds
+  )
+endif(DDS_PATH)
 
 # following executables are only for protobuf tests and are not essential part of FairMQ
 # if(PROTOBUF_FOUND)
@@ -212,9 +274,20 @@ set(Exe_Source
   examples/2-sampler-processor-sink/runExample2Sampler.cxx
   examples/2-sampler-processor-sink/runExample2Processor.cxx
   examples/2-sampler-processor-sink/runExample2Sink.cxx
-  examples/req-rep/runExampleClient.cxx
-  examples/req-rep/runExampleServer.cxx
+  examples/4-copypush/runExample4Sampler.cxx
+  examples/4-copypush/runExample4Sink.cxx
+  examples/5-req-rep/runExample5Client.cxx
+  examples/5-req-rep/runExample5Server.cxx
 )
+
+if(DDS_PATH)
+  set(Exe_Source
+    ${Exe_Source}
+    examples/3-dds/runExample3Sampler.cxx
+    examples/3-dds/runExample3Processor.cxx
+    examples/3-dds/runExample3Sink.cxx
+  )
+endif(DDS_PATH)
 
 # following source files are only for protobuf tests and are not essential part of FairMQ
 # if(PROTOBUF_FOUND)

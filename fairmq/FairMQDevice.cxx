@@ -32,7 +32,7 @@ using namespace std;
 boost::function<void(int)> sigHandler;
 static void CallSignalHandler(int signal)
 {
-  sigHandler(signal);
+    sigHandler(signal);
 }
 
 FairMQDevice::FairMQDevice()

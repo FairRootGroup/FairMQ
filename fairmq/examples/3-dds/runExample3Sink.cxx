@@ -6,20 +6,25 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * runExample1Sink.cxx
+ * runExample2Sink.cxx
  *
  * @since 2013-04-23
  * @author D. Klein, A. Rybalchenko
  */
 
 #include <iostream>
+#include <mutex>
+#include <condition_variable>
+#include <map>
 
 #include "boost/program_options.hpp"
+#include <boost/asio.hpp> // for DDS
 
 #include "FairMQLogger.h"
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
-#include "FairMQExample1Sink.h"
+#include "FairMQExample3Sink.h"
+#include "FairMQTools.h"
 
 #ifdef NANOMSG
 #include "FairMQTransportFactoryNN.h"
@@ -27,11 +32,13 @@
 #include "FairMQTransportFactoryZMQ.h"
 #endif
 
+#include "KeyValue.h" // DDS
+
 using namespace boost::program_options;
 
 int main(int argc, char** argv)
 {
-    FairMQExample1Sink sink;
+    FairMQExample3Sink sink;
     sink.CatchSignals();
 
     FairMQProgOptions config;
@@ -60,16 +67,53 @@ int main(int argc, char** argv)
 
         sink.SetTransport(transportFactory);
 
-        sink.SetProperty(FairMQExample1Sink::Id, id);
+        sink.SetProperty(FairMQExample3Sink::Id, id);
+
+        // Get the IP of the current host and store it for binding.
+        map<string,string> IPs;
+        FairMQ::tools::getHostIPs(IPs);
+        stringstream ss;
+        // Check if ib0 (infiniband) interface is available, otherwise try eth0 or wlan0.
+        if (IPs.count("ib0")) {
+          ss << "tcp://" << IPs["ib0"] << ":1";
+        } else if (IPs.count("eth0")) {
+          ss << "tcp://" << IPs["eth0"] << ":1";
+        } else if (IPs.count("wlan0")) {
+          ss << "tcp://" << IPs["wlan0"] << ":1";
+        } else {
+            LOG(INFO) << ss.str();
+            LOG(ERROR) << "Could not find ib0, eth0 or wlan0";
+            exit(EXIT_FAILURE);
+        }
+        string initialInputAddress = ss.str();
+
+        // Configure the found host IP for the channel.
+        // TCP port will be chosen randomly during the initialization (binding).
+        sink.fChannels.at("data-in").at(0).UpdateAddress(initialInputAddress);
 
         sink.ChangeState("INIT_DEVICE");
+        sink.WaitForInitialValidation();
+
+        // Advertise the bound address via DDS property
+        LOG(INFO) << "Giving sink input address to DDS.";
+        dds::key_value::CKeyValue ddsKeyValue;
+        ddsKeyValue.putValue("SinkInputAddress", sink.fChannels.at("data-in").at(0).GetAddress());
+
         sink.WaitForEndOfState("INIT_DEVICE");
 
         sink.ChangeState("INIT_TASK");
         sink.WaitForEndOfState("INIT_TASK");
 
         sink.ChangeState("RUN");
-        sink.InteractiveStateLoop();
+        sink.WaitForEndOfState("RUN");
+
+        sink.ChangeState("RESET_TASK");
+        sink.WaitForEndOfState("RESET_TASK");
+
+        sink.ChangeState("RESET_DEVICE");
+        sink.WaitForEndOfState("RESET_DEVICE");
+
+        sink.ChangeState("END");
     }
     catch (std::exception& e)
     {
