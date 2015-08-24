@@ -5,7 +5,6 @@
  *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-
 /*
  * File:   FairProgOptions.h
  * Author: winckler
@@ -14,7 +13,7 @@
  */
 
 #ifndef FAIRPROGOPTIONS_H
-#define	FAIRPROGOPTIONS_H
+#define FAIRPROGOPTIONS_H
 
 #include "FairMQLogger.h"
 #include <boost/program_options.hpp>
@@ -39,15 +38,17 @@
  *      public : 
  *      MyOptions() : FairProgOptions()
  *      {
- *          fCmdline_options.add(fGenericDesc);
- *          fVisible_options.add(fCmdline_options);
+ *          fCmdlineOptions.add(fGenericDesc);
+ *          fVisibleOptions.add(fCmdlineOptions);
  *      }
- *      virtual ~MyOptions(){}
- *      virtual int ParseAll(const int argc, char** argv, bool AllowUnregistered = false)
+ *      virtual ~MyOptions() {}
+ *      virtual int ParseAll(const int argc, char** argv, bool allowUnregistered = false)
  *      {
- *          if(ParseCmdLine(argc,argv,fCmdline_options,fvarmap,AllowUnregistered))
+ *          if(ParseCmdLine(argc, argv, fCmdlineOptions, fVarMap, allowUnregistered))
+ *          {
  *              return 1;
- *          
+ *          }
+ *
  *          PrintOptions();
  *          return 0;
  *      }
@@ -66,17 +67,17 @@ namespace fs = boost::filesystem;
 
 class FairProgOptions
 {
-public:
+  public:
     FairProgOptions();
     virtual ~FairProgOptions();
 
     //  add options_description
-    int AddToCmdLineOptions(const po::options_description& optdesc, bool visible = true);
-    int AddToCfgFileOptions(const po::options_description& optdesc, bool visible = true);
-    int AddToEnvironmentOptions(const po::options_description& optdesc);
-    
+    int AddToCmdLineOptions(const po::options_description& optDesc, bool visible = true);
+    int AddToCfgFileOptions(const po::options_description& optDesc, bool visible = true);
+    int AddToEnvironmentOptions(const po::options_description& optDesc);
+
     void UseConfigFile(const std::string& filename = "");
-    
+
     // get value corresponding to the key
     template<typename T>
     T GetValue(const std::string& key) const
@@ -84,9 +85,9 @@ public:
         T val = T();
         try
         {
-            if (fvarmap.count(key))
+            if (fVarMap.count(key))
             {
-                val = fvarmap[key].as<T>();
+                val = fVarMap[key].as<T>();
             }
         }
         catch(std::exception& e)
@@ -102,27 +103,27 @@ public:
     // convert value to string that corresponds to the key
     std::string GetStringValue(const std::string& key);
     
-    const po::variables_map& GetVarMap() const {return fvarmap;}
+    const po::variables_map& GetVarMap() const {return fVarMap;}
     
     // boost prog options parsers
-    int ParseCmdLine(const int argc, char** argv, const po::options_description& desc, po::variables_map& varmap, bool AllowUnregistered = false);
-    int ParseCmdLine(const int argc, char** argv, const po::options_description& desc, bool AllowUnregistered = false);
+    int ParseCmdLine(const int argc, char** argv, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);
+    int ParseCmdLine(const int argc, char** argv, const po::options_description& desc, bool allowUnregistered = false);
     
-    int ParseCfgFile(const std::string& filename, const po::options_description& desc, po::variables_map& varmap, bool AllowUnregistered = false);
-    int ParseCfgFile(const std::string& filename, const po::options_description& desc, bool AllowUnregistered = false);
-    int ParseCfgFile(std::ifstream& ifs, const po::options_description& desc, po::variables_map& varmap, bool AllowUnregistered = false);
-    int ParseCfgFile(std::ifstream& ifs, const po::options_description& desc, bool AllowUnregistered = false);
+    int ParseCfgFile(const std::string& filename, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);
+    int ParseCfgFile(const std::string& filename, const po::options_description& desc, bool allowUnregistered = false);
+    int ParseCfgFile(std::ifstream& ifs, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);
+    int ParseCfgFile(std::ifstream& ifs, const po::options_description& desc, bool allowUnregistered = false);
 
     int ParseEnvironment(const std::function<std::string(std::string)>&);
 
-    virtual int ParseAll(const int argc, char** argv, bool AllowUnregistered = false) = 0;
+    virtual int ParseAll(const int argc, char** argv, bool allowUnregistered = false) = 0;
 
     virtual int PrintOptions();
     int PrintHelp() const;
 
-protected:
+  protected:
     // options container
-    po::variables_map fvarmap;
+    po::variables_map fVarMap;
 
     // basic description categories
     po::options_description fGenericDesc;
@@ -131,14 +132,13 @@ protected:
     po::options_description fHiddenDesc;
 
     // Description of cmd line and simple configuration file (configuration file like txt, but not like xml json ini)
-    po::options_description fCmdline_options;
-    po::options_description fConfig_file_options;
+    po::options_description fCmdLineOptions;
+    po::options_description fConfigFileOptions;
 
     // Description which is printed in help command line
-    po::options_description fVisible_options;
-    
     // to handle logger severity
-    std::map<std::string,fairmq::severity_level> fSeverity_map;
+    std::map<std::string,fairmq::severity_level> fSeverityMap;
+    po::options_description fVisibleOptions;
 
     std::string fVerboseLvl;
     bool fUseConfigFile;
@@ -149,7 +149,7 @@ protected:
     template<typename T>
     void UpadateVarMap(const std::string& key, const T& val)
     {
-        replace(fvarmap, key, val);
+        replace(fVarMap, key, val);
     }
 
     template<typename T>
@@ -158,25 +158,24 @@ protected:
         vm[opt].value() = boost::any(val);
     }
 
-private:
-    // /////////////////////////////////////////////
+  private:
     // Methods below are helper functions used in the PrintOptions method
     typedef std::tuple<std::string, std::string,std::string, std::string> VarValInfo_t;
-    typedef std::map<std::string, VarValInfo_t > MapVarValInfo_t;
+    typedef std::map<std::string, VarValInfo_t> MapVarValInfo_t;
 
-    VarValInfo_t Get_variable_value_info(const po::variable_value& var_val);
+    VarValInfo_t GetVariableValueInfo(const po::variable_value& varValue);
 
     template<typename T>
-    std::string variable_value_to_string(const po::variable_value& var_val)
+    std::string VariableValueToString(const po::variable_value& varValue)
     {
-        auto& value = var_val.value();
+        auto& value = varValue.value();
         std::ostringstream ostr;
         if (auto q = boost::any_cast<T>(&value))
         {
             ostr << *q;
         }
-        std::string val_str = ostr.str();
-        return val_str;
+        std::string valStr = ostr.str();
+        return valStr;
     }
 
     static void Max(int &val, const int &comp)
@@ -188,6 +187,4 @@ private:
     }
 };
 
-
-#endif	/* FAIRPROGOPTIONS_H */
-
+#endif /* FAIRPROGOPTIONS_H */

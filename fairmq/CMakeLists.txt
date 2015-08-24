@@ -29,23 +29,24 @@ Set(INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-if(DDS_PATH)
+if(DDS_FOUND)
+  add_definitions(-DENABLE_DDS)
   Set(INCLUDE_DIRECTORIES
     ${INCLUDE_DIRECTORIES}
     ${CMAKE_SOURCE_DIR}/fairmq/examples/3-dds
   )
-endif(DDS_PATH)
+endif(DDS_FOUND)
 
 Set(SYSTEM_INCLUDE_DIRECTORIES
   ${Boost_INCLUDE_DIR}
 )
 
-If(DDS_PATH)
+If(DDS_FOUND)
   Set(SYSTEM_INCLUDE_DIRECTORIES
     ${SYSTEM_INCLUDE_DIRECTORIES}
-    ${DDS_PATH}/include
+    ${DDS_INCLUDE_DIR}
     )
-EndIf(DDS_PATH)
+EndIf(DDS_FOUND)
 
 If(PROTOBUF_FOUND)
   Set(INCLUDE_DIRECTORIES
@@ -86,12 +87,12 @@ Set(LINK_DIRECTORIES
   ${Boost_LIBRARY_DIRS}
 )
 
-if(DDS_PATH)
+if(DDS_FOUND)
   set(LINK_DIRECTORIES
     ${LINK_DIRECTORIES}
-    ${DDS_PATH}/lib
+    ${DDS_LIBRARY_DIR}
   )
-endif(DDS_PATH)
+endif(DDS_FOUND)
 
 Link_Directories(${LINK_DIRECTORIES})
 
@@ -131,7 +132,7 @@ set(SRCS
   "examples/5-req-rep/FairMQExample5Server.cxx"
 )
 
-if(DDS_PATH)
+if(DDS_FOUND)
   set(SRCS
     ${SRCS}
     "examples/3-dds/FairMQExample3Sampler.cxx"
@@ -142,7 +143,7 @@ if(DDS_PATH)
     ${DEPENDENCIES}
     dds-key-value-lib
   )
-endif(DDS_PATH)
+endif(DDS_FOUND)
 
 if(PROTOBUF_FOUND)
   # following source files are only for protobuf tests and are not essential part of FairMQ
@@ -242,14 +243,14 @@ set(Exe_Names
   ex5-server
 )
 
-if(DDS_PATH)
+if(DDS_FOUND)
   set(Exe_Names
     ${Exe_Names}
     ex3-sampler-dds
     ex3-processor-dds
     ex3-sink-dds
   )
-endif(DDS_PATH)
+endif(DDS_FOUND)
 
 # following executables are only for protobuf tests and are not essential part of FairMQ
 # if(PROTOBUF_FOUND)
@@ -280,14 +281,14 @@ set(Exe_Source
   examples/5-req-rep/runExample5Server.cxx
 )
 
-if(DDS_PATH)
+if(DDS_FOUND)
   set(Exe_Source
     ${Exe_Source}
     examples/3-dds/runExample3Sampler.cxx
     examples/3-dds/runExample3Processor.cxx
     examples/3-dds/runExample3Sink.cxx
   )
-endif(DDS_PATH)
+endif(DDS_FOUND)
 
 # following source files are only for protobuf tests and are not essential part of FairMQ
 # if(PROTOBUF_FOUND)

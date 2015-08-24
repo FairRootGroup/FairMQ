@@ -18,6 +18,8 @@
 #include "FairMQExample3Processor.h"
 #include "FairMQLogger.h"
 
+using namespace std;
+
 FairMQExample3Processor::FairMQExample3Processor()
     : fTaskIndex(0)
 {
@@ -25,29 +27,37 @@ FairMQExample3Processor::FairMQExample3Processor()
 
 void FairMQExample3Processor::CustomCleanup(void *data, void *object)
 {
-    delete (std::string*)object;
+    delete (string*)object;
 }
 
 void FairMQExample3Processor::Run()
 {
+    // Check if we are still in the RUNNING state
     while (CheckCurrentState(RUNNING))
     {
-        FairMQMessage* input = fTransportFactory->CreateMessage();
-        fChannels.at("data-in").at(0).Receive(input);
+        // Create empty message to hold the input
+        unique_ptr<FairMQMessage> input(fTransportFactory->CreateMessage());
 
-        LOG(INFO) << "Received data, processing...";
+        // Receive the message (blocks until received or interrupted (e.g. by state change)). 
+        // Returns size of the received message or -1 if interrupted.
+        if (fChannels.at("data-in").at(0).Receive(input) > 0)
+        {
+            LOG(INFO) << "Received data, processing...";
 
-        std::string* text = new std::string(static_cast<char*>(input->GetData()), input->GetSize());
-        *text += " (modified by " + fId + std::to_string(fTaskIndex) + ")";
+            // Modify the received string
+            string* text = new string(static_cast<char*>(input->GetData()), input->GetSize());
+            *text += " (modified by " + fId + to_string(fTaskIndex) + ")";
 
-        delete input;
+            // Create output message
+            unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
 
-        FairMQMessage* msg = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
-        fChannels.at("data-out").at(0).Send(msg);
+            // Send out the output message
+            fChannels.at("data-out").at(0).Send(msg);
+        }
     }
 }
 
-void FairMQExample3Processor::SetProperty(const int key, const std::string& value)
+void FairMQExample3Processor::SetProperty(const int key, const string& value)
 {
     switch (key)
     {
@@ -57,7 +67,7 @@ void FairMQExample3Processor::SetProperty(const int key, const std::string& valu
     }
 }
 
-std::string FairMQExample3Processor::GetProperty(const int key, const std::string& default_ /*= ""*/)
+string FairMQExample3Processor::GetProperty(const int key, const string& default_ /*= ""*/)
 {
     switch (key)
     {

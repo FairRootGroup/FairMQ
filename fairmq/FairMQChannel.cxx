@@ -21,7 +21,7 @@
 
 using namespace std;
 
-boost::mutex FairMQChannel::channelMutex;
+boost::mutex FairMQChannel::fChannelMutex;
 
 FairMQChannel::FairMQChannel()
     : fType("unspecified")
@@ -63,7 +63,7 @@ std::string FairMQChannel::GetType() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
         return fType;
     }
     catch (boost::exception& e)
@@ -76,7 +76,7 @@ std::string FairMQChannel::GetMethod() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
         return fMethod;
     }
     catch (boost::exception& e)
@@ -89,7 +89,7 @@ std::string FairMQChannel::GetAddress() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
         return fAddress;
     }
     catch (boost::exception& e)
@@ -102,7 +102,7 @@ int FairMQChannel::GetSndBufSize() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
         return fSndBufSize;
     }
     catch (boost::exception& e)
@@ -115,7 +115,7 @@ int FairMQChannel::GetRcvBufSize() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
         return fRcvBufSize;
     }
     catch (boost::exception& e)
@@ -128,7 +128,7 @@ int FairMQChannel::GetRateLogging() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
         return fRateLogging;
     }
     catch (boost::exception& e)
@@ -141,7 +141,7 @@ void FairMQChannel::UpdateType(const std::string& type)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
         fIsValid = false;
         fType = type;
     }
@@ -155,7 +155,7 @@ void FairMQChannel::UpdateMethod(const std::string& method)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
         fIsValid = false;
         fMethod = method;
     }
@@ -169,7 +169,7 @@ void FairMQChannel::UpdateAddress(const std::string& address)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
         fIsValid = false;
         fAddress = address;
     }
@@ -183,7 +183,7 @@ void FairMQChannel::UpdateSndBufSize(const int sndBufSize)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
         fIsValid = false;
         fSndBufSize = sndBufSize;
     }
@@ -197,7 +197,7 @@ void FairMQChannel::UpdateRcvBufSize(const int rcvBufSize)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
         fIsValid = false;
         fRcvBufSize = rcvBufSize;
     }
@@ -211,7 +211,7 @@ void FairMQChannel::UpdateRateLogging(const int rateLogging)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
         fIsValid = false;
         fRateLogging = rateLogging;
     }
@@ -225,7 +225,7 @@ bool FairMQChannel::IsValid() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
         return fIsValid;
     }
     catch (boost::exception& e)
@@ -238,7 +238,7 @@ bool FairMQChannel::ValidateChannel()
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(channelMutex);
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
 
         stringstream ss;
         ss << "Validating channel \"" << fChannelName << "\"... ";
@@ -358,7 +358,7 @@ bool FairMQChannel::InitCommandInterface(FairMQTransportFactory* factory)
         fNoBlockFlag = fCmdSocket->NOBLOCK;
         fSndMoreFlag = fCmdSocket->SNDMORE;
 
-        fPoller = fTransportFactory->CreatePoller(*fSocket, *fCmdSocket);
+        fPoller = fTransportFactory->CreatePoller(*fCmdSocket, *fSocket);
 
         return true;
     }
@@ -380,7 +380,7 @@ int FairMQChannel::Send(const unique_ptr<FairMQMessage>& msg) const
 
     if (fPoller->CheckInput(0))
     {
-        HandleCommand();
+        HandleUnblock();
         return -1;
     }
 
@@ -408,7 +408,7 @@ int FairMQChannel::Receive(const unique_ptr<FairMQMessage>& msg) const
 
     if (fPoller->CheckInput(0))
     {
-        HandleCommand();
+        HandleUnblock();
         return -1;
     }
 
@@ -433,7 +433,7 @@ int FairMQChannel::Send(FairMQMessage* msg, const string& flag) const
 
         if (fPoller->CheckInput(0))
         {
-            HandleCommand();
+            HandleUnblock();
             return -1;
         }
 
@@ -458,7 +458,7 @@ int FairMQChannel::Send(FairMQMessage* msg, const int flags) const
 
         if (fPoller->CheckInput(0))
         {
-            HandleCommand();
+            HandleUnblock();
             return -1;
         }
 
@@ -483,7 +483,7 @@ int FairMQChannel::Receive(FairMQMessage* msg, const string& flag) const
 
         if (fPoller->CheckInput(0))
         {
-            HandleCommand();
+            HandleUnblock();
             return -1;
         }
 
@@ -508,7 +508,7 @@ int FairMQChannel::Receive(FairMQMessage* msg, const int flags) const
 
         if (fPoller->CheckInput(0))
         {
-            HandleCommand();
+            HandleUnblock();
             return -1;
         }
 
@@ -548,7 +548,7 @@ bool FairMQChannel::ExpectsAnotherPart() const
     }
 }
 
-inline bool FairMQChannel::HandleCommand() const
+inline bool FairMQChannel::HandleUnblock() const
 {
     FairMQMessage* cmd = fTransportFactory->CreateMessage();
     fCmdSocket->Receive(cmd, 0);

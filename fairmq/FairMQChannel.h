@@ -96,13 +96,13 @@ class FairMQChannel
     int fNoBlockFlag;
     int fSndMoreFlag;
 
-    bool HandleCommand() const;
+    bool HandleUnblock() const;
 
     // use static mutex to make the class easily copyable
     // implication: same mutex is used for all instances of the class
     // this does not hurt much, because mutex is used only during initialization with very low contention
     // possible TODO: improve this
-    static boost::mutex channelMutex;
+    static boost::mutex fChannelMutex;
 };
 
 #endif /* FAIRMQCHANNEL_H_ */

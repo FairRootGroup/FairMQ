@@ -35,7 +35,7 @@ void FairMQExample5Server::Run()
     {
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
-        FairMQMessage* request = fTransportFactory->CreateMessage();
+        unique_ptr<FairMQMessage> request(fTransportFactory->CreateMessage());
 
         if (fChannels.at("data").at(0).Receive(request) > 0)
         {
@@ -43,11 +43,9 @@ void FairMQExample5Server::Run()
 
             string* text = new string("Thank you for the \"" + string(static_cast<char*>(request->GetData()), request->GetSize()) + "\"!");
 
-            delete request;
-
             LOG(INFO) << "Sending reply to client.";
 
-            FairMQMessage* reply = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
+            unique_ptr<FairMQMessage> reply(fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
 
             fChannels.at("data").at(0).Send(reply);
         }

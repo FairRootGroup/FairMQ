@@ -12,6 +12,8 @@
  * @author A. Rybalchenko
  */
 
+#include <cstdlib> // quick_exit()
+
 #include <zmq.h>
 
 #include "FairMQPollerZMQ.h"
@@ -72,11 +74,11 @@ FairMQPollerZMQ::FairMQPollerZMQ(map< string,vector<FairMQChannel> >& channelsMa
     {
         LOG(ERROR) << "At least one of the provided channel keys for poller initialization is invalid";
         LOG(ERROR) << "Out of Range error: " << oor.what() << '\n';
-        exit(EXIT_FAILURE);
+        quick_exit(EXIT_FAILURE);
     }
 }
 
-FairMQPollerZMQ::FairMQPollerZMQ(FairMQSocket& dataSocket, FairMQSocket& cmdSocket)
+FairMQPollerZMQ::FairMQPollerZMQ(FairMQSocket& cmdSocket, FairMQSocket& dataSocket)
     : items()
     , fNumItems(2)
     , fOffsetMap()
@@ -111,7 +113,7 @@ FairMQPollerZMQ::FairMQPollerZMQ(FairMQSocket& dataSocket, FairMQSocket& cmdSock
     else
     {
         LOG(ERROR) << "invalid poller configuration, exiting.";
-        exit(EXIT_FAILURE);
+        quick_exit(EXIT_FAILURE);
     }
 }
 
@@ -165,7 +167,7 @@ bool FairMQPollerZMQ::CheckInput(const string channelKey, const int index)
     {
         LOG(ERROR) << "Invalid channel key: \"" << channelKey << "\"";
         LOG(ERROR) << "Out of Range error: " << oor.what() << '\n';
-        exit(EXIT_FAILURE);
+        quick_exit(EXIT_FAILURE);
     }
 }
 
@@ -184,7 +186,7 @@ bool FairMQPollerZMQ::CheckOutput(const string channelKey, const int index)
     {
         LOG(ERROR) << "Invalid channel key: \"" << channelKey << "\"";
         LOG(ERROR) << "Out of Range error: " << oor.what() << '\n';
-        exit(EXIT_FAILURE);
+        quick_exit(EXIT_FAILURE);
     }
 }
 

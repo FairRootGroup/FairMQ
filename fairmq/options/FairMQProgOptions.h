@@ -14,7 +14,7 @@
  */
 
 #ifndef FAIRMQPROGOPTIONS_H
-#define	FAIRMQPROGOPTIONS_H
+#define FAIRMQPROGOPTIONS_H
 
 #include <unordered_map>
 
@@ -24,16 +24,17 @@
 #include <boost/property_tree/ptree.hpp>
 
 namespace pt = boost::property_tree;
+
 class FairMQProgOptions : public FairProgOptions
 {
-protected:
-    typedef std::unordered_map< std::string,std::vector<FairMQChannel> > FairMQMap;
+  protected:
+    typedef std::unordered_map<std::string, std::vector<FairMQChannel>> FairMQMap;
 
-public:
+  public:
     FairMQProgOptions();
     virtual ~FairMQProgOptions();
 
-    virtual int ParseAll(const int argc, char** argv, bool AllowUnregistered = false);
+    virtual int ParseAll(const int argc, char** argv, bool allowUnregistered = false);
 
     // external parser, store function 
     template <typename T, typename ...Args>
@@ -53,7 +54,7 @@ public:
 
     int Store(const po::variables_map& vm)
     {
-        fvarmap = vm;
+        fVarMap = vm;
         return 0;
     }
 
@@ -65,26 +66,26 @@ public:
 
     int Store(const FairMQMap& channels)
     {
-        fFairMQmap = channels;
+        fFairMQMap = channels;
         return 0;
     }
 
     FairMQMap GetFairMQMap()
     {
-        return fFairMQmap;
+        return fFairMQMap;
     }
 
-protected:
+  protected:
     po::options_description fMQParserOptions;
     po::options_description fMQOptionsInCfg;
     po::options_description fMQOptionsInCmd;
     pt::ptree fMQtree;
-    FairMQMap fFairMQmap;
+    FairMQMap fFairMQMap;
 
     virtual int NotifySwitchOption(); // for custom help & version printing
     void InitOptionDescription();
 };
 
 
-#endif	/* FAIRMQPROGOPTIONS_H */
+#endif /* FAIRMQPROGOPTIONS_H */
 

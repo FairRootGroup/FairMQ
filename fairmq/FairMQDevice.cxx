@@ -13,8 +13,9 @@
  */
 
 #include <list>
-#include <algorithm> // for std::sort()
-#include <csignal> // for catching system signals
+#include <algorithm> // std::sort()
+#include <csignal> // catching system signals
+#include <cstdlib> // quick_exit()
 
 #include <termios.h> // for the InteractiveStateLoop
 
@@ -57,7 +58,7 @@ void FairMQDevice::CatchSignals()
     if (!fCatchingSignals)
     {
         // setup signal catching
-        sigHandler = std::bind1st(std::mem_fun(&FairMQDevice::SignalHandler), this);
+        sigHandler = bind1st(mem_fun(&FairMQDevice::SignalHandler), this);
         struct sigaction action;
         action.sa_handler = CallSignalHandler;
         action.sa_flags = 0;
@@ -73,15 +74,17 @@ void FairMQDevice::SignalHandler(int signal)
 {
     LOG(INFO) << "Caught signal " << signal;
 
-    ChangeState(STOP);
+    // fState = EXITING;
+    // Unblock();
+    // fStateThread.interrupt();
+    // fStateThread.join();
 
-    ChangeState(RESET_TASK);
-    WaitForEndOfState(RESET_TASK);
+    // fTerminateStateThread = boost::thread(boost::bind(&FairMQDevice::Terminate, this));
+    // Shutdown();
+    // fTerminateStateThread.join();
 
-    ChangeState(RESET_DEVICE);
-    WaitForEndOfState(RESET_DEVICE);
-
-    ChangeState(END);
+    MQLOG(INFO) << "Exiting.";
+    quick_exit(EXIT_FAILURE);
 }
 
 void FairMQDevice::InitWrapper()
@@ -145,7 +148,7 @@ void FairMQDevice::InitWrapper()
         {
             LOG(ERROR) << "could not initialize all channels after " << maxAttempts << " attempts";
             // TODO: goto ERROR state;
-            exit(EXIT_FAILURE);
+            quick_exit(EXIT_FAILURE);
         }
 
         if (numAttempts != 0)
@@ -418,11 +421,6 @@ int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/)
     }
 }
 
-void FairMQDevice::SetTransport(unique_ptr<FairMQTransportFactory>& factory)
-{
-    fTransportFactory = factory.get();
-}
-
 void FairMQDevice::SetTransport(FairMQTransportFactory* factory)
 {
     fTransportFactory = factory;
@@ -579,6 +577,10 @@ void FairMQDevice::InteractiveStateLoop()
                 LOG(INFO) << "[h] help";
                 PrintInteractiveStateLoopHelp();
                 break;
+            case 'x':
+                LOG(INFO) << "[x] ERROR";
+                ChangeState("ERROR_FOUND");
+                break;
             case 'q':
                 LOG(INFO) << "[q] end";
                 ChangeState("END");
@@ -605,11 +607,11 @@ inline void FairMQDevice::PrintInteractiveStateLoopHelp()
     LOG(INFO) << "[h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device";
 }
 
-void FairMQDevice::SendCommand(const string& command)
+void FairMQDevice::Unblock()
 {
-    FairMQMessage* cmd = fTransportFactory->CreateMessage(command.size());
-    memcpy(cmd->GetData(), command.c_str(), command.size());
+    FairMQMessage* cmd = fTransportFactory->CreateMessage();
     fCmdSocket->Send(cmd, 0);
+    delete cmd;
 }
 
 void FairMQDevice::ResetTaskWrapper()

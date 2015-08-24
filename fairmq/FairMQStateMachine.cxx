@@ -12,7 +12,6 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-
 #include <boost/exception/all.hpp>
 #include <boost/chrono.hpp> // for WaitForEndOfStateForMs()
 
@@ -44,8 +43,9 @@ int FairMQStateMachine::GetEventNumber(std::string event)
     if (event == "RESET_DEVICE") return RESET_DEVICE;
     if (event == "RESET_TASK") return RESET_TASK;
     if (event == "END") return END;
+    if (event == "ERROR_FOUND") return ERROR_FOUND;
     LOG(ERROR) << "Requested number for non-existent event... " << event << std::endl
-               << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, STOP, RESET_DEVICE, RESET_TASK, END";
+               << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, STOP, RESET_DEVICE, RESET_TASK, END, ERROR_FOUND";
     return -1;
 }
 
@@ -88,9 +88,12 @@ bool FairMQStateMachine::ChangeState(int event)
             case END:
                 process_event(FairMQFSM::END());
                 return true;
+            case ERROR_FOUND:
+                process_event(FairMQFSM::ERROR_FOUND());
+                return true;
             default:
-                LOG(ERROR) << "Requested unsupported state: " << event << std::endl
-                           << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, STOP, RESET_TASK, RESET_DEVICE, END";
+                LOG(ERROR) << "Requested state transition with an unsupported event: " << event << std::endl
+                           << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, STOP, RESET_TASK, RESET_DEVICE, END, ERROR_FOUND";
                 return false;
         }
     }

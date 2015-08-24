@@ -42,19 +42,17 @@ void FairMQExample5Client::Run()
 
         string* text = new string(fText);
 
-        FairMQMessage* request = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
-        FairMQMessage* reply = fTransportFactory->CreateMessage();
+        unique_ptr<FairMQMessage> request(fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
+        unique_ptr<FairMQMessage> reply(fTransportFactory->CreateMessage());
 
         LOG(INFO) << "Sending \"" << fText << "\" to server.";
 
         if (fChannels.at("data").at(0).Send(request) > 0)
         {
             fChannels.at("data").at(0).Receive(reply);
+            LOG(INFO) << "Received reply from server: \"" << string(static_cast<char*>(reply->GetData()), reply->GetSize()) << "\"";
         }
 
-        LOG(INFO) << "Received reply from server: \"" << string(static_cast<char*>(reply->GetData()), reply->GetSize()) << "\"";
-
-        delete reply;
     }
 }
 

@@ -83,13 +83,20 @@ int main(int argc, char** argv)
         FairMQ::tools::getHostIPs(IPs);
         stringstream ss;
         // Check if ib0 (infiniband) interface is available, otherwise try eth0 or wlan0.
-        if (IPs.count("ib0")) {
-          ss << "tcp://" << IPs["ib0"] << ":1";
-        } else if (IPs.count("eth0")) {
-          ss << "tcp://" << IPs["eth0"] << ":1";
-        } else if (IPs.count("wlan0")) {
-          ss << "tcp://" << IPs["wlan0"] << ":1";
-        } else {
+        if (IPs.count("ib0"))
+        {
+            ss << "tcp://" << IPs["ib0"] << ":1";
+        }
+        else if (IPs.count("eth0"))
+        {
+            ss << "tcp://" << IPs["eth0"] << ":1";
+        }
+        else if (IPs.count("wlan0"))
+        {
+            ss << "tcp://" << IPs["wlan0"] << ":1";
+        }
+        else
+        {
             LOG(INFO) << ss.str();
             LOG(ERROR) << "Could not find ib0, eth0 or wlan0";
             exit(EXIT_FAILURE);

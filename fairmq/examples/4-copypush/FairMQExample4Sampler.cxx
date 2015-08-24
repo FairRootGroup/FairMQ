@@ -12,7 +12,7 @@
  * @author A. Rybalchenko
  */
 
-#include <memory>
+#include <memory> // unique_ptr
 
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
@@ -32,9 +32,9 @@ void FairMQExample4Sampler::Run()
     {
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
-        std::unique_ptr<uint64_t> number(new uint64_t(counter));
+        uint64_t* number = new uint64_t(counter);
 
-        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage(number.release(), sizeof(uint64_t)));
+        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage(number, sizeof(uint64_t)));
 
         LOG(INFO) << "Sending \"" << counter << "\"";
 

@@ -2,7 +2,7 @@
 #define FAIRMQTOOLS_H_
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE     /* To get defns of NI_MAXSERV and NI_MAXHOST */
+#define _GNU_SOURCE // To get defns of NI_MAXSERV and NI_MAXHOST
 #endif
 
 #include <sys/socket.h>
@@ -22,6 +22,12 @@ namespace FairMQ
 {
 namespace tools
 {
+
+template<typename T, typename ...Args>
+unique_ptr<T> make_unique(Args&& ...args)
+{
+    return unique_ptr<T>(new T(forward<Args>(args)...));
+}
 
 int getHostIPs(map<string, string>& addressMap)
 {

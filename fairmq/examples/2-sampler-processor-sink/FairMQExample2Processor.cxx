@@ -18,6 +18,8 @@
 #include "FairMQExample2Processor.h"
 #include "FairMQLogger.h"
 
+using namespace std;
+
 FairMQExample2Processor::FairMQExample2Processor()
     : fText()
 {
@@ -25,25 +27,33 @@ FairMQExample2Processor::FairMQExample2Processor()
 
 void FairMQExample2Processor::CustomCleanup(void *data, void *object)
 {
-    delete (std::string*)object;
+    delete (string*)object;
 }
 
 void FairMQExample2Processor::Run()
 {
+    // Check if we are still in the RUNNING state
     while (CheckCurrentState(RUNNING))
     {
-        FairMQMessage* input = fTransportFactory->CreateMessage();
-        fChannels.at("data-in").at(0).Receive(input);
+        // Create empty message to hold the input
+        unique_ptr<FairMQMessage> input(fTransportFactory->CreateMessage());
 
-        LOG(INFO) << "Received data, processing...";
+        // Receive the message (blocks until received or interrupted (e.g. by state change)). 
+        // Returns size of the received message or -1 if interrupted.
+        if (fChannels.at("data-in").at(0).Receive(input) > 0)
+        {
+            LOG(INFO) << "Received data, processing...";
 
-        std::string* text = new std::string(static_cast<char*>(input->GetData()), input->GetSize());
-        *text += " (modified by " + fId + ")";
+            // Modify the received string
+            string* text = new string(static_cast<char*>(input->GetData()), input->GetSize());
+            *text += " (modified by " + fId + ")";
 
-        delete input;
+            // Create output message
+            unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
 
-        FairMQMessage* msg = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
-        fChannels.at("data-out").at(0).Send(msg);
+            // Send out the output message
+            fChannels.at("data-out").at(0).Send(msg);
+        }
     }
 }
 

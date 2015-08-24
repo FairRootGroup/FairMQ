@@ -69,7 +69,7 @@ void FairMQBenchmarkSampler::Run()
 
 void FairMQBenchmarkSampler::ResetEventCounter()
 {
-    while (CheckCurrentState(RUNNING))
+    while (true)
     {
         try
         {

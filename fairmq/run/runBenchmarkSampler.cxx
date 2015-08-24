@@ -17,6 +17,7 @@
 #include "boost/program_options.hpp"
 
 #include "FairMQLogger.h"
+#include "FairMQTools.h"
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
 #include "FairMQBenchmarkSampler.h"
@@ -71,7 +72,6 @@ int main(int argc, char** argv)
 #else
         sampler.SetTransport(new FairMQTransportFactoryZMQ());
 #endif
-
 
         sampler.SetProperty(FairMQBenchmarkSampler::Id, id);
         sampler.SetProperty(FairMQBenchmarkSampler::EventSize, eventSize);

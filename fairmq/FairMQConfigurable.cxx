@@ -12,6 +12,8 @@
  * @author D. Klein, A. Rybalchenko
  */
 
+#include <cstdlib> // quick_exit()
+
 #include "FairMQLogger.h"
 #include "FairMQConfigurable.h"
 
@@ -24,7 +26,7 @@ FairMQConfigurable::FairMQConfigurable()
 void FairMQConfigurable::SetProperty(const int key, const string& value)
 {
     LOG(ERROR) << "Reached end of the property list. SetProperty(" << key << ", " << value << ") has no effect.";
-    exit(EXIT_FAILURE);
+    quick_exit(EXIT_FAILURE);
 }
 
 string FairMQConfigurable::GetProperty(const int key, const string& default_ /*= ""*/)
@@ -36,7 +38,7 @@ string FairMQConfigurable::GetProperty(const int key, const string& default_ /*=
 void FairMQConfigurable::SetProperty(const int key, const int value)
 {
     LOG(ERROR) << "Reached end of the property list. SetProperty(" << key << ", " << value << ") has no effect.";
-    exit(EXIT_FAILURE);
+    quick_exit(EXIT_FAILURE);
 }
 
 int FairMQConfigurable::GetProperty(const int key, const int default_ /*= 0*/)

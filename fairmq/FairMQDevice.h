@@ -61,7 +61,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     virtual int GetProperty(const int key, const int default_ = 0);
 
     virtual void SetTransport(FairMQTransportFactory* factory);
-    virtual void SetTransport(std::unique_ptr<FairMQTransportFactory>& factory);
 
     static bool SortSocketsByAddress(const FairMQChannel &lhs, const FairMQChannel &rhs);
 
@@ -105,7 +104,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     void Shutdown();
 
     void Terminate();
-    void SendCommand(const std::string& command);
+    void Unblock();
 
     bool InitChannel(FairMQChannel&);
 

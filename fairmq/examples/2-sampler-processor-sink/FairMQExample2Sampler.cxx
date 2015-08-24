@@ -18,6 +18,8 @@
 #include "FairMQExample2Sampler.h"
 #include "FairMQLogger.h"
 
+using namespace std;
+
 FairMQExample2Sampler::FairMQExample2Sampler()
     : fText()
 {
@@ -25,18 +27,19 @@ FairMQExample2Sampler::FairMQExample2Sampler()
 
 void FairMQExample2Sampler::CustomCleanup(void *data, void *object)
 {
-    delete (std::string*)object;
+    delete (string*)object;
 }
 
 void FairMQExample2Sampler::Run()
 {
+    // Check if we are still in the RUNNING state
     while (CheckCurrentState(RUNNING))
     {
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
-        std::string* text = new std::string(fText);
+        string* text = new string(fText);
 
-        FairMQMessage* msg = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
+        unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
 
         LOG(INFO) << "Sending \"" << fText << "\"";
 
@@ -48,7 +51,7 @@ FairMQExample2Sampler::~FairMQExample2Sampler()
 {
 }
 
-void FairMQExample2Sampler::SetProperty(const int key, const std::string& value)
+void FairMQExample2Sampler::SetProperty(const int key, const string& value)
 {
     switch (key)
     {
@@ -61,7 +64,7 @@ void FairMQExample2Sampler::SetProperty(const int key, const std::string& value)
     }
 }
 
-std::string FairMQExample2Sampler::GetProperty(const int key, const std::string& default_ /*= ""*/)
+string FairMQExample2Sampler::GetProperty(const int key, const string& default_ /*= ""*/)
 {
     switch (key)
     {

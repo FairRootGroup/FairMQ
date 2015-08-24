@@ -12,11 +12,15 @@
  * @author A. Rybalchenko
  */
 
+#include <memory> // unique_ptr
+
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 
 #include "FairMQExample1Sampler.h"
 #include "FairMQLogger.h"
+
+using namespace std;
 
 FairMQExample1Sampler::FairMQExample1Sampler()
     : fText()
@@ -25,18 +29,18 @@ FairMQExample1Sampler::FairMQExample1Sampler()
 
 void FairMQExample1Sampler::CustomCleanup(void *data, void *object)
 {
-    delete (std::string*)object;
+    delete (string*)object;
 }
 
 void FairMQExample1Sampler::Run()
 {
-    while (GetCurrentState() == RUNNING)
+    while (CheckCurrentState(RUNNING))
     {
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
-        std::string* text = new std::string(fText);
+        string* text = new string(fText);
 
-        FairMQMessage* msg = fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text);
+        unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
 
         LOG(INFO) << "Sending \"" << fText << "\"";
 
@@ -48,7 +52,7 @@ FairMQExample1Sampler::~FairMQExample1Sampler()
 {
 }
 
-void FairMQExample1Sampler::SetProperty(const int key, const std::string& value)
+void FairMQExample1Sampler::SetProperty(const int key, const string& value)
 {
     switch (key)
     {
@@ -61,7 +65,7 @@ void FairMQExample1Sampler::SetProperty(const int key, const std::string& value)
     }
 }
 
-std::string FairMQExample1Sampler::GetProperty(const int key, const std::string& default_ /*= ""*/)
+string FairMQExample1Sampler::GetProperty(const int key, const string& default_ /*= ""*/)
 {
     switch (key)
     {

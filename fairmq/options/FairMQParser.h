@@ -23,7 +23,7 @@
 namespace FairMQParser
 {
 
-typedef std::unordered_map< std::string,std::vector<FairMQChannel> > FairMQMap;
+typedef std::unordered_map<std::string, std::vector<FairMQChannel>> FairMQMap;
 
 FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& deviceId, const std::string& rootNode, const std::string& formatFlag = "json");
 
@@ -35,8 +35,8 @@ struct JSON
 
 struct XML
 {
-    FairMQMap UserParser(const std::string& filename, const std::string& deviceId, const std::string& root_node="fairMQOptions");
-    FairMQMap UserParser(std::stringstream& input, const std::string& deviceId, const std::string& rootNode="fairMQOptions");
+    FairMQMap UserParser(const std::string& filename, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
+    FairMQMap UserParser(std::stringstream& input, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
 };
 
 } // FairMQParser namespace

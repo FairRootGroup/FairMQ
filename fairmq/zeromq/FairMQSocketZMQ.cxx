@@ -12,6 +12,7 @@
  * @author D. Klein, A. Rybalchenko
  */
 
+#include <cstdlib> // quick_exit()
 #include <sstream>
 
 #include "FairMQSocketZMQ.h"
@@ -43,7 +44,7 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, int num
     if (fSocket == NULL)
     {
         LOG(ERROR) << "failed creating socket " << fId << ", reason: " << zmq_strerror(errno);
-        exit(EXIT_FAILURE);
+        quick_exit(EXIT_FAILURE);
     }
 
     if (zmq_setsockopt(fSocket, ZMQ_IDENTITY, &fId, fId.length()) != 0)
@@ -99,7 +100,7 @@ void FairMQSocketZMQ::Connect(const string& address)
     {
         LOG(ERROR) << "failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
         // error here means incorrect configuration. exit if it happens.
-        exit(EXIT_FAILURE);
+        quick_exit(EXIT_FAILURE);
     }
 }
 

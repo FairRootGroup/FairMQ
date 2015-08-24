@@ -43,7 +43,7 @@ class FairMQPollerZMQ : public FairMQPoller
     virtual ~FairMQPollerZMQ();
 
   private:
-    FairMQPollerZMQ(FairMQSocket& dataSocket, FairMQSocket& cmdSocket);
+    FairMQPollerZMQ(FairMQSocket& cmdSocket, FairMQSocket& dataSocket);
 
     zmq_pollitem_t* items;
     int fNumItems;

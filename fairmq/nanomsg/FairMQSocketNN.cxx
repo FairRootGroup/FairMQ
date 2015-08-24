@@ -12,6 +12,7 @@
  * @author A. Rybalchenko
  */
 
+#include <cstdlib> // quick_exit()
 #include <sstream>
 
 #include "FairMQSocketNN.h"
@@ -45,7 +46,7 @@ FairMQSocketNN::FairMQSocketNN(const string& type, const std::string& name, int 
         if (fSocket == -1)
         {
             LOG(ERROR) << "failed creating socket " << fId << ", reason: " << nn_strerror(errno);
-            exit(EXIT_FAILURE);
+            quick_exit(EXIT_FAILURE);
         }
     }
     else
@@ -54,7 +55,7 @@ FairMQSocketNN::FairMQSocketNN(const string& type, const std::string& name, int 
         if (fSocket == -1)
         {
             LOG(ERROR) << "failed creating socket " << fId << ", reason: " << nn_strerror(errno);
-            exit(EXIT_FAILURE);
+            quick_exit(EXIT_FAILURE);
         }
         if (type == "sub")
         {

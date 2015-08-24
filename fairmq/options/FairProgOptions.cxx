@@ -5,7 +5,6 @@
  *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-
 /*
  * File:   FairProgOptions.cxx
  * Author: winckler
@@ -15,21 +14,20 @@
 
 #include "FairProgOptions.h"
 
-
+using namespace std;
 
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Constructor / destructor
+/// Constructor
 FairProgOptions::FairProgOptions() : 
-                        fGenericDesc("Generic options description"), 
-                        fConfigDesc("Configuration options description"), 
-                        fHiddenDesc("Hidden options description"), 
+                        fGenericDesc("Generic options description"),
+                        fConfigDesc("Configuration options description"),
+                        fHiddenDesc("Hidden options description"),
                         fEnvironmentDesc("Environment Variables"),
-                        fCmdline_options("Command line options"), 
-                        fConfig_file_options("Configuration file options"), 
-                        fVisible_options("Visible options"),
+                        fCmdLineOptions("Command line options"),
+                        fConfigFileOptions("Configuration file options"),
+                        fVisibleOptions("Visible options"),
                         fVerboseLvl("INFO"), fUseConfigFile(false), fConfigFile()
 {
-    // //////////////////////////////////
     // define generic options
     fGenericDesc.add_options()
         ("help,h", "produce help")
@@ -45,7 +43,7 @@ FairProgOptions::FairProgOptions() :
                                                                     "  NOLOG"
             )
         ;
-    
+
     fSeverity_map["TRACE"]              = fairmq::severity_level::TRACE;
     fSeverity_map["DEBUG"]              = fairmq::severity_level::DEBUG;
     fSeverity_map["RESULTS"]            = fairmq::severity_level::RESULTS;
@@ -54,45 +52,48 @@ FairProgOptions::FairProgOptions() :
     fSeverity_map["ERROR"]              = fairmq::severity_level::ERROR;
     fSeverity_map["STATE"]              = fairmq::severity_level::STATE;
     fSeverity_map["NOLOG"]              = fairmq::severity_level::NOLOG;
-    
 }
 
-FairProgOptions::~FairProgOptions() 
+/// Destructor
+FairProgOptions::~FairProgOptions()
 {
 }
-
 
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Add option descriptions
-
-int FairProgOptions::AddToCmdLineOptions(const po::options_description& optdesc, bool visible)
+int FairProgOptions::AddToCmdLineOptions(const po::options_description& optDesc, bool visible)
 {
-    fCmdline_options.add(optdesc);
-    if(visible)
-        fVisible_options.add(optdesc);
+    fCmdLineOptions.add(optDesc);
+    if (visible)
+    {
+        fVisibleOptions.add(optDesc);
+    }
     return 0;
 }
 
-int FairProgOptions::AddToCfgFileOptions(const po::options_description& optdesc, bool visible)
+int FairProgOptions::AddToCfgFileOptions(const po::options_description& optDesc, bool visible)
 {
     //if UseConfigFile() not yet called, then enable it with required file name to be provided by command line
-    if(!fUseConfigFile)
+    if (!fUseConfigFile)
+    {
         UseConfigFile();
-    
-    fConfig_file_options.add(optdesc);
-    if(visible)
-        fVisible_options.add(optdesc);
+    }
+
+    fConfigFileOptions.add(optDesc);
+    if (visible)
+    {
+        fVisibleOptions.add(optDesc);
+    }
     return 0;
 }
 
-int FairProgOptions::AddToEnvironmentOptions(const po::options_description& optdesc)
+int FairProgOptions::AddToEnvironmentOptions(const po::options_description& optDesc)
 {
-    fEnvironmentDesc.add(optdesc);
+    fEnvironmentDesc.add(optDesc);
     return 0;
 }
 
-
-void FairProgOptions::UseConfigFile(const std::string& filename)
+void FairProgOptions::UseConfigFile(const string& filename)
 {
         fUseConfigFile = true;
         if (filename.empty())
@@ -110,176 +111,168 @@ void FairProgOptions::UseConfigFile(const std::string& filename)
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Parser
 
-int FairProgOptions::ParseCmdLine(const int argc, char** argv, const po::options_description& desc, po::variables_map& varmap, bool AllowUnregistered)
+int FairProgOptions::ParseCmdLine(const int argc, char** argv, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered)
 {
-    // //////////////////////////////////
     // get options from cmd line and store in variable map
     // here we use command_line_parser instead of parse_command_line, to allow unregistered and positional options
-    if(AllowUnregistered)
+    if (allowUnregistered)
     {
         po::command_line_parser parser{argc, argv};
         parser.options(desc).allow_unregistered();
         po::parsed_options parsedOptions = parser.run();
-        po::store(parsedOptions,varmap);
+        po::store(parsedOptions, varmap);
     }
     else
+    {
         po::store(po::parse_command_line(argc, argv, desc), varmap);
+    }
 
-    // //////////////////////////////////
     // call the virtual NotifySwitchOption method to handle switch options like e.g. "--help" or "--version"
     // return 1 if switch options found in varmap
-    if(NotifySwitchOption())
+    if (NotifySwitchOption())
+    {
         return 1;
+    }
 
     po::notify(varmap);
     return 0;
 }
 
-
-int FairProgOptions::ParseCmdLine(const int argc, char** argv, const po::options_description& desc, bool AllowUnregistered)
+int FairProgOptions::ParseCmdLine(const int argc, char** argv, const po::options_description& desc, bool allowUnregistered)
 {
-    return ParseCmdLine(argc,argv,desc,fvarmap,AllowUnregistered);
+    return ParseCmdLine(argc,argv,desc,fVarMap,allowUnregistered);
 }
-    
 
-
-int FairProgOptions::ParseCfgFile(std::ifstream& ifs, const po::options_description& desc, po::variables_map& varmap, bool AllowUnregistered)
+int FairProgOptions::ParseCfgFile(ifstream& ifs, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered)
 {
     if (!ifs)
     {
-        std::cout << "can not open configuration file \n";
+        cout << "can not open configuration file \n";
         return -1;
     }
     else
     {
-        po:store(parse_config_file(ifs, desc, AllowUnregistered), varmap);
+        po:store(parse_config_file(ifs, desc, allowUnregistered), varmap);
         po::notify(varmap);
     }
     return 0;
 }
 
-int FairProgOptions::ParseCfgFile(const std::string& filename, const po::options_description& desc, po::variables_map& varmap, bool AllowUnregistered)
+int FairProgOptions::ParseCfgFile(const string& filename, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered)
 {
-    std::ifstream ifs(filename.c_str());
+    ifstream ifs(filename.c_str());
     if (!ifs)
     {
-        std::cout << "can not open configuration file: " << filename << "\n";
+        cout << "can not open configuration file: " << filename << "\n";
         return -1;
     }
     else
     {
-        po:store(parse_config_file(ifs, desc, AllowUnregistered), varmap);
+        po:store(parse_config_file(ifs, desc, allowUnregistered), varmap);
         po::notify(varmap);
     }
     return 0;
 }
 
-
-int FairProgOptions::ParseCfgFile(const std::string& filename, const po::options_description& desc, bool AllowUnregistered)
+int FairProgOptions::ParseCfgFile(const string& filename, const po::options_description& desc, bool allowUnregistered)
 {
-    return ParseCfgFile(filename,desc,fvarmap,AllowUnregistered);
+    return ParseCfgFile(filename,desc,fVarMap,allowUnregistered);
 }
 
-int FairProgOptions::ParseCfgFile(std::ifstream& ifs, const po::options_description& desc, bool AllowUnregistered)
+int FairProgOptions::ParseCfgFile(ifstream& ifs, const po::options_description& desc, bool allowUnregistered)
 {
-    return ParseCfgFile(ifs,desc,fvarmap,AllowUnregistered);
+    return ParseCfgFile(ifs,desc,fVarMap,allowUnregistered);
 }
-    
 
-int FairProgOptions::ParseEnvironment(const std::function<std::string(std::string)> & environment_mapper)
+int FairProgOptions::ParseEnvironment(const function<string(string)>& environmentMapper)
 {
-    po::store(po::parse_environment(fEnvironmentDesc, environment_mapper), fvarmap);
-    po::notify(fvarmap);
-    
+    po::store(po::parse_environment(fEnvironmentDesc, environmentMapper), fVarMap);
+    po::notify(fVarMap);
+
     return 0;
 }
 
 // Given a key, convert the variable value to string
-std::string FairProgOptions::GetStringValue(const std::string& key)
+string FairProgOptions::GetStringValue(const string& key)
+{
+    string valueStr;
+    try
     {
-        std::string val_str;
-        try
+        if (fVarMap.count(key))
         {
-            if ( fvarmap.count(key) )
+            auto& value = fVarMap[key].value();
+
+            // string albeit useless here
+            if (auto q = boost::any_cast<string>(&value))
             {
-                auto& value = fvarmap[key].value();
+                valueStr = VariableValueToString<string>(fVarMap[key]);
+                return valueStr;
+            }
 
+            // vector<string>
+            if (auto q = boost::any_cast<vector<string>>(&value))
+            {
+                valueStr = VariableValueToString<vector<string>>(fVarMap[key]);
+                return valueStr;
+            }
 
-                // string albeit useless here
-                if(auto q = boost::any_cast< std::string >(&value ))
-                {
-                    val_str = variable_value_to_string< std::string >(fvarmap[key]);
-                    return val_str;
-                }
-                
-                // vector<string>
-                if(auto q = boost::any_cast< std::vector<std::string> >(&value ))
-                {
-                    val_str = variable_value_to_string< std::vector<std::string> >(fvarmap[key]);
-                    return val_str;
-                }
-                
-                // int
-                if(auto q = boost::any_cast< int >(&value ))
-                {
-                    val_str = variable_value_to_string< int >(fvarmap[key]);
-                    return val_str;
-                }
-                
-                // vector<int>
-                if(auto q = boost::any_cast< std::vector<int> >(&value ))
-                {
-                    val_str = variable_value_to_string< std::vector<int> >(fvarmap[key]);
-                    return val_str;
-                }
-                
-                // float
-                if(auto q = boost::any_cast< float >(&value ))
-                {
-                    val_str = variable_value_to_string< float >(fvarmap[key]);
-                    return val_str;
-                }
-                
-                // vector float
-                if(auto q = boost::any_cast< std::vector<float> >(&value ))
-                {
-                    val_str = variable_value_to_string< std::vector<float> >(fvarmap[key]);
-                    return val_str;
-                }
-                
-                // double
-                if(auto q = boost::any_cast< double >(&value ))
-                {
-                    val_str = variable_value_to_string< double >(fvarmap[key]);
-                    return val_str;
-                }
-                
-                // vector double
-                if(auto q = boost::any_cast< std::vector<double> >(&value ))
-                {
-                    val_str = variable_value_to_string< std::vector<double> >(fvarmap[key]);
-                    return val_str;
-                }
-                
-                
+            // int
+            if (auto q = boost::any_cast<int>(&value))
+            {
+                valueStr = VariableValueToString<int>(fVarMap[key]);
+                return valueStr;
+            }
+
+            // vector<int>
+            if (auto q = boost::any_cast<vector<int>>(&value))
+            {
+                valueStr = VariableValueToString<vector<int>>(fVarMap[key]);
+                return valueStr;
+            }
+
+            // float
+            if (auto q = boost::any_cast<float>(&value))
+            {
+                valueStr = VariableValueToString<float>(fVarMap[key]);
+                return valueStr;
+            }
+
+            // vector float
+            if (auto q = boost::any_cast<vector<float>>(&value))
+            {
+                valueStr = VariableValueToString<vector<float>>(fVarMap[key]);
+                return valueStr;
+            }
+
+            // double
+            if (auto q = boost::any_cast<double>(&value))
+            {
+                valueStr = VariableValueToString<double>(fVarMap[key]);
+                return valueStr;
+            }
+
+            // vector double
+            if (auto q = boost::any_cast<vector<double>>(&value))
+            {
+                valueStr = VariableValueToString<vector<double>>(fVarMap[key]);
+                return valueStr;
             }
         }
-        catch(std::exception& e)
-        {
-            LOG(ERROR) << "Exception thrown for the key '" << key << "'";
-            LOG(ERROR) << e.what();
-        }
-        
-        return val_str;
+    }
+    catch(exception& e)
+    {
+        LOG(ERROR) << "Exception thrown for the key '" << key << "'";
+        LOG(ERROR) << e.what();
     }
 
+    return valueStr;
+}
 
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Print/notify options
-
 int FairProgOptions::PrintHelp()  const
 {
-    std::cout << fVisible_options << "\n";
+    cout << fVisibleOptions << "\n";
     return 0;
 }
 
@@ -289,205 +282,210 @@ int FairProgOptions::PrintOptions()
     // Method to overload.
     // -> loop over variable map and print its content
     // -> In this example the following types are supported:
-    // std::string, int, float, double, boost::filesystem::path
-    // std::vector<std::string>, std::vector<int>, std::vector<float>, std::vector<double>
-
+    // string, int, float, double, boost::filesystem::path
+    // vector<string>, vector<int>, vector<float>, vector<double>
 
     MapVarValInfo_t mapinfo;
 
     // get string length for formatting and convert varmap values into string
-    int maxlen_1st = 0;
-    int maxlen_2nd = 0;
-    int maxlen_TypeInfo = 0;
-    int maxlen_default =0;
-    int maxlen_empty = 0;
-    int total_len=0;
-    for (const auto& m : fvarmap)
+    int maxLength1st = 0;
+    int maxLength2nd = 0;
+    int maxLengthTypeInfo = 0;
+    int maxLengthDefault = 0;
+    int maxLengthEmpty = 0;
+    int totalLength = 0;
+    for (const auto& m : fVarMap)
     {
-        Max(maxlen_1st, m.first.length());
+        Max(maxLength1st, m.first.length());
 
-        VarValInfo_t valinfo=Get_variable_value_info(m.second);
-        mapinfo[m.first]=valinfo;
-        std::string val_str;
-        std::string typeInfo_str;
-        std::string default_str;
-        std::string empty_str;
-        std::tie(val_str,typeInfo_str,default_str,empty_str)=valinfo;
+        VarValInfo_t valinfo = GetVariableValueInfo(m.second);
+        mapinfo[m.first] = valinfo;
+        string valueStr;
+        string typeInfoStr;
+        string defaultStr;
+        string emptyStr;
+        tie(valueStr, typeInfoStr, defaultStr, emptyStr) = valinfo;
 
-        Max(maxlen_2nd, val_str.length());
-        Max(maxlen_TypeInfo, typeInfo_str.length());
-        Max(maxlen_default, default_str.length());
-        Max(maxlen_empty, empty_str.length());
-
+        Max(maxLength2nd, valueStr.length());
+        Max(maxLengthTypeInfo, typeInfoStr.length());
+        Max(maxLengthDefault, defaultStr.length());
+        Max(maxLengthEmpty, emptyStr.length());
     }
 
     // TODO : limit the value length field in a better way
-    if(maxlen_2nd>100) 
-        maxlen_2nd=100;
-    total_len=maxlen_1st+maxlen_2nd+maxlen_TypeInfo+maxlen_default+maxlen_empty;
-    
-    
-    //maxlen_2nd=200;
-    
+    if (maxLength2nd > 100)
+    {
+        maxLength2nd = 100;
+    }
+    totalLength = maxLength1st + maxLength2nd + maxLengthTypeInfo + maxLengthDefault + maxLengthEmpty;
+
+    // maxLength2nd = 200;
+
     // formatting and printing
 
-    LOG(INFO)<<std::setfill ('*') << std::setw (total_len+3)<<"*";// +3 because of string " = "
-    std::string PrintOptionsTitle="     Program options found     ";
+    LOG(INFO) << setfill ('*') << setw (totalLength + 3) << "*";// +3 because of string " = "
+    string PrintOptionsTitle = "     Program options found     ";
 
-    int leftSpace_len=0;
-    int rightSpace_len=0;
-    int leftTitle_shift_len=0;
-    int rightTitle_shift_len=0;
+    int leftSpaceLength = 0;
+    int rightSpaceLength = 0;
+    int leftTitleShiftLength = 0;
+    int rightTitleShiftLength = 0;
 
-    leftTitle_shift_len=PrintOptionsTitle.length()/2;
+    leftTitleShiftLength = PrintOptionsTitle.length() / 2;
 
     if ((PrintOptionsTitle.length()) % 2)
-        rightTitle_shift_len=leftTitle_shift_len+1;
+        rightTitleShiftLength = leftTitleShiftLength + 1;
     else
-        rightTitle_shift_len=leftTitle_shift_len;
+        rightTitleShiftLength = leftTitleShiftLength;
 
-    leftSpace_len=(total_len+3)/2-leftTitle_shift_len;
-    if ((total_len+3) % 2) 
-        rightSpace_len=(total_len+3)/2-rightTitle_shift_len+1;
+    leftSpaceLength = (totalLength + 3) / 2 - leftTitleShiftLength;
+    if ((totalLength + 3) % 2)
+    {
+        rightSpaceLength = (totalLength + 3) / 2 - rightTitleShiftLength + 1;
+    }
     else
-        rightSpace_len=(total_len+3)/2-rightTitle_shift_len;
+    {
+        rightSpaceLength = (totalLength + 3) / 2 - rightTitleShiftLength;
+    }
 
+    LOG(INFO) << setfill ('*') << setw(leftSpaceLength) << "*"
+                << setw(PrintOptionsTitle.length()) << PrintOptionsTitle
+                << setfill ('*') << setw(rightSpaceLength) << "*";
 
-    LOG(INFO)   << std::setfill ('*') << std::setw(leftSpace_len) <<"*"
-                << std::setfill(' ')  
-                << std::setw(PrintOptionsTitle.length()) << PrintOptionsTitle 
-                << std::setfill ('*') << std::setw(rightSpace_len) <<"*";
-
-    LOG(INFO) <<std::setfill ('*') << std::setw (total_len+3)<<"*";
+    LOG(INFO) << setfill ('*') << setw (totalLength+3) << "*";
 
     for (const auto& p : mapinfo)
     {
-        std::string key_str;
-        std::string val_str;
-        std::string typeInfo_str;
-        std::string default_str;
-        std::string empty_str;
-        key_str=p.first;
-        std::tie(val_str,typeInfo_str,default_str,empty_str)=p.second;
-        LOG(INFO)   << std::setfill(' ')
-                    << std::setw(maxlen_1st)<<std::left 
-                    << p.first << " = " 
-                    << std::setw(maxlen_2nd) 
-                    << val_str 
-                    << std::setw(maxlen_TypeInfo) 
-                    << typeInfo_str 
-                    << std::setw(maxlen_default)
-                    << default_str 
-                    << std::setw(maxlen_empty)
-                    << empty_str;
+        string keyStr;
+        string valueStr;
+        string typeInfoStr;
+        string defaultStr;
+        string emptyStr;
+        keyStr = p.first;
+        tie(valueStr, typeInfoStr, defaultStr, emptyStr) = p.second;
+        LOG(INFO) << std::setfill(' ')
+                    << setw(maxLength1st) << left
+                    << p.first << " = "
+                    << setw(maxLength2nd)
+                    << valueStr
+                    << setw(maxLengthTypeInfo)
+                    << typeInfoStr
+                    << setw(maxLengthDefault)
+                    << defaultStr
+                    << setw(maxLengthEmpty)
+                    << emptyStr;
     }
-    LOG(INFO)<<std::setfill ('*') << std::setw (total_len+3)<<"*";// +3 for " = "
+    LOG(INFO) << setfill ('*') << setw (totalLength + 3) << "*";// +3 for " = "
+
     return 0;
 }
-
-
 
 int FairProgOptions::NotifySwitchOption()
 {
-    // //////////////////////////////////
     // Method to overload.
-    if ( fvarmap.count("help") )
+    if (fVarMap.count("help"))
     {
-        std::cout << "***** FAIR Program Options ***** \n" << fVisible_options;
+        cout << "***** FAIR Program Options ***** \n" << fVisibleOptions;
         return 1;
     }
 
-    if (fvarmap.count("version")) 
+    if (fVarMap.count("version"))
     {
-        std::cout << "alpha version 0.0\n";
+        cout << "alpha version 0.0\n";
         return 1;
     }
 
     return 0;
 }
 
-FairProgOptions::VarValInfo_t FairProgOptions::Get_variable_value_info(const po::variable_value& var_val)
+FairProgOptions::VarValInfo_t FairProgOptions::GetVariableValueInfo(const po::variable_value& varValue)
+{
+    // tuple<valueStr, type_info_str, defaultStr, empty>
+    auto& value = varValue.value();
+    string defaultedValue;
+    string emptyValue;
+
+    if (varValue.empty())
     {
-        // tuple<val_str, type_info_str, default_str, empty>
-        auto& value = var_val.value();
-        std::string defaulted_val;
-        std::string empty_val;
-
-        if(var_val.empty())
-            empty_val="  [empty]";
+        emptyValue = "  [empty]";
+    }
+    else
+    {
+        if (varValue.defaulted())
+        {
+            defaultedValue = "  [default value]";
+        }
         else
-            if(var_val.defaulted())
-                defaulted_val="  [default value]";
-            else
-                defaulted_val="  [provided value]";
-
-        empty_val+=" *";
-        // string
-        if(auto q = boost::any_cast< std::string >(&value))
         {
-            std::string val_str = *q;
-            return std::make_tuple(val_str,std::string("  [Type=string]"),defaulted_val,empty_val);
+            defaultedValue = "  [provided value]";
         }
-
-        // vector<string>
-        if(auto q = boost::any_cast< std::vector<std::string> >(&value))
-        {
-            std::string val_str = variable_value_to_string< std::vector<std::string> >(var_val);
-            return std::make_tuple(val_str,std::string("  [Type=vector<string>]"),defaulted_val,empty_val);
-        }
-
-        // int
-        if(auto q = boost::any_cast< int >(&value))
-        {
-            std::string val_str =  variable_value_to_string< int >(var_val);
-            return std::make_tuple(val_str,std::string("  [Type=int]"),defaulted_val,empty_val);
-        }
-
-        // vector<int>
-        if(auto q = boost::any_cast< std::vector<int> >(&value))
-        {
-            std::string val_str = variable_value_to_string< std::vector<int> >(var_val);
-            return std::make_tuple(val_str,std::string("  [Type=vector<int>]"),defaulted_val,empty_val);
-        }
-
-        // float
-        if(auto q = boost::any_cast< float >(&value))
-        {
-            std::string val_str = variable_value_to_string< float >(var_val);
-            return std::make_tuple(val_str,std::string("  [Type=float]"),defaulted_val,empty_val);
-        }
-
-        // vector<float>
-        if(auto q = boost::any_cast< std::vector<float> >(&value))
-        {
-            std::string val_str = variable_value_to_string< std::vector<float> >(var_val);
-            return std::make_tuple(val_str,std::string("  [Type=vector<float>]"),defaulted_val,empty_val);
-        }
-
-        // double
-        if(auto q = boost::any_cast< double >(&value))
-        {
-            std::string val_str = variable_value_to_string< double >(var_val);
-            return std::make_tuple(val_str,std::string("  [Type=double]"),defaulted_val,empty_val);
-        }
-
-        // vector<double>
-        if(auto q = boost::any_cast< std::vector<double> >(&value))
-        {
-            std::string val_str = variable_value_to_string< std::vector<double> >(var_val);
-            return std::make_tuple(val_str,std::string("  [Type=vector<double>]"),defaulted_val,empty_val);
-        }
-
-        // boost::filesystem::path
-        if(auto q = boost::any_cast<boost::filesystem::path>(&value))
-        {
-            std::string val_str = (*q).string();
-            //std::string val_str = (*q).filename().generic_string();
-            return std::make_tuple(val_str,std::string("  [Type=boost::filesystem::path]"),defaulted_val,empty_val);
-        }
-
-        // if we get here, the type is not supported return unknown info
-        return std::make_tuple(std::string("Unknown value"), std::string("  [Type=Unknown]"),defaulted_val,empty_val);
     }
 
+    emptyValue += " *";
+    // string
+    if (auto q = boost::any_cast<string>(&value))
+    {
+        string valueStr = *q;
+        return make_tuple(valueStr, string("  [Type=string]"), defaultedValue, emptyValue);
+    }
 
+    // vector<string>
+    if (auto q = boost::any_cast<vector<string>>(&value))
+    {
+        string valueStr = VariableValueToString<vector<string>>(varValue);
+        return make_tuple(valueStr, string("  [Type=vector<string>]"), defaultedValue, emptyValue);
+    }
+
+    // int
+    if (auto q = boost::any_cast<int>(&value))
+    {
+        string valueStr =  VariableValueToString<int>(varValue);
+        return make_tuple(valueStr, string("  [Type=int]"), defaultedValue, emptyValue);
+    }
+
+    // vector<int>
+    if (auto q = boost::any_cast<vector<int>>(&value))
+    {
+        string valueStr = VariableValueToString<vector<int>>(varValue);
+        return make_tuple(valueStr, string("  [Type=vector<int>]"), defaultedValue, emptyValue);
+    }
+
+    // float
+    if (auto q = boost::any_cast<float>(&value))
+    {
+        string valueStr = VariableValueToString<float>(varValue);
+        return make_tuple(valueStr, string("  [Type=float]"), defaultedValue, emptyValue);
+    }
+
+    // vector<float>
+    if (auto q = boost::any_cast<vector<float>>(&value))
+    {
+        string valueStr = VariableValueToString<vector<float>>(varValue);
+        return make_tuple(valueStr, string("  [Type=vector<float>]"), defaultedValue, emptyValue);
+    }
+
+    // double
+    if (auto q = boost::any_cast<double>(&value))
+    {
+        string valueStr = VariableValueToString<double>(varValue);
+        return make_tuple(valueStr, string("  [Type=double]"), defaultedValue, emptyValue);
+    }
+
+    // vector<double>
+    if (auto q = boost::any_cast<vector<double>>(&value))
+    {
+        string valueStr = VariableValueToString<vector<double>>(varValue);
+        return make_tuple(valueStr, string("  [Type=vector<double>]"), defaultedValue, emptyValue);
+    }
+
+    // boost::filesystem::path
+    if (auto q = boost::any_cast<boost::filesystem::path>(&value))
+    {
+        string valueStr = (*q).string();
+        //string valueStr = (*q).filename().generic_string();
+        return make_tuple(valueStr, string("  [Type=boost::filesystem::path]"), defaultedValue, emptyValue);
+    }
+
+    // if we get here, the type is not supported return unknown info
+    return make_tuple(string("Unknown value"), string("  [Type=Unknown]"), defaultedValue, emptyValue);
+}
