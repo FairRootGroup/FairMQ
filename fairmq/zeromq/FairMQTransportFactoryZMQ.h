@@ -35,8 +35,8 @@ class FairMQTransportFactoryZMQ : public FairMQTransportFactory
     virtual FairMQSocket* CreateSocket(const std::string& type, const std::string& name, int numIoThreads);
 
     virtual FairMQPoller* CreatePoller(const std::vector<FairMQChannel>& channels);
-    virtual FairMQPoller* CreatePoller(std::map< std::string,std::vector<FairMQChannel> >& channelsMap, std::initializer_list<std::string> channelList);
-    virtual FairMQPoller* CreatePoller(FairMQSocket& dataSocket, FairMQSocket& cmdSocket);
+    virtual FairMQPoller* CreatePoller(std::map<std::string, std::vector<FairMQChannel>>& channelsMap, std::initializer_list<std::string> channelList);
+    virtual FairMQPoller* CreatePoller(FairMQSocket& cmdSocket, FairMQSocket& dataSocket);
 
     virtual ~FairMQTransportFactoryZMQ() {};
 };

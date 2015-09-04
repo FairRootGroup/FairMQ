@@ -58,10 +58,10 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
         ("id", bpo::value<string>()->required(), "Device ID")
         ("io-threads", bpo::value<int>()->default_value(1), "Number of I/O threads")
         ("num-inputs", bpo::value<int>()->required(), "Number of Merger input sockets")
-        ("input-socket-type", bpo::value< vector<string> >()->required(), "Input socket type: sub/pull")
-        ("input-buff-size", bpo::value< vector<int> >()->required(), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
-        ("input-method", bpo::value< vector<string> >()->required(), "Input method: bind/connect")
-        ("input-address", bpo::value< vector<string> >()->required(), "Input address, e.g.: \"tcp://localhost:5555\"")
+        ("input-socket-type", bpo::value<vector<string>>()->required(), "Input socket type: sub/pull")
+        ("input-buff-size", bpo::value<vector<int>>()->required(), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
+        ("input-method", bpo::value<vector<string>>()->required(), "Input method: bind/connect")
+        ("input-address", bpo::value<vector<string>>()->required(), "Input address, e.g.: \"tcp://localhost:5555\"")
         ("output-socket-type", bpo::value<string>()->required(), "Output socket type: pub/push")
         ("output-buff-size", bpo::value<int>()->required(), "Output buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
         ("output-method", bpo::value<string>()->required(), "Output method: bind/connect")
@@ -89,16 +89,16 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
         _options->numInputs = vm["num-inputs"].as<int>();
 
     if (vm.count("input-socket-type"))
-        _options->inputSocketType = vm["input-socket-type"].as< vector<string> >();
+        _options->inputSocketType = vm["input-socket-type"].as<vector<string>>();
 
     if (vm.count("input-buff-size"))
-        _options->inputBufSize = vm["input-buff-size"].as< vector<int> >();
+        _options->inputBufSize = vm["input-buff-size"].as<vector<int>>();
 
     if (vm.count("input-method"))
-        _options->inputMethod = vm["input-method"].as< vector<string> >();
+        _options->inputMethod = vm["input-method"].as<vector<string>>();
 
     if (vm.count("input-address"))
-        _options->inputAddress = vm["input-address"].as< vector<string> >();
+        _options->inputAddress = vm["input-address"].as<vector<string>>();
 
     if (vm.count("output-socket-type"))
         _options->outputSocketType = vm["output-socket-type"].as<string>();

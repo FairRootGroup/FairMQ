@@ -32,7 +32,7 @@ class FairMQPollerNN : public FairMQPoller
 
   public:
     FairMQPollerNN(const std::vector<FairMQChannel>& channels);
-    FairMQPollerNN(std::map< std::string,std::vector<FairMQChannel> >& channelsMap, std::initializer_list<std::string> channelList);
+    FairMQPollerNN(std::map<std::string, std::vector<FairMQChannel>>& channelsMap, std::initializer_list<std::string> channelList);
 
     virtual void Poll(const int timeout);
     virtual bool CheckInput(const int index);
@@ -43,12 +43,12 @@ class FairMQPollerNN : public FairMQPoller
     virtual ~FairMQPollerNN();
 
   private:
-    FairMQPollerNN(FairMQSocket& dataSocket, FairMQSocket& cmdSocket);
+    FairMQPollerNN(FairMQSocket& cmdSocket, FairMQSocket& dataSocket);
 
     nn_pollfd* items;
     int fNumItems;
 
-    std::unordered_map<std::string,int> fOffsetMap;
+    std::unordered_map<std::string, int> fOffsetMap;
 
     /// Copy Constructor
     FairMQPollerNN(const FairMQPollerNN&);

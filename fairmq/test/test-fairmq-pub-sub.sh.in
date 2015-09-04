@@ -1,0 +1,12 @@
+#!/bin/bash
+
+trap 'kill -TERM $PUB_PID; kill -TERM $SUB1_PID; kill -TERM $SUB2_PID; wait $PUB_PID; wait $SUB1_PID; wait $SUB2_PID;' TERM
+@CMAKE_BINARY_DIR@/bin/test-fairmq-pub &
+PUB_PID=$!
+@CMAKE_BINARY_DIR@/bin/test-fairmq-sub &
+SUB1_PID=$!
+@CMAKE_BINARY_DIR@/bin/test-fairmq-sub &
+SUB2_PID=$!
+wait $PUB_PID
+wait $SUB1_PID
+wait $SUB2_PID

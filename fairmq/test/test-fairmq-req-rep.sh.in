@@ -1,0 +1,9 @@
+#!/bin/bash
+
+trap 'kill -TERM $REQ_PID; kill -TERM $REP_PID; wait $REQ_PID; wait $REP_PID;' TERM
+@CMAKE_BINARY_DIR@/bin/test-fairmq-req &
+REQ_PID=$!
+@CMAKE_BINARY_DIR@/bin/test-fairmq-rep &
+REP_PID=$!
+wait $REQ_PID
+wait $REP_PID

@@ -38,6 +38,7 @@ class FairMQMessageNN : public FairMQMessage
 
     virtual void CloseMessage() {};
     virtual void Copy(FairMQMessage* msg);
+    virtual void Copy(const std::unique_ptr<FairMQMessage>& msg);
 
     virtual ~FairMQMessageNN();
 

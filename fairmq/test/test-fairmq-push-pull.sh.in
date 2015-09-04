@@ -1,0 +1,9 @@
+#!/bin/bash
+
+trap 'kill -TERM $PUSH_PID; kill -TERM $PULL_PID; wait $PUSH_PID; wait $PULL_PID;' TERM
+@CMAKE_BINARY_DIR@/bin/test-fairmq-push &
+PUSH_PID=$!
+@CMAKE_BINARY_DIR@/bin/test-fairmq-pull &
+PULL_PID=$!
+wait $PUSH_PID
+wait $PULL_PID

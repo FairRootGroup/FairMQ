@@ -14,6 +14,10 @@ configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/3-dds/ex3-dds-topology.xml ${
 configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/3-dds/ex3-dds-hosts.cfg ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-hosts.cfg COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/4-copypush/ex4-copypush.json ${CMAKE_BINARY_DIR}/bin/config/ex4-copypush.json)
 
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/test/test-fairmq-push-pull.sh.in ${CMAKE_BINARY_DIR}/fairmq/test/test-fairmq-push-pull.sh)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/test/test-fairmq-pub-sub.sh.in ${CMAKE_BINARY_DIR}/fairmq/test/test-fairmq-pub-sub.sh)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/test/test-fairmq-req-rep.sh.in ${CMAKE_BINARY_DIR}/fairmq/test/test-fairmq-req-rep.sh)
+
 add_subdirectory(logger)
 
 Set(INCLUDE_DIRECTORIES
@@ -26,6 +30,9 @@ Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq/examples/2-sampler-processor-sink
   ${CMAKE_SOURCE_DIR}/fairmq/examples/4-copypush
   ${CMAKE_SOURCE_DIR}/fairmq/examples/5-req-rep
+  ${CMAKE_SOURCE_DIR}/fairmq/test/push-pull
+  ${CMAKE_SOURCE_DIR}/fairmq/test/pub-sub
+  ${CMAKE_SOURCE_DIR}/fairmq/test/req-rep
   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
@@ -120,16 +127,20 @@ set(SRCS
 
   "examples/1-sampler-sink/FairMQExample1Sampler.cxx"
   "examples/1-sampler-sink/FairMQExample1Sink.cxx"
-
   "examples/2-sampler-processor-sink/FairMQExample2Sampler.cxx"
   "examples/2-sampler-processor-sink/FairMQExample2Processor.cxx"
   "examples/2-sampler-processor-sink/FairMQExample2Sink.cxx"
-
   "examples/4-copypush/FairMQExample4Sampler.cxx"
   "examples/4-copypush/FairMQExample4Sink.cxx"
-
   "examples/5-req-rep/FairMQExample5Client.cxx"
   "examples/5-req-rep/FairMQExample5Server.cxx"
+
+  "test/push-pull/FairMQTestPush.cxx"
+  "test/push-pull/FairMQTestPull.cxx"
+  "test/pub-sub/FairMQTestPub.cxx"
+  "test/pub-sub/FairMQTestSub.cxx"
+  "test/req-rep/FairMQTestReq.cxx"
+  "test/req-rep/FairMQTestRep.cxx"
 )
 
 if(DDS_FOUND)
@@ -241,6 +252,12 @@ set(Exe_Names
   ex4-sink
   ex5-client
   ex5-server
+  test-fairmq-push
+  test-fairmq-pull
+  test-fairmq-pub
+  test-fairmq-sub
+  test-fairmq-req
+  test-fairmq-rep
 )
 
 if(DDS_FOUND)
@@ -263,7 +280,7 @@ endif(DDS_FOUND)
 #       )
 # endif(PROTOBUF_FOUND)
 
-set(Exe_Source 
+set(Exe_Source
   run/runBenchmarkSampler.cxx
   run/runSink.cxx
   run/runBuffer.cxx
@@ -279,6 +296,12 @@ set(Exe_Source
   examples/4-copypush/runExample4Sink.cxx
   examples/5-req-rep/runExample5Client.cxx
   examples/5-req-rep/runExample5Server.cxx
+  test/push-pull/runTestPush.cxx
+  test/push-pull/runTestPull.cxx
+  test/pub-sub/runTestPub.cxx
+  test/pub-sub/runTestSub.cxx
+  test/req-rep/runTestReq.cxx
+  test/req-rep/runTestRep.cxx
 )
 
 if(DDS_FOUND)
@@ -312,3 +335,15 @@ ForEach(_file RANGE 0 ${_length})
   set(DEPENDENCIES FairMQ)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
+
+add_test(NAME run_fairmq_push_pull COMMAND ${CMAKE_BINARY_DIR}/fairmq/test/test-fairmq-push-pull.sh)
+set_tests_properties(run_fairmq_push_pull PROPERTIES TIMEOUT "30")
+set_tests_properties(run_fairmq_push_pull PROPERTIES PASS_REGULAR_EXPRESSION "PUSH-PULL test successfull")
+
+add_test(NAME run_fairmq_pub_sub COMMAND ${CMAKE_BINARY_DIR}/fairmq/test/test-fairmq-pub-sub.sh)
+set_tests_properties(run_fairmq_pub_sub PROPERTIES TIMEOUT "30")
+set_tests_properties(run_fairmq_pub_sub PROPERTIES PASS_REGULAR_EXPRESSION "PUB-SUB test successfull")
+
+add_test(NAME run_fairmq_req_rep COMMAND ${CMAKE_BINARY_DIR}/fairmq/test/test-fairmq-req-rep.sh)
+set_tests_properties(run_fairmq_req_rep PROPERTIES TIMEOUT "30")
+set_tests_properties(run_fairmq_req_rep PROPERTIES PASS_REGULAR_EXPRESSION "REQ-REP test successfull")

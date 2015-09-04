@@ -119,7 +119,7 @@ class base_GenericSampler : public FairMQDevice, public T, public U
        we can do in the main function as follow :
        
        sampler.RegisterTask(
-          [&](TSampler* s, std::map<int, std::function<void()> >& task_list) 
+          [&](TSampler* s, std::map<int, std::function<void()>>& task_list) 
           {
               task_list[0]=std::bind(myfunction);
               task_list[1]=std::bind(&U::template MultiPartTask<5>, s);

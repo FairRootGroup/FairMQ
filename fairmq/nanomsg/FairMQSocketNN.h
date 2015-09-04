@@ -62,6 +62,10 @@ class FairMQSocketNN : public FairMQSocket
     unsigned long fBytesRx;
     unsigned long fMessagesTx;
     unsigned long fMessagesRx;
+
+    /// Copy Constructor
+    FairMQSocketNN(const FairMQSocketNN&);
+    FairMQSocketNN operator=(const FairMQSocketNN&);
 };
 
 #endif /* FAIRMQSOCKETNN_H_ */

@@ -91,6 +91,7 @@ int main(int argc, char** argv)
     client.SetTransport(transportFactory);
 
     client.SetProperty(FairMQExample5Client::Id, "client");
+    client.SetProperty(FairMQExample5Client::Text, options.text);
     client.SetProperty(FairMQExample5Client::NumIoThreads, 1);
 
     FairMQChannel requestChannel("req", "connect", "tcp://localhost:5005");

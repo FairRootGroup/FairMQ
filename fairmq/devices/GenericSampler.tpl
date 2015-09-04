@@ -197,5 +197,5 @@ std::string base_GenericSampler<T,U,K,L>::GetProperty(const int key, const std::
 }
 
 template<typename T, typename U>
-using GenericSampler = base_GenericSampler<T,U,int,std::function<void()> >;
-typedef std::map<int, std::function<void()> > SamplerTasksMap;
+using GenericSampler = base_GenericSampler<T,U,int,std::function<void()>>;
+typedef std::map<int, std::function<void()>> SamplerTasksMap;

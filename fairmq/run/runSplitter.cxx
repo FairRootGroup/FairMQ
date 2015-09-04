@@ -63,10 +63,10 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
         ("input-buff-size", bpo::value<int>(), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
         ("input-method", bpo::value<string>()->required(), "Input method: bind/connect")
         ("input-address", bpo::value<string>()->required(), "Input address, e.g.: \"tcp://localhost:5555\"")
-        ("output-socket-type", bpo::value< vector<string> >()->required(), "Output socket type: pub/push")
-        ("output-buff-size", bpo::value< vector<int> >(), "Output buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
-        ("output-method", bpo::value< vector<string> >()->required(), "Output method: bind/connect")
-        ("output-address", bpo::value< vector<string> >()->required(), "Output address, e.g.: \"tcp://localhost:5555\"")
+        ("output-socket-type", bpo::value<vector<string>>()->required(), "Output socket type: pub/push")
+        ("output-buff-size", bpo::value<vector<int>>(), "Output buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
+        ("output-method", bpo::value<vector<string>>()->required(), "Output method: bind/connect")
+        ("output-address", bpo::value<vector<string>>()->required(), "Output address, e.g.: \"tcp://localhost:5555\"")
         ("help", "Print help messages");
 
     bpo::variables_map vm;
@@ -102,16 +102,16 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
         _options->inputAddress = vm["input-address"].as<string>();
 
     if ( vm.count("output-socket-type") )
-        _options->outputSocketType = vm["output-socket-type"].as< vector<string> >();
+        _options->outputSocketType = vm["output-socket-type"].as<vector<string>>();
 
     if ( vm.count("output-buff-size") )
-        _options->outputBufSize = vm["output-buff-size"].as< vector<int> >();
+        _options->outputBufSize = vm["output-buff-size"].as<vector<int>>();
 
     if ( vm.count("output-method") )
-        _options->outputMethod = vm["output-method"].as< vector<string> >();
+        _options->outputMethod = vm["output-method"].as<vector<string>>();
 
     if ( vm.count("output-address") )
-        _options->outputAddress = vm["output-address"].as< vector<string> >();
+        _options->outputAddress = vm["output-address"].as<vector<string>>();
 
     return true;
 }

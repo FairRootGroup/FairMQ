@@ -32,7 +32,7 @@ class FairMQPollerZMQ : public FairMQPoller
 
   public:
     FairMQPollerZMQ(const std::vector<FairMQChannel>& channels);
-    FairMQPollerZMQ(std::map< std::string,std::vector<FairMQChannel> >& channelsMap, std::initializer_list<std::string> channelList);
+    FairMQPollerZMQ(std::map<std::string, std::vector<FairMQChannel>>& channelsMap, std::initializer_list<std::string> channelList);
 
     virtual void Poll(const int timeout);
     virtual bool CheckInput(const int index);

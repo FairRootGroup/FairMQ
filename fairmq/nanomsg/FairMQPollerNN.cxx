@@ -40,7 +40,7 @@ FairMQPollerNN::FairMQPollerNN(const vector<FairMQChannel>& channels)
     }
 }
 
-FairMQPollerNN::FairMQPollerNN(map< string,vector<FairMQChannel> >& channelsMap, initializer_list<string> channelList)
+FairMQPollerNN::FairMQPollerNN(map<string, vector<FairMQChannel>>& channelsMap, initializer_list<string> channelList)
     : items()
     , fNumItems(0)
     , fOffsetMap()
@@ -78,7 +78,7 @@ FairMQPollerNN::FairMQPollerNN(map< string,vector<FairMQChannel> >& channelsMap,
     }
 }
 
-FairMQPollerNN::FairMQPollerNN(FairMQSocket& dataSocket, FairMQSocket& cmdSocket)
+FairMQPollerNN::FairMQPollerNN(FairMQSocket& cmdSocket, FairMQSocket& dataSocket)
     : items()
     , fNumItems(2)
     , fOffsetMap()
