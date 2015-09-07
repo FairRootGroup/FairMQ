@@ -15,7 +15,6 @@
 #ifndef FAIRMQTRANSPORTFACTORY_H_
 #define FAIRMQTRANSPORTFACTORY_H_
 
-
 #include "FairMQMessage.h"
 #include "FairMQChannel.h"
 #include "FairMQSocket.h"

@@ -136,8 +136,11 @@ protected:
 
     // Description which is printed in help command line
     po::options_description fVisible_options;
+    
+    // to handle logger severity
+    std::map<std::string,fairmq::severity_level> fSeverity_map;
 
-    int fVerboseLvl;
+    std::string fVerboseLvl;
     bool fUseConfigFile;
     boost::filesystem::path fConfigFile;
     virtual int NotifySwitchOption();

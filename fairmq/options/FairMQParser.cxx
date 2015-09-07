@@ -48,13 +48,13 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string&
         if (formatFlag == "xml")
         {
             deviceIdKey = p.second.get<std::string>("<xmlattr>.id");
-            MQLOG(DEBUG) << "Found device id '" << deviceIdKey << "' in XML input";
+            LOG(DEBUG) << "Found device id '" << deviceIdKey << "' in XML input";
         }
 
         if (formatFlag == "json")
         {
             deviceIdKey = p.second.get<std::string>("id");
-            MQLOG(DEBUG) << "Found device id '"<< deviceIdKey << "' in JSON input";
+            LOG(DEBUG) << "Found device id '"<< deviceIdKey << "' in JSON input";
         }
     }
     
@@ -88,7 +88,7 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string&
         std::stringstream deviceStream;
         deviceStream << "[node = "     << p.first 
                << "]   id = "    << deviceIdKey;
-        MQLOG(DEBUG) << deviceStream.str();
+        LOG(DEBUG) << deviceStream.str();
 
         // for each channel in device
         for(const auto& q : p.second.get_child(""))
@@ -113,7 +113,7 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string&
             std::stringstream channelStream;
             channelStream << "\t [node = " << q.first 
                     << "]   name = " << channelKey;
-            MQLOG(DEBUG) << channelStream.str();
+            LOG(DEBUG) << channelStream.str();
 
             // temporary FairMQChannel container
             std::vector<FairMQChannel> channelList;
@@ -134,13 +134,13 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string&
                 std::stringstream socket;
                 socket << "\t \t [node = " << r.first 
                         << "]   socket index = " << socketCounter;
-                MQLOG(DEBUG) << socket.str();
-                MQLOG(DEBUG) <<  "\t \t \t type        = " << r.second.get<std::string>("type", channel.GetType());
-                MQLOG(DEBUG) <<  "\t \t \t method      = " << r.second.get<std::string>("method", channel.GetMethod());
-                MQLOG(DEBUG) <<  "\t \t \t address     = " << r.second.get<std::string>("address", channel.GetAddress());
-                MQLOG(DEBUG) <<  "\t \t \t sndBufSize  = " << r.second.get<int>("sndBufSize", channel.GetSndBufSize());
-                MQLOG(DEBUG) <<  "\t \t \t rcvBufSize  = " << r.second.get<int>("rcvBufSize", channel.GetRcvBufSize());
-                MQLOG(DEBUG) <<  "\t \t \t rateLogging = " << r.second.get<int>("rateLogging", channel.GetRateLogging());
+                LOG(DEBUG) << socket.str();
+                LOG(DEBUG) <<  "\t \t \t type        = " << r.second.get<std::string>("type", channel.GetType());
+                LOG(DEBUG) <<  "\t \t \t method      = " << r.second.get<std::string>("method", channel.GetMethod());
+                LOG(DEBUG) <<  "\t \t \t address     = " << r.second.get<std::string>("address", channel.GetAddress());
+                LOG(DEBUG) <<  "\t \t \t sndBufSize  = " << r.second.get<int>("sndBufSize", channel.GetSndBufSize());
+                LOG(DEBUG) <<  "\t \t \t rcvBufSize  = " << r.second.get<int>("rcvBufSize", channel.GetRcvBufSize());
+                LOG(DEBUG) <<  "\t \t \t rateLogging = " << r.second.get<int>("rateLogging", channel.GetRateLogging());
 
                 channel.UpdateType(r.second.get<std::string>("type", channel.GetType()));
                 channel.UpdateMethod(r.second.get<std::string>("method", channel.GetMethod()));
@@ -159,16 +159,16 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string&
 
     if (MQChannelMap.size() > 0)
     {
-        MQLOG(DEBUG) << "---- Channel-keys found are :";
+        LOG(DEBUG) << "---- Channel-keys found are :";
         for (const auto& p : MQChannelMap)
         {
-            MQLOG(DEBUG) << p.first;
+            LOG(DEBUG) << p.first;
         }
     }
     else
     {
-        MQLOG(WARN) << "---- No channel-keys found for device-id " << deviceId;
-        MQLOG(WARN) << "---- Check the "<< formatFlag << " inputs and/or command line inputs";
+        LOG(WARN) << "---- No channel-keys found for device-id " << deviceId;
+        LOG(WARN) << "---- Check the "<< formatFlag << " inputs and/or command line inputs";
     }
     return MQChannelMap;
 }

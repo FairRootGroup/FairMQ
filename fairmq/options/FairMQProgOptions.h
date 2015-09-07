@@ -45,7 +45,7 @@ public:
         }
         catch (std::exception& e)
         {
-            MQLOG(ERROR) << e.what();
+            LOG(ERROR) << e.what();
             return 1;
         }
         return 0;

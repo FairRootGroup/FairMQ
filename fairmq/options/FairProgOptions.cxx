@@ -27,22 +27,33 @@ FairProgOptions::FairProgOptions() :
                         fCmdline_options("Command line options"), 
                         fConfig_file_options("Configuration file options"), 
                         fVisible_options("Visible options"),
-                        fVerboseLvl(0), fUseConfigFile(false), fConfigFile()
+                        fVerboseLvl("INFO"), fUseConfigFile(false), fConfigFile()
 {
     // //////////////////////////////////
     // define generic options
     fGenericDesc.add_options()
         ("help,h", "produce help")
         ("version,v", "print version")
-        ("verbose", po::value<int>(&fVerboseLvl)->default_value(0), "Verbosity level : \n"
-                                                                    "  0=DEBUG \n"
-                                                                    "  1=INFO \n"
-                                                                    "  2=WARN \n"
-                                                                    "  3=ERROR \n"
-                                                                    "  4=STATE \n"
-                                                                    "  5=NOLOG"
+        ("verbose", po::value<std::string>(&fVerboseLvl)->default_value("INFO"), "Verbosity level : \n"
+                                                                    "  TRACE \n"
+                                                                    "  DEBUG \n"
+                                                                    "  RESULTS \n"
+                                                                    "  INFO \n"
+                                                                    "  WARN \n"
+                                                                    "  ERROR \n"
+                                                                    "  STATE \n"
+                                                                    "  NOLOG"
             )
         ;
+    
+    fSeverity_map["TRACE"]              = fairmq::severity_level::TRACE;
+    fSeverity_map["DEBUG"]              = fairmq::severity_level::DEBUG;
+    fSeverity_map["RESULTS"]            = fairmq::severity_level::RESULTS;
+    fSeverity_map["INFO"]               = fairmq::severity_level::INFO;
+    fSeverity_map["WARN"]               = fairmq::severity_level::WARN;
+    fSeverity_map["ERROR"]              = fairmq::severity_level::ERROR;
+    fSeverity_map["STATE"]              = fairmq::severity_level::STATE;
+    fSeverity_map["NOLOG"]              = fairmq::severity_level::NOLOG;
     
 }
 
@@ -255,8 +266,8 @@ std::string FairProgOptions::GetStringValue(const std::string& key)
         }
         catch(std::exception& e)
         {
-            MQLOG(ERROR) << "Exception thrown for the key '" << key << "'";
-            MQLOG(ERROR) << e.what();
+            LOG(ERROR) << "Exception thrown for the key '" << key << "'";
+            LOG(ERROR) << e.what();
         }
         
         return val_str;
@@ -320,7 +331,7 @@ int FairProgOptions::PrintOptions()
     
     // formatting and printing
 
-    MQLOG(INFO)<<std::setfill ('*') << std::setw (total_len+3)<<"*";// +3 because of string " = "
+    LOG(INFO)<<std::setfill ('*') << std::setw (total_len+3)<<"*";// +3 because of string " = "
     std::string PrintOptionsTitle="     Program options found     ";
 
     int leftSpace_len=0;
@@ -342,11 +353,12 @@ int FairProgOptions::PrintOptions()
         rightSpace_len=(total_len+3)/2-rightTitle_shift_len;
 
 
-    MQLOG(INFO) <<std::setfill ('*') << std::setw(leftSpace_len) <<"*"
-                <<std::setw(PrintOptionsTitle.length()) << PrintOptionsTitle 
-                <<std::setfill ('*') << std::setw(rightSpace_len) <<"*";
+    LOG(INFO)   << std::setfill ('*') << std::setw(leftSpace_len) <<"*"
+                << std::setfill(' ')  
+                << std::setw(PrintOptionsTitle.length()) << PrintOptionsTitle 
+                << std::setfill ('*') << std::setw(rightSpace_len) <<"*";
 
-    MQLOG(INFO) <<std::setfill ('*') << std::setw (total_len+3)<<"*";
+    LOG(INFO) <<std::setfill ('*') << std::setw (total_len+3)<<"*";
 
     for (const auto& p : mapinfo)
     {
@@ -357,7 +369,8 @@ int FairProgOptions::PrintOptions()
         std::string empty_str;
         key_str=p.first;
         std::tie(val_str,typeInfo_str,default_str,empty_str)=p.second;
-        MQLOG(INFO) << std::setw(maxlen_1st)<<std::left 
+        LOG(INFO)   << std::setfill(' ')
+                    << std::setw(maxlen_1st)<<std::left 
                     << p.first << " = " 
                     << std::setw(maxlen_2nd) 
                     << val_str 
@@ -368,7 +381,7 @@ int FairProgOptions::PrintOptions()
                     << std::setw(maxlen_empty)
                     << empty_str;
     }
-    MQLOG(INFO)<<std::setfill ('*') << std::setw (total_len+3)<<"*";// +3 for " = "
+    LOG(INFO)<<std::setfill ('*') << std::setw (total_len+3)<<"*";// +3 for " = "
     return 0;
 }
 

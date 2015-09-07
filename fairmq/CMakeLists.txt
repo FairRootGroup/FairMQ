@@ -9,12 +9,13 @@
 configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/ProgOptionTest/macro/bsampler-sink.json ${CMAKE_BINARY_DIR}/bin/config/bsampler-sink.json)
 configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/1-sampler-sink/sampler-sink.json ${CMAKE_BINARY_DIR}/bin/config/ex1-sampler-sink.json)
 configure_file(${CMAKE_SOURCE_DIR}/fairmq/examples/2-sampler-processor-sink/sampler-processor-sink.json ${CMAKE_BINARY_DIR}/bin/config/ex2-sampler-processor-sink.json)
-
+add_subdirectory(logger)
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
   ${CMAKE_SOURCE_DIR}/fairmq/devices
   ${CMAKE_SOURCE_DIR}/fairmq/tools
   ${CMAKE_SOURCE_DIR}/fairmq/options
+  ${CMAKE_SOURCE_DIR}/fairmq/logger
   ${CMAKE_SOURCE_DIR}/fairmq/examples/1-sampler-sink
   ${CMAKE_SOURCE_DIR}/fairmq/examples/2-sampler-processor-sink
   ${CMAKE_SOURCE_DIR}/fairmq/examples/req-rep
@@ -164,7 +165,7 @@ Set(FAIRMQHEADERS
 install(FILES ${FAIRMQHEADERS} DESTINATION include)
 
 set(DEPENDENCIES
-  ${DEPENDENCIES}
+  ${DEPENDENCIES} fairmq_logger
   boost_thread boost_timer boost_system boost_filesystem boost_program_options boost_random boost_chrono boost_exception
 )
 
