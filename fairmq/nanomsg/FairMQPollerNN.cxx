@@ -130,7 +130,7 @@ void FairMQPollerNN::Poll(int timeout)
 
 bool FairMQPollerNN::CheckInput(const int index)
 {
-    if (items[index].revents & NN_POLLIN)
+    if (items[index].revents & (NN_POLLIN | NN_POLLOUT))
     {
         return true;
     }

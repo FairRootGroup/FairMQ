@@ -33,8 +33,6 @@ void FairMQExample5Server::Run()
 {
     while (CheckCurrentState(RUNNING))
     {
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-
         unique_ptr<FairMQMessage> request(fTransportFactory->CreateMessage());
 
         if (fChannels.at("data").at(0).Receive(request) > 0)
