@@ -83,6 +83,11 @@ void base_GenericSampler<T,U,K,L>::Run()
             {
                     fCurrentIdx--;
             }
+
+            if (!CheckCurrentState(RUNNING))
+            {
+                break;
+            }
         }
     }
     while (CheckCurrentState(RUNNING) && fContinuous);
@@ -128,7 +133,7 @@ void base_GenericSampler<T,U,K,L>::SetContinuous(bool flag)
 template <typename T, typename U, typename K, typename L>
 void base_GenericSampler<T,U,K,L>::ResetEventCounter()
 {
-    while (CheckCurrentState(RUNNING))
+    while (true)
     {
         try
         {

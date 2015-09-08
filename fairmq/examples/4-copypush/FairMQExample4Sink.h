@@ -13,7 +13,7 @@
  */
 
 #ifndef FAIRMQEXAMPLE4SINK_H_
-#define FAIRMQEXAMPLE1SINK_H_
+#define FAIRMQEXAMPLE4SINK_H_
 
 #include "FairMQDevice.h"
 

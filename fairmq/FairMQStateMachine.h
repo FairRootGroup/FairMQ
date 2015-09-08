@@ -62,12 +62,12 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
 {
   public:
     FairMQFSM_()
-        : fState()
-        , fStateThread()
+        : fStateThread()
         , fTerminateStateThread()
         , fStateFinished(false)
         , fStateCondition()
         , fStateMutex()
+        , fState()
         {}
 
     // Destructor
@@ -87,7 +87,7 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
     }
 
     // The list of FSM states
-    struct NORMAL_FSM : public msm::front::state<> {};
+    struct OK_FSM : public msm::front::state<> {};
     struct ERROR_FSM : public msm::front::terminate_state<> {};
 
     struct IDLE_FSM : public msm::front::state<> {};
@@ -102,7 +102,7 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
     struct EXITING_FSM : public msm::front::state<> {};
 
     // Define initial states
-    typedef mpl::vector<IDLE_FSM, NORMAL_FSM> initial_state;
+    typedef mpl::vector<IDLE_FSM, OK_FSM> initial_state;
 
     // Actions
     struct IdleFct
@@ -314,7 +314,6 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
             LOG(STATE) << "ERROR!";
 
             fsm.fState = ERROR;
-            // quick_exit(EXIT_FAILURE);
         }
     };
 
@@ -353,7 +352,7 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
         msmf::Row<RESETTING_DEVICE_FSM,    internal_IDLE,         IDLE_FSM,                IdleFct,         msmf::none>,
         msmf::Row<RUNNING_FSM,             END,                   EXITING_FSM,             ExitingRunFct,   msmf::none>,
         msmf::Row<IDLE_FSM,                END,                   EXITING_FSM,             ExitingFct,      msmf::none>,
-        msmf::Row<NORMAL_FSM,              ERROR_FOUND,           ERROR_FSM,               ErrorFoundFct,   msmf::none>>
+        msmf::Row<OK_FSM,                  ERROR_FOUND,           ERROR_FSM,               ErrorFoundFct,   msmf::none>>
         {};
 
     // Replaces the default no-transition response.
@@ -366,7 +365,7 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
     // backward compatibility to FairMQStateMachine
     enum State
     {
-        NORMAL,
+        OK,
         ERROR,
         IDLE,
         INITIALIZING_DEVICE,
@@ -384,8 +383,8 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
     {
         switch(state)
         {
-            case NORMAL:
-                return "NORMAL";
+            case OK:
+                return "OK";
             case ERROR:
                 return "ERROR";
             case IDLE:

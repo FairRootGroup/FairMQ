@@ -12,7 +12,6 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include <cstdlib> // quick_exit()
 #include <sstream>
 
 #include "FairMQLogger.h"
@@ -25,7 +24,7 @@ FairMQContextZMQ::FairMQContextZMQ(int numIoThreads)
     if (fContext == NULL)
     {
         LOG(ERROR) << "failed creating context, reason: " << zmq_strerror(errno);
-        quick_exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 
     if (zmq_ctx_set(fContext, ZMQ_IO_THREADS, numIoThreads) != 0)

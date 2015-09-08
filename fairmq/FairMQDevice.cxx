@@ -15,7 +15,7 @@
 #include <list>
 #include <algorithm> // std::sort()
 #include <csignal> // catching system signals
-#include <cstdlib> // quick_exit()
+#include <cstdlib>
 
 #include <termios.h> // for the InteractiveStateLoop
 
@@ -57,15 +57,9 @@ void FairMQDevice::CatchSignals()
 {
     if (!fCatchingSignals)
     {
-        // setup signal catching
         sigHandler = bind1st(mem_fun(&FairMQDevice::SignalHandler), this);
-        struct sigaction action;
-        action.sa_handler = CallSignalHandler;
-        action.sa_flags = 0;
-        sigemptyset(&action.sa_mask);
-        sigaction(SIGINT, &action, NULL);
-        sigaction(SIGTERM, &action, NULL);
-
+        std::signal(SIGINT, CallSignalHandler);
+        std::signal(SIGTERM, CallSignalHandler);
         fCatchingSignals = true;
     }
 }
@@ -74,17 +68,19 @@ void FairMQDevice::SignalHandler(int signal)
 {
     LOG(INFO) << "Caught signal " << signal;
 
-    // fState = EXITING;
-    // Unblock();
-    // fStateThread.interrupt();
-    // fStateThread.join();
+    fState = EXITING;
+    Unblock();
+    fStateThread.interrupt();
+    fStateThread.join();
 
-    // fTerminateStateThread = boost::thread(boost::bind(&FairMQDevice::Terminate, this));
-    // Shutdown();
-    // fTerminateStateThread.join();
+    fTerminateStateThread = boost::thread(boost::bind(&FairMQDevice::Terminate, this));
+    Shutdown();
+    fTerminateStateThread.join();
 
     MQLOG(INFO) << "Exiting.";
-    quick_exit(EXIT_FAILURE);
+    stop();
+    std::abort();
+    // exit(EXIT_FAILURE);
 }
 
 void FairMQDevice::InitWrapper()
@@ -148,7 +144,7 @@ void FairMQDevice::InitWrapper()
         {
             LOG(ERROR) << "could not initialize all channels after " << maxAttempts << " attempts";
             // TODO: goto ERROR state;
-            quick_exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE);
         }
 
         if (numAttempts != 0)
@@ -334,7 +330,7 @@ void FairMQDevice::Run()
 
 void FairMQDevice::Pause()
 {
-    while (CheckCurrentState(PAUSED))
+    while (true)
     {
         try
         {
@@ -481,7 +477,7 @@ void FairMQDevice::LogSocketRates()
 
     t0 = get_timestamp();
 
-    while (CheckCurrentState(RUNNING))
+    while (true)
     {
         try
         {

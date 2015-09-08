@@ -12,8 +12,8 @@
  * @author A. Rybalchenko
  */
 
-#ifndef FAIRMQEXAMPLESAMPLER_H_
-#define FAIRMQEXAMPLESAMPLER_H_
+#ifndef FAIRMQEXAMPLE4SAMPLER_H_
+#define FAIRMQEXAMPLE4SAMPLER_H_
 
 #include <string>
 

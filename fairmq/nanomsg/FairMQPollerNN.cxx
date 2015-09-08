@@ -12,8 +12,6 @@
  * @author A. Rybalchenko
  */
 
-#include <cstdlib> // quick_exit()
-
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
 #include <nanomsg/pubsub.h>
@@ -74,7 +72,7 @@ FairMQPollerNN::FairMQPollerNN(map<string, vector<FairMQChannel>>& channelsMap, 
     {
         LOG(ERROR) << "At least one of the provided channel keys for poller initialization is invalid";
         LOG(ERROR) << "Out of Range error: " << oor.what() << '\n';
-        quick_exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -109,7 +107,7 @@ FairMQPollerNN::FairMQPollerNN(FairMQSocket& cmdSocket, FairMQSocket& dataSocket
     else
     {
         LOG(ERROR) << "invalid poller configuration, exiting.";
-        quick_exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -163,7 +161,7 @@ bool FairMQPollerNN::CheckInput(const string channelKey, const int index)
     {
         LOG(ERROR) << "Invalid channel key: \"" << channelKey << "\"";
         LOG(ERROR) << "Out of Range error: " << oor.what() << '\n';
-        quick_exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -182,7 +180,7 @@ bool FairMQPollerNN::CheckOutput(const string channelKey, const int index)
     {
         LOG(ERROR) << "Invalid channel key: \"" << channelKey << "\"";
         LOG(ERROR) << "Out of Range error: " << oor.what() << '\n';
-        quick_exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }
 
