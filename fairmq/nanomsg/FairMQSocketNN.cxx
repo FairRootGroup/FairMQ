@@ -143,6 +143,7 @@ int FairMQSocketNN::Receive(FairMQMessage* msg, const string& flag)
     {
         fBytesRx += rc;
         ++fMessagesRx;
+        msg->Rebuild();
         msg->SetMessage(ptr, rc);
         static_cast<FairMQMessageNN*>(msg)->fReceiving = true;
     }

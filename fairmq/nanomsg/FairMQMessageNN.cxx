@@ -27,6 +27,11 @@ FairMQMessageNN::FairMQMessageNN()
     , fSize(0)
     , fReceiving(false)
 {
+    fMessage = nn_allocmsg(0, 0);
+    if (!fMessage)
+    {
+        LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
+    }
 }
 
 FairMQMessageNN::FairMQMessageNN(size_t size)
@@ -40,7 +45,6 @@ FairMQMessageNN::FairMQMessageNN(size_t size)
         LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
     }
     fSize = size;
-    fReceiving = false;
 }
 
 
@@ -61,7 +65,6 @@ FairMQMessageNN::FairMQMessageNN(void* data, size_t size, fairmq_free_fn *ffn, v
     }
     memcpy(fMessage, data, size);
     fSize = size;
-    fReceiving = false;
 
     if (ffn)
     {
@@ -76,8 +79,6 @@ FairMQMessageNN::FairMQMessageNN(void* data, size_t size, fairmq_free_fn *ffn, v
 void FairMQMessageNN::Rebuild()
 {
     Clear();
-    fSize = 0;
-    fMessage = NULL;
     fReceiving = false;
 }
 

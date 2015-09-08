@@ -61,6 +61,15 @@ class FairMQChannel
 
     // Wrappers for the socket methods to simplify the usage of channels
     int Send(const std::unique_ptr<FairMQMessage>& msg) const;
+
+    /// \brief Sends a message in non-blocking mode.
+    /// \details SendAsync method attempts to send the message without blocking by
+    /// putting it in the queue. If the queue is full or queueing is not possible
+    /// for some other reason (e.g. no peers connected for a binding socket), the method returns 0.
+    /// 
+    /// \param msg Constant reference of unique_ptr to a FairMQMessage
+    /// \return Returns the number of bytes that have been queued. If queueing failed due to
+    /// full queue or no connected peers (when binding), returns 0. In case of errors, returns -1.
     int SendAsync(const std::unique_ptr<FairMQMessage>& msg) const;
     int SendPart(const std::unique_ptr<FairMQMessage>& msg) const;
 
@@ -73,7 +82,7 @@ class FairMQChannel
     int Receive(FairMQMessage* msg, const std::string& flag = "") const;
     int Receive(FairMQMessage* msg, const int flags) const;
 
-    /// Checks if the socket is expecting to receive another part of a multipart message.
+    /// \brief Checks if the socket is expecting to receive another part of a multipart message.
     /// \return Return true if the socket expects another part of a multipart message and false otherwise.
     bool ExpectsAnotherPart() const;
 
