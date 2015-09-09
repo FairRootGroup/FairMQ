@@ -551,7 +551,10 @@ bool FairMQChannel::ExpectsAnotherPart() const
 inline bool FairMQChannel::HandleUnblock() const
 {
     FairMQMessage* cmd = fTransportFactory->CreateMessage();
-    fCmdSocket->Receive(cmd, 0);
+    if (fCmdSocket->Receive(cmd, 0) >= 0)
+    {
+        LOG(DEBUG) << "unblocked";
+    }
     delete cmd;
     return true;
 }

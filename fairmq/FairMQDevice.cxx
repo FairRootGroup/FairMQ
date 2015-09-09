@@ -79,8 +79,8 @@ void FairMQDevice::SignalHandler(int signal)
 
     MQLOG(INFO) << "Exiting.";
     stop();
-    std::abort();
-    // exit(EXIT_FAILURE);
+    // std::abort();
+    exit(EXIT_FAILURE);
 }
 
 void FairMQDevice::InitWrapper()
@@ -573,10 +573,10 @@ void FairMQDevice::InteractiveStateLoop()
                 LOG(INFO) << "[h] help";
                 PrintInteractiveStateLoopHelp();
                 break;
-            case 'x':
-                LOG(INFO) << "[x] ERROR";
-                ChangeState("ERROR_FOUND");
-                break;
+            // case 'x':
+            //     LOG(INFO) << "[x] ERROR";
+            //     ChangeState("ERROR_FOUND");
+            //     break;
             case 'q':
                 LOG(INFO) << "[q] end";
                 ChangeState("END");
