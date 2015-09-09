@@ -15,13 +15,15 @@
 #ifndef FAIRMQTRANSPORTFACTORY_H_
 #define FAIRMQTRANSPORTFACTORY_H_
 
-#include <string>
 
 #include "FairMQMessage.h"
 #include "FairMQChannel.h"
 #include "FairMQSocket.h"
 #include "FairMQPoller.h"
 #include "FairMQLogger.h"
+
+#include <string>
+#include <vector>
 
 class FairMQChannel;
 
