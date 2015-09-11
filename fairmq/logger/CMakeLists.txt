@@ -24,14 +24,16 @@ set(SRCS logger.cxx)
 set(LIBRARY_NAME fairmq_logger)
 
 set(DEPENDENCIES
-    boost_log 
-    boost_log_setup 
-    boost_thread 
-    boost_date_time 
-    boost_filesystem 
+    boost_log
+    boost_log_setup
+    boost_thread
+    boost_date_time
+    boost_filesystem
     boost_system
     pthread
   )
+
+install(FILES logger.h logger_def.h DESTINATION include/logger)
 
 GENERATE_LIBRARY()
 
