@@ -44,14 +44,14 @@ FairProgOptions::FairProgOptions() :
             )
         ;
 
-    fSeverity_map["TRACE"]              = fairmq::severity_level::TRACE;
-    fSeverity_map["DEBUG"]              = fairmq::severity_level::DEBUG;
-    fSeverity_map["RESULTS"]            = fairmq::severity_level::RESULTS;
-    fSeverity_map["INFO"]               = fairmq::severity_level::INFO;
-    fSeverity_map["WARN"]               = fairmq::severity_level::WARN;
-    fSeverity_map["ERROR"]              = fairmq::severity_level::ERROR;
-    fSeverity_map["STATE"]              = fairmq::severity_level::STATE;
-    fSeverity_map["NOLOG"]              = fairmq::severity_level::NOLOG;
+    fSeverityMap["TRACE"]              = fairmq::severity_level::TRACE;
+    fSeverityMap["DEBUG"]              = fairmq::severity_level::DEBUG;
+    fSeverityMap["RESULTS"]            = fairmq::severity_level::RESULTS;
+    fSeverityMap["INFO"]               = fairmq::severity_level::INFO;
+    fSeverityMap["WARN"]               = fairmq::severity_level::WARN;
+    fSeverityMap["ERROR"]              = fairmq::severity_level::ERROR;
+    fSeverityMap["STATE"]              = fairmq::severity_level::STATE;
+    fSeverityMap["NOLOG"]              = fairmq::severity_level::NOLOG;
 }
 
 /// Destructor

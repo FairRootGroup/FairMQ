@@ -13,7 +13,7 @@
  */
 
 #include "FairMQParser.h"
-#include "FairLogger.h"
+#include "FairMQLogger.h"
 #include <boost/property_tree/xml_parser.hpp>
 
 // WARNING : pragma commands to hide boost (1.54.0) warning
@@ -171,7 +171,7 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const string& devi
     if (channelMap.size() > 0)
     {
         LOG(DEBUG) << "---- Channel-keys found are :";
-        for (const auto& p : MQChannelMap)
+        for (const auto& p : channelMap)
         {
             LOG(DEBUG) << p.first;
         }

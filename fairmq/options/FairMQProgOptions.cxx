@@ -62,14 +62,14 @@ int FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregiste
     // set log level before printing (default is 0 = DEBUG level)
     std::string verbose=GetValue<std::string>("verbose");
     //SET_LOG_LEVEL(DEBUG);
-    if (fSeverity_map.count(verbose))
+    if (fSeverityMap.count(verbose))
     {
-        set_global_log_level(log_op::operation::GREATER_EQ_THAN,fSeverity_map.at(verbose));
+        set_global_log_level(log_op::operation::GREATER_EQ_THAN,fSeverityMap.at(verbose));
     }
     else
     {
         LOG(ERROR)<<" verbosity level '"<<verbose<<"' unknown, it will be set to INFO";
-        set_global_log_level(log_op::operation::GREATER_EQ_THAN,fSeverity_map.at("RESULTS"));
+        set_global_log_level(log_op::operation::GREATER_EQ_THAN,fSeverityMap.at("RESULTS"));
     }
 
     PrintOptions();

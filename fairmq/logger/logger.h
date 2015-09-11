@@ -15,6 +15,7 @@
 #define	LOGGER_H
 
 #define BOOST_LOG_DYN_LINK 1 // necessary when linking the boost_log library dynamically
+#define FUSION_MAX_VECTOR_SIZE 20
 
 // std
 #include <type_traits>
