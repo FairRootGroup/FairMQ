@@ -19,8 +19,11 @@ set(LINK_DIRECTORIES ${Boost_LIBRARY_DIRS})
 
 link_directories(${LINK_DIRECTORIES})
 
-set(SRCS logger.cxx)
-
+if(NOT ("${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}" VERSION_LESS "1.56") )
+    set(SRCS logger.cxx)
+else()
+    set(SRCS logger_oldboost_version.cxx)
+endif()
 set(LIBRARY_NAME fairmq_logger)
 
 set(DEPENDENCIES

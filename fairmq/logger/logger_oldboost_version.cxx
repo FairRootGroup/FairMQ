@@ -1,3 +1,7 @@
+
+
+// fix backward compability issue with boost<1.56
+
 /********************************************************************************
  *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
@@ -14,7 +18,7 @@
 #include <boost/log/sinks/text_ostream_backend.hpp>
 #include <boost/log/sources/severity_logger.hpp>
 #include <boost/log/support/date_time.hpp>
-#include <boost/core/null_deleter.hpp>
+
 #include <boost/log/sinks/text_file_backend.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/make_shared.hpp>
@@ -22,7 +26,7 @@
 #include <fstream>
 #include <ostream>
 
-
+#include "fairroot_null_deleter.h"
 
 namespace logging = boost::log;
 namespace src = boost::log::sources;
@@ -46,8 +50,7 @@ void init_log_console()
     typedef sinks::synchronous_sink<sinks::text_ostream_backend> text_sink;
     boost::shared_ptr<text_sink> sink = boost::make_shared<text_sink>();
     // add "console" output stream to our sink
-    //sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::clog, boost::null_deleter()));
-    sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::clog));
+    sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::clog, fairroot::null_deleter()));
     
     // specify the format of the log message 
     sink->set_formatter(&init_log_formatter<tag_console>);
