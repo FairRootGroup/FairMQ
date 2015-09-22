@@ -6,8 +6,21 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "logger.h"
+// WARNING : pragma commands to hide boost warning
+// TODO : remove these pragma commands when boost will fix this issue in future release
 
+#if defined(__clang__)
+    _Pragma("clang diagnostic push") 
+    _Pragma("clang diagnostic ignored \"-Wshadow\"") 
+    #include "logger.h"
+    _Pragma("clang diagnostic pop")
+#elif defined(__GNUC__) || defined(__GNUG__)
+    _Pragma("GCC diagnostic push")
+    _Pragma("GCC diagnostic ignored \"-Wshadow\"")
+    #include "logger.h"
+    _Pragma("GCC diagnostic pop")
+#endif
+    
  void test_logger()
  {
     LOG(TRACE) << "this is a trace message";

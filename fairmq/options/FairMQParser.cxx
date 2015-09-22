@@ -15,12 +15,24 @@
 #include "FairMQParser.h"
 #include "FairMQLogger.h"
 #include <boost/property_tree/xml_parser.hpp>
+
 // WARNING : pragma commands to hide boost (1.54.0) warning
 // TODO : remove these pragma commands when boost will fix this issue in future release
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wshadow"
-#include <boost/property_tree/json_parser.hpp>
-#pragma clang diagnostic pop
+#if defined(__clang__)
+    _Pragma("clang diagnostic push") 
+    _Pragma("clang diagnostic ignored \"-Wshadow\"") 
+    #include <boost/property_tree/json_parser.hpp> 
+    _Pragma("clang diagnostic pop")
+#elif defined(__GNUC__) || defined(__GNUG__)
+    _Pragma("GCC diagnostic push")
+    _Pragma("GCC diagnostic ignored \"-Wshadow\"")
+    #include <boost/property_tree/json_parser.hpp> 
+    _Pragma("GCC diagnostic pop")
+#endif
+
+
+
+
 
 namespace FairMQParser
 {

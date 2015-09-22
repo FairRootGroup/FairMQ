@@ -36,7 +36,7 @@ set(DEPENDENCIES
     pthread
   )
 
-install(FILES logger.h logger_def.h DESTINATION include/logger)
+install(FILES logger.h logger_def.h fairroot_null_deleter.h DESTINATION include/logger)
 
 GENERATE_LIBRARY()
 
