@@ -43,8 +43,7 @@ void init_log_console()
     typedef sinks::synchronous_sink<sinks::text_ostream_backend> text_sink;
     boost::shared_ptr<text_sink> sink = boost::make_shared<text_sink>();
     // add "console" output stream to our sink
-    //sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::clog, boost::null_deleter()));
-    sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::clog));
+    sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::clog, boost::null_deleter()));
     
     // specify the format of the log message 
     sink->set_formatter(&init_log_formatter<tag_console>);
