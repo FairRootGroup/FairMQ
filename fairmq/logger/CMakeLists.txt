@@ -36,7 +36,14 @@ set(DEPENDENCIES
     pthread
   )
 
-install(FILES logger.h logger_def.h fairroot_null_deleter.h DESTINATION include/logger)
+
+if(NOT ("${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}" VERSION_LESS "1.56") )
+    install(FILES logger.h logger_def.h DESTINATION include/logger)
+else()
+    install(FILES logger_oldboost_version.h logger_def.h fairroot_null_deleter.h DESTINATION include/logger)
+endif()
+
+
 
 GENERATE_LIBRARY()
 

@@ -9,7 +9,7 @@
  *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-#include "logger.h"
+#include "logger_oldboost_version.h"
 #include "fairroot_null_deleter.h"
 
 #include <boost/log/core/core.hpp>
