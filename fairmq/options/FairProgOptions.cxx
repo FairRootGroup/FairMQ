@@ -32,7 +32,7 @@ FairProgOptions::FairProgOptions() :
     fGenericDesc.add_options()
         ("help,h", "produce help")
         ("version,v", "print version")
-        ("verbose", po::value<std::string>(&fVerboseLvl)->default_value("INFO"), "Verbosity level : \n"
+        ("verbose", po::value<std::string>(&fVerboseLvl)->default_value("DEBUG"), "Verbosity level : \n"
                                                                     "  TRACE \n"
                                                                     "  DEBUG \n"
                                                                     "  RESULTS \n"

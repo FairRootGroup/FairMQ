@@ -6,13 +6,21 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 #include "logger.h"
-
+#include <boost/version.hpp>
 #include <boost/log/core/core.hpp>
 #include <boost/log/expressions/formatters/date_time.hpp>
 #include <boost/log/sinks/text_ostream_backend.hpp>
 #include <boost/log/support/date_time.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
+
+#if BOOST_VERSION < 105600
+#include "fairroot_null_deleter.h"
+typedef fairroot::null_deleter empty_deleter_t;
+#else
 #include <boost/core/null_deleter.hpp>
+typedef boost::null_deleter empty_deleter_t;
+#endif
+
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -37,19 +45,47 @@ BOOST_LOG_GLOBAL_LOGGER_INIT(global_logger, src::severity_logger_mt)
     return global_logger;
 }
 
-void init_log_console()
+void init_log_console(bool color_format)
 {
     // add a text sink
     typedef sinks::synchronous_sink<sinks::text_ostream_backend> text_sink;
+    
+    
+    // CONSOLE - all severity except error
     boost::shared_ptr<text_sink> sink = boost::make_shared<text_sink>();
     // add "console" output stream to our sink
-    sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::clog, boost::null_deleter()));
+    sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::cout, empty_deleter_t()));
     
     // specify the format of the log message 
-    sink->set_formatter(&init_log_formatter<tag_console>);
+    if(color_format)
+        sink->set_formatter(&init_log_formatter<tag_console>);
+    else
+        sink->set_formatter(&init_log_formatter<tag_file>);
+    
+    sink->set_filter(severity != SEVERITY_ERROR);
     // add sink to the core
     logging::core::get()->add_sink(sink);
+    
+    
+    // CONSOLE - only severity error
+    boost::shared_ptr<text_sink> sink_error = boost::make_shared<text_sink>();
+    sink_error->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::cerr, empty_deleter_t()));
+    
+    if(color_format)
+        sink_error->set_formatter(&init_log_formatter<tag_console>);
+    else
+        sink_error->set_formatter(&init_log_formatter<tag_file>);
+    
+    sink_error->set_filter(severity == SEVERITY_ERROR);
+    logging::core::get()->add_sink(sink_error);
 }
+
+void reinit_logger(bool color_format)
+{
+    logging::core::get()->remove_all_sinks();
+    init_log_console(color_format);
+}
+
 
 void init_log_file(const std::string& filename, custom_severity_level threshold, log_op::operation op, const std::string& id)
 {

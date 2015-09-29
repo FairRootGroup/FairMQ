@@ -68,8 +68,8 @@ int FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregiste
     }
     else
     {
-        LOG(ERROR)<<" verbosity level '"<<verbose<<"' unknown, it will be set to INFO";
-        set_global_log_level(log_op::operation::GREATER_EQ_THAN,fSeverityMap.at("RESULTS"));
+        LOG(ERROR)<<" verbosity level '"<<verbose<<"' unknown, it will be set to DEBUG";
+        set_global_log_level(log_op::operation::GREATER_EQ_THAN,fSeverityMap.at("DEBUG"));
     }
 
     PrintOptions();
@@ -90,7 +90,7 @@ int FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregiste
 
     if (!optionExists)
     {
-        LOG(ERROR) << "Required option to configure the MQ device is not there.";
+        LOG(ERROR) << "Required options to configure the MQ device are not provided.";
         LOG(ERROR) << "Please provide the value of one of the following key:";
         for (const auto& p : MQParserKeys)
         {

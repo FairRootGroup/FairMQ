@@ -72,7 +72,8 @@ int main()
     test_set_level();
     INIT_LOG_FILE_FILTER("test_another_log_file",EQUAL,INFO);// init and add another sink to the core
     test_set_level();
-    
+    reinit_logger(false);
+    test_set_level();
     return 0;
 }
 

@@ -19,11 +19,8 @@ set(LINK_DIRECTORIES ${Boost_LIBRARY_DIRS})
 
 link_directories(${LINK_DIRECTORIES})
 
-if(NOT ("${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}" VERSION_LESS "1.56") )
-    set(SRCS logger.cxx)
-else()
-    set(SRCS logger_oldboost_version.cxx)
-endif()
+set(SRCS logger.cxx)
+
 set(LIBRARY_NAME fairmq_logger)
 
 set(DEPENDENCIES
@@ -36,11 +33,9 @@ set(DEPENDENCIES
     pthread
   )
 
-
-if(NOT ("${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}" VERSION_LESS "1.56") )
-    install(FILES logger.h logger_def.h DESTINATION include/logger)
-else()
-    install(FILES logger_oldboost_version.h logger_def.h fairroot_null_deleter.h DESTINATION include/logger)
+install(FILES logger.h logger_def.h DESTINATION include/logger)
+if("${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}" VERSION_LESS "1.56")
+    install(FILES fairroot_null_deleter.h DESTINATION include/logger)
 endif()
 
 
