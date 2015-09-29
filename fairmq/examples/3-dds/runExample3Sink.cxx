@@ -45,6 +45,14 @@ int main(int argc, char** argv)
 
     try
     {
+        std::string interfaceName; // name of the network interface to use for communication.
+
+        options_description sinkOptions("Sink options");
+        sinkOptions.add_options()
+            ("network-interface", value<std::string>(&interfaceName)->default_value("eth0"), "Name of the network interface to use (e.g. eth0, ib0, wlan0, en0...)");
+
+        config.AddToCmdLineOptions(sinkOptions);
+
         if (config.ParseAll(argc, argv))
         {
             return 0;
@@ -74,22 +82,14 @@ int main(int argc, char** argv)
         FairMQ::tools::getHostIPs(IPs);
         stringstream ss;
         // Check if ib0 (infiniband) interface is available, otherwise try eth0 or wlan0.
-        if (IPs.count("ib0"))
+        if (IPs.count(interfaceName))
         {
-            ss << "tcp://" << IPs["ib0"] << ":1";
-        }
-        else if (IPs.count("eth0"))
-        {
-            ss << "tcp://" << IPs["eth0"] << ":1";
-        }
-        else if (IPs.count("wlan0"))
-        {
-            ss << "tcp://" << IPs["wlan0"] << ":1";
+            ss << "tcp://" << IPs[interfaceName] << ":1";
         }
         else
         {
             LOG(INFO) << ss.str();
-            LOG(ERROR) << "Could not find ib0, eth0 or wlan0";
+            LOG(ERROR) << "Could not find provided network interface: \"" << interfaceName << "\"!, exiting.";
             exit(EXIT_FAILURE);
         }
         string initialInputAddress = ss.str();

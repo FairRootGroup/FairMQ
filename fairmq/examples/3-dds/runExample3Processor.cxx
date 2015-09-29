@@ -46,11 +46,11 @@ int main(int argc, char** argv)
     {
         int ddsTaskIndex = 0;
 
-        options_description samplerOptions("Processor options");
-        samplerOptions.add_options()
-            ("index", value<int>(&ddsTaskIndex)->default_value(0), "Store DDS task index");
+        options_description processorOptions("Processor options");
+        processorOptions.add_options()
+            ("index", value<int>(&ddsTaskIndex)->default_value(0), "DDS task index");
 
-        config.AddToCmdLineOptions(samplerOptions);
+        config.AddToCmdLineOptions(processorOptions);
 
         if (config.ParseAll(argc, argv))
         {

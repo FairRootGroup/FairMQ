@@ -12,9 +12,6 @@
  * @author A. Rybalchenko
  */
 
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-
 #include "FairMQExample1Sink.h"
 #include "FairMQLogger.h"
 

@@ -15,12 +15,9 @@
 #ifndef FAIRMQCONTEXTZMQ_H_
 #define FAIRMQCONTEXTZMQ_H_
 
-#include <zmq.h>
-
 class FairMQContextZMQ
 {
   public:
-
     /// Constructor
     FairMQContextZMQ(int numIoThreads);
 

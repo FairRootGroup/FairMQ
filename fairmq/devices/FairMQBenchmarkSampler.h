@@ -44,6 +44,9 @@ class FairMQBenchmarkSampler : public FairMQDevice
     virtual void SetProperty(const int key, const int value);
     virtual int GetProperty(const int key, const int default_ = 0);
 
+    virtual std::string GetPropertyDescription(const int key);
+    virtual void ListProperties();
+
   protected:
     int fEventSize;
     int fEventRate;

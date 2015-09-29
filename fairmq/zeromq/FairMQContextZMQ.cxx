@@ -14,6 +14,8 @@
 
 #include <sstream>
 
+#include <zmq.h>
+
 #include "FairMQLogger.h"
 #include "FairMQContextZMQ.h"
 

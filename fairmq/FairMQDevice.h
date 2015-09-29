@@ -29,12 +29,14 @@
 
 class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 {
+    friend class FairMQChannel;
+
   public:
     enum
     {
         Id = FairMQConfigurable::Last,
-        MaxInitializationTime,
         NumIoThreads,
+        MaxInitializationTime,
         PortRangeMin,
         PortRangeMax,
         LogIntervalInMs,
@@ -59,6 +61,13 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     virtual std::string GetProperty(const int key, const std::string& default_ = "");
     virtual void SetProperty(const int key, const int value);
     virtual int GetProperty(const int key, const int default_ = 0);
+
+    /// Get property description for a given property name
+    /// @param key Property name/key
+    /// @return String with the property description 
+    virtual std::string GetPropertyDescription(const int key);
+    /// Print all properties of this and the parent class to LOG(INFO)
+    virtual void ListProperties();
 
     virtual void SetTransport(FairMQTransportFactory* factory);
 

@@ -130,3 +130,26 @@ int FairMQBenchmarkSampler::GetProperty(const int key, const int default_ /*= 0*
             return FairMQDevice::GetProperty(key, default_);
     }
 }
+
+string FairMQBenchmarkSampler::GetPropertyDescription(const int key)
+{
+    switch (key)
+    {
+        case EventSize:
+            return "EventSize: Size of the transfered message buffer.";
+        case EventRate:
+            return "EventRate: Upper limit for the message rate.";
+        default:
+            return FairMQDevice::GetPropertyDescription(key);
+    }
+}
+
+void FairMQBenchmarkSampler::ListProperties()
+{
+    LOG(INFO) << "Properties of FairMQBenchmarkSampler:";
+    for (int p = FairMQConfigurable::Last; p < FairMQBenchmarkSampler::Last; ++p)
+    {
+        LOG(INFO) << " " << GetPropertyDescription(p);
+    }
+    LOG(INFO) << "---------------------------";
+}

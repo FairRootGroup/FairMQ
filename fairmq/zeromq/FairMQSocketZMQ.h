@@ -17,8 +17,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <zmq.h>
-
 #include "FairMQSocket.h"
 #include "FairMQContextZMQ.h"
 

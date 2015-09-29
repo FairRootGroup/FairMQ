@@ -397,6 +397,37 @@ string FairMQDevice::GetProperty(const int key, const string& default_ /*= ""*/)
     }
 }
 
+string FairMQDevice::GetPropertyDescription(const int key)
+{
+    switch (key)
+    {
+        case Id:
+            return "Id: Device ID";
+        case NumIoThreads:
+            return "NumIoThreads: Number of I/O Threads (size of the 0MQ thread pool to handle I/O operations. If your application is using only the inproc transport for messaging you may set this to zero, otherwise set it to at least one.)";
+        case MaxInitializationTime:
+            return "MaxInitializationTime: Timeout for retrying validation and initialization of the channels.";
+        case PortRangeMin:
+            return "PortRangeMin: Minumum value for the port range (when binding to dynamic port).";
+        case PortRangeMax:
+            return "PortRangeMax: Maximum value for the port range (when binding to dynamic port).";
+        case LogIntervalInMs:
+            return "LogIntervalInMs: Time between socket rates logging outputs.";
+        default:
+            return FairMQConfigurable::GetPropertyDescription(key);
+    }
+}
+
+void FairMQDevice::ListProperties()
+{
+    LOG(INFO) << "Properties of FairMQDevice:";
+    for (int p = FairMQConfigurable::Last; p < FairMQDevice::Last; ++p)
+    {
+        LOG(INFO) << " " << GetPropertyDescription(p);
+    }
+    LOG(INFO) << "---------------------------";
+}
+
 // Method for getting properties represented as an integer.
 int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/)
 {

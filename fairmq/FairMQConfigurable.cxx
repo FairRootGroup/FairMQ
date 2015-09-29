@@ -45,6 +45,12 @@ int FairMQConfigurable::GetProperty(const int key, const int default_ /*= 0*/)
     return default_;
 }
 
+string FairMQConfigurable::GetPropertyDescription(const int key)
+{
+    LOG(ERROR) << "Reached end of the property list. The description of the requested property " << key << " was not found.";
+    return "0";
+}
+
 FairMQConfigurable::~FairMQConfigurable()
 {
 }

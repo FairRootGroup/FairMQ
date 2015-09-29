@@ -3,6 +3,12 @@ Example 3: DDS
 
 This example demonstrates usage of the Dynamic Deployment System ([DDS](http://dds.gsi.de/)) to dynamically deploy and configure a topology of devices. The topology is similar to those of Example 2, but now it can be easily distributed on different computing nodes without the need for manual reconfiguration of the devices.
 
+This example is compiled only if the DDS is found by CMake. Custom DDS installation location can be given to CMake like this:
+
+```bash
+cmake -DDDS_PATH="/path/to/dds/install/dir/" ..
+```
+
 The description below outlines the minimal steps needed to run the example with DDS. For more details please refer to DDS documentation on [DDS Website](http://dds.gsi.de/).
 
 ##### 1. The devices that bind their sockets need to advertise their bound addresses to DDS by writing a property.
@@ -56,9 +62,9 @@ After this step each device will have the necessary connection information.
 
 We run this example on the local machine for simplicity. The file below defines one worker `wn0` with 12 DDS Agents (thus able to accept 12 tasks). The parameters for each worker node are:
  - user-chosen worker ID (must be unique)
- - a host name with or without a login, in a form: login@host.fqdn
+ - a host name with or without a login, in a form: login@host.fqdn (password-less SSH access to these hosts must be possible)
  - additional SSH params (can be empty)
- - a remote working directory
+ - a remote working directory (most exist on the worker nodes)
  - number of DDS Agents for this worker
 
 ```bash

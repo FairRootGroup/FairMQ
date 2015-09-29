@@ -15,7 +15,6 @@
 #include <memory> // unique_ptr
 
 #include <boost/thread.hpp>
-#include <boost/bind.hpp>
 
 #include "FairMQExample1Sampler.h"
 #include "FairMQLogger.h"
