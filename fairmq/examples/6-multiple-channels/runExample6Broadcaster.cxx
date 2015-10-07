@@ -6,10 +6,10 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * runExample2Sink.cxx
+ * runExample6Broadcaster.cxx
  *
  * @since 2013-04-23
- * @author D. Klein, A. Rybalchenko
+ * @author A. Rybalchenko
  */
 
 #include <iostream>
@@ -17,7 +17,7 @@
 #include "FairMQLogger.h"
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
-#include "FairMQExample2Sink.h"
+#include "FairMQExample6Broadcaster.h"
 
 #ifdef NANOMSG
 #include "FairMQTransportFactoryNN.h"
@@ -27,8 +27,8 @@
 
 int main(int argc, char** argv)
 {
-    FairMQExample2Sink sink;
-    sink.CatchSignals();
+    FairMQExample6Broadcaster broadcaster;
+    broadcaster.CatchSignals();
 
     FairMQProgOptions config;
 
@@ -44,7 +44,7 @@ int main(int argc, char** argv)
 
         config.UserParser<FairMQParser::JSON>(filename, id);
 
-        sink.fChannels = config.GetFairMQMap();
+        broadcaster.fChannels = config.GetFairMQMap();
 
         LOG(INFO) << "PID: " << getpid();
 
@@ -54,18 +54,18 @@ int main(int argc, char** argv)
         FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
 #endif
 
-        sink.SetTransport(transportFactory);
+        broadcaster.SetTransport(transportFactory);
 
-        sink.SetProperty(FairMQExample2Sink::Id, id);
+        broadcaster.SetProperty(FairMQExample6Broadcaster::Id, id);
 
-        sink.ChangeState("INIT_DEVICE");
-        sink.WaitForEndOfState("INIT_DEVICE");
+        broadcaster.ChangeState("INIT_DEVICE");
+        broadcaster.WaitForEndOfState("INIT_DEVICE");
 
-        sink.ChangeState("INIT_TASK");
-        sink.WaitForEndOfState("INIT_TASK");
+        broadcaster.ChangeState("INIT_TASK");
+        broadcaster.WaitForEndOfState("INIT_TASK");
 
-        sink.ChangeState("RUN");
-        sink.InteractiveStateLoop();
+        broadcaster.ChangeState("RUN");
+        broadcaster.InteractiveStateLoop();
     }
     catch (std::exception& e)
     {

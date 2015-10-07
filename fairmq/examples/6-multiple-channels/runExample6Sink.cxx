@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * runExample2Sink.cxx
+ * runExample6Sink.cxx
  *
  * @since 2013-04-23
  * @author D. Klein, A. Rybalchenko
@@ -14,10 +14,12 @@
 
 #include <iostream>
 
+#include "boost/program_options.hpp"
+
 #include "FairMQLogger.h"
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
-#include "FairMQExample2Sink.h"
+#include "FairMQExample6Sink.h"
 
 #ifdef NANOMSG
 #include "FairMQTransportFactoryNN.h"
@@ -25,9 +27,11 @@
 #include "FairMQTransportFactoryZMQ.h"
 #endif
 
+using namespace boost::program_options;
+
 int main(int argc, char** argv)
 {
-    FairMQExample2Sink sink;
+    FairMQExample6Sink sink;
     sink.CatchSignals();
 
     FairMQProgOptions config;
@@ -56,7 +60,7 @@ int main(int argc, char** argv)
 
         sink.SetTransport(transportFactory);
 
-        sink.SetProperty(FairMQExample2Sink::Id, id);
+        sink.SetProperty(FairMQExample6Sink::Id, id);
 
         sink.ChangeState("INIT_DEVICE");
         sink.WaitForEndOfState("INIT_DEVICE");

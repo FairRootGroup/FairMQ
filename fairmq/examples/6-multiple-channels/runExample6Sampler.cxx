@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * runExample2Sink.cxx
+ * runExample6Sampler.cxx
  *
  * @since 2013-04-23
  * @author D. Klein, A. Rybalchenko
@@ -14,10 +14,12 @@
 
 #include <iostream>
 
+#include "boost/program_options.hpp"
+
 #include "FairMQLogger.h"
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
-#include "FairMQExample2Sink.h"
+#include "FairMQExample6Sampler.h"
 
 #ifdef NANOMSG
 #include "FairMQTransportFactoryNN.h"
@@ -25,15 +27,25 @@
 #include "FairMQTransportFactoryZMQ.h"
 #endif
 
+using namespace boost::program_options;
+
 int main(int argc, char** argv)
 {
-    FairMQExample2Sink sink;
-    sink.CatchSignals();
+    FairMQExample6Sampler sampler;
+    sampler.CatchSignals();
 
     FairMQProgOptions config;
 
     try
     {
+        std::string text;
+
+        options_description samplerOptions("Sampler options");
+        samplerOptions.add_options()
+            ("text", value<std::string>(&text)->default_value("Hello"), "Text to send out");
+
+        config.AddToCmdLineOptions(samplerOptions);
+
         if (config.ParseAll(argc, argv))
         {
             return 0;
@@ -44,7 +56,7 @@ int main(int argc, char** argv)
 
         config.UserParser<FairMQParser::JSON>(filename, id);
 
-        sink.fChannels = config.GetFairMQMap();
+        sampler.fChannels = config.GetFairMQMap();
 
         LOG(INFO) << "PID: " << getpid();
 
@@ -54,18 +66,19 @@ int main(int argc, char** argv)
         FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
 #endif
 
-        sink.SetTransport(transportFactory);
+        sampler.SetTransport(transportFactory);
 
-        sink.SetProperty(FairMQExample2Sink::Id, id);
+        sampler.SetProperty(FairMQExample6Sampler::Id, id);
+        sampler.SetProperty(FairMQExample6Sampler::Text, text);
 
-        sink.ChangeState("INIT_DEVICE");
-        sink.WaitForEndOfState("INIT_DEVICE");
+        sampler.ChangeState("INIT_DEVICE");
+        sampler.WaitForEndOfState("INIT_DEVICE");
 
-        sink.ChangeState("INIT_TASK");
-        sink.WaitForEndOfState("INIT_TASK");
+        sampler.ChangeState("INIT_TASK");
+        sampler.WaitForEndOfState("INIT_TASK");
 
-        sink.ChangeState("RUN");
-        sink.InteractiveStateLoop();
+        sampler.ChangeState("RUN");
+        sampler.InteractiveStateLoop();
     }
     catch (std::exception& e)
     {

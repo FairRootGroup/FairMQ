@@ -14,8 +14,6 @@
 
 #include <iostream>
 
-#include "boost/program_options.hpp"
-
 #include "FairMQLogger.h"
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
@@ -26,8 +24,6 @@
 #else
 #include "FairMQTransportFactoryZMQ.h"
 #endif
-
-using namespace boost::program_options;
 
 int main(int argc, char** argv)
 {

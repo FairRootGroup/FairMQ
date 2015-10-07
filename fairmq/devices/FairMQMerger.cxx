@@ -39,6 +39,8 @@ void FairMQMerger::Run()
         dataInChannels.at(i) = &(fChannels.at("data-in").at(i));
     }
 
+    int numInputs = fChannels.at("data-in").size();
+
     while (CheckCurrentState(RUNNING))
     {
         std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
@@ -46,7 +48,7 @@ void FairMQMerger::Run()
         poller->Poll(100);
 
         // Loop over the data input channels.
-        for (int i = 0; i < fChannels.at("data-in").size(); ++i)
+        for (int i = 0; i < numInputs; ++i)
         {
             // Check if the channel has data ready to be received.
             if (poller->CheckInput(i))
