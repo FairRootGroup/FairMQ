@@ -50,7 +50,7 @@ FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQChannel
     return new FairMQPollerZMQ(channels);
 }
 
-FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(std::map<std::string, std::vector<FairMQChannel>>& channelsMap, std::initializer_list<std::string> channelList)
+FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, std::initializer_list<std::string> channelList)
 {
     return new FairMQPollerZMQ(channelsMap, channelList);
 }

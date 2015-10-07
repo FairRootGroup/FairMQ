@@ -31,12 +31,33 @@ FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQChannel>& channels)
     {
         items[i].socket = channels.at(i).fSocket->GetSocket();
         items[i].fd = 0;
-        items[i].events = ZMQ_POLLIN;
         items[i].revents = 0;
+
+        int type = 0;
+        size_t size = sizeof(type);
+        zmq_getsockopt (channels.at(i).fSocket->GetSocket(), ZMQ_TYPE, &type, &size);
+
+        if (type == ZMQ_REQ || type == ZMQ_REP || type == ZMQ_PAIR || type == ZMQ_DEALER || type == ZMQ_ROUTER)
+        {
+            items[i].events = ZMQ_POLLIN|ZMQ_POLLOUT;
+        }
+        else if (type == ZMQ_PUSH || type == ZMQ_PUB || type == ZMQ_XPUB)
+        {
+            items[i].events = ZMQ_POLLOUT;
+        }
+        else if (type == ZMQ_PULL || type == ZMQ_SUB || type == ZMQ_XSUB)
+        {
+            items[i].events = ZMQ_POLLIN;
+        }
+        else
+        {
+            LOG(ERROR) << "invalid poller configuration, exiting.";
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
-FairMQPollerZMQ::FairMQPollerZMQ(map<string, vector<FairMQChannel>>& channelsMap, initializer_list<string> channelList)
+FairMQPollerZMQ::FairMQPollerZMQ(unordered_map<string, vector<FairMQChannel>>& channelsMap, initializer_list<string> channelList)
     : items()
     , fNumItems(0)
     , fOffsetMap()
@@ -61,10 +82,32 @@ FairMQPollerZMQ::FairMQPollerZMQ(map<string, vector<FairMQChannel>>& channelsMap
             for (int i = 0; i < channelsMap.at(channel).size(); ++i)
             {
                 index = fOffsetMap[channel] + i;
+
                 items[index].socket = channelsMap.at(channel).at(i).fSocket->GetSocket();
                 items[index].fd = 0;
-                items[index].events = ZMQ_POLLIN;
                 items[index].revents = 0;
+
+                int type = 0;
+                size_t size = sizeof(type);
+                zmq_getsockopt (channelsMap.at(channel).at(i).fSocket->GetSocket(), ZMQ_TYPE, &type, &size);
+
+                if (type == ZMQ_REQ || type == ZMQ_REP || type == ZMQ_PAIR || type == ZMQ_DEALER || type == ZMQ_ROUTER)
+                {
+                    items[index].events = ZMQ_POLLIN|ZMQ_POLLOUT;
+                }
+                else if (type == ZMQ_PUSH || type == ZMQ_PUB || type == ZMQ_XPUB)
+                {
+                    items[index].events = ZMQ_POLLOUT;
+                }
+                else if (type == ZMQ_PULL || type == ZMQ_SUB || type == ZMQ_XSUB)
+                {
+                    items[index].events = ZMQ_POLLIN;
+                }
+                else
+                {
+                    LOG(ERROR) << "invalid poller configuration, exiting.";
+                    exit(EXIT_FAILURE);
+                }
             }
         }
     }

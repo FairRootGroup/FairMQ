@@ -34,11 +34,32 @@ FairMQPollerNN::FairMQPollerNN(const vector<FairMQChannel>& channels)
     for (int i = 0; i < fNumItems; ++i)
     {
         items[i].fd = channels.at(i).fSocket->GetSocket(1);
-        items[i].events = NN_POLLIN;
+
+        int type = 0;
+        size_t sz = sizeof(type);
+        nn_getsockopt(channels.at(i).fSocket->GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
+
+        if (type == NN_REQ || type == NN_REP || type == NN_PAIR)
+        {
+            items[i].events = NN_POLLIN|NN_POLLOUT;
+        }
+        else if (type == NN_PUSH || type == NN_PUB)
+        {
+            items[i].events = NN_POLLOUT;
+        }
+        else if (type == NN_PULL || type == NN_SUB)
+        {
+            items[i].events = NN_POLLIN;
+        }
+        else
+        {
+            LOG(ERROR) << "invalid poller configuration, exiting.";
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
-FairMQPollerNN::FairMQPollerNN(map<string, vector<FairMQChannel>>& channelsMap, initializer_list<string> channelList)
+FairMQPollerNN::FairMQPollerNN(unordered_map<string, vector<FairMQChannel>>& channelsMap, initializer_list<string> channelList)
     : items()
     , fNumItems(0)
     , fOffsetMap()
@@ -64,7 +85,28 @@ FairMQPollerNN::FairMQPollerNN(map<string, vector<FairMQChannel>>& channelsMap, 
             {
                 index = fOffsetMap[channel] + i;
                 items[index].fd = channelsMap.at(channel).at(i).fSocket->GetSocket(1);
-                items[index].events = NN_POLLIN;
+
+                int type = 0;
+                size_t sz = sizeof(type);
+                nn_getsockopt(channelsMap.at(channel).at(i).fSocket->GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
+
+                if (type == NN_REQ || type == NN_REP || type == NN_PAIR)
+                {
+                    items[index].events = NN_POLLIN|NN_POLLOUT;
+                }
+                else if (type == NN_PUSH || type == NN_PUB)
+                {
+                    items[index].events = NN_POLLOUT;
+                }
+                else if (type == NN_PULL || type == NN_SUB)
+                {
+                    items[index].events = NN_POLLIN;
+                }
+                else
+                {
+                    LOG(ERROR) << "invalid poller configuration, exiting.";
+                    exit(EXIT_FAILURE);
+                }
             }
         }
     }

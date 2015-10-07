@@ -17,6 +17,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "FairMQMessage.h"
 #include "FairMQChannel.h"
@@ -36,7 +37,7 @@ class FairMQTransportFactory
     virtual FairMQSocket* CreateSocket(const std::string& type, const std::string& name, int numIoThreads) = 0;
 
     virtual FairMQPoller* CreatePoller(const std::vector<FairMQChannel>& channels) = 0;
-    virtual FairMQPoller* CreatePoller(std::map<std::string, std::vector<FairMQChannel>>& channelsMap, std::initializer_list<std::string> channelList) = 0;
+    virtual FairMQPoller* CreatePoller(std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, std::initializer_list<std::string> channelList) = 0;
     virtual FairMQPoller* CreatePoller(FairMQSocket& cmdSocket, FairMQSocket& dataSocket) = 0;
 
     virtual ~FairMQTransportFactory() {};
