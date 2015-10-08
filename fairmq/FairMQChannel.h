@@ -168,7 +168,7 @@ class FairMQChannel
     int fNoBlockFlag;
     int fSndMoreFlag;
 
-    bool InitCommandInterface(FairMQTransportFactory* factory);
+    bool InitCommandInterface(FairMQTransportFactory* factory, int numIoThreads);
 
     bool HandleUnblock() const;
 

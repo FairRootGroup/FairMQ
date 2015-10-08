@@ -43,13 +43,11 @@ int main(int argc, char** argv)
     {
         int eventSize;
         int eventRate;
-        int ioThreads;
 
         options_description sampler_options("Sampler options");
         sampler_options.add_options()
             ("event-size", value<int>(&eventSize)->default_value(1000), "Event size in bytes")
-            ("event-rate", value<int>(&eventRate)->default_value(0),    "Event rate limit in maximum number of events per second")
-            ("io-threads", value<int>(&ioThreads)->default_value(1),    "Number of I/O threads");
+            ("event-rate", value<int>(&eventRate)->default_value(0),    "Event rate limit in maximum number of events per second");
 
         config.AddToCmdLineOptions(sampler_options);
 
@@ -60,6 +58,7 @@ int main(int argc, char** argv)
 
         string filename = config.GetValue<string>("config-json-file");
         string id = config.GetValue<string>("id");
+        int ioThreads = config.GetValue<int>("io-threads");
 
         config.UserParser<JSON>(filename, id);
 

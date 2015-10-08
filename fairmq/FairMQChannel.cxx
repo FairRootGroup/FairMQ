@@ -346,11 +346,11 @@ bool FairMQChannel::ValidateChannel()
     }
 }
 
-bool FairMQChannel::InitCommandInterface(FairMQTransportFactory* factory)
+bool FairMQChannel::InitCommandInterface(FairMQTransportFactory* factory, int numIoThreads)
 {
     fTransportFactory = factory;
 
-    fCmdSocket = fTransportFactory->CreateSocket("sub", "device-commands", 1);
+    fCmdSocket = fTransportFactory->CreateSocket("sub", "device-commands", numIoThreads);
     if (fCmdSocket)
     {
         fCmdSocket->Connect("inproc://commands");
