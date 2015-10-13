@@ -56,30 +56,72 @@ The policies must have at least a couple of methods that will be called by the h
 ##### Input policy (Source)
 
 ``` C++
-				source_type::InitSampler() 						// must be there to compile
-int64_t 		source_type::GetNumberOfEvent() 				// must be there to compile
+				source_type::InitSampler(); 						// must be there to compile
+int64_t 		source_type::GetNumberOfEvent(); 					// must be there to compile
 
-				source_type::SetIndex(int64_t eventIdx)			// must be there to compile
-CONTAINER_TYPE  source_type::GetOutData() 						// must be there to compile
+				source_type::SetIndex(int64_t eventIdx);			// must be there to compile
+CONTAINER_TYPE  source_type::GetOutData(); 							// must be there to compile
 
-				source_type::SetFileProperties(Args&... args) 	// if called then must be there to compile
-				source_type::ExecuteTasks()						// must be there to compile
+				source_type::SetFileProperties(Args&... args); 		// if called by the host, then must be there to compile
+				source_type::ExecuteTasks();						// must be there to compile
 
- void 			source_type::BindSendPart(std::function<void(int)> callback)		// enabled if exists
- void 			source_type::BindGetSocketNumber(std::function<int()> callback) 	// enabled if exists
- void 			source_type::BindGetCurrentIndex(std::function<int()> callback)		// enabled if exists
+ void 			source_type::BindSendPart(std::function<void(int)> callback);		// enabled if exists
+ void 			source_type::BindGetSocketNumber(std::function<int()> callback); 	// enabled if exists
+ void 			source_type::BindGetCurrentIndex(std::function<int()> callback);	// enabled if exists
 ```
 
 The function members above that have no returned type means that the returned types are not used and can be anything. 
-The CONTAINER_TYPE above must correspond to the input parameter of the serialization_type::SerializeMsg() function (see below).
+The CONTAINER_TYPE above must correspond to the input parameter of the serialization_type::SerializeMsg(CONTAINER_TYPE container) function (see below).
 
 ##### Output policy (Serialization)
 
 ``` C++
-		serialization_type::SerializeMsg(CONTAINER_TYPE container)	// must be there to compile
-		serialization_type::SetMessage(FairMQMessage* msg) 			// must be there to compile
+		serialization_type::SerializeMsg(CONTAINER_TYPE container);		// must be there to compile
+		serialization_type::SetMessage(FairMQMessage* msg); 			// must be there to compile
 ```
 
 
-Examples of host class instantiation can be found in FairRoot/example/Tutorial7/run directory. For example
+Examples of host class instantiation can be found in FairRoot/example/Tutorial7/run directory. 
+Before the instanciation we need to form the sampler type with the proper policies.
+For example in FairRoot/example/Tutorial7/run/runSamplerBoost.cxx we form the sampler type as follow:
+
+``` C++
+typedef MyDigi                                         		TDigi;				// simple digi class of tutorial7
+typedef SimpleTreeReader<TClonesArray>                 		TSamplerPolicy;		// simple root file reader with a TClonesArray container.
+typedef BoostSerializer<TDigi>                         		TSerializePolicy; 	// boost serializer for the digi class.
+typedef GenericSampler<TSamplerPolicy,TSerializePolicy> 	TSampler; 			// the sampler type.
+
+int main(int argc, char** argv)
+{
+	// ...
+	TSampler sampler;
+	// ...
+}
+
+```
+
+Once the Sampler type is defined we can instantiate the sampler device as shown above and start the configuration and the state machine. 
+
+Host classes inherit publicly from the policies (called enriched policy), which allow policy function members to be accessible outside the host. Enriched policies offer additional functionnalities to the user without affecting the abstract host class and in a typesafe manner.
+When using multiple policy inheritance, function members may have the same signatures. Also, some function name should be reserved. To resolve ambiguities we can wrap some policy members, necessary for the host functionalities. For example in the sampler :
+
+``` C++
+void SetTransport(FairMQTransportFactory* factory)
+{
+    FairMQDevice::SetTransport(factory);
+}
+```
+or 
+
+``` C++
+template <typename... Args>
+void SetFileProperties(Args&... args)
+{
+    source_type::SetFileProperties(args...);
+}
+```
+
+### Generic Processor
+
+
 
