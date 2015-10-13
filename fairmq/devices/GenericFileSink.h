@@ -27,24 +27,26 @@
  * Function to define in (parent) policy classes :
  * 
  *  -------- INPUT POLICY --------
- *                InputPolicy::InitContainer(...)
- * CONTAINER_TYPE InputPolicy::DeSerializeMsg(FairMQMessage* msg)
+ *                deserialization_type::InitContainer(...)
+ * CONTAINER_TYPE deserialization_type::DeSerializeMsg(FairMQMessage* msg)
  * 
  * 
  *  -------- OUTPUT POLICY --------
- *                OutputPolicy::AddToFile(CONTAINER_TYPE);
- *                OutputPolicy::InitOutputFile()
+ *                sink_type::AddToFile(CONTAINER_TYPE);
+ *                sink_type::InitOutputFile()
  **********************************************************************/
 
 #include "FairMQDevice.h"
 
-template <typename InputPolicy, typename OutputPolicy>
-class GenericFileSink : public FairMQDevice, public InputPolicy, public OutputPolicy
+template <typename T, typename U>
+class GenericFileSink : public FairMQDevice, public T, public U
 {
+    typedef T                        deserialization_type;
+    typedef U                                   sink_type;
   public:
     GenericFileSink()
-        : InputPolicy()
-        , OutputPolicy()
+        : deserialization_type()
+        , sink_type()
     {}
 
     virtual ~GenericFileSink()
@@ -58,13 +60,13 @@ class GenericFileSink : public FairMQDevice, public InputPolicy, public OutputPo
     template <typename... Args>
     void InitInputContainer(Args... args)
     {
-        InputPolicy::InitContainer(std::forward<Args>(args)...);
+        deserialization_type::InitContainer(std::forward<Args>(args)...);
     }
 
   protected:
     virtual void InitTask()
     {
-        OutputPolicy::InitOutputFile();
+        sink_type::InitOutputFile();
     }
 
     virtual void Run()
@@ -80,7 +82,7 @@ class GenericFileSink : public FairMQDevice, public InputPolicy, public OutputPo
 
             if (inputChannel.Receive(msg) > 0)
             {
-                OutputPolicy::AddToFile(InputPolicy::DeSerializeMsg(msg.get()));
+                sink_type::AddToFile(deserialization_type::DeSerializeMsg(msg.get()));
                 receivedMsg++;
             }
         }

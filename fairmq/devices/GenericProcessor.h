@@ -23,31 +23,34 @@
  * Function to define in (parent) policy classes :
  * 
  *  -------- INPUT POLICY --------
- *                InputPolicy::InitContainer(...)
- * CONTAINER_TYPE InputPolicy::DeSerializeMsg(FairMQMessage* msg)
- *                InputPolicy::InitContainer(...)  // if GenericProcessor::InitInputContainer(...) is used
+ *                deserialization_type::InitContainer(...)
+ * CONTAINER_TYPE deserialization_type::DeSerializeMsg(FairMQMessage* msg)
+ *                deserialization_type::InitContainer(...)  // if GenericProcessor::InitInputContainer(...) is used
  * 
  * 
  *  -------- OUTPUT POLICY --------
- *                OutputPolicy::SerializeMsg(CONTAINER_TYPE)
- *                OutputPolicy::SetMessage(FairMQMessage* msg)
- *                OutputPolicy::InitContainer(...)  // if GenericProcessor::InitOutputContainer(...) is used
+ *                serialization_type::SerializeMsg(CONTAINER_TYPE)
+ *                serialization_type::SetMessage(FairMQMessage* msg)
+ *                serialization_type::InitContainer(...)  // if GenericProcessor::InitOutputContainer(...) is used
  * 
  *  -------- TASK POLICY --------
- * CONTAINER_TYPE TaskPolicy::GetOutputData()
- *                TaskPolicy::ExecuteTask(CONTAINER_TYPE container)
- *                TaskPolicy::InitTask(...)  // if GenericProcessor::InitTask(...) is used
+ * CONTAINER_TYPE proc_task_type::GetOutputData()
+ *                proc_task_type::ExecuteTask(CONTAINER_TYPE container)
+ *                proc_task_type::InitTask(...)  // if GenericProcessor::InitTask(...) is used
  *                
  **********************************************************************/
 
-template <typename InputPolicy, typename OutputPolicy, typename TaskPolicy>
-class GenericProcessor : public FairMQDevice, public InputPolicy, public OutputPolicy, public TaskPolicy
+template <typename T, typename U, typename V>
+class GenericProcessor : public FairMQDevice, public T, public U, public V
 {
+    typedef T                                         deserialization_type;
+    typedef U                                           serialization_type;
+    typedef V                                               proc_task_type;
   public:
     GenericProcessor()
-        : InputPolicy()
-        , OutputPolicy()
-        , TaskPolicy()
+        : deserialization_type()
+        , serialization_type()
+        , proc_task_type()
     {}
 
     virtual ~GenericProcessor()
@@ -64,19 +67,19 @@ class GenericProcessor : public FairMQDevice, public InputPolicy, public OutputP
     template <typename... Args>
     void InitTask(Args... args)
     {
-        TaskPolicy::InitTask(std::forward<Args>(args)...);
+        proc_task_type::InitTask(std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void InitInputContainer(Args... args)
     {
-        InputPolicy::InitContainer(std::forward<Args>(args)...);
+        deserialization_type::InitContainer(std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void InitOutputContainer(Args... args)
     {
-        OutputPolicy::InitContainer(std::forward<Args>(args)...);
+        serialization_type::InitContainer(std::forward<Args>(args)...);
     }
 
     /*
@@ -84,8 +87,8 @@ class GenericProcessor : public FairMQDevice, public InputPolicy, public OutputP
     // ***********************  TODO: implement multipart features
     void SendPart()
     {
-        fChannels["data-out"].at(0).Send(OutputPolicy::SerializeMsg(TaskPolicy::GetData()), "snd-more");
-        OutputPolicy::CloseMessage(); 
+        fChannels["data-out"].at(0).Send(serialization_type::SerializeMsg(proc_task_type::GetData()), "snd-more");
+        serialization_type::CloseMessage(); 
     }
 
     // void SendPart();
@@ -94,7 +97,7 @@ class GenericProcessor : public FairMQDevice, public InputPolicy, public OutputP
     {
         if (fChannels["data-in"].at(0).ExpectsAnotherPart())
         {
-            InputPolicy::CloseMessage(); 
+            deserialization_type::CloseMessage(); 
             // fProcessorTask->GetPayload()->CloseMessage();
             fProcessorTask->SetPayload(fTransportFactory->CreateMessage());
             return fChannels["data-in"].at(0).Receive(fProcessorTask->GetPayload());
@@ -131,16 +134,16 @@ class GenericProcessor : public FairMQDevice, public InputPolicy, public OutputP
 
             if (inputChannel.Receive(msg) > 0)
             {
-                // InputPolicy::DeSerializeMsg(msg) --> deserialize data of msg and fill output container
-                // TaskPolicy::ExecuteTask( ... )   --> process output container
-                TaskPolicy::ExecuteTask(InputPolicy::DeSerializeMsg(msg.get()));
+                // deserialization_type::DeSerializeMsg(msg) --> deserialize data of msg and fill output container
+                // proc_task_type::ExecuteTask( ... )   --> process output container
+                proc_task_type::ExecuteTask(deserialization_type::DeSerializeMsg(msg.get()));
 
-                // OutputPolicy::fMessage point to msg
-                OutputPolicy::SetMessage(msg.get());
+                // serialization_type::fMessage point to msg
+                serialization_type::SetMessage(msg.get());
 
-                // TaskPolicy::GetOutputData() --> Get processed output container
-                // OutputPolicy::message(...)  --> Serialize output container and fill fMessage
-                outputChannel.Send(OutputPolicy::SerializeMsg(TaskPolicy::GetOutputData()));
+                // proc_task_type::GetOutputData() --> Get processed output container
+                // serialization_type::message(...)  --> Serialize output container and fill fMessage
+                outputChannel.Send(serialization_type::SerializeMsg(proc_task_type::GetOutputData()));
                 sentMsgs++;
             }
         }
