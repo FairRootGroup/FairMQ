@@ -56,14 +56,13 @@ The policies must have at least a couple of methods that will be called by the h
 ##### Input policy (Source)
 
 ``` C++
-				source_type::InitSampler(); 						// must be there to compile
+				source_type::InitSource(); 							// must be there to compile
 int64_t 		source_type::GetNumberOfEvent(); 					// must be there to compile
 
 				source_type::SetIndex(int64_t eventIdx);			// must be there to compile
 CONTAINER_TYPE  source_type::GetOutData(); 							// must be there to compile
 
 				source_type::SetFileProperties(Args&... args); 		// if called by the host, then must be there to compile
-				source_type::ExecuteTasks();						// must be there to compile
 
  void 			source_type::BindSendPart(std::function<void(int)> callback);		// enabled if exists
  void 			source_type::BindGetSocketNumber(std::function<int()> callback); 	// enabled if exists
@@ -122,6 +121,6 @@ void SetFileProperties(Args&... args)
 ```
 
 ### Generic Processor
-
+The function members required by the processor policies are :
 
 

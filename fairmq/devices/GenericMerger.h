@@ -55,7 +55,7 @@ class GenericMerger : public FairMQDevice, public MergerPolicy, public InputPoli
                     received = fChannels.at("data-in").at(i).Receive(msg)
                     if (received > 0)
                     {
-                        MergerPolicy::Merge(InputPolicy::DeSerializeMsg(msg));
+                        MergerPolicy::Merge(InputPolicy::DeserializeMsg(msg));
                     }
                 }
 

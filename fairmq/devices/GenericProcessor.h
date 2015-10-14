@@ -24,7 +24,7 @@
  * 
  *  -------- INPUT POLICY --------
  *                deserialization_type::InitContainer(...)
- * CONTAINER_TYPE deserialization_type::DeSerializeMsg(FairMQMessage* msg)
+ * CONTAINER_TYPE deserialization_type::DeserializeMsg(FairMQMessage* msg)
  *                deserialization_type::InitContainer(...)  // if GenericProcessor::InitInputContainer(...) is used
  * 
  * 
@@ -134,9 +134,9 @@ class GenericProcessor : public FairMQDevice, public T, public U, public V
 
             if (inputChannel.Receive(msg) > 0)
             {
-                // deserialization_type::DeSerializeMsg(msg) --> deserialize data of msg and fill output container
+                // deserialization_type::DeserializeMsg(msg) --> deserialize data of msg and fill output container
                 // proc_task_type::ExecuteTask( ... )   --> process output container
-                proc_task_type::ExecuteTask(deserialization_type::DeSerializeMsg(msg.get()));
+                proc_task_type::ExecuteTask(deserialization_type::DeserializeMsg(msg.get()));
 
                 // serialization_type::fMessage point to msg
                 serialization_type::SetMessage(msg.get());

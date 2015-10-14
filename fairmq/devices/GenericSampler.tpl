@@ -34,7 +34,7 @@ void base_GenericSampler<T,U,K,L>::InitTask()
     BindingGetSocketNumber();
     BindingGetCurrentIndex();
 
-    source_type::InitSampler();
+    source_type::InitSource();
     fNumEvents = source_type::GetNumberOfEvent();
 }
 

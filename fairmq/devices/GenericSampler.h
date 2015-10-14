@@ -35,12 +35,11 @@
  * Function to define in (parent) policy classes :
  * 
  *  -------- INPUT POLICY (SAMPLER POLICY) --------
- *                source_type::InitSampler()                          // must be there to compile
+ *                source_type::InitSource()                          // must be there to compile
  *        int64_t source_type::GetNumberOfEvent()                     // must be there to compile
  *                source_type::SetIndex(int64_t eventIdx)             // must be there to compile
  * CONTAINER_TYPE source_type::GetOutData()                           // must be there to compile
  *                source_type::SetFileProperties(Args&... args)       // must be there to compile
- *                source_type::ExecuteTasks()                         // must be there to compile
  * 
  *           void BindSendPart(std::function<void(int)> callback)       // enabled if exists
  *           void BindGetSocketNumber(std::function<int()> callback)    // enabled if exists

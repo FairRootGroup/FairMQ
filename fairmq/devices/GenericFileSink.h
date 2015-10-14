@@ -28,7 +28,7 @@
  * 
  *  -------- INPUT POLICY --------
  *                deserialization_type::InitContainer(...)
- * CONTAINER_TYPE deserialization_type::DeSerializeMsg(FairMQMessage* msg)
+ * CONTAINER_TYPE deserialization_type::DeserializeMsg(FairMQMessage* msg)
  * 
  * 
  *  -------- OUTPUT POLICY --------
@@ -82,7 +82,7 @@ class GenericFileSink : public FairMQDevice, public T, public U
 
             if (inputChannel.Receive(msg) > 0)
             {
-                sink_type::AddToFile(deserialization_type::DeSerializeMsg(msg.get()));
+                sink_type::AddToFile(deserialization_type::DeserializeMsg(msg.get()));
                 receivedMsg++;
             }
         }

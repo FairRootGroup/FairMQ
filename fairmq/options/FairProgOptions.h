@@ -116,7 +116,7 @@ class FairProgOptions
 
     int ParseEnvironment(const std::function<std::string(std::string)>&);
 
-    virtual int ParseAll(const int argc, char** argv, bool allowUnregistered = false) = 0;
+    virtual int ParseAll(const int argc, char** argv, bool allowUnregistered = false) = 0;// TODO change return type to bool and propagate to executable
 
     virtual int PrintOptions();
     int PrintHelp() const;
