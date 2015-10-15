@@ -97,76 +97,96 @@ void FairMQSocketNN::Connect(const string& address)
 int FairMQSocketNN::Send(FairMQMessage* msg, const string& flag)
 {
     void* ptr = msg->GetMessage();
-    int rc = nn_send(fSocket, &ptr, NN_MSG, 0);
-    if (rc < 0)
+    int nbytes = nn_send(fSocket, &ptr, NN_MSG, GetConstant(flag));
+    if (nbytes >= 0)
     {
-        LOG(ERROR) << "failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
-    }
-    else
-    {
-        fBytesTx += rc;
+        fBytesTx += nbytes;
         ++fMessagesTx;
         static_cast<FairMQMessageNN*>(msg)->fReceiving = false;
     }
-
-    return rc;
+    if (nn_errno() == EAGAIN)
+    {
+        return -2;
+    }
+    if (nn_errno() == ETERM)
+    {
+        LOG(INFO) << "terminating socket " << fId;
+        return -1;
+    }
+    LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
+    return nbytes;
 }
 
 int FairMQSocketNN::Send(FairMQMessage* msg, const int flags)
 {
     void* ptr = msg->GetMessage();
-    int rc = nn_send(fSocket, &ptr, NN_MSG, flags);
-    if (rc < 0)
+    int nbytes = nn_send(fSocket, &ptr, NN_MSG, flags);
+    if (nbytes >= 0)
     {
-        LOG(ERROR) << "failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
-    }
-    else
-    {
-        fBytesTx += rc;
+        fBytesTx += nbytes;
         ++fMessagesTx;
         static_cast<FairMQMessageNN*>(msg)->fReceiving = false;
     }
-
-    return rc;
+    if (nn_errno() == EAGAIN)
+    {
+        return -2;
+    }
+    if (nn_errno() == ETERM)
+    {
+        LOG(INFO) << "terminating socket " << fId;
+        return -1;
+    }
+    LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
+    return nbytes;
 }
 
 int FairMQSocketNN::Receive(FairMQMessage* msg, const string& flag)
 {
     void* ptr = NULL;
-    int rc = nn_recv(fSocket, &ptr, NN_MSG, 0);
-    if (rc < 0)
+    int nbytes = nn_recv(fSocket, &ptr, NN_MSG, GetConstant(flag));
+    if (nbytes >= 0)
     {
-        LOG(ERROR) << "failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
-    }
-    else
-    {
-        fBytesRx += rc;
+        fBytesRx += nbytes;
         ++fMessagesRx;
         msg->Rebuild();
-        msg->SetMessage(ptr, rc);
+        msg->SetMessage(ptr, nbytes);
         static_cast<FairMQMessageNN*>(msg)->fReceiving = true;
     }
-
-    return rc;
+    if (nn_errno() == EAGAIN)
+    {
+        return -2;
+    }
+    if (nn_errno() == ETERM)
+    {
+        LOG(INFO) << "terminating socket " << fId;
+        return -1;
+    }
+    LOG(ERROR) << "Failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
+    return nbytes;
 }
 
 int FairMQSocketNN::Receive(FairMQMessage* msg, const int flags)
 {
     void* ptr = NULL;
-    int rc = nn_recv(fSocket, &ptr, NN_MSG, flags);
-    if (rc < 0)
+    int nbytes = nn_recv(fSocket, &ptr, NN_MSG, flags);
+    if (nbytes >= 0)
     {
-        LOG(ERROR) << "failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
-    }
-    else
-    {
-        fBytesRx += rc;
+        fBytesRx += nbytes;
         ++fMessagesRx;
-        msg->SetMessage(ptr, rc);
+        msg->SetMessage(ptr, nbytes);
         static_cast<FairMQMessageNN*>(msg)->fReceiving = true;
     }
-
-    return rc;
+    if (nn_errno() == EAGAIN)
+    {
+        return -2;
+    }
+    if (nn_errno() == ETERM)
+    {
+        LOG(INFO) << "terminating socket " << fId;
+        return -1;
+    }
+    LOG(ERROR) << "Failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
+    return nbytes;
 }
 
 void FairMQSocketNN::Close()
@@ -179,12 +199,12 @@ void FairMQSocketNN::Terminate()
     nn_term();
 }
 
-void* FairMQSocketNN::GetSocket()
+void* FairMQSocketNN::GetSocket() const
 {
     return NULL; // dummy method to comply with the interface. functionality not possible in zeromq.
 }
 
-int FairMQSocketNN::GetSocket(int nothing)
+int FairMQSocketNN::GetSocket(int nothing) const
 {
     return fSocket;
 }
@@ -206,24 +226,72 @@ void FairMQSocketNN::GetOption(const string& option, void* value, size_t* valueS
     }
 }
 
-unsigned long FairMQSocketNN::GetBytesTx()
+unsigned long FairMQSocketNN::GetBytesTx() const
 {
     return fBytesTx;
 }
 
-unsigned long FairMQSocketNN::GetBytesRx()
+unsigned long FairMQSocketNN::GetBytesRx() const
 {
     return fBytesRx;
 }
 
-unsigned long FairMQSocketNN::GetMessagesTx()
+unsigned long FairMQSocketNN::GetMessagesTx() const
 {
     return fMessagesTx;
 }
 
-unsigned long FairMQSocketNN::GetMessagesRx()
+unsigned long FairMQSocketNN::GetMessagesRx() const
 {
     return fMessagesRx;
+}
+
+bool FairMQSocketNN::SetSendTimeout(const int timeout, const string& address, const string& method)
+{
+    if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_SNDTIMEO, &timeout, sizeof(int)) != 0)
+    {
+        LOG(ERROR) << "Failed setting option 'send timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
+        return false;
+    }
+
+    return true;
+}
+
+int FairMQSocketNN::GetSendTimeout() const
+{
+    int timeout = -1;
+    size_t size = sizeof(timeout);
+
+    if (nn_getsockopt(fSocket, NN_SOL_SOCKET, NN_SNDTIMEO, &timeout, &size) != 0)
+    {
+        LOG(ERROR) << "Failed getting option 'send timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
+    }
+
+    return timeout;
+}
+
+bool FairMQSocketNN::SetReceiveTimeout(const int timeout, const string& address, const string& method)
+{
+    if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_RCVTIMEO, &timeout, sizeof(int)) != 0)
+    {
+        LOG(ERROR) << "Failed setting option 'receive timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
+        return false;
+    }
+
+    return true;
+}
+
+int FairMQSocketNN::GetReceiveTimeout() const
+{
+    int timeout = -1;
+    size_t size = sizeof(timeout);
+
+    if (nn_getsockopt(fSocket, NN_SOL_SOCKET, NN_RCVTIMEO, &timeout, &size) != 0)
+    {
+        LOG(ERROR) << "Failed getting option 'receive timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
+    }
+
+    return timeout;
 }
 
 int FairMQSocketNN::GetConstant(const string& constant)

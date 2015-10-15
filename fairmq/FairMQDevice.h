@@ -34,88 +34,114 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
   public:
     enum
     {
-        Id = FairMQConfigurable::Last,
-        NumIoThreads,
-        MaxInitializationTime,
-        PortRangeMin,
-        PortRangeMax,
-        LogIntervalInMs,
+        Id = FairMQConfigurable::Last, ///< Device ID
+        MaxInitializationTime, ///< Timeout for the initialization
+        NumIoThreads, ///< Number of ZeroMQ I/O threads
+        PortRangeMin, ///< Minimum value for the port range (if dynamic)
+        PortRangeMax, ///< Maximum value for the port range (if dynamic)
+        LogIntervalInMs, ///< Interval for logging the socket transfer rates
         Last
     };
 
+    /// Default constructor
     FairMQDevice();
+    /// Default destructor
+    virtual ~FairMQDevice();
 
+    /// Catches interrupt signals (SIGINT, SIGTERM)
     void CatchSignals();
 
+    /// Outputs the socket transfer rates
     virtual void LogSocketRates();
 
+    /// Sorts a channel by address, with optional reindexing of the sorted values
+    /// @param name    Channel name
+    /// @param reindex Should reindexing be done
     void SortChannel(const std::string& name, const bool reindex = true);
+
+    /// Prints channel configuration
+    /// @param name Name of the channel
     void PrintChannel(const std::string& name);
 
+    /// Waits for the first initialization run to finish
     void WaitForInitialValidation();
 
+    /// Starts interactive (console) loop for controlling the device
+    /// Works only when running in a terminal. Running in background would exit, because no interactive input (std::cin) is possible.
     void InteractiveStateLoop();
+    /// Prints the available commands of the InteractiveStateLoop()
     void PrintInteractiveStateLoopHelp();
 
+    /// Set Device properties stored as strings
+    /// @param key      Property key
+    /// @param value    Property value
     virtual void SetProperty(const int key, const std::string& value);
+    /// Get Device properties stored as strings
+    /// @param key      Property key
+    /// @param default_ not used
+    /// @return         Property value
     virtual std::string GetProperty(const int key, const std::string& default_ = "");
+    /// Set Device properties stored as integers
+    /// @param key      Property key
+    /// @param value    Property value
     virtual void SetProperty(const int key, const int value);
+    /// Get Device properties stored as integers
+    /// @param key      Property key
+    /// @param default_ not used
+    /// @return         Property value
     virtual int GetProperty(const int key, const int default_ = 0);
 
     /// Get property description for a given property name
-    /// @param key Property name/key
-    /// @return String with the property description 
+    /// @param  key     Property name/key
+    /// @return String  with the property description 
     virtual std::string GetPropertyDescription(const int key);
     /// Print all properties of this and the parent class to LOG(INFO)
     virtual void ListProperties();
 
+    /// Configures the device with a transport factory
+    /// @param factory  Pointer to the transport factory object
     virtual void SetTransport(FairMQTransportFactory* factory);
 
+    /// Implements the sort algorithm used in SortChannel()
+    /// @param lhs Right hand side value for comparison
+    /// @param rhs Left hand side value for comparison
     static bool SortSocketsByAddress(const FairMQChannel &lhs, const FairMQChannel &rhs);
 
-    virtual ~FairMQDevice();
-
-    std::unordered_map<std::string, std::vector<FairMQChannel>> fChannels;
+    std::unordered_map<std::string, std::vector<FairMQChannel>> fChannels; ///< Device channels
 
   protected:
-    std::string fId;
+    std::string fId; ///< Device ID
 
-    int fMaxInitializationTime;
+    int fMaxInitializationTime; ///< Timeout for the initialization
 
-    int fNumIoThreads;
+    int fNumIoThreads; ///< Number of ZeroMQ I/O threads
 
-    int fPortRangeMin;
-    int fPortRangeMax;
+    int fPortRangeMin; ///< Minimum value for the port range (if dynamic)
+    int fPortRangeMax; ///< Maximum value for the port range (if dynamic)
 
-    int fLogIntervalInMs;
+    int fLogIntervalInMs; ///< Interval for logging the socket transfer rates
 
-    FairMQSocket* fCmdSocket;
+    FairMQSocket* fCmdSocket; ///< Socket used for the internal unblocking mechanism
 
-    FairMQTransportFactory* fTransportFactory;
+    FairMQTransportFactory* fTransportFactory; ///< Transport factory
 
-    void InitWrapper();
+    /// Additional user initialization (can be overloaded in child classes). Prefer to use InitTask().
     virtual void Init();
 
-    void InitTaskWrapper();
+    /// Task initialization (can be overloaded in child classes)
     virtual void InitTask();
 
-    void RunWrapper();
+    /// Runs the device (to be overloaded in child classes)
     virtual void Run();
 
+    /// Handles the PAUSE state
     virtual void Pause();
 
-    void ResetTaskWrapper();
+    /// Resets the user task (to be overloaded in child classes)
     virtual void ResetTask();
 
-    void ResetWrapper();
+    /// Resets the device (can be overloaded in child classes)
     virtual void Reset();
-
-    void Shutdown();
-
-    void Terminate();
-    void Unblock();
-
-    bool InitChannel(FairMQChannel&);
 
   private:
     // condition variable to notify parent thread about end of initial validation.
@@ -123,6 +149,28 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     boost::condition_variable fInitialValidationCondition;
     boost::mutex fInitialValidationMutex;
 
+    /// Handles the initialization and the Init() method
+    void InitWrapper();
+    /// Handles the InitTask() method
+    void InitTaskWrapper();
+    /// Handles the Run() method
+    void RunWrapper();
+    /// Handles the ResetTask() method
+    void ResetTaskWrapper();
+    /// Handles the Reset() method
+    void ResetWrapper();
+    /// Shuts down the device (closses socket connections)
+    void Shutdown();
+
+    /// Terminates the transport interface
+    void Terminate();
+    /// Unblocks blocking channel send/receive calls
+    void Unblock();
+
+    /// Initializes a single channel (used in InitWrapper)
+    bool InitChannel(FairMQChannel&);
+
+    /// Signal handler
     void SignalHandler(int signal);
     bool fCatchingSignals;
 

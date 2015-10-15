@@ -101,7 +101,7 @@ class FairMQChannel
     /// for some other reason (e.g. no peers connected for a binding socket), the method blocks.
     ///
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
-    /// @return Returns the number of bytes that have been queued. In case of errors, returns -1.
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. In case of errors, returns -1.
     int Send(const std::unique_ptr<FairMQMessage>& msg) const;
 
     /// Sends a message in non-blocking mode.
@@ -111,7 +111,7 @@ class FairMQChannel
     /// 
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
     /// @return Returns the number of bytes that have been queued. If queueing failed due to
-    /// full queue or no connected peers (when binding), returns 0. In case of errors, returns -1.
+    /// full queue or no connected peers (when binding), returns -2. In case of errors, returns -1.
     int SendAsync(const std::unique_ptr<FairMQMessage>& msg) const;
 
     /// Queues the current message as a part of a multi-part message
@@ -119,7 +119,7 @@ class FairMQChannel
     /// The actual transfer over the network is initiated once final part has been queued with the Send() or SendAsync methods.
     /// 
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
-    /// @return Returns the number of bytes that have been queued. In case of errors, returns -1.
+    /// @return Returns the number of bytes that have been queued. -2 If queueing was not possible. In case of errors, returns -1.
     int SendPart(const std::unique_ptr<FairMQMessage>& msg) const;
 
     /// Receives a message from the socket queue.
@@ -127,7 +127,7 @@ class FairMQChannel
     /// If the queue is empty the method blocks.
     ///
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
-    /// @return Returns the number of bytes that have been received. In case of errors, returns -1.
+    /// @return Returns the number of bytes that have been received. -2 If reading from the queue was not possible or timed out. In case of errors, returns -1.
     int Receive(const std::unique_ptr<FairMQMessage>& msg) const;
 
     /// Receives a message in non-blocking mode.
@@ -135,7 +135,7 @@ class FairMQChannel
     /// If the queue is empty the method returns 0.
     ///
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
-    /// @return Returns the number of bytes that have been received. If queue is empty, returns 0.
+    /// @return Returns the number of bytes that have been received. If queue is empty, returns -2.
     /// In case of errors, returns -1.
     int ReceiveAsync(const std::unique_ptr<FairMQMessage>& msg) const;
 
@@ -144,6 +144,24 @@ class FairMQChannel
     int Send(FairMQMessage* msg, const int flags) const;
     int Receive(FairMQMessage* msg, const std::string& flag = "") const;
     int Receive(FairMQMessage* msg, const int flags) const;
+
+    /// Sets a timeout on the (blocking) Send method
+    /// @param timeout timeout value in milliseconds
+    /// @return true if operation was successfull, otherwise false.
+    bool SetSendTimeout(const int timeout);
+
+    /// Gets the current value of the timeout on the (blocking) Send method
+    /// @return Timeout value in milliseconds. -1 for no timeout.
+    int GetSendTimeout() const;
+
+    /// Sets a timeout on the (blocking) Receive method
+    /// @param timeout timeout value in milliseconds
+    /// @return true if operation was successfull, otherwise false.
+    bool SetReceiveTimeout(const int timeout);
+
+    /// Gets the current value of the timeout on the (blocking) Receive method
+    /// @return Timeout value in milliseconds. -1 for no timeout.
+    int GetReceiveTimeout() const;
 
     /// Checks if the socket is expecting to receive another part of a multipart message.
     /// @return Return true if the socket expects another part of a multipart message and false otherwise.
@@ -167,6 +185,9 @@ class FairMQChannel
 
     int fNoBlockFlag;
     int fSndMoreFlag;
+
+    int fSndTimeoutInMs;
+    int fRcvTimeoutInMs;
 
     bool InitCommandInterface(FairMQTransportFactory* factory, int numIoThreads);
 

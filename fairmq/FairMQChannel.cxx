@@ -38,6 +38,8 @@ FairMQChannel::FairMQChannel()
     , fTransportFactory(nullptr)
     , fNoBlockFlag(0)
     , fSndMoreFlag(0)
+    , fSndTimeoutInMs(-1)
+    , fRcvTimeoutInMs(-1)
 {
 }
 
@@ -56,6 +58,8 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
     , fTransportFactory(nullptr)
     , fNoBlockFlag(0)
     , fSndMoreFlag(0)
+    , fSndTimeoutInMs(-1)
+    , fRcvTimeoutInMs(-1)
 {
 }
 
@@ -376,12 +380,12 @@ void FairMQChannel::ResetChannel()
 
 int FairMQChannel::Send(const unique_ptr<FairMQMessage>& msg) const
 {
-    fPoller->Poll(-1);
+    fPoller->Poll(fSndTimeoutInMs);
 
     if (fPoller->CheckInput(0))
     {
         HandleUnblock();
-        return -1;
+        return -2;
     }
 
     if (fPoller->CheckOutput(1))
@@ -389,7 +393,7 @@ int FairMQChannel::Send(const unique_ptr<FairMQMessage>& msg) const
         return fSocket->Send(msg.get(), 0);
     }
 
-    return -1;
+    return -2;
 }
 
 int FairMQChannel::SendAsync(const unique_ptr<FairMQMessage>& msg) const
@@ -404,12 +408,12 @@ int FairMQChannel::SendPart(const unique_ptr<FairMQMessage>& msg) const
 
 int FairMQChannel::Receive(const unique_ptr<FairMQMessage>& msg) const
 {
-    fPoller->Poll(-1);
+    fPoller->Poll(fRcvTimeoutInMs);
 
     if (fPoller->CheckInput(0))
     {
         HandleUnblock();
-        return -1;
+        return -2;
     }
 
     if (fPoller->CheckInput(1))
@@ -417,7 +421,7 @@ int FairMQChannel::Receive(const unique_ptr<FairMQMessage>& msg) const
         return fSocket->Receive(msg.get(), 0);
     }
 
-    return -1;
+    return -2;
 }
 
 int FairMQChannel::ReceiveAsync(const unique_ptr<FairMQMessage>& msg) const
@@ -429,100 +433,160 @@ int FairMQChannel::Send(FairMQMessage* msg, const string& flag) const
 {
     if (flag == "")
     {
-        fPoller->Poll(-1);
+        fPoller->Poll(fSndTimeoutInMs);
 
         if (fPoller->CheckInput(0))
         {
             HandleUnblock();
-            return -1;
+            return -2;
         }
 
         if (fPoller->CheckOutput(1))
         {
             return fSocket->Send(msg, flag);
         }
+
+        return -2;
     }
     else
     {
         return fSocket->Send(msg, flag);
     }
-
-    return -1;
 }
 
 int FairMQChannel::Send(FairMQMessage* msg, const int flags) const
 {
     if (flags == 0)
     {
-        fPoller->Poll(-1);
+        fPoller->Poll(fSndTimeoutInMs);
 
         if (fPoller->CheckInput(0))
         {
             HandleUnblock();
-            return -1;
+            return -2;
         }
 
         if (fPoller->CheckOutput(1))
         {
             return fSocket->Send(msg, flags);
         }
+
+        return -2;
     }
     else
     {
         return fSocket->Send(msg, flags);
     }
-
-    return -1;
 }
 
 int FairMQChannel::Receive(FairMQMessage* msg, const string& flag) const
 {
     if (flag == "")
     {
-        fPoller->Poll(-1);
+        fPoller->Poll(fRcvTimeoutInMs);
 
         if (fPoller->CheckInput(0))
         {
             HandleUnblock();
-            return -1;
+            return -2;
         }
 
         if (fPoller->CheckInput(1))
         {
             return fSocket->Receive(msg, flag);
         }
+
+        return -2;
     }
     else
     {
         return fSocket->Receive(msg, flag);
     }
-
-    return -1;
 }
 
 int FairMQChannel::Receive(FairMQMessage* msg, const int flags) const
 {
     if (flags == 0)
     {
-        fPoller->Poll(-1);
+        fPoller->Poll(fRcvTimeoutInMs);
 
         if (fPoller->CheckInput(0))
         {
             HandleUnblock();
-            return -1;
+            return -2;
         }
 
         if (fPoller->CheckInput(1))
         {
             return fSocket->Receive(msg, flags);
         }
+
+        return -2;
     }
     else
     {
         return fSocket->Receive(msg, flags);
     }
+}
 
-    return -1;
+bool FairMQChannel::SetSendTimeout(const int timeout)
+{
+    if (fSocket)
+    {
+        if (fSocket->SetSendTimeout(timeout, fAddress, fMethod))
+        {
+            fSndTimeoutInMs = timeout;
+            return true;
+        }
+    }
+    else
+    {
+        LOG(ERROR) << "SetSendTimeout() failed - socket is not initialized!";
+        return false;
+    }
+}
+
+int FairMQChannel::GetSendTimeout() const
+{
+    if (fSocket)
+    {
+        return fSocket->GetSendTimeout();
+    }
+    else
+    {
+        LOG(ERROR) << "GetSendTimeout() failed - socket is not initialized!";
+        return -1;
+    }
+}
+
+bool FairMQChannel::SetReceiveTimeout(const int timeout)
+{
+    if (fSocket)
+    {
+        if (fSocket->SetReceiveTimeout(timeout, fAddress, fMethod))
+        {
+            fRcvTimeoutInMs = timeout;
+            return true;
+        }
+    }
+    else
+    {
+        LOG(ERROR) << "SetReceiveTimeout() failed - socket is not initialized!";
+        return false;
+    }
+}
+
+int FairMQChannel::GetReceiveTimeout() const
+{
+    if (fSocket)
+    {
+        return fSocket->GetReceiveTimeout();
+    }
+    else
+    {
+        LOG(ERROR) << "GetReceiveTimeout() failed - socket is not initialized!";
+        return -1;
+    }
 }
 
 bool FairMQChannel::ExpectsAnotherPart() const

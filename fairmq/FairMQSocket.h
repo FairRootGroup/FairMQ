@@ -42,18 +42,23 @@ class FairMQSocket
     virtual int Receive(FairMQMessage* msg, const std::string& flag = "") = 0;
     virtual int Receive(FairMQMessage* msg, const int flags = 0) = 0;
 
-    virtual void* GetSocket() = 0;
-    virtual int GetSocket(int nothing) = 0;
+    virtual void* GetSocket() const = 0;
+    virtual int GetSocket(int nothing) const = 0;
     virtual void Close() = 0;
     virtual void Terminate() = 0;
 
     virtual void SetOption(const std::string& option, const void* value, size_t valueSize) = 0;
     virtual void GetOption(const std::string& option, void* value, size_t* valueSize) = 0;
 
-    virtual unsigned long GetBytesTx() = 0;
-    virtual unsigned long GetBytesRx() = 0;
-    virtual unsigned long GetMessagesTx() = 0;
-    virtual unsigned long GetMessagesRx() = 0;
+    virtual unsigned long GetBytesTx() const = 0;
+    virtual unsigned long GetBytesRx() const = 0;
+    virtual unsigned long GetMessagesTx() const = 0;
+    virtual unsigned long GetMessagesRx() const = 0;
+
+    virtual bool SetSendTimeout(const int timeout, const std::string& address, const std::string& method) = 0;
+    virtual int GetSendTimeout() const = 0;
+    virtual bool SetReceiveTimeout(const int timeout, const std::string& address, const std::string& method) = 0;
+    virtual int GetReceiveTimeout() const = 0;
 
     virtual ~FairMQSocket() {};
 };

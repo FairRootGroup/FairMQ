@@ -15,6 +15,7 @@ Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq/devices
   ${CMAKE_SOURCE_DIR}/fairmq/tools
   ${CMAKE_SOURCE_DIR}/fairmq/options
+  ${CMAKE_SOURCE_DIR}/fairmq/test/
   ${CMAKE_SOURCE_DIR}/fairmq/test/push-pull
   ${CMAKE_SOURCE_DIR}/fairmq/test/pub-sub
   ${CMAKE_SOURCE_DIR}/fairmq/test/req-rep
@@ -71,6 +72,7 @@ set(Exe_Names
   test-fairmq-sub
   test-fairmq-req
   test-fairmq-rep
+  test-fairmq-transfer-timeout
 )
 
 set(Exe_Source
@@ -80,6 +82,7 @@ set(Exe_Source
   pub-sub/runTestSub.cxx
   req-rep/runTestReq.cxx
   req-rep/runTestRep.cxx
+  runTransferTimeoutTest.cxx
 )
 
 list(LENGTH Exe_Names _length)
@@ -105,3 +108,7 @@ set_tests_properties(run_fairmq_pub_sub PROPERTIES PASS_REGULAR_EXPRESSION "PUB-
 add_test(NAME run_fairmq_req_rep COMMAND ${CMAKE_BINARY_DIR}/fairmq/test/test-fairmq-req-rep.sh)
 set_tests_properties(run_fairmq_req_rep PROPERTIES TIMEOUT "30")
 set_tests_properties(run_fairmq_req_rep PROPERTIES PASS_REGULAR_EXPRESSION "REQ-REP test successfull")
+
+add_test(NAME run_fairmq_transfer_timeout COMMAND ${CMAKE_BINARY_DIR}/bin/test-fairmq-transfer-timeout)
+set_tests_properties(run_fairmq_transfer_timeout PROPERTIES TIMEOUT "30")
+set_tests_properties(run_fairmq_transfer_timeout PROPERTIES PASS_REGULAR_EXPRESSION "Transfer timeout test successfull")

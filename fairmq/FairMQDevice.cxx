@@ -77,7 +77,7 @@ void FairMQDevice::SignalHandler(int signal)
     Shutdown();
     fTerminateStateThread.join();
 
-    MQLOG(INFO) << "Exiting.";
+    LOG(INFO) << "Exiting.";
     stop();
     // std::abort();
     exit(EXIT_FAILURE);
@@ -558,8 +558,8 @@ void FairMQDevice::LogSocketRates()
 
 void FairMQDevice::InteractiveStateLoop()
 {
-    char c; // hold the user console input
     bool running = true;
+    char c; // hold the user console input
 
     struct termios t;
     tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
