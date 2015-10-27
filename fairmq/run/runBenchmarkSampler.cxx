@@ -58,7 +58,6 @@ int main(int argc, char** argv)
 
         string filename = config.GetValue<string>("config-json-file");
         string id = config.GetValue<string>("id");
-        int ioThreads = config.GetValue<int>("io-threads");
 
         config.UserParser<JSON>(filename, id);
 
@@ -75,7 +74,7 @@ int main(int argc, char** argv)
         sampler.SetProperty(FairMQBenchmarkSampler::Id, id);
         sampler.SetProperty(FairMQBenchmarkSampler::EventSize, eventSize);
         sampler.SetProperty(FairMQBenchmarkSampler::EventRate, eventRate);
-        sampler.SetProperty(FairMQBenchmarkSampler::NumIoThreads, ioThreads);
+        sampler.SetProperty(FairMQBenchmarkSampler::NumIoThreads, config.GetValue<int>("io-threads"));
 
         sampler.ChangeState("INIT_DEVICE");
         sampler.WaitForEndOfState("INIT_DEVICE");

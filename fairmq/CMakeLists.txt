@@ -18,6 +18,7 @@ EndIf(DDS_FOUND)
 add_subdirectory(examples/4-copypush)
 add_subdirectory(examples/5-req-rep)
 add_subdirectory(examples/6-multiple-channels)
+add_subdirectory(examples/7-parameters)
 
 add_subdirectory(test)
 

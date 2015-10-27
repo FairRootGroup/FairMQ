@@ -64,7 +64,7 @@ int main(int argc, char** argv)
         sink.SetTransport(transportFactory);
 
         sink.SetProperty(FairMQSink::Id, id);
-        sink.SetProperty(FairMQSink::NumIoThreads, ioThreads);
+        sink.SetProperty(FairMQSink::NumIoThreads, config.GetValue<int>("io-threads"));
 
         sink.ChangeState("INIT_DEVICE");
         sink.WaitForEndOfState("INIT_DEVICE");
