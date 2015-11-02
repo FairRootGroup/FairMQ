@@ -40,14 +40,6 @@ int main(int argc, char** argv)
 
     try
     {
-        int ioThreads;
-
-        options_description sink_options("Sink options");
-        sink_options.add_options()
-            ("io-threads", value<int>(&ioThreads)->default_value(1),    "Number of I/O threads");
-
-        config.AddToCmdLineOptions(sink_options);
-
         if (config.ParseAll(argc, argv))
         {
             return 0;
@@ -55,6 +47,7 @@ int main(int argc, char** argv)
 
         string filename = config.GetValue<string>("config-json-file");
         string id = config.GetValue<string>("id");
+        int ioThreads = config.GetValue<int>("io-threads");
 
         config.UserParser<JSON>(filename, id);
 
