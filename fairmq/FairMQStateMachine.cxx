@@ -105,6 +105,7 @@ bool FairMQStateMachine::ChangeState(int event)
     {
         LOG(ERROR) << boost::diagnostic_information(e);
     }
+    return false;
 }
 
 bool FairMQStateMachine::ChangeState(std::string event)
@@ -187,6 +188,7 @@ bool FairMQStateMachine::WaitForEndOfStateForMs(int event, int durationInMs)
     {
         LOG(ERROR) << boost::diagnostic_information(e);
     }
+    return false;
 }
 
 bool FairMQStateMachine::WaitForEndOfStateForMs(std::string event, int durationInMs)
