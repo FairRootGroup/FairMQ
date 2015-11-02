@@ -143,6 +143,11 @@ Set(FAIRMQHEADERS
   devices/GenericSampler.tpl
   devices/GenericProcessor.h
   devices/GenericFileSink.h
+  devices/BaseDeserializationPolicy.h
+  devices/BaseSerializationPolicy.h
+  devices/BaseProcessorTaskPolicy.h
+  devices/BaseSinkPolicy.h
+  devices/BaseSourcePolicy.h
   tools/FairMQTools.h
 )
 Install(FILES ${FAIRMQHEADERS} DESTINATION include)
