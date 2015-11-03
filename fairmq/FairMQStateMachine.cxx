@@ -104,6 +104,7 @@ bool FairMQStateMachine::ChangeState(int event)
     catch (boost::exception& e)
     {
         LOG(ERROR) << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
     return false;
 }
@@ -136,6 +137,7 @@ void FairMQStateMachine::WaitForEndOfState(int event)
                 catch (boost::exception& e)
                 {
                     LOG(ERROR) << boost::diagnostic_information(e);
+                    exit(EXIT_FAILURE);
                 }
                 break;
             }
@@ -184,7 +186,7 @@ bool FairMQStateMachine::WaitForEndOfStateForMs(int event, int durationInMs)
                 return false;
         }
     }
-    catch (boost::thread_interrupted &e)
+    catch (boost::thread_interrupted& e)
     {
         LOG(ERROR) << boost::diagnostic_information(e);
     }

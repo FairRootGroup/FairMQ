@@ -311,6 +311,7 @@ void FairMQDevice::RunWrapper()
     catch(boost::thread_resource_error& e)
     {
         LOG(ERROR) << e.what();
+        exit(EXIT_FAILURE);
     }
 
     if (CheckCurrentState(RUNNING))

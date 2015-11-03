@@ -73,6 +73,7 @@ std::string FairMQChannel::GetType() const
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::GetType: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -86,6 +87,7 @@ std::string FairMQChannel::GetMethod() const
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::GetMethod: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -99,6 +101,7 @@ std::string FairMQChannel::GetAddress() const
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::GetAddress: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -112,6 +115,7 @@ int FairMQChannel::GetSndBufSize() const
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::GetSndBufSize: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -125,6 +129,7 @@ int FairMQChannel::GetRcvBufSize() const
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::GetRcvBufSize: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -138,6 +143,7 @@ int FairMQChannel::GetRateLogging() const
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::GetRateLogging: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -152,6 +158,7 @@ void FairMQChannel::UpdateType(const std::string& type)
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::UpdateType: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -166,6 +173,7 @@ void FairMQChannel::UpdateMethod(const std::string& method)
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::UpdateMethod: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -180,6 +188,7 @@ void FairMQChannel::UpdateAddress(const std::string& address)
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::UpdateAddress: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -194,6 +203,7 @@ void FairMQChannel::UpdateSndBufSize(const int sndBufSize)
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::UpdateSndBufSize: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -208,6 +218,7 @@ void FairMQChannel::UpdateRcvBufSize(const int rcvBufSize)
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::UpdateRcvBufSize: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -222,6 +233,7 @@ void FairMQChannel::UpdateRateLogging(const int rateLogging)
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::UpdateRateLogging: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -235,6 +247,7 @@ bool FairMQChannel::IsValid() const
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::IsValid: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -347,6 +360,7 @@ bool FairMQChannel::ValidateChannel()
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::ValidateChannel: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
     }
 }
 
