@@ -49,10 +49,11 @@ void FairMQExample5Client::Run()
 
         if (fChannels.at("data").at(0).Send(request) > 0)
         {
-            fChannels.at("data").at(0).Receive(reply);
-            LOG(INFO) << "Received reply from server: \"" << string(static_cast<char*>(reply->GetData()), reply->GetSize()) << "\"";
+            if (fChannels.at("data").at(0).Receive(reply) >= 0)
+            {
+                LOG(INFO) << "Received reply from server: \"" << string(static_cast<char*>(reply->GetData()), reply->GetSize()) << "\"";
+            }
         }
-
     }
 }
 

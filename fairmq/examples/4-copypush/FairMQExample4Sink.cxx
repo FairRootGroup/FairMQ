@@ -30,9 +30,10 @@ void FairMQExample4Sink::Run()
     {
         std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
 
-        fChannels.at("data-in").at(0).Receive(msg);
-
-        LOG(INFO) << "Received message: \"" << *(static_cast<int*>(msg->GetData())) << "\"";
+        if (fChannels.at("data-in").at(0).Receive(msg) >= 0)
+        {
+            LOG(INFO) << "Received message: \"" << *(static_cast<int*>(msg->GetData())) << "\"";
+        }
     }
 }
 
