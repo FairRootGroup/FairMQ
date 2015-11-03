@@ -103,6 +103,7 @@ int FairMQSocketNN::Send(FairMQMessage* msg, const string& flag)
         fBytesTx += nbytes;
         ++fMessagesTx;
         static_cast<FairMQMessageNN*>(msg)->fReceiving = false;
+        return nbytes;
     }
     if (nn_errno() == EAGAIN)
     {
@@ -126,6 +127,7 @@ int FairMQSocketNN::Send(FairMQMessage* msg, const int flags)
         fBytesTx += nbytes;
         ++fMessagesTx;
         static_cast<FairMQMessageNN*>(msg)->fReceiving = false;
+        return nbytes;
     }
     if (nn_errno() == EAGAIN)
     {
@@ -151,6 +153,7 @@ int FairMQSocketNN::Receive(FairMQMessage* msg, const string& flag)
         msg->Rebuild();
         msg->SetMessage(ptr, nbytes);
         static_cast<FairMQMessageNN*>(msg)->fReceiving = true;
+        return nbytes;
     }
     if (nn_errno() == EAGAIN)
     {
@@ -175,6 +178,7 @@ int FairMQSocketNN::Receive(FairMQMessage* msg, const int flags)
         ++fMessagesRx;
         msg->SetMessage(ptr, nbytes);
         static_cast<FairMQMessageNN*>(msg)->fReceiving = true;
+        return nbytes;
     }
     if (nn_errno() == EAGAIN)
     {
