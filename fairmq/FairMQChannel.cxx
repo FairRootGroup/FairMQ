@@ -553,11 +553,9 @@ bool FairMQChannel::SetSendTimeout(const int timeout)
             return true;
         }
     }
-    else
-    {
-        LOG(ERROR) << "SetSendTimeout() failed - socket is not initialized!";
-        return false;
-    }
+
+    LOG(ERROR) << "SetSendTimeout() failed - socket is not initialized!";
+    return false;
 }
 
 int FairMQChannel::GetSendTimeout() const
@@ -583,11 +581,9 @@ bool FairMQChannel::SetReceiveTimeout(const int timeout)
             return true;
         }
     }
-    else
-    {
-        LOG(ERROR) << "SetReceiveTimeout() failed - socket is not initialized!";
-        return false;
-    }
+
+    LOG(ERROR) << "SetReceiveTimeout() failed - socket is not initialized!";
+    return false;
 }
 
 int FairMQChannel::GetReceiveTimeout() const
