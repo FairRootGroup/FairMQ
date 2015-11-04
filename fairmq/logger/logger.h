@@ -26,7 +26,7 @@
 #include <boost/log/sources/global_logger_storage.hpp>
 #include <boost/log/expressions/attr_fwd.hpp>
 
-
+#include <boost/version.hpp>
 
 
 // WARNING : pragma commands to hide boost Wshadow warning
@@ -142,8 +142,15 @@ void init_log_formatter(const boost::log::record_view &view, boost::log::formatt
 // helper macros 
 
 // global macros (core). Level filters are set globally here, that is to all register sinks
+// add empty string if boost 1.59.0 (see : https://svn.boost.org/trac/boost/ticket/11549 )
+#if BOOST_VERSION == 105900
+#define LOG(severity) BOOST_LOG_SEV(global_logger::get(),custom_severity_level::severity) << ""
+#define MQLOG(severity) BOOST_LOG_SEV(global_logger::get(),custom_severity_level::severity) << ""
+#else
 #define LOG(severity) BOOST_LOG_SEV(global_logger::get(),custom_severity_level::severity)
 #define MQLOG(severity) BOOST_LOG_SEV(global_logger::get(),custom_severity_level::severity)
+#endif 
+
 #define SET_LOG_LEVEL(loglevel) boost::log::core::get()->set_filter(severity >= custom_severity_level::loglevel);
 #define SET_LOG_FILTER(op,loglevel)  set_global_log_level(log_op::op,custom_severity_level::loglevel)
 
