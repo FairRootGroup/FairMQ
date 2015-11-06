@@ -43,7 +43,7 @@
  * 
  *           void BindSendHeader(std::function<void(int)> callback)       // enabled if exists
  *           void BindGetSocketNumber(std::function<int()> callback)    // enabled if exists
- *           void BindGetCurrentIndex(std::function<int()> callback)    // enabled if exists
+ *           void GetHeader(std::function<int()> callback)    // enabled if exists
  * 
  *  -------- OUTPUT POLICY --------
  *                serialization_type::SerializeMsg(CONTAINER_TYPE)            // must be there to compile
@@ -172,6 +172,17 @@ class base_GenericSampler : public FairMQDevice, public T, public U
     void BindingGetSocketNumber()
     {
         source_type::BindGetSocketNumber(std::bind(&base_GenericSampler::GetSocketNumber,this) );
+    }
+
+    template<typename S = source_type,FairMQ::tools::enable_if_hasNot_GetHeader<S> = 0>
+    void SendHeader(int socketIdx) {}
+    template<typename S = source_type,FairMQ::tools::enable_if_has_GetHeader<S> = 0>
+    void SendHeader(int socketIdx)
+    {
+        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
+        serialization_type::SetMessage(msg.get());
+        // remark : serialization_type must have an overload of the SerializeMsg to serialize the Header structure
+        fChannels.at(fOutChanName).at(socketIdx).Send(serialization_type::SerializeMsg(source_type::GetHeader()), "snd-more");
     }
 
     template<typename S = source_type,FairMQ::tools::enable_if_hasNot_BindGetCurrentIndex<S> = 0>

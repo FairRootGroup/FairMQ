@@ -53,7 +53,7 @@ void base_GenericSampler<T,U,K,L>::Run()
     {
         for (fCurrentIdx = 0; fCurrentIdx < fNumEvents; fCurrentIdx++)
         {
-            for (auto& p : fChannels[fOutChanName])
+            for (auto& p : fChannels.at(fOutChanName))
             {
                 std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
                 serialization_type::SetMessage(msg.get());
@@ -85,16 +85,6 @@ void base_GenericSampler<T,U,K,L>::Run()
     boost::timer::cpu_times const elapsed_time(timer.elapsed());
     LOG(INFO) << "Sent everything in:\n" << boost::timer::format(elapsed_time, 2);
     LOG(INFO) << "Sent " << sentMsgs << " messages!";
-}
-
-
-template <typename T, typename U, typename K, typename L>
-void base_GenericSampler<T,U,K,L>::SendHeader(int socketIdx)
-{
-
-    std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
-    serialization_type::SetMessage(msg.get());
-    fChannels.at(fOutChanName).at(socketIdx).Send(serialization_type::SerializeMsg(source_type::GetOutData()), "snd-more");
 }
 
 

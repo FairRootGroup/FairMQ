@@ -88,6 +88,16 @@ struct has_BindGetSocketNumber
         is_convertible<decltype(declval<T>().BindGetSocketNumber(declval<Args>()...)), R>::value || is_same<R, void>::value>::type
     >:true_type {};
 
+// test, at compile time, whether T has GetHeader member function with returned type R and argument ...Args type
+template<class T, class Sig, class=void>
+struct has_GetHeader : false_type {};
+
+template<class T, class R, class... Args>
+struct has_GetHeader
+    <T, R(Args...), typename enable_if<
+        is_convertible<decltype(declval<T>().GetHeader(declval<Args>()...)), R>::value || is_same<R, void>::value>::type
+    >:true_type {};
+
 // test, at compile time, whether T has BindGetCurrentIndex member function with returned type R and argument ...Args type
 template<class T, class Sig, class=void>
 struct has_BindGetCurrentIndex : false_type {};
@@ -99,7 +109,7 @@ struct has_BindGetCurrentIndex
     >:true_type {};
 
 
-    
+
 } // end namespace details
 
 // Alias template of the above structs
@@ -108,6 +118,9 @@ using has_BindSendHeader = integral_constant<bool, details::has_BindSendHeader<T
 
 template<class T, class Sig>
 using has_BindGetSocketNumber = integral_constant<bool, details::has_BindGetSocketNumber<T, Sig>::value>;
+
+template<class T, class Sig>
+using has_GetHeader = integral_constant<bool, details::has_GetHeader<T, Sig>::value>;
 
 template<class T, class Sig>
 using has_BindGetCurrentIndex = integral_constant<bool, details::has_BindGetCurrentIndex<T, Sig>::value>;
@@ -127,6 +140,11 @@ template<typename T>
 using enable_if_has_BindGetCurrentIndex = typename enable_if<has_BindGetCurrentIndex<T, int()>::value, int>::type;
 template<typename T>
 using enable_if_hasNot_BindGetCurrentIndex = typename enable_if<!has_BindGetCurrentIndex<T, int()>::value, int>::type;
+
+template<typename T>
+using enable_if_has_GetHeader = typename enable_if<has_GetHeader<T, int()>::value, int>::type;
+template<typename T>
+using enable_if_hasNot_GetHeader = typename enable_if<!has_GetHeader<T, int()>::value, int>::type;
 
 } // namespace tools
 } // namespace FairMQ
