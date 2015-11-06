@@ -6,36 +6,25 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * FairMQExample1Sink.cxx
+ * FairMQExample8Sink.h
  *
  * @since 2014-10-10
  * @author A. Rybalchenko
  */
 
-#include "FairMQExample1Sink.h"
-#include "FairMQLogger.h"
+#ifndef FAIRMQEXAMPLE8SINK_H_
+#define FAIRMQEXAMPLE8SINK_H_
 
-using namespace std;
+#include "FairMQDevice.h"
 
-FairMQExample1Sink::FairMQExample1Sink()
+class FairMQExample8Sink : public FairMQDevice
 {
-}
+  public:
+    FairMQExample8Sink();
+    virtual ~FairMQExample8Sink();
 
-void FairMQExample1Sink::Run()
-{
-    while (CheckCurrentState(RUNNING))
-    {
-        unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
+  protected:
+    virtual void Run();
+};
 
-        if (fChannels.at("data-in").at(0).Receive(msg) >= 0)
-        {
-            LOG(INFO) << "Received message: \""
-                      << string(static_cast<char*>(msg->GetData()), msg->GetSize())
-                      << "\"";
-        }
-    }
-}
-
-FairMQExample1Sink::~FairMQExample1Sink()
-{
-}
+#endif /* FAIRMQEXAMPLE8SINK_H_ */

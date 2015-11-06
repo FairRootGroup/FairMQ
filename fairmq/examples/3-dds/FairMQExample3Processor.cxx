@@ -40,7 +40,7 @@ void FairMQExample3Processor::Run()
 
         // Receive the message (blocks until received or interrupted (e.g. by state change)). 
         // Returns size of the received message or -1 if interrupted.
-        if (fChannels.at("data-in").at(0).Receive(input) > 0)
+        if (fChannels.at("data-in").at(0).Receive(input) >= 0)
         {
             LOG(INFO) << "Received data, processing...";
 

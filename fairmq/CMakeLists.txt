@@ -19,6 +19,7 @@ add_subdirectory(examples/4-copypush)
 add_subdirectory(examples/5-req-rep)
 add_subdirectory(examples/6-multiple-channels)
 add_subdirectory(examples/7-parameters)
+add_subdirectory(examples/8-multipart)
 
 add_subdirectory(test)
 

@@ -63,7 +63,7 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
 {
 }
 
-std::string FairMQChannel::GetType() const
+string FairMQChannel::GetType() const
 {
     try
     {
@@ -77,7 +77,7 @@ std::string FairMQChannel::GetType() const
     }
 }
 
-std::string FairMQChannel::GetMethod() const
+string FairMQChannel::GetMethod() const
 {
     try
     {
@@ -91,7 +91,7 @@ std::string FairMQChannel::GetMethod() const
     }
 }
 
-std::string FairMQChannel::GetAddress() const
+string FairMQChannel::GetAddress() const
 {
     try
     {
@@ -147,7 +147,7 @@ int FairMQChannel::GetRateLogging() const
     }
 }
 
-void FairMQChannel::UpdateType(const std::string& type)
+void FairMQChannel::UpdateType(const string& type)
 {
     try
     {
@@ -162,7 +162,7 @@ void FairMQChannel::UpdateType(const std::string& type)
     }
 }
 
-void FairMQChannel::UpdateMethod(const std::string& method)
+void FairMQChannel::UpdateMethod(const string& method)
 {
     try
     {
@@ -177,7 +177,7 @@ void FairMQChannel::UpdateMethod(const std::string& method)
     }
 }
 
-void FairMQChannel::UpdateAddress(const std::string& address)
+void FairMQChannel::UpdateAddress(const string& address)
 {
     try
     {
@@ -419,6 +419,41 @@ int FairMQChannel::SendPart(const unique_ptr<FairMQMessage>& msg) const
 {
     return fSocket->Send(msg.get(), fSndMoreFlag);
 }
+
+// int FairMQChannel::SendParts(initializer_list<unique_ptr<FairMQMessage>> partsList) const
+// {
+//     int totalSize = 0;
+//     initializer_list<unique_ptr<FairMQMessage>>::iterator it = partsList.end();
+//     auto &last = --it;
+//     for (auto &p : partsList)
+//     {
+//         if (&p != last)
+//         {
+//             int nbytes = SendPart(p);
+//             if (nbytes >= 0)
+//             {
+//                 totalSize += nbytes;
+//             }
+//             else
+//             {
+//                 return nbytes;
+//             }
+//         }
+//         else
+//         {
+//             int nbytes = Send(p);
+//             if (nbytes >= 0)
+//             {
+//                 totalSize += nbytes;
+//             }
+//             else
+//             {
+//                 return nbytes;
+//             }
+//         }
+//     }
+//     return totalSize;
+// }
 
 int FairMQChannel::Receive(const unique_ptr<FairMQMessage>& msg) const
 {

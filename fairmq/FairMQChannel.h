@@ -122,6 +122,12 @@ class FairMQChannel
     /// @return Returns the number of bytes that have been queued. -2 If queueing was not possible. In case of errors, returns -1.
     int SendPart(const std::unique_ptr<FairMQMessage>& msg) const;
 
+    // /// Sends the messages provided as arguments as a multi-part message.
+    // /// 
+    // /// @param partsList Initializer list of FairMQMessages
+    // /// @return Returns the number of bytes that have been queued. -2 If queueing was not possible. In case of errors, returns -1.
+    // int SendParts(std::initializer_list<std::unique_ptr<FairMQMessage>> partsList) const;
+
     /// Receives a message from the socket queue.
     /// @details Receive method attempts to receive a message from the input queue.
     /// If the queue is empty the method blocks.

@@ -35,7 +35,7 @@ void FairMQExample5Server::Run()
     {
         unique_ptr<FairMQMessage> request(fTransportFactory->CreateMessage());
 
-        if (fChannels.at("data").at(0).Receive(request) > 0)
+        if (fChannels.at("data").at(0).Receive(request) >= 0)
         {
             LOG(INFO) << "Received request from client: \"" << string(static_cast<char*>(request->GetData()), request->GetSize()) << "\"";
 
