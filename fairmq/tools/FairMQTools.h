@@ -68,14 +68,14 @@ int getHostIPs(map<string, string>& addressMap)
 // below are SFINAE template functions to check for function member signatures of class
 namespace details
 {
-// test, at compile time, whether T has BindSendPart member function with returned type R and argument ...Args type
+// test, at compile time, whether T has BindSendHeader member function with returned type R and argument ...Args type
 template<class T, class Sig, class=void>
-struct has_BindSendPart : false_type {};
+struct has_BindSendHeader : false_type {};
 
 template<class T, class R, class... Args>
-struct has_BindSendPart
+struct has_BindSendHeader
     <T, R(Args...), typename enable_if<
-        is_convertible<decltype(declval<T>().BindSendPart(declval<Args>()...)), R>::value || is_same<R, void>::value>::type
+        is_convertible<decltype(declval<T>().BindSendHeader(declval<Args>()...)), R>::value || is_same<R, void>::value>::type
     >:true_type {};
 
 // test, at compile time, whether T has BindGetSocketNumber member function with returned type R and argument ...Args type
@@ -97,11 +97,14 @@ struct has_BindGetCurrentIndex
     <T, R(Args...), typename enable_if<
         is_convertible<decltype(declval<T>().BindGetCurrentIndex(declval<Args>()...)), R>::value || is_same<R, void>::value>::type
     >:true_type {};
+
+
+    
 } // end namespace details
 
 // Alias template of the above structs
 template<class T, class Sig>
-using has_BindSendPart = integral_constant<bool, details::has_BindSendPart<T, Sig>::value>;
+using has_BindSendHeader = integral_constant<bool, details::has_BindSendHeader<T, Sig>::value>;
 
 template<class T, class Sig>
 using has_BindGetSocketNumber = integral_constant<bool, details::has_BindGetSocketNumber<T, Sig>::value>;
@@ -111,9 +114,9 @@ using has_BindGetCurrentIndex = integral_constant<bool, details::has_BindGetCurr
 
 // enable_if Alias template
 template<typename T>
-using enable_if_has_BindSendPart = typename enable_if<has_BindSendPart<T, void(int)>::value, int>::type;
+using enable_if_has_BindSendHeader = typename enable_if<has_BindSendHeader<T, void(int)>::value, int>::type;
 template<typename T>
-using enable_if_hasNot_BindSendPart = typename enable_if<!has_BindSendPart<T, void(int)>::value, int>::type;
+using enable_if_hasNot_BindSendHeader = typename enable_if<!has_BindSendHeader<T, void(int)>::value, int>::type;
 
 template<typename T>
 using enable_if_has_BindGetSocketNumber = typename enable_if<has_BindGetSocketNumber<T, int()>::value, int>::type;

@@ -64,7 +64,7 @@ CONTAINER_TYPE  source_type::GetOutData(); 							// must be there to compile
 
 				source_type::SetFileProperties(Args&... args); 		// if called by the host, then must be there to compile
 
- void 			source_type::BindSendPart(std::function<void(int)> callback);		// enabled if exists
+ void 			source_type::BindSendHeader(std::function<void(int)> callback);		// enabled if exists
  void 			source_type::BindGetSocketNumber(std::function<int()> callback); 	// enabled if exists
  void 			source_type::BindGetCurrentIndex(std::function<int()> callback);	// enabled if exists
 ```

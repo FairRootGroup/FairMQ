@@ -62,11 +62,6 @@ void base_GenericSampler<T,U,K,L>::Run()
                 p.Send(serialization_type::SerializeMsg(source_type::GetOutData()));
                 sentMsgs++;
 
-                if (fChannels[fOutChanName].size() > 1)
-                {
-                    fCurrentIdx++;
-                }
-
                 // Optional event rate limiting
                 // --fEventCounter;
                 // while (fEventCounter == 0) {
@@ -77,11 +72,6 @@ void base_GenericSampler<T,U,K,L>::Run()
                 {
                     break;
                 }
-            }
-            // if more than one socket, remove the last incrementation
-            if (fChannels[fOutChanName].size() > 1)
-            {
-                    fCurrentIdx--;
             }
 
             if (!CheckCurrentState(RUNNING))
@@ -99,16 +89,12 @@ void base_GenericSampler<T,U,K,L>::Run()
 
 
 template <typename T, typename U, typename K, typename L>
-void base_GenericSampler<T,U,K,L>::SendPart(int socketIdx)
+void base_GenericSampler<T,U,K,L>::SendHeader(int socketIdx)
 {
-    fCurrentIdx++;
-    if (fCurrentIdx < fNumEvents)
-    {
-        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
-        serialization_type::SetMessage(msg.get());
-        source_type::SetIndex(fCurrentIdx);
-        fChannels[fOutChanName].at(socketIdx).Send(serialization_type::SerializeMsg(source_type::GetOutData()), "snd-more");
-    }
+
+    std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
+    serialization_type::SetMessage(msg.get());
+    fChannels.at(fOutChanName).at(socketIdx).Send(serialization_type::SerializeMsg(source_type::GetOutData()), "snd-more");
 }
 
 

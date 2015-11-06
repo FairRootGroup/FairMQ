@@ -41,7 +41,7 @@
  * CONTAINER_TYPE source_type::GetOutData()                           // must be there to compile
  *                source_type::SetFileProperties(Args&... args)       // must be there to compile
  * 
- *           void BindSendPart(std::function<void(int)> callback)       // enabled if exists
+ *           void BindSendHeader(std::function<void(int)> callback)       // enabled if exists
  *           void BindGetSocketNumber(std::function<int()> callback)    // enabled if exists
  *           void BindGetCurrentIndex(std::function<int()> callback)    // enabled if exists
  * 
@@ -97,7 +97,7 @@ class base_GenericSampler : public FairMQDevice, public T, public U
     virtual void SetProperty(const int key, const std::string& value);
     virtual std::string GetProperty(const int key, const std::string& default_ = "");
 
-    void SendPart(int socketIdx);
+    void SendHeader(int socketIdx=0);
     int GetSocketNumber() const;
     int GetCurrentIndex() const;
     void SetContinuous(bool flag);
@@ -158,12 +158,12 @@ class base_GenericSampler : public FairMQDevice, public T, public U
 
     // automatically enable or disable the call of policy function members for binding of host functions.
     // this template functions use SFINAE to detect the existence of the policy function signature.
-    template<typename S = source_type,FairMQ::tools::enable_if_hasNot_BindSendPart<S> = 0>
+    template<typename S = source_type,FairMQ::tools::enable_if_hasNot_BindSendHeader<S> = 0>
     void BindingSendPart() {}
-    template<typename S = source_type,FairMQ::tools::enable_if_has_BindSendPart<S> = 0>
+    template<typename S = source_type,FairMQ::tools::enable_if_has_BindSendHeader<S> = 0>
     void BindingSendPart()
     {
-        source_type::BindSendPart(std::bind(&base_GenericSampler::SendPart,this,std::placeholders::_1) );
+        source_type::BindSendHeader(std::bind(&base_GenericSampler::SendPart,this,std::placeholders::_1) );
     }
 
     template<typename S = source_type,FairMQ::tools::enable_if_hasNot_BindGetSocketNumber<S> = 0>
