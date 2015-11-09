@@ -138,6 +138,7 @@ Set(FAIRMQHEADERS
   devices/BaseProcessorTaskPolicy.h
   devices/BaseSinkPolicy.h
   devices/BaseSourcePolicy.h
+  options/FairProgOptionsHelper.h
   tools/FairMQTools.h
 )
 Install(FILES ${FAIRMQHEADERS} DESTINATION include)
