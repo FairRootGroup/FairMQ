@@ -1,0 +1,40 @@
+{
+    "fairMQOptions":
+    {
+        "device":
+        {
+            "id": "sampler1",
+            "channel":
+            {
+                "name": "data-out",
+                "socket":
+                {
+                    "type": "push",
+                    "method": "bind",
+                    "address": "tcp://*:5555",
+                    "sndBufSize": "1000",
+                    "rcvBufSize": "1000",
+                    "rateLogging": "0"
+                }
+            }
+        },
+
+        "device":
+        {
+            "id": "sink1",
+            "channel":
+            {
+                "name": "data-in",
+                "socket":
+                {
+                    "type": "pull",
+                    "method": "connect",
+                    "address": "tcp://localhost:5555",
+                    "sndBufSize": "1000",
+                    "rcvBufSize": "1000",
+                    "rateLogging": "0"
+                }
+            }
+        }
+    }
+}
