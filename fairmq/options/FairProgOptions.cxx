@@ -200,63 +200,7 @@ string FairProgOptions::GetStringValue(const string& key)
     {
         if (fVarMap.count(key))
         {
-            auto& value = fVarMap[key].value();
-
-            // string albeit useless here
-            if (auto q = boost::any_cast<string>(&value))
-            {
-                valueStr = VariableValueToString<string>(fVarMap[key]);
-                return valueStr;
-            }
-
-            // vector<string>
-            if (auto q = boost::any_cast<vector<string>>(&value))
-            {
-                valueStr = VariableValueToString<vector<string>>(fVarMap[key]);
-                return valueStr;
-            }
-
-            // int
-            if (auto q = boost::any_cast<int>(&value))
-            {
-                valueStr = VariableValueToString<int>(fVarMap[key]);
-                return valueStr;
-            }
-
-            // vector<int>
-            if (auto q = boost::any_cast<vector<int>>(&value))
-            {
-                valueStr = VariableValueToString<vector<int>>(fVarMap[key]);
-                return valueStr;
-            }
-
-            // float
-            if (auto q = boost::any_cast<float>(&value))
-            {
-                valueStr = VariableValueToString<float>(fVarMap[key]);
-                return valueStr;
-            }
-
-            // vector float
-            if (auto q = boost::any_cast<vector<float>>(&value))
-            {
-                valueStr = VariableValueToString<vector<float>>(fVarMap[key]);
-                return valueStr;
-            }
-
-            // double
-            if (auto q = boost::any_cast<double>(&value))
-            {
-                valueStr = VariableValueToString<double>(fVarMap[key]);
-                return valueStr;
-            }
-
-            // vector double
-            if (auto q = boost::any_cast<vector<double>>(&value))
-            {
-                valueStr = VariableValueToString<vector<double>>(fVarMap[key]);
-                return valueStr;
-            }
+            valueStr=fairmq::ConvertVariableValue<fairmq::ToString>().Run(fVarMap.at(key));
         }
     }
     catch(exception& e)
@@ -282,8 +226,8 @@ int FairProgOptions::PrintOptions()
     // Method to overload.
     // -> loop over variable map and print its content
     // -> In this example the following types are supported:
-    // string, int, float, double, boost::filesystem::path
-    // vector<string>, vector<int>, vector<float>, vector<double>
+    // string, int, float, double, short, boost::filesystem::path
+    // vector<string>, vector<int>, vector<float>, vector<double>, vector<short>
 
     MapVarValInfo_t mapinfo;
 
@@ -400,92 +344,5 @@ int FairProgOptions::NotifySwitchOption()
 
 FairProgOptions::VarValInfo_t FairProgOptions::GetVariableValueInfo(const po::variable_value& varValue)
 {
-    // tuple<valueStr, type_info_str, defaultStr, empty>
-    auto& value = varValue.value();
-    string defaultedValue;
-    string emptyValue;
-
-    if (varValue.empty())
-    {
-        emptyValue = "  [empty]";
-    }
-    else
-    {
-        if (varValue.defaulted())
-        {
-            defaultedValue = "  [default value]";
-        }
-        else
-        {
-            defaultedValue = "  [provided value]";
-        }
-    }
-
-    emptyValue += " *";
-    // string
-    if (auto q = boost::any_cast<string>(&value))
-    {
-        string valueStr = *q;
-        return make_tuple(valueStr, string("  [Type=string]"), defaultedValue, emptyValue);
-    }
-
-    // vector<string>
-    if (auto q = boost::any_cast<vector<string>>(&value))
-    {
-        string valueStr = VariableValueToString<vector<string>>(varValue);
-        return make_tuple(valueStr, string("  [Type=vector<string>]"), defaultedValue, emptyValue);
-    }
-
-    // int
-    if (auto q = boost::any_cast<int>(&value))
-    {
-        string valueStr =  VariableValueToString<int>(varValue);
-        return make_tuple(valueStr, string("  [Type=int]"), defaultedValue, emptyValue);
-    }
-
-    // vector<int>
-    if (auto q = boost::any_cast<vector<int>>(&value))
-    {
-        string valueStr = VariableValueToString<vector<int>>(varValue);
-        return make_tuple(valueStr, string("  [Type=vector<int>]"), defaultedValue, emptyValue);
-    }
-
-    // float
-    if (auto q = boost::any_cast<float>(&value))
-    {
-        string valueStr = VariableValueToString<float>(varValue);
-        return make_tuple(valueStr, string("  [Type=float]"), defaultedValue, emptyValue);
-    }
-
-    // vector<float>
-    if (auto q = boost::any_cast<vector<float>>(&value))
-    {
-        string valueStr = VariableValueToString<vector<float>>(varValue);
-        return make_tuple(valueStr, string("  [Type=vector<float>]"), defaultedValue, emptyValue);
-    }
-
-    // double
-    if (auto q = boost::any_cast<double>(&value))
-    {
-        string valueStr = VariableValueToString<double>(varValue);
-        return make_tuple(valueStr, string("  [Type=double]"), defaultedValue, emptyValue);
-    }
-
-    // vector<double>
-    if (auto q = boost::any_cast<vector<double>>(&value))
-    {
-        string valueStr = VariableValueToString<vector<double>>(varValue);
-        return make_tuple(valueStr, string("  [Type=vector<double>]"), defaultedValue, emptyValue);
-    }
-
-    // boost::filesystem::path
-    if (auto q = boost::any_cast<boost::filesystem::path>(&value))
-    {
-        string valueStr = (*q).string();
-        //string valueStr = (*q).filename().generic_string();
-        return make_tuple(valueStr, string("  [Type=boost::filesystem::path]"), defaultedValue, emptyValue);
-    }
-
-    // if we get here, the type is not supported return unknown info
-    return make_tuple(string("Unknown value"), string("  [Type=Unknown]"), defaultedValue, emptyValue);
+    return fairmq::ConvertVariableValue<fairmq::ToVarInfo>().Run(varValue);
 }

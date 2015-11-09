@@ -18,7 +18,7 @@
 #include "FairMQLogger.h"
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
-
+#include "FairProgOptionsHelper.h"
 #include <string>
 #include <vector>
 #include <iostream>
@@ -55,12 +55,6 @@
  * }
  */
 
-template<class T>
-std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
-{
-    std::copy(v.begin(), v.end(), std::ostream_iterator<T>(os, "  "));
-    return os;
-}
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -164,19 +158,6 @@ class FairProgOptions
     typedef std::map<std::string, VarValInfo_t> MapVarValInfo_t;
 
     VarValInfo_t GetVariableValueInfo(const po::variable_value& varValue);
-
-    template<typename T>
-    std::string VariableValueToString(const po::variable_value& varValue)
-    {
-        auto& value = varValue.value();
-        std::ostringstream ostr;
-        if (auto q = boost::any_cast<T>(&value))
-        {
-            ostr << *q;
-        }
-        std::string valStr = ostr.str();
-        return valStr;
-    }
 
     static void Max(int &val, const int &comp)
     {
