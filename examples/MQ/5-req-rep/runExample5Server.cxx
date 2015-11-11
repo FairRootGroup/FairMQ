@@ -14,7 +14,11 @@
 
 #include <iostream>
 
+#include "boost/program_options.hpp"
+
 #include "FairMQLogger.h"
+#include "FairMQParser.h"
+#include "FairMQProgOptions.h"
 #include "FairMQExample5Server.h"
 
 #ifdef NANOMSG
@@ -24,40 +28,57 @@
 #endif
 
 using namespace std;
+using namespace boost::program_options;
 
 int main(int argc, char** argv)
 {
     FairMQExample5Server server;
     server.CatchSignals();
 
-    LOG(INFO) << "PID: " << getpid();
+    FairMQProgOptions config;
+
+    try
+    {
+        if (config.ParseAll(argc, argv))
+        {
+            return 0;
+        }
+
+        string filename = config.GetValue<string>("config-json-file");
+        string id = config.GetValue<string>("id");
+
+        config.UserParser<FairMQParser::JSON>(filename, id);
+
+        server.fChannels = config.GetFairMQMap();
+
+        LOG(INFO) << "PID: " << getpid();
 
 #ifdef NANOMSG
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
+        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
 #else
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
 #endif
 
-    server.SetTransport(transportFactory);
+        server.SetTransport(transportFactory);
 
-    server.SetProperty(FairMQExample5Server::Id, "server");
-    server.SetProperty(FairMQExample5Server::NumIoThreads, 1);
+        server.SetProperty(FairMQExample5Server::Id, id);
 
-    FairMQChannel replyChannel("rep", "bind", "tcp://*:5005");
-    replyChannel.UpdateSndBufSize(10000);
-    replyChannel.UpdateRcvBufSize(10000);
-    replyChannel.UpdateRateLogging(1);
+        server.ChangeState("INIT_DEVICE");
+        server.WaitForEndOfState("INIT_DEVICE");
 
-    server.fChannels["data"].push_back(replyChannel);
+        server.ChangeState("INIT_TASK");
+        server.WaitForEndOfState("INIT_TASK");
 
-    server.ChangeState("INIT_DEVICE");
-    server.WaitForEndOfState("INIT_DEVICE");
-
-    server.ChangeState("INIT_TASK");
-    server.WaitForEndOfState("INIT_TASK");
-
-    server.ChangeState("RUN");
-    server.InteractiveStateLoop();
+        server.ChangeState("RUN");
+        server.InteractiveStateLoop();
+    }
+    catch (exception& e)
+    {
+        LOG(ERROR) << e.what();
+        LOG(INFO) << "Command line options are the following: ";
+        config.PrintHelp();
+        return 1;
+    }
 
     return 0;
 }

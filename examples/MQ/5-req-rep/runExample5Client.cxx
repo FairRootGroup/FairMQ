@@ -17,6 +17,8 @@
 #include "boost/program_options.hpp"
 
 #include "FairMQLogger.h"
+#include "FairMQParser.h"
+#include "FairMQProgOptions.h"
 #include "FairMQExample5Client.h"
 
 #ifdef NANOMSG
@@ -26,89 +28,66 @@
 #endif
 
 using namespace std;
-
-typedef struct DeviceOptions
-{
-    DeviceOptions() :
-        text() {}
-
-    string text;
-} DeviceOptions_t;
-
-inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
-{
-    if (_options == NULL)
-        throw runtime_error("Internal error: options' container is empty.");
-
-    namespace bpo = boost::program_options;
-    bpo::options_description desc("Options");
-    desc.add_options()
-        ("text,t", bpo::value<string>()->default_value("something"), "Text to send to server")
-        ("help", "Print help messages");
-
-    bpo::variables_map vm;
-    bpo::store(bpo::parse_command_line(_argc, _argv, desc), vm);
-
-    if (vm.count("help"))
-    {
-        LOG(INFO) << "EPN" << endl << desc;
-        return false;
-    }
-
-    bpo::notify(vm);
-
-    if ( vm.count("text") )
-        _options->text = vm["text"].as<string>();
-
-    return true;
-}
+using namespace boost::program_options;
 
 int main(int argc, char** argv)
 {
     FairMQExample5Client client;
     client.CatchSignals();
 
-    DeviceOptions_t options;
+    FairMQProgOptions config;
+
     try
     {
-        if (!parse_cmd_line(argc, argv, &options))
+        string text;
+
+        options_description clientOptions("Client options");
+        clientOptions.add_options()
+            ("text", value<string>(&text)->default_value("Hello"), "Text to send out");
+
+        config.AddToCmdLineOptions(clientOptions);
+
+        if (config.ParseAll(argc, argv))
+        {
             return 0;
+        }
+
+        string filename = config.GetValue<string>("config-json-file");
+        string id = config.GetValue<string>("id");
+
+        config.UserParser<FairMQParser::JSON>(filename, id);
+
+        client.fChannels = config.GetFairMQMap();
+
+        LOG(INFO) << "PID: " << getpid();
+
+#ifdef NANOMSG
+        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
+#else
+        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+#endif
+
+        client.SetTransport(transportFactory);
+
+        client.SetProperty(FairMQExample5Client::Id, id);
+        client.SetProperty(FairMQExample5Client::Text, text);
+
+        client.ChangeState("INIT_DEVICE");
+        client.WaitForEndOfState("INIT_DEVICE");
+
+        client.ChangeState("INIT_TASK");
+        client.WaitForEndOfState("INIT_TASK");
+
+        client.ChangeState("RUN");
+        client.InteractiveStateLoop();
     }
     catch (exception& e)
     {
         LOG(ERROR) << e.what();
+        LOG(INFO) << "Command line options are the following: ";
+        config.PrintHelp();
         return 1;
     }
-
-    LOG(INFO) << "PID: " << getpid();
-
-#ifdef NANOMSG
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
-#else
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-#endif
-
-    client.SetTransport(transportFactory);
-
-    client.SetProperty(FairMQExample5Client::Id, "client");
-    client.SetProperty(FairMQExample5Client::Text, options.text);
-    client.SetProperty(FairMQExample5Client::NumIoThreads, 1);
-
-    FairMQChannel requestChannel("req", "connect", "tcp://localhost:5005");
-    requestChannel.UpdateSndBufSize(10000);
-    requestChannel.UpdateRcvBufSize(10000);
-    requestChannel.UpdateRateLogging(1);
-
-    client.fChannels["data"].push_back(requestChannel);
-
-    client.ChangeState("INIT_DEVICE");
-    client.WaitForEndOfState("INIT_DEVICE");
-
-    client.ChangeState("INIT_TASK");
-    client.WaitForEndOfState("INIT_TASK");
-
-    client.ChangeState("RUN");
-    client.InteractiveStateLoop();
 
     return 0;
 }
