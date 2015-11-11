@@ -74,7 +74,7 @@ class GenericFileSink : public FairMQDevice, public T, public U
         int receivedMsg = 0;
 
         // store the channel reference to avoid traversing the map on every loop iteration
-        const FairMQChannel& inputChannel = fChannels["data-in"].at(0);
+        const FairMQChannel& inputChannel = fChannels.at("data-in").at(0);
 
         while (CheckCurrentState(RUNNING))
         {
