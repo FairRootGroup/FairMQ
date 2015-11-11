@@ -1,0 +1,41 @@
+{
+    "fairMQOptions":
+    {
+        "device":
+        {
+            "id": "client",
+            "channel":
+            {
+                "name": "data",
+                "socket":
+                {
+                    "type": "req",
+                    "method": "connect",
+                    "address": "tcp://localhost:5005",
+                    "sndBufSize": "1000",
+                    "rcvBufSize": "1000",
+                    "rateLogging": "0"
+                }
+            }
+        },
+
+        "device":
+        {
+            "id": "server",
+            "channel":
+            {
+                "name": "data",
+                "socket":
+                {
+                    "type": "rep",
+                    "method": "bind",
+                    "address": "tcp://*:5005",
+                    "sndBufSize": "1000",
+                    "rcvBufSize": "1000",
+                    "rateLogging": "0"
+                }
+            }
+        }
+    }
+}
+

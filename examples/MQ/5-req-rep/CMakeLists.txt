@@ -6,6 +6,8 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/5-req-rep/ex5-req-rep.json ${CMAKE_BINARY_DIR}/bin/config/ex5-req-rep.json)
+
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
   ${CMAKE_SOURCE_DIR}/fairmq/devices
