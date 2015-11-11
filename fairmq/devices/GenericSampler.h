@@ -56,6 +56,7 @@
 template <typename T, typename U, typename K, typename L>
 class base_GenericSampler : public FairMQDevice, public T, public U
 {
+  protected:
     typedef T                                                 source_type;
     typedef U                                          serialization_type;
     typedef K                                                    key_type;

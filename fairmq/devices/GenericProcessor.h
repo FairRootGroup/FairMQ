@@ -43,6 +43,7 @@
 template <typename T, typename U, typename V>
 class GenericProcessor : public FairMQDevice, public T, public U, public V
 {
+  protected:
     typedef T                                         deserialization_type;
     typedef U                                           serialization_type;
     typedef V                                               proc_task_type;

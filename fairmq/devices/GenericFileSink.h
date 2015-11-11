@@ -41,6 +41,7 @@
 template <typename T, typename U>
 class GenericFileSink : public FairMQDevice, public T, public U
 {
+  protected:
     typedef T                        deserialization_type;
     typedef U                                   sink_type;
   public:
