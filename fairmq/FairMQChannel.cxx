@@ -420,6 +420,11 @@ int FairMQChannel::SendPart(const unique_ptr<FairMQMessage>& msg) const
     return fSocket->Send(msg.get(), fSndMoreFlag);
 }
 
+int FairMQChannel::SendPartAsync(const unique_ptr<FairMQMessage>& msg) const
+{
+    return fSocket->Send(msg.get(), fSndMoreFlag|fNoBlockFlag);
+}
+
 // int FairMQChannel::SendParts(initializer_list<unique_ptr<FairMQMessage>> partsList) const
 // {
 //     int totalSize = 0;

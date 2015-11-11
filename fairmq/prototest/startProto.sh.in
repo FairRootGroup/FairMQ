@@ -1,0 +1,18 @@
+#!/bin/bash
+
+if(@NANOMSG_FOUND@); then
+    buffSize="50000000" # nanomsg buffer size is in bytes
+else
+    buffSize="1000" # zeromq high-water mark is in messages
+fi
+
+SAMPLER="protosampler"
+SAMPLER+=" --id 101"
+SAMPLER+=" --event-size 10000"
+SAMPLER+=" --output-socket-type push --output-buff-size $buffSize --output-method bind --output-address tcp://*:5565"
+xterm -e @CMAKE_BINARY_DIR@/bin/$SAMPLER &
+
+SINK="protosink"
+SINK+=" --id 201"
+SINK+=" --input-socket-type pull --input-buff-size $buffSize --input-method connect --input-address tcp://localhost:5565"
+xterm -e @CMAKE_BINARY_DIR@/bin/$SINK &

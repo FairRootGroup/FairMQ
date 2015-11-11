@@ -9,7 +9,7 @@
                 "name": "data-out",
                 "socket":
                 {
-                    "type": "pub",
+                    "type": "push",
                     "method": "bind",
                     "address": "tcp://*:5555",
                     "sndBufSize": "1000",
@@ -26,7 +26,7 @@
                 "name": "data-in",
                 "socket":
                 {
-                    "type": "sub",
+                    "type": "pull",
                     "method": "connect",
                     "address": "tcp://localhost:5555",
                     "sndBufSize": "1000",

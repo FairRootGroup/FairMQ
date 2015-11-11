@@ -116,11 +116,19 @@ class FairMQChannel
 
     /// Queues the current message as a part of a multi-part message
     /// @details SendPart method queues the provided message as a part of a multi-part message.
-    /// The actual transfer over the network is initiated once final part has been queued with the Send() or SendAsync methods.
+    /// The actual transfer over the network is initiated once final part has been queued with the Send() or SendAsync() methods.
     /// 
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
     /// @return Returns the number of bytes that have been queued. -2 If queueing was not possible. In case of errors, returns -1.
     int SendPart(const std::unique_ptr<FairMQMessage>& msg) const;
+
+    /// Queues the current message as a part of a multi-part message without blocking
+    /// @details SendPart method queues the provided message as a part of a multi-part message without blocking.
+    /// The actual transfer over the network is initiated once final part has been queued with the Send() or SendAsync() methods.
+    /// 
+    /// @param msg Constant reference of unique_ptr to a FairMQMessage
+    /// @return Returns the number of bytes that have been queued. -2 If queueing was not possible. In case of errors, returns -1.
+    int SendPartAsync(const std::unique_ptr<FairMQMessage>& msg) const;
 
     // /// Sends the messages provided as arguments as a multi-part message.
     // /// 

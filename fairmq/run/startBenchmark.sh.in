@@ -1,0 +1,18 @@
+#!/bin/bash
+
+if(@NANOMSG_FOUND@); then
+    buffSize="500000000" # nanomsg buffer size is in bytes
+else
+    buffSize="10000" # zeromq high-water mark is in messages
+fi
+
+SAMPLER="bsampler"
+SAMPLER+=" --id bsampler1"
+SAMPLER+=" --event-size 10000"
+SAMPLER+=" --config-json-file @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
+xterm -geometry 80x23+0+0 -hold -e @CMAKE_BINARY_DIR@/bin/$SAMPLER &
+
+SINK="sink"
+SINK+=" --id sink1"
+SINK+=" --config-json-file @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
+xterm -geometry 80x23+500+0 -hold -e @CMAKE_BINARY_DIR@/bin/$SINK &
