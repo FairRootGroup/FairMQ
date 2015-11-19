@@ -144,6 +144,7 @@ Set(FAIRMQHEADERS
   devices/BaseSourcePolicy.h
   options/FairProgOptionsHelper.h
   tools/FairMQTools.h
+  tools/runSimpleMQStateMachine.h
 )
 Install(FILES ${FAIRMQHEADERS} DESTINATION include)
 

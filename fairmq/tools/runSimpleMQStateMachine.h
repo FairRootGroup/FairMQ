@@ -18,9 +18,9 @@
 
 /// ZMQ/nmsg (in FairSoft)
 #ifdef NANOMSG
-#include "nanomsg/FairMQTransportFactoryNN.h"
+#include "FairMQTransportFactoryNN.h"
 #else
-#include "zeromq/FairMQTransportFactoryZMQ.h"
+#include "FairMQTransportFactoryZMQ.h"
 #endif
 
 /// FairRoot - FairMQ

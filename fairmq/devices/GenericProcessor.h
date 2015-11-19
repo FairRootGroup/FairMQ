@@ -131,10 +131,9 @@ class GenericProcessor : public FairMQDevice, public T, public U, public V
         {
             std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
 
-            ++receivedMsgs;
-
             if (inputChannel.Receive(msg) > 0)
             {
+                receivedMsgs++;
                 // deserialization_type::DeserializeMsg(msg) --> deserialize data of msg and fill output container
                 // proc_task_type::ExecuteTask( ... )   --> process output container
                 proc_task_type::ExecuteTask(deserialization_type::DeserializeMsg(msg.get()));
