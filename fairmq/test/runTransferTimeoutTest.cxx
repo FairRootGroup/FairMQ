@@ -37,47 +37,27 @@ class TransferTimeoutTester : public FairMQDevice
         bool sendCanceling = false;
         bool receiveCanceling = false;
 
-        if (fChannels.at("data-out").at(0).SetSendTimeout(1000))
+        fChannels.at("data-out").at(0).SetSendTimeout(1000);
+        fChannels.at("data-in").at(0).SetReceiveTimeout(1000);
+
+        if (fChannels.at("data-out").at(0).GetSendTimeout() == 1000)
         {
-            setSndOK = true;
-            LOG(INFO) << "set send timeout OK";
+            getSndOK = true;
+            LOG(INFO) << "get send timeout OK: " << fChannels.at("data-out").at(0).GetSendTimeout();
         }
         else
         {
-            LOG(ERROR) << "set send timeout failed";
+            LOG(ERROR) << "get send timeout failed";
         }
 
-        if (fChannels.at("data-in").at(0).SetReceiveTimeout(1000))
+        if (fChannels.at("data-in").at(0).GetReceiveTimeout() == 1000)
         {
-            setRcvOK = true;
-            LOG(INFO) << "set receive timeout OK";
+            getRcvOK = true;
+            LOG(INFO) << "get receive timeout OK: " << fChannels.at("data-in").at(0).GetReceiveTimeout();
         }
         else
         {
-            LOG(ERROR) << "set receive timeout failed";
-        }
-
-        if (setSndOK && setRcvOK)
-        {
-            if (fChannels.at("data-out").at(0).GetSendTimeout() == 1000)
-            {
-                getSndOK = true;
-                LOG(INFO) << "get send timeout OK: " << fChannels.at("data-out").at(0).GetSendTimeout();
-            }
-            else
-            {
-                LOG(ERROR) << "get send timeout failed";
-            }
-
-            if (fChannels.at("data-in").at(0).GetReceiveTimeout() == 1000)
-            {
-                getRcvOK = true;
-                LOG(INFO) << "get receive timeout OK: " << fChannels.at("data-in").at(0).GetReceiveTimeout();
-            }
-            else
-            {
-                LOG(ERROR) << "get receive timeout failed";
-            }
+            LOG(ERROR) << "get receive timeout failed";
         }
 
         if (getSndOK && getRcvOK)

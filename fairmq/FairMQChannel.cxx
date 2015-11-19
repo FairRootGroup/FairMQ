@@ -583,60 +583,62 @@ int FairMQChannel::Receive(FairMQMessage* msg, const int flags) const
     }
 }
 
-bool FairMQChannel::SetSendTimeout(const int timeout)
+void FairMQChannel::SetSendTimeout(const int timeout)
 {
-    if (fSocket)
-    {
-        if (fSocket->SetSendTimeout(timeout, fAddress, fMethod))
-        {
+    // if (fSocket)
+    // {
+    //     if (fSocket->SetSendTimeout(timeout, fAddress, fMethod))
+    //     {
             fSndTimeoutInMs = timeout;
-            return true;
-        }
-    }
+    //         return true;
+    //     }
+    // }
 
-    LOG(ERROR) << "SetSendTimeout() failed - socket is not initialized!";
-    return false;
+    // LOG(ERROR) << "SetSendTimeout() failed - socket is not initialized!";
+    // return false;
 }
 
 int FairMQChannel::GetSendTimeout() const
 {
-    if (fSocket)
-    {
-        return fSocket->GetSendTimeout();
-    }
-    else
-    {
-        LOG(ERROR) << "GetSendTimeout() failed - socket is not initialized!";
-        return -1;
-    }
+    return fSndTimeoutInMs;
+    // if (fSocket)
+    // {
+    //     return fSocket->GetSendTimeout();
+    // }
+    // else
+    // {
+    //     LOG(ERROR) << "GetSendTimeout() failed - socket is not initialized!";
+    //     return -1;
+    // }
 }
 
-bool FairMQChannel::SetReceiveTimeout(const int timeout)
+void FairMQChannel::SetReceiveTimeout(const int timeout)
 {
-    if (fSocket)
-    {
-        if (fSocket->SetReceiveTimeout(timeout, fAddress, fMethod))
-        {
+    // if (fSocket)
+    // {
+    //     if (fSocket->SetReceiveTimeout(timeout, fAddress, fMethod))
+    //     {
             fRcvTimeoutInMs = timeout;
-            return true;
-        }
-    }
+    //         return true;
+    //     }
+    // }
 
-    LOG(ERROR) << "SetReceiveTimeout() failed - socket is not initialized!";
-    return false;
+    // LOG(ERROR) << "SetReceiveTimeout() failed - socket is not initialized!";
+    // return false;
 }
 
 int FairMQChannel::GetReceiveTimeout() const
 {
-    if (fSocket)
-    {
-        return fSocket->GetReceiveTimeout();
-    }
-    else
-    {
-        LOG(ERROR) << "GetReceiveTimeout() failed - socket is not initialized!";
-        return -1;
-    }
+    return fRcvTimeoutInMs;
+    // if (fSocket)
+    // {
+    //     return fSocket->GetReceiveTimeout();
+    // }
+    // else
+    // {
+    //     LOG(ERROR) << "GetReceiveTimeout() failed - socket is not initialized!";
+    //     return -1;
+    // }
 }
 
 bool FairMQChannel::ExpectsAnotherPart() const

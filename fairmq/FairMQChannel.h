@@ -161,8 +161,7 @@ class FairMQChannel
 
     /// Sets a timeout on the (blocking) Send method
     /// @param timeout timeout value in milliseconds
-    /// @return true if operation was successfull, otherwise false.
-    bool SetSendTimeout(const int timeout);
+    void SetSendTimeout(const int timeout);
 
     /// Gets the current value of the timeout on the (blocking) Send method
     /// @return Timeout value in milliseconds. -1 for no timeout.
@@ -170,8 +169,7 @@ class FairMQChannel
 
     /// Sets a timeout on the (blocking) Receive method
     /// @param timeout timeout value in milliseconds
-    /// @return true if operation was successfull, otherwise false.
-    bool SetReceiveTimeout(const int timeout);
+    void SetReceiveTimeout(const int timeout);
 
     /// Gets the current value of the timeout on the (blocking) Receive method
     /// @return Timeout value in milliseconds. -1 for no timeout.
