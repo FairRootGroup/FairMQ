@@ -120,7 +120,5 @@ void SetFileProperties(Args&... args)
 }
 ```
 
-### Generic Processor
-The function members required by the processor policies are :
 
 
