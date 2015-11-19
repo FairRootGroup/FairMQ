@@ -159,6 +159,7 @@ Set(DEPENDENCIES
   boost_random
   boost_chrono
   boost_exception
+  boost_regex
 )
 
 Set(LIBRARY_NAME FairMQ)
