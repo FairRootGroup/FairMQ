@@ -49,7 +49,7 @@ void init_log_console(bool color_format)
 {
     // add a text sink
     typedef sinks::synchronous_sink<sinks::text_ostream_backend> text_sink;
-    
+    logging::core::get()->remove_all_sinks();
     
     // CONSOLE - all severity except error
     boost::shared_ptr<text_sink> sink = boost::make_shared<text_sink>();
@@ -62,7 +62,7 @@ void init_log_console(bool color_format)
     else
         sink->set_formatter(&init_log_formatter<tag_file>);
     
-    sink->set_filter(severity != SEVERITY_ERROR);
+    sink->set_filter(severity != SEVERITY_ERROR && severity < SEVERITY_NOLOG);
     // add sink to the core
     logging::core::get()->add_sink(sink);
     
@@ -82,6 +82,7 @@ void init_log_console(bool color_format)
 
 void reinit_logger(bool color_format)
 {
+    LOG(NOLOG)<<"";
     logging::core::get()->remove_all_sinks();
     init_log_console(color_format);
 }

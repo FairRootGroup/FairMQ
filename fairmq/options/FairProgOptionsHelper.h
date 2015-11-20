@@ -210,10 +210,17 @@ namespace fairmq
             if (is_this_type<std::size_t>(varValue))
                 return T::template Value<std::size_t>(varValue,std::string("  [Type=std::size_t]"),defaultedValue,emptyValue);
 
-            // std::vector short
+            // std::vector size_t
             if (is_this_type<std::vector<std::size_t>>(varValue))
                 return T::template Value<std::vector<std::size_t>>(varValue,std::string("  [Type=vector<std::size_t>]"),defaultedValue,emptyValue);
 
+            // bool
+            if (is_this_type<bool>(varValue))
+                return T::template Value<bool>(varValue,std::string("  [Type=bool]"),defaultedValue,emptyValue);
+
+            // std::vector bool
+            if (is_this_type<std::vector<bool>>(varValue))
+                return T::template Value<std::vector<bool>>(varValue,std::string("  [Type=vector<bool>]"),defaultedValue,emptyValue);
 
             //////////////////////////////// boost types
             // boost::filesystem::path
