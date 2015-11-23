@@ -22,24 +22,12 @@
 class FairMQExample3Sampler : public FairMQDevice
 {
   public:
-    enum
-    {
-        Text = FairMQDevice::Last,
-        Last
-    };
     FairMQExample3Sampler();
     virtual ~FairMQExample3Sampler();
 
     static void CustomCleanup(void* data, void* hint);
 
-    virtual void SetProperty(const int key, const std::string& value);
-    virtual std::string GetProperty(const int key, const std::string& default_ = "");
-    virtual void SetProperty(const int key, const int value);
-    virtual int GetProperty(const int key, const int default_ = 0);
-
   protected:
-    std::string fText;
-
     virtual void Run();
 };
 

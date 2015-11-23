@@ -20,7 +20,6 @@
 #include <boost/asio.hpp> // for DDS
 
 #include "FairMQLogger.h"
-#include "FairMQParser.h"
 #include "FairMQProgOptions.h"
 #include "FairMQExample3Processor.h"
 #include "FairMQTools.h"
@@ -31,8 +30,10 @@
 #include "FairMQTransportFactoryZMQ.h"
 #endif
 
-#include "KeyValue.h" // DDS
+#include "KeyValue.h" // DDS Key Value
+#include "CustomCmd.h" // DDS Custom Commands
 
+using namespace std;
 using namespace boost::program_options;
 
 int main(int argc, char** argv)
@@ -44,27 +45,34 @@ int main(int argc, char** argv)
 
     try
     {
-        int ddsTaskIndex = 0;
-
-        options_description processorOptions("Processor options");
-        processorOptions.add_options()
-            ("index", value<int>(&ddsTaskIndex)->default_value(0), "DDS task index");
-
-        config.AddToCmdLineOptions(processorOptions);
-
         if (config.ParseAll(argc, argv))
         {
             return 0;
         }
 
-        std::string filename = config.GetValue<std::string>("config-json-file");
-        std::string id = config.GetValue<std::string>("id");
-
-        config.UserParser<FairMQParser::JSON>(filename, id);
-
-        processor.fChannels = config.GetFairMQMap();
+        string id = config.GetValue<string>("id");
 
         LOG(INFO) << "PID: " << getpid();
+
+#ifdef NANOMSG
+        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
+#else
+        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
+#endif
+
+        processor.SetTransport(transportFactory);
+
+        processor.SetProperty(FairMQExample3Processor::Id, id);
+
+        // configure data output channel
+        FairMQChannel dataInChannel("pull", "connect", "");
+        dataInChannel.UpdateRateLogging(0);
+        processor.fChannels["data-in"].push_back(dataInChannel);
+
+        // configure data output channel
+        FairMQChannel dataOutChannel("push", "connect", "");
+        dataOutChannel.UpdateRateLogging(0);
+        processor.fChannels["data-out"].push_back(dataOutChannel);
 
         // Waiting for DDS properties
         dds::key_value::CKeyValue ddsKeyValue;
@@ -104,22 +112,29 @@ int main(int argc, char** argv)
         processor.fChannels.at("data-in").at(0).UpdateAddress(samplerValues.begin()->second);
         processor.fChannels.at("data-out").at(0).UpdateAddress(sinkValues.begin()->second);
 
-#ifdef NANOMSG
-        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
-#else
-        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-#endif
-
-        processor.SetTransport(transportFactory);
-
-        processor.SetProperty(FairMQExample3Processor::Id, id);
-        processor.SetProperty(FairMQExample3Processor::TaskIndex, ddsTaskIndex);
-
         processor.ChangeState("INIT_DEVICE");
         processor.WaitForEndOfState("INIT_DEVICE");
 
         processor.ChangeState("INIT_TASK");
         processor.WaitForEndOfState("INIT_TASK");
+
+        dds::custom_cmd::CCustomCmd ddsCustomCmd;
+
+        // Subscribe on custom commands
+        ddsCustomCmd.subscribeCmd([&](const string& command, const string& condition, uint64_t senderId)
+        {
+            LOG(INFO) << "Received custom command: " << command << " condition: " << condition << " senderId: " << senderId;
+            if (command == "check-state")
+            {
+                ddsCustomCmd.sendCmd(id + ": " + processor.GetCurrentStateName(), to_string(senderId));
+            }
+            else
+            {
+                LOG(WARN) << "Received unknown command: " << command;
+                LOG(WARN) << "Origin: " << senderId;
+                LOG(WARN) << "Destination: " << condition;
+            }
+        });
 
         processor.ChangeState("RUN");
         processor.WaitForEndOfState("RUN");
@@ -132,7 +147,7 @@ int main(int argc, char** argv)
 
         processor.ChangeState("END");
     }
-    catch (std::exception& e)
+    catch (exception& e)
     {
         LOG(ERROR) << e.what();
         LOG(INFO) << "Command line options are the following: ";

@@ -6,7 +6,6 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-devices.json ${CMAKE_BINARY_DIR}/bin/config/ex3-devices.json)
 configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-topology.xml ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-topology.xml)
 configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-hosts.cfg ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-hosts.cfg COPYONLY)
 
@@ -68,6 +67,7 @@ Set(DEPENDENCIES
   ${DEPENDENCIES}
   FairMQ
   dds-key-value-lib
+  dds-custom-cmd-lib
 )
 
 set(LIBRARY_NAME FairMQExample3)
@@ -79,6 +79,7 @@ Set(Exe_Names
   ex3-sampler-dds
   ex3-processor-dds
   ex3-sink-dds
+  ex3-dds-command-ui
 )
 
 Set(Exe_Source
@@ -86,6 +87,7 @@ Set(Exe_Source
   runExample3Sampler.cxx
   runExample3Processor.cxx
   runExample3Sink.cxx
+  runDDSCommandUI.cxx
 )
 
 list(LENGTH Exe_Names _length)
