@@ -93,13 +93,14 @@ int FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregiste
 
     if (!optionExists)
     {
-        LOG(ERROR) << "Required options to configure the MQ device are not provided.";
-        LOG(ERROR) << "Please provide the value of one of the following key:";
+        LOG(WARN) << "Options to configure FairMQ channels are not provided.";
+        LOG(WARN) << "Please provide the value for one of the following keys:";
         for (const auto& p : MQParserKeys)
         {
-            LOG(ERROR) << p;
+            LOG(WARN) << p;
         }
-        return 1;
+        LOG(WARN) << "No channels will be created (You can still fill these manually).";
+        // return 1;
     }
 
     return 0;
