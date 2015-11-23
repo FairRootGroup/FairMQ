@@ -21,7 +21,6 @@
 #include <boost/asio.hpp> // for DDS
 
 #include "FairMQLogger.h"
-#include "FairMQParser.h"
 #include "FairMQProgOptions.h"
 #include "FairMQExample3Sink.h"
 #include "FairMQTools.h"
@@ -32,8 +31,10 @@
 #include "FairMQTransportFactoryZMQ.h"
 #endif
 
-#include "KeyValue.h" // DDS
+#include "KeyValue.h" // DDS Key Value
+#include "CustomCmd.h" // DDS Custom Commands
 
+using namespace std;
 using namespace boost::program_options;
 
 int main(int argc, char** argv)
@@ -45,11 +46,11 @@ int main(int argc, char** argv)
 
     try
     {
-        std::string interfaceName; // name of the network interface to use for communication.
+        string interfaceName; // name of the network interface to use for communication.
 
         options_description sinkOptions("Sink options");
         sinkOptions.add_options()
-            ("network-interface", value<std::string>(&interfaceName)->default_value("eth0"), "Name of the network interface to use (e.g. eth0, ib0, wlan0, en0...)");
+            ("network-interface", value<string>(&interfaceName)->default_value("eth0"), "Name of the network interface to use (e.g. eth0, ib0, wlan0, en0...)");
 
         config.AddToCmdLineOptions(sinkOptions);
 
@@ -58,12 +59,7 @@ int main(int argc, char** argv)
             return 0;
         }
 
-        std::string filename = config.GetValue<std::string>("config-json-file");
-        std::string id = config.GetValue<std::string>("id");
-
-        config.UserParser<FairMQParser::JSON>(filename, id);
-
-        sink.fChannels = config.GetFairMQMap();
+        string id = config.GetValue<string>("id");
 
         LOG(INFO) << "PID: " << getpid();
 
@@ -76,6 +72,11 @@ int main(int argc, char** argv)
         sink.SetTransport(transportFactory);
 
         sink.SetProperty(FairMQExample3Sink::Id, id);
+
+        // configure data output channel
+        FairMQChannel dataInChannel("pull", "bind", "");
+        dataInChannel.UpdateRateLogging(0);
+        sink.fChannels["data-in"].push_back(dataInChannel);
 
         // Get the IP of the current host and store it for binding.
         map<string,string> IPs;
@@ -111,6 +112,24 @@ int main(int argc, char** argv)
         sink.ChangeState("INIT_TASK");
         sink.WaitForEndOfState("INIT_TASK");
 
+        dds::custom_cmd::CCustomCmd ddsCustomCmd;
+
+        // Subscribe on custom commands
+        ddsCustomCmd.subscribeCmd([&](const string& command, const string& condition, uint64_t senderId)
+        {
+            LOG(INFO) << "Received custom command: " << command << " condition: " << condition << " senderId: " << senderId;
+            if (command == "check-state")
+            {
+                ddsCustomCmd.sendCmd(id + ": " + sink.GetCurrentStateName(), to_string(senderId));
+            }
+            else
+            {
+                LOG(WARN) << "Received unknown command: " << command;
+                LOG(WARN) << "Origin: " << senderId;
+                LOG(WARN) << "Destination: " << condition;
+            }
+        });
+
         sink.ChangeState("RUN");
         sink.WaitForEndOfState("RUN");
 
@@ -122,7 +141,7 @@ int main(int argc, char** argv)
 
         sink.ChangeState("END");
     }
-    catch (std::exception& e)
+    catch (exception& e)
     {
         LOG(ERROR) << e.what();
         LOG(INFO) << "Command line options are the following: ";

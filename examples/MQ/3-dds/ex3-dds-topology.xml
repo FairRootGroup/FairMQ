@@ -3,15 +3,29 @@
     <property id="SamplerOutputAddress" />
     <property id="SinkInputAddress" />
 
+    <declrequirement id="SamplerWorker">
+        <hostPattern type="wnname" value="sampler"/>
+    </declrequirement>
+
+    <declrequirement id="ProcessorWorker">
+        <hostPattern type="wnname" value="processor"/>
+    </declrequirement>
+
+    <declrequirement id="SinkWorker">
+        <hostPattern type="wnname" value="sink"/>
+    </declrequirement>
+
     <decltask id="Sampler">
-        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-sampler-dds --id sampler --config-json-file @CMAKE_BINARY_DIR@/bin/config/ex3-devices.json</exe>
+        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-sampler-dds --id sampler0 --log-color-format false</exe>
+        <requirement>SamplerWorker</requirement>
         <properties>
             <id access="write">SamplerOutputAddress</id>
         </properties>
     </decltask>
 
     <decltask id="Processor">
-        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-processor-dds --id processor --index %taskIndex% --config-json-file @CMAKE_BINARY_DIR@/bin/config/ex3-devices.json</exe>
+        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-processor-dds --id processor%taskIndex% --log-color-format false</exe>
+        <requirement>ProcessorWorker</requirement>
         <properties>
             <id access="read">SamplerOutputAddress</id>
             <id access="read">SinkInputAddress</id>
@@ -19,7 +33,8 @@
     </decltask>
 
     <decltask id="Sink">
-        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-sink-dds --id sink --config-json-file @CMAKE_BINARY_DIR@/bin/config/ex3-devices.json</exe>
+        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-sink-dds --id sink0 --log-color-format false</exe>
+        <requirement>SinkWorker</requirement>
         <properties>
             <id access="write">SinkInputAddress</id>
         </properties>

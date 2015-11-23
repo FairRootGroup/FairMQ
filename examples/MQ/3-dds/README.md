@@ -113,7 +113,13 @@ dds-topology --activate
 
 After activation, agents will execute the defined tasks on the worker nodes. Output of the tasks will be stored in the directory that was specified in the hosts file.
 
-##### 10. Stop DDS server/topology.
+##### 10. (optional) Use example command UI to check state of the devices
+
+This example includes a simple utility to send command to devices and receive replies from them. The code in `runDDSCommandUI.cxx` (compiled as ex3-dds-command-ui) uses the DDSCustomCmd library to send "check-state" string to all devices, to which they reply with their ID and state they are in. This can be used as an example of sending/receiving commands or other information to devices.
+
+To see it in action, start the ex3-dds-command-ui while the topology is running.
+
+##### 11. Stop DDS server/topology.
 
 The execution of tasks can be stopped with:
 ```bash
