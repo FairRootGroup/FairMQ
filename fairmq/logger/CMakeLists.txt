@@ -13,7 +13,9 @@ set(INCLUDE_DIRECTORIES
     )
 
 include_directories(${INCLUDE_DIRECTORIES})
-include_directories(${Boost_INCLUDE_DIRS})
+
+set(SYSTEM_INCLUDE_DIRECTORIES ${Boost_INCLUDE_DIR})
+include_Directories(SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 
 set(LINK_DIRECTORIES ${Boost_LIBRARY_DIRS}) 
 

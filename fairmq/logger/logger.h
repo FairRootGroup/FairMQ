@@ -22,20 +22,12 @@
 #include <cstddef>
 #include <iostream>
 
-
+// boost
+#include <boost/version.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_io.hpp>
 #include <boost/log/sources/global_logger_storage.hpp>
 #include <boost/log/expressions/attr_fwd.hpp>
-
-#include <boost/version.hpp>
-
-
-// WARNING : pragma commands to hide boost Wshadow warning
-#if defined(__clang__)
-    _Pragma("clang diagnostic push") 
-    _Pragma("clang diagnostic ignored \"-Wshadow\"") 
-// boost
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/posix_time/posix_time_io.hpp>
 #include <boost/log/sources/severity_logger.hpp>
 #include <boost/log/utility/formatting_ostream.hpp>
 #include <boost/log/expressions.hpp>
@@ -43,26 +35,9 @@
 #include <boost/log/utility/formatting_ostream.hpp>
 #include <boost/log/sinks/text_file_backend.hpp>
 #include <boost/log/sinks/sync_frontend.hpp>
+
 // fairmq
 #include "logger_def.h"
-    _Pragma("clang diagnostic pop")
-#elif defined(__GNUC__) || defined(__GNUG__)    
-    _Pragma("GCC diagnostic push")
-    _Pragma("GCC diagnostic ignored \"-Wshadow\"")
-// boost
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/date_time/posix_time/posix_time_io.hpp>
-#include <boost/log/sources/severity_logger.hpp>
-#include <boost/log/utility/formatting_ostream.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/log/expressions/attr.hpp>
-#include <boost/log/utility/formatting_ostream.hpp>
-#include <boost/log/sinks/text_file_backend.hpp>
-#include <boost/log/sinks/sync_frontend.hpp>
-// fairmq
-#include "logger_def.h"        
-    _Pragma("GCC diagnostic pop")
-#endif
     
     
     
