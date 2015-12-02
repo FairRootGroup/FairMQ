@@ -105,7 +105,7 @@ int main(int argc, char** argv)
         // Advertise the bound address via DDS property
         LOG(INFO) << "Giving sink input address to DDS.";
         dds::key_value::CKeyValue ddsKeyValue;
-        ddsKeyValue.putValue("SinkInputAddress", sink.fChannels.at("data-in").at(0).GetAddress());
+        ddsKeyValue.putValue("SinkAddress", sink.fChannels.at("data-in").at(0).GetAddress());
 
         sink.WaitForEndOfState("INIT_DEVICE");
 
@@ -117,7 +117,7 @@ int main(int argc, char** argv)
         // Subscribe on custom commands
         ddsCustomCmd.subscribeCmd([&](const string& command, const string& condition, uint64_t senderId)
         {
-            LOG(INFO) << "Received custom command: " << command << " condition: " << condition << " senderId: " << senderId;
+            LOG(INFO) << "Received custom command: " << command;
             if (command == "check-state")
             {
                 ddsCustomCmd.sendCmd(id + ": " + sink.GetCurrentStateName(), to_string(senderId));

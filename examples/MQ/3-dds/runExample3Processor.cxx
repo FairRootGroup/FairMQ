@@ -84,12 +84,12 @@ int main(int argc, char** argv)
 
             LOG(INFO) << "Subscribing and waiting for sampler output address.";
             ddsKeyValue.subscribe([&keyCondition](const string& /*_key*/, const string& /*_value*/) { keyCondition.notify_all(); });
-            ddsKeyValue.getValues("SamplerOutputAddress", &samplerValues);
+            ddsKeyValue.getValues("SamplerAddress", &samplerValues);
             while (samplerValues.empty())
             {
                 unique_lock<mutex> lock(keyMutex);
                 keyCondition.wait_until(lock, chrono::system_clock::now() + chrono::milliseconds(1000));
-                ddsKeyValue.getValues("SamplerOutputAddress", &samplerValues);
+                ddsKeyValue.getValues("SamplerAddress", &samplerValues);
             }
         }
         // Sink properties
@@ -100,12 +100,12 @@ int main(int argc, char** argv)
 
             LOG(INFO) << "Subscribing and waiting for sink input address.";
             ddsKeyValue.subscribe([&keyCondition](const string& /*_key*/, const string& /*_value*/) { keyCondition.notify_all(); });
-            ddsKeyValue.getValues("SinkInputAddress", &sinkValues);
+            ddsKeyValue.getValues("SinkAddress", &sinkValues);
             while (sinkValues.empty())
             {
                 unique_lock<mutex> lock(keyMutex);
                 keyCondition.wait_until(lock, chrono::system_clock::now() + chrono::milliseconds(1000));
-                ddsKeyValue.getValues("SinkInputAddress", &sinkValues);
+                ddsKeyValue.getValues("SinkAddress", &sinkValues);
             }
         }
 
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
         // Subscribe on custom commands
         ddsCustomCmd.subscribeCmd([&](const string& command, const string& condition, uint64_t senderId)
         {
-            LOG(INFO) << "Received custom command: " << command << " condition: " << condition << " senderId: " << senderId;
+            LOG(INFO) << "Received custom command: " << command;
             if (command == "check-state")
             {
                 ddsCustomCmd.sendCmd(id + ": " + processor.GetCurrentStateName(), to_string(senderId));
