@@ -42,7 +42,7 @@ FairProgOptions::FairProgOptions() :
                                                                     "  STATE \n"
                                                                     "  NOLOG"
             )
-        ("log-color-format", po::value<bool>()->default_value(true), "logger color format : true or false")
+        ("log-color", po::value<bool>()->default_value(true), "logger color: true or false")
         ;
 
     fSeverityMap["TRACE"]              = fairmq::severity_level::TRACE;
