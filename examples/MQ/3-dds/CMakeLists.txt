@@ -76,10 +76,10 @@ GENERATE_LIBRARY()
 
 Set(Exe_Names
   ${Exe_Names}
-  ex3-sampler-dds
-  ex3-processor-dds
-  ex3-sink-dds
-  ex3-dds-command-ui
+  ex3-sampler
+  ex3-processor
+  ex3-sink
+  ex3-command-ui
 )
 
 Set(Exe_Source

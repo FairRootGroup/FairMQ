@@ -1,7 +1,7 @@
 <topology id="ExampleDDS">
 
-    <property id="SamplerOutputAddress" />
-    <property id="SinkInputAddress" />
+    <property id="SamplerAddress" />
+    <property id="SinkAddress" />
 
     <declrequirement id="SamplerWorker">
         <hostPattern type="wnname" value="sampler"/>
@@ -16,27 +16,27 @@
     </declrequirement>
 
     <decltask id="Sampler">
-        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-sampler-dds --id sampler0 --log-color-format false</exe>
+        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-sampler --id sampler0 --log-color false</exe>
         <requirement>SamplerWorker</requirement>
         <properties>
-            <id access="write">SamplerOutputAddress</id>
+            <id access="write">SamplerAddress</id>
         </properties>
     </decltask>
 
     <decltask id="Processor">
-        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-processor-dds --id processor%taskIndex% --log-color-format false</exe>
+        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-processor --id processor%taskIndex% --log-color false</exe>
         <requirement>ProcessorWorker</requirement>
         <properties>
-            <id access="read">SamplerOutputAddress</id>
-            <id access="read">SinkInputAddress</id>
+            <id access="read">SamplerAddress</id>
+            <id access="read">SinkAddress</id>
         </properties>
     </decltask>
 
     <decltask id="Sink">
-        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-sink-dds --id sink0 --log-color-format false</exe>
+        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-sink --id sink0 --log-color false</exe>
         <requirement>SinkWorker</requirement>
         <properties>
-            <id access="write">SinkInputAddress</id>
+            <id access="write">SinkAddress</id>
         </properties>
     </decltask>
 
