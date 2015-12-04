@@ -29,17 +29,17 @@ FairMQMerger::~FairMQMerger()
 
 void FairMQMerger::Run()
 {
-    std::unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels.at("data-in")));
-
     // store the channel references to avoid traversing the map on every loop iteration
+    auto& dataInChannelRef = fChannels.at("data-in");
     const FairMQChannel& dataOutChannel = fChannels.at("data-out").at(0);
-    std::vector<FairMQChannel*> dataInChannels(fChannels.at("data-in").size());
-    for (unsigned int i = 0; i < fChannels.at("data-in").size(); ++i)
+    int numInputs = dataInChannelRef.size();
+    std::vector<FairMQChannel*> dataInChannels(numInputs);
+    for (int i = 0; i < numInputs; ++i)
     {
-        dataInChannels.at(i) = &(fChannels.at("data-in").at(i));
+        dataInChannels.at(i) = &(dataInChannelRef.at(i));
     }
 
-    int numInputs = fChannels.at("data-in").size();
+    std::unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(dataInChannelRef));
 
     while (CheckCurrentState(RUNNING))
     {

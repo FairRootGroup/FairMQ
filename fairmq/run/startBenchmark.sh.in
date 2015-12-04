@@ -1,14 +1,36 @@
 #!/bin/bash
 
+numMsgs="0"
+msgSize="1000000"
+
+if [[ $1 =~ ^[0-9]+$ ]]; then
+    msgSize=$1
+fi
+
+echo "Starting benchmark with message size of $msgSize bytes."
+
+if [[ $2 =~ ^[0-9]+$ ]]; then
+    numMsgs=$2
+fi
+
+if [ $numMsgs = 0 ]; then
+    echo "Unlimited number of messages."
+else
+    echo "Number of messages: $numMsgs."
+fi
+
+echo ""
+echo "Usage: startBenchmark [message size=1000000] [number of messages=0]"
+
 SAMPLER="bsampler"
 SAMPLER+=" --id bsampler1"
-SAMPLER+=" --msg-size 1000000"
-#SAMPLER+=" --num-msgs 1000"
+SAMPLER+=" --msg-size $msgSize"
+SAMPLER+=" --num-msgs $numMsgs"
 SAMPLER+=" --config-json-file @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
-xterm -geometry 80x23+0+0 -hold -e @CMAKE_BINARY_DIR@/bin/$SAMPLER &
+xterm -geometry 80x23+0+0 -hold -e taskset 0x1 @CMAKE_BINARY_DIR@/bin/$SAMPLER &
 
 SINK="sink"
 SINK+=" --id sink1"
-#SINK+=" --num-msgs 1000"
+SINK+=" --num-msgs $numMsgs"
 SINK+=" --config-json-file @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
-xterm -geometry 80x23+500+0 -hold -e @CMAKE_BINARY_DIR@/bin/$SINK &
+xterm -geometry 80x23+500+0 -hold -e taskset 0x2 @CMAKE_BINARY_DIR@/bin/$SINK &

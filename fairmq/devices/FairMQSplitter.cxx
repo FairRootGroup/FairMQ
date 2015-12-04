@@ -28,16 +28,17 @@ FairMQSplitter::~FairMQSplitter()
 
 void FairMQSplitter::Run()
 {
-    int direction = 0;
-    int numOutputs = fChannels.at("data-out").size();
-
     // store the channel references to avoid traversing the map on every loop iteration
+    auto& dataOutChannelRef = fChannels.at("data-out");
     const FairMQChannel& dataInChannel = fChannels.at("data-in").at(0);
-    FairMQChannel* dataOutChannels[fChannels.at("data-out").size()];
+    int numOutputs = dataOutChannelRef.size();
+    std::vector<FairMQChannel*> dataOutChannels(numOutputs);
     for (int i = 0; i < numOutputs; ++i)
     {
-        dataOutChannels[i] = &(fChannels.at("data-out").at(i));
+        dataOutChannels[i] = &(dataOutChannelRef.at(i));
     }
+
+    int direction = 0;
 
     while (CheckCurrentState(RUNNING))
     {

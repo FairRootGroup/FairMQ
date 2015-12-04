@@ -479,9 +479,9 @@ void FairMQDevice::SetTransport(const string& transport)
 #endif
     else
     {
-        LOG(ERROR) << "Unknown transport implementation requested: "
-                   << transport
-                   << ". Supported are "
+        LOG(ERROR) << "Unavailable transport implementation requested: "
+                   << "\"" << transport << "\""
+                   << ". Available are: "
                    << "\"zeromq\""
 #ifdef NANOMSG_FOUND
                    << ", \"nanomsg\""

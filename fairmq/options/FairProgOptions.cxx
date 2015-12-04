@@ -32,7 +32,6 @@ FairProgOptions::FairProgOptions() :
                         fVarMap(),
                         fSeverityMap()
 {
-    // define generic options
     fGenericDesc.add_options()
         ("help,h", "produce help")
         ("version,v", "print version")
