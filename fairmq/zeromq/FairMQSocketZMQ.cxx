@@ -223,7 +223,7 @@ void* FairMQSocketZMQ::GetSocket() const
     return fSocket;
 }
 
-int FairMQSocketZMQ::GetSocket(int nothing) const
+int FairMQSocketZMQ::GetSocket(int) const
 {
     // dummy method to comply with the interface. functionality not possible in zeromq.
     return -1;

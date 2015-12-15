@@ -98,12 +98,12 @@ namespace fairmq
     {
         typedef std::string returned_type;
         template<typename T>
-        std::string Value(const po::variable_value& varValue,const  std::string& type, const std::string& defaulted, const std::string& empty)
+        std::string Value(const po::variable_value& varValue,const  std::string&, const std::string&, const std::string&)
         {
             return ConvertVariableValueToString<T>(varValue);
         }
 
-        returned_type DefaultValue(const std::string& defaulted, const std::string& empty)
+        returned_type DefaultValue(const std::string&, const std::string&)
         {
             return std::string("empty value");
         }

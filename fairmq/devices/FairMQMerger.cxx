@@ -34,7 +34,7 @@ void FairMQMerger::Run()
     // store the channel references to avoid traversing the map on every loop iteration
     const FairMQChannel& dataOutChannel = fChannels.at("data-out").at(0);
     std::vector<FairMQChannel*> dataInChannels(fChannels.at("data-in").size());
-    for (int i = 0; i < fChannels.at("data-in").size(); ++i)
+    for (unsigned int i = 0; i < fChannels.at("data-in").size(); ++i)
     {
         dataInChannels.at(i) = &(fChannels.at("data-in").at(i));
     }

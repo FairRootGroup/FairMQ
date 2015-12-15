@@ -89,7 +89,7 @@ size_t FairMQMessageZMQ::GetSize()
     return zmq_msg_size(&fMessage);
 }
 
-void FairMQMessageZMQ::SetMessage(void* data, size_t size)
+void FairMQMessageZMQ::SetMessage(void*, size_t)
 {
     // dummy method to comply with the interface. functionality not allowed in zeromq.
 }
@@ -136,7 +136,7 @@ inline void FairMQMessageZMQ::CloseMessage()
     }
 }
 
-void FairMQMessageZMQ::CleanUp(void* data, void* hint)
+void FairMQMessageZMQ::CleanUp(void* data, void*)
 {
     free(data);
 }

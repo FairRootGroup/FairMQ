@@ -79,7 +79,7 @@ FairMQPollerZMQ::FairMQPollerZMQ(unordered_map<string, vector<FairMQChannel>>& c
         int index = 0;
         for (string channel : channelList)
         {
-            for (int i = 0; i < channelsMap.at(channel).size(); ++i)
+            for (unsigned int i = 0; i < channelsMap.at(channel).size(); ++i)
             {
                 index = fOffsetMap[channel] + i;
 

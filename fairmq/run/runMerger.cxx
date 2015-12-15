@@ -142,7 +142,7 @@ int main(int argc, char** argv)
 
     merger.SetTransport(transportFactory);
 
-    for (int i = 0; i < options.inputAddress.size(); ++i)
+    for (unsigned int i = 0; i < options.inputAddress.size(); ++i)
     {
         FairMQChannel inputChannel(options.inputSocketType.at(i), options.inputMethod.at(i), options.inputAddress.at(i));
         inputChannel.UpdateSndBufSize(options.inputBufSize.at(i));
