@@ -96,13 +96,13 @@ class FairProgOptions
 
     // convert value to string that corresponds to the key
     std::string GetStringValue(const std::string& key);
-    
-    const po::variables_map& GetVarMap() const {return fVarMap;}
-    
+
+    const po::variables_map& GetVarMap() const { return fVarMap; }
+
     // boost prog options parsers
     int ParseCmdLine(const int argc, char** argv, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);
     int ParseCmdLine(const int argc, char** argv, const po::options_description& desc, bool allowUnregistered = false);
-    
+
     int ParseCfgFile(const std::string& filename, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);
     int ParseCfgFile(const std::string& filename, const po::options_description& desc, bool allowUnregistered = false);
     int ParseCfgFile(std::ifstream& ifs, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);

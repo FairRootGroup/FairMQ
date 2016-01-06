@@ -57,6 +57,15 @@ struct internal_IDLE         { std::string name() const { return "internal_IDLE"
 struct END                   { std::string name() const { return "END"; } };
 struct ERROR_FOUND           { std::string name() const { return "ERROR_FOUND"; } };
 
+// deactivate the warning for non-virtual destructor thrown in the boost library
+#if defined(__clang__)
+_Pragma("clang diagnostic push")
+_Pragma("clang diagnostic ignored \"-Wnon-virtual-dtor\"")
+#elif defined(__GNUC__) || defined(__GNUG__)
+_Pragma("GCC diagnostic push")
+_Pragma("GCC diagnostic ignored \"-Wnon-virtual-dtor\"")
+#endif
+
 // defining the boost MSM state machine
 struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
 {
@@ -458,6 +467,13 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
   protected:
     std::atomic<State> fState;
 };
+
+// reactivate the warning for non-virtual destructor
+#if defined(__clang__)
+_Pragma("clang diagnostic pop")
+#elif defined(__GNUC__) || defined(__GNUG__)
+_Pragma("GCC diagnostic pop")
+#endif
 
 typedef msm::back::state_machine<FairMQFSM_> FairMQFSM;
 } // namespace FairMQFSM

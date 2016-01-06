@@ -41,6 +41,12 @@ class FairMQChannel
     /// @param address Network address to bind/connect to (e.g. "tcp://127.0.0.1:5555" or "ipc://abc")
     FairMQChannel(const std::string& type, const std::string& method, const std::string& address);
 
+    /// Copy Constructor
+    FairMQChannel(const FairMQChannel&);
+
+    /// Assignment operator
+    FairMQChannel& operator=(const FairMQChannel&);
+
     /// Default destructor
     virtual ~FairMQChannel();
 

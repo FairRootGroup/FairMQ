@@ -25,6 +25,8 @@ class FairMQMessageNN : public FairMQMessage
     FairMQMessageNN();
     FairMQMessageNN(size_t size);
     FairMQMessageNN(void* data, size_t size, fairmq_free_fn *ffn = NULL, void* hint = NULL);
+    FairMQMessageNN(const FairMQMessageNN&) = delete;
+    FairMQMessageNN operator=(const FairMQMessageNN&) = delete;
 
     virtual void Rebuild();
     virtual void Rebuild(size_t size);
@@ -50,10 +52,6 @@ class FairMQMessageNN : public FairMQMessage
     bool fReceiving;
 
     void Clear();
-
-    /// Copy Constructor
-    FairMQMessageNN(const FairMQMessageNN&);
-    FairMQMessageNN operator=(const FairMQMessageNN&);
 };
 
 #endif /* FAIRMQMESSAGENN_H_ */

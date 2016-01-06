@@ -6,20 +6,19 @@
  */
 
 #ifndef BASESOURCEPOLICY_H
-#define	BASESOURCEPOLICY_H
+#define BASESOURCEPOLICY_H
 
 #include <type_traits>
+
 // c++11 code
 //  CRTP base class
 template <typename TDerived >
 class BaseSourcePolicy
 {
-public:
-    BaseSourcePolicy() 
-    {}
+  public:
+    BaseSourcePolicy() {}
 
-    virtual ~BaseSourcePolicy()
-    {}
+    virtual ~BaseSourcePolicy() {}
 
     template<typename C = TDerived>
     auto InitSource()-> decltype(static_cast<C*>(this)->InitSource() )
@@ -49,7 +48,6 @@ public:
         static_assert(std::is_same<C, TDerived>{}, "BaseSourcePolicy::GetOutData hack broken");
         return static_cast<TDerived*>(this)->GetOutData();
     }
-
 };
 
 /*
@@ -87,5 +85,5 @@ public:
 
 };
 */
-#endif	/* BASESOURCEPOLICY_H */
 
+#endif /* BASESOURCEPOLICY_H */

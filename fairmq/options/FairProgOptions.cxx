@@ -18,15 +18,19 @@ using namespace std;
 
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Constructor
-FairProgOptions::FairProgOptions() : 
+FairProgOptions::FairProgOptions() :
                         fGenericDesc("Generic options description"),
                         fConfigDesc("Configuration options description"),
                         fHiddenDesc("Hidden options description"),
-                        fEnvironmentDesc("Environment Variables"),
+                        fEnvironmentDesc("Environment variables"),
                         fCmdLineOptions("Command line options"),
                         fConfigFileOptions("Configuration file options"),
                         fVisibleOptions("Visible options"),
-                        fVerboseLvl("INFO"), fUseConfigFile(false), fConfigFile()
+                        fVerboseLvl("INFO"),
+                        fUseConfigFile(false),
+                        fConfigFile(),
+                        fVarMap(),
+                        fSeverityMap()
 {
     // define generic options
     fGenericDesc.add_options()
@@ -141,7 +145,7 @@ int FairProgOptions::ParseCmdLine(const int argc, char** argv, const po::options
 
 int FairProgOptions::ParseCmdLine(const int argc, char** argv, const po::options_description& desc, bool allowUnregistered)
 {
-    return ParseCmdLine(argc,argv,desc,fVarMap,allowUnregistered);
+    return ParseCmdLine(argc, argv, desc, fVarMap, allowUnregistered);
 }
 
 int FairProgOptions::ParseCfgFile(ifstream& ifs, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered)

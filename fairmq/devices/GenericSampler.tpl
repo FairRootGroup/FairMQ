@@ -13,6 +13,7 @@ base_GenericSampler<T,U,K,L>::base_GenericSampler()
   , fEventRate(1)
   , fEventCounter(0)
   , fContinuous(false)
+  , fTaskList()
 {
 }
 

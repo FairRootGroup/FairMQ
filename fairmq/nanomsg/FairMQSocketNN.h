@@ -27,6 +27,8 @@ class FairMQSocketNN : public FairMQSocket
 {
   public:
     FairMQSocketNN(const std::string& type, const std::string& name, int numIoThreads); // numIoThreads is not used in nanomsg.
+    FairMQSocketNN(const FairMQSocketNN&) = delete;
+    FairMQSocketNN operator=(const FairMQSocketNN&) = delete;
 
     virtual std::string GetId();
 
@@ -67,10 +69,6 @@ class FairMQSocketNN : public FairMQSocket
     unsigned long fBytesRx;
     unsigned long fMessagesTx;
     unsigned long fMessagesRx;
-
-    /// Copy Constructor
-    FairMQSocketNN(const FairMQSocketNN&);
-    FairMQSocketNN operator=(const FairMQSocketNN&);
 };
 
 #endif /* FAIRMQSOCKETNN_H_ */

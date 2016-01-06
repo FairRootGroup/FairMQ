@@ -6,20 +6,18 @@
  */
 
 #ifndef BASESINKPOLICY_H
-#define	BASESINKPOLICY_H
-
+#define BASESINKPOLICY_H
 
 #include <type_traits>
+
 //  CRTP base class
 template <typename TDerived >
 class BaseSinkPolicy
 {
-public:
-    BaseSinkPolicy() 
-    {}
+  public:
+    BaseSinkPolicy() {}
 
-    virtual ~BaseSinkPolicy()
-    {}
+    virtual ~BaseSinkPolicy() {}
 
     template<typename CONTAINER_TYPE, typename C = TDerived>
     auto AddToFile(CONTAINER_TYPE container) -> decltype(static_cast<C*>(this)->AddToFile(container) )
@@ -34,8 +32,6 @@ public:
         static_assert(std::is_same<C, TDerived>{}, "BaseSinkPolicy::InitOutputFile hack broken");
         return static_cast<TDerived*>(this)->InitOutputFile();
     }
-
 };
 
-#endif	/* BASESINKPOLICY_H */
-
+#endif /* BASESINKPOLICY_H */

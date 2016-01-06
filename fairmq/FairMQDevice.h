@@ -45,6 +45,10 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     /// Default constructor
     FairMQDevice();
+    /// Copy constructor (disabled)
+    FairMQDevice(const FairMQDevice&) = delete;
+    /// Assignment operator (disabled)
+    FairMQDevice operator=(const FairMQDevice&) = delete;
     /// Default destructor
     virtual ~FairMQDevice();
 
@@ -173,10 +177,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// Signal handler
     void SignalHandler(int signal);
     bool fCatchingSignals;
-
-    /// Copy Constructor
-    FairMQDevice(const FairMQDevice&);
-    FairMQDevice operator=(const FairMQDevice&);
 };
 
 #endif /* FAIRMQDEVICE_H_ */

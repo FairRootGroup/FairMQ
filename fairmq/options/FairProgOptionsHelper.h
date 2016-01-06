@@ -25,8 +25,6 @@
 #include <iterator>
 #include <tuple>
 
-
-
 template<class T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
 {
@@ -36,9 +34,8 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
 
 namespace fairmq
 {
-    
     namespace po = boost::program_options;
-    
+
     //_____________________________________________________________________________________________________________________________
 
     template<typename T>
@@ -108,6 +105,7 @@ namespace fairmq
             return std::string("empty value");
         }
     };
+
 //_____________________________________________________________________________________________________________________________
 
     // policy to convert variable value content into a tuple with value, type, defaulted, empty information

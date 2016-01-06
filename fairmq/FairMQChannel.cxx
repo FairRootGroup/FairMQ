@@ -63,6 +63,47 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
 {
 }
 
+FairMQChannel::FairMQChannel(const FairMQChannel& chan)
+    : fType(chan.fType)
+    , fMethod(chan.fMethod)
+    , fAddress(chan.fAddress)
+    , fSndBufSize(chan.fSndBufSize)
+    , fRcvBufSize(chan.fRcvBufSize)
+    , fRateLogging(chan.fRateLogging)
+    , fSocket(nullptr)
+    , fChannelName(chan.fChannelName)
+    , fIsValid(false)
+    , fPoller(nullptr)
+    , fCmdSocket(nullptr)
+    , fTransportFactory(nullptr)
+    , fNoBlockFlag(chan.fNoBlockFlag)
+    , fSndMoreFlag(chan.fSndMoreFlag)
+    , fSndTimeoutInMs(chan.fSndTimeoutInMs)
+    , fRcvTimeoutInMs(chan.fRcvTimeoutInMs)
+{}
+
+FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
+{
+    fType = chan.fType;
+    fMethod = chan.fMethod;
+    fAddress = chan.fAddress;
+    fSndBufSize = chan.fSndBufSize;
+    fRcvBufSize = chan.fRcvBufSize;
+    fRateLogging = chan.fRateLogging;
+    fSocket = nullptr;
+    fChannelName = chan.fChannelName;
+    fIsValid = false;
+    fPoller = nullptr;
+    fCmdSocket = nullptr;
+    fTransportFactory = nullptr;
+    fNoBlockFlag = chan.fNoBlockFlag;
+    fSndMoreFlag = chan.fSndMoreFlag;
+    fSndTimeoutInMs = chan.fSndTimeoutInMs;
+    fRcvTimeoutInMs = chan.fRcvTimeoutInMs;
+
+    return *this;
+}
+
 string FairMQChannel::GetType() const
 {
     try

@@ -6,34 +6,28 @@
  */
 
 #ifndef BASEDESERIALIZATIONPOLICY_H
-#define	BASEDESERIALIZATIONPOLICY_H
-
+#define BASEDESERIALIZATIONPOLICY_H
 
 #include "FairMQMessage.h"
 
 // c++11 code
 #include <type_traits>
 
-
-
 //  CRTP base class
 template <typename TDerived >
 class BaseDeserializationPolicy
 {
-public:
-    BaseDeserializationPolicy() 
-    {}
+  public:
+    BaseDeserializationPolicy() {}
 
-    virtual ~BaseDeserializationPolicy()
-    {}
+    virtual ~BaseDeserializationPolicy() {}
 
     template<typename C = TDerived>
-    auto DeserializeMsg(FairMQMessage* msg)-> decltype(static_cast<C*>(this)->DeserializeMsg(msg) )
+    auto DeserializeMsg(FairMQMessage* msg)-> decltype(static_cast<C*>(this)->DeserializeMsg(msg))
     {
-    	static_assert(std::is_same<C, TDerived>{}, "BaseDeserializationPolicy::DeserializeMsg hack broken");
-    	return static_cast<TDerived*>(this)->DeserializeMsg(msg);
+        static_assert(std::is_same<C, TDerived>{}, "BaseDeserializationPolicy::DeserializeMsg hack broken");
+        return static_cast<TDerived*>(this)->DeserializeMsg(msg);
     }
-
 };
 
 
@@ -57,5 +51,4 @@ public:
 
 };*/
 
-#endif	/* BASEDESERIALIZATIONPOLICY_H */
-
+#endif /* BASEDESERIALIZATIONPOLICY_H */

@@ -28,8 +28,6 @@
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
 
-
-
 // template function that take any device, 
 // and run a simple MQ state machine configured from a JSON file
 template<typename TMQDevice>
@@ -114,6 +112,4 @@ inline int runNonInteractiveStateMachine(TMQDevice& device, FairMQProgOptions& c
     return 0;
 }
 
-
 #endif /* RUNSIMPLEMQSTATEMACHINE_H */
-

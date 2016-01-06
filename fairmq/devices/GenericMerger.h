@@ -6,7 +6,7 @@
  */
 
 #ifndef GENERICMERGER_H
-#define	GENERICMERGER_H
+#define GENERICMERGER_H
 
 
 #include <boost/thread.hpp>
@@ -72,4 +72,3 @@ class GenericMerger : public FairMQDevice, public MergerPolicy, public InputPoli
 };
 
 #endif /* GENERICMERGER_H */
-

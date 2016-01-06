@@ -6,7 +6,7 @@
  */
 
 #ifndef BASESERIALIZATIONPOLICY_H
-#define	BASESERIALIZATIONPOLICY_H
+#define BASESERIALIZATIONPOLICY_H
 
 #include "FairMQMessage.h"
 
@@ -15,12 +15,10 @@
 template <typename TDerived >
 class BaseSerializationPolicy
 {
-public:
-    BaseSerializationPolicy() 
-    {}
+  public:
+    BaseSerializationPolicy() {}
 
-    virtual ~BaseSerializationPolicy()
-    {}
+    virtual ~BaseSerializationPolicy() {}
 
     template<typename CONTAINER_TYPE, typename C = TDerived>
     auto SerializeMsg(CONTAINER_TYPE container) -> decltype(static_cast<C*>(this)->SerializeMsg(container) )
@@ -35,10 +33,9 @@ public:
         static_assert(std::is_same<C, TDerived>{}, "BaseSerializationPolicy::SetMessage hack broken");
         return static_cast<TDerived*>(this)->SetMessage(msg);
     }
-
 };
 
- /*
+/*
 //  CRTP base class
 // c++14 code
 template <typename TDerived >
@@ -64,5 +61,5 @@ public:
 
 };
 */
-#endif	/* BASESERIALIZATIONPOLICY_H */
 
+#endif /* BASESERIALIZATIONPOLICY_H */
