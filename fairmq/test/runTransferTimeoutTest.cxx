@@ -62,7 +62,7 @@ class TransferTimeoutTester : public FairMQDevice
 
         if (getSndOK && getRcvOK)
         {
-            void* buffer = operator new[](1000);
+            void* buffer = malloc(1000);
             std::unique_ptr<FairMQMessage> msg1(fTransportFactory->CreateMessage(buffer, 1000));
             std::unique_ptr<FairMQMessage> msg2(fTransportFactory->CreateMessage());
 
