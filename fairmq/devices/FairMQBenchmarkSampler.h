@@ -28,8 +28,9 @@ class FairMQBenchmarkSampler : public FairMQDevice
   public:
     enum
     {
-        EventSize = FairMQDevice::Last,
-        EventRate,
+        MsgSize = FairMQDevice::Last,
+        NumMsgs,
+        MsgRate,
         Last
     };
 
@@ -37,7 +38,6 @@ class FairMQBenchmarkSampler : public FairMQDevice
     virtual ~FairMQBenchmarkSampler();
 
     void Log(int intervalInMs);
-    void ResetEventCounter();
 
     virtual void SetProperty(const int key, const std::string& value);
     virtual std::string GetProperty(const int key, const std::string& default_ = "");
@@ -48,9 +48,8 @@ class FairMQBenchmarkSampler : public FairMQDevice
     virtual void ListProperties();
 
   protected:
-    int fEventSize;
-    int fEventRate;
-    int fEventCounter;
+    int fMsgSize;
+    int fNumMsgs;
 
     virtual void Run();
 };

@@ -40,6 +40,14 @@ int main(int argc, char** argv)
 
     try
     {
+        int numMsgs;
+
+        options_description sink_options("Sink options");
+        sink_options.add_options()
+            ("num-msgs", value<int>(&numMsgs)->default_value(0), "Number of messages to receive");
+
+        config.AddToCmdLineOptions(sink_options);
+
         if (config.ParseAll(argc, argv))
         {
             return 0;
@@ -64,6 +72,7 @@ int main(int argc, char** argv)
         sink.SetTransport(transportFactory);
 
         sink.SetProperty(FairMQSink::Id, id);
+        sink.SetProperty(FairMQSink::NumMsgs, numMsgs);
         sink.SetProperty(FairMQSink::NumIoThreads, config.GetValue<int>("io-threads"));
 
         sink.ChangeState("INIT_DEVICE");

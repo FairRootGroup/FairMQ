@@ -16,6 +16,7 @@
 
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
+#include <boost/timer/timer.hpp>
 
 #include "FairMQBenchmarkSampler.h"
 #include "FairMQLogger.h"
@@ -23,9 +24,8 @@
 using namespace std;
 
 FairMQBenchmarkSampler::FairMQBenchmarkSampler()
-    : fEventSize(10000)
-    , fEventRate(1)
-    , fEventCounter(0)
+    : fMsgSize(10000)
+    , fNumMsgs(0)
 {
 }
 
@@ -35,52 +35,37 @@ FairMQBenchmarkSampler::~FairMQBenchmarkSampler()
 
 void FairMQBenchmarkSampler::Run()
 {
-    boost::thread resetEventCounter(boost::bind(&FairMQBenchmarkSampler::ResetEventCounter, this));
+    void* buffer = malloc(fMsgSize);
+    int numSentMsgs = 0;
 
-    void* buffer = operator new[](fEventSize);
-
-    unique_ptr<FairMQMessage> baseMsg(fTransportFactory->CreateMessage(buffer, fEventSize));
+    unique_ptr<FairMQMessage> baseMsg(fTransportFactory->CreateMessage(buffer, fMsgSize));
 
     // store the channel reference to avoid traversing the map on every loop iteration
-    const FairMQChannel& dataChannel = fChannels.at("data-out").at(0);
+    const FairMQChannel& dataOutChannel = fChannels.at("data-out").at(0);
+
+    LOG(INFO) << "Starting the benchmark with message size of " << fMsgSize << " and number of messages " << fNumMsgs << ".";
+    boost::timer::auto_cpu_timer timer;
 
     while (CheckCurrentState(RUNNING))
     {
         unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
         msg->Copy(baseMsg);
 
-        dataChannel.Send(msg);
-
-        --fEventCounter;
-
-        while (fEventCounter == 0)
+        if (dataOutChannel.Send(msg) >= 0)
         {
-            boost::this_thread::sleep(boost::posix_time::milliseconds(1));
+            if (fNumMsgs > 0)
+            {
+                numSentMsgs++;
+                if (numSentMsgs >= fNumMsgs)
+                {
+                    break;
+                }
+            }
         }
     }
 
-    try {
-        resetEventCounter.interrupt();
-        resetEventCounter.join();
-    } catch(boost::thread_resource_error& e) {
-        LOG(ERROR) << e.what();
-    }
-}
-
-void FairMQBenchmarkSampler::ResetEventCounter()
-{
-    while (true)
-    {
-        try
-        {
-            fEventCounter = fEventRate / 100;
-            boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-        }
-        catch (boost::thread_interrupted&)
-        {
-            break;
-        }
-    }
+    LOG(INFO) << "Sent " << numSentMsgs << " messages, leaving RUNNING state.";
+    LOG(INFO) << "Sending time: ";
 }
 
 void FairMQBenchmarkSampler::SetProperty(const int key, const string& value)
@@ -106,11 +91,11 @@ void FairMQBenchmarkSampler::SetProperty(const int key, const int value)
 {
     switch (key)
     {
-        case EventSize:
-            fEventSize = value;
+        case MsgSize:
+            fMsgSize = value;
             break;
-        case EventRate:
-            fEventRate = value;
+        case NumMsgs:
+            fNumMsgs = value;
             break;
         default:
             FairMQDevice::SetProperty(key, value);
@@ -122,10 +107,10 @@ int FairMQBenchmarkSampler::GetProperty(const int key, const int default_ /*= 0*
 {
     switch (key)
     {
-        case EventSize:
-            return fEventSize;
-        case EventRate:
-            return fEventRate;
+        case MsgSize:
+            return fMsgSize;
+        case NumMsgs:
+            return fNumMsgs;
         default:
             return FairMQDevice::GetProperty(key, default_);
     }
@@ -135,10 +120,10 @@ string FairMQBenchmarkSampler::GetPropertyDescription(const int key)
 {
     switch (key)
     {
-        case EventSize:
-            return "EventSize: Size of the transfered message buffer.";
-        case EventRate:
-            return "EventRate: Upper limit for the message rate.";
+        case MsgSize:
+            return "MsgSize: Size of the transfered message buffer.";
+        case NumMsgs:
+            return "NumMsgs: Number of messages to send.";
         default:
             return FairMQDevice::GetPropertyDescription(key);
     }
