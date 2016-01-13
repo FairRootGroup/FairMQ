@@ -22,12 +22,6 @@
 #include "FairMQProgOptions.h"
 #include "FairMQBenchmarkSampler.h"
 
-#ifdef NANOMSG
-#include "FairMQTransportFactoryNN.h"
-#else
-#include "FairMQTransportFactoryZMQ.h"
-#endif
-
 using namespace std;
 using namespace FairMQParser;
 using namespace boost::program_options;
@@ -65,11 +59,7 @@ int main(int argc, char** argv)
 
         LOG(INFO) << "PID: " << getpid();
 
-#ifdef NANOMSG
-        sampler.SetTransport(new FairMQTransportFactoryNN());
-#else
-        sampler.SetTransport(new FairMQTransportFactoryZMQ());
-#endif
+        sampler.SetTransport(config.GetValue<std::string>("transport"));
 
         sampler.SetProperty(FairMQBenchmarkSampler::Id, id);
         sampler.SetProperty(FairMQBenchmarkSampler::MsgSize, msgSize);

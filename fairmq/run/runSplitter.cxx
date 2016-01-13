@@ -19,24 +19,19 @@
 #include "FairMQLogger.h"
 #include "FairMQSplitter.h"
 
-#ifdef NANOMSG
-#include "FairMQTransportFactoryNN.h"
-#else
-#include "FairMQTransportFactoryZMQ.h"
-#endif
-
 using namespace std;
 
 typedef struct DeviceOptions
 {
     DeviceOptions() :
-        id(), ioThreads(0), numOutputs(0),
+        id(), ioThreads(0), transport(), numOutputs(0),
         inputSocketType(), inputBufSize(0), inputMethod(), inputAddress(),
         outputSocketType(), outputBufSize(), outputMethod(), outputAddress()
         {}
 
     string id;
     int ioThreads;
+    string transport;
     int numOutputs;
     string inputSocketType;
     int inputBufSize;
@@ -58,6 +53,7 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
     desc.add_options()
         ("id", bpo::value<string>()->required(), "Device ID")
         ("io-threads", bpo::value<int>()->default_value(1), "Number of I/O threads")
+        ("transport", bpo::value<string>()->default_value("zeromq"), "Transport (zeromq/nanomsg)")
         ("num-outputs", bpo::value<int>()->required(), "Number of Splitter output sockets")
         ("input-socket-type", bpo::value<string>()->required(), "Input socket type: sub/pull")
         ("input-buff-size", bpo::value<int>(), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
@@ -72,7 +68,7 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
     bpo::variables_map vm;
     bpo::store(bpo::parse_command_line(_argc, _argv, desc), vm);
 
-    if ( vm.count("help") )
+    if (vm.count("help"))
     {
         LOG(INFO) << "FairMQ Splitter" << endl << desc;
         return false;
@@ -80,38 +76,18 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
 
     bpo::notify(vm);
 
-    if ( vm.count("id") )
-        _options->id = vm["id"].as<string>();
-
-    if ( vm.count("io-threads") )
-        _options->ioThreads = vm["io-threads"].as<int>();
-
-    if ( vm.count("num-outputs") )
-        _options->numOutputs = vm["num-outputs"].as<int>();
-
-    if ( vm.count("input-socket-type") )
-        _options->inputSocketType = vm["input-socket-type"].as<string>();
-
-    if ( vm.count("input-buff-size") )
-        _options->inputBufSize = vm["input-buff-size"].as<int>();
-
-    if ( vm.count("input-method") )
-        _options->inputMethod = vm["input-method"].as<string>();
-
-    if ( vm.count("input-address") )
-        _options->inputAddress = vm["input-address"].as<string>();
-
-    if ( vm.count("output-socket-type") )
-        _options->outputSocketType = vm["output-socket-type"].as<vector<string>>();
-
-    if ( vm.count("output-buff-size") )
-        _options->outputBufSize = vm["output-buff-size"].as<vector<int>>();
-
-    if ( vm.count("output-method") )
-        _options->outputMethod = vm["output-method"].as<vector<string>>();
-
-    if ( vm.count("output-address") )
-        _options->outputAddress = vm["output-address"].as<vector<string>>();
+    if (vm.count("id")) { _options->id = vm["id"].as<string>(); }
+    if (vm.count("io-threads")) { _options->ioThreads = vm["io-threads"].as<int>(); }
+    if (vm.count("transport"))  { _options->transport = vm["transport"].as<string>(); }
+    if (vm.count("num-outputs")) { _options->numOutputs = vm["num-outputs"].as<int>(); }
+    if (vm.count("input-socket-type")) { _options->inputSocketType = vm["input-socket-type"].as<string>(); }
+    if (vm.count("input-buff-size")) { _options->inputBufSize = vm["input-buff-size"].as<int>(); }
+    if (vm.count("input-method")) { _options->inputMethod = vm["input-method"].as<string>(); }
+    if (vm.count("input-address")) { _options->inputAddress = vm["input-address"].as<string>(); }
+    if (vm.count("output-socket-type")) { _options->outputSocketType = vm["output-socket-type"].as<vector<string>>(); }
+    if (vm.count("output-buff-size")) { _options->outputBufSize = vm["output-buff-size"].as<vector<int>>(); }
+    if (vm.count("output-method")) { _options->outputMethod = vm["output-method"].as<vector<string>>(); }
+    if (vm.count("output-address")) { _options->outputAddress = vm["output-address"].as<vector<string>>(); }
 
     return true;
 }
@@ -135,13 +111,7 @@ int main(int argc, char** argv)
 
     LOG(INFO) << "PID: " << getpid();
 
-#ifdef NANOMSG
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
-#else
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-#endif
-
-    splitter.SetTransport(transportFactory);
+    splitter.SetTransport(options.transport);
 
     FairMQChannel inputChannel(options.inputSocketType, options.inputMethod, options.inputAddress);
     inputChannel.UpdateSndBufSize(options.inputBufSize);

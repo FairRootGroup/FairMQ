@@ -131,18 +131,21 @@ void FairMQProgOptions::InitOptionDescription()
     if (fUseConfigFile)
     {
         fMQOptionsInCmd.add_options()
-            ("id",             po::value<string>(),                       "Device ID (required argument).")
-            ("io-threads",     po::value<int>()->default_value(1),        "Number of I/O threads.");
+            ("id",             po::value<string>(),                          "Device ID (required argument).")
+            ("io-threads",     po::value<int>()->default_value(1),           "Number of I/O threads.")
+            ("transport",      po::value<string>()->default_value("zeromq"), "Transport ('zeromq'/'nanomsg').");
 
         fMQOptionsInCfg.add_options()
-            ("id",             po::value<string>()->required(),           "Device ID (required argument).")
-            ("io-threads",     po::value<int>()->default_value(1),        "Number of I/O threads.");
+            ("id",             po::value<string>()->required(),              "Device ID (required argument).")
+            ("io-threads",     po::value<int>()->default_value(1),           "Number of I/O threads.")
+            ("transport",      po::value<string>()->default_value("zeromq"), "Transport ('zeromq'/'nanomsg').");
     }
     else
     {
         fMQOptionsInCmd.add_options()
-            ("id",             po::value<string>()->required(),           "Device ID (required argument)")
-            ("io-threads",     po::value<int>()->default_value(1),        "Number of I/O threads");
+            ("id",             po::value<string>()->required(),              "Device ID (required argument)")
+            ("io-threads",     po::value<int>()->default_value(1),           "Number of I/O threads")
+            ("transport",      po::value<string>()->default_value("zeromq"), "Transport ('zeromq'/'nanomsg').");
     }
 
     fMQParserOptions.add_options()

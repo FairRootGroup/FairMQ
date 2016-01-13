@@ -60,9 +60,10 @@ class GenericProcessor : public FairMQDevice, public T, public U, public V
     // the four following methods ensure 
     // that the correct policy method is called
 
-    void SetTransport(FairMQTransportFactory* transport)
+    template <typename... Args>
+    void SetTransport(Args... args)
     {
-        FairMQDevice::SetTransport(transport);
+        FairMQDevice::SetTransport(std::forward<Args>(args)...);
     }
 
     template <typename... Args>

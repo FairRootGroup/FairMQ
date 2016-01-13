@@ -28,9 +28,10 @@ class GenericMerger : public FairMQDevice, public MergerPolicy, public InputPoli
     virtual ~GenericMerger()
     {}
 
-    void SetTransport(FairMQTransportFactory* transport)
+    template <typename... Args>
+    void SetTransport(Args... args)
     {
-        FairMQDevice::SetTransport(transport);
+        FairMQDevice::SetTransport(std::forward<Args>(args)...);
     }
 
   protected:

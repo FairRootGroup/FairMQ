@@ -16,13 +16,6 @@
 /// boost
 #include "boost/program_options.hpp"
 
-/// ZMQ/nmsg (in FairSoft)
-#ifdef NANOMSG
-#include "FairMQTransportFactoryNN.h"
-#else
-#include "FairMQTransportFactoryZMQ.h"
-#endif
-
 /// FairRoot - FairMQ
 #include "FairMQLogger.h"
 #include "FairMQParser.h"
@@ -47,13 +40,7 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
 
     LOG(INFO) << "PID: " << getpid();
 
-#ifdef NANOMSG
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
-#else
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-#endif
-
-    device.SetTransport(transportFactory);
+    device.SetTransport(config.GetValue<std::string>("transport"));
 
     device.ChangeState(TMQDevice::INIT_DEVICE);
     device.WaitForEndOfState(TMQDevice::INIT_DEVICE);
@@ -84,13 +71,7 @@ inline int runNonInteractiveStateMachine(TMQDevice& device, FairMQProgOptions& c
 
     LOG(INFO) << "PID: " << getpid();
 
-#ifdef NANOMSG
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
-#else
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-#endif
-
-    device.SetTransport(transportFactory);
+    device.SetTransport(config.GetValue<std::string>("transport"));
 
     device.ChangeState(TMQDevice::INIT_DEVICE);
     device.WaitForEndOfState(TMQDevice::INIT_DEVICE);

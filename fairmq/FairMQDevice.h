@@ -102,9 +102,12 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// Print all properties of this and the parent class to LOG(INFO)
     virtual void ListProperties();
 
-    /// Configures the device with a transport factory
+    /// Configures the device with a transport factory (DEPRECATED)
     /// @param factory  Pointer to the transport factory object
-    virtual void SetTransport(FairMQTransportFactory* factory);
+    void SetTransport(FairMQTransportFactory* factory);
+    /// Configures the device with a transport factory
+    /// @param transport  Transport string ("zeromq"/"nanomsg")
+    void SetTransport(const std::string& transport = "zeromq");
 
     /// Implements the sort algorithm used in SortChannel()
     /// @param lhs Right hand side value for comparison

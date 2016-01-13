@@ -17,22 +17,11 @@
 #include "FairMQLogger.h"
 #include "FairMQTestSub.h"
 
-#ifdef NANOMSG
-#include "FairMQTransportFactoryNN.h"
-#else
-#include "FairMQTransportFactoryZMQ.h"
-#endif
-
 int main(int argc, char** argv)
 {
     FairMQTestSub testSub;
     testSub.CatchSignals();
-
-#ifdef NANOMSG
-    testSub.SetTransport(new FairMQTransportFactoryNN());
-#else
-    testSub.SetTransport(new FairMQTransportFactoryZMQ());
-#endif
+    testSub.SetTransport("zeromq");
 
     testSub.SetProperty(FairMQTestSub::Id, "testSub_" + std::to_string(getpid()));
 

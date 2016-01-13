@@ -19,23 +19,18 @@
 #include "FairMQLogger.h"
 #include "FairMQMerger.h"
 
-#ifdef NANOMSG
-#include "FairMQTransportFactoryNN.h"
-#else
-#include "FairMQTransportFactoryZMQ.h"
-#endif
-
 using namespace std;
 
 typedef struct DeviceOptions
 {
     DeviceOptions() :
-        id(), ioThreads(0), numInputs(0),
+        id(), ioThreads(0), transport(), numInputs(0),
         inputSocketType(), inputBufSize(), inputMethod(), inputAddress(),
         outputSocketType(), outputBufSize(0), outputMethod(), outputAddress() {}
 
     string id;
     int ioThreads;
+    string transport;
     int numInputs;
     vector<string> inputSocketType;
     vector<int> inputBufSize;
@@ -57,6 +52,7 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
     desc.add_options()
         ("id", bpo::value<string>()->required(), "Device ID")
         ("io-threads", bpo::value<int>()->default_value(1), "Number of I/O threads")
+        ("transport", bpo::value<string>()->default_value("zeromq"), "Transport (zeromq/nanomsg)")
         ("num-inputs", bpo::value<int>()->required(), "Number of Merger input sockets")
         ("input-socket-type", bpo::value<vector<string>>()->required(), "Input socket type: sub/pull")
         ("input-buff-size", bpo::value<vector<int>>()->required(), "Input buffer size in number of messages (ZeroMQ)/bytes(nanomsg)")
@@ -79,38 +75,18 @@ inline bool parse_cmd_line(int _argc, char* _argv[], DeviceOptions* _options)
 
     bpo::notify(vm);
 
-    if (vm.count("id"))
-        _options->id = vm["id"].as<string>();
-
-    if (vm.count("io-threads"))
-        _options->ioThreads = vm["io-threads"].as<int>();
-
-    if (vm.count("num-inputs"))
-        _options->numInputs = vm["num-inputs"].as<int>();
-
-    if (vm.count("input-socket-type"))
-        _options->inputSocketType = vm["input-socket-type"].as<vector<string>>();
-
-    if (vm.count("input-buff-size"))
-        _options->inputBufSize = vm["input-buff-size"].as<vector<int>>();
-
-    if (vm.count("input-method"))
-        _options->inputMethod = vm["input-method"].as<vector<string>>();
-
-    if (vm.count("input-address"))
-        _options->inputAddress = vm["input-address"].as<vector<string>>();
-
-    if (vm.count("output-socket-type"))
-        _options->outputSocketType = vm["output-socket-type"].as<string>();
-
-    if (vm.count("output-buff-size"))
-        _options->outputBufSize = vm["output-buff-size"].as<int>();
-
-    if (vm.count("output-method"))
-        _options->outputMethod = vm["output-method"].as<string>();
-
-    if (vm.count("output-address"))
-        _options->outputAddress = vm["output-address"].as<string>();
+    if (vm.count("id")) { _options->id = vm["id"].as<string>(); }
+    if (vm.count("io-threads")) { _options->ioThreads = vm["io-threads"].as<int>(); }
+    if (vm.count("transport"))  { _options->transport = vm["transport"].as<string>(); }
+    if (vm.count("num-inputs")) { _options->numInputs = vm["num-inputs"].as<int>(); }
+    if (vm.count("input-socket-type")) { _options->inputSocketType = vm["input-socket-type"].as<vector<string>>(); }
+    if (vm.count("input-buff-size")) { _options->inputBufSize = vm["input-buff-size"].as<vector<int>>(); }
+    if (vm.count("input-method")) { _options->inputMethod = vm["input-method"].as<vector<string>>(); }
+    if (vm.count("input-address")) { _options->inputAddress = vm["input-address"].as<vector<string>>(); }
+    if (vm.count("output-socket-type")) { _options->outputSocketType = vm["output-socket-type"].as<string>(); }
+    if (vm.count("output-buff-size")) { _options->outputBufSize = vm["output-buff-size"].as<int>(); }
+    if (vm.count("output-method")) { _options->outputMethod = vm["output-method"].as<string>(); }
+    if (vm.count("output-address")) { _options->outputAddress = vm["output-address"].as<string>(); }
 
     return true;
 }
@@ -134,13 +110,7 @@ int main(int argc, char** argv)
 
     LOG(INFO) << "PID: " << getpid();
 
-#ifdef NANOMSG
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
-#else
-    FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-#endif
-
-    merger.SetTransport(transportFactory);
+    merger.SetTransport(options.transport);
 
     for (unsigned int i = 0; i < options.inputAddress.size(); ++i)
     {

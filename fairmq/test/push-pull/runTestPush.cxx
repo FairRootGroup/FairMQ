@@ -15,22 +15,11 @@
 #include "FairMQLogger.h"
 #include "FairMQTestPush.h"
 
-#ifdef NANOMSG
-#include "FairMQTransportFactoryNN.h"
-#else
-#include "FairMQTransportFactoryZMQ.h"
-#endif
-
 int main(int argc, char** argv)
 {
     FairMQTestPush testPush;
     testPush.CatchSignals();
-
-#ifdef NANOMSG
-    testPush.SetTransport(new FairMQTransportFactoryNN());
-#else
-    testPush.SetTransport(new FairMQTransportFactoryZMQ());
-#endif
+    testPush.SetTransport("zeromq");
 
     testPush.SetProperty(FairMQTestPush::Id, "testPush");
 

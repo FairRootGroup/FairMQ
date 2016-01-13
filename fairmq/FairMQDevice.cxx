@@ -27,6 +27,11 @@
 #include "FairMQDevice.h"
 #include "FairMQLogger.h"
 
+#include "FairMQTransportFactoryZMQ.h"
+#ifdef NANOMSG_FOUND
+#include "FairMQTransportFactoryNN.h"
+#endif
+
 using namespace std;
 
 // boost::function and a wrapper to catch the signals
@@ -85,6 +90,12 @@ void FairMQDevice::SignalHandler(int signal)
 
 void FairMQDevice::InitWrapper()
 {
+    if (!fTransportFactory)
+    {
+        LOG(ERROR) << "Transport not initialized. Did you call SetTransport()?";
+        exit(EXIT_FAILURE);
+    }
+
     if (!fCmdSocket)
     {
         fCmdSocket = fTransportFactory->CreateSocket("pub", "device-commands", fNumIoThreads);
@@ -452,6 +463,32 @@ int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/)
 void FairMQDevice::SetTransport(FairMQTransportFactory* factory)
 {
     fTransportFactory = factory;
+}
+
+void FairMQDevice::SetTransport(const string& transport)
+{
+    if (transport == "zeromq")
+    {
+        fTransportFactory = new FairMQTransportFactoryZMQ();
+    }
+#ifdef NANOMSG_FOUND
+    else if (transport == "nanomsg")
+    {
+        fTransportFactory = new FairMQTransportFactoryNN();
+    }
+#endif
+    else
+    {
+        LOG(ERROR) << "Unknown transport implementation requested: "
+                   << transport
+                   << ". Supported are "
+                   << "\"zeromq\""
+#ifdef NANOMSG_FOUND
+                   << ", \"nanomsg\""
+#endif
+                   << ". Exiting.";
+        exit(EXIT_FAILURE);
+    }
 }
 
 void FairMQDevice::LogSocketRates()

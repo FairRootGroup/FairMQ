@@ -53,9 +53,10 @@ class GenericFileSink : public FairMQDevice, public T, public U
     virtual ~GenericFileSink()
     {}
 
-    void SetTransport(FairMQTransportFactory* transport)
+    template <typename... Args>
+    void SetTransport(Args... args)
     {
-        FairMQDevice::SetTransport(transport);
+        FairMQDevice::SetTransport(std::forward<Args>(args)...);
     }
 
     template <typename... Args>

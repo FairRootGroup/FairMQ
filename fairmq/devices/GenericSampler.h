@@ -84,7 +84,12 @@ class base_GenericSampler : public FairMQDevice, public T, public U
     };
     */
 
-    virtual void SetTransport(FairMQTransportFactory* factory);
+    template <typename... Args>
+    void SetTransport(Args... args)
+    {
+        FairMQDevice::SetTransport(std::forward<Args>(args)...);
+    }
+
     void ResetEventCounter();
 
     template <typename... Args>

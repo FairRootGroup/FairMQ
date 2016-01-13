@@ -12,27 +12,14 @@
  * @author A. Rybalchenko
  */
 
-
-
 #include "FairMQLogger.h"
 #include "FairMQTestPub.h"
-
-#ifdef NANOMSG
-#include "FairMQTransportFactoryNN.h"
-#else
-#include "FairMQTransportFactoryZMQ.h"
-#endif
 
 int main(int argc, char** argv)
 {
     FairMQTestPub testPub;
     testPub.CatchSignals();
-
-#ifdef NANOMSG
-    testPub.SetTransport(new FairMQTransportFactoryNN());
-#else
-    testPub.SetTransport(new FairMQTransportFactoryZMQ());
-#endif
+    testPub.SetTransport("zeromq");
 
     testPub.SetProperty(FairMQTestPub::Id, "testPub");
 

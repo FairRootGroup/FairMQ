@@ -50,7 +50,7 @@ class FairMQPollerZMQ : public FairMQPoller
     zmq_pollitem_t* items;
     int fNumItems;
 
-    std::unordered_map<std::string,int> fOffsetMap;
+    std::unordered_map<std::string, int> fOffsetMap;
 };
 
 #endif /* FAIRMQPOLLERZMQ_H_ */

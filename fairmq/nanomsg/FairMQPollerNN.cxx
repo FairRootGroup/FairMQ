@@ -127,12 +127,14 @@ FairMQPollerNN::FairMQPollerNN(FairMQSocket& cmdSocket, FairMQSocket& dataSocket
 
     items[0].fd = cmdSocket.GetSocket(1);
     items[0].events = NN_POLLIN;
+    items[0].revents = 0;
+
+    items[1].fd = dataSocket.GetSocket(1);
+    items[1].revents = 0;
 
     int type = 0;
     size_t sz = sizeof(type);
     nn_getsockopt(dataSocket.GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
-
-    items[1].fd = dataSocket.GetSocket(1);
 
     if (type == NN_REQ || type == NN_REP || type == NN_PAIR)
     {
@@ -153,7 +155,7 @@ FairMQPollerNN::FairMQPollerNN(FairMQSocket& cmdSocket, FairMQSocket& dataSocket
     }
 }
 
-void FairMQPollerNN::Poll(int timeout)
+void FairMQPollerNN::Poll(const int timeout)
 {
     if (nn_poll(items, fNumItems, timeout) < 0)
     {
@@ -192,7 +194,7 @@ bool FairMQPollerNN::CheckInput(const string channelKey, const int index)
 {
     try
     {
-        if (items[fOffsetMap.at(channelKey) + index].revents & NN_POLLIN)
+        if (items[fOffsetMap.at(channelKey) + index].revents & (NN_POLLIN | NN_POLLOUT))
         {
             return true;
         }

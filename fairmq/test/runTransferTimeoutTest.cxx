@@ -15,12 +15,6 @@
 #include "FairMQLogger.h"
 #include "FairMQDevice.h"
 
-#ifdef NANOMSG
-#include "FairMQTransportFactoryNN.h"
-#else
-#include "FairMQTransportFactoryZMQ.h"
-#endif
-
 class TransferTimeoutTester : public FairMQDevice
 {
   public:
@@ -98,12 +92,7 @@ int main(int argc, char** argv)
 {
     TransferTimeoutTester timeoutTester;
     timeoutTester.CatchSignals();
-
-#ifdef NANOMSG
-    timeoutTester.SetTransport(new FairMQTransportFactoryNN());
-#else
-    timeoutTester.SetTransport(new FairMQTransportFactoryZMQ());
-#endif
+    timeoutTester.SetTransport("zeromq");
 
     timeoutTester.SetProperty(TransferTimeoutTester::Id, "timeoutTester");
 
