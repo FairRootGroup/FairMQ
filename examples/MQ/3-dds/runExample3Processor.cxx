@@ -24,12 +24,6 @@
 #include "FairMQExample3Processor.h"
 #include "FairMQTools.h"
 
-#ifdef NANOMSG
-#include "FairMQTransportFactoryNN.h"
-#else
-#include "FairMQTransportFactoryZMQ.h"
-#endif
-
 #include "KeyValue.h" // DDS Key Value
 #include "CustomCmd.h" // DDS Custom Commands
 
@@ -54,13 +48,7 @@ int main(int argc, char** argv)
 
         LOG(INFO) << "PID: " << getpid();
 
-#ifdef NANOMSG
-        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
-#else
-        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-#endif
-
-        processor.SetTransport(transportFactory);
+        processor.SetTransport(config.GetValue<std::string>("transport"));
 
         processor.SetProperty(FairMQExample3Processor::Id, id);
 

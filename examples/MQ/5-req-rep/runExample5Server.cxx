@@ -21,12 +21,6 @@
 #include "FairMQProgOptions.h"
 #include "FairMQExample5Server.h"
 
-#ifdef NANOMSG
-#include "FairMQTransportFactoryNN.h"
-#else
-#include "FairMQTransportFactoryZMQ.h"
-#endif
-
 using namespace std;
 using namespace boost::program_options;
 
@@ -53,13 +47,7 @@ int main(int argc, char** argv)
 
         LOG(INFO) << "PID: " << getpid();
 
-#ifdef NANOMSG
-        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
-#else
-        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-#endif
-
-        server.SetTransport(transportFactory);
+        server.SetTransport(config.GetValue<std::string>("transport"));
 
         server.SetProperty(FairMQExample5Server::Id, id);
 
