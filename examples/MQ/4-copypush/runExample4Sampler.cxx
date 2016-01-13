@@ -19,12 +19,6 @@
 #include "FairMQProgOptions.h"
 #include "FairMQExample4Sampler.h"
 
-#ifdef NANOMSG
-#include "FairMQTransportFactoryNN.h"
-#else
-#include "FairMQTransportFactoryZMQ.h"
-#endif
-
 int main(int argc, char** argv)
 {
     FairMQExample4Sampler sampler;
@@ -48,13 +42,7 @@ int main(int argc, char** argv)
 
         LOG(INFO) << "PID: " << getpid();
 
-#ifdef NANOMSG
-        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
-#else
-        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-#endif
-
-        sampler.SetTransport(transportFactory);
+        sampler.SetTransport(config.GetValue<std::string>("transport"));
 
         sampler.SetProperty(FairMQExample4Sampler::Id, id);
 

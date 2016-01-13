@@ -19,12 +19,6 @@
 #include "FairMQProgOptions.h"
 #include "FairMQExample6Broadcaster.h"
 
-#ifdef NANOMSG
-#include "FairMQTransportFactoryNN.h"
-#else
-#include "FairMQTransportFactoryZMQ.h"
-#endif
-
 int main(int argc, char** argv)
 {
     FairMQExample6Broadcaster broadcaster;
@@ -48,13 +42,7 @@ int main(int argc, char** argv)
 
         LOG(INFO) << "PID: " << getpid();
 
-#ifdef NANOMSG
-        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryNN();
-#else
-        FairMQTransportFactory* transportFactory = new FairMQTransportFactoryZMQ();
-#endif
-
-        broadcaster.SetTransport(transportFactory);
+        broadcaster.SetTransport(config.GetValue<std::string>("transport"));
 
         broadcaster.SetProperty(FairMQExample6Broadcaster::Id, id);
 
