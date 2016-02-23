@@ -55,12 +55,12 @@ int main(int argc, char** argv)
         // configure data output channel
         FairMQChannel dataInChannel("pull", "connect", "");
         dataInChannel.UpdateRateLogging(0);
-        processor.fChannels["data-in"].push_back(dataInChannel);
+        processor.fChannels["data1"].push_back(dataInChannel);
 
         // configure data output channel
         FairMQChannel dataOutChannel("push", "connect", "");
         dataOutChannel.UpdateRateLogging(0);
-        processor.fChannels["data-out"].push_back(dataOutChannel);
+        processor.fChannels["data2"].push_back(dataOutChannel);
 
         // Waiting for DDS properties
         dds::key_value::CKeyValue ddsKeyValue;
@@ -97,8 +97,8 @@ int main(int argc, char** argv)
             }
         }
 
-        processor.fChannels.at("data-in").at(0).UpdateAddress(samplerValues.begin()->second);
-        processor.fChannels.at("data-out").at(0).UpdateAddress(sinkValues.begin()->second);
+        processor.fChannels.at("data1").at(0).UpdateAddress(samplerValues.begin()->second);
+        processor.fChannels.at("data2").at(0).UpdateAddress(sinkValues.begin()->second);
 
         processor.ChangeState("INIT_DEVICE");
         processor.WaitForEndOfState("INIT_DEVICE");

@@ -6,7 +6,7 @@
             "id": "sampler1",
             "channel":
             {
-                "name": "data-out",
+                "name": "data1",
                 "socket":
                 {
                     "type": "push",
@@ -24,7 +24,7 @@
             "id": "processor1",
             "channel":
             {
-                "name": "data-in",
+                "name": "data1",
                 "socket":
                 {
                     "type": "pull",
@@ -37,7 +37,7 @@
             },
             "channel":
             {
-                "name": "data-out",
+                "name": "data2",
                 "socket":
                 {
                     "type": "push",
@@ -55,7 +55,7 @@
             "id": "processor2",
             "channel":
             {
-                "name": "data-in",
+                "name": "data1",
                 "socket":
                 {
                     "type": "pull",
@@ -68,7 +68,7 @@
             },
             "channel":
             {
-                "name": "data-out",
+                "name": "data2",
                 "socket":
                 {
                     "type": "push",
@@ -86,7 +86,7 @@
             "id": "sink1",
             "channel":
             {
-                "name": "data-in",
+                "name": "data2",
                 "socket":
                 {
                     "type": "pull",

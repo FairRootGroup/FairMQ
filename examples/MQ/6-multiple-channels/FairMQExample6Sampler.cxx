@@ -34,37 +34,37 @@ void FairMQExample6Sampler::CustomCleanup(void *data, void *object)
 
 void FairMQExample6Sampler::Run()
 {
-    std::unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels, { "data-out", "broadcast-in" }));
+    std::unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels, { "data", "broadcast" }));
 
     while (CheckCurrentState(RUNNING))
     {
         poller->Poll(-1);
 
-        if (poller->CheckInput("broadcast-in", 0))
+        if (poller->CheckInput("broadcast", 0))
         {
-            unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
+            unique_ptr<FairMQMessage> msg(NewMessage());
 
-            if (fChannels.at("broadcast-in").at(0).Receive(msg) > 0)
+            if (Receive(msg, "broadcast") > 0)
             {
                 LOG(INFO) << "Received broadcast: \""
                           << string(static_cast<char*>(msg->GetData()), msg->GetSize())
                           << "\"";
             }
-        } // if (poller->CheckInput("broadcast-in", 0))
+        }
 
-        if (poller->CheckOutput("data-out", 0))
+        if (poller->CheckOutput("data", 0))
         {
             boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 
             string* text = new string(fText);
 
-            unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
+            unique_ptr<FairMQMessage> msg(NewMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
 
             LOG(INFO) << "Sending \"" << fText << "\"";
 
-            fChannels.at("data-out").at(0).Send(msg);
-        } // if (poller->CheckOutput("data-out", 0))
-    } // while (CheckCurrentState(RUNNING))
+            Send(msg, "data");
+        }
+    }
 }
 
 FairMQExample6Sampler::~FairMQExample6Sampler()

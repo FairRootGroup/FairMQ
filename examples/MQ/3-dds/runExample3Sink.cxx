@@ -64,7 +64,7 @@ int main(int argc, char** argv)
         // configure data output channel
         FairMQChannel dataInChannel("pull", "bind", "");
         dataInChannel.UpdateRateLogging(0);
-        sink.fChannels["data-in"].push_back(dataInChannel);
+        sink.fChannels["data2"].push_back(dataInChannel);
 
         // Get the IP of the current host and store it for binding.
         map<string,string> IPs;
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
 
         // Configure the found host IP for the channel.
         // TCP port will be chosen randomly during the initialization (binding).
-        sink.fChannels.at("data-in").at(0).UpdateAddress(initialInputAddress);
+        sink.fChannels.at("data2").at(0).UpdateAddress(initialInputAddress);
 
         sink.ChangeState("INIT_DEVICE");
         sink.WaitForInitialValidation();
@@ -93,7 +93,7 @@ int main(int argc, char** argv)
         // Advertise the bound address via DDS property
         LOG(INFO) << "Giving sink input address to DDS.";
         dds::key_value::CKeyValue ddsKeyValue;
-        ddsKeyValue.putValue("SinkAddress", sink.fChannels.at("data-in").at(0).GetAddress());
+        ddsKeyValue.putValue("SinkAddress", sink.fChannels.at("data2").at(0).GetAddress());
 
         sink.WaitForEndOfState("INIT_DEVICE");
 

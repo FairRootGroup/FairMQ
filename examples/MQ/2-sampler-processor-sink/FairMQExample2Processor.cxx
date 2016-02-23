@@ -36,11 +36,11 @@ void FairMQExample2Processor::Run()
     while (CheckCurrentState(RUNNING))
     {
         // Create empty message to hold the input
-        unique_ptr<FairMQMessage> input(fTransportFactory->CreateMessage());
+        unique_ptr<FairMQMessage> input(NewMessage());
 
         // Receive the message (blocks until received or interrupted (e.g. by state change)). 
         // Returns size of the received message or -1 if interrupted.
-        if (fChannels.at("data-in").at(0).Receive(input) >= 0)
+        if (Receive(input, "data1") >= 0)
         {
             LOG(INFO) << "Received data, processing...";
 
@@ -49,10 +49,10 @@ void FairMQExample2Processor::Run()
             *text += " (modified by " + fId + ")";
 
             // Create output message
-            unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
+            unique_ptr<FairMQMessage> msg(NewMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
 
             // Send out the output message
-            fChannels.at("data-out").at(0).Send(msg);
+            Send(msg, "data2");
         }
     }
 }

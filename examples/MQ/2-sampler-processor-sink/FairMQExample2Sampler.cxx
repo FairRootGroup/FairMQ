@@ -39,11 +39,11 @@ void FairMQExample2Sampler::Run()
 
         string* text = new string(fText);
 
-        unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
+        unique_ptr<FairMQMessage> msg(NewMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
 
         LOG(INFO) << "Sending \"" << fText << "\"";
 
-        fChannels.at("data-out").at(0).Send(msg);
+        Send(msg, "data1");
     }
 }
 

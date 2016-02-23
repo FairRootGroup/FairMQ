@@ -64,7 +64,7 @@ int main(int argc, char** argv)
         // configure data output channel
         FairMQChannel dataOutChannel("push", "bind", "");
         dataOutChannel.UpdateRateLogging(0);
-        sampler.fChannels["data-out"].push_back(dataOutChannel);
+        sampler.fChannels["data1"].push_back(dataOutChannel);
 
         // Get the IP of the current host and store it for binding.
         map<string,string> IPs;
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
 
         // Configure the found host IP for the channel.
         // TCP port will be chosen randomly during the initialization (binding).
-        sampler.fChannels.at("data-out").at(0).UpdateAddress(initialOutputAddress);
+        sampler.fChannels.at("data1").at(0).UpdateAddress(initialOutputAddress);
 
         sampler.ChangeState("INIT_DEVICE");
         sampler.WaitForInitialValidation();
@@ -93,7 +93,7 @@ int main(int argc, char** argv)
         // Advertise the bound addresses via DDS property
         LOG(INFO) << "Giving sampler output address to DDS.";
         dds::key_value::CKeyValue ddsKeyValue;
-        ddsKeyValue.putValue("SamplerAddress", sampler.fChannels.at("data-out").at(0).GetAddress());
+        ddsKeyValue.putValue("SamplerAddress", sampler.fChannels.at("data1").at(0).GetAddress());
 
         sampler.WaitForEndOfState("INIT_DEVICE");
 
