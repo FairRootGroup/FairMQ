@@ -23,20 +23,20 @@ class FairMQMessageNN : public FairMQMessage
 {
   public:
     FairMQMessageNN();
-    FairMQMessageNN(size_t size);
-    FairMQMessageNN(void* data, size_t size, fairmq_free_fn *ffn = NULL, void* hint = NULL);
+    FairMQMessageNN(const size_t size);
+    FairMQMessageNN(void* data, const size_t size, fairmq_free_fn *ffn = NULL, void* hint = NULL);
     FairMQMessageNN(const FairMQMessageNN&) = delete;
     FairMQMessageNN operator=(const FairMQMessageNN&) = delete;
 
     virtual void Rebuild();
-    virtual void Rebuild(size_t size);
-    virtual void Rebuild(void* data, size_t size, fairmq_free_fn *ffn = NULL, void* hint = NULL);
+    virtual void Rebuild(const size_t size);
+    virtual void Rebuild(void* data, const size_t size, fairmq_free_fn *ffn = NULL, void* hint = NULL);
 
     virtual void* GetMessage();
     virtual void* GetData();
     virtual size_t GetSize();
 
-    virtual void SetMessage(void* data, size_t size);
+    virtual void SetMessage(void* data, const size_t size);
 
     virtual void CloseMessage() {};
     virtual void Copy(FairMQMessage* msg);

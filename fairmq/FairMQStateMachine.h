@@ -15,7 +15,7 @@
 #ifndef FAIRMQSTATEMACHINE_H_
 #define FAIRMQSTATEMACHINE_H_
 
-#define FAIRMQ_INTERFACE_VERSION 2
+#define FAIRMQ_INTERFACE_VERSION 3
 
 #include <string>
 #include <atomic>

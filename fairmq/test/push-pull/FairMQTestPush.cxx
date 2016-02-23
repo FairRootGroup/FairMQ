@@ -23,8 +23,8 @@ FairMQTestPush::FairMQTestPush()
 
 void FairMQTestPush::Run()
 {
-    std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
-    fChannels.at("data").at(0).Send(msg);
+    std::unique_ptr<FairMQMessage> msg(NewMessage());
+    Send(msg, "data");
 }
 
 FairMQTestPush::~FairMQTestPush()

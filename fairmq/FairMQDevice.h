@@ -26,6 +26,8 @@
 #include "FairMQTransportFactory.h"
 #include "FairMQSocket.h"
 #include "FairMQChannel.h"
+#include "FairMQMessage.h"
+#include "FairMQParts.h"
 
 class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 {
@@ -67,6 +69,92 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param name Name of the channel
     void PrintChannel(const std::string& name);
 
+    /// Shorthand method to send `msg` on `chan` at index `i`
+    /// @param msg message reference
+    /// @param chan channel name
+    /// @param i channel index
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. In case of errors, returns -1.
+    inline int Send(const std::unique_ptr<FairMQMessage>& msg, const std::string& chan, const int i = 0) const
+    {
+        return fChannels.at(chan).at(i).Send(msg);
+    }
+
+    /// Shorthand method to receive `msg` on `chan` at index `i`
+    /// @param msg message reference
+    /// @param chan channel name
+    /// @param i channel index
+    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out. In case of errors, returns -1.
+    inline int Receive(const std::unique_ptr<FairMQMessage>& msg, const std::string& chan, const int i = 0) const
+    {
+        return fChannels.at(chan).at(i).Receive(msg);
+    }
+
+    /// Shorthand method to send a vector of messages on `chan` at index `i`
+    /// @param msgVec message vector reference
+    /// @param chan channel name
+    /// @param i channel index
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. In case of errors, returns -1.
+    inline uint64_t Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const std::string& chan, const int i = 0) const
+    {
+        return fChannels.at(chan).at(i).Send(msgVec);
+    }
+
+    /// Shorthand method to receive a vector of messages on `chan` at index `i`
+    /// @param msgVec message vector reference
+    /// @param chan channel name
+    /// @param i channel index
+    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out. In case of errors, returns -1.
+    inline uint64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const std::string& chan, const int i = 0) const
+    {
+        return fChannels.at(chan).at(i).Receive(msgVec);
+    }
+
+    /// Shorthand method to send FairMQParts on `chan` at index `i`
+    /// @param parts parts reference
+    /// @param chan channel name
+    /// @param i channel index
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. In case of errors, returns -1.
+    inline uint64_t Send(const FairMQParts& parts, const std::string& chan, const int i = 0) const
+    {
+        return fChannels.at(chan).at(i).Send(parts.fParts);
+    }
+
+    /// Shorthand method to receive FairMQParts on `chan` at index `i`
+    /// @param parts parts reference
+    /// @param chan channel name
+    /// @param i channel index
+    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out. In case of errors, returns -1.
+    inline uint64_t Receive(FairMQParts& parts, const std::string& chan, const int i = 0) const
+    {
+        return fChannels.at(chan).at(i).Receive(parts.fParts);
+    }
+
+    /// @brief Create empty FairMQMessage
+    /// @return pointer to FairMQMessage
+    inline FairMQMessage* NewMessage() const
+    {
+        return fTransportFactory->CreateMessage();
+    }
+
+    /// @brief Create new FairMQMessage of specified size
+    /// @param size message size
+    /// @return pointer to FairMQMessage
+    inline FairMQMessage* NewMessage(int size) const
+    {
+        return fTransportFactory->CreateMessage(size);
+    }
+
+    /// @brief Create new FairMQMessage with user provided buffer and size
+    /// @param data pointer to user provided buffer
+    /// @param size size of the user provided buffer
+    /// @param ffn optional callback, called when the message is transfered (and can be deleted)
+    /// @param hint optional helper pointer that can be used in the callback
+    /// @return pointer to FairMQMessage
+    inline FairMQMessage* NewMessage(void* data, int size, fairmq_free_fn* ffn = NULL, void* hint = NULL) const
+    {
+        return fTransportFactory->CreateMessage(data, size, ffn, hint);
+    }
+
     /// Waits for the first initialization run to finish
     void WaitForInitialValidation();
 
@@ -74,7 +162,11 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// Works only when running in a terminal. Running in background would exit, because no interactive input (std::cin) is possible.
     void InteractiveStateLoop();
     /// Prints the available commands of the InteractiveStateLoop()
-    void PrintInteractiveStateLoopHelp();
+    inline void PrintInteractiveStateLoopHelp()
+    {
+        LOG(INFO) << "Use keys to control the state machine:";
+        LOG(INFO) << "[h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device";
+    }
 
     /// Set Device properties stored as strings
     /// @param key      Property key

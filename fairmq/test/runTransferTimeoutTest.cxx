@@ -56,11 +56,10 @@ class TransferTimeoutTester : public FairMQDevice
 
         if (getSndOK && getRcvOK)
         {
-            void* buffer = malloc(1000);
-            std::unique_ptr<FairMQMessage> msg1(fTransportFactory->CreateMessage(buffer, 1000));
-            std::unique_ptr<FairMQMessage> msg2(fTransportFactory->CreateMessage());
+            std::unique_ptr<FairMQMessage> msg1(NewMessage());
+            std::unique_ptr<FairMQMessage> msg2(NewMessage());
 
-            if (fChannels.at("data-out").at(0).Send(msg1) == -2)
+            if (Send(msg1, "data-out") == -2)
             {
                 LOG(INFO) << "send canceled";
                 sendCanceling = true;
@@ -70,7 +69,7 @@ class TransferTimeoutTester : public FairMQDevice
                 LOG(ERROR) << "send did not cancel";
             }
 
-            if (fChannels.at("data-in").at(0).Receive(msg2) == -2)
+            if (Receive(msg2, "data-in") == -2)
             {
                 LOG(INFO) << "receive canceled";
                 receiveCanceling = true;

@@ -666,12 +666,6 @@ void FairMQDevice::InteractiveStateLoop()
     tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
 }
 
-inline void FairMQDevice::PrintInteractiveStateLoopHelp()
-{
-    LOG(INFO) << "Use keys to control the state machine:";
-    LOG(INFO) << "[h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device";
-}
-
 void FairMQDevice::Unblock()
 {
     FairMQMessage* cmd = fTransportFactory->CreateMessage();

@@ -23,14 +23,14 @@ FairMQTestSub::FairMQTestSub()
 
 void FairMQTestSub::Run()
 {
-    std::unique_ptr<FairMQMessage> readyMsg(fTransportFactory->CreateMessage());
-    fChannels.at("control").at(0).Send(readyMsg);
+    std::unique_ptr<FairMQMessage> readyMsg(NewMessage());
+    Send(readyMsg, "control");
 
-    std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
-    if (fChannels.at("data").at(0).Receive(msg) >= 0)
+    std::unique_ptr<FairMQMessage> msg(NewMessage());
+    if (Receive(msg, "data") >= 0)
     {
-        std::unique_ptr<FairMQMessage> ackMsg(fTransportFactory->CreateMessage());
-        fChannels.at("control").at(0).Send(ackMsg);
+        std::unique_ptr<FairMQMessage> ackMsg(NewMessage());
+        Send(ackMsg, "control");
     }
     else
     {

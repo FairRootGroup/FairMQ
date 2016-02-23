@@ -24,7 +24,7 @@ using namespace std;
 // Context to hold the ZeroMQ sockets
 boost::shared_ptr<FairMQContextZMQ> FairMQSocketZMQ::fContext = boost::shared_ptr<FairMQContextZMQ>(new FairMQContextZMQ(1));
 
-FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, int numIoThreads)
+FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const int numIoThreads)
     : FairMQSocket(ZMQ_SNDMORE, ZMQ_RCVMORE, ZMQ_DONTWAIT)
     , fSocket(NULL)
     , fId()

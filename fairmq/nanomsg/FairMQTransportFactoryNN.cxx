@@ -26,17 +26,17 @@ FairMQMessage* FairMQTransportFactoryNN::CreateMessage()
     return new FairMQMessageNN();
 }
 
-FairMQMessage* FairMQTransportFactoryNN::CreateMessage(size_t size)
+FairMQMessage* FairMQTransportFactoryNN::CreateMessage(const size_t size)
 {
     return new FairMQMessageNN(size);
 }
 
-FairMQMessage* FairMQTransportFactoryNN::CreateMessage(void* data, size_t size, fairmq_free_fn *ffn, void* hint)
+FairMQMessage* FairMQTransportFactoryNN::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
 {
     return new FairMQMessageNN(data, size, ffn, hint);
 }
 
-FairMQSocket* FairMQTransportFactoryNN::CreateSocket(const string& type, const std::string& name, int numIoThreads)
+FairMQSocket* FairMQTransportFactoryNN::CreateSocket(const string& type, const std::string& name, const int numIoThreads)
 {
     return new FairMQSocketNN(type, name, numIoThreads);
 }
@@ -46,12 +46,12 @@ FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const vector<FairMQChannel>
     return new FairMQPollerNN(channels);
 }
 
-FairMQPoller* FairMQTransportFactoryNN::CreatePoller(std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, std::initializer_list<std::string> channelList)
+FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::initializer_list<std::string> channelList)
 {
     return new FairMQPollerNN(channelsMap, channelList);
 }
 
-FairMQPoller* FairMQTransportFactoryNN::CreatePoller(FairMQSocket& cmdSocket, FairMQSocket& dataSocket)
+FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket)
 {
     return new FairMQPollerNN(cmdSocket, dataSocket);
 }

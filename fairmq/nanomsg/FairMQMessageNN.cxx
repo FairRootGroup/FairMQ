@@ -34,7 +34,7 @@ FairMQMessageNN::FairMQMessageNN()
     }
 }
 
-FairMQMessageNN::FairMQMessageNN(size_t size)
+FairMQMessageNN::FairMQMessageNN(const size_t size)
     : fMessage(NULL)
     , fSize(0)
     , fReceiving(false)
@@ -53,7 +53,7 @@ FairMQMessageNN::FairMQMessageNN(size_t size)
  * create FairMQMessage object only with size parameter and fill it with data.
  * possible TODO: make this zero copy (will should then be as efficient as ZeroMQ).
 */
-FairMQMessageNN::FairMQMessageNN(void* data, size_t size, fairmq_free_fn *ffn, void* hint)
+FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn *ffn, void* hint)
     : fMessage(NULL)
     , fSize(0)
     , fReceiving(false)
@@ -63,16 +63,19 @@ FairMQMessageNN::FairMQMessageNN(void* data, size_t size, fairmq_free_fn *ffn, v
     {
         LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
     }
-    memcpy(fMessage, data, size);
-    fSize = size;
-
-    if (ffn)
-    {
-        ffn(data, hint);
-    }
     else
     {
-        if(data) free(data);
+        memcpy(fMessage, data, size);
+        fSize = size;
+
+        if (ffn)
+        {
+            ffn(data, hint);
+        }
+        else
+        {
+            if(data) free(data);
+        }
     }
 }
 
@@ -82,7 +85,7 @@ void FairMQMessageNN::Rebuild()
     fReceiving = false;
 }
 
-void FairMQMessageNN::Rebuild(size_t size)
+void FairMQMessageNN::Rebuild(const size_t size)
 {
     Clear();
     fMessage = nn_allocmsg(size, 0);
@@ -94,7 +97,7 @@ void FairMQMessageNN::Rebuild(size_t size)
     fReceiving = false;
 }
 
-void FairMQMessageNN::Rebuild(void* data, size_t size, fairmq_free_fn *ffn, void* hint)
+void FairMQMessageNN::Rebuild(void* data, const size_t size, fairmq_free_fn *ffn, void* hint)
 {
     Clear();
     fMessage = nn_allocmsg(size, 0);
@@ -102,17 +105,20 @@ void FairMQMessageNN::Rebuild(void* data, size_t size, fairmq_free_fn *ffn, void
     {
         LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
     }
-    memcpy(fMessage, data, size);
-    fSize = size;
-    fReceiving = false;
-
-    if(ffn)
-    {
-        ffn(data, hint);
-    }
     else
     {
-        if(data) free(data);
+        memcpy(fMessage, data, size);
+        fSize = size;
+        fReceiving = false;
+
+        if(ffn)
+        {
+            ffn(data, hint);
+        }
+        else
+        {
+            if(data) free(data);
+        }
     }
 }
 
@@ -131,7 +137,7 @@ size_t FairMQMessageNN::GetSize()
     return fSize;
 }
 
-void FairMQMessageNN::SetMessage(void* data, size_t size)
+void FairMQMessageNN::SetMessage(void* data, const size_t size)
 {
     fMessage = data;
     fSize = size;
@@ -156,8 +162,11 @@ void FairMQMessageNN::Copy(FairMQMessage* msg)
     {
         LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
     }
-    memcpy(fMessage, msg->GetMessage(), size);
-    fSize = size;
+    else
+    {
+        memcpy(fMessage, msg->GetMessage(), size);
+        fSize = size;
+    }
 }
 
 void FairMQMessageNN::Copy(const unique_ptr<FairMQMessage>& msg)
@@ -177,8 +186,11 @@ void FairMQMessageNN::Copy(const unique_ptr<FairMQMessage>& msg)
     {
         LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
     }
-    memcpy(fMessage, msg->GetMessage(), size);
-    fSize = size;
+    else
+    {
+        memcpy(fMessage, msg->GetMessage(), size);
+        fSize = size;
+    }
 }
 
 inline void FairMQMessageNN::Clear()

@@ -91,6 +91,7 @@ EndIf(NANOMSG_FOUND)
 # to copy src that are header-only files (e.g. c++ template) for FairRoot external installation
 # manual install (globbing add not recommended)
 Set(FAIRMQHEADERS
+  FairMQParts.h
   devices/GenericSampler.h
   devices/GenericSampler.tpl
   devices/GenericProcessor.h

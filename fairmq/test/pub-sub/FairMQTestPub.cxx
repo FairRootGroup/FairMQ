@@ -23,21 +23,21 @@ FairMQTestPub::FairMQTestPub()
 
 void FairMQTestPub::Run()
 {
-    std::unique_ptr<FairMQMessage> ready1Msg(fTransportFactory->CreateMessage());
-    int r1 = fChannels.at("control").at(0).Receive(ready1Msg);
-    std::unique_ptr<FairMQMessage> ready2Msg(fTransportFactory->CreateMessage());
-    int r2 = fChannels.at("control").at(0).Receive(ready2Msg);
+    std::unique_ptr<FairMQMessage> ready1Msg(NewMessage());
+    int r1 = Receive(ready1Msg, "control");
+    std::unique_ptr<FairMQMessage> ready2Msg(NewMessage());
+    int r2 = Receive(ready2Msg, "control");
 
     if (r1 >= 0 && r2 >= 0)
     {
-        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
-        fChannels.at("data").at(0).Send(msg);
+        std::unique_ptr<FairMQMessage> msg(NewMessage());
+        Send(msg, "data");
 
-        std::unique_ptr<FairMQMessage> ack1Msg(fTransportFactory->CreateMessage());
-        std::unique_ptr<FairMQMessage> ack2Msg(fTransportFactory->CreateMessage());
-        if (fChannels.at("control").at(0).Receive(ack1Msg) >= 0)
+        std::unique_ptr<FairMQMessage> ack1Msg(NewMessage());
+        std::unique_ptr<FairMQMessage> ack2Msg(NewMessage());
+        if (Receive(ack1Msg, "control") >= 0)
         {
-            if (fChannels.at("control").at(0).Receive(ack2Msg) >= 0)
+            if (Receive(ack2Msg, "control") >= 0)
             {
                 LOG(INFO) << "PUB-SUB test successfull";
             }

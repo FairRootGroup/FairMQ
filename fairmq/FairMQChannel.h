@@ -116,38 +116,41 @@ class FairMQChannel
     /// for some other reason (e.g. no peers connected for a binding socket), the method returns 0.
     /// 
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
-    /// @return Returns the number of bytes that have been queued. If queueing failed due to
+    /// @return Number of bytes that have been queued. If queueing failed due to
     /// full queue or no connected peers (when binding), returns -2. In case of errors, returns -1.
-    int SendAsync(const std::unique_ptr<FairMQMessage>& msg) const;
+    inline int SendAsync(const std::unique_ptr<FairMQMessage>& msg) const
+    {
+        return fSocket->Send(msg.get(), fNoBlockFlag);
+    }
 
     /// Queues the current message as a part of a multi-part message
     /// @details SendPart method queues the provided message as a part of a multi-part message.
     /// The actual transfer over the network is initiated once final part has been queued with the Send() or SendAsync() methods.
     /// 
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
-    /// @return Returns the number of bytes that have been queued. -2 If queueing was not possible. In case of errors, returns -1.
-    int SendPart(const std::unique_ptr<FairMQMessage>& msg) const;
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible. In case of errors, returns -1.
+    inline int SendPart(const std::unique_ptr<FairMQMessage>& msg) const
+    {
+        return fSocket->Send(msg.get(), fSndMoreFlag);
+    }
 
     /// Queues the current message as a part of a multi-part message without blocking
     /// @details SendPart method queues the provided message as a part of a multi-part message without blocking.
     /// The actual transfer over the network is initiated once final part has been queued with the Send() or SendAsync() methods.
     /// 
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
-    /// @return Returns the number of bytes that have been queued. -2 If queueing was not possible. In case of errors, returns -1.
-    int SendPartAsync(const std::unique_ptr<FairMQMessage>& msg) const;
-
-    // /// Sends the messages provided as arguments as a multi-part message.
-    // /// 
-    // /// @param partsList Initializer list of FairMQMessages
-    // /// @return Returns the number of bytes that have been queued. -2 If queueing was not possible. In case of errors, returns -1.
-    // int SendParts(std::initializer_list<std::unique_ptr<FairMQMessage>> partsList) const;
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible. In case of errors, returns -1.
+    inline int SendPartAsync(const std::unique_ptr<FairMQMessage>& msg) const
+    {
+        return fSocket->Send(msg.get(), fSndMoreFlag|fNoBlockFlag);
+    }
 
     /// Receives a message from the socket queue.
     /// @details Receive method attempts to receive a message from the input queue.
     /// If the queue is empty the method blocks.
     ///
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
-    /// @return Returns the number of bytes that have been received. -2 If reading from the queue was not possible or timed out. In case of errors, returns -1.
+    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out. In case of errors, returns -1.
     int Receive(const std::unique_ptr<FairMQMessage>& msg) const;
 
     /// Receives a message in non-blocking mode.
@@ -155,9 +158,26 @@ class FairMQChannel
     /// If the queue is empty the method returns 0.
     ///
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
-    /// @return Returns the number of bytes that have been received. If queue is empty, returns -2.
+    /// @return Number of bytes that have been received. If queue is empty, returns -2.
     /// In case of errors, returns -1.
-    int ReceiveAsync(const std::unique_ptr<FairMQMessage>& msg) const;
+    inline int ReceiveAsync(const std::unique_ptr<FairMQMessage>& msg) const
+    {
+        return fSocket->Receive(msg.get(), fNoBlockFlag);
+    }
+
+    /// Shorthand method to send a vector of messages on `chan` at index `i`
+    /// @param msgVec message vector reference
+    /// @param chan channel name
+    /// @param i channel index
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. In case of errors, returns -1.
+    uint64_t Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const;
+
+    /// Shorthand method to receive a vector of messages on `chan` at index `i`
+    /// @param msgVec message vector reference
+    /// @param chan channel name
+    /// @param i channel index
+    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out. In case of errors, returns -1.
+    uint64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const;
 
     // DEPRECATED socket method wrappers with raw pointers and flag checks
     int Send(FairMQMessage* msg, const std::string& flag = "") const;
@@ -167,19 +187,31 @@ class FairMQChannel
 
     /// Sets a timeout on the (blocking) Send method
     /// @param timeout timeout value in milliseconds
-    void SetSendTimeout(const int timeout);
+    inline void SetSendTimeout(const int timeout)
+    {
+        fSndTimeoutInMs = timeout;
+    }
 
     /// Gets the current value of the timeout on the (blocking) Send method
     /// @return Timeout value in milliseconds. -1 for no timeout.
-    int GetSendTimeout() const;
+    inline int GetSendTimeout() const
+    {
+        return fSndTimeoutInMs;
+    }
 
     /// Sets a timeout on the (blocking) Receive method
     /// @param timeout timeout value in milliseconds
-    void SetReceiveTimeout(const int timeout);
+    inline void SetReceiveTimeout(const int timeout)
+    {
+        fRcvTimeoutInMs = timeout;
+    }
 
     /// Gets the current value of the timeout on the (blocking) Receive method
     /// @return Timeout value in milliseconds. -1 for no timeout.
-    int GetReceiveTimeout() const;
+    inline int GetReceiveTimeout() const
+    {
+        return fRcvTimeoutInMs;
+    }
 
     /// Checks if the socket is expecting to receive another part of a multipart message.
     /// @return Return true if the socket expects another part of a multipart message and false otherwise.

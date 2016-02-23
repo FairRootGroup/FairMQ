@@ -23,7 +23,7 @@
 class FairMQSocketZMQ : public FairMQSocket
 {
   public:
-    FairMQSocketZMQ(const std::string& type, const std::string& name, int numIoThreads);
+    FairMQSocketZMQ(const std::string& type, const std::string& name, const int numIoThreads);
     FairMQSocketZMQ(const FairMQSocketZMQ&) = delete;
     FairMQSocketZMQ operator=(const FairMQSocketZMQ&) = delete;
 

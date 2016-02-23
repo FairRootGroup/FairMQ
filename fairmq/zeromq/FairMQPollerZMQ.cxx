@@ -57,7 +57,7 @@ FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQChannel>& channels)
     }
 }
 
-FairMQPollerZMQ::FairMQPollerZMQ(unordered_map<string, vector<FairMQChannel>>& channelsMap, initializer_list<string> channelList)
+FairMQPollerZMQ::FairMQPollerZMQ(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const initializer_list<string> channelList)
     : items()
     , fNumItems(0)
     , fOffsetMap()
@@ -119,7 +119,7 @@ FairMQPollerZMQ::FairMQPollerZMQ(unordered_map<string, vector<FairMQChannel>>& c
     }
 }
 
-FairMQPollerZMQ::FairMQPollerZMQ(FairMQSocket& cmdSocket, FairMQSocket& dataSocket)
+FairMQPollerZMQ::FairMQPollerZMQ(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket)
     : items()
     , fNumItems(2)
     , fOffsetMap()
@@ -137,7 +137,7 @@ FairMQPollerZMQ::FairMQPollerZMQ(FairMQSocket& cmdSocket, FairMQSocket& dataSock
 
     int type = 0;
     size_t size = sizeof(type);
-    zmq_getsockopt (dataSocket.GetSocket(), ZMQ_TYPE, &type, &size);
+    zmq_getsockopt(dataSocket.GetSocket(), ZMQ_TYPE, &type, &size);
 
     if (type == ZMQ_REQ || type == ZMQ_REP || type == ZMQ_PAIR || type == ZMQ_DEALER || type == ZMQ_ROUTER)
     {

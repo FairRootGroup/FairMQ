@@ -451,55 +451,79 @@ int FairMQChannel::Send(const unique_ptr<FairMQMessage>& msg) const
     return -2;
 }
 
-int FairMQChannel::SendAsync(const unique_ptr<FairMQMessage>& msg) const
+uint64_t FairMQChannel::Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const
 {
-    return fSocket->Send(msg.get(), fNoBlockFlag);
+    // Sending vector typicaly handles more then one part
+    if (msgVec.size() > 1)
+    {
+        uint64_t totalSize = 0;
+
+        for (unsigned int i = 0; i < msgVec.size() - 1; ++i)
+        {
+            int nbytes = SendPart(msgVec[i]);
+            if (nbytes >= 0)
+            {
+                totalSize += nbytes;
+            }
+            else
+            {
+                return nbytes;
+            }
+        }
+
+        int n = Send(msgVec.back());
+        if (n >= 0)
+        {
+            totalSize += n;
+        }
+        else
+        {
+            return n;
+        }
+
+        return totalSize;
+    } // If there's only one part, send it as a regular message
+    else if (msgVec.size() == 1)
+    {
+        return Send(msgVec.back());
+    }
+    else // if the vector is empty, something might be wrong
+    {
+        LOG(WARN) << "Will not send empty vector";
+        return -1;
+    }
 }
 
-int FairMQChannel::SendPart(const unique_ptr<FairMQMessage>& msg) const
+uint64_t FairMQChannel::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const
 {
-    return fSocket->Send(msg.get(), fSndMoreFlag);
-}
+    // Warn if the vector is filled before Receive() and empty it.
+    if (msgVec.size() > 0)
+    {
+        LOG(WARN) << "Message vector contains elements before Receive(), they will be deleted!";
+        msgVec.clear();
+    }
 
-int FairMQChannel::SendPartAsync(const unique_ptr<FairMQMessage>& msg) const
-{
-    return fSocket->Send(msg.get(), fSndMoreFlag|fNoBlockFlag);
-}
+    uint64_t totalSize = 0;
 
-// int FairMQChannel::SendParts(initializer_list<unique_ptr<FairMQMessage>> partsList) const
-// {
-//     int totalSize = 0;
-//     initializer_list<unique_ptr<FairMQMessage>>::iterator it = partsList.end();
-//     auto &last = --it;
-//     for (auto &p : partsList)
-//     {
-//         if (&p != last)
-//         {
-//             int nbytes = SendPart(p);
-//             if (nbytes >= 0)
-//             {
-//                 totalSize += nbytes;
-//             }
-//             else
-//             {
-//                 return nbytes;
-//             }
-//         }
-//         else
-//         {
-//             int nbytes = Send(p);
-//             if (nbytes >= 0)
-//             {
-//                 totalSize += nbytes;
-//             }
-//             else
-//             {
-//                 return nbytes;
-//             }
-//         }
-//     }
-//     return totalSize;
-// }
+    do
+    {
+        std::unique_ptr<FairMQMessage> part(fTransportFactory->CreateMessage());
+
+        int nbytes = Receive(part);
+        if (nbytes >= 0)
+        {
+            msgVec.push_back(std::move(part));
+            totalSize += nbytes;
+        }
+        else
+        {
+            return nbytes;
+        }
+    }
+    while (ExpectsAnotherPart());
+
+    return totalSize;
+}
 
 int FairMQChannel::Receive(const unique_ptr<FairMQMessage>& msg) const
 {
@@ -517,11 +541,6 @@ int FairMQChannel::Receive(const unique_ptr<FairMQMessage>& msg) const
     }
 
     return -2;
-}
-
-int FairMQChannel::ReceiveAsync(const unique_ptr<FairMQMessage>& msg) const
-{
-    return fSocket->Receive(msg.get(), fNoBlockFlag);
 }
 
 int FairMQChannel::Send(FairMQMessage* msg, const string& flag) const
@@ -622,64 +641,6 @@ int FairMQChannel::Receive(FairMQMessage* msg, const int flags) const
     {
         return fSocket->Receive(msg, flags);
     }
-}
-
-void FairMQChannel::SetSendTimeout(const int timeout)
-{
-    // if (fSocket)
-    // {
-    //     if (fSocket->SetSendTimeout(timeout, fAddress, fMethod))
-    //     {
-            fSndTimeoutInMs = timeout;
-    //         return true;
-    //     }
-    // }
-
-    // LOG(ERROR) << "SetSendTimeout() failed - socket is not initialized!";
-    // return false;
-}
-
-int FairMQChannel::GetSendTimeout() const
-{
-    return fSndTimeoutInMs;
-    // if (fSocket)
-    // {
-    //     return fSocket->GetSendTimeout();
-    // }
-    // else
-    // {
-    //     LOG(ERROR) << "GetSendTimeout() failed - socket is not initialized!";
-    //     return -1;
-    // }
-}
-
-void FairMQChannel::SetReceiveTimeout(const int timeout)
-{
-    // if (fSocket)
-    // {
-    //     if (fSocket->SetReceiveTimeout(timeout, fAddress, fMethod))
-    //     {
-            fRcvTimeoutInMs = timeout;
-    //         return true;
-    //     }
-    // }
-
-    // LOG(ERROR) << "SetReceiveTimeout() failed - socket is not initialized!";
-    // return false;
-}
-
-int FairMQChannel::GetReceiveTimeout() const
-{
-    return fRcvTimeoutInMs;
-    // if (fSocket)
-    // {
-    //     return fSocket->GetReceiveTimeout();
-    // }
-    // else
-    // {
-    //     LOG(ERROR) << "GetReceiveTimeout() failed - socket is not initialized!";
-    //     return -1;
-    // }
 }
 
 bool FairMQChannel::ExpectsAnotherPart() const

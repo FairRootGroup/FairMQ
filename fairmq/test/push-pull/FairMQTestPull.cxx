@@ -23,9 +23,9 @@ FairMQTestPull::FairMQTestPull()
 
 void FairMQTestPull::Run()
 {
-    std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
+    std::unique_ptr<FairMQMessage> msg(NewMessage());
 
-    if (fChannels.at("data").at(0).Receive(msg) >= 0)
+    if (Receive(msg, "data") >= 0)
     {
         LOG(INFO) << "PUSH-PULL test successfull";
     }

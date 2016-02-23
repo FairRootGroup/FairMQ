@@ -101,7 +101,7 @@ int FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregiste
         {
             LOG(WARN) << p;
         }
-        LOG(WARN) << "No channels will be created (You can still fill these manually).";
+        LOG(WARN) << "No channels will be created (You can create them manually).";
         // return 1;
     }
 

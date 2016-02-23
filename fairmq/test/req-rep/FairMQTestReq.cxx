@@ -23,11 +23,11 @@ FairMQTestReq::FairMQTestReq()
 
 void FairMQTestReq::Run()
 {
-    std::unique_ptr<FairMQMessage> request(fTransportFactory->CreateMessage());
-    fChannels.at("data").at(0).Send(request);
+    std::unique_ptr<FairMQMessage> request(NewMessage());
+    Send(request, "data");
 
-    std::unique_ptr<FairMQMessage> reply(fTransportFactory->CreateMessage());
-    if (fChannels.at("data").at(0).Receive(reply) >= 0)
+    std::unique_ptr<FairMQMessage> reply(NewMessage());
+    if (Receive(reply, "data") >= 0)
     {
         LOG(INFO) << "REQ-REP test successfull";
     }

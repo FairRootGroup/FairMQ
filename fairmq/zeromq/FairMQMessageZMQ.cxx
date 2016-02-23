@@ -29,7 +29,7 @@ FairMQMessageZMQ::FairMQMessageZMQ()
     }
 }
 
-FairMQMessageZMQ::FairMQMessageZMQ(size_t size)
+FairMQMessageZMQ::FairMQMessageZMQ(const size_t size)
     : fMessage()
 {
     if (zmq_msg_init_size(&fMessage, size) != 0)
@@ -38,7 +38,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(size_t size)
     }
 }
 
-FairMQMessageZMQ::FairMQMessageZMQ(void* data, size_t size, fairmq_free_fn *ffn, void* hint)
+FairMQMessageZMQ::FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn *ffn, void* hint)
     : fMessage()
 {
     if (zmq_msg_init_data(&fMessage, data, size, ffn ? ffn : &CleanUp, hint) != 0)
@@ -56,7 +56,7 @@ void FairMQMessageZMQ::Rebuild()
     }
 }
 
-void FairMQMessageZMQ::Rebuild(size_t size)
+void FairMQMessageZMQ::Rebuild(const size_t size)
 {
     CloseMessage();
     if (zmq_msg_init_size(&fMessage, size) != 0)
@@ -65,7 +65,7 @@ void FairMQMessageZMQ::Rebuild(size_t size)
     }
 }
 
-void FairMQMessageZMQ::Rebuild(void* data, size_t size, fairmq_free_fn *ffn, void* hint)
+void FairMQMessageZMQ::Rebuild(void* data, const size_t size, fairmq_free_fn *ffn, void* hint)
 {
     CloseMessage();
     if (zmq_msg_init_data(&fMessage, data, size, ffn ? ffn : &CleanUp, hint) != 0)
@@ -89,7 +89,7 @@ size_t FairMQMessageZMQ::GetSize()
     return zmq_msg_size(&fMessage);
 }
 
-void FairMQMessageZMQ::SetMessage(void*, size_t)
+void FairMQMessageZMQ::SetMessage(void*, const size_t)
 {
     // dummy method to comply with the interface. functionality not allowed in zeromq.
 }

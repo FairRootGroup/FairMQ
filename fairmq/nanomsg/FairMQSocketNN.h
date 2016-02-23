@@ -26,7 +26,7 @@
 class FairMQSocketNN : public FairMQSocket
 {
   public:
-    FairMQSocketNN(const std::string& type, const std::string& name, int numIoThreads); // numIoThreads is not used in nanomsg.
+    FairMQSocketNN(const std::string& type, const std::string& name, const int numIoThreads); // numIoThreads is not used in nanomsg.
     FairMQSocketNN(const FairMQSocketNN&) = delete;
     FairMQSocketNN operator=(const FairMQSocketNN&) = delete;
 
