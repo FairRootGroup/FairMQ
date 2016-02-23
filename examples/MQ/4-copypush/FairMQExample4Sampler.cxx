@@ -34,23 +34,23 @@ void FairMQExample4Sampler::Run()
 
         uint64_t* number = new uint64_t(counter);
 
-        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage(number, sizeof(uint64_t)));
+        std::unique_ptr<FairMQMessage> msg(NewMessage(number, sizeof(uint64_t)));
 
         LOG(INFO) << "Sending \"" << counter << "\"";
 
-        if (fChannels.at("data-out").size() > 1)
+        if (fChannels.at("data").size() > 1)
         {
-            for (int i = 1; i < fChannels.at("data-out").size(); ++i)
+            for (int i = 1; i < fChannels.at("data").size(); ++i)
             {
-                std::unique_ptr<FairMQMessage> msgCopy(fTransportFactory->CreateMessage());
+                std::unique_ptr<FairMQMessage> msgCopy(NewMessage());
                 msgCopy->Copy(msg);
-                fChannels.at("data-out").at(i).Send(msgCopy);
+                Send(msgCopy, "data", i);
             }
-            fChannels.at("data-out").at(0).Send(msg);
+            Send(msg, "data");
         }
         else
         {
-            fChannels.at("data-out").at(0).Send(msg);
+            Send(msg, "data");
         }
 
         ++counter;

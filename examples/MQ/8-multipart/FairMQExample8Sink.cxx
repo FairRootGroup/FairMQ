@@ -32,21 +32,18 @@ void FairMQExample8Sink::Run()
 {
     while (CheckCurrentState(RUNNING))
     {
-        unique_ptr<FairMQMessage> headerPart(fTransportFactory->CreateMessage());
-        unique_ptr<FairMQMessage> bodyPart(fTransportFactory->CreateMessage());
+        FairMQParts parts;
 
-        if (fChannels.at("data-in").at(0).Receive(headerPart) >= 0)
+        if (Receive(parts, "data-in") >= 0)
         {
-            if (fChannels.at("data-in").at(0).Receive(bodyPart) >= 0)
+            Ex8Header header;
+            header.stopFlag = (static_cast<Ex8Header*>(parts.At(0).GetData()))->stopFlag;
+            LOG(INFO) << "Received header with stopFlag: " << header.stopFlag;
+            LOG(INFO) << "Received body of size: " << parts.At(1).GetSize();
+            if (header.stopFlag == 1)
             {
-                Ex8Header header;
-                header.stopFlag = (static_cast<Ex8Header*>(headerPart->GetData()))->stopFlag;
-                LOG(INFO) << "Received header with stopFlag: " << header.stopFlag;
-                if (header.stopFlag == 1)
-                {
-                    LOG(INFO) << "Flag is 0, exiting Run()";
-                    break;
-                }
+                LOG(INFO) << "Flag is 0, exiting Run()";
+                break;
             }
         }
     }

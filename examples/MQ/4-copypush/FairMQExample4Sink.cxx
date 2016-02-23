@@ -28,9 +28,9 @@ void FairMQExample4Sink::Run()
 {
     while (CheckCurrentState(RUNNING))
     {
-        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
+        std::unique_ptr<FairMQMessage> msg(NewMessage());
 
-        if (fChannels.at("data-in").at(0).Receive(msg) >= 0)
+        if (Receive(msg, "data") >= 0)
         {
             LOG(INFO) << "Received message: \"" << *(static_cast<int*>(msg->GetData())) << "\"";
         }

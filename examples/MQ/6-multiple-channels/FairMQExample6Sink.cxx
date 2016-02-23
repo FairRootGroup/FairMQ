@@ -24,33 +24,29 @@ FairMQExample6Sink::FairMQExample6Sink()
 
 void FairMQExample6Sink::Run()
 {
-    std::unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels, { "data-in", "broadcast-in" }));
+    std::unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels, { "data", "broadcast" }));
 
     while (CheckCurrentState(RUNNING))
     {
         poller->Poll(-1);
 
-        if (poller->CheckInput("broadcast-in", 0))
+        if (poller->CheckInput("broadcast", 0))
         {
-            unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
+            unique_ptr<FairMQMessage> msg(NewMessage());
 
-            if (fChannels.at("broadcast-in").at(0).Receive(msg) > 0)
+            if (Receive(msg, "broadcast") > 0)
             {
-                LOG(INFO) << "Received broadcast: \""
-                          << string(static_cast<char*>(msg->GetData()), msg->GetSize())
-                          << "\"";
+                LOG(INFO) << "Received broadcast: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
             }
         }
 
-        if (poller->CheckInput("data-in", 0))
+        if (poller->CheckInput("data", 0))
         {
-            unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
+            unique_ptr<FairMQMessage> msg(NewMessage());
 
-            if (fChannels.at("data-in").at(0).Receive(msg) > 0)
+            if (Receive(msg, "data") > 0)
             {
-                LOG(INFO) << "Received message: \""
-                          << string(static_cast<char*>(msg->GetData()), msg->GetSize())
-                          << "\"";
+                LOG(INFO) << "Received message: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
             }
         }
     }
