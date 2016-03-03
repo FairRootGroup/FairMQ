@@ -170,14 +170,14 @@ class FairMQChannel
     /// @param chan channel name
     /// @param i channel index
     /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. In case of errors, returns -1.
-    uint64_t Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const;
+    int64_t Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const;
 
     /// Shorthand method to receive a vector of messages on `chan` at index `i`
     /// @param msgVec message vector reference
     /// @param chan channel name
     /// @param i channel index
     /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out. In case of errors, returns -1.
-    uint64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const;
+    int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const;
 
     // DEPRECATED socket method wrappers with raw pointers and flag checks
     int Send(FairMQMessage* msg, const std::string& flag = "") const;
