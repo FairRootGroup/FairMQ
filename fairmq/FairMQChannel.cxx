@@ -451,12 +451,12 @@ int FairMQChannel::Send(const unique_ptr<FairMQMessage>& msg) const
     return -2;
 }
 
-uint64_t FairMQChannel::Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const
+int64_t FairMQChannel::Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const
 {
     // Sending vector typicaly handles more then one part
     if (msgVec.size() > 1)
     {
-        uint64_t totalSize = 0;
+        int64_t totalSize = 0;
 
         for (unsigned int i = 0; i < msgVec.size() - 1; ++i)
         {
@@ -494,7 +494,7 @@ uint64_t FairMQChannel::Send(const std::vector<std::unique_ptr<FairMQMessage>>& 
     }
 }
 
-uint64_t FairMQChannel::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const
+int64_t FairMQChannel::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const
 {
     // Warn if the vector is filled before Receive() and empty it.
     if (msgVec.size() > 0)
@@ -503,7 +503,7 @@ uint64_t FairMQChannel::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msg
         msgVec.clear();
     }
 
-    uint64_t totalSize = 0;
+    int64_t totalSize = 0;
 
     do
     {
