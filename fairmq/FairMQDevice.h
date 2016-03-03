@@ -94,7 +94,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param chan channel name
     /// @param i channel index
     /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. In case of errors, returns -1.
-    inline uint64_t Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const std::string& chan, const int i = 0) const
+    inline int64_t Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).Send(msgVec);
     }
@@ -104,7 +104,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param chan channel name
     /// @param i channel index
     /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out. In case of errors, returns -1.
-    inline uint64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const std::string& chan, const int i = 0) const
+    inline int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).Receive(msgVec);
     }
@@ -114,7 +114,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param chan channel name
     /// @param i channel index
     /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. In case of errors, returns -1.
-    inline uint64_t Send(const FairMQParts& parts, const std::string& chan, const int i = 0) const
+    inline int64_t Send(const FairMQParts& parts, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).Send(parts.fParts);
     }
@@ -124,7 +124,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param chan channel name
     /// @param i channel index
     /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out. In case of errors, returns -1.
-    inline uint64_t Receive(FairMQParts& parts, const std::string& chan, const int i = 0) const
+    inline int64_t Receive(FairMQParts& parts, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).Receive(parts.fParts);
     }
