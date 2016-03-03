@@ -25,7 +25,7 @@ int main(int argc, char** argv)
 
     testRep.SetProperty(FairMQTestRep::Id, "testRep");
 
-    FairMQChannel repChannel("rep", "connect", "tcp://127.0.0.1:5558");
+    FairMQChannel repChannel("rep", "bind", "tcp://127.0.0.1:5558");
     testRep.fChannels["data"].push_back(repChannel);
 
     testRep.ChangeState("INIT_DEVICE");

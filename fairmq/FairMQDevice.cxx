@@ -98,7 +98,7 @@ void FairMQDevice::InitWrapper()
 
     if (!fCmdSocket)
     {
-        fCmdSocket = fTransportFactory->CreateSocket("pub", "device-commands", fNumIoThreads);
+        fCmdSocket = fTransportFactory->CreateSocket("pub", "device-commands", fNumIoThreads, fId);
         fCmdSocket->Bind("inproc://commands");
     }
 
@@ -191,7 +191,7 @@ bool FairMQDevice::InitChannel(FairMQChannel& ch)
 {
     LOG(DEBUG) << "Initializing channel " << ch.fChannelName << " (" << ch.fType << ")";
     // initialize the socket
-    ch.fSocket = fTransportFactory->CreateSocket(ch.fType, ch.fChannelName, fNumIoThreads);
+    ch.fSocket = fTransportFactory->CreateSocket(ch.fType, ch.fChannelName, fNumIoThreads, fId);
     // set high water marks
     ch.fSocket->SetOption("snd-hwm", &(ch.fSndBufSize), sizeof(ch.fSndBufSize));
     ch.fSocket->SetOption("rcv-hwm", &(ch.fRcvBufSize), sizeof(ch.fRcvBufSize));

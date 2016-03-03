@@ -409,7 +409,7 @@ bool FairMQChannel::InitCommandInterface(FairMQTransportFactory* factory, int nu
 {
     fTransportFactory = factory;
 
-    fCmdSocket = fTransportFactory->CreateSocket("sub", "device-commands", numIoThreads);
+    fCmdSocket = fTransportFactory->CreateSocket("sub", "device-commands", numIoThreads, "internal");
     if (fCmdSocket)
     {
         fCmdSocket->Connect("inproc://commands");

@@ -23,12 +23,22 @@ FairMQTestRep::FairMQTestRep()
 
 void FairMQTestRep::Run()
 {
-    std::unique_ptr<FairMQMessage> request(NewMessage());
-    if (Receive(request, "data") >= 0)
+    std::unique_ptr<FairMQMessage> request1(NewMessage());
+    if (Receive(request1, "data") >= 0)
     {
+        LOG(INFO) << "Received request 1";
         std::unique_ptr<FairMQMessage> reply(NewMessage());
         Send(reply, "data");
     }
+    std::unique_ptr<FairMQMessage> request2(NewMessage());
+    if (Receive(request2, "data") >= 0)
+    {
+        LOG(INFO) << "Received request 2";
+        std::unique_ptr<FairMQMessage> reply(NewMessage());
+        Send(reply, "data");
+    }
+
+    LOG(INFO) << "REQ-REP test successfull";
 }
 
 FairMQTestRep::~FairMQTestRep()

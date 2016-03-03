@@ -24,7 +24,7 @@ using namespace std;
 // Context to hold the ZeroMQ sockets
 boost::shared_ptr<FairMQContextZMQ> FairMQSocketZMQ::fContext = boost::shared_ptr<FairMQContextZMQ>(new FairMQContextZMQ(1));
 
-FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const int numIoThreads)
+FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const int numIoThreads, const std::string& id /*= ""*/)
     : FairMQSocket(ZMQ_SNDMORE, ZMQ_RCVMORE, ZMQ_DONTWAIT)
     , fSocket(NULL)
     , fId()
@@ -33,7 +33,7 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const i
     , fMessagesTx(0)
     , fMessagesRx(0)
 {
-    fId = name + "." + type;
+    fId = id + "." + name + "." + type;
 
     if (zmq_ctx_set(fContext->GetContext(), ZMQ_IO_THREADS, numIoThreads) != 0)
     {
@@ -68,8 +68,6 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const i
             LOG(ERROR) << "Failed setting ZMQ_SUBSCRIBE socket option, reason: " << zmq_strerror(errno);
         }
     }
-
-    // LOG(INFO) << "created socket " << fId;
 }
 
 string FairMQSocketZMQ::GetId()

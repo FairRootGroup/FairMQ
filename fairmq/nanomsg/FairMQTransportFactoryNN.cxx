@@ -36,9 +36,9 @@ FairMQMessage* FairMQTransportFactoryNN::CreateMessage(void* data, const size_t 
     return new FairMQMessageNN(data, size, ffn, hint);
 }
 
-FairMQSocket* FairMQTransportFactoryNN::CreateSocket(const string& type, const std::string& name, const int numIoThreads)
+FairMQSocket* FairMQTransportFactoryNN::CreateSocket(const string& type, const std::string& name, const int numIoThreads, const std::string& id /*= ""*/)
 {
-    return new FairMQSocketNN(type, name, numIoThreads);
+    return new FairMQSocketNN(type, name, numIoThreads, id);
 }
 
 FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const vector<FairMQChannel>& channels)

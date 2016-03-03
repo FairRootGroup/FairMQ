@@ -29,7 +29,7 @@ void FairMQTestReq::Run()
     std::unique_ptr<FairMQMessage> reply(NewMessage());
     if (Receive(reply, "data") >= 0)
     {
-        LOG(INFO) << "REQ-REP test successfull";
+        LOG(INFO) << "received reply";
     }
 }
 
