@@ -26,9 +26,9 @@ FairMQExample6Broadcaster::FairMQExample6Broadcaster()
 {
 }
 
-void FairMQExample6Broadcaster::CustomCleanup(void *data, void *object)
+void FairMQExample6Broadcaster::CustomCleanup(void* /*data*/, void *object)
 {
-    delete (string*)object;
+    delete static_cast<string*>(object);
 }
 
 void FairMQExample6Broadcaster::Run()

@@ -26,7 +26,7 @@ FairMQExample3Sampler::FairMQExample3Sampler()
 
 void FairMQExample3Sampler::CustomCleanup(void *data, void *object)
 {
-    delete (string*)object;
+    delete static_cast<string*>(object);
 }
 
 void FairMQExample3Sampler::Run()
