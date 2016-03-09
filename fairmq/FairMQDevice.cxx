@@ -225,7 +225,7 @@ bool FairMQDevice::InitChannel(FairMQChannel& ch)
 
                 size_t pos = ch.fAddress.rfind(":");
                 stringstream newPort;
-                newPort << (int)randomPort(gen);
+                newPort << static_cast<int>(randomPort(gen));
                 ch.fAddress = ch.fAddress.substr(0, pos + 1) + newPort.str();
 
                 LOG(DEBUG) << "Binding channel " << ch.fChannelName << " on " << ch.fAddress;
@@ -559,19 +559,19 @@ void FairMQDevice::LogSocketRates()
             for (auto itr = filteredSockets.begin(); itr != filteredSockets.end(); itr++)
             {
                 bytesInNew.at(i) = (*itr)->GetBytesRx();
-                mbPerSecIn.at(i) = ((double)(bytesInNew.at(i) - bytesIn.at(i)) / (1024. * 1024.)) / (double)msSinceLastLog * 1000.;
+                mbPerSecIn.at(i) = (static_cast<double>(bytesInNew.at(i) - bytesIn.at(i)) / (1024. * 1024.)) / static_cast<double>(msSinceLastLog) * 1000.;
                 bytesIn.at(i) = bytesInNew.at(i);
 
                 msgInNew.at(i) = (*itr)->GetMessagesRx();
-                msgPerSecIn.at(i) = (double)(msgInNew.at(i) - msgIn.at(i)) / (double)msSinceLastLog * 1000.;
+                msgPerSecIn.at(i) = static_cast<double>(msgInNew.at(i) - msgIn.at(i)) / static_cast<double>(msSinceLastLog) * 1000.;
                 msgIn.at(i) = msgInNew.at(i);
 
                 bytesOutNew.at(i) = (*itr)->GetBytesTx();
-                mbPerSecOut.at(i) = ((double)(bytesOutNew.at(i) - bytesOut.at(i)) / (1024. * 1024.)) / (double)msSinceLastLog * 1000.;
+                mbPerSecOut.at(i) = (static_cast<double>(bytesOutNew.at(i) - bytesOut.at(i)) / (1024. * 1024.)) / static_cast<double>(msSinceLastLog) * 1000.;
                 bytesOut.at(i) = bytesOutNew.at(i);
 
                 msgOutNew.at(i) = (*itr)->GetMessagesTx();
-                msgPerSecOut.at(i) = (double)(msgOutNew.at(i) - msgOut.at(i)) / (double)msSinceLastLog * 1000.;
+                msgPerSecOut.at(i) = static_cast<double>(msgOutNew.at(i) - msgOut.at(i)) / static_cast<double>(msSinceLastLog) * 1000.;
                 msgOut.at(i) = msgOutNew.at(i);
 
                 LOG(DEBUG) << filteredChannelNames.at(i) << ": "

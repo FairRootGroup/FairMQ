@@ -24,8 +24,8 @@ class TransferTimeoutTester : public FairMQDevice
   protected:
     virtual void Run()
     {
-        bool setSndOK = false;
-        bool setRcvOK = false;
+//        bool setSndOK = false;
+//        bool setRcvOK = false;
         bool getSndOK = false;
         bool getRcvOK = false;
         bool sendCanceling = false;
@@ -87,7 +87,7 @@ class TransferTimeoutTester : public FairMQDevice
     }
 };
 
-int main(int argc, char** argv)
+int main(int /*argc*/, char** /*argv*/)
 {
     TransferTimeoutTester timeoutTester;
     timeoutTester.CatchSignals();

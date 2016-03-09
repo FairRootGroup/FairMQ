@@ -181,7 +181,7 @@ class base_GenericSampler : public FairMQDevice, public T, public U
     }
 
     template<typename S = source_type,FairMQ::tools::enable_if_hasNot_GetHeader<S> = 0>
-    void SendHeader(int socketIdx) {}
+    void SendHeader(int /*socketIdx*/) {}
     template<typename S = source_type,FairMQ::tools::enable_if_has_GetHeader<S> = 0>
     void SendHeader(int socketIdx)
     {

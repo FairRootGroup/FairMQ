@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 
         string filename = config.GetValue<string>("config-json-file");
         string id = config.GetValue<string>("id");
-        int ioThreads = config.GetValue<int>("io-threads");
+//        int ioThreads = config.GetValue<int>("io-threads");
 
         config.UserParser<JSON>(filename, id);
 

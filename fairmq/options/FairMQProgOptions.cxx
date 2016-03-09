@@ -20,8 +20,8 @@ using namespace std;
 FairMQProgOptions::FairMQProgOptions()
     : FairProgOptions()
     , fMQParserOptions("MQ-Device parser options")
-    , fMQOptionsInCmd("MQ-Device options")
     , fMQOptionsInCfg("MQ-Device options")
+    , fMQOptionsInCmd("MQ-Device options")
     , fMQtree()
     , fFairMQMap()
 {

@@ -19,18 +19,18 @@ using namespace std;
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Constructor
 FairProgOptions::FairProgOptions() :
+                        fVarMap(),
                         fGenericDesc("Generic options description"),
                         fConfigDesc("Configuration options description"),
-                        fHiddenDesc("Hidden options description"),
                         fEnvironmentDesc("Environment variables"),
+                        fHiddenDesc("Hidden options description"),
                         fCmdLineOptions("Command line options"),
                         fConfigFileOptions("Configuration file options"),
+                        fSeverityMap(),
                         fVisibleOptions("Visible options"),
                         fVerboseLvl("INFO"),
                         fUseConfigFile(false),
-                        fConfigFile(),
-                        fVarMap(),
-                        fSeverityMap()
+                        fConfigFile()
 {
     fGenericDesc.add_options()
         ("help,h", "produce help")

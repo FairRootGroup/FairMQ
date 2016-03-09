@@ -17,7 +17,7 @@
 #include "FairMQLogger.h"
 #include "FairMQTestReq.h"
 
-int main(int argc, char** argv)
+int main(int /*argc*/, char** /*argv*/)
 {
     FairMQTestReq testReq;
     testReq.CatchSignals();

@@ -208,7 +208,7 @@ void* FairMQSocketNN::GetSocket() const
     return NULL; // dummy method to comply with the interface. functionality not possible in zeromq.
 }
 
-int FairMQSocketNN::GetSocket(int nothing) const
+int FairMQSocketNN::GetSocket(int /*nothing*/) const
 {
     return fSocket;
 }
@@ -250,7 +250,7 @@ unsigned long FairMQSocketNN::GetMessagesRx() const
     return fMessagesRx;
 }
 
-bool FairMQSocketNN::SetSendTimeout(const int timeout, const string& address, const string& method)
+bool FairMQSocketNN::SetSendTimeout(const int timeout, const string& /*address*/, const string& /*method*/)
 {
     if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_SNDTIMEO, &timeout, sizeof(int)) != 0)
     {
@@ -274,7 +274,7 @@ int FairMQSocketNN::GetSendTimeout() const
     return timeout;
 }
 
-bool FairMQSocketNN::SetReceiveTimeout(const int timeout, const string& address, const string& method)
+bool FairMQSocketNN::SetReceiveTimeout(const int timeout, const string& /*address*/, const string& /*method*/)
 {
     if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_RCVTIMEO, &timeout, sizeof(int)) != 0)
     {

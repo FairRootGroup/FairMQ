@@ -99,7 +99,7 @@ void FairMQMessageZMQ::Copy(FairMQMessage* msg)
     // DEPRECATED: Use Copy(const unique_ptr<FairMQMessage>&)
 
     // Shares the message buffer between msg and this fMessage.
-    if (zmq_msg_copy(&fMessage, (zmq_msg_t*)msg->GetMessage()) != 0)
+    if (zmq_msg_copy(&fMessage, static_cast<zmq_msg_t*>(msg->GetMessage())) != 0)
     {
         LOG(ERROR) << "failed copying message, reason: " << zmq_strerror(errno);
     }
@@ -115,7 +115,7 @@ void FairMQMessageZMQ::Copy(FairMQMessage* msg)
 void FairMQMessageZMQ::Copy(const unique_ptr<FairMQMessage>& msg)
 {
     // Shares the message buffer between msg and this fMessage.
-    if (zmq_msg_copy(&fMessage, (zmq_msg_t*)msg->GetMessage()) != 0)
+    if (zmq_msg_copy(&fMessage, static_cast<zmq_msg_t*>(msg->GetMessage())) != 0)
     {
         LOG(ERROR) << "failed copying message, reason: " << zmq_strerror(errno);
     }

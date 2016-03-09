@@ -120,7 +120,7 @@ int main(int argc, char** argv)
 
     splitter.fChannels["data-in"].push_back(inputChannel);
 
-    for (int i = 0; i < options.outputAddress.size(); ++i)
+    for (unsigned int i = 0; i < options.outputAddress.size(); ++i)
     {
         FairMQChannel outputChannel(options.outputSocketType.at(i), options.outputMethod.at(i), options.outputAddress.at(i));
         outputChannel.UpdateSndBufSize(options.outputBufSize.at(i));

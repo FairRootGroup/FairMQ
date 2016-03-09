@@ -81,7 +81,7 @@ FairMQPollerNN::FairMQPollerNN(const unordered_map<string, vector<FairMQChannel>
         int index = 0;
         for (string channel : channelList)
         {
-            for (int i = 0; i < channelsMap.at(channel).size(); ++i)
+            for (unsigned int i = 0; i < channelsMap.at(channel).size(); ++i)
             {
                 index = fOffsetMap[channel] + i;
                 items[index].fd = channelsMap.at(channel).at(i).fSocket->GetSocket(1);
