@@ -25,9 +25,9 @@ FairMQExample2Processor::FairMQExample2Processor()
 {
 }
 
-void FairMQExample2Processor::CustomCleanup(void *data, void *object)
+void FairMQExample2Processor::CustomCleanup(void* /*data*/, void *object)
 {
-    delete (string*)object;
+    delete static_cast<string*>(object);
 }
 
 void FairMQExample2Processor::Run()

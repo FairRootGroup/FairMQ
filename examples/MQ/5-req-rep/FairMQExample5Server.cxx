@@ -24,9 +24,9 @@ FairMQExample5Server::FairMQExample5Server()
 {
 }
 
-void FairMQExample5Server::CustomCleanup(void *data, void *hint)
+void FairMQExample5Server::CustomCleanup(void* /*data*/, void *hint)
 {
-    delete (string*)hint;
+    delete static_cast<string*>(hint);
 }
 
 void FairMQExample5Server::Run()
