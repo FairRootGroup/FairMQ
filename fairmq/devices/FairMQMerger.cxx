@@ -54,7 +54,7 @@ void FairMQMerger::Run()
             if (poller->CheckInput(i))
             {
                 // Try receiving the data.
-                if (dataInChannels[i]->Receive(msg) > 0)
+                if (dataInChannels[i]->Receive(msg) >= 0)
                 {
                     // If data was received, send it to output.
                     if (dataOutChannel.Send(msg) < 0)

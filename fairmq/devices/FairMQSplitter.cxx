@@ -44,7 +44,7 @@ void FairMQSplitter::Run()
     {
         std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
 
-        if (dataInChannel.Receive(msg) > 0)
+        if (dataInChannel.Receive(msg) >= 0)
         {
             dataOutChannels[direction]->Send(msg);
             ++direction;
