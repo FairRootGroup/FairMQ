@@ -65,6 +65,10 @@ int getHostIPs(map<string, string>& addressMap)
     return 0;
 }
 
+#if defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Weffc++"
+#endif
 // below are SFINAE template functions to check for function member signatures of class
 namespace details
 {
@@ -111,6 +115,9 @@ struct has_BindGetCurrentIndex
 
 
 } // end namespace details
+#if defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic pop
+#endif
 
 // Alias template of the above structs
 template<class T, class Sig>

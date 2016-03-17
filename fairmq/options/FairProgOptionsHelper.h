@@ -89,6 +89,10 @@ namespace fairmq
         return valueStr;
     }
 
+#if defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Weffc++"
+#endif
     //_____________________________________________________________________________________________________________________________
     // policy to convert boost variable value into string
     struct ToString
@@ -231,6 +235,9 @@ namespace fairmq
 
     };
 
+#if defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic pop
+#endif
 
 
 };

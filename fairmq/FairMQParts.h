@@ -19,7 +19,7 @@ class FairMQParts
 {
   public:
     /// Default constructor
-    FairMQParts() {};
+    FairMQParts() : fParts() {};
     /// Copy Constructor
     FairMQParts(const FairMQParts&) = delete;
     /// Assignment operator

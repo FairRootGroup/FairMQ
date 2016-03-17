@@ -14,6 +14,7 @@
 #ifndef LOGGER_H
 #define	LOGGER_H
 
+
 #define BOOST_LOG_DYN_LINK 1 // necessary when linking the boost_log library dynamically
 #define FUSION_MAX_VECTOR_SIZE 20
 
@@ -81,12 +82,21 @@ void set_global_log_level(  log_op::operation op=log_op::GREATER_EQ_THAN,
                             custom_severity_level threshold=SEVERITY_THRESHOLD );
 void set_global_log_level_operation(  log_op::operation op=log_op::GREATER_EQ_THAN, 
                             custom_severity_level threshold=SEVERITY_THRESHOLD );
+
+#if defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Weffc++"
+#endif
+
 // register a global logger (declaration)
 BOOST_LOG_GLOBAL_LOGGER(global_logger, boost::log::sources::severity_logger_mt<custom_severity_level>)
 
 BOOST_LOG_ATTRIBUTE_KEYWORD(fairmq_logger_timestamp, "TimeStamp", boost::posix_time::ptime)
 BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", custom_severity_level)        
 
+#if defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic pop
+#endif
 
 template<typename T>
 void init_log_formatter(const boost::log::record_view &view, boost::log::formatting_ostream &os)
