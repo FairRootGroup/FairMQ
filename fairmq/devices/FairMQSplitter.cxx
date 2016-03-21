@@ -28,30 +28,32 @@ FairMQSplitter::~FairMQSplitter()
 
 void FairMQSplitter::Run()
 {
-    // store the channel references to avoid traversing the map on every loop iteration
-    auto& dataOutChannelRef = fChannels.at("data-out");
-    const FairMQChannel& dataInChannel = fChannels.at("data-in").at(0);
-    int numOutputs = dataOutChannelRef.size();
-    std::vector<FairMQChannel*> dataOutChannels(numOutputs);
-    for (int i = 0; i < numOutputs; ++i)
-    {
-        dataOutChannels[i] = &(dataOutChannelRef.at(i));
-    }
+    int numOutputs = fChannels.at("data-out").size();
 
     int direction = 0;
 
     while (CheckCurrentState(RUNNING))
     {
-        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
+        FairMQParts parts;
 
-        if (dataInChannel.Receive(msg) >= 0)
+        if (Receive(parts, "data-in") >= 0)
         {
-            dataOutChannels[direction]->Send(msg);
-            ++direction;
-            if (direction >= numOutputs)
+            if (Send(parts, "data-out", direction) < 0)
             {
-                direction = 0;
+                LOG(DEBUG) << "Transfer interrupted";
+                break;
             }
+        }
+        else
+        {
+            LOG(DEBUG) << "Transfer interrupted";
+            break;
+        }
+
+        ++direction;
+        if (direction >= numOutputs)
+        {
+            direction = 0;
         }
     }
 }

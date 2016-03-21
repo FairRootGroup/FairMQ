@@ -53,7 +53,7 @@ FairMQMessageNN::FairMQMessageNN(const size_t size)
  * create FairMQMessage object only with size parameter and fill it with data.
  * possible TODO: make this zero copy (will should then be as efficient as ZeroMQ).
 */
-FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn *ffn, void* hint)
+FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
     : fMessage(NULL)
     , fSize(0)
     , fReceiving(false)
@@ -67,14 +67,9 @@ FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn *
     {
         memcpy(fMessage, data, size);
         fSize = size;
-
         if (ffn)
         {
             ffn(data, hint);
-        }
-        else
-        {
-            if(data) free(data);
         }
     }
 }
@@ -97,7 +92,7 @@ void FairMQMessageNN::Rebuild(const size_t size)
     fReceiving = false;
 }
 
-void FairMQMessageNN::Rebuild(void* data, const size_t size, fairmq_free_fn *ffn, void* hint)
+void FairMQMessageNN::Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
 {
     Clear();
     fMessage = nn_allocmsg(size, 0);
@@ -111,13 +106,9 @@ void FairMQMessageNN::Rebuild(void* data, const size_t size, fairmq_free_fn *ffn
         fSize = size;
         fReceiving = false;
 
-        if(ffn)
+        if (ffn)
         {
             ffn(data, hint);
-        }
-        else
-        {
-            if(data) free(data);
         }
     }
 }

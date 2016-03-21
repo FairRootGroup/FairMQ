@@ -65,6 +65,12 @@ class FairMQChannel
     /// Get socket receive buffer size (in number of messages)
     /// @return Returns socket receive buffer size (in number of messages)
     int GetRcvBufSize() const;
+    /// Get socket kernel transmit send buffer size (in bytes)
+    /// @return Returns socket kernel transmit send buffer size (in bytes)
+    int GetSndKernelSize() const;
+    /// Get socket kernel transmit receive buffer size (in bytes)
+    /// @return Returns socket kernel transmit receive buffer size (in bytes)
+    int GetRcvKernelSize() const;
     /// Get socket rate logging setting (1/0)
     /// @return Returns socket rate logging setting (1/0)
     int GetRateLogging() const;
@@ -84,6 +90,12 @@ class FairMQChannel
     /// Set socket receive buffer size
     /// @param rcvBufSize Socket receive buffer size (in number of messages)
     void UpdateRcvBufSize(const int rcvBufSize);
+    /// Set socket kernel transmit send buffer size (in bytes)
+    /// @param sndKernelSize Socket send buffer size (in bytes)
+    void UpdateSndKernelSize(const int sndKernelSize);
+    /// Set socket kernel transmit receive buffer size (in bytes)
+    /// @param rcvKernelSize Socket receive buffer size (in bytes)
+    void UpdateRcvKernelSize(const int rcvKernelSize);
     /// Set socket rate logging setting
     /// @param rateLogging Socket rate logging setting (1/0)
     void UpdateRateLogging(const int rateLogging);
@@ -223,6 +235,8 @@ class FairMQChannel
     std::string fAddress;
     int fSndBufSize;
     int fRcvBufSize;
+    int fSndKernelSize;
+    int fRcvKernelSize;
     int fRateLogging;
 
     std::string fChannelName;

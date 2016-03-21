@@ -30,6 +30,8 @@ FairMQChannel::FairMQChannel()
     , fAddress("unspecified")
     , fSndBufSize(1000)
     , fRcvBufSize(1000)
+    , fSndKernelSize(0)
+    , fRcvKernelSize(0)
     , fRateLogging(1)
     , fChannelName("")
     , fIsValid(false)
@@ -50,6 +52,8 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
     , fAddress(address)
     , fSndBufSize(1000)
     , fRcvBufSize(1000)
+    , fSndKernelSize(0)
+    , fRcvKernelSize(0)
     , fRateLogging(1)
     , fChannelName("")
     , fIsValid(false)
@@ -70,6 +74,8 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan)
     , fAddress(chan.fAddress)
     , fSndBufSize(chan.fSndBufSize)
     , fRcvBufSize(chan.fRcvBufSize)
+    , fSndKernelSize(chan.fSndKernelSize)
+    , fRcvKernelSize(chan.fRcvKernelSize)
     , fRateLogging(chan.fRateLogging)
     , fChannelName(chan.fChannelName)
     , fIsValid(false)
@@ -89,6 +95,8 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     fAddress = chan.fAddress;
     fSndBufSize = chan.fSndBufSize;
     fRcvBufSize = chan.fRcvBufSize;
+    fSndKernelSize = chan.fSndKernelSize;
+    fRcvKernelSize = chan.fRcvKernelSize;
     fRateLogging = chan.fRateLogging;
     fSocket = nullptr;
     fChannelName = chan.fChannelName;
@@ -170,6 +178,34 @@ int FairMQChannel::GetRcvBufSize() const
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::GetRcvBufSize: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
+    }
+}
+
+int FairMQChannel::GetSndKernelSize() const
+{
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        return fSndKernelSize;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << "Exception caught in FairMQChannel::GetSndKernelSize: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
+    }
+}
+
+int FairMQChannel::GetRcvKernelSize() const
+{
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        return fRcvKernelSize;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << "Exception caught in FairMQChannel::GetRcvKernelSize: " << boost::diagnostic_information(e);
         exit(EXIT_FAILURE);
     }
 }
@@ -259,6 +295,36 @@ void FairMQChannel::UpdateRcvBufSize(const int rcvBufSize)
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::UpdateRcvBufSize: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
+    }
+}
+
+void FairMQChannel::UpdateSndKernelSize(const int sndKernelSize)
+{
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        fIsValid = false;
+        fSndKernelSize = sndKernelSize;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateSndKernelSize: " << boost::diagnostic_information(e);
+        exit(EXIT_FAILURE);
+    }
+}
+
+void FairMQChannel::UpdateRcvKernelSize(const int rcvKernelSize)
+{
+    try
+    {
+        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        fIsValid = false;
+        fRcvKernelSize = rcvKernelSize;
+    }
+    catch (boost::exception& e)
+    {
+        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateRcvKernelSize: " << boost::diagnostic_information(e);
         exit(EXIT_FAILURE);
     }
 }
@@ -393,6 +459,24 @@ bool FairMQChannel::ValidateChannel()
             return false;
         }
 
+        // validate socket kernel transmit size for sending
+        if (fSndKernelSize < 0)
+        {
+            ss << "INVALID";
+            LOG(DEBUG) << ss.str();
+            LOG(DEBUG) << "invalid channel send kernel transmit size: \"" << fSndKernelSize << "\"";
+            return false;
+        }
+
+        // validate socket kernel transmit size for receiving
+        if (fRcvKernelSize < 0)
+        {
+            ss << "INVALID";
+            LOG(DEBUG) << ss.str();
+            LOG(DEBUG) << "invalid channel receive kernel transmit size: \"" << fRcvKernelSize << "\"";
+            return false;
+        }
+
         fIsValid = true;
         ss << "VALID";
         LOG(DEBUG) << ss.str();
@@ -451,80 +535,6 @@ int FairMQChannel::Send(const unique_ptr<FairMQMessage>& msg) const
     return -2;
 }
 
-int64_t FairMQChannel::Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const
-{
-    // Sending vector typicaly handles more then one part
-    if (msgVec.size() > 1)
-    {
-        int64_t totalSize = 0;
-
-        for (unsigned int i = 0; i < msgVec.size() - 1; ++i)
-        {
-            int nbytes = SendPart(msgVec[i]);
-            if (nbytes >= 0)
-            {
-                totalSize += nbytes;
-            }
-            else
-            {
-                return nbytes;
-            }
-        }
-
-        int n = Send(msgVec.back());
-        if (n >= 0)
-        {
-            totalSize += n;
-        }
-        else
-        {
-            return n;
-        }
-
-        return totalSize;
-    } // If there's only one part, send it as a regular message
-    else if (msgVec.size() == 1)
-    {
-        return Send(msgVec.back());
-    }
-    else // if the vector is empty, something might be wrong
-    {
-        LOG(WARN) << "Will not send empty vector";
-        return -1;
-    }
-}
-
-int64_t FairMQChannel::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const
-{
-    // Warn if the vector is filled before Receive() and empty it.
-    if (msgVec.size() > 0)
-    {
-        LOG(WARN) << "Message vector contains elements before Receive(), they will be deleted!";
-        msgVec.clear();
-    }
-
-    int64_t totalSize = 0;
-
-    do
-    {
-        std::unique_ptr<FairMQMessage> part(fTransportFactory->CreateMessage());
-
-        int nbytes = Receive(part);
-        if (nbytes >= 0)
-        {
-            msgVec.push_back(std::move(part));
-            totalSize += nbytes;
-        }
-        else
-        {
-            return nbytes;
-        }
-    }
-    while (ExpectsAnotherPart());
-
-    return totalSize;
-}
-
 int FairMQChannel::Receive(const unique_ptr<FairMQMessage>& msg) const
 {
     fPoller->Poll(fRcvTimeoutInMs);
@@ -538,6 +548,42 @@ int FairMQChannel::Receive(const unique_ptr<FairMQMessage>& msg) const
     if (fPoller->CheckInput(1))
     {
         return fSocket->Receive(msg.get(), 0);
+    }
+
+    return -2;
+}
+
+int64_t FairMQChannel::Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const
+{
+    fPoller->Poll(fSndTimeoutInMs);
+
+    if (fPoller->CheckInput(0))
+    {
+        HandleUnblock();
+        return -2;
+    }
+
+    if (fPoller->CheckOutput(1))
+    {
+        return fSocket->Send(msgVec);
+    }
+
+    return -2;
+}
+
+int64_t FairMQChannel::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const
+{
+    fPoller->Poll(fRcvTimeoutInMs);
+
+    if (fPoller->CheckInput(0))
+    {
+        HandleUnblock();
+        return -2;
+    }
+
+    if (fPoller->CheckInput(1))
+    {
+        return fSocket->Receive(msgVec);
     }
 
     return -2;

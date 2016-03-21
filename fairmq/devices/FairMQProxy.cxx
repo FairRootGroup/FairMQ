@@ -28,17 +28,22 @@ FairMQProxy::~FairMQProxy()
 
 void FairMQProxy::Run()
 {
-    std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
-
-    // store the channel references to avoid traversing the map on every loop iteration
-    const FairMQChannel& dataInChannel = fChannels.at("data-in").at(0);
-    const FairMQChannel& dataOutChannel = fChannels.at("data-out").at(0);
-
     while (CheckCurrentState(RUNNING))
     {
-        if (dataInChannel.Receive(msg) > 0)
+        FairMQParts parts;
+
+        if (Receive(parts, "data-in") >= 0)
         {
-            dataOutChannel.Send(msg);
+            if (Send(parts, "data-out") < 0)
+            {
+                LOG(DEBUG) << "Transfer interrupted";
+                break;
+            }
+        }
+        else
+        {
+            LOG(DEBUG) << "Transfer interrupted";
+            break;
         }
     }
 }

@@ -15,6 +15,8 @@
 #include "FairMQTransportFactory.h"
 #include "FairMQMessage.h"
 
+/// FairMQParts is a lightweight convenience wrapper around a vector of unique pointers to FairMQMessage, used for sending multi-part messages
+
 class FairMQParts
 {
   public:
@@ -22,6 +24,8 @@ class FairMQParts
     FairMQParts() : fParts() {};
     /// Copy Constructor
     FairMQParts(const FairMQParts&) = delete;
+    /// Move constructor
+    FairMQParts(FairMQParts&& p) = default;
     /// Assignment operator
     FairMQParts& operator=(const FairMQParts&) = delete;
     /// Default destructor
@@ -34,13 +38,20 @@ class FairMQParts
         fParts.push_back(std::unique_ptr<FairMQMessage>(msg));
     }
 
+    /// Adds part (std::unique_ptr<FairMQMessage>) to the container (move)
+    /// @param msg unique pointer to FairMQMessage
+    inline void AddPart(std::unique_ptr<FairMQMessage> msg)
+    {
+        fParts.push_back(std::move(msg));
+    }
+
     /// Get reference to part in the container at index (without bounds check)
     /// @param index container index
     inline FairMQMessage& operator[](const int index) { return *(fParts[index]); }
 
-    /// Get reference to part in the container at index (with bounds check)
+    /// Get reference to unique pointer to part in the container at index (with bounds check)
     /// @param index container index
-    inline FairMQMessage& At(const int index) { return *(fParts.at(index)); }
+    inline std::unique_ptr<FairMQMessage>& At(const int index) { return fParts.at(index); }
 
     /// Get number of parts in the container
     /// @return number of parts in the container

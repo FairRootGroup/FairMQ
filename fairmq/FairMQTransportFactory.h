@@ -32,7 +32,7 @@ class FairMQTransportFactory
   public:
     virtual FairMQMessage* CreateMessage() = 0;
     virtual FairMQMessage* CreateMessage(const size_t size) = 0;
-    virtual FairMQMessage* CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn = NULL, void* hint = NULL) = 0;
+    virtual FairMQMessage* CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = NULL) = 0;
 
     virtual FairMQSocket* CreateSocket(const std::string& type, const std::string& name, const int numIoThreads, const std::string& id = "") = 0;
 

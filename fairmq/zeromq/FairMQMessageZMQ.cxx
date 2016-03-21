@@ -38,10 +38,10 @@ FairMQMessageZMQ::FairMQMessageZMQ(const size_t size)
     }
 }
 
-FairMQMessageZMQ::FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn *ffn, void* hint)
+FairMQMessageZMQ::FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
     : fMessage()
 {
-    if (zmq_msg_init_data(&fMessage, data, size, ffn ? ffn : &CleanUp, hint) != 0)
+    if (zmq_msg_init_data(&fMessage, data, size, ffn, hint) != 0)
     {
         LOG(ERROR) << "failed initializing message with data, reason: " << zmq_strerror(errno);
     }
@@ -65,10 +65,10 @@ void FairMQMessageZMQ::Rebuild(const size_t size)
     }
 }
 
-void FairMQMessageZMQ::Rebuild(void* data, const size_t size, fairmq_free_fn *ffn, void* hint)
+void FairMQMessageZMQ::Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
 {
     CloseMessage();
-    if (zmq_msg_init_data(&fMessage, data, size, ffn ? ffn : &CleanUp, hint) != 0)
+    if (zmq_msg_init_data(&fMessage, data, size, ffn, hint) != 0)
     {
         LOG(ERROR) << "failed initializing message with data, reason: " << zmq_strerror(errno);
     }
@@ -134,11 +134,6 @@ inline void FairMQMessageZMQ::CloseMessage()
     {
         LOG(ERROR) << "failed closing message, reason: " << zmq_strerror(errno);
     }
-}
-
-void FairMQMessageZMQ::CleanUp(void* data, void*)
-{
-    free(data);
 }
 
 FairMQMessageZMQ::~FairMQMessageZMQ()

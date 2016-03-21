@@ -150,7 +150,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param ffn optional callback, called when the message is transfered (and can be deleted)
     /// @param hint optional helper pointer that can be used in the callback
     /// @return pointer to FairMQMessage
-    inline FairMQMessage* NewMessage(void* data, int size, fairmq_free_fn* ffn = NULL, void* hint = NULL) const
+    inline FairMQMessage* NewMessage(void* data, int size, fairmq_free_fn* ffn, void* hint = NULL) const
     {
         return fTransportFactory->CreateMessage(data, size, ffn, hint);
     }

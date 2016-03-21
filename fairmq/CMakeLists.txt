@@ -37,6 +37,13 @@ If(NANOMSG_FOUND)
     ${SYSTEM_INCLUDE_DIRECTORIES}
     ${NANOMSG_INCLUDE_DIR}
   )
+  If(MSGPACK_FOUND)
+    add_definitions(-DMSGPACK_FOUND)
+    Set(SYSTEM_INCLUDE_DIRECTORIES
+      ${SYSTEM_INCLUDE_DIRECTORIES}
+      ${MSGPACK_INCLUDE_DIR}
+    )
+  EndIf(MSGPACK_FOUND)
 EndIf(NANOMSG_FOUND)
 
 Include_Directories(${INCLUDE_DIRECTORIES})
@@ -67,7 +74,6 @@ Set(SRCS
 
   "devices/FairMQBenchmarkSampler.cxx"
   "devices/FairMQSink.cxx"
-  "devices/FairMQBuffer.cxx"
   "devices/FairMQProxy.cxx"
   "devices/FairMQSplitter.cxx"
   "devices/FairMQMerger.cxx"
@@ -126,6 +132,7 @@ If(NANOMSG_FOUND)
   Set(DEPENDENCIES
     ${DEPENDENCIES}
     ${NANOMSG_LIBRARY_SHARED}
+    # msgpackc # currently header only
   )
 EndIf(NANOMSG_FOUND)
 
@@ -136,7 +143,6 @@ GENERATE_LIBRARY()
 Set(Exe_Names
   bsampler
   sink
-  buffer
   splitter
   merger
   proxy
@@ -145,7 +151,6 @@ Set(Exe_Names
 Set(Exe_Source
   run/runBenchmarkSampler.cxx
   run/runSink.cxx
-  run/runBuffer.cxx
   run/runSplitter.cxx
   run/runMerger.cxx
   run/runProxy.cxx

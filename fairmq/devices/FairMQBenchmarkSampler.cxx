@@ -35,10 +35,9 @@ FairMQBenchmarkSampler::~FairMQBenchmarkSampler()
 
 void FairMQBenchmarkSampler::Run()
 {
-    void* buffer = malloc(fMsgSize);
     int numSentMsgs = 0;
 
-    unique_ptr<FairMQMessage> baseMsg(fTransportFactory->CreateMessage(buffer, fMsgSize));
+    unique_ptr<FairMQMessage> baseMsg(fTransportFactory->CreateMessage(fMsgSize));
 
     // store the channel reference to avoid traversing the map on every loop iteration
     const FairMQChannel& dataOutChannel = fChannels.at("data-out").at(0);
