@@ -34,7 +34,10 @@ void FairMQExample4Sampler::Run()
 
         uint64_t* number = new uint64_t(counter);
 
-        std::unique_ptr<FairMQMessage> msg(NewMessage(number, sizeof(uint64_t)));
+        std::unique_ptr<FairMQMessage> msg(NewMessage(number, // data pointer
+                                                      sizeof(uint64_t), // data size
+                                                      [](void* data, void* hint){ delete static_cast<uint64_t*>(data); } // callback to deallocate after the transfer
+                                                      ));
 
         LOG(INFO) << "Sending \"" << counter << "\"";
 
