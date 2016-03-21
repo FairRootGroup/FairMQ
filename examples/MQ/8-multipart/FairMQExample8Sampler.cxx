@@ -39,12 +39,17 @@ void FairMQExample8Sampler::Run()
         // Set stopFlag to 1 for the first 4 messages, and to 0 for the 5th.
         counter < 5 ? header->stopFlag = 0 : header->stopFlag = 1;
 
+        LOG(INFO) << "Sending header with stopFlag: " << header->stopFlag;
+
         FairMQParts parts;
-        parts.AddPart(NewMessage(header, sizeof(Ex8Header)));
+
+        parts.AddPart(NewMessage(header, // data pointer
+                                 sizeof(Ex8Header), // data size
+                                 [](void* data, void* hint) { delete static_cast<Ex8Header*>(data); } // callback to deallocate after the transfer
+                                 ));
         parts.AddPart(NewMessage(1000));
 
-        LOG(INFO) << "Sending header with stopFlag: " << header->stopFlag;
-        LOG(INFO) << "Sending body of size: " << parts.At(1).GetSize();
+        LOG(INFO) << "Sending body of size: " << parts.At(1)->GetSize();
 
         Send(parts, "data-out");
 
