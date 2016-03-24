@@ -38,7 +38,6 @@ void FairMQExample8Sampler::Run()
         Ex8Header* header = new Ex8Header;
         // Set stopFlag to 1 for the first 4 messages, and to 0 for the 5th.
         counter < 5 ? header->stopFlag = 0 : header->stopFlag = 1;
-
         LOG(INFO) << "Sending header with stopFlag: " << header->stopFlag;
 
         FairMQParts parts;
