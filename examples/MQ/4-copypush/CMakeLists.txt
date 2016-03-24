@@ -75,3 +75,8 @@ ForEach(_file RANGE 0 ${_length})
   Set(DEPENDENCIES FairMQExample4)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
+
+Install(
+  FILES ex4-copypush.json
+  DESTINATION share/fairbase/examples/MQ/4-copypush/config/
+)

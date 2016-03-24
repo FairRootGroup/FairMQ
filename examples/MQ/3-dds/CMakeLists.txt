@@ -92,3 +92,8 @@ ForEach(_file RANGE 0 ${_length})
   set(DEPENDENCIES FairMQExample3)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
+
+Install(
+  FILES ex3-dds-hosts.cfg ex3-dds-topology.xml
+  DESTINATION share/fairbase/examples/MQ/3-dds/config/
+)

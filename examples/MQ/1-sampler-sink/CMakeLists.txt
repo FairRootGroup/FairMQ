@@ -75,3 +75,8 @@ ForEach(_file RANGE 0 ${_length})
   set(DEPENDENCIES FairMQExample1)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
+
+Install(
+  FILES ex1-sampler-sink.json
+  DESTINATION share/fairbase/examples/MQ/1-sampler-sink/config/
+)

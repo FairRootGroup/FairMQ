@@ -75,3 +75,8 @@ ForEach(_file RANGE 0 ${_length})
   set(DEPENDENCIES FairMQExample5)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
+
+Install(
+  FILES ex5-req-rep.json
+  DESTINATION share/fairbase/examples/MQ/5-req-rep/config/
+)

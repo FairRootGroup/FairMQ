@@ -78,3 +78,8 @@ ForEach(_file RANGE 0 ${_length})
   set(DEPENDENCIES FairMQExample6)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
+
+Install(
+  FILES ex6-multiple-channels.json
+  DESTINATION share/fairbase/examples/MQ/6-multiple-channels/config/
+)

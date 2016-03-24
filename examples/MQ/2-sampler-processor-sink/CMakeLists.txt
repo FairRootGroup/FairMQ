@@ -78,3 +78,8 @@ ForEach(_file RANGE 0 ${_length})
   Set(DEPENDENCIES FairMQExample2)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
+
+Install(
+  FILES ex2-sampler-processor-sink.json
+  DESTINATION share/fairbase/examples/MQ/2-sampler-processor-sink/config/
+)
