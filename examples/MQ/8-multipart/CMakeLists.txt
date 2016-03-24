@@ -75,3 +75,8 @@ ForEach(_file RANGE 0 ${_length})
   Set(DEPENDENCIES FairMQExample8)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
+
+Install(
+  FILES ex8-multipart.json
+  DESTINATION share/fairbase/examples/MQ/8-multipart/config/
+)
