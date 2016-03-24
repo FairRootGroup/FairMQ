@@ -29,177 +29,83 @@
 #include "FairMQTools.h"
 
 /*  GENERIC SAMPLER (data source) MQ-DEVICE */
-/*********************************************************************
- * -------------- NOTES -----------------------
- * All policies must have a default constructor
- * Function to define in (parent) policy classes :
- * 
- *  -------- INPUT POLICY (SAMPLER POLICY) --------
- *                source_type::InitSource()                          // must be there to compile
- *        int64_t source_type::GetNumberOfEvent()                     // must be there to compile
- *                source_type::SetIndex(int64_t eventIdx)             // must be there to compile
- * CONTAINER_TYPE source_type::GetOutData()                           // must be there to compile
- *                source_type::SetFileProperties(Args&... args)       // must be there to compile
- * 
- *           void BindSendHeader(std::function<void(int)> callback)       // enabled if exists
- *           void BindGetSocketNumber(std::function<int()> callback)    // enabled if exists
- *           void GetHeader(std::function<int()> callback)    // enabled if exists
- * 
- *  -------- OUTPUT POLICY --------
- *                serialization_type::SerializeMsg(CONTAINER_TYPE)            // must be there to compile
- *                serialization_type::SetMessage(FairMQMessage* msg)          // must be there to compile
- *               
- **********************************************************************/
+/********************************************************************* */
+ 
+template<typename T, typename U>
+using enable_if_match = typename std::enable_if<std::is_same<T,U>::value,int>::type;
 
-//template <typename source_type, typename serialization_type, typename key_type, typename task_type>
-//class base_GenericSampler : public FairMQDevice, public source_type, public serialization_type
-template <typename T, typename U, typename K, typename L>
+struct DefaultSamplerRun {};
+
+template <  typename T, 
+            typename U,
+            typename R=DefaultSamplerRun
+         >
 class base_GenericSampler : public FairMQDevice, public T, public U
 {
-  protected:
-    typedef T                                                 source_type;
-    typedef U                                          serialization_type;
-    typedef K                                                    key_type;
-    typedef L                                                   task_type;
-    typedef base_GenericSampler<T,U,K,L>                        self_type;
-
   public:
-    enum
-    {
-        EventRate = FairMQDevice::Last,
-        OutChannelName
-    };
+    typedef T input_policy;// sampler source
+    typedef U output_policy;// deserialization
+    typedef R run_type;
 
-    base_GenericSampler();
-    virtual ~base_GenericSampler();
-    /*
-    struct trait : source_type::trait, serialization_type::trait
-    {
-        //static const SerializationTag serialization = serialization_type::trait::serialization;
-        //static const FileTag 
-        static const DeviceTag device = kSampler;
-        typedef base_GenericSampler<source_type,serialization_type> self_type;
-        typedef source_type source_type;
-        typedef serialization_type serialization_type;
-    };
-    */
+    base_GenericSampler() : FairMQDevice(), fOutChanName("data-out"), T(), U()
+    {}
+
+    virtual ~base_GenericSampler()
+    {}
 
     template <typename... Args>
-    void SetTransport(Args... args)
+    void SetFileProperties(Args&&... args)
     {
-        FairMQDevice::SetTransport(std::forward<Args>(args)...);
-    }
-
-    void ResetEventCounter();
-
-    template <typename... Args>
-    void SetFileProperties(Args&... args)
-    {
-        source_type::SetFileProperties(args...);
-    }
-
-    virtual void SetProperty(const int key, const int value);
-    virtual int GetProperty(const int key, const int default_ = 0);
-    virtual void SetProperty(const int key, const std::string& value);
-    virtual std::string GetProperty(const int key, const std::string& default_ = "");
-
-    void SendHeader(int socketIdx=0);
-    int GetSocketNumber() const;
-    int GetCurrentIndex() const;
-    void SetContinuous(bool flag);
-
-    /*
-       register the tasks you want to process and, which will be
-       called by ExecuteTasks() member function. The registration is done by filling
-       a std::map<key_type, task_type > where key_type is int and task_type
-       is std::function<void()> by default (when using GenericSampler alias template). 
-       The template parameter <RegistrationManager> must take a pointer to this class or derived class as first argument, 
-       and a reference to a std::map<key_type, task_type > as second argument.
-       It is convenient to use a lambda expression in the place of the <RegistrationManager> template argument.
-       For example if we want to register the simple function,
-       //<
-       void myfunction() {std::cout << "hello World" << std::endl;} 
-       //>
-       ,and the MultiPartTask() template function member of this class , then
-       we can do in the main function as follow :
-       
-       sampler.RegisterTask(
-          [&](TSampler* s, std::map<int, std::function<void()>>& task_list) 
-          {
-              task_list[0]=std::bind(myfunction);
-              task_list[1]=std::bind(&U::template MultiPartTask<5>, s);
-          });
-     
-     To communicate with the Host derived class via callback, three methods from the host class are callable (only
-     after binding these methods in the GenericSampler<I,O>::InitTask() )
-    */
-    template<typename RegistrationManager>
-    void RegisterTask(RegistrationManager manage)
-    {
-        manage(this, fTaskList);
-        LOG(DEBUG) << "Current Number of registered tasks = " << fTaskList.size();
-    }
-
-    void ExecuteTasks()
-    {
-        for(const auto& p : fTaskList)
-        {
-            LOG(DEBUG) << "Execute Task " << p.first;
-            p.second();
-        }
+        input_policy::SetFileProperties(std::forward<Args>(args)...);
     }
 
   protected:
-    virtual void InitTask();
-    virtual void Run();
+
+    
+    using input_policy::fInput;
+    virtual void Init()
+    {    
+        input_policy::InitSource();
+        
+    }
+
+    template <typename RUN = run_type, enable_if_match<RUN,DefaultSamplerRun> = 0>
+    inline void Run_impl()
+    {
+        int64_t sentMsgs(0);
+        int64_t numEvents = input_policy::GetNumberOfEvent();
+        LOG(INFO) << "Number of events to process: " << numEvents;
+        boost::timer::auto_cpu_timer timer;
+        for (int64_t idx(0); idx < numEvents; idx++)
+        {
+            std::unique_ptr<FairMQMessage> msg(NewMessage());
+            T::Deserialize(idx);
+            Send<U>(fInput, fOutChanName);
+            sentMsgs++;
+            if (!CheckCurrentState(RUNNING))
+                break;
+            
+        }
+
+        boost::timer::cpu_times const elapsed_time(timer.elapsed());
+        LOG(INFO) << "Sent everything in:\n" << boost::timer::format(elapsed_time, 2);
+        LOG(INFO) << "Sent " << sentMsgs << " messages!";
+    }
+
+    virtual void Run()
+    {
+        Run_impl();
+    }
 
   private:
     std::string fOutChanName;
-    int64_t fNumEvents;
-    int64_t fCurrentIdx;
-    int fEventRate;
-    int fEventCounter;
-    bool fContinuous;
-    std::map<key_type, task_type> fTaskList; // to handle Task list
 
-    // automatically enable or disable the call of policy function members for binding of host functions.
-    // this template functions use SFINAE to detect the existence of the policy function signature.
-    template<typename S = source_type,FairMQ::tools::enable_if_hasNot_BindSendHeader<S> = 0>
-    void BindingSendPart() {}
-    template<typename S = source_type,FairMQ::tools::enable_if_has_BindSendHeader<S> = 0>
-    void BindingSendPart()
-    {
-        source_type::BindSendHeader(std::bind(&base_GenericSampler::SendPart,this,std::placeholders::_1) );
-    }
-
-    template<typename S = source_type,FairMQ::tools::enable_if_hasNot_BindGetSocketNumber<S> = 0>
-    void BindingGetSocketNumber() {}
-    template<typename S = source_type,FairMQ::tools::enable_if_has_BindGetSocketNumber<S> = 0>
-    void BindingGetSocketNumber()
-    {
-        source_type::BindGetSocketNumber(std::bind(&base_GenericSampler::GetSocketNumber,this) );
-    }
-
-    template<typename S = source_type,FairMQ::tools::enable_if_hasNot_GetHeader<S> = 0>
-    void SendHeader(int /*socketIdx*/) {}
-    template<typename S = source_type,FairMQ::tools::enable_if_has_GetHeader<S> = 0>
-    void SendHeader(int socketIdx)
-    {
-        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
-        serialization_type::SetMessage(msg.get());
-        // remark : serialization_type must have an overload of the SerializeMsg to serialize the Header structure
-        fChannels.at(fOutChanName).at(socketIdx).Send(serialization_type::SerializeMsg(source_type::GetHeader()), "snd-more");
-    }
-
-    template<typename S = source_type,FairMQ::tools::enable_if_hasNot_BindGetCurrentIndex<S> = 0>
-    void BindingGetCurrentIndex() {}
-    template<typename S = source_type,FairMQ::tools::enable_if_has_BindGetCurrentIndex<S> = 0>
-    void BindingGetCurrentIndex()
-    {
-        source_type::BindGetCurrentIndex(std::bind(&base_GenericSampler::GetCurrentIndex,this) );
-    }
 };
 
-#include "GenericSampler.tpl"
+
+    void SendHeader(int /*socketIdx*/) {}
+
+
+
 
 #endif /* GENERICSAMPLER_H */

@@ -14,6 +14,18 @@
 
 #include "FairMQTransportFactory.h"
 #include "FairMQMessage.h"
+#include "FairMQLogger.h"
+#include "zeromq/FairMQMessageZMQ.h"
+//class FairMQMessageZMQ;
+class FairMQMessageNN;
+namespace fairmq
+{
+    namespace transport
+    {
+        struct ZMQ{};
+        struct NN{};
+    }
+}
 
 /// FairMQParts is a lightweight convenience wrapper around a vector of unique pointers to FairMQMessage, used for sending multi-part messages
 
@@ -37,6 +49,22 @@ class FairMQParts
     {
         fParts.push_back(std::unique_ptr<FairMQMessage>(msg));
     }
+    
+
+    inline void AddPart(std::unique_ptr<FairMQMessage>& msg)
+    {
+        fParts.push_back(std::move(msg));
+    }
+
+    template<typename Serializer, typename DataType>
+    inline void AddPart(DataType&& data)
+    {
+        std::unique_ptr<FairMQMessage> msg(new FairMQMessageZMQ());
+        Serializer().Serialize(msg, std::forward<DataType>(data));
+        fParts.push_back(std::move(msg));
+    }
+
+
 
     /// Adds part (std::unique_ptr<FairMQMessage>) to the container (move)
     /// @param msg unique pointer to FairMQMessage
@@ -53,6 +81,13 @@ class FairMQParts
     /// @param index container index
     inline std::unique_ptr<FairMQMessage>& At(const int index) { return fParts.at(index); }
 
+    template<typename Deserializer, typename DataType>
+    inline void At(DataType&& data, const int index)
+    {
+        Deserializer().Deserialize(fParts.at(index), std::forward<DataType>(data));
+    }
+
+    inline std::unique_ptr<FairMQMessage>& At_ptr(const int index) { return fParts.at(index); }
     /// Get number of parts in the container
     /// @return number of parts in the container
     inline int Size() const { return fParts.size(); }

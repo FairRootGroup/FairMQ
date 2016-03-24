@@ -41,55 +41,48 @@
 template <typename T, typename U>
 class GenericFileSink : public FairMQDevice, public T, public U
 {
-  protected:
-    typedef T                        deserialization_type;
-    typedef U                                   sink_type;
   public:
+    typedef T                        input_policy;
+    typedef U                        sink_type;
     GenericFileSink()
-        : deserialization_type()
-        , sink_type()
+        : FairMQDevice(), input_policy(), sink_type()
     {}
 
     virtual ~GenericFileSink()
     {}
 
-    template <typename... Args>
-    void SetTransport(Args... args)
-    {
-        FairMQDevice::SetTransport(std::forward<Args>(args)...);
-    }
 
-    template <typename... Args>
-    void InitInputContainer(Args... args)
+    template<typename... Args>
+    void InitInputData(Args&&... args)
     {
-        deserialization_type::InitContainer(std::forward<Args>(args)...);
+        input_policy::Create(std::forward<Args>(args)...);
     }
 
   protected:
+
+    
+    using input_policy::fInput;
+
+
     virtual void InitTask()
     {
         sink_type::InitOutputFile();
     }
 
+    typedef typename input_policy::deserialization_type deserializer_type;
     virtual void Run()
     {
         int receivedMsg = 0;
-
-        // store the channel reference to avoid traversing the map on every loop iteration
-        const FairMQChannel& inputChannel = fChannels.at("data-in").at(0);
-
         while (CheckCurrentState(RUNNING))
         {
-            std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
-
-            if (inputChannel.Receive(msg) > 0)
+            if (Receive<deserializer_type>(fInput, "data-in") > 0)
             {
-                sink_type::AddToFile(deserialization_type::DeserializeMsg(msg.get()));
+                U::Serialize(fInput);// add fInput to file
                 receivedMsg++;
             }
         }
 
-        MQLOG(INFO) << "Received " << receivedMsg << " messages!";
+        LOG(INFO) << "Received " << receivedMsg << " messages!";
     }
 };
 
