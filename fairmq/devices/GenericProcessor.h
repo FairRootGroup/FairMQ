@@ -75,11 +75,15 @@ class GenericProcessor :   public FairMQDevice, public T, public U,
 
         while (CheckCurrentState(RUNNING))
         {
-            if (Receive<T>(fInput, "data-in") > 0)
+            std::unique_ptr<FairMQMessage> msg(NewMessage());
+            if (Receive(fInput, "data-in") > 0)
             {
+                Deserialize<T>(*msg,fInput);
                 receivedMsgs++;
                 task_type::Exec(fInput,fOutput);
-                Send<U>(fOutput, "data-out");
+
+                Serialize<U>(*msg,fOutput);
+                Send(fOutput, "data-out");
                 sentMsgs++;
             }
         }

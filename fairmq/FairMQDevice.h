@@ -79,25 +79,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         return fChannels.at(chan).at(i).Send(msg);
     }
 
-    template<typename Serializer, typename DataType>
-    inline int Send(std::unique_ptr<FairMQMessage>& msg, DataType&& data, const std::string& chan, const int i = 0) const
-    {
-
-        Serializer().serialize_impl(msg,std::forward<DataType>(data));
-        auto nbytes = fChannels.at(chan).at(i).Send(msg);
-        return nbytes;
-    }
-
-    template<typename Serializer, typename DataType>
-    inline int Send(DataType&& data, const std::string& chan, const int i = 0) const
-    {
-        std::unique_ptr<FairMQMessage> msg(NewMessage());
-        Serializer().serialize_impl(msg,std::forward<DataType>(data));
-        auto nbytes = fChannels.at(chan).at(i).Send(msg);
-        return nbytes;
-    }
-
-//*
     template<typename Serializer, typename DataType, typename... Args>
     void Serialize(FairMQMessage& msg, DataType&& data, Args&&... args) const
     {
@@ -110,24 +91,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         Deserializer().Deserialize(msg,std::forward<DataType>(data),std::forward<Args>(args)...);
     }
 
-
-/*
-// temporary overload to handle the case of a return ref to FairMQMessage
-    template<typename Serializer, typename MessageType, typename DataType>
-    void Serialize(MessageType&& msg, DataType&& data) const
-    {
-        Serializer().Serialize(std::forward<MessageType>(msg),std::forward<DataType>(data));
-    }
-
-    template<typename Deserializer, typename MessageType, typename DataType>
-    void Deserialize(MessageType&& msg, DataType&& data) const
-    {
-        Deserializer().Deserialize(std::forward<MessageType>(msg), std::forward<DataType>(data));
-    }
-
-// */
-
-
     /// Shorthand method to receive `msg` on `chan` at index `i`
     /// @param msg message reference
     /// @param chan channel name
@@ -136,25 +99,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     inline int Receive(const std::unique_ptr<FairMQMessage>& msg, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).Receive(msg);
-    }
-
-
-    template<typename Deserializer, typename DataType>
-    inline int Receive(const std::unique_ptr<FairMQMessage>& msg, DataType&& data, const std::string& chan, const int i = 0) const
-    {   
-        auto nbytes = fChannels.at(chan).at(i).Receive(msg);
-        Deserializer().deserialize_impl(msg,std::forward<DataType>(data));
-        return nbytes;
-    }
-
-    // using rvalue ref as universal reference
-    template<typename Deserializer, typename DataType>
-    inline int Receive(DataType&& data, const std::string& chan, const int i = 0) const
-    {   
-        std::unique_ptr<FairMQMessage> msg(NewMessage());
-        auto nbytes = fChannels.at(chan).at(i).Receive(msg);
-        Deserializer().deserialize_impl(msg,std::forward<DataType>(data));
-        return nbytes;
     }
 
     /// Shorthand method to send a vector of messages on `chan` at index `i`

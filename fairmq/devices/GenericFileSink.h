@@ -75,8 +75,10 @@ class GenericFileSink : public FairMQDevice, public T, public U
         int receivedMsg = 0;
         while (CheckCurrentState(RUNNING))
         {
-            if (Receive<deserializer_type>(fInput, "data-in") > 0)
+            std::unique_ptr<FairMQMessage> msg(NewMessage());
+            if (Receive(msg,"data-in") > 0)
             {
+                Deserialize<deserializer_type>(*msg,fInput);
                 U::Serialize(fInput);// add fInput to file
                 receivedMsg++;
             }
