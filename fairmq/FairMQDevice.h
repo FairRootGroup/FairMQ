@@ -98,19 +98,20 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     }
 
 //*
-    template<typename Serializer, typename MessageType, typename DataType, typename... Args>
-    void Serialize(std::unique_ptr<FairMQMessage>& msg, DataType&& data, Args&&... args) const
+    template<typename Serializer, typename DataType, typename... Args>
+    void Serialize(FairMQMessage& msg, DataType&& data, Args&&... args) const
     {
         Serializer().Serialize(msg,std::forward<DataType>(data),std::forward<Args>(args)...);
     }
 
     template<typename Deserializer, typename DataType, typename... Args>
-    void Deserialize(std::unique_ptr<FairMQMessage>& msg, DataType&& data, Args&&... args) const
+    void Deserialize(FairMQMessage& msg, DataType&& data, Args&&... args) const
     {
         Deserializer().Deserialize(msg,std::forward<DataType>(data),std::forward<Args>(args)...);
     }
-// */
 
+
+/*
 // temporary overload to handle the case of a return ref to FairMQMessage
     template<typename Serializer, typename MessageType, typename DataType>
     void Serialize(MessageType&& msg, DataType&& data) const
@@ -124,7 +125,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         Deserializer().Deserialize(std::forward<MessageType>(msg), std::forward<DataType>(data));
     }
 
-
+// */
 
 
     /// Shorthand method to receive `msg` on `chan` at index `i`

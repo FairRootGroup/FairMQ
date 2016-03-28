@@ -81,6 +81,9 @@ class FairMQParts
     /// @param index container index
     inline std::unique_ptr<FairMQMessage>& At(const int index) { return fParts.at(index); }
 
+
+    inline FairMQMessage& At_ref(const int index) { return *(fParts.at(index)); }
+
     template<typename Deserializer, typename DataType>
     inline void At(DataType&& data, const int index)
     {
