@@ -116,16 +116,15 @@ Install(FILES ${FAIRMQHEADERS} DESTINATION include)
 Set(DEPENDENCIES
   ${DEPENDENCIES}
   ${ZMQ_LIBRARY_SHARED}
-  boost_thread
+  ${Boost_THREAD_LIBRARY}
   fairmq_logger
-  boost_timer
-  boost_system
-  boost_filesystem
-  boost_program_options
-  boost_random
-  boost_chrono
-  boost_exception
-  boost_regex
+  ${Boost_TIMER_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
+  ${Boost_FILESYSTEM_LIBRARY}
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_RANDOM_LIBRARY}
+  ${Boost_CHRONO_LIBRARY}
+  ${Boost_REGEX_LIBRARY}
 )
 
 If(NANOMSG_FOUND)
