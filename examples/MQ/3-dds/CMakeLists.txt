@@ -57,8 +57,7 @@ Set(SRCS
 Set(DEPENDENCIES
   ${DEPENDENCIES}
   FairMQ
-  dds-key-value-lib
-  dds-custom-cmd-lib
+  dds_intercom_lib
 )
 
 set(LIBRARY_NAME FairMQExample3)
