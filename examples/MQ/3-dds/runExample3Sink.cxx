@@ -25,11 +25,11 @@
 #include "FairMQExample3Sink.h"
 #include "FairMQTools.h"
 
-#include "KeyValue.h" // DDS Key Value
-#include "CustomCmd.h" // DDS Custom Commands
+#include "dds_intercom.h" // DDS
 
 using namespace std;
 using namespace boost::program_options;
+using namespace dds::intercom_api;
 
 int main(int argc, char** argv)
 {
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 
         // Advertise the bound address via DDS property
         LOG(INFO) << "Giving sink input address to DDS.";
-        dds::key_value::CKeyValue ddsKeyValue;
+        CKeyValue ddsKeyValue;
         ddsKeyValue.putValue("SinkAddress", sink.fChannels.at("data2").at(0).GetAddress());
 
         sink.WaitForEndOfState("INIT_DEVICE");
@@ -100,15 +100,15 @@ int main(int argc, char** argv)
         sink.ChangeState("INIT_TASK");
         sink.WaitForEndOfState("INIT_TASK");
 
-        dds::custom_cmd::CCustomCmd ddsCustomCmd;
+        CCustomCmd ddsCustomCmd;
 
         // Subscribe on custom commands
-        ddsCustomCmd.subscribeCmd([&](const string& command, const string& condition, uint64_t senderId)
+        ddsCustomCmd.subscribe([&](const string& command, const string& condition, uint64_t senderId)
         {
             LOG(INFO) << "Received custom command: " << command;
             if (command == "check-state")
             {
-                ddsCustomCmd.sendCmd(id + ": " + sink.GetCurrentStateName(), to_string(senderId));
+                ddsCustomCmd.send(id + ": " + sink.GetCurrentStateName(), to_string(senderId));
             }
             else
             {

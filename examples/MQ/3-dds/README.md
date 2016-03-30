@@ -19,7 +19,7 @@ In our example Sampler and Sink bind their sockets. The bound addresses are avai
 sampler.ChangeState("INIT_DEVICE");
 sampler.WaitForInitialValidation();
 
-dds::key_value::CKeyValue ddsKeyValue;
+CKeyValue ddsKeyValue;
 ddsKeyValue.putValue("SamplerOutputAddress", sampler.fChannels.at("data-out").at(0).GetAddress());
 
 sampler.WaitForEndOfState("INIT_DEVICE");
@@ -32,9 +32,9 @@ Same approach for the Sink.
 The Processors in our example need the addresses of Sampler and Sink. They receive these from DDS via properties (sent in the step above):
 
 ```C++
-dds::key_value::CKeyValue ddsKeyValue;
+CKeyValue ddsKeyValue;
 // Sampler properties
-dds::key_value::CKeyValue::valuesMap_t samplerValues;
+CKeyValue::valuesMap_t samplerValues;
 {
     mutex keyMutex;
     condition_variable keyCondition;
@@ -92,9 +92,9 @@ dds-server start -s
 
 Agents are submitted with:
 ```bash
-dds-submit --rms ssh --ssh-rms-cfg ex3-dds-hosts.cfg
+dds-submit --rms ssh --config ex3-dds-hosts.cfg
 ```
-The `--rms` option defines a destination resource management system. The `--ssh-rms-cfg` specifies an SSH plug-in resource definition file. 
+The `--rms` option defines a destination resource management system. The `--config` specifies an SSH plug-in resource definition file. 
 
 ##### 7. Set the topology file.
 
@@ -115,7 +115,7 @@ After activation, agents will execute the defined tasks on the worker nodes. Out
 
 ##### 10. (optional) Use example command UI to check state of the devices
 
-This example includes a simple utility to send command to devices and receive replies from them. The code in `runDDSCommandUI.cxx` (compiled as ex3-dds-command-ui) uses the DDSCustomCmd library to send "check-state" string to all devices, to which they reply with their ID and state they are in. This can be used as an example of sending/receiving commands or other information to devices.
+This example includes a simple utility to send command to devices and receive replies from them. The code in `runDDSCommandUI.cxx` (compiled as ex3-dds-command-ui) uses the DDS intercom library to send "check-state" string to all devices, to which they reply with their ID and state they are in. This can be used as an example of sending/receiving commands or other information to devices.
 
 To see it in action, start the ex3-dds-command-ui while the topology is running.
 

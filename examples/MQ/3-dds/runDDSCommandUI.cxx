@@ -1,5 +1,5 @@
-// DDS
-#include "CustomCmd.h"
+#include "dds_intercom.h" // DDS
+
 // STD
 #include <iostream>
 #include <exception>
@@ -8,8 +8,7 @@
 #include <atomic>
 
 using namespace std;
-using namespace dds;
-using namespace custom_cmd;
+using namespace dds::intercom_api;
 
 int main(int argc, char* argv[])
 {
@@ -17,14 +16,14 @@ int main(int argc, char* argv[])
     {
         CCustomCmd ddsCustomCmd;
 
-        ddsCustomCmd.subscribeCmd([](const string& command, const string& condition, uint64_t senderId)
+        ddsCustomCmd.subscribe([](const string& command, const string& condition, uint64_t senderId)
         {
             cout << "Received: \"" << command << "\"" << endl;
         });
 
         while (true)
         {
-            int result = ddsCustomCmd.sendCmd("check-state", "");
+            int result = ddsCustomCmd.send("check-state", "");
 
             if (result == 1)
             {
@@ -34,9 +33,9 @@ int main(int argc, char* argv[])
             this_thread::sleep_for(chrono::seconds(1));
         }
     }
-    catch (exception& _e)
+    catch (exception& e)
     {
-        cerr << "Error: " << _e.what() << endl;
+        cerr << "Error: " << e.what() << endl;
         return EXIT_FAILURE;
     }
 

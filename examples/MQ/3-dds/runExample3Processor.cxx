@@ -24,11 +24,11 @@
 #include "FairMQExample3Processor.h"
 #include "FairMQTools.h"
 
-#include "KeyValue.h" // DDS Key Value
-#include "CustomCmd.h" // DDS Custom Commands
+#include "dds_intercom.h" // DDS
 
 using namespace std;
 using namespace boost::program_options;
+using namespace dds::intercom_api;
 
 int main(int argc, char** argv)
 {
@@ -63,9 +63,9 @@ int main(int argc, char** argv)
         processor.fChannels["data2"].push_back(dataOutChannel);
 
         // Waiting for DDS properties
-        dds::key_value::CKeyValue ddsKeyValue;
+        CKeyValue ddsKeyValue;
         // Sampler properties
-        dds::key_value::CKeyValue::valuesMap_t samplerValues;
+        CKeyValue::valuesMap_t samplerValues;
         {
             mutex keyMutex;
             condition_variable keyCondition;
@@ -81,7 +81,7 @@ int main(int argc, char** argv)
             }
         }
         // Sink properties
-        dds::key_value::CKeyValue::valuesMap_t sinkValues;
+        CKeyValue::valuesMap_t sinkValues;
         {
             mutex keyMutex;
             condition_variable keyCondition;
@@ -106,15 +106,15 @@ int main(int argc, char** argv)
         processor.ChangeState("INIT_TASK");
         processor.WaitForEndOfState("INIT_TASK");
 
-        dds::custom_cmd::CCustomCmd ddsCustomCmd;
+        CCustomCmd ddsCustomCmd;
 
         // Subscribe on custom commands
-        ddsCustomCmd.subscribeCmd([&](const string& command, const string& condition, uint64_t senderId)
+        ddsCustomCmd.subscribe([&](const string& command, const string& condition, uint64_t senderId)
         {
             LOG(INFO) << "Received custom command: " << command;
             if (command == "check-state")
             {
-                ddsCustomCmd.sendCmd(id + ": " + processor.GetCurrentStateName(), to_string(senderId));
+                ddsCustomCmd.send(id + ": " + processor.GetCurrentStateName(), to_string(senderId));
             }
             else
             {

@@ -25,11 +25,11 @@
 #include "FairMQExample3Sampler.h"
 #include "FairMQTools.h"
 
-#include "KeyValue.h" // DDS Key Value
-#include "CustomCmd.h" // DDS Custom Commands
+#include "dds_intercom.h" // DDS
 
 using namespace std;
 using namespace boost::program_options;
+using namespace dds::intercom_api;
 
 int main(int argc, char** argv)
 {
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 
         // Advertise the bound addresses via DDS property
         LOG(INFO) << "Giving sampler output address to DDS.";
-        dds::key_value::CKeyValue ddsKeyValue;
+        CKeyValue ddsKeyValue;
         ddsKeyValue.putValue("SamplerAddress", sampler.fChannels.at("data1").at(0).GetAddress());
 
         sampler.WaitForEndOfState("INIT_DEVICE");
@@ -100,15 +100,15 @@ int main(int argc, char** argv)
         sampler.ChangeState("INIT_TASK");
         sampler.WaitForEndOfState("INIT_TASK");
 
-        dds::custom_cmd::CCustomCmd ddsCustomCmd;
+        CCustomCmd ddsCustomCmd;
 
         // Subscribe on custom commands
-        ddsCustomCmd.subscribeCmd([&](const string& command, const string& condition, uint64_t senderId)
+        ddsCustomCmd.subscribe([&](const string& command, const string& condition, uint64_t senderId)
         {
             LOG(INFO) << "Received custom command: " << command;
             if (command == "check-state")
             {
-                ddsCustomCmd.sendCmd(id + ": " + sampler.GetCurrentStateName(), to_string(senderId));
+                ddsCustomCmd.send(id + ": " + sampler.GetCurrentStateName(), to_string(senderId));
             }
             else
             {
