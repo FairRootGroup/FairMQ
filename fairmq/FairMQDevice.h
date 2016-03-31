@@ -21,13 +21,19 @@
 #include <iostream>
 #include <unordered_map>
 
+#include <mutex>
+#include <condition_variable>
+
 #include "FairMQConfigurable.h"
 #include "FairMQStateMachine.h"
 #include "FairMQTransportFactory.h"
+
 #include "FairMQSocket.h"
 #include "FairMQChannel.h"
 #include "FairMQMessage.h"
 #include "FairMQParts.h"
+
+class FairMQProgOptions;
 
 class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 {
@@ -37,11 +43,12 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     enum
     {
         Id = FairMQConfigurable::Last, ///< Device ID
-        MaxInitializationTime, ///< Timeout for the initialization
+        MaxInitializationAttempts, ///< Timeout for the initialization
         NumIoThreads, ///< Number of ZeroMQ I/O threads
         PortRangeMin, ///< Minimum value for the port range (if dynamic)
         PortRangeMax, ///< Maximum value for the port range (if dynamic)
         LogIntervalInMs, ///< Interval for logging the socket transfer rates
+        NetworkInterface, ///< Network interface to use for dynamic binding
         Last
     };
 
@@ -241,17 +248,21 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param transport  Transport string ("zeromq"/"nanomsg")
     void SetTransport(const std::string& transport = "zeromq");
 
+    void SetConfig(FairMQProgOptions& config);
+
     /// Implements the sort algorithm used in SortChannel()
     /// @param lhs Right hand side value for comparison
     /// @param rhs Left hand side value for comparison
     static bool SortSocketsByAddress(const FairMQChannel &lhs, const FairMQChannel &rhs);
 
+    // TODO: make this const?
     std::unordered_map<std::string, std::vector<FairMQChannel>> fChannels; ///< Device channels
 
   protected:
     std::string fId; ///< Device ID
+    std::string fNetworkInterface; ///< Network interface to use for dynamic binding
 
-    int fMaxInitializationTime; ///< Timeout for the initialization
+    int fMaxInitializationAttempts; ///< Timeout for the initialization
 
     int fNumIoThreads; ///< Number of ZeroMQ I/O threads
 
@@ -263,6 +274,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     FairMQSocket* fCmdSocket; ///< Socket used for the internal unblocking mechanism
 
     FairMQTransportFactory* fTransportFactory; ///< Transport factory
+    FairMQProgOptions* fConfig; ///< Program options configuration
 
     /// Additional user initialization (can be overloaded in child classes). Prefer to use InitTask().
     virtual void Init();
@@ -285,8 +297,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
   private:
     // condition variable to notify parent thread about end of initial validation.
     bool fInitialValidationFinished;
-    boost::condition_variable fInitialValidationCondition;
-    boost::mutex fInitialValidationMutex;
+    std::condition_variable fInitialValidationCondition;
+    std::mutex fInitialValidationMutex;
 
     /// Handles the initialization and the Init() method
     void InitWrapper();
@@ -306,8 +318,14 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// Unblocks blocking channel send/receive calls
     void Unblock();
 
-    /// Initializes a single channel (used in InitWrapper)
-    bool InitChannel(FairMQChannel&);
+    /// Binds channel in the list
+    void BindChannels(std::list<FairMQChannel*>& chans);
+    /// Connects channel in the list
+    void ConnectChannels(std::list<FairMQChannel*>& chans);
+    /// Binds a single channel (used in InitWrapper)
+    bool BindChannel(FairMQChannel& ch);
+    /// Connects a single channel (used in InitWrapper)
+    bool ConnectChannel(FairMQChannel& ch);
 
     /// Signal handler
     void SignalHandler(int signal);

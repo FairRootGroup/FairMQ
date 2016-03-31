@@ -24,6 +24,7 @@
 #include "FairMQTransportFactoryNN.h"
 
 class FairMQChannel;
+struct nn_pollfd;
 
 class FairMQPollerNN : public FairMQPoller
 {

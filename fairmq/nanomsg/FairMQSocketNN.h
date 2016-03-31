@@ -17,12 +17,6 @@
 
 #include <vector>
 
-#include <nanomsg/nn.h>
-#include <nanomsg/pipeline.h>
-#include <nanomsg/pubsub.h>
-#include <nanomsg/reqrep.h>
-#include <nanomsg/pair.h>
-
 #include "FairMQSocket.h"
 
 class FairMQSocketNN : public FairMQSocket

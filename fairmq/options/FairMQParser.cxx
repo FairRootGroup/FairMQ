@@ -24,30 +24,30 @@ namespace FairMQParser
 
 // TODO : add key-value map<string,string> parameter  for replacing/updating values from keys
 // function that convert property tree (given the xml or json structure) to FairMQMap
-FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const string& deviceId, const string& rootNode, const string& formatFlag)
+FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const string& id, const string& rootNode, const string& formatFlag)
 {
     // Create fair mq map
     FairMQMap channelMap;
-    helper::PrintDeviceList(pt.get_child(rootNode));
+    // helper::PrintDeviceList(pt.get_child(rootNode));
     // Extract value from boost::property_tree
-    helper::DeviceParser(pt.get_child(rootNode),channelMap,deviceId,formatFlag);
+    helper::DeviceParser(pt.get_child(rootNode), channelMap, id, formatFlag);
     if (channelMap.size() > 0)
     {
-        LOG(DEBUG) << "---- Channel-keys found are :";
+        stringstream channelKeys;
         for (const auto& p : channelMap)
         {
-            LOG(DEBUG) << p.first;
+            channelKeys << "'" << p.first << "' ";
         }
+        LOG(DEBUG) << "---- Found following channel keys: " << channelKeys.str();
     }
     else
     {
-        LOG(WARN) << "---- No channel-keys found for device-id " << deviceId;
+        LOG(WARN) << "---- No channel keys found for " << id;
         LOG(WARN) << "---- Check the JSON inputs and/or command line inputs";
     }
 
     return channelMap;
 }
-
 
 FairMQMap JSON::UserParser(const string& filename, const string& deviceId, const string& rootNode)
 {
@@ -77,93 +77,119 @@ FairMQMap XML::UserParser(stringstream& input, const string& deviceId, const str
     return ptreeToMQMap(pt, deviceId, rootNode, "xml");
 }
 
-
-
-
-// /////////////////////////////////////////////////////////////////////////////////////////
-// -----------------------------------------------------------------------------------------
 namespace helper
 {
-    // -----------------------------------------------------------------------------------------
-
     void PrintDeviceList(const boost::property_tree::ptree& tree, const std::string& formatFlag)
     {
         string deviceIdKey;
 
         // do a first loop just to print the device-id in json input 
-        for(const auto& p : tree)
+        for (const auto& p : tree)
         {
             if (p.first == "devices")
             {
-                for(const auto& q : p.second.get_child(""))
+                for (const auto& q : p.second.get_child(""))
                 {
-                    deviceIdKey = q.second.get<string>("id");
-                    LOG(DEBUG) << "Found device id '" << deviceIdKey << "' in JSON input";
+                    string key = q.second.get<string>("key", "");
+                    if (key != "")
+                    {
+                        deviceIdKey = key;
+                        LOG(TRACE) << "Found config for device key '" << deviceIdKey << "' in JSON input";
+                    }
+                    else
+                    {
+                        deviceIdKey = q.second.get<string>("id");
+                        LOG(TRACE) << "Found config for device id '" << deviceIdKey << "' in JSON input";
+                    }
                 }
             }
-            
+
             if (p.first == "device")
             {
                 //get id attribute to choose the device
                 if (formatFlag == "xml")
                 {
                     deviceIdKey = p.second.get<string>("<xmlattr>.id");
-                    LOG(DEBUG) << "Found device id '" << deviceIdKey << "' in XML input";
+                    LOG(TRACE) << "Found config for '" << deviceIdKey << "' in XML input";
                 }
 
                 if (formatFlag == "json")
                 {
-                    deviceIdKey = p.second.get<string>("id");
-                    LOG(DEBUG) << "Found device id '"<< deviceIdKey << "' in JSON input";
+                    string key = p.second.get<string>("key", "");
+                    if (key != "")
+                    {
+                        deviceIdKey = key;
+                        LOG(TRACE) << "Found config for device key '" << deviceIdKey << "' in JSON input";
+                    }
+                    else
+                    {
+                        deviceIdKey = p.second.get<string>("id");
+                        LOG(TRACE) << "Found config for device id '" << deviceIdKey << "' in JSON input";
+                    }
                 }
             }
-            
         }
     }
-
-    // -----------------------------------------------------------------------------------------
 
     void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap, const string& deviceId, const string& formatFlag)
     {
         string deviceIdKey;
+
+        LOG(DEBUG) << "Looking for '" << deviceId << "' id/key in the provided config file...";
+
         // For each node in fairMQOptions
-        for(const auto& p0 : tree)
+        for (const auto& p0 : tree)
         {
             if (p0.first == "devices")
             {
-                for(const auto& p : p0.second)
+                for (const auto& p : p0.second)
                 {
-                    deviceIdKey = p.second.get<string>("id");
-                    LOG(TRACE) << "Found device id '"<< deviceIdKey << "' in JSON input";
-                    
+                    // check if key is provided, otherwise use id
+                    string key = p.second.get<string>("key", "");
+                    if (key != "")
+                    {
+                        deviceIdKey = key;
+                        // LOG(DEBUG) << "Found config for device key '" << deviceIdKey << "' in JSON input";
+                    }
+                    else
+                    {
+                        deviceIdKey = p.second.get<string>("id");
+                        // LOG(DEBUG) << "Found config for device id '" << deviceIdKey << "' in JSON input";
+                    }
+
                     // if not correct device id, do not fill MQMap
                     if (deviceId != deviceIdKey)
                     {
                         continue;
                     }
 
-                    // print if DEBUG log level set
-                    stringstream deviceStream;
-                    deviceStream << "[node = "     << p.first  << "]   id = "    << deviceIdKey;
-                    LOG(DEBUG) << deviceStream.str();
-                    helper::ChannelParser(p.second,channelMap,formatFlag);
-
+                    LOG(DEBUG) << "[" << p0.first << "] " << deviceIdKey;
+                    ChannelParser(p.second, channelMap, formatFlag);
                 }
             }
 
             if (p0.first == "device")
             {
-                
                 if (formatFlag == "xml")
                 {
                     deviceIdKey = p0.second.get<string>("<xmlattr>.id");
-                    LOG(DEBUG) << "Found device id '" << deviceIdKey << "' in XML input";
+                    LOG(DEBUG) << "Found config for '" << deviceIdKey << "' in XML input";
                 }
 
                 if (formatFlag == "json")
                 {
-                    deviceIdKey = p0.second.get<string>("id");
-                    LOG(DEBUG) << "Found device id '"<< deviceIdKey << "' in JSON input";
+                    // check if key is provided, otherwise use id
+                    string key = p0.second.get<string>("key", "");
+                    if (key != "")
+                    {
+                        deviceIdKey = key;
+                        // LOG(DEBUG) << "Found config for device key '" << deviceIdKey << "' in JSON input";
+                    }
+                    else
+                    {
+                        deviceIdKey = p0.second.get<string>("id");
+                        // LOG(DEBUG) << "Found config for device id '" << deviceIdKey << "' in JSON input";
+                    }
                 }
 
                 // if not correct device id, do not fill MQMap
@@ -172,47 +198,49 @@ namespace helper
                     continue;
                 }
 
-                
+                LOG(DEBUG) << "[" << p0.first << "] " << deviceIdKey;
 
-                // print if DEBUG log level set
-                stringstream deviceStream;
-                deviceStream << "[node = "     << p0.first  << "]   id = "    << deviceIdKey;
-                LOG(DEBUG) << deviceStream.str();
-                helper::ChannelParser(p0.second,channelMap,formatFlag);
+                ChannelParser(p0.second, channelMap, formatFlag);
             }
         }
     }
 
-    // -----------------------------------------------------------------------------------------
-
     void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap, const string& formatFlag)
     {
         string channelKey;
-        for(const auto& p : tree)
+
+        for (const auto& p : tree)
         {
-            if(p.first=="channels")
+            if (p.first == "channels")
             {
-                for(const auto& q : p.second)
+                for (const auto& q : p.second)
                 {
                     channelKey = q.second.get<string>("name");
-                    
-                    // print if DEBUG log level set
-                    stringstream channelStream;
-                    channelStream << "\t [node = " << p.first  << "]   name = " << channelKey;
-                    LOG(DEBUG) << channelStream.str();
+
+                    // try to get common properties to use for all subChannels
+                    FairMQChannel commonChannel;
+                    commonChannel.UpdateType(q.second.get<string>("type", commonChannel.GetType()));
+                    commonChannel.UpdateMethod(q.second.get<string>("method", commonChannel.GetMethod()));
+                    commonChannel.UpdateProperty(q.second.get<string>("property", commonChannel.GetProperty()));
+                    commonChannel.UpdateSndBufSize(q.second.get<int>("sndBufSize", commonChannel.GetSndBufSize()));
+                    commonChannel.UpdateRcvBufSize(q.second.get<int>("rcvBufSize", commonChannel.GetRcvBufSize()));
+                    commonChannel.UpdateRateLogging(q.second.get<int>("rateLogging", commonChannel.GetRateLogging()));
+
+                    LOG(DEBUG) << "\t[" << p.first << "] " << channelKey;
 
                     // temporary FairMQChannel container
                     vector<FairMQChannel> channelList;
-                    helper::SocketParser(q.second.get_child(""),channelList);
-                    
-                    //fill mq map option
+                    SocketParser(q.second.get_child(""), channelList, commonChannel);
+
                     channelMap.insert(make_pair(channelKey, move(channelList)));
                 }
             }
 
-            if(p.first=="channel")
+            if (p.first == "channel")
             {
-                
+                // try to get common properties to use for all subChannels
+                FairMQChannel commonChannel;
+
                 // get name attribute to form key
                 if (formatFlag == "xml")
                 {
@@ -222,87 +250,112 @@ namespace helper
                 if (formatFlag == "json")
                 {
                     channelKey = p.second.get<string>("name");
+
+                    // try to get common properties to use for all subChannels
+                    commonChannel.UpdateType(p.second.get<string>("type", commonChannel.GetType()));
+                    commonChannel.UpdateMethod(p.second.get<string>("method", commonChannel.GetMethod()));
+                    commonChannel.UpdateProperty(p.second.get<string>("property", commonChannel.GetProperty()));
+                    commonChannel.UpdateSndBufSize(p.second.get<int>("sndBufSize", commonChannel.GetSndBufSize()));
+                    commonChannel.UpdateRcvBufSize(p.second.get<int>("rcvBufSize", commonChannel.GetRcvBufSize()));
+                    commonChannel.UpdateRateLogging(p.second.get<int>("rateLogging", commonChannel.GetRateLogging()));
                 }
 
-                stringstream channelStream;
-                channelStream << "\t [node = " << p.first  << "]   name = " << channelKey;
-                LOG(DEBUG) << channelStream.str();
+                LOG(DEBUG) << "\t[" << p.first  << "] " << channelKey;
 
                 // temporary FairMQChannel container
                 vector<FairMQChannel> channelList;
-                helper::SocketParser(p.second.get_child(""),channelList);
-                
-                //fill mq map option
+                SocketParser(p.second.get_child(""), channelList, commonChannel);
+
                 channelMap.insert(make_pair(channelKey, move(channelList)));
             }
-            
         }
     }
 
-    // -----------------------------------------------------------------------------------------
-
-    void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>& channelList)
+    void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>& channelList, const FairMQChannel& commonChannel)
     {
         // for each socket in channel
         int socketCounter = 0;
-        for (const auto& s : tree)
+        for (const auto& p : tree)
         {
-            if (s.first == "sockets")
+            if (p.first == "sockets")
             {
-                for (const auto& r : s.second)
+                for (const auto& q : p.second)
                 {
                     ++socketCounter;
-                    FairMQChannel channel;
+                    // create new channel and apply setting from the common channel
+                    FairMQChannel channel(commonChannel);
 
-                    // print if DEBUG log level set
-                    stringstream socket;
-                    socket << "\t \t [node = " << s.first  << "]   socket index = " << socketCounter;
-                    LOG(DEBUG) << socket.str();
-                    LOG(DEBUG) <<  "\t \t \t type        = " << r.second.get<string>("type", channel.GetType());
-                    LOG(DEBUG) <<  "\t \t \t method      = " << r.second.get<string>("method", channel.GetMethod());
-                    LOG(DEBUG) <<  "\t \t \t address     = " << r.second.get<string>("address", channel.GetAddress());
-                    LOG(DEBUG) <<  "\t \t \t sndBufSize  = " << r.second.get<int>("sndBufSize", channel.GetSndBufSize());
-                    LOG(DEBUG) <<  "\t \t \t rcvBufSize  = " << r.second.get<int>("rcvBufSize", channel.GetRcvBufSize());
-                    LOG(DEBUG) <<  "\t \t \t rateLogging = " << r.second.get<int>("rateLogging", channel.GetRateLogging());
+                    // if the socket field specifies or overrides something from the common channel, apply those settings
+                    channel.UpdateType(q.second.get<string>("type", channel.GetType()));
+                    channel.UpdateMethod(q.second.get<string>("method", channel.GetMethod()));
+                    channel.UpdateAddress(q.second.get<string>("address", channel.GetAddress()));
+                    channel.UpdateProperty(q.second.get<string>("property", channel.GetProperty()));
+                    channel.UpdateSndBufSize(q.second.get<int>("sndBufSize", channel.GetSndBufSize()));
+                    channel.UpdateRcvBufSize(q.second.get<int>("rcvBufSize", channel.GetRcvBufSize()));
+                    channel.UpdateRateLogging(q.second.get<int>("rateLogging", channel.GetRateLogging()));
 
-                    channel.UpdateType(r.second.get<string>("type", channel.GetType()));
-                    channel.UpdateMethod(r.second.get<string>("method", channel.GetMethod()));
-                    channel.UpdateAddress(r.second.get<string>("address", channel.GetAddress()));
-                    channel.UpdateSndBufSize(r.second.get<int>("sndBufSize", channel.GetSndBufSize())); // int
-                    channel.UpdateRcvBufSize(r.second.get<int>("rcvBufSize", channel.GetRcvBufSize())); // int
-                    channel.UpdateRateLogging(r.second.get<int>("rateLogging", channel.GetRateLogging())); // int
+                    LOG(DEBUG) << "\t\t[" << p.first  << "] " << socketCounter;
+                    LOG(DEBUG) << "\t\t\ttype        = " << channel.GetType();
+                    LOG(DEBUG) << "\t\t\tmethod      = " << channel.GetMethod();
+                    LOG(DEBUG) << "\t\t\taddress     = " << channel.GetAddress();
+                    LOG(DEBUG) << "\t\t\tproperty    = " << channel.GetProperty();
+                    LOG(DEBUG) << "\t\t\tsndBufSize  = " << channel.GetSndBufSize();
+                    LOG(DEBUG) << "\t\t\trcvBufSize  = " << channel.GetRcvBufSize();
+                    LOG(DEBUG) << "\t\t\trateLogging = " << channel.GetRateLogging();
 
                     channelList.push_back(channel);
                 }
             }
 
-            if(s.first == "socket")
+            if (p.first == "socket")
             {
                 ++socketCounter;
-                FairMQChannel channel;
+                // create new channel and apply setting from the common channel
+                FairMQChannel channel(commonChannel);
 
-                // print if DEBUG log level set
-                stringstream socket;
-                socket << "\t \t [node = " << s.first  << "]   socket index = " << socketCounter;
-                LOG(DEBUG) << socket.str();
-                LOG(DEBUG) <<  "\t \t \t type        = " << s.second.get<string>("type", channel.GetType());
-                LOG(DEBUG) <<  "\t \t \t method      = " << s.second.get<string>("method", channel.GetMethod());
-                LOG(DEBUG) <<  "\t \t \t address     = " << s.second.get<string>("address", channel.GetAddress());
-                LOG(DEBUG) <<  "\t \t \t sndBufSize  = " << s.second.get<int>("sndBufSize", channel.GetSndBufSize());
-                LOG(DEBUG) <<  "\t \t \t rcvBufSize  = " << s.second.get<int>("rcvBufSize", channel.GetRcvBufSize());
-                LOG(DEBUG) <<  "\t \t \t rateLogging = " << s.second.get<int>("rateLogging", channel.GetRateLogging());
+                // if the socket field specifies or overrides something from the common channel, apply those settings
+                channel.UpdateType(p.second.get<string>("type", channel.GetType()));
+                channel.UpdateMethod(p.second.get<string>("method", channel.GetMethod()));
+                channel.UpdateAddress(p.second.get<string>("address", channel.GetAddress()));
+                channel.UpdateProperty(p.second.get<string>("property", channel.GetProperty()));
+                channel.UpdateSndBufSize(p.second.get<int>("sndBufSize", channel.GetSndBufSize()));
+                channel.UpdateRcvBufSize(p.second.get<int>("rcvBufSize", channel.GetRcvBufSize()));
+                channel.UpdateRateLogging(p.second.get<int>("rateLogging", channel.GetRateLogging()));
 
-                channel.UpdateType(s.second.get<string>("type", channel.GetType()));
-                channel.UpdateMethod(s.second.get<string>("method", channel.GetMethod()));
-                channel.UpdateAddress(s.second.get<string>("address", channel.GetAddress()));
-                channel.UpdateSndBufSize(s.second.get<int>("sndBufSize", channel.GetSndBufSize())); // int
-                channel.UpdateRcvBufSize(s.second.get<int>("rcvBufSize", channel.GetRcvBufSize())); // int
-                channel.UpdateRateLogging(s.second.get<int>("rateLogging", channel.GetRateLogging())); // int
+                LOG(DEBUG) << "\t\t[" << p.first  << "] " << socketCounter;
+                LOG(DEBUG) << "\t\t\ttype        = " << channel.GetType();
+                LOG(DEBUG) << "\t\t\tmethod      = " << channel.GetMethod();
+                LOG(DEBUG) << "\t\t\taddress     = " << channel.GetAddress();
+                LOG(DEBUG) << "\t\t\tproperty    = " << channel.GetProperty();
+                LOG(DEBUG) << "\t\t\tsndBufSize  = " << channel.GetSndBufSize();
+                LOG(DEBUG) << "\t\t\trcvBufSize  = " << channel.GetRcvBufSize();
+                LOG(DEBUG) << "\t\t\trateLogging = " << channel.GetRateLogging();
 
                 channelList.push_back(channel);
             }
-            
-        }// end socket loop
+        } // end socket loop
+
+        if (socketCounter)
+        {
+            LOG(DEBUG) << "Found " << socketCounter << " socket(s) in channel.";
+        }
+        else
+        {
+            LOG(DEBUG) << "\t\t\tNo subChannels specified,";
+            LOG(DEBUG) << "\t\t\tapplying common settings to the channel:";
+            FairMQChannel channel(commonChannel);
+
+            LOG(DEBUG) << "\t\t\ttype        = " << channel.GetType();
+            LOG(DEBUG) << "\t\t\tmethod      = " << channel.GetMethod();
+            LOG(DEBUG) << "\t\t\taddress     = " << channel.GetAddress();
+            LOG(DEBUG) << "\t\t\tproperty    = " << channel.GetProperty();
+            LOG(DEBUG) << "\t\t\tsndBufSize  = " << channel.GetSndBufSize();
+            LOG(DEBUG) << "\t\t\trcvBufSize  = " << channel.GetRcvBufSize();
+            LOG(DEBUG) << "\t\t\trateLogging = " << channel.GetRateLogging();
+
+            channelList.push_back(channel);
+        }
+
     }
 } // end helper namespace
 

@@ -39,17 +39,14 @@ struct XML
     FairMQMap UserParser(std::stringstream& input, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
 };
 
-
 namespace helper
 {
     void PrintDeviceList(const boost::property_tree::ptree& tree, const std::string& formatFlag = "json");
     void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap, const std::string& deviceId, const std::string& formatFlag);
     void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap, const std::string& formatFlag);
-    void SocketParser(const boost::property_tree::ptree& tree, std::vector<FairMQChannel>& channelList);
+    void SocketParser(const boost::property_tree::ptree& tree, std::vector<FairMQChannel>& channelList, const FairMQChannel& commonChannel);
 }
 
-
-
 } // FairMQParser namespace
-#endif /* FAIRMQPARSER_H */
 
+#endif /* FAIRMQPARSER_H */

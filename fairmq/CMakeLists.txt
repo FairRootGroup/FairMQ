@@ -6,11 +6,15 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/fairmq/run/startBenchmark.sh.in ${CMAKE_BINARY_DIR}/bin/startBenchmark.sh)
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/run/startFairMQBenchmark.sh.in ${CMAKE_BINARY_DIR}/bin/startFairMQBenchmark.sh)
 configure_file(${CMAKE_SOURCE_DIR}/fairmq/run/benchmark.json ${CMAKE_BINARY_DIR}/bin/config/benchmark.json)
 
 add_subdirectory(logger)
 add_subdirectory(test)
+
+If(DDS_FOUND)
+  add_subdirectory(deployment)
+EndIf(DDS_FOUND)
 
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq

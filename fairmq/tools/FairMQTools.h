@@ -65,6 +65,21 @@ int getHostIPs(map<string, string>& addressMap)
     return 0;
 }
 
+string getInterfaceIP(string interface)
+{
+    map<string, string> IPs;
+    FairMQ::tools::getHostIPs(IPs);
+    if (IPs.count(interface))
+    {
+        return IPs[interface];
+    }
+    else
+    {
+        LOG(ERROR) << "Could not find provided network interface: \"" << interface << "\"!, exiting.";
+        exit(EXIT_FAILURE);
+    }
+}
+
 #if defined(__GNUC__) || defined(__GNUG__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Weffc++"

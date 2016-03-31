@@ -12,8 +12,7 @@
  * Created on August 21, 2015, 6:12 PM
  */
 #ifndef LOGGER_H
-#define	LOGGER_H
-
+#define LOGGER_H
 
 #define BOOST_LOG_DYN_LINK 1 // necessary when linking the boost_log library dynamically
 #define FUSION_MAX_VECTOR_SIZE 20
@@ -39,10 +38,7 @@
 
 // fairmq
 #include "logger_def.h"
-    
-    
-    
-    
+
 // Note : the following types and values must be defined in the included logger_def.h :
 // 1- custom_severity_level 
 // 2- SEVERITY_THRESHOLD
@@ -62,26 +58,22 @@ namespace log_op
     };
 }
 
-
 // declaration of the init function for the global logger
-    
-void init_log_console(bool color_format=true);
+void init_log_console(bool color_format = true);
 void reinit_logger(bool color_format);
-void init_log_file( const std::string& filename, 
-                    custom_severity_level threshold=SEVERITY_THRESHOLD, 
-                    log_op::operation=log_op::GREATER_EQ_THAN,
-                    const std::string& id=""
-                  );
+void init_log_file(const std::string& filename, 
+    custom_severity_level threshold = SEVERITY_THRESHOLD,
+    log_op::operation = log_op::GREATER_EQ_THAN,
+    const std::string& id = ""
+    );
 
-void init_new_file( const std::string& filename, 
-                    custom_severity_level threshold, 
-                    log_op::operation op
-                   );
+void init_new_file(const std::string& filename,
+    custom_severity_level threshold,
+    log_op::operation op
+    );
 
-void set_global_log_level(  log_op::operation op=log_op::GREATER_EQ_THAN, 
-                            custom_severity_level threshold=SEVERITY_THRESHOLD );
-void set_global_log_level_operation(  log_op::operation op=log_op::GREATER_EQ_THAN, 
-                            custom_severity_level threshold=SEVERITY_THRESHOLD );
+void set_global_log_level(log_op::operation op = log_op::GREATER_EQ_THAN, custom_severity_level threshold = SEVERITY_THRESHOLD);
+void set_global_log_level_operation(log_op::operation op = log_op::GREATER_EQ_THAN, custom_severity_level threshold=SEVERITY_THRESHOLD);
 
 #if defined(__GNUC__) || defined(__GNUG__)
 #pragma GCC diagnostic push
@@ -92,7 +84,7 @@ void set_global_log_level_operation(  log_op::operation op=log_op::GREATER_EQ_TH
 BOOST_LOG_GLOBAL_LOGGER(global_logger, boost::log::sources::severity_logger_mt<custom_severity_level>)
 
 BOOST_LOG_ATTRIBUTE_KEYWORD(fairmq_logger_timestamp, "TimeStamp", boost::posix_time::ptime)
-BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", custom_severity_level)        
+BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", custom_severity_level)
 
 #if defined(__GNUC__) || defined(__GNUG__)
 #pragma GCC diagnostic pop
@@ -101,28 +93,28 @@ BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", custom_severity_level)
 template<typename T>
 void init_log_formatter(const boost::log::record_view &view, boost::log::formatting_ostream &os)
 {
-    os      << "[" ;
-    
-    if(std::is_same<T,tag_console>::value)
-        os<<"\033[01;36m";
-    
-    auto date_time_formatter = 
-        boost::log::expressions::stream 
-            << boost::log::expressions::format_date_time< boost::posix_time::ptime >("TimeStamp", "%H:%M:%S");
+    os << "[";
+
+    if (std::is_same<T,tag_console>::value)
+    {
+        os << "\033[01;36m";
+    }
+
+    auto date_time_formatter = boost::log::expressions::stream << boost::log::expressions::format_date_time<boost::posix_time::ptime>("TimeStamp", "%H:%M:%S");
     date_time_formatter(view, os);
-    
-    if(std::is_same<T,tag_console>::value)
-        os<<"\033[0m";
-    
-    os      << "]"
-            << "[" 
-            << view.attribute_values()["Severity"].extract<custom_severity_level,T>()
-            << "] "
-            //<< " - " 
-            << view.attribute_values()["Message"].extract<std::string>();
+
+    if (std::is_same<T,tag_console>::value)
+    {
+        os << "\033[0m";
+    }
+
+    os << "]"
+       << "["
+       << view.attribute_values()["Severity"].extract<custom_severity_level, T>()
+       << "] "
+       //<< " - " 
+       << view.attribute_values()["Message"].extract<std::string>();
 }
-
-
 
 // helper macros 
 
@@ -134,7 +126,7 @@ void init_log_formatter(const boost::log::record_view &view, boost::log::formatt
 #else
 #define LOG(severity) BOOST_LOG_SEV(global_logger::get(),custom_severity_level::severity)
 #define MQLOG(severity) BOOST_LOG_SEV(global_logger::get(),custom_severity_level::severity)
-#endif 
+#endif
 
 #define SET_LOG_LEVEL(loglevel) boost::log::core::get()->set_filter(severity >= custom_severity_level::loglevel);
 #define SET_LOG_FILTER(op,loglevel)  set_global_log_level(log_op::op,custom_severity_level::loglevel)
@@ -152,5 +144,4 @@ void init_log_formatter(const boost::log::record_view &view, boost::log::formatt
 // create new file without formatting
 #define INIT_NEW_FILE(filename,op,loglevel) init_new_file(filename,custom_severity_level::loglevel,log_op::op);
 
-        
 #endif

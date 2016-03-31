@@ -16,6 +16,12 @@
 #include "FairMQMessageNN.h"
 #include "FairMQLogger.h"
 
+#include <nanomsg/nn.h>
+#include <nanomsg/pipeline.h>
+#include <nanomsg/pubsub.h>
+#include <nanomsg/reqrep.h>
+#include <nanomsg/pair.h>
+
 #include <sstream>
 #ifdef MSGPACK_FOUND
 #include <msgpack.hpp>
