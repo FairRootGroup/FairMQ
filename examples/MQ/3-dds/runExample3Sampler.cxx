@@ -12,24 +12,13 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include <iostream>
-#include <mutex>
-#include <condition_variable>
-#include <map>
-
-#include "boost/program_options.hpp"
-#include <boost/asio.hpp> // for DDS
-
 #include "FairMQLogger.h"
+#include "FairMQDDSTools.h"
 #include "FairMQProgOptions.h"
 #include "FairMQExample3Sampler.h"
-#include "FairMQTools.h"
-
-#include "dds_intercom.h" // DDS
 
 using namespace std;
 using namespace boost::program_options;
-using namespace dds::intercom_api;
 
 int main(int argc, char** argv)
 {
@@ -40,94 +29,21 @@ int main(int argc, char** argv)
 
     try
     {
-        string interfaceName; // name of the network interface to use for communication.
-
-        options_description samplerOptions("Sampler options");
-        samplerOptions.add_options()
-            ("network-interface", value<string>(&interfaceName)->default_value("eth0"), "Name of the network interface to use (e.g. eth0, ib0, wlan0, en0...)");
-
-        config.AddToCmdLineOptions(samplerOptions);
-
         if (config.ParseAll(argc, argv))
         {
             return 0;
         }
 
-        string id = config.GetValue<string>("id");
-
-        LOG(INFO) << "PID: " << getpid();
-
-        sampler.SetTransport(config.GetValue<std::string>("transport"));
-
-        sampler.SetProperty(FairMQExample3Sampler::Id, id);
-
-        // configure data output channel
-        FairMQChannel dataOutChannel("push", "bind", "");
-        dataOutChannel.UpdateRateLogging(0);
-        sampler.fChannels["data1"].push_back(dataOutChannel);
-
-        // Get the IP of the current host and store it for binding.
-        map<string,string> IPs;
-        FairMQ::tools::getHostIPs(IPs);
-        stringstream ss;
-        // Check if ib0 (infiniband) interface is available, otherwise try eth0 or wlan0.
-        if (IPs.count(interfaceName))
-        {
-            ss << "tcp://" << IPs[interfaceName] << ":1";
-        }
-        else
-        {
-            LOG(INFO) << ss.str();
-            LOG(ERROR) << "Could not find provided network interface: \"" << interfaceName << "\"!, exiting.";
-            exit(EXIT_FAILURE);
-        }
-        string initialOutputAddress = ss.str();
-
-        // Configure the found host IP for the channel.
-        // TCP port will be chosen randomly during the initialization (binding).
-        sampler.fChannels.at("data1").at(0).UpdateAddress(initialOutputAddress);
+        sampler.SetConfig(config);
 
         sampler.ChangeState("INIT_DEVICE");
-        sampler.WaitForInitialValidation();
-
-        // Advertise the bound addresses via DDS property
-        LOG(INFO) << "Giving sampler output address to DDS.";
-        CKeyValue ddsKeyValue;
-        ddsKeyValue.putValue("SamplerAddress", sampler.fChannels.at("data1").at(0).GetAddress());
-
+        HandleConfigViaDDS(sampler);
         sampler.WaitForEndOfState("INIT_DEVICE");
 
         sampler.ChangeState("INIT_TASK");
         sampler.WaitForEndOfState("INIT_TASK");
 
-        CCustomCmd ddsCustomCmd;
-
-        // Subscribe on custom commands
-        ddsCustomCmd.subscribe([&](const string& command, const string& condition, uint64_t senderId)
-        {
-            LOG(INFO) << "Received custom command: " << command;
-            if (command == "check-state")
-            {
-                ddsCustomCmd.send(id + ": " + sampler.GetCurrentStateName(), to_string(senderId));
-            }
-            else
-            {
-                LOG(WARN) << "Received unknown command: " << command;
-                LOG(WARN) << "Origin: " << senderId;
-                LOG(WARN) << "Destination: " << condition;
-            }
-        });
-
-        sampler.ChangeState("RUN");
-        sampler.WaitForEndOfState("RUN");
-
-        sampler.ChangeState("RESET_TASK");
-        sampler.WaitForEndOfState("RESET_TASK");
-
-        sampler.ChangeState("RESET_DEVICE");
-        sampler.WaitForEndOfState("RESET_DEVICE");
-
-        sampler.ChangeState("END");
+        runDDSStateHandler(sampler);
     }
     catch (exception& e)
     {

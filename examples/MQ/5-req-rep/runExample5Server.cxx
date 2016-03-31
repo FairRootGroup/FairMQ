@@ -14,15 +14,12 @@
 
 #include <iostream>
 
-#include "boost/program_options.hpp"
-
 #include "FairMQLogger.h"
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
 #include "FairMQExample5Server.h"
 
 using namespace std;
-using namespace boost::program_options;
 
 int main(int argc, char** argv)
 {
@@ -38,18 +35,7 @@ int main(int argc, char** argv)
             return 0;
         }
 
-        string filename = config.GetValue<string>("config-json-file");
-        string id = config.GetValue<string>("id");
-
-        config.UserParser<FairMQParser::JSON>(filename, id);
-
-        server.fChannels = config.GetFairMQMap();
-
-        LOG(INFO) << "PID: " << getpid();
-
-        server.SetTransport(config.GetValue<std::string>("transport"));
-
-        server.SetProperty(FairMQExample5Server::Id, id);
+        server.SetConfig(config);
 
         server.ChangeState("INIT_DEVICE");
         server.WaitForEndOfState("INIT_DEVICE");

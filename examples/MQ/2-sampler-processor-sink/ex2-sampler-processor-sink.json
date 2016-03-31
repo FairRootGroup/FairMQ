@@ -1,8 +1,8 @@
 {
     "fairMQOptions":
     {
-        "device":
-        {
+        "devices":
+        [{
             "id": "sampler1",
             "channel":
             {
@@ -18,12 +18,10 @@
                 }
             }
         },
-
-        "device":
         {
-            "id": "processor1",
-            "channel":
-            {
+            "key": "processor",
+            "channels":
+            [{
                 "name": "data1",
                 "socket":
                 {
@@ -35,7 +33,6 @@
                     "rateLogging": "0"
                 }
             },
-            "channel":
             {
                 "name": "data2",
                 "socket":
@@ -47,41 +44,8 @@
                     "rcvBufSize": "1000",
                     "rateLogging": "0"
                 }
-            }
+            }]
         },
-
-        "device":
-        {
-            "id": "processor2",
-            "channel":
-            {
-                "name": "data1",
-                "socket":
-                {
-                    "type": "pull",
-                    "method": "connect",
-                    "address": "tcp://localhost:5555",
-                    "sndBufSize": "1000",
-                    "rcvBufSize": "1000",
-                    "rateLogging": "0"
-                }
-            },
-            "channel":
-            {
-                "name": "data2",
-                "socket":
-                {
-                    "type": "push",
-                    "method": "connect",
-                    "address": "tcp://localhost:5556",
-                    "sndBufSize": "1000",
-                    "rcvBufSize": "1000",
-                    "rateLogging": "0"
-                }
-            }
-        },
-
-        "device":
         {
             "id": "sink1",
             "channel":
@@ -97,6 +61,6 @@
                     "rateLogging": "0"
                 }
             }
-        }
+        }]
     }
 }

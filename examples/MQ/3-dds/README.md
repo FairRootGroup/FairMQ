@@ -1,7 +1,7 @@
 Example 3: DDS
 ===============
 
-This example demonstrates usage of the Dynamic Deployment System ([DDS](http://dds.gsi.de/)) to dynamically deploy and configure a topology of devices. The topology is similar to those of Example 2, but now it can be easily distributed on different computing nodes without the need for manual reconfiguration of the devices.
+This example demonstrates usage of the Dynamic Deployment System ([DDS](http://dds.gsi.de/)) to dynamically deploy and configure a topology of devices. The topology is similar to those of Example 2, but now it can be easily distributed on different computing nodes without the need for manual socket reconfiguration of the devices.
 
 This example is compiled only if the DDS is found by CMake. Custom DDS installation location can be given to CMake like this:
 
@@ -11,52 +11,17 @@ cmake -DDDS_PATH="/path/to/dds/install/dir/" ..
 
 The description below outlines the minimal steps needed to run the example with DDS. For more details please refer to DDS documentation on [DDS Website](http://dds.gsi.de/).
 
-##### 1. The devices that bind their sockets need to advertise their bound addresses to DDS by writing a property.
+##### 1. After beginning the initialization, the device handles the socket addresses and ports distribution via DDS.
 
-In our example Sampler and Sink bind their sockets. The bound addresses are available after the initial validation. The following code takes the address value and gives it to DDS:
+The binding channels give their bound addresses to devices interested in connecting to it and connecting sockets wait to receive these addresses. This match happens via the properties specified in the JSON file, which replace addresses in the DDS run. This is done behind the scenes after the initialization has been started and can be called with a single method call:
 
 ```C++
 sampler.ChangeState("INIT_DEVICE");
-sampler.WaitForInitialValidation();
-
-CKeyValue ddsKeyValue;
-ddsKeyValue.putValue("SamplerOutputAddress", sampler.fChannels.at("data-out").at(0).GetAddress());
-
+HandleConfigViaDDS(sampler);
 sampler.WaitForEndOfState("INIT_DEVICE");
 ```
 
-Same approach for the Sink.
-
-##### 2. The devices that connect their sockets need to read the addresses from DDS.
-
-The Processors in our example need the addresses of Sampler and Sink. They receive these from DDS via properties (sent in the step above):
-
-```C++
-CKeyValue ddsKeyValue;
-// Sampler properties
-CKeyValue::valuesMap_t samplerValues;
-{
-    mutex keyMutex;
-    condition_variable keyCondition;
-
-    LOG(INFO) << "Subscribing and waiting for sampler output address.";
-    ddsKeyValue.subscribe([&keyCondition](const string& /*_key*/, const string& /*_value*/) { keyCondition.notify_all(); });
-    ddsKeyValue.getValues("SamplerOutputAddress", &samplerValues);
-    while (samplerValues.empty())
-    {
-        unique_lock<mutex> lock(keyMutex);
-        keyCondition.wait_until(lock, chrono::system_clock::now() + chrono::milliseconds(1000));
-        ddsKeyValue.getValues("SamplerOutputAddress", &samplerValues);
-    }
-}
-// Sink properties
-// ... same as above, but for sinkValues ...
-
-processor.fChannels.at("data-in").at(0).UpdateAddress(samplerValues.begin()->second);
-processor.fChannels.at("data-out").at(0).UpdateAddress(sinkValues.begin()->second);
-```
-
-After this step each device will have the necessary connection information.
+In most cases a device will land on a random node and all the addresses and ports are configured dynamicaly. The JSON file does not contain any address information for a DDS run. Instead, addresses are exchanged between the devices dynamically based on the provided property names. E.g. here a processor communicates with the sampler via the *data1* channel. Sampler (binding) communicates its address to the processor(s) (connecting) via the "samplerAddr" property (see `ex3-dds.json` file).
 
 ##### 3. Write DDS hosts file that contains a list of worker nodes to run the topology on (When deploying using the SSH plug-in).
 
@@ -79,6 +44,8 @@ wn0, username@localhost, , /tmp/, 12
 ##### 4. Write DDS topology file that describes which tasks (processes) to run and their topology and configuration.
 
 Take a look at `ex3-dds-topology.xml`. It consists of a definition part (properties, tasks, collections and more) and execution part (main). In our example Sampler, Processor and Sink tasks are defines, containing their executables and exchanged properties. The `<main>` of the topology uses the defined tasks. Besides one Sampler and one Sink task, a group containing Processor task is defined. The group has a multiplicity of 10, meaninig 10 Processors will be executed. Each of the Processors will receive the properties with Sampler and Sink addresses.
+
+If `eth0` network interface (default for binding) is not available on your system, specify another one in the topology file for each task. For example: `--network-interface lo0`.
 
 ##### 5. Start DDS server.
 
@@ -115,7 +82,7 @@ After activation, agents will execute the defined tasks on the worker nodes. Out
 
 ##### 10. (optional) Use example command UI to check state of the devices
 
-This example includes a simple utility to send command to devices and receive replies from them. The code in `runDDSCommandUI.cxx` (compiled as ex3-dds-command-ui) uses the DDS intercom library to send "check-state" string to all devices, to which they reply with their ID and state they are in. This can be used as an example of sending/receiving commands or other information to devices.
+This example includes a simple utility to send commands to devices and receive replies from them. The code in `runDDSCommandUI.cxx` (compiled as ex3-dds-command-ui) uses the DDS intercom library to send "check-state" string to all devices, to which they reply with their ID and state they are in. The utility also allows requesting state changes from devices. This can be used as an example of sending/receiving commands or other information to devices.
 
 To see it in action, start the ex3-dds-command-ui while the topology is running.
 

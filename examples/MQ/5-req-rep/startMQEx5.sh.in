@@ -1,0 +1,12 @@
+#!/bin/bash
+ex5config="@CMAKE_BINARY_DIR@/bin/config/ex5-req-rep.json"
+
+CLIENT="ex5-client"
+CLIENT+=" --id client"
+CLIENT+=" --mq-config $ex5config"
+xterm -geometry 80x23+0+0 -hold -e @CMAKE_BINARY_DIR@/bin/$CLIENT &
+
+SERVER="ex5-server"
+SERVER+=" --id server"
+SERVER+=" --mq-config $ex5config"
+xterm -geometry 80x23+500+0 -hold -e @CMAKE_BINARY_DIR@/bin/$SERVER &

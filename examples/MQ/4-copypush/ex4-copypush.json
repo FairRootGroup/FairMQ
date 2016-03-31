@@ -1,14 +1,14 @@
 {
     "fairMQOptions":
     {
-        "device":
-        {
+        "devices":
+        [{
             "id": "sampler1",
             "channel":
             {
                 "name": "data",
-                "socket":
-                {
+                "sockets":
+                [{
                     "type": "push",
                     "method": "bind",
                     "address": "tcp://*:5555",
@@ -16,7 +16,6 @@
                     "rcvBufSize": "1000",
                     "rateLogging": "0"
                 },
-                "socket":
                 {
                     "type": "push",
                     "method": "bind",
@@ -24,11 +23,9 @@
                     "sndBufSize": "1000",
                     "rcvBufSize": "1000",
                     "rateLogging": "0"
-                }
+                }]
             }
         },
-
-        "device":
         {
             "id": "sink1",
             "channel":
@@ -45,8 +42,6 @@
                 }
             }
         },
-
-        "device":
         {
             "id": "sink2",
             "channel":
@@ -62,7 +57,7 @@
                     "rateLogging": "0"
                 }
             }
-        }
+        }]
     }
 }
 

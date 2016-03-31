@@ -46,18 +46,7 @@ int main(int argc, char** argv)
             return 0;
         }
 
-        string filename = config.GetValue<string>("config-json-file");
-        string id = config.GetValue<string>("id");
-
-        config.UserParser<FairMQParser::JSON>(filename, id);
-
-        client.fChannels = config.GetFairMQMap();
-
-        LOG(INFO) << "PID: " << getpid();
-
-        client.SetTransport(config.GetValue<std::string>("transport"));
-
-        client.SetProperty(FairMQExample5Client::Id, id);
+        client.SetConfig(config);
         client.SetProperty(FairMQExample5Client::Text, text);
 
         client.ChangeState("INIT_DEVICE");
