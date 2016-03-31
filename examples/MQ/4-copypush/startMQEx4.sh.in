@@ -1,0 +1,17 @@
+#!/bin/bash
+ex4config="@CMAKE_BINARY_DIR@/bin/config/ex4-copypush.json"
+
+SAMPLER="ex4-sampler"
+SAMPLER+=" --id sampler1"
+SAMPLER+=" --mq-config $ex4config"
+xterm -geometry 80x23+0+165 -hold -e @CMAKE_BINARY_DIR@/bin/$SAMPLER &
+
+SINK1="ex4-sink"
+SINK1+=" --id sink1"
+SINK1+=" --mq-config $ex4config"
+xterm -geometry 80x23+500+0 -hold -e @CMAKE_BINARY_DIR@/bin/$SINK1 &
+
+SINK2="ex4-sink"
+SINK2+=" --id sink2"
+SINK2+=" --mq-config $ex4config"
+xterm -geometry 80x23+500+330 -hold -e @CMAKE_BINARY_DIR@/bin/$SINK2 &

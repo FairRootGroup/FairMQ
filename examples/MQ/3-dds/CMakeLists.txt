@@ -8,8 +8,7 @@
 
 configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-topology.xml ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-topology.xml)
 configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-hosts.cfg ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-hosts.cfg COPYONLY)
-
-add_definitions(-DENABLE_DDS)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds.json ${CMAKE_BINARY_DIR}/bin/config/ex3-dds.json COPYONLY)
 
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
@@ -18,6 +17,7 @@ Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq/devices
   ${CMAKE_SOURCE_DIR}/fairmq/tools
   ${CMAKE_SOURCE_DIR}/fairmq/options
+  ${CMAKE_SOURCE_DIR}/fairmq/deployment
   ${CMAKE_SOURCE_DIR}/examples/MQ/3-dds
   ${CMAKE_CURRENT_BINARY_DIR}
 )
@@ -69,7 +69,6 @@ Set(Exe_Names
   ex3-sampler
   ex3-processor
   ex3-sink
-  ex3-command-ui
 )
 
 Set(Exe_Source
@@ -77,7 +76,6 @@ Set(Exe_Source
   runExample3Sampler.cxx
   runExample3Processor.cxx
   runExample3Sink.cxx
-  runDDSCommandUI.cxx
 )
 
 list(LENGTH Exe_Names _length)

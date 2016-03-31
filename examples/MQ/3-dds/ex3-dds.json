@@ -1,0 +1,42 @@
+{
+    "fairMQOptions":
+    {
+        "devices":
+        [{
+            "id": "sampler",
+            "channel":
+            {
+                "name": "data1",
+                "property": "samplerAddr",
+                "type": "push",
+                "method": "bind"
+            }
+        },
+        {
+            "key": "processor",
+            "channels":
+            [{
+                "name": "data1",
+                "property": "samplerAddr",
+                "type": "pull",
+                "method": "connect"
+            },
+            {
+                "name": "data2",
+                "property": "sinkAddr",
+                "type": "push",
+                "method": "connect"
+            }]
+        },
+        {
+            "id": "sink",
+            "channel":
+            {
+                "name": "data2",
+                "property": "sinkAddr",
+                "type": "pull",
+                "method": "bind"
+            }
+        }]
+    }
+}

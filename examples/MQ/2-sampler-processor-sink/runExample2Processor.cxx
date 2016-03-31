@@ -33,18 +33,7 @@ int main(int argc, char** argv)
             return 0;
         }
 
-        std::string filename = config.GetValue<std::string>("config-json-file");
-        std::string id = config.GetValue<std::string>("id");
-
-        config.UserParser<FairMQParser::JSON>(filename, id);
-
-        processor.fChannels = config.GetFairMQMap();
-
-        LOG(INFO) << "PID: " << getpid();
-
-        processor.SetTransport(config.GetValue<std::string>("transport"));
-
-        processor.SetProperty(FairMQExample2Processor::Id, id);
+        processor.SetConfig(config);
 
         processor.ChangeState("INIT_DEVICE");
         processor.WaitForEndOfState("INIT_DEVICE");
