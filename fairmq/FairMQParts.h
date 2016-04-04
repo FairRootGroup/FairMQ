@@ -37,7 +37,6 @@ class FairMQParts
     {
         fParts.push_back(std::unique_ptr<FairMQMessage>(msg));
     }
-    
 
     /// Adds part (std::unique_ptr<FairMQMessage>&) to the container (move)
     /// @param msg unique pointer to FairMQMessage

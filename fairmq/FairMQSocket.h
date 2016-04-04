@@ -40,11 +40,11 @@ class FairMQSocket
 
     virtual int Send(FairMQMessage* msg, const std::string& flag = "") = 0;
     virtual int Send(FairMQMessage* msg, const int flags = 0) = 0;
-    virtual int64_t Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
+    virtual int64_t Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags = 0) = 0;
 
     virtual int Receive(FairMQMessage* msg, const std::string& flag = "") = 0;
     virtual int Receive(FairMQMessage* msg, const int flags = 0) = 0;
-    virtual int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
+    virtual int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags = 0) = 0;
 
     virtual void* GetSocket() const = 0;
     virtual int GetSocket(int nothing) const = 0;

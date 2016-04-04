@@ -69,76 +69,104 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param name Name of the channel
     void PrintChannel(const std::string& name);
 
-    /// Shorthand method to send `msg` on `chan` at index `i`
-    /// @param msg message reference
-    /// @param chan channel name
-    /// @param i channel index
-    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. In case of errors, returns -1.
-    inline int Send(const std::unique_ptr<FairMQMessage>& msg, const std::string& chan, const int i = 0) const
-    {
-        return fChannels.at(chan).at(i).Send(msg);
-    }
-
     template<typename Serializer, typename DataType, typename... Args>
     void Serialize(FairMQMessage& msg, DataType&& data, Args&&... args) const
     {
-        Serializer().Serialize(msg,std::forward<DataType>(data),std::forward<Args>(args)...);
+        Serializer().Serialize(msg, std::forward<DataType>(data), std::forward<Args>(args)...);
     }
 
     template<typename Deserializer, typename DataType, typename... Args>
     void Deserialize(FairMQMessage& msg, DataType&& data, Args&&... args) const
     {
-        Deserializer().Deserialize(msg,std::forward<DataType>(data),std::forward<Args>(args)...);
+        Deserializer().Deserialize(msg, std::forward<DataType>(data), std::forward<Args>(args)...);
     }
 
-    /// Shorthand method to receive `msg` on `chan` at index `i`
+    /// Shorthand method to send `msg` on `chan` at index `i`
     /// @param msg message reference
     /// @param chan channel name
     /// @param i channel index
-    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out. In case of errors, returns -1.
-    inline int Receive(const std::unique_ptr<FairMQMessage>& msg, const std::string& chan, const int i = 0) const
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
+    /// In case of errors, returns -1.
+    inline int Send(const std::unique_ptr<FairMQMessage>& msg, const std::string& chan, const int i = 0) const
     {
-        return fChannels.at(chan).at(i).Receive(msg);
+        return fChannels.at(chan).at(i).Send(msg);
     }
 
-    /// Shorthand method to send a vector of messages on `chan` at index `i`
-    /// @param msgVec message vector reference
+    /// Shorthand method to send `msg` on `chan` at index `i` without blocking
+    /// @param msg message reference
     /// @param chan channel name
     /// @param i channel index
-    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. In case of errors, returns -1.
-    inline int64_t Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const std::string& chan, const int i = 0) const
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
+    /// In case of errors, returns -1.
+    inline int SendAsync(const std::unique_ptr<FairMQMessage>& msg, const std::string& chan, const int i = 0) const
     {
-        return fChannels.at(chan).at(i).Send(msgVec);
-    }
-
-    /// Shorthand method to receive a vector of messages on `chan` at index `i`
-    /// @param msgVec message vector reference
-    /// @param chan channel name
-    /// @param i channel index
-    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out. In case of errors, returns -1.
-    inline int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const std::string& chan, const int i = 0) const
-    {
-        return fChannels.at(chan).at(i).Receive(msgVec);
+        return fChannels.at(chan).at(i).SendAsync(msg);
     }
 
     /// Shorthand method to send FairMQParts on `chan` at index `i`
     /// @param parts parts reference
     /// @param chan channel name
     /// @param i channel index
-    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. In case of errors, returns -1.
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
+    /// In case of errors, returns -1.
     inline int64_t Send(const FairMQParts& parts, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).Send(parts.fParts);
+    }
+
+    /// Shorthand method to send FairMQParts on `chan` at index `i` without blocking
+    /// @param parts parts reference
+    /// @param chan channel name
+    /// @param i channel index
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
+    /// In case of errors, returns -1.
+    inline int64_t SendAsync(const FairMQParts& parts, const std::string& chan, const int i = 0) const
+    {
+        return fChannels.at(chan).at(i).SendAsync(parts.fParts);
+    }
+
+    /// Shorthand method to receive `msg` on `chan` at index `i`
+    /// @param msg message reference
+    /// @param chan channel name
+    /// @param i channel index
+    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
+    /// In case of errors, returns -1.
+    inline int Receive(const std::unique_ptr<FairMQMessage>& msg, const std::string& chan, const int i = 0) const
+    {
+        return fChannels.at(chan).at(i).Receive(msg);
+    }
+
+    /// Shorthand method to receive `msg` on `chan` at index `i` without blocking
+    /// @param msg message reference
+    /// @param chan channel name
+    /// @param i channel index
+    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
+    /// In case of errors, returns -1.
+    inline int ReceiveAsync(const std::unique_ptr<FairMQMessage>& msg, const std::string& chan, const int i = 0) const
+    {
+        return fChannels.at(chan).at(i).ReceiveAsync(msg);
     }
 
     /// Shorthand method to receive FairMQParts on `chan` at index `i`
     /// @param parts parts reference
     /// @param chan channel name
     /// @param i channel index
-    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out. In case of errors, returns -1.
+    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
+    /// In case of errors, returns -1.
     inline int64_t Receive(FairMQParts& parts, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).Receive(parts.fParts);
+    }
+
+    /// Shorthand method to receive FairMQParts on `chan` at index `i` without blocking
+    /// @param parts parts reference
+    /// @param chan channel name
+    /// @param i channel index
+    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
+    /// In case of errors, returns -1.
+    inline int64_t ReceiveAsync(FairMQParts& parts, const std::string& chan, const int i = 0) const
+    {
+        return fChannels.at(chan).at(i).ReceiveAsync(parts.fParts);
     }
 
     /// @brief Create empty FairMQMessage

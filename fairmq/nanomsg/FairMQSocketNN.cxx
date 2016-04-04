@@ -145,7 +145,7 @@ int FairMQSocketNN::Send(FairMQMessage* msg, const int flags)
     return nbytes;
 }
 
-int64_t FairMQSocketNN::Send(const vector<unique_ptr<FairMQMessage>>& msgVec)
+int64_t FairMQSocketNN::Send(const vector<unique_ptr<FairMQMessage>>& msgVec, const int flags)
 {
 #ifdef MSGPACK_FOUND
     // create msgpack simple buffer
@@ -161,7 +161,7 @@ int64_t FairMQSocketNN::Send(const vector<unique_ptr<FairMQMessage>>& msgVec)
         packer.pack_bin_body(static_cast<char*>(msgVec[i]->GetData()), msgVec[i]->GetSize());
     }
 
-    int64_t nbytes = nn_send(fSocket, sbuf.data(), sbuf.size(), 0);
+    int64_t nbytes = nn_send(fSocket, sbuf.data(), sbuf.size(), flags);
     if (nbytes >= 0)
     {
         fBytesTx += nbytes;
@@ -236,7 +236,7 @@ int FairMQSocketNN::Receive(FairMQMessage* msg, const int flags)
     return nbytes;
 }
 
-int64_t FairMQSocketNN::Receive(vector<unique_ptr<FairMQMessage>>& msgVec)
+int64_t FairMQSocketNN::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const int flags)
 {
 #ifdef MSGPACK_FOUND
     // Warn if the vector is filled before Receive() and empty it.
@@ -249,7 +249,7 @@ int64_t FairMQSocketNN::Receive(vector<unique_ptr<FairMQMessage>>& msgVec)
     // pointer to point to received message buffer
     char* ptr = NULL;
     // receive the message into a buffer allocated by nanomsg and let ptr point to it
-    int nbytes = nn_recv(fSocket, &ptr, NN_MSG, 0);
+    int nbytes = nn_recv(fSocket, &ptr, NN_MSG, flags);
     if (nbytes >= 0) // if no errors or non-blocking timeouts
     {
         // store statistics on how many bytes received
