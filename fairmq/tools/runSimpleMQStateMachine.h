@@ -27,11 +27,8 @@ template<typename TMQDevice>
 inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
 {
     device.CatchSignals();
-    std::string jsonfile = config.GetValue<std::string>("config-json-file");
     std::string id = config.GetValue<std::string>("id");
     int ioThreads = config.GetValue<int>("io-threads");
-
-    config.UserParser<FairMQParser::JSON>(jsonfile, id);
 
     device.fChannels = config.GetFairMQMap();
 
@@ -58,11 +55,8 @@ template<typename TMQDevice>
 inline int runNonInteractiveStateMachine(TMQDevice& device, FairMQProgOptions& config)
 {
     device.CatchSignals();
-    std::string jsonfile = config.GetValue<std::string>("config-json-file");
     std::string id = config.GetValue<std::string>("id");
     int ioThreads = config.GetValue<int>("io-threads");
-
-    config.UserParser<FairMQParser::JSON>(jsonfile, id);
 
     device.fChannels = config.GetFairMQMap();
 

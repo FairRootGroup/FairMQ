@@ -34,6 +34,8 @@ class FairMQProgOptions : public FairProgOptions
     FairMQProgOptions();
     virtual ~FairMQProgOptions();
 
+    // parse command line and txt/INI configuration file. 
+    // default parser for the mq-configuration file (JSON/XML) is called if command line key mq-config is called
     virtual int ParseAll(const int argc, char** argv, bool allowUnregistered = false);
 
     // external parser, store function 
@@ -75,12 +77,25 @@ class FairMQProgOptions : public FairProgOptions
         return fFairMQMap;
     }
 
+    // to customize title of the executable help command line  
+    void SetHelpTitle(const std::string& title)
+    {
+        fHelpTitle=title;
+    }
+    // to customize the executable version command line
+    void SetVersion(const std::string& version)
+    {
+        fVersion=version;
+    }
+
   protected:
     po::options_description fMQParserOptions;
     po::options_description fMQOptionsInCfg;
     po::options_description fMQOptionsInCmd;
     pt::ptree fMQtree;
     FairMQMap fFairMQMap;
+    std::string fHelpTitle;
+    std::string fVersion;
 
     virtual int NotifySwitchOption(); // for custom help & version printing
     void InitOptionDescription();
