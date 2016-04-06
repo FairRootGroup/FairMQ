@@ -80,7 +80,8 @@ class base_GenericSampler : public FairMQDevice, public T, public U
         {
             std::unique_ptr<FairMQMessage> msg(NewMessage());
             T::Deserialize(idx);
-            Send<U>(fInput, fOutChanName);
+            Serialize<U>(msg,fInput);
+            Send(msg, fOutChanName);
             sentMsgs++;
             if (!CheckCurrentState(RUNNING))
                 break;
