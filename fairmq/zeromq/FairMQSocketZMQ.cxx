@@ -49,7 +49,7 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const i
         exit(EXIT_FAILURE);
     }
 
-    if (zmq_setsockopt(fSocket, ZMQ_IDENTITY, &fId, fId.length()) != 0)
+    if (zmq_setsockopt(fSocket, ZMQ_IDENTITY, fId.c_str(), fId.length()) != 0)
     {
         LOG(ERROR) << "Failed setting ZMQ_IDENTITY socket option, reason: " << zmq_strerror(errno);
     }
