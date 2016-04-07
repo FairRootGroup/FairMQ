@@ -31,7 +31,8 @@ struct DDSConfig
 /// Addresses of binding channels are published via DDS using channels names as keys
 /// Addresses of connecting channels are collected from DDS using channels names as keys
 /// \param device  Reference to FairMQDevice whose channels to handle
-void HandleConfigViaDDS(FairMQDevice& device)
+template<typename TMQDevice>
+void HandleConfigViaDDS(TMQDevice& device)
 {
     // container for binding channels
     vector<FairMQChannel*> bindingChans;

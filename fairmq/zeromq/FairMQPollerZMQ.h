@@ -19,6 +19,8 @@
 #include <unordered_map>
 #include <initializer_list>
 
+#include <zmq.h>
+
 #include "FairMQPoller.h"
 #include "FairMQChannel.h"
 #include "FairMQTransportFactoryZMQ.h"

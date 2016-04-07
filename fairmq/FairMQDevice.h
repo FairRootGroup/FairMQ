@@ -330,6 +330,9 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// Signal handler
     void SignalHandler(int signal);
     bool fCatchingSignals;
+    bool fTerminated;
+    // Interactive state loop helper
+    std::atomic<bool> fRunning;
 };
 
 #endif /* FAIRMQDEVICE_H_ */

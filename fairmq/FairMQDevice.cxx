@@ -18,6 +18,7 @@
 #include <cstdlib>
 
 #include <termios.h> // for the InteractiveStateLoop
+#include <poll.h>
 
 #include <boost/thread.hpp>
 #include <boost/random/mersenne_twister.hpp> // for choosing random port in range
@@ -59,6 +60,8 @@ FairMQDevice::FairMQDevice()
     , fInitialValidationCondition()
     , fInitialValidationMutex()
     , fCatchingSignals(false)
+    , fTerminated(false)
+    , fRunning(false)
 {
 }
 
@@ -86,10 +89,19 @@ void FairMQDevice::SignalHandler(int signal)
     Shutdown();
     fTerminateStateThread.join();
 
-    LOG(INFO) << "Exiting.";
     stop();
-    // std::abort();
-    exit(EXIT_FAILURE);
+    fRunning = false;
+    if (!fTerminated)
+    {
+        fTerminated = true;
+        LOG(INFO) << "Exiting.";
+    }
+    else
+    {
+        LOG(WARN) << "Repeated termination or bad initialization? Aborting.";
+        // std::abort();
+        exit(EXIT_FAILURE);
+    }
 }
 
 void FairMQDevice::ConnectChannels(list<FairMQChannel*>& chans)
@@ -728,8 +740,11 @@ void FairMQDevice::LogSocketRates()
 
 void FairMQDevice::InteractiveStateLoop()
 {
-    bool running = true;
+    fRunning = true;
     char c; // hold the user console input
+    pollfd cinfd[1];
+    cinfd[0].fd = fileno(stdin);
+    cinfd[0].events = POLLIN;
 
     struct termios t;
     tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
@@ -738,58 +753,68 @@ void FairMQDevice::InteractiveStateLoop()
 
     PrintInteractiveStateLoopHelp();
 
-    while (running && cin >> c)
+    while (fRunning)
     {
-        switch (c)
+        if (poll(cinfd, 1, 500))
         {
-            case 'i':
-                LOG(INFO) << "[i] init device";
-                ChangeState("INIT_DEVICE");
+            if (!fRunning)
+            {
                 break;
-            case 'j':
-                LOG(INFO) << "[j] init task";
-                ChangeState("INIT_TASK");
-                break;
-            case 'p':
-                LOG(INFO) << "[p] pause";
-                ChangeState("PAUSE");
-                break;
-            case 'r':
-                LOG(INFO) << "[r] run";
-                ChangeState("RUN");
-                break;
-            case 's':
-                LOG(INFO) << "[s] stop";
-                ChangeState("STOP");
-                break;
-            case 't':
-                LOG(INFO) << "[t] reset task";
-                ChangeState("RESET_TASK");
-                break;
-            case 'd':
-                LOG(INFO) << "[d] reset device";
-                ChangeState("RESET_DEVICE");
-                break;
-            case 'h':
-                LOG(INFO) << "[h] help";
-                PrintInteractiveStateLoopHelp();
-                break;
-            // case 'x':
-            //     LOG(INFO) << "[x] ERROR";
-            //     ChangeState("ERROR_FOUND");
-            //     break;
-            case 'q':
-                LOG(INFO) << "[q] end";
-                ChangeState("END");
-                if (CheckCurrentState("EXITING"))
-                {
-                    running = false;
-                }
-                break;
-            default:
-                LOG(INFO) << "Invalid input: [" << c << "]";
-                PrintInteractiveStateLoopHelp();
-                break;
+            }
+
+            cin >> c;
+
+            switch (c)
+            {
+                case 'i':
+                    LOG(INFO) << "[i] init device";
+                    ChangeState("INIT_DEVICE");
+                    break;
+                case 'j':
+                    LOG(INFO) << "[j] init task";
+                    ChangeState("INIT_TASK");
+                    break;
+                case 'p':
+                    LOG(INFO) << "[p] pause";
+                    ChangeState("PAUSE");
+                    break;
+                case 'r':
+                    LOG(INFO) << "[r] run";
+                    ChangeState("RUN");
+                    break;
+                case 's':
+                    LOG(INFO) << "[s] stop";
+                    ChangeState("STOP");
+                    break;
+                case 't':
+                    LOG(INFO) << "[t] reset task";
+                    ChangeState("RESET_TASK");
+                    break;
+                case 'd':
+                    LOG(INFO) << "[d] reset device";
+                    ChangeState("RESET_DEVICE");
+                    break;
+                case 'h':
+                    LOG(INFO) << "[h] help";
+                    PrintInteractiveStateLoopHelp();
+                    break;
+                // case 'x':
+                //     LOG(INFO) << "[x] ERROR";
+                //     ChangeState("ERROR_FOUND");
+                //     break;
+                case 'q':
+                    LOG(INFO) << "[q] end";
+                    ChangeState("END");
+                    if (CheckCurrentState("EXITING"))
+                    {
+                        fRunning = false;
+                    }
+                    break;
+                default:
+                    LOG(INFO) << "Invalid input: [" << c << "]";
+                    PrintInteractiveStateLoopHelp();
+                    break;
+            }
         }
     }
 
@@ -921,4 +946,6 @@ FairMQDevice::~FairMQDevice()
     }
 
     delete fTransportFactory;
+
+    LOG(DEBUG) << "Device destroyed";
 }

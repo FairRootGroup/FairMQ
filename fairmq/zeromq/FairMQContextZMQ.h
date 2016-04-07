@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * FairMQContext.h
+ * FairMQContextZMQ.h
  *
  * @since 2012-12-05
  * @author D. Klein, A. Rybalchenko

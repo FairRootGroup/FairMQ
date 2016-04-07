@@ -58,5 +58,3 @@ ForEach(_file RANGE 0 ${_length})
   set(DEPENDENCIES FairMQ dds_intercom_lib)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
-
-
