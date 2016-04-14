@@ -63,7 +63,7 @@ class FairMQParts
     inline std::unique_ptr<FairMQMessage>& At(const int index) { return fParts.at(index); }
 
     // ref version
-    inline FairMQMessage& At_ref(const int index) { return *(fParts.at(index)); }
+    inline FairMQMessage& AtRef(const int index) { return *(fParts.at(index)); }
 
     /// Get number of parts in the container
     /// @return number of parts in the container
