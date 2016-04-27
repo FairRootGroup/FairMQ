@@ -16,7 +16,7 @@
     </declrequirement>
 
     <decltask id="Sampler">
-        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-sampler --id sampler --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
+        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-sampler --id sampler --log-color false --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
         <requirement>SamplerWorker</requirement>
         <properties>
             <id access="write">samplerAddr</id>
@@ -24,7 +24,7 @@
     </decltask>
 
     <decltask id="Processor">
-        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-processor --id processor_%taskIndex% --config-key processor --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
+        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-processor --id processor_%taskIndex% --config-key processor --log-color false --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
         <requirement>ProcessorWorker</requirement>
         <properties>
             <id access="read">samplerAddr</id>
@@ -33,7 +33,7 @@
     </decltask>
 
     <decltask id="Sink">
-        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-sink --id sink --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
+        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/ex3-sink --id sink --log-color false --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
         <requirement>SinkWorker</requirement>
         <properties>
             <id access="write">sinkAddr</id>
