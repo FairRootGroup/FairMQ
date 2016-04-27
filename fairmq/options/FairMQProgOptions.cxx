@@ -61,23 +61,23 @@ int FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregiste
         }
     }
 
-    // // set log level before printing (default is 0 = DEBUG level)
-    // std::string verbose = GetValue<std::string>("verbose");
-    // bool color = GetValue<bool>("log-color");
-    // if (!color)
-    // {
-    //     reinit_logger(false);
-    // }
-    // //SET_LOG_LEVEL(DEBUG);
-    // if (fSeverityMap.count(verbose))
-    // {
-    //     set_global_log_level(log_op::operation::GREATER_EQ_THAN, fSeverityMap.at(verbose));
-    // }
-    // else
-    // {
-    //     LOG(ERROR) << " verbosity level '" << verbose << "' unknown, it will be set to DEBUG";
-    //     set_global_log_level(log_op::operation::GREATER_EQ_THAN, fSeverityMap.at("DEBUG"));
-    // }
+    // set log level before printing (default is 0 = DEBUG level)
+    std::string verbosity = GetValue<std::string>("verbose");
+    bool color = GetValue<bool>("log-color");
+    if (!color)
+    {
+        reinit_logger(false);
+    }
+
+    if (fSeverityMap.count(verbosity))
+    {
+        set_global_log_level(log_op::operation::GREATER_EQ_THAN, fSeverityMap.at(verbosity));
+    }
+    else
+    {
+        LOG(ERROR) << " verbosity level '" << verbosity << "' unknown, it will be set to DEBUG";
+        set_global_log_level(log_op::operation::GREATER_EQ_THAN, fSeverityMap.at("DEBUG"));
+    }
 
     PrintOptions();
 

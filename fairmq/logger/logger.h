@@ -59,8 +59,8 @@ namespace log_op
 }
 
 // declaration of the init function for the global logger
-void init_log_console(bool color_format = true);
-void reinit_logger(bool color_format);
+void init_log_console(bool color = true);
+void reinit_logger(bool color);
 void init_log_file(const std::string& filename, 
     custom_severity_level threshold = SEVERITY_THRESHOLD,
     log_op::operation = log_op::GREATER_EQ_THAN,
