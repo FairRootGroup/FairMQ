@@ -25,16 +25,18 @@ echo "Usage: startBenchmark [message size=1000000] [number of messages=0]"
 SAMPLER="bsampler"
 SAMPLER+=" --id bsampler1"
 #SAMPLER+=" --io-threads 2"
+#SAMPLER+=" --control static"
 #SAMPLER+=" --transport nanomsg"
 SAMPLER+=" --msg-size $msgSize"
 SAMPLER+=" --num-msgs $numMsgs"
-SAMPLER+=" --config-json-file @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
-xterm -geometry 80x23+0+0 -hold -e taskset 0x1 @CMAKE_BINARY_DIR@/bin/$SAMPLER &
+SAMPLER+=" --mq-config @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
+xterm -geometry 80x23+0+0 -hold -e @CMAKE_BINARY_DIR@/bin/$SAMPLER &
 
 SINK="sink"
 SINK+=" --id sink1"
 #SINK+=" --io-threads 2"
+#SINK+=" --control static"
 #SINK+=" --transport nanomsg"
 SINK+=" --num-msgs $numMsgs"
-SINK+=" --config-json-file @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
-xterm -geometry 80x23+500+0 -hold -e taskset 0x2 @CMAKE_BINARY_DIR@/bin/$SINK &
+SINK+=" --mq-config @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
+xterm -geometry 80x23+500+0 -hold -e @CMAKE_BINARY_DIR@/bin/$SINK &

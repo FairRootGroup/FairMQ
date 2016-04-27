@@ -21,24 +21,14 @@
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
 
-// template function that take any device, 
-// and run a simple MQ state machine configured from a JSON file
+// template function that takes any device
+// and runs a simple MQ state machine configured from a JSON file
 template<typename TMQDevice>
 inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
 {
     device.CatchSignals();
-    std::string id = config.GetValue<std::string>("id");
-    int ioThreads = config.GetValue<int>("io-threads");
 
-    device.fChannels = config.GetFairMQMap();
-
-    device.SetProperty(TMQDevice::Id, id);
-    device.SetProperty(TMQDevice::NumIoThreads, ioThreads);
-
-    LOG(INFO) << "PID: " << getpid();
-
-    device.SetTransport(config.GetValue<std::string>("transport"));
-
+    device.SetConfig(config);
     device.ChangeState(TMQDevice::INIT_DEVICE);
     device.WaitForEndOfState(TMQDevice::INIT_DEVICE);
 
@@ -46,43 +36,36 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
     device.WaitForEndOfState(TMQDevice::INIT_TASK);
 
     device.ChangeState(TMQDevice::RUN);
-    device.InteractiveStateLoop();
 
-    return 0;
-}
+    std::string control = config.GetValue<std::string>("control");
 
-template<typename TMQDevice>
-inline int runNonInteractiveStateMachine(TMQDevice& device, FairMQProgOptions& config)
-{
-    device.CatchSignals();
-    std::string id = config.GetValue<std::string>("id");
-    int ioThreads = config.GetValue<int>("io-threads");
+    // TODO: Extend this with DDS (requires optional dependency?)?
+    if (control == "interactive")
+    {
+        device.InteractiveStateLoop();
+    }
+    else if (control == "static")
+    {
+        device.ChangeState(TMQDevice::RUN);
+        device.WaitForEndOfState(TMQDevice::RUN);
 
-    device.fChannels = config.GetFairMQMap();
+        device.ChangeState(TMQDevice::RESET_TASK);
+        device.WaitForEndOfState(TMQDevice::RESET_TASK);
 
-    device.SetProperty(TMQDevice::Id, id);
-    device.SetProperty(TMQDevice::NumIoThreads, ioThreads);
+        device.ChangeState(TMQDevice::RESET_DEVICE);
+        device.WaitForEndOfState(TMQDevice::RESET_DEVICE);
 
-    LOG(INFO) << "PID: " << getpid();
-
-    device.SetTransport(config.GetValue<std::string>("transport"));
-
-    device.ChangeState(TMQDevice::INIT_DEVICE);
-    device.WaitForEndOfState(TMQDevice::INIT_DEVICE);
-
-    device.ChangeState(TMQDevice::INIT_TASK);
-    device.WaitForEndOfState(TMQDevice::INIT_TASK);
-
-    device.ChangeState(TMQDevice::RUN);
-    device.WaitForEndOfState(TMQDevice::RUN);
-
-    device.ChangeState(TMQDevice::RESET_TASK);
-    device.WaitForEndOfState(TMQDevice::RESET_TASK);
-
-    device.ChangeState(TMQDevice::RESET_DEVICE);
-    device.WaitForEndOfState(TMQDevice::RESET_DEVICE);
-
-    device.ChangeState(TMQDevice::END);
+        device.ChangeState(TMQDevice::END);
+    }
+    else
+    {
+        LOG(ERROR) << "Requested control mechanism '" << control << "' is not available.";
+        LOG(ERROR) << "Currently available are:"
+                   << " 'interactive'"
+                   << ", 'static'"
+                   << ". Exiting.";
+        exit(EXIT_FAILURE);
+    }
 
     return 0;
 }

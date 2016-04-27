@@ -15,40 +15,28 @@
 #include <iostream>
 
 #include "FairMQLogger.h"
-#include "FairMQParser.h"
 #include "FairMQProgOptions.h"
 #include "FairMQMerger.h"
+#include "runSimpleMQStateMachine.h"
 
 int main(int argc, char** argv)
 {
-    FairMQMerger merger;
-    merger.CatchSignals();
-
-    FairMQProgOptions config;
-
     try
     {
+        FairMQProgOptions config;
+
         if (config.ParseAll(argc, argv))
         {
             return 0;
         }
 
-        merger.SetConfig(config);
-
-        merger.ChangeState("INIT_DEVICE");
-        merger.WaitForEndOfState("INIT_DEVICE");
-
-        merger.ChangeState("INIT_TASK");
-        merger.WaitForEndOfState("INIT_TASK");
-
-        merger.ChangeState("RUN");
-        merger.InteractiveStateLoop();
+        FairMQMerger merger;
+        runStateMachine(merger, config);
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << e.what();
-        LOG(INFO) << "Command line options are the following: ";
-        config.PrintHelp();
+        LOG(ERROR) << "Unhandled Exception reached the top of main: "
+                   << e.what() << ", application will now exit";
         return 1;
     }
 

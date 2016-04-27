@@ -15,40 +15,28 @@
 #include <iostream>
 
 #include "FairMQLogger.h"
-#include "FairMQParser.h"
 #include "FairMQProgOptions.h"
 #include "FairMQSplitter.h"
+#include "runSimpleMQStateMachine.h"
 
 int main(int argc, char** argv)
 {
-    FairMQSplitter splitter;
-    splitter.CatchSignals();
-
-    FairMQProgOptions config;
-
     try
     {
+        FairMQProgOptions config;
+
         if (config.ParseAll(argc, argv))
         {
             return 0;
         }
 
-        splitter.SetConfig(config);
-
-        splitter.ChangeState("INIT_DEVICE");
-        splitter.WaitForEndOfState("INIT_DEVICE");
-
-        splitter.ChangeState("INIT_TASK");
-        splitter.WaitForEndOfState("INIT_TASK");
-
-        splitter.ChangeState("RUN");
-        splitter.InteractiveStateLoop();
+        FairMQSplitter splitter;
+        runStateMachine(splitter, config);
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << e.what();
-        LOG(INFO) << "Command line options are the following: ";
-        config.PrintHelp();
+        LOG(ERROR) << "Unhandled Exception reached the top of main: "
+                   << e.what() << ", application will now exit";
         return 1;
     }
 

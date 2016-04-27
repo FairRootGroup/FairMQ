@@ -17,66 +17,39 @@
 #include "boost/program_options.hpp"
 
 #include "FairMQLogger.h"
-#include "FairMQParser.h"
 #include "FairMQProgOptions.h"
 #include "FairMQSink.h"
+#include "runSimpleMQStateMachine.h"
 
-using namespace std;
-using namespace FairMQParser;
 using namespace boost::program_options;
 
 int main(int argc, char** argv)
 {
-    FairMQSink sink;
-    sink.CatchSignals();
-
-    FairMQProgOptions config;
-
     try
     {
         int numMsgs;
 
-        options_description sink_options("Sink options");
-        sink_options.add_options()
+        options_description sinkOptions("Sink options");
+        sinkOptions.add_options()
             ("num-msgs", value<int>(&numMsgs)->default_value(0), "Number of messages to receive");
 
-        config.AddToCmdLineOptions(sink_options);
+        FairMQProgOptions config;
+        config.AddToCmdLineOptions(sinkOptions);
 
         if (config.ParseAll(argc, argv))
         {
             return 0;
         }
 
-        string filename = config.GetValue<string>("config-json-file");
-        string id = config.GetValue<string>("id");
-//        int ioThreads = config.GetValue<int>("io-threads");
-
-        config.UserParser<JSON>(filename, id);
-
-        sink.fChannels = config.GetFairMQMap();
-
-        LOG(INFO) << "PID: " << getpid();
-
-        sink.SetTransport(config.GetValue<std::string>("transport"));
-
-        sink.SetProperty(FairMQSink::Id, id);
+        FairMQSink sink;
         sink.SetProperty(FairMQSink::NumMsgs, numMsgs);
-        sink.SetProperty(FairMQSink::NumIoThreads, config.GetValue<int>("io-threads"));
 
-        sink.ChangeState("INIT_DEVICE");
-        sink.WaitForEndOfState("INIT_DEVICE");
-
-        sink.ChangeState("INIT_TASK");
-        sink.WaitForEndOfState("INIT_TASK");
-
-        sink.ChangeState("RUN");
-        sink.InteractiveStateLoop();
+        runStateMachine(sink, config);
     }
-    catch (exception& e)
+    catch (std::exception& e)
     {
-        LOG(ERROR) << e.what();
-        LOG(INFO) << "Started with: ";
-        config.PrintHelp();
+        LOG(ERROR) << "Unhandled Exception reached the top of main: "
+                   << e.what() << ", application will now exit";
         return 1;
     }
 

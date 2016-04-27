@@ -15,42 +15,28 @@
 #include <iostream>
 
 #include "FairMQLogger.h"
-#include "FairMQParser.h"
 #include "FairMQProgOptions.h"
 #include "FairMQProxy.h"
-
-using namespace std;
+#include "runSimpleMQStateMachine.h"
 
 int main(int argc, char** argv)
 {
-    FairMQProxy proxy;
-    proxy.CatchSignals();
-
-    FairMQProgOptions config;
-
     try
     {
+        FairMQProgOptions config;
+
         if (config.ParseAll(argc, argv))
         {
             return 0;
         }
 
-        proxy.SetConfig(config);
-
-        proxy.ChangeState("INIT_DEVICE");
-        proxy.WaitForEndOfState("INIT_DEVICE");
-
-        proxy.ChangeState("INIT_TASK");
-        proxy.WaitForEndOfState("INIT_TASK");
-
-        proxy.ChangeState("RUN");
-        proxy.InteractiveStateLoop();
+        FairMQProxy proxy;
+        runStateMachine(proxy, config);
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << e.what();
-        LOG(INFO) << "Command line options are the following: ";
-        config.PrintHelp();
+        LOG(ERROR) << "Unhandled Exception reached the top of main: "
+                   << e.what() << ", application will now exit";
         return 1;
     }
 

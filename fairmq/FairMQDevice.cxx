@@ -614,6 +614,7 @@ void FairMQDevice::SetTransport(const string& transport)
 
 void FairMQDevice::SetConfig(FairMQProgOptions& config)
 {
+    LOG(DEBUG) << "PID: " << getpid();
     fConfig = &config;
     fChannels = config.GetFairMQMap();
     SetTransport(config.GetValue<string>("transport"));

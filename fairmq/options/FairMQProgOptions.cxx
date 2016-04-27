@@ -173,29 +173,32 @@ void FairMQProgOptions::InitOptionDescription()
     if (fUseConfigFile)
     {
         fMQOptionsInCmd.add_options()
-            ("id",                po::value<string>(),                          "Device ID (required argument).")
-            ("io-threads",        po::value<int>()->default_value(1),           "Number of I/O threads.")
-            ("transport",         po::value<string>()->default_value("zeromq"), "Transport ('zeromq'/'nanomsg').")
-            ("deployment",        po::value<string>()->default_value("static"), "Deployment ('static'/'dds').")
-            ("network-interface", po::value<string>()->default_value("eth0"),   "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
+            ("id",                po::value<string>(),                               "Device ID (required argument).")
+            ("io-threads",        po::value<int   >()->default_value(1),             "Number of I/O threads.")
+            ("transport",         po::value<string>()->default_value("zeromq"),      "Transport ('zeromq'/'nanomsg').")
+            ("deployment",        po::value<string>()->default_value("static"),      "Deployment ('static'/'dds').")
+            ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/'dds').")
+            ("network-interface", po::value<string>()->default_value("eth0"),        "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
             ;
 
         fMQOptionsInCfg.add_options()
-            ("id",                po::value<string>()->required(),              "Device ID (required argument).")
-            ("io-threads",        po::value<int>()->default_value(1),           "Number of I/O threads.")
-            ("transport",         po::value<string>()->default_value("zeromq"), "Transport ('zeromq'/'nanomsg').")
-            ("deployment",        po::value<string>()->default_value("static"), "Deployment ('static'/'dds').")
-            ("network-interface", po::value<string>()->default_value("eth0"),   "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
+            ("id",                po::value<string>()->required(),                   "Device ID (required argument).")
+            ("io-threads",        po::value<int   >()->default_value(1),             "Number of I/O threads.")
+            ("transport",         po::value<string>()->default_value("zeromq"),      "Transport ('zeromq'/'nanomsg').")
+            ("deployment",        po::value<string>()->default_value("static"),      "Deployment ('static'/'dds').")
+            ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/'dds').")
+            ("network-interface", po::value<string>()->default_value("eth0"),        "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
             ;
     }
     else
     {
         fMQOptionsInCmd.add_options()
-            ("id",                po::value<string>()->required(),              "Device ID (required argument)")
-            ("io-threads",        po::value<int>()->default_value(1),           "Number of I/O threads")
-            ("transport",         po::value<string>()->default_value("zeromq"), "Transport ('zeromq'/'nanomsg').")
-            ("deployment",        po::value<string>()->default_value("static"), "Deployment ('static'/'dds').")
-            ("network-interface", po::value<string>()->default_value("eth0"),   "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
+            ("id",                po::value<string>()->required(),                   "Device ID (required argument)")
+            ("io-threads",        po::value<int   >()->default_value(1),             "Number of I/O threads")
+            ("transport",         po::value<string>()->default_value("zeromq"),      "Transport ('zeromq'/'nanomsg').")
+            ("deployment",        po::value<string>()->default_value("static"),      "Deployment ('static'/'dds').")
+            ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/'dds').")
+            ("network-interface", po::value<string>()->default_value("eth0"),        "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
             ;
     }
 

@@ -17,69 +17,42 @@
 #include "boost/program_options.hpp"
 
 #include "FairMQLogger.h"
-#include "FairMQTools.h"
-#include "FairMQParser.h"
 #include "FairMQProgOptions.h"
 #include "FairMQBenchmarkSampler.h"
+#include "runSimpleMQStateMachine.h"
 
-using namespace std;
-using namespace FairMQParser;
 using namespace boost::program_options;
 
 int main(int argc, char** argv)
 {
-    FairMQBenchmarkSampler sampler;
-    sampler.CatchSignals();
-
-    FairMQProgOptions config;
-
     try
     {
         int msgSize;
         int numMsgs;
 
-        options_description sampler_options("Sampler options");
-        sampler_options.add_options()
+        options_description samplerOptions("Sampler options");
+        samplerOptions.add_options()
             ("msg-size", value<int>(&msgSize)->default_value(1000), "Message size in bytes")
             ("num-msgs", value<int>(&numMsgs)->default_value(0),    "Number of messages to send");
 
-        config.AddToCmdLineOptions(sampler_options);
+        FairMQProgOptions config;
+        config.AddToCmdLineOptions(samplerOptions);
 
         if (config.ParseAll(argc, argv))
         {
             return 0;
         }
 
-        string filename = config.GetValue<string>("config-json-file");
-        string id = config.GetValue<string>("id");
-
-        config.UserParser<JSON>(filename, id);
-
-        sampler.fChannels = config.GetFairMQMap();
-
-        LOG(INFO) << "PID: " << getpid();
-
-        sampler.SetTransport(config.GetValue<std::string>("transport"));
-
-        sampler.SetProperty(FairMQBenchmarkSampler::Id, id);
+        FairMQBenchmarkSampler sampler;
         sampler.SetProperty(FairMQBenchmarkSampler::MsgSize, msgSize);
         sampler.SetProperty(FairMQBenchmarkSampler::NumMsgs, numMsgs);
-        sampler.SetProperty(FairMQBenchmarkSampler::NumIoThreads, config.GetValue<int>("io-threads"));
 
-        sampler.ChangeState("INIT_DEVICE");
-        sampler.WaitForEndOfState("INIT_DEVICE");
-
-        sampler.ChangeState("INIT_TASK");
-        sampler.WaitForEndOfState("INIT_TASK");
-
-        sampler.ChangeState("RUN");
-        sampler.InteractiveStateLoop();
+        runStateMachine(sampler, config);
     }
-    catch (exception& e)
+    catch (std::exception& e)
     {
-        LOG(ERROR) << e.what();
-        LOG(INFO) << "Command line options are the following : ";
-        config.PrintHelp();
+        LOG(ERROR) << "Unhandled Exception reached the top of main: "
+                   << e.what() << ", application will now exit";
         return 1;
     }
 
