@@ -35,6 +35,7 @@ FairMQProgOptions::~FairMQProgOptions()
 
 int FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregistered)
 {
+    LOG(NOLOG) << "";
     // init description
     InitOptionDescription();
     // parse command line options

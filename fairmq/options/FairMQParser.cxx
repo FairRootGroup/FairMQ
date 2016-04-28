@@ -221,6 +221,7 @@ namespace helper
                     FairMQChannel commonChannel;
                     commonChannel.UpdateType(q.second.get<string>("type", commonChannel.GetType()));
                     commonChannel.UpdateMethod(q.second.get<string>("method", commonChannel.GetMethod()));
+                    commonChannel.UpdateAddress(q.second.get<string>("address", commonChannel.GetAddress()));
                     commonChannel.UpdateProperty(q.second.get<string>("property", commonChannel.GetProperty()));
                     commonChannel.UpdateSndBufSize(q.second.get<int>("sndBufSize", commonChannel.GetSndBufSize()));
                     commonChannel.UpdateRcvBufSize(q.second.get<int>("rcvBufSize", commonChannel.GetRcvBufSize()));
@@ -254,6 +255,7 @@ namespace helper
                     // try to get common properties to use for all subChannels
                     commonChannel.UpdateType(p.second.get<string>("type", commonChannel.GetType()));
                     commonChannel.UpdateMethod(p.second.get<string>("method", commonChannel.GetMethod()));
+                    commonChannel.UpdateAddress(p.second.get<string>("address", commonChannel.GetAddress()));
                     commonChannel.UpdateProperty(p.second.get<string>("property", commonChannel.GetProperty()));
                     commonChannel.UpdateSndBufSize(p.second.get<int>("sndBufSize", commonChannel.GetSndBufSize()));
                     commonChannel.UpdateRcvBufSize(p.second.get<int>("rcvBufSize", commonChannel.GetRcvBufSize()));
