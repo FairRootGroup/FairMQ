@@ -51,6 +51,7 @@ BOOST_LOG_GLOBAL_LOGGER_INIT(global_logger, src::severity_logger_mt)
 
 void init_log_console(bool color/* = true*/)
 {
+    FairMQ::Logger::sinkList.clear();
     // add a text sink
     typedef sinks::synchronous_sink<sinks::text_ostream_backend> text_sink;
 
