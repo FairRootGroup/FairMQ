@@ -27,7 +27,7 @@
 #include <tuple>
 
 /*
- * FairProgOptions abstract base class 
+ * FairProgOptions abstract base class
  * parse command line, configuration file options as well as environment variables.
  * 
  * The user defines in the derived class the option descriptions and
@@ -42,15 +42,14 @@
  *          fVisibleOptions.add(fCmdlineOptions);
  *      }
  *      virtual ~MyOptions() {}
- *      virtual int ParseAll(const int argc, char** argv, bool allowUnregistered = false)
+ *      virtual void ParseAll(const int argc, char** argv, bool allowUnregistered = false)
  *      {
- *          if(ParseCmdLine(argc, argv, fCmdlineOptions, fVarMap, allowUnregistered))
+ *          if (ParseCmdLine(argc, argv, fCmdlineOptions, fVarMap, allowUnregistered))
  *          {
- *              return 1;
+ *              exit(EXIT_FAILURE);
  *          }
  *
  *          PrintOptions();
- *          return 0;
  *      }
  * }
  */
@@ -110,7 +109,7 @@ class FairProgOptions
 
     int ParseEnvironment(const std::function<std::string(std::string)>&);
 
-    virtual int ParseAll(const int argc, char** argv, bool allowUnregistered = false) = 0;// TODO change return type to bool and propagate to executable
+    virtual void ParseAll(const int argc, char** argv, bool allowUnregistered = false) = 0;// TODO change return type to bool and propagate to executable
 
     virtual int PrintOptions();
     int PrintHelp() const;

@@ -35,11 +35,7 @@ int main(int argc, char** argv)
 
         FairMQProgOptions config;
         config.AddToCmdLineOptions(sinkOptions);
-
-        if (config.ParseAll(argc, argv))
-        {
-            return 0;
-        }
+        config.ParseAll(argc, argv);
 
         FairMQSink sink;
         sink.SetProperty(FairMQSink::NumMsgs, numMsgs);

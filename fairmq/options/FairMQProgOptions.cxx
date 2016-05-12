@@ -33,7 +33,7 @@ FairMQProgOptions::~FairMQProgOptions()
 {
 }
 
-int FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregistered)
+void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregistered)
 {
     LOG(NOLOG) << "";
     // init description
@@ -41,7 +41,8 @@ int FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregiste
     // parse command line options
     if (ParseCmdLine(argc, argv, fCmdLineOptions, fVarMap, allowUnregistered))
     {
-        return 1;
+        LOG(ERROR) << "Could not parse cmd options";
+        exit(EXIT_FAILURE);
     }
 
     // if txt/INI configuration file enabled then parse it as well
@@ -52,13 +53,14 @@ int FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregiste
         {
             if (ParseCfgFile(fConfigFile.string(), fConfigFileOptions, fVarMap, allowUnregistered))
             {
-                return 1;
+                LOG(ERROR) << "Could not parse config";
+                exit(EXIT_FAILURE);
             }
         }
         else
         {
             LOG(ERROR) << "config file '" << fConfigFile << "' not found";
-            return 1;
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -123,32 +125,30 @@ int FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregiste
                 id = fVarMap["id"].as<std::string>();
             }
 
-            std::string file_extension = boost::filesystem::extension(file);
+            std::string fileExtension = boost::filesystem::extension(file);
 
-            std::transform(file_extension.begin(), file_extension.end(), file_extension.begin(), ::tolower);
+            std::transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), ::tolower);
 
-            if (file_extension == ".json")
+            if (fileExtension == ".json")
             {
                 UserParser<FairMQParser::JSON>(file, id);
             }
             else
             {
-                if (file_extension == ".xml")
+                if (fileExtension == ".xml")
                 {
                     UserParser<FairMQParser::XML>(file, id);
                 }
                 else
                 {
                     LOG(ERROR)  << "mq-config command line called but file extension '"
-                                << file_extension
+                                << fileExtension
                                 << "' not recognized. Program will now exit";
-                    return 1;
+                    exit(EXIT_FAILURE);
                 }
             }
         }
     }
-
-    return 0;
 }
 
 int FairMQProgOptions::NotifySwitchOption()
