@@ -12,12 +12,10 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include <iostream>
-
 #include "boost/program_options.hpp"
 
 #include "FairMQLogger.h"
-#include "FairMQParser.h"
+
 #include "FairMQProgOptions.h"
 #include "FairMQExample2Sampler.h"
 
@@ -25,11 +23,6 @@ using namespace boost::program_options;
 
 int main(int argc, char** argv)
 {
-    FairMQExample2Sampler sampler;
-    sampler.CatchSignals();
-
-    FairMQProgOptions config;
-
     try
     {
         std::string text;
@@ -38,13 +31,15 @@ int main(int argc, char** argv)
         samplerOptions.add_options()
             ("text", value<std::string>(&text)->default_value("Hello"), "Text to send out");
 
+        FairMQProgOptions config;
         config.AddToCmdLineOptions(samplerOptions);
-
         if (config.ParseAll(argc, argv))
         {
             return 0;
         }
 
+        FairMQExample2Sampler sampler;
+        sampler.CatchSignals();
         sampler.SetConfig(config);
         sampler.SetProperty(FairMQExample2Sampler::Text, text);
 
@@ -59,9 +54,8 @@ int main(int argc, char** argv)
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << e.what();
-        LOG(INFO) << "Command line options are the following: ";
-        config.PrintHelp();
+        LOG(ERROR) << "Unhandled Exception reached the top of main: "
+                   << e.what() << ", application will now exit";
         return 1;
     }
 

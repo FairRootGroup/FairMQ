@@ -17,23 +17,18 @@
 #include "FairMQProgOptions.h"
 #include "FairMQExample3Sampler.h"
 
-using namespace std;
-using namespace boost::program_options;
-
 int main(int argc, char** argv)
 {
-    FairMQExample3Sampler sampler;
-    sampler.CatchSignals();
-
-    FairMQProgOptions config;
-
     try
     {
+        FairMQProgOptions config;
         if (config.ParseAll(argc, argv))
         {
             return 0;
         }
 
+        FairMQExample3Sampler sampler;
+        sampler.CatchSignals();
         sampler.SetConfig(config);
 
         sampler.ChangeState("INIT_DEVICE");
@@ -45,11 +40,10 @@ int main(int argc, char** argv)
 
         runDDSStateHandler(sampler);
     }
-    catch (exception& e)
+    catch (std::exception& e)
     {
-        LOG(ERROR) << e.what();
-        LOG(INFO) << "Command line options are the following: ";
-        config.PrintHelp();
+        LOG(ERROR) << "Unhandled Exception reached the top of main: "
+                   << e.what() << ", application will now exit";
         return 1;
     }
 
