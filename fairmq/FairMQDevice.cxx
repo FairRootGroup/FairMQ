@@ -90,18 +90,19 @@ void FairMQDevice::SignalHandler(int signal)
     fTerminateStateThread.join();
 
     stop();
-    fRunning = false;
-    if (!fTerminated)
-    {
-        fTerminated = true;
-        LOG(INFO) << "Exiting.";
-    }
-    else
-    {
-        LOG(WARN) << "Repeated termination or bad initialization? Aborting.";
-        // std::abort();
-        exit(EXIT_FAILURE);
-    }
+    exit(EXIT_FAILURE);
+    // fRunning = false;
+    // if (!fTerminated)
+    // {
+    //     fTerminated = true;
+    //     LOG(INFO) << "Exiting.";
+    // }
+    // else
+    // {
+    //     LOG(WARN) << "Repeated termination or bad initialization? Aborting.";
+    //     // std::abort();
+    //     exit(EXIT_FAILURE);
+    // }
 }
 
 void FairMQDevice::ConnectChannels(list<FairMQChannel*>& chans)

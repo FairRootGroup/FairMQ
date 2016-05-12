@@ -46,7 +46,6 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
     }
     else if (control == "static")
     {
-        device.ChangeState(TMQDevice::RUN);
         device.WaitForEndOfState(TMQDevice::RUN);
 
         device.ChangeState(TMQDevice::RESET_TASK);
