@@ -23,10 +23,7 @@ int main(int argc, char** argv)
     try
     {
         FairMQProgOptions config;
-        if (config.ParseAll(argc, argv))
-        {
-            return 0;
-        }
+        config.ParseAll(argc, argv);
 
         FairMQExample5Server server;
         server.CatchSignals();
