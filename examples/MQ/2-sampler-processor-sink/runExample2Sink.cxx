@@ -12,27 +12,23 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include <iostream>
-
 #include "FairMQLogger.h"
-#include "FairMQParser.h"
+
 #include "FairMQProgOptions.h"
 #include "FairMQExample2Sink.h"
 
 int main(int argc, char** argv)
 {
-    FairMQExample2Sink sink;
-    sink.CatchSignals();
-
-    FairMQProgOptions config;
-
     try
     {
+        FairMQProgOptions config;
         if (config.ParseAll(argc, argv))
         {
             return 0;
         }
 
+        FairMQExample2Sink sink;
+        sink.CatchSignals();
         sink.SetConfig(config);
 
         sink.ChangeState("INIT_DEVICE");
@@ -46,9 +42,8 @@ int main(int argc, char** argv)
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << e.what();
-        LOG(INFO) << "Command line options are the following: ";
-        config.PrintHelp();
+        LOG(ERROR) << "Unhandled Exception reached the top of main: "
+                   << e.what() << ", application will now exit";
         return 1;
     }
 
