@@ -15,6 +15,8 @@
 #ifndef FAIRMQSOCKETZMQ_H_
 #define FAIRMQSOCKETZMQ_H_
 
+#include <atomic>
+
 #include <boost/shared_ptr.hpp>
 
 #include "FairMQSocket.h"
@@ -65,10 +67,10 @@ class FairMQSocketZMQ : public FairMQSocket
   private:
     void* fSocket;
     std::string fId;
-    unsigned long fBytesTx;
-    unsigned long fBytesRx;
-    unsigned long fMessagesTx;
-    unsigned long fMessagesRx;
+    std::atomic<unsigned long> fBytesTx;
+    std::atomic<unsigned long> fBytesRx;
+    std::atomic<unsigned long> fMessagesTx;
+    std::atomic<unsigned long> fMessagesRx;
 
     static boost::shared_ptr<FairMQContextZMQ> fContext;
 };

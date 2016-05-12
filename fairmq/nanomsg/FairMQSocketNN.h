@@ -16,6 +16,7 @@
 #define FAIRMQSOCKETNN_H_
 
 #include <vector>
+#include <atomic>
 
 #include "FairMQSocket.h"
 
@@ -64,10 +65,10 @@ class FairMQSocketNN : public FairMQSocket
   private:
     int fSocket;
     std::string fId;
-    unsigned long fBytesTx;
-    unsigned long fBytesRx;
-    unsigned long fMessagesTx;
-    unsigned long fMessagesRx;
+    std::atomic<unsigned long> fBytesTx;
+    std::atomic<unsigned long> fBytesRx;
+    std::atomic<unsigned long> fMessagesTx;
+    std::atomic<unsigned long> fMessagesRx;
 };
 
 #endif /* FAIRMQSOCKETNN_H_ */
