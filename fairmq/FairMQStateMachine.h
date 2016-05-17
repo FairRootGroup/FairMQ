@@ -343,7 +343,7 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
     virtual void Terminate() {} // Termination method called during StopFct action.
     virtual void Unblock() {} // Method to send commands.
 
-    // Transition table for FairMQFMS
+    // Transition table for FairMQFSM
     struct transition_table : mpl::vector<
         //        Start                    Event                  Next                     Action           Guard
         //        +------------------------+----------------------+------------------------+----------------+---------+
@@ -369,7 +369,7 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
     template <class FSM, class Event>
     void no_transition(Event const& e, FSM&, int state)
     {
-        LOG(STATE) << "no transition from state " << GetStateName(state) << " on event " << e.name();
+        LOG(STATE) << "no transition from state " << GetStateName(state) << " (" << state << ") on event " << e.name();
     }
 
     // backward compatibility to FairMQStateMachine

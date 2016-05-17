@@ -48,13 +48,16 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
     {
         device.WaitForEndOfState(TMQDevice::RUN);
 
-        device.ChangeState(TMQDevice::RESET_TASK);
-        device.WaitForEndOfState(TMQDevice::RESET_TASK);
+        if (!device.CheckCurrentState(TMQDevice::EXITING))
+        {
+            device.ChangeState(TMQDevice::RESET_TASK);
+            device.WaitForEndOfState(TMQDevice::RESET_TASK);
 
-        device.ChangeState(TMQDevice::RESET_DEVICE);
-        device.WaitForEndOfState(TMQDevice::RESET_DEVICE);
+            device.ChangeState(TMQDevice::RESET_DEVICE);
+            device.WaitForEndOfState(TMQDevice::RESET_DEVICE);
 
-        device.ChangeState(TMQDevice::END);
+            device.ChangeState(TMQDevice::END);
+        }
     }
     else
     {

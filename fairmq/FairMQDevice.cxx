@@ -80,29 +80,29 @@ void FairMQDevice::SignalHandler(int signal)
 {
     LOG(INFO) << "Caught signal " << signal;
 
-    fState = EXITING;
-    Unblock();
-    fStateThread.interrupt();
-    fStateThread.join();
+    if (!fTerminated)
+    {
+        ChangeState(STOP);
 
-    fTerminateStateThread = boost::thread(boost::bind(&FairMQDevice::Terminate, this));
-    Shutdown();
-    fTerminateStateThread.join();
+        ChangeState(RESET_TASK);
+        WaitForEndOfState(RESET_TASK);
 
-    stop();
-    exit(EXIT_FAILURE);
-    // fRunning = false;
-    // if (!fTerminated)
-    // {
-    //     fTerminated = true;
-    //     LOG(INFO) << "Exiting.";
-    // }
-    // else
-    // {
-    //     LOG(WARN) << "Repeated termination or bad initialization? Aborting.";
-    //     // std::abort();
-    //     exit(EXIT_FAILURE);
-    // }
+        ChangeState(RESET_DEVICE);
+        WaitForEndOfState(RESET_DEVICE);
+
+        ChangeState(END);
+
+        // exit(EXIT_FAILURE);
+        fRunning = false;
+        fTerminated = true;
+        LOG(INFO) << "Exiting.";
+    }
+    else
+    {
+        LOG(WARN) << "Repeated termination or bad initialization? Aborting.";
+        // std::abort();
+        exit(EXIT_FAILURE);
+    }
 }
 
 void FairMQDevice::ConnectChannels(list<FairMQChannel*>& chans)
@@ -769,31 +769,31 @@ void FairMQDevice::InteractiveStateLoop()
             {
                 case 'i':
                     LOG(INFO) << "[i] init device";
-                    ChangeState("INIT_DEVICE");
+                    ChangeState(INIT_DEVICE);
                     break;
                 case 'j':
                     LOG(INFO) << "[j] init task";
-                    ChangeState("INIT_TASK");
+                    ChangeState(INIT_TASK);
                     break;
                 case 'p':
                     LOG(INFO) << "[p] pause";
-                    ChangeState("PAUSE");
+                    ChangeState(PAUSE);
                     break;
                 case 'r':
                     LOG(INFO) << "[r] run";
-                    ChangeState("RUN");
+                    ChangeState(RUN);
                     break;
                 case 's':
                     LOG(INFO) << "[s] stop";
-                    ChangeState("STOP");
+                    ChangeState(STOP);
                     break;
                 case 't':
                     LOG(INFO) << "[t] reset task";
-                    ChangeState("RESET_TASK");
+                    ChangeState(RESET_TASK);
                     break;
                 case 'd':
                     LOG(INFO) << "[d] reset device";
-                    ChangeState("RESET_DEVICE");
+                    ChangeState(RESET_DEVICE);
                     break;
                 case 'h':
                     LOG(INFO) << "[h] help";
@@ -801,11 +801,11 @@ void FairMQDevice::InteractiveStateLoop()
                     break;
                 // case 'x':
                 //     LOG(INFO) << "[x] ERROR";
-                //     ChangeState("ERROR_FOUND");
+                //     ChangeState(ERROR_FOUND);
                 //     break;
                 case 'q':
                     LOG(INFO) << "[q] end";
-                    ChangeState("END");
+                    ChangeState(END);
                     if (CheckCurrentState("EXITING"))
                     {
                         fRunning = false;
