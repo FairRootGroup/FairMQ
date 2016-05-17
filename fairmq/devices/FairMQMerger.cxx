@@ -19,7 +19,10 @@
 #include "FairMQMerger.h"
 #include "FairMQPoller.h"
 
+using namespace std;
+
 FairMQMerger::FairMQMerger()
+    : fMultipart(1)
 {
 }
 
@@ -33,32 +36,130 @@ void FairMQMerger::Run()
 
     std::unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels.at("data-in")));
 
-    while (CheckCurrentState(RUNNING))
+    if (fMultipart)
     {
-        poller->Poll(100);
-
-        // Loop over the data input channels.
-        for (int i = 0; i < numInputs; ++i)
+        while (CheckCurrentState(RUNNING))
         {
-            // Check if the channel has data ready to be received.
-            if (poller->CheckInput(i))
-            {
-                FairMQParts parts;
+            poller->Poll(100);
 
-                if (Receive(parts, "data-in", i) >= 0)
+            // Loop over the data input channels.
+            for (int i = 0; i < numInputs; ++i)
+            {
+                // Check if the channel has data ready to be received.
+                if (poller->CheckInput(i))
                 {
-                    if (Send(parts, "data-out") < 0)
+                    FairMQParts payload;
+
+                    if (Receive(payload, "data-in", i) >= 0)
+                    {
+                        if (Send(payload, "data-out") < 0)
+                        {
+                            LOG(DEBUG) << "Transfer interrupted";
+                            break;
+                        }
+                    }
+                    else
                     {
                         LOG(DEBUG) << "Transfer interrupted";
                         break;
                     }
                 }
-                else
+            }
+        }
+    }
+    else
+    {
+        while (CheckCurrentState(RUNNING))
+        {
+            poller->Poll(100);
+
+            // Loop over the data input channels.
+            for (int i = 0; i < numInputs; ++i)
+            {
+                // Check if the channel has data ready to be received.
+                if (poller->CheckInput(i))
                 {
-                    LOG(DEBUG) << "Transfer interrupted";
-                    break;
+                    unique_ptr<FairMQMessage> payload(fTransportFactory->CreateMessage());
+
+                    if (Receive(payload, "data-in", i) >= 0)
+                    {
+                        if (Send(payload, "data-out") < 0)
+                        {
+                            LOG(DEBUG) << "Transfer interrupted";
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        LOG(DEBUG) << "Transfer interrupted";
+                        break;
+                    }
                 }
             }
         }
     }
+}
+
+void FairMQMerger::SetProperty(const int key, const string& value)
+{
+    switch (key)
+    {
+        default:
+            FairMQDevice::SetProperty(key, value);
+            break;
+    }
+}
+
+string FairMQMerger::GetProperty(const int key, const string& default_ /*= ""*/)
+{
+    switch (key)
+    {
+        default:
+            return FairMQDevice::GetProperty(key, default_);
+    }
+}
+
+void FairMQMerger::SetProperty(const int key, const int value)
+{
+    switch (key)
+    {
+        case Multipart:
+            fMultipart = value;
+            break;
+        default:
+            FairMQDevice::SetProperty(key, value);
+            break;
+    }
+}
+
+int FairMQMerger::GetProperty(const int key, const int default_ /*= 0*/)
+{
+    switch (key)
+    {
+        case Multipart:
+            return fMultipart;
+        default:
+            return FairMQDevice::GetProperty(key, default_);
+    }
+}
+
+string FairMQMerger::GetPropertyDescription(const int key)
+{
+    switch (key)
+    {
+        case Multipart:
+            return "Multipart: Handle payloads as multipart messages.";
+        default:
+            return FairMQDevice::GetPropertyDescription(key);
+    }
+}
+
+void FairMQMerger::ListProperties()
+{
+    LOG(INFO) << "Properties of FairMQMerger:";
+    for (int p = FairMQConfigurable::Last; p < FairMQMerger::Last; ++p)
+    {
+        LOG(INFO) << " " << GetPropertyDescription(p);
+    }
+    LOG(INFO) << "---------------------------";
 }

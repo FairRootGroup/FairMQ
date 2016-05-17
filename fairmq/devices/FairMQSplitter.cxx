@@ -18,7 +18,10 @@
 #include "FairMQLogger.h"
 #include "FairMQSplitter.h"
 
+using namespace std;
+
 FairMQSplitter::FairMQSplitter()
+    : fMultipart(1)
 {
 }
 
@@ -32,28 +35,123 @@ void FairMQSplitter::Run()
 
     int direction = 0;
 
-    while (CheckCurrentState(RUNNING))
+    if (fMultipart)
     {
-        FairMQParts parts;
-
-        if (Receive(parts, "data-in") >= 0)
+        while (CheckCurrentState(RUNNING))
         {
-            if (Send(parts, "data-out", direction) < 0)
+            FairMQParts payload;
+
+            if (Receive(payload, "data-in") >= 0)
+            {
+                if (Send(payload, "data-out", direction) < 0)
+                {
+                    LOG(DEBUG) << "Transfer interrupted";
+                    break;
+                }
+            }
+            else
             {
                 LOG(DEBUG) << "Transfer interrupted";
                 break;
             }
-        }
-        else
-        {
-            LOG(DEBUG) << "Transfer interrupted";
-            break;
-        }
 
-        ++direction;
-        if (direction >= numOutputs)
+            ++direction;
+            if (direction >= numOutputs)
+            {
+                direction = 0;
+            }
+        }
+    }
+    else
+    {
+        while (CheckCurrentState(RUNNING))
         {
-            direction = 0;
+            unique_ptr<FairMQMessage> payload(fTransportFactory->CreateMessage());
+
+            if (Receive(payload, "data-in") >= 0)
+            {
+                if (Send(payload, "data-out", direction) < 0)
+                {
+                    LOG(DEBUG) << "Transfer interrupted";
+                    break;
+                }
+            }
+            else
+            {
+                LOG(DEBUG) << "Transfer interrupted";
+                break;
+            }
+
+            ++direction;
+            if (direction >= numOutputs)
+            {
+                direction = 0;
+            }
         }
     }
 }
+
+void FairMQSplitter::SetProperty(const int key, const string& value)
+{
+    switch (key)
+    {
+        default:
+            FairMQDevice::SetProperty(key, value);
+            break;
+    }
+}
+
+string FairMQSplitter::GetProperty(const int key, const string& default_ /*= ""*/)
+{
+    switch (key)
+    {
+        default:
+            return FairMQDevice::GetProperty(key, default_);
+    }
+}
+
+void FairMQSplitter::SetProperty(const int key, const int value)
+{
+    switch (key)
+    {
+        case Multipart:
+            fMultipart = value;
+            break;
+        default:
+            FairMQDevice::SetProperty(key, value);
+            break;
+    }
+}
+
+int FairMQSplitter::GetProperty(const int key, const int default_ /*= 0*/)
+{
+    switch (key)
+    {
+        case Multipart:
+            return fMultipart;
+        default:
+            return FairMQDevice::GetProperty(key, default_);
+    }
+}
+
+string FairMQSplitter::GetPropertyDescription(const int key)
+{
+    switch (key)
+    {
+        case Multipart:
+            return "Multipart: Handle payloads as multipart messages.";
+        default:
+            return FairMQDevice::GetPropertyDescription(key);
+    }
+}
+
+void FairMQSplitter::ListProperties()
+{
+    LOG(INFO) << "Properties of FairMQSplitter:";
+    for (int p = FairMQConfigurable::Last; p < FairMQSplitter::Last; ++p)
+    {
+        LOG(INFO) << " " << GetPropertyDescription(p);
+    }
+    LOG(INFO) << "---------------------------";
+}
+

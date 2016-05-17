@@ -14,19 +14,31 @@
 
 #include <iostream>
 
+#include "boost/program_options.hpp"
+
 #include "FairMQLogger.h"
 #include "FairMQProgOptions.h"
 #include "FairMQMerger.h"
 #include "runSimpleMQStateMachine.h"
 
+using namespace boost::program_options;
+
 int main(int argc, char** argv)
 {
     try
     {
+        int multipart;
+
+        options_description mergerOptions("Proxy options");
+        mergerOptions.add_options()
+            ("multipart", value<int>(&multipart)->default_value(1), "Handle multipart payloads");
+
         FairMQProgOptions config;
+        config.AddToCmdLineOptions(mergerOptions);
         config.ParseAll(argc, argv);
 
         FairMQMerger merger;
+        merger.SetProperty(FairMQMerger::Multipart, multipart);
         runStateMachine(merger, config);
     }
     catch (std::exception& e)

@@ -37,8 +37,6 @@ class FairMQBenchmarkSampler : public FairMQDevice
     FairMQBenchmarkSampler();
     virtual ~FairMQBenchmarkSampler();
 
-    void Log(int intervalInMs);
-
     virtual void SetProperty(const int key, const std::string& value);
     virtual std::string GetProperty(const int key, const std::string& default_ = "");
     virtual void SetProperty(const int key, const int value);

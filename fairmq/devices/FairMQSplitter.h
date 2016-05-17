@@ -20,10 +20,26 @@
 class FairMQSplitter : public FairMQDevice
 {
   public:
+    enum
+    {
+        Multipart = FairMQDevice::Last,
+        Last
+    };
+
     FairMQSplitter();
     virtual ~FairMQSplitter();
 
+    virtual void SetProperty(const int key, const std::string& value);
+    virtual std::string GetProperty(const int key, const std::string& default_ = "");
+    virtual void SetProperty(const int key, const int value);
+    virtual int GetProperty(const int key, const int default_ = 0);
+
+    virtual std::string GetPropertyDescription(const int key);
+    virtual void ListProperties();
+
   protected:
+    int fMultipart;
+
     virtual void Run();
 };
 
