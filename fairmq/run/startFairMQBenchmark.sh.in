@@ -28,6 +28,7 @@ SAMPLER+=" --id bsampler1"
 #SAMPLER+=" --control static"
 #SAMPLER+=" --transport nanomsg"
 SAMPLER+=" --msg-size $msgSize"
+# SAMPLER+=" --msg-rate 1000"
 SAMPLER+=" --num-msgs $numMsgs"
 SAMPLER+=" --mq-config @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
 xterm -geometry 80x23+0+0 -hold -e @CMAKE_BINARY_DIR@/bin/$SAMPLER &

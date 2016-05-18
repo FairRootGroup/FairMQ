@@ -29,11 +29,13 @@ int main(int argc, char** argv)
     {
         int msgSize;
         int numMsgs;
+        int msgRate;
 
         options_description samplerOptions("Sampler options");
         samplerOptions.add_options()
             ("msg-size", value<int>(&msgSize)->default_value(1000), "Message size in bytes")
-            ("num-msgs", value<int>(&numMsgs)->default_value(0),    "Number of messages to send");
+            ("num-msgs", value<int>(&numMsgs)->default_value(0),    "Number of messages to send")
+            ("msg-rate", value<int>(&msgRate)->default_value(0), "Msg rate limit in maximum number of messages per second");
 
         FairMQProgOptions config;
         config.AddToCmdLineOptions(samplerOptions);
@@ -42,6 +44,7 @@ int main(int argc, char** argv)
         FairMQBenchmarkSampler sampler;
         sampler.SetProperty(FairMQBenchmarkSampler::MsgSize, msgSize);
         sampler.SetProperty(FairMQBenchmarkSampler::NumMsgs, numMsgs);
+        sampler.SetProperty(FairMQBenchmarkSampler::MsgRate, msgRate);
 
         runStateMachine(sampler, config);
     }

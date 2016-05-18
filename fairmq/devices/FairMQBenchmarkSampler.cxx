@@ -26,6 +26,8 @@ using namespace std;
 FairMQBenchmarkSampler::FairMQBenchmarkSampler()
     : fMsgSize(10000)
     , fNumMsgs(0)
+    , fMsgCounter(0)
+    , fMsgRate(1)
 {
 }
 
@@ -35,6 +37,8 @@ FairMQBenchmarkSampler::~FairMQBenchmarkSampler()
 
 void FairMQBenchmarkSampler::Run()
 {
+    boost::thread resetMsgCounter(boost::bind(&FairMQBenchmarkSampler::ResetMsgCounter, this));
+
     int numSentMsgs = 0;
 
     unique_ptr<FairMQMessage> baseMsg(fTransportFactory->CreateMessage(fMsgSize));
@@ -61,10 +65,40 @@ void FairMQBenchmarkSampler::Run()
                 }
             }
         }
+
+        --fMsgCounter;
+
+        while (fMsgCounter == 0) {
+          boost::this_thread::sleep(boost::posix_time::milliseconds(1));
+        }
     }
 
     LOG(INFO) << "Sent " << numSentMsgs << " messages, leaving RUNNING state.";
     LOG(INFO) << "Sending time: ";
+
+    try
+    {
+        resetMsgCounter.interrupt();
+        resetMsgCounter.join();
+    }
+    catch(boost::thread_resource_error& e)
+    {
+        LOG(ERROR) << e.what();
+        exit(EXIT_FAILURE);
+    }
+}
+
+void FairMQBenchmarkSampler::ResetMsgCounter()
+{
+  while (true) {
+    try {
+      fMsgCounter = fMsgRate / 100;
+      boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+    } catch (boost::thread_interrupted&) {
+      LOG(DEBUG) << "Event rate limiter thread interrupted";
+      break;
+    }
+  }
 }
 
 void FairMQBenchmarkSampler::SetProperty(const int key, const string& value)
@@ -93,6 +127,9 @@ void FairMQBenchmarkSampler::SetProperty(const int key, const int value)
         case MsgSize:
             fMsgSize = value;
             break;
+        case MsgRate:
+            fMsgRate = value;
+            break;
         case NumMsgs:
             fNumMsgs = value;
             break;
@@ -108,6 +145,8 @@ int FairMQBenchmarkSampler::GetProperty(const int key, const int default_ /*= 0*
     {
         case MsgSize:
             return fMsgSize;
+        case MsgRate:
+            return fMsgRate;
         case NumMsgs:
             return fNumMsgs;
         default:
@@ -123,6 +162,8 @@ string FairMQBenchmarkSampler::GetPropertyDescription(const int key)
             return "MsgSize: Size of the transfered message buffer.";
         case NumMsgs:
             return "NumMsgs: Number of messages to send.";
+        case MsgRate:
+            return "MsgRate: Maximum msg rate.";
         default:
             return FairMQDevice::GetPropertyDescription(key);
     }
