@@ -13,9 +13,9 @@
  */
 
 #include "FairMQLogger.h"
-#include "FairMQDDSTools.h"
 #include "FairMQProgOptions.h"
 #include "FairMQExample3Sink.h"
+#include "runSimpleMQStateMachine.h"
 
 int main(int argc, char** argv)
 {
@@ -25,17 +25,7 @@ int main(int argc, char** argv)
         config.ParseAll(argc, argv);
 
         FairMQExample3Sink sink;
-        sink.CatchSignals();
-        sink.SetConfig(config);
-
-        sink.ChangeState("INIT_DEVICE");
-        HandleConfigViaDDS(sink);
-        sink.WaitForEndOfState("INIT_DEVICE");
-
-        sink.ChangeState("INIT_TASK");
-        sink.WaitForEndOfState("INIT_TASK");
-
-        runDDSStateHandler(sink);
+        runStateMachine(sink, config);
     }
     catch (std::exception& e)
     {

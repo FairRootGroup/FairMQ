@@ -13,9 +13,9 @@
  */
 
 #include "FairMQLogger.h"
-#include "FairMQDDSTools.h"
 #include "FairMQProgOptions.h"
 #include "FairMQExample3Sampler.h"
+#include "runSimpleMQStateMachine.h"
 
 int main(int argc, char** argv)
 {
@@ -25,17 +25,7 @@ int main(int argc, char** argv)
         config.ParseAll(argc, argv);
 
         FairMQExample3Sampler sampler;
-        sampler.CatchSignals();
-        sampler.SetConfig(config);
-
-        sampler.ChangeState("INIT_DEVICE");
-        HandleConfigViaDDS(sampler);
-        sampler.WaitForEndOfState("INIT_DEVICE");
-
-        sampler.ChangeState("INIT_TASK");
-        sampler.WaitForEndOfState("INIT_TASK");
-
-        runDDSStateHandler(sampler);
+        runStateMachine(sampler, config);
     }
     catch (std::exception& e)
     {
