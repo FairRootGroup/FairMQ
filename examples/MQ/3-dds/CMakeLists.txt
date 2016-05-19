@@ -10,6 +10,10 @@ configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-topology.xml ${CMAK
 configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-hosts.cfg ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-hosts.cfg COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds.json ${CMAKE_BINARY_DIR}/bin/config/ex3-dds.json COPYONLY)
 
+If(DDS_FOUND)
+  add_definitions(-DDDS_FOUND)
+EndIf(DDS_FOUND)
+
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
   ${CMAKE_SOURCE_DIR}/fairmq/zeromq
@@ -17,7 +21,6 @@ Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq/devices
   ${CMAKE_SOURCE_DIR}/fairmq/tools
   ${CMAKE_SOURCE_DIR}/fairmq/options
-  ${CMAKE_SOURCE_DIR}/fairmq/deployment
   ${CMAKE_SOURCE_DIR}/examples/MQ/3-dds
   ${CMAKE_CURRENT_BINARY_DIR}
 )
@@ -35,7 +38,6 @@ Include_Directories(SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 Set(LINK_DIRECTORIES
   ${LINK_DIRECTORIES}
   ${Boost_LIBRARY_DIRS}
-  ${DDS_LIBRARY_DIR}
 )
 
 Link_Directories(${LINK_DIRECTORIES})
@@ -50,7 +52,9 @@ Set(SRCS
 Set(DEPENDENCIES
   ${DEPENDENCIES}
   FairMQ
-  dds_intercom_lib
+  ${DDS_INTERCOM_LIBRARY_SHARED}
+  ${DDS_PROTOCOL_LIBRARY_SHARED} # also link the two DDS dependency libraries to avoid linking issues on some osx systems
+  ${DDS_USER_DEFAULTS_LIBRARY_SHARED}
 )
 
 set(LIBRARY_NAME FairMQExample3)
