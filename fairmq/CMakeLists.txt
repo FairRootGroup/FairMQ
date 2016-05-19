@@ -12,10 +12,6 @@ configure_file(${CMAKE_SOURCE_DIR}/fairmq/run/benchmark.json ${CMAKE_BINARY_DIR}
 add_subdirectory(logger)
 add_subdirectory(test)
 
-If(DDS_FOUND)
-  add_subdirectory(deployment)
-EndIf(DDS_FOUND)
-
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
   ${CMAKE_SOURCE_DIR}/fairmq/devices
@@ -30,6 +26,14 @@ Set(SYSTEM_INCLUDE_DIRECTORIES
   ${Boost_INCLUDE_DIR}
   ${ZMQ_INCLUDE_DIR}
 )
+
+If(DDS_FOUND)
+  add_definitions(-DDDS_FOUND)
+  Set(SYSTEM_INCLUDE_DIRECTORIES
+    ${SYSTEM_INCLUDE_DIRECTORIES}
+    ${DDS_INCLUDE_DIR}
+    )
+EndIf(DDS_FOUND)
 
 If(NANOMSG_FOUND)
   add_definitions(-DNANOMSG_FOUND)
@@ -56,6 +60,13 @@ Include_Directories(SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 Set(LINK_DIRECTORIES
   ${Boost_LIBRARY_DIRS}
 )
+
+If(DDS_FOUND)
+  Set(LINK_DIRECTORIES
+    ${LINK_DIRECTORIES}
+    DDS_LIBRARY_DIR
+    )
+EndIf(DDS_FOUND)
 
 Link_Directories(${LINK_DIRECTORIES})
 
@@ -113,6 +124,7 @@ Set(FAIRMQHEADERS
   devices/BaseSourcePolicy.h
   options/FairProgOptionsHelper.h
   tools/FairMQTools.h
+  tools/FairMQDDSTools.h
   tools/runSimpleMQStateMachine.h
 )
 Install(FILES ${FAIRMQHEADERS} DESTINATION include)
@@ -139,6 +151,15 @@ If(NANOMSG_FOUND)
   )
 EndIf(NANOMSG_FOUND)
 
+If(DDS_FOUND)
+  Set(DEPENDENCIES
+    ${DEPENDENCIES}
+    ${DDS_INTERCOM_LIBRARY_SHARED}
+    ${DDS_PROTOCOL_LIBRARY_SHARED} # also link the two DDS dependency libraries to avoid linking issues on some osx systems
+    ${DDS_USER_DEFAULTS_LIBRARY_SHARED}
+    )
+EndIf(DDS_FOUND)
+
 Set(LIBRARY_NAME FairMQ)
 
 GENERATE_LIBRARY()
@@ -151,6 +172,13 @@ Set(Exe_Names
   proxy
 )
 
+If(DDS_FOUND)
+  Set(Exe_Names
+    ${Exe_Names}
+    fairmq-dds-command-ui
+    )
+EndIf(DDS_FOUND)
+
 Set(Exe_Source
   run/runBenchmarkSampler.cxx
   run/runSink.cxx
@@ -158,6 +186,13 @@ Set(Exe_Source
   run/runMerger.cxx
   run/runProxy.cxx
 )
+
+If(DDS_FOUND)
+  Set(Exe_Source
+    ${Exe_Source}
+    run/runDDSCommandUI.cxx
+    )
+EndIf(DDS_FOUND)
 
 list(LENGTH Exe_Names _length)
 math(EXPR _length ${_length}-1)

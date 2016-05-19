@@ -8,28 +8,34 @@
 #ifndef RUNSIMPLEMQSTATEMACHINE_H
 #define RUNSIMPLEMQSTATEMACHINE_H
 
-/// std
 #include <iostream>
-#include <type_traits>
 #include <string>
 
-/// boost
-#include "boost/program_options.hpp"
+#ifdef DDS_FOUND
+#include "FairMQDDSTools.h"
+#endif /*DDS_FOUND*/
 
-/// FairRoot - FairMQ
 #include "FairMQLogger.h"
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
 
 // template function that takes any device
-// and runs a simple MQ state machine configured from a JSON file
+// and runs a simple MQ state machine configured from a JSON file and/or (optionally) DDS.
 template<typename TMQDevice>
 inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
 {
     device.CatchSignals();
 
     device.SetConfig(config);
+    std::string control = config.GetValue<std::string>("control");
+
     device.ChangeState(TMQDevice::INIT_DEVICE);
+#ifdef DDS_FOUND
+    if (control == "dds")
+    {
+        HandleConfigViaDDS(device);
+    }
+#endif /*DDS_FOUND*/
     device.WaitForEndOfState(TMQDevice::INIT_DEVICE);
 
     device.ChangeState(TMQDevice::INIT_TASK);
@@ -37,9 +43,6 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
 
     device.ChangeState(TMQDevice::RUN);
 
-    std::string control = config.GetValue<std::string>("control");
-
-    // TODO: Extend this with DDS (requires optional dependency?)?
     if (control == "interactive")
     {
         device.InteractiveStateLoop();
@@ -59,12 +62,21 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
             device.ChangeState(TMQDevice::END);
         }
     }
+#ifdef DDS_FOUND
+    else if (control == "dds")
+    {
+        runDDSStateHandler(device);
+    }
+#endif /*DDS_FOUND*/
     else
     {
         LOG(ERROR) << "Requested control mechanism '" << control << "' is not available.";
         LOG(ERROR) << "Currently available are:"
                    << " 'interactive'"
                    << ", 'static'"
+#ifdef DDS_FOUND
+                   << ", 'dds'"
+#endif /*DDS_FOUND*/
                    << ". Exiting.";
         exit(EXIT_FAILURE);
     }
