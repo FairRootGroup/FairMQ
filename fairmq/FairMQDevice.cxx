@@ -16,6 +16,7 @@
 #include <algorithm> // std::sort()
 #include <csignal> // catching system signals
 #include <cstdlib>
+#include <stdexcept>
 
 #include <termios.h> // for the InteractiveStateLoop
 #include <poll.h>
@@ -439,14 +440,23 @@ void FairMQDevice::RunWrapper()
 
     boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
 
-    Run();
+    try
+    {
+        Run();
+    }
+    catch (const out_of_range& oor)
+    {
+        LOG(ERROR) << "Out of Range error: " << oor.what();
+        LOG(ERROR) << "Incorrect channel name in the Run() or the configuration?";
+        ChangeState(ERROR);
+    }
 
     try
     {
         rateLogger.interrupt();
         rateLogger.join();
     }
-    catch(boost::thread_resource_error& e)
+    catch (const boost::thread_resource_error& e)
     {
         LOG(ERROR) << e.what();
         exit(EXIT_FAILURE);
@@ -476,7 +486,7 @@ void FairMQDevice::Pause()
             boost::this_thread::sleep(boost::posix_time::milliseconds(500));
             LOG(DEBUG) << "paused...";
         }
-        catch (boost::thread_interrupted&)
+        catch (const boost::thread_interrupted&)
         {
             LOG(INFO) << "FairMQDevice::Pause() interrupted";
             break;
