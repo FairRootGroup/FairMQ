@@ -86,7 +86,7 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
     template <class Event, class FSM>
     void on_entry(Event const&, FSM&)
     {
-        LOG(STATE) << "Entering FairMQ state machine";
+        LOG(STATE) << "Starting FairMQ state machine";
         fState = IDLE;
     }
 

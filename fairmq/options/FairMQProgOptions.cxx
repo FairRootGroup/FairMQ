@@ -113,9 +113,11 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
     {
         if (fVarMap.count("mq-config"))
         {
-            LOG(DEBUG) << "mq-config command line called : default xml/json parser will be used";
+            LOG(DEBUG) << "mq-config: Using default XML/JSON parser";
+
             std::string file = fVarMap["mq-config"].as<std::string>();
             std::string id;
+
             if (fVarMap.count("config-key"))
             {
                 id = fVarMap["config-key"].as<std::string>();
@@ -147,6 +149,28 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
                     exit(EXIT_FAILURE);
                 }
             }
+        }
+        else if (fVarMap.count("config-json-string"))
+        {
+            LOG(DEBUG) << "config-json-string: Parsing JSON string";
+
+            std::string id = fVarMap["id"].as<std::string>();
+
+            std::string value = fairmq::ConvertVariableValue<fairmq::ToString>().Run(fVarMap.at("config-json-string"));
+            std::stringstream ss;
+            ss << value;
+            UserParser<FairMQParser::JSON>(ss, id);
+        }
+        else if (fVarMap.count("config-xml-string"))
+        {
+            LOG(DEBUG) << "config-json-string: Parsing XML string";
+
+            std::string id = fVarMap["id"].as<std::string>();
+
+            std::string value = fairmq::ConvertVariableValue<fairmq::ToString>().Run(fVarMap.at("config-xml-string"));
+            std::stringstream ss;
+            ss << value;
+            UserParser<FairMQParser::XML>(ss, id);
         }
     }
 }
@@ -180,6 +204,7 @@ void FairMQProgOptions::InitOptionDescription()
             ("deployment",        po::value<string>()->default_value("static"),      "Deployment ('static'/'dds').")
             ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/'dds').")
             ("network-interface", po::value<string>()->default_value("eth0"),        "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
+            ("config-key",        po::value<string>(),                               "Use provided value instead of device id for fetching the configuration from the config file")
             ;
 
         fMQOptionsInCfg.add_options()
@@ -189,6 +214,7 @@ void FairMQProgOptions::InitOptionDescription()
             ("deployment",        po::value<string>()->default_value("static"),      "Deployment ('static'/'dds').")
             ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/'dds').")
             ("network-interface", po::value<string>()->default_value("eth0"),        "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
+            ("config-key",        po::value<string>(),                               "Use provided value instead of device id for fetching the configuration from the config file")
             ;
     }
     else
@@ -200,16 +226,16 @@ void FairMQProgOptions::InitOptionDescription()
             ("deployment",        po::value<string>()->default_value("static"),      "Deployment ('static'/'dds').")
             ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/'dds').")
             ("network-interface", po::value<string>()->default_value("eth0"),        "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
+            ("config-key",        po::value<string>(),                               "Use provided value instead of device id for fetching the configuration from the config file")
             ;
     }
 
     fMQParserOptions.add_options()
         ("config-xml-string",  po::value<vector<string>>()->multitoken(), "XML input as command line string.")
-        ("config-xml-file",    po::value<string>(),                       "XML input as file.")
+        // ("config-xml-file",    po::value<string>(),                       "XML input as file.")
         ("config-json-string", po::value<vector<string>>()->multitoken(), "JSON input as command line string.")
-        ("config-json-file",   po::value<string>(),                       "JSON input as file.")
+        // ("config-json-file",   po::value<string>(),                       "JSON input as file.")
         ("mq-config",          po::value<string>(),                       "JSON/XML input as file. The configuration object will check xml or json file extention and will call the json or xml parser accordingly")
-        ("config-key",         po::value<string>(),                       "Use provided value instead of device id for fetching the configuration from the config file")
         ;
 
     AddToCmdLineOptions(fGenericDesc);
