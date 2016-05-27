@@ -176,6 +176,7 @@ If(DDS_FOUND)
   Set(Exe_Names
     ${Exe_Names}
     fairmq-dds-command-ui
+    fairmq-dds-command
     )
 EndIf(DDS_FOUND)
 
@@ -191,6 +192,7 @@ If(DDS_FOUND)
   Set(Exe_Source
     ${Exe_Source}
     run/runDDSCommandUI.cxx
+    run/runDDSCommand.cxx
     )
 EndIf(DDS_FOUND)
 
