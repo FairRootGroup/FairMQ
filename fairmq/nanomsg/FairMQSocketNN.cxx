@@ -71,6 +71,11 @@ FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const int
         }
     }
 
+#ifdef NN_RCVMAXSIZE
+    int rcvSize = -1;
+    nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_RCVMAXSIZE, &rcvSize, sizeof(rcvSize));
+#endif
+
     // LOG(INFO) << "created socket " << fId;
 }
 
