@@ -7,6 +7,7 @@
 #include <sstream>
 #include <thread>
 #include <atomic>
+#include <unistd.h>
 
 using namespace std;
 using namespace dds::intercom_api;
@@ -38,7 +39,10 @@ int main(int argc, char* argv[])
         t.c_lflag &= ~ICANON; // disable canonical input
         tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
 
-        PrintControlsHelp();
+        if ( argc != 2 )
+            PrintControlsHelp();
+        else
+            cin.putback(argv[1][0]);
 
         while (cin >> c)
         {
@@ -95,6 +99,10 @@ int main(int argc, char* argv[])
             if (result == 1)
             {
                 cerr << "Error sending custom command" << endl;
+            }
+            if ( argc == 2 ) {
+                usleep(50000);
+                return EXIT_SUCCESS;
             }
         }
 

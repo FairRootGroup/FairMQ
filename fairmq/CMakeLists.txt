@@ -61,13 +61,6 @@ Set(LINK_DIRECTORIES
   ${Boost_LIBRARY_DIRS}
 )
 
-If(DDS_FOUND)
-  Set(LINK_DIRECTORIES
-    ${LINK_DIRECTORIES}
-    DDS_LIBRARY_DIR
-    )
-EndIf(DDS_FOUND)
-
 Link_Directories(${LINK_DIRECTORIES})
 
 Set(SRCS
@@ -176,7 +169,6 @@ If(DDS_FOUND)
   Set(Exe_Names
     ${Exe_Names}
     fairmq-dds-command-ui
-    fairmq-dds-command
     )
 EndIf(DDS_FOUND)
 
@@ -192,7 +184,6 @@ If(DDS_FOUND)
   Set(Exe_Source
     ${Exe_Source}
     run/runDDSCommandUI.cxx
-    run/runDDSCommand.cxx
     )
 EndIf(DDS_FOUND)
 
