@@ -23,6 +23,8 @@ int main(int /*argc*/, char** /*argv*/)
     testReq.CatchSignals();
     testReq.SetTransport("zeromq");
 
+    reinit_logger(false);
+
     testReq.SetProperty(FairMQTestReq::Id, "testReq" + std::to_string(getpid()));
 
     FairMQChannel reqChannel("req", "connect", "tcp://127.0.0.1:5558");

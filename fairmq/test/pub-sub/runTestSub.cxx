@@ -23,6 +23,8 @@ int main(int /*argc*/, char** /*argv*/)
     testSub.CatchSignals();
     testSub.SetTransport("zeromq");
 
+    reinit_logger(false);
+
     testSub.SetProperty(FairMQTestSub::Id, "testSub_" + std::to_string(getpid()));
 
     FairMQChannel controlChannel("push", "connect", "tcp://127.0.0.1:5555");

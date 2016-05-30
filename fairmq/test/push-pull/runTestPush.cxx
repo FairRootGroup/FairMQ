@@ -21,6 +21,8 @@ int main(int /*argc*/, char** /*argv*/)
     testPush.CatchSignals();
     testPush.SetTransport("zeromq");
 
+    reinit_logger(false);
+
     testPush.SetProperty(FairMQTestPush::Id, "testPush");
 
     FairMQChannel pushChannel("push", "bind", "tcp://127.0.0.1:5557");

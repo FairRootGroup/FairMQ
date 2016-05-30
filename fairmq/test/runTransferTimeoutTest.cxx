@@ -93,6 +93,8 @@ int main(int /*argc*/, char** /*argv*/)
     timeoutTester.CatchSignals();
     timeoutTester.SetTransport("zeromq");
 
+    reinit_logger(false);
+
     timeoutTester.SetProperty(TransferTimeoutTester::Id, "timeoutTester");
 
     FairMQChannel dataOutChannel;

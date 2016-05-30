@@ -23,6 +23,8 @@ int main(int /*argc*/, char** /*argv*/)
     testRep.CatchSignals();
     testRep.SetTransport("zeromq");
 
+    reinit_logger(false);
+
     testRep.SetProperty(FairMQTestRep::Id, "testRep");
 
     FairMQChannel repChannel("rep", "bind", "tcp://127.0.0.1:5558");

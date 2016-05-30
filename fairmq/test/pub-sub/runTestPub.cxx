@@ -21,6 +21,8 @@ int main(int /*argc*/, char** /*argv*/)
     testPub.CatchSignals();
     testPub.SetTransport("zeromq");
 
+    reinit_logger(false);
+
     testPub.SetProperty(FairMQTestPub::Id, "testPub");
 
     FairMQChannel controlChannel("pull", "bind", "tcp://127.0.0.1:5555");
