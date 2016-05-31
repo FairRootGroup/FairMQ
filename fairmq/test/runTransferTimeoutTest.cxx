@@ -87,11 +87,18 @@ class TransferTimeoutTester : public FairMQDevice
     }
 };
 
-int main(int /*argc*/, char** /*argv*/)
+int main(int argc, char** argv)
 {
     TransferTimeoutTester timeoutTester;
     timeoutTester.CatchSignals();
-    timeoutTester.SetTransport("zeromq");
+    if (argc == 2)
+    {
+        timeoutTester.SetTransport(argv[1]);
+    }
+    else
+    {
+        timeoutTester.SetTransport("zeromq");
+    }
 
     reinit_logger(false);
 

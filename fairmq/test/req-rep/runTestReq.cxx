@@ -17,13 +17,21 @@
 #include "FairMQLogger.h"
 #include "FairMQTestReq.h"
 
-int main(int /*argc*/, char** /*argv*/)
+int main(int argc, char** argv)
 {
     FairMQTestReq testReq;
     testReq.CatchSignals();
-    testReq.SetTransport("zeromq");
+    if (argc == 2)
+    {
+        testReq.SetTransport(argv[1]);
+    }
+    else
+    {
+        testReq.SetTransport("zeromq");
+    }
 
     reinit_logger(false);
+    set_global_log_level(log_op::operation::GREATER_EQ_THAN, fairmq::NOLOG);
 
     testReq.SetProperty(FairMQTestReq::Id, "testReq" + std::to_string(getpid()));
 

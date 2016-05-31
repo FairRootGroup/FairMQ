@@ -15,13 +15,21 @@
 #include "FairMQLogger.h"
 #include "FairMQTestPush.h"
 
-int main(int /*argc*/, char** /*argv*/)
+int main(int argc, char** argv)
 {
     FairMQTestPush testPush;
     testPush.CatchSignals();
-    testPush.SetTransport("zeromq");
+    if (argc == 2)
+    {
+        testPush.SetTransport(argv[1]);
+    }
+    else
+    {
+        testPush.SetTransport("zeromq");
+    }
 
     reinit_logger(false);
+    set_global_log_level(log_op::operation::GREATER_EQ_THAN, fairmq::NOLOG);
 
     testPush.SetProperty(FairMQTestPush::Id, "testPush");
 

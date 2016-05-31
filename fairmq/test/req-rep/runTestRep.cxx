@@ -17,11 +17,18 @@
 #include "FairMQLogger.h"
 #include "FairMQTestRep.h"
 
-int main(int /*argc*/, char** /*argv*/)
+int main(int argc, char** argv)
 {
     FairMQTestRep testRep;
     testRep.CatchSignals();
-    testRep.SetTransport("zeromq");
+    if (argc == 2)
+    {
+        testRep.SetTransport(argv[1]);
+    }
+    else
+    {
+        testRep.SetTransport("zeromq");
+    }
 
     reinit_logger(false);
 
