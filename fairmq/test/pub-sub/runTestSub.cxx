@@ -36,10 +36,18 @@ int main(int argc, char** argv)
     testSub.SetProperty(FairMQTestSub::Id, "testSub_" + std::to_string(getpid()));
 
     FairMQChannel controlChannel("push", "connect", "tcp://127.0.0.1:5555");
+    if (argc == 2)
+    {
+        controlChannel.UpdateAddress("tcp://127.0.0.1:5755");
+    }
     controlChannel.UpdateRateLogging(0);
     testSub.fChannels["control"].push_back(controlChannel);
 
     FairMQChannel subChannel("sub", "connect", "tcp://127.0.0.1:5556");
+    if (argc == 2)
+    {
+        subChannel.UpdateAddress("tcp://127.0.0.1:5756");
+    }
     subChannel.UpdateRateLogging(0);
     testSub.fChannels["data"].push_back(subChannel);
 

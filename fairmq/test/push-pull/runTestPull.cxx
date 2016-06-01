@@ -33,6 +33,11 @@ int main(int argc, char** argv)
     testPull.SetProperty(FairMQTestPull::Id, "testPull");
 
     FairMQChannel pullChannel("pull", "connect", "tcp://127.0.0.1:5557");
+    if (argc == 2)
+    {
+        pullChannel.UpdateAddress("tcp://127.0.0.1:5757");
+    }
+    pullChannel.UpdateRateLogging(0);
     testPull.fChannels["data"].push_back(pullChannel);
 
     testPull.ChangeState("INIT_DEVICE");

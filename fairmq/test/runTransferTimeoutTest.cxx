@@ -108,6 +108,10 @@ int main(int argc, char** argv)
     dataOutChannel.UpdateType("push");
     dataOutChannel.UpdateMethod("bind");
     dataOutChannel.UpdateAddress("tcp://127.0.0.1:5559");
+    if (argc == 2)
+    {
+        dataOutChannel.UpdateAddress("tcp://127.0.0.1:5759");
+    }
     dataOutChannel.UpdateSndBufSize(1000);
     dataOutChannel.UpdateRcvBufSize(1000);
     dataOutChannel.UpdateRateLogging(0);
@@ -117,6 +121,10 @@ int main(int argc, char** argv)
     dataInChannel.UpdateType("pull");
     dataInChannel.UpdateMethod("bind");
     dataInChannel.UpdateAddress("tcp://127.0.0.1:5560");
+    if (argc == 2)
+    {
+        dataInChannel.UpdateAddress("tcp://127.0.0.1:5760");
+    }
     dataInChannel.UpdateSndBufSize(1000);
     dataInChannel.UpdateRcvBufSize(1000);
     dataInChannel.UpdateRateLogging(0);

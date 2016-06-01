@@ -36,6 +36,11 @@ int main(int argc, char** argv)
     testReq.SetProperty(FairMQTestReq::Id, "testReq" + std::to_string(getpid()));
 
     FairMQChannel reqChannel("req", "connect", "tcp://127.0.0.1:5558");
+    if (argc == 2)
+    {
+        reqChannel.UpdateAddress("tcp://127.0.0.1:5758");
+    }
+    reqChannel.UpdateRateLogging(0);
     testReq.fChannels["data"].push_back(reqChannel);
 
     testReq.ChangeState("INIT_DEVICE");

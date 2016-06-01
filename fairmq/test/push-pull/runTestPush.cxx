@@ -34,6 +34,11 @@ int main(int argc, char** argv)
     testPush.SetProperty(FairMQTestPush::Id, "testPush");
 
     FairMQChannel pushChannel("push", "bind", "tcp://127.0.0.1:5557");
+    if (argc == 2)
+    {
+        pushChannel.UpdateAddress("tcp://127.0.0.1:5757");
+    }
+    pushChannel.UpdateRateLogging(0);
     testPush.fChannels["data"].push_back(pushChannel);
 
     testPush.ChangeState("INIT_DEVICE");

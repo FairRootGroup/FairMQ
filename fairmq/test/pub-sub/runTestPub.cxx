@@ -33,10 +33,18 @@ int main(int argc, char** argv)
     testPub.SetProperty(FairMQTestPub::Id, "testPub");
 
     FairMQChannel controlChannel("pull", "bind", "tcp://127.0.0.1:5555");
+    if (argc == 2)
+    {
+        controlChannel.UpdateAddress("tcp://127.0.0.1:5755");
+    }
     controlChannel.UpdateRateLogging(0);
     testPub.fChannels["control"].push_back(controlChannel);
 
     FairMQChannel pubChannel("pub", "bind", "tcp://127.0.0.1:5556");
+    if (argc == 2)
+    {
+        pubChannel.UpdateAddress("tcp://127.0.0.1:5756");
+    }
     pubChannel.UpdateRateLogging(0);
     testPub.fChannels["data"].push_back(pubChannel);
 
