@@ -34,19 +34,11 @@ void FairMQExample2Sampler::InitTask()
 
 bool FairMQExample2Sampler::ConditionalRun()
 {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    this_thread::sleep_for(chrono::seconds(1));
 
-    // create a copy of the data with new(), that will be deleted after the transfer is complete
-    string* text = new string(fText);
-
-    // create message object with a pointer to the data buffer,
-    // its size,
-    // custom deletion function (called when transfer is done),
-    // and pointer to the object managing the data buffer
-    FairMQMessagePtr msg(NewMessage(const_cast<char*>(text->c_str()),
-                                    text->length(),
-                                    [](void* /*data*/, void* object) { delete static_cast<string*>(object); },
-                                    text));
+    // Initializing message with NewStaticMessage will avoid copy
+    // but won't delete the data after the sending is completed.
+    FairMQMessagePtr msg(NewStaticMessage(fText));
 
     LOG(INFO) << "Sending \"" << fText << "\"";
 
