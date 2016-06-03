@@ -22,8 +22,10 @@
 
 using namespace std;
 
+string FairMQMessageNN::fDeviceID = string();
+
 FairMQMessageNN::FairMQMessageNN()
-    : fMessage(NULL)
+    : fMessage(nullptr)
     , fSize(0)
     , fReceiving(false)
 {
@@ -35,7 +37,7 @@ FairMQMessageNN::FairMQMessageNN()
 }
 
 FairMQMessageNN::FairMQMessageNN(const size_t size)
-    : fMessage(NULL)
+    : fMessage(nullptr)
     , fSize(0)
     , fReceiving(false)
 {
@@ -54,7 +56,7 @@ FairMQMessageNN::FairMQMessageNN(const size_t size)
  * possible TODO: make this zero copy (will should then be as efficient as ZeroMQ).
 */
 FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
-    : fMessage(NULL)
+    : fMessage(nullptr)
     , fSize(0)
     , fReceiving(false)
 {
@@ -70,6 +72,10 @@ FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* 
         if (ffn)
         {
             ffn(data, hint);
+        }
+        else
+        {
+            free(data);
         }
     }
 }
@@ -134,30 +140,9 @@ void FairMQMessageNN::SetMessage(void* data, const size_t size)
     fSize = size;
 }
 
-void FairMQMessageNN::Copy(FairMQMessage* msg)
+void FairMQMessageNN::SetDeviceId(const string& deviceId)
 {
-    // DEPRECATED: Use Copy(const unique_ptr<FairMQMessage>&)
-
-    if (fMessage)
-    {
-        if (nn_freemsg(fMessage) < 0)
-        {
-            LOG(ERROR) << "failed freeing message, reason: " << nn_strerror(errno);
-        }
-    }
-
-    size_t size = msg->GetSize();
-
-    fMessage = nn_allocmsg(size, 0);
-    if (!fMessage)
-    {
-        LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
-    }
-    else
-    {
-        memcpy(fMessage, msg->GetMessage(), size);
-        fSize = size;
-    }
+    fDeviceID = deviceId;
 }
 
 void FairMQMessageNN::Copy(const unique_ptr<FairMQMessage>& msg)
@@ -192,7 +177,7 @@ inline void FairMQMessageNN::Clear()
     }
     else
     {
-        fMessage = NULL;
+        fMessage = nullptr;
         fSize = 0;
     }
 }
@@ -208,7 +193,7 @@ FairMQMessageNN::~FairMQMessageNN()
         }
         else
         {
-            fMessage = NULL;
+            fMessage = nullptr;
             fSize = 0;
         }
     }

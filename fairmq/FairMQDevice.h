@@ -21,6 +21,8 @@
 #include <iostream>
 #include <unordered_map>
 #include <functional>
+#include <assert.h> // static_assert
+#include <type_traits> // is_trivially_copyable
 
 #include <mutex>
 #include <condition_variable>
@@ -40,12 +42,6 @@ typedef std::function<bool(FairMQMessagePtr&, int)> InputMsgCallback;
 typedef std::function<bool(FairMQParts&, int)> InputMultipartCallback;
 
 class FairMQProgOptions;
-
-template<typename T>
-void FairMQSimpleMsgCleanup(void* /*data*/, void* hint)
-{
-    delete static_cast<T*>(hint);
-}
 
 class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 {
@@ -203,20 +199,42 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         return fTransportFactory->CreateMessage(size);
     }
 
+    template<typename T>
+    static void FairMQSimpleMsgCleanup(void* /*data*/, void* hint)
+    {
+        delete static_cast<T*>(hint);
+    }
+
+    static void FairMQNoCleanup(void* /*data*/, void* /*hint*/)
+    {
+    }
+
     /// @brief Create new FairMQMessage with user provided buffer and size
     /// @param data pointer to user provided buffer
     /// @param size size of the user provided buffer
     /// @param ffn optional callback, called when the message is transfered (and can be deleted)
     /// @param hint optional helper pointer that can be used in the callback
     /// @return pointer to FairMQMessage
-    inline FairMQMessagePtr NewMessage(void* data, int size, fairmq_free_fn* ffn, void* hint = NULL) const
+    inline FairMQMessagePtr NewMessage(void* data, int size, fairmq_free_fn* ffn, void* hint = nullptr) const
     {
         return fTransportFactory->CreateMessage(data, size, ffn, hint);
     }
 
     template<typename T>
+    inline FairMQMessagePtr NewStaticMessage(const T& data) const
+    {
+        return fTransportFactory->CreateMessage(data, sizeof(T), FairMQNoCleanup, nullptr);
+    }
+
+    inline FairMQMessagePtr NewStaticMessage(const std::string& str) const
+    {
+        return fTransportFactory->CreateMessage(const_cast<char*>(str.c_str()), str.length(), FairMQNoCleanup, nullptr);
+    }
+
+    template<typename T>
     inline FairMQMessagePtr NewSimpleMessage(const T& data) const
     {
+        static_assert(std::is_trivially_copyable<T>::value, "The argument type for NewSimpleMessage has to be trivially copyable!");
         T* dataCopy = new T(data);
         return fTransportFactory->CreateMessage(dataCopy, sizeof(T), FairMQSimpleMsgCleanup<T>, dataCopy);
     }

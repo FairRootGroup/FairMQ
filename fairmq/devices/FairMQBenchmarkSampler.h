@@ -32,10 +32,11 @@ class FairMQBenchmarkSampler : public FairMQDevice
     void ResetMsgCounter();
 
   protected:
+    bool fSameMessage;
     int fMsgSize;
-    int fNumMsgs;
     int fMsgCounter;
     int fMsgRate;
+    uint64_t fNumMsgs;
     std::string fOutChannelName;
 
     virtual void InitTask();

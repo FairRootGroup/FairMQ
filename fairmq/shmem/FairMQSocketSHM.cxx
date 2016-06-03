@@ -5,27 +5,22 @@
  *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQSocketZMQ.cxx
- *
- * @since 2012-12-05
- * @author D. Klein, A. Rybalchenko
- */
-
 #include <sstream>
 
 #include <zmq.h>
 
-#include "FairMQSocketZMQ.h"
-#include "FairMQMessageZMQ.h"
+#include "FairMQSocketSHM.h"
+#include "FairMQMessageSHM.h"
 #include "FairMQLogger.h"
 
 using namespace std;
+using namespace FairMQ::shmem;
 
 // Context to hold the ZeroMQ sockets
-std::unique_ptr<FairMQContextZMQ> FairMQSocketZMQ::fContext = std::unique_ptr<FairMQContextZMQ>(new FairMQContextZMQ(1));
+unique_ptr<FairMQContextSHM> FairMQSocketSHM::fContext = unique_ptr<FairMQContextSHM>(new FairMQContextSHM(1));
+// bool FairMQSocketSHM::fContextInitialized = false;
 
-FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const int numIoThreads, const string& id /*= ""*/)
+FairMQSocketSHM::FairMQSocketSHM(const string& type, const string& name, const int numIoThreads, const string& id /*= ""*/)
     : FairMQSocket(ZMQ_SNDMORE, ZMQ_RCVMORE, ZMQ_DONTWAIT)
     , fSocket(NULL)
     , fId()
@@ -35,6 +30,12 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const i
     , fMessagesRx(0)
 {
     fId = id + "." + name + "." + type;
+
+    // if (!fContextInitialized)
+    // {
+    //     fContext = unique_ptr<FairMQContextSHM>(new FairMQContextSHM(1));
+    //     fContextInitialized = true;
+    // }
 
     if (zmq_ctx_set(fContext->GetContext(), ZMQ_IO_THREADS, numIoThreads) != 0)
     {
@@ -62,6 +63,18 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const i
         LOG(ERROR) << "Failed setting ZMQ_LINGER socket option, reason: " << zmq_strerror(errno);
     }
 
+    int kernelSndSize = 10000;
+    if (zmq_setsockopt(fSocket, ZMQ_SNDBUF, &kernelSndSize, sizeof(kernelSndSize)) != 0)
+    {
+        LOG(ERROR) << "Failed setting ZMQ_SNDBUF socket option, reason: " << zmq_strerror(errno);
+    }
+
+    int kernelRcvSize = 10000;
+    if (zmq_setsockopt(fSocket, ZMQ_RCVBUF, &kernelRcvSize, sizeof(kernelRcvSize)) != 0)
+    {
+        LOG(ERROR) << "Failed setting ZMQ_RCVBUF socket option, reason: " << zmq_strerror(errno);
+    }
+
     if (type == "sub")
     {
         if (zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, NULL, 0) != 0)
@@ -73,12 +86,12 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const i
     // LOG(INFO) << "created socket " << fId;
 }
 
-string FairMQSocketZMQ::GetId()
+string FairMQSocketSHM::GetId()
 {
     return fId;
 }
 
-bool FairMQSocketZMQ::Bind(const string& address)
+bool FairMQSocketSHM::Bind(const string& address)
 {
     // LOG(INFO) << "bind socket " << fId << " on " << address;
 
@@ -94,7 +107,7 @@ bool FairMQSocketZMQ::Bind(const string& address)
     return true;
 }
 
-void FairMQSocketZMQ::Connect(const string& address)
+void FairMQSocketSHM::Connect(const string& address)
 {
     // LOG(INFO) << "connect socket " << fId << " on " << address;
 
@@ -106,19 +119,24 @@ void FairMQSocketZMQ::Connect(const string& address)
     }
 }
 
-int FairMQSocketZMQ::Send(FairMQMessage* msg, const string& flag)
+int FairMQSocketSHM::Send(FairMQMessage* msg, const string& flag)
 {
     return Send(msg, GetConstant(flag));
 }
 
-int FairMQSocketZMQ::Send(FairMQMessage* msg, const int flags)
+int FairMQSocketSHM::Send(FairMQMessage* msg, const int flags)
 {
     int nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, flags);
     if (nbytes >= 0)
     {
-        fBytesTx += nbytes;
+        static_cast<FairMQMessageSHM*>(msg)->fReceiving = false;
+        static_cast<FairMQMessageSHM*>(msg)->fQueued = true;
+        size_t size = msg->GetSize();
+
+        fBytesTx += size;
         ++fMessagesTx;
-        return nbytes;
+
+        return size;
     }
     if (zmq_errno() == EAGAIN)
     {
@@ -133,7 +151,7 @@ int FairMQSocketZMQ::Send(FairMQMessage* msg, const int flags)
     return nbytes;
 }
 
-int64_t FairMQSocketZMQ::Send(const vector<unique_ptr<FairMQMessage>>& msgVec, const int flags)
+int64_t FairMQSocketSHM::Send(const vector<FairMQMessagePtr>& msgVec, const int flags)
 {
     // Sending vector typicaly handles more then one part
     if (msgVec.size() > 1)
@@ -145,8 +163,12 @@ int64_t FairMQSocketZMQ::Send(const vector<unique_ptr<FairMQMessage>>& msgVec, c
             int nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msgVec[i]->GetMessage()), fSocket, ZMQ_SNDMORE|flags);
             if (nbytes >= 0)
             {
-                totalSize += nbytes;
-                fBytesTx += nbytes;
+                static_cast<FairMQMessageSHM*>(msgVec[i].get())->fReceiving = false;
+                static_cast<FairMQMessageSHM*>(msgVec[i].get())->fQueued = true;
+                size_t size = msgVec[i]->GetSize();
+
+                totalSize += size;
+                fBytesTx += size;
             }
             else
             {
@@ -167,7 +189,12 @@ int64_t FairMQSocketZMQ::Send(const vector<unique_ptr<FairMQMessage>>& msgVec, c
         int nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msgVec.back()->GetMessage()), fSocket, flags);
         if (nbytes >= 0)
         {
-            totalSize += nbytes;
+            static_cast<FairMQMessageSHM*>(msgVec.back().get())->fReceiving = false;
+            static_cast<FairMQMessageSHM*>(msgVec.back().get())->fQueued = true;
+            size_t size = msgVec.back()->GetSize();
+
+            totalSize += size;
+            fBytesTx += size;
         }
         else
         {
@@ -199,19 +226,41 @@ int64_t FairMQSocketZMQ::Send(const vector<unique_ptr<FairMQMessage>>& msgVec, c
     }
 }
 
-int FairMQSocketZMQ::Receive(FairMQMessage* msg, const string& flag)
+int FairMQSocketSHM::Receive(FairMQMessage* msg, const string& flag)
 {
     return Receive(msg, GetConstant(flag));
 }
 
-int FairMQSocketZMQ::Receive(FairMQMessage* msg, const int flags)
+int FairMQSocketSHM::Receive(FairMQMessage* msg, const int flags)
 {
-    int nbytes = zmq_msg_recv(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, flags);
-    if (nbytes >= 0)
+    zmq_msg_t* msgPtr = static_cast<zmq_msg_t*>(msg->GetMessage());
+    int nbytes = zmq_msg_recv(msgPtr, fSocket, flags);
+    if (nbytes == 0)
     {
-        fBytesRx += nbytes;
         ++fMessagesRx;
         return nbytes;
+    }
+    else if (nbytes > 0)
+    {
+        string ownerID(static_cast<char*>(zmq_msg_data(msgPtr)), zmq_msg_size(msgPtr));
+        ShPtrOwner* owner = Manager::Instance().Segment()->find<ShPtrOwner>(ownerID.c_str()).first;
+        size_t size = 0;
+        if (owner)
+        {
+            static_cast<FairMQMessageSHM*>(msg)->fOwner = owner;
+            static_cast<FairMQMessageSHM*>(msg)->fReceiving = true;
+            size = msg->GetSize();
+
+            fBytesRx += size;
+            ++fMessagesRx;
+
+            return size;
+        }
+        else
+        {
+            LOG(ERROR) << "Received meta data, but could not find corresponding chunk";
+            return -1;
+        }
     }
     if (zmq_errno() == EAGAIN)
     {
@@ -226,7 +275,7 @@ int FairMQSocketZMQ::Receive(FairMQMessage* msg, const int flags)
     return nbytes;
 }
 
-int64_t FairMQSocketZMQ::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const int flags)
+int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int flags)
 {
     // Warn if the vector is filled before Receive() and empty it.
     if (msgVec.size() > 0)
@@ -240,14 +289,35 @@ int64_t FairMQSocketZMQ::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, cons
 
     do
     {
-        unique_ptr<FairMQMessage> part(new FairMQMessageZMQ());
+        FairMQMessagePtr part(new FairMQMessageSHM());
+        zmq_msg_t* msgPtr = static_cast<zmq_msg_t*>(part->GetMessage());
 
-        int nbytes = zmq_msg_recv(static_cast<zmq_msg_t*>(part->GetMessage()), fSocket, flags);
-        if (nbytes >= 0)
+        int nbytes = zmq_msg_recv(msgPtr, fSocket, flags);
+        if (nbytes == 0)
         {
             msgVec.push_back(move(part));
-            totalSize += nbytes;
-            fBytesRx += nbytes;
+        }
+        else if (nbytes > 0)
+        {
+            string ownerID(static_cast<char*>(zmq_msg_data(msgPtr)), zmq_msg_size(msgPtr));
+            ShPtrOwner* owner = Manager::Instance().Segment()->find<ShPtrOwner>(ownerID.c_str()).first;
+            size_t size = 0;
+            if (owner)
+            {
+                static_cast<FairMQMessageSHM*>(part.get())->fOwner = owner;
+                static_cast<FairMQMessageSHM*>(part.get())->fReceiving = true;
+                size = part->GetSize();
+
+                msgVec.push_back(move(part));
+
+                fBytesRx += size;
+                totalSize += size;
+            }
+            else
+            {
+                LOG(ERROR) << "Received meta data, but could not find corresponding chunk";
+                return -1;
+            }
         }
         else
         {
@@ -264,7 +334,7 @@ int64_t FairMQSocketZMQ::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, cons
     return totalSize;
 }
 
-void FairMQSocketZMQ::Close()
+void FairMQSocketSHM::Close()
 {
     // LOG(DEBUG) << "Closing socket " << fId;
 
@@ -281,7 +351,7 @@ void FairMQSocketZMQ::Close()
     fSocket = NULL;
 }
 
-void FairMQSocketZMQ::Terminate()
+void FairMQSocketSHM::Terminate()
 {
     if (zmq_ctx_destroy(fContext->GetContext()) != 0)
     {
@@ -289,26 +359,28 @@ void FairMQSocketZMQ::Terminate()
     }
 }
 
-void FairMQSocketZMQ::Interrupt()
+void FairMQSocketSHM::Interrupt()
 {
+    FairMQMessageSHM::fInterrupted = true;
 }
 
-void FairMQSocketZMQ::Resume()
+void FairMQSocketSHM::Resume()
 {
+    FairMQMessageSHM::fInterrupted = false;
 }
 
-void* FairMQSocketZMQ::GetSocket() const
+void* FairMQSocketSHM::GetSocket() const
 {
     return fSocket;
 }
 
-int FairMQSocketZMQ::GetSocket(int) const
+int FairMQSocketSHM::GetSocket(int) const
 {
     // dummy method to comply with the interface. functionality not possible in zeromq.
     return -1;
 }
 
-void FairMQSocketZMQ::SetOption(const string& option, const void* value, size_t valueSize)
+void FairMQSocketSHM::SetOption(const string& option, const void* value, size_t valueSize)
 {
     if (zmq_setsockopt(fSocket, GetConstant(option), value, valueSize) < 0)
     {
@@ -316,7 +388,7 @@ void FairMQSocketZMQ::SetOption(const string& option, const void* value, size_t 
     }
 }
 
-void FairMQSocketZMQ::GetOption(const string& option, void* value, size_t* valueSize)
+void FairMQSocketSHM::GetOption(const string& option, void* value, size_t* valueSize)
 {
     if (zmq_getsockopt(fSocket, GetConstant(option), value, valueSize) < 0)
     {
@@ -324,27 +396,27 @@ void FairMQSocketZMQ::GetOption(const string& option, void* value, size_t* value
     }
 }
 
-unsigned long FairMQSocketZMQ::GetBytesTx() const
+unsigned long FairMQSocketSHM::GetBytesTx() const
 {
     return fBytesTx;
 }
 
-unsigned long FairMQSocketZMQ::GetBytesRx() const
+unsigned long FairMQSocketSHM::GetBytesRx() const
 {
     return fBytesRx;
 }
 
-unsigned long FairMQSocketZMQ::GetMessagesTx() const
+unsigned long FairMQSocketSHM::GetMessagesTx() const
 {
     return fMessagesTx;
 }
 
-unsigned long FairMQSocketZMQ::GetMessagesRx() const
+unsigned long FairMQSocketSHM::GetMessagesRx() const
 {
     return fMessagesRx;
 }
 
-bool FairMQSocketZMQ::SetSendTimeout(const int timeout, const string& address, const string& method)
+bool FairMQSocketSHM::SetSendTimeout(const int timeout, const string& address, const string& method)
 {
     if (method == "bind")
     {
@@ -391,7 +463,7 @@ bool FairMQSocketZMQ::SetSendTimeout(const int timeout, const string& address, c
     return true;
 }
 
-int FairMQSocketZMQ::GetSendTimeout() const
+int FairMQSocketSHM::GetSendTimeout() const
 {
     int timeout = -1;
     size_t size = sizeof(timeout);
@@ -404,7 +476,7 @@ int FairMQSocketZMQ::GetSendTimeout() const
     return timeout;
 }
 
-bool FairMQSocketZMQ::SetReceiveTimeout(const int timeout, const string& address, const string& method)
+bool FairMQSocketSHM::SetReceiveTimeout(const int timeout, const string& address, const string& method)
 {
     if (method == "bind")
     {
@@ -451,7 +523,7 @@ bool FairMQSocketZMQ::SetReceiveTimeout(const int timeout, const string& address
     return true;
 }
 
-int FairMQSocketZMQ::GetReceiveTimeout() const
+int FairMQSocketSHM::GetReceiveTimeout() const
 {
     int timeout = -1;
     size_t size = sizeof(timeout);
@@ -464,7 +536,7 @@ int FairMQSocketZMQ::GetReceiveTimeout() const
     return timeout;
 }
 
-int FairMQSocketZMQ::GetConstant(const string& constant)
+int FairMQSocketSHM::GetConstant(const string& constant)
 {
     if (constant == "")
         return 0;
@@ -514,6 +586,6 @@ int FairMQSocketZMQ::GetConstant(const string& constant)
     return -1;
 }
 
-FairMQSocketZMQ::~FairMQSocketZMQ()
+FairMQSocketSHM::~FairMQSocketSHM()
 {
 }

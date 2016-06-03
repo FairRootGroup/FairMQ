@@ -5,19 +5,17 @@
  *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQContextZMQ.cxx
- *
- * @since 2012-12-05
- * @author D. Klein, A. Rybalchenko
- */
-
 #include <zmq.h>
 
-#include "FairMQLogger.h"
-#include "FairMQContextZMQ.h"
+#include <boost/interprocess/managed_shared_memory.hpp>
 
-FairMQContextZMQ::FairMQContextZMQ(int numIoThreads)
+#include "FairMQLogger.h"
+#include "FairMQContextSHM.h"
+#include "FairMQShmManager.h"
+
+using namespace FairMQ::shmem;
+
+FairMQContextSHM::FairMQContextSHM(int numIoThreads)
     : fContext()
 {
     fContext = zmq_ctx_new();
@@ -37,19 +35,31 @@ FairMQContextZMQ::FairMQContextZMQ(int numIoThreads)
     {
         LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
     }
+
+    Manager::Instance().InitializeSegment("open_or_create", "FairMQSharedMemory", 2000000000);
+    LOG(INFO) << "Created/Opened shared memory segment of 2,000,000,000 bytes. Available are " << Manager::Instance().Segment()->get_free_memory() << " bytes.";
 }
 
-FairMQContextZMQ::~FairMQContextZMQ()
+FairMQContextSHM::~FairMQContextSHM()
 {
     Close();
+
+    if (boost::interprocess::shared_memory_object::remove("FairMQSharedMemory"))
+    {
+        LOG(INFO) << "Successfully removed shared memory after the device has stopped.";
+    }
+    else
+    {
+        LOG(INFO) << "Did not remove shared memory after the device stopped. Still in use?";
+    }
 }
 
-void* FairMQContextZMQ::GetContext()
+void* FairMQContextSHM::GetContext()
 {
     return fContext;
 }
 
-void FairMQContextZMQ::Close()
+void FairMQContextSHM::Close()
 {
     if (fContext == NULL)
     {

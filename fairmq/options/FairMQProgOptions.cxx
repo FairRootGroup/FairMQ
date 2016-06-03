@@ -235,6 +235,8 @@ void FairMQProgOptions::UpdateMQValues()
             string addressKey = p.first + "." + to_string(index) + ".address";
             string sndBufSizeKey = p.first + "." + to_string(index) + ".sndBufSize";
             string rcvBufSizeKey = p.first + "." + to_string(index) + ".rcvBufSize";
+            string sndKernelSizeKey = p.first + "." + to_string(index) + ".sndKernelSize";
+            string rcvKernelSizeKey = p.first + "." + to_string(index) + ".rcvKernelSize";
             string rateLoggingKey = p.first + "." + to_string(index) + ".rateLogging";
 
             fMQKeyMap[typeKey] = make_tuple(p.first, index, "type");
@@ -242,6 +244,8 @@ void FairMQProgOptions::UpdateMQValues()
             fMQKeyMap[addressKey] = make_tuple(p.first, index, "address");
             fMQKeyMap[sndBufSizeKey] = make_tuple(p.first, index, "sndBufSize");
             fMQKeyMap[rcvBufSizeKey] = make_tuple(p.first, index, "rcvBufSize");
+            fMQKeyMap[sndKernelSizeKey] = make_tuple(p.first, index, "sndKernelSize");
+            fMQKeyMap[rcvKernelSizeKey] = make_tuple(p.first, index, "rcvkernelSize");
             fMQKeyMap[rateLoggingKey] = make_tuple(p.first, index, "rateLogging");
 
             UpdateVarMap<string>(typeKey, channel.GetType());
@@ -255,6 +259,12 @@ void FairMQProgOptions::UpdateMQValues()
             //UpdateVarMap<string>(rcvBufSizeKey, to_string(channel.GetRcvBufSize()));// string API
             UpdateVarMap<int>(rcvBufSizeKey, channel.GetRcvBufSize());
 
+            //UpdateVarMap<string>(sndKernelSizeKey, to_string(channel.GetSndKernelSize()));// string API
+            UpdateVarMap<int>(sndKernelSizeKey, channel.GetSndKernelSize());
+
+            //UpdateVarMap<string>(rcvKernelSizeKey, to_string(channel.GetRcvKernelSize()));// string API
+            UpdateVarMap<int>(rcvKernelSizeKey, channel.GetRcvKernelSize());
+
             //UpdateVarMap<string>(rateLoggingKey,to_string(channel.GetRateLogging()));// string API
             UpdateVarMap<int>(rateLoggingKey, channel.GetRateLogging());
 
@@ -265,6 +275,8 @@ void FairMQProgOptions::UpdateMQValues()
             LOG(DEBUG) << "key = " << addressKey <<"\t value = " << GetValue<string>(addressKey);
             LOG(DEBUG) << "key = " << sndBufSizeKey << "\t value = " << GetValue<int>(sndBufSizeKey);
             LOG(DEBUG) << "key = " << rcvBufSizeKey <<"\t value = " << GetValue<int>(rcvBufSizeKey);
+            LOG(DEBUG) << "key = " << sndKernelSizeKey << "\t value = " << GetValue<int>(sndKernelSizeKey);
+            LOG(DEBUG) << "key = " << rcvKernelSizeKey <<"\t value = " << GetValue<int>(rcvKernelSizeKey);
             LOG(DEBUG) << "key = " << rateLoggingKey <<"\t value = " << GetValue<int>(rateLoggingKey);
             */
             index++;
@@ -376,7 +388,7 @@ int FairMQProgOptions::UpdateChannelMap(const string& channelName, int index, co
     {
         //if we get there it means something is wrong
         LOG(ERROR)  << "update of FairMQChannel map failed for the following key: "
-                    << channelName<<"."<<index<<"."<<member;
+                    << channelName << "." << index << "." << member;
         return 1;
     }
 }
@@ -443,7 +455,7 @@ int FairMQProgOptions::UpdateChannelMap(const string& channelName, int index, co
     {
         //if we get there it means something is wrong
         LOG(ERROR)  << "update of FairMQChannel map failed for the following key: "
-                    << channelName<<"."<<index<<"."<<member;
+                    << channelName << "." << index << "." << member;
         return 1;
     }
 }

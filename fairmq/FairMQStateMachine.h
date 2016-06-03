@@ -213,7 +213,6 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
             fsm.fState = PAUSED;
 
             fsm.Unblock();
-
             std::unique_lock<std::mutex> lock(fsm.fWorkMutex);
             while (fsm.fWorkActive)
             {
@@ -539,8 +538,8 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
     bool fWorkAvailable;
 
   protected:
-    std::mutex fChangeStateMutex;
     std::atomic<State> fState;
+    std::mutex fChangeStateMutex;
 };
 
 // reactivate the warning for non-virtual destructor

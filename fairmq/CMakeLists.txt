@@ -19,6 +19,7 @@ Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq/options
   ${CMAKE_SOURCE_DIR}/fairmq/logger
   ${CMAKE_SOURCE_DIR}/fairmq/zeromq
+  ${CMAKE_SOURCE_DIR}/fairmq/shmem
   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
@@ -66,6 +67,12 @@ Set(SRCS
   "zeromq/FairMQSocketZMQ.cxx"
   "zeromq/FairMQPollerZMQ.cxx"
   "zeromq/FairMQContextZMQ.cxx"
+
+  "shmem/FairMQTransportFactorySHM.cxx"
+  "shmem/FairMQMessageSHM.cxx"
+  "shmem/FairMQSocketSHM.cxx"
+  "shmem/FairMQPollerSHM.cxx"
+  "shmem/FairMQContextSHM.cxx"
 
   "FairMQLogger.cxx"
   "FairMQConfigurable.cxx"
@@ -125,6 +132,7 @@ Set(DEPENDENCIES
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   ${Boost_REGEX_LIBRARY}
   ${Boost_DATE_TIME_LIBRARY}
+  ${Boost_INTERPROCESS_LIBRARY}
 )
 
 If(NANOMSG_FOUND)

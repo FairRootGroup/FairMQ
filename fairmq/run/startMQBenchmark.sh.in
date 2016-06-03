@@ -2,16 +2,27 @@
 
 numMsgs="0"
 msgSize="1000000"
+transport="zeromq"
+sameMsg="true"
 
 if [[ $1 =~ ^[0-9]+$ ]]; then
     msgSize=$1
 fi
 
-echo "Starting benchmark with message size of $msgSize bytes."
-
 if [[ $2 =~ ^[0-9]+$ ]]; then
     numMsgs=$2
 fi
+
+if [[ $3 =~ ^[a-z]+$ ]]; then
+    transport=$3
+fi
+
+if [[ $4 =~ ^[a-z]+$ ]]; then
+    sameMsg=$4
+fi
+
+echo "Starting benchmark with message size of $msgSize bytes ($numMsgs messages) and $transport transport."
+echo "Using $transport transport."
 
 if [ $numMsgs = 0 ]; then
     echo "Unlimited number of messages."
@@ -20,14 +31,15 @@ else
 fi
 
 echo ""
-echo "Usage: startBenchmark [message size=1000000] [number of messages=0]"
+echo "Usage: startBenchmark [message size=1000000] [number of messages=0] [transport=zeromq/nanomsg/shmem] [resend same message=true]"
 
 SAMPLER="bsampler"
 SAMPLER+=" --id bsampler1"
 #SAMPLER+=" --io-threads 2"
 #SAMPLER+=" --control static"
-#SAMPLER+=" --transport nanomsg"
+SAMPLER+=" --transport $transport"
 SAMPLER+=" --msg-size $msgSize"
+SAMPLER+=" --same-msg $sameMsg"
 # SAMPLER+=" --msg-rate 1000"
 SAMPLER+=" --num-msgs $numMsgs"
 SAMPLER+=" --mq-config @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
@@ -37,7 +49,7 @@ SINK="sink"
 SINK+=" --id sink1"
 #SINK+=" --io-threads 2"
 #SINK+=" --control static"
-#SINK+=" --transport nanomsg"
+SINK+=" --transport $transport"
 SINK+=" --num-msgs $numMsgs"
 SINK+=" --mq-config @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
 xterm -geometry 80x23+500+0 -hold -e @CMAKE_BINARY_DIR@/bin/$SINK &

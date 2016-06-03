@@ -53,6 +53,9 @@ class FairMQSocket
     virtual void Close() = 0;
     virtual void Terminate() = 0;
 
+    virtual void Interrupt() = 0;
+    virtual void Resume() = 0;
+
     virtual void SetOption(const std::string& option, const void* value, size_t valueSize) = 0;
     virtual void GetOption(const std::string& option, void* value, size_t* valueSize) = 0;
 

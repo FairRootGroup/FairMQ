@@ -5,29 +5,30 @@
  *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQMessageZMQ.h
- *
- * @since 2014-01-17
- * @author A. Rybalchenko
- */
-
-#ifndef FAIRMQMESSAGEZMQ_H_
-#define FAIRMQMESSAGEZMQ_H_
+#ifndef FAIRMQMESSAGESHM_H_
+#define FAIRMQMESSAGESHM_H_
 
 #include <cstddef>
 #include <string>
+#include <atomic>
 
 #include <zmq.h>
 
 #include "FairMQMessage.h"
+#include "FairMQShmManager.h"
 
-class FairMQMessageZMQ : public FairMQMessage
+class FairMQMessageSHM : public FairMQMessage
 {
+    friend class FairMQSocketSHM;
+
   public:
-    FairMQMessageZMQ();
-    FairMQMessageZMQ(const size_t size);
-    FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
+    FairMQMessageSHM();
+    FairMQMessageSHM(const size_t size);
+    FairMQMessageSHM(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
+    FairMQMessageSHM(const FairMQMessageSHM&) = delete;
+    FairMQMessageSHM operator=(const FairMQMessageSHM&) = delete;
+
+    void InitializeChunk(const size_t size);
 
     virtual void Rebuild();
     virtual void Rebuild(const size_t size);
@@ -45,11 +46,18 @@ class FairMQMessageZMQ : public FairMQMessage
 
     void CloseMessage();
 
-    virtual ~FairMQMessageZMQ();
+    virtual ~FairMQMessageSHM();
+
+    static void StringDeleter(void* data, void* str);
 
   private:
     zmq_msg_t fMessage;
+    FairMQ::shmem::ShPtrOwner* fOwner;
+    static uint64_t fMessageID;
     static std::string fDeviceID;
+    bool fReceiving;
+    bool fQueued;
+    static std::atomic<bool> fInterrupted;
 };
 
-#endif /* FAIRMQMESSAGEZMQ_H_ */
+#endif /* FAIRMQMESSAGESHM_H_ */

@@ -26,7 +26,8 @@ int main(int argc, char* argv[])
         CIntercomService service;
         CCustomCmd ddsCustomCmd(service);
 
-        service.subscribeOnError([](const EErrorCode errorCode, const string& errorMsg) {
+        service.subscribeOnError([](const EErrorCode errorCode, const string& errorMsg)
+        {
             cout << "DDS error received: error code: " << errorCode << ", error message: " << errorMsg << endl;
         });
 
@@ -46,10 +47,14 @@ int main(int argc, char* argv[])
         t.c_lflag &= ~ICANON; // disable canonical input
         tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
 
-        if ( argc != 2 )
+        if (argc != 2)
+        {
             PrintControlsHelp();
+        }
         else
+        {
             cin.putback(argv[1][0]);
+        }
 
         while (cin >> c)
         {

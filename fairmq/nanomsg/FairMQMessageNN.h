@@ -16,6 +16,7 @@
 #define FAIRMQMESSAGENN_H_
 
 #include <cstddef>
+#include <string>
 
 #include "FairMQMessage.h"
 
@@ -24,13 +25,13 @@ class FairMQMessageNN : public FairMQMessage
   public:
     FairMQMessageNN();
     FairMQMessageNN(const size_t size);
-    FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = NULL);
+    FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
     FairMQMessageNN(const FairMQMessageNN&) = delete;
     FairMQMessageNN operator=(const FairMQMessageNN&) = delete;
 
     virtual void Rebuild();
     virtual void Rebuild(const size_t size);
-    virtual void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = NULL);
+    virtual void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
 
     virtual void* GetMessage();
     virtual void* GetData();
@@ -38,8 +39,8 @@ class FairMQMessageNN : public FairMQMessage
 
     virtual void SetMessage(void* data, const size_t size);
 
-    virtual void CloseMessage() {};
-    virtual void Copy(FairMQMessage* msg);
+    virtual void SetDeviceId(const std::string& deviceId);
+
     virtual void Copy(const std::unique_ptr<FairMQMessage>& msg);
 
     virtual ~FairMQMessageNN();
@@ -50,6 +51,7 @@ class FairMQMessageNN : public FairMQMessage
     void* fMessage;
     size_t fSize;
     bool fReceiving;
+    static std::string fDeviceID;
 
     void Clear();
 };

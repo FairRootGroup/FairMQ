@@ -230,6 +230,8 @@ void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMa
                 commonChannel.UpdateAddress(q.second.get<string>("address", commonChannel.GetAddress()));
                 commonChannel.UpdateSndBufSize(q.second.get<int>("sndBufSize", commonChannel.GetSndBufSize()));
                 commonChannel.UpdateRcvBufSize(q.second.get<int>("rcvBufSize", commonChannel.GetRcvBufSize()));
+                commonChannel.UpdateSndKernelSize(q.second.get<int>("sndKernelSize", commonChannel.GetSndKernelSize()));
+                commonChannel.UpdateRcvKernelSize(q.second.get<int>("rcvKernelSize", commonChannel.GetRcvKernelSize()));
                 commonChannel.UpdateRateLogging(q.second.get<int>("rateLogging", commonChannel.GetRateLogging()));
 
                 // temporary FairMQChannel container
@@ -241,12 +243,14 @@ void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMa
                     LOG(DEBUG) << "\tnumSockets of " << numSockets << " specified,";
                     LOG(DEBUG) << "\tapplying common settings to each:";
 
-                    LOG(DEBUG) << "\ttype        = " << commonChannel.GetType();
-                    LOG(DEBUG) << "\tmethod      = " << commonChannel.GetMethod();
-                    LOG(DEBUG) << "\taddress     = " << commonChannel.GetAddress();
-                    LOG(DEBUG) << "\tsndBufSize  = " << commonChannel.GetSndBufSize();
-                    LOG(DEBUG) << "\trcvBufSize  = " << commonChannel.GetRcvBufSize();
-                    LOG(DEBUG) << "\trateLogging = " << commonChannel.GetRateLogging();
+                    LOG(DEBUG) << "\ttype          = " << commonChannel.GetType();
+                    LOG(DEBUG) << "\tmethod        = " << commonChannel.GetMethod();
+                    LOG(DEBUG) << "\taddress       = " << commonChannel.GetAddress();
+                    LOG(DEBUG) << "\tsndBufSize    = " << commonChannel.GetSndBufSize();
+                    LOG(DEBUG) << "\trcvBufSize    = " << commonChannel.GetRcvBufSize();
+                    LOG(DEBUG) << "\tsndKernelSize = " << commonChannel.GetSndKernelSize();
+                    LOG(DEBUG) << "\trcvKernelSize = " << commonChannel.GetRcvKernelSize();
+                    LOG(DEBUG) << "\trateLogging   = " << commonChannel.GetRateLogging();
 
                     for (int i = 0; i < numSockets; ++i)
                     {
@@ -287,6 +291,8 @@ void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMa
                 commonChannel.UpdateAddress(p.second.get<string>("address", commonChannel.GetAddress()));
                 commonChannel.UpdateSndBufSize(p.second.get<int>("sndBufSize", commonChannel.GetSndBufSize()));
                 commonChannel.UpdateRcvBufSize(p.second.get<int>("rcvBufSize", commonChannel.GetRcvBufSize()));
+                commonChannel.UpdateSndKernelSize(p.second.get<int>("sndKernelSize", commonChannel.GetSndKernelSize()));
+                commonChannel.UpdateRcvKernelSize(p.second.get<int>("rcvKernelSize", commonChannel.GetRcvKernelSize()));
                 commonChannel.UpdateRateLogging(p.second.get<int>("rateLogging", commonChannel.GetRateLogging()));
             }
 
@@ -299,12 +305,14 @@ void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMa
                 LOG(DEBUG) << "\tnumSockets of " << numSockets << " specified,";
                 LOG(DEBUG) << "\tapplying common settings to each:";
 
-                LOG(DEBUG) << "\ttype        = " << commonChannel.GetType();
-                LOG(DEBUG) << "\tmethod      = " << commonChannel.GetMethod();
-                LOG(DEBUG) << "\taddress     = " << commonChannel.GetAddress();
-                LOG(DEBUG) << "\tsndBufSize  = " << commonChannel.GetSndBufSize();
-                LOG(DEBUG) << "\trcvBufSize  = " << commonChannel.GetRcvBufSize();
-                LOG(DEBUG) << "\trateLogging = " << commonChannel.GetRateLogging();
+                LOG(DEBUG) << "\ttype          = " << commonChannel.GetType();
+                LOG(DEBUG) << "\tmethod        = " << commonChannel.GetMethod();
+                LOG(DEBUG) << "\taddress       = " << commonChannel.GetAddress();
+                LOG(DEBUG) << "\tsndBufSize    = " << commonChannel.GetSndBufSize();
+                LOG(DEBUG) << "\trcvBufSize    = " << commonChannel.GetRcvBufSize();
+                LOG(DEBUG) << "\tsndKernelSize = " << commonChannel.GetSndKernelSize();
+                LOG(DEBUG) << "\trcvKernelSize = " << commonChannel.GetRcvKernelSize();
+                LOG(DEBUG) << "\trateLogging   = " << commonChannel.GetRateLogging();
 
                 for (int i = 0; i < numSockets; ++i)
                 {
@@ -342,15 +350,19 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
                 channel.UpdateAddress(q.second.get<string>("address", channel.GetAddress()));
                 channel.UpdateSndBufSize(q.second.get<int>("sndBufSize", channel.GetSndBufSize()));
                 channel.UpdateRcvBufSize(q.second.get<int>("rcvBufSize", channel.GetRcvBufSize()));
+                channel.UpdateSndKernelSize(q.second.get<int>("sndKernelSize", channel.GetSndKernelSize()));
+                channel.UpdateRcvKernelSize(q.second.get<int>("rcvKernelSize", channel.GetRcvKernelSize()));
                 channel.UpdateRateLogging(q.second.get<int>("rateLogging", channel.GetRateLogging()));
 
                 LOG(DEBUG) << "" << channelName << "[" << socketCounter << "]:";
-                LOG(DEBUG) << "\ttype        = " << channel.GetType();
-                LOG(DEBUG) << "\tmethod      = " << channel.GetMethod();
-                LOG(DEBUG) << "\taddress     = " << channel.GetAddress();
-                LOG(DEBUG) << "\tsndBufSize  = " << channel.GetSndBufSize();
-                LOG(DEBUG) << "\trcvBufSize  = " << channel.GetRcvBufSize();
-                LOG(DEBUG) << "\trateLogging = " << channel.GetRateLogging();
+                LOG(DEBUG) << "\ttype          = " << channel.GetType();
+                LOG(DEBUG) << "\tmethod        = " << channel.GetMethod();
+                LOG(DEBUG) << "\taddress       = " << channel.GetAddress();
+                LOG(DEBUG) << "\tsndBufSize    = " << channel.GetSndBufSize();
+                LOG(DEBUG) << "\trcvBufSize    = " << channel.GetRcvBufSize();
+                LOG(DEBUG) << "\tsndKernelSize = " << channel.GetSndKernelSize();
+                LOG(DEBUG) << "\trcvKernelSize = " << channel.GetRcvKernelSize();
+                LOG(DEBUG) << "\trateLogging   = " << channel.GetRateLogging();
 
                 channelList.push_back(channel);
                 ++socketCounter;
@@ -368,15 +380,19 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
             channel.UpdateAddress(p.second.get<string>("address", channel.GetAddress()));
             channel.UpdateSndBufSize(p.second.get<int>("sndBufSize", channel.GetSndBufSize()));
             channel.UpdateRcvBufSize(p.second.get<int>("rcvBufSize", channel.GetRcvBufSize()));
+            channel.UpdateSndKernelSize(p.second.get<int>("sndKernelSize", channel.GetSndKernelSize()));
+            channel.UpdateRcvKernelSize(p.second.get<int>("rcvKernelSize", channel.GetRcvKernelSize()));
             channel.UpdateRateLogging(p.second.get<int>("rateLogging", channel.GetRateLogging()));
 
             LOG(DEBUG) << "" << channelName << "[" << socketCounter << "]:";
-            LOG(DEBUG) << "\ttype        = " << channel.GetType();
-            LOG(DEBUG) << "\tmethod      = " << channel.GetMethod();
-            LOG(DEBUG) << "\taddress     = " << channel.GetAddress();
-            LOG(DEBUG) << "\tsndBufSize  = " << channel.GetSndBufSize();
-            LOG(DEBUG) << "\trcvBufSize  = " << channel.GetRcvBufSize();
-            LOG(DEBUG) << "\trateLogging = " << channel.GetRateLogging();
+            LOG(DEBUG) << "\ttype          = " << channel.GetType();
+            LOG(DEBUG) << "\tmethod        = " << channel.GetMethod();
+            LOG(DEBUG) << "\taddress       = " << channel.GetAddress();
+            LOG(DEBUG) << "\tsndBufSize    = " << channel.GetSndBufSize();
+            LOG(DEBUG) << "\trcvBufSize    = " << channel.GetRcvBufSize();
+            LOG(DEBUG) << "\tsndKernelSize = " << channel.GetSndKernelSize();
+            LOG(DEBUG) << "\trcvKernelSize = " << channel.GetRcvKernelSize();
+            LOG(DEBUG) << "\trateLogging   = " << channel.GetRateLogging();
 
             channelList.push_back(channel);
             ++socketCounter;
@@ -395,12 +411,14 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
 
         FairMQChannel channel(commonChannel);
 
-        LOG(DEBUG) << "\ttype        = " << channel.GetType();
-        LOG(DEBUG) << "\tmethod      = " << channel.GetMethod();
-        LOG(DEBUG) << "\taddress     = " << channel.GetAddress();
-        LOG(DEBUG) << "\tsndBufSize  = " << channel.GetSndBufSize();
-        LOG(DEBUG) << "\trcvBufSize  = " << channel.GetRcvBufSize();
-        LOG(DEBUG) << "\trateLogging = " << channel.GetRateLogging();
+        LOG(DEBUG) << "\ttype          = " << channel.GetType();
+        LOG(DEBUG) << "\tmethod        = " << channel.GetMethod();
+        LOG(DEBUG) << "\taddress       = " << channel.GetAddress();
+        LOG(DEBUG) << "\tsndBufSize    = " << channel.GetSndBufSize();
+        LOG(DEBUG) << "\trcvBufSize    = " << channel.GetRcvBufSize();
+        LOG(DEBUG) << "\tsndKernelSize = " << channel.GetSndKernelSize();
+        LOG(DEBUG) << "\trcvKernelSize = " << channel.GetRcvKernelSize();
+        LOG(DEBUG) << "\trateLogging   = " << channel.GetRateLogging();
 
         channelList.push_back(channel);
     }

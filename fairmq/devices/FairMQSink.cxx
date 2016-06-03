@@ -34,7 +34,7 @@ void FairMQSink::InitTask()
 
 void FairMQSink::Run()
 {
-    int numReceivedMsgs = 0;
+    uint64_t numReceivedMsgs = 0;
     // store the channel reference to avoid traversing the map on every loop iteration
     const FairMQChannel& dataInChannel = fChannels.at(fInChannelName).at(0);
 
@@ -43,25 +43,24 @@ void FairMQSink::Run()
 
     while (CheckCurrentState(RUNNING))
     {
-        std::unique_ptr<FairMQMessage> msg(fTransportFactory->CreateMessage());
+        FairMQMessagePtr msg(fTransportFactory->CreateMessage());
 
         if (dataInChannel.Receive(msg) >= 0)
         {
             if (fNumMsgs > 0)
             {
-                numReceivedMsgs++;
                 if (numReceivedMsgs >= fNumMsgs)
                 {
                     break;
                 }
             }
+            numReceivedMsgs++;
         }
     }
 
     auto tEnd = chrono::high_resolution_clock::now();
 
-    LOG(INFO) << "Received " << numReceivedMsgs << " messages, leaving RUNNING state.";
-    LOG(INFO) << "Receiving time: " << chrono::duration<double, milli>(tEnd - tStart).count() << " ms";
+    LOG(INFO) << "Leaving RUNNING state. Received " << numReceivedMsgs << " messages in " << chrono::duration<double, milli>(tEnd - tStart).count() << "ms.";
 }
 
 FairMQSink::~FairMQSink()

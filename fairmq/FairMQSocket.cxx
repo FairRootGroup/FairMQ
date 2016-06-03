@@ -17,48 +17,64 @@
 
 bool FairMQSocket::Attach(const std::string& config, bool serverish)
 {
-  if (config.empty())
-    return false;
-  if (config.size()<2)
-    return false;
-
-  const char* endpoints = config.c_str();
-
-  //  We hold each individual endpoint here
-  char endpoint [256];
-  while (*endpoints) {
-    const char *delimiter = strchr (endpoints, ',');
-    if (!delimiter)
-      delimiter = endpoints + strlen (endpoints);
-    if (delimiter - endpoints > 255)
-      return false;
-    memcpy (endpoint, endpoints, delimiter - endpoints);
-    endpoint [delimiter - endpoints] = 0;
-
-    bool rc;
-    if (endpoint [0] == '@') {
-      rc = Bind(endpoint + 1);
+    if (config.empty())
+    {
+        return false;
     }
-    else if (endpoint [0] == '>' || endpoint [0] == '-' || endpoint [0] == '+' ) {
-      Connect(endpoint + 1);
-    }
-    else if (serverish) {
-      rc = Bind(endpoint);
-    }
-    else {
-      Connect(endpoint);
+    if (config.size() < 2)
+    {
+        return false;
     }
 
-    if (!rc) {
-      return false;
+    const char* endpoints = config.c_str();
+
+    //  We hold each individual endpoint here
+    char endpoint [256];
+    while (*endpoints)
+    {
+        const char *delimiter = strchr(endpoints, ',');
+        if (!delimiter)
+        {
+            delimiter = endpoints + strlen(endpoints);
+        }
+        if (delimiter - endpoints > 255)
+        {
+            return false;
+        }
+        memcpy(endpoint, endpoints, delimiter - endpoints);
+        endpoint[delimiter - endpoints] = 0;
+
+        bool rc = false;
+
+        if (endpoint [0] == '@')
+        {
+            rc = Bind(endpoint + 1);
+        }
+        else if (endpoint [0] == '>' || endpoint [0] == '-' || endpoint [0] == '+' )
+        {
+            Connect(endpoint + 1);
+        }
+        else if (serverish)
+        {
+            rc = Bind(endpoint);
+        }
+        else
+        {
+            Connect(endpoint);
+        }
+
+        if (!rc)
+        {
+            return false;
+        }
+
+        if (*delimiter == 0)
+        {
+            break;
+        }
+
+        endpoints = delimiter + 1;
     }
 
-    if (*delimiter == 0) {
-      break;
-    }
-
-    endpoints = delimiter + 1;
-  }
-
-  return true;
+    return true;
 }

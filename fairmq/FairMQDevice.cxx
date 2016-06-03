@@ -35,6 +35,7 @@
 
 #include "FairMQProgOptions.h"
 #include "FairMQTransportFactoryZMQ.h"
+#include "FairMQTransportFactorySHM.h"
 #ifdef NANOMSG_FOUND
 #include "FairMQTransportFactoryNN.h"
 #endif
@@ -177,6 +178,9 @@ void FairMQDevice::InitWrapper()
     {
         fCmdSocket = fTransportFactory->CreateSocket("pub", "device-commands", fNumIoThreads, fId);
         fCmdSocket->Bind("inproc://commands");
+
+        FairMQMessagePtr msg(fTransportFactory->CreateMessage());
+        msg->SetDeviceId(fId);
     }
 
     // Containers to store the uninitialized channels.
@@ -301,66 +305,83 @@ bool FairMQDevice::ConnectChannel(FairMQChannel& ch)
 
 bool FairMQDevice::AttachChannel(FairMQChannel& ch)
 {
-  std::vector<std::string> endpoints;
-  FairMQChannel::Tokenize(endpoints, ch.fAddress);
-  for (auto& endpoint : endpoints)
-  {
-    //(re-)init socket
-    if (!ch.fSocket) {
-      ch.fSocket = fTransportFactory->CreateSocket(ch.fType, ch.fChannelName, fNumIoThreads, fId);
+    std::vector<std::string> endpoints;
+    FairMQChannel::Tokenize(endpoints, ch.fAddress);
+    for (auto& endpoint : endpoints)
+    {
+        //(re-)init socket
+        if (!ch.fSocket)
+        {
+            ch.fSocket = fTransportFactory->CreateSocket(ch.fType, ch.fChannelName, fNumIoThreads, fId);
+        }
+
+        // set high water marks
+        ch.fSocket->SetOption("snd-hwm", &(ch.fSndBufSize), sizeof(ch.fSndBufSize));
+        ch.fSocket->SetOption("rcv-hwm", &(ch.fRcvBufSize), sizeof(ch.fRcvBufSize));
+
+        // set kernel transmit size
+        ch.fSocket->SetOption("snd-size", &(ch.fSndKernelSize), sizeof(ch.fSndKernelSize));
+        ch.fSocket->SetOption("rcv-size", &(ch.fRcvKernelSize), sizeof(ch.fRcvKernelSize));
+
+        // attach
+        bool bind = (ch.fMethod == "bind");
+        bool connectionModifier = false;
+        std::string address = endpoint;
+
+        // check if the default fMethod is overridden by a modifier
+        if (endpoint[0] == '+' || endpoint[0] == '>')
+        {
+            connectionModifier = true;
+            bind = false;
+            address = endpoint.substr(1);
+        }
+        else if (endpoint[0] == '@')
+        {
+            connectionModifier = true;
+            bind = true;
+            address = endpoint.substr(1);
+        }
+
+        bool rc = true;
+        // make the connection
+        if (bind)
+        {
+            rc = BindEndpoint(*ch.fSocket, address);
+        }
+        else
+        {
+            rc = ConnectEndpoint(*ch.fSocket, address);
+        }
+
+        // bind might bind to an address different than requested,
+        // put the actual address back in the config
+        endpoint.clear();
+        if (connectionModifier)
+        {
+            endpoint.push_back(bind?'@':'+');
+        }
+        endpoint += address;
+
+        LOG(DEBUG) << "Attached channel " << ch.fChannelName << " to " << endpoint << (bind ? " (bind) " : " (connect) ");
+
+        // after the book keeping is done, exit in case of errors
+        if (!rc)
+        {
+            return rc;
+        }
     }
 
-    // set high water marks
-    ch.fSocket->SetOption("snd-hwm", &(ch.fSndBufSize), sizeof(ch.fSndBufSize));
-    ch.fSocket->SetOption("rcv-hwm", &(ch.fRcvBufSize), sizeof(ch.fRcvBufSize));
+    // put the (possibly) modified address back in the config
+    ch.UpdateAddress(boost::algorithm::join(endpoints, ","));
 
-    // attach
-    bool bind = (ch.fMethod=="bind");
-    bool connectionModifier = false;
-    std::string address = endpoint;
-
-    // check if the default fMethod is overridden by a modifier
-    if (endpoint[0]=='+' || endpoint[0]=='>') {
-      connectionModifier = true;
-      bind = false;
-      address = endpoint.substr(1);
-    } else if (endpoint[0]=='@') {
-      connectionModifier = true;
-      bind = true;
-      address = endpoint.substr(1);
-    }
-
-    bool rc = true;
-    // make the connection
-    if (bind) {
-      rc = BindEndpoint(*ch.fSocket, address);
-    } else {
-      rc = ConnectEndpoint(*ch.fSocket, address);
-    }
-
-    // bind might bind to an address different than requested,
-    // put the actual address back in the config
-    endpoint.clear();
-    if (connectionModifier) endpoint.push_back(bind?'@':'+');
-    endpoint += address;
-
-    LOG(DEBUG) << "Attached channel " << ch.fChannelName << " to " << endpoint
-      << (bind?" (bind) ":" (connect) ");
-
-    // after the book keeping is done, exit in case of errors
-    if (!rc) return rc;
-  }
-
-  // put the (possibly) modified address back in the config
-  ch.UpdateAddress(boost::algorithm::join(endpoints, ","));
-
-  return true;
+    return true;
 }
 
 bool FairMQDevice::ConnectEndpoint(FairMQSocket& socket, std::string& endpoint)
 {
-  socket.Connect(endpoint);
-  return true;
+    socket.Connect(endpoint);
+
+    return true;
 }
 
 bool FairMQDevice::BindEndpoint(FairMQSocket& socket, std::string& endpoint)
@@ -393,6 +414,7 @@ bool FairMQDevice::BindEndpoint(FairMQSocket& socket, std::string& endpoint)
         // TODO: thread safety? (this comes in as a reference and DOES get changed in this case).
         endpoint = endpoint.substr(0, pos + 1) + newPort.str();
     }
+
     return true;
 }
 
@@ -475,6 +497,7 @@ void FairMQDevice::RunWrapper()
     std::thread rateLogger(&FairMQDevice::LogSocketRates, this);
 
     FairMQChannel::fInterrupted = false;
+    fCmdSocket->Resume();
 
     try
     {
@@ -732,19 +755,23 @@ int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/)
 
 void FairMQDevice::SetTransport(FairMQTransportFactory* factory)
 {
-    fTransportFactory = unique_ptr<FairMQTransportFactory>(factory);
+    fTransportFactory = shared_ptr<FairMQTransportFactory>(factory);
 }
 
 void FairMQDevice::SetTransport(const string& transport)
 {
     if (transport == "zeromq")
     {
-        fTransportFactory = unique_ptr<FairMQTransportFactory>(new FairMQTransportFactoryZMQ());
+        fTransportFactory = make_shared<FairMQTransportFactoryZMQ>();
+    }
+    else if (transport == "shmem")
+    {
+        fTransportFactory = make_shared<FairMQTransportFactorySHM>();
     }
 #ifdef NANOMSG_FOUND
     else if (transport == "nanomsg")
     {
-        fTransportFactory = unique_ptr<FairMQTransportFactory>(new FairMQTransportFactoryNN());
+        fTransportFactory = make_shared<FairMQTransportFactoryNN>();
     }
 #endif
     else
@@ -875,7 +902,7 @@ void FairMQDevice::LogSocketRates()
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 
-    // LOG(DEBUG) << "FairMQDevice::LogSocketRates() stopping";
+    LOG(DEBUG) << "FairMQDevice::LogSocketRates() stopping";
 }
 
 void FairMQDevice::InteractiveStateLoop()
@@ -978,6 +1005,7 @@ void FairMQDevice::InteractiveStateLoop()
 void FairMQDevice::Unblock()
 {
     FairMQChannel::fInterrupted = true;
+    fCmdSocket->Interrupt();
     FairMQMessagePtr cmd(fTransportFactory->CreateMessage());
     fCmdSocket->Send(cmd.get(), 0);
 }

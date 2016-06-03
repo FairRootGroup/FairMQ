@@ -110,26 +110,7 @@ void FairMQSocketNN::Connect(const string& address)
 
 int FairMQSocketNN::Send(FairMQMessage* msg, const string& flag)
 {
-    void* ptr = msg->GetMessage();
-    int nbytes = nn_send(fSocket, &ptr, NN_MSG, GetConstant(flag));
-    if (nbytes >= 0)
-    {
-        fBytesTx += nbytes;
-        ++fMessagesTx;
-        static_cast<FairMQMessageNN*>(msg)->fReceiving = false;
-        return nbytes;
-    }
-    if (nn_errno() == EAGAIN)
-    {
-        return -2;
-    }
-    if (nn_errno() == ETERM)
-    {
-        LOG(INFO) << "terminating socket " << fId;
-        return -1;
-    }
-    LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
-    return nbytes;
+    return Send(msg, GetConstant(flag));
 }
 
 int FairMQSocketNN::Send(FairMQMessage* msg, const int flags)
@@ -198,28 +179,7 @@ int64_t FairMQSocketNN::Send(const vector<unique_ptr<FairMQMessage>>& msgVec, co
 
 int FairMQSocketNN::Receive(FairMQMessage* msg, const string& flag)
 {
-    void* ptr = NULL;
-    int nbytes = nn_recv(fSocket, &ptr, NN_MSG, GetConstant(flag));
-    if (nbytes >= 0)
-    {
-        fBytesRx += nbytes;
-        ++fMessagesRx;
-        msg->Rebuild();
-        msg->SetMessage(ptr, nbytes);
-        static_cast<FairMQMessageNN*>(msg)->fReceiving = true;
-        return nbytes;
-    }
-    if (nn_errno() == EAGAIN)
-    {
-        return -2;
-    }
-    if (nn_errno() == ETERM)
-    {
-        LOG(INFO) << "terminating socket " << fId;
-        return -1;
-    }
-    LOG(ERROR) << "Failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
-    return nbytes;
+    return Receive(msg, GetConstant(flag));
 }
 
 int FairMQSocketNN::Receive(FairMQMessage* msg, const int flags)
@@ -318,6 +278,14 @@ void FairMQSocketNN::Terminate()
     nn_term();
 }
 
+void FairMQSocketNN::Interrupt()
+{
+}
+
+void FairMQSocketNN::Resume()
+{
+}
+
 void* FairMQSocketNN::GetSocket() const
 {
     return NULL; // dummy method to comply with the interface. functionality not possible in zeromq.
@@ -330,6 +298,21 @@ int FairMQSocketNN::GetSocket(int /*nothing*/) const
 
 void FairMQSocketNN::SetOption(const string& option, const void* value, size_t valueSize)
 {
+    if (option == "snd-size" || option == "rcv-size")
+    {
+        int val = *(static_cast<int*>(const_cast<void*>(value)));
+        if (val <= 0)
+        {
+            LOG(WARN) << "nanomsg: value for sndKernelSize/rcvKernelSize should be greater than 0, using defaults (128kB).";
+            return;
+        }
+    }
+
+    if (option == "snd-hwm" || option == "rcv-hwm")
+    {
+        return;
+    }
+
     int rc = nn_setsockopt(fSocket, NN_SOL_SOCKET, GetConstant(option), value, valueSize);
     if (rc < 0)
     {

@@ -96,6 +96,11 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
             LOG(ERROR) << "Cannot load fairmqControlPlugin(): " << dlsymError;
             fairmqControlPlugin = nullptr;
             dlclose(ldControlHandle);
+            // also close the config plugin before quiting with error.
+            if (ldConfigHandle)
+            {
+                dlclose(ldConfigHandle);
+            }
             return 1;
         }
 

@@ -47,6 +47,9 @@ class FairMQSocketZMQ : public FairMQSocket
     virtual void Close();
     virtual void Terminate();
 
+    virtual void Interrupt();
+    virtual void Resume();
+
     virtual void SetOption(const std::string& option, const void* value, size_t valueSize);
     virtual void GetOption(const std::string& option, void* value, size_t* valueSize);
 

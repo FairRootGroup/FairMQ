@@ -23,10 +23,11 @@
 using namespace std;
 
 FairMQBenchmarkSampler::FairMQBenchmarkSampler()
-    : fMsgSize(10000)
-    , fNumMsgs(0)
+    : fSameMessage(true)
+    , fMsgSize(10000)
     , fMsgCounter(0)
     , fMsgRate(1)
+    , fNumMsgs(0)
     , fOutChannelName()
 {
 }
@@ -37,9 +38,10 @@ FairMQBenchmarkSampler::~FairMQBenchmarkSampler()
 
 void FairMQBenchmarkSampler::InitTask()
 {
+    fSameMessage = fConfig->GetValue<bool>("same-msg");
     fMsgSize = fConfig->GetValue<int>("msg-size");
-    fNumMsgs = fConfig->GetValue<int>("num-msgs");
     fMsgRate = fConfig->GetValue<int>("msg-rate");
+    fNumMsgs = fConfig->GetValue<uint64_t>("num-msgs");
     fOutChannelName = fConfig->GetValue<string>("out-channel");
 }
 
@@ -47,7 +49,7 @@ void FairMQBenchmarkSampler::Run()
 {
     // std::thread resetMsgCounter(&FairMQBenchmarkSampler::ResetMsgCounter, this);
 
-    int numSentMsgs = 0;
+    uint64_t numSentMsgs = 0;
 
     FairMQMessagePtr baseMsg(fTransportFactory->CreateMessage(fMsgSize));
 
@@ -59,17 +61,37 @@ void FairMQBenchmarkSampler::Run()
 
     while (CheckCurrentState(RUNNING))
     {
-        FairMQMessagePtr msg(fTransportFactory->CreateMessage());
-        msg->Copy(baseMsg);
-
-        if (dataOutChannel.Send(msg) >= 0)
+        if (fSameMessage)
         {
-            if (fNumMsgs > 0)
+            FairMQMessagePtr msg(fTransportFactory->CreateMessage());
+            msg->Copy(baseMsg);
+
+            if (dataOutChannel.Send(msg) >= 0)
             {
-                if (++numSentMsgs >= fNumMsgs)
+                if (fNumMsgs > 0)
                 {
-                    break;
+                    if (numSentMsgs >= fNumMsgs)
+                    {
+                        break;
+                    }
                 }
+                ++numSentMsgs;
+            }
+        }
+        else
+        {
+            FairMQMessagePtr msg(fTransportFactory->CreateMessage(fMsgSize));
+
+            if (dataOutChannel.Send(msg) >= 0)
+            {
+                if (fNumMsgs > 0)
+                {
+                    if (numSentMsgs >= fNumMsgs)
+                    {
+                        break;
+                    }
+                }
+                ++numSentMsgs;
             }
         }
 
@@ -82,8 +104,7 @@ void FairMQBenchmarkSampler::Run()
 
     auto tEnd = chrono::high_resolution_clock::now();
 
-    LOG(INFO) << "Sent " << numSentMsgs << " messages, leaving RUNNING state.";
-    LOG(INFO) << "Sending time: " << chrono::duration<double, milli>(tEnd - tStart).count() << " ms";
+    LOG(INFO) << "Leaving RUNNING state. Sent " << numSentMsgs << " messages in " << chrono::duration<double, milli>(tEnd - tStart).count() << "ms.";
 
     // resetMsgCounter.join();
 }

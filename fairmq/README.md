@@ -14,26 +14,39 @@ Example of a simple FairMQ topology:
 
 ![example of FairMQ topology](../docs/images/fairmq-example-topology.png?raw=true "Example of possible FairMQ topology")
 
+Within a topology each device needs a unique id (given to it via required command line option `--id`).
+
 Topology configuration is currently happening via setup scripts. This is very rudimentary and a much more flexible system is now in development. For now, example setup scripts can be found in directory `FairRoot/example/Tutorial3/` along with some additional documentation.
 
 ## Communication Patterns
 
-FairMQ devices communicate via the communication patterns offered by ZeroMQ (or nanomsg): PUSH-PULL, PUB-SUB, REQ-REP, PAIR, [more info here](http://api.zeromq.org/4-0:zmq-socket).
+FairMQ devices communicate via the communication patterns offered by ZeroMQ (or nanomsg): PUSH-PULL, PUB-SUB, REQ-REP, PAIR, [more info here](http://api.zeromq.org/4-0:zmq-socket). Each transport may provide further patterns.
 
 ## Messages
 
-Devices transport data between each other in form of `FairMQMessage`s. These can be filled with arbitrary content and transport either raw data or serialized data as described above. Message can be initialized in three different ways:
- - **with no parameters**: This is usefull for receiving a message, since neither size nor contents are yet known.
- - **given message size**: Initialize message body with a size and fill the contents later, either with `memcpy` or by writing directly into message memory.
- - **given message size and buffer**: initialize the message given an existing buffer. This is a zero-copy operation.
+Devices transport data between each other in form of `FairMQMessage`s. These can be filled with arbitrary content. Message can be initialized in three different ways:
+- **with no parameters**: Initializes an empty message (typically used for receiving).
+- **given message size**: Initializes message body with a given size. Fill the created contents via buffer pointer.
+- **given existing buffer and a size**: Initialize the message from an existing buffer. In case of ZeroMQ this is a zero-copy operation.
 
-After sending the message, the queueing system takes over control over the message body and will free it with `free()` after it is no longer used. A callback can be given to the message object, to be called instead of the destruction with `free()`.
+After sending the message, the transport takes over control over the message body and will free it with `free()` after it is no longer used. A callback can be given to the message object, to be called instead of the destruction with `free()` (for initialization via buffer+size).
 
 ## Transport Interface
 
-The communication layer is available through an interface. Two interface implementations are currently available. Main implementation uses the [ZeroMQ](http://zeromq.org) library. Alternative implementation relies on the [nanomsg](http://nanomsg.org) library. Here is an overview to give an idea how interface is implemented:
+The communication layer is available through an interface. Three interface implementations are currently available. Main implementation uses the [ZeroMQ](http://zeromq.org) library. Alternative implementation relies on the [nanomsg](http://nanomsg.org) library. Third transport implementation is using shared memory via boost::interprocess & ZeroMQ combination.
+
+Here is an overview to give an idea how interface is implemented:
 
 ![FairMQ transport interface](../docs/images/fairmq-transport-interface.png?raw=true "FairMQ transport interface")
+
+Currently, the transports have been tested to work with these communication patterns:
+
+|               | ZeroMQ | nanomsg | Shared Memory |
+| ------------- |--------| ------- | ------------- |
+| PAIR          | yes    | yes     | yes           |
+| PUSH/PULL     | yes    | yes     | yes           |
+| PUB/SUB       | yes    | yes     | no            |
+| REQ/REP       | yes    | yes     | yes           |
 
 ## State Machine
 
