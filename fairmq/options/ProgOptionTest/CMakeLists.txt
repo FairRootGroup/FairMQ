@@ -59,7 +59,9 @@ Set(LIBRARY_NAME ProgOptionTest)
 
 If (Boost_FOUND)
   Set(DEPENDENCIES
-    boost_system boost_program_options FairMQ
+    ${Boost_SYSTEM_LIBRARY}
+    ${Boost_PROGRAM_OPTIONS_LIBRARY})
+    FairMQ
     )
 EndIf (Boost_FOUND)
 
