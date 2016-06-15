@@ -6,8 +6,10 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/2-sampler-processor-sink/ex2-sampler-processor-sink.json ${CMAKE_BINARY_DIR}/bin/config/ex2-sampler-processor-sink.json)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/2-sampler-processor-sink/startMQEx2.sh.in  ${CMAKE_BINARY_DIR}/bin/startMQEx2.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/2-sampler-processor-sink/ex2-sampler-processor-sink.json 
+               ${CMAKE_BINARY_DIR}/bin/config/ex2-sampler-processor-sink.json)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/2-sampler-processor-sink/startMQEx2.sh.in  
+               ${CMAKE_BINARY_DIR}/bin/examples/MQ/2-sampler-processor-sink/startMQEx2.sh)
 
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
@@ -63,6 +65,9 @@ Set(Exe_Source
 
 list(LENGTH Exe_Names _length)
 math(EXPR _length ${_length}-1)
+
+set(BIN_DESTINATION share/fairbase/examples/MQ/2-sampler-processor-sink/bin)
+set(EXECUTABLE_OUTPUT_PATH "${EXECUTABLE_OUTPUT_PATH}/examples/MQ/2-sampler-processor-sink")
 
 ForEach(_file RANGE 0 ${_length})
   list(GET Exe_Names ${_file} _name)

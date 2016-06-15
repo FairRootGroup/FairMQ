@@ -6,8 +6,10 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/4-copypush/ex4-copypush.json ${CMAKE_BINARY_DIR}/bin/config/ex4-copypush.json)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/4-copypush/startMQEx4.sh.in  ${CMAKE_BINARY_DIR}/bin/startMQEx4.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/4-copypush/ex4-copypush.json 
+               ${CMAKE_BINARY_DIR}/bin/config/ex4-copypush.json)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/4-copypush/startMQEx4.sh.in  
+               ${CMAKE_BINARY_DIR}/bin/examples/MQ/4-copypush/startMQEx4.sh)
 
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
@@ -60,6 +62,9 @@ Set(Exe_Source
 
 list(LENGTH Exe_Names _length)
 math(EXPR _length ${_length}-1)
+
+set(BIN_DESTINATION share/fairbase/examples/MQ/4-copypush/bin)
+set(EXECUTABLE_OUTPUT_PATH "${EXECUTABLE_OUTPUT_PATH}/examples/MQ/4-copypush")
 
 ForEach(_file RANGE 0 ${_length})
   list(GET Exe_Names ${_file} _name)

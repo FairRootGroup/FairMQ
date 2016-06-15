@@ -6,9 +6,12 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-topology.xml ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-topology.xml)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-hosts.cfg ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-hosts.cfg COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds.json ${CMAKE_BINARY_DIR}/bin/config/ex3-dds.json COPYONLY)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-topology.xml 
+               ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-topology.xml)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-hosts.cfg 
+               ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-hosts.cfg COPYONLY)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds.json 
+               ${CMAKE_BINARY_DIR}/bin/config/ex3-dds.json COPYONLY)
 
 If(DDS_FOUND)
   add_definitions(-DDDS_FOUND)
@@ -77,6 +80,9 @@ Set(Exe_Source
 
 list(LENGTH Exe_Names _length)
 math(EXPR _length ${_length}-1)
+
+set(BIN_DESTINATION share/fairbase/examples/MQ/3-dds/bin)
+set(EXECUTABLE_OUTPUT_PATH "${EXECUTABLE_OUTPUT_PATH}/examples/MQ/3-dds")
 
 ForEach(_file RANGE 0 ${_length})
   list(GET Exe_Names ${_file} _name)

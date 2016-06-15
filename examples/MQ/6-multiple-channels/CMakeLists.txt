@@ -6,8 +6,10 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/6-multiple-channels/ex6-multiple-channels.json ${CMAKE_BINARY_DIR}/bin/config/ex6-multiple-channels.json)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/6-multiple-channels/startMQEx6.sh.in  ${CMAKE_BINARY_DIR}/bin/startMQEx6.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/6-multiple-channels/ex6-multiple-channels.json 
+               ${CMAKE_BINARY_DIR}/bin/config/ex6-multiple-channels.json)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/6-multiple-channels/startMQEx6.sh.in  
+               ${CMAKE_BINARY_DIR}/bin/examples/MQ/6-multiple-channels/startMQEx6.sh)
 
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
@@ -63,6 +65,9 @@ Set(Exe_Source
 
 list(LENGTH Exe_Names _length)
 math(EXPR _length ${_length}-1)
+
+set(BIN_DESTINATION share/fairbase/examples/MQ/6-multiple-channels/bin)
+set(EXECUTABLE_OUTPUT_PATH "${EXECUTABLE_OUTPUT_PATH}/examples/MQ/6-multiple-channels")
 
 ForEach(_file RANGE 0 ${_length})
   list(GET Exe_Names ${_file} _name)
