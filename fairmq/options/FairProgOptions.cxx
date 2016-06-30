@@ -32,6 +32,8 @@ FairProgOptions::FairProgOptions() :
                         fUseConfigFile(false),
                         fConfigFile()
 {
+
+    LOG(NOLOG) << "";// temporary hack to prevent throwing exception when accessing empty sinklist --> fixed me
     fGenericDesc.add_options()
         ("help,h", "produce help")
         ("version,v", "print version")

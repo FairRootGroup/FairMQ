@@ -106,15 +106,6 @@ EndIf(NANOMSG_FOUND)
 # manual install (globbing add not recommended)
 Set(FAIRMQHEADERS
   FairMQParts.h
-  devices/GenericSampler.h
-  devices/GenericSampler.tpl
-  devices/GenericProcessor.h
-  devices/GenericFileSink.h
-  devices/BaseDeserializationPolicy.h
-  devices/BaseSerializationPolicy.h
-  devices/BaseProcessorTaskPolicy.h
-  devices/BaseSinkPolicy.h
-  devices/BaseSourcePolicy.h
   options/FairProgOptionsHelper.h
   tools/FairMQTools.h
   tools/FairMQDDSTools.h
