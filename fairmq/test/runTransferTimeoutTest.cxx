@@ -91,13 +91,23 @@ int main(int argc, char** argv)
 {
     TransferTimeoutTester timeoutTester;
     timeoutTester.CatchSignals();
-    if (argc == 2)
+
+    std::string transport;
+    if (argc != 2)
     {
-        timeoutTester.SetTransport(argv[1]);
+        LOG(ERROR) << "Transport for the test not specified!";
+        return 1;
+    }
+    transport = argv[1];
+
+    if (transport == "zeromq" || transport == "nanomsg")
+    {
+        timeoutTester.SetTransport(transport);
     }
     else
     {
-        timeoutTester.SetTransport("zeromq");
+        LOG(ERROR) << "Incorrect transport requested! Expected 'zeromq' or 'nanomsg', found: " << transport;
+        return 1;
     }
 
     reinit_logger(false);
@@ -108,7 +118,7 @@ int main(int argc, char** argv)
     dataOutChannel.UpdateType("push");
     dataOutChannel.UpdateMethod("bind");
     dataOutChannel.UpdateAddress("tcp://127.0.0.1:5559");
-    if (argc == 2)
+    if (transport == "nanomsg")
     {
         dataOutChannel.UpdateAddress("tcp://127.0.0.1:5759");
     }
@@ -121,7 +131,7 @@ int main(int argc, char** argv)
     dataInChannel.UpdateType("pull");
     dataInChannel.UpdateMethod("bind");
     dataInChannel.UpdateAddress("tcp://127.0.0.1:5560");
-    if (argc == 2)
+    if (transport == "nanomsg")
     {
         dataInChannel.UpdateAddress("tcp://127.0.0.1:5760");
     }

@@ -21,13 +21,23 @@ int main(int argc, char** argv)
 {
     FairMQTestReq testReq;
     testReq.CatchSignals();
-    if (argc == 2)
+
+    std::string transport;
+    if (argc != 2)
     {
-        testReq.SetTransport(argv[1]);
+        LOG(ERROR) << "Transport for the test not specified!";
+        return 1;
+    }
+    transport = argv[1];
+
+    if (transport == "zeromq" || transport == "nanomsg")
+    {
+        testReq.SetTransport(transport);
     }
     else
     {
-        testReq.SetTransport("zeromq");
+        LOG(ERROR) << "Incorrect transport requested! Expected 'zeromq' or 'nanomsg', found: " << transport;
+        return 1;
     }
 
     reinit_logger(false);
@@ -36,7 +46,7 @@ int main(int argc, char** argv)
     testReq.SetProperty(FairMQTestReq::Id, "testReq" + std::to_string(getpid()));
 
     FairMQChannel reqChannel("req", "connect", "tcp://127.0.0.1:5558");
-    if (argc == 2)
+    if (transport == "nanomsg")
     {
         reqChannel.UpdateAddress("tcp://127.0.0.1:5758");
     }
