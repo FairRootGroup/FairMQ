@@ -17,13 +17,11 @@
 #define FAIRMQPROGOPTIONS_H
 
 #include <unordered_map>
+#include <set>
 
 #include "FairProgOptions.h"
 
 #include "FairMQChannel.h"
-#include <boost/property_tree/ptree.hpp>
-
-namespace pt = boost::property_tree;
 
 class FairMQProgOptions : public FairProgOptions
 {
@@ -54,23 +52,8 @@ class FairMQProgOptions : public FairProgOptions
         return 0;
     }
 
-    int Store(const po::variables_map& vm)
-    {
-        fVarMap = vm;
-        return 0;
-    }
 
-    int Store(const pt::ptree& tree)
-    {
-        fMQtree = tree;
-        return 0;
-    }
-
-    int Store(const FairMQMap& channels)
-    {
-        fFairMQMap = channels;
-        return 0;
-    }
+    
 
     FairMQMap GetFairMQMap()
     {
@@ -88,17 +71,64 @@ class FairMQProgOptions : public FairProgOptions
         fVersion=version;
     }
 
+    // store key-value of type T into variable_map. 
+    // If key is found in fMQKeyMap, update the FairMQChannelMap accordingly
+    // Note that the fMQKeyMap is filled:
+    // - if UpdateChannelMap(const FairMQMap& map) method is called 
+    // - if UserParser template method is called (it is called in the ParseAll method if json or xml MQ-config files is provided)
+    
+    template<typename T>
+    int UpdateValue(const std::string& key, const T& val)
+    {
+        UpdateVarMap(key,val);
+
+        if(fMQKeyMap.count(key))
+        {
+            std::string channelName;
+            int index = 0;
+            std::string member;
+            std::tie(channelName, index, member) = fMQKeyMap.at(key);
+
+            if(std::is_same<T, int>::value || std::is_same<T, std::string>::value)
+                UpdateChannelMap(channelName, index, member, val);
+
+        }
+        return 0;
+    }
+
+    // replace FairMQChannelMap, and update variable map accordingly
+    int UpdateChannelMap(const FairMQMap& map);
+
+    
+
   protected:
     po::options_description fMQParserOptions;
     po::options_description fMQOptionsInCfg;
     po::options_description fMQOptionsInCmd;
-    pt::ptree fMQtree;
     FairMQMap fFairMQMap;
     std::string fHelpTitle;
     std::string fVersion;
 
+    typedef std::tuple<std::string,int,std::string> MQKey;//store key info
+    std::map<std::string,MQKey> fMQKeyMap;// key=full path - val=key info
+
     virtual int NotifySwitchOption(); // for custom help & version printing
     void InitOptionDescription();
+
+    // read FairMQChannelMap and insert/update corresponding values in variable map
+    // create key for variable map as follow : channelName.index.memberName
+    void UpdateMQValues();
+    int Store(const FairMQMap& channels);
+
+  private:
+    int UpdateChannelMap(const std::string& channelName, int index, const std::string& member, const std::string& val);
+    int UpdateChannelMap(const std::string& channelName, int index, const std::string& member, int val);
+    // for cases other than int and string
+    template<typename T>
+    int UpdateChannelMap(const std::string& channelName, int index, const std::string& member, T val)
+    {
+        return 0;
+    }
 };
 
 

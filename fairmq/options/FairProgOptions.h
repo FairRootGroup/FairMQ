@@ -138,9 +138,9 @@ class FairProgOptions
     boost::filesystem::path fConfigFile;
     virtual int NotifySwitchOption();
 
-    // UpadateVarMap() and replace() --> helper functions to modify the value of variable map after calling po::store
+    // UpdateVarMap() and replace() --> helper functions to modify the value of variable map after calling po::store
     template<typename T>
-    void UpadateVarMap(const std::string& key, const T& val)
+    void UpdateVarMap(const std::string& key, const T& val)
     {
         replace(fVarMap, key, val);
     }
