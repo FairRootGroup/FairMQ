@@ -68,6 +68,9 @@ class FairProgOptions
     int AddToCmdLineOptions(const po::options_description& optDesc, bool visible = true);
     int AddToCfgFileOptions(const po::options_description& optDesc, bool visible = true);
     int AddToEnvironmentOptions(const po::options_description& optDesc);
+    po::options_description& GetCmdLineOptions();
+    po::options_description& GetCfgFileOptions();
+    po::options_description& GetEnvironmentOptions();
 
     void UseConfigFile(const std::string& filename = "");
 
@@ -95,6 +98,23 @@ class FairProgOptions
 
     // convert value to string that corresponds to the key
     std::string GetStringValue(const std::string& key);
+
+    //restrict conversion to fundamental types
+    template<typename T>
+    T ConvertTo(const std::string& str_value)
+    {
+        if (std::is_arithmetic<T>::value) 
+        {
+            std::istringstream iss( str_value );
+            T val;
+            iss >> val;
+            return val;
+        } 
+        else 
+        {
+            LOG(ERROR)<<"the provided string "<<str_value << " cannot be converted in the requested type. The target types must be arithmetic types";
+        }
+    }
 
     const po::variables_map& GetVarMap() const { return fVarMap; }
 

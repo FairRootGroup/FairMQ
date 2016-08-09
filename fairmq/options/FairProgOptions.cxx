@@ -92,6 +92,21 @@ int FairProgOptions::AddToCfgFileOptions(const po::options_description& optDesc,
     }
     return 0;
 }
+//*
+po::options_description& FairProgOptions::GetCmdLineOptions()
+{
+    return fCmdLineOptions;
+}
+
+po::options_description& FairProgOptions::GetCfgFileOptions()
+{
+    return fConfigFileOptions;
+}
+
+po::options_description& FairProgOptions::GetEnvironmentOptions()
+{
+    return fEnvironmentDesc;
+}
 
 int FairProgOptions::AddToEnvironmentOptions(const po::options_description& optDesc)
 {
@@ -153,7 +168,7 @@ int FairProgOptions::ParseCfgFile(ifstream& ifs, const po::options_description& 
 {
     if (!ifs)
     {
-        cout << "can not open configuration file \n";
+        LOG(ERROR) << "can not open configuration file";
         return -1;
     }
     else
@@ -169,7 +184,7 @@ int FairProgOptions::ParseCfgFile(const string& filename, const po::options_desc
     ifstream ifs(filename.c_str());
     if (!ifs)
     {
-        cout << "can not open configuration file: " << filename << "\n";
+        LOG(ERROR) << "can not open configuration file: " << filename;
         return -1;
     }
     else

@@ -18,7 +18,7 @@
 using namespace std;
 
 FairMQProgOptions::FairMQProgOptions()
-    : FairProgOptions()
+    : FairProgOptions(), FairMQEventManager()
     , fMQParserOptions("MQ-Device parser options")
     , fMQOptionsInCfg("MQ-Device options")
     , fMQOptionsInCmd("MQ-Device options")
@@ -26,6 +26,7 @@ FairMQProgOptions::FairMQProgOptions()
     , fHelpTitle("***** FAIRMQ Program Options ***** ")
     , fVersion("Beta version 0.1")
     , fMQKeyMap()
+    // , fSignalMap() //string API
 {
 }
 
@@ -43,10 +44,10 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
     // init description
     InitOptionDescription();
     // parse command line options
-    if (ParseCmdLine(argc, argv, fCmdLineOptions, fVarMap, allowUnregistered))
+    if (FairProgOptions::ParseCmdLine(argc, argv, fCmdLineOptions, fVarMap, allowUnregistered))
     {
-        LOG(ERROR) << "Could not parse cmd options";
-        exit(EXIT_FAILURE);
+        // ParseCmdLine return 0 if help or version cmd not called. return 1 if called
+        exit(EXIT_SUCCESS);
     }
 
     // if txt/INI configuration file enabled then parse it as well
@@ -55,8 +56,9 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
         // check if file exist
         if (fs::exists(fConfigFile))
         {
-            if (ParseCfgFile(fConfigFile.string(), fConfigFileOptions, fVarMap, allowUnregistered))
+            if (FairProgOptions::ParseCfgFile(fConfigFile.string(), fConfigFileOptions, fVarMap, allowUnregistered))
             {
+                // ParseCfgFile return -1 if cannot open or read config file. It return 0 otherwise
                 LOG(ERROR) << "Could not parse config";
                 exit(EXIT_FAILURE);
             }
@@ -86,7 +88,7 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
         set_global_log_level(log_op::operation::GREATER_EQ_THAN, fSeverityMap.at("DEBUG"));
     }
 
-    PrintOptions();
+    
 
     // check if one of required MQ config option is there  
     auto parserOption_shptr = fMQParserOptions.options();
@@ -115,6 +117,7 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
     }
     else
     {
+        // if cmdline mq-config called then use the default xml/json parser
         if (fVarMap.count("mq-config"))
         {
             LOG(DEBUG) << "mq-config: Using default XML/JSON parser";
@@ -177,6 +180,7 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
             UserParser<FairMQParser::XML>(ss, id);
         }
     }
+    FairProgOptions::PrintOptions();
 }
 
 
@@ -206,7 +210,6 @@ int FairMQProgOptions::UpdateChannelMap(const FairMQMap& channels)
 // create key for variable map as follow : channelName.index.memberName
 void FairMQProgOptions::UpdateMQValues()
 {
-
     for(const auto& p : fFairMQMap)
     {
         int index = 0;
@@ -232,8 +235,15 @@ void FairMQProgOptions::UpdateMQValues()
             UpdateVarMap<std::string>(methodKey,channel.GetMethod());
             UpdateVarMap<std::string>(addressKey,channel.GetAddress());
             UpdateVarMap<std::string>(propertyKey,channel.GetProperty());
+
+
+            //UpdateVarMap<std::string>(sndBufSizeKey, std::to_string(channel.GetSndBufSize()));// string API
             UpdateVarMap<int>(sndBufSizeKey,channel.GetSndBufSize());
+
+            //UpdateVarMap<std::string>(rcvBufSizeKey, std::to_string(channel.GetRcvBufSize()));// string API
             UpdateVarMap<int>(rcvBufSizeKey,channel.GetRcvBufSize());
+
+            //UpdateVarMap<std::string>(rateLoggingKey,std::to_string(channel.GetRateLogging()));// string API
             UpdateVarMap<int>(rateLoggingKey,channel.GetRateLogging());
 
             /*
@@ -369,6 +379,48 @@ int FairMQProgOptions::UpdateChannelMap(const std::string& channelName, int inde
 
 }
 
+/*
+// string API
+int FairMQProgOptions::UpdateChannelMap(const std::string& channelName, int index, const std::string& member, const std::string& val)
+{
+    if(member == "type") 
+    {
+        fFairMQMap.at(channelName).at(index).UpdateType(val);
+        return 0;
+    }
+    
+    if(member == "method") 
+    {
+        fFairMQMap.at(channelName).at(index).UpdateMethod(val);
+        return 0;
+    }
+    
+    if(member == "address") 
+    {
+        fFairMQMap.at(channelName).at(index).UpdateAddress(val);
+        return 0;
+    }
+    
+    if(member == "property") 
+    {
+        fFairMQMap.at(channelName).at(index).UpdateProperty(val);
+        return 0;
+    }
+    else
+    {
+        if(member == "sndBufSize" || member == "rcvBufSize" || member == "rateLogging") 
+        {
+            UpdateChannelMap(channelName,index,member,ConvertTo<int>(val));
+        }
+
+        //if we get there it means something is wrong
+        LOG(ERROR)  << "update of FairMQChannel map failed for the following key: "
+                    << channelName<<"."<<index<<"."<<member;
+        return 1;
+    }
+
+}
+*/
 // ----------------------------------------------------------------------------------
 
 
