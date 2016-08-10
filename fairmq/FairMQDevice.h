@@ -20,6 +20,7 @@
 #include <string>
 #include <iostream>
 #include <unordered_map>
+#include <functional>
 
 #include <mutex>
 #include <condition_variable>
@@ -33,7 +34,18 @@
 #include "FairMQMessage.h"
 #include "FairMQParts.h"
 
+typedef std::unordered_map<std::string, std::vector<FairMQChannel>> FairMQChannelMap;
+
+typedef std::function<bool(std::unique_ptr<FairMQMessage>&, int)> InputMsgCallback;
+typedef std::function<bool(FairMQParts&, int)> InputMultipartCallback;
+
 class FairMQProgOptions;
+
+template<typename T>
+void FairMQSimpleMsgCleanup(void* /*data*/, void* hint)
+{
+    delete static_cast<T*>(hint);
+}
 
 class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 {
@@ -94,9 +106,9 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param i channel index
     /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
     /// In case of errors, returns -1.
-    inline int Send(const std::unique_ptr<FairMQMessage>& msg, const std::string& chan, const int i = 0) const
+    inline int Send(const std::unique_ptr<FairMQMessage>& msg, const std::string& chan, const int i = 0, int sndTimeoutInMs = -1) const
     {
-        return fChannels.at(chan).at(i).Send(msg);
+        return fChannels.at(chan).at(i).Send(msg, sndTimeoutInMs);
     }
 
     /// Shorthand method to send `msg` on `chan` at index `i` without blocking
@@ -116,9 +128,9 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param i channel index
     /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
     /// In case of errors, returns -1.
-    inline int64_t Send(const FairMQParts& parts, const std::string& chan, const int i = 0) const
+    inline int64_t Send(const FairMQParts& parts, const std::string& chan, const int i = 0, int sndTimeoutInMs = -1) const
     {
-        return fChannels.at(chan).at(i).Send(parts.fParts);
+        return fChannels.at(chan).at(i).Send(parts.fParts, sndTimeoutInMs);
     }
 
     /// Shorthand method to send FairMQParts on `chan` at index `i` without blocking
@@ -138,9 +150,9 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param i channel index
     /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
     /// In case of errors, returns -1.
-    inline int Receive(const std::unique_ptr<FairMQMessage>& msg, const std::string& chan, const int i = 0) const
+    inline int Receive(const std::unique_ptr<FairMQMessage>& msg, const std::string& chan, const int i = 0, int rcvTimeoutInMs = -1) const
     {
-        return fChannels.at(chan).at(i).Receive(msg);
+        return fChannels.at(chan).at(i).Receive(msg, rcvTimeoutInMs);
     }
 
     /// Shorthand method to receive `msg` on `chan` at index `i` without blocking
@@ -160,9 +172,9 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param i channel index
     /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
     /// In case of errors, returns -1.
-    inline int64_t Receive(FairMQParts& parts, const std::string& chan, const int i = 0) const
+    inline int64_t Receive(FairMQParts& parts, const std::string& chan, const int i = 0, int rcvTimeoutInMs = -1) const
     {
-        return fChannels.at(chan).at(i).Receive(parts.fParts);
+        return fChannels.at(chan).at(i).Receive(parts.fParts, rcvTimeoutInMs);
     }
 
     /// Shorthand method to receive FairMQParts on `chan` at index `i` without blocking
@@ -174,6 +186,13 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     inline int64_t ReceiveAsync(FairMQParts& parts, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).ReceiveAsync(parts.fParts);
+    }
+
+    /// @brief Create FairMQPoller
+    /// @return pointer to FairMQPoller
+    inline FairMQPoller* NewPoller(const std::initializer_list<std::string> channelList) const
+    {
+        return fTransportFactory->CreatePoller(fChannels, channelList);
     }
 
     /// @brief Create empty FairMQMessage
@@ -200,6 +219,26 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     inline FairMQMessage* NewMessage(void* data, int size, fairmq_free_fn* ffn, void* hint = NULL) const
     {
         return fTransportFactory->CreateMessage(data, size, ffn, hint);
+    }
+
+    template<typename T>
+    inline FairMQMessage* NewSimpleMessage(const T& data) const
+    {
+        T* dataCopy = new T(data);
+        return fTransportFactory->CreateMessage(dataCopy, sizeof(T), FairMQSimpleMsgCleanup<T>, dataCopy);
+    }
+
+    template<std::size_t N>
+    inline FairMQMessage* NewSimpleMessage(const char(&data)[N]) const
+    {
+        std::string* msgStr = new std::string(data);
+        return fTransportFactory->CreateMessage(const_cast<char*>(msgStr->c_str()), msgStr->length(), FairMQSimpleMsgCleanup<std::string>, msgStr);
+    }
+
+    inline FairMQMessage* NewSimpleMessage(const std::string& str) const
+    {
+        std::string* msgStr = new std::string(str);
+        return fTransportFactory->CreateMessage(const_cast<char*>(msgStr->c_str()), msgStr->length(), FairMQSimpleMsgCleanup<std::string>, msgStr);
     }
 
     /// Waits for the first initialization run to finish
@@ -255,8 +294,32 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param rhs Left hand side value for comparison
     static bool SortSocketsByAddress(const FairMQChannel &lhs, const FairMQChannel &rhs);
 
-    // TODO: make this const?
     std::unordered_map<std::string, std::vector<FairMQChannel>> fChannels; ///< Device channels
+    FairMQProgOptions* fConfig; ///< Program options configuration
+
+    template<class T>
+    void OnData(const std::string& channelName, bool (T::* memberFunction)(std::unique_ptr<FairMQMessage>& msg, int index))
+    {
+        fDataCallbacks = true;
+        fMsgInputs.insert(std::make_pair(channelName, [this, memberFunction](std::unique_ptr<FairMQMessage>& msg, int index)
+        {
+            return (static_cast<T*>(this)->*memberFunction)(msg, index);
+        }));
+    }
+
+    void OnData(const std::string& channelName, InputMsgCallback);
+
+    template<class T>
+    void OnData(const std::string& channelName, bool (T::* memberFunction)(FairMQParts& parts, int index))
+    {
+        fDataCallbacks = true;
+        fMultipartInputs.insert(std::make_pair(channelName, [this, memberFunction](FairMQParts& parts, int index)
+        {
+            return (static_cast<T*>(this)->*memberFunction)(parts, index);
+        }));
+    }
+
+    void OnData(const std::string& channelName, InputMultipartCallback);
 
   protected:
     std::string fId; ///< Device ID
@@ -274,7 +337,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     FairMQSocket* fCmdSocket; ///< Socket used for the internal unblocking mechanism
 
     FairMQTransportFactory* fTransportFactory; ///< Transport factory
-    FairMQProgOptions* fConfig; ///< Program options configuration
 
     /// Additional user initialization (can be overloaded in child classes). Prefer to use InitTask().
     virtual void Init();
@@ -284,6 +346,15 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     /// Runs the device (to be overloaded in child classes)
     virtual void Run();
+
+    /// Called in the RUNNING state once before executing the Run()/ConditionalRun() method
+    virtual void PreRun();
+
+    /// Called during RUNNING state repeatedly until it returns false or device state changes
+    virtual bool ConditionalRun();
+
+    /// Called in the RUNNING state once after executing the Run()/ConditionalRun() method
+    virtual void PostRun();
 
     /// Handles the PAUSE state
     virtual void Pause();
@@ -330,9 +401,13 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// Signal handler
     void SignalHandler(int signal);
     bool fCatchingSignals;
-    bool fTerminated;
+    bool fTerminationRequested;
     // Interactive state loop helper
-    std::atomic<bool> fRunning;
+    std::atomic<bool> fInteractiveRunning;
+
+    bool fDataCallbacks;
+    std::unordered_map<std::string, InputMsgCallback> fMsgInputs;
+    std::unordered_map<std::string, InputMultipartCallback> fMultipartInputs;
 };
 
 #endif /* FAIRMQDEVICE_H_ */

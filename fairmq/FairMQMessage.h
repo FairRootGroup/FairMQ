@@ -39,4 +39,6 @@ class FairMQMessage
     virtual ~FairMQMessage() {};
 };
 
+using FairMQMessagePtr = std::unique_ptr<FairMQMessage>;
+
 #endif /* FAIRMQMESSAGE_H_ */

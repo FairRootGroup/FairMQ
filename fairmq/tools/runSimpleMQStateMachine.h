@@ -8,34 +8,44 @@
 #ifndef RUNSIMPLEMQSTATEMACHINE_H
 #define RUNSIMPLEMQSTATEMACHINE_H
 
+#include "FairMQLogger.h"
+#include "FairMQParser.h"
+#include "FairMQProgOptions.h"
+
 #include <iostream>
 #include <string>
+#include <dlfcn.h>
 
 #ifdef DDS_FOUND
 #include "FairMQDDSTools.h"
 #endif /*DDS_FOUND*/
-
-#include "FairMQLogger.h"
-#include "FairMQParser.h"
-#include "FairMQProgOptions.h"
 
 // template function that takes any device
 // and runs a simple MQ state machine configured from a JSON file and/or (optionally) DDS.
 template<typename TMQDevice>
 inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
 {
-    device.CatchSignals();
+    if (config.GetValue<int>("catch-signals") > 0)
+    {
+        device.CatchSignals();
+    }
+    else
+    {
+        LOG(WARN) << "Signal handling (e.g. ctrl+C) has been deactivated via command line argument";
+    }
 
     device.SetConfig(config);
     std::string control = config.GetValue<std::string>("control");
 
     device.ChangeState(TMQDevice::INIT_DEVICE);
+
 #ifdef DDS_FOUND
     if (control == "dds")
     {
         HandleConfigViaDDS(device);
     }
 #endif /*DDS_FOUND*/
+
     device.WaitForEndOfState(TMQDevice::INIT_DEVICE);
 
     device.ChangeState(TMQDevice::INIT_TASK);
@@ -78,7 +88,7 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
                    << ", 'dds'"
 #endif /*DDS_FOUND*/
                    << ". Exiting.";
-        exit(EXIT_FAILURE);
+        return 1;
     }
 
     return 0;

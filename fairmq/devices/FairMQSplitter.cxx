@@ -12,16 +12,18 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-
 #include "FairMQLogger.h"
 #include "FairMQSplitter.h"
+#include "FairMQProgOptions.h"
 
 using namespace std;
 
 FairMQSplitter::FairMQSplitter()
     : fMultipart(1)
+    , fNumOutputs(0)
+    , fDirection(0)
+    , fInChannelName()
+    , fOutChannelName()
 {
 }
 
@@ -29,129 +31,44 @@ FairMQSplitter::~FairMQSplitter()
 {
 }
 
-void FairMQSplitter::Run()
+void FairMQSplitter::InitTask()
 {
-    int numOutputs = fChannels.at("data-out").size();
-
-    int direction = 0;
+    fMultipart = fConfig->GetValue<int>("multipart");
+    fInChannelName = fConfig->GetValue<string>("in-channel");
+    fOutChannelName = fConfig->GetValue<string>("out-channel");
+    fNumOutputs = fChannels.at(fOutChannelName).size();
+    fDirection = 0;
 
     if (fMultipart)
     {
-        while (CheckCurrentState(RUNNING))
-        {
-            FairMQParts payload;
-
-            if (Receive(payload, "data-in") >= 0)
-            {
-                if (Send(payload, "data-out", direction) < 0)
-                {
-                    LOG(DEBUG) << "Transfer interrupted";
-                    break;
-                }
-            }
-            else
-            {
-                LOG(DEBUG) << "Transfer interrupted";
-                break;
-            }
-
-            ++direction;
-            if (direction >= numOutputs)
-            {
-                direction = 0;
-            }
-        }
+        OnData(fInChannelName, &FairMQSplitter::HandleMultipartData);
     }
     else
     {
-        while (CheckCurrentState(RUNNING))
-        {
-            unique_ptr<FairMQMessage> payload(fTransportFactory->CreateMessage());
-
-            if (Receive(payload, "data-in") >= 0)
-            {
-                if (Send(payload, "data-out", direction) < 0)
-                {
-                    LOG(DEBUG) << "Transfer interrupted";
-                    break;
-                }
-            }
-            else
-            {
-                LOG(DEBUG) << "Transfer interrupted";
-                break;
-            }
-
-            ++direction;
-            if (direction >= numOutputs)
-            {
-                direction = 0;
-            }
-        }
+        OnData(fInChannelName, &FairMQSplitter::HandleSingleData);
     }
 }
 
-void FairMQSplitter::SetProperty(const int key, const string& value)
+bool FairMQSplitter::HandleSingleData(FairMQMessagePtr& payload, int /*index*/)
 {
-    switch (key)
+    Send(payload, fOutChannelName, fDirection);
+
+    if (++fDirection >= fNumOutputs)
     {
-        default:
-            FairMQDevice::SetProperty(key, value);
-            break;
+        fDirection = 0;
     }
+
+    return true;
 }
 
-string FairMQSplitter::GetProperty(const int key, const string& default_ /*= ""*/)
+bool FairMQSplitter::HandleMultipartData(FairMQParts& payload, int /*index*/)
 {
-    switch (key)
-    {
-        default:
-            return FairMQDevice::GetProperty(key, default_);
-    }
-}
+    Send(payload, fOutChannelName, fDirection);
 
-void FairMQSplitter::SetProperty(const int key, const int value)
-{
-    switch (key)
+    if (++fDirection >= fNumOutputs)
     {
-        case Multipart:
-            fMultipart = value;
-            break;
-        default:
-            FairMQDevice::SetProperty(key, value);
-            break;
+        fDirection = 0;
     }
-}
 
-int FairMQSplitter::GetProperty(const int key, const int default_ /*= 0*/)
-{
-    switch (key)
-    {
-        case Multipart:
-            return fMultipart;
-        default:
-            return FairMQDevice::GetProperty(key, default_);
-    }
+    return true;
 }
-
-string FairMQSplitter::GetPropertyDescription(const int key)
-{
-    switch (key)
-    {
-        case Multipart:
-            return "Multipart: Handle payloads as multipart messages.";
-        default:
-            return FairMQDevice::GetPropertyDescription(key);
-    }
-}
-
-void FairMQSplitter::ListProperties()
-{
-    LOG(INFO) << "Properties of FairMQSplitter:";
-    for (int p = FairMQConfigurable::Last; p < FairMQSplitter::Last; ++p)
-    {
-        LOG(INFO) << " " << GetPropertyDescription(p);
-    }
-    LOG(INFO) << "---------------------------";
-}
-

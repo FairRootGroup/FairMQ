@@ -22,57 +22,61 @@
 #include <boost/log/utility/manipulators/to_log.hpp>
 #include <boost/log/sources/record_ostream.hpp>
 
-namespace fairmq
+namespace FairMQ
 {
-    enum severity_level
-    {
-        TRACE,
-        DEBUG,
-        RESULTS,
-        INFO,
-        WARN,
-        ERROR,
-        STATE,
-        NOLOG
-    };
 
-    static const std::array<std::string, 8> g_LogSeverityLevelString
-    {
-        { 
-            "TRACE",
-            "DEBUG",
-            "RESULTS",
-            "INFO",
-            "WARN",
-            "ERROR",
-            "STATE",
-            "NOLOG"
-        }
-    };
+enum severity_level
+{
+    TRACE,
+    DEBUG,
+    RESULTS,
+    INFO,
+    WARN,
+    ERROR,
+    STATE,
+    NOLOG
+};
 
-    namespace color
+static const std::array<std::string, 8> g_LogSeverityLevelString
+{
     {
-        enum code
-        {
-            FG_BLACK    = 30,
-            FG_RED      = 31,
-            FG_GREEN    = 32,
-            FG_YELLOW   = 33,
-            FG_BLUE     = 34,
-            FG_MAGENTA  = 35,
-            FG_CYAN     = 36,
-            FG_WHITE    = 37,
-            FG_DEFAULT  = 39,
-            BG_RED      = 41,
-            BG_GREEN    = 42,
-            BG_BLUE     = 44,
-            BG_DEFAULT  = 49
-        };
+        "TRACE",
+        "DEBUG",
+        "RESULTS",
+        "INFO",
+        "WARN",
+        "ERROR",
+        "STATE",
+        "NOLOG"
     }
+};
+
+namespace Color
+{
+
+enum code
+{
+    FG_BLACK    = 30,
+    FG_RED      = 31,
+    FG_GREEN    = 32,
+    FG_YELLOW   = 33,
+    FG_BLUE     = 34,
+    FG_MAGENTA  = 35,
+    FG_CYAN     = 36,
+    FG_WHITE    = 37,
+    FG_DEFAULT  = 39,
+    BG_RED      = 41,
+    BG_GREEN    = 42,
+    BG_BLUE     = 44,
+    BG_DEFAULT  = 49
+};
+
 }
 
+} // FairMQ namespace
+
 // helper function to format in color console output
-template <fairmq::color::code color> 
+template <FairMQ::Color::code color> 
 inline std::string write_in(const std::string& text_in_bold)
 {
     std::ostringstream os;
@@ -82,8 +86,8 @@ inline std::string write_in(const std::string& text_in_bold)
 }
 
 // typedef
-typedef fairmq::severity_level custom_severity_level;
-#define SEVERITY_THRESHOLD custom_severity_level::TRACE
+typedef FairMQ::severity_level custom_severity_level;
+#define SEVERITY_MINIMUM custom_severity_level::TRACE
 #define SEVERITY_ERROR custom_severity_level::ERROR
 #define SEVERITY_NOLOG custom_severity_level::NOLOG
 
@@ -100,41 +104,41 @@ inline boost::log::formatting_ostream& operator<<
 {
     custom_severity_level level = manip.get();
     std::size_t idx = static_cast<std::size_t>(level);
-    if (idx < fairmq::g_LogSeverityLevelString.size())
+    if (idx < FairMQ::g_LogSeverityLevelString.size())
     {
         // strm << " idx = " << idx << " ";
         switch (level)
         {
             case custom_severity_level::TRACE :
-                strm << write_in<fairmq::color::FG_BLUE>(fairmq::g_LogSeverityLevelString.at(idx));
+                strm << write_in<FairMQ::Color::FG_BLUE>(FairMQ::g_LogSeverityLevelString.at(idx));
                 break;
 
             case custom_severity_level::DEBUG :
-                strm << write_in<fairmq::color::FG_BLUE>(fairmq::g_LogSeverityLevelString.at(idx));
+                strm << write_in<FairMQ::Color::FG_BLUE>(FairMQ::g_LogSeverityLevelString.at(idx));
                 break;
 
             case custom_severity_level::RESULTS :
-                strm << write_in<fairmq::color::FG_MAGENTA>(fairmq::g_LogSeverityLevelString.at(idx));
+                strm << write_in<FairMQ::Color::FG_MAGENTA>(FairMQ::g_LogSeverityLevelString.at(idx));
                 break;
 
             case custom_severity_level::INFO :
-                strm << write_in<fairmq::color::FG_GREEN>(fairmq::g_LogSeverityLevelString.at(idx));
+                strm << write_in<FairMQ::Color::FG_GREEN>(FairMQ::g_LogSeverityLevelString.at(idx));
                 break;
 
             case custom_severity_level::WARN :
-                strm << write_in<fairmq::color::FG_YELLOW>(fairmq::g_LogSeverityLevelString.at(idx));
+                strm << write_in<FairMQ::Color::FG_YELLOW>(FairMQ::g_LogSeverityLevelString.at(idx));
                 break;
 
             case custom_severity_level::STATE :
-                strm << write_in<fairmq::color::FG_MAGENTA>(fairmq::g_LogSeverityLevelString.at(idx));
+                strm << write_in<FairMQ::Color::FG_MAGENTA>(FairMQ::g_LogSeverityLevelString.at(idx));
                 break;
 
             case custom_severity_level::ERROR :
-                strm << write_in<fairmq::color::FG_RED>(fairmq::g_LogSeverityLevelString.at(idx));
+                strm << write_in<FairMQ::Color::FG_RED>(FairMQ::g_LogSeverityLevelString.at(idx));
                 break;
 
             case custom_severity_level::NOLOG :
-                strm << write_in<fairmq::color::FG_DEFAULT>(fairmq::g_LogSeverityLevelString.at(idx));
+                strm << write_in<FairMQ::Color::FG_DEFAULT>(FairMQ::g_LogSeverityLevelString.at(idx));
                 break;
 
             default:
@@ -143,7 +147,7 @@ inline boost::log::formatting_ostream& operator<<
     }
     else
     {
-        strm << write_in<fairmq::color::FG_RED>("Unknown log level ")
+        strm << write_in<FairMQ::Color::FG_RED>("Unknown log level ")
              << "(int level = " << static_cast<int>(level) << ")";
     }
     return strm;
@@ -158,13 +162,13 @@ inline boost::log::formatting_ostream& operator<<
 {
     custom_severity_level level = manip.get();
     std::size_t idx = static_cast<std::size_t>(level);
-    if (idx < fairmq::g_LogSeverityLevelString.size())
+    if (idx < FairMQ::g_LogSeverityLevelString.size())
     {
-        strm << fairmq::g_LogSeverityLevelString.at(idx);
+        strm << FairMQ::g_LogSeverityLevelString.at(idx);
     }
     else
     {
-        strm << write_in<fairmq::color::FG_RED>("Unknown log level ")
+        strm << write_in<FairMQ::Color::FG_RED>("Unknown log level ")
              << "(int level = " << static_cast<int>(level) << ")";
     }
     return strm;

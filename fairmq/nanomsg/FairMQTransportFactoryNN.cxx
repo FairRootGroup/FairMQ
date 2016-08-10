@@ -21,37 +21,37 @@ FairMQTransportFactoryNN::FairMQTransportFactoryNN()
     LOG(INFO) << "Using nanomsg library";
 }
 
-FairMQMessage* FairMQTransportFactoryNN::CreateMessage()
+FairMQMessage* FairMQTransportFactoryNN::CreateMessage() const
 {
     return new FairMQMessageNN();
 }
 
-FairMQMessage* FairMQTransportFactoryNN::CreateMessage(const size_t size)
+FairMQMessage* FairMQTransportFactoryNN::CreateMessage(const size_t size) const
 {
     return new FairMQMessageNN(size);
 }
 
-FairMQMessage* FairMQTransportFactoryNN::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
+FairMQMessage* FairMQTransportFactoryNN::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const
 {
     return new FairMQMessageNN(data, size, ffn, hint);
 }
 
-FairMQSocket* FairMQTransportFactoryNN::CreateSocket(const string& type, const std::string& name, const int numIoThreads, const std::string& id /*= ""*/)
+FairMQSocket* FairMQTransportFactoryNN::CreateSocket(const string& type, const std::string& name, const int numIoThreads, const std::string& id /*= ""*/) const
 {
     return new FairMQSocketNN(type, name, numIoThreads, id);
 }
 
-FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const vector<FairMQChannel>& channels)
+FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const vector<FairMQChannel>& channels) const
 {
     return new FairMQPollerNN(channels);
 }
 
-FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::initializer_list<std::string> channelList)
+FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const
 {
     return new FairMQPollerNN(channelsMap, channelList);
 }
 
-FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket)
+FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const
 {
     return new FairMQPollerNN(cmdSocket, dataSocket);
 }

@@ -12,17 +12,17 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-
 #include "FairMQLogger.h"
 #include "FairMQMerger.h"
 #include "FairMQPoller.h"
+#include "FairMQProgOptions.h"
 
 using namespace std;
 
 FairMQMerger::FairMQMerger()
     : fMultipart(1)
+    , fInChannelName()
+    , fOutChannelName()
 {
 }
 
@@ -30,11 +30,18 @@ FairMQMerger::~FairMQMerger()
 {
 }
 
+void FairMQMerger::InitTask()
+{
+    fMultipart = fConfig->GetValue<int>("multipart");
+    fInChannelName = fConfig->GetValue<string>("in-channel");
+    fOutChannelName = fConfig->GetValue<string>("out-channel");
+}
+
 void FairMQMerger::Run()
 {
-    int numInputs = fChannels.at("data-in").size();
+    int numInputs = fChannels.at(fInChannelName).size();
 
-    std::unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels.at("data-in")));
+    std::unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels.at(fInChannelName)));
 
     if (fMultipart)
     {
@@ -50,9 +57,9 @@ void FairMQMerger::Run()
                 {
                     FairMQParts payload;
 
-                    if (Receive(payload, "data-in", i) >= 0)
+                    if (Receive(payload, fInChannelName, i) >= 0)
                     {
-                        if (Send(payload, "data-out") < 0)
+                        if (Send(payload, fOutChannelName) < 0)
                         {
                             LOG(DEBUG) << "Transfer interrupted";
                             break;
@@ -79,11 +86,11 @@ void FairMQMerger::Run()
                 // Check if the channel has data ready to be received.
                 if (poller->CheckInput(i))
                 {
-                    unique_ptr<FairMQMessage> payload(fTransportFactory->CreateMessage());
+                    FairMQMessagePtr payload(fTransportFactory->CreateMessage());
 
-                    if (Receive(payload, "data-in", i) >= 0)
+                    if (Receive(payload, fInChannelName, i) >= 0)
                     {
-                        if (Send(payload, "data-out") < 0)
+                        if (Send(payload, fOutChannelName) < 0)
                         {
                             LOG(DEBUG) << "Transfer interrupted";
                             break;
@@ -98,68 +105,4 @@ void FairMQMerger::Run()
             }
         }
     }
-}
-
-void FairMQMerger::SetProperty(const int key, const string& value)
-{
-    switch (key)
-    {
-        default:
-            FairMQDevice::SetProperty(key, value);
-            break;
-    }
-}
-
-string FairMQMerger::GetProperty(const int key, const string& default_ /*= ""*/)
-{
-    switch (key)
-    {
-        default:
-            return FairMQDevice::GetProperty(key, default_);
-    }
-}
-
-void FairMQMerger::SetProperty(const int key, const int value)
-{
-    switch (key)
-    {
-        case Multipart:
-            fMultipart = value;
-            break;
-        default:
-            FairMQDevice::SetProperty(key, value);
-            break;
-    }
-}
-
-int FairMQMerger::GetProperty(const int key, const int default_ /*= 0*/)
-{
-    switch (key)
-    {
-        case Multipart:
-            return fMultipart;
-        default:
-            return FairMQDevice::GetProperty(key, default_);
-    }
-}
-
-string FairMQMerger::GetPropertyDescription(const int key)
-{
-    switch (key)
-    {
-        case Multipart:
-            return "Multipart: Handle payloads as multipart messages.";
-        default:
-            return FairMQDevice::GetPropertyDescription(key);
-    }
-}
-
-void FairMQMerger::ListProperties()
-{
-    LOG(INFO) << "Properties of FairMQMerger:";
-    for (int p = FairMQConfigurable::Last; p < FairMQMerger::Last; ++p)
-    {
-        LOG(INFO) << " " << GetPropertyDescription(p);
-    }
-    LOG(INFO) << "---------------------------";
 }

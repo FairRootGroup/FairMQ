@@ -23,8 +23,8 @@
 
 #include <boost/log/support/date_time.hpp>
 
- void test_logger()
- {
+void test_logger()
+{
     LOG(TRACE) << "this is a trace message";
     LOG(DEBUG) << "this is a debug message";
     LOG(RESULTS) << "this is a results message";
@@ -32,57 +32,54 @@
     LOG(WARN) << "this is a warning message";
     LOG(ERROR) << "this is an error message";
     LOG(STATE) << "this is a state message";
- }
- 
- void test_console_level()
- {
+}
+
+void test_console_level()
+{
     std::cout<<"********* test logger : SET_LOG_CONSOLE_LEVEL(lvl) *********"<<std::endl;
     SET_LOG_CONSOLE_LEVEL(TRACE);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
-    
+
     SET_LOG_CONSOLE_LEVEL(DEBUG);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
-    
+
     SET_LOG_CONSOLE_LEVEL(RESULTS);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
-    
+
     SET_LOG_CONSOLE_LEVEL(INFO);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
-    
+
     SET_LOG_CONSOLE_LEVEL(WARN);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
-    
+
     SET_LOG_CONSOLE_LEVEL(ERROR);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
-    
+
     SET_LOG_CONSOLE_LEVEL(STATE);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
- }
- 
+}
 
-  
-int main() 
+int main()
 {
     test_console_level();
     SET_LOG_CONSOLE_LEVEL(INFO);
-    
+
     std::cout << "----------------------------"<<std::endl;
     LOG(INFO)<<"open log file 1";
     ADD_LOG_FILESINK("test_log1",ERROR);
     test_logger();
-    
+
     std::cout << "----------------------------"<<std::endl;
     LOG(INFO)<<"open log file 2";
     ADD_LOG_FILESINK("test_log2",STATE);
     test_logger();
-
 
     // advanced commands
     std::cout << "----------------------------"<<std::endl;
@@ -90,7 +87,7 @@ int main()
     AddFileSink([](const boost::log::attribute_value_set& attr_set)
         {
             auto sev = attr_set["Severity"].extract<custom_severity_level>();
-            return (sev == fairmq::ERROR);
+            return (sev == FairMQ::ERROR);
         },
         boost::log::keywords::file_name = "test_log3_%5N.log",
         boost::log::keywords::rotation_size = 5 * 1024 * 1024,
@@ -105,7 +102,7 @@ int main()
     FairMQ::Logger::sinkList.back()->set_filter([](const boost::log::attribute_value_set& attr_set)
         {
             auto sev = attr_set["Severity"].extract<custom_severity_level>();
-            return (sev == fairmq::WARN) || (sev == fairmq::ERROR);
+            return (sev == FairMQ::WARN) || (sev == FairMQ::ERROR);
         });
     test_logger();
 
@@ -114,5 +111,3 @@ int main()
     test_logger();
     return 0;
 }
-
-

@@ -12,25 +12,31 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
 #include <boost/timer/timer.hpp>
 
 #include "FairMQSink.h"
 #include "FairMQLogger.h"
+#include "FairMQProgOptions.h"
 
 using namespace std;
 
 FairMQSink::FairMQSink()
     : fNumMsgs(0)
+    , fInChannelName()
 {
+}
+
+void FairMQSink::InitTask()
+{
+    fNumMsgs = fConfig->GetValue<int>("num-msgs");
+    fInChannelName = fConfig->GetValue<string>("in-channel");
 }
 
 void FairMQSink::Run()
 {
     int numReceivedMsgs = 0;
     // store the channel reference to avoid traversing the map on every loop iteration
-    const FairMQChannel& dataInChannel = fChannels.at("data-in").at(0);
+    const FairMQChannel& dataInChannel = fChannels.at(fInChannelName).at(0);
 
     LOG(INFO) << "Starting the benchmark and expecting to receive " << fNumMsgs << " messages.";
     boost::timer::auto_cpu_timer timer;
@@ -58,68 +64,4 @@ void FairMQSink::Run()
 
 FairMQSink::~FairMQSink()
 {
-}
-
-void FairMQSink::SetProperty(const int key, const string& value)
-{
-    switch (key)
-    {
-        default:
-            FairMQDevice::SetProperty(key, value);
-            break;
-    }
-}
-
-string FairMQSink::GetProperty(const int key, const string& default_ /*= ""*/)
-{
-    switch (key)
-    {
-        default:
-            return FairMQDevice::GetProperty(key, default_);
-    }
-}
-
-void FairMQSink::SetProperty(const int key, const int value)
-{
-    switch (key)
-    {
-        case NumMsgs:
-            fNumMsgs = value;
-            break;
-        default:
-            FairMQDevice::SetProperty(key, value);
-            break;
-    }
-}
-
-int FairMQSink::GetProperty(const int key, const int default_ /*= 0*/)
-{
-    switch (key)
-    {
-        case NumMsgs:
-            return fNumMsgs;
-        default:
-            return FairMQDevice::GetProperty(key, default_);
-    }
-}
-
-string FairMQSink::GetPropertyDescription(const int key)
-{
-    switch (key)
-    {
-        case NumMsgs:
-            return "NumMsgs: Number of messages to send.";
-        default:
-            return FairMQDevice::GetPropertyDescription(key);
-    }
-}
-
-void FairMQSink::ListProperties()
-{
-    LOG(INFO) << "Properties of FairMQSink:";
-    for (int p = FairMQConfigurable::Last; p < FairMQSink::Last; ++p)
-    {
-        LOG(INFO) << " " << GetPropertyDescription(p);
-    }
-    LOG(INFO) << "---------------------------";
 }

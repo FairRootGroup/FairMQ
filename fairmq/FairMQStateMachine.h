@@ -31,7 +31,10 @@
 // This #define has to be before any msm header includes
 #define FUSION_MAX_VECTOR_SIZE 20
 
+#include <boost/mpl/for_each.hpp>
 #include <boost/msm/back/state_machine.hpp>
+#include <boost/msm/back/tools.hpp>
+#include <boost/msm/back/metafunctions.hpp>
 #include <boost/msm/front/state_machine_def.hpp>
 #include <boost/msm/front/functor_row.hpp>
 
@@ -233,7 +236,7 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
         template <class EVT, class FSM, class SourceState, class TargetState>
         void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
         {
-            LOG(STATE) << "Received STOP event";
+            LOG(STATE) << "Entering READY state";
 
             fsm.fState = READY;
 
@@ -288,7 +291,7 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
         template <class EVT, class FSM, class SourceState, class TargetState>
         void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
         {
-            LOG(STATE) << "Received END event";
+            LOG(STATE) << "Entering EXITING state";
 
             fsm.fState = EXITING;
 
@@ -321,7 +324,7 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
         template <class EVT, class FSM, class SourceState, class TargetState>
         void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
         {
-            LOG(STATE) << "ERROR!";
+            LOG(STATE) << "Entering ERROR state";
 
             fsm.fState = ERROR;
         }
@@ -348,20 +351,20 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
         //        Start                    Event                  Next                     Action           Guard
         //        +------------------------+----------------------+------------------------+----------------+---------+
         msmf::Row<IDLE_FSM,                INIT_DEVICE,           INITIALIZING_DEVICE_FSM, InitDeviceFct,   msmf::none>,
+        msmf::Row<IDLE_FSM,                END,                   EXITING_FSM,             ExitingFct,      msmf::none>,
         msmf::Row<INITIALIZING_DEVICE_FSM, internal_DEVICE_READY, DEVICE_READY_FSM,        DeviceReadyFct,  msmf::none>,
         msmf::Row<DEVICE_READY_FSM,        INIT_TASK,             INITIALIZING_TASK_FSM,   InitTaskFct,     msmf::none>,
+        msmf::Row<DEVICE_READY_FSM,        RESET_DEVICE,          RESETTING_DEVICE_FSM,    ResetDeviceFct,  msmf::none>,
         msmf::Row<INITIALIZING_TASK_FSM,   internal_READY,        READY_FSM,               ReadyFct,        msmf::none>,
         msmf::Row<READY_FSM,               RUN,                   RUNNING_FSM,             RunFct,          msmf::none>,
+        msmf::Row<READY_FSM,               RESET_TASK,            RESETTING_TASK_FSM,      ResetTaskFct,    msmf::none>,
         msmf::Row<RUNNING_FSM,             PAUSE,                 PAUSED_FSM,              PauseFct,        msmf::none>,
-        msmf::Row<PAUSED_FSM,              RUN,                   RUNNING_FSM,             ResumeFct,       msmf::none>,
         msmf::Row<RUNNING_FSM,             STOP,                  READY_FSM,               StopFct,         msmf::none>,
         msmf::Row<RUNNING_FSM,             internal_READY,        READY_FSM,               InternalStopFct, msmf::none>,
-        msmf::Row<READY_FSM,               RESET_TASK,            RESETTING_TASK_FSM,      ResetTaskFct,    msmf::none>,
-        msmf::Row<RESETTING_TASK_FSM,      internal_DEVICE_READY, DEVICE_READY_FSM,        DeviceReadyFct,  msmf::none>,
-        msmf::Row<DEVICE_READY_FSM,        RESET_DEVICE,          RESETTING_DEVICE_FSM,    ResetDeviceFct,  msmf::none>,
-        msmf::Row<RESETTING_DEVICE_FSM,    internal_IDLE,         IDLE_FSM,                IdleFct,         msmf::none>,
         msmf::Row<RUNNING_FSM,             END,                   EXITING_FSM,             ExitingRunFct,   msmf::none>,
-        msmf::Row<IDLE_FSM,                END,                   EXITING_FSM,             ExitingFct,      msmf::none>,
+        msmf::Row<PAUSED_FSM,              RUN,                   RUNNING_FSM,             ResumeFct,       msmf::none>,
+        msmf::Row<RESETTING_TASK_FSM,      internal_DEVICE_READY, DEVICE_READY_FSM,        DeviceReadyFct,  msmf::none>,
+        msmf::Row<RESETTING_DEVICE_FSM,    internal_IDLE,         IDLE_FSM,                IdleFct,         msmf::none>,
         msmf::Row<OK_FSM,                  ERROR_FOUND,           ERROR_FSM,               ErrorFoundFct,   msmf::none>>
         {};
 
@@ -369,7 +372,25 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
     template <class FSM, class Event>
     void no_transition(Event const& e, FSM&, int state)
     {
-        LOG(STATE) << "no transition from state " << GetStateName(state) << " (" << state << ") on event " << e.name();
+        typedef typename boost::msm::back::recursive_get_transition_table<FSM>::type recursive_stt;
+        typedef typename boost::msm::back::generate_state_set<recursive_stt>::type all_states;
+        std::string stateName;
+        boost::mpl::for_each<all_states,boost::msm::wrap<boost::mpl::placeholders::_1> >(boost::msm::back::get_state_name<recursive_stt>(stateName, state));
+        stateName = stateName.substr(24);
+        std::size_t pos = stateName.find("_FSME");
+        stateName.erase(pos);
+
+        if (stateName == "1RUNNING" || stateName == "6DEVICE_READY" || stateName == "0PAUSED")
+        {
+            stateName = stateName.substr(1);
+        }
+
+        if (stateName != "OK")
+        {
+            LOG(STATE) << "No transition from state " << stateName << " on event " << e.name();
+        }
+
+        // LOG(STATE) << "no transition from state " << GetStateName(state) << " (" << state << ") on event " << e.name();
     }
 
     // backward compatibility to FairMQStateMachine
@@ -461,7 +482,7 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
     boost::thread fTerminateStateThread;
 
     // condition variable to notify parent thread about end of state.
-    bool fStateFinished;
+    std::atomic<bool> fStateFinished;
     boost::condition_variable fStateCondition;
     boost::mutex fStateMutex;
 

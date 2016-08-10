@@ -16,6 +16,7 @@
 #include <algorithm>
 #include "FairMQParser.h"
 #include "FairMQLogger.h"
+
 using namespace std;
 
 FairMQProgOptions::FairMQProgOptions()
@@ -41,7 +42,6 @@ FairMQProgOptions::~FairMQProgOptions()
 
 void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregistered)
 {
-    
     // init description
     InitOptionDescription();
     // parse command line options
@@ -71,33 +71,37 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
         }
     }
 
-    // set log level before printing (default is 0 = DEBUG level)
-    std::string verbosity = GetValue<std::string>("verbose");
+    std::string verbosity = GetValue<std::string>("verbosity");
+    std::string logFile = GetValue<std::string>("log-to-file");
     bool color = GetValue<bool>("log-color");
-    if (!color)
+
+    // check if the provided verbosity level is valid, otherwise set to DEBUG
+    if (fSeverityMap.count(verbosity) == 0)
     {
-        reinit_logger(false);
+        LOG(ERROR) << " verbosity level '" << verbosity << "' unknown, it will be set to DEBUG";
+        verbosity = "DEBUG";
     }
 
-    if (fSeverityMap.count(verbosity))
+    if (logFile != "")
     {
-        DefaultConsoleSetFilter(fSeverityMap.at(verbosity));// return 1 if not success
-        //set_global_log_level(log_op::operation::GREATER_EQ_THAN, fSeverityMap.at(verbosity));
+        reinit_logger(false, logFile, fSeverityMap.at(verbosity));
+        DefaultConsoleSetFilter(fSeverityMap.at("NOLOG"));
     }
     else
     {
-        LOG(ERROR) << " verbosity level '" << verbosity << "' unknown, it will be set to DEBUG";
-        //set_global_log_level(log_op::operation::GREATER_EQ_THAN, fSeverityMap.at("DEBUG"));
-        DefaultConsoleSetFilter(fSeverityMap.at("DEBUG"));
+        if (!color)
+        {
+            reinit_logger(false);
+        }
+
+        DefaultConsoleSetFilter(fSeverityMap.at(verbosity));
     }
 
-    
-
     // check if one of required MQ config option is there  
-    auto parserOption_shptr = fMQParserOptions.options();
+    auto parserOptions = fMQParserOptions.options();
     bool optionExists = false;
     vector<string> MQParserKeys;
-    for (const auto& p : parserOption_shptr)
+    for (const auto& p : parserOptions)
     {
         MQParserKeys.push_back(p->canonical_display_name());
         if (fVarMap.count(p->canonical_display_name()))
@@ -164,9 +168,18 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
         {
             LOG(DEBUG) << "config-json-string: Parsing JSON string";
 
-            std::string id = fVarMap["id"].as<std::string>();
+            std::string id;
 
-            std::string value = fairmq::ConvertVariableValue<fairmq::ToString>().Run(fVarMap.at("config-json-string"));
+            if (fVarMap.count("config-key"))
+            {
+                id = fVarMap["config-key"].as<std::string>();
+            }
+            else
+            {
+                id = fVarMap["id"].as<std::string>();
+            }
+
+            std::string value = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at("config-json-string"));
             std::stringstream ss;
             ss << value;
             UserParser<FairMQParser::JSON>(ss, id);
@@ -175,14 +188,24 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
         {
             LOG(DEBUG) << "config-json-string: Parsing XML string";
 
-            std::string id = fVarMap["id"].as<std::string>();
+            std::string id;
 
-            std::string value = fairmq::ConvertVariableValue<fairmq::ToString>().Run(fVarMap.at("config-xml-string"));
+            if (fVarMap.count("config-key"))
+            {
+                id = fVarMap["config-key"].as<std::string>();
+            }
+            else
+            {
+                id = fVarMap["id"].as<std::string>();
+            }
+
+            std::string value = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at("config-xml-string"));
             std::stringstream ss;
             ss << value;
             UserParser<FairMQParser::XML>(ss, id);
         }
     }
+
     FairProgOptions::PrintOptions();
 }
 
@@ -301,6 +324,8 @@ void FairMQProgOptions::InitOptionDescription()
             ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/'dds').")
             ("network-interface", po::value<string>()->default_value("eth0"),        "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
             ("config-key",        po::value<string>(),                               "Use provided value instead of device id for fetching the configuration from the config file")
+            ("catch-signals",     po::value<int   >()->default_value(1),             "Enable signal handling (1/0)")
+            ("log-to-file",       po::value<string>()->default_value(""),            "Log output to a file")
             ;
 
         fMQOptionsInCfg.add_options()
@@ -311,6 +336,8 @@ void FairMQProgOptions::InitOptionDescription()
             ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/'dds').")
             ("network-interface", po::value<string>()->default_value("eth0"),        "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
             ("config-key",        po::value<string>(),                               "Use provided value instead of device id for fetching the configuration from the config file")
+            ("catch-signals",     po::value<int   >()->default_value(1),             "Enable signal handling (1/0)")
+            ("log-to-file",       po::value<string>()->default_value(""),            "Log output to a file")
             ;
     }
     else
@@ -323,6 +350,8 @@ void FairMQProgOptions::InitOptionDescription()
             ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/'dds').")
             ("network-interface", po::value<string>()->default_value("eth0"),        "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
             ("config-key",        po::value<string>(),                               "Use provided value instead of device id for fetching the configuration from the config file")
+            ("catch-signals",     po::value<int   >()->default_value(1),             "Enable signal handling (1/0)")
+            ("log-to-file",       po::value<string>()->default_value(""),            "Log output to a file")
             ;
     }
 

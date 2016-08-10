@@ -12,21 +12,28 @@
  * @author A. Rybalchenko
  */
 
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-
 #include "FairMQLogger.h"
 #include "FairMQProxy.h"
+#include "FairMQProgOptions.h"
 
 using namespace std;
 
 FairMQProxy::FairMQProxy()
     : fMultipart(1)
+    , fInChannelName()
+    , fOutChannelName()
 {
 }
 
 FairMQProxy::~FairMQProxy()
 {
+}
+
+void FairMQProxy::InitTask()
+{
+    fMultipart = fConfig->GetValue<int>("multipart");
+    fInChannelName = fConfig->GetValue<string>("in-channel");
+    fOutChannelName = fConfig->GetValue<string>("out-channel");
 }
 
 void FairMQProxy::Run()
@@ -36,9 +43,9 @@ void FairMQProxy::Run()
         while (CheckCurrentState(RUNNING))
         {
             FairMQParts payload;
-            if (Receive(payload, "data-in") >= 0)
+            if (Receive(payload, fInChannelName) >= 0)
             {
-                if (Send(payload, "data-out") < 0)
+                if (Send(payload, fOutChannelName) < 0)
                 {
                     LOG(DEBUG) << "Transfer interrupted";
                     break;
@@ -56,9 +63,9 @@ void FairMQProxy::Run()
         while (CheckCurrentState(RUNNING))
         {
             unique_ptr<FairMQMessage> payload(fTransportFactory->CreateMessage());
-            if (Receive(payload, "data-in") >= 0)
+            if (Receive(payload, fInChannelName) >= 0)
             {
-                if (Send(payload, "data-out") < 0)
+                if (Send(payload, fOutChannelName) < 0)
                 {
                     LOG(DEBUG) << "Transfer interrupted";
                     break;

@@ -25,37 +25,37 @@ FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ()
     LOG(DEBUG) << "Using ZeroMQ library, version: " << major << "." << minor << "." << patch;
 }
 
-FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage()
+FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage() const
 {
     return new FairMQMessageZMQ();
 }
 
-FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage(const size_t size)
+FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage(const size_t size) const
 {
     return new FairMQMessageZMQ(size);
 }
 
-FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
+FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const
 {
     return new FairMQMessageZMQ(data, size, ffn, hint);
 }
 
-FairMQSocket* FairMQTransportFactoryZMQ::CreateSocket(const string& type, const std::string& name, const int numIoThreads, const std::string& id /*= ""*/)
+FairMQSocket* FairMQTransportFactoryZMQ::CreateSocket(const string& type, const std::string& name, const int numIoThreads, const std::string& id /*= ""*/) const
 {
     return new FairMQSocketZMQ(type, name, numIoThreads, id);
 }
 
-FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQChannel>& channels)
+FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQChannel>& channels) const
 {
     return new FairMQPollerZMQ(channels);
 }
 
-FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::initializer_list<std::string> channelList)
+FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const
 {
     return new FairMQPollerZMQ(channelsMap, channelList);
 }
 
-FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket)
+FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const
 {
     return new FairMQPollerZMQ(cmdSocket, dataSocket);
 }

@@ -20,12 +20,9 @@
 #include <map>
 #include <set>
 
-
 #include "FairProgOptions.h"
 #include "FairMQEventManager.h"
 #include "FairMQChannel.h"
-
-
 
 class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
 {
@@ -98,7 +95,7 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
             {
 
 
-                if(!fairmq::is_this_type<std::string>(fVarMap.at(key)))
+                if(!FairMQ::is_this_type<std::string>(fVarMap.at(key)))
                 {
                     LOG(ERROR) << "You try to update a value as string (for key="<< key <<") while it has been defined with a different type in the option description.";
                     abort();
@@ -238,9 +235,6 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
     std::string fHelpTitle;
     std::string fVersion;
 
-
-
-
     bool EventKeyFound(const std::string& key)
     {
         if (
@@ -250,8 +244,6 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
         else
             return false;
     }
-
-
 
     typedef std::tuple<std::string,int,std::string> MQKey;//store key info
     std::map<std::string,MQKey> fMQKeyMap;// key=full path - val=key info
@@ -264,9 +256,7 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
     void UpdateMQValues();
     int Store(const FairMQMap& channels);
 
-
   private:
-
     /*
     // string API
     std::map<std::string, signal_type_ptr > fSignalMap;
@@ -299,6 +289,4 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
     }
 };
 
-
 #endif /* FAIRMQPROGOPTIONS_H */
-

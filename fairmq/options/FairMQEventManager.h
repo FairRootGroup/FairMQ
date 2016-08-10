@@ -26,41 +26,36 @@
 #include <boost/signals2.hpp>
 #include <boost/signals2/signal.hpp>
 
-
-
-
-enum class EventId : uint32_t 
+enum class EventId : uint32_t
 {
     // Place your new EventManager events here
     UpdateParam           = 0,
     Custom                = 1,
-    
 };
 
-namespace Events 
+namespace Events
 {
 
-    template <EventId,typename ...Args> struct Traits;
-    template <typename T> struct Traits<EventId::UpdateParam, T>       { using signal_type = boost::signals2::signal<void(const std::string&, T)>; } ;
-    template <typename T> struct Traits<EventId::UpdateParam, std::vector<T> >       { using signal_type = boost::signals2::signal<void(const std::string&, const std::vector<T>& )>; } ;
-    
+template <EventId,typename ...Args> struct Traits;
+template <typename T> struct Traits<EventId::UpdateParam, T>       { using signal_type = boost::signals2::signal<void(const std::string&, T)>; } ;
+template <typename T> struct Traits<EventId::UpdateParam, std::vector<T> >       { using signal_type = boost::signals2::signal<void(const std::string&, const std::vector<T>& )>; } ;
 
-    template <> struct Traits<EventId::UpdateParam, std::string>       { using signal_type = boost::signals2::signal<void(const std::string&, const std::string&)>; } ;
-    
-    template<std::size_t N> struct Traits<EventId::UpdateParam, const char[N]>       { using signal_type = boost::signals2::signal<void(const std::string&, const std::string&)>; } ;
-    
-    template <typename ...T> struct Traits<EventId::Custom,T...> { using signal_type = boost::signals2::signal<void(T...)>; } ;
-    
-    /*
-    template <EventId, typename ...Args> struct Traits2;
-    template <> struct Traits2<EventId::UpdateParam> { using signal_type = boost::signals2::signal<void(const std::string&, const std::string&)>; } ;
-    template <typename ...T> struct Traits2<EventId::UpdateParam,T...> { using signal_type = boost::signals2::signal<void(const std::string&, T...)>; } ;
-    template <> struct Traits2<EventId::UpdateParamInt>    { using signal_type = boost::signals2::signal<void(const std::string&, int)>; } ;
-    // */
-}
+template <> struct Traits<EventId::UpdateParam, std::string>       { using signal_type = boost::signals2::signal<void(const std::string&, const std::string&)>; } ;
 
+template<std::size_t N> struct Traits<EventId::UpdateParam, const char[N]>       { using signal_type = boost::signals2::signal<void(const std::string&, const std::string&)>; } ;
 
-class FairMQEventManager 
+template <typename ...T> struct Traits<EventId::Custom,T...> { using signal_type = boost::signals2::signal<void(T...)>; } ;
+
+/*
+template <EventId, typename ...Args> struct Traits2;
+template <> struct Traits2<EventId::UpdateParam> { using signal_type = boost::signals2::signal<void(const std::string&, const std::string&)>; } ;
+template <typename ...T> struct Traits2<EventId::UpdateParam,T...> { using signal_type = boost::signals2::signal<void(const std::string&, T...)>; } ;
+template <> struct Traits2<EventId::UpdateParamInt>    { using signal_type = boost::signals2::signal<void(const std::string&, int)>; } ;
+// */
+
+} // Events namespace
+
+class FairMQEventManager
 {
   public:
     typedef std::pair<EventId,std::string> EventKey;
@@ -99,16 +94,13 @@ class FairMQEventManager
     }
 
   private:
-
-    
     std::map<EventKey, boost::any> fEventMap;
-
 
     template <EventId event, typename... T, typename Slot = typename Events::Traits<event,T...>::signal_type, 
     typename SlotPtr = boost::shared_ptr<Slot> >
-    Slot& GetSlot(const std::string& key) 
+    Slot& GetSlot(const std::string& key)
     {
-        try 
+        try
         {
             EventKey eventKey = std::make_pair(event,key);
             //static_assert(std::is_same<decltype(boost::make_shared<Slot>()),SlotPtr>::value, "");
@@ -119,7 +111,7 @@ class FairMQEventManager
 //            auto &&tmp = boost::any_cast<SlotPtr>(fEventMap.at(eventKey));
 //            return *tmp;
         }
-        catch (boost::bad_any_cast const &e) 
+        catch (boost::bad_any_cast const &e)
         {
             LOG(ERROR)  << "Caught instance of boost::bad_any_cast: " 
                         << e.what() << " on event #" << static_cast<uint32_t>(event) << " and key" << key;
@@ -128,6 +120,4 @@ class FairMQEventManager
     }
 };
 
-
 #endif /* FAIRMQEVENTMANAGER_H */
-

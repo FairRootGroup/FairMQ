@@ -115,8 +115,8 @@ int main(int argc, char** argv)
             return 0;
         
         // Set severity level (Default is 0=DEBUG)
-        int verbose=config->GetValue<int>("verbose");
-        FairMQLogger::Level lvl=static_cast<FairMQLogger::Level>(verbose);
+        int verbosity = config->GetValue<int>("verbosity");
+        FairMQLogger::Level lvl=static_cast<FairMQLogger::Level>(verbosity);
         SET_LOGGER_LEVEL(lvl);
         
         

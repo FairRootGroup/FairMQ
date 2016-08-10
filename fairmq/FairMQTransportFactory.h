@@ -30,15 +30,15 @@ class FairMQChannel;
 class FairMQTransportFactory
 {
   public:
-    virtual FairMQMessage* CreateMessage() = 0;
-    virtual FairMQMessage* CreateMessage(const size_t size) = 0;
-    virtual FairMQMessage* CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = NULL) = 0;
+    virtual FairMQMessage* CreateMessage() const = 0;
+    virtual FairMQMessage* CreateMessage(const size_t size) const = 0;
+    virtual FairMQMessage* CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = NULL) const = 0;
 
-    virtual FairMQSocket* CreateSocket(const std::string& type, const std::string& name, const int numIoThreads, const std::string& id = "") = 0;
+    virtual FairMQSocket* CreateSocket(const std::string& type, const std::string& name, const int numIoThreads, const std::string& id = "") const = 0;
 
-    virtual FairMQPoller* CreatePoller(const std::vector<FairMQChannel>& channels) = 0;
-    virtual FairMQPoller* CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::initializer_list<std::string> channelList) = 0;
-    virtual FairMQPoller* CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) = 0;
+    virtual FairMQPoller* CreatePoller(const std::vector<FairMQChannel>& channels) const = 0;
+    virtual FairMQPoller* CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const = 0;
+    virtual FairMQPoller* CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const = 0;
 
     virtual ~FairMQTransportFactory() {};
 };

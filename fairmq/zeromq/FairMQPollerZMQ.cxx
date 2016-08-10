@@ -57,7 +57,7 @@ FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQChannel>& channels)
     }
 }
 
-FairMQPollerZMQ::FairMQPollerZMQ(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const initializer_list<string> channelList)
+FairMQPollerZMQ::FairMQPollerZMQ(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList)
     : items()
     , fNumItems(0)
     , fOffsetMap()

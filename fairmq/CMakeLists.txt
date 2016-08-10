@@ -81,10 +81,11 @@ Set(SRCS
   "FairMQPoller.cxx"
 
   "devices/FairMQBenchmarkSampler.cxx"
-  "devices/FairMQSink.cxx"
-  "devices/FairMQProxy.cxx"
-  "devices/FairMQSplitter.cxx"
   "devices/FairMQMerger.cxx"
+  "devices/FairMQMultiplier.cxx"
+  "devices/FairMQProxy.cxx"
+  "devices/FairMQSink.cxx"
+  "devices/FairMQSplitter.cxx"
 
   "options/FairProgOptions.cxx"
   "options/FairMQProgOptions.cxx"
@@ -106,6 +107,8 @@ EndIf(NANOMSG_FOUND)
 # manual install (globbing add not recommended)
 Set(FAIRMQHEADERS
   FairMQParts.h
+  # FairMQPlugin.h
+  runFairMQDevice.h
   options/FairProgOptionsHelper.h
   options/FairMQEventManager.h
   tools/FairMQTools.h
@@ -142,7 +145,7 @@ If(DDS_FOUND)
   Set(DEPENDENCIES
     ${DEPENDENCIES}
     ${DDS_INTERCOM_LIBRARY_SHARED}
-    ${DDS_PROTOCOL_LIBRARY_SHARED} # also link the two DDS dependency libraries to avoid linking issues on some osx systems
+    ${DDS_PROTOCOL_LIBRARY_SHARED}
     ${DDS_USER_DEFAULTS_LIBRARY_SHARED}
     )
 EndIf(DDS_FOUND)
@@ -153,10 +156,11 @@ GENERATE_LIBRARY()
 
 Set(Exe_Names
   bsampler
+  merger
+  multiplier
+  proxy
   sink
   splitter
-  merger
-  proxy
   runConfigExample
 )
 
@@ -169,10 +173,11 @@ EndIf(DDS_FOUND)
 
 Set(Exe_Source
   run/runBenchmarkSampler.cxx
+  run/runMerger.cxx
+  run/runMultiplier.cxx
+  run/runProxy.cxx
   run/runSink.cxx
   run/runSplitter.cxx
-  run/runMerger.cxx
-  run/runProxy.cxx
   options/runConfigEx.cxx
 )
 
@@ -197,4 +202,3 @@ EndForEach(_file RANGE 0 ${_length})
 
 configure_file( ${CMAKE_SOURCE_DIR}/fairmq/options/startConfigExample.sh.in 
                 ${CMAKE_BINARY_DIR}/bin/startConfigExample.sh )
-

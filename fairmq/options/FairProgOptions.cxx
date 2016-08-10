@@ -28,7 +28,7 @@ FairProgOptions::FairProgOptions() :
                         fConfigFileOptions("Configuration file options"),
                         fSeverityMap(),
                         fVisibleOptions("Visible options"),
-                        fVerboseLvl("INFO"),
+                        fVerbosityLevel("INFO"),
                         fUseConfigFile(false),
                         fConfigFile()
 {
@@ -37,27 +37,27 @@ FairProgOptions::FairProgOptions() :
     fGenericDesc.add_options()
         ("help,h", "produce help")
         ("version,v", "print version")
-        ("verbose", po::value<std::string>(&fVerboseLvl)->default_value("DEBUG"), "Verbosity level : \n"
-                                                                    "  TRACE \n"
-                                                                    "  DEBUG \n"
-                                                                    "  RESULTS \n"
-                                                                    "  INFO \n"
-                                                                    "  WARN \n"
-                                                                    "  ERROR \n"
-                                                                    "  STATE \n"
-                                                                    "  NOLOG"
+        ("verbosity", po::value<std::string>(&fVerbosityLevel)->default_value("DEBUG"), "Verbosity level : \n"
+            "  TRACE \n"
+            "  DEBUG \n"
+            "  RESULTS \n"
+            "  INFO \n"
+            "  WARN \n"
+            "  ERROR \n"
+            "  STATE \n"
+            "  NOLOG"
             )
         ("log-color", po::value<bool>()->default_value(true), "logger color: true or false")
         ;
 
-    fSeverityMap["TRACE"]              = fairmq::severity_level::TRACE;
-    fSeverityMap["DEBUG"]              = fairmq::severity_level::DEBUG;
-    fSeverityMap["RESULTS"]            = fairmq::severity_level::RESULTS;
-    fSeverityMap["INFO"]               = fairmq::severity_level::INFO;
-    fSeverityMap["WARN"]               = fairmq::severity_level::WARN;
-    fSeverityMap["ERROR"]              = fairmq::severity_level::ERROR;
-    fSeverityMap["STATE"]              = fairmq::severity_level::STATE;
-    fSeverityMap["NOLOG"]              = fairmq::severity_level::NOLOG;
+    fSeverityMap["TRACE"]              = FairMQ::severity_level::TRACE;
+    fSeverityMap["DEBUG"]              = FairMQ::severity_level::DEBUG;
+    fSeverityMap["RESULTS"]            = FairMQ::severity_level::RESULTS;
+    fSeverityMap["INFO"]               = FairMQ::severity_level::INFO;
+    fSeverityMap["WARN"]               = FairMQ::severity_level::WARN;
+    fSeverityMap["ERROR"]              = FairMQ::severity_level::ERROR;
+    fSeverityMap["STATE"]              = FairMQ::severity_level::STATE;
+    fSeverityMap["NOLOG"]              = FairMQ::severity_level::NOLOG;
 }
 
 /// Destructor
@@ -221,7 +221,7 @@ string FairProgOptions::GetStringValue(const string& key)
     {
         if (fVarMap.count(key))
         {
-            valueStr=fairmq::ConvertVariableValue<fairmq::ToString>().Run(fVarMap.at(key));
+            valueStr=FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at(key));
         }
     }
     catch(exception& e)
@@ -288,8 +288,8 @@ int FairProgOptions::PrintOptions()
 
     // formatting and printing
 
-    LOG(INFO) << setfill ('*') << setw (totalLength + 3) << "*";// +3 because of string " = "
-    string PrintOptionsTitle = "     Program options found     ";
+    LOG(DEBUG) << setfill ('*') << setw (totalLength + 3) << "*";// +3 because of string " = "
+    string PrintOptionsTitle = "     Configuration     ";
 
     int leftSpaceLength = 0;
     int rightSpaceLength = 0;
@@ -313,11 +313,11 @@ int FairProgOptions::PrintOptions()
         rightSpaceLength = (totalLength + 3) / 2 - rightTitleShiftLength;
     }
 
-    LOG(INFO) << setfill ('*') << setw(leftSpaceLength) << "*"
+    LOG(DEBUG) << setfill ('*') << setw(leftSpaceLength) << "*"
                 << setw(PrintOptionsTitle.length()) << PrintOptionsTitle
                 << setfill ('*') << setw(rightSpaceLength) << "*";
 
-    LOG(INFO) << setfill ('*') << setw (totalLength+3) << "*";
+    LOG(DEBUG) << setfill ('*') << setw (totalLength+3) << "*";
 
     for (const auto& p : mapinfo)
     {
@@ -328,7 +328,7 @@ int FairProgOptions::PrintOptions()
         string emptyStr;
         keyStr = p.first;
         tie(valueStr, typeInfoStr, defaultStr, emptyStr) = p.second;
-        LOG(INFO) << std::setfill(' ')
+        LOG(DEBUG) << std::setfill(' ')
                     << setw(maxLength1st) << left
                     << p.first << " = "
                     << setw(maxLength2nd)
@@ -340,7 +340,7 @@ int FairProgOptions::PrintOptions()
                     << setw(maxLengthEmpty)
                     << emptyStr;
     }
-    LOG(INFO) << setfill ('*') << setw (totalLength + 3) << "*";// +3 for " = "
+    LOG(DEBUG) << setfill ('*') << setw (totalLength + 3) << "*";// +3 for " = "
 
     return 0;
 }
@@ -365,5 +365,5 @@ int FairProgOptions::NotifySwitchOption()
 
 FairProgOptions::VarValInfo_t FairProgOptions::GetVariableValueInfo(const po::variable_value& varValue)
 {
-    return fairmq::ConvertVariableValue<fairmq::ToVarInfo>().Run(varValue);
+    return FairMQ::ConvertVariableValue<FairMQ::ToVarInfo>().Run(varValue);
 }

@@ -17,6 +17,8 @@
 
 #include "FairMQDevice.h"
 
+#include <string>
+
 class FairMQProxy : public FairMQDevice
 {
   public:
@@ -39,8 +41,11 @@ class FairMQProxy : public FairMQDevice
 
   protected:
     int fMultipart;
+    std::string fInChannelName;
+    std::string fOutChannelName;
 
     virtual void Run();
+    virtual void InitTask();
 };
 
 #endif /* FAIRMQPROXY_H_ */

@@ -24,65 +24,35 @@ class TransferTimeoutTester : public FairMQDevice
   protected:
     virtual void Run()
     {
-//        bool setSndOK = false;
-//        bool setRcvOK = false;
-        bool getSndOK = false;
-        bool getRcvOK = false;
         bool sendCanceling = false;
         bool receiveCanceling = false;
 
-        fChannels.at("data-out").at(0).SetSendTimeout(1000);
-        fChannels.at("data-in").at(0).SetReceiveTimeout(1000);
+        FairMQMessagePtr msg1(NewMessage());
+        FairMQMessagePtr msg2(NewMessage());
 
-        if (fChannels.at("data-out").at(0).GetSendTimeout() == 1000)
+        if (Send(msg1, "data-out", 0, 1000) == -2)
         {
-            getSndOK = true;
-            LOG(INFO) << "get send timeout OK: " << fChannels.at("data-out").at(0).GetSendTimeout();
+            LOG(INFO) << "send canceled";
+            sendCanceling = true;
         }
         else
         {
-            LOG(ERROR) << "get send timeout failed";
+            LOG(ERROR) << "send did not cancel";
         }
 
-        if (fChannels.at("data-in").at(0).GetReceiveTimeout() == 1000)
+        if (Receive(msg2, "data-in", 0, 1000) == -2)
         {
-            getRcvOK = true;
-            LOG(INFO) << "get receive timeout OK: " << fChannels.at("data-in").at(0).GetReceiveTimeout();
+            LOG(INFO) << "receive canceled";
+            receiveCanceling = true;
         }
         else
         {
-            LOG(ERROR) << "get receive timeout failed";
+            LOG(ERROR) << "receive did not cancel";
         }
 
-        if (getSndOK && getRcvOK)
+        if (sendCanceling && receiveCanceling)
         {
-            std::unique_ptr<FairMQMessage> msg1(NewMessage());
-            std::unique_ptr<FairMQMessage> msg2(NewMessage());
-
-            if (Send(msg1, "data-out") == -2)
-            {
-                LOG(INFO) << "send canceled";
-                sendCanceling = true;
-            }
-            else
-            {
-                LOG(ERROR) << "send did not cancel";
-            }
-
-            if (Receive(msg2, "data-in") == -2)
-            {
-                LOG(INFO) << "receive canceled";
-                receiveCanceling = true;
-            }
-            else
-            {
-                LOG(ERROR) << "receive did not cancel";
-            }
-
-            if (sendCanceling && receiveCanceling)
-            {
-                LOG(INFO) << "Transfer timeout test successfull";
-            }
+            LOG(INFO) << "Transfer timeout test successfull";
         }
     }
 };

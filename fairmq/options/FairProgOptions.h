@@ -54,7 +54,6 @@
  * }
  */
 
-
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
@@ -150,10 +149,10 @@ class FairProgOptions
 
     // Description which is printed in help command line
     // to handle logger severity
-    std::map<std::string,fairmq::severity_level> fSeverityMap;
+    std::map<std::string, FairMQ::severity_level> fSeverityMap;
     po::options_description fVisibleOptions;
 
-    std::string fVerboseLvl;
+    std::string fVerbosityLevel;
     bool fUseConfigFile;
     boost::filesystem::path fConfigFile;
     virtual int NotifySwitchOption();

@@ -34,7 +34,7 @@ class FairMQPollerZMQ : public FairMQPoller
 
   public:
     FairMQPollerZMQ(const std::vector<FairMQChannel>& channels);
-    FairMQPollerZMQ(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::initializer_list<std::string> channelList);
+    FairMQPollerZMQ(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList);
     FairMQPollerZMQ(const FairMQPollerZMQ&) = delete;
     FairMQPollerZMQ operator=(const FairMQPollerZMQ&) = delete;
 

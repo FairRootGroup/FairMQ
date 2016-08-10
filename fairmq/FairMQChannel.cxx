@@ -23,6 +23,8 @@ using namespace std;
 
 boost::mutex FairMQChannel::fChannelMutex;
 
+std::atomic<bool> FairMQChannel::fInterrupted(false);
+
 FairMQChannel::FairMQChannel()
     : fSocket(nullptr)
     , fType("unspecified")
@@ -41,8 +43,6 @@ FairMQChannel::FairMQChannel()
     , fTransportFactory(nullptr)
     , fNoBlockFlag(0)
     , fSndMoreFlag(0)
-    , fSndTimeoutInMs(-1)
-    , fRcvTimeoutInMs(-1)
 {
 }
 
@@ -64,8 +64,6 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
     , fTransportFactory(nullptr)
     , fNoBlockFlag(0)
     , fSndMoreFlag(0)
-    , fSndTimeoutInMs(-1)
-    , fRcvTimeoutInMs(-1)
 {
 }
 
@@ -87,8 +85,6 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan)
     , fTransportFactory(nullptr)
     , fNoBlockFlag(chan.fNoBlockFlag)
     , fSndMoreFlag(chan.fSndMoreFlag)
-    , fSndTimeoutInMs(chan.fSndTimeoutInMs)
-    , fRcvTimeoutInMs(chan.fRcvTimeoutInMs)
 {}
 
 FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
@@ -110,8 +106,6 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     fTransportFactory = nullptr;
     fNoBlockFlag = chan.fNoBlockFlag;
     fSndMoreFlag = chan.fSndMoreFlag;
-    fSndTimeoutInMs = chan.fSndTimeoutInMs;
-    fRcvTimeoutInMs = chan.fRcvTimeoutInMs;
 
     return *this;
 }
@@ -425,8 +419,8 @@ bool FairMQChannel::ValidateChannel()
         {
             ss << "INVALID";
             LOG(DEBUG) << ss.str();
-            LOG(DEBUG) << "Invalid channel type: \"" << fType << "\"";
-            return false;
+            LOG(ERROR) << "Invalid channel type: \"" << fType << "\"";
+            exit(EXIT_FAILURE);
         }
 
         // validate socket method
@@ -436,8 +430,8 @@ bool FairMQChannel::ValidateChannel()
         {
             ss << "INVALID";
             LOG(DEBUG) << ss.str();
-            LOG(DEBUG) << "Invalid channel method: \"" << fMethod << "\"";
-            return false;
+            LOG(ERROR) << "Invalid channel method: \"" << fMethod << "\"";
+            exit(EXIT_FAILURE);
         }
 
         // validate socket address
@@ -459,7 +453,7 @@ bool FairMQChannel::ValidateChannel()
                 {
                     ss << "INVALID";
                     LOG(DEBUG) << ss.str();
-                    LOG(DEBUG) << "invalid channel address: \"" << fAddress << "\" (missing port?)";
+                    LOG(ERROR) << "invalid channel address: \"" << fAddress << "\" (missing port?)";
                     return false;
                 }
             }
@@ -471,7 +465,7 @@ bool FairMQChannel::ValidateChannel()
                 {
                     ss << "INVALID";
                     LOG(DEBUG) << ss.str();
-                    LOG(DEBUG) << "invalid channel address: \"" << fAddress << "\" (empty IPC address?)";
+                    LOG(ERROR) << "invalid channel address: \"" << fAddress << "\" (empty IPC address?)";
                     return false;
                 }
             }
@@ -480,7 +474,7 @@ bool FairMQChannel::ValidateChannel()
                 // if neither TCP or IPC is specified, return invalid
                 ss << "INVALID";
                 LOG(DEBUG) << ss.str();
-                LOG(DEBUG) << "invalid channel address: \"" << fAddress << "\" (missing protocol specifier?)";
+                LOG(ERROR) << "invalid channel address: \"" << fAddress << "\" (missing protocol specifier?)";
                 return false;
             }
         }
@@ -490,8 +484,8 @@ bool FairMQChannel::ValidateChannel()
         {
             ss << "INVALID";
             LOG(DEBUG) << ss.str();
-            LOG(DEBUG) << "invalid channel send buffer size: \"" << fSndBufSize << "\"";
-            return false;
+            LOG(ERROR) << "invalid channel send buffer size (cannot be negative): \"" << fSndBufSize << "\"";
+            exit(EXIT_FAILURE);
         }
 
         // validate socket buffer size for receiving
@@ -499,8 +493,8 @@ bool FairMQChannel::ValidateChannel()
         {
             ss << "INVALID";
             LOG(DEBUG) << ss.str();
-            LOG(DEBUG) << "invalid channel receive buffer size: \"" << fRcvBufSize << "\"";
-            return false;
+            LOG(ERROR) << "invalid channel receive buffer size (cannot be negative): \"" << fRcvBufSize << "\"";
+            exit(EXIT_FAILURE);
         }
 
         // validate socket kernel transmit size for sending
@@ -508,8 +502,8 @@ bool FairMQChannel::ValidateChannel()
         {
             ss << "INVALID";
             LOG(DEBUG) << ss.str();
-            LOG(DEBUG) << "invalid channel send kernel transmit size: \"" << fSndKernelSize << "\"";
-            return false;
+            LOG(ERROR) << "invalid channel send kernel transmit size (cannot be negative): \"" << fSndKernelSize << "\"";
+            exit(EXIT_FAILURE);
         }
 
         // validate socket kernel transmit size for receiving
@@ -517,8 +511,17 @@ bool FairMQChannel::ValidateChannel()
         {
             ss << "INVALID";
             LOG(DEBUG) << ss.str();
-            LOG(DEBUG) << "invalid channel receive kernel transmit size: \"" << fRcvKernelSize << "\"";
-            return false;
+            LOG(ERROR) << "invalid channel receive kernel transmit size (cannot be negative): \"" << fRcvKernelSize << "\"";
+            exit(EXIT_FAILURE);
+        }
+
+        // validate socket rate logging interval
+        if (fRateLogging < 0)
+        {
+            ss << "INVALID";
+            LOG(DEBUG) << ss.str();
+            LOG(ERROR) << "invalid socket rate logging interval (cannot be negative): \"" << fRateLogging << "\"";
+            exit(EXIT_FAILURE);
         }
 
         fIsValid = true;
@@ -561,14 +564,17 @@ void FairMQChannel::ResetChannel()
     // TODO: implement channel resetting
 }
 
-int FairMQChannel::Send(const unique_ptr<FairMQMessage>& msg) const
+int FairMQChannel::Send(const unique_ptr<FairMQMessage>& msg, int sndTimeoutInMs) const
 {
-    fPoller->Poll(fSndTimeoutInMs);
+    fPoller->Poll(sndTimeoutInMs);
 
     if (fPoller->CheckInput(0))
     {
         HandleUnblock();
-        return -2;
+        if (fInterrupted)
+        {
+            return -2;
+        }
     }
 
     if (fPoller->CheckOutput(1))
@@ -579,14 +585,17 @@ int FairMQChannel::Send(const unique_ptr<FairMQMessage>& msg) const
     return -2;
 }
 
-int FairMQChannel::Receive(const unique_ptr<FairMQMessage>& msg) const
+int FairMQChannel::Receive(const unique_ptr<FairMQMessage>& msg, int rcvTimeoutInMs) const
 {
-    fPoller->Poll(fRcvTimeoutInMs);
+    fPoller->Poll(rcvTimeoutInMs);
 
     if (fPoller->CheckInput(0))
     {
         HandleUnblock();
-        return -2;
+        if (fInterrupted)
+        {
+            return -2;
+        }
     }
 
     if (fPoller->CheckInput(1))
@@ -597,14 +606,17 @@ int FairMQChannel::Receive(const unique_ptr<FairMQMessage>& msg) const
     return -2;
 }
 
-int64_t FairMQChannel::Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const
+int64_t FairMQChannel::Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int sndTimeoutInMs) const
 {
-    fPoller->Poll(fSndTimeoutInMs);
+    fPoller->Poll(sndTimeoutInMs);
 
     if (fPoller->CheckInput(0))
     {
         HandleUnblock();
-        return -2;
+        if (fInterrupted)
+        {
+            return -2;
+        }
     }
 
     if (fPoller->CheckOutput(1))
@@ -615,14 +627,17 @@ int64_t FairMQChannel::Send(const std::vector<std::unique_ptr<FairMQMessage>>& m
     return -2;
 }
 
-int64_t FairMQChannel::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const
+int64_t FairMQChannel::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int rcvTimeoutInMs) const
 {
-    fPoller->Poll(fRcvTimeoutInMs);
+    fPoller->Poll(rcvTimeoutInMs);
 
     if (fPoller->CheckInput(0))
     {
         HandleUnblock();
-        return -2;
+        if (fInterrupted)
+        {
+            return -2;
+        }
     }
 
     if (fPoller->CheckInput(1))
@@ -633,16 +648,20 @@ int64_t FairMQChannel::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgV
     return -2;
 }
 
-int FairMQChannel::Send(FairMQMessage* msg, const string& flag) const
+int FairMQChannel::Send(FairMQMessage* msg, const string& flag, int sndTimeoutInMs) const
 {
     if (flag == "")
     {
-        fPoller->Poll(fSndTimeoutInMs);
+        fPoller->Poll(sndTimeoutInMs);
 
         if (fPoller->CheckInput(0))
         {
             HandleUnblock();
-            return -2;
+            if (fInterrupted)
+            {
+                return -2;
+
+            }
         }
 
         if (fPoller->CheckOutput(1))
@@ -658,16 +677,20 @@ int FairMQChannel::Send(FairMQMessage* msg, const string& flag) const
     }
 }
 
-int FairMQChannel::Send(FairMQMessage* msg, const int flags) const
+int FairMQChannel::Send(FairMQMessage* msg, const int flags, int sndTimeoutInMs) const
 {
     if (flags == 0)
     {
-        fPoller->Poll(fSndTimeoutInMs);
+        fPoller->Poll(sndTimeoutInMs);
 
         if (fPoller->CheckInput(0))
         {
             HandleUnblock();
-            return -2;
+            if (fInterrupted)
+            {
+                return -2;
+
+            }
         }
 
         if (fPoller->CheckOutput(1))
@@ -683,16 +706,20 @@ int FairMQChannel::Send(FairMQMessage* msg, const int flags) const
     }
 }
 
-int FairMQChannel::Receive(FairMQMessage* msg, const string& flag) const
+int FairMQChannel::Receive(FairMQMessage* msg, const string& flag, int rcvTimeoutInMs) const
 {
     if (flag == "")
     {
-        fPoller->Poll(fRcvTimeoutInMs);
+        fPoller->Poll(rcvTimeoutInMs);
 
         if (fPoller->CheckInput(0))
         {
             HandleUnblock();
-            return -2;
+            if (fInterrupted)
+            {
+                return -2;
+
+            }
         }
 
         if (fPoller->CheckInput(1))
@@ -708,16 +735,20 @@ int FairMQChannel::Receive(FairMQMessage* msg, const string& flag) const
     }
 }
 
-int FairMQChannel::Receive(FairMQMessage* msg, const int flags) const
+int FairMQChannel::Receive(FairMQMessage* msg, const int flags, int rcvTimeoutInMs) const
 {
     if (flags == 0)
     {
-        fPoller->Poll(fRcvTimeoutInMs);
+        fPoller->Poll(rcvTimeoutInMs);
 
         if (fPoller->CheckInput(0))
         {
             HandleUnblock();
-            return -2;
+            if (fInterrupted)
+            {
+                return -2;
+
+            }
         }
 
         if (fPoller->CheckInput(1))
@@ -761,7 +792,7 @@ inline bool FairMQChannel::HandleUnblock() const
     FairMQMessage* cmd = fTransportFactory->CreateMessage();
     if (fCmdSocket->Receive(cmd, 0) >= 0)
     {
-        LOG(DEBUG) << "unblocked";
+        // LOG(DEBUG) << "unblocked";
     }
     delete cmd;
     return true;

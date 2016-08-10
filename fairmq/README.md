@@ -35,8 +35,33 @@ The communication layer is available through an interface. Two interface impleme
 
 ![FairMQ transport interface](../docs/images/fairmq-transport-interface.png?raw=true "FairMQ transport interface")
 
+## State Machine
+
+Each FairMQ device has an internal state machine:
+
+![FairMQ state machine](../docs/images/fairmq-states.png?raw=true "FairMQ state machine")
+
+The state machine can be querried and controlled via `GetCurrentStateName()` and `ChangeState("<state name>")` methods. Only legal state transitions are allowed (see image above). Illegal transitions will fail with an error.
+
+If the device is running in interactive mode (default), states can be changed via keyboard input:
+
+ - `'h'` - help
+ - `'p'` - pause
+ - `'r'` - run
+ - `'s'` - stop
+ - `'t'` - reset task
+ - `'d'` - reset device
+ - `'q'` - end
+ - `'j'` - init task
+ - `'i'` - init device
+
+Without the interactive mode, for example for a run in background, two other control mechanisms are available:
+
+ - static (`--control static`) - device goes through a simple init -> run -> reset -> exit chain.
+ - dds (`--control dds`) - device is controled by external command, in this case using dds commands (fairmq-dds-command-ui).
+
 ## Examples
 
-A collection of simple examples in `examples` directory demonstrates some common usage patterns of FairMQ.
+A collection of simple examples in `FairRoot/examples/MQ` directory demonstrates some common usage patterns of FairMQ.
 
-A number of devices to handle the data from the Tutorial3 FairTestDetector of FairRoot are provided as an example and can be found in `FairRoot/base/MQ` directory. The implementation of the tasks run by these devices can be found `FairRoot/example/Tutorial3`. The implementation includes sending raw binary data as well as serializing the data with either [Boost Serialization](http://www.boost.org/doc/libs/release/libs/serialization/), [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) or [Root TMessage](http://root.cern.ch/root/html/TMessage.html). Following the examples you can implement your own devices to transport arbitrary data.
+A number of devices to handle the data from the Tutorial3 FairTestDetector of FairRoot are provided as an example and can be found in `FairRoot/base/MQ` directory. The implementation of the tasks run by these devices can be found `FairRoot/examples/advanced/Tutorial3`. The implementation includes sending raw binary data as well as serializing the data with either [Boost Serialization](http://www.boost.org/doc/libs/release/libs/serialization/), [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) or [Root TMessage](http://root.cern.ch/root/html/TMessage.html). Following the examples you can implement your own devices to transport arbitrary data.

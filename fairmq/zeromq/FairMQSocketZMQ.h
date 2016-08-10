@@ -17,7 +17,7 @@
 
 #include <atomic>
 
-#include <boost/shared_ptr.hpp>
+#include <memory> // unique_ptr
 
 #include "FairMQSocket.h"
 #include "FairMQContextZMQ.h"
@@ -72,7 +72,7 @@ class FairMQSocketZMQ : public FairMQSocket
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
 
-    static boost::shared_ptr<FairMQContextZMQ> fContext;
+    static std::unique_ptr<FairMQContextZMQ> fContext;
 };
 
 #endif /* FAIRMQSOCKETZMQ_H_ */
