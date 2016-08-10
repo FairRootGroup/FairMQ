@@ -12,11 +12,13 @@
  * @author A. Rybalchenko
  */
 
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
+#include <memory> // unique_ptr
+#include <thread> // this_thread::sleep_for
+#include <chrono>
 
 #include "FairMQExample5Client.h"
 #include "FairMQLogger.h"
+#include "FairMQProgOptions.h"
 
 using namespace std;
 
@@ -25,79 +27,41 @@ FairMQExample5Client::FairMQExample5Client()
 {
 }
 
-FairMQExample5Client::~FairMQExample5Client()
+void FairMQExample5Client::InitTask()
 {
+    fText = fConfig->GetValue<string>("text");
 }
 
-void FairMQExample5Client::CustomCleanup(void* /*data*/, void *hint)
+bool FairMQExample5Client::ConditionalRun()
 {
-    delete static_cast<string*>(hint);
-}
+    this_thread::sleep_for(chrono::seconds(1));
 
-void FairMQExample5Client::Run()
-{
-    while (CheckCurrentState(RUNNING))
+    string* text = new string(fText);
+
+    // create message object with a pointer to the data buffer,
+    // its size,
+    // custom deletion function (called when transfer is done),
+    // and pointer to the object managing the data buffer
+    FairMQMessagePtr request(NewMessage(const_cast<char*>(text->c_str()), // data
+                                                          text->length(), // size
+                                                          [](void* /*data*/, void* object) { delete static_cast<string*>(object); }, // deletion callback
+                                                          text)); // object that manages the data
+    FairMQMessagePtr reply(NewMessage());
+
+    LOG(INFO) << "Sending \"" << fText << "\" to server.";
+
+    if (Send(request, "data") > 0)
     {
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-
-        string* text = new string(fText);
-
-        unique_ptr<FairMQMessage> request(NewMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
-        unique_ptr<FairMQMessage> reply(NewMessage());
-
-        LOG(INFO) << "Sending \"" << fText << "\" to server.";
-
-        if (Send(request, "data") > 0)
+        if (Receive(reply, "data") >= 0)
         {
-            if (Receive(reply, "data") >= 0)
-            {
-                LOG(INFO) << "Received reply from server: \"" << string(static_cast<char*>(reply->GetData()), reply->GetSize()) << "\"";
-            }
+            LOG(INFO) << "Received reply from server: \"" << string(static_cast<char*>(reply->GetData()), reply->GetSize()) << "\"";
+            return true;
         }
     }
+
+    return false;
 }
 
-
-void FairMQExample5Client::SetProperty(const int key, const string& value)
+FairMQExample5Client::~FairMQExample5Client()
 {
-    switch (key)
-    {
-        case Text:
-            fText = value;
-            break;
-        default:
-            FairMQDevice::SetProperty(key, value);
-            break;
-    }
-}
-
-string FairMQExample5Client::GetProperty(const int key, const string& default_ /*= ""*/)
-{
-    switch (key)
-    {
-        case Text:
-            return fText;
-            break;
-        default:
-            return FairMQDevice::GetProperty(key, default_);
-    }
-}
-
-void FairMQExample5Client::SetProperty(const int key, const int value)
-{
-    switch (key)
-    {
-        default:
-            FairMQDevice::SetProperty(key, value);
-            break;
-    }
-}
-
-int FairMQExample5Client::GetProperty(const int key, const int default_ /*= 0*/)
-{
-    switch (key)
-    {
-        default:
-            return FairMQDevice::GetProperty(key, default_);
-    }
 }

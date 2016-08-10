@@ -12,58 +12,48 @@
  * @author A. Rybalchenko
  */
 
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
+#include <thread> // this_thread::sleep_for
+#include <chrono>
 
 #include "FairMQExample8Sampler.h"
+#include "FairMQEx8Header.h"
 #include "FairMQLogger.h"
 
 using namespace std;
 
-struct Ex8Header {
-  int32_t stopFlag;
-};
-
 FairMQExample8Sampler::FairMQExample8Sampler()
+    : fCounter(0)
 {
 }
 
-void FairMQExample8Sampler::Run()
+bool FairMQExample8Sampler::ConditionalRun()
 {
-    int counter = 0;
+    // Wait a second to keep the output readable.
+    this_thread::sleep_for(chrono::seconds(1));
 
-    // Check if we are still in the RUNNING state.
-    while (CheckCurrentState(RUNNING))
+    Ex8Header header;
+    // Set stopFlag to 1 for the first 4 messages, and to 0 for the 5th.
+    fCounter < 5 ? header.stopFlag = 0 : header.stopFlag = 1;
+    LOG(INFO) << "Sending header with stopFlag: " << header.stopFlag;
+
+    FairMQParts parts;
+
+    // NewSimpleMessage creates a copy of the data and takes care of its destruction (after the transfer takes place).
+    // Should only be used for small data because of the cost of an additional copy
+    parts.AddPart(NewSimpleMessage(header));
+    parts.AddPart(NewMessage(1000));
+
+    LOG(INFO) << "Sending body of size: " << parts.At(1)->GetSize();
+
+    Send(parts, "data-out");
+
+    // Go out of the sending loop if the stopFlag was sent.
+    if (fCounter++ == 5)
     {
-        Ex8Header* header = new Ex8Header;
-        // Set stopFlag to 1 for the first 4 messages, and to 0 for the 5th.
-        counter < 5 ? header->stopFlag = 0 : header->stopFlag = 1;
-        LOG(INFO) << "Sending header with stopFlag: " << header->stopFlag;
-
-        FairMQParts parts;
-
-        parts.AddPart(NewMessage(header, // data pointer
-                                 sizeof(Ex8Header), // data size
-                                 [](void* data, void* /*hint*/) { delete static_cast<Ex8Header*>(data); } // callback to deallocate after the transfer
-                                 ));
-        parts.AddPart(NewMessage(1000));
-
-        LOG(INFO) << "Sending body of size: " << parts.At(1)->GetSize();
-
-        Send(parts, "data-out");
-
-        // Go out of the sending loop if the stopFlag was sent.
-        if (counter == 5)
-        {
-            break;
-        }
-
-        counter++;
-        // Wait a second to keep the output readable.
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+        return false;
     }
 
-    LOG(INFO) << "Going out of RUNNING state.";
+    return true;
 }
 
 FairMQExample8Sampler::~FairMQExample8Sampler()

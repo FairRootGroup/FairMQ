@@ -12,41 +12,30 @@
  * @author A. Rybalchenko
  */
 
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-
 #include "FairMQExample8Sink.h"
+#include "FairMQEx8Header.h"
 #include "FairMQLogger.h"
 
 using namespace std;
 
-struct Ex8Header {
-  int32_t stopFlag;
-};
-
 FairMQExample8Sink::FairMQExample8Sink()
 {
+    OnData("data-in", &FairMQExample8Sink::HandleData);
 }
 
-void FairMQExample8Sink::Run()
+bool FairMQExample8Sink::HandleData(FairMQParts& parts, int /*index*/)
 {
-    while (CheckCurrentState(RUNNING))
+    Ex8Header header;
+    header.stopFlag = (static_cast<Ex8Header*>(parts.At(0)->GetData()))->stopFlag;
+    LOG(INFO) << "Received header with stopFlag: " << header.stopFlag;
+    LOG(INFO) << "Received body of size: " << parts.At(1)->GetSize();
+    if (header.stopFlag == 1)
     {
-        FairMQParts parts;
-
-        if (Receive(parts, "data-in") >= 0)
-        {
-            Ex8Header header;
-            header.stopFlag = (static_cast<Ex8Header*>(parts.At(0)->GetData()))->stopFlag;
-            LOG(INFO) << "Received header with stopFlag: " << header.stopFlag;
-            LOG(INFO) << "Received body of size: " << parts.At(1)->GetSize();
-            if (header.stopFlag == 1)
-            {
-                LOG(INFO) << "Flag is 0, exiting Run()";
-                break;
-            }
-        }
+        LOG(INFO) << "stopFlag is 0, going IDLE";
+        return false;
     }
+
+    return true;
 }
 
 FairMQExample8Sink::~FairMQExample8Sink()

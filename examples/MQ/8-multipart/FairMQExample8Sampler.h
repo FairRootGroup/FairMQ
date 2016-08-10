@@ -15,8 +15,6 @@
 #ifndef FAIRMQEXAMPLE8SAMPLER_H_
 #define FAIRMQEXAMPLE8SAMPLER_H_
 
-#include <string>
-
 #include "FairMQDevice.h"
 
 class FairMQExample8Sampler : public FairMQDevice
@@ -26,7 +24,10 @@ class FairMQExample8Sampler : public FairMQDevice
     virtual ~FairMQExample8Sampler();
 
   protected:
-    virtual void Run();
+    virtual bool ConditionalRun();
+
+  private:
+    int fCounter;
 };
 
 #endif /* FAIRMQEXAMPLE8SAMPLER_H_ */

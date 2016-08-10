@@ -13,12 +13,13 @@
  */
 
 #include <memory> // unique_ptr
-
-#include <boost/thread.hpp>
+#include <thread> // this_thread::sleep_for
+#include <chrono>
 
 #include "FairMQExample6Sampler.h"
 #include "FairMQPoller.h"
 #include "FairMQLogger.h"
+#include "FairMQProgOptions.h"
 
 using namespace std;
 
@@ -27,90 +28,43 @@ FairMQExample6Sampler::FairMQExample6Sampler()
 {
 }
 
-void FairMQExample6Sampler::CustomCleanup(void* /*data*/, void *object)
+void FairMQExample6Sampler::InitTask()
 {
-    delete static_cast<string*>(object);
+    fText = fConfig->GetValue<string>("text");
 }
 
 void FairMQExample6Sampler::Run()
 {
-    std::unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels, { "data", "broadcast" }));
+    unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels, { "data", "broadcast" }));
 
     while (CheckCurrentState(RUNNING))
     {
-        poller->Poll(-1);
+        poller->Poll(100);
 
         if (poller->CheckInput("broadcast", 0))
         {
-            unique_ptr<FairMQMessage> msg(NewMessage());
+            FairMQMessagePtr msg(NewMessage());
 
             if (Receive(msg, "broadcast") > 0)
             {
-                LOG(INFO) << "Received broadcast: \""
-                          << string(static_cast<char*>(msg->GetData()), msg->GetSize())
-                          << "\"";
+                LOG(INFO) << "Received broadcast: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
             }
         }
 
         if (poller->CheckOutput("data", 0))
         {
-            boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+            this_thread::sleep_for(chrono::seconds(1));
 
-            string* text = new string(fText);
+            FairMQMessagePtr msg(NewSimpleMessage(fText));
 
-            unique_ptr<FairMQMessage> msg(NewMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
-
-            LOG(INFO) << "Sending \"" << fText << "\"";
-
-            Send(msg, "data");
+            if (Send(msg, "data") > 0)
+            {
+                LOG(INFO) << "Sent \"" << fText << "\"";
+            }
         }
     }
 }
 
 FairMQExample6Sampler::~FairMQExample6Sampler()
 {
-}
-
-void FairMQExample6Sampler::SetProperty(const int key, const string& value)
-{
-    switch (key)
-    {
-        case Text:
-            fText = value;
-            break;
-        default:
-            FairMQDevice::SetProperty(key, value);
-            break;
-    }
-}
-
-string FairMQExample6Sampler::GetProperty(const int key, const string& default_ /*= ""*/)
-{
-    switch (key)
-    {
-        case Text:
-            return fText;
-            break;
-        default:
-            return FairMQDevice::GetProperty(key, default_);
-    }
-}
-
-void FairMQExample6Sampler::SetProperty(const int key, const int value)
-{
-    switch (key)
-    {
-        default:
-            FairMQDevice::SetProperty(key, value);
-            break;
-    }
-}
-
-int FairMQExample6Sampler::GetProperty(const int key, const int default_ /*= 0*/)
-{
-    switch (key)
-    {
-        default:
-            return FairMQDevice::GetProperty(key, default_);
-    }
 }

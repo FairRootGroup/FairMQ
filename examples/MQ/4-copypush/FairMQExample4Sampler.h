@@ -15,9 +15,9 @@
 #ifndef FAIRMQEXAMPLE4SAMPLER_H_
 #define FAIRMQEXAMPLE4SAMPLER_H_
 
-#include <string>
-
 #include "FairMQDevice.h"
+
+#include <stdint.h> // uint64_t
 
 class FairMQExample4Sampler : public FairMQDevice
 {
@@ -26,7 +26,11 @@ class FairMQExample4Sampler : public FairMQDevice
     virtual ~FairMQExample4Sampler();
 
   protected:
-    virtual void Run();
+    virtual void InitTask();
+    virtual bool ConditionalRun();
+
+    int fNumDataChannels;
+    uint64_t fCounter;
 };
 
 #endif /* FAIRMQEXAMPLE4SAMPLER_H_ */

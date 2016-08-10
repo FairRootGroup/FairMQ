@@ -23,10 +23,8 @@ class FairMQExample5Server : public FairMQDevice
     FairMQExample5Server();
     virtual ~FairMQExample5Server();
 
-    static void CustomCleanup(void *data, void* hint);
-
   protected:
-    virtual void Run();
+    bool HandleData(FairMQMessagePtr&, int);
 };
 
 #endif /* FAIRMQEXAMPLE5SERVER_H_ */

@@ -15,8 +15,6 @@
 #ifndef FAIRMQEXAMPLE3SAMPLER_H_
 #define FAIRMQEXAMPLE3SAMPLER_H_
 
-#include <string>
-
 #include "FairMQDevice.h"
 
 class FairMQExample3Sampler : public FairMQDevice
@@ -25,10 +23,8 @@ class FairMQExample3Sampler : public FairMQDevice
     FairMQExample3Sampler();
     virtual ~FairMQExample3Sampler();
 
-    static void CustomCleanup(void* data, void* hint);
-
   protected:
-    virtual void Run();
+    virtual bool ConditionalRun();
 };
 
 #endif /* FAIRMQEXAMPLE3SAMPLER_H_ */

@@ -12,12 +12,12 @@
  * @author A. Rybalchenko
  */
 
-#include <memory> // unique_ptr
-
-#include <boost/thread.hpp>
+#include <thread> // this_thread::sleep_for
+#include <chrono>
 
 #include "FairMQExample1Sampler.h"
 #include "FairMQLogger.h"
+#include "FairMQProgOptions.h" // device->fConfig
 
 using namespace std;
 
@@ -26,71 +26,40 @@ FairMQExample1Sampler::FairMQExample1Sampler()
 {
 }
 
-void FairMQExample1Sampler::CustomCleanup(void* /*data*/, void *object)
+void FairMQExample1Sampler::InitTask()
 {
-    delete static_cast<string*>(object);
+    // Get the fText value from the command line option (via fConfig)
+    fText = fConfig->GetValue<string>("text");
 }
 
-void FairMQExample1Sampler::Run()
+bool FairMQExample1Sampler::ConditionalRun()
 {
-    while (CheckCurrentState(RUNNING))
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    // create a copy of the data with new(), that will be deleted after the transfer is complete
+    string* text = new string(fText);
+
+    // create message object with a pointer to the data buffer,
+    // its size,
+    // custom deletion function (called when transfer is done),
+    // and pointer to the object managing the data buffer
+    FairMQMessagePtr msg(NewMessage(const_cast<char*>(text->c_str()),
+                                    text->length(),
+                                    [](void* /*data*/, void* object) { delete static_cast<string*>(object); },
+                                    text));
+
+    LOG(INFO) << "Sending \"" << fText << "\"";
+
+    // in case of error or transfer interruption, return false to go to IDLE state
+    // successfull transfer will return number of bytes transfered (can be 0 if sending an empty message).
+    if (Send(msg, "data") < 0)
     {
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-
-        string* text = new string(fText);
-
-        unique_ptr<FairMQMessage> msg(NewMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
-
-        LOG(INFO) << "Sending \"" << fText << "\"";
-
-        Send(msg, "data");
+        return false;
     }
+
+    return true;
 }
 
 FairMQExample1Sampler::~FairMQExample1Sampler()
 {
-}
-
-void FairMQExample1Sampler::SetProperty(const int key, const string& value)
-{
-    switch (key)
-    {
-        case Text:
-            fText = value;
-            break;
-        default:
-            FairMQDevice::SetProperty(key, value);
-            break;
-    }
-}
-
-string FairMQExample1Sampler::GetProperty(const int key, const string& default_ /*= ""*/)
-{
-    switch (key)
-    {
-        case Text:
-            return fText;
-            break;
-        default:
-            return FairMQDevice::GetProperty(key, default_);
-    }
-}
-
-void FairMQExample1Sampler::SetProperty(const int key, const int value)
-{
-    switch (key)
-    {
-        default:
-            FairMQDevice::SetProperty(key, value);
-            break;
-    }
-}
-
-int FairMQExample1Sampler::GetProperty(const int key, const int default_ /*= 0*/)
-{
-    switch (key)
-    {
-        default:
-            return FairMQDevice::GetProperty(key, default_);
-    }
 }
