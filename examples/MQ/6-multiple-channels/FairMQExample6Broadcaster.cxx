@@ -12,10 +12,8 @@
  * @author A. Rybalchenko
  */
 
-#include <memory> // unique_ptr
-#include <string>
-
-#include <boost/thread.hpp>
+#include <thread> // this_thread::sleep_for
+#include <chrono>
 
 #include "FairMQExample6Broadcaster.h"
 #include "FairMQLogger.h"
@@ -26,22 +24,19 @@ FairMQExample6Broadcaster::FairMQExample6Broadcaster()
 {
 }
 
-void FairMQExample6Broadcaster::CustomCleanup(void* /*data*/, void *object)
+bool FairMQExample6Broadcaster::ConditionalRun()
 {
-    delete static_cast<string*>(object);
-}
+    this_thread::sleep_for(chrono::seconds(1));
 
-void FairMQExample6Broadcaster::Run()
-{
-    while (CheckCurrentState(RUNNING))
-    {
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+    // NewSimpleMessage creates a copy of the data and takes care of its destruction (after the transfer takes place).
+    // Should only be used for small data because of the cost of an additional copy
+    FairMQMessagePtr msg(NewSimpleMessage("OK"));
 
-        string* text = new string("OK");
-        unique_ptr<FairMQMessage> msg(NewMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
-        LOG(INFO) << "Sending OK";
-        Send(msg, "broadcast");
-    }
+    LOG(INFO) << "Sending OK";
+
+    Send(msg, "broadcast");
+
+    return true;
 }
 
 FairMQExample6Broadcaster::~FairMQExample6Broadcaster()

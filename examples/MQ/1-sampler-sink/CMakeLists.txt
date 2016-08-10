@@ -6,9 +6,9 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/1-sampler-sink/ex1-sampler-sink.json 
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/1-sampler-sink/ex1-sampler-sink.json
                ${CMAKE_BINARY_DIR}/bin/config/ex1-sampler-sink.json)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/1-sampler-sink/startMQEx1.sh.in  
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/1-sampler-sink/startMQEx1.sh.in
                ${CMAKE_BINARY_DIR}/bin/examples/MQ/1-sampler-sink/startMQEx1.sh)
 
 Set(INCLUDE_DIRECTORIES

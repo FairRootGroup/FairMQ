@@ -12,29 +12,22 @@
  * @author A. Rybalchenko
  */
 
-#include <memory>
-
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-
 #include "FairMQExample4Sink.h"
 #include "FairMQLogger.h"
 
+#include <stdint.h> // uint64_t
+
 FairMQExample4Sink::FairMQExample4Sink()
 {
+    OnData("data", &FairMQExample4Sink::HandleData);
 }
 
-void FairMQExample4Sink::Run()
+bool FairMQExample4Sink::HandleData(FairMQMessagePtr& msg, int /*index*/)
 {
-    while (CheckCurrentState(RUNNING))
-    {
-        std::unique_ptr<FairMQMessage> msg(NewMessage());
+    LOG(INFO) << "Received message: \"" << *(static_cast<uint64_t*>(msg->GetData())) << "\"";
 
-        if (Receive(msg, "data") >= 0)
-        {
-            LOG(INFO) << "Received message: \"" << *(static_cast<int*>(msg->GetData())) << "\"";
-        }
-    }
+    // return true if want to be called again (otherwise go to IDLE state)
+    return true;
 }
 
 FairMQExample4Sink::~FairMQExample4Sink()

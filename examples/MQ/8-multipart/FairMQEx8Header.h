@@ -5,26 +5,13 @@
  *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQExample8Sink.h
- *
- * @since 2014-10-10
- * @author A. Rybalchenko
- */
 
-#ifndef FAIRMQEXAMPLE8SINK_H_
-#define FAIRMQEXAMPLE8SINK_H_
+#ifndef FAIRMQEX8HEADER_H_
+#define FAIRMQEX8HEADER_H_
 
-#include "FairMQDevice.h"
-
-class FairMQExample8Sink : public FairMQDevice
+struct Ex8Header
 {
-  public:
-    FairMQExample8Sink();
-    virtual ~FairMQExample8Sink();
-
-  protected:
-    bool HandleData(FairMQParts&, int);
+    int32_t stopFlag;
 };
 
-#endif /* FAIRMQEXAMPLE8SINK_H_ */
+#endif /* FAIRMQEX8HEADER_H_ */

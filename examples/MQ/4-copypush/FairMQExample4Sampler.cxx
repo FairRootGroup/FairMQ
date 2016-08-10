@@ -12,52 +12,39 @@
  * @author A. Rybalchenko
  */
 
-#include <memory> // unique_ptr
-
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
+#include <thread> // this_thread::sleep_for
+#include <chrono>
 
 #include "FairMQExample4Sampler.h"
 #include "FairMQLogger.h"
 
 FairMQExample4Sampler::FairMQExample4Sampler()
+    : fNumDataChannels(0)
+    , fCounter(0)
 {
 }
 
-void FairMQExample4Sampler::Run()
+void FairMQExample4Sampler::InitTask()
 {
-    uint64_t counter = 0;
+    fNumDataChannels = fChannels.at("data").size();
+}
 
-    while (CheckCurrentState(RUNNING))
+bool FairMQExample4Sampler::ConditionalRun()
+{
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    // NewSimpleMessage creates a copy of the data and takes care of its destruction (after the transfer takes place).
+    // Should only be used for small data because of the cost of an additional copy
+    FairMQMessagePtr msg(NewSimpleMessage(fCounter++));
+
+    for (int i = 0; i < fNumDataChannels - 1; ++i)
     {
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-
-        uint64_t* number = new uint64_t(counter);
-
-        std::unique_ptr<FairMQMessage> msg(NewMessage(number, // data pointer
-                                                      sizeof(uint64_t), // data size
-                                                      [](void* data, void* /*hint*/){ delete static_cast<uint64_t*>(data); } // callback to deallocate after the transfer
-                                                      ));
-
-        LOG(INFO) << "Sending \"" << counter << "\"";
-
-        if (fChannels.at("data").size() > 1)
-        {
-            for (unsigned int i = 1; i < fChannels.at("data").size(); ++i)
-            {
-                std::unique_ptr<FairMQMessage> msgCopy(NewMessage());
-                msgCopy->Copy(msg);
-                Send(msgCopy, "data", i);
-            }
-            Send(msg, "data");
-        }
-        else
-        {
-            Send(msg, "data");
-        }
-
-        ++counter;
+        FairMQMessagePtr msgCopy(NewMessage());
+        msgCopy->Copy(msg);
+        Send(msgCopy, "data", i);
     }
+    Send(msg, "data", fNumDataChannels - 1);
+    return true;
 }
 
 FairMQExample4Sampler::~FairMQExample4Sampler()

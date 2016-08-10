@@ -5,43 +5,17 @@
  *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * runExample8Sampler.cxx
- *
- * @since 2013-04-23
- * @author D. Klein, A. Rybalchenko
- */
 
-#include "FairMQLogger.h"
-#include "FairMQProgOptions.h"
+#include "runFairMQDevice.h"
 #include "FairMQExample8Sampler.h"
 
-int main(int argc, char** argv)
+namespace bpo = boost::program_options;
+
+void addCustomOptions(bpo::options_description& /*options*/)
 {
-    try
-    {
-        FairMQProgOptions config;
-        config.ParseAll(argc, argv);
+}
 
-        FairMQExample8Sampler sampler;
-        sampler.CatchSignals();
-        sampler.SetConfig(config);
-
-        sampler.ChangeState("INIT_DEVICE");
-        sampler.WaitForEndOfState("INIT_DEVICE");
-
-        sampler.ChangeState("INIT_TASK");
-        sampler.WaitForEndOfState("INIT_TASK");
-
-        sampler.ChangeState("RUN");
-        sampler.InteractiveStateLoop();
-    }
-    catch (std::exception& e)
-    {
-        LOG(ERROR) << "Unhandled Exception reached the top of main: "
-                   << e.what() << ", application will now exit";
-        return 1;
-    }
-
-    return 0;
+FairMQDevice* getDevice(const FairMQProgOptions& /*config*/)
+{
+    return new FairMQExample8Sampler();
 }

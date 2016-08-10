@@ -24,7 +24,7 @@ class FairMQExample3Sink : public FairMQDevice
     virtual ~FairMQExample3Sink();
 
   protected:
-    virtual void Run();
+    bool HandleData(FairMQMessagePtr&, int);
 };
 
 #endif /* FAIRMQEXAMPLE3SINK_H_ */

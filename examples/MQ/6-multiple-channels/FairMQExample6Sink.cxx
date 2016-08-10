@@ -12,6 +12,8 @@
  * @author A. Rybalchenko
  */
 
+#include <memory> // unique_ptr
+
 #include "FairMQExample6Sink.h"
 #include "FairMQPoller.h"
 #include "FairMQLogger.h"
@@ -28,11 +30,11 @@ void FairMQExample6Sink::Run()
 
     while (CheckCurrentState(RUNNING))
     {
-        poller->Poll(-1);
+        poller->Poll(100);
 
         if (poller->CheckInput("broadcast", 0))
         {
-            unique_ptr<FairMQMessage> msg(NewMessage());
+            FairMQMessagePtr msg(NewMessage());
 
             if (Receive(msg, "broadcast") > 0)
             {
@@ -42,7 +44,7 @@ void FairMQExample6Sink::Run()
 
         if (poller->CheckInput("data", 0))
         {
-            unique_ptr<FairMQMessage> msg(NewMessage());
+            FairMQMessagePtr msg(NewMessage());
 
             if (Receive(msg, "data") > 0)
             {

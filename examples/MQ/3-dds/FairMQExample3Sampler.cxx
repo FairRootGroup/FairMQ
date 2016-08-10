@@ -12,11 +12,12 @@
  * @author A. Rybalchenko
  */
 
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
+#include <thread> // this_thread::sleep_for
+#include <chrono>
 
 #include "FairMQExample3Sampler.h"
 #include "FairMQLogger.h"
+#include "FairMQProgOptions.h" // device->fConfig
 
 using namespace std;
 
@@ -24,25 +25,24 @@ FairMQExample3Sampler::FairMQExample3Sampler()
 {
 }
 
-void FairMQExample3Sampler::CustomCleanup(void *data, void *object)
+bool FairMQExample3Sampler::ConditionalRun()
 {
-    delete static_cast<string*>(object);
-}
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
-void FairMQExample3Sampler::Run()
-{
-    while (CheckCurrentState(RUNNING))
+    // NewSimpleMessage creates a copy of the data and takes care of its destruction (after the transfer takes place).
+    // Should only be used for small data because of the cost of an additional copy
+    FairMQMessagePtr msg(NewSimpleMessage("Data"));
+
+    LOG(INFO) << "Sending \"Data\"";
+
+    // in case of error or transfer interruption, return false to go to IDLE state
+    // successfull transfer will return number of bytes transfered (can be 0 if sending an empty message).
+    if (Send(msg, "data1") < 0)
     {
-        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
-
-        string* text = new string("Data");
-
-        unique_ptr<FairMQMessage> msg(NewMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
-
-        LOG(INFO) << "Sending \"Data\"";
-
-        Send(msg, "data1");
+        return false;
     }
+
+    return true;
 }
 
 FairMQExample3Sampler::~FairMQExample3Sampler()

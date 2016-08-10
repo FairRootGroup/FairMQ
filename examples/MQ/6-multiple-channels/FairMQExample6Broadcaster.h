@@ -23,10 +23,8 @@ class FairMQExample6Broadcaster : public FairMQDevice
     FairMQExample6Broadcaster();
     virtual ~FairMQExample6Broadcaster();
 
-    static void CustomCleanup(void* data, void* hint);
-
   protected:
-    virtual void Run();
+    virtual bool ConditionalRun();
 };
 
 #endif /* FAIRMQEXAMPLE6BROADCASTER_H_ */

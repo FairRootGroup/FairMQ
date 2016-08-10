@@ -5,56 +5,43 @@
  *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQExample2Processor.cpp
- *
- * @since 2014-10-10
- * @author A. Rybalchenko
- */
-
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
 
 #include "FairMQExample2Processor.h"
 #include "FairMQLogger.h"
 
+#include <string>
+
 using namespace std;
 
 FairMQExample2Processor::FairMQExample2Processor()
-    : fText()
 {
+    OnData("data1", &FairMQExample2Processor::HandleData);
 }
 
-void FairMQExample2Processor::CustomCleanup(void* /*data*/, void *object)
+bool FairMQExample2Processor::HandleData(FairMQMessagePtr& msg, int /*index*/)
 {
-    delete static_cast<string*>(object);
-}
+    LOG(INFO) << "Received data, processing...";
 
-void FairMQExample2Processor::Run()
-{
-    // Check if we are still in the RUNNING state
-    while (CheckCurrentState(RUNNING))
+    // Modify the received string
+    string* text = new std::string(static_cast<char*>(msg->GetData()), msg->GetSize());
+    *text += " (modified by " + fId + ")";
+
+    // create message object with a pointer to the data buffer,
+    // its size,
+    // custom deletion function (called when transfer is done),
+    // and pointer to the object managing the data buffer
+    FairMQMessagePtr msg2(NewMessage(const_cast<char*>(text->c_str()),
+                                     text->length(),
+                                     [](void* /*data*/, void* object) { delete static_cast<string*>(object); },
+                                     text));
+
+    // Send out the output message
+    if (Send(msg2, "data2") < 0)
     {
-        // Create empty message to hold the input
-        unique_ptr<FairMQMessage> input(NewMessage());
-
-        // Receive the message (blocks until received or interrupted (e.g. by state change)). 
-        // Returns size of the received message or -1 if interrupted.
-        if (Receive(input, "data1") >= 0)
-        {
-            LOG(INFO) << "Received data, processing...";
-
-            // Modify the received string
-            string* text = new string(static_cast<char*>(input->GetData()), input->GetSize());
-            *text += " (modified by " + fId + ")";
-
-            // Create output message
-            unique_ptr<FairMQMessage> msg(NewMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
-
-            // Send out the output message
-            Send(msg, "data2");
-        }
+        return false;
     }
+
+    return true;
 }
 
 FairMQExample2Processor::~FairMQExample2Processor()

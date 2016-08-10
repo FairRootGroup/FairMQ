@@ -12,9 +12,6 @@
  * @author A. Rybalchenko
  */
 
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-
 #include "FairMQExample5Server.h"
 #include "FairMQLogger.h"
 
@@ -22,32 +19,28 @@ using namespace std;
 
 FairMQExample5Server::FairMQExample5Server()
 {
+    OnData("data", &FairMQExample5Server::HandleData);
 }
 
-void FairMQExample5Server::CustomCleanup(void* /*data*/, void *hint)
+bool FairMQExample5Server::HandleData(FairMQMessagePtr& request, int /*index*/)
 {
-    delete static_cast<string*>(hint);
-}
+    LOG(INFO) << "Received request from client: \"" << string(static_cast<char*>(request->GetData()), request->GetSize()) << "\"";
 
-void FairMQExample5Server::Run()
-{
-    while (CheckCurrentState(RUNNING))
+    string* text = new string("Thank you for the \"" + string(static_cast<char*>(request->GetData()), request->GetSize()) + "\"!");
+
+    LOG(INFO) << "Sending reply to client.";
+
+    FairMQMessagePtr reply(NewMessage(const_cast<char*>(text->c_str()), // data
+                                                        text->length(), // size
+                                                        [](void* /*data*/, void* object) { delete static_cast<string*>(object); }, // deletion callback
+                                                        text)); // object that manages the data
+
+    if (Send(reply, "data") > 0)
     {
-        unique_ptr<FairMQMessage> request(NewMessage());
-
-        if (Receive(request, "data") >= 0)
-        {
-            LOG(INFO) << "Received request from client: \"" << string(static_cast<char*>(request->GetData()), request->GetSize()) << "\"";
-
-            string* text = new string("Thank you for the \"" + string(static_cast<char*>(request->GetData()), request->GetSize()) + "\"!");
-
-            LOG(INFO) << "Sending reply to client.";
-
-            unique_ptr<FairMQMessage> reply(NewMessage(const_cast<char*>(text->c_str()), text->length(), CustomCleanup, text));
-
-            Send(reply, "data");
-        }
+        return true;
     }
+
+    return false;
 }
 
 FairMQExample5Server::~FairMQExample5Server()

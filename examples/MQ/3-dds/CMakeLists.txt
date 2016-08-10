@@ -56,7 +56,7 @@ Set(DEPENDENCIES
   ${DEPENDENCIES}
   FairMQ
   ${DDS_INTERCOM_LIBRARY_SHARED}
-  ${DDS_PROTOCOL_LIBRARY_SHARED} # also link the two DDS dependency libraries to avoid linking issues on some osx systems
+  ${DDS_PROTOCOL_LIBRARY_SHARED}
   ${DDS_USER_DEFAULTS_LIBRARY_SHARED}
 )
 

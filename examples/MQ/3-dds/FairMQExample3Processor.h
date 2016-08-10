@@ -5,17 +5,9 @@
  *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQExample3Processor.h
- *
- * @since 2014-10-10
- * @author A. Rybalchenko
- */
 
-#ifndef FAIRMQEXAMPLE3PROCESSOR_H_
-#define FAIRMQEXAMPLE3PROCESSOR_H_
-
-#include <string>
+#ifndef FAIRMQEXAMPLE2PROCESSOR_H_
+#define FAIRMQEXAMPLE2PROCESSOR_H_
 
 #include "FairMQDevice.h"
 
@@ -25,10 +17,8 @@ class FairMQExample3Processor : public FairMQDevice
     FairMQExample3Processor();
     virtual ~FairMQExample3Processor();
 
-    static void CustomCleanup(void* data, void* hint);
-
   protected:
-    virtual void Run();
+    bool HandleData(FairMQMessagePtr&, int);
 };
 
 #endif /* FAIRMQEXAMPLE3PROCESSOR_H_ */
