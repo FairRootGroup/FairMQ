@@ -125,7 +125,7 @@ class FairMQProgOptions : public FairProgOptions
     int UpdateChannelMap(const std::string& channelName, int index, const std::string& member, int val);
     // for cases other than int and string
     template<typename T>
-    int UpdateChannelMap(const std::string& channelName, int index, const std::string& member, T val)
+    int UpdateChannelMap(const std::string& /*channelName*/, int /*index*/, const std::string& /*member*/, T /*val*/)
     {
         return 0;
     }
