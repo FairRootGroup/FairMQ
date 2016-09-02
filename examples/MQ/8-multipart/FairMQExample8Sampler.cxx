@@ -44,7 +44,7 @@ void FairMQExample8Sampler::Run()
 
         parts.AddPart(NewMessage(header, // data pointer
                                  sizeof(Ex8Header), // data size
-                                 [](void* data, void* hint) { delete static_cast<Ex8Header*>(data); } // callback to deallocate after the transfer
+                                 [](void* data, void* /*hint*/) { delete static_cast<Ex8Header*>(data); } // callback to deallocate after the transfer
                                  ));
         parts.AddPart(NewMessage(1000));
 
