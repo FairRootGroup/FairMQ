@@ -158,7 +158,7 @@ int FairProgOptions::ParseCfgFile(ifstream& ifs, const po::options_description& 
     }
     else
     {
-        po:store(parse_config_file(ifs, desc, allowUnregistered), varmap);
+        po::store(parse_config_file(ifs, desc, allowUnregistered), varmap);
         po::notify(varmap);
     }
     return 0;
@@ -174,7 +174,7 @@ int FairProgOptions::ParseCfgFile(const string& filename, const po::options_desc
     }
     else
     {
-        po:store(parse_config_file(ifs, desc, allowUnregistered), varmap);
+        po::store(parse_config_file(ifs, desc, allowUnregistered), varmap);
         po::notify(varmap);
     }
     return 0;

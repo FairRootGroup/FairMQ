@@ -191,7 +191,7 @@ int64_t FairMQSocketNN::Send(const vector<unique_ptr<FairMQMessage>>& msgVec, co
     LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
     return nbytes;
 #else /*MSGPACK_FOUND*/
-    LOG(ERROR) << "Cannot use nanomsg multipart because MessagePack was not found.";
+    LOG(ERROR) << "Cannot send message from vector of size " << msgVec.size() << " and flags " << flags << " with nanomsg multipart because MessagePack is not available.";
     exit(EXIT_FAILURE);
 #endif /*MSGPACK_FOUND*/
 }
@@ -303,7 +303,7 @@ int64_t FairMQSocketNN::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const
     LOG(ERROR) << "Failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
     return nbytes;
 #else /*MSGPACK_FOUND*/
-    LOG(ERROR) << "Cannot use nanomsg multipart because MessagePack was not found.";
+    LOG(ERROR) << "Cannot receive message into vector of size " << msgVec.size() << " and flags " << flags << " with nanomsg multipart because MessagePack is not available.";
     exit(EXIT_FAILURE);
 #endif /*MSGPACK_FOUND*/
 }
