@@ -21,6 +21,11 @@ using namespace dds::intercom_api;
 // container to hold channel config and corresponding dds key values
 struct DDSConfig
 {
+    DDSConfig()
+        : subChannels()
+        , ddsValues()
+    {}
+
     // container of sub channels, e.g. 'i' in data[i]
     vector<FairMQChannel*> subChannels;
     // dds values for the channel
@@ -111,7 +116,7 @@ void HandleConfigViaDDS(TMQDevice& device)
                     if (mi->second.subChannels.size() == mi->second.ddsValues.size())
                     {
                         auto it = mi->second.ddsValues.begin();
-                        for (int i = 0; i < mi->second.subChannels.size(); ++i)
+                        for (unsigned int i = 0; i < mi->second.subChannels.size(); ++i)
                         {
                           mi->second.subChannels.at(i)->UpdateAddress(it->second);
                           ++it;

@@ -165,7 +165,7 @@ int64_t FairMQSocketNN::Send(const vector<unique_ptr<FairMQMessage>>& msgVec, co
     msgpack::packer<msgpack::sbuffer> packer(&sbuf);
 
     // pack all parts into a single msgpack simple buffer
-    for (int i = 0; i < msgVec.size(); ++i)
+    for (unsigned int i = 0; i < msgVec.size(); ++i)
     {
         static_cast<FairMQMessageNN*>(msgVec[i].get())->fReceiving = false;
         packer.pack_bin(msgVec[i]->GetSize());
@@ -270,7 +270,7 @@ int64_t FairMQSocketNN::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const
 
         // offset to be used by msgpack to handle separate chunks
         size_t offset = 0;
-        while (offset != nbytes) // continue until all parts have been read
+        while (offset != static_cast<size_t>(nbytes)) // continue until all parts have been read
         {
             // vector of chars to hold blob (unlike char*/void* this type can be converted to by msgpack)
             std::vector<char> buf;
