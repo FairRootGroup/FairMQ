@@ -16,6 +16,35 @@
 #define FAIRMQLOGGER_H_
 
 #include "logger/logger.h"
+
+
+// FairMQLogger helper macros 
+/*
+    Definition : 
+    
+    #define LOG(severity) BOOST_LOG_SEV(global_logger::get(),fairmq::severity)
+    #define SET_LOG_CONSOLE_LEVEL(loglevel) DefaultConsoleSetFilter(fairmq::loglevel)
+    #define ADD_LOG_FILESINK(filename,loglevel) DefaultAddFileSink(filename, fairmq::loglevel)
+    
+    enum severity_level
+    {
+        TRACE,
+        DEBUG,
+        RESULTS,
+        INFO,
+        WARN,
+        ERROR,
+        STATE,
+        NOLOG
+    };
+
+    Use : 
+    
+    LOG(DEBUG)<<"Hello World";
+    SET_LOG_CONSOLE_LEVEL(INFO); // => Print severity >= INFO to console
+    ADD_LOG_FILESINK(filename,ERROR); // => Print severity >= ERROR to file (extension is added)
+*/
+
 typedef unsigned long long timestamp_t;
 
 timestamp_t get_timestamp();

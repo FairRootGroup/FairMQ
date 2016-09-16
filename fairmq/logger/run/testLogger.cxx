@@ -20,7 +20,9 @@
     #include "logger.h"
     _Pragma("GCC diagnostic pop")
 #endif
-    
+
+#include <boost/log/support/date_time.hpp>
+
  void test_logger()
  {
     LOG(TRACE) << "this is a trace message";
@@ -32,34 +34,34 @@
     LOG(STATE) << "this is a state message";
  }
  
- void test_set_level()
+ void test_console_level()
  {
-    std::cout<<"********* test logger : SET_LOG_LEVEL(lvl) *********"<<std::endl;
-    SET_LOG_LEVEL(TRACE);
+    std::cout<<"********* test logger : SET_LOG_CONSOLE_LEVEL(lvl) *********"<<std::endl;
+    SET_LOG_CONSOLE_LEVEL(TRACE);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
     
-    SET_LOG_LEVEL(DEBUG);
+    SET_LOG_CONSOLE_LEVEL(DEBUG);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
     
-    SET_LOG_LEVEL(RESULTS);
+    SET_LOG_CONSOLE_LEVEL(RESULTS);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
     
-    SET_LOG_LEVEL(INFO);
+    SET_LOG_CONSOLE_LEVEL(INFO);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
     
-    SET_LOG_LEVEL(WARN);
+    SET_LOG_CONSOLE_LEVEL(WARN);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
     
-    SET_LOG_LEVEL(ERROR);
+    SET_LOG_CONSOLE_LEVEL(ERROR);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
     
-    SET_LOG_LEVEL(STATE);
+    SET_LOG_CONSOLE_LEVEL(STATE);
     test_logger();
     std::cout << "----------------------------"<<std::endl;
  }
@@ -68,12 +70,48 @@
   
 int main() 
 {
-    INIT_LOG_FILE_FILTER("test_log_file",GREATER_EQ_THAN,ERROR);// init and add one sink to the core
-    test_set_level();
-    INIT_LOG_FILE_FILTER("test_another_log_file",EQUAL,INFO);// init and add another sink to the core
-    test_set_level();
+    test_console_level();
+    SET_LOG_CONSOLE_LEVEL(INFO);
+    
+    std::cout << "----------------------------"<<std::endl;
+    LOG(INFO)<<"open log file 1";
+    ADD_LOG_FILESINK("test_log1",ERROR);
+    test_logger();
+    
+    std::cout << "----------------------------"<<std::endl;
+    LOG(INFO)<<"open log file 2";
+    ADD_LOG_FILESINK("test_log2",STATE);
+    test_logger();
+
+
+    // advanced commands
+    std::cout << "----------------------------"<<std::endl;
+    LOG(INFO)<<"open log file 3";// custom file sink setting
+    AddFileSink([](const boost::log::attribute_value_set& attr_set)
+        {
+            auto sev = attr_set["Severity"].extract<custom_severity_level>();
+            return (sev == fairmq::ERROR);
+        },
+        boost::log::keywords::file_name = "test_log3_%5N.log",
+        boost::log::keywords::rotation_size = 5 * 1024 * 1024,
+        boost::log::keywords::time_based_rotation = boost::log::sinks::file::rotation_at_time_point(12, 0, 0)
+        );
+
+    test_logger();
+
+    std::cout << "----------------------------"<<std::endl;
+    LOG(INFO)<<"set filter of last sink";// custom file sink setting
+    // get last added sink and reset filter to WARN and ERROR
+    FairMQ::Logger::sinkList.back()->set_filter([](const boost::log::attribute_value_set& attr_set)
+        {
+            auto sev = attr_set["Severity"].extract<custom_severity_level>();
+            return (sev == fairmq::WARN) || (sev == fairmq::ERROR);
+        });
+    test_logger();
+
+    // remove all sinks, and restart console sinks
     reinit_logger(false);
-    test_set_level();
+    test_logger();
     return 0;
 }
 

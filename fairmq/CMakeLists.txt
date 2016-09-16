@@ -107,6 +107,7 @@ EndIf(NANOMSG_FOUND)
 Set(FAIRMQHEADERS
   FairMQParts.h
   options/FairProgOptionsHelper.h
+  options/FairMQEventManager.h
   tools/FairMQTools.h
   tools/FairMQDDSTools.h
   tools/runSimpleMQStateMachine.h
@@ -156,6 +157,7 @@ Set(Exe_Names
   splitter
   merger
   proxy
+  runConfigExample
 )
 
 If(DDS_FOUND)
@@ -171,6 +173,7 @@ Set(Exe_Source
   run/runSplitter.cxx
   run/runMerger.cxx
   run/runProxy.cxx
+  options/runConfigEx.cxx
 )
 
 If(DDS_FOUND)
@@ -191,3 +194,7 @@ ForEach(_file RANGE 0 ${_length})
   Set(DEPENDENCIES FairMQ)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
+
+configure_file( ${CMAKE_SOURCE_DIR}/fairmq/options/startConfigExample.sh.in 
+                ${CMAKE_BINARY_DIR}/bin/startConfigExample.sh )
+

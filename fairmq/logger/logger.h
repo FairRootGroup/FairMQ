@@ -36,6 +36,7 @@
 #include <boost/log/sinks/text_file_backend.hpp>
 #include <boost/log/sinks/sync_frontend.hpp>
 
+#include <boost/log/sinks/basic_sink_frontend.hpp>
 // fairmq
 #include "logger_def.h"
 
@@ -45,35 +46,6 @@
 // 3- tag_console
 // 4- tag_file
 
-// Note : operation enum temporary : (until we replace it with c++11 lambda expression)
-namespace log_op
-{
-    enum operation
-    {
-        EQUAL,
-        GREATER_THAN,
-        GREATER_EQ_THAN,
-        LESS_THAN,
-        LESS_EQ_THAN
-    };
-}
-
-// declaration of the init function for the global logger
-void init_log_console(bool color = true);
-void reinit_logger(bool color);
-void init_log_file(const std::string& filename, 
-    custom_severity_level threshold = SEVERITY_THRESHOLD,
-    log_op::operation = log_op::GREATER_EQ_THAN,
-    const std::string& id = ""
-    );
-
-void init_new_file(const std::string& filename,
-    custom_severity_level threshold,
-    log_op::operation op
-    );
-
-void set_global_log_level(log_op::operation op = log_op::GREATER_EQ_THAN, custom_severity_level threshold = SEVERITY_THRESHOLD);
-void set_global_log_level_operation(log_op::operation op = log_op::GREATER_EQ_THAN, custom_severity_level threshold=SEVERITY_THRESHOLD);
 
 #if defined(__GNUC__) || defined(__GNUG__)
 #pragma GCC diagnostic push
@@ -90,31 +62,89 @@ BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", custom_severity_level)
 #pragma GCC diagnostic pop
 #endif
 
-template<typename T>
-void init_log_formatter(const boost::log::record_view &view, boost::log::formatting_ostream &os)
+
+namespace FairMQ
 {
-    os << "[";
+namespace Logger
+{
+    // common
+    extern std::vector<boost::shared_ptr< boost::log::sinks::basic_sink_frontend > >sinkList;// global var
+}}
+    void reinit_logger(bool color, const std::string& filename = "", custom_severity_level threshold = SEVERITY_NOLOG);
+    void RemoveRegisteredSinks();
 
-    if (std::is_same<T,tag_console>::value)
+    template<typename T>
+    void InitLogFormatter(const boost::log::record_view &view, boost::log::formatting_ostream &os)
     {
-        os << "\033[01;36m";
+        os << "[";
+
+        if (std::is_same<T,tag_console>::value)
+        {
+            os << "\033[01;36m";
+        }
+
+        auto date_time_formatter = boost::log::expressions::stream << boost::log::expressions::format_date_time<boost::posix_time::ptime>("TimeStamp", "%H:%M:%S");
+        date_time_formatter(view, os);
+
+        if (std::is_same<T,tag_console>::value)
+        {
+            os << "\033[0m";
+        }
+
+        os << "]"
+           << "["
+           << view.attribute_values()["Severity"].extract<custom_severity_level, T>()
+           << "] "
+           //<< " - " 
+           << view.attribute_values()["Message"].extract<std::string>();
     }
 
-    auto date_time_formatter = boost::log::expressions::stream << boost::log::expressions::format_date_time<boost::posix_time::ptime>("TimeStamp", "%H:%M:%S");
-    date_time_formatter(view, os);
 
-    if (std::is_same<T,tag_console>::value)
+    template<typename FunT>
+    int SetSinkFilterImpl(std::size_t index, FunT&& func)
     {
-        os << "\033[0m";
+        if(index<FairMQ::Logger::sinkList.size())
+        {
+            FairMQ::Logger::sinkList.at(index)->set_filter(std::forward<FunT>(func));
+        }
+        return 0;
     }
 
-    os << "]"
-       << "["
-       << view.attribute_values()["Severity"].extract<custom_severity_level, T>()
-       << "] "
-       //<< " - " 
-       << view.attribute_values()["Message"].extract<std::string>();
-}
+    // console sink related functions
+   
+
+        void DefaultConsoleInit(bool color = true);
+        int DefaultConsoleSetFilter(custom_severity_level threshold);
+
+    
+
+    // file sink related functions
+   
+        void DefaultAddFileSink(const std::string& filename, custom_severity_level threshold);
+        
+        template<typename FunT, typename... Args>
+        void AddFileSink(FunT&& func, Args&&... args)
+        {
+            // add a text sink
+            typedef boost::log::sinks::text_file_backend sink_backend_t;
+            typedef boost::log::sinks::synchronous_sink<sink_backend_t> sink_t;
+
+            // forward keywords args for setting log file properties
+            boost::shared_ptr<sink_backend_t> backend = boost::make_shared<sink_backend_t>(std::forward<Args>(args)...);
+            boost::shared_ptr<sink_t> sink = boost::make_shared<sink_t>(backend);
+
+            // specify the format of the log message 
+            sink->set_formatter(&InitLogFormatter<tag_file>);
+
+            // forward lambda for setting the filter
+            sink->set_filter(std::forward<FunT>(func));
+                    
+            // add file sinks to core and list
+            boost::log::core::get()->add_sink(sink);
+            FairMQ::Logger::sinkList.push_back(sink);
+
+        }
+
 
 // helper macros 
 
@@ -128,20 +158,8 @@ void init_log_formatter(const boost::log::record_view &view, boost::log::formatt
 #define MQLOG(severity) BOOST_LOG_SEV(global_logger::get(),custom_severity_level::severity)
 #endif
 
-#define SET_LOG_LEVEL(loglevel) boost::log::core::get()->set_filter(severity >= custom_severity_level::loglevel);
-#define SET_LOG_FILTER(op,loglevel)  set_global_log_level(log_op::op,custom_severity_level::loglevel)
+#define SET_LOG_CONSOLE_LEVEL(loglevel) DefaultConsoleSetFilter(custom_severity_level::loglevel)
+#define ADD_LOG_FILESINK(filename,loglevel) DefaultAddFileSink(filename, custom_severity_level::loglevel)
 
-// local init macros (sinks)
-// Notes : when applying a filter to the sink, and then to the core, the resulting filter will 
-//         be the intersection of the two sets defined by the two filters, i.e., core and sinks
-// filename : path to file name without extension
-#define INIT_LOG_FILE(filename) init_log_file(filename);
-#define INIT_LOG_FILE_LVL(filename,loglevel) init_log_file(filename,custom_severity_level::loglevel);
-#define INIT_LOG_FILE_FILTER(filename,op,loglevel) init_log_file(filename,custom_severity_level::loglevel,log_op::op);
-//INIT_LOG_FILE_FILTER_MP : add id to log filename for multiprocess
-#define INIT_LOG_FILE_FILTER_MP(filename,op,loglevel,id) init_log_file(filename,custom_severity_level::loglevel,log_op::GREATER_EQ_THAN,id);
-
-// create new file without formatting
-#define INIT_NEW_FILE(filename,op,loglevel) init_new_file(filename,custom_severity_level::loglevel,log_op::op);
-
+// Use : SET_LOG_CONSOLE_LEVEL(INFO); ADD_LOG_FILESINK(filename,ERROR);
 #endif

@@ -15,6 +15,7 @@
 #include "FairMQProgOptions.h"
 #include <algorithm>
 #include "FairMQParser.h"
+#include "FairMQLogger.h"
 using namespace std;
 
 FairMQProgOptions::FairMQProgOptions()
@@ -80,12 +81,14 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
 
     if (fSeverityMap.count(verbosity))
     {
-        set_global_log_level(log_op::operation::GREATER_EQ_THAN, fSeverityMap.at(verbosity));
+        DefaultConsoleSetFilter(fSeverityMap.at(verbosity));// return 1 if not success
+        //set_global_log_level(log_op::operation::GREATER_EQ_THAN, fSeverityMap.at(verbosity));
     }
     else
     {
         LOG(ERROR) << " verbosity level '" << verbosity << "' unknown, it will be set to DEBUG";
-        set_global_log_level(log_op::operation::GREATER_EQ_THAN, fSeverityMap.at("DEBUG"));
+        //set_global_log_level(log_op::operation::GREATER_EQ_THAN, fSeverityMap.at("DEBUG"));
+        DefaultConsoleSetFilter(fSeverityMap.at("DEBUG"));
     }
 
     

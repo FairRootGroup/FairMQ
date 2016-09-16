@@ -1,0 +1,11 @@
+#!/bin/bash
+
+TRANSPORT="zeromq"
+VERBOSE="DEBUG"
+
+JSONCONFIGFILE="@CMAKE_BINARY_DIR@/bin/config/ex1-sampler-sink.json"
+
+########################## start DEVICE
+DEVICE="runConfigExample --transport $TRANSPORT --verbose $VERBOSE"
+DEVICE+=" --id sampler1 --mq-config $JSONCONFIGFILE"
+@CMAKE_BINARY_DIR@/bin/$DEVICE

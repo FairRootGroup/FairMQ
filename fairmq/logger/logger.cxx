@@ -33,230 +33,150 @@ namespace expr = boost::log::expressions;
 namespace sinks = boost::log::sinks;
 namespace attrs = boost::log::attributes;
 
-namespace FairMQ
-{
-namespace Logger
-{
-    std::vector<boost::shared_ptr<sinks::synchronous_sink<sinks::text_ostream_backend>>> sinkList;
-}
-}
 
 BOOST_LOG_GLOBAL_LOGGER_INIT(global_logger, src::severity_logger_mt)
 {
     src::severity_logger_mt<custom_severity_level> global_logger;
     global_logger.add_attribute("TimeStamp", attrs::local_clock());
-    init_log_console();
+    DefaultConsoleInit();
     return global_logger;
 }
 
-void init_log_console(bool color/* = true*/)
-{
-    FairMQ::Logger::sinkList.clear();
-    // add a text sink
-    typedef sinks::synchronous_sink<sinks::text_ostream_backend> text_sink;
 
-    logging::core::get()->remove_all_sinks();
 
-    // CONSOLE - all severity except error
-    boost::shared_ptr<text_sink> sink = boost::make_shared<text_sink>();
-    // add "console" output stream to our sink
-    sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::clog, empty_deleter_t()));
 
-    // specify the format of the log message 
-    if (color)
+namespace FairMQ{
+namespace Logger{
+    std::vector<boost::shared_ptr< boost::log::sinks::basic_sink_frontend > >sinkList;// global var
+}}//end namespace
+
+    void RemoveRegisteredSinks()
     {
-        sink->set_formatter(&init_log_formatter<tag_console>);
-    }
-    else
-    {
-        sink->set_formatter(&init_log_formatter<tag_file>);
+        if(FairMQ::Logger::sinkList.size() > 0)
+        {
+            for(const auto& sink : FairMQ::Logger::sinkList)
+                logging::core::get()->remove_sink(sink);
+            FairMQ::Logger::sinkList.clear();
+        }
     }
 
-    sink->set_filter(severity != SEVERITY_ERROR && severity < SEVERITY_NOLOG);
-    // add sink to the core
-    FairMQ::Logger::sinkList.push_back(sink);
-    logging::core::get()->add_sink(sink);
 
-    // CONSOLE - only severity error
-    boost::shared_ptr<text_sink> sink_error = boost::make_shared<text_sink>();
-    sink_error->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::cerr, empty_deleter_t()));
+    void reinit_logger(bool color, const std::string& filename, custom_severity_level threshold)
+    {
+        BOOST_LOG_SEV(global_logger::get(), custom_severity_level::NOLOG) << "";
+        RemoveRegisteredSinks();
+        DefaultConsoleInit(color);
+        if(threshold!=SEVERITY_NOLOG)
+        {
+            if(!filename.empty())
+            {
+                DefaultAddFileSink(filename,threshold);
+            }
+        }
 
-    if (color)
-    {
-        sink_error->set_formatter(&init_log_formatter<tag_console>);
-    }
-    else
-    {
-        sink_error->set_formatter(&init_log_formatter<tag_file>);
     }
 
-    sink_error->set_filter(severity == SEVERITY_ERROR);
-    FairMQ::Logger::sinkList.push_back(sink_error);
-    logging::core::get()->add_sink(sink_error);
-}
+    // console sink related functions
+            void DefaultConsoleInit(bool color/* = true*/)
+            {
+                // add a text sink
+                typedef sinks::synchronous_sink<sinks::text_ostream_backend> text_sink;
 
-void reinit_logger(bool color)
-{
-    LOG(NOLOG) << "";
-    logging::core::get()->remove_all_sinks();
-    init_log_console(color);
-}
+                RemoveRegisteredSinks();
 
-void init_log_file(const std::string& filename, custom_severity_level threshold, log_op::operation op, const std::string& id)
-{
-    // add a text sink
-    std::string formatted_filename(filename);
-    formatted_filename += id;
-    formatted_filename += "_%Y-%m-%d_%H-%M-%S.%N.log";
-    boost::shared_ptr<sinks::text_file_backend> backend = boost::make_shared<sinks::text_file_backend>(
-        boost::log::keywords::file_name = formatted_filename, 
-        boost::log::keywords::rotation_size = 10 * 1024 * 1024,
-        // rotate at midnight every day
-        boost::log::keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0),
-        // log collector,
-        // -- maximum total size of the stored log files is 1GB.
-        // -- minimum free space on the drive is 2GB
-        boost::log::keywords::max_size = 1000 * 1024 * 1024,
-        boost::log::keywords::min_free_space = 2000 * 1024 * 1024,
-        boost::log::keywords::auto_flush = true
-        //keywords::time_based_rotation = &is_it_time_to_rotate
-        );
-    typedef sinks::synchronous_sink<sinks::text_file_backend> sink_t;
-    boost::shared_ptr<sink_t> sink(new sink_t(backend));
+                // CONSOLE - all severity except error
+                boost::shared_ptr<text_sink> sink = boost::make_shared<text_sink>();
+                // add "console" output stream to our sink
+                sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::clog, empty_deleter_t()));
 
-    // specify the format of the log message 
-    sink->set_formatter(&init_log_formatter<tag_file>);
+                // specify the format of the log message 
+                if (color)
+                {
+                    sink->set_formatter(&InitLogFormatter<tag_console>);
+                }
+                else
+                {
+                    sink->set_formatter(&InitLogFormatter<tag_file>);
+                }
 
-    switch (op)
-    {
-        case log_op::operation::EQUAL :
-            sink->set_filter(severity == threshold);
-            break;
-        case log_op::operation::GREATER_THAN :
-            sink->set_filter(severity > threshold);
-            break;
-        case log_op::operation::GREATER_EQ_THAN :
-            sink->set_filter(severity >= threshold);
-            break;
-        case log_op::operation::LESS_THAN :
-            sink->set_filter(severity < threshold);
-            break;
-        case log_op::operation::LESS_EQ_THAN :
-            sink->set_filter(severity <= threshold);
-            break;
-        default:
-            break;
-    }
+                sink->set_filter(severity != SEVERITY_ERROR && severity < SEVERITY_NOLOG);
+                // add sink to the core
+                FairMQ::Logger::sinkList.push_back(sink);
+                logging::core::get()->add_sink(sink);
 
-    logging::core::get()->add_sink(sink);
-}
+                // CONSOLE - only severity error
+                boost::shared_ptr<text_sink> sink_error = boost::make_shared<text_sink>();
+                sink_error->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::cerr, empty_deleter_t()));
 
-// temporary : to be replaced with c++11 lambda
-void set_global_log_level(log_op::operation op, custom_severity_level threshold)
-{
-    switch (threshold)
-    {
-        case custom_severity_level::TRACE :
-            set_global_log_level_operation(op,custom_severity_level::TRACE);
-            break;
-        case custom_severity_level::DEBUG :
-            set_global_log_level_operation(op,custom_severity_level::DEBUG);
-            break;
-        case custom_severity_level::RESULTS :
-            set_global_log_level_operation(op,custom_severity_level::RESULTS);
-            break;
-        case custom_severity_level::INFO :
-            set_global_log_level_operation(op,custom_severity_level::INFO);
-            break;
-        case custom_severity_level::WARN :
-            set_global_log_level_operation(op,custom_severity_level::WARN);
-            break;
-        case custom_severity_level::STATE :
-            set_global_log_level_operation(op,custom_severity_level::STATE);
-            break;
-        case custom_severity_level::ERROR :
-            set_global_log_level_operation(op,custom_severity_level::ERROR);
-            break;
-        case custom_severity_level::NOLOG :
-            set_global_log_level_operation(op,custom_severity_level::NOLOG);
-            break;
-        default:
-            break;
-    }
-}
+                if (color)
+                {
+                    sink_error->set_formatter(&InitLogFormatter<tag_console>);
+                }
+                else
+                {
+                    sink_error->set_formatter(&InitLogFormatter<tag_file>);
+                }
 
-void set_global_log_level_operation(log_op::operation op, custom_severity_level threshold)
-{
-    switch (op)
-    {
-        case log_op::operation::EQUAL:
-            FairMQ::Logger::sinkList.at(0)->set_filter(severity == threshold);
-            // boost::log::core::get()->set_filter(severity == threshold);
-            break;
-        case log_op::operation::GREATER_THAN:
-            FairMQ::Logger::sinkList.at(0)->set_filter(severity > threshold);
-            // boost::log::core::get()->set_filter(severity > threshold);
-            break;
-        case log_op::operation::GREATER_EQ_THAN:
-            FairMQ::Logger::sinkList.at(0)->set_filter(severity >= threshold);
-            // boost::log::core::get()->set_filter(severity >= threshold);
-            break;
-        case log_op::operation::LESS_THAN:
-            FairMQ::Logger::sinkList.at(0)->set_filter(severity < threshold);
-            // boost::log::core::get()->set_filter(severity < threshold);
-            break;
-        case log_op::operation::LESS_EQ_THAN:
-            FairMQ::Logger::sinkList.at(0)->set_filter(severity <= threshold);
-            // boost::log::core::get()->set_filter(severity <= threshold);
-            break;
-        default:
-            break;
-    }
-}
+                sink_error->set_filter(severity == SEVERITY_ERROR);
+                FairMQ::Logger::sinkList.push_back(sink_error);
+                logging::core::get()->add_sink(sink_error);
+            }
 
-void init_new_file(const std::string& filename, custom_severity_level threshold, log_op::operation op)
-{
-    // add a file text sink with filters but without any formatting
-    std::string formatted_filename(filename);
-    formatted_filename += ".%N.txt";
-    boost::shared_ptr<sinks::text_file_backend> backend = boost::make_shared<sinks::text_file_backend>(
-        boost::log::keywords::file_name = formatted_filename, 
-        boost::log::keywords::rotation_size = 10 * 1024 * 1024,
-        // rotate at midnight every day
-        boost::log::keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0),
-        // log collector,
-        // -- maximum total size of the stored log files is 1GB.
-        // -- minimum free space on the drive is 2GB
-        boost::log::keywords::max_size = 1000 * 1024 * 1024,
-        boost::log::keywords::min_free_space = 2000 * 1024 * 1024,
-        boost::log::keywords::auto_flush = true
-        //keywords::time_based_rotation = &is_it_time_to_rotate
-        );
-    typedef sinks::synchronous_sink<sinks::text_file_backend> sink_t;
-    boost::shared_ptr<sink_t> sink(new sink_t(backend));
+            int DefaultConsoleSetFilter(custom_severity_level threshold)
+            {
 
-    // sink->set_formatter(&init_file_formatter);
+                if(FairMQ::Logger::sinkList.size()>=2)
+                {
+                    FairMQ::Logger::sinkList.at(0)->set_filter([threshold](const boost::log::attribute_value_set& attr_set)
+                    {
+                        auto sev = attr_set["Severity"].extract<custom_severity_level>();
+                        auto mainConsoleSinkCondition = (sev != SEVERITY_ERROR) && (sev < SEVERITY_NOLOG);
+                        return mainConsoleSinkCondition && (sev>=threshold);
+                    });
 
-    switch (op)
-    {
-        case log_op::operation::EQUAL :
-            sink->set_filter(severity == threshold);
-            break;
-        case log_op::operation::GREATER_THAN :
-            sink->set_filter(severity > threshold);
-            break;
-        case log_op::operation::GREATER_EQ_THAN :
-            sink->set_filter(severity >= threshold);
-            break;
-        case log_op::operation::LESS_THAN :
-            sink->set_filter(severity < threshold);
-            break;
-        case log_op::operation::LESS_EQ_THAN :
-            sink->set_filter(severity <= threshold);
-            break;
-        default:
-            break;
-    }
+                    FairMQ::Logger::sinkList.at(1)->set_filter([threshold](const boost::log::attribute_value_set& attr_set)
+                    {
+                        auto sev = attr_set["Severity"].extract<custom_severity_level>();
+                        auto errorConsoleSinkCondition = sev == SEVERITY_ERROR;
+                        return errorConsoleSinkCondition && (sev>=threshold);
+                    });
+                    return 0;
+                }
+                else
+                {
+                    return 1;
+                }
 
-    logging::core::get()->add_sink(sink);
-}
+                return 0;
+            }
+
+
+
+    // file sink related functions
+   
+        void DefaultAddFileSink(const std::string& filename, custom_severity_level threshold)
+        {
+            // add a text sink
+            std::string formatted_filename(filename);
+            formatted_filename += "_%Y-%m-%d_%H-%M-%S.%N.log";
+            AddFileSink([threshold](const boost::log::attribute_value_set& attr_set)
+                {
+                    auto sev = attr_set["Severity"].extract<custom_severity_level>();
+                    return (sev >= threshold) && (sev < SEVERITY_NOLOG);
+                },
+                boost::log::keywords::file_name = formatted_filename, 
+                boost::log::keywords::rotation_size = 10 * 1024 * 1024,
+                // rotate at midnight every day
+                boost::log::keywords::time_based_rotation = boost::log::sinks::file::rotation_at_time_point(0, 0, 0),
+                // log collector,
+                // -- maximum total size of the stored log files is 1GB.
+                // -- minimum free space on the drive is 2GB
+                boost::log::keywords::max_size = 1000 * 1024 * 1024,
+                boost::log::keywords::min_free_space = 2000 * 1024 * 1024,
+                boost::log::keywords::auto_flush = true
+                //keywords::time_based_rotation = &is_it_time_to_rotate 
+                );
+                
+        }
+
+   

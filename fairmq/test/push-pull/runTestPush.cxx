@@ -39,7 +39,7 @@ int main(int argc, char** argv)
     }
 
     reinit_logger(false);
-    set_global_log_level(log_op::operation::GREATER_EQ_THAN, fairmq::NOLOG);
+    SET_LOG_CONSOLE_LEVEL(NOLOG);
 
     testPush.SetProperty(FairMQTestPush::Id, "testPush");
 
