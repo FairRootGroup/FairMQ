@@ -7,9 +7,9 @@
             "channel":
             {
                 "name": "data1",
-                "property": "samplerAddr",
                 "type": "push",
-                "method": "bind"
+                "method": "bind",
+                "rateLogging": "0"
             }
         },
         {
@@ -17,15 +17,15 @@
             "channels":
             [{
                 "name": "data1",
-                "property": "samplerAddr",
                 "type": "pull",
-                "method": "connect"
+                "method": "connect",
+                "rateLogging": "0"
             },
             {
                 "name": "data2",
-                "property": "sinkAddr",
                 "type": "push",
-                "method": "connect"
+                "method": "connect",
+                "rateLogging": "0"
             }]
         },
         {
@@ -33,9 +33,9 @@
             "channel":
             {
                 "name": "data2",
-                "property": "sinkAddr",
                 "type": "pull",
-                "method": "bind"
+                "method": "bind",
+                "rateLogging": "0"
             }
         }]
     }
