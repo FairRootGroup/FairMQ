@@ -6,16 +6,12 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-topology.xml 
-               ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-topology.xml)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-hosts.cfg 
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-topology.xml
+               ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-topology.xml @ONLY)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-hosts.cfg
                ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-hosts.cfg COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds.json 
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds.json
                ${CMAKE_BINARY_DIR}/bin/config/ex3-dds.json COPYONLY)
-
-If(DDS_FOUND)
-  add_definitions(-DDDS_FOUND)
-EndIf(DDS_FOUND)
 
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
@@ -31,7 +27,6 @@ Set(INCLUDE_DIRECTORIES
 Set(SYSTEM_INCLUDE_DIRECTORIES
   ${SYSTEM_INCLUDE_DIRECTORIES}
   ${Boost_INCLUDE_DIR}
-  ${DDS_INCLUDE_DIR}
   ${ZMQ_INCLUDE_DIR}
 )
 
@@ -55,9 +50,6 @@ Set(SRCS
 Set(DEPENDENCIES
   ${DEPENDENCIES}
   FairMQ
-  ${DDS_INTERCOM_LIBRARY_SHARED}
-  ${DDS_PROTOCOL_LIBRARY_SHARED}
-  ${DDS_USER_DEFAULTS_LIBRARY_SHARED}
 )
 
 set(LIBRARY_NAME FairMQExample3)

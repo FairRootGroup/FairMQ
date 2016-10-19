@@ -1,7 +1,7 @@
 <topology id="ExampleDDS">
 
-    <property id="samplerAddr" />
-    <property id="sinkAddr" />
+    <property id="data1" />
+    <property id="data2" />
 
     <declrequirement id="SamplerWorker">
         <hostPattern type="wnname" value="sampler"/>
@@ -16,27 +16,27 @@
     </declrequirement>
 
     <decltask id="Sampler">
-        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/examples/MQ/3-dds/ex3-sampler --id sampler --log-color false --control dds --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
+        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/examples/MQ/3-dds/ex3-sampler --id sampler --log-color false --control libFairMQDDSControlPlugin.so --config libFairMQDDSConfigPlugin.so --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
         <requirement>SamplerWorker</requirement>
         <properties>
-            <id access="write">samplerAddr</id>
+            <id access="write">data1</id>
         </properties>
     </decltask>
 
     <decltask id="Processor">
-        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/examples/MQ/3-dds/ex3-processor --id processor_%taskIndex% --config-key processor --log-color false --control dds --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
+        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/examples/MQ/3-dds/ex3-processor --id processor_%taskIndex% --config-key processor --log-color false --control libFairMQDDSControlPlugin.so --config libFairMQDDSConfigPlugin.so --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
         <requirement>ProcessorWorker</requirement>
         <properties>
-            <id access="read">samplerAddr</id>
-            <id access="read">sinkAddr</id>
+            <id access="read">data1</id>
+            <id access="read">data2</id>
         </properties>
     </decltask>
 
     <decltask id="Sink">
-        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/examples/MQ/3-dds/ex3-sink --id sink --log-color false --control dds --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
+        <exe reachable="true">@CMAKE_BINARY_DIR@/bin/examples/MQ/3-dds/ex3-sink --id sink --log-color false --control libFairMQDDSControlPlugin.so --config libFairMQDDSConfigPlugin.so --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
         <requirement>SinkWorker</requirement>
         <properties>
-            <id access="write">sinkAddr</id>
+            <id access="write">data2</id>
         </properties>
     </decltask>
 
