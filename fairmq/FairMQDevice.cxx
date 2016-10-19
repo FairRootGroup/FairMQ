@@ -17,14 +17,13 @@
 #include <csignal> // catching system signals
 #include <cstdlib>
 #include <stdexcept>
+#include <random>
+#include <chrono>
 
 #include <termios.h> // for the InteractiveStateLoop
 #include <poll.h>
 
-#include <boost/timer/timer.hpp>
 #include <boost/thread.hpp>
-#include <boost/random/mersenne_twister.hpp> // for choosing random port in range
-#include <boost/random/uniform_int_distribution.hpp> // for choosing random port in range
 
 #include "FairMQSocket.h"
 #include "FairMQDevice.h"
@@ -279,8 +278,8 @@ bool FairMQDevice::BindChannel(FairMQChannel& ch)
     int numAttempts = 0;
 
     // initialize random generator
-    boost::random::mt19937 gen(getpid());
-    boost::random::uniform_int_distribution<> randomPort(fPortRangeMin, fPortRangeMax);
+    std::default_random_engine generator(std::chrono::system_clock::now().time_since_epoch().count());
+    std::uniform_int_distribution<int> randomPort(fPortRangeMin, fPortRangeMax);
 
     LOG(DEBUG) << "Binding channel " << ch.fChannelName << " on " << ch.fAddress;
 
@@ -298,7 +297,7 @@ bool FairMQDevice::BindChannel(FairMQChannel& ch)
 
         size_t pos = ch.fAddress.rfind(":");
         stringstream newPort;
-        newPort << static_cast<int>(randomPort(gen));
+        newPort << static_cast<int>(randomPort(generator));
         ch.fAddress = ch.fAddress.substr(0, pos + 1) + newPort.str();
 
         LOG(DEBUG) << "Binding channel " << ch.fChannelName << " on " << ch.fAddress;
@@ -982,6 +981,11 @@ void FairMQDevice::Reset()
             vi.fCmdSocket = nullptr;
         }
     }
+}
+
+bool FairMQDevice::Terminated()
+{
+    return fTerminationRequested;
 }
 
 void FairMQDevice::Terminate()

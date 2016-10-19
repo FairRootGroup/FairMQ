@@ -84,6 +84,10 @@ class FairProgOptions
             {
                 val = fVarMap[key].as<T>();
             }
+            else
+            {
+                LOG(ERROR) << "Config has no key: " << key;
+            }
         }
         catch(std::exception& e)
         {

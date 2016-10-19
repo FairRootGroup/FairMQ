@@ -28,11 +28,8 @@ Set(SYSTEM_INCLUDE_DIRECTORIES
 )
 
 If(DDS_FOUND)
-  add_definitions(-DDDS_FOUND)
-  Set(SYSTEM_INCLUDE_DIRECTORIES
-    ${SYSTEM_INCLUDE_DIRECTORIES}
-    ${DDS_INCLUDE_DIR}
-    )
+  add_subdirectory(plugins/config)
+  add_subdirectory(plugins/control)
 EndIf(DDS_FOUND)
 
 If(NANOMSG_FOUND)
@@ -107,12 +104,12 @@ EndIf(NANOMSG_FOUND)
 # manual install (globbing add not recommended)
 Set(FAIRMQHEADERS
   FairMQParts.h
-  # FairMQPlugin.h
+  FairMQConfigPlugin.h
+  FairMQControlPlugin.h
   runFairMQDevice.h
   options/FairProgOptionsHelper.h
   options/FairMQEventManager.h
   tools/FairMQTools.h
-  tools/FairMQDDSTools.h
   tools/runSimpleMQStateMachine.h
 )
 Install(FILES ${FAIRMQHEADERS} DESTINATION include)
@@ -121,6 +118,7 @@ Set(DEPENDENCIES
   ${DEPENDENCIES}
   ${ZMQ_LIBRARY_SHARED}
   ${Boost_THREAD_LIBRARY}
+  dl
   fairmq_logger
   ${Boost_TIMER_LIBRARY}
   ${Boost_SYSTEM_LIBRARY}
@@ -141,15 +139,6 @@ If(NANOMSG_FOUND)
   )
 EndIf(NANOMSG_FOUND)
 
-If(DDS_FOUND)
-  Set(DEPENDENCIES
-    ${DEPENDENCIES}
-    ${DDS_INTERCOM_LIBRARY_SHARED}
-    ${DDS_PROTOCOL_LIBRARY_SHARED}
-    ${DDS_USER_DEFAULTS_LIBRARY_SHARED}
-    )
-EndIf(DDS_FOUND)
-
 Set(LIBRARY_NAME FairMQ)
 
 GENERATE_LIBRARY()
@@ -164,13 +153,6 @@ Set(Exe_Names
   runConfigExample
 )
 
-If(DDS_FOUND)
-  Set(Exe_Names
-    ${Exe_Names}
-    fairmq-dds-command-ui
-    )
-EndIf(DDS_FOUND)
-
 Set(Exe_Source
   run/runBenchmarkSampler.cxx
   run/runMerger.cxx
@@ -180,13 +162,6 @@ Set(Exe_Source
   run/runSplitter.cxx
   options/runConfigEx.cxx
 )
-
-If(DDS_FOUND)
-  Set(Exe_Source
-    ${Exe_Source}
-    run/runDDSCommandUI.cxx
-    )
-EndIf(DDS_FOUND)
 
 list(LENGTH Exe_Names _length)
 math(EXPR _length ${_length}-1)
@@ -200,5 +175,5 @@ ForEach(_file RANGE 0 ${_length})
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
 
-configure_file( ${CMAKE_SOURCE_DIR}/fairmq/options/startConfigExample.sh.in 
-                ${CMAKE_BINARY_DIR}/bin/startConfigExample.sh )
+configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/startConfigExample.sh.in
+               ${CMAKE_BINARY_DIR}/bin/startConfigExample.sh)

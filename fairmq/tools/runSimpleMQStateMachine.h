@@ -9,23 +9,22 @@
 #define RUNSIMPLEMQSTATEMACHINE_H
 
 #include "FairMQLogger.h"
+#include "FairMQConfigPlugin.h"
+#include "FairMQControlPlugin.h"
 #include "FairMQParser.h"
 #include "FairMQProgOptions.h"
 
 #include <iostream>
 #include <string>
+#include <chrono>
 #include <dlfcn.h>
 
-#ifdef DDS_FOUND
-#include "FairMQDDSTools.h"
-#endif /*DDS_FOUND*/
-
 // template function that takes any device
-// and runs a simple MQ state machine configured from a JSON file and/or (optionally) DDS.
+// and runs a simple MQ state machine configured from a JSON file and/or a plugin.
 template<typename TMQDevice>
-inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
+inline int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
 {
-    if (config.GetValue<int>("catch-signals") > 0)
+    if (cfg.GetValue<int>("catch-signals") > 0)
     {
         device.CatchSignals();
     }
@@ -34,19 +33,90 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
         LOG(WARN) << "Signal handling (e.g. ctrl+C) has been deactivated via command line argument";
     }
 
-    device.SetConfig(config);
-    std::string control = config.GetValue<std::string>("control");
+    device.SetConfig(cfg);
+    std::string config = cfg.GetValue<std::string>("config");
+    std::string control = cfg.GetValue<std::string>("control");
+
+    // plugin objects
+    void* ldConfigHandle = nullptr;
+    void* ldControlHandle = nullptr;
+    FairMQConfigPlugin* fairmqConfigPlugin = nullptr;
+    FairMQControlPlugin* fairmqControlPlugin = nullptr;
+
+    std::clock_t c_start = std::clock();
+    auto t_start = std::chrono::high_resolution_clock::now();
 
     device.ChangeState(TMQDevice::INIT_DEVICE);
+    // Wait for the binding channels to bind
+    device.WaitForInitialValidation();
 
-#ifdef DDS_FOUND
-    if (control == "dds")
+    if (config != "static")
     {
-        HandleConfigViaDDS(device);
+        LOG(DEBUG) << "Opening config plugin: " << config;
+        ldConfigHandle = dlopen(config.c_str(), RTLD_LAZY);
+
+        if (!ldConfigHandle)
+        {
+            LOG(ERROR) << "Cannot open library: " << dlerror();
+            return 1;
+        }
+
+        // load the fairmqConfigPlugin
+        dlerror();
+        fairmqConfigPlugin = static_cast<FairMQConfigPlugin*>(dlsym(ldConfigHandle, "fairmqConfigPlugin"));
+        const char* dlsymError = dlerror();
+        if (dlsymError)
+        {
+            LOG(ERROR) << "Cannot load fairmqConfigPlugin() from: " << dlsymError;
+            fairmqConfigPlugin = nullptr;
+            dlclose(ldConfigHandle);
+            return 1;
+        }
+
+        fairmqConfigPlugin->initConfig(device);
     }
-#endif /*DDS_FOUND*/
+
+    if (control != "interactive" && control != "static")
+    {
+        LOG(DEBUG) << "Opening control plugin: " << control;
+        ldControlHandle = dlopen(control.c_str(), RTLD_LAZY);
+
+        if (!ldControlHandle)
+        {
+            LOG(ERROR) << "Cannot open library: " << dlerror();
+            return 1;
+        }
+
+        // load the fairmqControlPlugin
+        dlerror();
+        fairmqControlPlugin = static_cast<FairMQControlPlugin*>(dlsym(ldControlHandle, "fairmqControlPlugin"));
+        const char* dlsymError = dlerror();
+        if (dlsymError)
+        {
+            LOG(ERROR) << "Cannot load fairmqControlPlugin(): " << dlsymError;
+            fairmqControlPlugin = nullptr;
+            dlclose(ldControlHandle);
+            return 1;
+        }
+
+        fairmqControlPlugin->initControl(device);
+    }
+
+    if (config != "static")
+    {
+        if (fairmqConfigPlugin)
+        {
+            fairmqConfigPlugin->handleInitialConfig(device);
+        }
+    }
 
     device.WaitForEndOfState(TMQDevice::INIT_DEVICE);
+
+    std::clock_t c_end = std::clock();
+    auto t_end = std::chrono::high_resolution_clock::now();
+
+    LOG(DEBUG) << "Init time (CPU) : " << std::fixed << std::setprecision(2) << 1000.0 * (c_end - c_start) / CLOCKS_PER_SEC << " ms";
+    LOG(DEBUG) << "Init time (Wall): " << std::chrono::duration<double, std::milli>(t_end - t_start).count() << " ms";
 
     device.ChangeState(TMQDevice::INIT_TASK);
     device.WaitForEndOfState(TMQDevice::INIT_TASK);
@@ -72,23 +142,32 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& config)
             device.ChangeState(TMQDevice::END);
         }
     }
-#ifdef DDS_FOUND
-    else if (control == "dds")
-    {
-        runDDSStateHandler(device);
-    }
-#endif /*DDS_FOUND*/
     else
     {
-        LOG(ERROR) << "Requested control mechanism '" << control << "' is not available.";
-        LOG(ERROR) << "Currently available are:"
-                   << " 'interactive'"
-                   << ", 'static'"
-#ifdef DDS_FOUND
-                   << ", 'dds'"
-#endif /*DDS_FOUND*/
-                   << ". Exiting.";
-        return 1;
+        if (fairmqControlPlugin)
+        {
+            fairmqControlPlugin->handleStateChanges(device);
+        }
+    }
+
+    if (config != "static")
+    {
+        if (fairmqConfigPlugin)
+        {
+            LOG(DEBUG) << "Closing FairMQConfigPlugin...";
+            fairmqConfigPlugin->stopConfig();
+            dlclose(ldConfigHandle);
+        }
+    }
+
+    if (control != "interactive" && control != "static")
+    {
+        if (fairmqControlPlugin)
+        {
+            LOG(DEBUG) << "Closing FairMQControlPlugin...";
+            fairmqControlPlugin->stopControl();
+            dlclose(ldControlHandle);
+        }
     }
 
     return 0;

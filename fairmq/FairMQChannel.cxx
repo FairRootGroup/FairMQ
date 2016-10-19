@@ -30,7 +30,6 @@ FairMQChannel::FairMQChannel()
     , fType("unspecified")
     , fMethod("unspecified")
     , fAddress("unspecified")
-    , fProperty("")
     , fSndBufSize(1000)
     , fRcvBufSize(1000)
     , fSndKernelSize(0)
@@ -51,7 +50,6 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
     , fType(type)
     , fMethod(method)
     , fAddress(address)
-    , fProperty("")
     , fSndBufSize(1000)
     , fRcvBufSize(1000)
     , fSndKernelSize(0)
@@ -72,7 +70,6 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan)
     , fType(chan.fType)
     , fMethod(chan.fMethod)
     , fAddress(chan.fAddress)
-    , fProperty(chan.fProperty)
     , fSndBufSize(chan.fSndBufSize)
     , fRcvBufSize(chan.fRcvBufSize)
     , fSndKernelSize(chan.fSndKernelSize)
@@ -92,7 +89,6 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     fType = chan.fType;
     fMethod = chan.fMethod;
     fAddress = chan.fAddress;
-    fProperty = chan.fProperty;
     fSndBufSize = chan.fSndBufSize;
     fRcvBufSize = chan.fRcvBufSize;
     fSndKernelSize = chan.fSndKernelSize;
@@ -159,20 +155,6 @@ string FairMQChannel::GetAddress() const
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::GetAddress: " << boost::diagnostic_information(e);
-        exit(EXIT_FAILURE);
-    }
-}
-
-string FairMQChannel::GetProperty() const
-{
-    try
-    {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
-        return fProperty;
-    }
-    catch (boost::exception& e)
-    {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetProperty: " << boost::diagnostic_information(e);
         exit(EXIT_FAILURE);
     }
 }
@@ -288,21 +270,6 @@ void FairMQChannel::UpdateAddress(const string& address)
     catch (boost::exception& e)
     {
         LOG(ERROR) << "Exception caught in FairMQChannel::UpdateAddress: " << boost::diagnostic_information(e);
-        exit(EXIT_FAILURE);
-    }
-}
-
-void FairMQChannel::UpdateProperty(const string& property)
-{
-    try
-    {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
-        fIsValid = false;
-        fProperty = property;
-    }
-    catch (boost::exception& e)
-    {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateProperty: " << boost::diagnostic_information(e);
         exit(EXIT_FAILURE);
     }
 }

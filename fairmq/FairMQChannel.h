@@ -71,10 +71,6 @@ class FairMQChannel
     /// @return Returns socket type (e.g. "tcp://127.0.0.1:5555" or "ipc://abc")
     std::string GetAddress() const;
 
-    /// Get channel property (custom property)
-    /// @return Returns property value
-    std::string GetProperty() const;
-
     /// Get socket send buffer size (in number of messages)
     /// @return Returns socket send buffer size (in number of messages)
     int GetSndBufSize() const;
@@ -106,10 +102,6 @@ class FairMQChannel
     /// Set socket address
     /// @param address Socket address (e.g. "tcp://127.0.0.1:5555" or "ipc://abc")
     void UpdateAddress(const std::string& address);
-
-    /// Set custom channel property
-    /// @param property Channel property
-    void UpdateProperty(const std::string& property);
 
     /// Set socket send buffer size
     /// @param sndBufSize Socket send buffer size (in number of messages)
@@ -260,7 +252,6 @@ class FairMQChannel
     std::string fType;
     std::string fMethod;
     std::string fAddress;
-    std::string fProperty;
     int fSndBufSize;
     int fRcvBufSize;
     int fSndKernelSize;

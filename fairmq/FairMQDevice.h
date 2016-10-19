@@ -321,6 +321,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     void OnData(const std::string& channelName, InputMultipartCallback);
 
+    bool Terminated();
+
   protected:
     std::string fId; ///< Device ID
     std::string fNetworkInterface; ///< Network interface to use for dynamic binding

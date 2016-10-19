@@ -23,13 +23,20 @@ int main(int argc, char* argv[])
 {
     try
     {
-        CCustomCmd ddsCustomCmd;
+        CIntercomService service;
+        CCustomCmd ddsCustomCmd(service);
+
+        service.subscribeOnError([](const EErrorCode errorCode, const string& errorMsg) {
+            cout << "DDS error received: error code: " << errorCode << ", error message: " << errorMsg << endl;
+        });
 
         // subscribe to receive messages from DDS
         ddsCustomCmd.subscribe([](const string& msg, const string& condition, uint64_t senderId)
         {
             cout << "Received: \"" << msg << "\"" << endl;
         });
+
+        service.start();
 
         char c;
 
@@ -46,41 +53,39 @@ int main(int argc, char* argv[])
 
         while (cin >> c)
         {
-            int result = 0; // result of the dds send
-
             switch (c)
             {
                 case 'c':
                     cout << " > checking state of the devices" << endl;
-                    result = ddsCustomCmd.send("check-state", "");
+                    ddsCustomCmd.send("check-state", "");
                     break;
                 case 'i':
                     cout << " > init devices" << endl;
-                    result = ddsCustomCmd.send("INIT_DEVICE", "");
+                    ddsCustomCmd.send("INIT_DEVICE", "");
                     break;
                 case 'j':
                     cout << " > init tasks" << endl;
-                    result = ddsCustomCmd.send("INIT_TASK", "");
+                    ddsCustomCmd.send("INIT_TASK", "");
                     break;
                 case 'p':
                     cout << " > pause devices" << endl;
-                    result = ddsCustomCmd.send("PAUSE", "");
+                    ddsCustomCmd.send("PAUSE", "");
                     break;
                 case 'r':
                     cout << " > run tasks" << endl;
-                    result = ddsCustomCmd.send("RUN", "");
+                    ddsCustomCmd.send("RUN", "");
                     break;
                 case 's':
                     cout << " > stop devices" << endl;
-                    result = ddsCustomCmd.send("STOP", "");
+                    ddsCustomCmd.send("STOP", "");
                     break;
                 case 't':
                     cout << " > reset tasks" << endl;
-                    result = ddsCustomCmd.send("RESET_TASK", "");
+                    ddsCustomCmd.send("RESET_TASK", "");
                     break;
                 case 'd':
                     cout << " > reset devices" << endl;
-                    result = ddsCustomCmd.send("RESET_DEVICE", "");
+                    ddsCustomCmd.send("RESET_DEVICE", "");
                     break;
                 case 'h':
                     cout << " > help" << endl;
@@ -88,7 +93,7 @@ int main(int argc, char* argv[])
                     break;
                 case 'q':
                     cout << " > end" << endl;
-                    result = ddsCustomCmd.send("END", "");
+                    ddsCustomCmd.send("END", "");
                     break;
                 default:
                     cout << "Invalid input: [" << c << "]" << endl;
@@ -96,11 +101,8 @@ int main(int argc, char* argv[])
                     break;
             }
 
-            if (result == 1)
+            if (argc == 2)
             {
-                cerr << "Error sending custom command" << endl;
-            }
-            if ( argc == 2 ) {
                 usleep(50000);
                 return EXIT_SUCCESS;
             }

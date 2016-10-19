@@ -32,13 +32,9 @@ FairMQProgOptions::FairMQProgOptions()
 {
 }
 
-// ----------------------------------------------------------------------------------
-
 FairMQProgOptions::~FairMQProgOptions()
 {
 }
-
-// ----------------------------------------------------------------------------------
 
 void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregistered)
 {
@@ -209,18 +205,12 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
     FairProgOptions::PrintOptions();
 }
 
-
-// ----------------------------------------------------------------------------------
-
 int FairMQProgOptions::Store(const FairMQMap& channels)
 {
     fFairMQMap = channels;
     UpdateMQValues();
     return 0;
 }
-
-
-// ----------------------------------------------------------------------------------
 
 // replace FairMQChannelMap, and update variable map accordingly
 int FairMQProgOptions::UpdateChannelMap(const FairMQMap& channels)
@@ -229,8 +219,6 @@ int FairMQProgOptions::UpdateChannelMap(const FairMQMap& channels)
     UpdateMQValues();
     return 0;
 }
-
-// ----------------------------------------------------------------------------------
 
 // read FairMQChannelMap and insert/update corresponding values in variable map
 // create key for variable map as follow : channelName.index.memberName
@@ -244,23 +232,20 @@ void FairMQProgOptions::UpdateMQValues()
             std::string typeKey = p.first + "." + std::to_string(index) + ".type";
             std::string methodKey = p.first + "." + std::to_string(index) + ".method";
             std::string addressKey = p.first + "." + std::to_string(index) + ".address";
-            std::string propertyKey = p.first + "." + std::to_string(index) + ".property";
             std::string sndBufSizeKey = p.first + "." + std::to_string(index) + ".sndBufSize";
             std::string rcvBufSizeKey = p.first + "." + std::to_string(index) + ".rcvBufSize";
             std::string rateLoggingKey = p.first + "." + std::to_string(index) + ".rateLogging";
-            
+
             fMQKeyMap[typeKey] = std::make_tuple(p.first,index,"type");
             fMQKeyMap[methodKey] = std::make_tuple(p.first,index,"method");
             fMQKeyMap[addressKey] = std::make_tuple(p.first,index,"address");
-            fMQKeyMap[propertyKey] = std::make_tuple(p.first,index,"property");
             fMQKeyMap[sndBufSizeKey] = std::make_tuple(p.first,index,"sndBufSize");
             fMQKeyMap[rcvBufSizeKey] = std::make_tuple(p.first,index,"rcvBufSize");
             fMQKeyMap[rateLoggingKey] = std::make_tuple(p.first,index,"rateLogging");
-            
+
             UpdateVarMap<std::string>(typeKey,channel.GetType());
             UpdateVarMap<std::string>(methodKey,channel.GetMethod());
             UpdateVarMap<std::string>(addressKey,channel.GetAddress());
-            UpdateVarMap<std::string>(propertyKey,channel.GetProperty());
 
 
             //UpdateVarMap<std::string>(sndBufSizeKey, std::to_string(channel.GetSndBufSize()));// string API
@@ -277,20 +262,14 @@ void FairMQProgOptions::UpdateMQValues()
             LOG(DEBUG) << "key = " << typeKey <<"\t value = " << GetValue<std::string>(typeKey);
             LOG(DEBUG) << "key = " << methodKey <<"\t value = " << GetValue<std::string>(methodKey);
             LOG(DEBUG) << "key = " << addressKey <<"\t value = " << GetValue<std::string>(addressKey);
-            LOG(DEBUG) << "key = " << propertyKey <<"\t value = " << GetValue<std::string>(propertyKey);
             LOG(DEBUG) << "key = " << sndBufSizeKey << "\t value = " << GetValue<int>(sndBufSizeKey);
             LOG(DEBUG) << "key = " << rcvBufSizeKey <<"\t value = " << GetValue<int>(rcvBufSizeKey);
             LOG(DEBUG) << "key = " << rateLoggingKey <<"\t value = " << GetValue<int>(rateLoggingKey);
             */
             index++;
         }
-
     }
-
 }
-
-// ----------------------------------------------------------------------------------
-
 
 int FairMQProgOptions::NotifySwitchOption()
 {
@@ -309,8 +288,6 @@ int FairMQProgOptions::NotifySwitchOption()
     return 0;
 }
 
-// ----------------------------------------------------------------------------------
-
 void FairMQProgOptions::InitOptionDescription()
 {
     // Id required in command line if config txt file not enabled
@@ -320,8 +297,8 @@ void FairMQProgOptions::InitOptionDescription()
             ("id",                po::value<string>(),                               "Device ID (required argument).")
             ("io-threads",        po::value<int   >()->default_value(1),             "Number of I/O threads.")
             ("transport",         po::value<string>()->default_value("zeromq"),      "Transport ('zeromq'/'nanomsg').")
-            ("deployment",        po::value<string>()->default_value("static"),      "Deployment ('static'/'dds').")
-            ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/'dds').")
+            ("config",            po::value<string>()->default_value("static"),      "Config source ('static'/<config library filename>).")
+            ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/<control library filename>).")
             ("network-interface", po::value<string>()->default_value("eth0"),        "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
             ("config-key",        po::value<string>(),                               "Use provided value instead of device id for fetching the configuration from the config file")
             ("catch-signals",     po::value<int   >()->default_value(1),             "Enable signal handling (1/0)")
@@ -332,8 +309,8 @@ void FairMQProgOptions::InitOptionDescription()
             ("id",                po::value<string>()->required(),                   "Device ID (required argument).")
             ("io-threads",        po::value<int   >()->default_value(1),             "Number of I/O threads.")
             ("transport",         po::value<string>()->default_value("zeromq"),      "Transport ('zeromq'/'nanomsg').")
-            ("deployment",        po::value<string>()->default_value("static"),      "Deployment ('static'/'dds').")
-            ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/'dds').")
+            ("config",            po::value<string>()->default_value("static"),      "Config source ('static'/<config library filename>).")
+            ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/<control library filename>).")
             ("network-interface", po::value<string>()->default_value("eth0"),        "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
             ("config-key",        po::value<string>(),                               "Use provided value instead of device id for fetching the configuration from the config file")
             ("catch-signals",     po::value<int   >()->default_value(1),             "Enable signal handling (1/0)")
@@ -346,8 +323,8 @@ void FairMQProgOptions::InitOptionDescription()
             ("id",                po::value<string>()->required(),                   "Device ID (required argument)")
             ("io-threads",        po::value<int   >()->default_value(1),             "Number of I/O threads")
             ("transport",         po::value<string>()->default_value("zeromq"),      "Transport ('zeromq'/'nanomsg').")
-            ("deployment",        po::value<string>()->default_value("static"),      "Deployment ('static'/'dds').")
-            ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/'dds').")
+            ("config",            po::value<string>()->default_value("static"),      "Config source ('static'/<config library filename>).")
+            ("control",           po::value<string>()->default_value("interactive"), "States control ('interactive'/'static'/<control library filename>).")
             ("network-interface", po::value<string>()->default_value("eth0"),        "Network interface to bind on (e.g. eth0, ib0, wlan0, en0, lo...).")
             ("config-key",        po::value<string>(),                               "Use provided value instead of device id for fetching the configuration from the config file")
             ("catch-signals",     po::value<int   >()->default_value(1),             "Enable signal handling (1/0)")
@@ -374,31 +351,23 @@ void FairMQProgOptions::InitOptionDescription()
     }
 }
 
-// ----------------------------------------------------------------------------------
-
 int FairMQProgOptions::UpdateChannelMap(const std::string& channelName, int index, const std::string& member, const std::string& val)
 {
-    if(member == "type") 
+    if (member == "type")
     {
         fFairMQMap.at(channelName).at(index).UpdateType(val);
         return 0;
     }
-    
-    if(member == "method") 
+
+    if (member == "method")
     {
         fFairMQMap.at(channelName).at(index).UpdateMethod(val);
         return 0;
     }
-    
-    if(member == "address") 
+
+    if (member == "address")
     {
         fFairMQMap.at(channelName).at(index).UpdateAddress(val);
-        return 0;
-    }
-    
-    if(member == "property") 
-    {
-        fFairMQMap.at(channelName).at(index).UpdateProperty(val);
         return 0;
     }
     else
@@ -408,39 +377,32 @@ int FairMQProgOptions::UpdateChannelMap(const std::string& channelName, int inde
                     << channelName<<"."<<index<<"."<<member;
         return 1;
     }
-
 }
 
 /*
 // string API
 int FairMQProgOptions::UpdateChannelMap(const std::string& channelName, int index, const std::string& member, const std::string& val)
 {
-    if(member == "type") 
+    if (member == "type") 
     {
         fFairMQMap.at(channelName).at(index).UpdateType(val);
         return 0;
     }
     
-    if(member == "method") 
+    if (member == "method") 
     {
         fFairMQMap.at(channelName).at(index).UpdateMethod(val);
         return 0;
     }
     
-    if(member == "address") 
+    if (member == "address") 
     {
         fFairMQMap.at(channelName).at(index).UpdateAddress(val);
         return 0;
     }
-    
-    if(member == "property") 
-    {
-        fFairMQMap.at(channelName).at(index).UpdateProperty(val);
-        return 0;
-    }
     else
     {
-        if(member == "sndBufSize" || member == "rcvBufSize" || member == "rateLogging") 
+        if (member == "sndBufSize" || member == "rcvBufSize" || member == "rateLogging") 
         {
             UpdateChannelMap(channelName,index,member,ConvertTo<int>(val));
         }
@@ -458,20 +420,19 @@ int FairMQProgOptions::UpdateChannelMap(const std::string& channelName, int inde
 
 int FairMQProgOptions::UpdateChannelMap(const std::string& channelName, int index, const std::string& member, int val)
 {
-    
-    if(member == "sndBufSize") 
+    if (member == "sndBufSize")
     {
         fFairMQMap.at(channelName).at(index).UpdateSndBufSize(val);
         return 0;
     }
-    
-    if(member == "rcvBufSize") 
+
+    if (member == "rcvBufSize")
     {
         fFairMQMap.at(channelName).at(index).UpdateRcvBufSize(val);
         return 0;
     }
 
-    if(member == "rateLogging") 
+    if (member == "rateLogging")
     {
         fFairMQMap.at(channelName).at(index).UpdateRateLogging(val);
         return 0;

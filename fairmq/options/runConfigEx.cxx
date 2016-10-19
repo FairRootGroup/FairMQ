@@ -10,208 +10,181 @@
  * Author: winckler
  */
 
-
 // FairRoot - FairMQ
 #include "FairMQLogger.h"
 #include "FairMQProgOptions.h"
 #include "FairMQDevice.h"
 
-typedef std::unordered_map<std::string, std::vector<FairMQChannel>> FairMQMap;
+#include <exception>
+#include <string>
+#include <vector>
+#include <unordered_map>
 
-class MyDevice : public FairMQDevice 
+using namespace std;
+
+typedef unordered_map<string, vector<FairMQChannel>> FairMQMap;
+
+class MyDevice : public FairMQDevice
 {
   public:
-    MyDevice() : rate(0.5) {}
-    virtual ~MyDevice() {}
-    void SetRate(double r){rate=r;}
-    void Print(){LOG(INFO)<<"[MyDevice] rate = "<<rate;}
+    MyDevice()
+        : fRate(0.5)
+    {}
+
+    virtual ~MyDevice()
+    {}
+
+    void SetRate(double r)
+    {
+        fRate = r;
+    }
+
+    double GetRate()
+    {
+        return fRate;
+    }
+
+    void Print()
+    {
+        LOG(INFO) << "[MyDevice] rate = " << fRate;
+    }
+
   private:
-    double rate;
+    double fRate;
 };
 
 void MyCallBack(MyDevice& d, double val)
-            {
-                d.SetRate(val);
-                d.Print();
-            }
+{
+    d.SetRate(val);
+    d.Print();
+}
 
 void PrintMQParam(const FairMQMap& channels, const FairMQProgOptions& config)
 {
-
-    for(const auto& p : channels)
+    for (const auto& p : channels)
     {
         int index = 0;
-        for(const auto& channel : p.second)
+        for (const auto& channel : p.second)
         {
-            std::string typeKey = p.first + "." + std::to_string(index) + ".type";
-            std::string methodKey = p.first + "." + std::to_string(index) + ".method";
-            std::string addressKey = p.first + "." + std::to_string(index) + ".address";
-            std::string propertyKey = p.first + "." + std::to_string(index) + ".property";
-            std::string sndBufSizeKey = p.first + "." + std::to_string(index) + ".sndBufSize";
-            std::string rcvBufSizeKey = p.first + "." + std::to_string(index) + ".rcvBufSize";
-            std::string rateLoggingKey = p.first + "." + std::to_string(index) + ".rateLogging";
-            
-            LOG(DEBUG) << "Channel name = "<<p.first;
-            LOG(DEBUG) << "key = " << typeKey <<"\t value = " << config.GetValue<std::string>(typeKey);
-            LOG(DEBUG) << "key = " << methodKey <<"\t value = " << config.GetValue<std::string>(methodKey);
-            LOG(DEBUG) << "key = " << addressKey <<"\t value = " << config.GetValue<std::string>(addressKey);
-            LOG(DEBUG) << "key = " << propertyKey <<"\t value = " << config.GetValue<std::string>(propertyKey);
-            LOG(DEBUG) << "key = " << sndBufSizeKey << "\t value = " << config.GetValue<int>(sndBufSizeKey);
-            LOG(DEBUG) << "key = " << rcvBufSizeKey <<"\t value = " << config.GetValue<int>(rcvBufSizeKey);
-            LOG(DEBUG) << "key = " << rateLoggingKey <<"\t value = " << config.GetValue<int>(rateLoggingKey);
+            string typeKey = p.first + "." + to_string(index) + ".type";
+            string methodKey = p.first + "." + to_string(index) + ".method";
+            string addressKey = p.first + "." + to_string(index) + ".address";
+            string propertyKey = p.first + "." + to_string(index) + ".property";
+            string sndBufSizeKey = p.first + "." + to_string(index) + ".sndBufSize";
+            string rcvBufSizeKey = p.first + "." + to_string(index) + ".rcvBufSize";
+            string rateLoggingKey = p.first + "." + to_string(index) + ".rateLogging";
+
+            LOG(INFO) << "Channel name = " << p.first;
+            LOG(INFO) << "key = " << typeKey <<"\t value = " << config.GetValue<string>(typeKey);
+            LOG(INFO) << "key = " << methodKey <<"\t value = " << config.GetValue<string>(methodKey);
+            LOG(INFO) << "key = " << addressKey <<"\t value = " << config.GetValue<string>(addressKey);
+            LOG(INFO) << "key = " << propertyKey <<"\t value = " << config.GetValue<string>(propertyKey);
+            LOG(INFO) << "key = " << sndBufSizeKey << "\t value = " << config.GetValue<int>(sndBufSizeKey);
+            LOG(INFO) << "key = " << rcvBufSizeKey <<"\t value = " << config.GetValue<int>(rcvBufSizeKey);
+            LOG(INFO) << "key = " << rateLoggingKey <<"\t value = " << config.GetValue<int>(rateLoggingKey);
         }
     }
 }
-
-
-
 
 int main(int argc, char** argv)
 {
     try
     {
-
         // create option manager object
         FairMQProgOptions config;
 
         // add key description to cmd line options
         config.GetCmdLineOptions().add_options()
-        ("data-rate", po::value<double>()->default_value(0.5), "Data rate");
-        
+            ("data-rate", po::value<double>()->default_value(0.5), "Data rate");
+
         // parse command lines, parse json file and init FairMQMap
         config.ParseAll(argc, argv);
 
-        // get FairMQMap
-        auto map1 = config.GetFairMQMap();
-        
-        // form keys from map1 and print the value stored in variable map
-        PrintMQParam(map1,config);
+        // // get FairMQMap
+        // auto map1 = config.GetFairMQMap();
 
-        // update value in variable map, and propagate the update to the FairMQMap
-        config.UpdateValue("data.0.address","tcp://localhost:1234");
-        
-        // get the updated FairMQMap
-        auto map2 = config.GetFairMQMap();
+        // // form keys from map1 and print the value stored in variable map
+        // PrintMQParam(map1, config);
 
-        // modify one channel value
-        map2.at("data").at(0).UpdateSndBufSize(500);
+        // // update value in variable map, and propagate the update to the FairMQMap
+        // config.UpdateValue<string>("data.0.address","tcp://localhost:1234");
 
-        // update the FairMQMap and propagate the change in variable map
-        config.UpdateChannelMap(map2);
+        // // get the updated FairMQMap
+        // auto map2 = config.GetFairMQMap();
 
-        // print values stored in variable map 
-        PrintMQParam(map2,config);
+        // // modify one channel value
+        // map2.at("data").at(0).UpdateSndBufSize(500);
+
+        // // update the FairMQMap and propagate the change in variable map
+        // config.UpdateChannelMap(map2);
+
+        // // print values stored in variable map 
+        // PrintMQParam(map2, config);
 
         MyDevice device;
         device.CatchSignals();
         device.SetConfig(config);
 
+        // getting as string and conversion helpers
 
-        std::string blah = config.GetStringValue("data-rate");
-        double blah2 = config.ConvertTo<double>(blah);
-        LOG(INFO)<<"blah2 "<<blah2;
+        // string dataRateStr = config.GetStringValue("data-rate");
+        // double dataRate = config.ConvertTo<double>(dataRateStr);
+        // LOG(INFO) << "dataRate: " << dataRate;
 
+        LOG(INFO) << "Subscribing: <string>(data.0.address)";
+        config.Subscribe<string>("data.0.address", [&device](const string& key, const string& value)
+        {
+            LOG(INFO) << "[callback] Updating device parameter " << key << " = " << value;
+            device.fChannels.at("data").at(0).UpdateAddress(value);
+        });
 
-        LOG(INFO)<<"---- Connect 1";
-        config.Subscribe<std::string >("data.0.address",[&device](const std::string& key, const std::string& value) 
-            {
-                LOG(INFO) << "[Lambda] Update parameter (0) " << key << " = " << value; 
-                device.fChannels.at("data").at(0).UpdateAddress(value);
-            });
+        LOG(INFO) << "Subscribing: <int>(data.0.rcvBufSize)";
+        config.Subscribe<int>("data.0.rcvBufSize", [&device](const string& key, int value)
+        {
+            LOG(INFO) << "[callback] Updating device parameter " << key << " = " << value;
+            device.fChannels.at("data").at(0).UpdateRcvBufSize(value);
+        });
 
+        LOG(INFO) << "Subscribing: <double>(data-rate)";
+        config.Subscribe<double>("data-rate", [&device](const string& key, double value)
+        {
+            LOG(INFO) << "[callback] Updating device parameter " << key << " = " << value;
+            device.SetRate(value);
+        });
 
-        std::string key1("data.0.address");
-        std::string value1("tcp://localhost:4321");
-        config.UpdateValue(key1,value1);
+        LOG(INFO) << "Starting value updates...\n";
 
-        LOG(INFO)<<"device.fChannels.GetAddress = "<<device.fChannels.at("data").at(0).GetAddress();
-        LOG(INFO)<<"config.GetValue = "<<config.GetValue<std::string>(key1);
+        config.UpdateValue<string>("data.0.address", "tcp://localhost:4321");
+        LOG(INFO) << "config: " << config.GetValue<string>("data.0.address");
+        LOG(INFO) << "device: " << device.fChannels.at("data").at(0).GetAddress() << endl;
 
+        config.UpdateValue<int>("data.0.rcvBufSize", 100);
+        LOG(INFO) << "config: " << config.GetValue<int>("data.0.rcvBufSize");
+        LOG(INFO) << "device: " << device.fChannels.at("data").at(0).GetRcvBufSize() << endl;
 
-
-
-        LOG(INFO)<<"---- Connect 2";
-        config.Subscribe<std::string>("data.0.method",[&device](const std::string& key, const std::string& value) 
-            {
-                //value="abcd";
-                LOG(INFO) << "[Lambda] Update parameter " << key << " = " << value; 
-                device.fChannels.at("data").at(0).UpdateMethod(value);
-            });
-
-        LOG(INFO)<<"---- Connect 3";
-        config.Subscribe<int>("data.0.rcvBufSize",[&device](const std::string& key, int value) 
-            {
-                LOG(INFO) << "[Lambda] Update parameter " << key << " = " << value; 
-                device.fChannels.at("data").at(0).UpdateRcvBufSize(value);
-            });
-
-        LOG(INFO)<<"---- Connect 4";
-        config.Subscribe<double>("data-rate",[&device](const std::string& key, double value) 
-            {
-                LOG(INFO) << "[Lambda] Update parameter " << key << " = " << value; 
-                device.SetRate(value);
-            });
-
-
-        std::string key2("data.0.rcvBufSize");
-        int value2(100);
-
-        std::string key3("data.0.method");
-        std::string value3("bind");
-        
-
-
-        LOG(INFO)<<"-------------------- start update";
-
-        //config.EmitUpdate(key,value);
-        config.UpdateValue(key1,value1);
-
-        LOG(INFO)<<"device.fChannels.GetAddress = "<<device.fChannels.at("data").at(0).GetAddress();
-        LOG(INFO)<<"config.GetValue = "<<config.GetValue<std::string>(key1);
-
-        config.UpdateValue(key2,value2);
-
-        LOG(INFO)<<"device.fChannels.GetRcvBufSize = "<<device.fChannels.at("data").at(0).GetRcvBufSize();
-        LOG(INFO)<<"config.GetValue = "<<config.GetValue<int>(key2);
-
-        config.UpdateValue(key3,value3);
-
-        LOG(INFO)<<"device.fChannels.Method = "<<device.fChannels.at("data").at(0).GetMethod();
-        LOG(INFO)<<"config.GetValue = "<<config.GetValue<std::string>(key3);
-
-        device.Print();
-        double rate=0.9;
-        config.UpdateValue<double>("data-rate",rate);
-        LOG(INFO)<<"config.GetValue = "<<config.GetValue<double>("data-rate");
-        device.Print();
-        LOG(INFO)<<" double rate = " <<rate;
-
+        config.UpdateValue<double>("data-rate", 0.9);
+        LOG(INFO) << "config: " << config.GetValue<double>("data-rate");
+        LOG(INFO) << "device: " << device.GetRate() << endl;
+        // device.Print();
 
         // advanced commands
 
-        LOG(INFO)<<"-------------------- start custom 1";
+        // LOG(INFO) << "-------------------- start custom 1";
 
-        config.Connect<EventId::Custom, MyDevice&, double>("myNewKey",[](MyDevice& d, double val)
-            {
-                d.SetRate(val);
-                d.Print();
-            });
+        // config.Connect<EventId::Custom, MyDevice&, double>("myNewKey", [](MyDevice& d, double val)
+        // {
+        //     d.SetRate(val);
+        //     d.Print();
+        // });
 
-        double value4=0.123;
-        config.Emit<EventId::Custom, MyDevice&, double>("myNewKey",device,value4);
+        // config.Emit<EventId::Custom, MyDevice&, double>("myNewKey", device, 0.123);
 
+        // LOG(INFO) << "-------------------- start custom 2 with function";
+        // config.Connect<EventId::Custom, MyDevice&, double>("function example", &MyCallBack);
 
-        LOG(INFO)<<"-------------------- start custom 2 with function";
-        config.Connect<EventId::Custom, MyDevice&, double>("function example",&MyCallBack);
-
-        value4=6.66;
-        config.Emit<EventId::Custom, MyDevice&, double>("function example",device,value4);
-
-
-
-
+        // config.Emit<EventId::Custom, MyDevice&, double>("function example", device, 6.66);
     }
-    catch (std::exception& e)
+    catch (exception& e)
     {
         LOG(ERROR)  << "Unhandled Exception reached the top of main: " 
                     << e.what() << ", application will now exit";
@@ -219,5 +192,3 @@ int main(int argc, char** argv)
     }
     return 0;
 }
-
-
