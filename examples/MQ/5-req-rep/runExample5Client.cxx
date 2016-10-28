@@ -17,7 +17,7 @@ void addCustomOptions(bpo::options_description& options)
         ("text", bpo::value<std::string>()->default_value("Hello"), "Text to send out");
 }
 
-FairMQDevice* getDevice(const FairMQProgOptions& /*config*/)
+FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)
 {
     return new FairMQExample5Client();
 }
