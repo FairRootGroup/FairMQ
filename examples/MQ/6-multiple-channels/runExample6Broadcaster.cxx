@@ -15,7 +15,7 @@ void addCustomOptions(bpo::options_description& /*options*/)
 {
 }
 
-FairMQDevice* getDevice(const FairMQProgOptions& /*config*/)
+FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)
 {
     return new FairMQExample6Broadcaster();
 }

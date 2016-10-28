@@ -1,8 +1,8 @@
 {
     "fairMQOptions":
     {
-        "device":
-        {
+        "devices":
+        [{
             "id": "sampler1",
             "channel":
             {
@@ -18,8 +18,6 @@
                 }
             }
         },
-
-        "device":
         {
             "id": "sink1",
             "channel":
@@ -35,6 +33,6 @@
                     "rateLogging": "0"
                 }
             }
-        }
+        }]
     }
 }
