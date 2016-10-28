@@ -91,7 +91,7 @@ class FairMQEventManager
     {}
 
     template <EventId event, typename... ValueType, typename F>
-    void Connect(const std::string& key, F&& func)
+    void Connect(const std::string& key, F&& func) const
     {
         GetSlot<event, ValueType...>(key).connect(std::forward<F>(func));
     }
@@ -111,7 +111,7 @@ class FairMQEventManager
     template <EventId event>
     bool EventKeyFound(const std::string& key)
     {
-        if (fEventMap.find(std::pair<EventId, std::string>(event, key) ) != fEventMap.end())
+        if (fEventMap.find(std::pair<EventId, std::string>(event, key)) != fEventMap.end())
         {
             return true;
         }
@@ -122,11 +122,11 @@ class FairMQEventManager
     }
 
   private:
-    std::map<EventKey, boost::any> fEventMap;
+    mutable std::map<EventKey, boost::any> fEventMap;
 
     template <EventId event, typename... T, typename Slot = typename Events::Traits<event,T...>::signal_type,
     typename SlotPtr = boost::shared_ptr<Slot>>
-    Slot& GetSlot(const std::string& key)
+    Slot& GetSlot(const std::string& key) const
     {
         try
         {

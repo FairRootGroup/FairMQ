@@ -32,8 +32,10 @@ FairMQDevice* makeDeviceWithConditionalRun(R r)
     return new GenericFairMQDevice<R>(r);
 }
 
+using FairMQDevicePtr = FairMQDevice*;
+
 // to be implemented by the user to return a child class of FairMQDevice
-FairMQDevice* getDevice(const FairMQProgOptions& config);
+FairMQDevicePtr getDevice(const FairMQProgOptions& config);
 
 // to be implemented by the user to add custom command line options (or just with empty body)
 void addCustomOptions(boost::program_options::options_description&);

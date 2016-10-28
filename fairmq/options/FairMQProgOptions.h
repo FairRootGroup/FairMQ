@@ -63,12 +63,12 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
     // to customize title of the executable help command line  
     void SetHelpTitle(const std::string& title)
     {
-        fHelpTitle=title;
+        fHelpTitle = title;
     }
     // to customize the executable version command line
     void SetVersion(const std::string& version)
     {
-        fVersion=version;
+        fVersion = version;
     }
 
     // store key-value of type T into variable_map. 
@@ -91,11 +91,11 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
     {
         try
         {
-            if(fVarMap.count(key))
+            if (fVarMap.count(key))
             {
 
 
-                if(!FairMQ::is_this_type<std::string>(fVarMap.at(key)))
+                if (!FairMQ::is_this_type<std::string>(fVarMap.at(key)))
                 {
                     LOG(ERROR) << "You try to update a value as string (for key="<< key <<") while it has been defined with a different type in the option description.";
                     abort();
@@ -104,7 +104,7 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
                 // update variable map
                 UpdateVarMap(key,val);
 
-                if(fMQKeyMap.count(key))
+                if (fMQKeyMap.count(key))
                 {
                     std::string channelName;
                     int index = 0;
@@ -114,8 +114,8 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
                 }
 
                 // execute stored function of a given key if exist
-                //if(std::is_same<T, int>::value || std::is_same<T, std::string>::value)//if one wants to restrict type
-                if(fSignalMap.count(key))
+                //if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)//if one wants to restrict type
+                if (fSignalMap.count(key))
                     EmitUpdate(key,val);
 
                 return 0;
@@ -151,28 +151,28 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
     // specialization/overloading for string, pass by const ref
     int UpdateValue(const std::string& key, const std::string& val) // string API
     {
-        UpdateValue(key,val);
+        UpdateValue(key, val);
         return 0;
     }
 
     int UpdateValue(const std::string& key, const char* val) // string API
     {
-        UpdateValue<std::string>(key,std::string(val));
+        UpdateValue<std::string>(key, std::string(val));
         return 0;
     }
 
     template<typename T>
     int UpdateValue(const std::string& key, T val)
     {
-
-        if(fVarMap.count(key))
+        if (fVarMap.count(key))
         {
             // update variable map
-            UpdateVarMap<typename std::decay<T>::type>(key,val);
+            UpdateVarMap<typename std::decay<T>::type>(key, val);
 
             // update FairMQChannel map, check first if data are int or string
-            if(std::is_same<T, int>::value || std::is_same<T, std::string>::value)
-                if(fMQKeyMap.count(key))
+            if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)
+            {
+                if (fMQKeyMap.count(key))
                 {
                     std::string channelName;
                     int index = 0;
@@ -180,44 +180,47 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
                     std::tie(channelName, index, member) = fMQKeyMap.at(key);
                     UpdateChannelMap(channelName, index, member, val);
                 }
+            }
 
             // execute stored function of a given key if exist
-            //if(std::is_same<T, int>::value || std::is_same<T, std::string>::value)//if one wants to restrict type
-            if(EventKeyFound(key))
-                EmitUpdate<typename std::decay<T>::type >(key,val);
+            //if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)//if one wants to restrict type
+            if (EventKeyFound(key))
+            {
+                EmitUpdate<typename std::decay<T>::type>(key, val);
+            }
 
             return 0;
         }
         else
         {
-
-            LOG(ERROR)  <<"UpdatedValue failed because the provided key '"
-                        <<key
-                        <<"' is not found in the variable map";
+            LOG(ERROR) << "UpdatedValue failed because the provided key '"
+                       << key
+                       << "' is not found in the variable map";
             return 1;
         }
         return 0;
     }
 
-
     template <typename T, typename F>
-    void Subscribe(const std::string& key, F&& func) 
+    void Subscribe(const std::string& key, F&& func) const
     {
-        static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value, 
+        static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value,
             "In template member FairMQProgOptions::Subscribe<T>(key,Lambda) the types const char* or char* for the calback signatures are not supported.");
-        
-        if(fVarMap.count(key))
-            FairMQEventManager::Connect<EventId::UpdateParam,T>(key,std::forward<F>(func));
+
+        if (fVarMap.count(key))
+        {
+            FairMQEventManager::Connect<EventId::UpdateParam, T>(key, std::forward<F>(func));
+        }
     }
 
     /*
     template <typename F>
     void Subscribe(const std::string& key, F&& func) 
     {
-        if(fVarMap.count(key))
+        if (fVarMap.count(key))
         {
             //if key-value not yet found, then add it
-            if(fSignalMap.find(key) == fSignalMap.end())
+            if (fSignalMap.find(key) == fSignalMap.end())
                 fSignalMap.emplace(key, boost::make_shared<signal_type>());
             (*fSignalMap.at(key)).connect(std::forward<F>(func));
         }
@@ -237,16 +240,18 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
 
     bool EventKeyFound(const std::string& key)
     {
-        if (
-            FairMQEventManager::EventKeyFound<EventId::UpdateParam>(key) 
-            )
+        if (FairMQEventManager::EventKeyFound<EventId::UpdateParam>(key))
+        {
             return true;
+        }
         else
+        {
             return false;
+        }
     }
 
-    typedef std::tuple<std::string,int,std::string> MQKey;//store key info
-    std::map<std::string,MQKey> fMQKeyMap;// key=full path - val=key info
+    typedef std::tuple<std::string, int, std::string> MQKey;//store key info
+    std::map<std::string, MQKey> fMQKeyMap;// key=full path - val=key info
 
     virtual int NotifySwitchOption(); // for custom help & version printing
     void InitOptionDescription();
@@ -276,7 +281,7 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
         //compile time check whether T is const char* or char*, and in that case a compile time error is thrown.
         static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value, 
             "In template member FairMQProgOptions::EmitUpdate<T>(key,val) the types const char* or char* for the calback signatures are not supported.");
-        Emit<EventId::UpdateParam,T>(key,key,val);
+        Emit<EventId::UpdateParam, T>(key, key, val);
     }
 
     int UpdateChannelMap(const std::string& channelName, int index, const std::string& member, const std::string& val);

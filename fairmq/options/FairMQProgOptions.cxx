@@ -67,8 +67,8 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
         }
     }
 
-    std::string verbosity = GetValue<std::string>("verbosity");
-    std::string logFile = GetValue<std::string>("log-to-file");
+    string verbosity = GetValue<string>("verbosity");
+    string logFile = GetValue<string>("log-to-file");
     bool color = GetValue<bool>("log-color");
 
     // check if the provided verbosity level is valid, otherwise set to DEBUG
@@ -125,21 +125,21 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
         {
             LOG(DEBUG) << "mq-config: Using default XML/JSON parser";
 
-            std::string file = fVarMap["mq-config"].as<std::string>();
-            std::string id;
+            string file = fVarMap["mq-config"].as<string>();
+            string id;
 
             if (fVarMap.count("config-key"))
             {
-                id = fVarMap["config-key"].as<std::string>();
+                id = fVarMap["config-key"].as<string>();
             }
             else
             {
-                id = fVarMap["id"].as<std::string>();
+                id = fVarMap["id"].as<string>();
             }
 
-            std::string fileExtension = boost::filesystem::extension(file);
+            string fileExtension = boost::filesystem::extension(file);
 
-            std::transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), ::tolower);
+            transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), ::tolower);
 
             if (fileExtension == ".json")
             {
@@ -164,19 +164,19 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
         {
             LOG(DEBUG) << "config-json-string: Parsing JSON string";
 
-            std::string id;
+            string id;
 
             if (fVarMap.count("config-key"))
             {
-                id = fVarMap["config-key"].as<std::string>();
+                id = fVarMap["config-key"].as<string>();
             }
             else
             {
-                id = fVarMap["id"].as<std::string>();
+                id = fVarMap["id"].as<string>();
             }
 
-            std::string value = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at("config-json-string"));
-            std::stringstream ss;
+            string value = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at("config-json-string"));
+            stringstream ss;
             ss << value;
             UserParser<FairMQParser::JSON>(ss, id);
         }
@@ -184,19 +184,19 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
         {
             LOG(DEBUG) << "config-json-string: Parsing XML string";
 
-            std::string id;
+            string id;
 
             if (fVarMap.count("config-key"))
             {
-                id = fVarMap["config-key"].as<std::string>();
+                id = fVarMap["config-key"].as<string>();
             }
             else
             {
-                id = fVarMap["id"].as<std::string>();
+                id = fVarMap["id"].as<string>();
             }
 
-            std::string value = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at("config-xml-string"));
-            std::stringstream ss;
+            string value = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at("config-xml-string"));
+            stringstream ss;
             ss << value;
             UserParser<FairMQParser::XML>(ss, id);
         }
@@ -215,7 +215,7 @@ int FairMQProgOptions::Store(const FairMQMap& channels)
 // replace FairMQChannelMap, and update variable map accordingly
 int FairMQProgOptions::UpdateChannelMap(const FairMQMap& channels)
 {
-    fFairMQMap=channels;
+    fFairMQMap = channels;
     UpdateMQValues();
     return 0;
 }
@@ -224,50 +224,52 @@ int FairMQProgOptions::UpdateChannelMap(const FairMQMap& channels)
 // create key for variable map as follow : channelName.index.memberName
 void FairMQProgOptions::UpdateMQValues()
 {
-    for(const auto& p : fFairMQMap)
+    for (const auto& p : fFairMQMap)
     {
         int index = 0;
-        for(const auto& channel : p.second)
+
+        for (const auto& channel : p.second)
         {
-            std::string typeKey = p.first + "." + std::to_string(index) + ".type";
-            std::string methodKey = p.first + "." + std::to_string(index) + ".method";
-            std::string addressKey = p.first + "." + std::to_string(index) + ".address";
-            std::string sndBufSizeKey = p.first + "." + std::to_string(index) + ".sndBufSize";
-            std::string rcvBufSizeKey = p.first + "." + std::to_string(index) + ".rcvBufSize";
-            std::string rateLoggingKey = p.first + "." + std::to_string(index) + ".rateLogging";
+            string typeKey = p.first + "." + to_string(index) + ".type";
+            string methodKey = p.first + "." + to_string(index) + ".method";
+            string addressKey = p.first + "." + to_string(index) + ".address";
+            string sndBufSizeKey = p.first + "." + to_string(index) + ".sndBufSize";
+            string rcvBufSizeKey = p.first + "." + to_string(index) + ".rcvBufSize";
+            string rateLoggingKey = p.first + "." + to_string(index) + ".rateLogging";
 
-            fMQKeyMap[typeKey] = std::make_tuple(p.first,index,"type");
-            fMQKeyMap[methodKey] = std::make_tuple(p.first,index,"method");
-            fMQKeyMap[addressKey] = std::make_tuple(p.first,index,"address");
-            fMQKeyMap[sndBufSizeKey] = std::make_tuple(p.first,index,"sndBufSize");
-            fMQKeyMap[rcvBufSizeKey] = std::make_tuple(p.first,index,"rcvBufSize");
-            fMQKeyMap[rateLoggingKey] = std::make_tuple(p.first,index,"rateLogging");
+            fMQKeyMap[typeKey] = make_tuple(p.first, index, "type");
+            fMQKeyMap[methodKey] = make_tuple(p.first, index, "method");
+            fMQKeyMap[addressKey] = make_tuple(p.first, index, "address");
+            fMQKeyMap[sndBufSizeKey] = make_tuple(p.first, index, "sndBufSize");
+            fMQKeyMap[rcvBufSizeKey] = make_tuple(p.first, index, "rcvBufSize");
+            fMQKeyMap[rateLoggingKey] = make_tuple(p.first, index, "rateLogging");
 
-            UpdateVarMap<std::string>(typeKey,channel.GetType());
-            UpdateVarMap<std::string>(methodKey,channel.GetMethod());
-            UpdateVarMap<std::string>(addressKey,channel.GetAddress());
+            UpdateVarMap<string>(typeKey, channel.GetType());
+            UpdateVarMap<string>(methodKey, channel.GetMethod());
+            UpdateVarMap<string>(addressKey, channel.GetAddress());
 
 
-            //UpdateVarMap<std::string>(sndBufSizeKey, std::to_string(channel.GetSndBufSize()));// string API
-            UpdateVarMap<int>(sndBufSizeKey,channel.GetSndBufSize());
+            //UpdateVarMap<string>(sndBufSizeKey, to_string(channel.GetSndBufSize()));// string API
+            UpdateVarMap<int>(sndBufSizeKey, channel.GetSndBufSize());
 
-            //UpdateVarMap<std::string>(rcvBufSizeKey, std::to_string(channel.GetRcvBufSize()));// string API
-            UpdateVarMap<int>(rcvBufSizeKey,channel.GetRcvBufSize());
+            //UpdateVarMap<string>(rcvBufSizeKey, to_string(channel.GetRcvBufSize()));// string API
+            UpdateVarMap<int>(rcvBufSizeKey, channel.GetRcvBufSize());
 
-            //UpdateVarMap<std::string>(rateLoggingKey,std::to_string(channel.GetRateLogging()));// string API
-            UpdateVarMap<int>(rateLoggingKey,channel.GetRateLogging());
+            //UpdateVarMap<string>(rateLoggingKey,to_string(channel.GetRateLogging()));// string API
+            UpdateVarMap<int>(rateLoggingKey, channel.GetRateLogging());
 
             /*
             LOG(DEBUG) << "Update MQ parameters of variable map";
-            LOG(DEBUG) << "key = " << typeKey <<"\t value = " << GetValue<std::string>(typeKey);
-            LOG(DEBUG) << "key = " << methodKey <<"\t value = " << GetValue<std::string>(methodKey);
-            LOG(DEBUG) << "key = " << addressKey <<"\t value = " << GetValue<std::string>(addressKey);
+            LOG(DEBUG) << "key = " << typeKey <<"\t value = " << GetValue<string>(typeKey);
+            LOG(DEBUG) << "key = " << methodKey <<"\t value = " << GetValue<string>(methodKey);
+            LOG(DEBUG) << "key = " << addressKey <<"\t value = " << GetValue<string>(addressKey);
             LOG(DEBUG) << "key = " << sndBufSizeKey << "\t value = " << GetValue<int>(sndBufSizeKey);
             LOG(DEBUG) << "key = " << rcvBufSizeKey <<"\t value = " << GetValue<int>(rcvBufSizeKey);
             LOG(DEBUG) << "key = " << rateLoggingKey <<"\t value = " << GetValue<int>(rateLoggingKey);
             */
             index++;
         }
+        UpdateVarMap<int>(p.first + ".numSockets", index);
     }
 }
 
@@ -351,7 +353,7 @@ void FairMQProgOptions::InitOptionDescription()
     }
 }
 
-int FairMQProgOptions::UpdateChannelMap(const std::string& channelName, int index, const std::string& member, const std::string& val)
+int FairMQProgOptions::UpdateChannelMap(const string& channelName, int index, const string& member, const string& val)
 {
     if (member == "type")
     {
@@ -381,7 +383,7 @@ int FairMQProgOptions::UpdateChannelMap(const std::string& channelName, int inde
 
 /*
 // string API
-int FairMQProgOptions::UpdateChannelMap(const std::string& channelName, int index, const std::string& member, const std::string& val)
+int FairMQProgOptions::UpdateChannelMap(const string& channelName, int index, const string& member, const string& val)
 {
     if (member == "type") 
     {
@@ -418,7 +420,7 @@ int FairMQProgOptions::UpdateChannelMap(const std::string& channelName, int inde
 // ----------------------------------------------------------------------------------
 
 
-int FairMQProgOptions::UpdateChannelMap(const std::string& channelName, int index, const std::string& member, int val)
+int FairMQProgOptions::UpdateChannelMap(const string& channelName, int index, const string& member, int val)
 {
     if (member == "sndBufSize")
     {

@@ -14,11 +14,11 @@ namespace bpo = boost::program_options;
 void addCustomOptions(bpo::options_description& options)
 {
     options.add_options()
-        ("in-channel", bpo::value<std::string>()->default_value("data-in"), "Name of the input channel")
+        ("in-channel", bpo::value<std::string>()->default_value("data"), "Name of the input channel")
         ("num-msgs", bpo::value<int>()->default_value(0), "Number of messages to receive");
 }
 
-FairMQDevice* getDevice(const FairMQProgOptions& /*config*/)
+FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)
 {
     return new FairMQSink();
 }

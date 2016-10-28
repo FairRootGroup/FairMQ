@@ -9,6 +9,7 @@
 set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
   ${CMAKE_SOURCE_DIR}/fairmq/plugins/config
+  ${CMAKE_SOURCE_DIR}/fairmq/options
   )
 
 set(SYSTEM_INCLUDE_DIRECTORIES

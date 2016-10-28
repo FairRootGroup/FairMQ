@@ -14,13 +14,13 @@ namespace bpo = boost::program_options;
 void addCustomOptions(bpo::options_description& options)
 {
     options.add_options()
-        ("out-channel", bpo::value<std::string>()->default_value("data-out"), "Name of the output channel")
+        ("out-channel", bpo::value<std::string>()->default_value("data"), "Name of the output channel")
         ("msg-size", bpo::value<int>()->default_value(1000), "Message size in bytes")
         ("num-msgs", bpo::value<int>()->default_value(0),    "Number of messages to send")
         ("msg-rate", bpo::value<int>()->default_value(0), "Msg rate limit in maximum number of messages per second");
 }
 
-FairMQDevice* getDevice(const FairMQProgOptions& /*config*/)
+FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)
 {
     return new FairMQBenchmarkSampler();
 }

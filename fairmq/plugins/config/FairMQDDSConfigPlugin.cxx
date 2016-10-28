@@ -13,6 +13,7 @@
 #include "FairMQLogger.h"
 #include "FairMQDevice.h"
 #include "FairMQChannel.h"
+#include "FairMQProgOptions.h"
 
 #include <vector>
 #include <map>

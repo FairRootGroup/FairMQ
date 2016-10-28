@@ -43,8 +43,8 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
     FairMQConfigPlugin* fairmqConfigPlugin = nullptr;
     FairMQControlPlugin* fairmqControlPlugin = nullptr;
 
-    std::clock_t c_start = std::clock();
-    auto t_start = std::chrono::high_resolution_clock::now();
+    std::clock_t cStart = std::clock();
+    auto tStart = std::chrono::high_resolution_clock::now();
 
     device.ChangeState(TMQDevice::INIT_DEVICE);
     // Wait for the binding channels to bind
@@ -112,11 +112,11 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
 
     device.WaitForEndOfState(TMQDevice::INIT_DEVICE);
 
-    std::clock_t c_end = std::clock();
-    auto t_end = std::chrono::high_resolution_clock::now();
+    std::clock_t cEnd = std::clock();
+    auto tEnd = std::chrono::high_resolution_clock::now();
 
-    LOG(DEBUG) << "Init time (CPU) : " << std::fixed << std::setprecision(2) << 1000.0 * (c_end - c_start) / CLOCKS_PER_SEC << " ms";
-    LOG(DEBUG) << "Init time (Wall): " << std::chrono::duration<double, std::milli>(t_end - t_start).count() << " ms";
+    LOG(DEBUG) << "Init time (CPU) : " << std::fixed << std::setprecision(2) << 1000.0 * (cEnd - cStart) / CLOCKS_PER_SEC << " ms";
+    LOG(DEBUG) << "Init time (Wall): " << std::chrono::duration<double, std::milli>(tEnd - tStart).count() << " ms";
 
     device.ChangeState(TMQDevice::INIT_TASK);
     device.WaitForEndOfState(TMQDevice::INIT_TASK);

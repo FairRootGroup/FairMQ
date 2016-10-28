@@ -89,7 +89,7 @@ class FairProgOptions
                 LOG(ERROR) << "Config has no key: " << key;
             }
         }
-        catch(std::exception& e)
+        catch (std::exception& e)
         {
             LOG(ERROR) << "Exception thrown for the key '" << key << "'";
             LOG(ERROR) << e.what();
@@ -104,18 +104,18 @@ class FairProgOptions
 
     //restrict conversion to fundamental types
     template<typename T>
-    T ConvertTo(const std::string& str_value)
+    T ConvertTo(const std::string& strValue)
     {
         if (std::is_arithmetic<T>::value) 
         {
-            std::istringstream iss( str_value );
+            std::istringstream iss(strValue);
             T val;
             iss >> val;
             return val;
         } 
         else 
         {
-            LOG(ERROR)<<"the provided string "<<str_value << " cannot be converted in the requested type. The target types must be arithmetic types";
+            LOG(ERROR) << "the provided string " << strValue << " cannot be converted in the requested type. The target types must be arithmetic types";
         }
     }
 
