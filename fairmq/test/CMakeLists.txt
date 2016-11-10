@@ -102,29 +102,36 @@ set_tests_properties(run_fairmq_push_pull_zmq PROPERTIES PASS_REGULAR_EXPRESSION
 add_test(NAME run_fairmq_pub_sub_zmq COMMAND ${CMAKE_BINARY_DIR}/fairmq/test/test-fairmq-pub-sub.sh zeromq)
 set_tests_properties(run_fairmq_pub_sub_zmq PROPERTIES TIMEOUT "30")
 set_tests_properties(run_fairmq_pub_sub_zmq PROPERTIES PASS_REGULAR_EXPRESSION "PUB-SUB test successfull")
+Set_Tests_Properties(run_fairmq_pub_sub_zmq PROPERTIES DEPENDS run_fairmq_push_pull_zmq)
 
 add_test(NAME run_fairmq_req_rep_zmq COMMAND ${CMAKE_BINARY_DIR}/fairmq/test/test-fairmq-req-rep.sh zeromq)
 set_tests_properties(run_fairmq_req_rep_zmq PROPERTIES TIMEOUT "30")
 set_tests_properties(run_fairmq_req_rep_zmq PROPERTIES PASS_REGULAR_EXPRESSION "REQ-REP test successfull")
+Set_Tests_Properties(run_fairmq_req_rep_zmq PROPERTIES DEPENDS run_fairmq_pub_sub_zmq)
 
 add_test(NAME run_fairmq_transfer_timeout_zmq COMMAND ${CMAKE_BINARY_DIR}/bin/test-fairmq-transfer-timeout zeromq)
 set_tests_properties(run_fairmq_transfer_timeout_zmq PROPERTIES TIMEOUT "30")
 set_tests_properties(run_fairmq_transfer_timeout_zmq PROPERTIES PASS_REGULAR_EXPRESSION "Transfer timeout test successfull")
+Set_Tests_Properties(run_fairmq_transfer_timeout_zmq PROPERTIES DEPENDS run_fairmq_pub_sub_zmq)
 
 If(NANOMSG_FOUND)
   add_test(NAME run_fairmq_push_pull_nn COMMAND ${CMAKE_BINARY_DIR}/fairmq/test/test-fairmq-push-pull.sh nanomsg)
   set_tests_properties(run_fairmq_push_pull_nn PROPERTIES TIMEOUT "30")
   set_tests_properties(run_fairmq_push_pull_nn PROPERTIES PASS_REGULAR_EXPRESSION "PUSH-PULL test successfull")
+  Set_Tests_Properties(run_fairmq_push_pull_nn PROPERTIES DEPENDS run_fairmq_transfer_timeout_zmq)
 
   add_test(NAME run_fairmq_pub_sub_nn COMMAND ${CMAKE_BINARY_DIR}/fairmq/test/test-fairmq-pub-sub.sh nanomsg)
   set_tests_properties(run_fairmq_pub_sub_nn PROPERTIES TIMEOUT "30")
   set_tests_properties(run_fairmq_pub_sub_nn PROPERTIES PASS_REGULAR_EXPRESSION "PUB-SUB test successfull")
+  Set_Tests_Properties(run_fairmq_pub_sub_nn PROPERTIES DEPENDS run_fairmq_push_pull_nn)
 
   add_test(NAME run_fairmq_req_rep_nn COMMAND ${CMAKE_BINARY_DIR}/fairmq/test/test-fairmq-req-rep.sh nanomsg)
   set_tests_properties(run_fairmq_req_rep_nn PROPERTIES TIMEOUT "30")
   set_tests_properties(run_fairmq_req_rep_nn PROPERTIES PASS_REGULAR_EXPRESSION "REQ-REP test successfull")
+  Set_Tests_Properties(run_fairmq_req_rep_nn PROPERTIES DEPENDS run_fairmq_pub_sub_nn)
 
   add_test(NAME run_fairmq_transfer_timeout_nn COMMAND ${CMAKE_BINARY_DIR}/bin/test-fairmq-transfer-timeout nanomsg)
   set_tests_properties(run_fairmq_transfer_timeout_nn PROPERTIES TIMEOUT "30")
   set_tests_properties(run_fairmq_transfer_timeout_nn PROPERTIES PASS_REGULAR_EXPRESSION "Transfer timeout test successfull")
+  Set_Tests_Properties(run_fairmq_transfer_timeout_nn PROPERTIES DEPENDS run_fairmq_req_rep_nn)
 EndIf(NANOMSG_FOUND)
