@@ -1,39 +1,42 @@
 {
-    "fairMQOptions":
-    {
-        "devices":
-        [{
-            "id": "client",
-            "channels":
-			[{
-                "name": "data",
-                "sockets":
-				[{
-                    "type": "req",
-                    "method": "connect",
-                    "address": "tcp://localhost:5005",
-                    "sndBufSize": 1000,
-                    "rcvBufSize": 1000,
-                    "rateLogging": 0
-                }]
-            }]
-        },
-        {
-            "id": "server",
-            "channels":
-			[{
-                "name": "data",
-                "sockets":
-				[{
-                    "type": "rep",
-                    "method": "bind",
-                    "address": "tcp://*:5005",
-                    "sndBufSize": 1000,
-                    "rcvBufSize": 1000,
-                    "rateLogging": 0
-                }]
-            }]
-        }]
+    "fairMQOptions": {
+        "devices": [
+            {
+                "id": "client",
+                "channels": [
+                    {
+                        "name": "data",
+                        "sockets": [
+                            {
+                                "type": "req",
+                                "method": "connect",
+                                "address": "tcp://localhost:5005",
+                                "sndBufSize": 1000,
+                                "rcvBufSize": 1000,
+                                "rateLogging": 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "server",
+                "channels": [
+                    {
+                        "name": "data",
+                        "sockets": [
+                            {
+                                "type": "rep",
+                                "method": "bind",
+                                "address": "tcp://*:5005",
+                                "sndBufSize": 1000,
+                                "rcvBufSize": 1000,
+                                "rateLogging": 0
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
     }
 }
-
