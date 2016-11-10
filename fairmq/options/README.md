@@ -57,8 +57,8 @@ When a channel has multiple sockets, sockets can share common parameters. In thi
                 "method": "connect",
                 "sockets":
                 [
-                    { "address": "tcp://127.0.0.1:5555" }
-                    { "address": "tcp://127.0.0.1:5556" }
+                    { "address": "tcp://127.0.0.1:5555" },
+                    { "address": "tcp://127.0.0.1:5556" },
                     { "address": "tcp://127.0.0.1:5557" }
                 ]
             }]
