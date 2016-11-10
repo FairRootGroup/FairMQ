@@ -1,66 +1,73 @@
 {
-    "fairMQOptions":
-    {
-        "devices":
-        [{
-            "id": "sampler1",
-            "channels":
-			[{
-                "name": "data1",
-                "sockets":
-				[{
-                    "type": "push",
-                    "method": "bind",
-                    "address": "tcp://*:5555",
-                    "sndBufSize": 1000,
-                    "rcvBufSize": 1000,
-                    "rateLogging": 0
-                }]
-            }]
-        },
-        {
-            "key": "processor",
-            "channels":
-            [{
-                "name": "data1",
-                "sockets":
-				[{
-                    "type": "pull",
-                    "method": "connect",
-                    "address": "tcp://localhost:5555",
-                    "sndBufSize": 1000,
-                    "rcvBufSize": 1000,
-                    "rateLogging": 0
-                }]
+    "fairMQOptions": {
+        "devices": [
+            {
+                "id": "sampler1",
+                "channels": [
+                    {
+                        "name": "data1",
+                        "sockets": [
+                            {
+                                "type": "push",
+                                "method": "bind",
+                                "address": "tcp://*:5555",
+                                "sndBufSize": 1000,
+                                "rcvBufSize": 1000,
+                                "rateLogging": 0
+                            }
+                        ]
+                    }
+                ]
             },
             {
-                "name": "data2",
-                "sockets":
-				[{
-                    "type": "push",
-                    "method": "connect",
-                    "address": "tcp://localhost:5556",
-                    "sndBufSize": 1000,
-                    "rcvBufSize": 1000,
-                    "rateLogging": 0
-                }]
-            }]
-        },
-        {
-            "id": "sink1",
-            "channels":
-			[{
-                "name": "data2",
-                "sockets":
-				[{
-                    "type": "pull",
-                    "method": "bind",
-                    "address": "tcp://*:5556",
-                    "sndBufSize": 1000,
-                    "rcvBufSize": 1000,
-                    "rateLogging": 0
-                }]
-            }]
-        }]
+                "key": "processor",
+                "channels": [
+                    {
+                        "name": "data1",
+                        "sockets": [
+                            {
+                                "type": "pull",
+                                "method": "connect",
+                                "address": "tcp://localhost:5555",
+                                "sndBufSize": 1000,
+                                "rcvBufSize": 1000,
+                                "rateLogging": 0
+                            }
+                        ]
+                    },
+                    {
+                        "name": "data2",
+                        "sockets": [
+                            {
+                                "type": "push",
+                                "method": "connect",
+                                "address": "tcp://localhost:5556",
+                                "sndBufSize": 1000,
+                                "rcvBufSize": 1000,
+                                "rateLogging": 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "sink1",
+                "channels": [
+                    {
+                        "name": "data2",
+                        "sockets": [
+                            {
+                                "type": "pull",
+                                "method": "bind",
+                                "address": "tcp://*:5556",
+                                "sndBufSize": 1000,
+                                "rcvBufSize": 1000,
+                                "rateLogging": 0
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
     }
 }

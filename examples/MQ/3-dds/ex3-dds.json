@@ -1,42 +1,41 @@
 {
-    "fairMQOptions":
-    {
-        "devices":
-        [{
-            "id": "sampler",
-            "channels":
-			[{
-                "name": "data1",
-                "type": "push",
-                "method": "bind",
-                "rateLogging": 0
-            }]
-        },
-        {
-            "key": "processor",
-            "channels":
-            [{
-                "name": "data1",
-                "type": "pull",
-                "method": "connect",
-                "rateLogging": 0
+    "fairMQOptions": {
+        "devices": [
+            {
+                "id": "sampler",
+                "channels": [
+                    {
+                        "name": "data1",
+                        "type": "push",
+                        "method": "bind"
+                    }
+                ]
             },
             {
-                "name": "data2",
-                "type": "push",
-                "method": "connect",
-                "rateLogging": 0
-            }]
-        },
-        {
-            "id": "sink",
-            "channels":
-			[{
-                "name": "data2",
-                "type": "pull",
-                "method": "bind",
-                "rateLogging": 0
-            }]
-        }]
+                "key": "processor",
+                "channels": [
+                    {
+                        "name": "data1",
+                        "type": "pull",
+                        "method": "connect"
+                    },
+                    {
+                        "name": "data2",
+                        "type": "push",
+                        "method": "connect"
+                    }
+                ]
+            },
+            {
+                "id": "sink",
+                "channels": [
+                    {
+                        "name": "data2",
+                        "type": "pull",
+                        "method": "bind"
+                    }
+                ]
+            }
+        ]
     }
 }
