@@ -4,35 +4,35 @@
         "devices":
         [{
             "id": "client",
-            "channel":
-            {
+            "channels":
+			[{
                 "name": "data",
-                "socket":
-                {
+                "sockets":
+				[{
                     "type": "req",
                     "method": "connect",
                     "address": "tcp://localhost:5005",
-                    "sndBufSize": "1000",
-                    "rcvBufSize": "1000",
-                    "rateLogging": "0"
-                }
-            }
+                    "sndBufSize": 1000,
+                    "rcvBufSize": 1000,
+                    "rateLogging": 0
+                }]
+            }]
         },
         {
             "id": "server",
-            "channel":
-            {
+            "channels":
+			[{
                 "name": "data",
-                "socket":
-                {
+                "sockets":
+				[{
                     "type": "rep",
                     "method": "bind",
                     "address": "tcp://*:5005",
-                    "sndBufSize": "1000",
-                    "rcvBufSize": "1000",
-                    "rateLogging": "0"
-                }
-            }
+                    "sndBufSize": 1000,
+                    "rcvBufSize": 1000,
+                    "rateLogging": 0
+                }]
+            }]
         }]
     }
 }

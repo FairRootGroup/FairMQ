@@ -7,27 +7,27 @@
             "channels":
             [{
                 "name": "data",
-                "socket":
-                {
+                "sockets":
+				[{
                     "type": "push",
                     "method": "bind",
                     "address": "tcp://*:5555",
-                    "sndBufSize": "1000",
-                    "rcvBufSize": "1000",
-                    "rateLogging": "0"
-                }
+                    "sndBufSize": 1000,
+                    "rcvBufSize": 1000,
+                    "rateLogging": 0
+                }]
             },
             {
                 "name": "broadcast",
-                "socket":
-                {
+                "sockets":
+				[{
                     "type": "sub",
                     "method": "connect",
                     "address": "tcp://localhost:5005",
-                    "sndBufSize": "1000",
-                    "rcvBufSize": "1000",
-                    "rateLogging": "0"
-                }
+                    "sndBufSize": 1000,
+                    "rcvBufSize": 1000,
+                    "rateLogging": 0
+                }]
             }]
         },
         {
@@ -35,44 +35,44 @@
             "channels":
             [{
                 "name": "data",
-                "socket":
-                {
+                "sockets":
+				[{
                     "type": "pull",
                     "method": "connect",
                     "address": "tcp://localhost:5555",
-                    "sndBufSize": "1000",
-                    "rcvBufSize": "1000",
-                    "rateLogging": "0"
-                }
+                    "sndBufSize": 1000,
+                    "rcvBufSize": 1000,
+                    "rateLogging": 0
+                }]
             },
             {
                 "name": "broadcast",
-                "socket":
-                {
+                "sockets":
+				[{
                     "type": "sub",
                     "method": "connect",
                     "address": "tcp://localhost:5005",
-                    "sndBufSize": "1000",
-                    "rcvBufSize": "1000",
-                    "rateLogging": "0"
-                }
+                    "sndBufSize": 1000,
+                    "rcvBufSize": 1000,
+                    "rateLogging": 0
+                }]
             }]
         },
         {
             "id": "broadcaster1",
-            "channel":
-            {
+            "channels":
+			[{
                 "name": "broadcast",
-                "socket":
-                {
+                "sockets":
+				[{
                     "type": "pub",
                     "method": "bind",
                     "address": "tcp://*:5005",
-                    "sndBufSize": "1000",
-                    "rcvBufSize": "1000",
-                    "rateLogging": "0"
-                }
-            }
+                    "sndBufSize": 1000,
+                    "rcvBufSize": 1000,
+                    "rateLogging": 0
+                }]
+            }]
         }]
     }
 }
