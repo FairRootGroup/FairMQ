@@ -1,57 +1,63 @@
 {
-  "fairMQOptions": {
-    "devices":
-	[{
-        "id": "merger1",
-        "channels":
-		[{
-            "name": "two_inputs_channel",
-            "sockets":
-			[{
-                "type": "pull",
-                "address": "tcp://*:5569",
-                "sndBufSize": 1000,
-                "rcvBufSize": 1000,
-                "rateLogging": 1
-              },
-              {
-                "type": "pull",
-                "method": "bind",
-                "address": "tcp://*:5570",
-                "sndBufSize": 1000,
-                "rcvBufSize": 1000,
-                "rateLogging": 1
-              }]
-            
-          },
-          {
-            "name": "one_output_channel",
-            "sockets": [{
-              "type": "push",
-              "method": "connect",
-              "address": "tcp://*:5571",
-              "sndBufSize": 1000,
-              "rcvBufSize": 1000,
-              "rateLogging": 1
-            }]
-          }]
-        
-      },
-      {
-        "id": "sink1",
-        "channels": [{
-          "name": "one_input",
-          "sockets": [{
-            "name": "input1",
-            "type": "pull",
-            "method": "bind",
-            "address": "tcp://localhost:5571",
-            "sndBufSize": 1000,
-            "rcvBufSize": 1000,
-            "rateLogging": 1
-          }]
-        }]
-      }]
-    
-  }
+    "fairMQOptions": {
+        "devices": [
+            {
+                "id": "merger1",
+                "channels": [
+                    {
+                        "name": "two_inputs_channel",
+                        "sockets": [
+                            {
+                                "type": "pull",
+                                "method": "",
+                                "address": "tcp://*:5569",
+                                "sndBufSize": 1000,
+                                "rcvBufSize": 1000,
+                                "rateLogging": 1
+                            },
+                            {
+                                "type": "pull",
+                                "method": "bind",
+                                "address": "tcp://*:5570",
+                                "sndBufSize": 1000,
+                                "rcvBufSize": 1000,
+                                "rateLogging": 1
+                            }
+                        ]
+                    },
+                    {
+                        "name": "one_output_channel",
+                        "sockets": [
+                            {
+                                "type": "push",
+                                "method": "connect",
+                                "address": "tcp://*:5571",
+                                "sndBufSize": 1000,
+                                "rcvBufSize": 1000,
+                                "rateLogging": 1
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "sink1",
+                "channels": [
+                    {
+                        "name": "one_input",
+                        "sockets": [
+                            {
+                                "type": "pull",
+                                "method": "bind",
+                                "address": "tcp://localhost:5571",
+                                "sndBufSize": 1000,
+                                "rcvBufSize": 1000,
+                                "rateLogging": 1
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
 }
