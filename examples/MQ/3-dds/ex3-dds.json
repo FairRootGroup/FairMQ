@@ -4,13 +4,13 @@
         "devices":
         [{
             "id": "sampler",
-            "channel":
-            {
+            "channels":
+			[{
                 "name": "data1",
                 "type": "push",
                 "method": "bind",
-                "rateLogging": "0"
-            }
+                "rateLogging": 0
+            }]
         },
         {
             "key": "processor",
@@ -19,24 +19,24 @@
                 "name": "data1",
                 "type": "pull",
                 "method": "connect",
-                "rateLogging": "0"
+                "rateLogging": 0
             },
             {
                 "name": "data2",
                 "type": "push",
                 "method": "connect",
-                "rateLogging": "0"
+                "rateLogging": 0
             }]
         },
         {
             "id": "sink",
-            "channel":
-            {
+            "channels":
+			[{
                 "name": "data2",
                 "type": "pull",
                 "method": "bind",
-                "rateLogging": "0"
-            }
+                "rateLogging": 0
+            }]
         }]
     }
 }
