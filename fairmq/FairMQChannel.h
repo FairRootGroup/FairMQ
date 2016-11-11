@@ -248,6 +248,11 @@ class FairMQChannel
     int Receive(FairMQMessage* msg, const std::string& flag = "", int rcvTimeoutInMs = -1) const;
     int Receive(FairMQMessage* msg, const int flags, int rcvTimeoutInMs = -1) const;
 
+    // TODO: this might go to some base utility library
+    static void Tokenize(std::vector<std::string>& output,
+                         const std::string& input,
+                         const std::string delimiters = ",");
+
   private:
     std::string fType;
     std::string fMethod;

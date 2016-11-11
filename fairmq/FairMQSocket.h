@@ -37,6 +37,7 @@ class FairMQSocket
 
     virtual bool Bind(const std::string& address) = 0;
     virtual void Connect(const std::string& address) = 0;
+    virtual bool Attach(const std::string& address, bool serverish = false);
 
     virtual int Send(FairMQMessage* msg, const std::string& flag = "") = 0;
     virtual int Send(FairMQMessage* msg, const int flags = 0) = 0;

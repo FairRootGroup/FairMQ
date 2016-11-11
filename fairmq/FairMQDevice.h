@@ -400,6 +400,16 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// Connects a single channel (used in InitWrapper)
     bool ConnectChannel(FairMQChannel& ch);
 
+    /// Sets up and connects/binds a socket to an endpoint
+    /// return a string with the actual endpoint if it happens
+    //to stray from default.
+    bool ConnectEndpoint(FairMQSocket& socket, std::string& endpoint);
+    bool BindEndpoint(FairMQSocket& socket, std::string& endpoint);
+    /// Attaches the channel to all listed endpoints
+    /// the list is comma separated; the default method (bind/connect) is used.
+    /// to override default: prepend "@" to bind, "+" or ">" to connect endpoint.
+    bool AttachChannel(FairMQChannel& ch);
+
     /// Signal handler
     void SignalHandler(int signal);
     bool fCatchingSignals;

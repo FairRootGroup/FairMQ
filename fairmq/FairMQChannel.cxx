@@ -411,38 +411,51 @@ bool FairMQChannel::ValidateChannel()
         }
         else
         {
-            // check if address is a tcp or ipc address
-            if (fAddress.compare(0, 6, "tcp://") == 0)
+            //TODO: maybe cache fEndpoints as a class member? not really needed as tokenizing is
+            //fast, and only happens during (re-)configure
+            std::vector<std::string> fEndpoints;
+            Tokenize(fEndpoints, fAddress);
+            for (const auto endpoint : fEndpoints)
             {
-                // check if TCP address contains port delimiter
-                string addressString = fAddress.substr(6);
-                if (addressString.find(":") == string::npos)
+                std::string address;
+                if (endpoint[0]=='@'||endpoint[0]=='+'||endpoint[0]=='>') {
+                  address = endpoint.substr(1);
+                } else {
+                  address = endpoint;
+                }
+                // check if address is a tcp or ipc address
+                if (address.compare(0, 6, "tcp://") == 0)
                 {
+                    // check if TCP address contains port delimiter
+                    string addressString = address.substr(6);
+                    if (addressString.find(":") == string::npos)
+                    {
+                        ss << "INVALID";
+                        LOG(DEBUG) << ss.str();
+                        LOG(ERROR) << "invalid channel address: \"" << address << "\" (missing port?)";
+                        return false;
+                    }
+                }
+                else if (address.compare(0, 6, "ipc://") == 0)
+                {
+                    // check if IPC address is not empty
+                    string addressString = address.substr(6);
+                    if (addressString == "")
+                    {
+                        ss << "INVALID";
+                        LOG(DEBUG) << ss.str();
+                        LOG(ERROR) << "invalid channel address: \"" << address << "\" (empty IPC address?)";
+                        return false;
+                    }
+                }
+                else
+                {
+                    // if neither TCP or IPC is specified, return invalid
                     ss << "INVALID";
                     LOG(DEBUG) << ss.str();
-                    LOG(ERROR) << "invalid channel address: \"" << fAddress << "\" (missing port?)";
+                    LOG(ERROR) << "invalid channel address: \"" << address << "\" (missing protocol specifier?)";
                     return false;
                 }
-            }
-            else if (fAddress.compare(0, 6, "ipc://") == 0)
-            {
-                // check if IPC address is not empty
-                string addressString = fAddress.substr(6);
-                if (addressString == "")
-                {
-                    ss << "INVALID";
-                    LOG(DEBUG) << ss.str();
-                    LOG(ERROR) << "invalid channel address: \"" << fAddress << "\" (empty IPC address?)";
-                    return false;
-                }
-            }
-            else
-            {
-                // if neither TCP or IPC is specified, return invalid
-                ss << "INVALID";
-                LOG(DEBUG) << ss.str();
-                LOG(ERROR) << "invalid channel address: \"" << fAddress << "\" (missing protocol specifier?)";
-                return false;
             }
         }
 
@@ -770,3 +783,27 @@ FairMQChannel::~FairMQChannel()
     delete fCmdSocket;
     delete fPoller;
 }
+
+void FairMQChannel::Tokenize(std::vector<std::string>& output,
+                             const std::string& input,
+                             const std::string delimiters)
+{
+  using namespace std;
+  size_t start = 0;
+  size_t end = input.find_first_of(delimiters);
+  if (end == string::npos)
+  {
+    output.push_back(input.substr(start, input.length()));
+  }
+  else do
+  {
+    output.push_back(input.substr(start, end-start));
+    start = ++end;
+    end = input.find_first_of(delimiters, start);
+    if (end == string::npos)
+    {
+      output.push_back(input.substr(start, input.length()));
+    }
+  } while (end != string::npos);
+}
+

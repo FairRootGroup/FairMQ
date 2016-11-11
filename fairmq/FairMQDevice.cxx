@@ -118,7 +118,7 @@ void FairMQDevice::ConnectChannels(list<FairMQChannel*>& chans)
     {
         if ((*itr)->ValidateChannel())
         {
-            if (ConnectChannel(**itr))
+            if (AttachChannel(**itr))
             {
                 (*itr)->InitCommandInterface(fTransportFactory, fNumIoThreads);
                 chans.erase(itr++);
@@ -144,7 +144,7 @@ void FairMQDevice::BindChannels(list<FairMQChannel*>& chans)
     {
         if ((*itr)->ValidateChannel())
         {
-            if (BindChannel(**itr))
+            if (AttachChannel(**itr))
             {
                 (*itr)->InitCommandInterface(fTransportFactory, fNumIoThreads);
                 chans.erase(itr++);
@@ -273,37 +273,9 @@ bool FairMQDevice::BindChannel(FairMQChannel& ch)
     ch.fSocket->SetOption("snd-hwm", &(ch.fSndBufSize), sizeof(ch.fSndBufSize));
     ch.fSocket->SetOption("rcv-hwm", &(ch.fRcvBufSize), sizeof(ch.fRcvBufSize));
 
-    // number of attempts when choosing a random port
-    int maxAttempts = 1000;
-    int numAttempts = 0;
-
-    // initialize random generator
-    std::default_random_engine generator(std::chrono::system_clock::now().time_since_epoch().count());
-    std::uniform_int_distribution<int> randomPort(fPortRangeMin, fPortRangeMax);
-
     LOG(DEBUG) << "Binding channel " << ch.fChannelName << " on " << ch.fAddress;
 
-    // try to bind to the saved port. In case of failure, try random one.
-    while (!ch.fSocket->Bind(ch.fAddress))
-    {
-        LOG(DEBUG) << "Could not bind to configured (TCP) port, trying random port in range " << fPortRangeMin << "-" << fPortRangeMax;
-        ++numAttempts;
-
-        if (numAttempts > maxAttempts)
-        {
-            LOG(ERROR) << "could not bind to any (TCP) port in the given range after " << maxAttempts << " attempts";
-            return false;
-        }
-
-        size_t pos = ch.fAddress.rfind(":");
-        stringstream newPort;
-        newPort << static_cast<int>(randomPort(generator));
-        ch.fAddress = ch.fAddress.substr(0, pos + 1) + newPort.str();
-
-        LOG(DEBUG) << "Binding channel " << ch.fChannelName << " on " << ch.fAddress;
-    }
-
-    return true;
+    return BindEndpoint(*ch.fSocket, ch.fAddress);
 }
 
 bool FairMQDevice::ConnectChannel(FairMQChannel& ch)
@@ -316,7 +288,100 @@ bool FairMQDevice::ConnectChannel(FairMQChannel& ch)
     ch.fSocket->SetOption("rcv-hwm", &(ch.fRcvBufSize), sizeof(ch.fRcvBufSize));
     // connect
     LOG(DEBUG) << "Connecting channel " << ch.fChannelName << " to " << ch.fAddress;
-    ch.fSocket->Connect(ch.fAddress);
+    ConnectEndpoint(*ch.fSocket, ch.fAddress);
+    return true;
+}
+
+bool FairMQDevice::AttachChannel(FairMQChannel& ch)
+{
+  std::vector<std::string> endpoints;
+  FairMQChannel::Tokenize(endpoints, ch.fAddress);
+  for (auto& endpoint : endpoints)
+  {
+    //(re-)init socket
+    if (!ch.fSocket) {
+      ch.fSocket = fTransportFactory->CreateSocket(ch.fType, ch.fChannelName, fNumIoThreads, fId);
+    }
+
+    // set high water marks
+    ch.fSocket->SetOption("snd-hwm", &(ch.fSndBufSize), sizeof(ch.fSndBufSize));
+    ch.fSocket->SetOption("rcv-hwm", &(ch.fRcvBufSize), sizeof(ch.fRcvBufSize));
+
+    // attach
+    bool bind = (ch.fMethod=="bind");
+    bool connectionModifier = false;
+    std::string address = endpoint;
+
+    // check if the default fMethod is overridden by a modifier
+    if (endpoint[0]=='+' || endpoint[0]=='>') {
+      connectionModifier = true;
+      bind = false;
+      address = endpoint.substr(1);
+    } else if (endpoint[0]=='@') {
+      connectionModifier = true;
+      bind = true;
+      address = endpoint.substr(1);
+    }
+
+    bool rc = true;
+    // make the connection
+    if (bind) {
+      rc = BindEndpoint(*ch.fSocket, address);
+    } else {
+      rc = ConnectEndpoint(*ch.fSocket, address);
+    }
+
+    // bind might bind to an address different than requested,
+    // put the actual address back in the config
+    endpoint.clear();
+    if (connectionModifier) endpoint.push_back(bind?'@':'+');
+    endpoint += address;
+
+    LOG(DEBUG) << "Attached channel " << ch.fChannelName << " to " << endpoint
+      << (bind?" (bind) ":" (connect) ");
+
+    // after the book keeping is done, exit in case of errors
+    if (!rc) return rc;
+  }
+  return true;
+}
+
+bool FairMQDevice::ConnectEndpoint(FairMQSocket& socket, std::string& endpoint)
+{
+  socket.Connect(endpoint);
+  return true;
+}
+
+bool FairMQDevice::BindEndpoint(FairMQSocket& socket, std::string& endpoint)
+{
+    // number of attempts when choosing a random port
+    int maxAttempts = 1000;
+    int numAttempts = 0;
+
+    // initialize random generator
+    std::default_random_engine generator(std::chrono::system_clock::now().time_since_epoch().count());
+    std::uniform_int_distribution<int> randomPort(fPortRangeMin, fPortRangeMax);
+
+    // try to bind to the saved port. In case of failure, try random one.
+    while (!socket.Bind(endpoint))
+    {
+        LOG(DEBUG) << "Could not bind to configured (TCP) port, trying random port in range "
+          << fPortRangeMin << "-" << fPortRangeMax;
+        ++numAttempts;
+
+        if (numAttempts > maxAttempts)
+        {
+            LOG(ERROR) << "could not bind to any (TCP) port in the given range after "
+              << maxAttempts << " attempts";
+            return false;
+        }
+
+        size_t pos = endpoint.rfind(":");
+        stringstream newPort;
+        newPort << static_cast<int>(randomPort(generator));
+        // TODO: thread safety? (this comes in as a reference and DOES get changed in this case).
+        endpoint = endpoint.substr(0, pos + 1) + newPort.str();
+    }
     return true;
 }
 
