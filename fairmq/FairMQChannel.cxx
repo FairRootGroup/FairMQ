@@ -791,19 +791,12 @@ void FairMQChannel::Tokenize(std::vector<std::string>& output,
   using namespace std;
   size_t start = 0;
   size_t end = input.find_first_of(delimiters);
-  if (end == string::npos)
-  {
-    output.push_back(input.substr(start, input.length()));
-  }
-  else do
+  while (end != string::npos)
   {
     output.push_back(input.substr(start, end-start));
     start = ++end;
     end = input.find_first_of(delimiters, start);
-    if (end == string::npos)
-    {
-      output.push_back(input.substr(start, input.length()));
-    }
-  } while (end != string::npos);
+  }
+  output.push_back(input.substr(start));
 }
 
