@@ -13,6 +13,7 @@
  */
 
 #include "FairMQSocket.h"
+#include <cstring>
 
 bool FairMQSocket::Attach(const std::string& config, bool serverish)
 {
