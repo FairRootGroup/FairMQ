@@ -390,17 +390,6 @@ bool FairMQChannel::ValidateChannel()
             exit(EXIT_FAILURE);
         }
 
-        // validate socket method
-        const string socketMethodNames[] = { "bind", "connect" };
-        const set<string> socketMethods(socketMethodNames, socketMethodNames + sizeof(socketMethodNames) / sizeof(string));
-        if (socketMethods.find(fMethod) == socketMethods.end())
-        {
-            ss << "INVALID";
-            LOG(DEBUG) << ss.str();
-            LOG(ERROR) << "Invalid channel method: \"" << fMethod << "\"";
-            exit(EXIT_FAILURE);
-        }
-
         // validate socket address
         if (fAddress == "unspecified" || fAddress == "")
         {
@@ -421,7 +410,17 @@ bool FairMQChannel::ValidateChannel()
                 if (endpoint[0]=='@'||endpoint[0]=='+'||endpoint[0]=='>') {
                   address = endpoint.substr(1);
                 } else {
-                  address = endpoint;
+                    // we don't have a method modifier, check if the default method is set
+                    const string socketMethodNames[] = { "bind", "connect" };
+                    const set<string> socketMethods(socketMethodNames, socketMethodNames + sizeof(socketMethodNames) / sizeof(string));
+                    if (socketMethods.find(fMethod) == socketMethods.end())
+                    {
+                        ss << "INVALID";
+                        LOG(DEBUG) << ss.str();
+                        LOG(ERROR) << "Invalid endpoint connection method: \"" << fMethod << "\" for " << endpoint;
+                        exit(EXIT_FAILURE);
+                    }
+                    address = endpoint;
                 }
                 // check if address is a tcp or ipc address
                 if (address.compare(0, 6, "tcp://") == 0)

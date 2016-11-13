@@ -208,6 +208,15 @@ void FairMQDevice::InitWrapper()
                 // fill the uninitialized list
                 uninitializedConnectingChannels.push_back(&(*vi));
             }
+            else if (vi->fAddress.find_first_of("@+>") != string::npos)
+            {
+                // set channel name: name + vector index
+                stringstream ss;
+                ss << mi->first << "[" << vi - (mi->second).begin() << "]";
+                vi->fChannelName = ss.str();
+                // fill the uninitialized list
+                uninitializedConnectingChannels.push_back(&(*vi));
+            }
             else
             {
                 LOG(ERROR) << "Cannot update configuration. Socket method (bind/connect) not specified.";
