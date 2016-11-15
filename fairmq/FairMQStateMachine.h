@@ -250,8 +250,8 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
         template <class EVT, class FSM, class SourceState, class TargetState>
         void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
         {
-            LOG(STATE) << "RUNNING state finished without an external event, going to IDLE";
-
+            LOG(STATE) << "RUNNING state finished without an external event";
+            LOG(STATE) << "Entering READY state";
             fsm.fState = READY;
         }
     };
@@ -380,7 +380,7 @@ struct FairMQFSM_ : public msm::front::state_machine_def<FairMQFSM_>
         std::size_t pos = stateName.find("_FSME");
         stateName.erase(pos);
 
-        if (stateName == "1RUNNING" || stateName == "6DEVICE_READY" || stateName == "0PAUSED")
+        if (stateName == "1RUNNING" || stateName == "6DEVICE_READY" || stateName == "0PAUSED" || stateName == "8RESETTING_TASK")
         {
             stateName = stateName.substr(1);
         }

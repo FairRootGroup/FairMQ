@@ -18,6 +18,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <chrono>
+#include <set>
 
 using namespace std;
 using namespace dds::intercom_api;

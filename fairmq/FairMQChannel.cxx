@@ -539,6 +539,7 @@ bool FairMQChannel::InitCommandInterface(FairMQTransportFactory* factory, int nu
 
 void FairMQChannel::ResetChannel()
 {
+    boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
     fIsValid = false;
     // TODO: implement channel resetting
 }

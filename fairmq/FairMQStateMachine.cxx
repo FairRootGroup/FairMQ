@@ -133,6 +133,7 @@ void FairMQStateMachine::WaitForEndOfState(int event)
                     {
                         fStateCondition.wait(lock);
                     }
+                    fStateThread.join();
                 }
                 catch (boost::exception& e)
                 {
