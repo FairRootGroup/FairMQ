@@ -125,7 +125,7 @@ class FairMQConfigPluginDDS
         }
     }
 
-    void Run(FairMQDevice& device)
+    void Run(FairMQDevice& /*device*/)
     {
         // start DDS intercom service
         fService.start();

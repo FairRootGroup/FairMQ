@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
         });
 
         // subscribe to receive messages from DDS
-        ddsCustomCmd.subscribe([](const string& msg, const string& condition, uint64_t senderId)
+        ddsCustomCmd.subscribe([](const string& msg, const string& /*condition*/, uint64_t /*senderId*/)
         {
             cout << "Received: \"" << msg << "\"" << endl;
         });

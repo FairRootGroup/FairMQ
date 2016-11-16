@@ -21,37 +21,37 @@ FairMQTransportFactoryNN::FairMQTransportFactoryNN()
     LOG(INFO) << "Using nanomsg library";
 }
 
-FairMQMessage* FairMQTransportFactoryNN::CreateMessage() const
+FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage() const
 {
-    return new FairMQMessageNN();
+    return unique_ptr<FairMQMessage>(new FairMQMessageNN());
 }
 
-FairMQMessage* FairMQTransportFactoryNN::CreateMessage(const size_t size) const
+FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(const size_t size) const
 {
-    return new FairMQMessageNN(size);
+    return unique_ptr<FairMQMessage>(new FairMQMessageNN(size));
 }
 
-FairMQMessage* FairMQTransportFactoryNN::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const
+FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const
 {
-    return new FairMQMessageNN(data, size, ffn, hint);
+    return unique_ptr<FairMQMessage>(new FairMQMessageNN(data, size, ffn, hint));
 }
 
-FairMQSocket* FairMQTransportFactoryNN::CreateSocket(const string& type, const std::string& name, const int numIoThreads, const std::string& id /*= ""*/) const
+FairMQSocketPtr FairMQTransportFactoryNN::CreateSocket(const string& type, const string& name, const int numIoThreads, const string& id /*= ""*/) const
 {
-    return new FairMQSocketNN(type, name, numIoThreads, id);
+    return unique_ptr<FairMQSocket>(new FairMQSocketNN(type, name, numIoThreads, id));
 }
 
-FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const vector<FairMQChannel>& channels) const
+FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const vector<FairMQChannel>& channels) const
 {
-    return new FairMQPollerNN(channels);
+    return unique_ptr<FairMQPoller>(new FairMQPollerNN(channels));
 }
 
-FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const
+FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList) const
 {
-    return new FairMQPollerNN(channelsMap, channelList);
+    return unique_ptr<FairMQPoller>(new FairMQPollerNN(channelsMap, channelList));
 }
 
-FairMQPoller* FairMQTransportFactoryNN::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const
+FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const
 {
-    return new FairMQPollerNN(cmdSocket, dataSocket);
+    return unique_ptr<FairMQPoller>(new FairMQPollerNN(cmdSocket, dataSocket));
 }

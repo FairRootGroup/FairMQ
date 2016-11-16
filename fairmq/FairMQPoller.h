@@ -16,6 +16,7 @@
 #define FAIRMQPOLLER_H_
 
 #include <string>
+#include <memory>
 
 class FairMQPoller
 {
@@ -28,5 +29,7 @@ class FairMQPoller
 
     virtual ~FairMQPoller() {};
 };
+
+using FairMQPollerPtr = std::unique_ptr<FairMQPoller>;
 
 #endif /* FAIRMQPOLLER_H_ */

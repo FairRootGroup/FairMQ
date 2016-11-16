@@ -12,7 +12,7 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include <boost/timer/timer.hpp>
+#include <chrono>
 
 #include "FairMQSink.h"
 #include "FairMQLogger.h"
@@ -39,7 +39,7 @@ void FairMQSink::Run()
     const FairMQChannel& dataInChannel = fChannels.at(fInChannelName).at(0);
 
     LOG(INFO) << "Starting the benchmark and expecting to receive " << fNumMsgs << " messages.";
-    boost::timer::auto_cpu_timer timer;
+    auto tStart = chrono::high_resolution_clock::now();
 
     while (CheckCurrentState(RUNNING))
     {
@@ -58,8 +58,10 @@ void FairMQSink::Run()
         }
     }
 
+    auto tEnd = chrono::high_resolution_clock::now();
+
     LOG(INFO) << "Received " << numReceivedMsgs << " messages, leaving RUNNING state.";
-    LOG(INFO) << "Receiving time: ";
+    LOG(INFO) << "Receiving time: " << chrono::duration<double, milli>(tEnd - tStart).count() << " ms";
 }
 
 FairMQSink::~FairMQSink()

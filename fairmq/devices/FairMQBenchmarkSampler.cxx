@@ -13,10 +13,8 @@
  */
 
 #include <vector>
-
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-#include <boost/timer/timer.hpp>
+#include <chrono>
+#include <thread>
 
 #include "FairMQBenchmarkSampler.h"
 #include "FairMQLogger.h"
@@ -47,7 +45,7 @@ void FairMQBenchmarkSampler::InitTask()
 
 void FairMQBenchmarkSampler::Run()
 {
-    // boost::thread resetMsgCounter(boost::bind(&FairMQBenchmarkSampler::ResetMsgCounter, this));
+    // std::thread resetMsgCounter(&FairMQBenchmarkSampler::ResetMsgCounter, this);
 
     int numSentMsgs = 0;
 
@@ -57,7 +55,7 @@ void FairMQBenchmarkSampler::Run()
     const FairMQChannel& dataOutChannel = fChannels.at(fOutChannelName).at(0);
 
     LOG(INFO) << "Starting the benchmark with message size of " << fMsgSize << " and number of messages " << fNumMsgs << ".";
-    boost::timer::auto_cpu_timer timer;
+    auto tStart = chrono::high_resolution_clock::now();
 
     while (CheckCurrentState(RUNNING))
     {
@@ -78,38 +76,23 @@ void FairMQBenchmarkSampler::Run()
         // --fMsgCounter;
 
         // while (fMsgCounter == 0) {
-        //   boost::this_thread::sleep(boost::posix_time::milliseconds(1));
+        //   this_thread::sleep_for(chrono::milliseconds(1));
         // }
     }
 
-    LOG(INFO) << "Sent " << numSentMsgs << " messages, leaving RUNNING state.";
-    LOG(INFO) << "Sending time: ";
+    auto tEnd = chrono::high_resolution_clock::now();
 
-    // try
-    // {
-    //     resetMsgCounter.interrupt();
-    //     resetMsgCounter.join();
-    // }
-    // catch(boost::thread_resource_error& e)
-    // {
-    //     LOG(ERROR) << e.what();
-    //     exit(EXIT_FAILURE);
-    // }
+    LOG(INFO) << "Sent " << numSentMsgs << " messages, leaving RUNNING state.";
+    LOG(INFO) << "Sending time: " << chrono::duration<double, milli>(tEnd - tStart).count() << " ms";
+
+    // resetMsgCounter.join();
 }
 
 void FairMQBenchmarkSampler::ResetMsgCounter()
 {
-    while (true)
+    while (CheckCurrentState(RUNNING))
     {
-        try
-        {
-            fMsgCounter = fMsgRate / 100;
-            boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-        }
-        catch (boost::thread_interrupted&)
-        {
-            LOG(DEBUG) << "Event rate limiter thread interrupted";
-            break;
-        }
+        fMsgCounter = fMsgRate / 100;
+        this_thread::sleep_for(chrono::milliseconds(10));
     }
 }

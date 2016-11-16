@@ -12,8 +12,7 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include <boost/exception/all.hpp>
-#include <boost/chrono.hpp> // for WaitForEndOfStateForMs()
+#include <chrono> // WaitForEndOfStateForMs()
 
 #include "FairMQStateMachine.h"
 #include "FairMQLogger.h"
@@ -97,13 +96,9 @@ bool FairMQStateMachine::ChangeState(int event)
                 return false;
         }
     }
-    catch (boost::thread_interrupted& e)
+    catch (std::exception& e)
     {
-        LOG(ERROR) << boost::diagnostic_information(e);
-    }
-    catch (boost::exception& e)
-    {
-        LOG(ERROR) << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception in FairMQStateMachine::ChangeState(): " << e.what();
         exit(EXIT_FAILURE);
     }
     return false;
@@ -121,35 +116,28 @@ void FairMQStateMachine::WaitForEndOfState(int event)
         switch (event)
         {
             case INIT_DEVICE:
-            case INIT_TASK:
             case RUN:
             case RESET_TASK:
             case RESET_DEVICE:
             {
-                try
+                std::unique_lock<std::mutex> lock(fWorkMutex);
+                while (fWorkActive || fWorkAvailable)
                 {
-                    boost::unique_lock<boost::mutex> lock(fStateMutex);
-                    while (!fStateFinished)
-                    {
-                        fStateCondition.wait(lock);
-                    }
-                    fStateThread.join();
+                    fWorkDoneCondition.wait(lock);
                 }
-                catch (boost::exception& e)
-                {
-                    LOG(ERROR) << boost::diagnostic_information(e);
-                    exit(EXIT_FAILURE);
-                }
+
                 break;
             }
+            case INIT_TASK:
+                break; // InitTask is synchronous, until ROOT workaround is no longer needed.
             default:
                 LOG(ERROR) << "Requested state is either synchronous or does not exist.";
                 break;
         }
     }
-    catch (boost::thread_interrupted& e)
+    catch (std::exception& e)
     {
-        LOG(ERROR) << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception in FairMQStateMachine::WaitForEndOfState(): " << e.what();
     }
 }
 
@@ -165,16 +153,15 @@ bool FairMQStateMachine::WaitForEndOfStateForMs(int event, int durationInMs)
         switch (event)
         {
             case INIT_DEVICE:
-            case INIT_TASK:
             case RUN:
             case RESET_TASK:
             case RESET_DEVICE:
             {
-                boost::unique_lock<boost::mutex> lock(fStateMutex);
-                while (!fStateFinished)
+                std::unique_lock<std::mutex> lock(fWorkMutex);
+                while (fWorkActive || fWorkAvailable)
                 {
-                    fStateCondition.wait_until(lock, boost::chrono::system_clock::now() + boost::chrono::milliseconds(durationInMs));
-                    if (!fStateFinished)
+                    fWorkDoneCondition.wait_for(lock, std::chrono::milliseconds(durationInMs));
+                    if (fWorkActive)
                     {
                         return false;
                     }
@@ -182,14 +169,16 @@ bool FairMQStateMachine::WaitForEndOfStateForMs(int event, int durationInMs)
                 return true;
                 break;
             }
+            case INIT_TASK:
+                break; // InitTask is synchronous, until ROOT workaround is no longer needed.
             default:
                 LOG(ERROR) << "Requested state is either synchronous or does not exist.";
                 return false;
         }
     }
-    catch (boost::thread_interrupted& e)
+    catch (std::exception& e)
     {
-        LOG(ERROR) << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception in FairMQStateMachine::WaitForEndOfStateForMs(): " << e.what();
     }
     return false;
 }

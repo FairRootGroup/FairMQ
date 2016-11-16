@@ -19,11 +19,12 @@
 #include <stdexcept>
 #include <random>
 #include <chrono>
+#include <mutex>
+#include <thread>
+#include <functional>
 
 #include <termios.h> // for the InteractiveStateLoop
 #include <poll.h>
-
-#include <boost/thread.hpp>
 
 #include "FairMQSocket.h"
 #include "FairMQDevice.h"
@@ -38,8 +39,8 @@
 
 using namespace std;
 
-// boost::function and a wrapper to catch the signals
-boost::function<void(int)> sigHandler;
+// std::function and a wrapper to catch the signals
+std::function<void(int)> sigHandler;
 static void CallSignalHandler(int signal)
 {
     sigHandler(signal);
@@ -249,18 +250,13 @@ void FairMQDevice::InitWrapper()
 
         if (numAttempts != 0)
         {
-            boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     }
 
     Init();
 
     ChangeState(internal_DEVICE_READY);
-
-    // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fStateMutex);
-    fStateFinished = true;
-    fStateCondition.notify_one();
 }
 
 void FairMQDevice::WaitForInitialValidation()
@@ -399,11 +395,6 @@ void FairMQDevice::InitTaskWrapper()
     InitTask();
 
     ChangeState(internal_READY);
-
-    // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fStateMutex);
-    fStateFinished = true;
-    fStateCondition.notify_one();
 }
 
 void FairMQDevice::InitTask()
@@ -475,7 +466,7 @@ void FairMQDevice::RunWrapper()
 {
     LOG(INFO) << "DEVICE: Running...";
 
-    boost::thread rateLogger(boost::bind(&FairMQDevice::LogSocketRates, this));
+    std::thread rateLogger(&FairMQDevice::LogSocketRates, this);
 
     FairMQChannel::fInterrupted = false;
 
@@ -497,7 +488,7 @@ void FairMQDevice::RunWrapper()
                 inputChannelKeys.push_back(i.first);
             }
 
-            unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels, inputChannelKeys));
+            FairMQPollerPtr poller(fTransportFactory->CreatePoller(fChannels, inputChannelKeys));
 
             while (CheckCurrentState(RUNNING) && !exitingRunningCallback)
             {
@@ -580,26 +571,20 @@ void FairMQDevice::RunWrapper()
         ChangeState(ERROR);
     }
 
-    try
-    {
-        rateLogger.interrupt();
-        rateLogger.join();
-    }
-    catch (const boost::thread_resource_error& e)
-    {
-        LOG(ERROR) << e.what();
-        exit(EXIT_FAILURE);
-    }
-
     if (CheckCurrentState(RUNNING))
     {
         ChangeState(internal_READY);
     }
 
-    // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fStateMutex);
-    fStateFinished = true;
-    fStateCondition.notify_one();
+    try
+    {
+        rateLogger.join();
+    }
+    catch (exception& e)
+    {
+        LOG(ERROR) << "Exception cought during Run(): " << e.what();
+        exit(EXIT_FAILURE);
+    }
 }
 
 void FairMQDevice::Run()
@@ -621,19 +606,12 @@ void FairMQDevice::PostRun()
 
 void FairMQDevice::Pause()
 {
-    while (true)
+    while (CheckCurrentState(PAUSED))
     {
-        try
-        {
-            boost::this_thread::sleep(boost::posix_time::milliseconds(500));
-            LOG(DEBUG) << "paused...";
-        }
-        catch (const boost::thread_interrupted&)
-        {
-            LOG(INFO) << "FairMQDevice::Pause() interrupted";
-            break;
-        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        LOG(DEBUG) << "paused...";
     }
+    LOG(DEBUG) << "Unpausing";
 }
 
 // Method for setting properties represented as a string.
@@ -748,19 +726,19 @@ int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/)
 
 void FairMQDevice::SetTransport(FairMQTransportFactory* factory)
 {
-    fTransportFactory = factory;
+    fTransportFactory = unique_ptr<FairMQTransportFactory>(factory);
 }
 
 void FairMQDevice::SetTransport(const string& transport)
 {
     if (transport == "zeromq")
     {
-        fTransportFactory = new FairMQTransportFactoryZMQ();
+        fTransportFactory = unique_ptr<FairMQTransportFactory>(new FairMQTransportFactoryZMQ());
     }
 #ifdef NANOMSG_FOUND
     else if (transport == "nanomsg")
     {
-        fTransportFactory = new FairMQTransportFactoryNN();
+        fTransportFactory = unique_ptr<FairMQTransportFactory>(new FairMQTransportFactoryNN());
     }
 #endif
     else
@@ -809,7 +787,7 @@ void FairMQDevice::LogSocketRates()
         {
             if (vi->fRateLogging > 0)
             {
-                filteredSockets.push_back(vi->fSocket);
+                filteredSockets.push_back(vi->fSocket.get());
                 logIntervals.push_back(vi->fRateLogging);
                 intervalCounters.push_back(0);
                 stringstream ss;
@@ -847,56 +825,48 @@ void FairMQDevice::LogSocketRates()
 
     t0 = get_timestamp();
 
-    while (true)
+    while (CheckCurrentState(RUNNING))
     {
-        try
+        t1 = get_timestamp();
+
+        msSinceLastLog = (t1 - t0) / 1000.0L;
+
+        i = 0;
+
+        for (const auto& vi : filteredSockets)
         {
-            t1 = get_timestamp();
+            intervalCounters.at(i)++;
 
-            msSinceLastLog = (t1 - t0) / 1000.0L;
-
-            i = 0;
-
-            for (const auto& vi : filteredSockets)
+            if (intervalCounters.at(i) == logIntervals.at(i))
             {
-                intervalCounters.at(i)++;
+                intervalCounters.at(i) = 0;
 
-                if (intervalCounters.at(i) == logIntervals.at(i))
-                {
-                    intervalCounters.at(i) = 0;
+                bytesInNew.at(i) = vi->GetBytesRx();
+                mbPerSecIn.at(i) = (static_cast<double>(bytesInNew.at(i) - bytesIn.at(i)) / (1024. * 1024.)) / static_cast<double>(msSinceLastLog) * 1000.;
+                bytesIn.at(i) = bytesInNew.at(i);
 
-                    bytesInNew.at(i) = vi->GetBytesRx();
-                    mbPerSecIn.at(i) = (static_cast<double>(bytesInNew.at(i) - bytesIn.at(i)) / (1024. * 1024.)) / static_cast<double>(msSinceLastLog) * 1000.;
-                    bytesIn.at(i) = bytesInNew.at(i);
+                msgInNew.at(i) = vi->GetMessagesRx();
+                msgPerSecIn.at(i) = static_cast<double>(msgInNew.at(i) - msgIn.at(i)) / static_cast<double>(msSinceLastLog) * 1000.;
+                msgIn.at(i) = msgInNew.at(i);
 
-                    msgInNew.at(i) = vi->GetMessagesRx();
-                    msgPerSecIn.at(i) = static_cast<double>(msgInNew.at(i) - msgIn.at(i)) / static_cast<double>(msSinceLastLog) * 1000.;
-                    msgIn.at(i) = msgInNew.at(i);
+                bytesOutNew.at(i) = vi->GetBytesTx();
+                mbPerSecOut.at(i) = (static_cast<double>(bytesOutNew.at(i) - bytesOut.at(i)) / (1024. * 1024.)) / static_cast<double>(msSinceLastLog) * 1000.;
+                bytesOut.at(i) = bytesOutNew.at(i);
 
-                    bytesOutNew.at(i) = vi->GetBytesTx();
-                    mbPerSecOut.at(i) = (static_cast<double>(bytesOutNew.at(i) - bytesOut.at(i)) / (1024. * 1024.)) / static_cast<double>(msSinceLastLog) * 1000.;
-                    bytesOut.at(i) = bytesOutNew.at(i);
+                msgOutNew.at(i) = vi->GetMessagesTx();
+                msgPerSecOut.at(i) = static_cast<double>(msgOutNew.at(i) - msgOut.at(i)) / static_cast<double>(msSinceLastLog) * 1000.;
+                msgOut.at(i) = msgOutNew.at(i);
 
-                    msgOutNew.at(i) = vi->GetMessagesTx();
-                    msgPerSecOut.at(i) = static_cast<double>(msgOutNew.at(i) - msgOut.at(i)) / static_cast<double>(msSinceLastLog) * 1000.;
-                    msgOut.at(i) = msgOutNew.at(i);
-
-                    LOG(DEBUG) << filteredChannelNames.at(i) << ": "
-                               << "in: " << msgPerSecIn.at(i) << " msg (" << mbPerSecIn.at(i) << " MB), "
-                               << "out: " << msgPerSecOut.at(i) << " msg (" << mbPerSecOut.at(i) << " MB)";
-                }
-
-                ++i;
+                LOG(DEBUG) << filteredChannelNames.at(i) << ": "
+                           << "in: " << msgPerSecIn.at(i) << " msg (" << mbPerSecIn.at(i) << " MB), "
+                           << "out: " << msgPerSecOut.at(i) << " msg (" << mbPerSecOut.at(i) << " MB)";
             }
 
-            t0 = t1;
-            boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+            ++i;
         }
-        catch (boost::thread_interrupted&)
-        {
-            // LOG(DEBUG) << "FairMQDevice::LogSocketRates() interrupted";
-            break;
-        }
+
+        t0 = t1;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 
     // LOG(DEBUG) << "FairMQDevice::LogSocketRates() stopping";
@@ -979,7 +949,7 @@ void FairMQDevice::InteractiveStateLoop()
 
                     ChangeState(END);
 
-                    if (CheckCurrentState("EXITING"))
+                    if (CheckCurrentState(EXITING))
                     {
                         fInteractiveRunning = false;
                     }
@@ -1002,9 +972,8 @@ void FairMQDevice::InteractiveStateLoop()
 void FairMQDevice::Unblock()
 {
     FairMQChannel::fInterrupted = true;
-    FairMQMessage* cmd = fTransportFactory->CreateMessage();
-    fCmdSocket->Send(cmd, 0);
-    delete cmd;
+    FairMQMessagePtr cmd(fTransportFactory->CreateMessage());
+    fCmdSocket->Send(cmd.get(), 0);
 }
 
 void FairMQDevice::ResetTaskWrapper()
@@ -1012,11 +981,6 @@ void FairMQDevice::ResetTaskWrapper()
     ResetTask();
 
     ChangeState(internal_DEVICE_READY);
-
-    // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fStateMutex);
-    fStateFinished = true;
-    fStateCondition.notify_one();
 }
 
 void FairMQDevice::ResetTask()
@@ -1028,11 +992,6 @@ void FairMQDevice::ResetWrapper()
     Reset();
 
     ChangeState(internal_IDLE);
-
-    // notify parent thread about end of processing.
-    boost::lock_guard<boost::mutex> lock(fStateMutex);
-    fStateFinished = true;
-    fStateCondition.notify_one();
 }
 
 void FairMQDevice::Reset()
@@ -1044,14 +1003,11 @@ void FairMQDevice::Reset()
         for (auto& vi : mi.second)
         {
             vi.fSocket->Close();
-            delete vi.fSocket;
             vi.fSocket = nullptr;
 
-            delete vi.fPoller;
             vi.fPoller = nullptr;
 
             vi.fCmdSocket->Close();
-            delete vi.fCmdSocket;
             vi.fCmdSocket = nullptr;
         }
     }
@@ -1102,32 +1058,5 @@ void FairMQDevice::Shutdown()
 
 FairMQDevice::~FairMQDevice()
 {
-    // iterate over the channels map
-    for (auto& mi : fChannels)
-    {
-        // iterate over the channels vector
-        for (auto& vi : mi.second)
-        {
-            if (vi.fSocket)
-            {
-                delete vi.fSocket;
-                vi.fSocket = nullptr;
-            }
-            if (vi.fPoller)
-            {
-                delete vi.fPoller;
-                vi.fPoller = nullptr;
-            }
-        }
-    }
-
-    if (fCmdSocket)
-    {
-        delete fCmdSocket;
-        fCmdSocket = nullptr;
-    }
-
-    delete fTransportFactory;
-
     LOG(DEBUG) << "Device destroyed";
 }

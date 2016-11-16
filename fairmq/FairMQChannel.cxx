@@ -14,16 +14,14 @@
 
 #include <set>
 
-#include <boost/exception/all.hpp>
-
 #include "FairMQChannel.h"
 #include "FairMQLogger.h"
 
 using namespace std;
 
-boost::mutex FairMQChannel::fChannelMutex;
+mutex FairMQChannel::fChannelMutex;
 
-std::atomic<bool> FairMQChannel::fInterrupted(false);
+atomic<bool> FairMQChannel::fInterrupted(false);
 
 FairMQChannel::FairMQChannel()
     : fSocket(nullptr)
@@ -121,12 +119,12 @@ string FairMQChannel::GetType() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         return fType;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetType: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::GetType: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -135,12 +133,12 @@ string FairMQChannel::GetMethod() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         return fMethod;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetMethod: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::GetMethod: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -149,12 +147,12 @@ string FairMQChannel::GetAddress() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         return fAddress;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetAddress: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::GetAddress: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -163,12 +161,12 @@ int FairMQChannel::GetSndBufSize() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         return fSndBufSize;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetSndBufSize: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::GetSndBufSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -177,12 +175,12 @@ int FairMQChannel::GetRcvBufSize() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         return fRcvBufSize;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetRcvBufSize: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::GetRcvBufSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -191,12 +189,12 @@ int FairMQChannel::GetSndKernelSize() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         return fSndKernelSize;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetSndKernelSize: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::GetSndKernelSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -205,12 +203,12 @@ int FairMQChannel::GetRcvKernelSize() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         return fRcvKernelSize;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetRcvKernelSize: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::GetRcvKernelSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -219,12 +217,12 @@ int FairMQChannel::GetRateLogging() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         return fRateLogging;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetRateLogging: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::GetRateLogging: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -233,13 +231,13 @@ void FairMQChannel::UpdateType(const string& type)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fType = type;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateType: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateType: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -248,13 +246,13 @@ void FairMQChannel::UpdateMethod(const string& method)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fMethod = method;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateMethod: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateMethod: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -263,13 +261,13 @@ void FairMQChannel::UpdateAddress(const string& address)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fAddress = address;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateAddress: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateAddress: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -278,13 +276,13 @@ void FairMQChannel::UpdateSndBufSize(const int sndBufSize)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fSndBufSize = sndBufSize;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateSndBufSize: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateSndBufSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -293,13 +291,13 @@ void FairMQChannel::UpdateRcvBufSize(const int rcvBufSize)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fRcvBufSize = rcvBufSize;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateRcvBufSize: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateRcvBufSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -308,13 +306,13 @@ void FairMQChannel::UpdateSndKernelSize(const int sndKernelSize)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fSndKernelSize = sndKernelSize;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateSndKernelSize: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateSndKernelSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -323,13 +321,13 @@ void FairMQChannel::UpdateRcvKernelSize(const int rcvKernelSize)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fRcvKernelSize = rcvKernelSize;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateRcvKernelSize: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateRcvKernelSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -338,13 +336,13 @@ void FairMQChannel::UpdateRateLogging(const int rateLogging)
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fRateLogging = rateLogging;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateRateLogging: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateRateLogging: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -353,12 +351,12 @@ bool FairMQChannel::IsValid() const
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
         return fIsValid;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::IsValid: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::IsValid: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -367,7 +365,7 @@ bool FairMQChannel::ValidateChannel()
 {
     try
     {
-        boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+        unique_lock<mutex> lock(fChannelMutex);
 
         stringstream ss;
         ss << "Validating channel \"" << fChannelName << "\"... ";
@@ -402,14 +400,17 @@ bool FairMQChannel::ValidateChannel()
         {
             //TODO: maybe cache fEndpoints as a class member? not really needed as tokenizing is
             //fast, and only happens during (re-)configure
-            std::vector<std::string> fEndpoints;
+            vector<string> fEndpoints;
             Tokenize(fEndpoints, fAddress);
             for (const auto endpoint : fEndpoints)
             {
-                std::string address;
-                if (endpoint[0]=='@'||endpoint[0]=='+'||endpoint[0]=='>') {
-                  address = endpoint.substr(1);
-                } else {
+                string address;
+                if (endpoint[0] == '@' || endpoint[0] == '+' || endpoint[0] == '>')
+                {
+                    address = endpoint.substr(1);
+                }
+                else
+                {
                     // we don't have a method modifier, check if the default method is set
                     const string socketMethodNames[] = { "bind", "connect" };
                     const set<string> socketMethods(socketMethodNames, socketMethodNames + sizeof(socketMethodNames) / sizeof(string));
@@ -508,14 +509,14 @@ bool FairMQChannel::ValidateChannel()
         LOG(DEBUG) << ss.str();
         return true;
     }
-    catch (boost::exception& e)
+    catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::ValidateChannel: " << boost::diagnostic_information(e);
+        LOG(ERROR) << "Exception caught in FairMQChannel::ValidateChannel: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
 
-bool FairMQChannel::InitCommandInterface(FairMQTransportFactory* factory, int numIoThreads)
+bool FairMQChannel::InitCommandInterface(shared_ptr<FairMQTransportFactory> factory, int numIoThreads)
 {
     fTransportFactory = factory;
 
@@ -539,7 +540,7 @@ bool FairMQChannel::InitCommandInterface(FairMQTransportFactory* factory, int nu
 
 void FairMQChannel::ResetChannel()
 {
-    boost::unique_lock<boost::mutex> scoped_lock(fChannelMutex);
+    unique_lock<mutex> lock(fChannelMutex);
     fIsValid = false;
     // TODO: implement channel resetting
 }
@@ -586,7 +587,7 @@ int FairMQChannel::Receive(const unique_ptr<FairMQMessage>& msg, int rcvTimeoutI
     return -2;
 }
 
-int64_t FairMQChannel::Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int sndTimeoutInMs) const
+int64_t FairMQChannel::Send(const vector<unique_ptr<FairMQMessage>>& msgVec, int sndTimeoutInMs) const
 {
     fPoller->Poll(sndTimeoutInMs);
 
@@ -607,7 +608,7 @@ int64_t FairMQChannel::Send(const std::vector<std::unique_ptr<FairMQMessage>>& m
     return -2;
 }
 
-int64_t FairMQChannel::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int rcvTimeoutInMs) const
+int64_t FairMQChannel::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, int rcvTimeoutInMs) const
 {
     fPoller->Poll(rcvTimeoutInMs);
 
@@ -769,34 +770,27 @@ bool FairMQChannel::ExpectsAnotherPart() const
 
 inline bool FairMQChannel::HandleUnblock() const
 {
-    FairMQMessage* cmd = fTransportFactory->CreateMessage();
-    if (fCmdSocket->Receive(cmd, 0) >= 0)
+    FairMQMessagePtr cmd(fTransportFactory->CreateMessage());
+    if (fCmdSocket->Receive(cmd.get(), 0) >= 0)
     {
         // LOG(DEBUG) << "unblocked";
     }
-    delete cmd;
     return true;
 }
 
 FairMQChannel::~FairMQChannel()
 {
-    delete fCmdSocket;
-    delete fPoller;
 }
 
-void FairMQChannel::Tokenize(std::vector<std::string>& output,
-                             const std::string& input,
-                             const std::string delimiters)
+void FairMQChannel::Tokenize(vector<string>& output, const string& input, const string delimiters)
 {
-  using namespace std;
-  size_t start = 0;
-  size_t end = input.find_first_of(delimiters);
-  while (end != string::npos)
-  {
-    output.push_back(input.substr(start, end-start));
-    start = ++end;
-    end = input.find_first_of(delimiters, start);
-  }
-  output.push_back(input.substr(start));
+    size_t start = 0;
+    size_t end = input.find_first_of(delimiters);
+    while (end != string::npos)
+    {
+        output.push_back(input.substr(start, end-start));
+        start = ++end;
+        end = input.find_first_of(delimiters, start);
+    }
+    output.push_back(input.substr(start));
 }
-

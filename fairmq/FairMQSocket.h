@@ -17,6 +17,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "FairMQMessage.h"
 
@@ -67,5 +68,7 @@ class FairMQSocket
 
     virtual ~FairMQSocket() {};
 };
+
+using FairMQSocketPtr = std::unique_ptr<FairMQSocket>;
 
 #endif /* FAIRMQSOCKET_H_ */

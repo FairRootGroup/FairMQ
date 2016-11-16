@@ -59,33 +59,6 @@ void MyCallBack(MyDevice& d, double val)
     d.Print();
 }
 
-void PrintMQParam(const FairMQMap& channels, const FairMQProgOptions& config)
-{
-    for (const auto& p : channels)
-    {
-        int index = 0;
-        for (const auto& channel : p.second)
-        {
-            string typeKey = p.first + "." + to_string(index) + ".type";
-            string methodKey = p.first + "." + to_string(index) + ".method";
-            string addressKey = p.first + "." + to_string(index) + ".address";
-            string propertyKey = p.first + "." + to_string(index) + ".property";
-            string sndBufSizeKey = p.first + "." + to_string(index) + ".sndBufSize";
-            string rcvBufSizeKey = p.first + "." + to_string(index) + ".rcvBufSize";
-            string rateLoggingKey = p.first + "." + to_string(index) + ".rateLogging";
-
-            LOG(INFO) << "Channel name = " << p.first;
-            LOG(INFO) << "key = " << typeKey <<"\t value = " << config.GetValue<string>(typeKey);
-            LOG(INFO) << "key = " << methodKey <<"\t value = " << config.GetValue<string>(methodKey);
-            LOG(INFO) << "key = " << addressKey <<"\t value = " << config.GetValue<string>(addressKey);
-            LOG(INFO) << "key = " << propertyKey <<"\t value = " << config.GetValue<string>(propertyKey);
-            LOG(INFO) << "key = " << sndBufSizeKey << "\t value = " << config.GetValue<int>(sndBufSizeKey);
-            LOG(INFO) << "key = " << rcvBufSizeKey <<"\t value = " << config.GetValue<int>(rcvBufSizeKey);
-            LOG(INFO) << "key = " << rateLoggingKey <<"\t value = " << config.GetValue<int>(rateLoggingKey);
-        }
-    }
-}
-
 int main(int argc, char** argv)
 {
     try
@@ -103,9 +76,6 @@ int main(int argc, char** argv)
         // // get FairMQMap
         // auto map1 = config.GetFairMQMap();
 
-        // // form keys from map1 and print the value stored in variable map
-        // PrintMQParam(map1, config);
-
         // // update value in variable map, and propagate the update to the FairMQMap
         // config.UpdateValue<string>("data.0.address","tcp://localhost:1234");
 
@@ -117,9 +87,6 @@ int main(int argc, char** argv)
 
         // // update the FairMQMap and propagate the change in variable map
         // config.UpdateChannelMap(map2);
-
-        // // print values stored in variable map 
-        // PrintMQParam(map2, config);
 
         MyDevice device;
         device.CatchSignals();

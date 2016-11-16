@@ -25,37 +25,37 @@ FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ()
     LOG(DEBUG) << "Using ZeroMQ library, version: " << major << "." << minor << "." << patch;
 }
 
-FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage() const
+FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage() const
 {
-    return new FairMQMessageZMQ();
+    return unique_ptr<FairMQMessage>(new FairMQMessageZMQ());
 }
 
-FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage(const size_t size) const
+FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(const size_t size) const
 {
-    return new FairMQMessageZMQ(size);
+    return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(size));
 }
 
-FairMQMessage* FairMQTransportFactoryZMQ::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const
+FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const
 {
-    return new FairMQMessageZMQ(data, size, ffn, hint);
+    return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(data, size, ffn, hint));
 }
 
-FairMQSocket* FairMQTransportFactoryZMQ::CreateSocket(const string& type, const std::string& name, const int numIoThreads, const std::string& id /*= ""*/) const
+FairMQSocketPtr FairMQTransportFactoryZMQ::CreateSocket(const string& type, const string& name, const int numIoThreads, const string& id /*= ""*/) const
 {
-    return new FairMQSocketZMQ(type, name, numIoThreads, id);
+    return unique_ptr<FairMQSocket>(new FairMQSocketZMQ(type, name, numIoThreads, id));
 }
 
-FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQChannel>& channels) const
+FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQChannel>& channels) const
 {
-    return new FairMQPollerZMQ(channels);
+    return unique_ptr<FairMQPoller>(new FairMQPollerZMQ(channels));
 }
 
-FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const
+FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList) const
 {
-    return new FairMQPollerZMQ(channelsMap, channelList);
+    return unique_ptr<FairMQPoller>(new FairMQPollerZMQ(channelsMap, channelList));
 }
 
-FairMQPoller* FairMQTransportFactoryZMQ::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const
+FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const
 {
-    return new FairMQPollerZMQ(cmdSocket, dataSocket);
+    return unique_ptr<FairMQPoller>(new FairMQPollerZMQ(cmdSocket, dataSocket));
 }

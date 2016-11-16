@@ -18,8 +18,7 @@
 #include <string>
 #include <memory> // unique_ptr
 #include <atomic>
-
-#include <boost/thread/mutex.hpp>
+#include <mutex>
 
 #include "FairMQTransportFactory.h"
 #include "FairMQSocket.h"
@@ -134,7 +133,7 @@ class FairMQChannel
     /// Resets the channel (requires validation to be used again).
     void ResetChannel();
 
-    FairMQSocket* fSocket;
+    std::unique_ptr<FairMQSocket> fSocket;
 
     /// Sends a message to the socket queue.
     /// @details Send method attempts to send a message by
@@ -249,9 +248,7 @@ class FairMQChannel
     int Receive(FairMQMessage* msg, const int flags, int rcvTimeoutInMs = -1) const;
 
     // TODO: this might go to some base utility library
-    static void Tokenize(std::vector<std::string>& output,
-                         const std::string& input,
-                         const std::string delimiters = ",");
+    static void Tokenize(std::vector<std::string>& output, const std::string& input, const std::string delimiters = ",");
 
   private:
     std::string fType;
@@ -266,15 +263,15 @@ class FairMQChannel
     std::string fChannelName;
     std::atomic<bool> fIsValid;
 
-    FairMQPoller* fPoller;
-    FairMQSocket* fCmdSocket;
+    FairMQPollerPtr fPoller;
+    FairMQSocketPtr fCmdSocket;
 
-    FairMQTransportFactory* fTransportFactory;
+    std::shared_ptr<FairMQTransportFactory> fTransportFactory;
 
     int fNoBlockFlag;
     int fSndMoreFlag;
 
-    bool InitCommandInterface(FairMQTransportFactory* factory, int numIoThreads);
+    bool InitCommandInterface(std::shared_ptr<FairMQTransportFactory> factory, int numIoThreads);
 
     bool HandleUnblock() const;
 
@@ -282,7 +279,7 @@ class FairMQChannel
     // implication: same mutex is used for all instances of the class
     // this does not hurt much, because mutex is used only during initialization with very low contention
     // possible TODO: improve this
-    static boost::mutex fChannelMutex;
+    static std::mutex fChannelMutex;
 
     static std::atomic<bool> fInterrupted;
 };
