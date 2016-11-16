@@ -35,7 +35,7 @@ void FairMQExample6Sampler::InitTask()
 
 void FairMQExample6Sampler::Run()
 {
-    unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels, { "data", "broadcast" }));
+    FairMQPollerPtr poller(fTransportFactory->CreatePoller(fChannels, { "data", "broadcast" }));
 
     while (CheckCurrentState(RUNNING))
     {
