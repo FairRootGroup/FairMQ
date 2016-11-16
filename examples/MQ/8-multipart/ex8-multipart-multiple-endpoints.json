@@ -10,7 +10,7 @@
                             {
                                 "type": "push",
                                 "method": "connect",
-                                "address": "tcp://localhost:5555",
+                                "address": "tcp://localhost:5555,tcp://localhost:5556",
                                 "sndBufSize": 1000,
                                 "rcvBufSize": 1000,
                                 "rateLogging": 0
@@ -29,6 +29,24 @@
                                 "type": "pull",
                                 "method": "bind",
                                 "address": "tcp://*:5555",
+                                "sndBufSize": 1000,
+                                "rcvBufSize": 1000,
+                                "rateLogging": 0
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "sink2",
+                "channels": [
+                    {
+                        "name": "data-in",
+                        "sockets": [
+                            {
+                                "type": "pull",
+                                "method": "connect",
+                                "address": "@tcp://*:5556",
                                 "sndBufSize": 1000,
                                 "rcvBufSize": 1000,
                                 "rateLogging": 0
