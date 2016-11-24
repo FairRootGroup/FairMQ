@@ -82,6 +82,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         , fWorkActive(false)
         , fWorkAvailable(false)
         , fState()
+        , fChangeStateMutex()
         {}
 
     // Destructor
@@ -100,9 +101,6 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
     template <class Event, class FSM>
     void on_exit(Event const&, FSM& fsm)
     {
-        // join the worker thread (executing user states)
-        fsm.fWorkerThread.join();
-
         LOG(STATE) << "Exiting FairMQ state machine";
     }
 
@@ -320,31 +318,17 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
             fsm.fState = EXITING;
 
             // terminate worker thread
-            std::lock_guard<std::mutex> lock(fsm.fWorkMutex);
-            fsm.fWorkerTerminated = true;
-            fsm.fWorkAvailableCondition.notify_one();
+            {
+                std::lock_guard<std::mutex> lock(fsm.fWorkMutex);
+                fsm.fWorkerTerminated = true;
+                fsm.fWorkAvailableCondition.notify_one();
+            }
 
-            fsm.fTerminateStateThread = std::thread(&FairMQFSM_::Terminate, &fsm);
-            fsm.Shutdown();
-            fsm.fTerminateStateThread.join();
-        }
-    };
-
-    struct ExitingRunFct
-    {
-        template <class EVT, class FSM, class SourceState, class TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
-        {
-            LOG(STATE) << "Entering EXITING state";
-
-            fsm.fState = EXITING;
-
-            fsm.Unblock(); // Unblock potential blocking transfer calls
-
-            // terminate worker thread
-            std::lock_guard<std::mutex> lock(fsm.fWorkMutex);
-            fsm.fWorkerTerminated = true;
-            fsm.fWorkAvailableCondition.notify_one();
+            // join the worker thread (executing user states)
+            if (fsm.fWorkerThread.joinable())
+            {
+                fsm.fWorkerThread.join();
+            }
 
             fsm.fTerminateStateThread = std::thread(&FairMQFSM_::Terminate, &fsm);
             fsm.Shutdown();
@@ -423,7 +407,6 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         msmf::Row<RUNNING_FSM,             PAUSE,                 PAUSED_FSM,              PauseFct,        msmf::none>,
         msmf::Row<RUNNING_FSM,             STOP,                  READY_FSM,               StopFct,         msmf::none>,
         msmf::Row<RUNNING_FSM,             internal_READY,        READY_FSM,               InternalStopFct, msmf::none>,
-        msmf::Row<RUNNING_FSM,             END,                   EXITING_FSM,             ExitingRunFct,   msmf::none>,
         msmf::Row<PAUSED_FSM,              RUN,                   RUNNING_FSM,             ResumeFct,       msmf::none>,
         msmf::Row<RESETTING_TASK_FSM,      internal_DEVICE_READY, DEVICE_READY_FSM,        DeviceReadyFct,  msmf::none>,
         msmf::Row<RESETTING_DEVICE_FSM,    internal_IDLE,         IDLE_FSM,                IdleFct,         msmf::none>,
@@ -556,6 +539,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
     bool fWorkAvailable;
 
   protected:
+    std::mutex fChangeStateMutex;
     std::atomic<State> fState;
 };
 

@@ -55,45 +55,83 @@ bool FairMQStateMachine::ChangeState(int event)
         switch (event)
         {
             case INIT_DEVICE:
+            {
+                std::lock_guard<std::mutex> lock(fChangeStateMutex);
                 process_event(FairMQFSM::INIT_DEVICE());
                 return true;
+            }
             case internal_DEVICE_READY:
+            {
+                std::lock_guard<std::mutex> lock(fChangeStateMutex);
                 process_event(FairMQFSM::internal_DEVICE_READY());
                 return true;
+            }
             case INIT_TASK:
+            {
+                std::lock_guard<std::mutex> lock(fChangeStateMutex);
                 process_event(FairMQFSM::INIT_TASK());
                 return true;
+            }
             case internal_READY:
+            {
+                // std::lock_guard<std::mutex> lock(fChangeStateMutex); // InitTask is synchronous, until ROOT workaround is no longer needed.
                 process_event(FairMQFSM::internal_READY());
                 return true;
+            }
             case RUN:
+            {
+                std::lock_guard<std::mutex> lock(fChangeStateMutex);
                 process_event(FairMQFSM::RUN());
                 return true;
+            }
             case PAUSE:
+            {
+                std::lock_guard<std::mutex> lock(fChangeStateMutex);
                 process_event(FairMQFSM::PAUSE());
                 return true;
+            }
             case STOP:
+            {
+                std::lock_guard<std::mutex> lock(fChangeStateMutex);
                 process_event(FairMQFSM::STOP());
                 return true;
+            }
             case RESET_DEVICE:
+            {
+                std::lock_guard<std::mutex> lock(fChangeStateMutex);
                 process_event(FairMQFSM::RESET_DEVICE());
                 return true;
+            }
             case RESET_TASK:
+            {
+                std::lock_guard<std::mutex> lock(fChangeStateMutex);
                 process_event(FairMQFSM::RESET_TASK());
                 return true;
+            }
             case internal_IDLE:
+            {
+                std::lock_guard<std::mutex> lock(fChangeStateMutex);
                 process_event(FairMQFSM::internal_IDLE());
                 return true;
+            }
             case END:
+            {
+                std::lock_guard<std::mutex> lock(fChangeStateMutex);
                 process_event(FairMQFSM::END());
                 return true;
+            }
             case ERROR_FOUND:
+            {
+                std::lock_guard<std::mutex> lock(fChangeStateMutex);
                 process_event(FairMQFSM::ERROR_FOUND());
                 return true;
+            }
             default:
+            {
                 LOG(ERROR) << "Requested state transition with an unsupported event: " << event << std::endl
                            << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, STOP, RESET_TASK, RESET_DEVICE, END, ERROR_FOUND";
                 return false;
+            }
         }
     }
     catch (std::exception& e)
@@ -123,7 +161,7 @@ void FairMQStateMachine::WaitForEndOfState(int event)
                 std::unique_lock<std::mutex> lock(fWorkMutex);
                 while (fWorkActive || fWorkAvailable)
                 {
-                    fWorkDoneCondition.wait(lock);
+                    fWorkDoneCondition.wait_for(lock, std::chrono::seconds(1));
                 }
 
                 break;
