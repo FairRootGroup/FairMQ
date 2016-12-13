@@ -26,6 +26,8 @@
 #include <termios.h> // for the InteractiveStateLoop
 #include <poll.h>
 
+#include <boost/algorithm/string.hpp> // join/split
+
 #include "FairMQSocket.h"
 #include "FairMQDevice.h"
 #include "FairMQLogger.h"
@@ -348,6 +350,10 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
     // after the book keeping is done, exit in case of errors
     if (!rc) return rc;
   }
+
+  // put the (possibly) modified address back in the config
+  ch.UpdateAddress(boost::algorithm::join(endpoints, ","));
+
   return true;
 }
 

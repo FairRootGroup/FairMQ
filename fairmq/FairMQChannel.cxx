@@ -14,6 +14,8 @@
 
 #include <set>
 
+#include <boost/algorithm/string.hpp> // join/split
+
 #include "FairMQChannel.h"
 #include "FairMQLogger.h"
 
@@ -784,13 +786,5 @@ FairMQChannel::~FairMQChannel()
 
 void FairMQChannel::Tokenize(vector<string>& output, const string& input, const string delimiters)
 {
-    size_t start = 0;
-    size_t end = input.find_first_of(delimiters);
-    while (end != string::npos)
-    {
-        output.push_back(input.substr(start, end-start));
-        start = ++end;
-        end = input.find_first_of(delimiters, start);
-    }
-    output.push_back(input.substr(start));
+    boost::algorithm::split(output, input, boost::algorithm::is_any_of(delimiters));
 }
