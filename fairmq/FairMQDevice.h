@@ -234,7 +234,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     template<typename T>
     inline FairMQMessagePtr NewSimpleMessage(const T& data) const
     {
-        static_assert(std::is_trivially_copyable<T>::value, "The argument type for NewSimpleMessage has to be trivially copyable!");
+        // todo: is_trivially_copyable not available on gcc < 5, workaround?
+        // static_assert(std::is_trivially_copyable<T>::value, "The argument type for NewSimpleMessage has to be trivially copyable!");
         T* dataCopy = new T(data);
         return fTransportFactory->CreateMessage(dataCopy, sizeof(T), FairMQSimpleMsgCleanup<T>, dataCopy);
     }
