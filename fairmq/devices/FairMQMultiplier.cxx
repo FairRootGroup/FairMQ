@@ -81,7 +81,7 @@ bool FairMQMultiplier::HandleMultipartData(FairMQParts& payload, int /*index*/)
             {
                 FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage());
                 msgCopy->Copy(payload.At(k));
-                parts.AddPart(msgCopy);
+                parts.AddPart(std::move(msgCopy));
             }
 
             Send(parts, fOutChannelNames.at(i), j);
@@ -98,7 +98,7 @@ bool FairMQMultiplier::HandleMultipartData(FairMQParts& payload, int /*index*/)
         {
             FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage());
             msgCopy->Copy(payload.At(k));
-            parts.AddPart(msgCopy);
+            parts.AddPart(std::move(msgCopy));
         }
 
         Send(parts, fOutChannelNames.back(), i);

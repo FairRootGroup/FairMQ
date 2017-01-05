@@ -41,10 +41,10 @@ class FairMQParts
     /// Adds part (std::unique_ptr<FairMQMessage>&) to the container (move)
     /// @param msg unique pointer to FairMQMessage
     /// lvalue ref (move not required when passing argument)
-    inline void AddPart(std::unique_ptr<FairMQMessage>& msg)
-    {
-        fParts.push_back(std::move(msg));
-    }
+    // inline void AddPart(std::unique_ptr<FairMQMessage>& msg)
+    // {
+    //     fParts.push_back(std::move(msg));
+    // }
 
     /// Adds part (std::unique_ptr<FairMQMessage>&) to the container (move)
     /// @param msg unique pointer to FairMQMessage
