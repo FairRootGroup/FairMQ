@@ -28,7 +28,7 @@ class FairMQMessageSHM : public FairMQMessage
     FairMQMessageSHM(const FairMQMessageSHM&) = delete;
     FairMQMessageSHM operator=(const FairMQMessageSHM&) = delete;
 
-    void InitializeChunk(const size_t size);
+    bool InitializeChunk(const size_t size);
 
     virtual void Rebuild();
     virtual void Rebuild(const size_t size);

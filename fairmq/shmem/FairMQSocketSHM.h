@@ -70,7 +70,7 @@ class FairMQSocketSHM : public FairMQSocket
     std::atomic<unsigned long> fMessagesRx;
 
     static std::unique_ptr<FairMQContextSHM> fContext;
-    // static bool fContextInitialized;
+    static bool fContextInitialized;
 };
 
 #endif /* FAIRMQSOCKETSHM_H_ */

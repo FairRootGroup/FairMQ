@@ -50,20 +50,21 @@ FairMQMessageSHM::FairMQMessageSHM(void* data, const size_t size, fairmq_free_fn
     , fReceiving(false)
     , fQueued(false)
 {
-    InitializeChunk(size);
-
-    memcpy(fOwner->fPtr->GetData(), data, size);
-    if (ffn)
+    if (InitializeChunk(size))
     {
-        ffn(data, hint);
-    }
-    else
-    {
-        free(data);
+        memcpy(fOwner->fPtr->GetData(), data, size);
+        if (ffn)
+        {
+            ffn(data, hint);
+        }
+        else
+        {
+            free(data);
+        }
     }
 }
 
-void FairMQMessageSHM::InitializeChunk(const size_t size)
+bool FairMQMessageSHM::InitializeChunk(const size_t size)
 {
     string chunkID = fDeviceID + "c" + to_string(fMessageID);
     string* ownerID = new string(fDeviceID + "o" + to_string(fMessageID));
@@ -94,12 +95,17 @@ void FairMQMessageSHM::InitializeChunk(const size_t size)
         }
     }
 
-    if (zmq_msg_init_data(&fMessage, const_cast<char*>(ownerID->c_str()), ownerID->length(), StringDeleter, ownerID) != 0)
+    if (success)
     {
-        LOG(ERROR) << "failed initializing meta message, reason: " << zmq_strerror(errno);
+        if (zmq_msg_init_data(&fMessage, const_cast<char*>(ownerID->c_str()), ownerID->length(), StringDeleter, ownerID) != 0)
+        {
+            LOG(ERROR) << "failed initializing meta message, reason: " << zmq_strerror(errno);
+        }
+
+        ++fMessageID;
     }
 
-    ++fMessageID;
+    return success;
 }
 
 void FairMQMessageSHM::Rebuild()
@@ -132,16 +138,17 @@ void FairMQMessageSHM::Rebuild(void* data, const size_t size, fairmq_free_fn* ff
     fReceiving = false;
     fQueued = false;
 
-    InitializeChunk(size);
-
-    memcpy(fOwner->fPtr->GetData(), data, size);
-    if (ffn)
+    if (InitializeChunk(size))
     {
-        ffn(data, hint);
-    }
-    else
-    {
-        free(data);
+        memcpy(fOwner->fPtr->GetData(), data, size);
+        if (ffn)
+        {
+            ffn(data, hint);
+        }
+        else
+        {
+            free(data);
+        }
     }
 }
 
@@ -192,9 +199,10 @@ void FairMQMessageSHM::Copy(const unique_ptr<FairMQMessage>& msg)
         FairMQ::shmem::ShPtrOwner* otherOwner = static_cast<FairMQMessageSHM*>(msg.get())->fOwner;
         if (otherOwner)
         {
-            InitializeChunk(otherOwner->fPtr->GetSize());
-
-            memcpy(fOwner->fPtr->GetData(), otherOwner->fPtr->GetData(), otherOwner->fPtr->GetSize());
+            if (InitializeChunk(otherOwner->fPtr->GetSize()))
+            {
+                memcpy(fOwner->fPtr->GetData(), otherOwner->fPtr->GetData(), otherOwner->fPtr->GetSize());
+            }
         }
         else
         {

@@ -115,7 +115,7 @@ FairMQPollerZMQ::FairMQPollerZMQ(const unordered_map<string, vector<FairMQChanne
     {
         LOG(ERROR) << "At least one of the provided channel keys for poller initialization is invalid";
         LOG(ERROR) << "Out of Range error: " << oor.what() << '\n';
-        exit(EXIT_FAILURE);
+        throw std::out_of_range("Invalid channel during poller initialization");
     }
 }
 
