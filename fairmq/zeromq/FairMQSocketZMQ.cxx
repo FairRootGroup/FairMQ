@@ -146,7 +146,6 @@ int64_t FairMQSocketZMQ::Send(const vector<unique_ptr<FairMQMessage>>& msgVec, c
             if (nbytes >= 0)
             {
                 totalSize += nbytes;
-                fBytesTx += nbytes;
             }
             else
             {
@@ -186,6 +185,7 @@ int64_t FairMQSocketZMQ::Send(const vector<unique_ptr<FairMQMessage>>& msgVec, c
 
         // store statistics on how many messages have been sent (handle all parts as a single message)
         ++fMessagesTx;
+        fBytesTx += totalSize;
         return totalSize;
     } // If there's only one part, send it as a regular message
     else if (msgVec.size() == 1)
@@ -247,7 +247,6 @@ int64_t FairMQSocketZMQ::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, cons
         {
             msgVec.push_back(move(part));
             totalSize += nbytes;
-            fBytesRx += nbytes;
         }
         else
         {
@@ -261,6 +260,7 @@ int64_t FairMQSocketZMQ::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, cons
 
     // store statistics on how many messages have been received (handle all parts as a single message)
     ++fMessagesRx;
+    fBytesRx += totalSize;
     return totalSize;
 }
 
