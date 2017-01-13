@@ -13,8 +13,6 @@ configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/6-multiple-channels/startMQEx6.sh
 
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
-  ${CMAKE_SOURCE_DIR}/fairmq/zeromq
-  ${CMAKE_SOURCE_DIR}/fairmq/nanomsg
   ${CMAKE_SOURCE_DIR}/fairmq/devices
   ${CMAKE_SOURCE_DIR}/fairmq/tools
   ${CMAKE_SOURCE_DIR}/fairmq/options

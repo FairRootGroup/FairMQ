@@ -1,0 +1,84 @@
+{
+    "fairMQOptions": {
+        "devices": [
+            {
+                "id": "sampler1",
+                "channels": [
+                    {
+                        "name": "data1",
+                        "sockets": [
+                            {
+                                "type": "push",
+                                "method": "bind",
+                                "address": "tcp://127.0.0.1:5555"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ack",
+                        "transport": "zeromq",
+                        "sockets": [
+                            {
+                                "type": "sub",
+                                "method": "bind",
+                                "address": "tcp://127.0.0.1:5557"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "sampler2",
+                "channels": [
+                    {
+                        "name": "data2",
+                        "sockets": [
+                            {
+                                "type": "push",
+                                "method": "bind",
+                                "address": "tcp://127.0.0.1:5556"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "sink1",
+                "channels": [
+                    {
+                        "name": "data1",
+                        "sockets": [
+                            {
+                                "type": "pull",
+                                "method": "connect",
+                                "address": "tcp://127.0.0.1:5555"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "data2",
+                        "transport": "nanomsg",
+                        "sockets": [
+                            {
+                                "type": "pull",
+                                "method": "connect",
+                                "address": "tcp://127.0.0.1:5556"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "ack",
+                        "transport": "zeromq",
+                        "sockets": [
+                            {
+                                "type": "pub",
+                                "method": "connect",
+                                "address": "tcp://127.0.0.1:5557"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
