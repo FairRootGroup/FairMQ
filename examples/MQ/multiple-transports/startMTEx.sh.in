@@ -1,0 +1,20 @@
+#!/bin/bash
+config="@CMAKE_BINARY_DIR@/bin/config/ex-multiple-transports.json"
+
+SAMPLER1="ex-mt-sampler1"
+SAMPLER1+=" --id sampler1"
+SAMPLER1+=" --transport shmem"
+SAMPLER1+=" --mq-config $config"
+xterm -geometry 80x30+0+0 -hold -e @CMAKE_BINARY_DIR@/bin/examples/MQ/multiple-transports/$SAMPLER1 &
+
+SAMPLER2="ex-mt-sampler2"
+SAMPLER2+=" --id sampler2"
+SAMPLER2+=" --transport nanomsg"
+SAMPLER2+=" --mq-config $config"
+xterm -geometry 80x30+0+450 -hold -e @CMAKE_BINARY_DIR@/bin/examples/MQ/multiple-transports/$SAMPLER2 &
+
+SINK="ex-mt-sink"
+SINK+=" --id sink1"
+SINK+=" --transport shmem"
+SINK+=" --mq-config $config"
+xterm -geometry 80x30+500+0 -hold -e @CMAKE_BINARY_DIR@/bin/examples/MQ/multiple-transports/$SINK &
