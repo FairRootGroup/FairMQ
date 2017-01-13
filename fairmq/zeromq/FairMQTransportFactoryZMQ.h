@@ -16,6 +16,7 @@
 #define FAIRMQTRANSPORTFACTORYZMQ_H_
 
 #include <vector>
+#include <string>
 
 #include "FairMQTransportFactory.h"
 #include "FairMQContextZMQ.h"
@@ -37,6 +38,8 @@ class FairMQTransportFactoryZMQ : public FairMQTransportFactory
     virtual FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const;
     virtual FairMQPollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const;
     virtual FairMQPollerPtr CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const;
+
+    virtual FairMQ::Transport GetType() const;
 
     virtual ~FairMQTransportFactoryZMQ() {};
 };

@@ -51,7 +51,7 @@ FairMQPollerSHM::FairMQPollerSHM(const vector<FairMQChannel>& channels)
         }
         else
         {
-            LOG(ERROR) << "invalid poller configuration, exiting.";
+            LOG(ERROR) << "shmem: invalid poller configuration, exiting.";
             exit(EXIT_FAILURE);
         }
     }
@@ -105,7 +105,7 @@ FairMQPollerSHM::FairMQPollerSHM(const unordered_map<string, vector<FairMQChanne
                 }
                 else
                 {
-                    LOG(ERROR) << "invalid poller configuration, exiting.";
+                    LOG(ERROR) << "shmem: invalid poller configuration, exiting.";
                     exit(EXIT_FAILURE);
                 }
             }
@@ -113,8 +113,8 @@ FairMQPollerSHM::FairMQPollerSHM(const unordered_map<string, vector<FairMQChanne
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "At least one of the provided channel keys for poller initialization is invalid";
-        LOG(ERROR) << "Out of Range error: " << oor.what() << '\n';
+        LOG(ERROR) << "shmem: at least one of the provided channel keys for poller initialization is invalid";
+        LOG(ERROR) << "shmem: out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }
@@ -153,7 +153,7 @@ FairMQPollerSHM::FairMQPollerSHM(const FairMQSocket& cmdSocket, const FairMQSock
     }
     else
     {
-        LOG(ERROR) << "invalid poller configuration, exiting.";
+        LOG(ERROR) << "shmem: invalid poller configuration, exiting.";
         exit(EXIT_FAILURE);
     }
 }
@@ -164,11 +164,12 @@ void FairMQPollerSHM::Poll(const int timeout)
     {
         if (errno == ETERM)
         {
-            LOG(DEBUG) << "polling exited, reason: " << zmq_strerror(errno);
+            LOG(DEBUG) << "shmem: polling exited, reason: " << zmq_strerror(errno);
         }
         else
         {
-            LOG(ERROR) << "polling failed, reason: " << zmq_strerror(errno);
+            LOG(ERROR) << "shmem: polling failed, reason: " << zmq_strerror(errno);
+            throw std::runtime_error("shmem: polling failed");
         }
     }
 }
@@ -206,8 +207,8 @@ bool FairMQPollerSHM::CheckInput(const string channelKey, const int index)
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "Invalid channel key: \"" << channelKey << "\"";
-        LOG(ERROR) << "Out of Range error: " << oor.what() << '\n';
+        LOG(ERROR) << "shmem: invalid channel key: \"" << channelKey << "\"";
+        LOG(ERROR) << "shmem: out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }
@@ -225,8 +226,8 @@ bool FairMQPollerSHM::CheckOutput(const string channelKey, const int index)
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "Invalid channel key: \"" << channelKey << "\"";
-        LOG(ERROR) << "Out of Range error: " << oor.what() << '\n';
+        LOG(ERROR) << "shmem: Invalid channel key: \"" << channelKey << "\"";
+        LOG(ERROR) << "shmem: out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }

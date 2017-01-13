@@ -20,6 +20,8 @@
 
 using namespace std;
 
+static FairMQ::Transport gTransportType = FairMQ::Transport::ZMQ;
+
 string FairMQMessageZMQ::fDeviceID = string();
 
 FairMQMessageZMQ::FairMQMessageZMQ()
@@ -99,6 +101,11 @@ void FairMQMessageZMQ::SetMessage(void*, const size_t)
 void FairMQMessageZMQ::SetDeviceId(const string& deviceId)
 {
     fDeviceID = deviceId;
+}
+
+FairMQ::Transport FairMQMessageZMQ::GetType() const
+{
+    return gTransportType;
 }
 
 void FairMQMessageZMQ::Copy(const unique_ptr<FairMQMessage>& msg)

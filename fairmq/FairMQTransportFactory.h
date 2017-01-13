@@ -21,10 +21,10 @@
 #include <unordered_map>
 
 #include "FairMQMessage.h"
-#include "FairMQChannel.h"
 #include "FairMQSocket.h"
 #include "FairMQPoller.h"
 #include "FairMQLogger.h"
+#include "FairMQTransports.h"
 
 class FairMQChannel;
 
@@ -40,6 +40,8 @@ class FairMQTransportFactory
     virtual FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const = 0;
     virtual FairMQPollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const = 0;
     virtual FairMQPollerPtr CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const = 0;
+
+    virtual FairMQ::Transport GetType() const = 0;
 
     virtual ~FairMQTransportFactory() {};
 };

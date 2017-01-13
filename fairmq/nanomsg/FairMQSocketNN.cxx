@@ -29,6 +29,8 @@
 
 using namespace std;
 
+atomic<bool> FairMQSocketNN::fInterrupted(false);
+
 FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const int numIoThreads, const string& id /*= ""*/)
     : FairMQSocket(0, 0, NN_DONTWAIT)
     , fSocket(-1)
@@ -71,6 +73,18 @@ FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const int
         }
     }
 
+    int sndTimeout = 700;
+    if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_SNDTIMEO, &sndTimeout, sizeof(sndTimeout)) != 0)
+    {
+        LOG(ERROR) << "Failed setting NN_SNDTIMEO socket option, reason: " << nn_strerror(errno);
+    }
+
+    int rcvTimeout = 700;
+    if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_RCVTIMEO, &rcvTimeout, sizeof(rcvTimeout)) != 0)
+    {
+        LOG(ERROR) << "Failed setting NN_RCVTIMEO socket option, reason: " << nn_strerror(errno);
+    }
+
 #ifdef NN_RCVMAXSIZE
     int rcvSize = -1;
     nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_RCVMAXSIZE, &rcvSize, sizeof(rcvSize));
@@ -108,103 +122,153 @@ void FairMQSocketNN::Connect(const string& address)
     }
 }
 
-int FairMQSocketNN::Send(FairMQMessage* msg, const string& flag)
+int FairMQSocketNN::Send(FairMQMessagePtr& msg, const int flags)
 {
-    return Send(msg, GetConstant(flag));
+    int nbytes = -1;
+
+    while (true)
+    {
+        void* ptr = msg->GetMessage();
+        nbytes = nn_send(fSocket, &ptr, NN_MSG, flags);
+        if (nbytes >= 0)
+        {
+            fBytesTx += nbytes;
+            ++fMessagesTx;
+            static_cast<FairMQMessageNN*>(msg.get())->fReceiving = false;
+
+            return nbytes;
+        }
+        else if (nn_errno() == ETIMEDOUT)
+        {
+            if (!fInterrupted && ((flags & NN_DONTWAIT) == 0))
+            {
+                continue;
+            }
+            else
+            {
+                return -2;
+            }
+        }
+        else if (nn_errno() == EAGAIN)
+        {
+            return -2;
+        }
+        else if (nn_errno() == ETERM)
+        {
+            LOG(INFO) << "terminating socket " << fId;
+            return -1;
+        }
+        else
+        {
+            LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
+            return nbytes;
+        }
+    }
 }
 
-int FairMQSocketNN::Send(FairMQMessage* msg, const int flags)
+int FairMQSocketNN::Receive(FairMQMessagePtr& msg, const int flags)
 {
-    void* ptr = msg->GetMessage();
-    int nbytes = nn_send(fSocket, &ptr, NN_MSG, flags);
-    if (nbytes >= 0)
+    int nbytes = -1;
+
+    while (true)
     {
-        fBytesTx += nbytes;
-        ++fMessagesTx;
-        static_cast<FairMQMessageNN*>(msg)->fReceiving = false;
-        return nbytes;
+        void* ptr = NULL;
+        nbytes = nn_recv(fSocket, &ptr, NN_MSG, flags);
+        if (nbytes >= 0)
+        {
+            fBytesRx += nbytes;
+            ++fMessagesRx;
+            msg->SetMessage(ptr, nbytes);
+            static_cast<FairMQMessageNN*>(msg.get())->fReceiving = true;
+            return nbytes;
+        }
+        else if (nn_errno() == ETIMEDOUT)
+        {
+            if (!fInterrupted && ((flags & NN_DONTWAIT) == 0))
+            {
+                continue;
+            }
+            else
+            {
+                return -2;
+            }
+        }
+        else if (nn_errno() == EAGAIN)
+        {
+            return -2;
+        }
+        else if (nn_errno() == ETERM)
+        {
+            LOG(INFO) << "terminating socket " << fId;
+            return -1;
+        }
+        else
+        {
+            LOG(ERROR) << "Failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
+            return nbytes;
+        }
     }
-    if (nn_errno() == EAGAIN)
-    {
-        return -2;
-    }
-    if (nn_errno() == ETERM)
-    {
-        LOG(INFO) << "terminating socket " << fId;
-        return -1;
-    }
-    LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
-    return nbytes;
 }
 
-int64_t FairMQSocketNN::Send(const vector<unique_ptr<FairMQMessage>>& msgVec, const int flags)
+int64_t FairMQSocketNN::Send(vector<unique_ptr<FairMQMessage>>& msgVec, const int flags)
 {
 #ifdef MSGPACK_FOUND
+    const unsigned int vecSize = msgVec.size();
+
     // create msgpack simple buffer
     msgpack::sbuffer sbuf;
     // create msgpack packer
     msgpack::packer<msgpack::sbuffer> packer(&sbuf);
 
     // pack all parts into a single msgpack simple buffer
-    for (unsigned int i = 0; i < msgVec.size(); ++i)
+    for (unsigned int i = 0; i < vecSize; ++i)
     {
         static_cast<FairMQMessageNN*>(msgVec[i].get())->fReceiving = false;
         packer.pack_bin(msgVec[i]->GetSize());
         packer.pack_bin_body(static_cast<char*>(msgVec[i]->GetData()), msgVec[i]->GetSize());
     }
 
-    int64_t nbytes = nn_send(fSocket, sbuf.data(), sbuf.size(), flags);
-    if (nbytes >= 0)
+    int64_t nbytes = -1;
+
+    while (true)
     {
-        fBytesTx += nbytes;
-        ++fMessagesTx;
-        return nbytes;
+        nbytes = nn_send(fSocket, sbuf.data(), sbuf.size(), flags);
+        if (nbytes >= 0)
+        {
+            fBytesTx += nbytes;
+            ++fMessagesTx;
+            return nbytes;
+        }
+        else if (nn_errno() == ETIMEDOUT)
+        {
+            if (!fInterrupted && ((flags & NN_DONTWAIT) == 0))
+            {
+                continue;
+            }
+            else
+            {
+                return -2;
+            }
+        }
+        else if (nn_errno() == EAGAIN)
+        {
+            return -2;
+        }
+        else if (nn_errno() == ETERM)
+        {
+            LOG(INFO) << "terminating socket " << fId;
+            return -1;
+        }
+        else
+        {
+            LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
+            return nbytes;
+        }
     }
-    if (nn_errno() == EAGAIN)
-    {
-        return -2;
-    }
-    if (nn_errno() == ETERM)
-    {
-        LOG(INFO) << "terminating socket " << fId;
-        return -1;
-    }
-    LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
-    return nbytes;
 #else /*MSGPACK_FOUND*/
-    LOG(ERROR) << "Cannot send message from vector of size " << msgVec.size() << " and flags " << flags << " with nanomsg multipart because MessagePack is not available.";
+    LOG(ERROR) << "Cannot send message from vector of size " << vecSize << " and flags " << flags << " with nanomsg multipart because MessagePack is not available.";
     exit(EXIT_FAILURE);
 #endif /*MSGPACK_FOUND*/
-}
-
-int FairMQSocketNN::Receive(FairMQMessage* msg, const string& flag)
-{
-    return Receive(msg, GetConstant(flag));
-}
-
-int FairMQSocketNN::Receive(FairMQMessage* msg, const int flags)
-{
-    void* ptr = NULL;
-    int nbytes = nn_recv(fSocket, &ptr, NN_MSG, flags);
-    if (nbytes >= 0)
-    {
-        fBytesRx += nbytes;
-        ++fMessagesRx;
-        msg->SetMessage(ptr, nbytes);
-        static_cast<FairMQMessageNN*>(msg)->fReceiving = true;
-        return nbytes;
-    }
-    if (nn_errno() == EAGAIN)
-    {
-        return -2;
-    }
-    if (nn_errno() == ETERM)
-    {
-        LOG(INFO) << "terminating socket " << fId;
-        return -1;
-    }
-    LOG(ERROR) << "Failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
-    return nbytes;
 }
 
 int64_t FairMQSocketNN::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const int flags)
@@ -217,51 +281,68 @@ int64_t FairMQSocketNN::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const
         msgVec.clear();
     }
 
-    // pointer to point to received message buffer
-    char* ptr = NULL;
-    // receive the message into a buffer allocated by nanomsg and let ptr point to it
-    int nbytes = nn_recv(fSocket, &ptr, NN_MSG, flags);
-    if (nbytes >= 0) // if no errors or non-blocking timeouts
+    while (true)
     {
-        // store statistics on how many bytes received
-        fBytesRx += nbytes;
-        // store statistics on how many messages received (count messages instead of parts)
-        ++fMessagesRx;
-
-        // offset to be used by msgpack to handle separate chunks
-        size_t offset = 0;
-        while (offset != static_cast<size_t>(nbytes)) // continue until all parts have been read
+        // pointer to point to received message buffer
+        char* ptr = NULL;
+        // receive the message into a buffer allocated by nanomsg and let ptr point to it
+        int nbytes = nn_recv(fSocket, &ptr, NN_MSG, flags);
+        if (nbytes >= 0) // if no errors or non-blocking timeouts
         {
-            // vector of chars to hold blob (unlike char*/void* this type can be converted to by msgpack)
-            std::vector<char> buf;
+            // store statistics on how many bytes received
+            fBytesRx += nbytes;
+            // store statistics on how many messages received (count messages instead of parts)
+            ++fMessagesRx;
 
-            // unpack and convert chunk
-            msgpack::unpacked result;
-            unpack(result, ptr, nbytes, offset);
-            msgpack::object object(result.get());
-            object.convert(buf);
-            // get the single message size
-            size_t size = buf.size() * sizeof(char);
-            unique_ptr<FairMQMessage> part(new FairMQMessageNN(size));
-            static_cast<FairMQMessageNN*>(part.get())->fReceiving = true;
-            memcpy(part->GetData(), buf.data(), size);
-            msgVec.push_back(move(part));
+            // offset to be used by msgpack to handle separate chunks
+            size_t offset = 0;
+            while (offset != static_cast<size_t>(nbytes)) // continue until all parts have been read
+            {
+                // vector of chars to hold blob (unlike char*/void* this type can be converted to by msgpack)
+                std::vector<char> buf;
+
+                // unpack and convert chunk
+                msgpack::unpacked result;
+                unpack(result, ptr, nbytes, offset);
+                msgpack::object object(result.get());
+                object.convert(buf);
+                // get the single message size
+                size_t size = buf.size() * sizeof(char);
+                unique_ptr<FairMQMessage> part(new FairMQMessageNN(size));
+                static_cast<FairMQMessageNN*>(part.get())->fReceiving = true;
+                memcpy(part->GetData(), buf.data(), size);
+                msgVec.push_back(move(part));
+            }
+
+            nn_freemsg(ptr);
+            return nbytes;
         }
-
-        nn_freemsg(ptr);
-        return nbytes;
+        else if (nn_errno() == ETIMEDOUT)
+        {
+            if (!fInterrupted && ((flags & NN_DONTWAIT) == 0))
+            {
+                continue;
+            }
+            else
+            {
+                return -2;
+            }
+        }
+        else if (nn_errno() == EAGAIN)
+        {
+            return -2;
+        }
+        else if (nn_errno() == ETERM)
+        {
+            LOG(INFO) << "terminating socket " << fId;
+            return -1;
+        }
+        else
+        {
+            LOG(ERROR) << "Failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
+            return nbytes;
+        }
     }
-    if (nn_errno() == EAGAIN)
-    {
-        return -2;
-    }
-    if (nn_errno() == ETERM)
-    {
-        LOG(INFO) << "terminating socket " << fId;
-        return -1;
-    }
-    LOG(ERROR) << "Failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
-    return nbytes;
 #else /*MSGPACK_FOUND*/
     LOG(ERROR) << "Cannot receive message into vector of size " << msgVec.size() << " and flags " << flags << " with nanomsg multipart because MessagePack is not available.";
     exit(EXIT_FAILURE);
@@ -280,10 +361,12 @@ void FairMQSocketNN::Terminate()
 
 void FairMQSocketNN::Interrupt()
 {
+    fInterrupted = true;
 }
 
 void FairMQSocketNN::Resume()
 {
+    fInterrupted = false;
 }
 
 void* FairMQSocketNN::GetSocket() const

@@ -7,6 +7,8 @@
  ********************************************************************************/
 #include <zmq.h>
 
+#include <cstdio>
+
 #include <boost/interprocess/managed_shared_memory.hpp>
 
 #include "FairMQLogger.h"
@@ -46,11 +48,11 @@ FairMQContextSHM::~FairMQContextSHM()
 
     if (boost::interprocess::shared_memory_object::remove("FairMQSharedMemory"))
     {
-        LOG(INFO) << "Successfully removed shared memory after the device has stopped.";
+        printf("Successfully removed shared memory after the device has stopped.\n");
     }
     else
     {
-        LOG(INFO) << "Did not remove shared memory after the device stopped. Still in use?";
+        printf("Did not remove shared memory after the device stopped. Already removed?\n");
     }
 }
 

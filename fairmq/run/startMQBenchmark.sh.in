@@ -4,6 +4,10 @@ numMsgs="0"
 msgSize="1000000"
 transport="zeromq"
 sameMsg="true"
+affinity="false"
+affinitySamp=""
+affinitySink=""
+
 
 if [[ $1 =~ ^[0-9]+$ ]]; then
     msgSize=$1
@@ -21,17 +25,40 @@ if [[ $4 =~ ^[a-z]+$ ]]; then
     sameMsg=$4
 fi
 
-echo "Starting benchmark with message size of $msgSize bytes ($numMsgs messages) and $transport transport."
-echo "Using $transport transport."
+if [[ $5 =~ ^[a-z]+$ ]]; then
+    affinity=$5
+fi
+
+
+echo "Starting benchmark with following settings:"
+
+echo ""
+echo "message size: $msgSize bytes"
 
 if [ $numMsgs = 0 ]; then
-    echo "Unlimited number of messages."
+    echo "number of messages: unlimited"
 else
-    echo "Number of messages: $numMsgs."
+    echo "number of messages: $numMsgs"
+fi
+
+echo "transport: $transport"
+
+if [ $sameMsg = "true" ]; then
+    echo "resend same message: yes, using Copy() method to resend the same message"
+else
+    echo "resend same message: no, allocating each message separately"
+fi
+
+if [ $affinity = "true" ]; then
+    affinitySamp="taskset -c 0"
+    affinitySink="taskset -c 1"
+    echo "affinity: assigning sampler to core 0, sink to core 1"
+else
+    echo ""
 fi
 
 echo ""
-echo "Usage: startBenchmark [message size=1000000] [number of messages=0] [transport=zeromq/nanomsg/shmem] [resend same message=true]"
+echo "Usage: startBenchmark [message size=1000000] [number of messages=0] [transport=zeromq/nanomsg/shmem] [resend same message=true] [affinity=false]"
 
 SAMPLER="bsampler"
 SAMPLER+=" --id bsampler1"
@@ -43,7 +70,7 @@ SAMPLER+=" --same-msg $sameMsg"
 # SAMPLER+=" --msg-rate 1000"
 SAMPLER+=" --num-msgs $numMsgs"
 SAMPLER+=" --mq-config @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
-xterm -geometry 80x23+0+0 -hold -e @CMAKE_BINARY_DIR@/bin/$SAMPLER &
+xterm -geometry 90x23+0+0 -hold -e $affinitySamp @CMAKE_BINARY_DIR@/bin/$SAMPLER &
 
 SINK="sink"
 SINK+=" --id sink1"
@@ -52,4 +79,4 @@ SINK+=" --id sink1"
 SINK+=" --transport $transport"
 SINK+=" --num-msgs $numMsgs"
 SINK+=" --mq-config @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
-xterm -geometry 80x23+500+0 -hold -e @CMAKE_BINARY_DIR@/bin/$SINK &
+xterm -geometry 90x23+550+0 -hold -e $affinitySink @CMAKE_BINARY_DIR@/bin/$SINK &

@@ -53,7 +53,7 @@ FairMQPollerNN::FairMQPollerNN(const vector<FairMQChannel>& channels)
         }
         else
         {
-            LOG(ERROR) << "invalid poller configuration, exiting.";
+            LOG(ERROR) << "nanomsg: invalid poller configuration, exiting.";
             exit(EXIT_FAILURE);
         }
     }
@@ -104,7 +104,7 @@ FairMQPollerNN::FairMQPollerNN(const unordered_map<string, vector<FairMQChannel>
                 }
                 else
                 {
-                    LOG(ERROR) << "invalid poller configuration, exiting.";
+                    LOG(ERROR) << "nanomsg: invalid poller configuration, exiting.";
                     exit(EXIT_FAILURE);
                 }
             }
@@ -112,8 +112,8 @@ FairMQPollerNN::FairMQPollerNN(const unordered_map<string, vector<FairMQChannel>
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "At least one of the provided channel keys for poller initialization is invalid";
-        LOG(ERROR) << "Out of Range error: " << oor.what() << '\n';
+        LOG(ERROR) << "nanomsg: at least one of the provided channel keys for poller initialization is invalid";
+        LOG(ERROR) << "nanomsg: out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }
@@ -150,7 +150,7 @@ FairMQPollerNN::FairMQPollerNN(const FairMQSocket& cmdSocket, const FairMQSocket
     }
     else
     {
-        LOG(ERROR) << "invalid poller configuration, exiting.";
+        LOG(ERROR) << "nanomsg: invalid poller configuration, exiting.";
         exit(EXIT_FAILURE);
     }
 }
@@ -161,11 +161,12 @@ void FairMQPollerNN::Poll(const int timeout)
     {
         if (errno == ETERM)
         {
-            LOG(DEBUG) << "polling exited, reason: " << nn_strerror(errno);
+            LOG(DEBUG) << "nanomsg: polling exited, reason: " << nn_strerror(errno);
         }
         else
         {
-            LOG(ERROR) << "polling failed, reason: " << nn_strerror(errno);
+            LOG(ERROR) << "nanomsg: polling failed, reason: " << nn_strerror(errno);
+            throw std::runtime_error("nanomsg: polling failed");
         }
     }
 }
@@ -203,8 +204,8 @@ bool FairMQPollerNN::CheckInput(const string channelKey, const int index)
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "Invalid channel key: \"" << channelKey << "\"";
-        LOG(ERROR) << "Out of Range error: " << oor.what() << '\n';
+        LOG(ERROR) << "nanomsg: invalid channel key: \"" << channelKey << "\"";
+        LOG(ERROR) << "nanomsg: out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }
@@ -222,8 +223,8 @@ bool FairMQPollerNN::CheckOutput(const string channelKey, const int index)
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "Invalid channel key: \"" << channelKey << "\"";
-        LOG(ERROR) << "Out of Range error: " << oor.what() << '\n';
+        LOG(ERROR) << "nanomsg: invalid channel key: \"" << channelKey << "\"";
+        LOG(ERROR) << "nanomsg: out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }

@@ -18,6 +18,8 @@
 #include <cstddef> // for size_t
 #include <memory> // unique_ptr
 
+#include "FairMQTransports.h"
+
 using fairmq_free_fn = void(void* data, void* hint);
 
 class FairMQMessage
@@ -33,6 +35,8 @@ class FairMQMessage
     virtual void SetMessage(void* data, size_t size) = 0;
 
     virtual void SetDeviceId(const std::string& deviceId) = 0;
+
+    virtual FairMQ::Transport GetType() const = 0;
 
     virtual void Copy(const std::unique_ptr<FairMQMessage>& msg) = 0;
 

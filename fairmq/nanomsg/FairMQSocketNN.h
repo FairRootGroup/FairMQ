@@ -19,6 +19,7 @@
 #include <atomic>
 
 #include "FairMQSocket.h"
+#include "FairMQMessage.h"
 
 class FairMQSocketNN : public FairMQSocket
 {
@@ -32,12 +33,10 @@ class FairMQSocketNN : public FairMQSocket
     virtual bool Bind(const std::string& address);
     virtual void Connect(const std::string& address);
 
-    virtual int Send(FairMQMessage* msg, const std::string& flag = "");
-    virtual int Send(FairMQMessage* msg, const int flags = 0);
-    virtual int64_t Send(const std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags = 0);
+    virtual int Send(FairMQMessagePtr& msg, const int flags = 0);
+    virtual int Receive(FairMQMessagePtr& msg, const int flags = 0);
 
-    virtual int Receive(FairMQMessage* msg, const std::string& flag = "");
-    virtual int Receive(FairMQMessage* msg, const int flags = 0);
+    virtual int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags = 0);
     virtual int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags = 0);
 
     virtual void* GetSocket() const;
@@ -72,6 +71,7 @@ class FairMQSocketNN : public FairMQSocket
     std::atomic<unsigned long> fBytesRx;
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
+    static std::atomic<bool> fInterrupted;
 };
 
 #endif /* FAIRMQSOCKETNN_H_ */

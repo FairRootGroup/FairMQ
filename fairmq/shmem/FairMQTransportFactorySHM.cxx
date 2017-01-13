@@ -12,11 +12,13 @@
 
 using namespace std;
 
+static FairMQ::Transport gTransportType = FairMQ::Transport::SHM;
+
 FairMQTransportFactorySHM::FairMQTransportFactorySHM()
 {
     int major, minor, patch;
     zmq_version(&major, &minor, &patch);
-    LOG(DEBUG) << "Using ZeroMQ (" << major << "." << minor << "." << patch << ") & "
+    LOG(DEBUG) << "Transport: Using ZeroMQ (" << major << "." << minor << "." << patch << ") & "
                << "boost::interprocess (" << (BOOST_VERSION / 100000) << "." << (BOOST_VERSION / 100 % 1000) << "." << (BOOST_VERSION % 100) << ")";
 }
 
@@ -54,3 +56,9 @@ FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const FairMQSocket& cmdS
 {
     return unique_ptr<FairMQPoller>(new FairMQPollerSHM(cmdSocket, dataSocket));
 }
+
+FairMQ::Transport FairMQTransportFactorySHM::GetType() const
+{
+    return gTransportType;
+}
+

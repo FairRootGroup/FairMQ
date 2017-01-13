@@ -36,14 +36,14 @@ void FairMQSink::Run()
 {
     uint64_t numReceivedMsgs = 0;
     // store the channel reference to avoid traversing the map on every loop iteration
-    const FairMQChannel& dataInChannel = fChannels.at(fInChannelName).at(0);
+    FairMQChannel& dataInChannel = fChannels.at(fInChannelName).at(0);
 
     LOG(INFO) << "Starting the benchmark and expecting to receive " << fNumMsgs << " messages.";
     auto tStart = chrono::high_resolution_clock::now();
 
     while (CheckCurrentState(RUNNING))
     {
-        FairMQMessagePtr msg(fTransportFactory->CreateMessage());
+        FairMQMessagePtr msg(dataInChannel.Transport()->CreateMessage());
 
         if (dataInChannel.Receive(msg) >= 0)
         {

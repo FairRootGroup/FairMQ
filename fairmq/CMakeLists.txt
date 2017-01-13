@@ -111,6 +111,7 @@ EndIf(NANOMSG_FOUND)
 # manual install (globbing add not recommended)
 Set(FAIRMQHEADERS
   FairMQParts.h
+  FairMQTransports.h
   FairMQConfigPlugin.h
   FairMQControlPlugin.h
   runFairMQDevice.h

@@ -233,6 +233,7 @@ void FairMQProgOptions::UpdateMQValues()
             string typeKey = p.first + "." + to_string(index) + ".type";
             string methodKey = p.first + "." + to_string(index) + ".method";
             string addressKey = p.first + "." + to_string(index) + ".address";
+            string transportKey = p.first + "." + to_string(index) + ".transport";
             string sndBufSizeKey = p.first + "." + to_string(index) + ".sndBufSize";
             string rcvBufSizeKey = p.first + "." + to_string(index) + ".rcvBufSize";
             string sndKernelSizeKey = p.first + "." + to_string(index) + ".sndKernelSize";
@@ -242,6 +243,7 @@ void FairMQProgOptions::UpdateMQValues()
             fMQKeyMap[typeKey] = make_tuple(p.first, index, "type");
             fMQKeyMap[methodKey] = make_tuple(p.first, index, "method");
             fMQKeyMap[addressKey] = make_tuple(p.first, index, "address");
+            fMQKeyMap[transportKey] = make_tuple(p.first, index, "transport");
             fMQKeyMap[sndBufSizeKey] = make_tuple(p.first, index, "sndBufSize");
             fMQKeyMap[rcvBufSizeKey] = make_tuple(p.first, index, "rcvBufSize");
             fMQKeyMap[sndKernelSizeKey] = make_tuple(p.first, index, "sndKernelSize");
@@ -251,6 +253,7 @@ void FairMQProgOptions::UpdateMQValues()
             UpdateVarMap<string>(typeKey, channel.GetType());
             UpdateVarMap<string>(methodKey, channel.GetMethod());
             UpdateVarMap<string>(addressKey, channel.GetAddress());
+            UpdateVarMap<string>(transportKey, channel.GetTransport());
 
 
             //UpdateVarMap<string>(sndBufSizeKey, to_string(channel.GetSndBufSize()));// string API
@@ -382,6 +385,12 @@ int FairMQProgOptions::UpdateChannelMap(const string& channelName, int index, co
     if (member == "address")
     {
         fFairMQMap.at(channelName).at(index).UpdateAddress(val);
+        return 0;
+    }
+
+    if (member == "transport")
+    {
+        fFairMQMap.at(channelName).at(index).UpdateTransport(val);
         return 0;
     }
     else

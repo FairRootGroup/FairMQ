@@ -19,6 +19,7 @@ using namespace FairMQ::shmem;
 // Context to hold the ZeroMQ sockets
 unique_ptr<FairMQContextSHM> FairMQSocketSHM::fContext; // = unique_ptr<FairMQContextSHM>(new FairMQContextSHM(1));
 bool FairMQSocketSHM::fContextInitialized = false;
+atomic<bool> FairMQSocketSHM::fInterrupted(false);
 
 FairMQSocketSHM::FairMQSocketSHM(const string& type, const string& name, const int numIoThreads, const string& id /*= ""*/)
     : FairMQSocket(ZMQ_SNDMORE, ZMQ_RCVMORE, ZMQ_DONTWAIT)
@@ -57,22 +58,22 @@ FairMQSocketSHM::FairMQSocketSHM(const string& type, const string& name, const i
 
     // Tell socket to try and send/receive outstanding messages for <linger> milliseconds before terminating.
     // Default value for ZeroMQ is -1, which is to wait forever.
-    int linger = 500;
+    int linger = 1000;
     if (zmq_setsockopt(fSocket, ZMQ_LINGER, &linger, sizeof(linger)) != 0)
     {
         LOG(ERROR) << "Failed setting ZMQ_LINGER socket option, reason: " << zmq_strerror(errno);
     }
 
-    int kernelSndSize = 10000;
-    if (zmq_setsockopt(fSocket, ZMQ_SNDBUF, &kernelSndSize, sizeof(kernelSndSize)) != 0)
+    int sndTimeout = 700;
+    if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &sndTimeout, sizeof(sndTimeout)) != 0)
     {
-        LOG(ERROR) << "Failed setting ZMQ_SNDBUF socket option, reason: " << zmq_strerror(errno);
+        LOG(ERROR) << "Failed setting ZMQ_SNDTIMEO socket option, reason: " << zmq_strerror(errno);
     }
 
-    int kernelRcvSize = 10000;
-    if (zmq_setsockopt(fSocket, ZMQ_RCVBUF, &kernelRcvSize, sizeof(kernelRcvSize)) != 0)
+    int rcvTimeout = 700;
+    if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &rcvTimeout, sizeof(rcvTimeout)) != 0)
     {
-        LOG(ERROR) << "Failed setting ZMQ_RCVBUF socket option, reason: " << zmq_strerror(errno);
+        LOG(ERROR) << "Failed setting ZMQ_RCVTIMEO socket option, reason: " << zmq_strerror(errno);
     }
 
     if (type == "sub")
@@ -119,105 +120,183 @@ void FairMQSocketSHM::Connect(const string& address)
     }
 }
 
-int FairMQSocketSHM::Send(FairMQMessage* msg, const string& flag)
+int FairMQSocketSHM::Send(FairMQMessagePtr& msg, const int flags)
 {
-    return Send(msg, GetConstant(flag));
-}
-
-int FairMQSocketSHM::Send(FairMQMessage* msg, const int flags)
-{
-    int nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, flags);
-    if (nbytes >= 0)
+    int nbytes = -1;
+    while (true && !fInterrupted)
     {
-        static_cast<FairMQMessageSHM*>(msg)->fReceiving = false;
-        static_cast<FairMQMessageSHM*>(msg)->fQueued = true;
-        size_t size = msg->GetSize();
-
-        fBytesTx += size;
-        ++fMessagesTx;
-
-        return size;
-    }
-    if (zmq_errno() == EAGAIN)
-    {
-        return -2;
-    }
-    if (zmq_errno() == ETERM)
-    {
-        LOG(INFO) << "terminating socket " << fId;
-        return -1;
-    }
-    LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
-    return nbytes;
-}
-
-int64_t FairMQSocketSHM::Send(const vector<FairMQMessagePtr>& msgVec, const int flags)
-{
-    // Sending vector typicaly handles more then one part
-    if (msgVec.size() > 1)
-    {
-        int64_t totalSize = 0;
-
-        for (unsigned int i = 0; i < msgVec.size() - 1; ++i)
+        nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, flags);
+        if (nbytes == 0)
         {
-            int nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msgVec[i]->GetMessage()), fSocket, ZMQ_SNDMORE|flags);
-            if (nbytes >= 0)
-            {
-                static_cast<FairMQMessageSHM*>(msgVec[i].get())->fReceiving = false;
-                static_cast<FairMQMessageSHM*>(msgVec[i].get())->fQueued = true;
-                size_t size = msgVec[i]->GetSize();
+            return nbytes;
+        }
+        else if (nbytes > 0)
+        {
+            // static_cast<FairMQMessageSHM*>(msg.get())->fReceiving = false;
+            static_cast<FairMQMessageSHM*>(msg.get())->fQueued = true;
 
-                totalSize += size;
-                fBytesTx += size;
+            size_t size = msg->GetSize();
+            fBytesTx += size;
+            ++fMessagesTx;
+
+            return size;
+        }
+        else if (zmq_errno() == EAGAIN)
+        {
+            if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
+            {
+                continue;
             }
             else
             {
-                if (zmq_errno() == EAGAIN)
-                {
-                    return -2;
-                }
-                if (zmq_errno() == ETERM)
-                {
-                    LOG(INFO) << "terminating socket " << fId;
-                    return -1;
-                }
-                LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
-                return nbytes;
+                return -2;
             }
         }
-
-        int nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msgVec.back()->GetMessage()), fSocket, flags);
-        if (nbytes >= 0)
+        else if (zmq_errno() == ETERM)
         {
-            static_cast<FairMQMessageSHM*>(msgVec.back().get())->fReceiving = false;
-            static_cast<FairMQMessageSHM*>(msgVec.back().get())->fQueued = true;
-            size_t size = msgVec.back()->GetSize();
-
-            totalSize += size;
-            fBytesTx += size;
+            LOG(INFO) << "terminating socket " << fId;
+            return -1;
         }
         else
         {
-            if (zmq_errno() == EAGAIN)
-            {
-                return -2;
-            }
-            if (zmq_errno() == ETERM)
-            {
-                LOG(INFO) << "terminating socket " << fId;
-                return -1;
-            }
             LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
             return nbytes;
         }
+    }
 
-        // store statistics on how many messages have been sent (handle all parts as a single message)
-        ++fMessagesTx;
-        return totalSize;
-    } // If there's only one part, send it as a regular message
-    else if (msgVec.size() == 1)
+    return -1;
+}
+
+int FairMQSocketSHM::Receive(FairMQMessagePtr& msg, const int flags)
+{
+    int nbytes = -1;
+    zmq_msg_t* msgPtr = static_cast<zmq_msg_t*>(msg->GetMessage());
+    while (true)
     {
-        return Send(msgVec.back().get(), flags);
+        nbytes = zmq_msg_recv(msgPtr, fSocket, flags);
+        if (nbytes == 0)
+        {
+            ++fMessagesRx;
+
+            return nbytes;
+        }
+        else if (nbytes > 0)
+        {
+            // string ownerID(static_cast<char*>(zmq_msg_data(msgPtr)), zmq_msg_size(msgPtr));
+            // ShPtrOwner* owner = Manager::Instance().Segment()->find<ShPtrOwner>(ownerID.c_str()).first;
+            MetaHeader* hdr = static_cast<MetaHeader*>(zmq_msg_data(msgPtr));
+            size_t size = 0;
+            if (hdr->fHandle)
+            {
+                static_cast<FairMQMessageSHM*>(msg.get())->fHandle = hdr->fHandle;
+                static_cast<FairMQMessageSHM*>(msg.get())->fChunkSize = hdr->fSize;
+                // static_cast<FairMQMessageSHM*>(msg.get())->fOwner = owner;
+                // static_cast<FairMQMessageSHM*>(msg.get())->fReceiving = true;
+                size = msg->GetSize();
+
+                fBytesRx += size;
+                ++fMessagesRx;
+
+                return size;
+            }
+            else
+            {
+                LOG(ERROR) << "Received meta data, but could not find corresponding chunk";
+                return -1;
+            }
+        }
+        else if (zmq_errno() == EAGAIN)
+        {
+            if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
+            {
+                continue;
+            }
+            else
+            {
+                return -2;
+            }
+        }
+        else if (zmq_errno() == ETERM)
+        {
+            LOG(INFO) << "terminating socket " << fId;
+            return -1;
+        }
+        else
+        {
+            LOG(ERROR) << "Failed receiving on socket " << fId << ", reason: " << zmq_strerror(errno);
+            return nbytes;
+        }
+    }
+}
+
+int64_t FairMQSocketSHM::Send(vector<FairMQMessagePtr>& msgVec, const int flags)
+{
+    const unsigned int vecSize = msgVec.size();
+
+    // Sending vector typicaly handles more then one part
+    if (vecSize > 1)
+    {
+        int64_t totalSize = 0;
+        int nbytes = -1;
+        bool repeat = false;
+
+        while (true && !fInterrupted)
+        {
+            for (unsigned int i = 0; i < vecSize; ++i)
+            {
+                nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msgVec[i]->GetMessage()),
+                                      fSocket,
+                                      (i < vecSize - 1) ? ZMQ_SNDMORE|flags : flags);
+                if (nbytes >= 0)
+                {
+                    static_cast<FairMQMessageSHM*>(msgVec[i].get())->fQueued = true;
+                    // static_cast<FairMQMessageSHM*>(msgVec[i].get())->fReceiving = false;
+                    // static_cast<FairMQMessageSHM*>(msgVec[i].get())->fQueued = true;
+                    size_t size = msgVec[i]->GetSize();
+
+                    totalSize += size;
+                }
+                else
+                {
+                    // according to ZMQ docs, this can only occur for the first part
+                    if (zmq_errno() == EAGAIN)
+                    {
+                        if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
+                        {
+                            repeat = true;
+                            break;
+                        }
+                        else
+                        {
+                            return -2;
+                        }
+                    }
+                    if (zmq_errno() == ETERM)
+                    {
+                        LOG(INFO) << "terminating socket " << fId;
+                        return -1;
+                    }
+                    LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
+                    return nbytes;
+                }
+            }
+
+            if (repeat)
+            {
+                continue;
+            }
+
+            // store statistics on how many messages have been sent (handle all parts as a single message)
+            ++fMessagesTx;
+            fBytesTx += totalSize;
+            return totalSize;
+        }
+
+        return -1;
+    } // If there's only one part, send it as a regular message
+    else if (vecSize == 1)
+    {
+        return Send(msgVec.back(), flags);
     }
     else // if the vector is empty, something might be wrong
     {
@@ -226,112 +305,91 @@ int64_t FairMQSocketSHM::Send(const vector<FairMQMessagePtr>& msgVec, const int 
     }
 }
 
-int FairMQSocketSHM::Receive(FairMQMessage* msg, const string& flag)
-{
-    return Receive(msg, GetConstant(flag));
-}
-
-int FairMQSocketSHM::Receive(FairMQMessage* msg, const int flags)
-{
-    zmq_msg_t* msgPtr = static_cast<zmq_msg_t*>(msg->GetMessage());
-    int nbytes = zmq_msg_recv(msgPtr, fSocket, flags);
-    if (nbytes == 0)
-    {
-        ++fMessagesRx;
-        return nbytes;
-    }
-    else if (nbytes > 0)
-    {
-        string ownerID(static_cast<char*>(zmq_msg_data(msgPtr)), zmq_msg_size(msgPtr));
-        ShPtrOwner* owner = Manager::Instance().Segment()->find<ShPtrOwner>(ownerID.c_str()).first;
-        size_t size = 0;
-        if (owner)
-        {
-            static_cast<FairMQMessageSHM*>(msg)->fOwner = owner;
-            static_cast<FairMQMessageSHM*>(msg)->fReceiving = true;
-            size = msg->GetSize();
-
-            fBytesRx += size;
-            ++fMessagesRx;
-
-            return size;
-        }
-        else
-        {
-            LOG(ERROR) << "Received meta data, but could not find corresponding chunk";
-            return -1;
-        }
-    }
-    if (zmq_errno() == EAGAIN)
-    {
-        return -2;
-    }
-    if (zmq_errno() == ETERM)
-    {
-        LOG(INFO) << "terminating socket " << fId;
-        return -1;
-    }
-    LOG(ERROR) << "Failed receiving on socket " << fId << ", reason: " << zmq_strerror(errno);
-    return nbytes;
-}
-
 int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int flags)
 {
-    // Warn if the vector is filled before Receive() and empty it.
-    if (msgVec.size() > 0)
-    {
-        LOG(WARN) << "Message vector contains elements before Receive(), they will be deleted!";
-        msgVec.clear();
-    }
-
     int64_t totalSize = 0;
     int64_t more = 0;
+    bool repeat = false;
 
-    do
+    while (true)
     {
-        FairMQMessagePtr part(new FairMQMessageSHM());
-        zmq_msg_t* msgPtr = static_cast<zmq_msg_t*>(part->GetMessage());
-
-        int nbytes = zmq_msg_recv(msgPtr, fSocket, flags);
-        if (nbytes == 0)
+        // Warn if the vector is filled before Receive() and empty it.
+        if (msgVec.size() > 0)
         {
-            msgVec.push_back(move(part));
+            LOG(WARN) << "Message vector contains elements before Receive(), they will be deleted!";
+            msgVec.clear();
         }
-        else if (nbytes > 0)
+
+        totalSize = 0;
+        more = 0;
+        repeat = false;
+
+        do
         {
-            string ownerID(static_cast<char*>(zmq_msg_data(msgPtr)), zmq_msg_size(msgPtr));
-            ShPtrOwner* owner = Manager::Instance().Segment()->find<ShPtrOwner>(ownerID.c_str()).first;
-            size_t size = 0;
-            if (owner)
+            FairMQMessagePtr part(new FairMQMessageSHM());
+            zmq_msg_t* msgPtr = static_cast<zmq_msg_t*>(part->GetMessage());
+
+            int nbytes = zmq_msg_recv(msgPtr, fSocket, flags);
+            if (nbytes == 0)
             {
-                static_cast<FairMQMessageSHM*>(part.get())->fOwner = owner;
-                static_cast<FairMQMessageSHM*>(part.get())->fReceiving = true;
-                size = part->GetSize();
-
                 msgVec.push_back(move(part));
+            }
+            else if (nbytes > 0)
+            {
+                // string ownerID(static_cast<char*>(zmq_msg_data(msgPtr)), zmq_msg_size(msgPtr));
+                // ShPtrOwner* owner = Manager::Instance().Segment()->find<ShPtrOwner>(ownerID.c_str()).first;
+                MetaHeader* hdr = static_cast<MetaHeader*>(zmq_msg_data(msgPtr));
+                size_t size = 0;
+                if (hdr->fHandle)
+                {
+                    static_cast<FairMQMessageSHM*>(part.get())->fHandle = hdr->fHandle;
+                    static_cast<FairMQMessageSHM*>(part.get())->fChunkSize = hdr->fSize;
+                    // static_cast<FairMQMessageSHM*>(msg.get())->fOwner = owner;
+                    // static_cast<FairMQMessageSHM*>(msg.get())->fReceiving = true;
+                    size = part->GetSize();
 
-                fBytesRx += size;
-                totalSize += size;
+                    msgVec.push_back(move(part));
+
+                    totalSize += size;
+                }
+                else
+                {
+                    LOG(ERROR) << "Received meta data, but could not find corresponding chunk";
+                    return -1;
+                }
+            }
+            else if (zmq_errno() == EAGAIN)
+            {
+                if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
+                {
+                    repeat = true;
+                    break;
+                }
+                else
+                {
+                    return -2;
+                }
             }
             else
             {
-                LOG(ERROR) << "Received meta data, but could not find corresponding chunk";
-                return -1;
+                return nbytes;
             }
+
+            size_t more_size = sizeof(more);
+            zmq_getsockopt(fSocket, ZMQ_RCVMORE, &more, &more_size);
         }
-        else
+        while (more);
+
+        if (repeat)
         {
-            return nbytes;
+            continue;
         }
 
-        size_t more_size = sizeof(more);
-        zmq_getsockopt(fSocket, ZMQ_RCVMORE, &more, &more_size);
+        // store statistics on how many messages have been received (handle all parts as a single message)
+        ++fMessagesRx;
+        fBytesRx += totalSize;
+        return totalSize;
     }
-    while (more);
-
-    // store statistics on how many messages have been received (handle all parts as a single message)
-    ++fMessagesRx;
-    return totalSize;
 }
 
 void FairMQSocketSHM::Close()
@@ -362,11 +420,13 @@ void FairMQSocketSHM::Terminate()
 void FairMQSocketSHM::Interrupt()
 {
     FairMQMessageSHM::fInterrupted = true;
+    fInterrupted = true;
 }
 
 void FairMQSocketSHM::Resume()
 {
     FairMQMessageSHM::fInterrupted = false;
+    fInterrupted = false;
 }
 
 void* FairMQSocketSHM::GetSocket() const

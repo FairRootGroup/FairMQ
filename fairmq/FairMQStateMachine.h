@@ -99,7 +99,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
     }
 
     template <class Event, class FSM>
-    void on_exit(Event const&, FSM& fsm)
+    void on_exit(Event const&, FSM& /*fsm*/)
     {
         LOG(STATE) << "Exiting FairMQ state machine";
     }

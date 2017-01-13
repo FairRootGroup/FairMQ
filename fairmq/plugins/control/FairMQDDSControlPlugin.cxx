@@ -35,8 +35,8 @@ class FairMQControlPluginDDS
         return fInstance;
     }
 
-   static void ResetInstance()
-   {
+    static void ResetInstance()
+    {
         try
         {
             delete fInstance;
@@ -47,7 +47,7 @@ class FairMQControlPluginDDS
             LOG(ERROR) << "Error: " << e.what() << endl;
             return;
         }
-   }
+    }
 
     void Init(FairMQDevice& device)
     {

@@ -18,11 +18,13 @@
 
 using namespace std;
 
+static FairMQ::Transport gTransportType = FairMQ::Transport::ZMQ;
+
 FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ()
 {
     int major, minor, patch;
     zmq_version(&major, &minor, &patch);
-    LOG(DEBUG) << "Using ZeroMQ library, version: " << major << "." << minor << "." << patch;
+    LOG(DEBUG) << "Transport: Using ZeroMQ library, version: " << major << "." << minor << "." << patch;
 }
 
 FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage() const
@@ -58,4 +60,9 @@ FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const unordered_map<stri
 FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const
 {
     return unique_ptr<FairMQPoller>(new FairMQPollerZMQ(cmdSocket, dataSocket));
+}
+
+FairMQ::Transport FairMQTransportFactoryZMQ::GetType() const
+{
+    return gTransportType;
 }
