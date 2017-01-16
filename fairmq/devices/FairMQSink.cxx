@@ -28,7 +28,7 @@ FairMQSink::FairMQSink()
 
 void FairMQSink::InitTask()
 {
-    fNumMsgs = fConfig->GetValue<int>("num-msgs");
+    fNumMsgs = fConfig->GetValue<uint64_t>("num-msgs");
     fInChannelName = fConfig->GetValue<string>("in-channel");
 }
 

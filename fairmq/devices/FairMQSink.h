@@ -26,7 +26,7 @@ class FairMQSink : public FairMQDevice
     virtual ~FairMQSink();
 
   protected:
-    int fNumMsgs;
+    uint64_t fNumMsgs;
     std::string fInChannelName;
 
     virtual void Run();
