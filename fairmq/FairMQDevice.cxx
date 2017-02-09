@@ -320,8 +320,14 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
         ch.fSocket->SetOption("rcv-hwm", &(ch.fRcvBufSize), sizeof(ch.fRcvBufSize));
 
         // set kernel transmit size
-        ch.fSocket->SetOption("snd-size", &(ch.fSndKernelSize), sizeof(ch.fSndKernelSize));
-        ch.fSocket->SetOption("rcv-size", &(ch.fRcvKernelSize), sizeof(ch.fRcvKernelSize));
+        if (ch.fSndKernelSize != 0)
+        {
+            ch.fSocket->SetOption("snd-size", &(ch.fSndKernelSize), sizeof(ch.fSndKernelSize));
+        }
+        if (ch.fRcvKernelSize != 0)
+        {
+            ch.fSocket->SetOption("rcv-size", &(ch.fRcvKernelSize), sizeof(ch.fRcvKernelSize));
+        }
 
         // attach
         bool bind = (ch.fMethod == "bind");
