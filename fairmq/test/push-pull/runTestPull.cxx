@@ -26,20 +26,25 @@ int main(int argc, char** argv)
     testPull.CatchSignals();
 
     std::string transport;
-    if (argc != 2)
+    if ( (argc != 2) || (argv[1] == NULL) )
     {
         LOG(ERROR) << "Transport for the test not specified!";
         return 1;
     }
-    transport = argv[1];
 
-    if (transport == "zeromq" || transport == "nanomsg")
+    if ( strncmp(argv[1],"zeromq",6) == 0 )
     {
+        transport = "zeromq";
+        testPull.SetTransport(transport);
+    }
+    else if ( strncmp(argv[1],"nanomsg",7) == 0 )
+    {
+        transport = "nanomsg";
         testPull.SetTransport(transport);
     }
     else
     {
-        LOG(ERROR) << "Incorrect transport requested! Expected 'zeromq' or 'nanomsg', found: " << transport;
+        LOG(ERROR) << "Incorrect transport requested! Expected 'zeromq' or 'nanomsg', found: " << argv[1];
         return 1;
     }
 

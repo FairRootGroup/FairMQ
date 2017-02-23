@@ -32,15 +32,25 @@ int main(int argc, char** argv)
         LOG(ERROR) << "Transport for the test not specified!";
         return 1;
     }
-    transport = argv[1];
 
-    if (transport == "zeromq" || transport == "nanomsg")
+    if (argv[1] == NULL) {
+        LOG(ERROR) << "Transport for the test not specified!";
+        return 1;
+    }
+
+    if ( strncmp(argv[1],"zeromq",6) == 0 )
     {
+        transport = "zeromq";
+        testPush.SetTransport(transport);
+    }
+    else if ( strncmp(argv[1],"nanomsg",7) == 0 )
+    {
+        transport = "nanomsg";
         testPush.SetTransport(transport);
     }
     else
     {
-        LOG(ERROR) << "Incorrect transport requested! Expected 'zeromq' or 'nanomsg', found: " << transport;
+        LOG(ERROR) << "Incorrect transport requested! Expected 'zeromq' or 'nanomsg', found: " << argv[1];
         return 1;
     }
 
