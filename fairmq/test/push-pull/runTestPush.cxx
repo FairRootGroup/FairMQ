@@ -17,6 +17,9 @@
 
 int main(int argc, char** argv)
 {
+    reinit_logger(false);
+    SET_LOG_CONSOLE_LEVEL(WARN);
+
     FairMQTestPush testPush;
     testPush.CatchSignals();
 
@@ -37,9 +40,6 @@ int main(int argc, char** argv)
         LOG(ERROR) << "Incorrect transport requested! Expected 'zeromq' or 'nanomsg', found: " << transport;
         return 1;
     }
-
-    reinit_logger(false);
-    SET_LOG_CONSOLE_LEVEL(NOLOG);
 
     testPush.SetProperty(FairMQTestPush::Id, "testPush");
 

@@ -32,9 +32,9 @@
         DEBUG,
         RESULTS,
         INFO,
+        STATE,
         WARN,
         ERROR,
-        STATE,
         NOLOG
     };
 

@@ -31,9 +31,9 @@ enum severity_level
     DEBUG,
     RESULTS,
     INFO,
+    STATE,
     WARN,
     ERROR,
-    STATE,
     NOLOG
 };
 
@@ -44,9 +44,9 @@ static const std::array<std::string, 8> g_LogSeverityLevelString
         "DEBUG",
         "RESULTS",
         "INFO",
+        "STATE",
         "WARN",
         "ERROR",
-        "STATE",
         "NOLOG"
     }
 };

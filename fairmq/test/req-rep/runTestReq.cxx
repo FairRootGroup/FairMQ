@@ -19,6 +19,9 @@
 
 int main(int argc, char** argv)
 {
+    reinit_logger(false);
+    SET_LOG_CONSOLE_LEVEL(WARN);
+
     FairMQTestReq testReq;
     testReq.CatchSignals();
 
@@ -39,9 +42,6 @@ int main(int argc, char** argv)
         LOG(ERROR) << "Incorrect transport requested! Expected 'zeromq' or 'nanomsg', found: " << transport;
         return 1;
     }
-
-    reinit_logger(false);
-    SET_LOG_CONSOLE_LEVEL(NOLOG);
 
     testReq.SetProperty(FairMQTestReq::Id, "testReq" + std::to_string(getpid()));
 

@@ -17,6 +17,8 @@
 
 int main(int argc, char** argv)
 {
+    reinit_logger(false);
+
     FairMQTestPub testPub;
     testPub.CatchSignals();
 
@@ -37,8 +39,6 @@ int main(int argc, char** argv)
         LOG(ERROR) << "Incorrect transport requested! Expected 'zeromq' or 'nanomsg', found: " << transport;
         return 1;
     }
-
-    reinit_logger(false);
 
     testPub.SetProperty(FairMQTestPub::Id, "testPub");
 

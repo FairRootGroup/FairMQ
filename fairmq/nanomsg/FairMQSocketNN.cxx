@@ -212,8 +212,8 @@ int FairMQSocketNN::Receive(FairMQMessagePtr& msg, const int flags)
 
 int64_t FairMQSocketNN::Send(vector<unique_ptr<FairMQMessage>>& msgVec, const int flags)
 {
-#ifdef MSGPACK_FOUND
     const unsigned int vecSize = msgVec.size();
+#ifdef MSGPACK_FOUND
 
     // create msgpack simple buffer
     msgpack::sbuffer sbuf;
