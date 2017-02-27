@@ -12,10 +12,12 @@
  * @author A. Rybalchenko
  */
 
-#include <iostream>
-
 #include "FairMQLogger.h"
 #include "FairMQTestRep.h"
+
+#include <iostream>
+#include <chrono>
+#include <thread>
 
 int main(int argc, char** argv)
 {
@@ -60,6 +62,12 @@ int main(int argc, char** argv)
 
     testRep.ChangeState("RUN");
     testRep.WaitForEndOfState("RUN");
+
+    // nanomsg does not implement the LINGER option. Give the sockets some time before their queues are terminated
+    if (transport == "nanomsg")
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 
     testRep.ChangeState("RESET_TASK");
     testRep.WaitForEndOfState("RESET_TASK");

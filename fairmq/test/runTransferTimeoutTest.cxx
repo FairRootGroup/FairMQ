@@ -15,6 +15,9 @@
 #include "FairMQLogger.h"
 #include "FairMQDevice.h"
 
+#include <chrono>
+#include <thread>
+
 class TransferTimeoutTester : public FairMQDevice
 {
   public:
@@ -110,22 +113,28 @@ int main(int argc, char** argv)
     dataInChannel.UpdateRateLogging(0);
     timeoutTester.fChannels["data-in"].push_back(dataInChannel);
 
-    timeoutTester.ChangeState(TransferTimeoutTester::INIT_DEVICE);
-    timeoutTester.WaitForEndOfState(TransferTimeoutTester::INIT_DEVICE);
+    timeoutTester.ChangeState("INIT_DEVICE");
+    timeoutTester.WaitForEndOfState("INIT_DEVICE");
 
-    timeoutTester.ChangeState(TransferTimeoutTester::INIT_TASK);
-    timeoutTester.WaitForEndOfState(TransferTimeoutTester::INIT_TASK);
+    timeoutTester.ChangeState("INIT_TASK");
+    timeoutTester.WaitForEndOfState("INIT_TASK");
 
-    timeoutTester.ChangeState(TransferTimeoutTester::RUN);
-    timeoutTester.WaitForEndOfState(TransferTimeoutTester::RUN);
+    timeoutTester.ChangeState("RUN");
+    timeoutTester.WaitForEndOfState("RUN");
 
-    timeoutTester.ChangeState(TransferTimeoutTester::RESET_TASK);
-    timeoutTester.WaitForEndOfState(TransferTimeoutTester::RESET_TASK);
+    // nanomsg does not implement the LINGER option. Give the sockets some time before their queues are terminated
+    if (transport == "nanomsg")
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 
-    timeoutTester.ChangeState(TransferTimeoutTester::RESET_DEVICE);
-    timeoutTester.WaitForEndOfState(TransferTimeoutTester::RESET_DEVICE);
+    timeoutTester.ChangeState("RESET_TASK");
+    timeoutTester.WaitForEndOfState("RESET_TASK");
 
-    timeoutTester.ChangeState(TransferTimeoutTester::END);
+    timeoutTester.ChangeState("RESET_DEVICE");
+    timeoutTester.WaitForEndOfState("RESET_DEVICE");
+
+    timeoutTester.ChangeState("END");
 
     return 0;
 }
