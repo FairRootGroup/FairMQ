@@ -84,6 +84,10 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
         if (!ldControlHandle)
         {
             LOG(ERROR) << "Cannot open library: " << dlerror();
+            if (ldConfigHandle)
+            {
+                dlclose(ldConfigHandle);
+            }
             return 1;
         }
 
