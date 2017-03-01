@@ -12,8 +12,6 @@
  * @author A. Rybalchenko
  */
 
-#include <memory> // unique_ptr
-
 #include "FairMQTestPub.h"
 #include "FairMQLogger.h"
 
@@ -23,25 +21,37 @@ FairMQTestPub::FairMQTestPub()
 
 void FairMQTestPub::Run()
 {
-    std::unique_ptr<FairMQMessage> ready1Msg(NewMessage());
-    int r1 = Receive(ready1Msg, "control");
-    std::unique_ptr<FairMQMessage> ready2Msg(NewMessage());
-    int r2 = Receive(ready2Msg, "control");
-
+    FairMQMessagePtr ready1(NewMessage());
+    FairMQMessagePtr ready2(NewMessage());
+    int r1 = Receive(ready1, "control");
+    int r2 = Receive(ready2, "control");
     if (r1 >= 0 && r2 >= 0)
     {
-        std::unique_ptr<FairMQMessage> msg(NewMessage());
-        Send(msg, "data");
+        LOG(INFO) << "Received both ready signals, proceeding to publish data";
 
-        std::unique_ptr<FairMQMessage> ack1Msg(NewMessage());
-        std::unique_ptr<FairMQMessage> ack2Msg(NewMessage());
-        if (Receive(ack1Msg, "control") >= 0)
+        FairMQMessagePtr msg(NewMessage());
+        int d1 = Send(msg, "data");
+        if (d1 < 0)
         {
-            if (Receive(ack2Msg, "control") >= 0)
-            {
-                LOG(INFO) << "PUB-SUB test successfull";
-            }
+            LOG(ERROR) << "Failed sending data: d1 = " << d1;
         }
+
+        FairMQMessagePtr ack1(NewMessage());
+        FairMQMessagePtr ack2(NewMessage());
+        int a1 = Receive(ack1, "control");
+        int a2 = Receive(ack2, "control");
+        if (a1 >= 0 && a2 >= 0)
+        {
+            LOG(INFO) << "PUB-SUB test successfull";
+        }
+        else
+        {
+            LOG(ERROR) << "Failed receiving ack signal: a1 = " << a1 << ", a2 = " << a2;
+        }
+    }
+    else
+    {
+        LOG(ERROR) << "Failed receiving ready signal: r1 = " << r1 << ", r2 = " << r2;
     }
 }
 

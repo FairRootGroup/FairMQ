@@ -12,8 +12,6 @@
  * @author A. Rybalchenko
  */
 
-#include <memory> // unique_ptr
-
 #include "FairMQTestPull.h"
 #include "FairMQLogger.h"
 
@@ -23,7 +21,7 @@ FairMQTestPull::FairMQTestPull()
 
 void FairMQTestPull::Run()
 {
-    std::unique_ptr<FairMQMessage> msg(NewMessage());
+    FairMQMessagePtr msg(NewMessage());
 
     if (Receive(msg, "data") >= 0)
     {

@@ -12,8 +12,6 @@
  * @author A. Rybalchenko
  */
 
-#include <memory> // unique_ptr
-
 #include "FairMQTestRep.h"
 #include "FairMQLogger.h"
 
@@ -23,18 +21,18 @@ FairMQTestRep::FairMQTestRep()
 
 void FairMQTestRep::Run()
 {
-    std::unique_ptr<FairMQMessage> request1(NewMessage());
+    FairMQMessagePtr request1(NewMessage());
     if (Receive(request1, "data") >= 0)
     {
         LOG(INFO) << "Received request 1";
-        std::unique_ptr<FairMQMessage> reply(NewMessage());
+        FairMQMessagePtr reply(NewMessage());
         Send(reply, "data");
     }
-    std::unique_ptr<FairMQMessage> request2(NewMessage());
+    FairMQMessagePtr request2(NewMessage());
     if (Receive(request2, "data") >= 0)
     {
         LOG(INFO) << "Received request 2";
-        std::unique_ptr<FairMQMessage> reply(NewMessage());
+        FairMQMessagePtr reply(NewMessage());
         Send(reply, "data");
     }
 

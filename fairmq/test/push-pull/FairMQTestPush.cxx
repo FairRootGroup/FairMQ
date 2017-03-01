@@ -12,8 +12,6 @@
  * @author A. Rybalchenko
  */
 
-#include <memory> // unique_ptr
-
 #include "FairMQTestPush.h"
 #include "FairMQLogger.h"
 
@@ -23,7 +21,7 @@ FairMQTestPush::FairMQTestPush()
 
 void FairMQTestPush::Run()
 {
-    std::unique_ptr<FairMQMessage> msg(NewMessage());
+    FairMQMessagePtr msg(NewMessage());
     Send(msg, "data");
 }
 

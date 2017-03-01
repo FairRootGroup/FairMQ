@@ -12,8 +12,6 @@
  * @author A. Rybalchenko
  */
 
-#include <memory> // unique_ptr
-
 #include "FairMQTestSub.h"
 #include "FairMQLogger.h"
 
@@ -23,18 +21,29 @@ FairMQTestSub::FairMQTestSub()
 
 void FairMQTestSub::Run()
 {
-    std::unique_ptr<FairMQMessage> readyMsg(NewMessage());
-    Send(readyMsg, "control");
-
-    std::unique_ptr<FairMQMessage> msg(NewMessage());
-    if (Receive(msg, "data") >= 0)
+    FairMQMessagePtr ready(NewMessage());
+    int r1 = Send(ready, "control");
+    if (r1 >= 0)
     {
-        std::unique_ptr<FairMQMessage> ackMsg(NewMessage());
-        Send(ackMsg, "control");
+        FairMQMessagePtr msg(NewMessage());
+        int d1 = Receive(msg, "data");
+        if (d1 >= 0)
+        {
+            FairMQMessagePtr ack(NewMessage());
+            int a1 = Send(ack, "control");
+            if (a1 < 0)
+            {
+                LOG(ERROR) << "Failed sending ack signal: a1 = " << a1;
+            }
+        }
+        else
+        {
+            LOG(ERROR) << "Failed receiving data: d1 = " << d1;
+        }
     }
     else
     {
-        LOG(ERROR) << "Test failed: size of the received message doesn't match. Expected: 0, Received: " << msg->GetSize();
+        LOG(ERROR) << "Failed sending ready signal: r1 = " << r1;
     }
 }
 
