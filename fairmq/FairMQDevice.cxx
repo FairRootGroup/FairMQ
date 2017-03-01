@@ -185,9 +185,14 @@ void FairMQDevice::InitWrapper()
 
             if (vi->fMethod == "bind")
             {
-                // if binding address is not specified, set it up to try getting it from the configured network interface
+                // if binding address is not specified, try getting it from the configured network interface
                 if (vi->fAddress == "unspecified" || vi->fAddress == "")
                 {
+                    // if the configured network interface is default, get its name from the default route
+                    if (fNetworkInterface == "default")
+                    {
+                        fNetworkInterface = FairMQ::tools::getDefaultRouteNetworkInterface();
+                    }
                     vi->fAddress = "tcp://" + FairMQ::tools::getInterfaceIP(fNetworkInterface) + ":1";
                 }
                 // fill the uninitialized list

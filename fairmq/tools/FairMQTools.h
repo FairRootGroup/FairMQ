@@ -5,16 +5,21 @@
 #define _GNU_SOURCE // To get defns of NI_MAXSERV and NI_MAXHOST
 #endif
 
+#include "FairMQLogger.h"
+
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netdb.h>
 #include <ifaddrs.h>
 #include <stdio.h>
 
+#include <boost/algorithm/string.hpp> // trim
+
 #include <map>
 #include <string>
 #include <iostream>
 #include <type_traits>
+#include <array>
 
 using namespace std;
 
@@ -23,12 +28,14 @@ namespace FairMQ
 namespace tools
 {
 
+// make_unique implementation, until C++14 is default
 template<typename T, typename ...Args>
 unique_ptr<T> make_unique(Args&& ...args)
 {
     return unique_ptr<T>(new T(forward<Args>(args)...));
 }
 
+// returns a map with network interface names as keys and their IP addresses as values
 int getHostIPs(map<string, string>& addressMap)
 {
     struct ifaddrs *ifaddr, *ifa;
@@ -65,6 +72,7 @@ int getHostIPs(map<string, string>& addressMap)
     return 0;
 }
 
+// get IP address of a given interface name
 string getInterfaceIP(string interface)
 {
     map<string, string> IPs;
@@ -76,8 +84,48 @@ string getInterfaceIP(string interface)
     else
     {
         LOG(ERROR) << "Could not find provided network interface: \"" << interface << "\"!, exiting.";
-        exit(EXIT_FAILURE);
+        return "";
     }
+}
+
+// get name of the default route interface
+string getDefaultRouteNetworkInterface()
+{
+    array<char, 128> buffer;
+    string interfaceName;
+
+#ifdef __APPLE__ // MacOS
+    unique_ptr<FILE, decltype(pclose) *> file(popen("route -n get default | grep interface | cut -d \":\" -f 2", "r"), pclose);
+#else // Linux
+    unique_ptr<FILE, decltype(pclose) *> file(popen("ip route | grep default | cut -d \" \" -f 5", "r"), pclose);
+#endif
+
+    if (!file)
+    {
+        LOG(ERROR) << "Could not detect default route network interface name - popen() failed!";
+        return "";
+    }
+
+    while (!feof(file.get()))
+    {
+        if (fgets(buffer.data(), 128, file.get()) != NULL)
+        {
+            interfaceName += buffer.data();
+        }
+    }
+
+    boost::algorithm::trim(interfaceName);
+
+    if (interfaceName == "")
+    {
+        LOG(ERROR) << "Could not detect default route network interface name";
+    }
+    else
+    {
+        LOG(DEBUG) << "Detected network interface name for the default route: " << interfaceName;
+    }
+
+    return interfaceName;
 }
 
 #if defined(__GNUC__) || defined(__GNUG__)
