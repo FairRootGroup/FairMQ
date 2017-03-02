@@ -342,6 +342,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     void SetTransport(const std::string& transport = "zeromq");
 
     void SetConfig(FairMQProgOptions& config);
+    const FairMQProgOptions* GetConfig() const {return fConfig;}
 
     /// Implements the sort algorithm used in SortChannel()
     /// @param lhs Right hand side value for comparison
