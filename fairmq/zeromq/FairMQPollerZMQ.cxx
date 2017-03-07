@@ -29,13 +29,13 @@ FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQChannel>& channels)
 
     for (int i = 0; i < fNumItems; ++i)
     {
-        items[i].socket = channels.at(i).fSocket->GetSocket();
+        items[i].socket = channels.at(i).GetSocket().GetSocket();
         items[i].fd = 0;
         items[i].revents = 0;
 
         int type = 0;
         size_t size = sizeof(type);
-        zmq_getsockopt (channels.at(i).fSocket->GetSocket(), ZMQ_TYPE, &type, &size);
+        zmq_getsockopt(channels.at(i).GetSocket().GetSocket(), ZMQ_TYPE, &type, &size);
 
         if (type == ZMQ_REQ || type == ZMQ_REP || type == ZMQ_PAIR || type == ZMQ_DEALER || type == ZMQ_ROUTER)
         {
@@ -83,13 +83,13 @@ FairMQPollerZMQ::FairMQPollerZMQ(const unordered_map<string, vector<FairMQChanne
             {
                 index = fOffsetMap[channel] + i;
 
-                items[index].socket = channelsMap.at(channel).at(i).fSocket->GetSocket();
+                items[index].socket = channelsMap.at(channel).at(i).GetSocket().GetSocket();
                 items[index].fd = 0;
                 items[index].revents = 0;
 
                 int type = 0;
                 size_t size = sizeof(type);
-                zmq_getsockopt (channelsMap.at(channel).at(i).fSocket->GetSocket(), ZMQ_TYPE, &type, &size);
+                zmq_getsockopt(channelsMap.at(channel).at(i).GetSocket().GetSocket(), ZMQ_TYPE, &type, &size);
 
                 if (type == ZMQ_REQ || type == ZMQ_REP || type == ZMQ_PAIR || type == ZMQ_DEALER || type == ZMQ_ROUTER)
                 {

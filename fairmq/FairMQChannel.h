@@ -53,6 +53,8 @@ class FairMQChannel
     /// Default destructor
     virtual ~FairMQChannel();
 
+    FairMQSocket const & GetSocket() const;
+
     /// Get channel name
     /// @return Returns full channel name (e.g. "data[0]")
     std::string GetChannelName() const;
@@ -144,8 +146,6 @@ class FairMQChannel
     /// Resets the channel (requires validation to be used again).
     void ResetChannel();
 
-    std::unique_ptr<FairMQSocket> fSocket;
-
     int Send(std::unique_ptr<FairMQMessage>& msg) const;
     int Receive(std::unique_ptr<FairMQMessage>& msg) const;
 
@@ -221,9 +221,16 @@ class FairMQChannel
     // TODO: this might go to some base utility library
     static void Tokenize(std::vector<std::string>& output, const std::string& input, const std::string delimiters = ",");
 
+    unsigned long GetBytesTx() const;
+    unsigned long GetBytesRx() const;
+    unsigned long GetMessagesTx() const;
+    unsigned long GetMessagesRx() const;
+
     FairMQTransportFactory* Transport();
 
   private:
+    std::unique_ptr<FairMQSocket> fSocket;
+
     std::string fType;
     std::string fMethod;
     std::string fAddress;

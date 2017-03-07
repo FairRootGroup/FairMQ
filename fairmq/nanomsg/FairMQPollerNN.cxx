@@ -33,11 +33,11 @@ FairMQPollerNN::FairMQPollerNN(const vector<FairMQChannel>& channels)
 
     for (int i = 0; i < fNumItems; ++i)
     {
-        items[i].fd = channels.at(i).fSocket->GetSocket(1);
+        items[i].fd = channels.at(i).GetSocket().GetSocket(1);
 
         int type = 0;
         size_t sz = sizeof(type);
-        nn_getsockopt(channels.at(i).fSocket->GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
+        nn_getsockopt(channels.at(i).GetSocket().GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
 
         if (type == NN_REQ || type == NN_REP || type == NN_PAIR)
         {
@@ -84,11 +84,11 @@ FairMQPollerNN::FairMQPollerNN(const unordered_map<string, vector<FairMQChannel>
             for (unsigned int i = 0; i < channelsMap.at(channel).size(); ++i)
             {
                 index = fOffsetMap[channel] + i;
-                items[index].fd = channelsMap.at(channel).at(i).fSocket->GetSocket(1);
+                items[index].fd = channelsMap.at(channel).at(i).GetSocket().GetSocket(1);
 
                 int type = 0;
                 size_t sz = sizeof(type);
-                nn_getsockopt(channelsMap.at(channel).at(i).fSocket->GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
+                nn_getsockopt(channelsMap.at(channel).at(i).GetSocket().GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
 
                 if (type == NN_REQ || type == NN_REP || type == NN_PAIR)
                 {

@@ -117,6 +117,12 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     return *this;
 }
 
+FairMQSocket const & FairMQChannel::GetSocket() const
+{
+    assert(fSocket);
+    return *fSocket;
+}
+
 string FairMQChannel::GetChannelName() const
 {
     return fName;
@@ -757,6 +763,27 @@ void FairMQChannel::Tokenize(vector<string>& output, const string& input, const 
 {
     boost::algorithm::split(output, input, boost::algorithm::is_any_of(delimiters));
 }
+
+unsigned long FairMQChannel::GetBytesTx() const
+{
+    return fSocket->GetBytesTx();
+}
+
+unsigned long FairMQChannel::GetBytesRx() const
+{
+    return fSocket->GetBytesRx();
+}
+
+unsigned long FairMQChannel::GetMessagesTx() const
+{
+    return fSocket->GetMessagesTx();
+}
+
+unsigned long FairMQChannel::GetMessagesRx() const
+{
+    return fSocket->GetMessagesRx();
+}
+
 
 FairMQTransportFactory* FairMQChannel::Transport()
 {
