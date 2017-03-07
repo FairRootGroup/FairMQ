@@ -53,12 +53,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     enum
     {
         Id = FairMQConfigurable::Last, ///< Device ID
-        MaxInitializationAttempts, ///< Timeout for the initialization
         NumIoThreads, ///< Number of ZeroMQ I/O threads
-        PortRangeMin, ///< Minimum value for the port range (if dynamic)
-        PortRangeMax, ///< Maximum value for the port range (if dynamic)
-        LogIntervalInMs, ///< Interval for logging the socket transfer rates
-        NetworkInterface, ///< Network interface to use for dynamic binding
         Last
     };
 
@@ -393,14 +388,12 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     std::string fNetworkInterface; ///< Network interface to use for dynamic binding
     std::string fDefaultTransport; ///< Default transport for the device
 
-    int fMaxInitializationAttempts; ///< Timeout for the initialization
+    int fInitializationTimeoutInS; ///< Timeout for the initialization (in seconds)
 
     int fNumIoThreads; ///< Number of ZeroMQ I/O threads
 
     int fPortRangeMin; ///< Minimum value for the port range (if dynamic)
     int fPortRangeMax; ///< Maximum value for the port range (if dynamic)
-
-    int fLogIntervalInMs; ///< Interval for logging the socket transfer rates
 
     std::shared_ptr<FairMQTransportFactory> fTransportFactory; ///< Transport factory
     std::unordered_map<FairMQ::Transport, std::shared_ptr<FairMQTransportFactory>> fTransports; ///< Container for transports

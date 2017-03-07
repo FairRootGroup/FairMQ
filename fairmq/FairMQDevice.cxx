@@ -54,11 +54,10 @@ FairMQDevice::FairMQDevice()
     , fId()
     , fNetworkInterface()
     , fDefaultTransport()
-    , fMaxInitializationAttempts(120)
+    , fInitializationTimeoutInS(120)
     , fNumIoThreads(1)
     , fPortRangeMin(22000)
     , fPortRangeMax(32000)
-    , fLogIntervalInMs(1000)
     , fTransportFactory(nullptr)
     , fTransports()
     , fDeviceCmdSockets()
@@ -231,9 +230,9 @@ void FairMQDevice::InitWrapper()
     while (!uninitializedConnectingChannels.empty())
     {
         AttachChannels(uninitializedConnectingChannels);
-        if (++numAttempts > fMaxInitializationAttempts)
+        if (++numAttempts > fInitializationTimeoutInS)
         {
-            LOG(ERROR) << "could not connect all channels after " << fMaxInitializationAttempts << " attempts";
+            LOG(ERROR) << "could not connect all channels after " << fInitializationTimeoutInS << " attempts";
             // TODO: goto ERROR state;
             exit(EXIT_FAILURE);
         }
@@ -764,9 +763,6 @@ void FairMQDevice::SetProperty(const int key, const string& value)
         case Id:
             fId = value;
             break;
-        case NetworkInterface:
-            fNetworkInterface = value;
-            break;
         default:
             FairMQConfigurable::SetProperty(key, value);
             break;
@@ -781,18 +777,6 @@ void FairMQDevice::SetProperty(const int key, const int value)
         case NumIoThreads:
             fNumIoThreads = value;
             break;
-        case MaxInitializationAttempts:
-            fMaxInitializationAttempts = value;
-            break;
-        case PortRangeMin:
-            fPortRangeMin = value;
-            break;
-        case PortRangeMax:
-            fPortRangeMax = value;
-            break;
-        case LogIntervalInMs:
-            fLogIntervalInMs = value;
-            break;
         default:
             FairMQConfigurable::SetProperty(key, value);
             break;
@@ -806,8 +790,6 @@ string FairMQDevice::GetProperty(const int key, const string& default_ /*= ""*/)
     {
         case Id:
             return fId;
-        case NetworkInterface:
-            return fNetworkInterface;
         default:
             return FairMQConfigurable::GetProperty(key, default_);
     }
@@ -821,16 +803,6 @@ string FairMQDevice::GetPropertyDescription(const int key)
             return "Id: Device ID";
         case NumIoThreads:
             return "NumIoThreads: Number of I/O Threads (size of the 0MQ thread pool to handle I/O operations. If your application is using only the inproc transport for messaging you may set this to zero, otherwise set it to at least one.)";
-        case MaxInitializationAttempts:
-            return "MaxInitializationAttempts: Maximum number of validation and initialization attempts of the channels.";
-        case PortRangeMin:
-            return "PortRangeMin: Minumum value for the port range (when binding to dynamic port).";
-        case PortRangeMax:
-            return "PortRangeMax: Maximum value for the port range (when binding to dynamic port).";
-        case LogIntervalInMs:
-            return "LogIntervalInMs: Time between socket rates logging outputs.";
-        case NetworkInterface:
-            return "NetworkInterface: Network interface to use for dynamic binding.";
         default:
             return FairMQConfigurable::GetPropertyDescription(key);
     }
@@ -853,14 +825,6 @@ int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/)
     {
         case NumIoThreads:
             return fNumIoThreads;
-        case MaxInitializationAttempts:
-            return fMaxInitializationAttempts;
-        case PortRangeMin:
-            return fPortRangeMin;
-        case PortRangeMax:
-            return fPortRangeMax;
-        case LogIntervalInMs:
-            return fLogIntervalInMs;
         default:
             return FairMQConfigurable::GetProperty(key, default_);
     }
@@ -969,6 +933,7 @@ void FairMQDevice::SetConfig(FairMQProgOptions& config)
     fId = config.GetValue<string>("id");
     fNetworkInterface = config.GetValue<string>("network-interface");
     fNumIoThreads = config.GetValue<int>("io-threads");
+    fInitializationTimeoutInS = config.GetValue<int>("initialization-timeout");
 }
 
 void FairMQDevice::LogSocketRates()
