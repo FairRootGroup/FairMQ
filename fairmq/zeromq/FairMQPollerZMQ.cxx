@@ -234,8 +234,5 @@ bool FairMQPollerZMQ::CheckOutput(const string channelKey, const int index)
 
 FairMQPollerZMQ::~FairMQPollerZMQ()
 {
-    if (items != NULL)
-    {
-        delete[] items;
-    }
+    delete[] items;
 }
