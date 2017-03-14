@@ -16,7 +16,7 @@
 
 using namespace std;
 
-static FairMQ::Transport gTransportType = FairMQ::Transport::NN;
+FairMQ::Transport FairMQTransportFactoryNN::fTransportType = FairMQ::Transport::NN;
 
 FairMQTransportFactoryNN::FairMQTransportFactoryNN()
 {
@@ -60,5 +60,5 @@ FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const FairMQSocket& cmdSo
 
 FairMQ::Transport FairMQTransportFactoryNN::GetType() const
 {
-    return gTransportType;
+    return fTransportType;
 }

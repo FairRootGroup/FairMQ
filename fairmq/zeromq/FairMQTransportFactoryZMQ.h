@@ -42,6 +42,9 @@ class FairMQTransportFactoryZMQ : public FairMQTransportFactory
     virtual FairMQ::Transport GetType() const;
 
     virtual ~FairMQTransportFactoryZMQ() {};
+
+  private:
+    static FairMQ::Transport fTransportType;
 };
 
 #endif /* FAIRMQTRANSPORTFACTORYZMQ_H_ */

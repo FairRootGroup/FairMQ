@@ -35,6 +35,9 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
     virtual FairMQ::Transport GetType() const;
 
     virtual ~FairMQTransportFactorySHM() {};
+
+  private:
+    static FairMQ::Transport fTransportType;
 };
 
 #endif /* FAIRMQTRANSPORTFACTORYSHM_H_ */

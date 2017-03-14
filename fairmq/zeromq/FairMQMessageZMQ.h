@@ -52,6 +52,7 @@ class FairMQMessageZMQ : public FairMQMessage
   private:
     zmq_msg_t fMessage;
     static std::string fDeviceID;
+    static FairMQ::Transport fTransportType;
 };
 
 #endif /* FAIRMQMESSAGEZMQ_H_ */

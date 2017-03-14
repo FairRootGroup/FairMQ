@@ -14,11 +14,10 @@
 using namespace std;
 using namespace FairMQ::shmem;
 
-static FairMQ::Transport gTransportType = FairMQ::Transport::SHM;
-
 // uint64_t FairMQMessageSHM::fMessageID = 0;
 // string FairMQMessageSHM::fDeviceID = string();
 atomic<bool> FairMQMessageSHM::fInterrupted(false);
+FairMQ::Transport FairMQMessageSHM::fTransportType = FairMQ::Transport::SHM;
 
 FairMQMessageSHM::FairMQMessageSHM()
     : fMessage()
@@ -234,7 +233,7 @@ void FairMQMessageSHM::SetDeviceId(const string& /*deviceId*/)
 
 FairMQ::Transport FairMQMessageSHM::GetType() const
 {
-    return gTransportType;
+    return fTransportType;
 }
 
 void FairMQMessageSHM::Copy(const unique_ptr<FairMQMessage>& msg)

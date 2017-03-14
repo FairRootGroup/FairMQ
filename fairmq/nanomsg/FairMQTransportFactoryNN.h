@@ -41,6 +41,9 @@ class FairMQTransportFactoryNN : public FairMQTransportFactory
     virtual FairMQ::Transport GetType() const;
 
     virtual ~FairMQTransportFactoryNN() {};
+
+  private:
+    static FairMQ::Transport fTransportType;
 };
 
 #endif /* FAIRMQTRANSPORTFACTORYNN_H_ */

@@ -61,6 +61,7 @@ class FairMQMessageSHM : public FairMQMessage
     bool fQueued;
     bool fMetaCreated;
     static std::atomic<bool> fInterrupted;
+    static FairMQ::Transport fTransportType;
     bipc::managed_shared_memory::handle_t fHandle;
     size_t fChunkSize;
     void* fLocalPtr;

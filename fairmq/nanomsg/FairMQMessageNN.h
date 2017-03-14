@@ -54,6 +54,7 @@ class FairMQMessageNN : public FairMQMessage
     size_t fSize;
     bool fReceiving;
     static std::string fDeviceID;
+    static FairMQ::Transport fTransportType;
 
     void Clear();
 };
