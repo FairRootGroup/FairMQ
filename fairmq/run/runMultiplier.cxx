@@ -6,8 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "runFairMQDevice.h"
-#include "FairMQMultiplier.h"
+#include <runFairMQDevice.h>
+#include <devices/FairMQMultiplier.h>
 
 namespace bpo = boost::program_options;
 

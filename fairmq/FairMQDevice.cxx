@@ -30,13 +30,13 @@
 #include "FairMQSocket.h"
 #include "FairMQDevice.h"
 #include "FairMQLogger.h"
-#include "FairMQTools.h"
+#include "tools/FairMQTools.h"
 
-#include "FairMQProgOptions.h"
-#include "FairMQTransportFactoryZMQ.h"
-#include "FairMQTransportFactorySHM.h"
+#include "options/FairMQProgOptions.h"
+#include "zeromq/FairMQTransportFactoryZMQ.h"
+#include "shmem/FairMQTransportFactorySHM.h"
 #ifdef NANOMSG_FOUND
-#include "FairMQTransportFactoryNN.h"
+#include "nanomsg/FairMQTransportFactoryNN.h"
 #endif
 
 using namespace std;

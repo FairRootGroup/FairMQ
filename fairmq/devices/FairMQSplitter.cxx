@@ -12,9 +12,10 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include "FairMQLogger.h"
 #include "FairMQSplitter.h"
-#include "FairMQProgOptions.h"
+
+#include "../FairMQLogger.h"
+#include "../options/FairMQProgOptions.h"
 
 using namespace std;
 

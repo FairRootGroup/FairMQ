@@ -12,11 +12,12 @@
  * @author D. Klein, A. Rybalchenko
  */
 
+#include "FairMQSink.h"
+
 #include <chrono>
 
-#include "FairMQSink.h"
-#include "FairMQLogger.h"
-#include "FairMQProgOptions.h"
+#include "../FairMQLogger.h"
+#include "../options/FairMQProgOptions.h"
 
 using namespace std;
 

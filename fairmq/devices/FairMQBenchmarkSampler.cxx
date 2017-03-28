@@ -12,13 +12,14 @@
  * @author D. Klein, A. Rybalchenko
  */
 
+#include "FairMQBenchmarkSampler.h"
+
 #include <vector>
 #include <chrono>
 #include <thread>
 
-#include "FairMQBenchmarkSampler.h"
-#include "FairMQLogger.h"
-#include "FairMQProgOptions.h"
+#include "../FairMQLogger.h"
+#include "../options/FairMQProgOptions.h"
 
 using namespace std;
 

@@ -48,11 +48,11 @@ FairMQContextSHM::~FairMQContextSHM()
 
     if (boost::interprocess::shared_memory_object::remove("FairMQSharedMemory"))
     {
-        printf("Successfully removed shared memory after the device has stopped.\n");
+        fprintf(stderr, "Successfully removed shared memory after the device has stopped.\n");
     }
     else
     {
-        printf("Did not remove shared memory after the device stopped. Already removed?\n");
+        fprintf(stderr, "Did not remove shared memory after the device stopped. Already removed?\n");
     }
 }
 

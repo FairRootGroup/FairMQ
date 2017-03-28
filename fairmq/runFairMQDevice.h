@@ -9,9 +9,9 @@
 #include <boost/program_options.hpp>
 
 #include "FairMQLogger.h"
-#include "FairMQProgOptions.h"
+#include "options/FairMQProgOptions.h"
 #include "FairMQDevice.h"
-#include "runSimpleMQStateMachine.h"
+#include "tools/runSimpleMQStateMachine.h"
 
 template <typename R>
 class GenericFairMQDevice : public FairMQDevice

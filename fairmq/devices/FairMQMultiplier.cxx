@@ -6,9 +6,10 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "FairMQLogger.h"
 #include "FairMQMultiplier.h"
-#include "FairMQProgOptions.h"
+
+#include "../FairMQLogger.h"
+#include "../options/FairMQProgOptions.h"
 
 using namespace std;
 

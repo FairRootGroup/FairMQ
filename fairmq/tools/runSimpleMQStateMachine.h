@@ -11,8 +11,8 @@
 #include "FairMQLogger.h"
 #include "FairMQConfigPlugin.h"
 #include "FairMQControlPlugin.h"
-#include "FairMQParser.h"
-#include "FairMQProgOptions.h"
+#include "options/FairMQParser.h"
+#include "options/FairMQProgOptions.h"
 
 #include <iostream>
 #include <string>
