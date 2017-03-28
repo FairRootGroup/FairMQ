@@ -1,0 +1,66 @@
+/********************************************************************************
+ *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ *                                                                              *
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
+ *                  copied verbatim in the file "LICENSE"                       *
+ ********************************************************************************/
+/**
+ * @file fairmq/test/protocols/runner.cxx.in
+ */
+
+#include "runner.h"
+#include <gtest/gtest.h>
+#include <sstream>
+#include <string>
+#include <pstream.h> // redi::ipstream
+#include <iostream>
+
+namespace fair
+{
+namespace mq
+{
+namespace test
+{
+
+using namespace std;
+
+string runTestDevice = "@RUN_TEST_DEVICE@";
+string mqConfig = "@MQ_CONFIG@";
+
+auto execute(string cmd, string log_prefix) -> execute_result
+{
+    auto res = execute_result{"", 0};
+    stringstream out;
+
+    // Log cmd
+    out << log_prefix << cmd << endl;
+
+    // Execute command and capture stderr, add log_prefix line by line
+    redi::ipstream in(cmd, redi::pstreams::pstderr);
+    auto line = string{};
+    while (getline(in, line))
+    {
+        out << log_prefix << line << endl;
+    }
+    in.close();
+
+    // Capture exit code
+    res.exit_code = in.rdbuf()->status();
+    out << log_prefix << " Exit code: " << res.exit_code << endl;
+    
+    // Return result
+    res.error_out = out.str();
+    return res;
+}
+
+} /* namespace test */
+} /* namespace mq */
+} /* namespace fair */
+
+auto main(int argc, char** argv) -> int
+{
+    ::testing::InitGoogleTest(&argc, argv);
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    return RUN_ALL_TESTS();
+}

@@ -1,0 +1,348 @@
+{
+    "fairMQOptions": {
+        "devices": [
+            {
+                "id": "push_zeromq",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5557",
+                        "method": "bind",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "zeromq",
+                        "type": "push"
+                    }
+                ]
+            },
+            {
+                "id": "pull_zeromq",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5557",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "zeromq",
+                        "type": "pull"
+                    }
+                ]
+            },
+            {
+                "id": "push_nanomsg",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5757",
+                        "method": "bind",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "nanomsg",
+                        "type": "push"
+                    }
+                ]
+            },
+            {
+                "id": "pull_nanomsg",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5757",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "nanomsg",
+                        "type": "pull"
+                    }
+                ]
+            },
+            {
+                "id": "push_shmem",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5857",
+                        "method": "bind",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "shmem",
+                        "type": "push"
+                    }
+                ]
+            },
+            {
+                "id": "pull_shmem",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5857",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "shmem",
+                        "type": "pull"
+                    }
+                ]
+            },
+            {
+                "id": "pub_zeromq",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5556",
+                        "method": "bind",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "zeromq",
+                        "type": "pub"
+                    },
+                    {
+                        "address": "tcp://127.0.0.1:5555",
+                        "method": "bind",
+                        "name": "control",
+                        "rateLogging": 0,
+                        "transport": "zeromq",
+                        "type": "pull"
+                    }
+                ]
+            },
+            {
+                "id": "pub_nanomsg",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5756",
+                        "method": "bind",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "nanomsg",
+                        "type": "pub"
+                    },
+                    {
+                        "address": "tcp://127.0.0.1:5755",
+                        "method": "bind",
+                        "name": "control",
+                        "rateLogging": 0,
+                        "transport": "nanomsg",
+                        "type": "pull"
+                    }
+                ]
+            },
+            {
+                "id": "sub_zeromq",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5556",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "zeromq",
+                        "type": "sub"
+                    },
+                    {
+                        "address": "tcp://127.0.0.1:5555",
+                        "method": "connect",
+                        "name": "control",
+                        "rateLogging": 0,
+                        "transport": "zeromq",
+                        "type": "push"
+                    }
+                ]
+            },
+            {
+                "id": "sub_nanomsg",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5756",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "nanomsg",
+                        "type": "sub"
+                    },
+                    {
+                        "address": "tcp://127.0.0.1:5755",
+                        "method": "connect",
+                        "name": "control",
+                        "rateLogging": 0,
+                        "transport": "nanomsg",
+                        "type": "push"
+                    }
+                ]
+            },
+            {
+                "id": "req_1zeromq",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5558",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "zeromq",
+                        "type": "req"
+                    }
+                ]
+            },
+            {
+                "id": "req_1nanomsg",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5758",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "nanomsg",
+                        "type": "req"
+                    }
+                ]
+            },
+            {
+                "id": "req_2zeromq",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5558",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "zeromq",
+                        "type": "req"
+                    }
+                ]
+            },
+            {
+                "id": "req_2nanomsg",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5758",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "nanomsg",
+                        "type": "req"
+                    }
+                ]
+            },
+            {
+                "id": "req_1shmem",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5758",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "shmem",
+                        "type": "req"
+                    }
+                ]
+            },
+            {
+                "id": "req_2shmem",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5758",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "shmem",
+                        "type": "req"
+                    }
+                ]
+            },
+            {
+                "id": "rep_zeromq",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5558",
+                        "method": "bind",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "zeromq",
+                        "type": "rep"
+                    }
+                ]
+            },
+            {
+                "id": "rep_nanomsg",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5758",
+                        "method": "bind",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "nanomsg",
+                        "type": "rep"
+                    }
+                ]
+            },
+            {
+                "id": "rep_shmem",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5758",
+                        "method": "bind",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "shmem",
+                        "type": "rep"
+                    }
+                ]
+            },
+            {
+                "id": "transfer_timeout_zeromq",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5559",
+                        "method": "bind",
+                        "name": "data-in",
+                        "rateLogging": 0,
+                        "transport": "zeromq",
+                        "type": "pull"
+                    },
+                    {
+                        "address": "tcp://127.0.0.1:5560",
+                        "method": "bind",
+                        "name": "data-out",
+                        "rateLogging": 0,
+                        "transport": "zeromq",
+                        "type": "push"
+                    }
+                ]
+            },
+            {
+                "id": "transfer_timeout_shmem",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5959",
+                        "method": "bind",
+                        "name": "data-in",
+                        "rateLogging": 0,
+                        "transport": "shmem",
+                        "type": "pull"
+                    },
+                    {
+                        "address": "tcp://127.0.0.1:5960",
+                        "method": "bind",
+                        "name": "data-out",
+                        "rateLogging": 0,
+                        "transport": "shmem",
+                        "type": "push"
+                    }
+                ]
+            },
+            {
+                "id": "transfer_timeout_nanomsg",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5759",
+                        "method": "bind",
+                        "name": "data-in",
+                        "rateLogging": 0,
+                        "transport": "nanomsg",
+                        "type": "pull"
+                    },
+                    {
+                        "address": "tcp://127.0.0.1:5560",
+                        "method": "bind",
+                        "name": "data-out",
+                        "rateLogging": 0,
+                        "transport": "nanomsg",
+                        "type": "push"
+                    }
+                ]
+            }
+        ]
+    }
+}
