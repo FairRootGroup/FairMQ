@@ -15,6 +15,7 @@
 #include "FairMQProgOptions.h"
 #include <algorithm>
 #include "FairMQParser.h"
+#include "FairMQSuboptParser.h"
 #include "FairMQLogger.h"
 
 using namespace std;
@@ -120,22 +121,23 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
     }
     else
     {
+        string id;
+
+        if (fVarMap.count("config-key"))
+        {
+            id = fVarMap["config-key"].as<string>();
+        }
+        else
+        {
+            id = fVarMap["id"].as<string>();
+        }
+
         // if cmdline mq-config called then use the default xml/json parser
         if (fVarMap.count("mq-config"))
         {
             LOG(DEBUG) << "mq-config: Using default XML/JSON parser";
 
             string file = fVarMap["mq-config"].as<string>();
-            string id;
-
-            if (fVarMap.count("config-key"))
-            {
-                id = fVarMap["config-key"].as<string>();
-            }
-            else
-            {
-                id = fVarMap["id"].as<string>();
-            }
 
             string fileExtension = boost::filesystem::extension(file);
 
@@ -164,17 +166,6 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
         {
             LOG(DEBUG) << "config-json-string: Parsing JSON string";
 
-            string id;
-
-            if (fVarMap.count("config-key"))
-            {
-                id = fVarMap["config-key"].as<string>();
-            }
-            else
-            {
-                id = fVarMap["id"].as<string>();
-            }
-
             string value = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at("config-json-string"));
             stringstream ss;
             ss << value;
@@ -184,22 +175,17 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
         {
             LOG(DEBUG) << "config-json-string: Parsing XML string";
 
-            string id;
-
-            if (fVarMap.count("config-key"))
-            {
-                id = fVarMap["config-key"].as<string>();
-            }
-            else
-            {
-                id = fVarMap["id"].as<string>();
-            }
-
             string value = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at("config-xml-string"));
             stringstream ss;
             ss << value;
             UserParser<FairMQParser::XML>(ss, id);
         }
+        else if (fVarMap.count(FairMQParser::SUBOPT::OptionKeyChannelConfig))
+        {
+            LOG(DEBUG) << "channel-config: Parsing channel configuration";
+            UserParser<FairMQParser::SUBOPT>(fVarMap, id);
+        }
+
     }
 
     FairProgOptions::PrintOptions();
@@ -364,6 +350,7 @@ void FairMQProgOptions::InitOptionDescription()
         ("config-json-string", po::value<vector<string>>()->multitoken(), "JSON input as command line string.")
         // ("config-json-file",   po::value<string>(),                       "JSON input as file.")
         ("mq-config",          po::value<string>(),                       "JSON/XML input as file. The configuration object will check xml or json file extention and will call the json or xml parser accordingly")
+        (FairMQParser::SUBOPT::OptionKeyChannelConfig, po::value<std::vector<std::string> >()->multitoken()->composing(), "Configuration of single or multiple channel(s) by comma separated key=value list")
         ;
 
     AddToCmdLineOptions(fGenericDesc);
