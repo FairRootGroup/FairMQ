@@ -94,6 +94,7 @@ Set(SRCS
   "options/FairProgOptions.cxx"
   "options/FairMQProgOptions.cxx"
   "options/FairMQParser.cxx"
+  "options/FairMQSuboptParser.cxx"
 )
 
 If(NANOMSG_FOUND)
