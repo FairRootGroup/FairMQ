@@ -28,7 +28,8 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const string& id, 
 {
     // Create fair mq map
     FairMQMap channelMap;
-    // helper::PrintDeviceList(pt.get_child(rootNode));
+    //Helper::PrintPropertyTree(pt);
+    //Helper::PrintDeviceList(pt.get_child(rootNode), formatFlag);
     // Extract value from boost::property_tree
     Helper::DeviceParser(pt.get_child(rootNode), channelMap, id, formatFlag);
 
@@ -431,6 +432,14 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
 
         channelList.push_back(channel);
     }
+}
+
+void PrintPropertyTree(const boost::property_tree::ptree& tree, int level)
+{
+  for (const auto& p : tree) {
+    std::cout << std::setw(level+1) << level << ": " << p.first << " " << p.second.get_value<string>() << std::endl;
+    PrintPropertyTree(p.second.get_child(""), level + 1);
+  }
 }
 
 } // Helper namespace
