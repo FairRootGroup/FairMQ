@@ -16,12 +16,9 @@
 using namespace std;
 using namespace FairMQ::shmem;
 
-// Context to hold the ZeroMQ sockets
-unique_ptr<FairMQContextSHM> FairMQSocketSHM::fContext; // = unique_ptr<FairMQContextSHM>(new FairMQContextSHM(1));
-bool FairMQSocketSHM::fContextInitialized = false;
 atomic<bool> FairMQSocketSHM::fInterrupted(false);
 
-FairMQSocketSHM::FairMQSocketSHM(const string& type, const string& name, const int numIoThreads, const string& id /*= ""*/)
+FairMQSocketSHM::FairMQSocketSHM(const string& type, const string& name, const string& id /*= ""*/, void* context)
     : FairMQSocket(ZMQ_SNDMORE, ZMQ_RCVMORE, ZMQ_DONTWAIT)
     , fSocket(NULL)
     , fId()
@@ -32,18 +29,8 @@ FairMQSocketSHM::FairMQSocketSHM(const string& type, const string& name, const i
 {
     fId = id + "." + name + "." + type;
 
-    if (!fContextInitialized)
-    {
-        fContext = unique_ptr<FairMQContextSHM>(new FairMQContextSHM(1));
-        fContextInitialized = true;
-    }
-
-    if (zmq_ctx_set(fContext->GetContext(), ZMQ_IO_THREADS, numIoThreads) != 0)
-    {
-        LOG(ERROR) << "Failed configuring context, reason: " << zmq_strerror(errno);
-    }
-
-    fSocket = zmq_socket(fContext->GetContext(), GetConstant(type));
+    assert(context);
+    fSocket = zmq_socket(context, GetConstant(type));
 
     if (fSocket == NULL)
     {
@@ -407,14 +394,6 @@ void FairMQSocketSHM::Close()
     }
 
     fSocket = NULL;
-}
-
-void FairMQSocketSHM::Terminate()
-{
-    if (zmq_ctx_destroy(fContext->GetContext()) != 0)
-    {
-        LOG(ERROR) << "Failed terminating context, reason: " << zmq_strerror(errno);
-    }
 }
 
 void FairMQSocketSHM::Interrupt()

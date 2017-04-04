@@ -13,6 +13,9 @@
  */
 
 #include "FairMQTransportFactoryNN.h"
+#include "../options/FairMQProgOptions.h"
+
+#include <nanomsg/nn.h>
 
 using namespace std;
 
@@ -21,6 +24,11 @@ FairMQ::Transport FairMQTransportFactoryNN::fTransportType = FairMQ::Transport::
 FairMQTransportFactoryNN::FairMQTransportFactoryNN()
 {
     LOG(DEBUG) << "Transport: Using nanomsg library";
+}
+
+void FairMQTransportFactoryNN::Initialize(const FairMQProgOptions* config)
+{
+    // nothing to do for nanomsg, transport is ready to be used any time (until nn_term()).
 }
 
 FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage() const
@@ -38,9 +46,9 @@ FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(void* data, const size_
     return unique_ptr<FairMQMessage>(new FairMQMessageNN(data, size, ffn, hint));
 }
 
-FairMQSocketPtr FairMQTransportFactoryNN::CreateSocket(const string& type, const string& name, const int numIoThreads, const string& id /*= ""*/) const
+FairMQSocketPtr FairMQTransportFactoryNN::CreateSocket(const string& type, const string& name, const string& id /*= ""*/) const
 {
-    return unique_ptr<FairMQSocket>(new FairMQSocketNN(type, name, numIoThreads, id));
+    return unique_ptr<FairMQSocket>(new FairMQSocketNN(type, name, id));
 }
 
 FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const vector<FairMQChannel>& channels) const
@@ -56,6 +64,16 @@ FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const unordered_map<strin
 FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const
 {
     return unique_ptr<FairMQPoller>(new FairMQPollerNN(cmdSocket, dataSocket));
+}
+
+void FairMQTransportFactoryNN::Shutdown()
+{
+    // nothing to do for nanomsg, transport is ready to be terminated any time.
+}
+
+void FairMQTransportFactoryNN::Terminate()
+{
+    nn_term();
 }
 
 FairMQ::Transport FairMQTransportFactoryNN::GetType() const

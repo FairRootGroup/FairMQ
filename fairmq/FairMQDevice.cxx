@@ -128,7 +128,7 @@ void FairMQDevice::AttachChannels(list<FairMQChannel*>& chans)
         {
             if (AttachChannel(**itr))
             {
-                (*itr)->InitCommandInterface(fNumIoThreads);
+                (*itr)->InitCommandInterface();
                 chans.erase(itr++);
             }
             else
@@ -154,7 +154,7 @@ void FairMQDevice::InitWrapper()
 
     if (fDeviceCmdSockets.empty())
     {
-        auto p = fDeviceCmdSockets.emplace(fTransportFactory->GetType(), fTransportFactory->CreateSocket("pub", "device-commands", fNumIoThreads, fId));
+        auto p = fDeviceCmdSockets.emplace(fTransportFactory->GetType(), fTransportFactory->CreateSocket("pub", "device-commands", fId));
         if (p.second)
         {
             p.first->second->Bind("inproc://commands");
@@ -282,7 +282,7 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
         //(re-)init socket
         if (!ch.fSocket)
         {
-            ch.fSocket = ch.fTransportFactory->CreateSocket(ch.fType, ch.fName, fNumIoThreads, fId);
+            ch.fSocket = ch.fTransportFactory->CreateSocket(ch.fType, ch.fName, fId);
         }
 
         // set high water marks
@@ -837,6 +837,7 @@ void FairMQDevice::SetTransport(FairMQTransportFactory* factory)
     {
         fTransportFactory = shared_ptr<FairMQTransportFactory>(factory);
         pair<FairMQ::Transport, shared_ptr<FairMQTransportFactory>> t(fTransportFactory->GetType(), fTransportFactory);
+        fTransportFactory->Initialize(fConfig);
         fTransports.insert(t);
     }
     else
@@ -870,9 +871,7 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& tran
 #endif
         else
         {
-            LOG(ERROR) << "Unavailable transport requested: "
-                       << "\"" << transport << "\""
-                       << ". Available are: "
+            LOG(ERROR) << "Unavailable transport requested: " << "\"" << transport << "\"" << ". Available are: "
                        << "\"zeromq\""
                        << "\"shmem\""
 #ifdef NANOMSG_FOUND
@@ -885,9 +884,10 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& tran
         LOG(DEBUG) << "Adding '" << transport << "' transport to the device.";
 
         pair<FairMQ::Transport, shared_ptr<FairMQTransportFactory>> trPair(FairMQ::TransportTypes.at(transport), tr);
+        tr->Initialize(fConfig);
         fTransports.insert(trPair);
 
-        auto p = fDeviceCmdSockets.emplace(tr->GetType(), tr->CreateSocket("pub", "device-commands", fNumIoThreads, fId));
+        auto p = fDeviceCmdSockets.emplace(tr->GetType(), tr->CreateSocket("pub", "device-commands", fId));
         if (p.second)
         {
             p.first->second->Bind("inproc://commands");
@@ -997,6 +997,8 @@ void FairMQDevice::LogSocketRates()
 
         t0 = get_timestamp();
 
+        LOG(DEBUG) << "<channel>: in: <#msgs> (<MB>) out: <#msgs> (<MB>)";
+
         while (CheckCurrentState(RUNNING))
         {
             t1 = get_timestamp();
@@ -1014,24 +1016,23 @@ void FairMQDevice::LogSocketRates()
                     intervalCounters.at(i) = 0;
 
                     bytesInNew.at(i) = vi->GetBytesRx();
-                    mbPerSecIn.at(i) = (static_cast<double>(bytesInNew.at(i) - bytesIn.at(i)) / (1000. * 1000.)) / static_cast<double>(msSinceLastLog) * 1000.;
-                    bytesIn.at(i) = bytesInNew.at(i);
-
                     msgInNew.at(i) = vi->GetMessagesRx();
-                    msgPerSecIn.at(i) = static_cast<double>(msgInNew.at(i) - msgIn.at(i)) / static_cast<double>(msSinceLastLog) * 1000.;
-                    msgIn.at(i) = msgInNew.at(i);
-
                     bytesOutNew.at(i) = vi->GetBytesTx();
-                    mbPerSecOut.at(i) = (static_cast<double>(bytesOutNew.at(i) - bytesOut.at(i)) / (1000. * 1000.)) / static_cast<double>(msSinceLastLog) * 1000.;
-                    bytesOut.at(i) = bytesOutNew.at(i);
-
                     msgOutNew.at(i) = vi->GetMessagesTx();
+
+                    mbPerSecIn.at(i) = (static_cast<double>(bytesInNew.at(i) - bytesIn.at(i)) / (1000. * 1000.)) / static_cast<double>(msSinceLastLog) * 1000.;
+                    msgPerSecIn.at(i) = static_cast<double>(msgInNew.at(i) - msgIn.at(i)) / static_cast<double>(msSinceLastLog) * 1000.;
+                    mbPerSecOut.at(i) = (static_cast<double>(bytesOutNew.at(i) - bytesOut.at(i)) / (1000. * 1000.)) / static_cast<double>(msSinceLastLog) * 1000.;
                     msgPerSecOut.at(i) = static_cast<double>(msgOutNew.at(i) - msgOut.at(i)) / static_cast<double>(msSinceLastLog) * 1000.;
+
+                    bytesIn.at(i) = bytesInNew.at(i);
+                    msgIn.at(i) = msgInNew.at(i);
+                    bytesOut.at(i) = bytesOutNew.at(i);
                     msgOut.at(i) = msgOutNew.at(i);
 
                     LOG(DEBUG) << filteredChannelNames.at(i) << ": "
-                               << "in: " << msgPerSecIn.at(i) << " msg (" << mbPerSecIn.at(i) << " MB), "
-                               << "out: " << msgPerSecOut.at(i) << " msg (" << mbPerSecOut.at(i) << " MB)";
+                               << "in: " << msgPerSecIn.at(i) << " (" << mbPerSecIn.at(i) << " MB) "
+                               << "out: " << msgPerSecOut.at(i) << " (" << mbPerSecOut.at(i) << " MB)";
                 }
 
                 ++i;
@@ -1195,36 +1196,29 @@ bool FairMQDevice::Terminated()
     return fTerminationRequested;
 }
 
-void FairMQDevice::Terminate()
+void FairMQDevice::Exit()
 {
-    // Termination signal has to be sent only once to any socket.
-    for (auto& kv : fDeviceCmdSockets)
+    // ask transports to terminate transfers
+    for (const auto& t : fTransports)
     {
-        kv.second->Terminate();
+        t.second->Shutdown();
     }
-    // if (!fDeviceCmdSockets.empty())
-    // {
-    //     fDeviceCmdSockets[0]->Terminate();
-    // }
-}
 
-void FairMQDevice::Shutdown()
-{
     LOG(DEBUG) << "Closing sockets...";
 
-    // iterate over the channels map
-    for (const auto& mi : fChannels)
+    // iterate over the channels
+    for (const auto& c : fChannels)
     {
-        // iterate over the channels vector
-        for (const auto& vi : mi.second)
+        // iterate over the sub-channels
+        for (const auto& sc : c.second)
         {
-            if (vi.fSocket)
+            if (sc.fSocket)
             {
-                vi.fSocket->Close();
+                sc.fSocket->Close();
             }
-            if (vi.fChannelCmdSocket)
+            if (sc.fChannelCmdSocket)
             {
-                vi.fChannelCmdSocket->Close();
+                sc.fChannelCmdSocket->Close();
             }
         }
     }
@@ -1234,12 +1228,15 @@ void FairMQDevice::Shutdown()
         s.second->Close();
     }
 
-    // if (!fDeviceCmdSockets.empty())
-    // {
-    //     fDeviceCmdSockets[0]->Close();
-    // }
-
     LOG(DEBUG) << "Closed all sockets!";
+
+    // ask transports to terminate
+    for (const auto& t : fTransports)
+    {
+        t.second->Terminate();
+    }
+
+    LOG(DEBUG) << "All transports exited.";
 }
 
 FairMQDevice::~FairMQDevice()

@@ -77,14 +77,12 @@ set(FAIRMQ_HEADER_FILES
     options/FairProgOptions.h
     options/FairProgOptionsHelper.h
     runFairMQDevice.h
-    shmem/FairMQContextSHM.h
     shmem/FairMQMessageSHM.h
     shmem/FairMQPollerSHM.h
     shmem/FairMQSocketSHM.h
     shmem/FairMQTransportFactorySHM.h
     tools/FairMQTools.h
     tools/runSimpleMQStateMachine.h
-    zeromq/FairMQContextZMQ.h
     zeromq/FairMQMessageZMQ.h
     zeromq/FairMQPollerZMQ.h
     zeromq/FairMQSocketZMQ.h
@@ -128,12 +126,10 @@ set(FAIRMQ_SOURCE_FILES
     options/FairMQProgOptions.cxx
     options/FairMQSuboptParser.cxx
     options/FairProgOptions.cxx
-    shmem/FairMQContextSHM.cxx
     shmem/FairMQMessageSHM.cxx
     shmem/FairMQPollerSHM.cxx
     shmem/FairMQSocketSHM.cxx
     shmem/FairMQTransportFactorySHM.cxx
-    zeromq/FairMQContextZMQ.cxx
     zeromq/FairMQMessageZMQ.cxx
     zeromq/FairMQPollerZMQ.cxx
     zeromq/FairMQSocketZMQ.cxx
@@ -176,7 +172,6 @@ target_include_directories(FairMQ
     $<INSTALL_INTERFACE:include/fairmq>
 )
 
-
 ##################
 # link libraries #
 ##################
@@ -195,7 +190,7 @@ target_link_libraries(FairMQ
     Boost::filesystem
     Boost::regex
     Boost::date_time
-    
+
     PRIVATE # only libFairMQ links against private dependencies
     ZeroMQ
     $<$<BOOL:${NANOMSG_FOUND}>:nanomsg>

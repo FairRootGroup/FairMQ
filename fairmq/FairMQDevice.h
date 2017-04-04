@@ -337,7 +337,10 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     void SetTransport(const std::string& transport = "zeromq");
 
     void SetConfig(FairMQProgOptions& config);
-    const FairMQProgOptions* GetConfig() const {return fConfig;}
+    const FairMQProgOptions* GetConfig() const
+    {
+        return fConfig;
+    }
 
     /// Implements the sort algorithm used in SortChannel()
     /// @param lhs Right hand side value for comparison
@@ -442,20 +445,19 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     void ResetTaskWrapper();
     /// Handles the Reset() method
     void ResetWrapper();
-    /// Shuts down the device (closses socket connections)
-    void Shutdown();
 
-    /// Terminates the transport interface
-    void Terminate();
     /// Unblocks blocking channel send/receive calls
     void Unblock();
+
+    /// Shuts down the transports and the device
+    void Exit();
 
     /// Attach (bind/connect) channels in the list
     void AttachChannels(std::list<FairMQChannel*>& chans);
 
     /// Sets up and connects/binds a socket to an endpoint
     /// return a string with the actual endpoint if it happens
-    //to stray from default.
+    /// to stray from default.
     bool ConnectEndpoint(FairMQSocket& socket, std::string& endpoint);
     bool BindEndpoint(FairMQSocket& socket, std::string& endpoint);
     /// Attaches the channel to all listed endpoints

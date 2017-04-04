@@ -28,17 +28,22 @@ class FairMQTransportFactoryNN : public FairMQTransportFactory
   public:
     FairMQTransportFactoryNN();
 
+    virtual void Initialize(const FairMQProgOptions* config);
+
     virtual FairMQMessagePtr CreateMessage() const;
     virtual FairMQMessagePtr CreateMessage(const size_t size) const;
-    virtual FairMQMessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = NULL) const;
+    virtual FairMQMessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) const;
 
-    virtual FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name, const int numIoThreads, const std::string& id = "") const;
+    virtual FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name, const std::string& id = "") const;
 
     virtual FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const;
     virtual FairMQPollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const;
     virtual FairMQPollerPtr CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const;
 
     virtual FairMQ::Transport GetType() const;
+
+    virtual void Shutdown();
+    virtual void Terminate();
 
     virtual ~FairMQTransportFactoryNN() {};
 

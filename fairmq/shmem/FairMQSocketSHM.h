@@ -14,13 +14,12 @@
 
 #include "FairMQSocket.h"
 #include "FairMQMessage.h"
-#include "FairMQContextSHM.h"
 #include "FairMQShmManager.h"
 
 class FairMQSocketSHM : public FairMQSocket
 {
   public:
-    FairMQSocketSHM(const std::string& type, const std::string& name, const int numIoThreads, const std::string& id = "");
+    FairMQSocketSHM(const std::string& type, const std::string& name, const std::string& id = "", void* context = nullptr);
     FairMQSocketSHM(const FairMQSocketSHM&) = delete;
     FairMQSocketSHM operator=(const FairMQSocketSHM&) = delete;
 
@@ -38,7 +37,6 @@ class FairMQSocketSHM : public FairMQSocket
     virtual void* GetSocket() const;
     virtual int GetSocket(int nothing) const;
     virtual void Close();
-    virtual void Terminate();
 
     virtual void Interrupt();
     virtual void Resume();
@@ -68,8 +66,6 @@ class FairMQSocketSHM : public FairMQSocket
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
 
-    static std::unique_ptr<FairMQContextSHM> fContext;
-    static bool fContextInitialized;
     static std::atomic<bool> fInterrupted;
 };
 

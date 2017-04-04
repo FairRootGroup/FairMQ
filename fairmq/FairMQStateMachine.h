@@ -73,7 +73,6 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
   public:
     FairMQFSM_()
         : fWorkerThread()
-        , fTerminateStateThread()
         , fWork()
         , fWorkAvailableCondition()
         , fWorkDoneCondition()
@@ -329,9 +328,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
                 fsm.fWorkerThread.join();
             }
 
-            fsm.fTerminateStateThread = std::thread(&FairMQFSM_::Terminate, &fsm);
-            fsm.Shutdown();
-            fsm.fTerminateStateThread.join();
+            fsm.Exit();
         }
     };
 
@@ -358,8 +355,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
     virtual void Reset() {}
     virtual void ResetTaskWrapper() {}
     virtual void ResetTask() {}
-    virtual void Shutdown() {}
-    virtual void Terminate() {} // Termination method called during StopFct action.
+    virtual void Exit() {}
     virtual void Unblock() {} // Method to send commands.
 
     void Worker()
@@ -526,7 +522,6 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
 
     // this is to run certain functions in a separate thread
     std::thread fWorkerThread;
-    std::thread fTerminateStateThread;
 
     // function to execute user states in a worker thread
     std::function<void(void)> fWork;

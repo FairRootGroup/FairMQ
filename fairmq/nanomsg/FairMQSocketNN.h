@@ -24,7 +24,7 @@
 class FairMQSocketNN : public FairMQSocket
 {
   public:
-    FairMQSocketNN(const std::string& type, const std::string& name, const int numIoThreads, const std::string& id = ""); // numIoThreads is not used in nanomsg.
+    FairMQSocketNN(const std::string& type, const std::string& name, const std::string& id = "");
     FairMQSocketNN(const FairMQSocketNN&) = delete;
     FairMQSocketNN operator=(const FairMQSocketNN&) = delete;
 
@@ -42,7 +42,6 @@ class FairMQSocketNN : public FairMQSocket
     virtual void* GetSocket() const;
     virtual int GetSocket(int nothing) const;
     virtual void Close();
-    virtual void Terminate();
 
     virtual void Interrupt();
     virtual void Resume();

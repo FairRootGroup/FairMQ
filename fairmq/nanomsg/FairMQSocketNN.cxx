@@ -31,7 +31,7 @@ using namespace std;
 
 atomic<bool> FairMQSocketNN::fInterrupted(false);
 
-FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const int numIoThreads, const string& id /*= ""*/)
+FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const string& id /*= ""*/)
     : FairMQSocket(0, 0, NN_DONTWAIT)
     , fSocket(-1)
     , fId()
@@ -41,11 +41,6 @@ FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const int
     , fMessagesRx(0)
 {
     fId = id + "." + name + "." + type;
-
-    if (numIoThreads > 1)
-    {
-        LOG(INFO) << "number of I/O threads is not used in nanomsg";
-    }
 
     if (type == "router" || type == "dealer")
     {
@@ -368,11 +363,6 @@ int64_t FairMQSocketNN::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const
 void FairMQSocketNN::Close()
 {
     nn_close(fSocket);
-}
-
-void FairMQSocketNN::Terminate()
-{
-    nn_term();
 }
 
 void FairMQSocketNN::Interrupt()
