@@ -68,6 +68,8 @@ set(FAIRMQ_HEADER_FILES
     devices/FairMQProxy.h
     devices/FairMQSink.h
     devices/FairMQSplitter.h
+    logger/logger.h
+    logger/logger_def.h
     options/FairMQEventManager.h
     options/FairMQParser.h
     options/FairMQProgOptions.h
@@ -97,12 +99,6 @@ if(NANOMSG_FOUND)
         nanomsg/FairMQTransportFactoryNN.h
     )
 endif()
-
-# TODO only for transition to namespaces
-set(FAIRMQ_HEADER_FILES_NAMESPACED
-    logger/logger.h
-    logger/logger_def.h
-)
 
 if("${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}" VERSION_LESS "1.56")
     set(FAIRMQ_HEADER_FILES_NAMESPACED ${FAIRMQ_HEADER_FILES_NAMESPACED}
@@ -273,6 +269,8 @@ install(
     TARGETS # FairMQFull, tests are not installed
     ${FAIRMQ_FULL_TARGETS}
 
+    EXPORT FairMQ
+
     LIBRARY
     DESTINATION lib
     COMPONENT fairmq
@@ -282,14 +280,8 @@ install(
     COMPONENT fairmq
 )
 
-# TODO only during transition to namespaces
-install(FILES ${FAIRMQ_HEADER_FILES}
-    DESTINATION include
-    COMPONENT fairmq
-)
-
 # preserve relative path and prepend fairmq
-foreach(HEADER ${FAIRMQ_HEADER_FILES_NAMESPACED})
+foreach(HEADER ${FAIRMQ_HEADER_FILES})
     get_filename_component(_path ${HEADER} DIRECTORY)
     file(TO_CMAKE_PATH include/fairmq/${_path} _destination)
     if("${_path}" STREQUAL "logger")
@@ -304,6 +296,15 @@ foreach(HEADER ${FAIRMQ_HEADER_FILES_NAMESPACED})
         )
     endif()
 endforeach()
+
+# export FairMQ targets
+install(
+    EXPORT FairMQ
+    DESTINATION include/cmake
+    NAMESPACE FairRoot::
+    EXPORT_LINK_INTERFACE_LIBRARIES
+    COMPONENT fairmq
+)
 
 # use the following target to only install the fairmq component
 add_custom_target(FairMQInstall
