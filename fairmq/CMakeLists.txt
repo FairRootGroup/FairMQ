@@ -20,6 +20,13 @@
 #   * FairMQInstall - install everything from the FairMQ submodule
 #   * FairMQTests   - build all tests in the submodule
 #
+# Installation:
+#   * Header files are installed hierarchically
+#     into ${CMAKE_INSTALL_PREFIX}/include/fairmq
+#   * All targets in FairMQFull are exported to
+#     ${CMAKE_INSTALL_PREFIX}/include/cmake/FairMQ.cmake
+#     with namespace prefix "FairRoot::"
+#
 #
 
 ############################
