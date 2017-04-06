@@ -309,6 +309,7 @@ void FairMQProgOptions::InitOptionDescription()
             ("port-range-min",         po::value<int   >()->default_value(22000),         "Start of the port range for dynamic initialization.")
             ("port-range-max",         po::value<int   >()->default_value(32000),         "End of the port range for dynamic initialization.")
             ("log-to-file",            po::value<string>()->default_value(""),            "Log output to a file.")
+            ("shm-segment-size",       po::value<size_t>()->default_value(2000000000),    "shmem transport: size of the shared memory segment (in bytes).")
             ;
 
         fMQOptionsInCfg.add_options()
@@ -324,6 +325,7 @@ void FairMQProgOptions::InitOptionDescription()
             ("port-range-min",         po::value<int   >()->default_value(22000),         "Start of the port range for dynamic initialization.")
             ("port-range-max",         po::value<int   >()->default_value(32000),         "End of the port range for dynamic initialization.")
             ("log-to-file",            po::value<string>()->default_value(""),            "Log output to a file.")
+            ("shm-segment-size",       po::value<size_t>()->default_value(2000000000),    "shmem transport: size of the shared memory segment (in bytes).")
             ;
     }
     else
@@ -341,6 +343,7 @@ void FairMQProgOptions::InitOptionDescription()
             ("port-range-min",         po::value<int   >()->default_value(22000),         "Start of the port range for dynamic initialization.")
             ("port-range-max",         po::value<int   >()->default_value(32000),         "End of the port range for dynamic initialization.")
             ("log-to-file",            po::value<string>()->default_value(""),            "Log output to a file.")
+            ("shm-segment-size",       po::value<size_t>()->default_value(2000000000),    "shmem transport: size of the shared memory segment (in bytes).")
             ;
     }
 

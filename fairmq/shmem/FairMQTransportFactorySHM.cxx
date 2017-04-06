@@ -38,9 +38,11 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM()
 void FairMQTransportFactorySHM::Initialize(const FairMQProgOptions* config)
 {
     int numIoThreads = 1;
+    size_t segmentSize = 2000000000;
     if (config)
     {
         numIoThreads = config->GetValue<int>("io-threads");
+        segmentSize = config->GetValue<size_t>("shm-segment-size");
     }
     else
     {
@@ -58,8 +60,8 @@ void FairMQTransportFactorySHM::Initialize(const FairMQProgOptions* config)
         LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
     }
 
-    Manager::Instance().InitializeSegment("open_or_create", "FairMQSharedMemory", 2000000000);
-    LOG(DEBUG) << "shmem: created/opened shared memory segment of 2000000000 bytes. Available are " << Manager::Instance().Segment()->get_free_memory() << " bytes.";
+    Manager::Instance().InitializeSegment("open_or_create", "FairMQSharedMemory", segmentSize);
+    LOG(DEBUG) << "shmem: created/opened shared memory segment of " << segmentSize << " bytes. Available are " << Manager::Instance().Segment()->get_free_memory() << " bytes.";
 }
 
 FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage() const
