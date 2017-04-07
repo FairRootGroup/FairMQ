@@ -164,7 +164,6 @@ configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/startConfigExample.sh.in
 add_library(FairMQ SHARED
     ${FAIRMQ_SOURCE_FILES}
     ${FAIRMQ_HEADER_FILES} # for IDE integration
-    ${FAIRMQ_HEADER_FILES_NAMESPACED} # for IDE integration
 )
 
 
