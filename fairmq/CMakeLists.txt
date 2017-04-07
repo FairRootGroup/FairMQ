@@ -172,7 +172,6 @@ add_library(FairMQ SHARED
 #######################
 target_include_directories(FairMQ
     PUBLIC # consumers inherit public include directories
-    ${ZMQ_INCLUDE_DIR}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/fairmq>
 )
