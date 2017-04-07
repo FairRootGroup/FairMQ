@@ -283,17 +283,10 @@ install(
 foreach(HEADER ${FAIRMQ_HEADER_FILES})
     get_filename_component(_path ${HEADER} DIRECTORY)
     file(TO_CMAKE_PATH include/fairmq/${_path} _destination)
-    if("${_path}" STREQUAL "logger")
-        install(FILES ${HEADER}
-            DESTINATION include/logger
-            COMPONENT fairmq
-        )
-    else()
-        install(FILES ${HEADER}
-            DESTINATION ${_destination}
-            COMPONENT fairmq
-        )
-    endif()
+    install(FILES ${HEADER}
+        DESTINATION ${_destination}
+        COMPONENT fairmq
+    )
 endforeach()
 
 # export FairMQ targets
