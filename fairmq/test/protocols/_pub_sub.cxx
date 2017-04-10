@@ -33,7 +33,7 @@ auto RunPubSub(string transport) -> void
     auto sub1 = execute_result{"", 0};
     thread sub1_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id sub_" << transport << " --control static --verbosity DEBUG "
+        cmd << runTestDevice << " --id sub_1" << transport << " --control static --verbosity DEBUG "
             << "--log-color false --mq-config \"" << mqConfig << "\"";
         sub1 = execute(cmd.str(), "[SUB1]");
     });
@@ -41,7 +41,7 @@ auto RunPubSub(string transport) -> void
     auto sub2 = execute_result{"", 0};
     thread sub2_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id sub_" << transport << " --control static --verbosity DEBUG "
+        cmd << runTestDevice << " --id sub_2" << transport << " --control static --verbosity DEBUG "
             << "--log-color false --mq-config \"" << mqConfig << "\"";
         sub2 = execute(cmd.str(), "[SUB2]");
     });
