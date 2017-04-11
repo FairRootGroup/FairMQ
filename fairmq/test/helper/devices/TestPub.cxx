@@ -34,7 +34,11 @@ class Pub : public FairMQDevice
 
             auto msg = FairMQMessagePtr{NewMessage()};
             auto d1 = Send(msg, "data");
-            if (d1 < 0)
+            if (d1 >= 0)
+            {
+                LOG(INFO) << "Sent data: d1 = " << d1;
+            }
+            else
             {
                 LOG(ERROR) << "Failed sending data: d1 = " << d1;
             }
