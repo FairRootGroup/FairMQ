@@ -47,6 +47,7 @@ add_testsuite(FairMQ.Protocols
     DEPENDS testhelper_runTestDevice
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/protocols
     TIMEOUT 30
+    RUN_SERIAL ON
 )
 
 
