@@ -71,6 +71,9 @@ SAMPLER+=" --same-msg $sameMsg"
 SAMPLER+=" --num-msgs $numMsgs"
 SAMPLER+=" --mq-config @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
 xterm -geometry 90x23+0+0 -hold -e $affinitySamp @CMAKE_BINARY_DIR@/bin/$SAMPLER &
+echo ""
+echo "started: xterm -geometry 90x23+0+0 -hold -e $affinitySamp @CMAKE_BINARY_DIR@/bin/$SAMPLER"
+echo "pid: $!"
 
 SINK="sink"
 SINK+=" --id sink1"
@@ -80,3 +83,7 @@ SINK+=" --transport $transport"
 SINK+=" --num-msgs $numMsgs"
 SINK+=" --mq-config @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
 xterm -geometry 90x23+550+0 -hold -e $affinitySink @CMAKE_BINARY_DIR@/bin/$SINK &
+echo ""
+echo "started: xterm -geometry 90x23+550+0 -hold -e $affinitySink @CMAKE_BINARY_DIR@/bin/$SINK"
+echo "pid: $!"
+echo ""

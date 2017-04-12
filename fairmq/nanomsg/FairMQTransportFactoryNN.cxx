@@ -68,12 +68,12 @@ FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const FairMQSocket& cmdSo
 
 void FairMQTransportFactoryNN::Shutdown()
 {
-    // nothing to do for nanomsg, transport is ready to be terminated any time.
+    nn_term();
 }
 
 void FairMQTransportFactoryNN::Terminate()
 {
-    nn_term();
+    // nothing to do for nanomsg
 }
 
 FairMQ::Transport FairMQTransportFactoryNN::GetType() const

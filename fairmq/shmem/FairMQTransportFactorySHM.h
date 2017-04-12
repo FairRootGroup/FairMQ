@@ -10,11 +10,16 @@
 
 #include <vector>
 #include <string>
+#include <thread>
+#include <atomic>
+
+#include <boost/interprocess/sync/named_mutex.hpp>
 
 #include "FairMQTransportFactory.h"
 #include "FairMQMessageSHM.h"
 #include "FairMQSocketSHM.h"
 #include "FairMQPollerSHM.h"
+#include "FairMQShmDeviceCounter.h"
 
 class FairMQTransportFactorySHM : public FairMQTransportFactory
 {
@@ -38,11 +43,18 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
     void Shutdown() override;
     void Terminate() override;
 
+    void SendHeartbeats();
+
     ~FairMQTransportFactorySHM() override {};
 
   private:
     static FairMQ::Transport fTransportType;
     void* fContext;
+    void* fHeartbeatSocket;
+    std::thread fHeartbeatThread;
+    std::atomic<bool> fSendHeartbeats;
+    boost::interprocess::named_mutex fShMutex;
+    FairMQ::shmem::FairMQShmDeviceCounter* fDeviceCounter;
 };
 
 #endif /* FAIRMQTRANSPORTFACTORYSHM_H_ */
