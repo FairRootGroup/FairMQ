@@ -1,0 +1,62 @@
+/********************************************************************************
+ *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ *                                                                              *
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
+ *                  copied verbatim in the file "LICENSE"                       *
+ ********************************************************************************/
+
+#ifndef FAIR_MQ_TEST_PLUGIN_DUMMY
+#define FAIR_MQ_TEST_PLUGIN_DUMMY
+
+#include <fairmq/Plugin.h>
+
+#include <string>
+#include <tuple>
+#include <vector>
+
+namespace fair
+{
+namespace mq
+{
+namespace test
+{
+
+class DummyPlugin : public fair::mq::Plugin
+{
+    public:
+
+    DummyPlugin(const std::string name, const Version version, const std::string maintainer, const std::string homepage)
+    : Plugin(name, version, maintainer, homepage)
+    {
+    }
+
+}; /* class DummyPlugin */
+
+auto DummyPluginProgramOptions() -> const boost::optional<boost::program_options::options_description>
+{
+    using namespace boost::program_options;
+    using std::string;
+
+    auto plugin_options = options_description{"Dummy Plugin"};
+    plugin_options.add_options()
+        ("custom-dummy-option", value<string>(), "Cool custom option.");
+        ("custom-dummy-option2", value<string>(), "Another cool custom option.");
+    return plugin_options;
+}
+
+REGISTER_FAIRMQ_PLUGIN(
+    DummyPlugin,                                 // Class name
+    test_dummy,                                  // Plugin name (string, lower case chars only)
+    (fair::mq::Plugin::Version{@VERSION_MAJOR@,@VERSION_MINOR@,@VERSION_PATCH@}), // Version
+    "Mr. Dummy <dummy@test.net>",                // Maintainer
+    "https://git.test.net/dummy.git",            // Homepage
+    fair::mq::test::DummyPluginProgramOptions    // Free function which declares custom program options for the plugin
+                                                 // signature: () -> boost::optional<boost::program_options::options_description>
+)
+
+} /* namespace test */
+} /* namespace mq */
+} /* namespace fair */
+
+#endif /* FAIR_MQ_TEST_PLUGIN_DUMMY */

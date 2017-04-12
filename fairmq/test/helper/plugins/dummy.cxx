@@ -6,13 +6,4 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIR_MQ_TOOLS_H
-#define FAIR_MQ_TOOLS_H
-
-// IWYU pragma: begin_exports
-#include <fairmq/tools/CppSTL.h>
-#include <fairmq/tools/Network.h>
-#include <fairmq/tools/Strings.h>
-// IWYU pragma: end_exports
-
-#endif // FAIR_MQ_TOOLS_H
+#include <dummy.h>

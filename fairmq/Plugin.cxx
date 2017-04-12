@@ -6,13 +6,21 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIR_MQ_TOOLS_H
-#define FAIR_MQ_TOOLS_H
+#include <fairmq/Plugin.h>
+#include <FairMQLogger.h>
 
-// IWYU pragma: begin_exports
-#include <fairmq/tools/CppSTL.h>
-#include <fairmq/tools/Network.h>
-#include <fairmq/tools/Strings.h>
-// IWYU pragma: end_exports
+using namespace std;
 
-#endif // FAIR_MQ_TOOLS_H
+fair::mq::Plugin::Plugin(const string name, const Version version, const string maintainer, const string homepage)
+: fkName(name)
+, fkVersion(version)
+, fkMaintainer(maintainer)
+, fkHomepage(homepage)
+{
+	LOG(DEBUG) << "Loaded plugin: " << *this;
+}
+
+fair::mq::Plugin::~Plugin()
+{
+	LOG(DEBUG) << "Unloaded plugin: " << *this;
+}

@@ -77,6 +77,58 @@ add_testsuite(FairMQ.Device
     RUN_SERIAL ON
 )
 
+set(VERSION_MAJOR 1)
+set(VERSION_MINOR 1)
+set(VERSION_PATCH 0)
+set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/helper/plugins/dummy.h.in ${CMAKE_CURRENT_BINARY_DIR}/helper/plugins/dummy.h)
+add_testlib(FairMQPlugin_test_dummy
+    SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/helper/plugins/dummy.h
+    helper/plugins/dummy.cxx
+
+    LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_BINARY_DIR}/helper/plugins
+    HIDDEN
+    VERSION ${VERSION}
+)
+
+set(VERSION_MAJOR 2)
+set(VERSION_MINOR 2)
+set(VERSION_PATCH 0)
+set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/helper/plugins/dummy2.h.in ${CMAKE_CURRENT_BINARY_DIR}/helper/plugins/dummy2.h)
+add_testlib(FairMQPlugin_test_dummy2
+    SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/helper/plugins/dummy2.h
+    helper/plugins/dummy2.cxx
+
+    LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_BINARY_DIR}/helper/plugins
+    HIDDEN
+    VERSION ${VERSION}
+)
+
+add_testsuite(FairMQ.Plugins
+    SOURCES
+    plugins/runner.cxx
+    plugins/_plugin.cxx
+    plugins/_plugin_manager.cxx
+
+    LINKS FairMQ
+    DEPENDS FairMQPlugin_test_dummy FairMQPlugin_test_dummy2
+    TIMEOUT 10
+)
+
+add_testsuite(FairMQ.PluginsStatic
+    SOURCES
+    plugins/runner.cxx
+    plugins/_plugin_manager_static.cxx
+
+    LINKS FairMQ FairMQPlugin_test_dummy FairMQPlugin_test_dummy2
+    TIMEOUT 10
+)
+
 ##############################
 # Aggregate all test targets #
 ##############################

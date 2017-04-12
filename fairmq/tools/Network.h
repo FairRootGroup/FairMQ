@@ -36,7 +36,7 @@ namespace tools
 {
 
 // returns a map with network interface names as keys and their IP addresses as values
-int getHostIPs(std::map<std::string, std::string>& addressMap)
+inline int getHostIPs(std::map<std::string, std::string>& addressMap)
 {
     struct ifaddrs *ifaddr, *ifa;
     int s;
@@ -73,7 +73,7 @@ int getHostIPs(std::map<std::string, std::string>& addressMap)
 }
 
 // get IP address of a given interface name
-std::string getInterfaceIP(std::string interface)
+inline std::string getInterfaceIP(std::string interface)
 {
     std::map<std::string, std::string> IPs;
     getHostIPs(IPs);
@@ -89,7 +89,7 @@ std::string getInterfaceIP(std::string interface)
 }
 
 // get name of the default route interface
-std::string getDefaultRouteNetworkInterface()
+inline std::string getDefaultRouteNetworkInterface()
 {
     std::array<char, 128> buffer;
     std::string interfaceName;

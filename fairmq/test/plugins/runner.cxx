@@ -6,13 +6,11 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIR_MQ_TOOLS_H
-#define FAIR_MQ_TOOLS_H
+#include <gtest/gtest.h>
 
-// IWYU pragma: begin_exports
-#include <fairmq/tools/CppSTL.h>
-#include <fairmq/tools/Network.h>
-#include <fairmq/tools/Strings.h>
-// IWYU pragma: end_exports
-
-#endif // FAIR_MQ_TOOLS_H
+int main(int argc, char** argv)
+{
+    ::testing::InitGoogleTest(&argc, argv);
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    return RUN_ALL_TESTS();
+}

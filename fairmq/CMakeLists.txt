@@ -88,6 +88,8 @@ set(FAIRMQ_HEADER_FILES
     options/FairMQSuboptParser.h
     options/FairProgOptions.h
     options/FairProgOptionsHelper.h
+    Plugin.h
+    PluginManager.h
     runFairMQDevice.h
     shmem/FairMQMessageSHM.h
     shmem/FairMQPollerSHM.h
@@ -141,6 +143,8 @@ set(FAIRMQ_SOURCE_FILES
     options/FairMQProgOptions.cxx
     options/FairMQSuboptParser.cxx
     options/FairProgOptions.cxx
+    Plugin.cxx
+    PluginManager.cxx
     shmem/FairMQMessageSHM.cxx
     shmem/FairMQPollerSHM.cxx
     shmem/FairMQSocketSHM.cxx

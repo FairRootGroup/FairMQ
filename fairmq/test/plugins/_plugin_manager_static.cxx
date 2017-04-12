@@ -6,13 +6,23 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIR_MQ_TOOLS_H
-#define FAIR_MQ_TOOLS_H
+#include <gtest/gtest.h>
+#include <fairmq/PluginManager.h>
+#include <FairMQLogger.h>
+#include <vector>
 
-// IWYU pragma: begin_exports
-#include <fairmq/tools/CppSTL.h>
-#include <fairmq/tools/Network.h>
-#include <fairmq/tools/Strings.h>
-// IWYU pragma: end_exports
+namespace
+{
 
-#endif // FAIR_MQ_TOOLS_H
+using namespace fair::mq;
+using namespace std;
+
+TEST(PluginManager, LoadPluginStatic)
+{
+    auto mgr = PluginManager{};
+
+    ASSERT_NO_THROW(mgr.LoadPlugin("s:test_dummy"));
+    ASSERT_NO_THROW(mgr.LoadPlugin("s:test_dummy2"));
+}
+
+} /* namespace */

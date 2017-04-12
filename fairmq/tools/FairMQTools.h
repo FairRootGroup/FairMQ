@@ -5,6 +5,7 @@
 
 #include <fairmq/tools/CppSTL.h>
 #include <fairmq/tools/Network.h>
+#include <fairmq/tools/Strings.h>
 
 namespace FairMQ
 {
@@ -16,6 +17,8 @@ using fair::mq::tools::make_unique;
 using fair::mq::tools::getHostIPs;
 using fair::mq::tools::getInterfaceIP;
 using fair::mq::tools::getDefaultRouteNetworkInterface;
+
+using fair::mq::tools::S;
 
 } // namespace tools
 } // namespace FairMQ
