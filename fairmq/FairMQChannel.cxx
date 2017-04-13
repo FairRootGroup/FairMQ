@@ -45,6 +45,8 @@ FairMQChannel::FairMQChannel()
     , fNoBlockFlag(0)
     , fSndMoreFlag(0)
     , fMultipart(false)
+    , fModified(true)
+    , fReset(false)
 {
 }
 
@@ -68,6 +70,8 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
     , fNoBlockFlag(0)
     , fSndMoreFlag(0)
     , fMultipart(false)
+    , fModified(true)
+    , fReset(false)
 {
 }
 
@@ -91,6 +95,8 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan)
     , fNoBlockFlag(chan.fNoBlockFlag)
     , fSndMoreFlag(chan.fSndMoreFlag)
     , fMultipart(chan.fMultipart)
+    , fModified(chan.fModified)
+    , fReset(false)
 {}
 
 FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
@@ -267,6 +273,7 @@ void FairMQChannel::UpdateType(const string& type)
         unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fType = type;
+        fModified = true;
     }
     catch (exception& e)
     {
@@ -282,6 +289,7 @@ void FairMQChannel::UpdateMethod(const string& method)
         unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fMethod = method;
+        fModified = true;
     }
     catch (exception& e)
     {
@@ -297,6 +305,7 @@ void FairMQChannel::UpdateAddress(const string& address)
         unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fAddress = address;
+        fModified = true;
     }
     catch (exception& e)
     {
@@ -312,6 +321,7 @@ void FairMQChannel::UpdateTransport(const string& transport)
         unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fTransport = transport;
+        fModified = true;
     }
     catch (exception& e)
     {
@@ -327,6 +337,7 @@ void FairMQChannel::UpdateSndBufSize(const int sndBufSize)
         unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fSndBufSize = sndBufSize;
+        fModified = true;
     }
     catch (exception& e)
     {
@@ -342,6 +353,7 @@ void FairMQChannel::UpdateRcvBufSize(const int rcvBufSize)
         unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fRcvBufSize = rcvBufSize;
+        fModified = true;
     }
     catch (exception& e)
     {
@@ -357,6 +369,7 @@ void FairMQChannel::UpdateSndKernelSize(const int sndKernelSize)
         unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fSndKernelSize = sndKernelSize;
+        fModified = true;
     }
     catch (exception& e)
     {
@@ -372,6 +385,7 @@ void FairMQChannel::UpdateRcvKernelSize(const int rcvKernelSize)
         unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fRcvKernelSize = rcvKernelSize;
+        fModified = true;
     }
     catch (exception& e)
     {
@@ -387,6 +401,7 @@ void FairMQChannel::UpdateRateLogging(const int rateLogging)
         unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
         fRateLogging = rateLogging;
+        fModified = true;
     }
     catch (exception& e)
     {

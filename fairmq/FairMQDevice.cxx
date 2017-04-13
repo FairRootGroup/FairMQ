@@ -129,6 +129,7 @@ void FairMQDevice::AttachChannels(list<FairMQChannel*>& chans)
             if (AttachChannel(**itr))
             {
                 (*itr)->InitCommandInterface();
+                (*itr)->fModified = false;
                 chans.erase(itr++);
             }
             else
@@ -177,40 +178,53 @@ void FairMQDevice::InitWrapper()
     {
         for (auto vi = (mi->second).begin(); vi != (mi->second).end(); ++vi)
         {
-            // set channel name: name + vector index
-            stringstream ss;
-            ss << mi->first << "[" << vi - (mi->second).begin() << "]";
-            vi->fName = ss.str();
-
-            if (vi->fMethod == "bind")
+            if (vi->fModified)
             {
-                // if binding address is not specified, try getting it from the configured network interface
-                if (vi->fAddress == "unspecified" || vi->fAddress == "")
+                if (vi->fReset)
                 {
-                    // if the configured network interface is default, get its name from the default route
-                    if (fNetworkInterface == "default")
-                    {
-                        fNetworkInterface = FairMQ::tools::getDefaultRouteNetworkInterface();
-                    }
-                    vi->fAddress = "tcp://" + FairMQ::tools::getInterfaceIP(fNetworkInterface) + ":1";
+                    vi->fSocket->Close();
+                    vi->fSocket = nullptr;
+
+                    vi->fPoller = nullptr;
+
+                    vi->fChannelCmdSocket->Close();
+                    vi->fChannelCmdSocket = nullptr;
                 }
-                // fill the uninitialized list
-                uninitializedBindingChannels.push_back(&(*vi));
-            }
-            else if (vi->fMethod == "connect")
-            {
-                // fill the uninitialized list
-                uninitializedConnectingChannels.push_back(&(*vi));
-            }
-            else if (vi->fAddress.find_first_of("@+>") != string::npos)
-            {
-                // fill the uninitialized list
-                uninitializedConnectingChannels.push_back(&(*vi));
-            }
-            else
-            {
-                LOG(ERROR) << "Cannot update configuration. Socket method (bind/connect) not specified.";
-                exit(EXIT_FAILURE);
+                // set channel name: name + vector index
+                stringstream ss;
+                ss << mi->first << "[" << vi - (mi->second).begin() << "]";
+                vi->fName = ss.str();
+
+                if (vi->fMethod == "bind")
+                {
+                    // if binding address is not specified, try getting it from the configured network interface
+                    if (vi->fAddress == "unspecified" || vi->fAddress == "")
+                    {
+                        // if the configured network interface is default, get its name from the default route
+                        if (fNetworkInterface == "default")
+                        {
+                            fNetworkInterface = FairMQ::tools::getDefaultRouteNetworkInterface();
+                        }
+                        vi->fAddress = "tcp://" + FairMQ::tools::getInterfaceIP(fNetworkInterface) + ":1";
+                    }
+                    // fill the uninitialized list
+                    uninitializedBindingChannels.push_back(&(*vi));
+                }
+                else if (vi->fMethod == "connect")
+                {
+                    // fill the uninitialized list
+                    uninitializedConnectingChannels.push_back(&(*vi));
+                }
+                else if (vi->fAddress.find_first_of("@+>") != string::npos)
+                {
+                    // fill the uninitialized list
+                    uninitializedConnectingChannels.push_back(&(*vi));
+                }
+                else
+                {
+                    LOG(ERROR) << "Cannot update configuration. Socket method (bind/connect) not specified.";
+                    exit(EXIT_FAILURE);
+                }
             }
         }
     }
@@ -1180,13 +1194,14 @@ void FairMQDevice::Reset()
         // iterate over the channels vector
         for (auto& vi : mi.second)
         {
-            vi.fSocket->Close();
-            vi.fSocket = nullptr;
+            vi.fReset = true;
+            // vi.fSocket->Close();
+            // vi.fSocket = nullptr;
 
-            vi.fPoller = nullptr;
+            // vi.fPoller = nullptr;
 
-            vi.fChannelCmdSocket->Close();
-            vi.fChannelCmdSocket = nullptr;
+            // vi.fChannelCmdSocket->Close();
+            // vi.fChannelCmdSocket = nullptr;
         }
     }
 }
@@ -1207,18 +1222,24 @@ void FairMQDevice::Exit()
     LOG(DEBUG) << "Closing sockets...";
 
     // iterate over the channels
-    for (const auto& c : fChannels)
+    for (auto& c : fChannels)
     {
         // iterate over the sub-channels
-        for (const auto& sc : c.second)
+        for (auto& sc : c.second)
         {
             if (sc.fSocket)
             {
                 sc.fSocket->Close();
+                sc.fSocket = nullptr;
             }
             if (sc.fChannelCmdSocket)
             {
                 sc.fChannelCmdSocket->Close();
+                sc.fChannelCmdSocket = nullptr;
+            }
+            if (sc.fPoller)
+            {
+                sc.fPoller = nullptr;
             }
         }
     }

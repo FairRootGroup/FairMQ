@@ -244,7 +244,6 @@ class FairMQChannel
     std::string fName;
     std::atomic<bool> fIsValid;
 
-
     FairMQPollerPtr fPoller;
     FairMQSocketPtr fChannelCmdSocket;
 
@@ -270,6 +269,8 @@ class FairMQChannel
 
     static std::atomic<bool> fInterrupted;
     bool fMultipart;
+    bool fModified;
+    bool fReset;
 };
 
 #endif /* FAIRMQCHANNEL_H_ */
