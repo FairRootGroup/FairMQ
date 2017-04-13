@@ -227,20 +227,20 @@ void FairMQDevice::InitWrapper()
 
     // go over the list of channels until all are initialized (and removed from the uninitialized list)
     int numAttempts = 0;
+    auto sleepTimeInMS = 50;
+    auto maxAttempts = fInitializationTimeoutInS * 1000 / sleepTimeInMS;
     while (!uninitializedConnectingChannels.empty())
     {
         AttachChannels(uninitializedConnectingChannels);
-        if (++numAttempts > fInitializationTimeoutInS)
+        if (numAttempts > maxAttempts)
         {
             LOG(ERROR) << "could not connect all channels after " << fInitializationTimeoutInS << " attempts";
             // TODO: goto ERROR state;
             exit(EXIT_FAILURE);
         }
 
-        if (numAttempts != 0)
-        {
-            this_thread::sleep_for(chrono::milliseconds(1000));
-        }
+        this_thread::sleep_for(chrono::milliseconds(sleepTimeInMS));
+        numAttempts++;
     }
 
     Init();
