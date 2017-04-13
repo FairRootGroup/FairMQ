@@ -11,6 +11,8 @@
 
 #include <FairMQDevice.h>
 #include <FairMQLogger.h>
+#include <chrono>
+#include <thread>
 
 namespace fair
 {
@@ -22,6 +24,16 @@ namespace test
 class Pub : public FairMQDevice
 {
   protected:
+    auto Init() -> void override
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    
+    auto Reset() -> void override
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+
     auto Run() -> void override
     {
         auto ready1 = FairMQMessagePtr{NewMessage()};
@@ -60,7 +72,7 @@ class Pub : public FairMQDevice
         {
             LOG(ERROR) << "Failed receiving ready signal: r1 = " << r1 << ", r2 = " << r2;
         }
-    };
+    }
 };
 
 } // namespace test
