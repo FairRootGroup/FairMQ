@@ -5,9 +5,6 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * @file fairmq/test/helper/runTestDevice.cxx
- */
 
 #include "devices/TestPub.cxx"
 #include "devices/TestPull.cxx"

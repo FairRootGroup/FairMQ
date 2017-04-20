@@ -5,9 +5,6 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * @file fairmq/test/protocols/_transfer_timeout.cxx
- */
 
 #include "runner.h"
 #include <gtest/gtest.h>

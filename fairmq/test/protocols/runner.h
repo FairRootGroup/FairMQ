@@ -5,9 +5,6 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * @file fairmq/test/protocols/runner.h
- */
 
 #ifndef FAIR_MQ_TEST_RUNNER_H
 #define FAIR_MQ_TEST_RUNNER_H
