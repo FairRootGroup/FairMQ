@@ -34,6 +34,12 @@ auto execute(string cmd, string log_prefix) -> execute_result
     stringstream out;
 
     // Log cmd
+
+    // print full line thread-safe
+    stringstream printCmd;
+    printCmd << log_prefix << cmd << endl;
+    cout << printCmd.str() << flush;
+
     out << log_prefix << cmd << endl;
 
     // Execute command and capture stderr, add log_prefix line by line
@@ -41,6 +47,11 @@ auto execute(string cmd, string log_prefix) -> execute_result
     auto line = string{};
     while (getline(in, line))
     {
+        // print full line thread-safe
+        stringstream printLine;
+        printLine << log_prefix << line << endl;
+        cout << printLine.str() << flush;
+
         out << log_prefix << line << endl;
     }
     in.close();
