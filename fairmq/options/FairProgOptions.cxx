@@ -120,7 +120,7 @@ void FairProgOptions::UseConfigFile(const string& filename)
         if (filename.empty())
         {
             fConfigDesc.add_options()
-                ("config,c", po::value<boost::filesystem::path>(&fConfigFile)->required(), "Path to configuration file (required argument)");
+                ("config-file", po::value<boost::filesystem::path>(&fConfigFile)->required(), "Path to configuration file (required argument)");
             AddToCmdLineOptions(fConfigDesc);
         }
         else
