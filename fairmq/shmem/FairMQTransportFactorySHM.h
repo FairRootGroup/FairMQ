@@ -54,7 +54,7 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
     std::thread fHeartbeatThread;
     std::atomic<bool> fSendHeartbeats;
     boost::interprocess::named_mutex fShMutex;
-    FairMQ::shmem::FairMQShmDeviceCounter* fDeviceCounter;
+    fair::mq::shmem::DeviceCounter* fDeviceCounter;
 };
 
 #endif /* FAIRMQTRANSPORTFACTORYSHM_H_ */

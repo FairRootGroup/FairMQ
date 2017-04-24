@@ -12,7 +12,7 @@
 #include "FairMQLogger.h"
 
 using namespace std;
-using namespace FairMQ::shmem;
+using namespace fair::mq::shmem;
 
 // uint64_t FairMQMessageSHM::fMessageID = 0;
 // string FairMQMessageSHM::fDeviceID = string();

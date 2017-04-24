@@ -14,7 +14,7 @@
 #include "FairMQLogger.h"
 
 using namespace std;
-using namespace FairMQ::shmem;
+using namespace fair::mq::shmem;
 
 atomic<bool> FairMQSocketSHM::fInterrupted(false);
 

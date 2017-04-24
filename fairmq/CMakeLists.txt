@@ -88,6 +88,8 @@ set(FAIRMQ_HEADER_FILES
     shmem/FairMQPollerSHM.h
     shmem/FairMQSocketSHM.h
     shmem/FairMQTransportFactorySHM.h
+    shmem/FairMQShmMonitor.h
+    shmem/FairMQShmDeviceCounter.h
     tools/FairMQTools.h
     tools/runSimpleMQStateMachine.h
     zeromq/FairMQMessageZMQ.h
@@ -137,6 +139,7 @@ set(FAIRMQ_SOURCE_FILES
     shmem/FairMQPollerSHM.cxx
     shmem/FairMQSocketSHM.cxx
     shmem/FairMQTransportFactorySHM.cxx
+    shmem/FairMQShmMonitor.cxx
     zeromq/FairMQMessageZMQ.cxx
     zeromq/FairMQPollerZMQ.cxx
     zeromq/FairMQSocketZMQ.cxx
@@ -197,6 +200,7 @@ target_link_libraries(FairMQ
     Boost::filesystem
     Boost::regex
     Boost::date_time
+    $<$<PLATFORM_ID:Linux>:rt>
 
     PRIVATE # only libFairMQ links against private dependencies
     ZeroMQ
@@ -208,6 +212,7 @@ target_link_libraries(FairMQ
 ###############
 # executables #
 ###############
+
 add_executable(bsampler run/runBenchmarkSampler.cxx)
 target_link_libraries(bsampler FairMQ)
 
@@ -229,6 +234,9 @@ target_link_libraries(splitter FairMQ)
 add_executable(runConfigExample options/runConfigEx.cxx)
 target_link_libraries(runConfigExample FairMQ)
 
+add_executable(shmmonitor shmem/runFairMQShmMonitor.cxx)
+target_link_libraries(shmmonitor FairMQ)
+
 
 ####################
 # aggregate target #
@@ -242,6 +250,7 @@ set(FAIRMQ_FULL_TARGETS
     proxy
     sink
     splitter
+    shmmonitor
 )
 add_custom_target(FairMQFull DEPENDS ${FAIRMQ_FULL_TARGETS})
 # all targets including tests, if enabled

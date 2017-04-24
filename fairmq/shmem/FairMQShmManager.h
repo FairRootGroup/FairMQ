@@ -25,7 +25,9 @@
 
 namespace bipc = boost::interprocess;
 
-namespace FairMQ
+namespace fair
+{
+namespace mq
 {
 namespace shmem
 {
@@ -185,7 +187,7 @@ struct alignas(16) MetaHeader
 // };
 
 } // namespace shmem
-
-} // namespace FairMQ
+} // namespace mq
+} // namespace fair
 
 #endif /* FAIRMQSHMMANAGER_H_ */

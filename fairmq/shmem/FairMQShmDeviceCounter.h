@@ -10,20 +10,23 @@
 
 #include <atomic>
 
-namespace FairMQ
+namespace fair
+{
+namespace mq
 {
 namespace shmem
 {
 
-struct FairMQShmDeviceCounter
+struct DeviceCounter
 {
-    FairMQShmDeviceCounter(unsigned int c)
+    DeviceCounter(unsigned int c)
         : count(c)
     {}
     std::atomic<unsigned int> count;
 };
 
 } // namespace shmem
-} // namespace FairMQ
+} // namespace mq
+} // namespace fair
 
 #endif /* FAIRMQSHMDEVICECOUNTER_H_ */
