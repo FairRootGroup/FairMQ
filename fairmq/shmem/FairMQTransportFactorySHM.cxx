@@ -53,10 +53,12 @@ void FairMQTransportFactorySHM::Initialize(const FairMQProgOptions* config)
 {
     int numIoThreads = 1;
     size_t segmentSize = 2000000000;
+    string segmentName = "fairmq_shmem_main";
     if (config)
     {
         numIoThreads = config->GetValue<int>("io-threads");
         segmentSize = config->GetValue<size_t>("shm-segment-size");
+        segmentName = config->GetValue<string>("shm-segment-name");
     }
     else
     {
@@ -77,7 +79,7 @@ void FairMQTransportFactorySHM::Initialize(const FairMQProgOptions* config)
     fSendHeartbeats = true;
     fHeartbeatThread = thread(&FairMQTransportFactorySHM::SendHeartbeats, this);
 
-    Manager::Instance().InitializeSegment("open_or_create", "FairMQSharedMemory", segmentSize);
+    Manager::Instance().InitializeSegment("open_or_create", segmentName, segmentSize);
     LOG(DEBUG) << "shmem: created/opened shared memory segment of " << segmentSize << " bytes. Available are " << Manager::Instance().Segment()->get_free_memory() << " bytes.";
 
     { // mutex scope
@@ -202,9 +204,9 @@ void FairMQTransportFactorySHM::Terminate()
 
         if (fDeviceCounter->count == 0)
         {
-            LOG(DEBUG) << "shmem: last FairMQSharedMemory user, removing segment.";
+            LOG(DEBUG) << "shmem: last 'fairmq_shmem_main' user, removing segment.";
 
-            if (bipc::shared_memory_object::remove("FairMQSharedMemory"))
+            if (bipc::shared_memory_object::remove("fairmq_shmem_main"))
             {
                 LOG(DEBUG) << "shmem: successfully removed shared memory segment after the device has stopped.";
             }
@@ -215,7 +217,7 @@ void FairMQTransportFactorySHM::Terminate()
         }
         else
         {
-            LOG(DEBUG) << "shmem: other FairMQSharedMemory users present (" << fDeviceCounter->count << "), not removing it.";
+            LOG(DEBUG) << "shmem: other 'fairmq_shmem_main' users present (" << fDeviceCounter->count << "), not removing it.";
         }
     }
 }
