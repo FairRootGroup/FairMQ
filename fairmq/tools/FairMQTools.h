@@ -18,10 +18,7 @@
 #include <map>
 #include <string>
 #include <iostream>
-#include <type_traits>
 #include <array>
-
-using namespace std;
 
 namespace FairMQ
 {
@@ -30,13 +27,13 @@ namespace tools
 
 // make_unique implementation, until C++14 is default
 template<typename T, typename ...Args>
-unique_ptr<T> make_unique(Args&& ...args)
+std::unique_ptr<T> make_unique(Args&& ...args)
 {
-    return unique_ptr<T>(new T(forward<Args>(args)...));
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
 // returns a map with network interface names as keys and their IP addresses as values
-int getHostIPs(map<string, string>& addressMap)
+int getHostIPs(std::map<std::string, std::string>& addressMap)
 {
     struct ifaddrs *ifaddr, *ifa;
     int s;
@@ -60,11 +57,11 @@ int getHostIPs(map<string, string>& addressMap)
             s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
             if (s != 0)
             {
-                cout << "getnameinfo() failed: " << gai_strerror(s) << endl;
+                std::cout << "getnameinfo() failed: " << gai_strerror(s) << std::endl;
                 return -1;
             }
 
-            addressMap.insert(pair<string, string>(ifa->ifa_name, host));
+            addressMap.insert(std::pair<std::string, std::string>(ifa->ifa_name, host));
         }
     }
     freeifaddrs(ifaddr);
@@ -73,10 +70,10 @@ int getHostIPs(map<string, string>& addressMap)
 }
 
 // get IP address of a given interface name
-string getInterfaceIP(string interface)
+std::string getInterfaceIP(std::string interface)
 {
-    map<string, string> IPs;
-    FairMQ::tools::getHostIPs(IPs);
+    std::map<std::string, std::string> IPs;
+    getHostIPs(IPs);
     if (IPs.count(interface))
     {
         return IPs[interface];
@@ -89,15 +86,15 @@ string getInterfaceIP(string interface)
 }
 
 // get name of the default route interface
-string getDefaultRouteNetworkInterface()
+std::string getDefaultRouteNetworkInterface()
 {
-    array<char, 128> buffer;
-    string interfaceName;
+    std::array<char, 128> buffer;
+    std::string interfaceName;
 
 #ifdef __APPLE__ // MacOS
-    unique_ptr<FILE, decltype(pclose) *> file(popen("route -n get default | grep interface | cut -d \":\" -f 2", "r"), pclose);
+    std::unique_ptr<FILE, decltype(pclose) *> file(popen("route -n get default | grep interface | cut -d \":\" -f 2", "r"), pclose);
 #else // Linux
-    unique_ptr<FILE, decltype(pclose) *> file(popen("ip route | grep default | cut -d \" \" -f 5", "r"), pclose);
+    std::unique_ptr<FILE, decltype(pclose) *> file(popen("ip route | grep default | cut -d \" \" -f 5", "r"), pclose);
 #endif
 
     if (!file)
