@@ -923,6 +923,41 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& tran
     }
 }
 
+unique_ptr<FairMQTransportFactory> FairMQDevice::MakeTransport(const string& transport)
+{
+    unique_ptr<FairMQTransportFactory> tr;
+
+    if (transport == "zeromq")
+    {
+        tr = FairMQ::tools::make_unique<FairMQTransportFactoryZMQ>();
+    }
+    else if (transport == "shmem")
+    {
+        tr = FairMQ::tools::make_unique<FairMQTransportFactorySHM>();
+    }
+#ifdef NANOMSG_FOUND
+    else if (transport == "nanomsg")
+    {
+        tr = FairMQ::tools::make_unique<FairMQTransportFactoryNN>();
+    }
+#endif
+    else
+    {
+        LOG(ERROR) << "Unavailable transport requested: " << "\"" << transport << "\"" << ". Available are: "
+                   << "\"zeromq\""
+                   << "\"shmem\""
+#ifdef NANOMSG_FOUND
+                   << ", \"nanomsg\""
+#endif
+                   << ". Returning nullptr.";
+        return tr;
+    }
+
+    tr->Initialize(nullptr);
+
+    return move(tr);
+}
+
 void FairMQDevice::SetTransport(const string& transport)
 {
     if (fTransports.empty())
