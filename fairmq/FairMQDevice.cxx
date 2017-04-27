@@ -232,6 +232,13 @@ void FairMQDevice::InitWrapper()
     // Bind channels. Here one run is enough, because bind settings should be available locally
     // If necessary this could be handled in the same way as the connecting channels
     AttachChannels(uninitializedBindingChannels);
+
+    if (uninitializedBindingChannels.size() > 0)
+    {
+        LOG(ERROR) << uninitializedBindingChannels.size() << " of the binding channels could not initialize. Initial configuration incomplete.";
+        exit(EXIT_FAILURE);
+    }
+
     // notify parent thread about completion of first validation.
     {
         lock_guard<mutex> lock(fInitialValidationMutex);
