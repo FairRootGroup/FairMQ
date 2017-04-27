@@ -282,11 +282,11 @@ int64_t FairMQSocketNN::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const
 {
 #ifdef MSGPACK_FOUND
     // Warn if the vector is filled before Receive() and empty it.
-    if (msgVec.size() > 0)
-    {
-        LOG(WARN) << "Message vector contains elements before Receive(), they will be deleted!";
-        msgVec.clear();
-    }
+    // if (msgVec.size() > 0)
+    // {
+    //     LOG(WARN) << "Message vector contains elements before Receive(), they will be deleted!";
+    //     msgVec.clear();
+    // }
 
     while (true)
     {

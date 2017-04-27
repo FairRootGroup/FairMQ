@@ -269,11 +269,11 @@ int64_t FairMQSocketZMQ::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, cons
     while (true)
     {
         // Warn if the vector is filled before Receive() and empty it.
-        if (msgVec.size() > 0)
-        {
-            LOG(WARN) << "Message vector contains elements before Receive(), they will be deleted!";
-            msgVec.clear();
-        }
+        // if (msgVec.size() > 0)
+        // {
+        //     LOG(WARN) << "Message vector contains elements before Receive(), they will be deleted!";
+        //     msgVec.clear();
+        // }
 
         totalSize = 0;
         more = 0;

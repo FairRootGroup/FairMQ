@@ -823,27 +823,26 @@ bool FairMQChannel::CheckCompatibility(unique_ptr<FairMQMessage>& msg) const
 
 bool FairMQChannel::CheckCompatibility(vector<unique_ptr<FairMQMessage>>& msgVec) const
 {
+    bool match = true;
+
     if (msgVec.size() > 0)
     {
-        if (fTransportType == msgVec.at(0)->GetType())
+        for (unsigned int i = 0; i < msgVec.size(); ++i)
         {
-            return true;
-        }
-        else
-        {
-            // LOG(WARN) << "Channel type does not match message type. Copying...";
-            vector<unique_ptr<FairMQMessage>> tempVec;
-            for (unsigned int i = 0; i < msgVec.size(); ++i)
+            if (fTransportType != msgVec.at(i)->GetType())
             {
-                tempVec.push_back(fTransportFactory->CreateMessage(msgVec[i]->GetSize()));
-                memcpy(tempVec[i]->GetData(), msgVec[i]->GetData(), msgVec[i]->GetSize());
+                // LOG(WARN) << "Channel type does not match message type. Copying...";
+                FairMQMessagePtr newMsg(fTransportFactory->CreateMessage(msgVec[i]->GetSize()));
+                memcpy(newMsg->GetData(), msgVec[i]->GetData(), msgVec[i]->GetSize());
+                msgVec[i] = move(newMsg);
+                match = false;
             }
-            msgVec = move(tempVec);
-            return false;
         }
     }
     else
     {
         return true;
     }
+
+    return match;
 }
