@@ -11,6 +11,9 @@
 /// @since  2017-03-30
 /// @brief  Parser implementation for key-value subopt format
 
+#ifndef FAIRMQPARSER_SUBOPT_H
+#define FAIRMQPARSER_SUBOPT_H
+
 #include "FairMQParser.h" // for FairMQMap
 #include <boost/program_options.hpp>
 #include <cstring>
@@ -69,3 +72,6 @@ struct SUBOPT {
   FairMQMap UserParser(const po::variables_map& omap, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
 };
 }
+
+#endif /* FAIRMQPARSER_SUBOPT_H */
+
