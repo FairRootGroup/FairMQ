@@ -50,6 +50,15 @@ add_testsuite(FairMQ.Protocols
     RUN_SERIAL ON
 )
 
+add_testsuite(FairMQ.Parts
+    SOURCES
+    parts/runner.cxx
+    parts/_iterator_interface.cxx
+
+    LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/parts
+    TIMEOUT 5
+)
 
 ##############################
 # Aggregate all test targets #
