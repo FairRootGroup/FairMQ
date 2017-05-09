@@ -55,7 +55,7 @@ add_testsuite(FairMQ.Parts
     parts/runner.cxx
     parts/_iterator_interface.cxx
 
-    LINKS FairMQ
+    LINKS FairMQ ZeroMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/parts
     TIMEOUT 5
 )
