@@ -541,6 +541,18 @@ bool FairMQChannel::ValidateChannel()
                         return false;
                     }
                 }
+                else if (address.compare(0, 9, "inproc://") == 0)
+                {
+                    // check if IPC address is not empty
+                    string addressString = address.substr(9);
+                    if (addressString == "")
+                    {
+                        ss << "INVALID";
+                        LOG(DEBUG) << ss.str();
+                        LOG(ERROR) << "invalid channel address: \"" << address << "\" (empty inproc address?)";
+                        return false;
+                    }
+                }
                 else
                 {
                     // if neither TCP or IPC is specified, return invalid
