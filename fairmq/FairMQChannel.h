@@ -26,9 +26,7 @@
 #include "FairMQPoller.h"
 #include "FairMQTransports.h"
 #include "FairMQLogger.h"
-
-class FairMQPoller;
-class FairMQTransportFactory;
+#include "FairMQParts.h"
 
 class FairMQChannel
 {
@@ -221,6 +219,36 @@ class FairMQChannel
     /// @return Number of bytes that have been received. If queue is empty, returns -2.
     /// In case of errors, returns -1.
     int64_t ReceiveAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const;
+
+    int64_t Send(FairMQParts& parts) const
+    {
+        return Send(parts.fParts);
+    }
+
+    int64_t Receive(FairMQParts& parts) const
+    {
+        return Receive(parts.fParts);
+    }
+
+    int64_t Send(FairMQParts& parts, int sndTimeoutInMs) const
+    {
+        return Send(parts.fParts, sndTimeoutInMs);
+    }
+
+    int64_t Receive(FairMQParts& parts, int rcvTimeoutInMs) const
+    {
+        return Receive(parts.fParts, rcvTimeoutInMs);
+    }
+
+    int64_t SendAsync(FairMQParts& parts) const
+    {
+        return SendAsync(parts.fParts);
+    }
+
+    int64_t ReceiveAsync(FairMQParts& parts) const
+    {
+        return ReceiveAsync(parts.fParts);
+    }
 
     // TODO: this might go to some base utility library
     static void Tokenize(std::vector<std::string>& output, const std::string& input, const std::string delimiters = ",");
