@@ -42,8 +42,9 @@ add_testsuite(FairMQ.Protocols
     protocols/_push_pull.cxx
     protocols/_req_rep.cxx
     protocols/_transfer_timeout.cxx
+    protocols/_push_pull_multipart.cxx
 
-    LINKS PStreams
+    LINKS PStreams FairMQ
     DEPENDS testhelper_runTestDevice
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/protocols
     TIMEOUT 30
