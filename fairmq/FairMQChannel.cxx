@@ -424,6 +424,22 @@ auto FairMQChannel::SetModified(const bool modified) -> void
     }
 }
 
+void FairMQChannel::UpdateChannelName(const string& name)
+{
+    try
+    {
+        unique_lock<mutex> lock(fChannelMutex);
+        fIsValid = false;
+        fName = name;
+        fModified = true;
+    }
+    catch (exception& e)
+    {
+        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateChannelName: " << e.what();
+        exit(EXIT_FAILURE);
+    }
+}
+
 bool FairMQChannel::IsValid() const
 {
     try

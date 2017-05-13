@@ -135,6 +135,10 @@ class FairMQChannel
     /// @param rateLogging Socket rate logging interval (in seconds)
     void UpdateRateLogging(const int rateLogging);
 
+    /// Set channel name
+    /// @param name Arbitrary channel name
+    void UpdateChannelName(const std::string& name);
+
     /// Checks if the configured channel settings are valid (checks the validity parameter, without running full validation (as oposed to ValidateChannel()))
     /// @return true if channel settings are valid, false otherwise.
     bool IsValid() const;
