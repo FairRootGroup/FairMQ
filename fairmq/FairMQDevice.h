@@ -195,90 +195,46 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         return fChannels.at(chan).at(i).ReceiveAsync(parts.fParts);
     }
 
-    /// @brief Create empty FairMQMessage
-    /// @return pointer to FairMQMessage
-    inline FairMQMessagePtr NewMessage() const
+    /// @brief Getter for default transport factory
+    auto Transport() const -> const FairMQTransportFactory*
     {
-        return fTransportFactory->CreateMessage();
+        return fTransports.cbegin()->second.get();
     }
 
-    /// @brief Create new FairMQMessage of specified size
-    /// @param size message size
-    /// @return pointer to FairMQMessage
-    inline FairMQMessagePtr NewMessage(int size) const
+    template<typename... Args>
+    inline FairMQMessagePtr NewMessage(Args&&... args) const
     {
-        return fTransportFactory->CreateMessage(size);
-    }
-
-    /// @brief Create new FairMQMessage with user provided buffer and size
-    /// @param data pointer to user provided buffer
-    /// @param size size of the user provided buffer
-    /// @param ffn callback, called when the message is transfered (and can be deleted)
-    /// @param obj optional helper pointer that can be used in the callback
-    /// @return pointer to FairMQMessage
-    inline FairMQMessagePtr NewMessage(void* data, int size, fairmq_free_fn* ffn, void* obj = nullptr) const
-    {
-        return fTransportFactory->CreateMessage(data, size, ffn, obj);
+        return Transport()->CreateMessage(std::forward<Args>(args)...);
     }
 
     template<typename... Args>
     inline FairMQMessagePtr NewMessageFor(const std::string& channel, int index, Args&&... args) const
     {
-        return fChannels.at(channel).at(index).fTransportFactory->CreateMessage(std::forward<Args>(args)...);
-    }
-
-    static void FairMQNoCleanup(void* /*data*/, void* /*obj*/)
-    {
+        return fChannels.at(channel).at(index).Transport()->CreateMessage(std::forward<Args>(args)...);
     }
 
     template<typename T>
     inline FairMQMessagePtr NewStaticMessage(const T& data) const
     {
-        return fTransportFactory->CreateMessage(data, sizeof(T), FairMQNoCleanup, nullptr);
-    }
-
-    inline FairMQMessagePtr NewStaticMessage(const std::string& str) const
-    {
-        return fTransportFactory->CreateMessage(const_cast<char*>(str.c_str()), str.length(), FairMQNoCleanup, nullptr);
+        return Transport()->NewStaticMessage(data);
     }
 
     template<typename T>
     inline FairMQMessagePtr NewStaticMessageFor(const std::string& channel, int index, const T& data) const
     {
-        return fChannels.at(channel).at(index).fTransportFactory->CreateMessage(data, sizeof(T), FairMQNoCleanup, nullptr);
-    }
-
-    inline FairMQMessagePtr NewStaticMessageFor(const std::string& channel, int index, const std::string& str) const
-    {
-        return fChannels.at(channel).at(index).fTransportFactory->CreateMessage(const_cast<char*>(str.c_str()), str.length(), FairMQNoCleanup, nullptr);
-    }
-
-    template<typename T>
-    static void FairMQSimpleMsgCleanup(void* /*data*/, void* obj)
-    {
-        delete static_cast<T*>(obj);
+        return fChannels.at(channel).at(index).NewStaticMessage(data);
     }
 
     template<typename T>
     inline FairMQMessagePtr NewSimpleMessage(const T& data) const
     {
-        // todo: is_trivially_copyable not available on gcc < 5, workaround?
-        // static_assert(std::is_trivially_copyable<T>::value, "The argument type for NewSimpleMessage has to be trivially copyable!");
-        T* dataCopy = new T(data);
-        return fTransportFactory->CreateMessage(dataCopy, sizeof(T), FairMQSimpleMsgCleanup<T>, dataCopy);
+        return Transport()->NewSimpleMessage(data);
     }
 
-    template<std::size_t N>
-    inline FairMQMessagePtr NewSimpleMessage(const char(&data)[N]) const
+    template<typename T>
+    inline FairMQMessagePtr NewSimpleMessageFor(const std::string& channel, int index, const T& data) const
     {
-        std::string* msgStr = new std::string(data);
-        return fTransportFactory->CreateMessage(const_cast<char*>(msgStr->c_str()), msgStr->length(), FairMQSimpleMsgCleanup<std::string>, msgStr);
-    }
-
-    inline FairMQMessagePtr NewSimpleMessage(const std::string& str) const
-    {
-        std::string* msgStr = new std::string(str);
-        return fTransportFactory->CreateMessage(const_cast<char*>(msgStr->c_str()), msgStr->length(), FairMQSimpleMsgCleanup<std::string>, msgStr);
+        return fChannels.at(channel).at(index).NewSimpleMessage(data);
     }
 
     /// Waits for the first initialization run to finish

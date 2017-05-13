@@ -258,7 +258,28 @@ class FairMQChannel
     unsigned long GetMessagesTx() const;
     unsigned long GetMessagesRx() const;
 
-    FairMQTransportFactory* Transport();
+    auto Transport() const -> const FairMQTransportFactory*
+    {
+        return fTransportFactory.get();
+    };
+
+    template<typename... Args>
+    inline FairMQMessagePtr NewMessage(Args&&... args) const
+    {
+        return Transport()->CreateMessage(std::forward<Args>(args)...);
+    }
+
+    template<typename T>
+    inline FairMQMessagePtr NewSimpleMessage(const T& data) const
+    {
+        return Transport()->NewSimpleMessage(data);
+    }
+
+    template<typename T>
+    inline FairMQMessagePtr NewStaticMessage(const T& data) const
+    {
+        return Transport()->NewStaticMessage(data);
+    }
 
   private:
     std::unique_ptr<FairMQSocket> fSocket;

@@ -841,12 +841,6 @@ unsigned long FairMQChannel::GetMessagesRx() const
     return fSocket->GetMessagesRx();
 }
 
-
-FairMQTransportFactory* FairMQChannel::Transport()
-{
-    return fTransportFactory.get();
-}
-
 bool FairMQChannel::CheckCompatibility(unique_ptr<FairMQMessage>& msg) const
 {
     if (fTransportType == msg->GetType())

@@ -8,8 +8,7 @@
 
 #include <gtest/gtest.h>
 #include <FairMQParts.h>
-#include <FairMQDevice.h>
-#include <zeromq/FairMQTransportFactoryZMQ.h>
+#include <FairMQTransportFactory.h>
 #include <string>
 #include <sstream>
 #include <algorithm>
@@ -28,7 +27,7 @@ class RandomAccessIterator : public ::testing::Test {
 
     RandomAccessIterator()
     : mParts(FairMQParts{}),
-      mFactory(FairMQTransportFactoryZMQ{}),
+      mFactory(FairMQTransportFactory::CreateTransportFactory("zeromq")),
       mS1("1"),
       mS2("2"),
       mS3("3")
