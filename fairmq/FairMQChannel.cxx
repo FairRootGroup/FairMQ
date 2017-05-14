@@ -75,6 +75,31 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
 {
 }
 
+FairMQChannel::FairMQChannel(const string& name, const string& type, std::shared_ptr<FairMQTransportFactory> factory)
+    : fSocket(factory->CreateSocket(type, name, name)) // TODO whats id and whats name?
+    , fType(type)
+    , fMethod("unspecified")
+    , fAddress("unspecified")
+    , fTransport("default") // TODO refactor, either use string representation or enum type
+    , fSndBufSize(1000)
+    , fRcvBufSize(1000)
+    , fSndKernelSize(0)
+    , fRcvKernelSize(0)
+    , fRateLogging(1)
+    , fName(name)
+    , fIsValid(false)
+    , fPoller(nullptr)
+    , fChannelCmdSocket(nullptr)
+    , fTransportType(factory->GetType())
+    , fTransportFactory(factory)
+    , fNoBlockFlag(0)
+    , fSndMoreFlag(0)
+    , fMultipart(false)
+    , fModified(true)
+    , fReset(false)
+{
+}
+
 FairMQChannel::FairMQChannel(const FairMQChannel& chan)
     : fSocket(nullptr)
     , fType(chan.fType)

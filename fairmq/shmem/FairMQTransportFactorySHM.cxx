@@ -228,3 +228,7 @@ FairMQ::Transport FairMQTransportFactorySHM::GetType() const
     return fTransportType;
 }
 
+FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
+{
+    Terminate();
+}

@@ -80,3 +80,8 @@ FairMQ::Transport FairMQTransportFactoryNN::GetType() const
 {
     return fTransportType;
 }
+
+FairMQTransportFactoryNN::~FairMQTransportFactoryNN()
+{
+    Terminate();
+}

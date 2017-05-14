@@ -565,4 +565,5 @@ int FairMQSocketZMQ::GetConstant(const string& constant)
 
 FairMQSocketZMQ::~FairMQSocketZMQ()
 {
+    Close();
 }

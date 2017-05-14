@@ -627,4 +627,5 @@ int FairMQSocketSHM::GetConstant(const string& constant)
 
 FairMQSocketSHM::~FairMQSocketSHM()
 {
+    Close();
 }

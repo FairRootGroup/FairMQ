@@ -1235,45 +1235,7 @@ void FairMQDevice::Exit()
         t.second->Shutdown();
     }
 
-    LOG(DEBUG) << "Closing sockets...";
-
-    // iterate over the channels
-    for (auto& c : fChannels)
-    {
-        // iterate over the sub-channels
-        for (auto& sc : c.second)
-        {
-            if (sc.fSocket)
-            {
-                sc.fSocket->Close();
-                sc.fSocket = nullptr;
-            }
-            if (sc.fChannelCmdSocket)
-            {
-                sc.fChannelCmdSocket->Close();
-                sc.fChannelCmdSocket = nullptr;
-            }
-            if (sc.fPoller)
-            {
-                sc.fPoller = nullptr;
-            }
-        }
-    }
-
-    for (auto& s : fDeviceCmdSockets)
-    {
-        s.second->Close();
-    }
-
-    LOG(DEBUG) << "Closed all sockets!";
-
-    // ask transports to terminate
-    for (const auto& t : fTransports)
-    {
-        t.second->Terminate();
-    }
-
-    LOG(DEBUG) << "All transports exited.";
+    LOG(DEBUG) << "All transports are shut down.";
 }
 
 FairMQDevice::~FairMQDevice()

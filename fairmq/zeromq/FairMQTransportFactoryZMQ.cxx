@@ -33,6 +33,11 @@ FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ()
         LOG(ERROR) << "failed creating context, reason: " << zmq_strerror(errno);
         exit(EXIT_FAILURE);
     }
+
+    if (zmq_ctx_set(fContext, ZMQ_MAX_SOCKETS, 10000) != 0)
+    {
+        LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
+    }
 }
 
 void FairMQTransportFactoryZMQ::Initialize(const FairMQProgOptions* config)
@@ -48,12 +53,6 @@ void FairMQTransportFactoryZMQ::Initialize(const FairMQProgOptions* config)
     }
 
     if (zmq_ctx_set(fContext, ZMQ_IO_THREADS, numIoThreads) != 0)
-    {
-        LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
-    }
-
-    // Set the maximum number of allowed sockets on the context.
-    if (zmq_ctx_set(fContext, ZMQ_MAX_SOCKETS, 10000) != 0)
     {
         LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
     }
@@ -129,4 +128,9 @@ void FairMQTransportFactoryZMQ::Terminate()
     {
         LOG(ERROR) << "shmem: Terminate(): context now available for shutdown";
     }
+}
+
+FairMQTransportFactoryZMQ::~FairMQTransportFactoryZMQ()
+{
+    Terminate();
 }

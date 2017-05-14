@@ -45,7 +45,7 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
 
     void SendHeartbeats();
 
-    ~FairMQTransportFactorySHM() override {};
+    ~FairMQTransportFactorySHM() override;
 
   private:
     static FairMQ::Transport fTransportType;

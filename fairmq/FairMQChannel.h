@@ -42,6 +42,12 @@ class FairMQChannel
     /// @param address Network address to bind/connect to (e.g. "tcp://127.0.0.1:5555" or "ipc://abc")
     FairMQChannel(const std::string& type, const std::string& method, const std::string& address);
 
+    /// Constructor
+    /// @param name Channel name
+    /// @param type Socket type (push/pull/pub/sub/spub/xsub/pair/req/rep/dealer/router/)
+    /// @param factory TransportFactory
+    FairMQChannel(const std::string& name, const std::string& type, std::shared_ptr<FairMQTransportFactory> factory);
+
     /// Copy Constructor
     FairMQChannel(const FairMQChannel&);
 
@@ -52,6 +58,20 @@ class FairMQChannel
     virtual ~FairMQChannel();
 
     FairMQSocket const & GetSocket() const;
+
+    auto Bind(const std::string& address) -> bool
+    {
+        fMethod = "bind";
+        fAddress = address;
+        return fSocket->Bind(address);
+    }
+
+    auto Connect(const std::string& address) -> void
+    {
+        fMethod = "connect";
+        fAddress = address;
+        return fSocket->Connect(address);
+    }
 
     /// Get channel name
     /// @return Returns full channel name (e.g. "data[0]")

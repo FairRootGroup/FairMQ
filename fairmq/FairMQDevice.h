@@ -301,9 +301,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param rhs Left hand side value for comparison
     static bool SortSocketsByAddress(const FairMQChannel &lhs, const FairMQChannel &rhs);
 
-    std::unordered_map<std::string, std::vector<FairMQChannel>> fChannels; ///< Device channels
-    FairMQProgOptions* fConfig; ///< Program options configuration
-
     template<class T>
     void OnData(const std::string& channelName, bool (T::* memberFunction)(FairMQMessagePtr& msg, int index))
     {
@@ -341,6 +338,14 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     bool Terminated();
 
   protected:
+    std::shared_ptr<FairMQTransportFactory> fTransportFactory; ///< Transport factory
+    std::unordered_map<FairMQ::Transport, std::shared_ptr<FairMQTransportFactory>> fTransports; ///< Container for transports
+
+  public:
+    std::unordered_map<std::string, std::vector<FairMQChannel>> fChannels; ///< Device channels
+    FairMQProgOptions* fConfig; ///< Program options configuration
+
+  protected:
     std::string fId; ///< Device ID
     std::string fNetworkInterface; ///< Network interface to use for dynamic binding
     std::string fDefaultTransport; ///< Default transport for the device
@@ -352,8 +357,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     int fPortRangeMin; ///< Minimum value for the port range (if dynamic)
     int fPortRangeMax; ///< Maximum value for the port range (if dynamic)
 
-    std::shared_ptr<FairMQTransportFactory> fTransportFactory; ///< Transport factory
-    std::unordered_map<FairMQ::Transport, std::shared_ptr<FairMQTransportFactory>> fTransports; ///< Container for transports
     std::unordered_map<FairMQ::Transport, FairMQSocketPtr> fDeviceCmdSockets; ///< Sockets used for the internal unblocking mechanism
 
     /// Additional user initialization (can be overloaded in child classes). Prefer to use InitTask().

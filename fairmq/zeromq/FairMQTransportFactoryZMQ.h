@@ -27,6 +27,7 @@ class FairMQTransportFactoryZMQ : public FairMQTransportFactory
 {
   public:
     FairMQTransportFactoryZMQ();
+    ~FairMQTransportFactoryZMQ() override;
 
     void Initialize(const FairMQProgOptions* config) override;
 
@@ -44,8 +45,6 @@ class FairMQTransportFactoryZMQ : public FairMQTransportFactory
 
     void Shutdown() override;
     void Terminate() override;
-
-    ~FairMQTransportFactoryZMQ() override {};
 
   private:
     static FairMQ::Transport fTransportType;
