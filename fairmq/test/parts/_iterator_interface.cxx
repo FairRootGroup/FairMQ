@@ -23,18 +23,14 @@ class RandomAccessIterator : public ::testing::Test {
   protected:
     FairMQParts mParts;
     shared_ptr<FairMQTransportFactory> mFactory;
-    const string mS1, mS2, mS3;
 
     RandomAccessIterator()
     : mParts(FairMQParts{}),
-      mFactory(FairMQTransportFactory::CreateTransportFactory("zeromq")),
-      mS1("1"),
-      mS2("2"),
-      mS3("3")
+      mFactory(FairMQTransportFactory::CreateTransportFactory("zeromq"))
     {
-        mParts.AddPart(mFactory->NewSimpleMessage(mS1));
-        mParts.AddPart(mFactory->NewSimpleMessage(mS2));
-        mParts.AddPart(mFactory->NewSimpleMessage(mS3));
+        mParts.AddPart(mFactory->NewSimpleMessage("1"));
+        mParts.AddPart(mFactory->NewSimpleMessage("2"));
+        mParts.AddPart(mFactory->NewSimpleMessage("3"));
     }
 };
 
