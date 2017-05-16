@@ -1,10 +1,16 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2016-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
+
+#include "FairMQLogger.h"
+#include "FairMQShmManager.h"
+#include "FairMQTransportFactorySHM.h"
+#include "../options/FairMQProgOptions.h"
+
 #include <zmq.h>
 
 #include <boost/version.hpp>
@@ -17,11 +23,6 @@
 
 #include <chrono>
 
-#include "FairMQLogger.h"
-#include "FairMQShmManager.h"
-#include "FairMQTransportFactorySHM.h"
-#include "../options/FairMQProgOptions.h"
-
 using namespace std;
 using namespace fair::mq::shmem;
 namespace bipc = boost::interprocess;
@@ -29,8 +30,9 @@ namespace bpt = boost::posix_time;
 
 FairMQ::Transport FairMQTransportFactorySHM::fTransportType = FairMQ::Transport::SHM;
 
-FairMQTransportFactorySHM::FairMQTransportFactorySHM()
-    : fContext(nullptr)
+FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id)
+    : FairMQTransportFactory(id)
+    , fContext(nullptr)
     , fHeartbeatSocket(nullptr)
     , fHeartbeatThread()
     , fSendHeartbeats(true)
@@ -144,10 +146,10 @@ FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(void* data, const size
     return unique_ptr<FairMQMessage>(new FairMQMessageSHM(data, size, ffn, hint));
 }
 
-FairMQSocketPtr FairMQTransportFactorySHM::CreateSocket(const string& type, const string& name, const string& id /*= ""*/) const
+FairMQSocketPtr FairMQTransportFactorySHM::CreateSocket(const string& type, const string& name) const
 {
     assert(fContext);
-    return unique_ptr<FairMQSocket>(new FairMQSocketSHM(type, name, id, fContext));
+    return unique_ptr<FairMQSocket>(new FairMQSocketSHM(type, name, GetId(), fContext));
 }
 
 FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const vector<FairMQChannel>& channels) const

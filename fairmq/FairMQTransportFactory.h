@@ -1,37 +1,40 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQTransportFactory.h
- *
- * @since 2014-01-20
- * @author: A. Rybalchenko
- */
 
 #ifndef FAIRMQTRANSPORTFACTORY_H_
 #define FAIRMQTRANSPORTFACTORY_H_
-
-#include <string>
-#include <memory>
-#include <vector>
-#include <unordered_map>
 
 #include "FairMQMessage.h"
 #include "FairMQSocket.h"
 #include "FairMQPoller.h"
 #include "FairMQLogger.h"
 #include "FairMQTransports.h"
+#include <string>
+#include <memory>
+#include <vector>
+#include <unordered_map>
 
 class FairMQChannel;
 class FairMQProgOptions;
 
 class FairMQTransportFactory
 {
+  private:
+    /// Topology wide unique id
+    const std::string fkId;
+ 
   public:
+    /// ctor
+    /// @param id Topology wide unique id, usually the device id.
+    FairMQTransportFactory(const std::string& id);
+
+    auto GetId() const -> const std::string { return fkId; };
+
     /// Initialize transport
     virtual void Initialize(const FairMQProgOptions* config) = 0;
 
@@ -51,7 +54,7 @@ class FairMQTransportFactory
     virtual FairMQMessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) const = 0;
 
     /// Create a socket
-    virtual FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name, const std::string& id = "") const = 0;
+    virtual FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name) const = 0;
 
     /// Create a poller for all device channels
     virtual FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const = 0;
@@ -70,7 +73,7 @@ class FairMQTransportFactory
 
     virtual ~FairMQTransportFactory() {};
 
-    static auto CreateTransportFactory(const std::string& type) -> std::shared_ptr<FairMQTransportFactory>;
+    static auto CreateTransportFactory(const std::string& type, const std::string& id = "") -> std::shared_ptr<FairMQTransportFactory>;
 
     static void FairMQNoCleanup(void* /*data*/, void* /*obj*/)
     {

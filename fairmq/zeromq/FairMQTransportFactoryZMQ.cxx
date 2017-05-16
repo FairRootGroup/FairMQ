@@ -1,28 +1,22 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQTransportFactoryZMQ.cxx
- *
- * @since 2014-01-20
- * @author: A. Rybalchenko
- */
-
-#include "zmq.h"
 
 #include "FairMQTransportFactoryZMQ.h"
 #include "../options/FairMQProgOptions.h"
+#include <zmq.h>
 
 using namespace std;
 
 FairMQ::Transport FairMQTransportFactoryZMQ::fTransportType = FairMQ::Transport::ZMQ;
 
-FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ()
-    : fContext(zmq_ctx_new())
+FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id)
+: FairMQTransportFactory(id)
+, fContext(zmq_ctx_new())
 {
     int major, minor, patch;
     zmq_version(&major, &minor, &patch);
@@ -73,10 +67,10 @@ FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(void* data, const size
     return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(data, size, ffn, hint));
 }
 
-FairMQSocketPtr FairMQTransportFactoryZMQ::CreateSocket(const string& type, const string& name, const string& id /*= ""*/) const
+FairMQSocketPtr FairMQTransportFactoryZMQ::CreateSocket(const string& type, const string& name) const
 {
     assert(fContext);
-    return unique_ptr<FairMQSocket>(new FairMQSocketZMQ(type, name, id, fContext));
+    return unique_ptr<FairMQSocket>(new FairMQSocketZMQ(type, name, GetId(), fContext));
 }
 
 FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQChannel>& channels) const

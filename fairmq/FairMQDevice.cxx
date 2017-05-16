@@ -155,7 +155,7 @@ void FairMQDevice::InitWrapper()
 
     if (fDeviceCmdSockets.empty())
     {
-        auto p = fDeviceCmdSockets.emplace(fTransportFactory->GetType(), fTransportFactory->CreateSocket("pub", "device-commands", fId));
+        auto p = fDeviceCmdSockets.emplace(fTransportFactory->GetType(), fTransportFactory->CreateSocket("pub", "device-commands"));
         if (p.second)
         {
             p.first->second->Bind("inproc://commands");
@@ -303,7 +303,7 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
         //(re-)init socket
         if (!ch.fSocket)
         {
-            ch.fSocket = ch.fTransportFactory->CreateSocket(ch.fType, ch.fName, fId);
+            ch.fSocket = ch.fTransportFactory->CreateSocket(ch.fType, ch.fName);
         }
 
         // set high water marks
@@ -874,7 +874,7 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& tran
 
     if (i == fTransports.end())
     {
-        auto tr = FairMQTransportFactory::CreateTransportFactory(transport);
+        auto tr = FairMQTransportFactory::CreateTransportFactory(transport, fId);
 
         LOG(DEBUG) << "Adding '" << transport << "' transport to the device.";
 
@@ -882,7 +882,7 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& tran
         tr->Initialize(fConfig);
         fTransports.insert(trPair);
 
-        auto p = fDeviceCmdSockets.emplace(tr->GetType(), tr->CreateSocket("pub", "device-commands", fId));
+        auto p = fDeviceCmdSockets.emplace(tr->GetType(), tr->CreateSocket("pub", "device-commands"));
         if (p.second)
         {
             p.first->second->Bind("inproc://commands");

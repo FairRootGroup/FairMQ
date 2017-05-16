@@ -76,7 +76,7 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
 }
 
 FairMQChannel::FairMQChannel(const string& name, const string& type, std::shared_ptr<FairMQTransportFactory> factory)
-    : fSocket(factory->CreateSocket(type, name, name)) // TODO whats id and whats name?
+    : fSocket(factory->CreateSocket(type, name))
     , fType(type)
     , fMethod("unspecified")
     , fAddress("unspecified")
@@ -665,7 +665,7 @@ void FairMQChannel::InitTransport(shared_ptr<FairMQTransportFactory> factory)
 
 bool FairMQChannel::InitCommandInterface()
 {
-    fChannelCmdSocket = fTransportFactory->CreateSocket("sub", "device-commands", "internal");
+    fChannelCmdSocket = fTransportFactory->CreateSocket("sub", "device-commands");
     if (fChannelCmdSocket)
     {
         fChannelCmdSocket->Connect("inproc://commands");

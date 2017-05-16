@@ -14,21 +14,41 @@
 #endif /* NANOMSG_FOUND */
 #include <FairMQLogger.h>
 #include <memory>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <string>
+#include <sstream>
 
-auto FairMQTransportFactory::CreateTransportFactory(const std::string& type) -> std::shared_ptr<FairMQTransportFactory>
+FairMQTransportFactory::FairMQTransportFactory(const std::string& id)
+: fkId(id)
 {
+}
+
+auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, const std::string& id) -> std::shared_ptr<FairMQTransportFactory>
+{
+    using namespace std;
+
+    auto final_id = id;
+
+    // Generate uuid if empty
+    if(final_id == "")
+    {
+        final_id = boost::uuids::to_string(boost::uuids::random_generator()());
+    }
+
     if (type == "zeromq")
     {
-        return std::make_shared<FairMQTransportFactoryZMQ>();
+        return std::make_shared<FairMQTransportFactoryZMQ>(final_id);
     }
     else if (type == "shmem")
     {
-        return std::make_shared<FairMQTransportFactorySHM>();
+        return std::make_shared<FairMQTransportFactorySHM>(final_id);
     }
 #ifdef NANOMSG_FOUND
     else if (type == "nanomsg")
     {
-        return std::make_shared<FairMQTransportFactoryNN>();
+        return std::make_shared<FairMQTransportFactoryNN>(final_id);
     }
 #endif /* NANOMSG_FOUND */
     else

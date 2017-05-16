@@ -1,16 +1,10 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2017 GSI Helmholtzzentrum fuer Schwerionenforschung Gmb   *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQTransportFactoryNN.cxx
- *
- * @since 2014-01-20
- * @author: A. Rybalchenko
- */
 
 #include "FairMQTransportFactoryNN.h"
 #include "../options/FairMQProgOptions.h"
@@ -21,7 +15,8 @@ using namespace std;
 
 FairMQ::Transport FairMQTransportFactoryNN::fTransportType = FairMQ::Transport::NN;
 
-FairMQTransportFactoryNN::FairMQTransportFactoryNN()
+FairMQTransportFactoryNN::FairMQTransportFactoryNN(const string& id)
+    : FairMQTransportFactory(id)
 {
     LOG(DEBUG) << "Transport: Using nanomsg library";
 }
@@ -46,9 +41,9 @@ FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(void* data, const size_
     return unique_ptr<FairMQMessage>(new FairMQMessageNN(data, size, ffn, hint));
 }
 
-FairMQSocketPtr FairMQTransportFactoryNN::CreateSocket(const string& type, const string& name, const string& id /*= ""*/) const
+FairMQSocketPtr FairMQTransportFactoryNN::CreateSocket(const string& type, const string& name) const
 {
-    return unique_ptr<FairMQSocket>(new FairMQSocketNN(type, name, id));
+    return unique_ptr<FairMQSocket>(new FairMQSocketNN(type, name, GetId()));
 }
 
 FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const vector<FairMQChannel>& channels) const
