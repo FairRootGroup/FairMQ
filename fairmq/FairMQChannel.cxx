@@ -410,6 +410,20 @@ void FairMQChannel::UpdateRateLogging(const int rateLogging)
     }
 }
 
+auto FairMQChannel::SetModified(const bool modified) -> void
+{
+    try
+    {
+        unique_lock<mutex> lock(fChannelMutex);
+        fModified = modified;
+    }
+    catch (exception& e)
+    {
+        LOG(ERROR) << "Exception caught in FairMQChannel::SetModified: " << e.what();
+        exit(EXIT_FAILURE);
+    }
+}
+
 bool FairMQChannel::IsValid() const
 {
     try

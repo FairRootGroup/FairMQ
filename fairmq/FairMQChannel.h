@@ -270,6 +270,7 @@ class FairMQChannel
     static std::atomic<bool> fInterrupted;
     bool fMultipart;
     bool fModified;
+    auto SetModified(const bool modified) -> void;
     bool fReset;
 };
 

@@ -129,7 +129,7 @@ void FairMQDevice::AttachChannels(list<FairMQChannel*>& chans)
             if (AttachChannel(**itr))
             {
                 (*itr)->InitCommandInterface();
-                (*itr)->fModified = false;
+                (*itr)->SetModified(false);
                 chans.erase(itr++);
             }
             else
