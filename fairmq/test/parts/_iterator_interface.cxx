@@ -13,6 +13,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <memory>
 
 namespace
 {
@@ -22,7 +23,7 @@ using namespace std;
 class RandomAccessIterator : public ::testing::Test {
   protected:
     FairMQParts mParts;
-    FairMQTransportFactoryZMQ mFactory;
+    shared_ptr<FairMQTransportFactory> mFactory;
     const string mS1, mS2, mS3;
 
     RandomAccessIterator()
@@ -32,13 +33,9 @@ class RandomAccessIterator : public ::testing::Test {
       mS2("2"),
       mS3("3")
     {
-
-        mParts.AddPart(mFactory.CreateMessage(const_cast<char*>(mS1.c_str()),
-            mS1.length(), FairMQDevice::FairMQSimpleMsgCleanup<string>));
-        mParts.AddPart(mFactory.CreateMessage(const_cast<char*>(mS2.c_str()),
-            mS2.length(), FairMQDevice::FairMQSimpleMsgCleanup<string>));
-        mParts.AddPart(mFactory.CreateMessage(const_cast<char*>(mS3.c_str()),
-            mS3.length(), FairMQDevice::FairMQSimpleMsgCleanup<string>));
+        mParts.AddPart(mFactory->NewSimpleMessage(mS1));
+        mParts.AddPart(mFactory->NewSimpleMessage(mS2));
+        mParts.AddPart(mFactory->NewSimpleMessage(mS3));
     }
 };
 
@@ -57,8 +54,7 @@ TEST_F(RandomAccessIterator, RangeForLoopMutation)
     auto s = string{"4"};
 
     for (auto&& part : mParts) {
-        part = mFactory.CreateMessage(const_cast<char*>(s.c_str()),
-            s.length(), FairMQDevice::FairMQSimpleMsgCleanup<string>);
+        part = mFactory->NewSimpleMessage(s);
     }
 
     stringstream out;

@@ -1,19 +1,23 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2012-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQDevice.h
- *
- * @since 2012-10-25
- * @author D. Klein, A. Rybalchenko
- */
 
 #ifndef FAIRMQDEVICE_H_
 #define FAIRMQDEVICE_H_
+
+#include "FairMQConfigurable.h"
+#include "FairMQStateMachine.h"
+#include "FairMQTransportFactory.h"
+#include "FairMQTransports.h"
+
+#include "FairMQSocket.h"
+#include "FairMQChannel.h"
+#include "FairMQMessage.h"
+#include "FairMQParts.h"
 
 #include <vector>
 #include <memory> // unique_ptr
@@ -27,16 +31,6 @@
 
 #include <mutex>
 #include <condition_variable>
-
-#include "FairMQConfigurable.h"
-#include "FairMQStateMachine.h"
-#include "FairMQTransportFactory.h"
-#include "FairMQTransports.h"
-
-#include "FairMQSocket.h"
-#include "FairMQChannel.h"
-#include "FairMQMessage.h"
-#include "FairMQParts.h"
 
 typedef std::unordered_map<std::string, std::vector<FairMQChannel>> FairMQChannelMap;
 
@@ -321,7 +315,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     /// Get property description for a given property name
     /// @param  key     Property name/key
-    /// @return String  with the property description 
+    /// @return String  with the property description
     virtual std::string GetPropertyDescription(const int key);
     /// Print all properties of this and the parent class to LOG(INFO)
     virtual void ListProperties();

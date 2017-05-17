@@ -874,33 +874,7 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& tran
 
     if (i == fTransports.end())
     {
-        shared_ptr<FairMQTransportFactory> tr;
-
-        if (transport == "zeromq")
-        {
-            tr = make_shared<FairMQTransportFactoryZMQ>();
-        }
-        else if (transport == "shmem")
-        {
-            tr = make_shared<FairMQTransportFactorySHM>();
-        }
-#ifdef NANOMSG_FOUND
-        else if (transport == "nanomsg")
-        {
-            tr = make_shared<FairMQTransportFactoryNN>();
-        }
-#endif
-        else
-        {
-            LOG(ERROR) << "Unavailable transport requested: " << "\"" << transport << "\"" << ". Available are: "
-                       << "\"zeromq\""
-                       << "\"shmem\""
-#ifdef NANOMSG_FOUND
-                       << ", \"nanomsg\""
-#endif
-                       << ". Exiting.";
-            exit(EXIT_FAILURE);
-        }
+        auto tr = FairMQTransportFactory::CreateTransportFactory(transport);
 
         LOG(DEBUG) << "Adding '" << transport << "' transport to the device.";
 

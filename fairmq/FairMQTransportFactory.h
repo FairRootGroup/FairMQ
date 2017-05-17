@@ -61,6 +61,8 @@ class FairMQTransportFactory
     virtual void Terminate() = 0;
 
     virtual ~FairMQTransportFactory() {};
+
+    static auto CreateTransportFactory(const std::string& type) -> std::shared_ptr<FairMQTransportFactory>;
 };
 
 #endif /* FAIRMQTRANSPORTFACTORY_H_ */
