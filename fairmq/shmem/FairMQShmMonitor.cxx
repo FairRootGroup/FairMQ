@@ -325,6 +325,10 @@ void Monitor::PrintQueues()
     {
         cout << "\tno queues found" << endl;
     }
+    catch (std::out_of_range& ie)
+    {
+        cout << "\tno queues found" << endl;
+    }
 
     cout << endl;
 }
