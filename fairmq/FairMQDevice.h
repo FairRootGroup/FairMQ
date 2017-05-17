@@ -472,6 +472,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     bool HandleMsgInput(const std::string& chName, const InputMsgCallback& callback, int i) const;
     bool HandleMultipartInput(const std::string& chName, const InputMultipartCallback& callback, int i) const;
 
+    void CreateOwnConfig();
+
     /// Signal handler
     void SignalHandler(int signal);
     bool fCatchingSignals;
@@ -486,6 +488,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     std::vector<std::string> fInputChannelKeys;
     std::mutex fMultitransportMutex;
     std::atomic<bool> fMultitransportProceed;
+
+    bool fExternalConfig;
 };
 
 #endif /* FAIRMQDEVICE_H_ */
