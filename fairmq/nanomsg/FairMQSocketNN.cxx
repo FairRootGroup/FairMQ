@@ -82,7 +82,10 @@ FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const str
 
 #ifdef NN_RCVMAXSIZE
     int rcvSize = -1;
-    nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_RCVMAXSIZE, &rcvSize, sizeof(rcvSize));
+    if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_RCVMAXSIZE, &rcvSize, sizeof(rcvSize)) != 0)
+    {
+        LOG(ERROR) << "Failed setting NN_RCVMAXSIZE socket option, reason: " << nn_strerror(errno);
+    }
 #endif
 
     // LOG(INFO) << "created socket " << fId;
