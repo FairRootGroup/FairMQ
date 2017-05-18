@@ -30,7 +30,7 @@
 #include "FairMQSocket.h"
 #include "FairMQDevice.h"
 #include "FairMQLogger.h"
-#include "tools/FairMQTools.h"
+#include <fairmq/Tools.h>
 
 #include "options/FairMQProgOptions.h"
 #include "zeromq/FairMQTransportFactoryZMQ.h"
@@ -203,9 +203,9 @@ void FairMQDevice::InitWrapper()
                         // if the configured network interface is default, get its name from the default route
                         if (fNetworkInterface == "default")
                         {
-                            fNetworkInterface = FairMQ::tools::getDefaultRouteNetworkInterface();
+                            fNetworkInterface = fair::mq::tools::getDefaultRouteNetworkInterface();
                         }
-                        vi->fAddress = "tcp://" + FairMQ::tools::getInterfaceIP(fNetworkInterface) + ":1";
+                        vi->fAddress = "tcp://" + fair::mq::tools::getInterfaceIP(fNetworkInterface) + ":1";
                     }
                     // fill the uninitialized list
                     uninitializedBindingChannels.push_back(&(*vi));
@@ -910,16 +910,16 @@ unique_ptr<FairMQTransportFactory> FairMQDevice::MakeTransport(const string& tra
 
     if (transport == "zeromq")
     {
-        tr = FairMQ::tools::make_unique<FairMQTransportFactoryZMQ>();
+        tr = fair::mq::tools::make_unique<FairMQTransportFactoryZMQ>();
     }
     else if (transport == "shmem")
     {
-        tr = FairMQ::tools::make_unique<FairMQTransportFactorySHM>();
+        tr = fair::mq::tools::make_unique<FairMQTransportFactorySHM>();
     }
 #ifdef NANOMSG_FOUND
     else if (transport == "nanomsg")
     {
-        tr = FairMQ::tools::make_unique<FairMQTransportFactoryNN>();
+        tr = fair::mq::tools::make_unique<FairMQTransportFactoryNN>();
     }
 #endif
     else

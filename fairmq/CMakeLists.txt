@@ -55,7 +55,11 @@ endif(DDS_FOUND)
 ##########################
 # libFairMQ header files #
 ##########################
+set(FAIRMQ_DEPRECATED_HEADER_FILES
+    tools/FairMQTools.h
+)
 set(FAIRMQ_HEADER_FILES
+    ${FAIRMQ_DEPRECATED_HEADER_FILES}
     FairMQChannel.h
     FairMQConfigPlugin.h
     FairMQConfigurable.h
@@ -69,6 +73,7 @@ set(FAIRMQ_HEADER_FILES
     FairMQStateMachine.h
     FairMQTransportFactory.h
     FairMQTransports.h
+    Tools.h
     devices/FairMQBenchmarkSampler.h
     devices/FairMQMerger.h
     devices/FairMQMultiplier.h
@@ -90,7 +95,8 @@ set(FAIRMQ_HEADER_FILES
     shmem/FairMQTransportFactorySHM.h
     shmem/FairMQShmMonitor.h
     shmem/FairMQShmDeviceCounter.h
-    tools/FairMQTools.h
+    tools/CppSTL.h
+    tools/Network.h
     tools/runSimpleMQStateMachine.h
     zeromq/FairMQMessageZMQ.h
     zeromq/FairMQPollerZMQ.h
@@ -179,7 +185,9 @@ add_library(FairMQ SHARED
 target_include_directories(FairMQ
     PUBLIC # consumers inherit public include directories
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/fairmq>
+    $<INSTALL_INTERFACE:include>
 )
 
 ##################

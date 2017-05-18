@@ -2,7 +2,7 @@
 
 Contains common tools for use by FairMQ and/or users.
 
-## FairMQ::tools::getHostIPs
+## fair::mq::tools::getHostIPs
 
 Fills a map with the network interfaces and their IP addresses available on the current host.
 
@@ -13,13 +13,13 @@ Fills a map with the network interfaces and their IP addresses available on the 
 #include <string>
 #include <iostream>
 
-#include "FairMQTools.h"
+#include <fairmq/Tools.h>
 
 void main()
 {
     std::map<string,string> IPs;
 
-    FairMQ::tools::getHostIPs(IPs);
+    fair::mq::tools::getHostIPs(IPs);
 
     for (std::map<string,string>::iterator it = IPs.begin(); it != IPs.end(); ++it)
     {
