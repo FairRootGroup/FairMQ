@@ -237,6 +237,49 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         return fChannels.at(channel).at(index).NewSimpleMessage(data);
     }
 
+    template<typename ...Ts>
+    FairMQPollerPtr NewPoller(const Ts&... inputs)
+    {
+        std::vector<std::string> chans{inputs...};
+
+        // if more than one channel provided, check compatibility
+        if (chans.size() > 1)
+        {
+            FairMQ::Transport type = fChannels.at(chans.at(0)).at(0).Transport()->GetType();
+
+            for (int i = 1; i < chans.size(); ++i)
+            {
+                if (type != fChannels.at(chans.at(i)).at(0).Transport()->GetType())
+                {
+                    LOG(ERROR) << "FairMQDevice::NewPoller() failed: different transports within same poller are not yet supported. Going to ERROR state.";
+                    ChangeState(ERROR_FOUND);
+                }
+            }
+        }
+
+        return fChannels.at(chans.at(0)).at(0).Transport()->CreatePoller(fChannels, chans);
+    }
+
+    FairMQPollerPtr NewPoller(const std::vector<const FairMQChannel*>& channels)
+    {
+        // if more than one channel provided, check compatibility
+        if (channels.size() > 1)
+        {
+            FairMQ::Transport type = channels.at(0)->Transport()->GetType();
+
+            for (int i = 1; i < channels.size(); ++i)
+            {
+                if (type != channels.at(i)->Transport()->GetType())
+                {
+                    LOG(ERROR) << "FairMQDevice::NewPoller() failed: different transports within same poller are not yet supported. Going to ERROR state.";
+                    ChangeState(ERROR_FOUND);
+                }
+            }
+        }
+
+        return channels.at(0)->Transport()->CreatePoller(channels);
+    }
+
     /// Waits for the first initialization run to finish
     void WaitForInitialValidation();
 
@@ -336,6 +379,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     void OnData(const std::string& channelName, InputMultipartCallback);
 
     bool Terminated();
+
+    const FairMQChannel& GetChannel(const std::string& channelName, const int index) const;
 
   protected:
     std::shared_ptr<FairMQTransportFactory> fTransportFactory; ///< Transport factory

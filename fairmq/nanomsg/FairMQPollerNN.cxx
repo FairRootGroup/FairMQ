@@ -24,43 +24,47 @@
 using namespace std;
 
 FairMQPollerNN::FairMQPollerNN(const vector<FairMQChannel>& channels)
-    : items()
+    : fItems()
     , fNumItems(0)
     , fOffsetMap()
 {
     fNumItems = channels.size();
-    items = new nn_pollfd[fNumItems];
+    fItems = new nn_pollfd[fNumItems];
 
     for (int i = 0; i < fNumItems; ++i)
     {
-        items[i].fd = channels.at(i).GetSocket().GetSocket(1);
+        fItems[i].fd = channels.at(i).GetSocket().GetSocket(1);
 
         int type = 0;
         size_t sz = sizeof(type);
         nn_getsockopt(channels.at(i).GetSocket().GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
 
-        if (type == NN_REQ || type == NN_REP || type == NN_PAIR)
-        {
-            items[i].events = NN_POLLIN|NN_POLLOUT;
-        }
-        else if (type == NN_PUSH || type == NN_PUB)
-        {
-            items[i].events = NN_POLLOUT;
-        }
-        else if (type == NN_PULL || type == NN_SUB)
-        {
-            items[i].events = NN_POLLIN;
-        }
-        else
-        {
-            LOG(ERROR) << "nanomsg: invalid poller configuration, exiting.";
-            exit(EXIT_FAILURE);
-        }
+        SetItemEvents(fItems[i], type);
+    }
+}
+
+FairMQPollerNN::FairMQPollerNN(const vector<const FairMQChannel*>& channels)
+    : fItems()
+    , fNumItems(0)
+    , fOffsetMap()
+{
+    fNumItems = channels.size();
+    fItems = new nn_pollfd[fNumItems];
+
+    for (int i = 0; i < fNumItems; ++i)
+    {
+        fItems[i].fd = channels.at(i)->GetSocket().GetSocket(1);
+
+        int type = 0;
+        size_t sz = sizeof(type);
+        nn_getsockopt(channels.at(i)->GetSocket().GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
+
+        SetItemEvents(fItems[i], type);
     }
 }
 
 FairMQPollerNN::FairMQPollerNN(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList)
-    : items()
+    : fItems()
     , fNumItems(0)
     , fOffsetMap()
 {
@@ -76,7 +80,7 @@ FairMQPollerNN::FairMQPollerNN(const unordered_map<string, vector<FairMQChannel>
             fNumItems += channelsMap.at(channel).size();
         }
 
-        items = new nn_pollfd[fNumItems];
+        fItems = new nn_pollfd[fNumItems];
 
         int index = 0;
         for (string channel : channelList)
@@ -84,29 +88,13 @@ FairMQPollerNN::FairMQPollerNN(const unordered_map<string, vector<FairMQChannel>
             for (unsigned int i = 0; i < channelsMap.at(channel).size(); ++i)
             {
                 index = fOffsetMap[channel] + i;
-                items[index].fd = channelsMap.at(channel).at(i).GetSocket().GetSocket(1);
+                fItems[index].fd = channelsMap.at(channel).at(i).GetSocket().GetSocket(1);
 
                 int type = 0;
                 size_t sz = sizeof(type);
                 nn_getsockopt(channelsMap.at(channel).at(i).GetSocket().GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
 
-                if (type == NN_REQ || type == NN_REP || type == NN_PAIR)
-                {
-                    items[index].events = NN_POLLIN|NN_POLLOUT;
-                }
-                else if (type == NN_PUSH || type == NN_PUB)
-                {
-                    items[index].events = NN_POLLOUT;
-                }
-                else if (type == NN_PULL || type == NN_SUB)
-                {
-                    items[index].events = NN_POLLIN;
-                }
-                else
-                {
-                    LOG(ERROR) << "nanomsg: invalid poller configuration, exiting.";
-                    exit(EXIT_FAILURE);
-                }
+                SetItemEvents(fItems[index], type);
             }
         }
     }
@@ -119,34 +107,39 @@ FairMQPollerNN::FairMQPollerNN(const unordered_map<string, vector<FairMQChannel>
 }
 
 FairMQPollerNN::FairMQPollerNN(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket)
-    : items()
+    : fItems()
     , fNumItems(2)
     , fOffsetMap()
 {
-    items = new nn_pollfd[fNumItems];
+    fItems = new nn_pollfd[fNumItems];
 
-    items[0].fd = cmdSocket.GetSocket(1);
-    items[0].events = NN_POLLIN;
-    items[0].revents = 0;
+    fItems[0].fd = cmdSocket.GetSocket(1);
+    fItems[0].events = NN_POLLIN;
+    fItems[0].revents = 0;
 
-    items[1].fd = dataSocket.GetSocket(1);
-    items[1].revents = 0;
+    fItems[1].fd = dataSocket.GetSocket(1);
+    fItems[1].revents = 0;
 
     int type = 0;
     size_t sz = sizeof(type);
     nn_getsockopt(dataSocket.GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
 
+    SetItemEvents(fItems[1], type);
+}
+
+void FairMQPollerNN::SetItemEvents(nn_pollfd& item, const int type)
+{
     if (type == NN_REQ || type == NN_REP || type == NN_PAIR)
     {
-        items[1].events = NN_POLLIN|NN_POLLOUT;
+        item.events = NN_POLLIN|NN_POLLOUT;
     }
     else if (type == NN_PUSH || type == NN_PUB)
     {
-        items[1].events = NN_POLLOUT;
+        item.events = NN_POLLOUT;
     }
     else if (type == NN_PULL || type == NN_SUB)
     {
-        items[1].events = NN_POLLIN;
+        item.events = NN_POLLIN;
     }
     else
     {
@@ -157,7 +150,7 @@ FairMQPollerNN::FairMQPollerNN(const FairMQSocket& cmdSocket, const FairMQSocket
 
 void FairMQPollerNN::Poll(const int timeout)
 {
-    if (nn_poll(items, fNumItems, timeout) < 0)
+    if (nn_poll(fItems, fNumItems, timeout) < 0)
     {
         if (errno == ETERM)
         {
@@ -173,7 +166,7 @@ void FairMQPollerNN::Poll(const int timeout)
 
 bool FairMQPollerNN::CheckInput(const int index)
 {
-    if (items[index].revents & (NN_POLLIN | NN_POLLOUT))
+    if (fItems[index].revents & (NN_POLLIN | NN_POLLOUT))
     {
         return true;
     }
@@ -183,7 +176,7 @@ bool FairMQPollerNN::CheckInput(const int index)
 
 bool FairMQPollerNN::CheckOutput(const int index)
 {
-    if (items[index].revents & NN_POLLOUT)
+    if (fItems[index].revents & NN_POLLOUT)
     {
         return true;
     }
@@ -195,7 +188,7 @@ bool FairMQPollerNN::CheckInput(const string channelKey, const int index)
 {
     try
     {
-        if (items[fOffsetMap.at(channelKey) + index].revents & (NN_POLLIN | NN_POLLOUT))
+        if (fItems[fOffsetMap.at(channelKey) + index].revents & (NN_POLLIN | NN_POLLOUT))
         {
             return true;
         }
@@ -214,7 +207,7 @@ bool FairMQPollerNN::CheckOutput(const string channelKey, const int index)
 {
     try
     {
-        if (items[fOffsetMap.at(channelKey) + index].revents & NN_POLLOUT)
+        if (fItems[fOffsetMap.at(channelKey) + index].revents & NN_POLLOUT)
         {
             return true;
         }
@@ -231,5 +224,5 @@ bool FairMQPollerNN::CheckOutput(const string channelKey, const int index)
 
 FairMQPollerNN::~FairMQPollerNN()
 {
-    delete[] items;
+    delete[] fItems;
 }

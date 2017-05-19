@@ -34,9 +34,13 @@ class FairMQPollerZMQ : public FairMQPoller
 
   public:
     FairMQPollerZMQ(const std::vector<FairMQChannel>& channels);
+    FairMQPollerZMQ(const std::vector<const FairMQChannel*>& channels);
     FairMQPollerZMQ(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList);
+
     FairMQPollerZMQ(const FairMQPollerZMQ&) = delete;
     FairMQPollerZMQ operator=(const FairMQPollerZMQ&) = delete;
+
+    void SetItemEvents(zmq_pollitem_t& item, const int type);
 
     virtual void Poll(const int timeout);
     virtual bool CheckInput(const int index);
@@ -49,7 +53,7 @@ class FairMQPollerZMQ : public FairMQPoller
   private:
     FairMQPollerZMQ(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket);
 
-    zmq_pollitem_t* items;
+    zmq_pollitem_t* fItems;
     int fNumItems;
 
     std::unordered_map<std::string, int> fOffsetMap;

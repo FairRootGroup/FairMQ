@@ -33,9 +33,13 @@ class FairMQPollerNN : public FairMQPoller
 
   public:
     FairMQPollerNN(const std::vector<FairMQChannel>& channels);
+    FairMQPollerNN(const std::vector<const FairMQChannel*>& channels);
     FairMQPollerNN(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList);
+
     FairMQPollerNN(const FairMQPollerNN&) = delete;
     FairMQPollerNN operator=(const FairMQPollerNN&) = delete;
+
+    void SetItemEvents(nn_pollfd& item, const int type);
 
     virtual void Poll(const int timeout);
     virtual bool CheckInput(const int index);
@@ -48,7 +52,7 @@ class FairMQPollerNN : public FairMQPoller
   private:
     FairMQPollerNN(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket);
 
-    nn_pollfd* items;
+    nn_pollfd* fItems;
     int fNumItems;
 
     std::unordered_map<std::string, int> fOffsetMap;

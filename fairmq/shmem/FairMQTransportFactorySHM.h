@@ -37,6 +37,7 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
     FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name) const override;
 
     FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const override;
+    FairMQPollerPtr CreatePoller(const std::vector<const FairMQChannel*>& channels) const override;
     FairMQPollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const override;
     FairMQPollerPtr CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const override;
 

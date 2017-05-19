@@ -20,45 +20,52 @@
 using namespace std;
 
 FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQChannel>& channels)
-    : items()
+    : fItems()
     , fNumItems(0)
     , fOffsetMap()
 {
     fNumItems = channels.size();
-    items = new zmq_pollitem_t[fNumItems];
+    fItems = new zmq_pollitem_t[fNumItems];
 
     for (int i = 0; i < fNumItems; ++i)
     {
-        items[i].socket = channels.at(i).GetSocket().GetSocket();
-        items[i].fd = 0;
-        items[i].revents = 0;
+        fItems[i].socket = channels.at(i).GetSocket().GetSocket();
+        fItems[i].fd = 0;
+        fItems[i].revents = 0;
 
         int type = 0;
         size_t size = sizeof(type);
         zmq_getsockopt(channels.at(i).GetSocket().GetSocket(), ZMQ_TYPE, &type, &size);
 
-        if (type == ZMQ_REQ || type == ZMQ_REP || type == ZMQ_PAIR || type == ZMQ_DEALER || type == ZMQ_ROUTER)
-        {
-            items[i].events = ZMQ_POLLIN|ZMQ_POLLOUT;
-        }
-        else if (type == ZMQ_PUSH || type == ZMQ_PUB || type == ZMQ_XPUB)
-        {
-            items[i].events = ZMQ_POLLOUT;
-        }
-        else if (type == ZMQ_PULL || type == ZMQ_SUB || type == ZMQ_XSUB)
-        {
-            items[i].events = ZMQ_POLLIN;
-        }
-        else
-        {
-            LOG(ERROR) << "zeromq: invalid poller configuration, exiting.";
-            exit(EXIT_FAILURE);
-        }
+        SetItemEvents(fItems[i], type);
+    }
+}
+
+
+FairMQPollerZMQ::FairMQPollerZMQ(const std::vector<const FairMQChannel*>& channels)
+    : fItems()
+    , fNumItems(0)
+    , fOffsetMap()
+{
+    fNumItems = channels.size();
+    fItems = new zmq_pollitem_t[fNumItems];
+
+    for (int i = 0; i < fNumItems; ++i)
+    {
+        fItems[i].socket = channels.at(i)->GetSocket().GetSocket();
+        fItems[i].fd = 0;
+        fItems[i].revents = 0;
+
+        int type = 0;
+        size_t size = sizeof(type);
+        zmq_getsockopt(channels.at(i)->GetSocket().GetSocket(), ZMQ_TYPE, &type, &size);
+
+        SetItemEvents(fItems[i], type);
     }
 }
 
 FairMQPollerZMQ::FairMQPollerZMQ(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList)
-    : items()
+    : fItems()
     , fNumItems(0)
     , fOffsetMap()
 {
@@ -74,7 +81,7 @@ FairMQPollerZMQ::FairMQPollerZMQ(const unordered_map<string, vector<FairMQChanne
             fNumItems += channelsMap.at(channel).size();
         }
 
-        items = new zmq_pollitem_t[fNumItems];
+        fItems = new zmq_pollitem_t[fNumItems];
 
         int index = 0;
         for (string channel : channelList)
@@ -83,31 +90,15 @@ FairMQPollerZMQ::FairMQPollerZMQ(const unordered_map<string, vector<FairMQChanne
             {
                 index = fOffsetMap[channel] + i;
 
-                items[index].socket = channelsMap.at(channel).at(i).GetSocket().GetSocket();
-                items[index].fd = 0;
-                items[index].revents = 0;
+                fItems[index].socket = channelsMap.at(channel).at(i).GetSocket().GetSocket();
+                fItems[index].fd = 0;
+                fItems[index].revents = 0;
 
                 int type = 0;
                 size_t size = sizeof(type);
                 zmq_getsockopt(channelsMap.at(channel).at(i).GetSocket().GetSocket(), ZMQ_TYPE, &type, &size);
 
-                if (type == ZMQ_REQ || type == ZMQ_REP || type == ZMQ_PAIR || type == ZMQ_DEALER || type == ZMQ_ROUTER)
-                {
-                    items[index].events = ZMQ_POLLIN|ZMQ_POLLOUT;
-                }
-                else if (type == ZMQ_PUSH || type == ZMQ_PUB || type == ZMQ_XPUB)
-                {
-                    items[index].events = ZMQ_POLLOUT;
-                }
-                else if (type == ZMQ_PULL || type == ZMQ_SUB || type == ZMQ_XSUB)
-                {
-                    items[index].events = ZMQ_POLLIN;
-                }
-                else
-                {
-                    LOG(ERROR) << "zeromq: invalid poller configuration, exiting.";
-                    exit(EXIT_FAILURE);
-                }
+                SetItemEvents(fItems[index], type);
             }
         }
     }
@@ -120,36 +111,41 @@ FairMQPollerZMQ::FairMQPollerZMQ(const unordered_map<string, vector<FairMQChanne
 }
 
 FairMQPollerZMQ::FairMQPollerZMQ(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket)
-    : items()
+    : fItems()
     , fNumItems(2)
     , fOffsetMap()
 {
-    items = new zmq_pollitem_t[fNumItems];
+    fItems = new zmq_pollitem_t[fNumItems];
 
-    items[0].socket = cmdSocket.GetSocket();
-    items[0].fd = 0;
-    items[0].events = ZMQ_POLLIN;
-    items[0].revents = 0;
+    fItems[0].socket = cmdSocket.GetSocket();
+    fItems[0].fd = 0;
+    fItems[0].events = ZMQ_POLLIN;
+    fItems[0].revents = 0;
 
-    items[1].socket = dataSocket.GetSocket();
-    items[1].fd = 0;
-    items[1].revents = 0;
+    fItems[1].socket = dataSocket.GetSocket();
+    fItems[1].fd = 0;
+    fItems[1].revents = 0;
 
     int type = 0;
     size_t size = sizeof(type);
     zmq_getsockopt(dataSocket.GetSocket(), ZMQ_TYPE, &type, &size);
 
+    SetItemEvents(fItems[1], type);
+}
+
+void FairMQPollerZMQ::SetItemEvents(zmq_pollitem_t& item, const int type)
+{
     if (type == ZMQ_REQ || type == ZMQ_REP || type == ZMQ_PAIR || type == ZMQ_DEALER || type == ZMQ_ROUTER)
     {
-        items[1].events = ZMQ_POLLIN|ZMQ_POLLOUT;
+        item.events = ZMQ_POLLIN|ZMQ_POLLOUT;
     }
     else if (type == ZMQ_PUSH || type == ZMQ_PUB || type == ZMQ_XPUB)
     {
-        items[1].events = ZMQ_POLLOUT;
+        item.events = ZMQ_POLLOUT;
     }
     else if (type == ZMQ_PULL || type == ZMQ_SUB || type == ZMQ_XSUB)
     {
-        items[1].events = ZMQ_POLLIN;
+        item.events = ZMQ_POLLIN;
     }
     else
     {
@@ -160,7 +156,7 @@ FairMQPollerZMQ::FairMQPollerZMQ(const FairMQSocket& cmdSocket, const FairMQSock
 
 void FairMQPollerZMQ::Poll(const int timeout)
 {
-    if (zmq_poll(items, fNumItems, timeout) < 0)
+    if (zmq_poll(fItems, fNumItems, timeout) < 0)
     {
         if (errno == ETERM)
         {
@@ -176,7 +172,7 @@ void FairMQPollerZMQ::Poll(const int timeout)
 
 bool FairMQPollerZMQ::CheckInput(const int index)
 {
-    if (items[index].revents & ZMQ_POLLIN)
+    if (fItems[index].revents & ZMQ_POLLIN)
     {
         return true;
     }
@@ -186,7 +182,7 @@ bool FairMQPollerZMQ::CheckInput(const int index)
 
 bool FairMQPollerZMQ::CheckOutput(const int index)
 {
-    if (items[index].revents & ZMQ_POLLOUT)
+    if (fItems[index].revents & ZMQ_POLLOUT)
     {
         return true;
     }
@@ -198,7 +194,7 @@ bool FairMQPollerZMQ::CheckInput(const string channelKey, const int index)
 {
     try
     {
-        if (items[fOffsetMap.at(channelKey) + index].revents & ZMQ_POLLIN)
+        if (fItems[fOffsetMap.at(channelKey) + index].revents & ZMQ_POLLIN)
         {
             return true;
         }
@@ -217,7 +213,7 @@ bool FairMQPollerZMQ::CheckOutput(const string channelKey, const int index)
 {
     try
     {
-        if (items[fOffsetMap.at(channelKey) + index].revents & ZMQ_POLLOUT)
+        if (fItems[fOffsetMap.at(channelKey) + index].revents & ZMQ_POLLOUT)
         {
             return true;
         }
@@ -234,5 +230,5 @@ bool FairMQPollerZMQ::CheckOutput(const string channelKey, const int index)
 
 FairMQPollerZMQ::~FairMQPollerZMQ()
 {
-    delete[] items;
+    delete[] fItems;
 }

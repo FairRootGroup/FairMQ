@@ -51,6 +51,11 @@ FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const vector<FairMQChanne
     return unique_ptr<FairMQPoller>(new FairMQPollerNN(channels));
 }
 
+FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const std::vector<const FairMQChannel*>& channels) const
+{
+    return unique_ptr<FairMQPoller>(new FairMQPollerNN(channels));
+}
+
 FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList) const
 {
     return unique_ptr<FairMQPoller>(new FairMQPollerNN(channelsMap, channelList));

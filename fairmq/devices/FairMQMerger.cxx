@@ -41,7 +41,14 @@ void FairMQMerger::Run()
 {
     int numInputs = fChannels.at(fInChannelName).size();
 
-    std::unique_ptr<FairMQPoller> poller(fTransportFactory->CreatePoller(fChannels.at(fInChannelName)));
+    vector<const FairMQChannel*> chans;
+
+    for (auto& chan : fChannels.at(fInChannelName))
+    {
+        chans.push_back(&chan);
+    }
+
+    FairMQPollerPtr poller(NewPoller(chans));
 
     if (fMultipart)
     {
