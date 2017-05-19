@@ -6,6 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include "devices/TestPollIn.cxx"
+#include "devices/TestPollOut.cxx"
 #include "devices/TestPub.cxx"
 #include "devices/TestPull.cxx"
 #include "devices/TestPush.cxx"
@@ -22,6 +24,8 @@ namespace bpo = boost::program_options;
 
 auto addCustomOptions(bpo::options_description& options) -> void
 {
+    options.add_options()
+        ("poll-type", bpo::value<int>()->default_value(0), "Poll type switch(0 - vector of (sub-)channels, 1 - vector of channel names)");
 }
 
 auto getDevice(const FairMQProgOptions& config) -> FairMQDevicePtr
@@ -57,6 +61,14 @@ auto getDevice(const FairMQProgOptions& config) -> FairMQDevicePtr
     else if (0 == id.find("transfer_timeout_"))
     {
         return new TransferTimeout;
+    }
+    else if (0 == id.find("pollout_"))
+    {
+        return new PollOut;
+    }
+    else if (0 == id.find("pollin_"))
+    {
+        return new PollIn;
     }
     else
     {
