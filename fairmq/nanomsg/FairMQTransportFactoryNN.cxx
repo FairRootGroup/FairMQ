@@ -68,7 +68,8 @@ FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const FairMQSocket& cmdSo
 
 void FairMQTransportFactoryNN::Shutdown()
 {
-    nn_term();
+    // nn_term();
+    // see https://www.freelists.org/post/nanomsg/Getting-rid-of-nn-init-and-nn-term,8
 }
 
 void FairMQTransportFactoryNN::Terminate()
