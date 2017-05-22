@@ -24,6 +24,7 @@ using namespace std;
 
 auto RunSingleThreadedMultipart(string transport, string address) -> void {
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport);
+    factory->Initialize(nullptr);
     auto push = FairMQChannel{"Push", "push", factory};
     ASSERT_TRUE(push.Bind(address));
     auto pull = FairMQChannel{"Pull", "pull", factory};
@@ -51,11 +52,14 @@ auto RunSingleThreadedMultipart(string transport, string address) -> void {
         out << string{static_cast<char*>(part->GetData()), part->GetSize()};
     });
     ASSERT_EQ(out.str(), "123");
+
+    factory->Shutdown();
 }
 
 auto RunMultiThreadedMultipart(string transport, string address) -> void
 {
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport);
+    factory->Initialize(nullptr);
     auto push = FairMQChannel{"Push", "push", factory};
     ASSERT_TRUE(push.Bind(address));
     auto pull = FairMQChannel{"Pull", "pull", factory};
@@ -87,6 +91,8 @@ auto RunMultiThreadedMultipart(string transport, string address) -> void
 
     pusher.join();
     puller.join();
+
+    factory->Shutdown();
 }
 
 TEST(PushPull, ST_ZeroMQ__inproc_Multipart)
@@ -94,10 +100,10 @@ TEST(PushPull, ST_ZeroMQ__inproc_Multipart)
     RunSingleThreadedMultipart("zeromq", "inproc://test");
 }
 
-//TEST(PushPull, ST_Shmem___inproc_Multipart)
-//{
-    //RunSingleThreadedMultipart("shmem", "inproc://test");
-//}
+TEST(PushPull, ST_Shmem___inproc_Multipart)
+{
+    RunSingleThreadedMultipart("shmem", "inproc://test");
+}
 
 #ifdef NANOMSG_FOUND
 TEST(PushPull, ST_Nanomsg_inproc_Multipart)
@@ -111,10 +117,10 @@ TEST(PushPull, ST_ZeroMQ__ipc____Multipart)
     RunSingleThreadedMultipart("zeromq", "ipc://test");
 }
 
-//TEST(PushPull, ST_Shmen___ipc____Multipart)
-//{
-    //RunSingleThreadedMultipart("shmem", "ipc://test");
-//}
+TEST(PushPull, ST_Shmen___ipc____Multipart)
+{
+    RunSingleThreadedMultipart("shmem", "ipc://test");
+}
 
 #ifdef NANOMSG_FOUND
 TEST(PushPull, ST_Nanomsg_ipc____Multipart)
@@ -128,10 +134,10 @@ TEST(PushPull, MT_ZeroMQ__inproc_Multipart)
     RunMultiThreadedMultipart("zeromq", "inproc://test");
 }
 
-//TEST(PushPull, MT_Shmem___inproc_Multipart)
-//{
-    //RunMultiThreadedMultipart("shmem", "inproc://test");
-//}
+TEST(PushPull, MT_Shmem___inproc_Multipart)
+{
+    RunMultiThreadedMultipart("shmem", "inproc://test");
+}
 
 #ifdef NANOMSG_FOUND
 TEST(PushPull, MT_Nanomsg_inproc_Multipart)
@@ -145,10 +151,10 @@ TEST(PushPull, MT_ZeroMQ__ipc____Multipart)
     RunMultiThreadedMultipart("zeromq", "ipc://test");
 }
 
-//TEST(PushPull, MT_Shmem___ipc____Multipart)
-//{
-    //RunMultiThreadedMultipart("shmem", "ipc://test");
-//}
+TEST(PushPull, MT_Shmem___ipc____Multipart)
+{
+    RunMultiThreadedMultipart("shmem", "ipc://test");
+}
 
 #ifdef NANOMSG_FOUND
 TEST(PushPull, MT_Nanomsg_ipc____Multipart)
