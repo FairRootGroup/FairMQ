@@ -331,7 +331,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     /// Creates stand-alone transport factory
     /// @param transport  Transport string ("zeromq"/"nanomsg"/"shmem")
-    static std::unique_ptr<FairMQTransportFactory> MakeTransport(const std::string& transport);
+    static std::unique_ptr<FairMQTransportFactory> MakeTransport(const std::string& transport) __attribute__((deprecated("Use 'static auto FairMQTransportFactory::CreateTransportFactory() -> std::shared_ptr<FairMQTransportFactory>' from <FairMQTransportFactory.h> instead.")));
 
     void SetConfig(FairMQProgOptions& config);
     const FairMQProgOptions* GetConfig() const
