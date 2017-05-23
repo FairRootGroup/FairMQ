@@ -35,9 +35,6 @@ class FairMQTransportFactory
 
     auto GetId() const -> const std::string { return fkId; };
 
-    /// Initialize transport
-    virtual void Initialize(const FairMQProgOptions* config) = 0;
-
     /// @brief Create empty FairMQMessage
     /// @return pointer to FairMQMessage
     virtual FairMQMessagePtr CreateMessage() const = 0;
@@ -68,14 +65,9 @@ class FairMQTransportFactory
     /// Get transport type
     virtual FairMQ::Transport GetType() const = 0;
 
-    /// Shutdown transport (stop transfers, get ready for complete shutdown)
-    virtual void Shutdown() = 0;
-    /// Terminate transport (complete shutdown)
-    virtual void Terminate() = 0;
-
     virtual ~FairMQTransportFactory() {};
 
-    static auto CreateTransportFactory(const std::string& type, const std::string& id = "") -> std::shared_ptr<FairMQTransportFactory>;
+    static auto CreateTransportFactory(const std::string& type, const std::string& id = "", const FairMQProgOptions* config = nullptr) -> std::shared_ptr<FairMQTransportFactory>;
 
     static void FairMQNoCleanup(void* /*data*/, void* /*obj*/)
     {

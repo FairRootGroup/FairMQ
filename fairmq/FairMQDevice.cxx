@@ -1,16 +1,10 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2012-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQDevice.cxx
- *
- * @since 2012-10-25
- * @author D. Klein, A. Rybalchenko
- */
 
 #include <list>
 #include <csignal> // catching system signals
@@ -851,35 +845,17 @@ int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/)
     }
 }
 
-// DEPRECATED, use the string version
-void FairMQDevice::SetTransport(FairMQTransportFactory* factory)
-{
-    if (fTransports.empty())
-    {
-        fTransportFactory = shared_ptr<FairMQTransportFactory>(factory);
-        pair<FairMQ::Transport, shared_ptr<FairMQTransportFactory>> t(fTransportFactory->GetType(), fTransportFactory);
-        fTransportFactory->Initialize(fConfig);
-        fTransports.insert(t);
-    }
-    else
-    {
-        LOG(ERROR) << "Transports container is not empty when setting transport. Setting twice?";
-        ChangeState(ERROR_FOUND);
-    }
-}
-
 shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& transport)
 {
     unordered_map<FairMQ::Transport, shared_ptr<FairMQTransportFactory>>::const_iterator i = fTransports.find(FairMQ::TransportTypes.at(transport));
 
     if (i == fTransports.end())
     {
-        auto tr = FairMQTransportFactory::CreateTransportFactory(transport, fId);
+        auto tr = FairMQTransportFactory::CreateTransportFactory(transport, fId, fConfig);
 
         LOG(DEBUG) << "Adding '" << transport << "' transport to the device.";
 
         pair<FairMQ::Transport, shared_ptr<FairMQTransportFactory>> trPair(FairMQ::TransportTypes.at(transport), tr);
-        tr->Initialize(fConfig);
         fTransports.insert(trPair);
 
         auto p = fDeviceCmdSockets.emplace(tr->GetType(), tr->CreateSocket("pub", "device-commands"));
@@ -933,8 +909,6 @@ unique_ptr<FairMQTransportFactory> FairMQDevice::MakeTransport(const string& tra
                    << ". Returning nullptr.";
         return tr;
     }
-
-    tr->Initialize(nullptr);
 
     return move(tr);
 }
@@ -1232,15 +1206,8 @@ const FairMQChannel& FairMQDevice::GetChannel(const std::string& channelName, co
     return fChannels.at(channelName).at(index);
 }
 
-
 void FairMQDevice::Exit()
 {
-    // ask transports to terminate transfers
-    for (const auto& t : fTransports)
-    {
-        t.second->Shutdown();
-    }
-
     LOG(DEBUG) << "All transports are shut down.";
 }
 

@@ -24,7 +24,6 @@ using namespace std;
 
 auto RunSingleThreadedMultipart(string transport, string address) -> void {
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport);
-    factory->Initialize(nullptr);
     auto push = FairMQChannel{"Push", "push", factory};
     ASSERT_TRUE(push.Bind(address));
     auto pull = FairMQChannel{"Pull", "pull", factory};
@@ -52,14 +51,11 @@ auto RunSingleThreadedMultipart(string transport, string address) -> void {
         out << string{static_cast<char*>(part->GetData()), part->GetSize()};
     });
     ASSERT_EQ(out.str(), "123");
-
-    factory->Shutdown();
 }
 
 auto RunMultiThreadedMultipart(string transport, string address) -> void
 {
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport);
-    factory->Initialize(nullptr);
     auto push = FairMQChannel{"Push", "push", factory};
     ASSERT_TRUE(push.Bind(address));
     auto pull = FairMQChannel{"Pull", "pull", factory};
@@ -91,8 +87,6 @@ auto RunMultiThreadedMultipart(string transport, string address) -> void
 
     pusher.join();
     puller.join();
-
-    factory->Shutdown();
 }
 
 TEST(PushPull, ST_ZeroMQ__inproc_Multipart)

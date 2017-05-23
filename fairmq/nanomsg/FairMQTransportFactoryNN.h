@@ -13,6 +13,7 @@
 #include "FairMQMessageNN.h"
 #include "FairMQSocketNN.h"
 #include "FairMQPollerNN.h"
+#include <options/FairMQProgOptions.h>
 
 #include <vector>
 #include <string>
@@ -20,10 +21,8 @@
 class FairMQTransportFactoryNN : public FairMQTransportFactory
 {
   public:
-    FairMQTransportFactoryNN(const std::string& id = "");
+    FairMQTransportFactoryNN(const std::string& id = "", const FairMQProgOptions* config = nullptr);
     ~FairMQTransportFactoryNN() override;
-
-    void Initialize(const FairMQProgOptions* config) override;
 
     FairMQMessagePtr CreateMessage() const override;
     FairMQMessagePtr CreateMessage(const size_t size) const override;
@@ -37,9 +36,6 @@ class FairMQTransportFactoryNN : public FairMQTransportFactory
     FairMQPollerPtr CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const override;
 
     FairMQ::Transport GetType() const override;
-
-    void Shutdown() override;
-    void Terminate() override;
 
   private:
     static FairMQ::Transport fTransportType;

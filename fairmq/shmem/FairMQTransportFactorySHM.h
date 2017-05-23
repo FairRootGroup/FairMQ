@@ -14,6 +14,7 @@
 #include "FairMQSocketSHM.h"
 #include "FairMQPollerSHM.h"
 #include "FairMQShmDeviceCounter.h"
+#include <options/FairMQProgOptions.h>
 
 #include <vector>
 #include <string>
@@ -26,9 +27,7 @@
 class FairMQTransportFactorySHM : public FairMQTransportFactory
 {
   public:
-    FairMQTransportFactorySHM(const std::string& id = "");
-
-    void Initialize(const FairMQProgOptions* config) override;
+    FairMQTransportFactorySHM(const std::string& id = "", const FairMQProgOptions* config = nullptr);
 
     FairMQMessagePtr CreateMessage() const override;
     FairMQMessagePtr CreateMessage(const size_t size) const override;
@@ -42,9 +41,6 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
     FairMQPollerPtr CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const override;
 
     FairMQ::Transport GetType() const override;
-
-    void Shutdown() override;
-    void Terminate() override;
 
     void SendHeartbeats();
 

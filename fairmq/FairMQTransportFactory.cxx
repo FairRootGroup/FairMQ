@@ -25,7 +25,7 @@ FairMQTransportFactory::FairMQTransportFactory(const std::string& id)
 {
 }
 
-auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, const std::string& id) -> std::shared_ptr<FairMQTransportFactory>
+auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, const std::string& id, const FairMQProgOptions* config) -> std::shared_ptr<FairMQTransportFactory>
 {
     using namespace std;
 
@@ -39,16 +39,16 @@ auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, con
 
     if (type == "zeromq")
     {
-        return std::make_shared<FairMQTransportFactoryZMQ>(final_id);
+        return std::make_shared<FairMQTransportFactoryZMQ>(final_id, config);
     }
     else if (type == "shmem")
     {
-        return std::make_shared<FairMQTransportFactorySHM>(final_id);
+        return std::make_shared<FairMQTransportFactorySHM>(final_id, config);
     }
 #ifdef NANOMSG_FOUND
     else if (type == "nanomsg")
     {
-        return std::make_shared<FairMQTransportFactoryNN>(final_id);
+        return std::make_shared<FairMQTransportFactoryNN>(final_id, config);
     }
 #endif /* NANOMSG_FOUND */
     else

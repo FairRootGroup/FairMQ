@@ -22,14 +22,13 @@
 #include "FairMQMessageZMQ.h"
 #include "FairMQSocketZMQ.h"
 #include "FairMQPollerZMQ.h"
+#include <options/FairMQProgOptions.h>
 
 class FairMQTransportFactoryZMQ : public FairMQTransportFactory
 {
   public:
-    FairMQTransportFactoryZMQ(const std::string& id = "");
+    FairMQTransportFactoryZMQ(const std::string& id = "", const FairMQProgOptions* config = nullptr);
     ~FairMQTransportFactoryZMQ() override;
-
-    void Initialize(const FairMQProgOptions* config) override;
 
     FairMQMessagePtr CreateMessage() const override;
     FairMQMessagePtr CreateMessage(const size_t size) const override;
@@ -43,10 +42,6 @@ class FairMQTransportFactoryZMQ : public FairMQTransportFactory
     FairMQPollerPtr CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const override;
 
     FairMQ::Transport GetType() const override;
-
-    void Shutdown() override;
-    void Terminate() override;
-
   private:
     static FairMQ::Transport fTransportType;
     void* fContext;

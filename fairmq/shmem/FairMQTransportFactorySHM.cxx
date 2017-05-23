@@ -9,7 +9,6 @@
 #include "FairMQLogger.h"
 #include "FairMQShmManager.h"
 #include "FairMQTransportFactorySHM.h"
-#include "../options/FairMQProgOptions.h"
 
 #include <zmq.h>
 
@@ -30,7 +29,7 @@ namespace bpt = boost::posix_time;
 
 FairMQ::Transport FairMQTransportFactorySHM::fTransportType = FairMQ::Transport::SHM;
 
-FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id)
+FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const FairMQProgOptions* config)
     : FairMQTransportFactory(id)
     , fContext(nullptr)
     , fHeartbeatSocket(nullptr)
@@ -50,10 +49,7 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id)
         LOG(ERROR) << "failed creating context, reason: " << zmq_strerror(errno);
         exit(EXIT_FAILURE);
     }
-}
-
-void FairMQTransportFactorySHM::Initialize(const FairMQProgOptions* config)
-{
+    
     int numIoThreads = 1;
     size_t segmentSize = 2000000000;
     string segmentName = "fairmq_shmem_main";
@@ -172,19 +168,11 @@ FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const FairMQSocket& cmdS
     return unique_ptr<FairMQPoller>(new FairMQPollerSHM(cmdSocket, dataSocket));
 }
 
-void FairMQTransportFactorySHM::Shutdown()
+FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
 {
-    if (zmq_ctx_shutdown(fContext) != 0)
-    {
-        LOG(ERROR) << "shmem: failed shutting down context, reason: " << zmq_strerror(errno);
-    }
-
     fSendHeartbeats = false;
     fHeartbeatThread.join();
-}
 
-void FairMQTransportFactorySHM::Terminate()
-{
     if (fContext)
     {
         if (zmq_ctx_term(fContext) != 0)
@@ -233,9 +221,4 @@ void FairMQTransportFactorySHM::Terminate()
 FairMQ::Transport FairMQTransportFactorySHM::GetType() const
 {
     return fTransportType;
-}
-
-FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
-{
-    Terminate();
 }

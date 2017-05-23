@@ -319,9 +319,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// Print all properties of this and the parent class to LOG(INFO)
     virtual void ListProperties();
 
-    /// Configures the device with a transport factory (DEPRECATED)
-    /// @param factory  Pointer to the transport factory object
-    void SetTransport(FairMQTransportFactory* factory);
     /// Adds a transport to the device if it doesn't exist
     /// @param transport  Transport string ("zeromq"/"nanomsg"/"shmem")
     std::shared_ptr<FairMQTransportFactory> AddTransport(const std::string& transport);

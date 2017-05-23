@@ -7,14 +7,13 @@
  ********************************************************************************/
 
 #include "FairMQTransportFactoryZMQ.h"
-#include "../options/FairMQProgOptions.h"
 #include <zmq.h>
 
 using namespace std;
 
 FairMQ::Transport FairMQTransportFactoryZMQ::fTransportType = FairMQ::Transport::ZMQ;
 
-FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id)
+FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id, const FairMQProgOptions* config)
 : FairMQTransportFactory(id)
 , fContext(zmq_ctx_new())
 {
@@ -32,10 +31,7 @@ FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id)
     {
         LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
     }
-}
 
-void FairMQTransportFactoryZMQ::Initialize(const FairMQProgOptions* config)
-{
     int numIoThreads = 1;
     if (config)
     {
@@ -50,6 +46,7 @@ void FairMQTransportFactoryZMQ::Initialize(const FairMQProgOptions* config)
     {
         LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
     }
+
 }
 
 FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage() const
@@ -98,15 +95,7 @@ FairMQ::Transport FairMQTransportFactoryZMQ::GetType() const
     return fTransportType;
 }
 
-void FairMQTransportFactoryZMQ::Shutdown()
-{
-    if (zmq_ctx_shutdown(fContext) != 0)
-    {
-        LOG(ERROR) << "zeromq: failed shutting down context, reason: " << zmq_strerror(errno);
-    }
-}
-
-void FairMQTransportFactoryZMQ::Terminate()
+FairMQTransportFactoryZMQ::~FairMQTransportFactoryZMQ()
 {
     if (fContext)
     {
@@ -127,9 +116,4 @@ void FairMQTransportFactoryZMQ::Terminate()
     {
         LOG(ERROR) << "shmem: Terminate(): context now available for shutdown";
     }
-}
-
-FairMQTransportFactoryZMQ::~FairMQTransportFactoryZMQ()
-{
-    Terminate();
 }

@@ -7,7 +7,6 @@
  ********************************************************************************/
 
 #include "FairMQTransportFactoryNN.h"
-#include "../options/FairMQProgOptions.h"
 
 #include <nanomsg/nn.h>
 
@@ -15,15 +14,10 @@ using namespace std;
 
 FairMQ::Transport FairMQTransportFactoryNN::fTransportType = FairMQ::Transport::NN;
 
-FairMQTransportFactoryNN::FairMQTransportFactoryNN(const string& id)
+FairMQTransportFactoryNN::FairMQTransportFactoryNN(const string& id, const FairMQProgOptions* config)
     : FairMQTransportFactory(id)
 {
     LOG(DEBUG) << "Transport: Using nanomsg library";
-}
-
-void FairMQTransportFactoryNN::Initialize(const FairMQProgOptions* config)
-{
-    // nothing to do for nanomsg, transport is ready to be used any time (until nn_term()).
 }
 
 FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage() const
@@ -66,17 +60,6 @@ FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const FairMQSocket& cmdSo
     return unique_ptr<FairMQPoller>(new FairMQPollerNN(cmdSocket, dataSocket));
 }
 
-void FairMQTransportFactoryNN::Shutdown()
-{
-    // nn_term();
-    // see https://www.freelists.org/post/nanomsg/Getting-rid-of-nn-init-and-nn-term,8
-}
-
-void FairMQTransportFactoryNN::Terminate()
-{
-    // nothing to do for nanomsg
-}
-
 FairMQ::Transport FairMQTransportFactoryNN::GetType() const
 {
     return fTransportType;
@@ -84,5 +67,6 @@ FairMQ::Transport FairMQTransportFactoryNN::GetType() const
 
 FairMQTransportFactoryNN::~FairMQTransportFactoryNN()
 {
-    Terminate();
+    // nn_term();
+    // see https://www.freelists.org/post/nanomsg/Getting-rid-of-nn-init-and-nn-term,8
 }
