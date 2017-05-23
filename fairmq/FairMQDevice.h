@@ -377,7 +377,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     bool Terminated();
 
-    const FairMQChannel& GetChannel(const std::string& channelName, const int index) const;
+    const FairMQChannel& GetChannel(const std::string& channelName, const int index = 0) const;
 
   protected:
     std::shared_ptr<FairMQTransportFactory> fTransportFactory; ///< Transport factory
