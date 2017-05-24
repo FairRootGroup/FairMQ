@@ -22,6 +22,7 @@ struct DeviceCounter
     DeviceCounter(unsigned int c)
         : count(c)
     {}
+
     std::atomic<unsigned int> count;
 };
 

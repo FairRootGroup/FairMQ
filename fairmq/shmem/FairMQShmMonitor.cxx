@@ -39,8 +39,12 @@ namespace mq
 namespace shmem
 {
 
-Monitor::Monitor(const string& segmentName)
-    : fSegmentName(segmentName)
+Monitor::Monitor(const string& segmentName, bool selfDestruct, bool interactive, unsigned int timeoutInMS)
+    : fSelfDestruct(selfDestruct)
+    , fInteractive(interactive)
+    , fSeenOnce(false)
+    , fTimeoutInMS(timeoutInMS)
+    , fSegmentName(segmentName)
     , fTerminating(false)
     , fHeartbeatTriggered(false)
     , fLastHeartbeat()
@@ -56,36 +60,24 @@ Monitor::Monitor(const string& segmentName)
     }
 }
 
-void Monitor::PrintHeader()
+void Monitor::Run()
 {
-    cout << "| "
-        << "\033[01;32m" << setw(18) << "name"            << "\033[0m" << " | "
-        << "\033[01;32m" << setw(10) << "size"            << "\033[0m" << " | "
-        << "\033[01;32m" << setw(10) << "free"            << "\033[0m" << " | "
-        // << "\033[01;32m" << setw(15) << "all deallocated" << "\033[0m" << " | "
-        << "\033[01;32m" << setw(2)  << "ok"              << "\033[0m" << " | "
-        // << "\033[01;32m" << setw(10) << "# named"         << "\033[0m" << " | "
-        << "\033[01;32m" << setw(10) << "# devices"       << "\033[0m" << " | "
-        // << "\033[01;32m" << setw(10) << "# unique"        << "\033[0m" << " |"
-        << "\033[01;32m" << setw(10) << "ms since"        << "\033[0m" << " |"
-        << endl;
-}
+    thread heartbeatThread(&Monitor::MonitorHeartbeats, this);
 
-void Monitor::PrintHelp()
-{
-    cout << "controls: [x] close memory, [p] print queues, [h] help, [q] quit." << endl;
-}
-
-void Monitor::CloseMemory()
-{
-    if (bipc::shared_memory_object::remove(fSegmentName.c_str()))
+    if (fInteractive)
     {
-        cout << "Successfully removed shared memory \"" << fSegmentName.c_str() << "\"." << endl;
+        Interactive();
     }
     else
     {
-        cout << "Did not remove shared memory. Already removed?" << endl;
+        while (!fTerminating)
+        {
+            this_thread::sleep_for(chrono::milliseconds(100));
+            CheckSegment();
+        }
     }
+
+    heartbeatThread.join();
 }
 
 void Monitor::MonitorHeartbeats()
@@ -119,7 +111,7 @@ void Monitor::MonitorHeartbeats()
 
     if (bipc::message_queue::remove("fairmq_shmem_control_queue"))
     {
-        cout << "successfully removed control queue" << endl;
+        // cout << "successfully removed control queue" << endl;
     }
     else
     {
@@ -127,10 +119,8 @@ void Monitor::MonitorHeartbeats()
     }
 }
 
-void Monitor::Run()
+void Monitor::Interactive()
 {
-    thread heartbeatThread(&Monitor::MonitorHeartbeats, this);
-
     char input;
     pollfd inputFd[1];
     inputFd[0].fd = fileno(stdin);
@@ -164,7 +154,7 @@ void Monitor::Run()
                     break;
                 case 'x':
                     cout << "[x] --> closing shared memory:" << endl;
-                    CloseMemory();
+                    Cleanup(fSegmentName);
                     break;
                 case 'h':
                     cout << "[h] --> help:" << endl << endl;
@@ -189,46 +179,52 @@ void Monitor::Run()
 
         CheckSegment();
 
-        cout << "\r";
+        if (!fTerminating)
+        {
+            cout << "\r";
+        }
     }
 
     tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
     t.c_lflag |= ICANON; // re-enable canonical input
     tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
-
-    heartbeatThread.join();
 }
 
 void Monitor::CheckSegment()
 {
     static uint64_t counter = 0;
-
     char c = '#';
-    int mod = counter++ % 5;
-    switch (mod)
+
+    if (fInteractive)
     {
-        case 0:
-            c = '-';
-            break;
-        case 1:
-            c = '\\';
-            break;
-        case 2:
-            c = '|';
-            break;
-        case 3:
-            c = '-';
-            break;
-        case 4:
-            c = '/';
-            break;
-        default:
-            break;
+        int mod = counter++ % 5;
+        switch (mod)
+        {
+            case 0:
+                c = '-';
+                break;
+            case 1:
+                c = '\\';
+                break;
+            case 2:
+                c = '|';
+                break;
+            case 3:
+                c = '-';
+                break;
+            case 4:
+                c = '/';
+                break;
+            default:
+                break;
+        }
     }
 
     try
     {
         bipc::managed_shared_memory segment(bipc::open_only, fSegmentName.c_str());
+
+        fSeenOnce = true;
 
         unsigned int numDevices = 0;
 
@@ -241,39 +237,58 @@ void Monitor::CheckSegment()
         auto now = chrono::high_resolution_clock::now();
         unsigned int duration = chrono::duration_cast<chrono::milliseconds>(now - fLastHeartbeat).count();
 
-        if (fHeartbeatTriggered && duration > 5000)
+        if (fHeartbeatTriggered && duration > fTimeoutInMS)
         {
-            cout << "no heartbeats since over 5 seconds, cleaning..." << endl;
-            CloseMemory();
+            cout << "no heartbeats since over " << fTimeoutInMS << " milliseconds, cleaning..." << endl;
+            Cleanup(fSegmentName);
             fHeartbeatTriggered = false;
+            if (fSelfDestruct)
+            {
+                cout << "self destructing" << endl;
+                fTerminating = true;
+            }
         }
 
-        cout << "| "
-            << setw(18) << fSegmentName << " | "
-            << setw(10) << segment.get_size() << " | "
-            << setw(10) << segment.get_free_memory() << " | "
-            // << setw(15) << segment.all_memory_deallocated() << " | "
-            << setw(2) << segment.check_sanity() << " | "
-            // << setw(10) << segment.get_num_named_objects() << " | "
-            << setw(10) << numDevices << " | "
-            // << setw(10) << segment.get_num_unique_objects() << " |"
-            << setw(10) << duration << " |"
-            << c
-            << flush;
+        if (fInteractive)
+        {
+            cout << "| "
+                << setw(18) << fSegmentName << " | "
+                << setw(10) << segment.get_size() << " | "
+                << setw(10) << segment.get_free_memory() << " | "
+                // << setw(15) << segment.all_memory_deallocated() << " | "
+                << setw(2) << segment.check_sanity() << " | "
+                // << setw(10) << segment.get_num_named_objects() << " | "
+                << setw(10) << numDevices << " | "
+                // << setw(10) << segment.get_num_unique_objects() << " |"
+                << setw(10) << duration << " |"
+                << c
+                << flush;
+        }
     }
     catch (bipc::interprocess_exception& ie)
     {
         fHeartbeatTriggered = false;
-        cout << "| "
-            << setw(18) << "-" << " | "
-            << setw(10) << "-" << " | "
-            << setw(10) << "-" << " | "
-            // << setw(15) << "-" << " | "
-            << setw(2) << "-" << " | "
-            << setw(10) << "-" << " | "
-            << setw(10) << "-" << " |"
-            << c
-            << flush;
+        if (fInteractive)
+        {
+            cout << "| "
+                << setw(18) << "-" << " | "
+                << setw(10) << "-" << " | "
+                << setw(10) << "-" << " | "
+                // << setw(15) << "-" << " | "
+                << setw(2) << "-" << " | "
+                << setw(10) << "-" << " | "
+                << setw(10) << "-" << " |"
+                << c
+                << flush;
+        }
+        if (fSelfDestruct)
+        {
+            if (fSeenOnce)
+            {
+                cout << "self destructing" << endl;
+                fTerminating = true;
+            }
+        }
     }
 }
 
@@ -331,6 +346,26 @@ void Monitor::PrintQueues()
     }
 
     cout << endl;
+}
+
+void Monitor::PrintHeader()
+{
+    cout << "| "
+        << "\033[01;32m" << setw(18) << "name"            << "\033[0m" << " | "
+        << "\033[01;32m" << setw(10) << "size"            << "\033[0m" << " | "
+        << "\033[01;32m" << setw(10) << "free"            << "\033[0m" << " | "
+        // << "\033[01;32m" << setw(15) << "all deallocated" << "\033[0m" << " | "
+        << "\033[01;32m" << setw(2)  << "ok"              << "\033[0m" << " | "
+        // << "\033[01;32m" << setw(10) << "# named"         << "\033[0m" << " | "
+        << "\033[01;32m" << setw(10) << "# devices"       << "\033[0m" << " | "
+        // << "\033[01;32m" << setw(10) << "# unique"        << "\033[0m" << " |"
+        << "\033[01;32m" << setw(10) << "ms since"        << "\033[0m" << " |"
+        << endl;
+}
+
+void Monitor::PrintHelp()
+{
+    cout << "controls: [x] close memory, [p] print queues, [h] help, [q] quit." << endl;
 }
 
 } // namespace shmem

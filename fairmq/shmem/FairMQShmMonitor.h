@@ -23,7 +23,8 @@ namespace shmem
 class Monitor
 {
   public:
-    Monitor(const std::string& segmentName);
+    Monitor(const std::string& segmentName, bool selfDestruct, bool interactive, unsigned int timeoutInMS);
+
     Monitor(const Monitor&) = delete;
     Monitor operator=(const Monitor&) = delete;
 
@@ -31,16 +32,20 @@ class Monitor
 
     virtual ~Monitor() {}
 
+    static void Cleanup(const std::string& segmentName);
+
   private:
     void PrintHeader();
     void PrintHelp();
     void PrintQueues();
-    void CloseMemory();
     void MonitorHeartbeats();
     void CheckSegment();
+    void Interactive();
 
-    static void Cleanup(const std::string& segmentName);
-
+    bool fSelfDestruct; // will self-destruct after the memory has been closed
+    bool fInteractive; // running in interactive mode
+    bool fSeenOnce; // true is segment has been opened successfully at least once
+    unsigned int fTimeoutInMS;
     std::string fSegmentName;
     std::atomic<bool> fTerminating;
     std::atomic<bool> fHeartbeatTriggered;
