@@ -22,7 +22,7 @@ The next table shows the supported address types for each transport implementati
 |             | zeromq | nanomsg | shmem | comment                                       |
 | ----------- | ------ | ------- | ----- | --------------------------------------------- |
 | `inproc://` | yes    | yes     | yes   | in process: useful for unit testing           |
-| `ipc://`    | yes    | yes     | yes   | inter process comm: useful on single machin   |
+| `ipc://`    | yes    | yes     | yes   | inter process comm: useful on single machine  |
 | `tcp://`    | yes    | yes     | yes   | useful for any communication, local or remote |
 
 ## 2.1 Message
@@ -74,10 +74,21 @@ For convenience, two common deleter callbacks are already defined in the `FairMQ
 
 ## 2.2 Channel
 
-TODO
+A channel represents a communication endpoint in FairMQ. Usage is similar to a traditional Unix network socket. A device usually contains a number of channels that can either listen for incoming connections from channels of other devices or they can connect to other listening channels. Channels are organized by a channel name and a subchannel index.
+
+```cpp
+const FairMQChannel& GetChannel(const std::string& channelName, const int index = 0) const;
+```
+
+All subchannels with a common channel name need to be of the same transport type.
 
 ## 2.3 Poller
 
-TODO
+A poller allows to wait on multiple channels either to receive or send a message.
+
+```cpp
+FairMQPollerPtr NewPoller(const std::vector<const FairMQChannel*>& channels)
+```
+**list channels**: This poller waits on all supplied channels. Currently, it is limited to channels of the same transport type only.
 
 ← [Back](../README.md)
