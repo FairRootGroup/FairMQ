@@ -45,4 +45,8 @@ Without the interactive mode, for example for a run in background, two other con
  - static (`--control static`) - device goes through a simple init -> run -> reset -> exit chain.
  - dds (`--control dds`) - device is controled by external command, in this case using dds commands (fairmq-dds-command-ui).
 
+## 1.4 Multiple devices in the same process
+
+Technically one can create two or more devices within the same process without any conflicts. However the configuration (FairMQProgOptions) currently assumes the supplied configuration values are for one device/process.
+
 ← [Back](../README.md)

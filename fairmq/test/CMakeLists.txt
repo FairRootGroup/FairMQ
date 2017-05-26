@@ -64,6 +64,19 @@ add_testsuite(FairMQ.Parts
     TIMEOUT 5
 )
 
+add_testsuite(FairMQ.Device
+    SOURCES
+    device/TestSender.h
+    device/TestReceiver.h
+    device/runner.cxx
+    device/_multiple_devices.cxx
+
+    LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/device
+    TIMEOUT 5
+    RUN_SERIAL ON
+)
+
 ##############################
 # Aggregate all test targets #
 ##############################
