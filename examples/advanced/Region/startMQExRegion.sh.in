@@ -1,0 +1,21 @@
+#!/bin/bash
+exRegionConfig="@CMAKE_BINARY_DIR@/bin/config/ex-region.json"
+
+msgSize="1000000"
+
+if [[ $1 =~ ^[0-9]+$ ]]; then
+    msgSize=$1
+fi
+
+SAMPLER="ex-region-sampler"
+SAMPLER+=" --id sampler1"
+SAMPLER+=" --msg-size $msgSize"
+SAMPLER+=" --transport shmem"
+SAMPLER+=" --mq-config $exRegionConfig"
+xterm -geometry 80x23+0+0 -hold -e @CMAKE_BINARY_DIR@/bin/examples/advanced/Region/$SAMPLER &
+
+SINK="ex-region-sink"
+SINK+=" --id sink1"
+SINK+=" --transport shmem"
+SINK+=" --mq-config $exRegionConfig"
+xterm -geometry 80x23+500+0 -hold -e @CMAKE_BINARY_DIR@/bin/examples/advanced/Region/$SINK &
