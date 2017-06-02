@@ -49,6 +49,7 @@ int main(int argc, char** argv)
         {
             cout << "Cleaning up \"" << segmentName << "\"..." << endl;
             fair::mq::shmem::Monitor::Cleanup(segmentName);
+            fair::mq::shmem::Monitor::CleanupControlQueues();
             return 0;
         }
 
@@ -56,6 +57,7 @@ int main(int argc, char** argv)
 
         fair::mq::shmem::Monitor monitor{segmentName, selfDestruct, interactive, timeoutInMS};
 
+        monitor.CatchSignals();
         monitor.Run();
     }
     catch (exception& e)

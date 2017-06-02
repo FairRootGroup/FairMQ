@@ -35,6 +35,11 @@ FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(void* data, const size_
     return unique_ptr<FairMQMessage>(new FairMQMessageNN(data, size, ffn, hint));
 }
 
+FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(FairMQRegionPtr& region, void* data, const size_t size) const
+{
+    return unique_ptr<FairMQMessage>(new FairMQMessageNN(region, data, size));
+}
+
 FairMQSocketPtr FairMQTransportFactoryNN::CreateSocket(const string& type, const string& name) const
 {
     return unique_ptr<FairMQSocket>(new FairMQSocketNN(type, name, GetId()));
@@ -58,6 +63,11 @@ FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const unordered_map<strin
 FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const
 {
     return unique_ptr<FairMQPoller>(new FairMQPollerNN(cmdSocket, dataSocket));
+}
+
+FairMQRegionPtr FairMQTransportFactoryNN::CreateRegion(const size_t size) const
+{
+    return unique_ptr<FairMQRegion>(new FairMQRegionNN(size));
 }
 
 FairMQ::Transport FairMQTransportFactoryNN::GetType() const

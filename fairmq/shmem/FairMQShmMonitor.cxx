@@ -7,16 +7,18 @@
  ********************************************************************************/
 
 #include "FairMQShmMonitor.h"
-#include "FairMQShmDeviceCounter.h"
+#include "FairMQShmCommon.h"
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/containers/vector.hpp>
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
 
+#include <boost/interprocess/sync/named_mutex.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include <csignal>
 #include <iostream>
 #include <iomanip>
 
@@ -32,12 +34,22 @@ using String          = bipc::basic_string<char, std::char_traits<char>, CharAll
 using StringAllocator = bipc::allocator<String, bipc::managed_shared_memory::segment_manager>;
 using StringVector    = bipc::vector<String, StringAllocator>;
 
+namespace
+{
+    volatile std::sig_atomic_t gSignalStatus;
+}
+
 namespace fair
 {
 namespace mq
 {
 namespace shmem
 {
+
+void signalHandler(int signal)
+{
+    gSignalStatus = signal;
+}
 
 Monitor::Monitor(const string& segmentName, bool selfDestruct, bool interactive, unsigned int timeoutInMS)
     : fSelfDestruct(selfDestruct)
@@ -48,15 +60,43 @@ Monitor::Monitor(const string& segmentName, bool selfDestruct, bool interactive,
     , fTerminating(false)
     , fHeartbeatTriggered(false)
     , fLastHeartbeat()
-    , fHeartbeatThread()
+    , fSignalThread()
+    , fManagementSegment(bipc::open_or_create, "fairmq_shmem_management", 65536)
 {
-    if (bipc::message_queue::remove("fairmq_shmem_control_queue"))
+    MonitorStatus* monitorStatus = fManagementSegment.find<MonitorStatus>(bipc::unique_instance).first;
+    if (monitorStatus != nullptr)
     {
-        // cout << "successfully removed control queue" << endl;
+        cout << "shmmonitor already started or not properly exited. Try `shmmonitor --cleanup`" << endl;
+        exit(EXIT_FAILURE);
     }
-    else
+    fManagementSegment.construct<MonitorStatus>(bipc::unique_instance)();
+
+    CleanupControlQueues();
+}
+
+void Monitor::CatchSignals()
+{
+    signal(SIGINT, signalHandler);
+    signal(SIGTERM, signalHandler);
+    fSignalThread = thread(&Monitor::SignalMonitor, this);
+}
+
+void Monitor::SignalMonitor()
+{
+    while (true)
     {
-        // cout << "could not remove control queue" << endl;
+        if (gSignalStatus != 0)
+        {
+            fTerminating = true;
+            cout << "signal: " << gSignalStatus << endl;
+            break;
+        }
+        else if (fTerminating)
+        {
+            break;
+        }
+
+        this_thread::sleep_for(chrono::milliseconds(100));
     }
 }
 
@@ -109,22 +149,15 @@ void Monitor::MonitorHeartbeats()
         cout << ie.what() << endl;
     }
 
-    if (bipc::message_queue::remove("fairmq_shmem_control_queue"))
-    {
-        // cout << "successfully removed control queue" << endl;
-    }
-    else
-    {
-        cout << "could not remove control queue" << endl;
-    }
+    CleanupControlQueues();
 }
 
 void Monitor::Interactive()
 {
-    char input;
-    pollfd inputFd[1];
-    inputFd[0].fd = fileno(stdin);
-    inputFd[0].events = POLLIN;
+    char c;
+    pollfd cinfd[1];
+    cinfd[0].fd = fileno(stdin);
+    cinfd[0].events = POLLIN;
 
     struct termios t;
     tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
@@ -138,11 +171,16 @@ void Monitor::Interactive()
 
     while (!fTerminating)
     {
-        if (poll(inputFd, 1, 100))
+        if (poll(cinfd, 1, 100))
         {
-            input = getchar();
+            if (fTerminating || gSignalStatus != 0)
+            {
+                break;
+            }
 
-            switch (input)
+            c = getchar();
+
+            switch (c)
             {
                 case 'q':
                     cout << "[q] --> quitting." << endl;
@@ -165,7 +203,7 @@ void Monitor::Interactive()
                     cout << "[\\n] --> invalid input." << endl;
                     break;
                 default:
-                    cout << "[" << input << "] --> invalid input." << endl;
+                    cout << "[" << c << "] --> invalid input." << endl;
                     break;
             }
 
@@ -175,6 +213,11 @@ void Monitor::Interactive()
             }
 
             PrintHeader();
+        }
+
+        if (fTerminating)
+        {
+            break;
         }
 
         CheckSegment();
@@ -228,10 +271,10 @@ void Monitor::CheckSegment()
 
         unsigned int numDevices = 0;
 
-        pair<fair::mq::shmem::DeviceCounter*, size_t> result = segment.find<fair::mq::shmem::DeviceCounter>(bipc::unique_instance);
-        if (result.first != nullptr)
+        fair::mq::shmem::DeviceCounter* dc = segment.find<fair::mq::shmem::DeviceCounter>(bipc::unique_instance).first;
+        if (dc)
         {
-            numDevices = result.first->count;
+            numDevices = dc->fCount;
         }
 
         auto now = chrono::high_resolution_clock::now();
@@ -294,13 +337,57 @@ void Monitor::CheckSegment()
 
 void Monitor::Cleanup(const string& segmentName)
 {
-    if (bipc::shared_memory_object::remove(segmentName.c_str()))
+    try
     {
-        cout << "Successfully removed shared memory \"" << segmentName.c_str() << "\"." << endl;
+        bipc::managed_shared_memory managementSegment(bipc::open_only, "fairmq_shmem_management");
+        RegionCounter* rc = managementSegment.find<RegionCounter>(bipc::unique_instance).first;
+        if (rc)
+        {
+            cout << "Region counter found: " << rc->fCount << endl;
+            unsigned int regionCount = rc->fCount;
+            for (int i = 1; i <= regionCount; ++i)
+            {
+                RemoveObject("fairmq_shmem_region_" + to_string(regionCount));
+            }
+        }
+        else
+        {
+            cout << "shmem: no region counter found. no regions to cleanup." << endl;
+        }
+
+        RemoveObject("fairmq_shmem_management");
+    }
+    catch (bipc::interprocess_exception& ie)
+    {
+        cout << "Did not find \"fairmq_shmem_management\" shared memory segment. No regions to cleanup." << endl;
+    }
+
+    RemoveObject(segmentName);
+
+    boost::interprocess::named_mutex::remove("fairmq_shmem_mutex");
+}
+
+void Monitor::RemoveObject(const std::string& name)
+{
+    if (bipc::shared_memory_object::remove(name.c_str()))
+    {
+        cout << "Successfully removed \"" << name << "\" shared memory segment." << endl;
     }
     else
     {
-        cout << "Did not remove shared memory. Already removed?" << endl;
+        cout << "Did not remove \"" << name << "\" shared memory segment. Already removed?" << endl;
+    }
+}
+
+void Monitor::CleanupControlQueues()
+{
+    if (bipc::message_queue::remove("fairmq_shmem_control_queue"))
+    {
+        // cout << "successfully removed control queue" << endl;
+    }
+    else
+    {
+        // cout << "could not remove control queue" << endl;
     }
 }
 
@@ -311,19 +398,19 @@ void Monitor::PrintQueues()
     try
     {
         bipc::managed_shared_memory segment(bipc::open_only, fSegmentName.c_str());
-        pair<StringVector*, size_t> queues = segment.find<StringVector>("fairmq_shmem_queues");
-        if (queues.first != nullptr)
+        StringVector* queues = segment.find<StringVector>("fairmq_shmem_queues").first;
+        if (queues)
         {
-            cout << "found " << queues.first->size() << " queue(s):" << endl;
+            cout << "found " << queues->size() << " queue(s):" << endl;
 
-            for (int i = 0; i < queues.first->size(); ++i)
+            for (int i = 0; i < queues->size(); ++i)
             {
-                string name(queues.first->at(i).c_str());
+                string name(queues->at(i).c_str());
                 cout << '\t' << name << " : ";
-                pair<atomic<int>*, size_t> queueSize = segment.find<atomic<int>>(name.c_str());
-                if (queueSize.first != nullptr)
+                atomic<int>* queueSize = segment.find<atomic<int>>(name.c_str()).first;
+                if (queueSize)
                 {
-                    cout << *(queueSize.first) << " messages" << endl;
+                    cout << *queueSize << " messages" << endl;
                 }
                 else
                 {
@@ -366,6 +453,15 @@ void Monitor::PrintHeader()
 void Monitor::PrintHelp()
 {
     cout << "controls: [x] close memory, [p] print queues, [h] help, [q] quit." << endl;
+}
+
+Monitor::~Monitor()
+{
+    fManagementSegment.destroy<MonitorStatus>(bipc::unique_instance);
+    if (fSignalThread.joinable())
+    {
+        fSignalThread.join();
+    }
 }
 
 } // namespace shmem

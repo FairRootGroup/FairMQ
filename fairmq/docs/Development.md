@@ -31,4 +31,11 @@ Possible further implementation would be to run the monitor with `--self-destruc
 
 The FairMQShmMonitor class can also be used independently from the supplied executable (built from `runFairMQShmMonitor.cxx`), allowing integration on any level. For example invoking the monitor could be a functionality that a device offers.
 
+FairMQ Shared Memory currently uses following names to register shared memory on the system:
+
+`fairmq_shmem_main` - main segment name, used for user data (this name can be overridden via `--shm-segment-name`).
+`fairmq_shmem_management` - management segment name, used for storing management data.
+`fairmq_shmem_control_queue` - message queue for communicating between shm transport and shm monitor (exists independent of above segments).
+`fairmq_shmem_mutex` - boost::interprocess::named_mutex for management purposes (exists independent of above segments).
+
 ← [Back](../README.md)

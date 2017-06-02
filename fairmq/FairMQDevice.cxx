@@ -47,12 +47,12 @@ static void CallSignalHandler(int signal)
 }
 
 FairMQDevice::FairMQDevice()
-    : fChannels()
+    : fTransportFactory(nullptr)
+    , fTransports()
+    , fChannels()
     , fConfig(nullptr)
     , fId()
     , fNumIoThreads(1)
-    , fTransportFactory(nullptr)
-    , fTransports()
     , fInitialValidationFinished(false)
     , fInitialValidationCondition()
     , fInitialValidationMutex()
@@ -69,6 +69,7 @@ FairMQDevice::FairMQDevice()
     , fMsgInputs()
     , fMultipartInputs()
     , fMultitransportInputs()
+    , fChannelRegistry()
     , fInputChannelKeys()
     , fMultitransportMutex()
     , fMultitransportProceed(false)
@@ -78,12 +79,12 @@ FairMQDevice::FairMQDevice()
 }
 
 FairMQDevice::FairMQDevice(const fair::mq::tools::Version version)
-    : fChannels()
+    : fTransportFactory(nullptr)
+    , fTransports()
+    , fChannels()
     , fConfig(nullptr)
     , fId()
     , fNumIoThreads(1)
-    , fTransportFactory(nullptr)
-    , fTransports()
     , fInitialValidationFinished(false)
     , fInitialValidationCondition()
     , fInitialValidationMutex()
@@ -100,6 +101,7 @@ FairMQDevice::FairMQDevice(const fair::mq::tools::Version version)
     , fMsgInputs()
     , fMultipartInputs()
     , fMultitransportInputs()
+    , fChannelRegistry()
     , fInputChannelKeys()
     , fMultitransportMutex()
     , fMultitransportProceed(false)
@@ -1293,8 +1295,6 @@ const FairMQChannel& FairMQDevice::GetChannel(const std::string& channelName, co
 
 void FairMQDevice::Exit()
 {
-    LOG(DEBUG) << "All transports are shut down.";
-
     if (!fExternalConfig && fConfig)
     {
         delete fConfig;
@@ -1303,5 +1303,5 @@ void FairMQDevice::Exit()
 
 FairMQDevice::~FairMQDevice()
 {
-    LOG(DEBUG) << "Device destroyed";
+    LOG(DEBUG) << "Destructing device " << fId;
 }

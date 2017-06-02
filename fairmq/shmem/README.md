@@ -6,5 +6,3 @@ The transport manages shared memory via boost::interprocess library. The transfe
 
 Under development:
 - Cleanup of the shared memory segment in case all devices crash. Currently at least one device has to stop properly for a cleanup.
-- Implement more than one transport per device.
-- Configuration of the shared memory size (currently hard-coded).

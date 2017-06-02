@@ -50,6 +50,25 @@ FairMQMessageZMQ::FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn
     }
 }
 
+FairMQMessageZMQ::FairMQMessageZMQ(FairMQRegionPtr& region, void* data, const size_t size)
+    : fMessage()
+{
+    // FIXME: make this zero-copy:
+    // simply taking over the provided buffer can casue premature delete, since region could be destroyed before the message is sent out.
+    // Needs lifetime extension for the ZMQ region.
+    if (zmq_msg_init_size(&fMessage, size) != 0)
+    {
+        LOG(ERROR) << "failed initializing message with size, reason: " << zmq_strerror(errno);
+    }
+
+    memcpy(zmq_msg_data(&fMessage), data, size);
+
+    // if (zmq_msg_init_data(&fMessage, data, size, [](void*, void*){}, nullptr) != 0)
+    // {
+    //     LOG(ERROR) << "failed initializing message with data, reason: " << zmq_strerror(errno);
+    // }
+}
+
 void FairMQMessageZMQ::Rebuild()
 {
     CloseMessage();

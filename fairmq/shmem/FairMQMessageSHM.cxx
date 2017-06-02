@@ -9,10 +9,14 @@
 #include <cstdlib>
 
 #include "FairMQMessageSHM.h"
+#include "FairMQRegionSHM.h"
 #include "FairMQLogger.h"
+#include "FairMQShmCommon.h"
 
 using namespace std;
 using namespace fair::mq::shmem;
+
+namespace bipc = boost::interprocess;
 
 // uint64_t FairMQMessageSHM::fMessageID = 0;
 // string FairMQMessageSHM::fDeviceID = string();
@@ -25,9 +29,11 @@ FairMQMessageSHM::FairMQMessageSHM()
     // , fReceiving(false)
     , fQueued(false)
     , fMetaCreated(false)
+    , fRegionId(0)
     , fHandle()
-    , fChunkSize(0)
+    , fSize(0)
     , fLocalPtr(nullptr)
+    , fRemoteRegion(nullptr)
 {
     if (zmq_msg_init(&fMessage) != 0)
     {
@@ -47,9 +53,11 @@ FairMQMessageSHM::FairMQMessageSHM(const size_t size)
     // , fReceiving(false)
     , fQueued(false)
     , fMetaCreated(false)
+    , fRegionId(0)
     , fHandle()
-    , fChunkSize(0)
+    , fSize(0)
     , fLocalPtr(nullptr)
+    , fRemoteRegion(nullptr)
 {
     InitializeChunk(size);
 }
@@ -60,9 +68,11 @@ FairMQMessageSHM::FairMQMessageSHM(void* data, const size_t size, fairmq_free_fn
     // , fReceiving(false)
     , fQueued(false)
     , fMetaCreated(false)
+    , fRegionId(0)
     , fHandle()
-    , fChunkSize(0)
+    , fSize(0)
     , fLocalPtr(nullptr)
+    , fRemoteRegion(nullptr)
 {
     if (InitializeChunk(size))
     {
@@ -75,6 +85,35 @@ FairMQMessageSHM::FairMQMessageSHM(void* data, const size_t size, fairmq_free_fn
         {
             free(data);
         }
+    }
+}
+
+FairMQMessageSHM::FairMQMessageSHM(FairMQRegionPtr& region, void* data, const size_t size)
+    : fMessage()
+    // , fOwner(nullptr)
+    // , fReceiving(false)
+    , fQueued(false)
+    , fMetaCreated(false)
+    , fRegionId(static_cast<FairMQRegionSHM*>(region.get())->fRegionId)
+    , fHandle()
+    , fSize(size)
+    , fLocalPtr(data)
+    , fRemoteRegion(nullptr)
+{
+    fHandle = (bipc::managed_shared_memory::handle_t)(reinterpret_cast<const char*>(data) - reinterpret_cast<const char*>(region->GetData()));
+
+    if (zmq_msg_init_size(&fMessage, sizeof(MetaHeader)) != 0)
+    {
+        LOG(ERROR) << "failed initializing meta message, reason: " << zmq_strerror(errno);
+    }
+    else
+    {
+        MetaHeader* metaPtr = new(zmq_msg_data(&fMessage)) MetaHeader();
+        metaPtr->fSize = size;
+        metaPtr->fHandle = fHandle;
+        metaPtr->fRegionId = fRegionId;
+
+        fMetaCreated = true;
     }
 }
 
@@ -109,7 +148,7 @@ bool FairMQMessageSHM::InitializeChunk(const size_t size)
         fHandle = Manager::Instance().Segment()->get_handle_from_address(fLocalPtr);
     }
 
-    fChunkSize = size;
+    fSize = size;
 
     if (zmq_msg_init_size(&fMessage, sizeof(MetaHeader)) != 0)
     {
@@ -119,6 +158,7 @@ bool FairMQMessageSHM::InitializeChunk(const size_t size)
     MetaHeader* metaPtr = new(zmq_msg_data(&fMessage)) MetaHeader();
     metaPtr->fSize = size;
     metaPtr->fHandle = fHandle;
+    metaPtr->fRegionId = fRegionId;
 
     // if (zmq_msg_init_data(&fMessage, const_cast<char*>(ownerID->c_str()), ownerID->length(), StringDeleter, ownerID) != 0)
     // {
@@ -187,14 +227,21 @@ void* FairMQMessageSHM::GetData()
     {
         return fLocalPtr;
     }
-    else if (fHandle)
-    {
-        return Manager::Instance().Segment()->get_address_from_handle(fHandle);
-    }
     else
     {
-        // LOG(ERROR) << "Trying to get data of an empty shared memory message";
-        return nullptr;
+        if (fRegionId == 0)
+        {
+            return Manager::Instance().Segment()->get_address_from_handle(fHandle);
+        }
+        else
+        {
+            if (!fRemoteRegion)
+            {
+                fRemoteRegion = FairMQRegionPtr(new FairMQRegionSHM(fRegionId, true));
+            }
+            fLocalPtr = reinterpret_cast<char*>(fRemoteRegion->GetData()) + fHandle;
+            return fLocalPtr;
+        }
     }
 
     // if (fOwner)
@@ -210,7 +257,7 @@ void* FairMQMessageSHM::GetData()
 
 size_t FairMQMessageSHM::GetSize()
 {
-    return fChunkSize;
+    return fSize;
     // if (fOwner)
     // {
     //     return fOwner->fPtr->GetSize();
@@ -324,7 +371,7 @@ void FairMQMessageSHM::CloseMessage()
     // }
     // else
     // {
-        if (fHandle && !fQueued)
+        if (fHandle && !fQueued && fRegionId == 0)
         {
             // LOG(WARN) << "Destroying unsent message";
             // Manager::Instance().Segment()->destroy_ptr(fHandle);

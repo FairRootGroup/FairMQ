@@ -8,13 +8,17 @@
 #ifndef FAIRMQMESSAGESHM_H_
 #define FAIRMQMESSAGESHM_H_
 
-#include <cstddef>
+#include <cstddef> // size_t
 #include <string>
 #include <atomic>
 
 #include <zmq.h>
 
+#include <boost/interprocess/shared_memory_object.hpp>
+#include <boost/interprocess/mapped_region.hpp>
+
 #include "FairMQMessage.h"
+#include "FairMQRegion.h"
 #include "FairMQShmManager.h"
 
 class FairMQMessageSHM : public FairMQMessage
@@ -25,6 +29,8 @@ class FairMQMessageSHM : public FairMQMessage
     FairMQMessageSHM();
     FairMQMessageSHM(const size_t size);
     FairMQMessageSHM(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
+    FairMQMessageSHM(FairMQRegionPtr& region, void* data, const size_t size);
+
     FairMQMessageSHM(const FairMQMessageSHM&) = delete;
     FairMQMessageSHM operator=(const FairMQMessageSHM&) = delete;
 
@@ -62,9 +68,11 @@ class FairMQMessageSHM : public FairMQMessage
     bool fMetaCreated;
     static std::atomic<bool> fInterrupted;
     static FairMQ::Transport fTransportType;
+    uint64_t fRegionId;
     bipc::managed_shared_memory::handle_t fHandle;
-    size_t fChunkSize;
+    size_t fSize;
     void* fLocalPtr;
+    FairMQRegionPtr fRemoteRegion;
 };
 
 #endif /* FAIRMQMESSAGESHM_H_ */

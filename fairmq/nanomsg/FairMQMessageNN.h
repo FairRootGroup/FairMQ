@@ -19,6 +19,7 @@
 #include <string>
 
 #include "FairMQMessage.h"
+#include "FairMQRegion.h"
 
 class FairMQMessageNN : public FairMQMessage
 {
@@ -26,6 +27,8 @@ class FairMQMessageNN : public FairMQMessage
     FairMQMessageNN();
     FairMQMessageNN(const size_t size);
     FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
+    FairMQMessageNN(FairMQRegionPtr& region, void* data, const size_t size);
+
     FairMQMessageNN(const FairMQMessageNN&) = delete;
     FairMQMessageNN operator=(const FairMQMessageNN&) = delete;
 
@@ -53,6 +56,7 @@ class FairMQMessageNN : public FairMQMessage
     void* fMessage;
     size_t fSize;
     bool fReceiving;
+    bool fRegion;
     static std::string fDeviceID;
     static FairMQ::Transport fTransportType;
 

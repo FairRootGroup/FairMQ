@@ -13,6 +13,7 @@
 #include <zmq.h>
 
 #include <boost/version.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 
 #include <boost/interprocess/ipc/message_queue.hpp>
@@ -21,10 +22,13 @@
 #include <boost/interprocess/sync/scoped_lock.hpp>
 
 #include <chrono>
+#include <thread>
+#include <cstdlib> // std::system
 
 using namespace std;
 using namespace fair::mq::shmem;
 namespace bipc = boost::interprocess;
+namespace bfs = boost::filesystem;
 namespace bpt = boost::posix_time;
 
 FairMQ::Transport FairMQTransportFactorySHM::fTransportType = FairMQ::Transport::SHM;
@@ -75,30 +79,84 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
         LOG(ERROR) << "shmem: failed configuring context, reason: " << zmq_strerror(errno);
     }
 
-    fSendHeartbeats = true;
-    fHeartbeatThread = thread(&FairMQTransportFactorySHM::SendHeartbeats, this);
-
     Manager::Instance().InitializeSegment("open_or_create", segmentName, segmentSize);
     LOG(DEBUG) << "shmem: created/opened shared memory segment of " << segmentSize << " bytes. Available are " << Manager::Instance().Segment()->get_free_memory() << " bytes.";
 
-    { // mutex scope
+    {
         bipc::scoped_lock<bipc::named_mutex> lock(fShMutex);
 
-        pair<DeviceCounter*, size_t> result = Manager::Instance().Segment()->find<DeviceCounter>(bipc::unique_instance);
-        if (result.first != nullptr)
+        fDeviceCounter = Manager::Instance().Segment()->find<DeviceCounter>(bipc::unique_instance).first;
+        if (fDeviceCounter)
         {
-            fDeviceCounter = result.first;
-            LOG(DEBUG) << "shmem: device counter found, with value of " << fDeviceCounter->count << ". incrementing.";
-            (fDeviceCounter->count)++;
-            LOG(DEBUG) << "shmem: incremented device counter, now: " << fDeviceCounter->count;
+            LOG(DEBUG) << "shmem: device counter found, with value of " << fDeviceCounter->fCount << ". incrementing.";
+            (fDeviceCounter->fCount)++;
+            LOG(DEBUG) << "shmem: incremented device counter, now: " << fDeviceCounter->fCount;
         }
         else
         {
             LOG(DEBUG) << "shmem: no device counter found, creating one and initializing with 1";
             fDeviceCounter = Manager::Instance().Segment()->construct<DeviceCounter>(bipc::unique_instance)(1);
-            LOG(DEBUG) << "shmem: initialized device counter with: " << fDeviceCounter->count;
+            LOG(DEBUG) << "shmem: initialized device counter with: " << fDeviceCounter->fCount;
+        }
+
+        // start shm monitor
+        // try
+        // {
+        //     MonitorStatus* monitorStatus = fManagementSegment.find<MonitorStatus>(bipc::unique_instance).first;
+        //     if (monitorStatus == nullptr)
+        //     {
+        //         LOG(DEBUG) << "shmem: no shmmonitor found, starting...";
+        //         StartMonitor();
+        //     }
+        //     else
+        //     {
+        //         LOG(DEBUG) << "shmem: found shmmonitor in fairmq_shmem_management.";
+        //     }
+        // }
+        // catch (std::exception& e)
+        // {
+        //     LOG(ERROR) << "shmem: Exception during shmmonitor initialization: " << e.what() << ", application will now exit";
+        //     exit(EXIT_FAILURE);
+        // }
+    }
+
+    fSendHeartbeats = true;
+    fHeartbeatThread = thread(&FairMQTransportFactorySHM::SendHeartbeats, this);
+}
+
+void FairMQTransportFactorySHM::StartMonitor()
+{
+    int numTries = 0;
+
+    if (!bfs::exists(bfs::path("shmmonitor")))
+    {
+        LOG(ERROR) << "Could not find shmmonitor. Is it in the PATH? Monitor not started";
+        return;
+    }
+
+    // TODO: replace with Boost.Process once boost 1.64 is available
+    int r = system("shmmonitor --self-destruct &");
+    LOG(DEBUG) << r;
+
+    do
+    {
+        MonitorStatus* monitorStatus = Manager::Instance().ManagementSegment().find<MonitorStatus>(bipc::unique_instance).first;
+        if (monitorStatus)
+        {
+            LOG(DEBUG) << "shmem: shmmonitor started";
+            break;
+        }
+        else
+        {
+            this_thread::sleep_for(std::chrono::milliseconds(10));
+            if (++numTries > 100)
+            {
+                LOG(ERROR) << "Did not get response from shmmonitor after " << 10 * 100 << " milliseconds. Exiting.";
+                exit(EXIT_FAILURE);
+            }
         }
     }
+    while (true);
 }
 
 void FairMQTransportFactorySHM::SendHeartbeats()
@@ -142,6 +200,11 @@ FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(void* data, const size
     return unique_ptr<FairMQMessage>(new FairMQMessageSHM(data, size, ffn, hint));
 }
 
+FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(FairMQRegionPtr& region, void* data, const size_t size) const
+{
+    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(region, data, size));
+}
+
 FairMQSocketPtr FairMQTransportFactorySHM::CreateSocket(const string& type, const string& name) const
 {
     assert(fContext);
@@ -166,6 +229,11 @@ FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const unordered_map<stri
 FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const
 {
     return unique_ptr<FairMQPoller>(new FairMQPollerSHM(cmdSocket, dataSocket));
+}
+
+FairMQRegionPtr FairMQTransportFactorySHM::CreateRegion(const size_t size) const
+{
+    return unique_ptr<FairMQRegion>(new FairMQRegionSHM(size));
 }
 
 FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
@@ -196,24 +264,17 @@ FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
     { // mutex scope
         bipc::scoped_lock<bipc::named_mutex> lock(fShMutex);
 
-        (fDeviceCounter->count)--;
+        (fDeviceCounter->fCount)--;
 
-        if (fDeviceCounter->count == 0)
+        if (fDeviceCounter->fCount == 0)
         {
             LOG(DEBUG) << "shmem: last 'fairmq_shmem_main' user, removing segment.";
 
-            if (bipc::shared_memory_object::remove("fairmq_shmem_main"))
-            {
-                LOG(DEBUG) << "shmem: successfully removed shared memory segment after the device has stopped.";
-            }
-            else
-            {
-                LOG(DEBUG) << "shmem: did not remove shared memory segment after the device stopped. Already removed?";
-            }
+            Manager::Instance().Remove();
         }
         else
         {
-            LOG(DEBUG) << "shmem: other 'fairmq_shmem_main' users present (" << fDeviceCounter->count << "), not removing it.";
+            LOG(DEBUG) << "shmem: other 'fairmq_shmem_main' users present (" << fDeviceCounter->fCount << "), not removing it.";
         }
     }
 }

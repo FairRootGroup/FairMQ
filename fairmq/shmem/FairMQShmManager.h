@@ -115,18 +115,42 @@ class Manager
         }
     }
 
+    void Remove()
+    {
+        if (bipc::shared_memory_object::remove("fairmq_shmem_main"))
+        {
+            LOG(DEBUG) << "shmem: successfully removed \"fairmq_shmem_main\" segment after the device has stopped.";
+        }
+        else
+        {
+            LOG(DEBUG) << "shmem: did not remove \"fairmq_shmem_main\" segment after the device stopped. Already removed?";
+        }
+
+        if (bipc::shared_memory_object::remove("fairmq_shmem_management"))
+        {
+            LOG(DEBUG) << "shmem: successfully removed \"fairmq_shmem_management\" segment after the device has stopped.";
+        }
+        else
+        {
+            LOG(DEBUG) << "shmem: did not remove \"fairmq_shmem_management\" segment after the device stopped. Already removed?";
+        }
+    }
+
+    bipc::managed_shared_memory& ManagementSegment()
+    {
+        return fManagementSegment;
+    }
+
   private:
     Manager()
         : fSegment(nullptr)
+        , fManagementSegment(bipc::open_or_create, "fairmq_shmem_management", 65536)
     {}
+    Manager(const Manager&) = delete;
+    Manager operator=(const Manager&) = delete;
 
     bipc::managed_shared_memory* fSegment;
-};
-
-struct alignas(16) MetaHeader
-{
-    uint64_t fSize;
-    bipc::managed_shared_memory::handle_t fHandle;
+    bipc::managed_shared_memory fManagementSegment;
 };
 
 // class Chunk

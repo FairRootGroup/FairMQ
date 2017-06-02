@@ -13,8 +13,9 @@
 #include "FairMQMessageSHM.h"
 #include "FairMQSocketSHM.h"
 #include "FairMQPollerSHM.h"
-#include "FairMQShmDeviceCounter.h"
+#include "FairMQShmCommon.h"
 #include <options/FairMQProgOptions.h>
+#include "FairMQRegionSHM.h"
 
 #include <vector>
 #include <string>
@@ -23,15 +24,17 @@
 
 #include <boost/interprocess/sync/named_mutex.hpp>
 
-
 class FairMQTransportFactorySHM : public FairMQTransportFactory
 {
   public:
     FairMQTransportFactorySHM(const std::string& id = "", const FairMQProgOptions* config = nullptr);
+    FairMQTransportFactorySHM(const FairMQTransportFactorySHM&) = delete;
+    FairMQTransportFactorySHM operator=(const FairMQTransportFactorySHM&) = delete;
 
     FairMQMessagePtr CreateMessage() const override;
     FairMQMessagePtr CreateMessage(const size_t size) const override;
     FairMQMessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) const override;
+    FairMQMessagePtr CreateMessage(FairMQRegionPtr& region, void* data, const size_t size) const override;
 
     FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name) const override;
 
@@ -40,13 +43,16 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
     FairMQPollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const override;
     FairMQPollerPtr CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const override;
 
-    FairMQ::Transport GetType() const override;
+    FairMQRegionPtr CreateRegion(const size_t size) const override;
 
-    void SendHeartbeats();
+    FairMQ::Transport GetType() const override;
 
     ~FairMQTransportFactorySHM() override;
 
   private:
+    void SendHeartbeats();
+    void StartMonitor();
+
     static FairMQ::Transport fTransportType;
     void* fContext;
     void* fHeartbeatSocket;

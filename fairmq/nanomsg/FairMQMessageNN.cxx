@@ -29,6 +29,7 @@ FairMQMessageNN::FairMQMessageNN()
     : fMessage(nullptr)
     , fSize(0)
     , fReceiving(false)
+    , fRegion(false)
 {
     fMessage = nn_allocmsg(0, 0);
     if (!fMessage)
@@ -41,6 +42,7 @@ FairMQMessageNN::FairMQMessageNN(const size_t size)
     : fMessage(nullptr)
     , fSize(0)
     , fReceiving(false)
+    , fRegion(false)
 {
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
@@ -60,6 +62,7 @@ FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* 
     : fMessage(nullptr)
     , fSize(0)
     , fReceiving(false)
+    , fRegion(false)
 {
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
@@ -79,6 +82,15 @@ FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* 
             free(data);
         }
     }
+}
+
+FairMQMessageNN::FairMQMessageNN(FairMQRegionPtr& region, void* data, const size_t size)
+    : fMessage(data)
+    , fSize(size)
+    , fReceiving(false)
+    , fRegion(true)
+{
+    // currently nanomsg will copy the buffer (data) inside nn_sendmsg()
 }
 
 void FairMQMessageNN::Rebuild()

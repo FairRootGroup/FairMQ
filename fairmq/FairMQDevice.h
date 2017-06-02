@@ -18,6 +18,7 @@
 #include "FairMQChannel.h"
 #include "FairMQMessage.h"
 #include "FairMQParts.h"
+#include "FairMQRegion.h"
 
 #include <vector>
 #include <memory> // unique_ptr
@@ -242,6 +243,16 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         return fChannels.at(channel).at(index).NewSimpleMessage(data);
     }
 
+    FairMQRegionPtr NewRegion(const size_t size)
+    {
+        return Transport()->CreateRegion(size);
+    }
+
+    FairMQRegionPtr NewRegionFor(const std::string& channel, int index, const size_t size)
+    {
+        return fChannels.at(channel).at(index).Transport()->CreateRegion(size);
+    }
+
     template<typename ...Ts>
     FairMQPollerPtr NewPoller(const Ts&... inputs)
     {
@@ -272,7 +283,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         {
             FairMQ::Transport type = channels.at(0)->Transport()->GetType();
 
-            for (int i = 1; i < channels.size(); ++i)
+            for (unsigned int i = 1; i < channels.size(); ++i)
             {
                 if (type != channels.at(i)->Transport()->GetType())
                 {

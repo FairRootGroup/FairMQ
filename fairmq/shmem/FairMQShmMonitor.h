@@ -5,8 +5,10 @@
  *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-#ifndef FAIRMQSHMMONITOR_H_
-#define FAIRMQSHMMONITOR_H_
+#ifndef FAIR_MQ_SHMEM_MONITOR_H_
+#define FAIR_MQ_SHMEM_MONITOR_H_
+
+#include <boost/interprocess/managed_shared_memory.hpp>
 
 #include <thread>
 #include <chrono>
@@ -28,11 +30,13 @@ class Monitor
     Monitor(const Monitor&) = delete;
     Monitor operator=(const Monitor&) = delete;
 
+    void CatchSignals();
     void Run();
 
-    virtual ~Monitor() {}
+    virtual ~Monitor();
 
     static void Cleanup(const std::string& segmentName);
+    static void CleanupControlQueues();
 
   private:
     void PrintHeader();
@@ -41,6 +45,8 @@ class Monitor
     void MonitorHeartbeats();
     void CheckSegment();
     void Interactive();
+    void SignalMonitor();
+    static void RemoveObject(const std::string&);
 
     bool fSelfDestruct; // will self-destruct after the memory has been closed
     bool fInteractive; // running in interactive mode
@@ -50,11 +56,12 @@ class Monitor
     std::atomic<bool> fTerminating;
     std::atomic<bool> fHeartbeatTriggered;
     std::chrono::high_resolution_clock::time_point fLastHeartbeat;
-    std::thread fHeartbeatThread;
+    std::thread fSignalThread;
+    boost::interprocess::managed_shared_memory fManagementSegment;
 };
 
 } // namespace shmem
 } // namespace mq
 } // namespace fair
 
-#endif /* FAIRMQSHMMONITOR_H_ */
+#endif /* FAIR_MQ_SHMEM_MONITOR_H_ */

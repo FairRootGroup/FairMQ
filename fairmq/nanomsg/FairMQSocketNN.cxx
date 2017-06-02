@@ -127,7 +127,14 @@ int FairMQSocketNN::Send(FairMQMessagePtr& msg, const int flags)
     while (true)
     {
         void* ptr = msg->GetMessage();
-        nbytes = nn_send(fSocket, &ptr, NN_MSG, flags);
+        if (static_cast<FairMQMessageNN*>(msg.get())->fRegion == false)
+        {
+            nbytes = nn_send(fSocket, &ptr, NN_MSG, flags);
+        }
+        else
+        {
+            nbytes = nn_send(fSocket, ptr, msg->GetSize(), flags);
+        }
         if (nbytes >= 0)
         {
             fBytesTx += nbytes;
