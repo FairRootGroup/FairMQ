@@ -68,6 +68,18 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
         }
     }
 
+    if (fVarMap.count("print-options"))
+    {
+        PrintOptionsRaw();
+        exit(EXIT_SUCCESS);
+    }
+
+    if (fVarMap.count("id") == 0)
+    {
+        LOG(ERROR) << "Device id not provided, provide with --id";
+        exit(EXIT_FAILURE);
+    }
+
     string verbosity = GetValue<string>("verbosity");
     string logFile = GetValue<string>("log-to-file");
     bool color = GetValue<bool>("log-color");
@@ -183,7 +195,6 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
             LOG(DEBUG) << "channel-config: Parsing channel configuration";
             UserParser<FairMQParser::SUBOPT>(fVarMap, id);
         }
-
     }
 
     FairProgOptions::PrintOptions();
@@ -312,7 +323,7 @@ void FairMQProgOptions::InitOptionDescription()
             ;
 
         fMQOptionsInCfg.add_options()
-            ("id",                     po::value<string>()->required(),                         "Device ID (required argument).")
+            ("id",                     po::value<string>(),                                     "Device ID (required argument).")
             ("io-threads",             po::value<int   >()->default_value(1),                   "Number of I/O threads.")
             ("transport",              po::value<string>()->default_value("zeromq"),            "Transport ('zeromq'/'nanomsg').")
             ("config",                 po::value<string>()->default_value("static"),            "Config source ('static'/<config library filename>).")
@@ -331,7 +342,7 @@ void FairMQProgOptions::InitOptionDescription()
     else
     {
         fMQOptionsInCmd.add_options()
-            ("id",                     po::value<string>()->required(),                         "Device ID (required argument)")
+            ("id",                     po::value<string>(),                                     "Device ID (required argument)")
             ("io-threads",             po::value<int   >()->default_value(1),                   "Number of I/O threads")
             ("transport",              po::value<string>()->default_value("zeromq"),            "Transport ('zeromq'/'nanomsg').")
             ("config",                 po::value<string>()->default_value("static"),            "Config source ('static'/<config library filename>).")

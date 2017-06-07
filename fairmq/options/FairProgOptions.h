@@ -135,6 +135,7 @@ class FairProgOptions
     virtual void ParseAll(const int argc, char** argv, bool allowUnregistered = false) = 0;// TODO change return type to bool and propagate to executable
 
     virtual int PrintOptions();
+    virtual int PrintOptionsRaw();
     int PrintHelp() const;
 
   protected:
@@ -176,7 +177,7 @@ class FairProgOptions
 
   private:
     // Methods below are helper functions used in the PrintOptions method
-    typedef std::tuple<std::string, std::string,std::string, std::string> VarValInfo_t;
+    typedef std::tuple<std::string, std::string, std::string, std::string> VarValInfo_t;
     typedef std::map<std::string, VarValInfo_t> MapVarValInfo_t;
 
     VarValInfo_t GetVariableValueInfo(const po::variable_value& varValue);

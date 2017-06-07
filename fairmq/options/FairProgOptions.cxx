@@ -37,27 +37,18 @@ FairProgOptions::FairProgOptions() :
     fGenericDesc.add_options()
         ("help,h", "produce help")
         ("version,v", "print version")
-        ("verbosity", po::value<std::string>(&fVerbosityLevel)->default_value("DEBUG"), "Verbosity level : \n"
-            "  TRACE \n"
-            "  DEBUG \n"
-            "  RESULTS \n"
-            "  INFO \n"
-            "  WARN \n"
-            "  ERROR \n"
-            "  STATE \n"
-            "  NOLOG"
-            )
+        ("verbosity", po::value<std::string>(&fVerbosityLevel)->default_value("DEBUG"), "Verbosity level : TRACE, DEBUG, RESULTS, INFO, WARN, ERROR, STATE, NOLOG")
         ("log-color", po::value<bool>()->default_value(true), "logger color: true or false")
-        ;
+        ("print-options", po::value<bool>()->implicit_value(true), "print options in machine-readable format");
 
-    fSeverityMap["TRACE"]              = FairMQ::severity_level::TRACE;
-    fSeverityMap["DEBUG"]              = FairMQ::severity_level::DEBUG;
-    fSeverityMap["RESULTS"]            = FairMQ::severity_level::RESULTS;
-    fSeverityMap["INFO"]               = FairMQ::severity_level::INFO;
-    fSeverityMap["WARN"]               = FairMQ::severity_level::WARN;
-    fSeverityMap["ERROR"]              = FairMQ::severity_level::ERROR;
-    fSeverityMap["STATE"]              = FairMQ::severity_level::STATE;
-    fSeverityMap["NOLOG"]              = FairMQ::severity_level::NOLOG;
+    fSeverityMap["TRACE"]   = FairMQ::severity_level::TRACE;
+    fSeverityMap["DEBUG"]   = FairMQ::severity_level::DEBUG;
+    fSeverityMap["RESULTS"] = FairMQ::severity_level::RESULTS;
+    fSeverityMap["INFO"]    = FairMQ::severity_level::INFO;
+    fSeverityMap["WARN"]    = FairMQ::severity_level::WARN;
+    fSeverityMap["ERROR"]   = FairMQ::severity_level::ERROR;
+    fSeverityMap["STATE"]   = FairMQ::severity_level::STATE;
+    fSeverityMap["NOLOG"]   = FairMQ::severity_level::NOLOG;
 }
 
 /// Destructor
@@ -238,6 +229,31 @@ string FairProgOptions::GetStringValue(const string& key)
 int FairProgOptions::PrintHelp()  const
 {
     cout << fVisibleOptions << "\n";
+    return 0;
+}
+
+int FairProgOptions::PrintOptionsRaw()
+{
+    MapVarValInfo_t mapInfo;
+
+    for (const auto& m : fVarMap)
+    {
+        mapInfo[m.first] = GetVariableValueInfo(m.second);
+    }
+
+    for (const auto& p : mapInfo)
+    {
+        string keyStr;
+        string valueStr;
+        string typeInfoStr;
+        string defaultStr;
+        string emptyStr;
+        keyStr = p.first;
+        tie(valueStr, typeInfoStr, defaultStr, emptyStr) = p.second;
+        auto option = fCmdLineOptions.find_nothrow(keyStr, false);
+        cout << keyStr << ":" << valueStr << ":" << typeInfoStr << ":" << (option ? option->description() : "<not found>") << endl;
+    }
+
     return 0;
 }
 
