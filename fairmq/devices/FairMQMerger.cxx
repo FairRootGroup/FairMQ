@@ -21,9 +21,15 @@ using namespace std;
 
 FairMQMerger::FairMQMerger()
     : fMultipart(1)
-    , fInChannelName()
-    , fOutChannelName()
+    , fInChannelName("data-in")
+    , fOutChannelName("data-out")
 {
+}
+
+void FairMQMerger::RegisterChannelEndpoints()
+{
+    RegisterChannelEndpoint(fInChannelName, 1, 10000);
+    RegisterChannelEndpoint(fOutChannelName, 1, 1);
 }
 
 FairMQMerger::~FairMQMerger()

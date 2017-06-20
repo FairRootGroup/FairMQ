@@ -24,6 +24,14 @@
 template<typename TMQDevice>
 inline int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
 {
+    device.RegisterChannelEndpoints();
+    if (cfg.GetValue<bool>("print-channels"))
+    {
+        device.PrintRegisteredChannels();
+        device.ChangeState(TMQDevice::END);
+        return 0;
+    }
+
     if (cfg.GetValue<int>("catch-signals") > 0)
     {
         device.CatchSignals();
@@ -32,6 +40,8 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
     {
         LOG(WARN) << "Signal handling (e.g. ctrl+C) has been deactivated via command line argument";
     }
+
+    LOG(DEBUG) << "PID: " << getpid();
 
     device.SetConfig(cfg);
     std::string config = cfg.GetValue<std::string>("config");

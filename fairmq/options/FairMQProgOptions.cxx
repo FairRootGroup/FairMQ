@@ -74,6 +74,13 @@ void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregist
         exit(EXIT_SUCCESS);
     }
 
+    if (fVarMap.count("print-channels"))
+    {
+        // if this option is provided, do no further checks and let the device print the channels
+        DefaultConsoleSetFilter(fSeverityMap.at("NOLOG"));
+        return;
+    }
+
     if (fVarMap.count("id") == 0)
     {
         LOG(ERROR) << "Device id not provided, provide with --id";
@@ -318,6 +325,7 @@ void FairMQProgOptions::InitOptionDescription()
             ("port-range-min",         po::value<int   >()->default_value(22000),               "Start of the port range for dynamic initialization.")
             ("port-range-max",         po::value<int   >()->default_value(32000),               "End of the port range for dynamic initialization.")
             ("log-to-file",            po::value<string>()->default_value(""),                  "Log output to a file.")
+            ("print-channels",         po::value<bool  >()->implicit_value(true),               "Print registered channel endpoints in a machine-readable format (<channel name>:<min num subchannels>:<max num subchannels>)")
             ("shm-segment-size",       po::value<size_t>()->default_value(2000000000),          "shmem transport: size of the shared memory segment (in bytes).")
             ("shm-segment-name",       po::value<string>()->default_value("fairmq_shmem_main"), "shmem transport: name of the shared memory segment.")
             ;
@@ -335,6 +343,7 @@ void FairMQProgOptions::InitOptionDescription()
             ("port-range-min",         po::value<int   >()->default_value(22000),               "Start of the port range for dynamic initialization.")
             ("port-range-max",         po::value<int   >()->default_value(32000),               "End of the port range for dynamic initialization.")
             ("log-to-file",            po::value<string>()->default_value(""),                  "Log output to a file.")
+            ("print-channels",         po::value<bool  >()->implicit_value(true),               "Print registered channel endpoints in a machine-readable format (<channel name>:<min num subchannels>:<max num subchannels>)")
             ("shm-segment-size",       po::value<size_t>()->default_value(2000000000),          "shmem transport: size of the shared memory segment (in bytes).")
             ("shm-segment-name",       po::value<string>()->default_value("fairmq_shmem_main"), "shmem transport: name of the shared memory segment.")
             ;
@@ -354,6 +363,7 @@ void FairMQProgOptions::InitOptionDescription()
             ("port-range-min",         po::value<int   >()->default_value(22000),               "Start of the port range for dynamic initialization.")
             ("port-range-max",         po::value<int   >()->default_value(32000),               "End of the port range for dynamic initialization.")
             ("log-to-file",            po::value<string>()->default_value(""),                  "Log output to a file.")
+            ("print-channels",         po::value<bool  >()->implicit_value(true),               "Print registered channel endpoints in a machine-readable format (<channel name>:<min num subchannels>:<max num subchannels>)")
             ("shm-segment-size",       po::value<size_t>()->default_value(2000000000),          "shmem transport: size of the shared memory segment (in bytes).")
             ("shm-segment-name",       po::value<string>()->default_value("fairmq_shmem_main"), "shmem transport: name of the shared memory segment.")
             ;
@@ -365,7 +375,7 @@ void FairMQProgOptions::InitOptionDescription()
         ("config-json-string", po::value<vector<string>>()->multitoken(), "JSON input as command line string.")
         // ("config-json-file",   po::value<string>(),                       "JSON input as file.")
         ("mq-config",          po::value<string>(),                       "JSON/XML input as file. The configuration object will check xml or json file extention and will call the json or xml parser accordingly")
-        (FairMQParser::SUBOPT::OptionKeyChannelConfig, po::value<std::vector<std::string> >()->multitoken()->composing(), "Configuration of single or multiple channel(s) by comma separated key=value list")
+        (FairMQParser::SUBOPT::OptionKeyChannelConfig, po::value<std::vector<std::string>>()->multitoken()->composing(), "Configuration of single or multiple channel(s) by comma separated key=value list")
         ;
 
     AddToCmdLineOptions(fGenericDesc);

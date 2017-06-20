@@ -74,7 +74,6 @@ FairMQDevice::FairMQDevice()
     , fMultitransportProceed(false)
     , fExternalConfig(false)
 {
-    LOG(DEBUG) << "PID: " << getpid();
 }
 
 void FairMQDevice::CatchSignals()

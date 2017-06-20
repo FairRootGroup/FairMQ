@@ -39,7 +39,7 @@ FairProgOptions::FairProgOptions() :
         ("version,v", "print version")
         ("verbosity", po::value<std::string>(&fVerbosityLevel)->default_value("DEBUG"), "Verbosity level : TRACE, DEBUG, RESULTS, INFO, WARN, ERROR, STATE, NOLOG")
         ("log-color", po::value<bool>()->default_value(true), "logger color: true or false")
-        ("print-options", po::value<bool>()->implicit_value(true), "print options in machine-readable format");
+        ("print-options", po::value<bool>()->implicit_value(true), "print options in machine-readable format (<option>:<computed-value>:<type>:<description>)");
 
     fSeverityMap["TRACE"]   = FairMQ::severity_level::TRACE;
     fSeverityMap["DEBUG"]   = FairMQ::severity_level::DEBUG;

@@ -379,6 +379,33 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     const FairMQChannel& GetChannel(const std::string& channelName, const int index = 0) const;
 
+    virtual void RegisterChannelEndpoints() {}
+
+    bool RegisterChannelEndpoint(const std::string& channelName, uint16_t minNumSubChannels = 1, uint16_t maxNumSubChannels = 1)
+    {
+        bool ok = fChannelRegistry.insert(std::make_pair(channelName, std::make_pair(minNumSubChannels, maxNumSubChannels))).second;
+        if (!ok)
+        {
+            LOG(WARN) << "Registering channel: name already registered: \"" << channelName << "\"";
+        }
+        return ok;
+    }
+
+    void PrintRegisteredChannels()
+    {
+        if (fChannelRegistry.size() < 1)
+        {
+            std::cout << "no channels registered." << std::endl;
+        }
+        else
+        {
+            for (const auto& c : fChannelRegistry)
+            {
+                std::cout << c.first << ":" << c.second.first << ":" << c.second.second << std::endl;
+            }
+        }
+    }
+
   protected:
     std::shared_ptr<FairMQTransportFactory> fTransportFactory; ///< Transport factory
     std::unordered_map<FairMQ::Transport, std::shared_ptr<FairMQTransportFactory>> fTransports; ///< Container for transports
@@ -485,6 +512,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     std::unordered_map<std::string, InputMsgCallback> fMsgInputs;
     std::unordered_map<std::string, InputMultipartCallback> fMultipartInputs;
     std::unordered_map<FairMQ::Transport, std::vector<std::string>> fMultitransportInputs;
+    std::unordered_map<std::string, std::pair<uint16_t, uint16_t>> fChannelRegistry;
     std::vector<std::string> fInputChannelKeys;
     std::mutex fMultitransportMutex;
     std::atomic<bool> fMultitransportProceed;

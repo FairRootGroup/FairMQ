@@ -205,13 +205,17 @@ struct ConvertVariableValue : T
         if (is_this_type<std::size_t>(varValue))
             return T::template Value<std::size_t>(varValue, std::string("<std::size_t>"), defaultedValue, emptyValue);
 
+        // std::vector size_t
+        if (is_this_type<std::vector<std::size_t>>(varValue))
+            return T::template Value<std::vector<std::size_t>>(varValue, std::string("<vector<std::size_t>>"), defaultedValue, emptyValue);
+
         // uint64_t
         if (is_this_type<std::uint64_t>(varValue))
             return T::template Value<std::uint64_t>(varValue, std::string("<std::uint64_t>"), defaultedValue, emptyValue);
 
-        // std::vector size_t
-        if (is_this_type<std::vector<std::size_t>>(varValue))
-            return T::template Value<std::vector<std::size_t>>(varValue, std::string("<vector<std::size_t>>"), defaultedValue, emptyValue);
+        // std::vector uint64_t
+        if (is_this_type<std::vector<std::uint64_t>>(varValue))
+            return T::template Value<std::vector<std::uint64_t>>(varValue, std::string("<vector<std::uint64_t>>"), defaultedValue, emptyValue);
 
         // bool
         if (is_this_type<bool>(varValue))

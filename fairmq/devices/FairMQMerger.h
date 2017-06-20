@@ -30,8 +30,9 @@ class FairMQMerger : public FairMQDevice
     std::string fInChannelName;
     std::string fOutChannelName;
 
-    virtual void Run();
-    virtual void InitTask();
+    virtual void RegisterChannelEndpoints() override;
+    virtual void Run() override;
+    virtual void InitTask() override;
 };
 
 #endif /* FAIRMQMERGER_H_ */
