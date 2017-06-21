@@ -25,7 +25,7 @@ template<typename TMQDevice>
 inline int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
 {
     device.RegisterChannelEndpoints();
-    if (cfg.GetValue<bool>("print-channels"))
+    if (cfg.Count("print-channels"))
     {
         device.PrintRegisteredChannels();
         device.ChangeState(TMQDevice::END);

@@ -102,6 +102,11 @@ class FairProgOptions
     // convert value to string that corresponds to the key
     std::string GetStringValue(const std::string& key);
 
+    int Count(const std::string& key) const
+    {
+        return fVarMap.count(key);
+    }
+
     //restrict conversion to fundamental types
     template<typename T>
     T ConvertTo(const std::string& strValue)
