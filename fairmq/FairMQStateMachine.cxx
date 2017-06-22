@@ -225,3 +225,9 @@ bool FairMQStateMachine::WaitForEndOfStateForMs(std::string event, int durationI
 {
     return WaitForEndOfStateForMs(GetEventNumber(event), durationInMs);
 }
+
+void FairMQStateMachine::OnStateChange(std::function<void(const State)> callback)
+{
+    fStateChangeCallback.connect(callback);
+}
+

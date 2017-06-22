@@ -351,8 +351,8 @@ void FairMQProgOptions::InitOptionDescription()
     else
     {
         fMQOptionsInCmd.add_options()
-            ("id",                     po::value<string>(),                                     "Device ID (required argument)")
-            ("io-threads",             po::value<int   >()->default_value(1),                   "Number of I/O threads")
+            ("id",                     po::value<string>(),                                     "Device ID (required argument).")
+            ("io-threads",             po::value<int   >()->default_value(1),                   "Number of I/O threads.")
             ("transport",              po::value<string>()->default_value("zeromq"),            "Transport ('zeromq'/'nanomsg').")
             ("config",                 po::value<string>()->default_value("static"),            "Config source ('static'/<config library filename>).")
             ("control",                po::value<string>()->default_value("interactive"),       "States control ('interactive'/'static'/<control library filename>).")

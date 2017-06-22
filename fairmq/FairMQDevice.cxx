@@ -228,6 +228,11 @@ void FairMQDevice::InitWrapper()
         }
     }
 
+    if (!fStateChangeCallback.empty())
+    {
+        fStateChangeCallback(INITIALIZING_DEVICE);
+    }
+
     // Bind channels. Here one run is enough, because bind settings should be available locally
     // If necessary this could be handled in the same way as the connecting channels
     AttachChannels(uninitializedBindingChannels);
@@ -414,6 +419,11 @@ bool FairMQDevice::BindEndpoint(FairMQSocket& socket, string& endpoint)
 
 void FairMQDevice::InitTaskWrapper()
 {
+    if (!fStateChangeCallback.empty())
+    {
+        fStateChangeCallback(INITIALIZING_TASK);
+    }
+
     InitTask();
 
     ChangeState(internal_READY);
@@ -472,30 +482,13 @@ void FairMQDevice::PrintChannel(const string& name)
     }
 }
 
-void FairMQDevice::OnData(const string& channelName, InputMsgCallback callback)
-{
-    fDataCallbacks = true;
-    fMsgInputs.insert(make_pair(channelName, callback));
-
-    if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end())
-    {
-        fInputChannelKeys.push_back(channelName);
-    }
-}
-
-void FairMQDevice::OnData(const string& channelName, InputMultipartCallback callback)
-{
-    fDataCallbacks = true;
-    fMultipartInputs.insert(make_pair(channelName, callback));
-
-    if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end())
-    {
-        fInputChannelKeys.push_back(channelName);
-    }
-}
-
 void FairMQDevice::RunWrapper()
 {
+    if (!fStateChangeCallback.empty())
+    {
+        fStateChangeCallback(RUNNING);
+    }
+
     LOG(INFO) << "DEVICE: Running...";
 
     // start the rate logger thread
@@ -763,6 +756,16 @@ bool FairMQDevice::ConditionalRun()
 
 void FairMQDevice::PostRun()
 {
+}
+
+void FairMQDevice::PauseWrapper()
+{
+    if (!fStateChangeCallback.empty())
+    {
+        fStateChangeCallback(PAUSED);
+    }
+
+    Pause();
 }
 
 void FairMQDevice::Pause()
@@ -1195,6 +1198,11 @@ void FairMQDevice::Unblock()
 
 void FairMQDevice::ResetTaskWrapper()
 {
+    if (!fStateChangeCallback.empty())
+    {
+        fStateChangeCallback(RESETTING_TASK);
+    }
+
     ResetTask();
 
     ChangeState(internal_DEVICE_READY);
@@ -1206,6 +1214,11 @@ void FairMQDevice::ResetTask()
 
 void FairMQDevice::ResetWrapper()
 {
+    if (!fStateChangeCallback.empty())
+    {
+        fStateChangeCallback(RESETTING_DEVICE);
+    }
+
     Reset();
 
     ChangeState(internal_IDLE);

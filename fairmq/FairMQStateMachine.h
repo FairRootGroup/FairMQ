@@ -35,6 +35,8 @@
 #include <boost/msm/front/state_machine_def.hpp>
 #include <boost/msm/front/functor_row.hpp>
 
+#include <boost/signals2.hpp> // signal/slot for onStateChange callbacks
+
 #include "FairMQLogger.h"
 
 namespace msm = boost::msm;
@@ -82,6 +84,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         , fWorkAvailable(false)
         , fState()
         , fChangeStateMutex()
+        , fStateChangeCallback()
         {}
 
     // Destructor
@@ -129,6 +132,10 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "Entering IDLE state";
             fsm.fState = IDLE;
+            if (!fsm.fStateChangeCallback.empty())
+            {
+                fsm.fStateChangeCallback(IDLE);
+            }
         }
     };
 
@@ -158,6 +165,10 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "Entering DEVICE READY state";
             fsm.fState = DEVICE_READY;
+            if (!fsm.fStateChangeCallback.empty())
+            {
+                fsm.fStateChangeCallback(DEVICE_READY);
+            }
         }
     };
 
@@ -181,6 +192,10 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "Entering READY state";
             fsm.fState = READY;
+            if (!fsm.fStateChangeCallback.empty())
+            {
+                fsm.fStateChangeCallback(READY);
+            }
         }
     };
 
@@ -218,7 +233,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            fsm.fWork = std::bind(&FairMQFSM_::Pause, &fsm);
+            fsm.fWork = std::bind(&FairMQFSM_::PauseWrapper, &fsm);
             fsm.fWorkAvailableCondition.notify_one();
         }
     };
@@ -249,6 +264,10 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "Entering READY state";
             fsm.fState = READY;
+            if (!fsm.fStateChangeCallback.empty())
+            {
+                fsm.fStateChangeCallback(READY);
+            }
 
             fsm.Unblock();
             std::unique_lock<std::mutex> lock(fsm.fWorkMutex);
@@ -266,6 +285,10 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "RUNNING state finished without an external event, entering READY state";
             fsm.fState = READY;
+            if (!fsm.fStateChangeCallback.empty())
+            {
+                fsm.fStateChangeCallback(READY);
+            }
         }
     };
 
@@ -314,6 +337,10 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "Entering EXITING state";
             fsm.fState = EXITING;
+            if (!fsm.fStateChangeCallback.empty())
+            {
+                fsm.fStateChangeCallback(EXITING);
+            }
 
             // terminate worker thread
             {
@@ -338,8 +365,11 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
         {
             LOG(STATE) << "Entering ERROR state";
-
             fsm.fState = ERROR;
+            if (!fsm.fStateChangeCallback.empty())
+            {
+                fsm.fStateChangeCallback(ERROR);
+            }
         }
     };
 
@@ -350,6 +380,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
     virtual void InitTask() {}
     virtual void RunWrapper() {}
     virtual void Run() {}
+    virtual void PauseWrapper() {}
     virtual void Pause() {}
     virtual void ResetWrapper() {}
     virtual void Reset() {}
@@ -535,6 +566,8 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
   protected:
     std::atomic<State> fState;
     std::mutex fChangeStateMutex;
+
+    boost::signals2::signal<void(const State)> fStateChangeCallback;
 };
 
 // reactivate the warning for non-virtual destructor
@@ -582,6 +615,8 @@ class FairMQStateMachine : public FairMQFSM::FairMQFSM
 
     bool WaitForEndOfStateForMs(int state, int durationInMs);
     bool WaitForEndOfStateForMs(std::string state, int durationInMs);
+
+    void OnStateChange(std::function<void(const State)> callback);
 };
 
 #endif /* FAIRMQSTATEMACHINE_H_ */

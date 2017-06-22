@@ -356,7 +356,17 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         }
     }
 
-    void OnData(const std::string& channelName, InputMsgCallback);
+    void OnData(const std::string& channelName, InputMsgCallback callback)
+    {
+        fDataCallbacks = true;
+        fMsgInputs.insert(make_pair(channelName, callback));
+
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end())
+        {
+            fInputChannelKeys.push_back(channelName);
+        }
+    }
+
 
     template<class T>
     void OnData(const std::string& channelName, bool (T::* memberFunction)(FairMQParts& parts, int index))
@@ -373,7 +383,16 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         }
     }
 
-    void OnData(const std::string& channelName, InputMultipartCallback);
+    void OnData(const std::string& channelName, InputMultipartCallback callback)
+    {
+        fDataCallbacks = true;
+        fMultipartInputs.insert(make_pair(channelName, callback));
+
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end())
+        {
+            fInputChannelKeys.push_back(channelName);
+        }
+    }
 
     bool Terminated();
 
@@ -487,6 +506,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     void InitTaskWrapper();
     /// Handles the Run() method
     void RunWrapper();
+    /// Handles the Pause() method
+    void PauseWrapper();
     /// Handles the ResetTask() method
     void ResetTaskWrapper();
     /// Handles the Reset() method
