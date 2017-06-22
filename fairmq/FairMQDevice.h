@@ -406,6 +406,27 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         }
     }
 
+    void SetId(const std::string& id) { fId = id; }
+    std::string GetId() { return fId; }
+
+    void SetNumIoThreads(int numIoThreads) { fNumIoThreads = numIoThreads; }
+    int GetNumIoThreads() { return fNumIoThreads; }
+
+    void SetPortRangeMin(int portRangeMin) { fPortRangeMin = portRangeMin; }
+    int GetPortRangeMin() { return fPortRangeMin; }
+
+    void SetPortRangeMax(int portRangeMax) { fPortRangeMax = portRangeMax; }
+    int GetPortRangeMax() { return fPortRangeMax; }
+
+    void SetNetworkInterface(const std::string& networkInterface) { fNetworkInterface = networkInterface; }
+    std::string GetNetworkInterface() { return fNetworkInterface; }
+
+    void SetDefaultTransport(const std::string& defaultTransport) { fDefaultTransport = defaultTransport; }
+    std::string GetDefaultTransport() { return fDefaultTransport; }
+
+    void SetInitializationTimeoutInS(int initializationTimeoutInS) { fInitializationTimeoutInS = initializationTimeoutInS; }
+    int GetInitializationTimeoutInS() { return fInitializationTimeoutInS; }
+
   protected:
     std::shared_ptr<FairMQTransportFactory> fTransportFactory; ///< Transport factory
     std::unordered_map<FairMQ::Transport, std::shared_ptr<FairMQTransportFactory>> fTransports; ///< Container for transports
@@ -416,17 +437,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
   protected:
     std::string fId; ///< Device ID
-    std::string fNetworkInterface; ///< Network interface to use for dynamic binding
-    std::string fDefaultTransport; ///< Default transport for the device
-
-    int fInitializationTimeoutInS; ///< Timeout for the initialization (in seconds)
 
     int fNumIoThreads; ///< Number of ZeroMQ I/O threads
-
-    int fPortRangeMin; ///< Minimum value for the port range (if dynamic)
-    int fPortRangeMax; ///< Maximum value for the port range (if dynamic)
-
-    std::unordered_map<FairMQ::Transport, FairMQSocketPtr> fDeviceCmdSockets; ///< Sockets used for the internal unblocking mechanism
 
     /// Additional user initialization (can be overloaded in child classes). Prefer to use InitTask().
     virtual void Init();
@@ -460,6 +472,14 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     bool fInitialValidationFinished;
     std::condition_variable fInitialValidationCondition;
     std::mutex fInitialValidationMutex;
+
+    int fPortRangeMin; ///< Minimum value for the port range (if dynamic)
+    int fPortRangeMax; ///< Maximum value for the port range (if dynamic)
+
+    std::string fNetworkInterface; ///< Network interface to use for dynamic binding
+    std::string fDefaultTransport; ///< Default transport for the device
+
+    int fInitializationTimeoutInS; ///< Timeout for the initialization (in seconds)
 
     /// Handles the initialization and the Init() method
     void InitWrapper();
@@ -509,6 +529,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     std::atomic<bool> fInteractiveRunning;
 
     bool fDataCallbacks;
+    std::unordered_map<FairMQ::Transport, FairMQSocketPtr> fDeviceCmdSockets; ///< Sockets used for the internal unblocking mechanism
     std::unordered_map<std::string, InputMsgCallback> fMsgInputs;
     std::unordered_map<std::string, InputMultipartCallback> fMultipartInputs;
     std::unordered_map<FairMQ::Transport, std::vector<std::string>> fMultitransportInputs;

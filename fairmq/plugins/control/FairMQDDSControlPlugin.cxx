@@ -51,7 +51,7 @@ class FairMQControlPluginDDS
 
     void Init(FairMQDevice& device)
     {
-        string id = device.GetProperty(FairMQDevice::Id, "");
+        string id = device.GetId();
         string pid(to_string(getpid()));
 
         try
