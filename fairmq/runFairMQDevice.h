@@ -69,6 +69,11 @@ int main(int argc, char** argv)
         LOG(ERROR) << "Unhandled exception reached the top of main: " << e.what() << ", application will now exit";
         return 1;
     }
+    catch (...)
+    {
+        LOG(ERROR) << "Non-exception instance being thrown. Please make sure you use std::runtime_exception() instead. Application will now exit.";
+        return 1;
+    }
 
     return 0;
 }
