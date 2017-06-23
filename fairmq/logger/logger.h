@@ -17,6 +17,11 @@
 #define BOOST_LOG_DYN_LINK 1 // necessary when linking the boost_log library dynamically
 #define FUSION_MAX_VECTOR_SIZE 20
 
+#ifdef DEBUG
+#undef DEBUG
+#warning "The symbol 'DEBUG' is used in FairMQLogger. undefining..."
+#endif
+
 // std
 #include <type_traits>
 #include <cstddef>
