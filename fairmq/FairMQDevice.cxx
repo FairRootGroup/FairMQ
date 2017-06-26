@@ -227,7 +227,6 @@ void FairMQDevice::InitWrapper()
             }
         }
     }
-
     if (!fStateChangeCallback.empty())
     {
         fStateChangeCallback(INITIALIZING_DEVICE);

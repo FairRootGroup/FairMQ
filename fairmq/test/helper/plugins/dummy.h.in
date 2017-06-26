@@ -26,22 +26,33 @@ class DummyPlugin : public fair::mq::Plugin
 {
     public:
 
-    DummyPlugin(const std::string name, const Version version, const std::string maintainer, const std::string homepage, PluginServices& pluginServices)
+    DummyPlugin(
+        const std::string name,
+        const Version version,
+        const std::string maintainer,
+        const std::string homepage,
+        PluginServices& pluginServices)
     : Plugin(name, version, maintainer, homepage, pluginServices)
     {
+        SubscribeToDeviceStateChange(
+            [&](DeviceState newState){
+                switch (newState)
+                {
+                case DeviceState::Exiting:
+                    UnsubscribeFromDeviceStateChange();
+                    break;
+                }
+            }
+        );
     }
-
 }; /* class DummyPlugin */
 
 auto DummyPluginProgramOptions() -> const boost::optional<boost::program_options::options_description>
 {
-    using namespace boost::program_options;
-    using std::string;
-
-    auto plugin_options = options_description{"Dummy Plugin"};
+    auto plugin_options = boost::program_options::options_description{"Dummy Plugin"};
     plugin_options.add_options()
-        ("custom-dummy-option", value<string>(), "Cool custom option.");
-        ("custom-dummy-option2", value<string>(), "Another cool custom option.");
+        ("custom-dummy-option", value<std::string>(), "Cool custom option.");
+        ("custom-dummy-option2", value<std::string>(), "Another cool custom option.");
     return plugin_options;
 }
 

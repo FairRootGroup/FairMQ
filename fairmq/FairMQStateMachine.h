@@ -23,6 +23,7 @@
 #include <condition_variable>
 #include <thread>
 #include <functional>
+#include <unordered_map>
 
 // Increase maximum number of boost::msm states (default is 10)
 // This #define has to be before any msm header includes
@@ -85,6 +86,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         , fState()
         , fChangeStateMutex()
         , fStateChangeCallback()
+        , fStateChangeCallbacksMap()
         {}
 
     // Destructor
@@ -568,6 +570,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
     std::mutex fChangeStateMutex;
 
     boost::signals2::signal<void(const State)> fStateChangeCallback;
+    std::unordered_map<std::string, boost::signals2::connection> fStateChangeCallbacksMap;
 };
 
 // reactivate the warning for non-virtual destructor
@@ -616,7 +619,8 @@ class FairMQStateMachine : public FairMQFSM::FairMQFSM
     bool WaitForEndOfStateForMs(int state, int durationInMs);
     bool WaitForEndOfStateForMs(std::string state, int durationInMs);
 
-    void OnStateChange(std::function<void(const State)> callback);
+    void OnStateChange(const std::string&, std::function<void(const State)> callback);
+    void UnsubscribeFromStateChange(const std::string&);
 };
 
 #endif /* FAIRMQSTATEMACHINE_H_ */

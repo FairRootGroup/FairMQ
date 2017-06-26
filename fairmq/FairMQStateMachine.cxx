@@ -226,8 +226,13 @@ bool FairMQStateMachine::WaitForEndOfStateForMs(std::string event, int durationI
     return WaitForEndOfStateForMs(GetEventNumber(event), durationInMs);
 }
 
-void FairMQStateMachine::OnStateChange(std::function<void(const State)> callback)
+void FairMQStateMachine::OnStateChange(const std::string& key, std::function<void(const State)> callback)
 {
-    fStateChangeCallback.connect(callback);
+    fStateChangeCallbacksMap.insert({key, fStateChangeCallback.connect(callback)});
 }
 
+void FairMQStateMachine::UnsubscribeFromStateChange(const std::string& key)
+{
+    fStateChangeCallbacksMap.at(key).disconnect();
+    //fStateChangeCallbacksMap.erase(key);
+}

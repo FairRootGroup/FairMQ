@@ -38,7 +38,7 @@ auto control(FairMQDevice& device) -> void
 
 TEST(PluginManager, LoadPlugin)
 {
-    auto config = FairMQProgOptions{};
+    FairMQProgOptions config{};
     FairMQDevice device{};
     auto mgr = PluginManager{};
     mgr.EmplacePluginServices(config, device);

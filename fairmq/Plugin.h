@@ -69,6 +69,16 @@ class Plugin
     }
     static auto NoProgramOptions() -> const boost::optional<boost::program_options::options_description> { return boost::none; }
 
+    // device control API
+    using DeviceState = fair::mq::PluginServices::DeviceState;
+    using DeviceStateTransition = fair::mq::PluginServices::DeviceStateTransition;
+    auto ToDeviceState(const std::string& state) const -> fair::mq::PluginServices::DeviceState { return fPluginServices.ToDeviceState(state); }
+    auto ToStr(fair::mq::PluginServices::DeviceState state) const -> std::string { return fPluginServices.ToStr(state); }
+    auto GetCurrentDeviceState() const -> fair::mq::PluginServices::DeviceState { return fPluginServices.GetCurrentDeviceState(); }
+    auto ChangeDeviceState(const fair::mq::PluginServices::DeviceStateTransition next) -> void { fPluginServices.ChangeDeviceState(next); }
+    auto SubscribeToDeviceStateChange(std::function<void(fair::mq::PluginServices::DeviceState)> callback) -> void { fPluginServices.SubscribeToDeviceStateChange(fkName, callback); }
+    auto UnsubscribeFromDeviceStateChange() -> void { fPluginServices.UnsubscribeFromDeviceStateChange(fkName); }
+
     private:
 
     const std::string fkName;

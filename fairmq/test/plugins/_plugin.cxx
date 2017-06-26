@@ -36,9 +36,9 @@ auto control(FairMQDevice& device) -> void
 
 TEST(Plugin, Operators)
 {
-    auto config = FairMQProgOptions{};
+    FairMQProgOptions config{};
     FairMQDevice device{};
-    auto services = PluginServices{config, device};
+    PluginServices services{config, device};
     auto p1 = Plugin{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", services};
     auto p2 = Plugin{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", services};
     auto p3 = Plugin{"file", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/file.git", services};
@@ -49,9 +49,9 @@ TEST(Plugin, Operators)
 
 TEST(Plugin, OstreamOperators)
 {
-    auto config = FairMQProgOptions{};
+    FairMQProgOptions config{};
     FairMQDevice device{};
-    auto services = PluginServices{config, device};
+    PluginServices services{config, device};
     auto p1 = Plugin{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", services};
     stringstream ss;
     ss << p1;
