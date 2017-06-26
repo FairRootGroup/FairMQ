@@ -9,7 +9,8 @@
 #ifndef FAIR_MQ_PLUGIN_H
 #define FAIR_MQ_PLUGIN_H
 
-#include <fairmq/tools/Strings.h>
+#include <fairmq/Tools.h>
+#include <fairmq/PluginServices.h>
 #include <boost/dll/alias.hpp>
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
@@ -49,7 +50,7 @@ class Plugin
     };
 
     Plugin() = delete;
-    Plugin(const std::string name, const Version version, const std::string maintainer, const std::string homepage);
+    Plugin(const std::string name, const Version version, const std::string maintainer, const std::string homepage, PluginServices& pluginServices);
     virtual ~Plugin();
 
     auto GetName() const -> const std::string& { return fkName; }
@@ -74,6 +75,7 @@ class Plugin
     const Version fkVersion;
     const std::string fkMaintainer;
     const std::string fkHomepage;
+    PluginServices& fPluginServices;
 
 }; /* class Plugin */
 
@@ -81,9 +83,9 @@ class Plugin
 } /* namespace fair */
 
 #define REGISTER_FAIRMQ_PLUGIN(KLASS, NAME, VERSION, MAINTAINER, HOMEPAGE, PROGOPTIONS) \
-static auto Make_##NAME##_Plugin() -> std::shared_ptr<KLASS> \
+static auto Make_##NAME##_Plugin(fair::mq::PluginServices& pluginServices) -> std::shared_ptr<KLASS> \
 { \
-    return std::make_shared<KLASS>(std::string{#NAME}, VERSION, std::string{MAINTAINER}, std::string{HOMEPAGE}); \
+    return std::make_shared<KLASS>(std::string{#NAME}, VERSION, std::string{MAINTAINER}, std::string{HOMEPAGE}, pluginServices); \
 } \
 BOOST_DLL_ALIAS(Make_##NAME##_Plugin, make_##NAME##_plugin) \
 BOOST_DLL_ALIAS(PROGOPTIONS, get_##NAME##_plugin_progoptions)

@@ -933,7 +933,7 @@ void FairMQDevice::CreateOwnConfig()
     char arg0[] = "undefined"; // executable name
     char arg1[] = "--id";
     char* arg2 = const_cast<char*>(id.c_str()); // device ID
-    char* argv[] = { &arg0[0], &arg1[0], arg2, nullptr };
+    const char* argv[] = { &arg0[0], &arg1[0], arg2, nullptr };
     int argc = static_cast<int>((sizeof(argv) / sizeof(argv[0])) - 1);
 
     fConfig->ParseAll(argc, &argv[0]);

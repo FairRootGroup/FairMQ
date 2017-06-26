@@ -22,8 +22,8 @@ class Dummy2Plugin : public fair::mq::Plugin
 {
     public:
 
-    Dummy2Plugin(const std::string name, const Version version, const std::string maintainer, const std::string homepage)
-    : Plugin(name, version, maintainer, homepage)
+    Dummy2Plugin(const std::string name, const Version version, const std::string maintainer, const std::string homepage, PluginServices& pluginServices)
+    : Plugin(name, version, maintainer, homepage, pluginServices)
     {
     }
 }; /* class Dummy2Plugin */

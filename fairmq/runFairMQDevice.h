@@ -1,17 +1,17 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
  *              This software is distributed under the terms of the             *
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include <FairMQLogger.h>
+#include <options/FairMQProgOptions.h>
+#include <FairMQDevice.h>
+#include <tools/runSimpleMQStateMachine.h>
+#include <fairmq/PluginManager.h>
 #include <boost/program_options.hpp>
-
-#include "FairMQLogger.h"
-#include "options/FairMQProgOptions.h"
-#include "FairMQDevice.h"
-#include "tools/runSimpleMQStateMachine.h"
 
 template <typename R>
 class GenericFairMQDevice : public FairMQDevice
@@ -40,7 +40,7 @@ FairMQDevicePtr getDevice(const FairMQProgOptions& config);
 // to be implemented by the user to add custom command line options (or just with empty body)
 void addCustomOptions(boost::program_options::options_description&);
 
-int main(int argc, char** argv)
+int main(int argc, const char** argv)
 {
     try
     {
@@ -49,7 +49,14 @@ int main(int argc, char** argv)
 
         FairMQProgOptions config;
         config.AddToCmdLineOptions(customOptions);
-        config.ParseAll(argc, argv);
+
+        auto pluginManager = fair::mq::PluginManager::MakeFromCommandLineOptions(fair::mq::tools::ToStrVector(argc, argv));
+        config.AddToCmdLineOptions(pluginManager->ProgramOptions());
+        pluginManager->ForEachPluginProgOptions([&config](const boost::program_options::options_description& options){
+            config.AddToCmdLineOptions(options);
+        });
+
+        config.ParseAll(argc, argv, true);
 
         std::unique_ptr<FairMQDevice> device(getDevice(config));
         if (!device)
@@ -57,6 +64,10 @@ int main(int argc, char** argv)
             LOG(ERROR) << "getDevice(): no valid device provided. Exiting.";
             return 1;
         }
+
+        pluginManager->EmplacePluginServices(config, *device);
+        pluginManager->InstantiatePlugins();
+
         int result = runStateMachine(*device, config);
 
         if (result > 0)

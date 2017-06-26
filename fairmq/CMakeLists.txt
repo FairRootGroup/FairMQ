@@ -46,11 +46,6 @@ endif()
 if(BUILD_TESTING)
     add_subdirectory(test)
 endif()
-if(DDS_FOUND)
-    add_subdirectory(plugins/config)
-    add_subdirectory(plugins/control)
-endif(DDS_FOUND)
-
 
 ##########################
 # libFairMQ header files #
@@ -61,9 +56,7 @@ set(FAIRMQ_DEPRECATED_HEADER_FILES
 set(FAIRMQ_HEADER_FILES
     ${FAIRMQ_DEPRECATED_HEADER_FILES}
     FairMQChannel.h
-    FairMQConfigPlugin.h
     FairMQConfigurable.h
-    FairMQControlPlugin.h
     FairMQDevice.h
     FairMQLogger.h
     FairMQMessage.h
@@ -90,6 +83,7 @@ set(FAIRMQ_HEADER_FILES
     options/FairProgOptionsHelper.h
     Plugin.h
     PluginManager.h
+    PluginServices.h
     runFairMQDevice.h
     shmem/FairMQMessageSHM.h
     shmem/FairMQPollerSHM.h
@@ -145,6 +139,7 @@ set(FAIRMQ_SOURCE_FILES
     options/FairProgOptions.cxx
     Plugin.cxx
     PluginManager.cxx
+    PluginServices.cxx
     shmem/FairMQMessageSHM.cxx
     shmem/FairMQPollerSHM.cxx
     shmem/FairMQSocketSHM.cxx
@@ -199,9 +194,9 @@ target_include_directories(FairMQ
 ##################
 target_link_libraries(FairMQ
     INTERFACE # only consumers link against interface dependencies
-    dl
 
     PUBLIC # libFairMQ AND consumers of libFairMQ link aginst public dependencies
+    dl
     pthread
     Boost::boost
     Boost::log

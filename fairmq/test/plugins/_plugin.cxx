@@ -8,30 +8,55 @@
 
 #include <gtest/gtest.h>
 #include <fairmq/Plugin.h>
+#include <fairmq/PluginServices.h>
+#include <FairMQDevice.h>
+#include <options/FairMQProgOptions.h>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace
 {
 
 using namespace std;
-using fair::mq::Plugin;
+using namespace fair::mq;
+
+auto control(FairMQDevice& device) -> void
+{
+    device.SetTransport("zeromq");
+    for (const auto event : {
+        FairMQDevice::INIT_DEVICE,
+        FairMQDevice::RESET_DEVICE,
+        FairMQDevice::END,
+    }) {
+        device.ChangeState(event);
+        if (event != FairMQDevice::END) device.WaitForEndOfState(event);
+    }
+}
 
 TEST(Plugin, Operators)
 {
-    auto p1 = Plugin{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git"};
-    auto p2 = Plugin{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git"};
-    auto p3 = Plugin{"file", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/file.git"};
+    auto config = FairMQProgOptions{};
+    FairMQDevice device{};
+    auto services = PluginServices{config, device};
+    auto p1 = Plugin{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", services};
+    auto p2 = Plugin{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", services};
+    auto p3 = Plugin{"file", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/file.git", services};
     EXPECT_EQ(p1, p2);
     EXPECT_NE(p1, p3);
+    control(device);
 }
 
 TEST(Plugin, OstreamOperators)
 {
-    auto p1 = Plugin{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git"};
+    auto config = FairMQProgOptions{};
+    FairMQDevice device{};
+    auto services = PluginServices{config, device};
+    auto p1 = Plugin{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", services};
     stringstream ss;
     ss << p1;
     EXPECT_EQ(ss.str(), string{"'dds', version '1.0.0', maintainer 'Foo Bar <foo.bar@test.net>', homepage 'https://git.test.net/dds.git'"});
+    control(device);
 }
 
 TEST(PluginVersion, Operators)

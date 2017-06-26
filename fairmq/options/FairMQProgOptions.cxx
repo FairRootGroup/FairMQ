@@ -37,7 +37,7 @@ FairMQProgOptions::~FairMQProgOptions()
 {
 }
 
-void FairMQProgOptions::ParseAll(const int argc, char** argv, bool allowUnregistered)
+void FairMQProgOptions::ParseAll(const int argc, const char** argv, bool allowUnregistered)
 {
     // init description
     InitOptionDescription();

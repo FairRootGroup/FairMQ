@@ -8,6 +8,8 @@
 
 #include <gtest/gtest.h>
 #include <fairmq/PluginManager.h>
+#include <FairMQDevice.h>
+#include <options/FairMQProgOptions.h>
 #include <FairMQLogger.h>
 #include <vector>
 
@@ -21,8 +23,8 @@ TEST(PluginManager, LoadPluginStatic)
 {
     auto mgr = PluginManager{};
 
-    ASSERT_NO_THROW(mgr.LoadPlugin("s:test_dummy"));
-    ASSERT_NO_THROW(mgr.LoadPlugin("s:test_dummy2"));
+    ASSERT_NO_THROW(mgr.LoadPlugin("p:test_dummy"));
+    ASSERT_NO_THROW(mgr.LoadPlugin("p:test_dummy2"));
 }
 
 } /* namespace */

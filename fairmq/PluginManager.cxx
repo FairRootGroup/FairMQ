@@ -14,6 +14,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 
 using namespace std;
 using fair::mq::tools::ToString;
@@ -27,7 +28,7 @@ using boost::optional;
 const std::string fair::mq::PluginManager::fgkLibPrefix = "FairMQPlugin_";
 
 fair::mq::PluginManager::PluginManager()
-: fSearchPaths({"."})
+: fSearchPaths{{"."}}
 {
 }
 
@@ -56,7 +57,7 @@ auto fair::mq::PluginManager::PrependSearchPath(const fs::path& path) -> void
     fSearchPaths.insert(begin(fSearchPaths), path);
 }
 
-auto fair::mq::PluginManager::ProgramOptions() -> const optional<po::options_description>
+auto fair::mq::PluginManager::ProgramOptions() -> const po::options_description
 {
     auto plugin_options = po::options_description{"Plugin Manager"};
     plugin_options.add_options()
@@ -69,14 +70,14 @@ auto fair::mq::PluginManager::ProgramOptions() -> const optional<po::options_des
          "* If you mix the overriding and appending/prepending syntaxes, the overriding paths act as default search path, e.g.\n"
          "  -S /usr/lib >/lib </home/user/lib /usr/local/lib results in /home/user/lib,/usr/local/lib,/usr/lib/,/lib")
         ("plugin,P", po::value<vector<string>>(),
-         "List of plugin names to load in order, e.g. if the file is called 'libFairMQPlugin_example.so', just list 'example' or 'd:example' here. To load a static plugin, list 's:example' here (The plugin must be already linked into the executable).");
+         "List of plugin names to load in order, e.g. if the file is called 'libFairMQPlugin_example.so', just list 'example' or 'd:example' here. To load a prelinked plugin, list 'p:example' here.");
     return plugin_options;
 }
 
 auto fair::mq::PluginManager::MakeFromCommandLineOptions(const vector<string> args) -> shared_ptr<PluginManager>
 {
     // Parse command line options
-    auto options = ProgramOptions().value();
+    auto options = ProgramOptions();
     auto vm = po::variables_map{};
     try
     {
@@ -87,7 +88,7 @@ auto fair::mq::PluginManager::MakeFromCommandLineOptions(const vector<string> ar
     {
         throw ProgramOptionsParseError{ToString("Error occured while parsing the 'Plugin Manager' program options: ", e.what())};
     }
-    
+
     // Process plugin search paths
     auto append = vector<fs::path>{};
     auto prepend = vector<fs::path>{};
@@ -107,13 +108,7 @@ auto fair::mq::PluginManager::MakeFromCommandLineOptions(const vector<string> ar
     mgr->SetSearchPaths(searchPaths);
     for(const auto& path : prepend) { mgr->PrependSearchPath(path); }
     for(const auto& path : append)  { mgr->AppendSearchPath(path); }
-    if (vm.count("plugin"))
-    {
-        for (const auto& plugin : vm["plugin"].as<vector<string>>())
-        {
-            mgr->LoadPlugin(plugin);
-        }
-    }
+    if (vm.count("plugin")) { mgr->LoadPlugins(vm["plugin"].as<vector<string>>()); }
 
     // Return the plugin manager and command line options, that have not been recognized.
     return mgr;
@@ -121,10 +116,10 @@ auto fair::mq::PluginManager::MakeFromCommandLineOptions(const vector<string> ar
 
 auto fair::mq::PluginManager::LoadPlugin(const string& pluginName) -> void
 {
-    if (pluginName.substr(0,2) == "s:")
+    if (pluginName.substr(0,2) == "p:")
     {
-        // Mechanism A: static
-        LoadPluginStatic(pluginName.substr(2));
+        // Mechanism A: prelinked dynamic
+        LoadPluginPrelinkedDynamic(pluginName.substr(2));
     }
     else if (pluginName.substr(0,2) == "d:")
     {
@@ -138,7 +133,7 @@ auto fair::mq::PluginManager::LoadPlugin(const string& pluginName) -> void
     }
 }
 
-auto fair::mq::PluginManager::LoadPluginStatic(const string& pluginName) -> void
+auto fair::mq::PluginManager::LoadPluginPrelinkedDynamic(const string& pluginName) -> void
 {
     // Load symbol
     if (fPluginFactories.find(pluginName) == fPluginFactories.end())
@@ -149,11 +144,9 @@ auto fair::mq::PluginManager::LoadPluginStatic(const string& pluginName) -> void
         }
         catch (boost::system::system_error& e)
         {
-            throw PluginLoadError(ToString("An error occurred while loading static plugin ", pluginName, ": ", e.what()));
+            throw PluginLoadError(ToString("An error occurred while loading prelinked dynamic plugin ", pluginName, ": ", e.what()));
         }
     }
-
-    InstantiatePlugin(pluginName);
 }
 
 auto fair::mq::PluginManager::LoadPluginDynamic(const string& pluginName) -> void
@@ -172,6 +165,7 @@ auto fair::mq::PluginManager::LoadPluginDynamic(const string& pluginName) -> voi
                     dll::load_mode::append_decorations
                 );
 
+                fPluginOrder.push_back(pluginName);
                 success = true;
                 break;
             }
@@ -183,17 +177,29 @@ auto fair::mq::PluginManager::LoadPluginDynamic(const string& pluginName) -> voi
                 }
             }
         }
-        if(!success) throw PluginLoadError(ToString("The plugin ", pluginName, " could not be found in the plugin search paths."));
+        if(!success) { throw PluginLoadError(ToString("The plugin ", pluginName, " could not be found in the plugin search paths.")); }
     }
-
-    InstantiatePlugin(pluginName);
 }
 
 auto fair::mq::PluginManager::InstantiatePlugin(const string& pluginName) -> void
 {
     if (fPlugins.find(pluginName) == fPlugins.end())
     {
-        fPlugins[pluginName] = fPluginFactories[pluginName]();
-        fPluginOrder.push_back(pluginName);
+        fPlugins[pluginName] = fPluginFactories[pluginName](*fPluginServices);
+    }
+}
+
+auto fair::mq::PluginManager::InstantiatePlugins() -> void
+{
+    for(const auto& pluginName : fPluginOrder)
+    {
+        try
+        {
+            InstantiatePlugin(pluginName);
+        }
+        catch (std::exception& e)
+        {
+            throw PluginInstantiationError(ToString("An error occurred while instantiating plugin ", pluginName, ": ", e.what()));
+        }
     }
 }

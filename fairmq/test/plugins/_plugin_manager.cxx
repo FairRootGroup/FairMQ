@@ -8,6 +8,9 @@
 
 #include <gtest/gtest.h>
 #include <fairmq/PluginManager.h>
+#include <fairmq/PluginServices.h>
+#include <FairMQDevice.h>
+#include <options/FairMQProgOptions.h>
 #include <FairMQLogger.h>
 #include <fstream>
 #include <vector>
@@ -20,16 +23,35 @@ using namespace boost::filesystem;
 using namespace boost::program_options;
 using namespace std;
 
+auto control(FairMQDevice& device) -> void
+{
+    device.SetTransport("zeromq");
+    for (const auto event : {
+        FairMQDevice::INIT_DEVICE,
+        FairMQDevice::RESET_DEVICE,
+        FairMQDevice::END,
+    }) {
+        device.ChangeState(event);
+        if (event != FairMQDevice::END) device.WaitForEndOfState(event);
+    }
+}
+
 TEST(PluginManager, LoadPlugin)
 {
+    auto config = FairMQProgOptions{};
+    FairMQDevice device{};
     auto mgr = PluginManager{};
+    mgr.EmplacePluginServices(config, device);
+
     mgr.PrependSearchPath("./lib");
 
     ASSERT_NO_THROW(mgr.LoadPlugin("test_dummy"));
     ASSERT_NO_THROW(mgr.LoadPlugin("test_dummy2"));
 
+    ASSERT_NO_THROW(mgr.InstantiatePlugins());
+
     // check order
-    auto expected = vector<string>{"test_dummy", "test_dummy2"};
+    const auto expected = vector<string>{"test_dummy", "test_dummy2"};
     auto actual = vector<string>{};
     mgr.ForEachPlugin([&](Plugin& plugin){ actual.push_back(plugin.GetName()); });
     ASSERT_TRUE(actual == expected);
@@ -38,6 +60,8 @@ TEST(PluginManager, LoadPlugin)
     auto count = 0;
     mgr.ForEachPluginProgOptions([&count](const options_description& d){ ++count; });
     ASSERT_EQ(count, 1);
+
+    control(device);
 }
 
 TEST(PluginManager, Factory)

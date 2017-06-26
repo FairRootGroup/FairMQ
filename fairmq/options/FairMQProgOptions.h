@@ -17,6 +17,7 @@
 #define FAIRMQPROGOPTIONS_H
 
 #include <unordered_map>
+#include <functional>
 #include <map>
 #include <set>
 #include <mutex>
@@ -38,7 +39,7 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
 
     // parse command line and txt/INI configuration file. 
     // default parser for the mq-configuration file (JSON/XML) is called if command line key mq-config is called
-    virtual void ParseAll(const int argc, char** argv, bool allowUnregistered = false);
+    virtual void ParseAll(const int argc, const char** argv, bool allowUnregistered = false);
 
     // external parser, store function 
     template <typename T, typename ...Args>

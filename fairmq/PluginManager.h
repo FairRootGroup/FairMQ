@@ -10,7 +10,9 @@
 #define FAIR_MQ_PLUGINMANAGER_H
 
 #include <fairmq/Plugin.h>
+#include <fairmq/PluginServices.h>
 #include <fairmq/Tools.h>
+#include <FairMQDevice.h>
 #define BOOST_FILESYSTEM_VERSION 3
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
@@ -38,15 +40,15 @@ namespace mq
  * @brief manages and owns plugin instances
  *
  * The plugin manager is responsible for the whole plugin lifecycle. It
- * facilitates three plugin mechanisms:
- * A static (built-in) plugins
+ * facilitates two plugin mechanisms:
+ * A prelinked dynamic plugins (shared libraries)
  * B dynamic plugins (shared libraries)
  */
 class PluginManager
 {
     public:
 
-    using PluginFactory = std::shared_ptr<fair::mq::Plugin>();
+    using PluginFactory = std::shared_ptr<fair::mq::Plugin>(PluginServices&);
     using PluginProgOptions = const boost::optional<boost::program_options::options_description>();
 
     PluginManager();
@@ -60,8 +62,10 @@ class PluginManager
     auto LoadPlugin(const std::string& pluginName) -> void;
     auto LoadPlugins(const std::vector<std::string>& pluginNames) -> void { for(const auto& pluginName : pluginNames) { LoadPlugin(pluginName); } }
     struct PluginLoadError : std::runtime_error { using std::runtime_error::runtime_error; };
+    auto InstantiatePlugins() -> void;
+    struct PluginInstantiationError : std::runtime_error { using std::runtime_error::runtime_error; };
 
-    static auto ProgramOptions() -> const boost::optional<boost::program_options::options_description>;
+    static auto ProgramOptions() -> const boost::program_options::options_description;
     static auto MakeFromCommandLineOptions(const std::vector<std::string>) -> std::shared_ptr<PluginManager>;
     struct ProgramOptionsParseError : std::runtime_error { using std::runtime_error::runtime_error; };
 
@@ -70,11 +74,14 @@ class PluginManager
     auto ForEachPlugin(std::function<void (Plugin&)> func) -> void { for(const auto& p : fPluginOrder) { func(*fPlugins[p]); } }
     auto ForEachPluginProgOptions(std::function<void (const boost::program_options::options_description&)> func) const -> void { for(const auto& pair : fPluginProgOptions) { func(pair.second); } }
 
+    template<typename... Args>
+    auto EmplacePluginServices(Args&&... args) -> void { fPluginServices = fair::mq::tools::make_unique<PluginServices>(std::forward<Args>(args)...); };
+
     private:
 
     static auto ValidateSearchPath(const boost::filesystem::path&) -> void;
 
-    auto LoadPluginStatic(const std::string& pluginName) -> void;
+    auto LoadPluginPrelinkedDynamic(const std::string& pluginName) -> void;
     auto LoadPluginDynamic(const std::string& pluginName) -> void;
     template<typename... Args>
     auto LoadSymbols(const std::string& pluginName, Args&&... args) -> void
@@ -107,6 +114,7 @@ class PluginManager
     std::map<std::string, std::shared_ptr<Plugin>> fPlugins;
     std::vector<std::string> fPluginOrder;
     std::map<std::string, boost::program_options::options_description> fPluginProgOptions;
+    std::unique_ptr<PluginServices> fPluginServices;
     
 }; /* class PluginManager */
 
