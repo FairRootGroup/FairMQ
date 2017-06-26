@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <map>
 #include <set>
+#include <mutex>
 
 #include "FairProgOptions.h"
 #include "FairMQEventManager.h"
@@ -164,6 +165,8 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
     template<typename T>
     int UpdateValue(const std::string& key, T val)
     {
+        std::unique_lock<std::mutex> lock(fConfigMutex);
+
         if (fVarMap.count(key))
         {
             // update variable map
@@ -204,6 +207,8 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
     template <typename T, typename F>
     void Subscribe(const std::string& key, F&& func) const
     {
+        std::unique_lock<std::mutex> lock(fConfigMutex);
+
         static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value,
             "In template member FairMQProgOptions::Subscribe<T>(key,Lambda) the types const char* or char* for the calback signatures are not supported.");
 

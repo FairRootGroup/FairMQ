@@ -28,6 +28,7 @@ FairProgOptions::FairProgOptions() :
                         fConfigFileOptions("Configuration file options"),
                         fSeverityMap(),
                         fVisibleOptions("Visible options"),
+                        fConfigMutex(),
                         fVerbosityLevel("INFO"),
                         fUseConfigFile(false),
                         fConfigFile()
@@ -204,29 +205,7 @@ int FairProgOptions::ParseEnvironment(const function<string(string)>& environmen
     return 0;
 }
 
-// Given a key, convert the variable value to string
-string FairProgOptions::GetStringValue(const string& key)
-{
-    string valueStr;
-    try
-    {
-        if (fVarMap.count(key))
-        {
-            valueStr=FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at(key));
-        }
-    }
-    catch(exception& e)
-    {
-        LOG(ERROR) << "Exception thrown for the key '" << key << "'";
-        LOG(ERROR) << e.what();
-    }
-
-    return valueStr;
-}
-
-/// //////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Print/notify options
-int FairProgOptions::PrintHelp()  const
+int FairProgOptions::PrintHelp() const
 {
     cout << fVisibleOptions << "\n";
     return 0;

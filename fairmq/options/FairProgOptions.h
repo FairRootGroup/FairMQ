@@ -24,6 +24,7 @@
 #include <iostream>
 #include <fstream>
 #include <iterator>
+#include <mutex>
 #include <tuple>
 
 /*
@@ -77,6 +78,8 @@ class FairProgOptions
     template<typename T>
     T GetValue(const std::string& key) const
     {
+        std::unique_lock<std::mutex> lock(fConfigMutex);
+
         T val = T();
         try
         {
@@ -99,11 +102,32 @@ class FairProgOptions
         return val;
     }
 
-    // convert value to string that corresponds to the key
-    std::string GetStringValue(const std::string& key);
+    // Given a key, convert the variable value to string
+    std::string GetStringValue(const std::string& key)
+    {
+        std::unique_lock<std::mutex> lock(fConfigMutex);
+
+        std::string valueStr;
+        try
+        {
+            if (fVarMap.count(key))
+            {
+                valueStr = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at(key));
+            }
+        }
+        catch (std::exception& e)
+        {
+            LOG(ERROR) << "Exception thrown for the key '" << key << "'";
+            LOG(ERROR) << e.what();
+        }
+
+        return valueStr;
+    }
 
     int Count(const std::string& key) const
     {
+        std::unique_lock<std::mutex> lock(fConfigMutex);
+
         return fVarMap.count(key);
     }
 
@@ -161,6 +185,8 @@ class FairProgOptions
     // to handle logger severity
     std::map<std::string, FairMQ::severity_level> fSeverityMap;
     po::options_description fVisibleOptions;
+
+    mutable std::mutex fConfigMutex;
 
     std::string fVerbosityLevel;
     bool fUseConfigFile;
