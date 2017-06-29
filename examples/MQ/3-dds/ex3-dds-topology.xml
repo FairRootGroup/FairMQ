@@ -3,21 +3,15 @@
     <property id="data1" />
     <property id="data2" />
 
-    <declrequirement id="SamplerWorker">
-        <hostPattern type="wnname" value="sampler"/>
-    </declrequirement>
-
-    <declrequirement id="ProcessorWorker">
-        <hostPattern type="wnname" value="processor"/>
-    </declrequirement>
-
-    <declrequirement id="SinkWorker">
-        <hostPattern type="wnname" value="sink"/>
-    </declrequirement>
+    <declrequirement id="SamplerWorker" type="wnname" value="sampler"/>
+    <declrequirement id="ProcessorWorker" type="wnname" value="processor"/>
+    <declrequirement id="SinkWorker" type="wnname" value="sink"/>
 
     <decltask id="Sampler">
         <exe reachable="true">@CMAKE_BINARY_DIR@/bin/examples/MQ/3-dds/ex3-sampler --id sampler --log-color false --control libFairMQDDSControlPlugin.so --config libFairMQDDSConfigPlugin.so --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
-        <requirement>SamplerWorker</requirement>
+        <requirements>
+            <id>SamplerWorker</id>
+        </requirements>
         <properties>
             <id access="write">data1</id>
         </properties>
@@ -25,7 +19,9 @@
 
     <decltask id="Processor">
         <exe reachable="true">@CMAKE_BINARY_DIR@/bin/examples/MQ/3-dds/ex3-processor --id processor_%taskIndex% --config-key processor --log-color false --control libFairMQDDSControlPlugin.so --config libFairMQDDSConfigPlugin.so --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
-        <requirement>ProcessorWorker</requirement>
+        <requirements>
+            <id>ProcessorWorker</id>
+        </requirements>
         <properties>
             <id access="read">data1</id>
             <id access="read">data2</id>
@@ -34,7 +30,9 @@
 
     <decltask id="Sink">
         <exe reachable="true">@CMAKE_BINARY_DIR@/bin/examples/MQ/3-dds/ex3-sink --id sink --log-color false --control libFairMQDDSControlPlugin.so --config libFairMQDDSConfigPlugin.so --mq-config @CMAKE_BINARY_DIR@/bin/config/ex3-dds.json</exe>
-        <requirement>SinkWorker</requirement>
+        <requirements>
+            <id>SinkWorker</id>
+        </requirements>
         <properties>
             <id access="write">data2</id>
         </properties>
