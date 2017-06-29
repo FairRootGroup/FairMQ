@@ -58,30 +58,23 @@ dds-submit --rms ssh --config ex3-dds-hosts.cfg
 ```
 The `--rms` option defines a destination resource management system. The `--config` specifies an SSH plug-in resource definition file.
 
-##### 6. Set the topology file.
-
-Point DDS to the topology file:
-```bash
-dds-topology --set ex3-dds-topology.xml
-```
-
-##### 7. Activate the topology.
+##### 6. Activate the topology.
 
 ```bash
-dds-topology --activate
+dds-topology --activate ex3-dds-topology.xml
 ```
 
-##### 8. Run
+##### 7. Run
 
 After activation, agents will execute the defined tasks on the worker nodes. Output of the tasks will be stored in the directory that was specified in the hosts file.
 
-##### 9. (optional) Use example command UI to check state of the devices
+##### 8. (optional) Use example command UI to check state of the devices
 
 A simple utility (fairmq-dds-command-ui) is included with FairRoot to send commands to devices and receive replies from them. The utility uses the DDS intercom library to send "check-state" string to all devices, to which they reply with their ID and state they are in. The utility also allows requesting state changes from devices. To let the device listen to the commands from the utility, start the device with `--control <ddsControlPluginLibraryName>` cmd option (see example XML topology).
 
 To see it in action, start the fairmq-dds-command-ui while the topology is running.
 
-##### 10. Stop DDS server/topology.
+##### 9. Stop DDS server/topology.
 
 The execution of tasks can be stopped with:
 ```bash
