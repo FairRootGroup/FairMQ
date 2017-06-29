@@ -32,7 +32,7 @@ auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, con
     auto final_id = id;
 
     // Generate uuid if empty
-    if(final_id == "")
+    if (final_id == "")
     {
         final_id = boost::uuids::to_string(boost::uuids::random_generator()());
     }
