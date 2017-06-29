@@ -59,7 +59,7 @@ FairProgOptions::~FairProgOptions()
 
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Add option descriptions
-int FairProgOptions::AddToCmdLineOptions(const po::options_description& optDesc, bool visible)
+int FairProgOptions::AddToCmdLineOptions(const po::options_description optDesc, bool visible)
 {
     fCmdLineOptions.add(optDesc);
     if (visible)
@@ -69,7 +69,7 @@ int FairProgOptions::AddToCmdLineOptions(const po::options_description& optDesc,
     return 0;
 }
 
-int FairProgOptions::AddToCfgFileOptions(const po::options_description& optDesc, bool visible)
+int FairProgOptions::AddToCfgFileOptions(const po::options_description optDesc, bool visible)
 {
     //if UseConfigFile() not yet called, then enable it with required file name to be provided by command line
     if (!fUseConfigFile)
@@ -100,7 +100,7 @@ po::options_description& FairProgOptions::GetEnvironmentOptions()
     return fEnvironmentDesc;
 }
 
-int FairProgOptions::AddToEnvironmentOptions(const po::options_description& optDesc)
+int FairProgOptions::AddToEnvironmentOptions(const po::options_description optDesc)
 {
     fEnvironmentDesc.add(optDesc);
     return 0;

@@ -47,14 +47,16 @@ int main(int argc, const char** argv)
         boost::program_options::options_description customOptions("Custom options");
         addCustomOptions(customOptions);
 
+        // Plugin manager needs to be destroyed after config !
+        // TODO Investigate, why
+        auto pluginManager = fair::mq::PluginManager::MakeFromCommandLineOptions(fair::mq::tools::ToStrVector(argc, argv));
         FairMQProgOptions config;
         config.AddToCmdLineOptions(customOptions);
 
-        auto pluginManager = fair::mq::PluginManager::MakeFromCommandLineOptions(fair::mq::tools::ToStrVector(argc, argv));
-        config.AddToCmdLineOptions(pluginManager->ProgramOptions());
-        pluginManager->ForEachPluginProgOptions([&config](const boost::program_options::options_description& options){
+        pluginManager->ForEachPluginProgOptions([&config](boost::program_options::options_description options){
             config.AddToCmdLineOptions(options);
         });
+        config.AddToCmdLineOptions(pluginManager->ProgramOptions());
 
         config.ParseAll(argc, argv, true);
 

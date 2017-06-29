@@ -9,9 +9,9 @@
 #ifndef FAIR_MQ_PLUGINSERVICES_H
 #define FAIR_MQ_PLUGINSERVICES_H
 
+#include <fairmq/Tools.h>
 #include <FairMQDevice.h>
 #include <options/FairMQProgOptions.h>
-#include <atomic>
 #include <functional>
 #include <string>
 #include <unordered_map>
@@ -65,143 +65,140 @@ class PluginServices
     PluginServices(FairMQProgOptions& config, FairMQDevice& device)
     : fDevice{device}
     , fConfig{config}
-    , fConfigEnabled{false}
-    , fkDeviceStateStrMap{
-        {"Ok",                 DeviceState::Ok},
-        {"Error",              DeviceState::Error},
-        {"Idle",               DeviceState::Idle},
-        {"InitializingDevice", DeviceState::InitializingDevice},
-        {"DeviceReady",        DeviceState::DeviceReady},
-        {"InitializingTask",   DeviceState::InitializingTask},
-        {"Ready",              DeviceState::Ready},
-        {"Running",            DeviceState::Running},
-        {"Paused",             DeviceState::Paused},
-        {"ResettingTask",      DeviceState::ResettingTask},
-        {"ResettingDevice",    DeviceState::ResettingDevice},
-        {"Exiting",            DeviceState::Exiting}
-      }
-    , fkStrDeviceStateMap{
-        {DeviceState::Ok,                 "Ok"},
-        {DeviceState::Error,              "Error"},
-        {DeviceState::Idle,               "Idle"},
-        {DeviceState::InitializingDevice, "InitializingDevice"},
-        {DeviceState::DeviceReady,        "DeviceReady"},
-        {DeviceState::InitializingTask,   "InitializingTask"},
-        {DeviceState::Ready,              "Ready"},
-        {DeviceState::Running,            "Running"},
-        {DeviceState::Paused,             "Paused"},
-        {DeviceState::ResettingTask,      "ResettingTask"},
-        {DeviceState::ResettingDevice,    "ResettingDevice"},
-        {DeviceState::Exiting,            "Exiting"}
-      }
-    , fkDeviceStateMap{
-        {FairMQDevice::OK,                  DeviceState::Ok},
-        {FairMQDevice::ERROR,               DeviceState::Error},
-        {FairMQDevice::IDLE,                DeviceState::Idle},
-        {FairMQDevice::INITIALIZING_DEVICE, DeviceState::InitializingDevice},
-        {FairMQDevice::DEVICE_READY,        DeviceState::DeviceReady},
-        {FairMQDevice::INITIALIZING_TASK,   DeviceState::InitializingTask},
-        {FairMQDevice::READY,               DeviceState::Ready},
-        {FairMQDevice::RUNNING,             DeviceState::Running},
-        {FairMQDevice::PAUSED,              DeviceState::Paused},
-        {FairMQDevice::RESETTING_TASK,      DeviceState::ResettingTask},
-        {FairMQDevice::RESETTING_DEVICE,    DeviceState::ResettingDevice},
-        {FairMQDevice::EXITING,             DeviceState::Exiting}
-      }
-    , fkDeviceStateTransitionMap{
-        {DeviceStateTransition::InitDevice,  FairMQDevice::INIT_DEVICE},
-        {DeviceStateTransition::InitTask,    FairMQDevice::INIT_TASK},
-        {DeviceStateTransition::Run,         FairMQDevice::RUN},
-        {DeviceStateTransition::Pause,       FairMQDevice::PAUSE},
-        {DeviceStateTransition::Stop,        FairMQDevice::STOP},
-        {DeviceStateTransition::ResetTask,   FairMQDevice::RESET_TASK},
-        {DeviceStateTransition::ResetDevice, FairMQDevice::RESET_DEVICE},
-        {DeviceStateTransition::End,         FairMQDevice::END},
-        {DeviceStateTransition::ErrorFound,  FairMQDevice::ERROR_FOUND}
-      }
     {
     }
 
-    // Control
+    // Control API
 
     /// @brief Convert string to DeviceState
     /// @param state to convert
     /// @return DeviceState enum entry 
     /// @throw std::out_of_range if a string cannot be resolved to a DeviceState
-    auto ToDeviceState(const std::string& state) const -> DeviceState
-    {
-        return fkDeviceStateStrMap.at(state);
-    }
+    static auto ToDeviceState(const std::string& state) -> DeviceState { return fkDeviceStateStrMap.at(state); }
+
+    /// @brief Convert string to DeviceStateTransition
+    /// @param transition to convert
+    /// @return DeviceStateTransition enum entry 
+    /// @throw std::out_of_range if a string cannot be resolved to a DeviceStateTransition
+    static auto ToDeviceStateTransition(const std::string& transition) -> DeviceStateTransition { return fkDeviceStateTransitionStrMap.at(transition); }
 
     /// @brief Convert DeviceState to string
-    /// @param string to convert
+    /// @param state to convert
     /// @return string representation of DeviceState enum entry 
-    auto ToStr(DeviceState state) const -> std::string
-    {
-        return fkStrDeviceStateMap.at(state);
-    }
+    static auto ToStr(DeviceState state) -> std::string { return fkStrDeviceStateMap.at(state); }
+    friend auto operator<<(std::ostream& os, const DeviceState& state) -> std::ostream& { return os << ToStr(state); }
+
+    /// @brief Convert DeviceStateTransition to string
+    /// @param transition to convert
+    /// @return string representation of DeviceStateTransition enum entry 
+    static auto ToStr(DeviceStateTransition transition) -> std::string { return fkStrDeviceStateTransitionMap.at(transition); }
+    friend auto operator<<(std::ostream& os, const DeviceStateTransition& transition) -> std::ostream& { return os << ToStr(transition); }
 
     /// @return current device state
-    auto GetCurrentDeviceState() const -> DeviceState
-    {
-        return fkDeviceStateMap.at(static_cast<FairMQDevice::State>(fDevice.GetCurrentState()));
-    }
+    auto GetCurrentDeviceState() const -> DeviceState { return fkDeviceStateMap.at(static_cast<FairMQDevice::State>(fDevice.GetCurrentState())); }
 
-    /// @brief Trigger a device state transition
+    /// @brief Request a device state transition
     /// @param next state transition
     ///
     /// The state transition may not happen immediately, but when the current state evaluates the
     /// pending transition event and terminates. In other words, the device states are scheduled cooperatively.
-    auto ChangeDeviceState(const DeviceStateTransition next) -> void
-    {
-        fDevice.ChangeState(fkDeviceStateTransitionMap.at(next));
-    }
+    auto ChangeDeviceState(const DeviceStateTransition next) -> void { fDevice.ChangeState(fkDeviceStateTransitionMap.at(next)); }
 
     /// @brief Subscribe with a callback to device state changes
-    /// @param InputMsgCallback
+    /// @param subscriber id
+    /// @param callback
     ///
     /// The callback will be called at the beginning of a new state. The callback is called from the thread
     /// the state is running in.
-    auto SubscribeToDeviceStateChange(const std::string& key, std::function<void(DeviceState /*newState*/)> callback) -> void
+    auto SubscribeToDeviceStateChange(const std::string& subscriber, std::function<void(DeviceState /*newState*/)> callback) -> void
     {
-        fDevice.OnStateChange(key, [&,callback](FairMQDevice::State newState){
+        fDevice.SubscribeToStateChange(subscriber, [&,callback](FairMQDevice::State newState){
             callback(fkDeviceStateMap.at(newState));
         });
     }
 
-    auto UnsubscribeFromDeviceStateChange(const std::string& key) -> void
+    /// @brief Unsubscribe from device state changes
+    /// @param subscriber id
+    auto UnsubscribeFromDeviceStateChange(const std::string& subscriber) -> void { fDevice.UnsubscribeFromStateChange(subscriber); }
+
+
+    // Config API
+
+    /// @brief Set config property
+    /// @param key
+    /// @param val
+    /// @throws fair::mq::PluginServices::InvalidStateError if method is called in unsupported device states
+    ///
+    /// Setting a config property will store the value in the FairMQ internal config store and notify any subscribers about the update.
+    /// It is property dependent, if the call to this method will have an immediate, delayed or any effect at all.
+    template<typename T>
+    auto SetProperty(const std::string& key, T val) -> void
     {
-        fDevice.UnsubscribeFromStateChange(key);
+        auto currentState = GetCurrentDeviceState();
+        if (currentState == DeviceState::InitializingDevice)
+        {
+            fConfig.SetValue(key, val);
+        }
+        else
+        {
+            throw InvalidStateError{tools::ToString("PluginServices::SetProperty is not supported in device state ", currentState, ". Supported state is ", DeviceState::InitializingDevice, ".")};
+        }
     }
+    struct InvalidStateError : std::runtime_error { using std::runtime_error::runtime_error; };
 
+    /// @brief Read config property
+    /// @param key
+    /// @return config property value
+    ///
+    /// TODO Currently, if a non-existing key is requested and a default constructed object is returned.
+    /// This behaviour will be changed in the future to throw an exception in that case to provide a proper sentinel.
+    template<typename T>
+    auto GetProperty(const std::string& key) const -> T { return fConfig.GetValue<T>(key); }
 
-    //// Configuration
+    /// @brief Read config property as string
+    /// @param key
+    /// @return config property value converted to string
+    /// 
+    /// If a type is not supported, the user can provide support by overloading the ostream operator for this type
+    auto GetPropertyAsString(const std::string& key) const -> std::string { return fConfig.GetStringValue(key); }
 
-    //// Writing only works during Initializing_device state
-    //template<typename T>
-    //auto SetProperty(const std::string& key, T val) -> void;
+    /// @brief Subscribe to property updates of type T
+    /// @param subscriber
+    /// @param callback function
+    ///
+    /// While PluginServices provides the SetProperty method which can update properties only during certain device states, there are
+    /// other methods in a FairMQ device that can update properties at any time. Therefore, the callback implementation should expect to be called in any
+    /// device state.
+    // template<typename T>
+    // auto SubscribeToPropertyChange(
+    //     const std::string& subscriber,
+    //     std::function<void(const std::string& [>key*/, const T /*newValue<])> callback
+    // ) const -> void
+    // {
+    //     fConfig.Subscribe(subscriber, callback);
+    // }
+    //
+    // /// @brief Unsubscribe from property updates of type T
+    // /// @param subscriber
+    // template<typename T>
+    // auto UnsubscribeFromPropertyChange(const std::string& subscriber) -> void { fConfig.Unsubscribe<T>(subscriber); }
+    //
+    // TODO Fix property subscription
+    // TODO Property iterator
 
-    //template<typename T>
-    //auto GetProperty(const std::string& key) const -> T;
-    //auto GetPropertyAsString(const std::string& key) const -> std::string;
-
-    //template<typename T>
-    //auto SubscribeToPropertyChange(
-        //const std::string& key,
-        //std::function<void(const std::string& [>key*/, const T /*newValue<])> callback
-    //) const -> void;
-    //auto UnsubscribeFromPropertyChange(const std::string& key) -> void;
+    static const std::unordered_map<std::string, DeviceState> fkDeviceStateStrMap;
+    static const std::unordered_map<DeviceState, std::string> fkStrDeviceStateMap;
+    static const std::unordered_map<std::string, DeviceStateTransition> fkDeviceStateTransitionStrMap;
+    static const std::unordered_map<DeviceStateTransition, std::string> fkStrDeviceStateTransitionMap;
+    static const std::unordered_map<FairMQDevice::State, DeviceState> fkDeviceStateMap;
+    static const std::unordered_map<DeviceStateTransition, FairMQDevice::Event> fkDeviceStateTransitionMap;
 
     private:
 
     FairMQProgOptions& fConfig;
     FairMQDevice& fDevice;
-    std::atomic<bool> fConfigEnabled;
-    const std::unordered_map<std::string, DeviceState> fkDeviceStateStrMap;
-    const std::unordered_map<DeviceState, std::string> fkStrDeviceStateMap;
-    const std::unordered_map<FairMQDevice::State, DeviceState> fkDeviceStateMap;
-    const std::unordered_map<DeviceStateTransition, FairMQDevice::Event> fkDeviceStateTransitionMap;
 }; /* class PluginServices */
+
 
 } /* namespace mq */
 } /* namespace fair */

@@ -16,6 +16,8 @@
 #ifndef FAIRMQEVENTMANAGER_H
 #define FAIRMQEVENTMANAGER_H
 
+#include <FairMQLogger.h>
+
 #include <map>
 #include <utility>
 #include <string>
@@ -97,7 +99,7 @@ class FairMQEventManager
     }
 
     template <EventId event, typename... ValueType>
-    void Disonnect(const std::string& key)
+    void Disconnect(const std::string& key)
     {
         GetSlot<event, ValueType...>(key).disconnect();
     }
@@ -111,14 +113,7 @@ class FairMQEventManager
     template <EventId event>
     bool EventKeyFound(const std::string& key)
     {
-        if (fEventMap.find(std::pair<EventId, std::string>(event, key)) != fEventMap.end())
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return fEventMap.find(std::pair<EventId, std::string>(event, key)) != fEventMap.end();
     }
 
   private:

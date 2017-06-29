@@ -36,6 +36,8 @@ class Plugin
 {
     public:
     
+    using ProgOptions = boost::optional<boost::program_options::options_description>;
+
     struct Version
     {
         const int fkMajor, fkMinor, fkPatch;
@@ -67,9 +69,10 @@ class Plugin
                   << "maintainer '" << p.GetMaintainer() << "', "
                   << "homepage '" << p.GetHomepage() << "'";
     }
-    static auto NoProgramOptions() -> const boost::optional<boost::program_options::options_description> { return boost::none; }
+    static auto NoProgramOptions() -> ProgOptions { return boost::none; }
 
     // device control API
+    // see <fairmq/PluginServices.h> for docs
     using DeviceState = fair::mq::PluginServices::DeviceState;
     using DeviceStateTransition = fair::mq::PluginServices::DeviceStateTransition;
     auto ToDeviceState(const std::string& state) const -> fair::mq::PluginServices::DeviceState { return fPluginServices.ToDeviceState(state); }
@@ -78,6 +81,18 @@ class Plugin
     auto ChangeDeviceState(const fair::mq::PluginServices::DeviceStateTransition next) -> void { fPluginServices.ChangeDeviceState(next); }
     auto SubscribeToDeviceStateChange(std::function<void(fair::mq::PluginServices::DeviceState)> callback) -> void { fPluginServices.SubscribeToDeviceStateChange(fkName, callback); }
     auto UnsubscribeFromDeviceStateChange() -> void { fPluginServices.UnsubscribeFromDeviceStateChange(fkName); }
+
+    // device config API
+    // see <fairmq/PluginServices.h> for docs
+    template<typename T>
+    auto SetProperty(const std::string& key, T val) -> void { fPluginServices.SetProperty(key, val); }
+    template<typename T>
+    auto GetProperty(const std::string& key) const -> T { return fPluginServices.GetProperty<T>(key); }
+    auto GetPropertyAsString(const std::string& key) const -> std::string { return fPluginServices.GetPropertyAsString(key); }
+    template<typename T>
+    auto SubscribeToPropertyChange(std::function<void(const std::string& /*key*/, const T /*newValue*/)> callback) const -> void { fPluginServices.SubscribeToPropertyChange(fkName, callback); }
+    template<typename T>
+    auto UnsubscribeFromPropertyChange() -> void { fPluginServices.UnsubscribeFromPropertyChange<T>(fkName); }
 
     private:
 

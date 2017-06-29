@@ -86,7 +86,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         , fState()
         , fChangeStateMutex()
         , fStateChangeCallback()
-        , fStateChangeCallbacksMap()
+        , fStateChangeCallbacks()
         {}
 
     // Destructor
@@ -134,7 +134,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "Entering IDLE state";
             fsm.fState = IDLE;
-            if (!fsm.fStateChangeCallback.empty())
+            if (!fsm.fStateChangeCallbacks.empty())
             {
                 fsm.fStateChangeCallback(IDLE);
             }
@@ -519,39 +519,10 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         }
     }
 
-    std::string GetCurrentStateName() const
-    {
-        return GetStateName(fState);
-    }
-
-    int GetCurrentState() const
-    {
-        return fState;
-    }
-
-    bool CheckCurrentState(int state) const
-    {
-        if (state == fState)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    bool CheckCurrentState(std::string state) const
-    {
-        if (state == GetCurrentStateName())
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
+    std::string GetCurrentStateName() const { return GetStateName(fState); }
+    int GetCurrentState() const { return fState; }
+    bool CheckCurrentState(int state) const { return state == fState; }
+    bool CheckCurrentState(std::string state) const { return state == GetCurrentStateName(); }
 
     // this is to run certain functions in a separate thread
     std::thread fWorkerThread;
@@ -570,7 +541,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
     std::mutex fChangeStateMutex;
 
     boost::signals2::signal<void(const State)> fStateChangeCallback;
-    std::unordered_map<std::string, boost::signals2::connection> fStateChangeCallbacksMap;
+    std::unordered_map<std::string, boost::signals2::connection> fStateChangeCallbacks;
 };
 
 // reactivate the warning for non-virtual destructor
@@ -619,8 +590,8 @@ class FairMQStateMachine : public FairMQFSM::FairMQFSM
     bool WaitForEndOfStateForMs(int state, int durationInMs);
     bool WaitForEndOfStateForMs(std::string state, int durationInMs);
 
-    void OnStateChange(const std::string&, std::function<void(const State)> callback);
-    void UnsubscribeFromStateChange(const std::string&);
+    void SubscribeToStateChange(const std::string& key, std::function<void(const State)> callback);
+    void UnsubscribeFromStateChange(const std::string& key);
 };
 
 #endif /* FAIRMQSTATEMACHINE_H_ */

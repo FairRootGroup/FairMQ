@@ -57,7 +57,7 @@ auto fair::mq::PluginManager::PrependSearchPath(const fs::path& path) -> void
     fSearchPaths.insert(begin(fSearchPaths), path);
 }
 
-auto fair::mq::PluginManager::ProgramOptions() -> const po::options_description
+auto fair::mq::PluginManager::ProgramOptions() -> po::options_description
 {
     auto plugin_options = po::options_description{"Plugin Manager"};
     plugin_options.add_options()

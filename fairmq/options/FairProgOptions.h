@@ -65,9 +65,9 @@ class FairProgOptions
     virtual ~FairProgOptions();
 
     //  add options_description
-    int AddToCmdLineOptions(const po::options_description& optDesc, bool visible = true);
-    int AddToCfgFileOptions(const po::options_description& optDesc, bool visible = true);
-    int AddToEnvironmentOptions(const po::options_description& optDesc);
+    int AddToCmdLineOptions(const po::options_description optDesc, bool visible = true);
+    int AddToCfgFileOptions(const po::options_description optDesc, bool visible = true);
+    int AddToEnvironmentOptions(const po::options_description optDesc);
     po::options_description& GetCmdLineOptions();
     po::options_description& GetCfgFileOptions();
     po::options_description& GetEnvironmentOptions();

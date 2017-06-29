@@ -205,6 +205,37 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
         return 0;
     }
 
+    template<typename T>
+    int SetValue(const std::string& key, T val)
+    {
+        std::unique_lock<std::mutex> lock(fConfigMutex);
+
+        // update variable map
+        UpdateVarMap<typename std::decay<T>::type>(key, val);
+
+        // update FairMQChannel map, check first if data are int or string
+        if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)
+        {
+            if (fMQKeyMap.count(key))
+            {
+                std::string channelName;
+                int index = 0;
+                std::string member;
+                std::tie(channelName, index, member) = fMQKeyMap.at(key);
+                UpdateChannelMap(channelName, index, member, val);
+            }
+        }
+
+        // execute stored function of a given key if exist
+        //if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)//if one wants to restrict type
+        if (EventKeyFound(key))
+        {
+            EmitUpdate<typename std::decay<T>::type>(key, val);
+        }
+
+        return 0;
+    }
+
     template <typename T, typename F>
     void Subscribe(const std::string& key, F&& func) const
     {
@@ -215,9 +246,18 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
 
         if (fVarMap.count(key))
         {
-            FairMQEventManager::Connect<EventId::UpdateParam, T>(key, std::forward<F>(func));
+            Connect<EventId::UpdateParam, T>(key, std::forward<F>(func));
         }
     }
+
+    template <typename T>
+    void Unsubscribe(const std::string& key) const
+    {
+        std::unique_lock<std::mutex> lock(fConfigMutex);
+
+        Disconnect<EventId::UpdateParam, T>(key);
+    }
+    
 
     /*
     template <typename F>

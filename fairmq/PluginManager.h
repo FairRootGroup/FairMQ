@@ -49,7 +49,6 @@ class PluginManager
     public:
 
     using PluginFactory = std::shared_ptr<fair::mq::Plugin>(PluginServices&);
-    using PluginProgOptions = const boost::optional<boost::program_options::options_description>();
 
     PluginManager();
 
@@ -65,14 +64,14 @@ class PluginManager
     auto InstantiatePlugins() -> void;
     struct PluginInstantiationError : std::runtime_error { using std::runtime_error::runtime_error; };
 
-    static auto ProgramOptions() -> const boost::program_options::options_description;
+    static auto ProgramOptions() -> boost::program_options::options_description;
     static auto MakeFromCommandLineOptions(const std::vector<std::string>) -> std::shared_ptr<PluginManager>;
     struct ProgramOptionsParseError : std::runtime_error { using std::runtime_error::runtime_error; };
 
     static auto LibPrefix() -> const std::string& { return fgkLibPrefix; }
 
     auto ForEachPlugin(std::function<void (Plugin&)> func) -> void { for(const auto& p : fPluginOrder) { func(*fPlugins[p]); } }
-    auto ForEachPluginProgOptions(std::function<void (const boost::program_options::options_description&)> func) const -> void { for(const auto& pair : fPluginProgOptions) { func(pair.second); } }
+    auto ForEachPluginProgOptions(std::function<void (boost::program_options::options_description)> func) const -> void { for(const auto& pair : fPluginProgOptions) { func(pair.second); } }
 
     template<typename... Args>
     auto EmplacePluginServices(Args&&... args) -> void { fPluginServices = fair::mq::tools::make_unique<PluginServices>(std::forward<Args>(args)...); };
@@ -100,7 +99,7 @@ class PluginManager
         {
             fPluginProgOptions.insert({
                 pluginName,
-                lib.get_alias<PluginProgOptions>(ToString("get_", pluginName, "_plugin_progoptions"))().value()
+                lib.get_alias<Plugin::ProgOptions()>(ToString("get_", pluginName, "_plugin_progoptions"))().value()
             });
         }
         catch (const boost::bad_optional_access& e) { /* just ignore, if no prog options are declared */ }
