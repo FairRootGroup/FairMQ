@@ -31,7 +31,7 @@ class DummyPlugin : public fair::mq::Plugin
         const Version version,
         const std::string maintainer,
         const std::string homepage,
-        PluginServices& pluginServices)
+        PluginServices* pluginServices)
     : Plugin(name, version, maintainer, homepage, pluginServices)
     {
         SubscribeToDeviceStateChange(
@@ -63,7 +63,6 @@ REGISTER_FAIRMQ_PLUGIN(
     "Mr. Dummy <dummy@test.net>",                // Maintainer
     "https://git.test.net/dummy.git",            // Homepage
     fair::mq::test::DummyPluginProgramOptions    // Free function which declares custom program options for the plugin
-                                                 // signature: () -> boost::optional<boost::program_options::options_description>
 )
 
 } /* namespace test */

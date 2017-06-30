@@ -854,7 +854,7 @@ int FairMQDevice::GetProperty(const int key, const int default_ /*= 0*/)
 
 shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& transport)
 {
-    unordered_map<FairMQ::Transport, shared_ptr<FairMQTransportFactory>>::const_iterator i = fTransports.find(FairMQ::TransportTypes.at(transport));
+    auto i = fTransports.find(FairMQ::TransportTypes.at(transport));
 
     if (i == fTransports.end())
     {

@@ -124,7 +124,7 @@ void FairProgOptions::UseConfigFile(const string& filename)
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Parser
 
-int FairProgOptions::ParseCmdLine(const int argc, const char** argv, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered)
+int FairProgOptions::ParseCmdLine(const int argc, char const* const* argv, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered)
 {
     // get options from cmd line and store in variable map
     // here we use command_line_parser instead of parse_command_line, to allow unregistered and positional options
@@ -151,7 +151,7 @@ int FairProgOptions::ParseCmdLine(const int argc, const char** argv, const po::o
     return 0;
 }
 
-int FairProgOptions::ParseCmdLine(const int argc, const char** argv, const po::options_description& desc, bool allowUnregistered)
+int FairProgOptions::ParseCmdLine(const int argc, char const* const* argv, const po::options_description& desc, bool allowUnregistered)
 {
     return ParseCmdLine(argc, argv, desc, fVarMap, allowUnregistered);
 }

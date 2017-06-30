@@ -11,9 +11,9 @@
 
 using namespace std;
 
-fair::mq::Plugin::Plugin(const string name, const Version version, const string maintainer, const string homepage, PluginServices& pluginServices)
+fair::mq::Plugin::Plugin(const string name, const Version version, const string maintainer, const string homepage, PluginServices* pluginServices)
 : fkName{name}
-, fkVersion{version}
+, fkVersion(version)
 , fkMaintainer{maintainer}
 , fkHomepage{homepage}
 , fPluginServices{pluginServices}

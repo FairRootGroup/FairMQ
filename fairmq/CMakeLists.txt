@@ -95,6 +95,7 @@ set(FAIRMQ_HEADER_FILES
     tools/Network.h
     tools/runSimpleMQStateMachine.h
     tools/Strings.h
+    tools/Version.h
     zeromq/FairMQMessageZMQ.h
     zeromq/FairMQPollerZMQ.h
     zeromq/FairMQSocketZMQ.h

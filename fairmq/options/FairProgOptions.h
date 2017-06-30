@@ -151,8 +151,8 @@ class FairProgOptions
     const po::variables_map& GetVarMap() const { return fVarMap; }
 
     // boost prog options parsers
-    int ParseCmdLine(const int argc, const char** argv, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);
-    int ParseCmdLine(const int argc, const char** argv, const po::options_description& desc, bool allowUnregistered = false);
+    int ParseCmdLine(const int argc, char const* const* argv, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);
+    int ParseCmdLine(const int argc, char const* const* argv, const po::options_description& desc, bool allowUnregistered = false);
 
     int ParseCfgFile(const std::string& filename, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);
     int ParseCfgFile(const std::string& filename, const po::options_description& desc, bool allowUnregistered = false);
@@ -161,7 +161,7 @@ class FairProgOptions
 
     int ParseEnvironment(const std::function<std::string(std::string)>&);
 
-    virtual void ParseAll(const int argc, const char** argv, bool allowUnregistered = false) = 0;// TODO change return type to bool and propagate to executable
+    virtual void ParseAll(const int argc, char const* const* argv, bool allowUnregistered = false) = 0;// TODO change return type to bool and propagate to executable
 
     virtual int PrintOptions();
     virtual int PrintOptionsRaw();

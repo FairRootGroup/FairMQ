@@ -32,8 +32,15 @@ class PluginServices
 {
     public:
 
+    PluginServices() = delete;
+    PluginServices(FairMQProgOptions* config, std::shared_ptr<FairMQDevice> device)
+    : fDevice{device}
+    , fConfig{config}
+    {
+    }
+
     /// See https://github.com/FairRootGroup/FairRoot/blob/dev/fairmq/docs/Device.md#13-state-machine
-    enum class DeviceState
+    enum class DeviceState : int
     {
         Ok,
         Error,
@@ -48,7 +55,8 @@ class PluginServices
         ResettingDevice,
         Exiting
     };
-    enum class DeviceStateTransition  // transition event between DeviceStates
+
+    enum class DeviceStateTransition : int // transition event between DeviceStates
     {
         InitDevice,
         InitTask,
@@ -60,13 +68,6 @@ class PluginServices
         End,
         ErrorFound
     };
-
-    PluginServices() = delete;
-    PluginServices(FairMQProgOptions& config, FairMQDevice& device)
-    : fDevice{device}
-    , fConfig{config}
-    {
-    }
 
     // Control API
 
@@ -86,23 +87,24 @@ class PluginServices
     /// @param state to convert
     /// @return string representation of DeviceState enum entry 
     static auto ToStr(DeviceState state) -> std::string { return fkStrDeviceStateMap.at(state); }
-    friend auto operator<<(std::ostream& os, const DeviceState& state) -> std::ostream& { return os << ToStr(state); }
 
     /// @brief Convert DeviceStateTransition to string
     /// @param transition to convert
     /// @return string representation of DeviceStateTransition enum entry 
     static auto ToStr(DeviceStateTransition transition) -> std::string { return fkStrDeviceStateTransitionMap.at(transition); }
+
+    friend auto operator<<(std::ostream& os, const DeviceState& state) -> std::ostream& { return os << ToStr(state); }
     friend auto operator<<(std::ostream& os, const DeviceStateTransition& transition) -> std::ostream& { return os << ToStr(transition); }
 
     /// @return current device state
-    auto GetCurrentDeviceState() const -> DeviceState { return fkDeviceStateMap.at(static_cast<FairMQDevice::State>(fDevice.GetCurrentState())); }
+    auto GetCurrentDeviceState() const -> DeviceState { return fkDeviceStateMap.at(static_cast<FairMQDevice::State>(fDevice->GetCurrentState())); }
 
     /// @brief Request a device state transition
     /// @param next state transition
     ///
     /// The state transition may not happen immediately, but when the current state evaluates the
     /// pending transition event and terminates. In other words, the device states are scheduled cooperatively.
-    auto ChangeDeviceState(const DeviceStateTransition next) -> void { fDevice.ChangeState(fkDeviceStateTransitionMap.at(next)); }
+    auto ChangeDeviceState(const DeviceStateTransition next) -> void { fDevice->ChangeState(fkDeviceStateTransitionMap.at(next)); }
 
     /// @brief Subscribe with a callback to device state changes
     /// @param subscriber id
@@ -112,14 +114,14 @@ class PluginServices
     /// the state is running in.
     auto SubscribeToDeviceStateChange(const std::string& subscriber, std::function<void(DeviceState /*newState*/)> callback) -> void
     {
-        fDevice.SubscribeToStateChange(subscriber, [&,callback](FairMQDevice::State newState){
+        fDevice->SubscribeToStateChange(subscriber, [&,callback](FairMQDevice::State newState){
             callback(fkDeviceStateMap.at(newState));
         });
     }
 
     /// @brief Unsubscribe from device state changes
     /// @param subscriber id
-    auto UnsubscribeFromDeviceStateChange(const std::string& subscriber) -> void { fDevice.UnsubscribeFromStateChange(subscriber); }
+    auto UnsubscribeFromDeviceStateChange(const std::string& subscriber) -> void { fDevice->UnsubscribeFromStateChange(subscriber); }
 
 
     // Config API
@@ -137,7 +139,7 @@ class PluginServices
         auto currentState = GetCurrentDeviceState();
         if (currentState == DeviceState::InitializingDevice)
         {
-            fConfig.SetValue(key, val);
+            fConfig->SetValue(key, val);
         }
         else
         {
@@ -153,14 +155,14 @@ class PluginServices
     /// TODO Currently, if a non-existing key is requested and a default constructed object is returned.
     /// This behaviour will be changed in the future to throw an exception in that case to provide a proper sentinel.
     template<typename T>
-    auto GetProperty(const std::string& key) const -> T { return fConfig.GetValue<T>(key); }
+    auto GetProperty(const std::string& key) const -> T { return fConfig->GetValue<T>(key); }
 
     /// @brief Read config property as string
     /// @param key
     /// @return config property value converted to string
     /// 
     /// If a type is not supported, the user can provide support by overloading the ostream operator for this type
-    auto GetPropertyAsString(const std::string& key) const -> std::string { return fConfig.GetStringValue(key); }
+    auto GetPropertyAsString(const std::string& key) const -> std::string { return fConfig->GetStringValue(key); }
 
     /// @brief Subscribe to property updates of type T
     /// @param subscriber
@@ -175,30 +177,29 @@ class PluginServices
     //     std::function<void(const std::string& [>key*/, const T /*newValue<])> callback
     // ) const -> void
     // {
-    //     fConfig.Subscribe(subscriber, callback);
+    //     fConfig->Subscribe(subscriber, callback);
     // }
     //
     // /// @brief Unsubscribe from property updates of type T
     // /// @param subscriber
     // template<typename T>
-    // auto UnsubscribeFromPropertyChange(const std::string& subscriber) -> void { fConfig.Unsubscribe<T>(subscriber); }
+    // auto UnsubscribeFromPropertyChange(const std::string& subscriber) -> void { fConfig->Unsubscribe<T>(subscriber); }
     //
     // TODO Fix property subscription
     // TODO Property iterator
 
     static const std::unordered_map<std::string, DeviceState> fkDeviceStateStrMap;
-    static const std::unordered_map<DeviceState, std::string> fkStrDeviceStateMap;
+    static const std::unordered_map<DeviceState, std::string, tools::HashEnum<DeviceState>> fkStrDeviceStateMap;
     static const std::unordered_map<std::string, DeviceStateTransition> fkDeviceStateTransitionStrMap;
-    static const std::unordered_map<DeviceStateTransition, std::string> fkStrDeviceStateTransitionMap;
-    static const std::unordered_map<FairMQDevice::State, DeviceState> fkDeviceStateMap;
-    static const std::unordered_map<DeviceStateTransition, FairMQDevice::Event> fkDeviceStateTransitionMap;
+    static const std::unordered_map<DeviceStateTransition, std::string, tools::HashEnum<DeviceStateTransition>> fkStrDeviceStateTransitionMap;
+    static const std::unordered_map<FairMQDevice::State, DeviceState, tools::HashEnum<FairMQDevice::State>> fkDeviceStateMap;
+    static const std::unordered_map<DeviceStateTransition, FairMQDevice::Event, tools::HashEnum<DeviceStateTransition>> fkDeviceStateTransitionMap;
 
     private:
 
-    FairMQProgOptions& fConfig;
-    FairMQDevice& fDevice;
+    FairMQProgOptions* fConfig; // TODO make it a shared pointer, once old AliceO2 code is cleaned up
+    std::shared_ptr<FairMQDevice> fDevice;
 }; /* class PluginServices */
-
 
 } /* namespace mq */
 } /* namespace fair */

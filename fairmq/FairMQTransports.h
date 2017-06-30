@@ -8,6 +8,7 @@
 #ifndef FAIRMQTRANSPORTS_H_
 #define FAIRMQTRANSPORTS_H_
 
+#include <fairmq/Tools.h>
 #include <string>
 #include <unordered_map>
 
@@ -22,6 +23,7 @@ enum class Transport
     SHM
 };
 
+
 static std::unordered_map<std::string, Transport> TransportTypes {
     { "default", Transport::DEFAULT },
     { "zeromq", Transport::ZMQ },
@@ -34,14 +36,9 @@ static std::unordered_map<std::string, Transport> TransportTypes {
 namespace std
 {
 
-template <>
-struct hash<FairMQ::Transport>
-{
-    size_t operator()(const FairMQ::Transport& v) const
-    {
-        return hash<int>()(static_cast<int>(v));
-    }
-};
+template<>
+struct hash<FairMQ::Transport> : fair::mq::tools::HashEnum<FairMQ::Transport> {};
 
-}
+} /* namespace std */
+
 #endif /* FAIRMQTRANSPORTS_H_ */

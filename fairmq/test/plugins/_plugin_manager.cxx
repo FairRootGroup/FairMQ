@@ -13,6 +13,7 @@
 #include <options/FairMQProgOptions.h>
 #include <FairMQLogger.h>
 #include <fstream>
+#include <memory>
 #include <vector>
 
 namespace
@@ -23,25 +24,25 @@ using namespace boost::filesystem;
 using namespace boost::program_options;
 using namespace std;
 
-auto control(FairMQDevice& device) -> void
+auto control(shared_ptr<FairMQDevice> device) -> void
 {
-    device.SetTransport("zeromq");
+    device->SetTransport("zeromq");
     for (const auto event : {
         FairMQDevice::INIT_DEVICE,
         FairMQDevice::RESET_DEVICE,
         FairMQDevice::END,
     }) {
-        device.ChangeState(event);
-        if (event != FairMQDevice::END) device.WaitForEndOfState(event);
+        device->ChangeState(event);
+        if (event != FairMQDevice::END) device->WaitForEndOfState(event);
     }
 }
 
 TEST(PluginManager, LoadPlugin)
 {
     FairMQProgOptions config{};
-    FairMQDevice device{};
+    auto device = make_shared<FairMQDevice>();
     auto mgr = PluginManager{};
-    mgr.EmplacePluginServices(config, device);
+    mgr.EmplacePluginServices(&config, device);
 
     mgr.PrependSearchPath("./lib");
 

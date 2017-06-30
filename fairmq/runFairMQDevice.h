@@ -12,6 +12,7 @@
 #include <tools/runSimpleMQStateMachine.h>
 #include <fairmq/PluginManager.h>
 #include <boost/program_options.hpp>
+#include <memory>
 
 template <typename R>
 class GenericFairMQDevice : public FairMQDevice
@@ -60,14 +61,14 @@ int main(int argc, const char** argv)
 
         config.ParseAll(argc, argv, true);
 
-        std::unique_ptr<FairMQDevice> device(getDevice(config));
+        std::shared_ptr<FairMQDevice> device{getDevice(config)};
         if (!device)
         {
             LOG(ERROR) << "getDevice(): no valid device provided. Exiting.";
             return 1;
         }
 
-        pluginManager->EmplacePluginServices(config, *device);
+        pluginManager->EmplacePluginServices(&config, device);
         pluginManager->InstantiatePlugins();
 
         int result = runStateMachine(*device, config);

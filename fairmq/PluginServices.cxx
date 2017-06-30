@@ -8,7 +8,7 @@
 
 #include <fairmq/PluginServices.h>
 
-using fair::mq::PluginServices;
+using namespace fair::mq;
 
 const std::unordered_map<std::string, PluginServices::DeviceState> PluginServices::fkDeviceStateStrMap = {
     {"OK",                  DeviceState::Ok},
@@ -24,7 +24,7 @@ const std::unordered_map<std::string, PluginServices::DeviceState> PluginService
     {"RESETTING DEVICE",    DeviceState::ResettingDevice},
     {"EXITING",             DeviceState::Exiting}
 };
-const std::unordered_map<PluginServices::DeviceState, std::string> PluginServices::fkStrDeviceStateMap = {
+const std::unordered_map<PluginServices::DeviceState, std::string, tools::HashEnum<PluginServices::DeviceState>> PluginServices::fkStrDeviceStateMap = {
     {DeviceState::Ok,                 "OK"},
     {DeviceState::Error,              "ERROR"},
     {DeviceState::Idle,               "IDLE"},
@@ -49,7 +49,7 @@ const std::unordered_map<std::string, PluginServices::DeviceStateTransition> Plu
     {"END",          DeviceStateTransition::End},
     {"ERROR FOUND",  DeviceStateTransition::ErrorFound},
 };
-const std::unordered_map<PluginServices::DeviceStateTransition, std::string> PluginServices::fkStrDeviceStateTransitionMap = {
+const std::unordered_map<PluginServices::DeviceStateTransition, std::string, tools::HashEnum<PluginServices::DeviceStateTransition>> PluginServices::fkStrDeviceStateTransitionMap = {
     {DeviceStateTransition::InitDevice,  "INIT DEVICE"},
     {DeviceStateTransition::InitTask,    "INIT TASK"},
     {DeviceStateTransition::Run,         "RUN"},
@@ -60,7 +60,7 @@ const std::unordered_map<PluginServices::DeviceStateTransition, std::string> Plu
     {DeviceStateTransition::End,         "END"},
     {DeviceStateTransition::ErrorFound,  "ERROR FOUND"},
 };
-const std::unordered_map<FairMQDevice::State, PluginServices::DeviceState> PluginServices::fkDeviceStateMap = {
+const std::unordered_map<FairMQDevice::State, PluginServices::DeviceState, fair::mq::tools::HashEnum<FairMQDevice::State>> PluginServices::fkDeviceStateMap = {
     {FairMQDevice::OK,                  DeviceState::Ok},
     {FairMQDevice::ERROR,               DeviceState::Error},
     {FairMQDevice::IDLE,                DeviceState::Idle},
@@ -74,7 +74,7 @@ const std::unordered_map<FairMQDevice::State, PluginServices::DeviceState> Plugi
     {FairMQDevice::RESETTING_DEVICE,    DeviceState::ResettingDevice},
     {FairMQDevice::EXITING,             DeviceState::Exiting}
 };
-const std::unordered_map<PluginServices::DeviceStateTransition, FairMQDevice::Event> PluginServices::fkDeviceStateTransitionMap = {
+const std::unordered_map<PluginServices::DeviceStateTransition, FairMQDevice::Event, tools::HashEnum<PluginServices::DeviceStateTransition>> PluginServices::fkDeviceStateTransitionMap = {
     {DeviceStateTransition::InitDevice,  FairMQDevice::INIT_DEVICE},
     {DeviceStateTransition::InitTask,    FairMQDevice::INIT_TASK},
     {DeviceStateTransition::Run,         FairMQDevice::RUN},

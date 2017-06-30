@@ -38,21 +38,10 @@ class Plugin
     
     using ProgOptions = boost::optional<boost::program_options::options_description>;
 
-    struct Version
-    {
-        const int fkMajor, fkMinor, fkPatch;
-
-        friend auto operator< (const Version& lhs, const Version& rhs) -> bool { return std::tie(lhs.fkMajor, lhs.fkMinor, lhs.fkPatch) < std::tie(rhs.fkMajor, rhs.fkMinor, rhs.fkPatch); }
-        friend auto operator> (const Version& lhs, const Version& rhs) -> bool { return rhs < lhs; }
-        friend auto operator<=(const Version& lhs, const Version& rhs) -> bool { return !(lhs > rhs); }
-        friend auto operator>=(const Version& lhs, const Version& rhs) -> bool { return !(lhs < rhs); }
-        friend auto operator==(const Version& lhs, const Version& rhs) -> bool { return std::tie(lhs.fkMajor, lhs.fkMinor, lhs.fkPatch) == std::tie(rhs.fkMajor, rhs.fkMinor, rhs.fkPatch); }
-        friend auto operator!=(const Version& lhs, const Version& rhs) -> bool { return !(lhs == rhs); }
-        friend auto operator<<(std::ostream& os, const Version& v) -> std::ostream& { return os << v.fkMajor << "." << v.fkMinor << "." << v.fkPatch; }
-    };
+    using Version = tools::Version;
 
     Plugin() = delete;
-    Plugin(const std::string name, const Version version, const std::string maintainer, const std::string homepage, PluginServices& pluginServices);
+    Plugin(const std::string name, const Version version, const std::string maintainer, const std::string homepage, PluginServices* pluginServices);
     virtual ~Plugin();
 
     auto GetName() const -> const std::string& { return fkName; }
@@ -75,24 +64,24 @@ class Plugin
     // see <fairmq/PluginServices.h> for docs
     using DeviceState = fair::mq::PluginServices::DeviceState;
     using DeviceStateTransition = fair::mq::PluginServices::DeviceStateTransition;
-    auto ToDeviceState(const std::string& state) const -> fair::mq::PluginServices::DeviceState { return fPluginServices.ToDeviceState(state); }
-    auto ToStr(fair::mq::PluginServices::DeviceState state) const -> std::string { return fPluginServices.ToStr(state); }
-    auto GetCurrentDeviceState() const -> fair::mq::PluginServices::DeviceState { return fPluginServices.GetCurrentDeviceState(); }
-    auto ChangeDeviceState(const fair::mq::PluginServices::DeviceStateTransition next) -> void { fPluginServices.ChangeDeviceState(next); }
-    auto SubscribeToDeviceStateChange(std::function<void(fair::mq::PluginServices::DeviceState)> callback) -> void { fPluginServices.SubscribeToDeviceStateChange(fkName, callback); }
-    auto UnsubscribeFromDeviceStateChange() -> void { fPluginServices.UnsubscribeFromDeviceStateChange(fkName); }
+    auto ToDeviceState(const std::string& state) const -> DeviceState { return fPluginServices->ToDeviceState(state); }
+    auto ToStr(DeviceState state) const -> std::string { return fPluginServices->ToStr(state); }
+    auto GetCurrentDeviceState() const -> DeviceState { return fPluginServices->GetCurrentDeviceState(); }
+    auto ChangeDeviceState(const DeviceStateTransition next) -> void { fPluginServices->ChangeDeviceState(next); }
+    auto SubscribeToDeviceStateChange(std::function<void(DeviceState)> callback) -> void { fPluginServices->SubscribeToDeviceStateChange(fkName, callback); }
+    auto UnsubscribeFromDeviceStateChange() -> void { fPluginServices->UnsubscribeFromDeviceStateChange(fkName); }
 
     // device config API
     // see <fairmq/PluginServices.h> for docs
     template<typename T>
-    auto SetProperty(const std::string& key, T val) -> void { fPluginServices.SetProperty(key, val); }
+    auto SetProperty(const std::string& key, T val) -> void { fPluginServices->SetProperty(key, val); }
     template<typename T>
-    auto GetProperty(const std::string& key) const -> T { return fPluginServices.GetProperty<T>(key); }
-    auto GetPropertyAsString(const std::string& key) const -> std::string { return fPluginServices.GetPropertyAsString(key); }
-    template<typename T>
-    auto SubscribeToPropertyChange(std::function<void(const std::string& /*key*/, const T /*newValue*/)> callback) const -> void { fPluginServices.SubscribeToPropertyChange(fkName, callback); }
-    template<typename T>
-    auto UnsubscribeFromPropertyChange() -> void { fPluginServices.UnsubscribeFromPropertyChange<T>(fkName); }
+    auto GetProperty(const std::string& key) const -> T { return fPluginServices->GetProperty<T>(key); }
+    auto GetPropertyAsString(const std::string& key) const -> std::string { return fPluginServices->GetPropertyAsString(key); }
+    // template<typename T>
+    // auto SubscribeToPropertyChange(std::function<void(const std::string& [>key*/, const T /*newValue<])> callback) const -> void { fPluginServices.SubscribeToPropertyChange(fkName, callback); }
+    // template<typename T>
+    // auto UnsubscribeFromPropertyChange() -> void { fPluginServices.UnsubscribeFromPropertyChange<T>(fkName); }
 
     private:
 
@@ -100,7 +89,7 @@ class Plugin
     const Version fkVersion;
     const std::string fkMaintainer;
     const std::string fkHomepage;
-    PluginServices& fPluginServices;
+    PluginServices* fPluginServices;
 
 }; /* class Plugin */
 
@@ -108,7 +97,7 @@ class Plugin
 } /* namespace fair */
 
 #define REGISTER_FAIRMQ_PLUGIN(KLASS, NAME, VERSION, MAINTAINER, HOMEPAGE, PROGOPTIONS) \
-static auto Make_##NAME##_Plugin(fair::mq::PluginServices& pluginServices) -> std::shared_ptr<KLASS> \
+static auto Make_##NAME##_Plugin(fair::mq::PluginServices* pluginServices) -> std::shared_ptr<KLASS> \
 { \
     return std::make_shared<KLASS>(std::string{#NAME}, VERSION, std::string{MAINTAINER}, std::string{HOMEPAGE}, pluginServices); \
 } \
