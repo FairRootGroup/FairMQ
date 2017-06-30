@@ -968,7 +968,13 @@ void FairMQDevice::SetConfig(FairMQProgOptions& config)
 {
     fExternalConfig = true;
     fConfig = &config;
-    fChannels = config.GetFairMQMap();
+    for (auto& c : config.GetFairMQMap())
+    {
+        if (!fChannels.insert(c).second)
+        {
+            LOG(WARN) << "FairMQDevice::SetConfig: did not insert channel '" << c.first << "', it is already in the device.";
+        }
+    }
     fDefaultTransport = config.GetValue<string>("transport");
     SetTransport(fDefaultTransport);
     fId = config.GetValue<string>("id");
