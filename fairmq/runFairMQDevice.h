@@ -73,6 +73,11 @@ int main(int argc, const char** argv)
 
         int result = runStateMachine(*device, config);
 
+        if (config.Count("version"))
+        {
+            pluginManager->ForEachPlugin([](fair::mq::Plugin& plugin){ std::cout << "plugin: " << plugin << std::endl; });
+        }
+
         if (result > 0)
         {
             return 1;

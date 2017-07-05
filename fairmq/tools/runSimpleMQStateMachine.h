@@ -11,6 +11,8 @@
 #include "FairMQLogger.h"
 #include "options/FairMQParser.h"
 #include "options/FairMQProgOptions.h"
+#include <FairMQDevice.h>
+#include <fairmq/PluginManager.h>
 
 #include <iostream>
 #include <string>
@@ -26,6 +28,15 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
     if (cfg.Count("print-channels"))
     {
         device.PrintRegisteredChannels();
+        device.ChangeState(TMQDevice::END);
+        return 0;
+    }
+
+    if (cfg.Count("version"))
+    {
+        std::cout << "User device version: " << device.GetVersion() << std::endl;
+        std::cout << "FAIRMQ_INTERFACE_VERSION: " << FAIRMQ_INTERFACE_VERSION << std::endl;
+
         device.ChangeState(TMQDevice::END);
         return 0;
     }

@@ -32,6 +32,8 @@
 #include <mutex>
 #include <condition_variable>
 
+#include <fairmq/Tools.h>
+
 typedef std::unordered_map<std::string, std::vector<FairMQChannel>> FairMQChannelMap;
 
 typedef std::function<bool(FairMQMessagePtr&, int)> InputMsgCallback;
@@ -53,6 +55,9 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     /// Default constructor
     FairMQDevice();
+
+    /// Constructor that sets the version
+    FairMQDevice(const fair::mq::tools::Version version);
     /// Copy constructor (disabled)
     FairMQDevice(const FairMQDevice&) = delete;
     /// Assignment operator (disabled)
@@ -428,23 +433,25 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     void SetId(const std::string& id) { fId = id; }
     std::string GetId() { return fId; }
 
+    const fair::mq::tools::Version GetVersion() const { return fVersion; }
+
     void SetNumIoThreads(int numIoThreads) { fNumIoThreads = numIoThreads; }
-    int GetNumIoThreads() { return fNumIoThreads; }
+    int GetNumIoThreads() const { return fNumIoThreads; }
 
     void SetPortRangeMin(int portRangeMin) { fPortRangeMin = portRangeMin; }
-    int GetPortRangeMin() { return fPortRangeMin; }
+    int GetPortRangeMin() const { return fPortRangeMin; }
 
     void SetPortRangeMax(int portRangeMax) { fPortRangeMax = portRangeMax; }
-    int GetPortRangeMax() { return fPortRangeMax; }
+    int GetPortRangeMax() const { return fPortRangeMax; }
 
     void SetNetworkInterface(const std::string& networkInterface) { fNetworkInterface = networkInterface; }
-    std::string GetNetworkInterface() { return fNetworkInterface; }
+    std::string GetNetworkInterface() const { return fNetworkInterface; }
 
     void SetDefaultTransport(const std::string& defaultTransport) { fDefaultTransport = defaultTransport; }
-    std::string GetDefaultTransport() { return fDefaultTransport; }
+    std::string GetDefaultTransport() const { return fDefaultTransport; }
 
     void SetInitializationTimeoutInS(int initializationTimeoutInS) { fInitializationTimeoutInS = initializationTimeoutInS; }
-    int GetInitializationTimeoutInS() { return fInitializationTimeoutInS; }
+    int GetInitializationTimeoutInS() const { return fInitializationTimeoutInS; }
 
   protected:
     std::shared_ptr<FairMQTransportFactory> fTransportFactory; ///< Transport factory
@@ -560,6 +567,8 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     std::atomic<bool> fMultitransportProceed;
 
     bool fExternalConfig;
+
+    const fair::mq::tools::Version fVersion;
 };
 
 #endif /* FAIRMQDEVICE_H_ */

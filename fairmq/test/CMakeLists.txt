@@ -68,8 +68,10 @@ add_testsuite(FairMQ.Device
     SOURCES
     device/TestSender.h
     device/TestReceiver.h
+    device/TestVersion.h
     device/runner.cxx
     device/_multiple_devices.cxx
+    device/_device_version.cxx
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/device

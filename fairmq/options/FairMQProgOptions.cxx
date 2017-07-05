@@ -74,9 +74,9 @@ void FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool a
         exit(EXIT_SUCCESS);
     }
 
-    if (fVarMap.count("print-channels"))
+    // if these options are provided, do no further checks and let the device handle them
+    if (fVarMap.count("print-channels") || fVarMap.count("version"))
     {
-        // if this option is provided, do no further checks and let the device print the channels
         DefaultConsoleSetFilter(fSeverityMap.at("NOLOG"));
         return;
     }
@@ -295,12 +295,6 @@ int FairMQProgOptions::NotifySwitchOption()
     if (fVarMap.count("help"))
     {
         LOG(INFO) << fHelpTitle << "\n" << fVisibleOptions;
-        return 1;
-    }
-
-    if (fVarMap.count("version")) 
-    {
-        LOG(INFO) << fVersion << "\n";
         return 1;
     }
 
