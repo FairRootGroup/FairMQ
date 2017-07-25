@@ -131,6 +131,17 @@ add_testsuite(FairMQ.PluginsPrelinked
     TIMEOUT 10
 )
 
+add_testsuite(FairMQ.PluginServices
+    SOURCES
+    plugin_services/runner.cxx
+    plugin_services/_config.cxx
+    plugin_services/_control.cxx
+    plugin_services/Fixture.h
+
+    LINKS FairMQ
+    TIMEOUT 10
+)
+
 ##############################
 # Aggregate all test targets #
 ##############################
