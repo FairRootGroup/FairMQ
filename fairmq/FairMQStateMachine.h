@@ -291,6 +291,8 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
             {
                 fsm.fStateChangeCallback(READY);
             }
+
+            fsm.Unblock();
         }
     };
 

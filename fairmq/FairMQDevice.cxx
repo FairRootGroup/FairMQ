@@ -559,8 +559,6 @@ void FairMQDevice::RunWrapper()
 
             Run();
         }
-
-        PostRun();
     }
     catch (const out_of_range& oor)
     {
@@ -573,6 +571,8 @@ void FairMQDevice::RunWrapper()
     {
         ChangeState(internal_READY);
     }
+
+    PostRun();
 
     rateLogger.join();
 }
