@@ -6,10 +6,9 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/8-multipart/ex8-multipart.json 
-               ${CMAKE_BINARY_DIR}/bin/config/ex8-multipart.json)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/8-multipart/startMQEx8.sh.in  
-               ${CMAKE_BINARY_DIR}/bin/examples/MQ/8-multipart/startMQEx8.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/8-multipart/ex8-multipart.json ${CMAKE_BINARY_DIR}/bin/config/ex8-multipart.json)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/8-multipart/startMQEx8.sh.in ${CMAKE_BINARY_DIR}/bin/examples/MQ/8-multipart/startMQEx8.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/8-multipart/testMQEx8.sh.in ${CMAKE_BINARY_DIR}/bin/examples/MQ/8-multipart/testMQEx8.sh)
 
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
@@ -72,6 +71,11 @@ ForEach(_file RANGE 0 ${_length})
   Set(DEPENDENCIES FairMQExample8)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
+
+add_test(NAME MQ.ex8-multipart COMMAND ${CMAKE_BINARY_DIR}/bin/examples/MQ/8-multipart/testMQEx8.sh)
+set_tests_properties(MQ.ex8-multipart PROPERTIES TIMEOUT "30")
+set_tests_properties(MQ.ex8-multipart PROPERTIES RUN_SERIAL true)
+set_tests_properties(MQ.ex8-multipart PROPERTIES PASS_REGULAR_EXPRESSION "Received message with 2 parts")
 
 Install(
   FILES ex8-multipart.json

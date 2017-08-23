@@ -6,10 +6,9 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/4-copypush/ex4-copypush.json 
-               ${CMAKE_BINARY_DIR}/bin/config/ex4-copypush.json)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/4-copypush/startMQEx4.sh.in  
-               ${CMAKE_BINARY_DIR}/bin/examples/MQ/4-copypush/startMQEx4.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/4-copypush/ex4-copypush.json ${CMAKE_BINARY_DIR}/bin/config/ex4-copypush.json)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/4-copypush/startMQEx4.sh.in ${CMAKE_BINARY_DIR}/bin/examples/MQ/4-copypush/startMQEx4.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/4-copypush/testMQEx4.sh.in ${CMAKE_BINARY_DIR}/bin/examples/MQ/4-copypush/testMQEx4.sh)
 
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
@@ -72,6 +71,11 @@ ForEach(_file RANGE 0 ${_length})
   Set(DEPENDENCIES FairMQExample4)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
+
+add_test(NAME MQ.ex4-copypush COMMAND ${CMAKE_BINARY_DIR}/bin/examples/MQ/4-copypush/testMQEx4.sh)
+set_tests_properties(MQ.ex4-copypush PROPERTIES TIMEOUT "30")
+set_tests_properties(MQ.ex4-copypush PROPERTIES RUN_SERIAL true)
+set_tests_properties(MQ.ex4-copypush PROPERTIES PASS_REGULAR_EXPRESSION "Received message: ")
 
 Install(
   FILES ex4-copypush.json

@@ -18,22 +18,31 @@
 #include "FairMQExample8Sampler.h"
 #include "FairMQEx8Header.h"
 #include "FairMQLogger.h"
+#include "FairMQProgOptions.h"
 
 using namespace std;
 
 FairMQExample8Sampler::FairMQExample8Sampler()
-    : fCounter(0)
+    : fMaxIterations(5)
+    , fNumIterations(0)
 {
+}
+
+void FairMQExample8Sampler::InitTask()
+{
+    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
 }
 
 bool FairMQExample8Sampler::ConditionalRun()
 {
-    // Wait a second to keep the output readable.
-    this_thread::sleep_for(chrono::seconds(1));
-
     Ex8Header header;
-    // Set stopFlag to 1 for the first 4 messages, and to 0 for the 5th.
-    fCounter < 5 ? header.stopFlag = 0 : header.stopFlag = 1;
+    header.stopFlag = 0;
+
+    // Set stopFlag to 1 for last message.
+    if (fMaxIterations > 0 && fNumIterations == fMaxIterations - 1)
+    {
+        header.stopFlag = 1;
+    }
     LOG(INFO) << "Sending header with stopFlag: " << header.stopFlag;
 
     FairMQParts parts;
@@ -48,10 +57,14 @@ bool FairMQExample8Sampler::ConditionalRun()
     Send(parts, "data-out");
 
     // Go out of the sending loop if the stopFlag was sent.
-    if (fCounter++ == 5)
+    if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
     {
+        LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
         return false;
     }
+
+    // Wait a second to keep the output readable.
+    this_thread::sleep_for(chrono::seconds(1));
 
     return true;
 }

@@ -6,10 +6,9 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/multiple-transports/ex-multiple-transports.json
-               ${CMAKE_BINARY_DIR}/bin/config/ex-multiple-transports.json)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/multiple-transports/startMTEx.sh.in
-               ${CMAKE_BINARY_DIR}/bin/examples/MQ/multiple-transports/startMTEx.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/multiple-transports/ex-multiple-transports.json ${CMAKE_BINARY_DIR}/bin/config/ex-multiple-transports.json)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/multiple-transports/startMTEx.sh.in ${CMAKE_BINARY_DIR}/bin/examples/MQ/multiple-transports/startMTEx.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/multiple-transports/testMTEx.sh.in ${CMAKE_BINARY_DIR}/bin/examples/MQ/multiple-transports/testMTEx.sh)
 
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
@@ -75,6 +74,11 @@ ForEach(_file RANGE 0 ${_length})
   Set(DEPENDENCIES FairMQExampleMT)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
+
+add_test(NAME MQ.ex-multiple-transports COMMAND ${CMAKE_BINARY_DIR}/bin/examples/MQ/multiple-transports/testMTEx.sh)
+set_tests_properties(MQ.ex-multiple-transports PROPERTIES TIMEOUT "30")
+set_tests_properties(MQ.ex-multiple-transports PROPERTIES RUN_SERIAL true)
+set_tests_properties(MQ.ex-multiple-transports PROPERTIES PASS_REGULAR_EXPRESSION "Received messages from both sources.")
 
 Install(
   FILES ex-multiple-transports.json

@@ -21,7 +21,12 @@ class FairMQExampleMTSampler2 : public FairMQDevice
     virtual ~FairMQExampleMTSampler2();
 
   protected:
+    virtual void InitTask();
     virtual bool ConditionalRun();
+
+  private:
+    uint64_t fMaxIterations;
+    uint64_t fNumIterations;
 };
 
 #endif /* FAIRMQEXAMPLEMTSAMPLER2_H_ */

@@ -27,6 +27,8 @@ class FairMQExample5Client : public FairMQDevice
 
   protected:
     std::string fText;
+    uint64_t fMaxIterations;
+    uint64_t fNumIterations;
 
     virtual bool ConditionalRun();
     virtual void InitTask();

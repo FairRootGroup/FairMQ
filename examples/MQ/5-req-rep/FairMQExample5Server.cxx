@@ -14,12 +14,21 @@
 
 #include "FairMQExample5Server.h"
 #include "FairMQLogger.h"
+#include "FairMQProgOptions.h" // device->fConfig
 
 using namespace std;
 
 FairMQExample5Server::FairMQExample5Server()
+    : fMaxIterations(0)
+    , fNumIterations(0)
 {
     OnData("data", &FairMQExample5Server::HandleData);
+}
+
+void FairMQExample5Server::InitTask()
+{
+    // Get the fMaxIterations value from the command line options (via fConfig)
+    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
 }
 
 bool FairMQExample5Server::HandleData(FairMQMessagePtr& request, int /*index*/)
@@ -37,6 +46,12 @@ bool FairMQExample5Server::HandleData(FairMQMessagePtr& request, int /*index*/)
 
     if (Send(reply, "data") > 0)
     {
+        if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
+        {
+            LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+            return false;
+        }
+
         return true;
     }
 

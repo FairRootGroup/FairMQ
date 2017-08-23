@@ -24,17 +24,19 @@ using namespace std;
 
 FairMQExample5Client::FairMQExample5Client()
     : fText()
+    , fMaxIterations(0)
+    , fNumIterations(0)
 {
 }
 
 void FairMQExample5Client::InitTask()
 {
     fText = fConfig->GetValue<string>("text");
+    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
 }
 
 bool FairMQExample5Client::ConditionalRun()
 {
-    this_thread::sleep_for(chrono::seconds(1));
 
     string* text = new string(fText);
 
@@ -55,6 +57,15 @@ bool FairMQExample5Client::ConditionalRun()
         if (Receive(reply, "data") >= 0)
         {
             LOG(INFO) << "Received reply from server: \"" << string(static_cast<char*>(reply->GetData()), reply->GetSize()) << "\"";
+
+            if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
+            {
+                LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+                return false;
+            }
+
+            this_thread::sleep_for(chrono::seconds(1));
+
             return true;
         }
     }

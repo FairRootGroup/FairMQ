@@ -24,7 +24,12 @@ class FairMQExample1Sink : public FairMQDevice
     virtual ~FairMQExample1Sink();
 
   protected:
+    virtual void InitTask();
     bool HandleData(FairMQMessagePtr&, int);
+
+  private:
+    uint64_t fMaxIterations;
+    uint64_t fNumIterations;
 };
 
 #endif /* FAIRMQEXAMPLE1SINK_H_ */

@@ -13,7 +13,14 @@
 using namespace std;
 
 FairMQExampleMTSampler2::FairMQExampleMTSampler2()
+    : fMaxIterations(0)
+    , fNumIterations(0)
 {
+}
+
+void FairMQExampleMTSampler2::InitTask()
+{
+    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
 }
 
 bool FairMQExampleMTSampler2::ConditionalRun()
@@ -24,6 +31,12 @@ bool FairMQExampleMTSampler2::ConditionalRun()
     // successfull transfer will return number of bytes transfered (can be 0 if sending an empty message).
     if (Send(msg, "data2") < 0)
     {
+        return false;
+    }
+
+    if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
+    {
+        LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
         return false;
     }
 

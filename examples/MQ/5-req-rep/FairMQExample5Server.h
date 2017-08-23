@@ -24,7 +24,12 @@ class FairMQExample5Server : public FairMQDevice
     virtual ~FairMQExample5Server();
 
   protected:
+    virtual void InitTask();
     bool HandleData(FairMQMessagePtr&, int);
+
+  private:
+    uint64_t fMaxIterations;
+    uint64_t fNumIterations;
 };
 
 #endif /* FAIRMQEXAMPLE5SERVER_H_ */

@@ -26,6 +26,14 @@ class FairMQExample6Sink : public FairMQDevice
   protected:
     bool HandleBroadcast(FairMQMessagePtr&, int);
     bool HandleData(FairMQMessagePtr&, int);
+    bool CheckIterations();
+    virtual void InitTask();
+
+  private:
+    bool fReceivedData;
+    bool fReceivedBroadcast;
+    uint64_t fMaxIterations;
+    uint64_t fNumIterations;
 };
 
 #endif /* FAIRMQEXAMPLE6SINK_H_ */
