@@ -31,6 +31,8 @@ class FairMQExample4Sampler : public FairMQDevice
 
     int fNumDataChannels;
     uint64_t fCounter;
+    uint64_t fMaxIterations;
+    uint64_t fNumIterations;
 };
 
 #endif /* FAIRMQEXAMPLE4SAMPLER_H_ */

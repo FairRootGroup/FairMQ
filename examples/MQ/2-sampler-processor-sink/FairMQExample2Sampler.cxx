@@ -23,19 +23,20 @@ using namespace std;
 
 FairMQExample2Sampler::FairMQExample2Sampler()
     : fText()
+    , fMaxIterations(0)
+    , fNumIterations(0)
 {
 }
 
 void FairMQExample2Sampler::InitTask()
 {
-    // Get the fText value from the command line option (via fConfig)
+    // Get the fText and fMaxIterations values from the command line options (via fConfig)
     fText = fConfig->GetValue<string>("text");
+    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
 }
 
 bool FairMQExample2Sampler::ConditionalRun()
 {
-    this_thread::sleep_for(chrono::seconds(1));
-
     // Initializing message with NewStaticMessage will avoid copy
     // but won't delete the data after the sending is completed.
     FairMQMessagePtr msg(NewStaticMessage(fText));
@@ -48,6 +49,13 @@ bool FairMQExample2Sampler::ConditionalRun()
     {
         return false;
     }
+    else if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
+    {
+        LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+        return false;
+    }
+
+    this_thread::sleep_for(chrono::seconds(1));
 
     return true;
 }

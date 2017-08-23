@@ -25,12 +25,15 @@ using namespace std;
 
 FairMQExample6Sampler::FairMQExample6Sampler()
     : fText()
+    , fMaxIterations(0)
+    , fNumIterations(0)
 {
 }
 
 void FairMQExample6Sampler::InitTask()
 {
     fText = fConfig->GetValue<string>("text");
+    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
 }
 
 void FairMQExample6Sampler::Run()
@@ -61,6 +64,12 @@ void FairMQExample6Sampler::Run()
             {
                 LOG(INFO) << "Sent \"" << fText << "\"";
             }
+        }
+
+        if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
+        {
+            LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+            break;
         }
     }
 }

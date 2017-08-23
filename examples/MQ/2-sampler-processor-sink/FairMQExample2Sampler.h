@@ -27,6 +27,8 @@ class FairMQExample2Sampler : public FairMQDevice
 
   protected:
     std::string fText;
+    uint64_t fMaxIterations;
+    uint64_t fNumIterations;
 
     virtual void InitTask();
     virtual bool ConditionalRun();

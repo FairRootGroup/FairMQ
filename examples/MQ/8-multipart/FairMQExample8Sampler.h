@@ -24,10 +24,12 @@ class FairMQExample8Sampler : public FairMQDevice
     virtual ~FairMQExample8Sampler();
 
   protected:
+    virtual void InitTask();
     virtual bool ConditionalRun();
 
   private:
-    int fCounter;
+    uint64_t fMaxIterations;
+    uint64_t fNumIterations;
 };
 
 #endif /* FAIRMQEXAMPLE8SAMPLER_H_ */

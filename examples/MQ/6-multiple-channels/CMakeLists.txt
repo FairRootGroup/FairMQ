@@ -6,12 +6,11 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/6-multiple-channels/ex6-multiple-channels.json 
-               ${CMAKE_BINARY_DIR}/bin/config/ex6-multiple-channels.json)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/6-multiple-channels/startMQEx6.sh.in  
-               ${CMAKE_BINARY_DIR}/bin/examples/MQ/6-multiple-channels/startMQEx6.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/6-multiple-channels/ex6-multiple-channels.json ${CMAKE_BINARY_DIR}/bin/config/ex6-multiple-channels.json)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/6-multiple-channels/startMQEx6.sh.in ${CMAKE_BINARY_DIR}/bin/examples/MQ/6-multiple-channels/startMQEx6.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/6-multiple-channels/testMQEx6.sh.in ${CMAKE_BINARY_DIR}/bin/examples/MQ/6-multiple-channels/testMQEx6.sh)
 
-Set(INCLUDE_DIRECTORIES
+set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
   ${CMAKE_SOURCE_DIR}/fairmq/devices
   ${CMAKE_SOURCE_DIR}/fairmq/tools
@@ -20,42 +19,42 @@ Set(INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-Set(SYSTEM_INCLUDE_DIRECTORIES
+set(SYSTEM_INCLUDE_DIRECTORIES
   ${Boost_INCLUDE_DIR}
   ${ZeroMQ_INCLUDE_DIR}
 )
 
-Include_Directories(${INCLUDE_DIRECTORIES})
-Include_Directories(SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
+include_directories(${INCLUDE_DIRECTORIES})
+include_directories(SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 
-Set(LINK_DIRECTORIES
+set(LINK_DIRECTORIES
   ${Boost_LIBRARY_DIRS}
 )
 
-Link_Directories(${LINK_DIRECTORIES})
+link_directories(${LINK_DIRECTORIES})
 
-Set(SRCS
+set(SRCS
   "FairMQExample6Sampler.cxx"
   "FairMQExample6Sink.cxx"
   "FairMQExample6Broadcaster.cxx"
 )
 
-Set(DEPENDENCIES
+set(DEPENDENCIES
   ${DEPENDENCIES}
   FairMQ
 )
 
-Set(LIBRARY_NAME FairMQExample6)
+set(LIBRARY_NAME FairMQExample6)
 
 GENERATE_LIBRARY()
 
-Set(Exe_Names
+set(Exe_Names
   ex6-sampler
   ex6-sink
   ex6-broadcaster
 )
 
-Set(Exe_Source
+set(Exe_Source
   runExample6Sampler.cxx
   runExample6Sink.cxx
   runExample6Broadcaster.cxx
@@ -67,16 +66,21 @@ math(EXPR _length ${_length}-1)
 set(BIN_DESTINATION share/fairbase/examples/MQ/6-multiple-channels/bin)
 set(EXECUTABLE_OUTPUT_PATH "${EXECUTABLE_OUTPUT_PATH}/examples/MQ/6-multiple-channels")
 
-ForEach(_file RANGE 0 ${_length})
+foreach(_file RANGE 0 ${_length})
   list(GET Exe_Names ${_file} _name)
   list(GET Exe_Source ${_file} _src)
   set(EXE_NAME ${_name})
   set(SRCS ${_src})
   set(DEPENDENCIES FairMQExample6)
   GENERATE_EXECUTABLE()
-EndForEach(_file RANGE 0 ${_length})
+endforeach(_file RANGE 0 ${_length})
 
-Install(
+add_test(NAME MQ.ex6-multiple-channels COMMAND ${CMAKE_BINARY_DIR}/bin/examples/MQ/6-multiple-channels/testMQEx6.sh)
+set_tests_properties(MQ.ex6-multiple-channels PROPERTIES TIMEOUT "30")
+set_tests_properties(MQ.ex6-multiple-channels PROPERTIES RUN_SERIAL true)
+set_tests_properties(MQ.ex6-multiple-channels PROPERTIES PASS_REGULAR_EXPRESSION "Received messages from both sources.")
+
+install(
   FILES ex6-multiple-channels.json
   DESTINATION share/fairbase/examples/MQ/6-multiple-channels/config/
 )

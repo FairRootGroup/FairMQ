@@ -6,12 +6,11 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/2-sampler-processor-sink/ex2-sampler-processor-sink.json 
-               ${CMAKE_BINARY_DIR}/bin/config/ex2-sampler-processor-sink.json)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/2-sampler-processor-sink/startMQEx2.sh.in  
-               ${CMAKE_BINARY_DIR}/bin/examples/MQ/2-sampler-processor-sink/startMQEx2.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/2-sampler-processor-sink/ex2-sampler-processor-sink.json ${CMAKE_BINARY_DIR}/bin/config/ex2-sampler-processor-sink.json)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/2-sampler-processor-sink/startMQEx2.sh.in ${CMAKE_BINARY_DIR}/bin/examples/MQ/2-sampler-processor-sink/startMQEx2.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/2-sampler-processor-sink/testMQEx2.sh.in ${CMAKE_BINARY_DIR}/bin/examples/MQ/2-sampler-processor-sink/testMQEx2.sh)
 
-Set(INCLUDE_DIRECTORIES
+set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
   ${CMAKE_SOURCE_DIR}/fairmq/devices
   ${CMAKE_SOURCE_DIR}/fairmq/tools
@@ -20,42 +19,42 @@ Set(INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-Set(SYSTEM_INCLUDE_DIRECTORIES
+set(SYSTEM_INCLUDE_DIRECTORIES
   ${Boost_INCLUDE_DIR}
   ${ZeroMQ_INCLUDE_DIR}
 )
 
-Include_Directories(${INCLUDE_DIRECTORIES})
-Include_Directories(SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
+include_directories(${INCLUDE_DIRECTORIES})
+include_directories(SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 
-Set(LINK_DIRECTORIES
+set(LINK_DIRECTORIES
   ${Boost_LIBRARY_DIRS}
 )
 
-Link_Directories(${LINK_DIRECTORIES})
+link_directories(${LINK_DIRECTORIES})
 
-Set(SRCS
+set(SRCS
   "FairMQExample2Sampler.cxx"
   "FairMQExample2Processor.cxx"
   "FairMQExample2Sink.cxx"
 )
 
-Set(DEPENDENCIES
+set(DEPENDENCIES
   ${DEPENDENCIES}
   FairMQ
 )
 
-Set(LIBRARY_NAME FairMQExample2)
+set(LIBRARY_NAME FairMQExample2)
 
 GENERATE_LIBRARY()
 
-Set(Exe_Names
+set(Exe_Names
   ex2-sampler
   ex2-processor
   ex2-sink
 )
 
-Set(Exe_Source
+set(Exe_Source
   runExample2Sampler.cxx
   runExample2Processor.cxx
   runExample2Sink.cxx
@@ -67,16 +66,21 @@ math(EXPR _length ${_length}-1)
 set(BIN_DESTINATION share/fairbase/examples/MQ/2-sampler-processor-sink/bin)
 set(EXECUTABLE_OUTPUT_PATH "${EXECUTABLE_OUTPUT_PATH}/examples/MQ/2-sampler-processor-sink")
 
-ForEach(_file RANGE 0 ${_length})
+foreach(_file RANGE 0 ${_length})
   list(GET Exe_Names ${_file} _name)
   list(GET Exe_Source ${_file} _src)
-  Set(EXE_NAME ${_name})
-  Set(SRCS ${_src})
-  Set(DEPENDENCIES FairMQExample2)
+  set(EXE_NAME ${_name})
+  set(SRCS ${_src})
+  set(DEPENDENCIES FairMQExample2)
   GENERATE_EXECUTABLE()
-EndForEach(_file RANGE 0 ${_length})
+endforeach(_file RANGE 0 ${_length})
 
-Install(
+add_test(NAME MQ.ex2-sampler-processor-sink COMMAND ${CMAKE_BINARY_DIR}/bin/examples/MQ/2-sampler-processor-sink/testMQEx2.sh)
+set_tests_properties(MQ.ex2-sampler-processor-sink PROPERTIES TIMEOUT "30")
+set_tests_properties(MQ.ex2-sampler-processor-sink PROPERTIES RUN_SERIAL true)
+set_tests_properties(MQ.ex2-sampler-processor-sink PROPERTIES PASS_REGULAR_EXPRESSION "Received: ")
+
+install(
   FILES ex2-sampler-processor-sink.json
   DESTINATION share/fairbase/examples/MQ/2-sampler-processor-sink/config/
 )

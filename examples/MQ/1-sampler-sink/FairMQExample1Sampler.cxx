@@ -23,19 +23,20 @@ using namespace std;
 
 FairMQExample1Sampler::FairMQExample1Sampler()
     : fText()
+    , fMaxIterations(0)
+    , fNumIterations(0)
 {
 }
 
 void FairMQExample1Sampler::InitTask()
 {
-    // Get the fText value from the command line option (via fConfig)
+    // Get the fText and fMaxIterations values from the command line options (via fConfig)
     fText = fConfig->GetValue<string>("text");
+    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
 }
 
 bool FairMQExample1Sampler::ConditionalRun()
 {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
     // create a copy of the data with new(), that will be deleted after the transfer is complete
     string* text = new string(fText);
 
@@ -56,6 +57,13 @@ bool FairMQExample1Sampler::ConditionalRun()
     {
         return false;
     }
+    else if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
+    {
+        LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+        return false;
+    }
+
+    this_thread::sleep_for(chrono::seconds(1));
 
     return true;
 }

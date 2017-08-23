@@ -28,6 +28,8 @@ class FairMQExampleMTSampler1 : public FairMQDevice
     void ListenForAcks();
 
     std::thread fAckListener;
+    uint64_t fMaxIterations;
+    uint64_t fNumIterations;
 };
 
 #endif /* FAIRMQEXAMPLEMTSAMPLER1_H_ */
