@@ -85,8 +85,8 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         , fWorkAvailable(false)
         , fState()
         , fChangeStateMutex()
-        , fStateChangeCallback()
-        , fStateChangeCallbacks()
+        , fStateChangeSignal()
+        , fStateChangeSignalsMap()
         {}
 
     // Destructor
@@ -134,10 +134,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "Entering IDLE state";
             fsm.fState = IDLE;
-            if (!fsm.fStateChangeCallbacks.empty())
-            {
-                fsm.fStateChangeCallback(IDLE);
-            }
+            fsm.CallStateChangeCallbacks(IDLE);
         }
     };
 
@@ -167,10 +164,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "Entering DEVICE READY state";
             fsm.fState = DEVICE_READY;
-            if (!fsm.fStateChangeCallback.empty())
-            {
-                fsm.fStateChangeCallback(DEVICE_READY);
-            }
+            fsm.CallStateChangeCallbacks(DEVICE_READY);
         }
     };
 
@@ -194,10 +188,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "Entering READY state";
             fsm.fState = READY;
-            if (!fsm.fStateChangeCallback.empty())
-            {
-                fsm.fStateChangeCallback(READY);
-            }
+            fsm.CallStateChangeCallbacks(READY);
         }
     };
 
@@ -266,10 +257,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "Entering READY state";
             fsm.fState = READY;
-            if (!fsm.fStateChangeCallback.empty())
-            {
-                fsm.fStateChangeCallback(READY);
-            }
+            fsm.CallStateChangeCallbacks(READY);
 
             fsm.Unblock();
             std::unique_lock<std::mutex> lock(fsm.fWorkMutex);
@@ -287,10 +275,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "RUNNING state finished without an external event, entering READY state";
             fsm.fState = READY;
-            if (!fsm.fStateChangeCallback.empty())
-            {
-                fsm.fStateChangeCallback(READY);
-            }
+            fsm.CallStateChangeCallbacks(READY);
 
             fsm.Unblock();
         }
@@ -341,10 +326,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "Entering EXITING state";
             fsm.fState = EXITING;
-            if (!fsm.fStateChangeCallback.empty())
-            {
-                fsm.fStateChangeCallback(EXITING);
-            }
+            fsm.CallStateChangeCallbacks(EXITING);
 
             // terminate worker thread
             {
@@ -370,10 +352,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             LOG(STATE) << "Entering ERROR state";
             fsm.fState = ERROR;
-            if (!fsm.fStateChangeCallback.empty())
-            {
-                fsm.fStateChangeCallback(ERROR);
-            }
+            fsm.CallStateChangeCallbacks(ERROR);
         }
     };
 
@@ -488,7 +467,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         EXITING
     };
 
-    std::string GetStateName(int state) const
+    static std::string GetStateName(const int state)
     {
         switch(state)
         {
@@ -526,6 +505,14 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
     bool CheckCurrentState(int state) const { return state == fState; }
     bool CheckCurrentState(std::string state) const { return state == GetCurrentStateName(); }
 
+    void CallStateChangeCallbacks(const State state) const
+    {
+        if (!fStateChangeSignal.empty())
+        {
+            fStateChangeSignal(state);
+        }
+    }
+
     // this is to run certain functions in a separate thread
     std::thread fWorkerThread;
 
@@ -542,8 +529,8 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
     std::atomic<State> fState;
     std::mutex fChangeStateMutex;
 
-    boost::signals2::signal<void(const State)> fStateChangeCallback;
-    std::unordered_map<std::string, boost::signals2::connection> fStateChangeCallbacks;
+    boost::signals2::signal<void(const State)> fStateChangeSignal;
+    std::unordered_map<std::string, boost::signals2::connection> fStateChangeSignalsMap;
 };
 
 // reactivate the warning for non-virtual destructor

@@ -261,10 +261,7 @@ void FairMQDevice::InitWrapper()
             }
         }
     }
-    if (!fStateChangeCallback.empty())
-    {
-        fStateChangeCallback(INITIALIZING_DEVICE);
-    }
+    CallStateChangeCallbacks(INITIALIZING_DEVICE);
 
     // Bind channels. Here one run is enough, because bind settings should be available locally
     // If necessary this could be handled in the same way as the connecting channels
@@ -452,10 +449,7 @@ bool FairMQDevice::BindEndpoint(FairMQSocket& socket, string& endpoint)
 
 void FairMQDevice::InitTaskWrapper()
 {
-    if (!fStateChangeCallback.empty())
-    {
-        fStateChangeCallback(INITIALIZING_TASK);
-    }
+    CallStateChangeCallbacks(INITIALIZING_TASK);
 
     InitTask();
 
@@ -517,10 +511,7 @@ void FairMQDevice::PrintChannel(const string& name)
 
 void FairMQDevice::RunWrapper()
 {
-    if (!fStateChangeCallback.empty())
-    {
-        fStateChangeCallback(RUNNING);
-    }
+    CallStateChangeCallbacks(RUNNING);
 
     LOG(INFO) << "DEVICE: Running...";
 
@@ -793,10 +784,7 @@ void FairMQDevice::PostRun()
 
 void FairMQDevice::PauseWrapper()
 {
-    if (!fStateChangeCallback.empty())
-    {
-        fStateChangeCallback(PAUSED);
-    }
+    CallStateChangeCallbacks(PAUSED);
 
     Pause();
 }
@@ -1237,10 +1225,7 @@ void FairMQDevice::Unblock()
 
 void FairMQDevice::ResetTaskWrapper()
 {
-    if (!fStateChangeCallback.empty())
-    {
-        fStateChangeCallback(RESETTING_TASK);
-    }
+    CallStateChangeCallbacks(RESETTING_TASK);
 
     ResetTask();
 
@@ -1253,10 +1238,7 @@ void FairMQDevice::ResetTask()
 
 void FairMQDevice::ResetWrapper()
 {
-    if (!fStateChangeCallback.empty())
-    {
-        fStateChangeCallback(RESETTING_DEVICE);
-    }
+    CallStateChangeCallbacks(RESETTING_DEVICE);
 
     Reset();
 
