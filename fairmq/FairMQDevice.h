@@ -478,30 +478,40 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     int fNumIoThreads; ///< Number of ZeroMQ I/O threads
 
     /// Additional user initialization (can be overloaded in child classes). Prefer to use InitTask().
+    /// Executed in a worker thread
     virtual void Init();
 
     /// Task initialization (can be overloaded in child classes)
+    /// Executed in a worker thread (currently runs in main thread as workaround for multithread-aware FairRunAna/Sim implementation)
+    // TODO: fix this to also run in worker thread, or change all callbacks to be run in the main thread?
     virtual void InitTask();
 
     /// Runs the device (to be overloaded in child classes)
+    /// Executed in a worker thread
     virtual void Run();
 
     /// Called in the RUNNING state once before executing the Run()/ConditionalRun() method
+    /// Executed in a worker thread
     virtual void PreRun();
 
     /// Called during RUNNING state repeatedly until it returns false or device state changes
+    /// Executed in a worker thread
     virtual bool ConditionalRun();
 
     /// Called in the RUNNING state once after executing the Run()/ConditionalRun() method
+    /// Executed in a worker thread
     virtual void PostRun();
 
     /// Handles the PAUSE state
+    /// Executed in a worker thread
     virtual void Pause();
 
     /// Resets the user task (to be overloaded in child classes)
+    /// Executed in a worker thread
     virtual void ResetTask();
 
     /// Resets the device (can be overloaded in child classes)
+    /// Executed in a worker thread
     virtual void Reset();
 
   private:
