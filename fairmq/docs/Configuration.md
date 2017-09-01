@@ -91,4 +91,23 @@ The option key `--channel-config` can be used with the list of key/value pairs, 
 --channel-config name=output,type=push,method=bind,address=tcp://127.0.0.1:5555
 ```
 
+## 3.3 Introspection
+
+A compiled device executable repots its available configuration. Run the device with one of the following options to see the corresponding help:
+
+- `-h [ --help ]`: All available command line options with their descriptions and default values.
+
+- `--print-options`: All available command line options in a machine-readable format: `<option>:<computed-value>:<<type>>:<description>`.
+
+- `--print-channels`: Prints registered channels in a machine-readable format: `<channel name>:<minimum sub-channels>:<maximum sub-channels>`. There are devices where channels names are not known in advance before the configuration takes place (e.g. FairMQMultiplier has configurable channel names at runtime). This options will only print channels that have been registered in the device by implementing the following method:
+
+```C++
+void YourDevice::RegisterChannelEndpoints()
+{
+    // provide channel name, minimum and maximum number of subchannels
+    RegisterChannelEndpoint("channelA", 1, 10000);
+    RegisterChannelEndpoint("channelB", 1, 1);
+}
+```
+
 ← [Back](../README.md)
