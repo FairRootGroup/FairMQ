@@ -94,7 +94,7 @@ inline std::string ConvertVariableValueToString<boost::filesystem::path>(const p
 // policy to convert boost variable value into string
 struct ToString
 {
-    typedef std::string returned_type;
+    using returned_type = std::string;
     template<typename T>
     std::string Value(const po::variable_value& varValue, const std::string&, const std::string&, const std::string&)
     {
@@ -110,7 +110,7 @@ struct ToString
 // policy to convert variable value content into a tuple with value, type, defaulted, empty information
 struct ToVarInfo
 {
-    typedef std::tuple<std::string, std::string,std::string, std::string> returned_type;
+    using returned_type = std::tuple<std::string, std::string,std::string, std::string>;
     template<typename T>
     returned_type Value(const po::variable_value& varValue, const std::string& type, const std::string& defaulted, const std::string& empty)
     {

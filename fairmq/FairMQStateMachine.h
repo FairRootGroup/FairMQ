@@ -574,16 +574,16 @@ class FairMQStateMachine : public FairMQFSM::FairMQFSM
 
     int GetInterfaceVersion();
 
-    int GetEventNumber(std::string event);
+    int GetEventNumber(const std::string& event);
 
     bool ChangeState(int event);
-    bool ChangeState(std::string event);
+    bool ChangeState(const std::string& event);
 
     void WaitForEndOfState(int state);
-    void WaitForEndOfState(std::string state);
+    void WaitForEndOfState(const std::string& state);
 
     bool WaitForEndOfStateForMs(int state, int durationInMs);
-    bool WaitForEndOfStateForMs(std::string state, int durationInMs);
+    bool WaitForEndOfStateForMs(const std::string& state, int durationInMs);
 
     void SubscribeToStateChange(const std::string& key, std::function<void(const State)> callback);
     void UnsubscribeFromStateChange(const std::string& key);

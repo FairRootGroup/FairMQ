@@ -45,7 +45,7 @@
     ADD_LOG_FILESINK(filename,ERROR); // => Print severity >= ERROR to file (extension is added)
 */
 
-typedef unsigned long long timestamp_t;
+using timestamp_t = unsigned long long;
 
 timestamp_t get_timestamp();
 

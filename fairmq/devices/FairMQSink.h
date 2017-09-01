@@ -16,21 +16,65 @@
 #define FAIRMQSINK_H_
 
 #include <string>
+#include <chrono>
 
-#include "FairMQDevice.h"
+#include "../FairMQDevice.h"
+#include "../FairMQLogger.h"
+#include "../options/FairMQProgOptions.h"
 
-class FairMQSink : public FairMQDevice
+// template<typename OutputPolicy>
+class FairMQSink : public FairMQDevice//, public OutputPolicy
 {
   public:
-    FairMQSink();
-    virtual ~FairMQSink();
+    FairMQSink()
+        : fMaxIterations(0)
+        , fNumIterations(0)
+        , fInChannelName()
+    {}
+
+    virtual ~FairMQSink()
+    {}
 
   protected:
-    uint64_t fNumMsgs;
+    uint64_t fMaxIterations;
+    uint64_t fNumIterations;
     std::string fInChannelName;
 
-    virtual void Run();
-    virtual void InitTask();
+    virtual void InitTask()
+    {
+        fMaxIterations = fConfig->GetValue<uint64_t>("num-iterations");
+        fInChannelName = fConfig->GetValue<std::string>("in-channel");
+    }
+
+    virtual void Run()
+    {
+        // store the channel reference to avoid traversing the map on every loop iteration
+        FairMQChannel& dataInChannel = fChannels.at(fInChannelName).at(0);
+
+        LOG(INFO) << "Starting the benchmark and expecting to receive " << fMaxIterations << " messages.";
+        auto tStart = std::chrono::high_resolution_clock::now();
+
+        while (CheckCurrentState(RUNNING))
+        {
+            FairMQMessagePtr msg(dataInChannel.Transport()->CreateMessage());
+
+            if (dataInChannel.Receive(msg) >= 0)
+            {
+                if (fMaxIterations > 0)
+                {
+                    if (fNumIterations >= fMaxIterations)
+                    {
+                        break;
+                    }
+                }
+                fNumIterations++;
+            }
+        }
+
+        auto tEnd = std::chrono::high_resolution_clock::now();
+
+        LOG(INFO) << "Leaving RUNNING state. Received " << fNumIterations << " messages in " << std::chrono::duration<double, std::milli>(tEnd - tStart).count() << "ms.";
+    }
 };
 
 #endif /* FAIRMQSINK_H_ */

@@ -131,8 +131,8 @@ namespace Logger
         void AddFileSink(FunT&& func, Args&&... args)
         {
             // add a text sink
-            typedef boost::log::sinks::text_file_backend sink_backend_t;
-            typedef boost::log::sinks::synchronous_sink<sink_backend_t> sink_t;
+            using sink_backend_t = boost::log::sinks::text_file_backend;
+            using sink_t = boost::log::sinks::synchronous_sink<sink_backend_t>;
 
             // forward keywords args for setting log file properties
             boost::shared_ptr<sink_backend_t> backend = boost::make_shared<sink_backend_t>(std::forward<Args>(args)...);

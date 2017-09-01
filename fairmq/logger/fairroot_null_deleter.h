@@ -14,7 +14,7 @@ namespace fairroot
     struct null_deleter
     {
         //! Function object result type
-        typedef void result_type;
+        using result_type = void;
         /*!
          * Does nothing
          */

@@ -35,10 +35,10 @@
 
 #include <fairmq/Tools.h>
 
-typedef std::unordered_map<std::string, std::vector<FairMQChannel>> FairMQChannelMap;
+using FairMQChannelMap = std::unordered_map<std::string, std::vector<FairMQChannel>>;
 
-typedef std::function<bool(FairMQMessagePtr&, int)> InputMsgCallback;
-typedef std::function<bool(FairMQParts&, int)> InputMultipartCallback;
+using InputMsgCallback = std::function<bool(FairMQMessagePtr&, int)>;
+using InputMultipartCallback = std::function<bool(FairMQParts&, int)>;
 
 class FairMQProgOptions;
 
@@ -357,7 +357,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param rhs Left hand side value for comparison
     static bool SortSocketsByAddress(const FairMQChannel &lhs, const FairMQChannel &rhs);
 
-    template<class T>
+    template<typename T>
     void OnData(const std::string& channelName, bool (T::* memberFunction)(FairMQMessagePtr& msg, int index))
     {
         fDataCallbacks = true;
@@ -383,7 +383,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         }
     }
 
-    template<class T>
+    template<typename T>
     void OnData(const std::string& channelName, bool (T::* memberFunction)(FairMQParts& parts, int index))
     {
         fDataCallbacks = true;

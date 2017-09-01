@@ -20,7 +20,7 @@
 namespace FairMQParser
 {
 
-typedef std::unordered_map<std::string, std::vector<FairMQChannel>> FairMQMap;
+using FairMQMap = std::unordered_map<std::string, std::vector<FairMQChannel>>;
 
 FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& deviceId, const std::string& rootNode, const std::string& formatFlag = "json");
 

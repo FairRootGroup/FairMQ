@@ -22,7 +22,7 @@
 
 using namespace std;
 
-typedef unordered_map<string, vector<FairMQChannel>> FairMQMap;
+using FairMQMap = unordered_map<string, vector<FairMQChannel>>;
 
 class MyDevice : public FairMQDevice
 {

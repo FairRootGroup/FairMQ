@@ -85,8 +85,7 @@ inline std::string write_in(const std::string& text_in_bold)
     return os.str();
 }
 
-// typedef
-typedef FairMQ::severity_level custom_severity_level;
+using custom_severity_level = FairMQ::severity_level;
 #define SEVERITY_MINIMUM custom_severity_level::TRACE
 #define SEVERITY_ERROR custom_severity_level::ERROR
 #define SEVERITY_NOLOG custom_severity_level::NOLOG

@@ -83,7 +83,7 @@ template <> struct Traits2<EventId::UpdateParamInt>    { using signal_type = boo
 class FairMQEventManager
 {
   public:
-    typedef std::pair<EventId, std::string> EventKey;
+    using EventKey = std::pair<EventId, std::string>;
 
     FairMQEventManager() :
         fEventMap()

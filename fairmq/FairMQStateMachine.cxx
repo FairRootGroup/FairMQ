@@ -32,7 +32,7 @@ int FairMQStateMachine::GetInterfaceVersion()
     return FAIRMQ_INTERFACE_VERSION;
 }
 
-int FairMQStateMachine::GetEventNumber(std::string event)
+int FairMQStateMachine::GetEventNumber(const std::string& event)
 {
     if (event == "INIT_DEVICE") return INIT_DEVICE;
     if (event == "INIT_TASK") return INIT_TASK;
@@ -142,7 +142,7 @@ bool FairMQStateMachine::ChangeState(int event)
     return false;
 }
 
-bool FairMQStateMachine::ChangeState(std::string event)
+bool FairMQStateMachine::ChangeState(const std::string& event)
 {
     return ChangeState(GetEventNumber(event));
 }
@@ -178,7 +178,7 @@ void FairMQStateMachine::WaitForEndOfState(int event)
     }
 }
 
-void FairMQStateMachine::WaitForEndOfState(std::string event)
+void FairMQStateMachine::WaitForEndOfState(const std::string& event)
 {
     return WaitForEndOfState(GetEventNumber(event));
 }
@@ -219,7 +219,7 @@ bool FairMQStateMachine::WaitForEndOfStateForMs(int event, int durationInMs)
     return false;
 }
 
-bool FairMQStateMachine::WaitForEndOfStateForMs(std::string event, int durationInMs)
+bool FairMQStateMachine::WaitForEndOfStateForMs(const std::string& event, int durationInMs)
 {
     return WaitForEndOfStateForMs(GetEventNumber(event), durationInMs);
 }

@@ -296,7 +296,7 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
         }
     }
 
-    typedef std::tuple<std::string, int, std::string> MQKey;//store key info
+    using MQKey = std::tuple<std::string, int, std::string>;//store key info
     std::map<std::string, MQKey> fMQKeyMap;// key=full path - val=key info
 
     virtual int NotifySwitchOption(); // for custom help & version printing

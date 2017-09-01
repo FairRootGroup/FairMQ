@@ -208,8 +208,8 @@ class FairProgOptions
 
   private:
     // Methods below are helper functions used in the PrintOptions method
-    typedef std::tuple<std::string, std::string, std::string, std::string> VarValInfo_t;
-    typedef std::map<std::string, VarValInfo_t> MapVarValInfo_t;
+    using VarValInfo_t = std::tuple<std::string, std::string, std::string, std::string>;
+    using MapVarValInfo_t = std::map<std::string, VarValInfo_t>;
 
     VarValInfo_t GetVariableValueInfo(const po::variable_value& varValue);
 

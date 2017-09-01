@@ -15,10 +15,10 @@
 
 #if BOOST_VERSION < 105600
 #include "fairroot_null_deleter.h"
-typedef fairroot::null_deleter empty_deleter_t;
+using empty_deleter_t = fairroot::null_deleter;
 #else
 #include <boost/core/null_deleter.hpp>
-typedef boost::null_deleter empty_deleter_t;
+using empty_deleter_t = boost::null_deleter;
 #endif
 
 #include <boost/make_shared.hpp>
@@ -79,7 +79,7 @@ void reinit_logger(bool color, const std::string& filename, custom_severity_leve
 void DefaultConsoleInit(bool color/* = true*/)
 {
     // add a text sink
-    typedef sinks::synchronous_sink<sinks::text_ostream_backend> text_sink;
+    using text_sink = sinks::synchronous_sink<sinks::text_ostream_backend>;
 
     RemoveRegisteredSinks();
 

@@ -138,7 +138,7 @@ set(FAIRMQ_SOURCE_FILES
     devices/FairMQMerger.cxx
     devices/FairMQMultiplier.cxx
     devices/FairMQProxy.cxx
-    devices/FairMQSink.cxx
+    # devices/FairMQSink.cxx
     devices/FairMQSplitter.cxx
     logger/logger.cxx
     options/FairMQParser.cxx
