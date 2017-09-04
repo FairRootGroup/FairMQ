@@ -3,6 +3,8 @@ config="@CMAKE_BINARY_DIR@/bin/config/ex-multiple-transports.json"
 
 trap 'kill -TERM $SAMPLER1_PID; kill -TERM $SAMPLER2_PID; kill -TERM $SINK_PID; wait $SAMPLER1_PID; wait $SAMPLER2_PID; wait $SINK_PID; @CMAKE_BINARY_DIR@/bin/shmmonitor --cleanup;' TERM
 
+@CMAKE_BINARY_DIR@/bin/shmmonitor --cleanup
+
 SINK="ex-mt-sink"
 SINK+=" --id sink1"
 SINK+=" --max-iterations 1"
