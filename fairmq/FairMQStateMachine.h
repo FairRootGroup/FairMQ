@@ -176,8 +176,14 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
             LOG(STATE) << "Entering INITIALIZING TASK state";
             fsm.fState = INITIALIZING_TASK;
 
-            fsm.InitTaskWrapper();
-            // fsm.fInitializingTaskThread = std::thread(&FairMQFSM_::InitTaskWrapper, &fsm);
+            std::unique_lock<std::mutex> lock(fsm.fWorkMutex);
+            while (fsm.fWorkActive)
+            {
+                fsm.fWorkDoneCondition.wait(lock);
+            }
+            fsm.fWorkAvailable = true;
+            fsm.fWork = std::bind(&FairMQFSM_::InitTaskWrapper, &fsm);
+            fsm.fWorkAvailableCondition.notify_one();
         }
     };
 

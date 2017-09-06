@@ -482,8 +482,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     virtual void Init();
 
     /// Task initialization (can be overloaded in child classes)
-    /// Executed in a worker thread (currently runs in main thread as workaround for multithread-aware FairRunAna/Sim implementation)
-    // TODO: fix this to also run in worker thread, or change all callbacks to be run in the main thread?
+    /// Executed in a worker thread
     virtual void InitTask();
 
     /// Runs the device (to be overloaded in child classes)

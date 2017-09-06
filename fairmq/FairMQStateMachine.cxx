@@ -74,7 +74,7 @@ bool FairMQStateMachine::ChangeState(int event)
             }
             case internal_READY:
             {
-                // std::lock_guard<std::mutex> lock(fChangeStateMutex); // InitTask is synchronous, until ROOT workaround is no longer needed.
+                std::lock_guard<std::mutex> lock(fChangeStateMutex);
                 process_event(FairMQFSM::internal_READY());
                 return true;
             }
@@ -154,6 +154,7 @@ void FairMQStateMachine::WaitForEndOfState(int event)
         switch (event)
         {
             case INIT_DEVICE:
+            case INIT_TASK:
             case RUN:
             case RESET_TASK:
             case RESET_DEVICE:
@@ -166,8 +167,6 @@ void FairMQStateMachine::WaitForEndOfState(int event)
 
                 break;
             }
-            case INIT_TASK:
-                break; // InitTask is synchronous, until ROOT workaround is no longer needed.
             default:
                 LOG(ERROR) << "Requested state is either synchronous or does not exist.";
                 break;
@@ -191,6 +190,7 @@ bool FairMQStateMachine::WaitForEndOfStateForMs(int event, int durationInMs)
         switch (event)
         {
             case INIT_DEVICE:
+            case INIT_TASK:
             case RUN:
             case RESET_TASK:
             case RESET_DEVICE:
@@ -207,8 +207,6 @@ bool FairMQStateMachine::WaitForEndOfStateForMs(int event, int durationInMs)
                 return true;
                 break;
             }
-            case INIT_TASK:
-                break; // InitTask is synchronous, until ROOT workaround is no longer needed.
             default:
                 LOG(ERROR) << "Requested state is either synchronous or does not exist.";
                 return false;
