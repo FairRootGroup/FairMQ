@@ -42,7 +42,7 @@ class FairMQSink : public FairMQDevice//, public OutputPolicy
 
     virtual void InitTask()
     {
-        fMaxIterations = fConfig->GetValue<uint64_t>("num-iterations");
+        fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
         fInChannelName = fConfig->GetValue<std::string>("in-channel");
     }
 

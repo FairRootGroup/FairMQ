@@ -15,7 +15,7 @@ void addCustomOptions(bpo::options_description& options)
 {
     options.add_options()
         ("in-channel", bpo::value<std::string>()->default_value("data"), "Name of the input channel")
-        ("num-msgs", bpo::value<uint64_t>()->default_value(0), "Number of messages to receive");
+        ("max-iterations", bpo::value<uint64_t>()->default_value(0), "Number of run iterations (0 - infinite)");
 }
 
 FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)

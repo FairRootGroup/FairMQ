@@ -40,7 +40,8 @@ class FairMQBenchmarkSampler : public FairMQDevice
     int fMsgSize;
     int fMsgCounter;
     int fMsgRate;
-    uint64_t fNumMsgs;
+    uint64_t fNumIterations;
+    uint64_t fMaxIterations;
     std::string fOutChannelName;
     std::thread fResetMsgCounter;
 

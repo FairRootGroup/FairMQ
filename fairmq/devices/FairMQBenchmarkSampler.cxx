@@ -27,7 +27,8 @@ FairMQBenchmarkSampler::FairMQBenchmarkSampler()
     , fMsgSize(10000)
     , fMsgCounter(0)
     , fMsgRate(1)
-    , fNumMsgs(0)
+    , fNumIterations(0)
+    , fMaxIterations(0)
     , fOutChannelName()
     , fResetMsgCounter()
 {
@@ -42,7 +43,7 @@ void FairMQBenchmarkSampler::InitTask()
     fSameMessage = fConfig->GetValue<bool>("same-msg");
     fMsgSize = fConfig->GetValue<int>("msg-size");
     fMsgRate = fConfig->GetValue<int>("msg-rate");
-    fNumMsgs = fConfig->GetValue<uint64_t>("num-msgs");
+    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
     fOutChannelName = fConfig->GetValue<string>("out-channel");
 }
 
@@ -53,14 +54,12 @@ void FairMQBenchmarkSampler::PreRun()
 
 void FairMQBenchmarkSampler::Run()
 {
-    uint64_t numSentMsgs = 0;
-
     // store the channel reference to avoid traversing the map on every loop iteration
     FairMQChannel& dataOutChannel = fChannels.at(fOutChannelName).at(0);
 
     FairMQMessagePtr baseMsg(dataOutChannel.Transport()->CreateMessage(fMsgSize));
 
-    LOG(INFO) << "Starting the benchmark with message size of " << fMsgSize << " and number of messages " << fNumMsgs << ".";
+    LOG(INFO) << "Starting the benchmark with message size of " << fMsgSize << " and " << fMaxIterations << " iterations.";
     auto tStart = chrono::high_resolution_clock::now();
 
     while (CheckCurrentState(RUNNING))
@@ -72,14 +71,14 @@ void FairMQBenchmarkSampler::Run()
 
             if (dataOutChannel.Send(msg) >= 0)
             {
-                if (fNumMsgs > 0)
+                if (fMaxIterations > 0)
                 {
-                    if (numSentMsgs >= fNumMsgs)
+                    if (fNumIterations >= fMaxIterations)
                     {
                         break;
                     }
                 }
-                ++numSentMsgs;
+                ++fNumIterations;
             }
         }
         else
@@ -88,14 +87,14 @@ void FairMQBenchmarkSampler::Run()
 
             if (dataOutChannel.Send(msg) >= 0)
             {
-                if (fNumMsgs > 0)
+                if (fMaxIterations > 0)
                 {
-                    if (numSentMsgs >= fNumMsgs)
+                    if (fNumIterations >= fMaxIterations)
                     {
                         break;
                     }
                 }
-                ++numSentMsgs;
+                ++fNumIterations;
             }
         }
 
@@ -109,7 +108,7 @@ void FairMQBenchmarkSampler::Run()
 
     auto tEnd = chrono::high_resolution_clock::now();
 
-    LOG(INFO) << "Leaving RUNNING state. Sent " << numSentMsgs << " messages in " << chrono::duration<double, milli>(tEnd - tStart).count() << "ms.";
+    LOG(INFO) << "Leaving RUNNING state. Done " << fNumIterations << " iterations in " << chrono::duration<double, milli>(tEnd - tStart).count() << "ms.";
 
 }
 

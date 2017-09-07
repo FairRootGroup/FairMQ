@@ -1,6 +1,6 @@
 #!/bin/bash
 
-numMsgs="0"
+maxIterations="0"
 msgSize="1000000"
 transport="zeromq"
 sameMsg="true"
@@ -14,7 +14,7 @@ if [[ $1 =~ ^[0-9]+$ ]]; then
 fi
 
 if [[ $2 =~ ^[0-9]+$ ]]; then
-    numMsgs=$2
+    maxIterations=$2
 fi
 
 if [[ $3 =~ ^[a-z]+$ ]]; then
@@ -35,10 +35,10 @@ echo "Starting benchmark with following settings:"
 echo ""
 echo "message size: $msgSize bytes"
 
-if [ $numMsgs = 0 ]; then
-    echo "number of messages: unlimited"
+if [ $maxIterations = 0 ]; then
+    echo "number of iterations: unlimited"
 else
-    echo "number of messages: $numMsgs"
+    echo "number of iterations: $maxIterations"
 fi
 
 echo "transport: $transport"
@@ -58,7 +58,7 @@ else
 fi
 
 echo ""
-echo "Usage: startBenchmark [message size=1000000] [number of messages=0] [transport=zeromq/nanomsg/shmem] [resend same message=true] [affinity=false]"
+echo "Usage: startBenchmark [message size=1000000] [number of iterations=0] [transport=zeromq/nanomsg/shmem] [resend same message=true] [affinity=false]"
 
 SAMPLER="bsampler"
 SAMPLER+=" --id bsampler1"
@@ -68,7 +68,7 @@ SAMPLER+=" --transport $transport"
 SAMPLER+=" --msg-size $msgSize"
 SAMPLER+=" --same-msg $sameMsg"
 # SAMPLER+=" --msg-rate 1000"
-SAMPLER+=" --num-msgs $numMsgs"
+SAMPLER+=" --max-iterations $maxIterations"
 SAMPLER+=" --mq-config @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
 xterm -geometry 90x23+0+0 -hold -e $affinitySamp @CMAKE_BINARY_DIR@/bin/$SAMPLER &
 echo ""
@@ -80,7 +80,7 @@ SINK+=" --id sink1"
 #SINK+=" --io-threads 2"
 #SINK+=" --control static"
 SINK+=" --transport $transport"
-SINK+=" --num-msgs $numMsgs"
+SINK+=" --max-iterations $maxIterations"
 SINK+=" --mq-config @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
 xterm -geometry 90x23+550+0 -hold -e $affinitySink @CMAKE_BINARY_DIR@/bin/$SINK &
 echo ""
