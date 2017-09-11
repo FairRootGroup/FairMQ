@@ -284,19 +284,19 @@ class FairMQChannel
     };
 
     template<typename... Args>
-    inline FairMQMessagePtr NewMessage(Args&&... args) const
+    FairMQMessagePtr NewMessage(Args&&... args) const
     {
         return Transport()->CreateMessage(std::forward<Args>(args)...);
     }
 
     template<typename T>
-    inline FairMQMessagePtr NewSimpleMessage(const T& data) const
+    FairMQMessagePtr NewSimpleMessage(const T& data) const
     {
         return Transport()->NewSimpleMessage(data);
     }
 
     template<typename T>
-    inline FairMQMessagePtr NewStaticMessage(const T& data) const
+    FairMQMessagePtr NewStaticMessage(const T& data) const
     {
         return Transport()->NewStaticMessage(data);
     }

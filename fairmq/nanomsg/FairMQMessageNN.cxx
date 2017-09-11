@@ -84,7 +84,7 @@ FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* 
     }
 }
 
-FairMQMessageNN::FairMQMessageNN(FairMQRegionPtr& region, void* data, const size_t size)
+FairMQMessageNN::FairMQMessageNN(FairMQRegionPtr& /*region*/, void* data, const size_t size)
     : fMessage(data)
     , fSize(size)
     , fReceiving(false)
@@ -187,7 +187,7 @@ void FairMQMessageNN::Copy(const unique_ptr<FairMQMessage>& msg)
     }
 }
 
-inline void FairMQMessageNN::Clear()
+void FairMQMessageNN::Clear()
 {
     if (nn_freemsg(fMessage) < 0)
     {

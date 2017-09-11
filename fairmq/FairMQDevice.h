@@ -93,12 +93,12 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         Deserializer().Deserialize(msg, std::forward<DataType>(data), std::forward<Args>(args)...);
     }
 
-    inline int Send(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const
+    int Send(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).Send(msg);
     }
 
-    inline int Receive(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const
+    int Receive(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).Receive(msg);
     }
@@ -109,7 +109,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param i channel index
     /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
     /// In case of errors, returns -1.
-    inline int Send(FairMQMessagePtr& msg, const std::string& chan, const int i, int sndTimeoutInMs) const
+    int Send(FairMQMessagePtr& msg, const std::string& chan, const int i, int sndTimeoutInMs) const
     {
         return fChannels.at(chan).at(i).Send(msg, sndTimeoutInMs);
     }
@@ -120,7 +120,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param i channel index
     /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
     /// In case of errors, returns -1.
-    inline int Receive(FairMQMessagePtr& msg, const std::string& chan, const int i, int rcvTimeoutInMs) const
+    int Receive(FairMQMessagePtr& msg, const std::string& chan, const int i, int rcvTimeoutInMs) const
     {
         return fChannels.at(chan).at(i).Receive(msg, rcvTimeoutInMs);
     }
@@ -131,7 +131,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param i channel index
     /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
     /// In case of errors, returns -1.
-    inline int SendAsync(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const
+    int SendAsync(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).SendAsync(msg);
     }
@@ -142,17 +142,17 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param i channel index
     /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
     /// In case of errors, returns -1.
-    inline int ReceiveAsync(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const
+    int ReceiveAsync(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).ReceiveAsync(msg);
     }
 
-    inline int64_t Send(FairMQParts& parts, const std::string& chan, const int i = 0) const
+    int64_t Send(FairMQParts& parts, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).Send(parts.fParts);
     }
 
-    inline int64_t Receive(FairMQParts& parts, const std::string& chan, const int i = 0) const
+    int64_t Receive(FairMQParts& parts, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).Receive(parts.fParts);
     }
@@ -163,7 +163,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param i channel index
     /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
     /// In case of errors, returns -1.
-    inline int64_t Send(FairMQParts& parts, const std::string& chan, const int i, int sndTimeoutInMs) const
+    int64_t Send(FairMQParts& parts, const std::string& chan, const int i, int sndTimeoutInMs) const
     {
         return fChannels.at(chan).at(i).Send(parts.fParts, sndTimeoutInMs);
     }
@@ -174,7 +174,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param i channel index
     /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
     /// In case of errors, returns -1.
-    inline int64_t Receive(FairMQParts& parts, const std::string& chan, const int i, int rcvTimeoutInMs) const
+    int64_t Receive(FairMQParts& parts, const std::string& chan, const int i, int rcvTimeoutInMs) const
     {
         return fChannels.at(chan).at(i).Receive(parts.fParts, rcvTimeoutInMs);
     }
@@ -185,7 +185,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param i channel index
     /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
     /// In case of errors, returns -1.
-    inline int64_t SendAsync(FairMQParts& parts, const std::string& chan, const int i = 0) const
+    int64_t SendAsync(FairMQParts& parts, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).SendAsync(parts.fParts);
     }
@@ -196,7 +196,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// @param i channel index
     /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
     /// In case of errors, returns -1.
-    inline int64_t ReceiveAsync(FairMQParts& parts, const std::string& chan, const int i = 0) const
+    int64_t ReceiveAsync(FairMQParts& parts, const std::string& chan, const int i = 0) const
     {
         return fChannels.at(chan).at(i).ReceiveAsync(parts.fParts);
     }
@@ -208,37 +208,37 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     }
 
     template<typename... Args>
-    inline FairMQMessagePtr NewMessage(Args&&... args) const
+    FairMQMessagePtr NewMessage(Args&&... args) const
     {
         return Transport()->CreateMessage(std::forward<Args>(args)...);
     }
 
     template<typename... Args>
-    inline FairMQMessagePtr NewMessageFor(const std::string& channel, int index, Args&&... args) const
+    FairMQMessagePtr NewMessageFor(const std::string& channel, int index, Args&&... args) const
     {
         return fChannels.at(channel).at(index).Transport()->CreateMessage(std::forward<Args>(args)...);
     }
 
     template<typename T>
-    inline FairMQMessagePtr NewStaticMessage(const T& data) const
+    FairMQMessagePtr NewStaticMessage(const T& data) const
     {
         return Transport()->NewStaticMessage(data);
     }
 
     template<typename T>
-    inline FairMQMessagePtr NewStaticMessageFor(const std::string& channel, int index, const T& data) const
+    FairMQMessagePtr NewStaticMessageFor(const std::string& channel, int index, const T& data) const
     {
         return fChannels.at(channel).at(index).NewStaticMessage(data);
     }
 
     template<typename T>
-    inline FairMQMessagePtr NewSimpleMessage(const T& data) const
+    FairMQMessagePtr NewSimpleMessage(const T& data) const
     {
         return Transport()->NewSimpleMessage(data);
     }
 
     template<typename T>
-    inline FairMQMessagePtr NewSimpleMessageFor(const std::string& channel, int index, const T& data) const
+    FairMQMessagePtr NewSimpleMessageFor(const std::string& channel, int index, const T& data) const
     {
         return fChannels.at(channel).at(index).NewSimpleMessage(data);
     }
@@ -263,7 +263,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         {
             FairMQ::Transport type = fChannels.at(chans.at(0)).at(0).Transport()->GetType();
 
-            for (int i = 1; i < chans.size(); ++i)
+            for (unsigned int i = 1; i < chans.size(); ++i)
             {
                 if (type != fChannels.at(chans.at(i)).at(0).Transport()->GetType())
                 {
@@ -303,7 +303,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// Works only when running in a terminal. Running in background would exit, because no interactive input (std::cin) is possible.
     void InteractiveStateLoop();
     /// Prints the available commands of the InteractiveStateLoop()
-    inline void PrintInteractiveStateLoopHelp()
+    void PrintInteractiveStateLoopHelp()
     {
         LOG(INFO) << "Use keys to control the state machine:";
         LOG(INFO) << "[h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device";

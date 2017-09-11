@@ -85,7 +85,7 @@ class FairMQTransportFactory
     }
 
     template<typename T>
-    inline FairMQMessagePtr NewSimpleMessage(const T& data) const
+    FairMQMessagePtr NewSimpleMessage(const T& data) const
     {
         // todo: is_trivially_copyable not available on gcc < 5, workaround?
         // static_assert(std::is_trivially_copyable<T>::value, "The argument type for NewSimpleMessage has to be trivially copyable!");
@@ -94,13 +94,13 @@ class FairMQTransportFactory
     }
 
     template<std::size_t N>
-    inline FairMQMessagePtr NewSimpleMessage(const char(&data)[N]) const
+    FairMQMessagePtr NewSimpleMessage(const char(&data)[N]) const
     {
         std::string* msgStr = new std::string(data);
         return CreateMessage(const_cast<char*>(msgStr->c_str()), msgStr->length(), FairMQSimpleMsgCleanup<std::string>, msgStr);
     }
 
-    inline FairMQMessagePtr NewSimpleMessage(const std::string& str) const
+    FairMQMessagePtr NewSimpleMessage(const std::string& str) const
     {
 
         std::string* msgStr = new std::string(str);
@@ -108,12 +108,12 @@ class FairMQTransportFactory
     }
 
     template<typename T>
-    inline FairMQMessagePtr NewStaticMessage(const T& data) const
+    FairMQMessagePtr NewStaticMessage(const T& data) const
     {
         return CreateMessage(data, sizeof(T), FairMQNoCleanup, nullptr);
     }
 
-    inline FairMQMessagePtr NewStaticMessage(const std::string& str) const
+    FairMQMessagePtr NewStaticMessage(const std::string& str) const
     {
         return CreateMessage(const_cast<char*>(str.c_str()), str.length(), FairMQNoCleanup, nullptr);
     }

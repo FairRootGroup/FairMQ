@@ -28,7 +28,12 @@ using boost::optional;
 const std::string fair::mq::PluginManager::fgkLibPrefix = "FairMQPlugin_";
 
 fair::mq::PluginManager::PluginManager()
-: fSearchPaths{{"."}}
+    : fSearchPaths{{"."}}
+    , fPluginFactories()
+    , fPlugins()
+    , fPluginOrder()
+    , fPluginProgOptions()
+    , fPluginServices()
 {
 }
 
@@ -61,16 +66,17 @@ auto fair::mq::PluginManager::ProgramOptions() -> po::options_description
 {
     auto plugin_options = po::options_description{"Plugin Manager"};
     plugin_options.add_options()
-        ("plugin-search-path,S", po::value<vector<string>>()->multitoken(),
-         "List of plugin search paths.\n\n"
-         "* Override default search path, e.g.\n"
-         "  -S /home/user/lib /lib\n"
-         "* Append(>) or prepend(<) to default search path, e.g.\n"
-         "  -S >/lib </home/user/lib\n"
-         "* If you mix the overriding and appending/prepending syntaxes, the overriding paths act as default search path, e.g.\n"
-         "  -S /usr/lib >/lib </home/user/lib /usr/local/lib results in /home/user/lib,/usr/local/lib,/usr/lib/,/lib")
-        ("plugin,P", po::value<vector<string>>(),
-         "List of plugin names to load in order, e.g. if the file is called 'libFairMQPlugin_example.so', just list 'example' or 'd:example' here. To load a prelinked plugin, list 'p:example' here.");
+        ("plugin-search-path,S", po::value<vector<string>>()->multitoken(), "List of plugin search paths.\n\n"
+                                                                            "* Override default search path, e.g.\n"
+                                                                            "  -S /home/user/lib /lib\n"
+                                                                            "* Append(>) or prepend(<) to default search path, e.g.\n"
+                                                                            "  -S >/lib </home/user/lib\n"
+                                                                            "* If you mix the overriding and appending/prepending syntaxes, the overriding paths act as default search path, e.g.\n"
+                                                                            "  -S /usr/lib >/lib </home/user/lib /usr/local/lib results in /home/user/lib,/usr/local/lib,/usr/lib/,/lib")
+        ("plugin,P", po::value<vector<string>>(), "List of plugin names to load in order,"
+                                                  "e.g. if the file is called 'libFairMQPlugin_example.so', just list 'example' or 'd:example' here."
+                                                  "To load a prelinked plugin, list 'p:example' here.");
+
     return plugin_options;
 }
 

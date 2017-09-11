@@ -59,7 +59,7 @@ TEST(PluginManager, LoadPluginDynamic)
 
     // program options
     auto count = 0;
-    mgr.ForEachPluginProgOptions([&count](const options_description& d){ ++count; });
+    mgr.ForEachPluginProgOptions([&count](const options_description& /*d*/){ ++count; });
     ASSERT_EQ(count, 1);
 
     control(device);

@@ -345,7 +345,7 @@ void Monitor::Cleanup(const string& segmentName)
         {
             cout << "Region counter found: " << rc->fCount << endl;
             unsigned int regionCount = rc->fCount;
-            for (int i = 1; i <= regionCount; ++i)
+            for (unsigned int i = 1; i <= regionCount; ++i)
             {
                 RemoveObject("fairmq_shmem_region_" + to_string(regionCount));
             }
@@ -403,7 +403,7 @@ void Monitor::PrintQueues()
         {
             cout << "found " << queues->size() << " queue(s):" << endl;
 
-            for (int i = 0; i < queues->size(); ++i)
+            for (unsigned int i = 0; i < queues->size(); ++i)
             {
                 string name(queues->at(i).c_str());
                 cout << '\t' << name << " : ";

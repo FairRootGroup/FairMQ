@@ -22,7 +22,7 @@
 // template function that takes any device
 // and runs a simple MQ state machine configured from a JSON file and/or a plugin.
 template<typename TMQDevice>
-inline int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
+int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
 {
     std::string config = cfg.GetValue<std::string>("config");
     std::string control = cfg.GetValue<std::string>("control");

@@ -149,5 +149,3 @@ add_custom_target(FairMQTests
     DEPENDS
     ${ALL_TEST_TARGETS}
 )
-
-

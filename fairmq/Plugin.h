@@ -41,6 +41,10 @@ class Plugin
 
     Plugin() = delete;
     Plugin(const std::string name, const Version version, const std::string maintainer, const std::string homepage, PluginServices* pluginServices);
+
+    Plugin(const Plugin&) = delete;
+    Plugin operator=(const Plugin&) = delete;
+
     virtual ~Plugin();
 
     auto GetName() const -> const std::string& { return fkName; }
@@ -90,7 +94,6 @@ class Plugin
     const std::string fkMaintainer;
     const std::string fkHomepage;
     PluginServices* fPluginServices;
-
 }; /* class Plugin */
 
 } /* namespace mq */

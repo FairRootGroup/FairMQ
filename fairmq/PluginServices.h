@@ -37,10 +37,13 @@ class PluginServices
   public:
     PluginServices() = delete;
     PluginServices(FairMQProgOptions* config, std::shared_ptr<FairMQDevice> device)
-        : fDevice{device}
-        , fConfig{config}
+        : fConfig{config}
+        , fDevice{device}
     {
     }
+
+    PluginServices(const PluginServices&) = delete;
+    PluginServices operator=(const PluginServices&) = delete;
 
     /// See https://github.com/FairRootGroup/FairRoot/blob/dev/fairmq/docs/Device.md#13-state-machine
     enum class DeviceState : int

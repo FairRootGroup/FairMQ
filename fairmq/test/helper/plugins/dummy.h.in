@@ -41,13 +41,15 @@ class DummyPlugin : public fair::mq::Plugin
                 case DeviceState::Exiting:
                     UnsubscribeFromDeviceStateChange();
                     break;
+                default:
+                    break;
                 }
             }
         );
     }
 }; /* class DummyPlugin */
 
-auto DummyPluginProgramOptions() -> Plugin::ProgOptions 
+auto DummyPluginProgramOptions() -> Plugin::ProgOptions
 {
     auto plugin_options = boost::program_options::options_description{"Dummy Plugin"};
     plugin_options.add_options()

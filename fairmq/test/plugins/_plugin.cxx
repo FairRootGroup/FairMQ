@@ -41,9 +41,9 @@ TEST(Plugin, Operators)
     FairMQProgOptions config{};
     auto device = make_shared<FairMQDevice>();
     PluginServices services{&config, device};
-    auto p1 = Plugin{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
-    auto p2 = Plugin{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
-    auto p3 = Plugin{"file", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/file.git", &services};
+    Plugin p1{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
+    Plugin p2{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
+    Plugin p3{"file", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/file.git", &services};
     EXPECT_EQ(p1, p2);
     EXPECT_NE(p1, p3);
     control(device);
@@ -54,7 +54,7 @@ TEST(Plugin, OstreamOperators)
     FairMQProgOptions config{};
     auto device = make_shared<FairMQDevice>();
     PluginServices services{&config, device};
-    auto p1 = Plugin{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
+    Plugin p1{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
     stringstream ss;
     ss << p1;
     EXPECT_EQ(ss.str(), string{"'dds', version '1.0.0', maintainer 'Foo Bar <foo.bar@test.net>', homepage 'https://git.test.net/dds.git'"});
