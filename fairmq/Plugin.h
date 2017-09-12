@@ -70,6 +70,8 @@ class Plugin
     auto ChangeDeviceState(const DeviceStateTransition next) -> void { fPluginServices->ChangeDeviceState(next); }
     auto SubscribeToDeviceStateChange(std::function<void(DeviceState)> callback) -> void { fPluginServices->SubscribeToDeviceStateChange(fkName, callback); }
     auto UnsubscribeFromDeviceStateChange() -> void { fPluginServices->UnsubscribeFromDeviceStateChange(fkName); }
+    auto TakeControl() -> void { fPluginServices->TakeControl(fkName); };
+    auto ReleaseControl() -> void { fPluginServices->ReleaseControl(fkName); };
 
     // device config API
     // see <fairmq/PluginServices.h> for docs
@@ -97,7 +99,7 @@ class Plugin
 } /* namespace fair */
 
 #define REGISTER_FAIRMQ_PLUGIN(KLASS, NAME, VERSION, MAINTAINER, HOMEPAGE, PROGOPTIONS) \
-static auto Make_##NAME##_Plugin(fair::mq::PluginServices* pluginServices) -> std::shared_ptr<KLASS> \
+static auto Make_##NAME##_Plugin(fair::mq::PluginServices* pluginServices) -> std::shared_ptr<fair::mq::Plugin> \
 { \
     return std::make_shared<KLASS>(std::string{#NAME}, VERSION, std::string{MAINTAINER}, std::string{HOMEPAGE}, pluginServices); \
 } \

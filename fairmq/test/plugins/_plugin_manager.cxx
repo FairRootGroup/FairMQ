@@ -37,11 +37,11 @@ auto control(shared_ptr<FairMQDevice> device) -> void
     }
 }
 
-TEST(PluginManager, LoadPlugin)
+TEST(PluginManager, LoadPluginDynamic)
 {
     FairMQProgOptions config{};
-    auto device = make_shared<FairMQDevice>();
     auto mgr = PluginManager{};
+    auto device = make_shared<FairMQDevice>();
     mgr.EmplacePluginServices(&config, device);
 
     mgr.PrependSearchPath("./lib");
@@ -53,6 +53,31 @@ TEST(PluginManager, LoadPlugin)
 
     // check order
     const auto expected = vector<string>{"test_dummy", "test_dummy2"};
+    auto actual = vector<string>{};
+    mgr.ForEachPlugin([&](Plugin& plugin){ actual.push_back(plugin.GetName()); });
+    ASSERT_TRUE(actual == expected);
+
+    // program options
+    auto count = 0;
+    mgr.ForEachPluginProgOptions([&count](const options_description& d){ ++count; });
+    ASSERT_EQ(count, 1);
+
+    control(device);
+}
+
+TEST(PluginManager, LoadPluginStatic)
+{
+    FairMQProgOptions config{};
+    auto mgr = PluginManager{};
+    auto device = make_shared<FairMQDevice>();
+    mgr.EmplacePluginServices(&config, device);
+
+    ASSERT_NO_THROW(mgr.LoadPlugin("s:control_static"));
+
+    ASSERT_NO_THROW(mgr.InstantiatePlugins());
+
+    // check order
+    const auto expected = vector<string>{"control_static"};
     auto actual = vector<string>{};
     mgr.ForEachPlugin([&](Plugin& plugin){ actual.push_back(plugin.GetName()); });
     ASSERT_TRUE(actual == expected);

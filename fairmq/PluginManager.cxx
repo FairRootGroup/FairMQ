@@ -126,6 +126,11 @@ auto fair::mq::PluginManager::LoadPlugin(const string& pluginName) -> void
         // Mechanism B: dynamic
         LoadPluginDynamic(pluginName.substr(2));
     }
+    else if (pluginName.substr(0,2) == "s:")
+    {
+        // Mechanism C: static (builtin)
+        LoadPluginStatic(pluginName.substr(2));
+    }
     else
     {
         // Mechanism B: dynamic (default)
@@ -141,6 +146,7 @@ auto fair::mq::PluginManager::LoadPluginPrelinkedDynamic(const string& pluginNam
         try
         {
             LoadSymbols(pluginName, dll::program_location());
+            fPluginOrder.push_back(pluginName);
         }
         catch (boost::system::system_error& e)
         {
@@ -178,6 +184,23 @@ auto fair::mq::PluginManager::LoadPluginDynamic(const string& pluginName) -> voi
             }
         }
         if(!success) { throw PluginLoadError(ToString("The plugin ", pluginName, " could not be found in the plugin search paths.")); }
+    }
+}
+
+auto fair::mq::PluginManager::LoadPluginStatic(const string& pluginName) -> void
+{
+    // Load symbol
+    if (fPluginFactories.find(pluginName) == fPluginFactories.end())
+    {
+        try
+        {
+            LoadSymbols(pluginName, dll::program_location());
+            fPluginOrder.push_back(pluginName);
+        }
+        catch (boost::system::system_error& e)
+        {
+            throw PluginLoadError(ToString("An error occurred while loading static plugin ", pluginName, ": ", e.what()));
+        }
     }
 }
 

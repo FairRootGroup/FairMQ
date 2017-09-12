@@ -6,25 +6,6 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <gtest/gtest.h>
-#include <fairmq/PluginManager.h>
-#include <FairMQDevice.h>
-#include <options/FairMQProgOptions.h>
-#include <FairMQLogger.h>
-#include <vector>
+// List of all builtin plugin headers (the ones which call REGISTER_FAIRMQ_PLUGIN macro)
 
-namespace
-{
-
-using namespace fair::mq;
-using namespace std;
-
-TEST(PluginManager, LoadPluginStatic)
-{
-    auto mgr = PluginManager{};
-
-    ASSERT_NO_THROW(mgr.LoadPlugin("p:test_dummy"));
-    ASSERT_NO_THROW(mgr.LoadPlugin("p:test_dummy2"));
-}
-
-} /* namespace */
+#include <fairmq/plugins/ControlStatic.h>

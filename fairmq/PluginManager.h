@@ -11,6 +11,7 @@
 
 #include <fairmq/Plugin.h>
 #include <fairmq/PluginServices.h>
+#include <fairmq/plugins/Builtin.h>
 #include <fairmq/Tools.h>
 #include <FairMQDevice.h>
 #define BOOST_FILESYSTEM_VERSION 3
@@ -27,7 +28,6 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
-#include <tuple>
 #include <vector>
 
 namespace fair
@@ -43,6 +43,7 @@ namespace mq
  * facilitates two plugin mechanisms:
  * A prelinked dynamic plugins (shared libraries)
  * B dynamic plugins (shared libraries)
+ * C static plugins (builtin)
  */
 class PluginManager
 {
@@ -82,6 +83,7 @@ class PluginManager
 
     auto LoadPluginPrelinkedDynamic(const std::string& pluginName) -> void;
     auto LoadPluginDynamic(const std::string& pluginName) -> void;
+    auto LoadPluginStatic(const std::string& pluginName) -> void;
     template<typename... Args>
     auto LoadSymbols(const std::string& pluginName, Args&&... args) -> void
     {

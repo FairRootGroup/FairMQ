@@ -122,10 +122,10 @@ add_testsuite(FairMQ.Plugins
     TIMEOUT 10
 )
 
-add_testsuite(FairMQ.PluginsStatic
+add_testsuite(FairMQ.PluginsPrelinked
     SOURCES
     plugins/runner.cxx
-    plugins/_plugin_manager_static.cxx
+    plugins/_plugin_manager_prelink.cxx
 
     LINKS FairMQ FairMQPlugin_test_dummy FairMQPlugin_test_dummy2
     TIMEOUT 10

@@ -119,6 +119,9 @@ class PluginServices
         });
     }
 
+    auto TakeControl(const std::string& controller) -> void { };
+    auto ReleaseControl(const std::string& controller) -> void { };
+
     /// @brief Unsubscribe from device state changes
     /// @param subscriber id
     auto UnsubscribeFromDeviceStateChange(const std::string& subscriber) -> void { fDevice->UnsubscribeFromStateChange(subscriber); }
