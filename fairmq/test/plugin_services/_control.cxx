@@ -9,7 +9,6 @@
 #include "Fixture.h"
 #include <condition_variable>
 #include <mutex>
-// #include <thread>
 
 namespace
 {
@@ -19,10 +18,36 @@ using fair::mq::test::PluginServices;
 using DeviceState = fair::mq::PluginServices::DeviceState;
 using DeviceStateTransition = fair::mq::PluginServices::DeviceStateTransition;
 
+TEST_F(PluginServices, OnlySingleController)
+{
+    ASSERT_NO_THROW(mServices.TakeDeviceControl("foo"));
+    ASSERT_NO_THROW(mServices.TakeDeviceControl("foo")); // noop
+    ASSERT_THROW( // no control for bar
+        mServices.ChangeDeviceState("bar", DeviceStateTransition::InitDevice),
+        fair::mq::PluginServices::DeviceControlError
+    );
+    ASSERT_THROW( // no control for bar
+        mServices.ReleaseDeviceControl("bar"),
+        fair::mq::PluginServices::DeviceControlError
+    );
+
+    ASSERT_NO_THROW(mServices.ReleaseDeviceControl("foo"));
+    ASSERT_FALSE(mServices.GetDeviceController());
+    // take control implicitely
+    ASSERT_NO_THROW(mServices.ChangeDeviceState("foo", DeviceStateTransition::InitDevice));
+    EXPECT_EQ(mServices.GetDeviceController(), string{"foo"});
+
+    // park device
+    mDevice->WaitForEndOfState(FairMQDevice::DEVICE_READY);
+    mServices.ChangeDeviceState("foo", DeviceStateTransition::ResetDevice);
+    mDevice->WaitForEndOfState(FairMQDevice::RESET_DEVICE);
+    mServices.ChangeDeviceState("foo", DeviceStateTransition::End);
+}
+
 TEST_F(PluginServices, Control)
 {
     ASSERT_EQ(mServices.GetCurrentDeviceState(), DeviceState::Idle);
-    ASSERT_NO_THROW(mServices.ChangeDeviceState(DeviceStateTransition::InitDevice));
+    ASSERT_NO_THROW(mServices.ChangeDeviceState("foo", DeviceStateTransition::InitDevice));
 
     DeviceState nextState;
     condition_variable cv;
@@ -38,16 +63,15 @@ TEST_F(PluginServices, Control)
             mServices.UnsubscribeFromDeviceStateChange("test");
         }
     });
-    {
-        unique_lock<mutex> lock{cv_m};
-        cv.wait(lock);
-    }
+
+    unique_lock<mutex> lock{cv_m};
+    cv.wait(lock);
 
     ASSERT_EQ(mServices.GetCurrentDeviceState(), DeviceState::DeviceReady);
 
-    mServices.ChangeDeviceState(DeviceStateTransition::ResetDevice);
+    mServices.ChangeDeviceState("foo", DeviceStateTransition::ResetDevice);
     mDevice->WaitForEndOfState(FairMQDevice::RESET_DEVICE);
-    mServices.ChangeDeviceState(DeviceStateTransition::End);
+    mServices.ChangeDeviceState("foo", DeviceStateTransition::End);
 }
 
 TEST_F(PluginServices, ControlStateConversions)

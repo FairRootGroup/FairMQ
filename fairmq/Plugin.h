@@ -67,12 +67,11 @@ class Plugin
     auto ToDeviceState(const std::string& state) const -> DeviceState { return fPluginServices->ToDeviceState(state); }
     auto ToStr(DeviceState state) const -> std::string { return fPluginServices->ToStr(state); }
     auto GetCurrentDeviceState() const -> DeviceState { return fPluginServices->GetCurrentDeviceState(); }
-    auto ChangeDeviceState(const DeviceStateTransition next) -> void { fPluginServices->ChangeDeviceState(next); }
+    auto TakeDeviceControl() -> void { fPluginServices->TakeDeviceControl(fkName); };
+    auto ReleaseDeviceControl() -> void { fPluginServices->ReleaseDeviceControl(fkName); };
+    auto ChangeDeviceState(const DeviceStateTransition next) -> void { fPluginServices->ChangeDeviceState(fkName, next); }
     auto SubscribeToDeviceStateChange(std::function<void(DeviceState)> callback) -> void { fPluginServices->SubscribeToDeviceStateChange(fkName, callback); }
     auto UnsubscribeFromDeviceStateChange() -> void { fPluginServices->UnsubscribeFromDeviceStateChange(fkName); }
-    auto TakeControl() -> void { fPluginServices->TakeControl(fkName); };
-    auto ReleaseControl() -> void { fPluginServices->ReleaseControl(fkName); };
-
     // device config API
     // see <fairmq/PluginServices.h> for docs
     template<typename T>

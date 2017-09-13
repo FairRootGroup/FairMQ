@@ -77,6 +77,8 @@ class PluginManager
     template<typename... Args>
     auto EmplacePluginServices(Args&&... args) -> void { fPluginServices = fair::mq::tools::make_unique<PluginServices>(std::forward<Args>(args)...); };
 
+    auto WaitForPluginsToReleaseDeviceControl() -> void { fPluginServices->WaitForReleaseDeviceControl(); }
+
     private:
 
     static auto ValidateSearchPath(const boost::filesystem::path&) -> void;

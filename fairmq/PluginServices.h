@@ -15,6 +15,10 @@
 #include <functional>
 #include <string>
 #include <unordered_map>
+#include <boost/optional.hpp>
+#include <boost/optional/optional_io.hpp>
+#include <mutex>
+#include <condition_variable>
 
 namespace fair
 {
@@ -99,12 +103,34 @@ class PluginServices
     /// @return current device state
     auto GetCurrentDeviceState() const -> DeviceState { return fkDeviceStateMap.at(static_cast<FairMQDevice::State>(fDevice->GetCurrentState())); }
 
+    /// @brief Become device controller
+    /// @param controller id
+    /// @throws fair::mq::PluginServices::DeviceControlError if there is already a device controller.
+    ///
+    /// Only one plugin can succeed to take control over device state transitions at a time.
+    auto TakeDeviceControl(const std::string& controller) -> void;
+    struct DeviceControlError : std::runtime_error { using std::runtime_error::runtime_error; };
+
+    /// @brief Release device controller role
+    /// @param controller id
+    /// @throws fair::mq::PluginServices::DeviceControlError if passed controller id is not the current device controller.
+    auto ReleaseDeviceControl(const std::string& controller) -> void;
+
+    /// @brief Get current device controller
+    auto GetDeviceController() const -> boost::optional<std::string>;
+
+    /// @brief Block until control is released
+    auto WaitForReleaseDeviceControl() -> void;
+
     /// @brief Request a device state transition
+    /// @param controller id
     /// @param next state transition
+    /// @throws fair::mq::PluginServices::DeviceControlError if control role is not currently owned by passed controller id.
     ///
     /// The state transition may not happen immediately, but when the current state evaluates the
     /// pending transition event and terminates. In other words, the device states are scheduled cooperatively.
-    auto ChangeDeviceState(const DeviceStateTransition next) -> void { fDevice->ChangeState(fkDeviceStateTransitionMap.at(next)); }
+    /// If the device control role has not been taken yet, calling this function will take over control implicitely.
+    auto ChangeDeviceState(const std::string& controller, const DeviceStateTransition next) -> void;
 
     /// @brief Subscribe with a callback to device state changes
     /// @param subscriber id
@@ -118,9 +144,6 @@ class PluginServices
             callback(fkDeviceStateMap.at(newState));
         });
     }
-
-    auto TakeControl(const std::string& controller) -> void { };
-    auto ReleaseControl(const std::string& controller) -> void { };
 
     /// @brief Unsubscribe from device state changes
     /// @param subscriber id
@@ -202,6 +225,9 @@ class PluginServices
 
     FairMQProgOptions* fConfig; // TODO make it a shared pointer, once old AliceO2 code is cleaned up
     std::shared_ptr<FairMQDevice> fDevice;
+    boost::optional<std::string> fDeviceController;
+    mutable std::mutex fDeviceControllerMutex;
+    std::condition_variable fReleaseDeviceControlCondition;
 }; /* class PluginServices */
 
 } /* namespace mq */

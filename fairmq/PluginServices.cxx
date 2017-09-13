@@ -9,6 +9,7 @@
 #include <fairmq/PluginServices.h>
 
 using namespace fair::mq;
+using namespace std;
 
 const std::unordered_map<std::string, PluginServices::DeviceState> PluginServices::fkDeviceStateStrMap = {
     {"OK",                  DeviceState::Ok},
@@ -85,3 +86,78 @@ const std::unordered_map<PluginServices::DeviceStateTransition, FairMQDevice::Ev
     {DeviceStateTransition::End,         FairMQDevice::END},
     {DeviceStateTransition::ErrorFound,  FairMQDevice::ERROR_FOUND}
 };
+
+auto PluginServices::ChangeDeviceState(const std::string& controller, const DeviceStateTransition next) -> void
+{
+    lock_guard<mutex> lock{fDeviceControllerMutex};
+
+    if(!fDeviceController) fDeviceController = controller;
+
+    if(fDeviceController == controller)
+    {
+        fDevice->ChangeState(fkDeviceStateTransitionMap.at(next));
+    }
+    else
+    {
+        throw DeviceControlError{tools::ToString(
+            "Plugin ", controller, " is not allowed to change device states. ",
+            "Currently, plugin ", fDeviceController, " has taken control."
+        )};
+    }
+}
+
+auto PluginServices::TakeDeviceControl(const std::string& controller) -> void
+{
+    lock_guard<mutex> lock{fDeviceControllerMutex};
+
+    if(!fDeviceController)
+    {
+        fDeviceController = controller;
+    }
+    else if(fDeviceController == controller)
+    {
+        // nothing to do
+    }
+    else
+    {
+        throw DeviceControlError{tools::ToString(
+            "Plugin ", controller, " is not allowed to take over control. ",
+            "Currently, plugin ", fDeviceController, " has taken control."
+        )};
+    }
+
+}
+
+auto PluginServices::ReleaseDeviceControl(const std::string& controller) -> void
+{
+    {
+        lock_guard<mutex> lock{fDeviceControllerMutex};
+
+        if(fDeviceController == controller)
+        {
+            fDeviceController = boost::none;
+        }
+        else
+        {
+            throw DeviceControlError{tools::ToString(
+                "Plugin ", controller, " cannot release control because it has not taken over control."
+            )};
+        }
+    }
+
+    fReleaseDeviceControlCondition.notify_one();
+}
+
+auto PluginServices::GetDeviceController() const -> boost::optional<std::string>
+{
+    lock_guard<mutex> lock{fDeviceControllerMutex};
+
+    return fDeviceController;
+}
+
+auto PluginServices::WaitForReleaseDeviceControl() -> void
+{
+    unique_lock<mutex> lock{fDeviceControllerMutex};
+
+    fReleaseDeviceControlCondition.wait(lock, [&]{ return !GetDeviceController(); });
+}
