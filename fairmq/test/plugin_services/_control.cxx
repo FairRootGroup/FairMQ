@@ -34,6 +34,7 @@ TEST_F(PluginServices, OnlySingleController)
     ASSERT_NO_THROW(mServices.ReleaseDeviceControl("foo"));
     ASSERT_FALSE(mServices.GetDeviceController());
     // take control implicitely
+    ASSERT_NO_THROW(mServices.TakeDeviceControl("foo"));
     ASSERT_NO_THROW(mServices.ChangeDeviceState("foo", DeviceStateTransition::InitDevice));
     EXPECT_EQ(mServices.GetDeviceController(), string{"foo"});
 
@@ -47,6 +48,7 @@ TEST_F(PluginServices, OnlySingleController)
 TEST_F(PluginServices, Control)
 {
     ASSERT_EQ(mServices.GetCurrentDeviceState(), DeviceState::Idle);
+    ASSERT_NO_THROW(mServices.TakeDeviceControl("foo"));
     ASSERT_NO_THROW(mServices.ChangeDeviceState("foo", DeviceStateTransition::InitDevice));
 
     DeviceState nextState;

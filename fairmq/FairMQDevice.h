@@ -383,7 +383,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         }
     }
 
-
     template<class T>
     void OnData(const std::string& channelName, bool (T::* memberFunction)(FairMQParts& parts, int index))
     {
@@ -410,7 +409,10 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         }
     }
 
-    bool Terminated();
+    bool Terminated()
+    {
+        return fTerminationRequested;
+    }
 
     const FairMQChannel& GetChannel(const std::string& channelName, const int index = 0) const;
 
@@ -572,7 +574,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// Signal handler
     void SignalHandler(int signal);
     bool fCatchingSignals;
-    bool fTerminationRequested;
+    std::atomic<bool> fTerminationRequested;
     // Interactive state loop helper
     std::atomic<bool> fInteractiveRunning;
 

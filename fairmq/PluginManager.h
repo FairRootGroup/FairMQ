@@ -47,8 +47,7 @@ namespace mq
  */
 class PluginManager
 {
-    public:
-
+  public:
     using PluginFactory = std::shared_ptr<fair::mq::Plugin>(PluginServices&);
 
     PluginManager();
@@ -79,8 +78,7 @@ class PluginManager
 
     auto WaitForPluginsToReleaseDeviceControl() -> void { fPluginServices->WaitForReleaseDeviceControl(); }
 
-    private:
-
+  private:
     static auto ValidateSearchPath(const boost::filesystem::path&) -> void;
 
     auto LoadPluginPrelinkedDynamic(const std::string& pluginName) -> void;
@@ -118,7 +116,6 @@ class PluginManager
     std::vector<std::string> fPluginOrder;
     std::map<std::string, boost::program_options::options_description> fPluginProgOptions;
     std::unique_ptr<PluginServices> fPluginServices;
-    
 }; /* class PluginManager */
 
 } /* namespace mq */

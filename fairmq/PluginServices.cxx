@@ -91,9 +91,9 @@ auto PluginServices::ChangeDeviceState(const std::string& controller, const Devi
 {
     // lock_guard<mutex> lock{fDeviceControllerMutex};
     //
-    // if(!fDeviceController) fDeviceController = controller;
+    // if (!fDeviceController) fDeviceController = controller;
 
-    if(fDeviceController == controller)
+    if (fDeviceController == controller)
     {
         fDevice->ChangeState(fkDeviceStateTransitionMap.at(next));
     }
@@ -110,11 +110,11 @@ auto PluginServices::TakeDeviceControl(const std::string& controller) -> void
 {
     lock_guard<mutex> lock{fDeviceControllerMutex};
 
-    if(!fDeviceController)
+    if (!fDeviceController)
     {
         fDeviceController = controller;
     }
-    else if(fDeviceController == controller)
+    else if (fDeviceController == controller)
     {
         // nothing to do
     }
@@ -133,15 +133,13 @@ auto PluginServices::ReleaseDeviceControl(const std::string& controller) -> void
     {
         lock_guard<mutex> lock{fDeviceControllerMutex};
 
-        if(fDeviceController == controller)
+        if (fDeviceController == controller)
         {
             fDeviceController = boost::none;
         }
         else
         {
-            throw DeviceControlError{tools::ToString(
-                "Plugin ", controller, " cannot release control because it has not taken over control."
-            )};
+            throw DeviceControlError{tools::ToString("Plugin ", controller, " cannot release control because it has not taken over control.")};
         }
     }
 
@@ -159,7 +157,7 @@ auto PluginServices::WaitForReleaseDeviceControl() -> void
 {
     unique_lock<mutex> lock{fDeviceControllerMutex};
 
-    while(GetDeviceController())
+    while (fDeviceController)
     {
         fReleaseDeviceControlCondition.wait(lock);
     }

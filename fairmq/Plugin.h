@@ -34,8 +34,7 @@ namespace mq
  */
 class Plugin
 {
-    public:
-    
+  public:
     using ProgOptions = boost::optional<boost::program_options::options_description>;
 
     using Version = tools::Version;
@@ -72,6 +71,7 @@ class Plugin
     auto ChangeDeviceState(const DeviceStateTransition next) -> void { fPluginServices->ChangeDeviceState(fkName, next); }
     auto SubscribeToDeviceStateChange(std::function<void(DeviceState)> callback) -> void { fPluginServices->SubscribeToDeviceStateChange(fkName, callback); }
     auto UnsubscribeFromDeviceStateChange() -> void { fPluginServices->UnsubscribeFromDeviceStateChange(fkName); }
+    auto DeviceTerminated() const -> bool { return fPluginServices->DeviceTerminated(); }
     // device config API
     // see <fairmq/PluginServices.h> for docs
     template<typename T>
@@ -84,8 +84,7 @@ class Plugin
     // template<typename T>
     // auto UnsubscribeFromPropertyChange() -> void { fPluginServices.UnsubscribeFromPropertyChange<T>(fkName); }
 
-    private:
-
+  private:
     const std::string fkName;
     const Version fkVersion;
     const std::string fkMaintainer;

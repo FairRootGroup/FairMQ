@@ -16,7 +16,6 @@
 
 #include <vector>
 #include <chrono>
-#include <thread>
 
 #include "../FairMQLogger.h"
 #include "../options/FairMQProgOptions.h"
@@ -30,6 +29,7 @@ FairMQBenchmarkSampler::FairMQBenchmarkSampler()
     , fMsgRate(1)
     , fNumMsgs(0)
     , fOutChannelName()
+    , fResetMsgCounter()
 {
 }
 
@@ -46,10 +46,13 @@ void FairMQBenchmarkSampler::InitTask()
     fOutChannelName = fConfig->GetValue<string>("out-channel");
 }
 
+void FairMQBenchmarkSampler::PreRun()
+{
+    fResetMsgCounter = std::thread(&FairMQBenchmarkSampler::ResetMsgCounter, this);
+}
+
 void FairMQBenchmarkSampler::Run()
 {
-    std::thread resetMsgCounter(&FairMQBenchmarkSampler::ResetMsgCounter, this);
-
     uint64_t numSentMsgs = 0;
 
     // store the channel reference to avoid traversing the map on every loop iteration
@@ -108,7 +111,11 @@ void FairMQBenchmarkSampler::Run()
 
     LOG(INFO) << "Leaving RUNNING state. Sent " << numSentMsgs << " messages in " << chrono::duration<double, milli>(tEnd - tStart).count() << "ms.";
 
-    resetMsgCounter.join();
+}
+
+void FairMQBenchmarkSampler::PostRun()
+{
+    fResetMsgCounter.join();
 }
 
 void FairMQBenchmarkSampler::ResetMsgCounter()

@@ -16,6 +16,7 @@
 #define FAIRMQBENCHMARKSAMPLER_H_
 
 #include <string>
+#include <thread>
 
 #include "FairMQDevice.h"
 
@@ -29,6 +30,9 @@ class FairMQBenchmarkSampler : public FairMQDevice
     FairMQBenchmarkSampler();
     virtual ~FairMQBenchmarkSampler();
 
+    void PreRun() override;
+    void PostRun() override;
+
     void ResetMsgCounter();
 
   protected:
@@ -38,6 +42,7 @@ class FairMQBenchmarkSampler : public FairMQDevice
     int fMsgRate;
     uint64_t fNumMsgs;
     std::string fOutChannelName;
+    std::thread fResetMsgCounter;
 
     virtual void InitTask();
     virtual void Run();

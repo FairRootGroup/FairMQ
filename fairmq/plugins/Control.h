@@ -10,10 +10,12 @@
 #define FAIR_MQ_PLUGINS_CONTROL
 
 #include <fairmq/Plugin.h>
+
 #include <condition_variable>
 #include <mutex>
 #include <string>
 #include <queue>
+#include <thread>
 
 namespace fair
 {
@@ -24,26 +26,21 @@ namespace plugins
 
 class Control : public Plugin
 {
-    public:
+  public:
+    Control(const std::string name, const Plugin::Version version, const std::string maintainer, const std::string homepage, PluginServices* pluginServices);
 
-    Control(
-        const std::string name,
-        const Plugin::Version version,
-        const std::string maintainer,
-        const std::string homepage,
-        PluginServices* pluginServices
-    );
+    ~Control();
 
-    private:
-
+  private:
     auto InteractiveMode() -> void;
+    auto PrintInteractiveHelp() -> void;
     auto StaticMode() -> void;
     auto WaitForNextState() -> DeviceState;
-    
+
+    std::thread fControllerThread;
     std::queue<DeviceState> fEvents;
     std::mutex fEventsMutex;
     std::condition_variable fNewEvent;
-
 }; /* class Control */
 
 auto ControlPluginProgramOptions() -> Plugin::ProgOptions;

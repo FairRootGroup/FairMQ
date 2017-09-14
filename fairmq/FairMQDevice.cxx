@@ -1265,11 +1265,6 @@ void FairMQDevice::Reset()
     }
 }
 
-bool FairMQDevice::Terminated()
-{
-    return fTerminationRequested;
-}
-
 const FairMQChannel& FairMQDevice::GetChannel(const std::string& channelName, const int index) const
 {
     return fChannels.at(channelName).at(index);

@@ -34,12 +34,11 @@ namespace mq
  */
 class PluginServices
 {
-    public:
-
+  public:
     PluginServices() = delete;
     PluginServices(FairMQProgOptions* config, std::shared_ptr<FairMQDevice> device)
-    : fDevice{device}
-    , fConfig{config}
+        : fDevice{device}
+        , fConfig{config}
     {
     }
 
@@ -77,24 +76,24 @@ class PluginServices
 
     /// @brief Convert string to DeviceState
     /// @param state to convert
-    /// @return DeviceState enum entry 
+    /// @return DeviceState enum entry
     /// @throw std::out_of_range if a string cannot be resolved to a DeviceState
     static auto ToDeviceState(const std::string& state) -> DeviceState { return fkDeviceStateStrMap.at(state); }
 
     /// @brief Convert string to DeviceStateTransition
     /// @param transition to convert
-    /// @return DeviceStateTransition enum entry 
+    /// @return DeviceStateTransition enum entry
     /// @throw std::out_of_range if a string cannot be resolved to a DeviceStateTransition
     static auto ToDeviceStateTransition(const std::string& transition) -> DeviceStateTransition { return fkDeviceStateTransitionStrMap.at(transition); }
 
     /// @brief Convert DeviceState to string
     /// @param state to convert
-    /// @return string representation of DeviceState enum entry 
+    /// @return string representation of DeviceState enum entry
     static auto ToStr(DeviceState state) -> std::string { return fkStrDeviceStateMap.at(state); }
 
     /// @brief Convert DeviceStateTransition to string
     /// @param transition to convert
-    /// @return string representation of DeviceStateTransition enum entry 
+    /// @return string representation of DeviceStateTransition enum entry
     static auto ToStr(DeviceStateTransition transition) -> std::string { return fkStrDeviceStateTransitionMap.at(transition); }
 
     friend auto operator<<(std::ostream& os, const DeviceState& state) -> std::ostream& { return os << ToStr(state); }
@@ -149,6 +148,7 @@ class PluginServices
     /// @param subscriber id
     auto UnsubscribeFromDeviceStateChange(const std::string& subscriber) -> void { fDevice->UnsubscribeFromStateChange(subscriber); }
 
+    auto DeviceTerminated() const -> bool { return fDevice->Terminated(); }
 
     // Config API
 
@@ -186,7 +186,7 @@ class PluginServices
     /// @brief Read config property as string
     /// @param key
     /// @return config property value converted to string
-    /// 
+    ///
     /// If a type is not supported, the user can provide support by overloading the ostream operator for this type
     auto GetPropertyAsString(const std::string& key) const -> std::string { return fConfig->GetStringValue(key); }
 
@@ -221,8 +221,7 @@ class PluginServices
     static const std::unordered_map<FairMQDevice::State, DeviceState, tools::HashEnum<FairMQDevice::State>> fkDeviceStateMap;
     static const std::unordered_map<DeviceStateTransition, FairMQDevice::Event, tools::HashEnum<DeviceStateTransition>> fkDeviceStateTransitionMap;
 
-    private:
-
+  private:
     FairMQProgOptions* fConfig; // TODO make it a shared pointer, once old AliceO2 code is cleaned up
     std::shared_ptr<FairMQDevice> fDevice;
     boost::optional<std::string> fDeviceController;

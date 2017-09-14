@@ -72,12 +72,14 @@ TEST(PluginManager, LoadPluginStatic)
     auto device = make_shared<FairMQDevice>();
     mgr.EmplacePluginServices(&config, device);
 
-    ASSERT_NO_THROW(mgr.LoadPlugin("s:control_static"));
+    device->SetTransport("zeromq");
+
+    ASSERT_NO_THROW(mgr.LoadPlugin("s:control"));
 
     ASSERT_NO_THROW(mgr.InstantiatePlugins());
 
     // check order
-    const auto expected = vector<string>{"control_static"};
+    const auto expected = vector<string>{"control"};
     auto actual = vector<string>{};
     mgr.ForEachPlugin([&](Plugin& plugin){ actual.push_back(plugin.GetName()); });
     ASSERT_TRUE(actual == expected);
@@ -87,7 +89,7 @@ TEST(PluginManager, LoadPluginStatic)
     mgr.ForEachPluginProgOptions([&count](const options_description& d){ ++count; });
     ASSERT_EQ(count, 1);
 
-    control(device);
+    mgr.WaitForPluginsToReleaseDeviceControl();
 }
 
 TEST(PluginManager, Factory)

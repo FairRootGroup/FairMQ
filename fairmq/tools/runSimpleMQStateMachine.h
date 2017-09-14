@@ -27,20 +27,11 @@ inline int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
     std::string config = cfg.GetValue<std::string>("config");
     std::string control = cfg.GetValue<std::string>("control");
 
-    std::clock_t cStart = std::clock();
-    auto tStart = std::chrono::high_resolution_clock::now();
-
     device.ChangeState(TMQDevice::INIT_DEVICE);
     // Wait for the binding channels to bind
     device.WaitForInitialValidation();
 
     device.WaitForEndOfState(TMQDevice::INIT_DEVICE);
-
-    std::clock_t cEnd = std::clock();
-    auto tEnd = std::chrono::high_resolution_clock::now();
-
-    LOG(DEBUG) << "Init time (CPU) : " << std::fixed << std::setprecision(2) << 1000.0 * (cEnd - cStart) / CLOCKS_PER_SEC << " ms";
-    LOG(DEBUG) << "Init time (Wall): " << std::chrono::duration<double, std::milli>(tEnd - tStart).count() << " ms";
 
     device.ChangeState(TMQDevice::INIT_TASK);
     device.WaitForEndOfState(TMQDevice::INIT_TASK);

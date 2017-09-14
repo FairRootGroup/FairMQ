@@ -54,10 +54,10 @@ int main(int argc, const char** argv)
         // Create plugin manager and load command line supplied plugins
         // Plugin manager needs to be destroyed after config! TODO Investigate why
         auto pluginManager = fair::mq::PluginManager::MakeFromCommandLineOptions(fair::mq::tools::ToStrVector(argc, argv));
-        
+
         // Load builtin plugins last
         pluginManager->LoadPlugin("s:control");
-        
+
         // Construct command line options parser
         FairMQProgOptions config;
         config.AddToCmdLineOptions(customOptions);
@@ -76,7 +76,7 @@ int main(int argc, const char** argv)
             LOG(ERROR) << "getDevice(): no valid device provided. Exiting.";
             return 1;
         }
-    
+
         // Handle --print-channels
         device->RegisterChannelEndpoints();
         if (config.Count("print-channels"))
@@ -117,9 +117,7 @@ int main(int argc, const char** argv)
         pluginManager->InstantiatePlugins();
 
         // Wait for control plugin to release device control
-    LOG(ERROR) << "1";
         pluginManager->WaitForPluginsToReleaseDeviceControl();
-    LOG(ERROR) << "2";
     }
     catch (std::exception& e)
     {
