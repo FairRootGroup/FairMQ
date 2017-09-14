@@ -24,35 +24,6 @@
 template<typename TMQDevice>
 inline int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
 {
-    device.RegisterChannelEndpoints();
-    if (cfg.Count("print-channels"))
-    {
-        device.PrintRegisteredChannels();
-        device.ChangeState(TMQDevice::END);
-        return 0;
-    }
-
-    if (cfg.Count("version"))
-    {
-        std::cout << "User device version: " << device.GetVersion() << std::endl;
-        std::cout << "FAIRMQ_INTERFACE_VERSION: " << FAIRMQ_INTERFACE_VERSION << std::endl;
-
-        device.ChangeState(TMQDevice::END);
-        return 0;
-    }
-
-    if (cfg.GetValue<int>("catch-signals") > 0)
-    {
-        device.CatchSignals();
-    }
-    else
-    {
-        LOG(WARN) << "Signal handling (e.g. ctrl+C) has been deactivated via command line argument";
-    }
-
-    LOG(DEBUG) << "PID: " << getpid();
-
-    device.SetConfig(cfg);
     std::string config = cfg.GetValue<std::string>("config");
     std::string control = cfg.GetValue<std::string>("control");
 

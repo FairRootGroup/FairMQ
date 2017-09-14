@@ -89,9 +89,9 @@ const std::unordered_map<PluginServices::DeviceStateTransition, FairMQDevice::Ev
 
 auto PluginServices::ChangeDeviceState(const std::string& controller, const DeviceStateTransition next) -> void
 {
-    lock_guard<mutex> lock{fDeviceControllerMutex};
-
-    if(!fDeviceController) fDeviceController = controller;
+    // lock_guard<mutex> lock{fDeviceControllerMutex};
+    //
+    // if(!fDeviceController) fDeviceController = controller;
 
     if(fDeviceController == controller)
     {
@@ -159,5 +159,8 @@ auto PluginServices::WaitForReleaseDeviceControl() -> void
 {
     unique_lock<mutex> lock{fDeviceControllerMutex};
 
-    fReleaseDeviceControlCondition.wait(lock, [&]{ return !GetDeviceController(); });
+    while(GetDeviceController())
+    {
+        fReleaseDeviceControlCondition.wait(lock);
+    }
 }

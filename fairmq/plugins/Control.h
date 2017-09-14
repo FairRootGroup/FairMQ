@@ -6,11 +6,14 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIR_MQ_PLUGINS_CONTROLSTATIC
-#define FAIR_MQ_PLUGINS_CONTROLSTATIC
+#ifndef FAIR_MQ_PLUGINS_CONTROL
+#define FAIR_MQ_PLUGINS_CONTROL
 
 #include <fairmq/Plugin.h>
+#include <condition_variable>
+#include <mutex>
 #include <string>
+#include <queue>
 
 namespace fair
 {
@@ -19,28 +22,39 @@ namespace mq
 namespace plugins
 {
 
-class ControlStatic : public Plugin
+class Control : public Plugin
 {
     public:
 
-    ControlStatic(
+    Control(
         const std::string name,
         const Plugin::Version version,
         const std::string maintainer,
         const std::string homepage,
         PluginServices* pluginServices
     );
-}; /* class ControlStatic */
 
-auto ControlStaticPluginProgramOptions() -> Plugin::ProgOptions;
+    private:
+
+    auto InteractiveMode() -> void;
+    auto StaticMode() -> void;
+    auto WaitForNextState() -> DeviceState;
+    
+    std::queue<DeviceState> fEvents;
+    std::mutex fEventsMutex;
+    std::condition_variable fNewEvent;
+
+}; /* class Control */
+
+auto ControlPluginProgramOptions() -> Plugin::ProgOptions;
 
 REGISTER_FAIRMQ_PLUGIN(
-    ControlStatic,                               // Class name
-    control_static,                              // Plugin name (string, lower case chars only)
+    Control,                                     // Class name
+    control,                                     // Plugin name (string, lower case chars only)
     (Plugin::Version{1,0,0}),                    // Version
     "FairRootGroup <fairroot@gsi.de>",           // Maintainer
     "https://github.com/FairRootGroup/FairRoot", // Homepage
-    ControlStaticPluginProgramOptions            // Free function which declares custom program options for the plugin
+    ControlPluginProgramOptions                  // Free function which declares custom program options for the plugin
                                                  // signature: () -> boost::optional<boost::program_options::options_description>
 )
 
@@ -48,4 +62,4 @@ REGISTER_FAIRMQ_PLUGIN(
 } /* namespace mq */
 } /* namespace fair */
 
-#endif /* FAIR_MQ_PLUGINS_CONTROLSTATIC */
+#endif /* FAIR_MQ_PLUGINS_CONTROL */

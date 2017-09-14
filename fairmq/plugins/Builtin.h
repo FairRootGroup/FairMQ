@@ -8,4 +8,4 @@
 
 // List of all builtin plugin headers (the ones which call REGISTER_FAIRMQ_PLUGIN macro)
 
-#include <fairmq/plugins/ControlStatic.h>
+#include <fairmq/plugins/Control.h>

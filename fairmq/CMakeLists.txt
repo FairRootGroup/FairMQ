@@ -86,7 +86,7 @@ set(FAIRMQ_HEADER_FILES
     PluginManager.h
     PluginServices.h
     plugins/Builtin.h
-    plugins/ControlStatic.h
+    plugins/Control.h
     runFairMQDevice.h
     shmem/FairMQMessageSHM.h
     shmem/FairMQPollerSHM.h
@@ -148,7 +148,7 @@ set(FAIRMQ_SOURCE_FILES
     Plugin.cxx
     PluginManager.cxx
     PluginServices.cxx
-    plugins/ControlStatic.cxx
+    plugins/Control.cxx
     shmem/FairMQMessageSHM.cxx
     shmem/FairMQPollerSHM.cxx
     shmem/FairMQRegionSHM.cxx

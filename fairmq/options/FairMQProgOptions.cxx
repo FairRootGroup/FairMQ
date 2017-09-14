@@ -17,6 +17,7 @@
 #include "FairMQParser.h"
 #include "FairMQSuboptParser.h"
 #include "FairMQLogger.h"
+#include <iostream>
 
 using namespace std;
 
@@ -294,7 +295,7 @@ int FairMQProgOptions::NotifySwitchOption()
 {
     if (fVarMap.count("help"))
     {
-        LOG(INFO) << fHelpTitle << "\n" << fVisibleOptions;
+        std::cout << fHelpTitle << std::endl << fVisibleOptions;
         return 1;
     }
 

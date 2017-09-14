@@ -9,10 +9,12 @@
 #include <FairMQLogger.h>
 #include <options/FairMQProgOptions.h>
 #include <FairMQDevice.h>
-#include <tools/runSimpleMQStateMachine.h>
 #include <fairmq/PluginManager.h>
+#include <fairmq/Tools.h>
 #include <boost/program_options.hpp>
 #include <memory>
+#include <string>
+#include <iostream>
 
 template <typename R>
 class GenericFairMQDevice : public FairMQDevice
@@ -45,43 +47,79 @@ int main(int argc, const char** argv)
 {
     try
     {
+        // Call custom program options hook
         boost::program_options::options_description customOptions("Custom options");
         addCustomOptions(customOptions);
 
-        // Plugin manager needs to be destroyed after config !
-        // TODO Investigate, why
+        // Create plugin manager and load command line supplied plugins
+        // Plugin manager needs to be destroyed after config! TODO Investigate why
         auto pluginManager = fair::mq::PluginManager::MakeFromCommandLineOptions(fair::mq::tools::ToStrVector(argc, argv));
+        
+        // Load builtin plugins last
+        pluginManager->LoadPlugin("s:control");
+        
+        // Construct command line options parser
         FairMQProgOptions config;
         config.AddToCmdLineOptions(customOptions);
-
         pluginManager->ForEachPluginProgOptions([&config](boost::program_options::options_description options){
             config.AddToCmdLineOptions(options);
         });
         config.AddToCmdLineOptions(pluginManager->ProgramOptions());
 
+        // Parse command line options
         config.ParseAll(argc, argv, true);
 
+        // Call device creation hook
         std::shared_ptr<FairMQDevice> device{getDevice(config)};
         if (!device)
         {
             LOG(ERROR) << "getDevice(): no valid device provided. Exiting.";
             return 1;
         }
+    
+        // Handle --print-channels
+        device->RegisterChannelEndpoints();
+        if (config.Count("print-channels"))
+        {
+            device->PrintRegisteredChannels();
+            device->ChangeState(FairMQDevice::END);
+            return 0;
+        }
 
-        pluginManager->EmplacePluginServices(&config, device);
-        pluginManager->InstantiatePlugins();
-
-        int result = runStateMachine(*device, config);
-
+        // Handle --version
         if (config.Count("version"))
         {
-            pluginManager->ForEachPlugin([](fair::mq::Plugin& plugin){ std::cout << "plugin: " << plugin << std::endl; });
+            std::cout << "User device version: " << device->GetVersion() << std::endl;
+            std::cout << "FAIRMQ_INTERFACE_VERSION: " << FAIRMQ_INTERFACE_VERSION << std::endl;
+            device->ChangeState(FairMQDevice::END);
+            return 0;
         }
 
-        if (result > 0)
+        // Handle --catch-signals
+        if (config.GetValue<int>("catch-signals") > 0)
         {
-            return 1;
+            device->CatchSignals();
         }
+        else
+        {
+            LOG(WARN) << "Signal handling (e.g. ctrl+C) has been deactivated via command line argument";
+        }
+
+        LOG(DEBUG) << "PID: " << getpid();
+
+        // Configure device
+        device->SetConfig(config);
+
+        // Initialize plugin services
+        pluginManager->EmplacePluginServices(&config, device);
+
+        // Instantiate and run plugins
+        pluginManager->InstantiatePlugins();
+
+        // Wait for control plugin to release device control
+    LOG(ERROR) << "1";
+        pluginManager->WaitForPluginsToReleaseDeviceControl();
+    LOG(ERROR) << "2";
     }
     catch (std::exception& e)
     {
