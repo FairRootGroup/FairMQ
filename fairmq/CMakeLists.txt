@@ -29,6 +29,14 @@
 #
 #
 
+####################
+# external plugins #
+####################
+if (DDS_FOUND)
+    add_subdirectory(plugins/DDS)
+endif()
+
+
 ############################
 # preprocessor definitions #
 ############################

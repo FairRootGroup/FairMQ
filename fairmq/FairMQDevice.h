@@ -409,11 +409,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
         }
     }
 
-    bool Terminated()
-    {
-        return fTerminationRequested;
-    }
-
     const FairMQChannel& GetChannel(const std::string& channelName, const int index = 0) const;
 
     virtual void RegisterChannelEndpoints() {}
@@ -549,7 +544,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     void Exit();
 
     /// Attach (bind/connect) channels in the list
-    void AttachChannels(std::list<FairMQChannel*>& chans);
+    void AttachChannels(std::vector<FairMQChannel*>& chans);
 
     /// Sets up and connects/binds a socket to an endpoint
     /// return a string with the actual endpoint if it happens
@@ -574,7 +569,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// Signal handler
     void SignalHandler(int signal);
     bool fCatchingSignals;
-    std::atomic<bool> fTerminationRequested;
     // Interactive state loop helper
     std::atomic<bool> fInteractiveRunning;
 

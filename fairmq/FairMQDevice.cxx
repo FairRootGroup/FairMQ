@@ -62,7 +62,6 @@ FairMQDevice::FairMQDevice()
     , fDefaultTransport()
     , fInitializationTimeoutInS(120)
     , fCatchingSignals(false)
-    , fTerminationRequested(false)
     , fInteractiveRunning(false)
     , fDataCallbacks(false)
     , fDeviceCmdSockets()
@@ -94,7 +93,6 @@ FairMQDevice::FairMQDevice(const fair::mq::tools::Version version)
     , fDefaultTransport()
     , fInitializationTimeoutInS(120)
     , fCatchingSignals(false)
-    , fTerminationRequested(false)
     , fInteractiveRunning(false)
     , fDataCallbacks(false)
     , fDeviceCmdSockets()
@@ -151,33 +149,6 @@ void FairMQDevice::SignalHandler(int signal)
     }
 }
 
-void FairMQDevice::AttachChannels(list<FairMQChannel*>& chans)
-{
-    auto itr = chans.begin();
-
-    while (itr != chans.end())
-    {
-        if ((*itr)->ValidateChannel())
-        {
-            if (AttachChannel(**itr))
-            {
-                (*itr)->InitCommandInterface();
-                (*itr)->SetModified(false);
-                chans.erase(itr++);
-            }
-            else
-            {
-                LOG(ERROR) << "failed to attach channel " << (*itr)->fName << " (" << (*itr)->fMethod << ")";
-                ++itr;
-            }
-        }
-        else
-        {
-            ++itr;
-        }
-    }
-}
-
 void FairMQDevice::InitWrapper()
 {
     if (!fTransportFactory)
@@ -203,13 +174,13 @@ void FairMQDevice::InitWrapper()
     }
 
     // Containers to store the uninitialized channels.
-    list<FairMQChannel*> uninitializedBindingChannels;
-    list<FairMQChannel*> uninitializedConnectingChannels;
+    vector<FairMQChannel*> uninitializedBindingChannels;
+    vector<FairMQChannel*> uninitializedConnectingChannels;
 
     // Fill the uninitialized channel containers
-    for (auto mi = fChannels.begin(); mi != fChannels.end(); ++mi)
+    for (auto& mi : fChannels)
     {
-        for (auto vi = (mi->second).begin(); vi != (mi->second).end(); ++vi)
+        for (auto vi = mi.second.begin(); vi != mi.second.end(); ++vi)
         {
             if (vi->fModified)
             {
@@ -224,9 +195,7 @@ void FairMQDevice::InitWrapper()
                     vi->fChannelCmdSocket = nullptr;
                 }
                 // set channel name: name + vector index
-                stringstream ss;
-                ss << mi->first << "[" << vi - (mi->second).begin() << "]";
-                vi->fName = ss.str();
+                vi->fName = fair::mq::tools::ToString(mi.first, "[", vi - (mi.second).begin(), "]");
 
                 if (vi->fMethod == "bind")
                 {
@@ -256,12 +225,11 @@ void FairMQDevice::InitWrapper()
                 else
                 {
                     LOG(ERROR) << "Cannot update configuration. Socket method (bind/connect) not specified.";
-                    exit(EXIT_FAILURE);
+                    throw runtime_error("Cannot update configuration. Socket method (bind/connect) not specified.");
                 }
             }
         }
     }
-    CallStateChangeCallbacks(INITIALIZING_DEVICE);
 
     // Bind channels. Here one run is enough, because bind settings should be available locally
     // If necessary this could be handled in the same way as the connecting channels
@@ -270,8 +238,10 @@ void FairMQDevice::InitWrapper()
     if (uninitializedBindingChannels.size() > 0)
     {
         LOG(ERROR) << uninitializedBindingChannels.size() << " of the binding channels could not initialize. Initial configuration incomplete.";
-        exit(EXIT_FAILURE);
+        throw runtime_error(fair::mq::tools::ToString(uninitializedBindingChannels.size(), " of the binding channels could not initialize. Initial configuration incomplete."));
     }
+
+    CallStateChangeCallbacks(INITIALIZING_DEVICE);
 
     // notify parent thread about completion of first validation.
     {
@@ -281,21 +251,36 @@ void FairMQDevice::InitWrapper()
     }
 
     // go over the list of channels until all are initialized (and removed from the uninitialized list)
-    int numAttempts = 0;
+    int numAttempts = 1;
     auto sleepTimeInMS = 50;
     auto maxAttempts = fInitializationTimeoutInS * 1000 / sleepTimeInMS;
+    // first attempt
+    AttachChannels(uninitializedConnectingChannels);
+    // if not all channels could be connected, update their address values from config and retry
     while (!uninitializedConnectingChannels.empty())
     {
-        AttachChannels(uninitializedConnectingChannels);
-        if (numAttempts > maxAttempts)
+        this_thread::sleep_for(chrono::milliseconds(sleepTimeInMS));
+
+        if (fConfig)
         {
-            LOG(ERROR) << "could not connect all channels after " << fInitializationTimeoutInS << " attempts";
-            // TODO: goto ERROR state;
-            exit(EXIT_FAILURE);
+            for (auto& chan : uninitializedConnectingChannels)
+            {
+                string key{"chans." + chan->GetChannelPrefix() + "." + chan->GetChannelIndex() + ".address"};
+                string newAddress = fConfig->GetValue<string>(key);
+                if (newAddress != chan->GetAddress())
+                {
+                    chan->UpdateAddress(newAddress);
+                }
+            }
         }
 
-        this_thread::sleep_for(chrono::milliseconds(sleepTimeInMS));
-        numAttempts++;
+        if (numAttempts++ > maxAttempts)
+        {
+            LOG(ERROR) << "could not connect all channels after " << fInitializationTimeoutInS << " attempts";
+            throw runtime_error(fair::mq::tools::ToString("could not connect all channels after ", fInitializationTimeoutInS, " attempts"));
+        }
+
+        AttachChannels(uninitializedConnectingChannels);
     }
 
     Init();
@@ -311,6 +296,33 @@ void FairMQDevice::WaitForInitialValidation()
 
 void FairMQDevice::Init()
 {
+}
+
+void FairMQDevice::AttachChannels(vector<FairMQChannel*>& chans)
+{
+    auto itr = chans.begin();
+
+    while (itr != chans.end())
+    {
+        if ((*itr)->ValidateChannel())
+        {
+            if (AttachChannel(**itr))
+            {
+                (*itr)->InitCommandInterface();
+                (*itr)->SetModified(false);
+                itr = chans.erase(itr);
+            }
+            else
+            {
+                LOG(ERROR) << "failed to attach channel " << (*itr)->fName << " (" << (*itr)->fMethod << ")";
+                ++itr;
+            }
+        }
+        else
+        {
+            ++itr;
+        }
+    }
 }
 
 bool FairMQDevice::AttachChannel(FairMQChannel& ch)
@@ -331,7 +343,7 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
     }
 
     vector<string> endpoints;
-    FairMQChannel::Tokenize(endpoints, ch.fAddress);
+    boost::algorithm::split(endpoints, ch.fAddress, boost::algorithm::is_any_of(","));
     for (auto& endpoint : endpoints)
     {
         //(re-)init socket
@@ -402,8 +414,17 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
         }
     }
 
-    // put the (possibly) modified address back in the config
-    ch.UpdateAddress(boost::algorithm::join(endpoints, ","));
+    // put the (possibly) modified address back in the channel object and config
+    string newAddress{boost::algorithm::join(endpoints, ",")};
+    if (newAddress != ch.fAddress)
+    {
+        ch.UpdateAddress(newAddress);
+        if (fConfig)
+        {
+            string key{"chans." + ch.GetChannelPrefix() + "." + ch.GetChannelIndex() + ".address"};
+            fConfig->SetValue(key, newAddress);
+        }
+    }
 
     return true;
 }

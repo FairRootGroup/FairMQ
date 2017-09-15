@@ -12,11 +12,13 @@
 #include <fairmq/Tools.h>
 #include <FairMQDevice.h>
 #include <options/FairMQProgOptions.h>
+
+#include <boost/optional.hpp>
+#include <boost/optional/optional_io.hpp>
+
 #include <functional>
 #include <string>
 #include <unordered_map>
-#include <boost/optional.hpp>
-#include <boost/optional/optional_io.hpp>
 #include <mutex>
 #include <condition_variable>
 
@@ -39,6 +41,9 @@ class PluginServices
     PluginServices(FairMQProgOptions* config, std::shared_ptr<FairMQDevice> device)
         : fConfig{config}
         , fDevice{device}
+        , fDeviceController()
+        , fDeviceControllerMutex()
+        , fReleaseDeviceControlCondition()
     {
     }
 
@@ -192,6 +197,8 @@ class PluginServices
     ///
     /// If a type is not supported, the user can provide support by overloading the ostream operator for this type
     auto GetPropertyAsString(const std::string& key) const -> std::string { return fConfig->GetStringValue(key); }
+
+    auto GetChannelInfo() const -> std::unordered_map<std::string, int> { return fConfig->GetChannelInfo(); }
 
     /// @brief Subscribe to property updates of type T
     /// @param subscriber

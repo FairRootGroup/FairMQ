@@ -91,6 +91,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
         , fStateChangeSignal()
         , fStateChangeSignalsMap()
         , fWorkerThread()
+        , fTerminationRequested(false)
     {}
 
     virtual ~FairMQFSM()
@@ -299,6 +300,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
         {
             LOG(STATE) << "Entering EXITING state";
             fsm.fState = EXITING;
+            fsm.fTerminationRequested = true;
             fsm.CallStateChangeCallbacks(EXITING);
 
             // terminate worker thread
@@ -454,6 +456,11 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
     virtual void Exit() {}
     virtual void Unblock() {}
 
+    bool Terminated()
+    {
+        return fTerminationRequested;
+    }
+
   protected:
     std::atomic<State> fState;
     std::mutex fChangeStateMutex;
@@ -469,6 +476,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
 
     boost::signals2::signal<void(const State)> fStateChangeSignal;
     std::unordered_map<std::string, boost::signals2::connection> fStateChangeSignalsMap;
+    std::atomic<bool> fTerminationRequested;
 
     void CallStateChangeCallbacks(const State state) const
     {

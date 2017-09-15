@@ -1,4 +1,12 @@
-#include "dds_intercom.h"
+/********************************************************************************
+ *  Copyright (C) 2014-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH *
+ *                                                                              *
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
+ *                  copied verbatim in the file "LICENSE"                       *
+ ********************************************************************************/
+
+#include <dds_intercom.h>
 
 #include <termios.h> // raw mode console input
 
@@ -66,11 +74,11 @@ int main(int argc, char* argv[])
                     break;
                 case 'i':
                     cout << " > init devices" << endl;
-                    ddsCustomCmd.send("INIT_DEVICE", "");
+                    ddsCustomCmd.send("INIT DEVICE", "");
                     break;
                 case 'j':
                     cout << " > init tasks" << endl;
-                    ddsCustomCmd.send("INIT_TASK", "");
+                    ddsCustomCmd.send("INIT TASK", "");
                     break;
                 case 'p':
                     cout << " > pause devices" << endl;
@@ -86,11 +94,11 @@ int main(int argc, char* argv[])
                     break;
                 case 't':
                     cout << " > reset tasks" << endl;
-                    ddsCustomCmd.send("RESET_TASK", "");
+                    ddsCustomCmd.send("RESET TASK", "");
                     break;
                 case 'd':
                     cout << " > reset devices" << endl;
-                    ddsCustomCmd.send("RESET_DEVICE", "");
+                    ddsCustomCmd.send("RESET DEVICE", "");
                     break;
                 case 'h':
                     cout << " > help" << endl;

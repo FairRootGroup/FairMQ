@@ -53,7 +53,7 @@ auto DummyPluginProgramOptions() -> Plugin::ProgOptions
 {
     auto plugin_options = boost::program_options::options_description{"Dummy Plugin"};
     plugin_options.add_options()
-        ("custom-dummy-option", boost::program_options::value<std::string>(), "Cool custom option.");
+        ("custom-dummy-option", boost::program_options::value<std::string>(), "Cool custom option.")
         ("custom-dummy-option2", boost::program_options::value<std::string>(), "Another cool custom option.");
     return plugin_options;
 }

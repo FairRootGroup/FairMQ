@@ -29,6 +29,7 @@ FairMQProgOptions::FairMQProgOptions()
     , fFairMQMap()
     , fHelpTitle("***** FAIRMQ Program Options ***** ")
     , fVersion("Beta version 0.1")
+    , fChannelInfo()
     , fMQKeyMap()
     // , fSignalMap() //string API
 {
@@ -114,7 +115,7 @@ void FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool a
         DefaultConsoleSetFilter(fSeverityMap.at(verbosity));
     }
 
-    // check if one of required MQ config option is there  
+    // check if one of required MQ config option is there
     auto parserOptions = fMQParserOptions.options();
     bool optionExists = false;
     vector<string> MQParserKeys;
@@ -157,24 +158,24 @@ void FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool a
 
             string file = fVarMap["mq-config"].as<string>();
 
-            string fileExtension = boost::filesystem::extension(file);
+            string ext = boost::filesystem::extension(file);
 
-            transform(fileExtension.begin(), fileExtension.end(), fileExtension.begin(), ::tolower);
+            transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
-            if (fileExtension == ".json")
+            if (ext == ".json")
             {
                 UserParser<FairMQParser::JSON>(file, id);
             }
             else
             {
-                if (fileExtension == ".xml")
+                if (ext == ".xml")
                 {
                     UserParser<FairMQParser::XML>(file, id);
                 }
                 else
                 {
                     LOG(ERROR)  << "mq-config command line called but file extension '"
-                                << fileExtension
+                                << ext
                                 << "' not recognized. Program will now exit";
                     exit(EXIT_FAILURE);
                 }
@@ -211,6 +212,7 @@ void FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool a
 int FairMQProgOptions::Store(const FairMQMap& channels)
 {
     fFairMQMap = channels;
+    UpdateChannelInfo();
     UpdateMQValues();
     return 0;
 }
@@ -219,8 +221,18 @@ int FairMQProgOptions::Store(const FairMQMap& channels)
 int FairMQProgOptions::UpdateChannelMap(const FairMQMap& channels)
 {
     fFairMQMap = channels;
+    UpdateChannelInfo();
     UpdateMQValues();
     return 0;
+}
+
+void FairMQProgOptions::UpdateChannelInfo()
+{
+    fChannelInfo.clear();
+    for (const auto& c : fFairMQMap)
+    {
+        fChannelInfo.insert(std::make_pair(c.first, c.second.size()));
+    }
 }
 
 // read FairMQChannelMap and insert/update corresponding values in variable map
@@ -233,15 +245,15 @@ void FairMQProgOptions::UpdateMQValues()
 
         for (const auto& channel : p.second)
         {
-            string typeKey = p.first + "." + to_string(index) + ".type";
-            string methodKey = p.first + "." + to_string(index) + ".method";
-            string addressKey = p.first + "." + to_string(index) + ".address";
-            string transportKey = p.first + "." + to_string(index) + ".transport";
-            string sndBufSizeKey = p.first + "." + to_string(index) + ".sndBufSize";
-            string rcvBufSizeKey = p.first + "." + to_string(index) + ".rcvBufSize";
-            string sndKernelSizeKey = p.first + "." + to_string(index) + ".sndKernelSize";
-            string rcvKernelSizeKey = p.first + "." + to_string(index) + ".rcvKernelSize";
-            string rateLoggingKey = p.first + "." + to_string(index) + ".rateLogging";
+            string typeKey = "chans." + p.first + "." + to_string(index) + ".type";
+            string methodKey = "chans." + p.first + "." + to_string(index) + ".method";
+            string addressKey = "chans." + p.first + "." + to_string(index) + ".address";
+            string transportKey = "chans." + p.first + "." + to_string(index) + ".transport";
+            string sndBufSizeKey = "chans." + p.first + "." + to_string(index) + ".sndBufSize";
+            string rcvBufSizeKey = "chans." + p.first + "." + to_string(index) + ".rcvBufSize";
+            string sndKernelSizeKey = "chans." + p.first + "." + to_string(index) + ".sndKernelSize";
+            string rcvKernelSizeKey = "chans." + p.first + "." + to_string(index) + ".rcvKernelSize";
+            string rateLoggingKey = "chans." + p.first + "." + to_string(index) + ".rateLogging";
 
             fMQKeyMap[typeKey] = make_tuple(p.first, index, "type");
             fMQKeyMap[methodKey] = make_tuple(p.first, index, "method");
@@ -257,7 +269,6 @@ void FairMQProgOptions::UpdateMQValues()
             UpdateVarMap<string>(methodKey, channel.GetMethod());
             UpdateVarMap<string>(addressKey, channel.GetAddress());
             UpdateVarMap<string>(transportKey, channel.GetTransport());
-
 
             //UpdateVarMap<string>(sndBufSizeKey, to_string(channel.GetSndBufSize()));// string API
             UpdateVarMap<int>(sndBufSizeKey, channel.GetSndBufSize());

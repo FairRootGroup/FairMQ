@@ -11,10 +11,13 @@
 
 #include <fairmq/Tools.h>
 #include <fairmq/PluginServices.h>
+
 #include <boost/dll/alias.hpp>
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
+
 #include <functional>
+#include <unordered_map>
 #include <ostream>
 #include <memory>
 #include <string>
@@ -68,7 +71,9 @@ class Plugin
     using DeviceState = fair::mq::PluginServices::DeviceState;
     using DeviceStateTransition = fair::mq::PluginServices::DeviceStateTransition;
     auto ToDeviceState(const std::string& state) const -> DeviceState { return fPluginServices->ToDeviceState(state); }
+    auto ToDeviceStateTransition(const std::string& transition) const -> DeviceStateTransition { return fPluginServices->ToDeviceStateTransition(transition); }
     auto ToStr(DeviceState state) const -> std::string { return fPluginServices->ToStr(state); }
+    auto ToStr(DeviceStateTransition transition) const -> std::string { return fPluginServices->ToStr(transition); }
     auto GetCurrentDeviceState() const -> DeviceState { return fPluginServices->GetCurrentDeviceState(); }
     auto TakeDeviceControl() -> void { fPluginServices->TakeDeviceControl(fkName); };
     auto ReleaseDeviceControl() -> void { fPluginServices->ReleaseDeviceControl(fkName); };
@@ -83,6 +88,7 @@ class Plugin
     template<typename T>
     auto GetProperty(const std::string& key) const -> T { return fPluginServices->GetProperty<T>(key); }
     auto GetPropertyAsString(const std::string& key) const -> std::string { return fPluginServices->GetPropertyAsString(key); }
+    auto GetChannelInfo() const -> std::unordered_map<std::string, int> { return fPluginServices->GetChannelInfo(); }
     // template<typename T>
     // auto SubscribeToPropertyChange(std::function<void(const std::string& [>key*/, const T /*newValue<])> callback) const -> void { fPluginServices.SubscribeToPropertyChange(fkName, callback); }
     // template<typename T>

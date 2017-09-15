@@ -14,7 +14,7 @@ using namespace std;
 
 FairMQ::Transport FairMQTransportFactoryNN::fTransportType = FairMQ::Transport::NN;
 
-FairMQTransportFactoryNN::FairMQTransportFactoryNN(const string& id, const FairMQProgOptions* config)
+FairMQTransportFactoryNN::FairMQTransportFactoryNN(const string& id, const FairMQProgOptions* /*config*/)
     : FairMQTransportFactory(id)
 {
     LOG(DEBUG) << "Transport: Using nanomsg library";

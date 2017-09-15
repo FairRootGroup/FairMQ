@@ -162,7 +162,16 @@ string FairMQChannel::GetChannelName() const
 string FairMQChannel::GetChannelPrefix() const
 {
     string prefix = fName;
-    return prefix.erase(fName.rfind("["));
+    prefix = prefix.erase(fName.rfind("["));
+    return prefix;
+}
+
+string FairMQChannel::GetChannelIndex() const
+{
+    string indexStr = fName;
+    indexStr.erase(indexStr.rfind("]"));
+    indexStr.erase(0, indexStr.rfind("[") + 1);
+    return indexStr;
 }
 
 string FairMQChannel::GetType() const
@@ -516,11 +525,9 @@ bool FairMQChannel::ValidateChannel()
         }
         else
         {
-            //TODO: maybe cache fEndpoints as a class member? not really needed as tokenizing is
-            //fast, and only happens during (re-)configure
-            vector<string> fEndpoints;
-            Tokenize(fEndpoints, fAddress);
-            for (const auto endpoint : fEndpoints)
+            vector<string> endpoints;
+            boost::algorithm::split(endpoints, fAddress, boost::algorithm::is_any_of(","));
+            for (const auto endpoint : endpoints)
             {
                 string address;
                 if (endpoint[0] == '@' || endpoint[0] == '+' || endpoint[0] == '>')
@@ -839,11 +846,6 @@ inline bool FairMQChannel::HandleUnblock() const
 
 FairMQChannel::~FairMQChannel()
 {
-}
-
-void FairMQChannel::Tokenize(vector<string>& output, const string& input, const string delimiters)
-{
-    boost::algorithm::split(output, input, boost::algorithm::is_any_of(delimiters));
 }
 
 unsigned long FairMQChannel::GetBytesTx() const

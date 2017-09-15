@@ -21,6 +21,7 @@
 #include <map>
 #include <set>
 #include <mutex>
+#include <string>
 
 #include "FairProgOptions.h"
 #include "FairMQEventManager.h"
@@ -37,11 +38,11 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
     FairMQProgOptions();
     virtual ~FairMQProgOptions();
 
-    // parse command line and txt/INI configuration file. 
+    // parse command line and txt/INI configuration file.
     // default parser for the mq-configuration file (JSON/XML) is called if command line key mq-config is called
     virtual void ParseAll(const int argc, char const* const* argv, bool allowUnregistered = false);
 
-    // external parser, store function 
+    // external parser, store function
     template <typename T, typename ...Args>
     int UserParser(Args &&... args)
     {
@@ -57,9 +58,14 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
         return 0;
     }
 
-    FairMQMap GetFairMQMap()
+    FairMQMap GetFairMQMap() const
     {
         return fFairMQMap;
+    }
+
+    std::unordered_map<std::string, int> GetChannelInfo() const
+    {
+        return fChannelInfo;
     }
 
     // to customize title of the executable help command line  
@@ -257,7 +263,6 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
 
         Disconnect<EventId::UpdateParam, T>(key);
     }
-    
 
     /*
     template <typename F>
@@ -283,6 +288,9 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
     FairMQMap fFairMQMap;
     std::string fHelpTitle;
     std::string fVersion;
+
+    // map of read channel info - channel name - number of subchannels
+    std::unordered_map<std::string, int> fChannelInfo;
 
     bool EventKeyFound(const std::string& key)
     {
@@ -338,6 +346,8 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
     {
         return 0;
     }
+
+    void UpdateChannelInfo();
 };
 
 #endif /* FAIRMQPROGOPTIONS_H */

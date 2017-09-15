@@ -201,9 +201,9 @@ class FairProgOptions
     }
 
     template<typename T>
-    void replace(std::map<std::string, po::variable_value>& vm, const std::string& opt, const T& val)
+    void replace(std::map<std::string, po::variable_value>& vm, const std::string& key, const T& val)
     {
-        vm[opt].value() = boost::any(val);
+        vm[key].value() = boost::any(val);
     }
 
   private:

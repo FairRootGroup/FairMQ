@@ -33,16 +33,7 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const string& id, 
     // Extract value from boost::property_tree
     Helper::DeviceParser(pt.get_child(rootNode), channelMap, id, formatFlag);
 
-    if (channelMap.size() > 0)
-    {
-        stringstream channelKeys;
-        for (const auto& p : channelMap)
-        {
-            channelKeys << "'" << p.first << "' ";
-        }
-        LOG(DEBUG) << "---- Found following channel keys: " << channelKeys.str();
-    }
-    else
+    if (channelMap.empty())
     {
         LOG(WARN) << "---- No channel keys found for " << id;
         LOG(WARN) << "---- Check the JSON inputs and/or command line inputs";

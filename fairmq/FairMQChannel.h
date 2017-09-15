@@ -78,8 +78,12 @@ class FairMQChannel
     std::string GetChannelName() const;
 
     /// Get channel prefix
-    /// @return Returns channel prefix (e.g. "data")
+    /// @return Returns channel prefix (e.g. "data" in "data[0]")
     std::string GetChannelPrefix() const;
+
+    /// Get channel index
+    /// @return Returns channel index (e.g. 0 in "data[0]")
+    std::string GetChannelIndex() const;
 
     /// Get socket type
     /// @return Returns socket type (push/pull/pub/sub/spub/xsub/pair/req/rep/dealer/router/)
@@ -269,9 +273,6 @@ class FairMQChannel
     {
         return ReceiveAsync(parts.fParts);
     }
-
-    // TODO: this might go to some base utility library
-    static void Tokenize(std::vector<std::string>& output, const std::string& input, const std::string delimiters = ",");
 
     unsigned long GetBytesTx() const;
     unsigned long GetBytesRx() const;

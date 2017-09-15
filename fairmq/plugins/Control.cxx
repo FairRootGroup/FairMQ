@@ -8,8 +8,6 @@
 
 #include "Control.h"
 
-#include <chrono>
-
 #include <termios.h> // for the interactive mode
 #include <poll.h> // for the interactive mode
 
@@ -79,7 +77,6 @@ auto Control::InteractiveMode() -> void
 
     ChangeDeviceState(DeviceStateTransition::InitDevice);
     while (WaitForNextState() != DeviceState::DeviceReady) {}
-
     ChangeDeviceState(DeviceStateTransition::InitTask);
     while (WaitForNextState() != DeviceState::Ready) {}
     ChangeDeviceState(DeviceStateTransition::Run);
