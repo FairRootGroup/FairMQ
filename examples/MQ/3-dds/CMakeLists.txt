@@ -10,8 +10,6 @@ configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-topology.xml
                ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-topology.xml @ONLY)
 configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds-hosts.cfg
                ${CMAKE_BINARY_DIR}/bin/config/ex3-dds-hosts.cfg COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/examples/MQ/3-dds/ex3-dds.json
-               ${CMAKE_BINARY_DIR}/bin/config/ex3-dds.json COPYONLY)
 
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
