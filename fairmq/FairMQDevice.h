@@ -299,16 +299,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// Waits for the first initialization run to finish
     void WaitForInitialValidation();
 
-    /// Starts interactive (console) loop for controlling the device
-    /// Works only when running in a terminal. Running in background would exit, because no interactive input (std::cin) is possible.
-    void InteractiveStateLoop();
-    /// Prints the available commands of the InteractiveStateLoop()
-    void PrintInteractiveStateLoopHelp()
-    {
-        LOG(INFO) << "Use keys to control the state machine:";
-        LOG(INFO) << "[h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device";
-    }
-
     /// Set Device properties stored as strings
     /// @param key      Property key
     /// @param value    Property value
@@ -569,8 +559,7 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
     /// Signal handler
     void SignalHandler(int signal);
     bool fCatchingSignals;
-    // Interactive state loop helper
-    std::atomic<bool> fInteractiveRunning;
+    std::atomic<bool> fTerminationRequested;
 
     bool fDataCallbacks;
     std::unordered_map<FairMQ::Transport, FairMQSocketPtr> fDeviceCmdSockets; ///< Sockets used for the internal unblocking mechanism

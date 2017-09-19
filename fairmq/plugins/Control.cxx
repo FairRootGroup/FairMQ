@@ -51,6 +51,7 @@ Control::Control(const string name, const Plugin::Version version, const string 
     }
     catch (PluginServices::DeviceControlError& e)
     {
+        // If we are here, it means another plugin has taken control. That's fine, just print the exception message and do nothing else.
         LOG(DEBUG) << e.what();
     }
 }
@@ -59,8 +60,7 @@ auto ControlPluginProgramOptions() -> Plugin::ProgOptions
 {
     auto pluginOptions = boost::program_options::options_description{"Control (builtin) Plugin"};
     pluginOptions.add_options()
-        ("ctrlmode", boost::program_options::value<string>(), "Control mode, 'static' or 'interactive'");
-        // should rename to --control and remove control from device options ?
+        ("control", boost::program_options::value<string>()->default_value("interactive"), "Control mode, 'static' or 'interactive'");
     return pluginOptions;
 }
 

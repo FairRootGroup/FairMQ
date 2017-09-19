@@ -100,8 +100,8 @@ auto PluginServices::ChangeDeviceState(const std::string& controller, const Devi
     else
     {
         throw DeviceControlError{tools::ToString(
-            "Plugin ", controller, " is not allowed to change device states. ",
-            "Currently, plugin ", fDeviceController, " has taken control."
+            "Plugin '", controller, "' is not allowed to change device states. ",
+            "Currently, plugin '", fDeviceController, "' has taken control."
         )};
     }
 }
@@ -121,8 +121,8 @@ auto PluginServices::TakeDeviceControl(const std::string& controller) -> void
     else
     {
         throw DeviceControlError{tools::ToString(
-            "Plugin ", controller, " is not allowed to take over control. ",
-            "Currently, plugin ", fDeviceController, " has taken control."
+            "Plugin '", controller, "' is not allowed to take over control. ",
+            "Currently, plugin '", fDeviceController, "' has taken control."
         )};
     }
 
@@ -139,7 +139,7 @@ auto PluginServices::ReleaseDeviceControl(const std::string& controller) -> void
         }
         else
         {
-            throw DeviceControlError{tools::ToString("Plugin ", controller, " cannot release control because it has not taken over control.")};
+            throw DeviceControlError{tools::ToString("Plugin '", controller, "' cannot release control because it has not taken over control.")};
         }
     }
 

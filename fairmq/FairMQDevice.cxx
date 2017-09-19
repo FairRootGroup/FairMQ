@@ -16,9 +16,6 @@
 #include <thread>
 #include <functional>
 
-#include <termios.h> // for the InteractiveStateLoop
-#include <poll.h>
-
 #include <boost/algorithm/string.hpp> // join/split
 
 #include <boost/uuid/uuid.hpp>
@@ -62,7 +59,7 @@ FairMQDevice::FairMQDevice()
     , fDefaultTransport()
     , fInitializationTimeoutInS(120)
     , fCatchingSignals(false)
-    , fInteractiveRunning(false)
+    , fTerminationRequested(false)
     , fDataCallbacks(false)
     , fDeviceCmdSockets()
     , fMsgInputs()
@@ -93,7 +90,7 @@ FairMQDevice::FairMQDevice(const fair::mq::tools::Version version)
     , fDefaultTransport()
     , fInitializationTimeoutInS(120)
     , fCatchingSignals(false)
-    , fInteractiveRunning(false)
+    , fTerminationRequested(false)
     , fDataCallbacks(false)
     , fDeviceCmdSockets()
     , fMsgInputs()
@@ -138,7 +135,6 @@ void FairMQDevice::SignalHandler(int signal)
         ChangeState(END);
 
         // exit(EXIT_FAILURE);
-        fInteractiveRunning = false;
         LOG(INFO) << "Exiting.";
     }
     else
@@ -1134,103 +1130,6 @@ void FairMQDevice::LogSocketRates()
     }
 
     // LOG(DEBUG) << "FairMQDevice::LogSocketRates() stopping";
-}
-
-void FairMQDevice::InteractiveStateLoop()
-{
-    fInteractiveRunning = true;
-    char c; // hold the user console input
-    pollfd cinfd[1];
-    cinfd[0].fd = fileno(stdin);
-    cinfd[0].events = POLLIN;
-
-    struct termios t;
-    tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
-    t.c_lflag &= ~ICANON; // disable canonical input
-    tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
-
-    PrintInteractiveStateLoopHelp();
-
-    while (fInteractiveRunning)
-    {
-        if (poll(cinfd, 1, 500))
-        {
-            if (!fInteractiveRunning)
-            {
-                break;
-            }
-
-            cin >> c;
-
-            switch (c)
-            {
-                case 'i':
-                    LOG(INFO) << "[i] init device";
-                    ChangeState(INIT_DEVICE);
-                    break;
-                case 'j':
-                    LOG(INFO) << "[j] init task";
-                    ChangeState(INIT_TASK);
-                    break;
-                case 'p':
-                    LOG(INFO) << "[p] pause";
-                    ChangeState(PAUSE);
-                    break;
-                case 'r':
-                    LOG(INFO) << "[r] run";
-                    ChangeState(RUN);
-                    break;
-                case 's':
-                    LOG(INFO) << "[s] stop";
-                    ChangeState(STOP);
-                    break;
-                case 't':
-                    LOG(INFO) << "[t] reset task";
-                    ChangeState(RESET_TASK);
-                    break;
-                case 'd':
-                    LOG(INFO) << "[d] reset device";
-                    ChangeState(RESET_DEVICE);
-                    break;
-                case 'h':
-                    LOG(INFO) << "[h] help";
-                    PrintInteractiveStateLoopHelp();
-                    break;
-                // case 'x':
-                //     LOG(INFO) << "[x] ERROR";
-                //     ChangeState(ERROR_FOUND);
-                //     break;
-                case 'q':
-                    LOG(INFO) << "[q] end";
-
-                    ChangeState(STOP);
-
-                    ChangeState(RESET_TASK);
-                    WaitForEndOfState(RESET_TASK);
-
-                    ChangeState(RESET_DEVICE);
-                    WaitForEndOfState(RESET_DEVICE);
-
-                    ChangeState(END);
-
-                    if (CheckCurrentState(EXITING))
-                    {
-                        fInteractiveRunning = false;
-                    }
-
-                    LOG(INFO) << "Exiting.";
-                    break;
-                default:
-                    LOG(INFO) << "Invalid input: [" << c << "]";
-                    PrintInteractiveStateLoopHelp();
-                    break;
-            }
-        }
-    }
-
-    tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
-    t.c_lflag |= ICANON; // re-enable canonical input
-    tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
 }
 
 void FairMQDevice::Unblock()
