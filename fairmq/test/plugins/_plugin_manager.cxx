@@ -67,14 +67,16 @@ TEST(PluginManager, LoadPluginDynamic)
 
 TEST(PluginManager, LoadPluginStatic)
 {
-    FairMQProgOptions config{};
     auto mgr = PluginManager{};
     auto device = make_shared<FairMQDevice>();
-    mgr.EmplacePluginServices(&config, device);
-
     device->SetTransport("zeromq");
 
     ASSERT_NO_THROW(mgr.LoadPlugin("s:control"));
+
+    FairMQProgOptions config{};
+    config.SetValue<string>("control", "static");
+    config.SetValue("catch-signals", 0);
+    mgr.EmplacePluginServices(&config, device);
 
     ASSERT_NO_THROW(mgr.InstantiatePlugins());
 

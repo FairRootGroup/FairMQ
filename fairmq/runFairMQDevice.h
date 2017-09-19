@@ -95,16 +95,6 @@ int main(int argc, const char** argv)
             return 0;
         }
 
-        // Handle --catch-signals
-        if (config.GetValue<int>("catch-signals") > 0)
-        {
-            device->CatchSignals();
-        }
-        else
-        {
-            LOG(WARN) << "Signal handling (e.g. ctrl+C) has been deactivated via command line argument";
-        }
-
         LOG(DEBUG) << "PID: " << getpid();
 
         // Configure device

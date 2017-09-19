@@ -7,7 +7,6 @@
  ********************************************************************************/
 
 #include <list>
-#include <csignal> // catching system signals
 #include <cstdlib>
 #include <stdexcept>
 #include <random>
@@ -36,13 +35,6 @@
 
 using namespace std;
 
-// function and a wrapper to catch the signals
-function<void(int)> sigHandler;
-static void CallSignalHandler(int signal)
-{
-    sigHandler(signal);
-}
-
 FairMQDevice::FairMQDevice()
     : fTransportFactory(nullptr)
     , fTransports()
@@ -58,8 +50,6 @@ FairMQDevice::FairMQDevice()
     , fNetworkInterface()
     , fDefaultTransport()
     , fInitializationTimeoutInS(120)
-    , fCatchingSignals(false)
-    , fTerminationRequested(false)
     , fDataCallbacks(false)
     , fDeviceCmdSockets()
     , fMsgInputs()
@@ -89,8 +79,6 @@ FairMQDevice::FairMQDevice(const fair::mq::tools::Version version)
     , fNetworkInterface()
     , fDefaultTransport()
     , fInitializationTimeoutInS(120)
-    , fCatchingSignals(false)
-    , fTerminationRequested(false)
     , fDataCallbacks(false)
     , fDeviceCmdSockets()
     , fMsgInputs()
@@ -103,46 +91,6 @@ FairMQDevice::FairMQDevice(const fair::mq::tools::Version version)
     , fExternalConfig(false)
     , fVersion(version)
 {
-}
-
-void FairMQDevice::CatchSignals()
-{
-    if (!fCatchingSignals)
-    {
-        sigHandler = bind1st(mem_fun(&FairMQDevice::SignalHandler), this);
-        signal(SIGINT, CallSignalHandler);
-        signal(SIGTERM, CallSignalHandler);
-        fCatchingSignals = true;
-    }
-}
-
-void FairMQDevice::SignalHandler(int signal)
-{
-    LOG(INFO) << "Caught signal " << signal;
-
-    if (!fTerminationRequested)
-    {
-        fTerminationRequested = true;
-
-        ChangeState(STOP);
-
-        ChangeState(RESET_TASK);
-        WaitForEndOfState(RESET_TASK);
-
-        ChangeState(RESET_DEVICE);
-        WaitForEndOfState(RESET_DEVICE);
-
-        ChangeState(END);
-
-        // exit(EXIT_FAILURE);
-        LOG(INFO) << "Exiting.";
-    }
-    else
-    {
-        LOG(WARN) << "Repeated termination or bad initialization? Aborting.";
-        abort();
-        // exit(EXIT_FAILURE);
-    }
 }
 
 void FairMQDevice::InitWrapper()

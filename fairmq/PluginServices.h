@@ -73,6 +73,7 @@ class PluginServices
         InitTask,
         Run,
         Pause,
+        Resume,
         Stop,
         ResetTask,
         ResetDevice,
@@ -118,6 +119,13 @@ class PluginServices
     auto TakeDeviceControl(const std::string& controller) -> void;
     struct DeviceControlError : std::runtime_error { using std::runtime_error::runtime_error; };
 
+    /// @brief Become device controller by force
+    /// @param controller id
+    ///
+    /// Take over device controller privileges by force. Does not trigger the ReleaseDeviceControl condition!
+    /// This function is intended to implement override/emergency control functionality (e.g. device shutdown on SIGINT).
+    auto StealDeviceControl(const std::string& controller) -> void;
+
     /// @brief Release device controller role
     /// @param controller id
     /// @throws fair::mq::PluginServices::DeviceControlError if passed controller id is not the current device controller.
@@ -155,8 +163,6 @@ class PluginServices
     /// @brief Unsubscribe from device state changes
     /// @param subscriber id
     auto UnsubscribeFromDeviceStateChange(const std::string& subscriber) -> void { fDevice->UnsubscribeFromStateChange(subscriber); }
-
-    auto DeviceTerminated() const -> bool { return fDevice->Terminated(); }
 
     // Config API
 

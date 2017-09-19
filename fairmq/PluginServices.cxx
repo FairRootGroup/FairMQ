@@ -44,6 +44,7 @@ const std::unordered_map<std::string, PluginServices::DeviceStateTransition> Plu
     {"INIT TASK",    DeviceStateTransition::InitTask},
     {"RUN",          DeviceStateTransition::Run},
     {"PAUSE",        DeviceStateTransition::Pause},
+    {"RESUME",       DeviceStateTransition::Resume},
     {"STOP",         DeviceStateTransition::Stop},
     {"RESET TASK",   DeviceStateTransition::ResetTask},
     {"RESET DEVICE", DeviceStateTransition::ResetDevice},
@@ -55,6 +56,7 @@ const std::unordered_map<PluginServices::DeviceStateTransition, std::string, too
     {DeviceStateTransition::InitTask,    "INIT TASK"},
     {DeviceStateTransition::Run,         "RUN"},
     {DeviceStateTransition::Pause,       "PAUSE"},
+    {DeviceStateTransition::Resume,      "RESUME"},
     {DeviceStateTransition::Stop,        "STOP"},
     {DeviceStateTransition::ResetTask,   "RESET TASK"},
     {DeviceStateTransition::ResetDevice, "RESET DEVICE"},
@@ -80,6 +82,7 @@ const std::unordered_map<PluginServices::DeviceStateTransition, FairMQDevice::Ev
     {DeviceStateTransition::InitTask,    FairMQDevice::INIT_TASK},
     {DeviceStateTransition::Run,         FairMQDevice::RUN},
     {DeviceStateTransition::Pause,       FairMQDevice::PAUSE},
+    {DeviceStateTransition::Resume,      FairMQDevice::RUN},
     {DeviceStateTransition::Stop,        FairMQDevice::STOP},
     {DeviceStateTransition::ResetTask,   FairMQDevice::RESET_TASK},
     {DeviceStateTransition::ResetDevice, FairMQDevice::RESET_DEVICE},
@@ -89,9 +92,9 @@ const std::unordered_map<PluginServices::DeviceStateTransition, FairMQDevice::Ev
 
 auto PluginServices::ChangeDeviceState(const std::string& controller, const DeviceStateTransition next) -> void
 {
-    // lock_guard<mutex> lock{fDeviceControllerMutex};
-    //
-    // if (!fDeviceController) fDeviceController = controller;
+    lock_guard<mutex> lock{fDeviceControllerMutex};
+
+    if (!fDeviceController) fDeviceController = controller;
 
     if (fDeviceController == controller)
     {
@@ -125,7 +128,16 @@ auto PluginServices::TakeDeviceControl(const std::string& controller) -> void
             "Currently, plugin '", fDeviceController, "' has taken control."
         )};
     }
+}
 
+auto PluginServices::StealDeviceControl(const std::string& controller) -> void
+{
+    lock_guard<mutex> lock{fDeviceControllerMutex};
+
+    if (!fDeviceController)
+    {
+        fDeviceController = controller;
+    }
 }
 
 auto PluginServices::ReleaseDeviceControl(const std::string& controller) -> void

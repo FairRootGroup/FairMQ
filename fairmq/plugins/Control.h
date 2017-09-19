@@ -16,6 +16,7 @@
 #include <string>
 #include <queue>
 #include <thread>
+#include <atomic>
 
 namespace fair
 {
@@ -36,11 +37,17 @@ class Control : public Plugin
     auto PrintInteractiveHelp() -> void;
     auto StaticMode() -> void;
     auto WaitForNextState() -> DeviceState;
+    auto SignalHandler(int signal) -> void;
+    auto RunShutdownSequence() -> void;
+    auto RunStartupSequence() -> void;
+    auto EmptyEventQueue() -> void;
 
     std::thread fControllerThread;
+    std::thread fSignalHandlerThread;
     std::queue<DeviceState> fEvents;
     std::mutex fEventsMutex;
     std::condition_variable fNewEvent;
+    std::atomic<bool> fDeviceTerminationRequested;
 }; /* class Control */
 
 auto ControlPluginProgramOptions() -> Plugin::ProgOptions;

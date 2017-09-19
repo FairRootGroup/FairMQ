@@ -556,11 +556,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     void CreateOwnConfig();
 
-    /// Signal handler
-    void SignalHandler(int signal);
-    bool fCatchingSignals;
-    std::atomic<bool> fTerminationRequested;
-
     bool fDataCallbacks;
     std::unordered_map<FairMQ::Transport, FairMQSocketPtr> fDeviceCmdSockets; ///< Sockets used for the internal unblocking mechanism
     std::unordered_map<std::string, InputMsgCallback> fMsgInputs;

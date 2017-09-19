@@ -83,12 +83,6 @@ void FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool a
         return;
     }
 
-    if (fVarMap.count("id") == 0)
-    {
-        LOG(ERROR) << "Device id not provided, provide with --id";
-        exit(EXIT_FAILURE);
-    }
-
     string verbosity = GetValue<string>("verbosity");
     string logFile = GetValue<string>("log-to-file");
     bool color = GetValue<bool>("log-color");
