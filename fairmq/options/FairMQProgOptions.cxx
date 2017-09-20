@@ -79,7 +79,7 @@ void FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool a
     // if these options are provided, do no further checks and let the device handle them
     if (fVarMap.count("print-channels") || fVarMap.count("version"))
     {
-        DefaultConsoleSetFilter(fSeverityMap.at("NOLOG"));
+        fair::mq::logger::DefaultConsoleSetFilter(fSeverityMap.at("NOLOG"));
         return;
     }
 
@@ -96,17 +96,17 @@ void FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool a
 
     if (logFile != "")
     {
-        reinit_logger(false, logFile, fSeverityMap.at(verbosity));
-        DefaultConsoleSetFilter(fSeverityMap.at("NOLOG"));
+        fair::mq::logger::ReinitLogger(false, logFile, fSeverityMap.at(verbosity));
+        fair::mq::logger::DefaultConsoleSetFilter(fSeverityMap.at("NOLOG"));
     }
     else
     {
         if (!color)
         {
-            reinit_logger(false);
+            fair::mq::logger::ReinitLogger(false);
         }
 
-        DefaultConsoleSetFilter(fSeverityMap.at(verbosity));
+        fair::mq::logger::DefaultConsoleSetFilter(fSeverityMap.at(verbosity));
     }
 
     // check if one of required MQ config option is there

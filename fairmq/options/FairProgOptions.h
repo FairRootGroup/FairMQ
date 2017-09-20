@@ -135,14 +135,14 @@ class FairProgOptions
     template<typename T>
     T ConvertTo(const std::string& strValue)
     {
-        if (std::is_arithmetic<T>::value) 
+        if (std::is_arithmetic<T>::value)
         {
             std::istringstream iss(strValue);
             T val;
             iss >> val;
             return val;
-        } 
-        else 
+        }
+        else
         {
             LOG(ERROR) << "the provided string " << strValue << " cannot be converted in the requested type. The target types must be arithmetic types";
         }
@@ -183,7 +183,7 @@ class FairProgOptions
 
     // Description which is printed in help command line
     // to handle logger severity
-    std::map<std::string, FairMQ::severity_level> fSeverityMap;
+    std::map<std::string, fair::mq::logger::SeverityLevel> fSeverityMap;
     po::options_description fVisibleOptions;
 
     mutable std::mutex fConfigMutex;

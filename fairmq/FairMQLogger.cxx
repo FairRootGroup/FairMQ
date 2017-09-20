@@ -12,9 +12,10 @@
  * @author D. Klein, A. Rybalchenko
  */
 
+#include "FairMQLogger.h"
+
 #include <sys/time.h>
 #include <ctime>
-#include "FairMQLogger.h"
 
 timestamp_t get_timestamp()
 {

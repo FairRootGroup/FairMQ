@@ -84,7 +84,6 @@ set(FAIRMQ_HEADER_FILES
     devices/FairMQSink.h
     devices/FairMQSplitter.h
     logger/logger.h
-    logger/logger_def.h
     options/FairMQEventManager.h
     options/FairMQParser.h
     options/FairMQProgOptions.h

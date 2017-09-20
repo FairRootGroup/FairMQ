@@ -8,16 +8,16 @@
 /*
  * File:   FairProgOptions.cxx
  * Author: winckler
- * 
+ *
  * Created on March 11, 2015, 5:38 PM
  */
 
 #include "FairProgOptions.h"
 
+#include <iomanip>
+
 using namespace std;
 
-/// //////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Constructor
 FairProgOptions::FairProgOptions() :
                         fVarMap(),
                         fGenericDesc("Generic options description"),
@@ -42,14 +42,14 @@ FairProgOptions::FairProgOptions() :
         ("log-color", po::value<bool>()->default_value(true), "logger color: true or false")
         ("print-options", po::value<bool>()->implicit_value(true), "print options in machine-readable format (<option>:<computed-value>:<type>:<description>)");
 
-    fSeverityMap["TRACE"]   = FairMQ::severity_level::TRACE;
-    fSeverityMap["DEBUG"]   = FairMQ::severity_level::DEBUG;
-    fSeverityMap["RESULTS"] = FairMQ::severity_level::RESULTS;
-    fSeverityMap["INFO"]    = FairMQ::severity_level::INFO;
-    fSeverityMap["WARN"]    = FairMQ::severity_level::WARN;
-    fSeverityMap["ERROR"]   = FairMQ::severity_level::ERROR;
-    fSeverityMap["STATE"]   = FairMQ::severity_level::STATE;
-    fSeverityMap["NOLOG"]   = FairMQ::severity_level::NOLOG;
+    fSeverityMap["TRACE"]   = fair::mq::logger::SeverityLevel::TRACE;
+    fSeverityMap["DEBUG"]   = fair::mq::logger::SeverityLevel::DEBUG;
+    fSeverityMap["RESULTS"] = fair::mq::logger::SeverityLevel::RESULTS;
+    fSeverityMap["INFO"]    = fair::mq::logger::SeverityLevel::INFO;
+    fSeverityMap["WARN"]    = fair::mq::logger::SeverityLevel::WARN;
+    fSeverityMap["ERROR"]   = fair::mq::logger::SeverityLevel::ERROR;
+    fSeverityMap["STATE"]   = fair::mq::logger::SeverityLevel::STATE;
+    fSeverityMap["NOLOG"]   = fair::mq::logger::SeverityLevel::NOLOG;
 }
 
 /// Destructor

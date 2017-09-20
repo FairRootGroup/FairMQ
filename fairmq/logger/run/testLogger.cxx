@@ -84,15 +84,15 @@ int main()
     // advanced commands
     std::cout << "----------------------------"<<std::endl;
     LOG(INFO)<<"open log file 3";// custom file sink setting
-    AddFileSink([](const boost::log::attribute_value_set& attr_set)
-        {
-            auto sev = attr_set["Severity"].extract<custom_severity_level>();
-            return (sev == FairMQ::ERROR);
-        },
-        boost::log::keywords::file_name = "test_log3_%5N.log",
-        boost::log::keywords::rotation_size = 5 * 1024 * 1024,
-        boost::log::keywords::time_based_rotation = boost::log::sinks::file::rotation_at_time_point(12, 0, 0)
-        );
+    // AddFileSink([](const boost::log::attribute_value_set& attr_set)
+    //     {
+    //         auto sev = attr_set["Severity"].extract<custom_severity_level>();
+    //         return (sev == FairMQ::ERROR);
+    //     },
+    //     boost::log::keywords::file_name = "test_log3_%5N.log",
+    //     boost::log::keywords::rotation_size = 5 * 1024 * 1024,
+    //     boost::log::keywords::time_based_rotation = boost::log::sinks::file::rotation_at_time_point(12, 0, 0)
+    //     );
 
     test_logger();
 
@@ -107,7 +107,7 @@ int main()
     test_logger();
 
     // remove all sinks, and restart console sinks
-    reinit_logger(false);
+    ReinitLogger(false);
     test_logger();
     return 0;
 }
