@@ -55,7 +55,7 @@ auto ControlPluginProgramOptions() -> Plugin::ProgOptions;
 REGISTER_FAIRMQ_PLUGIN(
     Control,                                     // Class name
     control,                                     // Plugin name (string, lower case chars only)
-    (Plugin::Version{1,0,0}),                    // Version
+    (Plugin::Version{1,0,1}),                    // Version
     "FairRootGroup <fairroot@gsi.de>",           // Maintainer
     "https://github.com/FairRootGroup/FairRoot", // Homepage
     ControlPluginProgramOptions                  // Free function which declares custom program options for the plugin

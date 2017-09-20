@@ -17,6 +17,7 @@ using namespace std;
 
 namespace
 {
+    // ugly global state, but std::signal gives us no other choice
     std::function<void(int)> gSignalHandlerClosure;
 
     extern "C" auto signal_handler(int signal) -> void
@@ -62,23 +63,23 @@ Control::Control(const string name, const Plugin::Version version, const string 
             LOG(ERROR) << "Unrecognized control mode '" << control << "' requested. " << "Ignoring and falling back to static control mode.";
             fControllerThread = thread(&Control::StaticMode, this);
         }
-
-        LOG(DEBUG) << "catch-signals: " << GetProperty<int>("catch-signals");
-        if (GetProperty<int>("catch-signals") > 0)
-        {
-            gSignalHandlerClosure = bind(&Control::SignalHandler, this, placeholders::_1);
-            signal(SIGINT, signal_handler);
-            signal(SIGTERM, signal_handler);
-        }
-        else
-        {
-            LOG(WARN) << "Signal handling (e.g. Ctrl-C) has been deactivated.";
-        }
     }
     catch (PluginServices::DeviceControlError& e)
     {
         // If we are here, it means another plugin has taken control. That's fine, just print the exception message and do nothing else.
         LOG(DEBUG) << e.what();
+    }
+
+    LOG(DEBUG) << "catch-signals: " << GetProperty<int>("catch-signals");
+    if (GetProperty<int>("catch-signals") > 0)
+    {
+        gSignalHandlerClosure = bind(&Control::SignalHandler, this, placeholders::_1);
+        signal(SIGINT, signal_handler);
+        signal(SIGTERM, signal_handler);
+    }
+    else
+    {
+        LOG(WARN) << "Signal handling (e.g. Ctrl-C) has been deactivated.";
     }
 }
 
@@ -96,15 +97,6 @@ auto Control::InteractiveMode() -> void
 {
     try
     {
-        SubscribeToDeviceStateChange([&](DeviceState newState)
-        {
-            {
-                lock_guard<mutex> lock{fEventsMutex};
-                fEvents.push(newState);
-            }
-            fNewEvent.notify_one();
-        });
-
         RunStartupSequence();
 
         char input; // hold the user console input
@@ -226,15 +218,6 @@ auto Control::StaticMode() -> void
 {
     try
     {
-        SubscribeToDeviceStateChange([&](DeviceState newState)
-        {
-            {
-                lock_guard<mutex> lock{fEventsMutex};
-                fEvents.push(newState);
-            }
-            fNewEvent.notify_one();
-        });
-
         RunStartupSequence();
     
         {
@@ -261,7 +244,6 @@ auto Control::StaticMode() -> void
 
 auto Control::SignalHandler(int signal) -> void
 {
-
     if (!fDeviceTerminationRequested)
     {
         fDeviceTerminationRequested = true;
@@ -270,6 +252,16 @@ auto Control::SignalHandler(int signal) -> void
 
         LOG(INFO) << "Received device shutdown request (signal " << signal << ").";
         LOG(INFO) << "Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.";
+
+        UnsubscribeFromDeviceStateChange(); // In case, static or interactive mode have subscribed already
+        SubscribeToDeviceStateChange([&](DeviceState newState)
+        {
+            {
+                lock_guard<mutex> lock{fEventsMutex};
+                fEvents.push(newState);
+            }
+            fNewEvent.notify_one();
+        });
 
         fSignalHandlerThread = thread(&Control::RunShutdownSequence, this);
     }
@@ -317,6 +309,15 @@ auto Control::RunShutdownSequence() -> void
 
 auto Control::RunStartupSequence() -> void
 {
+    SubscribeToDeviceStateChange([&](DeviceState newState)
+    {
+        {
+            lock_guard<mutex> lock{fEventsMutex};
+            fEvents.push(newState);
+        }
+        fNewEvent.notify_one();
+    });
+
     ChangeDeviceState(DeviceStateTransition::InitDevice);
     while (WaitForNextState() != DeviceState::DeviceReady) {}
     ChangeDeviceState(DeviceStateTransition::InitTask);
