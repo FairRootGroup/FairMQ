@@ -63,6 +63,7 @@ set(FAIRMQ_DEPRECATED_HEADER_FILES
 )
 set(FAIRMQ_HEADER_FILES
     ${FAIRMQ_DEPRECATED_HEADER_FILES}
+    EventManager.h
     FairMQChannel.h
     FairMQConfigurable.h
     FairMQDevice.h

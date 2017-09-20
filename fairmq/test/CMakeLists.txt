@@ -142,6 +142,15 @@ add_testsuite(FairMQ.PluginServices
     TIMEOUT 10
 )
 
+add_testsuite(FairMQ.EventManager
+    SOURCES
+    event_manager/runner.cxx
+    event_manager/_event_manager.cxx
+
+    LINKS FairMQ
+    TIMEOUT 10
+)
+
 ##############################
 # Aggregate all test targets #
 ##############################

@@ -211,7 +211,7 @@ class PluginServices
     /// @param callback function
     ///
     /// While PluginServices provides the SetProperty method which can update properties only during certain device states, there are
-    /// other methods in a FairMQ device that can update properties at any time. Therefore, the callback implementation should expect to be called in any
+    /// other APIs in a FairMQ device that can update properties at any time. Therefore, the callback implementation should expect to be called in any
     /// device state.
     // template<typename T>
     // auto SubscribeToPropertyChange(
