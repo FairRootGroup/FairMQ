@@ -89,7 +89,7 @@ int main(int argc, char** argv)
         // config.UpdateChannelMap(map2);
 
         MyDevice device;
-        device.CatchSignals();
+        // device.CatchSignals();
         device.SetConfig(config);
 
         // getting as string and conversion helpers

@@ -108,7 +108,7 @@ void FairMQBenchmarkSampler::Run()
 
     auto tEnd = chrono::high_resolution_clock::now();
 
-    LOG(INFO) << "Leaving RUNNING state. Done " << fNumIterations << " iterations in " << chrono::duration<double, milli>(tEnd - tStart).count() << "ms.";
+    LOG(INFO) << "Done " << fNumIterations << " iterations in " << chrono::duration<double, milli>(tEnd - tStart).count() << "ms.";
 
 }
 

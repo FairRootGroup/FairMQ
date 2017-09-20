@@ -74,6 +74,8 @@ class DDS : public Plugin
     std::queue<DeviceState> fEvents;
     std::mutex fEventsMutex;
     std::condition_variable fNewEvent;
+
+    std::atomic<bool> fDeviceTerminationRequested;
 };
 
 REGISTER_FAIRMQ_PLUGIN(

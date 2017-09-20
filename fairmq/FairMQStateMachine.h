@@ -90,8 +90,8 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
         , fWorkAvailable(false)
         , fStateChangeSignal()
         , fStateChangeSignalsMap()
-        , fWorkerThread()
         , fTerminationRequested(false)
+        , fWorkerThread()
     {}
 
     virtual ~FairMQFSM()

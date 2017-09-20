@@ -34,6 +34,7 @@ DDS::DDS(const string name, const Plugin::Version version, const string maintain
     , fEvents()
     , fEventsMutex()
     , fNewEvent()
+    , fDeviceTerminationRequested(false)
 {
     try
     {
@@ -67,6 +68,10 @@ auto DDS::HandleControl() -> void
                 fEvents.push(newState);
             }
             fNewEvent.notify_one();
+            if (newState == DeviceState::Exiting)
+            {
+                fDeviceTerminationRequested = true;
+            }
         });
 
         ChangeDeviceState(DeviceStateTransition::InitDevice);
@@ -100,7 +105,7 @@ auto DDS::HandleControl() -> void
 
         // wait until stop signal
         unique_lock<mutex> lock(fStopMutex);
-        while (!DeviceTerminated())
+        while (!fDeviceTerminationRequested)
         {
             fStopCondition.wait_for(lock, chrono::seconds(1));
         }
@@ -129,7 +134,7 @@ auto DDS::FillChannelContainers() -> void
         if (GetProperty<string>(methodKey) == "bind")
         {
             fBindingChans.insert(make_pair(c.first, vector<string>()));
-            for (unsigned int i = 0; i < c.second; ++i)
+            for (int i = 0; i < c.second; ++i)
             {
                 fBindingChans.at(c.first).push_back(GetProperty<string>(addressKey));
             }
@@ -138,7 +143,7 @@ auto DDS::FillChannelContainers() -> void
         {
             fConnectingChans.insert(make_pair(c.first, DDSConfig()));
             LOG(DEBUG) << "preparing to connect: " << c.first << " with " << c.second << " sub-channels.";
-            for (unsigned int i = 0; i < c.second; ++i)
+            for (int i = 0; i < c.second; ++i)
             {
                 fConnectingChans.at(c.first).fSubChannelAddresses.push_back(string());
             }

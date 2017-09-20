@@ -36,7 +36,8 @@ inline auto control(std::shared_ptr<FairMQDevice> device) -> void
 
 struct PluginServices : ::testing::Test {
     PluginServices()
-    : mDevice{std::make_shared<FairMQDevice>()}
+    : mConfig()
+    , mDevice{std::make_shared<FairMQDevice>()}
     , mServices{&mConfig, mDevice}
     {
         mDevice->SetTransport("zeromq");
