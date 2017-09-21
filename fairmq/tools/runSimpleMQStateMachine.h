@@ -28,9 +28,6 @@ int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
     std::string control = cfg.GetValue<std::string>("control");
 
     device.ChangeState(TMQDevice::INIT_DEVICE);
-    // Wait for the binding channels to bind
-    device.WaitForInitialValidation();
-
     device.WaitForEndOfState(TMQDevice::INIT_DEVICE);
 
     device.ChangeState(TMQDevice::INIT_TASK);

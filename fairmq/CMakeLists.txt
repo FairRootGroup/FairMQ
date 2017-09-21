@@ -65,7 +65,6 @@ set(FAIRMQ_HEADER_FILES
     ${FAIRMQ_DEPRECATED_HEADER_FILES}
     EventManager.h
     FairMQChannel.h
-    FairMQConfigurable.h
     FairMQDevice.h
     FairMQLogger.h
     FairMQMessage.h
@@ -134,7 +133,6 @@ endif()
 
 set(FAIRMQ_SOURCE_FILES
     FairMQChannel.cxx
-    FairMQConfigurable.cxx
     FairMQDevice.cxx
     FairMQLogger.cxx
     FairMQMessage.cxx

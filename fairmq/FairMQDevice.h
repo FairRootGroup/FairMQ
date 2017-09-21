@@ -9,7 +9,6 @@
 #ifndef FAIRMQDEVICE_H_
 #define FAIRMQDEVICE_H_
 
-#include "FairMQConfigurable.h"
 #include "FairMQStateMachine.h"
 #include "FairMQTransportFactory.h"
 #include "FairMQTransports.h"
@@ -42,18 +41,11 @@ using InputMultipartCallback = std::function<bool(FairMQParts&, int)>;
 
 class FairMQProgOptions;
 
-class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
+class FairMQDevice : public FairMQStateMachine
 {
     friend class FairMQChannel;
 
   public:
-    enum
-    {
-        Id = FairMQConfigurable::Last, ///< Device ID
-        NumIoThreads, ///< Number of ZeroMQ I/O threads
-        Last
-    };
-
     /// Default constructor
     FairMQDevice();
 
@@ -298,32 +290,6 @@ class FairMQDevice : public FairMQStateMachine, public FairMQConfigurable
 
     /// Waits for the first initialization run to finish
     void WaitForInitialValidation();
-
-    /// Set Device properties stored as strings
-    /// @param key      Property key
-    /// @param value    Property value
-    virtual void SetProperty(const int key, const std::string& value);
-    /// Get Device properties stored as strings
-    /// @param key      Property key
-    /// @param default_ not used
-    /// @return         Property value
-    virtual std::string GetProperty(const int key, const std::string& default_ = "");
-    /// Set Device properties stored as integers
-    /// @param key      Property key
-    /// @param value    Property value
-    virtual void SetProperty(const int key, const int value);
-    /// Get Device properties stored as integers
-    /// @param key      Property key
-    /// @param default_ not used
-    /// @return         Property value
-    virtual int GetProperty(const int key, const int default_ = 0);
-
-    /// Get property description for a given property name
-    /// @param  key     Property name/key
-    /// @return String  with the property description
-    virtual std::string GetPropertyDescription(const int key);
-    /// Print all properties of this and the parent class to LOG(INFO)
-    virtual void ListProperties();
 
     /// Adds a transport to the device if it doesn't exist
     /// @param transport  Transport string ("zeromq"/"nanomsg"/"shmem")
