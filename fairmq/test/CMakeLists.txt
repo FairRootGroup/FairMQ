@@ -151,6 +151,15 @@ add_testsuite(FairMQ.EventManager
     TIMEOUT 10
 )
 
+add_testsuite(FairMQ.StateMachine
+    SOURCES
+    state_machine/runner.cxx
+    state_machine/_state_machine.cxx
+
+    LINKS FairMQ
+    TIMEOUT 10
+)
+
 ##############################
 # Aggregate all test targets #
 ##############################

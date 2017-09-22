@@ -95,7 +95,7 @@ class EventManager
     }
 
     template<typename E, typename ...Args>
-    auto Emit(typename E::KeyType& key, Args&&... args) const -> void
+    auto Emit(typename E::KeyType& key, Args... args) const -> void
     {
         const std::type_index event_type_index{typeid(E)};
         const std::type_index callback_type_index{typeid(Callback<E, Args...>)};

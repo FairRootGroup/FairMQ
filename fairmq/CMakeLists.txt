@@ -95,6 +95,7 @@ set(FAIRMQ_HEADER_FILES
     plugins/Builtin.h
     plugins/Control.h
     runFairMQDevice.h
+    StateMachine.h
     shmem/FairMQMessageSHM.h
     shmem/FairMQPollerSHM.h
     shmem/FairMQRegionSHM.h
@@ -155,6 +156,7 @@ set(FAIRMQ_SOURCE_FILES
     PluginManager.cxx
     PluginServices.cxx
     plugins/Control.cxx
+    StateMachine.cxx
     shmem/FairMQMessageSHM.cxx
     shmem/FairMQPollerSHM.cxx
     shmem/FairMQRegionSHM.cxx
