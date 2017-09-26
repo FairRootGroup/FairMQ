@@ -12,7 +12,7 @@ using namespace fair::mq;
 
 const std::unordered_map<std::string, PluginServices::DeviceState> PluginServices::fkDeviceStateStrMap = {
     {"OK",                  DeviceState::Ok},
-    {"ERROR",               DeviceState::Error},
+    {"Error",               DeviceState::Error},
     {"IDLE",                DeviceState::Idle},
     {"INITIALIZING DEVICE", DeviceState::InitializingDevice},
     {"DEVICE READY",        DeviceState::DeviceReady},
@@ -26,7 +26,7 @@ const std::unordered_map<std::string, PluginServices::DeviceState> PluginService
 };
 const std::unordered_map<PluginServices::DeviceState, std::string, tools::HashEnum<PluginServices::DeviceState>> PluginServices::fkStrDeviceStateMap = {
     {DeviceState::Ok,                 "OK"},
-    {DeviceState::Error,              "ERROR"},
+    {DeviceState::Error,              "Error"},
     {DeviceState::Idle,               "IDLE"},
     {DeviceState::InitializingDevice, "INITIALIZING DEVICE"},
     {DeviceState::DeviceReady,        "DEVICE READY"},
@@ -62,7 +62,7 @@ const std::unordered_map<PluginServices::DeviceStateTransition, std::string, too
 };
 const std::unordered_map<FairMQDevice::State, PluginServices::DeviceState, fair::mq::tools::HashEnum<FairMQDevice::State>> PluginServices::fkDeviceStateMap = {
     {FairMQDevice::OK,                  DeviceState::Ok},
-    {FairMQDevice::ERROR,               DeviceState::Error},
+    {FairMQDevice::Error,               DeviceState::Error},
     {FairMQDevice::IDLE,                DeviceState::Idle},
     {FairMQDevice::INITIALIZING_DEVICE, DeviceState::InitializingDevice},
     {FairMQDevice::DEVICE_READY,        DeviceState::DeviceReady},

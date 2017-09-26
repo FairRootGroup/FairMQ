@@ -357,8 +357,8 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
         {
             LOG(STATE) << "Entering ERROR state";
-            fsm.fState = ERROR;
-            fsm.CallStateChangeCallbacks(ERROR);
+            fsm.fState = Error;
+            fsm.CallStateChangeCallbacks(Error);
         }
     };
 
@@ -460,7 +460,7 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
     enum State
     {
         OK,
-        ERROR,
+        Error,
         IDLE,
         INITIALIZING_DEVICE,
         DEVICE_READY,
@@ -479,8 +479,8 @@ struct FairMQFSM_ : public msmf::state_machine_def<FairMQFSM_>
         {
             case OK:
                 return "OK";
-            case ERROR:
-                return "ERROR";
+            case Error:
+                return "Error";
             case IDLE:
                 return "IDLE";
             case INITIALIZING_DEVICE:
