@@ -206,6 +206,8 @@ class PluginServices
 
     auto GetChannelInfo() const -> std::unordered_map<std::string, int> { return fConfig->GetChannelInfo(); }
 
+    auto GetPropertyKeys() const -> std::vector<std::string> { return fConfig->GetPropertyKeys(); }
+
     /// @brief Subscribe to property updates of type T
     /// @param subscriber
     /// @param callback function
@@ -228,7 +230,6 @@ class PluginServices
     // auto UnsubscribeFromPropertyChange(const std::string& subscriber) -> void { fConfig->Unsubscribe<T>(subscriber); }
     //
     // TODO Fix property subscription
-    // TODO Property iterator
 
     static const std::unordered_map<std::string, DeviceState> fkDeviceStateStrMap;
     static const std::unordered_map<DeviceState, std::string, tools::HashEnum<DeviceState>> fkStrDeviceStateMap;

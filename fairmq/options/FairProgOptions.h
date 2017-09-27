@@ -64,6 +64,20 @@ class FairProgOptions
     FairProgOptions();
     virtual ~FairProgOptions();
 
+    auto GetPropertyKeys() const -> std::vector<std::string>
+    {
+        std::lock_guard<std::mutex> lock{fConfigMutex};
+
+        std::vector<std::string> result;
+
+        for (const auto& it : fVarMap)
+        {
+            result.push_back(it.first.c_str());
+        }
+
+        return result;
+    }
+
     //  add options_description
     int AddToCmdLineOptions(const po::options_description optDesc, bool visible = true);
     int AddToCfgFileOptions(const po::options_description optDesc, bool visible = true);
