@@ -99,24 +99,33 @@ int main(int argc, char** argv)
         // LOG(INFO) << "dataRate: " << dataRate;
 
         LOG(INFO) << "Subscribing: <string>(chans.data.0.address)";
-        config.Subscribe<string>("chans.data.0.address", [&device](const string& key, const string& value)
+        config.Subscribe<string>("test", [&device](const string& key, string value)
         {
-            LOG(INFO) << "[callback] Updating device parameter " << key << " = " << value;
-            device.fChannels.at("data").at(0).UpdateAddress(value);
+            if (key == "chans.data.0.address")
+            {
+                LOG(INFO) << "[callback] Updating device parameter " << key << " = " << value;
+                device.fChannels.at("data").at(0).UpdateAddress(value);
+            }
         });
 
         LOG(INFO) << "Subscribing: <int>(chans.data.0.rcvBufSize)";
-        config.Subscribe<int>("chans.data.0.rcvBufSize", [&device](const string& key, int value)
+        config.Subscribe<int>("test", [&device](const string& key, int value)
         {
-            LOG(INFO) << "[callback] Updating device parameter " << key << " = " << value;
-            device.fChannels.at("data").at(0).UpdateRcvBufSize(value);
+            if(key == "chans.data.0.rcvBufSize")
+            {
+                LOG(INFO) << "[callback] Updating device parameter " << key << " = " << value;
+                device.fChannels.at("data").at(0).UpdateRcvBufSize(value);
+            }
         });
 
         LOG(INFO) << "Subscribing: <double>(data-rate)";
-        config.Subscribe<double>("data-rate", [&device](const string& key, double value)
+        config.Subscribe<double>("test", [&device](const string& key, double value)
         {
-            LOG(INFO) << "[callback] Updating device parameter " << key << " = " << value;
-            device.SetRate(value);
+            if (key == "data-rate")
+            {
+                LOG(INFO) << "[callback] Updating device parameter " << key << " = " << value;
+                device.SetRate(value);
+            }
         });
 
         LOG(INFO) << "Starting value updates...\n";
@@ -134,6 +143,11 @@ int main(int argc, char** argv)
         LOG(INFO) << "device: " << device.GetRate() << endl;
         // device.Print();
 
+        LOG(INFO) << "nase: " << config.GetValue<double>("nase");
+
+        config.Unsubscribe<string>("test");
+        config.Unsubscribe<int>("test");
+        config.Unsubscribe<double>("test");
         // advanced commands
 
         // LOG(INFO) << "-------------------- start custom 1";

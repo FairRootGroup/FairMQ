@@ -16,6 +16,8 @@
 #ifndef FAIRMQPROGOPTIONS_H
 #define FAIRMQPROGOPTIONS_H
 
+#include <fairmq/EventManager.h>
+
 #include <unordered_map>
 #include <functional>
 #include <map>
@@ -24,10 +26,19 @@
 #include <string>
 
 #include "FairProgOptions.h"
-#include "FairMQEventManager.h"
 #include "FairMQChannel.h"
 
-class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
+namespace fair
+{
+namespace mq
+{
+
+struct PropertyChange : Event<std::string> {};
+
+} /* namespace mq */
+} /* namespace fair */
+
+class FairMQProgOptions : public FairProgOptions
 {
   protected:
     using FairMQMap = std::unordered_map<std::string, std::vector<FairMQChannel>>;
@@ -192,12 +203,8 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
                 }
             }
 
-            // execute stored function of a given key if exist
             //if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)//if one wants to restrict type
-            if (EventKeyFound(key))
-            {
-                EmitUpdate<typename std::decay<T>::type>(key, val);
-            }
+            fEvents.Emit<fair::mq::PropertyChange, typename std::decay<T>::type>(key, val);
 
             return 0;
         }
@@ -232,36 +239,29 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
             }
         }
 
-        // execute stored function of a given key if exist
         //if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)//if one wants to restrict type
-        if (EventKeyFound(key))
-        {
-            EmitUpdate<typename std::decay<T>::type>(key, val);
-        }
+        fEvents.Emit<fair::mq::PropertyChange, typename std::decay<T>::type>(key, val);
 
         return 0;
     }
 
-    template <typename T, typename F>
-    void Subscribe(const std::string& key, F&& func) const
+    template <typename T>
+    void Subscribe(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, T)> func)
     {
         std::unique_lock<std::mutex> lock(fConfigMutex);
 
         static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value,
             "In template member FairMQProgOptions::Subscribe<T>(key,Lambda) the types const char* or char* for the calback signatures are not supported.");
 
-        if (fVarMap.count(key))
-        {
-            Connect<EventId::UpdateParam, T>(key, std::forward<F>(func));
-        }
+        fEvents.Subscribe<fair::mq::PropertyChange, T>(subscriber, func);
     }
 
     template <typename T>
-    void Unsubscribe(const std::string& key) const
+    void Unsubscribe(const std::string& subscriber)
     {
         std::unique_lock<std::mutex> lock(fConfigMutex);
 
-        Disconnect<EventId::UpdateParam, T>(key);
+        fEvents.Unsubscribe<fair::mq::PropertyChange, T>(subscriber);
     }
 
     /*
@@ -291,18 +291,6 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
 
     // map of read channel info - channel name - number of subchannels
     std::unordered_map<std::string, int> fChannelInfo;
-
-    bool EventKeyFound(const std::string& key)
-    {
-        if (FairMQEventManager::EventKeyFound<EventId::UpdateParam>(key))
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
 
     using MQKey = std::tuple<std::string, int, std::string>;//store key info
     std::map<std::string, MQKey> fMQKeyMap;// key=full path - val=key info
@@ -335,7 +323,7 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
         //compile time check whether T is const char* or char*, and in that case a compile time error is thrown.
         static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value, 
             "In template member FairMQProgOptions::EmitUpdate<T>(key,val) the types const char* or char* for the calback signatures are not supported.");
-        Emit<EventId::UpdateParam, T>(key, key, val);
+        fEvents.Emit<fair::mq::PropertyChange, T>(key, val);
     }
 
     int UpdateChannelMap(const std::string& channelName, int index, const std::string& member, const std::string& val);
@@ -348,6 +336,8 @@ class FairMQProgOptions : public FairProgOptions , public FairMQEventManager
     }
 
     void UpdateChannelInfo();
+
+    fair::mq::EventManager fEvents;
 };
 
 #endif /* FAIRMQPROGOPTIONS_H */

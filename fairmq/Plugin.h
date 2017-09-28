@@ -91,10 +91,10 @@ class Plugin
     auto GetPropertyAsString(const std::string& key) const -> std::string { return fPluginServices->GetPropertyAsString(key); }
     auto GetChannelInfo() const -> std::unordered_map<std::string, int> { return fPluginServices->GetChannelInfo(); }
     auto GetPropertyKeys() const -> std::vector<std::string> { return fPluginServices->GetPropertyKeys(); }
-    // template<typename T>
-    // auto SubscribeToPropertyChange(std::function<void(const std::string& [>key*/, const T /*newValue<])> callback) const -> void { fPluginServices.SubscribeToPropertyChange(fkName, callback); }
-    // template<typename T>
-    // auto UnsubscribeFromPropertyChange() -> void { fPluginServices.UnsubscribeFromPropertyChange<T>(fkName); }
+    template<typename T>
+    auto SubscribeToPropertyChange(std::function<void(const std::string& key, T newValue)> callback) -> void { fPluginServices->SubscribeToPropertyChange<T>(fkName, callback); }
+    template<typename T>
+    auto UnsubscribeFromPropertyChange() -> void { fPluginServices->UnsubscribeFromPropertyChange<T>(fkName); }
 
   private:
     const std::string fkName;

@@ -206,30 +206,25 @@ class PluginServices
 
     auto GetChannelInfo() const -> std::unordered_map<std::string, int> { return fConfig->GetChannelInfo(); }
 
+    /// @brief Discover the list of property keys
+    /// @return list of property keys
     auto GetPropertyKeys() const -> std::vector<std::string> { return fConfig->GetPropertyKeys(); }
 
     /// @brief Subscribe to property updates of type T
     /// @param subscriber
     /// @param callback function
     ///
-    /// While PluginServices provides the SetProperty method which can update properties only during certain device states, there are
-    /// other APIs in a FairMQ device that can update properties at any time. Therefore, the callback implementation should expect to be called in any
-    /// device state.
-    // template<typename T>
-    // auto SubscribeToPropertyChange(
-    //     const std::string& subscriber,
-    //     std::function<void(const std::string& [>key*/, const T /*newValue<])> callback
-    // ) const -> void
-    // {
-    //     fConfig->Subscribe(subscriber, callback);
-    // }
-    //
-    // /// @brief Unsubscribe from property updates of type T
-    // /// @param subscriber
-    // template<typename T>
-    // auto UnsubscribeFromPropertyChange(const std::string& subscriber) -> void { fConfig->Unsubscribe<T>(subscriber); }
-    //
-    // TODO Fix property subscription
+    /// Subscribe to property changes with a callback to monitor property changes in an event based fashion.
+    template<typename T>
+    auto SubscribeToPropertyChange(const std::string& subscriber, std::function<void(const std::string& key, T)> callback) const -> void
+    {
+        fConfig->Subscribe<T>(subscriber, callback);
+    }
+
+    /// @brief Unsubscribe from property updates of type T
+    /// @param subscriber
+    template<typename T>
+    auto UnsubscribeFromPropertyChange(const std::string& subscriber) -> void { fConfig->Unsubscribe<T>(subscriber); }
 
     static const std::unordered_map<std::string, DeviceState> fkDeviceStateStrMap;
     static const std::unordered_map<DeviceState, std::string, tools::HashEnum<DeviceState>> fkStrDeviceStateMap;

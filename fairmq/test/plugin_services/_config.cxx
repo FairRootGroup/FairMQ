@@ -57,4 +57,35 @@ TEST_F(PluginServices, KeyDiscovery)
     EXPECT_TRUE(find(keys.begin(), keys.end(), "foo") != keys.end());
 }
 
+TEST_F(PluginServices, ConfigCallbacks)
+{
+    mServices.SubscribeToPropertyChange<string>("test", [](const string& key, string value) {
+        if (key == "chans.data.0.address") { ASSERT_EQ(value, "tcp://localhost:4321"); }
+    });
+
+    mServices.SubscribeToPropertyChange<int>("test", [](const string& key, int value) {
+        if(key == "chans.data.0.rcvBufSize") {
+            FAIL(); // should not be called because we unsubscribed
+        }
+    });
+
+    mServices.SubscribeToPropertyChange<double>("test", [](const string& key, double value) {
+        if (key == "data-rate") { ASSERT_EQ(value, 0.9); }
+    });
+
+    mServices.SubscribeToDeviceStateChange("test",[&](DeviceState newState){
+        switch (newState) {
+        case DeviceState::InitializingDevice:
+            mServices.SetProperty<string>("chans.data.0.address", "tcp://localhost:4321");
+            mServices.SetProperty<int>("chans.data.0.rcvBufSize", 100);
+            mServices.SetProperty<double>("data-rate", 0.9);
+            break;
+        default:
+            break;
+        }
+    });
+
+    mServices.UnsubscribeFromPropertyChange<int>("test");
+}
+
 } /* namespace */

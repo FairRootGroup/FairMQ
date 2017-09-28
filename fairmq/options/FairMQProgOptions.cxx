@@ -22,7 +22,7 @@
 using namespace std;
 
 FairMQProgOptions::FairMQProgOptions()
-    : FairProgOptions(), FairMQEventManager()
+    : FairProgOptions()
     , fMQParserOptions("MQ-Device parser options")
     , fMQOptionsInCfg("MQ-Device options")
     , fMQOptionsInCmd("MQ-Device options")
