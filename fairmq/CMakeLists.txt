@@ -63,6 +63,7 @@ set(FAIRMQ_DEPRECATED_HEADER_FILES
 )
 set(FAIRMQ_HEADER_FILES
     ${FAIRMQ_DEPRECATED_HEADER_FILES}
+    DeviceRunner.h
     EventManager.h
     FairMQChannel.h
     FairMQDevice.h
@@ -83,7 +84,6 @@ set(FAIRMQ_HEADER_FILES
     devices/FairMQSink.h
     devices/FairMQSplitter.h
     logger/logger.h
-    options/FairMQEventManager.h
     options/FairMQParser.h
     options/FairMQProgOptions.h
     options/FairMQSuboptParser.h
@@ -133,6 +133,7 @@ endif()
 
 
 set(FAIRMQ_SOURCE_FILES
+    DeviceRunner.cxx
     FairMQChannel.cxx
     FairMQDevice.cxx
     FairMQLogger.cxx

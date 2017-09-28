@@ -49,6 +49,7 @@ class FairMQProgOptions : public FairProgOptions
     FairMQProgOptions();
     virtual ~FairMQProgOptions();
 
+    void ParseAll(const std::vector<std::string>& cmdLineArgs, bool allowUnregistered);
     // parse command line and txt/INI configuration file.
     // default parser for the mq-configuration file (JSON/XML) is called if command line key mq-config is called
     virtual void ParseAll(const int argc, char const* const* argv, bool allowUnregistered = false);

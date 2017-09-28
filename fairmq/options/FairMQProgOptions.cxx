@@ -39,6 +39,18 @@ FairMQProgOptions::~FairMQProgOptions()
 {
 }
 
+void FairMQProgOptions::ParseAll(const std::vector<std::string>& cmdLineArgs, bool allowUnregistered)
+{
+    std::vector<const char*> argv(cmdLineArgs.size());
+
+    std::transform(cmdLineArgs.begin(), cmdLineArgs.end(), argv.begin(), [](const std::string& str)
+    {
+        return str.c_str();
+    });
+
+    ParseAll(argv.size(), const_cast<char**>(argv.data()), allowUnregistered);
+}
+
 void FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool allowUnregistered)
 {
     // init description
