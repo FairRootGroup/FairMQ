@@ -52,7 +52,7 @@ TEST_F(PluginServices, KeyDiscovery)
 {
     mConfig.SetValue("foo", 0);
 
-    auto keys{mServices.GetPropertyKeys()};
+    auto keys(mServices.GetPropertyKeys());
 
     EXPECT_TRUE(find(keys.begin(), keys.end(), "foo") != keys.end());
 }
