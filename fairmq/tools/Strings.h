@@ -33,7 +33,7 @@ auto ToString(T&&... t) -> std::string
 }
 
 /// @brief convert command line arguments from main function to vector of strings
-inline auto ToStrVector(const int argc, const char* argv[], const bool dropProgramName = true) -> std::vector<std::string>
+inline auto ToStrVector(const int argc, char* const argv[], const bool dropProgramName = true) -> std::vector<std::string>
 {
     auto res = std::vector<std::string>{};
     if (dropProgramName)

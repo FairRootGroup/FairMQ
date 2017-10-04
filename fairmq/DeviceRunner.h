@@ -51,7 +51,7 @@ namespace mq
 class DeviceRunner
 {
   public:
-    DeviceRunner(int argc, char const* argv[]);
+    DeviceRunner(int argc, char* const argv[]);
 
     auto Run() -> int;
     auto RunWithExceptionHandlers() -> int;

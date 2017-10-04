@@ -38,7 +38,7 @@ FairMQDevicePtr getDevice(const FairMQProgOptions& config);
 // to be implemented by the user to add custom command line options (or just with empty body)
 void addCustomOptions(boost::program_options::options_description&);
 
-int main(int argc, const char** argv)
+int main(int argc, char* argv[])
 {
     using namespace fair::mq;
     using namespace fair::mq::hooks;

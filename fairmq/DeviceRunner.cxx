@@ -12,7 +12,7 @@
 
 using namespace fair::mq;
 
-DeviceRunner::DeviceRunner(int argc, char const* argv[])
+DeviceRunner::DeviceRunner(int argc, char* const argv[])
 : fRawCmdLineArgs{tools::ToStrVector(argc, argv, false)}
 , fPluginManager{PluginManager::MakeFromCommandLineOptions(fRawCmdLineArgs)}
 , fDevice{nullptr}

@@ -37,7 +37,9 @@ int runStateMachine(TMQDevice& device, FairMQProgOptions& cfg)
 
     if (control == "interactive")
     {
-        device.InteractiveStateLoop();
+        LOG(ERROR) << "interactive control moved to plugin";
+        return 1;
+        // device.InteractiveStateLoop();
     }
     else if (control == "static")
     {
