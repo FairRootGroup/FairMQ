@@ -11,25 +11,6 @@
 #include <memory>
 #include <string>
 
-template <typename R>
-class GenericFairMQDevice : public FairMQDevice
-{
-  public:
-    GenericFairMQDevice(R func) : r(func) {}
-
-  protected:
-    virtual bool ConditionalRun() { return r(*static_cast<FairMQDevice*>(this)); }
-
-  private:
-    R r;
-};
-
-template <typename R>
-FairMQDevice* makeDeviceWithConditionalRun(R r)
-{
-    return new GenericFairMQDevice<R>(r);
-}
-
 using FairMQDevicePtr = FairMQDevice*;
 
 // to be implemented by the user to return a child class of FairMQDevice

@@ -105,7 +105,6 @@ set(FAIRMQ_HEADER_FILES
     shmem/FairMQShmCommon.h
     tools/CppSTL.h
     tools/Network.h
-    tools/runSimpleMQStateMachine.h
     tools/Strings.h
     tools/Version.h
     zeromq/FairMQMessageZMQ.h
