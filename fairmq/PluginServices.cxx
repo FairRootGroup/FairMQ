@@ -13,7 +13,7 @@ using namespace std;
 
 const std::unordered_map<std::string, PluginServices::DeviceState> PluginServices::fkDeviceStateStrMap = {
     {"OK",                  DeviceState::Ok},
-    {"Error",               DeviceState::Error},
+    {"ERROR",               DeviceState::Error},
     {"IDLE",                DeviceState::Idle},
     {"INITIALIZING DEVICE", DeviceState::InitializingDevice},
     {"DEVICE READY",        DeviceState::DeviceReady},
@@ -27,7 +27,7 @@ const std::unordered_map<std::string, PluginServices::DeviceState> PluginService
 };
 const std::unordered_map<PluginServices::DeviceState, std::string, tools::HashEnum<PluginServices::DeviceState>> PluginServices::fkStrDeviceStateMap = {
     {DeviceState::Ok,                 "OK"},
-    {DeviceState::Error,              "Error"},
+    {DeviceState::Error,              "ERROR"},
     {DeviceState::Idle,               "IDLE"},
     {DeviceState::InitializingDevice, "INITIALIZING DEVICE"},
     {DeviceState::DeviceReady,        "DEVICE READY"},
