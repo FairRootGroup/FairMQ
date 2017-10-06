@@ -99,17 +99,8 @@ void DefaultAddFileSink(const std::string& filename, SeverityLevel level);
 } // namespace mq
 } // namespace fair
 
-#if defined(__GNUC__) || defined(__GNUG__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Weffc++"
-#endif
-
 // register a global logger (declaration)
 BOOST_LOG_GLOBAL_LOGGER(global_logger, boost::log::sources::severity_logger_mt<fair::mq::logger::SeverityLevel>)
-
-#if defined(__GNUC__) || defined(__GNUG__)
-#pragma GCC diagnostic pop
-#endif
 
 // helper macros
 

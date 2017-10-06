@@ -86,11 +86,6 @@ inline std::string ConvertVariableValueToString<boost::filesystem::path>(const p
     return valueStr;
 }
 
-#if defined(__GNUC__) || defined(__GNUG__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Weffc++"
-#endif
-
 // policy to convert boost variable value into string
 struct ToString
 {
@@ -234,10 +229,6 @@ struct ConvertVariableValue : T
         return T::DefaultValue(defaultedValue, emptyValue);
     }
 };
-
-#if defined(__GNUC__) || defined(__GNUG__)
-#pragma GCC diagnostic pop
-#endif
 
 } // FairMQ namespace
 

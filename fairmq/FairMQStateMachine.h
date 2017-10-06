@@ -71,7 +71,6 @@ _Pragma("clang diagnostic ignored \"-Wnon-virtual-dtor\"")
 #elif defined(__GNUC__) || defined(__GNUG__)
 _Pragma("GCC diagnostic push")
 _Pragma("GCC diagnostic ignored \"-Wnon-virtual-dtor\"")
-_Pragma("GCC diagnostic ignored \"-Weffc++\"")
 #endif
 
 // defining the boost MSM state machine
