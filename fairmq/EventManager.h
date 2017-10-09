@@ -32,7 +32,7 @@ namespace mq
 template<typename K>
 struct Event
 {
-    using KeyType = const K;
+    using KeyType = K;
 };
 
 /**
@@ -53,16 +53,19 @@ struct Event
 class EventManager
 {
   public:
-    template<typename E, typename ...Args>
-    using Callback = std::function<void(typename E::KeyType, Args...)>;
+    // Clang 3.4-3.8 has a bug and cannot properly deal with the following template alias.
+    // Therefore, we leave them here commented out for now.
+    // template<typename E, typename ...Args>
+    // using Callback = std::function<void(typename E::KeyType, Args...)>;
+
     template<typename E, typename ...Args>
     using Signal = boost::signals2::signal<void(typename E::KeyType, Args...)>;
 
     template<typename E, typename ...Args>
-    auto Subscribe(const std::string& subscriber, Callback<E, Args...> callback) -> void
+    auto Subscribe(const std::string& subscriber, std::function<void(typename E::KeyType, Args...)> callback) -> void
     {
         const std::type_index event_type_index{typeid(E)};
-        const std::type_index callback_type_index{typeid(Callback<E, Args...>)};
+        const std::type_index callback_type_index{typeid(std::function<void(typename E::KeyType, Args...)>)};
         const auto signalsKey = std::make_pair(event_type_index, callback_type_index);
         const auto connectionsKey = std::make_pair(subscriber, signalsKey);
 
@@ -84,7 +87,7 @@ class EventManager
     auto Unsubscribe(const std::string& subscriber) -> void
     {
         const std::type_index event_type_index{typeid(E)};
-        const std::type_index callback_type_index{typeid(Callback<E, Args...>)};
+        const std::type_index callback_type_index{typeid(std::function<void(typename E::KeyType, Args...)>)};
         const auto signalsKey = std::make_pair(event_type_index, callback_type_index);
         const auto connectionsKey = std::make_pair(subscriber, signalsKey);
 
@@ -95,10 +98,10 @@ class EventManager
     }
 
     template<typename E, typename ...Args>
-    auto Emit(typename E::KeyType& key, Args... args) const -> void
+    auto Emit(typename E::KeyType key, Args... args) const -> void
     {
         const std::type_index event_type_index{typeid(E)};
-        const std::type_index callback_type_index{typeid(Callback<E, Args...>)};
+        const std::type_index callback_type_index{typeid(std::function<void(typename E::KeyType, Args...)>)};
         const auto signalsKey = std::make_pair(event_type_index, callback_type_index);
 
         (*GetSignal<E, Args...>(signalsKey))(key, std::forward<Args>(args)...);

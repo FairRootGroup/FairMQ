@@ -16,7 +16,7 @@ namespace
 using namespace std;
 using namespace fair::mq;
 
-struct TestEvent : fair::mq::Event<std::string> {};
+struct TestEvent : fair::mq::Event<const std::string&> {};
 
 TEST(EventManager, Basics)
 {
@@ -26,14 +26,14 @@ TEST(EventManager, Basics)
     int value = 0;
     string value2;
 
-    EventManager::Callback<TestEvent, int> callback{
-        [&](TestEvent::KeyType& key, int newValue){
+    std::function<void(typename TestEvent::KeyType, int)> callback{
+        [&](TestEvent::KeyType key, int newValue){
             ++call_counter;
             if (key == "test") value = newValue;
         }
     };
-    EventManager::Callback<TestEvent, string> callback2{
-        [&](TestEvent::KeyType& key, string newValue){
+    std::function<void(typename TestEvent::KeyType, string)> callback2{
+        [&](TestEvent::KeyType key, string newValue){
             ++call_counter2;
             if (key == "test") value2 = newValue;
         }

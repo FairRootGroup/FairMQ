@@ -95,7 +95,7 @@ class StateMachine
     struct StateQueued : Event<State> {};
     auto SubscribeToStateChange(const std::string& subscriber, std::function<void(typename StateChange::KeyType newState, State lastState)> callback) -> void { fCallbacks.Subscribe<StateChange, State>(subscriber, callback); }
     auto UnsubscribeFromStateChange(const std::string& subscriber) -> void { fCallbacks.Unsubscribe<StateChange, State>(subscriber); }
-    auto SubscribeToStateQueued(const std::string& subscriber, std::function<void(typename StateChange::KeyType newState, State lastState)> callback) -> void { fCallbacks.Subscribe<StateQueued, State>(subscriber, callback); }
+    auto SubscribeToStateQueued(const std::string& subscriber, std::function<void(typename StateQueued::KeyType newState, State lastState)> callback) -> void { fCallbacks.Subscribe<StateQueued, State>(subscriber, callback); }
     auto UnsubscribeFromStateQueued(const std::string& subscriber) -> void { fCallbacks.Unsubscribe<StateQueued, State>(subscriber); }
 
     auto GetCurrentState() const -> State { std::lock_guard<std::mutex> lock{fMutex}; return fState; }
