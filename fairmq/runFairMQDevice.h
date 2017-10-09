@@ -24,31 +24,44 @@ int main(int argc, char* argv[])
     using namespace fair::mq;
     using namespace fair::mq::hooks;
 
-    fair::mq::DeviceRunner runner{argc, argv};
+    try
+    {
+        fair::mq::DeviceRunner runner{argc, argv};
 
-    // runner.AddHook<LoadPlugins>([](DeviceRunner& r){
-    //     // for example:
-    //     r.fPluginManager->SetSearchPaths({"/lib", "/lib/plugins"});
-    //     r.fPluginManager->LoadPlugin("asdf");
-    // });
+        // runner.AddHook<LoadPlugins>([](DeviceRunner& r){
+        //     // for example:
+        //     r.fPluginManager->SetSearchPaths({"/lib", "/lib/plugins"});
+        //     r.fPluginManager->LoadPlugin("asdf");
+        // });
 
-    runner.AddHook<SetCustomCmdLineOptions>([](DeviceRunner& r){
-        boost::program_options::options_description customOptions("Custom options");
-        addCustomOptions(customOptions);
-        r.fConfig.AddToCmdLineOptions(customOptions);
-    });
+        runner.AddHook<SetCustomCmdLineOptions>([](DeviceRunner& r){
+            boost::program_options::options_description customOptions("Custom options");
+            addCustomOptions(customOptions);
+            r.fConfig.AddToCmdLineOptions(customOptions);
+        });
 
-    // runner.AddHook<ModifyRawCmdLineArgs>([](DeviceRunner& r){
-    //     // for example:
-    //     r.fRawCmdLineArgs.push_back("--blubb");
-    // });
+        // runner.AddHook<ModifyRawCmdLineArgs>([](DeviceRunner& r){
+        //     // for example:
+        //     r.fRawCmdLineArgs.push_back("--blubb");
+        // });
 
-    runner.AddHook<InstantiateDevice>([](DeviceRunner& r){
-        r.fDevice = std::shared_ptr<FairMQDevice>{getDevice(r.fConfig)};
-    });
+        runner.AddHook<InstantiateDevice>([](DeviceRunner& r){
+            r.fDevice = std::shared_ptr<FairMQDevice>{getDevice(r.fConfig)};
+        });
 
-    return runner.RunWithExceptionHandlers();
+        return runner.Run();
 
-    // Run without builtin catch all exception handler, just:
-    // return runner.Run();
+        // Run with builtin catch all exception handler, just:
+        // return runner.RunWithExceptionHandlers();
+    }
+    catch (std::exception& e)
+    {
+        LOG(ERROR) << "Unhandled exception reached the top of main: " << e.what() << ", application will now exit";
+        return 1;
+    }
+    catch (...)
+    {
+        LOG(ERROR) << "Non-exception instance being thrown. Please make sure you use std::runtime_exception() instead. Application will now exit.";
+        return 1;
+    }
 }
