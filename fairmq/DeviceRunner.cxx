@@ -41,7 +41,10 @@ auto DeviceRunner::Run() -> int
     fEvents.Emit<hooks::ModifyRawCmdLineArgs>(*this);
     ////////////////////////
 
-    fConfig.ParseAll(fRawCmdLineArgs, true);
+    if (fConfig.ParseAll(fRawCmdLineArgs, true))
+    {
+        return 0;
+    }
 
     ////// CALL HOOK ///////
     fEvents.Emit<hooks::InstantiateDevice>(*this);

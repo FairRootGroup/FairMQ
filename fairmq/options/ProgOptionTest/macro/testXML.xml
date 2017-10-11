@@ -1,48 +1,44 @@
-
 <fairMQOptions>
-    <device name="merger" id="merger" >
-         <channel name="two_inputs_channel" >
-             <socket name="input1" >
-                     <type>pull</type> 
-                     <method>bind</method> 
-                     <address>tcp://*:5569</address>
-                     <sndBufSize>1000</sndBufSize>
-                     <rcvBufSize>1000</rcvBufSize>
-                     <rateLogging>1</rateLogging>
-                     
-             </socket>
-             <socket name="input2" >
-                     <type>pull</type> 
-                     <method>bind</method> 
-                     <address>tcp://*:5570</address>
-                     <sndBufSize>1000</sndBufSize>
-                     <rcvBufSize>1000</rcvBufSize>
-                     <rateLogging>1</rateLogging>
-                     
-             </socket>
-         </channel>
-         <channel name="one_output_channel" >
-             <socket name="output1" >
-                     <type>push</type> 
-                     <method>connect</method> 
-                     <address>tcp://*:5571</address>
-                     <sndBufSize>1000</sndBufSize>
-                     <rcvBufSize>1000</rcvBufSize>
-                     <rateLogging>1</rateLogging>
-             </socket>
-         </channel>
+    <device name="merger" id="merger">
+        <channel name="two_inputs_channel">
+            <socket name="input1">
+            <type>pull</type>
+            <method>bind</method>
+            <address>tcp://*:5569</address>
+            <sndBufSize>1000</sndBufSize>
+            <rcvBufSize>1000</rcvBufSize>
+            <rateLogging>1</rateLogging>
+            </socket>
+            <socket name="input2">
+            <type>pull</type>
+            <method>bind</method>
+            <address>tcp://*:5570</address>
+            <sndBufSize>1000</sndBufSize>
+            <rcvBufSize>1000</rcvBufSize>
+            <rateLogging>1</rateLogging>
+            </socket>
+        </channel>
+        <channel name="one_output_channel">
+            <socket name="output1">
+                    <type>push</type>
+                    <method>connect</method>
+                    <address>tcp://*:5571</address>
+                    <sndBufSize>1000</sndBufSize>
+                    <rcvBufSize>1000</rcvBufSize>
+                    <rateLogging>1</rateLogging>
+            </socket>
+        </channel>
     </device>
-    <device name="sink" id="sink" >
-        <channel name="one_input" >
-             <socket name="input1" >
-                     <type>pull</type> 
-                     <method>bind</method> 
-                     <address>tcp://localhost:5571</address>
-                     <sndBufSize>1000</sndBufSize>
-                     <rcvBufSize>1000</rcvBufSize>
-                     <rateLogging>1</rateLogging>
-             </socket>
+    <device name="sink" id="sink">
+        <channel name="one_input">
+            <socket name="input1">
+                    <type>pull</type>
+                    <method>bind</method>
+                    <address>tcp://localhost:5571</address>
+                    <sndBufSize>1000</sndBufSize>
+                    <rcvBufSize>1000</rcvBufSize>
+                    <rateLogging>1</rateLogging>
+            </socket>
          </channel>
     </device>
 </fairMQOptions>
-

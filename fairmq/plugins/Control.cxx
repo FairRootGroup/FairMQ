@@ -127,43 +127,43 @@ auto Control::InteractiveMode() -> void
                 switch (input)
                 {
                     case 'i':
-                        LOG(INFO) << "[i] init device";
+                        LOG(INFO) << "\n\n --> [i] init device\n";
                         ChangeDeviceState(DeviceStateTransition::InitDevice);
                     break;
                     case 'j':
-                        LOG(INFO) << "[j] init task";
+                        LOG(INFO) << "\n\n --> [j] init task\n";
                         ChangeDeviceState(DeviceStateTransition::InitTask);
                     break;
                     case 'p':
-                        LOG(INFO) << "[p] pause";
+                        LOG(INFO) << "\n\n --> [p] pause\n";
                         ChangeDeviceState(DeviceStateTransition::Pause);
                     break;
                     case 'r':
-                        LOG(INFO) << "[r] run";
+                        LOG(INFO) << "\n\n --> [r] run\n";
                         ChangeDeviceState(DeviceStateTransition::Run);
                     break;
                     case 's':
-                        LOG(INFO) << "[s] stop";
+                        LOG(INFO) << "\n\n --> [s] stop\n";
                         ChangeDeviceState(DeviceStateTransition::Stop);
                     break;
                     case 't':
-                        LOG(INFO) << "[t] reset task";
+                        LOG(INFO) << "\n\n --> [t] reset task\n";
                         ChangeDeviceState(DeviceStateTransition::ResetTask);
                     break;
                     case 'd':
-                        LOG(INFO) << "[d] reset device";
+                        LOG(INFO) << "\n\n --> [d] reset device\n";
                         ChangeDeviceState(DeviceStateTransition::ResetDevice);
                     break;
                     case 'h':
-                        LOG(INFO) << "[h] help";
+                        LOG(INFO) << "\n\n --> [h] help\n";
                         PrintInteractiveHelp();
                     break;
                     // case 'x':
-                    //     LOG(INFO) << "[x] ERROR";
+                    //     LOG(INFO) << "\n\n --> [x] ERROR\n";
                     //     ChangeDeviceState(DeviceStateTransition::ERROR_FOUND);
                     //     break;
                     case 'q':
-                        LOG(INFO) << "[q] end";
+                        LOG(INFO) << "\n\n --> [q] end\n";
                         keepRunning = false;
                     break;
                     default:
@@ -197,8 +197,8 @@ auto Control::InteractiveMode() -> void
 
 auto Control::PrintInteractiveHelp() -> void
 {
-    LOG(INFO) << "Use keys to control the state machine:";
-    LOG(INFO) << "[h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device";
+    LOG(INFO) << "Use keys to control the state machine:\n\n"
+              << "[h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device\n";
 }
 
 auto Control::WaitForNextState() -> DeviceState
@@ -219,7 +219,7 @@ auto Control::StaticMode() -> void
     try
     {
         RunStartupSequence();
-    
+
         {
             // Wait for next state, which is DeviceState::Ready,
             // or for device termination request

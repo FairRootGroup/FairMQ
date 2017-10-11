@@ -27,7 +27,7 @@ auto RunPoller(string transport, int pollType) -> void
         stringstream cmd;
         cmd << runTestDevice
             << " --id pollout_"<< transport
-            << " --control static --verbosity DEBUG --log-color false"
+            << " --control static --severity DEBUG --color false"
             << " --session " << session << " --mq-config \"" << mqConfig << "\"";
         pollout = execute(cmd.str(), "[POLLOUT]");
     });
@@ -37,7 +37,7 @@ auto RunPoller(string transport, int pollType) -> void
         stringstream cmd;
         cmd << runTestDevice
             << " --id pollin_" << transport
-            << " --control static --verbosity DEBUG --log-color false"
+            << " --control static --severity DEBUG --color false"
             << " --session " << session << " --mq-config \"" << mqConfig << "\" --poll-type " << pollType;
         pollin = execute(cmd.str(), "[POLLIN]");
     });

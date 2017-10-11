@@ -73,11 +73,11 @@ FairMQMap XML::UserParser(stringstream& input, const string& deviceId, const str
 namespace Helper
 {
 
-void PrintDeviceList(const boost::property_tree::ptree& tree, const std::string& formatFlag)
+void PrintDeviceList(const boost::property_tree::ptree& tree, const string& formatFlag)
 {
     string deviceIdKey;
 
-    // do a first loop just to print the device-id in json input 
+    // do a first loop just to print the device-id in json input
     for (const auto& p : tree)
     {
         if (p.first == "devices")
@@ -88,23 +88,23 @@ void PrintDeviceList(const boost::property_tree::ptree& tree, const std::string&
                 if (key != "")
                 {
                     deviceIdKey = key;
-                    LOG(TRACE) << "Found config for device key '" << deviceIdKey << "' in JSON input";
+                    LOG(DEBUG) << "Found config for device key '" << deviceIdKey << "' in JSON input";
                 }
                 else
                 {
                     deviceIdKey = q.second.get<string>("id");
-                    LOG(TRACE) << "Found config for device id '" << deviceIdKey << "' in JSON input";
+                    LOG(DEBUG) << "Found config for device id '" << deviceIdKey << "' in JSON input";
                 }
             }
         }
 
         if (p.first == "device")
         {
-            //get id attribute to choose the device
+            // get id attribute to choose the device
             if (formatFlag == "xml")
             {
                 deviceIdKey = p.second.get<string>("<xmlattr>.id");
-                LOG(TRACE) << "Found config for '" << deviceIdKey << "' in XML input";
+                LOG(DEBUG) << "Found config for '" << deviceIdKey << "' in XML input";
             }
 
             if (formatFlag == "json")
@@ -113,12 +113,12 @@ void PrintDeviceList(const boost::property_tree::ptree& tree, const std::string&
                 if (key != "")
                 {
                     deviceIdKey = key;
-                    LOG(TRACE) << "Found config for device key '" << deviceIdKey << "' in JSON input";
+                    LOG(DEBUG) << "Found config for device key '" << deviceIdKey << "' in JSON input";
                 }
                 else
                 {
                     deviceIdKey = p.second.get<string>("id");
-                    LOG(TRACE) << "Found config for device id '" << deviceIdKey << "' in JSON input";
+                    LOG(DEBUG) << "Found config for device id '" << deviceIdKey << "' in JSON input";
                 }
             }
         }
@@ -428,7 +428,7 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
 void PrintPropertyTree(const boost::property_tree::ptree& tree, int level)
 {
   for (const auto& p : tree) {
-    std::cout << std::setw(level+1) << level << ": " << p.first << " " << p.second.get_value<string>() << std::endl;
+    cout << setw(level+1) << level << ": " << p.first << " " << p.second.get_value<string>() << endl;
     PrintPropertyTree(p.second.get_child(""), level + 1);
   }
 }

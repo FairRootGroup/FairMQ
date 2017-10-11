@@ -15,17 +15,16 @@
 //////////////////////////////////////////////////////////////
 
 int main(int argc, char** argv)
-{    
-    
+{
     try
     {
         FairMQProgOptions config;
-    
+
         po::options_description format_desc("XML input");
         format_desc.add_options() 
             ("xml.config.node.root",  po::value<std::string>()->default_value("fairMQOptions"), "xml root node ")
             ;
-       
+
         po::options_description io_file_opt_desc("I/O file Options");
         io_file_opt_desc.add_options() 
             ("input.file.name",     po::value<std::string>(), "input file name")
@@ -38,21 +37,20 @@ int main(int argc, char** argv)
 
         config.AddToCmdLineOptions(format_desc,true);
         config.AddToCmdLineOptions(io_file_opt_desc,true);
-        
-        
+
         config.EnableCfgFile();// UseConfigFile (by default config file is not defined)
         config.AddToCfgFileOptions(format_desc,false);//false because already added to visible
         config.AddToCfgFileOptions(io_file_opt_desc,false);
-        
+
         // Parse command line and config file
         if(config.ParseAll(argc,argv))
             return 0;
-        
+
         // Set severity level (Default is 0=DEBUG)
-        int verbosity=config.GetValue<int>("verbosity");
-        FairMQLogger::Level lvl=static_cast<FairMQLogger::Level>(verbosity);
+        int severity = config.GetValue<int>("severity");
+        FairMQLogger::Level lvl = static_cast<FairMQLogger::Level>(severity);
         SET_LOGGER_LEVEL(lvl);
-        
+
         // parse XML file
         std::string filename;
         std::string XMLrootNode;
@@ -61,8 +59,6 @@ int main(int argc, char** argv)
         XMLrootNode=config.GetValue<std::string>("xml.config.node.root");
         std::string id=config.GetValue<std::string>("id");
         config.UserParser<FairMQParser::XML>(filename,id,XMLrootNode);
-        
-        
     }
     catch (std::exception& e)
     {
@@ -71,9 +67,3 @@ int main(int argc, char** argv)
     }
     return 0;
 }
-
-
-
-
-
-

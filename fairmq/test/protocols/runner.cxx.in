@@ -40,7 +40,7 @@ auto execute(string cmd, string log_prefix) -> execute_result
     out << log_prefix << cmd << endl;
 
     // Execute command and capture stderr, add log_prefix line by line
-    redi::ipstream in(cmd, redi::pstreams::pstderr);
+    redi::ipstream in(cmd, redi::pstreams::pstdout);
     auto line = string{};
     while (getline(in, line))
     {

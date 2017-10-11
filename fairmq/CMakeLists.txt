@@ -83,7 +83,6 @@ set(FAIRMQ_HEADER_FILES
     devices/FairMQProxy.h
     devices/FairMQSink.h
     devices/FairMQSplitter.h
-    logger/logger.h
     options/FairMQParser.h
     options/FairMQProgOptions.h
     options/FairMQSuboptParser.h
@@ -127,13 +126,9 @@ if(NANOMSG_FOUND)
     )
 endif()
 
-if("${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}" VERSION_LESS "1.56")
-    set(FAIRMQ_HEADER_FILES_NAMESPACED ${FAIRMQ_HEADER_FILES_NAMESPACED}
-        logger/fairroot_null_deleter.h
-    )
-endif()
-
-
+##########################
+# libFairMQ source files #
+##########################
 set(FAIRMQ_SOURCE_FILES
     DeviceRunner.cxx
     FairMQChannel.cxx
@@ -150,7 +145,6 @@ set(FAIRMQ_SOURCE_FILES
     devices/FairMQProxy.cxx
     # devices/FairMQSink.cxx
     devices/FairMQSplitter.cxx
-    logger/logger.cxx
     options/FairMQParser.cxx
     options/FairMQProgOptions.cxx
     options/FairMQSuboptParser.cxx
@@ -208,6 +202,7 @@ add_library(FairMQ SHARED
 #######################
 target_include_directories(FairMQ
     PUBLIC # consumers inherit public include directories
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/logger>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/fairmq>
@@ -224,8 +219,6 @@ target_link_libraries(FairMQ
     dl
     pthread
     Boost::boost
-    Boost::log
-    Boost::log_setup
     Boost::program_options
     Boost::thread
     Boost::system
@@ -233,6 +226,7 @@ target_link_libraries(FairMQ
     Boost::regex
     Boost::date_time
     Boost::signals
+    Logger
     $<$<PLATFORM_ID:Linux>:rt>
 
     PRIVATE # only libFairMQ links against private dependencies

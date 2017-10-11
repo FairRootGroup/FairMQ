@@ -16,27 +16,28 @@
 #define FAIRPROGOPTIONS_H
 
 #include "FairMQLogger.h"
+#include "FairProgOptionsHelper.h"
+
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
-#include "FairProgOptionsHelper.h"
+
 #include <string>
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <iterator>
 #include <mutex>
 #include <tuple>
 
 /*
  * FairProgOptions abstract base class
- * parse command line, configuration file options as well as environment variables.
- * 
+ * parse command line, configuration file options.
+ *
  * The user defines in the derived class the option descriptions and
  * the pure virtual ParseAll() method
- * 
+ *
  * class MyOptions : public FairProgOptions
  * {
- *      public : 
+ *      public :
  *      MyOptions() : FairProgOptions()
  *      {
  *          fCmdlineOptions.add(fGenericDesc);
@@ -80,13 +81,7 @@ class FairProgOptions
 
     //  add options_description
     int AddToCmdLineOptions(const po::options_description optDesc, bool visible = true);
-    int AddToCfgFileOptions(const po::options_description optDesc, bool visible = true);
-    int AddToEnvironmentOptions(const po::options_description optDesc);
     po::options_description& GetCmdLineOptions();
-    po::options_description& GetCfgFileOptions();
-    po::options_description& GetEnvironmentOptions();
-
-    void UseConfigFile(const std::string& filename = "");
 
     // get value corresponding to the key
     template<typename T>
@@ -108,9 +103,8 @@ class FairProgOptions
         }
         catch (std::exception& e)
         {
-            LOG(ERROR) << "Exception thrown for the key '" << key << "'";
-            LOG(ERROR) << e.what();
-            this->PrintHelp();
+            LOG(error) << "Exception thrown for the key '" << key << "'";
+            LOG(error) << e.what();
         }
 
         return val;
@@ -168,44 +162,26 @@ class FairProgOptions
     int ParseCmdLine(const int argc, char const* const* argv, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);
     int ParseCmdLine(const int argc, char const* const* argv, const po::options_description& desc, bool allowUnregistered = false);
 
-    int ParseCfgFile(const std::string& filename, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);
-    int ParseCfgFile(const std::string& filename, const po::options_description& desc, bool allowUnregistered = false);
-    int ParseCfgFile(std::ifstream& ifs, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);
-    int ParseCfgFile(std::ifstream& ifs, const po::options_description& desc, bool allowUnregistered = false);
-
-    int ParseEnvironment(const std::function<std::string(std::string)>&);
-
-    virtual void ParseAll(const int argc, char const* const* argv, bool allowUnregistered = false) = 0;// TODO change return type to bool and propagate to executable
+    virtual int ParseAll(const int argc, char const* const* argv, bool allowUnregistered = false) = 0;// TODO change return type to bool and propagate to executable
 
     virtual int PrintOptions();
     virtual int PrintOptionsRaw();
-    int PrintHelp() const;
 
   protected:
     // options container
     po::variables_map fVarMap;
 
     // basic description categories
-    po::options_description fGenericDesc;
-    po::options_description fConfigDesc;
-    po::options_description fEnvironmentDesc;
-    po::options_description fHiddenDesc;
+    po::options_description fGeneralDesc;
 
-    // Description of cmd line and simple configuration file (configuration file like txt, but not like xml json ini)
     po::options_description fCmdLineOptions;
-    po::options_description fConfigFileOptions;
 
     // Description which is printed in help command line
-    // to handle logger severity
-    std::map<std::string, fair::mq::logger::SeverityLevel> fSeverityMap;
     po::options_description fVisibleOptions;
 
     mutable std::mutex fConfigMutex;
 
-    std::string fVerbosityLevel;
-    bool fUseConfigFile;
-    boost::filesystem::path fConfigFile;
-    virtual int NotifySwitchOption();
+    virtual int ImmediateOptions() = 0;
 
     // UpdateVarMap() and replace() --> helper functions to modify the value of variable map after calling po::store
     template<typename T>
@@ -227,7 +203,7 @@ class FairProgOptions
 
     VarValInfo_t GetVariableValueInfo(const po::variable_value& varValue);
 
-    static void Max(int &val, const int &comp)
+    static void Max(int& val, const int& comp)
     {
         if (comp > val)
         {

@@ -8,30 +8,27 @@
 /*
  * File:   FairMQProgOptions.cxx
  * Author: winckler
- * 
+ *
  * Created on March 11, 2015, 10:20 PM
  */
 
 #include "FairMQProgOptions.h"
-#include <algorithm>
 #include "FairMQParser.h"
 #include "FairMQSuboptParser.h"
 #include "FairMQLogger.h"
+
+#include <algorithm>
 #include <iostream>
 
 using namespace std;
 
 FairMQProgOptions::FairMQProgOptions()
     : FairProgOptions()
-    , fMQParserOptions("MQ-Device parser options")
-    , fMQOptionsInCfg("MQ-Device options")
-    , fMQOptionsInCmd("MQ-Device options")
+    , fMQParserOptions("FairMQ config parser options")
+    , fMQCmdOptions("FairMQ device options")
     , fFairMQMap()
-    , fHelpTitle("***** FAIRMQ Program Options ***** ")
-    , fVersion("Beta version 0.1")
     , fChannelInfo()
     , fMQKeyMap()
-    // , fSignalMap() //string API
 {
 }
 
@@ -39,86 +36,51 @@ FairMQProgOptions::~FairMQProgOptions()
 {
 }
 
-void FairMQProgOptions::ParseAll(const std::vector<std::string>& cmdLineArgs, bool allowUnregistered)
+int FairMQProgOptions::ParseAll(const vector<string>& cmdLineArgs, bool allowUnregistered)
 {
-    std::vector<const char*> argv(cmdLineArgs.size());
+    vector<const char*> argv(cmdLineArgs.size());
 
-    std::transform(cmdLineArgs.begin(), cmdLineArgs.end(), argv.begin(), [](const std::string& str)
+    transform(cmdLineArgs.begin(), cmdLineArgs.end(), argv.begin(), [](const string& str)
     {
         return str.c_str();
     });
 
-    ParseAll(argv.size(), const_cast<char**>(argv.data()), allowUnregistered);
+    return ParseAll(argv.size(), const_cast<char**>(argv.data()), allowUnregistered);
 }
 
-void FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool allowUnregistered)
+int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool allowUnregistered)
 {
-    // init description
     InitOptionDescription();
-    // parse command line options
+
     if (FairProgOptions::ParseCmdLine(argc, argv, fCmdLineOptions, fVarMap, allowUnregistered))
     {
-        // ParseCmdLine return 0 if help or version cmd not called. return 1 if called
-        exit(EXIT_SUCCESS);
-    }
-
-    // if txt/INI configuration file enabled then parse it as well
-    if (fUseConfigFile)
-    {
-        // check if file exist
-        if (fs::exists(fConfigFile))
-        {
-            if (FairProgOptions::ParseCfgFile(fConfigFile.string(), fConfigFileOptions, fVarMap, allowUnregistered))
-            {
-                // ParseCfgFile return -1 if cannot open or read config file. It return 0 otherwise
-                LOG(ERROR) << "Could not parse config";
-                exit(EXIT_FAILURE);
-            }
-        }
-        else
-        {
-            LOG(ERROR) << "config file '" << fConfigFile << "' not found";
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    if (fVarMap.count("print-options"))
-    {
-        PrintOptionsRaw();
-        exit(EXIT_SUCCESS);
+        // ParseCmdLine returns 0 if no immediate switches found.
+        return 1;
     }
 
     // if these options are provided, do no further checks and let the device handle them
     if (fVarMap.count("print-channels") || fVarMap.count("version"))
     {
-        fair::mq::logger::DefaultConsoleSetFilter(fSeverityMap.at("NOLOG"));
-        return;
+        fair::Logger::SetConsoleSeverity("nolog");
+        return 0;
     }
+
+    string severity = GetValue<string>("severity");
+    string logFile = GetValue<string>("log-to-file");
+    bool color = GetValue<bool>("color");
 
     string verbosity = GetValue<string>("verbosity");
-    string logFile = GetValue<string>("log-to-file");
-    bool color = GetValue<bool>("log-color");
-
-    // check if the provided verbosity level is valid, otherwise set to DEBUG
-    if (fSeverityMap.count(verbosity) == 0)
-    {
-        LOG(ERROR) << " verbosity level '" << verbosity << "' unknown, it will be set to DEBUG";
-        verbosity = "DEBUG";
-    }
+    fair::Logger::SetVerbosity(verbosity);
 
     if (logFile != "")
     {
-        fair::mq::logger::ReinitLogger(false, logFile, fSeverityMap.at(verbosity));
-        fair::mq::logger::DefaultConsoleSetFilter(fSeverityMap.at("NOLOG"));
+        fair::Logger::InitFileSink(logFile, severity);
+        fair::Logger::SetConsoleSeverity("nolog");
     }
     else
     {
-        if (!color)
-        {
-            fair::mq::logger::ReinitLogger(false);
-        }
-
-        fair::mq::logger::DefaultConsoleSetFilter(fSeverityMap.at(verbosity));
+        fair::Logger::SetConsoleColor(color);
+        fair::Logger::SetConsoleSeverity(severity);
     }
 
     // check if one of required MQ config option is there
@@ -140,9 +102,9 @@ void FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool a
         LOG(WARN) << "FairMQProgOptions: no channels configuration provided via neither of:";
         for (const auto& p : MQParserKeys)
         {
-            LOG(WARN) << " --" << p;
+            LOG(WARNING) << " --" << p;
         }
-        LOG(WARN) << "No channels will be created (You can create them manually).";
+        LOG(warn) << "No channels will be created (You can create them manually).";
     }
     else
     {
@@ -180,10 +142,8 @@ void FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool a
                 }
                 else
                 {
-                    LOG(ERROR)  << "mq-config command line called but file extension '"
-                                << ext
-                                << "' not recognized. Program will now exit";
-                    exit(EXIT_FAILURE);
+                    LOG(error)  << "mq-config command line called but file extension '" << ext << "' not recognized. Program will now exit";
+                    return 1;
                 }
             }
         }
@@ -213,6 +173,8 @@ void FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool a
     }
 
     FairProgOptions::PrintOptions();
+
+    return 0;
 }
 
 int FairMQProgOptions::Store(const FairMQMap& channels)
@@ -237,7 +199,7 @@ void FairMQProgOptions::UpdateChannelInfo()
     fChannelInfo.clear();
     for (const auto& c : fFairMQMap)
     {
-        fChannelInfo.insert(std::make_pair(c.first, c.second.size()));
+        fChannelInfo.insert(make_pair(c.first, c.second.size()));
     }
 }
 
@@ -275,104 +237,64 @@ void FairMQProgOptions::UpdateMQValues()
             UpdateVarMap<string>(methodKey, channel.GetMethod());
             UpdateVarMap<string>(addressKey, channel.GetAddress());
             UpdateVarMap<string>(transportKey, channel.GetTransport());
-
-            //UpdateVarMap<string>(sndBufSizeKey, to_string(channel.GetSndBufSize()));// string API
             UpdateVarMap<int>(sndBufSizeKey, channel.GetSndBufSize());
-
-            //UpdateVarMap<string>(rcvBufSizeKey, to_string(channel.GetRcvBufSize()));// string API
             UpdateVarMap<int>(rcvBufSizeKey, channel.GetRcvBufSize());
-
-            //UpdateVarMap<string>(sndKernelSizeKey, to_string(channel.GetSndKernelSize()));// string API
             UpdateVarMap<int>(sndKernelSizeKey, channel.GetSndKernelSize());
-
-            //UpdateVarMap<string>(rcvKernelSizeKey, to_string(channel.GetRcvKernelSize()));// string API
             UpdateVarMap<int>(rcvKernelSizeKey, channel.GetRcvKernelSize());
-
-            //UpdateVarMap<string>(rateLoggingKey,to_string(channel.GetRateLogging()));// string API
             UpdateVarMap<int>(rateLoggingKey, channel.GetRateLogging());
 
-            /*
-            LOG(DEBUG) << "Update MQ parameters of variable map";
-            LOG(DEBUG) << "key = " << typeKey <<"\t value = " << GetValue<string>(typeKey);
-            LOG(DEBUG) << "key = " << methodKey <<"\t value = " << GetValue<string>(methodKey);
-            LOG(DEBUG) << "key = " << addressKey <<"\t value = " << GetValue<string>(addressKey);
-            LOG(DEBUG) << "key = " << sndBufSizeKey << "\t value = " << GetValue<int>(sndBufSizeKey);
-            LOG(DEBUG) << "key = " << rcvBufSizeKey <<"\t value = " << GetValue<int>(rcvBufSizeKey);
-            LOG(DEBUG) << "key = " << sndKernelSizeKey << "\t value = " << GetValue<int>(sndKernelSizeKey);
-            LOG(DEBUG) << "key = " << rcvKernelSizeKey <<"\t value = " << GetValue<int>(rcvKernelSizeKey);
-            LOG(DEBUG) << "key = " << rateLoggingKey <<"\t value = " << GetValue<int>(rateLoggingKey);
-            */
             index++;
         }
-        UpdateVarMap<int>(p.first + ".numSockets", index);
+        UpdateVarMap<int>("chans." + p.first + ".numSockets", index);
     }
 }
 
-int FairMQProgOptions::NotifySwitchOption()
+int FairMQProgOptions::ImmediateOptions()
 {
     if (fVarMap.count("help"))
     {
-        std::cout << fHelpTitle << std::endl << fVisibleOptions;
+        cout << "===== FairMQ Program Options =====" << endl << fVisibleOptions;
+        return 1;
+    }
+
+    if (fVarMap.count("print-options"))
+    {
+        PrintOptionsRaw();
         return 1;
     }
 
     return 0;
 }
 
-void FairMQProgOptions::FillOptionDescription(boost::program_options::options_description& options)
-{
-        options.add_options()
-            ("id",                     po::value<string>(),                                "Device ID (required argument).")
-            ("io-threads",             po::value<int   >()->default_value(1),              "Number of I/O threads.")
-            ("transport",              po::value<string>()->default_value("zeromq"),       "Transport ('zeromq'/'nanomsg').")
-            ("config",                 po::value<string>()->default_value("static"),       "Config source ('static'/<config library filename>).")
-            ("network-interface",      po::value<string>()->default_value("default"),      "Network interface to bind on (e.g. eth0, ib0..., default will try to detect the interface of the default route).")
-            ("config-key",             po::value<string>(),                                "Use provided value instead of device id for fetching the configuration from the config file.")
-            ("catch-signals",          po::value<int   >()->default_value(1),              "Enable signal handling (1/0).")
-            ("initialization-timeout", po::value<int   >()->default_value(120),            "Timeout for the initialization in seconds (when expecting dynamic initialization).")
-            ("port-range-min",         po::value<int   >()->default_value(22000),          "Start of the port range for dynamic initialization.")
-            ("port-range-max",         po::value<int   >()->default_value(32000),          "End of the port range for dynamic initialization.")
-            ("log-to-file",            po::value<string>()->default_value(""),             "Log output to a file.")
-            ("print-channels",         po::value<bool  >()->implicit_value(true),          "Print registered channel endpoints in a machine-readable format (<channel name>:<min num subchannels>:<max num subchannels>)")
-            ("shm-segment-size",       po::value<size_t>()->default_value(2000000000),     "Shared memory: size of the shared memory segment (in bytes).")
-            ("rate",                   po::value<float >()->default_value(0.),             "Rate for conditional run loop (Hz).")
-            ("session",                po::value<string>()->default_value("default"),      "Session name.")
-            ;
-
-}
-
 void FairMQProgOptions::InitOptionDescription()
 {
-    // Id required in command line if config txt file not enabled
-    if (fUseConfigFile)
-    {
-        FillOptionDescription(fMQOptionsInCmd);
-
-        FillOptionDescription(fMQOptionsInCfg);
-    }
-    else
-    {
-        FillOptionDescription(fMQOptionsInCmd);
-    }
+    fMQCmdOptions.add_options()
+        ("id",                     po::value<string>(),                            "Device ID (required argument).")
+        ("io-threads",             po::value<int   >()->default_value(1),          "Number of I/O threads.")
+        ("transport",              po::value<string>()->default_value("zeromq"),   "Transport ('zeromq'/'nanomsg').")
+        ("config",                 po::value<string>()->default_value("static"),   "Config source ('static'/<config library filename>).")
+        ("network-interface",      po::value<string>()->default_value("default"),  "Network interface to bind on (e.g. eth0, ib0..., default will try to detect the interface of the default route).")
+        ("config-key",             po::value<string>(),                            "Use provided value instead of device id for fetching the configuration from the config file.")
+        ("initialization-timeout", po::value<int   >()->default_value(120),        "Timeout for the initialization in seconds (when expecting dynamic initialization).")
+        ("port-range-min",         po::value<int   >()->default_value(22000),      "Start of the port range for dynamic initialization.")
+        ("port-range-max",         po::value<int   >()->default_value(32000),      "End of the port range for dynamic initialization.")
+        ("log-to-file",            po::value<string>()->default_value(""),         "Log output to a file.")
+        ("print-channels",         po::value<bool  >()->implicit_value(true),      "Print registered channel endpoints in a machine-readable format (<channel name>:<min num subchannels>:<max num subchannels>)")
+        ("shm-segment-size",       po::value<size_t>()->default_value(2000000000), "Shared memory: size of the shared memory segment (in bytes).")
+        ("rate",                   po::value<float >()->default_value(0.),         "Rate for conditional run loop (Hz).")
+        ("session",                po::value<string>()->default_value("default"),  "Session name.")
+        ;
 
     fMQParserOptions.add_options()
         ("config-xml-string",  po::value<vector<string>>()->multitoken(), "XML input as command line string.")
-        // ("config-xml-file",    po::value<string>(),                       "XML input as file.")
         ("config-json-string", po::value<vector<string>>()->multitoken(), "JSON input as command line string.")
-        // ("config-json-file",   po::value<string>(),                       "JSON input as file.")
         ("mq-config",          po::value<string>(),                       "JSON/XML input as file. The configuration object will check xml or json file extention and will call the json or xml parser accordingly")
-        (FairMQParser::SUBOPT::OptionKeyChannelConfig, po::value<std::vector<std::string>>()->multitoken()->composing(), "Configuration of single or multiple channel(s) by comma separated key=value list")
+        (FairMQParser::SUBOPT::OptionKeyChannelConfig, po::value<vector<string>>()->multitoken()->composing(), "Configuration of single or multiple channel(s) by comma separated key=value list")
         ;
 
-    AddToCmdLineOptions(fGenericDesc);
-    AddToCmdLineOptions(fMQOptionsInCmd);
+    AddToCmdLineOptions(fGeneralDesc);
+    AddToCmdLineOptions(fMQCmdOptions);
     AddToCmdLineOptions(fMQParserOptions);
-
-    if (fUseConfigFile)
-    {
-        AddToCfgFileOptions(fMQOptionsInCfg, false);
-        AddToCfgFileOptions(fMQParserOptions, false);
-    }
 }
 
 int FairMQProgOptions::UpdateChannelMap(const string& channelName, int index, const string& member, const string& val)
@@ -409,45 +331,6 @@ int FairMQProgOptions::UpdateChannelMap(const string& channelName, int index, co
     }
 }
 
-/*
-// string API
-int FairMQProgOptions::UpdateChannelMap(const string& channelName, int index, const string& member, const string& val)
-{
-    if (member == "type") 
-    {
-        fFairMQMap.at(channelName).at(index).UpdateType(val);
-        return 0;
-    }
-    
-    if (member == "method") 
-    {
-        fFairMQMap.at(channelName).at(index).UpdateMethod(val);
-        return 0;
-    }
-    
-    if (member == "address") 
-    {
-        fFairMQMap.at(channelName).at(index).UpdateAddress(val);
-        return 0;
-    }
-    else
-    {
-        if (member == "sndBufSize" || member == "rcvBufSize" || member == "rateLogging") 
-        {
-            UpdateChannelMap(channelName,index,member,ConvertTo<int>(val));
-        }
-
-        //if we get there it means something is wrong
-        LOG(ERROR)  << "update of FairMQChannel map failed for the following key: "
-                    << channelName<<"."<<index<<"."<<member;
-        return 1;
-    }
-
-}
-*/
-// ----------------------------------------------------------------------------------
-
-
 int FairMQProgOptions::UpdateChannelMap(const string& channelName, int index, const string& member, int val)
 {
     if (member == "sndBufSize")
@@ -469,9 +352,8 @@ int FairMQProgOptions::UpdateChannelMap(const string& channelName, int index, co
     }
     else
     {
-        //if we get there it means something is wrong
-        LOG(ERROR)  << "update of FairMQChannel map failed for the following key: "
-                    << channelName << "." << index << "." << member;
+        // if we get there it means something is wrong
+        LOG(ERROR)  << "update of FairMQChannel map failed for the following key: " << channelName << "." << index << "." << member;
         return 1;
     }
 }

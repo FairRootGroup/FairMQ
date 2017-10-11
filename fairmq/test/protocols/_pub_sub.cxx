@@ -25,24 +25,24 @@ auto RunPubSub(string transport) -> void
     auto pub = execute_result{"", 0};
     thread pub_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id pub_" << transport << " --control static --verbosity DEBUG "
-        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
+        cmd << runTestDevice << " --id pub_" << transport << " --control static --severity DEBUG "
+        << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
         pub = execute(cmd.str(), "[PUB]");
     });
 
     auto sub1 = execute_result{"", 0};
     thread sub1_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id sub_1" << transport << " --control static --verbosity DEBUG "
-        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
+        cmd << runTestDevice << " --id sub_1" << transport << " --control static --severity DEBUG "
+        << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
         sub1 = execute(cmd.str(), "[SUB1]");
     });
 
     auto sub2 = execute_result{"", 0};
     thread sub2_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id sub_2" << transport << " --control static --verbosity DEBUG "
-        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
+        cmd << runTestDevice << " --id sub_2" << transport << " --control static --severity DEBUG "
+        << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
         sub2 = execute(cmd.str(), "[SUB2]");
     });
 

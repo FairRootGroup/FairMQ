@@ -25,16 +25,16 @@ auto RunPushPull(string transport) -> void
     auto push = execute_result{"", 100};
     thread push_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id push_" << transport << " --control static --verbosity DEBUG "
-        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
+        cmd << runTestDevice << " --id push_" << transport << " --control static --severity DEBUG "
+        << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
         push = execute(cmd.str(), "[PUSH]");
     });
 
     auto pull = execute_result{"", 100};
     thread pull_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id pull_" << transport << " --control static --verbosity DEBUG "
-        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
+        cmd << runTestDevice << " --id pull_" << transport << " --control static --severity DEBUG "
+        << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
         pull = execute(cmd.str(), "[PULL]");
     });
 

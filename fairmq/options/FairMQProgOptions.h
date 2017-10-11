@@ -18,15 +18,14 @@
 
 #include <fairmq/EventManager.h>
 
+#include "FairProgOptions.h"
+#include "FairMQChannel.h"
+
 #include <unordered_map>
 #include <functional>
 #include <map>
-#include <set>
 #include <mutex>
 #include <string>
-
-#include "FairProgOptions.h"
-#include "FairMQChannel.h"
 
 namespace fair
 {
@@ -43,17 +42,15 @@ class FairMQProgOptions : public FairProgOptions
 {
   protected:
     using FairMQMap = std::unordered_map<std::string, std::vector<FairMQChannel>>;
-    //using signal_type = boost::signals2::signal<void(const std::string&, const std::string&)>;// string API
-    //using signal_type_ptr = boost::shared_ptr<signal_type>;// string API
 
   public:
     FairMQProgOptions();
     virtual ~FairMQProgOptions();
 
-    void ParseAll(const std::vector<std::string>& cmdLineArgs, bool allowUnregistered);
-    // parse command line and txt/INI configuration file.
+    int ParseAll(const std::vector<std::string>& cmdLineArgs, bool allowUnregistered);
+    // parse command line.
     // default parser for the mq-configuration file (JSON/XML) is called if command line key mq-config is called
-    virtual void ParseAll(const int argc, char const* const* argv, bool allowUnregistered = false);
+    int ParseAll(const int argc, char const* const* argv, bool allowUnregistered = false) override;
 
     // external parser, store function
     template <typename T, typename ...Args>
@@ -81,93 +78,11 @@ class FairMQProgOptions : public FairProgOptions
         return fChannelInfo;
     }
 
-    // to customize title of the executable help command line  
-    void SetHelpTitle(const std::string& title)
-    {
-        fHelpTitle = title;
-    }
-    // to customize the executable version command line
-    void SetVersion(const std::string& version)
-    {
-        fVersion = version;
-    }
-
-    // store key-value of type T into variable_map. 
+    // store key-value of type T into variable_map.
     // If key is found in fMQKeyMap, update the FairMQChannelMap accordingly
     // Note that the fMQKeyMap is filled:
-    // - if UpdateChannelMap(const FairMQMap& map) method is called 
+    // - if UpdateChannelMap(const FairMQMap& map) method is called
     // - if UserParser template method is called (it is called in the ParseAll method if json or xml MQ-config files is provided)
-    
-
-    /* // string API
-
-    //overload for string literal
-    int UpdateValue(const std::string& key, const char* val) // string API
-    {
-        UpdateValue(key,std::string(val));
-        return 0;
-    }
-    // overload for string values
-    int UpdateValue(const std::string& key, const std::string& val) // string API
-    {
-        try
-        {
-            if (fVarMap.count(key))
-            {
-
-
-                if (!FairMQ::is_this_type<std::string>(fVarMap.at(key)))
-                {
-                    LOG(ERROR) << "You try to update a value as string (for key="<< key <<") while it has been defined with a different type in the option description.";
-                    abort();
-                }
-
-                // update variable map
-                UpdateVarMap(key,val);
-
-                if (fMQKeyMap.count(key))
-                {
-                    std::string channelName;
-                    int index = 0;
-                    std::string member;
-                    std::tie(channelName, index, member) = fMQKeyMap.at(key);
-                    UpdateChannelMap(channelName, index, member, val);
-                }
-
-                // execute stored function of a given key if exist
-                //if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)//if one wants to restrict type
-                if (fSignalMap.count(key))
-                    EmitUpdate(key,val);
-
-                return 0;
-            }
-            else
-            {
-
-                LOG(ERROR)  <<"UpdatedValue failed because the provided key '"
-                            <<key
-                            <<"' is not found in the variable map";
-                return 1;
-            }
-        }
-        catch (std::exception& e)
-        {
-            LOG(ERROR)  << "Caught exception on key "<<key; 
-            abort();
-        }
-        
-        return 0;
-    }
-    */
-
-
-    //overload for string literal
-    /*int UpdateValue(const std::string& key, const char* val) // string API
-    {
-        UpdateValue<std::string>(key,val);
-        return 0;
-    }*/
-
 
     // specialization/overloading for string, pass by const ref
     int UpdateValue(const std::string& key, const std::string& val) // string API
@@ -214,9 +129,7 @@ class FairMQProgOptions : public FairProgOptions
         }
         else
         {
-            LOG(ERROR) << "UpdatedValue failed because the provided key '"
-                       << key
-                       << "' is not found in the variable map";
+            LOG(error) << "UpdateValue failed: key '" << key << "' not found in the variable map";
             return 1;
         }
         return 0;
@@ -284,30 +197,14 @@ class FairMQProgOptions : public FairProgOptions
 
         fEvents.Unsubscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber);
     }
-    /*
-    template <typename F>
-    void Subscribe(const std::string& key, F&& func) 
-    {
-        if (fVarMap.count(key))
-        {
-            //if key-value not yet found, then add it
-            if (fSignalMap.find(key) == fSignalMap.end())
-                fSignalMap.emplace(key, boost::make_shared<signal_type>());
-            (*fSignalMap.at(key)).connect(std::forward<F>(func));
-        }
-    }
-    */
 
     // replace FairMQChannelMap, and update variable map accordingly
     int UpdateChannelMap(const FairMQMap& map);
 
   protected:
+    po::options_description fMQCmdOptions;
     po::options_description fMQParserOptions;
-    po::options_description fMQOptionsInCfg;
-    po::options_description fMQOptionsInCmd;
     FairMQMap fFairMQMap;
-    std::string fHelpTitle;
-    std::string fVersion;
 
     // map of read channel info - channel name - number of subchannels
     std::unordered_map<std::string, int> fChannelInfo;
@@ -315,11 +212,8 @@ class FairMQProgOptions : public FairProgOptions
     using MQKey = std::tuple<std::string, int, std::string>;//store key info
     std::map<std::string, MQKey> fMQKeyMap;// key=full path - val=key info
 
-    virtual int NotifySwitchOption(); // for custom help & version printing
+    int ImmediateOptions() override; // for custom help & version printing
     void InitOptionDescription();
-
-    // fill boost option description with the standard options
-    static void FillOptionDescription(po::options_description& options);
 
     // read FairMQChannelMap and insert/update corresponding values in variable map
     // create key for variable map as follow : channelName.index.memberName
@@ -327,24 +221,11 @@ class FairMQProgOptions : public FairProgOptions
     int Store(const FairMQMap& channels);
 
   private:
-    /*
-    // string API
-    std::map<std::string, signal_type_ptr > fSignalMap;
-    void EmitUpdate(const std::string& key, const char* val)
-    {
-        EmitUpdate(key,std::string(val));
-    }
-    void EmitUpdate(const std::string& key, const std::string& val)
-    {
-        (*fSignalMap.at(key))(key,val);
-    }
-    */
-
     template<typename T>
     void EmitUpdate(const std::string& key, T val)
     {
         //compile time check whether T is const char* or char*, and in that case a compile time error is thrown.
-        static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value, 
+        static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value,
             "In template member FairMQProgOptions::EmitUpdate<T>(key,val) the types const char* or char* for the calback signatures are not supported.");
         fEvents.Emit<fair::mq::PropertyChange, T>(key, val);
         fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetStringValue(key));

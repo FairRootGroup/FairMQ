@@ -15,49 +15,30 @@
 #include "FairProgOptions.h"
 
 #include <iomanip>
+#include <sstream>
 
 using namespace std;
 
-FairProgOptions::FairProgOptions() :
-                        fVarMap(),
-                        fGenericDesc("Generic options description"),
-                        fConfigDesc("Configuration options description"),
-                        fEnvironmentDesc("Environment variables"),
-                        fHiddenDesc("Hidden options description"),
-                        fCmdLineOptions("Command line options"),
-                        fConfigFileOptions("Configuration file options"),
-                        fSeverityMap(),
-                        fVisibleOptions("Visible options"),
-                        fConfigMutex(),
-                        fVerbosityLevel("INFO"),
-                        fUseConfigFile(false),
-                        fConfigFile()
+FairProgOptions::FairProgOptions()
+    : fVarMap()
+    , fGeneralDesc("General options")
+    , fCmdLineOptions("Command line options")
+    , fVisibleOptions("Visible options")
+    , fConfigMutex()
 {
-
-    LOG(NOLOG) << "";// temporary hack to prevent throwing exception when accessing empty sinklist --> fixed me
-    fGenericDesc.add_options()
+    fGeneralDesc.add_options()
         ("help,h", "produce help")
         ("version,v", "print version")
-        ("verbosity", po::value<std::string>(&fVerbosityLevel)->default_value("DEBUG"), "Verbosity level : TRACE, DEBUG, RESULTS, INFO, WARN, ERROR, STATE, NOLOG")
-        ("log-color", po::value<bool>()->default_value(true), "logger color: true or false")
+        ("severity", po::value<string>()->default_value("debug"), "Log severity level : trace, debug, info, state, warn, error, fatal, nolog")
+        ("verbosity", po::value<string>()->default_value("medium"), "Log verbosity level : veryhigh, high, medium, low")
+        ("color", po::value<bool>()->default_value(true), "Log color (true/false)")
         ("print-options", po::value<bool>()->implicit_value(true), "print options in machine-readable format (<option>:<computed-value>:<type>:<description>)");
-
-    fSeverityMap["TRACE"]   = fair::mq::logger::SeverityLevel::TRACE;
-    fSeverityMap["DEBUG"]   = fair::mq::logger::SeverityLevel::DEBUG;
-    fSeverityMap["RESULTS"] = fair::mq::logger::SeverityLevel::RESULTS;
-    fSeverityMap["INFO"]    = fair::mq::logger::SeverityLevel::INFO;
-    fSeverityMap["WARN"]    = fair::mq::logger::SeverityLevel::WARN;
-    fSeverityMap["ERROR"]   = fair::mq::logger::SeverityLevel::ERROR;
-    fSeverityMap["STATE"]   = fair::mq::logger::SeverityLevel::STATE;
-    fSeverityMap["NOLOG"]   = fair::mq::logger::SeverityLevel::NOLOG;
 }
 
-/// Destructor
 FairProgOptions::~FairProgOptions()
 {
 }
 
-/// //////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Add option descriptions
 int FairProgOptions::AddToCmdLineOptions(const po::options_description optDesc, bool visible)
 {
@@ -69,60 +50,10 @@ int FairProgOptions::AddToCmdLineOptions(const po::options_description optDesc, 
     return 0;
 }
 
-int FairProgOptions::AddToCfgFileOptions(const po::options_description optDesc, bool visible)
-{
-    //if UseConfigFile() not yet called, then enable it with required file name to be provided by command line
-    if (!fUseConfigFile)
-    {
-        UseConfigFile();
-    }
-
-    fConfigFileOptions.add(optDesc);
-    if (visible)
-    {
-        fVisibleOptions.add(optDesc);
-    }
-    return 0;
-}
-//*
 po::options_description& FairProgOptions::GetCmdLineOptions()
 {
     return fCmdLineOptions;
 }
-
-po::options_description& FairProgOptions::GetCfgFileOptions()
-{
-    return fConfigFileOptions;
-}
-
-po::options_description& FairProgOptions::GetEnvironmentOptions()
-{
-    return fEnvironmentDesc;
-}
-
-int FairProgOptions::AddToEnvironmentOptions(const po::options_description optDesc)
-{
-    fEnvironmentDesc.add(optDesc);
-    return 0;
-}
-
-void FairProgOptions::UseConfigFile(const string& filename)
-{
-        fUseConfigFile = true;
-        if (filename.empty())
-        {
-            fConfigDesc.add_options()
-                ("config-file", po::value<boost::filesystem::path>(&fConfigFile)->required(), "Path to configuration file (required argument)");
-            AddToCmdLineOptions(fConfigDesc);
-        }
-        else
-        {
-            fConfigFile = filename;
-        }
-}
-
-/// //////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Parser
 
 int FairProgOptions::ParseCmdLine(const int argc, char const* const* argv, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered)
 {
@@ -140,9 +71,9 @@ int FairProgOptions::ParseCmdLine(const int argc, char const* const* argv, const
         po::store(po::parse_command_line(argc, argv, desc), varmap);
     }
 
-    // call the virtual NotifySwitchOption method to handle switch options like e.g. "--help" or "--version"
+    // Handles options like "--help" or "--version"
     // return 1 if switch options found in varmap
-    if (NotifySwitchOption())
+    if (ImmediateOptions())
     {
         return 1;
     }
@@ -156,89 +87,8 @@ int FairProgOptions::ParseCmdLine(const int argc, char const* const* argv, const
     return ParseCmdLine(argc, argv, desc, fVarMap, allowUnregistered);
 }
 
-int FairProgOptions::ParseCfgFile(ifstream& ifs, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered)
-{
-    if (!ifs)
-    {
-        LOG(ERROR) << "can not open configuration file";
-        return -1;
-    }
-    else
-    {
-        po::store(parse_config_file(ifs, desc, allowUnregistered), varmap);
-        po::notify(varmap);
-    }
-    return 0;
-}
-
-int FairProgOptions::ParseCfgFile(const string& filename, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered)
-{
-    ifstream ifs(filename.c_str());
-    if (!ifs)
-    {
-        LOG(ERROR) << "can not open configuration file: " << filename;
-        return -1;
-    }
-    else
-    {
-        po::store(parse_config_file(ifs, desc, allowUnregistered), varmap);
-        po::notify(varmap);
-    }
-    return 0;
-}
-
-int FairProgOptions::ParseCfgFile(const string& filename, const po::options_description& desc, bool allowUnregistered)
-{
-    return ParseCfgFile(filename,desc,fVarMap,allowUnregistered);
-}
-
-int FairProgOptions::ParseCfgFile(ifstream& ifs, const po::options_description& desc, bool allowUnregistered)
-{
-    return ParseCfgFile(ifs,desc,fVarMap,allowUnregistered);
-}
-
-int FairProgOptions::ParseEnvironment(const function<string(string)>& environmentMapper)
-{
-    po::store(po::parse_environment(fEnvironmentDesc, environmentMapper), fVarMap);
-    po::notify(fVarMap);
-
-    return 0;
-}
-
-int FairProgOptions::PrintHelp() const
-{
-    cout << fVisibleOptions << "\n";
-    return 0;
-}
-
-int FairProgOptions::PrintOptionsRaw()
-{
-    MapVarValInfo_t mapInfo;
-
-    for (const auto& m : fVarMap)
-    {
-        mapInfo[m.first] = GetVariableValueInfo(m.second);
-    }
-
-    for (const auto& p : mapInfo)
-    {
-        string keyStr;
-        string valueStr;
-        string typeInfoStr;
-        string defaultStr;
-        string emptyStr;
-        keyStr = p.first;
-        tie(valueStr, typeInfoStr, defaultStr, emptyStr) = p.second;
-        auto option = fCmdLineOptions.find_nothrow(keyStr, false);
-        cout << keyStr << ":" << valueStr << ":" << typeInfoStr << ":" << (option ? option->description() : "<not found>") << endl;
-    }
-
-    return 0;
-}
-
 int FairProgOptions::PrintOptions()
 {
-    // //////////////////////////////////
     // Method to overload.
     // -> loop over variable map and print its content
     // -> In this example the following types are supported:
@@ -283,20 +133,27 @@ int FairProgOptions::PrintOptions()
 
     // formatting and printing
 
-    LOG(DEBUG) << setfill ('*') << setw (totalLength + 3) << "*";// +3 because of string " = "
-    string PrintOptionsTitle = "     Configuration     ";
+    stringstream ss;
+    ss << "\n";
+
+    ss << setfill('*') << setw(totalLength + 3) << "*" << "\n"; // +3 because of string " = "
+    string title = "     Configuration     ";
 
     int leftSpaceLength = 0;
     int rightSpaceLength = 0;
     int leftTitleShiftLength = 0;
     int rightTitleShiftLength = 0;
 
-    leftTitleShiftLength = PrintOptionsTitle.length() / 2;
+    leftTitleShiftLength = title.length() / 2;
 
-    if ((PrintOptionsTitle.length()) % 2)
+    if ((title.length()) % 2)
+    {
         rightTitleShiftLength = leftTitleShiftLength + 1;
+    }
     else
+    {
         rightTitleShiftLength = leftTitleShiftLength;
+    }
 
     leftSpaceLength = (totalLength + 3) / 2 - leftTitleShiftLength;
     if ((totalLength + 3) % 2)
@@ -308,11 +165,11 @@ int FairProgOptions::PrintOptions()
         rightSpaceLength = (totalLength + 3) / 2 - rightTitleShiftLength;
     }
 
-    LOG(DEBUG) << setfill ('*') << setw(leftSpaceLength) << "*"
-                << setw(PrintOptionsTitle.length()) << PrintOptionsTitle
-                << setfill ('*') << setw(rightSpaceLength) << "*";
+    ss << setfill ('*') << setw(leftSpaceLength) << "*"
+       << setw(title.length()) << title
+       << setfill ('*') << setw(rightSpaceLength) << "*" << "\n";
 
-    LOG(DEBUG) << setfill ('*') << setw (totalLength+3) << "*";
+    ss << setfill ('*') << setw (totalLength+3) << "*" << "\n";
 
     for (const auto& p : mapinfo)
     {
@@ -323,36 +180,46 @@ int FairProgOptions::PrintOptions()
         string emptyStr;
         keyStr = p.first;
         tie(valueStr, typeInfoStr, defaultStr, emptyStr) = p.second;
-        LOG(DEBUG) << std::setfill(' ')
-                    << setw(maxLength1st) << left
-                    << p.first << " = "
-                    << setw(maxLength2nd)
-                    << valueStr
-                    << setw(maxLengthTypeInfo)
-                    << typeInfoStr
-                    << setw(maxLengthDefault)
-                    << defaultStr
-                    << setw(maxLengthEmpty)
-                    << emptyStr;
+        ss << setfill(' ')
+           << setw(maxLength1st) << left
+           << p.first << " = "
+           << setw(maxLength2nd)
+           << valueStr
+           << setw(maxLengthTypeInfo)
+           << typeInfoStr
+           << setw(maxLengthDefault)
+           << defaultStr
+           << setw(maxLengthEmpty)
+           << emptyStr
+           << "\n";
     }
-    LOG(DEBUG) << setfill ('*') << setw (totalLength + 3) << "*";// +3 for " = "
+    ss << setfill ('*') << setw(totalLength + 3) << "*";// +3 for " = "
+
+    LOG(DEBUG) << ss.str();
 
     return 0;
 }
 
-int FairProgOptions::NotifySwitchOption()
+int FairProgOptions::PrintOptionsRaw()
 {
-    // Method to overload.
-    if (fVarMap.count("help"))
+    MapVarValInfo_t mapInfo;
+
+    for (const auto& m : fVarMap)
     {
-        cout << "***** FAIR Program Options ***** \n" << fVisibleOptions;
-        return 1;
+        mapInfo[m.first] = GetVariableValueInfo(m.second);
     }
 
-    if (fVarMap.count("version"))
+    for (const auto& p : mapInfo)
     {
-        cout << "alpha version 0.0\n";
-        return 1;
+        string keyStr;
+        string valueStr;
+        string typeInfoStr;
+        string defaultStr;
+        string emptyStr;
+        keyStr = p.first;
+        tie(valueStr, typeInfoStr, defaultStr, emptyStr) = p.second;
+        auto option = fCmdLineOptions.find_nothrow(keyStr, false);
+        cout << keyStr << ":" << valueStr << ":" << typeInfoStr << ":" << (option ? option->description() : "<not found>") << endl;
     }
 
     return 0;
