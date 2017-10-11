@@ -7,8 +7,8 @@ trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; kill -TERM $PROCESSOR1_PID;
 
 SAMPLER="ex2-sampler"
 SAMPLER+=" --id sampler1"
-SAMPLER+=" --verbosity NOLOG"
-SAMPLER+=" --control static --log-color false"
+SAMPLER+=" --severity NOLOG"
+SAMPLER+=" --control static --color false"
 SAMPLER+=" --max-iterations 2"
 SAMPLER+=" --mq-config $ex2config"
 @CMAKE_BINARY_DIR@/bin/examples/MQ/2-sampler-processor-sink/$SAMPLER &
@@ -16,8 +16,8 @@ SAMPLER_PID=$!
 
 PROCESSOR1="ex2-processor"
 PROCESSOR1+=" --id processor1"
-PROCESSOR1+=" --verbosity NOLOG"
-PROCESSOR1+=" --control static --log-color false"
+PROCESSOR1+=" --severity NOLOG"
+PROCESSOR1+=" --control static --color false"
 PROCESSOR1+=" --mq-config $ex2config"
 PROCESSOR1+=" --config-key processor"
 @CMAKE_BINARY_DIR@/bin/examples/MQ/2-sampler-processor-sink/$PROCESSOR1 &
@@ -25,8 +25,8 @@ PROCESSOR1_PID=$!
 
 PROCESSOR2="ex2-processor"
 PROCESSOR2+=" --id processor2"
-PROCESSOR2+=" --verbosity NOLOG"
-PROCESSOR2+=" --control static --log-color false"
+PROCESSOR2+=" --severity NOLOG"
+PROCESSOR2+=" --control static --color false"
 PROCESSOR2+=" --mq-config $ex2config"
 PROCESSOR2+=" --config-key processor"
 @CMAKE_BINARY_DIR@/bin/examples/MQ/2-sampler-processor-sink/$PROCESSOR2 &
@@ -34,7 +34,7 @@ PROCESSOR2_PID=$!
 
 SINK="ex2-sink"
 SINK+=" --id sink1"
-SINK+=" --control static --log-color false"
+SINK+=" --control static --color false"
 SINK+=" --max-iterations 2"
 SINK+=" --mq-config $ex2config"
 @CMAKE_BINARY_DIR@/bin/examples/MQ/2-sampler-processor-sink/$SINK &

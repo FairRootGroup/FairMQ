@@ -9,6 +9,7 @@ fi
 
 SAMPLER="ex-region-sampler"
 SAMPLER+=" --id sampler1"
+SAMPLER+=" --severity debug"
 SAMPLER+=" --msg-size $msgSize"
 # SAMPLER+=" --rate 10"
 SAMPLER+=" --transport shmem"
@@ -17,6 +18,7 @@ xterm -geometry 80x23+0+0 -hold -e @CMAKE_BINARY_DIR@/bin/examples/advanced/Regi
 
 SINK="ex-region-sink"
 SINK+=" --id sink1"
+SINK+=" --severity debug"
 SINK+=" --transport shmem"
 SINK+=" --mq-config $exRegionConfig"
 xterm -geometry 80x23+500+0 -hold -e @CMAKE_BINARY_DIR@/bin/examples/advanced/Region/$SINK &
