@@ -7,8 +7,8 @@ trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SI
 
 SAMPLER="ex1-sampler"
 SAMPLER+=" --id sampler1"
-SAMPLER+=" --verbosity NOLOG"
-SAMPLER+=" --control static --log-color false"
+SAMPLER+=" --severity NOLOG"
+SAMPLER+=" --control static --color false"
 SAMPLER+=" --max-iterations 1"
 SAMPLER+=" --mq-config $ex1config"
 @CMAKE_BINARY_DIR@/bin/examples/MQ/1-sampler-sink/$SAMPLER &
@@ -16,7 +16,7 @@ SAMPLER_PID=$!
 
 SINK="ex1-sink"
 SINK+=" --id sink1"
-SINK+=" --control static --log-color false"
+SINK+=" --control static --color false"
 SINK+=" --max-iterations 1"
 SINK+=" --mq-config $ex1config"
 @CMAKE_BINARY_DIR@/bin/examples/MQ/1-sampler-sink/$SINK &
