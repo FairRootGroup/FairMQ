@@ -63,13 +63,13 @@ void FairMQExample6Sampler::Run()
             if (Send(msg, "data") > 0)
             {
                 LOG(INFO) << "Sent \"" << fText << "\"";
-            }
-        }
 
-        if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
-        {
-            LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
-            break;
+                if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
+                {
+                    LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+                    break;
+                }
+            }
         }
     }
 }
