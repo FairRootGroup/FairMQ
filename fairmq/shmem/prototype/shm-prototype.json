@@ -1,0 +1,34 @@
+{
+    "fairMQOptions": {
+        "devices": [
+            {
+                "id": "sampler1",
+                "channels": [
+                    {
+                        "name": "meta",
+                        "type": "push",
+                        "method": "bind",
+                        "address": "tcp://127.0.0.1:5555",
+                        "sndBufSize": 10,
+                        "rcvBufSize": 10,
+                        "rateLogging": 0
+                    }
+                ]
+            },
+            {
+                "id": "sink1",
+                "channels": [
+                    {
+                        "name": "meta",
+                        "type": "pull",
+                        "method": "connect",
+                        "address": "tcp://127.0.0.1:5555",
+                        "sndBufSize": 10,
+                        "rcvBufSize": 10,
+                        "rateLogging": 0
+                    }
+                ]
+            }
+        ]
+    }
+}
