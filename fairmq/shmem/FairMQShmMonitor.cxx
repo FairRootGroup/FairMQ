@@ -347,7 +347,7 @@ void Monitor::Cleanup(const string& segmentName)
             unsigned int regionCount = rc->fCount;
             for (unsigned int i = 1; i <= regionCount; ++i)
             {
-                RemoveObject("fairmq_shmem_region_" + to_string(regionCount));
+                RemoveObject("fairmq_shmem_region_" + to_string(i));
             }
         }
         else

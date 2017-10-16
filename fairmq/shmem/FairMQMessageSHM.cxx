@@ -108,10 +108,16 @@ FairMQMessageSHM::FairMQMessageSHM(FairMQRegionPtr& region, void* data, const si
     }
     else
     {
-        MetaHeader* metaPtr = new(zmq_msg_data(&fMessage)) MetaHeader();
-        metaPtr->fSize = size;
-        metaPtr->fHandle = fHandle;
-        metaPtr->fRegionId = fRegionId;
+        MetaHeader header;
+        header.fSize = size;
+        header.fHandle = fHandle;
+        header.fRegionId = fRegionId;
+        memcpy(zmq_msg_data(&fMessage), &header, sizeof(MetaHeader));
+        // placement new fails in some environments, TODO: investigate why:
+        // MetaHeader* metaPtr = new(zmq_msg_data(&fMessage)) MetaHeader();
+        // metaPtr->fSize = size;
+        // metaPtr->fHandle = fHandle;
+        // metaPtr->fRegionId = fRegionId;
 
         fMetaCreated = true;
     }
