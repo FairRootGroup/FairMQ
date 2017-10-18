@@ -161,10 +161,15 @@ bool FairMQMessageSHM::InitializeChunk(const size_t size)
         LOG(ERROR) << "failed initializing meta message, reason: " << zmq_strerror(errno);
         return false;
     }
-    MetaHeader* metaPtr = new(zmq_msg_data(&fMessage)) MetaHeader();
-    metaPtr->fSize = size;
-    metaPtr->fHandle = fHandle;
-    metaPtr->fRegionId = fRegionId;
+    MetaHeader header;
+    header.fSize = size;
+    header.fHandle = fHandle;
+    header.fRegionId = fRegionId;
+    memcpy(zmq_msg_data(&fMessage), &header, sizeof(MetaHeader));
+    // MetaHeader* metaPtr = new(zmq_msg_data(&fMessage)) MetaHeader();
+    // metaPtr->fSize = size;
+    // metaPtr->fHandle = fHandle;
+    // metaPtr->fRegionId = fRegionId;
 
     // if (zmq_msg_init_data(&fMessage, const_cast<char*>(ownerID->c_str()), ownerID->length(), StringDeleter, ownerID) != 0)
     // {
