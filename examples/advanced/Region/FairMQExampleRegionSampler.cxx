@@ -32,7 +32,7 @@ void FairMQExampleRegionSampler::Run()
 {
     FairMQChannel& dataOutChannel = fChannels.at("data").at(0);
 
-    FairMQRegionPtr region(NewRegionFor("data", 0, 10000000));
+    FairMQUnmanagedRegionPtr region(NewUnmanagedRegionFor("data", 0, 10000000));
 
     while (CheckCurrentState(RUNNING))
     {
