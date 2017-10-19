@@ -12,9 +12,10 @@
 #include "FairMQMessage.h"
 #include "FairMQSocket.h"
 #include "FairMQPoller.h"
-#include "FairMQRegion.h"
+#include "FairMQUnmanagedRegion.h"
 #include "FairMQLogger.h"
 #include "FairMQTransports.h"
+
 #include <string>
 #include <memory>
 #include <vector>
@@ -51,7 +52,7 @@ class FairMQTransportFactory
     /// @return pointer to FairMQMessage
     virtual FairMQMessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) const = 0;
 
-    virtual FairMQMessagePtr CreateMessage(FairMQRegionPtr& region, void* data, const size_t size) const = 0;
+    virtual FairMQMessagePtr CreateMessage(FairMQUnmanagedRegionPtr& unmanagedRegion, void* data, const size_t size) const = 0;
 
     /// Create a socket
     virtual FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name) const = 0;
@@ -65,7 +66,7 @@ class FairMQTransportFactory
     /// Create a poller for two sockets
     virtual FairMQPollerPtr CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const = 0;
 
-    virtual FairMQRegionPtr CreateRegion(const size_t size) const = 0;
+    virtual FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size) const = 0;
 
     /// Get transport type
     virtual FairMQ::Transport GetType() const = 0;

@@ -72,7 +72,7 @@ set(FAIRMQ_HEADER_FILES
     FairMQMessage.h
     FairMQParts.h
     FairMQPoller.h
-    FairMQRegion.h
+    FairMQUnmanagedRegion.h
     FairMQSocket.h
     FairMQStateMachine.h
     FairMQTransportFactory.h
@@ -99,7 +99,7 @@ set(FAIRMQ_HEADER_FILES
     StateMachine.h
     shmem/FairMQMessageSHM.h
     shmem/FairMQPollerSHM.h
-    shmem/FairMQRegionSHM.h
+    shmem/FairMQUnmanagedRegionSHM.h
     shmem/FairMQSocketSHM.h
     shmem/FairMQTransportFactorySHM.h
     shmem/FairMQShmMonitor.h
@@ -110,7 +110,7 @@ set(FAIRMQ_HEADER_FILES
     tools/Version.h
     zeromq/FairMQMessageZMQ.h
     zeromq/FairMQPollerZMQ.h
-    zeromq/FairMQRegionZMQ.h
+    zeromq/FairMQUnmanagedRegionZMQ.h
     zeromq/FairMQSocketZMQ.h
     zeromq/FairMQTransportFactoryZMQ.h
 )
@@ -119,7 +119,7 @@ if(NANOMSG_FOUND)
     set(FAIRMQ_HEADER_FILES ${FAIRMQ_HEADER_FILES}
         nanomsg/FairMQMessageNN.h
         nanomsg/FairMQPollerNN.h
-        nanomsg/FairMQRegionNN.h
+        nanomsg/FairMQUnmanagedRegionNN.h
         nanomsg/FairMQSocketNN.h
         nanomsg/FairMQTransportFactoryNN.h
     )
@@ -160,13 +160,13 @@ set(FAIRMQ_SOURCE_FILES
     StateMachine.cxx
     shmem/FairMQMessageSHM.cxx
     shmem/FairMQPollerSHM.cxx
-    shmem/FairMQRegionSHM.cxx
+    shmem/FairMQUnmanagedRegionSHM.cxx
     shmem/FairMQSocketSHM.cxx
     shmem/FairMQTransportFactorySHM.cxx
     shmem/FairMQShmMonitor.cxx
     zeromq/FairMQMessageZMQ.cxx
     zeromq/FairMQPollerZMQ.cxx
-    zeromq/FairMQRegionZMQ.cxx
+    zeromq/FairMQUnmanagedRegionZMQ.cxx
     zeromq/FairMQSocketZMQ.cxx
     zeromq/FairMQTransportFactoryZMQ.cxx
 )
@@ -175,7 +175,7 @@ if(NANOMSG_FOUND)
     set(FAIRMQ_SOURCE_FILES ${FAIRMQ_SOURCE_FILES}
         nanomsg/FairMQMessageNN.cxx
         nanomsg/FairMQPollerNN.cxx
-        nanomsg/FairMQRegionNN.cxx
+        nanomsg/FairMQUnmanagedRegionNN.cxx
         nanomsg/FairMQSocketNN.cxx
         nanomsg/FairMQTransportFactoryNN.cxx
     )

@@ -22,7 +22,7 @@
 #include "FairMQMessageZMQ.h"
 #include "FairMQSocketZMQ.h"
 #include "FairMQPollerZMQ.h"
-#include "FairMQRegionZMQ.h"
+#include "FairMQUnmanagedRegionZMQ.h"
 #include <options/FairMQProgOptions.h>
 
 class FairMQTransportFactoryZMQ : public FairMQTransportFactory
@@ -37,7 +37,7 @@ class FairMQTransportFactoryZMQ : public FairMQTransportFactory
     FairMQMessagePtr CreateMessage() const override;
     FairMQMessagePtr CreateMessage(const size_t size) const override;
     FairMQMessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) const override;
-    FairMQMessagePtr CreateMessage(FairMQRegionPtr& region, void* data, const size_t size) const override;
+    FairMQMessagePtr CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size) const override;
 
     FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name) const override;
 
@@ -46,7 +46,7 @@ class FairMQTransportFactoryZMQ : public FairMQTransportFactory
     FairMQPollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const override;
     FairMQPollerPtr CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const override;
 
-    FairMQRegionPtr CreateRegion(const size_t size) const override;
+    FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size) const override;
 
     FairMQ::Transport GetType() const override;
   private:

@@ -6,28 +6,28 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "FairMQRegionZMQ.h"
+#include "FairMQUnmanagedRegionNN.h"
 #include "FairMQLogger.h"
 
 using namespace std;
 
-FairMQRegionZMQ::FairMQRegionZMQ(const size_t size)
+FairMQUnmanagedRegionNN::FairMQUnmanagedRegionNN(const size_t size)
     : fBuffer(malloc(size))
     , fSize(size)
 {
 }
 
-void* FairMQRegionZMQ::GetData() const
+void* FairMQUnmanagedRegionNN::GetData() const
 {
     return fBuffer;
 }
 
-size_t FairMQRegionZMQ::GetSize() const
+size_t FairMQUnmanagedRegionNN::GetSize() const
 {
     return fSize;
 }
 
-FairMQRegionZMQ::~FairMQRegionZMQ()
+FairMQUnmanagedRegionNN::~FairMQUnmanagedRegionNN()
 {
     LOG(DEBUG) << "destroying region";
     free(fBuffer);

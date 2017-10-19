@@ -19,7 +19,7 @@
 #include <string>
 
 #include "FairMQMessage.h"
-#include "FairMQRegion.h"
+#include "FairMQUnmanagedRegion.h"
 
 class FairMQMessageNN : public FairMQMessage
 {
@@ -27,7 +27,7 @@ class FairMQMessageNN : public FairMQMessage
     FairMQMessageNN();
     FairMQMessageNN(const size_t size);
     FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
-    FairMQMessageNN(FairMQRegionPtr& region, void* data, const size_t size);
+    FairMQMessageNN(FairMQUnmanagedRegionPtr& region, void* data, const size_t size);
 
     FairMQMessageNN(const FairMQMessageNN&) = delete;
     FairMQMessageNN operator=(const FairMQMessageNN&) = delete;

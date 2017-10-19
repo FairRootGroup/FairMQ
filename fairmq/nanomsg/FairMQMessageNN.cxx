@@ -84,7 +84,7 @@ FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* 
     }
 }
 
-FairMQMessageNN::FairMQMessageNN(FairMQRegionPtr& /*region*/, void* data, const size_t size)
+FairMQMessageNN::FairMQMessageNN(FairMQUnmanagedRegionPtr& /*region*/, void* data, const size_t size)
     : fMessage(data)
     , fSize(size)
     , fReceiving(false)

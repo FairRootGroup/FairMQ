@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "FairMQRegionSHM.h"
+#include "FairMQUnmanagedRegionSHM.h"
 #include "FairMQShmManager.h"
 #include "FairMQShmCommon.h"
 
@@ -15,11 +15,11 @@ using namespace fair::mq::shmem;
 
 namespace bipc = boost::interprocess;
 
-atomic<bool> FairMQRegionSHM::fInterrupted(false);
+atomic<bool> FairMQUnmanagedRegionSHM::fInterrupted(false);
+unordered_map<uint64_t, RemoteRegion> FairMQUnmanagedRegionSHM::fRemoteRegionMap;
 
-FairMQRegionSHM::FairMQRegionSHM(const size_t size)
-    : fShmemObject()
-    , fRegion()
+FairMQUnmanagedRegionSHM::FairMQUnmanagedRegionSHM(const size_t size)
+    : fRegion(nullptr)
     , fRegionId(0)
     , fRegionIdStr()
     , fRemote(false)
@@ -41,11 +41,24 @@ FairMQRegionSHM::FairMQRegionSHM(const size_t size)
         }
 
         fRegionId = rc->fCount;
-        fRegionIdStr = "fairmq_shmem_region_" + std::to_string(fRegionId);
+        fRegionIdStr = "fairmq_shmem_region_" + to_string(fRegionId);
 
-        fShmemObject = unique_ptr<bipc::shared_memory_object>(new bipc::shared_memory_object(bipc::create_only, fRegionIdStr.c_str(), bipc::read_write));
-        fShmemObject->truncate(size);
-        fRegion = unique_ptr<bipc::mapped_region>(new bipc::mapped_region(*fShmemObject, bipc::read_write)); // TODO: add HUGEPAGES flag here
+        auto it = fRemoteRegionMap.find(fRegionId);
+        if (it != fRemoteRegionMap.end())
+        {
+            LOG(ERROR) << "Trying to create a region that already exists";
+        }
+        else
+        {
+            string regionIdStr = "fairmq_shmem_region_" + to_string(fRegionId);
+
+            LOG(DEBUG) << "creating region with id " << fRegionId;
+
+            auto r = fRemoteRegionMap.emplace(fRegionId, RemoteRegion{regionIdStr, size});
+            fRegion = &(r.first->second.fRegion);
+
+            LOG(DEBUG) << "created region with id " << fRegionId;
+        }
     }
     catch (bipc::interprocess_exception& e)
     {
@@ -55,43 +68,32 @@ FairMQRegionSHM::FairMQRegionSHM(const size_t size)
     }
 }
 
-FairMQRegionSHM::FairMQRegionSHM(const uint64_t id, bool remote)
-    : fShmemObject()
-    , fRegion()
-    , fRegionId(id)
-    , fRegionIdStr()
-    , fRemote(remote)
-{
-    try
-    {
-        fRegionIdStr = "fairmq_shmem_region_" + std::to_string(fRegionId);
-
-        fShmemObject = unique_ptr<bipc::shared_memory_object>(new bipc::shared_memory_object(bipc::open_only, fRegionIdStr.c_str(), bipc::read_write));
-        fRegion = unique_ptr<bipc::mapped_region>(new bipc::mapped_region(*fShmemObject, bipc::read_write)); // TODO: add HUGEPAGES flag here
-    }
-    catch (bipc::interprocess_exception& e)
-    {
-        LOG(ERROR) << "shmem: cannot open region. Already closed?";
-        LOG(ERROR) << e.what();
-        exit(EXIT_FAILURE);
-    }
-}
-
-void* FairMQRegionSHM::GetData() const
+void* FairMQUnmanagedRegionSHM::GetData() const
 {
     return fRegion->get_address();
 }
 
-size_t FairMQRegionSHM::GetSize() const
+size_t FairMQUnmanagedRegionSHM::GetSize() const
 {
     return fRegion->get_size();
 }
 
-FairMQRegionSHM::~FairMQRegionSHM()
+bipc::mapped_region* FairMQUnmanagedRegionSHM::GetRemoteRegion(uint64_t regionId)
 {
-    if (!fRemote)
+    auto it = fRemoteRegionMap.find(regionId);
+    if (it != fRemoteRegionMap.end())
     {
-        LOG(DEBUG) << "destroying region";
-        bipc::shared_memory_object::remove(fRegionIdStr.c_str());
+        return &(it->second.fRegion);
     }
+    else
+    {
+        string regionIdStr = "fairmq_shmem_region_" + to_string(regionId);
+
+        auto r = fRemoteRegionMap.emplace(regionId, RemoteRegion{regionIdStr, 0});
+        return &(r.first->second.fRegion);
+    }
+}
+
+FairMQUnmanagedRegionSHM::~FairMQUnmanagedRegionSHM()
+{
 }

@@ -6,21 +6,21 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIRMQREGION_H_
-#define FAIRMQREGION_H_
+#ifndef FAIRMQUNMANAGEDREGION_H_
+#define FAIRMQUNMANAGEDREGION_H_
 
 #include <cstddef> // size_t
 #include <memory> // unique_ptr
 
-class FairMQRegion
+class FairMQUnmanagedRegion
 {
   public:
     virtual void* GetData() const = 0;
     virtual size_t GetSize() const = 0;
 
-    virtual ~FairMQRegion() {};
+    virtual ~FairMQUnmanagedRegion() {};
 };
 
-using FairMQRegionPtr = std::unique_ptr<FairMQRegion>;
+using FairMQUnmanagedRegionPtr = std::unique_ptr<FairMQUnmanagedRegion>;
 
-#endif /* FAIRMQREGION_H_ */
+#endif /* FAIRMQUNMANAGEDREGION_H_ */

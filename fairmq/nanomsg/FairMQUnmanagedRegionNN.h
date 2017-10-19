@@ -6,30 +6,30 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIRMQREGIONNN_H_
-#define FAIRMQREGIONNN_H_
+#ifndef FAIRMQUNMANAGEDREGIONNN_H_
+#define FAIRMQUNMANAGEDREGIONNN_H_
 
-#include "FairMQRegion.h"
+#include "FairMQUnmanagedRegion.h"
 
 #include <cstddef> // size_t
 
-class FairMQRegionNN : public FairMQRegion
+class FairMQUnmanagedRegionNN : public FairMQUnmanagedRegion
 {
     friend class FairMQSocketNN;
 
   public:
-    FairMQRegionNN(const size_t size);
-    FairMQRegionNN(const FairMQRegionNN&) = delete;
-    FairMQRegionNN operator=(const FairMQRegionNN&) = delete;
+    FairMQUnmanagedRegionNN(const size_t size);
+    FairMQUnmanagedRegionNN(const FairMQUnmanagedRegionNN&) = delete;
+    FairMQUnmanagedRegionNN operator=(const FairMQUnmanagedRegionNN&) = delete;
 
     virtual void* GetData() const override;
     virtual size_t GetSize() const override;
 
-    virtual ~FairMQRegionNN();
+    virtual ~FairMQUnmanagedRegionNN();
 
   private:
     void* fBuffer;
     size_t fSize;
 };
 
-#endif /* FAIRMQREGIONNN_H_ */
+#endif /* FAIRMQUNMANAGEDREGIONNN_H_ */

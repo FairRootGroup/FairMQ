@@ -200,7 +200,7 @@ FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(void* data, const size
     return unique_ptr<FairMQMessage>(new FairMQMessageSHM(data, size, ffn, hint));
 }
 
-FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(FairMQRegionPtr& region, void* data, const size_t size) const
+FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size) const
 {
     return unique_ptr<FairMQMessage>(new FairMQMessageSHM(region, data, size));
 }
@@ -231,9 +231,9 @@ FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const FairMQSocket& cmdS
     return unique_ptr<FairMQPoller>(new FairMQPollerSHM(cmdSocket, dataSocket));
 }
 
-FairMQRegionPtr FairMQTransportFactorySHM::CreateRegion(const size_t size) const
+FairMQUnmanagedRegionPtr FairMQTransportFactorySHM::CreateUnmanagedRegion(const size_t size) const
 {
-    return unique_ptr<FairMQRegion>(new FairMQRegionSHM(size));
+    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionSHM(size));
 }
 
 FairMQTransportFactorySHM::~FairMQTransportFactorySHM()

@@ -11,7 +11,7 @@
 
 #include "FairMQSocketSHM.h"
 #include "FairMQMessageSHM.h"
-#include "FairMQRegionSHM.h"
+#include "FairMQUnmanagedRegionSHM.h"
 #include "FairMQLogger.h"
 #include "FairMQShmCommon.h"
 
@@ -121,7 +121,6 @@ int FairMQSocketSHM::Send(FairMQMessagePtr& msg, const int flags)
         }
         else if (nbytes > 0)
         {
-            // static_cast<FairMQMessageSHM*>(msg.get())->fReceiving = false;
             static_cast<FairMQMessageSHM*>(msg.get())->fQueued = true;
 
             size_t size = msg->GetSize();
@@ -171,26 +170,17 @@ int FairMQSocketSHM::Receive(FairMQMessagePtr& msg, const int flags)
         }
         else if (nbytes > 0)
         {
-            // string ownerID(static_cast<char*>(zmq_msg_data(msgPtr)), zmq_msg_size(msgPtr));
-            // ShPtrOwner* owner = Manager::Instance().Segment()->find<ShPtrOwner>(ownerID.c_str()).first;
             MetaHeader* hdr = static_cast<MetaHeader*>(zmq_msg_data(msgPtr));
             size_t size = 0;
             static_cast<FairMQMessageSHM*>(msg.get())->fHandle = hdr->fHandle;
             static_cast<FairMQMessageSHM*>(msg.get())->fSize = hdr->fSize;
             static_cast<FairMQMessageSHM*>(msg.get())->fRegionId = hdr->fRegionId;
-            // static_cast<FairMQMessageSHM*>(msg.get())->fOwner = owner;
-            // static_cast<FairMQMessageSHM*>(msg.get())->fReceiving = true;
             size = msg->GetSize();
 
             fBytesRx += size;
             ++fMessagesRx;
 
             return size;
-            // else
-            // {
-            //     LOG(ERROR) << "Received meta data, but could not find corresponding chunk";
-            //     return -1;
-            // }
         }
         else if (zmq_errno() == EAGAIN)
         {
@@ -237,7 +227,6 @@ int64_t FairMQSocketSHM::Send(vector<FairMQMessagePtr>& msgVec, const int flags)
                 if (nbytes >= 0)
                 {
                     static_cast<FairMQMessageSHM*>(msgVec[i].get())->fQueued = true;
-                    // static_cast<FairMQMessageSHM*>(msgVec[i].get())->fReceiving = false;
                     size_t size = msgVec[i]->GetSize();
 
                     totalSize += size;
@@ -322,25 +311,16 @@ int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int fla
             }
             else if (nbytes > 0)
             {
-                // string ownerID(static_cast<char*>(zmq_msg_data(msgPtr)), zmq_msg_size(msgPtr));
-                // ShPtrOwner* owner = Manager::Instance().Segment()->find<ShPtrOwner>(ownerID.c_str()).first;
                 MetaHeader* hdr = static_cast<MetaHeader*>(zmq_msg_data(msgPtr));
                 size_t size = 0;
                 static_cast<FairMQMessageSHM*>(part.get())->fHandle = hdr->fHandle;
                 static_cast<FairMQMessageSHM*>(part.get())->fSize = hdr->fSize;
                 static_cast<FairMQMessageSHM*>(part.get())->fRegionId = hdr->fRegionId;
-                // static_cast<FairMQMessageSHM*>(part.get())->fOwner = owner;
-                // static_cast<FairMQMessageSHM*>(part.get())->fReceiving = true;
                 size = part->GetSize();
 
                 msgVec.push_back(move(part));
 
                 totalSize += size;
-                // else
-                // {
-                //     LOG(ERROR) << "Received meta data, but could not find corresponding chunk";
-                //     return -1;
-                // }
             }
             else if (zmq_errno() == EAGAIN)
             {
@@ -396,14 +376,14 @@ void FairMQSocketSHM::Close()
 void FairMQSocketSHM::Interrupt()
 {
     FairMQMessageSHM::fInterrupted = true;
-    FairMQRegionSHM::fInterrupted = true;
+    FairMQUnmanagedRegionSHM::fInterrupted = true;
     fInterrupted = true;
 }
 
 void FairMQSocketSHM::Resume()
 {
     FairMQMessageSHM::fInterrupted = false;
-    FairMQRegionSHM::fInterrupted = true;
+    FairMQUnmanagedRegionSHM::fInterrupted = true;
     fInterrupted = false;
 }
 

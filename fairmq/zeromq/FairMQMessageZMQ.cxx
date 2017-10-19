@@ -50,7 +50,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn
     }
 }
 
-FairMQMessageZMQ::FairMQMessageZMQ(FairMQRegionPtr& /*region*/, void* data, const size_t size)
+FairMQMessageZMQ::FairMQMessageZMQ(FairMQUnmanagedRegionPtr& /*region*/, void* data, const size_t size)
     : fMessage()
 {
     // FIXME: make this zero-copy:

@@ -17,7 +17,7 @@
 #include "FairMQChannel.h"
 #include "FairMQMessage.h"
 #include "FairMQParts.h"
-#include "FairMQRegion.h"
+#include "FairMQUnmanagedRegion.h"
 
 #include <vector>
 #include <memory> // unique_ptr
@@ -235,14 +235,14 @@ class FairMQDevice : public FairMQStateMachine
         return fChannels.at(channel).at(index).NewSimpleMessage(data);
     }
 
-    FairMQRegionPtr NewRegion(const size_t size)
+    FairMQUnmanagedRegionPtr NewUnmanagedRegion(const size_t size)
     {
-        return Transport()->CreateRegion(size);
+        return Transport()->CreateUnmanagedRegion(size);
     }
 
-    FairMQRegionPtr NewRegionFor(const std::string& channel, int index, const size_t size)
+    FairMQUnmanagedRegionPtr NewUnmanagedRegionFor(const std::string& channel, int index, const size_t size)
     {
-        return fChannels.at(channel).at(index).Transport()->CreateRegion(size);
+        return fChannels.at(channel).at(index).Transport()->CreateUnmanagedRegion(size);
     }
 
     template<typename ...Ts>

@@ -21,7 +21,7 @@
 #include <zmq.h>
 
 #include "FairMQMessage.h"
-#include "FairMQRegion.h"
+#include "FairMQUnmanagedRegion.h"
 
 class FairMQMessageZMQ : public FairMQMessage
 {
@@ -29,7 +29,7 @@ class FairMQMessageZMQ : public FairMQMessage
     FairMQMessageZMQ();
     FairMQMessageZMQ(const size_t size);
     FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
-    FairMQMessageZMQ(FairMQRegionPtr& region, void* data, const size_t size);
+    FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data, const size_t size);
 
     virtual void Rebuild();
     virtual void Rebuild(const size_t size);

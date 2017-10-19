@@ -1,8 +1,8 @@
 /********************************************************************************
  *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *              This software is distributed under the terms of the             *
+ *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 #ifndef FAIRMQMESSAGESHM_H_
@@ -14,11 +14,10 @@
 
 #include <zmq.h>
 
-#include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 
 #include "FairMQMessage.h"
-#include "FairMQRegion.h"
+#include "FairMQUnmanagedRegion.h"
 #include "FairMQShmManager.h"
 
 class FairMQMessageSHM : public FairMQMessage
@@ -29,7 +28,7 @@ class FairMQMessageSHM : public FairMQMessage
     FairMQMessageSHM();
     FairMQMessageSHM(const size_t size);
     FairMQMessageSHM(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
-    FairMQMessageSHM(FairMQRegionPtr& region, void* data, const size_t size);
+    FairMQMessageSHM(FairMQUnmanagedRegionPtr& region, void* data, const size_t size);
 
     FairMQMessageSHM(const FairMQMessageSHM&) = delete;
     FairMQMessageSHM operator=(const FairMQMessageSHM&) = delete;
@@ -56,14 +55,8 @@ class FairMQMessageSHM : public FairMQMessage
 
     virtual ~FairMQMessageSHM();
 
-    // static void StringDeleter(void* data, void* str);
-
   private:
     zmq_msg_t fMessage;
-    // FairMQ::shmem::ShPtrOwner* fOwner;
-    // static uint64_t fMessageID;
-    // static std::string fDeviceID;
-    // bool fReceiving;
     bool fQueued;
     bool fMetaCreated;
     static std::atomic<bool> fInterrupted;
@@ -72,7 +65,7 @@ class FairMQMessageSHM : public FairMQMessage
     bipc::managed_shared_memory::handle_t fHandle;
     size_t fSize;
     void* fLocalPtr;
-    FairMQRegionPtr fRemoteRegion;
+    boost::interprocess::mapped_region* fRemoteRegion; // cache region ptr
 };
 
 #endif /* FAIRMQMESSAGESHM_H_ */
