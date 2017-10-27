@@ -97,7 +97,7 @@ inline std::string getDefaultRouteNetworkInterface()
 #ifdef __APPLE__ // MacOS
     std::unique_ptr<FILE, decltype(pclose) *> file(popen("route -n get default | grep interface | cut -d \":\" -f 2", "r"), pclose);
 #else // Linux
-    std::unique_ptr<FILE, decltype(pclose) *> file(popen("ip route | grep default | cut -d \" \" -f 5", "r"), pclose);
+    std::unique_ptr<FILE, decltype(pclose) *> file(popen("ip route | grep default | cut -d \" \" -f 5 | head -n 1", "r"), pclose);
 #endif
 
     if (!file)
