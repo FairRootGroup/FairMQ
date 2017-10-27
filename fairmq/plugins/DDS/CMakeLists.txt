@@ -17,3 +17,14 @@ add_executable(fairmq-dds-command-ui ${CMAKE_CURRENT_SOURCE_DIR}/runDDSCommandUI
 target_link_libraries(fairmq-dds-command-ui FairMQ ${DDS_INTERCOM_LIBRARY_SHARED} ${DDS_PROTOCOL_LIBRARY_SHARED} ${DDS_USER_DEFAULTS_LIBRARY_SHARED})
 target_include_directories(fairmq-dds-command-ui PRIVATE ${CMAKE_CURRENT_BINARY_DIR} PUBLIC ${DDS_INCLUDE_DIR})
 
+install(TARGETS ${plugin} fairmq-dds-command-ui
+    EXPORT FairMQ
+
+    LIBRARY
+    DESTINATION lib
+    COMPONENT fairmq
+
+    RUNTIME
+    DESTINATION bin
+    COMPONENT fairmq
+)
