@@ -10,6 +10,8 @@
 
 #include <termios.h> // for the interactive mode
 #include <poll.h> // for the interactive mode
+#include <sstream>
+#include <iostream>
 
 using namespace std;
 
@@ -89,7 +91,7 @@ auto DDS::HandleControl() -> void
         }
 
         // subscribe for state changes from DDS (subscriptions start firing after fService.start() is called)
-        SubscribeForStateChanges();
+        SubscribeForCustomCommands();
 
         // start DDS service - subscriptions will only start firing after this step
         fService.start();
@@ -201,7 +203,7 @@ auto DDS::PublishBoundChannels() -> void
     }
 }
 
-auto DDS::SubscribeForStateChanges() -> void
+auto DDS::SubscribeForCustomCommands() -> void
 {
     string id = GetProperty<string>("id");
     string pid(to_string(getpid()));
@@ -229,6 +231,15 @@ auto DDS::SubscribeForStateChanges() -> void
                 unique_lock<mutex> lock(fStopMutex);
                 fStopCondition.notify_one();
             }
+        }
+        else if (cmd == "dump-config")
+        {
+            stringstream ss;
+            for (const auto pKey: GetPropertyKeys())
+            {
+                ss << id << ": " << pKey << " -> " << GetPropertyAsString(pKey) << endl;
+            }
+            fDDSCustomCmd.send(ss.str(), to_string(senderId));
         }
         else
         {

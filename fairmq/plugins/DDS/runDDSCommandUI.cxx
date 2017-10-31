@@ -23,7 +23,7 @@ using namespace dds::intercom_api;
 void PrintControlsHelp()
 {
     cout << "Use keys to control the devices:" << endl;
-    cout << "[c] check states, [h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device" << endl;
+    cout << "[c] check states, [o] dump config, [h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device" << endl;
     cout << "To quit press Ctrl+C" << endl;
 }
 
@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
         // subscribe to receive messages from DDS
         ddsCustomCmd.subscribe([](const string& msg, const string& /*condition*/, uint64_t /*senderId*/)
         {
-            cout << "Received: \"" << msg << "\"" << endl;
+            cout << "Received: " << msg << endl;
         });
 
         service.start();
@@ -71,6 +71,10 @@ int main(int argc, char* argv[])
                 case 'c':
                     cout << " > checking state of the devices" << endl;
                     ddsCustomCmd.send("check-state", "");
+                    break;
+                case 'o':
+                    cout << " > dumping config of the devices" << endl;
+                    ddsCustomCmd.send("dump-config", "");
                     break;
                 case 'i':
                     cout << " > init devices" << endl;

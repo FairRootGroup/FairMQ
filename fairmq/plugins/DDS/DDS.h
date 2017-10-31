@@ -56,7 +56,7 @@ class DDS : public Plugin
     auto FillChannelContainers() -> void;
     auto SubscribeForConnectingChannels() -> void;
     auto PublishBoundChannels() -> void;
-    auto SubscribeForStateChanges() -> void;
+    auto SubscribeForCustomCommands() -> void;
 
     dds::intercom_api::CIntercomService fService;
     dds::intercom_api::CCustomCmd fDDSCustomCmd;
