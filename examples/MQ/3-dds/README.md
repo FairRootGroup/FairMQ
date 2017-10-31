@@ -13,9 +13,9 @@ The description below outlines the minimal steps needed to run the example with 
 
 ##### 1. The device handles the socket addresses and ports configuration via DDS Plugin.
 
-It is sufficient to provide the `--config <ddsConfigPluginLibraryName>` (and `--control <ddsControlPluginLibraryName>` if state machine control is to be handled with DDS) command line arguments to let the devices be configured dynamically. No code changes in the device are necessary. See the XML topology file for example of using the command line arguments.
+It is sufficient to provide the `-S "<@FAIRROOT_INSTALL_DIR@/lib" -P dds` (`<` prepends the following path to the default plugin search paths; put in the path which points to the library dir of your FairRoot installation) command line arguments to let the devices be configured dynamically. No code changes in the device are necessary. See the XML topology file for example of using the command line arguments.
 
-##### 2. Write DDS hosts file that contains a list of worker nodes to run the topology on (When deploying using the SSH plug-in).
+##### 2a. Write DDS hosts file that contains a list of worker nodes to run the topology on (When deploying using the SSH plug-in).
 
 We run this example on the local machine for simplicity. The file below defines three workers, sampler, processor and sink, with a total of 12 DDS agents (thus able to accept 12 tasks). The parameters for each worker node are:
  - user-chosen worker ID (must be unique)
@@ -34,6 +34,10 @@ processor, username@localhost, , /path/to/dds-work-dir/, 10
 sink, username@localhost, , /path/to/dds-work-dir/, 1
 ```
 
+##### 2b. Skip (When deploying using the localhost plug-in).
+
+If you want to deploy on a single host DDS 1.6+ provides a localhost rms plug-in. You do not need a hosts file in that case.
+
 ##### 3. Write DDS topology file that describes which tasks (processes) to run and their topology and configuration.
 
 Take a look at `ex3-dds-topology.xml`. It consists of a definition part (properties, tasks, collections and more) and execution part (main). In our example Sampler, Processor and Sink tasks are defines, containing their executables and exchanged properties. The `<main>` of the topology uses the defined tasks. Besides one Sampler and one Sink task, a group containing Processor task is defined. The group has a multiplicity of 10, meaninig 10 Processors will be executed. Each of the Processors will receive the properties with Sampler and Sink addresses.
@@ -41,6 +45,15 @@ Take a look at `ex3-dds-topology.xml`. It consists of a definition part (propert
 The configuration of the channel connection addresses is done by the DDS plugin via the channel names. The task property names must correspond to the channel names (data1, data2), with binding channels writing the properties and connecting channel reading the properties (see the example XML and JSON files).
 
 If `eth0` network interface (default for binding) is not available on your system, specify another one in the topology file for each task. For example: `--network-interface lo0`.
+
+If you chose step 2b earlier, then modify the provided `ex3-dds-topology.xml` in the top that the following lines read as following:
+```xml
+    <declrequirement id="SamplerWorker" type="wnname" value=".*"/>
+    <declrequirement id="ProcessorWorker" type="wnname" value=".*"/>
+    <declrequirement id="SinkWorker" type="wnname" value=".*"/>
+```
+
+Note that the attributes `value` contain a different value.
 
 ##### 4. Start DDS server.
 
@@ -58,6 +71,12 @@ dds-submit --rms ssh --config ex3-dds-hosts.cfg
 ```
 The `--rms` option defines a destination resource management system. The `--config` specifies an SSH plug-in resource definition file.
 
+If you chose step 2b earlier, run the following command instead:
+
+```bash
+dds-submit --rms localhost -n 12
+```
+
 ##### 6. Activate the topology.
 
 ```bash
@@ -70,7 +89,7 @@ After activation, agents will execute the defined tasks on the worker nodes. Out
 
 ##### 8. (optional) Use example command UI to check state of the devices
 
-A simple utility (fairmq-dds-command-ui) is included with FairRoot to send commands to devices and receive replies from them. The utility uses the DDS intercom library to send "check-state" string to all devices, to which they reply with their ID and state they are in. The utility also allows requesting state changes from devices. To let the device listen to the commands from the utility, start the device with `--control <ddsControlPluginLibraryName>` cmd option (see example XML topology).
+A simple utility (fairmq-dds-command-ui) is included with FairRoot to send commands to devices and receive replies from them. The utility uses the DDS intercom library to send "check-state" string to all devices, to which they reply with their ID and state they are in. The utility also allows requesting state changes from devices. To let the device listen to the commands from the utility, start the device with `-S "<@FAIRROOT_INSTALL_DIR@/lib" -P dds` cmd option (see example XML topology).
 
 To see it in action, start the fairmq-dds-command-ui while the topology is running.
 
