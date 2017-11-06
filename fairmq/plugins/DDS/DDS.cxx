@@ -37,11 +37,18 @@ DDS::DDS(const string name, const Plugin::Version version, const string maintain
     , fEventsMutex()
     , fNewEvent()
     , fDeviceTerminationRequested(false)
+    , fIosWork{fIos}
+    , fHeartbeatInterval{100}
+    , fHeartbeatTimer{fIos, fHeartbeatInterval}
+    , fIosWorkerThread([&](){ fIos.run(); })
 {
     try
     {
         TakeDeviceControl();
         fControllerThread = thread(&DDS::HandleControl, this);
+
+        fHeartbeatTimer.expires_from_now(chrono::milliseconds{0});
+        fHeartbeatTimer.async_wait(bind(&DDS::Heartbeat, this, placeholders::_1));
     }
     catch (PluginServices::DeviceControlError& e)
     {
@@ -203,6 +210,24 @@ auto DDS::PublishBoundChannels() -> void
     }
 }
 
+auto DDS::Heartbeat(const boost::system::error_code&) -> void
+{
+    string id = GetProperty<string>("id");
+    string pid(to_string(getpid()));
+
+    {
+        lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
+
+        for (const auto subscriberId : fHeartbeatSubscribers) {
+            fDDSCustomCmd.send("heartbeat: " + id + "," + pid, to_string(subscriberId));
+        }
+        if (!fHeartbeatSubscribers.empty()) {
+            fHeartbeatTimer.expires_at(fHeartbeatTimer.expires_at() + fHeartbeatInterval);
+            fHeartbeatTimer.async_wait(bind(&DDS::Heartbeat, this, placeholders::_1));
+        }
+    }
+}
+
 auto DDS::SubscribeForCustomCommands() -> void
 {
     string id = GetProperty<string>("id");
@@ -241,6 +266,23 @@ auto DDS::SubscribeForCustomCommands() -> void
             }
             fDDSCustomCmd.send(ss.str(), to_string(senderId));
         }
+        else if (cmd == "subscribe-to-heartbeats")
+        {
+            {
+                auto size = fHeartbeatSubscribers.size();
+                std::lock_guard<std::mutex> lock{fHeartbeatSubscriberMutex};
+                fHeartbeatSubscribers.insert(senderId);
+            }
+            fDDSCustomCmd.send("heartbeat-subscription: OK", to_string(senderId));
+        }
+        else if (cmd == "unsubscribe-from-heartbeats")
+        {
+            {
+                std::lock_guard<std::mutex> lock{fHeartbeatSubscriberMutex};
+                fHeartbeatSubscribers.erase(senderId);
+            }
+            fDDSCustomCmd.send("heartbeat-unsubscription: OK", to_string(senderId));
+        }
         else
         {
             LOG(WARN) << "Unknown command: " << cmd;
@@ -269,6 +311,9 @@ DDS::~DDS()
     {
         fControllerThread.join();
     }
+
+    fIos.stop();
+    fIosWorkerThread.join();
 }
 
 } /* namespace plugins */

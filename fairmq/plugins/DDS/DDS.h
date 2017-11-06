@@ -21,6 +21,9 @@
 #include <vector>
 #include <unordered_map>
 #include <set>
+#include <boost/asio.hpp>
+#include <chrono>
+#include <functional>
 
 namespace fair
 {
@@ -58,6 +61,8 @@ class DDS : public Plugin
     auto PublishBoundChannels() -> void;
     auto SubscribeForCustomCommands() -> void;
 
+    auto Heartbeat(const boost::system::error_code&) -> void;
+
     dds::intercom_api::CIntercomService fService;
     dds::intercom_api::CCustomCmd fDDSCustomCmd;
     dds::intercom_api::CKeyValue fDDSKeyValue;
@@ -76,6 +81,15 @@ class DDS : public Plugin
     std::condition_variable fNewEvent;
 
     std::atomic<bool> fDeviceTerminationRequested;
+
+    std::set<uint64_t> fHeartbeatSubscribers;
+    std::mutex fHeartbeatSubscriberMutex;
+
+    boost::asio::io_service fIos;
+    boost::asio::io_service::work fIosWork;
+    std::thread fIosWorkerThread;
+    boost::asio::basic_waitable_timer<std::chrono::steady_clock> fHeartbeatTimer;
+    std::chrono::milliseconds fHeartbeatInterval;
 };
 
 REGISTER_FAIRMQ_PLUGIN(
