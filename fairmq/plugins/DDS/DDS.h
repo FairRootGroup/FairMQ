@@ -84,6 +84,8 @@ class DDS : public Plugin
 
     std::set<uint64_t> fHeartbeatSubscribers;
     std::mutex fHeartbeatSubscriberMutex;
+    std::set<uint64_t> fStateChangeSubscribers;
+    std::mutex fStateChangeSubscriberMutex;
 
     boost::asio::io_service fIos;
     boost::asio::io_service::work fIosWork;
