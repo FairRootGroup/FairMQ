@@ -119,7 +119,6 @@ void FairMQDevice::InitWrapper()
         }
 
         FairMQMessagePtr msg(fTransportFactory->CreateMessage());
-        msg->SetDeviceId(fId);
     }
 
     // Containers to store the uninitialized channels.
@@ -131,18 +130,14 @@ void FairMQDevice::InitWrapper()
     {
         for (auto vi = mi.second.begin(); vi != mi.second.end(); ++vi)
         {
-            if (vi->fModified)
-            {
-                if (vi->fReset)
-                {
-                    vi->fSocket->Close();
-                    vi->fSocket = nullptr;
-
-                    vi->fPoller = nullptr;
-
-                    vi->fChannelCmdSocket->Close();
-                    vi->fChannelCmdSocket = nullptr;
-                }
+            // if (vi->fModified)
+            // {
+                // if (vi->fReset)
+                // {
+                //     vi->fSocket.reset();
+                //     vi->fPoller.reset();
+                //     vi->fChannelCmdSocket.reset();
+                // }
                 // set channel name: name + vector index
                 vi->fName = fair::mq::tools::ToString(mi.first, "[", vi - (mi.second).begin(), "]");
 
@@ -176,7 +171,7 @@ void FairMQDevice::InitWrapper()
                     LOG(ERROR) << "Cannot update configuration. Socket method (bind/connect) not specified.";
                     throw runtime_error("Cannot update configuration. Socket method (bind/connect) not specified.");
                 }
-            }
+            // }
         }
     }
 
@@ -805,7 +800,6 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& tran
         }
 
         FairMQMessagePtr msg(tr->CreateMessage());
-        msg->SetDeviceId(fId);
 
         return move(tr);
     }
@@ -1064,14 +1058,10 @@ void FairMQDevice::Reset()
         // iterate over the channels vector
         for (auto& vi : mi.second)
         {
-            vi.fReset = true;
-            // vi.fSocket->Close();
-            // vi.fSocket = nullptr;
-
-            // vi.fPoller = nullptr;
-
-            // vi.fChannelCmdSocket->Close();
-            // vi.fChannelCmdSocket = nullptr;
+            // vi.fReset = true;
+            vi.fSocket.reset();
+            vi.fPoller.reset();
+            vi.fChannelCmdSocket.reset();
         }
     }
 }

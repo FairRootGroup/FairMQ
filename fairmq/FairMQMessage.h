@@ -1,8 +1,8 @@
 /********************************************************************************
  *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *              This software is distributed under the terms of the             *
+ *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
@@ -32,9 +32,8 @@ class FairMQMessage
     virtual void* GetMessage() = 0;
     virtual void* GetData() = 0;
     virtual size_t GetSize() = 0;
-    virtual void SetMessage(void* data, size_t size) = 0;
 
-    virtual void SetDeviceId(const std::string& deviceId) = 0;
+    virtual void SetMessage(void* data, size_t size) = 0;
 
     virtual FairMQ::Transport GetType() const = 0;
 

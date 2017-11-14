@@ -17,6 +17,7 @@
 
 #include <cstddef>
 #include <string>
+#include <memory>
 
 #include "FairMQMessage.h"
 #include "FairMQUnmanagedRegion.h"
@@ -42,8 +43,6 @@ class FairMQMessageNN : public FairMQMessage
 
     virtual void SetMessage(void* data, const size_t size);
 
-    virtual void SetDeviceId(const std::string& deviceId);
-
     virtual FairMQ::Transport GetType() const;
 
     virtual void Copy(const std::unique_ptr<FairMQMessage>& msg);
@@ -56,8 +55,7 @@ class FairMQMessageNN : public FairMQMessage
     void* fMessage;
     size_t fSize;
     bool fReceiving;
-    bool fRegion;
-    static std::string fDeviceID;
+    FairMQUnmanagedRegion* fRegionPtr;
     static FairMQ::Transport fTransportType;
 
     void Clear();

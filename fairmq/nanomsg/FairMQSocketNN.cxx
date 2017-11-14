@@ -15,6 +15,7 @@
 #include "FairMQSocketNN.h"
 #include "FairMQMessageNN.h"
 #include "FairMQLogger.h"
+#include "FairMQUnmanagedRegionNN.h"
 
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
@@ -127,14 +128,17 @@ int FairMQSocketNN::Send(FairMQMessagePtr& msg, const int flags)
     while (true)
     {
         void* ptr = msg->GetMessage();
-        if (static_cast<FairMQMessageNN*>(msg.get())->fRegion == false)
+        if (static_cast<FairMQMessageNN*>(msg.get())->fRegionPtr == nullptr)
         {
             nbytes = nn_send(fSocket, &ptr, NN_MSG, flags);
         }
         else
         {
             nbytes = nn_send(fSocket, ptr, msg->GetSize(), flags);
+            // nn_send copies the data, safe to call region callback here
+            static_cast<FairMQUnmanagedRegionNN*>(static_cast<FairMQMessageNN*>(msg.get())->fRegionPtr)->fCallback(msg->GetMessage(), msg->GetSize());
         }
+
         if (nbytes >= 0)
         {
             fBytesTx += nbytes;
@@ -239,6 +243,8 @@ int64_t FairMQSocketNN::Send(vector<unique_ptr<FairMQMessage>>& msgVec, const in
         static_cast<FairMQMessageNN*>(msgVec[i].get())->fReceiving = false;
         packer.pack_bin(msgVec[i]->GetSize());
         packer.pack_bin_body(static_cast<char*>(msgVec[i]->GetData()), msgVec[i]->GetSize());
+        // call region callback
+        static_cast<FairMQUnmanagedRegionNN*>(static_cast<FairMQMessageNN*>(msgVec[i].get())->fRegionPtr)->fCallback(msgVec[i]->GetMessage(), msgVec[i]->GetSize());
     }
 
     int64_t nbytes = -1;

@@ -5,7 +5,7 @@
  *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-#include "FairMQShmMonitor.h"
+#include "Monitor.h"
 
 #include <boost/program_options.hpp>
 
@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 
         options_description desc("Options");
         desc.add_options()
-            ("segment-name", value<string>(&segmentName)->default_value("fairmq_shmem_main"), "Name of the shared memory segment")
+            ("segment-name", value<string>(&segmentName)->default_value("fmq_shm_main"), "Name of the shared memory segment")
             ("cleanup", value<bool>(&cleanup)->implicit_value(true), "Perform cleanup and quit")
             ("self-destruct", value<bool>(&selfDestruct)->implicit_value(true), "Quit after first closing of the memory")
             ("interactive", value<bool>(&interactive)->implicit_value(true), "Interactive run")
@@ -49,7 +49,7 @@ int main(int argc, char** argv)
         {
             cout << "Cleaning up \"" << segmentName << "\"..." << endl;
             fair::mq::shmem::Monitor::Cleanup(segmentName);
-            fair::mq::shmem::Monitor::CleanupControlQueues();
+            fair::mq::shmem::Monitor::RemoveQueue("fmq_shm_control_queue");
             return 0;
         }
 

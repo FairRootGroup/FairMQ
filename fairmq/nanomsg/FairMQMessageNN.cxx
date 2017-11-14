@@ -22,14 +22,13 @@
 
 using namespace std;
 
-string FairMQMessageNN::fDeviceID = string();
 FairMQ::Transport FairMQMessageNN::fTransportType = FairMQ::Transport::NN;
 
 FairMQMessageNN::FairMQMessageNN()
     : fMessage(nullptr)
     , fSize(0)
     , fReceiving(false)
-    , fRegion(false)
+    , fRegionPtr(nullptr)
 {
     fMessage = nn_allocmsg(0, 0);
     if (!fMessage)
@@ -42,7 +41,7 @@ FairMQMessageNN::FairMQMessageNN(const size_t size)
     : fMessage(nullptr)
     , fSize(0)
     , fReceiving(false)
-    , fRegion(false)
+    , fRegionPtr(nullptr)
 {
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
@@ -62,7 +61,7 @@ FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* 
     : fMessage(nullptr)
     , fSize(0)
     , fReceiving(false)
-    , fRegion(false)
+    , fRegionPtr(nullptr)
 {
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
@@ -84,11 +83,11 @@ FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* 
     }
 }
 
-FairMQMessageNN::FairMQMessageNN(FairMQUnmanagedRegionPtr& /*region*/, void* data, const size_t size)
+FairMQMessageNN::FairMQMessageNN(FairMQUnmanagedRegionPtr& region, void* data, const size_t size)
     : fMessage(data)
     , fSize(size)
     , fReceiving(false)
-    , fRegion(true)
+    , fRegionPtr(region.get())
 {
     // currently nanomsg will copy the buffer (data) inside nn_sendmsg()
 }
@@ -151,11 +150,6 @@ void FairMQMessageNN::SetMessage(void* data, const size_t size)
 {
     fMessage = data;
     fSize = size;
-}
-
-void FairMQMessageNN::SetDeviceId(const string& deviceId)
-{
-    fDeviceID = deviceId;
 }
 
 FairMQ::Transport FairMQMessageNN::GetType() const

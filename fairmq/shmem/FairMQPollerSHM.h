@@ -1,8 +1,8 @@
 /********************************************************************************
  *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *              This software is distributed under the terms of the             *
+ *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 #ifndef FAIRMQPOLLERSHM_H_
@@ -35,13 +35,13 @@ class FairMQPollerSHM : public FairMQPoller
 
     void SetItemEvents(zmq_pollitem_t& item, const int type);
 
-    virtual void Poll(const int timeout);
-    virtual bool CheckInput(const int index);
-    virtual bool CheckOutput(const int index);
-    virtual bool CheckInput(const std::string channelKey, const int index);
-    virtual bool CheckOutput(const std::string channelKey, const int index);
+    void Poll(const int timeout) override;
+    bool CheckInput(const int index) override;
+    bool CheckOutput(const int index) override;
+    bool CheckInput(const std::string channelKey, const int index) override;
+    bool CheckOutput(const std::string channelKey, const int index) override;
 
-    virtual ~FairMQPollerSHM();
+    ~FairMQPollerSHM() override;
 
   private:
     FairMQPollerSHM(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket);

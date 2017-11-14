@@ -102,8 +102,10 @@ set(FAIRMQ_HEADER_FILES
     shmem/FairMQUnmanagedRegionSHM.h
     shmem/FairMQSocketSHM.h
     shmem/FairMQTransportFactorySHM.h
-    shmem/FairMQShmMonitor.h
-    shmem/FairMQShmCommon.h
+    shmem/Common.h
+    shmem/Manager.h
+    shmem/Monitor.h
+    shmem/Region.h
     tools/CppSTL.h
     tools/Network.h
     tools/Strings.h
@@ -163,7 +165,9 @@ set(FAIRMQ_SOURCE_FILES
     shmem/FairMQUnmanagedRegionSHM.cxx
     shmem/FairMQSocketSHM.cxx
     shmem/FairMQTransportFactorySHM.cxx
-    shmem/FairMQShmMonitor.cxx
+    shmem/Manager.cxx
+    shmem/Monitor.cxx
+    shmem/Region.cxx
     zeromq/FairMQMessageZMQ.cxx
     zeromq/FairMQPollerZMQ.cxx
     zeromq/FairMQUnmanagedRegionZMQ.cxx
@@ -262,7 +266,7 @@ target_link_libraries(splitter FairMQ)
 add_executable(runConfigExample options/runConfigEx.cxx)
 target_link_libraries(runConfigExample FairMQ)
 
-add_executable(shmmonitor shmem/runFairMQShmMonitor.cxx)
+add_executable(shmmonitor shmem/runMonitor.cxx)
 target_link_libraries(shmmonitor FairMQ)
 
 

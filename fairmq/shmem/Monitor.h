@@ -36,7 +36,8 @@ class Monitor
     virtual ~Monitor();
 
     static void Cleanup(const std::string& segmentName);
-    static void CleanupControlQueues();
+    static void RemoveObject(const std::string&);
+    static void RemoveQueue(const std::string&);
 
   private:
     void PrintHeader();
@@ -46,7 +47,6 @@ class Monitor
     void CheckSegment();
     void Interactive();
     void SignalMonitor();
-    static void RemoveObject(const std::string&);
 
     bool fSelfDestruct; // will self-destruct after the memory has been closed
     bool fInteractive; // running in interactive mode

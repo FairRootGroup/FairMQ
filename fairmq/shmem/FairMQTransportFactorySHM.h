@@ -10,19 +10,20 @@
 #define FAIRMQTRANSPORTFACTORYSHM_H_
 
 #include "FairMQTransportFactory.h"
+#include "Manager.h"
 #include "FairMQMessageSHM.h"
 #include "FairMQSocketSHM.h"
 #include "FairMQPollerSHM.h"
-#include "FairMQShmCommon.h"
-#include <options/FairMQProgOptions.h>
+#include "Common.h"
 #include "FairMQUnmanagedRegionSHM.h"
+#include <options/FairMQProgOptions.h>
+
+#include <boost/interprocess/sync/named_mutex.hpp>
 
 #include <vector>
 #include <string>
 #include <thread>
 #include <atomic>
-
-#include <boost/interprocess/sync/named_mutex.hpp>
 
 class FairMQTransportFactorySHM : public FairMQTransportFactory
 {
@@ -43,7 +44,7 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
     FairMQPollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const override;
     FairMQPollerPtr CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const override;
 
-    FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size) const override;
+    FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback = nullptr) const override;
 
     FairMQ::Transport GetType() const override;
 
@@ -60,6 +61,8 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
     std::atomic<bool> fSendHeartbeats;
     boost::interprocess::named_mutex fShMutex;
     fair::mq::shmem::DeviceCounter* fDeviceCounter;
+    std::string fSegmentName;
+    std::unique_ptr<fair::mq::shmem::Manager> fManager;
 };
 
 #endif /* FAIRMQTRANSPORTFACTORYSHM_H_ */

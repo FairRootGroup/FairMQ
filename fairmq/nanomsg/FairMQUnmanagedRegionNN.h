@@ -18,7 +18,7 @@ class FairMQUnmanagedRegionNN : public FairMQUnmanagedRegion
     friend class FairMQSocketNN;
 
   public:
-    FairMQUnmanagedRegionNN(const size_t size);
+    FairMQUnmanagedRegionNN(const size_t size, FairMQRegionCallback callback);
     FairMQUnmanagedRegionNN(const FairMQUnmanagedRegionNN&) = delete;
     FairMQUnmanagedRegionNN operator=(const FairMQUnmanagedRegionNN&) = delete;
 
@@ -30,6 +30,7 @@ class FairMQUnmanagedRegionNN : public FairMQUnmanagedRegion
   private:
     void* fBuffer;
     size_t fSize;
+    FairMQRegionCallback fCallback;
 };
 
 #endif /* FAIRMQUNMANAGEDREGIONNN_H_ */

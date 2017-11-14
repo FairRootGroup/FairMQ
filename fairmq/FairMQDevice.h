@@ -240,9 +240,9 @@ class FairMQDevice : public FairMQStateMachine
         return Transport()->CreateUnmanagedRegion(size);
     }
 
-    FairMQUnmanagedRegionPtr NewUnmanagedRegionFor(const std::string& channel, int index, const size_t size)
+    FairMQUnmanagedRegionPtr NewUnmanagedRegionFor(const std::string& channel, int index, const size_t size, FairMQRegionCallback callback = nullptr)
     {
-        return fChannels.at(channel).at(index).Transport()->CreateUnmanagedRegion(size);
+        return fChannels.at(channel).at(index).Transport()->CreateUnmanagedRegion(size, callback);
     }
 
     template<typename ...Ts>

@@ -17,10 +17,10 @@
 
 #include "FairMQMessageZMQ.h"
 #include "FairMQLogger.h"
+#include "FairMQUnmanagedRegionZMQ.h"
 
 using namespace std;
 
-string FairMQMessageZMQ::fDeviceID = string();
 FairMQ::Transport FairMQMessageZMQ::fTransportType = FairMQ::Transport::ZMQ;
 
 FairMQMessageZMQ::FairMQMessageZMQ()
@@ -50,7 +50,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn
     }
 }
 
-FairMQMessageZMQ::FairMQMessageZMQ(FairMQUnmanagedRegionPtr& /*region*/, void* data, const size_t size)
+FairMQMessageZMQ::FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data, const size_t size)
     : fMessage()
 {
     // FIXME: make this zero-copy:
@@ -62,6 +62,8 @@ FairMQMessageZMQ::FairMQMessageZMQ(FairMQUnmanagedRegionPtr& /*region*/, void* d
     }
 
     memcpy(zmq_msg_data(&fMessage), data, size);
+    // call region callback
+    static_cast<FairMQUnmanagedRegionZMQ*>(region.get())->fCallback(data, size);
 
     // if (zmq_msg_init_data(&fMessage, data, size, [](void*, void*){}, nullptr) != 0)
     // {
@@ -114,11 +116,6 @@ size_t FairMQMessageZMQ::GetSize()
 void FairMQMessageZMQ::SetMessage(void*, const size_t)
 {
     // dummy method to comply with the interface. functionality not allowed in zeromq.
-}
-
-void FairMQMessageZMQ::SetDeviceId(const string& deviceId)
-{
-    fDeviceID = deviceId;
 }
 
 FairMQ::Transport FairMQMessageZMQ::GetType() const

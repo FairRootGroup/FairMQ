@@ -13,16 +13,17 @@
 #include "FairMQMessageSHM.h"
 #include "FairMQUnmanagedRegionSHM.h"
 #include "FairMQLogger.h"
-#include "FairMQShmCommon.h"
+#include "Common.h"
 
 using namespace std;
 using namespace fair::mq::shmem;
 
 atomic<bool> FairMQSocketSHM::fInterrupted(false);
 
-FairMQSocketSHM::FairMQSocketSHM(const string& type, const string& name, const string& id /*= ""*/, void* context)
+FairMQSocketSHM::FairMQSocketSHM(Manager& manager, const string& type, const string& name, const string& id /*= ""*/, void* context)
     : FairMQSocket(ZMQ_SNDMORE, ZMQ_RCVMORE, ZMQ_DONTWAIT)
-    , fSocket(NULL)
+    , fManager(manager)
+    , fSocket(nullptr)
     , fId()
     , fBytesTx(0)
     , fBytesRx(0)
@@ -34,7 +35,7 @@ FairMQSocketSHM::FairMQSocketSHM(const string& type, const string& name, const s
     assert(context);
     fSocket = zmq_socket(context, GetConstant(type));
 
-    if (fSocket == NULL)
+    if (fSocket == nullptr)
     {
         LOG(ERROR) << "Failed creating socket " << fId << ", reason: " << zmq_strerror(errno);
         exit(EXIT_FAILURE);
@@ -67,7 +68,7 @@ FairMQSocketSHM::FairMQSocketSHM(const string& type, const string& name, const s
 
     if (type == "sub")
     {
-        if (zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, NULL, 0) != 0)
+        if (zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, nullptr, 0) != 0)
         {
             LOG(ERROR) << "Failed setting ZMQ_SUBSCRIBE socket option, reason: " << zmq_strerror(errno);
         }
@@ -301,7 +302,7 @@ int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int fla
 
         do
         {
-            FairMQMessagePtr part(new FairMQMessageSHM());
+            FairMQMessagePtr part(new FairMQMessageSHM(fManager));
             zmq_msg_t* msgPtr = static_cast<zmq_msg_t*>(part->GetMessage());
 
             int nbytes = zmq_msg_recv(msgPtr, fSocket, flags);
@@ -360,7 +361,7 @@ void FairMQSocketSHM::Close()
 {
     // LOG(DEBUG) << "Closing socket " << fId;
 
-    if (fSocket == NULL)
+    if (fSocket == nullptr)
     {
         return;
     }
@@ -370,20 +371,20 @@ void FairMQSocketSHM::Close()
         LOG(ERROR) << "Failed closing socket " << fId << ", reason: " << zmq_strerror(errno);
     }
 
-    fSocket = NULL;
+    fSocket = nullptr;
 }
 
 void FairMQSocketSHM::Interrupt()
 {
+    fManager.Interrupt();
     FairMQMessageSHM::fInterrupted = true;
-    FairMQUnmanagedRegionSHM::fInterrupted = true;
     fInterrupted = true;
 }
 
 void FairMQSocketSHM::Resume()
 {
+    fManager.Resume();
     FairMQMessageSHM::fInterrupted = false;
-    FairMQUnmanagedRegionSHM::fInterrupted = true;
     fInterrupted = false;
 }
 

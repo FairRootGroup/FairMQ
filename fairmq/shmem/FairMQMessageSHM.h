@@ -18,54 +18,52 @@
 
 #include "FairMQMessage.h"
 #include "FairMQUnmanagedRegion.h"
-#include "FairMQShmManager.h"
+#include "Manager.h"
 
 class FairMQMessageSHM : public FairMQMessage
 {
     friend class FairMQSocketSHM;
 
   public:
-    FairMQMessageSHM();
-    FairMQMessageSHM(const size_t size);
-    FairMQMessageSHM(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
-    FairMQMessageSHM(FairMQUnmanagedRegionPtr& region, void* data, const size_t size);
+    FairMQMessageSHM(fair::mq::shmem::Manager& manager);
+    FairMQMessageSHM(fair::mq::shmem::Manager& manager, const size_t size);
+    FairMQMessageSHM(fair::mq::shmem::Manager& manager, void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
+    FairMQMessageSHM(fair::mq::shmem::Manager& manager, FairMQUnmanagedRegionPtr& region, void* data, const size_t size);
 
     FairMQMessageSHM(const FairMQMessageSHM&) = delete;
     FairMQMessageSHM operator=(const FairMQMessageSHM&) = delete;
 
     bool InitializeChunk(const size_t size);
 
-    virtual void Rebuild();
-    virtual void Rebuild(const size_t size);
-    virtual void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
+    void Rebuild() override;
+    void Rebuild(const size_t size) override;
+    void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override;
 
-    virtual void* GetMessage();
-    virtual void* GetData();
-    virtual size_t GetSize();
+    void* GetMessage() override;
+    void* GetData() override;
+    size_t GetSize() override;
 
-    virtual void SetMessage(void* data, const size_t size);
+    void SetMessage(void* data, const size_t size) override;
 
-    virtual void SetDeviceId(const std::string& deviceId);
+    FairMQ::Transport GetType() const override;
 
-    virtual FairMQ::Transport GetType() const;
-
-    virtual void Copy(const std::unique_ptr<FairMQMessage>& msg);
+    void Copy(const std::unique_ptr<FairMQMessage>& msg) override;
 
     void CloseMessage();
 
-    virtual ~FairMQMessageSHM();
+    ~FairMQMessageSHM() override;
 
   private:
+    fair::mq::shmem::Manager& fManager;
     zmq_msg_t fMessage;
     bool fQueued;
     bool fMetaCreated;
     static std::atomic<bool> fInterrupted;
     static FairMQ::Transport fTransportType;
     uint64_t fRegionId;
-    bipc::managed_shared_memory::handle_t fHandle;
+    boost::interprocess::managed_shared_memory::handle_t fHandle;
     size_t fSize;
     void* fLocalPtr;
-    boost::interprocess::mapped_region* fRemoteRegion; // cache region ptr
 };
 
 #endif /* FAIRMQMESSAGESHM_H_ */

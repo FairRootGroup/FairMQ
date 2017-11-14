@@ -10,7 +10,10 @@
 #define FAIRMQUNMANAGEDREGION_H_
 
 #include <cstddef> // size_t
-#include <memory> // unique_ptr
+#include <memory> // std::unique_ptr
+#include <functional> // std::function
+
+using FairMQRegionCallback = std::function<void(void*, size_t)>;
 
 class FairMQUnmanagedRegion
 {

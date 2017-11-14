@@ -7,7 +7,6 @@
  ********************************************************************************/
 
 #include "FairMQLogger.h"
-#include "FairMQShmManager.h"
 #include "FairMQTransportFactorySHM.h"
 
 #include <zmq.h>
@@ -27,9 +26,10 @@
 
 using namespace std;
 using namespace fair::mq::shmem;
-namespace bipc = boost::interprocess;
+
 namespace bfs = boost::filesystem;
 namespace bpt = boost::posix_time;
+namespace bipc = boost::interprocess;
 
 FairMQ::Transport FairMQTransportFactorySHM::fTransportType = FairMQ::Transport::SHM;
 
@@ -39,8 +39,10 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
     , fHeartbeatSocket(nullptr)
     , fHeartbeatThread()
     , fSendHeartbeats(true)
-    , fShMutex(bipc::open_or_create, "fairmq_shmem_mutex")
+    , fShMutex(bipc::open_or_create, "fmq_shm_mutex")
     , fDeviceCounter(nullptr)
+    , fSegmentName()
+    , fManager(nullptr)
 {
     int major, minor, patch;
     zmq_version(&major, &minor, &patch);
@@ -53,15 +55,15 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
         LOG(ERROR) << "failed creating context, reason: " << zmq_strerror(errno);
         exit(EXIT_FAILURE);
     }
-    
+
     int numIoThreads = 1;
+    fSegmentName = "fmq_shm_main";
     size_t segmentSize = 2000000000;
-    string segmentName = "fairmq_shmem_main";
     if (config)
     {
         numIoThreads = config->GetValue<int>("io-threads");
+        fSegmentName = config->GetValue<string>("shm-segment-name");
         segmentSize = config->GetValue<size_t>("shm-segment-size");
-        segmentName = config->GetValue<string>("shm-segment-name");
     }
     else
     {
@@ -79,13 +81,13 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
         LOG(ERROR) << "shmem: failed configuring context, reason: " << zmq_strerror(errno);
     }
 
-    Manager::Instance().InitializeSegment("open_or_create", segmentName, segmentSize);
-    LOG(DEBUG) << "shmem: created/opened shared memory segment of " << segmentSize << " bytes. Available are " << Manager::Instance().Segment()->get_free_memory() << " bytes.";
+    fManager = fair::mq::tools::make_unique<Manager>(fSegmentName, segmentSize);
+    LOG(DEBUG) << "shmem: created/opened shared memory segment of " << segmentSize << " bytes. Available are " << fManager->Segment().get_free_memory() << " bytes.";
 
     {
         bipc::scoped_lock<bipc::named_mutex> lock(fShMutex);
 
-        fDeviceCounter = Manager::Instance().Segment()->find<DeviceCounter>(bipc::unique_instance).first;
+        fDeviceCounter = fManager->Segment().find<DeviceCounter>(bipc::unique_instance).first;
         if (fDeviceCounter)
         {
             LOG(DEBUG) << "shmem: device counter found, with value of " << fDeviceCounter->fCount << ". incrementing.";
@@ -95,7 +97,7 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
         else
         {
             LOG(DEBUG) << "shmem: no device counter found, creating one and initializing with 1";
-            fDeviceCounter = Manager::Instance().Segment()->construct<DeviceCounter>(bipc::unique_instance)(1);
+            fDeviceCounter = fManager->Segment().construct<DeviceCounter>(bipc::unique_instance)(1);
             LOG(DEBUG) << "shmem: initialized device counter with: " << fDeviceCounter->fCount;
         }
 
@@ -110,7 +112,7 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
         //     }
         //     else
         //     {
-        //         LOG(DEBUG) << "shmem: found shmmonitor in fairmq_shmem_management.";
+        //         LOG(DEBUG) << "shmem: found shmmonitor in fmq_shm_management.";
         //     }
         // }
         // catch (std::exception& e)
@@ -140,7 +142,7 @@ void FairMQTransportFactorySHM::StartMonitor()
 
     do
     {
-        MonitorStatus* monitorStatus = Manager::Instance().ManagementSegment().find<MonitorStatus>(bipc::unique_instance).first;
+        MonitorStatus* monitorStatus = fManager->ManagementSegment().find<MonitorStatus>(bipc::unique_instance).first;
         if (monitorStatus)
         {
             LOG(DEBUG) << "shmem: shmmonitor started";
@@ -165,7 +167,7 @@ void FairMQTransportFactorySHM::SendHeartbeats()
     {
         try
         {
-            bipc::message_queue mq(bipc::open_only, "fairmq_shmem_control_queue");
+            bipc::message_queue mq(bipc::open_only, "fmq_shm_control_queue");
             bool heartbeat = true;
             bpt::ptime sndTill = bpt::microsec_clock::universal_time() + bpt::milliseconds(100);
             if (mq.timed_send(&heartbeat, sizeof(heartbeat), 0, sndTill))
@@ -180,35 +182,35 @@ void FairMQTransportFactorySHM::SendHeartbeats()
         catch (bipc::interprocess_exception& ie)
         {
             this_thread::sleep_for(chrono::milliseconds(500));
-            // LOG(WARN) << "no fairmq_shmem_control_queue found";
+            // LOG(WARN) << "no fmq_shm_control_queue found";
         }
     }
 }
 
 FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage() const
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageSHM());
+    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager));
 }
 
 FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(const size_t size) const
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(size));
+    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, size));
 }
 
 FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(data, size, ffn, hint));
+    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, data, size, ffn, hint));
 }
 
 FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size) const
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(region, data, size));
+    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, region, data, size));
 }
 
 FairMQSocketPtr FairMQTransportFactorySHM::CreateSocket(const string& type, const string& name) const
 {
     assert(fContext);
-    return unique_ptr<FairMQSocket>(new FairMQSocketSHM(type, name, GetId(), fContext));
+    return unique_ptr<FairMQSocket>(new FairMQSocketSHM(*fManager, type, name, GetId(), fContext));
 }
 
 FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const vector<FairMQChannel>& channels) const
@@ -231,9 +233,9 @@ FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const FairMQSocket& cmdS
     return unique_ptr<FairMQPoller>(new FairMQPollerSHM(cmdSocket, dataSocket));
 }
 
-FairMQUnmanagedRegionPtr FairMQTransportFactorySHM::CreateUnmanagedRegion(const size_t size) const
+FairMQUnmanagedRegionPtr FairMQTransportFactorySHM::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback) const
 {
-    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionSHM(size));
+    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionSHM(*fManager, size, callback));
 }
 
 FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
@@ -261,6 +263,8 @@ FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
         LOG(ERROR) << "shmem: Terminate(): context not available for shutdown";
     }
 
+    bool lastRemoved = false;
+
     { // mutex scope
         bipc::scoped_lock<bipc::named_mutex> lock(fShMutex);
 
@@ -268,14 +272,20 @@ FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
 
         if (fDeviceCounter->fCount == 0)
         {
-            LOG(DEBUG) << "shmem: last 'fairmq_shmem_main' user, removing segment.";
+            LOG(DEBUG) << "shmem: last " << fSegmentName << " user, removing segment.";
 
-            Manager::Instance().Remove();
+            fManager->RemoveSegment();
+            lastRemoved = true;
         }
         else
         {
-            LOG(DEBUG) << "shmem: other 'fairmq_shmem_main' users present (" << fDeviceCounter->fCount << "), not removing it.";
+            LOG(DEBUG) << "shmem: other " << fSegmentName << " users present (" << fDeviceCounter->fCount << "), not removing it.";
         }
+    }
+
+    if (lastRemoved)
+    {
+        boost::interprocess::named_mutex::remove("fmq_shm_mutex");
     }
 }
 

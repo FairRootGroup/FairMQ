@@ -1,8 +1,8 @@
 /********************************************************************************
  *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *  
+ *              This software is distributed under the terms of the             *
+ *         GNU Lesser General Public Licence version 3 (LGPL) version 3,        *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 #ifndef FAIR_MQ_SHMEM_COMMON_H_
@@ -51,6 +51,22 @@ struct alignas(32) MetaHeader
     uint64_t fSize;
     uint64_t fRegionId;
     boost::interprocess::managed_shared_memory::handle_t fHandle;
+};
+
+struct RegionBlock
+{
+    RegionBlock()
+        : fHandle()
+        , fSize(0)
+    {}
+
+    RegionBlock(boost::interprocess::managed_shared_memory::handle_t handle, size_t size)
+        : fHandle(handle)
+        , fSize(size)
+    {}
+
+    boost::interprocess::managed_shared_memory::handle_t fHandle;
+    size_t fSize;
 };
 
 } // namespace shmem

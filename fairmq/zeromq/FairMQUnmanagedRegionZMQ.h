@@ -15,10 +15,11 @@
 
 class FairMQUnmanagedRegionZMQ : public FairMQUnmanagedRegion
 {
-    friend class FairMQSocketSHM;
+    friend class FairMQSocketZMQ;
+    friend class FairMQMessageZMQ;
 
   public:
-    FairMQUnmanagedRegionZMQ(const size_t size);
+    FairMQUnmanagedRegionZMQ(const size_t size, FairMQRegionCallback callback);
     FairMQUnmanagedRegionZMQ(const FairMQUnmanagedRegionZMQ&) = delete;
     FairMQUnmanagedRegionZMQ operator=(const FairMQUnmanagedRegionZMQ&) = delete;
 
@@ -30,6 +31,7 @@ class FairMQUnmanagedRegionZMQ : public FairMQUnmanagedRegion
   private:
     void* fBuffer;
     size_t fSize;
+    FairMQRegionCallback fCallback;
 };
 
 #endif /* FAIRMQUNMANAGEDREGIONZMQ_H_ */
