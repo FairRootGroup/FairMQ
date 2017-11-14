@@ -10,6 +10,7 @@ fi
 SAMPLER="ex-region-sampler"
 SAMPLER+=" --id sampler1"
 SAMPLER+=" --msg-size $msgSize"
+# SAMPLER+=" --rate 10"
 SAMPLER+=" --transport shmem"
 SAMPLER+=" --mq-config $exRegionConfig"
 xterm -geometry 80x23+0+0 -hold -e @CMAKE_BINARY_DIR@/bin/examples/advanced/Region/$SAMPLER &
