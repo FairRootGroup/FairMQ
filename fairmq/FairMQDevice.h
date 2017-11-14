@@ -535,6 +535,8 @@ class FairMQDevice : public FairMQStateMachine
     bool fExternalConfig;
 
     const fair::mq::tools::Version fVersion;
+    float fRate;
+    size_t fLastTime;
 };
 
 #endif /* FAIRMQDEVICE_H_ */

@@ -299,6 +299,9 @@ class FairMQProgOptions : public FairProgOptions
     virtual int NotifySwitchOption(); // for custom help & version printing
     void InitOptionDescription();
 
+    // fill boost option description with the standard options
+    static void FillOptionDescription(po::options_description& options);
+
     // read FairMQChannelMap and insert/update corresponding values in variable map
     // create key for variable map as follow : channelName.index.memberName
     void UpdateMQValues();

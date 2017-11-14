@@ -14,6 +14,7 @@
 #include <mutex>
 #include <thread>
 #include <functional>
+#include <sstream>
 
 #include <boost/algorithm/string.hpp> // join/split
 
@@ -61,6 +62,9 @@ FairMQDevice::FairMQDevice()
     , fMultitransportProceed(false)
     , fExternalConfig(false)
     , fVersion({0, 0, 0})
+    , fRate(0.)
+    , fLastTime(0)
+
 {
 }
 
@@ -511,6 +515,18 @@ void FairMQDevice::RunWrapper()
         {
             while (CheckCurrentState(RUNNING) && ConditionalRun())
             {
+              using TimeScale = std::chrono::microseconds;
+              static const auto reftime = std::chrono::system_clock::now();
+              if (fRate > 0.001) {
+                auto timeSinceRef = std::chrono::duration_cast<TimeScale>(std::chrono::system_clock::now() - reftime);
+                auto timespan = timeSinceRef.count() - fLastTime;
+                TimeScale::rep period = (float)TimeScale::period::den / fRate;
+                if (timespan < period) {
+                  TimeScale sleepfor(period - timespan);
+                  std::this_thread::sleep_for(sleepfor);
+                }
+                fLastTime = std::chrono::duration_cast<TimeScale>(std::chrono::system_clock::now() - reftime).count();
+              }
             }
 
             Run();
@@ -893,6 +909,7 @@ void FairMQDevice::SetConfig(FairMQProgOptions& config)
     fNetworkInterface = config.GetValue<string>("network-interface");
     fNumIoThreads = config.GetValue<int>("io-threads");
     fInitializationTimeoutInS = config.GetValue<int>("initialization-timeout");
+    std::stringstream(fConfig->GetValue<string>("rate")) >> fRate;
 }
 
 void FairMQDevice::LogSocketRates()
