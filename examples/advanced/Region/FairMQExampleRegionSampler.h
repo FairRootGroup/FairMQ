@@ -16,6 +16,7 @@
 #define FAIRMQEXAMPLEREGIONSAMPLER_H_
 
 #include <string>
+#include <atomic>
 
 #include "FairMQDevice.h"
 
@@ -26,10 +27,14 @@ class FairMQExampleRegionSampler : public FairMQDevice
     virtual ~FairMQExampleRegionSampler();
 
   protected:
-    int fMsgSize;
-
     virtual void InitTask();
-    virtual void Run();
+    virtual bool ConditionalRun();
+    virtual void ResetTask();
+
+  private:
+    int fMsgSize;
+    FairMQUnmanagedRegionPtr fRegion;
+    std::atomic<uint64_t> fNumUnackedMsgs;
 };
 
 #endif /* FAIRMQEXAMPLEREGIONSAMPLER_H_ */
