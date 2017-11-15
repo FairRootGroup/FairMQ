@@ -64,7 +64,6 @@ FairMQDevice::FairMQDevice()
     , fVersion({0, 0, 0})
     , fRate(0.)
     , fLastTime(0)
-
 {
 }
 
@@ -94,6 +93,8 @@ FairMQDevice::FairMQDevice(const fair::mq::tools::Version version)
     , fMultitransportProceed(false)
     , fExternalConfig(false)
     , fVersion(version)
+    , fRate(0.)
+    , fLastTime(0)
 {
 }
 
