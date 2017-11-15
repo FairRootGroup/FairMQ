@@ -336,7 +336,7 @@ void FairMQProgOptions::FillOptionDescription(boost::program_options::options_de
             ("print-channels",         po::value<bool  >()->implicit_value(true),               "Print registered channel endpoints in a machine-readable format (<channel name>:<min num subchannels>:<max num subchannels>)")
             ("shm-segment-size",       po::value<size_t>()->default_value(2000000000),          "shmem transport: size of the shared memory segment (in bytes).")
             ("shm-segment-name",       po::value<string>()->default_value("fairmq_shmem_main"), "shmem transport: name of the shared memory segment.")
-            ("rate",                   po::value<string>()->default_value(""),                  "rate for conditional run loop (Hz)")
+            ("rate",                   po::value<float>()->default_value(0.),                   "rate for conditional run loop (Hz)")
             ;
 
 }

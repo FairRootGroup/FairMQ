@@ -520,7 +520,7 @@ void FairMQDevice::RunWrapper()
               if (fRate > 0.001) {
                 auto timeSinceRef = std::chrono::duration_cast<TimeScale>(std::chrono::system_clock::now() - reftime);
                 auto timespan = timeSinceRef.count() - fLastTime;
-                TimeScale::rep period = (float)TimeScale::period::den / fRate;
+                TimeScale::rep period = static_cast<float>(TimeScale::period::den) / fRate;
                 if (timespan < period) {
                   TimeScale sleepfor(period - timespan);
                   std::this_thread::sleep_for(sleepfor);
@@ -909,7 +909,7 @@ void FairMQDevice::SetConfig(FairMQProgOptions& config)
     fNetworkInterface = config.GetValue<string>("network-interface");
     fNumIoThreads = config.GetValue<int>("io-threads");
     fInitializationTimeoutInS = config.GetValue<int>("initialization-timeout");
-    std::stringstream(fConfig->GetValue<string>("rate")) >> fRate;
+    fRate = fConfig->GetValue<float>("rate");
 }
 
 void FairMQDevice::LogSocketRates()
