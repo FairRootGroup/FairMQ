@@ -226,6 +226,21 @@ class PluginServices
     template<typename T>
     auto UnsubscribeFromPropertyChange(const std::string& subscriber) -> void { fConfig->Unsubscribe<T>(subscriber); }
 
+    /// @brief Subscribe to property updates
+    /// @param subscriber
+    /// @param callback function
+    ///
+    /// Subscribe to property changes with a callback to monitor property changes in an event based fashion. Will convert the property to string.
+    auto SubscribeToPropertyChangeAsString(const std::string& subscriber, std::function<void(const std::string& key, std::string)> callback) const -> void
+    {
+        fConfig->SubscribeAsString(subscriber, callback);
+    }
+
+    /// @brief Unsubscribe from property updates that convert to string
+    /// @param subscriber
+    auto UnsubscribeFromPropertyChangeAsString(const std::string& subscriber) -> void { fConfig->UnsubscribeAsString(subscriber); }
+
+
     static const std::unordered_map<std::string, DeviceState> fkDeviceStateStrMap;
     static const std::unordered_map<DeviceState, std::string, tools::HashEnum<DeviceState>> fkStrDeviceStateMap;
     static const std::unordered_map<std::string, DeviceStateTransition> fkDeviceStateTransitionStrMap;

@@ -34,6 +34,7 @@ namespace mq
 {
 
 struct PropertyChange : Event<std::string> {};
+struct PropertyChangeAsString : Event<std::string> {};
 
 } /* namespace mq */
 } /* namespace fair */
@@ -204,8 +205,10 @@ class FairMQProgOptions : public FairProgOptions
                 }
             }
 
+            lock.unlock();
             //if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)//if one wants to restrict type
             fEvents.Emit<fair::mq::PropertyChange, typename std::decay<T>::type>(key, val);
+            fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetStringValue(key));
 
             return 0;
         }
@@ -240,8 +243,11 @@ class FairMQProgOptions : public FairProgOptions
             }
         }
 
+        lock.unlock();
+
         //if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)//if one wants to restrict type
         fEvents.Emit<fair::mq::PropertyChange, typename std::decay<T>::type>(key, val);
+        fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetStringValue(key));
 
         return 0;
     }
@@ -265,6 +271,19 @@ class FairMQProgOptions : public FairProgOptions
         fEvents.Unsubscribe<fair::mq::PropertyChange, T>(subscriber);
     }
 
+    void SubscribeAsString(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, std::string)> func)
+    {
+        std::unique_lock<std::mutex> lock(fConfigMutex);
+
+        fEvents.Subscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber, func);
+    }
+
+    void UnsubscribeAsString(const std::string& subscriber)
+    {
+        std::unique_lock<std::mutex> lock(fConfigMutex);
+
+        fEvents.Unsubscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber);
+    }
     /*
     template <typename F>
     void Subscribe(const std::string& key, F&& func) 
@@ -328,6 +347,7 @@ class FairMQProgOptions : public FairProgOptions
         static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value, 
             "In template member FairMQProgOptions::EmitUpdate<T>(key,val) the types const char* or char* for the calback signatures are not supported.");
         fEvents.Emit<fair::mq::PropertyChange, T>(key, val);
+        fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetStringValue(key));
     }
 
     int UpdateChannelMap(const std::string& channelName, int index, const std::string& member, const std::string& val);

@@ -95,6 +95,8 @@ class Plugin
     auto SubscribeToPropertyChange(std::function<void(const std::string& key, T newValue)> callback) -> void { fPluginServices->SubscribeToPropertyChange<T>(fkName, callback); }
     template<typename T>
     auto UnsubscribeFromPropertyChange() -> void { fPluginServices->UnsubscribeFromPropertyChange<T>(fkName); }
+    auto SubscribeToPropertyChangeAsString(std::function<void(const std::string& key, std::string newValue)> callback) -> void { fPluginServices->SubscribeToPropertyChangeAsString(fkName, callback); }
+    auto UnsubscribeFromPropertyChangeAsString() -> void { fPluginServices->UnsubscribeFromPropertyChangeAsString(fkName); }
 
   private:
     const std::string fkName;
