@@ -514,19 +514,19 @@ void FairMQDevice::RunWrapper()
         }
         else
         {
+            using Clock = std::chrono::steady_clock;
+            using TimeScale = std::chrono::microseconds;
+            const TimeScale::rep period = TimeScale::period::den / fRate;
+            const auto reftime = Clock::now();
             while (CheckCurrentState(RUNNING) && ConditionalRun())
             {
-              using TimeScale = std::chrono::microseconds;
-              static const auto reftime = std::chrono::system_clock::now();
               if (fRate > 0.001) {
-                auto timeSinceRef = std::chrono::duration_cast<TimeScale>(std::chrono::system_clock::now() - reftime);
-                auto timespan = timeSinceRef.count() - fLastTime;
-                TimeScale::rep period = static_cast<float>(TimeScale::period::den) / fRate;
+                auto timespan = std::chrono::duration_cast<TimeScale>(Clock::now() - reftime).count() - fLastTime;
                 if (timespan < period) {
                   TimeScale sleepfor(period - timespan);
                   std::this_thread::sleep_for(sleepfor);
                 }
-                fLastTime = std::chrono::duration_cast<TimeScale>(std::chrono::system_clock::now() - reftime).count();
+                fLastTime = std::chrono::duration_cast<TimeScale>(Clock::now() - reftime).count();
               }
             }
 
