@@ -60,7 +60,6 @@ add_subdirectory(shmem/prototype)
 # libFairMQ header files #
 ##########################
 set(FAIRMQ_DEPRECATED_HEADER_FILES
-    tools/FairMQTools.h
 )
 set(FAIRMQ_HEADER_FILES
     ${FAIRMQ_DEPRECATED_HEADER_FILES}
