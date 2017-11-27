@@ -10,7 +10,7 @@
 #include "Common.h"
 #include "Manager.h"
 
-#include <boost/thread/thread_time.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <chrono>
 
@@ -30,8 +30,8 @@ Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, FairMQ
     : fManager(manager)
     , fRemote(remote)
     , fStop(false)
-    , fName("fmq_shm_region_" + to_string(id))
-    , fQueueName("fmq_shm_region_queue_" + to_string(id))
+    , fName("fmq_shm_" + fManager.fSessionName +"_region_" + to_string(id))
+    , fQueueName("fmq_shm_" + fManager.fSessionName +"_region_queue_" + to_string(id))
     , fShmemObject()
     , fQueue(nullptr)
     , fWorker()

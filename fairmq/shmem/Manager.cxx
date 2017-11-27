@@ -20,9 +20,11 @@ using namespace std;
 namespace bipc = boost::interprocess;
 
 Manager::Manager(const string& name, size_t size)
-    : fName(name)
-    , fSegment(bipc::open_or_create, fName.c_str(), size)
-    , fManagementSegment(bipc::open_or_create, "fmq_shm_management", 65536)
+    : fSessionName(name)
+    , fSegmentName("fmq_shm_" + fSessionName + "_main")
+    , fManagementSegmentName("fmq_shm_" + fSessionName + "_management")
+    , fSegment(bipc::open_or_create, fSegmentName.c_str(), size)
+    , fManagementSegment(bipc::open_or_create, fManagementSegmentName.c_str(), 65536)
     , fRegions()
 {}
 
@@ -112,22 +114,22 @@ bipc::message_queue* Manager::GetRegionQueue(const uint64_t id)
 
 void Manager::RemoveSegment()
 {
-    if (bipc::shared_memory_object::remove(fName.c_str()))
+    if (bipc::shared_memory_object::remove(fSegmentName.c_str()))
     {
-        LOG(DEBUG) << "shmem: successfully removed " << fName << " segment after the device has stopped.";
+        LOG(DEBUG) << "shmem: successfully removed " << fSegmentName << " segment after the device has stopped.";
     }
     else
     {
-        LOG(DEBUG) << "shmem: did not remove " << fName << " segment after the device stopped. Already removed?";
+        LOG(DEBUG) << "shmem: did not remove " << fSegmentName << " segment after the device stopped. Already removed?";
     }
 
-    if (bipc::shared_memory_object::remove("fmq_shm_management"))
+    if (bipc::shared_memory_object::remove(fManagementSegmentName.c_str()))
     {
-        LOG(DEBUG) << "shmem: successfully removed \"fmq_shm_management\" segment after the device has stopped.";
+        LOG(DEBUG) << "shmem: successfully removed '" << fManagementSegmentName << "' segment after the device has stopped.";
     }
     else
     {
-        LOG(DEBUG) << "shmem: did not remove \"fmq_shm_management\" segment after the device stopped. Already removed?";
+        LOG(DEBUG) << "shmem: did not remove '" << fManagementSegmentName << "' segment after the device stopped. Already removed?";
     }
 }
 

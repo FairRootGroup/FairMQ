@@ -19,7 +19,7 @@ int main(int argc, char** argv)
 {
     try
     {
-        string segmentName;
+        string sessionName;
         bool cleanup = false;
         bool selfDestruct = false;
         bool interactive = false;
@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 
         options_description desc("Options");
         desc.add_options()
-            ("segment-name", value<string>(&segmentName)->default_value("fmq_shm_main"), "Name of the shared memory segment")
+            ("session", value<string>(&sessionName)->default_value("default"), "Name of the session which to monitor")
             ("cleanup", value<bool>(&cleanup)->implicit_value(true), "Perform cleanup and quit")
             ("self-destruct", value<bool>(&selfDestruct)->implicit_value(true), "Quit after first closing of the memory")
             ("interactive", value<bool>(&interactive)->implicit_value(true), "Interactive run")
@@ -47,15 +47,15 @@ int main(int argc, char** argv)
 
         if (cleanup)
         {
-            cout << "Cleaning up \"" << segmentName << "\"..." << endl;
-            fair::mq::shmem::Monitor::Cleanup(segmentName);
-            fair::mq::shmem::Monitor::RemoveQueue("fmq_shm_control_queue");
+            cout << "Cleaning up \"" << sessionName << "\"..." << endl;
+            fair::mq::shmem::Monitor::Cleanup(sessionName);
+            fair::mq::shmem::Monitor::RemoveQueue("fmq_shm_" + sessionName + "_control_queue");
             return 0;
         }
 
-        cout << "Starting monitor for shared memory segment: \"" << segmentName << "\"..." << endl;
+        cout << "Starting shared memory monitor for session: \"" << sessionName << "\"..." << endl;
 
-        fair::mq::shmem::Monitor monitor{segmentName, selfDestruct, interactive, timeoutInMS};
+        fair::mq::shmem::Monitor monitor{sessionName, selfDestruct, interactive, timeoutInMS};
 
         monitor.CatchSignals();
         monitor.Run();

@@ -334,9 +334,9 @@ void FairMQProgOptions::FillOptionDescription(boost::program_options::options_de
             ("port-range-max",         po::value<int   >()->default_value(32000),          "End of the port range for dynamic initialization.")
             ("log-to-file",            po::value<string>()->default_value(""),             "Log output to a file.")
             ("print-channels",         po::value<bool  >()->implicit_value(true),          "Print registered channel endpoints in a machine-readable format (<channel name>:<min num subchannels>:<max num subchannels>)")
-            ("shm-segment-size",       po::value<size_t>()->default_value(2000000000),     "shmem transport: size of the shared memory segment (in bytes).")
-            ("shm-segment-name",       po::value<string>()->default_value("fmq_shm_main"), "shmem transport: name of the shared memory segment.")
-            ("rate",                   po::value<float >()->default_value(0.),             "rate for conditional run loop (Hz)")
+            ("shm-segment-size",       po::value<size_t>()->default_value(2000000000),     "Shared memory: size of the shared memory segment (in bytes).")
+            ("rate",                   po::value<float >()->default_value(0.),             "Rate for conditional run loop (Hz).")
+            ("session",                po::value<string>()->default_value("default"),      "Session name.")
             ;
 
 }

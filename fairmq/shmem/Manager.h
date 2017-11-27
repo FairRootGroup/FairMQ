@@ -68,7 +68,9 @@ class Manager
     boost::interprocess::managed_shared_memory& ManagementSegment();
 
   private:
-    std::string fName;
+    std::string fSessionName;
+    std::string fSegmentName;
+    std::string fManagementSegmentName;
     boost::interprocess::managed_shared_memory fSegment;
     boost::interprocess::managed_shared_memory fManagementSegment;
     std::unordered_map<uint64_t, Region> fRegions;

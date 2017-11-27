@@ -51,17 +51,20 @@ void signalHandler(int signal)
     gSignalStatus = signal;
 }
 
-Monitor::Monitor(const string& segmentName, bool selfDestruct, bool interactive, unsigned int timeoutInMS)
+Monitor::Monitor(const string& sessionName, bool selfDestruct, bool interactive, unsigned int timeoutInMS)
     : fSelfDestruct(selfDestruct)
     , fInteractive(interactive)
     , fSeenOnce(false)
     , fTimeoutInMS(timeoutInMS)
-    , fSegmentName(segmentName)
+    , fSessionName(sessionName)
+    , fSegmentName("fmq_shm_" + fSessionName + "_main")
+    , fManagementSegmentName("fmq_shm_" + fSessionName + "_management")
+    , fControlQueueName("fmq_shm_" + fSessionName + "_control_queue")
     , fTerminating(false)
     , fHeartbeatTriggered(false)
     , fLastHeartbeat()
     , fSignalThread()
-    , fManagementSegment(bipc::open_or_create, "fmq_shm_management", 65536)
+    , fManagementSegment(bipc::open_or_create, fManagementSegmentName.c_str(), 65536)
 {
     MonitorStatus* monitorStatus = fManagementSegment.find<MonitorStatus>(bipc::unique_instance).first;
     if (monitorStatus != nullptr)
@@ -71,7 +74,7 @@ Monitor::Monitor(const string& segmentName, bool selfDestruct, bool interactive,
     }
     fManagementSegment.construct<MonitorStatus>(bipc::unique_instance)();
 
-    RemoveQueue("fmq_shm_control_queue");
+    RemoveQueue(fControlQueueName);
 }
 
 void Monitor::CatchSignals()
@@ -124,7 +127,7 @@ void Monitor::MonitorHeartbeats()
 {
     try
     {
-        bipc::message_queue mq(bipc::open_or_create, "fmq_shm_control_queue", 1000, sizeof(bool));
+        bipc::message_queue mq(bipc::open_or_create, fControlQueueName.c_str(), 1000, sizeof(bool));
 
         unsigned int priority;
         bipc::message_queue::size_type recvdSize;
@@ -149,7 +152,7 @@ void Monitor::MonitorHeartbeats()
         cout << ie.what() << endl;
     }
 
-    RemoveQueue("fmq_shm_control_queue");
+    RemoveQueue(fControlQueueName);
 }
 
 void Monitor::Interactive()
@@ -192,7 +195,7 @@ void Monitor::Interactive()
                     break;
                 case 'x':
                     cout << "[x] --> closing shared memory:" << endl;
-                    Cleanup(fSegmentName);
+                    Cleanup(fSessionName);
                     break;
                 case 'h':
                     cout << "[h] --> help:" << endl << endl;
@@ -283,7 +286,7 @@ void Monitor::CheckSegment()
         if (fHeartbeatTriggered && duration > fTimeoutInMS)
         {
             cout << "no heartbeats since over " << fTimeoutInMS << " milliseconds, cleaning..." << endl;
-            Cleanup(fSegmentName);
+            Cleanup(fSessionName);
             fHeartbeatTriggered = false;
             if (fSelfDestruct)
             {
@@ -335,11 +338,12 @@ void Monitor::CheckSegment()
     }
 }
 
-void Monitor::Cleanup(const string& segmentName)
+void Monitor::Cleanup(const string& sessionName)
 {
+    string managementSegmentName("fmq_shm_" + sessionName + "_management");
     try
     {
-        bipc::managed_shared_memory managementSegment(bipc::open_only, "fmq_shm_management");
+        bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
         RegionCounter* rc = managementSegment.find<RegionCounter>(bipc::unique_instance).first;
         if (rc)
         {
@@ -347,8 +351,8 @@ void Monitor::Cleanup(const string& segmentName)
             unsigned int regionCount = rc->fCount;
             for (unsigned int i = 1; i <= regionCount; ++i)
             {
-                RemoveObject("fmq_shm_region_" + to_string(i));
-                RemoveQueue(std::string("fmq_shm_region_queue_" + std::to_string(i)));
+                RemoveObject("fmq_shm_" + sessionName + "_region_" + to_string(i));
+                RemoveQueue(std::string("fmq_shm_" + sessionName + "_region_queue_" + std::to_string(i)));
             }
         }
         else
@@ -356,16 +360,16 @@ void Monitor::Cleanup(const string& segmentName)
             cout << "shmem: no region counter found. no regions to cleanup." << endl;
         }
 
-        RemoveObject("fmq_shm_management");
+        RemoveObject(managementSegmentName.c_str());
     }
     catch (bipc::interprocess_exception& ie)
     {
-        cout << "Did not find \"fmq_shm_management\" shared memory segment. No regions to cleanup." << endl;
+        cout << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup." << endl;
     }
 
-    RemoveObject(segmentName);
+    RemoveObject("fmq_shm_" + sessionName + "_main");
 
-    boost::interprocess::named_mutex::remove("fmq_shm_mutex");
+    boost::interprocess::named_mutex::remove(std::string("fmq_shm_" + sessionName + "_mutex").c_str());
 
     cout << endl;
 }
@@ -401,7 +405,7 @@ void Monitor::PrintQueues()
     try
     {
         bipc::managed_shared_memory segment(bipc::open_only, fSegmentName.c_str());
-        StringVector* queues = segment.find<StringVector>("fmq_shm_queues").first;
+        StringVector* queues = segment.find<StringVector>(std::string("fmq_shm_" + fSessionName + "_queues").c_str()).first;
         if (queues)
         {
             cout << "found " << queues->size() << " queue(s):" << endl;

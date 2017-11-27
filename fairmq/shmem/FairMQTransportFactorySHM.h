@@ -55,13 +55,13 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
     void StartMonitor();
 
     static FairMQ::Transport fTransportType;
+    std::string fSessionName;
     void* fContext;
     void* fHeartbeatSocket;
     std::thread fHeartbeatThread;
     std::atomic<bool> fSendHeartbeats;
     boost::interprocess::named_mutex fShMutex;
     fair::mq::shmem::DeviceCounter* fDeviceCounter;
-    std::string fSegmentName;
     std::unique_ptr<fair::mq::shmem::Manager> fManager;
 };
 
