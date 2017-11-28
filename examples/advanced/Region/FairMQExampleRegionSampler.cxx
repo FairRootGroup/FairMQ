@@ -77,6 +77,7 @@ void FairMQExampleRegionSampler::ResetTask()
     {
         LOG(DEBUG) << "waiting for all acknowledgements... (" << fNumUnackedMsgs << ")";
         this_thread::sleep_for(chrono::milliseconds(500));
+        LOG(DEBUG) << "done, still unacked: " << fNumUnackedMsgs;
     }
     fRegion.reset();
 }

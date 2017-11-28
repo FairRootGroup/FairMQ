@@ -1,12 +1,12 @@
 #!/bin/bash
 config="@CMAKE_BINARY_DIR@/bin/config/ex-multiple-transports.json"
+SESSION="$(@CMAKE_BINARY_DIR@/bin/uuidGen -h)"
 
-trap 'kill -TERM $SAMPLER1_PID; kill -TERM $SAMPLER2_PID; kill -TERM $SINK_PID; wait $SAMPLER1_PID; wait $SAMPLER2_PID; wait $SINK_PID; @CMAKE_BINARY_DIR@/bin/shmmonitor --cleanup;' TERM
-
-@CMAKE_BINARY_DIR@/bin/shmmonitor --cleanup
+trap 'kill -TERM $SAMPLER1_PID; kill -TERM $SAMPLER2_PID; kill -TERM $SINK_PID; wait $SAMPLER1_PID; wait $SAMPLER2_PID; wait $SINK_PID; @CMAKE_BINARY_DIR@/bin/shmmonitor --cleanup --session $SESSION;' TERM
 
 SINK="ex-mt-sink"
 SINK+=" --id sink1"
+SINK+=" --session $SESSION"
 SINK+=" --max-iterations 1"
 SINK+=" --control static --log-color false"
 SINK+=" --transport shmem"
@@ -16,6 +16,7 @@ SINK_PID=$!
 
 SAMPLER1="ex-mt-sampler1"
 SAMPLER1+=" --id sampler1"
+SAMPLER1+=" --session $SESSION"
 SAMPLER1+=" --max-iterations 1"
 SAMPLER1+=" --control static --log-color false"
 SAMPLER1+=" --transport shmem"
@@ -25,6 +26,7 @@ SAMPLER1_PID=$!
 
 SAMPLER2="ex-mt-sampler2"
 SAMPLER2+=" --id sampler2"
+SAMPLER2+=" --session $SESSION"
 SAMPLER2+=" --max-iterations 1"
 SAMPLER2+=" --control static --log-color false"
 SAMPLER2+=" --transport nanomsg"
