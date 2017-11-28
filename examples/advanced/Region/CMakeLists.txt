@@ -6,10 +6,9 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-configure_file(${CMAKE_SOURCE_DIR}/examples/advanced/Region/ex-region.json
-               ${CMAKE_BINARY_DIR}/bin/config/ex-region.json)
-configure_file(${CMAKE_SOURCE_DIR}/examples/advanced/Region/startMQExRegion.sh.in
-               ${CMAKE_BINARY_DIR}/bin/examples/advanced/Region/startMQExRegion.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/advanced/Region/ex-region.json ${CMAKE_BINARY_DIR}/bin/config/ex-region.json)
+configure_file(${CMAKE_SOURCE_DIR}/examples/advanced/Region/startMQExRegion.sh.in ${CMAKE_BINARY_DIR}/bin/examples/advanced/Region/startMQExRegion.sh)
+configure_file(${CMAKE_SOURCE_DIR}/examples/advanced/Region/testMQExRegion.sh.in ${CMAKE_BINARY_DIR}/bin/examples/advanced/Region/testMQExRegion.sh)
 
 Set(INCLUDE_DIRECTORIES
   ${CMAKE_SOURCE_DIR}/fairmq
@@ -72,6 +71,11 @@ ForEach(_file RANGE 0 ${_length})
   set(DEPENDENCIES FairMQExampleRegion)
   GENERATE_EXECUTABLE()
 EndForEach(_file RANGE 0 ${_length})
+
+add_test(NAME MQ.ex-advanced-region COMMAND ${CMAKE_BINARY_DIR}/bin/examples/advanced/Region/testMQExRegion.sh)
+set_tests_properties(MQ.ex-advanced-region PROPERTIES TIMEOUT "30")
+set_tests_properties(MQ.ex-advanced-region PROPERTIES RUN_SERIAL true)
+set_tests_properties(MQ.ex-advanced-region PROPERTIES PASS_REGULAR_EXPRESSION "Received ack")
 
 Install(
   FILES ex-region.json

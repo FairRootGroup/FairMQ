@@ -27,6 +27,11 @@ class FairMQExampleRegionSink : public FairMQDevice
 
   protected:
     virtual void Run();
+    virtual void InitTask();
+
+  private:
+    uint64_t fMaxIterations;
+    uint64_t fNumIterations;
 };
 
 #endif /* FAIRMQEXAMPLEREGIONSINK_H_ */
