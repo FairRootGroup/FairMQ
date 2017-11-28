@@ -14,11 +14,20 @@
 
 #include "FairMQExampleRegionSink.h"
 #include "FairMQLogger.h"
+#include "FairMQProgOptions.h" // device->fConfig
 
 using namespace std;
 
 FairMQExampleRegionSink::FairMQExampleRegionSink()
+    : fMaxIterations(0)
+    , fNumIterations(0)
 {
+}
+
+void FairMQExampleRegionSink::InitTask()
+{
+    // Get the fMaxIterations value from the command line options (via fConfig)
+    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
 }
 
 void FairMQExampleRegionSink::Run()
@@ -30,6 +39,12 @@ void FairMQExampleRegionSink::Run()
         FairMQMessagePtr msg(dataInChannel.Transport()->CreateMessage());
         dataInChannel.Receive(msg);
         void* ptr = msg->GetData();
+
+        if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
+        {
+            LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+            break;
+        }
     }
 }
 

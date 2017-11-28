@@ -3,10 +3,12 @@ ex8config="@CMAKE_BINARY_DIR@/bin/config/ex8-multipart.json"
 
 SAMPLER="ex8-sampler"
 SAMPLER+=" --id sampler1"
+SAMPLER+=" --transport nanomsg"
 SAMPLER+=" --mq-config $ex8config"
-xterm -geometry 80x23+0+0 -hold -e @CMAKE_BINARY_DIR@/bin/examples/MQ/8-multipart/$SAMPLER &
+xterm -geometry 80x23+0+0 -hold -e gdb --args @CMAKE_BINARY_DIR@/bin/examples/MQ/8-multipart/$SAMPLER &
 
 SINK="ex8-sink"
 SINK+=" --id sink1"
+SINK+=" --transport nanomsg"
 SINK+=" --mq-config $ex8config"
 xterm -geometry 80x23+500+0 -hold -e @CMAKE_BINARY_DIR@/bin/examples/MQ/8-multipart/$SINK &

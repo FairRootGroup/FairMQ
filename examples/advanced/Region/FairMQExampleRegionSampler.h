@@ -33,6 +33,8 @@ class FairMQExampleRegionSampler : public FairMQDevice
 
   private:
     int fMsgSize;
+    uint64_t fMaxIterations;
+    uint64_t fNumIterations;
     FairMQUnmanagedRegionPtr fRegion;
     std::atomic<uint64_t> fNumUnackedMsgs;
 };

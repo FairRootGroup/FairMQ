@@ -1,0 +1,36 @@
+#!/bin/bash
+
+exRegionConfig="@CMAKE_BINARY_DIR@/bin/config/ex-region.json"
+
+msgSize="1000000"
+
+# setup a trap to kill everything if the test fails/timeouts
+trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SINK_PID; @CMAKE_BINARY_DIR@/bin/shmmonitor --cleanup --session region_test' TERM
+
+@CMAKE_BINARY_DIR@/bin/shmmonitor --cleanup --session region_test
+
+SAMPLER="ex-region-sampler"
+SAMPLER+=" --id sampler1"
+SAMPLER+=" --session region_test"
+SAMPLER+=" --control static --log-color false"
+SAMPLER+=" --max-iterations 1"
+SAMPLER+=" --msg-size $msgSize"
+SAMPLER+=" --transport shmem"
+SAMPLER+=" --mq-config $exRegionConfig"
+@CMAKE_BINARY_DIR@/bin/examples/advanced/Region/$SAMPLER &
+SAMPLER_PID=$!
+
+SINK="ex-region-sink"
+SINK+=" --id sink1"
+SINK+=" --session region_test"
+SINK+=" --verbosity INFO"
+SINK+=" --control static --log-color false"
+SINK+=" --max-iterations 1"
+SINK+=" --transport shmem"
+SINK+=" --mq-config $exRegionConfig"
+@CMAKE_BINARY_DIR@/bin/examples/advanced/Region/$SINK &
+SINK_PID=$!
+
+# wait for sampler and sink to finish
+wait $SAMPLER_PID
+wait $SINK_PID
