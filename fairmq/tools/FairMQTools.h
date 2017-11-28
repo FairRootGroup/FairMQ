@@ -7,6 +7,7 @@
 #include <fairmq/tools/Network.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/tools/Version.h>
+#include <fairmq/tools/Unique.h>
 
 namespace FairMQ
 {
@@ -21,6 +22,9 @@ using fair::mq::tools::getInterfaceIP;
 using fair::mq::tools::getDefaultRouteNetworkInterface;
 
 using fair::mq::tools::S;
+
+using fair::mq::tools::Uuid;
+using fair::mq::tools::UuidHash;
 
 using fair::mq::tools::Version;
 

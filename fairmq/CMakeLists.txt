@@ -110,6 +110,7 @@ set(FAIRMQ_HEADER_FILES
     tools/Network.h
     tools/Strings.h
     tools/Version.h
+    tools/Unique.h
     zeromq/FairMQMessageZMQ.h
     zeromq/FairMQPollerZMQ.h
     zeromq/FairMQUnmanagedRegionZMQ.h
@@ -269,6 +270,8 @@ target_link_libraries(runConfigExample FairMQ)
 add_executable(shmmonitor shmem/runMonitor.cxx)
 target_link_libraries(shmmonitor FairMQ)
 
+add_executable(uuidGen run/runUuidGenerator.cxx)
+target_link_libraries(uuidGen FairMQ)
 
 ####################
 # aggregate target #

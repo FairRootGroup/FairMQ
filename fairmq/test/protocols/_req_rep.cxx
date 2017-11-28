@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include "runner.h"
+#include <fairmq/Tools.h>
 #include <gtest/gtest.h>
 #include <sstream> // std::stringstream
 #include <thread>
@@ -19,11 +20,13 @@ using namespace fair::mq::test;
 
 auto RunReqRep(string transport) -> void
 {
+    size_t session{fair::mq::tools::UuidHash()};
+
     auto rep = execute_result{ "", 0 };
     thread rep_thread([&]() {
         stringstream cmd;
         cmd << runTestDevice << " --id rep_" << transport << " --control static --verbosity DEBUG "
-            << "--log-color false --mq-config \"" << mqConfig << "\"";
+        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
         rep = execute(cmd.str(), "[REP]");
     });
 
@@ -31,7 +34,7 @@ auto RunReqRep(string transport) -> void
     thread req1_thread([&]() {
         stringstream cmd;
         cmd << runTestDevice << " --id req_1" << transport << " --control static --verbosity DEBUG "
-            << "--log-color false --mq-config \"" << mqConfig << "\"";
+        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
         req1 = execute(cmd.str(), "[REQ1]");
     });
 
@@ -39,7 +42,7 @@ auto RunReqRep(string transport) -> void
     thread req2_thread([&]() {
         stringstream cmd;
         cmd << runTestDevice << " --id req_2" << transport << " --control static --verbosity DEBUG "
-            << "--log-color false --mq-config \"" << mqConfig << "\"";
+        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
         req2 = execute(cmd.str(), "[REQ2]");
     });
 

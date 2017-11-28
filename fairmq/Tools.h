@@ -14,6 +14,7 @@
 #include <fairmq/tools/Network.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/tools/Version.h>
+#include <fairmq/tools/Unique.h>
 // IWYU pragma: end_exports
 
 #endif // FAIR_MQ_TOOLS_H

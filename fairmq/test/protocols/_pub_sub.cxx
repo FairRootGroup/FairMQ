@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include "runner.h"
+#include <fairmq/Tools.h>
 #include <gtest/gtest.h>
 #include <sstream> // std::stringstream
 #include <thread>
@@ -19,11 +20,13 @@ using namespace fair::mq::test;
 
 auto RunPubSub(string transport) -> void
 {
+    size_t session{fair::mq::tools::UuidHash()};
+
     auto pub = execute_result{"", 0};
     thread pub_thread([&]() {
         stringstream cmd;
         cmd << runTestDevice << " --id pub_" << transport << " --control static --verbosity DEBUG "
-            << "--log-color false --mq-config \"" << mqConfig << "\"";
+        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
         pub = execute(cmd.str(), "[PUB]");
     });
 
@@ -31,7 +34,7 @@ auto RunPubSub(string transport) -> void
     thread sub1_thread([&]() {
         stringstream cmd;
         cmd << runTestDevice << " --id sub_1" << transport << " --control static --verbosity DEBUG "
-            << "--log-color false --mq-config \"" << mqConfig << "\"";
+        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
         sub1 = execute(cmd.str(), "[SUB1]");
     });
 
@@ -39,7 +42,7 @@ auto RunPubSub(string transport) -> void
     thread sub2_thread([&]() {
         stringstream cmd;
         cmd << runTestDevice << " --id sub_2" << transport << " --control static --verbosity DEBUG "
-            << "--log-color false --mq-config \"" << mqConfig << "\"";
+        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
         sub2 = execute(cmd.str(), "[SUB2]");
     });
 

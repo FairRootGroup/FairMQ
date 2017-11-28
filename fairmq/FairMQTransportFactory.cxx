@@ -13,10 +13,7 @@
 #include <nanomsg/FairMQTransportFactoryNN.h>
 #endif /* NANOMSG_FOUND */
 #include <FairMQLogger.h>
-
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
+#include <fairmq/Tools.h>
 
 #include <memory>
 #include <string>
@@ -36,7 +33,7 @@ auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, con
     // Generate uuid if empty
     if (finalId == "")
     {
-        finalId = boost::uuids::to_string(boost::uuids::random_generator()());
+        finalId = fair::mq::tools::Uuid();
     }
 
     if (type == "zeromq")

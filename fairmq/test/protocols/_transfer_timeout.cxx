@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include "runner.h"
+#include <fairmq/Tools.h>
 #include <gtest/gtest.h>
 #include <sstream> // std::stringstream
 
@@ -18,9 +19,10 @@ using namespace fair::mq::test;
 
 auto RunTransferTimeout(string transport) -> void
 {
+    size_t session{fair::mq::tools::UuidHash()};
     stringstream cmd;
     cmd << runTestDevice << " --id transfer_timeout_" << transport << " --control static --verbosity DEBUG "
-        << "--log-color false --mq-config \"" << mqConfig << "\"";
+        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
     auto res = execute(cmd.str());
 
     cerr << res.error_out;

@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include "runner.h"
+#include <fairmq/Tools.h>
 #include <gtest/gtest.h>
 #include <sstream> // std::stringstream
 #include <thread>
@@ -19,11 +20,13 @@ using namespace fair::mq::test;
 
 auto RunPushPull(string transport) -> void
 {
+    size_t session{fair::mq::tools::UuidHash()};
+
     auto push = execute_result{"", 100};
     thread push_thread([&]() {
         stringstream cmd;
         cmd << runTestDevice << " --id push_" << transport << " --control static --verbosity DEBUG "
-            << "--log-color false --mq-config \"" << mqConfig << "\"";
+        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
         push = execute(cmd.str(), "[PUSH]");
     });
 
@@ -31,7 +34,7 @@ auto RunPushPull(string transport) -> void
     thread pull_thread([&]() {
         stringstream cmd;
         cmd << runTestDevice << " --id pull_" << transport << " --control static --verbosity DEBUG "
-            << "--log-color false --mq-config \"" << mqConfig << "\"";
+        << "--session " << session << " --log-color false --mq-config \"" << mqConfig << "\"";
         pull = execute(cmd.str(), "[PULL]");
     });
 

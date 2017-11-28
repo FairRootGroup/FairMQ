@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include "runner.h"
+#include <fairmq/Tools.h>
 #include <gtest/gtest.h>
 #include <sstream> // std::stringstream
 #include <thread>
@@ -19,13 +20,15 @@ using namespace fair::mq::test;
 
 auto RunPoller(string transport, int pollType) -> void
 {
+    size_t session{fair::mq::tools::UuidHash()};
+
     auto pollout = execute_result{"", 0};
     thread poll_out_thread([&]() {
         stringstream cmd;
         cmd << runTestDevice
             << " --id pollout_"<< transport
             << " --control static --verbosity DEBUG --log-color false"
-            << " --mq-config \"" << mqConfig << "\"";
+            << " --session " << session << " --mq-config \"" << mqConfig << "\"";
         pollout = execute(cmd.str(), "[POLLOUT]");
     });
 
@@ -35,7 +38,7 @@ auto RunPoller(string transport, int pollType) -> void
         cmd << runTestDevice
             << " --id pollin_" << transport
             << " --control static --verbosity DEBUG --log-color false"
-            << " --mq-config \"" << mqConfig << "\" --poll-type " << pollType;
+            << " --session " << session << " --mq-config \"" << mqConfig << "\" --poll-type " << pollType;
         pollin = execute(cmd.str(), "[POLLIN]");
     });
 
