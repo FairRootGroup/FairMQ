@@ -244,7 +244,10 @@ int64_t FairMQSocketNN::Send(vector<unique_ptr<FairMQMessage>>& msgVec, const in
         packer.pack_bin(msgVec[i]->GetSize());
         packer.pack_bin_body(static_cast<char*>(msgVec[i]->GetData()), msgVec[i]->GetSize());
         // call region callback
-        static_cast<FairMQUnmanagedRegionNN*>(static_cast<FairMQMessageNN*>(msgVec[i].get())->fRegionPtr)->fCallback(msgVec[i]->GetMessage(), msgVec[i]->GetSize());
+        if (static_cast<FairMQMessageNN*>(msgVec[i].get())->fRegionPtr)
+        {
+            static_cast<FairMQUnmanagedRegionNN*>(static_cast<FairMQMessageNN*>(msgVec[i].get())->fRegionPtr)->fCallback(msgVec[i]->GetMessage(), msgVec[i]->GetSize());
+        }
     }
 
     int64_t nbytes = -1;
