@@ -38,7 +38,7 @@ void FairMQExampleRegionSink::Run()
     {
         FairMQMessagePtr msg(dataInChannel.Transport()->CreateMessage());
         dataInChannel.Receive(msg);
-        void* ptr = msg->GetData();
+        // void* ptr = msg->GetData();
 
         if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
         {
