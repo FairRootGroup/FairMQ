@@ -5,15 +5,14 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *  
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-#include <sstream>
-
-#include <zmq.h>
+#include <fairmq/shmem/Common.h>
 
 #include "FairMQSocketSHM.h"
 #include "FairMQMessageSHM.h"
 #include "FairMQUnmanagedRegionSHM.h"
 #include "FairMQLogger.h"
-#include "Common.h"
+
+#include <zmq.h>
 
 using namespace std;
 using namespace fair::mq::shmem;

@@ -6,13 +6,11 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "Region.h"
-#include "Common.h"
-#include "Manager.h"
+#include <fairmq/shmem/Region.h>
+#include <fairmq/shmem/Common.h>
+#include <fairmq/shmem/Manager.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
-
-#include <chrono>
 
 namespace fair
 {

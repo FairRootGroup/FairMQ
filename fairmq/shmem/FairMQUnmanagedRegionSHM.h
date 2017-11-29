@@ -9,18 +9,15 @@
 #ifndef FAIRMQUNMANAGEDREGIONSHM_H_
 #define FAIRMQUNMANAGEDREGIONSHM_H_
 
+#include <fairmq/shmem/Manager.h>
+
 #include "FairMQUnmanagedRegion.h"
 #include "FairMQLogger.h"
-#include "Manager.h"
 
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 
 #include <cstddef> // size_t
-#include <atomic>
-#include <memory>
-#include <string>
-#include <unordered_map>
 
 class FairMQUnmanagedRegionSHM : public FairMQUnmanagedRegion
 {

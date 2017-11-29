@@ -5,15 +5,16 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-#include <string>
-#include <cstdlib>
-
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <fairmq/shmem/Common.h>
+#include <fairmq/shmem/Region.h>
 
 #include "FairMQMessageSHM.h"
 #include "FairMQUnmanagedRegionSHM.h"
 #include "FairMQLogger.h"
-#include "Common.h"
+
+#include <boost/date_time/posix_time/posix_time.hpp>
+
+#include <cstdlib>
 
 using namespace std;
 using namespace fair::mq::shmem;
@@ -30,6 +31,7 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager)
     , fQueued(false)
     , fMetaCreated(false)
     , fRegionId(0)
+    , fRegionPtr(nullptr)
     , fHandle(-1)
     , fSize(0)
     , fLocalPtr(nullptr)
@@ -47,6 +49,7 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager, const size_t size)
     , fQueued(false)
     , fMetaCreated(false)
     , fRegionId(0)
+    , fRegionPtr(nullptr)
     , fHandle(-1)
     , fSize(0)
     , fLocalPtr(nullptr)
@@ -60,6 +63,7 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager, void* data, const size_t si
     , fQueued(false)
     , fMetaCreated(false)
     , fRegionId(0)
+    , fRegionPtr(nullptr)
     , fHandle(-1)
     , fSize(0)
     , fLocalPtr(nullptr)
@@ -84,6 +88,7 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager, FairMQUnmanagedRegionPtr& r
     , fQueued(false)
     , fMetaCreated(false)
     , fRegionId(static_cast<FairMQUnmanagedRegionSHM*>(region.get())->fRegionId)
+    , fRegionPtr(nullptr)
     , fHandle(-1)
     , fSize(size)
     , fLocalPtr(data)
@@ -209,10 +214,10 @@ void* FairMQMessageSHM::GetData()
         }
         else
         {
-            boost::interprocess::mapped_region* region = fManager.GetRemoteRegion(fRegionId);
-            if (region)
+            fRegionPtr = fManager.GetRemoteRegion(fRegionId);
+            if (fRegionPtr)
             {
-                fLocalPtr = reinterpret_cast<char*>(region->get_address()) + fHandle;
+                fLocalPtr = reinterpret_cast<char*>(fRegionPtr->fRegion.get_address()) + fHandle;
             }
             else
             {
@@ -290,10 +295,13 @@ void FairMQMessageSHM::CloseMessage()
             do
             {
                 auto sndTill = bpt::microsec_clock::universal_time() + bpt::milliseconds(200);
-                bipc::message_queue* q = fManager.GetRegionQueue(fRegionId);
-                if (q)
+                if (!fRegionPtr)
                 {
-                    if (q->timed_send(&block, sizeof(RegionBlock), 0, sndTill))
+                    fRegionPtr = fManager.GetRemoteRegion(fRegionId);
+                }
+                if (fRegionPtr)
+                {
+                    if (fRegionPtr->fQueue->timed_send(&block, sizeof(RegionBlock), 0, sndTill))
                     {
                         success = true;
                     }

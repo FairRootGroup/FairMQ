@@ -9,12 +9,13 @@
 #ifndef FAIRMQTRANSPORTFACTORYSHM_H_
 #define FAIRMQTRANSPORTFACTORYSHM_H_
 
+#include <fairmq/shmem/Manager.h>
+#include <fairmq/shmem/Common.h>
+
 #include "FairMQTransportFactory.h"
-#include "Manager.h"
 #include "FairMQMessageSHM.h"
 #include "FairMQSocketSHM.h"
 #include "FairMQPollerSHM.h"
-#include "Common.h"
 #include "FairMQUnmanagedRegionSHM.h"
 #include <options/FairMQProgOptions.h>
 

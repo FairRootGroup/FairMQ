@@ -5,7 +5,7 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-#include "Monitor.h"
+#include <fairmq/shmem/Monitor.h>
 
 #include <boost/program_options.hpp>
 

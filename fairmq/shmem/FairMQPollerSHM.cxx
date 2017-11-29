@@ -12,10 +12,10 @@
  * @author A. Rybalchenko
  */
 
-#include <zmq.h>
-
 #include "FairMQPollerSHM.h"
 #include "FairMQLogger.h"
+
+#include <zmq.h>
 
 using namespace std;
 

@@ -6,8 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
- #include "Manager.h"
- #include "Common.h"
+#include <fairmq/shmem/Manager.h>
+#include <fairmq/shmem/Common.h>
 
 namespace fair
 {
@@ -71,20 +71,20 @@ bipc::mapped_region* Manager::CreateRegion(const size_t size, const uint64_t id,
     }
 }
 
-bipc::mapped_region* Manager::GetRemoteRegion(const uint64_t id)
+Region* Manager::GetRemoteRegion(const uint64_t id)
 {
     // remote region could actually be a local one if a message originates from this device (has been sent out and returned)
     auto it = fRegions.find(id);
     if (it != fRegions.end())
     {
-        return &(it->second.fRegion);
+        return &(it->second);
     }
     else
     {
         try
         {
             auto r = fRegions.emplace(id, Region{*this, id, 0, true, nullptr});
-            return &(r.first->second.fRegion);
+            return &(r.first->second);
         }
         catch (bipc::interprocess_exception& e)
         {
@@ -98,18 +98,6 @@ bipc::mapped_region* Manager::GetRemoteRegion(const uint64_t id)
 void Manager::RemoveRegion(const uint64_t id)
 {
     fRegions.erase(id);
-}
-
-bipc::message_queue* Manager::GetRegionQueue(const uint64_t id)
-{
-    try
-    {
-        return fRegions.at(id).fQueue.get();
-    }
-    catch (out_of_range& oor)
-    {
-        return nullptr;
-    }
 }
 
 void Manager::RemoveSegment()

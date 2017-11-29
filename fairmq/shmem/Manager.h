@@ -15,23 +15,18 @@
 #ifndef FAIR_MQ_SHMEM_MANAGER_H_
 #define FAIR_MQ_SHMEM_MANAGER_H_
 
+#include <fairmq/Tools.h>
+#include <fairmq/shmem/Region.h>
+#include <fairmq/shmem/Common.h>
+
 #include "FairMQLogger.h"
 #include "FairMQMessage.h"
-#include "fairmq/Tools.h"
-#include "Region.h"
-#include "Common.h"
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
 
-#include <thread>
-#include <queue>
 #include <string>
-#include <vector>
-#include <functional>
 #include <unordered_map>
-#include <mutex>
-#include <condition_variable>
 
 namespace fair
 {
@@ -58,10 +53,8 @@ class Manager
     void Resume();
 
     boost::interprocess::mapped_region* CreateRegion(const size_t size, const uint64_t id, FairMQRegionCallback callback);
-    boost::interprocess::mapped_region* GetRemoteRegion(const uint64_t id);
+    Region* GetRemoteRegion(const uint64_t id);
     void RemoveRegion(const uint64_t id);
-
-    boost::interprocess::message_queue* GetRegionQueue(const uint64_t id);
 
     void RemoveSegment();
 

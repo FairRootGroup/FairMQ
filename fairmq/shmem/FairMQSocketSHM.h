@@ -8,13 +8,13 @@
 #ifndef FAIRMQSOCKETSHM_H_
 #define FAIRMQSOCKETSHM_H_
 
-#include <atomic>
-
-#include <memory> // unique_ptr
-
 #include "FairMQSocket.h"
 #include "FairMQMessage.h"
-#include "Manager.h"
+
+#include <fairmq/shmem/Manager.h>
+
+#include <atomic>
+#include <memory> // unique_ptr
 
 class FairMQSocketSHM : public FairMQSocket
 {

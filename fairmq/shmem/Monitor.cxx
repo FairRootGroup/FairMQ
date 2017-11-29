@@ -6,8 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "Monitor.h"
-#include "Common.h"
+#include <fairmq/shmem/Monitor.h>
+#include <fairmq/shmem/Common.h>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/containers/vector.hpp>

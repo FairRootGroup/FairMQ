@@ -6,8 +6,9 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include <fairmq/shmem/Common.h>
+
 #include "FairMQUnmanagedRegionSHM.h"
-#include "Common.h"
 
 using namespace std;
 using namespace fair::mq::shmem;

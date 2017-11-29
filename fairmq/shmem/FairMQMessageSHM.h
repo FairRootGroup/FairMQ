@@ -8,17 +8,17 @@
 #ifndef FAIRMQMESSAGESHM_H_
 #define FAIRMQMESSAGESHM_H_
 
-#include <cstddef> // size_t
-#include <string>
-#include <atomic>
+#include <fairmq/shmem/Manager.h>
+
+#include "FairMQMessage.h"
+#include "FairMQUnmanagedRegion.h"
 
 #include <zmq.h>
 
 #include <boost/interprocess/mapped_region.hpp>
 
-#include "FairMQMessage.h"
-#include "FairMQUnmanagedRegion.h"
-#include "Manager.h"
+#include <cstddef> // size_t
+#include <atomic>
 
 class FairMQMessageSHM : public FairMQMessage
 {
@@ -61,6 +61,7 @@ class FairMQMessageSHM : public FairMQMessage
     static std::atomic<bool> fInterrupted;
     static FairMQ::Transport fTransportType;
     uint64_t fRegionId;
+    fair::mq::shmem::Region* fRegionPtr;
     boost::interprocess::managed_shared_memory::handle_t fHandle;
     size_t fSize;
     void* fLocalPtr;
