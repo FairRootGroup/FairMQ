@@ -45,6 +45,8 @@ int main(int argc, char** argv)
 
         notify(vm);
 
+        sessionName.resize(8, '_'); // shorten the session name, to accommodate for name size limit on some systems (MacOS)
+
         if (cleanup)
         {
             cout << "Cleaning up \"" << sessionName << "\"..." << endl;

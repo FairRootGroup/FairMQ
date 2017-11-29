@@ -62,7 +62,7 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
     {
         numIoThreads = config->GetValue<int>("io-threads");
         fSessionName = config->GetValue<string>("session");
-        fSessionName.resize(8); // shorten the session name, to acomodate for name size limit on some systems (MacOS)
+        fSessionName.resize(8, '_'); // shorten the session name, to accommodate for name size limit on some systems (MacOS)
         // fSegmentName = "fmq_shm_" + fSessionName + "_main";
         segmentSize = config->GetValue<size_t>("shm-segment-size");
     }
@@ -87,7 +87,7 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
         }
 
         fManager = fair::mq::tools::make_unique<Manager>(fSessionName, segmentSize);
-        LOG(DEBUG) << "shmem: created/opened shared memory segment of " << segmentSize << " bytes. Available are " << fManager->Segment().get_free_memory() << " bytes.";
+        LOG(DEBUG) << "shmem: created/opened shared memory segment '" << "fmq_shm_" << fSessionName << "_main" << "' of " << segmentSize << " bytes. Available are " << fManager->Segment().get_free_memory() << " bytes.";
 
         {
             bipc::scoped_lock<bipc::named_mutex> lock(*fShMutex);
