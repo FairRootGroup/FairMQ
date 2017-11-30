@@ -15,6 +15,7 @@ CLIENT_PID=$!
 
 SERVER="ex5-server"
 SERVER+=" --id server"
+SERVER+=" --verbosity NOLOG"
 SERVER+=" --control static --log-color false"
 SERVER+=" --max-iterations 1"
 SERVER+=" --mq-config $ex5config"

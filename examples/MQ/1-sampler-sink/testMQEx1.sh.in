@@ -7,6 +7,7 @@ trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SI
 
 SAMPLER="ex1-sampler"
 SAMPLER+=" --id sampler1"
+SAMPLER+=" --verbosity NOLOG"
 SAMPLER+=" --control static --log-color false"
 SAMPLER+=" --max-iterations 1"
 SAMPLER+=" --mq-config $ex1config"
