@@ -17,6 +17,7 @@ sleep 1
 
 SAMPLER="ex6-sampler"
 SAMPLER+=" --id sampler1"
+SAMPLER+=" --verbosity NOLOG"
 SAMPLER+=" --max-iterations 1"
 SAMPLER+=" --control static --log-color false"
 SAMPLER+=" --mq-config $ex6config"
@@ -25,6 +26,7 @@ SAMPLER_PID=$!
 
 BROADCASTER="ex6-broadcaster"
 BROADCASTER+=" --id broadcaster1"
+BROADCASTER+=" --verbosity NOLOG"
 BROADCASTER+=" --control static --log-color false"
 BROADCASTER+=" --mq-config $ex6config"
 @CMAKE_BINARY_DIR@/bin/examples/MQ/6-multiple-channels/$BROADCASTER &
