@@ -14,7 +14,6 @@
 #include <mutex>
 #include <thread>
 #include <functional>
-#include <sstream>
 
 #include <boost/algorithm/string.hpp> // join/split
 
@@ -403,10 +402,7 @@ bool FairMQDevice::BindEndpoint(FairMQSocket& socket, string& endpoint)
         }
 
         size_t pos = endpoint.rfind(":");
-        stringstream newPort;
-        newPort << static_cast<int>(randomPort(generator));
-        // TODO: thread safety? (this comes in as a reference and DOES get changed in this case).
-        endpoint = endpoint.substr(0, pos + 1) + newPort.str();
+        endpoint = endpoint.substr(0, pos + 1) + fair::mq::tools::ToString(static_cast<int>(randomPort(generator)));
     }
 
     return true;
@@ -441,9 +437,7 @@ void FairMQDevice::SortChannel(const string& name, const bool reindex)
             for (auto vi = fChannels.at(name).begin(); vi != fChannels.at(name).end(); ++vi)
             {
                 // set channel name: name + vector index
-                stringstream ss;
-                ss << name << "[" << vi - fChannels.at(name).begin() << "]";
-                vi->fName = ss.str();
+                vi->fName = fair::mq::tools::ToString(name, "[", vi - fChannels.at(name).begin(), "]");
             }
         }
     }
@@ -930,9 +924,7 @@ void FairMQDevice::LogSocketRates()
                 filteredSockets.push_back(vi->fSocket.get());
                 logIntervals.push_back(vi->fRateLogging);
                 intervalCounters.push_back(0);
-                stringstream ss;
-                ss << mi.first << "[" << vi - (mi.second).begin() << "]";
-                filteredChannelNames.push_back(ss.str());
+                filteredChannelNames.push_back(fair::mq::tools::ToString(mi.first, "[", vi - (mi.second).begin(), "]"));
             }
         }
     }
