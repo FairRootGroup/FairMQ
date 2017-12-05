@@ -1,8 +1,8 @@
 /********************************************************************************
  *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *              GNU Lesser General Public Licence (LGPL) version 3,             *  
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
@@ -141,9 +141,25 @@ void* FairMQMessageNN::GetData()
     return fMessage;
 }
 
-size_t FairMQMessageNN::GetSize()
+size_t FairMQMessageNN::GetSize() const
 {
     return fSize;
+}
+
+bool FairMQMessageNN::SetUsedSize(const size_t size)
+{
+    if (size <= fSize)
+    {
+        // with size smaller than original nanomsg will simply "chop" the data, avoiding reallocation
+        fMessage = nn_reallocmsg(fMessage, size);
+        fSize = size;
+        return true;
+    }
+    else
+    {
+        LOG(ERROR) << "FairMQMessageNN::SetUsedSize: cannot set used size higher than original.";
+        return false;
+    }
 }
 
 void FairMQMessageNN::SetMessage(void* data, const size_t size)

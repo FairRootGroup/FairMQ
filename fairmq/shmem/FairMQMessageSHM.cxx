@@ -91,7 +91,7 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager, FairMQUnmanagedRegionPtr& r
     , fRegionPtr(nullptr)
     , fHandle(-1)
     , fSize(size)
-    , fLocalPtr(data)
+    , fLocalPtr(static_cast<char*>(data))
 {
     fHandle = (bipc::managed_shared_memory::handle_t)(reinterpret_cast<const char*>(data) - reinterpret_cast<const char*>(region->GetData()));
 
@@ -117,7 +117,9 @@ bool FairMQMessageSHM::InitializeChunk(const size_t size)
     {
         try
         {
-            fLocalPtr = fManager.Segment().allocate(size);
+            bipc::managed_shared_memory::size_type actualSize = size;
+            char* hint = 0; // unused for bipc::allocate_new
+            fLocalPtr = fManager.Segment().allocation_command<char>(bipc::allocate_new, size, actualSize, hint);
         }
         catch (bipc::bad_alloc& ba)
         {
@@ -229,9 +231,42 @@ void* FairMQMessageSHM::GetData()
     }
 }
 
-size_t FairMQMessageSHM::GetSize()
+size_t FairMQMessageSHM::GetSize() const
 {
     return fSize;
+}
+
+bool FairMQMessageSHM::SetUsedSize(const size_t size)
+{
+    if (size == fSize)
+    {
+        return true;
+    }
+    else if (size <= fSize)
+    {
+        try
+        {
+
+            bipc::managed_shared_memory::size_type shrunkSize = size;
+            fLocalPtr = fManager.Segment().allocation_command<char>(bipc::shrink_in_place, fSize + 128, shrunkSize, fLocalPtr);
+            fSize = size;
+
+            // update meta header
+            MetaHeader* hdrPtr = static_cast<MetaHeader*>(zmq_msg_data(&fMessage));
+            hdrPtr->fSize = fSize;
+            return true;
+        }
+        catch (bipc::interprocess_exception& e)
+        {
+            LOG(INFO) << "FairMQMessageSHM::SetUsedSize could not set used size: " << e.what();
+            return false;
+        }
+    }
+    else
+    {
+        LOG(ERROR) << "FairMQMessageSHM::SetUsedSize: cannot set used size higher than original.";
+        return false;
+    }
 }
 
 void FairMQMessageSHM::SetMessage(void*, const size_t)

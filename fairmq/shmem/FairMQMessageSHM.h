@@ -41,7 +41,9 @@ class FairMQMessageSHM : public FairMQMessage
 
     void* GetMessage() override;
     void* GetData() override;
-    size_t GetSize() override;
+    size_t GetSize() const override;
+
+    bool SetUsedSize(const size_t size) override;
 
     void SetMessage(void* data, const size_t size) override;
 
@@ -64,7 +66,7 @@ class FairMQMessageSHM : public FairMQMessage
     fair::mq::shmem::Region* fRegionPtr;
     boost::interprocess::managed_shared_memory::handle_t fHandle;
     size_t fSize;
-    void* fLocalPtr;
+    char* fLocalPtr;
 };
 
 #endif /* FAIRMQMESSAGESHM_H_ */

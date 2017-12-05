@@ -1,8 +1,8 @@
 /********************************************************************************
  *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *              GNU Lesser General Public Licence (LGPL) version 3,             *  
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
@@ -33,21 +33,23 @@ class FairMQMessageNN : public FairMQMessage
     FairMQMessageNN(const FairMQMessageNN&) = delete;
     FairMQMessageNN operator=(const FairMQMessageNN&) = delete;
 
-    virtual void Rebuild();
-    virtual void Rebuild(const size_t size);
-    virtual void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
+    void Rebuild() override;
+    void Rebuild(const size_t size) override;
+    void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override;
 
-    virtual void* GetMessage();
-    virtual void* GetData();
-    virtual size_t GetSize();
+    void* GetMessage() override;
+    void* GetData() override;
+    size_t GetSize() const override;
 
-    virtual void SetMessage(void* data, const size_t size);
+    bool SetUsedSize(const size_t size) override;
 
-    virtual FairMQ::Transport GetType() const;
+    void SetMessage(void* data, const size_t size) override;
 
-    virtual void Copy(const std::unique_ptr<FairMQMessage>& msg);
+    FairMQ::Transport GetType() const override;
 
-    virtual ~FairMQMessageNN();
+    void Copy(const std::unique_ptr<FairMQMessage>& msg) override;
+
+    ~FairMQMessageNN() override;
 
     friend class FairMQSocketNN;
 

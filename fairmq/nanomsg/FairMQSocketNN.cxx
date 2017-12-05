@@ -65,7 +65,7 @@ FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const str
         }
         if (type == "sub")
         {
-            nn_setsockopt(fSocket, NN_SUB, NN_SUB_SUBSCRIBE, NULL, 0);
+            nn_setsockopt(fSocket, NN_SUB, NN_SUB_SUBSCRIBE, nullptr, 0);
         }
     }
 
@@ -185,7 +185,7 @@ int FairMQSocketNN::Receive(FairMQMessagePtr& msg, const int flags)
 
     while (true)
     {
-        void* ptr = NULL;
+        void* ptr = nullptr;
         nbytes = nn_recv(fSocket, &ptr, NN_MSG, flags);
         if (nbytes >= 0)
         {
@@ -310,7 +310,7 @@ int64_t FairMQSocketNN::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const
     while (true)
     {
         // pointer to point to received message buffer
-        char* ptr = NULL;
+        char* ptr = nullptr;
         // receive the message into a buffer allocated by nanomsg and let ptr point to it
         int nbytes = nn_recv(fSocket, &ptr, NN_MSG, flags);
         if (nbytes >= 0) // if no errors or non-blocking timeouts
@@ -396,7 +396,7 @@ void FairMQSocketNN::Resume()
 
 void* FairMQSocketNN::GetSocket() const
 {
-    return NULL; // dummy method to comply with the interface. functionality not possible in zeromq.
+    return nullptr; // dummy method to comply with the interface. functionality not possible in zeromq.
 }
 
 int FairMQSocketNN::GetSocket(int /*nothing*/) const

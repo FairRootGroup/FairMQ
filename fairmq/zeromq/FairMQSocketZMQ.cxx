@@ -1,8 +1,8 @@
 /********************************************************************************
  *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *              GNU Lesser General Public Licence (LGPL) version 3,             *  
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
@@ -12,13 +12,11 @@
  * @author D. Klein, A. Rybalchenko
  */
 
-#include <sstream>
-
-#include <zmq.h>
-
 #include "FairMQSocketZMQ.h"
 #include "FairMQMessageZMQ.h"
 #include "FairMQLogger.h"
+
+#include <zmq.h>
 
 using namespace std;
 
@@ -26,7 +24,7 @@ atomic<bool> FairMQSocketZMQ::fInterrupted(false);
 
 FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const string& id /*= ""*/, void* context)
     : FairMQSocket(ZMQ_SNDMORE, ZMQ_RCVMORE, ZMQ_DONTWAIT)
-    , fSocket(NULL)
+    , fSocket(nullptr)
     , fId()
     , fBytesTx(0)
     , fBytesRx(0)
@@ -38,7 +36,7 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const s
     assert(context);
     fSocket = zmq_socket(context, GetConstant(type));
 
-    if (fSocket == NULL)
+    if (fSocket == nullptr)
     {
         LOG(ERROR) << "Failed creating socket " << fId << ", reason: " << zmq_strerror(errno);
         exit(EXIT_FAILURE);
@@ -71,7 +69,7 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const s
 
     if (type == "sub")
     {
-        if (zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, NULL, 0) != 0)
+        if (zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, nullptr, 0) != 0)
         {
             LOG(ERROR) << "Failed setting ZMQ_SUBSCRIBE socket option, reason: " << zmq_strerror(errno);
         }
@@ -117,6 +115,8 @@ int FairMQSocketZMQ::Send(FairMQMessagePtr& msg, const int flags)
 {
     int nbytes = -1;
 
+    static_cast<FairMQMessageZMQ*>(msg.get())->ApplyUsedSize();
+
     while (true)
     {
         nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, flags);
@@ -154,6 +154,7 @@ int FairMQSocketZMQ::Send(FairMQMessagePtr& msg, const int flags)
 int FairMQSocketZMQ::Receive(FairMQMessagePtr& msg, const int flags)
 {
     int nbytes = -1;
+
     while (true)
     {
         nbytes = zmq_msg_recv(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, flags);
@@ -187,7 +188,7 @@ int FairMQSocketZMQ::Receive(FairMQMessagePtr& msg, const int flags)
     }
 }
 
-int64_t FairMQSocketZMQ::Send(vector<unique_ptr<FairMQMessage>>& msgVec, const int flags)
+int64_t FairMQSocketZMQ::Send(vector<FairMQMessagePtr>& msgVec, const int flags)
 {
     const unsigned int vecSize = msgVec.size();
 
@@ -206,6 +207,8 @@ int64_t FairMQSocketZMQ::Send(vector<unique_ptr<FairMQMessage>>& msgVec, const i
 
             for (unsigned int i = 0; i < vecSize; ++i)
             {
+                static_cast<FairMQMessageZMQ*>(msgVec[i].get())->ApplyUsedSize();
+
                 nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msgVec[i]->GetMessage()),
                                       fSocket,
                                       (i < vecSize - 1) ? ZMQ_SNDMORE|flags : flags);
@@ -260,7 +263,7 @@ int64_t FairMQSocketZMQ::Send(vector<unique_ptr<FairMQMessage>>& msgVec, const i
     }
 }
 
-int64_t FairMQSocketZMQ::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const int flags)
+int64_t FairMQSocketZMQ::Receive(vector<FairMQMessagePtr>& msgVec, const int flags)
 {
     int64_t totalSize = 0;
     int64_t more = 0;
@@ -268,13 +271,6 @@ int64_t FairMQSocketZMQ::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, cons
 
     while (true)
     {
-        // Warn if the vector is filled before Receive() and empty it.
-        // if (msgVec.size() > 0)
-        // {
-        //     LOG(WARN) << "Message vector contains elements before Receive(), they will be deleted!";
-        //     msgVec.clear();
-        // }
-
         totalSize = 0;
         more = 0;
         repeat = false;
@@ -306,8 +302,8 @@ int64_t FairMQSocketZMQ::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, cons
                 return nbytes;
             }
 
-            size_t more_size = sizeof(more);
-            zmq_getsockopt(fSocket, ZMQ_RCVMORE, &more, &more_size);
+            size_t moreSize = sizeof(more);
+            zmq_getsockopt(fSocket, ZMQ_RCVMORE, &more, &moreSize);
         }
         while (more);
 
@@ -327,7 +323,7 @@ void FairMQSocketZMQ::Close()
 {
     // LOG(DEBUG) << "Closing socket " << fId;
 
-    if (fSocket == NULL)
+    if (fSocket == nullptr)
     {
         return;
     }
@@ -337,7 +333,7 @@ void FairMQSocketZMQ::Close()
         LOG(ERROR) << "Failed closing socket " << fId << ", reason: " << zmq_strerror(errno);
     }
 
-    fSocket = NULL;
+    fSocket = nullptr;
 }
 
 void FairMQSocketZMQ::Interrupt()
