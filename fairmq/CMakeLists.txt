@@ -232,6 +232,7 @@ target_link_libraries(FairMQ
     Boost::filesystem
     Boost::regex
     Boost::date_time
+    Boost::signals
     $<$<PLATFORM_ID:Linux>:rt>
 
     PRIVATE # only libFairMQ links against private dependencies
