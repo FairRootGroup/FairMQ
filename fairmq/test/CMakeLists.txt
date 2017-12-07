@@ -64,6 +64,16 @@ add_testsuite(FairMQ.Parts
     TIMEOUT 5
 )
 
+add_testsuite(FairMQ.MessageResize
+    SOURCES
+    message_resize/runner.cxx
+    message_resize/_message_resize.cxx
+
+    LINKS FairMQ ZeroMQ
+    INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/message_resize
+    TIMEOUT 5
+)
+
 add_testsuite(FairMQ.Device
     SOURCES
     device/TestSender.h
