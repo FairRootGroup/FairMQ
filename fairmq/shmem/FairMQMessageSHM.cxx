@@ -197,7 +197,7 @@ void FairMQMessageSHM::Rebuild(void* data, const size_t size, fairmq_free_fn* ff
     }
 }
 
-void* FairMQMessageSHM::GetMessage()
+zmq_msg_t* FairMQMessageSHM::GetMessage()
 {
     return &fMessage;
 }
@@ -267,11 +267,6 @@ bool FairMQMessageSHM::SetUsedSize(const size_t size)
         LOG(ERROR) << "FairMQMessageSHM::SetUsedSize: cannot set used size higher than original.";
         return false;
     }
-}
-
-void FairMQMessageSHM::SetMessage(void*, const size_t)
-{
-    // dummy method to comply with the interface. functionality not allowed in zeromq.
 }
 
 FairMQ::Transport FairMQMessageSHM::GetType() const

@@ -22,8 +22,12 @@
 #include "FairMQMessage.h"
 #include "FairMQUnmanagedRegion.h"
 
+class FairMQSocketNN;
+
 class FairMQMessageNN : public FairMQMessage
 {
+    friend class FairMQSocketNN;
+
   public:
     FairMQMessageNN();
     FairMQMessageNN(const size_t size);
@@ -37,21 +41,16 @@ class FairMQMessageNN : public FairMQMessage
     void Rebuild(const size_t size) override;
     void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override;
 
-    void* GetMessage() override;
     void* GetData() override;
     size_t GetSize() const override;
 
     bool SetUsedSize(const size_t size) override;
 
-    void SetMessage(void* data, const size_t size) override;
-
     FairMQ::Transport GetType() const override;
 
-    void Copy(const std::unique_ptr<FairMQMessage>& msg) override;
+    void Copy(const FairMQMessagePtr& msg) override;
 
     ~FairMQMessageNN() override;
-
-    friend class FairMQSocketNN;
 
   private:
     void* fMessage;
@@ -60,7 +59,9 @@ class FairMQMessageNN : public FairMQMessage
     FairMQUnmanagedRegion* fRegionPtr;
     static FairMQ::Transport fTransportType;
 
-    void Clear();
+    void* GetMessage();
+    void CloseMessage();
+    void SetMessage(void* data, const size_t size);
 };
 
 #endif /* FAIRMQMESSAGENN_H_ */

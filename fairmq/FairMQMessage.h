@@ -29,13 +29,10 @@ class FairMQMessage
     virtual void Rebuild(const size_t size) = 0;
     virtual void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) = 0;
 
-    virtual void* GetMessage() = 0;
     virtual void* GetData() = 0;
     virtual size_t GetSize() const = 0;
 
     virtual bool SetUsedSize(const size_t size) = 0;
-
-    virtual void SetMessage(void* data, size_t size) = 0;
 
     virtual FairMQ::Transport GetType() const = 0;
 

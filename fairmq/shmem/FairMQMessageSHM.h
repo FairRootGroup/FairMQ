@@ -20,6 +20,8 @@
 #include <cstddef> // size_t
 #include <atomic>
 
+class FairMQSocketSHM;
+
 class FairMQMessageSHM : public FairMQMessage
 {
     friend class FairMQSocketSHM;
@@ -33,25 +35,18 @@ class FairMQMessageSHM : public FairMQMessage
     FairMQMessageSHM(const FairMQMessageSHM&) = delete;
     FairMQMessageSHM operator=(const FairMQMessageSHM&) = delete;
 
-    bool InitializeChunk(const size_t size);
-
     void Rebuild() override;
     void Rebuild(const size_t size) override;
     void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override;
 
-    void* GetMessage() override;
     void* GetData() override;
     size_t GetSize() const override;
 
     bool SetUsedSize(const size_t size) override;
 
-    void SetMessage(void* data, const size_t size) override;
-
     FairMQ::Transport GetType() const override;
 
-    void Copy(const std::unique_ptr<FairMQMessage>& msg) override;
-
-    void CloseMessage();
+    void Copy(const FairMQMessagePtr& msg) override;
 
     ~FairMQMessageSHM() override;
 
@@ -67,6 +62,10 @@ class FairMQMessageSHM : public FairMQMessage
     boost::interprocess::managed_shared_memory::handle_t fHandle;
     size_t fSize;
     char* fLocalPtr;
+
+    bool InitializeChunk(const size_t size);
+    zmq_msg_t* GetMessage();
+    void CloseMessage();
 };
 
 #endif /* FAIRMQMESSAGESHM_H_ */

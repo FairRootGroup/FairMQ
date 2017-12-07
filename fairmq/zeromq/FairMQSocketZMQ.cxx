@@ -119,7 +119,7 @@ int FairMQSocketZMQ::Send(FairMQMessagePtr& msg, const int flags)
 
     while (true)
     {
-        nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, flags);
+        nbytes = zmq_msg_send(static_cast<FairMQMessageZMQ*>(msg.get())->GetMessage(), fSocket, flags);
         if (nbytes >= 0)
         {
             fBytesTx += nbytes;
@@ -157,7 +157,7 @@ int FairMQSocketZMQ::Receive(FairMQMessagePtr& msg, const int flags)
 
     while (true)
     {
-        nbytes = zmq_msg_recv(static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, flags);
+        nbytes = zmq_msg_recv(static_cast<FairMQMessageZMQ*>(msg.get())->GetMessage(), fSocket, flags);
         if (nbytes >= 0)
         {
             fBytesRx += nbytes;
@@ -209,7 +209,7 @@ int64_t FairMQSocketZMQ::Send(vector<FairMQMessagePtr>& msgVec, const int flags)
             {
                 static_cast<FairMQMessageZMQ*>(msgVec[i].get())->ApplyUsedSize();
 
-                nbytes = zmq_msg_send(static_cast<zmq_msg_t*>(msgVec[i]->GetMessage()),
+                nbytes = zmq_msg_send(static_cast<FairMQMessageZMQ*>(msgVec[i].get())->GetMessage(),
                                       fSocket,
                                       (i < vecSize - 1) ? ZMQ_SNDMORE|flags : flags);
                 if (nbytes >= 0)
@@ -279,7 +279,7 @@ int64_t FairMQSocketZMQ::Receive(vector<FairMQMessagePtr>& msgVec, const int fla
         {
             unique_ptr<FairMQMessage> part(new FairMQMessageZMQ());
 
-            int nbytes = zmq_msg_recv(static_cast<zmq_msg_t*>(part->GetMessage()), fSocket, flags);
+            int nbytes = zmq_msg_recv(static_cast<FairMQMessageZMQ*>(part.get())->GetMessage(), fSocket, flags);
             if (nbytes >= 0)
             {
                 msgVec.push_back(move(part));

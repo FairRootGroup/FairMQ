@@ -24,8 +24,12 @@
 #include "FairMQMessage.h"
 #include "FairMQUnmanagedRegion.h"
 
+class FairMQSocketZMQ;
+
 class FairMQMessageZMQ : public FairMQMessage
 {
+    friend class FairMQSocketZMQ;
+
   public:
     FairMQMessageZMQ();
     FairMQMessageZMQ(const size_t size);
@@ -36,21 +40,15 @@ class FairMQMessageZMQ : public FairMQMessage
     void Rebuild(const size_t size) override;
     void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override;
 
-    void* GetMessage() override;
     void* GetData() override;
     size_t GetSize() const override;
 
     bool SetUsedSize(const size_t size) override;
     void ApplyUsedSize();
 
-    void SetMessage(void* data, const size_t size) override;
-
-
     FairMQ::Transport GetType() const override;
 
-    void Copy(const std::unique_ptr<FairMQMessage>& msg) override;
-
-    void CloseMessage();
+    void Copy(const FairMQMessagePtr& msg) override;
 
     ~FairMQMessageZMQ() override;
 
@@ -60,6 +58,9 @@ class FairMQMessageZMQ : public FairMQMessage
     std::unique_ptr<zmq_msg_t> fMsg;
     std::unique_ptr<zmq_msg_t> fViewMsg; // view on a subset of fMsg (treating it as user buffer)
     static FairMQ::Transport fTransportType;
+
+    zmq_msg_t* GetMessage();
+    void CloseMessage();
 };
 
 #endif /* FAIRMQMESSAGEZMQ_H_ */

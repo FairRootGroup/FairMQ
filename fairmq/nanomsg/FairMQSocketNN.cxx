@@ -125,18 +125,20 @@ int FairMQSocketNN::Send(FairMQMessagePtr& msg, const int flags)
 {
     int nbytes = -1;
 
+    FairMQMessageNN* msgPtr = static_cast<FairMQMessageNN*>(msg.get());
+    void* bufPtr = msgPtr->GetMessage();
+
     while (true)
     {
-        void* ptr = msg->GetMessage();
-        if (static_cast<FairMQMessageNN*>(msg.get())->fRegionPtr == nullptr)
+        if (msgPtr->fRegionPtr == nullptr)
         {
-            nbytes = nn_send(fSocket, &ptr, NN_MSG, flags);
+            nbytes = nn_send(fSocket, &bufPtr, NN_MSG, flags);
         }
         else
         {
-            nbytes = nn_send(fSocket, ptr, msg->GetSize(), flags);
+            nbytes = nn_send(fSocket, bufPtr, msg->GetSize(), flags);
             // nn_send copies the data, safe to call region callback here
-            static_cast<FairMQUnmanagedRegionNN*>(static_cast<FairMQMessageNN*>(msg.get())->fRegionPtr)->fCallback(msg->GetMessage(), msg->GetSize());
+            static_cast<FairMQUnmanagedRegionNN*>(msgPtr->fRegionPtr)->fCallback(bufPtr, msg->GetSize());
         }
 
         if (nbytes >= 0)
@@ -183,6 +185,8 @@ int FairMQSocketNN::Receive(FairMQMessagePtr& msg, const int flags)
 {
     int nbytes = -1;
 
+    FairMQMessageNN* msgPtr = static_cast<FairMQMessageNN*>(msg.get());
+
     while (true)
     {
         void* ptr = nullptr;
@@ -191,8 +195,8 @@ int FairMQSocketNN::Receive(FairMQMessagePtr& msg, const int flags)
         {
             fBytesRx += nbytes;
             ++fMessagesRx;
-            msg->SetMessage(ptr, nbytes);
-            static_cast<FairMQMessageNN*>(msg.get())->fReceiving = true;
+            msgPtr->SetMessage(ptr, nbytes);
+            msgPtr->fReceiving = true;
             return nbytes;
         }
 #if NN_VERSION_CURRENT>2 // backwards-compatibility with nanomsg version<=0.6
@@ -227,7 +231,7 @@ int FairMQSocketNN::Receive(FairMQMessagePtr& msg, const int flags)
     }
 }
 
-int64_t FairMQSocketNN::Send(vector<unique_ptr<FairMQMessage>>& msgVec, const int flags)
+int64_t FairMQSocketNN::Send(vector<FairMQMessagePtr>& msgVec, const int flags)
 {
     const unsigned int vecSize = msgVec.size();
 #ifdef MSGPACK_FOUND
@@ -240,13 +244,15 @@ int64_t FairMQSocketNN::Send(vector<unique_ptr<FairMQMessage>>& msgVec, const in
     // pack all parts into a single msgpack simple buffer
     for (unsigned int i = 0; i < vecSize; ++i)
     {
-        static_cast<FairMQMessageNN*>(msgVec[i].get())->fReceiving = false;
+        FairMQMessageNN* partPtr = static_cast<FairMQMessageNN*>(msgVec[i].get());
+
+        partPtr->fReceiving = false;
         packer.pack_bin(msgVec[i]->GetSize());
         packer.pack_bin_body(static_cast<char*>(msgVec[i]->GetData()), msgVec[i]->GetSize());
         // call region callback
-        if (static_cast<FairMQMessageNN*>(msgVec[i].get())->fRegionPtr)
+        if (partPtr->fRegionPtr)
         {
-            static_cast<FairMQUnmanagedRegionNN*>(static_cast<FairMQMessageNN*>(msgVec[i].get())->fRegionPtr)->fCallback(msgVec[i]->GetMessage(), msgVec[i]->GetSize());
+            static_cast<FairMQUnmanagedRegionNN*>(partPtr->fRegionPtr)->fCallback(partPtr->GetMessage(), msgVec[i]->GetSize());
         }
     }
 
@@ -297,7 +303,7 @@ int64_t FairMQSocketNN::Send(vector<unique_ptr<FairMQMessage>>& msgVec, const in
 #endif /*MSGPACK_FOUND*/
 }
 
-int64_t FairMQSocketNN::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const int flags)
+int64_t FairMQSocketNN::Receive(vector<FairMQMessagePtr>& msgVec, const int flags)
 {
 #ifdef MSGPACK_FOUND
     // Warn if the vector is filled before Receive() and empty it.
@@ -334,7 +340,7 @@ int64_t FairMQSocketNN::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const
                 object.convert(buf);
                 // get the single message size
                 size_t size = buf.size() * sizeof(char);
-                unique_ptr<FairMQMessage> part(new FairMQMessageNN(size));
+                FairMQMessagePtr part(new FairMQMessageNN(size));
                 static_cast<FairMQMessageNN*>(part.get())->fReceiving = true;
                 memcpy(part->GetData(), buf.data(), size);
                 msgVec.push_back(move(part));

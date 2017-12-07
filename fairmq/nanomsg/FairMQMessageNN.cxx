@@ -94,13 +94,13 @@ FairMQMessageNN::FairMQMessageNN(FairMQUnmanagedRegionPtr& region, void* data, c
 
 void FairMQMessageNN::Rebuild()
 {
-    Clear();
+    CloseMessage();
     fReceiving = false;
 }
 
 void FairMQMessageNN::Rebuild(const size_t size)
 {
-    Clear();
+    CloseMessage();
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
     {
@@ -112,7 +112,7 @@ void FairMQMessageNN::Rebuild(const size_t size)
 
 void FairMQMessageNN::Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
 {
-    Clear();
+    CloseMessage();
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
     {
@@ -173,7 +173,7 @@ FairMQ::Transport FairMQMessageNN::GetType() const
     return fTransportType;
 }
 
-void FairMQMessageNN::Copy(const unique_ptr<FairMQMessage>& msg)
+void FairMQMessageNN::Copy(const FairMQMessagePtr& msg)
 {
     if (fMessage)
     {
@@ -192,12 +192,12 @@ void FairMQMessageNN::Copy(const unique_ptr<FairMQMessage>& msg)
     }
     else
     {
-        memcpy(fMessage, msg->GetMessage(), size);
+        memcpy(fMessage, static_cast<FairMQMessageNN*>(msg.get())->GetMessage(), size);
         fSize = size;
     }
 }
 
-void FairMQMessageNN::Clear()
+void FairMQMessageNN::CloseMessage()
 {
     if (nn_freemsg(fMessage) < 0)
     {
@@ -214,15 +214,6 @@ FairMQMessageNN::~FairMQMessageNN()
 {
     if (fReceiving)
     {
-        int rc = nn_freemsg(fMessage);
-        if (rc < 0)
-        {
-            LOG(ERROR) << "failed freeing message, reason: " << nn_strerror(errno);
-        }
-        else
-        {
-            fMessage = nullptr;
-            fSize = 0;
-        }
+        CloseMessage();
     }
 }

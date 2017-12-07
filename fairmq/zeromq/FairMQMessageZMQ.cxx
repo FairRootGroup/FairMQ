@@ -112,7 +112,7 @@ void FairMQMessageZMQ::Rebuild(void* data, const size_t size, fairmq_free_fn* ff
     }
 }
 
-void* FairMQMessageZMQ::GetMessage()
+zmq_msg_t* FairMQMessageZMQ::GetMessage()
 {
     if (!fViewMsg)
     {
@@ -190,11 +190,6 @@ void FairMQMessageZMQ::ApplyUsedSize()
     }
 }
 
-void FairMQMessageZMQ::SetMessage(void*, const size_t)
-{
-    // dummy method to comply with the interface. functionality not allowed in zeromq.
-}
-
 FairMQ::Transport FairMQMessageZMQ::GetType() const
 {
     return fTransportType;
@@ -202,18 +197,19 @@ FairMQ::Transport FairMQMessageZMQ::GetType() const
 
 void FairMQMessageZMQ::Copy(const FairMQMessagePtr& msg)
 {
+    FairMQMessageZMQ* msgPtr = static_cast<FairMQMessageZMQ*>(msg.get());
     // Shares the message buffer between msg and this fMsg.
-    if (zmq_msg_copy(fMsg.get(), static_cast<zmq_msg_t*>(msg->GetMessage())) != 0)
+    if (zmq_msg_copy(fMsg.get(), msgPtr->GetMessage()) != 0)
     {
         LOG(ERROR) << "failed copying message, reason: " << zmq_strerror(errno);
         return;
     }
 
     // if the target message has been resized, apply same to this message also
-    if (static_cast<FairMQMessageZMQ*>(msg.get())->fUsedSizeModified)
+    if (msgPtr->fUsedSizeModified)
     {
         fUsedSizeModified = true;
-        fUsedSize = static_cast<FairMQMessageZMQ*>(msg.get())->fUsedSize;
+        fUsedSize = msgPtr->fUsedSize;
     }
 }
 
