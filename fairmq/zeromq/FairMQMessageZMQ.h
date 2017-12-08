@@ -40,7 +40,7 @@ class FairMQMessageZMQ : public FairMQMessage
     void Rebuild(const size_t size) override;
     void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override;
 
-    void* GetData() override;
+    void* GetData() const override;
     size_t GetSize() const override;
 
     bool SetUsedSize(const size_t size) override;
@@ -49,6 +49,7 @@ class FairMQMessageZMQ : public FairMQMessage
     FairMQ::Transport GetType() const override;
 
     void Copy(const FairMQMessagePtr& msg) override;
+    void Copy(const FairMQMessage& msg) override;
 
     ~FairMQMessageZMQ() override;
 
@@ -59,7 +60,7 @@ class FairMQMessageZMQ : public FairMQMessage
     std::unique_ptr<zmq_msg_t> fViewMsg; // view on a subset of fMsg (treating it as user buffer)
     static FairMQ::Transport fTransportType;
 
-    zmq_msg_t* GetMessage();
+    zmq_msg_t* GetMessage() const;
     void CloseMessage();
 };
 

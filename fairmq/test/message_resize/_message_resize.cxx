@@ -45,7 +45,7 @@ auto RunPushPullWithMsgResize(string transport, string address) -> void {
     outMsg->SetUsedSize(250);
     ASSERT_EQ(outMsg->GetSize(), 250);
     FairMQMessagePtr msgCopy(push.NewMessage());
-    msgCopy->Copy(outMsg);
+    msgCopy->Copy(*outMsg);
     ASSERT_EQ(msgCopy->GetSize(), 250);
 
     ASSERT_EQ(push.Send(outMsg), 250);

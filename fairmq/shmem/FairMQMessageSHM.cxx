@@ -202,7 +202,7 @@ zmq_msg_t* FairMQMessageSHM::GetMessage()
     return &fMessage;
 }
 
-void* FairMQMessageSHM::GetData()
+void* FairMQMessageSHM::GetData() const
 {
     if (fLocalPtr)
     {
@@ -274,7 +274,30 @@ FairMQ::Transport FairMQMessageSHM::GetType() const
     return fTransportType;
 }
 
-void FairMQMessageSHM::Copy(const unique_ptr<FairMQMessage>& msg)
+void FairMQMessageSHM::Copy(const FairMQMessage& msg)
+{
+    if (fHandle < 0)
+    {
+        bipc::managed_shared_memory::handle_t otherHandle = static_cast<const FairMQMessageSHM&>(msg).fHandle;
+        if (otherHandle)
+        {
+            if (InitializeChunk(msg.GetSize()))
+            {
+                memcpy(GetData(), msg.GetData(), msg.GetSize());
+            }
+        }
+        else
+        {
+            LOG(ERROR) << "FairMQMessageSHM::Copy() fail: source message not initialized!";
+        }
+    }
+    else
+    {
+        LOG(ERROR) << "FairMQMessageSHM::Copy() fail: target message already initialized!";
+    }
+}
+
+void FairMQMessageSHM::Copy(const FairMQMessagePtr& msg)
 {
     if (fHandle < 0)
     {

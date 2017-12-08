@@ -29,14 +29,15 @@ class FairMQMessage
     virtual void Rebuild(const size_t size) = 0;
     virtual void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) = 0;
 
-    virtual void* GetData() = 0;
+    virtual void* GetData() const = 0;
     virtual size_t GetSize() const = 0;
 
     virtual bool SetUsedSize(const size_t size) = 0;
 
     virtual FairMQ::Transport GetType() const = 0;
 
-    virtual void Copy(const std::unique_ptr<FairMQMessage>& msg) = 0;
+    virtual void Copy(const std::unique_ptr<FairMQMessage>& msg) __attribute__((deprecated("Use 'Copy(const FairMQMessage& msg)'"))) = 0;
+    virtual void Copy(const FairMQMessage& msg) = 0;
 
     virtual ~FairMQMessage() {};
 };

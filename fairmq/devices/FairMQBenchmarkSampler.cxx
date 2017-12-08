@@ -67,7 +67,7 @@ void FairMQBenchmarkSampler::Run()
         if (fSameMessage)
         {
             FairMQMessagePtr msg(dataOutChannel.Transport()->CreateMessage());
-            msg->Copy(baseMsg);
+            msg->Copy(*baseMsg);
 
             if (dataOutChannel.Send(msg) >= 0)
             {

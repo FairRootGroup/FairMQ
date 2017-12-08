@@ -39,13 +39,14 @@ class FairMQMessageSHM : public FairMQMessage
     void Rebuild(const size_t size) override;
     void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override;
 
-    void* GetData() override;
+    void* GetData() const override;
     size_t GetSize() const override;
 
     bool SetUsedSize(const size_t size) override;
 
     FairMQ::Transport GetType() const override;
 
+    void Copy(const FairMQMessage& msg) override;
     void Copy(const FairMQMessagePtr& msg) override;
 
     ~FairMQMessageSHM() override;
@@ -58,10 +59,10 @@ class FairMQMessageSHM : public FairMQMessage
     static std::atomic<bool> fInterrupted;
     static FairMQ::Transport fTransportType;
     uint64_t fRegionId;
-    fair::mq::shmem::Region* fRegionPtr;
+    mutable fair::mq::shmem::Region* fRegionPtr;
     boost::interprocess::managed_shared_memory::handle_t fHandle;
     size_t fSize;
-    char* fLocalPtr;
+    mutable char* fLocalPtr;
 
     bool InitializeChunk(const size_t size);
     zmq_msg_t* GetMessage();

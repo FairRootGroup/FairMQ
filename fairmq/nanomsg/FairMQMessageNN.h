@@ -41,13 +41,14 @@ class FairMQMessageNN : public FairMQMessage
     void Rebuild(const size_t size) override;
     void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override;
 
-    void* GetData() override;
+    void* GetData() const override;
     size_t GetSize() const override;
 
     bool SetUsedSize(const size_t size) override;
 
     FairMQ::Transport GetType() const override;
 
+    void Copy(const FairMQMessage& msg) override;
     void Copy(const FairMQMessagePtr& msg) override;
 
     ~FairMQMessageNN() override;
@@ -59,7 +60,7 @@ class FairMQMessageNN : public FairMQMessage
     FairMQUnmanagedRegion* fRegionPtr;
     static FairMQ::Transport fTransportType;
 
-    void* GetMessage();
+    void* GetMessage() const;
     void CloseMessage();
     void SetMessage(void* data, const size_t size);
 };

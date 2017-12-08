@@ -131,12 +131,12 @@ void FairMQMessageNN::Rebuild(void* data, const size_t size, fairmq_free_fn* ffn
     }
 }
 
-void* FairMQMessageNN::GetMessage()
+void* FairMQMessageNN::GetMessage() const
 {
     return fMessage;
 }
 
-void* FairMQMessageNN::GetData()
+void* FairMQMessageNN::GetData() const
 {
     return fMessage;
 }
@@ -171,6 +171,30 @@ void FairMQMessageNN::SetMessage(void* data, const size_t size)
 FairMQ::Transport FairMQMessageNN::GetType() const
 {
     return fTransportType;
+}
+
+void FairMQMessageNN::Copy(const FairMQMessage& msg)
+{
+    if (fMessage)
+    {
+        if (nn_freemsg(fMessage) < 0)
+        {
+            LOG(ERROR) << "failed freeing message, reason: " << nn_strerror(errno);
+        }
+    }
+
+    size_t size = msg.GetSize();
+
+    fMessage = nn_allocmsg(size, 0);
+    if (!fMessage)
+    {
+        LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
+    }
+    else
+    {
+        memcpy(fMessage, static_cast<const FairMQMessageNN&>(msg).GetMessage(), size);
+        fSize = size;
+    }
 }
 
 void FairMQMessageNN::Copy(const FairMQMessagePtr& msg)
