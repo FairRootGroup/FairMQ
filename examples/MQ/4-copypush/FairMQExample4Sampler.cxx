@@ -45,7 +45,7 @@ bool FairMQExample4Sampler::ConditionalRun()
     for (int i = 0; i < fNumDataChannels - 1; ++i)
     {
         FairMQMessagePtr msgCopy(NewMessage());
-        msgCopy->Copy(msg);
+        msgCopy->Copy(*msg);
         Send(msgCopy, "data", i);
     }
     Send(msg, "data", fNumDataChannels - 1);
