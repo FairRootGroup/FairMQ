@@ -64,9 +64,9 @@ FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(void* data, const size
     return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(data, size, ffn, hint));
 }
 
-FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size) const
+FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint) const
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(region, data, size));
+    return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(region, data, size, hint));
 }
 
 FairMQSocketPtr FairMQTransportFactoryZMQ::CreateSocket(const string& type, const string& name) const

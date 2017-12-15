@@ -34,6 +34,7 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager)
     , fRegionPtr(nullptr)
     , fHandle(-1)
     , fSize(0)
+    , fHint(0)
     , fLocalPtr(nullptr)
 {
     if (zmq_msg_init(&fMessage) != 0)
@@ -52,6 +53,7 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager, const size_t size)
     , fRegionPtr(nullptr)
     , fHandle(-1)
     , fSize(0)
+    , fHint(0)
     , fLocalPtr(nullptr)
 {
     InitializeChunk(size);
@@ -66,6 +68,7 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager, void* data, const size_t si
     , fRegionPtr(nullptr)
     , fHandle(-1)
     , fSize(0)
+    , fHint(0)
     , fLocalPtr(nullptr)
 {
     if (InitializeChunk(size))
@@ -82,7 +85,7 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager, void* data, const size_t si
     }
 }
 
-FairMQMessageSHM::FairMQMessageSHM(Manager& manager, FairMQUnmanagedRegionPtr& region, void* data, const size_t size)
+FairMQMessageSHM::FairMQMessageSHM(Manager& manager, FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint)
     : fManager(manager)
     , fMessage()
     , fQueued(false)
@@ -91,23 +94,34 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager, FairMQUnmanagedRegionPtr& r
     , fRegionPtr(nullptr)
     , fHandle(-1)
     , fSize(size)
+    , fHint(reinterpret_cast<size_t>(hint))
     , fLocalPtr(static_cast<char*>(data))
 {
-    fHandle = (bipc::managed_shared_memory::handle_t)(reinterpret_cast<const char*>(data) - reinterpret_cast<const char*>(region->GetData()));
-
-    if (zmq_msg_init_size(&fMessage, sizeof(MetaHeader)) != 0)
+    if (reinterpret_cast<const char*>(data) >= reinterpret_cast<const char*>(region->GetData()) ||
+        reinterpret_cast<const char*>(data) <= reinterpret_cast<const char*>(region->GetData()) + region->GetSize())
     {
-        LOG(ERROR) << "failed initializing meta message, reason: " << zmq_strerror(errno);
+        fHandle = (bipc::managed_shared_memory::handle_t)(reinterpret_cast<const char*>(data) - reinterpret_cast<const char*>(region->GetData()));
+
+        if (zmq_msg_init_size(&fMessage, sizeof(MetaHeader)) != 0)
+        {
+            LOG(ERROR) << "failed initializing meta message, reason: " << zmq_strerror(errno);
+        }
+        else
+        {
+            MetaHeader header;
+            header.fSize = size;
+            header.fHandle = fHandle;
+            header.fRegionId = fRegionId;
+            header.fHint = fHint;
+            memcpy(zmq_msg_data(&fMessage), &header, sizeof(MetaHeader));
+
+            fMetaCreated = true;
+        }
     }
     else
     {
-        MetaHeader header;
-        header.fSize = size;
-        header.fHandle = fHandle;
-        header.fRegionId = fRegionId;
-        memcpy(zmq_msg_data(&fMessage), &header, sizeof(MetaHeader));
-
-        fMetaCreated = true;
+        LOG(ERROR) << "shmem: trying to create region message with data from outside the region";
+        throw runtime_error("shmem: trying to create region message with data from outside the region");
     }
 }
 
@@ -148,6 +162,7 @@ bool FairMQMessageSHM::InitializeChunk(const size_t size)
     header.fSize = size;
     header.fHandle = fHandle;
     header.fRegionId = fRegionId;
+    header.fHint = fHint;
     memcpy(zmq_msg_data(&fMessage), &header, sizeof(MetaHeader));
 
     fMetaCreated = true;
@@ -343,7 +358,7 @@ void FairMQMessageSHM::CloseMessage()
             // // }
 
             // timed version
-            RegionBlock block(fHandle, fSize);
+            RegionBlock block(fHandle, fSize, fHint);
             bool success = false;
             do
             {

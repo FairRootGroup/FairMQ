@@ -30,7 +30,7 @@ class FairMQMessageSHM : public FairMQMessage
     FairMQMessageSHM(fair::mq::shmem::Manager& manager);
     FairMQMessageSHM(fair::mq::shmem::Manager& manager, const size_t size);
     FairMQMessageSHM(fair::mq::shmem::Manager& manager, void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
-    FairMQMessageSHM(fair::mq::shmem::Manager& manager, FairMQUnmanagedRegionPtr& region, void* data, const size_t size);
+    FairMQMessageSHM(fair::mq::shmem::Manager& manager, FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0);
 
     FairMQMessageSHM(const FairMQMessageSHM&) = delete;
     FairMQMessageSHM operator=(const FairMQMessageSHM&) = delete;
@@ -58,10 +58,11 @@ class FairMQMessageSHM : public FairMQMessage
     bool fMetaCreated;
     static std::atomic<bool> fInterrupted;
     static FairMQ::Transport fTransportType;
-    uint64_t fRegionId;
+    size_t fRegionId;
     mutable fair::mq::shmem::Region* fRegionPtr;
     boost::interprocess::managed_shared_memory::handle_t fHandle;
     size_t fSize;
+    size_t fHint;
     mutable char* fLocalPtr;
 
     bool InitializeChunk(const size_t size);

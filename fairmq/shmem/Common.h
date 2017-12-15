@@ -46,11 +46,12 @@ struct MonitorStatus
     bool fActive;
 };
 
-struct alignas(32) MetaHeader
+struct MetaHeader
 {
-    uint64_t fSize;
-    uint64_t fRegionId;
+    size_t fSize;
+    size_t fRegionId;
     boost::interprocess::managed_shared_memory::handle_t fHandle;
+    size_t fHint;
 };
 
 struct RegionBlock
@@ -58,15 +59,18 @@ struct RegionBlock
     RegionBlock()
         : fHandle()
         , fSize(0)
+        , fHint(0)
     {}
 
-    RegionBlock(boost::interprocess::managed_shared_memory::handle_t handle, size_t size)
+    RegionBlock(boost::interprocess::managed_shared_memory::handle_t handle, size_t size, size_t hint)
         : fHandle(handle)
         , fSize(size)
+        , fHint(hint)
     {}
 
     boost::interprocess::managed_shared_memory::handle_t fHandle;
     size_t fSize;
+    size_t fHint;
 };
 
 } // namespace shmem

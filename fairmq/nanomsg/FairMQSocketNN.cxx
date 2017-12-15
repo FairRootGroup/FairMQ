@@ -138,7 +138,7 @@ int FairMQSocketNN::Send(FairMQMessagePtr& msg, const int flags)
         {
             nbytes = nn_send(fSocket, bufPtr, msg->GetSize(), flags);
             // nn_send copies the data, safe to call region callback here
-            static_cast<FairMQUnmanagedRegionNN*>(msgPtr->fRegionPtr)->fCallback(bufPtr, msg->GetSize());
+            static_cast<FairMQUnmanagedRegionNN*>(msgPtr->fRegionPtr)->fCallback(bufPtr, msg->GetSize(), reinterpret_cast<void*>(msgPtr->fHint));
         }
 
         if (nbytes >= 0)
@@ -252,7 +252,7 @@ int64_t FairMQSocketNN::Send(vector<FairMQMessagePtr>& msgVec, const int flags)
         // call region callback
         if (partPtr->fRegionPtr)
         {
-            static_cast<FairMQUnmanagedRegionNN*>(partPtr->fRegionPtr)->fCallback(partPtr->GetMessage(), msgVec[i]->GetSize());
+            static_cast<FairMQUnmanagedRegionNN*>(partPtr->fRegionPtr)->fCallback(partPtr->GetMessage(), partPtr->GetSize(), reinterpret_cast<void*>(partPtr->fHint));
         }
     }
 

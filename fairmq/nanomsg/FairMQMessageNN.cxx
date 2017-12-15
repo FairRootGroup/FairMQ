@@ -27,6 +27,7 @@ FairMQ::Transport FairMQMessageNN::fTransportType = FairMQ::Transport::NN;
 FairMQMessageNN::FairMQMessageNN()
     : fMessage(nullptr)
     , fSize(0)
+    , fHint(0)
     , fReceiving(false)
     , fRegionPtr(nullptr)
 {
@@ -40,6 +41,7 @@ FairMQMessageNN::FairMQMessageNN()
 FairMQMessageNN::FairMQMessageNN(const size_t size)
     : fMessage(nullptr)
     , fSize(0)
+    , fHint(0)
     , fReceiving(false)
     , fRegionPtr(nullptr)
 {
@@ -60,6 +62,7 @@ FairMQMessageNN::FairMQMessageNN(const size_t size)
 FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
     : fMessage(nullptr)
     , fSize(0)
+    , fHint(0)
     , fReceiving(false)
     , fRegionPtr(nullptr)
 {
@@ -83,9 +86,10 @@ FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* 
     }
 }
 
-FairMQMessageNN::FairMQMessageNN(FairMQUnmanagedRegionPtr& region, void* data, const size_t size)
+FairMQMessageNN::FairMQMessageNN(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint)
     : fMessage(data)
     , fSize(size)
+    , fHint(reinterpret_cast<size_t>(hint))
     , fReceiving(false)
     , fRegionPtr(region.get())
 {

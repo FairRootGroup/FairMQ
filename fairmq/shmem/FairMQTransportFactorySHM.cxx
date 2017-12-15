@@ -214,9 +214,9 @@ FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(void* data, const size
     return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, data, size, ffn, hint));
 }
 
-FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size) const
+FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint) const
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, region, data, size));
+    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, region, data, size, hint));
 }
 
 FairMQSocketPtr FairMQTransportFactorySHM::CreateSocket(const string& type, const string& name) const

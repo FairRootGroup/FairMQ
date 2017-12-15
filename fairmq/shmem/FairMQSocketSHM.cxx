@@ -175,6 +175,7 @@ int FairMQSocketSHM::Receive(FairMQMessagePtr& msg, const int flags)
             static_cast<FairMQMessageSHM*>(msg.get())->fHandle = hdr->fHandle;
             static_cast<FairMQMessageSHM*>(msg.get())->fSize = hdr->fSize;
             static_cast<FairMQMessageSHM*>(msg.get())->fRegionId = hdr->fRegionId;
+            static_cast<FairMQMessageSHM*>(msg.get())->fHint = hdr->fHint;
             size = msg->GetSize();
 
             fBytesRx += size;
@@ -316,6 +317,7 @@ int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int fla
                 static_cast<FairMQMessageSHM*>(part.get())->fHandle = hdr->fHandle;
                 static_cast<FairMQMessageSHM*>(part.get())->fSize = hdr->fSize;
                 static_cast<FairMQMessageSHM*>(part.get())->fRegionId = hdr->fRegionId;
+                static_cast<FairMQMessageSHM*>(part.get())->fHint = hdr->fHint;
                 size = part->GetSize();
 
                 msgVec.push_back(move(part));

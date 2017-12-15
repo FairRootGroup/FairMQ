@@ -75,7 +75,7 @@ void Region::ReceiveAcks()
             // LOG(DEBUG) << "received: " << block.fHandle << " " << block.fSize << " " << block.fMessageId;
             if (fCallback)
             {
-                fCallback(reinterpret_cast<char*>(fRegion.get_address()) + block.fHandle, block.fSize);
+                fCallback(reinterpret_cast<char*>(fRegion.get_address()) + block.fHandle, block.fSize, reinterpret_cast<void*>(block.fHint));
             }
         }
         else

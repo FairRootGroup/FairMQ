@@ -32,7 +32,7 @@ class FairMQMessageNN : public FairMQMessage
     FairMQMessageNN();
     FairMQMessageNN(const size_t size);
     FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
-    FairMQMessageNN(FairMQUnmanagedRegionPtr& region, void* data, const size_t size);
+    FairMQMessageNN(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0);
 
     FairMQMessageNN(const FairMQMessageNN&) = delete;
     FairMQMessageNN operator=(const FairMQMessageNN&) = delete;
@@ -56,6 +56,7 @@ class FairMQMessageNN : public FairMQMessage
   private:
     void* fMessage;
     size_t fSize;
+    size_t fHint;
     bool fReceiving;
     FairMQUnmanagedRegion* fRegionPtr;
     static FairMQ::Transport fTransportType;

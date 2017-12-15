@@ -13,7 +13,7 @@
 #include <memory> // std::unique_ptr
 #include <functional> // std::function
 
-using FairMQRegionCallback = std::function<void(void*, size_t)>;
+using FairMQRegionCallback = std::function<void(void*, size_t, void*)>;
 
 class FairMQUnmanagedRegion
 {

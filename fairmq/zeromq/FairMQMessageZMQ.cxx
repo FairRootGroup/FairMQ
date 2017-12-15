@@ -58,7 +58,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn
     }
 }
 
-FairMQMessageZMQ::FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data, const size_t size)
+FairMQMessageZMQ::FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint)
     : fUsedSizeModified(false)
     , fUsedSize()
     , fMsg(fair::mq::tools::make_unique<zmq_msg_t>())
@@ -74,7 +74,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data,
 
     memcpy(zmq_msg_data(fMsg.get()), data, size);
     // call region callback
-    static_cast<FairMQUnmanagedRegionZMQ*>(region.get())->fCallback(data, size);
+    static_cast<FairMQUnmanagedRegionZMQ*>(region.get())->fCallback(data, size, hint);
 
     // if (zmq_msg_init_data(fMsg.get(), data, size, [](void*, void*){}, nullptr) != 0)
     // {
