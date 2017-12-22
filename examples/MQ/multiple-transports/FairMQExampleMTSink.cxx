@@ -64,7 +64,7 @@ bool FairMQExampleMTSink::CheckIterations()
     {
         if (fNumIterations1 >= fMaxIterations && fNumIterations2 >= fMaxIterations)
         {
-            LOG(INFO) << "Configured maximum number of iterations reached & Received messages from both sources. Leaving RUNNING state.";
+            LOG(info) << "Configured maximum number of iterations reached & Received messages from both sources. Leaving RUNNING state.";
             return false;
         }
     }

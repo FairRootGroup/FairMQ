@@ -35,11 +35,11 @@ void FairMQExample1Sink::InitTask()
 // handler is called whenever a message arrives on "data", with a reference to the message and a sub-channel index (here 0)
 bool FairMQExample1Sink::HandleData(FairMQMessagePtr& msg, int /*index*/)
 {
-    LOG(INFO) << "Received: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
+    LOG(info) << "Received: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
 
     if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
     {
-        LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+        LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
         return false;
     }
 

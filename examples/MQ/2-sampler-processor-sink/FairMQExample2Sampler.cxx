@@ -41,7 +41,7 @@ bool FairMQExample2Sampler::ConditionalRun()
     // but won't delete the data after the sending is completed.
     FairMQMessagePtr msg(NewStaticMessage(fText));
 
-    LOG(INFO) << "Sending \"" << fText << "\"";
+    LOG(info) << "Sending \"" << fText << "\"";
 
     // in case of error or transfer interruption, return false to go to IDLE state
     // successfull transfer will return number of bytes transfered (can be 0 if sending an empty message).
@@ -51,7 +51,7 @@ bool FairMQExample2Sampler::ConditionalRun()
     }
     else if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
     {
-        LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+        LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
         return false;
     }
 

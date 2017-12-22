@@ -42,7 +42,7 @@ void FairMQExampleRegionSampler::InitTask()
                                                                  --fNumUnackedMsgs;
                                                                  if (fMaxIterations > 0)
                                                                  {
-                                                                     LOG(DEBUG) << "Received ack";
+                                                                     LOG(debug) << "Received ack";
                                                                  }
                                                              }
                                                              ));
@@ -64,7 +64,7 @@ bool FairMQExampleRegionSampler::ConditionalRun()
 
         if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
         {
-            LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+            LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
             return false;
         }
     }
@@ -77,9 +77,9 @@ void FairMQExampleRegionSampler::ResetTask()
     // if not all messages acknowledged, wait for a bit. But only once, since receiver could be already dead.
     if (fNumUnackedMsgs != 0)
     {
-        LOG(DEBUG) << "waiting for all acknowledgements... (" << fNumUnackedMsgs << ")";
+        LOG(debug) << "waiting for all acknowledgements... (" << fNumUnackedMsgs << ")";
         this_thread::sleep_for(chrono::milliseconds(500));
-        LOG(DEBUG) << "done, still unacked: " << fNumUnackedMsgs;
+        LOG(debug) << "done, still unacked: " << fNumUnackedMsgs;
     }
     fRegion.reset();
 }

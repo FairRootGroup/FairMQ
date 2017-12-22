@@ -33,11 +33,11 @@ void FairMQExample4Sink::InitTask()
 
 bool FairMQExample4Sink::HandleData(FairMQMessagePtr& msg, int /*index*/)
 {
-    LOG(INFO) << "Received message: \"" << *(static_cast<uint64_t*>(msg->GetData())) << "\"";
+    LOG(info) << "Received message: \"" << *(static_cast<uint64_t*>(msg->GetData())) << "\"";
 
     if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
     {
-        LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+        LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
         return false;
     }
 

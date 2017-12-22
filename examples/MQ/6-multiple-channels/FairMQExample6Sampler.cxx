@@ -50,7 +50,7 @@ void FairMQExample6Sampler::Run()
 
             if (Receive(msg, "broadcast") > 0)
             {
-                LOG(INFO) << "Received broadcast: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
+                LOG(info) << "Received broadcast: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
             }
         }
 
@@ -62,11 +62,11 @@ void FairMQExample6Sampler::Run()
 
             if (Send(msg, "data") > 0)
             {
-                LOG(INFO) << "Sent \"" << fText << "\"";
+                LOG(info) << "Sent \"" << fText << "\"";
 
                 if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
                 {
-                    LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+                    LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
                     break;
                 }
             }

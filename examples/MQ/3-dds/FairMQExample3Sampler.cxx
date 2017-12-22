@@ -33,7 +33,7 @@ bool FairMQExample3Sampler::ConditionalRun()
     // Should only be used for small data because of the cost of an additional copy
     FairMQMessagePtr msg(NewSimpleMessage("Data"));
 
-    LOG(INFO) << "Sending \"Data\"";
+    LOG(info) << "Sending \"Data\"";
 
     // in case of error or transfer interruption, return false to go to IDLE state
     // successfull transfer will return number of bytes transfered (can be 0 if sending an empty message).

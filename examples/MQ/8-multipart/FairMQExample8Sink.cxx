@@ -28,14 +28,14 @@ bool FairMQExample8Sink::HandleData(FairMQParts& parts, int /*index*/)
     Ex8Header header;
     header.stopFlag = (static_cast<Ex8Header*>(parts.At(0)->GetData()))->stopFlag;
 
-    LOG(INFO) << "Received message with " << parts.Size() << " parts";
+    LOG(info) << "Received message with " << parts.Size() << " parts";
 
-    LOG(INFO) << "Received header with stopFlag: " << header.stopFlag;
-    LOG(INFO) << "Received body of size: " << parts.At(1)->GetSize();
+    LOG(info) << "Received header with stopFlag: " << header.stopFlag;
+    LOG(info) << "Received body of size: " << parts.At(1)->GetSize();
 
     if (header.stopFlag == 1)
     {
-        LOG(INFO) << "stopFlag is 1, going IDLE";
+        LOG(info) << "stopFlag is 1, going IDLE";
         return false;
     }
 

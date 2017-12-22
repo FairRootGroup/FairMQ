@@ -20,7 +20,7 @@ FairMQExample2Processor::FairMQExample2Processor()
 
 bool FairMQExample2Processor::HandleData(FairMQMessagePtr& msg, int /*index*/)
 {
-    LOG(INFO) << "Received data, processing...";
+    LOG(info) << "Received data, processing...";
 
     // Modify the received string
     string* text = new std::string(static_cast<char*>(msg->GetData()), msg->GetSize());

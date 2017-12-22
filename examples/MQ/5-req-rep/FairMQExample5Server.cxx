@@ -33,11 +33,11 @@ void FairMQExample5Server::InitTask()
 
 bool FairMQExample5Server::HandleData(FairMQMessagePtr& request, int /*index*/)
 {
-    LOG(INFO) << "Received request from client: \"" << string(static_cast<char*>(request->GetData()), request->GetSize()) << "\"";
+    LOG(info) << "Received request from client: \"" << string(static_cast<char*>(request->GetData()), request->GetSize()) << "\"";
 
     string* text = new string("Thank you for the \"" + string(static_cast<char*>(request->GetData()), request->GetSize()) + "\"!");
 
-    LOG(INFO) << "Sending reply to client.";
+    LOG(info) << "Sending reply to client.";
 
     FairMQMessagePtr reply(NewMessage(const_cast<char*>(text->c_str()), // data
                                                         text->length(), // size
@@ -48,7 +48,7 @@ bool FairMQExample5Server::HandleData(FairMQMessagePtr& request, int /*index*/)
     {
         if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
         {
-            LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+            LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
             return false;
         }
 

@@ -32,7 +32,7 @@ bool FairMQExample6Broadcaster::ConditionalRun()
     // Should only be used for small data because of the cost of an additional copy
     FairMQMessagePtr msg(NewSimpleMessage("OK"));
 
-    LOG(INFO) << "Sending OK";
+    LOG(info) << "Sending OK";
 
     Send(msg, "broadcast");
 
