@@ -52,7 +52,7 @@ bool FairMQExample4Sampler::ConditionalRun()
 
     if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
     {
-        LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+        LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
         return false;
     }
 

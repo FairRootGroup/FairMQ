@@ -18,7 +18,7 @@ FairMQExample3Processor::FairMQExample3Processor()
 
 bool FairMQExample3Processor::HandleData(FairMQMessagePtr& msg, int /*index*/)
 {
-    LOG(INFO) << "Received data, processing...";
+    LOG(info) << "Received data, processing...";
 
     // Modify the received string
     string* text = new std::string(static_cast<char*>(msg->GetData()), msg->GetSize());

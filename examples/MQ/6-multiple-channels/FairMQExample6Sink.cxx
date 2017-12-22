@@ -37,7 +37,7 @@ void FairMQExample6Sink::InitTask()
 
 bool FairMQExample6Sink::HandleBroadcast(FairMQMessagePtr& msg, int /*index*/)
 {
-    LOG(INFO) << "Received broadcast: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
+    LOG(info) << "Received broadcast: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
     fReceivedBroadcast = true;
 
     return CheckIterations();
@@ -45,7 +45,7 @@ bool FairMQExample6Sink::HandleBroadcast(FairMQMessagePtr& msg, int /*index*/)
 
 bool FairMQExample6Sink::HandleData(FairMQMessagePtr& msg, int /*index*/)
 {
-    LOG(INFO) << "Received message: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
+    LOG(info) << "Received message: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
     fReceivedData = true;
 
     return CheckIterations();
@@ -57,7 +57,7 @@ bool FairMQExample6Sink::CheckIterations()
     {
         if (fReceivedData && fReceivedBroadcast && ++fNumIterations >= fMaxIterations)
         {
-            LOG(INFO) << "Configured maximum number of iterations reached & Received messages from both sources. Leaving RUNNING state.";
+            LOG(info) << "Configured maximum number of iterations reached & Received messages from both sources. Leaving RUNNING state.";
             return false;
         }
     }

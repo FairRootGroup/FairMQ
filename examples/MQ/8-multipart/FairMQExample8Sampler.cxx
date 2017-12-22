@@ -43,7 +43,7 @@ bool FairMQExample8Sampler::ConditionalRun()
     {
         header.stopFlag = 1;
     }
-    LOG(INFO) << "Sending header with stopFlag: " << header.stopFlag;
+    LOG(info) << "Sending header with stopFlag: " << header.stopFlag;
 
     FairMQParts parts;
 
@@ -52,14 +52,14 @@ bool FairMQExample8Sampler::ConditionalRun()
     parts.AddPart(NewSimpleMessage(header));
     parts.AddPart(NewMessage(1000));
 
-    LOG(INFO) << "Sending body of size: " << parts.At(1)->GetSize();
+    LOG(info) << "Sending body of size: " << parts.At(1)->GetSize();
 
     Send(parts, "data-out");
 
     // Go out of the sending loop if the stopFlag was sent.
     if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
     {
-        LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+        LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
         return false;
     }
 

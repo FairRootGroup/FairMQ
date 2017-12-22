@@ -26,7 +26,7 @@ FairMQExample3Sink::FairMQExample3Sink()
 // handler is called whenever a message arrives on "data2", with a reference to the message and a sub-channel index (here 0)
 bool FairMQExample3Sink::HandleData(FairMQMessagePtr& msg, int /*index*/)
 {
-    LOG(INFO) << "Received: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
+    LOG(info) << "Received: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
 
     // return true if want to be called again (otherwise go to IDLE state)
     return true;

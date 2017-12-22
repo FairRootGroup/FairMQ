@@ -50,17 +50,17 @@ bool FairMQExample5Client::ConditionalRun()
                                                           text)); // object that manages the data
     FairMQMessagePtr reply(NewMessage());
 
-    LOG(INFO) << "Sending \"" << fText << "\" to server.";
+    LOG(info) << "Sending \"" << fText << "\" to server.";
 
     if (Send(request, "data") > 0)
     {
         if (Receive(reply, "data") >= 0)
         {
-            LOG(INFO) << "Received reply from server: \"" << string(static_cast<char*>(reply->GetData()), reply->GetSize()) << "\"";
+            LOG(info) << "Received reply from server: \"" << string(static_cast<char*>(reply->GetData()), reply->GetSize()) << "\"";
 
             if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
             {
-                LOG(INFO) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+                LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
                 return false;
             }
 
