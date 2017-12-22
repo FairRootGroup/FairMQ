@@ -30,6 +30,6 @@ size_t FairMQUnmanagedRegionZMQ::GetSize() const
 
 FairMQUnmanagedRegionZMQ::~FairMQUnmanagedRegionZMQ()
 {
-    LOG(DEBUG) << "destroying region";
+    LOG(debug) << "destroying region";
     free(fBuffer);
 }

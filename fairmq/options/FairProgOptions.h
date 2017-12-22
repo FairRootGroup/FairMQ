@@ -98,7 +98,7 @@ class FairProgOptions
             }
             else
             {
-                LOG(ERROR) << "Config has no key: " << key;
+                LOG(error) << "Config has no key: " << key;
             }
         }
         catch (std::exception& e)
@@ -125,8 +125,8 @@ class FairProgOptions
         }
         catch (std::exception& e)
         {
-            LOG(ERROR) << "Exception thrown for the key '" << key << "'";
-            LOG(ERROR) << e.what();
+            LOG(error) << "Exception thrown for the key '" << key << "'";
+            LOG(error) << e.what();
         }
 
         return valueStr;
@@ -152,7 +152,7 @@ class FairProgOptions
         }
         else
         {
-            LOG(ERROR) << "the provided string " << strValue << " cannot be converted in the requested type. The target types must be arithmetic types";
+            LOG(error) << "the provided string " << strValue << " cannot be converted in the requested type. The target types must be arithmetic types";
         }
     }
 

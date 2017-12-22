@@ -44,7 +44,7 @@ FairMQShmPrototypeSink::~FairMQShmPrototypeSink()
 void FairMQShmPrototypeSink::Init()
 {
     SegmentManager::Instance().InitializeSegment("open_or_create", "FairMQSharedMemoryPrototype", 2000000000);
-    LOG(INFO) << "Created/Opened shared memory segment of 2,000,000,000 bytes. Available are "
+    LOG(info) << "Created/Opened shared memory segment of 2,000,000,000 bytes. Available are "
               << SegmentManager::Instance().Segment()->get_free_memory() << " bytes.";
 }
 
@@ -65,9 +65,9 @@ void FairMQShmPrototypeSink::Run()
             bipc::managed_shared_memory::handle_t handle = hdr->fHandle;
             void* ptr = SegmentManager::Instance().Segment()->get_address_from_handle(handle);
 
-            // LOG(INFO) << size;
-            // LOG(INFO) << handle;
-            // LOG(WARN) << ptr;
+            // LOG(info) << size;
+            // LOG(info) << handle;
+            // LOG(warn) << ptr;
 
             fBytesInNew += size;
             ++fMsgInNew;
@@ -78,21 +78,21 @@ void FairMQShmPrototypeSink::Run()
 
             // find the shared pointer in shared memory with its ID
             // ShPtrOwner* owner = SegmentManager::Instance().Segment()->find<ShPtrOwner>(ownerID.c_str()).first;
-            // LOG(DEBUG) << "owner (" << ownerID << ") use count: " << owner->fPtr.use_count();
+            // LOG(debug) << "owner (" << ownerID << ") use count: " << owner->fPtr.use_count();
 
 
             // if (owner)
             // {
             //     // void* ptr = owner->fPtr->GetData();
 
-            //     // LOG(DEBUG) << "chunk handle: " << owner->fPtr->GetHandle();
-            //     // LOG(DEBUG) << "chunk size: " << owner->fPtr->GetSize();
+            //     // LOG(debug) << "chunk handle: " << owner->fPtr->GetHandle();
+            //     // LOG(debug) << "chunk size: " << owner->fPtr->GetSize();
 
             //     fBytesInNew += owner->fPtr->GetSize();
             //     ++fMsgInNew;
 
             //     // char* cptr = static_cast<char*>(ptr);
-            //     // LOG(DEBUG) << "check: " << cptr[3];
+            //     // LOG(debug) << "check: " << cptr[3];
 
             //     SegmentManager::Instance().Segment()->deallocate(ptr);
 
@@ -100,7 +100,7 @@ void FairMQShmPrototypeSink::Run()
             // }
             // else
             // {
-            //     LOG(WARN) << "Shared pointer is zero.";
+            //     LOG(warn) << "Shared pointer is zero.";
             // }
 
 
@@ -108,7 +108,7 @@ void FairMQShmPrototypeSink::Run()
         }
     }
 
-    LOG(INFO) << "Received " << numReceivedMsgs << " messages, leaving RUNNING state.";
+    LOG(info) << "Received " << numReceivedMsgs << " messages, leaving RUNNING state.";
 
     rateLogger.join();
 }
@@ -134,7 +134,7 @@ void FairMQShmPrototypeSink::Log(const int intervalInMs)
         msgPerSecIn = static_cast<double>(fMsgInNew - fMsgIn) / static_cast<double>(msSinceLastLog) * 1000.;
         fMsgIn = fMsgInNew;
 
-        LOG(DEBUG) << fixed
+        LOG(debug) << fixed
                    << setprecision(0) << "in: " << msgPerSecIn << " msg ("
                    << setprecision(2) << mbPerSecIn << " MB)\t("
                    << SegmentManager::Instance().Segment()->get_free_memory() / (1024. * 1024.) << " MB free)";

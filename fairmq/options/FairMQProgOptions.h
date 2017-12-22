@@ -62,7 +62,7 @@ class FairMQProgOptions : public FairProgOptions
         }
         catch (std::exception& e)
         {
-            LOG(ERROR) << e.what();
+            LOG(error) << e.what();
             return 1;
         }
         return 0;

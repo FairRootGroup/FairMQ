@@ -19,17 +19,17 @@ FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id, const Fai
 {
     int major, minor, patch;
     zmq_version(&major, &minor, &patch);
-    LOG(DEBUG) << "Transport: Using ZeroMQ library, version: " << major << "." << minor << "." << patch;
+    LOG(debug) << "Transport: Using ZeroMQ library, version: " << major << "." << minor << "." << patch;
 
     if (!fContext)
     {
-        LOG(ERROR) << "failed creating context, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed creating context, reason: " << zmq_strerror(errno);
         exit(EXIT_FAILURE);
     }
 
     if (zmq_ctx_set(fContext, ZMQ_MAX_SOCKETS, 10000) != 0)
     {
-        LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
     }
 
     int numIoThreads = 1;
@@ -39,12 +39,12 @@ FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id, const Fai
     }
     else
     {
-        LOG(WARN) << "zeromq: FairMQProgOptions not available! Using defaults.";
+        LOG(warn) << "FairMQProgOptions not available! Using defaults.";
     }
 
     if (zmq_ctx_set(fContext, ZMQ_IO_THREADS, numIoThreads) != 0)
     {
-        LOG(ERROR) << "failed configuring context, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
     }
 
 }
@@ -113,7 +113,7 @@ FairMQTransportFactoryZMQ::~FairMQTransportFactoryZMQ()
         {
             if (errno == EINTR)
             {
-                LOG(ERROR) << " failed closing context, reason: " << zmq_strerror(errno);
+                LOG(error) << " failed closing context, reason: " << zmq_strerror(errno);
             }
             else
             {
@@ -124,6 +124,6 @@ FairMQTransportFactoryZMQ::~FairMQTransportFactoryZMQ()
     }
     else
     {
-        LOG(ERROR) << "Terminate(): context not available for shutdown";
+        LOG(error) << "context not available for shutdown";
     }
 }

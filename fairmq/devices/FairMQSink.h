@@ -51,7 +51,7 @@ class FairMQSink : public FairMQDevice//, public OutputPolicy
         // store the channel reference to avoid traversing the map on every loop iteration
         FairMQChannel& dataInChannel = fChannels.at(fInChannelName).at(0);
 
-        LOG(INFO) << "Starting the benchmark and expecting to receive " << fMaxIterations << " messages.";
+        LOG(info) << "Starting the benchmark and expecting to receive " << fMaxIterations << " messages.";
         auto tStart = std::chrono::high_resolution_clock::now();
 
         while (CheckCurrentState(RUNNING))
@@ -73,7 +73,7 @@ class FairMQSink : public FairMQDevice//, public OutputPolicy
 
         auto tEnd = std::chrono::high_resolution_clock::now();
 
-        LOG(INFO) << "Leaving RUNNING state. Received " << fNumIterations << " messages in " << std::chrono::duration<double, std::milli>(tEnd - tStart).count() << "ms.";
+        LOG(info) << "Leaving RUNNING state. Received " << fNumIterations << " messages in " << std::chrono::duration<double, std::milli>(tEnd - tStart).count() << "ms.";
     }
 };
 

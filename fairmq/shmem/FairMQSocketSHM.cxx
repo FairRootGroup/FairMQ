@@ -36,13 +36,13 @@ FairMQSocketSHM::FairMQSocketSHM(Manager& manager, const string& type, const str
 
     if (fSocket == nullptr)
     {
-        LOG(ERROR) << "Failed creating socket " << fId << ", reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed creating socket " << fId << ", reason: " << zmq_strerror(errno);
         exit(EXIT_FAILURE);
     }
 
     if (zmq_setsockopt(fSocket, ZMQ_IDENTITY, fId.c_str(), fId.length()) != 0)
     {
-        LOG(ERROR) << "Failed setting ZMQ_IDENTITY socket option, reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed setting ZMQ_IDENTITY socket option, reason: " << zmq_strerror(errno);
     }
 
     // Tell socket to try and send/receive outstanding messages for <linger> milliseconds before terminating.
@@ -50,30 +50,30 @@ FairMQSocketSHM::FairMQSocketSHM(Manager& manager, const string& type, const str
     int linger = 1000;
     if (zmq_setsockopt(fSocket, ZMQ_LINGER, &linger, sizeof(linger)) != 0)
     {
-        LOG(ERROR) << "Failed setting ZMQ_LINGER socket option, reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed setting ZMQ_LINGER socket option, reason: " << zmq_strerror(errno);
     }
 
     int sndTimeout = 700;
     if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &sndTimeout, sizeof(sndTimeout)) != 0)
     {
-        LOG(ERROR) << "Failed setting ZMQ_SNDTIMEO socket option, reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed setting ZMQ_SNDTIMEO socket option, reason: " << zmq_strerror(errno);
     }
 
     int rcvTimeout = 700;
     if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &rcvTimeout, sizeof(rcvTimeout)) != 0)
     {
-        LOG(ERROR) << "Failed setting ZMQ_RCVTIMEO socket option, reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed setting ZMQ_RCVTIMEO socket option, reason: " << zmq_strerror(errno);
     }
 
     if (type == "sub")
     {
         if (zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, nullptr, 0) != 0)
         {
-            LOG(ERROR) << "Failed setting ZMQ_SUBSCRIBE socket option, reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed setting ZMQ_SUBSCRIBE socket option, reason: " << zmq_strerror(errno);
         }
     }
 
-    // LOG(INFO) << "created socket " << fId;
+    // LOG(info) << "created socket " << fId;
 }
 
 string FairMQSocketSHM::GetId()
@@ -83,7 +83,7 @@ string FairMQSocketSHM::GetId()
 
 bool FairMQSocketSHM::Bind(const string& address)
 {
-    // LOG(INFO) << "bind socket " << fId << " on " << address;
+    // LOG(info) << "bind socket " << fId << " on " << address;
 
     if (zmq_bind(fSocket, address.c_str()) != 0)
     {
@@ -91,7 +91,7 @@ bool FairMQSocketSHM::Bind(const string& address)
             // do not print error in this case, this is handled by FairMQDevice in case no connection could be established after trying a number of random ports from a range.
             return false;
         }
-        LOG(ERROR) << "Failed binding socket " << fId << ", reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed binding socket " << fId << ", reason: " << zmq_strerror(errno);
         return false;
     }
     return true;
@@ -99,11 +99,11 @@ bool FairMQSocketSHM::Bind(const string& address)
 
 void FairMQSocketSHM::Connect(const string& address)
 {
-    // LOG(INFO) << "connect socket " << fId << " on " << address;
+    // LOG(info) << "connect socket " << fId << " on " << address;
 
     if (zmq_connect(fSocket, address.c_str()) != 0)
     {
-        LOG(ERROR) << "Failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
         // error here means incorrect configuration. exit if it happens.
         exit(EXIT_FAILURE);
     }
@@ -142,12 +142,12 @@ int FairMQSocketSHM::Send(FairMQMessagePtr& msg, const int flags)
         }
         else if (zmq_errno() == ETERM)
         {
-            LOG(INFO) << "terminating socket " << fId;
+            LOG(info) << "terminating socket " << fId;
             return -1;
         }
         else
         {
-            LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
             return nbytes;
         }
     }
@@ -196,12 +196,12 @@ int FairMQSocketSHM::Receive(FairMQMessagePtr& msg, const int flags)
         }
         else if (zmq_errno() == ETERM)
         {
-            LOG(INFO) << "terminating socket " << fId;
+            LOG(info) << "terminating socket " << fId;
             return -1;
         }
         else
         {
-            LOG(ERROR) << "Failed receiving on socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed receiving on socket " << fId << ", reason: " << zmq_strerror(errno);
             return nbytes;
         }
     }
@@ -249,10 +249,10 @@ int64_t FairMQSocketSHM::Send(vector<FairMQMessagePtr>& msgVec, const int flags)
                     }
                     if (zmq_errno() == ETERM)
                     {
-                        LOG(INFO) << "terminating socket " << fId;
+                        LOG(info) << "terminating socket " << fId;
                         return -1;
                     }
-                    LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
+                    LOG(error) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
                     return nbytes;
                 }
             }
@@ -276,7 +276,7 @@ int64_t FairMQSocketSHM::Send(vector<FairMQMessagePtr>& msgVec, const int flags)
     }
     else // if the vector is empty, something might be wrong
     {
-        LOG(WARN) << "Will not send empty vector";
+        LOG(warn) << "Will not send empty vector";
         return -1;
     }
 }
@@ -292,7 +292,7 @@ int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int fla
         // Warn if the vector is filled before Receive() and empty it.
         // if (msgVec.size() > 0)
         // {
-        //     LOG(WARN) << "Message vector contains elements before Receive(), they will be deleted!";
+        //     LOG(warn) << "Message vector contains elements before Receive(), they will be deleted!";
         //     msgVec.clear();
         // }
 
@@ -360,7 +360,7 @@ int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int fla
 
 void FairMQSocketSHM::Close()
 {
-    // LOG(DEBUG) << "Closing socket " << fId;
+    // LOG(debug) << "Closing socket " << fId;
 
     if (fSocket == nullptr)
     {
@@ -369,7 +369,7 @@ void FairMQSocketSHM::Close()
 
     if (zmq_close(fSocket) != 0)
     {
-        LOG(ERROR) << "Failed closing socket " << fId << ", reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed closing socket " << fId << ", reason: " << zmq_strerror(errno);
     }
 
     fSocket = nullptr;
@@ -404,7 +404,7 @@ void FairMQSocketSHM::SetOption(const string& option, const void* value, size_t 
 {
     if (zmq_setsockopt(fSocket, GetConstant(option), value, valueSize) < 0)
     {
-        LOG(ERROR) << "Failed setting socket option, reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed setting socket option, reason: " << zmq_strerror(errno);
     }
 }
 
@@ -412,7 +412,7 @@ void FairMQSocketSHM::GetOption(const string& option, void* value, size_t* value
 {
     if (zmq_getsockopt(fSocket, GetConstant(option), value, valueSize) < 0)
     {
-        LOG(ERROR) << "Failed getting socket option, reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed getting socket option, reason: " << zmq_strerror(errno);
     }
 }
 
@@ -442,17 +442,17 @@ bool FairMQSocketSHM::SetSendTimeout(const int timeout, const string& address, c
     {
         if (zmq_unbind(fSocket, address.c_str()) != 0)
         {
-            LOG(ERROR) << "Failed unbinding socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed unbinding socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
         if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &timeout, sizeof(int)) != 0)
         {
-            LOG(ERROR) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
         if (zmq_bind(fSocket, address.c_str()) != 0)
         {
-            LOG(ERROR) << "Failed binding socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed binding socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
     }
@@ -460,23 +460,23 @@ bool FairMQSocketSHM::SetSendTimeout(const int timeout, const string& address, c
     {
         if (zmq_disconnect(fSocket, address.c_str()) != 0)
         {
-            LOG(ERROR) << "Failed disconnecting socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed disconnecting socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
         if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &timeout, sizeof(int)) != 0)
         {
-            LOG(ERROR) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
         if (zmq_connect(fSocket, address.c_str()) != 0)
         {
-            LOG(ERROR) << "Failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
     }
     else
     {
-        LOG(ERROR) << "SetSendTimeout() failed - unknown method provided!";
+        LOG(error) << "timeout failed - unknown method provided!";
         return false;
     }
 
@@ -490,7 +490,7 @@ int FairMQSocketSHM::GetSendTimeout() const
 
     if (zmq_getsockopt(fSocket, ZMQ_SNDTIMEO, &timeout, &size) != 0)
     {
-        LOG(ERROR) << "Failed getting option 'receive timeout' on socket " << fId << ", reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed getting option 'receive timeout' on socket " << fId << ", reason: " << zmq_strerror(errno);
     }
 
     return timeout;
@@ -502,17 +502,17 @@ bool FairMQSocketSHM::SetReceiveTimeout(const int timeout, const string& address
     {
         if (zmq_unbind(fSocket, address.c_str()) != 0)
         {
-            LOG(ERROR) << "Failed unbinding socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed unbinding socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
         if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &timeout, sizeof(int)) != 0)
         {
-            LOG(ERROR) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
         if (zmq_bind(fSocket, address.c_str()) != 0)
         {
-            LOG(ERROR) << "Failed binding socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed binding socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
     }
@@ -520,23 +520,23 @@ bool FairMQSocketSHM::SetReceiveTimeout(const int timeout, const string& address
     {
         if (zmq_disconnect(fSocket, address.c_str()) != 0)
         {
-            LOG(ERROR) << "Failed disconnecting socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed disconnecting socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
         if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &timeout, sizeof(int)) != 0)
         {
-            LOG(ERROR) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
         if (zmq_connect(fSocket, address.c_str()) != 0)
         {
-            LOG(ERROR) << "Failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
     }
     else
     {
-        LOG(ERROR) << "SetReceiveTimeout() failed - unknown method provided!";
+        LOG(error) << "timeout failed - unknown method provided!";
         return false;
     }
 
@@ -550,7 +550,7 @@ int FairMQSocketSHM::GetReceiveTimeout() const
 
     if (zmq_getsockopt(fSocket, ZMQ_RCVTIMEO, &timeout, &size) != 0)
     {
-        LOG(ERROR) << "Failed getting option 'receive timeout' on socket " << fId << ", reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed getting option 'receive timeout' on socket " << fId << ", reason: " << zmq_strerror(errno);
     }
 
     return timeout;

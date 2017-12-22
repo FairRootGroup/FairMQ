@@ -38,19 +38,19 @@ Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, FairMQ
     if (fRemote)
     {
         fShmemObject = bipc::shared_memory_object(bipc::open_only, fName.c_str(), bipc::read_write);
-        LOG(DEBUG) << "shmem: located remote region: " << fName;
+        LOG(debug) << "shmem: located remote region: " << fName;
 
         fQueue = fair::mq::tools::make_unique<bipc::message_queue>(bipc::open_only, fQueueName.c_str());
-        LOG(DEBUG) << "shmem: located remote region queue: " << fQueueName;
+        LOG(debug) << "shmem: located remote region queue: " << fQueueName;
     }
     else
     {
         fShmemObject = bipc::shared_memory_object(bipc::create_only, fName.c_str(), bipc::read_write);
-        LOG(DEBUG) << "shmem: created region: " << fName;
+        LOG(debug) << "shmem: created region: " << fName;
         fShmemObject.truncate(size);
 
         fQueue = fair::mq::tools::make_unique<bipc::message_queue>(bipc::create_only, fQueueName.c_str(), 10000, sizeof(RegionBlock));
-        LOG(DEBUG) << "shmem: created region queue: " << fQueueName;
+        LOG(debug) << "shmem: created region queue: " << fQueueName;
     }
     fRegion = bipc::mapped_region(fShmemObject, bipc::read_write); // TODO: add HUGEPAGES flag here
     // fRegion = bipc::mapped_region(fShmemObject, bipc::read_write, 0, 0, 0, MAP_HUGETLB | MAP_HUGE_1GB);
@@ -72,7 +72,7 @@ void Region::ReceiveAcks()
         RegionBlock block;
         if (fQueue->timed_receive(&block, sizeof(RegionBlock), recvdSize, priority, rcvTill))
         {
-            // LOG(DEBUG) << "received: " << block.fHandle << " " << block.fSize << " " << block.fMessageId;
+            // LOG(debug) << "received: " << block.fHandle << " " << block.fSize << " " << block.fMessageId;
             if (fCallback)
             {
                 fCallback(reinterpret_cast<char*>(fRegion.get_address()) + block.fHandle, block.fSize, reinterpret_cast<void*>(block.fHint));
@@ -80,11 +80,11 @@ void Region::ReceiveAcks()
         }
         else
         {
-            // LOG(DEBUG) << "queue " << fQueueName << " timeout!";
+            // LOG(debug) << "queue " << fQueueName << " timeout!";
         }
     } // while !fStop
 
-    LOG(DEBUG) << "worker for " << fName << " leaving.";
+    LOG(debug) << "worker for " << fName << " leaving.";
 }
 
 Region::~Region()
@@ -99,18 +99,18 @@ Region::~Region()
 
         if (bipc::shared_memory_object::remove(fName.c_str()))
         {
-            LOG(DEBUG) << "shmem: destroyed region " << fName;
+            LOG(debug) << "shmem: destroyed region " << fName;
         }
 
         if (bipc::message_queue::remove(fQueueName.c_str()))
         {
-            LOG(DEBUG) << "shmem: removed region queue " << fName;
+            LOG(debug) << "shmem: removed region queue " << fName;
         }
     }
     else
     {
-        // LOG(DEBUG) << "shmem: region '" << fName << "' is remote, no cleanup necessary.";
-        LOG(DEBUG) << "shmem: region queue '" << fQueueName << "' is remote, no cleanup necessary";
+        // LOG(debug) << "shmem: region '" << fName << "' is remote, no cleanup necessary.";
+        LOG(debug) << "shmem: region queue '" << fQueueName << "' is remote, no cleanup necessary";
     }
 }
 

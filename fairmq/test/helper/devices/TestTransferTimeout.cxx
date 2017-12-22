@@ -29,27 +29,27 @@ class TransferTimeout : public FairMQDevice
 
         if (Send(msg1, "data-out", 0, 100) == -2)
         {
-            LOG(INFO) << "send canceled";
+            LOG(info) << "send canceled";
             sendCanceling = true;
         }
         else
         {
-            LOG(ERROR) << "send did not cancel";
+            LOG(error) << "send did not cancel";
         }
 
         if (Receive(msg2, "data-in", 0, 100) == -2)
         {
-            LOG(INFO) << "receive canceled";
+            LOG(info) << "receive canceled";
             receiveCanceling = true;
         }
         else
         {
-            LOG(ERROR) << "receive did not cancel";
+            LOG(error) << "receive did not cancel";
         }
 
         if (sendCanceling && receiveCanceling)
         {
-            LOG(INFO) << "Transfer timeout test successfull";
+            LOG(info) << "Transfer timeout test successfull";
         }
     };
 };

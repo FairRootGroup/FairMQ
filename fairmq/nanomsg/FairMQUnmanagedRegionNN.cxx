@@ -30,6 +30,6 @@ size_t FairMQUnmanagedRegionNN::GetSize() const
 
 FairMQUnmanagedRegionNN::~FairMQUnmanagedRegionNN()
 {
-    LOG(DEBUG) << "destroying region";
+    LOG(debug) << "destroying region";
     free(fBuffer);
 }

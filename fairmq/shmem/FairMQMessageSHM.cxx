@@ -39,7 +39,7 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager)
 {
     if (zmq_msg_init(&fMessage) != 0)
     {
-        LOG(ERROR) << "failed initializing message, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed initializing message, reason: " << zmq_strerror(errno);
     }
     fMetaCreated = true;
 }
@@ -104,7 +104,7 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager, FairMQUnmanagedRegionPtr& r
 
         if (zmq_msg_init_size(&fMessage, sizeof(MetaHeader)) != 0)
         {
-            LOG(ERROR) << "failed initializing meta message, reason: " << zmq_strerror(errno);
+            LOG(error) << "failed initializing meta message, reason: " << zmq_strerror(errno);
         }
         else
         {
@@ -120,8 +120,8 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager, FairMQUnmanagedRegionPtr& r
     }
     else
     {
-        LOG(ERROR) << "shmem: trying to create region message with data from outside the region";
-        throw runtime_error("shmem: trying to create region message with data from outside the region");
+        LOG(error) << "trying to create region message with data from outside the region";
+        throw runtime_error("trying to create region message with data from outside the region");
     }
 }
 
@@ -137,7 +137,7 @@ bool FairMQMessageSHM::InitializeChunk(const size_t size)
         }
         catch (bipc::bad_alloc& ba)
         {
-            // LOG(WARN) << "Shared memory full...";
+            // LOG(warn) << "Shared memory full...";
             this_thread::sleep_for(chrono::milliseconds(50));
             if (fInterrupted)
             {
@@ -155,7 +155,7 @@ bool FairMQMessageSHM::InitializeChunk(const size_t size)
 
     if (zmq_msg_init_size(&fMessage, sizeof(MetaHeader)) != 0)
     {
-        LOG(ERROR) << "failed initializing meta message, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed initializing meta message, reason: " << zmq_strerror(errno);
         return false;
     }
     MetaHeader header;
@@ -178,7 +178,7 @@ void FairMQMessageSHM::Rebuild()
 
     if (zmq_msg_init(&fMessage) != 0)
     {
-        LOG(ERROR) << "failed initializing message, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed initializing message, reason: " << zmq_strerror(errno);
     }
     fMetaCreated = true;
 }
@@ -238,7 +238,7 @@ void* FairMQMessageSHM::GetData() const
             }
             else
             {
-                // LOG(WARN) << "could not get pointer from a region message";
+                // LOG(warn) << "could not get pointer from a region message";
                 fLocalPtr = nullptr;
             }
             return fLocalPtr;
@@ -273,13 +273,13 @@ bool FairMQMessageSHM::SetUsedSize(const size_t size)
         }
         catch (bipc::interprocess_exception& e)
         {
-            LOG(INFO) << "FairMQMessageSHM::SetUsedSize could not set used size: " << e.what();
+            LOG(info) << "could not set used size: " << e.what();
             return false;
         }
     }
     else
     {
-        LOG(ERROR) << "FairMQMessageSHM::SetUsedSize: cannot set used size higher than original.";
+        LOG(error) << "cannot set used size higher than original.";
         return false;
     }
 }
@@ -303,12 +303,12 @@ void FairMQMessageSHM::Copy(const FairMQMessage& msg)
         }
         else
         {
-            LOG(ERROR) << "FairMQMessageSHM::Copy() fail: source message not initialized!";
+            LOG(error) << "copy fail: source message not initialized!";
         }
     }
     else
     {
-        LOG(ERROR) << "FairMQMessageSHM::Copy() fail: target message already initialized!";
+        LOG(error) << "copy fail: target message already initialized!";
     }
 }
 
@@ -326,12 +326,12 @@ void FairMQMessageSHM::Copy(const FairMQMessagePtr& msg)
         }
         else
         {
-            LOG(ERROR) << "FairMQMessageSHM::Copy() fail: source message not initialized!";
+            LOG(error) << "copy fail: source message not initialized!";
         }
     }
     else
     {
-        LOG(ERROR) << "FairMQMessageSHM::Copy() fail: target message already initialized!";
+        LOG(error) << "copy fail: target message already initialized!";
     }
 }
 
@@ -350,11 +350,11 @@ void FairMQMessageSHM::CloseMessage()
             // RegionBlock block(fHandle, fSize);
             // if (fManager.GetRegionQueue(fRegionId).try_send(static_cast<void*>(&block), sizeof(RegionBlock), 0))
             // {
-            //     // LOG(INFO) << "true";
+            //     // LOG(info) << "true";
             // }
             // // else
             // // {
-            // //     LOG(DEBUG) << "could not send ack";
+            // //     LOG(debug) << "could not send ack";
             // // }
 
             // timed version
@@ -379,12 +379,12 @@ void FairMQMessageSHM::CloseMessage()
                         {
                             break;
                         }
-                        LOG(DEBUG) << "region ack queue is full, retrying...";
+                        LOG(debug) << "region ack queue is full, retrying...";
                     }
                 }
                 else
                 {
-                    // LOG(WARN) << "region ack queue for id " << fRegionId << " no longer exist. Not sending ack";
+                    // LOG(warn) << "region ack queue for id " << fRegionId << " no longer exist. Not sending ack";
                     success = true;
                 }
             }
@@ -396,7 +396,7 @@ void FairMQMessageSHM::CloseMessage()
     {
         if (zmq_msg_close(&fMessage) != 0)
         {
-            LOG(ERROR) << "failed closing message, reason: " << zmq_strerror(errno);
+            LOG(error) << "failed closing message, reason: " << zmq_strerror(errno);
         }
     }
 }

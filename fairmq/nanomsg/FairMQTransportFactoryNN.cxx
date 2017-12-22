@@ -17,7 +17,7 @@ FairMQ::Transport FairMQTransportFactoryNN::fTransportType = FairMQ::Transport::
 FairMQTransportFactoryNN::FairMQTransportFactoryNN(const string& id, const FairMQProgOptions* /*config*/)
     : FairMQTransportFactory(id)
 {
-    LOG(DEBUG) << "Transport: Using nanomsg library";
+    LOG(debug) << "Transport: Using nanomsg library";
 }
 
 FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage() const

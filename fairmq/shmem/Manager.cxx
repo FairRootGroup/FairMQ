@@ -58,7 +58,7 @@ bipc::mapped_region* Manager::CreateRegion(const size_t size, const uint64_t id,
     auto it = fRegions.find(id);
     if (it != fRegions.end())
     {
-        LOG(ERROR) << "shmem: Trying to create a region that already exists";
+        LOG(error) << "Trying to create a region that already exists";
         return nullptr;
     }
     else
@@ -88,7 +88,7 @@ Region* Manager::GetRemoteRegion(const uint64_t id)
         }
         catch (bipc::interprocess_exception& e)
         {
-            // LOG(WARN) << "remote region (" << id << ") no longer exists";
+            // LOG(warn) << "remote region (" << id << ") no longer exists";
             return nullptr;
         }
 
@@ -104,20 +104,20 @@ void Manager::RemoveSegment()
 {
     if (bipc::shared_memory_object::remove(fSegmentName.c_str()))
     {
-        LOG(DEBUG) << "shmem: successfully removed " << fSegmentName << " segment after the device has stopped.";
+        LOG(debug) << "successfully removed " << fSegmentName << " segment after the device has stopped.";
     }
     else
     {
-        LOG(DEBUG) << "shmem: did not remove " << fSegmentName << " segment after the device stopped. Already removed?";
+        LOG(debug) << "did not remove " << fSegmentName << " segment after the device stopped. Already removed?";
     }
 
     if (bipc::shared_memory_object::remove(fManagementSegmentName.c_str()))
     {
-        LOG(DEBUG) << "shmem: successfully removed '" << fManagementSegmentName << "' segment after the device has stopped.";
+        LOG(debug) << "successfully removed '" << fManagementSegmentName << "' segment after the device has stopped.";
     }
     else
     {
-        LOG(DEBUG) << "shmem: did not remove '" << fManagementSegmentName << "' segment after the device stopped. Already removed?";
+        LOG(debug) << "did not remove '" << fManagementSegmentName << "' segment after the device stopped. Already removed?";
     }
 }
 

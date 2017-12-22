@@ -30,7 +30,7 @@ FairMQMessageZMQ::FairMQMessageZMQ()
 {
     if (zmq_msg_init(fMsg.get()) != 0)
     {
-        LOG(ERROR) << "failed initializing message, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed initializing message, reason: " << zmq_strerror(errno);
     }
 }
 
@@ -42,7 +42,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(const size_t size)
 {
     if (zmq_msg_init_size(fMsg.get(), size) != 0)
     {
-        LOG(ERROR) << "failed initializing message with size, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
     }
 }
 
@@ -54,7 +54,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn
 {
     if (zmq_msg_init_data(fMsg.get(), data, size, ffn, hint) != 0)
     {
-        LOG(ERROR) << "failed initializing message with data, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed initializing message with data, reason: " << zmq_strerror(errno);
     }
 }
 
@@ -69,7 +69,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data,
     // Needs lifetime extension for the ZMQ region.
     if (zmq_msg_init_size(fMsg.get(), size) != 0)
     {
-        LOG(ERROR) << "failed initializing message with size, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
     }
 
     memcpy(zmq_msg_data(fMsg.get()), data, size);
@@ -78,7 +78,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data,
 
     // if (zmq_msg_init_data(fMsg.get(), data, size, [](void*, void*){}, nullptr) != 0)
     // {
-    //     LOG(ERROR) << "failed initializing message with data, reason: " << zmq_strerror(errno);
+    //     LOG(error) << "failed initializing message with data, reason: " << zmq_strerror(errno);
     // }
 }
 
@@ -88,7 +88,7 @@ void FairMQMessageZMQ::Rebuild()
     fMsg = fair::mq::tools::make_unique<zmq_msg_t>();
     if (zmq_msg_init(fMsg.get()) != 0)
     {
-        LOG(ERROR) << "failed initializing message, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed initializing message, reason: " << zmq_strerror(errno);
     }
 }
 
@@ -98,7 +98,7 @@ void FairMQMessageZMQ::Rebuild(const size_t size)
     fMsg = fair::mq::tools::make_unique<zmq_msg_t>();
     if (zmq_msg_init_size(fMsg.get(), size) != 0)
     {
-        LOG(ERROR) << "failed initializing message with size, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
     }
 }
 
@@ -108,7 +108,7 @@ void FairMQMessageZMQ::Rebuild(void* data, const size_t size, fairmq_free_fn* ff
     fMsg = fair::mq::tools::make_unique<zmq_msg_t>();
     if (zmq_msg_init_data(fMsg.get(), data, size, ffn, hint) != 0)
     {
-        LOG(ERROR) << "failed initializing message with data, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed initializing message with data, reason: " << zmq_strerror(errno);
     }
 }
 
@@ -162,7 +162,7 @@ bool FairMQMessageZMQ::SetUsedSize(const size_t size)
     }
     else
     {
-        LOG(ERROR) << "FairMQMessageZMQ::SetUsedSize: cannot set used size higher than original.";
+        LOG(error) << "cannot set used size higher than original.";
         return false;
     }
 }
@@ -185,7 +185,7 @@ void FairMQMessageZMQ::ApplyUsedSize()
                                 },
                                 fMsg.release()) != 0)
         {
-            LOG(ERROR) << "failed initializing view message, reason: " << zmq_strerror(errno);
+            LOG(error) << "failed initializing view message, reason: " << zmq_strerror(errno);
         }
     }
 }
@@ -201,7 +201,7 @@ void FairMQMessageZMQ::Copy(const FairMQMessage& msg)
     // Shares the message buffer between msg and this fMsg.
     if (zmq_msg_copy(fMsg.get(), zMsg.GetMessage()) != 0)
     {
-        LOG(ERROR) << "failed copying message, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed copying message, reason: " << zmq_strerror(errno);
         return;
     }
 
@@ -219,7 +219,7 @@ void FairMQMessageZMQ::Copy(const FairMQMessagePtr& msg)
     // Shares the message buffer between msg and this fMsg.
     if (zmq_msg_copy(fMsg.get(), msgPtr->GetMessage()) != 0)
     {
-        LOG(ERROR) << "failed copying message, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed copying message, reason: " << zmq_strerror(errno);
         return;
     }
 
@@ -237,7 +237,7 @@ void FairMQMessageZMQ::CloseMessage()
     {
         if (zmq_msg_close(fMsg.get()) != 0)
         {
-            LOG(ERROR) << "failed closing message, reason: " << zmq_strerror(errno);
+            LOG(error) << "failed closing message, reason: " << zmq_strerror(errno);
         }
         // reset the message object to allow reuse in Rebuild
         fMsg.reset(nullptr);
@@ -246,7 +246,7 @@ void FairMQMessageZMQ::CloseMessage()
     {
         if (zmq_msg_close(fViewMsg.get()) != 0)
         {
-            LOG(ERROR) << "failed closing message, reason: " << zmq_strerror(errno);
+            LOG(error) << "failed closing message, reason: " << zmq_strerror(errno);
         }
         // reset the message object to allow reuse in Rebuild
         fViewMsg.reset(nullptr);

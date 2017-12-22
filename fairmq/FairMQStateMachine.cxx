@@ -109,7 +109,7 @@ bool FairMQStateMachine::ChangeState(int event)
             }
             default:
             {
-                LOG(ERROR) << "Requested state transition with an unsupported event: " << event << std::endl
+                LOG(error) << "Requested state transition with an unsupported event: " << event << std::endl
                             << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, STOP, RESET_TASK, RESET_DEVICE, END, ERROR_FOUND";
                 return false;
             }
@@ -117,7 +117,7 @@ bool FairMQStateMachine::ChangeState(int event)
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << "Exception in FairMQStateMachine::ChangeState(): " << e.what();
+        LOG(error) << "Exception in FairMQStateMachine::ChangeState(): " << e.what();
         exit(EXIT_FAILURE);
     }
     return false;
@@ -149,13 +149,13 @@ void FairMQStateMachine::WaitForEndOfState(int event)
                 break;
             }
             default:
-                LOG(ERROR) << "Requested state is either synchronous or does not exist.";
+                LOG(error) << "Requested state is either synchronous or does not exist.";
                 break;
         }
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << "Exception in FairMQStateMachine::WaitForEndOfState(): " << e.what();
+        LOG(error) << "Exception in FairMQStateMachine::WaitForEndOfState(): " << e.what();
     }
 }
 
@@ -188,13 +188,13 @@ bool FairMQStateMachine::WaitForEndOfStateForMs(int event, int durationInMs)
                 return true;
             }
             default:
-                LOG(ERROR) << "Requested state is either synchronous or does not exist.";
+                LOG(error) << "Requested state is either synchronous or does not exist.";
                 return false;
         }
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << "Exception in FairMQStateMachine::WaitForEndOfStateForMs(): " << e.what();
+        LOG(error) << "Exception in FairMQStateMachine::WaitForEndOfStateForMs(): " << e.what();
     }
     return false;
 }
@@ -225,7 +225,7 @@ int FairMQStateMachine::GetEventNumber(const std::string& event)
     if (event == "RESET_TASK") return RESET_TASK;
     if (event == "END") return END;
     if (event == "ERROR_FOUND") return ERROR_FOUND;
-    LOG(ERROR) << "Requested number for non-existent event... " << event << std::endl
+    LOG(error) << "Requested number for non-existent event... " << event << std::endl
                << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, STOP, RESET_DEVICE, RESET_TASK, END, ERROR_FOUND";
     return -1;
 }

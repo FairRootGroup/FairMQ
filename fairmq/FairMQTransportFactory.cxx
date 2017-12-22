@@ -52,7 +52,7 @@ auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, con
 #endif /* NANOMSG_FOUND */
     else
     {
-        LOG(ERROR) << "Unavailable transport requested: " << "\"" << type << "\"" << ". Available are: "
+        LOG(error) << "Unavailable transport requested: " << "\"" << type << "\"" << ". Available are: "
                    << "\"zeromq\""
                    << "\"shmem\""
 #ifdef NANOMSG_FOUND

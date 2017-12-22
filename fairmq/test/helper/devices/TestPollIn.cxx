@@ -61,7 +61,7 @@ class PollIn : public FairMQDevice
         }
         else
         {
-            LOG(ERROR) << "wrong poll type provided: " << fPollType;
+            LOG(error) << "wrong poll type provided: " << fPollType;
         }
 
         bool arrived1 = false;
@@ -79,7 +79,7 @@ class PollIn : public FairMQDevice
             {
                 if (poller->CheckInput(0))
                 {
-                    LOG(DEBUG) << "CheckInput(0) triggered";
+                    LOG(debug) << "CheckInput(0) triggered";
                     if (Receive(msg1, "data1", 0) >= 0)
                     {
                         arrived1 = true;
@@ -88,7 +88,7 @@ class PollIn : public FairMQDevice
 
                 if (poller->CheckInput(1))
                 {
-                    LOG(DEBUG) << "CheckInput(1) triggered";
+                    LOG(debug) << "CheckInput(1) triggered";
                     if (Receive(msg2, "data2", 0) >= 0)
                     {
                         arrived2 = true;
@@ -99,7 +99,7 @@ class PollIn : public FairMQDevice
             {
                 if (poller->CheckInput("data1", 0))
                 {
-                    LOG(DEBUG) << "CheckInput(\"data1\", 0) triggered";
+                    LOG(debug) << "CheckInput(\"data1\", 0) triggered";
                     if (Receive(msg1, "data1", 0) >= 0)
                     {
                         arrived1 = true;
@@ -108,7 +108,7 @@ class PollIn : public FairMQDevice
 
                 if (poller->CheckInput("data2", 0))
                 {
-                    LOG(DEBUG) << "CheckInput(\"data2\", 0) triggered";
+                    LOG(debug) << "CheckInput(\"data2\", 0) triggered";
                     if (Receive(msg2, "data2", 0) >= 0)
                     {
                         arrived2 = true;
@@ -119,7 +119,7 @@ class PollIn : public FairMQDevice
             if (arrived1 && arrived2)
             {
                 bothArrived = true;
-                LOG(INFO) << "POLL test successfull";
+                LOG(info) << "POLL test successfull";
             }
         }
     };

@@ -64,7 +64,7 @@ FairMQMap SUBOPT::UserParser(const po::variables_map& omap, const std::string& d
             else
             {
                 // TODO: what is the error policy here, should we abort?
-                LOG(ERROR) << "missing channel name in argument of option --channel-config";
+                LOG(error) << "missing channel name in argument of option --channel-config";
             }
         }
         for (auto channelProperty : channelProperties)

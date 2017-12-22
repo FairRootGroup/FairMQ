@@ -37,31 +37,31 @@ class Sub : public FairMQDevice
         auto r1 = Send(ready, "control");
         if (r1 >= 0)
         {
-            LOG(INFO) << "Sent first control signal";
+            LOG(info) << "Sent first control signal";
             auto msg = FairMQMessagePtr{NewMessage()};
             auto d1 = Receive(msg, "data");
             if (d1 >= 0)
             {
-                LOG(INFO) << "Received data";
+                LOG(info) << "Received data";
                 auto ack = FairMQMessagePtr{NewMessage()};
                 auto a1 = Send(ack, "control");
                 if (a1 >= 0)
                 {
-                    LOG(INFO) << "Sent second control signal";
+                    LOG(info) << "Sent second control signal";
                 }
                 else
                 {
-                    LOG(ERROR) << "Failed sending ack signal: a1 = " << a1;
+                    LOG(error) << "Failed sending ack signal: a1 = " << a1;
                 }
             }
             else
             {
-                LOG(ERROR) << "Failed receiving data: d1 = " << d1;
+                LOG(error) << "Failed receiving data: d1 = " << d1;
             }
         }
         else
         {
-            LOG(ERROR) << "Failed sending ready signal: r1 = " << r1;
+            LOG(error) << "Failed sending ready signal: r1 = " << r1;
         }
     }
 };

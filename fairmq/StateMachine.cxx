@@ -62,10 +62,10 @@ const std::unordered_map<StateMachine::StateTransition, std::string, tools::Hash
 
 auto StateMachine::Run() -> void
 {
-    LOG(STATE) << "Starting FairMQ state machine";
+    LOG(state) << "Starting FairMQ state machine";
 
-    LOG(DEBUG) << "Entering initial " << fErrorState << " state (orthogonal error state machine)";
-    LOG(STATE) << "Entering initial " << fState << " state";
+    LOG(debug) << "Entering initial " << fErrorState << " state (orthogonal error state machine)";
+    LOG(state) << "Entering initial " << fState << " state";
 
     std::unique_lock<std::mutex> lock{fMutex};
     while (true)
@@ -83,7 +83,7 @@ auto StateMachine::Run() -> void
             lastState = fErrorState;
             fErrorState = fNextStates.front();
             fNextStates.pop_front();
-            LOG(ERROR) << "Entering " << fErrorState << " state (orthogonal error state machine)";
+            LOG(error) << "Entering " << fErrorState << " state (orthogonal error state machine)";
         }
         else
         {
@@ -91,7 +91,7 @@ auto StateMachine::Run() -> void
             lastState = fState;
             fState = fNextStates.front();
             fNextStates.pop_front();
-            LOG(STATE) << "Entering " << fState << " state";
+            LOG(state) << "Entering " << fState << " state";
         }
         lock.unlock();
 
@@ -101,7 +101,7 @@ auto StateMachine::Run() -> void
         if (fState == State::Exiting || fErrorState == State::Error) break;
     }
 
-    LOG(STATE) << "Exiting FairMQ state machine";
+    LOG(state) << "Exiting FairMQ state machine";
 }
 
 auto StateMachine::ChangeState(StateTransition transition) -> void

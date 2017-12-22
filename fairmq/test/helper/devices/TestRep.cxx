@@ -34,19 +34,19 @@ class Rep : public FairMQDevice
         auto request1 = FairMQMessagePtr{NewMessage()};
         if (Receive(request1, "data") >= 0)
         {
-            LOG(INFO) << "Received request 1";
+            LOG(info) << "Received request 1";
             auto reply = FairMQMessagePtr{NewMessage()};
             Send(reply, "data");
         }
         auto request2 = FairMQMessagePtr{NewMessage()};
         if (Receive(request2, "data") >= 0)
         {
-            LOG(INFO) << "Received request 2";
+            LOG(info) << "Received request 2";
             auto reply = FairMQMessagePtr{NewMessage()};
             Send(reply, "data");
         }
 
-        LOG(INFO) << "REQ-REP test successfull";
+        LOG(info) << "REQ-REP test successfull";
     };
 };
 

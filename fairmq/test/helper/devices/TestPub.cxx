@@ -39,17 +39,17 @@ class Pub : public FairMQDevice
         auto r2 = Receive(ready2, "control");
         if (r1 >= 0 && r2 >= 0)
         {
-            LOG(INFO) << "Received both ready signals, proceeding to publish data";
+            LOG(info) << "Received both ready signals, proceeding to publish data";
 
             auto msg = FairMQMessagePtr{NewMessage()};
             auto d1 = Send(msg, "data");
             if (d1 >= 0)
             {
-                LOG(INFO) << "Sent data: d1 = " << d1;
+                LOG(info) << "Sent data: d1 = " << d1;
             }
             else
             {
-                LOG(ERROR) << "Failed sending data: d1 = " << d1;
+                LOG(error) << "Failed sending data: d1 = " << d1;
             }
 
             auto ack1 = FairMQMessagePtr{NewMessage()};
@@ -58,16 +58,16 @@ class Pub : public FairMQDevice
             auto a2 = Receive(ack2, "control");
             if (a1 >= 0 && a2 >= 0)
             {
-                LOG(INFO) << "PUB-SUB test successfull";
+                LOG(info) << "PUB-SUB test successfull";
             }
             else
             {
-                LOG(ERROR) << "Failed receiving ack signal: a1 = " << a1 << ", a2 = " << a2;
+                LOG(error) << "Failed receiving ack signal: a1 = " << a1 << ", a2 = " << a2;
             }
         }
         else
         {
-            LOG(ERROR) << "Failed receiving ready signal: r1 = " << r1 << ", r2 = " << r2;
+            LOG(error) << "Failed receiving ready signal: r1 = " << r1 << ", r2 = " << r2;
         }
     }
 };

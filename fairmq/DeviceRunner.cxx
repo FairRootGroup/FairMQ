@@ -52,7 +52,7 @@ auto DeviceRunner::Run() -> int
 
     if (!fDevice)
     {
-        LOG(ERROR) << "getDevice(): no valid device provided. Exiting.";
+        LOG(error) << "getDevice(): no valid device provided. Exiting.";
         return 1;
     }
 
@@ -74,7 +74,7 @@ auto DeviceRunner::Run() -> int
         return 0;
     }
 
-    LOG(DEBUG) << "PID: " << getpid();
+    LOG(debug) << "PID: " << getpid();
 
     // Configure device
     fDevice->SetConfig(fConfig);
@@ -99,12 +99,12 @@ auto DeviceRunner::RunWithExceptionHandlers() -> int
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << "Unhandled exception reached the top of main: " << e.what() << ", application will now exit";
+        LOG(error) << "Unhandled exception reached the top of main: " << e.what() << ", application will now exit";
         return 1;
     }
     catch (...)
     {
-        LOG(ERROR) << "Non-exception instance being thrown. Please make sure you use std::runtime_exception() instead. Application will now exit.";
+        LOG(error) << "Non-exception instance being thrown. Please make sure you use std::runtime_exception() instead. Application will now exit.";
         return 1;
     }
 }

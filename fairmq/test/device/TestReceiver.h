@@ -44,11 +44,11 @@ class Receiver : public FairMQDevice
         auto msg = FairMQMessagePtr{NewMessage()};
         if (Receive(msg, fChannelName) >= 0)
         {
-            LOG(INFO) << "received empty message";
+            LOG(info) << "received empty message";
         }
         else
         {
-            LOG(ERROR) << "fair::mq::test::Receiver::Run(): Receive(msg, fChannelName) < 0";
+            LOG(error) << "fair::mq::test::Receiver::Run(): Receive(msg, fChannelName) < 0";
         }
     };
 

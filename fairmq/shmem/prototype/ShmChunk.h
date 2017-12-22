@@ -64,13 +64,13 @@ class SegmentManager
                         {
                             if (++numTries == 5)
                             {
-                                LOG(ERROR) << "Could not open shared memory after " << numTries << " attempts, exiting!";
+                                LOG(error) << "Could not open shared memory after " << numTries << " attempts, exiting!";
                                 exit(EXIT_FAILURE);
                             }
                             else
                             {
-                                LOG(DEBUG) << "Could not open shared memory segment on try " << numTries << ". Retrying in 1 second...";
-                                LOG(DEBUG) << ie.what();
+                                LOG(debug) << "Could not open shared memory segment on try " << numTries << ". Retrying in 1 second...";
+                                LOG(debug) << ie.what();
 
                                 std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                             }
@@ -80,18 +80,18 @@ class SegmentManager
                 }
                 else
                 {
-                    LOG(ERROR) << "Unknown operation when initializing shared memory segment: " << op;
+                    LOG(error) << "Unknown operation when initializing shared memory segment: " << op;
                 }
             }
             catch (std::exception& e)
             {
-                LOG(ERROR) << "Exception during shared memory segment initialization: " << e.what() << ", application will now exit";
+                LOG(error) << "Exception during shared memory segment initialization: " << e.what() << ", application will now exit";
                 exit(EXIT_FAILURE);
             }
         }
         else
         {
-            LOG(INFO) << "Segment already initialized";
+            LOG(info) << "Segment already initialized";
         }
     }
 
@@ -103,7 +103,7 @@ class SegmentManager
         }
         else
         {
-            LOG(ERROR) << "Segment not initialized";
+            LOG(error) << "Segment not initialized";
             exit(EXIT_FAILURE);
         }
     }

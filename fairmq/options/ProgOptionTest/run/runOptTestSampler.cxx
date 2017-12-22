@@ -68,8 +68,8 @@ int main(int argc, char** argv)
     }
     catch (exception& e)
     {
-        LOG(ERROR) << e.what();
-        LOG(INFO) << "Command line options are the following : ";
+        LOG(error) << e.what();
+        LOG(info) << "Command line options are the following : ";
         config.PrintHelp();
         return 1;
     }

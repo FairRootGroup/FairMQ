@@ -13,7 +13,7 @@
 // Parse xml from file
 int testXML1(FairMQProgOptions* config)
 {
-    LOG(INFO)<<"--------- test XML1 ---------\n";
+    LOG(info)<<"--------- test XML1 ---------\n";
     std::string filename;
     std::string XMLrootNode;
 
@@ -25,14 +25,14 @@ int testXML1(FairMQProgOptions* config)
     config->UserParser<FairMQParser::MQXML2>(filename);
     config->UserParser<FairMQParser::MQXML3>(filename,"merger");
 
-    LOG(INFO)<<"--------- test XML1 end ---------\n";
+    LOG(info)<<"--------- test XML1 end ---------\n";
     return 0;
 }
 
 // Parse xml from command line
 int testXML2(FairMQProgOptions* config)
 {
-    LOG(INFO)<<"--------- test XML2 ---------\n";
+    LOG(info)<<"--------- test XML2 ---------\n";
     std::string XML;
     std::string XMLrootNode;
     std::string id=config->GetValue<std::string>("id");
@@ -45,14 +45,14 @@ int testXML2(FairMQProgOptions* config)
     iss << XML;
     config->UserParser<FairMQParser::XML>(iss,id,XMLrootNode);
 
-    LOG(INFO)<<"--------- test XML2 end ---------\n";
+    LOG(info)<<"--------- test XML2 end ---------\n";
     return 0;
 }
 
 // Parse json from file
 int testJSON1(FairMQProgOptions* config)
 {
-    LOG(INFO)<<"--------- test JSON1 ---------\n";
+    LOG(info)<<"--------- test JSON1 ---------\n";
     std::string filename;
     std::string JSONrootNode;
     std::string id=config->GetValue<std::string>("id");
@@ -62,14 +62,14 @@ int testJSON1(FairMQProgOptions* config)
 
     config->UserParser<FairMQParser::JSON>(filename,id,JSONrootNode);
 
-    LOG(INFO)<<"--------- test JSON1 end ---------\n";
+    LOG(info)<<"--------- test JSON1 end ---------\n";
     return 0;
 }
 
 // Parse json from command line
 int testJSON2(FairMQProgOptions* config)
 {
-    LOG(INFO)<<"--------- test JSON2 ---------\n";
+    LOG(info)<<"--------- test JSON2 ---------\n";
     std::string JSON;
     std::string JSONrootNode;
     std::string id=config->GetValue<std::string>("id");
@@ -82,7 +82,7 @@ int testJSON2(FairMQProgOptions* config)
     iss << JSON;
     config->UserParser<FairMQParser::JSON>(iss,id,JSONrootNode);
 
-    LOG(INFO)<<"--------- test JSON2 end ---------\n";
+    LOG(info)<<"--------- test JSON2 end ---------\n";
     return 0;
 }
 
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << e.what();
+        LOG(error) << e.what();
         return 1;
     }
     return 0;

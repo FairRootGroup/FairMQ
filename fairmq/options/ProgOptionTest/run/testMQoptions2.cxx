@@ -62,7 +62,7 @@ int main(int argc, char** argv)
     }
     catch (std::exception& e)
     {
-        MQLOG(ERROR) << e.what();
+        LOG(error) << e.what();
         return 1;
     }
     return 0;

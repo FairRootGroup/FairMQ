@@ -99,10 +99,10 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
 
     if (!optionExists)
     {
-        LOG(WARN) << "FairMQProgOptions: no channels configuration provided via neither of:";
+        LOG(warn) << "FairMQProgOptions: no channels configuration provided via neither of:";
         for (const auto& p : MQParserKeys)
         {
-            LOG(WARNING) << " --" << p;
+            LOG(warn) << " --" << p;
         }
         LOG(warn) << "No channels will be created (You can create them manually).";
     }
@@ -122,7 +122,7 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
         // if cmdline mq-config called then use the default xml/json parser
         if (fVarMap.count("mq-config"))
         {
-            LOG(DEBUG) << "mq-config: Using default XML/JSON parser";
+            LOG(debug) << "mq-config: Using default XML/JSON parser";
 
             string file = fVarMap["mq-config"].as<string>();
 
@@ -149,7 +149,7 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
         }
         else if (fVarMap.count("config-json-string"))
         {
-            LOG(DEBUG) << "config-json-string: Parsing JSON string";
+            LOG(debug) << "config-json-string: Parsing JSON string";
 
             string value = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at("config-json-string"));
             stringstream ss;
@@ -158,7 +158,7 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
         }
         else if (fVarMap.count("config-xml-string"))
         {
-            LOG(DEBUG) << "config-json-string: Parsing XML string";
+            LOG(debug) << "config-json-string: Parsing XML string";
 
             string value = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at("config-xml-string"));
             stringstream ss;
@@ -167,7 +167,7 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
         }
         else if (fVarMap.count(FairMQParser::SUBOPT::OptionKeyChannelConfig))
         {
-            LOG(DEBUG) << "channel-config: Parsing channel configuration";
+            LOG(debug) << "channel-config: Parsing channel configuration";
             UserParser<FairMQParser::SUBOPT>(fVarMap, id);
         }
     }
@@ -325,7 +325,7 @@ int FairMQProgOptions::UpdateChannelMap(const string& channelName, int index, co
     else
     {
         //if we get there it means something is wrong
-        LOG(ERROR)  << "update of FairMQChannel map failed for the following key: "
+        LOG(error)  << "update of FairMQChannel map failed for the following key: "
                     << channelName << "." << index << "." << member;
         return 1;
     }
@@ -353,7 +353,7 @@ int FairMQProgOptions::UpdateChannelMap(const string& channelName, int index, co
     else
     {
         // if we get there it means something is wrong
-        LOG(ERROR)  << "update of FairMQChannel map failed for the following key: " << channelName << "." << index << "." << member;
+        LOG(error)  << "update of FairMQChannel map failed for the following key: " << channelName << "." << index << "." << member;
         return 1;
     }
 }

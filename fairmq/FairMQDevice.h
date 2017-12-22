@@ -259,7 +259,7 @@ class FairMQDevice : public FairMQStateMachine
             {
                 if (type != fChannels.at(chans.at(i)).at(0).Transport()->GetType())
                 {
-                    LOG(ERROR) << "FairMQDevice::NewPoller() failed: different transports within same poller are not yet supported. Going to ERROR state.";
+                    LOG(error) << "poller failed: different transports within same poller are not yet supported. Going to ERROR state.";
                     ChangeState(ERROR_FOUND);
                 }
             }
@@ -279,7 +279,7 @@ class FairMQDevice : public FairMQStateMachine
             {
                 if (type != channels.at(i)->Transport()->GetType())
                 {
-                    LOG(ERROR) << "FairMQDevice::NewPoller() failed: different transports within same poller are not yet supported. Going to ERROR state.";
+                    LOG(error) << "poller failed: different transports within same poller are not yet supported. Going to ERROR state.";
                     ChangeState(ERROR_FOUND);
                 }
             }
@@ -374,7 +374,7 @@ class FairMQDevice : public FairMQStateMachine
         bool ok = fChannelRegistry.insert(std::make_pair(channelName, std::make_pair(minNumSubChannels, maxNumSubChannels))).second;
         if (!ok)
         {
-            LOG(WARN) << "Registering channel: name already registered: \"" << channelName << "\"";
+            LOG(warn) << "Registering channel: name already registered: \"" << channelName << "\"";
         }
         return ok;
     }

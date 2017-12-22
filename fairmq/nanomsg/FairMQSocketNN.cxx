@@ -51,7 +51,7 @@ FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const str
         fSocket = nn_socket(AF_SP_RAW, GetConstant(type));
         if (fSocket == -1)
         {
-            LOG(ERROR) << "failed creating socket " << fId << ", reason: " << nn_strerror(errno);
+            LOG(error) << "failed creating socket " << fId << ", reason: " << nn_strerror(errno);
             exit(EXIT_FAILURE);
         }
     }
@@ -60,7 +60,7 @@ FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const str
         fSocket = nn_socket(AF_SP, GetConstant(type));
         if (fSocket == -1)
         {
-            LOG(ERROR) << "failed creating socket " << fId << ", reason: " << nn_strerror(errno);
+            LOG(error) << "failed creating socket " << fId << ", reason: " << nn_strerror(errno);
             exit(EXIT_FAILURE);
         }
         if (type == "sub")
@@ -72,24 +72,24 @@ FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const str
     int sndTimeout = 700;
     if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_SNDTIMEO, &sndTimeout, sizeof(sndTimeout)) != 0)
     {
-        LOG(ERROR) << "Failed setting NN_SNDTIMEO socket option, reason: " << nn_strerror(errno);
+        LOG(error) << "Failed setting NN_SNDTIMEO socket option, reason: " << nn_strerror(errno);
     }
 
     int rcvTimeout = 700;
     if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_RCVTIMEO, &rcvTimeout, sizeof(rcvTimeout)) != 0)
     {
-        LOG(ERROR) << "Failed setting NN_RCVTIMEO socket option, reason: " << nn_strerror(errno);
+        LOG(error) << "Failed setting NN_RCVTIMEO socket option, reason: " << nn_strerror(errno);
     }
 
 #ifdef NN_RCVMAXSIZE
     int rcvSize = -1;
     if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_RCVMAXSIZE, &rcvSize, sizeof(rcvSize)) != 0)
     {
-        LOG(ERROR) << "Failed setting NN_RCVMAXSIZE socket option, reason: " << nn_strerror(errno);
+        LOG(error) << "Failed setting NN_RCVMAXSIZE socket option, reason: " << nn_strerror(errno);
     }
 #endif
 
-    // LOG(INFO) << "created socket " << fId;
+    // LOG(info) << "created socket " << fId;
 }
 
 string FairMQSocketNN::GetId()
@@ -99,12 +99,12 @@ string FairMQSocketNN::GetId()
 
 bool FairMQSocketNN::Bind(const string& address)
 {
-    // LOG(INFO) << "bind socket " << fId << " on " << address;
+    // LOG(info) << "bind socket " << fId << " on " << address;
 
     int eid = nn_bind(fSocket, address.c_str());
     if (eid < 0)
     {
-        LOG(ERROR) << "failed binding socket " << fId << ", reason: " << nn_strerror(errno);
+        LOG(error) << "failed binding socket " << fId << ", reason: " << nn_strerror(errno);
         return false;
     }
     return true;
@@ -112,12 +112,12 @@ bool FairMQSocketNN::Bind(const string& address)
 
 void FairMQSocketNN::Connect(const string& address)
 {
-    // LOG(INFO) << "connect socket " << fId << " to " << address;
+    // LOG(info) << "connect socket " << fId << " to " << address;
 
     int eid = nn_connect(fSocket, address.c_str());
     if (eid < 0)
     {
-        LOG(ERROR) << "failed connecting socket " << fId << ", reason: " << nn_strerror(errno);
+        LOG(error) << "failed connecting socket " << fId << ", reason: " << nn_strerror(errno);
     }
 }
 
@@ -170,12 +170,12 @@ int FairMQSocketNN::Send(FairMQMessagePtr& msg, const int flags)
         }
         else if (nn_errno() == ETERM)
         {
-            LOG(INFO) << "terminating socket " << fId;
+            LOG(info) << "terminating socket " << fId;
             return -1;
         }
         else
         {
-            LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
+            LOG(error) << "Failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
             return nbytes;
         }
     }
@@ -220,12 +220,12 @@ int FairMQSocketNN::Receive(FairMQMessagePtr& msg, const int flags)
         }
         else if (nn_errno() == ETERM)
         {
-            LOG(INFO) << "terminating socket " << fId;
+            LOG(info) << "terminating socket " << fId;
             return -1;
         }
         else
         {
-            LOG(ERROR) << "Failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
+            LOG(error) << "Failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
             return nbytes;
         }
     }
@@ -288,17 +288,17 @@ int64_t FairMQSocketNN::Send(vector<FairMQMessagePtr>& msgVec, const int flags)
         }
         else if (nn_errno() == ETERM)
         {
-            LOG(INFO) << "terminating socket " << fId;
+            LOG(info) << "terminating socket " << fId;
             return -1;
         }
         else
         {
-            LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
+            LOG(error) << "Failed sending on socket " << fId << ", reason: " << nn_strerror(errno);
             return nbytes;
         }
     }
 #else /*MSGPACK_FOUND*/
-    LOG(ERROR) << "Cannot send message from vector of size " << vecSize << " and flags " << flags << " with nanomsg multipart because MessagePack is not available.";
+    LOG(error) << "Cannot send message from vector of size " << vecSize << " and flags " << flags << " with nanomsg multipart because MessagePack is not available.";
     exit(EXIT_FAILURE);
 #endif /*MSGPACK_FOUND*/
 }
@@ -309,7 +309,7 @@ int64_t FairMQSocketNN::Receive(vector<FairMQMessagePtr>& msgVec, const int flag
     // Warn if the vector is filled before Receive() and empty it.
     // if (msgVec.size() > 0)
     // {
-    //     LOG(WARN) << "Message vector contains elements before Receive(), they will be deleted!";
+    //     LOG(warn) << "Message vector contains elements before Receive(), they will be deleted!";
     //     msgVec.clear();
     // }
 
@@ -370,17 +370,17 @@ int64_t FairMQSocketNN::Receive(vector<FairMQMessagePtr>& msgVec, const int flag
         }
         else if (nn_errno() == ETERM)
         {
-            LOG(INFO) << "terminating socket " << fId;
+            LOG(info) << "terminating socket " << fId;
             return -1;
         }
         else
         {
-            LOG(ERROR) << "Failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
+            LOG(error) << "Failed receiving on socket " << fId << ", reason: " << nn_strerror(errno);
             return nbytes;
         }
     }
 #else /*MSGPACK_FOUND*/
-    LOG(ERROR) << "Cannot receive message into vector of size " << msgVec.size() << " and flags " << flags << " with nanomsg multipart because MessagePack is not available.";
+    LOG(error) << "Cannot receive message into vector of size " << msgVec.size() << " and flags " << flags << " with nanomsg multipart because MessagePack is not available.";
     exit(EXIT_FAILURE);
 #endif /*MSGPACK_FOUND*/
 }
@@ -417,7 +417,7 @@ void FairMQSocketNN::SetOption(const string& option, const void* value, size_t v
         int val = *(static_cast<int*>(const_cast<void*>(value)));
         if (val <= 0)
         {
-            LOG(WARN) << "nanomsg: value for sndKernelSize/rcvKernelSize should be greater than 0, using defaults (128kB).";
+            LOG(warn) << "value for sndKernelSize/rcvKernelSize should be greater than 0, using defaults (128kB).";
             return;
         }
     }
@@ -430,7 +430,7 @@ void FairMQSocketNN::SetOption(const string& option, const void* value, size_t v
     int rc = nn_setsockopt(fSocket, NN_SOL_SOCKET, GetConstant(option), value, valueSize);
     if (rc < 0)
     {
-        LOG(ERROR) << "failed setting socket option, reason: " << nn_strerror(errno);
+        LOG(error) << "failed setting socket option, reason: " << nn_strerror(errno);
     }
 }
 
@@ -439,7 +439,7 @@ void FairMQSocketNN::GetOption(const string& option, void* value, size_t* valueS
     int rc = nn_getsockopt(fSocket, NN_SOL_SOCKET, GetConstant(option), value, valueSize);
     if (rc < 0)
     {
-        LOG(ERROR) << "failed getting socket option, reason: " << nn_strerror(errno);
+        LOG(error) << "failed getting socket option, reason: " << nn_strerror(errno);
     }
 }
 
@@ -467,7 +467,7 @@ bool FairMQSocketNN::SetSendTimeout(const int timeout, const string& /*address*/
 {
     if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_SNDTIMEO, &timeout, sizeof(int)) != 0)
     {
-        LOG(ERROR) << "Failed setting option 'send timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
+        LOG(error) << "Failed setting option 'send timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
         return false;
     }
 
@@ -481,7 +481,7 @@ int FairMQSocketNN::GetSendTimeout() const
 
     if (nn_getsockopt(fSocket, NN_SOL_SOCKET, NN_SNDTIMEO, &timeout, &size) != 0)
     {
-        LOG(ERROR) << "Failed getting option 'send timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
+        LOG(error) << "Failed getting option 'send timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
     }
 
     return timeout;
@@ -491,7 +491,7 @@ bool FairMQSocketNN::SetReceiveTimeout(const int timeout, const string& /*addres
 {
     if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_RCVTIMEO, &timeout, sizeof(int)) != 0)
     {
-        LOG(ERROR) << "Failed setting option 'receive timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
+        LOG(error) << "Failed setting option 'receive timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
         return false;
     }
 
@@ -505,7 +505,7 @@ int FairMQSocketNN::GetReceiveTimeout() const
 
     if (nn_getsockopt(fSocket, NN_SOL_SOCKET, NN_RCVTIMEO, &timeout, &size) != 0)
     {
-        LOG(ERROR) << "Failed getting option 'receive timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
+        LOG(error) << "Failed getting option 'receive timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
     }
 
     return timeout;
@@ -548,12 +548,12 @@ int FairMQSocketNN::GetConstant(const string& constant)
         return NN_RCVBUF;
     if (constant == "snd-more")
     {
-        LOG(ERROR) << "Multipart messages functionality currently not supported by nanomsg!";
+        LOG(error) << "Multipart messages functionality currently not supported by nanomsg!";
         return -1;
     }
     if (constant == "rcv-more")
     {
-        LOG(ERROR) << "Multipart messages functionality currently not supported by nanomsg!";
+        LOG(error) << "Multipart messages functionality currently not supported by nanomsg!";
         return -1;
     }
 

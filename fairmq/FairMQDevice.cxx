@@ -101,7 +101,7 @@ void FairMQDevice::InitWrapper()
 {
     if (!fTransportFactory)
     {
-        LOG(ERROR) << "Transport not initialized. Did you call SetTransport()?";
+        LOG(error) << "Transport not initialized. Did you call SetTransport()?";
         exit(EXIT_FAILURE);
     }
 
@@ -167,7 +167,7 @@ void FairMQDevice::InitWrapper()
                 }
                 else
                 {
-                    LOG(ERROR) << "Cannot update configuration. Socket method (bind/connect) not specified.";
+                    LOG(error) << "Cannot update configuration. Socket method (bind/connect) not specified.";
                     throw runtime_error("Cannot update configuration. Socket method (bind/connect) not specified.");
                 }
             // }
@@ -180,7 +180,7 @@ void FairMQDevice::InitWrapper()
 
     if (uninitializedBindingChannels.size() > 0)
     {
-        LOG(ERROR) << uninitializedBindingChannels.size() << " of the binding channels could not initialize. Initial configuration incomplete.";
+        LOG(error) << uninitializedBindingChannels.size() << " of the binding channels could not initialize. Initial configuration incomplete.";
         throw runtime_error(fair::mq::tools::ToString(uninitializedBindingChannels.size(), " of the binding channels could not initialize. Initial configuration incomplete."));
     }
 
@@ -219,7 +219,7 @@ void FairMQDevice::InitWrapper()
 
         if (numAttempts++ > maxAttempts)
         {
-            LOG(ERROR) << "could not connect all channels after " << fInitializationTimeoutInS << " attempts";
+            LOG(error) << "could not connect all channels after " << fInitializationTimeoutInS << " attempts";
             throw runtime_error(fair::mq::tools::ToString("could not connect all channels after ", fInitializationTimeoutInS, " attempts"));
         }
 
@@ -257,7 +257,7 @@ void FairMQDevice::AttachChannels(vector<FairMQChannel*>& chans)
             }
             else
             {
-                LOG(ERROR) << "failed to attach channel " << (*itr)->fName << " (" << (*itr)->fMethod << ")";
+                LOG(error) << "failed to attach channel " << (*itr)->fName << " (" << (*itr)->fMethod << ")";
                 ++itr;
             }
         }
@@ -274,12 +274,12 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
     {
         if (ch.fTransport == "default" || ch.fTransport == fDefaultTransport)
         {
-            LOG(DEBUG) << ch.fName << ": using default transport";
+            LOG(debug) << ch.fName << ": using default transport";
             ch.InitTransport(fTransportFactory);
         }
         else
         {
-            LOG(DEBUG) << ch.fName << ": channel transport (" << fDefaultTransport << ") overriden to " << ch.fTransport;
+            LOG(debug) << ch.fName << ": channel transport (" << fDefaultTransport << ") overriden to " << ch.fTransport;
             ch.InitTransport(AddTransport(ch.fTransport));
         }
         ch.fTransportType = ch.fTransportFactory->GetType();
@@ -348,7 +348,7 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
         }
         endpoint += address;
 
-        LOG(DEBUG) << "Attached channel " << ch.fName << " to " << endpoint << (bind ? " (bind) " : " (connect) ");
+        LOG(debug) << "Attached channel " << ch.fName << " to " << endpoint << (bind ? " (bind) " : " (connect) ");
 
         // after the book keeping is done, exit in case of errors
         if (!rc)
@@ -392,12 +392,12 @@ bool FairMQDevice::BindEndpoint(FairMQSocket& socket, string& endpoint)
     // try to bind to the saved port. In case of failure, try random one.
     while (!socket.Bind(endpoint))
     {
-        LOG(DEBUG) << "Could not bind to configured (TCP) port, trying random port in range " << fPortRangeMin << "-" << fPortRangeMax;
+        LOG(debug) << "Could not bind to configured (TCP) port, trying random port in range " << fPortRangeMin << "-" << fPortRangeMax;
         ++numAttempts;
 
         if (numAttempts > maxAttempts)
         {
-            LOG(ERROR) << "could not bind to any (TCP) port in the given range after " << maxAttempts << " attempts";
+            LOG(error) << "could not bind to any (TCP) port in the given range after " << maxAttempts << " attempts";
             return false;
         }
 
@@ -443,7 +443,7 @@ void FairMQDevice::SortChannel(const string& name, const bool reindex)
     }
     else
     {
-        LOG(ERROR) << "Sorting failed: no channel with the name \"" << name << "\".";
+        LOG(error) << "Sorting failed: no channel with the name \"" << name << "\".";
     }
 }
 
@@ -453,7 +453,7 @@ void FairMQDevice::PrintChannel(const string& name)
     {
         for (auto vi = fChannels[name].begin(); vi != fChannels[name].end(); ++vi)
         {
-            LOG(INFO) << vi->fName << ": "
+            LOG(info) << vi->fName << ": "
                       << vi->fType << " | "
                       << vi->fMethod << " | "
                       << vi->fAddress << " | "
@@ -464,7 +464,7 @@ void FairMQDevice::PrintChannel(const string& name)
     }
     else
     {
-        LOG(ERROR) << "Printing failed: no channel with the name \"" << name << "\".";
+        LOG(error) << "Printing failed: no channel with the name \"" << name << "\".";
     }
 }
 
@@ -472,7 +472,7 @@ void FairMQDevice::RunWrapper()
 {
     CallStateChangeCallbacks(RUNNING);
 
-    LOG(INFO) << "DEVICE: Running...";
+    LOG(info) << "DEVICE: Running...";
 
     // start the rate logger thread
     thread rateLogger(&FairMQDevice::LogSocketRates, this);
@@ -524,8 +524,8 @@ void FairMQDevice::RunWrapper()
     }
     catch (const out_of_range& oor)
     {
-        LOG(ERROR) << "out of range: " << oor.what();
-        LOG(ERROR) << "incorrect/incomplete channel configuration?";
+        LOG(error) << "out of range: " << oor.what();
+        LOG(error) << "incorrect/incomplete channel configuration?";
     }
 
     // if Run() exited and the state is still RUNNING, transition to READY.
@@ -703,7 +703,7 @@ void FairMQDevice::PollForTransport(const FairMQTransportFactory* factory, const
     }
     catch (std::exception& e)
     {
-        LOG(ERROR) << "FairMQDevice::PollForTransport() failed: " << e.what() << ", going to ERROR state.";
+        LOG(error) << "FairMQDevice::PollForTransport() failed: " << e.what() << ", going to ERROR state.";
         ChangeState(ERROR_FOUND);
     }
 }
@@ -765,9 +765,9 @@ void FairMQDevice::Pause()
     while (CheckCurrentState(PAUSED))
     {
         this_thread::sleep_for(chrono::milliseconds(500));
-        LOG(DEBUG) << "paused...";
+        LOG(debug) << "paused...";
     }
-    LOG(DEBUG) << "Unpausing";
+    LOG(debug) << "Unpausing";
 }
 
 shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& transport)
@@ -778,7 +778,7 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& tran
     {
         auto tr = FairMQTransportFactory::CreateTransportFactory(transport, fId, fConfig);
 
-        LOG(DEBUG) << "Adding '" << transport << "' transport to the device.";
+        LOG(debug) << "Adding '" << transport << "' transport to the device.";
 
         pair<FairMQ::Transport, shared_ptr<FairMQTransportFactory>> trPair(FairMQ::TransportTypes.at(transport), tr);
         fTransports.insert(trPair);
@@ -799,7 +799,7 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& tran
     }
     else
     {
-        LOG(DEBUG) << "Reusing existing '" << transport << "' transport.";
+        LOG(debug) << "Reusing existing '" << transport << "' transport.";
         return i->second;
     }
 }
@@ -824,7 +824,7 @@ unique_ptr<FairMQTransportFactory> FairMQDevice::MakeTransport(const string& tra
 #endif
     else
     {
-        LOG(ERROR) << "Unavailable transport requested: " << "\"" << transport << "\"" << ". Available are: "
+        LOG(error) << "Unavailable transport requested: " << "\"" << transport << "\"" << ". Available are: "
                    << "\"zeromq\""
                    << "\"shmem\""
 #ifdef NANOMSG_FOUND
@@ -843,7 +843,7 @@ void FairMQDevice::CreateOwnConfig()
     fConfig = new FairMQProgOptions();
 
     string id{boost::uuids::to_string(boost::uuids::random_generator()())};
-    LOG(WARN) << "No FairMQProgOptions provided, creating one internally and setting device ID to " << id;
+    LOG(warn) << "No FairMQProgOptions provided, creating one internally and setting device ID to " << id;
 
     // dummy argc+argv
     char arg0[] = "undefined"; // executable name
@@ -871,12 +871,12 @@ void FairMQDevice::SetTransport(const string& transport)
 
     if (fTransports.empty())
     {
-        LOG(DEBUG) << "Requesting '" << transport << "' as default transport for the device";
+        LOG(debug) << "Requesting '" << transport << "' as default transport for the device";
         fTransportFactory = AddTransport(transport);
     }
     else
     {
-        LOG(ERROR) << "Transports container is not empty when setting transport. Setting default twice?";
+        LOG(error) << "Transports container is not empty when setting transport. Setting default twice?";
         ChangeState(ERROR_FOUND);
     }
 }
@@ -889,7 +889,7 @@ void FairMQDevice::SetConfig(FairMQProgOptions& config)
     {
         if (!fChannels.insert(c).second)
         {
-            LOG(WARN) << "FairMQDevice::SetConfig: did not insert channel '" << c.first << "', it is already in the device.";
+            LOG(warn) << "did not insert channel '" << c.first << "', it is already in the device.";
         }
     }
     fDefaultTransport = config.GetValue<string>("transport");
@@ -960,7 +960,7 @@ void FairMQDevice::LogSocketRates()
 
         t0 = get_timestamp();
 
-        LOG(DEBUG) << "<channel>: in: <#msgs> (<MB>) out: <#msgs> (<MB>)";
+        LOG(debug) << "<channel>: in: <#msgs> (<MB>) out: <#msgs> (<MB>)";
 
         while (CheckCurrentState(RUNNING))
         {
@@ -993,7 +993,7 @@ void FairMQDevice::LogSocketRates()
                     bytesOut.at(i) = bytesOutNew.at(i);
                     msgOut.at(i) = msgOutNew.at(i);
 
-                    LOG(DEBUG) << filteredChannelNames.at(i) << ": "
+                    LOG(debug) << filteredChannelNames.at(i) << ": "
                                << "in: " << msgPerSecIn.at(i) << " (" << mbPerSecIn.at(i) << " MB) "
                                << "out: " << msgPerSecOut.at(i) << " (" << mbPerSecOut.at(i) << " MB)";
                 }
@@ -1005,8 +1005,6 @@ void FairMQDevice::LogSocketRates()
             this_thread::sleep_for(chrono::milliseconds(1000));
         }
     }
-
-    // LOG(DEBUG) << "FairMQDevice::LogSocketRates() stopping";
 }
 
 void FairMQDevice::Unblock()
@@ -1073,5 +1071,5 @@ void FairMQDevice::Exit()
 
 FairMQDevice::~FairMQDevice()
 {
-    LOG(DEBUG) << "Destructing device " << fId;
+    LOG(debug) << "Destructing device " << fId;
 }

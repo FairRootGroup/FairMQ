@@ -195,7 +195,7 @@ int FairProgOptions::PrintOptions()
     }
     ss << setfill ('*') << setw(totalLength + 3) << "*";// +3 for " = "
 
-    LOG(DEBUG) << ss.str();
+    LOG(debug) << ss.str();
 
     return 0;
 }

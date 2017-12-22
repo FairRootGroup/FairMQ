@@ -34,7 +34,7 @@ FairMQMessageNN::FairMQMessageNN()
     fMessage = nn_allocmsg(0, 0);
     if (!fMessage)
     {
-        LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
+        LOG(error) << "failed allocating message, reason: " << nn_strerror(errno);
     }
 }
 
@@ -48,7 +48,7 @@ FairMQMessageNN::FairMQMessageNN(const size_t size)
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
     {
-        LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
+        LOG(error) << "failed allocating message, reason: " << nn_strerror(errno);
     }
     fSize = size;
 }
@@ -69,7 +69,7 @@ FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* 
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
     {
-        LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
+        LOG(error) << "failed allocating message, reason: " << nn_strerror(errno);
     }
     else
     {
@@ -108,7 +108,7 @@ void FairMQMessageNN::Rebuild(const size_t size)
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
     {
-        LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
+        LOG(error) << "failed allocating message, reason: " << nn_strerror(errno);
     }
     fSize = size;
     fReceiving = false;
@@ -120,7 +120,7 @@ void FairMQMessageNN::Rebuild(void* data, const size_t size, fairmq_free_fn* ffn
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
     {
-        LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
+        LOG(error) << "failed allocating message, reason: " << nn_strerror(errno);
     }
     else
     {
@@ -161,7 +161,7 @@ bool FairMQMessageNN::SetUsedSize(const size_t size)
     }
     else
     {
-        LOG(ERROR) << "FairMQMessageNN::SetUsedSize: cannot set used size higher than original.";
+        LOG(error) << "cannot set used size higher than original.";
         return false;
     }
 }
@@ -183,7 +183,7 @@ void FairMQMessageNN::Copy(const FairMQMessage& msg)
     {
         if (nn_freemsg(fMessage) < 0)
         {
-            LOG(ERROR) << "failed freeing message, reason: " << nn_strerror(errno);
+            LOG(error) << "failed freeing message, reason: " << nn_strerror(errno);
         }
     }
 
@@ -192,7 +192,7 @@ void FairMQMessageNN::Copy(const FairMQMessage& msg)
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
     {
-        LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
+        LOG(error) << "failed allocating message, reason: " << nn_strerror(errno);
     }
     else
     {
@@ -207,7 +207,7 @@ void FairMQMessageNN::Copy(const FairMQMessagePtr& msg)
     {
         if (nn_freemsg(fMessage) < 0)
         {
-            LOG(ERROR) << "failed freeing message, reason: " << nn_strerror(errno);
+            LOG(error) << "failed freeing message, reason: " << nn_strerror(errno);
         }
     }
 
@@ -216,7 +216,7 @@ void FairMQMessageNN::Copy(const FairMQMessagePtr& msg)
     fMessage = nn_allocmsg(size, 0);
     if (!fMessage)
     {
-        LOG(ERROR) << "failed allocating message, reason: " << nn_strerror(errno);
+        LOG(error) << "failed allocating message, reason: " << nn_strerror(errno);
     }
     else
     {
@@ -229,7 +229,7 @@ void FairMQMessageNN::CloseMessage()
 {
     if (nn_freemsg(fMessage) < 0)
     {
-        LOG(ERROR) << "failed freeing message, reason: " << nn_strerror(errno);
+        LOG(error) << "failed freeing message, reason: " << nn_strerror(errno);
     }
     else
     {

@@ -35,8 +35,8 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const string& id, 
 
     if (channelMap.empty())
     {
-        LOG(WARN) << "---- No channel keys found for " << id;
-        LOG(WARN) << "---- Check the JSON inputs and/or command line inputs";
+        LOG(warn) << "---- No channel keys found for " << id;
+        LOG(warn) << "---- Check the JSON inputs and/or command line inputs";
     }
 
     return channelMap;
@@ -88,12 +88,12 @@ void PrintDeviceList(const boost::property_tree::ptree& tree, const string& form
                 if (key != "")
                 {
                     deviceIdKey = key;
-                    LOG(DEBUG) << "Found config for device key '" << deviceIdKey << "' in JSON input";
+                    LOG(debug) << "Found config for device key '" << deviceIdKey << "' in JSON input";
                 }
                 else
                 {
                     deviceIdKey = q.second.get<string>("id");
-                    LOG(DEBUG) << "Found config for device id '" << deviceIdKey << "' in JSON input";
+                    LOG(debug) << "Found config for device id '" << deviceIdKey << "' in JSON input";
                 }
             }
         }
@@ -104,7 +104,7 @@ void PrintDeviceList(const boost::property_tree::ptree& tree, const string& form
             if (formatFlag == "xml")
             {
                 deviceIdKey = p.second.get<string>("<xmlattr>.id");
-                LOG(DEBUG) << "Found config for '" << deviceIdKey << "' in XML input";
+                LOG(debug) << "Found config for '" << deviceIdKey << "' in XML input";
             }
 
             if (formatFlag == "json")
@@ -113,12 +113,12 @@ void PrintDeviceList(const boost::property_tree::ptree& tree, const string& form
                 if (key != "")
                 {
                     deviceIdKey = key;
-                    LOG(DEBUG) << "Found config for device key '" << deviceIdKey << "' in JSON input";
+                    LOG(debug) << "Found config for device key '" << deviceIdKey << "' in JSON input";
                 }
                 else
                 {
                     deviceIdKey = p.second.get<string>("id");
-                    LOG(DEBUG) << "Found config for device id '" << deviceIdKey << "' in JSON input";
+                    LOG(debug) << "Found config for device id '" << deviceIdKey << "' in JSON input";
                 }
             }
         }
@@ -129,7 +129,7 @@ void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap
 {
     string deviceIdKey;
 
-    LOG(DEBUG) << "Looking for '" << deviceId << "' id/key in the provided config file...";
+    LOG(debug) << "Looking for '" << deviceId << "' id/key in the provided config file...";
 
     // For each node in fairMQOptions
     for (const auto& p : tree)
@@ -144,12 +144,12 @@ void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap
                 if (key != "")
                 {
                     deviceIdKey = key;
-                    // LOG(DEBUG) << "Found config for device key '" << deviceIdKey << "' in JSON input";
+                    // LOG(debug) << "Found config for device key '" << deviceIdKey << "' in JSON input";
                 }
                 else
                 {
                     deviceIdKey = q.second.get<string>("id");
-                    // LOG(DEBUG) << "Found config for device id '" << deviceIdKey << "' in JSON input";
+                    // LOG(debug) << "Found config for device id '" << deviceIdKey << "' in JSON input";
                 }
 
                 // if not correct device id, do not fill MQMap
@@ -158,7 +158,7 @@ void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap
                     continue;
                 }
 
-                LOG(DEBUG) << "Found with following channels:";
+                LOG(debug) << "Found with following channels:";
 
                 ChannelParser(q.second, channelMap, formatFlag);
             }
@@ -179,12 +179,12 @@ void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap
                 if (key != "")
                 {
                     deviceIdKey = key;
-                    // LOG(DEBUG) << "Found config for device key '" << deviceIdKey << "' in JSON input";
+                    // LOG(debug) << "Found config for device key '" << deviceIdKey << "' in JSON input";
                 }
                 else
                 {
                     deviceIdKey = p.second.get<string>("id");
-                    // LOG(DEBUG) << "Found config for device id '" << deviceIdKey << "' in JSON input";
+                    // LOG(debug) << "Found config for device id '" << deviceIdKey << "' in JSON input";
                 }
             }
 
@@ -194,7 +194,7 @@ void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap
                 continue;
             }
 
-            LOG(DEBUG) << "Found with following channels:";
+            LOG(debug) << "Found with following channels:";
 
             ChannelParser(p.second, channelMap, formatFlag);
         }
@@ -232,19 +232,19 @@ void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMa
 
                 if (numSockets > 0)
                 {
-                    LOG(DEBUG) << "" << channelKey << ":";
-                    LOG(DEBUG) << "\tnumSockets of " << numSockets << " specified,";
-                    LOG(DEBUG) << "\tapplying common settings to each:";
+                    LOG(debug) << "" << channelKey << ":";
+                    LOG(debug) << "\tnumSockets of " << numSockets << " specified,";
+                    LOG(debug) << "\tapplying common settings to each:";
 
-                    LOG(DEBUG) << "\ttype          = " << commonChannel.GetType();
-                    LOG(DEBUG) << "\tmethod        = " << commonChannel.GetMethod();
-                    LOG(DEBUG) << "\taddress       = " << commonChannel.GetAddress();
-                    LOG(DEBUG) << "\ttransport     = " << commonChannel.GetTransport();
-                    LOG(DEBUG) << "\tsndBufSize    = " << commonChannel.GetSndBufSize();
-                    LOG(DEBUG) << "\trcvBufSize    = " << commonChannel.GetRcvBufSize();
-                    LOG(DEBUG) << "\tsndKernelSize = " << commonChannel.GetSndKernelSize();
-                    LOG(DEBUG) << "\trcvKernelSize = " << commonChannel.GetRcvKernelSize();
-                    LOG(DEBUG) << "\trateLogging   = " << commonChannel.GetRateLogging();
+                    LOG(debug) << "\ttype          = " << commonChannel.GetType();
+                    LOG(debug) << "\tmethod        = " << commonChannel.GetMethod();
+                    LOG(debug) << "\taddress       = " << commonChannel.GetAddress();
+                    LOG(debug) << "\ttransport     = " << commonChannel.GetTransport();
+                    LOG(debug) << "\tsndBufSize    = " << commonChannel.GetSndBufSize();
+                    LOG(debug) << "\trcvBufSize    = " << commonChannel.GetRcvBufSize();
+                    LOG(debug) << "\tsndKernelSize = " << commonChannel.GetSndKernelSize();
+                    LOG(debug) << "\trcvKernelSize = " << commonChannel.GetRcvKernelSize();
+                    LOG(debug) << "\trateLogging   = " << commonChannel.GetRateLogging();
 
                     for (int i = 0; i < numSockets; ++i)
                     {
@@ -296,19 +296,19 @@ void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMa
 
             if (numSockets > 0)
             {
-                LOG(DEBUG) << "" << channelKey << ":";
-                LOG(DEBUG) << "\tnumSockets of " << numSockets << " specified,";
-                LOG(DEBUG) << "\tapplying common settings to each:";
+                LOG(debug) << "" << channelKey << ":";
+                LOG(debug) << "\tnumSockets of " << numSockets << " specified,";
+                LOG(debug) << "\tapplying common settings to each:";
 
-                LOG(DEBUG) << "\ttype          = " << commonChannel.GetType();
-                LOG(DEBUG) << "\tmethod        = " << commonChannel.GetMethod();
-                LOG(DEBUG) << "\taddress       = " << commonChannel.GetAddress();
-                LOG(DEBUG) << "\ttransport     = " << commonChannel.GetTransport();
-                LOG(DEBUG) << "\tsndBufSize    = " << commonChannel.GetSndBufSize();
-                LOG(DEBUG) << "\trcvBufSize    = " << commonChannel.GetRcvBufSize();
-                LOG(DEBUG) << "\tsndKernelSize = " << commonChannel.GetSndKernelSize();
-                LOG(DEBUG) << "\trcvKernelSize = " << commonChannel.GetRcvKernelSize();
-                LOG(DEBUG) << "\trateLogging   = " << commonChannel.GetRateLogging();
+                LOG(debug) << "\ttype          = " << commonChannel.GetType();
+                LOG(debug) << "\tmethod        = " << commonChannel.GetMethod();
+                LOG(debug) << "\taddress       = " << commonChannel.GetAddress();
+                LOG(debug) << "\ttransport     = " << commonChannel.GetTransport();
+                LOG(debug) << "\tsndBufSize    = " << commonChannel.GetSndBufSize();
+                LOG(debug) << "\trcvBufSize    = " << commonChannel.GetRcvBufSize();
+                LOG(debug) << "\tsndKernelSize = " << commonChannel.GetSndKernelSize();
+                LOG(debug) << "\trcvKernelSize = " << commonChannel.GetRcvKernelSize();
+                LOG(debug) << "\trateLogging   = " << commonChannel.GetRateLogging();
 
                 for (int i = 0; i < numSockets; ++i)
                 {
@@ -351,16 +351,16 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
                 channel.UpdateRcvKernelSize(q.second.get<int>("rcvKernelSize", channel.GetRcvKernelSize()));
                 channel.UpdateRateLogging(q.second.get<int>("rateLogging", channel.GetRateLogging()));
 
-                LOG(DEBUG) << "" << channelName << "[" << socketCounter << "]:";
-                LOG(DEBUG) << "\ttype          = " << channel.GetType();
-                LOG(DEBUG) << "\tmethod        = " << channel.GetMethod();
-                LOG(DEBUG) << "\taddress       = " << channel.GetAddress();
-                LOG(DEBUG) << "\ttransport     = " << channel.GetTransport();
-                LOG(DEBUG) << "\tsndBufSize    = " << channel.GetSndBufSize();
-                LOG(DEBUG) << "\trcvBufSize    = " << channel.GetRcvBufSize();
-                LOG(DEBUG) << "\tsndKernelSize = " << channel.GetSndKernelSize();
-                LOG(DEBUG) << "\trcvKernelSize = " << channel.GetRcvKernelSize();
-                LOG(DEBUG) << "\trateLogging   = " << channel.GetRateLogging();
+                LOG(debug) << "" << channelName << "[" << socketCounter << "]:";
+                LOG(debug) << "\ttype          = " << channel.GetType();
+                LOG(debug) << "\tmethod        = " << channel.GetMethod();
+                LOG(debug) << "\taddress       = " << channel.GetAddress();
+                LOG(debug) << "\ttransport     = " << channel.GetTransport();
+                LOG(debug) << "\tsndBufSize    = " << channel.GetSndBufSize();
+                LOG(debug) << "\trcvBufSize    = " << channel.GetRcvBufSize();
+                LOG(debug) << "\tsndKernelSize = " << channel.GetSndKernelSize();
+                LOG(debug) << "\trcvKernelSize = " << channel.GetRcvKernelSize();
+                LOG(debug) << "\trateLogging   = " << channel.GetRateLogging();
 
                 channelList.push_back(channel);
                 ++socketCounter;
@@ -383,16 +383,16 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
             channel.UpdateRcvKernelSize(p.second.get<int>("rcvKernelSize", channel.GetRcvKernelSize()));
             channel.UpdateRateLogging(p.second.get<int>("rateLogging", channel.GetRateLogging()));
 
-            LOG(DEBUG) << "" << channelName << "[" << socketCounter << "]:";
-            LOG(DEBUG) << "\ttype          = " << channel.GetType();
-            LOG(DEBUG) << "\tmethod        = " << channel.GetMethod();
-            LOG(DEBUG) << "\taddress       = " << channel.GetAddress();
-            LOG(DEBUG) << "\ttransport     = " << channel.GetTransport();
-            LOG(DEBUG) << "\tsndBufSize    = " << channel.GetSndBufSize();
-            LOG(DEBUG) << "\trcvBufSize    = " << channel.GetRcvBufSize();
-            LOG(DEBUG) << "\tsndKernelSize = " << channel.GetSndKernelSize();
-            LOG(DEBUG) << "\trcvKernelSize = " << channel.GetRcvKernelSize();
-            LOG(DEBUG) << "\trateLogging   = " << channel.GetRateLogging();
+            LOG(debug) << "" << channelName << "[" << socketCounter << "]:";
+            LOG(debug) << "\ttype          = " << channel.GetType();
+            LOG(debug) << "\tmethod        = " << channel.GetMethod();
+            LOG(debug) << "\taddress       = " << channel.GetAddress();
+            LOG(debug) << "\ttransport     = " << channel.GetTransport();
+            LOG(debug) << "\tsndBufSize    = " << channel.GetSndBufSize();
+            LOG(debug) << "\trcvBufSize    = " << channel.GetRcvBufSize();
+            LOG(debug) << "\tsndKernelSize = " << channel.GetSndKernelSize();
+            LOG(debug) << "\trcvKernelSize = " << channel.GetRcvKernelSize();
+            LOG(debug) << "\trateLogging   = " << channel.GetRateLogging();
 
             channelList.push_back(channel);
             ++socketCounter;
@@ -401,25 +401,25 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
 
     if (socketCounter)
     {
-        LOG(DEBUG) << "Found " << socketCounter << " socket(s) in channel.";
+        LOG(debug) << "Found " << socketCounter << " socket(s) in channel.";
     }
     else
     {
-        LOG(DEBUG) << "" << channelName << ":";
-        LOG(DEBUG) << "\tNo sockets specified,";
-        LOG(DEBUG) << "\tapplying common settings to the channel:";
+        LOG(debug) << "" << channelName << ":";
+        LOG(debug) << "\tNo sockets specified,";
+        LOG(debug) << "\tapplying common settings to the channel:";
 
         FairMQChannel channel(commonChannel);
 
-        LOG(DEBUG) << "\ttype          = " << channel.GetType();
-        LOG(DEBUG) << "\tmethod        = " << channel.GetMethod();
-        LOG(DEBUG) << "\taddress       = " << channel.GetAddress();
-        LOG(DEBUG) << "\ttransport     = " << channel.GetTransport();
-        LOG(DEBUG) << "\tsndBufSize    = " << channel.GetSndBufSize();
-        LOG(DEBUG) << "\trcvBufSize    = " << channel.GetRcvBufSize();
-        LOG(DEBUG) << "\tsndKernelSize = " << channel.GetSndKernelSize();
-        LOG(DEBUG) << "\trcvKernelSize = " << channel.GetRcvKernelSize();
-        LOG(DEBUG) << "\trateLogging   = " << channel.GetRateLogging();
+        LOG(debug) << "\ttype          = " << channel.GetType();
+        LOG(debug) << "\tmethod        = " << channel.GetMethod();
+        LOG(debug) << "\taddress       = " << channel.GetAddress();
+        LOG(debug) << "\ttransport     = " << channel.GetTransport();
+        LOG(debug) << "\tsndBufSize    = " << channel.GetSndBufSize();
+        LOG(debug) << "\trcvBufSize    = " << channel.GetRcvBufSize();
+        LOG(debug) << "\tsndKernelSize = " << channel.GetSndKernelSize();
+        LOG(debug) << "\trcvKernelSize = " << channel.GetRcvKernelSize();
+        LOG(debug) << "\trateLogging   = " << channel.GetRateLogging();
 
         channelList.push_back(channel);
     }

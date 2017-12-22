@@ -37,7 +37,7 @@ class Req : public FairMQDevice
         auto reply = FairMQMessagePtr{NewMessage()};
         if (Receive(reply, "data") >= 0)
         {
-            LOG(INFO) << "received reply";
+            LOG(info) << "received reply";
         }
     };
 };

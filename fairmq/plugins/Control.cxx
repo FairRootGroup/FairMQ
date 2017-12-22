@@ -50,27 +50,27 @@ Control::Control(const string name, const Plugin::Version version, const string 
 
         if (control == "static")
         {
-            LOG(DEBUG) << "Running builtin controller: static";
+            LOG(debug) << "Running builtin controller: static";
             fControllerThread = thread(&Control::StaticMode, this);
         }
         else if (control == "interactive")
         {
-            LOG(DEBUG) << "Running builtin controller: interactive";
+            LOG(debug) << "Running builtin controller: interactive";
             fControllerThread = thread(&Control::InteractiveMode, this);
         }
         else
         {
-            LOG(ERROR) << "Unrecognized control mode '" << control << "' requested. " << "Ignoring and falling back to static control mode.";
+            LOG(error) << "Unrecognized control mode '" << control << "' requested. " << "Ignoring and falling back to static control mode.";
             fControllerThread = thread(&Control::StaticMode, this);
         }
     }
     catch (PluginServices::DeviceControlError& e)
     {
         // If we are here, it means another plugin has taken control. That's fine, just print the exception message and do nothing else.
-        LOG(DEBUG) << e.what();
+        LOG(debug) << e.what();
     }
 
-    LOG(DEBUG) << "catch-signals: " << GetProperty<int>("catch-signals");
+    LOG(debug) << "catch-signals: " << GetProperty<int>("catch-signals");
     if (GetProperty<int>("catch-signals") > 0)
     {
         gSignalHandlerClosure = bind(&Control::SignalHandler, this, placeholders::_1);
@@ -79,7 +79,7 @@ Control::Control(const string name, const Plugin::Version version, const string 
     }
     else
     {
-        LOG(WARN) << "Signal handling (e.g. Ctrl-C) has been deactivated.";
+        LOG(warn) << "Signal handling (e.g. Ctrl-C) has been deactivated.";
     }
 }
 
@@ -127,47 +127,47 @@ auto Control::InteractiveMode() -> void
                 switch (input)
                 {
                     case 'i':
-                        LOG(INFO) << "\n\n --> [i] init device\n";
+                        LOG(info) << "\n\n --> [i] init device\n";
                         ChangeDeviceState(DeviceStateTransition::InitDevice);
                     break;
                     case 'j':
-                        LOG(INFO) << "\n\n --> [j] init task\n";
+                        LOG(info) << "\n\n --> [j] init task\n";
                         ChangeDeviceState(DeviceStateTransition::InitTask);
                     break;
                     case 'p':
-                        LOG(INFO) << "\n\n --> [p] pause\n";
+                        LOG(info) << "\n\n --> [p] pause\n";
                         ChangeDeviceState(DeviceStateTransition::Pause);
                     break;
                     case 'r':
-                        LOG(INFO) << "\n\n --> [r] run\n";
+                        LOG(info) << "\n\n --> [r] run\n";
                         ChangeDeviceState(DeviceStateTransition::Run);
                     break;
                     case 's':
-                        LOG(INFO) << "\n\n --> [s] stop\n";
+                        LOG(info) << "\n\n --> [s] stop\n";
                         ChangeDeviceState(DeviceStateTransition::Stop);
                     break;
                     case 't':
-                        LOG(INFO) << "\n\n --> [t] reset task\n";
+                        LOG(info) << "\n\n --> [t] reset task\n";
                         ChangeDeviceState(DeviceStateTransition::ResetTask);
                     break;
                     case 'd':
-                        LOG(INFO) << "\n\n --> [d] reset device\n";
+                        LOG(info) << "\n\n --> [d] reset device\n";
                         ChangeDeviceState(DeviceStateTransition::ResetDevice);
                     break;
                     case 'h':
-                        LOG(INFO) << "\n\n --> [h] help\n";
+                        LOG(info) << "\n\n --> [h] help\n";
                         PrintInteractiveHelp();
                     break;
                     // case 'x':
-                    //     LOG(INFO) << "\n\n --> [x] ERROR\n";
+                    //     LOG(info) << "\n\n --> [x] ERROR\n";
                     //     ChangeDeviceState(DeviceStateTransition::ERROR_FOUND);
                     //     break;
                     case 'q':
-                        LOG(INFO) << "\n\n --> [q] end\n";
+                        LOG(info) << "\n\n --> [q] end\n";
                         keepRunning = false;
                     break;
                     default:
-                        LOG(INFO) << "Invalid input: [" << input << "]";
+                        LOG(info) << "Invalid input: [" << input << "]";
                         PrintInteractiveHelp();
                     break;
                 }
@@ -191,13 +191,13 @@ auto Control::InteractiveMode() -> void
     catch (PluginServices::DeviceControlError& e)
     {
         // If we are here, it means another plugin has taken control. That's fine, just print the exception message and do nothing else.
-        LOG(DEBUG) << e.what();
+        LOG(debug) << e.what();
     }
 }
 
 auto Control::PrintInteractiveHelp() -> void
 {
-    LOG(INFO) << "Use keys to control the state machine:\n\n"
+    LOG(info) << "Use keys to control the state machine:\n\n"
               << "[h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device\n";
 }
 
@@ -238,7 +238,7 @@ auto Control::StaticMode() -> void
     catch (PluginServices::DeviceControlError& e)
     {
         // If we are here, it means another plugin has taken control. That's fine, just print the exception message and do nothing else.
-        LOG(DEBUG) << e.what();
+        LOG(debug) << e.what();
     }
 }
 
@@ -250,8 +250,8 @@ auto Control::SignalHandler(int signal) -> void
 
         StealDeviceControl();
 
-        LOG(INFO) << "Received device shutdown request (signal " << signal << ").";
-        LOG(INFO) << "Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.";
+        LOG(info) << "Received device shutdown request (signal " << signal << ").";
+        LOG(info) << "Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.";
 
         UnsubscribeFromDeviceStateChange(); // In case, static or interactive mode have subscribed already
         SubscribeToDeviceStateChange([&](DeviceState newState)
@@ -267,8 +267,8 @@ auto Control::SignalHandler(int signal) -> void
     }
     else
     {
-        LOG(WARN) << "Received 2nd device shutdown request (signal " << signal << ").";
-        LOG(WARN) << "Aborting immediately !";
+        LOG(warn) << "Received 2nd device shutdown request (signal " << signal << ").";
+        LOG(warn) << "Aborting immediately !";
         abort();
     }
 }

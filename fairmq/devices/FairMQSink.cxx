@@ -39,7 +39,7 @@ void FairMQSink::Run()
     // store the channel reference to avoid traversing the map on every loop iteration
     FairMQChannel& dataInChannel = fChannels.at(fInChannelName).at(0);
 
-    LOG(INFO) << "Starting the benchmark and expecting to receive " << fNumMsgs << " messages.";
+    LOG(info) << "Starting the benchmark and expecting to receive " << fNumMsgs << " messages.";
     auto tStart = chrono::high_resolution_clock::now();
 
     while (CheckCurrentState(RUNNING))
@@ -61,7 +61,7 @@ void FairMQSink::Run()
 
     auto tEnd = chrono::high_resolution_clock::now();
 
-    LOG(INFO) << "Leaving RUNNING state. Received " << numReceivedMsgs << " messages in " << chrono::duration<double, milli>(tEnd - tStart).count() << "ms.";
+    LOG(info) << "Leaving RUNNING state. Received " << numReceivedMsgs << " messages in " << chrono::duration<double, milli>(tEnd - tStart).count() << "ms.";
 }
 
 FairMQSink::~FairMQSink()

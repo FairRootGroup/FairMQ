@@ -40,11 +40,11 @@ FairMQShmPrototypeSampler::FairMQShmPrototypeSampler()
 {
     if (shared_memory_object::remove("FairMQSharedMemoryPrototype"))
     {
-        LOG(INFO) << "Successfully removed shared memory upon device start.";
+        LOG(info) << "Successfully removed shared memory upon device start.";
     }
     else
     {
-        LOG(INFO) << "Did not remove shared memory upon device start.";
+        LOG(info) << "Did not remove shared memory upon device start.";
     }
 }
 
@@ -52,11 +52,11 @@ FairMQShmPrototypeSampler::~FairMQShmPrototypeSampler()
 {
     if (shared_memory_object::remove("FairMQSharedMemoryPrototype"))
     {
-        LOG(INFO) << "Successfully removed shared memory after the device has stopped.";
+        LOG(info) << "Successfully removed shared memory after the device has stopped.";
     }
     else
     {
-        LOG(INFO) << "Did not remove shared memory after the device stopped. Still in use?";
+        LOG(info) << "Did not remove shared memory after the device stopped. Still in use?";
     }
 }
 
@@ -66,7 +66,7 @@ void FairMQShmPrototypeSampler::Init()
     fMsgRate = fConfig->GetValue<int>("msg-rate");
 
     SegmentManager::Instance().InitializeSegment("open_or_create", "FairMQSharedMemoryPrototype", 2000000000);
-    LOG(INFO) << "Created/Opened shared memory segment of 2,000,000,000 bytes. Available are "
+    LOG(info) << "Created/Opened shared memory segment of 2,000,000,000 bytes. Available are "
               << SegmentManager::Instance().Segment()->get_free_memory() << " bytes.";
 }
 
@@ -75,7 +75,7 @@ void FairMQShmPrototypeSampler::Run()
     // count sent messages (also used in creating ShmChunk container ID)
     static uint64_t numSentMsgs = 0;
 
-    LOG(INFO) << "Starting the benchmark with message size of " << fMsgSize;
+    LOG(info) << "Starting the benchmark with message size of " << fMsgSize;
 
     // start rate logger and acknowledgement listener in separate threads
     thread rateLogger(&FairMQShmPrototypeSampler::Log, this, 1000);
@@ -123,7 +123,7 @@ void FairMQShmPrototypeSampler::Run()
         // }
         // catch (bipc::bad_alloc& ba)
         // {
-        //     LOG(WARN) << "Shared memory full...";
+        //     LOG(warn) << "Shared memory full...";
         //     this_thread::sleep_for(chrono::milliseconds(100));
         //     continue;
         // }
@@ -139,12 +139,12 @@ void FairMQShmPrototypeSampler::Run()
         //     charnum = 97;
         // }
 
-        // LOG(DEBUG) << "chunk handle: " << owner->fPtr->GetHandle();
-        // LOG(DEBUG) << "chunk size: " << owner->fPtr->GetSize();
-        // LOG(DEBUG) << "owner (" << ownerID << ") use count: " << owner->fPtr.use_count();
+        // LOG(debug) << "chunk handle: " << owner->fPtr->GetHandle();
+        // LOG(debug) << "chunk size: " << owner->fPtr->GetSize();
+        // LOG(debug) << "owner (" << ownerID << ") use count: " << owner->fPtr.use_count();
 
         // char* cptr = static_cast<char*>(ptr);
-        // LOG(DEBUG) << "check: " << cptr[3];
+        // LOG(debug) << "check: " << cptr[3];
 
         // FairMQMessagePtr msg(NewSimpleMessage(ownerID));
 
@@ -156,9 +156,9 @@ void FairMQShmPrototypeSampler::Run()
             metaPtr->fSize = fMsgSize;
             metaPtr->fHandle = handle;
 
-            // LOG(INFO) << metaPtr->fSize;
-            // LOG(INFO) << metaPtr->fHandle;
-            // LOG(WARN) << ptr;
+            // LOG(info) << metaPtr->fSize;
+            // LOG(info) << metaPtr->fHandle;
+            // LOG(warn) << ptr;
 
             if (Send(msg, "meta", 0) > 0)
             {
@@ -180,7 +180,7 @@ void FairMQShmPrototypeSampler::Run()
         // }
     }
 
-    LOG(INFO) << "Sent " << numSentMsgs << " messages, leaving RUNNING state.";
+    LOG(info) << "Sent " << numSentMsgs << " messages, leaving RUNNING state.";
 
     rateLogger.join();
     // resetMsgCounter.join();
@@ -207,7 +207,7 @@ void FairMQShmPrototypeSampler::Log(const int intervalInMs)
         msgPerSecOut = static_cast<double>(fMsgOutNew - fMsgOut) / static_cast<double>(msSinceLastLog) * 1000.;
         fMsgOut = fMsgOutNew;
 
-        LOG(DEBUG) << fixed
+        LOG(debug) << fixed
                    << setprecision(0) << "out: " << msgPerSecOut << " msg ("
                    << setprecision(2) << mbPerSecOut << " MB)\t("
                    << SegmentManager::Instance().Segment()->get_free_memory() / (1024. * 1024.) << " MB free)";

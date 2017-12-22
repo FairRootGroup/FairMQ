@@ -44,11 +44,11 @@ class Sender : public FairMQDevice
         auto msg = FairMQMessagePtr{NewMessage()};
         if (Send(msg, fChannelName) >= 0)
         {
-            LOG(INFO) << "sent empty message";
+            LOG(info) << "sent empty message";
         }
         else
         {
-            LOG(ERROR) << "fair::mq::test::Sender::Run(): Send(msg, fChannelName) < 0";
+            LOG(error) << "fair::mq::test::Sender::Run(): Send(msg, fChannelName) < 0";
         }
     };
 

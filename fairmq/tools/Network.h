@@ -83,7 +83,7 @@ inline std::string getInterfaceIP(std::string interface)
     }
     else
     {
-        LOG(ERROR) << "Could not find provided network interface: \"" << interface << "\"!, exiting.";
+        LOG(error) << "Could not find provided network interface: \"" << interface << "\"!, exiting.";
         return "";
     }
 }
@@ -102,7 +102,7 @@ inline std::string getDefaultRouteNetworkInterface()
 
     if (!file)
     {
-        LOG(ERROR) << "Could not detect default route network interface name - popen() failed!";
+        LOG(error) << "Could not detect default route network interface name - popen() failed!";
         return "";
     }
 
@@ -118,11 +118,11 @@ inline std::string getDefaultRouteNetworkInterface()
 
     if (interfaceName == "")
     {
-        LOG(ERROR) << "Could not detect default route network interface name";
+        LOG(error) << "Could not detect default route network interface name";
     }
     else
     {
-        LOG(DEBUG) << "Detected network interface name for the default route: " << interfaceName;
+        LOG(debug) << "Detected network interface name for the default route: " << interfaceName;
     }
 
     return interfaceName;

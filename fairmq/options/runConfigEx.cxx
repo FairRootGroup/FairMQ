@@ -46,7 +46,7 @@ class MyDevice : public FairMQDevice
 
     void Print()
     {
-        LOG(INFO) << "[MyDevice] rate = " << fRate;
+        LOG(info) << "[MyDevice] rate = " << fRate;
     }
 
   private:
@@ -96,61 +96,61 @@ int main(int argc, char** argv)
 
         // string dataRateStr = config.GetStringValue("data-rate");
         // double dataRate = config.ConvertTo<double>(dataRateStr);
-        // LOG(INFO) << "dataRate: " << dataRate;
+        // LOG(info) << "dataRate: " << dataRate;
 
-        LOG(INFO) << "Subscribing: <string>(chans.data.0.address)";
+        LOG(info) << "Subscribing: <string>(chans.data.0.address)";
         config.Subscribe<string>("test", [&device](const string& key, string value)
         {
             if (key == "chans.data.0.address")
             {
-                LOG(INFO) << "[callback] Updating device parameter " << key << " = " << value;
+                LOG(info) << "[callback] Updating device parameter " << key << " = " << value;
                 device.fChannels.at("data").at(0).UpdateAddress(value);
             }
         });
 
-        LOG(INFO) << "Subscribing: <int>(chans.data.0.rcvBufSize)";
+        LOG(info) << "Subscribing: <int>(chans.data.0.rcvBufSize)";
         config.Subscribe<int>("test", [&device](const string& key, int value)
         {
             if(key == "chans.data.0.rcvBufSize")
             {
-                LOG(INFO) << "[callback] Updating device parameter " << key << " = " << value;
+                LOG(info) << "[callback] Updating device parameter " << key << " = " << value;
                 device.fChannels.at("data").at(0).UpdateRcvBufSize(value);
             }
         });
 
-        LOG(INFO) << "Subscribing: <double>(data-rate)";
+        LOG(info) << "Subscribing: <double>(data-rate)";
         config.Subscribe<double>("test", [&device](const string& key, double value)
         {
             if (key == "data-rate")
             {
-                LOG(INFO) << "[callback] Updating device parameter " << key << " = " << value;
+                LOG(info) << "[callback] Updating device parameter " << key << " = " << value;
                 device.SetRate(value);
             }
         });
 
-        LOG(INFO) << "Starting value updates...\n";
+        LOG(info) << "Starting value updates...\n";
 
         config.UpdateValue<string>("chans.data.0.address", "tcp://localhost:4321");
-        LOG(INFO) << "config: " << config.GetValue<string>("chans.data.0.address");
-        LOG(INFO) << "device: " << device.fChannels.at("data").at(0).GetAddress() << endl;
+        LOG(info) << "config: " << config.GetValue<string>("chans.data.0.address");
+        LOG(info) << "device: " << device.fChannels.at("data").at(0).GetAddress() << endl;
 
         config.UpdateValue<int>("chans.data.0.rcvBufSize", 100);
-        LOG(INFO) << "config: " << config.GetValue<int>("chans.data.0.rcvBufSize");
-        LOG(INFO) << "device: " << device.fChannels.at("data").at(0).GetRcvBufSize() << endl;
+        LOG(info) << "config: " << config.GetValue<int>("chans.data.0.rcvBufSize");
+        LOG(info) << "device: " << device.fChannels.at("data").at(0).GetRcvBufSize() << endl;
 
         config.UpdateValue<double>("data-rate", 0.9);
-        LOG(INFO) << "config: " << config.GetValue<double>("data-rate");
-        LOG(INFO) << "device: " << device.GetRate() << endl;
+        LOG(info) << "config: " << config.GetValue<double>("data-rate");
+        LOG(info) << "device: " << device.GetRate() << endl;
         // device.Print();
 
-        LOG(INFO) << "nase: " << config.GetValue<double>("nase");
+        LOG(info) << "nase: " << config.GetValue<double>("nase");
 
         config.Unsubscribe<string>("test");
         config.Unsubscribe<int>("test");
         config.Unsubscribe<double>("test");
         // advanced commands
 
-        // LOG(INFO) << "-------------------- start custom 1";
+        // LOG(info) << "-------------------- start custom 1";
 
         // config.Connect<EventId::Custom, MyDevice&, double>("myNewKey", [](MyDevice& d, double val)
         // {
@@ -160,14 +160,14 @@ int main(int argc, char** argv)
 
         // config.Emit<EventId::Custom, MyDevice&, double>("myNewKey", device, 0.123);
 
-        // LOG(INFO) << "-------------------- start custom 2 with function";
+        // LOG(info) << "-------------------- start custom 2 with function";
         // config.Connect<EventId::Custom, MyDevice&, double>("function example", &MyCallBack);
 
         // config.Emit<EventId::Custom, MyDevice&, double>("function example", device, 6.66);
     }
     catch (exception& e)
     {
-        LOG(ERROR)  << "Unhandled Exception reached the top of main: " 
+        LOG(error)  << "Unhandled Exception reached the top of main: " 
                     << e.what() << ", application will now exit";
         return 1;
     }

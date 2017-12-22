@@ -48,13 +48,13 @@ void FairMQProxy::Run()
             {
                 if (Send(payload, fOutChannelName) < 0)
                 {
-                    LOG(DEBUG) << "Transfer interrupted";
+                    LOG(debug) << "Transfer interrupted";
                     break;
                 }
             }
             else
             {
-                LOG(DEBUG) << "Transfer interrupted";
+                LOG(debug) << "Transfer interrupted";
                 break;
             }
         }
@@ -68,13 +68,13 @@ void FairMQProxy::Run()
             {
                 if (Send(payload, fOutChannelName) < 0)
                 {
-                    LOG(DEBUG) << "Transfer interrupted";
+                    LOG(debug) << "Transfer interrupted";
                     break;
                 }
             }
             else
             {
-                LOG(DEBUG) << "Transfer interrupted";
+                LOG(debug) << "Transfer interrupted";
                 break;
             }
         }

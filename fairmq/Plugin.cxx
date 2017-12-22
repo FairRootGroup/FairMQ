@@ -18,10 +18,10 @@ fair::mq::Plugin::Plugin(const string name, const Version version, const string 
     , fkHomepage{homepage}
     , fPluginServices{pluginServices}
 {
-    LOG(DEBUG) << "Loaded plugin: " << *this;
+    LOG(debug) << "Loaded plugin: " << *this;
 }
 
 fair::mq::Plugin::~Plugin()
 {
-    LOG(DEBUG) << "Unloaded plugin: " << *this;
+    LOG(debug) << "Unloaded plugin: " << *this;
 }

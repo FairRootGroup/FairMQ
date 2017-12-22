@@ -183,7 +183,7 @@ string FairMQChannel::GetType() const
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetType: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::GetType: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -197,7 +197,7 @@ string FairMQChannel::GetMethod() const
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetMethod: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::GetMethod: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -211,7 +211,7 @@ string FairMQChannel::GetAddress() const
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetAddress: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::GetAddress: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -225,7 +225,7 @@ string FairMQChannel::GetTransport() const
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetTransport: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::GetTransport: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -239,7 +239,7 @@ int FairMQChannel::GetSndBufSize() const
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetSndBufSize: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::GetSndBufSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -253,7 +253,7 @@ int FairMQChannel::GetRcvBufSize() const
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetRcvBufSize: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::GetRcvBufSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -267,7 +267,7 @@ int FairMQChannel::GetSndKernelSize() const
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetSndKernelSize: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::GetSndKernelSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -281,7 +281,7 @@ int FairMQChannel::GetRcvKernelSize() const
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetRcvKernelSize: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::GetRcvKernelSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -295,7 +295,7 @@ int FairMQChannel::GetRateLogging() const
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::GetRateLogging: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::GetRateLogging: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -311,7 +311,7 @@ void FairMQChannel::UpdateType(const string& type)
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateType: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::UpdateType: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -327,7 +327,7 @@ void FairMQChannel::UpdateMethod(const string& method)
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateMethod: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::UpdateMethod: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -343,7 +343,7 @@ void FairMQChannel::UpdateAddress(const string& address)
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateAddress: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::UpdateAddress: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -359,7 +359,7 @@ void FairMQChannel::UpdateTransport(const string& transport)
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateTransport: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::UpdateTransport: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -375,7 +375,7 @@ void FairMQChannel::UpdateSndBufSize(const int sndBufSize)
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateSndBufSize: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::UpdateSndBufSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -391,7 +391,7 @@ void FairMQChannel::UpdateRcvBufSize(const int rcvBufSize)
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateRcvBufSize: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::UpdateRcvBufSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -407,7 +407,7 @@ void FairMQChannel::UpdateSndKernelSize(const int sndKernelSize)
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateSndKernelSize: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::UpdateSndKernelSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -423,7 +423,7 @@ void FairMQChannel::UpdateRcvKernelSize(const int rcvKernelSize)
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateRcvKernelSize: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::UpdateRcvKernelSize: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -439,7 +439,7 @@ void FairMQChannel::UpdateRateLogging(const int rateLogging)
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateRateLogging: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::UpdateRateLogging: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -453,7 +453,7 @@ auto FairMQChannel::SetModified(const bool modified) -> void
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::SetModified: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::SetModified: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -469,7 +469,7 @@ void FairMQChannel::UpdateChannelName(const string& name)
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::UpdateChannelName: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::UpdateChannelName: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -483,7 +483,7 @@ bool FairMQChannel::IsValid() const
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::IsValid: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::IsValid: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -500,7 +500,7 @@ bool FairMQChannel::ValidateChannel()
         if (fIsValid)
         {
             ss << "ALREADY VALID";
-            LOG(DEBUG) << ss.str();
+            LOG(debug) << ss.str();
             return true;
         }
 
@@ -510,8 +510,8 @@ bool FairMQChannel::ValidateChannel()
         if (socketTypes.find(fType) == socketTypes.end())
         {
             ss << "INVALID";
-            LOG(DEBUG) << ss.str();
-            LOG(ERROR) << "Invalid channel type: \"" << fType << "\"";
+            LOG(debug) << ss.str();
+            LOG(error) << "Invalid channel type: \"" << fType << "\"";
             exit(EXIT_FAILURE);
         }
 
@@ -519,8 +519,8 @@ bool FairMQChannel::ValidateChannel()
         if (fAddress == "unspecified" || fAddress == "")
         {
             ss << "INVALID";
-            LOG(DEBUG) << ss.str();
-            LOG(DEBUG) << "invalid channel address: \"" << fAddress << "\"";
+            LOG(debug) << ss.str();
+            LOG(debug) << "invalid channel address: \"" << fAddress << "\"";
             return false;
         }
         else
@@ -542,8 +542,8 @@ bool FairMQChannel::ValidateChannel()
                     if (socketMethods.find(fMethod) == socketMethods.end())
                     {
                         ss << "INVALID";
-                        LOG(DEBUG) << ss.str();
-                        LOG(ERROR) << "Invalid endpoint connection method: \"" << fMethod << "\" for " << endpoint;
+                        LOG(debug) << ss.str();
+                        LOG(error) << "Invalid endpoint connection method: \"" << fMethod << "\" for " << endpoint;
                         exit(EXIT_FAILURE);
                     }
                     address = endpoint;
@@ -556,8 +556,8 @@ bool FairMQChannel::ValidateChannel()
                     if (addressString.find(":") == string::npos)
                     {
                         ss << "INVALID";
-                        LOG(DEBUG) << ss.str();
-                        LOG(ERROR) << "invalid channel address: \"" << address << "\" (missing port?)";
+                        LOG(debug) << ss.str();
+                        LOG(error) << "invalid channel address: \"" << address << "\" (missing port?)";
                         return false;
                     }
                 }
@@ -568,8 +568,8 @@ bool FairMQChannel::ValidateChannel()
                     if (addressString == "")
                     {
                         ss << "INVALID";
-                        LOG(DEBUG) << ss.str();
-                        LOG(ERROR) << "invalid channel address: \"" << address << "\" (empty IPC address?)";
+                        LOG(debug) << ss.str();
+                        LOG(error) << "invalid channel address: \"" << address << "\" (empty IPC address?)";
                         return false;
                     }
                 }
@@ -580,8 +580,8 @@ bool FairMQChannel::ValidateChannel()
                     if (addressString == "")
                     {
                         ss << "INVALID";
-                        LOG(DEBUG) << ss.str();
-                        LOG(ERROR) << "invalid channel address: \"" << address << "\" (empty inproc address?)";
+                        LOG(debug) << ss.str();
+                        LOG(error) << "invalid channel address: \"" << address << "\" (empty inproc address?)";
                         return false;
                     }
                 }
@@ -589,8 +589,8 @@ bool FairMQChannel::ValidateChannel()
                 {
                     // if neither TCP or IPC is specified, return invalid
                     ss << "INVALID";
-                    LOG(DEBUG) << ss.str();
-                    LOG(ERROR) << "invalid channel address: \"" << address << "\" (missing protocol specifier?)";
+                    LOG(debug) << ss.str();
+                    LOG(error) << "invalid channel address: \"" << address << "\" (missing protocol specifier?)";
                     return false;
                 }
             }
@@ -602,8 +602,8 @@ bool FairMQChannel::ValidateChannel()
         if (FairMQ::TransportTypes.find(fTransport) == FairMQ::TransportTypes.end())
         {
             ss << "INVALID";
-            LOG(DEBUG) << ss.str();
-            LOG(ERROR) << "Invalid channel transport: \"" << fTransport << "\"";
+            LOG(debug) << ss.str();
+            LOG(error) << "Invalid channel transport: \"" << fTransport << "\"";
             exit(EXIT_FAILURE);
         }
 
@@ -611,8 +611,8 @@ bool FairMQChannel::ValidateChannel()
         if (fSndBufSize < 0)
         {
             ss << "INVALID";
-            LOG(DEBUG) << ss.str();
-            LOG(ERROR) << "invalid channel send buffer size (cannot be negative): \"" << fSndBufSize << "\"";
+            LOG(debug) << ss.str();
+            LOG(error) << "invalid channel send buffer size (cannot be negative): \"" << fSndBufSize << "\"";
             exit(EXIT_FAILURE);
         }
 
@@ -620,8 +620,8 @@ bool FairMQChannel::ValidateChannel()
         if (fRcvBufSize < 0)
         {
             ss << "INVALID";
-            LOG(DEBUG) << ss.str();
-            LOG(ERROR) << "invalid channel receive buffer size (cannot be negative): \"" << fRcvBufSize << "\"";
+            LOG(debug) << ss.str();
+            LOG(error) << "invalid channel receive buffer size (cannot be negative): \"" << fRcvBufSize << "\"";
             exit(EXIT_FAILURE);
         }
 
@@ -629,8 +629,8 @@ bool FairMQChannel::ValidateChannel()
         if (fSndKernelSize < 0)
         {
             ss << "INVALID";
-            LOG(DEBUG) << ss.str();
-            LOG(ERROR) << "invalid channel send kernel transmit size (cannot be negative): \"" << fSndKernelSize << "\"";
+            LOG(debug) << ss.str();
+            LOG(error) << "invalid channel send kernel transmit size (cannot be negative): \"" << fSndKernelSize << "\"";
             exit(EXIT_FAILURE);
         }
 
@@ -638,8 +638,8 @@ bool FairMQChannel::ValidateChannel()
         if (fRcvKernelSize < 0)
         {
             ss << "INVALID";
-            LOG(DEBUG) << ss.str();
-            LOG(ERROR) << "invalid channel receive kernel transmit size (cannot be negative): \"" << fRcvKernelSize << "\"";
+            LOG(debug) << ss.str();
+            LOG(error) << "invalid channel receive kernel transmit size (cannot be negative): \"" << fRcvKernelSize << "\"";
             exit(EXIT_FAILURE);
         }
 
@@ -647,19 +647,19 @@ bool FairMQChannel::ValidateChannel()
         if (fRateLogging < 0)
         {
             ss << "INVALID";
-            LOG(DEBUG) << ss.str();
-            LOG(ERROR) << "invalid socket rate logging interval (cannot be negative): \"" << fRateLogging << "\"";
+            LOG(debug) << ss.str();
+            LOG(error) << "invalid socket rate logging interval (cannot be negative): \"" << fRateLogging << "\"";
             exit(EXIT_FAILURE);
         }
 
         fIsValid = true;
         ss << "VALID";
-        LOG(DEBUG) << ss.str();
+        LOG(debug) << ss.str();
         return true;
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Exception caught in FairMQChannel::ValidateChannel: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::ValidateChannel: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -839,7 +839,7 @@ inline bool FairMQChannel::HandleUnblock() const
     FairMQMessagePtr cmd(fTransportFactory->CreateMessage());
     if (fChannelCmdSocket->Receive(cmd) >= 0)
     {
-        // LOG(DEBUG) << "unblocked";
+        // LOG(debug) << "unblocked";
     }
     return true;
 }
@@ -876,7 +876,7 @@ bool FairMQChannel::CheckCompatibility(unique_ptr<FairMQMessage>& msg) const
     }
     else
     {
-        // LOG(WARN) << "Channel type does not match message type. Copying...";
+        // LOG(warn) << "Channel type does not match message type. Copying...";
         FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage(msg->GetSize()));
         memcpy(msgCopy->GetData(), msg->GetData(), msg->GetSize());
         msg = move(msgCopy);
@@ -894,7 +894,7 @@ bool FairMQChannel::CheckCompatibility(vector<unique_ptr<FairMQMessage>>& msgVec
         {
             if (fTransportType != msgVec.at(i)->GetType())
             {
-                // LOG(WARN) << "Channel type does not match message type. Copying...";
+                // LOG(warn) << "Channel type does not match message type. Copying...";
                 FairMQMessagePtr newMsg(fTransportFactory->CreateMessage(msgVec[i]->GetSize()));
                 memcpy(newMsg->GetData(), msgVec[i]->GetData(), msgVec[i]->GetSize());
                 msgVec[i] = move(newMsg);

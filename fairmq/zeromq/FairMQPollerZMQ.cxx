@@ -104,8 +104,8 @@ FairMQPollerZMQ::FairMQPollerZMQ(const unordered_map<string, vector<FairMQChanne
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "zeromq: at least one of the provided channel keys for poller initialization is invalid";
-        LOG(ERROR) << "zeromq: out of range error: " << oor.what() << '\n';
+        LOG(error) << "at least one of the provided channel keys for poller initialization is invalid";
+        LOG(error) << "out of range error: " << oor.what() << '\n';
         throw std::out_of_range("invalid channel during poller initialization");
     }
 }
@@ -149,7 +149,7 @@ void FairMQPollerZMQ::SetItemEvents(zmq_pollitem_t& item, const int type)
     }
     else
     {
-        LOG(ERROR) << "zeromq: invalid poller configuration, exiting.";
+        LOG(error) << "invalid poller configuration, exiting.";
         exit(EXIT_FAILURE);
     }
 }
@@ -160,12 +160,12 @@ void FairMQPollerZMQ::Poll(const int timeout)
     {
         if (errno == ETERM)
         {
-            LOG(DEBUG) << "zeromq: polling exited, reason: " << zmq_strerror(errno);
+            LOG(debug) << "polling exited, reason: " << zmq_strerror(errno);
         }
         else
         {
-            LOG(ERROR) << "zeromq: polling failed, reason: " << zmq_strerror(errno);
-            throw std::runtime_error("zeromq: polling failed");
+            LOG(error) << "polling failed, reason: " << zmq_strerror(errno);
+            throw std::runtime_error("polling failed");
         }
     }
 }
@@ -203,8 +203,8 @@ bool FairMQPollerZMQ::CheckInput(const string channelKey, const int index)
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "zeromq: invalid channel key: \"" << channelKey << "\"";
-        LOG(ERROR) << "zeromq: out of range error: " << oor.what() << '\n';
+        LOG(error) << "invalid channel key: \"" << channelKey << "\"";
+        LOG(error) << "out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }
@@ -222,8 +222,8 @@ bool FairMQPollerZMQ::CheckOutput(const string channelKey, const int index)
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "zeromq: invalid channel key: \"" << channelKey << "\"";
-        LOG(ERROR) << "zeromq: out of range error: " << oor.what() << '\n';
+        LOG(error) << "invalid channel key: \"" << channelKey << "\"";
+        LOG(error) << "out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }

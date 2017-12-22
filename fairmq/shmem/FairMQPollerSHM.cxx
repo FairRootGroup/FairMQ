@@ -103,8 +103,8 @@ FairMQPollerSHM::FairMQPollerSHM(const unordered_map<string, vector<FairMQChanne
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "shmem: at least one of the provided channel keys for poller initialization is invalid";
-        LOG(ERROR) << "shmem: out of range error: " << oor.what() << '\n';
+        LOG(error) << "at least one of the provided channel keys for poller initialization is invalid";
+        LOG(error) << "out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }
@@ -148,7 +148,7 @@ void FairMQPollerSHM::SetItemEvents(zmq_pollitem_t& item, const int type)
     }
     else
     {
-        LOG(ERROR) << "zeromq: invalid poller configuration, exiting.";
+        LOG(error) << "invalid poller configuration, exiting.";
         exit(EXIT_FAILURE);
     }
 }
@@ -159,12 +159,12 @@ void FairMQPollerSHM::Poll(const int timeout)
     {
         if (errno == ETERM)
         {
-            LOG(DEBUG) << "shmem: polling exited, reason: " << zmq_strerror(errno);
+            LOG(debug) << "polling exited, reason: " << zmq_strerror(errno);
         }
         else
         {
-            LOG(ERROR) << "shmem: polling failed, reason: " << zmq_strerror(errno);
-            throw std::runtime_error("shmem: polling failed");
+            LOG(error) << "polling failed, reason: " << zmq_strerror(errno);
+            throw std::runtime_error("polling failed");
         }
     }
 }
@@ -202,8 +202,8 @@ bool FairMQPollerSHM::CheckInput(const string channelKey, const int index)
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "shmem: invalid channel key: \"" << channelKey << "\"";
-        LOG(ERROR) << "shmem: out of range error: " << oor.what() << '\n';
+        LOG(error) << "invalid channel key: \"" << channelKey << "\"";
+        LOG(error) << "out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }
@@ -221,8 +221,8 @@ bool FairMQPollerSHM::CheckOutput(const string channelKey, const int index)
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "shmem: Invalid channel key: \"" << channelKey << "\"";
-        LOG(ERROR) << "shmem: out of range error: " << oor.what() << '\n';
+        LOG(error) << "Invalid channel key: \"" << channelKey << "\"";
+        LOG(error) << "out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }

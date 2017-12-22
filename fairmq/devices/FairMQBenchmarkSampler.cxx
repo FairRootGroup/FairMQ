@@ -59,7 +59,7 @@ void FairMQBenchmarkSampler::Run()
 
     FairMQMessagePtr baseMsg(dataOutChannel.Transport()->CreateMessage(fMsgSize));
 
-    LOG(INFO) << "Starting the benchmark with message size of " << fMsgSize << " and " << fMaxIterations << " iterations.";
+    LOG(info) << "Starting the benchmark with message size of " << fMsgSize << " and " << fMaxIterations << " iterations.";
     auto tStart = chrono::high_resolution_clock::now();
 
     while (CheckCurrentState(RUNNING))
@@ -108,7 +108,7 @@ void FairMQBenchmarkSampler::Run()
 
     auto tEnd = chrono::high_resolution_clock::now();
 
-    LOG(INFO) << "Done " << fNumIterations << " iterations in " << chrono::duration<double, milli>(tEnd - tStart).count() << "ms.";
+    LOG(info) << "Done " << fNumIterations << " iterations in " << chrono::duration<double, milli>(tEnd - tStart).count() << "ms.";
 
 }
 

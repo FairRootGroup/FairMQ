@@ -46,13 +46,13 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
 {
     int major, minor, patch;
     zmq_version(&major, &minor, &patch);
-    LOG(DEBUG) << "Transport: Using ZeroMQ (" << major << "." << minor << "." << patch << ") & "
+    LOG(debug) << "Transport: Using ZeroMQ (" << major << "." << minor << "." << patch << ") & "
                << "boost::interprocess (" << (BOOST_VERSION / 100000) << "." << (BOOST_VERSION / 100 % 1000) << "." << (BOOST_VERSION % 100) << ")";
 
     fContext = zmq_ctx_new();
     if (!fContext)
     {
-        LOG(ERROR) << "failed creating context, reason: " << zmq_strerror(errno);
+        LOG(error) << "failed creating context, reason: " << zmq_strerror(errno);
         exit(EXIT_FAILURE);
     }
 
@@ -68,7 +68,7 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
     }
     else
     {
-        LOG(WARN) << "shmem: FairMQProgOptions not available! Using defaults.";
+        LOG(warn) << "FairMQProgOptions not available! Using defaults.";
     }
 
     try
@@ -77,17 +77,17 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
 
         if (zmq_ctx_set(fContext, ZMQ_IO_THREADS, numIoThreads) != 0)
         {
-            LOG(ERROR) << "shmem: failed configuring context, reason: " << zmq_strerror(errno);
+            LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
         }
 
         // Set the maximum number of allowed sockets on the context.
         if (zmq_ctx_set(fContext, ZMQ_MAX_SOCKETS, 10000) != 0)
         {
-            LOG(ERROR) << "shmem: failed configuring context, reason: " << zmq_strerror(errno);
+            LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
         }
 
         fManager = fair::mq::tools::make_unique<Manager>(fSessionName, segmentSize);
-        LOG(DEBUG) << "shmem: created/opened shared memory segment '" << "fmq_shm_" << fSessionName << "_main" << "' of " << segmentSize << " bytes. Available are " << fManager->Segment().get_free_memory() << " bytes.";
+        LOG(debug) << "created/opened shared memory segment '" << "fmq_shm_" << fSessionName << "_main" << "' of " << segmentSize << " bytes. Available are " << fManager->Segment().get_free_memory() << " bytes.";
 
         {
             bipc::scoped_lock<bipc::named_mutex> lock(*fShMutex);
@@ -95,15 +95,15 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
             fDeviceCounter = fManager->Segment().find<DeviceCounter>(bipc::unique_instance).first;
             if (fDeviceCounter)
             {
-                LOG(DEBUG) << "shmem: device counter found, with value of " << fDeviceCounter->fCount << ". incrementing.";
+                LOG(debug) << "device counter found, with value of " << fDeviceCounter->fCount << ". incrementing.";
                 (fDeviceCounter->fCount)++;
-                LOG(DEBUG) << "shmem: incremented device counter, now: " << fDeviceCounter->fCount;
+                LOG(debug) << "incremented device counter, now: " << fDeviceCounter->fCount;
             }
             else
             {
-                LOG(DEBUG) << "shmem: no device counter found, creating one and initializing with 1";
+                LOG(debug) << "no device counter found, creating one and initializing with 1";
                 fDeviceCounter = fManager->Segment().construct<DeviceCounter>(bipc::unique_instance)(1);
-                LOG(DEBUG) << "shmem: initialized device counter with: " << fDeviceCounter->fCount;
+                LOG(debug) << "initialized device counter with: " << fDeviceCounter->fCount;
             }
 
             // start shm monitor
@@ -112,24 +112,24 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
             //     MonitorStatus* monitorStatus = fManagementSegment.find<MonitorStatus>(bipc::unique_instance).first;
             //     if (monitorStatus == nullptr)
             //     {
-            //         LOG(DEBUG) << "shmem: no shmmonitor found, starting...";
+            //         LOG(debug) << "no shmmonitor found, starting...";
             //         StartMonitor();
             //     }
             //     else
             //     {
-            //         LOG(DEBUG) << "shmem: found shmmonitor.";
+            //         LOG(debug) << "found shmmonitor.";
             //     }
             // }
             // catch (std::exception& e)
             // {
-            //     LOG(ERROR) << "shmem: Exception during shmmonitor initialization: " << e.what() << ", application will now exit";
+            //     LOG(error) << "Exception during shmmonitor initialization: " << e.what() << ", application will now exit";
             //     exit(EXIT_FAILURE);
             // }
         }
     }
     catch(bipc::interprocess_exception& e)
     {
-        LOG(ERROR) << "Could not initialize shared memory transport: " << e.what();
+        LOG(error) << "Could not initialize shared memory transport: " << e.what();
         throw runtime_error("Cannot update configuration. Socket method (bind/connect) not specified.");
     }
 
@@ -143,20 +143,20 @@ void FairMQTransportFactorySHM::StartMonitor()
 
     if (!bfs::exists(bfs::path("shmmonitor")))
     {
-        LOG(ERROR) << "Could not find shmmonitor. Is it in the PATH? Monitor not started";
+        LOG(error) << "Could not find shmmonitor. Is it in the PATH? Monitor not started";
         return;
     }
 
     // TODO: replace with Boost.Process once boost 1.64 is available
     int r = system("shmmonitor --self-destruct &");
-    LOG(DEBUG) << r;
+    LOG(debug) << r;
 
     do
     {
         MonitorStatus* monitorStatus = fManager->ManagementSegment().find<MonitorStatus>(bipc::unique_instance).first;
         if (monitorStatus)
         {
-            LOG(DEBUG) << "shmem: shmmonitor started";
+            LOG(debug) << "shmmonitor started";
             break;
         }
         else
@@ -164,7 +164,7 @@ void FairMQTransportFactorySHM::StartMonitor()
             this_thread::sleep_for(std::chrono::milliseconds(10));
             if (++numTries > 100)
             {
-                LOG(ERROR) << "Did not get response from shmmonitor after " << 10 * 100 << " milliseconds. Exiting.";
+                LOG(error) << "Did not get response from shmmonitor after " << 10 * 100 << " milliseconds. Exiting.";
                 exit(EXIT_FAILURE);
             }
         }
@@ -188,13 +188,13 @@ void FairMQTransportFactorySHM::SendHeartbeats()
             }
             else
             {
-                LOG(DEBUG) << "control queue timeout";
+                LOG(debug) << "control queue timeout";
             }
         }
         catch (bipc::interprocess_exception& ie)
         {
             this_thread::sleep_for(chrono::milliseconds(500));
-            // LOG(WARN) << "no " << controlQueueName << " found";
+            // LOG(warn) << "no " << controlQueueName << " found";
         }
     }
 }
@@ -261,7 +261,7 @@ FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
         {
             if (errno == EINTR)
             {
-                LOG(ERROR) << "shmem: failed closing context, reason: " << zmq_strerror(errno);
+                LOG(error) << "failed closing context, reason: " << zmq_strerror(errno);
             }
             else
             {
@@ -272,7 +272,7 @@ FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
     }
     else
     {
-        LOG(ERROR) << "shmem: Terminate(): context not available for shutdown";
+        LOG(error) << "context not available for shutdown";
     }
 
     bool lastRemoved = false;
@@ -284,14 +284,14 @@ FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
 
         if (fDeviceCounter->fCount == 0)
         {
-            LOG(DEBUG) << "shmem: last segment user, removing segment.";
+            LOG(debug) << "last segment user, removing segment.";
 
             fManager->RemoveSegment();
             lastRemoved = true;
         }
         else
         {
-            LOG(DEBUG) << "shmem: other segment users present (" << fDeviceCounter->fCount << "), not removing it.";
+            LOG(debug) << "other segment users present (" << fDeviceCounter->fCount << "), not removing it.";
         }
     }
 

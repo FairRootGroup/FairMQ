@@ -37,7 +37,7 @@ class Pull : public FairMQDevice
 
         if (Receive(msg, "data") >= 0)
         {
-            LOG(INFO) << "PUSH-PULL test successfull";
+            LOG(info) << "PUSH-PULL test successfull";
         }
     };
 };

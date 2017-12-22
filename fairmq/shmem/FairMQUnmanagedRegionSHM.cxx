@@ -25,15 +25,15 @@ FairMQUnmanagedRegionSHM::FairMQUnmanagedRegionSHM(Manager& manager, const size_
         RegionCounter* rc = fManager.ManagementSegment().find<RegionCounter>(bipc::unique_instance).first;
         if (rc)
         {
-            LOG(DEBUG) << "shmem: region counter found, with value of " << rc->fCount << ". incrementing.";
+            LOG(debug) << "region counter found, with value of " << rc->fCount << ". incrementing.";
             (rc->fCount)++;
-            LOG(DEBUG) << "shmem: incremented region counter, now: " << rc->fCount;
+            LOG(debug) << "incremented region counter, now: " << rc->fCount;
         }
         else
         {
-            LOG(DEBUG) << "shmem: no region counter found, creating one and initializing with 1";
+            LOG(debug) << "no region counter found, creating one and initializing with 1";
             rc = fManager.ManagementSegment().construct<RegionCounter>(bipc::unique_instance)(1);
-            LOG(DEBUG) << "shmem: initialized region counter with: " << rc->fCount;
+            LOG(debug) << "initialized region counter with: " << rc->fCount;
         }
 
         fRegionId = rc->fCount;
@@ -42,8 +42,8 @@ FairMQUnmanagedRegionSHM::FairMQUnmanagedRegionSHM(Manager& manager, const size_
     }
     catch (bipc::interprocess_exception& e)
     {
-        LOG(ERROR) << "shmem: cannot create region. Already created/not cleaned up?";
-        LOG(ERROR) << e.what();
+        LOG(error) << "cannot create region. Already created/not cleaned up?";
+        LOG(error) << e.what();
         exit(EXIT_FAILURE);
     }
 }

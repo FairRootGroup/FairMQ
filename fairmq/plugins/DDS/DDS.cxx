@@ -53,11 +53,11 @@ DDS::DDS(const string name, const Plugin::Version version, const string maintain
     }
     catch (PluginServices::DeviceControlError& e)
     {
-        LOG(DEBUG) << e.what();
+        LOG(debug) << e.what();
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Error in plugin initialization: " << e.what();
+        LOG(error) << "Error in plugin initialization: " << e.what();
     }
 }
 
@@ -70,10 +70,10 @@ auto DDS::HandleControl() -> void
 
         // subscribe for DDS service errors.
         fService.subscribeOnError([](const dds::intercom_api::EErrorCode errorCode, const string& errorMsg) {
-            LOG(ERROR) << "DDS Error received: error code: " << errorCode << ", error message: " << errorMsg << endl;
+            LOG(error) << "DDS Error received: error code: " << errorCode << ", error message: " << errorMsg << endl;
         });
 
-        LOG(DEBUG) << "Subscribing for DDS properties.";
+        LOG(debug) << "Subscribing for DDS properties.";
         SubscribeForConnectingChannels();
 
         // subscribe to device state changes, pushing new state chenges into the event queue
@@ -94,7 +94,7 @@ auto DDS::HandleControl() -> void
                 string id = GetProperty<string>("id");
                 for (auto subscriberId : fStateChangeSubscribers)
                 {
-                    LOG(DEBUG) << "Publishing state-change: " << newState << " to " << subscriberId;
+                    LOG(debug) << "Publishing state-change: " << newState << " to " << subscriberId;
                     fDDSCustomCmd.send("state-change: " + id + "," + ToStr(newState), to_string(subscriberId));
                 }
             }
@@ -125,11 +125,11 @@ auto DDS::HandleControl() -> void
         {
             fStopCondition.wait_for(lock, chrono::seconds(1));
         }
-        LOG(DEBUG) << "Stopping DDS control plugin";
+        LOG(debug) << "Stopping DDS control plugin";
     }
     catch (exception& e)
     {
-        LOG(ERROR) << "Error: " << e.what() << endl;
+        LOG(error) << "Error: " << e.what() << endl;
         return;
     }
 
@@ -158,7 +158,7 @@ auto DDS::FillChannelContainers() -> void
         else if (GetProperty<string>(methodKey) == "connect")
         {
             fConnectingChans.insert(make_pair(c.first, DDSConfig()));
-            LOG(DEBUG) << "preparing to connect: " << c.first << " with " << c.second << " sub-channels.";
+            LOG(debug) << "preparing to connect: " << c.first << " with " << c.second << " sub-channels.";
             for (int i = 0; i < c.second; ++i)
             {
                 fConnectingChans.at(c.first).fSubChannelAddresses.push_back(string());
@@ -166,7 +166,7 @@ auto DDS::FillChannelContainers() -> void
         }
         else
         {
-            LOG(ERROR) << "Cannot update address configuration. Channel method (bind/connect) not specified.";
+            LOG(error) << "Cannot update address configuration. Channel method (bind/connect) not specified.";
             return;
         }
     }
@@ -177,7 +177,7 @@ auto DDS::SubscribeForConnectingChannels() -> void
     fDDSKeyValue.subscribe([&] (const string& propertyId, const string& key, const string& value)
     {
         try {
-            LOG(DEBUG) << "Received update for " << propertyId << ": key=" << key << " value=" << value;
+            LOG(debug) << "Received update for " << propertyId << ": key=" << key << " value=" << value;
             fConnectingChans.at(propertyId).fDDSValues.insert(make_pair<string, string>(key.c_str(), value.c_str()));
 
             // update channels and remove them from unfinished container
@@ -203,7 +203,7 @@ auto DDS::SubscribeForConnectingChannels() -> void
             }
         } catch (const exception& e)
         {
-            LOG(ERROR) << "Error on handling DDS property update for " << propertyId << ": key=" << key << " value=" << value << ": " << e.what();
+            LOG(error) << "Error on handling DDS property update for " << propertyId << ": key=" << key << " value=" << value << ": " << e.what();
         }
     });
 }
@@ -215,7 +215,7 @@ auto DDS::PublishBoundChannels() -> void
         unsigned int index = 0;
         for (const auto& i : chan.second)
         {
-            LOG(DEBUG) << "Publishing " << chan.first << "[" << index << "] address to DDS under '" << chan.first << "' property name.";
+            LOG(debug) << "Publishing " << chan.first << "[" << index << "] address to DDS under '" << chan.first << "' property name.";
             fDDSKeyValue.putValue(chan.first, i);
             ++index;
         }
@@ -245,7 +245,7 @@ auto DDS::SubscribeForCustomCommands() -> void
 
     fDDSCustomCmd.subscribe([id, pid, this](const string& cmd, const string& cond, uint64_t senderId)
     {
-        LOG(INFO) << "Received command: " << cmd;
+        LOG(info) << "Received command: " << cmd;
 
         if (cmd == "check-state")
         {
@@ -302,7 +302,7 @@ auto DDS::SubscribeForCustomCommands() -> void
             }
             fDDSCustomCmd.send("state-changes-subscription: " + id + ",OK", to_string(senderId));
             auto state = GetCurrentDeviceState();
-            LOG(DEBUG) << "Publishing state-change: " << state << " to " << senderId;
+            LOG(debug) << "Publishing state-change: " << state << " to " << senderId;
             fDDSCustomCmd.send("state-change: " + id + "," + ToStr(state), to_string(senderId));
         }
         else if (cmd == "unsubscribe-from-state-changes")
@@ -315,9 +315,9 @@ auto DDS::SubscribeForCustomCommands() -> void
         }
         else
         {
-            LOG(WARN) << "Unknown command: " << cmd;
-            LOG(WARN) << "Origin: " << senderId;
-            LOG(WARN) << "Destination: " << cond;
+            LOG(warn) << "Unknown command: " << cmd;
+            LOG(warn) << "Origin: " << senderId;
+            LOG(warn) << "Destination: " << cond;
         }
     });
 }

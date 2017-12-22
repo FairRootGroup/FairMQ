@@ -99,7 +99,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
     template<typename Event, typename FSM>
     void on_entry(Event const&, FSM& fsm)
     {
-        LOG(STATE) << "Starting FairMQ state machine";
+        LOG(state) << "Starting FairMQ state machine";
         fState = IDLE;
         fsm.CallStateChangeCallbacks(IDLE);
 
@@ -110,7 +110,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
     template<typename Event, typename FSM>
     void on_exit(Event const&, FSM& /*fsm*/)
     {
-        LOG(STATE) << "Exiting FairMQ state machine";
+        LOG(state) << "Exiting FairMQ state machine";
     }
 
     // list of FSM states
@@ -137,7 +137,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
         void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
         {
-            LOG(STATE) << "Entering IDLE state";
+            LOG(state) << "Entering IDLE state";
             fsm.fState = IDLE;
         }
     };
@@ -155,7 +155,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            LOG(STATE) << "Entering INITIALIZING DEVICE state";
+            LOG(state) << "Entering INITIALIZING DEVICE state";
             fsm.fWork = std::bind(&FairMQFSM::InitWrapper, &fsm);
             fsm.fWorkAvailableCondition.notify_one();
         }
@@ -166,7 +166,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
         void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
         {
-            LOG(STATE) << "Entering DEVICE READY state";
+            LOG(state) << "Entering DEVICE READY state";
             fsm.fState = DEVICE_READY;
         }
     };
@@ -184,7 +184,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            LOG(STATE) << "Entering INITIALIZING TASK state";
+            LOG(state) << "Entering INITIALIZING TASK state";
             fsm.fWork = std::bind(&FairMQFSM::InitTaskWrapper, &fsm);
             fsm.fWorkAvailableCondition.notify_one();
         }
@@ -195,7 +195,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
         void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
         {
-            LOG(STATE) << "Entering READY state";
+            LOG(state) << "Entering READY state";
             fsm.fState = READY;
         }
     };
@@ -213,7 +213,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            LOG(STATE) << "Entering RUNNING state";
+            LOG(state) << "Entering RUNNING state";
             fsm.fWork = std::bind(&FairMQFSM::RunWrapper, &fsm);
             fsm.fWorkAvailableCondition.notify_one();
         }
@@ -233,7 +233,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            LOG(STATE) << "Entering PAUSED state";
+            LOG(state) << "Entering PAUSED state";
             fsm.fWork = std::bind(&FairMQFSM::PauseWrapper, &fsm);
             fsm.fWorkAvailableCondition.notify_one();
         }
@@ -252,7 +252,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            LOG(STATE) << "Entering RUNNING state";
+            LOG(state) << "Entering RUNNING state";
             fsm.fWork = std::bind(&FairMQFSM::RunWrapper, &fsm);
             fsm.fWorkAvailableCondition.notify_one();
         }
@@ -271,7 +271,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
             {
                 fsm.fWorkDoneCondition.wait(lock);
             }
-            LOG(STATE) << "Entering READY state";
+            LOG(state) << "Entering READY state";
         }
     };
 
@@ -282,7 +282,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
         {
             fsm.fState = READY;
             fsm.Unblock();
-            LOG(STATE) << "RUNNING state finished without an external event, entering READY state";
+            LOG(state) << "RUNNING state finished without an external event, entering READY state";
         }
     };
 
@@ -299,7 +299,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            LOG(STATE) << "Entering RESETTING TASK state";
+            LOG(state) << "Entering RESETTING TASK state";
             fsm.fWork = std::bind(&FairMQFSM::ResetTaskWrapper, &fsm);
             fsm.fWorkAvailableCondition.notify_one();
         }
@@ -318,7 +318,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            LOG(STATE) << "Entering RESETTING DEVICE state";
+            LOG(state) << "Entering RESETTING DEVICE state";
             fsm.fWork = std::bind(&FairMQFSM::ResetWrapper, &fsm);
             fsm.fWorkAvailableCondition.notify_one();
         }
@@ -329,7 +329,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
         void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
         {
-            LOG(STATE) << "Entering EXITING state";
+            LOG(state) << "Entering EXITING state";
             fsm.fState = EXITING;
             fsm.fTerminationRequested = true;
             fsm.CallStateChangeCallbacks(EXITING);
@@ -356,7 +356,7 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
         void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
         {
-            LOG(STATE) << "Entering ERROR state";
+            LOG(state) << "Entering ERROR state";
             fsm.fState = Error;
             fsm.CallStateChangeCallbacks(Error);
         }
@@ -404,10 +404,10 @@ struct FairMQFSM : public msmf::state_machine_def<FairMQFSM>
 
         if (stateName != "OK")
         {
-            LOG(STATE) << "No transition from state " << stateName << " on event " << e.name();
+            LOG(state) << "No transition from state " << stateName << " on event " << e.name();
         }
 
-        // LOG(STATE) << "no transition from state " << GetStateName(state) << " (" << state << ") on event " << e.name();
+        // LOG(state) << "no transition from state " << GetStateName(state) << " (" << state << ") on event " << e.name();
     }
 
     // backward compatibility to FairMQStateMachine

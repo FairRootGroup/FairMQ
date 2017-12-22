@@ -100,8 +100,8 @@ FairMQPollerNN::FairMQPollerNN(const unordered_map<string, vector<FairMQChannel>
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "nanomsg: at least one of the provided channel keys for poller initialization is invalid";
-        LOG(ERROR) << "nanomsg: out of range error: " << oor.what() << '\n';
+        LOG(error) << "at least one of the provided channel keys for poller initialization is invalid";
+        LOG(error) << "out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }
@@ -143,7 +143,7 @@ void FairMQPollerNN::SetItemEvents(nn_pollfd& item, const int type)
     }
     else
     {
-        LOG(ERROR) << "nanomsg: invalid poller configuration, exiting.";
+        LOG(error) << "invalid poller configuration, exiting.";
         exit(EXIT_FAILURE);
     }
 }
@@ -154,12 +154,12 @@ void FairMQPollerNN::Poll(const int timeout)
     {
         if (errno == ETERM)
         {
-            LOG(DEBUG) << "nanomsg: polling exited, reason: " << nn_strerror(errno);
+            LOG(debug) << "polling exited, reason: " << nn_strerror(errno);
         }
         else
         {
-            LOG(ERROR) << "nanomsg: polling failed, reason: " << nn_strerror(errno);
-            throw std::runtime_error("nanomsg: polling failed");
+            LOG(error) << "polling failed, reason: " << nn_strerror(errno);
+            throw std::runtime_error("polling failed");
         }
     }
 }
@@ -197,8 +197,8 @@ bool FairMQPollerNN::CheckInput(const string channelKey, const int index)
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "nanomsg: invalid channel key: \"" << channelKey << "\"";
-        LOG(ERROR) << "nanomsg: out of range error: " << oor.what() << '\n';
+        LOG(error) << "invalid channel key: \"" << channelKey << "\"";
+        LOG(error) << "out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }
@@ -216,8 +216,8 @@ bool FairMQPollerNN::CheckOutput(const string channelKey, const int index)
     }
     catch (const std::out_of_range& oor)
     {
-        LOG(ERROR) << "nanomsg: invalid channel key: \"" << channelKey << "\"";
-        LOG(ERROR) << "nanomsg: out of range error: " << oor.what() << '\n';
+        LOG(error) << "invalid channel key: \"" << channelKey << "\"";
+        LOG(error) << "out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
 }
