@@ -124,18 +124,18 @@ TEST(PushPull, ST_Nanomsg_inproc_Multipart)
 
 TEST(PushPull, ST_ZeroMQ__ipc____Multipart)
 {
-    RunSingleThreadedMultipart("zeromq", "ipc://test");
+    RunSingleThreadedMultipart("zeromq", "ipc://test_ST_ZeroMQ__ipc____Multipart");
 }
 
 TEST(PushPull, ST_Shmen___ipc____Multipart)
 {
-    RunSingleThreadedMultipart("shmem", "ipc://test");
+    RunSingleThreadedMultipart("shmem", "ipc://test_ST_Shmen___ipc____Multipart");
 }
 
 #ifdef NANOMSG_FOUND
 TEST(PushPull, ST_Nanomsg_ipc____Multipart)
 {
-    RunSingleThreadedMultipart("nanomsg", "ipc://test");
+    RunSingleThreadedMultipart("nanomsg", "ipc://test_ST_Nanomsg_ipc____Multipart");
 }
 #endif /* NANOMSG_FOUND */
 
@@ -158,18 +158,18 @@ TEST(PushPull, MT_Nanomsg_inproc_Multipart)
 
 TEST(PushPull, MT_ZeroMQ__ipc____Multipart)
 {
-    RunMultiThreadedMultipart("zeromq", "ipc://test");
+    RunMultiThreadedMultipart("zeromq", "ipc://test_MT_ZeroMQ__ipc____Multipart");
 }
 
 TEST(PushPull, MT_Shmem___ipc____Multipart)
 {
-    RunMultiThreadedMultipart("shmem", "ipc://test");
+    RunMultiThreadedMultipart("shmem", "ipc://test_MT_Shmem___ipc____Multipart");
 }
 
 #ifdef NANOMSG_FOUND
 TEST(PushPull, MT_Nanomsg_ipc____Multipart)
 {
-    RunMultiThreadedMultipart("nanomsg", "ipc://test");
+    RunMultiThreadedMultipart("nanomsg", "ipc://test_MT_Nanomsg_ipc____Multipart");
 }
 #endif /* NANOMSG_FOUND */
 
