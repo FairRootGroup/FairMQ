@@ -503,19 +503,19 @@ void FairMQDevice::RunWrapper()
         }
         else
         {
-            using Clock = std::chrono::steady_clock;
-            using TimeScale = std::chrono::microseconds;
+            using Clock = chrono::steady_clock;
+            using TimeScale = chrono::microseconds;
             const TimeScale::rep period = TimeScale::period::den / fRate;
             const auto reftime = Clock::now();
             while (CheckCurrentState(RUNNING) && ConditionalRun())
             {
               if (fRate > 0.001) {
-                auto timespan = std::chrono::duration_cast<TimeScale>(Clock::now() - reftime).count() - fLastTime;
+                auto timespan = chrono::duration_cast<TimeScale>(Clock::now() - reftime).count() - fLastTime;
                 if (timespan < period) {
                   TimeScale sleepfor(period - timespan);
-                  std::this_thread::sleep_for(sleepfor);
+                  this_thread::sleep_for(sleepfor);
                 }
-                fLastTime = std::chrono::duration_cast<TimeScale>(Clock::now() - reftime).count();
+                fLastTime = chrono::duration_cast<TimeScale>(Clock::now() - reftime).count();
               }
             }
 
@@ -701,7 +701,7 @@ void FairMQDevice::PollForTransport(const FairMQTransportFactory* factory, const
             }
         }
     }
-    catch (std::exception& e)
+    catch (exception& e)
     {
         LOG(error) << "FairMQDevice::PollForTransport() failed: " << e.what() << ", going to ERROR state.";
         ChangeState(ERROR_FOUND);
@@ -903,10 +903,10 @@ void FairMQDevice::SetConfig(FairMQProgOptions& config)
 
 void FairMQDevice::LogSocketRates()
 {
-    timestamp_t t0;
-    timestamp_t t1;
+    chrono::time_point<chrono::high_resolution_clock> t0;
+    chrono::time_point<chrono::high_resolution_clock> t1;
 
-    timestamp_t msSinceLastLog;
+    unsigned long long msSinceLastLog;
 
     vector<FairMQSocket*> filteredSockets;
     vector<string> filteredChannelNames;
@@ -958,15 +958,15 @@ void FairMQDevice::LogSocketRates()
             ++i;
         }
 
-        t0 = get_timestamp();
+        t0 = chrono::high_resolution_clock::now();
 
         LOG(debug) << "<channel>: in: <#msgs> (<MB>) out: <#msgs> (<MB>)";
 
         while (CheckCurrentState(RUNNING))
         {
-            t1 = get_timestamp();
+            t1 = chrono::high_resolution_clock::now();
 
-            msSinceLastLog = (t1 - t0) / 1000.0L;
+            msSinceLastLog = chrono::duration_cast<chrono::milliseconds>(t1 - t0).count();
 
             i = 0;
 
@@ -1056,7 +1056,7 @@ void FairMQDevice::Reset()
     }
 }
 
-const FairMQChannel& FairMQDevice::GetChannel(const std::string& channelName, const int index) const
+const FairMQChannel& FairMQDevice::GetChannel(const string& channelName, const int index) const
 {
     return fChannels.at(channelName).at(index);
 }

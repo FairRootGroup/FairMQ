@@ -13,13 +13,3 @@
  */
 
 #include "FairMQLogger.h"
-
-#include <sys/time.h>
-#include <ctime>
-
-timestamp_t get_timestamp()
-{
-    struct timeval now;
-    gettimeofday(&now, nullptr);
-    return now.tv_usec + static_cast<timestamp_t>(now.tv_sec) * 1000000;
-}

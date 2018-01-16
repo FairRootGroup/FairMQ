@@ -115,18 +115,18 @@ void FairMQShmPrototypeSink::Run()
 
 void FairMQShmPrototypeSink::Log(const int intervalInMs)
 {
-    timestamp_t t0 = get_timestamp();
-    timestamp_t t1;
-    timestamp_t msSinceLastLog;
+    chrono::time_point<chrono::high_resolution_clock> t0 = chrono::high_resolution_clock::now();
+    chrono::time_point<chrono::high_resolution_clock> t1;
+    unsigned long long msSinceLastLog;
 
     double mbPerSecIn = 0;
     double msgPerSecIn = 0;
 
     while (CheckCurrentState(RUNNING))
     {
-        t1 = get_timestamp();
+        t1 = chrono::high_resolution_clock::now();
 
-        msSinceLastLog = (t1 - t0) / 1000.0L;
+        msSinceLastLog = chrono::duration_cast<chrono::milliseconds>(t1 - t0).count();
 
         mbPerSecIn = (static_cast<double>(fBytesInNew - fBytesIn) / (1024. * 1024.)) / static_cast<double>(msSinceLastLog) * 1000.;
         fBytesIn = fBytesInNew;
