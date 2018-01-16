@@ -7,6 +7,7 @@ trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; kill -TERM $BROADCASTER_PID
 
 SINK="ex6-sink"
 SINK+=" --id sink1"
+SINK+=" --verbosity veryhigh"
 SINK+=" --max-iterations 1"
 SINK+=" --control static --color false"
 SINK+=" --mq-config $ex6config"
@@ -17,7 +18,7 @@ sleep 1
 
 SAMPLER="ex6-sampler"
 SAMPLER+=" --id sampler1"
-SAMPLER+=" --severity NOLOG"
+SAMPLER+=" --verbosity veryhigh"
 SAMPLER+=" --max-iterations 1"
 SAMPLER+=" --control static --color false"
 SAMPLER+=" --mq-config $ex6config"
@@ -26,7 +27,7 @@ SAMPLER_PID=$!
 
 BROADCASTER="ex6-broadcaster"
 BROADCASTER+=" --id broadcaster1"
-BROADCASTER+=" --severity NOLOG"
+BROADCASTER+=" --verbosity veryhigh"
 BROADCASTER+=" --control static --color false"
 BROADCASTER+=" --mq-config $ex6config"
 @CMAKE_BINARY_DIR@/bin/examples/MQ/6-multiple-channels/$BROADCASTER &
