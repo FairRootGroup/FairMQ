@@ -7,6 +7,7 @@ trap 'kill -TERM $CLIENT_PID; kill -TERM $SERVER_PID; wait $CLIENT_PID; wait $SE
 
 CLIENT="ex5-client"
 CLIENT+=" --id client"
+CLIENT+=" --verbosity veryhigh"
 CLIENT+=" --control static --color false"
 CLIENT+=" --max-iterations 1"
 CLIENT+=" --mq-config $ex5config"
@@ -15,7 +16,7 @@ CLIENT_PID=$!
 
 SERVER="ex5-server"
 SERVER+=" --id server"
-SERVER+=" --severity NOLOG"
+SERVER+=" --verbosity veryhigh"
 SERVER+=" --control static --color false"
 SERVER+=" --max-iterations 1"
 SERVER+=" --mq-config $ex5config"

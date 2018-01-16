@@ -7,7 +7,7 @@ trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; kill -TERM $PROCESSOR1_PID;
 
 SAMPLER="ex2-sampler"
 SAMPLER+=" --id sampler1"
-SAMPLER+=" --severity NOLOG"
+SAMPLER+=" --verbosity veryhigh"
 SAMPLER+=" --control static --color false"
 SAMPLER+=" --max-iterations 2"
 SAMPLER+=" --mq-config $ex2config"
@@ -16,7 +16,7 @@ SAMPLER_PID=$!
 
 PROCESSOR1="ex2-processor"
 PROCESSOR1+=" --id processor1"
-PROCESSOR1+=" --severity NOLOG"
+PROCESSOR1+=" --verbosity veryhigh"
 PROCESSOR1+=" --control static --color false"
 PROCESSOR1+=" --mq-config $ex2config"
 PROCESSOR1+=" --config-key processor"
@@ -25,7 +25,7 @@ PROCESSOR1_PID=$!
 
 PROCESSOR2="ex2-processor"
 PROCESSOR2+=" --id processor2"
-PROCESSOR2+=" --severity NOLOG"
+PROCESSOR2+=" --verbosity veryhigh"
 PROCESSOR2+=" --control static --color false"
 PROCESSOR2+=" --mq-config $ex2config"
 PROCESSOR2+=" --config-key processor"
@@ -34,6 +34,7 @@ PROCESSOR2_PID=$!
 
 SINK="ex2-sink"
 SINK+=" --id sink1"
+SINK+=" --verbosity veryhigh"
 SINK+=" --control static --color false"
 SINK+=" --max-iterations 2"
 SINK+=" --mq-config $ex2config"
