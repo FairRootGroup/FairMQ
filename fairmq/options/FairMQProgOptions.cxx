@@ -74,7 +74,7 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
 
     if (logFile != "")
     {
-        fair::Logger::InitFileSink(logFile, severity);
+        fair::Logger::InitFileSink(severity, logFile);
         fair::Logger::SetConsoleSeverity("nolog");
     }
     else
