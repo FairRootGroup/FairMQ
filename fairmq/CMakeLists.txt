@@ -106,9 +106,10 @@ set(FAIRMQ_HEADER_FILES
     shmem/Region.h
     tools/CppSTL.h
     tools/Network.h
+    tools/Process.h
     tools/Strings.h
-    tools/Version.h
     tools/Unique.h
+    tools/Version.h
     zeromq/FairMQMessageZMQ.h
     zeromq/FairMQPollerZMQ.h
     zeromq/FairMQUnmanagedRegionZMQ.h

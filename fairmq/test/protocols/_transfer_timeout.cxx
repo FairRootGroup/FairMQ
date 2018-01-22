@@ -16,16 +16,17 @@ namespace
 
 using namespace std;
 using namespace fair::mq::test;
+using namespace fair::mq::tools;
 
 auto RunTransferTimeout(string transport) -> void
 {
     size_t session{fair::mq::tools::UuidHash()};
     stringstream cmd;
-    cmd << runTestDevice << " --id transfer_timeout_" << transport << " --control static --severity DEBUG "
+    cmd << runTestDevice << " --id transfer_timeout_" << transport << " --control static "
         << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
     auto res = execute(cmd.str());
 
-    cerr << res.error_out;
+    cerr << res.console_out;
 
     exit(res.exit_code);
 }

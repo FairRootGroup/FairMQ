@@ -17,6 +17,7 @@ namespace
 
 using namespace std;
 using namespace fair::mq::test;
+using namespace fair::mq::tools;
 
 auto RunPoller(string transport, int pollType) -> void
 {
@@ -27,7 +28,7 @@ auto RunPoller(string transport, int pollType) -> void
         stringstream cmd;
         cmd << runTestDevice
             << " --id pollout_"<< transport
-            << " --control static --severity DEBUG --color false"
+            << " --control static --color false"
             << " --session " << session << " --mq-config \"" << mqConfig << "\"";
         pollout = execute(cmd.str(), "[POLLOUT]");
     });
@@ -37,14 +38,14 @@ auto RunPoller(string transport, int pollType) -> void
         stringstream cmd;
         cmd << runTestDevice
             << " --id pollin_" << transport
-            << " --control static --severity DEBUG --color false"
+            << " --control static --color false"
             << " --session " << session << " --mq-config \"" << mqConfig << "\" --poll-type " << pollType;
         pollin = execute(cmd.str(), "[POLLIN]");
     });
 
     poll_out_thread.join();
     poll_in_thread.join();
-    cerr << pollout.error_out << pollin.error_out;
+    cerr << pollout.console_out << pollin.console_out;
 
     exit(pollout.exit_code + pollin.exit_code);
 }

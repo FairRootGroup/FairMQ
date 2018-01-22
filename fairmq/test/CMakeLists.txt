@@ -7,8 +7,6 @@
 ################################################################################
 
 find_package(GTest REQUIRED)
-set(PSTREAMS_SOURCE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/pstreams)
-find_package(PStreams REQUIRED)
 include(GTestHelper)
 
 #############################
@@ -47,7 +45,7 @@ add_testsuite(FairMQ.Protocols
     protocols/_transfer_timeout.cxx
     protocols/_push_pull_multipart.cxx
 
-    LINKS PStreams FairMQ
+    LINKS FairMQ
     DEPENDS testhelper_runTestDevice
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/protocols
     TIMEOUT 30

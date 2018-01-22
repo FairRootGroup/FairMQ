@@ -12,9 +12,10 @@
 // IWYU pragma: begin_exports
 #include <fairmq/tools/CppSTL.h>
 #include <fairmq/tools/Network.h>
+#include <fairmq/tools/Process.h>
 #include <fairmq/tools/Strings.h>
-#include <fairmq/tools/Version.h>
 #include <fairmq/tools/Unique.h>
+#include <fairmq/tools/Version.h>
 // IWYU pragma: end_exports
 
 #endif // FAIR_MQ_TOOLS_H

@@ -7,10 +7,10 @@
  ********************************************************************************/
 
 #include "runner.h"
+
 #include <gtest/gtest.h>
-#include <sstream>
+
 #include <string>
-#include <pstream.h> // redi::ipstream
 #include <iostream>
 
 namespace fair
@@ -24,43 +24,6 @@ using namespace std;
 
 string runTestDevice = "@RUN_TEST_DEVICE@";
 string mqConfig = "@MQ_CONFIG@";
-
-auto execute(string cmd, string log_prefix) -> execute_result
-{
-    auto res = execute_result{"", 0};
-    stringstream out;
-
-    // Log cmd
-
-    // print full line thread-safe
-    stringstream printCmd;
-    printCmd << log_prefix << cmd << endl;
-    cout << printCmd.str() << flush;
-
-    out << log_prefix << cmd << endl;
-
-    // Execute command and capture stderr, add log_prefix line by line
-    redi::ipstream in(cmd, redi::pstreams::pstdout);
-    auto line = string{};
-    while (getline(in, line))
-    {
-        // print full line thread-safe
-        stringstream printLine;
-        printLine << log_prefix << line << endl;
-        cout << printLine.str() << flush;
-
-        out << log_prefix << line << endl;
-    }
-    in.close();
-
-    // Capture exit code
-    res.exit_code = in.rdbuf()->status();
-    out << log_prefix << " Exit code: " << res.exit_code << endl;
-    
-    // Return result
-    res.error_out = out.str();
-    return res;
-}
 
 } /* namespace test */
 } /* namespace mq */

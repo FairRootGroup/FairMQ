@@ -17,6 +17,7 @@ namespace
 
 using namespace std;
 using namespace fair::mq::test;
+using namespace fair::mq::tools;
 
 auto RunPushPull(string transport) -> void
 {
@@ -25,7 +26,7 @@ auto RunPushPull(string transport) -> void
     auto push = execute_result{"", 100};
     thread push_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id push_" << transport << " --control static --severity DEBUG "
+        cmd << runTestDevice << " --id push_" << transport << " --control static "
         << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
         push = execute(cmd.str(), "[PUSH]");
     });
@@ -33,14 +34,14 @@ auto RunPushPull(string transport) -> void
     auto pull = execute_result{"", 100};
     thread pull_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id pull_" << transport << " --control static --severity DEBUG "
+        cmd << runTestDevice << " --id pull_" << transport << " --control static "
         << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
         pull = execute(cmd.str(), "[PULL]");
     });
 
     push_thread.join();
     pull_thread.join();
-    cerr << push.error_out << pull.error_out;
+    cerr << push.console_out << pull.console_out;
 
     exit(push.exit_code + pull.exit_code);
 }

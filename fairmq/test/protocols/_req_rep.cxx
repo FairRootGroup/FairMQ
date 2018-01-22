@@ -17,6 +17,7 @@ namespace
 
 using namespace std;
 using namespace fair::mq::test;
+using namespace fair::mq::tools;
 
 auto RunReqRep(string transport) -> void
 {
@@ -25,7 +26,7 @@ auto RunReqRep(string transport) -> void
     auto rep = execute_result{ "", 0 };
     thread rep_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id rep_" << transport << " --control static --severity DEBUG "
+        cmd << runTestDevice << " --id rep_" << transport << " --control static "
         << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
         rep = execute(cmd.str(), "[REP]");
     });
@@ -33,7 +34,7 @@ auto RunReqRep(string transport) -> void
     auto req1 = execute_result{ "", 0 };
     thread req1_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id req_1" << transport << " --control static --severity DEBUG "
+        cmd << runTestDevice << " --id req_1" << transport << " --control static "
         << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
         req1 = execute(cmd.str(), "[REQ1]");
     });
@@ -41,7 +42,7 @@ auto RunReqRep(string transport) -> void
     auto req2 = execute_result{ "", 0 };
     thread req2_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id req_2" << transport << " --control static --severity DEBUG "
+        cmd << runTestDevice << " --id req_2" << transport << " --control static "
         << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
         req2 = execute(cmd.str(), "[REQ2]");
     });
@@ -49,7 +50,7 @@ auto RunReqRep(string transport) -> void
     rep_thread.join();
     req1_thread.join();
     req2_thread.join();
-    cerr << req1.error_out << req2.error_out << rep.error_out;
+    cerr << req1.console_out << req2.console_out << rep.console_out;
 
     exit(req1.exit_code + req2.exit_code + rep.exit_code);
 }
