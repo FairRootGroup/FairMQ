@@ -37,10 +37,10 @@ Control::Control(const string name, const Plugin::Version version, const string 
     : Plugin(name, version, maintainer, homepage, pluginServices)
     , fControllerThread()
     , fSignalHandlerThread()
-    , fDeviceTerminationRequested{false}
     , fEvents()
     , fEventsMutex()
     , fNewEvent()
+    , fDeviceTerminationRequested{false}
 {
     try
     {

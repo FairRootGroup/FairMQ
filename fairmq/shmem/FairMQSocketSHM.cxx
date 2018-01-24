@@ -21,8 +21,8 @@ atomic<bool> FairMQSocketSHM::fInterrupted(false);
 
 FairMQSocketSHM::FairMQSocketSHM(Manager& manager, const string& type, const string& name, const string& id /*= ""*/, void* context)
     : FairMQSocket(ZMQ_SNDMORE, ZMQ_RCVMORE, ZMQ_DONTWAIT)
-    , fManager(manager)
     , fSocket(nullptr)
+    , fManager(manager)
     , fId()
     , fBytesTx(0)
     , fBytesRx(0)

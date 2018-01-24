@@ -24,8 +24,8 @@ using namespace std;
 
 FairMQProgOptions::FairMQProgOptions()
     : FairProgOptions()
-    , fMQParserOptions("FairMQ config parser options")
     , fMQCmdOptions("FairMQ device options")
+    , fMQParserOptions("FairMQ config parser options")
     , fFairMQMap()
     , fChannelInfo()
     , fMQKeyMap()
