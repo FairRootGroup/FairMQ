@@ -35,7 +35,7 @@ FairMQ::Transport FairMQTransportFactorySHM::fTransportType = FairMQ::Transport:
 
 FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const FairMQProgOptions* config)
     : FairMQTransportFactory(id)
-    , fSessionName()
+    , fSessionName("default")
     , fContext(nullptr)
     , fHeartbeatSocket(nullptr)
     , fHeartbeatThread()
@@ -62,14 +62,14 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
     {
         numIoThreads = config->GetValue<int>("io-threads");
         fSessionName = config->GetValue<string>("session");
-        fSessionName.resize(8, '_'); // shorten the session name, to accommodate for name size limit on some systems (MacOS)
-        // fSegmentName = "fmq_shm_" + fSessionName + "_main";
         segmentSize = config->GetValue<size_t>("shm-segment-size");
     }
     else
     {
         LOG(warn) << "FairMQProgOptions not available! Using defaults.";
     }
+
+    fSessionName.resize(8, '_'); // shorten the session name, to accommodate for name size limit on some systems (MacOS)
 
     try
     {
