@@ -16,6 +16,7 @@
 
 #include <iomanip>
 #include <sstream>
+#include <algorithm>
 
 using namespace std;
 
@@ -85,6 +86,21 @@ int FairProgOptions::ParseCmdLine(const int argc, char const* const* argv, const
 int FairProgOptions::ParseCmdLine(const int argc, char const* const* argv, const po::options_description& desc, bool allowUnregistered)
 {
     return ParseCmdLine(argc, argv, desc, fVarMap, allowUnregistered);
+}
+
+void FairProgOptions::ParseDefaults(const po::options_description& desc)
+{
+    vector<string> emptyArgs;
+    emptyArgs.push_back("dummy");
+
+    vector<const char*> argv(emptyArgs.size());
+
+    transform(emptyArgs.begin(), emptyArgs.end(), argv.begin(), [](const string& str)
+    {
+        return str.c_str();
+    });
+
+    po::store(po::parse_command_line(argv.size(), const_cast<char**>(argv.data()), desc), fVarMap);
 }
 
 int FairProgOptions::PrintOptions()

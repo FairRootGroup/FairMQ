@@ -30,6 +30,8 @@ FairMQProgOptions::FairMQProgOptions()
     , fChannelInfo()
     , fMQKeyMap()
 {
+    InitOptionDescription();
+    ParseDefaults(fCmdLineOptions);
 }
 
 FairMQProgOptions::~FairMQProgOptions()
@@ -50,8 +52,6 @@ int FairMQProgOptions::ParseAll(const vector<string>& cmdLineArgs, bool allowUnr
 
 int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool allowUnregistered)
 {
-    InitOptionDescription();
-
     if (FairProgOptions::ParseCmdLine(argc, argv, fCmdLineOptions, fVarMap, allowUnregistered))
     {
         // ParseCmdLine returns 0 if no immediate switches found.

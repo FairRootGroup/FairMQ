@@ -27,8 +27,6 @@ auto RunPushPullWithMsgResize(string transport, string address) -> void {
 
     FairMQProgOptions config;
     config.SetValue<string>("session", to_string(session));
-    config.SetValue<int>("io-threads", 1);
-    config.SetValue<size_t>("shm-segment-size", 20000000);
 
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
 

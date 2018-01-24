@@ -161,6 +161,7 @@ class FairProgOptions
     // boost prog options parsers
     int ParseCmdLine(const int argc, char const* const* argv, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);
     int ParseCmdLine(const int argc, char const* const* argv, const po::options_description& desc, bool allowUnregistered = false);
+    void ParseDefaults(const po::options_description& desc);
 
     virtual int ParseAll(const int argc, char const* const* argv, bool allowUnregistered = false) = 0;// TODO change return type to bool and propagate to executable
 
