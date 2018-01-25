@@ -1,6 +1,6 @@
 ← [Back](../README.md)
 
-# 4. Examples
+# 6. Examples
 
 A collection of simple examples in `FairRoot/examples/MQ` directory demonstrates some common usage patterns of FairMQ.
 
