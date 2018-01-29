@@ -40,12 +40,12 @@ When running a FairMQ device, the log severity can be simply provided via `--sev
 
 ## 5.2 Log verbosity
 
-The log severity is controlled via:
+The log verbosity is controlled via:
 ```C++
 fair::Logget::SetVerbosity("<verbosity level>");
 ```
 
-it is same for all sinks, and is one of the follwing values: `low`, `medium`, `high`, `veryhigh`, which translates to following output:
+it is same for all sinks, and is one of the following values: `low`, `medium`, `high`, `veryhigh`, which translates to following output:
 
 ```
 low:      [severity] message
@@ -63,6 +63,8 @@ Colored output on console can be activated with:
 Logger::SetConsoleColor(true);
 ```
 
+When running a FairMQ device, the log color (console) can be simply provided via `--color <true/false>` cmd option (default is true).
+
 ## 5.4 File output
 
 Output to file can be enabled via:
@@ -70,6 +72,8 @@ Output to file can be enabled via:
 Logger::InitFileSink("<severity level>", "test_log", true);
 ```
 which will add output to "test_log" filename (if third parameter is `true` it will add timestamp to the file name) with `<severity level>` severity.
+
+When running a FairMQ device, the log file can be simply provided via `--log-to-file <filename_prefix>` cmd option (this will also turn off console output).
 
 ## 5.5 Custom sinks
 

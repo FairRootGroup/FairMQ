@@ -30,9 +30,10 @@ FairProgOptions::FairProgOptions()
     fGeneralDesc.add_options()
         ("help,h", "produce help")
         ("version,v", "print version")
-        ("severity", po::value<string>()->default_value("debug"), "Log severity level : trace, debug, info, state, warn, error, fatal, nolog")
-        ("verbosity", po::value<string>()->default_value("medium"), "Log verbosity level : veryhigh, high, medium, low")
+        ("severity", po::value<string>()->default_value("debug"), "Log severity level: trace, debug, info, state, warn, error, fatal, nolog")
+        ("verbosity", po::value<string>()->default_value("medium"), "Log verbosity level: veryhigh, high, medium, low")
         ("color", po::value<bool>()->default_value(true), "Log color (true/false)")
+        ("log-to-file", po::value<string>()->default_value(""), "Log output to a file.")
         ("print-options", po::value<bool>()->implicit_value(true), "print options in machine-readable format (<option>:<computed-value>:<type>:<description>)");
 }
 
