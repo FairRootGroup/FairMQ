@@ -30,13 +30,13 @@ namespace bipc = boost::interprocess;
 namespace bpt = boost::posix_time;
 
 using CharAllocator   = bipc::allocator<char, bipc::managed_shared_memory::segment_manager>;
-using String          = bipc::basic_string<char, std::char_traits<char>, CharAllocator>;
+using String          = bipc::basic_string<char, char_traits<char>, CharAllocator>;
 using StringAllocator = bipc::allocator<String, bipc::managed_shared_memory::segment_manager>;
 using StringVector    = bipc::vector<String, StringAllocator>;
 
 namespace
 {
-    volatile std::sig_atomic_t gSignalStatus = 0;
+    volatile sig_atomic_t gSignalStatus = 0;
 }
 
 namespace fair
@@ -51,10 +51,12 @@ void signalHandler(int signal)
     gSignalStatus = signal;
 }
 
-Monitor::Monitor(const string& sessionName, bool selfDestruct, bool interactive, unsigned int timeoutInMS)
+Monitor::Monitor(const string& sessionName, bool selfDestruct, bool interactive, unsigned int timeoutInMS, bool runAsDaemon, bool cleanOnExit)
     : fSelfDestruct(selfDestruct)
     , fInteractive(interactive)
     , fSeenOnce(false)
+    , fIsDaemon(runAsDaemon)
+    , fCleanOnExit(cleanOnExit)
     , fTimeoutInMS(timeoutInMS)
     , fSessionName(sessionName)
     , fSegmentName("fmq_shm_" + fSessionName + "_main")
@@ -62,9 +64,10 @@ Monitor::Monitor(const string& sessionName, bool selfDestruct, bool interactive,
     , fControlQueueName("fmq_shm_" + fSessionName + "_control_queue")
     , fTerminating(false)
     , fHeartbeatTriggered(false)
-    , fLastHeartbeat()
+    , fLastHeartbeat(chrono::high_resolution_clock::now())
     , fSignalThread()
     , fManagementSegment(bipc::open_or_create, fManagementSegmentName.c_str(), 65536)
+    , fDeviceHeartbeats()
 {
     MonitorStatus* monitorStatus = fManagementSegment.find<MonitorStatus>(bipc::unique_instance).first;
     if (monitorStatus != nullptr)
@@ -127,19 +130,21 @@ void Monitor::MonitorHeartbeats()
 {
     try
     {
-        bipc::message_queue mq(bipc::open_or_create, fControlQueueName.c_str(), 1000, sizeof(bool));
+        bipc::message_queue mq(bipc::open_or_create, fControlQueueName.c_str(), 1000, 256);
 
         unsigned int priority;
         bipc::message_queue::size_type recvdSize;
+        char msg[256] = {0};
 
         while (!fTerminating)
         {
-            bool heartbeat;
             bpt::ptime rcvTill = bpt::microsec_clock::universal_time() + bpt::milliseconds(100);
-            if (mq.timed_receive(&heartbeat, sizeof(heartbeat), recvdSize, priority, rcvTill))
+            if (mq.timed_receive(&msg, sizeof(msg), recvdSize, priority, rcvTill))
             {
                 fHeartbeatTriggered = true;
                 fLastHeartbeat = chrono::high_resolution_clock::now();
+                string deviceId(msg, recvdSize);
+                fDeviceHeartbeats[deviceId] = fLastHeartbeat;
             }
             else
             {
@@ -186,27 +191,27 @@ void Monitor::Interactive()
             switch (c)
             {
                 case 'q':
-                    cout << "[q] --> quitting." << endl;
+                    cout << "\n[q] --> quitting." << endl;
                     fTerminating = true;
                     break;
                 case 'p':
-                    cout << "[p] --> active queues:" << endl;
+                    cout << "\n[p] --> active queues:" << endl;
                     PrintQueues();
                     break;
                 case 'x':
-                    cout << "[x] --> closing shared memory:" << endl;
+                    cout << "\n[x] --> closing shared memory:" << endl;
                     Cleanup(fSessionName);
                     break;
                 case 'h':
-                    cout << "[h] --> help:" << endl << endl;
+                    cout << "\n[h] --> help:" << endl << endl;
                     PrintHelp();
                     cout << endl;
                     break;
                 case '\n':
-                    cout << "[\\n] --> invalid input." << endl;
+                    cout << "\n[\\n] --> invalid input." << endl;
                     break;
                 default:
-                    cout << "[" << c << "] --> invalid input." << endl;
+                    cout << "\n[" << c << "] --> invalid input." << endl;
                     break;
             }
 
@@ -290,7 +295,7 @@ void Monitor::CheckSegment()
             fHeartbeatTriggered = false;
             if (fSelfDestruct)
             {
-                cout << "self destructing" << endl;
+                cout << "\nself destructing" << endl;
                 fTerminating = true;
             }
         }
@@ -327,6 +332,21 @@ void Monitor::CheckSegment()
                 << c
                 << flush;
         }
+
+        auto now = chrono::high_resolution_clock::now();
+        unsigned int duration = chrono::duration_cast<chrono::milliseconds>(now - fLastHeartbeat).count();
+
+        if (fIsDaemon && duration > fTimeoutInMS * 2)
+        {
+            Cleanup(fSessionName);
+            fHeartbeatTriggered = false;
+            if (fSelfDestruct)
+            {
+                cout << "\nself destructing" << endl;
+                fTerminating = true;
+            }
+        }
+
         if (fSelfDestruct)
         {
             if (fSeenOnce)
@@ -352,7 +372,7 @@ void Monitor::Cleanup(const string& sessionName)
             for (unsigned int i = 1; i <= regionCount; ++i)
             {
                 RemoveObject("fmq_shm_" + sessionName + "_region_" + to_string(i));
-                RemoveQueue(std::string("fmq_shm_" + sessionName + "_region_queue_" + std::to_string(i)));
+                RemoveQueue(string("fmq_shm_" + sessionName + "_region_queue_" + to_string(i)));
             }
         }
         else
@@ -369,12 +389,12 @@ void Monitor::Cleanup(const string& sessionName)
 
     RemoveObject("fmq_shm_" + sessionName + "_main");
 
-    boost::interprocess::named_mutex::remove(std::string("fmq_shm_" + sessionName + "_mutex").c_str());
+    boost::interprocess::named_mutex::remove(string("fmq_shm_" + sessionName + "_mutex").c_str());
 
     cout << endl;
 }
 
-void Monitor::RemoveObject(const std::string& name)
+void Monitor::RemoveObject(const string& name)
 {
     if (bipc::shared_memory_object::remove(name.c_str()))
     {
@@ -386,7 +406,7 @@ void Monitor::RemoveObject(const std::string& name)
     }
 }
 
-void Monitor::RemoveQueue(const std::string& name)
+void Monitor::RemoveQueue(const string& name)
 {
     if (bipc::message_queue::remove(name.c_str()))
     {
@@ -405,7 +425,7 @@ void Monitor::PrintQueues()
     try
     {
         bipc::managed_shared_memory segment(bipc::open_only, fSegmentName.c_str());
-        StringVector* queues = segment.find<StringVector>(std::string("fmq_shm_" + fSessionName + "_queues").c_str()).first;
+        StringVector* queues = segment.find<StringVector>(string("fmq_shm_" + fSessionName + "_queues").c_str()).first;
         if (queues)
         {
             cout << "found " << queues->size() << " queue(s):" << endl;
@@ -434,9 +454,16 @@ void Monitor::PrintQueues()
     {
         cout << "\tno queues found" << endl;
     }
-    catch (std::out_of_range& ie)
+    catch (out_of_range& ie)
     {
         cout << "\tno queues found" << endl;
+    }
+
+    cout << "\n    --> last heartbeats: " << endl << endl;
+    auto now = chrono::high_resolution_clock::now();
+    for (const auto& h : fDeviceHeartbeats)
+    {
+        cout << "\t" << h.first << " : " << chrono::duration<double, milli>(now - h.second).count() << "ms ago." << endl;
     }
 
     cout << endl;
@@ -468,6 +495,10 @@ Monitor::~Monitor()
     if (fSignalThread.joinable())
     {
         fSignalThread.join();
+    }
+    if (fCleanOnExit)
+    {
+        Cleanup(fSessionName);
     }
 }
 

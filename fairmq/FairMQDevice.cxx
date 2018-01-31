@@ -892,13 +892,13 @@ void FairMQDevice::SetConfig(FairMQProgOptions& config)
             LOG(warn) << "did not insert channel '" << c.first << "', it is already in the device.";
         }
     }
-    fDefaultTransport = config.GetValue<string>("transport");
-    SetTransport(fDefaultTransport);
     fId = config.GetValue<string>("id");
     fNetworkInterface = config.GetValue<string>("network-interface");
     fNumIoThreads = config.GetValue<int>("io-threads");
     fInitializationTimeoutInS = config.GetValue<int>("initialization-timeout");
     fRate = fConfig->GetValue<float>("rate");
+    fDefaultTransport = config.GetValue<string>("transport");
+    SetTransport(fDefaultTransport);
 }
 
 void FairMQDevice::LogSocketRates()

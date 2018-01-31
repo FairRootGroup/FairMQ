@@ -56,6 +56,7 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
     void StartMonitor();
 
     static FairMQ::Transport fTransportType;
+    std::string fDeviceId;
     std::string fSessionName;
     void* fContext;
     std::thread fHeartbeatThread;

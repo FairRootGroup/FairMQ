@@ -14,6 +14,7 @@
 #include <chrono>
 #include <atomic>
 #include <string>
+#include <unordered_map>
 
 namespace fair
 {
@@ -25,7 +26,7 @@ namespace shmem
 class Monitor
 {
   public:
-    Monitor(const std::string& sessionName, bool selfDestruct, bool interactive, unsigned int timeoutInMS);
+    Monitor(const std::string& sessionName, bool selfDestruct, bool interactive, unsigned int timeoutInMS, bool runAsDaemon, bool cleanOnExit);
 
     Monitor(const Monitor&) = delete;
     Monitor operator=(const Monitor&) = delete;
@@ -51,6 +52,8 @@ class Monitor
     bool fSelfDestruct; // will self-destruct after the memory has been closed
     bool fInteractive; // running in interactive mode
     bool fSeenOnce; // true is segment has been opened successfully at least once
+    bool fIsDaemon;
+    bool fCleanOnExit;
     unsigned int fTimeoutInMS;
     std::string fSessionName;
     std::string fSegmentName;
@@ -61,6 +64,7 @@ class Monitor
     std::chrono::high_resolution_clock::time_point fLastHeartbeat;
     std::thread fSignalThread;
     boost::interprocess::managed_shared_memory fManagementSegment;
+    std::unordered_map<std::string, std::chrono::high_resolution_clock::time_point> fDeviceHeartbeats;
 };
 
 } // namespace shmem

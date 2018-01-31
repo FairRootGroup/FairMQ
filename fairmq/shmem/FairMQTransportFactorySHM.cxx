@@ -12,6 +12,7 @@
 #include <zmq.h>
 
 #include <boost/version.hpp>
+#include <boost/process.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 
@@ -35,6 +36,7 @@ FairMQ::Transport FairMQTransportFactorySHM::fTransportType = FairMQ::Transport:
 
 FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const FairMQProgOptions* config)
     : FairMQTransportFactory(id)
+    , fDeviceId(id)
     , fSessionName("default")
     , fContext(nullptr)
     , fHeartbeatThread()
@@ -57,11 +59,13 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
 
     int numIoThreads = 1;
     size_t segmentSize = 2000000000;
+    bool autolaunchMonitor = false;
     if (config)
     {
         numIoThreads = config->GetValue<int>("io-threads");
         fSessionName = config->GetValue<string>("session");
         segmentSize = config->GetValue<size_t>("shm-segment-size");
+        autolaunchMonitor = config->GetValue<bool>("shm-monitor");
     }
     else
     {
@@ -106,24 +110,27 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
             }
 
             // start shm monitor
-            // try
-            // {
-            //     MonitorStatus* monitorStatus = fManagementSegment.find<MonitorStatus>(bipc::unique_instance).first;
-            //     if (monitorStatus == nullptr)
-            //     {
-            //         LOG(debug) << "no shmmonitor found, starting...";
-            //         StartMonitor();
-            //     }
-            //     else
-            //     {
-            //         LOG(debug) << "found shmmonitor.";
-            //     }
-            // }
-            // catch (std::exception& e)
-            // {
-            //     LOG(error) << "Exception during shmmonitor initialization: " << e.what() << ", application will now exit";
-            //     exit(EXIT_FAILURE);
-            // }
+            if (autolaunchMonitor)
+            {
+                try
+                {
+                    MonitorStatus* monitorStatus = fManager->ManagementSegment().find<MonitorStatus>(bipc::unique_instance).first;
+                    if (monitorStatus == nullptr)
+                    {
+                        LOG(debug) << "no shmmonitor found, starting...";
+                        StartMonitor();
+                    }
+                    else
+                    {
+                        LOG(debug) << "found shmmonitor.";
+                    }
+                }
+                catch (std::exception& e)
+                {
+                    LOG(error) << "Exception during shmmonitor initialization: " << e.what() << ", application will now exit";
+                    exit(EXIT_FAILURE);
+                }
+            }
         }
     }
     catch(bipc::interprocess_exception& e)
@@ -140,35 +147,38 @@ void FairMQTransportFactorySHM::StartMonitor()
 {
     int numTries = 0;
 
-    if (!bfs::exists(bfs::path("shmmonitor")))
-    {
-        LOG(error) << "Could not find shmmonitor. Is it in the PATH? Monitor not started";
-        return;
-    }
+    auto env = boost::this_process::environment();
 
-    // TODO: replace with Boost.Process once boost 1.64 is available
-    int r = system("shmmonitor --self-destruct &");
-    LOG(debug) << r;
+    boost::filesystem::path p = boost::process::search_path("shmmonitor");
 
-    do
+    if (!p.empty())
     {
-        MonitorStatus* monitorStatus = fManager->ManagementSegment().find<MonitorStatus>(bipc::unique_instance).first;
-        if (monitorStatus)
+        boost::process::spawn(p, "-x", "-s", fSessionName, "-d", "-t", "2000", env);
+
+        do
         {
-            LOG(debug) << "shmmonitor started";
-            break;
-        }
-        else
-        {
-            this_thread::sleep_for(std::chrono::milliseconds(10));
-            if (++numTries > 100)
+            MonitorStatus* monitorStatus = fManager->ManagementSegment().find<MonitorStatus>(bipc::unique_instance).first;
+            if (monitorStatus)
             {
-                LOG(error) << "Did not get response from shmmonitor after " << 10 * 100 << " milliseconds. Exiting.";
-                exit(EXIT_FAILURE);
+                LOG(debug) << "shmmonitor started";
+                break;
+            }
+            else
+            {
+                this_thread::sleep_for(std::chrono::milliseconds(10));
+                if (++numTries > 1000)
+                {
+                    LOG(error) << "Did not get response from shmmonitor after " << 10 * 1000 << " milliseconds. Exiting.";
+                    exit(EXIT_FAILURE);
+                }
             }
         }
+        while (true);
     }
-    while (true);
+    else
+    {
+        LOG(WARN) << "could not find shmmonitor in the path";
+    }
 }
 
 void FairMQTransportFactorySHM::SendHeartbeats()
@@ -179,9 +189,8 @@ void FairMQTransportFactorySHM::SendHeartbeats()
         try
         {
             bipc::message_queue mq(bipc::open_only, controlQueueName.c_str());
-            bool heartbeat = true;
             bpt::ptime sndTill = bpt::microsec_clock::universal_time() + bpt::milliseconds(100);
-            if (mq.timed_send(&heartbeat, sizeof(heartbeat), 0, sndTill))
+            if (mq.timed_send(fDeviceId.c_str(), fDeviceId.size(), 0, sndTill))
             {
                 this_thread::sleep_for(chrono::milliseconds(100));
             }
