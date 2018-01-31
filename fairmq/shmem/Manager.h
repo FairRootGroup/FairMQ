@@ -37,7 +37,7 @@ namespace shmem
 
 class Manager
 {
-    friend class Region;
+    friend struct Region;
 
   public:
     Manager(const std::string& name, size_t size);

@@ -58,7 +58,6 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
     static FairMQ::Transport fTransportType;
     std::string fSessionName;
     void* fContext;
-    void* fHeartbeatSocket;
     std::thread fHeartbeatThread;
     std::atomic<bool> fSendHeartbeats;
     std::unique_ptr<boost::interprocess::named_mutex> fShMutex;

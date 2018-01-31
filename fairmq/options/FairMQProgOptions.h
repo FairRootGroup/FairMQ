@@ -84,19 +84,6 @@ class FairMQProgOptions : public FairProgOptions
     // - if UpdateChannelMap(const FairMQMap& map) method is called
     // - if UserParser template method is called (it is called in the ParseAll method if json or xml MQ-config files is provided)
 
-    // specialization/overloading for string, pass by const ref
-    int UpdateValue(const std::string& key, const std::string& val) // string API
-    {
-        UpdateValue(key, val);
-        return 0;
-    }
-
-    int UpdateValue(const std::string& key, const char* val) // string API
-    {
-        UpdateValue<std::string>(key, std::string(val));
-        return 0;
-    }
-
     template<typename T>
     int UpdateValue(const std::string& key, T val)
     {

@@ -37,7 +37,6 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
     : FairMQTransportFactory(id)
     , fSessionName("default")
     , fContext(nullptr)
-    , fHeartbeatSocket(nullptr)
     , fHeartbeatThread()
     , fSendHeartbeats(true)
     , fShMutex(nullptr)

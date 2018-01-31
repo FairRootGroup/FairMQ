@@ -38,8 +38,8 @@ DDS::DDS(const string name, const Plugin::Version version, const string maintain
     , fNewEvent()
     , fDeviceTerminationRequested(false)
     , fIosWork{fIos}
-    , fHeartbeatInterval{100}
     , fHeartbeatTimer{fIos, fHeartbeatInterval}
+    , fHeartbeatInterval{100}
 {
     try
     {
@@ -279,7 +279,7 @@ auto DDS::SubscribeForCustomCommands() -> void
         else if (cmd == "subscribe-to-heartbeats")
         {
             {
-                auto size = fHeartbeatSubscribers.size();
+                // auto size = fHeartbeatSubscribers.size();
                 std::lock_guard<std::mutex> lock{fHeartbeatSubscriberMutex};
                 fHeartbeatSubscribers.insert(senderId);
             }
@@ -296,7 +296,7 @@ auto DDS::SubscribeForCustomCommands() -> void
         else if (cmd == "subscribe-to-state-changes")
         {
             {
-                auto size = fStateChangeSubscribers.size();
+                // auto size = fStateChangeSubscribers.size();
                 std::lock_guard<std::mutex> lock{fStateChangeSubscriberMutex};
                 fStateChangeSubscribers.insert(senderId);
             }

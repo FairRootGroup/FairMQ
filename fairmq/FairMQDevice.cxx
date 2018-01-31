@@ -795,7 +795,7 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& tran
 
         FairMQMessagePtr msg(tr->CreateMessage());
 
-        return move(tr);
+        return tr;
     }
     else
     {
@@ -834,7 +834,7 @@ unique_ptr<FairMQTransportFactory> FairMQDevice::MakeTransport(const string& tra
         return tr;
     }
 
-    return move(tr);
+    return tr;
 }
 
 void FairMQDevice::CreateOwnConfig()
