@@ -26,35 +26,6 @@
 #include <iostream>
 #include <fstream>
 #include <mutex>
-#include <tuple>
-
-/*
- * FairProgOptions abstract base class
- * parse command line, configuration file options.
- *
- * The user defines in the derived class the option descriptions and
- * the pure virtual ParseAll() method
- *
- * class MyOptions : public FairProgOptions
- * {
- *      public :
- *      MyOptions() : FairProgOptions()
- *      {
- *          fCmdlineOptions.add(fGenericDesc);
- *          fVisibleOptions.add(fCmdlineOptions);
- *      }
- *      virtual ~MyOptions() {}
- *      virtual void ParseAll(const int argc, char** argv, bool allowUnregistered = false)
- *      {
- *          if (ParseCmdLine(argc, argv, fCmdlineOptions, fVarMap, allowUnregistered))
- *          {
- *              exit(EXIT_FAILURE);
- *          }
- *
- *          PrintOptions();
- *      }
- * }
- */
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -120,7 +91,7 @@ class FairProgOptions
         {
             if (fVarMap.count(key))
             {
-                valueStr = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at(key));
+                valueStr = fair::mq::ConvertVariableValue<fair::mq::VarInfoToString>()(fVarMap.at(key));
             }
         }
         catch (std::exception& e)
@@ -158,12 +129,10 @@ class FairProgOptions
 
     const po::variables_map& GetVarMap() const { return fVarMap; }
 
-    // boost prog options parsers
-    int ParseCmdLine(const int argc, char const* const* argv, const po::options_description& desc, po::variables_map& varmap, bool allowUnregistered = false);
-    int ParseCmdLine(const int argc, char const* const* argv, const po::options_description& desc, bool allowUnregistered = false);
-    void ParseDefaults(const po::options_description& desc);
+    int ParseCmdLine(const int argc, char const* const* argv, bool allowUnregistered = false);
+    void ParseDefaults();
 
-    virtual int ParseAll(const int argc, char const* const* argv, bool allowUnregistered = false) = 0;// TODO change return type to bool and propagate to executable
+    virtual int ParseAll(const int argc, char const* const* argv, bool allowUnregistered = false) = 0;
 
     virtual int PrintOptions();
     virtual int PrintOptionsRaw();
@@ -172,37 +141,29 @@ class FairProgOptions
     // options container
     po::variables_map fVarMap;
 
-    // basic description categories
-    po::options_description fGeneralDesc;
-
-    po::options_description fCmdLineOptions;
-
-    // Description which is printed in help command line
-    po::options_description fVisibleOptions;
+    // options descriptions
+    po::options_description fGeneralOptions;
+    po::options_description fAllOptions;
 
     mutable std::mutex fConfigMutex;
 
     virtual int ImmediateOptions() = 0;
 
-    // UpdateVarMap() and replace() --> helper functions to modify the value of variable map after calling po::store
+    // UpdateVarMap() and Replace() --> helper functions to modify the value of variable map after calling po::store
     template<typename T>
     void UpdateVarMap(const std::string& key, const T& val)
     {
-        replace(fVarMap, key, val);
+        Replace(fVarMap, key, val);
     }
 
     template<typename T>
-    void replace(std::map<std::string, po::variable_value>& vm, const std::string& key, const T& val)
+    void Replace(std::map<std::string, po::variable_value>& vm, const std::string& key, const T& val)
     {
         vm[key].value() = boost::any(val);
     }
 
   private:
-    // Methods below are helper functions used in the PrintOptions method
-    using VarValInfo_t = std::tuple<std::string, std::string, std::string, std::string>;
-    using MapVarValInfo_t = std::map<std::string, VarValInfo_t>;
-
-    VarValInfo_t GetVariableValueInfo(const po::variable_value& varValue);
+    fair::mq::VarValInfo GetVariableValueInfo(const po::variable_value& varValue);
 
     static void Max(int& val, const int& comp)
     {

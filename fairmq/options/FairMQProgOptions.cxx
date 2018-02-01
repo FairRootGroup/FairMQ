@@ -31,7 +31,7 @@ FairMQProgOptions::FairMQProgOptions()
     , fMQKeyMap()
 {
     InitOptionDescription();
-    ParseDefaults(fCmdLineOptions);
+    ParseDefaults();
 }
 
 FairMQProgOptions::~FairMQProgOptions()
@@ -52,7 +52,7 @@ int FairMQProgOptions::ParseAll(const vector<string>& cmdLineArgs, bool allowUnr
 
 int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool allowUnregistered)
 {
-    if (FairProgOptions::ParseCmdLine(argc, argv, fCmdLineOptions, fVarMap, allowUnregistered))
+    if (FairProgOptions::ParseCmdLine(argc, argv, allowUnregistered))
     {
         // ParseCmdLine returns 0 if no immediate switches found.
         return 1;
@@ -83,93 +83,53 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
         fair::Logger::SetConsoleSeverity(severity);
     }
 
-    // check if one of required MQ config option is there
-    auto parserOptions = fMQParserOptions.options();
-    bool optionExists = false;
-    vector<string> MQParserKeys;
-    for (const auto& p : parserOptions)
-    {
-        MQParserKeys.push_back(p->canonical_display_name());
-        if (fVarMap.count(p->canonical_display_name()))
-        {
-            optionExists = true;
-            break;
-        }
-    }
+    string id;
 
-    if (!optionExists)
+    // check if config-key for config parser is provided
+    if (fVarMap.count("config-key"))
     {
-        LOG(warn) << "FairMQProgOptions: no channels configuration provided via neither of:";
-        for (const auto& p : MQParserKeys)
-        {
-            LOG(warn) << " --" << p;
-        }
-        LOG(warn) << "No channels will be created (You can create them manually).";
+        id = fVarMap["config-key"].as<string>();
     }
     else
     {
-        string id;
+        id = fVarMap["id"].as<string>();
+    }
 
-        if (fVarMap.count("config-key"))
-        {
-            id = fVarMap["config-key"].as<string>();
-        }
-        else
-        {
-            id = fVarMap["id"].as<string>();
-        }
-
-        // if cmdline mq-config called then use the default xml/json parser
+    // check if any config parser is selected
+    try
+    {
         if (fVarMap.count("mq-config"))
         {
-            LOG(debug) << "mq-config: Using default XML/JSON parser";
-
-            string file = fVarMap["mq-config"].as<string>();
-
-            string ext = boost::filesystem::extension(file);
-
-            transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-
-            if (ext == ".json")
-            {
-                UserParser<FairMQParser::JSON>(file, id);
-            }
-            else
-            {
-                if (ext == ".xml")
-                {
-                    UserParser<FairMQParser::XML>(file, id);
-                }
-                else
-                {
-                    LOG(error)  << "mq-config command line called but file extension '" << ext << "' not recognized. Program will now exit";
-                    return 1;
-                }
-            }
+            LOG(debug) << "mq-config: Using default JSON parser";
+            Store(fair::mq::parser::JSON().UserParser(fVarMap["mq-config"].as<string>(), id));
         }
         else if (fVarMap.count("config-json-string"))
         {
             LOG(debug) << "config-json-string: Parsing JSON string";
-
-            string value = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at("config-json-string"));
+            string value = fair::mq::ConvertVariableValue<fair::mq::VarInfoToString>()(fVarMap.at("config-json-string"));
             stringstream ss;
             ss << value;
-            UserParser<FairMQParser::JSON>(ss, id);
+            Store(fair::mq::parser::JSON().UserParser(ss, id));
         }
-        else if (fVarMap.count("config-xml-string"))
-        {
-            LOG(debug) << "config-json-string: Parsing XML string";
-
-            string value = FairMQ::ConvertVariableValue<FairMQ::ToString>().Run(fVarMap.at("config-xml-string"));
-            stringstream ss;
-            ss << value;
-            UserParser<FairMQParser::XML>(ss, id);
-        }
-        else if (fVarMap.count(FairMQParser::SUBOPT::OptionKeyChannelConfig))
+        else if (fVarMap.count("channel-config"))
         {
             LOG(debug) << "channel-config: Parsing channel configuration";
-            UserParser<FairMQParser::SUBOPT>(fVarMap, id);
+            Store(fair::mq::parser::SUBOPT().UserParser(fVarMap.at("channel-config").as<vector<string>>(), id));
         }
+        else
+        {
+            LOG(warn) << "FairMQProgOptions: no channels configuration provided via neither of:";
+            for (const auto& p : fMQParserOptions.options())
+            {
+                LOG(warn) << "--" << p->canonical_display_name();
+            }
+            LOG(warn) << "No channels will be created (You can create them manually).";
+        }
+    }
+    catch (std::exception& e)
+    {
+        LOG(error) << e.what();
+        return 1;
     }
 
     FairProgOptions::PrintOptions();
@@ -223,15 +183,15 @@ void FairMQProgOptions::UpdateMQValues()
             string rcvKernelSizeKey = "chans." + p.first + "." + to_string(index) + ".rcvKernelSize";
             string rateLoggingKey = "chans." + p.first + "." + to_string(index) + ".rateLogging";
 
-            fMQKeyMap[typeKey] = make_tuple(p.first, index, "type");
-            fMQKeyMap[methodKey] = make_tuple(p.first, index, "method");
-            fMQKeyMap[addressKey] = make_tuple(p.first, index, "address");
-            fMQKeyMap[transportKey] = make_tuple(p.first, index, "transport");
-            fMQKeyMap[sndBufSizeKey] = make_tuple(p.first, index, "sndBufSize");
-            fMQKeyMap[rcvBufSizeKey] = make_tuple(p.first, index, "rcvBufSize");
-            fMQKeyMap[sndKernelSizeKey] = make_tuple(p.first, index, "sndKernelSize");
-            fMQKeyMap[rcvKernelSizeKey] = make_tuple(p.first, index, "rcvkernelSize");
-            fMQKeyMap[rateLoggingKey] = make_tuple(p.first, index, "rateLogging");
+            fMQKeyMap[typeKey] = MQKey{p.first, index, "type"};
+            fMQKeyMap[methodKey] = MQKey{p.first, index, "method"};
+            fMQKeyMap[addressKey] = MQKey{p.first, index, "address"};
+            fMQKeyMap[transportKey] = MQKey{p.first, index, "transport"};
+            fMQKeyMap[sndBufSizeKey] = MQKey{p.first, index, "sndBufSize"};
+            fMQKeyMap[rcvBufSizeKey] = MQKey{p.first, index, "rcvBufSize"};
+            fMQKeyMap[sndKernelSizeKey] = MQKey{p.first, index, "sndKernelSize"};
+            fMQKeyMap[rcvKernelSizeKey] = MQKey{p.first, index, "rcvkernelSize"};
+            fMQKeyMap[rateLoggingKey] = MQKey{p.first, index, "rateLogging"};
 
             UpdateVarMap<string>(typeKey, channel.GetType());
             UpdateVarMap<string>(methodKey, channel.GetMethod());
@@ -253,7 +213,7 @@ int FairMQProgOptions::ImmediateOptions()
 {
     if (fVarMap.count("help"))
     {
-        cout << "===== FairMQ Program Options =====" << endl << fVisibleOptions;
+        cout << "===== FairMQ Program Options =====" << endl << fAllOptions;
         return 1;
     }
 
@@ -285,13 +245,11 @@ void FairMQProgOptions::InitOptionDescription()
         ;
 
     fMQParserOptions.add_options()
-        ("config-xml-string",  po::value<vector<string>>()->multitoken(), "XML input as command line string.")
         ("config-json-string", po::value<vector<string>>()->multitoken(), "JSON input as command line string.")
         ("mq-config",          po::value<string>(),                       "JSON/XML input as file. The configuration object will check xml or json file extention and will call the json or xml parser accordingly")
-        (FairMQParser::SUBOPT::OptionKeyChannelConfig, po::value<vector<string>>()->multitoken()->composing(), "Configuration of single or multiple channel(s) by comma separated key=value list")
+        ("channel-config",     po::value<vector<string>>()->multitoken()->composing(), "Configuration of single or multiple channel(s) by comma separated key=value list")
         ;
 
-    AddToCmdLineOptions(fGeneralDesc);
     AddToCmdLineOptions(fMQCmdOptions);
     AddToCmdLineOptions(fMQParserOptions);
 }

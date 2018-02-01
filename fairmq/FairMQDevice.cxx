@@ -993,7 +993,7 @@ void FairMQDevice::LogSocketRates()
                     bytesOut.at(i) = bytesOutNew.at(i);
                     msgOut.at(i) = msgOutNew.at(i);
 
-                    LOG(debug) << filteredChannelNames.at(i) << ": "
+                    LOG(info) << filteredChannelNames.at(i) << ": "
                                << "in: " << msgPerSecIn.at(i) << " (" << mbPerSecIn.at(i) << " MB) "
                                << "out: " << msgPerSecOut.at(i) << " (" << mbPerSecOut.at(i) << " MB)";
                 }

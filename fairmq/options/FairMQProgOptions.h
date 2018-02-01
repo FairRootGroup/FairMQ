@@ -52,22 +52,6 @@ class FairMQProgOptions : public FairProgOptions
     // default parser for the mq-configuration file (JSON/XML) is called if command line key mq-config is called
     int ParseAll(const int argc, char const* const* argv, bool allowUnregistered = false) override;
 
-    // external parser, store function
-    template <typename T, typename ...Args>
-    int UserParser(Args &&... args)
-    {
-        try
-        {
-            Store(T().UserParser(std::forward<Args>(args)...));
-        }
-        catch (std::exception& e)
-        {
-            LOG(error) << e.what();
-            return 1;
-        }
-        return 0;
-    }
-
     FairMQMap GetFairMQMap() const
     {
         return fFairMQMap;
@@ -77,12 +61,6 @@ class FairMQProgOptions : public FairProgOptions
     {
         return fChannelInfo;
     }
-
-    // store key-value of type T into variable_map.
-    // If key is found in fMQKeyMap, update the FairMQChannelMap accordingly
-    // Note that the fMQKeyMap is filled:
-    // - if UpdateChannelMap(const FairMQMap& map) method is called
-    // - if UserParser template method is called (it is called in the ParseAll method if json or xml MQ-config files is provided)
 
     template<typename T>
     int UpdateValue(const std::string& key, T val)
@@ -99,11 +77,7 @@ class FairMQProgOptions : public FairProgOptions
             {
                 if (fMQKeyMap.count(key))
                 {
-                    std::string channelName;
-                    int index = 0;
-                    std::string member;
-                    std::tie(channelName, index, member) = fMQKeyMap.at(key);
-                    UpdateChannelMap(channelName, index, member, val);
+                    UpdateChannelMap(fMQKeyMap.at(key).channel, fMQKeyMap.at(key).index, fMQKeyMap.at(key).member, val);
                 }
             }
 
@@ -135,11 +109,7 @@ class FairMQProgOptions : public FairProgOptions
         {
             if (fMQKeyMap.count(key))
             {
-                std::string channelName;
-                int index = 0;
-                std::string member;
-                std::tie(channelName, index, member) = fMQKeyMap.at(key);
-                UpdateChannelMap(channelName, index, member, val);
+                UpdateChannelMap(fMQKeyMap.at(key).channel, fMQKeyMap.at(key).index, fMQKeyMap.at(key).member, val);
             }
         }
 
@@ -189,6 +159,13 @@ class FairMQProgOptions : public FairProgOptions
     int UpdateChannelMap(const FairMQMap& map);
 
   protected:
+    struct MQKey
+    {
+        std::string channel;
+        int index;
+        std::string member;
+    };
+
     po::options_description fMQCmdOptions;
     po::options_description fMQParserOptions;
     FairMQMap fFairMQMap;
@@ -196,7 +173,6 @@ class FairMQProgOptions : public FairProgOptions
     // map of read channel info - channel name - number of subchannels
     std::unordered_map<std::string, int> fChannelInfo;
 
-    using MQKey = std::tuple<std::string, int, std::string>;//store key info
     std::map<std::string, MQKey> fMQKeyMap;// key=full path - val=key info
 
     int ImmediateOptions() override; // for custom help & version printing

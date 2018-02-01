@@ -17,20 +17,18 @@
 
 #include "FairMQChannel.h"
 
-namespace FairMQParser
+namespace fair
+{
+namespace mq
+{
+namespace parser
 {
 
 using FairMQMap = std::unordered_map<std::string, std::vector<FairMQChannel>>;
 
-FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& deviceId, const std::string& rootNode, const std::string& formatFlag = "json");
+FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& deviceId, const std::string& rootNode);
 
 struct JSON
-{
-    FairMQMap UserParser(const std::string& filename, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
-    FairMQMap UserParser(std::stringstream& input, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
-};
-
-struct XML
 {
     FairMQMap UserParser(const std::string& filename, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
     FairMQMap UserParser(std::stringstream& input, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
@@ -39,14 +37,16 @@ struct XML
 namespace Helper
 {
 
-void PrintDeviceList(const boost::property_tree::ptree& tree, const std::string& formatFlag = "json");
-void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap, const std::string& deviceId, const std::string& formatFlag);
-void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap, const std::string& formatFlag);
+void PrintDeviceList(const boost::property_tree::ptree& tree);
+void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap, const std::string& deviceId);
+void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap);
 void SocketParser(const boost::property_tree::ptree& tree, std::vector<FairMQChannel>& channelList, const std::string& channelName, const FairMQChannel& commonChannel);
 void PrintPropertyTree(const boost::property_tree::ptree& tree, int level = 0);
 
 } // Helper namespace
 
-} // FairMQParser namespace
+} // namespace parser
+} // namespace mq
+} // namespace fair
 
 #endif /* FAIRMQPARSER_H */

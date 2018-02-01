@@ -71,9 +71,9 @@ SAMPLER+=" --same-msg $sameMsg"
 # SAMPLER+=" --msg-rate 1000"
 SAMPLER+=" --max-iterations $maxIterations"
 SAMPLER+=" --mq-config @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
-xterm -geometry 90x23+0+0 -hold -e $affinitySamp @CMAKE_BINARY_DIR@/bin/$SAMPLER &
+xterm -geometry 90x50+0+0 -hold -e $affinitySamp @CMAKE_BINARY_DIR@/bin/$SAMPLER &
 echo ""
-echo "started: xterm -geometry 90x23+0+0 -hold -e $affinitySamp @CMAKE_BINARY_DIR@/bin/$SAMPLER"
+echo "started: xterm -geometry 90x50+0+0 -hold -e $affinitySamp @CMAKE_BINARY_DIR@/bin/$SAMPLER"
 echo "pid: $!"
 
 SINK="sink"
@@ -84,8 +84,8 @@ SINK+=" --transport $transport"
 SINK+=" --severity debug"
 SINK+=" --max-iterations $maxIterations"
 SINK+=" --mq-config @CMAKE_BINARY_DIR@/bin/config/benchmark.json"
-xterm -geometry 90x23+550+0 -hold -e $affinitySink @CMAKE_BINARY_DIR@/bin/$SINK &
+xterm -geometry 90x50+550+0 -hold -e $affinitySink @CMAKE_BINARY_DIR@/bin/$SINK &
 echo ""
-echo "started: xterm -geometry 90x23+550+0 -hold -e $affinitySink @CMAKE_BINARY_DIR@/bin/$SINK"
+echo "started: xterm -geometry 90x50+550+0 -hold -e $affinitySink @CMAKE_BINARY_DIR@/bin/$SINK"
 echo "pid: $!"
 echo ""

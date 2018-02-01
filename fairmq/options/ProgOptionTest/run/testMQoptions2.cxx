@@ -35,8 +35,8 @@ int main(int argc, char** argv)
             ("output.file.branch",  po::value<std::string>(), "output branch name")
             ;
 
-        config.AddToCmdLineOptions(format_desc,true);
-        config.AddToCmdLineOptions(io_file_opt_desc,true);
+        config.AddToCmdLineOptions(format_desc);
+        config.AddToCmdLineOptions(io_file_opt_desc);
 
         config.EnableCfgFile();// UseConfigFile (by default config file is not defined)
         config.AddToCfgFileOptions(format_desc,false);//false because already added to visible

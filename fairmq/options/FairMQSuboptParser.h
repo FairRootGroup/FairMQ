@@ -17,11 +17,18 @@
 #include "FairMQParser.h" // for FairMQMap
 #include <boost/program_options.hpp>
 #include <cstring>
+#include <vector>
+#include <string>
 
 namespace po = boost::program_options;
 
-namespace FairMQParser
+namespace fair
 {
+namespace mq
+{
+namespace parser
+{
+
 /**
  * A parser implementation for FairMQ channel properties.
  * The parser handles a comma separated key=value list format by using the
@@ -38,39 +45,42 @@ namespace FairMQParser
  * the concept is extensible by renaming UserParser to ChannelPropertyParser
  * and introducing additional parser functions.
  */
-struct SUBOPT {
-  enum channelOptionKeyIds {
-    NAME = 0,       // name of the channel
-    TYPE,           // push, pull, publish, subscribe, etc
-    METHOD,         // bind or connect
-    ADDRESS,        // host, protocol and port address
-    TRANSPORT,      //
-    SNDBUFSIZE,     // size of the send queue
-    RCVBUFSIZE,     // size of the receive queue
-    SNDKERNELSIZE,
-    RCVKERNELSIZE,
-    RATELOGGING,    // logging rate
-    lastsocketkey
-  };
+struct SUBOPT
+{
+    enum channelOptionKeyIds
+    {
+        NAME = 0,       // name of the channel
+        TYPE,           // push, pull, publish, subscribe, etc
+        METHOD,         // bind or connect
+        ADDRESS,        // host, protocol and port address
+        TRANSPORT,      //
+        SNDBUFSIZE,     // size of the send queue
+        RCVBUFSIZE,     // size of the receive queue
+        SNDKERNELSIZE,
+        RCVKERNELSIZE,
+        RATELOGGING,    // logging rate
+        lastsocketkey
+    };
 
-  constexpr static const char *channelOptionKeys[] = {
-    /*[NAME]          = */ "name",
-    /*[TYPE]          = */ "type",
-    /*[METHOD]        = */ "method",
-    /*[ADDRESS]       = */ "address",
-    /*[TRANSPORT]     = */ "transport",
-    /*[SNDBUFSIZE]    = */ "sndBufSize",
-    /*[RCVBUFSIZE]    = */ "rcvBufSize",
-    /*[SNDKERNELSIZE] = */ "sndKernelSize",
-    /*[RCVKERNELSIZE] = */ "rcvKernelSize",
-    /*[RATELOGGING]   = */ "rateLogging",
-    nullptr
-  };
+    constexpr static const char *channelOptionKeys[] = {
+        /*[NAME]          = */ "name",
+        /*[TYPE]          = */ "type",
+        /*[METHOD]        = */ "method",
+        /*[ADDRESS]       = */ "address",
+        /*[TRANSPORT]     = */ "transport",
+        /*[SNDBUFSIZE]    = */ "sndBufSize",
+        /*[RCVBUFSIZE]    = */ "rcvBufSize",
+        /*[SNDKERNELSIZE] = */ "sndKernelSize",
+        /*[RCVKERNELSIZE] = */ "rcvKernelSize",
+        /*[RATELOGGING]   = */ "rateLogging",
+        nullptr
+    };
 
-  constexpr static const char* OptionKeyChannelConfig = "channel-config";
-
-  FairMQMap UserParser(const po::variables_map& omap, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
+    FairMQMap UserParser(const std::vector<std::string>& channelConfig, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
 };
+
+}
+}
 }
 
 #endif /* FAIRMQPARSER_SUBOPT_H */

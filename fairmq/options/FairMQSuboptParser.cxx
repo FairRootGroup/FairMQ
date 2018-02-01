@@ -12,68 +12,81 @@
 /// @brief  Parser implementation for key-value subopt format
 
 #include "FairMQSuboptParser.h"
+
 #include <boost/property_tree/ptree.hpp>
 #include <cstring>
+#include <utility> // make_pair
 
 using boost::property_tree::ptree;
+using namespace std;
 
-namespace FairMQParser
+namespace fair
+{
+namespace mq
+{
+namespace parser
 {
 
 constexpr const char* SUBOPT::channelOptionKeys[];
 
-FairMQMap SUBOPT::UserParser(const po::variables_map& omap, const std::string& deviceId, const std::string& rootNode)
+FairMQMap SUBOPT::UserParser(const vector<string>& channelConfig, const string& deviceId, const string& rootNode)
 {
-    std::string nodeKey = rootNode + ".device";
     ptree pt;
 
-    pt.put(nodeKey + ".id", deviceId.c_str());
-    nodeKey += ".channels";
+    ptree devicesArray;
+    ptree deviceProperties;
 
-    // parsing of channel properties is the only implemented method right now
-    if (omap.count(OptionKeyChannelConfig) > 0)
+    ptree channelsArray;
+
+    for (auto token : channelConfig)
     {
-        std::map<std::string, ptree> channelProperties;
-        auto tokens = omap[OptionKeyChannelConfig].as<std::vector<std::string>>();
-        for (auto token : tokens)
+        string channelName;
+        ptree channelProperties;
+
+        ptree socketsArray;
+        ptree socketProperties;
+
+        string argString(token);
+        char* subopts = &argString[0];
+        char* value = nullptr;
+        while (subopts && *subopts != 0 && *subopts != ' ')
         {
-            // std::map<std::string, ptree>::iterator channelProperty = channelProperties.end();
-            ptree socketProperty;
-            std::string channelName;
-            std::string argString(token);
-            char* subopts = &argString[0];
-            char* value = nullptr;
-            while (subopts && *subopts != 0 && *subopts != ' ')
+            int subopt = getsubopt(&subopts, (char**)channelOptionKeys, &value);
+            if (subopt == NAME)
             {
-                // char* saved = subopts;
-                int subopt=getsubopt(&subopts, (char**)channelOptionKeys, &value);
-                if (subopt == NAME)
-                {
-                    channelName = value;
-                    channelProperties[channelName].put("name", channelName);
-                }
-                else if (subopt>=0 && value != nullptr)
-                {
-                    socketProperty.put(channelOptionKeys[subopt], value);
-                }
+                channelName = value;
+                channelProperties.put("name", channelName);
             }
-            if (channelName != "")
+            else if (subopt >= 0 && value != nullptr)
             {
-                channelProperties[channelName].add_child("sockets.socket", socketProperty);
-            }
-            else
-            {
-                // TODO: what is the error policy here, should we abort?
-                LOG(error) << "missing channel name in argument of option --channel-config";
+                socketProperties.put(channelOptionKeys[subopt], value);
             }
         }
-        for (auto channelProperty : channelProperties)
+
+        if (channelName != "")
         {
-            pt.add_child(nodeKey + ".channel", channelProperty.second);
+            socketsArray.push_back(make_pair("", socketProperties));
+            channelProperties.add_child("sockets", socketsArray);
         }
+        else
+        {
+            // TODO: what is the error policy here, should we abort?
+            LOG(error) << "missing channel name in argument of option --channel-config";
+        }
+
+        channelsArray.push_back(make_pair("", channelProperties));
     }
+
+    deviceProperties.put("id", deviceId);
+    deviceProperties.add_child("channels", channelsArray);
+
+    devicesArray.push_back(make_pair("", deviceProperties));
+
+    pt.add_child("fairMQOptions.devices", devicesArray);
 
     return ptreeToMQMap(pt, deviceId, rootNode);
 }
 
-} // namespace FairMQParser
+}
+}
+}
