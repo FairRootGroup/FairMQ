@@ -71,4 +71,14 @@ class FairMQSocket
 
 using FairMQSocketPtr = std::unique_ptr<FairMQSocket>;
 
+namespace fair
+{
+namespace mq
+{
+
+using SocketPtr = std::unique_ptr<FairMQSocket>;
+
+} /* namespace mq */
+} /* namespace fair */
+
 #endif /* FAIRMQSOCKET_H_ */

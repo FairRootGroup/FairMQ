@@ -26,4 +26,14 @@ class FairMQUnmanagedRegion
 
 using FairMQUnmanagedRegionPtr = std::unique_ptr<FairMQUnmanagedRegion>;
 
+namespace fair
+{
+namespace mq
+{
+
+using UnmanagedRegionPtr = std::unique_ptr<FairMQUnmanagedRegion>;
+
+} /* namespace mq */
+} /* namespace fair */
+
 #endif /* FAIRMQUNMANAGEDREGION_H_ */

@@ -1,17 +1,19 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-#ifndef FAIRMQTRANSPORTS_H_
-#define FAIRMQTRANSPORTS_H_
+
+#ifndef FAIR_MQ_TRANSPORTS_H
+#define FAIR_MQ_TRANSPORTS_H
 
 #include <fairmq/Tools.h>
 #include <string>
 #include <unordered_map>
 
+/// TODO deprecate this namespace
 namespace FairMQ
 {
 
@@ -20,7 +22,8 @@ enum class Transport
     DEFAULT,
     ZMQ,
     NN,
-    SHM
+    SHM,
+    OFI
 };
 
 
@@ -28,10 +31,22 @@ static std::unordered_map<std::string, Transport> TransportTypes {
     { "default", Transport::DEFAULT },
     { "zeromq", Transport::ZMQ },
     { "nanomsg", Transport::NN },
-    { "shmem", Transport::SHM }
+    { "shmem", Transport::SHM },
+    { "ofi", Transport::OFI }
 };
 
 }
+
+namespace fair
+{
+namespace mq
+{
+
+using Transport = ::FairMQ::Transport;
+using ::FairMQ::TransportTypes;
+
+} /* namespace mq */
+} /* namespace fair */
 
 namespace std
 {
@@ -41,4 +56,4 @@ struct hash<FairMQ::Transport> : fair::mq::tools::HashEnum<FairMQ::Transport> {}
 
 } /* namespace std */
 
-#endif /* FAIRMQTRANSPORTS_H_ */
+#endif /* FAIR_MQ_TRANSPORTS_H */

@@ -32,4 +32,14 @@ class FairMQPoller
 
 using FairMQPollerPtr = std::unique_ptr<FairMQPoller>;
 
+namespace fair
+{
+namespace mq
+{
+
+using PollerPtr = std::unique_ptr<FairMQPoller>;
+
+} /* namespace mq */
+} /* namespace fair */
+
 #endif /* FAIRMQPOLLER_H_ */

@@ -83,6 +83,7 @@ set(FAIRMQ_HEADER_FILES
     devices/FairMQProxy.h
     devices/FairMQSink.h
     devices/FairMQSplitter.h
+    ofi/TransportFactory.h
     options/FairMQParser.h
     options/FairMQProgOptions.h
     options/FairMQSuboptParser.h
@@ -146,6 +147,7 @@ set(FAIRMQ_SOURCE_FILES
     devices/FairMQProxy.cxx
     # devices/FairMQSink.cxx
     devices/FairMQSplitter.cxx
+    ofi/TransportFactory.cxx
     options/FairMQParser.cxx
     options/FairMQProgOptions.cxx
     options/FairMQSuboptParser.cxx
@@ -232,8 +234,9 @@ target_link_libraries(FairMQ
 
     PRIVATE # only libFairMQ links against private dependencies
     ZeroMQ
+    OFI::libfabric
+    Msgpack
     $<$<BOOL:${NANOMSG_FOUND}>:nanomsg>
-    $<$<AND:$<BOOL:${NANOMSG_FOUND}>,$<BOOL:${MSGPACK_FOUND}>>:Msgpack>
 )
 
 

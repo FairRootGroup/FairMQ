@@ -44,4 +44,14 @@ class FairMQMessage
 
 using FairMQMessagePtr = std::unique_ptr<FairMQMessage>;
 
+namespace fair
+{
+namespace mq
+{
+
+using MessagePtr = std::unique_ptr<FairMQMessage>;
+
+} /* namespace mq */
+} /* namespace fair */
+
 #endif /* FAIRMQMESSAGE_H_ */
