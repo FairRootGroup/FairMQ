@@ -210,8 +210,11 @@ void FairMQStateMachine::SubscribeToStateChange(const std::string& key, std::fun
 }
 void FairMQStateMachine::UnsubscribeFromStateChange(const std::string& key)
 {
-    fStateChangeSignalsMap.at(key).disconnect();
-    fStateChangeSignalsMap.erase(key);
+    if (fStateChangeSignalsMap.count(key))
+    {
+        fStateChangeSignalsMap.at(key).disconnect();
+        fStateChangeSignalsMap.erase(key);
+    }
 }
 
 int FairMQStateMachine::GetEventNumber(const std::string& event)

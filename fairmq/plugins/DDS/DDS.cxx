@@ -37,19 +37,13 @@ DDS::DDS(const string name, const Plugin::Version version, const string maintain
     , fEventsMutex()
     , fNewEvent()
     , fDeviceTerminationRequested(false)
-    , fIosWork{fIos}
-    , fHeartbeatTimer{fIos, fHeartbeatInterval}
     , fHeartbeatInterval{100}
 {
     try
     {
         TakeDeviceControl();
         fControllerThread = thread(&DDS::HandleControl, this);
-
-        fIosWorkerThread = thread([&]{ fIos.run(); });
-
-        fHeartbeatTimer.expires_from_now(chrono::milliseconds{0});
-        fHeartbeatTimer.async_wait(bind(&DDS::Heartbeat, this, placeholders::_1));
+        fHeartbeatThread = thread(&DDS::HeartbeatSender, this);
     }
     catch (PluginServices::DeviceControlError& e)
     {
@@ -136,8 +130,15 @@ auto DDS::HandleControl() -> void
     fDDSKeyValue.unsubscribe();
     fDDSCustomCmd.unsubscribe();
 
-    UnsubscribeFromDeviceStateChange();
-    ReleaseDeviceControl();
+    try
+    {
+        UnsubscribeFromDeviceStateChange();
+        ReleaseDeviceControl();
+    }
+    catch (fair::mq::PluginServices::DeviceControlError& e)
+    {
+        LOG(error) << e.what();
+    }
 }
 
 auto DDS::FillChannelContainers() -> void
@@ -176,7 +177,8 @@ auto DDS::SubscribeForConnectingChannels() -> void
 {
     fDDSKeyValue.subscribe([&] (const string& propertyId, const string& key, const string& value)
     {
-        try {
+        try
+        {
             LOG(debug) << "Received update for " << propertyId << ": key=" << key << " value=" << value;
             fConnectingChans.at(propertyId).fDDSValues.insert(make_pair<string, string>(key.c_str(), value.c_str()));
 
@@ -201,7 +203,8 @@ auto DDS::SubscribeForConnectingChannels() -> void
                     ++mi;
                 }
             }
-        } catch (const exception& e)
+        }
+        catch (const exception& e)
         {
             LOG(error) << "Error on handling DDS property update for " << propertyId << ": key=" << key << " value=" << value << ": " << e.what();
         }
@@ -222,20 +225,24 @@ auto DDS::PublishBoundChannels() -> void
     }
 }
 
-auto DDS::Heartbeat(const boost::system::error_code&) -> void
+auto DDS::HeartbeatSender() -> void
 {
     string id = GetProperty<string>("id");
     string pid(to_string(getpid()));
 
+    while (!fDeviceTerminationRequested)
     {
-        lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
+        {
+            lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
 
-        for (const auto subscriberId : fHeartbeatSubscribers) {
-            fDDSCustomCmd.send("heartbeat: " + id + "," + pid, to_string(subscriberId));
+            for (const auto subscriberId : fHeartbeatSubscribers)
+            {
+                fDDSCustomCmd.send("heartbeat: " + id + "," + pid, to_string(subscriberId));
+            }
         }
+
+        this_thread::sleep_for(chrono::milliseconds(fHeartbeatInterval));
     }
-    fHeartbeatTimer.expires_at(fHeartbeatTimer.expires_at() + fHeartbeatInterval);
-    fHeartbeatTimer.async_wait(bind(&DDS::Heartbeat, this, placeholders::_1));
 }
 
 auto DDS::SubscribeForCustomCommands() -> void
@@ -342,8 +349,10 @@ DDS::~DDS()
         fControllerThread.join();
     }
 
-    fIos.stop();
-    fIosWorkerThread.join();
+    if (fHeartbeatThread.joinable())
+    {
+        fHeartbeatThread.join();
+    }
 }
 
 } /* namespace plugins */

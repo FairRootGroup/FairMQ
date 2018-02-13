@@ -21,7 +21,6 @@
 #include <vector>
 #include <unordered_map>
 #include <set>
-#include <boost/asio.hpp>
 #include <chrono>
 #include <functional>
 
@@ -61,7 +60,7 @@ class DDS : public Plugin
     auto PublishBoundChannels() -> void;
     auto SubscribeForCustomCommands() -> void;
 
-    auto Heartbeat(const boost::system::error_code&) -> void;
+    auto HeartbeatSender() -> void;
 
     dds::intercom_api::CIntercomService fService;
     dds::intercom_api::CCustomCmd fDDSCustomCmd;
@@ -87,10 +86,7 @@ class DDS : public Plugin
     std::set<uint64_t> fStateChangeSubscribers;
     std::mutex fStateChangeSubscriberMutex;
 
-    boost::asio::io_service fIos;
-    boost::asio::io_service::work fIosWork;
-    std::thread fIosWorkerThread;
-    boost::asio::basic_waitable_timer<std::chrono::steady_clock> fHeartbeatTimer;
+    std::thread fHeartbeatThread;
     std::chrono::milliseconds fHeartbeatInterval;
 };
 

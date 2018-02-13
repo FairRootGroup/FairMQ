@@ -104,7 +104,7 @@ auto PluginServices::ChangeDeviceState(const std::string& controller, const Devi
     {
         throw DeviceControlError{tools::ToString(
             "Plugin '", controller, "' is not allowed to change device states. ",
-            "Currently, plugin '", fDeviceController, "' has taken control."
+            "Currently, plugin '", *fDeviceController, "' has taken control."
         )};
     }
 }
@@ -125,7 +125,7 @@ auto PluginServices::TakeDeviceControl(const std::string& controller) -> void
     {
         throw DeviceControlError{tools::ToString(
             "Plugin '", controller, "' is not allowed to take over control. ",
-            "Currently, plugin '", fDeviceController, "' has taken control."
+            "Currently, plugin '", *fDeviceController, "' has taken control."
         )};
     }
 }
@@ -134,10 +134,7 @@ auto PluginServices::StealDeviceControl(const std::string& controller) -> void
 {
     lock_guard<mutex> lock{fDeviceControllerMutex};
 
-    if (!fDeviceController)
-    {
-        fDeviceController = controller;
-    }
+    fDeviceController = controller;
 }
 
 auto PluginServices::ReleaseDeviceControl(const std::string& controller) -> void
