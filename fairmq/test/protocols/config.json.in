@@ -2,6 +2,110 @@
     "fairMQOptions": {
         "devices": [
             {
+                "id": "pairleft_zeromq",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5557",
+                        "method": "bind",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "zeromq",
+                        "type": "pair"
+                    }
+                ]
+            },
+            {
+                "id": "pairright_zeromq",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5557",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "zeromq",
+                        "type": "pair"
+                    }
+                ]
+            },
+            {
+                "id": "pairleft_nanomsg",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5757",
+                        "method": "bind",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "nanomsg",
+                        "type": "pair"
+                    }
+                ]
+            },
+            {
+                "id": "pairright_nanomsg",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5757",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "nanomsg",
+                        "type": "pair"
+                    }
+                ]
+            },
+            {
+                "id": "pairleft_shmem",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5857",
+                        "method": "bind",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "shmem",
+                        "type": "pair"
+                    }
+                ]
+            },
+            {
+                "id": "pairright_shmem",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5857",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "shmem",
+                        "type": "pair"
+                    }
+                ]
+            },
+            {
+                "id": "pairleft_ofi",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5857",
+                        "method": "bind",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "ofi",
+                        "type": "pair"
+                    }
+                ]
+            },
+            {
+                "id": "pairright_ofi",
+                "channels": [
+                    {
+                        "address": "tcp://127.0.0.1:5857",
+                        "method": "connect",
+                        "name": "data",
+                        "rateLogging": 0,
+                        "transport": "ofi",
+                        "type": "pair"
+                    }
+                ]
+            },
+            {
                 "id": "push_zeromq",
                 "channels": [
                     {

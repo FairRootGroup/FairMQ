@@ -16,6 +16,8 @@ include(GTestHelper)
 add_testhelper(runTestDevice
     SOURCES
     helper/runTestDevice.cxx
+    helper/devices/TestPairLeft.cxx
+    helper/devices/TestPairRight.cxx
     helper/devices/TestPollIn.cxx
     helper/devices/TestPollOut.cxx
     helper/devices/TestPub.cxx
@@ -38,6 +40,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/protocols/runner.cxx.in ${CMAKE_CURRE
 add_testsuite(FairMQ.Protocols
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/protocols/runner.cxx
+    protocols/_pair.cxx
     protocols/_poller.cxx
     protocols/_pub_sub.cxx
     protocols/_push_pull.cxx

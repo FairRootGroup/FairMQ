@@ -6,6 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include "devices/TestPairLeft.cxx"
+#include "devices/TestPairRight.cxx"
 #include "devices/TestPollIn.cxx"
 #include "devices/TestPollOut.cxx"
 #include "devices/TestPub.cxx"
@@ -69,6 +71,14 @@ auto getDevice(const FairMQProgOptions& config) -> FairMQDevicePtr
     else if (0 == id.find("pollin_"))
     {
         return new PollIn;
+    }
+    else if (0 == id.find("pairleft_"))
+    {
+        return new PairLeft;
+    }
+    else if (0 == id.find("pairright_"))
+    {
+        return new PairRight;
     }
     else
     {
