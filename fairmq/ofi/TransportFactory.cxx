@@ -25,57 +25,57 @@ TransportFactory::TransportFactory(const string& id, const FairMQProgOptions* co
 
 auto TransportFactory::CreateMessage() const -> MessagePtr
 {
-  throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented."};
 }
 
 auto TransportFactory::CreateMessage(const size_t size) const -> MessagePtr
 {
-  throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented."};
 }
 
 auto TransportFactory::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const -> MessagePtr
 {
-  throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented."};
 }
 
 auto TransportFactory::CreateMessage(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint) const -> MessagePtr
 {
-  throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented."};
 }
 
 auto TransportFactory::CreateSocket(const string& type, const string& name) const -> SocketPtr
 {
-  throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented."};
 }
 
 auto TransportFactory::CreatePoller(const vector<FairMQChannel>& channels) const -> PollerPtr
 {
-  throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented."};
 }
 
 auto TransportFactory::CreatePoller(const vector<const FairMQChannel*>& channels) const -> PollerPtr
 {
-  throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented."};
 }
 
 auto TransportFactory::CreatePoller(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList) const -> PollerPtr
 {
-  throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented."};
 }
 
 auto TransportFactory::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const -> PollerPtr
 {
-  throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented."};
 }
 
 auto TransportFactory::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback) const -> UnmanagedRegionPtr
 {
-  throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented."};
 }
 
 auto TransportFactory::GetType() const -> Transport
 {
-  return Transport::OFI;
+    return Transport::OFI;
 }
 
 TransportFactory::~TransportFactory()

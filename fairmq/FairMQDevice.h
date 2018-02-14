@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2012-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2012-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,16 +9,15 @@
 #ifndef FAIRMQDEVICE_H_
 #define FAIRMQDEVICE_H_
 
-#include "FairMQStateMachine.h"
-#include "FairMQTransportFactory.h"
-#include "FairMQTransports.h"
+#include <FairMQStateMachine.h>
+#include <FairMQTransportFactory.h>
+#include <fairmq/Transports.h>
 
-#include "FairMQSocket.h"
-#include "FairMQChannel.h"
-#include "FairMQMessage.h"
-#include "FairMQParts.h"
-#include "FairMQUnmanagedRegion.h"
-#include "options/FairMQProgOptions.h"
+#include <FairMQSocket.h>
+#include <FairMQChannel.h>
+#include <FairMQMessage.h>
+#include <FairMQParts.h>
+#include <FairMQUnmanagedRegion.h>
 
 #include <vector>
 #include <memory> // unique_ptr
@@ -296,10 +295,6 @@ class FairMQDevice : public FairMQStateMachine
     /// Sets the default transport for the device
     /// @param transport  Transport string ("zeromq"/"nanomsg"/"shmem")
     void SetTransport(const std::string& transport = "zeromq");
-
-    /// Creates stand-alone transport factory
-    /// @param transport  Transport string ("zeromq"/"nanomsg"/"shmem")
-    static std::unique_ptr<FairMQTransportFactory> MakeTransport(const std::string& transport) __attribute__((deprecated("Use 'static auto FairMQTransportFactory::CreateTransportFactory() -> std::shared_ptr<FairMQTransportFactory>' from <FairMQTransportFactory.h> instead.")));
 
     void SetConfig(FairMQProgOptions& config);
     const FairMQProgOptions* GetConfig() const

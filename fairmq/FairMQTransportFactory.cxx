@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -12,6 +12,7 @@
 #ifdef NANOMSG_FOUND
 #include <nanomsg/FairMQTransportFactoryNN.h>
 #endif /* NANOMSG_FOUND */
+#include <fairmq/ofi/TransportFactory.h>
 #include <FairMQLogger.h>
 #include <fairmq/Tools.h>
 
@@ -38,18 +39,22 @@ auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, con
 
     if (type == "zeromq")
     {
-        return std::make_shared<FairMQTransportFactoryZMQ>(finalId, config);
+        return make_shared<FairMQTransportFactoryZMQ>(finalId, config);
     }
     else if (type == "shmem")
     {
-        return std::make_shared<FairMQTransportFactorySHM>(finalId, config);
+        return make_shared<FairMQTransportFactorySHM>(finalId, config);
     }
 #ifdef NANOMSG_FOUND
     else if (type == "nanomsg")
     {
-        return std::make_shared<FairMQTransportFactoryNN>(finalId, config);
+        return make_shared<FairMQTransportFactoryNN>(finalId, config);
     }
 #endif /* NANOMSG_FOUND */
+    else if (type == "ofi")
+    {
+        return make_shared<fair::mq::ofi::TransportFactory>(finalId, config);
+    }
     else
     {
         LOG(error) << "Unavailable transport requested: " << "\"" << type << "\"" << ". Available are: "
@@ -58,6 +63,7 @@ auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, con
 #ifdef NANOMSG_FOUND
                    << ", \"nanomsg\""
 #endif /* NANOMSG_FOUND */
+                   << ", and \"ofi\""
                    << ". Exiting.";
         exit(EXIT_FAILURE);
     }

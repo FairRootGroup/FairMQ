@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,12 +9,12 @@
 #ifndef FAIRMQTRANSPORTFACTORY_H_
 #define FAIRMQTRANSPORTFACTORY_H_
 
-#include "FairMQMessage.h"
-#include "FairMQSocket.h"
-#include "FairMQPoller.h"
-#include "FairMQUnmanagedRegion.h"
-#include "FairMQLogger.h"
-#include "FairMQTransports.h"
+#include <FairMQMessage.h>
+#include <FairMQSocket.h>
+#include <FairMQPoller.h>
+#include <FairMQUnmanagedRegion.h>
+#include <FairMQLogger.h>
+#include <fairmq/Transports.h>
 
 #include <string>
 #include <memory>

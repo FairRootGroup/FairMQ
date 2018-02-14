@@ -75,8 +75,8 @@ set(FAIRMQ_HEADER_FILES
     FairMQSocket.h
     FairMQStateMachine.h
     FairMQTransportFactory.h
-    FairMQTransports.h
     Tools.h
+    Transports.h
     devices/FairMQBenchmarkSampler.h
     devices/FairMQMerger.h
     devices/FairMQMultiplier.h

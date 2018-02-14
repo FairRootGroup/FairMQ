@@ -1,10 +1,24 @@
 /********************************************************************************
- * Copyright (C) 2012-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2012-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
+
+#include <FairMQSocket.h>
+#include <FairMQDevice.h>
+#include <FairMQLogger.h> 
+#include <options/FairMQProgOptions.h>
+
+#include <fairmq/Tools.h>
+#include <fairmq/Transports.h>
+
+#include <boost/algorithm/string.hpp> // join/split
+
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include <list>
 #include <cstdlib>
@@ -14,24 +28,7 @@
 #include <mutex>
 #include <thread>
 #include <functional>
-
-#include <boost/algorithm/string.hpp> // join/split
-
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
-
-#include "FairMQSocket.h"
-#include "FairMQDevice.h"
-#include "FairMQLogger.h"
-#include <fairmq/Tools.h>
-
-#include "options/FairMQProgOptions.h"
-#include "zeromq/FairMQTransportFactoryZMQ.h"
-#include "shmem/FairMQTransportFactorySHM.h"
-#ifdef NANOMSG_FOUND
-#include "nanomsg/FairMQTransportFactoryNN.h"
-#endif
+#include <sstream>
 
 using namespace std;
 
@@ -802,39 +799,6 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& tran
         LOG(debug) << "Reusing existing '" << transport << "' transport.";
         return i->second;
     }
-}
-
-unique_ptr<FairMQTransportFactory> FairMQDevice::MakeTransport(const string& transport)
-{
-    unique_ptr<FairMQTransportFactory> tr;
-
-    if (transport == "zeromq")
-    {
-        tr = fair::mq::tools::make_unique<FairMQTransportFactoryZMQ>();
-    }
-    else if (transport == "shmem")
-    {
-        tr = fair::mq::tools::make_unique<FairMQTransportFactorySHM>();
-    }
-#ifdef NANOMSG_FOUND
-    else if (transport == "nanomsg")
-    {
-        tr = fair::mq::tools::make_unique<FairMQTransportFactoryNN>();
-    }
-#endif
-    else
-    {
-        LOG(error) << "Unavailable transport requested: " << "\"" << transport << "\"" << ". Available are: "
-                   << "\"zeromq\""
-                   << "\"shmem\""
-#ifdef NANOMSG_FOUND
-                   << ", \"nanomsg\""
-#endif
-                   << ". Returning nullptr.";
-        return tr;
-    }
-
-    return tr;
 }
 
 void FairMQDevice::CreateOwnConfig()

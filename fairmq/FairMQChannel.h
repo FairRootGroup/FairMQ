@@ -1,16 +1,10 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQChannel.h
- *
- * @since 2015-06-02
- * @author A. Rybalchenko
- */
 
 #ifndef FAIRMQCHANNEL_H_
 #define FAIRMQCHANNEL_H_
@@ -21,12 +15,12 @@
 #include <atomic>
 #include <mutex>
 
-#include "FairMQTransportFactory.h"
-#include "FairMQSocket.h"
-#include "FairMQPoller.h"
-#include "FairMQTransports.h"
-#include "FairMQLogger.h"
-#include "FairMQParts.h"
+#include <FairMQTransportFactory.h>
+#include <FairMQSocket.h>
+#include <FairMQPoller.h>
+#include <fairmq/Transports.h>
+#include <FairMQLogger.h>
+#include <FairMQParts.h>
 
 class FairMQChannel
 {

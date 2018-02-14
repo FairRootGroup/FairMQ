@@ -1,16 +1,10 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQMessage.h
- *
- * @since 2012-12-05
- * @author D. Klein, A. Rybalchenko
- */
 
 #ifndef FAIRMQMESSAGE_H_
 #define FAIRMQMESSAGE_H_
@@ -18,7 +12,7 @@
 #include <cstddef> // for size_t
 #include <memory> // unique_ptr
 
-#include "FairMQTransports.h"
+#include <fairmq/Transports.h>
 
 using fairmq_free_fn = void(void* data, void* hint);
 
