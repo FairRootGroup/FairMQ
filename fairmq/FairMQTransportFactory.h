@@ -73,6 +73,8 @@ class FairMQTransportFactory
 
     virtual ~FairMQTransportFactory() {};
 
+    struct TransportFactoryError : std::runtime_error { using std::runtime_error::runtime_error; };
+
     static auto CreateTransportFactory(const std::string& type, const std::string& id = "", const FairMQProgOptions* config = nullptr) -> std::shared_ptr<FairMQTransportFactory>;
 
     static void FairMQNoCleanup(void* /*data*/, void* /*obj*/)
