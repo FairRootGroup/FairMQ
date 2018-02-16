@@ -1,16 +1,10 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             * 
  *              GNU Lesser General Public Licence (LGPL) version 3,             *  
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQSocketZMQ.h
- *
- * @since 2012-12-05
- * @author D. Klein, A. Rybalchenko
- */
 
 #ifndef FAIRMQSOCKETZMQ_H_
 #define FAIRMQSOCKETZMQ_H_
@@ -29,36 +23,41 @@ class FairMQSocketZMQ : public FairMQSocket
     FairMQSocketZMQ(const FairMQSocketZMQ&) = delete;
     FairMQSocketZMQ operator=(const FairMQSocketZMQ&) = delete;
 
-    virtual std::string GetId();
+    std::string GetId() override;
 
-    virtual bool Bind(const std::string& address);
-    virtual void Connect(const std::string& address);
+    bool Bind(const std::string& address) override;
+    void Connect(const std::string& address) override;
 
-    virtual int Send(FairMQMessagePtr& msg, const int flags = 0);
-    virtual int Receive(FairMQMessagePtr& msg, const int flags = 0);
+    int Send(FairMQMessagePtr& msg) override;
+    int SendAsync(FairMQMessagePtr& msg) override;
+    int Receive(FairMQMessagePtr& msg) override;
+    int ReceiveAsync(FairMQMessagePtr& msg) override;
 
-    virtual int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags = 0);
-    virtual int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags = 0);
+    int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
+    int64_t SendAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
+    int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
+    int64_t ReceiveAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
 
-    virtual void* GetSocket() const;
-    virtual int GetSocket(int nothing) const;
-    virtual void Close();
+    void* GetSocket() const override;
+    int GetSocket(int nothing) const override;
 
-    virtual void Interrupt();
-    virtual void Resume();
+    void Close() override;
 
-    virtual void SetOption(const std::string& option, const void* value, size_t valueSize);
-    virtual void GetOption(const std::string& option, void* value, size_t* valueSize);
+    void Interrupt() override;
+    void Resume() override;
 
-    virtual unsigned long GetBytesTx() const;
-    virtual unsigned long GetBytesRx() const;
-    virtual unsigned long GetMessagesTx() const;
-    virtual unsigned long GetMessagesRx() const;
+    void SetOption(const std::string& option, const void* value, size_t valueSize) override;
+    void GetOption(const std::string& option, void* value, size_t* valueSize) override;
 
-    virtual bool SetSendTimeout(const int timeout, const std::string& address, const std::string& method);
-    virtual int GetSendTimeout() const;
-    virtual bool SetReceiveTimeout(const int timeout, const std::string& address, const std::string& method);
-    virtual int GetReceiveTimeout() const;
+    unsigned long GetBytesTx() const override;
+    unsigned long GetBytesRx() const override;
+    unsigned long GetMessagesTx() const override;
+    unsigned long GetMessagesRx() const override;
+
+    bool SetSendTimeout(const int timeout, const std::string& address, const std::string& method) override;
+    int GetSendTimeout() const override;
+    bool SetReceiveTimeout(const int timeout, const std::string& address, const std::string& method) override;
+    int GetReceiveTimeout() const override;
 
     static int GetConstant(const std::string& constant);
 
@@ -73,6 +72,11 @@ class FairMQSocketZMQ : public FairMQSocket
     std::atomic<unsigned long> fMessagesRx;
 
     static std::atomic<bool> fInterrupted;
+
+    int Send(FairMQMessagePtr& msg, const int flags = 0);
+    int Receive(FairMQMessagePtr& msg, const int flags = 0);
+    int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags = 0);
+    int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags = 0);
 };
 
 #endif /* FAIRMQSOCKETZMQ_H_ */

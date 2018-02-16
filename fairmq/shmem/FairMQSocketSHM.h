@@ -23,16 +23,20 @@ class FairMQSocketSHM : public FairMQSocket
     FairMQSocketSHM(const FairMQSocketSHM&) = delete;
     FairMQSocketSHM operator=(const FairMQSocketSHM&) = delete;
 
-    std::string GetId() override;
+    std::string GetId() override { return fId; }
 
     bool Bind(const std::string& address) override;
     void Connect(const std::string& address) override;
 
-    int Send(FairMQMessagePtr& msg, const int flags = 0) override;
-    int Receive(FairMQMessagePtr& msg, const int flags = 0) override;
+    int Send(FairMQMessagePtr& msg) override;
+    int SendAsync(FairMQMessagePtr& msg) override;
+    int Receive(FairMQMessagePtr& msg) override;
+    int ReceiveAsync(FairMQMessagePtr& msg) override;
 
-    int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags = 0) override;
-    int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags = 0) override;
+    int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
+    int64_t SendAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
+    int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
+    int64_t ReceiveAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
 
     void* GetSocket() const override;
     int GetSocket(int nothing) const override;
@@ -68,6 +72,11 @@ class FairMQSocketSHM : public FairMQSocket
     std::atomic<unsigned long> fMessagesRx;
 
     static std::atomic<bool> fInterrupted;
+
+    int Send(FairMQMessagePtr& msg, const int flags);
+    int Receive(FairMQMessagePtr& msg, const int flags);
+    int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags);
+    int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags);
 };
 
 #endif /* FAIRMQSOCKETSHM_H_ */

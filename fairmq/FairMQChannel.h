@@ -318,9 +318,6 @@ class FairMQChannel
     FairMQ::Transport fTransportType;
     std::shared_ptr<FairMQTransportFactory> fTransportFactory;
 
-    int fNoBlockFlag;
-    int fSndMoreFlag;
-
     bool CheckCompatibility(std::unique_ptr<FairMQMessage>& msg) const;
     bool CheckCompatibility(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const;
 

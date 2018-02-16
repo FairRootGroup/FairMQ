@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -20,17 +20,14 @@ using namespace fair::mq::shmem;
 atomic<bool> FairMQSocketSHM::fInterrupted(false);
 
 FairMQSocketSHM::FairMQSocketSHM(Manager& manager, const string& type, const string& name, const string& id /*= ""*/, void* context)
-    : FairMQSocket(ZMQ_SNDMORE, ZMQ_RCVMORE, ZMQ_DONTWAIT)
-    , fSocket(nullptr)
+    : fSocket(nullptr)
     , fManager(manager)
-    , fId()
+    , fId(id + "." + name + "." + type)
     , fBytesTx(0)
     , fBytesRx(0)
     , fMessagesTx(0)
     , fMessagesRx(0)
 {
-    fId = id + "." + name + "." + type;
-
     assert(context);
     fSocket = zmq_socket(context, GetConstant(type));
 
@@ -76,11 +73,6 @@ FairMQSocketSHM::FairMQSocketSHM(Manager& manager, const string& type, const str
     // LOG(info) << "created socket " << fId;
 }
 
-string FairMQSocketSHM::GetId()
-{
-    return fId;
-}
-
 bool FairMQSocketSHM::Bind(const string& address)
 {
     // LOG(info) << "bind socket " << fId << " on " << address;
@@ -108,6 +100,16 @@ void FairMQSocketSHM::Connect(const string& address)
         exit(EXIT_FAILURE);
     }
 }
+
+int FairMQSocketSHM::Send(FairMQMessagePtr& msg) { return Send(msg, 0); }
+int FairMQSocketSHM::SendAsync(FairMQMessagePtr& msg) { return Send(msg, ZMQ_DONTWAIT); }
+int FairMQSocketSHM::Receive(FairMQMessagePtr& msg) { return Receive(msg, 0); }
+int FairMQSocketSHM::ReceiveAsync(FairMQMessagePtr& msg) { return Receive(msg, ZMQ_DONTWAIT); }
+
+int64_t FairMQSocketSHM::Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) { return Send(msgVec, 0); }
+int64_t FairMQSocketSHM::SendAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) { return Send(msgVec, ZMQ_DONTWAIT); }
+int64_t FairMQSocketSHM::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) { return Receive(msgVec, 0); }
+int64_t FairMQSocketSHM::ReceiveAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) { return Receive(msgVec, ZMQ_DONTWAIT); }
 
 int FairMQSocketSHM::Send(FairMQMessagePtr& msg, const int flags)
 {

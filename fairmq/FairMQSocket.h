@@ -18,30 +18,26 @@
 class FairMQSocket
 {
   public:
-    const int SNDMORE;
-    const int RCVMORE;
-    const int NOBLOCK;
-
-    FairMQSocket(int sndMore, int rcvMore, int noBlock)
-        : SNDMORE(sndMore)
-        , RCVMORE(rcvMore)
-        , NOBLOCK(noBlock)
-        {}
+    FairMQSocket() {}
 
     virtual std::string GetId() = 0;
 
     virtual bool Bind(const std::string& address) = 0;
     virtual void Connect(const std::string& address) = 0;
-    virtual bool Attach(const std::string& address, bool serverish = false);
 
-    virtual int Send(FairMQMessagePtr& msg, const int flags = 0) = 0;
-    virtual int Receive(FairMQMessagePtr& msg, const int flags = 0) = 0;
+    virtual int Send(FairMQMessagePtr& msg) = 0;
+    virtual int SendAsync(FairMQMessagePtr& msg) = 0;
+    virtual int Receive(FairMQMessagePtr& msg) = 0;
+    virtual int ReceiveAsync(FairMQMessagePtr& msg) = 0;
 
-    virtual int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags = 0) = 0;
-    virtual int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags = 0) = 0;
+    virtual int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
+    virtual int64_t SendAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
+    virtual int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
+    virtual int64_t ReceiveAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
 
     virtual void* GetSocket() const = 0;
     virtual int GetSocket(int nothing) const = 0;
+
     virtual void Close() = 0;
 
     virtual void Interrupt() = 0;

@@ -28,7 +28,7 @@ class PairRight : public FairMQDevice
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    auto Run() -> void
+    auto Run() -> void override
     {
         auto msg = FairMQMessagePtr{NewMessage()};
 

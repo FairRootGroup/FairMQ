@@ -33,16 +33,13 @@ using namespace std;
 atomic<bool> FairMQSocketNN::fInterrupted(false);
 
 FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const string& id /*= ""*/)
-    : FairMQSocket(0, 0, NN_DONTWAIT)
-    , fSocket(-1)
-    , fId()
+    : fSocket(-1)
+    , fId(id + "." + name + "." + type)
     , fBytesTx(0)
     , fBytesRx(0)
     , fMessagesTx(0)
     , fMessagesRx(0)
 {
-    fId = id + "." + name + "." + type;
-
     if (type == "router" || type == "dealer")
     {
         // Additional info about using the sockets ROUTER and DEALER with nanomsg can be found in:
@@ -120,6 +117,16 @@ void FairMQSocketNN::Connect(const string& address)
         LOG(error) << "failed connecting socket " << fId << ", reason: " << nn_strerror(errno);
     }
 }
+
+int FairMQSocketNN::Send(FairMQMessagePtr& msg) { return Send(msg, 0); }
+int FairMQSocketNN::SendAsync(FairMQMessagePtr& msg) { return Send(msg, NN_DONTWAIT); }
+int FairMQSocketNN::Receive(FairMQMessagePtr& msg) { return Receive(msg, 0); }
+int FairMQSocketNN::ReceiveAsync(FairMQMessagePtr& msg) { return Receive(msg, NN_DONTWAIT); }
+
+int64_t FairMQSocketNN::Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) { return Send(msgVec, 0); }
+int64_t FairMQSocketNN::SendAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) { return Send(msgVec, NN_DONTWAIT); }
+int64_t FairMQSocketNN::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) { return Receive(msgVec, 0); }
+int64_t FairMQSocketNN::ReceiveAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) { return Receive(msgVec, NN_DONTWAIT); }
 
 int FairMQSocketNN::Send(FairMQMessagePtr& msg, const int flags)
 {
