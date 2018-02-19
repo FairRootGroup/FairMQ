@@ -194,7 +194,7 @@ class FairMQDevice : public FairMQStateMachine
     /// @brief Getter for default transport factory
     auto Transport() const -> const FairMQTransportFactory*
     {
-        return fTransports.cbegin()->second.get();
+        return fTransports.at(fair::mq::TransportTypes[GetDefaultTransport()]).get();
     }
 
     template<typename... Args>
@@ -517,7 +517,7 @@ class FairMQDevice : public FairMQStateMachine
     void CreateOwnConfig();
 
     bool fDataCallbacks;
-    std::unordered_map<FairMQ::Transport, FairMQSocketPtr> fDeviceCmdSockets; ///< Sockets used for the internal unblocking mechanism
+    FairMQSocketPtr fDeviceCmdSocket; ///< Socket used for the internal unblocking mechanism
     std::unordered_map<std::string, InputMsgCallback> fMsgInputs;
     std::unordered_map<std::string, InputMultipartCallback> fMultipartInputs;
     std::unordered_map<FairMQ::Transport, std::vector<std::string>> fMultitransportInputs;

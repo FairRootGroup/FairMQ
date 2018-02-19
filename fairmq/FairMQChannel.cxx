@@ -660,9 +660,9 @@ void FairMQChannel::InitTransport(shared_ptr<FairMQTransportFactory> factory)
     fTransportType = factory->GetType();
 }
 
-bool FairMQChannel::InitCommandInterface()
+bool FairMQChannel::InitCommandInterface(FairMQSocketPtr channelCmdSocket)
 {
-    fChannelCmdSocket = fTransportFactory->CreateSocket("sub", "device-commands");
+    fChannelCmdSocket = std::move(channelCmdSocket);
     if (fChannelCmdSocket)
     {
         fChannelCmdSocket->Connect("inproc://commands");

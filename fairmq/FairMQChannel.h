@@ -322,7 +322,7 @@ class FairMQChannel
     bool CheckCompatibility(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const;
 
     void InitTransport(std::shared_ptr<FairMQTransportFactory> factory);
-    bool InitCommandInterface();
+    bool InitCommandInterface(FairMQSocketPtr channelCmdSocket);
 
     bool HandleUnblock() const;
 
