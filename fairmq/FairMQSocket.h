@@ -68,6 +68,8 @@ namespace mq
 
 using SocketPtr = std::unique_ptr<FairMQSocket>;
 
+struct SocketError : std::runtime_error { using std::runtime_error::runtime_error; };
+
 } /* namespace mq */
 } /* namespace fair */
 

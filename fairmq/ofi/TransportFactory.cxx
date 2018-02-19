@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include <fairmq/ofi/TransportFactory.h>
+#include <fairmq/ofi/Socket.h>
 #include <fairmq/Tools.h>
 
 #include <rdma/fabric.h> // OFI libfabric
@@ -82,7 +83,8 @@ auto TransportFactory::CreateMessage(UnmanagedRegionPtr& region, void* data, con
 
 auto TransportFactory::CreateSocket(const string& type, const string& name) const -> SocketPtr
 {
-    throw runtime_error{"Not yet implemented."};
+    assert(fZmqContext);
+    return unique_ptr<FairMQSocket>{new Socket(type, name, GetId(), fZmqContext)};
 }
 
 auto TransportFactory::CreatePoller(const vector<FairMQChannel>& channels) const -> PollerPtr
@@ -117,24 +119,8 @@ auto TransportFactory::GetType() const -> Transport
 
 TransportFactory::~TransportFactory()
 {
-    for (int i = 0; i < 5; ++i)
-    {
-        if (zmq_ctx_term(fZmqContext) != 0)
-        {
-            if ((errno == EINTR) && (i < 4))
-            {
-                LOG(warn) << "failed closing zmq context, reason: " << zmq_strerror(errno) << ", trying again";
-            }
-            else
-            {
-                LOG(error) << "failed closing zmq context, reason: " << zmq_strerror(errno);
-                break;
-            }
-        }
-        else
-        {
-            break;
-        }
+    if (zmq_ctx_term(fZmqContext) != 0) {
+        throw TransportFactoryError{tools::ToString("Failed closing zmq context, reason: ", zmq_strerror(errno))};
     }
 }
 

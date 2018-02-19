@@ -83,6 +83,7 @@ set(FAIRMQ_HEADER_FILES
     devices/FairMQProxy.h
     devices/FairMQSink.h
     devices/FairMQSplitter.h
+    ofi/Socket.h
     ofi/TransportFactory.h
     options/FairMQParser.h
     options/FairMQProgOptions.h
@@ -147,6 +148,7 @@ set(FAIRMQ_SOURCE_FILES
     devices/FairMQProxy.cxx
     # devices/FairMQSink.cxx
     devices/FairMQSplitter.cxx
+    ofi/Socket.cxx
     ofi/TransportFactory.cxx
     options/FairMQParser.cxx
     options/FairMQProgOptions.cxx
