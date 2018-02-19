@@ -6,8 +6,9 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <fairmq/ofi/TransportFactory.h>
+#include <fairmq/ofi/Poller.h>
 #include <fairmq/ofi/Socket.h>
+#include <fairmq/ofi/TransportFactory.h>
 #include <fairmq/Tools.h>
 
 #include <rdma/fabric.h> // OFI libfabric
@@ -63,22 +64,22 @@ TransportFactory::TransportFactory(const string& id, const FairMQProgOptions* co
 
 auto TransportFactory::CreateMessage() const -> MessagePtr
 {
-    throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented Msg1."};
 }
 
 auto TransportFactory::CreateMessage(const size_t size) const -> MessagePtr
 {
-    throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented Msg2."};
 }
 
 auto TransportFactory::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const -> MessagePtr
 {
-    throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented Msg3."};
 }
 
 auto TransportFactory::CreateMessage(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint) const -> MessagePtr
 {
-    throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented Msg4."};
 }
 
 auto TransportFactory::CreateSocket(const string& type, const string& name) const -> SocketPtr
@@ -89,27 +90,27 @@ auto TransportFactory::CreateSocket(const string& type, const string& name) cons
 
 auto TransportFactory::CreatePoller(const vector<FairMQChannel>& channels) const -> PollerPtr
 {
-    throw runtime_error{"Not yet implemented."};
+    return unique_ptr<FairMQPoller>(new Poller(channels));
 }
 
 auto TransportFactory::CreatePoller(const vector<const FairMQChannel*>& channels) const -> PollerPtr
 {
-    throw runtime_error{"Not yet implemented."};
+    return unique_ptr<FairMQPoller>(new Poller(channels));
 }
 
 auto TransportFactory::CreatePoller(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList) const -> PollerPtr
 {
-    throw runtime_error{"Not yet implemented."};
+    return unique_ptr<FairMQPoller>(new Poller(channelsMap, channelList));
 }
 
 auto TransportFactory::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const -> PollerPtr
 {
-    throw runtime_error{"Not yet implemented."};
+    return unique_ptr<FairMQPoller>(new Poller(cmdSocket, dataSocket));
 }
 
 auto TransportFactory::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback) const -> UnmanagedRegionPtr
 {
-    throw runtime_error{"Not yet implemented."};
+    throw runtime_error{"Not yet implemented UMR."};
 }
 
 auto TransportFactory::GetType() const -> Transport
