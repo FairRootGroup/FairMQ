@@ -48,7 +48,7 @@ class TransportFactory : public FairMQTransportFactory
 
     auto GetType() const -> Transport override;
 
-    ~TransportFactory() override;
+    ~TransportFactory() noexcept(false) override;
 
   private:
     void* fZmqContext;

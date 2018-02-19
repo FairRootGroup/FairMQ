@@ -71,7 +71,7 @@ class FairMQTransportFactory
     /// Get transport type
     virtual FairMQ::Transport GetType() const = 0;
 
-    virtual ~FairMQTransportFactory() {};
+    virtual ~FairMQTransportFactory() noexcept(false) {};
 
     static auto CreateTransportFactory(const std::string& type, const std::string& id = "", const FairMQProgOptions* config = nullptr) -> std::shared_ptr<FairMQTransportFactory>;
 
