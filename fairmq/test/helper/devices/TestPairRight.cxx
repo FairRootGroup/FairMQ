@@ -30,10 +30,9 @@ class PairRight : public FairMQDevice
 
     auto Run() -> void override
     {
-        auto msg = FairMQMessagePtr{NewMessage()};
+        MessagePtr msg{NewMessageFor("data", 0)};
 
-        if (Receive(msg, "data") >= 0)
-        {
+        if (Receive(msg, "data") >= 0) {
             LOG(info) << "PAIR test successfull";
         }
     };

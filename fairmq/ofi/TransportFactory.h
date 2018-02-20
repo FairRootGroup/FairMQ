@@ -19,6 +19,8 @@ namespace mq
 namespace ofi
 {
 
+class Socket;
+
 /**
  * @class TransportFactory TransportFactory.h <fairmq/ofi/TransportFactory.h>
  * @brief FairMQ transport factory for the ofi transport (implemented with ZeroMQ + libfabric)
@@ -27,6 +29,8 @@ namespace ofi
  */
 class TransportFactory : public FairMQTransportFactory
 {
+  friend Socket;
+
   public:
     TransportFactory(const std::string& id = "", const FairMQProgOptions* config = nullptr);
     TransportFactory(const TransportFactory&) = delete;

@@ -23,9 +23,6 @@ using namespace std;
 
 Message::Message()
 {
-    // if (zmq_msg_init(&fMessage) != 0) {
-    //     throw MessageError{tools::ToString("Failed initializing meta message, reason: ", zmq_strerror(errno))};
-    // }
 }
 
 Message::Message(const size_t size)
@@ -92,9 +89,6 @@ auto Message::Copy(const fair::mq::MessagePtr& msg) -> void
 
 Message::~Message() noexcept(false)
 {
-    // if (zmq_msg_close(&fMessage) != 0) {
-    //     throw MessageError{tools::ToString("Failed closing meta message, reason: ", zmq_strerror(errno))};
-    // }
 }
 
 } /* namespace ofi */

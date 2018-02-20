@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include <fairmq/ofi/Socket.h>
+#include <fairmq/ofi/TransportFactory.h>
 #include <fairmq/Tools.h>
 #include <FairMQLogger.h>
 
@@ -21,7 +22,7 @@ namespace ofi
 
 using namespace std;
 
-Socket::Socket(const string& type, const string& name, const string& id /*= ""*/, void* zmqContext)
+Socket::Socket(const TransportFactory& factory, const string& type, const string& name, const string& id /*= ""*/)
     : fId{id + "." + name + "." + type}
     , fBytesTx{0}
     , fBytesRx{0}
@@ -30,12 +31,10 @@ Socket::Socket(const string& type, const string& name, const string& id /*= ""*/
     , fSndTimeout{100}
     , fRcvTimeout{100}
 {
-    assert(zmqContext);
-
     if (type != "pair") {
         throw SocketError{tools::ToString("Socket type '", type, "' not implemented for ofi transport.")};
     } else {
-        fMetaSocket = zmq_socket(zmqContext, GetConstant(type));
+        fMetaSocket = zmq_socket(factory.fZmqContext, GetConstant(type));
     }
 
     if (fMetaSocket == nullptr) {
@@ -95,122 +94,28 @@ auto Socket::TryReceive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> 
 
 auto Socket::SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout) -> int
 {
-    throw SocketError{"Not yet implemented."};
-    // int nbytes = -1;
-    // int elapsed = 0;
-    //
-    // while (true && !fInterrupted)
-    // {
-    //     nbytes = zmq_msg_send(static_cast<FairMQMessageSHM*>(msg.get())->GetMessage(), fSocket, flags);
-    //     if (nbytes == 0)
-    //     {
-    //         return nbytes;
-    //     }
-    //     else if (nbytes > 0)
-    //     {
-    //         static_cast<FairMQMessageSHM*>(msg.get())->fQueued = true;
-    //
-    //         size_t size = msg->GetSize();
-    //         fBytesTx += size;
-    //         ++fMessagesTx;
-    //
-    //         return size;
-    //     }
-    //     else if (zmq_errno() == EAGAIN)
-    //     {
-    //         if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
-    //         {
-    //             if (timeout)
-    //             {
-    //                 elapsed += fSndTimeout;
-    //                 if (elapsed >= timeout)
-    //                 {
-    //                     return -2;
-    //                 }
-    //             }
-    //             continue;
-    //         }
-    //         else
-    //         {
-    //             return -2;
-    //         }
-    //     }
-    //     else if (zmq_errno() == ETERM)
-    //     {
-    //         LOG(info) << "terminating socket " << fId;
-    //         return -1;
-    //     }
-    //     else
-    //     {
-    //         LOG(error) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
-    //         return nbytes;
-    //     }
-    // }
-    //
-    // return -1;
+    auto ret = zmq_send(fMetaSocket, nullptr, 0, flags);
+    if (ret == EAGAIN) {
+        return -2;
+    } else if (ret < 0) {
+        LOG(error) << "Failed sending meta message on socket " << fId << ", reason: " << zmq_strerror(errno);
+        return -1;
+    } else {
+        return ret;
+    }
 }
 
 auto Socket::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout) -> int
 {
-    throw SocketError{"Not yet implemented."};
-    // int nbytes = -1;
-    // int elapsed = 0;
-    //
-    // zmq_msg_t* msgPtr = static_cast<FairMQMessageSHM*>(msg.get())->GetMessage();
-    // while (true)
-    // {
-    //     nbytes = zmq_msg_recv(msgPtr, fSocket, flags);
-    //     if (nbytes == 0)
-    //     {
-    //         ++fMessagesRx;
-    //
-    //         return nbytes;
-    //     }
-    //     else if (nbytes > 0)
-    //     {
-    //         MetaHeader* hdr = static_cast<MetaHeader*>(zmq_msg_data(msgPtr));
-    //         size_t size = 0;
-    //         static_cast<FairMQMessageSHM*>(msg.get())->fHandle = hdr->fHandle;
-    //         static_cast<FairMQMessageSHM*>(msg.get())->fSize = hdr->fSize;
-    //         static_cast<FairMQMessageSHM*>(msg.get())->fRegionId = hdr->fRegionId;
-    //         static_cast<FairMQMessageSHM*>(msg.get())->fHint = hdr->fHint;
-    //         size = msg->GetSize();
-    //
-    //         fBytesRx += size;
-    //         ++fMessagesRx;
-    //
-    //         return size;
-    //     }
-    //     else if (zmq_errno() == EAGAIN)
-    //     {
-    //         if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
-    //         {
-    //             if (timeout)
-    //             {
-    //                 elapsed += fSndTimeout;
-    //                 if (elapsed >= timeout)
-    //                 {
-    //                     return -2;
-    //                 }
-    //             }
-    //             continue;
-    //         }
-    //         else
-    //         {
-    //             return -2;
-    //         }
-    //     }
-    //     else if (zmq_errno() == ETERM)
-    //     {
-    //         LOG(info) << "terminating socket " << fId;
-    //         return -1;
-    //     }
-    //     else
-    //     {
-    //         LOG(error) << "Failed receiving on socket " << fId << ", reason: " << zmq_strerror(errno);
-    //         return nbytes;
-    //     }
-    // }
+    auto ret = zmq_recv(fMetaSocket, nullptr, 0, flags);
+    if (ret == EAGAIN) {
+        return -2;
+    } else if (ret < 0) {
+        LOG(error) << "Failed receiving meta message on socket " << fId << ", reason: " << zmq_strerror(errno);
+        return -1;
+    } else {
+        return ret;
+    }
 }
 
 auto Socket::SendImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout) -> int64_t 

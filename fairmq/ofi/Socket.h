@@ -21,16 +21,18 @@ namespace mq
 namespace ofi
 {
 
+class TransportFactory;
+
 /**
  * @class Socket Socket.h <fairmq/ofi/Socket.h>
  * @brief 
  *
  * @todo TODO insert long description
  */
-class Socket : public FairMQSocket
+class Socket : public fair::mq::Socket
 {
   public:
-    Socket(const std::string& type, const std::string& name, const std::string& id = "", void* zmqContext = nullptr);
+    Socket(const TransportFactory& factory, const std::string& type, const std::string& name, const std::string& id = "");
     Socket(const Socket&) = delete;
     Socket operator=(const Socket&) = delete;
 
@@ -39,15 +41,15 @@ class Socket : public FairMQSocket
     auto Bind(const std::string& address) -> bool override;
     auto Connect(const std::string& address) -> void override;
 
-    auto Send(FairMQMessagePtr& msg, int timeout = 0) -> int override;
-    auto Receive(FairMQMessagePtr& msg, int timeout = 0) -> int override;
-    auto Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int timeout = 0) -> int64_t override;
-    auto Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int timeout = 0) -> int64_t override;
+    auto Send(MessagePtr& msg, int timeout = 0) -> int override;
+    auto Receive(MessagePtr& msg, int timeout = 0) -> int override;
+    auto Send(std::vector<MessagePtr>& msgVec, int timeout = 0) -> int64_t override;
+    auto Receive(std::vector<MessagePtr>& msgVec, int timeout = 0) -> int64_t override;
 
-    auto TrySend(FairMQMessagePtr& msg) -> int override;
-    auto TryReceive(FairMQMessagePtr& msg) -> int override;
-    auto TrySend(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t override;
-    auto TryReceive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t override;
+    auto TrySend(MessagePtr& msg) -> int override;
+    auto TryReceive(MessagePtr& msg) -> int override;
+    auto TrySend(std::vector<MessagePtr>& msgVec) -> int64_t override;
+    auto TryReceive(std::vector<MessagePtr>& msgVec) -> int64_t override;
 
     auto GetSocket() const -> void* override { return fMetaSocket; }
     auto GetSocket(int nothing) const -> int override { return -1; }
@@ -82,10 +84,10 @@ class Socket : public FairMQSocket
     int fSndTimeout;
     int fRcvTimeout;
 
-    auto SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout) -> int;
-    auto ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout) -> int;
-    auto SendImpl(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags, const int timeout) -> int64_t;
-    auto ReceiveImpl(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags, const int timeout) -> int64_t;
+    auto SendImpl(MessagePtr& msg, const int flags, const int timeout) -> int;
+    auto ReceiveImpl(MessagePtr& msg, const int flags, const int timeout) -> int;
+    auto SendImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
+    auto ReceiveImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
 }; /* class Socket */
 
 } /* namespace ofi */

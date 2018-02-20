@@ -30,7 +30,7 @@ class PairLeft : public FairMQDevice
 
     auto Run() -> void override
     {
-        auto msg = FairMQMessagePtr{NewMessage()};
+        auto msg{NewMessageFor("data", 0)};
         Send(msg, "data");
     };
 };
