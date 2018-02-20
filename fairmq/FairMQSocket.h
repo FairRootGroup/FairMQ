@@ -25,23 +25,20 @@ class FairMQSocket
     virtual bool Bind(const std::string& address) = 0;
     virtual void Connect(const std::string& address) = 0;
 
-    virtual int Send(FairMQMessagePtr& msg) = 0;
-    virtual int SendAsync(FairMQMessagePtr& msg) = 0;
-    virtual int Receive(FairMQMessagePtr& msg) = 0;
-    virtual int ReceiveAsync(FairMQMessagePtr& msg) = 0;
+    virtual int Send(FairMQMessagePtr& msg, int timeout = 0) = 0;
+    virtual int Receive(FairMQMessagePtr& msg, int timeout = 0) = 0;
+    virtual int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int timeout = 0) = 0;
+    virtual int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int timeout = 0) = 0;
 
-    virtual int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
-    virtual int64_t SendAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
-    virtual int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
-    virtual int64_t ReceiveAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
+    virtual int TrySend(FairMQMessagePtr& msg) = 0;
+    virtual int TryReceive(FairMQMessagePtr& msg) = 0;
+    virtual int64_t TrySend(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
+    virtual int64_t TryReceive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
 
     virtual void* GetSocket() const = 0;
     virtual int GetSocket(int nothing) const = 0;
 
     virtual void Close() = 0;
-
-    virtual void Interrupt() = 0;
-    virtual void Resume() = 0;
 
     virtual void SetOption(const std::string& option, const void* value, size_t valueSize) = 0;
     virtual void GetOption(const std::string& option, void* value, size_t* valueSize) = 0;

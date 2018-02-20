@@ -23,6 +23,8 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const s
     , fBytesRx(0)
     , fMessagesTx(0)
     , fMessagesRx(0)
+    , fSndTimeout(100)
+    , fRcvTimeout(100)
 {
     assert(context);
     fSocket = zmq_socket(context, GetConstant(type));
@@ -46,14 +48,12 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const s
         LOG(error) << "Failed setting ZMQ_LINGER socket option, reason: " << zmq_strerror(errno);
     }
 
-    int sndTimeout = 700;
-    if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &sndTimeout, sizeof(sndTimeout)) != 0)
+    if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0)
     {
         LOG(error) << "Failed setting ZMQ_SNDTIMEO socket option, reason: " << zmq_strerror(errno);
     }
 
-    int rcvTimeout = 700;
-    if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &rcvTimeout, sizeof(rcvTimeout)) != 0)
+    if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0)
     {
         LOG(error) << "Failed setting ZMQ_RCVTIMEO socket option, reason: " << zmq_strerror(errno);
     }
@@ -102,19 +102,20 @@ void FairMQSocketZMQ::Connect(const string& address)
     }
 }
 
-int FairMQSocketZMQ::Send(FairMQMessagePtr& msg) { return Send(msg, 0); }
-int FairMQSocketZMQ::SendAsync(FairMQMessagePtr& msg) { return Send(msg, ZMQ_DONTWAIT); }
-int FairMQSocketZMQ::Receive(FairMQMessagePtr& msg) { return Receive(msg, 0); }
-int FairMQSocketZMQ::ReceiveAsync(FairMQMessagePtr& msg) { return Receive(msg, ZMQ_DONTWAIT); }
+int FairMQSocketZMQ::Send(FairMQMessagePtr& msg, const int timeout) { return SendImpl(msg, 0, timeout); }
+int FairMQSocketZMQ::Receive(FairMQMessagePtr& msg, const int timeout) { return ReceiveImpl(msg, 0, timeout); }
+int64_t FairMQSocketZMQ::Send(vector<unique_ptr<FairMQMessage>>& msgVec, const int timeout) { return SendImpl(msgVec, 0, timeout); }
+int64_t FairMQSocketZMQ::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const int timeout) { return ReceiveImpl(msgVec, 0, timeout); }
 
-int64_t FairMQSocketZMQ::Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) { return Send(msgVec, 0); }
-int64_t FairMQSocketZMQ::SendAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) { return Send(msgVec, ZMQ_DONTWAIT); }
-int64_t FairMQSocketZMQ::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) { return Receive(msgVec, 0); }
-int64_t FairMQSocketZMQ::ReceiveAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) { return Receive(msgVec, ZMQ_DONTWAIT); }
+int FairMQSocketZMQ::TrySend(FairMQMessagePtr& msg) { return SendImpl(msg, ZMQ_DONTWAIT, 0); }
+int FairMQSocketZMQ::TryReceive(FairMQMessagePtr& msg) { return ReceiveImpl(msg, ZMQ_DONTWAIT, 0); }
+int64_t FairMQSocketZMQ::TrySend(vector<unique_ptr<FairMQMessage>>& msgVec) { return SendImpl(msgVec, ZMQ_DONTWAIT, 0); }
+int64_t FairMQSocketZMQ::TryReceive(vector<unique_ptr<FairMQMessage>>& msgVec) { return ReceiveImpl(msgVec, ZMQ_DONTWAIT, 0); }
 
-int FairMQSocketZMQ::Send(FairMQMessagePtr& msg, const int flags)
+int FairMQSocketZMQ::SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout)
 {
     int nbytes = -1;
+    int elapsed = 0;
 
     static_cast<FairMQMessageZMQ*>(msg.get())->ApplyUsedSize();
 
@@ -132,6 +133,14 @@ int FairMQSocketZMQ::Send(FairMQMessagePtr& msg, const int flags)
         {
             if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
             {
+                if (timeout)
+                {
+                    elapsed += fSndTimeout;
+                    if (elapsed >= timeout)
+                    {
+                        return -2;
+                    }
+                }
                 continue;
             }
             else
@@ -152,9 +161,10 @@ int FairMQSocketZMQ::Send(FairMQMessagePtr& msg, const int flags)
     }
 }
 
-int FairMQSocketZMQ::Receive(FairMQMessagePtr& msg, const int flags)
+int FairMQSocketZMQ::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout)
 {
     int nbytes = -1;
+    int elapsed = 0;
 
     while (true)
     {
@@ -169,6 +179,14 @@ int FairMQSocketZMQ::Receive(FairMQMessagePtr& msg, const int flags)
         {
             if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
             {
+                if (timeout)
+                {
+                    elapsed += fRcvTimeout;
+                    if (elapsed >= timeout)
+                    {
+                        return -2;
+                    }
+                }
                 continue;
             }
             else
@@ -189,9 +207,10 @@ int FairMQSocketZMQ::Receive(FairMQMessagePtr& msg, const int flags)
     }
 }
 
-int64_t FairMQSocketZMQ::Send(vector<FairMQMessagePtr>& msgVec, const int flags)
+int64_t FairMQSocketZMQ::SendImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
 {
     const unsigned int vecSize = msgVec.size();
+    int elapsed = 0;
 
     // Sending vector typicaly handles more then one part
     if (vecSize > 1)
@@ -223,6 +242,14 @@ int64_t FairMQSocketZMQ::Send(vector<FairMQMessagePtr>& msgVec, const int flags)
                     {
                         if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
                         {
+                            if (timeout)
+                            {
+                                elapsed += fSndTimeout;
+                                if (elapsed >= timeout)
+                                {
+                                    return -2;
+                                }
+                            }
                             repeat = true;
                             break;
                         }
@@ -263,11 +290,12 @@ int64_t FairMQSocketZMQ::Send(vector<FairMQMessagePtr>& msgVec, const int flags)
     }
 }
 
-int64_t FairMQSocketZMQ::Receive(vector<FairMQMessagePtr>& msgVec, const int flags)
+int64_t FairMQSocketZMQ::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
 {
     int64_t totalSize = 0;
     int64_t more = 0;
     bool repeat = false;
+    int elapsed = 0;
 
     while (true)
     {
@@ -289,6 +317,14 @@ int64_t FairMQSocketZMQ::Receive(vector<FairMQMessagePtr>& msgVec, const int fla
             {
                 if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
                 {
+                    if (timeout)
+                    {
+                        elapsed += fRcvTimeout;
+                        if (elapsed >= timeout)
+                        {
+                            return -2;
+                        }
+                    }
                     repeat = true;
                     break;
                 }
@@ -395,6 +431,7 @@ unsigned long FairMQSocketZMQ::GetMessagesRx() const
 
 bool FairMQSocketZMQ::SetSendTimeout(const int timeout, const string& address, const string& method)
 {
+    fSndTimeout = timeout;
     if (method == "bind")
     {
         if (zmq_unbind(fSocket, address.c_str()) != 0)
@@ -402,7 +439,7 @@ bool FairMQSocketZMQ::SetSendTimeout(const int timeout, const string& address, c
             LOG(error) << "Failed unbinding socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
-        if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &timeout, sizeof(int)) != 0)
+        if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0)
         {
             LOG(error) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
@@ -420,7 +457,7 @@ bool FairMQSocketZMQ::SetSendTimeout(const int timeout, const string& address, c
             LOG(error) << "Failed disconnecting socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
-        if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &timeout, sizeof(int)) != 0)
+        if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0)
         {
             LOG(error) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
@@ -442,19 +479,12 @@ bool FairMQSocketZMQ::SetSendTimeout(const int timeout, const string& address, c
 
 int FairMQSocketZMQ::GetSendTimeout() const
 {
-    int timeout = -1;
-    size_t size = sizeof(timeout);
-
-    if (zmq_getsockopt(fSocket, ZMQ_SNDTIMEO, &timeout, &size) != 0)
-    {
-        LOG(error) << "Failed getting option 'receive timeout' on socket " << fId << ", reason: " << zmq_strerror(errno);
-    }
-
-    return timeout;
+    return fSndTimeout;
 }
 
 bool FairMQSocketZMQ::SetReceiveTimeout(const int timeout, const string& address, const string& method)
 {
+    fRcvTimeout = timeout;
     if (method == "bind")
     {
         if (zmq_unbind(fSocket, address.c_str()) != 0)
@@ -462,7 +492,7 @@ bool FairMQSocketZMQ::SetReceiveTimeout(const int timeout, const string& address
             LOG(error) << "Failed unbinding socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
-        if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &timeout, sizeof(int)) != 0)
+        if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0)
         {
             LOG(error) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
@@ -480,7 +510,7 @@ bool FairMQSocketZMQ::SetReceiveTimeout(const int timeout, const string& address
             LOG(error) << "Failed disconnecting socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
         }
-        if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &timeout, sizeof(int)) != 0)
+        if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0)
         {
             LOG(error) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
             return false;
@@ -502,59 +532,32 @@ bool FairMQSocketZMQ::SetReceiveTimeout(const int timeout, const string& address
 
 int FairMQSocketZMQ::GetReceiveTimeout() const
 {
-    int timeout = -1;
-    size_t size = sizeof(timeout);
-
-    if (zmq_getsockopt(fSocket, ZMQ_RCVTIMEO, &timeout, &size) != 0)
-    {
-        LOG(error) << "Failed getting option 'receive timeout' on socket " << fId << ", reason: " << zmq_strerror(errno);
-    }
-
-    return timeout;
+    return fRcvTimeout;
 }
 
 int FairMQSocketZMQ::GetConstant(const string& constant)
 {
-    if (constant == "")
-        return 0;
-    if (constant == "sub")
-        return ZMQ_SUB;
-    if (constant == "pub")
-        return ZMQ_PUB;
-    if (constant == "xsub")
-        return ZMQ_XSUB;
-    if (constant == "xpub")
-        return ZMQ_XPUB;
-    if (constant == "push")
-        return ZMQ_PUSH;
-    if (constant == "pull")
-        return ZMQ_PULL;
-    if (constant == "req")
-        return ZMQ_REQ;
-    if (constant == "rep")
-        return ZMQ_REP;
-    if (constant == "dealer")
-        return ZMQ_DEALER;
-    if (constant == "router")
-        return ZMQ_ROUTER;
-    if (constant == "pair")
-        return ZMQ_PAIR;
+    if (constant == "") return 0;
+    if (constant == "sub") return ZMQ_SUB;
+    if (constant == "pub") return ZMQ_PUB;
+    if (constant == "xsub") return ZMQ_XSUB;
+    if (constant == "xpub") return ZMQ_XPUB;
+    if (constant == "push") return ZMQ_PUSH;
+    if (constant == "pull") return ZMQ_PULL;
+    if (constant == "req") return ZMQ_REQ;
+    if (constant == "rep") return ZMQ_REP;
+    if (constant == "dealer") return ZMQ_DEALER;
+    if (constant == "router") return ZMQ_ROUTER;
+    if (constant == "pair") return ZMQ_PAIR;
 
-    if (constant == "snd-hwm")
-        return ZMQ_SNDHWM;
-    if (constant == "rcv-hwm")
-        return ZMQ_RCVHWM;
-    if (constant == "snd-size")
-        return ZMQ_SNDBUF;
-    if (constant == "rcv-size")
-        return ZMQ_RCVBUF;
-    if (constant == "snd-more")
-        return ZMQ_SNDMORE;
-    if (constant == "rcv-more")
-        return ZMQ_RCVMORE;
+    if (constant == "snd-hwm") return ZMQ_SNDHWM;
+    if (constant == "rcv-hwm") return ZMQ_RCVHWM;
+    if (constant == "snd-size") return ZMQ_SNDBUF;
+    if (constant == "rcv-size") return ZMQ_RCVBUF;
+    if (constant == "snd-more") return ZMQ_SNDMORE;
+    if (constant == "rcv-more") return ZMQ_RCVMORE;
 
-    if (constant == "linger")
-        return ZMQ_LINGER;
+    if (constant == "linger") return ZMQ_LINGER;
 
     return -1;
 }

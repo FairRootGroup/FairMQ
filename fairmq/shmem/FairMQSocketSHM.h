@@ -28,22 +28,23 @@ class FairMQSocketSHM : public FairMQSocket
     bool Bind(const std::string& address) override;
     void Connect(const std::string& address) override;
 
-    int Send(FairMQMessagePtr& msg) override;
-    int SendAsync(FairMQMessagePtr& msg) override;
-    int Receive(FairMQMessagePtr& msg) override;
-    int ReceiveAsync(FairMQMessagePtr& msg) override;
+    int Send(FairMQMessagePtr& msg, const int timeout = 0) override;
+    int Receive(FairMQMessagePtr& msg, const int timeout = 0) override;
+    int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int timeout = 0) override;
+    int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int timeout = 0) override;
 
-    int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
-    int64_t SendAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
-    int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
-    int64_t ReceiveAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
+    int TrySend(FairMQMessagePtr& msg) override;
+    int TryReceive(FairMQMessagePtr& msg) override;
+    int64_t TrySend(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
+    int64_t TryReceive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
 
     void* GetSocket() const override;
     int GetSocket(int nothing) const override;
+
     void Close() override;
 
-    void Interrupt() override;
-    void Resume() override;
+    static void Interrupt();
+    static void Resume();
 
     void SetOption(const std::string& option, const void* value, size_t valueSize) override;
     void GetOption(const std::string& option, void* value, size_t* valueSize) override;
@@ -73,10 +74,14 @@ class FairMQSocketSHM : public FairMQSocket
 
     static std::atomic<bool> fInterrupted;
 
-    int Send(FairMQMessagePtr& msg, const int flags);
-    int Receive(FairMQMessagePtr& msg, const int flags);
-    int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags);
-    int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags);
+    int fSndTimeout;
+    int fRcvTimeout;
+
+    int SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout);
+    int ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout);
+
+    int64_t SendImpl(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags, const int timeout);
+    int64_t ReceiveImpl(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags, const int timeout);
 };
 
 #endif /* FAIRMQSOCKETSHM_H_ */

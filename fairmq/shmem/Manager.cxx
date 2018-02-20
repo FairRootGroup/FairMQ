@@ -19,13 +19,14 @@ namespace shmem
 using namespace std;
 namespace bipc = boost::interprocess;
 
+std::unordered_map<uint64_t, Region> Manager::fRegions;
+
 Manager::Manager(const string& name, size_t size)
     : fSessionName(name)
     , fSegmentName("fmq_shm_" + fSessionName + "_main")
     , fManagementSegmentName("fmq_shm_" + fSessionName + "_management")
     , fSegment(bipc::open_or_create, fSegmentName.c_str(), size)
     , fManagementSegment(bipc::open_or_create, fManagementSegmentName.c_str(), 65536)
-    , fRegions()
 {}
 
 bipc::managed_shared_memory& Manager::Segment()

@@ -49,6 +49,9 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
 
     FairMQ::Transport GetType() const override;
 
+    void Interrupt() override { FairMQSocketSHM::Interrupt(); }
+    void Resume() override { FairMQSocketSHM::Resume(); }
+
     ~FairMQTransportFactorySHM() override;
 
   private:

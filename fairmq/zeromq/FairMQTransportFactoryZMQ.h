@@ -49,6 +49,10 @@ class FairMQTransportFactoryZMQ : public FairMQTransportFactory
     FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback) const override;
 
     FairMQ::Transport GetType() const override;
+
+    void Interrupt() override { FairMQSocketZMQ::Interrupt(); }
+    void Resume() override { FairMQSocketZMQ::Resume(); }
+
   private:
     static FairMQ::Transport fTransportType;
     void* fContext;

@@ -39,23 +39,20 @@ class Socket : public FairMQSocket
     auto Bind(const std::string& address) -> bool override;
     auto Connect(const std::string& address) -> void override;
 
-    auto Send(FairMQMessagePtr& msg) -> int override;
-    auto SendAsync(FairMQMessagePtr& msg) -> int override;
-    auto Receive(FairMQMessagePtr& msg) -> int override;
-    auto ReceiveAsync(FairMQMessagePtr& msg) -> int override;
+    auto Send(FairMQMessagePtr& msg, int timeout = 0) -> int override;
+    auto Receive(FairMQMessagePtr& msg, int timeout = 0) -> int override;
+    auto Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int timeout = 0) -> int64_t override;
+    auto Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int timeout = 0) -> int64_t override;
 
-    auto Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t override;
-    auto SendAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t override;
-    auto Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t override;
-    auto ReceiveAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t override;
+    auto TrySend(FairMQMessagePtr& msg) -> int override;
+    auto TryReceive(FairMQMessagePtr& msg) -> int override;
+    auto TrySend(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t override;
+    auto TryReceive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t override;
 
     auto GetSocket() const -> void* override { return fMetaSocket; }
     auto GetSocket(int nothing) const -> int override { return -1; }
 
     auto Close() -> void override;
-
-    auto Interrupt() -> void override;
-    auto Resume() -> void override;
 
     auto SetOption(const std::string& option, const void* value, size_t valueSize) -> void override;
     auto GetOption(const std::string& option, void* value, size_t* valueSize) -> void override;
@@ -82,10 +79,13 @@ class Socket : public FairMQSocket
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
 
-    auto Send(FairMQMessagePtr& msg, const int flags) -> int;
-    auto Receive(FairMQMessagePtr& msg, const int flags) -> int;
-    auto Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags) -> int64_t;
-    auto Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags) -> int64_t;
+    int fSndTimeout;
+    int fRcvTimeout;
+
+    auto SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout) -> int;
+    auto ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout) -> int;
+    auto SendImpl(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags, const int timeout) -> int64_t;
+    auto ReceiveImpl(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags, const int timeout) -> int64_t;
 }; /* class Socket */
 
 } /* namespace ofi */

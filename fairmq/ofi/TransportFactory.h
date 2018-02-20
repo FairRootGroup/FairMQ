@@ -48,6 +48,9 @@ class TransportFactory : public FairMQTransportFactory
 
     auto GetType() const -> Transport override;
 
+    void Interrupt() override {}
+    void Resume() override {}
+
     ~TransportFactory() noexcept(false) override;
 
   private:

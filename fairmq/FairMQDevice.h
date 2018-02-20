@@ -517,7 +517,6 @@ class FairMQDevice : public FairMQStateMachine
     void CreateOwnConfig();
 
     bool fDataCallbacks;
-    FairMQSocketPtr fDeviceCmdSocket; ///< Socket used for the internal unblocking mechanism
     std::unordered_map<std::string, InputMsgCallback> fMsgInputs;
     std::unordered_map<std::string, InputMultipartCallback> fMultipartInputs;
     std::unordered_map<FairMQ::Transport, std::vector<std::string>> fMultitransportInputs;

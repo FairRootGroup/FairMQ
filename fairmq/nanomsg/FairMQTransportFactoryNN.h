@@ -41,6 +41,9 @@ class FairMQTransportFactoryNN : public FairMQTransportFactory
 
     FairMQ::Transport GetType() const override;
 
+    void Interrupt() override { FairMQSocketNN::Interrupt(); }
+    void Resume() override { FairMQSocketNN::Resume(); }
+
   private:
     static FairMQ::Transport fTransportType;
 };

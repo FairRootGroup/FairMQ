@@ -48,7 +48,6 @@ FairMQDevice::FairMQDevice()
     , fDefaultTransport()
     , fInitializationTimeoutInS(120)
     , fDataCallbacks(false)
-    , fDeviceCmdSocket(nullptr)
     , fMsgInputs()
     , fMultipartInputs()
     , fMultitransportInputs()
@@ -79,7 +78,6 @@ FairMQDevice::FairMQDevice(const fair::mq::tools::Version version)
     , fDefaultTransport()
     , fInitializationTimeoutInS(120)
     , fDataCallbacks(false)
-    , fDeviceCmdSocket(nullptr)
     , fMsgInputs()
     , fMultipartInputs()
     , fMultitransportInputs()
@@ -116,8 +114,6 @@ void FairMQDevice::InitWrapper()
                 // if (vi->fReset)
                 // {
                 //     vi->fSocket.reset();
-                //     vi->fPoller.reset();
-                //     vi->fChannelCmdSocket.reset();
                 // }
                 // set channel name: name + vector index
                 vi->fName = fair::mq::tools::ToString(mi.first, "[", vi - (mi.second).begin(), "]");
@@ -233,7 +229,6 @@ void FairMQDevice::AttachChannels(vector<FairMQChannel*>& chans)
         {
             if (AttachChannel(**itr))
             {
-                (*itr)->InitCommandInterface(Transport()->CreateSocket("sub", "device-commands"));
                 (*itr)->SetModified(false);
                 itr = chans.erase(itr);
             }
@@ -459,9 +454,11 @@ void FairMQDevice::RunWrapper()
     // start the rate logger thread
     thread rateLogger(&FairMQDevice::LogSocketRates, this);
 
-    // notify channels to resume transfers
-    FairMQChannel::fInterrupted = false;
-    fDeviceCmdSocket->Resume();
+    // notify transports to resume transfers
+    for (auto& t : fTransports)
+    {
+        t.second->Resume();
+    }
 
     try
     {
@@ -762,12 +759,6 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& tran
         pair<FairMQ::Transport, shared_ptr<FairMQTransportFactory>> trPair(FairMQ::TransportTypes.at(transport), tr);
         fTransports.insert(trPair);
 
-        if (!fDeviceCmdSocket) {
-            fDeviceCmdSocket = Transport()->CreateSocket("pub", "device-commands");
-            if(!fDeviceCmdSocket->Bind("inproc://commands")) {
-                exit(EXIT_FAILURE);
-            }
-        }
         return tr;
     }
     else
@@ -949,10 +940,10 @@ void FairMQDevice::LogSocketRates()
 
 void FairMQDevice::Unblock()
 {
-    FairMQChannel::fInterrupted = true;
-    fDeviceCmdSocket->Interrupt();
-    FairMQMessagePtr cmd(Transport()->CreateMessage());
-    fDeviceCmdSocket->Send(cmd);
+    for (auto& t : fTransports)
+    {
+        t.second->Interrupt();
+    }
 }
 
 void FairMQDevice::ResetTaskWrapper()
@@ -987,8 +978,6 @@ void FairMQDevice::Reset()
         {
             // vi.fReset = true;
             vi.fSocket.reset();
-            vi.fPoller.reset();
-            vi.fChannelCmdSocket.reset();
         }
     }
 }

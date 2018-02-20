@@ -49,8 +49,8 @@ class Manager
 
     boost::interprocess::managed_shared_memory& Segment();
 
-    void Interrupt();
-    void Resume();
+    static void Interrupt();
+    static void Resume();
 
     boost::interprocess::mapped_region* CreateRegion(const size_t size, const uint64_t id, FairMQRegionCallback callback);
     Region* GetRemoteRegion(const uint64_t id);
@@ -66,7 +66,7 @@ class Manager
     std::string fManagementSegmentName;
     boost::interprocess::managed_shared_memory fSegment;
     boost::interprocess::managed_shared_memory fManagementSegment;
-    std::unordered_map<uint64_t, Region> fRegions;
+    static std::unordered_map<uint64_t, Region> fRegions;
 };
 
 } // namespace shmem

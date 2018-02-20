@@ -27,6 +27,8 @@ Socket::Socket(const string& type, const string& name, const string& id /*= ""*/
     , fBytesRx{0}
     , fMessagesTx{0}
     , fMessagesRx{0}
+    , fSndTimeout{100}
+    , fRcvTimeout{100}
 {
     assert(zmqContext);
 
@@ -51,13 +53,11 @@ Socket::Socket(const string& type, const string& name, const string& id /*= ""*/
         throw SocketError{tools::ToString("Failed setting ZMQ_LINGER socket option, reason: ", zmq_strerror(errno))};
     }
 
-    int sndTimeout = 700;
-    if (zmq_setsockopt(fMetaSocket, ZMQ_SNDTIMEO, &sndTimeout, sizeof(sndTimeout)) != 0) {
+    if (zmq_setsockopt(fMetaSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0) {
         throw SocketError{tools::ToString("Failed setting ZMQ_SNDTIMEO socket option, reason: ", zmq_strerror(errno))};
     }
 
-    int rcvTimeout = 700;
-    if (zmq_setsockopt(fMetaSocket, ZMQ_RCVTIMEO, &rcvTimeout, sizeof(rcvTimeout)) != 0) {
+    if (zmq_setsockopt(fMetaSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0) {
         throw SocketError{tools::ToString("Failed setting ZMQ_RCVTIMEO socket option, reason: ", zmq_strerror(errno))};
     }
 }
@@ -83,20 +83,22 @@ auto Socket::Connect(const string& address) -> void
     }
 }
 
-auto Socket::Send(FairMQMessagePtr& msg) -> int { return Send(msg, 0); }
-auto Socket::SendAsync(FairMQMessagePtr& msg) -> int { return Send(msg, ZMQ_DONTWAIT); }
-auto Socket::Receive(FairMQMessagePtr& msg) -> int { return Receive(msg, 0); }
-auto Socket::ReceiveAsync(FairMQMessagePtr& msg) -> int { return Receive(msg, ZMQ_DONTWAIT); }
+auto Socket::Send(FairMQMessagePtr& msg, const int timeout) -> int { return SendImpl(msg, 0, timeout); }
+auto Socket::Receive(FairMQMessagePtr& msg, const int timeout) -> int { return ReceiveImpl(msg, 0, timeout); }
+auto Socket::Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int timeout) -> int64_t { return SendImpl(msgVec, 0, timeout); }
+auto Socket::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int timeout) -> int64_t { return ReceiveImpl(msgVec, 0, timeout); }
 
-auto Socket::Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t { return Send(msgVec, 0); }
-auto Socket::SendAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t { return Send(msgVec, ZMQ_DONTWAIT); }
-auto Socket::Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t { return Receive(msgVec, 0); }
-auto Socket::ReceiveAsync(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t { return Receive(msgVec, ZMQ_DONTWAIT); }
+auto Socket::TrySend(FairMQMessagePtr& msg) -> int { return SendImpl(msg, ZMQ_DONTWAIT, 0); }
+auto Socket::TryReceive(FairMQMessagePtr& msg) -> int { return ReceiveImpl(msg, ZMQ_DONTWAIT, 0); }
+auto Socket::TrySend(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t { return SendImpl(msgVec, ZMQ_DONTWAIT, 0); }
+auto Socket::TryReceive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) -> int64_t { return ReceiveImpl(msgVec, ZMQ_DONTWAIT, 0); }
 
-auto Socket::Send(FairMQMessagePtr& msg, const int flags) -> int
+auto Socket::SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout) -> int
 {
     throw SocketError{"Not yet implemented."};
     // int nbytes = -1;
+    // int elapsed = 0;
+    //
     // while (true && !fInterrupted)
     // {
     //     nbytes = zmq_msg_send(static_cast<FairMQMessageSHM*>(msg.get())->GetMessage(), fSocket, flags);
@@ -118,6 +120,14 @@ auto Socket::Send(FairMQMessagePtr& msg, const int flags) -> int
     //     {
     //         if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
     //         {
+    //             if (timeout)
+    //             {
+    //                 elapsed += fSndTimeout;
+    //                 if (elapsed >= timeout)
+    //                 {
+    //                     return -2;
+    //                 }
+    //             }
     //             continue;
     //         }
     //         else
@@ -140,10 +150,12 @@ auto Socket::Send(FairMQMessagePtr& msg, const int flags) -> int
     // return -1;
 }
 
-auto Socket::Receive(FairMQMessagePtr& msg, const int flags) -> int
+auto Socket::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout) -> int
 {
     throw SocketError{"Not yet implemented."};
     // int nbytes = -1;
+    // int elapsed = 0;
+    //
     // zmq_msg_t* msgPtr = static_cast<FairMQMessageSHM*>(msg.get())->GetMessage();
     // while (true)
     // {
@@ -173,6 +185,14 @@ auto Socket::Receive(FairMQMessagePtr& msg, const int flags) -> int
     //     {
     //         if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
     //         {
+    //             if (timeout)
+    //             {
+    //                 elapsed += fSndTimeout;
+    //                 if (elapsed >= timeout)
+    //                 {
+    //                     return -2;
+    //                 }
+    //             }
     //             continue;
     //         }
     //         else
@@ -193,10 +213,11 @@ auto Socket::Receive(FairMQMessagePtr& msg, const int flags) -> int
     // }
 }
 
-auto Socket::Send(vector<FairMQMessagePtr>& msgVec, const int flags) -> int64_t 
+auto Socket::SendImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout) -> int64_t 
 {
     throw SocketError{"Not yet implemented."};
     // const unsigned int vecSize = msgVec.size();
+    // int elapsed = 0;
     //
     // // Sending vector typicaly handles more then one part
     // if (vecSize > 1)
@@ -226,6 +247,14 @@ auto Socket::Send(vector<FairMQMessagePtr>& msgVec, const int flags) -> int64_t
     //                 {
     //                     if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
     //                     {
+    //                         if (timeout)
+    //                         {
+    //                             elapsed += fSndTimeout;
+    //                             if (elapsed >= timeout)
+    //                             {
+    //                                 return -2;
+    //                             }
+    //                         }
     //                         repeat = true;
     //                         break;
     //                     }
@@ -268,12 +297,13 @@ auto Socket::Send(vector<FairMQMessagePtr>& msgVec, const int flags) -> int64_t
     // }
 }
 
-auto Socket::Receive(vector<FairMQMessagePtr>& msgVec, const int flags) -> int64_t
+auto Socket::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout) -> int64_t
 {
     throw SocketError{"Not yet implemented."};
     // int64_t totalSize = 0;
     // int64_t more = 0;
     // bool repeat = false;
+    // int elapsed = 0;
     //
     // while (true)
     // {
@@ -316,6 +346,14 @@ auto Socket::Receive(vector<FairMQMessagePtr>& msgVec, const int flags) -> int64
     //         {
     //             if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
     //             {
+    //                 if (timeout)
+    //                 {
+    //                     elapsed += fSndTimeout;
+    //                     if (elapsed >= timeout)
+    //                     {
+    //                         return -2;
+    //                     }
+    //                 }
     //                 repeat = true;
     //                 break;
     //             }
@@ -353,16 +391,6 @@ auto Socket::Close() -> void
     }
 }
 
-auto Socket::Interrupt() -> void
-{
-    throw SocketError{"Not yet implemented."};
-}
-
-auto Socket::Resume() -> void
-{
-    throw SocketError{"Not yet implemented."};
-}
-
 auto Socket::SetOption(const string& option, const void* value, size_t valueSize) -> void
 {
     if (zmq_setsockopt(fMetaSocket, GetConstant(option), value, valueSize) < 0) {
@@ -380,6 +408,7 @@ auto Socket::GetOption(const string& option, void* value, size_t* valueSize) -> 
 auto Socket::SetSendTimeout(const int timeout, const string& address, const string& method) -> bool
 {
     throw SocketError{"Not yet implemented."};
+    // fSndTimeout = timeout;
     // if (method == "bind")
     // {
     //     if (zmq_unbind(fSocket, address.c_str()) != 0)
@@ -387,7 +416,7 @@ auto Socket::SetSendTimeout(const int timeout, const string& address, const stri
     //         LOG(error) << "Failed unbinding socket " << fId << ", reason: " << zmq_strerror(errno);
     //         return false;
     //     }
-    //     if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &timeout, sizeof(int)) != 0)
+    //     if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0)
     //     {
     //         LOG(error) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
     //         return false;
@@ -405,7 +434,7 @@ auto Socket::SetSendTimeout(const int timeout, const string& address, const stri
     //         LOG(error) << "Failed disconnecting socket " << fId << ", reason: " << zmq_strerror(errno);
     //         return false;
     //     }
-    //     if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &timeout, sizeof(int)) != 0)
+    //     if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0)
     //     {
     //         LOG(error) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
     //         return false;
@@ -428,20 +457,13 @@ auto Socket::SetSendTimeout(const int timeout, const string& address, const stri
 auto Socket::GetSendTimeout() const -> int
 {
     throw SocketError{"Not yet implemented."};
-    // int timeout = -1;
-    // size_t size = sizeof(timeout);
-    //
-    // if (zmq_getsockopt(fSocket, ZMQ_SNDTIMEO, &timeout, &size) != 0)
-    // {
-    //     LOG(error) << "Failed getting option 'receive timeout' on socket " << fId << ", reason: " << zmq_strerror(errno);
-    // }
-    //
-    // return timeout;
+    // return fSndTimeout;
 }
 
 auto Socket::SetReceiveTimeout(const int timeout, const string& address, const string& method) -> bool
 {
     throw SocketError{"Not yet implemented."};
+    // fRcvTimeout = timeout;
     // if (method == "bind")
     // {
     //     if (zmq_unbind(fSocket, address.c_str()) != 0)
@@ -449,7 +471,7 @@ auto Socket::SetReceiveTimeout(const int timeout, const string& address, const s
     //         LOG(error) << "Failed unbinding socket " << fId << ", reason: " << zmq_strerror(errno);
     //         return false;
     //     }
-    //     if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &timeout, sizeof(int)) != 0)
+    //     if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0)
     //     {
     //         LOG(error) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
     //         return false;
@@ -467,7 +489,7 @@ auto Socket::SetReceiveTimeout(const int timeout, const string& address, const s
     //         LOG(error) << "Failed disconnecting socket " << fId << ", reason: " << zmq_strerror(errno);
     //         return false;
     //     }
-    //     if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &timeout, sizeof(int)) != 0)
+    //     if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0)
     //     {
     //         LOG(error) << "Failed setting option on socket " << fId << ", reason: " << zmq_strerror(errno);
     //         return false;
@@ -490,15 +512,7 @@ auto Socket::SetReceiveTimeout(const int timeout, const string& address, const s
 auto Socket::GetReceiveTimeout() const -> int
 {
     throw SocketError{"Not yet implemented."};
-    // int timeout = -1;
-    // size_t size = sizeof(timeout);
-    //
-    // if (zmq_getsockopt(fSocket, ZMQ_RCVTIMEO, &timeout, &size) != 0)
-    // {
-    //     LOG(error) << "Failed getting option 'receive timeout' on socket " << fId << ", reason: " << zmq_strerror(errno);
-    // }
-    //
-    // return timeout;
+    // return fRcvTimeout;
 }
 
 auto Socket::GetConstant(const string& constant) -> int

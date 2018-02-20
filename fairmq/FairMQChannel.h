@@ -17,7 +17,6 @@
 
 #include <FairMQTransportFactory.h>
 #include <FairMQSocket.h>
-#include <FairMQPoller.h>
 #include <fairmq/Transports.h>
 #include <FairMQLogger.h>
 #include <FairMQParts.h>
@@ -312,9 +311,6 @@ class FairMQChannel
     std::string fName;
     std::atomic<bool> fIsValid;
 
-    FairMQPollerPtr fPoller;
-    FairMQSocketPtr fChannelCmdSocket;
-
     FairMQ::Transport fTransportType;
     std::shared_ptr<FairMQTransportFactory> fTransportFactory;
 
@@ -322,9 +318,6 @@ class FairMQChannel
     bool CheckCompatibility(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const;
 
     void InitTransport(std::shared_ptr<FairMQTransportFactory> factory);
-    bool InitCommandInterface(FairMQSocketPtr channelCmdSocket);
-
-    bool HandleUnblock() const;
 
     // use static mutex to make the class easily copyable
     // implication: same mutex is used for all instances of the class
@@ -332,7 +325,6 @@ class FairMQChannel
     // possible TODO: improve this
     static std::mutex fChannelMutex;
 
-    static std::atomic<bool> fInterrupted;
     bool fMultipart;
     bool fModified;
     auto SetModified(const bool modified) -> void;
