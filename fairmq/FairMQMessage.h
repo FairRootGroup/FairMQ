@@ -33,7 +33,7 @@ class FairMQMessage
     virtual void Copy(const std::unique_ptr<FairMQMessage>& msg) __attribute__((deprecated("Use 'Copy(const FairMQMessage& msg)'"))) = 0;
     virtual void Copy(const FairMQMessage& msg) = 0;
 
-    virtual ~FairMQMessage() {};
+    virtual ~FairMQMessage() noexcept(false) {};
 };
 
 using FairMQMessagePtr = std::unique_ptr<FairMQMessage>;
@@ -43,7 +43,9 @@ namespace fair
 namespace mq
 {
 
-using MessagePtr = std::unique_ptr<FairMQMessage>;
+using Message = FairMQMessage;
+using MessagePtr = FairMQMessagePtr;
+struct MessageError : std::runtime_error { using std::runtime_error::runtime_error; };
 
 } /* namespace mq */
 } /* namespace fair */

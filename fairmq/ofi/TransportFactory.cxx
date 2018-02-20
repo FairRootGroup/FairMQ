@@ -6,6 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include <fairmq/ofi/Message.h>
 #include <fairmq/ofi/Poller.h>
 #include <fairmq/ofi/Socket.h>
 #include <fairmq/ofi/TransportFactory.h>
@@ -50,7 +51,7 @@ TransportFactory::TransportFactory(const string& id, const FairMQProgOptions* co
     }
     for(auto cursor{ofi_info}; cursor->next != nullptr; cursor = cursor->next)
     {
-        LOG(debug) << fi_tostr(cursor, FI_TYPE_INFO);
+        // LOG(debug) << fi_tostr(cursor, FI_TYPE_INFO);
     }
     fi_freeinfo(ofi_hints);
     fi_freeinfo(ofi_info);
@@ -64,48 +65,48 @@ TransportFactory::TransportFactory(const string& id, const FairMQProgOptions* co
 
 auto TransportFactory::CreateMessage() const -> MessagePtr
 {
-    throw runtime_error{"Not yet implemented Msg1."};
+    return MessagePtr{new Message()};
 }
 
 auto TransportFactory::CreateMessage(const size_t size) const -> MessagePtr
 {
-    throw runtime_error{"Not yet implemented Msg2."};
+    return MessagePtr{new Message(size)};
 }
 
 auto TransportFactory::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const -> MessagePtr
 {
-    throw runtime_error{"Not yet implemented Msg3."};
+    return MessagePtr{new Message(data, size, ffn, hint)};
 }
 
 auto TransportFactory::CreateMessage(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint) const -> MessagePtr
 {
-    throw runtime_error{"Not yet implemented Msg4."};
+    return MessagePtr{new Message(region, data, size, hint)};
 }
 
 auto TransportFactory::CreateSocket(const string& type, const string& name) const -> SocketPtr
 {
     assert(fZmqContext);
-    return unique_ptr<FairMQSocket>{new Socket(type, name, GetId(), fZmqContext)};
+    return SocketPtr{new Socket(type, name, GetId(), fZmqContext)};
 }
 
 auto TransportFactory::CreatePoller(const vector<FairMQChannel>& channels) const -> PollerPtr
 {
-    return unique_ptr<FairMQPoller>(new Poller(channels));
+    return PollerPtr{new Poller(channels)};
 }
 
 auto TransportFactory::CreatePoller(const vector<const FairMQChannel*>& channels) const -> PollerPtr
 {
-    return unique_ptr<FairMQPoller>(new Poller(channels));
+    return PollerPtr{new Poller(channels)};
 }
 
 auto TransportFactory::CreatePoller(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList) const -> PollerPtr
 {
-    return unique_ptr<FairMQPoller>(new Poller(channelsMap, channelList));
+    return PollerPtr{new Poller(channelsMap, channelList)};
 }
 
 auto TransportFactory::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const -> PollerPtr
 {
-    return unique_ptr<FairMQPoller>(new Poller(cmdSocket, dataSocket));
+    return PollerPtr{new Poller(cmdSocket, dataSocket)};
 }
 
 auto TransportFactory::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback) const -> UnmanagedRegionPtr
@@ -118,7 +119,7 @@ auto TransportFactory::GetType() const -> Transport
     return Transport::OFI;
 }
 
-TransportFactory::~TransportFactory()
+TransportFactory::~TransportFactory() noexcept(false)
 {
     if (zmq_ctx_term(fZmqContext) != 0) {
         throw TransportFactoryError{tools::ToString("Failed closing zmq context, reason: ", zmq_strerror(errno))};
