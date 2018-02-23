@@ -8,10 +8,14 @@
 
 #include "DDS.h"
 
+#include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/split.hpp>
+
 #include <termios.h> // for the interactive mode
 #include <poll.h> // for the interactive mode
 #include <sstream>
 #include <iostream>
+#include <cstdlib>
 
 using namespace std;
 
@@ -101,6 +105,13 @@ auto DDS::HandleControl() -> void
         // and propagate addresses of bound channels to DDS.
         FillChannelContainers();
 
+        LOG(DEBUG) << "$DDS_TASK_PATH: " << getenv("DDS_TASK_PATH");
+        LOG(DEBUG) << "$DDS_GROUP_NAME: " << getenv("DDS_GROUP_NAME");
+        LOG(DEBUG) << "$DDS_COLLECTION_NAME: " << getenv("DDS_COLLECTION_NAME");
+        LOG(DEBUG) << "$DDS_TASK_NAME: " << getenv("DDS_TASK_NAME");
+        LOG(DEBUG) << "$DDS_TASK_INDEX: " << getenv("DDS_TASK_INDEX");
+        LOG(DEBUG) << "$DDS_COLLECTION_INDEX: " << getenv("DDS_COLLECTION_INDEX");
+
         // start DDS service - subscriptions will only start firing after this step
         fService.start();
 
@@ -147,13 +158,12 @@ auto DDS::FillChannelContainers() -> void
     for (const auto& c : channelInfo)
     {
         string methodKey{"chans." + c.first + "." + to_string(c.second - 1) + ".method"};
-        string addressKey{"chans." + c.first + "." + to_string(c.second - 1) + ".address"};
         if (GetProperty<string>(methodKey) == "bind")
         {
             fBindingChans.insert(make_pair(c.first, vector<string>()));
             for (int i = 0; i < c.second; ++i)
             {
-                fBindingChans.at(c.first).push_back(GetProperty<string>(addressKey));
+                fBindingChans.at(c.first).push_back(GetProperty<string>(string{"chans." + c.first + "." + to_string(i) + ".address"}));
             }
         }
         else if (GetProperty<string>(methodKey) == "connect")
@@ -180,7 +190,26 @@ auto DDS::SubscribeForConnectingChannels() -> void
         try
         {
             LOG(debug) << "Received update for " << propertyId << ": key=" << key << " value=" << value;
-            fConnectingChans.at(propertyId).fDDSValues.insert(make_pair<string, string>(key.c_str(), value.c_str()));
+            vector<string> values;
+            boost::algorithm::split(values, value, boost::algorithm::is_any_of(","));
+            if (values.size() > 1)  // multiple bound channels received
+            {
+                int taskIndex = GetProperty<int>("dds-i");
+                if (taskIndex != -1)
+                {
+                    LOG(debug) << "adding connecting channel " << key << " : " << values.at(taskIndex);
+                    fConnectingChans.at(propertyId).fDDSValues.insert(make_pair<string, string>(key.c_str(), values.at(taskIndex).c_str()));
+                }
+                else
+                {
+                    LOG(error) << "multiple bound channels received, but no task index specified, only assigning the first";
+                    fConnectingChans.at(propertyId).fDDSValues.insert(make_pair<string, string>(key.c_str(), values.at(0).c_str()));
+                }
+            }
+            else // only one bound channel received
+            {
+                fConnectingChans.at(propertyId).fDDSValues.insert(make_pair<string, string>(key.c_str(), value.c_str()));
+            }
 
             // update channels and remove them from unfinished container
             for (auto mi = fConnectingChans.begin(); mi != fConnectingChans.end(); /* no increment */)
@@ -192,8 +221,7 @@ auto DDS::SubscribeForConnectingChannels() -> void
                     auto it = mi->second.fDDSValues.begin();
                     for (unsigned int i = 0; i < mi->second.fSubChannelAddresses.size(); ++i)
                     {
-                        string k = "chans." + mi->first + "." + to_string(i) + ".address";
-                        SetProperty<string>(k, it->second);
+                        SetProperty<string>(string{"chans." + mi->first + "." + to_string(i) + ".address"}, it->second);
                         ++it;
                     }
                     fConnectingChans.erase(mi++);
@@ -215,13 +243,9 @@ auto DDS::PublishBoundChannels() -> void
 {
     for (const auto& chan : fBindingChans)
     {
-        unsigned int index = 0;
-        for (const auto& i : chan.second)
-        {
-            LOG(debug) << "Publishing " << chan.first << "[" << index << "] address to DDS under '" << chan.first << "' property name.";
-            fDDSKeyValue.putValue(chan.first, i);
-            ++index;
-        }
+        string joined = boost::algorithm::join(chan.second, ",");
+        LOG(debug) << "Publishing " << chan.first << " bound addresses (" << chan.second.size() << ") to DDS under '" << chan.first << "' property name.";
+        fDDSKeyValue.putValue(chan.first, joined);
     }
 }
 
@@ -287,7 +311,7 @@ auto DDS::SubscribeForCustomCommands() -> void
         {
             {
                 // auto size = fHeartbeatSubscribers.size();
-                std::lock_guard<std::mutex> lock{fHeartbeatSubscriberMutex};
+                lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
                 fHeartbeatSubscribers.insert(senderId);
             }
             fDDSCustomCmd.send("heartbeat-subscription: " + id + ",OK", to_string(senderId));
@@ -295,7 +319,7 @@ auto DDS::SubscribeForCustomCommands() -> void
         else if (cmd == "unsubscribe-from-heartbeats")
         {
             {
-                std::lock_guard<std::mutex> lock{fHeartbeatSubscriberMutex};
+                lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
                 fHeartbeatSubscribers.erase(senderId);
             }
             fDDSCustomCmd.send("heartbeat-unsubscription: " + id + ",OK", to_string(senderId));
@@ -304,7 +328,7 @@ auto DDS::SubscribeForCustomCommands() -> void
         {
             {
                 // auto size = fStateChangeSubscribers.size();
-                std::lock_guard<std::mutex> lock{fStateChangeSubscriberMutex};
+                lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                 fStateChangeSubscribers.insert(senderId);
             }
             fDDSCustomCmd.send("state-changes-subscription: " + id + ",OK", to_string(senderId));
@@ -315,7 +339,7 @@ auto DDS::SubscribeForCustomCommands() -> void
         else if (cmd == "unsubscribe-from-state-changes")
         {
             {
-                std::lock_guard<std::mutex> lock{fStateChangeSubscriberMutex};
+                lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                 fStateChangeSubscribers.erase(senderId);
             }
             fDDSCustomCmd.send("state-changes-unsubscription: " + id + ",OK", to_string(senderId));

@@ -59,6 +59,7 @@ struct SUBOPT
         SNDKERNELSIZE,
         RCVKERNELSIZE,
         RATELOGGING,    // logging rate
+        NUMSOCKETS,
         lastsocketkey
     };
 
@@ -73,6 +74,7 @@ struct SUBOPT
         /*[SNDKERNELSIZE] = */ "sndKernelSize",
         /*[RCVKERNELSIZE] = */ "rcvKernelSize",
         /*[RATELOGGING]   = */ "rateLogging",
+        /*[NUMSOCKETS]    = */ "numSockets",
         nullptr
     };
 

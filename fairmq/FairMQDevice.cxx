@@ -714,7 +714,7 @@ bool FairMQDevice::HandleMsgInput(const string& chName, const InputMsgCallback& 
 
     if (Receive(input, chName, i) >= 0)
     {
-        return callback(input, 0);
+        return callback(input, i);
     }
     else
     {

@@ -90,13 +90,21 @@ class DDS : public Plugin
     std::chrono::milliseconds fHeartbeatInterval;
 };
 
+Plugin::ProgOptions DDSProgramOptions()
+{
+    boost::program_options::options_description options{"DDS Plugin"};
+    options.add_options()
+        ("dds-i", boost::program_options::value<int>()->default_value(-1), "Task index for chosing connection target (single channel n to m).");
+    return options;
+}
+
 REGISTER_FAIRMQ_PLUGIN(
     DDS,                                         // Class name
     dds,                                         // Plugin name (string, lower case chars only)
     (Plugin::Version{1,0,0}),                    // Version
     "FairRootGroup <fairroot@gsi.de>",           // Maintainer
     "https://github.com/FairRootGroup/FairRoot", // Homepage
-    fair::mq::Plugin::NoProgramOptions           // custom program options for the plugin
+    DDSProgramOptions                            // custom program options for the plugin
 )
 
 } /* namespace plugins */

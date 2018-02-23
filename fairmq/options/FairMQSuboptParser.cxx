@@ -59,7 +59,7 @@ FairMQMap SUBOPT::UserParser(const vector<string>& channelConfig, const string& 
             }
             else if (subopt >= 0 && value != nullptr)
             {
-                socketProperties.put(channelOptionKeys[subopt], value);
+                channelProperties.put(channelOptionKeys[subopt], value);
             }
         }
 
