@@ -11,8 +11,10 @@
 
 #include <FairMQSocket.h>
 #include <FairMQMessage.h>
+#include <fairmq/ofi/Context.h>
 
 #include <memory> // unique_ptr
+#include <rdma/fabric.h>
 
 namespace fair
 {
@@ -20,8 +22,6 @@ namespace mq
 {
 namespace ofi
 {
-
-class TransportFactory;
 
 /**
  * @class Socket Socket.h <fairmq/ofi/Socket.h>
@@ -32,7 +32,7 @@ class TransportFactory;
 class Socket : public fair::mq::Socket
 {
   public:
-    Socket(const TransportFactory& factory, const std::string& type, const std::string& name, const std::string& id = "");
+    Socket(Context& factory, const std::string& type, const std::string& name, const std::string& id = "");
     Socket(const Socket&) = delete;
     Socket operator=(const Socket&) = delete;
 
@@ -75,11 +75,15 @@ class Socket : public fair::mq::Socket
 
   private:
     void* fMetaSocket;
+    fid_ep* fDataEndpoint;
+    fid_cq* fDataCompletionQueueTx;
+    fid_cq* fDataCompletionQueueRx;
     std::string fId;
     std::atomic<unsigned long> fBytesTx;
     std::atomic<unsigned long> fBytesRx;
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
+    Context& fContext;
 
     int fSndTimeout;
     int fRcvTimeout;

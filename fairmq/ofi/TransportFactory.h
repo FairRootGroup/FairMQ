@@ -11,6 +11,7 @@
 
 #include <FairMQTransportFactory.h>
 #include <options/FairMQProgOptions.h>
+#include <fairmq/ofi/Context.h>
 
 namespace fair
 {
@@ -18,8 +19,6 @@ namespace mq
 {
 namespace ofi
 {
-
-class Socket;
 
 /**
  * @class TransportFactory TransportFactory.h <fairmq/ofi/TransportFactory.h>
@@ -29,8 +28,6 @@ class Socket;
  */
 class TransportFactory : public FairMQTransportFactory
 {
-  friend Socket;
-
   public:
     TransportFactory(const std::string& id = "", const FairMQProgOptions* config = nullptr);
     TransportFactory(const TransportFactory&) = delete;
@@ -55,10 +52,8 @@ class TransportFactory : public FairMQTransportFactory
     void Interrupt() override {}
     void Resume() override {}
 
-    ~TransportFactory() noexcept(false) override;
-
   private:
-    void* fZmqContext;
+    mutable Context fContext;
 }; /* class TransportFactory */  
 
 } /* namespace ofi */

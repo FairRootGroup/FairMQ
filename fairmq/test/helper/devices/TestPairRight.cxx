@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include <FairMQDevice.h>
+#include <string>
 
 namespace fair
 {
@@ -30,11 +31,28 @@ class PairRight : public FairMQDevice
 
     auto Run() -> void override
     {
-        MessagePtr msg{NewMessageFor("data", 0)};
+        int counter{0};
 
-        if (Receive(msg, "data") >= 0) {
-            LOG(info) << "PAIR test successfull";
+        // Simple empty message ping pong
+        auto msg1{NewMessageFor("data", 0)};
+        if (Receive(msg1, "data") >= 0) counter++;
+        if (Send(msg1, "data") >= 0) counter++;
+        auto msg2{NewMessageFor("data", 0)};
+        if (Receive(msg2, "data") >= 0) counter++;
+        if (Send(msg2, "data") >= 0) counter++;
+        if (counter == 4) LOG(info) << "Simple empty message ping pong successfull";
+        
+        // Simple message with short text data
+        auto msg3{NewMessageFor("data", 0)};
+        auto ret = Receive(msg3, "data");
+        if (ret > 0) {
+            auto content = std::string{static_cast<char*>(msg3->GetData()), msg3->GetSize()};
+            LOG(info) << ret << ", " << msg3->GetSize() << ", '" << content << "'";
+            if (msg3->GetSize() == ret && content == "testdata1234") counter++;
         }
+        if (counter == 5) LOG(info) << "Simple message with short text data successfull";
+
+        if (counter == 5) LOG(info) << "PAIR test successfull.";
     };
 };
 

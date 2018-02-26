@@ -30,8 +30,24 @@ class PairLeft : public FairMQDevice
 
     auto Run() -> void override
     {
-        auto msg{NewMessageFor("data", 0)};
-        Send(msg, "data");
+        int counter{0};
+
+        // Simple empty message ping pong
+        auto msg1{NewMessageFor("data", 0)};
+        auto msg2{NewMessageFor("data", 0)};
+        auto msg3{NewMessageFor("data", 0)};
+        if (Send(msg1, "data") >= 0) counter++;
+        if (Receive(msg2, "data") >= 0) counter++;
+        if (Send(msg2, "data") >= 0) counter++;
+        if (Receive(msg3, "data") >= 0) counter++;
+        if (counter == 4) LOG(info) << "Simple empty message ping pong successfull";
+
+        // Simple message with short text data
+        auto msg4{NewSimpleMessageFor("data", 0, "testdata1234")};
+        if (Send(msg4, "data") >= 0) counter++;
+        if (counter == 5) LOG(info) << "Simple message with short text data successfull";
+
+        assert(counter == 5);
     };
 };
 
