@@ -12,6 +12,7 @@
 
 #include <arpa/inet.h>
 #include <memory>
+#include <netinet/in.h>
 #include <rdma/fabric.h>
 #include <rdma/fi_domain.h>
 #include <rdma/fi_endpoint.h>
@@ -19,6 +20,7 @@
 #include <regex>
 #include <string>
 #include <string.h>
+#include <sys/socket.h>
 #include <zmq.h>
 
 namespace fair
@@ -45,16 +47,22 @@ Context::~Context()
         LOG(error) << "Failed closing zmq context, reason: " << zmq_strerror(errno);
     }
 
-	if (fOfiFabric) {
-        auto ret = fi_close(&fOfiFabric->fid);
+	if (fOfiAddressVector) {
+        auto ret = fi_close(&fOfiAddressVector->fid);
         if (ret != FI_SUCCESS)
-            LOG(error) << "Failed closing ofi fabric, reason: " << fi_strerror(ret);
+            LOG(error) << "Failed closing ofi address vector, reason: " << fi_strerror(ret);
     }
 
 	if (fOfiDomain) {
         auto ret = fi_close(&fOfiDomain->fid);
         if (ret != FI_SUCCESS)
             LOG(error) << "Failed closing ofi domain, reason: " << fi_strerror(ret);
+    }
+
+	if (fOfiFabric) {
+        auto ret = fi_close(&fOfiFabric->fid);
+        if (ret != FI_SUCCESS)
+            LOG(error) << "Failed closing ofi fabric, reason: " << fi_strerror(ret);
     }
 }
 
@@ -89,23 +97,26 @@ auto Context::InitOfi(ConnectionType type, std::string address) -> void
     if (!fOfiInfo) {
         sockaddr_in* sa = static_cast<sockaddr_in*>(malloc(sizeof(sockaddr_in)));
         inet_pton(AF_INET, ip.c_str(), &(sa->sin_addr));
-        sa->sin_port = port;
+        sa->sin_port = htons(port);
         sa->sin_family = AF_INET;
 
         // Prepare fi_getinfo query
         unique_ptr<fi_info, void(*)(fi_info*)> ofi_hints(fi_allocinfo(), fi_freeinfo);
-        ofi_hints->caps = FI_MSG;
+        ofi_hints->caps = FI_MSG | FI_SOURCE;
         ofi_hints->mode = FI_ASYNC_IOV;
         ofi_hints->addr_format = FI_SOCKADDR_IN;
         ofi_hints->fabric_attr->prov_name = strdup("sockets");
         ofi_hints->ep_attr->type = FI_EP_RDM;
-        if (type == ConnectionType::Bind) {
-            ofi_hints->src_addr = sa;
-            ofi_hints->src_addrlen = sizeof(sockaddr_in);
-        } else {
+        ofi_hints->domain_attr->threading = FI_THREAD_SAFE;
+        ofi_hints->domain_attr->control_progress = FI_PROGRESS_AUTO;
+        ofi_hints->domain_attr->data_progress = FI_PROGRESS_AUTO;
+        // if (type == ConnectionType::Bind) {
+        //     ofi_hints->src_addr = sa;
+        //     ofi_hints->src_addrlen = sizeof(sockaddr_in);
+        // } else {
             ofi_hints->dest_addr = sa;
             ofi_hints->dest_addrlen = sizeof(sockaddr_in);
-        }
+        // }
 
         // Query fi_getinfo for fabric to use
         auto res = fi_getinfo(FI_VERSION(1, 5), nullptr, nullptr, 0, ofi_hints.get(), &fOfiInfo);
@@ -113,7 +124,7 @@ auto Context::InitOfi(ConnectionType type, std::string address) -> void
         if (!fOfiInfo) throw ContextError{"Could not find any ofi compatible fabric."};
 
         // for(auto cursor{ofi_info}; cursor->next != nullptr; cursor = cursor->next) {
-        //     LOG(debug) << fi_tostr(cursor, FI_TYPE_INFO);
+             // LOG(debug) << fi_tostr(fOfiInfo, FI_TYPE_INFO);
         // }
         //
     } else {
@@ -122,12 +133,14 @@ auto Context::InitOfi(ConnectionType type, std::string address) -> void
 
     OpenOfiFabric();
     OpenOfiDomain();
+    OpenOfiAddressVector();
 }
 
 auto Context::OpenOfiFabric() -> void
 {
     if (!fOfiFabric) {
-        auto ret = fi_fabric(fOfiInfo->fabric_attr, &fOfiFabric, NULL);
+        assert(fOfiInfo);
+        auto ret = fi_fabric(fOfiInfo->fabric_attr, &fOfiFabric, nullptr);
         if (ret != FI_SUCCESS)
             throw ContextError{tools::ToString("Failed opening ofi fabric, reason: ", fi_strerror(ret))};
     } else {
@@ -140,7 +153,9 @@ auto Context::OpenOfiFabric() -> void
 auto Context::OpenOfiDomain() -> void
 {
     if (!fOfiDomain) {
-        auto ret = fi_domain(fOfiFabric, fOfiInfo, &fOfiDomain, NULL);
+        assert(fOfiInfo);
+        assert(fOfiFabric);
+        auto ret = fi_domain(fOfiFabric, fOfiInfo, &fOfiDomain, nullptr);
         if (ret != FI_SUCCESS)
             throw ContextError{tools::ToString("Failed opening ofi domain, reason: ", fi_strerror(ret))};
     } else {
@@ -148,19 +163,54 @@ auto Context::OpenOfiDomain() -> void
     }
 }
 
+auto Context::OpenOfiAddressVector() -> void
+{
+    if (!fOfiAddressVector) {
+        assert(fOfiDomain);
+        fi_av_attr attr = {fOfiInfo->domain_attr->av_type, 0, 1000, 0, nullptr, nullptr, 0};
+//      struct fi_av_attr {
+//          enum fi_av_type  type;        [> type of AV <]
+//          int              rx_ctx_bits; [> address bits to identify rx ctx <]
+//          size_t           count;       [> # entries for AV <]
+//          size_t           ep_per_node; [> # endpoints per fabric address <]
+//          const char       *name;       [> system name of AV <]
+//          void             *map_addr;   [> base mmap address <]
+//          uint64_t         flags;       [> operation flags <]
+//      };
+        auto ret = fi_av_open(fOfiDomain, &attr, &fOfiAddressVector, nullptr);
+        if (ret != FI_SUCCESS)
+            throw ContextError{tools::ToString("Failed opening ofi address vector, reason: ", fi_strerror(ret))};
+    } else {
+        LOG(debug) << "Ofi address vector already opened. Skipping.";
+    }
+}
+
 auto Context::CreateOfiEndpoint() -> fid_ep*
 {
+    assert(fOfiDomain);
+    assert(fOfiInfo);
     fid_ep* ep = nullptr;
     auto ret = fi_endpoint(fOfiDomain, fOfiInfo, &ep, nullptr);
     if (ret != FI_SUCCESS)
         throw ContextError{tools::ToString("Failed creating ofi endpoint, reason: ", fi_strerror(ret))};
+
+    assert(fOfiAddressVector);
+    ret = fi_ep_bind(ep, &fOfiAddressVector->fid, 0);
+    if (ret != FI_SUCCESS)
+        throw ContextError{tools::ToString("Failed binding ofi address vector to ofi endpoint, reason: ", fi_strerror(ret))};
+
     return ep;
 }
 
-auto Context::CreateOfiCompletionQueue() -> fid_cq*
+auto Context::CreateOfiCompletionQueue(Direction dir) -> fid_cq*
 {
     fid_cq* cq = nullptr;
     fi_cq_attr attr = {0, 0, FI_CQ_FORMAT_DATA, FI_WAIT_UNSPEC, 0, FI_CQ_COND_NONE, nullptr};
+    if (dir == Direction::Receive) {
+        attr.size = fOfiInfo->rx_attr->size;
+    } else {
+        attr.size = fOfiInfo->tx_attr->size;
+    }
 	// size_t               size;      [> # entries for CQ <]
 	// uint64_t             flags;     [> operation flags <]
 	// enum fi_cq_format    format;    [> completion format <]

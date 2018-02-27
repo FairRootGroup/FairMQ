@@ -10,6 +10,7 @@
 #include <fairmq/Tools.h>
 #include <FairMQLogger.h>
 
+#include <cstdlib>
 #include <zmq.h>
 
 namespace fair
@@ -26,9 +27,10 @@ Message::Message()
 }
 
 Message::Message(const size_t size)
-    : fSize{size}
+    : fInitialSize(size)
+    , fSize(size)
+    , fData(nullptr)
 {
-    throw MessageError{"Not yet implemented."};
 }
 
 Message::Message(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
@@ -58,7 +60,7 @@ auto Message::Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* 
 
 auto Message::GetData() const -> void*
 {
-    throw MessageError{"Not implemented."};
+    return fData;
 }
 
 auto Message::GetSize() const -> size_t
@@ -87,7 +89,7 @@ auto Message::Copy(const fair::mq::MessagePtr& msg) -> void
     throw MessageError{"Not yet implemented."};
 }
 
-Message::~Message() noexcept(false)
+Message::~Message()
 {
 }
 

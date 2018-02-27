@@ -33,7 +33,7 @@ class FairMQMessage
     virtual void Copy(const std::unique_ptr<FairMQMessage>& msg) __attribute__((deprecated("Use 'Copy(const FairMQMessage& msg)'"))) = 0;
     virtual void Copy(const FairMQMessage& msg) = 0;
 
-    virtual ~FairMQMessage() noexcept(false) {};
+    virtual ~FairMQMessage() {};
 };
 
 using FairMQMessagePtr = std::unique_ptr<FairMQMessage>;

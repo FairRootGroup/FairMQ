@@ -55,10 +55,12 @@ class Message : public fair::mq::Message
     auto Copy(const fair::mq::Message& msg) -> void override;
     auto Copy(const fair::mq::MessagePtr& msg) -> void override;
 
-    ~Message() noexcept(false) override;
+    ~Message() override;
 
   private:
+    size_t fInitialSize;
     size_t fSize;
+    void* fData;
 }; /* class Message */  
 
 } /* namespace ofi */

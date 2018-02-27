@@ -92,6 +92,8 @@ class Socket : public fair::mq::Socket
     auto ReceiveImpl(MessagePtr& msg, const int flags, const int timeout) -> int;
     auto SendImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
     auto ReceiveImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
+
+    auto InitDataEndpoint() -> void;
 }; /* class Socket */
 
 } /* namespace ofi */

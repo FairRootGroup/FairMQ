@@ -13,6 +13,7 @@
 
 #include <rdma/fabric.h>
 #include <rdma/fi_endpoint.h>
+#include <cstring>
 #include <sstream>
 #include <zmq.h>
 
@@ -27,6 +28,8 @@ using namespace std;
 
 Socket::Socket(Context& context, const string& type, const string& name, const string& id /*= ""*/)
     : fDataEndpoint(nullptr)
+    , fDataCompletionQueueTx(nullptr)
+    , fDataCompletionQueueRx(nullptr)
     , fId(id + "." + name + "." + type)
     , fSndTimeout(100)
     , fRcvTimeout(100)
@@ -64,6 +67,7 @@ Socket::Socket(Context& context, const string& type, const string& name, const s
 
 auto Socket::Bind(const string& address) -> bool
 {
+    // TODO handle verbs://
     if (zmq_bind(fMetaSocket, address.c_str()) != 0) {
         if (errno == EADDRINUSE) {
             // do not print error in this case, this is handled by FairMQDevice
@@ -76,28 +80,11 @@ auto Socket::Bind(const string& address) -> bool
 
     fContext.InitOfi(ConnectionType::Bind, address);
 
-    if (!fDataEndpoint) {
-        try {
-            fDataEndpoint = fContext.CreateOfiEndpoint();
-        } catch (ContextError& e) {
-            LOG(error) << "Failed creating ofi endpoint for " << address << ", reason: " << e.what();
-        }
-
-        if (!fDataCompletionQueueTx)
-            fDataCompletionQueueTx = fContext.CreateOfiCompletionQueue();
-        auto ret = fi_ep_bind(fDataEndpoint, &fDataCompletionQueueTx->fid, FI_TRANSMIT);
-        if (ret != FI_SUCCESS)
-            LOG(error) << "Failed binding ofi transmit completion queue to endpoint, reason: " << fi_strerror(ret);
-
-        if (!fDataCompletionQueueRx)
-            fDataCompletionQueueRx = fContext.CreateOfiCompletionQueue();
-        ret = fi_ep_bind(fDataEndpoint, &fDataCompletionQueueRx->fid, FI_RECV);
-        if (ret != FI_SUCCESS)
-            LOG(error) << "Failed binding ofi receive completion queue to endpoint, reason: " << fi_strerror(ret);
-
-        ret = fi_enable(fDataEndpoint);
-        if (ret != FI_SUCCESS)
-            LOG(error) << "Failed opening ofi fabric, reason: " << fi_strerror(ret);
+    try {
+        InitDataEndpoint();
+    } catch (SocketError& e) {
+        LOG(error) << e.what();
+        return false;
     }
 
     return true;
@@ -105,34 +92,40 @@ auto Socket::Bind(const string& address) -> bool
 
 auto Socket::Connect(const string& address) -> void
 {
+    // TODO handle verbs://
     if (zmq_connect(fMetaSocket, address.c_str()) != 0) {
         throw SocketError{tools::ToString("Failed connecting socket ", fId, ", reason: ", zmq_strerror(errno))};
     }
 
     fContext.InitOfi(ConnectionType::Connect, address);
 
+    InitDataEndpoint();
+}
+
+auto Socket::InitDataEndpoint() -> void
+{
     if (!fDataEndpoint) {
         try {
             fDataEndpoint = fContext.CreateOfiEndpoint();
         } catch (ContextError& e) {
-            throw SocketError(tools::ToString("Failed creating ofi endpoint for ", address, ", reason: ", e.what()));
+            throw SocketError(tools::ToString("Failed creating ofi endpoint, reason: ", e.what()));
         }
 
         if (!fDataCompletionQueueTx)
-            fDataCompletionQueueTx = fContext.CreateOfiCompletionQueue();
+            fDataCompletionQueueTx = fContext.CreateOfiCompletionQueue(Direction::Transmit);
         auto ret = fi_ep_bind(fDataEndpoint, &fDataCompletionQueueTx->fid, FI_TRANSMIT);
         if (ret != FI_SUCCESS)
-            LOG(error) << "Failed binding ofi transmit completion queue to endpoint, reason: " << fi_strerror(ret);
+            throw SocketError(tools::ToString("Failed binding ofi transmit completion queue to endpoint, reason: ", fi_strerror(ret)));
 
         if (!fDataCompletionQueueRx)
-            fDataCompletionQueueRx = fContext.CreateOfiCompletionQueue();
+            fDataCompletionQueueRx = fContext.CreateOfiCompletionQueue(Direction::Receive);
         ret = fi_ep_bind(fDataEndpoint, &fDataCompletionQueueRx->fid, FI_RECV);
         if (ret != FI_SUCCESS)
-            LOG(error) << "Failed binding ofi receive completion queue to endpoint, reason: " << fi_strerror(ret);
+            throw SocketError(tools::ToString("Failed binding ofi receive completion queue to endpoint, reason: ", fi_strerror(ret)));
 
         ret = fi_enable(fDataEndpoint);
         if (ret != FI_SUCCESS)
-            throw SocketError{tools::ToString("Failed opening ofi fabric, reason: ", fi_strerror(ret))};
+            throw SocketError(tools::ToString("Failed opening ofi fabric, reason: ", fi_strerror(ret)));
     }
 }
 
@@ -148,7 +141,8 @@ auto Socket::TryReceive(std::vector<MessagePtr>& msgVec) -> int64_t { return Rec
 
 auto Socket::SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout) -> int
 {
-    auto metadata = new int;
+    void* metadata = malloc(sizeof(size_t));
+    
     auto ret = zmq_send(fMetaSocket, &metadata, sizeof(int), flags);
     if (ret == EAGAIN) {
         return -2;
@@ -156,6 +150,7 @@ auto Socket::SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout)
         LOG(error) << "Failed sending meta message on socket " << fId << ", reason: " << zmq_strerror(errno);
         return -1;
     } else {
+        // auto ret2 = fi_send(fDataEndpoint, msg->GetData(), msg->GetSize(), nullptr, fi_addr_t dest_addr, nullptr);
         return ret;
     }
 }

@@ -22,6 +22,7 @@ namespace ofi
 {
 
 enum class ConnectionType : bool { Bind, Connect };
+enum class Direction : bool { Receive, Transmit };
 
 /**
  * @class Context Context.h <fairmq/ofi/Context.h>
@@ -38,7 +39,7 @@ class Context
     /// Deferred Ofi initialization
     auto InitOfi(ConnectionType type, std::string address) -> void;
     auto CreateOfiEndpoint() -> fid_ep*;
-    auto CreateOfiCompletionQueue() -> fid_cq*;
+    auto CreateOfiCompletionQueue(Direction dir) -> fid_cq*;
     auto GetZmqVersion() const -> std::string;
     auto GetOfiApiVersion() const -> std::string;
     auto GetZmqContext() const -> void* { return fZmqContext; }
@@ -48,9 +49,11 @@ class Context
     fi_info* fOfiInfo;
     fid_fabric* fOfiFabric;
     fid_domain* fOfiDomain;
+    fid_av* fOfiAddressVector;
 
     auto OpenOfiFabric() -> void;
     auto OpenOfiDomain() -> void;
+    auto OpenOfiAddressVector() -> void;
 }; /* class Context */
 
 struct ContextError : std::runtime_error { using std::runtime_error::runtime_error; };
