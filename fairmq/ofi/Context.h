@@ -10,6 +10,7 @@
 #define FAIR_MQ_OFI_CONTEXT_H
 
 #include <memory>
+#include <netinet/in.h>
 #include <rdma/fabric.h>
 #include <string>
 #include <stdexcept>
@@ -43,6 +44,14 @@ class Context
     auto GetZmqVersion() const -> std::string;
     auto GetOfiApiVersion() const -> std::string;
     auto GetZmqContext() const -> void* { return fZmqContext; }
+    auto InsertAddressVector(sockaddr_in address) -> fi_addr_t;
+    struct Address {
+        std::string Protocol;
+        std::string Ip;
+        unsigned int Port;
+    };
+    static auto ConvertAddress(std::string address) -> Address;
+    static auto ConvertAddress(Address address) -> sockaddr_in;
 
   private:
     void* fZmqContext;

@@ -75,6 +75,7 @@ class Socket : public fair::mq::Socket
 
   private:
     void* fMetaSocket;
+    void* fMonitorSocket;
     fid_ep* fDataEndpoint;
     fid_cq* fDataCompletionQueueTx;
     fid_cq* fDataCompletionQueueRx;
@@ -84,6 +85,8 @@ class Socket : public fair::mq::Socket
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
     Context& fContext;
+    fi_addr_t fRemoteAddr;
+    bool fWaitingForRemoteConnect;
 
     int fSndTimeout;
     int fRcvTimeout;
@@ -94,6 +97,7 @@ class Socket : public fair::mq::Socket
     auto ReceiveImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
 
     auto InitDataEndpoint() -> void;
+    auto WaitForRemoteConnect() -> void;
 }; /* class Socket */
 
 } /* namespace ofi */
