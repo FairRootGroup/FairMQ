@@ -258,8 +258,8 @@ auto Context::InsertAddressVector(sockaddr_in address) -> fi_addr_t
 {
     fi_addr_t mappedAddress;
     auto ret = fi_av_insert(fOfiAddressVector, &address, 1, &mappedAddress, 0, nullptr);
-    if (ret != FI_SUCCESS)
-        throw ContextError{tools::ToString("Failed to insert address into ofi address vector, reason: ", fi_strerror(ret))};
+    if (ret != 1)
+        throw ContextError{tools::ToString("Failed to insert address into ofi address vector")};
 
     return ret;
 }

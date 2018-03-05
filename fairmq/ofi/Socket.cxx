@@ -138,7 +138,7 @@ auto Socket::ProcessDataAddressAnnouncement(std::unique_ptr<ControlMessage> ctrl
     remoteAddr.sin_port = daa.port();
     remoteAddr.sin_addr.s_addr = daa.ipv4();
 
-    LOG(debug) << Context::ConvertAddress(remoteAddr);
+    LOG(debug) << "Data address announcement of remote ofi endpoint received: " << Context::ConvertAddress(remoteAddr);
     fRemoteDataAddr = fContext.InsertAddressVector(remoteAddr);
 }
 
