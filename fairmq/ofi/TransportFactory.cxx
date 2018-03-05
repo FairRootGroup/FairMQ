@@ -27,7 +27,8 @@ TransportFactory::TransportFactory(const string& id, const FairMQProgOptions* co
 try : FairMQTransportFactory{id}
 {
     LOG(debug) << "Transport: Using ZeroMQ (" << fContext.GetZmqVersion() << ") & "
-               << "OFI libfabric (API " << fContext.GetOfiApiVersion() << ")";
+               << "OFI libfabric (API " << fContext.GetOfiApiVersion() << ") & "
+               << "Google Protobuf (" << fContext.GetPbVersion() << ")";
 }
 catch (ContextError& e) { throw TransportFactoryError{e.what()}; }
 

@@ -12,8 +12,10 @@
 #include <FairMQSocket.h>
 #include <FairMQMessage.h>
 #include <fairmq/ofi/Context.h>
+#include <fairmq/ofi/Control.pb.h>
 
 #include <memory> // unique_ptr
+#include <netinet/in.h>
 #include <rdma/fabric.h>
 
 namespace fair
@@ -25,7 +27,7 @@ namespace ofi
 
 /**
  * @class Socket Socket.h <fairmq/ofi/Socket.h>
- * @brief 
+ * @brief
  *
  * @todo TODO insert long description
  */
@@ -51,7 +53,7 @@ class Socket : public fair::mq::Socket
     auto TrySend(std::vector<MessagePtr>& msgVec) -> int64_t override;
     auto TryReceive(std::vector<MessagePtr>& msgVec) -> int64_t override;
 
-    auto GetSocket() const -> void* override { return fMetaSocket; }
+    auto GetSocket() const -> void* override { return fControlSocket; }
     auto GetSocket(int nothing) const -> int override { return -1; }
 
     auto Close() -> void override;
@@ -74,7 +76,7 @@ class Socket : public fair::mq::Socket
     ~Socket() override;
 
   private:
-    void* fMetaSocket;
+    void* fControlSocket;
     void* fMonitorSocket;
     fid_ep* fDataEndpoint;
     fid_cq* fDataCompletionQueueTx;
@@ -85,8 +87,9 @@ class Socket : public fair::mq::Socket
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
     Context& fContext;
-    fi_addr_t fRemoteAddr;
-    bool fWaitingForRemoteConnect;
+    fi_addr_t fRemoteDataAddr;
+    sockaddr_in fLocalDataAddr;
+    bool fWaitingForControlPeer;
 
     int fSndTimeout;
     int fRcvTimeout;
@@ -97,8 +100,19 @@ class Socket : public fair::mq::Socket
     auto ReceiveImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
 
     auto InitDataEndpoint() -> void;
-    auto WaitForRemoteConnect() -> void;
+    auto WaitForControlPeer() -> void;
+    auto AnnounceDataAddress() -> void;
+    auto SendControlMessage(std::unique_ptr<ControlMessage> ctrl) -> void;
+    auto ReceiveControlMessage() -> std::unique_ptr<ControlMessage>;
+    auto ProcessDataAddressAnnouncement(std::unique_ptr<ControlMessage> ctrl) -> void;
+    auto ConnectControlSocket(Context::Address address) -> void;
+    auto BindControlSocket(Context::Address address) -> void;
 }; /* class Socket */
+
+// helper function to clean up the object holding the data after it is transported.
+void free_string(void* /*data*/, void* hint);
+
+struct SilentSocketError : SocketError { using SocketError::SocketError; };
 
 } /* namespace ofi */
 } /* namespace mq */

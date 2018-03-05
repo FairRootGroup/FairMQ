@@ -1,0 +1,15 @@
+syntax = "proto3";
+option optimize_for = SPEED;
+
+package fair.mq.ofi;
+
+message DataAddressAnnouncement {
+  uint32 ipv4 = 1; // in_addr_t from <netinet/in.h>
+  uint32 port = 2; // in_port_t from <netinet/in.h>
+}
+
+message ControlMessage {
+  oneof type {
+    DataAddressAnnouncement data_address_announcement = 1;
+  }    
+}

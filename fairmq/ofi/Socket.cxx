@@ -16,6 +16,7 @@
 #include <netinet/in.h>
 #include <rdma/fabric.h>
 #include <rdma/fi_endpoint.h>
+#include <rdma/fi_cm.h>
 #include <sstream>
 #include <string.h>
 #include <sys/socket.h>
@@ -35,34 +36,34 @@ Socket::Socket(Context& context, const string& type, const string& name, const s
     , fDataCompletionQueueTx(nullptr)
     , fDataCompletionQueueRx(nullptr)
     , fId(id + "." + name + "." + type)
-    , fMetaSocket(nullptr)
+    , fControlSocket(nullptr)
     , fMonitorSocket(nullptr)
     , fSndTimeout(100)
     , fRcvTimeout(100)
     , fContext(context)
-    , fWaitingForRemoteConnect(false)
+    , fWaitingForControlPeer(false)
 {
     if (type != "pair") {
         throw SocketError{tools::ToString("Socket type '", type, "' not implemented for ofi transport.")};
     } else {
-        fMetaSocket = zmq_socket(fContext.GetZmqContext(), ZMQ_PAIR);
+        fControlSocket = zmq_socket(fContext.GetZmqContext(), ZMQ_PAIR);
 
-        if (fMetaSocket == nullptr)
+        if (fControlSocket == nullptr)
             throw SocketError{tools::ToString("Failed creating zmq meta socket ", fId, ", reason: ", zmq_strerror(errno))};
 
-        if (zmq_setsockopt(fMetaSocket, ZMQ_IDENTITY, fId.c_str(), fId.length()) != 0)
+        if (zmq_setsockopt(fControlSocket, ZMQ_IDENTITY, fId.c_str(), fId.length()) != 0)
             throw SocketError{tools::ToString("Failed setting ZMQ_IDENTITY socket option, reason: ", zmq_strerror(errno))};
 
         // Tell socket to try and send/receive outstanding messages for <linger> milliseconds before terminating.
         // Default value for ZeroMQ is -1, which is to wait forever.
         int linger = 1000;
-        if (zmq_setsockopt(fMetaSocket, ZMQ_LINGER, &linger, sizeof(linger)) != 0)
+        if (zmq_setsockopt(fControlSocket, ZMQ_LINGER, &linger, sizeof(linger)) != 0)
             throw SocketError{tools::ToString("Failed setting ZMQ_LINGER socket option, reason: ", zmq_strerror(errno))};
 
-        if (zmq_setsockopt(fMetaSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0)
+        if (zmq_setsockopt(fControlSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0)
             throw SocketError{tools::ToString("Failed setting ZMQ_SNDTIMEO socket option, reason: ", zmq_strerror(errno))};
 
-        if (zmq_setsockopt(fMetaSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0)
+        if (zmq_setsockopt(fControlSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0)
             throw SocketError{tools::ToString("Failed setting ZMQ_RCVTIMEO socket option, reason: ", zmq_strerror(errno))};
 
         fMonitorSocket = zmq_socket(fContext.GetZmqContext(), ZMQ_PAIR);
@@ -71,7 +72,7 @@ Socket::Socket(Context& context, const string& type, const string& name, const s
             throw SocketError{tools::ToString("Failed creating zmq monitor socket ", fId, ", reason: ", zmq_strerror(errno))};
 
         auto mon_addr = tools::ToString("inproc://", fId);
-        if (zmq_socket_monitor(fMetaSocket, mon_addr.c_str(), ZMQ_EVENT_ACCEPTED) < 0)
+        if (zmq_socket_monitor(fControlSocket, mon_addr.c_str(), ZMQ_EVENT_ACCEPTED | ZMQ_EVENT_CONNECTED) < 0)
             throw SocketError{tools::ToString("Failed setting up monitor on meta socket, reason: ", zmq_strerror(errno))};
 
         if (zmq_connect(fMonitorSocket, mon_addr.c_str()) != 0)
@@ -80,50 +81,65 @@ Socket::Socket(Context& context, const string& type, const string& name, const s
 }
 
 auto Socket::Bind(const string& address) -> bool
-{
-    auto addr2 = fContext.ConvertAddress(address);
-    if (addr2.Protocol != "tcp")
-        throw SocketError("Wrong protocol: Supported protocols are: tcp");
-
-    if (zmq_bind(fMetaSocket, address.c_str()) != 0) {
-        if (errno == EADDRINUSE) {
-            // do not print error in this case, this is handled by FairMQDevice
-            // in case no connection could be established after trying a number of random ports from a range.
-            return false;
-        }
-        LOG(error) << "Failed binding socket " << fId << ", reason: " << zmq_strerror(errno);
-        return false;
-    }
-
+try {
+    auto addr = Context::VerifyAddress(address);
+    BindControlSocket(addr);
     fContext.InitOfi(ConnectionType::Bind, address);
-
-    try {
-        InitDataEndpoint();
-    } catch (SocketError& e) {
-        LOG(error) << e.what();
-        return false;
-    }
-
-    fWaitingForRemoteConnect = true;
-
+    InitDataEndpoint();
+    fWaitingForControlPeer = true;
     return true;
+}
+catch (const SilentSocketError& e)
+{
+    // do not print error in this case, this is handled by FairMQDevice
+    // in case no connection could be established after trying a number of random ports from a range.
+    return false;
+}
+catch (const SocketError& e)
+{
+    LOG(error) << e.what();
+    return false;
 }
 
 auto Socket::Connect(const string& address) -> void
 {
-    auto addr2 = fContext.ConvertAddress(address);
-    if (addr2.Protocol != "tcp")
-        throw SocketError("Wrong protocol: Supported protocols are: tcp");
-
-    if (zmq_connect(fMetaSocket, address.c_str()) != 0) {
-        throw SocketError(tools::ToString("Failed connecting socket ", fId, ", reason: ", zmq_strerror(errno)));
-    }
-
+    auto addr = Context::VerifyAddress(address);
+    ConnectControlSocket(addr);
     fContext.InitOfi(ConnectionType::Connect, address);
-
     InitDataEndpoint();
+    fWaitingForControlPeer = true;
+}
 
-    fRemoteAddr = fContext.InsertAddressVector(fContext.ConvertAddress(addr2));
+auto Socket::BindControlSocket(Context::Address address) -> void
+{
+    auto addr = tools::ToString("tcp://", address.Ip, ":", address.Port);
+
+    if (zmq_bind(fControlSocket, addr.c_str()) != 0) {
+        if (errno == EADDRINUSE) throw SilentSocketError("EADDRINUSE");
+        throw SocketError(tools::ToString("Failed binding control socket ", fId, ", reason: ", zmq_strerror(errno)));
+    }
+}
+
+auto Socket::ConnectControlSocket(Context::Address address) -> void
+{
+    auto addr = tools::ToString("tcp://", address.Ip, ":", address.Port);
+
+    if (zmq_connect(fControlSocket, addr.c_str()) != 0)
+        throw SocketError(tools::ToString("Failed connecting control socket ", fId, ", reason: ", zmq_strerror(errno)));
+}
+
+auto Socket::ProcessDataAddressAnnouncement(std::unique_ptr<ControlMessage> ctrl) -> void
+{
+    assert(ctrl->has_data_address_announcement());
+    auto daa = ctrl->data_address_announcement();
+
+    sockaddr_in remoteAddr;
+    remoteAddr.sin_family = AF_INET;
+    remoteAddr.sin_port = daa.port();
+    remoteAddr.sin_addr.s_addr = daa.ipv4();
+
+    LOG(debug) << Context::ConvertAddress(remoteAddr);
+    fRemoteDataAddr = fContext.InsertAddressVector(remoteAddr);
 }
 
 auto Socket::InitDataEndpoint() -> void
@@ -149,13 +165,81 @@ auto Socket::InitDataEndpoint() -> void
 
         ret = fi_enable(fDataEndpoint);
         if (ret != FI_SUCCESS)
-            throw SocketError(tools::ToString("Failed opening ofi fabric, reason: ", fi_strerror(ret)));
+            throw SocketError(tools::ToString("Failed enabling ofi endpoint, reason: ", fi_strerror(ret)));
     }
 }
 
-auto Socket::WaitForRemoteConnect() -> void
+void free_string(void* /*data*/, void* hint)
 {
-    assert(fWaitingForRemoteConnect);
+    delete static_cast<string*>(hint);
+}
+
+auto Socket::AnnounceDataAddress() -> void
+try {
+    using namespace google::protobuf;
+
+    size_t addrlen = sizeof(sockaddr_in);
+    auto ret = fi_getname(&fDataEndpoint->fid, &fLocalDataAddr, &addrlen);
+    if (ret != FI_SUCCESS)
+        throw SocketError(tools::ToString("Failed retrieving native address from ofi endpoint, reason: ", fi_strerror(ret)));
+    assert(addrlen == sizeof(sockaddr_in));
+
+    LOG(debug) << "Address of local ofi endpoint in socket " << fId << ": " << Context::ConvertAddress(fLocalDataAddr);
+
+    // Create new control message
+    auto ctrl = tools::make_unique<ControlMessage>();
+    auto daa = tools::make_unique<DataAddressAnnouncement>();
+
+    // Fill data address announcement
+    daa->set_ipv4(fLocalDataAddr.sin_addr.s_addr);
+    daa->set_port(fLocalDataAddr.sin_port);
+
+    // Fill control message
+    ctrl->set_allocated_data_address_announcement(daa.release());
+    assert(ctrl->IsInitialized());
+
+    SendControlMessage(move(ctrl));
+} catch (const SocketError& e) {
+    throw SocketError(tools::ToString("Failed to announce data address, reason: ", e.what()));
+}
+
+auto Socket::SendControlMessage(unique_ptr<ControlMessage> ctrl) -> void
+{
+    assert(fControlSocket);
+
+    // Serialize
+    string* str = new string();
+    ctrl->SerializeToString(str);
+    zmq_msg_t msg;
+    auto ret = zmq_msg_init_data(&msg, const_cast<char*>(str->c_str()), str->length(), free_string, str);
+    assert(ret == 0);
+
+    // Send
+    if (zmq_msg_send(&msg, fControlSocket, 0) == -1)
+        throw SocketError(tools::ToString("Failed to send control message, reason: ", zmq_strerror(errno)));
+}
+
+auto Socket::ReceiveControlMessage() -> unique_ptr<ControlMessage>
+{
+    assert(fControlSocket);
+
+    // Receive 
+    zmq_msg_t msg;
+    auto ret = zmq_msg_init(&msg);
+    assert(ret == 0);
+    if (zmq_msg_recv(&msg, fControlSocket, 0) == -1)
+        throw SocketError(tools::ToString("Failed to receive control message, reason: ", zmq_strerror(errno)));
+
+    // Deserialize
+    auto ctrl = tools::make_unique<ControlMessage>();
+    ctrl->ParseFromArray(zmq_msg_data(&msg), zmq_msg_size(&msg));
+    
+    return ctrl;
+}
+
+auto Socket::WaitForControlPeer() -> void
+{
+    assert(fWaitingForControlPeer);
 
     // First frame in message contains event number and value
     zmq_msg_t msg;
@@ -172,21 +256,23 @@ auto Socket::WaitForRemoteConnect() -> void
     if (zmq_msg_recv(&msg, fMonitorSocket, 0) == -1)
         throw SocketError(tools::ToString("Failed to get monitor event, reason: ", zmq_strerror(errno)));
 
-    string localAddress = string(static_cast<char*>(zmq_msg_data(&msg)), zmq_msg_size(&msg));
+    if (event == ZMQ_EVENT_ACCEPTED) {
+        // string localAddress = string(static_cast<char*>(zmq_msg_data(&msg)), zmq_msg_size(&msg));
+        sockaddr_in remoteAddr;
+        socklen_t addrSize = sizeof(sockaddr_in);
+        int ret = getpeername(value, (sockaddr*)&remoteAddr, &addrSize);
+        if (ret != 0)
+            throw SocketError(tools::ToString("Failed retrieving remote address, reason: ", strerror(errno)));
+        string remoteIp(inet_ntoa(remoteAddr.sin_addr));
+        int remotePort = ntohs(remoteAddr.sin_port);
+        LOG(debug) << "Accepted control peer connection from " << remoteIp << ":" << remotePort;
+    } else if (event == ZMQ_EVENT_CONNECTED) {
+        LOG(debug) << "Connected successfully to control peer";
+    } else {
+        LOG(debug) << "Unknown monitor event received: " << event << ". Ignoring.";
+    }
 
-    assert(event == ZMQ_EVENT_ACCEPTED); // we only subscribed for this event
-
-    sockaddr_in remoteAddr;
-    socklen_t addrSize = sizeof(sockaddr_in);
-    int ret = getpeername(value, (sockaddr*)&remoteAddr, &addrSize);
-    if (ret != 0)
-        throw SocketError(tools::ToString("Failed retrieving peer address, reason: ", strerror(errno)));
-    string remoteIp(inet_ntoa(remoteAddr.sin_addr));
-    int remotePort = ntohs(remoteAddr.sin_port);
-    LOG(debug) << "peer connected from " << remoteIp << ":" << remotePort << " at " << localAddress;
-
-    fRemoteAddr = fContext.InsertAddressVector(remoteAddr);
-    fWaitingForRemoteConnect = false;
+    fWaitingForControlPeer = false;
 }
 
 auto Socket::Send(MessagePtr& msg, const int timeout) -> int { return SendImpl(msg, 0, timeout); }
@@ -200,41 +286,51 @@ auto Socket::TrySend(std::vector<MessagePtr>& msgVec) -> int64_t { return SendIm
 auto Socket::TryReceive(std::vector<MessagePtr>& msgVec) -> int64_t { return ReceiveImpl(msgVec, ZMQ_DONTWAIT, 0); }
 
 auto Socket::SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout) -> int
-{
-    if (fWaitingForRemoteConnect) {
-        try {
-            WaitForRemoteConnect(); 
-        } catch (const std::exception& e) {
-            LOG(error) << e.what();
-            return -1;
-        }
+try {
+    if (fWaitingForControlPeer) {
+        WaitForControlPeer(); 
+        AnnounceDataAddress();
+        ProcessDataAddressAnnouncement(ReceiveControlMessage());
     }
 
-    // void* metadata = malloc(sizeof(size_t));
-    
-    auto ret = zmq_send(fMetaSocket, nullptr, 0, flags);
-    if (ret == EAGAIN) {
-        return -2;
-    } else if (ret < 0) {
-        LOG(error) << "Failed sending meta message on socket " << fId << ", reason: " << zmq_strerror(errno);
-        return -1;
-    } else {
-        // auto ret2 = fi_send(fDataEndpoint, msg->GetData(), msg->GetSize(), nullptr, fi_addr_t dest_addr, nullptr);
-        return ret;
-    }
+    auto ret = zmq_send(fControlSocket, nullptr, 0, flags);
+    if (ret == EAGAIN) throw SilentSocketError("EAGAIN");
+    if (ret == -1) throw SocketError(tools::ToString("Failed sending control message on socket ", fId, ", reason: ", zmq_strerror(errno)));
+
+    return ret;
+}
+catch (const SilentSocketError& e)
+{
+    return -2;
+}
+catch (const std::exception& e)
+{
+    LOG(error) << e.what();
+    return -1;
 }
 
 auto Socket::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout) -> int
-{
-    auto ret = zmq_recv(fMetaSocket, nullptr, 0, flags);
-    if (ret == EAGAIN) {
-        return -2;
-    } else if (ret < 0) {
-        LOG(error) << "Failed receiving meta message on socket " << fId << ", reason: " << zmq_strerror(errno);
-        return -1;
-    } else {
-        return ret;
+try {
+    if (fWaitingForControlPeer) {
+        WaitForControlPeer(); 
+        AnnounceDataAddress();
+        ProcessDataAddressAnnouncement(ReceiveControlMessage());
     }
+
+    auto ret = zmq_recv(fControlSocket, nullptr, 0, flags);
+    if (ret == EAGAIN) throw SilentSocketError("EAGAIN");
+    if (ret == -1) throw SocketError(tools::ToString("Failed sending control message on socket ", fId, ", reason: ", zmq_strerror(errno)));
+
+    return ret;
+}
+catch (const SilentSocketError& e)
+{
+    return -2;
+}
+catch (const std::exception& e)
+{
+    LOG(error) << e.what();
+    return -1;
 }
 
 auto Socket::SendImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout) -> int64_t 
@@ -410,7 +506,7 @@ auto Socket::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int flags, cons
 
 auto Socket::Close() -> void
 {
-    if (zmq_close(fMetaSocket) != 0)
+    if (zmq_close(fControlSocket) != 0)
         throw SocketError(tools::ToString("Failed closing zmq meta socket, reason: ", zmq_strerror(errno)));
 
     if (zmq_close(fMonitorSocket) != 0)
@@ -437,14 +533,14 @@ auto Socket::Close() -> void
 
 auto Socket::SetOption(const string& option, const void* value, size_t valueSize) -> void
 {
-    if (zmq_setsockopt(fMetaSocket, GetConstant(option), value, valueSize) < 0) {
+    if (zmq_setsockopt(fControlSocket, GetConstant(option), value, valueSize) < 0) {
         throw SocketError{tools::ToString("Failed setting socket option, reason: ", zmq_strerror(errno))};
     }
 }
 
 auto Socket::GetOption(const string& option, void* value, size_t* valueSize) -> void
 {
-    if (zmq_getsockopt(fMetaSocket, GetConstant(option), value, valueSize) < 0) {
+    if (zmq_getsockopt(fControlSocket, GetConstant(option), value, valueSize) < 0) {
         throw SocketError{tools::ToString("Failed getting socket option, reason: ", zmq_strerror(errno))};
     }
 }

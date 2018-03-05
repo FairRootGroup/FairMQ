@@ -11,6 +11,7 @@
 
 #include <memory>
 #include <netinet/in.h>
+#include <ostream>
 #include <rdma/fabric.h>
 #include <string>
 #include <stdexcept>
@@ -37,21 +38,24 @@ class Context
     Context(int numberIoThreads = 1);
     ~Context();
 
-    /// Deferred Ofi initialization
     auto InitOfi(ConnectionType type, std::string address) -> void;
     auto CreateOfiEndpoint() -> fid_ep*;
     auto CreateOfiCompletionQueue(Direction dir) -> fid_cq*;
     auto GetZmqVersion() const -> std::string;
     auto GetOfiApiVersion() const -> std::string;
+    auto GetPbVersion() const -> std::string;
     auto GetZmqContext() const -> void* { return fZmqContext; }
     auto InsertAddressVector(sockaddr_in address) -> fi_addr_t;
     struct Address {
         std::string Protocol;
         std::string Ip;
         unsigned int Port;
+        friend auto operator<<(std::ostream& os, const Address& a) -> std::ostream& { return os << a.Protocol << "://" << a.Ip << ":" << a.Port; }
     };
     static auto ConvertAddress(std::string address) -> Address;
     static auto ConvertAddress(Address address) -> sockaddr_in;
+    static auto ConvertAddress(sockaddr_in address) -> Address;
+    static auto VerifyAddress(const std::string& address) -> Address;
 
   private:
     void* fZmqContext;
@@ -59,8 +63,10 @@ class Context
     fid_fabric* fOfiFabric;
     fid_domain* fOfiDomain;
     fid_av* fOfiAddressVector;
+    fid_eq* fOfiEventQueue;
 
     auto OpenOfiFabric() -> void;
+    auto OpenOfiEventQueue() -> void;
     auto OpenOfiDomain() -> void;
     auto OpenOfiAddressVector() -> void;
 }; /* class Context */

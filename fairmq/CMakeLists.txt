@@ -199,10 +199,28 @@ configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/startConfigExample.sh.in
                ${CMAKE_BINARY_DIR}/bin/startConfigExample.sh)
 
 
+########################
+# compile protobuffers #
+########################
+add_custom_target(mkofibuilddir COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/ofi)
+add_custom_command(
+    OUTPUT
+    ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.h
+    ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc
+    COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I=${CMAKE_CURRENT_SOURCE_DIR}/ofi --cpp_out=${CMAKE_CURRENT_BINARY_DIR}/ofi Control.proto
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    DEPENDS mkofibuilddir
+)
+set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.h  PROPERTIES GENERATED TRUE)
+set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc PROPERTIES GENERATED TRUE)
+
+
 #################################
 # define libFairMQ build target #
 #################################
 add_library(FairMQ SHARED
+    ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.h
+    ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc
     ${FAIRMQ_SOURCE_FILES}
     ${FAIRMQ_HEADER_FILES} # for IDE integration
 )
@@ -216,6 +234,7 @@ target_include_directories(FairMQ
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/logger>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
     $<INSTALL_INTERFACE:include/fairmq>
     $<INSTALL_INTERFACE:include>
 )
@@ -243,6 +262,7 @@ target_link_libraries(FairMQ
     PRIVATE # only libFairMQ links against private dependencies
     ZeroMQ
     OFI::libfabric
+    protobuf::libprotobuf
     Msgpack
     $<$<BOOL:${NANOMSG_FOUND}>:nanomsg>
 )
