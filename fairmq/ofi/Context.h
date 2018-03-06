@@ -9,12 +9,15 @@
 #ifndef FAIR_MQ_OFI_CONTEXT_H
 #define FAIR_MQ_OFI_CONTEXT_H
 
+#include <boost/asio.hpp>
 #include <memory>
 #include <netinet/in.h>
 #include <ostream>
 #include <rdma/fabric.h>
-#include <string>
 #include <stdexcept>
+#include <string>
+#include <thread>
+#include <vector>
 
 namespace fair
 {
@@ -35,7 +38,7 @@ enum class Direction : bool { Receive, Transmit };
 class Context
 {
   public:
-    Context(int numberIoThreads = 1);
+    Context(int numberIoThreads = 2);
     ~Context();
 
     auto InitOfi(ConnectionType type, std::string address) -> void;
@@ -44,7 +47,9 @@ class Context
     auto GetZmqVersion() const -> std::string;
     auto GetOfiApiVersion() const -> std::string;
     auto GetPbVersion() const -> std::string;
+    auto GetBoostVersion() const -> std::string;
     auto GetZmqContext() const -> void* { return fZmqContext; }
+    auto GetIoContext() -> boost::asio::io_service& { return fIoContext; }
     auto InsertAddressVector(sockaddr_in address) -> fi_addr_t;
     struct Address {
         std::string Protocol;
@@ -64,11 +69,15 @@ class Context
     fid_domain* fOfiDomain;
     fid_av* fOfiAddressVector;
     fid_eq* fOfiEventQueue;
+    boost::asio::io_service fIoContext;
+    boost::asio::io_service::work fIoWork;
+    std::vector<std::thread> fThreadPool;
 
     auto OpenOfiFabric() -> void;
     auto OpenOfiEventQueue() -> void;
     auto OpenOfiDomain() -> void;
     auto OpenOfiAddressVector() -> void;
+    auto InitThreadPool(int numberIoThreads) -> void;
 }; /* class Context */
 
 struct ContextError : std::runtime_error { using std::runtime_error::runtime_error; };

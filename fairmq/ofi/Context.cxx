@@ -11,6 +11,7 @@
 #include <FairMQLogger.h>
 
 #include <arpa/inet.h>
+#include <boost/version.hpp>
 #include <cstring>
 #include <google/protobuf/stubs/common.h>
 #include <memory>
@@ -41,18 +42,37 @@ Context::Context(int numberIoThreads)
     , fOfiAddressVector(nullptr)
     , fOfiEventQueue(nullptr)
     , fZmqContext(zmq_ctx_new())
+    , fIoWork(fIoContext)
 {
     if (!fZmqContext)
         throw ContextError{tools::ToString("Failed creating zmq context, reason: ", zmq_strerror(errno))};
 
     GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+    InitThreadPool(numberIoThreads);
+}
+
+auto Context::InitThreadPool(int numberIoThreads) -> void
+{
+    assert(numberIoThreads > 0);
+
+    for (int i = 1; i <= numberIoThreads; ++i) {
+        fThreadPool.emplace_back([&, i, numberIoThreads]{
+            LOG(debug) << "I/O thread #" << i << "/" << numberIoThreads << " started";
+            fIoContext.run();
+            LOG(debug) << "I/O thread #" << i << "/" << numberIoThreads << " stopped";
+        });
+    }
 }
 
 Context::~Context()
 {
-    if (zmq_ctx_term(fZmqContext) != 0) {
+    fIoContext.stop();
+    for (auto& thread : fThreadPool)
+        thread.join();
+
+    if (zmq_ctx_term(fZmqContext) != 0)
         LOG(error) << "Failed closing zmq context, reason: " << zmq_strerror(errno);
-    }
 
 	if (fOfiEventQueue) {
         auto ret = fi_close(&fOfiEventQueue->fid);
@@ -95,6 +115,11 @@ auto Context::GetOfiApiVersion() const -> string
 auto Context::GetPbVersion() const -> string
 {
     return google::protobuf::internal::VersionString(GOOGLE_PROTOBUF_VERSION);
+}
+
+auto Context::GetBoostVersion() const -> std::string
+{
+    return tools::ToString(BOOST_VERSION / 100000, ".", BOOST_VERSION / 100 % 1000, ".", BOOST_VERSION % 100);
 }
 
 auto Context::InitOfi(ConnectionType type, std::string addr) -> void

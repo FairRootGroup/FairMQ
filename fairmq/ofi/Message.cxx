@@ -23,6 +23,11 @@ namespace ofi
 using namespace std;
 
 Message::Message()
+    : fInitialSize(0)
+    , fSize(0)
+    , fData(nullptr)
+    , fFreeFunction(nullptr)
+    , fHint(nullptr)
 {
 }
 
@@ -30,12 +35,18 @@ Message::Message(const size_t size)
     : fInitialSize(size)
     , fSize(size)
     , fData(nullptr)
+    , fFreeFunction(nullptr)
+    , fHint(nullptr)
 {
 }
 
 Message::Message(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
+    : fInitialSize(size)
+    , fSize(size)
+    , fData(data)
+    , fFreeFunction(ffn)
+    , fHint(hint)
 {
-    throw MessageError{"Not yet implemented."};
 }
 
 Message::Message(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint)
@@ -45,17 +56,48 @@ Message::Message(FairMQUnmanagedRegionPtr& region, void* data, const size_t size
 
 auto Message::Rebuild() -> void
 {
-    throw MessageError{"Not implemented."};
+    if (fFreeFunction) {
+      fFreeFunction(fData, fHint);
+    } else {
+      free(fData);
+    }
+    fData = nullptr;
+    fInitialSize = 0;
+    fSize = 0;
+    fFreeFunction = nullptr;
+    fHint = nullptr;
 }
 
 auto Message::Rebuild(const size_t size) -> void
 {
-    throw MessageError{"Not implemented."};
+    if (fFreeFunction) {
+      fFreeFunction(fData, fHint);
+      fData = nullptr;
+      fData = malloc(size);
+    } else {
+      fData = realloc(fData, size);
+    }
+    assert(fData);
+    fInitialSize = size;
+    fSize = size;
+    fFreeFunction = nullptr;
+    fHint = nullptr;
 }
 
 auto Message::Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) -> void
 {
-    throw MessageError{"Not implemented."};
+    if (fFreeFunction) {
+      fFreeFunction(fData, fHint);
+      fData = nullptr;
+      fData = malloc(size);
+    } else {
+      fData = realloc(fData, size);
+    }
+    assert(fData);
+    fInitialSize = size;
+    fSize = size;
+    fFreeFunction = ffn;
+    fHint = hint;
 }
 
 auto Message::GetData() const -> void*
@@ -91,6 +133,11 @@ auto Message::Copy(const fair::mq::MessagePtr& msg) -> void
 
 Message::~Message()
 {
+    if (fFreeFunction) {
+      fFreeFunction(fData, fHint);
+    } else {
+      free(fData);
+    }
 }
 
 } /* namespace ofi */

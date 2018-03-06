@@ -209,7 +209,7 @@ add_custom_command(
     ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc
     COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I=${CMAKE_CURRENT_SOURCE_DIR}/ofi --cpp_out=${CMAKE_CURRENT_BINARY_DIR}/ofi Control.proto
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    DEPENDS mkofibuilddir
+    DEPENDS mkofibuilddir ${CMAKE_CURRENT_SOURCE_DIR}/ofi/Control.proto
 )
 set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.h  PROPERTIES GENERATED TRUE)
 set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc PROPERTIES GENERATED TRUE)

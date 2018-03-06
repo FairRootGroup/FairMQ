@@ -14,6 +14,7 @@
 #include <fairmq/ofi/Context.h>
 #include <fairmq/ofi/Control.pb.h>
 
+#include <boost/asio.hpp>
 #include <memory> // unique_ptr
 #include <netinet/in.h>
 #include <rdma/fabric.h>
@@ -90,6 +91,7 @@ class Socket : public fair::mq::Socket
     fi_addr_t fRemoteDataAddr;
     sockaddr_in fLocalDataAddr;
     bool fWaitingForControlPeer;
+    boost::asio::io_service::strand fIoStrand;
 
     int fSndTimeout;
     int fRcvTimeout;

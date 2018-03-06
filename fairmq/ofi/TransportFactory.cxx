@@ -28,9 +28,13 @@ try : FairMQTransportFactory{id}
 {
     LOG(debug) << "Transport: Using ZeroMQ (" << fContext.GetZmqVersion() << ") & "
                << "OFI libfabric (API " << fContext.GetOfiApiVersion() << ") & "
-               << "Google Protobuf (" << fContext.GetPbVersion() << ")";
+               << "Google Protobuf (" << fContext.GetPbVersion() << ") & "
+               << "Boost.Asio (" << fContext.GetBoostVersion() << ")";
 }
-catch (ContextError& e) { throw TransportFactoryError{e.what()}; }
+catch (ContextError& e)
+{
+    throw TransportFactoryError{e.what()};
+}
 
 auto TransportFactory::CreateMessage() const -> MessagePtr
 {

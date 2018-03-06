@@ -61,6 +61,8 @@ class Message : public fair::mq::Message
     size_t fInitialSize;
     size_t fSize;
     void* fData;
+    fairmq_free_fn* fFreeFunction;
+    void* fHint;
 }; /* class Message */  
 
 } /* namespace ofi */

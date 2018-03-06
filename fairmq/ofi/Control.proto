@@ -8,8 +8,18 @@ message DataAddressAnnouncement {
   uint32 port = 2; // in_port_t from <netinet/in.h>
 }
 
+message PostBuffer {
+  uint64 size = 1; // buffer size (size_t)
+}
+
+message PostBufferAcknowledgement {
+  uint64 size = 1; // size_t
+}
+
 message ControlMessage {
   oneof type {
     DataAddressAnnouncement data_address_announcement = 1;
+    PostBuffer post_buffer = 2;
+    PostBufferAcknowledgement post_buffer_acknowledgement = 3;
   }    
 }

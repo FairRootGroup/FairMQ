@@ -36,19 +36,21 @@ class PairRight : public FairMQDevice
         // Simple empty message ping pong
         auto msg1{NewMessageFor("data", 0)};
         if (Receive(msg1, "data") >= 0) counter++;
-        if (Send(msg1, "data") >= 0) counter++;
         auto msg2{NewMessageFor("data", 0)};
-        if (Receive(msg2, "data") >= 0) counter++;
         if (Send(msg2, "data") >= 0) counter++;
+        auto msg3{NewMessageFor("data", 0)};
+        if (Receive(msg3, "data") >= 0) counter++;
+        auto msg4{NewMessageFor("data", 0)};
+        if (Send(msg4, "data") >= 0) counter++;
         if (counter == 4) LOG(info) << "Simple empty message ping pong successfull";
         
         // Simple message with short text data
-        auto msg3{NewMessageFor("data", 0)};
-        auto ret = Receive(msg3, "data");
+        auto msg5{NewMessageFor("data", 0)};
+        auto ret = Receive(msg5, "data");
         if (ret > 0) {
-            auto content = std::string{static_cast<char*>(msg3->GetData()), msg3->GetSize()};
-            LOG(info) << ret << ", " << msg3->GetSize() << ", '" << content << "'";
-            if (msg3->GetSize() == ret && content == "testdata1234") counter++;
+            auto content = std::string{static_cast<char*>(msg5->GetData()), msg5->GetSize()};
+            LOG(info) << ret << ", " << msg5->GetSize() << ", '" << content << "'";
+            if (msg5->GetSize() == ret && content == "testdata1234") counter++;
         }
         if (counter == 5) LOG(info) << "Simple message with short text data successfull";
 

@@ -34,19 +34,23 @@ class PairLeft : public FairMQDevice
 
         // Simple empty message ping pong
         auto msg1{NewMessageFor("data", 0)};
-        auto msg2{NewMessageFor("data", 0)};
-        auto msg3{NewMessageFor("data", 0)};
         if (Send(msg1, "data") >= 0) counter++;
+        auto msg2{NewMessageFor("data", 0)};
         if (Receive(msg2, "data") >= 0) counter++;
-        if (Send(msg2, "data") >= 0) counter++;
-        if (Receive(msg3, "data") >= 0) counter++;
+        auto msg3{NewMessageFor("data", 0)};
+        if (Send(msg3, "data") >= 0) counter++;
+        auto msg4{NewMessageFor("data", 0)};
+        if (Receive(msg4, "data") >= 0) counter++;
         if (counter == 4) LOG(info) << "Simple empty message ping pong successfull";
 
         // Simple message with short text data
-        auto msg4{NewSimpleMessageFor("data", 0, "testdata1234")};
-        if (Send(msg4, "data") >= 0) counter++;
+        auto msg5{NewSimpleMessageFor("data", 0, "testdata1234")};
+        LOG(info) << "Will send msg5";
+        if (Send(msg5, "data") >= 0) counter++;
+        LOG(info) << "Sent msg5";
         if (counter == 5) LOG(info) << "Simple message with short text data successfull";
 
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         assert(counter == 5);
     };
 };
