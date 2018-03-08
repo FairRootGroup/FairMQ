@@ -320,9 +320,9 @@ try {
 
     if (size) {
         // Receive and process control message
-        auto ctrl2 = ReceiveControlMessage();
-        assert(ctrl2->has_post_buffer_acknowledgement());
-        assert(ctrl2->post_buffer_acknowledgement().size() == size);
+        // auto ctrl2 = ReceiveControlMessage();
+        // assert(ctrl2->has_post_buffer_acknowledgement());
+        // assert(ctrl2->post_buffer_acknowledgement().size() == size);
 
         // Send data
         auto ret = fi_send(fDataEndpoint, msg->GetData(), size, nullptr, fRemoteDataAddr, nullptr);
@@ -375,12 +375,12 @@ try {
             throw SocketError(tools::ToString("Failed posting ofi receive buffer, reason: ", fi_strerror(ret)));
 
         // Create and send control message
-        auto ctrl2 = tools::make_unique<ControlMessage>();
-        auto ack = tools::make_unique<PostBufferAcknowledgement>();
-        ack->set_size(msg->GetSize());
-        ctrl2->set_allocated_post_buffer_acknowledgement(ack.release());
-        assert(ctrl2->IsInitialized());
-        SendControlMessage(move(ctrl2));
+        // auto ctrl2 = tools::make_unique<ControlMessage>();
+        // auto ack = tools::make_unique<PostBufferAcknowledgement>();
+        // ack->set_size(msg->GetSize());
+        // ctrl2->set_allocated_post_buffer_acknowledgement(ack.release());
+        // assert(ctrl2->IsInitialized());
+        // SendControlMessage(move(ctrl2));
 
         fi_cq_err_entry cqEntry;
         ret = fi_cq_sread(fDataCompletionQueueRx, &cqEntry, 1, nullptr, -1);
