@@ -323,7 +323,8 @@ try {
         // assert(ctrl2->post_buffer_acknowledgement().size() == size);
 
         // Send data
-        auto ret = fi_send(fDataEndpoint, msg->GetData(), size, nullptr, fRemoteDataAddr, nullptr);
+        fi_context ctx;
+        auto ret = fi_send(fDataEndpoint, msg->GetData(), size, nullptr, fRemoteDataAddr, &ctx);
         if (ret != FI_SUCCESS)
             throw SocketError(tools::ToString("Failed posting ofi send buffer, reason: ", fi_strerror(ret)));
 
@@ -365,10 +366,11 @@ try {
 
     // Receive data
     if (size) {
+        fi_context ctx;
         msg->Rebuild(size);
         auto buf = msg->GetData();
         auto size2 = msg->GetSize();
-        auto ret = fi_recv(fDataEndpoint, buf, size2, nullptr, fRemoteDataAddr, nullptr);
+        auto ret = fi_recv(fDataEndpoint, buf, size2, nullptr, fRemoteDataAddr, &ctx);
         if (ret != FI_SUCCESS)
             throw SocketError(tools::ToString("Failed posting ofi receive buffer, reason: ", fi_strerror(ret)));
 
