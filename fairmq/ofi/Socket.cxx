@@ -65,11 +65,12 @@ Socket::Socket(Context& context, const string& type, const string& name, const s
         if (zmq_setsockopt(fControlSocket, ZMQ_LINGER, &linger, sizeof(linger)) != 0)
             throw SocketError{tools::ToString("Failed setting ZMQ_LINGER socket option, reason: ", zmq_strerror(errno))};
 
-        if (zmq_setsockopt(fControlSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0)
-            throw SocketError{tools::ToString("Failed setting ZMQ_SNDTIMEO socket option, reason: ", zmq_strerror(errno))};
-
-        if (zmq_setsockopt(fControlSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0)
-            throw SocketError{tools::ToString("Failed setting ZMQ_RCVTIMEO socket option, reason: ", zmq_strerror(errno))};
+        // TODO enable again and implement retries
+        // if (zmq_setsockopt(fControlSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0)
+        //     throw SocketError{tools::ToString("Failed setting ZMQ_SNDTIMEO socket option, reason: ", zmq_strerror(errno))};
+        //
+        // if (zmq_setsockopt(fControlSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0)
+        //     throw SocketError{tools::ToString("Failed setting ZMQ_RCVTIMEO socket option, reason: ", zmq_strerror(errno))};
 
         fMonitorSocket = zmq_socket(fContext.GetZmqContext(), ZMQ_PAIR);
 
@@ -278,9 +279,6 @@ auto Socket::WaitForControlPeer() -> void
         string remoteIp(inet_ntoa(remoteAddr.sin_addr));
         int remotePort = ntohs(remoteAddr.sin_port);
         LOG(debug) << "Accepted control peer connection from " << remoteIp << ":" << remotePort;
-
-        // sucks, but the above event does not guarantee the socket is operational ...
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     } else if (event == ZMQ_EVENT_CONNECTED) {
         LOG(debug) << "Connected successfully to control peer";
     } else {
