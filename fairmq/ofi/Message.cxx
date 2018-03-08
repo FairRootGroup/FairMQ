@@ -38,6 +38,10 @@ Message::Message(const size_t size)
     , fFreeFunction(nullptr)
     , fHint(nullptr)
 {
+    if (size) {
+        fData = malloc(size);
+        assert(fData);
+    }
 }
 
 Message::Message(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
@@ -72,12 +76,15 @@ auto Message::Rebuild(const size_t size) -> void
 {
     if (fFreeFunction) {
       fFreeFunction(fData, fHint);
-      fData = nullptr;
-      fData = malloc(size);
     } else {
-      fData = realloc(fData, size);
+      free(fData);
     }
-    assert(fData);
+    if (size) {
+        fData = malloc(size);
+        assert(fData);
+    } else {
+        fData = nullptr;
+    }
     fInitialSize = size;
     fSize = size;
     fFreeFunction = nullptr;
@@ -88,10 +95,14 @@ auto Message::Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* 
 {
     if (fFreeFunction) {
       fFreeFunction(fData, fHint);
-      fData = nullptr;
-      fData = malloc(size);
     } else {
-      fData = realloc(fData, size);
+      free(fData);
+    }
+    if (size) {
+        fData = malloc(size);
+        assert(fData);
+    } else {
+        fData = nullptr;
     }
     assert(fData);
     fInitialSize = size;
