@@ -41,7 +41,6 @@ class Context
     Context(int numberIoThreads = 2);
     ~Context();
 
-    auto InitOfi(ConnectionType type, std::string address) -> void;
     auto CreateOfiEndpoint() -> fid_ep*;
     auto CreateOfiCompletionQueue(Direction dir) -> fid_cq*;
     auto GetZmqVersion() const -> std::string;
@@ -51,12 +50,14 @@ class Context
     auto GetZmqContext() const -> void* { return fZmqContext; }
     auto GetIoContext() -> boost::asio::io_service& { return fIoContext; }
     auto InsertAddressVector(sockaddr_in address) -> fi_addr_t;
+    auto AddressVectorLookup(fi_addr_t address) -> sockaddr_in;
     struct Address {
         std::string Protocol;
         std::string Ip;
         unsigned int Port;
         friend auto operator<<(std::ostream& os, const Address& a) -> std::ostream& { return os << a.Protocol << "://" << a.Ip << ":" << a.Port; }
     };
+    auto InitOfi(ConnectionType type, Address address) -> void;
     static auto ConvertAddress(std::string address) -> Address;
     static auto ConvertAddress(Address address) -> sockaddr_in;
     static auto ConvertAddress(sockaddr_in address) -> Address;

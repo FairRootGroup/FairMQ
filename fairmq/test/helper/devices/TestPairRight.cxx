@@ -52,9 +52,12 @@ class PairRight : public FairMQDevice
             LOG(info) << ret << ", " << msg5->GetSize() << ", '" << content << "'";
             if (msg5->GetSize() == ret && content == "testdata1234") counter++;
         }
-        if (counter == 5) LOG(info) << "Simple message with short text data successfull";
+        auto msg6{NewSimpleMessageFor("data", 0, "testdata1234")};
+        if (Send(msg6, "data") >= 0) counter++;
+        if (counter == 6) LOG(info) << "Simple message with short text data successfull";
 
-        if (counter == 5) LOG(info) << "PAIR test successfull.";
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        if (counter == 6) LOG(info) << "PAIR test successfull.";
     };
 };
 

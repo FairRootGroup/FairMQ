@@ -122,15 +122,12 @@ auto Context::GetBoostVersion() const -> std::string
     return tools::ToString(BOOST_VERSION / 100000, ".", BOOST_VERSION / 100 % 1000, ".", BOOST_VERSION % 100);
 }
 
-auto Context::InitOfi(ConnectionType type, std::string addr) -> void
+auto Context::InitOfi(ConnectionType type, Address addr) -> void
 {
-    auto addr2 = ConvertAddress(addr);
-    if (addr2.Protocol != "tcp")
-        throw ContextError{"Wrong protocol: Supplied address must be in format tcp://ip:port"};
-
     if (!fOfiInfo) {
         sockaddr_in* sa = static_cast<sockaddr_in*>(malloc(sizeof(sockaddr_in)));
-        auto sa2 = ConvertAddress(addr2);
+        addr.Port = 0;
+        auto sa2 = ConvertAddress(addr);
         memcpy(sa, &sa2, sizeof(sockaddr_in));
 
         // Prepare fi_getinfo query
@@ -143,16 +140,15 @@ auto Context::InitOfi(ConnectionType type, std::string addr) -> void
         ofi_hints->domain_attr->threading = FI_THREAD_SAFE;
         ofi_hints->domain_attr->control_progress = FI_PROGRESS_AUTO;
         ofi_hints->domain_attr->data_progress = FI_PROGRESS_AUTO;
-        // if (type == ConnectionType::Bind) {
-        //     ofi_hints->src_addr = sa;
-        //     ofi_hints->src_addrlen = sizeof(sockaddr_in);
-        // } else {
-        //     ofi_hints->dest_addr = sa;
-        //     ofi_hints->dest_addrlen = sizeof(sockaddr_in);
-        // }
+        ofi_hints->tx_attr->op_flags = FI_COMPLETION;
+        ofi_hints->rx_attr->op_flags = FI_COMPLETION;
+        ofi_hints->src_addr = sa;
+        ofi_hints->src_addrlen = sizeof(sockaddr_in);
+        ofi_hints->dest_addr = nullptr;
+        ofi_hints->dest_addrlen = 0;
 
         // Query fi_getinfo for fabric to use
-        auto res = fi_getinfo(FI_VERSION(1, 5), strdup(addr2.Ip.c_str()), 0, 0, ofi_hints.get(), &fOfiInfo);
+        auto res = fi_getinfo(FI_VERSION(1, 5), nullptr, nullptr, 0, ofi_hints.get(), &fOfiInfo);
         if (res != 0) throw ContextError{tools::ToString("Failed querying fi_getinfo, reason: ", fi_strerror(res))};
         if (!fOfiInfo) throw ContextError{"Could not find any ofi compatible fabric."};
 
@@ -286,7 +282,12 @@ auto Context::InsertAddressVector(sockaddr_in address) -> fi_addr_t
     if (ret != 1)
         throw ContextError{tools::ToString("Failed to insert address into ofi address vector")};
 
-    return ret;
+    return mappedAddress;
+}
+
+auto Context::AddressVectorLookup(fi_addr_t address) -> sockaddr_in
+{
+    throw ContextError("Not yet implemented");
 }
 
 auto Context::ConvertAddress(std::string address) -> Address

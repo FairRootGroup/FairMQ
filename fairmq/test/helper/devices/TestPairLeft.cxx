@@ -45,13 +45,17 @@ class PairLeft : public FairMQDevice
 
         // Simple message with short text data
         auto msg5{NewSimpleMessageFor("data", 0, "testdata1234")};
-        LOG(info) << "Will send msg5";
         if (Send(msg5, "data") >= 0) counter++;
-        LOG(info) << "Sent msg5";
-        if (counter == 5) LOG(info) << "Simple message with short text data successfull";
+        auto msg6{NewMessageFor("data", 0)};
+        auto ret = Receive(msg6, "data");
+        if (ret > 0) {
+            auto content = std::string{static_cast<char*>(msg6->GetData()), msg6->GetSize()};
+            LOG(info) << ret << ", " << msg6->GetSize() << ", '" << content << "'";
+            if (msg6->GetSize() == ret && content == "testdata1234") counter++;
+        }
+        if (counter == 6) LOG(info) << "Simple message with short text data successfull";
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        assert(counter == 5);
+        assert(counter == 6);
     };
 };
 
