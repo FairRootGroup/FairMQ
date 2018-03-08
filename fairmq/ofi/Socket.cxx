@@ -43,6 +43,10 @@ Socket::Socket(Context& context, const string& type, const string& name, const s
     , fContext(context)
     , fWaitingForControlPeer(false)
     , fIoStrand(fContext.GetIoContext())
+    , fBytesTx(0)
+    , fBytesRx(0)
+    , fMessagesTx(0)
+    , fMessagesRx(0)
 {
     if (type != "pair") {
         throw SocketError{tools::ToString("Socket type '", type, "' not implemented for ofi transport.")};
@@ -331,7 +335,9 @@ try {
             throw SocketError(tools::ToString("Failed reading ofi tx completion queue event, reason: ", fi_strerror(ret)));
     }
 
-    // TODO free msg on tx completion?
+    msg.reset(nullptr);
+    fBytesTx += size;
+    fMessagesTx++;
 
     return size;
 }
@@ -383,6 +389,9 @@ try {
         assert(cqEntry.len == size2);
         assert(cqEntry.buf == buf);
     }
+
+    fBytesRx += size;
+    fMessagesRx++;
 
     return size;
 }
