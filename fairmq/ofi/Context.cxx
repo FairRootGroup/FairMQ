@@ -134,16 +134,16 @@ auto Context::InitOfi(ConnectionType type, Address addr) -> void
 
         // Prepare fi_getinfo query
         unique_ptr<fi_info, void(*)(fi_info*)> ofi_hints(fi_allocinfo(), fi_freeinfo);
-        ofi_hints->caps = FI_MSG | FI_RMA;
-        ofi_hints->mode = FI_CONTEXT;
+        ofi_hints->caps = FI_MSG;
+        //ofi_hints->mode = FI_CONTEXT;
         ofi_hints->addr_format = FI_SOCKADDR_IN;
         if (addr.Protocol == "tcp") {
             ofi_hints->fabric_attr->prov_name = strdup("sockets");
         } else if (addr.Protocol == "verbs") {
-            ofi_hints->fabric_attr->prov_name = strdup("verbs");
+            ofi_hints->fabric_attr->prov_name = strdup("verbs;ofi_rxm");
         }
         ofi_hints->ep_attr->type = FI_EP_RDM;
-        ofi_hints->domain_attr->mr_mode = ~0;
+        //ofi_hints->domain_attr->mr_mode = FI_MR_BASIC | FI_MR_SCALABLE;
         ofi_hints->domain_attr->threading = FI_THREAD_SAFE;
         ofi_hints->domain_attr->control_progress = FI_PROGRESS_AUTO;
         ofi_hints->domain_attr->data_progress = FI_PROGRESS_AUTO;

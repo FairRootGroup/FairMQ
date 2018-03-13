@@ -325,11 +325,13 @@ try {
         // Send data
         fi_context ctx;
         auto ret = fi_send(fDataEndpoint, msg->GetData(), size, nullptr, fRemoteDataAddr, &ctx);
-        if (ret != FI_SUCCESS)
+        if (ret < 0)
             throw SocketError(tools::ToString("Failed posting ofi send buffer, reason: ", fi_strerror(ret)));
+    }
 
+    if (size) {
         fi_cq_err_entry cqEntry;
-        ret = fi_cq_sread(fDataCompletionQueueTx, &cqEntry, 1, nullptr, -1);
+        auto ret = fi_cq_sread(fDataCompletionQueueTx, &cqEntry, 1, nullptr, -1);
         if (ret != 1)
             throw SocketError(tools::ToString("Failed reading ofi tx completion queue event, reason: ", fi_strerror(ret)));
     }
@@ -371,7 +373,7 @@ try {
         auto buf = msg->GetData();
         auto size2 = msg->GetSize();
         auto ret = fi_recv(fDataEndpoint, buf, size2, nullptr, fRemoteDataAddr, &ctx);
-        if (ret != FI_SUCCESS)
+        if (ret < 0)
             throw SocketError(tools::ToString("Failed posting ofi receive buffer, reason: ", fi_strerror(ret)));
 
         // Create and send control message
