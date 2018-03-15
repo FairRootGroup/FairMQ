@@ -44,6 +44,20 @@ struct DDSConfig
     std::unordered_map<std::string, std::string> fDDSValues;
 };
 
+struct IofN
+{
+    IofN(int i, int n)
+        : fI(i)
+        , fN(n)
+        , fEntries()
+    {}
+
+    int fI;
+    int fN;
+    std::vector<std::string> fEntries;
+
+};
+
 class DDS : public Plugin
 {
   public:
@@ -68,6 +82,9 @@ class DDS : public Plugin
 
     std::unordered_map<std::string, std::vector<std::string>> fBindingChans;
     std::unordered_map<std::string, DDSConfig> fConnectingChans;
+
+    std::unordered_map<std::string, int> fI;
+    std::unordered_map<std::string, IofN> fIofN;
 
     std::mutex fStopMutex;
     std::condition_variable fStopCondition;
@@ -94,7 +111,9 @@ Plugin::ProgOptions DDSProgramOptions()
 {
     boost::program_options::options_description options{"DDS Plugin"};
     options.add_options()
-        ("dds-i", boost::program_options::value<int>()->default_value(-1), "Task index for chosing connection target (single channel n to m).");
+        ("dds-i", boost::program_options::value<std::vector<std::string>>()->multitoken()->composing(), "Task index for chosing connection target (single channel n to m). When all values come via same update.")
+        ("dds-i-n", boost::program_options::value<std::vector<std::string>>()->multitoken()->composing(), "Task index for chosing connection target (one out of n values to take). When values come as independent updates.");
+
     return options;
 }
 

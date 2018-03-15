@@ -8,6 +8,8 @@
 
 #include "DDS.h"
 
+#include <fairmq/Tools.h>
+
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
 
@@ -16,8 +18,10 @@
 #include <sstream>
 #include <iostream>
 #include <cstdlib>
+#include <stdexcept>
 
 using namespace std;
+using fair::mq::tools::ToString;
 
 namespace fair
 {
@@ -154,32 +158,65 @@ auto DDS::HandleControl() -> void
 
 auto DDS::FillChannelContainers() -> void
 {
-    unordered_map<string, int> channelInfo(GetChannelInfo());
-    for (const auto& c : channelInfo)
-    {
-        string methodKey{"chans." + c.first + "." + to_string(c.second - 1) + ".method"};
-        if (GetProperty<string>(methodKey) == "bind")
-        {
-            fBindingChans.insert(make_pair(c.first, vector<string>()));
-            for (int i = 0; i < c.second; ++i)
-            {
-                fBindingChans.at(c.first).push_back(GetProperty<string>(string{"chans." + c.first + "." + to_string(i) + ".address"}));
+    try {
+        unordered_map<string, int> channelInfo(GetChannelInfo());
+
+        // fill binding and connecting chans
+        for (const auto& c : channelInfo) {
+            string methodKey{"chans." + c.first + "." + to_string(c.second - 1) + ".method"};
+            if (GetProperty<string>(methodKey) == "bind") {
+                fBindingChans.insert(make_pair(c.first, vector<string>()));
+                for (int i = 0; i < c.second; ++i) {
+                    fBindingChans.at(c.first).push_back(GetProperty<string>(string{"chans." + c.first + "." + to_string(i) + ".address"}));
+                }
+            } else if (GetProperty<string>(methodKey) == "connect") {
+                fConnectingChans.insert(make_pair(c.first, DDSConfig()));
+                LOG(debug) << "preparing to connect: " << c.first << " with " << c.second << " sub-channels.";
+                for (int i = 0; i < c.second; ++i) {
+                    fConnectingChans.at(c.first).fSubChannelAddresses.push_back(string());
+                }
+            } else {
+                LOG(error) << "Cannot update address configuration. Channel method (bind/connect) not specified.";
+                return;
             }
         }
-        else if (GetProperty<string>(methodKey) == "connect")
-        {
-            fConnectingChans.insert(make_pair(c.first, DDSConfig()));
-            LOG(debug) << "preparing to connect: " << c.first << " with " << c.second << " sub-channels.";
-            for (int i = 0; i < c.second; ++i)
-            {
-                fConnectingChans.at(c.first).fSubChannelAddresses.push_back(string());
+
+        // save properties that will have multiple values arriving (with only some of them to be used)
+        vector<string> iValues = GetProperty<vector<string>>("dds-i");
+        vector<string> inValues = GetProperty<vector<string>>("dds-i-n");
+
+        for (const auto& vi : iValues) {
+            size_t pos = vi.find(":");
+            string chanName = vi.substr(0, pos );
+
+            // check if provided name is a valid channel name
+            if (fConnectingChans.find(chanName) == fConnectingChans.end()) {
+                throw invalid_argument(ToString("channel provided to dds-i is not an actual connecting channel of this device: ", chanName));
             }
+
+            int i = stoi(vi.substr(pos + 1));
+            LOG(debug) << "dds-i: adding " << chanName << " -> i of " << i;
+            fI.insert(make_pair(chanName, i));
         }
-        else
-        {
-            LOG(error) << "Cannot update address configuration. Channel method (bind/connect) not specified.";
-            return;
+
+        for (const auto& vi : inValues) {
+            size_t pos = vi.find(":");
+            string chanName = vi.substr(0, pos);
+
+            // check if provided name is a valid channel name
+            if (fConnectingChans.find(chanName) == fConnectingChans.end()) {
+                throw invalid_argument(ToString("channel provided to dds-i-n is not an actual connecting channel of this device: ", chanName));
+            }
+
+            string i_n = vi.substr(pos + 1);
+            pos = i_n.find("-");
+            int i = stoi(i_n.substr(0, pos));
+            int n = stoi(i_n.substr(pos + 1));
+            LOG(debug) << "dds-i-n: adding " << chanName << " -> i: " << i << " n: " << n;
+            fIofN.insert(make_pair(chanName, IofN(i, n)));
         }
+    } catch (const exception& e) {
+        LOG(error) << "Error filling channel containers: " << e.what();
     }
 }
 
@@ -190,25 +227,33 @@ auto DDS::SubscribeForConnectingChannels() -> void
         try
         {
             LOG(debug) << "Received update for " << propertyId << ": key=" << key << " value=" << value;
-            vector<string> values;
-            boost::algorithm::split(values, value, boost::algorithm::is_any_of(","));
-            if (values.size() > 1)  // multiple bound channels received
-            {
-                int taskIndex = GetProperty<int>("dds-i");
-                if (taskIndex != -1)
-                {
-                    LOG(debug) << "adding connecting channel " << key << " : " << values.at(taskIndex);
-                    fConnectingChans.at(propertyId).fDDSValues.insert(make_pair<string, string>(key.c_str(), values.at(taskIndex).c_str()));
-                }
-                else
-                {
-                    LOG(error) << "multiple bound channels received, but no task index specified, only assigning the first";
-                    fConnectingChans.at(propertyId).fDDSValues.insert(make_pair<string, string>(key.c_str(), values.at(0).c_str()));
+            string val = value;
+            // check if it is to handle as one out of multiple values
+            auto it = fIofN.find(propertyId);
+            if (it != fIofN.end()) {
+                it->second.fEntries.push_back(value);
+                if (it->second.fEntries.size() == it->second.fN) {
+                    sort(it->second.fEntries.begin(), it->second.fEntries.end());
+                    val = it->second.fEntries.at(it->second.fI);
+                } else {
+                    LOG(debug) << "received " << it->second.fEntries.size() << " values for " << propertyId << ", expecting total of " << it->second.fN;
+                    return;
                 }
             }
-            else // only one bound channel received
-            {
-                fConnectingChans.at(propertyId).fDDSValues.insert(make_pair<string, string>(key.c_str(), value.c_str()));
+
+            vector<string> connectionStrings;
+            boost::algorithm::split(connectionStrings, val, boost::algorithm::is_any_of(","));
+            if (connectionStrings.size() > 1) { // multiple bound channels received
+                auto it2 = fI.find(propertyId);
+                if (it2 != fI.end()) {
+                    LOG(debug) << "adding connecting channel " << propertyId << " : " << connectionStrings.at(it2->second);
+                    fConnectingChans.at(propertyId).fDDSValues.insert(make_pair<string, string>(key.c_str(), connectionStrings.at(it2->second).c_str()));
+                } else {
+                    LOG(error) << "multiple bound channels received, but no task index specified, only assigning the first";
+                    fConnectingChans.at(propertyId).fDDSValues.insert(make_pair<string, string>(key.c_str(), connectionStrings.at(0).c_str()));
+                }
+            } else { // only one bound channel received
+                fConnectingChans.at(propertyId).fDDSValues.insert(make_pair<string, string>(key.c_str(), val.c_str()));
             }
 
             // update channels and remove them from unfinished container
@@ -218,11 +263,11 @@ auto DDS::SubscribeForConnectingChannels() -> void
                 {
                     // when multiple subChannels are used, their order on every device should be the same, irregardless of arrival order from DDS.
                     sort(mi->second.fSubChannelAddresses.begin(), mi->second.fSubChannelAddresses.end());
-                    auto it = mi->second.fDDSValues.begin();
+                    auto it3 = mi->second.fDDSValues.begin();
                     for (unsigned int i = 0; i < mi->second.fSubChannelAddresses.size(); ++i)
                     {
-                        SetProperty<string>(string{"chans." + mi->first + "." + to_string(i) + ".address"}, it->second);
-                        ++it;
+                        SetProperty<string>(string{"chans." + mi->first + "." + to_string(i) + ".address"}, it3->second);
+                        ++it3;
                     }
                     fConnectingChans.erase(mi++);
                 }

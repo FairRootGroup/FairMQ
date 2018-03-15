@@ -199,6 +199,12 @@ struct ConvertVariableValue : T
         if (typeIs<std::vector<std::size_t>>(varValue))
             return T::template Value<std::vector<std::size_t>>(varValue, std::string("<vector<std::size_t>>"), defaulted, empty);
 
+        if (typeIs<std::uint32_t>(varValue))
+            return T::template Value<std::uint32_t>(varValue, std::string("<std::uint32_t>"), defaulted, empty);
+
+        if (typeIs<std::vector<std::uint32_t>>(varValue))
+            return T::template Value<std::vector<std::uint32_t>>(varValue, std::string("<vector<std::uint32_t>>"), defaulted, empty);
+
         if (typeIs<std::uint64_t>(varValue))
             return T::template Value<std::uint64_t>(varValue, std::string("<std::uint64_t>"), defaulted, empty);
 
