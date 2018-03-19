@@ -17,6 +17,7 @@
 
 #include "FairMQLogger.h"
 #include "FairProgOptionsHelper.h"
+#include <fairmq/Tools.h>
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
@@ -26,6 +27,7 @@
 #include <iostream>
 #include <fstream>
 #include <mutex>
+#include <exception>
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -61,21 +63,14 @@ class FairProgOptions
         std::unique_lock<std::mutex> lock(fConfigMutex);
 
         T val = T();
-        try
+
+        if (fVarMap.count(key))
         {
-            if (fVarMap.count(key))
-            {
-                val = fVarMap[key].as<T>();
-            }
-            else
-            {
-                LOG(error) << "Config has no key: " << key;
-            }
+            val = fVarMap[key].as<T>();
         }
-        catch (std::exception& e)
+        else
         {
-            LOG(error) << "Exception thrown for the key '" << key << "'";
-            LOG(error) << e.what();
+            LOG(warn) << "Config has no key: " << key << ". Returning default constructed object.";
         }
 
         return val;

@@ -182,8 +182,14 @@ auto DDS::FillChannelContainers() -> void
         }
 
         // save properties that will have multiple values arriving (with only some of them to be used)
-        vector<string> iValues = GetProperty<vector<string>>("dds-i");
-        vector<string> inValues = GetProperty<vector<string>>("dds-i-n");
+        vector<string> iValues;
+        if (PropertyExists("dds-i")) {
+            iValues = GetProperty<vector<string>>("dds-i");
+        }
+        vector<string> inValues;
+        if (PropertyExists("dds-i-n")) {
+            inValues = GetProperty<vector<string>>("dds-i-n");
+        }
 
         for (const auto& vi : iValues) {
             size_t pos = vi.find(":");

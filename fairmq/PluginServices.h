@@ -165,6 +165,9 @@ class PluginServices
     auto UnsubscribeFromDeviceStateChange(const std::string& subscriber) -> void { fDevice->UnsubscribeFromStateChange(subscriber); }
 
     // Config API
+    struct PropertyNotFoundError : std::runtime_error { using std::runtime_error::runtime_error; };
+
+    auto PropertyExists(const std::string& key) const -> bool { return fConfig->Count(key) > 0; }
 
     /// @brief Set config property
     /// @param key
@@ -195,14 +198,24 @@ class PluginServices
     /// TODO Currently, if a non-existing key is requested and a default constructed object is returned.
     /// This behaviour will be changed in the future to throw an exception in that case to provide a proper sentinel.
     template<typename T>
-    auto GetProperty(const std::string& key) const -> T { return fConfig->GetValue<T>(key); }
+    auto GetProperty(const std::string& key) const -> T {
+        if (PropertyExists(key)) {
+            return fConfig->GetValue<T>(key);
+        }
+        throw PropertyNotFoundError(fair::mq::tools::ToString("Config has no key: ", key));
+    }
 
     /// @brief Read config property as string
     /// @param key
     /// @return config property value converted to string
     ///
     /// If a type is not supported, the user can provide support by overloading the ostream operator for this type
-    auto GetPropertyAsString(const std::string& key) const -> std::string { return fConfig->GetStringValue(key); }
+    auto GetPropertyAsString(const std::string& key) const -> std::string {
+        if (PropertyExists(key)) {
+            return fConfig->GetStringValue(key);
+        }
+        throw PropertyNotFoundError(fair::mq::tools::ToString("Config has no key: ", key));
+    }
 
     auto GetChannelInfo() const -> std::unordered_map<std::string, int> { return fConfig->GetChannelInfo(); }
 

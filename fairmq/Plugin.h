@@ -84,6 +84,7 @@ class Plugin
 
     // device config API
     // see <fairmq/PluginServices.h> for docs
+    auto PropertyExists(const std::string& key) -> int { return fPluginServices->PropertyExists(key); }
     template<typename T>
     auto SetProperty(const std::string& key, T val) -> void { fPluginServices->SetProperty(key, val); }
     template<typename T>

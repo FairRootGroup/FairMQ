@@ -292,6 +292,8 @@ int64_t FairMQSocketSHM::Send(vector<FairMQMessagePtr>& msgVec, const int flags)
             return nbytes;
         }
     }
+
+    return -1;
 }
 
 
@@ -365,6 +367,8 @@ int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int fla
             return nbytes;
         }
     }
+
+    return -1;
 }
 
 void FairMQSocketSHM::Close()
