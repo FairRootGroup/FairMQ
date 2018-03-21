@@ -17,8 +17,11 @@
 #include <atomic>
 #include <unistd.h>
 
+#include <boost/program_options.hpp>
+
 using namespace std;
 using namespace dds::intercom_api;
+namespace bpo = boost::program_options;
 
 void PrintControlsHelp()
 {
@@ -29,23 +32,39 @@ void PrintControlsHelp()
 
 int main(int argc, char* argv[])
 {
-    try
-    {
+    try {
+        string sessionID;
+        char commandChar;
+
+        bpo::options_description options("fairmq-dds-command-ui options");
+        options.add_options()
+            ("session,s", bpo::value<string>(&sessionID)->required(), "DDS Session ID")
+            ("command,c", bpo::value<char>  (&commandChar)->default_value(' '), "Command character")
+            ("help,h", "Produce help message");
+
+        bpo::variables_map vm;
+        bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
+        bpo::notify(vm);
+
+        if (vm.count("help")) {
+            cout << "FairMQ DDS Command UI" << endl << options << endl;
+            cout << "possible command characters: [c] check states, [o] dump config, [h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device" << endl;
+            return EXIT_SUCCESS;
+        }
+
         CIntercomService service;
         CCustomCmd ddsCustomCmd(service);
 
-        service.subscribeOnError([](const EErrorCode errorCode, const string& errorMsg)
-        {
+        service.subscribeOnError([](const EErrorCode errorCode, const string& errorMsg) {
             cout << "DDS error received: error code: " << errorCode << ", error message: " << errorMsg << endl;
         });
 
         // subscribe to receive messages from DDS
-        ddsCustomCmd.subscribe([](const string& msg, const string& /*condition*/, uint64_t /*senderId*/)
-        {
+        ddsCustomCmd.subscribe([](const string& msg, const string& /*condition*/, uint64_t /*senderId*/) {
             cout << "Received: " << msg << endl;
         });
 
-        service.start();
+        service.start(sessionID);
 
         char c;
 
@@ -55,19 +74,14 @@ int main(int argc, char* argv[])
         t.c_lflag &= ~ICANON; // disable canonical input
         tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
 
-        if (argc != 2)
-        {
+        if (commandChar != ' ') {
+            cin.putback(commandChar);
+        } else {
             PrintControlsHelp();
         }
-        else
-        {
-            cin.putback(argv[1][0]);
-        }
 
-        while (cin >> c)
-        {
-            switch (c)
-            {
+        while (cin >> c) {
+            switch (c) {
                 case 'c':
                     cout << " > checking state of the devices" << endl;
                     ddsCustomCmd.send("check-state", "");
@@ -118,8 +132,7 @@ int main(int argc, char* argv[])
                     break;
             }
 
-            if (argc == 2)
-            {
+            if (commandChar != ' ') {
                 usleep(50000);
                 return EXIT_SUCCESS;
             }
@@ -129,9 +142,7 @@ int main(int argc, char* argv[])
         tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
         t.c_lflag |= ICANON; // re-enable canonical input
         tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
-    }
-    catch (exception& e)
-    {
+    } catch (exception& e) {
         cerr << "Error: " << e.what() << endl;
         return EXIT_FAILURE;
     }
