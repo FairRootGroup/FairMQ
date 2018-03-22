@@ -18,6 +18,7 @@
 #include "FairMQMessage.h"
 #include "FairMQParts.h"
 #include "FairMQUnmanagedRegion.h"
+#include "options/FairMQProgOptions.h"
 
 #include <vector>
 #include <memory> // unique_ptr
@@ -38,8 +39,6 @@ using FairMQChannelMap = std::unordered_map<std::string, std::vector<FairMQChann
 
 using InputMsgCallback = std::function<bool(FairMQMessagePtr&, int)>;
 using InputMultipartCallback = std::function<bool(FairMQParts&, int)>;
-
-class FairMQProgOptions;
 
 class FairMQDevice : public FairMQStateMachine
 {
