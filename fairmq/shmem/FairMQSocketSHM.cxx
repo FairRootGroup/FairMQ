@@ -170,6 +170,7 @@ int FairMQSocketSHM::SendImpl(FairMQMessagePtr& msg, const int flags, const int 
 int FairMQSocketSHM::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout)
 {
     int nbytes = -1;
+    int elapsed = 0;
 
     zmq_msg_t* msgPtr = static_cast<FairMQMessageSHM*>(msg.get())->GetMessage();
     while (true)
@@ -317,7 +318,7 @@ int64_t FairMQSocketSHM::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fl
 }
 
 
-int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int flags)
+int64_t FairMQSocketSHM::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
 {
     int64_t totalSize = 0;
 
