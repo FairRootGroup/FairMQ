@@ -23,9 +23,7 @@ enum class Transport
 {
     DEFAULT,
     ZMQ,
-#ifdef NANOMSG_FOUND
     NN,
-#endif
     SHM,
     OFI
 };
@@ -34,9 +32,7 @@ enum class Transport
 static std::unordered_map<std::string, Transport> TransportTypes {
     { "default", Transport::DEFAULT },
     { "zeromq", Transport::ZMQ },
-#ifdef NANOMSG_FOUND
     { "nanomsg", Transport::NN },
-#endif
     { "shmem", Transport::SHM },
     { "ofi", Transport::OFI }
 };
