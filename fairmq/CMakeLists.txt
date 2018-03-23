@@ -46,6 +46,9 @@ if(NANOMSG_FOUND)
         add_definitions(-DMSGPACK_FOUND)
     endif()
 endif()
+if(BUILD_OFI_TRANSPORT)
+    add_definitions(-DBUILD_OFI_TRANSPORT)
+endif()
 
 
 ##################
@@ -83,11 +86,6 @@ set(FAIRMQ_HEADER_FILES
     devices/FairMQProxy.h
     devices/FairMQSink.h
     devices/FairMQSplitter.h
-    ofi/Context.h
-    ofi/Message.h
-    ofi/Poller.h
-    ofi/Socket.h
-    ofi/TransportFactory.h
     options/FairMQParser.h
     options/FairMQProgOptions.h
     options/FairMQSuboptParser.h
@@ -132,6 +130,16 @@ if(NANOMSG_FOUND)
     )
 endif()
 
+if(BUILD_OFI_TRANSPORT)
+    set(FAIRMQ_HEADER_FILES ${FAIRMQ_HEADER_FILES}
+        ofi/Context.h
+        ofi/Message.h
+        ofi/Poller.h
+        ofi/Socket.h
+        ofi/TransportFactory.h
+    )
+endif()
+
 ##########################
 # libFairMQ source files #
 ##########################
@@ -151,11 +159,6 @@ set(FAIRMQ_SOURCE_FILES
     devices/FairMQProxy.cxx
     # devices/FairMQSink.cxx
     devices/FairMQSplitter.cxx
-    ofi/Context.cxx
-    ofi/Message.cxx
-    ofi/Poller.cxx
-    ofi/Socket.cxx
-    ofi/TransportFactory.cxx
     options/FairMQParser.cxx
     options/FairMQProgOptions.cxx
     options/FairMQSuboptParser.cxx
@@ -190,6 +193,17 @@ if(NANOMSG_FOUND)
     )
 endif()
 
+if(BUILD_OFI_TRANSPORT)
+    set(FAIRMQ_SOURCE_FILES ${FAIRMQ_SOURCE_FILES}
+        ofi/Context.cxx
+        ofi/Message.cxx
+        ofi/Poller.cxx
+        ofi/Socket.cxx
+        ofi/TransportFactory.cxx
+    )
+endif()
+
+
 ###################
 # configure files #
 ###################
@@ -202,29 +216,37 @@ configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/startConfigExample.sh.in
 ########################
 # compile protobuffers #
 ########################
-add_custom_target(mkofibuilddir COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/ofi)
-add_custom_command(
-    OUTPUT
-    ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.h
-    ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc
-    COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I=${CMAKE_CURRENT_SOURCE_DIR}/ofi --cpp_out=${CMAKE_CURRENT_BINARY_DIR}/ofi Control.proto
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    DEPENDS mkofibuilddir ${CMAKE_CURRENT_SOURCE_DIR}/ofi/Control.proto
-)
-set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.h  PROPERTIES GENERATED TRUE)
-set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc PROPERTIES GENERATED TRUE)
+if(BUILD_OFI_TRANSPORT)
+    add_custom_target(mkofibuilddir COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/ofi)
+    add_custom_command(
+        OUTPUT
+        ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.h
+        ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc
+        COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I=${CMAKE_CURRENT_SOURCE_DIR}/ofi --cpp_out=${CMAKE_CURRENT_BINARY_DIR}/ofi Control.proto
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        DEPENDS mkofibuilddir ${CMAKE_CURRENT_SOURCE_DIR}/ofi/Control.proto
+    )
+    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.h  PROPERTIES GENERATED TRUE)
+    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc PROPERTIES GENERATED TRUE)
+endif()
 
 
 #################################
 # define libFairMQ build target #
 #################################
-add_library(FairMQ SHARED
-    ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.h
-    ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc
-    ${FAIRMQ_SOURCE_FILES}
-    ${FAIRMQ_HEADER_FILES} # for IDE integration
-)
-
+if(BUILD_OFI_TRANSPORT)
+    add_library(FairMQ SHARED
+        ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.h
+        ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc
+        ${FAIRMQ_SOURCE_FILES}
+        ${FAIRMQ_HEADER_FILES} # for IDE integration
+    )
+else()
+    add_library(FairMQ SHARED
+        ${FAIRMQ_SOURCE_FILES}
+        ${FAIRMQ_HEADER_FILES} # for IDE integration
+    )
+endif()
 
 #######################
 # include directories #
@@ -242,6 +264,9 @@ target_include_directories(FairMQ
 ##################
 # link libraries #
 ##################
+if(BUILD_OFI_TRANSPORT)
+  set(OFI_DEPS OFI::libfabric protobuf::libprotobuf)
+endif()
 target_link_libraries(FairMQ
     INTERFACE # only consumers link against interface dependencies
 
@@ -261,10 +286,9 @@ target_link_libraries(FairMQ
 
     PRIVATE # only libFairMQ links against private dependencies
     ZeroMQ
-    OFI::libfabric
-    protobuf::libprotobuf
     Msgpack
     $<$<BOOL:${NANOMSG_FOUND}>:nanomsg>
+    ${OFI_DEPS}
 )
 
 

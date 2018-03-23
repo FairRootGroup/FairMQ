@@ -12,7 +12,9 @@
 #ifdef NANOMSG_FOUND
 #include <nanomsg/FairMQTransportFactoryNN.h>
 #endif /* NANOMSG_FOUND */
+#ifdef BUILD_OFI_TRANSPORT
 #include <fairmq/ofi/TransportFactory.h>
+#endif
 #include <FairMQLogger.h>
 #include <fairmq/Tools.h>
 
@@ -51,10 +53,12 @@ auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, con
         return make_shared<FairMQTransportFactoryNN>(finalId, config);
     }
 #endif /* NANOMSG_FOUND */
+#ifdef BUILD_OFI_TRANSPORT
     else if (type == "ofi")
     {
         return make_shared<fair::mq::ofi::TransportFactory>(finalId, config);
     }
+#endif /* BUILD_OFI_TRANSPORT */
     else
     {
         LOG(error) << "Unavailable transport requested: " << "\"" << type << "\"" << ". Available are: "
@@ -63,7 +67,9 @@ auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, con
 #ifdef NANOMSG_FOUND
                    << ", \"nanomsg\""
 #endif /* NANOMSG_FOUND */
+#ifdef BUILD_OFI_TRANSPORT
                    << ", and \"ofi\""
+#endif /* BUILD_OFI_TRANSPORT */
                    << ". Exiting.";
         exit(EXIT_FAILURE);
     }

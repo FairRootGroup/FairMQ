@@ -63,9 +63,11 @@ TEST(Pair, MP_Nanomsg_tcp____SingleMsg)
 }
 #endif /* NANOMSG_FOUND */
 
+#ifdef BUILD_OFI_TRANSPORT
 TEST(Pair, MP_Ofi_____tcp____SingleMsg)
 {
     EXPECT_EXIT(RunPair("ofi"), ::testing::ExitedWithCode(0), "PAIR test successfull");
 }
+#endif /* BUILD_OFI_TRANSPORT */
 
 } // namespace
