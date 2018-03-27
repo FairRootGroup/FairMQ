@@ -286,8 +286,8 @@ target_link_libraries(FairMQ
 
     PRIVATE # only libFairMQ links against private dependencies
     ZeroMQ
-    Msgpack
     $<$<BOOL:${NANOMSG_FOUND}>:nanomsg>
+    $<$<AND:$<BOOL:${NANOMSG_FOUND}>,$<BOOL:${MSGPACK_FOUND}>>:Msgpack>
     ${OFI_DEPS}
 )
 
