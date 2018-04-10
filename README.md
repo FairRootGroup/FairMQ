@@ -1,6 +1,23 @@
 # FairMQ
 
-Standard FairRoot is running all the different analysis tasks within one process. FairMQ ([Message Queue](http://en.wikipedia.org/wiki/Message_queue)) allows starting tasks on different processes and provides the communication layer between these processes.
+C++ Message Queuing Library
+
+## Dependencies
+
+TODO
+
+## Installation
+
+```bash
+git clone https://github.com/FairRootGroup/FairMQ
+mkdir fairmq_build && cd fairmq_build
+cmake -DCMAKE_INSTALL_PREFIX=./fairmq_install ../fairmq
+cmake --build . --target install
+```
+
+# Documentation
+
+Standard [FairRoot](https://github.com/FairRootGroup/FairRoot) is running all the different analysis tasks within one process. FairMQ ([Message Queue](http://en.wikipedia.org/wiki/Message_queue)) allows starting tasks on different processes and provides the communication layer between these processes.
 
 1. [Device](docs/Device.md#1-device)
    1. [Topology](docs/Device.md#11-topology)
@@ -27,3 +44,9 @@ Standard FairRoot is running all the different analysis tasks within one process
    4. [File output](docs/Logging.md#54-file-output)
    5. [Custom sinks](docs/Logging.md#55-custom-sinks)
 6. [Examples](docs/Examples.md#6-examples)
+
+## License
+
+GNU Lesser General Public Licence (LGPL) version 3, see [LICENSE](LICENSE).
+
+Copyright (C) 2013-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH
