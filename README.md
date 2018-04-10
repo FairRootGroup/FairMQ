@@ -43,12 +43,25 @@ find_package(ZeroMQ)
 # ...
 ```
 
-The above allows you to customize the `find_package` calls in the case, you project also has a direct dependency to FairMQ's dependencies. Check the next section for more options on how to customize dependency discovery.
+The above is useful, if you need to customize the `find_package` calls of FairMQ's dependencies. Check the next section for more CMake options.
 
 ## CMake options
 
+TODO complete list
+
+On command line:
+
   * `-DDISABLE_COLOR=ON` disables coloured console output.
-  * `-DFairMQ_PACKAGE_DEPENDENCIES_DISABLED=ON` disables transitive package dependency discovery. 
+  * `-DBUILD_OFI_TRANSPORT=ON` enables building of the experimental OFI transport.
+
+In front of the `find_package(FairMQ)` call:
+
+  * `set(BUILD_OFI_TRANSPORT ON)` enables building of the experimental OFI transport.
+  * `set(FairMQ_PACKAGE_DEPENDENCIES_DISABLED ON)` disables implicit discovery of all transitive package dependencies. 
+
+After the `find_package(FairMQ)` the following CMake variables are defined:
+
+  * `${FairMQ_BOOST_COMPONENTS}` contains the list of Boost components FairMQ depends on.
 
 ## Documentation
 
