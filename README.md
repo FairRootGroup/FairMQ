@@ -15,7 +15,42 @@ cmake -DCMAKE_INSTALL_PREFIX=./fairmq_install ../fairmq
 cmake --build . --target install
 ```
 
-# Documentation
+## Usage
+
+In your `CMakeLists.txt`:
+
+```cmake
+find_package(FairMQ)
+```
+
+If FairMQ is not installed in system directories, you can hint the installation:
+
+```cmake
+set(CMAKE_PREFIX_PATH /path/to/FairMQ/installation ${CMAKE_PREFIX_PATH})
+find_package(FairMQ)
+```
+
+`find_package(FairMQ)` will define an imported target `FairMQ::FairMQ` (An alias `FairRoot::FairMQ` is also defined, but it is deprecated).
+
+By default, `find_package(FairMQ)` will also invoke `find_package` commands for all its dependencies. You can override this behaviour though, e.g.:
+
+```cmake
+set(FairMQ_PACKAGE_DEPENDENCIES_DISABLED ON)
+find_package(FairMQ)
+
+find_package(Boost COMPONENTS ${FairMQ_BOOST_COMPONENTS})
+find_package(ZeroMQ)
+# ...
+```
+
+The above allows you to customize the `find_package` calls in the case, you project also has a direct dependency to FairMQ's dependencies. Check the next section for more options on how to customize dependency discovery.
+
+## CMake options
+
+  * `-DDISABLE_COLOR=ON` disables coloured console output.
+  * `-DFairMQ_PACKAGE_DEPENDENCIES_DISABLED=ON` disables transitive package dependency discovery. 
+
+## Documentation
 
 Standard [FairRoot](https://github.com/FairRootGroup/FairRoot) is running all the different analysis tasks within one process. FairMQ ([Message Queue](http://en.wikipedia.org/wiki/Message_queue)) allows starting tasks on different processes and provides the communication layer between these processes.
 

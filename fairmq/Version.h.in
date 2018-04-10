@@ -1,0 +1,20 @@
+/********************************************************************************
+ *    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ *                                                                              *
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
+ *                  copied verbatim in the file "LICENSE"                       *
+ ********************************************************************************/
+
+#ifndef FAIR_MQ_VERSION_H
+
+#define FAIRMQ_VERSION "@PROJECT_VERSION@"
+#define FAIRMQ_VERSION_DEC (@PROJECT_VERSION_MAJOR@ * 10000) + (@PROJECT_VERSION_MINOR@ * 100) + @PROJECT_VERSION_PATCH@
+#define FAIRMQ_VERSION_HEX (@PROJECT_VERSION_MAJOR@ << 16) + (@PROJECT_VERSION_MINOR@ << 8) + @PROJECT_VERSION_PATCH@
+#define FAIRMQ_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define FAIRMQ_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define FAIRMQ_VERSION_PATCH @PROJECT_VERSION_PATCH@
+#define FAIRMQ_GIT_VERSION "@FairMQ_GIT_VERSION@"
+#define FAIRMQ_GIT_DATE "@FairMQ_GIT_DATE@"
+
+#endif // FAIR_MQ_VERSION_H
