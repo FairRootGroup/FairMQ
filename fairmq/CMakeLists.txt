@@ -5,29 +5,6 @@
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
-#
-# This is the top-level cmake file for the FairMQ submodule.
-#
-# Testing:
-#   Enable the building of tests by enabling the cmake option BUILD_TESTING.
-#
-# Linking:
-#   Depend on FairMQ target, if you want to link against libFairMQ.
-#
-# Convenience targets defined:
-#   * FairMQFull    - build everything in the submodule except tests
-#   * FairMQAll     - build everything including tests, if enabled
-#   * FairMQInstall - install everything from the FairMQ submodule
-#   * FairMQTests   - build all tests in the submodule
-#
-# Installation:
-#   * Header files are installed hierarchically
-#     into ${CMAKE_INSTALL_PREFIX}/include/fairmq
-#   * All targets in FairMQFull are exported to
-#     ${CMAKE_INSTALL_PREFIX}/include/cmake/FairMQ.cmake
-#     with namespace prefix "FairRoot::"
-#
-#
 
 ####################
 # external plugins #
@@ -54,9 +31,6 @@ endif()
 ##################
 # subdirectories #
 ##################
-if(BUILD_TESTING)
-    add_subdirectory(test)
-endif()
 add_subdirectory(shmem/prototype)
 
 ##########################
@@ -253,7 +227,6 @@ endif()
 #######################
 target_include_directories(FairMQ
     PUBLIC # consumers inherit public include directories
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/logger>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
@@ -323,11 +296,11 @@ target_link_libraries(shmmonitor FairMQ)
 add_executable(uuidGen run/runUuidGenerator.cxx)
 target_link_libraries(uuidGen FairMQ)
 
-####################
-# aggregate target #
-####################
-# all targets except tests
-set(FAIRMQ_FULL_TARGETS
+###########
+# install #
+###########
+install(
+    TARGETS # FairMQFull, tests are not installed
     FairMQ
     bsampler
     merger
@@ -336,33 +309,6 @@ set(FAIRMQ_FULL_TARGETS
     sink
     splitter
     shmmonitor
-)
-add_custom_target(FairMQFull DEPENDS ${FAIRMQ_FULL_TARGETS})
-# all targets including tests, if enabled
-if(BUILD_TESTING)
-    set(FAIRMQ_TEST_TARGET FairMQTests)
-endif()
-add_custom_target(FairMQAll
-    DEPENDS
-    FairMQFull
-    ${FAIRMQ_TEST_TARGET}
-)
-
-
-###########################
-# generate cotire targets #
-###########################
-#cotire(${FAIRMQ_FULL_TARGETS})
-# disabled by default for now, because it messes up target properties
-# still useful for development
-
-
-###########
-# install #
-###########
-install(
-    TARGETS # FairMQFull, tests are not installed
-    ${FAIRMQ_FULL_TARGETS}
 
     EXPORT FairMQ
 
@@ -384,20 +330,3 @@ foreach(HEADER ${FAIRMQ_HEADER_FILES})
         COMPONENT fairmq
     )
 endforeach()
-
-# export FairMQ targets
-install(
-    EXPORT FairMQ
-    DESTINATION include/cmake
-    NAMESPACE FairRoot::
-    EXPORT_LINK_INTERFACE_LIBRARIES
-    COMPONENT fairmq
-)
-
-# use the following target to only install the fairmq component
-add_custom_target(FairMQInstall
-    DEPENDS FairMQFull
-    COMMAND ${CMAKE_COMMAND} -DCMAKE_INSTALL_COMPONENT=fairmq -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
-)
-
-

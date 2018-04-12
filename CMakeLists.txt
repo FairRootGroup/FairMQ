@@ -20,6 +20,8 @@ project(FairMQ VERSION ${FairMQ_VERSION} LANGUAGES CXX)
 message("${BWhite}${PROJECT_NAME}${CR} ${FairMQ_GIT_VERSION} from ${FairMQ_DATE}")
 
 set_fairmq_defaults()
+
+include(CTest)
 ################################################################################
 
 
@@ -37,6 +39,10 @@ find_package(Boost 1.64 ${SILENCE_BOOST} REQUIRED COMPONENTS system)
 if(BUILD_OFI_TRANSPORT)
   find_package(OFI 1.6.0 REQUIRED COMPONENTS fi_sockets)
 endif()
+
+if(BUILD_TESTING)
+  find_package(GTest REQUIRED)
+endif()
 ################################################################################
 
 
@@ -48,6 +54,10 @@ configure_file(${PROJECT_NAME_LOWER}/Version.h.in
 )
 
 add_subdirectory(fairmq)
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 ################################################################################
 
 
@@ -60,6 +70,12 @@ install_fairmq_cmake_package()
 message("  ")
 message("  ${Cyan}COMPONENT  BUILT?  INFO${CR}")
 message("  ${BWhite}library${CR}          ${BGreen}YES${CR}    (default, always built)")
+if(BUILD_OFI_TRANSPORT)
+  set(tests_summary "${BGreen}YES${CR}    (default, disable with ${BMagenta}-DBUILD_TESTING=OFF${CR})")
+else()
+  set(tests_summary "${BRed} NO${CR}    (enable with ${BMagenta}-DBUILD_TESTING=ON${CR})")
+endif()
+message("  ${BWhite}tests${CR}      ${tests_summary}")
 if(BUILD_OFI_TRANSPORT)
   set(ofi_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_OFI_TRANSPORT=OFF${CR})")
 else()

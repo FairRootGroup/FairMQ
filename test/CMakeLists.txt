@@ -6,7 +6,6 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-find_package(GTest REQUIRED)
 include(GTestHelper)
 
 #############################
@@ -169,12 +168,4 @@ add_testsuite(FairMQ.StateMachine
 
     LINKS FairMQ
     TIMEOUT 10
-)
-
-##############################
-# Aggregate all test targets #
-##############################
-add_custom_target(FairMQTests
-    DEPENDS
-    ${ALL_TEST_TARGETS}
 )
