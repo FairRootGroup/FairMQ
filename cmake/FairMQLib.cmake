@@ -54,7 +54,7 @@ function(get_git_version)
   cmake_parse_arguments(ARGS "" "DEFAULT_VERSION;DEFAULT_DATE;OUTVAR_PREFIX" "" ${ARGN})
 
   if(NOT ARGS_OUTVAR_PREFIX)
-    set(ARGS_OUTVAR_PREFIX FairMQ)
+    set(ARGS_OUTVAR_PREFIX PROJECT)
   endif()
 
   if(GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git)
@@ -127,29 +127,67 @@ macro(set_fairmq_defaults)
   include(GNUInstallDirs)
 
   # Define install dirs
-  set(FairMQ_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR})
-  set(FairMQ_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME_LOWER})
-  set(FairMQ_INSTALL_INCDIR ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME_LOWER})
-  set(FairMQ_INSTALL_DATADIR ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME_LOWER})
-  set(FairMQ_INSTALL_CMAKEMODDIR ${FairMQ_INSTALL_DATADIR}/cmake)
+  set(PROJECT_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR})
+  set(PROJECT_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME_LOWER})
+  set(PROJECT_INSTALL_INCDIR ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME_LOWER})
+  set(PROJECT_INSTALL_DATADIR ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME_LOWER})
+  set(PROJECT_INSTALL_CMAKEMODDIR ${${PROJECT_NAME}_INSTALL_DATADIR}/cmake)
 
   # Define export set, only one for now
-  set(FairMQ_EXPORT_SET ${PROJECT_NAME}Targets)
+  set(PROJECT_EXPORT_SET ${PROJECT_NAME}Targets)
 endmacro()
 
+macro(generate_package_dependencies)
+  set(PACKAGE_DEPENDENCIES "\
+include(CMakeFindDependencyMacro)
+
+set(${PROJECT_NAME}_PACKAGE_DEPENDENCIES ${PROJECT_PACKAGE_DEPENDENCIES})
+
+")
+  foreach(dep IN LISTS PROJECT_PACKAGE_DEPENDENCIES)
+    string(CONCAT ${PACKAGE_DEPENDENCIES} "\
+set(${PROJECT_NAME}_${dep}_COMPONENTS ${PROJECT_${dep}_COMPONENTS})
+set(${PROJECT_NAME}_${dep}_VERSION ${PROJECT_${dep}_VERSION})
+set(${PROJECT_NAME}_${dep}_FOUND ${${dep}_FOUND})
+
+")
+  endforeach()
+  string(CONCAT ${PACKAGE_DEPENDENCIES} "\
+if(Boost_INCLUDE_DIR) # checks for cached boost variable which indicates if Boost is already found
+  set(${PROJECT_NAME}_Boost_QUIET QUIET)
+endif()
+
+foreach(dep IN LISTS ${PROJECT_NAME}_PACKAGE_DEPENDENCIES)
+  if(    NOT (${PROJECT_NAME}_\${dep}_DISABLED OR ${PROJECT_NAME}_PACKAGE_DEPENDENCIES_DISABLED)
+    AND (${PROJECT_NAME}_\${dep}_FOUND OR ${PROJECT_NAME}_\${dep}_REQUIRED))
+    if(${PROJECT_NAME}_ADDITIONAL_\${dep}_COMPONENTS)
+      list(APPEND ${PROJECT_NAME}_\${dep}_COMPONENTS \${${PROJECT_NAME}_ADDITIONAL_\${dep}_COMPONENTS})
+      list(REMOVE_DUPLICATES ${PROJECT_NAME}_\${dep}_COMPONENTS)
+    endif()
+    if(${PROJECT_NAME}_\${dep}_COMPONENTS)
+      set(components COMPONENTS \${${PROJECT_NAME}_\${dep}_COMPONENTS})
+    else()
+      set(components)
+    endif()
+    find_dependency(\${dep} \${${PROJECT_NAME}_\${dep}_VERSION} \${${PROJECT_NAME}_\${dep}_QUIET} \${components})
+  endif()
+endforeach()
+")
+endmacro()
 
 # Configure/Install CMake package
-macro(install_fairmq_cmake_package)
+macro(install_cmake_package)
   # Install cmake modules
-  install( FILES cmake/FindOFI.cmake
-    DESTINATION ${FairMQ_INSTALL_CMAKEMODDIR}
+  install(DIRECTORY cmake
+    PATTERN "cmake/Find*.cmake"
+    DESTINATION ${${PROJECT_NAME}_INSTALL_CMAKEMODDIR}
   )
 
   include(CMakePackageConfigHelpers)
   set(PACKAGE_INSTALL_DESTINATION
     ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}-${PROJECT_VERSION}
   )
-  install(EXPORT ${FairMQ_EXPORT_SET}
+  install(EXPORT ${${PROJECT_NAME}_EXPORT_SET}
     NAMESPACE ${PROJECT_NAME}::
     DESTINATION ${PACKAGE_INSTALL_DESTINATION}
     EXPORT_LINK_INTERFACE_LIBRARIES
@@ -158,6 +196,7 @@ macro(install_fairmq_cmake_package)
     ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
     COMPATIBILITY AnyNewerVersion
   )
+  generate_package_dependencies() # fills ${PACKAGE_DEPENDENCIES}
   configure_package_config_file(
     ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake

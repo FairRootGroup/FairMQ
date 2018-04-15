@@ -17,7 +17,7 @@ set_fairmq_cmake_policies()
 get_git_version(OUTVAR_PREFIX FairMQ)
 
 project(FairMQ VERSION ${FairMQ_VERSION} LANGUAGES CXX)
-message(STATUS "${BWhite}${PROJECT_NAME}${CR} ${FairMQ_GIT_VERSION} from ${FairMQ_DATE}")
+message(STATUS "${BWhite}${PROJECT_NAME}${CR} ${${PROJECT_NAME}_GIT_VERSION} from ${${PROJECT_NAME}_DATE}")
 
 set_fairmq_defaults()
 
@@ -33,40 +33,69 @@ option(BUILD_DDS_PLUGIN "Build DDS plugin." OFF)
 
 
 # Dependencies #################################################################
+set(dep Boost)
+set(PROJECT_${dep}_VERSION 1.64)
+set(PROJECT_${dep}_COMPONENTS program_options thread system filesystem regex date_time signals)
 if(Boost_INCLUDE_DIR) # Silence output, if Boost was found already
   set(SILENCE_BOOST QUIET)
 endif()
-find_package(Boost 1.64 ${SILENCE_BOOST} REQUIRED
-  COMPONENTS program_options thread system filesystem regex date_time signals
-)
+find_package(${dep} ${PROJECT_${dep}_VERSION} ${SILENCE_BOOST} REQUIRED COMPONENTS ${PROJECT_${dep}_COMPONENTS})
+list(APPEND PROJECT_PACKAGE_DEPENDENCIES ${dep})
 
-set(CMAKE_PREFIX_PATH ${FAIRLOGGER_ROOT} $ENV{FAIRLOGGER_ROOT} ${CMAKE_PREFIX_PATH})
-find_package(FairLogger 1.0.1 REQUIRED)
+set(dep FairLogger)
+set(PROJECT_${dep}_VERSION 1.0.2)
+string(TOUPPER ${dep} upper_dep)
+set(old ${CMAKE_PREFIX_PATH})
+set(CMAKE_PREFIX_PATH ${${upper_dep}_ROOT} $ENV{${upper_dep}_ROOT} ${CMAKE_PREFIX_PATH})
+find_package(${dep} ${PROJECT_${dep}_VERSION} REQUIRED)
+list(APPEND PROJECT_PACKAGE_DEPENDENCIES ${dep})
+set(CMAKE_PREFIX_PATH ${old})
 
-find_package(ZeroMQ 4.2.2 REQUIRED)
+set(dep ZeroMQ)
+set(PROJECT_${dep}_VERSION 4.2.2)
+find_package(${dep} ${PROJECT_${dep}_VERSION} REQUIRED)
+list(APPEND PROJECT_PACKAGE_DEPENDENCIES ${dep})
 
 if(BUILD_NANOMSG_TRANSPORT)
-  find_package(nanomsg REQUIRED)
-  set(CMAKE_PREFIX_PATH ${MSGPACK_ROOT} $ENV{MSGPACK_ROOT} ${CMAKE_PREFIX_PATH})
-  find_package(msgpack 2.1.5 REQUIRED)
+  set(dep nanomsg)
+  find_package(${dep} REQUIRED)
+  list(APPEND PROJECT_PACKAGE_DEPENDENCIES ${dep})
+
+  set(dep msgpack)
+  set(PROJECT_${dep}_VERSION 2.1.5)
+  string(TOUPPER ${dep} upper_dep)
+  set(old ${CMAKE_PREFIX_PATH})
+  set(CMAKE_PREFIX_PATH ${${upper_dep}_ROOT} $ENV{${upper_dep}_ROOT} ${CMAKE_PREFIX_PATH})
+  find_package(${dep} ${PROJECT_${dep}_VERSION} REQUIRED)
+  list(APPEND PROJECT_PACKAGE_DEPENDENCIES ${dep})
+  set(CMAKE_PREFIX_PATH ${old})
 endif()
 
 if(BUILD_OFI_TRANSPORT)
-  find_package(OFI 1.6.0 REQUIRED COMPONENTS fi_sockets)
+  set(dep OFI)
+  set(PROJECT_${dep}_VERSION 1.6.0)
+  set(PROJECT_${dep}_COMPONENTS fi_sockets)
+  find_package(${dep} ${PROJECT_${dep}_VERSION} REQUIRED COMPONENTS ${PROJECT_${dep}_COMPONENTS})
+  list(APPEND PROJECT_PACKAGE_DEPENDENCIES ${dep})
 endif()
 
 if(BUILD_DDS_PLUGIN)
-  find_package(DDS 2.0 REQUIRED)
+  set(dep DDS)
+  set(PROJECT_${dep}_VERSION 2.0)
+  find_package(${dep} ${PROJECT_${dep}_VERSION} REQUIRED)
+  list(APPEND PROJECT_PACKAGE_DEPENDENCIES ${dep})
 endif()
 
 if(BUILD_TESTING)
-  find_package(GTest REQUIRED)
+  set(dep GTest)
+  set(PROJECT_${dep}_VERSION 1.7.0)
+  find_package(${dep} ${PROJECT_${dep}_VERSION} REQUIRED)
+  list(APPEND PROJECT_PACKAGE_DEPENDENCIES ${dep})
 endif()
 ################################################################################
 
 
 # Targets ######################################################################
-# Configure Version.hpp
 configure_file(${PROJECT_NAME_LOWER}/Version.h.in
   ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
   @ONLY
@@ -81,7 +110,11 @@ endif()
 
 
 # Installation #################################################################
-install_fairmq_cmake_package()
+install(FILE ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
+  DESTINATION ${PROJECT_INSTALL_INCDIR}
+)
+
+install_cmake_package()
 ################################################################################
 
 
@@ -95,18 +128,18 @@ else()
   set(tests_summary "${BRed} NO${CR}    (enable with ${BMagenta}-DBUILD_TESTING=ON${CR})")
 endif()
 message(STATUS "  ${BWhite}tests${CR}              ${tests_summary}")
-if(BUILD_OFI_TRANSPORT)
-  set(ofi_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_OFI_TRANSPORT=OFF${CR})")
-else()
-  set(ofi_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_OFI_TRANSPORT=ON${CR})")
-endif()
-message(STATUS "  ${BWhite}OFI transport${CR}      ${ofi_summary} Experimental")
 if(BUILD_NANOMSG_TRANSPORT)
   set(nn_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_NANOMSG_TRANSPORT=OFF${CR})")
 else()
   set(nn_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_NANOMSG_TRANSPORT=ON${CR})")
 endif()
 message(STATUS "  ${BWhite}nanomsg transport${CR}  ${nn_summary}")
+if(BUILD_OFI_TRANSPORT)
+  set(ofi_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_OFI_TRANSPORT=OFF${CR})")
+else()
+  set(ofi_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_OFI_TRANSPORT=ON${CR})")
+endif()
+message(STATUS "  ${BWhite}OFI transport${CR}      ${ofi_summary} Experimental")
 if(BUILD_DDS_PLUGIN)
   set(dds_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_DDS_PLUGIN=OFF${CR})")
 else()
