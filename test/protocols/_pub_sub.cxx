@@ -60,11 +60,11 @@ TEST(PubSub, ZeroMQ)
     EXPECT_EXIT(RunPubSub("zeromq"), ::testing::ExitedWithCode(0), "PUB-SUB test successfull");
 }
 
-#ifdef NANOMSG_FOUND
+#ifdef BUILD_NANOMSG_TRANSPORT
 TEST(PubSub, Nanomsg)
 {
     EXPECT_EXIT(RunPubSub("nanomsg"), ::testing::ExitedWithCode(0), "PUB-SUB test successfull");
 }
-#endif /* NANOMSG_FOUND */
+#endif /* BUILD_NANOMSG_TRANSPORT */
 
 } // namespace

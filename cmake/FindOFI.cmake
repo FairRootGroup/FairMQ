@@ -79,7 +79,7 @@ if(PKG_CONFIG_FOUND)
   )
 endif()
 
-if(OFI_FOUND)
+if(NOT TARGET OFI::libfabric AND OFI_FOUND)
   # Define an imported target
   add_library(OFI::libfabric SHARED IMPORTED GLOBAL)
   set_target_properties(OFI::libfabric PROPERTIES

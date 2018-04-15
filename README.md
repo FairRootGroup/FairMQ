@@ -4,7 +4,19 @@ C++ Message Queuing Library
 
 ## Dependencies
 
-TODO
+  * CMake
+  * GTest
+  * Boost
+  * FairLogger
+  * dl
+  * pthread
+  * rt (Linux)
+  * ZeroMQ
+  * Msgpack (optional, nanomsg transport)
+  * nanomsg (optional, nanomsg transport)
+  * libfabric (optional, OFI transport)
+  * Protobuf (optional, OFI transport)
+  * DDS (optional, DDS plugin)
 
 ## Installation
 
@@ -47,21 +59,26 @@ The above is useful, if you need to customize the `find_package` calls of FairMQ
 
 ## CMake options
 
-TODO complete list
-
 On command line:
 
   * `-DDISABLE_COLOR=ON` disables coloured console output.
+  * `-DBUILD_TESTING=OFF` disables building of tests.
+  * `-DBUILD_NANOMSG_TRANSPORT=ON` enables building of nanomsg transport.
   * `-DBUILD_OFI_TRANSPORT=ON` enables building of the experimental OFI transport.
+  * `-DBUILD_DDS_PLUGIN=ON` enables building of the DDS plugin.
 
 In front of the `find_package(FairMQ)` call:
 
+  * `set(BUILD_NANOMSG_TRANSPORT ON)` enables building of nanomsg transport.
   * `set(BUILD_OFI_TRANSPORT ON)` enables building of the experimental OFI transport.
+  * `set(BUILD_DDS_PLUGIN ON)` enables building of the DDS plugin.
   * `set(FairMQ_PACKAGE_DEPENDENCIES_DISABLED ON)` disables implicit discovery of all transitive package dependencies. 
+  * ... TODO
 
 After the `find_package(FairMQ)` the following CMake variables are defined:
 
   * `${FairMQ_BOOST_COMPONENTS}` contains the list of Boost components FairMQ depends on.
+  * ... TODO
 
 ## Documentation
 

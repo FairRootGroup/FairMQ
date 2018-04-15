@@ -44,7 +44,7 @@ TEST(PluginManager, LoadPluginDynamic)
     auto device = make_shared<FairMQDevice>();
     mgr.EmplacePluginServices(&config, device);
 
-    mgr.PrependSearchPath("./lib");
+    mgr.PrependSearchPath("./test");
 
     ASSERT_NO_THROW(mgr.LoadPlugin("test_dummy"));
     ASSERT_NO_THROW(mgr.LoadPlugin("test_dummy2"));

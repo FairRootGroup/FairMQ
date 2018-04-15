@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2012-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2012-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -9,29 +9,27 @@
 ####################
 # external plugins #
 ####################
-if (DDS_FOUND)
-    add_subdirectory(plugins/DDS)
+if(BUILD_DDS_PLUGIN)
+  add_subdirectory(plugins/DDS)
 endif()
 
 
 ############################
 # preprocessor definitions #
 ############################
-if(NANOMSG_FOUND)
-    add_definitions(-DNANOMSG_FOUND)
-    if(MSGPACK_FOUND)
-        add_definitions(-DMSGPACK_FOUND)
-    endif()
+if(BUILD_NANOMSG_TRANSPORT)
+  add_definitions(-DBUILD_NANOMSG_TRANSPORT)
 endif()
 if(BUILD_OFI_TRANSPORT)
-    add_definitions(-DBUILD_OFI_TRANSPORT)
+  add_definitions(-DBUILD_OFI_TRANSPORT)
 endif()
 
 
 ##################
 # subdirectories #
 ##################
-add_subdirectory(shmem/prototype)
+# add_subdirectory(shmem/prototype)
+
 
 ##########################
 # libFairMQ header files #
@@ -94,7 +92,7 @@ set(FAIRMQ_HEADER_FILES
     zeromq/FairMQTransportFactoryZMQ.h
 )
 
-if(NANOMSG_FOUND)
+if(BUILD_NANOMSG_TRANSPORT)
     set(FAIRMQ_HEADER_FILES ${FAIRMQ_HEADER_FILES}
         nanomsg/FairMQMessageNN.h
         nanomsg/FairMQPollerNN.h
@@ -157,7 +155,7 @@ set(FAIRMQ_SOURCE_FILES
     zeromq/FairMQTransportFactoryZMQ.cxx
 )
 
-if(NANOMSG_FOUND)
+if(BUILD_NANOMSG_TRANSPORT)
     set(FAIRMQ_SOURCE_FILES ${FAIRMQ_SOURCE_FILES}
         nanomsg/FairMQMessageNN.cxx
         nanomsg/FairMQPollerNN.cxx
@@ -237,6 +235,9 @@ target_include_directories(FairMQ
 ##################
 # link libraries #
 ##################
+if(BUILD_NANOMSG_TRANSPORT)
+  set(NANOMSG_DEPS nanomsg msgpackc)
+endif()
 if(BUILD_OFI_TRANSPORT)
   set(OFI_DEPS OFI::libfabric protobuf::libprotobuf)
 endif()
@@ -254,13 +255,12 @@ target_link_libraries(FairMQ
     Boost::regex
     Boost::date_time
     Boost::signals
-    Logger
+    FairLogger::FairLogger
     $<$<PLATFORM_ID:Linux>:rt>
 
     PRIVATE # only libFairMQ links against private dependencies
     ZeroMQ
-    $<$<BOOL:${NANOMSG_FOUND}>:nanomsg>
-    $<$<AND:$<BOOL:${NANOMSG_FOUND}>,$<BOOL:${MSGPACK_FOUND}>>:Msgpack>
+    ${NANOMSG_DEPS}
     ${OFI_DEPS}
 )
 
@@ -310,15 +310,9 @@ install(
     splitter
     shmmonitor
 
-    EXPORT FairMQ
-
-    LIBRARY
-    DESTINATION lib
-    COMPONENT fairmq
-
-    RUNTIME
-    DESTINATION bin
-    COMPONENT fairmq
+    EXPORT ${FairMQ_EXPORT_SET}
+    LIBRARY DESTINATION ${FairMQ_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${FairMQ_INSTALL_BINDIR}
 )
 
 # preserve relative path and prepend fairmq
@@ -327,6 +321,5 @@ foreach(HEADER ${FAIRMQ_HEADER_FILES})
     file(TO_CMAKE_PATH include/fairmq/${_path} _destination)
     install(FILES ${HEADER}
         DESTINATION ${_destination}
-        COMPONENT fairmq
     )
 endforeach()

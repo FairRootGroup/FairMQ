@@ -63,11 +63,11 @@ TEST(MessageResize, shmem)
     RunPushPullWithMsgResize("shmem", "ipc://test_message_resize");
 }
 
-#ifdef NANOMSG_FOUND
+#ifdef BUILD_NANOMSG_TRANSPORT
 TEST(MessageResize, nanomsg)
 {
     RunPushPullWithMsgResize("nanomsg", "ipc://test_message_resize");
 }
-#endif /* NANOMSG_FOUND */
+#endif /* BUILD_NANOMSG_TRANSPORT */
 
 } // namespace
