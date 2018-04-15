@@ -14,7 +14,7 @@ C++ Message Queuing Library
   * ZeroMQ
   * Msgpack (optional, nanomsg transport)
   * nanomsg (optional, nanomsg transport)
-  * libfabric (optional, OFI transport)
+  * OFI (optional, OFI transport)
   * Protobuf (optional, OFI transport)
   * DDS (optional, DDS plugin)
 
@@ -26,6 +26,14 @@ mkdir fairmq_build && cd fairmq_build
 cmake -DCMAKE_INSTALL_PREFIX=./fairmq_install ../fairmq
 cmake --build . --target install
 ```
+
+If dependencies are not installed in standard system
+directories, you can hint the installation location
+via `-DCMAKE_PREFIX_PATH=...` or per dependency via
+`-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `GTEST`,
+`BOOST`, `FAIRLOGGER`, `ZEROMQ`, `MSGPACK`, `NANOMSG`,
+`OFI`, `PROTOBUF`, or `DDS` (`*_ROOT` variables can also
+be environment variables).
 
 ## Usage
 
@@ -69,9 +77,6 @@ On command line:
 
 In front of the `find_package(FairMQ)` call:
 
-  * `set(BUILD_NANOMSG_TRANSPORT ON)` enables building of nanomsg transport.
-  * `set(BUILD_OFI_TRANSPORT ON)` enables building of the experimental OFI transport.
-  * `set(BUILD_DDS_PLUGIN ON)` enables building of the DDS plugin.
   * `set(FairMQ_PACKAGE_DEPENDENCIES_DISABLED ON)` disables implicit discovery of all transitive package dependencies. 
   * ... TODO
 
