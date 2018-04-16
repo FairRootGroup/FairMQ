@@ -20,7 +20,7 @@ endif()
 
 # This should be the default as of CMake 3.1, but it is not set. BUG? Also, it does not work
 set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH 1)
-find_package(PkgConfig)
+find_package(PkgConfig QUIET)
 
 if(PKG_CONFIG_FOUND)
   # Find include dir and dependencies from pkgconfig

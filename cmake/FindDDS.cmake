@@ -39,6 +39,18 @@ find_library(DDS_USER_DEFAULTS_LIBRARY_SHARED
   DOC "Path to libdds-user-defaults.dylib libdds-user-defaults.so."
 )
 
+find_file(DDS_VERSION_FILE
+  NAMES version
+  HINTS ${DDS_ROOT} $ENV{DDS_ROOT}
+  PATH_SUFFIXES etc
+)
+
+if(DDS_VERSION_FILE AND NOT DDS_VERSION)
+  file(READ ${DDS_VERSION_FILE} DDS_VERSION)
+  string(STRIP "${DDS_VERSION}" DDS_VERSION)
+  set(DDS_VERSION ${DDS_VERSION} CACHE string "DDS version.")
+endif()
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(DDS
   REQUIRED_VARS
@@ -47,6 +59,8 @@ find_package_handle_standard_args(DDS
   DDS_INTERCOM_LIBRARY_SHARED
   DDS_PROTOCOL_LIBRARY_SHARED
   DDS_USER_DEFAULTS_LIBRARY_SHARED
+
+  VERSION_VAR DDS_VERSION
 )
 
 if(NOT TARGET DDS::dds_intercom_lib AND DDS_FOUND)

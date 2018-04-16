@@ -18,7 +18,7 @@ target_link_libraries(${exe} FairMQ DDS::dds_intercom_lib DDS::dds_protocol_lib 
 target_include_directories(${exe} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 install(TARGETS ${plugin} ${exe}
-    EXPORT ${FairMQ_EXPORT_SET}
-    LIBRARY DESTINATION ${FairMQ_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${FairMQ_INSTALL_BINDIR}
+  EXPORT ${PROJECT_EXPORT_SET}
+  LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
 )

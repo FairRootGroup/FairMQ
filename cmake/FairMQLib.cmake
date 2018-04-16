@@ -103,6 +103,7 @@ endfunction()
 # Set defaults
 macro(set_fairmq_defaults)
   string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
+  string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPER)
 
   # Set a default build type
   if(NOT CMAKE_BUILD_TYPE)
@@ -131,28 +132,53 @@ macro(set_fairmq_defaults)
   set(PROJECT_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}/${PROJECT_NAME_LOWER})
   set(PROJECT_INSTALL_INCDIR ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME_LOWER})
   set(PROJECT_INSTALL_DATADIR ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME_LOWER})
-  set(PROJECT_INSTALL_CMAKEMODDIR ${${PROJECT_NAME}_INSTALL_DATADIR}/cmake)
+  set(PROJECT_INSTALL_CMAKEMODDIR ${PROJECT_INSTALL_DATADIR}/cmake)
 
   # Define export set, only one for now
   set(PROJECT_EXPORT_SET ${PROJECT_NAME}Targets)
 endmacro()
 
-macro(generate_package_dependencies)
+function(join VALUES GLUE OUTPUT)
+  string(REGEX REPLACE "([^\\]|^);" "\\1${GLUE}" _TMP_STR "${VALUES}")
+  string(REGEX REPLACE "[\\](.)" "\\1" _TMP_STR "${_TMP_STR}") #fixes escaping
+  set(${OUTPUT} "${_TMP_STR}" PARENT_SCOPE)
+endfunction()
+
+function(pad str width char out)
+  string(LENGTH ${str} length)
+  math(EXPR padding "${width}-${length}")
+  if(padding GREATER 0)
+    foreach(i RANGE ${padding})
+      set(str "${str}${char}")
+    endforeach()
+  endif()
+  set(${out} ${str} PARENT_SCOPE)
+endfunction()
+
+function(generate_package_dependencies)
+  join("${PROJECT_INTERFACE_PACKAGE_DEPENDENCIES}" " " DEPS)
   set(PACKAGE_DEPENDENCIES "\
+####### Expanded from @PACKAGE_DEPENDENCIES@ by configure_package_config_file() #######
+####### Any changes to this file will be overwritten by the next CMake run ############
+
 include(CMakeFindDependencyMacro)
 
-set(${PROJECT_NAME}_PACKAGE_DEPENDENCIES ${PROJECT_PACKAGE_DEPENDENCIES})
+set(${PROJECT_NAME}_PACKAGE_DEPENDENCIES ${DEPS})
 
 ")
-  foreach(dep IN LISTS PROJECT_PACKAGE_DEPENDENCIES)
-    string(CONCAT ${PACKAGE_DEPENDENCIES} "\
-set(${PROJECT_NAME}_${dep}_COMPONENTS ${PROJECT_${dep}_COMPONENTS})
-set(${PROJECT_NAME}_${dep}_VERSION ${PROJECT_${dep}_VERSION})
+  foreach(dep IN LISTS PROJECT_INTERFACE_PACKAGE_DEPENDENCIES)
+    join("${PROJECT_INTERFACE_${dep}_COMPONENTS}" " " COMPS)
+    if(${dep}_FOUND)
+    message(>>>> ${dep} ${${dep}_FOUND})
+  endif()
+    string(CONCAT PACKAGE_DEPENDENCIES ${PACKAGE_DEPENDENCIES} "\
+set(${PROJECT_NAME}_${dep}_COMPONENTS ${COMPS})
+set(${PROJECT_NAME}_${dep}_VERSION ${PROJECT_INTERFACE_${dep}_VERSION})
 set(${PROJECT_NAME}_${dep}_FOUND ${${dep}_FOUND})
 
 ")
   endforeach()
-  string(CONCAT ${PACKAGE_DEPENDENCIES} "\
+  string(CONCAT PACKAGE_DEPENDENCIES ${PACKAGE_DEPENDENCIES} "\
 if(Boost_INCLUDE_DIR) # checks for cached boost variable which indicates if Boost is already found
   set(${PROJECT_NAME}_Boost_QUIET QUIET)
 endif()
@@ -172,28 +198,32 @@ foreach(dep IN LISTS ${PROJECT_NAME}_PACKAGE_DEPENDENCIES)
     find_dependency(\${dep} \${${PROJECT_NAME}_\${dep}_VERSION} \${${PROJECT_NAME}_\${dep}_QUIET} \${components})
   endif()
 endforeach()
+
+#######################################################################################
 ")
-endmacro()
+set(PACKAGE_DEPENDENCIES ${PACKAGE_DEPENDENCIES} PARENT_SCOPE)
+endfunction()
 
 # Configure/Install CMake package
 macro(install_cmake_package)
   # Install cmake modules
   install(DIRECTORY cmake
+    DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
     PATTERN "cmake/Find*.cmake"
-    DESTINATION ${${PROJECT_NAME}_INSTALL_CMAKEMODDIR}
   )
 
   include(CMakePackageConfigHelpers)
   set(PACKAGE_INSTALL_DESTINATION
     ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}-${PROJECT_VERSION}
   )
-  install(EXPORT ${${PROJECT_NAME}_EXPORT_SET}
+  install(EXPORT ${PROJECT_EXPORT_SET}
     NAMESPACE ${PROJECT_NAME}::
     DESTINATION ${PACKAGE_INSTALL_DESTINATION}
     EXPORT_LINK_INTERFACE_LIBRARIES
   )
   write_basic_package_version_file(
     ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
     COMPATIBILITY AnyNewerVersion
   )
   generate_package_dependencies() # fills ${PACKAGE_DEPENDENCIES}
@@ -209,3 +239,35 @@ macro(install_cmake_package)
     DESTINATION ${PACKAGE_INSTALL_DESTINATION}
   )
 endmacro()
+
+function(find_package2 qualifier pkgname)
+  cmake_parse_arguments(ARGS "" "VERSION" "COMPONENTS" ${ARGN})
+
+  string(TOUPPER ${pkgname} pkgname_upper)
+  set(CMAKE_PREFIX_PATH ${${pkgname_upper}_ROOT} $ENV{${pkgname_upper}_ROOT} ${CMAKE_PREFIX_PATH})
+  if(ARGS_COMPONENTS)
+    find_package(${pkgname} ${ARGS_VERSION} QUIET COMPONENTS ${ARGS_COMPONENTS} ${ARGS_UNPARSED_ARGUMENTS})
+  else()
+    find_package(${pkgname} ${ARGS_VERSION} QUIET ${ARGS_UNPARSED_ARGUMENTS})
+  endif()
+
+  set(${pkgname}_VERSION ${${pkgname}_VERSION} PARENT_SCOPE)
+  set(${pkgname}_MAJOR_VERSION ${${pkgname}_MAJOR_VERSION} PARENT_SCOPE)
+  set(${pkgname}_MINOR_VERSION ${${pkgname}_MINOR_VERSION} PARENT_SCOPE)
+  if(qualifier STREQUAL PRIVATE)
+    set(PROJECT_${pkgname}_VERSION ${ARGS_VERSION} PARENT_SCOPE)
+    set(PROJECT_${pkgname}_COMPONENTS ${ARGS_COMPONENTS} PARENT_SCOPE)
+    set(PROJECT_PACKAGE_DEPENDENCIES ${PROJECT_PACKAGE_DEPENDENCIES} ${pkgname} PARENT_SCOPE)
+  elseif(qualifier STREQUAL PUBLIC)
+    set(PROJECT_${pkgname}_VERSION ${ARGS_VERSION} PARENT_SCOPE)
+    set(PROJECT_${pkgname}_COMPONENTS ${ARGS_COMPONENTS} PARENT_SCOPE)
+    set(PROJECT_PACKAGE_DEPENDENCIES ${PROJECT_PACKAGE_DEPENDENCIES} ${pkgname} PARENT_SCOPE)
+    set(PROJECT_INTERFACE_${pkgname}_VERSION ${ARGS_VERSION} PARENT_SCOPE)
+    set(PROJECT_INTERFACE_${pkgname}_COMPONENTS ${ARGS_COMPONENTS} PARENT_SCOPE)
+    set(PROJECT_INTERFACE_PACKAGE_DEPENDENCIES ${PROJECT_INTERFACE_PACKAGE_DEPENDENCIES} ${pkgname} PARENT_SCOPE)
+  elseif(qualifier STREQUAL INTERFACE)
+    set(PROJECT_INTERFACE_${pkgname}_VERSION ${ARGS_VERSION} PARENT_SCOPE)
+    set(PROJECT_INTERFACE_${pkgname}_COMPONENTS ${ARGS_COMPONENTS} PARENT_SCOPE)
+    set(PROJECT_INTERFACE_PACKAGE_DEPENDENCIES ${PROJECT_INTERFACE_PACKAGE_DEPENDENCIES} ${pkgname} PARENT_SCOPE)
+  endif()
+endfunction()

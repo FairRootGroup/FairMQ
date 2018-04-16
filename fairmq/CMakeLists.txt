@@ -29,15 +29,15 @@ endif()
 # subdirectories #
 ##################
 # add_subdirectory(shmem/prototype)
+if(BUILD_OFI_TRANSPORT)
+  add_subdirectory(ofi)
+endif()
 
 
 ##########################
 # libFairMQ header files #
 ##########################
-set(FAIRMQ_DEPRECATED_HEADER_FILES
-)
 set(FAIRMQ_HEADER_FILES
-    ${FAIRMQ_DEPRECATED_HEADER_FILES}
     DeviceRunner.h
     EventManager.h
     FairMQChannel.h
@@ -185,40 +185,13 @@ configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/startConfigExample.sh.in
                ${CMAKE_BINARY_DIR}/bin/startConfigExample.sh)
 
 
-########################
-# compile protobuffers #
-########################
-if(BUILD_OFI_TRANSPORT)
-    add_custom_target(mkofibuilddir COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/ofi)
-    add_custom_command(
-        OUTPUT
-        ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.h
-        ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc
-        COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I=${CMAKE_CURRENT_SOURCE_DIR}/ofi --cpp_out=${CMAKE_CURRENT_BINARY_DIR}/ofi Control.proto
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        DEPENDS mkofibuilddir ${CMAKE_CURRENT_SOURCE_DIR}/ofi/Control.proto
-    )
-    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.h  PROPERTIES GENERATED TRUE)
-    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc PROPERTIES GENERATED TRUE)
-endif()
-
-
 #################################
 # define libFairMQ build target #
 #################################
-if(BUILD_OFI_TRANSPORT)
-    add_library(FairMQ SHARED
-        ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.h
-        ${CMAKE_CURRENT_BINARY_DIR}/ofi/Control.pb.cc
-        ${FAIRMQ_SOURCE_FILES}
-        ${FAIRMQ_HEADER_FILES} # for IDE integration
-    )
-else()
-    add_library(FairMQ SHARED
-        ${FAIRMQ_SOURCE_FILES}
-        ${FAIRMQ_HEADER_FILES} # for IDE integration
-    )
-endif()
+add_library(FairMQ SHARED
+  ${FAIRMQ_SOURCE_FILES}
+  ${FAIRMQ_HEADER_FILES} # for IDE integration
+)
 
 #######################
 # include directories #
@@ -239,7 +212,7 @@ if(BUILD_NANOMSG_TRANSPORT)
   set(NANOMSG_DEPS nanomsg msgpackc)
 endif()
 if(BUILD_OFI_TRANSPORT)
-  set(OFI_DEPS OFI::libfabric protobuf::libprotobuf)
+  set(OFI_DEPS OFI::libfabric protobuf::libprotobuf $<TARGET_OBJECTS:OfiTransport>)
 endif()
 target_link_libraries(FairMQ
     INTERFACE # only consumers link against interface dependencies
@@ -310,15 +283,15 @@ install(
     splitter
     shmmonitor
 
-    EXPORT ${FairMQ_EXPORT_SET}
-    LIBRARY DESTINATION ${FairMQ_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${FairMQ_INSTALL_BINDIR}
+    EXPORT ${PROJECT_EXPORT_SET}
+    LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
 )
 
 # preserve relative path and prepend fairmq
 foreach(HEADER ${FAIRMQ_HEADER_FILES})
     get_filename_component(_path ${HEADER} DIRECTORY)
-    file(TO_CMAKE_PATH include/fairmq/${_path} _destination)
+    file(TO_CMAKE_PATH ${PROJECT_INSTALL_INCDIR}/${_path} _destination)
     install(FILES ${HEADER}
         DESTINATION ${_destination}
     )
