@@ -73,10 +73,45 @@ endif()
 ################################################################################
 
 
+# Package components ###########################################################
+list(APPEND PROJECT_PACKAGE_COMPONENTS fairmq)
+list(APPEND PROJECT_PACKAGE_COMPONENTS tests)
+if(BUILD_DDS_PLUGIN)
+  list(APPEND PROJECT_PACKAGE_COMPONENTS dds_plugin)
+endif()
+if(BUILD_NANOMSG_TRANSPORT)
+  list(APPEND PROJECT_PACKAGE_COMPONENTS nanomsg_transport)
+endif()
+if(BUILD_OFI_TRANSPORT)
+  list(APPEND PROJECT_PACKAGE_COMPONENTS ofi_transport)
+endif()
+################################################################################
+
+
 # Installation #################################################################
 install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
   DESTINATION ${PROJECT_INSTALL_INCDIR}
 )
+
+# Install cmake modules
+install(FILES cmake/FindZeroMQ.cmake
+  DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
+)
+if(BUILD_DDS_PLUGIN)
+  install(FILES cmake/FindDDS.cmake
+    DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
+  )
+endif()
+if(BUILD_NANOMSG_TRANSPORT)
+  install(FILES cmake/Findnanomsg.cmake
+    DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
+  )
+endif()
+if(BUILD_OFI_TRANSPORT)
+  install(FILES cmake/FindOFI.cmake
+    DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
+  )
+endif()
 
 install_cmake_package()
 ################################################################################
@@ -84,7 +119,7 @@ install_cmake_package()
 
 # Summary ######################################################################
 message(STATUS "  ")
-message(STATUS "  ${Cyan}DEPENDENCY      VERSION              PREFIX${CR}")
+message(STATUS "  ${Cyan}DEPENDENCY      VERSION              ${CR}")
 foreach(dep IN LISTS PROJECT_PACKAGE_DEPENDENCIES)
   if(${dep}_VERSION)
     if(${dep} STREQUAL Boost)
@@ -100,35 +135,35 @@ foreach(dep IN LISTS PROJECT_PACKAGE_DEPENDENCIES)
   endif()
   pad(${dep} 15 " " dep_padded)
   pad("${version_str}${version_req_str}" 20 " " version_padded)
-  message(STATUS "  ${BWhite}${dep_padded}${CR}${version_padded}...")
+  message(STATUS "  ${BWhite}${dep_padded}${CR}${version_padded}")
   unset(version_str)
 endforeach()
 message(STATUS "  ")
 message(STATUS "  ${Cyan}COMPONENT         BUILT?  INFO${CR}")
-message(STATUS "  ${BWhite}FairMQ${CR}             ${BGreen}YES${CR}    (default, always built)")
+message(STATUS "  ${BWhite}fairmq${CR}             ${BGreen}YES${CR}    (default, always built)")
 if(BUILD_TESTING)
   set(tests_summary "${BGreen}YES${CR}    (default, disable with ${BMagenta}-DBUILD_TESTING=OFF${CR})")
 else()
   set(tests_summary "${BRed} NO${CR}    (enable with ${BMagenta}-DBUILD_TESTING=ON${CR})")
 endif()
-message(STATUS "  ${BWhite}test${CR}               ${tests_summary}")
+message(STATUS "  ${BWhite}tests${CR}              ${tests_summary}")
 if(BUILD_NANOMSG_TRANSPORT)
   set(nn_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_NANOMSG_TRANSPORT=OFF${CR})")
 else()
   set(nn_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_NANOMSG_TRANSPORT=ON${CR})")
 endif()
-message(STATUS "  ${BWhite}NanomsgTransport${CR}   ${nn_summary}")
+message(STATUS "  ${BWhite}nanomsg_transport${CR}  ${nn_summary}")
 if(BUILD_OFI_TRANSPORT)
   set(ofi_summary "${BGreen}YES${CR}    EXPERIMENTAL (disable with ${BMagenta}-DBUILD_OFI_TRANSPORT=OFF${CR})")
 else()
   set(ofi_summary "${BRed} NO${CR}    EXPERIMENTAL (default, enable with ${BMagenta}-DBUILD_OFI_TRANSPORT=ON${CR})")
 endif()
-message(STATUS "  ${BWhite}OfiTransport${CR}       ${ofi_summary}")
+message(STATUS "  ${BWhite}ofi_transport${CR}      ${ofi_summary}")
 if(BUILD_DDS_PLUGIN)
   set(dds_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_DDS_PLUGIN=OFF${CR})")
 else()
   set(dds_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_DDS_PLUGIN=ON${CR})")
 endif()
-message(STATUS "  ${BWhite}FairMQPlugin_dds${CR}   ${dds_summary}")
+message(STATUS "  ${BWhite}dds_plugin${CR}         ${dds_summary}")
 message(STATUS "  ")
 ################################################################################

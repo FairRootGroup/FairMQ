@@ -121,6 +121,9 @@ macro(set_fairmq_defaults)
     set(CMAKE_CXX_EXTENSIONS OFF)
   endif()
 
+  # Set -fpic as default for all library types
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
   # Generate compile_commands.json file (https://clang.llvm.org/docs/JSONCompilationDatabase.html)
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -159,59 +162,52 @@ function(generate_package_dependencies)
   join("${PROJECT_INTERFACE_PACKAGE_DEPENDENCIES}" " " DEPS)
   set(PACKAGE_DEPENDENCIES "\
 ####### Expanded from @PACKAGE_DEPENDENCIES@ by configure_package_config_file() #######
-####### Any changes to this file will be overwritten by the next CMake run ############
-
-include(CMakeFindDependencyMacro)
 
 set(${PROJECT_NAME}_PACKAGE_DEPENDENCIES ${DEPS})
 
 ")
   foreach(dep IN LISTS PROJECT_INTERFACE_PACKAGE_DEPENDENCIES)
     join("${PROJECT_INTERFACE_${dep}_COMPONENTS}" " " COMPS)
-    if(${dep}_FOUND)
-    message(>>>> ${dep} ${${dep}_FOUND})
-  endif()
-    string(CONCAT PACKAGE_DEPENDENCIES ${PACKAGE_DEPENDENCIES} "\
+    if(COMPS)
+      string(CONCAT PACKAGE_DEPENDENCIES ${PACKAGE_DEPENDENCIES} "\
 set(${PROJECT_NAME}_${dep}_COMPONENTS ${COMPS})
-set(${PROJECT_NAME}_${dep}_VERSION ${PROJECT_INTERFACE_${dep}_VERSION})
-set(${PROJECT_NAME}_${dep}_FOUND ${${dep}_FOUND})
-
 ")
+    endif()
+    if(PROJECT_INTERFACE_${dep}_VERSION)
+      string(CONCAT PACKAGE_DEPENDENCIES ${PACKAGE_DEPENDENCIES} "\
+set(${PROJECT_NAME}_${dep}_VERSION ${PROJECT_INTERFACE_${dep}_VERSION})
+")
+    endif()
   endforeach()
   string(CONCAT PACKAGE_DEPENDENCIES ${PACKAGE_DEPENDENCIES} "\
-if(Boost_INCLUDE_DIR) # checks for cached boost variable which indicates if Boost is already found
-  set(${PROJECT_NAME}_Boost_QUIET QUIET)
-endif()
-
-foreach(dep IN LISTS ${PROJECT_NAME}_PACKAGE_DEPENDENCIES)
-  if(    NOT (${PROJECT_NAME}_\${dep}_DISABLED OR ${PROJECT_NAME}_PACKAGE_DEPENDENCIES_DISABLED)
-    AND (${PROJECT_NAME}_\${dep}_FOUND OR ${PROJECT_NAME}_\${dep}_REQUIRED))
-    if(${PROJECT_NAME}_ADDITIONAL_\${dep}_COMPONENTS)
-      list(APPEND ${PROJECT_NAME}_\${dep}_COMPONENTS \${${PROJECT_NAME}_ADDITIONAL_\${dep}_COMPONENTS})
-      list(REMOVE_DUPLICATES ${PROJECT_NAME}_\${dep}_COMPONENTS)
-    endif()
-    if(${PROJECT_NAME}_\${dep}_COMPONENTS)
-      set(components COMPONENTS \${${PROJECT_NAME}_\${dep}_COMPONENTS})
-    else()
-      set(components)
-    endif()
-    find_dependency(\${dep} \${${PROJECT_NAME}_\${dep}_VERSION} \${${PROJECT_NAME}_\${dep}_QUIET} \${components})
-  endif()
-endforeach()
 
 #######################################################################################
 ")
 set(PACKAGE_DEPENDENCIES ${PACKAGE_DEPENDENCIES} PARENT_SCOPE)
 endfunction()
 
+function(generate_package_components)
+  join("${PROJECT_PACKAGE_COMPONENTS}" " " COMPS)
+  set(PACKAGE_COMPONENTS "\
+####### Expanded from @PACKAGE_COMPONENTS@ by configure_package_config_file() #########
+
+set(${PROJECT_NAME}_PACKAGE_COMPONENTS ${COMPS})
+
+")
+  foreach(comp IN LISTS PROJECT_PACKAGE_COMPONENTS)
+    string(CONCAT PACKAGE_COMPONENTS ${PACKAGE_COMPONENTS} "\
+set(${PROJECT_NAME}_${comp}_FOUND TRUE)
+")
+  endforeach()
+  string(CONCAT PACKAGE_COMPONENTS ${PACKAGE_COMPONENTS} "\
+
+check_required_components(${PROJECT_NAME})
+")
+set(PACKAGE_COMPONENTS ${PACKAGE_COMPONENTS} PARENT_SCOPE)
+endfunction()
+
 # Configure/Install CMake package
 macro(install_cmake_package)
-  # Install cmake modules
-  install(DIRECTORY cmake
-    DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
-    PATTERN "cmake/Find*.cmake"
-  )
-
   include(CMakePackageConfigHelpers)
   set(PACKAGE_INSTALL_DESTINATION
     ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}-${PROJECT_VERSION}
@@ -227,6 +223,7 @@ macro(install_cmake_package)
     COMPATIBILITY AnyNewerVersion
   )
   generate_package_dependencies() # fills ${PACKAGE_DEPENDENCIES}
+  generate_package_components() # fills ${PACKAGE_COMPONENTS}
   configure_package_config_file(
     ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
