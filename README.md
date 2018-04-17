@@ -4,19 +4,19 @@ C++ Message Queuing Library
 
 ## Dependencies
 
+  * **Boost** (PUBLIC)
+  * **FairLogger** (PUBLIC)
   * CMake
-  * GTest
-  * Boost
-  * FairLogger
   * dl
   * pthread
   * rt (Linux)
   * ZeroMQ
-  * Msgpack (optional, nanomsg transport)
-  * nanomsg (optional, nanomsg transport)
-  * OFI (optional, OFI transport)
-  * Protobuf (optional, OFI transport)
-  * DDS (optional, DDS plugin)
+  * GTest (optional, `tests`)
+  * Msgpack (optional, `nanomsg_transport`)
+  * nanomsg (optional, `nanomsg_transport`)
+  * OFI (optional, `ofi_transport`)
+  * Protobuf (optional, `ofi_transport`)
+  * DDS (optional, `dds_plugin`)
 
 ## Installation
 
@@ -37,7 +37,7 @@ be environment variables).
 
 ## Usage
 
-In your `CMakeLists.txt`:
+FairMQ ships as a CMake package, so in your `CMakeLists.txt` you can discover it like this:
 
 ```cmake
 find_package(FairMQ)
@@ -46,24 +46,33 @@ find_package(FairMQ)
 If FairMQ is not installed in system directories, you can hint the installation:
 
 ```cmake
-set(CMAKE_PREFIX_PATH /path/to/FairMQ/installation ${CMAKE_PREFIX_PATH})
+set(CMAKE_PREFIX_PATH /path/to/FairMQ_install_prefix ${CMAKE_PREFIX_PATH})
 find_package(FairMQ)
 ```
 
-`find_package(FairMQ)` will define an imported target `FairMQ::FairMQ` (An alias `FairRoot::FairMQ` is also defined, but it is deprecated).
+`find_package(FairMQ)` will define an imported target `FairMQ::FairMQ` (An alias `FairRoot::FairMQ`
+is also defined for backwards compatibility, but it is deprecated).
 
-By default, `find_package(FairMQ)` will also invoke `find_package` commands for all its dependencies. You can override this behaviour though, e.g.:
+In order to succesfully compile and link against the `FairMQ::FairMQ` target,
+you need to discover its public package dependencies, too.
 
 ```cmake
-set(FairMQ_PACKAGE_DEPENDENCIES_DISABLED ON)
 find_package(FairMQ)
-
-find_package(Boost COMPONENTS ${FairMQ_BOOST_COMPONENTS})
-find_package(ZeroMQ)
-# ...
+find_package(FairLogger ${FairMQ_FairLogger_VERSION})
+find_package(Boost ${FairMQ_Boost_VERSION} COMPONENTS ${FairMQ_BOOST_COMPONENTS})
 ```
 
-The above is useful, if you need to customize the `find_package` calls of FairMQ's dependencies. Check the next section for more CMake options.
+Of course, feel free to customize the above commands to your needs.
+
+Optionally, you can require certain FairMQ package components and a minimum version:
+
+```cmake
+find_package(FairMQ 1.1.0 COMPONENTS nanomsg_transport dds_plugin)
+find_package(FairLogger ${FairMQ_FairLogger_VERSION})
+find_package(Boost ${FairMQ_Boost_VERSION} COMPONENTS ${FairMQ_BOOST_COMPONENTS})
+```
+
+When building FairMQ, CMake will print a summary table of all available package components.
 
 ## CMake options
 
@@ -74,15 +83,13 @@ On command line:
   * `-DBUILD_NANOMSG_TRANSPORT=ON` enables building of nanomsg transport.
   * `-DBUILD_OFI_TRANSPORT=ON` enables building of the experimental OFI transport.
   * `-DBUILD_DDS_PLUGIN=ON` enables building of the DDS plugin.
+  * You can hint non-system installations for dependent packages, see the #Installation section above
 
-In front of the `find_package(FairMQ)` call:
+After the `find_package(FairMQ)` call the following CMake variables are defined:
 
-  * `set(FairMQ_PACKAGE_DEPENDENCIES_DISABLED ON)` disables implicit discovery of all transitive package dependencies. 
-  * ... TODO
-
-After the `find_package(FairMQ)` the following CMake variables are defined:
-
-  * `${FairMQ_BOOST_COMPONENTS}` contains the list of Boost components FairMQ depends on.
+  * `${FairMQ_Boost_VERSION}` contains the minimum Boost version FairMQ requires.
+  * `${FairMQ_Boost_COMPONENTS}` contains the list of Boost components FairMQ depends on.
+  * `${FairMQ_FairLogger_VERSION}` contains the minimum FairLogger version FairMQ requires.
   * ... TODO
 
 ## Documentation
