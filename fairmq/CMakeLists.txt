@@ -282,6 +282,7 @@ install(
     sink
     splitter
     shmmonitor
+    uuidGen
 
     EXPORT ${PROJECT_EXPORT_SET}
     LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
