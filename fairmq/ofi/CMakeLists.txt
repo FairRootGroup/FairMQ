@@ -9,3 +9,4 @@
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS Control.proto)
 
 add_library(OfiTransport OBJECT ${PROTO_SRCS} ${PROTO_HDRS})
+target_include_directories(OfiTransport PRIVATE $<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>)
