@@ -6,8 +6,6 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-cmake_minimum_required(VERSION 3.9.4 FATAL_ERROR)
-
 @PACKAGE_INIT@
 
 ### General variables for project discovery/inspection
