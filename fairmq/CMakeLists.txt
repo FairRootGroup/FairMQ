@@ -236,7 +236,10 @@ target_link_libraries(FairMQ
     ${NANOMSG_DEPS}
     ${OFI_DEPS}
 )
-
+set_target_properties(FairMQ PROPERTIES
+  VERSION ${PROJECT_VERSION}
+  SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+)
 
 ###############
 # executables #
