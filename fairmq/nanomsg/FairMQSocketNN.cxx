@@ -24,9 +24,7 @@
 #include <nanomsg/pair.h>
 
 #include <sstream>
-#ifdef MSGPACK_FOUND
 #include <msgpack.hpp>
-#endif /*MSGPACK_FOUND*/
 
 using namespace std;
 
@@ -259,7 +257,6 @@ int FairMQSocketNN::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const in
 int64_t FairMQSocketNN::SendImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
 {
     const unsigned int vecSize = msgVec.size();
-#ifdef MSGPACK_FOUND
     int elapsed = 0;
 
     // create msgpack simple buffer
@@ -331,15 +328,10 @@ int64_t FairMQSocketNN::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fla
             return nbytes;
         }
     }
-#else /*MSGPACK_FOUND*/
-    LOG(error) << "Cannot send message from vector of size " << vecSize << " and flags " << flags << " with nanomsg multipart because MessagePack is not available.";
-    exit(EXIT_FAILURE);
-#endif /*MSGPACK_FOUND*/
 }
 
 int64_t FairMQSocketNN::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
 {
-#ifdef MSGPACK_FOUND
     // Warn if the vector is filled before Receive() and empty it.
     // if (msgVec.size() > 0)
     // {
@@ -423,10 +415,6 @@ int64_t FairMQSocketNN::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int 
             return nbytes;
         }
     }
-#else /*MSGPACK_FOUND*/
-    LOG(error) << "Cannot receive message into vector of size " << msgVec.size() << " and flags " << flags << " with nanomsg multipart because MessagePack is not available.";
-    exit(EXIT_FAILURE);
-#endif /*MSGPACK_FOUND*/
 }
 
 void FairMQSocketNN::Close()
