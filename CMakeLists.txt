@@ -45,7 +45,7 @@ if(BUILD_NANOMSG_TRANSPORT)
 endif()
 
 if(BUILD_OFI_TRANSPORT)
-  find_package2(PRIVATE OFI VERSION 1.6.0 REQUIRED COMPONENTS fi_sockets)
+  find_package2(PRIVATE OFI VERSION 1.6.0 REQUIRED COMPONENTS fi_sockets fi_verbs)
   find_package2(PRIVATE Protobuf VERSION 3.4.0 REQUIRED)
 endif()
 
