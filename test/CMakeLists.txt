@@ -59,7 +59,7 @@ add_testsuite(FairMQ.Parts
     parts/runner.cxx
     parts/_iterator_interface.cxx
 
-    LINKS FairMQ ZeroMQ
+    LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/parts
     TIMEOUT 5
 )
@@ -69,7 +69,7 @@ add_testsuite(FairMQ.MessageResize
     message_resize/runner.cxx
     message_resize/_message_resize.cxx
 
-    LINKS FairMQ ZeroMQ
+    LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/message_resize
     TIMEOUT 5
 )

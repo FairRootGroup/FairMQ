@@ -6,17 +6,14 @@ C++ Message Queuing Library
 
   * **Boost** (PUBLIC)
   * **FairLogger** (PUBLIC)
-  * CMake
-  * dl
-  * pthread
-  * rt (Linux)
-  * ZeroMQ
-  * GTest (optional, `tests`)
-  * Msgpack (optional, `nanomsg_transport`)
-  * nanomsg (optional, `nanomsg_transport`)
-  * OFI (optional, `ofi_transport`)
-  * Protobuf (optional, `ofi_transport`)
-  * DDS (optional, `dds_plugin`)
+  * CMake (BUILD)
+  * GTest (BUILD, optional, `tests`)
+  * ZeroMQ (PRIVATE)
+  * Msgpack (PRIVATE, optional, `nanomsg_transport`)
+  * nanomsg (PRIVATE, optional, `nanomsg_transport`)
+  * OFI (PRIVATE, optional, `ofi_transport`)
+  * Protobuf (PRIVATE, optional, `ofi_transport`)
+  * DDS (PRIVATE, optional, `dds_plugin`)
 
 ## Installation
 

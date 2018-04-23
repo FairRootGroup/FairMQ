@@ -219,7 +219,6 @@ target_link_libraries(FairMQ
 
     PUBLIC # libFairMQ AND consumers of libFairMQ link aginst public dependencies
     dl
-    pthread
     Boost::boost
     Boost::program_options
     Boost::thread
@@ -229,10 +228,9 @@ target_link_libraries(FairMQ
     Boost::date_time
     Boost::signals
     FairLogger::FairLogger
-    $<$<PLATFORM_ID:Linux>:rt>
 
     PRIVATE # only libFairMQ links against private dependencies
-    ZeroMQ
+    libzmq
     ${NANOMSG_DEPS}
     ${OFI_DEPS}
 )

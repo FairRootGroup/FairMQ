@@ -28,7 +28,7 @@ find_package_handle_standard_args(nanomsg
 if(NOT TARGET nanomsg AND nanomsg_FOUND)
   add_library(nanomsg SHARED IMPORTED)
   set_target_properties(nanomsg PROPERTIES
-    IMPORTED_LOCATION ${NANOMSG_LIBRARY_SHARED}
-    INTERFACE_INCLUDE_DIRECTORIES ${NANOMSG_INCLUDE_DIR}
+    IMPORTED_LOCATION ${nanomsg_LIBRARY_SHARED}
+    INTERFACE_INCLUDE_DIRECTORIES ${nanomsg_INCLUDE_DIR}
   )
 endif()

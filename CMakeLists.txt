@@ -36,8 +36,8 @@ option(BUILD_DDS_PLUGIN "Build DDS plugin." OFF)
 find_package2(PUBLIC Boost VERSION 1.64 REQUIRED
   COMPONENTS program_options thread system filesystem regex date_time signals
 )
-find_package2(PRIVATE ZeroMQ VERSION 4.2.2 REQUIRED)
 find_package2(PUBLIC FairLogger VERSION 1.0.6 REQUIRED)
+find_package2(PRIVATE ZeroMQ VERSION 4.1.5 REQUIRED)
 
 if(BUILD_NANOMSG_TRANSPORT)
   find_package2(PRIVATE nanomsg VERSION 1.0.0 REQUIRED)
@@ -95,9 +95,6 @@ install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
 )
 
 # Install cmake modules
-install(FILES cmake/FindZeroMQ.cmake
-  DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
-)
 if(BUILD_DDS_PLUGIN)
   install(FILES cmake/FindDDS.cmake
     DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
