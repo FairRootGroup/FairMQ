@@ -6,14 +6,14 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-find_path(NANOMSG_INCLUDE_DIR
+find_path(nanomsg_INCLUDE_DIR
   NAMES nanomsg/nn.h
   HINTS ${NANOMSG_ROOT} $ENV{NANOMSG_ROOT}
   PATH_SUFFIXES include
   DOC "Path to nanomsg include header files."
 )
 
-find_library(NANOMSG_LIBRARY_SHARED
+find_library(nanomsg_LIBRARY_SHARED
   NAMES libnanomsg.dylib libnanomsg.so
   HINTS ${NANOMSG_ROOT} $ENV{NANOMSG_ROOT}
   PATH_SUFFIXES lib
@@ -22,7 +22,7 @@ find_library(NANOMSG_LIBRARY_SHARED
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(nanomsg
-  REQUIRED_VARS NANOMSG_LIBRARY_SHARED NANOMSG_INCLUDE_DIR
+  REQUIRED_VARS nanomsg_LIBRARY_SHARED nanomsg_INCLUDE_DIR
 )
 
 if(NOT TARGET nanomsg AND nanomsg_FOUND)
