@@ -36,8 +36,8 @@ option(BUILD_DDS_PLUGIN "Build DDS plugin." OFF)
 find_package2(PUBLIC Boost VERSION 1.64 REQUIRED
   COMPONENTS program_options thread system filesystem regex date_time signals
 )
-find_package2(PUBLIC FairLogger VERSION 1.0.2 REQUIRED)
 find_package2(PRIVATE ZeroMQ VERSION 4.2.2 REQUIRED)
+find_package2(PUBLIC FairLogger VERSION 1.0.6 REQUIRED)
 
 if(BUILD_NANOMSG_TRANSPORT)
   find_package2(PRIVATE nanomsg VERSION 1.0.0 REQUIRED)
