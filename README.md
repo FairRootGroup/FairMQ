@@ -1,6 +1,28 @@
 # FairMQ
 
-C++ Message Queuing Library
+C++ Message Queuing Library and Framework
+
+FairMQ was designed to help implementing large-scale data processing workflows needed in next-generation High Energy
+Physics experiments. FairMQ is written in C++ and aims to
+  * provide **a message queuing abstraction** of different data transport technologies,
+  * provide a reasonably **efficient data transport** service (zero-copy, high throughput),
+  * be **data format agnostic**, and
+  * provide some of the **basic building blocks** needed to implement higher level data processing workflows.
+
+The core of FairMQ provides an abstract message queuing API with scalability protocols
+inspired by [ZeroMQ](https://github.com/zeromq/libzmq) (e.g. PUSH/PULL, PUB/SUB).
+FairMQ provides multiple implementations for its API (so-called "transports",
+e.g. `zeromq`, `shmem`, `nanomsg`, and `ofi` (in development)) to cover a variety of use cases
+(e.g. inter-thread, inter-process, inter-node communication) and machines (e.g. Ethernet, Infiniband).
+In addition to this core functionality FairMQ provides a framework for creating "devices" - actors which
+are communicating through message queuing. Device execution is modelled as a simple state machine that
+shapes the integration points for the user task. Devices also incorporate a plugin system for runtime configuration and control.
+Next to the provided devices and plugins (e.g. [DDS](https://github.com/FairRootGroup/DDS))
+the user can extened FairMQ by developing her own plugins to integrate her devices with external
+configuration and control services.
+
+FairMQ has been developed in the context of its mother project [FairRoot](https://github.com/FairRootGroup/FairRoot) - 
+a simulation, reconstruction and analysis framework that is based on the [ROOT](https://root.cern) system.
 
 ## Dependencies
 
@@ -15,22 +37,18 @@ C++ Message Queuing Library
   * Protobuf (PRIVATE, optional, `ofi_transport`)
   * DDS (PRIVATE, optional, `dds_plugin`)
 
+  Supported platforms: Linux and MacOS.
+
 ## Installation
 
 ```bash
-git clone https://github.com/FairRootGroup/FairMQ
+git clone https://github.com/FairRootGroup/FairMQ fairmq
 mkdir fairmq_build && cd fairmq_build
 cmake -DCMAKE_INSTALL_PREFIX=./fairmq_install ../fairmq
 cmake --build . --target install
 ```
 
-If dependencies are not installed in standard system
-directories, you can hint the installation location
-via `-DCMAKE_PREFIX_PATH=...` or per dependency via
-`-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `GTEST`,
-`BOOST`, `FAIRLOGGER`, `ZEROMQ`, `MSGPACK`, `NANOMSG`,
-`OFI`, `PROTOBUF`, or `DDS` (`*_ROOT` variables can also
-be environment variables).
+If dependencies are not installed in standard system directories, you can hint the installation location via `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `GTEST`, `BOOST`, `FAIRLOGGER`, `ZEROMQ`, `MSGPACK`, `NANOMSG`, `OFI`, `PROTOBUF`, or `DDS` (`*_ROOT` variables can also be environment variables).
 
 ## Usage
 
@@ -47,11 +65,9 @@ set(CMAKE_PREFIX_PATH /path/to/FairMQ_install_prefix ${CMAKE_PREFIX_PATH})
 find_package(FairMQ)
 ```
 
-`find_package(FairMQ)` will define an imported target `FairMQ::FairMQ` (An alias `FairRoot::FairMQ`
-is also defined for backwards compatibility, but it is deprecated).
+`find_package(FairMQ)` will define an imported target `FairMQ::FairMQ` (An alias `FairRoot::FairMQ` is also defined (if you use CMake 3.11+) for backwards compatibility, but it is deprecated).
 
-In order to succesfully compile and link against the `FairMQ::FairMQ` target,
-you need to discover its public package dependencies, too.
+In order to succesfully compile and link against the `FairMQ::FairMQ` target, you need to discover its public package dependencies, too.
 
 ```cmake
 find_package(FairMQ)
