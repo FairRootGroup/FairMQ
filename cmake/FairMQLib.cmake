@@ -265,7 +265,7 @@ macro(find_package2 qualifier pkgname)
 
   string(TOUPPER ${pkgname} pkgname_upper)
   set(old_CPP ${CMAKE_PREFIX_PATH})
-  set(CMAKE_PREFIX_PATH ${${pkgname_upper}_ROOT} $ENV{${pkgname_upper}_ROOT})
+  set(CMAKE_PREFIX_PATH ${${pkgname_upper}_ROOT} $ENV{${pkgname_upper}_ROOT} ${CMAKE_PREFIX_PATH})
   if(ARGS_COMPONENTS)
     find_package(${pkgname} ${ARGS_VERSION} QUIET COMPONENTS ${ARGS_COMPONENTS} ${ARGS_UNPARSED_ARGUMENTS})
   else()
