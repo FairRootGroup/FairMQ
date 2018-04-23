@@ -112,18 +112,19 @@ macro(set_fairmq_defaults)
     set(CMAKE_BUILD_TYPE RelWithDebInfo)
   endif()
 
+
   # Handle C++ standard level
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
   if(NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 11)
   elseif(${CMAKE_CXX_STANDARD} LESS 11)
     message(FATAL_ERROR "A minimum CMAKE_CXX_STANDARD of 11 is required.")
+  elseif(${CMAKE_CXX_STANDARD} GREATER 11)
+    message(WARNING "A CMAKE_CXX_STANDARD of ${CMAKE_CXX_STANDARD} (greater than 11) is not tested. Use on your own risk.")
   endif()
-  if(NOT CMAKE_CXX_EXTENSIONS)
-    set(CMAKE_CXX_EXTENSIONS OFF)
-  endif()
+  set(CMAKE_CXX_EXTENSIONS OFF)
 
-  # Set -fpic as default for all library types
+  # Set -fPIC as default for all library types
   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
   # Generate compile_commands.json file (https://clang.llvm.org/docs/JSONCompilationDatabase.html)
