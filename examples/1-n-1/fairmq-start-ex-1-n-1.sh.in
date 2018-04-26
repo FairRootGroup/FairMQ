@@ -1,0 +1,25 @@
+#!/bin/bash
+
+ex2config="@EX_BIN_DIR@/ex-1-n-1.json"
+
+SAMPLER="fairmq-ex-1-n-1-sampler"
+SAMPLER+=" --id sampler1"
+SAMPLER+=" --mq-config $ex2config"
+xterm -geometry 80x23+0+0 -hold -e @EX_BIN_DIR@/$SAMPLER &
+
+PROCESSOR1="fairmq-ex-1-n-1-processor"
+PROCESSOR1+=" --id processor1"
+PROCESSOR1+=" --mq-config $ex2config"
+PROCESSOR1+=" --config-key processor"
+xterm -geometry 80x23+500+0 -hold -e @EX_BIN_DIR@/$PROCESSOR1 &
+
+PROCESSOR2="fairmq-ex-1-n-1-processor"
+PROCESSOR2+=" --id processor2"
+PROCESSOR2+=" --mq-config $ex2config"
+PROCESSOR2+=" --config-key processor"
+xterm -geometry 80x23+500+330 -hold -e @EX_BIN_DIR@/$PROCESSOR2 &
+
+SINK="fairmq-ex-1-n-1-sink"
+SINK+=" --id sink1"
+SINK+=" --mq-config $ex2config"
+xterm -geometry 80x23+1000+0 -hold -e @EX_BIN_DIR@/$SINK &

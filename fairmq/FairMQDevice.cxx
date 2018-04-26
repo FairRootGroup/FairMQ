@@ -6,10 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <FairMQSocket.h>
 #include <FairMQDevice.h>
-#include <FairMQLogger.h> 
-#include <options/FairMQProgOptions.h>
 
 #include <fairmq/Tools.h>
 #include <fairmq/Transports.h>

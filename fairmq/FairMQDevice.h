@@ -18,6 +18,8 @@
 #include <FairMQMessage.h>
 #include <FairMQParts.h>
 #include <FairMQUnmanagedRegion.h>
+#include <FairMQLogger.h>
+#include <options/FairMQProgOptions.h>
 
 #include <vector>
 #include <memory> // unique_ptr

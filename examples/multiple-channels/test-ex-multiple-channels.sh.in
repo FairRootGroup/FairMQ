@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# setup a trap to kill everything if the test fails/timeouts
+trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; kill -TERM $BROADCASTER_PID; wait $SAMPLER_PID; wait $SINK_PID; wait $BROADCASTER_PID;' TERM
+
+
+SINK="fairmq-ex-multiple-channels-sink"
+SINK+=" --id sink1"
+SINK+=" --verbosity veryhigh"
+SINK+=" --max-iterations 1"
+SINK+=" --control static --color false"
+SINK+=" --channel-config name=data,type=pull,method=connect,rateLogging=0,address=tcp://localhost:5555"
+SINK+="                  name=broadcast,type=sub,method=connect,rateLogging=0,address=tcp://localhost:5005"
+@CMAKE_CURRENT_BINARY_DIR@/$SINK &
+SINK_PID=$!
+
+sleep 1
+
+SAMPLER="fairmq-ex-multiple-channels-sampler"
+SAMPLER+=" --id sampler1"
+SAMPLER+=" --verbosity veryhigh"
+SAMPLER+=" --max-iterations 1"
+SAMPLER+=" --control static --color false"
+SAMPLER+=" --channel-config name=data,type=push,method=bind,rateLogging=0,address=tcp://*:5555"
+SAMPLER+="                  name=broadcast,type=sub,method=connect,rateLogging=0,address=tcp://localhost:5005"
+@CMAKE_CURRENT_BINARY_DIR@/$SAMPLER &
+SAMPLER_PID=$!
+
+BROADCASTER="fairmq-ex-multiple-channels-broadcaster"
+BROADCASTER+=" --id broadcaster1"
+BROADCASTER+=" --verbosity veryhigh"
+BROADCASTER+=" --control static --color false"
+BROADCASTER+=" --channel-config name=broadcast,type=pub,method=bind,rateLogging=0,address=tcp://*:5005"
+@CMAKE_CURRENT_BINARY_DIR@/$BROADCASTER &
+BROADCASTER_PID=$!
+
+wait $SAMPLER_PID
+wait $SINK_PID
+
+# stop broadcaster
+kill -SIGINT $BROADCASTER_PID
+
+# wait for broadcaster to finish
+wait $BROADCASTER_PID

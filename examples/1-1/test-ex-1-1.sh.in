@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# setup a trap to kill everything if the test fails/timeouts
+trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SINK_PID;' TERM
+
+SAMPLER="fairmq-ex-1-1-sampler"
+SAMPLER+=" --id sampler1"
+SAMPLER+=" --verbosity veryhigh"
+SAMPLER+=" --control static --color false"
+SAMPLER+=" --max-iterations 1"
+SAMPLER+=" --channel-config name=data,type=push,method=bind,address=tcp://*:5555,rateLogging=0"
+@CMAKE_CURRENT_BINARY_DIR@/$SAMPLER &
+SAMPLER_PID=$!
+
+SINK="fairmq-ex-1-1-sink"
+SINK+=" --id sink1"
+SINK+=" --verbosity veryhigh"
+SINK+=" --control static --color false"
+SINK+=" --max-iterations 1"
+SINK+=" --channel-config name=data,type=pull,method=connect,address=tcp://localhost:5555,rateLogging=0"
+@CMAKE_CURRENT_BINARY_DIR@/$SINK &
+SINK_PID=$!
+
+# wait for sampler and sink to finish
+wait $SAMPLER_PID
+wait $SINK_PID

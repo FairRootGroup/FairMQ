@@ -1,0 +1,11 @@
+#!/bin/bash
+
+SAMPLER="fairmq-ex-multipart-sampler"
+SAMPLER+=" --id sampler1"
+SAMPLER+=" --channel-config name=data,type=push,method=connect,rateLogging=0,address=tcp://127.0.0.1:5555"
+xterm -geometry 80x23+0+0 -hold -e @EX_BIN_DIR@/$SAMPLER &
+
+SINK="fairmq-ex-multipart-sink"
+SINK+=" --id sink1"
+SINK+=" --channel-config name=data,type=pull,method=bind,rateLogging=0,address=tcp://127.0.0.1:5555"
+xterm -geometry 80x23+500+0 -hold -e @EX_BIN_DIR@/$SINK &

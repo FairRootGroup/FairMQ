@@ -1,0 +1,11 @@
+#!/bin/bash
+
+CLIENT="fairmq-ex-req-rep-client"
+CLIENT+=" --id client"
+CLIENT+=" --channel-config name=data,type=req,method=connect,rateLogging=0,address=tcp://127.0.0.1:5005"
+xterm -geometry 80x23+0+0 -hold -e @EX_BIN_DIR@/$CLIENT &
+
+SERVER="fairmq-ex-req-rep-server"
+SERVER+=" --id server"
+SERVER+=" --channel-config name=data,type=rep,method=bind,rateLogging=0,address=tcp://127.0.0.1:5005"
+xterm -geometry 80x23+500+0 -hold -e @EX_BIN_DIR@/$SERVER &
