@@ -1,0 +1,18 @@
+#!/bin/bash
+
+SAMPLER="fairmq-ex-multiple-channels-sampler"
+SAMPLER+=" --id sampler1"
+SAMPLER+=" --channel-config name=data,type=push,method=bind,rateLogging=0,address=tcp://*:5555"
+SAMPLER+="                  name=broadcast,type=sub,method=connect,rateLogging=0,address=tcp://localhost:5005"
+xterm -geometry 80x23+0+0 -hold -e @EX_BIN_DIR@/$SAMPLER &
+
+SINK="fairmq-ex-multiple-channels-sink"
+SINK+=" --id sink1"
+SINK+=" --channel-config name=data,type=pull,method=connect,rateLogging=0,address=tcp://localhost:5555"
+SINK+="                  name=broadcast,type=sub,method=connect,rateLogging=0,address=tcp://localhost:5005"
+xterm -geometry 80x23+500+0 -hold -e @EX_BIN_DIR@/$SINK &
+
+BROADCASTER="fairmq-ex-multiple-channels-broadcaster"
+BROADCASTER+=" --id broadcaster1"
+BROADCASTER+=" --channel-config name=broadcast,type=pub,method=bind,rateLogging=0,address=tcp://*:5005"
+xterm -geometry 80x23+250+330 -hold -e @EX_BIN_DIR@/$BROADCASTER &

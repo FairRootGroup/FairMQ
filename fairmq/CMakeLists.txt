@@ -179,10 +179,8 @@ endif()
 ###################
 # configure files #
 ###################
-configure_file(${CMAKE_SOURCE_DIR}/fairmq/run/startMQBenchmark.sh.in ${CMAKE_BINARY_DIR}/bin/startMQBenchmark.sh)
-configure_file(${CMAKE_SOURCE_DIR}/fairmq/run/benchmark.json ${CMAKE_BINARY_DIR}/bin/config/benchmark.json)
-configure_file(${CMAKE_SOURCE_DIR}/fairmq/options/startConfigExample.sh.in
-               ${CMAKE_BINARY_DIR}/bin/startConfigExample.sh)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run/startMQBenchmark.sh.in ${CMAKE_CURRENT_BINARY_DIR}/startMQBenchmark.sh)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/options/startConfigExample.sh.in ${CMAKE_CURRENT_BINARY_DIR}/startConfigExample.sh)
 
 
 #################################

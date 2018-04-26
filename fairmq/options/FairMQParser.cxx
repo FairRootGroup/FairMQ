@@ -31,8 +31,8 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const string& id, 
 {
     // Create fair mq map
     FairMQMap channelMap;
-    //Helper::PrintPropertyTree(pt);
-    //Helper::PrintDeviceList(pt.get_child(rootNode));
+    // boost::property_tree::json_parser::write_json(std::cout, pt);
+    // Helper::PrintDeviceList(pt.get_child(rootNode));
     // Extract value from boost::property_tree
     Helper::DeviceParser(pt.get_child(rootNode), channelMap, id);
 
@@ -93,8 +93,6 @@ void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap
 {
     string deviceIdKey;
 
-    LOG(debug) << "Looking for '" << deviceId << "' id/key in the provided config file...";
-
     // For each node in fairMQOptions
     for (const auto& p : tree)
     {
@@ -122,7 +120,7 @@ void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap
                     continue;
                 }
 
-                LOG(debug) << "Found with following channels:";
+                LOG(debug) << "Found following channels for device ID '" << deviceId << "' :";
 
                 ChannelParser(q.second, channelMap);
             }
@@ -258,14 +256,6 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
 
         channelList.push_back(channel);
     }
-}
-
-void PrintPropertyTree(const boost::property_tree::ptree& tree, int level)
-{
-  for (const auto& p : tree) {
-    cout << setw(level+1) << level << ": " << p.first << " " << p.second.get_value<string>() << endl;
-    PrintPropertyTree(p.second.get_child(""), level + 1);
-  }
 }
 
 } // Helper namespace

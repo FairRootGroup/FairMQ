@@ -29,6 +29,7 @@ include(CTest)
 option(BUILD_NANOMSG_TRANSPORT "Build nanomsg transport." OFF)
 option(BUILD_OFI_TRANSPORT "Build experimental OFI transport." OFF)
 option(BUILD_DDS_PLUGIN "Build DDS plugin." OFF)
+option(BUILD_EXAMPLES "Build FairMQ examples." ON)
 ################################################################################
 
 
@@ -70,6 +71,10 @@ add_subdirectory(fairmq)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
+endif()
+
+if(BUILD_EXAMPLES)
+  add_subdirectory(examples)
 endif()
 ################################################################################
 
@@ -178,5 +183,11 @@ else()
   set(dds_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_DDS_PLUGIN=ON${CR})")
 endif()
 message(STATUS "  ${BWhite}dds_plugin${CR}         ${dds_summary}")
+if(BUILD_EXAMPLES)
+  set(examples_summary "${BGreen}YES${CR}    (default, disable with ${BMagenta}-DBUILD_EXAMPLES=OFF${CR})")
+else()
+  set(examples_summary "${BRed} NO${CR}    (enable with ${BMagenta}-DBUILD_EXAMPLES=ON${CR})")
+endif()
+message(STATUS "  ${BWhite}examples${CR}           ${examples_summary}")
 message(STATUS "  ")
 ################################################################################

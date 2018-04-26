@@ -44,7 +44,6 @@ FairMQMap SUBOPT::UserParser(const vector<string>& channelConfig, const string& 
         ptree channelProperties;
 
         ptree socketsArray;
-        ptree socketProperties;
 
         string argString(token);
         char* subopts = &argString[0];
@@ -57,6 +56,12 @@ FairMQMap SUBOPT::UserParser(const vector<string>& channelConfig, const string& 
                 channelName = value;
                 channelProperties.put("name", channelName);
             }
+            else if (subopt == ADDRESS)
+            {
+                ptree socketProperties;
+                socketProperties.put(channelOptionKeys[subopt], value);
+                socketsArray.push_back(make_pair("", socketProperties));
+            }
             else if (subopt >= 0 && value != nullptr)
             {
                 channelProperties.put(channelOptionKeys[subopt], value);
@@ -65,7 +70,6 @@ FairMQMap SUBOPT::UserParser(const vector<string>& channelConfig, const string& 
 
         if (channelName != "")
         {
-            socketsArray.push_back(make_pair("", socketProperties));
             channelProperties.add_child("sockets", socketsArray);
         }
         else
