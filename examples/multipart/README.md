@@ -1,13 +1,12 @@
-Example 8: Sending Multipart messages
-===============
+Sending Multipart messages
+==========================
 
 A topology of two devices - Sampler and Sink, communicating with PUSH-PULL pattern.
 
 The Sampler sends a multipart message to the Sink, consisting of two message parts - header and body.
 
-Each message part is a regular FairMQMessage. To combine them into a multi-part message, simply send all but the last part with `SendPart()` and the last part with `Send()` as shown in the example.
+Each message part is a regular FairMQMessage. To combine them into a multi-part message use `FairMQParts`. Add messages to `FairMQParts` with `AddPart` method.
 
-The ZeroMQ transport guarantees delivery of both parts together. Meaning that when the Receive call of the Sink receives the first part, following parts have arrived too.
+All parts are guaranteed to be delivered together. The Receive call in the sink will recive the entire parts structure.
 
-The header contains a simple data structure with one integer. The integer in this structure is used as a stop flag for the sink. As long as its value is 0, the Sink will keep processing the data. Once its value is 1, the Sink will exit its `Run()` method.
-
+The header contains a simple data structure with one integer. The integer in this structure is used as a stop flag for the sink. As long as its value is 0, the Sink will keep processing the data. Once its value is 1, the data handler method of the Sink will return false, which will exit the RUNNING state of the device.

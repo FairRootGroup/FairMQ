@@ -1,5 +1,5 @@
-Example 6: Multiple Channels
-===============
+Multiple Channels
+=================
 
 This example demonstrates how to work with multiple channels and multiplex between them.
 
