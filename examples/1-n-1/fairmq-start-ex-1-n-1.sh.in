@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ex2config="@EX_BIN_DIR@/ex-1-n-1.json"
+ex2config="@EX_CONF_DIR@/ex-1-n-1.json"
 
 SAMPLER="fairmq-ex-1-n-1-sampler"
 SAMPLER+=" --id sampler1"

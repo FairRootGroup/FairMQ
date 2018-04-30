@@ -50,11 +50,11 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-dds-hosts.cfg ${CMAKE_CURRENT_BINA
 
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology.xml_install
-    DESTINATION ${PROJECT_INSTALL_BINDIR}
+    DESTINATION ${PROJECT_INSTALL_DATADIR}
     RENAME ex-dds-topology.xml
 )
 
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-hosts.cfg
-    DESTINATION ${PROJECT_INSTALL_BINDIR}
+    DESTINATION ${PROJECT_INSTALL_DATADIR}
 )
