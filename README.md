@@ -92,7 +92,7 @@ On command line:
 
   * `-DDISABLE_COLOR=ON` disables coloured console output.
   * `-DBUILD_TESTING=OFF` disables building of tests.
-  * `-DBUILD_ESXAMPLES=OFF` disables building of examples.
+  * `-DBUILD_EXAMPLES=OFF` disables building of examples.
   * `-DBUILD_NANOMSG_TRANSPORT=ON` enables building of nanomsg transport.
   * `-DBUILD_OFI_TRANSPORT=ON` enables building of the experimental OFI transport.
   * `-DBUILD_DDS_PLUGIN=ON` enables building of the DDS plugin.
