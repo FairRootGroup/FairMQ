@@ -117,17 +117,17 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
                     MonitorStatus* monitorStatus = fManager->ManagementSegment().find<MonitorStatus>(bipc::unique_instance).first;
                     if (monitorStatus == nullptr)
                     {
-                        LOG(debug) << "no shmmonitor found, starting...";
+                        LOG(debug) << "no fairmq-shmmonitor found, starting...";
                         StartMonitor();
                     }
                     else
                     {
-                        LOG(debug) << "found shmmonitor.";
+                        LOG(debug) << "found fairmq-shmmonitor.";
                     }
                 }
                 catch (std::exception& e)
                 {
-                    LOG(error) << "Exception during shmmonitor initialization: " << e.what() << ", application will now exit";
+                    LOG(error) << "Exception during fairmq-shmmonitor initialization: " << e.what() << ", application will now exit";
                     exit(EXIT_FAILURE);
                 }
             }
@@ -149,7 +149,7 @@ void FairMQTransportFactorySHM::StartMonitor()
 
     auto env = boost::this_process::environment();
 
-    boost::filesystem::path p = boost::process::search_path("shmmonitor");
+    boost::filesystem::path p = boost::process::search_path("fairmq-shmmonitor");
 
     if (!p.empty())
     {
@@ -160,7 +160,7 @@ void FairMQTransportFactorySHM::StartMonitor()
             MonitorStatus* monitorStatus = fManager->ManagementSegment().find<MonitorStatus>(bipc::unique_instance).first;
             if (monitorStatus)
             {
-                LOG(debug) << "shmmonitor started";
+                LOG(debug) << "fairmq-shmmonitor started";
                 break;
             }
             else
@@ -168,7 +168,7 @@ void FairMQTransportFactorySHM::StartMonitor()
                 this_thread::sleep_for(std::chrono::milliseconds(10));
                 if (++numTries > 1000)
                 {
-                    LOG(error) << "Did not get response from shmmonitor after " << 10 * 1000 << " milliseconds. Exiting.";
+                    LOG(error) << "Did not get response from fairmq-shmmonitor after " << 10 * 1000 << " milliseconds. Exiting.";
                     exit(EXIT_FAILURE);
                 }
             }
@@ -177,7 +177,7 @@ void FairMQTransportFactorySHM::StartMonitor()
     }
     else
     {
-        LOG(WARN) << "could not find shmmonitor in the path";
+        LOG(WARN) << "could not find fairmq-shmmonitor in the path";
     }
 }
 

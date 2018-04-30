@@ -1,10 +1,10 @@
 #!/bin/bash
 
 msgSize="1000000"
-SESSION="$(@CMAKE_BINARY_DIR@/fairmq/uuidGen -h)"
+SESSION="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
 
 # setup a trap to kill everything if the test fails/timeouts
-trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SINK_PID; @CMAKE_BINARY_DIR@/fairmq/shmmonitor --cleanup --session $SESSION' TERM
+trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SINK_PID; @CMAKE_BINARY_DIR@/fairmq/fairmq-shmmonitor --cleanup --session $SESSION' TERM
 
 SAMPLER="fairmq-ex-region-sampler"
 SAMPLER+=" --id sampler1"

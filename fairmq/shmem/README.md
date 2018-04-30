@@ -23,7 +23,7 @@ Without the `--self-destruct` option, the monitor will run continuously, moitori
 
 Possible further implementation would be to run the monitor with `--self-destruct` with each topology.
 
-The FairMQShmMonitor class can also be used independently from the supplied executable (built from `runFairMQShmMonitor.cxx`), allowing integration on any level. For example invoking the monitor could be a functionality that a device offers.
+The Monitor class can also be used independently from the supplied executable (built from `runMonitor.cxx`), allowing integration on any level. For example invoking the monitor could be a functionality that a device offers.
 
 FairMQ Shared Memory currently uses following names to register shared memory on the system:
 
