@@ -40,8 +40,10 @@ install(
 
 # configure run script with different executable paths for build and for install directories
 set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(EX_CONF_DIR ${CMAKE_CURRENT_BINARY_DIR})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-1-n-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-1-n-1.sh)
 set(EX_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR})
+set(EX_CONF_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-1-n-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-1-n-1.sh_install)
 
 install(
@@ -53,7 +55,7 @@ install(
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-1-n-1.json ${CMAKE_CURRENT_BINARY_DIR}/ex-1-n-1.json)
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-1-n-1.json
-    DESTINATION ${PROJECT_INSTALL_BINDIR} # TODO: install this in a more appropriate directory
+    DESTINATION ${PROJECT_INSTALL_DATADIR}
 )
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-1-n-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-n-1.sh)
