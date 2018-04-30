@@ -241,32 +241,32 @@ set_target_properties(FairMQ PROPERTIES
 # executables #
 ###############
 
-add_executable(bsampler run/runBenchmarkSampler.cxx)
-target_link_libraries(bsampler FairMQ)
+add_executable(fairmq-bsampler run/runBenchmarkSampler.cxx)
+target_link_libraries(fairmq-bsampler FairMQ)
 
-add_executable(merger run/runMerger.cxx)
-target_link_libraries(merger FairMQ)
+add_executable(fairmq-merger run/runMerger.cxx)
+target_link_libraries(fairmq-merger FairMQ)
 
-add_executable(multiplier run/runMultiplier.cxx)
-target_link_libraries(multiplier FairMQ)
+add_executable(fairmq-multiplier run/runMultiplier.cxx)
+target_link_libraries(fairmq-multiplier FairMQ)
 
-add_executable(proxy run/runProxy.cxx)
-target_link_libraries(proxy FairMQ)
+add_executable(fairmq-proxy run/runProxy.cxx)
+target_link_libraries(fairmq-proxy FairMQ)
 
-add_executable(sink run/runSink.cxx)
-target_link_libraries(sink FairMQ)
+add_executable(fairmq-sink run/runSink.cxx)
+target_link_libraries(fairmq-sink FairMQ)
 
-add_executable(splitter run/runSplitter.cxx)
-target_link_libraries(splitter FairMQ)
+add_executable(fairmq-splitter run/runSplitter.cxx)
+target_link_libraries(fairmq-splitter FairMQ)
 
 add_executable(runConfigExample options/runConfigEx.cxx)
 target_link_libraries(runConfigExample FairMQ)
 
-add_executable(shmmonitor shmem/runMonitor.cxx)
-target_link_libraries(shmmonitor FairMQ)
+add_executable(fairmq-shmmonitor shmem/runMonitor.cxx)
+target_link_libraries(fairmq-shmmonitor FairMQ)
 
-add_executable(uuidGen run/runUuidGenerator.cxx)
-target_link_libraries(uuidGen FairMQ)
+add_executable(fairmq-uuid-gen run/runUuidGenerator.cxx)
+target_link_libraries(fairmq-uuid-gen FairMQ)
 
 ###########
 # install #
@@ -274,14 +274,14 @@ target_link_libraries(uuidGen FairMQ)
 install(
     TARGETS # FairMQFull, tests are not installed
     FairMQ
-    bsampler
-    merger
-    multiplier
-    proxy
-    sink
-    splitter
-    shmmonitor
-    uuidGen
+    fairmq-bsampler
+    fairmq-merger
+    fairmq-multiplier
+    fairmq-proxy
+    fairmq-sink
+    fairmq-splitter
+    fairmq-shmmonitor
+    fairmq-uuid-gen
 
     EXPORT ${PROJECT_EXPORT_SET}
     LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}

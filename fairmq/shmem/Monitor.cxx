@@ -72,7 +72,7 @@ Monitor::Monitor(const string& sessionName, bool selfDestruct, bool interactive,
     MonitorStatus* monitorStatus = fManagementSegment.find<MonitorStatus>(bipc::unique_instance).first;
     if (monitorStatus != nullptr)
     {
-        cout << "shmmonitor already started or not properly exited. Try `shmmonitor --cleanup`" << endl;
+        cout << "fairmq-shmmonitor already started or not properly exited. Try `fairmq-shmmonitor --cleanup`" << endl;
         exit(EXIT_FAILURE);
     }
     fManagementSegment.construct<MonitorStatus>(bipc::unique_instance)();
