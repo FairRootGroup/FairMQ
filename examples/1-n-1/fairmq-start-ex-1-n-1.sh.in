@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
+
 ex2config="@EX_CONF_DIR@/ex-1-n-1.json"
 
 SAMPLER="fairmq-ex-1-n-1-sampler"

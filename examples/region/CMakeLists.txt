@@ -24,6 +24,19 @@ target_link_libraries(fairmq-ex-region-sink PRIVATE ExampleRegionLib)
 
 add_custom_target(ExampleRegion DEPENDS fairmq-ex-region-sampler fairmq-ex-region-sink)
 
+set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-region.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-region.sh)
+
+# test
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-region.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-region.sh)
+
+add_test(NAME Example-Region COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-region.sh)
+set_tests_properties(Example-Region PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received ack")
+
+# install
+
 install(
     TARGETS
     fairmq-ex-region-sampler
@@ -34,9 +47,8 @@ install(
 )
 
 # configure run script with different executable paths for build and for install directories
-set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-region.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-region.sh)
 set(EX_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR})
+set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-region.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-region.sh_install)
 
 install(
@@ -44,8 +56,3 @@ install(
     DESTINATION ${PROJECT_INSTALL_BINDIR}
     RENAME fairmq-start-ex-region.sh
 )
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-region.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-region.sh)
-
-add_test(NAME Example-Region COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-region.sh)
-set_tests_properties(Example-Region PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received ack")

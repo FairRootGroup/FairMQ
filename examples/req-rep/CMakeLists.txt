@@ -24,6 +24,19 @@ target_link_libraries(fairmq-ex-req-rep-server PRIVATE ExampleReqRepLib)
 
 add_custom_target(ExampleReqRep DEPENDS fairmq-ex-req-rep-client fairmq-ex-req-rep-server)
 
+set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-req-rep.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-req-rep.sh)
+
+# test
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-req-rep.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-req-rep.sh)
+
+add_test(NAME Example-ReqRep COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-req-rep.sh)
+set_tests_properties(Example-ReqRep PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received reply from server: ")
+
+# install
+
 install(
     TARGETS
     fairmq-ex-req-rep-client
@@ -34,9 +47,8 @@ install(
 )
 
 # configure run script with different executable paths for build and for install directories
-set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-req-rep.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-req-rep.sh)
 set(EX_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR})
+set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-req-rep.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-req-rep.sh_install)
 
 install(
@@ -44,8 +56,3 @@ install(
     DESTINATION ${PROJECT_INSTALL_BINDIR}
     RENAME fairmq-start-ex-req-rep.sh
 )
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-req-rep.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-req-rep.sh)
-
-add_test(NAME Example-ReqRep COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-req-rep.sh)
-set_tests_properties(Example-ReqRep PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received reply from server: ")

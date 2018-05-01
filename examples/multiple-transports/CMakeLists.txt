@@ -28,6 +28,18 @@ target_link_libraries(fairmq-ex-multiple-transports-sink PRIVATE ExampleMultiple
 
 add_custom_target(ExampleMultipleTransports DEPENDS fairmq-ex-multiple-transports-sampler1 fairmq-ex-multiple-transports-sampler2 fairmq-ex-multiple-transports-sink)
 
+set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-multiple-transports.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-multiple-transports.sh)
+
+# test
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-multiple-transports.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multiple-transports.sh)
+add_test(NAME Example-Multiple-Transports COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multiple-transports.sh)
+set_tests_properties(Example-Multiple-Transports PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received messages from both sources.")
+
+# install
+
 install(
     TARGETS
     fairmq-ex-multiple-transports-sampler1
@@ -38,10 +50,9 @@ install(
     RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
 )
 
-# configure run script with different executable paths for build and for install directories
-set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-multiple-transports.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-multiple-transports.sh)
+# configure run script with different executable paths for install directories
 set(EX_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR})
+set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-multiple-transports.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-multiple-transports.sh_install)
 
 install(
@@ -49,8 +60,3 @@ install(
     DESTINATION ${PROJECT_INSTALL_BINDIR}
     RENAME fairmq-start-ex-multiple-transports.sh
 )
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-multiple-transports.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multiple-transports.sh)
-
-add_test(NAME Example-Multiple-Transports COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multiple-transports.sh)
-set_tests_properties(Example-Multiple-Transports PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received messages from both sources.")

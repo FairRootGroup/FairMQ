@@ -28,6 +28,17 @@ target_link_libraries(fairmq-ex-dds-sink PRIVATE ExampleDDSLib)
 
 add_custom_target(ExampleDDS DEPENDS fairmq-ex-dds-sampler fairmq-ex-dds-processor fairmq-ex-dds-sink)
 
+set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(DDS_PLUGIN_LIB_DIR ${CMAKE_BINARY_DIR}/fairmq/plugins/DDS)
+set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-dds-topology.xml ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology.xml @ONLY)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-dds-hosts.cfg ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-hosts.cfg COPYONLY)
+
+# test
+
+# install
+
 install(
     TARGETS
     fairmq-ex-dds-sampler
@@ -39,14 +50,10 @@ install(
 )
 
 # configure run script with different executable paths for build and for install directories
-set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
-set(DDS_PLUGIN_LIB_DIR ${CMAKE_BINARY_DIR}/fairmq/plugins/DDS)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-dds-topology.xml ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology.xml @ONLY)
 set(EX_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR})
 set(DDS_PLUGIN_LIB_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR})
+set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-dds-topology.xml ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology.xml_install @ONLY)
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-dds-hosts.cfg ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-hosts.cfg COPYONLY)
 
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology.xml_install

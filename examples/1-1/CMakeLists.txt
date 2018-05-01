@@ -23,6 +23,19 @@ target_link_libraries(fairmq-ex-1-1-sink PRIVATE Example11Lib)
 
 add_custom_target(Example11 DEPENDS fairmq-ex-1-1-sampler fairmq-ex-1-1-sink)
 
+set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-1-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-1-1.sh)
+
+# test
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-1-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-1.sh)
+
+add_test(NAME Example-1-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-1.sh)
+set_tests_properties(Example-1-1 PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received: ")
+
+# install
+
 install(
     TARGETS
     fairmq-ex-1-1-sampler
@@ -33,9 +46,8 @@ install(
 )
 
 # configure run script with different executable paths for build and for install directories
-set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-1-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-1-1.sh)
 set(EX_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR})
+set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-1-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-1-1.sh_install)
 
 install(
@@ -43,8 +55,3 @@ install(
     DESTINATION ${PROJECT_INSTALL_BINDIR}
     RENAME fairmq-start-ex-1-1.sh
 )
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-1-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-1.sh)
-
-add_test(NAME Example-1-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-1.sh)
-set_tests_properties(Example-1-1 PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received: ")

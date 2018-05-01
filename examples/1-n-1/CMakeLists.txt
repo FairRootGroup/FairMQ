@@ -28,6 +28,22 @@ target_link_libraries(fairmq-ex-1-n-1-sink PRIVATE Example1N1Lib)
 
 add_custom_target(Example1N1 DEPENDS fairmq-ex-1-n-1-sampler fairmq-ex-1-n-1-processor fairmq-ex-1-n-1-sink)
 
+set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(EX_CONF_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-1-n-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-1-n-1.sh)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-1-n-1.json ${CMAKE_CURRENT_BINARY_DIR}/ex-1-n-1.json)
+
+# test
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-1-n-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-n-1.sh)
+
+add_test(NAME Example-1-n-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-n-1.sh)
+set_tests_properties(Example-1-n-1 PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received: ")
+
+# install
+
 install(
     TARGETS
     fairmq-ex-1-n-1-sampler
@@ -39,11 +55,9 @@ install(
 )
 
 # configure run script with different executable paths for build and for install directories
-set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
-set(EX_CONF_DIR ${CMAKE_CURRENT_BINARY_DIR})
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-1-n-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-1-n-1.sh)
 set(EX_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR})
 set(EX_CONF_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR})
+set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-1-n-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-1-n-1.sh_install)
 
 install(
@@ -52,13 +66,7 @@ install(
     RENAME fairmq-start-ex-1-n-1.sh
 )
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-1-n-1.json ${CMAKE_CURRENT_BINARY_DIR}/ex-1-n-1.json)
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-1-n-1.json
     DESTINATION ${PROJECT_INSTALL_DATADIR}
 )
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-1-n-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-n-1.sh)
-
-add_test(NAME Example-1-n-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-n-1.sh)
-set_tests_properties(Example-1-n-1 PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received: ")

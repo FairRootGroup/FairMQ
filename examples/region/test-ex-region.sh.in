@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
+
 msgSize="1000000"
 SESSION="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
 
