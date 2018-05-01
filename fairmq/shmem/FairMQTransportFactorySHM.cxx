@@ -23,7 +23,7 @@
 
 #include <chrono>
 #include <thread>
-#include <cstdlib> // std::system
+#include <cstdlib> // getenv
 
 using namespace std;
 using namespace fair::mq::shmem;
@@ -76,7 +76,7 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
 
     try
     {
-        fShMutex = fair::mq::tools::make_unique<bipc::named_mutex>(bipc::open_or_create, std::string("fmq_shm_" + fSessionName + "_mutex").c_str());
+        fShMutex = fair::mq::tools::make_unique<bipc::named_mutex>(bipc::open_or_create, string("fmq_shm_" + fSessionName + "_mutex").c_str());
 
         if (zmq_ctx_set(fContext, ZMQ_IO_THREADS, numIoThreads) != 0)
         {
@@ -125,7 +125,7 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
                         LOG(debug) << "found fairmq-shmmonitor.";
                     }
                 }
-                catch (std::exception& e)
+                catch (exception& e)
                 {
                     LOG(error) << "Exception during fairmq-shmmonitor initialization: " << e.what() << ", application will now exit";
                     exit(EXIT_FAILURE);
@@ -149,7 +149,14 @@ void FairMQTransportFactorySHM::StartMonitor()
 
     auto env = boost::this_process::environment();
 
-    boost::filesystem::path p = boost::process::search_path("fairmq-shmmonitor");
+    vector<boost::filesystem::path> ownPath = boost::this_process::path();
+
+    if (const char* fmqp = getenv("FAIRMQ_PATH"))
+    {
+        ownPath.insert(ownPath.begin(), boost::filesystem::path(fmqp));
+    }
+
+    boost::filesystem::path p = boost::process::search_path("fairmq-shmmonitor", ownPath);
 
     if (!p.empty())
     {
@@ -165,7 +172,7 @@ void FairMQTransportFactorySHM::StartMonitor()
             }
             else
             {
-                this_thread::sleep_for(std::chrono::milliseconds(10));
+                this_thread::sleep_for(chrono::milliseconds(10));
                 if (++numTries > 1000)
                 {
                     LOG(error) << "Did not get response from fairmq-shmmonitor after " << 10 * 1000 << " milliseconds. Exiting.";
@@ -238,7 +245,7 @@ FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const vector<FairMQChann
     return unique_ptr<FairMQPoller>(new FairMQPollerSHM(channels));
 }
 
-FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const std::vector<const FairMQChannel*>& channels) const
+FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const vector<const FairMQChannel*>& channels) const
 {
     return unique_ptr<FairMQPoller>(new FairMQPollerSHM(channels));
 }
@@ -305,7 +312,7 @@ FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
 
     if (lastRemoved)
     {
-        boost::interprocess::named_mutex::remove(std::string("fmq_shm_" + fSessionName + "_mutex").c_str());
+        boost::interprocess::named_mutex::remove(string("fmq_shm_" + fSessionName + "_mutex").c_str());
     }
 }
 

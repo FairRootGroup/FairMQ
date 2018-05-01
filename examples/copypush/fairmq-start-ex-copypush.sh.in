@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
+
 SAMPLER="fairmq-ex-copypush-sampler"
 SAMPLER+=" --id sampler1"
 SAMPLER+=" --channel-config name=data,type=push,method=bind,rateLogging=0,address=tcp://*:5555,address=tcp://*:5556"

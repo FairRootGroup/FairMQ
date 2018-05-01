@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
+
 SAMPLER1="fairmq-ex-multiple-transports-sampler1"
 SAMPLER1+=" --id sampler1"
 SAMPLER1+=" --severity debug"
