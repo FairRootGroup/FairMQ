@@ -84,10 +84,10 @@ else
 fi
 
 if [ "$1" == "alfa_ci" ]; then
-  export LABEL1=alfa_ci-$COMPILER-FairLogger_$GIT_BRANCH
+  export LABEL1=alfa_ci-$COMPILER-FairMQ_$GIT_BRANCH
   export LABEL=$(echo $LABEL1 | sed -e 's#/#_#g')
 else
-  export LABEL1=${LINUX_FLAVOUR}-$chip-$COMPILER-FairLogger_$GIT_BRANCH
+  export LABEL1=${LINUX_FLAVOUR}-$chip-$COMPILER-FairMQ_$GIT_BRANCH
   export LABEL=$(echo $LABEL1 | sed -e 's#/#_#g')
 fi
 
