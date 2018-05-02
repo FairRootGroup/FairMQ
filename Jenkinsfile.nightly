@@ -10,7 +10,6 @@ def buildMatrix(List specs, Closure callback) {
     def label = specToLabel(spec)
     nodes[label] = {
       node(label) {
-        githubNotify(context: "alfa-ci/${label}", description: 'Building ...', status: 'PENDING')
         try {
           deleteDir()
           checkout scm
@@ -18,10 +17,8 @@ def buildMatrix(List specs, Closure callback) {
           callback.call(spec, label)
 
           deleteDir()
-          githubNotify(context: "alfa-ci/${label}", description: 'Success', status: 'SUCCESS')
         } catch (e) {
           deleteDir()
-          githubNotify(context: "alfa-ci/${label}", description: 'Error', status: 'ERROR')
           throw e
         }
       }
@@ -32,8 +29,9 @@ def buildMatrix(List specs, Closure callback) {
 
 pipeline{
   agent none
+  triggers { cron('H 2 * * *') }
   stages {
-    stage("Run Build/Test Matrix") {
+    stage("Run Nightly Build/Test Matrix") {
       steps{
         script {
           parallel(buildMatrix([
@@ -45,9 +43,10 @@ pipeline{
               echo "export BUILDDIR=$PWD/build" >> Dart.cfg
               echo "export SOURCEDIR=$PWD" >> Dart.cfg
               echo "export PATH=$SIMPATH/bin:$PATH" >> Dart.cfg
-              echo "export GIT_BRANCH=$JOB_BASE_NAME" >> Dart.cfg
+              echo "export GIT_BRANCH=dev" >> Dart.cfg
             '''
-            sh './Dart.sh alfa_ci Dart.cfg'
+            sh './Dart.sh Nightly Dart.cfg'
+            sh './Dart.sh Profile Dart.cfg'
           })
         }
       }
