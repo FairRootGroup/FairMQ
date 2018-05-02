@@ -157,6 +157,10 @@ macro(set_fairmq_defaults)
 
   # Define export set, only one for now
   set(PROJECT_EXPORT_SET ${PROJECT_NAME}Targets)
+
+  # Override CMake defaults
+  set(CMAKE_CXX_FLAGS_NIGHTLY "-O2 -g -Wshadow -Wall -Wextra")
+  set(CMAKE_CXX_FLAGS_PROFILE "-g3 -fno-inline -ftest-coverage -fprofile-arcs -Wshadow -Wall -Wextra -Wunused-variable")
 endmacro()
 
 function(join VALUES GLUE OUTPUT)

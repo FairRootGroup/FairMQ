@@ -50,10 +50,6 @@ EndIf()
 
 Ctest_Start($ENV{ctest_model})
 
-If(NOT $ENV{ctest_model} MATCHES Experimental)
-  Ctest_Update(SOURCE "${CTEST_SOURCE_DIRECTORY}")
-EndIf()
-
 Ctest_Configure(BUILD "${CTEST_BINARY_DIRECTORY}"
                 OPTIONS "${configure_options}"
                )
