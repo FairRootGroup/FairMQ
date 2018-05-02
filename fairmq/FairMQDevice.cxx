@@ -42,7 +42,7 @@ FairMQDevice::FairMQDevice()
     , fPortRangeMin(22000)
     , fPortRangeMax(32000)
     , fNetworkInterface()
-    , fDefaultTransport()
+    , fDefaultTransport("default")
     , fInitializationTimeoutInS(120)
     , fDataCallbacks(false)
     , fMsgInputs()
@@ -72,7 +72,7 @@ FairMQDevice::FairMQDevice(const fair::mq::tools::Version version)
     , fPortRangeMin(22000)
     , fPortRangeMax(32000)
     , fNetworkInterface()
-    , fDefaultTransport()
+    , fDefaultTransport("default")
     , fInitializationTimeoutInS(120)
     , fDataCallbacks(false)
     , fMsgInputs()
@@ -786,6 +786,8 @@ void FairMQDevice::CreateOwnConfig()
     fNetworkInterface = fConfig->GetValue<string>("network-interface");
     fNumIoThreads = fConfig->GetValue<int>("io-threads");
     fInitializationTimeoutInS = fConfig->GetValue<int>("initialization-timeout");
+    fRate = fConfig->GetValue<float>("rate");
+    fDefaultTransport = fConfig->GetValue<string>("transport");
 }
 
 void FairMQDevice::SetTransport(const string& transport)
