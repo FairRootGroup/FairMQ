@@ -1,28 +1,27 @@
 # FairMQ
 
-C++ Message Queuing Library and Framework
+C++ Message passing framework
 
-FairMQ was designed to help implementing large-scale data processing workflows needed in next-generation High Energy
-Physics experiments. FairMQ is written in C++ and aims to
-  * provide **a message queuing abstraction** of different data transport technologies,
+FairMQ is designed to help implementing large-scale data processing workflows needed in next-generation Particle Physics experiments. FairMQ is written in C++ and aims to
+  * provide **an asynchronous message passing abstraction** of different data transport technologies,
   * provide a reasonably **efficient data transport** service (zero-copy, high throughput),
   * be **data format agnostic**, and
-  * provide some of the **basic building blocks** needed to implement higher level data processing workflows.
+  * provide **basic building blocks** that can be used to implement higher level data processing workflows.
 
-The core of FairMQ provides an abstract message queuing API with scalability protocols
+The core of FairMQ provides an abstract asynchronous message passing API with scalability protocols
 inspired by [ZeroMQ](https://github.com/zeromq/libzmq) (e.g. PUSH/PULL, PUB/SUB).
 FairMQ provides multiple implementations for its API (so-called "transports",
 e.g. `zeromq`, `shmem`, `nanomsg`, and `ofi` (in development)) to cover a variety of use cases
 (e.g. inter-thread, inter-process, inter-node communication) and machines (e.g. Ethernet, Infiniband).
 In addition to this core functionality FairMQ provides a framework for creating "devices" - actors which
-are communicating through message queuing. Device execution is modelled as a simple state machine that
+are communicating through message passing. FairMQ does not only allow the user to use different transport but also to mix them; i.e: A Device can communicate using different transport on different channels at the same time. Device execution is modelled as a simple state machine that
 shapes the integration points for the user task. Devices also incorporate a plugin system for runtime configuration and control.
 Next to the provided devices and plugins (e.g. [DDS](https://github.com/FairRootGroup/DDS))
-the user can extened FairMQ by developing her own plugins to integrate her devices with external
+the user can extened FairMQ by developing his own plugins to integrate his devices with external
 configuration and control services.
 
-FairMQ has been developed in the context of its mother project [FairRoot](https://github.com/FairRootGroup/FairRoot) - 
-a simulation, reconstruction and analysis framework that is based on the [ROOT](https://root.cern) system.
+FairMQ has been developed in the context of its mother project [FairRoot](https://github.com/FairRootGroup/FairRoot) -
+a simulation, reconstruction and analysis framework.
 
 ## Dependencies
 
