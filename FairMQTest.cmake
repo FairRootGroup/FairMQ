@@ -25,8 +25,9 @@ Set(CTEST_USE_LAUNCHERS 1)
 Set(configure_options "${configure_options};-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}")
 
 Set(configure_options "${configure_options};-DDISABLE_COLOR=ON")
-Set(configure_options "${configure_options};-DCMAKE_PREFIX_PATH=$SIMPATH")
+Set(configure_options "${configure_options};-DCMAKE_PREFIX_PATH=$ENV{SIMPATH}")
 Set(configure_options "${configure_options};-DBUILD_NANOMSG_TRANSPORT=ON")
+Set(configure_options "${configure_options};-DBUILD_DDS_PLUGIN=ON")
 
 Set(EXTRA_FLAGS $ENV{EXTRA_FLAGS})
 If(EXTRA_FLAGS)
