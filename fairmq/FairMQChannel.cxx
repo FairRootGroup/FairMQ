@@ -12,12 +12,12 @@
  * @author A. Rybalchenko
  */
 
-#include <set>
-#include <utility> // std::move
+#include "FairMQChannel.h"
 
 #include <boost/algorithm/string.hpp> // join/split
 
-#include "FairMQChannel.h"
+#include <set>
+#include <utility> // std::move
 
 using namespace std;
 

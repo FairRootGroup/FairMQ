@@ -302,15 +302,32 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
             address = endpoint.substr(1);
         }
 
-        bool rc = true;
+        if (address.compare(0, 6, "tcp://") == 0)
+        {
+            string addressString = address.substr(6);
+            auto pos = addressString.find(":");
+            string hostPart = addressString.substr(0, pos);
+            if (!(bind && hostPart == "*"))
+            {
+                string portPart = addressString.substr(pos + 1);
+                string resolvedHost = fair::mq::tools::getIpFromHostname(hostPart);
+                if (resolvedHost == "")
+                {
+                    return false;
+                }
+                address.assign("tcp://" + resolvedHost + ":" + portPart);
+            }
+        }
+
+        bool success = true;
         // make the connection
         if (bind)
         {
-            rc = BindEndpoint(*ch.fSocket, address);
+            success = BindEndpoint(*ch.fSocket, address);
         }
         else
         {
-            rc = ConnectEndpoint(*ch.fSocket, address);
+            success = ConnectEndpoint(*ch.fSocket, address);
         }
 
         // bind might bind to an address different than requested,
@@ -325,9 +342,9 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
         LOG(debug) << "Attached channel " << ch.fName << " to " << endpoint << (bind ? " (bind) " : " (connect) ");
 
         // after the book keeping is done, exit in case of errors
-        if (!rc)
+        if (!success)
         {
-            return rc;
+            return success;
         }
     }
 
