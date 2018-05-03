@@ -43,7 +43,15 @@ a simulation, reconstruction and analysis framework.
 
   Supported platforms: Linux and MacOS.
 
-## Installation
+## Releases
+
+| Stable release | Date |
+| --- | --- |
+| [**1.2.0**](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.2.0) | May 2018 |
+
+Find all FairMQ stable and development releases [here](https://github.com/FairRootGroup/FairMQ/releases).
+
+## Installation from Source
 
 ```bash
 git clone https://github.com/FairRootGroup/FairMQ fairmq
