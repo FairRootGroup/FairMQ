@@ -530,8 +530,8 @@ class FairMQDevice : public FairMQStateMachine
     bool fExternalConfig;
 
     const fair::mq::tools::Version fVersion;
-    float fRate;
-    size_t fLastTime;
+    float fRate; ///< Rate limiting for ConditionalRun
+    size_t fLastTime; ///< Rate limiting for ConditionalRun
 };
 
 #endif /* FAIRMQDEVICE_H_ */
