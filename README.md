@@ -30,16 +30,16 @@ a simulation, reconstruction and analysis framework.
 
 ## Dependencies
 
-  * **Boost** (PUBLIC)
-  * **FairLogger** (PUBLIC)
-  * CMake (BUILD)
-  * GTest (BUILD, optional, `tests`)
-  * ZeroMQ (PRIVATE)
-  * Msgpack (PRIVATE, optional, `nanomsg_transport`)
-  * nanomsg (PRIVATE, optional, `nanomsg_transport`)
-  * OFI (PRIVATE, optional, `ofi_transport`)
-  * Protobuf (PRIVATE, optional, `ofi_transport`)
-  * DDS (PRIVATE, optional, `dds_plugin`)
+  * [**Boost**](https://www.boost.org/) (PUBLIC)
+  * [**FairLogger**](https://github.com/FairRootGroup/FairLogger) (PUBLIC)
+  * [CMake](https://cmake.org/) (BUILD)
+  * [GTest](https://github.com/google/googletest) (BUILD, optional, `tests`)
+  * [ZeroMQ](http://zeromq.org/) (PRIVATE)
+  * [Msgpack](https://msgpack.org/index.html) (PRIVATE, optional, `nanomsg_transport`)
+  * [nanomsg](http://nanomsg.org/) (PRIVATE, optional, `nanomsg_transport`)
+  * [OFI](https://ofiwg.github.io/libfabric/) (PRIVATE, optional, `ofi_transport`)
+  * [Protobuf](https://developers.google.com/protocol-buffers/) (PRIVATE, optional, `ofi_transport`)
+  * [DDS](http://dds.gsi.de) (PRIVATE, optional, `dds_plugin`)
 
   Supported platforms: Linux and MacOS.
 
