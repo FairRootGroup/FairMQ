@@ -1,3 +1,4 @@
+<!-- {#mainpage} -->
 # FairMQ
 
 C++ Message passing framework
@@ -34,6 +35,7 @@ a simulation, reconstruction and analysis framework.
   * [**FairLogger**](https://github.com/FairRootGroup/FairLogger) (PUBLIC)
   * [CMake](https://cmake.org/) (BUILD)
   * [GTest](https://github.com/google/googletest) (BUILD, optional, `tests`)
+  * [Doxygen](http://www.doxygen.org/) (BUILD, optional, `docs`)
   * [ZeroMQ](http://zeromq.org/) (PRIVATE)
   * [Msgpack](https://msgpack.org/index.html) (PRIVATE, optional, `nanomsg_transport`)
   * [nanomsg](http://nanomsg.org/) (PRIVATE, optional, `nanomsg_transport`)

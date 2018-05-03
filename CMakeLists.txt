@@ -26,19 +26,25 @@ include(CTest)
 
 
 # Build options ################################################################
-option(BUILD_NANOMSG_TRANSPORT "Build nanomsg transport." OFF)
-option(BUILD_OFI_TRANSPORT "Build experimental OFI transport." OFF)
-option(BUILD_DDS_PLUGIN "Build DDS plugin." OFF)
-option(BUILD_EXAMPLES "Build FairMQ examples." ON)
+include(CMakeDependentOption)
+option(BUILD_FAIRMQ "Build FairMQ library and devices." ON)
+cmake_dependent_option(BUILD_TESTING "Build tests." OFF "BUILD_FAIRMQ" OFF)
+cmake_dependent_option(BUILD_NANOMSG_TRANSPORT "Build nanomsg transport." OFF "BUILD_FAIRMQ" OFF)
+cmake_dependent_option(BUILD_OFI_TRANSPORT "Build experimental OFI transport." OFF "BUILD_FAIRMQ" OFF)
+cmake_dependent_option(BUILD_DDS_PLUGIN "Build DDS plugin." OFF "BUILD_FAIRMQ" OFF)
+cmake_dependent_option(BUILD_EXAMPLES "Build FairMQ examples." ON "BUILD_FAIRMQ" OFF)
+option(BUILD_DOCS "Build FairMQ documentation." OFF)
 ################################################################################
 
 
 # Dependencies #################################################################
-find_package2(PUBLIC Boost VERSION 1.64 REQUIRED
-  COMPONENTS program_options thread system filesystem regex date_time signals
-)
-find_package2(PUBLIC FairLogger VERSION 1.0.6 REQUIRED)
-find_package2(PRIVATE ZeroMQ VERSION 4.1.5 REQUIRED)
+if(BUILD_FAIRMQ)
+  find_package2(PUBLIC Boost VERSION 1.64 REQUIRED
+    COMPONENTS program_options thread system filesystem regex date_time signals
+  )
+  find_package2(PUBLIC FairLogger VERSION 1.0.6 REQUIRED)
+  find_package2(PRIVATE ZeroMQ VERSION 4.1.5 REQUIRED)
+endif()
 
 if(BUILD_NANOMSG_TRANSPORT)
   find_package2(PRIVATE nanomsg VERSION 1.0.0 REQUIRED)
@@ -58,16 +64,22 @@ endif()
 if(BUILD_TESTING)
   find_package2(PRIVATE GTest VERSION 1.7.0 REQUIRED)
 endif()
+
+if(BUILD_DOCS)
+  find_package2(PRIVATE Doxygen VERSION 1.8.8 REQUIRED COMPONENTS dot OPTIONAL_COMPONENTS mscgen dia)
+endif()
 ################################################################################
 
 
 # Targets ######################################################################
-configure_file(${PROJECT_NAME_LOWER}/Version.h.in
-  ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
-  @ONLY
-)
+if(BUILD_FAIRMQ)
+  configure_file(${PROJECT_NAME_LOWER}/Version.h.in
+    ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
+    @ONLY
+  )
 
-add_subdirectory(fairmq)
+  add_subdirectory(fairmq)
+endif()
 
 if(BUILD_TESTING)
   add_subdirectory(test)
@@ -76,12 +88,25 @@ endif()
 if(BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
+
+if(BUILD_DOCS)
+  set(DOXYGEN_OUTPUT_DIRECTORY doxygen)
+  set(DOXYGEN_PROJECT_NUMBER ${PROJECT_GIT_VERSION})
+  set(DOXYGEN_PROJECT_BRIEF "C++ Message Passing Framework")
+  set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md)
+  doxygen_add_docs(doxygen README.md fairmq)
+  add_custom_target(docs ALL DEPENDS doxygen)
+endif()
 ################################################################################
 
 
 # Package components ###########################################################
-list(APPEND PROJECT_PACKAGE_COMPONENTS fairmq)
-list(APPEND PROJECT_PACKAGE_COMPONENTS tests)
+if(BUILD_FAIRMQ)
+  list(APPEND PROJECT_PACKAGE_COMPONENTS fairmq)
+endif()
+if(BUILD_TESTING)
+  list(APPEND PROJECT_PACKAGE_COMPONENTS tests)
+endif()
 if(BUILD_DDS_PLUGIN)
   list(APPEND PROJECT_PACKAGE_COMPONENTS dds_plugin)
 endif()
@@ -91,18 +116,25 @@ endif()
 if(BUILD_OFI_TRANSPORT)
   list(APPEND PROJECT_PACKAGE_COMPONENTS ofi_transport)
 endif()
+if(BUILD_EXAMPLES)
+  list(APPEND PROJECT_PACKAGE_COMPONENTS examples)
+endif()
+if(BUILD_DOCS)
+  list(APPEND PROJECT_PACKAGE_COMPONENTS docs)
+endif()
 ################################################################################
 
 
 # Installation #################################################################
-install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
-  DESTINATION ${PROJECT_INSTALL_INCDIR}
-)
+if(BUILD_FAIRMQ)
+  install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
+    DESTINATION ${PROJECT_INSTALL_INCDIR}
+  )
 
-# Install cmake modules
-install(FILES cmake/FindZeroMQ.cmake
-  DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
-)
+  install(FILES cmake/FindZeroMQ.cmake
+    DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
+  )
+endif()
 if(BUILD_DDS_PLUGIN)
   install(FILES cmake/FindDDS.cmake
     DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
@@ -118,50 +150,68 @@ if(BUILD_OFI_TRANSPORT)
     DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
   )
 endif()
+if(BUILD_DOCS)
+  install(DIRECTORY ${CMAKE_BINARY_DIR}/doxygen/html
+    DESTINATION ${PROJECT_INSTALL_DATADIR}/docs
+  )
+endif()
 
 install_cmake_package()
 ################################################################################
 
 
 # Summary ######################################################################
-message(STATUS "  ")
-message(STATUS "  ${Cyan}DEPENDENCY      VERSION              PREFIX${CR}")
-foreach(dep IN LISTS PROJECT_PACKAGE_DEPENDENCIES)
-  if(${dep}_VERSION)
-    if(${dep} STREQUAL Boost)
-      set(version_str "${BGreen}${${dep}_MAJOR_VERSION}.${${dep}_MINOR_VERSION}${CR}")
+if(PROJECT_PACKAGE_DEPENDENCIES)
+  message(STATUS "  ")
+  message(STATUS "  ${Cyan}DEPENDENCY FOUND     VERSION                   PREFIX${CR}")
+  foreach(dep IN LISTS PROJECT_PACKAGE_DEPENDENCIES)
+    if(${dep}_VERSION)
+      if(${dep} STREQUAL Boost)
+        set(version_str "${BGreen}${${dep}_MAJOR_VERSION}.${${dep}_MINOR_VERSION}${CR}")
+      else()
+        set(version_str "${BGreen}${${dep}_VERSION}${CR}")
+      endif()
     else()
-      set(version_str "${BGreen}${${dep}_VERSION}${CR}")
+      set(version_str "${BYellow}unknown${CR}")
     endif()
-  else()
-    set(version_str "${BYellow}unknown${CR}")
-  endif()
-  if(PROJECT_${dep}_VERSION)
-    set(version_req_str " (>= ${PROJECT_${dep}_VERSION})")
-  endif()
-  pad(${dep} 15 " " dep_padded)
-  if(DISABLE_COLOR)
-    pad("${version_str}${version_req_str}" 20 " " version_padded)
-  else()
-    pad("${version_str}${version_req_str}" 20 " " version_padded COLOR 1)
-  endif()
-  if(${dep} STREQUAL FairLogger)
-    set(prefix ${FairLogger_ROOT})
-  elseif(${dep} STREQUAL GTest)
-    get_filename_component(prefix ${GTEST_INCLUDE_DIRS}/.. ABSOLUTE)
-  elseif(${dep} STREQUAL msgpack)
-    set(prefix ${msgpack_ROOT})
-  elseif(${dep} STREQUAL OFI)
-    get_filename_component(prefix ${${dep}_INCLUDE_DIRS}/.. ABSOLUTE)
-  else()
-    get_filename_component(prefix ${${dep}_INCLUDE_DIR}/.. ABSOLUTE)
-  endif()
-  message(STATUS "  ${BWhite}${dep_padded}${CR}${version_padded}${prefix}")
-  unset(version_str)
-endforeach()
+    if(PROJECT_${dep}_VERSION)
+      set(version_req_str " (>= ${PROJECT_${dep}_VERSION})")
+    endif()
+    pad(${dep} 20 " " dep_padded)
+    if(DISABLE_COLOR)
+      pad("${version_str}${version_req_str}" 25 " " version_padded)
+    else()
+      pad("${version_str}${version_req_str}" 25 " " version_padded COLOR 1)
+    endif()
+    if(${dep} STREQUAL FairLogger)
+      set(prefix ${FairLogger_ROOT})
+    elseif(${dep} STREQUAL GTest)
+      get_filename_component(prefix ${GTEST_INCLUDE_DIRS}/.. ABSOLUTE)
+    elseif(${dep} STREQUAL msgpack)
+      set(prefix ${msgpack_ROOT})
+    elseif(${dep} STREQUAL OFI)
+      get_filename_component(prefix ${${dep}_INCLUDE_DIRS}/.. ABSOLUTE)
+    elseif(${dep} STREQUAL Doxygen)
+      get_target_property(doxygen_bin Doxygen::doxygen INTERFACE_LOCATION)
+      get_filename_component(prefix ${doxygen_bin} DIRECTORY)
+      get_filename_component(prefix ${prefix}/.. ABSOLUTE)
+    else()
+      get_filename_component(prefix ${${dep}_INCLUDE_DIR}/.. ABSOLUTE)
+    endif()
+    message(STATUS "  ${BWhite}${dep_padded}${CR}${version_padded}${prefix}")
+    unset(version_str)
+    unset(version_padded)
+    unset(version_req_str)
+  endforeach()
+endif()
 message(STATUS "  ")
 message(STATUS "  ${Cyan}COMPONENT         BUILT?  INFO${CR}")
-message(STATUS "  ${BWhite}fairmq${CR}             ${BGreen}YES${CR}    (default, always built)")
+if(BUILD_FAIRMQ)
+  set(fairmq_summary "${BGreen}YES${CR}    (default, disable with ${BMagenta}-DBUILD_FAIRMQ=OFF${CR})")
+else()
+  set(fairmq_summary "${BRed} NO${CR}    (enable with ${BMagenta}-DBUILD_FAIRMQ=ON${CR})")
+endif()
+message(STATUS "  ${BWhite}fairmq${CR}             ${fairmq_summary}")
 if(BUILD_TESTING)
   set(tests_summary "${BGreen}YES${CR}    (default, disable with ${BMagenta}-DBUILD_TESTING=OFF${CR})")
 else()
@@ -192,5 +242,11 @@ else()
   set(examples_summary "${BRed} NO${CR}    (enable with ${BMagenta}-DBUILD_EXAMPLES=ON${CR})")
 endif()
 message(STATUS "  ${BWhite}examples${CR}           ${examples_summary}")
+if(BUILD_DOCS)
+  set(docs_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_DOCS=OFF${CR})")
+else()
+  set(docs_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_DOCS=ON${CR})")
+endif()
+message(STATUS "  ${BWhite}docs${CR}               ${docs_summary}")
 message(STATUS "  ")
 ################################################################################
