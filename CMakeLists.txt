@@ -100,6 +100,9 @@ install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
 )
 
 # Install cmake modules
+install(FILES cmake/FindZeroMQ.cmake
+  DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
+)
 if(BUILD_DDS_PLUGIN)
   install(FILES cmake/FindDDS.cmake
     DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
