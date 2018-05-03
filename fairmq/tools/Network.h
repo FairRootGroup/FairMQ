@@ -22,11 +22,13 @@
 #include <stdio.h>
 
 #include <boost/algorithm/string.hpp> // trim
+#include <boost/asio.hpp>
 
 #include <map>
 #include <string>
 #include <iostream>
 #include <array>
+#include <exception>
 
 namespace fair
 {
@@ -126,6 +128,59 @@ inline std::string getDefaultRouteNetworkInterface()
     }
 
     return interfaceName;
+}
+
+inline std::string getIpFromHostname(const std::string& hostname)
+{
+    try {
+        boost::asio::io_service ios;
+        boost::asio::ip::tcp::resolver resolver(ios);
+        boost::asio::ip::tcp::resolver::query query(hostname, "");
+        boost::asio::ip::tcp::resolver::iterator end;
+
+        auto it = std::find_if(resolver.resolve(query), end, [](const boost::asio::ip::tcp::endpoint& ep) {
+            return ep.address().is_v4();
+        });
+
+        if (it != end) {
+            std::stringstream ss;
+            ss << static_cast<boost::asio::ip::tcp::endpoint>(*it).address();
+            return ss.str();
+        }
+
+        LOG(warn) << "could not find ipv4 address for hostname '" << hostname << "'";
+
+        return "";
+    } catch (std::exception& e) {
+        LOG(error) << "could not resolve hostname '" << hostname << "', reason: " << e.what();
+        return "";
+    }
+}
+
+inline std::string getIpFromHostname(const std::string& hostname, boost::asio::io_service& ios)
+{
+    try {
+        boost::asio::ip::tcp::resolver resolver(ios);
+        boost::asio::ip::tcp::resolver::query query(hostname, "");
+        boost::asio::ip::tcp::resolver::iterator end;
+
+        auto it = std::find_if(resolver.resolve(query), end, [](const boost::asio::ip::tcp::endpoint& ep) {
+            return ep.address().is_v4();
+        });
+
+        if (it != end) {
+            std::stringstream ss;
+            ss << static_cast<boost::asio::ip::tcp::endpoint>(*it).address();
+            return ss.str();
+        }
+
+        LOG(warn) << "could not find ipv4 address for hostname '" << hostname << "'";
+
+        return "";
+    } catch (std::exception& e) {
+        LOG(error) << "could not resolve hostname '" << hostname << "', reason: " << e.what();
+        return "";
+    }
 }
 
 } /* namespace tools */
