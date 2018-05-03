@@ -137,8 +137,6 @@ After the `find_package(FairMQ)` call the following CMake variables are defined:
 
 ## Documentation
 
-Standard [FairRoot](https://github.com/FairRootGroup/FairRoot) is running all the different analysis tasks within one process. FairMQ ([Message Queue](http://en.wikipedia.org/wiki/Message_queue)) allows starting tasks on different processes and provides the communication layer between these processes.
-
 1. [Device](docs/Device.md#1-device)
    1. [Topology](docs/Device.md#11-topology)
    2. [Communication Patterns](docs/Device.md#12-communication-patterns)
