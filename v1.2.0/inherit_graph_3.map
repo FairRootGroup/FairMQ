@@ -1,0 +1,7 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$structfair_1_1mq_1_1Event.html" title="fair::mq::Event\&lt; DeviceRunner &amp;\&gt;" alt="" coords="5,101,253,127"/>
+<area shape="rect" id="node2" href="$structfair_1_1mq_1_1hooks_1_1InstantiateDevice.html" title="fair::mq::hooks::Instantiate\lDevice" alt="" coords="305,5,504,47"/>
+<area shape="rect" id="node3" href="$structfair_1_1mq_1_1hooks_1_1LoadPlugins.html" title="fair::mq::hooks::LoadPlugins" alt="" coords="301,71,508,98"/>
+<area shape="rect" id="node4" href="$structfair_1_1mq_1_1hooks_1_1ModifyRawCmdLineArgs.html" title="fair::mq::hooks::ModifyRaw\lCmdLineArgs" alt="" coords="305,123,505,164"/>
+<area shape="rect" id="node5" href="$structfair_1_1mq_1_1hooks_1_1SetCustomCmdLineOptions.html" title="fair::mq::hooks::SetCustom\lCmdLineOptions" alt="" coords="305,188,504,229"/>
+</map>

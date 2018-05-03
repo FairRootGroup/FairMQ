@@ -1,0 +1,12 @@
+<map id="FairMQStateMachine" name="FairMQStateMachine">
+<area shape="rect" id="node3" href="$classFairMQDevice.html" title="FairMQDevice" alt="" coords="440,208,551,235"/>
+<area shape="rect" id="node4" href="$classFairMQBenchmarkSampler.html" title="FairMQBenchmarkSampler" alt="" coords="607,5,802,32"/>
+<area shape="rect" id="node5" href="$classFairMQMerger.html" title="FairMQMerger" alt="" coords="649,56,760,83"/>
+<area shape="rect" id="node6" href="$classFairMQMultiplier.html" title="FairMQMultiplier" alt="" coords="641,107,768,133"/>
+<area shape="rect" id="node7" href="$classFairMQProxy.html" title="FairMQProxy" alt="" coords="653,157,756,184"/>
+<area shape="rect" id="node8" href="$classFairMQShmPrototypeSampler.html" title="FairMQShmPrototypeSampler" alt="" coords="599,208,811,235"/>
+<area shape="rect" id="node9" href="$classFairMQShmPrototypeSink.html" title="FairMQShmPrototypeSink" alt="" coords="611,259,798,285"/>
+<area shape="rect" id="node10" href="$classFairMQSink.html" title="FairMQSink" alt="" coords="657,309,752,336"/>
+<area shape="rect" id="node11" href="$classFairMQSplitter.html" title="FairMQSplitter" alt="" coords="648,360,761,387"/>
+<area shape="rect" id="node12" href="$classMyDevice.html" title="MyDevice" alt="" coords="661,411,748,437"/>
+</map>
