@@ -115,10 +115,23 @@ On command line:
 
 After the `find_package(FairMQ)` call the following CMake variables are defined:
 
+  * `${FairMQ_PACKAGE_DEPENDENCIES}` contains the list of public package dependencies.
   * `${FairMQ_Boost_VERSION}` contains the minimum Boost version FairMQ requires.
   * `${FairMQ_Boost_COMPONENTS}` contains the list of Boost components FairMQ depends on.
   * `${FairMQ_FairLogger_VERSION}` contains the minimum FairLogger version FairMQ requires.
-  * ... TODO
+  * `${FairMQ_PACKAGE_COMPONENTS}` contains the list of components FairMQ consists of.
+  * `${FairMQ_#COMPONENT#_FOUND}` contains `TRUE` if this component was built.
+  * `${FairMQ_VERSION}` contains the version in format `MAJOR.MINOR.PATCH`.
+  * `${FairMQ_GIT_VERSION}` contains the version in the format returned by `git describe --tags --dirty --match "v*"`.
+  * `${FairMQ_ROOT}` contains the actual installation prefix, notice the difference to the hint variable `FAIRMQ_ROOT`.
+  * `${FairMQ_BINDIR}` contains the installation bin directory.
+  * `${FairMQ_INCDIR}` contains the installation include directory.
+  * `${FairMQ_LIBDIR}` contains the installation lib directory.
+  * `${FairMQ_DATADIR}` contains the installation data directory (`../share/fairmq`).
+  * `${FairMQ_CMAKEMODDIR}` contains the installation directory of shipped CMake find modules.
+  * `${FairMQ_CXX_STANDARD_REQUIRED}` contains the value of `CMAKE_CXX_STANDARD_REQUIRED` at built-time.
+  * `${FairMQ_CXX_STANDARD}` contains the value of `CMAKE_CXX_STANDARD` at built-time.
+  * `${FairMQ_CXX_EXTENSIONS}` contains the values of `CMAKE_CXX_EXTENSIONS` at built-time.
 
 ## Documentation
 
