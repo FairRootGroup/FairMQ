@@ -111,6 +111,7 @@ On command line:
   * `-DBUILD_NANOMSG_TRANSPORT=ON` enables building of nanomsg transport.
   * `-DBUILD_OFI_TRANSPORT=ON` enables building of the experimental OFI transport.
   * `-DBUILD_DDS_PLUGIN=ON` enables building of the DDS plugin.
+  * `-DBUILD_DOCS=ON` enables building of API docs.
   * You can hint non-system installations for dependent packages, see the #Installation section above
 
 After the `find_package(FairMQ)` call the following CMake variables are defined:
