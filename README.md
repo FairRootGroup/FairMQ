@@ -2,6 +2,11 @@
 
 C++ Message passing framework
 
+| Branch | Build Status |
+| :---: | :--- |
+| `master` | ![build status master branch](https://alfa-ci.gsi.de/buildStatus/icon?job=FairRootGroup/FairMQ/master) |
+| `dev` | ![build status dev branch](https://alfa-ci.gsi.de/buildStatus/icon?job=FairRootGroup/FairMQ/dev) |
+
 FairMQ is designed to help implementing large-scale data processing workflows needed in next-generation Particle Physics experiments. FairMQ is written in C++ and aims to
   * provide **an asynchronous message passing abstraction** of different data transport technologies,
   * provide a reasonably **efficient data transport** service (zero-copy, high throughput),
