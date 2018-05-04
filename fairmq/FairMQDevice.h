@@ -196,7 +196,7 @@ class FairMQDevice : public FairMQStateMachine
     /// @brief Getter for default transport factory
     auto Transport() const -> const FairMQTransportFactory*
     {
-        return fTransports.at(fair::mq::TransportTypes[GetDefaultTransport()]).get();
+        return fTransportFactory.get();;
     }
 
     template<typename... Args>
@@ -407,8 +407,8 @@ class FairMQDevice : public FairMQStateMachine
     void SetNetworkInterface(const std::string& networkInterface) { fNetworkInterface = networkInterface; }
     std::string GetNetworkInterface() const { return fNetworkInterface; }
 
-    void SetDefaultTransport(const std::string& defaultTransport) { fDefaultTransport = defaultTransport; }
-    std::string GetDefaultTransport() const { return fDefaultTransport; }
+    void SetDefaultTransportName(const std::string& defaultTransportName) { fDefaultTransportName = defaultTransportName; }
+    std::string GetDefaultTransportName() const { return fDefaultTransportName; }
 
     void SetInitializationTimeoutInS(int initializationTimeoutInS) { fInitializationTimeoutInS = initializationTimeoutInS; }
     int GetInitializationTimeoutInS() const { return fInitializationTimeoutInS; }
@@ -472,7 +472,7 @@ class FairMQDevice : public FairMQStateMachine
     int fPortRangeMax; ///< Maximum value for the port range (if dynamic)
 
     std::string fNetworkInterface; ///< Network interface to use for dynamic binding
-    std::string fDefaultTransport; ///< Default transport for the device
+    std::string fDefaultTransportName; ///< Default transport for the device
 
     int fInitializationTimeoutInS; ///< Timeout for the initialization (in seconds)
 

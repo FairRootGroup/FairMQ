@@ -196,7 +196,7 @@ void FairMQProgOptions::UpdateMQValues()
             UpdateVarMap<string>(typeKey, channel.GetType());
             UpdateVarMap<string>(methodKey, channel.GetMethod());
             UpdateVarMap<string>(addressKey, channel.GetAddress());
-            UpdateVarMap<string>(transportKey, channel.GetTransport());
+            UpdateVarMap<string>(transportKey, channel.GetTransportName());
             UpdateVarMap<int>(sndBufSizeKey, channel.GetSndBufSize());
             UpdateVarMap<int>(rcvBufSizeKey, channel.GetRcvBufSize());
             UpdateVarMap<int>(sndKernelSizeKey, channel.GetSndKernelSize());

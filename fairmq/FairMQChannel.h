@@ -92,7 +92,7 @@ class FairMQChannel
 
     /// Get channel transport ("default", "zeromq", "nanomsg" or "shmem")
     /// @return Returns channel transport (e.g. "default", "zeromq", "nanomsg" or "shmem")
-    std::string GetTransport() const;
+    std::string GetTransportName() const;
 
     /// Get socket send buffer size (in number of messages)
     /// @return Returns socket send buffer size (in number of messages)
@@ -301,7 +301,7 @@ class FairMQChannel
     std::string fType;
     std::string fMethod;
     std::string fAddress;
-    std::string fTransport;
+    std::string fTransportName;
     int fSndBufSize;
     int fRcvBufSize;
     int fSndKernelSize;
