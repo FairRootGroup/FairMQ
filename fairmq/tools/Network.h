@@ -29,6 +29,7 @@
 #include <iostream>
 #include <array>
 #include <exception>
+#include <algorithm>
 
 namespace fair
 {
@@ -133,18 +134,19 @@ inline std::string getDefaultRouteNetworkInterface()
 inline std::string getIpFromHostname(const std::string& hostname)
 {
     try {
+        namespace bai = boost::asio::ip;
         boost::asio::io_service ios;
-        boost::asio::ip::tcp::resolver resolver(ios);
-        boost::asio::ip::tcp::resolver::query query(hostname, "");
-        boost::asio::ip::tcp::resolver::iterator end;
+        bai::tcp::resolver resolver(ios);
+        bai::tcp::resolver::query query(hostname, "");
+        bai::tcp::resolver::iterator end;
 
-        auto it = std::find_if(resolver.resolve(query), end, [](const boost::asio::ip::tcp::endpoint& ep) {
+        auto it = std::find_if(static_cast<bai::basic_resolver_iterator<bai::tcp>>(resolver.resolve(query)), end, [](const bai::tcp::endpoint& ep) {
             return ep.address().is_v4();
         });
 
         if (it != end) {
             std::stringstream ss;
-            ss << static_cast<boost::asio::ip::tcp::endpoint>(*it).address();
+            ss << static_cast<bai::tcp::endpoint>(*it).address();
             return ss.str();
         }
 
@@ -160,17 +162,18 @@ inline std::string getIpFromHostname(const std::string& hostname)
 inline std::string getIpFromHostname(const std::string& hostname, boost::asio::io_service& ios)
 {
     try {
-        boost::asio::ip::tcp::resolver resolver(ios);
-        boost::asio::ip::tcp::resolver::query query(hostname, "");
-        boost::asio::ip::tcp::resolver::iterator end;
+        namespace bai = boost::asio::ip;
+        bai::tcp::resolver resolver(ios);
+        bai::tcp::resolver::query query(hostname, "");
+        bai::tcp::resolver::iterator end;
 
-        auto it = std::find_if(resolver.resolve(query), end, [](const boost::asio::ip::tcp::endpoint& ep) {
+        auto it = std::find_if(static_cast<bai::basic_resolver_iterator<bai::tcp>>(resolver.resolve(query)), end, [](const bai::tcp::endpoint& ep) {
             return ep.address().is_v4();
         });
 
         if (it != end) {
             std::stringstream ss;
-            ss << static_cast<boost::asio::ip::tcp::endpoint>(*it).address();
+            ss << static_cast<bai::tcp::endpoint>(*it).address();
             return ss.str();
         }
 
