@@ -29,6 +29,7 @@
 
 using namespace std;
 
+
 FairMQDevice::FairMQDevice()
     : fTransportFactory(nullptr)
     , fTransports()
@@ -42,7 +43,7 @@ FairMQDevice::FairMQDevice()
     , fPortRangeMin(22000)
     , fPortRangeMax(32000)
     , fNetworkInterface()
-    , fDefaultTransportName("default")
+    , fDefaultTransportType(fair::mq::Transport::DEFAULT)
     , fInitializationTimeoutInS(120)
     , fDataCallbacks(false)
     , fMsgInputs()
@@ -72,7 +73,7 @@ FairMQDevice::FairMQDevice(const fair::mq::tools::Version version)
     , fPortRangeMin(22000)
     , fPortRangeMax(32000)
     , fNetworkInterface()
-    , fDefaultTransportName("default")
+    , fDefaultTransportType(fair::mq::Transport::DEFAULT)
     , fInitializationTimeoutInS(120)
     , fDataCallbacks(false)
     , fMsgInputs()
@@ -246,15 +247,15 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
 {
     if (!ch.fTransportFactory)
     {
-        if (ch.fTransportName == "default" || ch.fTransportName == fDefaultTransportName)
+        if (ch.fTransportType == fair::mq::Transport::DEFAULT || ch.fTransportType == fTransportFactory->GetType())
         {
             LOG(debug) << ch.fName << ": using default transport";
             ch.InitTransport(fTransportFactory);
         }
         else
         {
-            LOG(debug) << ch.fName << ": channel transport (" << fDefaultTransportName << ") overriden to " << ch.fTransportName;
-            ch.InitTransport(AddTransport(ch.fTransportName));
+            LOG(debug) << ch.fName << ": channel transport (" << fair::mq::TransportNames.at(fDefaultTransportType) << ") overriden to " << fair::mq::TransportNames.at(ch.fTransportType);
+            ch.InitTransport(AddTransport(ch.fTransportType));
         }
         ch.fTransportType = ch.fTransportFactory->GetType();
     }
@@ -760,24 +761,24 @@ void FairMQDevice::Pause()
     LOG(debug) << "Unpausing";
 }
 
-shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& transport)
+shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const fair::mq::Transport transport)
 {
-    auto i = fTransports.find(fair::mq::TransportTypes.at(transport));
+    auto i = fTransports.find(transport);
 
     if (i == fTransports.end())
     {
-        auto tr = FairMQTransportFactory::CreateTransportFactory(transport, fId, fConfig);
+        auto tr = FairMQTransportFactory::CreateTransportFactory(fair::mq::TransportNames.at(transport), fId, fConfig);
 
-        LOG(debug) << "Adding '" << transport << "' transport to the device.";
+        LOG(debug) << "Adding '" << fair::mq::TransportNames.at(transport) << "' transport to the device.";
 
-        pair<fair::mq::Transport, shared_ptr<FairMQTransportFactory>> trPair(fair::mq::TransportTypes.at(transport), tr);
+        pair<fair::mq::Transport, shared_ptr<FairMQTransportFactory>> trPair(transport, tr);
         fTransports.insert(trPair);
 
         return tr;
     }
     else
     {
-        LOG(debug) << "Reusing existing '" << transport << "' transport.";
+        LOG(debug) << "Reusing existing '" << fair::mq::TransportNames.at(transport) << "' transport.";
         return i->second;
     }
 }
@@ -804,7 +805,11 @@ void FairMQDevice::CreateOwnConfig()
     fNumIoThreads = fConfig->GetValue<int>("io-threads");
     fInitializationTimeoutInS = fConfig->GetValue<int>("initialization-timeout");
     fRate = fConfig->GetValue<float>("rate");
-    fDefaultTransportName = fConfig->GetValue<string>("transport");
+    try {
+        fDefaultTransportType = fair::mq::TransportTypes.at(fConfig->GetValue<string>("transport"));
+    } catch(const exception& e) {
+        LOG(ERROR) << "invalid transport type provided: " << fConfig->GetValue<string>("transport");
+    }
 }
 
 void FairMQDevice::SetTransport(const string& transport)
@@ -819,7 +824,7 @@ void FairMQDevice::SetTransport(const string& transport)
     if (fTransports.empty())
     {
         LOG(debug) << "Requesting '" << transport << "' as default transport for the device";
-        fTransportFactory = AddTransport(transport);
+        fTransportFactory = AddTransport(fair::mq::TransportTypes.at(transport));
     }
     else
     {
@@ -844,8 +849,12 @@ void FairMQDevice::SetConfig(FairMQProgOptions& config)
     fNumIoThreads = config.GetValue<int>("io-threads");
     fInitializationTimeoutInS = config.GetValue<int>("initialization-timeout");
     fRate = fConfig->GetValue<float>("rate");
-    fDefaultTransportName = config.GetValue<string>("transport");
-    SetTransport(fDefaultTransportName);
+    try {
+        fDefaultTransportType = fair::mq::TransportTypes.at(fConfig->GetValue<string>("transport"));
+    } catch(const exception& e) {
+        LOG(ERROR) << "invalid transport type provided: " << fConfig->GetValue<string>("transport");
+    }
+    SetTransport(fConfig->GetValue<string>("transport"));
 }
 
 void FairMQDevice::LogSocketRates()

@@ -28,7 +28,6 @@ FairMQChannel::FairMQChannel()
     , fType("unspecified")
     , fMethod("unspecified")
     , fAddress("unspecified")
-    , fTransportName("default")
     , fSndBufSize(1000)
     , fRcvBufSize(1000)
     , fSndKernelSize(0)
@@ -49,7 +48,6 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
     , fType(type)
     , fMethod(method)
     , fAddress(address)
-    , fTransportName("default")
     , fSndBufSize(1000)
     , fRcvBufSize(1000)
     , fSndKernelSize(0)
@@ -70,7 +68,6 @@ FairMQChannel::FairMQChannel(const string& name, const string& type, std::shared
     , fType(type)
     , fMethod("unspecified")
     , fAddress("unspecified")
-    , fTransportName("default") // TODO refactor, either use string representation or enum type
     , fSndBufSize(1000)
     , fRcvBufSize(1000)
     , fSndKernelSize(0)
@@ -91,7 +88,6 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan)
     , fType(chan.fType)
     , fMethod(chan.fMethod)
     , fAddress(chan.fAddress)
-    , fTransportName(chan.fTransportName)
     , fSndBufSize(chan.fSndBufSize)
     , fRcvBufSize(chan.fRcvBufSize)
     , fSndKernelSize(chan.fSndKernelSize)
@@ -99,7 +95,7 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan)
     , fRateLogging(chan.fRateLogging)
     , fName(chan.fName)
     , fIsValid(false)
-    , fTransportType(fair::mq::Transport::DEFAULT)
+    , fTransportType(chan.fTransportType)
     , fTransportFactory(nullptr)
     , fMultipart(chan.fMultipart)
     , fModified(chan.fModified)
@@ -111,7 +107,6 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     fType = chan.fType;
     fMethod = chan.fMethod;
     fAddress = chan.fAddress;
-    fTransportName = chan.fTransportName;
     fSndBufSize = chan.fSndBufSize;
     fRcvBufSize = chan.fRcvBufSize;
     fSndKernelSize = chan.fSndKernelSize;
@@ -120,7 +115,7 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     fSocket = nullptr;
     fName = chan.fName;
     fIsValid = false;
-    fTransportType = fair::mq::Transport::DEFAULT;
+    fTransportType = chan.fTransportType;
     fTransportFactory = nullptr;
 
     return *this;
@@ -199,7 +194,7 @@ string FairMQChannel::GetTransportName() const
     try
     {
         unique_lock<mutex> lock(fChannelMutex);
-        return fTransportName;
+        return fair::mq::TransportNames.at(fTransportType);
     }
     catch (exception& e)
     {
@@ -332,7 +327,9 @@ void FairMQChannel::UpdateTransport(const string& transport)
     {
         unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
-        fTransportName = transport;
+        LOG(WARN) << fName << ": " << transport;
+        fTransportType = fair::mq::TransportTypes.at(transport);
+        LOG(WARN) << fName << ": " << fair::mq::TransportNames.at(fTransportType);
         fModified = true;
     }
     catch (exception& e)
@@ -584,15 +581,6 @@ bool FairMQChannel::ValidateChannel()
                     return false;
                 }
             }
-        }
-
-        // validate channel transport
-        if (fair::mq::TransportTypes.find(fTransportName) == fair::mq::TransportTypes.end())
-        {
-            ss << "INVALID";
-            LOG(debug) << ss.str();
-            LOG(error) << "Invalid channel transport: \"" << fTransportName << "\"";
-            exit(EXIT_FAILURE);
         }
 
         // validate socket buffer size for sending
