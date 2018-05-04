@@ -15,8 +15,9 @@
 #include <string>
 #include <unordered_map>
 
-/// TODO deprecate this namespace
-namespace FairMQ
+namespace fair
+{
+namespace mq
 {
 
 enum class Transport
@@ -28,7 +29,6 @@ enum class Transport
     OFI
 };
 
-
 static std::unordered_map<std::string, Transport> TransportTypes {
     { "default", Transport::DEFAULT },
     { "zeromq", Transport::ZMQ },
@@ -37,16 +37,6 @@ static std::unordered_map<std::string, Transport> TransportTypes {
     { "ofi", Transport::OFI }
 };
 
-}
-
-namespace fair
-{
-namespace mq
-{
-
-using Transport = ::FairMQ::Transport;
-using ::FairMQ::TransportTypes;
-
 } /* namespace mq */
 } /* namespace fair */
 
@@ -54,8 +44,24 @@ namespace std
 {
 
 template<>
-struct hash<FairMQ::Transport> : fair::mq::tools::HashEnum<FairMQ::Transport> {};
+struct hash<fair::mq::Transport> : fair::mq::tools::HashEnum<fair::mq::Transport> {};
 
 } /* namespace std */
+
+namespace fair
+{
+namespace mq
+{
+
+static std::unordered_map<Transport, std::string> TransportNames {
+    { Transport::DEFAULT, "default" },
+    { Transport::ZMQ, "zeromq" },
+    { Transport::NN, "nanomsg" },
+    { Transport::SHM, "shmem" },
+    { Transport::OFI, "ofi" }
+};
+
+} /* namespace mq */
+} /* namespace fair */
 
 #endif /* FAIR_MQ_TRANSPORTS_H */

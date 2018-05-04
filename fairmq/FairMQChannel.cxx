@@ -36,7 +36,7 @@ FairMQChannel::FairMQChannel()
     , fRateLogging(1)
     , fName("")
     , fIsValid(false)
-    , fTransportType(FairMQ::Transport::DEFAULT)
+    , fTransportType(fair::mq::Transport::DEFAULT)
     , fTransportFactory(nullptr)
     , fMultipart(false)
     , fModified(true)
@@ -57,7 +57,7 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
     , fRateLogging(1)
     , fName("")
     , fIsValid(false)
-    , fTransportType(FairMQ::Transport::DEFAULT)
+    , fTransportType(fair::mq::Transport::DEFAULT)
     , fTransportFactory(nullptr)
     , fMultipart(false)
     , fModified(true)
@@ -99,7 +99,7 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan)
     , fRateLogging(chan.fRateLogging)
     , fName(chan.fName)
     , fIsValid(false)
-    , fTransportType(FairMQ::Transport::DEFAULT)
+    , fTransportType(fair::mq::Transport::DEFAULT)
     , fTransportFactory(nullptr)
     , fMultipart(chan.fMultipart)
     , fModified(chan.fModified)
@@ -120,7 +120,7 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     fSocket = nullptr;
     fName = chan.fName;
     fIsValid = false;
-    fTransportType = FairMQ::Transport::DEFAULT;
+    fTransportType = fair::mq::Transport::DEFAULT;
     fTransportFactory = nullptr;
 
     return *this;
@@ -587,7 +587,7 @@ bool FairMQChannel::ValidateChannel()
         }
 
         // validate channel transport
-        if (FairMQ::TransportTypes.find(fTransportName) == FairMQ::TransportTypes.end())
+        if (fair::mq::TransportTypes.find(fTransportName) == fair::mq::TransportTypes.end())
         {
             ss << "INVALID";
             LOG(debug) << ss.str();

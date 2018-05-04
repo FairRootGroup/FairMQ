@@ -311,7 +311,7 @@ class FairMQChannel
     std::string fName;
     std::atomic<bool> fIsValid;
 
-    FairMQ::Transport fTransportType;
+    fair::mq::Transport fTransportType;
     std::shared_ptr<FairMQTransportFactory> fTransportFactory;
 
     bool CheckCompatibility(std::unique_ptr<FairMQMessage>& msg) const;

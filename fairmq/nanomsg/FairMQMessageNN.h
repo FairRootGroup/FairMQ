@@ -46,7 +46,7 @@ class FairMQMessageNN : public FairMQMessage
 
     bool SetUsedSize(const size_t size) override;
 
-    FairMQ::Transport GetType() const override;
+    fair::mq::Transport GetType() const override;
 
     void Copy(const FairMQMessage& msg) override;
     void Copy(const FairMQMessagePtr& msg) override;
@@ -59,7 +59,7 @@ class FairMQMessageNN : public FairMQMessage
     size_t fHint;
     bool fReceiving;
     FairMQUnmanagedRegion* fRegionPtr;
-    static FairMQ::Transport fTransportType;
+    static fair::mq::Transport fTransportType;
 
     void* GetMessage() const;
     void CloseMessage();

@@ -555,10 +555,10 @@ void FairMQDevice::HandleMultipleChannelInput()
     fMultitransportInputs.clear();
     for (const auto& k : fInputChannelKeys)
     {
-        FairMQ::Transport t = fChannels.at(k).at(0).fTransportType;
+        fair::mq::Transport t = fChannels.at(k).at(0).fTransportType;
         if (fMultitransportInputs.find(t) == fMultitransportInputs.end())
         {
-            fMultitransportInputs.insert(pair<FairMQ::Transport, vector<string>>(t, vector<string>()));
+            fMultitransportInputs.insert(pair<fair::mq::Transport, vector<string>>(t, vector<string>()));
             fMultitransportInputs.at(t).push_back(k);
         }
         else
@@ -762,7 +762,7 @@ void FairMQDevice::Pause()
 
 shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& transport)
 {
-    auto i = fTransports.find(FairMQ::TransportTypes.at(transport));
+    auto i = fTransports.find(fair::mq::TransportTypes.at(transport));
 
     if (i == fTransports.end())
     {
@@ -770,7 +770,7 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(const string& tran
 
         LOG(debug) << "Adding '" << transport << "' transport to the device.";
 
-        pair<FairMQ::Transport, shared_ptr<FairMQTransportFactory>> trPair(FairMQ::TransportTypes.at(transport), tr);
+        pair<fair::mq::Transport, shared_ptr<FairMQTransportFactory>> trPair(fair::mq::TransportTypes.at(transport), tr);
         fTransports.insert(trPair);
 
         return tr;

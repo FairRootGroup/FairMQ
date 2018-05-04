@@ -20,7 +20,7 @@
 
 using namespace std;
 
-FairMQ::Transport FairMQMessageZMQ::fTransportType = FairMQ::Transport::ZMQ;
+fair::mq::Transport FairMQMessageZMQ::fTransportType = fair::mq::Transport::ZMQ;
 
 FairMQMessageZMQ::FairMQMessageZMQ()
     : fUsedSizeModified(false)
@@ -190,7 +190,7 @@ void FairMQMessageZMQ::ApplyUsedSize()
     }
 }
 
-FairMQ::Transport FairMQMessageZMQ::GetType() const
+fair::mq::Transport FairMQMessageZMQ::GetType() const
 {
     return fTransportType;
 }

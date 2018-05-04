@@ -32,7 +32,7 @@ namespace bfs = boost::filesystem;
 namespace bpt = boost::posix_time;
 namespace bipc = boost::interprocess;
 
-FairMQ::Transport FairMQTransportFactorySHM::fTransportType = FairMQ::Transport::SHM;
+fair::mq::Transport FairMQTransportFactorySHM::fTransportType = fair::mq::Transport::SHM;
 
 FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const FairMQProgOptions* config)
     : FairMQTransportFactory(id)
@@ -316,7 +316,7 @@ FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
     }
 }
 
-FairMQ::Transport FairMQTransportFactorySHM::GetType() const
+fair::mq::Transport FairMQTransportFactorySHM::GetType() const
 {
     return fTransportType;
 }
