@@ -1,0 +1,7 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classFairMQMessage.html" title="FairMQMessage" alt="" coords="5,81,128,108"/>
+<area shape="rect" id="node2" href="$classfair_1_1mq_1_1ofi_1_1Message.html" title="fair::mq::ofi::Message" alt="" coords="176,5,339,32"/>
+<area shape="rect" id="node3" href="$classFairMQMessageNN.html" title="FairMQMessageNN" alt="" coords="186,56,329,83"/>
+<area shape="rect" id="node4" href="$classFairMQMessageSHM.html" title="FairMQMessageSHM" alt="" coords="181,107,333,133"/>
+<area shape="rect" id="node5" href="$classFairMQMessageZMQ.html" title="FairMQMessageZMQ" alt="" coords="181,157,334,184"/>
+</map>
