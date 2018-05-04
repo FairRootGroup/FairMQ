@@ -301,7 +301,7 @@ class FairMQChannel
     std::string fType;
     std::string fMethod;
     std::string fAddress;
-    std::string fTransportName;
+    fair::mq::Transport fTransportType;
     int fSndBufSize;
     int fRcvBufSize;
     int fSndKernelSize;
@@ -311,7 +311,6 @@ class FairMQChannel
     std::string fName;
     std::atomic<bool> fIsValid;
 
-    fair::mq::Transport fTransportType;
     std::shared_ptr<FairMQTransportFactory> fTransportFactory;
 
     bool CheckCompatibility(std::unique_ptr<FairMQMessage>& msg) const;

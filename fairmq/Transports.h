@@ -29,14 +29,6 @@ enum class Transport
     OFI
 };
 
-static std::unordered_map<std::string, Transport> TransportTypes {
-    { "default", Transport::DEFAULT },
-    { "zeromq", Transport::ZMQ },
-    { "nanomsg", Transport::NN },
-    { "shmem", Transport::SHM },
-    { "ofi", Transport::OFI }
-};
-
 } /* namespace mq */
 } /* namespace fair */
 
@@ -52,6 +44,14 @@ namespace fair
 {
 namespace mq
 {
+
+static std::unordered_map<std::string, Transport> TransportTypes {
+    { "default", Transport::DEFAULT },
+    { "zeromq", Transport::ZMQ },
+    { "nanomsg", Transport::NN },
+    { "shmem", Transport::SHM },
+    { "ofi", Transport::OFI }
+};
 
 static std::unordered_map<Transport, std::string> TransportNames {
     { Transport::DEFAULT, "default" },
