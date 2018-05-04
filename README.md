@@ -49,6 +49,7 @@ a simulation, reconstruction and analysis framework.
 
 | Stable release | Date | API Docs |
 | --- | --- | --- |
+| [**1.2.1**](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.2.1) | May 2018 | [link](https://fairrootgroup.github.io/FairMQ/v1.2.1/index.html) |
 | [**1.2.0**](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.2.0) | May 2018 | [link](https://fairrootgroup.github.io/FairMQ/v1.2.0/index.html) |
 
 Find all FairMQ stable and development releases [here](https://github.com/FairRootGroup/FairMQ/releases).
