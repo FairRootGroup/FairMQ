@@ -44,7 +44,7 @@ class FairMQMessageSHM : public FairMQMessage
 
     bool SetUsedSize(const size_t size) override;
 
-    FairMQ::Transport GetType() const override;
+    fair::mq::Transport GetType() const override;
 
     void Copy(const FairMQMessage& msg) override;
     void Copy(const FairMQMessagePtr& msg) override;
@@ -57,7 +57,7 @@ class FairMQMessageSHM : public FairMQMessage
     bool fQueued;
     bool fMetaCreated;
     static std::atomic<bool> fInterrupted;
-    static FairMQ::Transport fTransportType;
+    static fair::mq::Transport fTransportType;
     size_t fRegionId;
     mutable fair::mq::shmem::Region* fRegionPtr;
     boost::interprocess::managed_shared_memory::handle_t fHandle;

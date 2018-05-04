@@ -39,13 +39,13 @@ class FairMQTransportFactoryNN : public FairMQTransportFactory
 
     FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback) const override;
 
-    FairMQ::Transport GetType() const override;
+    fair::mq::Transport GetType() const override;
 
     void Interrupt() override { FairMQSocketNN::Interrupt(); }
     void Resume() override { FairMQSocketNN::Resume(); }
 
   private:
-    static FairMQ::Transport fTransportType;
+    static fair::mq::Transport fTransportType;
 };
 
 #endif /* FAIRMQTRANSPORTFACTORYNN_H_ */

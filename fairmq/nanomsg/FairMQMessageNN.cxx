@@ -22,7 +22,7 @@
 
 using namespace std;
 
-FairMQ::Transport FairMQMessageNN::fTransportType = FairMQ::Transport::NN;
+fair::mq::Transport FairMQMessageNN::fTransportType = fair::mq::Transport::NN;
 
 FairMQMessageNN::FairMQMessageNN()
     : fMessage(nullptr)
@@ -172,7 +172,7 @@ void FairMQMessageNN::SetMessage(void* data, const size_t size)
     fSize = size;
 }
 
-FairMQ::Transport FairMQMessageNN::GetType() const
+fair::mq::Transport FairMQMessageNN::GetType() const
 {
     return fTransportType;
 }

@@ -47,7 +47,7 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
 
     FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback = nullptr) const override;
 
-    FairMQ::Transport GetType() const override;
+    fair::mq::Transport GetType() const override;
 
     void Interrupt() override { FairMQSocketSHM::Interrupt(); }
     void Resume() override { FairMQSocketSHM::Resume(); }
@@ -58,7 +58,7 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
     void SendHeartbeats();
     void StartMonitor();
 
-    static FairMQ::Transport fTransportType;
+    static fair::mq::Transport fTransportType;
     std::string fDeviceId;
     std::string fSessionName;
     void* fContext;

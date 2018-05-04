@@ -12,7 +12,7 @@
 
 using namespace std;
 
-FairMQ::Transport FairMQTransportFactoryNN::fTransportType = FairMQ::Transport::NN;
+fair::mq::Transport FairMQTransportFactoryNN::fTransportType = fair::mq::Transport::NN;
 
 FairMQTransportFactoryNN::FairMQTransportFactoryNN(const string& id, const FairMQProgOptions* /*config*/)
     : FairMQTransportFactory(id)
@@ -70,7 +70,7 @@ FairMQUnmanagedRegionPtr FairMQTransportFactoryNN::CreateUnmanagedRegion(const s
     return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionNN(size, callback));
 }
 
-FairMQ::Transport FairMQTransportFactoryNN::GetType() const
+fair::mq::Transport FairMQTransportFactoryNN::GetType() const
 {
     return fTransportType;
 }

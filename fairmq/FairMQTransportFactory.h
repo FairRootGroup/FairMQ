@@ -29,7 +29,7 @@ class FairMQTransportFactory
   private:
     /// Topology wide unique id
     const std::string fkId;
- 
+
   public:
     /// ctor
     /// @param id Topology wide unique id, usually the device id.
@@ -69,7 +69,7 @@ class FairMQTransportFactory
     virtual FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback = nullptr) const = 0;
 
     /// Get transport type
-    virtual FairMQ::Transport GetType() const = 0;
+    virtual fair::mq::Transport GetType() const = 0;
 
     virtual void Interrupt() = 0;
     virtual void Resume() = 0;

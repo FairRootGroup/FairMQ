@@ -11,7 +11,7 @@
 
 using namespace std;
 
-FairMQ::Transport FairMQTransportFactoryZMQ::fTransportType = FairMQ::Transport::ZMQ;
+fair::mq::Transport FairMQTransportFactoryZMQ::fTransportType = fair::mq::Transport::ZMQ;
 
 FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id, const FairMQProgOptions* config)
     : FairMQTransportFactory(id)
@@ -100,7 +100,7 @@ FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(const 
     return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionZMQ(size, callback));
 }
 
-FairMQ::Transport FairMQTransportFactoryZMQ::GetType() const
+fair::mq::Transport FairMQTransportFactoryZMQ::GetType() const
 {
     return fTransportType;
 }

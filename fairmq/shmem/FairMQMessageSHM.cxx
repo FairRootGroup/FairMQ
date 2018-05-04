@@ -23,7 +23,7 @@ namespace bipc = boost::interprocess;
 namespace bpt = boost::posix_time;
 
 atomic<bool> FairMQMessageSHM::fInterrupted(false);
-FairMQ::Transport FairMQMessageSHM::fTransportType = FairMQ::Transport::SHM;
+fair::mq::Transport FairMQMessageSHM::fTransportType = fair::mq::Transport::SHM;
 
 FairMQMessageSHM::FairMQMessageSHM(Manager& manager)
     : fManager(manager)
@@ -284,7 +284,7 @@ bool FairMQMessageSHM::SetUsedSize(const size_t size)
     }
 }
 
-FairMQ::Transport FairMQMessageSHM::GetType() const
+fair::mq::Transport FairMQMessageSHM::GetType() const
 {
     return fTransportType;
 }
