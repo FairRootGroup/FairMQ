@@ -28,7 +28,7 @@ FairMQChannel::FairMQChannel()
     , fType("unspecified")
     , fMethod("unspecified")
     , fAddress("unspecified")
-    , fTransport("default")
+    , fTransportName("default")
     , fSndBufSize(1000)
     , fRcvBufSize(1000)
     , fSndKernelSize(0)
@@ -49,7 +49,7 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
     , fType(type)
     , fMethod(method)
     , fAddress(address)
-    , fTransport("default")
+    , fTransportName("default")
     , fSndBufSize(1000)
     , fRcvBufSize(1000)
     , fSndKernelSize(0)
@@ -70,7 +70,7 @@ FairMQChannel::FairMQChannel(const string& name, const string& type, std::shared
     , fType(type)
     , fMethod("unspecified")
     , fAddress("unspecified")
-    , fTransport("default") // TODO refactor, either use string representation or enum type
+    , fTransportName("default") // TODO refactor, either use string representation or enum type
     , fSndBufSize(1000)
     , fRcvBufSize(1000)
     , fSndKernelSize(0)
@@ -91,7 +91,7 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan)
     , fType(chan.fType)
     , fMethod(chan.fMethod)
     , fAddress(chan.fAddress)
-    , fTransport(chan.fTransport)
+    , fTransportName(chan.fTransportName)
     , fSndBufSize(chan.fSndBufSize)
     , fRcvBufSize(chan.fRcvBufSize)
     , fSndKernelSize(chan.fSndKernelSize)
@@ -111,7 +111,7 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     fType = chan.fType;
     fMethod = chan.fMethod;
     fAddress = chan.fAddress;
-    fTransport = chan.fTransport;
+    fTransportName = chan.fTransportName;
     fSndBufSize = chan.fSndBufSize;
     fRcvBufSize = chan.fRcvBufSize;
     fSndKernelSize = chan.fSndKernelSize;
@@ -194,16 +194,16 @@ string FairMQChannel::GetAddress() const
     }
 }
 
-string FairMQChannel::GetTransport() const
+string FairMQChannel::GetTransportName() const
 {
     try
     {
         unique_lock<mutex> lock(fChannelMutex);
-        return fTransport;
+        return fTransportName;
     }
     catch (exception& e)
     {
-        LOG(error) << "Exception caught in FairMQChannel::GetTransport: " << e.what();
+        LOG(error) << "Exception caught in FairMQChannel::GetTransportName: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
@@ -332,7 +332,7 @@ void FairMQChannel::UpdateTransport(const string& transport)
     {
         unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
-        fTransport = transport;
+        fTransportName = transport;
         fModified = true;
     }
     catch (exception& e)
@@ -587,13 +587,11 @@ bool FairMQChannel::ValidateChannel()
         }
 
         // validate channel transport
-        // const string channelTransportNames[] = { "default", "zeromq", "nanomsg", "shmem" };
-        // const set<string> channelTransports(channelTransportNames, channelTransportNames + sizeof(channelTransportNames) / sizeof(string));
-        if (FairMQ::TransportTypes.find(fTransport) == FairMQ::TransportTypes.end())
+        if (FairMQ::TransportTypes.find(fTransportName) == FairMQ::TransportTypes.end())
         {
             ss << "INVALID";
             LOG(debug) << ss.str();
-            LOG(error) << "Invalid channel transport: \"" << fTransport << "\"";
+            LOG(error) << "Invalid channel transport: \"" << fTransportName << "\"";
             exit(EXIT_FAILURE);
         }
 

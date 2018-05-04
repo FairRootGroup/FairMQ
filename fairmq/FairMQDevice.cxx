@@ -42,7 +42,7 @@ FairMQDevice::FairMQDevice()
     , fPortRangeMin(22000)
     , fPortRangeMax(32000)
     , fNetworkInterface()
-    , fDefaultTransport("default")
+    , fDefaultTransportName("default")
     , fInitializationTimeoutInS(120)
     , fDataCallbacks(false)
     , fMsgInputs()
@@ -72,7 +72,7 @@ FairMQDevice::FairMQDevice(const fair::mq::tools::Version version)
     , fPortRangeMin(22000)
     , fPortRangeMax(32000)
     , fNetworkInterface()
-    , fDefaultTransport("default")
+    , fDefaultTransportName("default")
     , fInitializationTimeoutInS(120)
     , fDataCallbacks(false)
     , fMsgInputs()
@@ -246,15 +246,15 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
 {
     if (!ch.fTransportFactory)
     {
-        if (ch.fTransport == "default" || ch.fTransport == fDefaultTransport)
+        if (ch.fTransportName == "default" || ch.fTransportName == fDefaultTransportName)
         {
             LOG(debug) << ch.fName << ": using default transport";
             ch.InitTransport(fTransportFactory);
         }
         else
         {
-            LOG(debug) << ch.fName << ": channel transport (" << fDefaultTransport << ") overriden to " << ch.fTransport;
-            ch.InitTransport(AddTransport(ch.fTransport));
+            LOG(debug) << ch.fName << ": channel transport (" << fDefaultTransportName << ") overriden to " << ch.fTransportName;
+            ch.InitTransport(AddTransport(ch.fTransportName));
         }
         ch.fTransportType = ch.fTransportFactory->GetType();
     }
@@ -804,7 +804,7 @@ void FairMQDevice::CreateOwnConfig()
     fNumIoThreads = fConfig->GetValue<int>("io-threads");
     fInitializationTimeoutInS = fConfig->GetValue<int>("initialization-timeout");
     fRate = fConfig->GetValue<float>("rate");
-    fDefaultTransport = fConfig->GetValue<string>("transport");
+    fDefaultTransportName = fConfig->GetValue<string>("transport");
 }
 
 void FairMQDevice::SetTransport(const string& transport)
@@ -844,8 +844,8 @@ void FairMQDevice::SetConfig(FairMQProgOptions& config)
     fNumIoThreads = config.GetValue<int>("io-threads");
     fInitializationTimeoutInS = config.GetValue<int>("initialization-timeout");
     fRate = fConfig->GetValue<float>("rate");
-    fDefaultTransport = config.GetValue<string>("transport");
-    SetTransport(fDefaultTransport);
+    fDefaultTransportName = config.GetValue<string>("transport");
+    SetTransport(fDefaultTransportName);
 }
 
 void FairMQDevice::LogSocketRates()

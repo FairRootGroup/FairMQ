@@ -147,7 +147,7 @@ void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMa
                 commonChannel.UpdateType(q.second.get<string>("type", commonChannel.GetType()));
                 commonChannel.UpdateMethod(q.second.get<string>("method", commonChannel.GetMethod()));
                 commonChannel.UpdateAddress(q.second.get<string>("address", commonChannel.GetAddress()));
-                commonChannel.UpdateTransport(q.second.get<string>("transport", commonChannel.GetTransport()));
+                commonChannel.UpdateTransport(q.second.get<string>("transport", commonChannel.GetTransportName()));
                 commonChannel.UpdateSndBufSize(q.second.get<int>("sndBufSize", commonChannel.GetSndBufSize()));
                 commonChannel.UpdateRcvBufSize(q.second.get<int>("rcvBufSize", commonChannel.GetRcvBufSize()));
                 commonChannel.UpdateSndKernelSize(q.second.get<int>("sndKernelSize", commonChannel.GetSndKernelSize()));
@@ -166,7 +166,7 @@ void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMa
                     LOG(debug) << "\ttype          = " << commonChannel.GetType();
                     LOG(debug) << "\tmethod        = " << commonChannel.GetMethod();
                     LOG(debug) << "\taddress       = " << commonChannel.GetAddress();
-                    LOG(debug) << "\ttransport     = " << commonChannel.GetTransport();
+                    LOG(debug) << "\ttransport     = " << commonChannel.GetTransportName();
                     LOG(debug) << "\tsndBufSize    = " << commonChannel.GetSndBufSize();
                     LOG(debug) << "\trcvBufSize    = " << commonChannel.GetRcvBufSize();
                     LOG(debug) << "\tsndKernelSize = " << commonChannel.GetSndKernelSize();
@@ -208,7 +208,7 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
                 channel.UpdateType(q.second.get<string>("type", channel.GetType()));
                 channel.UpdateMethod(q.second.get<string>("method", channel.GetMethod()));
                 channel.UpdateAddress(q.second.get<string>("address", channel.GetAddress()));
-                channel.UpdateTransport(q.second.get<string>("transport", channel.GetTransport()));
+                channel.UpdateTransport(q.second.get<string>("transport", channel.GetTransportName()));
                 channel.UpdateSndBufSize(q.second.get<int>("sndBufSize", channel.GetSndBufSize()));
                 channel.UpdateRcvBufSize(q.second.get<int>("rcvBufSize", channel.GetRcvBufSize()));
                 channel.UpdateSndKernelSize(q.second.get<int>("sndKernelSize", channel.GetSndKernelSize()));
@@ -219,7 +219,7 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
                 LOG(debug) << "\ttype          = " << channel.GetType();
                 LOG(debug) << "\tmethod        = " << channel.GetMethod();
                 LOG(debug) << "\taddress       = " << channel.GetAddress();
-                LOG(debug) << "\ttransport     = " << channel.GetTransport();
+                LOG(debug) << "\ttransport     = " << channel.GetTransportName();
                 LOG(debug) << "\tsndBufSize    = " << channel.GetSndBufSize();
                 LOG(debug) << "\trcvBufSize    = " << channel.GetRcvBufSize();
                 LOG(debug) << "\tsndKernelSize = " << channel.GetSndKernelSize();
@@ -247,7 +247,7 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
         LOG(debug) << "\ttype          = " << channel.GetType();
         LOG(debug) << "\tmethod        = " << channel.GetMethod();
         LOG(debug) << "\taddress       = " << channel.GetAddress();
-        LOG(debug) << "\ttransport     = " << channel.GetTransport();
+        LOG(debug) << "\ttransport     = " << channel.GetTransportName();
         LOG(debug) << "\tsndBufSize    = " << channel.GetSndBufSize();
         LOG(debug) << "\trcvBufSize    = " << channel.GetRcvBufSize();
         LOG(debug) << "\tsndKernelSize = " << channel.GetSndKernelSize();
