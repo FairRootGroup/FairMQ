@@ -170,6 +170,7 @@ void Monitor::Interactive()
     struct termios t;
     tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
     t.c_lflag &= ~ICANON; // disable canonical input
+    t.c_lflag &= ~ECHO; // do not echo input chars
     tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
 
     cout << endl;
@@ -238,6 +239,7 @@ void Monitor::Interactive()
 
     tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
     t.c_lflag |= ICANON; // re-enable canonical input
+    t.c_lflag |= ECHO; // echo input chars
     tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
 }
 
