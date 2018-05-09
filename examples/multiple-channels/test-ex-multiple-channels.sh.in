@@ -2,12 +2,19 @@
 
 export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
 
+transport="zeromq"
+
+if [[ $1 =~ ^[a-z]+$ ]]; then
+    transport=$1
+fi
+
 # setup a trap to kill everything if the test fails/timeouts
 trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; kill -TERM $BROADCASTER_PID; wait $SAMPLER_PID; wait $SINK_PID; wait $BROADCASTER_PID;' TERM
 
 
 SINK="fairmq-ex-multiple-channels-sink"
 SINK+=" --id sink1"
+SINK+=" --transport $transport"
 SINK+=" --verbosity veryhigh"
 SINK+=" --max-iterations 1"
 SINK+=" --control static --color false"
@@ -20,6 +27,7 @@ sleep 1
 
 SAMPLER="fairmq-ex-multiple-channels-sampler"
 SAMPLER+=" --id sampler1"
+SAMPLER+=" --transport $transport"
 SAMPLER+=" --verbosity veryhigh"
 SAMPLER+=" --max-iterations 1"
 SAMPLER+=" --control static --color false"
@@ -30,6 +38,7 @@ SAMPLER_PID=$!
 
 BROADCASTER="fairmq-ex-multiple-channels-broadcaster"
 BROADCASTER+=" --id broadcaster1"
+BROADCASTER+=" --transport $transport"
 BROADCASTER+=" --verbosity veryhigh"
 BROADCASTER+=" --control static --color false"
 BROADCASTER+=" --channel-config name=broadcast,type=pub,method=bind,rateLogging=0,address=tcp://*:5005"

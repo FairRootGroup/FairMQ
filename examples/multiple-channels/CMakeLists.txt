@@ -36,8 +36,11 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-multiple-channels.sh.
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-multiple-channels.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multiple-channels.sh)
 
-add_test(NAME Example-Multiple-Channels COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multiple-channels.sh)
-set_tests_properties(Example-Multiple-Channels PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received messages from both sources.")
+add_test(NAME Example-Multiple-Channels-zeromq COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multiple-channels.sh zeromq)
+set_tests_properties(Example-Multiple-Channels-zeromq PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received messages from both sources.")
+
+add_test(NAME Example-Multiple-Channels-nanomsg COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multiple-channels.sh nanomsg)
+set_tests_properties(Example-Multiple-Channels-nanomsg PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received messages from both sources.")
 
 # install
 

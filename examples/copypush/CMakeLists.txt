@@ -32,8 +32,14 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-copypush.sh.in ${CMAK
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-copypush.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-copypush.sh)
 
-add_test(NAME Example-CopyPush COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-copypush.sh)
-set_tests_properties(Example-CopyPush PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received message: ")
+add_test(NAME Example-CopyPush-zeromq COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-copypush.sh zeromq)
+set_tests_properties(Example-CopyPush-zeromq PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received message: ")
+
+add_test(NAME Example-CopyPush-nanomsg COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-copypush.sh nanomsg)
+set_tests_properties(Example-CopyPush-nanomsg PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received message: ")
+
+add_test(NAME Example-CopyPush-shmem COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-copypush.sh shmem)
+set_tests_properties(Example-CopyPush-shmem PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received message: ")
 
 # install
 
