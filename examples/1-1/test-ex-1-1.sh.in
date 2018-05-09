@@ -1,10 +1,19 @@
 #!/bin/bash
 
+export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
+
+transport="zeromq"
+
+if [[ $1 =~ ^[a-z]+$ ]]; then
+    transport=$1
+fi
+
 # setup a trap to kill everything if the test fails/timeouts
 trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SINK_PID;' TERM
 
 SAMPLER="fairmq-ex-1-1-sampler"
 SAMPLER+=" --id sampler1"
+SAMPLER+=" --transport $transport"
 SAMPLER+=" --verbosity veryhigh"
 SAMPLER+=" --control static --color false"
 SAMPLER+=" --max-iterations 1"
@@ -14,6 +23,7 @@ SAMPLER_PID=$!
 
 SINK="fairmq-ex-1-1-sink"
 SINK+=" --id sink1"
+SINK+=" --transport $transport"
 SINK+=" --verbosity veryhigh"
 SINK+=" --control static --color false"
 SINK+=" --max-iterations 1"

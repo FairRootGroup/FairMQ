@@ -39,8 +39,14 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-1-n-1.json ${CMAKE_CURRENT_BINARY_
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-1-n-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-n-1.sh)
 
-add_test(NAME Example-1-n-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-n-1.sh)
-set_tests_properties(Example-1-n-1 PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received: ")
+add_test(NAME Example-1-n-1-zeromq COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-n-1.sh zeromq)
+set_tests_properties(Example-1-n-1-zeromq PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received: ")
+
+add_test(NAME Example-1-n-1-nanomsg COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-n-1.sh nanomsg)
+set_tests_properties(Example-1-n-1-nanomsg PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received: ")
+
+add_test(NAME Example-1-n-1-shmem COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-n-1.sh shmem)
+set_tests_properties(Example-1-n-1-shmem PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received: ")
 
 # install
 
