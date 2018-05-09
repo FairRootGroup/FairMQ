@@ -253,6 +253,10 @@ class PluginServices
     /// @param subscriber
     auto UnsubscribeFromPropertyChangeAsString(const std::string& subscriber) -> void { fConfig->UnsubscribeAsString(subscriber); }
 
+    auto CycleLogConsoleSeverityUp() -> void { Logger::CycleConsoleSeverityUp(); }
+    auto CycleLogConsoleSeverityDown() -> void { Logger::CycleConsoleSeverityDown(); }
+    auto CycleLogVerbosityUp() -> void { Logger::CycleVerbosityUp(); }
+    auto CycleLogVerbosityDown() -> void { Logger::CycleVerbosityDown(); }
 
     static const std::unordered_map<std::string, DeviceState> fkDeviceStateStrMap;
     static const std::unordered_map<DeviceState, std::string, tools::HashEnum<DeviceState>> fkStrDeviceStateMap;

@@ -99,6 +99,11 @@ class Plugin
     auto SubscribeToPropertyChangeAsString(std::function<void(const std::string& key, std::string newValue)> callback) -> void { fPluginServices->SubscribeToPropertyChangeAsString(fkName, callback); }
     auto UnsubscribeFromPropertyChangeAsString() -> void { fPluginServices->UnsubscribeFromPropertyChangeAsString(fkName); }
 
+    auto CycleLogConsoleSeverityUp() -> void { fPluginServices->CycleLogConsoleSeverityUp(); }
+    auto CycleLogConsoleSeverityDown() -> void { fPluginServices->CycleLogConsoleSeverityDown(); }
+    auto CycleLogVerbosityUp() -> void { fPluginServices->CycleLogVerbosityUp(); }
+    auto CycleLogVerbosityDown() -> void { fPluginServices->CycleLogVerbosityDown(); }
+
   private:
     const std::string fkName;
     const Version fkVersion;

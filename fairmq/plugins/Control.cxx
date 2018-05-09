@@ -107,6 +107,7 @@ auto Control::InteractiveMode() -> void
         struct termios t;
         tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
         t.c_lflag &= ~ICANON; // disable canonical input
+        t.c_lflag &= ~ECHO; // do not echo input chars
         tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
 
         PrintInteractiveHelp();
@@ -154,6 +155,22 @@ auto Control::InteractiveMode() -> void
                         LOG(info) << "\n\n --> [d] reset device\n";
                         ChangeDeviceState(DeviceStateTransition::ResetDevice);
                     break;
+                    case 'k':
+                        LOG(info) << "\n\n --> [k] increase log severity\n";
+                        CycleLogConsoleSeverityUp();
+                    break;
+                    case 'l':
+                        LOG(info) << "\n\n --> [l] decrease log severity\n";
+                        CycleLogConsoleSeverityDown();
+                    break;
+                    case 'n':
+                        LOG(info) << "\n\n --> [n] increase log verbosity\n";
+                        CycleLogVerbosityUp();
+                    break;
+                    case 'm':
+                        LOG(info) << "\n\n --> [m] decrease log verbosity\n";
+                        CycleLogVerbosityDown();
+                    break;
                     case 'h':
                         LOG(info) << "\n\n --> [h] help\n";
                         PrintInteractiveHelp();
@@ -181,6 +198,7 @@ auto Control::InteractiveMode() -> void
 
         tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
         t.c_lflag |= ICANON; // re-enable canonical input
+        t.c_lflag |= ECHO; // echo input chars
         tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
 
         if (!fDeviceTerminationRequested)
@@ -197,8 +215,11 @@ auto Control::InteractiveMode() -> void
 
 auto Control::PrintInteractiveHelp() -> void
 {
-    LOG(info) << "Use keys to control the state machine:\n\n"
-              << "[h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device\n";
+    stringstream ss;
+    ss << "\nFollowing control commands are available:\n\n"
+       << "[h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device\n"
+       << "[k] increase log severity [l] decrease log severity [n] increase log verbosity [m] decrease log verbosity\n\n";
+    cout << ss.str() << flush;
 }
 
 auto Control::WaitForNextState() -> DeviceState
