@@ -6,11 +6,14 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include <TestEnvironment.h>
+
 #include <gtest/gtest.h>
 
 auto main(int argc, char** argv) -> int
 {
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    setenv("FAIRMQ_PATH", FAIRMQ_TEST_ENVIRONMENT, 0);
     return RUN_ALL_TESTS();
 }

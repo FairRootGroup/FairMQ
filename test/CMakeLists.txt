@@ -33,8 +33,10 @@ add_testhelper(runTestDevice
 
 set(MQ_CONFIG "${CMAKE_BINARY_DIR}/test/testsuite_FairMQ.IOPatterns_config.json")
 set(RUN_TEST_DEVICE "${CMAKE_BINARY_DIR}/test/testhelper_runTestDevice")
+set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/protocols/config.json.in ${MQ_CONFIG})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/protocols/runner.cxx.in ${CMAKE_CURRENT_BINARY_DIR}/protocols/runner.cxx)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/TestEnvironment.h.in ${CMAKE_CURRENT_BINARY_DIR}/TestEnvironment.h)
 
 add_testsuite(FairMQ.Protocols
     SOURCES
@@ -50,6 +52,7 @@ add_testsuite(FairMQ.Protocols
     LINKS FairMQ
     DEPENDS testhelper_runTestDevice
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/protocols
+             ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 30
     RUN_SERIAL ON
 )
@@ -61,6 +64,7 @@ add_testsuite(FairMQ.Parts
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/parts
+             ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 5
 )
 
@@ -71,6 +75,7 @@ add_testsuite(FairMQ.MessageResize
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/message_resize
+             ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 5
 )
 
@@ -85,6 +90,7 @@ add_testsuite(FairMQ.Device
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/device
+             ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 5
     RUN_SERIAL ON
 )
@@ -128,6 +134,7 @@ add_testsuite(FairMQ.Plugins
     plugins/_plugin_manager.cxx
 
     LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS FairMQPlugin_test_dummy FairMQPlugin_test_dummy2
     TIMEOUT 10
 )
@@ -138,6 +145,7 @@ add_testsuite(FairMQ.PluginsPrelinked
     plugins/_plugin_manager_prelink.cxx
 
     LINKS FairMQ FairMQPlugin_test_dummy FairMQPlugin_test_dummy2
+    INCLUDES ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 10
 )
 
@@ -149,6 +157,7 @@ add_testsuite(FairMQ.PluginServices
     plugin_services/Fixture.h
 
     LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 10
 )
 
@@ -158,6 +167,7 @@ add_testsuite(FairMQ.EventManager
     event_manager/_event_manager.cxx
 
     LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 10
 )
 
@@ -167,5 +177,6 @@ add_testsuite(FairMQ.StateMachine
     state_machine/_state_machine.cxx
 
     LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 10
 )
