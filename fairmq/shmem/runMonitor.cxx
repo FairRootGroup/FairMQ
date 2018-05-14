@@ -108,7 +108,7 @@ int main(int argc, char** argv)
         {
             cout << "Cleaning up \"" << sessionName << "\"..." << endl;
             fair::mq::shmem::Monitor::Cleanup(sessionName);
-            fair::mq::shmem::Monitor::RemoveQueue("fmq_shm_" + sessionName + "_control_queue");
+            fair::mq::shmem::Monitor::RemoveQueue("fmq_" + sessionName + "_cq");
             return 0;
         }
 

@@ -59,9 +59,9 @@ Monitor::Monitor(const string& sessionName, bool selfDestruct, bool interactive,
     , fCleanOnExit(cleanOnExit)
     , fTimeoutInMS(timeoutInMS)
     , fSessionName(sessionName)
-    , fSegmentName("fmq_shm_" + fSessionName + "_main")
-    , fManagementSegmentName("fmq_shm_" + fSessionName + "_management")
-    , fControlQueueName("fmq_shm_" + fSessionName + "_control_queue")
+    , fSegmentName("fmq_" + fSessionName + "_main")
+    , fManagementSegmentName("fmq_" + fSessionName + "_mng")
+    , fControlQueueName("fmq_" + fSessionName + "_cq")
     , fTerminating(false)
     , fHeartbeatTriggered(false)
     , fLastHeartbeat(chrono::high_resolution_clock::now())
@@ -360,7 +360,7 @@ void Monitor::CheckSegment()
 
 void Monitor::Cleanup(const string& sessionName)
 {
-    string managementSegmentName("fmq_shm_" + sessionName + "_management");
+    string managementSegmentName("fmq_" + sessionName + "_mng");
     try
     {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
@@ -371,8 +371,8 @@ void Monitor::Cleanup(const string& sessionName)
             unsigned int regionCount = rc->fCount;
             for (unsigned int i = 1; i <= regionCount; ++i)
             {
-                RemoveObject("fmq_shm_" + sessionName + "_region_" + to_string(i));
-                RemoveQueue(string("fmq_shm_" + sessionName + "_region_queue_" + to_string(i)));
+                RemoveObject("fmq_" + sessionName + "_rg_" + to_string(i));
+                RemoveQueue(string("fmq_" + sessionName + "_rgq_" + to_string(i)));
             }
         }
         else
@@ -387,9 +387,9 @@ void Monitor::Cleanup(const string& sessionName)
         cout << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup." << endl;
     }
 
-    RemoveObject("fmq_shm_" + sessionName + "_main");
+    RemoveObject("fmq_" + sessionName + "_main");
 
-    boost::interprocess::named_mutex::remove(string("fmq_shm_" + sessionName + "_mutex").c_str());
+    boost::interprocess::named_mutex::remove(string("fmq_" + sessionName + "_mtx").c_str());
 
     cout << endl;
 }
@@ -425,7 +425,7 @@ void Monitor::PrintQueues()
     try
     {
         bipc::managed_shared_memory segment(bipc::open_only, fSegmentName.c_str());
-        StringVector* queues = segment.find<StringVector>(string("fmq_shm_" + fSessionName + "_queues").c_str()).first;
+        StringVector* queues = segment.find<StringVector>(string("fmq_" + fSessionName + "_qs").c_str()).first;
         if (queues)
         {
             cout << "found " << queues->size() << " queue(s):" << endl;

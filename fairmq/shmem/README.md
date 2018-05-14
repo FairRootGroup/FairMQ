@@ -27,9 +27,9 @@ The Monitor class can also be used independently from the supplied executable (b
 
 FairMQ Shared Memory currently uses following names to register shared memory on the system:
 
-`fmq_shm_<sessionName>_main` - main segment name, used for user data (session name can be overridden via `--session`).
-`fmq_shm_<sessionName>_management` - management segment name, used for storing management data.
-`fmq_shm_<sessionName>_control_queue` - message queue for communicating between shm transport and shm monitor (exists independent of above segments).
-`fmq_shm_<sessionName>_mutex` - boost::interprocess::named_mutex for management purposes (exists independent of above segments).
-`fmq_shm_<sessionName>_region_<index>` - names of unmanaged regions.
-`fmq_shm_<sessionName>_region_queue_<index>` - names of queues for the unmanaged regions.
+`fmq_<sessionName>_main` - main segment name, used for user data (session name can be overridden via `--session`).
+`fmq_<sessionName>_mng` - management segment name, used for storing management data.
+`fmq_<sessionName>_cq` - message queue for communicating between shm transport and shm monitor (exists independent of above segments).
+`fmq_<sessionName>_mtx` - boost::interprocess::named_mutex for management purposes (exists independent of above segments).
+`fmq_<sessionName>_rg_<index>` - names of unmanaged regions.
+`fmq_<sessionName>_rgq_<index>` - names of queues for the unmanaged regions.
