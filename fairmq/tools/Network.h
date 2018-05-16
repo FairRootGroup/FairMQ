@@ -9,27 +9,20 @@
 #ifndef FAIR_MQ_TOOLS_NETWORK_H
 #define FAIR_MQ_TOOLS_NETWORK_H
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE // To get defns of NI_MAXSERV and NI_MAXHOST
-#endif
-
-#include "FairMQLogger.h"
-
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netdb.h>
-#include <ifaddrs.h>
-#include <stdio.h>
-
-#include <boost/algorithm/string.hpp> // trim
-#include <boost/asio.hpp>
-
 #include <map>
 #include <string>
-#include <iostream>
-#include <array>
-#include <exception>
-#include <algorithm>
+
+// forward declarations
+namespace boost
+{
+namespace asio
+{
+
+class io_context;
+typedef class io_context io_service;
+
+} // namespace asio
+} // namespace boost
 
 namespace fair
 {
@@ -39,152 +32,17 @@ namespace tools
 {
 
 // returns a map with network interface names as keys and their IP addresses as values
-inline int getHostIPs(std::map<std::string, std::string>& addressMap)
-{
-    struct ifaddrs *ifaddr, *ifa;
-    int s;
-    char host[NI_MAXHOST];
-
-    if (getifaddrs(&ifaddr) == -1)
-    {
-        perror("getifaddrs");
-        return -1;
-    }
-
-    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
-    {
-        if (ifa->ifa_addr == NULL)
-        {
-            continue;
-        }
-
-        if (ifa->ifa_addr->sa_family == AF_INET)
-        {
-            s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-            if (s != 0)
-            {
-                std::cout << "getnameinfo() failed: " << gai_strerror(s) << std::endl;
-                return -1;
-            }
-
-            addressMap.insert(std::pair<std::string, std::string>(ifa->ifa_name, host));
-        }
-    }
-    freeifaddrs(ifaddr);
-
-    return 0;
-}
+int getHostIPs(std::map<std::string, std::string>& addressMap);
 
 // get IP address of a given interface name
-inline std::string getInterfaceIP(std::string interface)
-{
-    std::map<std::string, std::string> IPs;
-    getHostIPs(IPs);
-    if (IPs.count(interface))
-    {
-        return IPs[interface];
-    }
-    else
-    {
-        LOG(error) << "Could not find provided network interface: \"" << interface << "\"!, exiting.";
-        return "";
-    }
-}
+std::string getInterfaceIP(const std::string& interface);
 
 // get name of the default route interface
-inline std::string getDefaultRouteNetworkInterface()
-{
-    std::array<char, 128> buffer;
-    std::string interfaceName;
+std::string getDefaultRouteNetworkInterface();
 
-#ifdef __APPLE__ // MacOS
-    std::unique_ptr<FILE, decltype(pclose) *> file(popen("route -n get default | grep interface | cut -d \":\" -f 2", "r"), pclose);
-#else // Linux
-    std::unique_ptr<FILE, decltype(pclose) *> file(popen("ip route | grep default | cut -d \" \" -f 5 | head -n 1", "r"), pclose);
-#endif
+std::string getIpFromHostname(const std::string& hostname);
 
-    if (!file)
-    {
-        LOG(error) << "Could not detect default route network interface name - popen() failed!";
-        return "";
-    }
-
-    while (!feof(file.get()))
-    {
-        if (fgets(buffer.data(), 128, file.get()) != NULL)
-        {
-            interfaceName += buffer.data();
-        }
-    }
-
-    boost::algorithm::trim(interfaceName);
-
-    if (interfaceName == "")
-    {
-        LOG(error) << "Could not detect default route network interface name";
-    }
-    else
-    {
-        LOG(debug) << "Detected network interface name for the default route: " << interfaceName;
-    }
-
-    return interfaceName;
-}
-
-inline std::string getIpFromHostname(const std::string& hostname)
-{
-    try {
-        namespace bai = boost::asio::ip;
-        boost::asio::io_service ios;
-        bai::tcp::resolver resolver(ios);
-        bai::tcp::resolver::query query(hostname, "");
-        bai::tcp::resolver::iterator end;
-
-        auto it = std::find_if(static_cast<bai::basic_resolver_iterator<bai::tcp>>(resolver.resolve(query)), end, [](const bai::tcp::endpoint& ep) {
-            return ep.address().is_v4();
-        });
-
-        if (it != end) {
-            std::stringstream ss;
-            ss << static_cast<bai::tcp::endpoint>(*it).address();
-            return ss.str();
-        }
-
-        LOG(warn) << "could not find ipv4 address for hostname '" << hostname << "'";
-
-        return "";
-    } catch (std::exception& e) {
-        LOG(error) << "could not resolve hostname '" << hostname << "', reason: " << e.what();
-        return "";
-    }
-}
-
-inline std::string getIpFromHostname(const std::string& hostname, boost::asio::io_service& ios)
-{
-    try {
-        namespace bai = boost::asio::ip;
-        bai::tcp::resolver resolver(ios);
-        bai::tcp::resolver::query query(hostname, "");
-        bai::tcp::resolver::iterator end;
-
-        auto it = std::find_if(static_cast<bai::basic_resolver_iterator<bai::tcp>>(resolver.resolve(query)), end, [](const bai::tcp::endpoint& ep) {
-            return ep.address().is_v4();
-        });
-
-        if (it != end) {
-            std::stringstream ss;
-            ss << static_cast<bai::tcp::endpoint>(*it).address();
-            return ss.str();
-        }
-
-        LOG(warn) << "could not find ipv4 address for hostname '" << hostname << "'";
-
-        return "";
-    } catch (std::exception& e) {
-        LOG(error) << "could not resolve hostname '" << hostname << "', reason: " << e.what();
-        return "";
-    }
-}
+std::string getIpFromHostname(const std::string& hostname, boost::asio::io_service& ios);
 
 } /* namespace tools */
 } /* namespace mq */

@@ -13,6 +13,7 @@
 #include <FairMQLogger.h>
 
 #include <string>
+#include <thread>
 
 namespace fair
 {
