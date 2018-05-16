@@ -12,6 +12,7 @@
 
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 
 #include <termios.h> // for the interactive mode
 #include <poll.h> // for the interactive mode

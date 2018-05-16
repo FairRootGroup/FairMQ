@@ -12,6 +12,8 @@
 
 #include <zmq.h>
 
+#include <cassert>
+
 using namespace std;
 
 atomic<bool> FairMQSocketZMQ::fInterrupted(false);

@@ -9,6 +9,7 @@
 #include <FairMQDevice.h>
 #include <FairMQLogger.h>
 #include <options/FairMQProgOptions.h>
+#include <thread>
 
 namespace fair
 {

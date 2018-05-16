@@ -15,6 +15,7 @@
 #include "FairMQParser.h"
 #include "FairMQLogger.h"
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 using namespace std;
 

@@ -148,6 +148,9 @@ set(FAIRMQ_SOURCE_FILES
     shmem/Manager.cxx
     shmem/Monitor.cxx
     shmem/Region.cxx
+    tools/Network.cxx
+    tools/Process.cxx
+    tools/Unique.cxx
     zeromq/FairMQMessageZMQ.cxx
     zeromq/FairMQPollerZMQ.cxx
     zeromq/FairMQUnmanagedRegionZMQ.cxx

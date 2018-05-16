@@ -18,6 +18,8 @@
 #include <fairmq/Tools.h>
 #include "FairMQUnmanagedRegionZMQ.h"
 
+#include <cstring>
+
 using namespace std;
 
 fair::mq::Transport FairMQMessageZMQ::fTransportType = fair::mq::Transport::ZMQ;
