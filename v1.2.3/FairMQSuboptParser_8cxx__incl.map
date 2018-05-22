@@ -1,0 +1,20 @@
+<map id="fairmq/options/FairMQSuboptParser.cxx" name="fairmq/options/FairMQSuboptParser.cxx">
+<area shape="rect" id="node2" href="$FairMQSuboptParser_8h.html" title="Parser implementation for key&#45;value subopt format. " alt="" coords="2260,102,2422,129"/>
+<area shape="rect" id="node3" href="$FairMQParser_8h_source.html" title="FairMQParser.h" alt="" coords="984,184,1101,211"/>
+<area shape="rect" id="node9" href="$FairMQChannel_8h_source.html" title="FairMQChannel.h" alt="" coords="1598,266,1729,293"/>
+<area shape="rect" id="node13" href="$FairMQTransportFactory_8h_source.html" title="FairMQTransportFactory.h" alt="" coords="1572,423,1755,449"/>
+<area shape="rect" id="node16" href="$Transports_8h_source.html" title="fairmq/Transports.h" alt="" coords="1136,647,1284,673"/>
+<area shape="rect" id="node30" href="$FairMQSocket_8h_source.html" title="FairMQSocket.h" alt="" coords="1752,497,1874,524"/>
+<area shape="rect" id="node33" href="$FairMQLogger_8h_source.html" title="FairMQLogger.h" alt="" coords="2112,497,2234,524"/>
+<area shape="rect" id="node35" href="$FairMQParts_8h_source.html" title="FairMQParts.h" alt="" coords="1856,348,1967,375"/>
+<area shape="rect" id="node14" href="$FairMQMessage_8h_source.html" title="FairMQMessage.h" alt="" coords="1739,572,1874,599"/>
+<area shape="rect" id="node31" href="$FairMQPoller_8h_source.html" title="FairMQPoller.h" alt="" coords="1276,796,1390,823"/>
+<area shape="rect" id="node32" href="$FairMQUnmanagedRegion_8h_source.html" title="FairMQUnmanagedRegion.h" alt="" coords="1462,572,1663,599"/>
+<area shape="rect" id="node17" href="$Tools_8h_source.html" title="fairmq/Tools.h" alt="" coords="924,721,1038,748"/>
+<area shape="rect" id="node18" href="$CppSTL_8h_source.html" title="fairmq/tools/CppSTL.h" alt="" coords="1414,796,1580,823"/>
+<area shape="rect" id="node21" href="$Network_8h_source.html" title="fairmq/tools/Network.h" alt="" coords="20,796,192,823"/>
+<area shape="rect" id="node22" href="$Process_8h_source.html" title="fairmq/tools/Process.h" alt="" coords="471,796,638,823"/>
+<area shape="rect" id="node23" href="$Strings_8h_source.html" title="fairmq/tools/Strings.h" alt="" coords="900,796,1062,823"/>
+<area shape="rect" id="node26" href="$Unique_8h_source.html" title="fairmq/tools/Unique.h" alt="" coords="662,796,825,823"/>
+<area shape="rect" id="node27" href="$Version_8h_source.html" title="fairmq/tools/Version.h" alt="" coords="1086,796,1252,823"/>
+</map>
