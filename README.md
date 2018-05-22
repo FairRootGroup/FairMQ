@@ -23,7 +23,7 @@ In addition to this core functionality FairMQ provides a framework for creating 
 are communicating through message passing. FairMQ does not only allow the user to use different transport but also to mix them; i.e: A Device can communicate using different transport on different channels at the same time. Device execution is modelled as a simple state machine that
 shapes the integration points for the user task. Devices also incorporate a plugin system for runtime configuration and control.
 Next to the provided devices and plugins (e.g. [DDS](https://github.com/FairRootGroup/DDS))
-the user can extened FairMQ by developing his own plugins to integrate his devices with external
+the user can extend FairMQ by developing his own plugins to integrate his devices with external
 configuration and control services.
 
 FairMQ has been developed in the context of its mother project [FairRoot](https://github.com/FairRootGroup/FairRoot) -
@@ -86,8 +86,10 @@ In order to succesfully compile and link against the `FairMQ::FairMQ` target, yo
 
 ```cmake
 find_package(FairMQ)
-find_package(FairLogger ${FairMQ_FairLogger_VERSION})
-find_package(Boost ${FairMQ_Boost_VERSION} COMPONENTS ${FairMQ_BOOST_COMPONENTS})
+if(FairMQ_FOUND)
+  find_package(FairLogger ${FairMQ_FairLogger_VERSION})
+  find_package(Boost ${FairMQ_Boost_VERSION} COMPONENTS ${FairMQ_BOOST_COMPONENTS})
+endif()
 ```
 
 Of course, feel free to customize the above commands to your needs.
@@ -96,8 +98,10 @@ Optionally, you can require certain FairMQ package components and a minimum vers
 
 ```cmake
 find_package(FairMQ 1.1.0 COMPONENTS nanomsg_transport dds_plugin)
-find_package(FairLogger ${FairMQ_FairLogger_VERSION})
-find_package(Boost ${FairMQ_Boost_VERSION} COMPONENTS ${FairMQ_BOOST_COMPONENTS})
+if(FairMQ_FOUND)
+  find_package(FairLogger ${FairMQ_FairLogger_VERSION})
+  find_package(Boost ${FairMQ_Boost_VERSION} COMPONENTS ${FairMQ_BOOST_COMPONENTS})
+endif()
 ```
 
 When building FairMQ, CMake will print a summary table of all available package components.
