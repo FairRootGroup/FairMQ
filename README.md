@@ -80,7 +80,7 @@ set(CMAKE_PREFIX_PATH /path/to/FairMQ_install_prefix ${CMAKE_PREFIX_PATH})
 find_package(FairMQ)
 ```
 
-`find_package(FairMQ)` will define an imported target `FairMQ::FairMQ` (An alias `FairRoot::FairMQ` is also defined (if you use CMake 3.11+) for backwards compatibility, but it is deprecated).
+`find_package(FairMQ)` will define an imported target `FairMQ::FairMQ`.
 
 In order to succesfully compile and link against the `FairMQ::FairMQ` target, you need to discover its public package dependencies, too.
 
