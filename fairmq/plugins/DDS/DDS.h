@@ -52,8 +52,8 @@ struct IofN
         , fEntries()
     {}
 
-    int fI;
-    int fN;
+    unsigned int fI;
+    unsigned int fN;
     std::vector<std::string> fEntries;
 
 };

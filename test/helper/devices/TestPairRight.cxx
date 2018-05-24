@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include <FairMQDevice.h>
+#include <cstddef>
 #include <string>
 #include <thread>
 
@@ -51,7 +52,7 @@ class PairRight : public FairMQDevice
         if (ret > 0) {
             auto content = std::string{static_cast<char*>(msg5->GetData()), msg5->GetSize()};
             LOG(info) << ret << ", " << msg5->GetSize() << ", '" << content << "'";
-            if (msg5->GetSize() == ret && content == "testdata1234") counter++;
+            if (msg5->GetSize() == static_cast<std::size_t>(ret) && content == "testdata1234") counter++;
         }
         auto msg6(NewSimpleMessageFor("data", 0, "testdata1234"));
         if (Send(msg6, "data") >= 0) counter++;

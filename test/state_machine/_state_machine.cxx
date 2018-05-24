@@ -38,7 +38,7 @@ TEST(StateMachine, RegularFSM)
     ASSERT_NO_THROW(fsm.ChangeState(T::Automatic));
 
     int cnt{0};
-    fsm.SubscribeToStateQueued("test", [&](S newState, S lastState){
+    fsm.SubscribeToStateQueued("test", [&](S /*newState*/, S /*lastState*/){
         ++cnt;
     });
 

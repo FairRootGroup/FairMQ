@@ -501,7 +501,7 @@ void FairMQDevice::RunWrapper()
             while (CheckCurrentState(RUNNING) && ConditionalRun())
             {
               if (fRate > 0.001) {
-                auto timespan = chrono::duration_cast<TimeScale>(Clock::now() - reftime).count() - fLastTime;
+                auto timespan = static_cast<TimeScale::rep>(chrono::duration_cast<TimeScale>(Clock::now() - reftime).count() - fLastTime);
                 if (timespan < period) {
                   TimeScale sleepfor(period - timespan);
                   this_thread::sleep_for(sleepfor);

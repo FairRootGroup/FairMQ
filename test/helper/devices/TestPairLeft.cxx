@@ -8,6 +8,7 @@
 
 #include <FairMQDevice.h>
 
+#include <cstddef>
 #include <thread>
 
 namespace fair
@@ -53,7 +54,7 @@ class PairLeft : public FairMQDevice
         if (ret > 0) {
             auto content = std::string{static_cast<char*>(msg6->GetData()), msg6->GetSize()};
             LOG(info) << ret << ", " << msg6->GetSize() << ", '" << content << "'";
-            if (msg6->GetSize() == ret && content == "testdata1234") counter++;
+            if (msg6->GetSize() == static_cast<std::size_t>(ret) && content == "testdata1234") counter++;
         }
         if (counter == 6) LOG(info) << "Simple message with short text data successfull";
 

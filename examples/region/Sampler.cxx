@@ -38,7 +38,7 @@ void Sampler::InitTask()
     fRegion = FairMQUnmanagedRegionPtr(NewUnmanagedRegionFor("data",
                                                              0,
                                                              10000000,
-                                                             [this](void* data, size_t size, void* hint) { // callback to be called when message buffers no longer needed by transport
+                                                             [this](void* /*data*/, size_t /*size*/, void* /*hint*/) { // callback to be called when message buffers no longer needed by transport
                                                                  --fNumUnackedMsgs;
                                                                  if (fMaxIterations > 0)
                                                                  {
