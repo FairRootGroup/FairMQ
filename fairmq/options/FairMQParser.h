@@ -10,8 +10,8 @@
 
 #include <string>
 #include <vector>
-#include <map>
 #include <unordered_map>
+#include <exception>
 
 #include <boost/property_tree/ptree_fwd.hpp>
 
@@ -24,22 +24,23 @@ namespace mq
 namespace parser
 {
 
-using FairMQMap = std::unordered_map<std::string, std::vector<FairMQChannel>>;
+using FairMQChannelMap = std::unordered_map<std::string, std::vector<FairMQChannel>>;
 
-FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& deviceId, const std::string& rootNode);
+struct ParserError : std::runtime_error { using std::runtime_error::runtime_error; };
+
+FairMQChannelMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& deviceId, const std::string& rootNode);
 
 struct JSON
 {
-    FairMQMap UserParser(const std::string& filename, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
-    FairMQMap UserParser(std::stringstream& input, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
+    FairMQChannelMap UserParser(const std::string& filename, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
 };
 
 namespace Helper
 {
 
 void PrintDeviceList(const boost::property_tree::ptree& tree);
-void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap, const std::string& deviceId);
-void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap);
+void DeviceParser(const boost::property_tree::ptree& tree, FairMQChannelMap& channelMap, const std::string& deviceId);
+void ChannelParser(const boost::property_tree::ptree& tree, FairMQChannelMap& channelMap);
 void SocketParser(const boost::property_tree::ptree& tree, std::vector<FairMQChannel>& channelList, const std::string& channelName, const FairMQChannel& commonChannel);
 
 } // Helper namespace

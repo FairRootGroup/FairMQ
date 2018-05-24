@@ -327,9 +327,7 @@ void FairMQChannel::UpdateTransport(const string& transport)
     {
         unique_lock<mutex> lock(fChannelMutex);
         fIsValid = false;
-        LOG(WARN) << fName << ": " << transport;
         fTransportType = fair::mq::TransportTypes.at(transport);
-        LOG(WARN) << fName << ": " << fair::mq::TransportNames.at(fTransportType);
         fModified = true;
     }
     catch (exception& e)

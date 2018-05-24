@@ -129,12 +129,10 @@ set(FAIRMQ_SOURCE_FILES
     devices/FairMQMerger.cxx
     devices/FairMQMultiplier.cxx
     devices/FairMQProxy.cxx
-    # devices/FairMQSink.cxx
     devices/FairMQSplitter.cxx
     options/FairMQParser.cxx
     options/FairMQProgOptions.cxx
     options/FairMQSuboptParser.cxx
-    options/FairProgOptions.cxx
     Plugin.cxx
     PluginManager.cxx
     PluginServices.cxx

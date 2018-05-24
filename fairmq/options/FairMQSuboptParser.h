@@ -14,13 +14,11 @@
 #ifndef FAIRMQPARSER_SUBOPT_H
 #define FAIRMQPARSER_SUBOPT_H
 
-#include "FairMQParser.h" // for FairMQMap
+#include "FairMQParser.h" // for FairMQChannelMap
 #include <boost/program_options.hpp>
 #include <cstring>
 #include <vector>
 #include <string>
-
-namespace po = boost::program_options;
 
 namespace fair
 {
@@ -78,7 +76,7 @@ struct SUBOPT
         nullptr
     };
 
-    FairMQMap UserParser(const std::vector<std::string>& channelConfig, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
+    FairMQChannelMap UserParser(const std::vector<std::string>& channelConfig, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
 };
 
 }

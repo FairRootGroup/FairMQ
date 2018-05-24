@@ -27,11 +27,16 @@ namespace parser
 {
 
 // TODO : add key-value map<string,string> parameter  for replacing/updating values from keys
-// function that convert property tree (given the json structure) to FairMQMap
-FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const string& id, const string& rootNode)
+// function that convert property tree (given the json structure) to FairMQChannelMap
+FairMQChannelMap ptreeToMQMap(const boost::property_tree::ptree& pt, const string& id, const string& rootNode)
 {
+    if (id == "")
+    {
+        throw ParserError("no device ID provided. Provide with `--id` cmd option");
+    }
+
     // Create fair mq map
-    FairMQMap channelMap;
+    FairMQChannelMap channelMap;
     // boost::property_tree::json_parser::write_json(std::cout, pt);
     // Helper::PrintDeviceList(pt.get_child(rootNode));
     // Extract value from boost::property_tree
@@ -46,17 +51,10 @@ FairMQMap ptreeToMQMap(const boost::property_tree::ptree& pt, const string& id, 
     return channelMap;
 }
 
-FairMQMap JSON::UserParser(const string& filename, const string& deviceId, const string& rootNode)
+FairMQChannelMap JSON::UserParser(const string& filename, const string& deviceId, const string& rootNode)
 {
     boost::property_tree::ptree pt;
     boost::property_tree::read_json(filename, pt);
-    return ptreeToMQMap(pt, deviceId, rootNode);
-}
-
-FairMQMap JSON::UserParser(stringstream& input, const string& deviceId, const string& rootNode)
-{
-    boost::property_tree::ptree pt;
-    boost::property_tree::read_json(input, pt);
     return ptreeToMQMap(pt, deviceId, rootNode);
 }
 
@@ -90,7 +88,7 @@ void PrintDeviceList(const boost::property_tree::ptree& tree)
     }
 }
 
-void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap, const string& deviceId)
+void DeviceParser(const boost::property_tree::ptree& tree, FairMQChannelMap& channelMap, const string& deviceId)
 {
     string deviceIdKey;
 
@@ -129,7 +127,7 @@ void DeviceParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap
     }
 }
 
-void ChannelParser(const boost::property_tree::ptree& tree, FairMQMap& channelMap)
+void ChannelParser(const boost::property_tree::ptree& tree, FairMQChannelMap& channelMap)
 {
     string channelKey;
 

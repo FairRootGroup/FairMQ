@@ -149,14 +149,14 @@ void FairMQTransportFactorySHM::StartMonitor()
 
     auto env = boost::this_process::environment();
 
-    vector<boost::filesystem::path> ownPath = boost::this_process::path();
+    vector<bfs::path> ownPath = boost::this_process::path();
 
     if (const char* fmqp = getenv("FAIRMQ_PATH"))
     {
-        ownPath.insert(ownPath.begin(), boost::filesystem::path(fmqp));
+        ownPath.insert(ownPath.begin(), bfs::path(fmqp));
     }
 
-    boost::filesystem::path p = boost::process::search_path("fairmq-shmmonitor", ownPath);
+    bfs::path p = boost::process::search_path("fairmq-shmmonitor", ownPath);
 
     if (!p.empty())
     {
@@ -184,7 +184,7 @@ void FairMQTransportFactorySHM::StartMonitor()
     }
     else
     {
-        LOG(WARN) << "could not find fairmq-shmmonitor in the path";
+        LOG(warn) << "could not find fairmq-shmmonitor in the path";
     }
 }
 

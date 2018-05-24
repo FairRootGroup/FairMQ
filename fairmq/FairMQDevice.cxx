@@ -837,17 +837,17 @@ void FairMQDevice::SetConfig(FairMQProgOptions& config)
 {
     fExternalConfig = true;
     fConfig = &config;
-    for (auto& c : config.GetFairMQMap())
+    for (auto& c : fConfig->GetFairMQMap())
     {
         if (!fChannels.insert(c).second)
         {
             LOG(warn) << "did not insert channel '" << c.first << "', it is already in the device.";
         }
     }
-    fId = config.GetValue<string>("id");
-    fNetworkInterface = config.GetValue<string>("network-interface");
-    fNumIoThreads = config.GetValue<int>("io-threads");
-    fInitializationTimeoutInS = config.GetValue<int>("initialization-timeout");
+    fId = fConfig->GetValue<string>("id");
+    fNetworkInterface = fConfig->GetValue<string>("network-interface");
+    fNumIoThreads = fConfig->GetValue<int>("io-threads");
+    fInitializationTimeoutInS = fConfig->GetValue<int>("initialization-timeout");
     fRate = fConfig->GetValue<float>("rate");
     try {
         fDefaultTransportType = fair::mq::TransportTypes.at(fConfig->GetValue<string>("transport"));
