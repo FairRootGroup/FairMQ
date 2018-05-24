@@ -23,8 +23,6 @@ Sink::Sink()
     : fMaxIterations(0)
     , fNumIterations1(0)
     , fNumIterations2(0)
-    , fReceived1(false)
-    , fReceived2(false)
 {
     // register a handler for data arriving on "data" channel
     OnData("data1", &Sink::HandleData1);

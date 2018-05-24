@@ -36,8 +36,6 @@ class Sink : public FairMQDevice
     uint64_t fMaxIterations;
     uint64_t fNumIterations1;
     uint64_t fNumIterations2;
-    bool fReceived1;
-    bool fReceived2;
 };
 
 } // namespace example_multiple_transports

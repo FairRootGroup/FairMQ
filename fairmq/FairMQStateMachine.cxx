@@ -72,8 +72,7 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
 {
   public:
     Machine_()
-        : fState()
-        , fWork()
+        : fWork()
         , fWorkAvailableCondition()
         , fWorkDoneCondition()
         , fWorkMutex()
@@ -83,6 +82,7 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
         , fStateChangeSignal()
         , fStateChangeSignalsMap()
         , fTerminationRequested(false)
+        , fState()
         , fWorkerThread()
     {}
 
@@ -521,8 +521,8 @@ _Pragma("GCC diagnostic pop")
 using namespace fair::mq::fsm;
 
 FairMQStateMachine::FairMQStateMachine()
-    : fFsm(new FairMQFSM)
-    , fChangeStateMutex()
+    : fChangeStateMutex()
+    , fFsm(new FairMQFSM)
 {
     static_pointer_cast<FairMQFSM>(fFsm)->fInitWrapperHandler = bind(&FairMQStateMachine::InitWrapper, this);
     static_pointer_cast<FairMQFSM>(fFsm)->fInitTaskWrapperHandler = bind(&FairMQStateMachine::InitTaskWrapper, this);

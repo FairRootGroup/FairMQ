@@ -238,7 +238,7 @@ int FairMQSocketSHM::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const i
     }
 }
 
-int64_t FairMQSocketSHM::SendImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
+int64_t FairMQSocketSHM::SendImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int /*timeout*/)
 {
     const unsigned int vecSize = msgVec.size();
     int64_t totalSize = 0;
@@ -318,7 +318,7 @@ int64_t FairMQSocketSHM::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fl
 }
 
 
-int64_t FairMQSocketSHM::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
+int64_t FairMQSocketSHM::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int /*timeout*/)
 {
     int64_t totalSize = 0;
 

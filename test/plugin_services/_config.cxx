@@ -63,7 +63,7 @@ TEST_F(PluginServices, ConfigCallbacks)
         if (key == "chans.data.0.address") { ASSERT_EQ(value, "tcp://localhost:4321"); }
     });
 
-    mServices.SubscribeToPropertyChange<int>("test", [](const string& key, int value) {
+    mServices.SubscribeToPropertyChange<int>("test", [](const string& key, int /*value*/) {
         if(key == "chans.data.0.rcvBufSize") {
             FAIL(); // should not be called because we unsubscribed
         }
