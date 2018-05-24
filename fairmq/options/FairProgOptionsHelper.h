@@ -17,211 +17,171 @@
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/spirit/home/support/detail/hold_any.hpp>
 
 #include <string>
 #include <vector>
 #include <iostream>
 #include <ostream>
 #include <iterator>
+#include <typeinfo>
 
 namespace fair
 {
 namespace mq
 {
 
+template<class T>
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
+{
+    for (const auto& i : v)
+    {
+        os << i << "  ";
+    }
+    return os;
+}
+
 struct VarValInfo
 {
     std::string value;
     std::string type;
     std::string defaulted;
-    std::string empty;
 };
 
-template<class T>
-std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
-{
-    std::copy(v.begin(), v.end(), std::ostream_iterator<T>(os, "  "));
-    return os;
-}
-
 template<typename T>
-bool typeIs(const boost::program_options::variable_value& varValue)
+std::string ConvertVariableValueToString(const boost::program_options::variable_value& varVal)
 {
-    auto& value = varValue.value();
-    if (auto q = boost::any_cast<T>(&value))
-    {
-        return true;
+    std::ostringstream oss;
+    if (auto q = boost::any_cast<T>(&varVal.value())) {
+        oss << *q;
     }
-    else
-    {
-        return false;
-    }
+    return oss.str();
 }
 
-template<typename T>
-std::string ConvertVariableValueToString(const boost::program_options::variable_value& varValue)
+namespace options
 {
-    auto& value = varValue.value();
-    std::ostringstream ostr;
-    if (auto q = boost::any_cast<T>(&value))
-    {
-        ostr << *q;
-    }
-    std::string valueStr = ostr.str();
-    return valueStr;
-}
-
-// string specialization
-template<>
-inline std::string ConvertVariableValueToString<std::string>(const boost::program_options::variable_value& varValue)
-{
-    auto& value = varValue.value();
-    std::string valueStr;
-    if (auto q = boost::any_cast<std::string>(&value))
-    {
-        valueStr = *q;
-    }
-    return valueStr;
-}
-
-// boost::filesystem::path specialization
-template<>
-inline std::string ConvertVariableValueToString<boost::filesystem::path>(const boost::program_options::variable_value& varValue)
-{
-    auto& value = varValue.value();
-    std::string valueStr;
-    if (auto q = boost::any_cast<boost::filesystem::path>(&value))
-    {
-        valueStr = (*q).string();
-    }
-    return valueStr;
-}
 
 // policy to convert boost variable value into string
-struct VarInfoToString
+struct ToString
 {
     using returned_type = std::string;
 
     template<typename T>
-    std::string Value(const boost::program_options::variable_value& varValue, const std::string&, const std::string&, const std::string&)
+    std::string Value(const boost::program_options::variable_value& varVal, const std::string&, const std::string&)
     {
-        return ConvertVariableValueToString<T>(varValue);
+        return ConvertVariableValueToString<T>(varVal);
     }
 
-    returned_type DefaultValue(const std::string&, const std::string&)
+    returned_type DefaultValue(const std::string&)
     {
-        return std::string("empty value");
+        return std::string("[unidentified]");
     }
 };
 
 // policy to convert variable value content into VarValInfo
 struct ToVarValInfo
 {
-    using returned_type = fair::mq::VarValInfo;
+    using returned_type = VarValInfo;
 
     template<typename T>
-    returned_type Value(const boost::program_options::variable_value& varValue, const std::string& type, const std::string& defaulted, const std::string& empty)
+    returned_type Value(const boost::program_options::variable_value& varVal, const std::string& type, const std::string& defaulted)
     {
-        std::string valueStr = ConvertVariableValueToString<T>(varValue);
-        return fair::mq::VarValInfo{valueStr, type, defaulted, empty};
+        return VarValInfo{ConvertVariableValueToString<T>(varVal), type, defaulted};
     }
 
-    returned_type DefaultValue(const std::string& defaulted, const std::string& empty)
+    returned_type DefaultValue(const std::string& defaulted)
     {
-        return fair::mq::VarValInfo{std::string("Unknown value"), std::string(" [Unknown]"), defaulted, empty};
+        return VarValInfo{std::string("[unidentified]"), std::string("[unidentified]"), defaulted};
     }
 };
+
+} // namespace options
 
 // host class that take one of the two policy defined above
 template<typename T>
 struct ConvertVariableValue : T
 {
-    auto operator()(const boost::program_options::variable_value& varValue) -> typename T::returned_type
+    auto operator()(const boost::program_options::variable_value& varVal) -> typename T::returned_type
     {
         std::string defaulted;
-        std::string empty;
 
-        if (varValue.empty())
+        if (varVal.defaulted())
         {
-            empty = " [empty]";
+            defaulted = " [default]";
         }
         else
         {
-            if (varValue.defaulted())
-            {
-                defaulted = " [default]";
-            }
-            else
-            {
-                defaulted = " [provided]";
-            }
+            defaulted = " [provided]";
         }
 
-        if (typeIs<std::string>(varValue))
-            return T::template Value<std::string>(varValue, std::string("<string>"), defaulted, empty);
+        if (typeid(std::string) == varVal.value().type())
+            return T::template Value<std::string>(varVal, std::string("<string>"), defaulted);
 
-        if (typeIs<std::vector<std::string>>(varValue))
-            return T::template Value<std::vector<std::string>>(varValue, std::string("<vector<string>>"), defaulted, empty);
+        if (typeid(std::vector<std::string>) == varVal.value().type())
+            return T::template Value<std::vector<std::string>>(varVal, std::string("<vector<string>>"), defaulted);
 
-        if (typeIs<int>(varValue))
-            return T::template Value<int>(varValue, std::string("<int>"), defaulted, empty);
+        if (typeid(int) == varVal.value().type())
+            return T::template Value<int>(varVal, std::string("<int>"), defaulted);
 
-        if (typeIs<std::vector<int>>(varValue))
-            return T::template Value<std::vector<int>>(varValue, std::string("<vector<int>>"), defaulted, empty);
+        if (typeid(std::vector<int>) == varVal.value().type())
+            return T::template Value<std::vector<int>>(varVal, std::string("<vector<int>>"), defaulted);
 
-        if (typeIs<float>(varValue))
-            return T::template Value<float>(varValue, std::string("<float>"), defaulted, empty);
+        if (typeid(float) == varVal.value().type())
+            return T::template Value<float>(varVal, std::string("<float>"), defaulted);
 
-        if (typeIs<std::vector<float>>(varValue))
-            return T::template Value<std::vector<float>>(varValue, std::string("<vector<float>>"), defaulted, empty);
+        if (typeid(std::vector<float>) == varVal.value().type())
+            return T::template Value<std::vector<float>>(varVal, std::string("<vector<float>>"), defaulted);
 
-        if (typeIs<double>(varValue))
-            return T::template Value<double>(varValue, std::string("<double>"), defaulted, empty);
+        if (typeid(double) == varVal.value().type())
+            return T::template Value<double>(varVal, std::string("<double>"), defaulted);
 
-        if (typeIs<std::vector<double>>(varValue))
-            return T::template Value<std::vector<double>>(varValue, std::string("<vector<double>>"), defaulted, empty);
+        if (typeid(std::vector<double>) == varVal.value().type())
+            return T::template Value<std::vector<double>>(varVal, std::string("<vector<double>>"), defaulted);
 
-        if (typeIs<short>(varValue))
-            return T::template Value<short>(varValue, std::string("<short>"), defaulted, empty);
+        if (typeid(short) == varVal.value().type())
+            return T::template Value<short>(varVal, std::string("<short>"), defaulted);
 
-        if (typeIs<std::vector<short>>(varValue))
-            return T::template Value<std::vector<short>>(varValue, std::string("<vector<short>>"), defaulted, empty);
+        if (typeid(std::vector<short>) == varVal.value().type())
+            return T::template Value<std::vector<short>>(varVal, std::string("<vector<short>>"), defaulted);
 
-        if (typeIs<long>(varValue))
-            return T::template Value<long>(varValue, std::string("<long>"), defaulted, empty);
+        if (typeid(long) == varVal.value().type())
+            return T::template Value<long>(varVal, std::string("<long>"), defaulted);
 
-        if (typeIs<std::vector<long>>(varValue))
-            return T::template Value<std::vector<long>>(varValue, std::string("<vector<long>>"), defaulted, empty);
+        if (typeid(std::vector<long>) == varVal.value().type())
+            return T::template Value<std::vector<long>>(varVal, std::string("<vector<long>>"), defaulted);
 
-        if (typeIs<std::size_t>(varValue))
-            return T::template Value<std::size_t>(varValue, std::string("<std::size_t>"), defaulted, empty);
+        if (typeid(std::size_t) == varVal.value().type())
+            return T::template Value<std::size_t>(varVal, std::string("<std::size_t>"), defaulted);
 
-        if (typeIs<std::vector<std::size_t>>(varValue))
-            return T::template Value<std::vector<std::size_t>>(varValue, std::string("<vector<std::size_t>>"), defaulted, empty);
+        if (typeid(std::vector<std::size_t>) == varVal.value().type())
+            return T::template Value<std::vector<std::size_t>>(varVal, std::string("<vector<std::size_t>>"), defaulted);
 
-        if (typeIs<std::uint32_t>(varValue))
-            return T::template Value<std::uint32_t>(varValue, std::string("<std::uint32_t>"), defaulted, empty);
+        if (typeid(std::uint32_t) == varVal.value().type())
+            return T::template Value<std::uint32_t>(varVal, std::string("<std::uint32_t>"), defaulted);
 
-        if (typeIs<std::vector<std::uint32_t>>(varValue))
-            return T::template Value<std::vector<std::uint32_t>>(varValue, std::string("<vector<std::uint32_t>>"), defaulted, empty);
+        if (typeid(std::vector<std::uint32_t>) == varVal.value().type())
+            return T::template Value<std::vector<std::uint32_t>>(varVal, std::string("<vector<std::uint32_t>>"), defaulted);
 
-        if (typeIs<std::uint64_t>(varValue))
-            return T::template Value<std::uint64_t>(varValue, std::string("<std::uint64_t>"), defaulted, empty);
+        if (typeid(std::uint64_t) == varVal.value().type())
+            return T::template Value<std::uint64_t>(varVal, std::string("<std::uint64_t>"), defaulted);
 
-        if (typeIs<std::vector<std::uint64_t>>(varValue))
-            return T::template Value<std::vector<std::uint64_t>>(varValue, std::string("<vector<std::uint64_t>>"), defaulted, empty);
+        if (typeid(std::vector<std::uint64_t>) == varVal.value().type())
+            return T::template Value<std::vector<std::uint64_t>>(varVal, std::string("<vector<std::uint64_t>>"), defaulted);
 
-        if (typeIs<bool>(varValue))
-            return T::template Value<bool>(varValue, std::string("<bool>"), defaulted, empty);
+        if (typeid(bool) == varVal.value().type())
+            return T::template Value<bool>(varVal, std::string("<bool>"), defaulted);
 
-        if (typeIs<std::vector<bool>>(varValue))
-            return T::template Value<std::vector<bool>>(varValue, std::string("<vector<bool>>"), defaulted, empty);
+        if (typeid(std::vector<bool>) == varVal.value().type())
+            return T::template Value<std::vector<bool>>(varVal, std::string("<vector<bool>>"), defaulted);
 
-        if (typeIs<boost::filesystem::path>(varValue))
-            return T::template Value<boost::filesystem::path>(varValue, std::string("<boost::filesystem::path>"), defaulted, empty);
+        if (typeid(boost::filesystem::path) == varVal.value().type())
+            return T::template Value<boost::filesystem::path>(varVal, std::string("<boost::filesystem::path>"), defaulted);
+
+        if (typeid(std::vector<boost::filesystem::path>) == varVal.value().type())
+            return T::template Value<std::vector<boost::filesystem::path>>(varVal, std::string("<std::vector<boost::filesystem::path>>"), defaulted);
 
         // if we get here, the type is not supported return unknown info
-        return T::DefaultValue(defaulted, empty);
+        return T::DefaultValue(defaulted);
     }
 };
 

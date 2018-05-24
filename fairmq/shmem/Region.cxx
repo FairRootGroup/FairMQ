@@ -53,7 +53,7 @@ Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, FairMQ
         LOG(debug) << "shmem: created region queue: " << fQueueName;
     }
     fRegion = bipc::mapped_region(fShmemObject, bipc::read_write); // TODO: add HUGEPAGES flag here
-    // fRegion = bipc::mapped_region(fShmemObject, bipc::read_write, 0, 0, 0, MAP_HUGETLB | MAP_HUGE_1GB);
+    // fRegion = bipc::mapped_region(fShmemObject, bipc::read_write, 0, 0, 0, MAP_ANONYMOUS | MAP_HUGETLB);
 }
 
 void Region::StartReceivingAcks()

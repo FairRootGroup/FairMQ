@@ -63,21 +63,18 @@ int main(int argc, char** argv)
 {
     try
     {
-        // create option manager object
         FairMQProgOptions config;
 
-        // add key description to cmd line options
         config.GetCmdLineOptions().add_options()
-            ("data-rate", po::value<double>()->default_value(0.5), "Data rate");
+            ("data-rate", boost::program_options::value<double>()->default_value(0.5), "Data rate");
 
-        // parse command lines, parse json file and init FairMQMap
         config.ParseAll(argc, argv, true);
 
         // // get FairMQMap
         // auto map1 = config.GetFairMQMap();
 
         // // update value in variable map, and propagate the update to the FairMQMap
-        // config.UpdateValue<string>("chans.data.0.address","tcp://localhost:1234");
+        // config.SetValue<string>("chans.data.0.address","tcp://localhost:1234");
 
         // // get the updated FairMQMap
         // auto map2 = config.GetFairMQMap();
@@ -89,7 +86,6 @@ int main(int argc, char** argv)
         // config.UpdateChannelMap(map2);
 
         MyDevice device;
-        // device.CatchSignals();
         device.SetConfig(config);
 
         // getting as string and conversion helpers
@@ -130,45 +126,30 @@ int main(int argc, char** argv)
 
         LOG(info) << "Starting value updates...\n";
 
-        config.UpdateValue<string>("chans.data.0.address", "tcp://localhost:4321");
+        config.SetValue<string>("chans.data.0.address", "tcp://localhost:4321");
         LOG(info) << "config: " << config.GetValue<string>("chans.data.0.address");
         LOG(info) << "device: " << device.fChannels.at("data").at(0).GetAddress() << endl;
 
-        config.UpdateValue<int>("chans.data.0.rcvBufSize", 100);
+        config.SetValue<int>("chans.data.0.rcvBufSize", 100);
         LOG(info) << "config: " << config.GetValue<int>("chans.data.0.rcvBufSize");
         LOG(info) << "device: " << device.fChannels.at("data").at(0).GetRcvBufSize() << endl;
 
-        config.UpdateValue<double>("data-rate", 0.9);
+        config.SetValue<double>("data-rate", 0.9);
         LOG(info) << "config: " << config.GetValue<double>("data-rate");
         LOG(info) << "device: " << device.GetRate() << endl;
-        // device.Print();
+        device.Print();
 
         LOG(info) << "nase: " << config.GetValue<double>("nase");
 
         config.Unsubscribe<string>("test");
         config.Unsubscribe<int>("test");
         config.Unsubscribe<double>("test");
-        // advanced commands
 
-        // LOG(info) << "-------------------- start custom 1";
-
-        // config.Connect<EventId::Custom, MyDevice&, double>("myNewKey", [](MyDevice& d, double val)
-        // {
-        //     d.SetRate(val);
-        //     d.Print();
-        // });
-
-        // config.Emit<EventId::Custom, MyDevice&, double>("myNewKey", device, 0.123);
-
-        // LOG(info) << "-------------------- start custom 2 with function";
-        // config.Connect<EventId::Custom, MyDevice&, double>("function example", &MyCallBack);
-
-        // config.Emit<EventId::Custom, MyDevice&, double>("function example", device, 6.66);
+        device.ChangeState("END");
     }
     catch (exception& e)
     {
-        LOG(error)  << "Unhandled Exception reached the top of main: " 
-                    << e.what() << ", application will now exit";
+        LOG(error) << "Unhandled Exception reached the top of main: " << e.what() << ", application will now exit";
         return 1;
     }
     return 0;

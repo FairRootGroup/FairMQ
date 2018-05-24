@@ -29,7 +29,7 @@ namespace parser
 
 constexpr const char* SUBOPT::channelOptionKeys[];
 
-FairMQMap SUBOPT::UserParser(const vector<string>& channelConfig, const string& deviceId, const string& rootNode)
+FairMQChannelMap SUBOPT::UserParser(const vector<string>& channelConfig, const string& deviceId, const string& rootNode)
 {
     ptree pt;
 
