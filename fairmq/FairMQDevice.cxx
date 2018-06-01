@@ -26,6 +26,8 @@
 #include <thread>
 #include <functional>
 #include <sstream>
+#include <iomanip>
+#include <algorithm> // std::max
 
 using namespace std;
 
@@ -57,6 +59,7 @@ FairMQDevice::FairMQDevice()
     , fVersion({0, 0, 0})
     , fRate(0.)
     , fLastTime(0)
+    , fRawCmdLineArgs()
 {
 }
 
@@ -87,6 +90,7 @@ FairMQDevice::FairMQDevice(const fair::mq::tools::Version version)
     , fVersion(version)
     , fRate(0.)
     , fLastTime(0)
+    , fRawCmdLineArgs()
 {
 }
 
@@ -869,6 +873,8 @@ void FairMQDevice::LogSocketRates()
     vector<int> logIntervals;
     vector<int> intervalCounters;
 
+    size_t chanNameLen = 0;
+
     // iterate over the channels map
     for (const auto& mi : fChannels)
     {
@@ -881,6 +887,7 @@ void FairMQDevice::LogSocketRates()
                 logIntervals.push_back(vi->fRateLogging);
                 intervalCounters.push_back(0);
                 filteredChannelNames.push_back(fair::mq::tools::ToString(mi.first, "[", vi - (mi.second).begin(), "]"));
+                chanNameLen = max(chanNameLen, filteredChannelNames.back().length());
             }
         }
     }
@@ -949,9 +956,9 @@ void FairMQDevice::LogSocketRates()
                     bytesOut.at(i) = bytesOutNew.at(i);
                     msgOut.at(i) = msgOutNew.at(i);
 
-                    LOG(info) << filteredChannelNames.at(i) << ": "
-                               << "in: " << msgPerSecIn.at(i) << " (" << mbPerSecIn.at(i) << " MB) "
-                               << "out: " << msgPerSecOut.at(i) << " (" << mbPerSecOut.at(i) << " MB)";
+                    LOG(info) << setw(chanNameLen) << filteredChannelNames.at(i) << ": "
+                              << "in: " << msgPerSecIn.at(i) << " (" << mbPerSecIn.at(i) << " MB) "
+                              << "out: " << msgPerSecOut.at(i) << " (" << mbPerSecOut.at(i) << " MB)";
                 }
 
                 ++i;

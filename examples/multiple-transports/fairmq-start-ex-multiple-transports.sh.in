@@ -24,4 +24,4 @@ SINK+=" --transport shmem"
 SINK+=" --channel-config name=data1,type=pull,method=connect,address=tcp://127.0.0.1:5555"
 SINK+="                  name=data2,type=pull,method=connect,address=tcp://127.0.0.1:5556,transport=nanomsg"
 SINK+="                  name=ack,type=pub,method=connect,address=tcp://127.0.0.1:5557,transport=zeromq"
-xterm -geometry 80x30+500+0 -hold -e @EX_BIN_DIR@/$SINK &
+xterm -geometry 80x30+500+225 -hold -e @EX_BIN_DIR@/$SINK &
