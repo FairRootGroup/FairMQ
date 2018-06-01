@@ -56,6 +56,8 @@ auto DeviceRunner::Run() -> int
         return 1;
     }
 
+    fDevice->SetRawCmdLineArgs(fRawCmdLineArgs);
+
     // Handle --print-channels
     fDevice->RegisterChannelEndpoints();
     if (fConfig.Count("print-channels"))

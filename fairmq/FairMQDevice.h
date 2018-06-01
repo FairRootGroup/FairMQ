@@ -413,6 +413,9 @@ class FairMQDevice : public FairMQStateMachine
     void SetInitializationTimeoutInS(int initializationTimeoutInS) { fInitializationTimeoutInS = initializationTimeoutInS; }
     int GetInitializationTimeoutInS() const { return fInitializationTimeoutInS; }
 
+    void SetRawCmdLineArgs(const std::vector<std::string>& args) { fRawCmdLineArgs = args; }
+    std::vector<std::string> GetRawCmdLineArgs() const { return fRawCmdLineArgs; }
+
   protected:
     std::shared_ptr<FairMQTransportFactory> fTransportFactory; ///< Default transport factory
     std::unordered_map<fair::mq::Transport, std::shared_ptr<FairMQTransportFactory>> fTransports; ///< Container for transports
@@ -532,6 +535,7 @@ class FairMQDevice : public FairMQStateMachine
     const fair::mq::tools::Version fVersion;
     float fRate; ///< Rate limiting for ConditionalRun
     size_t fLastTime; ///< Rate limiting for ConditionalRun
+    std::vector<std::string> fRawCmdLineArgs;
 };
 
 #endif /* FAIRMQDEVICE_H_ */
