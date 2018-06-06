@@ -148,7 +148,8 @@ void FairMQDevice::InitWrapper()
                 else
                 {
                     LOG(error) << "Cannot update configuration. Socket method (bind/connect) not specified.";
-                    throw runtime_error("Cannot update configuration. Socket method (bind/connect) not specified.");
+                    ChangeState(ERROR_FOUND);
+                    // throw runtime_error("Cannot update configuration. Socket method (bind/connect) not specified.");
                 }
             // }
         }
@@ -161,7 +162,8 @@ void FairMQDevice::InitWrapper()
     if (uninitializedBindingChannels.size() > 0)
     {
         LOG(error) << uninitializedBindingChannels.size() << " of the binding channels could not initialize. Initial configuration incomplete.";
-        throw runtime_error(fair::mq::tools::ToString(uninitializedBindingChannels.size(), " of the binding channels could not initialize. Initial configuration incomplete."));
+        ChangeState(ERROR_FOUND);
+        // throw runtime_error(fair::mq::tools::ToString(uninitializedBindingChannels.size(), " of the binding channels could not initialize. Initial configuration incomplete."));
     }
 
     CallStateChangeCallbacks(INITIALIZING_DEVICE);
@@ -200,7 +202,8 @@ void FairMQDevice::InitWrapper()
         if (numAttempts++ > maxAttempts)
         {
             LOG(error) << "could not connect all channels after " << fInitializationTimeoutInS << " attempts";
-            throw runtime_error(fair::mq::tools::ToString("could not connect all channels after ", fInitializationTimeoutInS, " attempts"));
+            ChangeState(ERROR_FOUND);
+            // throw runtime_error(fair::mq::tools::ToString("could not connect all channels after ", fInitializationTimeoutInS, " attempts"));
         }
 
         AttachChannels(uninitializedConnectingChannels);
@@ -271,7 +274,15 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
         //(re-)init socket
         if (!ch.fSocket)
         {
-            ch.fSocket = ch.fTransportFactory->CreateSocket(ch.fType, ch.fName);
+            try
+            {
+                ch.fSocket = ch.fTransportFactory->CreateSocket(ch.fType, ch.fName);
+            }
+            catch (fair::mq::SocketError& se)
+            {
+                LOG(ERROR) << se.what();
+                return false;
+            }
         }
 
         // set high water marks

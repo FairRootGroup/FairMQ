@@ -208,7 +208,7 @@ class FairMQDevice : public FairMQStateMachine
     template<typename... Args>
     FairMQMessagePtr NewMessageFor(const std::string& channel, int index, Args&&... args) const
     {
-        return fChannels.at(channel).at(index).Transport()->CreateMessage(std::forward<Args>(args)...);
+        return fChannels.at(channel).at(index).NewMessage(std::forward<Args>(args)...);
     }
 
     template<typename T>
