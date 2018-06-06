@@ -37,7 +37,7 @@ endif()
 ##########################
 # libFairMQ header files #
 ##########################
-set(FAIRMQ_HEADER_FILES
+set(FAIRMQ_PUBLIC_HEADER_FILES
     DeviceRunner.h
     EventManager.h
     FairMQChannel.h
@@ -52,6 +52,21 @@ set(FAIRMQ_HEADER_FILES
     FairMQTransportFactory.h
     Tools.h
     Transports.h
+    options/FairMQProgOptions.h
+    options/FairProgOptions.h
+    Plugin.h
+    PluginManager.h
+    PluginServices.h
+    runFairMQDevice.h
+    tools/CppSTL.h
+    tools/Network.h
+    tools/Process.h
+    tools/Strings.h
+    tools/Unique.h
+    tools/Version.h
+)
+
+set(FAIRMQ_PRIVATE_HEADER_FILES
     devices/FairMQBenchmarkSampler.h
     devices/FairMQMerger.h
     devices/FairMQMultiplier.h
@@ -59,16 +74,10 @@ set(FAIRMQ_HEADER_FILES
     devices/FairMQSink.h
     devices/FairMQSplitter.h
     options/FairMQParser.h
-    options/FairMQProgOptions.h
     options/FairMQSuboptParser.h
-    options/FairProgOptions.h
     options/FairProgOptionsHelper.h
-    Plugin.h
-    PluginManager.h
-    PluginServices.h
     plugins/Builtin.h
     plugins/Control.h
-    runFairMQDevice.h
     StateMachine.h
     shmem/FairMQMessageSHM.h
     shmem/FairMQPollerSHM.h
@@ -79,12 +88,6 @@ set(FAIRMQ_HEADER_FILES
     shmem/Manager.h
     shmem/Monitor.h
     shmem/Region.h
-    tools/CppSTL.h
-    tools/Network.h
-    tools/Process.h
-    tools/Strings.h
-    tools/Unique.h
-    tools/Version.h
     zeromq/FairMQMessageZMQ.h
     zeromq/FairMQPollerZMQ.h
     zeromq/FairMQUnmanagedRegionZMQ.h
@@ -93,7 +96,7 @@ set(FAIRMQ_HEADER_FILES
 )
 
 if(BUILD_NANOMSG_TRANSPORT)
-    set(FAIRMQ_HEADER_FILES ${FAIRMQ_HEADER_FILES}
+  set(FAIRMQ_PRIVATE_HEADER_FILES ${FAIRMQ_PRIVATE_HEADER_FILES}
         nanomsg/FairMQMessageNN.h
         nanomsg/FairMQPollerNN.h
         nanomsg/FairMQUnmanagedRegionNN.h
@@ -103,7 +106,7 @@ if(BUILD_NANOMSG_TRANSPORT)
 endif()
 
 if(BUILD_OFI_TRANSPORT)
-    set(FAIRMQ_HEADER_FILES ${FAIRMQ_HEADER_FILES}
+  set(FAIRMQ_PRIVATE_HEADER_FILES ${FAIRMQ_PRIVATE_HEADER_FILES}
         ofi/Context.h
         ofi/Message.h
         ofi/Poller.h
@@ -190,7 +193,8 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/options/startConfigExample.sh.in ${CM
 #################################
 add_library(FairMQ SHARED
   ${FAIRMQ_SOURCE_FILES}
-  ${FAIRMQ_HEADER_FILES} # for IDE integration
+  ${FAIRMQ_PUBLIC_HEADER_FILES} # for IDE integration
+  ${FAIRMQ_PRIVATE_HEADER_FILES} # for IDE integration
 )
 
 #######################
@@ -291,7 +295,7 @@ install(
 )
 
 # preserve relative path and prepend fairmq
-foreach(HEADER ${FAIRMQ_HEADER_FILES})
+foreach(HEADER ${FAIRMQ_PUBLIC_HEADER_FILES})
     get_filename_component(_path ${HEADER} DIRECTORY)
     file(TO_CMAKE_PATH ${PROJECT_INSTALL_INCDIR}/${_path} _destination)
     install(FILES ${HEADER}

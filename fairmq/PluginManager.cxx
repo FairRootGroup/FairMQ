@@ -6,6 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include <fairmq/plugins/Builtin.h>
 #include <fairmq/PluginManager.h>
 #include <fairmq/Tools.h>
 #include <boost/program_options.hpp>
