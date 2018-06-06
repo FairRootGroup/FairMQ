@@ -56,7 +56,7 @@ class FairMQSink : public FairMQDevice//, public OutputPolicy
 
         while (CheckCurrentState(RUNNING))
         {
-            FairMQMessagePtr msg(dataInChannel.Transport()->CreateMessage());
+            FairMQMessagePtr msg(dataInChannel.NewMessage());
 
             if (dataInChannel.Receive(msg) >= 0)
             {

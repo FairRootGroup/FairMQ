@@ -24,7 +24,7 @@
 #include <boost/msm/back/metafunctions.hpp>
 #include <boost/msm/front/state_machine_def.hpp>
 #include <boost/msm/front/functor_row.hpp>
-
+#include <boost/core/demangle.hpp>
 #include <boost/signals2.hpp> // signal/slot for onStateChange callbacks
 
 #include <atomic>
@@ -386,21 +386,18 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
 
         boost::mpl::for_each<all_states, boost::msm::wrap<boost::mpl::placeholders::_1>>(boost::msm::back::get_state_name<recursive_stt>(stateName, state));
 
-        stateName = stateName.substr(24);
-        size_t pos = stateName.find("_FSME");
-        stateName.erase(pos);
-
-        if (stateName == "1RUNNING" || stateName == "6DEVICE_READY" || stateName == "0PAUSED" || stateName == "8RESETTING_TASK" || stateName == "0RESETTING_DEVICE")
+        stateName = boost::core::demangle(stateName.c_str());
+        size_t pos = stateName.rfind(":");
+        if (pos != string::npos)
         {
-            stateName = stateName.substr(1);
+            stateName = stateName.substr(pos + 1);
+            stateName = stateName.substr(0, stateName.size() - 4);
         }
 
         if (stateName != "OK")
         {
             LOG(state) << "No transition from state " << stateName << " on event " << e.name();
         }
-
-        // LOG(state) << "no transition from state " << GetStateName(state) << " (" << state << ") on event " << e.name();
     }
 
     static string GetStateName(const int state)

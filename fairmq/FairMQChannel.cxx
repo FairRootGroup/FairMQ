@@ -748,44 +748,35 @@ unsigned long FairMQChannel::GetMessagesRx() const
     return fSocket->GetMessagesRx();
 }
 
-bool FairMQChannel::CheckCompatibility(unique_ptr<FairMQMessage>& msg) const
+void FairMQChannel::CheckCompatibility(unique_ptr<FairMQMessage>& msg) const
 {
-    if (fTransportType == msg->GetType())
+    if (fTransportType != msg->GetType())
     {
-        return true;
-    }
-    else
-    {
-        // LOG(warn) << "Channel type does not match message type. Copying...";
-        FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage(msg->GetSize()));
-        memcpy(msgCopy->GetData(), msg->GetData(), msg->GetSize());
-        msg = move(msgCopy);
-        return false;
+        // LOG(debug) << "Channel type does not match message type. Creating wrapper";
+        FairMQMessagePtr msgWrapper(fTransportFactory->CreateMessage(msg->GetData(),
+                                                                  msg->GetSize(),
+                                                                  [](void* /*data*/, void* msg) { delete static_cast<FairMQMessage*>(msg); },
+                                                                  msg.get()
+                                                                  ));
+        msg.release();
+        msg = move(msgWrapper);
     }
 }
 
-bool FairMQChannel::CheckCompatibility(vector<unique_ptr<FairMQMessage>>& msgVec) const
+void FairMQChannel::CheckCompatibility(vector<FairMQMessagePtr>& msgVec) const
 {
-    bool match = true;
-
-    if (msgVec.size() > 0)
+    for (auto& part : msgVec)
     {
-        for (unsigned int i = 0; i < msgVec.size(); ++i)
+        if (fTransportType != part->GetType())
         {
-            if (fTransportType != msgVec.at(i)->GetType())
-            {
-                // LOG(warn) << "Channel type does not match message type. Copying...";
-                FairMQMessagePtr newMsg(fTransportFactory->CreateMessage(msgVec[i]->GetSize()));
-                memcpy(newMsg->GetData(), msgVec[i]->GetData(), msgVec[i]->GetSize());
-                msgVec[i] = move(newMsg);
-                match = false;
-            }
+            // LOG(debug) << "Channel type does not match message type. Creating wrapper";
+            FairMQMessagePtr partWrapper(fTransportFactory->CreateMessage(part->GetData(),
+                                                                    part->GetSize(),
+                                                                    [](void* /*data*/, void* part) { delete static_cast<FairMQMessage*>(part); },
+                                                                    part.get()
+                                                                    ));
+            part.release();
+            part = move(partWrapper);
         }
     }
-    else
-    {
-        return true;
-    }
-
-    return match;
 }

@@ -57,7 +57,7 @@ void FairMQBenchmarkSampler::Run()
     // store the channel reference to avoid traversing the map on every loop iteration
     FairMQChannel& dataOutChannel = fChannels.at(fOutChannelName).at(0);
 
-    FairMQMessagePtr baseMsg(dataOutChannel.Transport()->CreateMessage(fMsgSize));
+    FairMQMessagePtr baseMsg(dataOutChannel.NewMessage(fMsgSize));
 
     LOG(info) << "Starting the benchmark with message size of " << fMsgSize << " and " << fMaxIterations << " iterations.";
     auto tStart = chrono::high_resolution_clock::now();
@@ -66,7 +66,7 @@ void FairMQBenchmarkSampler::Run()
     {
         if (fSameMessage)
         {
-            FairMQMessagePtr msg(dataOutChannel.Transport()->CreateMessage());
+            FairMQMessagePtr msg(dataOutChannel.NewMessage());
             msg->Copy(*baseMsg);
 
             if (dataOutChannel.Send(msg) >= 0)
@@ -83,7 +83,7 @@ void FairMQBenchmarkSampler::Run()
         }
         else
         {
-            FairMQMessagePtr msg(dataOutChannel.Transport()->CreateMessage(fMsgSize));
+            FairMQMessagePtr msg(dataOutChannel.NewMessage(fMsgSize));
 
             if (dataOutChannel.Send(msg) >= 0)
             {

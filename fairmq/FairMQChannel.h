@@ -313,8 +313,8 @@ class FairMQChannel
 
     std::shared_ptr<FairMQTransportFactory> fTransportFactory;
 
-    bool CheckCompatibility(std::unique_ptr<FairMQMessage>& msg) const;
-    bool CheckCompatibility(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const;
+    void CheckCompatibility(std::unique_ptr<FairMQMessage>& msg) const;
+    void CheckCompatibility(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) const;
 
     void InitTransport(std::shared_ptr<FairMQTransportFactory> factory);
 

@@ -14,6 +14,8 @@
 
 #include <zmq.h>
 
+#include <stdexcept>
+
 using namespace std;
 using namespace fair::mq::shmem;
 
@@ -62,12 +64,18 @@ FairMQSocketSHM::FairMQSocketSHM(Manager& manager, const string& type, const str
         LOG(error) << "Failed setting ZMQ_RCVTIMEO socket option, reason: " << zmq_strerror(errno);
     }
 
-    if (type == "sub")
+    // if (type == "sub")
+    // {
+    //     if (zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, nullptr, 0) != 0)
+    //     {
+    //         LOG(error) << "Failed setting ZMQ_SUBSCRIBE socket option, reason: " << zmq_strerror(errno);
+    //     }
+    // }
+
+    if (type == "sub" || type == "pub")
     {
-        if (zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, nullptr, 0) != 0)
-        {
-            LOG(error) << "Failed setting ZMQ_SUBSCRIBE socket option, reason: " << zmq_strerror(errno);
-        }
+        LOG(error) << "PUB/SUB socket type is not supported for shared memory transport";
+        throw fair::mq::SocketError("PUB/SUB socket type is not supported for shared memory transport");
     }
 
     // LOG(info) << "created socket " << fId;
