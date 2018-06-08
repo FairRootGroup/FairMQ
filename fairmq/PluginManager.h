@@ -11,7 +11,6 @@
 
 #include <fairmq/Plugin.h>
 #include <fairmq/PluginServices.h>
-#include <fairmq/plugins/Builtin.h>
 #include <fairmq/Tools.h>
 #include <FairMQDevice.h>
 #define BOOST_FILESYSTEM_VERSION 3
