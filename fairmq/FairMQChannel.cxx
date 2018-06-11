@@ -653,13 +653,13 @@ void FairMQChannel::ResetChannel()
 
 int FairMQChannel::Send(unique_ptr<FairMQMessage>& msg) const
 {
-    CheckCompatibility(msg);
+    CheckSendCompatibility(msg);
     return fSocket->Send(msg);
 }
 
 int FairMQChannel::Receive(unique_ptr<FairMQMessage>& msg) const
 {
-    CheckCompatibility(msg);
+    CheckReceiveCompatibility(msg);
     return fSocket->Receive(msg);
 }
 
@@ -675,25 +675,25 @@ int FairMQChannel::Receive(unique_ptr<FairMQMessage>& msg, int rcvTimeoutInMs) c
 
 int FairMQChannel::SendAsync(unique_ptr<FairMQMessage>& msg) const
 {
-    CheckCompatibility(msg);
+    CheckSendCompatibility(msg);
     return fSocket->TrySend(msg);
 }
 
 int FairMQChannel::ReceiveAsync(unique_ptr<FairMQMessage>& msg) const
 {
-    CheckCompatibility(msg);
+    CheckReceiveCompatibility(msg);
     return fSocket->TryReceive(msg);
 }
 
 int64_t FairMQChannel::Send(vector<unique_ptr<FairMQMessage>>& msgVec) const
 {
-    CheckCompatibility(msgVec);
+    CheckSendCompatibility(msgVec);
     return fSocket->Send(msgVec);
 }
 
 int64_t FairMQChannel::Receive(vector<unique_ptr<FairMQMessage>>& msgVec) const
 {
-    CheckCompatibility(msgVec);
+    CheckReceiveCompatibility(msgVec);
     return fSocket->Receive(msgVec);
 }
 
@@ -709,7 +709,7 @@ int64_t FairMQChannel::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, int rc
 
 int64_t FairMQChannel::SendAsync(vector<unique_ptr<FairMQMessage>>& msgVec) const
 {
-    CheckCompatibility(msgVec);
+    CheckSendCompatibility(msgVec);
     return fSocket->TrySend(msgVec);
 }
 
@@ -720,7 +720,7 @@ int64_t FairMQChannel::SendAsync(vector<unique_ptr<FairMQMessage>>& msgVec) cons
 /// In case of errors, returns -1.
 int64_t FairMQChannel::ReceiveAsync(vector<unique_ptr<FairMQMessage>>& msgVec) const
 {
-    CheckCompatibility(msgVec);
+    CheckReceiveCompatibility(msgVec);
     return fSocket->TryReceive(msgVec);
 }
 
@@ -748,35 +748,58 @@ unsigned long FairMQChannel::GetMessagesRx() const
     return fSocket->GetMessagesRx();
 }
 
-void FairMQChannel::CheckCompatibility(unique_ptr<FairMQMessage>& msg) const
+void FairMQChannel::CheckSendCompatibility(FairMQMessagePtr& msg) const
 {
     if (fTransportType != msg->GetType())
     {
         // LOG(debug) << "Channel type does not match message type. Creating wrapper";
-        FairMQMessagePtr msgWrapper(fTransportFactory->CreateMessage(msg->GetData(),
-                                                                  msg->GetSize(),
-                                                                  [](void* /*data*/, void* msg) { delete static_cast<FairMQMessage*>(msg); },
-                                                                  msg.get()
-                                                                  ));
+        FairMQMessagePtr msgWrapper(NewMessage(msg->GetData(),
+                                               msg->GetSize(),
+                                               [](void* /*data*/, void* msg) { delete static_cast<FairMQMessage*>(msg); },
+                                               msg.get()
+                                               ));
         msg.release();
         msg = move(msgWrapper);
     }
 }
 
-void FairMQChannel::CheckCompatibility(vector<FairMQMessagePtr>& msgVec) const
+void FairMQChannel::CheckSendCompatibility(vector<FairMQMessagePtr>& msgVec) const
 {
-    for (auto& part : msgVec)
+    for (auto& msg : msgVec)
     {
-        if (fTransportType != part->GetType())
+        if (fTransportType != msg->GetType())
         {
             // LOG(debug) << "Channel type does not match message type. Creating wrapper";
-            FairMQMessagePtr partWrapper(fTransportFactory->CreateMessage(part->GetData(),
-                                                                    part->GetSize(),
-                                                                    [](void* /*data*/, void* part) { delete static_cast<FairMQMessage*>(part); },
-                                                                    part.get()
-                                                                    ));
-            part.release();
-            part = move(partWrapper);
+            FairMQMessagePtr msgWrapper(NewMessage(msg->GetData(),
+                                                   msg->GetSize(),
+                                                   [](void* /*data*/, void* msg) { delete static_cast<FairMQMessage*>(msg); },
+                                                   msg.get()
+                                                   ));
+            msg.release();
+            msg = move(msgWrapper);
+        }
+    }
+}
+
+void FairMQChannel::CheckReceiveCompatibility(FairMQMessagePtr& msg) const
+{
+    if (fTransportType != msg->GetType())
+    {
+        // LOG(debug) << "Channel type does not match message type. Creating wrapper";
+        FairMQMessagePtr newMsg(NewMessage());
+        msg = move(newMsg);
+    }
+}
+
+void FairMQChannel::CheckReceiveCompatibility(vector<FairMQMessagePtr>& msgVec) const
+{
+    for (auto& msg : msgVec)
+    {
+        if (fTransportType != msg->GetType())
+        {
+            // LOG(debug) << "Channel type does not match message type. Creating wrapper";
+            FairMQMessagePtr newMsg(NewMessage());
+            msg = move(newMsg);
         }
     }
 }
