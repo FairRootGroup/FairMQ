@@ -11,6 +11,7 @@
 #include <boost/process.hpp>
 
 #include <iostream>
+#include <sstream>
 
 using namespace std;
 
