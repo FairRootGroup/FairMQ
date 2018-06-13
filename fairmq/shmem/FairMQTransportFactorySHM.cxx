@@ -69,7 +69,7 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
     }
     else
     {
-        LOG(warn) << "FairMQProgOptions not available! Using defaults.";
+        LOG(debug) << "FairMQProgOptions not available! Using defaults.";
     }
 
     fSessionName.resize(8, '_'); // shorten the session name, to accommodate for name size limit on some systems (MacOS)

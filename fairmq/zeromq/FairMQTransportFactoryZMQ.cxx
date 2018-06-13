@@ -39,7 +39,7 @@ FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id, const Fai
     }
     else
     {
-        LOG(warn) << "FairMQProgOptions not available! Using defaults.";
+        LOG(debug) << "FairMQProgOptions not available! Using defaults.";
     }
 
     if (zmq_ctx_set(fContext, ZMQ_IO_THREADS, numIoThreads) != 0)
