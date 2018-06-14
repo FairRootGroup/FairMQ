@@ -280,7 +280,7 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
             }
             catch (fair::mq::SocketError& se)
             {
-                LOG(ERROR) << se.what();
+                LOG(error) << se.what();
                 return false;
             }
         }
@@ -823,7 +823,7 @@ void FairMQDevice::CreateOwnConfig()
     try {
         fDefaultTransportType = fair::mq::TransportTypes.at(fConfig->GetValue<string>("transport"));
     } catch(const exception& e) {
-        LOG(ERROR) << "invalid transport type provided: " << fConfig->GetValue<string>("transport");
+        LOG(error) << "invalid transport type provided: " << fConfig->GetValue<string>("transport");
     }
 }
 
@@ -867,7 +867,7 @@ void FairMQDevice::SetConfig(FairMQProgOptions& config)
     try {
         fDefaultTransportType = fair::mq::TransportTypes.at(fConfig->GetValue<string>("transport"));
     } catch(const exception& e) {
-        LOG(ERROR) << "invalid transport type provided: " << fConfig->GetValue<string>("transport");
+        LOG(error) << "invalid transport type provided: " << fConfig->GetValue<string>("transport");
     }
     SetTransport(fConfig->GetValue<string>("transport"));
 }

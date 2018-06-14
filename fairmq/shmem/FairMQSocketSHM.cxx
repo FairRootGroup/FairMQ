@@ -196,7 +196,7 @@ int FairMQSocketSHM::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const i
             const auto numMsgs = nbytes / sizeof(MetaHeader);
             if (numMsgs > 1)
             {
-                LOG(ERROR) << "Receiving SHM multipart with a single message receive call";
+                LOG(error) << "Receiving SHM multipart with a single message receive call";
             }
 
             assert (numMsgs == 1);
@@ -311,13 +311,13 @@ int64_t FairMQSocketSHM::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fl
         else if (zmq_errno() == ETERM)
         {
             zmq_msg_close (&lZmqMsg);
-            LOG(INFO) << "terminating socket " << fId;
+            LOG(info) << "terminating socket " << fId;
             return -1;
         }
         else
         {
             zmq_msg_close (&lZmqMsg);
-            LOG(ERROR) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
             return nbytes;
         }
     }
