@@ -413,7 +413,7 @@ int FairMQProgOptions::PrintOptions()
 
     for (const auto& o : fUnregisteredOptions)
     {
-        LOG(WARN) << "detected unregistered option: " << o;
+        LOG(debug) << "detected unregistered option: " << o;
     }
 
     stringstream ss;

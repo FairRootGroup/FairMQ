@@ -110,12 +110,12 @@ auto DDS::HandleControl() -> void
         // and propagate addresses of bound channels to DDS.
         FillChannelContainers();
 
-        LOG(DEBUG) << "$DDS_TASK_PATH: " << getenv("DDS_TASK_PATH");
-        LOG(DEBUG) << "$DDS_GROUP_NAME: " << getenv("DDS_GROUP_NAME");
-        LOG(DEBUG) << "$DDS_COLLECTION_NAME: " << getenv("DDS_COLLECTION_NAME");
-        LOG(DEBUG) << "$DDS_TASK_NAME: " << getenv("DDS_TASK_NAME");
-        LOG(DEBUG) << "$DDS_TASK_INDEX: " << getenv("DDS_TASK_INDEX");
-        LOG(DEBUG) << "$DDS_COLLECTION_INDEX: " << getenv("DDS_COLLECTION_INDEX");
+        LOG(debug) << "$DDS_TASK_PATH: " << getenv("DDS_TASK_PATH");
+        LOG(debug) << "$DDS_GROUP_NAME: " << getenv("DDS_GROUP_NAME");
+        LOG(debug) << "$DDS_COLLECTION_NAME: " << getenv("DDS_COLLECTION_NAME");
+        LOG(debug) << "$DDS_TASK_NAME: " << getenv("DDS_TASK_NAME");
+        LOG(debug) << "$DDS_TASK_INDEX: " << getenv("DDS_TASK_INDEX");
+        LOG(debug) << "$DDS_COLLECTION_INDEX: " << getenv("DDS_COLLECTION_INDEX");
 
         // start DDS service - subscriptions will only start firing after this step
         fService.start();
