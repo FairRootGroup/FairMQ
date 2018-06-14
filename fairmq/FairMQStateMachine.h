@@ -79,10 +79,10 @@ class FairMQStateMachine
     void CallStateChangeCallbacks(const State state) const;
 
     std::string GetCurrentStateName() const;
+    static std::string GetStateName(const State);
     int GetCurrentState() const;
     bool CheckCurrentState(int state) const;
     bool CheckCurrentState(std::string state) const;
-    bool Terminated();
 
     // actions to be overwritten by derived classes
     virtual void InitWrapper() {}
@@ -94,8 +94,10 @@ class FairMQStateMachine
     virtual void Exit() {}
     virtual void Unblock() {}
 
+    void ProcessWork();
+
   private:
-    int GetEventNumber(const std::string& event);
+    static int GetEventNumber(const std::string& event);
 
     std::mutex fChangeStateMutex;
 

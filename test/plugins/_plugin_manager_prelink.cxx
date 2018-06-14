@@ -17,7 +17,7 @@ using namespace std;
 
 TEST(PluginManager, LoadPluginPrelinkedDynamic)
 {
-    auto mgr = PluginManager{};
+    PluginManager mgr;
 
     ASSERT_NO_THROW(mgr.LoadPlugin("p:test_dummy"));
     ASSERT_NO_THROW(mgr.LoadPlugin("p:test_dummy2"));

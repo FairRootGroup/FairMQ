@@ -13,6 +13,7 @@
  */
 
 #include "FairMQStateMachine.h"
+#include <fairmq/Tools.h>
 
 // Increase maximum number of boost::msm states (default is 10)
 // This #define has to be before any msm header includes
@@ -29,13 +30,20 @@
 
 #include <atomic>
 #include <condition_variable>
-#include <thread>
 #include <chrono>
+#include <array>
 #include <unordered_map>
 
 using namespace std;
+using namespace boost::msm::front;
 
-namespace msmf = boost::msm::front;
+namespace std
+{
+
+template<>
+struct hash<FairMQStateMachine::Event> : fair::mq::tools::HashEnum<FairMQStateMachine::Event> {};
+
+} /* namespace std */
 
 namespace fair
 {
@@ -44,31 +52,105 @@ namespace mq
 namespace fsm
 {
 
-// defining events for the boost MSM state machine
-struct INIT_DEVICE_E           { string name() const { return "INIT_DEVICE"; } };
-struct internal_DEVICE_READY_E { string name() const { return "internal_DEVICE_READY"; } };
-struct INIT_TASK_E             { string name() const { return "INIT_TASK"; } };
-struct internal_READY_E        { string name() const { return "internal_READY"; } };
-struct RUN_E                   { string name() const { return "RUN"; } };
-struct PAUSE_E                 { string name() const { return "PAUSE"; } };
-struct STOP_E                  { string name() const { return "STOP"; } };
-struct RESET_TASK_E            { string name() const { return "RESET_TASK"; } };
-struct RESET_DEVICE_E          { string name() const { return "RESET_DEVICE"; } };
-struct internal_IDLE_E         { string name() const { return "internal_IDLE"; } };
-struct END_E                   { string name() const { return "END"; } };
-struct ERROR_FOUND_E           { string name() const { return "ERROR_FOUND"; } };
+// list of FSM states
+struct OK_FSM_STATE                  : public state<> { static string Name() { return "OK"; }                  static FairMQStateMachine::State Type() { return FairMQStateMachine::State::OK; } };
+struct ERROR_FSM_STATE               : public terminate_state<> { static string Name() { return "ERROR"; }     static FairMQStateMachine::State Type() { return FairMQStateMachine::State::Error; } };
 
-// deactivate the warning for non-virtual destructor thrown in the boost library
-#if defined(__clang__)
-_Pragma("clang diagnostic push")
-_Pragma("clang diagnostic ignored \"-Wnon-virtual-dtor\"")
-#elif defined(__GNUC__) || defined(__GNUG__)
-_Pragma("GCC diagnostic push")
-_Pragma("GCC diagnostic ignored \"-Wnon-virtual-dtor\"")
-#endif
+struct IDLE_FSM_STATE                : public state<> { static string Name() { return "IDLE"; }                static FairMQStateMachine::State Type() { return FairMQStateMachine::State::IDLE; } };
+struct INITIALIZING_DEVICE_FSM_STATE : public state<> { static string Name() { return "INITIALIZING_DEVICE"; } static FairMQStateMachine::State Type() { return FairMQStateMachine::State::INITIALIZING_DEVICE; } };
+struct DEVICE_READY_FSM_STATE        : public state<> { static string Name() { return "DEVICE_READY"; }        static FairMQStateMachine::State Type() { return FairMQStateMachine::State::DEVICE_READY; } };
+struct INITIALIZING_TASK_FSM_STATE   : public state<> { static string Name() { return "INITIALIZING_TASK"; }   static FairMQStateMachine::State Type() { return FairMQStateMachine::State::INITIALIZING_TASK; } };
+struct READY_FSM_STATE               : public state<> { static string Name() { return "READY"; }               static FairMQStateMachine::State Type() { return FairMQStateMachine::State::READY; } };
+struct RUNNING_FSM_STATE             : public state<> { static string Name() { return "RUNNING"; }             static FairMQStateMachine::State Type() { return FairMQStateMachine::State::RUNNING; } };
+struct PAUSED_FSM_STATE              : public state<> { static string Name() { return "PAUSED"; }              static FairMQStateMachine::State Type() { return FairMQStateMachine::State::PAUSED; } };
+struct RESETTING_TASK_FSM_STATE      : public state<> { static string Name() { return "RESETTING_TASK"; }      static FairMQStateMachine::State Type() { return FairMQStateMachine::State::RESETTING_TASK; } };
+struct RESETTING_DEVICE_FSM_STATE    : public state<> { static string Name() { return "RESETTING_DEVICE"; }    static FairMQStateMachine::State Type() { return FairMQStateMachine::State::RESETTING_DEVICE; } };
+struct EXITING_FSM_STATE             : public state<> { static string Name() { return "EXITING"; }             static FairMQStateMachine::State Type() { return FairMQStateMachine::State::EXITING; } };
+
+// list of FSM events
+struct INIT_DEVICE_FSM_EVENT           { static string Name() { return "INIT_DEVICE"; }           static FairMQStateMachine::Event Type() { return FairMQStateMachine::Event::INIT_DEVICE; } };
+struct internal_DEVICE_READY_FSM_EVENT { static string Name() { return "internal_DEVICE_READY"; } static FairMQStateMachine::Event Type() { return FairMQStateMachine::Event::internal_DEVICE_READY; } };
+struct INIT_TASK_FSM_EVENT             { static string Name() { return "INIT_TASK"; }             static FairMQStateMachine::Event Type() { return FairMQStateMachine::Event::INIT_TASK; } };
+struct internal_READY_FSM_EVENT        { static string Name() { return "internal_READY"; }        static FairMQStateMachine::Event Type() { return FairMQStateMachine::Event::internal_READY; } };
+struct RUN_FSM_EVENT                   { static string Name() { return "RUN"; }                   static FairMQStateMachine::Event Type() { return FairMQStateMachine::Event::RUN; } };
+struct PAUSE_FSM_EVENT                 { static string Name() { return "PAUSE"; }                 static FairMQStateMachine::Event Type() { return FairMQStateMachine::Event::PAUSE; } };
+struct STOP_FSM_EVENT                  { static string Name() { return "STOP"; }                  static FairMQStateMachine::Event Type() { return FairMQStateMachine::Event::STOP; } };
+struct RESET_TASK_FSM_EVENT            { static string Name() { return "RESET_TASK"; }            static FairMQStateMachine::Event Type() { return FairMQStateMachine::Event::RESET_TASK; } };
+struct RESET_DEVICE_FSM_EVENT          { static string Name() { return "RESET_DEVICE"; }          static FairMQStateMachine::Event Type() { return FairMQStateMachine::Event::RESET_DEVICE; } };
+struct internal_IDLE_FSM_EVENT         { static string Name() { return "internal_IDLE"; }         static FairMQStateMachine::Event Type() { return FairMQStateMachine::Event::internal_IDLE; } };
+struct END_FSM_EVENT                   { static string Name() { return "END"; }                   static FairMQStateMachine::Event Type() { return FairMQStateMachine::Event::END; } };
+struct ERROR_FOUND_FSM_EVENT           { static string Name() { return "ERROR_FOUND"; }           static FairMQStateMachine::Event Type() { return FairMQStateMachine::Event::ERROR_FOUND; } };
+
+static array<string, 12> stateNames =
+{
+    {
+        "OK",
+        "Error",
+        "IDLE",
+        "INITIALIZING_DEVICE",
+        "DEVICE_READY",
+        "INITIALIZING_TASK",
+        "READY",
+        "RUNNING",
+        "PAUSED",
+        "RESETTING_TASK",
+        "RESETTING_DEVICE",
+        "EXITING"
+    }
+};
+
+static array<string, 12> eventNames =
+{
+    {
+        "INIT_DEVICE",
+        "internal_DEVICE_READY",
+        "INIT_TASK",
+        "internal_READY",
+        "RUN",
+        "PAUSE",
+        "STOP",
+        "RESET_TASK",
+        "RESET_DEVICE",
+        "internal_IDLE",
+        "END",
+        "ERROR_FOUND"
+    }
+};
+
+static map<string, int> stateNumbers =
+{
+    { "OK", FairMQStateMachine::State::OK },
+    { "Error", FairMQStateMachine::State::Error },
+    { "IDLE", FairMQStateMachine::State::IDLE },
+    { "INITIALIZING_DEVICE", FairMQStateMachine::State::INITIALIZING_DEVICE },
+    { "DEVICE_READY", FairMQStateMachine::State::DEVICE_READY },
+    { "INITIALIZING_TASK", FairMQStateMachine::State::INITIALIZING_TASK },
+    { "READY", FairMQStateMachine::State::READY },
+    { "RUNNING", FairMQStateMachine::State::RUNNING },
+    { "PAUSED", FairMQStateMachine::State::PAUSED },
+    { "RESETTING_TASK", FairMQStateMachine::State::RESETTING_TASK },
+    { "RESETTING_DEVICE", FairMQStateMachine::State::RESETTING_DEVICE },
+    { "EXITING", FairMQStateMachine::State::EXITING }
+};
+
+static map<string, int> eventNumbers =
+{
+    { "INIT_DEVICE", FairMQStateMachine::Event::INIT_DEVICE },
+    { "internal_DEVICE_READY", FairMQStateMachine::Event::internal_DEVICE_READY },
+    { "INIT_TASK", FairMQStateMachine::Event::INIT_TASK },
+    { "internal_READY", FairMQStateMachine::Event::internal_READY },
+    { "RUN", FairMQStateMachine::Event::RUN },
+    { "PAUSE", FairMQStateMachine::Event::PAUSE },
+    { "STOP", FairMQStateMachine::Event::STOP },
+    { "RESET_TASK", FairMQStateMachine::Event::RESET_TASK },
+    { "RESET_DEVICE", FairMQStateMachine::Event::RESET_DEVICE },
+    { "internal_IDLE", FairMQStateMachine::Event::internal_IDLE },
+    { "END", FairMQStateMachine::Event::END },
+    { "ERROR_FOUND", FairMQStateMachine::Event::ERROR_FOUND }
+};
 
 // defining the boost MSM state machine
-struct Machine_ : public msmf::state_machine_def<Machine_>
+struct Machine_ : public state_machine_def<Machine_>
 {
   public:
     Machine_()
@@ -81,23 +163,22 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
         , fWorkAvailable(false)
         , fStateChangeSignal()
         , fStateChangeSignalsMap()
-        , fTerminationRequested(false)
         , fState()
-        , fWorkerThread()
     {}
 
     virtual ~Machine_()
     {}
+
+    // initial states
+    using initial_state = boost::mpl::vector<IDLE_FSM_STATE, OK_FSM_STATE>;
 
     template<typename Event, typename FSM>
     void on_entry(Event const&, FSM& fsm)
     {
         LOG(state) << "Starting FairMQ state machine";
         fState = FairMQStateMachine::IDLE;
+        LOG(state) << "Entering IDLE state";
         fsm.CallStateChangeCallbacks(FairMQStateMachine::IDLE);
-
-        // start a worker thread to execute user states in.
-        fsm.fWorkerThread = thread(&Machine_::Worker, &fsm);
     }
 
     template<typename Event, typename FSM>
@@ -106,41 +187,23 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
         LOG(state) << "Exiting FairMQ state machine";
     }
 
-    // list of FSM states
-    struct OK_FSM                  : public msmf::state<> {};
-    struct ERROR_FSM               : public msmf::terminate_state<> {};
-
-    struct IDLE_FSM                : public msmf::state<> {};
-    struct INITIALIZING_DEVICE_FSM : public msmf::state<> {};
-    struct DEVICE_READY_FSM        : public msmf::state<> {};
-    struct INITIALIZING_TASK_FSM   : public msmf::state<> {};
-    struct READY_FSM               : public msmf::state<> {};
-    struct RUNNING_FSM             : public msmf::state<> {};
-    struct PAUSED_FSM              : public msmf::state<> {};
-    struct RESETTING_TASK_FSM      : public msmf::state<> {};
-    struct RESETTING_DEVICE_FSM    : public msmf::state<> {};
-    struct EXITING_FSM             : public msmf::state<> {};
-
-    // initial states
-    using initial_state = boost::mpl::vector<IDLE_FSM, OK_FSM>;
-
     // actions
-    struct IdleFct
+    struct AutomaticFct
     {
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        void operator()(EVT const&, FSM& fsm, SourceState& /* ss */, TargetState& ts)
         {
-            LOG(state) << "Entering IDLE state";
-            fsm.fState = FairMQStateMachine::IDLE;
+            fsm.fState = ts.Type();
+            LOG(state) << "Entering " << ts.Name() << " state";
         }
     };
 
     struct InitDeviceFct
     {
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        void operator()(EVT const&, FSM& fsm, SourceState& /* ss */, TargetState& ts)
         {
-            fsm.fState = FairMQStateMachine::INITIALIZING_DEVICE;
+            fsm.fState = ts.Type();
 
             unique_lock<mutex> lock(fsm.fWorkMutex);
             while (fsm.fWorkActive)
@@ -148,28 +211,18 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            LOG(state) << "Entering INITIALIZING DEVICE state";
+            LOG(state) << "Entering " << ts.Name() << " state";
             fsm.fWork = fsm.fInitWrapperHandler;
             fsm.fWorkAvailableCondition.notify_one();
-        }
-    };
-
-    struct DeviceReadyFct
-    {
-        template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
-        {
-            LOG(state) << "Entering DEVICE READY state";
-            fsm.fState = FairMQStateMachine::DEVICE_READY;
         }
     };
 
     struct InitTaskFct
     {
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        void operator()(EVT const&, FSM& fsm, SourceState& /* ss */, TargetState& ts)
         {
-            fsm.fState = FairMQStateMachine::INITIALIZING_TASK;
+            fsm.fState = ts.Type();
 
             unique_lock<mutex> lock(fsm.fWorkMutex);
             while (fsm.fWorkActive)
@@ -177,28 +230,18 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            LOG(state) << "Entering INITIALIZING TASK state";
+            LOG(state) << "Entering " << ts.Name() << " state";
             fsm.fWork = fsm.fInitTaskWrapperHandler;
             fsm.fWorkAvailableCondition.notify_one();
-        }
-    };
-
-    struct ReadyFct
-    {
-        template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
-        {
-            LOG(state) << "Entering READY state";
-            fsm.fState = FairMQStateMachine::READY;
         }
     };
 
     struct RunFct
     {
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        void operator()(EVT const&, FSM& fsm, SourceState& /* ss */, TargetState& ts)
         {
-            fsm.fState = FairMQStateMachine::RUNNING;
+            fsm.fState = ts.Type();
 
             unique_lock<mutex> lock(fsm.fWorkMutex);
             while (fsm.fWorkActive)
@@ -206,7 +249,7 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            LOG(state) << "Entering RUNNING state";
+            LOG(state) << "Entering " << ts.Name() << " state";
             fsm.fWork = fsm.fRunWrapperHandler;
             fsm.fWorkAvailableCondition.notify_one();
         }
@@ -215,9 +258,9 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
     struct PauseFct
     {
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        void operator()(EVT const&, FSM& fsm, SourceState& /* ss */, TargetState& ts)
         {
-            fsm.fState = FairMQStateMachine::PAUSED;
+            fsm.fState = ts.Type();
 
             fsm.fUnblockHandler();
             unique_lock<mutex> lock(fsm.fWorkMutex);
@@ -226,27 +269,8 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            LOG(state) << "Entering PAUSED state";
+            LOG(state) << "Entering " << ts.Name() << " state";
             fsm.fWork = fsm.fPauseWrapperHandler;
-            fsm.fWorkAvailableCondition.notify_one();
-        }
-    };
-
-    struct ResumeFct
-    {
-        template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
-        {
-            fsm.fState = FairMQStateMachine::RUNNING;
-
-            unique_lock<mutex> lock(fsm.fWorkMutex);
-            while (fsm.fWorkActive)
-            {
-                fsm.fWorkDoneCondition.wait(lock);
-            }
-            fsm.fWorkAvailable = true;
-            LOG(state) << "Entering RUNNING state";
-            fsm.fWork = fsm.fRunWrapperHandler;
             fsm.fWorkAvailableCondition.notify_one();
         }
     };
@@ -254,9 +278,9 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
     struct StopFct
     {
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        void operator()(EVT const&, FSM& fsm, SourceState& /* ss */, TargetState& ts)
         {
-            fsm.fState = FairMQStateMachine::READY;
+            fsm.fState = ts.Type();
 
             fsm.fUnblockHandler();
             unique_lock<mutex> lock(fsm.fWorkMutex);
@@ -264,27 +288,27 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
             {
                 fsm.fWorkDoneCondition.wait(lock);
             }
-            LOG(state) << "Entering READY state";
+            LOG(state) << "Entering " << ts.Name() << " state";
         }
     };
 
     struct InternalStopFct
     {
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        void operator()(EVT const&, FSM& fsm, SourceState& /* ss */, TargetState& ts)
         {
-            fsm.fState = FairMQStateMachine::READY;
+            fsm.fState = ts.Type();
             fsm.fUnblockHandler();
-            LOG(state) << "RUNNING state finished without an external event, entering READY state";
+            LOG(state) << "RUNNING state finished without an external event, entering " << ts.Name() << " state";
         }
     };
 
     struct ResetTaskFct
     {
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        void operator()(EVT const&, FSM& fsm, SourceState& /* ss */, TargetState& ts)
         {
-            fsm.fState = FairMQStateMachine::RESETTING_TASK;
+            fsm.fState = ts.Type();
 
             unique_lock<mutex> lock(fsm.fWorkMutex);
             while (fsm.fWorkActive)
@@ -292,7 +316,7 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            LOG(state) << "Entering RESETTING TASK state";
+            LOG(state) << "Entering " << ts.Name() << " state";
             fsm.fWork = fsm.fResetTaskWrapperHandler;
             fsm.fWorkAvailableCondition.notify_one();
         }
@@ -301,9 +325,9 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
     struct ResetDeviceFct
     {
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        void operator()(EVT const&, FSM& fsm, SourceState& /* ss */, TargetState& ts)
         {
-            fsm.fState = FairMQStateMachine::RESETTING_DEVICE;
+            fsm.fState = ts.Type();
 
             unique_lock<mutex> lock(fsm.fWorkMutex);
             while (fsm.fWorkActive)
@@ -311,7 +335,7 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
                 fsm.fWorkDoneCondition.wait(lock);
             }
             fsm.fWorkAvailable = true;
-            LOG(state) << "Entering RESETTING DEVICE state";
+            LOG(state) << "Entering " << ts.Name() << " state";
             fsm.fWork = fsm.fResetWrapperHandler;
             fsm.fWorkAvailableCondition.notify_one();
         }
@@ -320,24 +344,17 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
     struct ExitingFct
     {
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        void operator()(EVT const&, FSM& fsm, SourceState& /* ss */, TargetState& ts)
         {
-            LOG(state) << "Entering EXITING state";
-            fsm.fState = FairMQStateMachine::EXITING;
-            fsm.fTerminationRequested = true;
+            LOG(state) << "Entering " << ts.Name() << " state";
+            fsm.fState = ts.Type();
             fsm.CallStateChangeCallbacks(FairMQStateMachine::EXITING);
 
-            // terminate worker thread
+            // Stop ProcessWork()
             {
                 lock_guard<mutex> lock(fsm.fWorkMutex);
                 fsm.fWorkerTerminated = true;
                 fsm.fWorkAvailableCondition.notify_one();
-            }
-
-            // join the worker thread (executing user states)
-            if (fsm.fWorkerThread.joinable())
-            {
-                fsm.fWorkerThread.join();
             }
 
             fsm.fExitHandler();
@@ -347,32 +364,32 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
     struct ErrorFoundFct
     {
         template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const&, FSM& fsm, SourceState&, TargetState&)
+        void operator()(EVT const&, FSM& fsm, SourceState& /* ss */, TargetState& ts)
         {
-            LOG(state) << "Entering ERROR state";
-            fsm.fState = FairMQStateMachine::Error;
+            fsm.fState = ts.Type();
+            LOG(state) << "Entering " << ts.Name() << " state";
             fsm.CallStateChangeCallbacks(FairMQStateMachine::Error);
         }
     };
 
     // Transition table for Machine_
     struct transition_table : boost::mpl::vector<
-        //        Start                    Event                    Next                     Action           Guard
-        msmf::Row<IDLE_FSM,                INIT_DEVICE_E,           INITIALIZING_DEVICE_FSM, InitDeviceFct,   msmf::none>,
-        msmf::Row<IDLE_FSM,                END_E,                   EXITING_FSM,             ExitingFct,      msmf::none>,
-        msmf::Row<INITIALIZING_DEVICE_FSM, internal_DEVICE_READY_E, DEVICE_READY_FSM,        DeviceReadyFct,  msmf::none>,
-        msmf::Row<DEVICE_READY_FSM,        INIT_TASK_E,             INITIALIZING_TASK_FSM,   InitTaskFct,     msmf::none>,
-        msmf::Row<DEVICE_READY_FSM,        RESET_DEVICE_E,          RESETTING_DEVICE_FSM,    ResetDeviceFct,  msmf::none>,
-        msmf::Row<INITIALIZING_TASK_FSM,   internal_READY_E,        READY_FSM,               ReadyFct,        msmf::none>,
-        msmf::Row<READY_FSM,               RUN_E,                   RUNNING_FSM,             RunFct,          msmf::none>,
-        msmf::Row<READY_FSM,               RESET_TASK_E,            RESETTING_TASK_FSM,      ResetTaskFct,    msmf::none>,
-        msmf::Row<RUNNING_FSM,             PAUSE_E,                 PAUSED_FSM,              PauseFct,        msmf::none>,
-        msmf::Row<RUNNING_FSM,             STOP_E,                  READY_FSM,               StopFct,         msmf::none>,
-        msmf::Row<RUNNING_FSM,             internal_READY_E,        READY_FSM,               InternalStopFct, msmf::none>,
-        msmf::Row<PAUSED_FSM,              RUN_E,                   RUNNING_FSM,             ResumeFct,       msmf::none>,
-        msmf::Row<RESETTING_TASK_FSM,      internal_DEVICE_READY_E, DEVICE_READY_FSM,        DeviceReadyFct,  msmf::none>,
-        msmf::Row<RESETTING_DEVICE_FSM,    internal_IDLE_E,         IDLE_FSM,                IdleFct,         msmf::none>,
-        msmf::Row<OK_FSM,                  ERROR_FOUND_E,           ERROR_FSM,               ErrorFoundFct,   msmf::none>>
+        // Start                           Event                            Next                           Action           Guard
+        Row<IDLE_FSM_STATE,                INIT_DEVICE_FSM_EVENT,           INITIALIZING_DEVICE_FSM_STATE, InitDeviceFct,   none>,
+        Row<IDLE_FSM_STATE,                END_FSM_EVENT,                   EXITING_FSM_STATE,             ExitingFct,      none>,
+        Row<INITIALIZING_DEVICE_FSM_STATE, internal_DEVICE_READY_FSM_EVENT, DEVICE_READY_FSM_STATE,        AutomaticFct,    none>,
+        Row<DEVICE_READY_FSM_STATE,        INIT_TASK_FSM_EVENT,             INITIALIZING_TASK_FSM_STATE,   InitTaskFct,     none>,
+        Row<DEVICE_READY_FSM_STATE,        RESET_DEVICE_FSM_EVENT,          RESETTING_DEVICE_FSM_STATE,    ResetDeviceFct,  none>,
+        Row<INITIALIZING_TASK_FSM_STATE,   internal_READY_FSM_EVENT,        READY_FSM_STATE,               AutomaticFct,    none>,
+        Row<READY_FSM_STATE,               RUN_FSM_EVENT,                   RUNNING_FSM_STATE,             RunFct,          none>,
+        Row<READY_FSM_STATE,               RESET_TASK_FSM_EVENT,            RESETTING_TASK_FSM_STATE,      ResetTaskFct,    none>,
+        Row<RUNNING_FSM_STATE,             PAUSE_FSM_EVENT,                 PAUSED_FSM_STATE,              PauseFct,        none>,
+        Row<RUNNING_FSM_STATE,             STOP_FSM_EVENT,                  READY_FSM_STATE,               StopFct,         none>,
+        Row<RUNNING_FSM_STATE,             internal_READY_FSM_EVENT,        READY_FSM_STATE,               InternalStopFct, none>,
+        Row<PAUSED_FSM_STATE,              RUN_FSM_EVENT,                   RUNNING_FSM_STATE,             RunFct,          none>,
+        Row<RESETTING_TASK_FSM_STATE,      internal_DEVICE_READY_FSM_EVENT, DEVICE_READY_FSM_STATE,        AutomaticFct,    none>,
+        Row<RESETTING_DEVICE_FSM_STATE,    internal_IDLE_FSM_EVENT,         IDLE_FSM_STATE,                AutomaticFct,    none>,
+        Row<OK_FSM_STATE,                  ERROR_FOUND_FSM_EVENT,           ERROR_FSM_STATE,               ErrorFoundFct,   none>>
     {};
 
     // replaces the default no-transition response.
@@ -391,45 +408,12 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
         if (pos != string::npos)
         {
             stateName = stateName.substr(pos + 1);
-            stateName = stateName.substr(0, stateName.size() - 4);
+            stateName = stateName.substr(0, stateName.size() - 10);
         }
 
         if (stateName != "OK")
         {
-            LOG(state) << "No transition from state " << stateName << " on event " << e.name();
-        }
-    }
-
-    static string GetStateName(const int state)
-    {
-        switch(state)
-        {
-            case FairMQStateMachine::OK:
-                return "OK";
-            case FairMQStateMachine::Error:
-                return "Error";
-            case FairMQStateMachine::IDLE:
-                return "IDLE";
-            case FairMQStateMachine::INITIALIZING_DEVICE:
-                return "INITIALIZING_DEVICE";
-            case FairMQStateMachine::DEVICE_READY:
-                return "DEVICE_READY";
-            case FairMQStateMachine::INITIALIZING_TASK:
-                return "INITIALIZING_TASK";
-            case FairMQStateMachine::READY:
-                return "READY";
-            case FairMQStateMachine::RUNNING:
-                return "RUNNING";
-            case FairMQStateMachine::PAUSED:
-                return "PAUSED";
-            case FairMQStateMachine::RESETTING_TASK:
-                return "RESETTING_TASK";
-            case FairMQStateMachine::RESETTING_DEVICE:
-                return "RESETTING_DEVICE";
-            case FairMQStateMachine::EXITING:
-                return "EXITING";
-            default:
-                return "requested name for non-existent state...";
+            LOG(state) << "No transition from state " << stateName << " on event " << e.Name();
         }
     }
 
@@ -461,12 +445,10 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
 
     boost::signals2::signal<void(const FairMQStateMachine::State)> fStateChangeSignal;
     unordered_map<string, boost::signals2::connection> fStateChangeSignalsMap;
-    atomic<bool> fTerminationRequested;
 
     atomic<FairMQStateMachine::State> fState;
 
-  private:
-    void Worker()
+    void ProcessWork()
     {
         while (true)
         {
@@ -475,7 +457,7 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
                 // Wait for work to be done.
                 while (!fWorkAvailable && !fWorkerTerminated)
                 {
-                    fWorkAvailableCondition.wait(lock);
+                    fWorkAvailableCondition.wait_for(lock, chrono::milliseconds(300));
                 }
 
                 if (fWorkerTerminated)
@@ -497,19 +479,9 @@ struct Machine_ : public msmf::state_machine_def<Machine_>
             CallStateChangeCallbacks(fState);
         }
     }
-
-    // run state handlers in a separate thread
-    thread fWorkerThread;
 }; // Machine_
 
 using FairMQFSM = boost::msm::back::state_machine<Machine_>;
-
-// reactivate the warning for non-virtual destructor
-#if defined(__clang__)
-_Pragma("clang diagnostic pop")
-#elif defined(__GNUC__) || defined(__GNUG__)
-_Pragma("GCC diagnostic pop")
-#endif
 
 } // namespace fsm
 } // namespace mq
@@ -552,79 +524,79 @@ bool FairMQStateMachine::ChangeState(int event)
             case INIT_DEVICE:
             {
                 lock_guard<mutex> lock(fChangeStateMutex);
-                static_pointer_cast<FairMQFSM>(fFsm)->process_event(INIT_DEVICE_E());
+                static_pointer_cast<FairMQFSM>(fFsm)->process_event(INIT_DEVICE_FSM_EVENT());
                 return true;
             }
             case internal_DEVICE_READY:
             {
                 lock_guard<mutex> lock(fChangeStateMutex);
-                static_pointer_cast<FairMQFSM>(fFsm)->process_event(internal_DEVICE_READY_E());
+                static_pointer_cast<FairMQFSM>(fFsm)->process_event(internal_DEVICE_READY_FSM_EVENT());
                 return true;
             }
             case INIT_TASK:
             {
                 lock_guard<mutex> lock(fChangeStateMutex);
-                static_pointer_cast<FairMQFSM>(fFsm)->process_event(INIT_TASK_E());
+                static_pointer_cast<FairMQFSM>(fFsm)->process_event(INIT_TASK_FSM_EVENT());
                 return true;
             }
             case internal_READY:
             {
                 lock_guard<mutex> lock(fChangeStateMutex);
-                static_pointer_cast<FairMQFSM>(fFsm)->process_event(internal_READY_E());
+                static_pointer_cast<FairMQFSM>(fFsm)->process_event(internal_READY_FSM_EVENT());
                 return true;
             }
             case RUN:
             {
                 lock_guard<mutex> lock(fChangeStateMutex);
-                static_pointer_cast<FairMQFSM>(fFsm)->process_event(RUN_E());
+                static_pointer_cast<FairMQFSM>(fFsm)->process_event(RUN_FSM_EVENT());
                 return true;
             }
             case PAUSE:
             {
                 lock_guard<mutex> lock(fChangeStateMutex);
-                static_pointer_cast<FairMQFSM>(fFsm)->process_event(PAUSE_E());
+                static_pointer_cast<FairMQFSM>(fFsm)->process_event(PAUSE_FSM_EVENT());
                 return true;
             }
             case STOP:
             {
                 lock_guard<mutex> lock(fChangeStateMutex);
-                static_pointer_cast<FairMQFSM>(fFsm)->process_event(STOP_E());
+                static_pointer_cast<FairMQFSM>(fFsm)->process_event(STOP_FSM_EVENT());
                 return true;
             }
             case RESET_DEVICE:
             {
                 lock_guard<mutex> lock(fChangeStateMutex);
-                static_pointer_cast<FairMQFSM>(fFsm)->process_event(RESET_DEVICE_E());
+                static_pointer_cast<FairMQFSM>(fFsm)->process_event(RESET_DEVICE_FSM_EVENT());
                 return true;
             }
             case RESET_TASK:
             {
                 lock_guard<mutex> lock(fChangeStateMutex);
-                static_pointer_cast<FairMQFSM>(fFsm)->process_event(RESET_TASK_E());
+                static_pointer_cast<FairMQFSM>(fFsm)->process_event(RESET_TASK_FSM_EVENT());
                 return true;
             }
             case internal_IDLE:
             {
                 lock_guard<mutex> lock(fChangeStateMutex);
-                static_pointer_cast<FairMQFSM>(fFsm)->process_event(internal_IDLE_E());
+                static_pointer_cast<FairMQFSM>(fFsm)->process_event(internal_IDLE_FSM_EVENT());
                 return true;
             }
             case END:
             {
                 lock_guard<mutex> lock(fChangeStateMutex);
-                static_pointer_cast<FairMQFSM>(fFsm)->process_event(END_E());
+                static_pointer_cast<FairMQFSM>(fFsm)->process_event(END_FSM_EVENT());
                 return true;
             }
             case ERROR_FOUND:
             {
                 lock_guard<mutex> lock(fChangeStateMutex);
-                static_pointer_cast<FairMQFSM>(fFsm)->process_event(ERROR_FOUND_E());
+                static_pointer_cast<FairMQFSM>(fFsm)->process_event(ERROR_FOUND_FSM_EVENT());
                 return true;
             }
             default:
             {
                 LOG(error) << "Requested state transition with an unsupported event: " << event << endl
-                            << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, STOP, RESET_TASK, RESET_DEVICE, END, ERROR_FOUND";
+                           << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, STOP, RESET_TASK, RESET_DEVICE, END, ERROR_FOUND";
                 return false;
             }
         }
@@ -738,7 +710,11 @@ void FairMQStateMachine::CallStateChangeCallbacks(const State state) const
 
 string FairMQStateMachine::GetCurrentStateName() const
 {
-    return static_pointer_cast<FairMQFSM>(fFsm)->GetStateName(static_pointer_cast<FairMQFSM>(fFsm)->fState);
+    return GetStateName(static_pointer_cast<FairMQFSM>(fFsm)->fState);
+}
+string FairMQStateMachine::GetStateName(const State state)
+{
+    return stateNames.at(state);
 }
 int FairMQStateMachine::GetCurrentState() const
 {
@@ -753,23 +729,12 @@ bool FairMQStateMachine::CheckCurrentState(string state) const
     return state == GetCurrentStateName();
 }
 
-bool FairMQStateMachine::Terminated()
+void FairMQStateMachine::ProcessWork()
 {
-    return static_pointer_cast<FairMQFSM>(fFsm)->fTerminationRequested;
+    static_pointer_cast<FairMQFSM>(fFsm)->ProcessWork();
 }
 
 int FairMQStateMachine::GetEventNumber(const string& event)
 {
-    if (event == "INIT_DEVICE") return INIT_DEVICE;
-    if (event == "INIT_TASK") return INIT_TASK;
-    if (event == "RUN") return RUN;
-    if (event == "PAUSE") return PAUSE;
-    if (event == "STOP") return STOP;
-    if (event == "RESET_DEVICE") return RESET_DEVICE;
-    if (event == "RESET_TASK") return RESET_TASK;
-    if (event == "END") return END;
-    if (event == "ERROR_FOUND") return ERROR_FOUND;
-    LOG(error) << "Requested number for non-existent event... " << event << endl
-               << "Supported are: INIT_DEVICE, INIT_TASK, RUN, PAUSE, STOP, RESET_DEVICE, RESET_TASK, END, ERROR_FOUND";
-    return -1;
+    return eventNumbers.at(event);
 }

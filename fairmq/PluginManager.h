@@ -51,6 +51,11 @@ class PluginManager
 
     PluginManager();
 
+    ~PluginManager()
+    {
+        LOG(debug) << "Shutting down Plugin Manager";
+    }
+
     auto SetSearchPaths(const std::vector<boost::filesystem::path>&) -> void;
     auto AppendSearchPath(const boost::filesystem::path&) -> void;
     auto PrependSearchPath(const boost::filesystem::path&) -> void;

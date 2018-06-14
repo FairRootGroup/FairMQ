@@ -12,12 +12,31 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <thread>
 #include <future> // std::async, std::future
 
 namespace
 {
 
 using namespace std;
+
+void control(FairMQDevice& device)
+{
+    device.ChangeState("INIT_DEVICE");
+    device.WaitForEndOfState("INIT_DEVICE");
+    device.ChangeState("INIT_TASK");
+    device.WaitForEndOfState("INIT_TASK");
+
+    device.ChangeState("RUN");
+    device.WaitForEndOfState("RUN");
+
+    device.ChangeState("RESET_TASK");
+    device.WaitForEndOfState("RESET_TASK");
+    device.ChangeState("RESET_DEVICE");
+    device.WaitForEndOfState("RESET_DEVICE");
+
+    device.ChangeState("END");
+}
 
 class MultipleDevices : public ::testing::Test {
   public:
@@ -34,20 +53,14 @@ class MultipleDevices : public ::testing::Test {
         channel.UpdateRateLogging(0);
         sender.fChannels["data"].push_back(channel);
 
-        sender.ChangeState("INIT_DEVICE");
-        sender.WaitForEndOfState("INIT_DEVICE");
-        sender.ChangeState("INIT_TASK");
-        sender.WaitForEndOfState("INIT_TASK");
+        thread t(control, std::ref(sender));
 
-        sender.ChangeState("RUN");
-        sender.WaitForEndOfState("RUN");
+        sender.RunStateMachine();
 
-        sender.ChangeState("RESET_TASK");
-        sender.WaitForEndOfState("RESET_TASK");
-        sender.ChangeState("RESET_DEVICE");
-        sender.WaitForEndOfState("RESET_DEVICE");
-
-        sender.ChangeState("END");
+        if (t.joinable())
+        {
+            t.join();
+        }
 
         return true;
     }
@@ -62,20 +75,14 @@ class MultipleDevices : public ::testing::Test {
         channel.UpdateRateLogging(0);
         receiver.fChannels["data"].push_back(channel);
 
-        receiver.ChangeState("INIT_DEVICE");
-        receiver.WaitForEndOfState("INIT_DEVICE");
-        receiver.ChangeState("INIT_TASK");
-        receiver.WaitForEndOfState("INIT_TASK");
+        thread t(control, std::ref(receiver));
 
-        receiver.ChangeState("RUN");
-        receiver.WaitForEndOfState("RUN");
+        receiver.RunStateMachine();
 
-        receiver.ChangeState("RESET_TASK");
-        receiver.WaitForEndOfState("RESET_TASK");
-        receiver.ChangeState("RESET_DEVICE");
-        receiver.WaitForEndOfState("RESET_DEVICE");
-
-        receiver.ChangeState("END");
+        if (t.joinable())
+        {
+            t.join();
+        }
 
         return true;
     }

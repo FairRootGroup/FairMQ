@@ -15,6 +15,7 @@
 #include <fstream>
 #include <memory>
 #include <vector>
+#include <thread>
 
 namespace
 {
@@ -39,8 +40,8 @@ auto control(shared_ptr<FairMQDevice> device) -> void
 
 TEST(PluginManager, LoadPluginDynamic)
 {
-    FairMQProgOptions config{};
-    auto mgr = PluginManager{};
+    FairMQProgOptions config;
+    PluginManager mgr;
     auto device = make_shared<FairMQDevice>();
     mgr.EmplacePluginServices(&config, device);
 
@@ -53,7 +54,7 @@ TEST(PluginManager, LoadPluginDynamic)
 
     // check order
     const auto expected = vector<string>{"test_dummy", "test_dummy2"};
-    auto actual = vector<string>{};
+    auto actual = vector<string>();
     mgr.ForEachPlugin([&](Plugin& plugin){ actual.push_back(plugin.GetName()); });
     ASSERT_TRUE(actual == expected);
 
@@ -62,18 +63,22 @@ TEST(PluginManager, LoadPluginDynamic)
     mgr.ForEachPluginProgOptions([&count](const options_description& /*d*/){ ++count; });
     ASSERT_EQ(count, 1);
 
-    control(device);
+    thread t(control, device);
+    device->RunStateMachine();
+    if (t.joinable()) {
+        t.join();
+    }
 }
 
 TEST(PluginManager, LoadPluginStatic)
 {
-    auto mgr = PluginManager{};
+    PluginManager mgr;
     auto device = make_shared<FairMQDevice>();
     device->SetTransport("zeromq");
 
     ASSERT_NO_THROW(mgr.LoadPlugin("s:control"));
 
-    FairMQProgOptions config{};
+    FairMQProgOptions config;
     config.SetValue<string>("control", "static");
     config.SetValue("catch-signals", 0);
     mgr.EmplacePluginServices(&config, device);
@@ -82,7 +87,7 @@ TEST(PluginManager, LoadPluginStatic)
 
     // check order
     const auto expected = vector<string>{"control"};
-    auto actual = vector<string>{};
+    auto actual = vector<string>();
     mgr.ForEachPlugin([&](Plugin& plugin){ actual.push_back(plugin.GetName()); });
     ASSERT_TRUE(actual == expected);
 
@@ -90,6 +95,8 @@ TEST(PluginManager, LoadPluginStatic)
     auto count = 0;
     mgr.ForEachPluginProgOptions([&count](const options_description&){ ++count; });
     ASSERT_EQ(count, 1);
+
+    device->RunStateMachine();
 
     mgr.WaitForPluginsToReleaseDeviceControl();
 }
@@ -112,7 +119,7 @@ TEST(PluginManager, SearchPathValidation)
     const auto path1 = path{"/tmp/test1"};
     const auto path2 = path{"/tmp/test2"};
     const auto path3 = path{"/tmp/test3"};
-    auto mgr = PluginManager{};
+    PluginManager mgr;
 
     mgr.SetSearchPaths({path1, path2});
     auto expected = vector<path>{path1, path2};
@@ -140,7 +147,7 @@ TEST(PluginManager, SearchPaths)
     fs.close();
     const auto empty_path = path{""};
 
-    auto mgr = PluginManager{};
+    PluginManager mgr;
     ASSERT_NO_THROW(mgr.AppendSearchPath(non_existing_dir));
     ASSERT_NO_THROW(mgr.AppendSearchPath(existing_dir));
     ASSERT_THROW(mgr.AppendSearchPath(existing_file), PluginManager::BadSearchPath);

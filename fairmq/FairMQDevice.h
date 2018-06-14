@@ -416,6 +416,8 @@ class FairMQDevice : public FairMQStateMachine
     void SetRawCmdLineArgs(const std::vector<std::string>& args) { fRawCmdLineArgs = args; }
     std::vector<std::string> GetRawCmdLineArgs() const { return fRawCmdLineArgs; }
 
+    void RunStateMachine() { ProcessWork(); };
+
   protected:
     std::shared_ptr<FairMQTransportFactory> fTransportFactory; ///< Default transport factory
     std::unordered_map<fair::mq::Transport, std::shared_ptr<FairMQTransportFactory>> fTransports; ///< Container for transports

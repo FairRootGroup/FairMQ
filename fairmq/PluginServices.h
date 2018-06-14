@@ -47,6 +47,11 @@ class PluginServices
     {
     }
 
+    ~PluginServices()
+    {
+        LOG(debug) << "Shutting down Plugin Services";
+    }
+
     PluginServices(const PluginServices&) = delete;
     PluginServices operator=(const PluginServices&) = delete;
 

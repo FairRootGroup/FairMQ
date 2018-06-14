@@ -13,11 +13,12 @@
 using namespace fair::mq;
 
 DeviceRunner::DeviceRunner(int argc, char* const argv[])
-: fRawCmdLineArgs{tools::ToStrVector(argc, argv, false)}
-, fPluginManager{PluginManager::MakeFromCommandLineOptions(fRawCmdLineArgs)}
-, fDevice{nullptr}
-{
-}
+    : fRawCmdLineArgs(tools::ToStrVector(argc, argv, false))
+    , fPluginManager(PluginManager::MakeFromCommandLineOptions(fRawCmdLineArgs))
+    , fConfig()
+    , fDevice(nullptr)
+    , fEvents()
+{}
 
 auto DeviceRunner::Run() -> int
 {
@@ -86,6 +87,9 @@ auto DeviceRunner::Run() -> int
 
     // Instantiate and run plugins
     fPluginManager->InstantiatePlugins();
+
+    // Run the device
+    fDevice->RunStateMachine();
 
     // Wait for control plugin to release device control
     fPluginManager->WaitForPluginsToReleaseDeviceControl();
