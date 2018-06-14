@@ -16,6 +16,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <thread>
 
 namespace
 {
@@ -38,7 +39,7 @@ auto control(shared_ptr<FairMQDevice> device) -> void
 
 TEST(Plugin, Operators)
 {
-    FairMQProgOptions config{};
+    FairMQProgOptions config;
     auto device = make_shared<FairMQDevice>();
     PluginServices services{&config, device};
     Plugin p1{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
@@ -46,19 +47,27 @@ TEST(Plugin, Operators)
     Plugin p3{"file", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/file.git", &services};
     EXPECT_EQ(p1, p2);
     EXPECT_NE(p1, p3);
-    control(device);
+    thread t(control, device);
+    device->RunStateMachine();
+    if (t.joinable()) {
+        t.join();
+    }
 }
 
 TEST(Plugin, OstreamOperators)
 {
-    FairMQProgOptions config{};
+    FairMQProgOptions config;
     auto device = make_shared<FairMQDevice>();
     PluginServices services{&config, device};
     Plugin p1{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
     stringstream ss;
     ss << p1;
     EXPECT_EQ(ss.str(), string{"'dds', version '1.0.0', maintainer 'Foo Bar <foo.bar@test.net>', homepage 'https://git.test.net/dds.git'"});
-    control(device);
+    thread t(control, device);
+    device->RunStateMachine();
+    if (t.joinable()) {
+        t.join();
+    }
 }
 
 TEST(PluginVersion, Operators)

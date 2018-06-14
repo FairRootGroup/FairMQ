@@ -14,6 +14,7 @@
 #include <FairMQDevice.h>
 #include <options/FairMQProgOptions.h>
 #include <memory>
+#include <thread>
 
 namespace fair
 {
@@ -36,21 +37,28 @@ inline auto control(std::shared_ptr<FairMQDevice> device) -> void
 
 struct PluginServices : ::testing::Test {
     PluginServices()
-    : mConfig()
-    , mDevice{std::make_shared<FairMQDevice>()}
-    , mServices{&mConfig, mDevice}
+        : mConfig()
+        , mDevice{std::make_shared<FairMQDevice>()}
+        , mServices{&mConfig, mDevice}
+        , fRunStateMachineThread()
     {
+        fRunStateMachineThread = std::thread(&FairMQDevice::RunStateMachine, mDevice.get());
         mDevice->SetTransport("zeromq");
+
     }
 
     ~PluginServices()
     {
-        if(mDevice->GetCurrentState() == FairMQDevice::IDLE) control(mDevice);
+        if (mDevice->GetCurrentState() == FairMQDevice::IDLE) control(mDevice);
+        if (fRunStateMachineThread.joinable()) {
+            fRunStateMachineThread.join();
+        }
     }
 
     FairMQProgOptions mConfig;
     std::shared_ptr<FairMQDevice> mDevice;
     fair::mq::PluginServices mServices;
+    std::thread fRunStateMachineThread;
 };
 
 } /* namespace test */
