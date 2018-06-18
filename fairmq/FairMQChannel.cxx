@@ -499,7 +499,7 @@ bool FairMQChannel::ValidateChannel()
         else
         {
             vector<string> endpoints;
-            boost::algorithm::split(endpoints, fAddress, boost::algorithm::is_any_of(","));
+            boost::algorithm::split(endpoints, fAddress, boost::algorithm::is_any_of(";"));
             for (const auto endpoint : endpoints)
             {
                 string address;
