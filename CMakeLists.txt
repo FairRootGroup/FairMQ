@@ -48,7 +48,11 @@ endif()
 
 if(BUILD_NANOMSG_TRANSPORT)
   find_package2(PRIVATE nanomsg VERSION 1.0.0 REQUIRED)
-  find_package2(PRIVATE msgpack VERSION 2.1.5 REQUIRED)
+  find_package2(PRIVATE msgpack VERSION 3.0.0)
+  set(PROJECT_msgpack_VERSION 2.1.5)
+  if(NOT msgpack_FOUND)
+    find_package2(PRIVATE msgpack VERSION 2.1.5 REQUIRED)
+  endif()
   set(msgpack_ROOT ${PACKAGE_PREFIX_DIR})
 endif()
 
