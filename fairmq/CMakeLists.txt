@@ -196,6 +196,7 @@ add_library(FairMQ SHARED
   ${FAIRMQ_PUBLIC_HEADER_FILES} # for IDE integration
   ${FAIRMQ_PRIVATE_HEADER_FILES} # for IDE integration
 )
+set_target_properties(FairMQ PROPERTIES LABELS coverage)
 
 #######################
 # include directories #

@@ -34,18 +34,16 @@ If(EXTRA_FLAGS)
   Set(configure_options "${configure_options};${EXTRA_FLAGS}") 
 EndIf()
 
-If($ENV{ctest_model} MATCHES Nightly OR $ENV{ctest_model} MATCHES Profile)
-
+If($ENV{ctest_model} MATCHES Profile)
   Find_Program(GCOV_COMMAND gcov)
   If(GCOV_COMMAND)
     Message("Found GCOV: ${GCOV_COMMAND}")
     Set(CTEST_COVERAGE_COMMAND ${GCOV_COMMAND})
   EndIf(GCOV_COMMAND)
+EndIf()
 
-  Set(ENV{ctest_model} Nightly)
-
-  CTEST_EMPTY_BINARY_DIRECTORY(${CTEST_BINARY_DIRECTORY})
-
+If($ENV{ctest_model} MATCHES Nightly OR $ENV{ctest_model} MATCHES Profile)
+  Ctest_Empty_Binary_Directory(${CTEST_BINARY_DIRECTORY})
 EndIf()
 
 Ctest_Start($ENV{ctest_model})
@@ -62,7 +60,16 @@ Ctest_Test(BUILD "${CTEST_BINARY_DIRECTORY}"
           )
 
 If(GCOV_COMMAND)
-  Ctest_Coverage(BUILD "${CTEST_BINARY_DIRECTORY}")
+  Ctest_Coverage(BUILD "${CTEST_BINARY_DIRECTORY}" LABELS coverage)
+EndIf()
+
+If("$ENV{do_codecov_upload}")
+  Execute_Process(COMMAND curl https://codecov.io/bash -o codecov_uploader.sh
+                  WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY}
+                  TIMEOUT 60)
+  Execute_Process(COMMAND bash ./codecov_uploader.sh -X gcov
+                  WORKING_DIRECTORY ${CTEST_BINARY_DIRECTORY}
+                  TIMEOUT 60)
 EndIf()
 
 Ctest_Submit()
