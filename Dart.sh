@@ -41,13 +41,15 @@ if [ "$#" -lt "2" ]; then
 fi
 
 # test if a valid ctest model is defined
-if [ "$1" == "Experimental" -o "$1" == "Nightly" -o "$1" == "Continuous" -o "$1" == "Profile" -o "$1" == "alfa_ci" ]; then
-  echo ""
-else
-  echo "-- Error -- This ctest model is not supported."
-  echo "-- Error -- Possible arguments are Nightly, Experimental, Continuous or Profile."
-  exit 1
-fi
+case "$1" in
+  Experimental|Nightly|Continuous|Profile|alfa_ci|codecov)
+    ;;
+  *)
+    echo "-- Error -- This ctest model is not supported."
+    echo "-- Error -- Possible arguments are Nightly, Experimental, Continuous or Profile."
+    exit 1
+    ;;
+esac
 
 # test if the input file exists and execute it
 if [ -e "$2" ];then
@@ -61,6 +63,9 @@ fi
 # set the ctest model to command line parameter
 if [ "$1" == "alfa_ci" ]; then
   export ctest_model=Experimental
+elif [ "$1" == "codecov" ]; then
+  export ctest_model=Profile
+  export do_codecov_upload=1
 else
   export ctest_model=$1
 fi
@@ -83,13 +88,20 @@ else
   COMPILER=$CXX$($CXX -dumpversion)
 fi
 
-if [ "$1" == "alfa_ci" ]; then
-  export LABEL1=alfa_ci-$COMPILER-FairMQ_$GIT_BRANCH
-  export LABEL=$(echo $LABEL1 | sed -e 's#/#_#g')
-else
-  export LABEL1=${LINUX_FLAVOUR}-$chip-$COMPILER-FairMQ_$GIT_BRANCH
-  export LABEL=$(echo $LABEL1 | sed -e 's#/#_#g')
-fi
+case "$1" in
+  alfa_ci)
+    export LABEL1=alfa_ci-$COMPILER-FairMQ_$GIT_BRANCH
+    export LABEL=$(echo $LABEL1 | sed -e 's#/#_#g')
+    ;;
+  codecov)
+    export LABEL1=codecov-$COMPILER-FairMQ_$GIT_BRANCH
+    export LABEL=$(echo $LABEL1 | sed -e 's#/#_#g')
+    ;;
+  *)
+    export LABEL1=${LINUX_FLAVOUR}-$chip-$COMPILER-FairMQ_$GIT_BRANCH
+    export LABEL=$(echo $LABEL1 | sed -e 's#/#_#g')
+    ;;
+esac
 
 # get the number of processors
 # and information about the host
