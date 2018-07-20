@@ -3,10 +3,10 @@
 
 C++ Message passing framework
 
-| Branch | Build Status | Test coverage |
-| :---: | :--- | :--- |
-| `master` | [![build status master branch](https://alfa-ci.gsi.de/buildStatus/icon?job=FairRootGroup/FairMQ/master)](https://alfa-ci.gsi.de/blue/organizations/jenkins/FairRootGroup%2FFairMQ/branches) | [![test coverage master branch](https://codecov.io/gh/FairRootGroup/FairMQ/branch/master/graph/badge.svg)](https://codecov.io/gh/FairRootGroup/FairMQ/branch/master) |
-| `dev` | [![build status dev branch](https://alfa-ci.gsi.de/buildStatus/icon?job=FairRootGroup/FairMQ/dev)](https://alfa-ci.gsi.de/blue/organizations/jenkins/FairRootGroup%2FFairMQ/branches) | [![test coverage dev branch](https://codecov.io/gh/FairRootGroup/FairMQ/branch/dev/graph/badge.svg)](https://codecov.io/gh/FairRootGroup/FairMQ/branch/dev) |
+| Branch | Version | Docs | Status |
+| :---: | :--- | :--- | :--- |
+| `master` | [![release](https://img.shields.io/github/release/FairRootGroup/FairMQ.svg)](https://github.com/FairRootGroup/FairMQ/releases/latest) | [API](https://fairrootgroup.github.io/FairMQ/latest), [Book](https://github.com/FairRootGroup/FairMQ/blob/master/README.md#documentation) | [![build status master branch](https://alfa-ci.gsi.de/buildStatus/icon?job=FairRootGroup/FairMQ/master)](https://alfa-ci.gsi.de/blue/organizations/jenkins/FairRootGroup%2FFairMQ/branches) [![test coverage master branch](https://codecov.io/gh/FairRootGroup/FairMQ/branch/master/graph/badge.svg)](https://codecov.io/gh/FairRootGroup/FairMQ/branch/master) |
+| `dev` | [![dev tag](https://img.shields.io/github/tag/FairRootGroup/FairMQ.svg)](https://github.com/FairRootGroup/FairMQ/tags) | [Book](https://github.com/FairRootGroup/FairMQ/blob/dev/README.md#documentation) | [![build status dev branch](https://alfa-ci.gsi.de/buildStatus/icon?job=FairRootGroup/FairMQ/dev)](https://alfa-ci.gsi.de/blue/organizations/jenkins/FairRootGroup%2FFairMQ/branches) [![test coverage dev branch](https://codecov.io/gh/FairRootGroup/FairMQ/branch/dev/graph/badge.svg)](https://codecov.io/gh/FairRootGroup/FairMQ/branch/dev) |
 
 FairMQ is designed to help implementing large-scale data processing workflows needed in next-generation Particle Physics experiments. FairMQ is written in C++ and aims to
   * provide **an asynchronous message passing abstraction** of different data transport technologies,
@@ -29,6 +29,8 @@ configuration and control services.
 FairMQ has been developed in the context of its mother project [FairRoot](https://github.com/FairRootGroup/FairRoot) -
 a simulation, reconstruction and analysis framework.
 
+Find all FairMQ releases and development tags [here](https://github.com/FairRootGroup/FairMQ/releases).
+
 ## Dependencies
 
   * [**Boost**](https://www.boost.org/) (PUBLIC)
@@ -44,16 +46,6 @@ a simulation, reconstruction and analysis framework.
   * [DDS](http://dds.gsi.de) (PRIVATE, optional, `dds_plugin`)
 
   Supported platforms: Linux and MacOS.
-
-## Releases
-
-| Stable release | Date | API Docs |
-| --- | --- | --- |
-| [**1.2.3**](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.2.3) | May 2018 | [link](https://fairrootgroup.github.io/FairMQ/v1.2.3/index.html) |
-| [**1.2.1**](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.2.1) | May 2018 | [link](https://fairrootgroup.github.io/FairMQ/v1.2.1/index.html) |
-| [**1.2.0**](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.2.0) | May 2018 | [link](https://fairrootgroup.github.io/FairMQ/v1.2.0/index.html) |
-
-Find all FairMQ stable and development releases [here](https://github.com/FairRootGroup/FairMQ/releases).
 
 ## Installation from Source
 
