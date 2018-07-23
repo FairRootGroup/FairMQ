@@ -1,5 +1,5 @@
 <!-- {#mainpage} -->
-# FairMQ [![license](https://alfa-ci.gsi.de/shields/github/license/FairRootGroup/FairMQ.svg)](LICENSE)
+# FairMQ [![license](https://alfa-ci.gsi.de/shields/github/license/FairRootGroup/FairMQ.svg)](COPYRIGHT)
 
 C++ Message passing framework
 
