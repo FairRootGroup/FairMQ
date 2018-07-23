@@ -33,17 +33,10 @@ Find all FairMQ releases and development tags [here](https://github.com/FairRoot
 
 ## Dependencies
 
-  * [**Boost**](https://www.boost.org/) (PUBLIC)
-  * [**FairLogger**](https://github.com/FairRootGroup/FairLogger) (PUBLIC)
-  * [CMake](https://cmake.org/) (BUILD)
-  * [GTest](https://github.com/google/googletest) (BUILD, optional, `tests`)
-  * [Doxygen](http://www.doxygen.org/) (BUILD, optional, `docs`)
-  * [ZeroMQ](http://zeromq.org/) (PRIVATE)
-  * [Msgpack](https://msgpack.org/index.html) (PRIVATE, optional, `nanomsg_transport`)
-  * [nanomsg](http://nanomsg.org/) (PRIVATE, optional, `nanomsg_transport`)
-  * [OFI](https://ofiwg.github.io/libfabric/) (PRIVATE, optional, `ofi_transport`)
-  * [Protobuf](https://developers.google.com/protocol-buffers/) (PRIVATE, optional, `ofi_transport`)
-  * [DDS](http://dds.gsi.de) (PRIVATE, optional, `dds_plugin`)
+  * PUBLIC: [**Boost**](https://www.boost.org/), [**FairLogger**](https://github.com/FairRootGroup/FairLogger)
+  * BUILD: [CMake](https://cmake.org/), [GTest](https://github.com/google/googletest), [Doxygen](http://www.doxygen.org/)
+  * PRIVATE: [ZeroMQ](http://zeromq.org/), [Msgpack](https://msgpack.org/index.html), [nanomsg](http://nanomsg.org/),
+[OFI](https://ofiwg.github.io/libfabric/), [Protobuf](https://developers.google.com/protocol-buffers/), [DDS](http://dds.gsi.de)
 
   Supported platforms: Linux and MacOS.
 
