@@ -1,5 +1,5 @@
 <!-- {#mainpage} -->
-# FairMQ
+# FairMQ [![license](https://alfa-ci.gsi.de/shields/github/license/FairRootGroup/FairMQ.svg)](LICENSE)
 
 C++ Message passing framework
 
@@ -161,9 +161,3 @@ After the `find_package(FairMQ)` call the following CMake variables are defined:
    4. [File output](docs/Logging.md#54-file-output)
    5. [Custom sinks](docs/Logging.md#55-custom-sinks)
 6. [Examples](docs/Examples.md#6-examples)
-
-## License
-
-GNU Lesser General Public Licence (LGPL) version 3, see [LICENSE](LICENSE).
-
-Copyright (C) 2013-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH
