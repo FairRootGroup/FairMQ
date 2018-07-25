@@ -17,12 +17,11 @@ using namespace std;
 
 namespace
 {
-    // ugly global state, but std::signal gives us no other choice
-    std::function<void(int)> gSignalHandlerClosure;
+    volatile sig_atomic_t gSignalStatus = 0;
 
     extern "C" auto signal_handler(int signal) -> void
     {
-        gSignalHandlerClosure(signal);
+        gSignalStatus = signal;
     }
 }
 
@@ -37,10 +36,13 @@ Control::Control(const string name, const Plugin::Version version, const string 
     : Plugin(name, version, maintainer, homepage, pluginServices)
     , fControllerThread()
     , fSignalHandlerThread()
+    , fShutdownThread()
     , fEvents()
     , fEventsMutex()
+    , fShutdownMutex()
     , fNewEvent()
-    , fDeviceTerminationRequested{false}
+    , fDeviceTerminationRequested(false)
+    , fHasShutdown(false)
 {
     try
     {
@@ -73,7 +75,7 @@ Control::Control(const string name, const Plugin::Version version, const string 
     LOG(debug) << "catch-signals: " << GetProperty<int>("catch-signals");
     if (GetProperty<int>("catch-signals") > 0)
     {
-        gSignalHandlerClosure = bind(&Control::SignalHandler, this, placeholders::_1);
+        fSignalHandlerThread = thread(&Control::SignalHandler, this);
         signal(SIGINT, signal_handler);
         signal(SIGTERM, signal_handler);
     }
@@ -263,69 +265,92 @@ auto Control::StaticMode() -> void
     }
 }
 
-auto Control::SignalHandler(int signal) -> void
+auto Control::SignalHandler() -> void
 {
-    if (!fDeviceTerminationRequested)
+    while (true)
     {
-        fDeviceTerminationRequested = true;
-
-        StealDeviceControl();
-
-        LOG(info) << "Received device shutdown request (signal " << signal << ").";
-        LOG(info) << "Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.";
-
-        UnsubscribeFromDeviceStateChange(); // In case, static or interactive mode have subscribed already
-        SubscribeToDeviceStateChange([&](DeviceState newState)
+        if (gSignalStatus != 0 && !fHasShutdown)
         {
-            {
-                lock_guard<mutex> lock{fEventsMutex};
-                fEvents.push(newState);
-            }
-            fNewEvent.notify_one();
-        });
+            LOG(info) << "Received device shutdown request (signal " << gSignalStatus << ").";
+            LOG(info) << "Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.";
 
-        fSignalHandlerThread = thread(&Control::RunShutdownSequence, this);
+            if (!fDeviceTerminationRequested)
+            {
+                fDeviceTerminationRequested = true;
+                gSignalStatus = 0;
+                fShutdownThread = thread(&Control::HandleShutdownSignal, this);
+            }
+            else
+            {
+                LOG(warn) << "Received 2nd device shutdown request (signal " << gSignalStatus << ").";
+                LOG(warn) << "Aborting immediately!";
+                abort();
+            }
+        }
+        else if (fHasShutdown)
+        {
+            break;
+        }
+
+        this_thread::sleep_for(chrono::milliseconds(100));
     }
-    else
+}
+
+auto Control::HandleShutdownSignal() -> void
+{
+    StealDeviceControl();
+
+    UnsubscribeFromDeviceStateChange(); // In case, static or interactive mode have subscribed already
+    SubscribeToDeviceStateChange([&](DeviceState newState)
     {
-        LOG(warn) << "Received 2nd device shutdown request (signal " << signal << ").";
-        LOG(warn) << "Aborting immediately !";
-        abort();
-    }
+        {
+            lock_guard<mutex> lock{fEventsMutex};
+            fEvents.push(newState);
+        }
+        fNewEvent.notify_one();
+    });
+
+    RunShutdownSequence();
 }
 
 auto Control::RunShutdownSequence() -> void
 {
-    auto nextState = GetCurrentDeviceState();
-    EmptyEventQueue();
-    while (nextState != DeviceState::Exiting)
+    lock_guard<mutex> lock(fShutdownMutex);
+    if (!fHasShutdown)
     {
-        switch (nextState)
+        auto nextState = GetCurrentDeviceState();
+        EmptyEventQueue();
+        while (nextState != DeviceState::Exiting)
         {
-            case DeviceState::Idle:
-                ChangeDeviceState(DeviceStateTransition::End);
-                break;
-            case DeviceState::DeviceReady:
-                ChangeDeviceState(DeviceStateTransition::ResetDevice);
-                break;
-            case DeviceState::Ready:
-                ChangeDeviceState(DeviceStateTransition::ResetTask);
-                break;
-            case DeviceState::Running:
-                ChangeDeviceState(DeviceStateTransition::Stop);
-                break;
-            case DeviceState::Paused:
-                ChangeDeviceState(DeviceStateTransition::Resume);
-                break;
-            default:
-                break;
+            switch (nextState)
+            {
+                case DeviceState::Idle:
+                    ChangeDeviceState(DeviceStateTransition::End);
+                    break;
+                case DeviceState::DeviceReady:
+                    ChangeDeviceState(DeviceStateTransition::ResetDevice);
+                    break;
+                case DeviceState::Ready:
+                    ChangeDeviceState(DeviceStateTransition::ResetTask);
+                    break;
+                case DeviceState::Running:
+                    ChangeDeviceState(DeviceStateTransition::Stop);
+                    break;
+                case DeviceState::Paused:
+                    ChangeDeviceState(DeviceStateTransition::Resume);
+                    break;
+                default:
+                    // ignore other states
+                    break;
+            }
+
+            nextState = WaitForNextState();
         }
 
-        nextState = WaitForNextState();
+        fHasShutdown = true;
+        UnsubscribeFromDeviceStateChange();
+        ReleaseDeviceControl();
     }
-
-    UnsubscribeFromDeviceStateChange();
-    ReleaseDeviceControl();
 }
 
 auto Control::RunStartupSequence() -> void
@@ -357,6 +382,7 @@ Control::~Control()
 {
     if (fControllerThread.joinable()) fControllerThread.join();
     if (fSignalHandlerThread.joinable()) fSignalHandlerThread.join();
+    if (fShutdownThread.joinable()) fShutdownThread.join();
 }
 
 } /* namespace plugins */

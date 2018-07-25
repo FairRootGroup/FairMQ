@@ -44,7 +44,6 @@ struct PluginServices : ::testing::Test {
     {
         fRunStateMachineThread = std::thread(&FairMQDevice::RunStateMachine, mDevice.get());
         mDevice->SetTransport("zeromq");
-
     }
 
     ~PluginServices()

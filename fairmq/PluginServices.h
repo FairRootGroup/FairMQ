@@ -38,9 +38,9 @@ class PluginServices
 {
   public:
     PluginServices() = delete;
-    PluginServices(FairMQProgOptions* config, std::shared_ptr<FairMQDevice> device)
-        : fConfig{config}
-        , fDevice{device}
+    PluginServices(FairMQProgOptions* config, FairMQDevice& device)
+        : fConfig(config)
+        , fDevice(device)
         , fDeviceController()
         , fDeviceControllerMutex()
         , fReleaseDeviceControlCondition()
@@ -114,7 +114,7 @@ class PluginServices
     friend auto operator<<(std::ostream& os, const DeviceStateTransition& transition) -> std::ostream& { return os << ToStr(transition); }
 
     /// @return current device state
-    auto GetCurrentDeviceState() const -> DeviceState { return fkDeviceStateMap.at(static_cast<FairMQDevice::State>(fDevice->GetCurrentState())); }
+    auto GetCurrentDeviceState() const -> DeviceState { return fkDeviceStateMap.at(static_cast<FairMQDevice::State>(fDevice.GetCurrentState())); }
 
     /// @brief Become device controller
     /// @param controller id
@@ -160,14 +160,14 @@ class PluginServices
     /// the state is running in.
     auto SubscribeToDeviceStateChange(const std::string& subscriber, std::function<void(DeviceState /*newState*/)> callback) -> void
     {
-        fDevice->SubscribeToStateChange(subscriber, [&,callback](FairMQDevice::State newState){
+        fDevice.SubscribeToStateChange(subscriber, [&,callback](FairMQDevice::State newState){
             callback(fkDeviceStateMap.at(newState));
         });
     }
 
     /// @brief Unsubscribe from device state changes
     /// @param subscriber id
-    auto UnsubscribeFromDeviceStateChange(const std::string& subscriber) -> void { fDevice->UnsubscribeFromStateChange(subscriber); }
+    auto UnsubscribeFromDeviceStateChange(const std::string& subscriber) -> void { fDevice.UnsubscribeFromStateChange(subscriber); }
 
     // Config API
     struct PropertyNotFoundError : std::runtime_error { using std::runtime_error::runtime_error; };
@@ -272,7 +272,7 @@ class PluginServices
 
   private:
     FairMQProgOptions* fConfig; // TODO make it a shared pointer, once old AliceO2 code is cleaned up
-    std::shared_ptr<FairMQDevice> fDevice;
+    FairMQDevice& fDevice;
     boost::optional<std::string> fDeviceController;
     mutable std::mutex fDeviceControllerMutex;
     std::condition_variable fReleaseDeviceControlCondition;

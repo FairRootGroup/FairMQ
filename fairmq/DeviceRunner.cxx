@@ -13,10 +13,10 @@
 using namespace fair::mq;
 
 DeviceRunner::DeviceRunner(int argc, char* const argv[])
-    : fRawCmdLineArgs(tools::ToStrVector(argc, argv, false))
-    , fPluginManager(PluginManager::MakeFromCommandLineOptions(fRawCmdLineArgs))
+    : fDevice(nullptr)
+    , fRawCmdLineArgs(tools::ToStrVector(argc, argv, false))
     , fConfig()
-    , fDevice(nullptr)
+    , fPluginManager(fRawCmdLineArgs)
     , fEvents()
 {}
 
@@ -27,16 +27,16 @@ auto DeviceRunner::Run() -> int
     ////////////////////////
 
     // Load builtin plugins last
-    fPluginManager->LoadPlugin("s:control");
+    fPluginManager.LoadPlugin("s:control");
 
     ////// CALL HOOK ///////
     fEvents.Emit<hooks::SetCustomCmdLineOptions>(*this);
     ////////////////////////
 
-    fPluginManager->ForEachPluginProgOptions([&](boost::program_options::options_description options){
+    fPluginManager.ForEachPluginProgOptions([&](boost::program_options::options_description options){
         fConfig.AddToCmdLineOptions(options);
     });
-    fConfig.AddToCmdLineOptions(fPluginManager->ProgramOptions());
+    fConfig.AddToCmdLineOptions(fPluginManager.ProgramOptions());
 
     ////// CALL HOOK ///////
     fEvents.Emit<hooks::ModifyRawCmdLineArgs>(*this);
@@ -83,16 +83,16 @@ auto DeviceRunner::Run() -> int
     fDevice->SetConfig(fConfig);
 
     // Initialize plugin services
-    fPluginManager->EmplacePluginServices(&fConfig, fDevice);
+    fPluginManager.EmplacePluginServices(&fConfig, *fDevice);
 
     // Instantiate and run plugins
-    fPluginManager->InstantiatePlugins();
+    fPluginManager.InstantiatePlugins();
 
     // Run the device
     fDevice->RunStateMachine();
 
     // Wait for control plugin to release device control
-    fPluginManager->WaitForPluginsToReleaseDeviceControl();
+    fPluginManager.WaitForPluginsToReleaseDeviceControl();
 
     return 0;
 }

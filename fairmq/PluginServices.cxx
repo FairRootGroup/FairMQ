@@ -98,7 +98,7 @@ auto PluginServices::ChangeDeviceState(const std::string& controller, const Devi
 
     if (fDeviceController == controller)
     {
-        fDevice->ChangeState(fkDeviceStateTransitionMap.at(next));
+        fDevice.ChangeState(fkDeviceStateTransitionMap.at(next));
     }
     else
     {

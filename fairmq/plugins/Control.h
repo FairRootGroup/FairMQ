@@ -37,17 +37,21 @@ class Control : public Plugin
     auto PrintInteractiveHelp() -> void;
     auto StaticMode() -> void;
     auto WaitForNextState() -> DeviceState;
-    auto SignalHandler(int signal) -> void;
+    auto SignalHandler() -> void;
+    auto HandleShutdownSignal() -> void;
     auto RunShutdownSequence() -> void;
     auto RunStartupSequence() -> void;
     auto EmptyEventQueue() -> void;
 
     std::thread fControllerThread;
     std::thread fSignalHandlerThread;
+    std::thread fShutdownThread;
     std::queue<DeviceState> fEvents;
     std::mutex fEventsMutex;
+    std::mutex fShutdownMutex;
     std::condition_variable fNewEvent;
     std::atomic<bool> fDeviceTerminationRequested;
+    std::atomic<bool> fHasShutdown;
 }; /* class Control */
 
 auto ControlPluginProgramOptions() -> Plugin::ProgOptions;
