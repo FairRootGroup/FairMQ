@@ -47,9 +47,10 @@ namespace mq
 class PluginManager
 {
   public:
-    using PluginFactory = std::shared_ptr<fair::mq::Plugin>(PluginServices&);
+    using PluginFactory = std::unique_ptr<fair::mq::Plugin>(PluginServices&);
 
     PluginManager();
+    PluginManager(const std::vector<std::string> args);
 
     ~PluginManager()
     {
@@ -69,7 +70,7 @@ class PluginManager
     struct PluginInstantiationError : std::runtime_error { using std::runtime_error::runtime_error; };
 
     static auto ProgramOptions() -> boost::program_options::options_description;
-    static auto MakeFromCommandLineOptions(const std::vector<std::string>) -> std::shared_ptr<PluginManager>;
+    static auto MakeFromCommandLineOptions(const std::vector<std::string>) -> PluginManager;
     struct ProgramOptionsParseError : std::runtime_error { using std::runtime_error::runtime_error; };
 
     static auto LibPrefix() -> const std::string& { return fgkLibPrefix; }
@@ -116,10 +117,10 @@ class PluginManager
     static const std::string fgkLibPrefix;
     std::vector<boost::filesystem::path> fSearchPaths;
     std::map<std::string, std::function<PluginFactory>> fPluginFactories;
-    std::map<std::string, std::shared_ptr<Plugin>> fPlugins;
+    std::unique_ptr<PluginServices> fPluginServices;
+    std::map<std::string, std::unique_ptr<Plugin>> fPlugins;
     std::vector<std::string> fPluginOrder;
     std::map<std::string, boost::program_options::options_description> fPluginProgOptions;
-    std::unique_ptr<PluginServices> fPluginServices;
 }; /* class PluginManager */
 
 } /* namespace mq */

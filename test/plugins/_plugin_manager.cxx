@@ -104,14 +104,14 @@ TEST(PluginManager, LoadPluginStatic)
 TEST(PluginManager, Factory)
 {
     const auto args = vector<string>{"-l", "debug", "--help", "-S", ">/lib", "</home/user/lib", "/usr/local/lib", "/usr/lib"};
-    auto mgr = PluginManager::MakeFromCommandLineOptions(args);
+    PluginManager mgr(args);
     const auto path1 = path{"/home/user/lib"};
     const auto path2 = path{"/usr/local/lib"};
     const auto path3 = path{"/usr/lib"};
     const auto path4 = path{"/lib"};
     const auto expected = vector<path>{path1, path2, path3, path4};
-    ASSERT_TRUE(static_cast<bool>(mgr));
-    ASSERT_TRUE(mgr->SearchPaths() == expected);
+    // ASSERT_TRUE(static_cast<bool>(mgr));
+    ASSERT_TRUE(mgr.SearchPaths() == expected);
 }
 
 TEST(PluginManager, SearchPathValidation)

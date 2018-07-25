@@ -17,6 +17,7 @@
 
 #include <string>
 #include <thread>
+#include <atomic>
 
 #include "FairMQDevice.h"
 
@@ -38,7 +39,7 @@ class FairMQBenchmarkSampler : public FairMQDevice
   protected:
     bool fSameMessage;
     int fMsgSize;
-    int fMsgCounter;
+    std::atomic<int> fMsgCounter;
     int fMsgRate;
     uint64_t fNumIterations;
     uint64_t fMaxIterations;

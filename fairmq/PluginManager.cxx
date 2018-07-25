@@ -31,11 +31,53 @@ const std::string fair::mq::PluginManager::fgkLibPrefix = "FairMQPlugin_";
 fair::mq::PluginManager::PluginManager()
     : fSearchPaths{{"."}}
     , fPluginFactories()
+    , fPluginServices()
     , fPlugins()
     , fPluginOrder()
     , fPluginProgOptions()
-    , fPluginServices()
 {
+}
+
+fair::mq::PluginManager::PluginManager(const vector<string> args)
+    : fSearchPaths{{"."}}
+    , fPluginFactories()
+    , fPluginServices()
+    , fPlugins()
+    , fPluginOrder()
+    , fPluginProgOptions()
+{
+    // Parse command line options
+    auto options = ProgramOptions();
+    auto vm = po::variables_map{};
+    try
+    {
+        auto parsed = po::command_line_parser(args).options(options).allow_unregistered().run();
+        po::store(parsed, vm);
+        po::notify(vm);
+    } catch (const po::error& e)
+    {
+        throw ProgramOptionsParseError{ToString("Error occured while parsing the 'Plugin Manager' program options: ", e.what())};
+    }
+
+    // Process plugin search paths
+    auto append = vector<fs::path>{};
+    auto prepend = vector<fs::path>{};
+    auto searchPaths = vector<fs::path>{};
+    if (vm.count("plugin-search-path"))
+    {
+        for (const auto& path : vm["plugin-search-path"].as<vector<string>>())
+        {
+            if      (path.substr(0, 1) == "<") { prepend.emplace_back(path.substr(1)); }
+            else if (path.substr(0, 1) == ">") { append.emplace_back(path.substr(1)); }
+            else                               { searchPaths.emplace_back(path); }
+        }
+    }
+
+    // Set supplied options
+    SetSearchPaths(searchPaths);
+    for(const auto& path : prepend) { PrependSearchPath(path); }
+    for(const auto& path : append)  { AppendSearchPath(path); }
+    if (vm.count("plugin")) { LoadPlugins(vm["plugin"].as<vector<string>>()); }
 }
 
 auto fair::mq::PluginManager::ValidateSearchPath(const fs::path& path) -> void
@@ -79,46 +121,6 @@ auto fair::mq::PluginManager::ProgramOptions() -> po::options_description
                                                   "To load a prelinked plugin, list 'p:example' here.");
 
     return plugin_options;
-}
-
-auto fair::mq::PluginManager::MakeFromCommandLineOptions(const vector<string> args) -> shared_ptr<PluginManager>
-{
-    // Parse command line options
-    auto options = ProgramOptions();
-    auto vm = po::variables_map{};
-    try
-    {
-        auto parsed = po::command_line_parser(args).options(options).allow_unregistered().run();
-        po::store(parsed, vm);
-        po::notify(vm);
-    } catch (const po::error& e)
-    {
-        throw ProgramOptionsParseError{ToString("Error occured while parsing the 'Plugin Manager' program options: ", e.what())};
-    }
-
-    // Process plugin search paths
-    auto append = vector<fs::path>{};
-    auto prepend = vector<fs::path>{};
-    auto searchPaths = vector<fs::path>{};
-    if (vm.count("plugin-search-path"))
-    {
-        for (const auto& path : vm["plugin-search-path"].as<vector<string>>())
-        {
-            if      (path.substr(0, 1) == "<") { prepend.emplace_back(path.substr(1)); }
-            else if (path.substr(0, 1) == ">") { append.emplace_back(path.substr(1)); }
-            else                               { searchPaths.emplace_back(path); }
-        }
-    }
-
-    // Create PluginManager with supplied options
-    auto mgr = make_shared<PluginManager>();
-    mgr->SetSearchPaths(searchPaths);
-    for(const auto& path : prepend) { mgr->PrependSearchPath(path); }
-    for(const auto& path : append)  { mgr->AppendSearchPath(path); }
-    if (vm.count("plugin")) { mgr->LoadPlugins(vm["plugin"].as<vector<string>>()); }
-
-    // Return the plugin manager and command line options, that have not been recognized.
-    return mgr;
 }
 
 auto fair::mq::PluginManager::LoadPlugin(const string& pluginName) -> void
