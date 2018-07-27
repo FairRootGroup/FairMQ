@@ -38,7 +38,7 @@ class PluginServices
 {
   public:
     PluginServices() = delete;
-    PluginServices(FairMQProgOptions* config, FairMQDevice& device)
+    PluginServices(FairMQProgOptions& config, FairMQDevice& device)
         : fConfig(config)
         , fDevice(device)
         , fDeviceController()
@@ -172,7 +172,7 @@ class PluginServices
     // Config API
     struct PropertyNotFoundError : std::runtime_error { using std::runtime_error::runtime_error; };
 
-    auto PropertyExists(const std::string& key) const -> bool { return fConfig->Count(key) > 0; }
+    auto PropertyExists(const std::string& key) const -> bool { return fConfig.Count(key) > 0; }
 
     /// @brief Set config property
     /// @param key
@@ -187,7 +187,7 @@ class PluginServices
         auto currentState = GetCurrentDeviceState();
         if (currentState == DeviceState::InitializingDevice)
         {
-            fConfig->SetValue(key, val);
+            fConfig.SetValue(key, val);
         }
         else
         {
@@ -205,7 +205,7 @@ class PluginServices
     template<typename T>
     auto GetProperty(const std::string& key) const -> T {
         if (PropertyExists(key)) {
-            return fConfig->GetValue<T>(key);
+            return fConfig.GetValue<T>(key);
         }
         throw PropertyNotFoundError(fair::mq::tools::ToString("Config has no key: ", key));
     }
@@ -217,16 +217,16 @@ class PluginServices
     /// If a type is not supported, the user can provide support by overloading the ostream operator for this type
     auto GetPropertyAsString(const std::string& key) const -> std::string {
         if (PropertyExists(key)) {
-            return fConfig->GetStringValue(key);
+            return fConfig.GetStringValue(key);
         }
         throw PropertyNotFoundError(fair::mq::tools::ToString("Config has no key: ", key));
     }
 
-    auto GetChannelInfo() const -> std::unordered_map<std::string, int> { return fConfig->GetChannelInfo(); }
+    auto GetChannelInfo() const -> std::unordered_map<std::string, int> { return fConfig.GetChannelInfo(); }
 
     /// @brief Discover the list of property keys
     /// @return list of property keys
-    auto GetPropertyKeys() const -> std::vector<std::string> { return fConfig->GetPropertyKeys(); }
+    auto GetPropertyKeys() const -> std::vector<std::string> { return fConfig.GetPropertyKeys(); }
 
     /// @brief Subscribe to property updates of type T
     /// @param subscriber
@@ -236,13 +236,13 @@ class PluginServices
     template<typename T>
     auto SubscribeToPropertyChange(const std::string& subscriber, std::function<void(const std::string& key, T)> callback) const -> void
     {
-        fConfig->Subscribe<T>(subscriber, callback);
+        fConfig.Subscribe<T>(subscriber, callback);
     }
 
     /// @brief Unsubscribe from property updates of type T
     /// @param subscriber
     template<typename T>
-    auto UnsubscribeFromPropertyChange(const std::string& subscriber) -> void { fConfig->Unsubscribe<T>(subscriber); }
+    auto UnsubscribeFromPropertyChange(const std::string& subscriber) -> void { fConfig.Unsubscribe<T>(subscriber); }
 
     /// @brief Subscribe to property updates
     /// @param subscriber
@@ -251,12 +251,12 @@ class PluginServices
     /// Subscribe to property changes with a callback to monitor property changes in an event based fashion. Will convert the property to string.
     auto SubscribeToPropertyChangeAsString(const std::string& subscriber, std::function<void(const std::string& key, std::string)> callback) const -> void
     {
-        fConfig->SubscribeAsString(subscriber, callback);
+        fConfig.SubscribeAsString(subscriber, callback);
     }
 
     /// @brief Unsubscribe from property updates that convert to string
     /// @param subscriber
-    auto UnsubscribeFromPropertyChangeAsString(const std::string& subscriber) -> void { fConfig->UnsubscribeAsString(subscriber); }
+    auto UnsubscribeFromPropertyChangeAsString(const std::string& subscriber) -> void { fConfig.UnsubscribeAsString(subscriber); }
 
     auto CycleLogConsoleSeverityUp() -> void { Logger::CycleConsoleSeverityUp(); }
     auto CycleLogConsoleSeverityDown() -> void { Logger::CycleConsoleSeverityDown(); }
@@ -271,7 +271,7 @@ class PluginServices
     static const std::unordered_map<DeviceStateTransition, FairMQDevice::Event, tools::HashEnum<DeviceStateTransition>> fkDeviceStateTransitionMap;
 
   private:
-    FairMQProgOptions* fConfig; // TODO make it a shared pointer, once old AliceO2 code is cleaned up
+    FairMQProgOptions& fConfig;
     FairMQDevice& fDevice;
     boost::optional<std::string> fDeviceController;
     mutable std::mutex fDeviceControllerMutex;

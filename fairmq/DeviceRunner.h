@@ -61,9 +61,9 @@ class DeviceRunner
     template<typename H>
     auto RemoveHook() -> void { fEvents.Unsubscribe<H>("runner"); }
 
-    std::unique_ptr<FairMQDevice> fDevice;
     std::vector<std::string> fRawCmdLineArgs;
     FairMQProgOptions fConfig;
+    std::unique_ptr<FairMQDevice> fDevice;
     PluginManager fPluginManager;
 
   private:

@@ -116,9 +116,9 @@ class Plugin
 } /* namespace fair */
 
 #define REGISTER_FAIRMQ_PLUGIN(KLASS, NAME, VERSION, MAINTAINER, HOMEPAGE, PROGOPTIONS) \
-static auto Make_##NAME##_Plugin(fair::mq::PluginServices* pluginServices) -> std::shared_ptr<fair::mq::Plugin> \
+static auto Make_##NAME##_Plugin(fair::mq::PluginServices* pluginServices) -> std::unique_ptr<fair::mq::Plugin> \
 { \
-    return std::make_shared<KLASS>(std::string{#NAME}, VERSION, std::string{MAINTAINER}, std::string{HOMEPAGE}, pluginServices); \
+    return fair::mq::tools::make_unique<KLASS>(std::string{#NAME}, VERSION, std::string{MAINTAINER}, std::string{HOMEPAGE}, pluginServices); \
 } \
 BOOST_DLL_ALIAS(Make_##NAME##_Plugin, make_##NAME##_plugin) \
 BOOST_DLL_ALIAS(PROGOPTIONS, get_##NAME##_plugin_progoptions)

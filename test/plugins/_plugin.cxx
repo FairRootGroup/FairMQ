@@ -24,31 +24,31 @@ namespace
 using namespace std;
 using namespace fair::mq;
 
-auto control(shared_ptr<FairMQDevice> device) -> void
+auto control(FairMQDevice& device) -> void
 {
-    device->SetTransport("zeromq");
+    device.SetTransport("zeromq");
     for (const auto event : {
         FairMQDevice::INIT_DEVICE,
         FairMQDevice::RESET_DEVICE,
         FairMQDevice::END,
     }) {
-        device->ChangeState(event);
-        if (event != FairMQDevice::END) device->WaitForEndOfState(event);
+        device.ChangeState(event);
+        if (event != FairMQDevice::END) device.WaitForEndOfState(event);
     }
 }
 
 TEST(Plugin, Operators)
 {
     FairMQProgOptions config;
-    auto device = make_shared<FairMQDevice>();
-    PluginServices services{&config, device};
+    FairMQDevice device;
+    PluginServices services{config, device};
     Plugin p1{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
     Plugin p2{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
     Plugin p3{"file", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/file.git", &services};
     EXPECT_EQ(p1, p2);
     EXPECT_NE(p1, p3);
-    thread t(control, device);
-    device->RunStateMachine();
+    thread t(control, std::ref(device));
+    device.RunStateMachine();
     if (t.joinable()) {
         t.join();
     }
@@ -57,14 +57,14 @@ TEST(Plugin, Operators)
 TEST(Plugin, OstreamOperators)
 {
     FairMQProgOptions config;
-    auto device = make_shared<FairMQDevice>();
-    PluginServices services{&config, device};
+    FairMQDevice device;
+    PluginServices services{config, device};
     Plugin p1{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
     stringstream ss;
     ss << p1;
     EXPECT_EQ(ss.str(), string{"'dds', version '1.0.0', maintainer 'Foo Bar <foo.bar@test.net>', homepage 'https://git.test.net/dds.git'"});
-    thread t(control, device);
-    device->RunStateMachine();
+    thread t(control, std::ref(device));
+    device.RunStateMachine();
     if (t.joinable()) {
         t.join();
     }

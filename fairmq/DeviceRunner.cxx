@@ -13,9 +13,9 @@
 using namespace fair::mq;
 
 DeviceRunner::DeviceRunner(int argc, char* const argv[])
-    : fDevice(nullptr)
-    , fRawCmdLineArgs(tools::ToStrVector(argc, argv, false))
+    : fRawCmdLineArgs(tools::ToStrVector(argc, argv, false))
     , fConfig()
+    , fDevice(nullptr)
     , fPluginManager(fRawCmdLineArgs)
     , fEvents()
 {}
@@ -83,7 +83,7 @@ auto DeviceRunner::Run() -> int
     fDevice->SetConfig(fConfig);
 
     // Initialize plugin services
-    fPluginManager.EmplacePluginServices(&fConfig, *fDevice);
+    fPluginManager.EmplacePluginServices(fConfig, *fDevice);
 
     // Instantiate and run plugins
     fPluginManager.InstantiatePlugins();
