@@ -25,25 +25,25 @@ using namespace boost::filesystem;
 using namespace boost::program_options;
 using namespace std;
 
-auto control(shared_ptr<FairMQDevice> device) -> void
+auto control(FairMQDevice& device) -> void
 {
-    device->SetTransport("zeromq");
+    device.SetTransport("zeromq");
     for (const auto event : {
         FairMQDevice::INIT_DEVICE,
         FairMQDevice::RESET_DEVICE,
         FairMQDevice::END,
     }) {
-        device->ChangeState(event);
-        if (event != FairMQDevice::END) device->WaitForEndOfState(event);
+        device.ChangeState(event);
+        if (event != FairMQDevice::END) device.WaitForEndOfState(event);
     }
 }
 
 TEST(PluginManager, LoadPluginDynamic)
 {
     FairMQProgOptions config;
+    FairMQDevice device;
     PluginManager mgr;
-    auto device = make_shared<FairMQDevice>();
-    mgr.EmplacePluginServices(&config, device);
+    mgr.EmplacePluginServices(config, device);
 
     mgr.PrependSearchPath("./test");
 
@@ -63,8 +63,8 @@ TEST(PluginManager, LoadPluginDynamic)
     mgr.ForEachPluginProgOptions([&count](const options_description& /*d*/){ ++count; });
     ASSERT_EQ(count, 1);
 
-    thread t(control, device);
-    device->RunStateMachine();
+    thread t(control, std::ref(device));
+    device.RunStateMachine();
     if (t.joinable()) {
         t.join();
     }
@@ -72,16 +72,16 @@ TEST(PluginManager, LoadPluginDynamic)
 
 TEST(PluginManager, LoadPluginStatic)
 {
+    FairMQDevice device;
     PluginManager mgr;
-    auto device = make_shared<FairMQDevice>();
-    device->SetTransport("zeromq");
+    device.SetTransport("zeromq");
 
     ASSERT_NO_THROW(mgr.LoadPlugin("s:control"));
 
     FairMQProgOptions config;
     config.SetValue<string>("control", "static");
     config.SetValue("catch-signals", 0);
-    mgr.EmplacePluginServices(&config, device);
+    mgr.EmplacePluginServices(config, device);
 
     ASSERT_NO_THROW(mgr.InstantiatePlugins());
 
@@ -96,7 +96,7 @@ TEST(PluginManager, LoadPluginStatic)
     mgr.ForEachPluginProgOptions([&count](const options_description&){ ++count; });
     ASSERT_EQ(count, 1);
 
-    device->RunStateMachine();
+    device.RunStateMachine();
 
     mgr.WaitForPluginsToReleaseDeviceControl();
 }

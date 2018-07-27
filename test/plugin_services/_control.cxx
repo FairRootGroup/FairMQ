@@ -39,9 +39,9 @@ TEST_F(PluginServices, OnlySingleController)
     EXPECT_EQ(mServices.GetDeviceController(), string{"foo"});
 
     // park device
-    mDevice->WaitForEndOfState(FairMQDevice::DEVICE_READY);
+    mDevice.WaitForEndOfState(FairMQDevice::DEVICE_READY);
     mServices.ChangeDeviceState("foo", DeviceStateTransition::ResetDevice);
-    mDevice->WaitForEndOfState(FairMQDevice::RESET_DEVICE);
+    mDevice.WaitForEndOfState(FairMQDevice::RESET_DEVICE);
     mServices.ChangeDeviceState("foo", DeviceStateTransition::End);
 }
 
@@ -72,7 +72,7 @@ TEST_F(PluginServices, Control)
     ASSERT_EQ(mServices.GetCurrentDeviceState(), DeviceState::DeviceReady);
 
     mServices.ChangeDeviceState("foo", DeviceStateTransition::ResetDevice);
-    mDevice->WaitForEndOfState(FairMQDevice::RESET_DEVICE);
+    mDevice.WaitForEndOfState(FairMQDevice::RESET_DEVICE);
     mServices.ChangeDeviceState("foo", DeviceStateTransition::End);
 }
 

@@ -23,39 +23,39 @@ namespace mq
 namespace test
 {
 
-inline auto control(std::shared_ptr<FairMQDevice> device) -> void
+inline auto control(FairMQDevice& device) -> void
 {
     for (const auto event : {
         FairMQDevice::INIT_DEVICE,
         FairMQDevice::RESET_DEVICE,
         FairMQDevice::END,
     }) {
-        device->ChangeState(event);
-        if (event != FairMQDevice::END) device->WaitForEndOfState(event);
+        device.ChangeState(event);
+        if (event != FairMQDevice::END) device.WaitForEndOfState(event);
     }
 }
 
 struct PluginServices : ::testing::Test {
     PluginServices()
         : mConfig()
-        , mDevice{std::make_shared<FairMQDevice>()}
-        , mServices{&mConfig, mDevice}
+        , mDevice()
+        , mServices(mConfig, mDevice)
         , fRunStateMachineThread()
     {
-        fRunStateMachineThread = std::thread(&FairMQDevice::RunStateMachine, mDevice.get());
-        mDevice->SetTransport("zeromq");
+        fRunStateMachineThread = std::thread(&FairMQDevice::RunStateMachine, &mDevice);
+        mDevice.SetTransport("zeromq");
     }
 
     ~PluginServices()
     {
-        if (mDevice->GetCurrentState() == FairMQDevice::IDLE) control(mDevice);
+        if (mDevice.GetCurrentState() == FairMQDevice::IDLE) control(mDevice);
         if (fRunStateMachineThread.joinable()) {
             fRunStateMachineThread.join();
         }
     }
 
     FairMQProgOptions mConfig;
-    std::shared_ptr<FairMQDevice> mDevice;
+    FairMQDevice mDevice;
     fair::mq::PluginServices mServices;
     std::thread fRunStateMachineThread;
 };
