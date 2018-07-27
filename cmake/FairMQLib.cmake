@@ -112,7 +112,6 @@ macro(set_fairmq_defaults)
     set(CMAKE_BUILD_TYPE RelWithDebInfo)
   endif()
 
-
   # Handle C++ standard level
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
   if(NOT CMAKE_CXX_STANDARD)
@@ -158,9 +157,15 @@ macro(set_fairmq_defaults)
   # Define export set, only one for now
   set(PROJECT_EXPORT_SET ${PROJECT_NAME}Targets)
 
-  # Override CMake defaults
-  set(CMAKE_CXX_FLAGS_NIGHTLY "-O2 -g -Wshadow -Wall -Wextra")
-  set(CMAKE_CXX_FLAGS_PROFILE "-g3 -fno-inline -ftest-coverage -fprofile-arcs -Wshadow -Wall -Wextra -Wunused-variable")
+  # Configure build types
+  set(CMAKE_CONFIGURATION_TYPES "Debug" "Release" "RelWithDebInfo" "Nightly" "Profile" "AdressSan" "ThreadSan")
+  set(CMAKE_CXX_FLAGS_DEBUG          "-g -Wshadow -Wall -Wextra")
+  set(CMAKE_CXX_FLAGS_RELEASE        "-O2 -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -Wshadow -Wall -Wextra -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_NIGHTLY        "-O2 -g -Wshadow -Wall -Wextra")
+  set(CMAKE_CXX_FLAGS_PROFILE        "-g3 -Wshadow -Wall -Wextra -fno-inline -ftest-coverage -fprofile-arcs")
+  set(CMAKE_CXX_FLAGS_ADRESSSAN      "-O2 -g -Wshadow -Wall -Wextra -fsanitize=address -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS_THREADSAN      "-O2 -g -Wshadow -Wall -Wextra -fsanitize=thread")
 endmacro()
 
 function(join VALUES GLUE OUTPUT)
