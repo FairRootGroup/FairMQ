@@ -60,7 +60,7 @@ find_package(Threads REQUIRED)
 
 if(BUILD_FAIRMQ)
   find_package2(PUBLIC Boost VERSION 1.64 REQUIRED
-    COMPONENTS program_options thread system filesystem regex date_time signals
+    COMPONENTS container program_options thread system filesystem regex date_time signals
   )
   find_package2(PUBLIC FairLogger VERSION 1.2.0 REQUIRED)
   find_package2(PRIVATE ZeroMQ VERSION 4.1.5 REQUIRED)

@@ -50,6 +50,7 @@ set(FAIRMQ_PUBLIC_HEADER_FILES
     FairMQSocket.h
     FairMQStateMachine.h
     FairMQTransportFactory.h
+    MemoryResources.h
     Tools.h
     Transports.h
     options/FairMQProgOptions.h
@@ -234,6 +235,7 @@ endif()
 
 target_link_libraries(${_target}
     INTERFACE # only consumers link against interface dependencies
+    Boost::container
 
     PUBLIC # libFairMQ AND consumers of libFairMQ link aginst public dependencies
     Threads::Threads
