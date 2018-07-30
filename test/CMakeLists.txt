@@ -185,3 +185,14 @@ add_testsuite(FairMQ.StateMachine
     INCLUDES ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 10
 )
+
+add_testsuite(FairMQ.MemoryResources
+    SOURCES
+    memory_resources/runner.cxx
+    memory_resources/_memory_resources.cxx
+
+    LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_BINARY_DIR}
+    TIMEOUT 10
+)
+
