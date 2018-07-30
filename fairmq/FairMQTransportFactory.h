@@ -9,11 +9,12 @@
 #ifndef FAIRMQTRANSPORTFACTORY_H_
 #define FAIRMQTRANSPORTFACTORY_H_
 
-#include <FairMQMessage.h>
-#include <FairMQSocket.h>
-#include <FairMQPoller.h>
-#include <FairMQUnmanagedRegion.h>
 #include <FairMQLogger.h>
+#include <FairMQMessage.h>
+#include <FairMQPoller.h>
+#include <FairMQSocket.h>
+#include <FairMQUnmanagedRegion.h>
+#include <fairmq/MemoryResources.h>
 #include <fairmq/Transports.h>
 
 #include <string>
@@ -30,12 +31,18 @@ class FairMQTransportFactory
     /// Topology wide unique id
     const std::string fkId;
 
+    /// The polymorphic memory resource associated with the transport
+    fair::mq::ChannelResource fMemoryResource{this};
+
   public:
     /// ctor
     /// @param id Topology wide unique id, usually the device id.
     FairMQTransportFactory(const std::string& id);
 
     auto GetId() const -> const std::string { return fkId; };
+
+    /// Get a pointer to the associated polymorphic memory resource
+    fair::mq::ChannelResource* GetMemoryResource() { return &fMemoryResource; }
 
     /// @brief Create empty FairMQMessage
     /// @return pointer to FairMQMessage
