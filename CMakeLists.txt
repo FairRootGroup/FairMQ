@@ -170,6 +170,10 @@ install_cmake_package()
 
 
 # Summary ######################################################################
+if(CMAKE_CXX_FLAGS)
+  message(STATUS "  ")
+  message(STATUS "  ${Cyan}GLOBAL CXX FLAGS${CR}  ${BGreen}${CMAKE_CXX_FLAGS}${CR}")
+endif()
 if(CMAKE_CONFIGURATION_TYPES)
   message(STATUS "  ")
   message(STATUS "  ${Cyan}BUILD TYPE         CXX FLAGS${CR}")
