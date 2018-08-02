@@ -10,6 +10,7 @@
 #include <fairmq/Tools.h>
 #include <FairMQLogger.h>
 
+#include <cassert>
 #include <cstdlib>
 #include <zmq.h>
 
@@ -53,7 +54,7 @@ Message::Message(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
 {
 }
 
-Message::Message(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint)
+Message::Message(FairMQUnmanagedRegionPtr& /*region*/, void* /*data*/, const size_t /*size*/, void* /*hint*/)
 {
     throw MessageError{"Not yet implemented."};
 }
@@ -91,7 +92,7 @@ auto Message::Rebuild(const size_t size) -> void
     fHint = nullptr;
 }
 
-auto Message::Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) -> void
+auto Message::Rebuild(void* /*data*/, const size_t size, fairmq_free_fn* ffn, void* hint) -> void
 {
     if (fFreeFunction) {
       fFreeFunction(fData, fHint);
@@ -132,12 +133,12 @@ auto Message::SetUsedSize(const size_t size) -> bool
     }
 }
 
-auto Message::Copy(const fair::mq::Message& msg) -> void
+auto Message::Copy(const fair::mq::Message& /*msg*/) -> void
 {
     throw MessageError{"Not yet implemented."};
 }
 
-auto Message::Copy(const fair::mq::MessagePtr& msg) -> void
+auto Message::Copy(const fair::mq::MessagePtr& /*msg*/) -> void
 {
     throw MessageError{"Not yet implemented."};
 }
