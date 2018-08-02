@@ -245,10 +245,10 @@ set_target_properties(FairMQ PROPERTIES
   SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
 )
 
+
 ###############
 # executables #
 ###############
-
 add_executable(fairmq-bsampler run/runBenchmarkSampler.cxx)
 target_link_libraries(fairmq-bsampler FairMQ)
 
@@ -276,11 +276,12 @@ target_link_libraries(fairmq-shmmonitor FairMQ)
 add_executable(fairmq-uuid-gen run/runUuidGenerator.cxx)
 target_link_libraries(fairmq-uuid-gen FairMQ)
 
+
 ###########
 # install #
 ###########
 install(
-    TARGETS # FairMQFull, tests are not installed
+    TARGETS
     FairMQ
     fairmq-bsampler
     fairmq-merger
@@ -292,8 +293,8 @@ install(
     fairmq-uuid-gen
 
     EXPORT ${PROJECT_EXPORT_SET}
-    LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
 )
 
 # preserve relative path and prepend fairmq
