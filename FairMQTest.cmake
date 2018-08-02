@@ -58,6 +58,14 @@ Ctest_Test(BUILD "${CTEST_BINARY_DIRECTORY}"
            PARALLEL_LEVEL $ENV{number_of_processors}
            RETURN_VALUE _ctest_test_ret_val
           )
+If("$ENV{do_codecov_upload}")
+  ForEach(i RANGE 4)
+    # Gather statistics to catch time sensitive branches
+    Ctest_Test(BUILD "${CTEST_BINARY_DIRECTORY}" 
+               PARALLEL_LEVEL $ENV{number_of_processors}
+              )
+  EndForEach()
+EndIf()
 
 If(GCOV_COMMAND)
   Ctest_Coverage(BUILD "${CTEST_BINARY_DIRECTORY}" LABELS coverage)
