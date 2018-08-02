@@ -13,7 +13,6 @@
 #include <arpa/inet.h>
 #include <boost/version.hpp>
 #include <cstring>
-#include <google/protobuf/stubs/common.h>
 #include <memory>
 #include <netinet/in.h>
 #include <rdma/fabric.h>
@@ -46,8 +45,6 @@ Context::Context(int numberIoThreads)
 {
     if (!fZmqContext)
         throw ContextError{tools::ToString("Failed creating zmq context, reason: ", zmq_strerror(errno))};
-
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
 
     InitThreadPool(numberIoThreads);
 }
@@ -112,11 +109,6 @@ auto Context::GetOfiApiVersion() const -> string
     //auto ofi_version{fi_version()};
     //return tools::ToString(FI_MAJOR(ofi_version), ".", FI_MINOR(ofi_version));
     return "unknown";
-}
-
-auto Context::GetPbVersion() const -> string
-{
-    return google::protobuf::internal::VersionString(GOOGLE_PROTOBUF_VERSION);
 }
 
 auto Context::GetBoostVersion() const -> std::string
