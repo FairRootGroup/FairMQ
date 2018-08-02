@@ -351,7 +351,7 @@ int64_t FairMQSocketSHM::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int
 
             msgVec.reserve(lNumMessages);
 
-            for (auto m = 0; m < lNumMessages; m++)
+            for (size_t m = 0; m < lNumMessages; m++)
             {
                 MetaHeader lMetaHeader;
                 memcpy(&lMetaHeader, &lHdrVec[m], sizeof(MetaHeader));
