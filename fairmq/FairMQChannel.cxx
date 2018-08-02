@@ -755,7 +755,7 @@ void FairMQChannel::CheckSendCompatibility(FairMQMessagePtr& msg) const
         // LOG(debug) << "Channel type does not match message type. Creating wrapper";
         FairMQMessagePtr msgWrapper(NewMessage(msg->GetData(),
                                                msg->GetSize(),
-                                               [](void* /*data*/, void* msg) { delete static_cast<FairMQMessage*>(msg); },
+                                               [](void* /*data*/, void* _msg) { delete static_cast<FairMQMessage*>(_msg); },
                                                msg.get()
                                                ));
         msg.release();
@@ -772,7 +772,7 @@ void FairMQChannel::CheckSendCompatibility(vector<FairMQMessagePtr>& msgVec) con
             // LOG(debug) << "Channel type does not match message type. Creating wrapper";
             FairMQMessagePtr msgWrapper(NewMessage(msg->GetData(),
                                                    msg->GetSize(),
-                                                   [](void* /*data*/, void* msg) { delete static_cast<FairMQMessage*>(msg); },
+                                                   [](void* /*data*/, void* _msg) { delete static_cast<FairMQMessage*>(_msg); },
                                                    msg.get()
                                                    ));
             msg.release();
