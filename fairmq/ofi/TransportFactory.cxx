@@ -28,7 +28,6 @@ try : FairMQTransportFactory{id}
 {
     LOG(debug) << "Transport: Using ZeroMQ (" << fContext.GetZmqVersion() << ") & "
                << "OFI libfabric (API " << fContext.GetOfiApiVersion() << ") & "
-               << "Google Protobuf (" << fContext.GetPbVersion() << ") & "
                << "Boost.Asio (" << fContext.GetBoostVersion() << ")";
 }
 catch (ContextError& e)
