@@ -136,19 +136,19 @@ auto Socket::ConnectControlSocket(Context::Address address) -> void
         throw SocketError(tools::ToString("Failed connecting control socket ", fId, ", reason: ", zmq_strerror(errno)));
 }
 
-auto Socket::ProcessDataAddressAnnouncement(std::unique_ptr<ControlMessage> ctrl) -> void
-{
-    assert(ctrl->has_data_address_announcement());
-    auto daa = ctrl->data_address_announcement();
-
-    sockaddr_in remoteAddr;
-    remoteAddr.sin_family = AF_INET;
-    remoteAddr.sin_port = daa.port();
-    remoteAddr.sin_addr.s_addr = daa.ipv4();
-
-    LOG(debug) << "Data address announcement of remote ofi endpoint received: " << Context::ConvertAddress(remoteAddr);
-    fRemoteDataAddr = fContext.InsertAddressVector(remoteAddr);
-}
+// auto Socket::ProcessDataAddressAnnouncement(std::unique_ptr<ControlMessage> ctrl) -> void
+// {
+    // assert(ctrl->has_data_address_announcement());
+    // auto daa = ctrl->data_address_announcement();
+//
+    // sockaddr_in remoteAddr;
+    // remoteAddr.sin_family = AF_INET;
+    // remoteAddr.sin_port = daa.port();
+    // remoteAddr.sin_addr.s_addr = daa.ipv4();
+//
+    // LOG(debug) << "Data address announcement of remote ofi endpoint received: " << Context::ConvertAddress(remoteAddr);
+    // fRemoteDataAddr = fContext.InsertAddressVector(remoteAddr);
+// }
 
 auto Socket::InitDataEndpoint() -> void
 {
@@ -184,8 +184,6 @@ void free_string(void* /*data*/, void* hint)
 
 auto Socket::AnnounceDataAddress() -> void
 try {
-    using namespace google::protobuf;
-
     size_t addrlen = sizeof(sockaddr_in);
     auto ret = fi_getname(&fDataEndpoint->fid, &fLocalDataAddr, &addrlen);
     if (ret != FI_SUCCESS)
@@ -195,62 +193,62 @@ try {
     LOG(debug) << "Address of local ofi endpoint in socket " << fId << ": " << Context::ConvertAddress(fLocalDataAddr);
 
     // Create new control message
-    auto ctrl = tools::make_unique<ControlMessage>();
-    auto daa = tools::make_unique<DataAddressAnnouncement>();
+    // auto ctrl = tools::make_unique<ControlMessage>();
+    // auto daa = tools::make_unique<DataAddressAnnouncement>();
 
     // Fill data address announcement
-    daa->set_ipv4(fLocalDataAddr.sin_addr.s_addr);
-    daa->set_port(fLocalDataAddr.sin_port);
+    // daa->set_ipv4(fLocalDataAddr.sin_addr.s_addr);
+    // daa->set_port(fLocalDataAddr.sin_port);
 
     // Fill control message
-    ctrl->set_allocated_data_address_announcement(daa.release());
-    assert(ctrl->IsInitialized());
+    // ctrl->set_allocated_data_address_announcement(daa.release());
+    // assert(ctrl->IsInitialized());
 
-    SendControlMessage(move(ctrl));
+    // SendControlMessage(move(ctrl));
 } catch (const SocketError& e) {
     throw SocketError(tools::ToString("Failed to announce data address, reason: ", e.what()));
 }
 
-auto Socket::SendControlMessage(unique_ptr<ControlMessage> ctrl) -> void
-{
-    assert(fControlSocket);
+// auto Socket::SendControlMessage(unique_ptr<ControlMessage> ctrl) -> void
+// {
+    // assert(fControlSocket);
     // LOG(debug) << "About to send control message: " << ctrl->DebugString();
-
+//
     // Serialize
-    string* str = new string();
-    ctrl->SerializeToString(str);
-    zmq_msg_t msg;
-    auto ret = zmq_msg_init_data(&msg, const_cast<char*>(str->c_str()), str->length(), free_string, str);
-    assert(ret == 0);
-
+    // string* str = new string();
+    // ctrl->SerializeToString(str);
+    // zmq_msg_t msg;
+    // auto ret = zmq_msg_init_data(&msg, const_cast<char*>(str->c_str()), str->length(), free_string, str);
+    // assert(ret == 0);
+//
     // Send
-    if (zmq_msg_send(&msg, fControlSocket, 0) == -1) {
-        zmq_msg_close(&msg);
-        throw SocketError(tools::ToString("Failed to send control message, reason: ", zmq_strerror(errno)));
-    }
-}
-
-auto Socket::ReceiveControlMessage() -> unique_ptr<ControlMessage>
-{
-    assert(fControlSocket);
-
-    // Receive 
-    zmq_msg_t msg;
-    auto ret = zmq_msg_init(&msg);
-    assert(ret == 0);
-    if (zmq_msg_recv(&msg, fControlSocket, 0) == -1) {
-        zmq_msg_close(&msg);
-        throw SocketError(tools::ToString("Failed to receive control message, reason: ", zmq_strerror(errno)));
-    }
-
+    // if (zmq_msg_send(&msg, fControlSocket, 0) == -1) {
+        // zmq_msg_close(&msg);
+        // throw SocketError(tools::ToString("Failed to send control message, reason: ", zmq_strerror(errno)));
+    // }
+// }
+//
+// auto Socket::ReceiveControlMessage() -> unique_ptr<ControlMessage>
+// {
+    // assert(fControlSocket);
+//
+    // Receive
+    // zmq_msg_t msg;
+    // auto ret = zmq_msg_init(&msg);
+    // assert(ret == 0);
+    // if (zmq_msg_recv(&msg, fControlSocket, 0) == -1) {
+        // zmq_msg_close(&msg);
+        // throw SocketError(tools::ToString("Failed to receive control message, reason: ", zmq_strerror(errno)));
+    // }
+//
     // Deserialize
-    auto ctrl = tools::make_unique<ControlMessage>();
-    ctrl->ParseFromArray(zmq_msg_data(&msg), zmq_msg_size(&msg));
-    
-    zmq_msg_close(&msg);
+    // auto ctrl = tools::make_unique<ControlMessage>();
+    // ctrl->ParseFromArray(zmq_msg_data(&msg), zmq_msg_size(&msg));
+//
+    // zmq_msg_close(&msg);
     // LOG(debug) << "Received control message: " << ctrl->DebugString();
-    return ctrl;
-}
+    // return ctrl;
+// }
 
 auto Socket::WaitForControlPeer() -> void
 {
@@ -305,18 +303,18 @@ try {
     if (fWaitingForControlPeer) {
         WaitForControlPeer(); 
         AnnounceDataAddress();
-        ProcessDataAddressAnnouncement(ReceiveControlMessage());
+        // ProcessDataAddressAnnouncement(ReceiveControlMessage());
     }
 
     auto size = msg->GetSize();
 
     // Create and send control message
-    auto ctrl = tools::make_unique<ControlMessage>();
-    auto buf = tools::make_unique<PostBuffer>();
-    buf->set_size(size);
-    ctrl->set_allocated_post_buffer(buf.release());
-    assert(ctrl->IsInitialized());
-    SendControlMessage(move(ctrl));
+    // auto ctrl = tools::make_unique<ControlMessage>();
+    // auto buf = tools::make_unique<PostBuffer>();
+    // buf->set_size(size);
+    // ctrl->set_allocated_post_buffer(buf.release());
+    // assert(ctrl->IsInitialized());
+    // SendControlMessage(move(ctrl));
 
     if (size) {
         // Receive and process control message
@@ -359,19 +357,19 @@ try {
     if (fWaitingForControlPeer) {
         WaitForControlPeer(); 
         AnnounceDataAddress();
-        ProcessDataAddressAnnouncement(ReceiveControlMessage());
+        // ProcessDataAddressAnnouncement(ReceiveControlMessage());
     }
 
     // Receive and process control message
-    auto ctrl = ReceiveControlMessage();
-    assert(ctrl->has_post_buffer());
-    auto postBuffer = ctrl->post_buffer();
-    auto size = postBuffer.size();
+    // auto ctrl = ReceiveControlMessage();
+    // assert(ctrl->has_post_buffer());
+    // auto postBuffer = ctrl->post_buffer();
+    // auto size = postBuffer.size();
 
     // Receive data
-    if (size) {
+    // if (size) {
         fi_context ctx;
-        msg->Rebuild(size);
+        // msg->Rebuild(size);
         auto buf = msg->GetData();
         auto size2 = msg->GetSize();
         auto ret = fi_recv(fDataEndpoint, buf, size2, nullptr, fRemoteDataAddr, &ctx);
@@ -392,12 +390,13 @@ try {
             throw SocketError(tools::ToString("Failed reading ofi rx completion queue event, reason: ", fi_strerror(ret)));
         assert(cqEntry.len == size2);
         assert(cqEntry.buf == buf);
-    }
+    // }
 
-    fBytesRx += size;
+    // fBytesRx += size;
     fMessagesRx++;
 
-    return size;
+    // return size;
+    return 0;
 }
 catch (const SilentSocketError& e)
 {
