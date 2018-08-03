@@ -28,6 +28,7 @@ Set(configure_options "${configure_options};-DDISABLE_COLOR=ON")
 Set(configure_options "${configure_options};-DCMAKE_PREFIX_PATH=$ENV{SIMPATH}")
 Set(configure_options "${configure_options};-DBUILD_NANOMSG_TRANSPORT=ON")
 Set(configure_options "${configure_options};-DBUILD_DDS_PLUGIN=ON")
+Set(configure_options "${configure_options};-DFAST_BUILD=ON")
 
 Set(EXTRA_FLAGS $ENV{EXTRA_FLAGS})
 If(EXTRA_FLAGS)
