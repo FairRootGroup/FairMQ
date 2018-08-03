@@ -251,8 +251,8 @@ target_link_libraries(${_target}
     ${NANOMSG_DEPS}
     ${OFI_DEPS}
 )
-set_target_properties(FairMQ PROPERTIES
-  VERSION ${PROJECT_VERSION}
+set_target_properties(${_target} PROPERTIES
+  VERSION ${PROJECT_GIT_VERSION}
   SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
 )
 
