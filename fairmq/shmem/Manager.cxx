@@ -9,15 +9,15 @@
 #include <fairmq/shmem/Manager.h>
 #include <fairmq/shmem/Common.h>
 
+using namespace std;
+namespace bipc = ::boost::interprocess;
+
 namespace fair
 {
 namespace mq
 {
 namespace shmem
 {
-
-using namespace std;
-namespace bipc = boost::interprocess;
 
 std::unordered_map<uint64_t, Region> Manager::fRegions;
 

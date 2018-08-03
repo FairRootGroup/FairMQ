@@ -26,8 +26,8 @@
 #include <poll.h>
 
 using namespace std;
-namespace bipc = boost::interprocess;
-namespace bpt = boost::posix_time;
+namespace bipc = ::boost::interprocess;
+namespace bpt = ::boost::posix_time;
 
 using CharAllocator   = bipc::allocator<char, bipc::managed_shared_memory::segment_manager>;
 using String          = bipc::basic_string<char, char_traits<char>, CharAllocator>;
