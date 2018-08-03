@@ -228,7 +228,9 @@ if(BUILD_OFI_TRANSPORT)
   set(OFI_DEPS OFI::libfabric protobuf::libprotobuf $<TARGET_OBJECTS:OfiTransport>)
 endif()
 set(optional_deps ${NANOMSG_DEPS} ${OFI_DEPS})
-list(REMOVE_DUPLICATES optional_deps)
+if(optional_deps)
+  list(REMOVE_DUPLICATES optional_deps)
+endif()
 
 target_link_libraries(${_target}
     INTERFACE # only consumers link against interface dependencies
