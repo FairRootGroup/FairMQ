@@ -250,7 +250,7 @@ endfunction()
 macro(install_cmake_package)
   include(CMakePackageConfigHelpers)
   set(PACKAGE_INSTALL_DESTINATION
-    ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}-${PROJECT_VERSION}
+    ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}-${PROJECT_GIT_VERSION}
   )
   if(BUILD_FAIRMQ)
     install(EXPORT ${PROJECT_EXPORT_SET}
