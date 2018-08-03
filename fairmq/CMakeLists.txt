@@ -191,17 +191,25 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/options/startConfigExample.sh.in ${CM
 #################################
 # define libFairMQ build target #
 #################################
-add_library(FairMQ SHARED
+if(FAST_BUILD)
+  set(_target FairMQ_)
+else()
+  set(_target FairMQ)
+endif()
+add_library(${_target} SHARED
   ${FAIRMQ_SOURCE_FILES}
   ${FAIRMQ_PUBLIC_HEADER_FILES} # for IDE integration
   ${FAIRMQ_PRIVATE_HEADER_FILES} # for IDE integration
 )
-set_target_properties(FairMQ PROPERTIES LABELS coverage)
+set_target_properties(${_target} PROPERTIES LABELS coverage)
+if(FAST_BUILD)
+  set_target_properties(${_target} PROPERTIES OUTPUT_NAME FairMQ)
+endif()
 
 #######################
 # include directories #
 #######################
-target_include_directories(FairMQ
+target_include_directories(${_target}
     PUBLIC # consumers inherit public include directories
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
@@ -219,7 +227,10 @@ endif()
 if(BUILD_OFI_TRANSPORT)
   set(OFI_DEPS OFI::libfabric protobuf::libprotobuf $<TARGET_OBJECTS:OfiTransport>)
 endif()
-target_link_libraries(FairMQ
+set(optional_deps ${NANOMSG_DEPS} ${OFI_DEPS})
+list(REMOVE_DUPLICATES optional_deps)
+
+target_link_libraries(${_target}
     INTERFACE # only consumers link against interface dependencies
 
     PUBLIC # libFairMQ AND consumers of libFairMQ link aginst public dependencies
@@ -244,6 +255,20 @@ set_target_properties(FairMQ PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
 )
+
+
+##############
+# fast build #
+##############
+if(FAST_BUILD)
+  set_target_properties(${_target} PROPERTIES
+    COTIRE_UNITY_TARGET_NAME "FairMQ"
+    # COTIRE_ENABLE_PRECOMPILED_HEADER FALSE
+    EXCLUDE_FROM_ALL TRUE
+  )
+  cotire(${_target})
+  set_target_properties(FairMQ PROPERTIES EXCLUDE_FROM_ALL FALSE)
+endif()
 
 
 ###############

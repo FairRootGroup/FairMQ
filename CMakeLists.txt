@@ -34,10 +34,26 @@ cmake_dependent_option(BUILD_OFI_TRANSPORT "Build experimental OFI transport." O
 cmake_dependent_option(BUILD_DDS_PLUGIN "Build DDS plugin." OFF "BUILD_FAIRMQ" OFF)
 cmake_dependent_option(BUILD_EXAMPLES "Build FairMQ examples." ON "BUILD_FAIRMQ" OFF)
 option(BUILD_DOCS "Build FairMQ documentation." OFF)
+option(FAST_BUILD "Fast production build. Not recommended for development." OFF)
 ################################################################################
 
 
 # Dependencies #################################################################
+if(FAST_BUILD)
+  include(cotire)
+endif()
+
+macro(find_msgpack)
+  if(NOT msgpack_FOUND)
+    find_package2(PRIVATE msgpack VERSION 3.0.0)
+    set(PROJECT_msgpack_VERSION 2.1.5)
+    if(NOT msgpack_FOUND)
+      find_package2(PRIVATE msgpack VERSION 2.1.5 REQUIRED)
+    endif()
+    set(msgpack_ROOT ${PACKAGE_PREFIX_DIR})
+  endif()
+endmacro()
+
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
