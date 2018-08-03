@@ -12,17 +12,17 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+using namespace std;
+
+namespace bipc = ::boost::interprocess;
+namespace bpt = ::boost::posix_time;
+
 namespace fair
 {
 namespace mq
 {
 namespace shmem
 {
-
-using namespace std;
-
-namespace bipc = boost::interprocess;
-namespace bpt = boost::posix_time;
 
 Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, FairMQRegionCallback callback)
     : fManager(manager)

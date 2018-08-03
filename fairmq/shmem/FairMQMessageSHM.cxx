@@ -19,8 +19,8 @@
 using namespace std;
 using namespace fair::mq::shmem;
 
-namespace bipc = boost::interprocess;
-namespace bpt = boost::posix_time;
+namespace bipc = ::boost::interprocess;
+namespace bpt = ::boost::posix_time;
 
 atomic<bool> FairMQMessageSHM::fInterrupted(false);
 fair::mq::Transport FairMQMessageSHM::fTransportType = fair::mq::Transport::SHM;

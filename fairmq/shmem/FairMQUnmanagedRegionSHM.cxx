@@ -13,7 +13,7 @@
 using namespace std;
 using namespace fair::mq::shmem;
 
-namespace bipc = boost::interprocess;
+namespace bipc = ::boost::interprocess;
 
 FairMQUnmanagedRegionSHM::FairMQUnmanagedRegionSHM(Manager& manager, const size_t size, FairMQRegionCallback callback)
     : fManager(manager)
