@@ -38,8 +38,7 @@ a simulation, reconstruction and analysis framework.
   * PUBLIC: [**Boost**](https://www.boost.org/), [**FairLogger**](https://github.com/FairRootGroup/FairLogger)
   * BUILD: [CMake](https://cmake.org/), [GTest](https://github.com/google/googletest), [Doxygen](http://www.doxygen.org/)
   * PRIVATE: [ZeroMQ](http://zeromq.org/), [Msgpack](https://msgpack.org/index.html), [nanomsg](http://nanomsg.org/),
-[OFI](https://ofiwg.github.io/libfabric/), [Protobuf](https://developers.google.com/protocol-buffers/), [DDS](http://dds.gsi.de),
-[PMIx](https://pmix.org/)
+[asiofi](https://github.com/FairRootGroup/asiofi), [DDS](http://dds.gsi.de), [PMIx](https://pmix.org/)
 
   Supported platforms: Linux and MacOS.
 
