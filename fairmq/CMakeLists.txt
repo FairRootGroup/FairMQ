@@ -270,6 +270,7 @@ if(FAST_BUILD)
   )
   cotire(${_target})
   set_target_properties(FairMQ PROPERTIES EXCLUDE_FROM_ALL FALSE)
+  set_target_properties(FairMQ PROPERTIES LABELS coverage)
 endif()
 
 
