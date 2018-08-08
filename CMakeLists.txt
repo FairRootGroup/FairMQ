@@ -38,6 +38,10 @@ option(BUILD_DOCS "Build FairMQ documentation." OFF)
 
 
 # Dependencies #################################################################
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
+
 if(BUILD_FAIRMQ)
   find_package2(PUBLIC Boost VERSION 1.64 REQUIRED
     COMPONENTS program_options thread system filesystem regex date_time signals

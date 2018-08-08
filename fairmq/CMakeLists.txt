@@ -223,7 +223,7 @@ target_link_libraries(FairMQ
     INTERFACE # only consumers link against interface dependencies
 
     PUBLIC # libFairMQ AND consumers of libFairMQ link aginst public dependencies
-    pthread
+    Threads::Threads
     dl
     Boost::boost
     Boost::program_options
