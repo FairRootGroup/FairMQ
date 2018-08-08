@@ -214,7 +214,7 @@ target_include_directories(FairMQ
 # link libraries #
 ##################
 if(BUILD_NANOMSG_TRANSPORT)
-  set(NANOMSG_DEPS nanomsg msgpackc)
+  set(NANOMSG_DEPS nanomsg msgpack::msgpack)
 endif()
 if(BUILD_OFI_TRANSPORT)
   set(OFI_DEPS OFI::libfabric protobuf::libprotobuf $<TARGET_OBJECTS:OfiTransport>)
