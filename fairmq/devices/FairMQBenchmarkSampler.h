@@ -31,20 +31,14 @@ class FairMQBenchmarkSampler : public FairMQDevice
     FairMQBenchmarkSampler();
     virtual ~FairMQBenchmarkSampler();
 
-    void PreRun() override;
-    void PostRun() override;
-
-    void ResetMsgCounter();
-
   protected:
     bool fSameMessage;
     int fMsgSize;
     std::atomic<int> fMsgCounter;
-    int fMsgRate;
+    float fMsgRate;
     uint64_t fNumIterations;
     uint64_t fMaxIterations;
     std::string fOutChannelName;
-    std::thread fResetMsgCounter;
 
     virtual void InitTask() override;
     virtual void Run() override;
