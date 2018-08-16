@@ -20,6 +20,9 @@
 #include "FairMQSuboptParser.h"
 
 #include <boost/algorithm/string.hpp> // join/split
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include <algorithm>
 #include <iomanip>
@@ -136,16 +139,16 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
         fair::Logger::SetConsoleSeverity(severity);
     }
 
-    string id;
+    string idForParser;
 
     // check if config-key for config parser is provided
     if (fVarMap.count("config-key"))
     {
-        id = fVarMap["config-key"].as<string>();
+        idForParser = fVarMap["config-key"].as<string>();
     }
     else if (fVarMap.count("id"))
     {
-        id = fVarMap["id"].as<string>();
+        idForParser = fVarMap["id"].as<string>();
     }
 
     // check if any config parser is selected
@@ -154,12 +157,12 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
         if (fVarMap.count("mq-config"))
         {
             LOG(debug) << "mq-config: Using default JSON parser";
-            UpdateChannelMap(parser::JSON().UserParser(fVarMap.at("mq-config").as<string>(), id));
+            UpdateChannelMap(parser::JSON().UserParser(fVarMap.at("mq-config").as<string>(), idForParser));
         }
         else if (fVarMap.count("channel-config"))
         {
             LOG(debug) << "channel-config: Parsing channel configuration";
-            UpdateChannelMap(parser::SUBOPT().UserParser(fVarMap.at("channel-config").as<vector<string>>(), id));
+            UpdateChannelMap(parser::SUBOPT().UserParser(fVarMap.at("channel-config").as<vector<string>>(), idForParser));
         }
         else
         {
@@ -184,6 +187,8 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
 
 void FairMQProgOptions::ParseCmdLine(const int argc, char const* const* argv, bool allowUnregistered)
 {
+    fVarMap.clear();
+
     // get options from cmd line and store in variable map
     // here we use command_line_parser instead of parse_command_line, to allow unregistered and positional options
     if (allowUnregistered)
@@ -205,8 +210,7 @@ void FairMQProgOptions::ParseCmdLine(const int argc, char const* const* argv, bo
 
 void FairMQProgOptions::ParseDefaults()
 {
-    vector<string> emptyArgs;
-    emptyArgs.push_back("dummy");
+    vector<string> emptyArgs = {"dummy", "--id", boost::uuids::to_string(boost::uuids::random_generator()())};
 
     vector<const char*> argv(emptyArgs.size());
 
@@ -423,7 +427,7 @@ int FairMQProgOptions::PrintOptions()
     {
         ss << setfill(' ') << left
            << setw(maxLenKey) << p.first << " = "
-           << setw(maxLenValue) << p.second.value
+           << setw(maxLenValue) << p.second.value << " "
            << setw(maxLenType) << p.second.type
            << setw(maxLenDefault) << p.second.defaulted
            << "\n";
