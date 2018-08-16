@@ -162,6 +162,11 @@ class FairMQProgOptions
     int PrintOptions();
     int PrintOptionsRaw();
 
+    void AddChannel(const std::string& channelName, const FairMQChannel& channel)
+    {
+        fFairMQChannelMap[channelName].push_back(channel);
+    }
+
   private:
     struct ChannelKey
     {

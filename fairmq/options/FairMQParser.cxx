@@ -14,6 +14,8 @@
 
 #include "FairMQParser.h"
 #include "FairMQLogger.h"
+#include <fairmq/Tools.h>
+
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 

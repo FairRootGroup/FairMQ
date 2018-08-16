@@ -48,9 +48,19 @@ class FairMQDevice : public FairMQStateMachine
   public:
     /// Default constructor
     FairMQDevice();
+    /// Constructor with external FairMQProgOptions
+    FairMQDevice(FairMQProgOptions& config);
 
     /// Constructor that sets the version
     FairMQDevice(const fair::mq::tools::Version version);
+
+    /// Constructor that sets the version and external FairMQProgOptions
+    FairMQDevice(FairMQProgOptions& config, const fair::mq::tools::Version version);
+
+  private:
+    FairMQDevice(FairMQProgOptions* config, const fair::mq::tools::Version version);
+
+  public:
     /// Copy constructor (disabled)
     FairMQDevice(const FairMQDevice&) = delete;
     /// Assignment operator (disabled)
@@ -294,12 +304,11 @@ class FairMQDevice : public FairMQStateMachine
     /// Adds a transport to the device if it doesn't exist
     /// @param transport  Transport string ("zeromq"/"nanomsg"/"shmem")
     std::shared_ptr<FairMQTransportFactory> AddTransport(const fair::mq::Transport transport);
-    /// Sets the default transport for the device
-    /// @param transport  Transport string ("zeromq"/"nanomsg"/"shmem")
-    void SetTransport(const std::string& transport = "zeromq");
 
+    /// Assigns config to the device
     void SetConfig(FairMQProgOptions& config);
-    const FairMQProgOptions* GetConfig() const
+    /// Get pointer to the config
+    FairMQProgOptions* GetConfig() const
     {
         return fConfig;
     }
@@ -395,23 +404,29 @@ class FairMQDevice : public FairMQStateMachine
 
     const fair::mq::tools::Version GetVersion() const { return fVersion; }
 
-    void SetNumIoThreads(int numIoThreads) { fNumIoThreads = numIoThreads; }
-    int GetNumIoThreads() const { return fNumIoThreads; }
+    void SetNumIoThreads(int numIoThreads) { fConfig->SetValue<int>("io-threads", numIoThreads);}
+    int GetNumIoThreads() const { return fConfig->GetValue<int>("io-threads"); }
 
-    void SetPortRangeMin(int portRangeMin) { fPortRangeMin = portRangeMin; }
-    int GetPortRangeMin() const { return fPortRangeMin; }
+    void SetPortRangeMin(int portRangeMin) { fConfig->SetValue<int>("port-range-min", portRangeMin); }
+    int GetPortRangeMin() const { return fConfig->GetValue<int>("port-range-min"); }
 
-    void SetPortRangeMax(int portRangeMax) { fPortRangeMax = portRangeMax; }
-    int GetPortRangeMax() const { return fPortRangeMax; }
+    void SetPortRangeMax(int portRangeMax) { fConfig->SetValue<int>("port-range-max", portRangeMax); }
+    int GetPortRangeMax() const { return fConfig->GetValue<int>("port-range-max"); }
 
-    void SetNetworkInterface(const std::string& networkInterface) { fNetworkInterface = networkInterface; }
-    std::string GetNetworkInterface() const { return fNetworkInterface; }
+    void SetNetworkInterface(const std::string& networkInterface) { fConfig->SetValue<std::string>("network-interface", networkInterface); }
+    std::string GetNetworkInterface() const { return fConfig->GetValue<std::string>("network-interface"); }
 
-    void SetDefaultTransport(const std::string& name) { fDefaultTransportType = fair::mq::TransportTypes.at(name); }
-    std::string GetDefaultTransport() const { return fair::mq::TransportNames.at(fDefaultTransportType); }
+    void SetDefaultTransport(const std::string& name) { fConfig->SetValue<std::string>("transport", name); }
+    std::string GetDefaultTransport() const { return fConfig->GetValue<std::string>("transport"); }
 
-    void SetInitializationTimeoutInS(int initializationTimeoutInS) { fInitializationTimeoutInS = initializationTimeoutInS; }
-    int GetInitializationTimeoutInS() const { return fInitializationTimeoutInS; }
+    void SetInitializationTimeoutInS(int initializationTimeoutInS) { fConfig->SetValue<int>("initialization-timeout", initializationTimeoutInS); }
+    int GetInitializationTimeoutInS() const { return fConfig->GetValue<int>("initialization-timeout"); }
+
+    /// Sets the default transport for the device
+    /// @param transport  Transport string ("zeromq"/"nanomsg"/"shmem")
+    void SetTransport(const std::string& transport) { fConfig->SetValue<std::string>("transport", transport); }
+    /// Gets the default transport name
+    std::string GetTransportName() const { return fConfig->GetValue<std::string>("transport"); }
 
     void SetRawCmdLineArgs(const std::vector<std::string>& args) { fRawCmdLineArgs = args; }
     std::vector<std::string> GetRawCmdLineArgs() const { return fRawCmdLineArgs; }
@@ -424,12 +439,16 @@ class FairMQDevice : public FairMQStateMachine
 
   public:
     std::unordered_map<std::string, std::vector<FairMQChannel>> fChannels; ///< Device channels
-    FairMQProgOptions* fConfig; ///< Program options configuration
+    std::unique_ptr<FairMQProgOptions> fInternalConfig; ///< Internal program options configuration
+    FairMQProgOptions* fConfig; ///< Pointer to config (internal or external)
+
+    void AddChannel(const std::string& channelName, const FairMQChannel& channel)
+    {
+        fConfig->AddChannel(channelName, channel);
+    }
 
   protected:
     std::string fId; ///< Device ID
-
-    int fNumIoThreads; ///< Number of ZeroMQ I/O threads
 
     /// Additional user initialization (can be overloaded in child classes). Prefer to use InitTask().
     /// Executed in a worker thread
@@ -476,10 +495,7 @@ class FairMQDevice : public FairMQStateMachine
     int fPortRangeMin; ///< Minimum value for the port range (if dynamic)
     int fPortRangeMax; ///< Maximum value for the port range (if dynamic)
 
-    std::string fNetworkInterface; ///< Network interface to use for dynamic binding
     fair::mq::Transport fDefaultTransportType; ///< Default transport for the device
-
-    int fInitializationTimeoutInS; ///< Timeout for the initialization (in seconds)
 
     /// Handles the initialization and the Init() method
     void InitWrapper();
@@ -531,8 +547,6 @@ class FairMQDevice : public FairMQStateMachine
     std::vector<std::string> fInputChannelKeys;
     std::mutex fMultitransportMutex;
     std::atomic<bool> fMultitransportProceed;
-
-    bool fExternalConfig;
 
     const fair::mq::tools::Version fVersion;
     float fRate; ///< Rate limiting for ConditionalRun
