@@ -76,7 +76,7 @@ In order to succesfully compile and link against the `FairMQ::FairMQ` target, yo
 find_package(FairMQ)
 if(FairMQ_FOUND)
   find_package(FairLogger ${FairMQ_FairLogger_VERSION})
-  find_package(Boost ${FairMQ_Boost_VERSION} COMPONENTS ${FairMQ_BOOST_COMPONENTS})
+  find_package(Boost ${FairMQ_Boost_VERSION} COMPONENTS ${FairMQ_Boost_COMPONENTS})
 endif()
 ```
 
@@ -88,7 +88,7 @@ Optionally, you can require certain FairMQ package components and a minimum vers
 find_package(FairMQ 1.1.0 COMPONENTS nanomsg_transport dds_plugin)
 if(FairMQ_FOUND)
   find_package(FairLogger ${FairMQ_FairLogger_VERSION})
-  find_package(Boost ${FairMQ_Boost_VERSION} COMPONENTS ${FairMQ_BOOST_COMPONENTS})
+  find_package(Boost ${FairMQ_Boost_VERSION} COMPONENTS ${FairMQ_Boost_COMPONENTS})
 endif()
 ```
 
