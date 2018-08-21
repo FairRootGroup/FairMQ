@@ -1,4 +1,6 @@
-Replace me with your description.
+Describe your proposal.
+
+Mention any issue this PR is resolves or is related to.
 
 ---
 
