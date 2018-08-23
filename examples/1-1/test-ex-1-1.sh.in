@@ -13,6 +13,7 @@ trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SI
 
 SAMPLER="fairmq-ex-1-1-sampler"
 SAMPLER+=" --id sampler1"
+SAMPLER+=" --rate 1"
 SAMPLER+=" --transport $transport"
 SAMPLER+=" --verbosity veryhigh"
 SAMPLER+=" --control static --color false"

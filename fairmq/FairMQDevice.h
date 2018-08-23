@@ -550,7 +550,6 @@ class FairMQDevice : public FairMQStateMachine
 
     const fair::mq::tools::Version fVersion;
     float fRate; ///< Rate limiting for ConditionalRun
-    size_t fLastTime; ///< Rate limiting for ConditionalRun
     std::vector<std::string> fRawCmdLineArgs;
 };
 

@@ -64,8 +64,6 @@ bool Sampler::ConditionalRun()
         return false;
     }
 
-    this_thread::sleep_for(chrono::seconds(1));
-
     return true;
 }
 
