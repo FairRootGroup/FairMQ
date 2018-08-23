@@ -4,6 +4,7 @@ export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
 
 SAMPLER="fairmq-ex-1-1-sampler"
 SAMPLER+=" --id sampler1"
+SAMPLER+=" --rate 1"
 SAMPLER+=" --channel-config name=data,type=push,method=bind,address=tcp://*:5555,rateLogging=0"
 xterm -geometry 80x23+0+0 -hold -e @EX_BIN_DIR@/$SAMPLER &
 

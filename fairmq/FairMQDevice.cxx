@@ -71,7 +71,6 @@ FairMQDevice::FairMQDevice(FairMQProgOptions* config, const fair::mq::tools::Ver
     , fMultitransportProceed(false)
     , fVersion(version)
     , fRate(0.)
-    , fLastTime(0)
     , fRawCmdLineArgs()
 {
 }
@@ -516,20 +515,14 @@ void FairMQDevice::RunWrapper()
         }
         else
         {
-            using Clock = chrono::steady_clock;
-            using TimeScale = chrono::microseconds;
-            const TimeScale::rep period = TimeScale::period::den / fRate;
-            const auto reftime = Clock::now();
+            fair::mq::tools::RateLimiter rateLimiter(fRate);
+
             while (CheckCurrentState(RUNNING) && ConditionalRun())
             {
-              if (fRate > 0.001) {
-                auto timespan = static_cast<TimeScale::rep>(chrono::duration_cast<TimeScale>(Clock::now() - reftime).count() - fLastTime);
-                if (timespan < period) {
-                  TimeScale sleepfor(period - timespan);
-                  this_thread::sleep_for(sleepfor);
+                if (fRate > 0.001)
+                {
+                    rateLimiter.maybe_sleep();
                 }
-                fLastTime = chrono::duration_cast<TimeScale>(Clock::now() - reftime).count();
-              }
             }
 
             Run();
