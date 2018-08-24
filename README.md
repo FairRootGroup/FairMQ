@@ -8,6 +8,8 @@ C++ Message Queuing Library and Framework
 | `stable` | [![release](https://alfa-ci.gsi.de/shields/github/release/FairRootGroup/FairMQ.svg)](https://github.com/FairRootGroup/FairMQ/releases/latest) | [API](https://fairrootgroup.github.io/FairMQ/latest), [Book](https://github.com/FairRootGroup/FairMQ/blob/master/README.md#documentation) |
 | `testing` | [![dev tag](https://alfa-ci.gsi.de/shields/github/tag/FairRootGroup/FairMQ.svg)](https://github.com/FairRootGroup/FairMQ/tags) | [Book](https://github.com/FairRootGroup/FairMQ/blob/dev/README.md#documentation) |
 
+Find all FairMQ releases [here](https://github.com/FairRootGroup/FairMQ/releases).
+
 ## Introduction
 
 FairMQ is designed to help implementing large-scale data processing workflows needed in next-generation Particle Physics experiments. FairMQ is written in C++ and aims to
@@ -30,8 +32,6 @@ configuration and control services.
 
 FairMQ has been developed in the context of its mother project [FairRoot](https://github.com/FairRootGroup/FairRoot) -
 a simulation, reconstruction and analysis framework.
-
-Find all FairMQ releases and development tags [here](https://github.com/FairRootGroup/FairMQ/releases).
 
 ## Dependencies
 
