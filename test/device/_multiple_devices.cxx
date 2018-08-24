@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -51,7 +51,7 @@ class MultipleDevices : public ::testing::Test {
 
         FairMQChannel channel("push", "connect", "ipc://multiple-devices-test");
         channel.UpdateRateLogging(0);
-        sender.fChannels["data"].push_back(channel);
+        sender.AddChannel("data", channel);
 
         thread t(control, std::ref(sender));
 
@@ -73,7 +73,7 @@ class MultipleDevices : public ::testing::Test {
 
         FairMQChannel channel("pull", "bind", "ipc://multiple-devices-test");
         channel.UpdateRateLogging(0);
-        receiver.fChannels["data"].push_back(channel);
+        receiver.AddChannel("data", channel);
 
         thread t(control, std::ref(receiver));
 

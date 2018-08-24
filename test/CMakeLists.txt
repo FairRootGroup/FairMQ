@@ -1,5 +1,5 @@
 ################################################################################
-#    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
+# Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -83,10 +83,10 @@ add_testsuite(FairMQ.Device
     SOURCES
     device/TestSender.h
     device/TestReceiver.h
-    device/TestVersion.h
     device/runner.cxx
     device/_multiple_devices.cxx
     device/_device_version.cxx
+    device/_device_config.cxx
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/device
