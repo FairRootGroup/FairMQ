@@ -1,16 +1,10 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQBenchmarkSampler.h
- *
- * @since 2013-04-23
- * @author D. Klein, A. Rybalchenko
- */
 
 #ifndef FAIRMQBENCHMARKSAMPLER_H_
 #define FAIRMQBENCHMARKSAMPLER_H_

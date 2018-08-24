@@ -1,12 +1,12 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "TestVersion.h"
+#include <FairMQDevice.h>
 
 #include <fairmq/Tools.h>
 
@@ -19,16 +19,24 @@ namespace
 {
 
 using namespace std;
-using namespace fair::mq::test;
 
-class DeviceVersion : public ::testing::Test {
+class TestVersion : public FairMQDevice
+{
+  public:
+    TestVersion(fair::mq::tools::Version version)
+        : FairMQDevice(version)
+    {}
+};
+
+class DeviceVersion : public ::testing::Test
+{
   public:
     DeviceVersion()
     {}
 
     fair::mq::tools::Version TestDeviceVersion()
     {
-        fair::mq::test::TestVersion versionDevice({1, 2, 3});
+        TestVersion versionDevice({1, 2, 3});
         versionDevice.ChangeState("END");
 
         return versionDevice.GetVersion();
