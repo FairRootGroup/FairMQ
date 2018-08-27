@@ -16,12 +16,15 @@ Steps to reproduce the behavior:
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+**Logs / Screenshots**
+If applicable, add logs or screenshots to help explain your problem.
 
 **System information (please complete the following information):**
- - OS: [e.g. MacOS, Fedora28, Ubuntu14.04]
+ - OS: [e.g. MacOS 10.13, Fedora 28, Ubuntu 14.04]
+ - Compiler: [e.g. GCC 8.1, Clang 3.5]
  - Environment: [e.g. FairSoft version, alfadist revision]
 
 **Additional context**
 Add any other context about the problem here.
+
+See [github markdown cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#code) on how to format inline codes examples and logs.
