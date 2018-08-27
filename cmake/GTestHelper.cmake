@@ -51,7 +51,7 @@ function(add_testsuite suitename)
     cmake_parse_arguments(testsuite
         ""
         "TIMEOUT;RUN_SERIAL"
-        "SOURCES;LINKS;DEPENDS;INCLUDES"
+        "SOURCES;LINKS;DEPENDS;INCLUDES;DEFINITIONS"
         ${ARGN}
     )
 
@@ -68,6 +68,9 @@ function(add_testsuite suitename)
     endif()
     if(testsuite_INCLUDES)
         target_include_directories(${target} PUBLIC ${testsuite_INCLUDES})
+    endif()
+    if(testsuite_DEFINITIONS)
+        target_compile_definitions("${target}" PUBLIC ${testsuite_DEFINITIONS})
     endif()
 
     add_test(NAME "${suitename}" WORKING_DIRECTORY ${CMAKE_BINARY_DIR} COMMAND ${target})
@@ -86,7 +89,7 @@ function(add_testhelper helpername)
     cmake_parse_arguments(testhelper
         ""
         ""
-        "SOURCES;LINKS;DEPENDS;INCLUDES"
+        "SOURCES;LINKS;DEPENDS;INCLUDES;DEFINITIONS"
         ${ARGN}
     )
 
@@ -102,6 +105,9 @@ function(add_testhelper helpername)
     if(testhelper_INCLUDES)
         target_include_directories(${target} PUBLIC ${testhelper_INCLUDES})
     endif()
+    if(testhelper_DEFINITIONS)
+        target_compile_definitions(${target} PUBLIC ${testhelper_DEFINITIONS})
+    endif()
 
     list(APPEND ALL_TEST_TARGETS ${target})
     set(ALL_TEST_TARGETS ${ALL_TEST_TARGETS} PARENT_SCOPE)
@@ -111,7 +117,7 @@ function(add_testlib libname)
     cmake_parse_arguments(testlib
         "HIDDEN"
         "VERSION"
-        "SOURCES;LINKS;DEPENDS;INCLUDES"
+        "SOURCES;LINKS;DEPENDS;INCLUDES;DEFINITIONS"
         ${ARGN}
     )
 
@@ -132,6 +138,9 @@ function(add_testlib libname)
     endif()
     if(testlib_VERSION)
         set_target_properties(${target} PROPERTIES VERSION ${testlib_VERSION})
+    endif()
+    if(testlib_DEFINITIONS)
+        target_compile_definitions(${target} PUBLIC ${testlib_DEFINITIONS})
     endif()
 
     list(APPEND ALL_TEST_TARGETS ${target})
