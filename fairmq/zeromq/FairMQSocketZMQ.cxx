@@ -283,7 +283,7 @@ int64_t FairMQSocketZMQ::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fl
     } // If there's only one part, send it as a regular message
     else if (vecSize == 1)
     {
-        return Send(msgVec.back(), flags);
+        return SendImpl(msgVec.back(), flags, timeout);
     }
     else // if the vector is empty, something might be wrong
     {
