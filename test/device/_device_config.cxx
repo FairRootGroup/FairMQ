@@ -105,7 +105,7 @@ class DeviceConfig : public ::testing::Test
 
 TEST_F(DeviceConfig, SetConfig)
 {
-    string transport = "nanomsg";
+    string transport = "zeromq";
     string returnedTransport = TestDeviceSetConfig(transport);
 
     EXPECT_EQ(transport, returnedTransport);
@@ -113,7 +113,7 @@ TEST_F(DeviceConfig, SetConfig)
 
 TEST_F(DeviceConfig, SetTransport)
 {
-    string transport = "nanomsg";
+    string transport = "zeromq";
     string returnedTransport = TestDeviceSetTransport(transport);
 
     EXPECT_EQ(transport, returnedTransport);
