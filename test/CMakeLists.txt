@@ -30,6 +30,9 @@ add_testhelper(runTestDevice
     LINKS FairMQ
 )
 
+if(BUILD_NANOMSG_TRANSPORT)
+  set(definitions DEFINITIONS BUILD_NANOMSG_TRANSPORT)
+endif()
 
 set(MQ_CONFIG "${CMAKE_BINARY_DIR}/test/testsuite_FairMQ.IOPatterns_config.json")
 set(RUN_TEST_DEVICE "${CMAKE_BINARY_DIR}/test/testhelper_runTestDevice")
@@ -55,6 +58,7 @@ add_testsuite(FairMQ.Protocols
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 30
     RUN_SERIAL ON
+    ${definitions}
 )
 
 add_testsuite(FairMQ.Parts
@@ -77,6 +81,7 @@ add_testsuite(FairMQ.MessageResize
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/message_resize
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 5
+    ${definitions}
 )
 
 add_testsuite(FairMQ.Device
