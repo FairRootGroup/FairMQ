@@ -35,6 +35,8 @@ bool Sampler::ConditionalRun()
     // create a copy of the data with new(), that will be deleted after the transfer is complete
     string* text = new string(fText);
 
+    LOG(info) << GiveBark();
+
     // create message object with a pointer to the data buffer,
     // its size,
     // custom deletion function (called when transfer is done),

@@ -68,6 +68,11 @@ class FairMQDevice : public FairMQStateMachine
     /// Default destructor
     virtual ~FairMQDevice();
 
+    std::string GiveBark()
+    {
+        return "woof";
+    }
+
     /// Catches interrupt signals (SIGINT, SIGTERM)
     void CatchSignals();
 
