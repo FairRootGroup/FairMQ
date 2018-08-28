@@ -45,7 +45,6 @@ class Context
     auto CreateOfiCompletionQueue(Direction dir) -> fid_cq*;
     auto GetZmqVersion() const -> std::string;
     auto GetOfiApiVersion() const -> std::string;
-    auto GetPbVersion() const -> std::string;
     auto GetBoostVersion() const -> std::string;
     auto GetZmqContext() const -> void* { return fZmqContext; }
     auto GetIoContext() -> boost::asio::io_service& { return fIoContext; }

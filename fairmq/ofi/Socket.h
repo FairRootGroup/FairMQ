@@ -12,7 +12,6 @@
 #include <FairMQSocket.h>
 #include <FairMQMessage.h>
 #include <fairmq/ofi/Context.h>
-#include <fairmq/ofi/Control.pb.h>
 
 #include <boost/asio.hpp>
 #include <memory> // unique_ptr
@@ -104,9 +103,9 @@ class Socket : public fair::mq::Socket
     auto InitDataEndpoint() -> void;
     auto WaitForControlPeer() -> void;
     auto AnnounceDataAddress() -> void;
-    auto SendControlMessage(std::unique_ptr<ControlMessage> ctrl) -> void;
-    auto ReceiveControlMessage() -> std::unique_ptr<ControlMessage>;
-    auto ProcessDataAddressAnnouncement(std::unique_ptr<ControlMessage> ctrl) -> void;
+    // auto SendControlMessage(std::unique_ptr<ControlMessage> ctrl) -> void;
+    // auto ReceiveControlMessage() -> std::unique_ptr<ControlMessage>;
+    // auto ProcessDataAddressAnnouncement(std::unique_ptr<ControlMessage> ctrl) -> void;
     auto ConnectControlSocket(Context::Address address) -> void;
     auto BindControlSocket(Context::Address address) -> void;
 }; /* class Socket */

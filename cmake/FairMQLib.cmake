@@ -248,6 +248,8 @@ endfunction()
 
 # Configure/Install CMake package
 macro(install_cmake_package)
+  list(SORT PROJECT_PACKAGE_DEPENDENCIES)
+  list(SORT PROJECT_INTERFACE_PACKAGE_DEPENDENCIES)
   include(CMakePackageConfigHelpers)
   set(PACKAGE_INSTALL_DESTINATION
     ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}-${PROJECT_GIT_VERSION}

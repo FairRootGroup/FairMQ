@@ -89,7 +89,7 @@ endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(ZeroMQ
-    REQUIRED_VARS ZeroMQ_LIBRARY_SHARED ZeroMQ_INCLUDE_DIR ZeroMQ_LIBRARY_STATIC
+    REQUIRED_VARS ZeroMQ_LIBRARY_SHARED ZeroMQ_INCLUDE_DIR
     VERSION_VAR ZeroMQ_VERSION
 )
 

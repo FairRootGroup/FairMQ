@@ -25,15 +25,6 @@ if(BUILD_OFI_TRANSPORT)
 endif()
 
 
-##################
-# subdirectories #
-##################
-# add_subdirectory(shmem/prototype)
-if(BUILD_OFI_TRANSPORT)
-  add_subdirectory(ofi)
-endif()
-
-
 ##########################
 # libFairMQ header files #
 ##########################
@@ -50,6 +41,7 @@ set(FAIRMQ_PUBLIC_HEADER_FILES
     FairMQSocket.h
     FairMQStateMachine.h
     FairMQTransportFactory.h
+    MemoryResources.h
     Tools.h
     Transports.h
     options/FairMQProgOptions.h
@@ -225,7 +217,7 @@ if(BUILD_NANOMSG_TRANSPORT)
   set(NANOMSG_DEPS nanomsg msgpack::msgpack)
 endif()
 if(BUILD_OFI_TRANSPORT)
-  set(OFI_DEPS OFI::libfabric protobuf::libprotobuf $<TARGET_OBJECTS:OfiTransport>)
+  set(OFI_DEPS asiofi::asiofi msgpack::msgpack)
 endif()
 set(optional_deps ${NANOMSG_DEPS} ${OFI_DEPS})
 if(optional_deps)
@@ -234,6 +226,7 @@ endif()
 
 target_link_libraries(${_target}
     INTERFACE # only consumers link against interface dependencies
+    Boost::container
 
     PUBLIC # libFairMQ AND consumers of libFairMQ link aginst public dependencies
     Threads::Threads
@@ -250,8 +243,7 @@ target_link_libraries(${_target}
 
     PRIVATE # only libFairMQ links against private dependencies
     libzmq
-    ${NANOMSG_DEPS}
-    ${OFI_DEPS}
+    ${optional_deps}
 )
 set_target_properties(${_target} PROPERTIES
   VERSION ${PROJECT_GIT_VERSION}
