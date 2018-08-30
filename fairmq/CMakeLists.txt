@@ -222,7 +222,7 @@ target_include_directories(${_target}
 # link libraries #
 ##################
 if(BUILD_NANOMSG_TRANSPORT)
-  set(NANOMSG_DEPS nanomsg msgpack::msgpack)
+  set(NANOMSG_DEPS nanomsg msgpackc-cxx)
 endif()
 if(BUILD_OFI_TRANSPORT)
   set(OFI_DEPS OFI::libfabric protobuf::libprotobuf $<TARGET_OBJECTS:OfiTransport>)
