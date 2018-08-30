@@ -61,6 +61,7 @@ set(FAIRMQ_PUBLIC_HEADER_FILES
     tools/CppSTL.h
     tools/Network.h
     tools/Process.h
+    tools/RateLimit.h
     tools/Strings.h
     tools/Unique.h
     tools/Version.h
