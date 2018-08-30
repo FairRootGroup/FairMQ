@@ -67,7 +67,8 @@ if(BUILD_FAIRMQ)
 endif()
 
 if(BUILD_NANOMSG_TRANSPORT)
-  find_package2(PRIVATE nanomsg VERSION 1.0.0 REQUIRED)
+  find_package2(PRIVATE nanomsg REQUIRED)
+  set(PROJECT_nanomsg_VERSION 1.1.3) # Once upstream releases 1.1.5, we should bump again and use version check
   find_package2(PRIVATE msgpack VERSION 3.0.0)
   set(PROJECT_msgpack_VERSION 2.1.5)
   if(NOT msgpack_FOUND)
@@ -162,11 +163,6 @@ if(BUILD_FAIRMQ)
 endif()
 if(BUILD_DDS_PLUGIN)
   install(FILES cmake/FindDDS.cmake
-    DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
-  )
-endif()
-if(BUILD_NANOMSG_TRANSPORT)
-  install(FILES cmake/Findnanomsg.cmake
     DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
   )
 endif()
