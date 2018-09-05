@@ -12,7 +12,6 @@
 
 #include <iostream>
 #include <exception>
-#include <sstream>
 #include <thread>
 #include <atomic>
 #include <unistd.h>
@@ -34,23 +33,26 @@ int main(int argc, char* argv[])
 {
     try {
         string sessionID;
-        char commandChar;
+        char command;
+        string topologyPath;
 
         bpo::options_description options("fairmq-dds-command-ui options");
         options.add_options()
-            ("session,s", bpo::value<string>(&sessionID)->required(), "DDS Session ID")
-            ("command,c", bpo::value<char>  (&commandChar)->default_value(' '), "Command character")
+            ("session,s", bpo::value<string> (&sessionID)->required(), "DDS Session ID")
+            ("command,c", bpo::value<char>   (&command)->default_value(' '), "Command character")
+            ("path,p",    bpo::value<string> (&topologyPath)->default_value(""), "DDS Topology path to send command to")
             ("help,h", "Produce help message");
 
         bpo::variables_map vm;
         bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
-        bpo::notify(vm);
 
         if (vm.count("help")) {
             cout << "FairMQ DDS Command UI" << endl << options << endl;
-            cout << "possible command characters: [c] check states, [o] dump config, [h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device" << endl;
+            cout << "Commands: [c] check state, [o] dump config, [h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device" << endl;
             return EXIT_SUCCESS;
         }
+
+        bpo::notify(vm);
 
         CIntercomService service;
         CCustomCmd ddsCustomCmd(service);
@@ -61,7 +63,7 @@ int main(int argc, char* argv[])
 
         // subscribe to receive messages from DDS
         ddsCustomCmd.subscribe([](const string& msg, const string& /*condition*/, uint64_t /*senderId*/) {
-            cout << "Received: " << msg << endl;
+            cout << "Received: " << endl << msg << endl;
         });
 
         service.start(sessionID);
@@ -74,8 +76,8 @@ int main(int argc, char* argv[])
         t.c_lflag &= ~ICANON; // disable canonical input
         tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
 
-        if (commandChar != ' ') {
-            cin.putback(commandChar);
+        if (command != ' ') {
+            cin.putback(command);
         } else {
             PrintControlsHelp();
         }
@@ -84,39 +86,39 @@ int main(int argc, char* argv[])
             switch (c) {
                 case 'c':
                     cout << " > checking state of the devices" << endl;
-                    ddsCustomCmd.send("check-state", "");
+                    ddsCustomCmd.send("check-state", topologyPath);
                     break;
                 case 'o':
                     cout << " > dumping config of the devices" << endl;
-                    ddsCustomCmd.send("dump-config", "");
+                    ddsCustomCmd.send("dump-config", topologyPath);
                     break;
                 case 'i':
                     cout << " > init devices" << endl;
-                    ddsCustomCmd.send("INIT DEVICE", "");
+                    ddsCustomCmd.send("INIT DEVICE", topologyPath);
                     break;
                 case 'j':
                     cout << " > init tasks" << endl;
-                    ddsCustomCmd.send("INIT TASK", "");
+                    ddsCustomCmd.send("INIT TASK", topologyPath);
                     break;
                 case 'p':
                     cout << " > pause devices" << endl;
-                    ddsCustomCmd.send("PAUSE", "");
+                    ddsCustomCmd.send("PAUSE", topologyPath);
                     break;
                 case 'r':
                     cout << " > run tasks" << endl;
-                    ddsCustomCmd.send("RUN", "");
+                    ddsCustomCmd.send("RUN", topologyPath);
                     break;
                 case 's':
                     cout << " > stop devices" << endl;
-                    ddsCustomCmd.send("STOP", "");
+                    ddsCustomCmd.send("STOP", topologyPath);
                     break;
                 case 't':
                     cout << " > reset tasks" << endl;
-                    ddsCustomCmd.send("RESET TASK", "");
+                    ddsCustomCmd.send("RESET TASK", topologyPath);
                     break;
                 case 'd':
                     cout << " > reset devices" << endl;
-                    ddsCustomCmd.send("RESET DEVICE", "");
+                    ddsCustomCmd.send("RESET DEVICE", topologyPath);
                     break;
                 case 'h':
                     cout << " > help" << endl;
@@ -124,7 +126,7 @@ int main(int argc, char* argv[])
                     break;
                 case 'q':
                     cout << " > end" << endl;
-                    ddsCustomCmd.send("END", "");
+                    ddsCustomCmd.send("END", topologyPath);
                     break;
                 default:
                     cout << "Invalid input: [" << c << "]" << endl;
@@ -132,8 +134,8 @@ int main(int argc, char* argv[])
                     break;
             }
 
-            if (commandChar != ' ') {
-                usleep(50000);
+            if (command != ' ') {
+                this_thread::sleep_for(chrono::milliseconds(100)); // give dds a chance to complete request
                 return EXIT_SUCCESS;
             }
         }
