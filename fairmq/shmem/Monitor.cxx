@@ -443,9 +443,9 @@ void Monitor::PrintQueues()
         {
             cout << "found " << queues->size() << " queue(s):" << endl;
 
-            for (unsigned int i = 0; i < queues->size(); ++i)
+            for (const auto& queue : *queues)
             {
-                string name(queues->at(i).c_str());
+                string name(queue.c_str());
                 cout << '\t' << name << " : ";
                 atomic<int>* queueSize = segment.find<atomic<int>>(name.c_str()).first;
                 if (queueSize)
