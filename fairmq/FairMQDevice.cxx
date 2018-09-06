@@ -471,15 +471,15 @@ void FairMQDevice::PrintChannel(const string& name)
 {
     if (fChannels.find(name) != fChannels.end())
     {
-        for (auto vi = fChannels[name].begin(); vi != fChannels[name].end(); ++vi)
+        for (const auto& vi : fChannels[name])
         {
-            LOG(info) << vi->fName << ": "
-                      << vi->fType << " | "
-                      << vi->fMethod << " | "
-                      << vi->fAddress << " | "
-                      << vi->fSndBufSize << " | "
-                      << vi->fRcvBufSize << " | "
-                      << vi->fRateLogging;
+            LOG(info) << vi.fName << ": "
+                      << vi.fType << " | "
+                      << vi.fMethod << " | "
+                      << vi.fAddress << " | "
+                      << vi.fSndBufSize << " | "
+                      << vi.fRcvBufSize << " | "
+                      << vi.fRateLogging;
         }
     }
     else
@@ -596,17 +596,17 @@ void FairMQDevice::HandleMultipleChannelInput()
 
     for (const auto& mi : fMsgInputs)
     {
-        for (unsigned int i = 0; i < fChannels.at(mi.first).size(); ++i)
+        for (auto& i : fChannels.at(mi.first))
         {
-            fChannels.at(mi.first).at(i).fMultipart = false;
+            i.fMultipart = false;
         }
     }
 
     for (const auto& mi : fMultipartInputs)
     {
-        for (unsigned int i = 0; i < fChannels.at(mi.first).size(); ++i)
+        for (auto& i : fChannels.at(mi.first))
         {
-            fChannels.at(mi.first).at(i).fMultipart = true;
+            i.fMultipart = true;
         }
     }
 
