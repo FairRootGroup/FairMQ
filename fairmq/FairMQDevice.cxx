@@ -72,6 +72,9 @@ FairMQDevice::FairMQDevice(FairMQProgOptions* config, const fair::mq::tools::Ver
     , fVersion(version)
     , fRate(0.)
     , fRawCmdLineArgs()
+    , fInterrupted(false)
+    , fInterruptedCV()
+    , fInterruptedMtx()
 {
 }
 
@@ -491,6 +494,10 @@ void FairMQDevice::RunWrapper()
     thread rateLogger(&FairMQDevice::LogSocketRates, this);
 
     // notify transports to resume transfers
+    {
+        lock_guard<mutex> guard(fInterruptedMtx);
+        fInterrupted = false;
+    }
     for (auto& t : fTransports)
     {
         t.second->Resume();
@@ -909,6 +916,7 @@ void FairMQDevice::LogSocketRates()
 
             t0 = t1;
             this_thread::sleep_for(chrono::milliseconds(1000));
+            // WaitFor(chrono::milliseconds(1000)); TODO: enable this when nanomsg linger is fixed
         }
     }
 }
@@ -919,6 +927,11 @@ void FairMQDevice::Unblock()
     {
         t.second->Interrupt();
     }
+    {
+        lock_guard<mutex> guard(fInterruptedMtx);
+        fInterrupted = true;
+    }
+    fInterruptedCV.notify_all();
 }
 
 void FairMQDevice::ResetTaskWrapper()

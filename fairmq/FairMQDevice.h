@@ -25,6 +25,7 @@
 #include <memory> // unique_ptr
 #include <algorithm> // std::sort()
 #include <string>
+#include <chrono>
 #include <iostream>
 #include <unordered_map>
 #include <functional>
@@ -433,6 +434,16 @@ class FairMQDevice : public FairMQStateMachine
 
     void RunStateMachine() { ProcessWork(); };
 
+    /// Wait for the supplied amount of time or for interruption.
+    /// If interrupted, returns false, otherwise true.
+    /// @param duration wait duration
+    template<class Rep, class Period>
+    bool WaitFor(std::chrono::duration<Rep, Period> const& duration)
+    {
+        std::unique_lock<std::mutex> lock(fInterruptedMtx);
+        return !fInterruptedCV.wait_for(lock, duration, [&] { return fInterrupted.load(); }); // return true if no interruption happened
+    }
+
   protected:
     std::shared_ptr<FairMQTransportFactory> fTransportFactory; ///< Default transport factory
     std::unordered_map<fair::mq::Transport, std::shared_ptr<FairMQTransportFactory>> fTransports; ///< Container for transports
@@ -551,6 +562,10 @@ class FairMQDevice : public FairMQStateMachine
     const fair::mq::tools::Version fVersion;
     float fRate; ///< Rate limiting for ConditionalRun
     std::vector<std::string> fRawCmdLineArgs;
+
+    std::atomic<bool> fInterrupted;
+    std::condition_variable fInterruptedCV;
+    std::mutex fInterruptedMtx;
 };
 
 #endif /* FAIRMQDEVICE_H_ */
