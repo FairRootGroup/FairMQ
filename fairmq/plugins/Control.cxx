@@ -229,7 +229,7 @@ auto Control::WaitForNextState() -> DeviceState
     unique_lock<mutex> lock{fEventsMutex};
     while (fEvents.empty())
     {
-        fNewEvent.wait(lock);
+        fNewEvent.wait_for(lock, chrono::milliseconds(50));
     }
 
     auto result = fEvents.front();
