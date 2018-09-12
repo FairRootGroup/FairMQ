@@ -26,6 +26,7 @@ add_testhelper(runTestDevice
     helper/devices/TestReq.cxx
     helper/devices/TestSub.cxx
     helper/devices/TestTransferTimeout.cxx
+    helper/devices/TestWaitFor.cxx
 
     LINKS FairMQ
 )
@@ -51,6 +52,7 @@ add_testsuite(FairMQ.Protocols
     protocols/_req_rep.cxx
     protocols/_transfer_timeout.cxx
     protocols/_push_pull_multipart.cxx
+    protocols/_waitfor.cxx
 
     LINKS FairMQ
     DEPENDS testhelper_runTestDevice
@@ -94,6 +96,7 @@ add_testsuite(FairMQ.Device
     device/_device_config.cxx
 
     LINKS FairMQ
+    DEPENDS testhelper_runTestDevice
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/device
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 5

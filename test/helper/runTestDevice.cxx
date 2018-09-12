@@ -17,9 +17,12 @@
 #include "devices/TestReq.cxx"
 #include "devices/TestSub.cxx"
 #include "devices/TestTransferTimeout.cxx"
+#include "devices/TestWaitFor.cxx"
+
+#include <runFairMQDevice.h>
+
 #include <boost/program_options.hpp>
 #include <iostream>
-#include <runFairMQDevice.h>
 #include <string>
 
 namespace bpo = boost::program_options;
@@ -79,6 +82,10 @@ auto getDevice(const FairMQProgOptions& config) -> FairMQDevicePtr
     else if (0 == id.find("pairright_"))
     {
         return new PairRight;
+    }
+    else if (0 == id.find("waitfor_"))
+    {
+        return new TestWaitFor;
     }
     else
     {
