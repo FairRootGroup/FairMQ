@@ -6,9 +6,28 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include <runner.h>
 #include <TestEnvironment.h>
 
 #include <gtest/gtest.h>
+
+#include <string>
+
+namespace fair
+{
+namespace mq
+{
+namespace test
+{
+
+using namespace std;
+
+string runTestDevice = "@RUN_TEST_DEVICE@";
+string mqConfig = "@MQ_CONFIG@";
+
+} /* namespace test */
+} /* namespace mq */
+} /* namespace fair */
 
 int main(int argc, char** argv)
 {
