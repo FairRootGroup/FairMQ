@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -20,10 +20,8 @@
 #include <string>
 #include <vector>
 
-namespace fair
-{
-namespace mq
-{
+namespace fair {
+namespace mq {
 
 /**
  * @class DeviceRunner DeviceRunner.h <fairmq/DeviceRunner.h>
@@ -31,7 +29,8 @@ namespace mq
  *
  * Runs a single FairMQ device with config and plugin support.
  *
- * For customization user hooks are executed at various steps during device launch/shutdown in the following sequence:
+ * For customization user hooks are executed at various steps during device launch/shutdown in the
+ * following sequence:
  *
  *         LoadPlugins
  *              |
@@ -44,34 +43,41 @@ namespace mq
  *              v
  *      InstatiateDevice
  *
- * Each hook has access to all members of the DeviceRunner and really only differs by the point in time it is called.
+ * Each hook has access to all members of the DeviceRunner and really only differs by the point in
+ * time it is called.
  *
  * For an example usage of this class see the fairmq/runFairMQDevice.h header.
  */
 class DeviceRunner
 {
   public:
-    DeviceRunner(int argc, char* const argv[]);
+    DeviceRunner(int argc, char* const argv[], bool printLogo = true);
 
     auto Run() -> int;
     auto RunWithExceptionHandlers() -> int;
 
     template<typename H>
-    auto AddHook(std::function<void(DeviceRunner&)> hook) -> void { fEvents.Subscribe<H>("runner", hook); }
+    auto AddHook(std::function<void(DeviceRunner&)> hook) -> void
+    {
+        fEvents.Subscribe<H>("runner", hook);
+    }
     template<typename H>
-    auto RemoveHook() -> void { fEvents.Unsubscribe<H>("runner"); }
+    auto RemoveHook() -> void
+    {
+        fEvents.Unsubscribe<H>("runner");
+    }
 
     std::vector<std::string> fRawCmdLineArgs;
     FairMQProgOptions fConfig;
     std::unique_ptr<FairMQDevice> fDevice;
     PluginManager fPluginManager;
+    const bool fPrintLogo;
 
   private:
     EventManager fEvents;
 };
 
-namespace hooks
-{
+namespace hooks {
 struct LoadPlugins : Event<DeviceRunner&> {};
 struct SetCustomCmdLineOptions : Event<DeviceRunner&> {};
 struct ModifyRawCmdLineArgs : Event<DeviceRunner&> {};
