@@ -46,13 +46,10 @@ add_testsuite(FairMQ.Protocols
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     protocols/_pair.cxx
-    protocols/_poller.cxx
     protocols/_pub_sub.cxx
     protocols/_push_pull.cxx
     protocols/_req_rep.cxx
-    protocols/_transfer_timeout.cxx
     protocols/_push_pull_multipart.cxx
-    protocols/_waitfor.cxx
 
     LINKS FairMQ
     DEPENDS testhelper_runTestDevice
@@ -97,6 +94,7 @@ add_testsuite(FairMQ.Device
     device/_multiple_devices.cxx
     device/_device_version.cxx
     device/_device_config.cxx
+    device/_waitfor.cxx
 
     LINKS FairMQ
     DEPENDS testhelper_runTestDevice
@@ -191,6 +189,28 @@ add_testsuite(FairMQ.StateMachine
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     state_machine/_state_machine.cxx
+
+    LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
+             ${CMAKE_CURRENT_BINARY_DIR}
+    TIMEOUT 10
+)
+
+add_testsuite(FairMQ.Transport
+    SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    transport/_transfer_timeout.cxx
+
+    LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
+             ${CMAKE_CURRENT_BINARY_DIR}
+    TIMEOUT 10
+)
+
+add_testsuite(FairMQ.Poller
+    SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    poller/_poller.cxx
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
