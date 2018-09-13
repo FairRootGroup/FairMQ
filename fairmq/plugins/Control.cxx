@@ -12,12 +12,13 @@
 #include <poll.h> // for the interactive mode
 #include <csignal> // catching system signals
 #include <functional>
+#include <atomic>
 
 using namespace std;
 
 namespace
 {
-    volatile sig_atomic_t gSignalStatus = 0;
+    std::atomic<sig_atomic_t> gSignalStatus(0);
 
     extern "C" auto signal_handler(int signal) -> void
     {
