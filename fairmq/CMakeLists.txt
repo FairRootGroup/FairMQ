@@ -195,7 +195,7 @@ if(FAST_BUILD)
 else()
   set(_target FairMQ)
 endif()
-add_library(${_target} SHARED
+add_library(${_target}
   ${FAIRMQ_SOURCE_FILES}
   ${FAIRMQ_PUBLIC_HEADER_FILES} # for IDE integration
   ${FAIRMQ_PRIVATE_HEADER_FILES} # for IDE integration
@@ -237,7 +237,7 @@ target_link_libraries(${_target}
   PUBLIC # libFairMQ AND consumers of libFairMQ link aginst public dependencies
   Threads::Threads
   dl
-  rt
+  $<$<PLATFORM_ID:Linux>:rt>
   Boost::boost
   Boost::program_options
   Boost::thread
@@ -301,7 +301,7 @@ target_link_libraries(runConfigExample FairMQ)
 add_executable(fairmq-shmmonitor shmem/Monitor.cxx shmem/Monitor.h shmem/runMonitor.cxx)
 target_link_libraries(fairmq-shmmonitor PUBLIC
   Threads::Threads
-  rt
+  $<$<PLATFORM_ID:Linux>:rt>
   Boost::boost
   Boost::date_time
   Boost::program_options
@@ -332,6 +332,7 @@ install(
   EXPORT ${PROJECT_EXPORT_SET}
   RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
   LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${PROJECT_INSTALL_LIBDIR}
 )
 
 # preserve relative path and prepend fairmq
