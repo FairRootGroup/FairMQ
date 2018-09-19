@@ -123,8 +123,14 @@ macro(set_fairmq_defaults)
   endif()
   set(CMAKE_CXX_EXTENSIONS OFF)
 
+  if(NOT BUILD_SHARED_LIBS)
+    set(BUILD_SHARED_LIBS ON CACHE BOOL "Whether to build shared libraries or static archives")
+  endif()
+
   # Set -fPIC as default for all library types
-  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+  if(NOT CMAKE_POSITION_INDEPENDENT_CODE)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+  endif()
 
   # Generate compile_commands.json file (https://clang.llvm.org/docs/JSONCompilationDatabase.html)
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
