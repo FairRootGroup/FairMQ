@@ -38,146 +38,144 @@ endif()
 # libFairMQ header files #
 ##########################
 set(FAIRMQ_PUBLIC_HEADER_FILES
-    DeviceRunner.h
-    EventManager.h
-    FairMQChannel.h
-    FairMQDevice.h
-    FairMQLogger.h
-    FairMQMessage.h
-    FairMQParts.h
-    FairMQPoller.h
-    FairMQUnmanagedRegion.h
-    FairMQSocket.h
-    FairMQStateMachine.h
-    FairMQTransportFactory.h
-    Tools.h
-    Transports.h
-    options/FairMQProgOptions.h
-    options/FairProgOptions.h
-    Plugin.h
-    PluginManager.h
-    PluginServices.h
-    runFairMQDevice.h
-    tools/CppSTL.h
-    tools/Network.h
-    tools/Process.h
-    tools/RateLimit.h
-    tools/Strings.h
-    tools/Unique.h
-    tools/Version.h
+  DeviceRunner.h
+  EventManager.h
+  FairMQChannel.h
+  FairMQDevice.h
+  FairMQLogger.h
+  FairMQMessage.h
+  FairMQParts.h
+  FairMQPoller.h
+  FairMQUnmanagedRegion.h
+  FairMQSocket.h
+  FairMQStateMachine.h
+  FairMQTransportFactory.h
+  Tools.h
+  Transports.h
+  options/FairMQProgOptions.h
+  options/FairProgOptions.h
+  Plugin.h
+  PluginManager.h
+  PluginServices.h
+  runFairMQDevice.h
+  tools/CppSTL.h
+  tools/Network.h
+  tools/Process.h
+  tools/RateLimit.h
+  tools/Strings.h
+  tools/Unique.h
+  tools/Version.h
 )
 
 set(FAIRMQ_PRIVATE_HEADER_FILES
-    devices/FairMQBenchmarkSampler.h
-    devices/FairMQMerger.h
-    devices/FairMQMultiplier.h
-    devices/FairMQProxy.h
-    devices/FairMQSink.h
-    devices/FairMQSplitter.h
-    options/FairMQParser.h
-    options/FairMQSuboptParser.h
-    options/FairProgOptionsHelper.h
-    plugins/Builtin.h
-    plugins/Control.h
-    StateMachine.h
-    shmem/FairMQMessageSHM.h
-    shmem/FairMQPollerSHM.h
-    shmem/FairMQUnmanagedRegionSHM.h
-    shmem/FairMQSocketSHM.h
-    shmem/FairMQTransportFactorySHM.h
-    shmem/Common.h
-    shmem/Manager.h
-    shmem/Monitor.h
-    shmem/Region.h
-    zeromq/FairMQMessageZMQ.h
-    zeromq/FairMQPollerZMQ.h
-    zeromq/FairMQUnmanagedRegionZMQ.h
-    zeromq/FairMQSocketZMQ.h
-    zeromq/FairMQTransportFactoryZMQ.h
+  devices/FairMQBenchmarkSampler.h
+  devices/FairMQMerger.h
+  devices/FairMQMultiplier.h
+  devices/FairMQProxy.h
+  devices/FairMQSink.h
+  devices/FairMQSplitter.h
+  options/FairMQParser.h
+  options/FairMQSuboptParser.h
+  options/FairProgOptionsHelper.h
+  plugins/Builtin.h
+  plugins/Control.h
+  StateMachine.h
+  shmem/FairMQMessageSHM.h
+  shmem/FairMQPollerSHM.h
+  shmem/FairMQUnmanagedRegionSHM.h
+  shmem/FairMQSocketSHM.h
+  shmem/FairMQTransportFactorySHM.h
+  shmem/Common.h
+  shmem/Manager.h
+  shmem/Region.h
+  zeromq/FairMQMessageZMQ.h
+  zeromq/FairMQPollerZMQ.h
+  zeromq/FairMQUnmanagedRegionZMQ.h
+  zeromq/FairMQSocketZMQ.h
+  zeromq/FairMQTransportFactoryZMQ.h
 )
 
 if(BUILD_NANOMSG_TRANSPORT)
   set(FAIRMQ_PRIVATE_HEADER_FILES ${FAIRMQ_PRIVATE_HEADER_FILES}
-        nanomsg/FairMQMessageNN.h
-        nanomsg/FairMQPollerNN.h
-        nanomsg/FairMQUnmanagedRegionNN.h
-        nanomsg/FairMQSocketNN.h
-        nanomsg/FairMQTransportFactoryNN.h
-    )
+    nanomsg/FairMQMessageNN.h
+    nanomsg/FairMQPollerNN.h
+    nanomsg/FairMQUnmanagedRegionNN.h
+    nanomsg/FairMQSocketNN.h
+    nanomsg/FairMQTransportFactoryNN.h
+  )
 endif()
 
 if(BUILD_OFI_TRANSPORT)
   set(FAIRMQ_PRIVATE_HEADER_FILES ${FAIRMQ_PRIVATE_HEADER_FILES}
-        ofi/Context.h
-        ofi/Message.h
-        ofi/Poller.h
-        ofi/Socket.h
-        ofi/TransportFactory.h
-    )
+    ofi/Context.h
+    ofi/Message.h
+    ofi/Poller.h
+    ofi/Socket.h
+    ofi/TransportFactory.h
+  )
 endif()
 
 ##########################
 # libFairMQ source files #
 ##########################
 set(FAIRMQ_SOURCE_FILES
-    DeviceRunner.cxx
-    FairMQChannel.cxx
-    FairMQDevice.cxx
-    FairMQLogger.cxx
-    FairMQMessage.cxx
-    FairMQPoller.cxx
-    FairMQSocket.cxx
-    FairMQStateMachine.cxx
-    FairMQTransportFactory.cxx
-    devices/FairMQBenchmarkSampler.cxx
-    devices/FairMQMerger.cxx
-    devices/FairMQMultiplier.cxx
-    devices/FairMQProxy.cxx
-    devices/FairMQSplitter.cxx
-    options/FairMQParser.cxx
-    options/FairMQProgOptions.cxx
-    options/FairMQSuboptParser.cxx
-    Plugin.cxx
-    PluginManager.cxx
-    PluginServices.cxx
-    plugins/Control.cxx
-    StateMachine.cxx
-    shmem/FairMQMessageSHM.cxx
-    shmem/FairMQPollerSHM.cxx
-    shmem/FairMQUnmanagedRegionSHM.cxx
-    shmem/FairMQSocketSHM.cxx
-    shmem/FairMQTransportFactorySHM.cxx
-    shmem/Manager.cxx
-    shmem/Monitor.cxx
-    shmem/Region.cxx
-    tools/Network.cxx
-    tools/Process.cxx
-    tools/Unique.cxx
-    zeromq/FairMQMessageZMQ.cxx
-    zeromq/FairMQPollerZMQ.cxx
-    zeromq/FairMQUnmanagedRegionZMQ.cxx
-    zeromq/FairMQSocketZMQ.cxx
-    zeromq/FairMQTransportFactoryZMQ.cxx
+  DeviceRunner.cxx
+  FairMQChannel.cxx
+  FairMQDevice.cxx
+  FairMQLogger.cxx
+  FairMQMessage.cxx
+  FairMQPoller.cxx
+  FairMQSocket.cxx
+  FairMQStateMachine.cxx
+  FairMQTransportFactory.cxx
+  devices/FairMQBenchmarkSampler.cxx
+  devices/FairMQMerger.cxx
+  devices/FairMQMultiplier.cxx
+  devices/FairMQProxy.cxx
+  devices/FairMQSplitter.cxx
+  options/FairMQParser.cxx
+  options/FairMQProgOptions.cxx
+  options/FairMQSuboptParser.cxx
+  Plugin.cxx
+  PluginManager.cxx
+  PluginServices.cxx
+  plugins/Control.cxx
+  StateMachine.cxx
+  shmem/FairMQMessageSHM.cxx
+  shmem/FairMQPollerSHM.cxx
+  shmem/FairMQUnmanagedRegionSHM.cxx
+  shmem/FairMQSocketSHM.cxx
+  shmem/FairMQTransportFactorySHM.cxx
+  shmem/Manager.cxx
+  shmem/Region.cxx
+  tools/Network.cxx
+  tools/Process.cxx
+  tools/Unique.cxx
+  zeromq/FairMQMessageZMQ.cxx
+  zeromq/FairMQPollerZMQ.cxx
+  zeromq/FairMQUnmanagedRegionZMQ.cxx
+  zeromq/FairMQSocketZMQ.cxx
+  zeromq/FairMQTransportFactoryZMQ.cxx
 )
 
 if(BUILD_NANOMSG_TRANSPORT)
-    set(FAIRMQ_SOURCE_FILES ${FAIRMQ_SOURCE_FILES}
-        nanomsg/FairMQMessageNN.cxx
-        nanomsg/FairMQPollerNN.cxx
-        nanomsg/FairMQUnmanagedRegionNN.cxx
-        nanomsg/FairMQSocketNN.cxx
-        nanomsg/FairMQTransportFactoryNN.cxx
-    )
+  set(FAIRMQ_SOURCE_FILES ${FAIRMQ_SOURCE_FILES}
+    nanomsg/FairMQMessageNN.cxx
+    nanomsg/FairMQPollerNN.cxx
+    nanomsg/FairMQUnmanagedRegionNN.cxx
+    nanomsg/FairMQSocketNN.cxx
+    nanomsg/FairMQTransportFactoryNN.cxx
+  )
 endif()
 
 if(BUILD_OFI_TRANSPORT)
-    set(FAIRMQ_SOURCE_FILES ${FAIRMQ_SOURCE_FILES}
-        ofi/Context.cxx
-        ofi/Message.cxx
-        ofi/Poller.cxx
-        ofi/Socket.cxx
-        ofi/TransportFactory.cxx
-    )
+  set(FAIRMQ_SOURCE_FILES ${FAIRMQ_SOURCE_FILES}
+    ofi/Context.cxx
+    ofi/Message.cxx
+    ofi/Poller.cxx
+    ofi/Socket.cxx
+    ofi/TransportFactory.cxx
+  )
 endif()
 
 
@@ -211,12 +209,12 @@ endif()
 # include directories #
 #######################
 target_include_directories(${_target}
-    PUBLIC # consumers inherit public include directories
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-    $<INSTALL_INTERFACE:include/fairmq>
-    $<INSTALL_INTERFACE:include>
+  PUBLIC # consumers inherit public include directories
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+  $<INSTALL_INTERFACE:include/fairmq>
+  $<INSTALL_INTERFACE:include>
 )
 
 ##################
@@ -234,25 +232,26 @@ if(optional_deps)
 endif()
 
 target_link_libraries(${_target}
-    INTERFACE # only consumers link against interface dependencies
+  INTERFACE # only consumers link against interface dependencies
 
-    PUBLIC # libFairMQ AND consumers of libFairMQ link aginst public dependencies
-    Threads::Threads
-    dl
-    Boost::boost
-    Boost::program_options
-    Boost::thread
-    Boost::system
-    Boost::filesystem
-    Boost::regex
-    Boost::date_time
-    Boost::signals
-    FairLogger::FairLogger
+  PUBLIC # libFairMQ AND consumers of libFairMQ link aginst public dependencies
+  Threads::Threads
+  dl
+  rt
+  Boost::boost
+  Boost::program_options
+  Boost::thread
+  Boost::system
+  Boost::filesystem
+  Boost::regex
+  Boost::date_time
+  Boost::signals
+  FairLogger::FairLogger
 
-    PRIVATE # only libFairMQ links against private dependencies
-    libzmq
-    ${NANOMSG_DEPS}
-    ${OFI_DEPS}
+  PRIVATE # only libFairMQ links against private dependencies
+  libzmq
+  ${NANOMSG_DEPS}
+  ${OFI_DEPS}
 )
 set_target_properties(${_target} PROPERTIES
   VERSION ${PROJECT_GIT_VERSION}
@@ -299,8 +298,17 @@ target_link_libraries(fairmq-splitter FairMQ)
 add_executable(runConfigExample options/runConfigEx.cxx)
 target_link_libraries(runConfigExample FairMQ)
 
-add_executable(fairmq-shmmonitor shmem/runMonitor.cxx)
-target_link_libraries(fairmq-shmmonitor FairMQ)
+add_executable(fairmq-shmmonitor shmem/Monitor.cxx shmem/Monitor.h shmem/runMonitor.cxx)
+target_link_libraries(fairmq-shmmonitor PUBLIC
+  Threads::Threads
+  rt
+  Boost::boost
+  Boost::date_time
+  Boost::program_options
+)
+target_include_directories(fairmq-shmmonitor PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+)
 
 add_executable(fairmq-uuid-gen run/runUuidGenerator.cxx)
 target_link_libraries(fairmq-uuid-gen FairMQ)
@@ -310,27 +318,27 @@ target_link_libraries(fairmq-uuid-gen FairMQ)
 # install #
 ###########
 install(
-    TARGETS
-    FairMQ
-    fairmq-bsampler
-    fairmq-merger
-    fairmq-multiplier
-    fairmq-proxy
-    fairmq-sink
-    fairmq-splitter
-    fairmq-shmmonitor
-    fairmq-uuid-gen
+  TARGETS
+  FairMQ
+  fairmq-bsampler
+  fairmq-merger
+  fairmq-multiplier
+  fairmq-proxy
+  fairmq-sink
+  fairmq-splitter
+  fairmq-shmmonitor
+  fairmq-uuid-gen
 
-    EXPORT ${PROJECT_EXPORT_SET}
-    RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
+  EXPORT ${PROJECT_EXPORT_SET}
+  RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
 )
 
 # preserve relative path and prepend fairmq
 foreach(HEADER ${FAIRMQ_PUBLIC_HEADER_FILES})
-    get_filename_component(_path ${HEADER} DIRECTORY)
-    file(TO_CMAKE_PATH ${PROJECT_INSTALL_INCDIR}/${_path} _destination)
-    install(FILES ${HEADER}
-        DESTINATION ${_destination}
-    )
+  get_filename_component(_path ${HEADER} DIRECTORY)
+  file(TO_CMAKE_PATH ${PROJECT_INSTALL_INCDIR}/${_path} _destination)
+  install(FILES ${HEADER}
+    DESTINATION ${_destination}
+  )
 endforeach()
