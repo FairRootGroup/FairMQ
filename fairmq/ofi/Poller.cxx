@@ -59,9 +59,8 @@ Poller::Poller(const vector<const FairMQChannel*>& channels)
 
 Poller::Poller(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList)
 {
-    int offset = 0;
-
     try {
+        int offset = 0;
         // calculate offsets and the total size of the poll item set
         for (string channel : channelList) {
             fOffsetMap[channel] = offset;

@@ -71,7 +71,7 @@ int main(int argc, char** argv)
         bool cleanup = false;
         bool selfDestruct = false;
         bool interactive = false;
-        unsigned int timeoutInMS;
+        unsigned int timeoutInMS = 5000;
         bool runAsDaemon = false;
         bool cleanOnExit = false;
 

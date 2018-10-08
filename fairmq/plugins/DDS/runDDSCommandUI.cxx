@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 {
     try {
         string sessionID;
-        char command;
+        char command = ' ';
         string topologyPath;
 
         bpo::options_description options("fairmq-dds-command-ui options");

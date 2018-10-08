@@ -18,8 +18,8 @@ class FairMQPoller
     virtual void Poll(const int timeout) = 0;
     virtual bool CheckInput(const int index) = 0;
     virtual bool CheckOutput(const int index) = 0;
-    virtual bool CheckInput(const std::string channelKey, const int index) = 0;
-    virtual bool CheckOutput(const std::string channelKey, const int index) = 0;
+    virtual bool CheckInput(const std::string& channelKey, const int index) = 0;
+    virtual bool CheckOutput(const std::string& channelKey, const int index) = 0;
 
     virtual ~FairMQPoller() {};
 };

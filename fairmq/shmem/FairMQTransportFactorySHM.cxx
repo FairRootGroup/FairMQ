@@ -145,8 +145,6 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
 
 void FairMQTransportFactorySHM::StartMonitor()
 {
-    int numTries = 0;
-
     auto env = boost::this_process::environment();
 
     vector<bfs::path> ownPath = boost::this_process::path();
@@ -161,7 +159,7 @@ void FairMQTransportFactorySHM::StartMonitor()
     if (!p.empty())
     {
         boost::process::spawn(p, "-x", "-s", fSessionName, "-d", "-t", "2000", env);
-
+        int numTries = 0;
         do
         {
             MonitorStatus* monitorStatus = fManager->ManagementSegment().find<MonitorStatus>(bipc::unique_instance).first;

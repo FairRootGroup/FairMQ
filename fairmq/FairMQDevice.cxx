@@ -816,8 +816,6 @@ void FairMQDevice::LogSocketRates()
     chrono::time_point<chrono::high_resolution_clock> t0;
     chrono::time_point<chrono::high_resolution_clock> t1;
 
-    unsigned long long msSinceLastLog;
-
     vector<FairMQSocket*> filteredSockets;
     vector<string> filteredChannelNames;
     vector<int> logIntervals;
@@ -879,7 +877,7 @@ void FairMQDevice::LogSocketRates()
         {
             t1 = chrono::high_resolution_clock::now();
 
-            msSinceLastLog = chrono::duration_cast<chrono::milliseconds>(t1 - t0).count();
+            unsigned long long msSinceLastLog = chrono::duration_cast<chrono::milliseconds>(t1 - t0).count();
 
             i = 0;
 

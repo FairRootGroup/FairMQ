@@ -31,7 +31,7 @@ namespace mq
 namespace plugins
 {
 
-DDS::DDS(const string name, const Plugin::Version version, const string maintainer, const string homepage, PluginServices* pluginServices)
+DDS::DDS(const string& name, const Plugin::Version version, const string& maintainer, const string& homepage, PluginServices* pluginServices)
     : Plugin(name, version, maintainer, homepage, pluginServices)
     , fService()
     , fDDSCustomCmd(fService)

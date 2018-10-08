@@ -35,7 +35,7 @@ struct execute_result
  * @param[in] log_prefix How to prefix each captured output line with
  * @return Captured stdout output and exit code
  */
-execute_result execute(std::string cmd, std::string prefix = "");
+execute_result execute(const std::string& cmd, const std::string& prefix = "");
 
 } /* namespace tools */
 } /* namespace mq */
