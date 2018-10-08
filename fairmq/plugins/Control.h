@@ -18,6 +18,7 @@
 #include <queue>
 #include <thread>
 #include <atomic>
+#include <stdexcept>
 
 namespace fair
 {
@@ -35,24 +36,25 @@ class Control : public Plugin
 
   private:
     auto InteractiveMode() -> void;
-    auto PrintInteractiveHelp() -> void;
+    static auto PrintInteractiveHelp() -> void;
     auto StaticMode() -> void;
     auto WaitForNextState() -> DeviceState;
     auto SignalHandler() -> void;
-    auto HandleShutdownSignal() -> void;
     auto RunShutdownSequence() -> void;
     auto RunStartupSequence() -> void;
     auto EmptyEventQueue() -> void;
 
     std::thread fControllerThread;
     std::thread fSignalHandlerThread;
-    std::thread fShutdownThread;
     std::queue<DeviceState> fEvents;
     std::mutex fEventsMutex;
-    std::mutex fShutdownMutex;
+    std::mutex fControllerMutex;
     std::condition_variable fNewEvent;
-    std::atomic<bool> fDeviceTerminationRequested;
-    std::atomic<bool> fHasShutdown;
+    std::atomic<bool> fDeviceShutdownRequested;
+    std::atomic<bool> fDeviceHasShutdown;
+    std::atomic<bool> fPluginShutdownRequested;
+
+    struct DeviceErrorState : std::runtime_error { using std::runtime_error::runtime_error; };
 }; /* class Control */
 
 auto ControlPluginProgramOptions() -> Plugin::ProgOptions;

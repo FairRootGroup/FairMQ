@@ -462,39 +462,30 @@ class FairMQDevice : public FairMQStateMachine
     std::string fId; ///< Device ID
 
     /// Additional user initialization (can be overloaded in child classes). Prefer to use InitTask().
-    /// Executed in a worker thread
     virtual void Init();
 
     /// Task initialization (can be overloaded in child classes)
-    /// Executed in a worker thread
     virtual void InitTask();
 
     /// Runs the device (to be overloaded in child classes)
-    /// Executed in a worker thread
     virtual void Run();
 
     /// Called in the RUNNING state once before executing the Run()/ConditionalRun() method
-    /// Executed in a worker thread
     virtual void PreRun();
 
     /// Called during RUNNING state repeatedly until it returns false or device state changes
-    /// Executed in a worker thread
     virtual bool ConditionalRun();
 
     /// Called in the RUNNING state once after executing the Run()/ConditionalRun() method
-    /// Executed in a worker thread
     virtual void PostRun();
 
     /// Handles the PAUSE state
-    /// Executed in a worker thread
     virtual void Pause();
 
     /// Resets the user task (to be overloaded in child classes)
-    /// Executed in a worker thread
     virtual void ResetTask();
 
     /// Resets the device (can be overloaded in child classes)
-    /// Executed in a worker thread
     virtual void Reset();
 
   private:
@@ -520,6 +511,9 @@ class FairMQDevice : public FairMQStateMachine
     void ResetTaskWrapper();
     /// Handles the Reset() method
     void ResetWrapper();
+
+    /// Used to call user code and handle uncaught exceptions
+    void CallAndHandleError(std::function<void()> callable);
 
     /// Unblocks blocking channel send/receive calls
     void Unblock();
