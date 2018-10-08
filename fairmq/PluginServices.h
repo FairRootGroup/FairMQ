@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <condition_variable>
+#include <stdexcept>
 
 namespace fair
 {
