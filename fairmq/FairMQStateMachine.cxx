@@ -644,7 +644,7 @@ bool FairMQStateMachine::CheckCurrentState(int state) const
 {
     return state == static_pointer_cast<FairMQFSM>(fFsm)->fState;
 }
-bool FairMQStateMachine::CheckCurrentState(string state) const
+bool FairMQStateMachine::CheckCurrentState(const string& state) const
 {
     return state == GetCurrentStateName();
 }

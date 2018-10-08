@@ -197,7 +197,6 @@ int FairMQSocketNN::SendImpl(FairMQMessagePtr& msg, const int flags, const int t
 
 int FairMQSocketNN::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout)
 {
-    int nbytes = -1;
     int elapsed = 0;
 
     FairMQMessageNN* msgPtr = static_cast<FairMQMessageNN*>(msg.get());
@@ -205,7 +204,7 @@ int FairMQSocketNN::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const in
     while (true)
     {
         void* ptr = nullptr;
-        nbytes = nn_recv(fSocket, &ptr, NN_MSG, flags);
+        int nbytes = nn_recv(fSocket, &ptr, NN_MSG, flags);
         if (nbytes >= 0)
         {
             fBytesRx += nbytes;
@@ -279,11 +278,9 @@ int64_t FairMQSocketNN::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fla
         }
     }
 
-    int64_t nbytes = -1;
-
     while (true)
     {
-        nbytes = nn_send(fSocket, sbuf.data(), sbuf.size(), flags);
+        int64_t nbytes = nn_send(fSocket, sbuf.data(), sbuf.size(), flags);
         if (nbytes >= 0)
         {
             fBytesTx += nbytes;

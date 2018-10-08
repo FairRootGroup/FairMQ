@@ -33,7 +33,7 @@ namespace mq
 namespace plugins
 {
 
-Control::Control(const string name, const Plugin::Version version, const string maintainer, const string homepage, PluginServices* pluginServices)
+Control::Control(const string& name, const Plugin::Version version, const string& maintainer, const string& homepage, PluginServices* pluginServices)
     : Plugin(name, version, maintainer, homepage, pluginServices)
     , fControllerThread()
     , fSignalHandlerThread()

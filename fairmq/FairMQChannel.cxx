@@ -104,19 +104,22 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan)
 
 FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
 {
+    fSocket = nullptr;
     fType = chan.fType;
     fMethod = chan.fMethod;
     fAddress = chan.fAddress;
+    fTransportType = chan.fTransportType;
     fSndBufSize = chan.fSndBufSize;
     fRcvBufSize = chan.fRcvBufSize;
     fSndKernelSize = chan.fSndKernelSize;
     fRcvKernelSize = chan.fRcvKernelSize;
     fRateLogging = chan.fRateLogging;
-    fSocket = nullptr;
     fName = chan.fName;
     fIsValid = false;
-    fTransportType = chan.fTransportType;
     fTransportFactory = nullptr;
+    fMultipart = chan.fMultipart;
+    fModified = chan.fModified;
+    fReset = false;
 
     return *this;
 }

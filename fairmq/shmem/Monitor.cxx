@@ -245,11 +245,11 @@ void Monitor::Interactive()
 
 void Monitor::CheckSegment()
 {
-    static uint64_t counter = 0;
     char c = '#';
 
     if (fInteractive)
     {
+        static uint64_t counter = 0;
         int mod = counter++ % 5;
         switch (mod)
         {

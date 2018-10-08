@@ -37,8 +37,8 @@ class FairMQPollerSHM : public FairMQPoller
     void Poll(const int timeout) override;
     bool CheckInput(const int index) override;
     bool CheckOutput(const int index) override;
-    bool CheckInput(const std::string channelKey, const int index) override;
-    bool CheckOutput(const std::string channelKey, const int index) override;
+    bool CheckInput(const std::string& channelKey, const int index) override;
+    bool CheckOutput(const std::string& channelKey, const int index) override;
 
     ~FairMQPollerSHM() override;
 

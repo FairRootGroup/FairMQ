@@ -121,12 +121,11 @@ int64_t FairMQSocketSHM::TryReceive(vector<unique_ptr<FairMQMessage>>& msgVec) {
 
 int FairMQSocketSHM::SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout)
 {
-    int nbytes = -1;
     int elapsed = 0;
 
     while (true && !fInterrupted)
     {
-        nbytes = zmq_msg_send(static_cast<FairMQMessageSHM*>(msg.get())->GetMessage(), fSocket, flags);
+        int nbytes = zmq_msg_send(static_cast<FairMQMessageSHM*>(msg.get())->GetMessage(), fSocket, flags);
         if (nbytes == 0)
         {
             return nbytes;
@@ -177,13 +176,12 @@ int FairMQSocketSHM::SendImpl(FairMQMessagePtr& msg, const int flags, const int 
 
 int FairMQSocketSHM::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout)
 {
-    int nbytes = -1;
     int elapsed = 0;
 
     zmq_msg_t* msgPtr = static_cast<FairMQMessageSHM*>(msg.get())->GetMessage();
     while (true)
     {
-        nbytes = zmq_msg_recv(msgPtr, fSocket, flags);
+        int nbytes = zmq_msg_recv(msgPtr, fSocket, flags);
         if (nbytes == 0)
         {
             ++fMessagesRx;
@@ -249,7 +247,6 @@ int FairMQSocketSHM::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const i
 int64_t FairMQSocketSHM::SendImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
 {
     const unsigned int vecSize = msgVec.size();
-    int64_t totalSize = 0;
     int elapsed = 0;
 
     if (vecSize == 1) {
@@ -263,7 +260,7 @@ int64_t FairMQSocketSHM::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fl
     // prepare the message with shm metas
     MetaHeader* metas = static_cast<MetaHeader*>(zmq_msg_data(&zmqMsg));
 
-    for (auto &msg : msgVec)
+    for (auto& msg : msgVec)
     {
         zmq_msg_t* metaMsg = static_cast<FairMQMessageSHM*>(msg.get())->GetMessage();
         memcpy(metas++, zmq_msg_data(metaMsg), sizeof(MetaHeader));
@@ -271,9 +268,8 @@ int64_t FairMQSocketSHM::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fl
 
     while (!fInterrupted)
     {
-        int nbytes = -1;
-        nbytes = zmq_msg_send(&zmqMsg, fSocket, flags);
-
+        int64_t totalSize = 0;
+        int nbytes = zmq_msg_send(&zmqMsg, fSocket, flags);
         if (nbytes == 0)
         {
             zmq_msg_close(&zmqMsg);
@@ -283,7 +279,7 @@ int64_t FairMQSocketSHM::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fl
         {
             assert(nbytes == (vecSize * sizeof(MetaHeader))); // all or nothing
 
-            for (auto &msg : msgVec)
+            for (auto& msg : msgVec)
             {
                 FairMQMessageSHM* shmMsg = static_cast<FairMQMessageSHM*>(msg.get());
                 shmMsg->fQueued = true;
@@ -338,7 +334,6 @@ int64_t FairMQSocketSHM::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fl
 
 int64_t FairMQSocketSHM::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
 {
-    int64_t totalSize = 0;
     int elapsed = 0;
 
     zmq_msg_t zmqMsg;
@@ -346,6 +341,7 @@ int64_t FairMQSocketSHM::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int
 
     while (!fInterrupted)
     {
+        int64_t totalSize = 0;
         int nbytes = zmq_msg_recv(&zmqMsg, fSocket, flags);
         if (nbytes == 0)
         {

@@ -82,7 +82,7 @@ class FairMQStateMachine
     static std::string GetStateName(const State);
     int GetCurrentState() const;
     bool CheckCurrentState(int state) const;
-    bool CheckCurrentState(std::string state) const;
+    bool CheckCurrentState(const std::string& state) const;
 
     // actions to be overwritten by derived classes
     virtual void InitWrapper() {}

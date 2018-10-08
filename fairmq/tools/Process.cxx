@@ -30,7 +30,7 @@ namespace tools
  * @param[in] log_prefix How to prefix each captured output line with
  * @return Captured stdout output and exit code
  */
-execute_result execute(string cmd, string prefix)
+execute_result execute(const string& cmd, const string& prefix)
 {
     execute_result result;
     stringstream out;

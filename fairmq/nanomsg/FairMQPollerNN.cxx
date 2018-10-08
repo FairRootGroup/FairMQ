@@ -68,10 +68,9 @@ FairMQPollerNN::FairMQPollerNN(const unordered_map<string, vector<FairMQChannel>
     , fNumItems(0)
     , fOffsetMap()
 {
-    int offset = 0;
-
     try
     {
+        int offset = 0;
         // calculate offsets and the total size of the poll item set
         for (string channel : channelList)
         {
@@ -184,7 +183,7 @@ bool FairMQPollerNN::CheckOutput(const int index)
     return false;
 }
 
-bool FairMQPollerNN::CheckInput(const string channelKey, const int index)
+bool FairMQPollerNN::CheckInput(const string& channelKey, const int index)
 {
     try
     {
@@ -203,7 +202,7 @@ bool FairMQPollerNN::CheckInput(const string channelKey, const int index)
     }
 }
 
-bool FairMQPollerNN::CheckOutput(const string channelKey, const int index)
+bool FairMQPollerNN::CheckOutput(const string& channelKey, const int index)
 {
     try
     {

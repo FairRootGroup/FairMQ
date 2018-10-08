@@ -29,7 +29,7 @@ namespace plugins
 class Control : public Plugin
 {
   public:
-    Control(const std::string name, const Plugin::Version version, const std::string maintainer, const std::string homepage, PluginServices* pluginServices);
+    Control(const std::string& name, const Plugin::Version version, const std::string& maintainer, const std::string& homepage, PluginServices* pluginServices);
 
     ~Control();
 

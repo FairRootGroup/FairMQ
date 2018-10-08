@@ -61,7 +61,7 @@ struct IofN
 class DDS : public Plugin
 {
   public:
-    DDS(const std::string name, const Plugin::Version version, const std::string maintainer, const std::string homepage, PluginServices* pluginServices);
+    DDS(const std::string& name, const Plugin::Version version, const std::string& maintainer, const std::string& homepage, PluginServices* pluginServices);
 
     ~DDS();
 

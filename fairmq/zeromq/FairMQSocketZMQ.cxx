@@ -116,14 +116,13 @@ int64_t FairMQSocketZMQ::TryReceive(vector<unique_ptr<FairMQMessage>>& msgVec) {
 
 int FairMQSocketZMQ::SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout)
 {
-    int nbytes = -1;
     int elapsed = 0;
 
     static_cast<FairMQMessageZMQ*>(msg.get())->ApplyUsedSize();
 
     while (true)
     {
-        nbytes = zmq_msg_send(static_cast<FairMQMessageZMQ*>(msg.get())->GetMessage(), fSocket, flags);
+        int nbytes = zmq_msg_send(static_cast<FairMQMessageZMQ*>(msg.get())->GetMessage(), fSocket, flags);
         if (nbytes >= 0)
         {
             fBytesTx += nbytes;
@@ -212,25 +211,21 @@ int FairMQSocketZMQ::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const i
 int64_t FairMQSocketZMQ::SendImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
 {
     const unsigned int vecSize = msgVec.size();
-    int elapsed = 0;
 
     // Sending vector typicaly handles more then one part
     if (vecSize > 1)
     {
-        int64_t totalSize = 0;
-        int nbytes = -1;
-        bool repeat = false;
-
+        int elapsed = 0;
         while (true)
         {
-            totalSize = 0;
-            repeat = false;
+            int64_t totalSize = 0;
+            bool repeat = false;
 
             for (unsigned int i = 0; i < vecSize; ++i)
             {
                 static_cast<FairMQMessageZMQ*>(msgVec[i].get())->ApplyUsedSize();
 
-                nbytes = zmq_msg_send(static_cast<FairMQMessageZMQ*>(msgVec[i].get())->GetMessage(),
+                int nbytes = zmq_msg_send(static_cast<FairMQMessageZMQ*>(msgVec[i].get())->GetMessage(),
                                       fSocket,
                                       (i < vecSize - 1) ? ZMQ_SNDMORE|flags : flags);
                 if (nbytes >= 0)
@@ -294,16 +289,13 @@ int64_t FairMQSocketZMQ::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fl
 
 int64_t FairMQSocketZMQ::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
 {
-    int64_t totalSize = 0;
-    int64_t more = 0;
-    bool repeat = false;
     int elapsed = 0;
 
     while (true)
     {
-        totalSize = 0;
-        more = 0;
-        repeat = false;
+        int64_t totalSize = 0;
+        int64_t more = 0;
+        bool repeat = false;
 
         do
         {
