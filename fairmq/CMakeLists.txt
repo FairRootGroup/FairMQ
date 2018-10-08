@@ -28,7 +28,6 @@ endif()
 ##################
 # subdirectories #
 ##################
-# add_subdirectory(shmem/prototype)
 if(BUILD_OFI_TRANSPORT)
   add_subdirectory(ofi)
 endif()
