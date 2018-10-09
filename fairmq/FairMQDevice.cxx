@@ -24,6 +24,7 @@
 #include <functional>
 #include <sstream>
 #include <iomanip>
+#include <future>
 #include <algorithm> // std::max
 
 using namespace std;
@@ -491,7 +492,7 @@ void FairMQDevice::RunWrapper()
     LOG(info) << "DEVICE: Running...";
 
     // start the rate logger thread
-    thread rateLogger(&FairMQDevice::LogSocketRates, this);
+    future<void> rateLogger = async(launch::async, &FairMQDevice::LogSocketRates, this);
 
     // notify transports to resume transfers
     {
@@ -552,7 +553,7 @@ void FairMQDevice::RunWrapper()
 
     CallAndHandleError(std::bind(&FairMQDevice::PostRun, this));
 
-    rateLogger.join();
+    rateLogger.get();
 }
 
 void FairMQDevice::HandleSingleChannelInput()
