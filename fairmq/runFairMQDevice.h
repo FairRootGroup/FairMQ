@@ -56,12 +56,12 @@ int main(int argc, char* argv[])
     }
     catch (std::exception& e)
     {
-        LOG(error) << "Unhandled exception reached the top of main: " << e.what() << ", application will now exit";
+        LOG(error) << "Uncaught exception reached the top of main: " << e.what();
         return 1;
     }
     catch (...)
     {
-        LOG(error) << "Non-exception instance being thrown. Please make sure you use std::runtime_exception() instead. Application will now exit.";
+        LOG(error) << "Uncaught exception reached the top of main.";
         return 1;
     }
 }

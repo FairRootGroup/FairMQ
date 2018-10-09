@@ -18,6 +18,7 @@
 #include "devices/TestSub.cxx"
 #include "devices/TestTransferTimeout.cxx"
 #include "devices/TestWaitFor.cxx"
+#include "devices/TestExceptions.cxx"
 
 #include <runFairMQDevice.h>
 
@@ -86,6 +87,10 @@ auto getDevice(const FairMQProgOptions& config) -> FairMQDevicePtr
     else if (0 == id.find("waitfor_"))
     {
         return new TestWaitFor;
+    }
+    else if (0 == id.find("exceptions_"))
+    {
+        return new TestExceptions;
     }
     else
     {
