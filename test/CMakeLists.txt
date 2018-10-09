@@ -27,6 +27,7 @@ add_testhelper(runTestDevice
     helper/devices/TestSub.cxx
     helper/devices/TestTransferTimeout.cxx
     helper/devices/TestWaitFor.cxx
+    helper/devices/TestExceptions.cxx
 
     LINKS FairMQ
 )
@@ -95,6 +96,7 @@ add_testsuite(FairMQ.Device
     device/_device_version.cxx
     device/_device_config.cxx
     device/_waitfor.cxx
+    device/_exceptions.cxx
 
     LINKS FairMQ
     DEPENDS testhelper_runTestDevice
