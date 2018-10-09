@@ -209,6 +209,11 @@ try
             }
         }
 
+        if (GetCurrentDeviceState() == DeviceState::Error)
+        {
+            throw DeviceErrorState("Controlled device transitioned to error state.");
+        }
+
         if (fDeviceShutdownRequested)
         {
             break;
@@ -272,6 +277,11 @@ try
         while (fEvents.empty() && !fDeviceShutdownRequested)
         {
             fNewEvent.wait_for(lock, chrono::milliseconds(50));
+        }
+
+        if (fEvents.front() == DeviceState::Error)
+        {
+            throw DeviceErrorState("Controlled device transitioned to error state.");
         }
     }
 
