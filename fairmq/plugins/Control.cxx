@@ -113,6 +113,27 @@ auto ControlPluginProgramOptions() -> Plugin::ProgOptions
     return pluginOptions;
 }
 
+struct terminal_config
+{
+    terminal_config()
+    {
+        termios t;
+        tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
+        t.c_lflag &= ~ICANON; // disable canonical input
+        t.c_lflag &= ~ECHO; // do not echo input chars
+        tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
+    }
+
+    ~terminal_config()
+    {
+        termios t;
+        tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
+        t.c_lflag |= ICANON; // re-enable canonical input
+        t.c_lflag |= ECHO; // echo input chars
+        tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
+    }
+};
+
 auto Control::InteractiveMode() -> void
 try
 {
@@ -122,12 +143,9 @@ try
     pollfd cinfd[1];
     cinfd[0].fd = fileno(stdin);
     cinfd[0].events = POLLIN;
+    cinfd[0].revents = 0;
 
-    struct termios t;
-    tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
-    t.c_lflag &= ~ICANON; // disable canonical input
-    t.c_lflag &= ~ECHO; // do not echo input chars
-    tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
+    terminal_config tconfig;
 
     PrintInteractiveHelp();
 
@@ -219,11 +237,6 @@ try
             break;
         }
     }
-
-    tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
-    t.c_lflag |= ICANON; // re-enable canonical input
-    t.c_lflag |= ECHO; // echo input chars
-    tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
 
     RunShutdownSequence();
 }
