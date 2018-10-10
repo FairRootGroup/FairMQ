@@ -19,7 +19,7 @@ Set(BUILD_COMMAND "make")
 Set(CTEST_BUILD_COMMAND "${BUILD_COMMAND} -j$ENV{number_of_processors}")
 
 String(TOUPPER $ENV{ctest_model} _Model)
-Set(configure_options "-DCMAKE_BUILD_TYPE=${_Model}")
+Set(configure_options "-DCMAKE_BUILD_TYPE=$ENV{ctest_model}")
 
 Set(CTEST_USE_LAUNCHERS 1)
 Set(configure_options "${configure_options};-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}")
