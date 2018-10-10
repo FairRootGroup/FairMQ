@@ -650,9 +650,20 @@ bool FairMQStateMachine::CheckCurrentState(const string& state) const
 }
 
 void FairMQStateMachine::ProcessWork()
+try
 {
     static_pointer_cast<FairMQFSM>(fFsm)->ProcessWork();
+} catch(...) {
+    {
+        lock_guard<mutex> lock(static_pointer_cast<FairMQFSM>(fFsm)->fWorkMutex);
+        static_pointer_cast<FairMQFSM>(fFsm)->fWorkActive = false;
+        static_pointer_cast<FairMQFSM>(fFsm)->fWorkAvailable = false;
+        static_pointer_cast<FairMQFSM>(fFsm)->fWorkDoneCondition.notify_one();
+    }
+    ChangeState(ERROR_FOUND);
+    throw;
 }
+
 
 int FairMQStateMachine::GetEventNumber(const string& event)
 {

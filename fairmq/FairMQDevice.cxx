@@ -223,7 +223,7 @@ void FairMQDevice::InitWrapper()
         AttachChannels(uninitializedConnectingChannels);
     }
 
-    CallAndHandleError(std::bind(&FairMQDevice::Init, this));
+    Init();
 
     ChangeState(internal_DEVICE_READY);
 }
@@ -429,7 +429,7 @@ void FairMQDevice::InitTaskWrapper()
 {
     CallStateChangeCallbacks(INITIALIZING_TASK);
 
-    CallAndHandleError(std::bind(&FairMQDevice::InitTask, this));
+    InitTask();
 
     ChangeState(internal_READY);
 }
@@ -504,46 +504,43 @@ void FairMQDevice::RunWrapper()
         t.second->Resume();
     }
 
-    CallAndHandleError([this]
+    try
     {
-        try
+        PreRun();
+
+        // process either data callbacks or ConditionalRun/Run
+        if (fDataCallbacks)
         {
-            PreRun();
-
-            // process either data callbacks or ConditionalRun/Run
-            if (fDataCallbacks)
+            // if only one input channel, do lightweight handling without additional polling.
+            if (fInputChannelKeys.size() == 1 && fChannels.at(fInputChannelKeys.at(0)).size() == 1)
             {
-                // if only one input channel, do lightweight handling without additional polling.
-                if (fInputChannelKeys.size() == 1 && fChannels.at(fInputChannelKeys.at(0)).size() == 1)
-                {
-                    HandleSingleChannelInput();
-                }
-                else // otherwise do full handling with polling
-                {
-                    HandleMultipleChannelInput();
-                }
+                HandleSingleChannelInput();
             }
-            else
+            else // otherwise do full handling with polling
             {
-                fair::mq::tools::RateLimiter rateLimiter(fRate);
-
-                while (CheckCurrentState(RUNNING) && ConditionalRun())
-                {
-                    if (fRate > 0.001)
-                    {
-                        rateLimiter.maybe_sleep();
-                    }
-                }
-
-                Run();
+                HandleMultipleChannelInput();
             }
         }
-        catch (const out_of_range& oor)
+        else
         {
-            LOG(error) << "out of range: " << oor.what();
-            LOG(error) << "incorrect/incomplete channel configuration?";
+            fair::mq::tools::RateLimiter rateLimiter(fRate);
+
+            while (CheckCurrentState(RUNNING) && ConditionalRun())
+            {
+                if (fRate > 0.001)
+                {
+                    rateLimiter.maybe_sleep();
+                }
+            }
+
+            Run();
         }
-    });
+    }
+    catch (const out_of_range& oor)
+    {
+        LOG(error) << "out of range: " << oor.what();
+        LOG(error) << "incorrect/incomplete channel configuration?";
+    }
 
     // if Run() exited and the state is still RUNNING, transition to READY.
     if (CheckCurrentState(RUNNING))
@@ -551,7 +548,7 @@ void FairMQDevice::RunWrapper()
         ChangeState(internal_READY);
     }
 
-    CallAndHandleError(std::bind(&FairMQDevice::PostRun, this));
+    PostRun();
 
     rateLogger.get();
 }
@@ -774,7 +771,7 @@ void FairMQDevice::PauseWrapper()
 {
     CallStateChangeCallbacks(PAUSED);
 
-    CallAndHandleError(std::bind(&FairMQDevice::Pause, this));
+    Pause();
 }
 
 void FairMQDevice::Pause()
@@ -940,7 +937,7 @@ void FairMQDevice::ResetTaskWrapper()
 {
     CallStateChangeCallbacks(RESETTING_TASK);
 
-    CallAndHandleError(std::bind(&FairMQDevice::ResetTask, this));
+    ResetTask();
 
     ChangeState(internal_DEVICE_READY);
 }
@@ -953,7 +950,7 @@ void FairMQDevice::ResetWrapper()
 {
     CallStateChangeCallbacks(RESETTING_DEVICE);
 
-    CallAndHandleError(std::bind(&FairMQDevice::Reset, this));
+    Reset();
 
     ChangeState(internal_IDLE);
 }
@@ -975,17 +972,6 @@ void FairMQDevice::Reset()
 const FairMQChannel& FairMQDevice::GetChannel(const string& channelName, const int index) const
 {
     return fChannels.at(channelName).at(index);
-}
-
-void FairMQDevice::CallAndHandleError(std::function<void()> callable)
-try
-{
-    callable();
-}
-catch(...)
-{
-    ChangeState(ERROR_FOUND);
-    throw;
 }
 
 void FairMQDevice::Exit()

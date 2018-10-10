@@ -88,7 +88,6 @@ void FairMQBenchmarkSampler::Run()
             }
         }
 
-
         if (fMsgRate > 0)
         {
             rateLimiter.maybe_sleep();
