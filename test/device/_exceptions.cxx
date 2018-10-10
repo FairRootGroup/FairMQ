@@ -23,7 +23,7 @@ using namespace std;
 using namespace fair::mq::test;
 using namespace fair::mq::tools;
 
-void RunExceptionIn(const std::string& state)
+void RunExceptionIn(const std::string& state, const std::string& input = "")
 {
     size_t session{fair::mq::tools::UuidHash()};
 
@@ -32,10 +32,10 @@ void RunExceptionIn(const std::string& state)
         stringstream cmd;
         cmd << runTestDevice
             << " --id exceptions_" << state << "_"
-            << " --control static"
+            << " --control " << ((input == "") ? "static" : "interactive")
             << " --session " << session
             << " --color false";
-        result = execute(cmd.str(), "[EXCEPTION IN " + state + "]");
+        result = execute(cmd.str(), "[EXCEPTION IN " + state + "]", input);
     });
 
     device_thread.join();
@@ -45,33 +45,81 @@ void RunExceptionIn(const std::string& state)
     exit(result.exit_code);
 }
 
-TEST(Exceptions, InInit)
+TEST(Exceptions, InInit_______static)
 {
     EXPECT_EXIT(RunExceptionIn("Init"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InInitTask)
+TEST(Exceptions, InInitTask___static)
 {
     EXPECT_EXIT(RunExceptionIn("InitTask"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InPreRun)
+TEST(Exceptions, InPreRun_____static)
 {
     EXPECT_EXIT(RunExceptionIn("PreRun"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InRun)
+TEST(Exceptions, InRun________static)
 {
     EXPECT_EXIT(RunExceptionIn("Run"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InPostRun)
+TEST(Exceptions, InPostRun____static)
 {
     EXPECT_EXIT(RunExceptionIn("PostRun"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InResetTask)
+TEST(Exceptions, InResetTask__static)
 {
     EXPECT_EXIT(RunExceptionIn("ResetTask"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InReset)
+TEST(Exceptions, InReset______static)
 {
     EXPECT_EXIT(RunExceptionIn("Reset"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, InInit_______interactive)
+{
+    EXPECT_EXIT(RunExceptionIn("Init", "q"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, InInitTask___interactive)
+{
+    EXPECT_EXIT(RunExceptionIn("InitTask", "q"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, InPreRun_____interactive)
+{
+    EXPECT_EXIT(RunExceptionIn("PreRun", "q"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, InRun________interactive)
+{
+    EXPECT_EXIT(RunExceptionIn("Run", "q"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, InPostRun____interactive)
+{
+    EXPECT_EXIT(RunExceptionIn("PostRun", "q"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, InResetTask__interactive)
+{
+    EXPECT_EXIT(RunExceptionIn("ResetTask", "q"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, InReset______interactive)
+{
+    EXPECT_EXIT(RunExceptionIn("Reset", "q"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, InInit_______interactive_invalid)
+{
+    EXPECT_EXIT(RunExceptionIn("Init", "_"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, InInitTask___interactive_invalid)
+{
+    EXPECT_EXIT(RunExceptionIn("InitTask", "_"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, InPreRun_____interactive_invalid)
+{
+    EXPECT_EXIT(RunExceptionIn("PreRun", "_"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, InRun________interactive_invalid)
+{
+    EXPECT_EXIT(RunExceptionIn("Run", "_"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, InPostRun____interactive_invalid)
+{
+    EXPECT_EXIT(RunExceptionIn("PostRun", "_"), ::testing::ExitedWithCode(1), "");
 }
 
 } // namespace
