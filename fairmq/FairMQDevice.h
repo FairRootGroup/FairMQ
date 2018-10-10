@@ -512,9 +512,6 @@ class FairMQDevice : public FairMQStateMachine
     /// Handles the Reset() method
     void ResetWrapper();
 
-    /// Used to call user code and handle uncaught exceptions
-    void CallAndHandleError(std::function<void()> callable);
-
     /// Unblocks blocking channel send/receive calls
     void Unblock();
 
