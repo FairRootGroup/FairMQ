@@ -103,7 +103,7 @@ add_testsuite(FairMQ.Device
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_SOURCE_DIR}/device
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 15
     RUN_SERIAL ON
 )
 
