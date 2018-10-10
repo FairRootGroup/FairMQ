@@ -45,7 +45,10 @@ void RunExceptionIn(const std::string& state)
     exit(result.exit_code);
 }
 
-TEST(Exceptions, InInit) { EXPECT_EXIT(RunExceptionIn("Init"), ::testing::ExitedWithCode(1), ""); }
+TEST(Exceptions, InInit)
+{
+    EXPECT_EXIT(RunExceptionIn("Init"), ::testing::ExitedWithCode(1), "");
+}
 TEST(Exceptions, InInitTask)
 {
     EXPECT_EXIT(RunExceptionIn("InitTask"), ::testing::ExitedWithCode(1), "");
@@ -54,7 +57,10 @@ TEST(Exceptions, InPreRun)
 {
     EXPECT_EXIT(RunExceptionIn("PreRun"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InRun) { EXPECT_EXIT(RunExceptionIn("Run"), ::testing::ExitedWithCode(1), ""); }
+TEST(Exceptions, InRun)
+{
+    EXPECT_EXIT(RunExceptionIn("Run"), ::testing::ExitedWithCode(1), "");
+}
 TEST(Exceptions, InPostRun)
 {
     EXPECT_EXIT(RunExceptionIn("PostRun"), ::testing::ExitedWithCode(1), "");

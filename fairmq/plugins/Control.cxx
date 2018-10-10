@@ -339,7 +339,7 @@ auto Control::RunShutdownSequence() -> void
 {
     auto nextState = GetCurrentDeviceState();
     EmptyEventQueue();
-    while (nextState != DeviceState::Exiting)
+    while (nextState != DeviceState::Exiting && nextState != DeviceState::Error)
     {
         switch (nextState)
         {
@@ -359,7 +359,7 @@ auto Control::RunShutdownSequence() -> void
                 ChangeDeviceState(DeviceStateTransition::Resume);
                 break;
             default:
-                // ignore other states
+                LOG(debug) << "Controller ignoring event: " << nextState;
                 break;
         }
 
