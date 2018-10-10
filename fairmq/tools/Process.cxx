@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <thread>
 
 using namespace std;
 
@@ -30,23 +31,33 @@ namespace tools
  * @param[in] log_prefix How to prefix each captured output line with
  * @return Captured stdout output and exit code
  */
-execute_result execute(const string& cmd, const string& prefix)
+execute_result execute(const string& cmd, const string& prefix, const string& input)
 {
     execute_result result;
     stringstream out;
 
     // print full line thread-safe
     stringstream printCmd;
-    printCmd << prefix << cmd << "\n";
+    printCmd << prefix << " " << cmd << "\n";
     cout << printCmd.str() << flush;
 
     out << prefix << cmd << endl;
 
     // Execute command and capture stdout, add prefix line by line
-    boost::process::ipstream stdout;
-    boost::process::child c(cmd, boost::process::std_out > stdout);
+    boost::process::ipstream c_stdout;
+    boost::process::opstream c_stdin;
+    boost::process::child c(
+        cmd, boost::process::std_out > c_stdout, boost::process::std_in < c_stdin);
+
+    // Optionally, write to stdin of the child
+    if (input != "") {
+        this_thread::sleep_for(chrono::milliseconds(100));
+        c_stdin << input;
+        c_stdin.flush();
+    }
+
     string line;
-    while (getline(stdout, line))
+    while (getline(c_stdout, line))
     {
         // print full line thread-safe
         stringstream printLine;

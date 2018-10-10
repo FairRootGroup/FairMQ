@@ -32,10 +32,13 @@ struct execute_result
  * and exit code.
  *
  * @param[in] cmd Command to execute
- * @param[in] log_prefix How to prefix each captured output line with
+ * @param[in] prefix How to prefix each captured output line with
+ * @param[in] input Data which is sent to stdin of the child process
  * @return Captured stdout output and exit code
  */
-execute_result execute(const std::string& cmd, const std::string& prefix = "");
+execute_result execute(const std::string& cmd,
+                       const std::string& prefix = "",
+                       const std::string& input = "");
 
 } /* namespace tools */
 } /* namespace mq */
