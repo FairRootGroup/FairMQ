@@ -28,14 +28,6 @@ if(BUILD_OFI_TRANSPORT)
 endif()
 
 
-##################
-# subdirectories #
-##################
-if(BUILD_OFI_TRANSPORT)
-  add_subdirectory(ofi)
-endif()
-
-
 ##########################
 # libFairMQ header files #
 ##########################
@@ -227,7 +219,7 @@ if(BUILD_NANOMSG_TRANSPORT)
   set(NANOMSG_DEPS nanomsg msgpackc-cxx)
 endif()
 if(BUILD_OFI_TRANSPORT)
-  set(OFI_DEPS asiofi::asiofi msgpack::msgpack)
+  set(OFI_DEPS asiofi::asiofi msgpackc-cxx)
 endif()
 set(optional_deps ${NANOMSG_DEPS} ${OFI_DEPS})
 if(optional_deps)
