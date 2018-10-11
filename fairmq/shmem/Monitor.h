@@ -39,6 +39,7 @@ class Monitor
     static void Cleanup(const std::string& sessionName);
     static void RemoveObject(const std::string&);
     static void RemoveQueue(const std::string&);
+    static void RemoveMutex(const std::string&);
 
   private:
     void PrintHeader();
@@ -55,7 +56,7 @@ class Monitor
     bool fIsDaemon;
     bool fCleanOnExit;
     unsigned int fTimeoutInMS;
-    std::string fSessionName;
+    std::string fShmId;
     std::string fSegmentName;
     std::string fManagementSegmentName;
     std::string fControlQueueName;
