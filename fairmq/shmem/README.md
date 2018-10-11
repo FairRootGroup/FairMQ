@@ -12,8 +12,9 @@ The shared memory monitor tool, supplied with the shared memory transport can be
 
 With default arguments the monitor will run indefinitely with no output, and clean up shared memory segment if it is open and no heartbeats from devices arrive within a timeout period. It can be further customized with following parameters:
 
-  `--session <arg>`: customize the name of the shared memory segment via the session name (default is "default").
+  `--session <arg>`: for which session to run the monitor (default is "default"). The actual ressource names will be built out of session id, user id (hashed and truncated).
   `--cleanup`: start monitor, perform cleanup of the memory and quit.
+  `--shmid <arg>`: if provided, this shmem id will be used instead of the one generated from session id. Use this if you know the name of the shared memory ressource, but do not have the used session id.
   `--self-destruct`: run until the memory segment is closed (either naturally via cleanup performed by devices or in case of a crash (no heartbeats within timeout)).
   `--interactive`: run interactively, with detailed segment details and user input for various shmem operations.
   `--timeout <arg>`: specifiy the timeout for the heartbeats from shmem transports in milliseconds (default 5000).
@@ -27,9 +28,9 @@ The Monitor class can also be used independently from the supplied executable (b
 
 FairMQ Shared Memory currently uses following names to register shared memory on the system:
 
-`fmq_<sessionName>_main` - main segment name, used for user data (session name can be overridden via `--session`).
-`fmq_<sessionName>_mng` - management segment name, used for storing management data.
-`fmq_<sessionName>_cq` - message queue for communicating between shm transport and shm monitor (exists independent of above segments).
-`fmq_<sessionName>_mtx` - boost::interprocess::named_mutex for management purposes (exists independent of above segments).
-`fmq_<sessionName>_rg_<index>` - names of unmanaged regions.
-`fmq_<sessionName>_rgq_<index>` - names of queues for the unmanaged regions.
+`fmq_<shmId>_main` - main segment name, used for user data (the shmId is generated out of session id and user id).
+`fmq_<shmId>_mng` - management segment name, used for storing management data.
+`fmq_<shmId>_cq` - message queue for communicating between shm transport and shm monitor (exists independent of above segments).
+`fmq_<shmId>_mtx` - boost::interprocess::named_mutex for management purposes (exists independent of above segments).
+`fmq_<shmId>_rg_<index>` - names of unmanaged regions.
+`fmq_<shmId>_rgq_<index>` - names of queues for the unmanaged regions.

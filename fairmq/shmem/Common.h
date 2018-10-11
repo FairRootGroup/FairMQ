@@ -9,8 +9,13 @@
 #define FAIR_MQ_SHMEM_COMMON_H_
 
 #include <atomic>
+#include <string>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
+#include <boost/functional/hash.hpp>
+
+#include <unistd.h>
+#include <sys/types.h>
 
 namespace fair
 {
@@ -72,6 +77,16 @@ struct RegionBlock
     size_t fSize;
     size_t fHint;
 };
+
+// find id for unique shmem name:
+// a hash of user id + session id, truncated to 8 characters (to accommodate for name size limit on some systems (MacOS)).
+inline std::string buildShmIdFromSessionIdAndUserId(const std::string& sessionId)
+{
+    boost::hash<std::string> stringHash;
+    std::string shmId(std::to_string(stringHash(std::string((std::to_string(geteuid()) + sessionId)))));
+    shmId.resize(8, '_');
+    return shmId;
+}
 
 } // namespace shmem
 } // namespace mq

@@ -6,6 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 #include <fairmq/shmem/Monitor.h>
+#include <fairmq/shmem/Common.h>
 
 #include <boost/program_options.hpp>
 
@@ -20,6 +21,7 @@
 
 using namespace std;
 using namespace boost::program_options;
+using namespace fair::mq::shmem;
 
 static void daemonize()
 {
@@ -68,6 +70,7 @@ int main(int argc, char** argv)
     try
     {
         string sessionName;
+        string shmId;
         bool cleanup = false;
         bool selfDestruct = false;
         bool interactive = false;
@@ -77,7 +80,8 @@ int main(int argc, char** argv)
 
         options_description desc("Options");
         desc.add_options()
-            ("session,s", value<string>(&sessionName)->default_value("default"), "Name of the session which to monitor")
+            ("session,s", value<string>(&sessionName)->default_value("default"), "session id which to monitor")
+            ("shmid", value<string>(&shmId)->default_value(""), "Shmem Id to monitor (if not provided, it is generated out of session id and user id)")
             ("cleanup,c", value<bool>(&cleanup)->implicit_value(true), "Perform cleanup and quit")
             ("self-destruct,x", value<bool>(&selfDestruct)->implicit_value(true), "Quit after first closing of the memory")
             ("interactive,i", value<bool>(&interactive)->implicit_value(true), "Interactive run")
@@ -97,24 +101,27 @@ int main(int argc, char** argv)
 
         notify(vm);
 
-        sessionName.resize(8, '_'); // shorten the session name, to accommodate for name size limit on some systems (MacOS)
-
         if (runAsDaemon)
         {
             daemonize();
         }
 
+        if (shmId == "")
+        {
+            shmId = buildShmIdFromSessionIdAndUserId(sessionName);
+        }
+
         if (cleanup)
         {
-            cout << "Cleaning up \"" << sessionName << "\"..." << endl;
-            fair::mq::shmem::Monitor::Cleanup(sessionName);
-            fair::mq::shmem::Monitor::RemoveQueue("fmq_" + sessionName + "_cq");
+            cout << "Cleaning up \"" << shmId << "\"..." << endl;
+            Monitor::Cleanup(shmId);
+            Monitor::RemoveQueue("fmq_" + shmId + "_cq");
             return 0;
         }
 
-        cout << "Starting shared memory monitor for session: \"" << sessionName << "\"..." << endl;
+        cout << "Starting shared memory monitor for session: \"" << sessionName << "\" (shmId: " << shmId << ")..." << endl;
 
-        fair::mq::shmem::Monitor monitor{sessionName, selfDestruct, interactive, timeoutInMS, runAsDaemon, cleanOnExit};
+        Monitor monitor{shmId, selfDestruct, interactive, timeoutInMS, runAsDaemon, cleanOnExit};
 
         monitor.CatchSignals();
         monitor.Run();

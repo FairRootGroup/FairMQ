@@ -51,17 +51,17 @@ void signalHandler(int signal)
     gSignalStatus = signal;
 }
 
-Monitor::Monitor(const string& sessionName, bool selfDestruct, bool interactive, unsigned int timeoutInMS, bool runAsDaemon, bool cleanOnExit)
+Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, unsigned int timeoutInMS, bool runAsDaemon, bool cleanOnExit)
     : fSelfDestruct(selfDestruct)
     , fInteractive(interactive)
     , fSeenOnce(false)
     , fIsDaemon(runAsDaemon)
     , fCleanOnExit(cleanOnExit)
     , fTimeoutInMS(timeoutInMS)
-    , fSessionName(sessionName)
-    , fSegmentName("fmq_" + fSessionName + "_main")
-    , fManagementSegmentName("fmq_" + fSessionName + "_mng")
-    , fControlQueueName("fmq_" + fSessionName + "_cq")
+    , fShmId(shmId)
+    , fSegmentName("fmq_" + fShmId + "_main")
+    , fManagementSegmentName("fmq_" + fShmId + "_mng")
+    , fControlQueueName("fmq_" + fShmId + "_cq")
     , fTerminating(false)
     , fHeartbeatTriggered(false)
     , fLastHeartbeat(chrono::high_resolution_clock::now())
@@ -201,7 +201,7 @@ void Monitor::Interactive()
                     break;
                 case 'x':
                     cout << "\n[x] --> closing shared memory:" << endl;
-                    Cleanup(fSessionName);
+                    Cleanup(fShmId);
                     break;
                 case 'h':
                     cout << "\n[h] --> help:" << endl << endl;
@@ -293,7 +293,7 @@ void Monitor::CheckSegment()
         if (fHeartbeatTriggered && duration > fTimeoutInMS)
         {
             cout << "no heartbeats since over " << fTimeoutInMS << " milliseconds, cleaning..." << endl;
-            Cleanup(fSessionName);
+            Cleanup(fShmId);
             fHeartbeatTriggered = false;
             if (fSelfDestruct)
             {
@@ -340,7 +340,7 @@ void Monitor::CheckSegment()
 
         if (fIsDaemon && duration > fTimeoutInMS * 2)
         {
-            Cleanup(fSessionName);
+            Cleanup(fShmId);
             fHeartbeatTriggered = false;
             if (fSelfDestruct)
             {
@@ -360,9 +360,9 @@ void Monitor::CheckSegment()
     }
 }
 
-void Monitor::Cleanup(const string& sessionName)
+void Monitor::Cleanup(const string& shmId)
 {
-    string managementSegmentName("fmq_" + sessionName + "_mng");
+    string managementSegmentName("fmq_" + shmId + "_mng");
     try
     {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
@@ -373,8 +373,8 @@ void Monitor::Cleanup(const string& sessionName)
             unsigned int regionCount = rc->fCount;
             for (unsigned int i = 1; i <= regionCount; ++i)
             {
-                RemoveObject("fmq_" + sessionName + "_rg_" + to_string(i));
-                RemoveQueue(string("fmq_" + sessionName + "_rgq_" + to_string(i)));
+                RemoveObject("fmq_" + shmId + "_rg_" + to_string(i));
+                RemoveQueue(string("fmq_" + shmId + "_rgq_" + to_string(i)));
             }
         }
         else
@@ -389,9 +389,8 @@ void Monitor::Cleanup(const string& sessionName)
         cout << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup." << endl;
     }
 
-    RemoveObject("fmq_" + sessionName + "_main");
-
-    boost::interprocess::named_mutex::remove(string("fmq_" + sessionName + "_mtx").c_str());
+    RemoveObject("fmq_" + shmId + "_main");
+    RemoveMutex("fmq_" + shmId + "_mtx");
 
     cout << endl;
 }
@@ -420,6 +419,18 @@ void Monitor::RemoveQueue(const string& name)
     }
 }
 
+void Monitor::RemoveMutex(const string& name)
+{
+    if (bipc::named_mutex::remove(name.c_str()))
+    {
+        cout << "Successfully removed \"" << name << "\"." << endl;
+    }
+    else
+    {
+        cout << "Did not remove \"" << name << "\". Already removed?" << endl;
+    }
+}
+
 void Monitor::PrintQueues()
 {
     cout << '\n';
@@ -427,7 +438,7 @@ void Monitor::PrintQueues()
     try
     {
         bipc::managed_shared_memory segment(bipc::open_only, fSegmentName.c_str());
-        StringVector* queues = segment.find<StringVector>(string("fmq_" + fSessionName + "_qs").c_str()).first;
+        StringVector* queues = segment.find<StringVector>(string("fmq_" + fShmId + "_qs").c_str()).first;
         if (queues)
         {
             cout << "found " << queues->size() << " queue(s):" << endl;
@@ -500,7 +511,7 @@ Monitor::~Monitor()
     }
     if (fCleanOnExit)
     {
-        Cleanup(fSessionName);
+        Cleanup(fShmId);
     }
 }
 

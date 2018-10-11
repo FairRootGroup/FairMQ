@@ -105,7 +105,7 @@ void Manager::RemoveSegment()
 {
     if (bipc::shared_memory_object::remove(fSegmentName.c_str()))
     {
-        LOG(debug) << "successfully removed " << fSegmentName << " segment after the device has stopped.";
+        LOG(debug) << "successfully removed '" << fSegmentName << "' segment after the device has stopped.";
     }
     else
     {

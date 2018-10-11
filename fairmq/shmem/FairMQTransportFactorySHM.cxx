@@ -37,7 +37,7 @@ fair::mq::Transport FairMQTransportFactorySHM::fTransportType = fair::mq::Transp
 FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const FairMQProgOptions* config)
     : FairMQTransportFactory(id)
     , fDeviceId(id)
-    , fSessionName("default")
+    , fShmId()
     , fContext(nullptr)
     , fHeartbeatThread()
     , fSendHeartbeats(true)
@@ -58,12 +58,13 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
     }
 
     int numIoThreads = 1;
+    string sessionName = "default";
     size_t segmentSize = 2000000000;
     bool autolaunchMonitor = false;
     if (config)
     {
         numIoThreads = config->GetValue<int>("io-threads");
-        fSessionName = config->GetValue<string>("session");
+        sessionName = config->GetValue<string>("session");
         segmentSize = config->GetValue<size_t>("shm-segment-size");
         autolaunchMonitor = config->GetValue<bool>("shm-monitor");
     }
@@ -72,11 +73,11 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
         LOG(debug) << "FairMQProgOptions not available! Using defaults.";
     }
 
-    fSessionName.resize(8, '_'); // shorten the session name, to accommodate for name size limit on some systems (MacOS)
+    fShmId = buildShmIdFromSessionIdAndUserId(sessionName);
 
     try
     {
-        fShMutex = fair::mq::tools::make_unique<bipc::named_mutex>(bipc::open_or_create, string("fmq_" + fSessionName + "_mtx").c_str());
+        fShMutex = fair::mq::tools::make_unique<bipc::named_mutex>(bipc::open_or_create, string("fmq_" + fShmId + "_mtx").c_str());
 
         if (zmq_ctx_set(fContext, ZMQ_IO_THREADS, numIoThreads) != 0)
         {
@@ -89,8 +90,8 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
             LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
         }
 
-        fManager = fair::mq::tools::make_unique<Manager>(fSessionName, segmentSize);
-        LOG(debug) << "created/opened shared memory segment '" << "fmq_" << fSessionName << "_main" << "' of " << segmentSize << " bytes. Available are " << fManager->Segment().get_free_memory() << " bytes.";
+        fManager = fair::mq::tools::make_unique<Manager>(fShmId, segmentSize);
+        LOG(debug) << "created/opened shared memory segment '" << "fmq_" << fShmId << "_main" << "' of " << segmentSize << " bytes. Available are " << fManager->Segment().get_free_memory() << " bytes.";
 
         {
             bipc::scoped_lock<bipc::named_mutex> lock(*fShMutex);
@@ -158,7 +159,7 @@ void FairMQTransportFactorySHM::StartMonitor()
 
     if (!p.empty())
     {
-        boost::process::spawn(p, "-x", "-s", fSessionName, "-d", "-t", "2000", env);
+        boost::process::spawn(p, "-x", "--shmid", fShmId, "-d", "-t", "2000", env);
         int numTries = 0;
         do
         {
@@ -188,7 +189,7 @@ void FairMQTransportFactorySHM::StartMonitor()
 
 void FairMQTransportFactorySHM::SendHeartbeats()
 {
-    string controlQueueName("fmq_" + fSessionName + "_cq");
+    string controlQueueName("fmq_" + fShmId + "_cq");
     while (fSendHeartbeats)
     {
         try
@@ -310,7 +311,7 @@ FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
 
     if (lastRemoved)
     {
-        boost::interprocess::named_mutex::remove(string("fmq_" + fSessionName + "_mtx").c_str());
+        bipc::named_mutex::remove(string("fmq_" + fShmId + "_mtx").c_str());
     }
 }
 

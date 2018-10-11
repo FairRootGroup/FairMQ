@@ -60,7 +60,7 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
 
     static fair::mq::Transport fTransportType;
     std::string fDeviceId;
-    std::string fSessionName;
+    std::string fShmId;
     void* fContext;
     std::thread fHeartbeatThread;
     std::atomic<bool> fSendHeartbeats;
