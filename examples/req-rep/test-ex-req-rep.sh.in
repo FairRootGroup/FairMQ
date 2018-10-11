@@ -8,6 +8,8 @@ if [[ $1 =~ ^[a-z]+$ ]]; then
     transport=$1
 fi
 
+SESSION="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+
 # setup a trap to kill everything if the test fails/timeouts
 trap 'kill -TERM $CLIENT_PID; kill -TERM $SERVER_PID; wait $CLIENT_PID; wait $SERVER_PID;' TERM
 
@@ -15,6 +17,7 @@ CLIENT="fairmq-ex-req-rep-client"
 CLIENT+=" --id client"
 CLIENT+=" --transport $transport"
 CLIENT+=" --verbosity veryhigh"
+CLIENT+=" --session $SESSION"
 CLIENT+=" --control static --color false"
 CLIENT+=" --max-iterations 1"
 CLIENT+=" --channel-config name=data,type=req,method=connect,rateLogging=0,address=tcp://127.0.0.1:5005"
@@ -25,6 +28,7 @@ SERVER="fairmq-ex-req-rep-server"
 SERVER+=" --id server"
 SERVER+=" --transport $transport"
 SERVER+=" --verbosity veryhigh"
+SERVER+=" --session $SESSION"
 SERVER+=" --control static --color false"
 SERVER+=" --max-iterations 1"
 SERVER+=" --channel-config name=data,type=rep,method=bind,rateLogging=0,address=tcp://127.0.0.1:5005"
