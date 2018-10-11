@@ -62,32 +62,43 @@ if(BUILD_NANOMSG_TRANSPORT)
 endif()
 
 if(BUILD_OFI_TRANSPORT)
-  find_package2(PRIVATE asiofi VERSION 0.0.0 REQUIRED)
-  find_package2(PRIVATE OFI VERSION ${asiofi_OFI_VERSION} COMPONENTS ${asiofi_OFI_COMPONENTS} REQUIRED)
+  find_package2(PRIVATE asiofi REQUIRED
+    VERSION 0.0.0
+  )
+  find_package2(PRIVATE OFI REQUIRED
+    VERSION ${asiofi_OFI_VERSION}
+    COMPONENTS ${asiofi_OFI_COMPONENTS}
+  )
 endif()
 
 if(BUILD_NANOMSG_TRANSPORT OR BUILD_OFI_TRANSPORT)
-  find_package2(PRIVATE msgpack VERSION 3.1.0 REQUIRED)
+  find_package2(PRIVATE msgpack REQUIRED
+    VERSION 3.1.0
+  )
 endif()
 
 if(BUILD_FAIRMQ)
-  set(_components container program_options thread system filesystem regex date_time signals)
-  if(asiofi_FOUND)
-    if(${asiofi_Boost_VERSION} VERSION_GREATER 1.64)
-      set(_version ${asiofi_Boost_VERSION})
-    endif()
-    list(APPEND _components ${asiofi_Boost_COMPONENTS})
-    list(REMOVE_DUPLICATES _components)
-  else()
-    set(_version 1.64)
-  endif()
-  find_package2(PUBLIC Boost VERSION ${_version} REQUIRED
-    COMPONENTS ${_components}
-  )
-  find_package2(PUBLIC FairLogger VERSION 1.2.0 REQUIRED)
-  find_package2(PRIVATE ZeroMQ VERSION 4.1.5 REQUIRED)
-endif()
+  find_package2(PUBLIC Boost REQUIRED
+    VERSION 1.64 ${asiofi_Boost_VERSION}
 
+    COMPONENTS
+    container
+    program_options
+    thread
+    system
+    filesystem
+    regex
+    date_time
+    signals
+    ${asiofi_Boost_COMPONENTS}
+  )
+  find_package2(PUBLIC FairLogger REQUIRED
+    VERSION 1.2.0
+  )
+  find_package2(PRIVATE ZeroMQ REQUIRED
+    VERSION 4.1.5
+  )
+endif()
 
 if(BUILD_DDS_PLUGIN)
   find_package2(PRIVATE DDS VERSION 2.2 REQUIRED)
@@ -98,11 +109,17 @@ if(BUILD_PMIX_PLUGIN)
 endif()
 
 if(BUILD_TESTING)
-  find_package2(PRIVATE GTest VERSION 1.7.0 REQUIRED)
+  find_package2(PRIVATE GTest REQUIRED
+    VERSION 1.7.0
+  )
 endif()
 
 if(BUILD_DOCS)
-  find_package2(PRIVATE Doxygen VERSION 1.8.8 REQUIRED COMPONENTS dot OPTIONAL_COMPONENTS mscgen dia)
+  find_package2(PRIVATE Doxygen REQUIRED
+    VERSION 1.8.8
+    COMPONENTS dot
+    OPTIONAL_COMPONENTS mscgen dia
+  )
 endif()
 ################################################################################
 
