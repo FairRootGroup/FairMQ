@@ -8,6 +8,8 @@ if [[ $1 =~ ^[a-z]+$ ]]; then
     transport=$1
 fi
 
+SESSION="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+
 # setup a trap to kill everything if the test fails/timeouts
 trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK1_PID; kill -TERM $SINK2_PID; wait $SAMPLER_PID; wait $SINK1_PID; wait $SINK2_PID;' TERM
 
@@ -15,6 +17,7 @@ SAMPLER="fairmq-ex-copypush-sampler"
 SAMPLER+=" --id sampler1"
 SAMPLER+=" --transport $transport"
 SAMPLER+=" --verbosity veryhigh"
+SAMPLER+=" --session $SESSION"
 SAMPLER+=" --control static --color false"
 SAMPLER+=" --max-iterations 1"
 SAMPLER+=" --channel-config name=data,type=push,method=bind,rateLogging=0,address=tcp://*:5555,address=tcp://*:5556"
@@ -25,6 +28,7 @@ SINK1="fairmq-ex-copypush-sink"
 SINK1+=" --id sink1"
 SINK1+=" --transport $transport"
 SINK1+=" --verbosity veryhigh"
+SINK1+=" --session $SESSION"
 SINK1+=" --control static --color false"
 SINK1+=" --max-iterations 1"
 SINK1+=" --channel-config name=data,type=pull,method=connect,rateLogging=0,address=tcp://localhost:5555"
@@ -35,6 +39,7 @@ SINK2="fairmq-ex-copypush-sink"
 SINK2+=" --id sink2"
 SINK2+=" --transport $transport"
 SINK2+=" --verbosity veryhigh"
+SINK2+=" --session $SESSION"
 SINK2+=" --control static --color false"
 SINK2+=" --max-iterations 1"
 SINK2+=" --channel-config name=data,type=pull,method=connect,rateLogging=0,address=tcp://localhost:5556"
