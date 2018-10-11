@@ -47,9 +47,17 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
+if(BUILD_DDS_PLUGIN)
+  find_package2(PRIVATE DDS VERSION 2.2 REQUIRED)
+  set(DDS_Boost_COMPONENTS log log_setup system filesystem regex thread program_options)
+  set(DDS_Boost_VERSION 1.67)
+endif()
+
 if(BUILD_FAIRMQ)
-  find_package2(PUBLIC Boost VERSION 1.64 REQUIRED
+  find_package2(PUBLIC Boost REQUIRED
+    VERSION 1.64 ${DDS_Boost_VERSION}
     COMPONENTS container program_options thread system filesystem regex date_time
+               ${DDS_Boost_COMPONENTS}
   )
   find_package2(PUBLIC FairLogger VERSION 1.2.0 REQUIRED)
   find_package2(PRIVATE ZeroMQ VERSION 4.1.5 REQUIRED)
@@ -66,16 +74,18 @@ if(BUILD_OFI_TRANSPORT)
   find_package2(PRIVATE Protobuf VERSION 3.4.0 REQUIRED)
 endif()
 
-if(BUILD_DDS_PLUGIN)
-  find_package2(PRIVATE DDS VERSION 2.2 REQUIRED)
-endif()
-
 if(BUILD_TESTING)
-  find_package2(PRIVATE GTest VERSION 1.7.0 REQUIRED)
+  find_package2(PRIVATE GTest REQUIRED
+    VERSION 1.7.0
+  )
 endif()
 
 if(BUILD_DOCS)
-  find_package2(PRIVATE Doxygen VERSION 1.8.8 REQUIRED COMPONENTS dot OPTIONAL_COMPONENTS mscgen dia)
+  find_package2(PRIVATE Doxygen REQUIRED
+    VERSION 1.8.8
+    COMPONENTS dot
+    OPTIONAL_COMPONENTS mscgen dia
+  )
 endif()
 ################################################################################
 
