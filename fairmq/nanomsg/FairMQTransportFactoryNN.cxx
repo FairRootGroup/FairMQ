@@ -9,6 +9,9 @@
 #include "FairMQTransportFactoryNN.h"
 
 #include <nanomsg/nn.h>
+#include <algorithm>
+#include <thread>
+#include <chrono>
 
 using namespace std;
 
@@ -42,7 +45,9 @@ FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(FairMQUnmanagedRegionPt
 
 FairMQSocketPtr FairMQTransportFactoryNN::CreateSocket(const string& type, const string& name) const
 {
-    return unique_ptr<FairMQSocket>(new FairMQSocketNN(type, name, GetId()));
+    unique_ptr<FairMQSocket> socket(new FairMQSocketNN(type, name, GetId()));
+    fSockets.push_back(socket.get());
+    return socket;
 }
 
 FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const vector<FairMQChannel>& channels) const
@@ -73,6 +78,17 @@ FairMQUnmanagedRegionPtr FairMQTransportFactoryNN::CreateUnmanagedRegion(const s
 fair::mq::Transport FairMQTransportFactoryNN::GetType() const
 {
     return fTransportType;
+}
+
+void FairMQTransportFactoryNN::Reset()
+{
+    auto result = max_element(fSockets.begin(), fSockets.end(), [](FairMQSocket* s1, FairMQSocket* s2) {
+        return static_cast<FairMQSocketNN*>(s1)->fLinger < static_cast<FairMQSocketNN*>(s2)->fLinger;
+    });
+    if (result != fSockets.end()) {
+        this_thread::sleep_for(chrono::milliseconds(static_cast<FairMQSocketNN*>(*result)->fLinger));
+    }
+    fSockets.clear();
 }
 
 FairMQTransportFactoryNN::~FairMQTransportFactoryNN()

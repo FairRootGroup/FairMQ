@@ -73,6 +73,7 @@ class FairMQTransportFactory
 
     virtual void Interrupt() = 0;
     virtual void Resume() = 0;
+    virtual void Reset() = 0;
 
     virtual ~FairMQTransportFactory() {};
 

@@ -164,12 +164,11 @@ int FairMQSocketZMQ::SendImpl(FairMQMessagePtr& msg, const int flags, const int 
 
 int FairMQSocketZMQ::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout)
 {
-    int nbytes = -1;
     int elapsed = 0;
 
     while (true)
     {
-        nbytes = zmq_msg_recv(static_cast<FairMQMessageZMQ*>(msg.get())->GetMessage(), fSocket, flags);
+        int nbytes = zmq_msg_recv(static_cast<FairMQMessageZMQ*>(msg.get())->GetMessage(), fSocket, flags);
         if (nbytes >= 0)
         {
             fBytesRx += nbytes;

@@ -15,8 +15,12 @@
 #include "FairMQSocket.h"
 #include "FairMQMessage.h"
 
+class FairMQTransportFactoryNN;
+
 class FairMQSocketNN : public FairMQSocket
 {
+    friend class FairMQTransportFactoryNN;
+
   public:
     FairMQSocketNN(const std::string& type, const std::string& name, const std::string& id = "");
     FairMQSocketNN(const FairMQSocketNN&) = delete;
@@ -69,6 +73,7 @@ class FairMQSocketNN : public FairMQSocket
 
     int fSndTimeout;
     int fRcvTimeout;
+    int fLinger;
 
     int SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout);
     int ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout);

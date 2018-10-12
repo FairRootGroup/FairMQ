@@ -52,6 +52,7 @@ class FairMQTransportFactoryZMQ : public FairMQTransportFactory
 
     void Interrupt() override { FairMQSocketZMQ::Interrupt(); }
     void Resume() override { FairMQSocketZMQ::Resume(); }
+    void Reset() override {}
 
   private:
     static fair::mq::Transport fTransportType;

@@ -51,6 +51,7 @@ class FairMQTransportFactorySHM : public FairMQTransportFactory
 
     void Interrupt() override { FairMQSocketSHM::Interrupt(); }
     void Resume() override { FairMQSocketSHM::Resume(); }
+    void Reset() override {}
 
     ~FairMQTransportFactorySHM() override;
 

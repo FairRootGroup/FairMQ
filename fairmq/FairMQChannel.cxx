@@ -33,6 +33,7 @@ FairMQChannel::FairMQChannel()
     , fRcvBufSize(1000)
     , fSndKernelSize(0)
     , fRcvKernelSize(0)
+    , fLinger(500)
     , fRateLogging(1)
     , fName("")
     , fIsValid(false)
@@ -53,6 +54,7 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
     , fRcvBufSize(1000)
     , fSndKernelSize(0)
     , fRcvKernelSize(0)
+    , fLinger(500)
     , fRateLogging(1)
     , fName("")
     , fIsValid(false)
@@ -73,6 +75,7 @@ FairMQChannel::FairMQChannel(const string& name, const string& type, std::shared
     , fRcvBufSize(1000)
     , fSndKernelSize(0)
     , fRcvKernelSize(0)
+    , fLinger(500)
     , fRateLogging(1)
     , fName(name)
     , fIsValid(false)
@@ -93,6 +96,7 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan)
     , fRcvBufSize(chan.fRcvBufSize)
     , fSndKernelSize(chan.fSndKernelSize)
     , fRcvKernelSize(chan.fRcvKernelSize)
+    , fLinger(chan.fLinger)
     , fRateLogging(chan.fRateLogging)
     , fName(chan.fName)
     , fIsValid(false)
@@ -113,6 +117,7 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     fRcvBufSize = chan.fRcvBufSize;
     fSndKernelSize = chan.fSndKernelSize;
     fRcvKernelSize = chan.fRcvKernelSize;
+    fLinger = chan.fLinger;
     fRateLogging = chan.fRateLogging;
     fName = chan.fName;
     fIsValid = false;
@@ -262,6 +267,20 @@ int FairMQChannel::GetRcvKernelSize() const
     }
 }
 
+int FairMQChannel::GetLinger() const
+{
+    try
+    {
+        unique_lock<mutex> lock(fChannelMutex);
+        return fLinger;
+    }
+    catch (exception& e)
+    {
+        LOG(error) << "Exception caught in FairMQChannel::GetLinger: " << e.what();
+        exit(EXIT_FAILURE);
+    }
+}
+
 int FairMQChannel::GetRateLogging() const
 {
     try
@@ -400,6 +419,22 @@ void FairMQChannel::UpdateRcvKernelSize(const int rcvKernelSize)
     catch (exception& e)
     {
         LOG(error) << "Exception caught in FairMQChannel::UpdateRcvKernelSize: " << e.what();
+        exit(EXIT_FAILURE);
+    }
+}
+
+void FairMQChannel::UpdateLinger(const int duration)
+{
+    try
+    {
+        unique_lock<mutex> lock(fChannelMutex);
+        fIsValid = false;
+        fLinger = duration;
+        fModified = true;
+    }
+    catch (exception& e)
+    {
+        LOG(error) << "Exception caught in FairMQChannel::UpdateLinger: " << e.what();
         exit(EXIT_FAILURE);
     }
 }
