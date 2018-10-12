@@ -48,11 +48,6 @@ class FairMQSocket
     virtual unsigned long GetMessagesTx() const = 0;
     virtual unsigned long GetMessagesRx() const = 0;
 
-    virtual bool SetSendTimeout(const int timeout, const std::string& address, const std::string& method) = 0;
-    virtual int GetSendTimeout() const = 0;
-    virtual bool SetReceiveTimeout(const int timeout, const std::string& address, const std::string& method) = 0;
-    virtual int GetReceiveTimeout() const = 0;
-
     virtual ~FairMQSocket() {};
 };
 

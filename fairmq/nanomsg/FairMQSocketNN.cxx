@@ -492,40 +492,6 @@ unsigned long FairMQSocketNN::GetMessagesRx() const
     return fMessagesRx;
 }
 
-bool FairMQSocketNN::SetSendTimeout(const int timeout, const string& /*address*/, const string& /*method*/)
-{
-    fSndTimeout = timeout;
-    if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0)
-    {
-        LOG(error) << "Failed setting option 'send timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
-        return false;
-    }
-
-    return true;
-}
-
-int FairMQSocketNN::GetSendTimeout() const
-{
-    return fSndTimeout;
-}
-
-bool FairMQSocketNN::SetReceiveTimeout(const int timeout, const string& /*address*/, const string& /*method*/)
-{
-    fRcvTimeout = timeout;
-    if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0)
-    {
-        LOG(error) << "Failed setting option 'receive timeout' on socket " << fId << ", reason: " << nn_strerror(errno);
-        return false;
-    }
-
-    return true;
-}
-
-int FairMQSocketNN::GetReceiveTimeout() const
-{
-    return fRcvTimeout;
-}
-
 int FairMQSocketNN::GetConstant(const string& constant)
 {
     if (constant == "")
