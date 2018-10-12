@@ -111,6 +111,10 @@ class FairMQChannel
     /// @return Returns socket kernel transmit receive buffer size (in bytes)
     int GetRcvKernelSize() const;
 
+    /// Get linger duration (in milliseconds)
+    /// @return Returns linger duration (in milliseconds)
+    int GetLinger() const;
+
     /// Get socket rate logging interval (in seconds)
     /// @return Returns socket rate logging interval (in seconds)
     int GetRateLogging() const;
@@ -146,6 +150,10 @@ class FairMQChannel
     /// Set socket kernel transmit receive buffer size (in bytes)
     /// @param rcvKernelSize Socket receive buffer size (in bytes)
     void UpdateRcvKernelSize(const int rcvKernelSize);
+
+    /// Set linger duration (in milliseconds)
+    /// @param duration linger duration (in milliseconds)
+    void UpdateLinger(const int duration);
 
     /// Set socket rate logging interval (in seconds)
     /// @param rateLogging Socket rate logging interval (in seconds)
@@ -307,6 +315,7 @@ class FairMQChannel
     int fRcvBufSize;
     int fSndKernelSize;
     int fRcvKernelSize;
+    int fLinger;
     int fRateLogging;
 
     std::string fName;

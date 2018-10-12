@@ -268,6 +268,7 @@ void FairMQProgOptions::UpdateMQValues()
             string rcvBufSizeKey = "chans." + p.first + "." + to_string(index) + ".rcvBufSize";
             string sndKernelSizeKey = "chans." + p.first + "." + to_string(index) + ".sndKernelSize";
             string rcvKernelSizeKey = "chans." + p.first + "." + to_string(index) + ".rcvKernelSize";
+            string lingerKey = "chans." + p.first + "." + to_string(index) + ".linger";
             string rateLoggingKey = "chans." + p.first + "." + to_string(index) + ".rateLogging";
 
             fChannelKeyMap[typeKey] = ChannelKey{p.first, index, "type"};
@@ -278,6 +279,7 @@ void FairMQProgOptions::UpdateMQValues()
             fChannelKeyMap[rcvBufSizeKey] = ChannelKey{p.first, index, "rcvBufSize"};
             fChannelKeyMap[sndKernelSizeKey] = ChannelKey{p.first, index, "sndKernelSize"};
             fChannelKeyMap[rcvKernelSizeKey] = ChannelKey{p.first, index, "rcvkernelSize"};
+            fChannelKeyMap[lingerKey] = ChannelKey{p.first, index, "linger"};
             fChannelKeyMap[rateLoggingKey] = ChannelKey{p.first, index, "rateLogging"};
 
             UpdateVarMap<string>(typeKey, channel.GetType());
@@ -288,6 +290,7 @@ void FairMQProgOptions::UpdateMQValues()
             UpdateVarMap<int>(rcvBufSizeKey, channel.GetRcvBufSize());
             UpdateVarMap<int>(sndKernelSizeKey, channel.GetSndKernelSize());
             UpdateVarMap<int>(rcvKernelSizeKey, channel.GetRcvKernelSize());
+            UpdateVarMap<int>(lingerKey, channel.GetLinger());
             UpdateVarMap<int>(rateLoggingKey, channel.GetRateLogging());
 
             index++;
@@ -340,6 +343,12 @@ int FairMQProgOptions::UpdateChannelValue(const string& channelName, int index, 
     if (member == "rcvBufSize")
     {
         fFairMQChannelMap.at(channelName).at(index).UpdateRcvBufSize(val);
+        return 0;
+    }
+
+    if (member == "linger")
+    {
+        fFairMQChannelMap.at(channelName).at(index).UpdateLinger(val);
         return 0;
     }
 

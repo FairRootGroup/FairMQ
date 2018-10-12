@@ -51,6 +51,7 @@ class TransportFactory : public FairMQTransportFactory
 
     void Interrupt() override {}
     void Resume() override {}
+    void Reset() override {}
 
   private:
     mutable Context fContext;

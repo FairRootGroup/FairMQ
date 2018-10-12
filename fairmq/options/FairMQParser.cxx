@@ -153,6 +153,7 @@ void ChannelParser(const boost::property_tree::ptree& tree, FairMQChannelMap& ch
                 commonChannel.UpdateRcvBufSize(q.second.get<int>("rcvBufSize", commonChannel.GetRcvBufSize()));
                 commonChannel.UpdateSndKernelSize(q.second.get<int>("sndKernelSize", commonChannel.GetSndKernelSize()));
                 commonChannel.UpdateRcvKernelSize(q.second.get<int>("rcvKernelSize", commonChannel.GetRcvKernelSize()));
+                commonChannel.UpdateLinger(q.second.get<int>("linger", commonChannel.GetLinger()));
                 commonChannel.UpdateRateLogging(q.second.get<int>("rateLogging", commonChannel.GetRateLogging()));
 
                 // temporary FairMQChannel container
@@ -172,6 +173,7 @@ void ChannelParser(const boost::property_tree::ptree& tree, FairMQChannelMap& ch
                     LOG(debug) << "\trcvBufSize    = " << commonChannel.GetRcvBufSize();
                     LOG(debug) << "\tsndKernelSize = " << commonChannel.GetSndKernelSize();
                     LOG(debug) << "\trcvKernelSize = " << commonChannel.GetRcvKernelSize();
+                    LOG(debug) << "\tlinger        = " << commonChannel.GetLinger();
                     LOG(debug) << "\trateLogging   = " << commonChannel.GetRateLogging();
 
                     for (int i = 0; i < numSockets; ++i)
@@ -214,6 +216,7 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
                 channel.UpdateRcvBufSize(q.second.get<int>("rcvBufSize", channel.GetRcvBufSize()));
                 channel.UpdateSndKernelSize(q.second.get<int>("sndKernelSize", channel.GetSndKernelSize()));
                 channel.UpdateRcvKernelSize(q.second.get<int>("rcvKernelSize", channel.GetRcvKernelSize()));
+                channel.UpdateLinger(q.second.get<int>("linger", channel.GetLinger()));
                 channel.UpdateRateLogging(q.second.get<int>("rateLogging", channel.GetRateLogging()));
 
                 LOG(debug) << "" << channelName << "[" << socketCounter << "]:";
@@ -225,6 +228,7 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
                 LOG(debug) << "\trcvBufSize    = " << channel.GetRcvBufSize();
                 LOG(debug) << "\tsndKernelSize = " << channel.GetSndKernelSize();
                 LOG(debug) << "\trcvKernelSize = " << channel.GetRcvKernelSize();
+                LOG(debug) << "\tlinger        = " << channel.GetLinger();
                 LOG(debug) << "\trateLogging   = " << channel.GetRateLogging();
 
                 channelList.push_back(channel);
@@ -253,6 +257,7 @@ void SocketParser(const boost::property_tree::ptree& tree, vector<FairMQChannel>
         LOG(debug) << "\trcvBufSize    = " << channel.GetRcvBufSize();
         LOG(debug) << "\tsndKernelSize = " << channel.GetSndKernelSize();
         LOG(debug) << "\trcvKernelSize = " << channel.GetRcvKernelSize();
+        LOG(debug) << "\tlinger        = " << channel.GetLinger();
         LOG(debug) << "\trateLogging   = " << channel.GetRateLogging();
 
         channelList.push_back(channel);

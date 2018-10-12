@@ -295,6 +295,9 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
             }
         }
 
+        // set linger duration (how long socket should wait for outstanding transfers before shutdown)
+        ch.fSocket->SetOption("linger", &(ch.fLinger), sizeof(ch.fLinger));
+
         // set high water marks
         ch.fSocket->SetOption("snd-hwm", &(ch.fSndBufSize), sizeof(ch.fSndBufSize));
         ch.fSocket->SetOption("rcv-hwm", &(ch.fRcvBufSize), sizeof(ch.fRcvBufSize));
@@ -365,7 +368,7 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
         }
         endpoint += address;
 
-        LOG(debug) << "Attached channel " << ch.fName << " to " << endpoint << (bind ? " (bind) " : " (connect) ");
+        LOG(debug) << "Attached channel " << ch.fName << " to " << endpoint << (bind ? " (bind) " : " (connect) ") << "(" << ch.fType << ")";
 
         // after the book keeping is done, exit in case of errors
         if (!success)
@@ -914,8 +917,7 @@ void FairMQDevice::LogSocketRates()
             }
 
             t0 = t1;
-            this_thread::sleep_for(chrono::milliseconds(1000));
-            // WaitFor(chrono::milliseconds(1000)); TODO: enable this when nanomsg linger is fixed
+            WaitFor(chrono::milliseconds(1000));
         }
     }
 }
@@ -950,13 +952,11 @@ void FairMQDevice::ResetWrapper()
 {
     CallStateChangeCallbacks(RESETTING_DEVICE);
 
-    Reset();
+    for (auto& t : fTransports)
+    {
+        t.second->Reset();
+    }
 
-    ChangeState(internal_IDLE);
-}
-
-void FairMQDevice::Reset()
-{
     // iterate over the channels map
     for (auto& mi : fChannels)
     {
@@ -967,6 +967,14 @@ void FairMQDevice::Reset()
             vi.fSocket.reset(); // destroy FairMQSocket
         }
     }
+
+    Reset();
+
+    ChangeState(internal_IDLE);
+}
+
+void FairMQDevice::Reset()
+{
 }
 
 const FairMQChannel& FairMQDevice::GetChannel(const string& channelName, const int index) const

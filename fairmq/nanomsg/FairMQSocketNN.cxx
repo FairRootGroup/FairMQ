@@ -39,6 +39,7 @@ FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const str
     , fMessagesRx(0)
     , fSndTimeout(100)
     , fRcvTimeout(100)
+    , fLinger(500)
 {
     if (type == "router" || type == "dealer")
     {
@@ -453,6 +454,13 @@ void FairMQSocketNN::SetOption(const string& option, const void* value, size_t v
 
     if (option == "snd-hwm" || option == "rcv-hwm")
     {
+        return;
+    }
+
+    if (option == "linger")
+    {
+        int val = *(static_cast<int*>(const_cast<void*>(value)));
+        fLinger = val;
         return;
     }
 

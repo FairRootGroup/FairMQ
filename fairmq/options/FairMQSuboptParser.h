@@ -56,6 +56,7 @@ struct SUBOPT
         RCVBUFSIZE,     // size of the receive queue
         SNDKERNELSIZE,
         RCVKERNELSIZE,
+        LINGER,
         RATELOGGING,    // logging rate
         NUMSOCKETS,
         lastsocketkey
@@ -71,6 +72,7 @@ struct SUBOPT
         /*[RCVBUFSIZE]    = */ "rcvBufSize",
         /*[SNDKERNELSIZE] = */ "sndKernelSize",
         /*[RCVKERNELSIZE] = */ "rcvKernelSize",
+        /*[LINGER]        = */ "linger",
         /*[RATELOGGING]   = */ "rateLogging",
         /*[NUMSOCKETS]    = */ "numSockets",
         nullptr

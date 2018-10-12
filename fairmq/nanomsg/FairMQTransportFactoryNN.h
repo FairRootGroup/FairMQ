@@ -43,9 +43,11 @@ class FairMQTransportFactoryNN : public FairMQTransportFactory
 
     void Interrupt() override { FairMQSocketNN::Interrupt(); }
     void Resume() override { FairMQSocketNN::Resume(); }
+    void Reset() override;
 
   private:
     static fair::mq::Transport fTransportType;
+    mutable std::vector<FairMQSocket*> fSockets;
 };
 
 #endif /* FAIRMQTRANSPORTFACTORYNN_H_ */
