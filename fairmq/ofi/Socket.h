@@ -67,11 +67,6 @@ class Socket : public fair::mq::Socket
     auto GetMessagesTx() const -> unsigned long override { return fMessagesTx; }
     auto GetMessagesRx() const -> unsigned long override { return fMessagesRx; }
 
-    auto SetSendTimeout(const int timeout, const std::string& address, const std::string& method) -> bool override;
-    auto GetSendTimeout() const -> int override;
-    auto SetReceiveTimeout(const int timeout, const std::string& address, const std::string& method) -> bool override;
-    auto GetReceiveTimeout() const -> int override;
-
     static auto GetConstant(const std::string& constant) -> int;
 
     ~Socket() override;

@@ -54,11 +54,6 @@ class FairMQSocketSHM : public FairMQSocket
     unsigned long GetMessagesTx() const override;
     unsigned long GetMessagesRx() const override;
 
-    bool SetSendTimeout(const int timeout, const std::string& address, const std::string& method) override;
-    int GetSendTimeout() const override;
-    bool SetReceiveTimeout(const int timeout, const std::string& address, const std::string& method) override;
-    int GetReceiveTimeout() const override;
-
     static int GetConstant(const std::string& constant);
 
     ~FairMQSocketSHM() override;
