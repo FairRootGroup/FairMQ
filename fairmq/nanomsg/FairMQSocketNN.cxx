@@ -156,11 +156,7 @@ int FairMQSocketNN::SendImpl(FairMQMessagePtr& msg, const int flags, const int t
 
             return nbytes;
         }
-#if NN_VERSION_CURRENT>2 // backwards-compatibility with nanomsg version<=0.6
         else if (nn_errno() == ETIMEDOUT)
-#else
-        else if (nn_errno() == EAGAIN)
-#endif
         {
             if (!fInterrupted && ((flags & NN_DONTWAIT) == 0))
             {
@@ -214,11 +210,7 @@ int FairMQSocketNN::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const in
             msgPtr->fReceiving = true;
             return nbytes;
         }
-#if NN_VERSION_CURRENT>2 // backwards-compatibility with nanomsg version<=0.6
         else if (nn_errno() == ETIMEDOUT)
-#else
-        else if (nn_errno() == EAGAIN)
-#endif
         {
             if (!fInterrupted && ((flags & NN_DONTWAIT) == 0))
             {
@@ -288,11 +280,7 @@ int64_t FairMQSocketNN::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fla
             ++fMessagesTx;
             return nbytes;
         }
-#if NN_VERSION_CURRENT>2 // backwards-compatibility with nanomsg version<=0.6
         else if (nn_errno() == ETIMEDOUT)
-#else
-        else if (nn_errno() == EAGAIN)
-#endif
         {
             if (!fInterrupted && ((flags & NN_DONTWAIT) == 0))
             {
@@ -375,11 +363,7 @@ int64_t FairMQSocketNN::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int 
             nn_freemsg(ptr);
             return nbytes;
         }
-#if NN_VERSION_CURRENT>2 // backwards-compatibility with nanomsg version<=0.6
         else if (nn_errno() == ETIMEDOUT)
-#else
-        else if (nn_errno() == EAGAIN)
-#endif
         {
             if (!fInterrupted && ((flags & NN_DONTWAIT) == 0))
             {
