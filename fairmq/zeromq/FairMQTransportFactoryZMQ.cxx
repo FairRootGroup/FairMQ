@@ -90,11 +90,6 @@ FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const unordered_map<stri
     return unique_ptr<FairMQPoller>(new FairMQPollerZMQ(channelsMap, channelList));
 }
 
-FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const
-{
-    return unique_ptr<FairMQPoller>(new FairMQPollerZMQ(cmdSocket, dataSocket));
-}
-
 FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback) const
 {
     return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionZMQ(size, callback));

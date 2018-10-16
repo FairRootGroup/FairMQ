@@ -51,7 +51,7 @@ class FairMQChannel
     /// Default destructor
     virtual ~FairMQChannel();
 
-    FairMQSocket const & GetSocket() const;
+    FairMQSocket& GetSocket() const;
 
     auto Bind(const std::string& address) -> bool
     {

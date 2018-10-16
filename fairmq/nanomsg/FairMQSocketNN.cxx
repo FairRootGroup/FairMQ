@@ -416,12 +416,7 @@ void FairMQSocketNN::Resume()
     fInterrupted = false;
 }
 
-void* FairMQSocketNN::GetSocket() const
-{
-    return nullptr; // dummy method to comply with the interface. functionality not possible in zeromq.
-}
-
-int FairMQSocketNN::GetSocket(int /*nothing*/) const
+int FairMQSocketNN::GetSocket() const
 {
     return fSocket;
 }
@@ -445,8 +440,7 @@ void FairMQSocketNN::SetOption(const string& option, const void* value, size_t v
 
     if (option == "linger")
     {
-        int val = *(static_cast<int*>(const_cast<void*>(value)));
-        fLinger = val;
+        fLinger = *static_cast<int*>(const_cast<void*>(value));
         return;
     }
 
@@ -459,6 +453,19 @@ void FairMQSocketNN::SetOption(const string& option, const void* value, size_t v
 
 void FairMQSocketNN::GetOption(const string& option, void* value, size_t* valueSize)
 {
+    if (option == "linger")
+    {
+        *static_cast<int*>(value) = fLinger;
+        return;
+    }
+
+    if (option == "snd-hwm" || option == "rcv-hwm")
+    {
+        *static_cast<int*>(value) = -1;
+        return;
+    }
+
+
     int rc = nn_getsockopt(fSocket, NN_SOL_SOCKET, GetConstant(option), value, valueSize);
     if (rc < 0)
     {

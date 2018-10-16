@@ -43,7 +43,6 @@ class FairMQTransportFactorySHM final : public FairMQTransportFactory
     FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const override;
     FairMQPollerPtr CreatePoller(const std::vector<const FairMQChannel*>& channels) const override;
     FairMQPollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const override;
-    FairMQPollerPtr CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const override;
 
     FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback = nullptr) const override;
 

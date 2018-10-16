@@ -457,12 +457,6 @@ void* FairMQSocketSHM::GetSocket() const
     return fSocket;
 }
 
-int FairMQSocketSHM::GetSocket(int) const
-{
-    // dummy method to comply with the interface. functionality not possible in zeromq.
-    return -1;
-}
-
 void FairMQSocketSHM::SetOption(const string& option, const void* value, size_t valueSize)
 {
     if (zmq_setsockopt(fSocket, GetConstant(option), value, valueSize) < 0)
@@ -489,7 +483,7 @@ void FairMQSocketSHM::SetLinger(const int value)
 int FairMQSocketSHM::GetLinger() const
 {
     int value = 0;
-    size_t valueSize;
+    size_t valueSize = sizeof(value);
     if (zmq_getsockopt(fSocket, ZMQ_LINGER, &value, &valueSize) < 0) {
         throw SocketError(tools::ToString("failed getting ZMQ_LINGER, reason: ", zmq_strerror(errno)));
     }
@@ -506,7 +500,7 @@ void FairMQSocketSHM::SetSndBufSize(const int value)
 int FairMQSocketSHM::GetSndBufSize() const
 {
     int value = 0;
-    size_t valueSize;
+    size_t valueSize = sizeof(value);
     if (zmq_getsockopt(fSocket, ZMQ_SNDHWM, &value, &valueSize) < 0) {
         throw SocketError(tools::ToString("failed getting ZMQ_SNDHWM, reason: ", zmq_strerror(errno)));
     }
@@ -523,7 +517,7 @@ void FairMQSocketSHM::SetRcvBufSize(const int value)
 int FairMQSocketSHM::GetRcvBufSize() const
 {
     int value = 0;
-    size_t valueSize;
+    size_t valueSize = sizeof(value);
     if (zmq_getsockopt(fSocket, ZMQ_RCVHWM, &value, &valueSize) < 0) {
         throw SocketError(tools::ToString("failed getting ZMQ_RCVHWM, reason: ", zmq_strerror(errno)));
     }
@@ -540,7 +534,7 @@ void FairMQSocketSHM::SetSndKernelSize(const int value)
 int FairMQSocketSHM::GetSndKernelSize() const
 {
     int value = 0;
-    size_t valueSize;
+    size_t valueSize = sizeof(value);
     if (zmq_getsockopt(fSocket, ZMQ_SNDBUF, &value, &valueSize) < 0) {
         throw SocketError(tools::ToString("failed getting ZMQ_SNDBUF, reason: ", zmq_strerror(errno)));
     }
@@ -557,7 +551,7 @@ void FairMQSocketSHM::SetRcvKernelSize(const int value)
 int FairMQSocketSHM::GetRcvKernelSize() const
 {
     int value = 0;
-    size_t valueSize;
+    size_t valueSize = sizeof(value);
     if (zmq_getsockopt(fSocket, ZMQ_RCVBUF, &value, &valueSize) < 0) {
         throw SocketError(tools::ToString("failed getting ZMQ_RCVBUF, reason: ", zmq_strerror(errno)));
     }

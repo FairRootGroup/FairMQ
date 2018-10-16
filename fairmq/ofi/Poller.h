@@ -57,8 +57,6 @@ class Poller final : public FairMQPoller
     ~Poller() override;
 
   private:
-    Poller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket);
-
     zmq_pollitem_t* fItems;
     int fNumItems;
 
