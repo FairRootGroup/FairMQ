@@ -82,11 +82,11 @@ fair::mq::Transport FairMQTransportFactoryNN::GetType() const
 
 void FairMQTransportFactoryNN::Reset()
 {
-    auto result = max_element(fSockets.begin(), fSockets.end(), [](FairMQSocket* s1, FairMQSocket* s2) {
-        return static_cast<FairMQSocketNN*>(s1)->fLinger < static_cast<FairMQSocketNN*>(s2)->fLinger;
+    auto it = max_element(fSockets.begin(), fSockets.end(), [](FairMQSocket* s1, FairMQSocket* s2) {
+        return static_cast<FairMQSocketNN*>(s1)->GetLinger() < static_cast<FairMQSocketNN*>(s2)->GetLinger();
     });
-    if (result != fSockets.end()) {
-        this_thread::sleep_for(chrono::milliseconds(static_cast<FairMQSocketNN*>(*result)->fLinger));
+    if (it != fSockets.end()) {
+        this_thread::sleep_for(chrono::milliseconds(static_cast<FairMQSocketNN*>(*it)->GetLinger()));
     }
     fSockets.clear();
 }

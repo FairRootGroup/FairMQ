@@ -11,6 +11,7 @@
 #include "FairMQMessageSHM.h"
 #include "FairMQUnmanagedRegionSHM.h"
 #include "FairMQLogger.h"
+#include <fairmq/Tools.h>
 
 #include <zmq.h>
 
@@ -18,6 +19,7 @@
 
 using namespace std;
 using namespace fair::mq::shmem;
+using namespace fair::mq;
 
 atomic<bool> FairMQSocketSHM::fInterrupted(false);
 
@@ -475,6 +477,91 @@ void FairMQSocketSHM::GetOption(const string& option, void* value, size_t* value
     {
         LOG(error) << "Failed getting socket option, reason: " << zmq_strerror(errno);
     }
+}
+
+void FairMQSocketSHM::SetLinger(const int value)
+{
+    if (zmq_setsockopt(fSocket, ZMQ_LINGER, &value, sizeof(value)) < 0) {
+        throw SocketError(tools::ToString("failed setting ZMQ_LINGER, reason: ", zmq_strerror(errno)));
+    }
+}
+
+int FairMQSocketSHM::GetLinger() const
+{
+    int value = 0;
+    size_t valueSize;
+    if (zmq_getsockopt(fSocket, ZMQ_LINGER, &value, &valueSize) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_LINGER, reason: ", zmq_strerror(errno)));
+    }
+    return value;
+}
+
+void FairMQSocketSHM::SetSndBufSize(const int value)
+{
+    if (zmq_setsockopt(fSocket, ZMQ_SNDHWM, &value, sizeof(value)) < 0) {
+        throw SocketError(tools::ToString("failed setting ZMQ_SNDHWM, reason: ", zmq_strerror(errno)));
+    }
+}
+
+int FairMQSocketSHM::GetSndBufSize() const
+{
+    int value = 0;
+    size_t valueSize;
+    if (zmq_getsockopt(fSocket, ZMQ_SNDHWM, &value, &valueSize) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_SNDHWM, reason: ", zmq_strerror(errno)));
+    }
+    return value;
+}
+
+void FairMQSocketSHM::SetRcvBufSize(const int value)
+{
+    if (zmq_setsockopt(fSocket, ZMQ_RCVHWM, &value, sizeof(value)) < 0) {
+        throw SocketError(tools::ToString("failed setting ZMQ_RCVHWM, reason: ", zmq_strerror(errno)));
+    }
+}
+
+int FairMQSocketSHM::GetRcvBufSize() const
+{
+    int value = 0;
+    size_t valueSize;
+    if (zmq_getsockopt(fSocket, ZMQ_RCVHWM, &value, &valueSize) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_RCVHWM, reason: ", zmq_strerror(errno)));
+    }
+    return value;
+}
+
+void FairMQSocketSHM::SetSndKernelSize(const int value)
+{
+    if (zmq_setsockopt(fSocket, ZMQ_SNDBUF, &value, sizeof(value)) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_SNDBUF, reason: ", zmq_strerror(errno)));
+    }
+}
+
+int FairMQSocketSHM::GetSndKernelSize() const
+{
+    int value = 0;
+    size_t valueSize;
+    if (zmq_getsockopt(fSocket, ZMQ_SNDBUF, &value, &valueSize) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_SNDBUF, reason: ", zmq_strerror(errno)));
+    }
+    return value;
+}
+
+void FairMQSocketSHM::SetRcvKernelSize(const int value)
+{
+    if (zmq_setsockopt(fSocket, ZMQ_RCVBUF, &value, sizeof(value)) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_RCVBUF, reason: ", zmq_strerror(errno)));
+    }
+}
+
+int FairMQSocketSHM::GetRcvKernelSize() const
+{
+    int value = 0;
+    size_t valueSize;
+    if (zmq_getsockopt(fSocket, ZMQ_RCVBUF, &value, &valueSize) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_RCVBUF, reason: ", zmq_strerror(errno)));
+    }
+    return value;
 }
 
 unsigned long FairMQSocketSHM::GetBytesTx() const

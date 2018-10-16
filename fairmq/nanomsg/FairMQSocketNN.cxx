@@ -16,6 +16,7 @@
 #include "FairMQMessageNN.h"
 #include "FairMQLogger.h"
 #include "FairMQUnmanagedRegionNN.h"
+#include <fairmq/Tools.h>
 
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
@@ -27,6 +28,7 @@
 #include <msgpack.hpp>
 
 using namespace std;
+using namespace fair::mq;
 
 atomic<bool> FairMQSocketNN::fInterrupted(false);
 
@@ -431,7 +433,7 @@ void FairMQSocketNN::SetOption(const string& option, const void* value, size_t v
         int val = *(static_cast<int*>(const_cast<void*>(value)));
         if (val <= 0)
         {
-            LOG(warn) << "value for sndKernelSize/rcvKernelSize should be greater than 0, using defaults (128kB).";
+            LOG(warn) << "value for sndKernelSize/rcvKernelSize should be greater than 0, leaving unchanged.";
             return;
         }
     }
@@ -463,6 +465,73 @@ void FairMQSocketNN::GetOption(const string& option, void* value, size_t* valueS
         LOG(error) << "failed getting socket option, reason: " << nn_strerror(errno);
     }
 }
+
+void FairMQSocketNN::SetLinger(const int value)
+{
+    fLinger = value;
+}
+
+int FairMQSocketNN::GetLinger() const
+{
+    return fLinger;
+}
+
+void FairMQSocketNN::SetSndBufSize(const int /* value */)
+{
+    // not used in nanomsg
+}
+
+int FairMQSocketNN::GetSndBufSize() const
+{
+    // not used in nanomsg
+    return -1;
+}
+
+void FairMQSocketNN::SetRcvBufSize(const int /* value */)
+{
+    // not used in nanomsg
+}
+
+int FairMQSocketNN::GetRcvBufSize() const
+{
+    // not used in nanomsg
+    return -1;
+}
+
+void FairMQSocketNN::SetSndKernelSize(const int value)
+{
+    if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_SNDBUF, &value, sizeof(value)) < 0) {
+        throw SocketError(tools::ToString("failed setting NN_SNDBUF, reason: ", nn_strerror(errno)));
+    }
+}
+
+int FairMQSocketNN::GetSndKernelSize() const
+{
+    int value = 0;
+    size_t valueSize;
+    if (nn_getsockopt(fSocket, NN_SOL_SOCKET, NN_SNDBUF, &value, &valueSize) < 0) {
+        throw SocketError(tools::ToString("failed getting NN_SNDBUF, reason: ", nn_strerror(errno)));
+    }
+    return value;
+}
+
+void FairMQSocketNN::SetRcvKernelSize(const int value)
+{
+    if (nn_setsockopt(fSocket, NN_SOL_SOCKET, NN_RCVBUF, &value, sizeof(value)) < 0) {
+        throw SocketError(tools::ToString("failed setting NN_RCVBUF, reason: ", nn_strerror(errno)));
+    }
+}
+
+int FairMQSocketNN::GetRcvKernelSize() const
+{
+    int value = 0;
+    size_t valueSize;
+    if (nn_getsockopt(fSocket, NN_SOL_SOCKET, NN_RCVBUF, &value, &valueSize) < 0) {
+        throw SocketError(tools::ToString("failed getting NN_RCVBUF, reason: ", nn_strerror(errno)));
+    }
+    return value;
+}
+
 
 unsigned long FairMQSocketNN::GetBytesTx() const
 {

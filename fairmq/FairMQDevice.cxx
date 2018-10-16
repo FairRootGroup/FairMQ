@@ -296,20 +296,20 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
         }
 
         // set linger duration (how long socket should wait for outstanding transfers before shutdown)
-        ch.fSocket->SetOption("linger", &(ch.fLinger), sizeof(ch.fLinger));
+        ch.fSocket->SetLinger(ch.fLinger);
 
         // set high water marks
-        ch.fSocket->SetOption("snd-hwm", &(ch.fSndBufSize), sizeof(ch.fSndBufSize));
-        ch.fSocket->SetOption("rcv-hwm", &(ch.fRcvBufSize), sizeof(ch.fRcvBufSize));
+        ch.fSocket->SetSndBufSize(ch.fSndBufSize);
+        ch.fSocket->SetRcvBufSize(ch.fRcvBufSize);
 
         // set kernel transmit size (set it only if value is not the default value)
         if (ch.fSndKernelSize != 0)
         {
-            ch.fSocket->SetOption("snd-size", &(ch.fSndKernelSize), sizeof(ch.fSndKernelSize));
+            ch.fSocket->SetSndKernelSize(ch.fSndKernelSize);
         }
         if (ch.fRcvKernelSize != 0)
         {
-            ch.fSocket->SetOption("rcv-size", &(ch.fRcvKernelSize), sizeof(ch.fRcvKernelSize));
+            ch.fSocket->SetRcvKernelSize(ch.fRcvKernelSize);
         }
 
         // attach
