@@ -19,7 +19,7 @@
 
 class FairMQChannel;
 
-class FairMQPollerSHM : public FairMQPoller
+class FairMQPollerSHM final : public FairMQPoller
 {
     friend class FairMQChannel;
     friend class FairMQTransportFactorySHM;

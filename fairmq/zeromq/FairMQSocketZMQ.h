@@ -16,7 +16,7 @@
 #include "FairMQSocket.h"
 #include "FairMQMessage.h"
 
-class FairMQSocketZMQ : public FairMQSocket
+class FairMQSocketZMQ final : public FairMQSocket
 {
   public:
     FairMQSocketZMQ(const std::string& type, const std::string& name, const std::string& id = "", void* context = nullptr);

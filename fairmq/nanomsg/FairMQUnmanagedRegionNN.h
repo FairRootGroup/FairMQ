@@ -13,7 +13,7 @@
 
 #include <cstddef> // size_t
 
-class FairMQUnmanagedRegionNN : public FairMQUnmanagedRegion
+class FairMQUnmanagedRegionNN final : public FairMQUnmanagedRegion
 {
     friend class FairMQSocketNN;
 

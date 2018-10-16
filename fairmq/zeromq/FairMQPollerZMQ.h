@@ -27,7 +27,7 @@
 
 class FairMQChannel;
 
-class FairMQPollerZMQ : public FairMQPoller
+class FairMQPollerZMQ final : public FairMQPoller
 {
     friend class FairMQChannel;
     friend class FairMQTransportFactoryZMQ;
@@ -42,13 +42,13 @@ class FairMQPollerZMQ : public FairMQPoller
 
     void SetItemEvents(zmq_pollitem_t& item, const int type);
 
-    virtual void Poll(const int timeout);
-    virtual bool CheckInput(const int index);
-    virtual bool CheckOutput(const int index);
-    virtual bool CheckInput(const std::string& channelKey, const int index);
-    virtual bool CheckOutput(const std::string& channelKey, const int index);
+    void Poll(const int timeout) override;
+    bool CheckInput(const int index) override;
+    bool CheckOutput(const int index) override;
+    bool CheckInput(const std::string& channelKey, const int index) override;
+    bool CheckOutput(const std::string& channelKey, const int index) override;
 
-    virtual ~FairMQPollerZMQ();
+    ~FairMQPollerZMQ() override;
 
   private:
     FairMQPollerZMQ(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket);

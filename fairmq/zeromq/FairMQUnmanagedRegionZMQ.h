@@ -13,7 +13,7 @@
 
 #include <cstddef> // size_t
 
-class FairMQUnmanagedRegionZMQ : public FairMQUnmanagedRegion
+class FairMQUnmanagedRegionZMQ final : public FairMQUnmanagedRegion
 {
     friend class FairMQSocketZMQ;
     friend class FairMQMessageZMQ;

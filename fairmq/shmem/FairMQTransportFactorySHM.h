@@ -26,7 +26,7 @@
 #include <thread>
 #include <atomic>
 
-class FairMQTransportFactorySHM : public FairMQTransportFactory
+class FairMQTransportFactorySHM final : public FairMQTransportFactory
 {
   public:
     FairMQTransportFactorySHM(const std::string& id = "", const FairMQProgOptions* config = nullptr);

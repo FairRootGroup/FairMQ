@@ -26,7 +26,7 @@
 class FairMQChannel;
 struct nn_pollfd;
 
-class FairMQPollerNN : public FairMQPoller
+class FairMQPollerNN final : public FairMQPoller
 {
     friend class FairMQChannel;
     friend class FairMQTransportFactoryNN;
@@ -41,13 +41,13 @@ class FairMQPollerNN : public FairMQPoller
 
     void SetItemEvents(nn_pollfd& item, const int type);
 
-    virtual void Poll(const int timeout);
-    virtual bool CheckInput(const int index);
-    virtual bool CheckOutput(const int index);
-    virtual bool CheckInput(const std::string& channelKey, const int index);
-    virtual bool CheckOutput(const std::string& channelKey, const int index);
+    void Poll(const int timeout) override;
+    bool CheckInput(const int index) override;
+    bool CheckOutput(const int index) override;
+    bool CheckInput(const std::string& channelKey, const int index) override;
+    bool CheckOutput(const std::string& channelKey, const int index) override;
 
-    virtual ~FairMQPollerNN();
+    ~FairMQPollerNN() override;
 
   private:
     FairMQPollerNN(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket);

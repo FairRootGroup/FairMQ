@@ -22,7 +22,7 @@
 
 class FairMQSocketSHM;
 
-class FairMQMessageSHM : public FairMQMessage
+class FairMQMessageSHM final : public FairMQMessage
 {
     friend class FairMQSocketSHM;
 
