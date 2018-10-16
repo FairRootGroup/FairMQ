@@ -124,7 +124,7 @@ auto Poller::CheckOutput(const int index) -> bool
     return fItems[index].revents & ZMQ_POLLOUT;
 }
 
-auto Poller::CheckInput(const string channelKey, const int index) -> bool
+auto Poller::CheckInput(const string& channelKey, const int index) -> bool
 {
     try {
         return fItems[fOffsetMap.at(channelKey) + index].revents & ZMQ_POLLIN;
@@ -136,7 +136,7 @@ auto Poller::CheckInput(const string channelKey, const int index) -> bool
     }
 }
 
-auto Poller::CheckOutput(const string channelKey, const int index) -> bool
+auto Poller::CheckOutput(const string& channelKey, const int index) -> bool
 {
     try {
         return fItems[fOffsetMap.at(channelKey) + index].revents & ZMQ_POLLOUT;

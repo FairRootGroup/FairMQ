@@ -51,8 +51,8 @@ class Poller final : public FairMQPoller
     auto Poll(const int timeout) -> void override;
     auto CheckInput(const int index) -> bool override;
     auto CheckOutput(const int index) -> bool override;
-    auto CheckInput(const std::string channelKey, const int index) -> bool override;
-    auto CheckOutput(const std::string channelKey, const int index) -> bool override;
+    auto CheckInput(const std::string& channelKey, const int index) -> bool override;
+    auto CheckOutput(const std::string& channelKey, const int index) -> bool override;
 
     ~Poller() override;
 
