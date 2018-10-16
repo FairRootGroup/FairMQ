@@ -26,11 +26,6 @@ class PairRight : public FairMQDevice
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 
-    auto Reset() -> void override
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
     auto Run() -> void override
     {
         int counter{0};
@@ -45,7 +40,7 @@ class PairRight : public FairMQDevice
         auto msg4(NewMessageFor("data", 0));
         if (Send(msg4, "data") >= 0) counter++;
         if (counter == 4) LOG(info) << "Simple empty message ping pong successfull";
-        
+
         // Simple message with short text data
         auto msg5(NewMessageFor("data", 0));
         auto ret = Receive(msg5, "data");

@@ -24,11 +24,6 @@ class PollOut : public FairMQDevice
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 
-    auto Reset() -> void override
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
     auto Run() -> void override
     {
         auto msg1 = FairMQMessagePtr{NewMessage()};
