@@ -13,6 +13,7 @@
  */
 
 #include "FairMQPollerSHM.h"
+#include "FairMQSocketSHM.h"
 #include "FairMQLogger.h"
 
 #include <zmq.h>
@@ -29,13 +30,13 @@ FairMQPollerSHM::FairMQPollerSHM(const vector<FairMQChannel>& channels)
 
     for (int i = 0; i < fNumItems; ++i)
     {
-        fItems[i].socket = channels.at(i).GetSocket().GetSocket();
+        fItems[i].socket = static_cast<const FairMQSocketSHM*>(&(channels.at(i).GetSocket()))->GetSocket();
         fItems[i].fd = 0;
         fItems[i].revents = 0;
 
         int type = 0;
         size_t size = sizeof(type);
-        zmq_getsockopt(channels.at(i).GetSocket().GetSocket(), ZMQ_TYPE, &type, &size);
+        zmq_getsockopt(static_cast<const FairMQSocketSHM*>(&(channels.at(i).GetSocket()))->GetSocket(), ZMQ_TYPE, &type, &size);
 
         SetItemEvents(fItems[i], type);
     }
@@ -51,13 +52,13 @@ FairMQPollerSHM::FairMQPollerSHM(const vector<const FairMQChannel*>& channels)
 
     for (int i = 0; i < fNumItems; ++i)
     {
-        fItems[i].socket = channels.at(i)->GetSocket().GetSocket();
+        fItems[i].socket = static_cast<const FairMQSocketSHM*>(&(channels.at(i)->GetSocket()))->GetSocket();
         fItems[i].fd = 0;
         fItems[i].revents = 0;
 
         int type = 0;
         size_t size = sizeof(type);
-        zmq_getsockopt(channels.at(i)->GetSocket().GetSocket(), ZMQ_TYPE, &type, &size);
+        zmq_getsockopt(static_cast<const FairMQSocketSHM*>(&(channels.at(i)->GetSocket()))->GetSocket(), ZMQ_TYPE, &type, &size);
 
         SetItemEvents(fItems[i], type);
     }
@@ -88,13 +89,13 @@ FairMQPollerSHM::FairMQPollerSHM(const unordered_map<string, vector<FairMQChanne
             {
                 index = fOffsetMap[channel] + i;
 
-                fItems[index].socket = channelsMap.at(channel).at(i).GetSocket().GetSocket();
+                fItems[index].socket = static_cast<const FairMQSocketSHM*>(&(channelsMap.at(channel).at(i).GetSocket()))->GetSocket();
                 fItems[index].fd = 0;
                 fItems[index].revents = 0;
 
                 int type = 0;
                 size_t size = sizeof(type);
-                zmq_getsockopt(channelsMap.at(channel).at(i).GetSocket().GetSocket(), ZMQ_TYPE, &type, &size);
+                zmq_getsockopt(static_cast<const FairMQSocketSHM*>(&(channelsMap.at(channel).at(i).GetSocket()))->GetSocket(), ZMQ_TYPE, &type, &size);
 
                 SetItemEvents(fItems[index], type);
             }
@@ -106,29 +107,6 @@ FairMQPollerSHM::FairMQPollerSHM(const unordered_map<string, vector<FairMQChanne
         LOG(error) << "out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
-}
-
-FairMQPollerSHM::FairMQPollerSHM(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket)
-    : fItems()
-    , fNumItems(2)
-    , fOffsetMap()
-{
-    fItems = new zmq_pollitem_t[fNumItems];
-
-    fItems[0].socket = cmdSocket.GetSocket();
-    fItems[0].fd = 0;
-    fItems[0].events = ZMQ_POLLIN;
-    fItems[0].revents = 0;
-
-    fItems[1].socket = dataSocket.GetSocket();
-    fItems[1].fd = 0;
-    fItems[1].revents = 0;
-
-    int type = 0;
-    size_t size = sizeof(type);
-    zmq_getsockopt(dataSocket.GetSocket(), ZMQ_TYPE, &type, &size);
-
-    SetItemEvents(fItems[1], type);
 }
 
 void FairMQPollerSHM::SetItemEvents(zmq_pollitem_t& item, const int type)

@@ -254,11 +254,6 @@ FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const unordered_map<stri
     return unique_ptr<FairMQPoller>(new FairMQPollerSHM(channelsMap, channelList));
 }
 
-FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const
-{
-    return unique_ptr<FairMQPoller>(new FairMQPollerSHM(cmdSocket, dataSocket));
-}
-
 FairMQUnmanagedRegionPtr FairMQTransportFactorySHM::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback) const
 {
     return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionSHM(*fManager, size, callback));

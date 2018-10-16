@@ -50,8 +50,6 @@ class FairMQPollerNN final : public FairMQPoller
     ~FairMQPollerNN() override;
 
   private:
-    FairMQPollerNN(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket);
-
     nn_pollfd* fItems;
     int fNumItems;
 

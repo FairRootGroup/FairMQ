@@ -43,8 +43,6 @@ class FairMQPollerSHM final : public FairMQPoller
     ~FairMQPollerSHM() override;
 
   private:
-    FairMQPollerSHM(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket);
-
     zmq_pollitem_t* fItems;
     int fNumItems;
 

@@ -129,7 +129,7 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     return *this;
 }
 
-FairMQSocket const & FairMQChannel::GetSocket() const
+FairMQSocket & FairMQChannel::GetSocket() const
 {
     assert(fSocket);
     return *fSocket;

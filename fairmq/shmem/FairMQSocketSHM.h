@@ -38,8 +38,7 @@ class FairMQSocketSHM final : public FairMQSocket
     int64_t TrySend(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
     int64_t TryReceive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
 
-    void* GetSocket() const override;
-    int GetSocket(int nothing) const override;
+    void* GetSocket() const;
 
     void Close() override;
 

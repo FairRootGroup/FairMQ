@@ -19,6 +19,7 @@
 #include <nanomsg/pair.h>
 
 #include "FairMQPollerNN.h"
+#include "FairMQSocketNN.h"
 #include "FairMQLogger.h"
 
 using namespace std;
@@ -33,11 +34,11 @@ FairMQPollerNN::FairMQPollerNN(const vector<FairMQChannel>& channels)
 
     for (int i = 0; i < fNumItems; ++i)
     {
-        fItems[i].fd = channels.at(i).GetSocket().GetSocket(1);
+        fItems[i].fd = static_cast<const FairMQSocketNN*>(&(channels.at(i).GetSocket()))->GetSocket();
 
         int type = 0;
         size_t sz = sizeof(type);
-        nn_getsockopt(channels.at(i).GetSocket().GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
+        nn_getsockopt(static_cast<const FairMQSocketNN*>(&(channels.at(i).GetSocket()))->GetSocket(), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
 
         SetItemEvents(fItems[i], type);
     }
@@ -53,11 +54,11 @@ FairMQPollerNN::FairMQPollerNN(const vector<const FairMQChannel*>& channels)
 
     for (int i = 0; i < fNumItems; ++i)
     {
-        fItems[i].fd = channels.at(i)->GetSocket().GetSocket(1);
+        fItems[i].fd = static_cast<const FairMQSocketNN*>(&(channels.at(i)->GetSocket()))->GetSocket();
 
         int type = 0;
         size_t sz = sizeof(type);
-        nn_getsockopt(channels.at(i)->GetSocket().GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
+        nn_getsockopt(static_cast<const FairMQSocketNN*>(&(channels.at(i)->GetSocket()))->GetSocket(), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
 
         SetItemEvents(fItems[i], type);
     }
@@ -87,11 +88,11 @@ FairMQPollerNN::FairMQPollerNN(const unordered_map<string, vector<FairMQChannel>
             for (unsigned int i = 0; i < channelsMap.at(channel).size(); ++i)
             {
                 index = fOffsetMap[channel] + i;
-                fItems[index].fd = channelsMap.at(channel).at(i).GetSocket().GetSocket(1);
+                fItems[index].fd = static_cast<const FairMQSocketNN*>(&(channelsMap.at(channel).at(i).GetSocket()))->GetSocket();
 
                 int type = 0;
                 size_t sz = sizeof(type);
-                nn_getsockopt(channelsMap.at(channel).at(i).GetSocket().GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
+                nn_getsockopt(static_cast<const FairMQSocketNN*>(&(channelsMap.at(channel).at(i).GetSocket()))->GetSocket(), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
 
                 SetItemEvents(fItems[index], type);
             }
@@ -103,27 +104,6 @@ FairMQPollerNN::FairMQPollerNN(const unordered_map<string, vector<FairMQChannel>
         LOG(error) << "out of range error: " << oor.what() << '\n';
         exit(EXIT_FAILURE);
     }
-}
-
-FairMQPollerNN::FairMQPollerNN(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket)
-    : fItems()
-    , fNumItems(2)
-    , fOffsetMap()
-{
-    fItems = new nn_pollfd[fNumItems];
-
-    fItems[0].fd = cmdSocket.GetSocket(1);
-    fItems[0].events = NN_POLLIN;
-    fItems[0].revents = 0;
-
-    fItems[1].fd = dataSocket.GetSocket(1);
-    fItems[1].revents = 0;
-
-    int type = 0;
-    size_t sz = sizeof(type);
-    nn_getsockopt(dataSocket.GetSocket(1), NN_SOL_SOCKET, NN_PROTOCOL, &type, &sz);
-
-    SetItemEvents(fItems[1], type);
 }
 
 void FairMQPollerNN::SetItemEvents(nn_pollfd& item, const int type)

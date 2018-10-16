@@ -35,9 +35,6 @@ class FairMQSocket
     virtual int64_t TrySend(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
     virtual int64_t TryReceive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
 
-    virtual void* GetSocket() const = 0;
-    virtual int GetSocket(int nothing) const = 0;
-
     virtual void Close() = 0;
 
     virtual void SetOption(const std::string& option, const void* value, size_t valueSize) = 0;

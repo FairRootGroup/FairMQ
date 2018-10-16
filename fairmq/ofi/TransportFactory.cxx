@@ -76,11 +76,6 @@ auto TransportFactory::CreatePoller(const unordered_map<string, vector<FairMQCha
     return PollerPtr{new Poller(channelsMap, channelList)};
 }
 
-auto TransportFactory::CreatePoller(const FairMQSocket& cmdSocket, const FairMQSocket& dataSocket) const -> PollerPtr
-{
-    return PollerPtr{new Poller(cmdSocket, dataSocket)};
-}
-
 auto TransportFactory::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback) const -> UnmanagedRegionPtr
 {
     throw runtime_error{"Not yet implemented UMR."};
