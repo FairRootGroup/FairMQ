@@ -9,11 +9,13 @@
 #ifndef FAIR_MQ_OFI_CONTEXT_H
 #define FAIR_MQ_OFI_CONTEXT_H
 
+#include <asiofi/domain.hpp>
+#include <asiofi/fabric.hpp>
+#include <asiofi/info.hpp>
 #include <boost/asio.hpp>
 #include <memory>
 #include <netinet/in.h>
 #include <ostream>
-#include <rdma/fabric.h>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -38,18 +40,14 @@ enum class Direction : bool { Receive, Transmit };
 class Context
 {
   public:
-    Context(int numberIoThreads = 2);
+    Context(int numberIoThreads = 1);
     ~Context();
 
-    auto CreateOfiEndpoint() -> fid_ep*;
-    auto CreateOfiCompletionQueue(Direction dir) -> fid_cq*;
+    // auto CreateOfiEndpoint() -> fid_ep*;
     auto GetZmqVersion() const -> std::string;
-    auto GetOfiApiVersion() const -> std::string;
-    auto GetBoostVersion() const -> std::string;
+    auto GetAsiofiVersion() const -> std::string;
     auto GetZmqContext() const -> void* { return fZmqContext; }
     auto GetIoContext() -> boost::asio::io_service& { return fIoContext; }
-    auto InsertAddressVector(sockaddr_in address) -> fi_addr_t;
-    auto AddressVectorLookup(fi_addr_t address) -> sockaddr_in;
     struct Address {
         std::string Protocol;
         std::string Ip;
@@ -64,19 +62,13 @@ class Context
 
   private:
     void* fZmqContext;
-    fi_info* fOfiInfo;
-    fid_fabric* fOfiFabric;
-    fid_domain* fOfiDomain;
-    fid_av* fOfiAddressVector;
-    fid_eq* fOfiEventQueue;
+    std::unique_ptr<asiofi::info> fOfiInfo;
+    std::unique_ptr<asiofi::fabric> fOfiFabric;
+    std::unique_ptr<asiofi::domain> fOfiDomain;
     boost::asio::io_service fIoContext;
     boost::asio::io_service::work fIoWork;
     std::vector<std::thread> fThreadPool;
 
-    auto OpenOfiFabric() -> void;
-    auto OpenOfiEventQueue() -> void;
-    auto OpenOfiDomain() -> void;
-    auto OpenOfiAddressVector() -> void;
     auto InitThreadPool(int numberIoThreads) -> void;
 }; /* class Context */
 

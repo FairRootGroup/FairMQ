@@ -22,7 +22,7 @@ namespace ofi
 
 /**
  * @class TransportFactory TransportFactory.h <fairmq/ofi/TransportFactory.h>
- * @brief FairMQ transport factory for the ofi transport (implemented with ZeroMQ + libfabric)
+ * @brief FairMQ transport factory for the ofi transport
  *
  * @todo TODO insert long description
  */
