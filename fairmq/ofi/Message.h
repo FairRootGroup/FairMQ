@@ -30,7 +30,7 @@ namespace ofi
  *
  * @todo TODO insert long description
  */
-class Message : public fair::mq::Message
+class Message final : public fair::mq::Message
 {
   public:
     Message();

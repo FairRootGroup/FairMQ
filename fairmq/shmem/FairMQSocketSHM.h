@@ -16,7 +16,7 @@
 #include <atomic>
 #include <memory> // unique_ptr
 
-class FairMQSocketSHM : public FairMQSocket
+class FairMQSocketSHM final : public FairMQSocket
 {
   public:
     FairMQSocketSHM(fair::mq::shmem::Manager& manager, const std::string& type, const std::string& name, const std::string& id = "", void* context = nullptr);

@@ -25,7 +25,7 @@
 #include "FairMQUnmanagedRegionZMQ.h"
 #include <options/FairMQProgOptions.h>
 
-class FairMQTransportFactoryZMQ : public FairMQTransportFactory
+class FairMQTransportFactoryZMQ final : public FairMQTransportFactory
 {
   public:
     FairMQTransportFactoryZMQ(const std::string& id = "", const FairMQProgOptions* config = nullptr);

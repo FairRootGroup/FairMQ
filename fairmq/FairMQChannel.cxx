@@ -65,7 +65,7 @@ FairMQChannel::FairMQChannel(const string& type, const string& method, const str
 {
 }
 
-FairMQChannel::FairMQChannel(const string& name, const string& type, std::shared_ptr<FairMQTransportFactory> factory)
+FairMQChannel::FairMQChannel(const string& name, const string& type, shared_ptr<FairMQTransportFactory> factory)
     : fSocket(factory->CreateSocket(type, name))
     , fType(type)
     , fMethod("unspecified")

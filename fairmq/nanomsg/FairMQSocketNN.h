@@ -17,7 +17,7 @@
 
 class FairMQTransportFactoryNN;
 
-class FairMQSocketNN : public FairMQSocket
+class FairMQSocketNN final : public FairMQSocket
 {
     friend class FairMQTransportFactoryNN;
 

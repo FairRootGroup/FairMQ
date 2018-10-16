@@ -26,7 +26,7 @@ namespace ofi
  *
  * @todo TODO insert long description
  */
-class TransportFactory : public FairMQTransportFactory
+class TransportFactory final : public FairMQTransportFactory
 {
   public:
     TransportFactory(const std::string& id = "", const FairMQProgOptions* config = nullptr);

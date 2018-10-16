@@ -19,7 +19,7 @@
 #include <vector>
 #include <string>
 
-class FairMQTransportFactoryNN : public FairMQTransportFactory
+class FairMQTransportFactoryNN final : public FairMQTransportFactory
 {
   public:
     FairMQTransportFactoryNN(const std::string& id = "", const FairMQProgOptions* config = nullptr);

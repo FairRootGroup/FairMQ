@@ -32,7 +32,7 @@ namespace ofi
  *
  * @todo TODO insert long description
  */
-class Socket : public fair::mq::Socket
+class Socket final : public fair::mq::Socket
 {
   public:
     Socket(Context& factory, const std::string& type, const std::string& name, const std::string& id = "");

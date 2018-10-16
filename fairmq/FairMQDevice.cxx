@@ -302,7 +302,7 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
         ch.fSocket->SetOption("snd-hwm", &(ch.fSndBufSize), sizeof(ch.fSndBufSize));
         ch.fSocket->SetOption("rcv-hwm", &(ch.fRcvBufSize), sizeof(ch.fRcvBufSize));
 
-        // set kernel transmit size
+        // set kernel transmit size (set it only if value is not the default value)
         if (ch.fSndKernelSize != 0)
         {
             ch.fSocket->SetOption("snd-size", &(ch.fSndKernelSize), sizeof(ch.fSndKernelSize));

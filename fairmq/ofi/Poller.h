@@ -33,7 +33,7 @@ class TransportFactory;
  *
  * @todo TODO insert long description
  */
-class Poller : public FairMQPoller
+class Poller final : public FairMQPoller
 {
     friend class FairMQChannel;
     friend class TransportFactory;
