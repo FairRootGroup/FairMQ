@@ -57,6 +57,17 @@ class Socket final : public fair::mq::Socket
     auto GetSocket() const -> void* override { return fControlSocket; }
     auto GetSocket(int nothing) const -> int override { return -1; }
 
+    void SetLinger(const int value) override;
+    int GetLinger() const override;
+    void SetSndBufSize(const int value) override;
+    int GetSndBufSize() const override;
+    void SetRcvBufSize(const int value) override;
+    int GetRcvBufSize() const override;
+    void SetSndKernelSize(const int value) override;
+    int GetSndKernelSize() const override;
+    void SetRcvKernelSize(const int value) override;
+    int GetRcvKernelSize() const override;
+
     auto Close() -> void override;
 
     auto SetOption(const std::string& option, const void* value, size_t valueSize) -> void override;

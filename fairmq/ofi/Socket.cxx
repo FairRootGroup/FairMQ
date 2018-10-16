@@ -619,6 +619,84 @@ auto Socket::GetOption(const string& option, void* value, size_t* valueSize) -> 
     }
 }
 
+int Socket::GetLinger() const
+{
+    int value = 0;
+    size_t valueSize;
+    if (zmq_getsockopt(fControlSocket, ZMQ_LINGER, &value, &valueSize) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_LINGER, reason: ", zmq_strerror(errno)));
+    }
+    return value;
+}
+
+void Socket::SetSndBufSize(const int value)
+{
+    if (zmq_setsockopt(fControlSocket, ZMQ_SNDHWM, &value, sizeof(value)) < 0) {
+        throw SocketError(tools::ToString("failed setting ZMQ_SNDHWM, reason: ", zmq_strerror(errno)));
+    }
+}
+
+int Socket::GetSndBufSize() const
+{
+    int value = 0;
+    size_t valueSize;
+    if (zmq_getsockopt(fControlSocket, ZMQ_SNDHWM, &value, &valueSize) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_SNDHWM, reason: ", zmq_strerror(errno)));
+    }
+    return value;
+}
+
+void Socket::SetRcvBufSize(const int value)
+{
+    if (zmq_setsockopt(fControlSocket, ZMQ_RCVHWM, &value, sizeof(value)) < 0) {
+        throw SocketError(tools::ToString("failed setting ZMQ_RCVHWM, reason: ", zmq_strerror(errno)));
+    }
+}
+
+int Socket::GetRcvBufSize() const
+{
+    int value = 0;
+    size_t valueSize;
+    if (zmq_getsockopt(fControlSocket, ZMQ_RCVHWM, &value, &valueSize) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_RCVHWM, reason: ", zmq_strerror(errno)));
+    }
+    return value;
+}
+
+void Socket::SetSndKernelSize(const int value)
+{
+    if (zmq_setsockopt(fControlSocket, ZMQ_SNDBUF, &value, sizeof(value)) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_SNDBUF, reason: ", zmq_strerror(errno)));
+    }
+}
+
+int Socket::GetSndKernelSize() const
+{
+    int value = 0;
+    size_t valueSize;
+    if (zmq_getsockopt(fControlSocket, ZMQ_SNDBUF, &value, &valueSize) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_SNDBUF, reason: ", zmq_strerror(errno)));
+    }
+    return value;
+}
+
+void Socket::SetRcvKernelSize(const int value)
+{
+    if (zmq_setsockopt(fControlSocket, ZMQ_RCVBUF, &value, sizeof(value)) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_RCVBUF, reason: ", zmq_strerror(errno)));
+    }
+}
+
+int Socket::GetRcvKernelSize() const
+{
+    int value = 0;
+    size_t valueSize;
+    if (zmq_getsockopt(fControlSocket, ZMQ_RCVBUF, &value, &valueSize) < 0) {
+        throw SocketError(tools::ToString("failed getting ZMQ_RCVBUF, reason: ", zmq_strerror(errno)));
+    }
+    return value;
+}
+
 auto Socket::GetConstant(const string& constant) -> int
 {
     if (constant == "")

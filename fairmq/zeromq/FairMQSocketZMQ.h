@@ -49,6 +49,17 @@ class FairMQSocketZMQ final : public FairMQSocket
     void SetOption(const std::string& option, const void* value, size_t valueSize) override;
     void GetOption(const std::string& option, void* value, size_t* valueSize) override;
 
+    void SetLinger(const int value) override;
+    int GetLinger() const override;
+    void SetSndBufSize(const int value) override;
+    int GetSndBufSize() const override;
+    void SetRcvBufSize(const int value) override;
+    int GetRcvBufSize() const override;
+    void SetSndKernelSize(const int value) override;
+    int GetSndKernelSize() const override;
+    void SetRcvKernelSize(const int value) override;
+    int GetRcvKernelSize() const override;
+
     unsigned long GetBytesTx() const override;
     unsigned long GetBytesRx() const override;
     unsigned long GetMessagesTx() const override;
