@@ -202,11 +202,13 @@ add_testsuite(FairMQ.Transport
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     transport/_transfer_timeout.cxx
+    transport/_options.cxx
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 10
+    ${definitions}
 )
 
 add_testsuite(FairMQ.Poller
@@ -218,4 +220,5 @@ add_testsuite(FairMQ.Poller
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 10
+    ${definitions}
 )
