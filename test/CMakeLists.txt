@@ -33,7 +33,15 @@ add_testhelper(runTestDevice
 )
 
 if(BUILD_NANOMSG_TRANSPORT)
-  set(definitions DEFINITIONS BUILD_NANOMSG_TRANSPORT)
+  list(APPEND definitions BUILD_NANOMSG_TRANSPORT)
+endif()
+
+if(BUILD_OFI_TRANSPORT)
+  LIST(APPEND definitions BUILD_OFI_TRANSPORT)
+endif()
+
+if(definitions)
+  set(definitions DEFINITIONS ${definitions})
 endif()
 
 set(MQ_CONFIG "${CMAKE_BINARY_DIR}/test/testsuite_FairMQ.IOPatterns_config.json")
