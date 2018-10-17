@@ -12,9 +12,11 @@
 #include <FairMQSocket.h>
 #include <FairMQMessage.h>
 #include <fairmq/ofi/Context.h>
+#include <fairmq/ofi/ControlMessages.h>
 
 #include <asiofi/connected_endpoint.hpp>
 #include <boost/asio.hpp>
+#include <boost/container/pmr/unsynchronized_pool_resource.hpp>
 #include <memory> // unique_ptr
 #include <netinet/in.h>
 #include <rdma/fabric.h>
@@ -85,6 +87,7 @@ class Socket final : public fair::mq::Socket
   private:
     void* fControlSocket;
     void* fMonitorSocket;
+    std::unique_ptr<asiofi::passive_endpoint> fPassiveDataEndpoint;
     std::unique_ptr<asiofi::connected_endpoint> fDataEndpoint;
     std::string fId;
     std::atomic<unsigned long> fBytesTx;
@@ -92,10 +95,11 @@ class Socket final : public fair::mq::Socket
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
     Context& fContext;
-    fi_addr_t fRemoteDataAddr;
-    sockaddr_in fLocalDataAddr;
+    Context::Address fRemoteDataAddr;
+    Context::Address fLocalDataAddr;
     bool fWaitingForControlPeer;
     boost::asio::io_service::strand fIoStrand;
+    boost::container::pmr::unsynchronized_pool_resource fCtrlMemPool;
 
     int fSndTimeout;
     int fRcvTimeout;
@@ -105,18 +109,16 @@ class Socket final : public fair::mq::Socket
     auto SendImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
     auto ReceiveImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
 
-    auto InitDataEndpoint() -> void;
     auto WaitForControlPeer() -> void;
     auto AnnounceDataAddress() -> void;
-    // auto SendControlMessage(std::unique_ptr<ControlMessage> ctrl) -> void;
-    // auto ReceiveControlMessage() -> std::unique_ptr<ControlMessage>;
-    // auto ProcessDataAddressAnnouncement(std::unique_ptr<ControlMessage> ctrl) -> void;
+    auto SendControlMessage(CtrlMsgPtr<ControlMessage> ctrl) -> void;
+    auto ReceiveControlMessage() -> CtrlMsgPtr<ControlMessage>;
+    auto ProcessControlMessage(CtrlMsgPtr<DataAddressAnnouncement> ctrl) -> void;
     auto ConnectControlSocket(Context::Address address) -> void;
     auto BindControlSocket(Context::Address address) -> void;
+    auto BindDataEndpoint() -> void;
+    auto ConnectDataEndpoint() -> void;
 }; /* class Socket */
-
-// helper function to clean up the object holding the data after it is transported.
-void free_string(void* /*data*/, void* hint);
 
 struct SilentSocketError : SocketError { using SocketError::SocketError; };
 

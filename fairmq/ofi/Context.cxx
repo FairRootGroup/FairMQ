@@ -51,9 +51,9 @@ auto Context::InitThreadPool(int numberIoThreads) -> void
 
     for (int i = 1; i <= numberIoThreads; ++i) {
         fThreadPool.emplace_back([&, i, numberIoThreads]{
-            LOG(debug) << "OFI transport: I/O thread #" << i << "/" << numberIoThreads << " started";
+            LOG(debug) << "OFI transport: I/O thread #" << i << " of " << numberIoThreads << " started";
             fIoContext.run();
-            LOG(debug) << "OFI transport: I/O thread #" << i << "/" << numberIoThreads << " stopped";
+            LOG(debug) << "OFI transport: I/O thread #" << i << " of " << numberIoThreads << " stopped";
         });
     }
 }
@@ -97,12 +97,31 @@ auto Context::InitOfi(ConnectionType type, Address addr) -> void
     } else {
         fOfiInfo = tools::make_unique<asiofi::info>(addr.Ip.c_str(), std::to_string(addr.Port).c_str(), 0, hints);
     }
+    LOG(debug) << "OFI transport: " << *fOfiInfo;
 
     fOfiFabric = tools::make_unique<asiofi::fabric>(*fOfiInfo);
 
     fOfiDomain = tools::make_unique<asiofi::domain>(*fOfiFabric);
 }
 
+auto Context::MakeOfiPassiveEndpoint(Address addr) -> unique_ptr<asiofi::passive_endpoint>
+{
+    InitOfi(ConnectionType::Bind, addr);
+
+    return tools::make_unique<asiofi::passive_endpoint>(fIoContext, *fOfiFabric);
+}
+
+auto Context::MakeOfiConnectedEndpoint(const asiofi::info& info) -> std::unique_ptr<asiofi::connected_endpoint>
+{
+    return tools::make_unique<asiofi::connected_endpoint>(fIoContext, *fOfiDomain, info);
+}
+
+auto Context::MakeOfiConnectedEndpoint(Address addr) -> std::unique_ptr<asiofi::connected_endpoint>
+{
+    InitOfi(ConnectionType::Connect, addr);
+
+    return tools::make_unique<asiofi::connected_endpoint>(fIoContext, *fOfiDomain);
+}
 // auto Context::CreateOfiEndpoint() -> fid_ep*
 // {
     // assert(fOfiDomain);
