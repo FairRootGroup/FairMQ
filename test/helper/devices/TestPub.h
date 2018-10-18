@@ -6,6 +6,9 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#ifndef FAIR_MQ_TEST_PUB_H
+#define FAIR_MQ_TEST_PUB_H
+
 #include <FairMQDevice.h>
 #include <FairMQLogger.h>
 #include <chrono>
@@ -70,3 +73,5 @@ class Pub : public FairMQDevice
 } // namespace test
 } // namespace mq
 } // namespace fair
+
+#endif /* FAIR_MQ_TEST_PUB_H */

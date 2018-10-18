@@ -15,19 +15,19 @@ include(GTestHelper)
 add_testhelper(runTestDevice
     SOURCES
     helper/runTestDevice.cxx
-    helper/devices/TestPairLeft.cxx
-    helper/devices/TestPairRight.cxx
-    helper/devices/TestPollIn.cxx
-    helper/devices/TestPollOut.cxx
-    helper/devices/TestPub.cxx
-    helper/devices/TestPull.cxx
-    helper/devices/TestPush.cxx
-    helper/devices/TestRep.cxx
-    helper/devices/TestReq.cxx
-    helper/devices/TestSub.cxx
-    helper/devices/TestTransferTimeout.cxx
-    helper/devices/TestWaitFor.cxx
-    helper/devices/TestExceptions.cxx
+    helper/devices/TestPairLeft.h
+    helper/devices/TestPairRight.h
+    helper/devices/TestPollIn.h
+    helper/devices/TestPollOut.h
+    helper/devices/TestPub.h
+    helper/devices/TestPull.h
+    helper/devices/TestPush.h
+    helper/devices/TestRep.h
+    helper/devices/TestReq.h
+    helper/devices/TestSub.h
+    helper/devices/TestTransferTimeout.h
+    helper/devices/TestWaitFor.h
+    helper/devices/TestExceptions.h
 
     LINKS FairMQ
 )

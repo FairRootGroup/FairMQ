@@ -6,7 +6,11 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#ifndef FAIR_MQ_TEST_PULL_H
+#define FAIR_MQ_TEST_PULL_H
+
 #include <FairMQDevice.h>
+#include <FairMQLogger.h>
 #include <thread>
 
 namespace fair
@@ -16,7 +20,9 @@ namespace mq
 namespace test
 {
 
-class PollOut : public FairMQDevice
+using namespace std;
+
+class Pull : public FairMQDevice
 {
   protected:
     auto Init() -> void override
@@ -26,13 +32,17 @@ class PollOut : public FairMQDevice
 
     auto Run() -> void override
     {
-        auto msg1 = FairMQMessagePtr{NewMessage()};
-        auto msg2 = FairMQMessagePtr{NewMessage()};
-        Send(msg1, "data1");
-        Send(msg2, "data2");
+        auto msg = FairMQMessagePtr{NewMessage()};
+
+        if (Receive(msg, "data") >= 0)
+        {
+            LOG(info) << "PUSH-PULL test successfull";
+        }
     };
 };
 
 } // namespace test
 } // namespace mq
 } // namespace fair
+
+#endif /* FAIR_MQ_TEST_PULL_H */

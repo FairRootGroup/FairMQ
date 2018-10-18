@@ -6,8 +6,10 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#ifndef FAIR_MQ_TEST_POLLOUT_H
+#define FAIR_MQ_TEST_POLLOUT_H
+
 #include <FairMQDevice.h>
-#include <FairMQLogger.h>
 #include <thread>
 
 namespace fair
@@ -17,7 +19,7 @@ namespace mq
 namespace test
 {
 
-class Rep : public FairMQDevice
+class PollOut : public FairMQDevice
 {
   protected:
     auto Init() -> void override
@@ -27,25 +29,15 @@ class Rep : public FairMQDevice
 
     auto Run() -> void override
     {
-        auto request1 = FairMQMessagePtr{NewMessage()};
-        if (Receive(request1, "data") >= 0)
-        {
-            LOG(info) << "Received request 1";
-            auto reply = FairMQMessagePtr{NewMessage()};
-            Send(reply, "data");
-        }
-        auto request2 = FairMQMessagePtr{NewMessage()};
-        if (Receive(request2, "data") >= 0)
-        {
-            LOG(info) << "Received request 2";
-            auto reply = FairMQMessagePtr{NewMessage()};
-            Send(reply, "data");
-        }
-
-        LOG(info) << "REQ-REP test successfull";
+        auto msg1 = FairMQMessagePtr{NewMessage()};
+        auto msg2 = FairMQMessagePtr{NewMessage()};
+        Send(msg1, "data1");
+        Send(msg2, "data2");
     };
 };
 
 } // namespace test
 } // namespace mq
 } // namespace fair
+
+#endif /* FAIR_MQ_TEST_POLLOUT_H */
