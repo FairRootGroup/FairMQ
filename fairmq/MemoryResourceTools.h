@@ -62,8 +62,8 @@ FairMQMessagePtr getMessage(ContainerT &&container_, FairMQMemoryResource *targe
 };
 
 //_________________________________________________________________________________________________
-/// Return a vector of const ElemT, resource must be kept alive throughout the
-/// lifetime of the
+/// Return a vector of const ElemT, no wonership transfer.
+/// Resource must be kept alive throughout the lifetime of the
 /// container and associated message.
 template<typename ElemT>
 std::vector<const ElemT, boost::container::pmr::polymorphic_allocator<const ElemT>> adoptVector(
