@@ -26,8 +26,9 @@ class FairMQBenchmarkSampler : public FairMQDevice
     virtual ~FairMQBenchmarkSampler();
 
   protected:
-    bool fSameMessage;
-    int fMsgSize;
+    bool fMultipart;
+    size_t fNumParts;
+    size_t fMsgSize;
     std::atomic<int> fMsgCounter;
     float fMsgRate;
     uint64_t fNumIterations;

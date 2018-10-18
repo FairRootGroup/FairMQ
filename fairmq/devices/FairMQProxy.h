@@ -26,7 +26,7 @@ class FairMQProxy : public FairMQDevice
     virtual ~FairMQProxy();
 
   protected:
-    int fMultipart;
+    bool fMultipart;
     std::string fInChannelName;
     std::string fOutChannelName;
 

@@ -20,7 +20,7 @@ class FairMQMultiplier : public FairMQDevice
     virtual ~FairMQMultiplier();
 
   protected:
-    int fMultipart;
+    bool fMultipart;
     int fNumOutputs;
     std::string fInChannelName;
     std::vector<std::string> fOutChannelNames;

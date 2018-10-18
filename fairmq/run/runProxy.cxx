@@ -16,7 +16,7 @@ void addCustomOptions(bpo::options_description& options)
     options.add_options()
         ("in-channel", bpo::value<std::string>()->default_value("data-in"), "Name of the input channel")
         ("out-channel", bpo::value<std::string>()->default_value("data-out"), "Name of the output channel")
-        ("multipart", bpo::value<int>()->default_value(1), "Handle multipart payloads");
+        ("multipart", bpo::value<bool>()->default_value(true), "Handle multipart payloads");
 }
 
 FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)

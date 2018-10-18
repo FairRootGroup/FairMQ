@@ -20,7 +20,7 @@
 using namespace std;
 
 FairMQMerger::FairMQMerger()
-    : fMultipart(1)
+    : fMultipart(true)
     , fInChannelName("data-in")
     , fOutChannelName("data-out")
 {
@@ -30,6 +30,8 @@ void FairMQMerger::RegisterChannelEndpoints()
 {
     RegisterChannelEndpoint(fInChannelName, 1, 10000);
     RegisterChannelEndpoint(fOutChannelName, 1, 1);
+
+    PrintRegisteredChannels();
 }
 
 FairMQMerger::~FairMQMerger()
@@ -38,7 +40,7 @@ FairMQMerger::~FairMQMerger()
 
 void FairMQMerger::InitTask()
 {
-    fMultipart = fConfig->GetValue<int>("multipart");
+    fMultipart = fConfig->GetValue<bool>("multipart");
     fInChannelName = fConfig->GetValue<string>("in-channel");
     fOutChannelName = fConfig->GetValue<string>("out-channel");
 }

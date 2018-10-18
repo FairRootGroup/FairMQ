@@ -6,9 +6,13 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#ifndef FAIR_MQ_TEST_WAITFOR_H
+#define FAIR_MQ_TEST_WAITFOR_H
+
 #include <FairMQDevice.h>
 #include <FairMQLogger.h>
-#include <thread>
+
+#include <iostream>
 
 namespace fair
 {
@@ -17,27 +21,18 @@ namespace mq
 namespace test
 {
 
-class Req : public FairMQDevice
+class TestWaitFor : public FairMQDevice
 {
-  protected:
-    auto Init() -> void override
+  public:
+    void Run()
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        std::cout << "hello" << std::endl;
+        WaitFor(std::chrono::seconds(60));
     }
-
-    auto Run() -> void override
-    {
-        auto request = FairMQMessagePtr{NewMessage()};
-        Send(request, "data");
-
-        auto reply = FairMQMessagePtr{NewMessage()};
-        if (Receive(reply, "data") >= 0)
-        {
-            LOG(info) << "received reply";
-        }
-    };
 };
 
 } // namespace test
 } // namespace mq
 } // namespace fair
+
+#endif /* FAIR_MQ_TEST_WAITFOR_H */
