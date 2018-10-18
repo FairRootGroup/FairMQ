@@ -110,10 +110,9 @@ class ChannelResource : public FairMQMemoryResource
 };
 
 /// This memory resource only watches, does not allocate/deallocate anything.
-/// In combination with the ByteSpectatorAllocator this is an alternative to
-/// using span, as raw
-/// memory (e.g. an existing buffer message) will be accessible with appropriate
-/// container.
+/// Must be kept alive together with the message as only a pointer to the message is taken.
+/// In combination with SpectatorAllocator it allows an stl container to "adopt"
+/// the contents of the message buffer as it's own.
 class SpectatorMessageResource : public FairMQMemoryResource
 {
   public:
@@ -167,10 +166,8 @@ class SpectatorMessageResource : public FairMQMemoryResource
 /// This memory resource only watches, does not allocate/deallocate anything.
 /// Ownership of the message is taken. Meant to be used for transparent data
 /// adoption in containers.
-/// In combination with the SpectatorAllocator this is an alternative to using
-/// span, as raw memory
-/// (e.g. an existing buffer message) will be accessible with appropriate
-/// container.
+/// In combination with SpectatorAllocator it allows an stl container to "adopt"
+/// the contents of the message buffer as it's own.
 class MessageResource : public FairMQMemoryResource
 {
   public:
@@ -218,11 +215,15 @@ class MessageResource : public FairMQMemoryResource
     }
 };
 
-// This in general (as in STL) is a bad idea, but here it is safe to inherit
-// from an allocator since
-// we have no additional data and only override some methods so we don't get
-// into slicing and other
-// problems.
+/// Special allocator that skips default construction/destruction,
+/// allows an stl container to adopt the contents of a buffer as it's own.
+/// No ownership of the message or data is taken.
+///
+/// This in general (as in STL) is a bad idea, but here it is safe to inherit
+/// from an allocator since
+/// we have no additional data and only override some methods so we don't get
+/// into slicing and other
+/// problems.
 template<typename T>
 class SpectatorAllocator : public boost::container::pmr::polymorphic_allocator<T>
 {
@@ -259,6 +260,9 @@ class SpectatorAllocator : public boost::container::pmr::polymorphic_allocator<T
     }
 };
 
+/// Special allocator that skips default construction/destruction,
+/// allows an stl container to adopt the contents of a buffer as it's own.
+/// Ownership of the message is taken.
 /// This allocator has a pmr-like interface, but keeps the unique
 /// MessageResource as internal state,
 /// allowing full resource (associated message) management internally without
