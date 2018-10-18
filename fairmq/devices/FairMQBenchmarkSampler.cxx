@@ -18,7 +18,8 @@
 using namespace std;
 
 FairMQBenchmarkSampler::FairMQBenchmarkSampler()
-    : fSameMessage(true)
+    : fMultipart(false)
+    , fNumParts(1)
     , fMsgSize(10000)
     , fMsgRate(0)
     , fNumIterations(0)
@@ -33,8 +34,9 @@ FairMQBenchmarkSampler::~FairMQBenchmarkSampler()
 
 void FairMQBenchmarkSampler::InitTask()
 {
-    fSameMessage = fConfig->GetValue<bool>("same-msg");
-    fMsgSize = fConfig->GetValue<int>("msg-size");
+    fMultipart = fConfig->GetValue<bool>("multipart");
+    fNumParts = fConfig->GetValue<size_t>("num-parts");
+    fMsgSize = fConfig->GetValue<size_t>("msg-size");
     fMsgRate = fConfig->GetValue<float>("msg-rate");
     fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
     fOutChannelName = fConfig->GetValue<string>("out-channel");
@@ -54,12 +56,16 @@ void FairMQBenchmarkSampler::Run()
 
     while (CheckCurrentState(RUNNING))
     {
-        if (fSameMessage)
+        if (fMultipart)
         {
-            FairMQMessagePtr msg(dataOutChannel.NewMessage());
-            msg->Copy(*baseMsg);
+            FairMQParts parts;
 
-            if (dataOutChannel.Send(msg) >= 0)
+            for (size_t i = 0; i < fNumParts; ++i)
+            {
+                parts.AddPart(dataOutChannel.NewMessage(fMsgSize));
+            }
+
+            if (dataOutChannel.Send(parts) >= 0)
             {
                 if (fMaxIterations > 0)
                 {

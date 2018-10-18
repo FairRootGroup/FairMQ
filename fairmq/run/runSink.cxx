@@ -15,7 +15,8 @@ void addCustomOptions(bpo::options_description& options)
 {
     options.add_options()
         ("in-channel", bpo::value<std::string>()->default_value("data"), "Name of the input channel")
-        ("max-iterations", bpo::value<uint64_t>()->default_value(0), "Number of run iterations (0 - infinite)");
+        ("max-iterations", bpo::value<uint64_t>()->default_value(0), "Number of run iterations (0 - infinite)")
+        ("multipart", bpo::value<bool>()->default_value(false), "Handle multipart payloads");
 }
 
 FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)

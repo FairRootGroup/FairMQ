@@ -20,7 +20,7 @@
 using namespace std;
 
 FairMQProxy::FairMQProxy()
-    : fMultipart(1)
+    : fMultipart(true)
     , fInChannelName()
     , fOutChannelName()
 {
@@ -32,7 +32,7 @@ FairMQProxy::~FairMQProxy()
 
 void FairMQProxy::InitTask()
 {
-    fMultipart = fConfig->GetValue<int>("multipart");
+    fMultipart = fConfig->GetValue<bool>("multipart");
     fInChannelName = fConfig->GetValue<string>("in-channel");
     fOutChannelName = fConfig->GetValue<string>("out-channel");
 }

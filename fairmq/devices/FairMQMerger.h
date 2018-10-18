@@ -26,7 +26,7 @@ class FairMQMerger : public FairMQDevice
     virtual ~FairMQMerger();
 
   protected:
-    int fMultipart;
+    bool fMultipart;
     std::string fInChannelName;
     std::string fOutChannelName;
 

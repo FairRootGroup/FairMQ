@@ -14,7 +14,7 @@
 using namespace std;
 
 FairMQMultiplier::FairMQMultiplier()
-    : fMultipart(1)
+    : fMultipart(true)
     , fNumOutputs(0)
     , fInChannelName()
     , fOutChannelNames()
@@ -27,7 +27,7 @@ FairMQMultiplier::~FairMQMultiplier()
 
 void FairMQMultiplier::InitTask()
 {
-    fMultipart = fConfig->GetValue<int>("multipart");
+    fMultipart = fConfig->GetValue<bool>("multipart");
     fInChannelName = fConfig->GetValue<string>("in-channel");
     fOutChannelNames = fConfig->GetValue<vector<string>>("out-channel");
     fNumOutputs = fChannels.at(fOutChannelNames.at(0)).size();
