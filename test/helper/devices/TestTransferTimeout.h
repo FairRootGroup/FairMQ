@@ -6,6 +6,9 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#ifndef FAIR_MQ_TEST_TRANSFERTIMEOUT_H
+#define FAIR_MQ_TEST_TRANSFERTIMEOUT_H
+
 #include <FairMQDevice.h>
 #include <FairMQLogger.h>
 
@@ -112,3 +115,5 @@ class TransferTimeout : public FairMQDevice
 } // namespace test
 } // namespace mq
 } // namespace fair
+
+#endif /* FAIR_MQ_TEST_TRANSFERTIMEOUT_H */

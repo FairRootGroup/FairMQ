@@ -6,6 +6,9 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#ifndef FAIR_MQ_TEST_PAIRRIGHT_H
+#define FAIR_MQ_TEST_PAIRRIGHT_H
+
 #include <FairMQDevice.h>
 #include <cstddef>
 #include <string>
@@ -61,3 +64,5 @@ class PairRight : public FairMQDevice
 } // namespace test
 } // namespace mq
 } // namespace fair
+
+#endif /* FAIR_MQ_TEST_PAIRRIGHT_H */

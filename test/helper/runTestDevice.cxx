@@ -6,19 +6,19 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "devices/TestPairLeft.cxx"
-#include "devices/TestPairRight.cxx"
-#include "devices/TestPollIn.cxx"
-#include "devices/TestPollOut.cxx"
-#include "devices/TestPub.cxx"
-#include "devices/TestPull.cxx"
-#include "devices/TestPush.cxx"
-#include "devices/TestRep.cxx"
-#include "devices/TestReq.cxx"
-#include "devices/TestSub.cxx"
-#include "devices/TestTransferTimeout.cxx"
-#include "devices/TestWaitFor.cxx"
-#include "devices/TestExceptions.cxx"
+#include "devices/TestPairLeft.h"
+#include "devices/TestPairRight.h"
+#include "devices/TestPollIn.h"
+#include "devices/TestPollOut.h"
+#include "devices/TestPub.h"
+#include "devices/TestPull.h"
+#include "devices/TestPush.h"
+#include "devices/TestRep.h"
+#include "devices/TestReq.h"
+#include "devices/TestSub.h"
+#include "devices/TestTransferTimeout.h"
+#include "devices/TestWaitFor.h"
+#include "devices/TestExceptions.h"
 
 #include <runFairMQDevice.h>
 
@@ -90,7 +90,7 @@ auto getDevice(const FairMQProgOptions& config) -> FairMQDevicePtr
     }
     else if (0 == id.find("exceptions_"))
     {
-        return new TestExceptions;
+        return new Exceptions;
     }
     else
     {

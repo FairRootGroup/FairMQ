@@ -6,6 +6,9 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#ifndef FAIR_MQ_TEST_EXCEPTIONS_H
+#define FAIR_MQ_TEST_EXCEPTIONS_H
+
 #include <FairMQDevice.h>
 #include <FairMQLogger.h>
 
@@ -19,7 +22,7 @@ namespace mq
 namespace test
 {
 
-class TestExceptions : public FairMQDevice
+class Exceptions : public FairMQDevice
 {
   public:
     auto Init() -> void override
@@ -82,3 +85,5 @@ class TestExceptions : public FairMQDevice
 } // namespace test
 } // namespace mq
 } // namespace fair
+
+#endif /* FAIR_MQ_TEST_EXCEPTIONS_H */
