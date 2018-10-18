@@ -689,49 +689,49 @@ void FairMQChannel::ResetChannel()
     // TODO: implement channel resetting
 }
 
-int FairMQChannel::Send(unique_ptr<FairMQMessage>& msg, int sndTimeoutInMs) const
+int FairMQChannel::Send(unique_ptr<FairMQMessage>& msg, int sndTimeoutInMs)
 {
     CheckSendCompatibility(msg);
     return fSocket->Send(msg, sndTimeoutInMs);
 }
 
-int FairMQChannel::Receive(unique_ptr<FairMQMessage>& msg, int rcvTimeoutInMs) const
+int FairMQChannel::Receive(unique_ptr<FairMQMessage>& msg, int rcvTimeoutInMs)
 {
     CheckReceiveCompatibility(msg);
     return fSocket->Receive(msg, rcvTimeoutInMs);
 }
 
-int FairMQChannel::SendAsync(unique_ptr<FairMQMessage>& msg) const
+int FairMQChannel::SendAsync(unique_ptr<FairMQMessage>& msg)
 {
     CheckSendCompatibility(msg);
     return fSocket->Send(msg, 0);
 }
 
-int FairMQChannel::ReceiveAsync(unique_ptr<FairMQMessage>& msg) const
+int FairMQChannel::ReceiveAsync(unique_ptr<FairMQMessage>& msg)
 {
     CheckReceiveCompatibility(msg);
     return fSocket->Receive(msg, 0);
 }
 
-int64_t FairMQChannel::Send(vector<unique_ptr<FairMQMessage>>& msgVec, int sndTimeoutInMs) const
+int64_t FairMQChannel::Send(vector<unique_ptr<FairMQMessage>>& msgVec, int sndTimeoutInMs)
 {
     CheckSendCompatibility(msgVec);
     return fSocket->Send(msgVec, sndTimeoutInMs);
 }
 
-int64_t FairMQChannel::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, int rcvTimeoutInMs) const
+int64_t FairMQChannel::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, int rcvTimeoutInMs)
 {
     CheckReceiveCompatibility(msgVec);
     return fSocket->Receive(msgVec, rcvTimeoutInMs);
 }
 
-int64_t FairMQChannel::SendAsync(vector<unique_ptr<FairMQMessage>>& msgVec) const
+int64_t FairMQChannel::SendAsync(vector<unique_ptr<FairMQMessage>>& msgVec)
 {
     CheckSendCompatibility(msgVec);
     return fSocket->Send(msgVec, 0);
 }
 
-int64_t FairMQChannel::ReceiveAsync(vector<unique_ptr<FairMQMessage>>& msgVec) const
+int64_t FairMQChannel::ReceiveAsync(vector<unique_ptr<FairMQMessage>>& msgVec)
 {
     CheckReceiveCompatibility(msgVec);
     return fSocket->Receive(msgVec, 0);
@@ -761,7 +761,7 @@ unsigned long FairMQChannel::GetMessagesRx() const
     return fSocket->GetMessagesRx();
 }
 
-void FairMQChannel::CheckSendCompatibility(FairMQMessagePtr& msg) const
+void FairMQChannel::CheckSendCompatibility(FairMQMessagePtr& msg)
 {
     if (fTransportType != msg->GetType())
     {
@@ -776,7 +776,7 @@ void FairMQChannel::CheckSendCompatibility(FairMQMessagePtr& msg) const
     }
 }
 
-void FairMQChannel::CheckSendCompatibility(vector<FairMQMessagePtr>& msgVec) const
+void FairMQChannel::CheckSendCompatibility(vector<FairMQMessagePtr>& msgVec)
 {
     for (auto& msg : msgVec)
     {
@@ -794,7 +794,7 @@ void FairMQChannel::CheckSendCompatibility(vector<FairMQMessagePtr>& msgVec) con
     }
 }
 
-void FairMQChannel::CheckReceiveCompatibility(FairMQMessagePtr& msg) const
+void FairMQChannel::CheckReceiveCompatibility(FairMQMessagePtr& msg)
 {
     if (fTransportType != msg->GetType())
     {
@@ -804,7 +804,7 @@ void FairMQChannel::CheckReceiveCompatibility(FairMQMessagePtr& msg) const
     }
 }
 
-void FairMQChannel::CheckReceiveCompatibility(vector<FairMQMessagePtr>& msgVec) const
+void FairMQChannel::CheckReceiveCompatibility(vector<FairMQMessagePtr>& msgVec)
 {
     for (auto& msg : msgVec)
     {

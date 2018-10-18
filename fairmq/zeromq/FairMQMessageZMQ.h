@@ -23,6 +23,7 @@
 
 #include "FairMQMessage.h"
 #include "FairMQUnmanagedRegion.h"
+class FairMQTransportFactory;
 
 class FairMQSocketZMQ;
 
@@ -31,10 +32,10 @@ class FairMQMessageZMQ final : public FairMQMessage
     friend class FairMQSocketZMQ;
 
   public:
-    FairMQMessageZMQ();
-    FairMQMessageZMQ(const size_t size);
-    FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
-    FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0);
+    FairMQMessageZMQ(FairMQTransportFactory* = nullptr);
+    FairMQMessageZMQ(const size_t size, FairMQTransportFactory* = nullptr);
+    FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr, FairMQTransportFactory* = nullptr);
+    FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, FairMQTransportFactory* = nullptr);
 
     void Rebuild() override;
     void Rebuild(const size_t size) override;

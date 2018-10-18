@@ -43,7 +43,7 @@ FairMQPollerZMQ::FairMQPollerZMQ(const vector<FairMQChannel>& channels)
 }
 
 
-FairMQPollerZMQ::FairMQPollerZMQ(const std::vector<const FairMQChannel*>& channels)
+FairMQPollerZMQ::FairMQPollerZMQ(const std::vector<FairMQChannel*>& channels)
     : fItems()
     , fNumItems(0)
     , fOffsetMap()

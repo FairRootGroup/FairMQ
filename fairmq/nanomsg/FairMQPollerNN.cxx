@@ -44,7 +44,7 @@ FairMQPollerNN::FairMQPollerNN(const vector<FairMQChannel>& channels)
     }
 }
 
-FairMQPollerNN::FairMQPollerNN(const vector<const FairMQChannel*>& channels)
+FairMQPollerNN::FairMQPollerNN(const vector<FairMQChannel*>& channels)
     : fItems()
     , fNumItems(0)
     , fOffsetMap()

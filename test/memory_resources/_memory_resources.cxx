@@ -166,7 +166,7 @@ TEST(MemoryResources, adoptVector_test)
     std::memcpy(message->GetData(), tmpBuf, 3 * sizeof(testData));
 
     auto adoptedOwner =
-        adoptVector<testData>(3, factoryZMQ->GetMemoryResource(), std::move(message));
+        adoptVector<testData>(3, std::move(message));
     EXPECT_TRUE(adoptedOwner[0].i == 3);
     EXPECT_TRUE(adoptedOwner[1].i == 2);
     EXPECT_TRUE(adoptedOwner[2].i == 1);

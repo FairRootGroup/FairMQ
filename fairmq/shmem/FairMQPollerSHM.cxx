@@ -42,7 +42,7 @@ FairMQPollerSHM::FairMQPollerSHM(const vector<FairMQChannel>& channels)
     }
 }
 
-FairMQPollerSHM::FairMQPollerSHM(const vector<const FairMQChannel*>& channels)
+FairMQPollerSHM::FairMQPollerSHM(const vector<FairMQChannel*>& channels)
     : fItems()
     , fNumItems(0)
     , fOffsetMap()

@@ -49,24 +49,24 @@ FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id, const Fai
 
 }
 
-FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage() const
+FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage()
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageZMQ());
+    return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(this));
 }
 
-FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(const size_t size) const
+FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(const size_t size)
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(size));
+    return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(size, this));
 }
 
-FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const
+FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(data, size, ffn, hint));
+    return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(data, size, ffn, hint, this));
 }
 
-FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint) const
+FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint)
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(region, data, size, hint));
+    return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(region, data, size, hint, this));
 }
 
 FairMQSocketPtr FairMQTransportFactoryZMQ::CreateSocket(const string& type, const string& name) const
@@ -80,7 +80,7 @@ FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQChann
     return unique_ptr<FairMQPoller>(new FairMQPollerZMQ(channels));
 }
 
-FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const std::vector<const FairMQChannel*>& channels) const
+FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const std::vector<FairMQChannel*>& channels) const
 {
     return unique_ptr<FairMQPoller>(new FairMQPollerZMQ(channels));
 }

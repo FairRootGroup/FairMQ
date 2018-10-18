@@ -213,24 +213,24 @@ void FairMQTransportFactorySHM::SendHeartbeats()
     }
 }
 
-FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage() const
+FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage()
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager));
+    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, this));
 }
 
-FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(const size_t size) const
+FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(const size_t size)
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, size));
+    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, size, this));
 }
 
-FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const
+FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, data, size, ffn, hint));
+    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, data, size, ffn, hint, this));
 }
 
-FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint) const
+FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint)
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, region, data, size, hint));
+    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, region, data, size, hint, this));
 }
 
 FairMQSocketPtr FairMQTransportFactorySHM::CreateSocket(const string& type, const string& name) const
@@ -244,7 +244,7 @@ FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const vector<FairMQChann
     return unique_ptr<FairMQPoller>(new FairMQPollerSHM(channels));
 }
 
-FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const vector<const FairMQChannel*>& channels) const
+FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const vector<FairMQChannel*>& channels) const
 {
     return unique_ptr<FairMQPoller>(new FairMQPollerSHM(channels));
 }

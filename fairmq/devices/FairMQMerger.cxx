@@ -49,7 +49,7 @@ void FairMQMerger::Run()
 {
     int numInputs = fChannels.at(fInChannelName).size();
 
-    vector<const FairMQChannel*> chans;
+    vector<FairMQChannel*> chans;
 
     for (auto& chan : fChannels.at(fInChannelName))
     {

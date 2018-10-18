@@ -24,8 +24,9 @@ using namespace std;
 
 fair::mq::Transport FairMQMessageNN::fTransportType = fair::mq::Transport::NN;
 
-FairMQMessageNN::FairMQMessageNN()
-    : fMessage(nullptr)
+FairMQMessageNN::FairMQMessageNN(FairMQTransportFactory* factory)
+    : FairMQMessage{factory}
+    , fMessage(nullptr)
     , fSize(0)
     , fHint(0)
     , fReceiving(false)
@@ -38,8 +39,9 @@ FairMQMessageNN::FairMQMessageNN()
     }
 }
 
-FairMQMessageNN::FairMQMessageNN(const size_t size)
-    : fMessage(nullptr)
+FairMQMessageNN::FairMQMessageNN(const size_t size, FairMQTransportFactory* factory)
+    : FairMQMessage{factory}
+    , fMessage(nullptr)
     , fSize(0)
     , fHint(0)
     , fReceiving(false)
@@ -59,8 +61,9 @@ FairMQMessageNN::FairMQMessageNN(const size_t size)
  * create FairMQMessage object only with size parameter and fill it with data.
  * possible TODO: make this zero copy (will should then be as efficient as ZeroMQ).
 */
-FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
-    : fMessage(nullptr)
+FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* ffn, void* hint, FairMQTransportFactory* factory)
+    : FairMQMessage{factory}
+    , fMessage(nullptr)
     , fSize(0)
     , fHint(0)
     , fReceiving(false)
@@ -86,8 +89,9 @@ FairMQMessageNN::FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* 
     }
 }
 
-FairMQMessageNN::FairMQMessageNN(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint)
-    : fMessage(data)
+FairMQMessageNN::FairMQMessageNN(FairMQUnmanagedRegionPtr& region, void* /*data*/, const size_t size, void* hint, FairMQTransportFactory* factory)
+    : FairMQMessage{factory}
+    , fMessage(nullptr)
     , fSize(size)
     , fHint(reinterpret_cast<size_t>(hint))
     , fReceiving(false)

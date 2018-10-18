@@ -725,7 +725,7 @@ void FairMQDevice::PollForTransport(const FairMQTransportFactory* factory, const
     }
 }
 
-bool FairMQDevice::HandleMsgInput(const string& chName, const InputMsgCallback& callback, int i) const
+bool FairMQDevice::HandleMsgInput(const string& chName, const InputMsgCallback& callback, int i)
 {
     unique_ptr<FairMQMessage> input(fChannels.at(chName).at(i).fTransportFactory->CreateMessage());
 
@@ -739,7 +739,7 @@ bool FairMQDevice::HandleMsgInput(const string& chName, const InputMsgCallback& 
     }
 }
 
-bool FairMQDevice::HandleMultipartInput(const string& chName, const InputMultipartCallback& callback, int i) const
+bool FairMQDevice::HandleMultipartInput(const string& chName, const InputMultipartCallback& callback, int i)
 {
     FairMQParts input;
 
