@@ -25,15 +25,10 @@ class FairMQSocket
     virtual bool Bind(const std::string& address) = 0;
     virtual void Connect(const std::string& address) = 0;
 
-    virtual int Send(FairMQMessagePtr& msg, int timeout = 0) = 0;
-    virtual int Receive(FairMQMessagePtr& msg, int timeout = 0) = 0;
-    virtual int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int timeout = 0) = 0;
-    virtual int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int timeout = 0) = 0;
-
-    virtual int TrySend(FairMQMessagePtr& msg) = 0;
-    virtual int TryReceive(FairMQMessagePtr& msg) = 0;
-    virtual int64_t TrySend(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
-    virtual int64_t TryReceive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) = 0;
+    virtual int Send(FairMQMessagePtr& msg, int timeout = -1) = 0;
+    virtual int Receive(FairMQMessagePtr& msg, int timeout = -1) = 0;
+    virtual int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int timeout = -1) = 0;
+    virtual int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int timeout = -1) = 0;
 
     virtual void Close() = 0;
 

@@ -96,23 +96,13 @@ class FairMQDevice : public FairMQStateMachine
         Deserializer().Deserialize(msg, std::forward<DataType>(data), std::forward<Args>(args)...);
     }
 
-    int Send(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const
-    {
-        return fChannels.at(chan).at(i).Send(msg);
-    }
-
-    int Receive(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const
-    {
-        return fChannels.at(chan).at(i).Receive(msg);
-    }
-
     /// Shorthand method to send `msg` on `chan` at index `i`
     /// @param msg message reference
     /// @param chan channel name
     /// @param i channel index
-    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
-    /// In case of errors, returns -1.
-    int Send(FairMQMessagePtr& msg, const std::string& chan, const int i, int sndTimeoutInMs) const
+    /// @param sndTimeoutInMs send timeout in ms, -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. -1 if there was an error.
+    int Send(FairMQMessagePtr& msg, const std::string& chan, const int i = 0, int sndTimeoutInMs = -1) const
     {
         return fChannels.at(chan).at(i).Send(msg, sndTimeoutInMs);
     }
@@ -121,52 +111,29 @@ class FairMQDevice : public FairMQStateMachine
     /// @param msg message reference
     /// @param chan channel name
     /// @param i channel index
-    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
-    /// In case of errors, returns -1.
-    int Receive(FairMQMessagePtr& msg, const std::string& chan, const int i, int rcvTimeoutInMs) const
+    /// @param rcvTimeoutInMs receive timeout in ms, -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
+    /// @return Number of bytes that have been received. -2 if reading from the queue was not possible or timed out. -1 if there was an error.
+    int Receive(FairMQMessagePtr& msg, const std::string& chan, const int i = 0, int rcvTimeoutInMs = -1) const
     {
         return fChannels.at(chan).at(i).Receive(msg, rcvTimeoutInMs);
     }
 
-    /// Shorthand method to send `msg` on `chan` at index `i` without blocking
-    /// @param msg message reference
-    /// @param chan channel name
-    /// @param i channel index
-    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
-    /// In case of errors, returns -1.
-    int SendAsync(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const
+    int SendAsync(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(msg, \"channelA\", subchannelIndex, timeout);")))
     {
-        return fChannels.at(chan).at(i).SendAsync(msg);
+        return fChannels.at(chan).at(i).Send(msg, 0);
     }
-
-    /// Shorthand method to receive `msg` on `chan` at index `i` without blocking
-    /// @param msg message reference
-    /// @param chan channel name
-    /// @param i channel index
-    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
-    /// In case of errors, returns -1.
-    int ReceiveAsync(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const
+    int ReceiveAsync(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(msg, \"channelA\", subchannelIndex, timeout);")))
     {
-        return fChannels.at(chan).at(i).ReceiveAsync(msg);
-    }
-
-    int64_t Send(FairMQParts& parts, const std::string& chan, const int i = 0) const
-    {
-        return fChannels.at(chan).at(i).Send(parts.fParts);
-    }
-
-    int64_t Receive(FairMQParts& parts, const std::string& chan, const int i = 0) const
-    {
-        return fChannels.at(chan).at(i).Receive(parts.fParts);
+        return fChannels.at(chan).at(i).Receive(msg, 0);
     }
 
     /// Shorthand method to send FairMQParts on `chan` at index `i`
     /// @param parts parts reference
     /// @param chan channel name
     /// @param i channel index
-    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
-    /// In case of errors, returns -1.
-    int64_t Send(FairMQParts& parts, const std::string& chan, const int i, int sndTimeoutInMs) const
+    /// @param sndTimeoutInMs send timeout in ms, -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. -1 if there was an error.
+    int64_t Send(FairMQParts& parts, const std::string& chan, const int i = 0, int sndTimeoutInMs = -1) const
     {
         return fChannels.at(chan).at(i).Send(parts.fParts, sndTimeoutInMs);
     }
@@ -175,33 +142,20 @@ class FairMQDevice : public FairMQStateMachine
     /// @param parts parts reference
     /// @param chan channel name
     /// @param i channel index
-    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
-    /// In case of errors, returns -1.
-    int64_t Receive(FairMQParts& parts, const std::string& chan, const int i, int rcvTimeoutInMs) const
+    /// @param rcvTimeoutInMs receive timeout in ms, -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
+    /// @return Number of bytes that have been received. -2 if reading from the queue was not possible or timed out. -1 if there was an error.
+    int64_t Receive(FairMQParts& parts, const std::string& chan, const int i = 0, int rcvTimeoutInMs = -1) const
     {
         return fChannels.at(chan).at(i).Receive(parts.fParts, rcvTimeoutInMs);
     }
 
-    /// Shorthand method to send FairMQParts on `chan` at index `i` without blocking
-    /// @param parts parts reference
-    /// @param chan channel name
-    /// @param i channel index
-    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
-    /// In case of errors, returns -1.
-    int64_t SendAsync(FairMQParts& parts, const std::string& chan, const int i = 0) const
+    int64_t SendAsync(FairMQParts& parts, const std::string& chan, const int i = 0) const __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(parts, \"channelA\", subchannelIndex, timeout);")))
     {
-        return fChannels.at(chan).at(i).SendAsync(parts.fParts);
+        return fChannels.at(chan).at(i).Send(parts.fParts, 0);
     }
-
-    /// Shorthand method to receive FairMQParts on `chan` at index `i` without blocking
-    /// @param parts parts reference
-    /// @param chan channel name
-    /// @param i channel index
-    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
-    /// In case of errors, returns -1.
-    int64_t ReceiveAsync(FairMQParts& parts, const std::string& chan, const int i = 0) const
+    int64_t ReceiveAsync(FairMQParts& parts, const std::string& chan, const int i = 0) const __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(parts, \"channelA\", subchannelIndex, timeout);")))
     {
-        return fChannels.at(chan).at(i).ReceiveAsync(parts.fParts);
+        return fChannels.at(chan).at(i).Receive(parts.fParts, 0);
     }
 
     /// @brief Getter for default transport factory

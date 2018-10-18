@@ -174,106 +174,62 @@ class FairMQChannel
     /// Resets the channel (requires validation to be used again).
     void ResetChannel();
 
-    int Send(FairMQMessagePtr& msg) const;
-    int Receive(FairMQMessagePtr& msg) const;
-
     /// Sends a message to the socket queue.
-    /// @details Send method attempts to send a message by
-    /// putting it in the output queue. If the queue is full or queueing is not possible
-    /// for some other reason (e.g. no peers connected for a binding socket), the method blocks.
-    ///
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
-    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
-    /// In case of errors, returns -1.
-    int Send(FairMQMessagePtr& msg, int sndTimeoutInMs) const;
+    /// @param sndTimeoutInMs send timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. -1 if there was an error.
+    int Send(FairMQMessagePtr& msg, int sndTimeoutInMs = -1) const;
 
     /// Receives a message from the socket queue.
-    /// @details Receive method attempts to receive a message from the input queue.
-    /// If the queue is empty the method blocks.
-    ///
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
-    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
-    /// In case of errors, returns -1.
-    int Receive(FairMQMessagePtr& msg, int rcvTimeoutInMs) const;
+    /// @param rcvTimeoutInMs receive timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
+    /// @return Number of bytes that have been received. -2 if reading from the queue was not possible or timed out. -1 if there was an error.
+    int Receive(FairMQMessagePtr& msg, int rcvTimeoutInMs = -1) const;
 
-    /// Sends a message in non-blocking mode.
-    /// @details SendAsync method attempts to send a message without blocking by
-    /// putting it in the queue.
-    ///
-    /// @param msg Constant reference of unique_ptr to a FairMQMessage
-    /// @return Number of bytes that have been queued. If queueing failed due to
-    /// full queue or no connected peers (when binding), returns -2.
-    /// In case of errors, returns -1.
-    int SendAsync(FairMQMessagePtr& msg) const;
-
-    /// Receives a message in non-blocking mode.
-    ///
-    /// @param msg Constant reference of unique_ptr to a FairMQMessage
-    /// @return Number of bytes that have been received. If queue is empty, returns -2.
-    /// In case of errors, returns -1.
-    int ReceiveAsync(FairMQMessagePtr& msg) const;
-
-    int64_t Send(std::vector<FairMQMessagePtr>& msgVec) const;
-    int64_t Receive(std::vector<FairMQMessagePtr>& msgVec) const;
+    int SendAsync(FairMQMessagePtr& msg) const __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(msg, timeout);")));
+    int ReceiveAsync(FairMQMessagePtr& msg) const __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(msg, timeout);")));
 
     /// Send a vector of messages
-    ///
     /// @param msgVec message vector reference
-    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out.
-    /// In case of errors, returns -1.
-    int64_t Send(std::vector<FairMQMessagePtr>& msgVec, int sndTimeoutInMs) const;
+    /// @param sndTimeoutInMs send timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. -1 if there was an error.
+    int64_t Send(std::vector<FairMQMessagePtr>& msgVec, int sndTimeoutInMs = -1) const;
 
     /// Receive a vector of messages
-    ///
     /// @param msgVec message vector reference
-    /// @return Number of bytes that have been received. -2 If reading from the queue was not possible or timed out.
-    /// In case of errors, returns -1.
-    int64_t Receive(std::vector<FairMQMessagePtr>& msgVec, int rcvTimeoutInMs) const;
+    /// @param rcvTimeoutInMs receive timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
+    /// @return Number of bytes that have been received. -2 if reading from the queue was not possible or timed out. -1 if there was an error.
+    int64_t Receive(std::vector<FairMQMessagePtr>& msgVec, int rcvTimeoutInMs = -1) const;
 
-    /// Sends a vector of message in non-blocking mode.
-    /// @details SendAsync method attempts to send a vector of messages without blocking by
-    /// putting it them the queue.
-    ///
-    /// @param msgVec message vector reference
-    /// @return Number of bytes that have been queued. If queueing failed due to
-    /// full queue or no connected peers (when binding), returns -2. In case of errors, returns -1.
-    int64_t SendAsync(std::vector<FairMQMessagePtr>& msgVec) const;
+    int64_t SendAsync(std::vector<FairMQMessagePtr>& msgVec) const __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(msgVec, timeout);")));
+    int64_t ReceiveAsync(std::vector<FairMQMessagePtr>& msgVec) const __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(msgVec, timeout);")));
 
-    /// Receives a vector of messages in non-blocking mode.
-    ///
-    /// @param msgVec message vector reference
-    /// @return Number of bytes that have been received. If queue is empty, returns -2.
-    /// In case of errors, returns -1.
-    int64_t ReceiveAsync(std::vector<FairMQMessagePtr>& msgVec) const;
-
-    int64_t Send(FairMQParts& parts) const
-    {
-        return Send(parts.fParts);
-    }
-
-    int64_t Receive(FairMQParts& parts) const
-    {
-        return Receive(parts.fParts);
-    }
-
-    int64_t Send(FairMQParts& parts, int sndTimeoutInMs) const
+    /// Send FairMQParts
+    /// @param parts FairMQParts reference
+    /// @param sndTimeoutInMs send timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
+    /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. -1 if there was an error.
+    int64_t Send(FairMQParts& parts, int sndTimeoutInMs = -1) const
     {
         return Send(parts.fParts, sndTimeoutInMs);
     }
 
-    int64_t Receive(FairMQParts& parts, int rcvTimeoutInMs) const
+    /// Receive FairMQParts
+    /// @param parts FairMQParts reference
+    /// @param rcvTimeoutInMs receive timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
+    /// @return Number of bytes that have been received. -2 if reading from the queue was not possible or timed out. -1 if there was an error.
+    int64_t Receive(FairMQParts& parts, int rcvTimeoutInMs = -1) const
     {
         return Receive(parts.fParts, rcvTimeoutInMs);
     }
 
-    int64_t SendAsync(FairMQParts& parts) const
+    int64_t SendAsync(FairMQParts& parts) const __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(parts, timeout);")))
     {
-        return SendAsync(parts.fParts);
+        return Send(parts.fParts, 0);
     }
 
-    int64_t ReceiveAsync(FairMQParts& parts) const
+    int64_t ReceiveAsync(FairMQParts& parts) const __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(parts, timeout);")))
     {
-        return ReceiveAsync(parts.fParts);
+        return Receive(parts.fParts, 0);
     }
 
     unsigned long GetBytesTx() const;

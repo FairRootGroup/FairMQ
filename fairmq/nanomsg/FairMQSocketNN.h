@@ -27,15 +27,10 @@ class FairMQSocketNN final : public FairMQSocket
     bool Bind(const std::string& address) override;
     void Connect(const std::string& address) override;
 
-    int Send(FairMQMessagePtr& msg, const int timeout = 0) override;
-    int Receive(FairMQMessagePtr& msg, const int timeout = 0) override;
-    int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int timeout = 0) override;
-    int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int timeout = 0) override;
-
-    int TrySend(FairMQMessagePtr& msg) override;
-    int TryReceive(FairMQMessagePtr& msg) override;
-    int64_t TrySend(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
-    int64_t TryReceive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec) override;
+    int Send(FairMQMessagePtr& msg, const int timeout = -1) override;
+    int Receive(FairMQMessagePtr& msg, const int timeout = -1) override;
+    int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int timeout = -1) override;
+    int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int timeout = -1) override;
 
     int GetSocket() const;
 
@@ -80,11 +75,6 @@ class FairMQSocketNN final : public FairMQSocket
     int fSndTimeout;
     int fRcvTimeout;
     int fLinger;
-
-    int SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout);
-    int ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout);
-    int64_t SendImpl(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags, const int timeout);
-    int64_t ReceiveImpl(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int flags, const int timeout);
 };
 
 #endif /* FAIRMQSOCKETNN_H_ */
