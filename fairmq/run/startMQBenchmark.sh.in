@@ -5,7 +5,6 @@ export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
 maxIterations="0"
 msgSize="1000000"
 transport="zeromq"
-sameMsg="true"
 affinity="false"
 affinitySamp=""
 affinitySink=""
@@ -24,11 +23,7 @@ if [[ $3 =~ ^[a-z]+$ ]]; then
 fi
 
 if [[ $4 =~ ^[a-z]+$ ]]; then
-    sameMsg=$4
-fi
-
-if [[ $5 =~ ^[a-z]+$ ]]; then
-    affinity=$5
+    affinity=$4
 fi
 
 
@@ -45,12 +40,6 @@ fi
 
 echo "transport: $transport"
 
-if [ $sameMsg = "true" ]; then
-    echo "resend same message: yes, using Copy() method to resend the same message"
-else
-    echo "resend same message: no, allocating each message separately"
-fi
-
 if [ $affinity = "true" ]; then
     affinitySamp="taskset -c 0"
     affinitySink="taskset -c 1"
@@ -60,7 +49,7 @@ else
 fi
 
 echo ""
-echo "Usage: startBenchmark [message size=1000000] [number of iterations=0] [transport=zeromq/nanomsg/shmem] [resend same message=true] [affinity=false]"
+echo "Usage: startBenchmark [message size=1000000] [number of iterations=0] [transport=zeromq/nanomsg/shmem] [affinity=false]"
 
 SAMPLER="fairmq-bsampler"
 SAMPLER+=" --id bsampler1"
@@ -69,7 +58,7 @@ SAMPLER+=" --id bsampler1"
 SAMPLER+=" --transport $transport"
 SAMPLER+=" --severity debug"
 SAMPLER+=" --msg-size $msgSize"
-SAMPLER+=" --same-msg $sameMsg"
+SAMPLER+=" --num-parts 1"
 # SAMPLER+=" --msg-rate 1000"
 SAMPLER+=" --max-iterations $maxIterations"
 SAMPLER+=" --channel-config name=data,type=push,method=bind,address=tcp://127.0.0.1:5555"
@@ -84,6 +73,7 @@ SINK+=" --id sink1"
 #SINK+=" --control static"
 SINK+=" --transport $transport"
 SINK+=" --severity debug"
+SINK+=" --multipart false"
 SINK+=" --max-iterations $maxIterations"
 SINK+=" --channel-config name=data,type=pull,method=connect,address=tcp://127.0.0.1:5555"
 xterm -geometry 90x50+550+0 -hold -e $affinitySink @CMAKE_CURRENT_BINARY_DIR@/$SINK &

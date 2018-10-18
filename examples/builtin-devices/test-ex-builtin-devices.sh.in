@@ -1,0 +1,148 @@
+#!/bin/bash
+
+export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
+
+SESSION="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+
+transport="zeromq"
+multipart="false"
+numParts="1"
+
+if [[ $1 =~ ^[a-z]+$ ]]; then
+    transport=$1
+fi
+
+if [[ $2 =~ ^[a-z]+$ ]]; then
+    multipart=$2
+fi
+
+if [[ $3 =~ ^[0-9]+$ ]]; then
+    numParts=$3
+fi
+
+# setup a trap to kill everything if the test fails/timeouts
+trap 'kill -TERM $SAMPLER_PID; kill -TERM $SPLITTER_PID; kill -TERM $PROXY1_PID; kill -TERM $PROXY2_PID; kill -TERM $MERGER_PID; kill -TERM $MULTIPLIER_PID; kill -TERM $SINK_PID;' TERM
+
+SAMPLER="fairmq-bsampler"
+SAMPLER+=" --id bsampler1"
+SAMPLER+=" --session $SESSION"
+SAMPLER+=" --transport $transport"
+SAMPLER+=" --color false"
+SAMPLER+=" --control static"
+SAMPLER+=" --verbosity veryhigh"
+SAMPLER+=" --severity debug"
+SAMPLER+=" --msg-size 100000"
+SAMPLER+=" --multipart $multipart"
+SAMPLER+=" --num-parts $numParts"
+SAMPLER+=" --msg-rate 1"
+SAMPLER+=" --max-iterations 0"
+SAMPLER+=" --out-channel data1"
+SAMPLER+=" --channel-config name=data1,type=push,method=bind,sndBufSize=50,rcvBufSize=50,address=tcp://localhost:5555"
+@FAIRMQ_BIN_DIR@/$SAMPLER &
+SAMPLER_PID=$!
+
+SPLITTER="fairmq-splitter"
+SPLITTER+=" --id splitter"
+SPLITTER+=" --session $SESSION"
+SPLITTER+=" --transport $transport"
+SPLITTER+=" --color false"
+SPLITTER+=" --control static"
+SPLITTER+=" --verbosity veryhigh"
+SPLITTER+=" --multipart $multipart"
+SPLITTER+=" --in-channel data1"
+SPLITTER+=" --out-channel data2"
+SPLITTER+=" --channel-config name=data1,type=pull,method=connect,sndBufSize=50,rcvBufSize=50,address=tcp://localhost:5555"
+SPLITTER+="                  name=data2,type=push,method=bind,sndBufSize=50,rcvBufSize=50,address=tcp://localhost:5556,address=tcp://localhost:5557"
+@FAIRMQ_BIN_DIR@/$SPLITTER &
+SPLITTER_PID=$!
+
+PROXY1="fairmq-proxy"
+PROXY1+=" --id proxy1"
+PROXY1+=" --session $SESSION"
+PROXY1+=" --transport $transport"
+PROXY1+=" --color false"
+PROXY1+=" --control static"
+PROXY1+=" --verbosity veryhigh"
+PROXY1+=" --multipart $multipart"
+PROXY1+=" --in-channel data2"
+PROXY1+=" --out-channel data3"
+PROXY1+=" --channel-config name=data2,type=pull,method=connect,sndBufSize=50,rcvBufSize=50,address=tcp://localhost:5556"
+PROXY1+="                  name=data3,type=push,method=connect,sndBufSize=50,rcvBufSize=50,address=tcp://localhost:5558"
+@FAIRMQ_BIN_DIR@/$PROXY1 &
+PROXY1_PID=$!
+
+PROXY2="fairmq-proxy"
+PROXY2+=" --id proxy2"
+PROXY2+=" --session $SESSION"
+PROXY2+=" --transport $transport"
+PROXY2+=" --color false"
+PROXY2+=" --control static"
+PROXY2+=" --verbosity veryhigh"
+PROXY2+=" --multipart $multipart"
+PROXY2+=" --in-channel data2"
+PROXY2+=" --out-channel data3"
+PROXY2+=" --channel-config name=data2,type=pull,method=connect,sndBufSize=50,rcvBufSize=50,address=tcp://localhost:5557"
+PROXY2+="                  name=data3,type=push,method=connect,sndBufSize=50,rcvBufSize=50,address=tcp://localhost:5559"
+@FAIRMQ_BIN_DIR@/$PROXY2 &
+PROXY2_PID=$!
+
+MERGER="fairmq-merger"
+MERGER+=" --id merger"
+MERGER+=" --session $SESSION"
+MERGER+=" --transport $transport"
+MERGER+=" --color false"
+MERGER+=" --control static"
+MERGER+=" --verbosity veryhigh"
+MERGER+=" --multipart $multipart"
+MERGER+=" --in-channel data3"
+MERGER+=" --out-channel data4"
+MERGER+=" --channel-config name=data3,type=pull,method=bind,sndBufSize=50,rcvBufSize=50,address=tcp://localhost:5558,address=tcp://localhost:5559"
+MERGER+="                  name=data4,type=push,method=connect,sndBufSize=50,rcvBufSize=50,address=tcp://localhost:5560"
+@FAIRMQ_BIN_DIR@/$MERGER &
+MERGER_PID=$!
+
+MULTIPLIER="fairmq-multiplier"
+MULTIPLIER+=" --id multiplier"
+MULTIPLIER+=" --session $SESSION"
+MULTIPLIER+=" --transport $transport"
+MULTIPLIER+=" --color false"
+MULTIPLIER+=" --control static"
+MULTIPLIER+=" --verbosity veryhigh"
+MULTIPLIER+=" --multipart $multipart"
+MULTIPLIER+=" --in-channel data4"
+MULTIPLIER+=" --out-channel data5"
+MULTIPLIER+=" --channel-config name=data4,type=pull,method=bind,sndBufSize=50,rcvBufSize=50,address=tcp://localhost:5560"
+MULTIPLIER+="                  name=data5,type=push,method=connect,sndBufSize=50,rcvBufSize=50,address=tcp://localhost:5561,address=tcp://localhost:5561"
+@FAIRMQ_BIN_DIR@/$MULTIPLIER &
+MULTIPLIER_PID=$!
+
+SINK="fairmq-sink"
+SINK+=" --id sink1"
+SINK+=" --session $SESSION"
+SINK+=" --transport $transport"
+SINK+=" --color false"
+SINK+=" --control static"
+SINK+=" --verbosity veryhigh"
+SINK+=" --severity debug"
+SINK+=" --multipart $multipart"
+SINK+=" --max-iterations 2"
+SINK+=" --in-channel data5"
+SINK+=" --channel-config name=data5,type=pull,method=bind,sndBufSize=50,rcvBufSize=50,address=tcp://localhost:5561"
+@FAIRMQ_BIN_DIR@/$SINK &
+SINK_PID=$!
+
+wait $SINK_PID
+
+kill -SIGINT $SAMPLER_PID
+kill -SIGINT $SPLITTER_PID
+kill -SIGINT $PROXY1_PID
+kill -SIGINT $PROXY2_PID
+kill -SIGINT $MERGER_PID
+kill -SIGINT $MULTIPLIER_PID
+
+wait $SAMPLER_PID
+wait $SPLITTER_PID
+wait $PROXY1_PID
+wait $PROXY2_PID
+wait $MERGER_PID
+wait $MULTIPLIER_PID

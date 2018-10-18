@@ -20,7 +20,7 @@
 using namespace std;
 
 FairMQSplitter::FairMQSplitter()
-    : fMultipart(1)
+    : fMultipart(true)
     , fNumOutputs(0)
     , fDirection(0)
     , fInChannelName()
@@ -34,7 +34,7 @@ FairMQSplitter::~FairMQSplitter()
 
 void FairMQSplitter::InitTask()
 {
-    fMultipart = fConfig->GetValue<int>("multipart");
+    fMultipart = fConfig->GetValue<bool>("multipart");
     fInChannelName = fConfig->GetValue<string>("in-channel");
     fOutChannelName = fConfig->GetValue<string>("out-channel");
     fNumOutputs = fChannels.at(fOutChannelName).size();

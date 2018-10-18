@@ -26,7 +26,7 @@ class FairMQSplitter : public FairMQDevice
     virtual ~FairMQSplitter();
 
   protected:
-    int fMultipart;
+    bool fMultipart;
     int fNumOutputs;
     int fDirection;
     std::string fInChannelName;

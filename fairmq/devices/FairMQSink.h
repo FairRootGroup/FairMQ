@@ -27,7 +27,8 @@ class FairMQSink : public FairMQDevice//, public OutputPolicy
 {
   public:
     FairMQSink()
-        : fMaxIterations(0)
+        : fMultipart(false)
+        , fMaxIterations(0)
         , fNumIterations(0)
         , fInChannelName()
     {}
@@ -36,12 +37,14 @@ class FairMQSink : public FairMQDevice//, public OutputPolicy
     {}
 
   protected:
+    bool fMultipart;
     uint64_t fMaxIterations;
     uint64_t fNumIterations;
     std::string fInChannelName;
 
     virtual void InitTask()
     {
+        fMultipart = fConfig->GetValue<bool>("multipart");
         fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
         fInChannelName = fConfig->GetValue<std::string>("in-channel");
     }
@@ -56,18 +59,39 @@ class FairMQSink : public FairMQDevice//, public OutputPolicy
 
         while (CheckCurrentState(RUNNING))
         {
-            FairMQMessagePtr msg(dataInChannel.NewMessage());
-
-            if (dataInChannel.Receive(msg) >= 0)
+            if (fMultipart)
             {
-                if (fMaxIterations > 0)
+                FairMQParts parts;
+
+                if (dataInChannel.Receive(parts) >= 0)
                 {
-                    if (fNumIterations >= fMaxIterations)
+                    if (fMaxIterations > 0)
                     {
-                        break;
+                        if (fNumIterations >= fMaxIterations)
+                        {
+                            LOG(info) << "Configured maximum number of iterations reached.";
+                            break;
+                        }
                     }
+                    fNumIterations++;
                 }
-                fNumIterations++;
+            }
+            else
+            {
+                FairMQMessagePtr msg(dataInChannel.NewMessage());
+
+                if (dataInChannel.Receive(msg) >= 0)
+                {
+                    if (fMaxIterations > 0)
+                    {
+                        if (fNumIterations >= fMaxIterations)
+                        {
+                            LOG(info) << "Configured maximum number of iterations reached.";
+                            break;
+                        }
+                    }
+                    fNumIterations++;
+                }
             }
         }
 

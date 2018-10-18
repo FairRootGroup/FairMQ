@@ -8,6 +8,7 @@
 
 add_subdirectory(1-1)
 add_subdirectory(1-n-1)
+add_subdirectory(builtin-devices)
 add_subdirectory(copypush)
 add_subdirectory(dds)
 add_subdirectory(multipart)
