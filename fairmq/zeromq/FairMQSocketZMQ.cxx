@@ -106,18 +106,13 @@ void FairMQSocketZMQ::Connect(const string& address)
     }
 }
 
-int FairMQSocketZMQ::Send(FairMQMessagePtr& msg, const int timeout) { return SendImpl(msg, 0, timeout); }
-int FairMQSocketZMQ::Receive(FairMQMessagePtr& msg, const int timeout) { return ReceiveImpl(msg, 0, timeout); }
-int64_t FairMQSocketZMQ::Send(vector<unique_ptr<FairMQMessage>>& msgVec, const int timeout) { return SendImpl(msgVec, 0, timeout); }
-int64_t FairMQSocketZMQ::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const int timeout) { return ReceiveImpl(msgVec, 0, timeout); }
-
-int FairMQSocketZMQ::TrySend(FairMQMessagePtr& msg) { return SendImpl(msg, ZMQ_DONTWAIT, 0); }
-int FairMQSocketZMQ::TryReceive(FairMQMessagePtr& msg) { return ReceiveImpl(msg, ZMQ_DONTWAIT, 0); }
-int64_t FairMQSocketZMQ::TrySend(vector<unique_ptr<FairMQMessage>>& msgVec) { return SendImpl(msgVec, ZMQ_DONTWAIT, 0); }
-int64_t FairMQSocketZMQ::TryReceive(vector<unique_ptr<FairMQMessage>>& msgVec) { return ReceiveImpl(msgVec, ZMQ_DONTWAIT, 0); }
-
-int FairMQSocketZMQ::SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout)
+int FairMQSocketZMQ::Send(FairMQMessagePtr& msg, const int timeout)
 {
+    int flags = 0;
+    if (timeout == 0)
+    {
+        flags = ZMQ_DONTWAIT;
+    }
     int elapsed = 0;
 
     static_cast<FairMQMessageZMQ*>(msg.get())->ApplyUsedSize();
@@ -136,7 +131,7 @@ int FairMQSocketZMQ::SendImpl(FairMQMessagePtr& msg, const int flags, const int 
         {
             if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
             {
-                if (timeout)
+                if (timeout > 0)
                 {
                     elapsed += fSndTimeout;
                     if (elapsed >= timeout)
@@ -164,8 +159,13 @@ int FairMQSocketZMQ::SendImpl(FairMQMessagePtr& msg, const int flags, const int 
     }
 }
 
-int FairMQSocketZMQ::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout)
+int FairMQSocketZMQ::Receive(FairMQMessagePtr& msg, const int timeout)
 {
+    int flags = 0;
+    if (timeout == 0)
+    {
+        flags = ZMQ_DONTWAIT;
+    }
     int elapsed = 0;
 
     while (true)
@@ -181,7 +181,7 @@ int FairMQSocketZMQ::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const i
         {
             if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
             {
-                if (timeout)
+                if (timeout > 0)
                 {
                     elapsed += fRcvTimeout;
                     if (elapsed >= timeout)
@@ -209,14 +209,21 @@ int FairMQSocketZMQ::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const i
     }
 }
 
-int64_t FairMQSocketZMQ::SendImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
+int64_t FairMQSocketZMQ::Send(vector<FairMQMessagePtr>& msgVec, const int timeout)
 {
+    int flags = 0;
+    if (timeout == 0)
+    {
+        flags = ZMQ_DONTWAIT;
+    }
+
     const unsigned int vecSize = msgVec.size();
 
     // Sending vector typicaly handles more then one part
     if (vecSize > 1)
     {
         int elapsed = 0;
+
         while (true)
         {
             int64_t totalSize = 0;
@@ -240,7 +247,7 @@ int64_t FairMQSocketZMQ::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fl
                     {
                         if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
                         {
-                            if (timeout)
+                            if (timeout > 0)
                             {
                                 elapsed += fSndTimeout;
                                 if (elapsed >= timeout)
@@ -279,7 +286,7 @@ int64_t FairMQSocketZMQ::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fl
     } // If there's only one part, send it as a regular message
     else if (vecSize == 1)
     {
-        return SendImpl(msgVec.back(), flags, timeout);
+        return Send(msgVec.back(), timeout);
     }
     else // if the vector is empty, something might be wrong
     {
@@ -288,8 +295,13 @@ int64_t FairMQSocketZMQ::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fl
     }
 }
 
-int64_t FairMQSocketZMQ::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
+int64_t FairMQSocketZMQ::Receive(vector<FairMQMessagePtr>& msgVec, const int timeout)
 {
+    int flags = 0;
+    if (timeout == 0)
+    {
+        flags = ZMQ_DONTWAIT;
+    }
     int elapsed = 0;
 
     while (true)
@@ -312,7 +324,7 @@ int64_t FairMQSocketZMQ::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int
             {
                 if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0))
                 {
-                    if (timeout)
+                    if (timeout > 0)
                     {
                         elapsed += fRcvTimeout;
                         if (elapsed >= timeout)

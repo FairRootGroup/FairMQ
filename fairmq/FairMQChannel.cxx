@@ -689,77 +689,52 @@ void FairMQChannel::ResetChannel()
     // TODO: implement channel resetting
 }
 
-int FairMQChannel::Send(unique_ptr<FairMQMessage>& msg) const
-{
-    CheckSendCompatibility(msg);
-    return fSocket->Send(msg);
-}
-
-int FairMQChannel::Receive(unique_ptr<FairMQMessage>& msg) const
-{
-    CheckReceiveCompatibility(msg);
-    return fSocket->Receive(msg);
-}
-
 int FairMQChannel::Send(unique_ptr<FairMQMessage>& msg, int sndTimeoutInMs) const
 {
+    CheckSendCompatibility(msg);
     return fSocket->Send(msg, sndTimeoutInMs);
 }
 
 int FairMQChannel::Receive(unique_ptr<FairMQMessage>& msg, int rcvTimeoutInMs) const
 {
+    CheckReceiveCompatibility(msg);
     return fSocket->Receive(msg, rcvTimeoutInMs);
 }
 
 int FairMQChannel::SendAsync(unique_ptr<FairMQMessage>& msg) const
 {
     CheckSendCompatibility(msg);
-    return fSocket->TrySend(msg);
+    return fSocket->Send(msg, 0);
 }
 
 int FairMQChannel::ReceiveAsync(unique_ptr<FairMQMessage>& msg) const
 {
     CheckReceiveCompatibility(msg);
-    return fSocket->TryReceive(msg);
-}
-
-int64_t FairMQChannel::Send(vector<unique_ptr<FairMQMessage>>& msgVec) const
-{
-    CheckSendCompatibility(msgVec);
-    return fSocket->Send(msgVec);
-}
-
-int64_t FairMQChannel::Receive(vector<unique_ptr<FairMQMessage>>& msgVec) const
-{
-    CheckReceiveCompatibility(msgVec);
-    return fSocket->Receive(msgVec);
+    return fSocket->Receive(msg, 0);
 }
 
 int64_t FairMQChannel::Send(vector<unique_ptr<FairMQMessage>>& msgVec, int sndTimeoutInMs) const
 {
+    CheckSendCompatibility(msgVec);
     return fSocket->Send(msgVec, sndTimeoutInMs);
 }
 
 int64_t FairMQChannel::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, int rcvTimeoutInMs) const
 {
+    CheckReceiveCompatibility(msgVec);
     return fSocket->Receive(msgVec, rcvTimeoutInMs);
 }
 
 int64_t FairMQChannel::SendAsync(vector<unique_ptr<FairMQMessage>>& msgVec) const
 {
     CheckSendCompatibility(msgVec);
-    return fSocket->TrySend(msgVec);
+    return fSocket->Send(msgVec, 0);
 }
 
-/// Receives a vector of messages in non-blocking mode.
-///
-/// @param msgVec message vector reference
-/// @return Number of bytes that have been received. If queue is empty, returns -2.
-/// In case of errors, returns -1.
 int64_t FairMQChannel::ReceiveAsync(vector<unique_ptr<FairMQMessage>>& msgVec) const
 {
     CheckReceiveCompatibility(msgVec);
-    return fSocket->TryReceive(msgVec);
+    return fSocket->Receive(msgVec, 0);
 }
 
 FairMQChannel::~FairMQChannel()

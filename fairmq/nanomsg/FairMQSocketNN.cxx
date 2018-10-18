@@ -119,18 +119,13 @@ void FairMQSocketNN::Connect(const string& address)
     }
 }
 
-int FairMQSocketNN::Send(FairMQMessagePtr& msg, const int timeout) { return SendImpl(msg, 0, timeout); }
-int FairMQSocketNN::Receive(FairMQMessagePtr& msg, const int timeout) { return ReceiveImpl(msg, 0, timeout); }
-int64_t FairMQSocketNN::Send(vector<unique_ptr<FairMQMessage>>& msgVec, const int timeout) { return SendImpl(msgVec, 0, timeout); }
-int64_t FairMQSocketNN::Receive(vector<unique_ptr<FairMQMessage>>& msgVec, const int timeout) { return ReceiveImpl(msgVec, 0, timeout); }
-
-int FairMQSocketNN::TrySend(FairMQMessagePtr& msg) { return SendImpl(msg, NN_DONTWAIT, 0); }
-int FairMQSocketNN::TryReceive(FairMQMessagePtr& msg) { return ReceiveImpl(msg, NN_DONTWAIT, 0); }
-int64_t FairMQSocketNN::TrySend(vector<unique_ptr<FairMQMessage>>& msgVec) { return SendImpl(msgVec, NN_DONTWAIT, 0); }
-int64_t FairMQSocketNN::TryReceive(vector<unique_ptr<FairMQMessage>>& msgVec) { return ReceiveImpl(msgVec, NN_DONTWAIT, 0); }
-
-int FairMQSocketNN::SendImpl(FairMQMessagePtr& msg, const int flags, const int timeout)
+int FairMQSocketNN::Send(FairMQMessagePtr& msg, const int timeout)
 {
+    int flags = 0;
+    if (timeout == 0)
+    {
+        flags = NN_DONTWAIT;
+    }
     int nbytes = -1;
     int elapsed = 0;
 
@@ -162,7 +157,7 @@ int FairMQSocketNN::SendImpl(FairMQMessagePtr& msg, const int flags, const int t
         {
             if (!fInterrupted && ((flags & NN_DONTWAIT) == 0))
             {
-                if (timeout)
+                if (timeout > 0)
                 {
                     elapsed += fSndTimeout;
                     if (elapsed >= timeout)
@@ -194,8 +189,13 @@ int FairMQSocketNN::SendImpl(FairMQMessagePtr& msg, const int flags, const int t
     }
 }
 
-int FairMQSocketNN::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const int timeout)
+int FairMQSocketNN::Receive(FairMQMessagePtr& msg, const int timeout)
 {
+    int flags = 0;
+    if (timeout == 0)
+    {
+        flags = NN_DONTWAIT;
+    }
     int elapsed = 0;
 
     FairMQMessageNN* msgPtr = static_cast<FairMQMessageNN*>(msg.get());
@@ -216,7 +216,7 @@ int FairMQSocketNN::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const in
         {
             if (!fInterrupted && ((flags & NN_DONTWAIT) == 0))
             {
-                if (timeout)
+                if (timeout > 0)
                 {
                     elapsed += fRcvTimeout;
                     if (elapsed >= timeout)
@@ -248,8 +248,13 @@ int FairMQSocketNN::ReceiveImpl(FairMQMessagePtr& msg, const int flags, const in
     }
 }
 
-int64_t FairMQSocketNN::SendImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
+int64_t FairMQSocketNN::Send(vector<FairMQMessagePtr>& msgVec, const int timeout)
 {
+    int flags = 0;
+    if (timeout == 0)
+    {
+        flags = NN_DONTWAIT;
+    }
     const unsigned int vecSize = msgVec.size();
     int elapsed = 0;
 
@@ -286,7 +291,7 @@ int64_t FairMQSocketNN::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fla
         {
             if (!fInterrupted && ((flags & NN_DONTWAIT) == 0))
             {
-                if (timeout)
+                if (timeout > 0)
                 {
                     elapsed += fSndTimeout;
                     if (elapsed >= timeout)
@@ -318,8 +323,13 @@ int64_t FairMQSocketNN::SendImpl(vector<FairMQMessagePtr>& msgVec, const int fla
     }
 }
 
-int64_t FairMQSocketNN::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int flags, const int timeout)
+int64_t FairMQSocketNN::Receive(vector<FairMQMessagePtr>& msgVec, const int timeout)
 {
+    int flags = 0;
+    if (timeout == 0)
+    {
+        flags = NN_DONTWAIT;
+    }
     // Warn if the vector is filled before Receive() and empty it.
     // if (msgVec.size() > 0)
     // {
@@ -369,7 +379,7 @@ int64_t FairMQSocketNN::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int 
         {
             if (!fInterrupted && ((flags & NN_DONTWAIT) == 0))
             {
-                if (timeout)
+                if (timeout > 0)
                 {
                     elapsed += fRcvTimeout;
                     if (elapsed >= timeout)
