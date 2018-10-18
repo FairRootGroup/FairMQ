@@ -23,24 +23,24 @@ FairMQTransportFactoryNN::FairMQTransportFactoryNN(const string& id, const FairM
     LOG(debug) << "Transport: Using nanomsg library";
 }
 
-FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage() const
+FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage()
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageNN());
+    return unique_ptr<FairMQMessage>(new FairMQMessageNN(this));
 }
 
-FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(const size_t size) const
+FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(const size_t size)
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageNN(size));
+    return unique_ptr<FairMQMessage>(new FairMQMessageNN(size, this));
 }
 
-FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const
+FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageNN(data, size, ffn, hint));
+    return unique_ptr<FairMQMessage>(new FairMQMessageNN(data, size, ffn, hint, this));
 }
 
-FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint) const
+FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint)
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageNN(region, data, size, hint));
+    return unique_ptr<FairMQMessage>(new FairMQMessageNN(region, data, size, hint, this));
 }
 
 FairMQSocketPtr FairMQTransportFactoryNN::CreateSocket(const string& type, const string& name) const
@@ -55,7 +55,7 @@ FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const vector<FairMQChanne
     return unique_ptr<FairMQPoller>(new FairMQPollerNN(channels));
 }
 
-FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const std::vector<const FairMQChannel*>& channels) const
+FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const std::vector<FairMQChannel*>& channels) const
 {
     return unique_ptr<FairMQPoller>(new FairMQPollerNN(channels));
 }

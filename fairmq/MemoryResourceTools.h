@@ -75,17 +75,15 @@ std::vector<const ElemT, boost::container::pmr::polymorphic_allocator<const Elem
 };
 
 //_________________________________________________________________________________________________
-/// Return a vector of const ElemT, takes ownership of the message, needs an
-/// upstream global
-/// ChannelResource to register the message.
+/// Return a vector of const ElemT, takes ownership of the message
 template<typename ElemT>
 std::vector<const ElemT, OwningMessageSpectatorAllocator<const ElemT>>
-    adoptVector(size_t nelem, ChannelResource *upstream, FairMQMessagePtr message)
+    adoptVector(size_t nelem, FairMQMessagePtr message)
 {
     return std::vector<const ElemT, OwningMessageSpectatorAllocator<const ElemT>>(
         nelem,
         OwningMessageSpectatorAllocator<const ElemT>(
-            MessageResource{std::move(message), upstream}));
+            MessageResource{std::move(message)}));
 };
 
 //_________________________________________________________________________________________________
@@ -93,7 +91,7 @@ std::vector<const ElemT, OwningMessageSpectatorAllocator<const ElemT>>
 // This returns a unique_ptr of const vector, does not allow modifications at
 // the cost of pointer
 // semantics for access.
-// use auto or decltype to catch the return value (or use span)
+// use auto or decltype to catch the return type.
 // template<typename ElemT>
 // auto adoptVector(size_t nelem, FairMQMessage* message)
 //{

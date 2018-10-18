@@ -15,10 +15,13 @@
 #include <fairmq/Transports.h>
 
 using fairmq_free_fn = void(void* data, void* hint);
+class FairMQTransportFactory;
 
 class FairMQMessage
 {
   public:
+    FairMQMessage() = default;
+    FairMQMessage(FairMQTransportFactory* factory):fTransport{factory} {}
     virtual void Rebuild() = 0;
     virtual void Rebuild(const size_t size) = 0;
     virtual void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) = 0;
@@ -29,11 +32,16 @@ class FairMQMessage
     virtual bool SetUsedSize(const size_t size) = 0;
 
     virtual fair::mq::Transport GetType() const = 0;
+    FairMQTransportFactory* GetTransport() { return fTransport; }
+    //void SetTransport(FairMQTransportFactory* transport) { fTransport = transport; }
 
     virtual void Copy(const std::unique_ptr<FairMQMessage>& msg) __attribute__((deprecated("Use 'Copy(const FairMQMessage& msg)'"))) = 0;
     virtual void Copy(const FairMQMessage& msg) = 0;
 
     virtual ~FairMQMessage() {};
+
+  private:
+    FairMQTransportFactory* fTransport{nullptr};
 };
 
 using FairMQMessagePtr = std::unique_ptr<FairMQMessage>;

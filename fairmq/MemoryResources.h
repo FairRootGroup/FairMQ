@@ -47,7 +47,7 @@ class FairMQMemoryResource : public boost::container::pmr::memory_resource
     /// a message does not make sense!
     virtual FairMQMessagePtr getMessage(void *p) = 0;
     virtual void *setMessage(FairMQMessagePtr) = 0;
-    virtual const FairMQTransportFactory *getTransportFactory() const noexcept = 0;
+    virtual FairMQTransportFactory *getTransportFactory() noexcept = 0;
     virtual size_t getNumberOfMessages() const noexcept = 0;
 };
 
@@ -59,7 +59,7 @@ class FairMQMemoryResource : public boost::container::pmr::memory_resource
 class ChannelResource : public FairMQMemoryResource
 {
   protected:
-    const FairMQTransportFactory *factory{nullptr};
+    FairMQTransportFactory *factory{nullptr};
     // TODO: for now a map to keep track of allocations, something else would
     // probably be
     // faster, but for now this does not need to be fast.
@@ -68,7 +68,7 @@ class ChannelResource : public FairMQMemoryResource
   public:
     ChannelResource() = delete;
 
-    ChannelResource(const FairMQTransportFactory *_factory)
+    ChannelResource(FairMQTransportFactory *_factory)
         : FairMQMemoryResource()
         , factory(_factory)
         , messageMap()
@@ -92,7 +92,7 @@ class ChannelResource : public FairMQMemoryResource
         return addr;
     }
 
-    const FairMQTransportFactory *getTransportFactory() const noexcept override { return factory; }
+    FairMQTransportFactory *getTransportFactory() noexcept override { return factory; }
 
     size_t getNumberOfMessages() const noexcept override { return messageMap.size(); }
 
@@ -125,7 +125,7 @@ class SpectatorMessageResource : public FairMQMemoryResource
     }
 
     FairMQMessagePtr getMessage(void * /*p*/) override { return nullptr; }
-    const FairMQTransportFactory *getTransportFactory() const noexcept override { return nullptr; }
+    FairMQTransportFactory *getTransportFactory() noexcept override { return nullptr; }
     size_t getNumberOfMessages() const noexcept override { return 0; }
     void *setMessage(FairMQMessagePtr) override { return nullptr; }
 
@@ -180,14 +180,7 @@ class MessageResource : public FairMQMemoryResource
     MessageResource &operator=(const MessageResource &) = default;
     MessageResource &operator=(MessageResource &&) = default;
 
-    MessageResource(FairMQMessagePtr message, FairMQMemoryResource *upstream)
-        : mUpstream{upstream}
-        , mMessageSize{message->GetSize()}
-        , mMessageData{mUpstream ? mUpstream->setMessage(std::move(message))
-                                 : throw std::runtime_error(
-                                       "MessageResource::MessageResource upstream is nullptr")}
-    {
-    }
+    MessageResource(FairMQMessagePtr message);
 
     FairMQMessagePtr getMessage(void *p) override { return mUpstream->getMessage(p); }
     void *setMessage(FairMQMessagePtr message) override
@@ -195,7 +188,7 @@ class MessageResource : public FairMQMemoryResource
         return mUpstream->setMessage(std::move(message));
     }
 
-    const FairMQTransportFactory *getTransportFactory() const noexcept override { return nullptr; }
+    FairMQTransportFactory *getTransportFactory() noexcept override { return nullptr; }
     size_t getNumberOfMessages() const noexcept override { return mMessageData ? 1 : 0; }
 
   protected:

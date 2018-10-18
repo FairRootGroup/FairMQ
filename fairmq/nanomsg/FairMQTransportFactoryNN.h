@@ -25,15 +25,15 @@ class FairMQTransportFactoryNN final : public FairMQTransportFactory
     FairMQTransportFactoryNN(const std::string& id = "", const FairMQProgOptions* config = nullptr);
     ~FairMQTransportFactoryNN() override;
 
-    FairMQMessagePtr CreateMessage() const override;
-    FairMQMessagePtr CreateMessage(const size_t size) const override;
-    FairMQMessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) const override;
-    FairMQMessagePtr CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0) const override;
+    FairMQMessagePtr CreateMessage() override;
+    FairMQMessagePtr CreateMessage(const size_t size) override;
+    FairMQMessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override;
+    FairMQMessagePtr CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0) override;
 
     FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name) const override;
 
     FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const override;
-    FairMQPollerPtr CreatePoller(const std::vector<const FairMQChannel*>& channels) const override;
+    FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel*>& channels) const override;
     FairMQPollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const override;
 
     FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback) const override;

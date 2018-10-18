@@ -46,20 +46,20 @@ class FairMQTransportFactory
 
     /// @brief Create empty FairMQMessage
     /// @return pointer to FairMQMessage
-    virtual FairMQMessagePtr CreateMessage() const = 0;
+    virtual FairMQMessagePtr CreateMessage() = 0;
     /// @brief Create new FairMQMessage of specified size
     /// @param size message size
     /// @return pointer to FairMQMessage
-    virtual FairMQMessagePtr CreateMessage(const size_t size) const = 0;
+    virtual FairMQMessagePtr CreateMessage(const size_t size) = 0;
     /// @brief Create new FairMQMessage with user provided buffer and size
     /// @param data pointer to user provided buffer
     /// @param size size of the user provided buffer
     /// @param ffn callback, called when the message is transfered (and can be deleted)
     /// @param obj optional helper pointer that can be used in the callback
     /// @return pointer to FairMQMessage
-    virtual FairMQMessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) const = 0;
+    virtual FairMQMessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) = 0;
 
-    virtual FairMQMessagePtr CreateMessage(FairMQUnmanagedRegionPtr& unmanagedRegion, void* data, const size_t size, void* hint = 0) const = 0;
+    virtual FairMQMessagePtr CreateMessage(FairMQUnmanagedRegionPtr& unmanagedRegion, void* data, const size_t size, void* hint = 0) = 0;
 
     /// Create a socket
     virtual FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name) const = 0;
@@ -67,7 +67,7 @@ class FairMQTransportFactory
     /// Create a poller for a single channel (all subchannels)
     virtual FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const = 0;
     /// Create a poller for specific channels
-    virtual FairMQPollerPtr CreatePoller(const std::vector<const FairMQChannel*>& channels) const = 0;
+    virtual FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel*>& channels) const = 0;
     /// Create a poller for specific channels (all subchannels)
     virtual FairMQPollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const = 0;
 
@@ -95,7 +95,7 @@ class FairMQTransportFactory
     }
 
     template<typename T>
-    FairMQMessagePtr NewSimpleMessage(const T& data) const
+    FairMQMessagePtr NewSimpleMessage(const T& data)
     {
         // todo: is_trivially_copyable not available on gcc < 5, workaround?
         // static_assert(std::is_trivially_copyable<T>::value, "The argument type for NewSimpleMessage has to be trivially copyable!");
@@ -104,13 +104,13 @@ class FairMQTransportFactory
     }
 
     template<std::size_t N>
-    FairMQMessagePtr NewSimpleMessage(const char(&data)[N]) const
+    FairMQMessagePtr NewSimpleMessage(const char(&data)[N])
     {
         std::string* msgStr = new std::string(data);
         return CreateMessage(const_cast<char*>(msgStr->c_str()), msgStr->length(), FairMQSimpleMsgCleanup<std::string>, msgStr);
     }
 
-    FairMQMessagePtr NewSimpleMessage(const std::string& str) const
+    FairMQMessagePtr NewSimpleMessage(const std::string& str)
     {
 
         std::string* msgStr = new std::string(str);
@@ -118,12 +118,12 @@ class FairMQTransportFactory
     }
 
     template<typename T>
-    FairMQMessagePtr NewStaticMessage(const T& data) const
+    FairMQMessagePtr NewStaticMessage(const T& data)
     {
         return CreateMessage(data, sizeof(T), FairMQNoCleanup, nullptr);
     }
 
-    FairMQMessagePtr NewStaticMessage(const std::string& str) const
+    FairMQMessagePtr NewStaticMessage(const std::string& str)
     {
         return CreateMessage(const_cast<char*>(str.c_str()), str.length(), FairMQNoCleanup, nullptr);
     }

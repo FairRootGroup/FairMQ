@@ -29,10 +29,10 @@ class FairMQMessageNN final : public FairMQMessage
     friend class FairMQSocketNN;
 
   public:
-    FairMQMessageNN();
-    FairMQMessageNN(const size_t size);
-    FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
-    FairMQMessageNN(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0);
+    FairMQMessageNN(FairMQTransportFactory* factory = nullptr);
+    FairMQMessageNN(const size_t size, FairMQTransportFactory* factory = nullptr);
+    FairMQMessageNN(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr, FairMQTransportFactory* factory = nullptr);
+    FairMQMessageNN(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, FairMQTransportFactory* factory = nullptr);
 
     FairMQMessageNN(const FairMQMessageNN&) = delete;
     FairMQMessageNN operator=(const FairMQMessageNN&) = delete;

@@ -102,7 +102,7 @@ class FairMQDevice : public FairMQStateMachine
     /// @param i channel index
     /// @param sndTimeoutInMs send timeout in ms, -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
     /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. -1 if there was an error.
-    int Send(FairMQMessagePtr& msg, const std::string& chan, const int i = 0, int sndTimeoutInMs = -1) const
+    int Send(FairMQMessagePtr& msg, const std::string& chan, const int i = 0, int sndTimeoutInMs = -1)
     {
         return fChannels.at(chan).at(i).Send(msg, sndTimeoutInMs);
     }
@@ -113,16 +113,16 @@ class FairMQDevice : public FairMQStateMachine
     /// @param i channel index
     /// @param rcvTimeoutInMs receive timeout in ms, -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
     /// @return Number of bytes that have been received. -2 if reading from the queue was not possible or timed out. -1 if there was an error.
-    int Receive(FairMQMessagePtr& msg, const std::string& chan, const int i = 0, int rcvTimeoutInMs = -1) const
+    int Receive(FairMQMessagePtr& msg, const std::string& chan, const int i = 0, int rcvTimeoutInMs = -1)
     {
         return fChannels.at(chan).at(i).Receive(msg, rcvTimeoutInMs);
     }
 
-    int SendAsync(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(msg, \"channelA\", subchannelIndex, timeout);")))
+    int SendAsync(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(msg, \"channelA\", subchannelIndex, timeout);")))
     {
         return fChannels.at(chan).at(i).Send(msg, 0);
     }
-    int ReceiveAsync(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) const __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(msg, \"channelA\", subchannelIndex, timeout);")))
+    int ReceiveAsync(FairMQMessagePtr& msg, const std::string& chan, const int i = 0) __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(msg, \"channelA\", subchannelIndex, timeout);")))
     {
         return fChannels.at(chan).at(i).Receive(msg, 0);
     }
@@ -133,7 +133,7 @@ class FairMQDevice : public FairMQStateMachine
     /// @param i channel index
     /// @param sndTimeoutInMs send timeout in ms, -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
     /// @return Number of bytes that have been queued. -2 If queueing was not possible or timed out. -1 if there was an error.
-    int64_t Send(FairMQParts& parts, const std::string& chan, const int i = 0, int sndTimeoutInMs = -1) const
+    int64_t Send(FairMQParts& parts, const std::string& chan, const int i = 0, int sndTimeoutInMs = -1)
     {
         return fChannels.at(chan).at(i).Send(parts.fParts, sndTimeoutInMs);
     }
@@ -144,58 +144,58 @@ class FairMQDevice : public FairMQStateMachine
     /// @param i channel index
     /// @param rcvTimeoutInMs receive timeout in ms, -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
     /// @return Number of bytes that have been received. -2 if reading from the queue was not possible or timed out. -1 if there was an error.
-    int64_t Receive(FairMQParts& parts, const std::string& chan, const int i = 0, int rcvTimeoutInMs = -1) const
+    int64_t Receive(FairMQParts& parts, const std::string& chan, const int i = 0, int rcvTimeoutInMs = -1)
     {
         return fChannels.at(chan).at(i).Receive(parts.fParts, rcvTimeoutInMs);
     }
 
-    int64_t SendAsync(FairMQParts& parts, const std::string& chan, const int i = 0) const __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(parts, \"channelA\", subchannelIndex, timeout);")))
+    int64_t SendAsync(FairMQParts& parts, const std::string& chan, const int i = 0) __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(parts, \"channelA\", subchannelIndex, timeout);")))
     {
         return fChannels.at(chan).at(i).Send(parts.fParts, 0);
     }
-    int64_t ReceiveAsync(FairMQParts& parts, const std::string& chan, const int i = 0) const __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(parts, \"channelA\", subchannelIndex, timeout);")))
+    int64_t ReceiveAsync(FairMQParts& parts, const std::string& chan, const int i = 0) __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(parts, \"channelA\", subchannelIndex, timeout);")))
     {
         return fChannels.at(chan).at(i).Receive(parts.fParts, 0);
     }
 
     /// @brief Getter for default transport factory
-    auto Transport() const -> const FairMQTransportFactory*
+    auto Transport() const -> FairMQTransportFactory*
     {
         return fTransportFactory.get();
     }
 
     template<typename... Args>
-    FairMQMessagePtr NewMessage(Args&&... args) const
+    FairMQMessagePtr NewMessage(Args&&... args)
     {
         return Transport()->CreateMessage(std::forward<Args>(args)...);
     }
 
     template<typename... Args>
-    FairMQMessagePtr NewMessageFor(const std::string& channel, int index, Args&&... args) const
+    FairMQMessagePtr NewMessageFor(const std::string& channel, int index, Args&&... args)
     {
         return fChannels.at(channel).at(index).NewMessage(std::forward<Args>(args)...);
     }
 
     template<typename T>
-    FairMQMessagePtr NewStaticMessage(const T& data) const
+    FairMQMessagePtr NewStaticMessage(const T& data)
     {
         return Transport()->NewStaticMessage(data);
     }
 
     template<typename T>
-    FairMQMessagePtr NewStaticMessageFor(const std::string& channel, int index, const T& data) const
+    FairMQMessagePtr NewStaticMessageFor(const std::string& channel, int index, const T& data)
     {
         return fChannels.at(channel).at(index).NewStaticMessage(data);
     }
 
     template<typename T>
-    FairMQMessagePtr NewSimpleMessage(const T& data) const
+    FairMQMessagePtr NewSimpleMessage(const T& data)
     {
         return Transport()->NewSimpleMessage(data);
     }
 
     template<typename T>
-    FairMQMessagePtr NewSimpleMessageFor(const std::string& channel, int index, const T& data) const
+    FairMQMessagePtr NewSimpleMessageFor(const std::string& channel, int index, const T& data)
     {
         return fChannels.at(channel).at(index).NewSimpleMessage(data);
     }
@@ -233,7 +233,7 @@ class FairMQDevice : public FairMQStateMachine
         return fChannels.at(chans.at(0)).at(0).Transport()->CreatePoller(fChannels, chans);
     }
 
-    FairMQPollerPtr NewPoller(const std::vector<const FairMQChannel*>& channels)
+    FairMQPollerPtr NewPoller(const std::vector<FairMQChannel*>& channels)
     {
         // if more than one channel provided, check compatibility
         if (channels.size() > 1)
@@ -490,8 +490,8 @@ class FairMQDevice : public FairMQStateMachine
     void HandleMultipleTransportInput();
     void PollForTransport(const FairMQTransportFactory* factory, const std::vector<std::string>& channelKeys);
 
-    bool HandleMsgInput(const std::string& chName, const InputMsgCallback& callback, int i) const;
-    bool HandleMultipartInput(const std::string& chName, const InputMultipartCallback& callback, int i) const;
+    bool HandleMsgInput(const std::string& chName, const InputMsgCallback& callback, int i);
+    bool HandleMultipartInput(const std::string& chName, const InputMultipartCallback& callback, int i);
 
     void CreateOwnConfig();
 

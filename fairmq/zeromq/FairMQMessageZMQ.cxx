@@ -17,6 +17,7 @@
 #include "FairMQLogger.h"
 #include <fairmq/Tools.h>
 #include "FairMQUnmanagedRegionZMQ.h"
+#include <FairMQTransportFactory.h>
 
 #include <cstring>
 
@@ -24,8 +25,9 @@ using namespace std;
 
 fair::mq::Transport FairMQMessageZMQ::fTransportType = fair::mq::Transport::ZMQ;
 
-FairMQMessageZMQ::FairMQMessageZMQ()
-    : fUsedSizeModified(false)
+FairMQMessageZMQ::FairMQMessageZMQ(FairMQTransportFactory* factory)
+    : FairMQMessage{factory}
+    , fUsedSizeModified(false)
     , fUsedSize()
     , fMsg(fair::mq::tools::make_unique<zmq_msg_t>())
     , fViewMsg(nullptr)
@@ -36,8 +38,9 @@ FairMQMessageZMQ::FairMQMessageZMQ()
     }
 }
 
-FairMQMessageZMQ::FairMQMessageZMQ(const size_t size)
-    : fUsedSizeModified(false)
+FairMQMessageZMQ::FairMQMessageZMQ(const size_t size, FairMQTransportFactory* factory)
+    : FairMQMessage{factory}
+    , fUsedSizeModified(false)
     , fUsedSize(size)
     , fMsg(fair::mq::tools::make_unique<zmq_msg_t>())
     , fViewMsg(nullptr)
@@ -48,8 +51,9 @@ FairMQMessageZMQ::FairMQMessageZMQ(const size_t size)
     }
 }
 
-FairMQMessageZMQ::FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
-    : fUsedSizeModified(false)
+FairMQMessageZMQ::FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn* ffn, void* hint, FairMQTransportFactory* factory)
+    : FairMQMessage{factory}
+    , fUsedSizeModified(false)
     , fUsedSize()
     , fMsg(fair::mq::tools::make_unique<zmq_msg_t>())
     , fViewMsg(nullptr)
@@ -60,8 +64,9 @@ FairMQMessageZMQ::FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn
     }
 }
 
-FairMQMessageZMQ::FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint)
-    : fUsedSizeModified(false)
+FairMQMessageZMQ::FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint, FairMQTransportFactory* factory)
+    : FairMQMessage{factory}
+    , fUsedSizeModified(false)
     , fUsedSize()
     , fMsg(fair::mq::tools::make_unique<zmq_msg_t>())
     , fViewMsg(nullptr)

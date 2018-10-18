@@ -43,7 +43,7 @@ class PollIn : public FairMQDevice
 
     auto Run() -> void override
     {
-        vector<const FairMQChannel*> chans;
+        vector<FairMQChannel*> chans;
 
         chans.push_back(&fChannels.at("data1").at(0));
         chans.push_back(&fChannels.at("data2").at(0));

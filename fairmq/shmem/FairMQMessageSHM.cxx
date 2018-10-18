@@ -25,8 +25,9 @@ namespace bpt = ::boost::posix_time;
 atomic<bool> FairMQMessageSHM::fInterrupted(false);
 fair::mq::Transport FairMQMessageSHM::fTransportType = fair::mq::Transport::SHM;
 
-FairMQMessageSHM::FairMQMessageSHM(Manager& manager)
-    : fManager(manager)
+FairMQMessageSHM::FairMQMessageSHM(Manager& manager, FairMQTransportFactory* factory)
+    : FairMQMessage{factory}
+    , fManager(manager)
     , fMessage()
     , fQueued(false)
     , fMetaCreated(false)
@@ -44,8 +45,9 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager)
     fMetaCreated = true;
 }
 
-FairMQMessageSHM::FairMQMessageSHM(Manager& manager, const size_t size)
-    : fManager(manager)
+FairMQMessageSHM::FairMQMessageSHM(Manager& manager, const size_t size, FairMQTransportFactory* factory)
+    : FairMQMessage{factory}
+    , fManager(manager)
     , fMessage()
     , fQueued(false)
     , fMetaCreated(false)
@@ -59,8 +61,9 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager, const size_t size)
     InitializeChunk(size);
 }
 
-FairMQMessageSHM::FairMQMessageSHM(Manager& manager, void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
-    : fManager(manager)
+FairMQMessageSHM::FairMQMessageSHM(Manager& manager, void* data, const size_t size, fairmq_free_fn* ffn, void* hint, FairMQTransportFactory* factory)
+    : FairMQMessage{factory}
+    , fManager(manager)
     , fMessage()
     , fQueued(false)
     , fMetaCreated(false)
@@ -85,8 +88,9 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager, void* data, const size_t si
     }
 }
 
-FairMQMessageSHM::FairMQMessageSHM(Manager& manager, FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint)
-    : fManager(manager)
+FairMQMessageSHM::FairMQMessageSHM(Manager& manager, FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint, FairMQTransportFactory* factory)
+    : FairMQMessage{factory}
+    , fManager(manager)
     , fMessage()
     , fQueued(false)
     , fMetaCreated(false)

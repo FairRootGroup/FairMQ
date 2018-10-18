@@ -26,7 +26,7 @@ class FairMQPollerSHM final : public FairMQPoller
 
   public:
     FairMQPollerSHM(const std::vector<FairMQChannel>& channels);
-    FairMQPollerSHM(const std::vector<const FairMQChannel*>& channels);
+    FairMQPollerSHM(const std::vector<FairMQChannel*>& channels);
     FairMQPollerSHM(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList);
 
     FairMQPollerSHM(const FairMQPollerSHM&) = delete;

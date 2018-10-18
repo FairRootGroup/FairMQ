@@ -27,10 +27,10 @@ class FairMQMessageSHM final : public FairMQMessage
     friend class FairMQSocketSHM;
 
   public:
-    FairMQMessageSHM(fair::mq::shmem::Manager& manager);
-    FairMQMessageSHM(fair::mq::shmem::Manager& manager, const size_t size);
-    FairMQMessageSHM(fair::mq::shmem::Manager& manager, void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
-    FairMQMessageSHM(fair::mq::shmem::Manager& manager, FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0);
+    FairMQMessageSHM(fair::mq::shmem::Manager& manager, FairMQTransportFactory* factory = nullptr);
+    FairMQMessageSHM(fair::mq::shmem::Manager& manager, const size_t size, FairMQTransportFactory* factory = nullptr);
+    FairMQMessageSHM(fair::mq::shmem::Manager& manager, void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr, FairMQTransportFactory* factory = nullptr);
+    FairMQMessageSHM(fair::mq::shmem::Manager& manager, FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, FairMQTransportFactory* factory = nullptr);
 
     FairMQMessageSHM(const FairMQMessageSHM&) = delete;
     FairMQMessageSHM operator=(const FairMQMessageSHM&) = delete;
