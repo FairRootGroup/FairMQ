@@ -143,15 +143,15 @@ string FairMQChannel::GetChannelName() const
 string FairMQChannel::GetChannelPrefix() const
 {
     string prefix = fName;
-    prefix = prefix.erase(fName.rfind("["));
+    prefix = prefix.erase(fName.rfind('['));
     return prefix;
 }
 
 string FairMQChannel::GetChannelIndex() const
 {
     string indexStr = fName;
-    indexStr.erase(indexStr.rfind("]"));
-    indexStr.erase(0, indexStr.rfind("[") + 1);
+    indexStr.erase(indexStr.rfind(']'));
+    indexStr.erase(0, indexStr.rfind('[') + 1);
     return indexStr;
 }
 
@@ -564,7 +564,7 @@ bool FairMQChannel::ValidateChannel()
                 {
                     // check if TCP address contains port delimiter
                     string addressString = address.substr(6);
-                    if (addressString.find(":") == string::npos)
+                    if (addressString.find(':') == string::npos)
                     {
                         ss << "INVALID";
                         LOG(debug) << ss.str();

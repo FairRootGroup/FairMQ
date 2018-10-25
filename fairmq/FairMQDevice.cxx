@@ -171,7 +171,7 @@ void FairMQDevice::InitWrapper()
     // If necessary this could be handled in the same way as the connecting channels
     AttachChannels(uninitializedBindingChannels);
 
-    if (uninitializedBindingChannels.size() > 0)
+    if (!uninitializedBindingChannels.empty())
     {
         LOG(error) << uninitializedBindingChannels.size() << " of the binding channels could not initialize. Initial configuration incomplete.";
         ChangeState(ERROR_FOUND);
@@ -200,7 +200,7 @@ void FairMQDevice::InitWrapper()
     {
         this_thread::sleep_for(chrono::milliseconds(sleepTimeInMS));
 
-        if (fConfig)
+        if (fConfig != nullptr)
         {
             for (auto& chan : uninitializedConnectingChannels)
             {
@@ -334,7 +334,7 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
         if (address.compare(0, 6, "tcp://") == 0)
         {
             string addressString = address.substr(6);
-            auto pos = addressString.find(":");
+            auto pos = addressString.find(':');
             string hostPart = addressString.substr(0, pos);
             if (!(bind && hostPart == "*"))
             {
@@ -421,7 +421,7 @@ bool FairMQDevice::BindEndpoint(FairMQSocket& socket, string& endpoint)
             return false;
         }
 
-        size_t pos = endpoint.rfind(":");
+        size_t pos = endpoint.rfind(':');
         endpoint = endpoint.substr(0, pos + 1) + fair::mq::tools::ToString(static_cast<int>(randomPort(generator)));
     }
 
@@ -664,7 +664,7 @@ void FairMQDevice::HandleMultipleTransportInput()
 
     for (const auto& i : fMultitransportInputs)
     {
-        threads.push_back(thread(&FairMQDevice::PollForTransport, this, fTransports.at(i.first).get(), i.second));
+        threads.emplace_back(thread(&FairMQDevice::PollForTransport, this, fTransports.at(i.first).get(), i.second));
     }
 
     for (thread& t : threads)
