@@ -66,7 +66,7 @@ FairMQMessagePtr getMessage(ContainerT &&container_, FairMQMemoryResource *targe
 /// Resource must be kept alive throughout the lifetime of the
 /// container and associated message.
 template<typename ElemT>
-std::vector<const ElemT, boost::container::pmr::polymorphic_allocator<const ElemT>> adoptVector(
+std::vector<const ElemT, boost::container::pmr::polymorphic_allocator<const ElemT>> getVector(
     size_t nelem,
     SpectatorMessageResource *resource)
 {
@@ -78,7 +78,7 @@ std::vector<const ElemT, boost::container::pmr::polymorphic_allocator<const Elem
 /// Return a vector of const ElemT, takes ownership of the message
 template<typename ElemT>
 std::vector<const ElemT, OwningMessageSpectatorAllocator<const ElemT>>
-    adoptVector(size_t nelem, FairMQMessagePtr message)
+    getVector(size_t nelem, FairMQMessagePtr message)
 {
     return std::vector<const ElemT, OwningMessageSpectatorAllocator<const ElemT>>(
         nelem,
@@ -93,7 +93,7 @@ std::vector<const ElemT, OwningMessageSpectatorAllocator<const ElemT>>
 // semantics for access.
 // use auto or decltype to catch the return type.
 // template<typename ElemT>
-// auto adoptVector(size_t nelem, FairMQMessage* message)
+// auto getVector(size_t nelem, FairMQMessage* message)
 //{
 //    using DataType = std::vector<ElemT, ByteSpectatorAllocator>;
 //
