@@ -175,12 +175,13 @@ struct Machine_ : public state_machine_def<Machine_>
     using initial_state = boost::mpl::vector<IDLE_FSM_STATE, OK_FSM_STATE>;
 
     template<typename Event, typename FSM>
-    void on_entry(Event const&, FSM& fsm)
+    void on_entry(Event const&, FSM& /*fsm*/)
     {
         LOG(state) << "Starting FairMQ state machine";
         fState = FairMQStateMachine::IDLE;
         LOG(state) << "Entering IDLE state";
-        fsm.CallStateChangeCallbacks(FairMQStateMachine::IDLE);
+        // fsm.CallStateChangeCallbacks(FairMQStateMachine::IDLE);
+        // we call this for now in FairMQDevice::RunStateMachine()
     }
 
     template<typename Event, typename FSM>

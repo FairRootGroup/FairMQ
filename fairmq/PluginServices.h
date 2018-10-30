@@ -186,13 +186,16 @@ class PluginServices
     auto SetProperty(const std::string& key, T val) -> void
     {
         auto currentState = GetCurrentDeviceState();
-        if (currentState == DeviceState::InitializingDevice)
+        if (   (currentState == DeviceState::InitializingDevice)
+            || ((currentState == DeviceState::Idle) && (key == "channel-config")))
         {
             fConfig.SetValue(key, val);
         }
         else
         {
-            throw InvalidStateError{tools::ToString("PluginServices::SetProperty is not supported in device state ", currentState, ". Supported state is ", DeviceState::InitializingDevice, ".")};
+            throw InvalidStateError{
+                tools::ToString("PluginServices::SetProperty is not supported in device state ", currentState, ". ",
+                                "Supported state is ", DeviceState::InitializingDevice, ".")};
         }
     }
     struct InvalidStateError : std::runtime_error { using std::runtime_error::runtime_error; };

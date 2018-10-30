@@ -59,13 +59,13 @@ class FairMQProgOptions
         // update variable map
         UpdateVarMap<typename std::decay<T>::type>(key, val);
 
-        // update FairMQChannel map if the key is a channel key
-        if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)
+        if (key == "channel-config")
         {
-            if (fChannelKeyMap.count(key))
-            {
-                UpdateChannelValue(fChannelKeyMap.at(key).channel, fChannelKeyMap.at(key).index, fChannelKeyMap.at(key).member, val);
-            }
+            ParseChannelsFromCmdLine();
+        }
+        else if (fChannelKeyMap.count(key))
+        {
+            UpdateChannelValue(fChannelKeyMap.at(key).channel, fChannelKeyMap.at(key).index, fChannelKeyMap.at(key).member, val);
         }
 
         lock.unlock();
@@ -210,6 +210,12 @@ class FairMQProgOptions
     }
 
     int UpdateChannelMap(const FairMQChannelMap& map);
+    template<typename T>
+    int UpdateChannelValue(const std::string&, int, const std::string&, T)
+    {
+        LOG(error)  << "update of FairMQChannel map failed, because value type not supported";
+        return 1;
+    }
     int UpdateChannelValue(const std::string& channelName, int index, const std::string& member, const std::string& val);
     int UpdateChannelValue(const std::string& channelName, int index, const std::string& member, int val);
 
@@ -223,6 +229,7 @@ class FairMQProgOptions
         vm[key].value() = boost::any(val);
     }
 
+    void ParseChannelsFromCmdLine();
 };
 
 #endif /* FAIRMQPROGOPTIONS_H */
