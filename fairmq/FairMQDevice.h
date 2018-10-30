@@ -397,7 +397,11 @@ class FairMQDevice : public FairMQStateMachine
     void SetRawCmdLineArgs(const std::vector<std::string>& args) { fRawCmdLineArgs = args; }
     std::vector<std::string> GetRawCmdLineArgs() const { return fRawCmdLineArgs; }
 
-    void RunStateMachine() { ProcessWork(); };
+    void RunStateMachine()
+    {
+      CallStateChangeCallbacks(FairMQStateMachine::IDLE);
+      ProcessWork();
+    };
 
     /// Wait for the supplied amount of time or for interruption.
     /// If interrupted, returns false, otherwise true.

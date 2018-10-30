@@ -162,7 +162,7 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
         else if (fVarMap.count("channel-config"))
         {
             LOG(debug) << "channel-config: Parsing channel configuration";
-            UpdateChannelMap(parser::SUBOPT().UserParser(fVarMap.at("channel-config").as<vector<string>>(), idForParser));
+            ParseChannelsFromCmdLine();
         }
         else
         {
@@ -183,6 +183,23 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
     PrintOptions();
 
     return 0;
+}
+
+void FairMQProgOptions::ParseChannelsFromCmdLine()
+{
+    string idForParser;
+
+    // check if config-key for config parser is provided
+    if (fVarMap.count("config-key"))
+    {
+        idForParser = fVarMap["config-key"].as<string>();
+    }
+    else if (fVarMap.count("id"))
+    {
+        idForParser = fVarMap["id"].as<string>();
+    }
+
+    UpdateChannelMap(parser::SUBOPT().UserParser(fVarMap.at("channel-config").as<vector<string>>(), idForParser));
 }
 
 void FairMQProgOptions::ParseCmdLine(const int argc, char const* const* argv, bool allowUnregistered)
