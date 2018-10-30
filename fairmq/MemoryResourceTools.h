@@ -18,14 +18,14 @@
 namespace fair {
 namespace mq {
 
-using BytePmrAllocator = boost::container::pmr::polymorphic_allocator<fair::mq::byte>;
+using BytePmrAllocator = pmr::polymorphic_allocator<fair::mq::byte>;
 
 //_________________________________________________________________________________________________
 // return the message associated with the container or throw if it is not possible
 template<typename ContainerT>
 // typename std::enable_if<
 //    std::is_base_of<
-//        boost::container::pmr::polymorphic_allocator<typename
+//        pmr::polymorphic_allocator<typename
 //        ContainerT::value_type>,
 //        typename ContainerT::allocator_type>::value == true,
 //    FairMQMessagePtr>::type
