@@ -92,22 +92,6 @@ TEST(MemoryResources, allocator_test)
     }
     EXPECT_TRUE(testData::nallocated == 0);
     EXPECT_TRUE(testData::nallocations == testData::ndeallocations);
-
-    testData::nallocations = 0;
-    testData::ndeallocations = 0;
-    {
-        std::vector<testData, SpectatorAllocator<testData>> v(
-            SpectatorAllocator<testData>{allocZMQ});
-        v.reserve(3);
-        EXPECT_TRUE(allocZMQ->getNumberOfMessages() == 1);
-        v.emplace_back(1);
-        v.emplace_back(2);
-        v.emplace_back(3);
-        EXPECT_TRUE(testData::nallocated == 3);
-    }
-    EXPECT_TRUE(testData::nallocated
-                == 3);   // ByteSpectatorAllocator does not call dtors so nallocated remains at 3;
-    EXPECT_TRUE(allocZMQ->getNumberOfMessages() == 0);
 }
 
 TEST(MemoryResources, getMessage_test)
@@ -150,30 +134,6 @@ TEST(MemoryResources, getMessage_test)
     EXPECT_TRUE(message->GetSize() == 3 * sizeof(testData));
     messageArray = static_cast<int*>(message->GetData());
     EXPECT_TRUE(messageArray[0] == 4 && messageArray[1] == 5 && messageArray[2] == 6);
-
-    {
-        std::vector<testData, SpectatorAllocator<testData>> v(
-            SpectatorAllocator<testData>{allocSHM});
-    }
-}
-
-TEST(MemoryResources, adoptVector_test)
-{
-    // Create a bogus message
-    auto message = factoryZMQ->CreateMessage(3 * sizeof(testData));
-    auto messageAddr = message.get();
-    testData tmpBuf[3] = {3, 2, 1};
-    std::memcpy(message->GetData(), tmpBuf, 3 * sizeof(testData));
-
-    auto adoptedOwner =
-        getVector<testData>(3, std::move(message));
-    EXPECT_TRUE(adoptedOwner[0].i == 3);
-    EXPECT_TRUE(adoptedOwner[1].i == 2);
-    EXPECT_TRUE(adoptedOwner[2].i == 1);
-
-    auto reclaimedMessage = getMessage(std::move(adoptedOwner));
-    EXPECT_TRUE(reclaimedMessage.get() == messageAddr);
-    EXPECT_TRUE(adoptedOwner.size() == 0);
 }
 
 }   // namespace
