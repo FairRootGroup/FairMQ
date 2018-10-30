@@ -19,7 +19,6 @@
 #include <boost/container/pmr/unsynchronized_pool_resource.hpp>
 #include <memory> // unique_ptr
 #include <netinet/in.h>
-#include <rdma/fabric.h>
 class FairMQTransportFactory;
 
 namespace fair
@@ -86,7 +85,7 @@ class Socket final : public fair::mq::Socket
 
   private:
     void* fControlSocket;
-    void* fMonitorSocket;
+    // void* fMonitorSocket;
     std::unique_ptr<asiofi::passive_endpoint> fPassiveDataEndpoint;
     std::unique_ptr<asiofi::connected_endpoint> fDataEndpoint;
     std::string fId;
@@ -97,7 +96,7 @@ class Socket final : public fair::mq::Socket
     Context& fContext;
     Context::Address fRemoteDataAddr;
     Context::Address fLocalDataAddr;
-    bool fWaitingForControlPeer;
+    // bool fWaitingForControlPeer;
     boost::asio::io_service::strand fIoStrand;
     boost::container::pmr::unsynchronized_pool_resource fCtrlMemPool;
 
@@ -109,7 +108,7 @@ class Socket final : public fair::mq::Socket
     auto SendImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
     auto ReceiveImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
 
-    auto WaitForControlPeer() -> void;
+    // auto WaitForControlPeer() -> void;
     auto AnnounceDataAddress() -> void;
     auto SendControlMessage(CtrlMsgPtr<ControlMessage> ctrl) -> void;
     auto ReceiveControlMessage() -> CtrlMsgPtr<ControlMessage>;
