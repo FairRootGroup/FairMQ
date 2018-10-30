@@ -46,13 +46,13 @@ FairMQMessagePtr getMessage(ContainerT &&container_, FairMQMemoryResource *targe
                 container.data())));
         if (message)
             message->SetUsedSize(containerSizeBytes);
-        return std::move(message);
+        return message;
     } else {
         auto message = targetResource->getTransportFactory()->CreateMessage(containerSizeBytes);
         std::memcpy(static_cast<fair::mq::byte *>(message->GetData()),
                     container.data(),
                     containerSizeBytes);
-        return std::move(message);
+        return message;
     }
 };
 
