@@ -136,4 +136,23 @@ TEST(MemoryResources, getMessage_test)
     EXPECT_TRUE(messageArray[0] == 4 && messageArray[1] == 5 && messageArray[2] == 6);
 }
 
+TEST(MemoryResources, getVector)
+{
+  std::vector<int,polymorphic_allocator<int>> v(polymorphic_allocator<int>{allocZMQ});
+  v.emplace_back(1);
+  v.emplace_back(2);
+  auto message = getMessage(std::move(v));
+  void* olddata = message->GetData();
+
+  auto t = getVector<int>(2,std::move(message));
+  EXPECT_TRUE(t.size()==2);
+  t.emplace_back(3);
+  EXPECT_TRUE(t.size()==3);
+  EXPECT_TRUE(t[2]==3);
+
+  auto m = getMessage(std::move(t));
+  void* newdata = m->GetData();
+  EXPECT_TRUE(newdata!=olddata);
+}
+
 }   // namespace
