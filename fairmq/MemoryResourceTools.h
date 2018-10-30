@@ -18,15 +18,10 @@
 namespace fair {
 namespace mq {
 
-using ByteSpectatorAllocator = SpectatorAllocator<fair::mq::byte>;
 using BytePmrAllocator = boost::container::pmr::polymorphic_allocator<fair::mq::byte>;
 
 //_________________________________________________________________________________________________
-// return the message associated with the container or nullptr if it does not
-// make sense (e.g. when
-// we are just watching an existing message or when the container is not using
-// FairMQMemoryResource
-// as backend).
+// return the message associated with the container or throw if it is not possible
 template<typename ContainerT>
 // typename std::enable_if<
 //    std::is_base_of<
@@ -60,58 +55,6 @@ FairMQMessagePtr getMessage(ContainerT &&container_, FairMQMemoryResource *targe
         return std::move(message);
     }
 };
-
-//_________________________________________________________________________________________________
-/// Return a vector of const ElemT, no wonership transfer.
-/// Resource must be kept alive throughout the lifetime of the
-/// container and associated message.
-template<typename ElemT>
-std::vector<const ElemT, boost::container::pmr::polymorphic_allocator<const ElemT>> getVector(
-    size_t nelem,
-    SpectatorMessageResource *resource)
-{
-    return std::vector<const ElemT, SpectatorAllocator<const ElemT>>(
-        nelem, SpectatorAllocator<ElemT>(resource));
-};
-
-//_________________________________________________________________________________________________
-/// Return a vector of const ElemT, takes ownership of the message
-template<typename ElemT>
-std::vector<const ElemT, OwningMessageSpectatorAllocator<const ElemT>>
-    getVector(size_t nelem, FairMQMessagePtr message)
-{
-    return std::vector<const ElemT, OwningMessageSpectatorAllocator<const ElemT>>(
-        nelem,
-        OwningMessageSpectatorAllocator<const ElemT>(
-            MessageResource{std::move(message)}));
-};
-
-//_________________________________________________________________________________________________
-// TODO: this is C++14, converting it down to C++11 is too much work atm
-// This returns a unique_ptr of const vector, does not allow modifications at
-// the cost of pointer
-// semantics for access.
-// use auto or decltype to catch the return type.
-// template<typename ElemT>
-// auto getVector(size_t nelem, FairMQMessage* message)
-//{
-//    using DataType = std::vector<ElemT, ByteSpectatorAllocator>;
-//
-//    struct doubleDeleter
-//    {
-//        // kids: don't do this at home! (but here it's OK)
-//        // this stateful deleter allows a single unique_ptr to manage 2
-//        resources at the same time.
-//        std::unique_ptr<SpectatorMessageResource> extra;
-//        void operator()(const DataType* ptr) { delete ptr; }
-//    };
-//
-//    using OutputType = std::unique_ptr<const DataType, doubleDeleter>;
-//
-//    auto resource = std::make_unique<SpectatorMessageResource>(message);
-//    auto output = new DataType(nelem, ByteSpectatorAllocator{resource.get()});
-//    return OutputType(output, doubleDeleter{std::move(resource)});
-//}
 
 } /* namespace mq */
 } /* namespace fair */

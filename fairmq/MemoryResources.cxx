@@ -20,11 +20,3 @@ void *fair::mq::ChannelResource::do_allocate(std::size_t bytes, std::size_t /*al
     return setMessage(factory->CreateMessage(bytes));
 };
 
-fair::mq::MessageResource::MessageResource(FairMQMessagePtr message)
-: mUpstream{message->GetTransport()->GetMemoryResource()}
-, mMessageSize{message->GetSize()}
-, mMessageData{mUpstream ? mUpstream->setMessage(std::move(message))
-  : throw std::runtime_error(
-      "MessageResource::MessageResource message has no upstream resource set")}
-{
-}
