@@ -71,7 +71,7 @@ TEST(MemoryResources, transportallocatormap_test)
     EXPECT_TRUE(_tmp == allocZMQ);
 }
 
-using namespace boost::container::pmr;
+using namespace fair::mq::pmr;
 
 TEST(MemoryResources, allocator_test)
 {

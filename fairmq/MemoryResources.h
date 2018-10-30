@@ -33,11 +33,12 @@ namespace fair {
 namespace mq {
 
 using byte = unsigned char;
+namespace pmr = boost::container::pmr;
 
 /// All FairMQ related memory resources need to inherit from this interface
 /// class for the
 /// getMessage() api.
-class FairMQMemoryResource : public boost::container::pmr::memory_resource
+class FairMQMemoryResource : public pmr::memory_resource
 {
   public:
     /// return the message containing data associated with the pointer (to start
@@ -103,7 +104,7 @@ class ChannelResource : public FairMQMemoryResource
         messageMap.erase(p);
     };
 
-    bool do_is_equal(const boost::container::pmr::memory_resource &other) const noexcept override
+    bool do_is_equal(const pmr::memory_resource &other) const noexcept override
     {
         return this == &other;
     };
