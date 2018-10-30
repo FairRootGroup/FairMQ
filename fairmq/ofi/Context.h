@@ -79,14 +79,6 @@ class Context
 
 struct ContextError : std::runtime_error { using std::runtime_error::runtime_error; };
 
-template<typename Derived, typename Base, typename Del>
-std::unique_ptr<Derived, Del> 
-static_unique_ptr_downcast( std::unique_ptr<Base, Del>&& p )
-{
-    auto d = static_cast<Derived *>(p.release());
-    return std::unique_ptr<Derived, Del>(d, std::move(p.get_deleter()));
-}
-
 } /* namespace ofi */
 } /* namespace mq */
 } /* namespace fair */

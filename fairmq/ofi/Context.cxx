@@ -97,7 +97,7 @@ auto Context::InitOfi(ConnectionType type, Address addr) -> void
     } else {
         fOfiInfo = tools::make_unique<asiofi::info>(addr.Ip.c_str(), std::to_string(addr.Port).c_str(), 0, hints);
     }
-    LOG(debug) << "OFI transport: " << *fOfiInfo;
+    // LOG(debug) << "OFI transport: " << *fOfiInfo;
 
     fOfiFabric = tools::make_unique<asiofi::fabric>(*fOfiInfo);
 
@@ -113,6 +113,8 @@ auto Context::MakeOfiPassiveEndpoint(Address addr) -> unique_ptr<asiofi::passive
 
 auto Context::MakeOfiConnectedEndpoint(const asiofi::info& info) -> std::unique_ptr<asiofi::connected_endpoint>
 {
+    assert(fOfiDomain);
+
     return tools::make_unique<asiofi::connected_endpoint>(fIoContext, *fOfiDomain, info);
 }
 
