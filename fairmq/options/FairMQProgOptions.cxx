@@ -346,6 +346,18 @@ int FairMQProgOptions::UpdateChannelValue(const string& channelName, int index, 
         return 0;
     }
 
+    if (member == "sndKernelSize")
+    {
+        fFairMQChannelMap.at(channelName).at(index).UpdateSndKernelSize(val);
+        return 0;
+    }
+
+    if (member == "rcvKernelSize")
+    {
+        fFairMQChannelMap.at(channelName).at(index).UpdateRcvKernelSize(val);
+        return 0;
+    }
+
     if (member == "linger")
     {
         fFairMQChannelMap.at(channelName).at(index).UpdateLinger(val);
