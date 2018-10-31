@@ -13,6 +13,7 @@
  */
 
 #include "FairMQChannel.h"
+#include <fairmq/Tools.h>
 
 #include <boost/algorithm/string.hpp> // join/split
 
@@ -156,524 +157,403 @@ string FairMQChannel::GetChannelIndex() const
 }
 
 string FairMQChannel::GetType() const
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        return fType;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::GetType: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    return fType;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::GetType: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 string FairMQChannel::GetMethod() const
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        return fMethod;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::GetMethod: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    return fMethod;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::GetMethod: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 string FairMQChannel::GetAddress() const
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        return fAddress;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::GetAddress: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    return fAddress;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::GetAddress: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 string FairMQChannel::GetTransportName() const
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        return fair::mq::TransportNames.at(fTransportType);
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::GetTransportName: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    return fair::mq::TransportNames.at(fTransportType);
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::GetTransportName: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 int FairMQChannel::GetSndBufSize() const
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        return fSndBufSize;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::GetSndBufSize: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    return fSndBufSize;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::GetSndBufSize: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 int FairMQChannel::GetRcvBufSize() const
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        return fRcvBufSize;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::GetRcvBufSize: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    return fRcvBufSize;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::GetRcvBufSize: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 int FairMQChannel::GetSndKernelSize() const
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        return fSndKernelSize;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::GetSndKernelSize: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    return fSndKernelSize;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::GetSndKernelSize: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 int FairMQChannel::GetRcvKernelSize() const
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        return fRcvKernelSize;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::GetRcvKernelSize: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    return fRcvKernelSize;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::GetRcvKernelSize: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 int FairMQChannel::GetLinger() const
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        return fLinger;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::GetLinger: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    return fLinger;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::GetLinger: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 int FairMQChannel::GetRateLogging() const
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        return fRateLogging;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::GetRateLogging: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    return fRateLogging;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::GetRateLogging: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 void FairMQChannel::UpdateType(const string& type)
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        fIsValid = false;
-        fType = type;
-        fModified = true;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::UpdateType: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    fIsValid = false;
+    fType = type;
+    fModified = true;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::UpdateType: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 void FairMQChannel::UpdateMethod(const string& method)
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        fIsValid = false;
-        fMethod = method;
-        fModified = true;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::UpdateMethod: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    fIsValid = false;
+    fMethod = method;
+    fModified = true;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::UpdateMethod: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 void FairMQChannel::UpdateAddress(const string& address)
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        fIsValid = false;
-        fAddress = address;
-        fModified = true;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::UpdateAddress: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    fIsValid = false;
+    fAddress = address;
+    fModified = true;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::UpdateAddress: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 void FairMQChannel::UpdateTransport(const string& transport)
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        fIsValid = false;
-        fTransportType = fair::mq::TransportTypes.at(transport);
-        fModified = true;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::UpdateTransport: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    fIsValid = false;
+    fTransportType = fair::mq::TransportTypes.at(transport);
+    fModified = true;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::UpdateTransport: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 void FairMQChannel::UpdateSndBufSize(const int sndBufSize)
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        fIsValid = false;
-        fSndBufSize = sndBufSize;
-        fModified = true;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::UpdateSndBufSize: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    fIsValid = false;
+    fSndBufSize = sndBufSize;
+    fModified = true;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::UpdateSndBufSize: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 void FairMQChannel::UpdateRcvBufSize(const int rcvBufSize)
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        fIsValid = false;
-        fRcvBufSize = rcvBufSize;
-        fModified = true;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::UpdateRcvBufSize: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    fIsValid = false;
+    fRcvBufSize = rcvBufSize;
+    fModified = true;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::UpdateRcvBufSize: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 void FairMQChannel::UpdateSndKernelSize(const int sndKernelSize)
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        fIsValid = false;
-        fSndKernelSize = sndKernelSize;
-        fModified = true;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::UpdateSndKernelSize: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    fIsValid = false;
+    fSndKernelSize = sndKernelSize;
+    fModified = true;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::UpdateSndKernelSize: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 void FairMQChannel::UpdateRcvKernelSize(const int rcvKernelSize)
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        fIsValid = false;
-        fRcvKernelSize = rcvKernelSize;
-        fModified = true;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::UpdateRcvKernelSize: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    fIsValid = false;
+    fRcvKernelSize = rcvKernelSize;
+    fModified = true;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::UpdateRcvKernelSize: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 void FairMQChannel::UpdateLinger(const int duration)
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        fIsValid = false;
-        fLinger = duration;
-        fModified = true;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::UpdateLinger: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    fIsValid = false;
+    fLinger = duration;
+    fModified = true;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::UpdateLinger: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 void FairMQChannel::UpdateRateLogging(const int rateLogging)
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        fIsValid = false;
-        fRateLogging = rateLogging;
-        fModified = true;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::UpdateRateLogging: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    fIsValid = false;
+    fRateLogging = rateLogging;
+    fModified = true;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::UpdateRateLogging: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 auto FairMQChannel::SetModified(const bool modified) -> void
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        fModified = modified;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::SetModified: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    fModified = modified;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::SetModified: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 void FairMQChannel::UpdateChannelName(const string& name)
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        fIsValid = false;
-        fName = name;
-        fModified = true;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::UpdateChannelName: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    fIsValid = false;
+    fName = name;
+    fModified = true;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::UpdateChannelName: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 bool FairMQChannel::IsValid() const
-{
-    try
-    {
-        unique_lock<mutex> lock(fChannelMutex);
-        return fIsValid;
-    }
-    catch (exception& e)
-    {
-        LOG(error) << "Exception caught in FairMQChannel::IsValid: " << e.what();
-        exit(EXIT_FAILURE);
-    }
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    return fIsValid;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::IsValid: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString("failed to acquire lock: ", e.what()));
 }
 
 bool FairMQChannel::ValidateChannel()
-{
-    try
+try {
+    lock_guard<mutex> lock(fChannelMutex);
+    stringstream ss;
+    ss << "Validating channel '" << fName << "'... ";
+
+    if (fIsValid)
     {
-        unique_lock<mutex> lock(fChannelMutex);
-
-        stringstream ss;
-        ss << "Validating channel \"" << fName << "\"... ";
-
-        if (fIsValid)
-        {
-            ss << "ALREADY VALID";
-            LOG(debug) << ss.str();
-            return true;
-        }
-
-        // validate socket type
-        const string socketTypeNames[] = { "sub", "pub", "pull", "push", "req", "rep", "xsub", "xpub", "dealer", "router", "pair" };
-        const set<string> socketTypes(socketTypeNames, socketTypeNames + sizeof(socketTypeNames) / sizeof(string));
-        if (socketTypes.find(fType) == socketTypes.end())
-        {
-            ss << "INVALID";
-            LOG(debug) << ss.str();
-            LOG(error) << "Invalid channel type: \"" << fType << "\"";
-            exit(EXIT_FAILURE);
-        }
-
-        // validate socket address
-        if (fAddress == "unspecified" || fAddress == "")
-        {
-            ss << "INVALID";
-            LOG(debug) << ss.str();
-            LOG(debug) << "invalid channel address: \"" << fAddress << "\"";
-            return false;
-        }
-        else
-        {
-            vector<string> endpoints;
-            boost::algorithm::split(endpoints, fAddress, boost::algorithm::is_any_of(";"));
-            for (const auto endpoint : endpoints)
-            {
-                string address;
-                if (endpoint[0] == '@' || endpoint[0] == '+' || endpoint[0] == '>')
-                {
-                    address = endpoint.substr(1);
-                }
-                else
-                {
-                    // we don't have a method modifier, check if the default method is set
-                    const string socketMethodNames[] = { "bind", "connect" };
-                    const set<string> socketMethods(socketMethodNames, socketMethodNames + sizeof(socketMethodNames) / sizeof(string));
-                    if (socketMethods.find(fMethod) == socketMethods.end())
-                    {
-                        ss << "INVALID";
-                        LOG(debug) << ss.str();
-                        LOG(error) << "Invalid endpoint connection method: \"" << fMethod << "\" for " << endpoint;
-                        exit(EXIT_FAILURE);
-                    }
-                    address = endpoint;
-                }
-                // check if address is a tcp or ipc address
-                if (address.compare(0, 6, "tcp://") == 0)
-                {
-                    // check if TCP address contains port delimiter
-                    string addressString = address.substr(6);
-                    if (addressString.find(':') == string::npos)
-                    {
-                        ss << "INVALID";
-                        LOG(debug) << ss.str();
-                        LOG(error) << "invalid channel address: \"" << address << "\" (missing port?)";
-                        return false;
-                    }
-                }
-                else if (address.compare(0, 6, "ipc://") == 0)
-                {
-                    // check if IPC address is not empty
-                    string addressString = address.substr(6);
-                    if (addressString == "")
-                    {
-                        ss << "INVALID";
-                        LOG(debug) << ss.str();
-                        LOG(error) << "invalid channel address: \"" << address << "\" (empty IPC address?)";
-                        return false;
-                    }
-                }
-                else if (address.compare(0, 9, "inproc://") == 0)
-                {
-                    // check if IPC address is not empty
-                    string addressString = address.substr(9);
-                    if (addressString == "")
-                    {
-                        ss << "INVALID";
-                        LOG(debug) << ss.str();
-                        LOG(error) << "invalid channel address: \"" << address << "\" (empty inproc address?)";
-                        return false;
-                    }
-                }
-                else if (address.compare(0, 8, "verbs://") == 0)
-                {
-                    // check if IPC address is not empty
-                    string addressString = address.substr(9);
-                    if (addressString == "")
-                    {
-                        ss << "INVALID";
-                        LOG(debug) << ss.str();
-                        LOG(error) << "invalid channel address: \"" << address << "\" (empty verbs address?)";
-                        return false;
-                    }
-                }
-                else
-                {
-                    // if neither TCP or IPC is specified, return invalid
-                    ss << "INVALID";
-                    LOG(debug) << ss.str();
-                    LOG(error) << "invalid channel address: \"" << address << "\" (missing protocol specifier?)";
-                    return false;
-                }
-            }
-        }
-
-        // validate socket buffer size for sending
-        if (fSndBufSize < 0)
-        {
-            ss << "INVALID";
-            LOG(debug) << ss.str();
-            LOG(error) << "invalid channel send buffer size (cannot be negative): \"" << fSndBufSize << "\"";
-            exit(EXIT_FAILURE);
-        }
-
-        // validate socket buffer size for receiving
-        if (fRcvBufSize < 0)
-        {
-            ss << "INVALID";
-            LOG(debug) << ss.str();
-            LOG(error) << "invalid channel receive buffer size (cannot be negative): \"" << fRcvBufSize << "\"";
-            exit(EXIT_FAILURE);
-        }
-
-        // validate socket kernel transmit size for sending
-        if (fSndKernelSize < 0)
-        {
-            ss << "INVALID";
-            LOG(debug) << ss.str();
-            LOG(error) << "invalid channel send kernel transmit size (cannot be negative): \"" << fSndKernelSize << "\"";
-            exit(EXIT_FAILURE);
-        }
-
-        // validate socket kernel transmit size for receiving
-        if (fRcvKernelSize < 0)
-        {
-            ss << "INVALID";
-            LOG(debug) << ss.str();
-            LOG(error) << "invalid channel receive kernel transmit size (cannot be negative): \"" << fRcvKernelSize << "\"";
-            exit(EXIT_FAILURE);
-        }
-
-        // validate socket rate logging interval
-        if (fRateLogging < 0)
-        {
-            ss << "INVALID";
-            LOG(debug) << ss.str();
-            LOG(error) << "invalid socket rate logging interval (cannot be negative): \"" << fRateLogging << "\"";
-            exit(EXIT_FAILURE);
-        }
-
-        fIsValid = true;
-        ss << "VALID";
+        ss << "ALREADY VALID";
         LOG(debug) << ss.str();
         return true;
     }
-    catch (exception& e)
+
+    // validate socket type
+    const string socketTypeNames[] = { "sub", "pub", "pull", "push", "req", "rep", "xsub", "xpub", "dealer", "router", "pair" };
+    const set<string> socketTypes(socketTypeNames, socketTypeNames + sizeof(socketTypeNames) / sizeof(string));
+    if (socketTypes.find(fType) == socketTypes.end())
     {
-        LOG(error) << "Exception caught in FairMQChannel::ValidateChannel: " << e.what();
-        exit(EXIT_FAILURE);
+        ss << "INVALID";
+        LOG(debug) << ss.str();
+        LOG(error) << "Invalid channel type: '" << fType << "'";
+        throw ChannelConfigurationError(fair::mq::tools::ToString("Invalid channel type: '", fType, "'"));
     }
+
+    // validate socket address
+    if (fAddress == "unspecified" || fAddress == "")
+    {
+        ss << "INVALID";
+        LOG(debug) << ss.str();
+        LOG(debug) << "invalid channel address: '" << fAddress << "'";
+        return false;
+    }
+    else
+    {
+        vector<string> endpoints;
+        boost::algorithm::split(endpoints, fAddress, boost::algorithm::is_any_of(";"));
+        for (const auto endpoint : endpoints)
+        {
+            string address;
+            if (endpoint[0] == '@' || endpoint[0] == '+' || endpoint[0] == '>')
+            {
+                address = endpoint.substr(1);
+            }
+            else
+            {
+                // we don't have a method modifier, check if the default method is set
+                const string socketMethodNames[] = { "bind", "connect" };
+                const set<string> socketMethods(socketMethodNames, socketMethodNames + sizeof(socketMethodNames) / sizeof(string));
+                if (socketMethods.find(fMethod) == socketMethods.end())
+                {
+                    ss << "INVALID";
+                    LOG(debug) << ss.str();
+                    LOG(error) << "Invalid endpoint connection method: '" << fMethod << "' for " << endpoint;
+                    throw ChannelConfigurationError(fair::mq::tools::ToString("Invalid endpoint connection method: '", fMethod, "' for ", endpoint));
+                }
+                address = endpoint;
+            }
+            // check if address is a tcp or ipc address
+            if (address.compare(0, 6, "tcp://") == 0)
+            {
+                // check if TCP address contains port delimiter
+                string addressString = address.substr(6);
+                if (addressString.find(':') == string::npos)
+                {
+                    ss << "INVALID";
+                    LOG(debug) << ss.str();
+                    LOG(error) << "invalid channel address: '" << address << "' (missing port?)";
+                    return false;
+                }
+            }
+            else if (address.compare(0, 6, "ipc://") == 0)
+            {
+                // check if IPC address is not empty
+                string addressString = address.substr(6);
+                if (addressString == "")
+                {
+                    ss << "INVALID";
+                    LOG(debug) << ss.str();
+                    LOG(error) << "invalid channel address: '" << address << "' (empty IPC address?)";
+                    return false;
+                }
+            }
+            else if (address.compare(0, 9, "inproc://") == 0)
+            {
+                // check if IPC address is not empty
+                string addressString = address.substr(9);
+                if (addressString == "")
+                {
+                    ss << "INVALID";
+                    LOG(debug) << ss.str();
+                    LOG(error) << "invalid channel address: '" << address << "' (empty inproc address?)";
+                    return false;
+                }
+            }
+            else if (address.compare(0, 8, "verbs://") == 0)
+            {
+                // check if IPC address is not empty
+                string addressString = address.substr(9);
+                if (addressString == "")
+                {
+                    ss << "INVALID";
+                    LOG(debug) << ss.str();
+                    LOG(error) << "invalid channel address: '" << address << "' (empty verbs address?)";
+                    return false;
+                }
+            }
+            else
+            {
+                // if neither TCP or IPC is specified, return invalid
+                ss << "INVALID";
+                LOG(debug) << ss.str();
+                LOG(error) << "invalid channel address: '" << address << "' (missing protocol specifier?)";
+                return false;
+            }
+        }
+    }
+
+    // validate socket buffer size for sending
+    if (fSndBufSize < 0)
+    {
+        ss << "INVALID";
+        LOG(debug) << ss.str();
+        LOG(error) << "invalid channel send buffer size (cannot be negative): '" << fSndBufSize << "'";
+        throw ChannelConfigurationError(fair::mq::tools::ToString("invalid channel send buffer size (cannot be negative): '", fSndBufSize, "'"));
+    }
+
+    // validate socket buffer size for receiving
+    if (fRcvBufSize < 0)
+    {
+        ss << "INVALID";
+        LOG(debug) << ss.str();
+        LOG(error) << "invalid channel receive buffer size (cannot be negative): '" << fRcvBufSize << "'";
+        throw ChannelConfigurationError(fair::mq::tools::ToString("invalid channel receive buffer size (cannot be negative): '", fRcvBufSize, "'"));
+    }
+
+    // validate socket kernel transmit size for sending
+    if (fSndKernelSize < 0)
+    {
+        ss << "INVALID";
+        LOG(debug) << ss.str();
+        LOG(error) << "invalid channel send kernel transmit size (cannot be negative): '" << fSndKernelSize << "'";
+        throw ChannelConfigurationError(fair::mq::tools::ToString("invalid channel send kernel transmit size (cannot be negative): '", fSndKernelSize, "'"));
+    }
+
+    // validate socket kernel transmit size for receiving
+    if (fRcvKernelSize < 0)
+    {
+        ss << "INVALID";
+        LOG(debug) << ss.str();
+        LOG(error) << "invalid channel receive kernel transmit size (cannot be negative): '" << fRcvKernelSize << "'";
+        throw ChannelConfigurationError(fair::mq::tools::ToString("invalid channel receive kernel transmit size (cannot be negative): '", fRcvKernelSize, "'"));
+    }
+
+    // validate socket rate logging interval
+    if (fRateLogging < 0)
+    {
+        ss << "INVALID";
+        LOG(debug) << ss.str();
+        LOG(error) << "invalid socket rate logging interval (cannot be negative): '" << fRateLogging << "'";
+        throw ChannelConfigurationError(fair::mq::tools::ToString("invalid socket rate logging interval (cannot be negative): '", fRateLogging, "'"));
+    }
+
+    fIsValid = true;
+    ss << "VALID";
+    LOG(debug) << ss.str();
+    return true;
+} catch (exception& e) {
+    LOG(error) << "Exception caught in FairMQChannel::ValidateChannel: " << e.what();
+    throw ChannelConfigurationError(fair::mq::tools::ToString(e.what()));
 }
 
 void FairMQChannel::InitTransport(shared_ptr<FairMQTransportFactory> factory)
@@ -684,7 +564,7 @@ void FairMQChannel::InitTransport(shared_ptr<FairMQTransportFactory> factory)
 
 void FairMQChannel::ResetChannel()
 {
-    unique_lock<mutex> lock(fChannelMutex);
+    lock_guard<mutex> lock(fChannelMutex);
     fIsValid = false;
     // TODO: implement channel resetting
 }

@@ -16,7 +16,6 @@
 
 #include <list>
 #include <cstdlib>
-#include <stdexcept>
 #include <random>
 #include <chrono>
 #include <mutex>
@@ -56,9 +55,6 @@ FairMQDevice::FairMQDevice(FairMQProgOptions* config, const fair::mq::tools::Ver
     , fInternalConfig(config ? nullptr : fair::mq::tools::make_unique<FairMQProgOptions>())
     , fConfig(config ? config : fInternalConfig.get())
     , fId()
-    , fInitialValidationFinished(false)
-    , fInitialValidationCondition()
-    , fInitialValidationMutex()
     , fPortRangeMin(22000)
     , fPortRangeMax(32000)
     , fDefaultTransportType(fair::mq::Transport::DEFAULT)
@@ -76,6 +72,7 @@ FairMQDevice::FairMQDevice(FairMQProgOptions* config, const fair::mq::tools::Ver
     , fInterrupted(false)
     , fInterruptedCV()
     , fInterruptedMtx()
+    , fRateLogging(true)
 {
 }
 
@@ -86,13 +83,12 @@ void FairMQDevice::InitWrapper()
     fPortRangeMin = fConfig->GetValue<int>("port-range-min");
     fPortRangeMax = fConfig->GetValue<int>("port-range-max");
 
-    try
-    {
+    try {
         fDefaultTransportType = fair::mq::TransportTypes.at(fConfig->GetValue<string>("transport"));
-    }
-    catch (const exception& e)
-    {
+    } catch (const exception& e) {
+        LOG(error) << "exception: " << e.what();
         LOG(error) << "invalid transport type provided: " << fConfig->GetValue<string>("transport");
+        throw;
     }
 
     for (auto& c : fConfig->GetFairMQMap())
@@ -159,9 +155,8 @@ void FairMQDevice::InitWrapper()
                 }
                 else
                 {
-                    LOG(error) << "Cannot update configuration. Socket method (bind/connect) not specified.";
-                    ChangeState(ERROR_FOUND);
-                    // throw runtime_error("Cannot update configuration. Socket method (bind/connect) not specified.");
+                    LOG(error) << "Cannot update configuration. Socket method (bind/connect) for channel '" << vi->fName << "' not specified.";
+                    throw runtime_error(fair::mq::tools::ToString("Cannot update configuration. Socket method (bind/connect) for channel ", vi->fName, " not specified."));
                 }
             // }
         }
@@ -174,18 +169,10 @@ void FairMQDevice::InitWrapper()
     if (!uninitializedBindingChannels.empty())
     {
         LOG(error) << uninitializedBindingChannels.size() << " of the binding channels could not initialize. Initial configuration incomplete.";
-        ChangeState(ERROR_FOUND);
-        // throw runtime_error(fair::mq::tools::ToString(uninitializedBindingChannels.size(), " of the binding channels could not initialize. Initial configuration incomplete."));
+        throw runtime_error(fair::mq::tools::ToString(uninitializedBindingChannels.size(), " of the binding channels could not initialize. Initial configuration incomplete."));
     }
 
     CallStateChangeCallbacks(INITIALIZING_DEVICE);
-
-    // notify parent thread about completion of first validation.
-    {
-        lock_guard<mutex> lock(fInitialValidationMutex);
-        fInitialValidationFinished = true;
-        fInitialValidationCondition.notify_one();
-    }
 
     int initializationTimeoutInS = fConfig->GetValue<int>("initialization-timeout");
 
@@ -200,24 +187,20 @@ void FairMQDevice::InitWrapper()
     {
         this_thread::sleep_for(chrono::milliseconds(sleepTimeInMS));
 
-        if (fConfig != nullptr)
+        for (auto& chan : uninitializedConnectingChannels)
         {
-            for (auto& chan : uninitializedConnectingChannels)
+            string key{"chans." + chan->GetChannelPrefix() + "." + chan->GetChannelIndex() + ".address"};
+            string newAddress = fConfig->GetValue<string>(key);
+            if (newAddress != chan->GetAddress())
             {
-                string key{"chans." + chan->GetChannelPrefix() + "." + chan->GetChannelIndex() + ".address"};
-                string newAddress = fConfig->GetValue<string>(key);
-                if (newAddress != chan->GetAddress())
-                {
-                    chan->UpdateAddress(newAddress);
-                }
+                chan->UpdateAddress(newAddress);
             }
         }
 
         if (numAttempts++ > maxAttempts)
         {
             LOG(error) << "could not connect all channels after " << initializationTimeoutInS << " attempts";
-            ChangeState(ERROR_FOUND);
-            // throw runtime_error(fair::mq::tools::ToString("could not connect all channels after ", initializationTimeoutInS, " attempts"));
+            throw runtime_error(fair::mq::tools::ToString("could not connect all channels after ", initializationTimeoutInS, " attempts"));
         }
 
         AttachChannels(uninitializedConnectingChannels);
@@ -225,13 +208,11 @@ void FairMQDevice::InitWrapper()
 
     Init();
 
-    ChangeState(internal_DEVICE_READY);
-}
+    if (fChannels.empty()) {
+        LOG(warn) << "No channels created after finishing initialization";
+    }
 
-void FairMQDevice::WaitForInitialValidation()
-{
-    unique_lock<mutex> lock(fInitialValidationMutex);
-    fInitialValidationCondition.wait(lock, [&] () { return fInitialValidationFinished; });
+    ChangeState(internal_DEVICE_READY);
 }
 
 void FairMQDevice::Init()
@@ -382,11 +363,8 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
     if (newAddress != ch.fAddress)
     {
         ch.UpdateAddress(newAddress);
-        if (fConfig)
-        {
-            string key{"chans." + ch.GetChannelPrefix() + "." + ch.GetChannelIndex() + ".address"};
-            fConfig->SetValue(key, newAddress);
-        }
+        string key{"chans." + ch.GetChannelPrefix() + "." + ch.GetChannelIndex() + ".address"};
+        fConfig->SetValue(key, newAddress);
     }
 
     return true;
@@ -495,6 +473,7 @@ void FairMQDevice::RunWrapper()
     LOG(info) << "DEVICE: Running...";
 
     // start the rate logger thread
+    fRateLogging = true;
     future<void> rateLogger = async(launch::async, &FairMQDevice::LogSocketRates, this);
 
     // notify transports to resume transfers
@@ -507,8 +486,7 @@ void FairMQDevice::RunWrapper()
         t.second->Resume();
     }
 
-    try
-    {
+    try {
         PreRun();
 
         // process either data callbacks or ConditionalRun/Run
@@ -538,11 +516,14 @@ void FairMQDevice::RunWrapper()
 
             Run();
         }
-    }
-    catch (const out_of_range& oor)
-    {
+    } catch (const out_of_range& oor) {
         LOG(error) << "out of range: " << oor.what();
         LOG(error) << "incorrect/incomplete channel configuration?";
+        fRateLogging = false;
+        throw;
+    } catch (...) {
+        fRateLogging = false;
+        throw;
     }
 
     // if Run() exited and the state is still RUNNING, transition to READY.
@@ -721,7 +702,7 @@ void FairMQDevice::PollForTransport(const FairMQTransportFactory* factory, const
     catch (exception& e)
     {
         LOG(error) << "FairMQDevice::PollForTransport() failed: " << e.what() << ", going to ERROR state.";
-        ChangeState(ERROR_FOUND);
+        throw runtime_error(fair::mq::tools::ToString("FairMQDevice::PollForTransport() failed: ", e.what(), ", going to ERROR state."));
     }
 }
 
@@ -877,7 +858,7 @@ void FairMQDevice::LogSocketRates()
 
         LOG(debug) << "<channel>: in: <#msgs> (<MB>) out: <#msgs> (<MB>)";
 
-        while (CheckCurrentState(RUNNING))
+        while (fRateLogging)
         {
             t1 = chrono::high_resolution_clock::now();
 
@@ -931,6 +912,7 @@ void FairMQDevice::Unblock()
     {
         lock_guard<mutex> guard(fInterruptedMtx);
         fInterrupted = true;
+        fRateLogging = false;
     }
     fInterruptedCV.notify_all();
 }
@@ -975,11 +957,6 @@ void FairMQDevice::ResetWrapper()
 
 void FairMQDevice::Reset()
 {
-}
-
-const FairMQChannel& FairMQDevice::GetChannel(const string& channelName, const int index) const
-{
-    return fChannels.at(channelName).at(index);
 }
 
 void FairMQDevice::Exit()
