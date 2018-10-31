@@ -14,6 +14,7 @@
 #include <vector>
 #include <atomic>
 #include <mutex>
+#include <stdexcept>
 
 #include <FairMQTransportFactory.h>
 #include <FairMQSocket.h>
@@ -50,6 +51,8 @@ class FairMQChannel
 
     /// Default destructor
     virtual ~FairMQChannel();
+
+    struct ChannelConfigurationError : std::runtime_error { using std::runtime_error::runtime_error; };
 
     FairMQSocket& GetSocket() const;
 
