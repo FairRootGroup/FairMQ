@@ -12,10 +12,10 @@
 #include <FairMQMessage.h>
 #include <FairMQUnmanagedRegion.h>
 
-#include <zmq.h>
-
-#include <cstddef> // size_t
+#include <asiofi.hpp>
 #include <atomic>
+#include <cstddef> // size_t
+#include <zmq.h>
 
 namespace fair
 {
@@ -33,10 +33,18 @@ namespace ofi
 class Message final : public fair::mq::Message
 {
   public:
-    Message();
-    Message(const size_t size);
-    Message(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr);
-    Message(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0);
+    Message(boost::container::pmr::memory_resource* pmr);
+    Message(boost::container::pmr::memory_resource* pmr, const size_t size);
+    Message(boost::container::pmr::memory_resource* pmr,
+            void* data,
+            const size_t size,
+            fairmq_free_fn* ffn,
+            void* hint = nullptr);
+    Message(boost::container::pmr::memory_resource* pmr,
+            FairMQUnmanagedRegionPtr& region,
+            void* data,
+            const size_t size,
+            void* hint = 0);
 
     Message(const Message&) = delete;
     Message operator=(const Message&) = delete;
@@ -62,6 +70,7 @@ class Message final : public fair::mq::Message
     void* fData;
     fairmq_free_fn* fFreeFunction;
     void* fHint;
+    boost::container::pmr::memory_resource* fPmr;
 }; /* class Message */  
 
 } /* namespace ofi */

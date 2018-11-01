@@ -9,6 +9,8 @@
 #ifndef FAIR_MQ_OFI_CONTEXT_H
 #define FAIR_MQ_OFI_CONTEXT_H
 
+#include <FairMQLogger.h>
+
 #include <asiofi/connected_endpoint.hpp>
 #include <asiofi/domain.hpp>
 #include <asiofi/fabric.hpp>
@@ -63,6 +65,9 @@ class Context
     static auto ConvertAddress(Address address) -> sockaddr_in;
     static auto ConvertAddress(sockaddr_in address) -> Address;
     static auto VerifyAddress(const std::string& address) -> Address;
+    auto GetDomain() const -> const asiofi::domain& { return *fOfiDomain; }
+    auto Interrupt() -> void { LOG(debug) << "OFI transport: Interrupted (NOOP - not implemented)."; }
+    auto Resume() -> void { LOG(debug) << "OFI transport: Resumed (NOOP - not implemented)."; }
 
   private:
     void* fZmqContext;
