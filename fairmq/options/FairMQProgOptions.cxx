@@ -19,10 +19,9 @@
 #include "FairMQParser.h"
 #include "FairMQSuboptParser.h"
 
+#include "tools/Unique.h"
+
 #include <boost/algorithm/string.hpp> // join/split
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
 
 #include <algorithm>
 #include <iomanip>
@@ -227,7 +226,7 @@ void FairMQProgOptions::ParseCmdLine(const int argc, char const* const* argv, bo
 
 void FairMQProgOptions::ParseDefaults()
 {
-    vector<string> emptyArgs = {"dummy", "--id", boost::uuids::to_string(boost::uuids::random_generator()())};
+    vector<string> emptyArgs = {"dummy", "--id", tools::Uuid()};
 
     vector<const char*> argv(emptyArgs.size());
 
