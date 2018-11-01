@@ -36,22 +36,28 @@ catch (ContextError& e)
 
 auto TransportFactory::CreateMessage() const -> MessagePtr
 {
-    return MessagePtr{new Message()};
+    return MessagePtr{new Message(&fMemoryResource)};
 }
 
 auto TransportFactory::CreateMessage(const size_t size) const -> MessagePtr
 {
-    return MessagePtr{new Message(size)};
+    return MessagePtr{new Message(&fMemoryResource, size)};
 }
 
-auto TransportFactory::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint) const -> MessagePtr
+auto TransportFactory::CreateMessage(void* data,
+                                     const size_t size,
+                                     fairmq_free_fn* ffn,
+                                     void* hint) const -> MessagePtr
 {
-    return MessagePtr{new Message(data, size, ffn, hint)};
+    return MessagePtr{new Message(&fMemoryResource, data, size, ffn, hint)};
 }
 
-auto TransportFactory::CreateMessage(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint) const -> MessagePtr
+auto TransportFactory::CreateMessage(UnmanagedRegionPtr& region,
+                                     void* data,
+                                     const size_t size,
+                                     void* hint) const -> MessagePtr
 {
-    return MessagePtr{new Message(region, data, size, hint)};
+    return MessagePtr{new Message(&fMemoryResource, region, data, size, hint)};
 }
 
 auto TransportFactory::CreateSocket(const string& type, const string& name) -> SocketPtr

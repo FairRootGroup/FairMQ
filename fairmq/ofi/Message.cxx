@@ -10,6 +10,7 @@
 #include <fairmq/Tools.h>
 #include <FairMQLogger.h>
 
+#include <asiofi.hpp>
 #include <cassert>
 #include <cstdlib>
 #include <zmq.h>
@@ -23,38 +24,48 @@ namespace ofi
 
 using namespace std;
 
-Message::Message()
+Message::Message(boost::container::pmr::memory_resource* pmr)
     : fInitialSize(0)
     , fSize(0)
     , fData(nullptr)
     , fFreeFunction(nullptr)
     , fHint(nullptr)
+    , fPmr(pmr)
 {
 }
 
-Message::Message(const size_t size)
+Message::Message(boost::container::pmr::memory_resource* pmr, const size_t size)
     : fInitialSize(size)
     , fSize(size)
     , fData(nullptr)
     , fFreeFunction(nullptr)
     , fHint(nullptr)
+    , fPmr(pmr)
 {
     if (size) {
-        fData = malloc(size);
+        fData = fPmr->allocate(size);
         assert(fData);
     }
 }
 
-Message::Message(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
+Message::Message(boost::container::pmr::memory_resource* pmr,
+                 void* data,
+                 const size_t size,
+                 fairmq_free_fn* ffn,
+                 void* hint)
     : fInitialSize(size)
     , fSize(size)
     , fData(data)
     , fFreeFunction(ffn)
     , fHint(hint)
-{
-}
+    , fPmr(pmr)
+{}
 
-Message::Message(FairMQUnmanagedRegionPtr& /*region*/, void* /*data*/, const size_t /*size*/, void* /*hint*/)
+Message::Message(boost::container::pmr::memory_resource* /*pmr*/,
+                 FairMQUnmanagedRegionPtr& /*region*/,
+                 void* /*data*/,
+                 const size_t /*size*/,
+                 void* /*hint*/)
 {
     throw MessageError{"Not yet implemented."};
 }
@@ -62,9 +73,9 @@ Message::Message(FairMQUnmanagedRegionPtr& /*region*/, void* /*data*/, const siz
 auto Message::Rebuild() -> void
 {
     if (fFreeFunction) {
-      fFreeFunction(fData, fHint);
+        fFreeFunction(fData, fHint);
     } else {
-      free(fData);
+        fPmr->deallocate(fData, fSize);
     }
     fData = nullptr;
     fInitialSize = 0;
@@ -78,10 +89,10 @@ auto Message::Rebuild(const size_t size) -> void
     if (fFreeFunction) {
       fFreeFunction(fData, fHint);
     } else {
-      free(fData);
+      fPmr->deallocate(fData, fSize);
     }
     if (size) {
-        fData = malloc(size);
+        fData = fPmr->allocate(size);
         assert(fData);
     } else {
         fData = nullptr;
@@ -97,10 +108,10 @@ auto Message::Rebuild(void* /*data*/, const size_t size, fairmq_free_fn* ffn, vo
     if (fFreeFunction) {
       fFreeFunction(fData, fHint);
     } else {
-      free(fData);
+      fPmr->deallocate(fData, fSize);
     }
     if (size) {
-        fData = malloc(size);
+        fData = fPmr->allocate(size);
         assert(fData);
     } else {
         fData = nullptr;
@@ -143,7 +154,7 @@ Message::~Message()
     if (fFreeFunction) {
       fFreeFunction(fData, fHint);
     } else {
-      free(fData);
+      fPmr->deallocate(fData, fSize);
     }
 }
 

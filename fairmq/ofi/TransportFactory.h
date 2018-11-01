@@ -13,6 +13,8 @@
 #include <options/FairMQProgOptions.h>
 #include <fairmq/ofi/Context.h>
 
+#include <asiofi.hpp>
+
 namespace fair
 {
 namespace mq
@@ -48,12 +50,13 @@ class TransportFactory final : public FairMQTransportFactory
 
     auto GetType() const -> Transport override;
 
-    void Interrupt() override {}
-    void Resume() override {}
+    void Interrupt() override { fContext.Interrupt(); }
+    void Resume() override { fContext.Resume(); }
     void Reset() override {}
 
   private:
     mutable Context fContext;
+    asiofi::allocated_pool_resource fMemoryResource;
 }; /* class TransportFactory */  
 
 } /* namespace ofi */

@@ -56,6 +56,8 @@ auto MakeControlMessage(A* pmr, Args&& ... args) -> CtrlMsgPtr<T>
 
     if (std::is_same<T, DataAddressAnnouncement>::value) {
         raw_ptr->type = ControlMessageType::DataAddressAnnouncement;
+    } else if (std::is_same<T, PostBuffer>::value) {
+        raw_ptr->type = ControlMessageType::PostBuffer;
     }
 
     return {raw_ptr, [=](T* p) { pmr->deallocate(p, sizeof(T)); }};

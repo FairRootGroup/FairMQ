@@ -13,6 +13,8 @@
 #include <FairMQLogger.h>
 
 #include <arpa/inet.h>
+#include <asiofi.hpp>
+#include <boost/asio/buffer.hpp>
 #include <cstring>
 #include <netinet/in.h>
 #include <rdma/fabric.h>
@@ -43,7 +45,6 @@ Socket::Socket(Context& context, const string& type, const string& name, const s
     , fMessagesTx(0)
     , fMessagesRx(0)
     , fContext(context)
-    , fWaitingForControlPeer(false)
     , fIoStrand(fContext.GetIoContext())
     , fSndTimeout(100)
     , fRcvTimeout(100)
@@ -230,6 +231,14 @@ auto Socket::SendControlMessage(CtrlMsgPtr<ControlMessage> ctrl) -> void
                 std::memcpy(zmq_msg_data(msg), ctrl.get(), sizeof(DataAddressAnnouncement));
             }
             break;
+        case ControlMessageType::PostBuffer:
+            {
+                auto ret = zmq_msg_init_size(msg, sizeof(PostBuffer));
+                (void)ret;
+                assert(ret == 0);
+                std::memcpy(zmq_msg_data(msg), ctrl.get(), sizeof(PostBuffer));
+            }
+            break;
         default:
             throw SocketError(tools::ToString("Cannot send control message of unknown type."));
     }
@@ -273,6 +282,13 @@ auto Socket::ReceiveControlMessage() -> CtrlMsgPtr<ControlMessage>
             std::memcpy(daa.get(), msg_data, sizeof(DataAddressAnnouncement));
             // LOG(debug) << "Received control message: " << ctrl->DebugString();
             return StaticUniquePtrUpcast<ControlMessage>(std::move(daa));
+        }
+        case ControlMessageType::PostBuffer: {
+            assert(msg_size == sizeof(PostBuffer));
+            auto pb = MakeControlMessage<PostBuffer>(&fCtrlMemPool);
+            std::memcpy(pb.get(), msg_data, sizeof(PostBuffer));
+            // LOG(debug) << "Received control message: " << ctrl->DebugString();
+            return StaticUniquePtrUpcast<ControlMessage>(std::move(pb));
         }
         default:
             throw SocketError(tools::ToString("Received control message of unknown type."));
@@ -327,43 +343,53 @@ auto Socket::TryReceive(MessagePtr& msg) -> int { return ReceiveImpl(msg, ZMQ_DO
 auto Socket::TrySend(std::vector<MessagePtr>& msgVec) -> int64_t { return SendImpl(msgVec, ZMQ_DONTWAIT, 0); }
 auto Socket::TryReceive(std::vector<MessagePtr>& msgVec) -> int64_t { return ReceiveImpl(msgVec, ZMQ_DONTWAIT, 0); }
 
+#include <mutex>
+#include <condition_variable>
+
 auto Socket::SendImpl(FairMQMessagePtr& msg, const int /*flags*/, const int /*timeout*/) -> int
 try {
     auto size = msg->GetSize();
+    LOG(debug) << "OFI transport (" << fId << "): ENTER SendImpl";
 
-    this_thread::sleep_for(std::chrono::seconds(10));
     // Create and send control message
-    // auto ctrl = tools::make_unique<ControlMessage>();
-    // auto buf = tools::make_unique<PostBuffer>();
-    // buf->set_size(size);
-    // ctrl->set_allocated_post_buffer(buf.release());
-    // assert(ctrl->IsInitialized());
-    // SendControlMessage(move(ctrl));
+    auto pb = MakeControlMessage<PostBuffer>(&fCtrlMemPool);
+    pb->size = size;
+    SendControlMessage(StaticUniquePtrUpcast<ControlMessage>(std::move(pb)));
+    LOG(debug) << "OFI transport (" << fId << "): >>>>> SendImpl: Control message sent, size=" << size;
 
     if (size) {
-        // Receive and process control message
-        // auto ctrl2 = ReceiveControlMessage();
-        // assert(ctrl2->has_post_buffer_acknowledgement());
-        // assert(ctrl2->post_buffer_acknowledgement().size() == size);
+        boost::asio::mutable_buffer buffer(msg->GetData(), size);
+        asiofi::memory_region mr(fContext.GetDomain(), buffer, asiofi::mr::access::send);
 
-        // Send data
-        // fi_context ctx;
-        // auto ret = fi_send(fDataEndpoint, msg->GetData(), size, nullptr, fRemoteDataAddr, &ctx);
-        // if (ret < 0)
-            // throw SocketError(tools::ToString("Failed posting ofi send buffer, reason: ", fi_strerror(ret)));
-    }
+        std::mutex m;
+        std::condition_variable cv;
+        bool completed(false);
 
-    if (size) {
-        // fi_cq_err_entry cqEntry;
-        // auto ret = fi_cq_sread(fDataCompletionQueueTx, &cqEntry, 1, nullptr, -1);
-        // if (ret != 1)
-            // throw SocketError(tools::ToString("Failed reading ofi tx completion queue event, reason: ", fi_strerror(ret)));
+        fDataEndpoint->send(
+            buffer,
+            mr.desc(),
+            [&](boost::asio::mutable_buffer) {
+                {
+                    std::unique_lock<std::mutex> lk(m);
+                    completed = true;
+                }
+                cv.notify_one();
+                LOG(debug) << "OFI transport (" << fId << "):     > SendImpl: Data buffer sent";
+            }
+        );
+        
+        {
+            std::unique_lock<std::mutex> lk(m);
+            cv.wait(lk, [&](){ return completed; });
+        }
+        LOG(debug) << "OFI transport (" << fId << "): >>>>> SendImpl: Data send buffer posted";
     }
 
     msg.reset(nullptr);
     fBytesTx += size;
     fMessagesTx++;
 
+    LOG(debug) << "OFI transport (" << fId << "): LEAVE SendImpl";
     return size;
 }
 catch (const SilentSocketError& e)
@@ -376,52 +402,47 @@ catch (const std::exception& e)
     return -1;
 }
 
-auto Socket::ReceiveImpl(FairMQMessagePtr& /*msg*/, const int /*flags*/, const int /*timeout*/) -> int
+auto Socket::ReceiveImpl(FairMQMessagePtr& msg, const int /*flags*/, const int /*timeout*/) -> int
 try {
-    this_thread::sleep_for(std::chrono::seconds(10));
-    if (fWaitingForControlPeer) {
-        WaitForControlPeer(); 
-        // AnnounceDataAddress();
-        // ProcessDataAddressAnnouncement(ReceiveControlMessage());
-    }
-
+    LOG(debug) << "OFI transport (" << fId << "): ENTER ReceiveImpl";
     // Receive and process control message
-    // auto ctrl = ReceiveControlMessage();
-    // assert(ctrl->has_post_buffer());
-    // auto postBuffer = ctrl->post_buffer();
-    // auto size = postBuffer.size();
+    auto pb = StaticUniquePtrDowncast<PostBuffer>(ReceiveControlMessage());
+    assert(pb.get());
+    auto size = pb->size;
+    LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Control message received, size=" << size;
 
     // Receive data
-    // if (size) {
-        // fi_context ctx;
-        // msg->Rebuild(size);
-        // auto buf = msg->GetData();
-        // auto size2 = msg->GetSize();
-        // auto ret = fi_recv(fDataEndpoint, buf, size2, nullptr, fRemoteDataAddr, &ctx);
-        // if (ret < 0)
-            // throw SocketError(tools::ToString("Failed posting ofi receive buffer, reason: ", fi_strerror(ret)));
+    if (size) {
+        msg->Rebuild(size);
+        boost::asio::mutable_buffer buffer(msg->GetData(), size);
+        asiofi::memory_region mr(fContext.GetDomain(), buffer, asiofi::mr::access::recv);
 
-        // Create and send control message
-        // auto ctrl2 = tools::make_unique<ControlMessage>();
-        // auto ack = tools::make_unique<PostBufferAcknowledgement>();
-        // ack->set_size(msg->GetSize());
-        // ctrl2->set_allocated_post_buffer_acknowledgement(ack.release());
-        // assert(ctrl2->IsInitialized());
-        // SendControlMessage(move(ctrl2));
+        std::mutex m;
+        std::condition_variable cv;
+        bool completed(false);
 
-        // fi_cq_err_entry cqEntry;
-        // ret = fi_cq_sread(fDataCompletionQueueRx, &cqEntry, 1, nullptr, -1);
-        // if (ret != 1)
-            // throw SocketError(tools::ToString("Failed reading ofi rx completion queue event, reason: ", fi_strerror(ret)));
-        // assert(cqEntry.len == size2);
-        // assert(cqEntry.buf == buf);
-    // }
+        fDataEndpoint->recv(buffer, mr.desc(), [&](boost::asio::mutable_buffer) {
+                {
+                    std::unique_lock<std::mutex> lk(m);
+                    completed = true;
+                }
+                cv.notify_one();
+            }
+        );
+        LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Data buffer posted";
 
-    // fBytesRx += size;
+        {
+            std::unique_lock<std::mutex> lk(m);
+            cv.wait(lk, [&](){ return completed; });
+        }
+        LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Data received";
+    }
+
+    fBytesRx += size;
     fMessagesRx++;
 
-    // return size;
-    return 0;
+    LOG(debug) << "OFI transport (" << fId << "): EXIT ReceiveImpl";
+    return size;
 }
 catch (const SilentSocketError& e)
 {
