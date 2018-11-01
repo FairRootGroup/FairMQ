@@ -209,6 +209,17 @@ add_testsuite(FairMQ.Tools
     TIMEOUT 10
 )
 
+add_testsuite(FairMQ.Channel
+    SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    channel/_channel.cxx
+
+    LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
+             ${CMAKE_CURRENT_BINARY_DIR}
+    TIMEOUT 10
+)
+
 add_testsuite(FairMQ.Transport
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx

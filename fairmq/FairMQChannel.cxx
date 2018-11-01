@@ -399,8 +399,7 @@ try {
     }
 
     // validate socket type
-    const string socketTypeNames[] = { "sub", "pub", "pull", "push", "req", "rep", "xsub", "xpub", "dealer", "router", "pair" };
-    const set<string> socketTypes(socketTypeNames, socketTypeNames + sizeof(socketTypeNames) / sizeof(string));
+    const set<string> socketTypes{ "sub", "pub", "pull", "push", "req", "rep", "xsub", "xpub", "dealer", "router", "pair" };
     if (socketTypes.find(fType) == socketTypes.end())
     {
         ss << "INVALID";
@@ -431,8 +430,7 @@ try {
             else
             {
                 // we don't have a method modifier, check if the default method is set
-                const string socketMethodNames[] = { "bind", "connect" };
-                const set<string> socketMethods(socketMethodNames, socketMethodNames + sizeof(socketMethodNames) / sizeof(string));
+                const set<string> socketMethods{ "bind", "connect" };
                 if (socketMethods.find(fMethod) == socketMethods.end())
                 {
                     ss << "INVALID";
@@ -482,7 +480,7 @@ try {
             else if (address.compare(0, 8, "verbs://") == 0)
             {
                 // check if IPC address is not empty
-                string addressString = address.substr(9);
+                string addressString = address.substr(8);
                 if (addressString == "")
                 {
                     ss << "INVALID";
