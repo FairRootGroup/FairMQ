@@ -32,7 +32,7 @@ namespace tools
 {
 
 // returns a map with network interface names as keys and their IP addresses as values
-int getHostIPs(std::map<std::string, std::string>& addressMap);
+std::map<std::string, std::string> getHostIPs();
 
 // get IP address of a given interface name
 std::string getInterfaceIP(const std::string& interface);
