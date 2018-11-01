@@ -51,11 +51,6 @@ class Socket final : public fair::mq::Socket
     auto Send(std::vector<MessagePtr>& msgVec, int timeout = 0) -> int64_t override;
     auto Receive(std::vector<MessagePtr>& msgVec, int timeout = 0) -> int64_t override;
 
-    auto TrySend(MessagePtr& msg) -> int override;
-    auto TryReceive(MessagePtr& msg) -> int override;
-    auto TrySend(std::vector<MessagePtr>& msgVec) -> int64_t override;
-    auto TryReceive(std::vector<MessagePtr>& msgVec) -> int64_t override;
-
     auto GetSocket() const -> void* { return fControlSocket; }
 
     void SetLinger(const int value) override;

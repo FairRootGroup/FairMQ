@@ -17,13 +17,13 @@
 #include <boost/asio/buffer.hpp>
 #include <cstring>
 #include <netinet/in.h>
-#include <rdma/fabric.h>
-#include <rdma/fi_endpoint.h>
-#include <rdma/fi_cm.h>
 #include <sstream>
 #include <string.h>
 #include <sys/socket.h>
 #include <zmq.h>
+
+#include <mutex>
+#include <condition_variable>
 
 namespace fair
 {
@@ -98,8 +98,6 @@ try {
     fLocalDataAddr = addr;
     BindDataEndpoint();
 
-    AnnounceDataAddress();
-
     return true;
 }
 catch (const SilentSocketError& e)
@@ -143,17 +141,33 @@ auto Socket::BindDataEndpoint() -> void
     assert(!fPassiveDataEndpoint);
     assert(!fDataEndpoint);
 
+    std::mutex m;
+    std::condition_variable cv;
+    bool completed(false);
+
     fPassiveDataEndpoint = fContext.MakeOfiPassiveEndpoint(fLocalDataAddr);
     fPassiveDataEndpoint->listen([&](fid_t /*handle*/, asiofi::info&& info) {
         LOG(debug) << "OFI transport (" << fId << "): data band connection request received. Accepting ...";
         fDataEndpoint = fContext.MakeOfiConnectedEndpoint(info);
         fDataEndpoint->enable();
         fDataEndpoint->accept([&]() {
-            LOG(debug) << "OFI transport (" << fId << "): data band connection accepted.";
+            {
+                std::unique_lock<std::mutex> lk(m);
+                completed = true;
+            }
+            cv.notify_one();
         });
     });
 
     LOG(debug) << "OFI transport (" << fId << "): data band bound to " << fLocalDataAddr;
+
+    AnnounceDataAddress();
+
+    {
+        std::unique_lock<std::mutex> lk(m);
+        cv.wait(lk, [&](){ return completed; });
+    }
+    LOG(debug) << "OFI transport (" << fId << "): data band connection accepted.";
 }
 
 auto Socket::ConnectControlSocket(Context::Address address) -> void
@@ -295,69 +309,31 @@ auto Socket::ReceiveControlMessage() -> CtrlMsgPtr<ControlMessage>
     }
 }
 
-// auto Socket::WaitForControlPeer() -> void
-// {
-    // assert(fWaitingForControlPeer);
-//
-    // First frame in message contains event number and value
-    // zmq_msg_t msg;
-    // zmq_msg_init(&msg);
-    // if (zmq_msg_recv(&msg, fMonitorSocket, 0) == -1)
-        // throw SocketError(tools::ToString("Failed to get monitor event, reason: ", zmq_strerror(errno)));
-//
-    // uint8_t* data = (uint8_t*) zmq_msg_data(&msg);
-    // uint16_t event = *(uint16_t*)(data);
-    // int value = *(uint32_t *)(data + 2);
-//
-    // Second frame in message contains event address
-    // zmq_msg_init(&msg);
-    // if (zmq_msg_recv(&msg, fMonitorSocket, 0) == -1)
-        // throw SocketError(tools::ToString("Failed to get monitor event, reason: ", zmq_strerror(errno)));
-//
-    // if (event == ZMQ_EVENT_ACCEPTED) {
-        // string localAddress = string(static_cast<char*>(zmq_msg_data(&msg)), zmq_msg_size(&msg));
-        // sockaddr_in remoteAddr;
-        // socklen_t addrSize = sizeof(sockaddr_in);
-        // int ret = getpeername(value, (sockaddr*)&remoteAddr, &addrSize);
-        // if (ret != 0)
-            // throw SocketError(tools::ToString("Failed retrieving remote address, reason: ", strerror(errno)));
-        // string remoteIp(inet_ntoa(remoteAddr.sin_addr));
-        // int remotePort = ntohs(remoteAddr.sin_port);
-        // LOG(debug) << "Accepted control peer connection from " << remoteIp << ":" << remotePort;
-    // } else if (event == ZMQ_EVENT_CONNECTED) {
-        // LOG(debug) << "Connected successfully to control peer";
-    // } else {
-        // LOG(debug) << "Unknown monitor event received: " << event << ". Ignoring.";
-    // }
-//
-    // fWaitingForControlPeer = false;
-// }
-
 auto Socket::Send(MessagePtr& msg, const int timeout) -> int { return SendImpl(msg, 0, timeout); }
 auto Socket::Receive(MessagePtr& msg, const int timeout) -> int { return ReceiveImpl(msg, 0, timeout); }
 auto Socket::Send(std::vector<MessagePtr>& msgVec, const int timeout) -> int64_t { return SendImpl(msgVec, 0, timeout); }
 auto Socket::Receive(std::vector<MessagePtr>& msgVec, const int timeout) -> int64_t { return ReceiveImpl(msgVec, 0, timeout); }
 
-auto Socket::TrySend(MessagePtr& msg) -> int { return SendImpl(msg, ZMQ_DONTWAIT, 0); }
-auto Socket::TryReceive(MessagePtr& msg) -> int { return ReceiveImpl(msg, ZMQ_DONTWAIT, 0); }
-auto Socket::TrySend(std::vector<MessagePtr>& msgVec) -> int64_t { return SendImpl(msgVec, ZMQ_DONTWAIT, 0); }
-auto Socket::TryReceive(std::vector<MessagePtr>& msgVec) -> int64_t { return ReceiveImpl(msgVec, ZMQ_DONTWAIT, 0); }
-
-#include <mutex>
-#include <condition_variable>
-
 auto Socket::SendImpl(FairMQMessagePtr& msg, const int /*flags*/, const int /*timeout*/) -> int
 try {
     auto size = msg->GetSize();
-    LOG(debug) << "OFI transport (" << fId << "): ENTER SendImpl";
+    // LOG(debug) << "OFI transport (" << fId << "): ENTER SendImpl";
 
     // Create and send control message
     auto pb = MakeControlMessage<PostBuffer>(&fCtrlMemPool);
     pb->size = size;
     SendControlMessage(StaticUniquePtrUpcast<ControlMessage>(std::move(pb)));
-    LOG(debug) << "OFI transport (" << fId << "): >>>>> SendImpl: Control message sent, size=" << size;
+    // LOG(debug) << "OFI transport (" << fId << "): >>>>> SendImpl: Control message sent, size=" << size;
+    // LOG(debug) << "OFI transport (" << fId << "): >>>>> SendImpl: msg->GetData()=" << msg->GetData() << ",msg->GetSize()=" << msg->GetSize();
 
     if (size) {
+        // Receive ack
+        auto ack = StaticUniquePtrDowncast<PostBuffer>(ReceiveControlMessage());
+        assert(ack.get());
+        auto size_ack = ack->size;
+        assert(size == size_ack);
+        // LOG(debug) << "OFI transport (" << fId << "): >>>>> SendImpl: Control ack received, size_ack=" << size_ack;
+
         boost::asio::mutable_buffer buffer(msg->GetData(), size);
         asiofi::memory_region mr(fContext.GetDomain(), buffer, asiofi::mr::access::send);
 
@@ -374,7 +350,7 @@ try {
                     completed = true;
                 }
                 cv.notify_one();
-                LOG(debug) << "OFI transport (" << fId << "):     > SendImpl: Data buffer sent";
+                // LOG(debug) << "OFI transport (" << fId << "):     > SendImpl: Data buffer sent";
             }
         );
         
@@ -382,14 +358,14 @@ try {
             std::unique_lock<std::mutex> lk(m);
             cv.wait(lk, [&](){ return completed; });
         }
-        LOG(debug) << "OFI transport (" << fId << "): >>>>> SendImpl: Data send buffer posted";
+        // LOG(debug) << "OFI transport (" << fId << "): >>>>> SendImpl: Data send buffer posted";
     }
 
     msg.reset(nullptr);
     fBytesTx += size;
     fMessagesTx++;
 
-    LOG(debug) << "OFI transport (" << fId << "): LEAVE SendImpl";
+    // LOG(debug) << "OFI transport (" << fId << "): LEAVE SendImpl";
     return size;
 }
 catch (const SilentSocketError& e)
@@ -404,12 +380,12 @@ catch (const std::exception& e)
 
 auto Socket::ReceiveImpl(FairMQMessagePtr& msg, const int /*flags*/, const int /*timeout*/) -> int
 try {
-    LOG(debug) << "OFI transport (" << fId << "): ENTER ReceiveImpl";
+    // LOG(debug) << "OFI transport (" << fId << "): ENTER ReceiveImpl";
     // Receive and process control message
     auto pb = StaticUniquePtrDowncast<PostBuffer>(ReceiveControlMessage());
     assert(pb.get());
     auto size = pb->size;
-    LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Control message received, size=" << size;
+    // LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Control message received, size=" << size;
 
     // Receive data
     if (size) {
@@ -429,19 +405,24 @@ try {
                 cv.notify_one();
             }
         );
-        LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Data buffer posted";
+        // LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Data buffer posted";
+
+        auto ack = MakeControlMessage<PostBuffer>(&fCtrlMemPool);
+        ack->size = size;
+        SendControlMessage(StaticUniquePtrUpcast<ControlMessage>(std::move(ack)));
+        // LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Control Ack sent";
 
         {
             std::unique_lock<std::mutex> lk(m);
             cv.wait(lk, [&](){ return completed; });
         }
-        LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Data received";
+        // LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Data received";
     }
 
     fBytesRx += size;
     fMessagesRx++;
 
-    LOG(debug) << "OFI transport (" << fId << "): EXIT ReceiveImpl";
+    // LOG(debug) << "OFI transport (" << fId << "): EXIT ReceiveImpl";
     return size;
 }
 catch (const SilentSocketError& e)
@@ -657,6 +638,14 @@ int Socket::GetLinger() const
     }
     return value;
 }
+
+void Socket::SetLinger(const int value)
+{
+    if (zmq_setsockopt(fControlSocket, ZMQ_LINGER, &value, sizeof(value)) < 0) {
+        throw SocketError(tools::ToString("failed setting ZMQ_LINGER, reason: ", zmq_strerror(errno)));
+    }
+}
+
 
 void Socket::SetSndBufSize(const int value)
 {
