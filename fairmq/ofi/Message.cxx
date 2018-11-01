@@ -75,7 +75,9 @@ auto Message::Rebuild() -> void
     if (fFreeFunction) {
         fFreeFunction(fData, fHint);
     } else {
-        fPmr->deallocate(fData, fSize);
+        if (fData) {
+            fPmr->deallocate(fData, fSize);
+        }
     }
     fData = nullptr;
     fInitialSize = 0;
@@ -89,7 +91,9 @@ auto Message::Rebuild(const size_t size) -> void
     if (fFreeFunction) {
       fFreeFunction(fData, fHint);
     } else {
-      fPmr->deallocate(fData, fSize);
+        if (fData) {
+            fPmr->deallocate(fData, fSize);
+        }
     }
     if (size) {
         fData = fPmr->allocate(size);
@@ -108,7 +112,9 @@ auto Message::Rebuild(void* /*data*/, const size_t size, fairmq_free_fn* ffn, vo
     if (fFreeFunction) {
       fFreeFunction(fData, fHint);
     } else {
-      fPmr->deallocate(fData, fSize);
+        if (fData) {
+            fPmr->deallocate(fData, fSize);
+        }
     }
     if (size) {
         fData = fPmr->allocate(size);
@@ -152,9 +158,11 @@ auto Message::Copy(const fair::mq::Message& /*msg*/) -> void
 Message::~Message()
 {
     if (fFreeFunction) {
-      fFreeFunction(fData, fHint);
+        fFreeFunction(fData, fHint);
     } else {
-      fPmr->deallocate(fData, fSize);
+        if (fData) {
+            fPmr->deallocate(fData, fSize);
+        }
     }
 }
 

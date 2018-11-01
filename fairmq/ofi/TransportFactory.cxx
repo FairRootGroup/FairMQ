@@ -34,12 +34,12 @@ catch (ContextError& e)
     throw TransportFactoryError{e.what()};
 }
 
-auto TransportFactory::CreateMessage() const -> MessagePtr
+auto TransportFactory::CreateMessage() -> MessagePtr
 {
     return MessagePtr{new Message(&fMemoryResource)};
 }
 
-auto TransportFactory::CreateMessage(const size_t size) const -> MessagePtr
+auto TransportFactory::CreateMessage(const size_t size) -> MessagePtr
 {
     return MessagePtr{new Message(&fMemoryResource, size)};
 }
@@ -47,7 +47,7 @@ auto TransportFactory::CreateMessage(const size_t size) const -> MessagePtr
 auto TransportFactory::CreateMessage(void* data,
                                      const size_t size,
                                      fairmq_free_fn* ffn,
-                                     void* hint) const -> MessagePtr
+                                     void* hint) -> MessagePtr
 {
     return MessagePtr{new Message(&fMemoryResource, data, size, ffn, hint)};
 }
@@ -55,7 +55,7 @@ auto TransportFactory::CreateMessage(void* data,
 auto TransportFactory::CreateMessage(UnmanagedRegionPtr& region,
                                      void* data,
                                      const size_t size,
-                                     void* hint) const -> MessagePtr
+                                     void* hint) -> MessagePtr
 {
     return MessagePtr{new Message(&fMemoryResource, region, data, size, hint)};
 }
@@ -71,7 +71,7 @@ auto TransportFactory::CreatePoller(const vector<FairMQChannel>& channels) const
     // return PollerPtr{new Poller(channels)};
 }
 
-auto TransportFactory::CreatePoller(const vector<const FairMQChannel*>& channels) const -> PollerPtr
+auto TransportFactory::CreatePoller(const vector<FairMQChannel*>& channels) const -> PollerPtr
 {
     throw runtime_error{"Not yet implemented (Poller)."};
     // return PollerPtr{new Poller(channels)};
