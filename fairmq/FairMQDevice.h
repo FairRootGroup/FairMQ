@@ -81,10 +81,6 @@ class FairMQDevice : public FairMQStateMachine
     /// @param reindex Should reindexing be done
     void SortChannel(const std::string& name, const bool reindex = true);
 
-    /// Prints channel configuration
-    /// @param name Name of the channel
-    void PrintChannel(const std::string& name);
-
     template<typename Serializer, typename DataType, typename... Args>
     void Serialize(FairMQMessage& msg, DataType&& data, Args&&... args) const
     {
@@ -373,12 +369,6 @@ class FairMQDevice : public FairMQStateMachine
     void SetNumIoThreads(int numIoThreads) { fConfig->SetValue<int>("io-threads", numIoThreads);}
     int GetNumIoThreads() const { return fConfig->GetValue<int>("io-threads"); }
 
-    void SetPortRangeMin(int portRangeMin) { fConfig->SetValue<int>("port-range-min", portRangeMin); }
-    int GetPortRangeMin() const { return fConfig->GetValue<int>("port-range-min"); }
-
-    void SetPortRangeMax(int portRangeMax) { fConfig->SetValue<int>("port-range-max", portRangeMax); }
-    int GetPortRangeMax() const { return fConfig->GetValue<int>("port-range-max"); }
-
     void SetNetworkInterface(const std::string& networkInterface) { fConfig->SetValue<std::string>("network-interface", networkInterface); }
     std::string GetNetworkInterface() const { return fConfig->GetValue<std::string>("network-interface"); }
 
@@ -458,9 +448,6 @@ class FairMQDevice : public FairMQStateMachine
     virtual void Reset();
 
   private:
-    int fPortRangeMin; ///< Minimum value for the port range (if dynamic)
-    int fPortRangeMax; ///< Maximum value for the port range (if dynamic)
-
     fair::mq::Transport fDefaultTransportType; ///< Default transport for the device
 
     /// Handles the initialization and the Init() method
@@ -484,15 +471,6 @@ class FairMQDevice : public FairMQStateMachine
 
     /// Attach (bind/connect) channels in the list
     void AttachChannels(std::vector<FairMQChannel*>& chans);
-
-    /// Sets up and connects/binds a socket to an endpoint
-    /// return a string with the actual endpoint if it happens
-    /// to stray from default.
-    bool ConnectEndpoint(FairMQSocket& socket, std::string& endpoint);
-    bool BindEndpoint(FairMQSocket& socket, std::string& endpoint);
-    /// Attaches the channel to all listed endpoints
-    /// the list is comma separated; the default method (bind/connect) is used.
-    /// to override default: prepend "@" to bind, "+" or ">" to connect endpoint.
     bool AttachChannel(FairMQChannel& ch);
 
     void HandleSingleChannelInput();

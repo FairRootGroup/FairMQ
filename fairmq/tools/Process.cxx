@@ -13,6 +13,7 @@
 #include <iostream>
 #include <sstream>
 #include <thread>
+#include <stdexcept>
 
 using namespace std;
 namespace bp = boost::process;

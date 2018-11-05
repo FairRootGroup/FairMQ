@@ -58,6 +58,9 @@ struct SUBOPT
         RCVKERNELSIZE,
         LINGER,
         RATELOGGING,    // logging rate
+        PORTRANGEMIN,
+        PORTRANGEMAX,
+        AUTOBIND,
         NUMSOCKETS,
         lastsocketkey
     };
@@ -74,6 +77,9 @@ struct SUBOPT
         /*[RCVKERNELSIZE] = */ "rcvKernelSize",
         /*[LINGER]        = */ "linger",
         /*[RATELOGGING]   = */ "rateLogging",
+        /*[PORTRANGEMIN]  = */ "portRangeMin",
+        /*[PORTRANGEMAX]  = */ "portRangeMax",
+        /*[AUTOBIND]      = */ "autoBind",
         /*[NUMSOCKETS]    = */ "numSockets",
         nullptr
     };

@@ -23,7 +23,7 @@ class FairMQSocket
     virtual std::string GetId() = 0;
 
     virtual bool Bind(const std::string& address) = 0;
-    virtual void Connect(const std::string& address) = 0;
+    virtual bool Connect(const std::string& address) = 0;
 
     virtual int Send(FairMQMessagePtr& msg, int timeout = -1) = 0;
     virtual int Receive(FairMQMessagePtr& msg, int timeout = -1) = 0;

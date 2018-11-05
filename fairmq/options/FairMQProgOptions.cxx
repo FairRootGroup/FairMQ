@@ -62,8 +62,6 @@ FairMQProgOptions::FairMQProgOptions()
         ("network-interface",      po::value<string>()->default_value("default"),  "Network interface to bind on (e.g. eth0, ib0..., default will try to detect the interface of the default route).")
         ("config-key",             po::value<string>(),                            "Use provided value instead of device id for fetching the configuration from the config file.")
         ("initialization-timeout", po::value<int   >()->default_value(120),        "Timeout for the initialization in seconds (when expecting dynamic initialization).")
-        ("port-range-min",         po::value<int   >()->default_value(22000),      "Start of the port range for dynamic initialization.")
-        ("port-range-max",         po::value<int   >()->default_value(32000),      "End of the port range for dynamic initialization.")
         ("print-channels",         po::value<bool  >()->implicit_value(true),      "Print registered channel endpoints in a machine-readable format (<channel name>:<min num subchannels>:<max num subchannels>)")
         ("shm-segment-size",       po::value<size_t>()->default_value(2000000000), "Shared memory: size of the shared memory segment (in bytes).")
         ("shm-monitor",            po::value<bool  >()->default_value(true),       "Shared memory: run monitor daemon.")
@@ -170,7 +168,6 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
             {
                 LOG(warn) << "--" << p->canonical_display_name();
             }
-            LOG(warn) << "No channels will be created (You can create them manually).";
         }
     }
     catch (exception& e)
@@ -270,12 +267,10 @@ void FairMQProgOptions::UpdateChannelInfo()
 // create key for variable map as follow : channelName.index.memberName
 void FairMQProgOptions::UpdateMQValues()
 {
-    for (const auto& p : fFairMQChannelMap)
-    {
+    for (const auto& p : fFairMQChannelMap) {
         int index = 0;
 
-        for (const auto& channel : p.second)
-        {
+        for (const auto& channel : p.second) {
             string typeKey = "chans." + p.first + "." + to_string(index) + ".type";
             string methodKey = "chans." + p.first + "." + to_string(index) + ".method";
             string addressKey = "chans." + p.first + "." + to_string(index) + ".address";
@@ -286,6 +281,9 @@ void FairMQProgOptions::UpdateMQValues()
             string rcvKernelSizeKey = "chans." + p.first + "." + to_string(index) + ".rcvKernelSize";
             string lingerKey = "chans." + p.first + "." + to_string(index) + ".linger";
             string rateLoggingKey = "chans." + p.first + "." + to_string(index) + ".rateLogging";
+            string portRangeMinKey = "chans." + p.first + "." + to_string(index) + ".portRangeMin";
+            string portRangeMaxKey = "chans." + p.first + "." + to_string(index) + ".portRangeMax";
+            string autoBindKey = "chans." + p.first + "." + to_string(index) + ".autoBind";
 
             fChannelKeyMap[typeKey] = ChannelKey{p.first, index, "type"};
             fChannelKeyMap[methodKey] = ChannelKey{p.first, index, "method"};
@@ -297,6 +295,9 @@ void FairMQProgOptions::UpdateMQValues()
             fChannelKeyMap[rcvKernelSizeKey] = ChannelKey{p.first, index, "rcvkernelSize"};
             fChannelKeyMap[lingerKey] = ChannelKey{p.first, index, "linger"};
             fChannelKeyMap[rateLoggingKey] = ChannelKey{p.first, index, "rateLogging"};
+            fChannelKeyMap[portRangeMinKey] = ChannelKey{p.first, index, "portRangeMin"};
+            fChannelKeyMap[portRangeMaxKey] = ChannelKey{p.first, index, "portRangeMax"};
+            fChannelKeyMap[autoBindKey] = ChannelKey{p.first, index, "autoBind"};
 
             UpdateVarMap<string>(typeKey, channel.GetType());
             UpdateVarMap<string>(methodKey, channel.GetMethod());
@@ -308,86 +309,67 @@ void FairMQProgOptions::UpdateMQValues()
             UpdateVarMap<int>(rcvKernelSizeKey, channel.GetRcvKernelSize());
             UpdateVarMap<int>(lingerKey, channel.GetLinger());
             UpdateVarMap<int>(rateLoggingKey, channel.GetRateLogging());
+            UpdateVarMap<int>(portRangeMinKey, channel.GetPortRangeMin());
+            UpdateVarMap<int>(portRangeMaxKey, channel.GetPortRangeMax());
+            UpdateVarMap<bool>(autoBindKey, channel.GetAutoBind());
 
             index++;
         }
+
         UpdateVarMap<int>("chans." + p.first + ".numSockets", index);
     }
 }
 
 int FairMQProgOptions::UpdateChannelValue(const string& channelName, int index, const string& member, const string& val)
 {
-    if (member == "type")
-    {
+    if (member == "type") {
         fFairMQChannelMap.at(channelName).at(index).UpdateType(val);
-        return 0;
-    }
-
-    if (member == "method")
-    {
+    } else if (member == "method") {
         fFairMQChannelMap.at(channelName).at(index).UpdateMethod(val);
-        return 0;
-    }
-
-    if (member == "address")
-    {
+    } else if (member == "address") {
         fFairMQChannelMap.at(channelName).at(index).UpdateAddress(val);
-        return 0;
-    }
-
-    if (member == "transport")
-    {
+    } else if (member == "transport") {
         fFairMQChannelMap.at(channelName).at(index).UpdateTransport(val);
-        return 0;
-    }
-    else
-    {
-        //if we get there it means something is wrong
+    } else {
         LOG(error)  << "update of FairMQChannel map failed for the following key: " << channelName << "." << index << "." << member;
         return 1;
     }
+
+    return 0;
 }
 
 int FairMQProgOptions::UpdateChannelValue(const string& channelName, int index, const string& member, int val)
 {
-    if (member == "sndBufSize")
-    {
+    if (member == "sndBufSize") {
         fFairMQChannelMap.at(channelName).at(index).UpdateSndBufSize(val);
-        return 0;
-    }
-
-    if (member == "rcvBufSize")
-    {
+    } else if (member == "rcvBufSize") {
         fFairMQChannelMap.at(channelName).at(index).UpdateRcvBufSize(val);
-        return 0;
-    }
-
-    if (member == "sndKernelSize")
-    {
+    } else if (member == "sndKernelSize") {
         fFairMQChannelMap.at(channelName).at(index).UpdateSndKernelSize(val);
-        return 0;
-    }
-
-    if (member == "rcvKernelSize")
-    {
+    } else if (member == "rcvKernelSize") {
         fFairMQChannelMap.at(channelName).at(index).UpdateRcvKernelSize(val);
-        return 0;
-    }
-
-    if (member == "linger")
-    {
+    } else if (member == "linger") {
         fFairMQChannelMap.at(channelName).at(index).UpdateLinger(val);
-        return 0;
+    } else if (member == "rateLogging") {
+        fFairMQChannelMap.at(channelName).at(index).UpdateRateLogging(val);
+    } else if (member == "portRangeMin") {
+        fFairMQChannelMap.at(channelName).at(index).UpdatePortRangeMin(val);
+    } else if (member == "portRangeMax") {
+        fFairMQChannelMap.at(channelName).at(index).UpdatePortRangeMax(val);
+    } else {
+        LOG(error)  << "update of FairMQChannel map failed for the following key: " << channelName << "." << index << "." << member;
+        return 1;
     }
 
-    if (member == "rateLogging")
-    {
-        fFairMQChannelMap.at(channelName).at(index).UpdateRateLogging(val);
+    return 0;
+}
+
+int FairMQProgOptions::UpdateChannelValue(const string& channelName, int index, const string& member, bool val)
+{
+    if (member == "autoBind") {
+        fFairMQChannelMap.at(channelName).at(index).UpdateAutoBind(val);
         return 0;
-    }
-    else
-    {
-        // if we get there it means something is wrong
+    } else {
         LOG(error)  << "update of FairMQChannel map failed for the following key: " << channelName << "." << index << "." << member;
         return 1;
     }

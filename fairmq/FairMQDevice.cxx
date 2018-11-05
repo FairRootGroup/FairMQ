@@ -16,7 +16,6 @@
 
 #include <list>
 #include <cstdlib>
-#include <random>
 #include <chrono>
 #include <mutex>
 #include <thread>
@@ -55,8 +54,6 @@ FairMQDevice::FairMQDevice(FairMQProgOptions* config, const fair::mq::tools::Ver
     , fInternalConfig(config ? nullptr : fair::mq::tools::make_unique<FairMQProgOptions>())
     , fConfig(config ? config : fInternalConfig.get())
     , fId()
-    , fPortRangeMin(22000)
-    , fPortRangeMax(32000)
     , fDefaultTransportType(fair::mq::Transport::DEFAULT)
     , fDataCallbacks(false)
     , fMsgInputs()
@@ -80,8 +77,6 @@ void FairMQDevice::InitWrapper()
 {
     fId = fConfig->GetValue<string>("id");
     fRate = fConfig->GetValue<float>("rate");
-    fPortRangeMin = fConfig->GetValue<int>("port-range-min");
-    fPortRangeMax = fConfig->GetValue<int>("port-range-max");
 
     try {
         fDefaultTransportType = fair::mq::TransportTypes.at(fConfig->GetValue<string>("transport"));
@@ -91,15 +86,11 @@ void FairMQDevice::InitWrapper()
         throw;
     }
 
-    for (auto& c : fConfig->GetFairMQMap())
-    {
-        if (fChannels.find(c.first) == fChannels.end())
-        {
+    for (auto& c : fConfig->GetFairMQMap()) {
+        if (fChannels.find(c.first) == fChannels.end()) {
             LOG(debug) << "Inserting new device channel from config: " << c.first;
             fChannels.insert(c);
-        }
-        else
-        {
+        } else {
             LOG(debug) << "Updating existing device channel from config: " << c.first;
             fChannels[c.first] = c.second;
         }
@@ -115,50 +106,44 @@ void FairMQDevice::InitWrapper()
     string networkInterface = fConfig->GetValue<string>("network-interface");
 
     // Fill the uninitialized channel containers
-    for (auto& mi : fChannels)
-    {
-        for (auto vi = mi.second.begin(); vi != mi.second.end(); ++vi)
-        {
-            // if (vi->fModified)
-            // {
-                // if (vi->fReset)
-                // {
-                //     vi->fSocket.reset();
-                // }
-                // set channel name: name + vector index
-                vi->fName = fair::mq::tools::ToString(mi.first, "[", vi - (mi.second).begin(), "]");
+    for (auto& mi : fChannels) {
+        int subChannelIndex = 0;
+        for (auto& vi : mi.second) {
+            // set channel name: name + vector index
+            vi.fName = fair::mq::tools::ToString(mi.first, "[", subChannelIndex, "]");
 
-                if (vi->fMethod == "bind")
-                {
-                    // if binding address is not specified, try getting it from the configured network interface
-                    if (vi->fAddress == "unspecified" || vi->fAddress == "")
-                    {
-                        // if the configured network interface is default, get its name from the default route
-                        if (networkInterface == "default")
-                        {
-                            networkInterface = fair::mq::tools::getDefaultRouteNetworkInterface();
-                        }
-                        vi->fAddress = "tcp://" + fair::mq::tools::getInterfaceIP(networkInterface) + ":1";
+            // set channel transport
+            if (vi.fTransportType == fair::mq::Transport::DEFAULT || vi.fTransportType == fTransportFactory->GetType()) {
+                LOG(debug) << vi.fName << ": using default transport";
+                vi.InitTransport(fTransportFactory);
+            } else {
+                LOG(debug) << vi.fName << ": channel transport (" << fair::mq::TransportNames.at(fDefaultTransportType) << ") overriden to " << fair::mq::TransportNames.at(vi.fTransportType);
+                vi.InitTransport(AddTransport(vi.fTransportType));
+            }
+
+            if (vi.fMethod == "bind") {
+                // if binding address is not specified, try getting it from the configured network interface
+                if (vi.fAddress == "unspecified" || vi.fAddress == "") {
+                    // if the configured network interface is default, get its name from the default route
+                    if (networkInterface == "default") {
+                        networkInterface = fair::mq::tools::getDefaultRouteNetworkInterface();
                     }
-                    // fill the uninitialized list
-                    uninitializedBindingChannels.push_back(&(*vi));
+                    vi.fAddress = "tcp://" + fair::mq::tools::getInterfaceIP(networkInterface) + ":1";
                 }
-                else if (vi->fMethod == "connect")
-                {
-                    // fill the uninitialized list
-                    uninitializedConnectingChannels.push_back(&(*vi));
-                }
-                else if (vi->fAddress.find_first_of("@+>") != string::npos)
-                {
-                    // fill the uninitialized list
-                    uninitializedConnectingChannels.push_back(&(*vi));
-                }
-                else
-                {
-                    LOG(error) << "Cannot update configuration. Socket method (bind/connect) for channel '" << vi->fName << "' not specified.";
-                    throw runtime_error(fair::mq::tools::ToString("Cannot update configuration. Socket method (bind/connect) for channel ", vi->fName, " not specified."));
-                }
-            // }
+                // fill the uninitialized list
+                uninitializedBindingChannels.push_back(&vi);
+            } else if (vi.fMethod == "connect") {
+                // fill the uninitialized list
+                uninitializedConnectingChannels.push_back(&vi);
+            } else if (vi.fAddress.find_first_of("@+>") != string::npos) {
+                // fill the uninitialized list
+                uninitializedConnectingChannels.push_back(&vi);
+            } else {
+                LOG(error) << "Cannot update configuration. Socket method (bind/connect) for channel '" << vi.fName << "' not specified.";
+                throw runtime_error(fair::mq::tools::ToString("Cannot update configuration. Socket method (bind/connect) for channel ", vi.fName, " not specified."));
+            }
+
+            subChannelIndex++;
         }
     }
 
@@ -166,8 +151,7 @@ void FairMQDevice::InitWrapper()
     // If necessary this could be handled in the same way as the connecting channels
     AttachChannels(uninitializedBindingChannels);
 
-    if (!uninitializedBindingChannels.empty())
-    {
+    if (!uninitializedBindingChannels.empty()) {
         LOG(error) << uninitializedBindingChannels.size() << " of the binding channels could not initialize. Initial configuration incomplete.";
         throw runtime_error(fair::mq::tools::ToString(uninitializedBindingChannels.size(), " of the binding channels could not initialize. Initial configuration incomplete."));
     }
@@ -183,22 +167,18 @@ void FairMQDevice::InitWrapper()
     // first attempt
     AttachChannels(uninitializedConnectingChannels);
     // if not all channels could be connected, update their address values from config and retry
-    while (!uninitializedConnectingChannels.empty())
-    {
+    while (!uninitializedConnectingChannels.empty()) {
         this_thread::sleep_for(chrono::milliseconds(sleepTimeInMS));
 
-        for (auto& chan : uninitializedConnectingChannels)
-        {
+        for (auto& chan : uninitializedConnectingChannels) {
             string key{"chans." + chan->GetChannelPrefix() + "." + chan->GetChannelIndex() + ".address"};
             string newAddress = fConfig->GetValue<string>(key);
-            if (newAddress != chan->GetAddress())
-            {
+            if (newAddress != chan->GetAddress()) {
                 chan->UpdateAddress(newAddress);
             }
         }
 
-        if (numAttempts++ > maxAttempts)
-        {
+        if (numAttempts++ > maxAttempts) {
             LOG(error) << "could not connect all channels after " << initializationTimeoutInS << " attempts";
             throw runtime_error(fair::mq::tools::ToString("could not connect all channels after ", initializationTimeoutInS, " attempts"));
         }
@@ -223,106 +203,54 @@ void FairMQDevice::AttachChannels(vector<FairMQChannel*>& chans)
 {
     auto itr = chans.begin();
 
-    while (itr != chans.end())
-    {
-        if ((*itr)->ValidateChannel())
-        {
-            if (AttachChannel(**itr))
-            {
+    while (itr != chans.end()) {
+        if ((*itr)->ValidateChannel()) {
+            (*itr)->Init();
+            if (AttachChannel(**itr)) {
                 (*itr)->SetModified(false);
+                // remove the channel from the uninitialized container
                 itr = chans.erase(itr);
-            }
-            else
-            {
+            } else {
                 LOG(error) << "failed to attach channel " << (*itr)->fName << " (" << (*itr)->fMethod << ")";
                 ++itr;
             }
-        }
-        else
-        {
+        } else {
             ++itr;
         }
     }
 }
 
-bool FairMQDevice::AttachChannel(FairMQChannel& ch)
+bool FairMQDevice::AttachChannel(FairMQChannel& chan)
 {
-    if (ch.fTransportType == fair::mq::Transport::DEFAULT || ch.fTransportType == fTransportFactory->GetType())
-    {
-        LOG(debug) << ch.fName << ": using default transport";
-        ch.InitTransport(fTransportFactory);
-    }
-    else
-    {
-        LOG(debug) << ch.fName << ": channel transport (" << fair::mq::TransportNames.at(fDefaultTransportType) << ") overriden to " << fair::mq::TransportNames.at(ch.fTransportType);
-        ch.InitTransport(AddTransport(ch.fTransportType));
-    }
-
     vector<string> endpoints;
-    boost::algorithm::split(endpoints, ch.fAddress, boost::algorithm::is_any_of(","));
-    for (auto& endpoint : endpoints)
-    {
-        //(re-)init socket
-        if (!ch.fSocket)
-        {
-            try
-            {
-                ch.fSocket = ch.fTransportFactory->CreateSocket(ch.fType, ch.fName);
-            }
-            catch (fair::mq::SocketError& se)
-            {
-                LOG(error) << se.what();
-                return false;
-            }
-        }
+    string chanAddress = chan.GetAddress();
+    boost::algorithm::split(endpoints, chanAddress, boost::algorithm::is_any_of(","));
 
-        // set linger duration (how long socket should wait for outstanding transfers before shutdown)
-        ch.fSocket->SetLinger(ch.fLinger);
-
-        // set high water marks
-        ch.fSocket->SetSndBufSize(ch.fSndBufSize);
-        ch.fSocket->SetRcvBufSize(ch.fRcvBufSize);
-
-        // set kernel transmit size (set it only if value is not the default value)
-        if (ch.fSndKernelSize != 0)
-        {
-            ch.fSocket->SetSndKernelSize(ch.fSndKernelSize);
-        }
-        if (ch.fRcvKernelSize != 0)
-        {
-            ch.fSocket->SetRcvKernelSize(ch.fRcvKernelSize);
-        }
-
+    for (auto& endpoint : endpoints) {
         // attach
-        bool bind = (ch.fMethod == "bind");
+        bool bind = (chan.GetMethod() == "bind");
         bool connectionModifier = false;
         string address = endpoint;
 
         // check if the default fMethod is overridden by a modifier
-        if (endpoint[0] == '+' || endpoint[0] == '>')
-        {
+        if (endpoint[0] == '+' || endpoint[0] == '>') {
             connectionModifier = true;
             bind = false;
             address = endpoint.substr(1);
-        }
-        else if (endpoint[0] == '@')
-        {
+        } else if (endpoint[0] == '@') {
             connectionModifier = true;
             bind = true;
             address = endpoint.substr(1);
         }
 
-        if (address.compare(0, 6, "tcp://") == 0)
-        {
+        if (address.compare(0, 6, "tcp://") == 0) {
             string addressString = address.substr(6);
             auto pos = addressString.find(':');
             string hostPart = addressString.substr(0, pos);
-            if (!(bind && hostPart == "*"))
-            {
+            if (!(bind && hostPart == "*")) {
                 string portPart = addressString.substr(pos + 1);
                 string resolvedHost = fair::mq::tools::getIpFromHostname(hostPart);
-                if (resolvedHost == "")
-                {
+                if (resolvedHost == "") {
                     return false;
                 }
                 address.assign("tcp://" + resolvedHost + ":" + portPart);
@@ -331,76 +259,35 @@ bool FairMQDevice::AttachChannel(FairMQChannel& ch)
 
         bool success = true;
         // make the connection
-        if (bind)
-        {
-            success = BindEndpoint(*ch.fSocket, address);
-        }
-        else
-        {
-            success = ConnectEndpoint(*ch.fSocket, address);
+        if (bind) {
+            success = chan.BindEndpoint(address);
+        } else {
+            success = chan.ConnectEndpoint(address);
         }
 
         // bind might bind to an address different than requested,
         // put the actual address back in the config
         endpoint.clear();
-        if (connectionModifier)
-        {
+        if (connectionModifier) {
             endpoint.push_back(bind?'@':'+');
         }
         endpoint += address;
 
-        LOG(debug) << "Attached channel " << ch.fName << " to " << endpoint << (bind ? " (bind) " : " (connect) ") << "(" << ch.fType << ")";
-
         // after the book keeping is done, exit in case of errors
-        if (!success)
-        {
+        if (!success) {
             return success;
+        } else {
+            LOG(debug) << "Attached channel " << chan.GetName() << " to " << endpoint << (bind ? " (bind) " : " (connect) ") << "(" << chan.GetType() << ")";
         }
     }
 
     // put the (possibly) modified address back in the channel object and config
-    string newAddress{boost::algorithm::join(endpoints, ",")};
-    if (newAddress != ch.fAddress)
-    {
-        ch.UpdateAddress(newAddress);
-        string key{"chans." + ch.GetChannelPrefix() + "." + ch.GetChannelIndex() + ".address"};
-        fConfig->SetValue(key, newAddress);
-    }
+    string newAddress(boost::algorithm::join(endpoints, ","));
+    if (newAddress != chanAddress) {
+        chan.UpdateAddress(newAddress);
 
-    return true;
-}
-
-bool FairMQDevice::ConnectEndpoint(FairMQSocket& socket, string& endpoint)
-{
-    socket.Connect(endpoint);
-
-    return true;
-}
-
-bool FairMQDevice::BindEndpoint(FairMQSocket& socket, string& endpoint)
-{
-    // number of attempts when choosing a random port
-    int maxAttempts = 1000;
-    int numAttempts = 0;
-
-    // initialize random generator
-    default_random_engine generator(chrono::system_clock::now().time_since_epoch().count());
-    uniform_int_distribution<int> randomPort(fPortRangeMin, fPortRangeMax);
-
-    // try to bind to the saved port. In case of failure, try random one.
-    while (!socket.Bind(endpoint))
-    {
-        LOG(debug) << "Could not bind to configured (TCP) port, trying random port in range " << fPortRangeMin << "-" << fPortRangeMax;
-        ++numAttempts;
-
-        if (numAttempts > maxAttempts)
-        {
-            LOG(error) << "could not bind to any (TCP) port in the given range after " << maxAttempts << " attempts";
-            return false;
-        }
-
-        size_t pos = endpoint.rfind(':');
-        endpoint = endpoint.substr(0, pos + 1) + fair::mq::tools::ToString(static_cast<int>(randomPort(generator)));
+        // update address in the config, it could have been modified during binding
+        fConfig->SetValue({"chans." + chan.GetPrefix() + "." + chan.GetIndex() + ".address"}, newAddress);
     }
 
     return true;
@@ -442,27 +329,6 @@ void FairMQDevice::SortChannel(const string& name, const bool reindex)
     else
     {
         LOG(error) << "Sorting failed: no channel with the name \"" << name << "\".";
-    }
-}
-
-void FairMQDevice::PrintChannel(const string& name)
-{
-    if (fChannels.find(name) != fChannels.end())
-    {
-        for (const auto& vi : fChannels[name])
-        {
-            LOG(info) << vi.fName << ": "
-                      << vi.fType << " | "
-                      << vi.fMethod << " | "
-                      << vi.fAddress << " | "
-                      << vi.fSndBufSize << " | "
-                      << vi.fRcvBufSize << " | "
-                      << vi.fRateLogging;
-        }
-    }
-    else
-    {
-        LOG(error) << "Printing failed: no channel with the name \"" << name << "\".";
     }
 }
 

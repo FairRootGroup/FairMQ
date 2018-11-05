@@ -39,8 +39,8 @@ auto RunSingleThreadedMultipart(string transport, string address) -> void {
 
     // TODO validate that fTransportFactory is not nullptr
     // TODO validate that fSocket is not nullptr
-    ASSERT_TRUE(push.ValidateChannel());
-    ASSERT_TRUE(pull.ValidateChannel());
+    ASSERT_TRUE(push.Validate());
+    ASSERT_TRUE(pull.Validate());
 
     {
         auto sentMsg = FairMQParts{};
@@ -76,7 +76,7 @@ auto RunMultiThreadedMultipart(string transport, string address) -> void
     pull.Connect(address);
 
     auto pusher = thread{[&push](){
-        ASSERT_TRUE(push.ValidateChannel());
+        ASSERT_TRUE(push.Validate());
 
         auto sentMsg = FairMQParts{};
         sentMsg.AddPart(push.NewSimpleMessage("1"));
@@ -87,7 +87,7 @@ auto RunMultiThreadedMultipart(string transport, string address) -> void
     }};
 
     auto puller = thread{[&pull](){
-        ASSERT_TRUE(pull.ValidateChannel());
+        ASSERT_TRUE(pull.Validate());
 
         auto receivedMsg = FairMQParts{};
         ASSERT_GE(pull.Receive(receivedMsg), 0);

@@ -99,16 +99,17 @@ bool FairMQSocketSHM::Bind(const string& address)
     return true;
 }
 
-void FairMQSocketSHM::Connect(const string& address)
+bool FairMQSocketSHM::Connect(const string& address)
 {
     // LOG(info) << "connect socket " << fId << " on " << address;
 
     if (zmq_connect(fSocket, address.c_str()) != 0)
     {
         LOG(error) << "Failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
-        // error here means incorrect configuration. exit if it happens.
-        exit(EXIT_FAILURE);
+        return false;
     }
+
+    return true;
 }
 
 int FairMQSocketSHM::Send(FairMQMessagePtr& msg, const int timeout)
