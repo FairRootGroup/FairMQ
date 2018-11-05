@@ -91,19 +91,21 @@ bool FairMQSocketZMQ::Bind(const string& address)
         LOG(error) << "Failed binding socket " << fId << ", reason: " << zmq_strerror(errno);
         return false;
     }
+
     return true;
 }
 
-void FairMQSocketZMQ::Connect(const string& address)
+bool FairMQSocketZMQ::Connect(const string& address)
 {
     // LOG(info) << "connect socket " << fId << " on " << address;
 
     if (zmq_connect(fSocket, address.c_str()) != 0)
     {
         LOG(error) << "Failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
-        // error here means incorrect configuration. exit if it happens.
-        exit(EXIT_FAILURE);
+        return false;
     }
+
+    return true;
 }
 
 int FairMQSocketZMQ::Send(FairMQMessagePtr& msg, const int timeout)

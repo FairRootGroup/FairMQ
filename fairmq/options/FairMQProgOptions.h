@@ -218,6 +218,7 @@ class FairMQProgOptions
     }
     int UpdateChannelValue(const std::string& channelName, int index, const std::string& member, const std::string& val);
     int UpdateChannelValue(const std::string& channelName, int index, const std::string& member, int val);
+    int UpdateChannelValue(const std::string& channelName, int index, const std::string& member, bool val);
 
     void UpdateChannelInfo();
 

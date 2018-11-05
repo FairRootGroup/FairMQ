@@ -42,7 +42,7 @@ class Socket final : public fair::mq::Socket
     auto GetId() -> std::string { return fId; }
 
     auto Bind(const std::string& address) -> bool override;
-    auto Connect(const std::string& address) -> void override;
+    auto Connect(const std::string& address) -> bool override;
 
     auto Send(MessagePtr& msg, int timeout = 0) -> int override;
     auto Receive(MessagePtr& msg, int timeout = 0) -> int override;

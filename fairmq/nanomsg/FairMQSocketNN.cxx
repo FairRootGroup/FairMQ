@@ -99,24 +99,26 @@ bool FairMQSocketNN::Bind(const string& address)
 {
     // LOG(info) << "bind socket " << fId << " on " << address;
 
-    int eid = nn_bind(fSocket, address.c_str());
-    if (eid < 0)
+    if (nn_bind(fSocket, address.c_str()) < 0)
     {
         LOG(error) << "failed binding socket " << fId << ", reason: " << nn_strerror(errno);
         return false;
     }
+
     return true;
 }
 
-void FairMQSocketNN::Connect(const string& address)
+bool FairMQSocketNN::Connect(const string& address)
 {
     // LOG(info) << "connect socket " << fId << " to " << address;
 
-    int eid = nn_connect(fSocket, address.c_str());
-    if (eid < 0)
+    if (nn_connect(fSocket, address.c_str()) < 0)
     {
         LOG(error) << "failed connecting socket " << fId << ", reason: " << nn_strerror(errno);
+        return false;
     }
+
+    return true;
 }
 
 int FairMQSocketNN::Send(FairMQMessagePtr& msg, const int timeout)

@@ -107,13 +107,14 @@ catch (const SocketError& e)
     return false;
 }
 
-auto Socket::Connect(const string& address) -> void
+auto Socket::Connect(const string& address) -> bool
 {
     auto addr = Context::VerifyAddress(address);
     ConnectControlSocket(addr);
     fContext.InitOfi(ConnectionType::Connect, addr);
     InitDataEndpoint();
     fWaitingForControlPeer = true;
+    return true;
 }
 
 auto Socket::BindControlSocket(Context::Address address) -> void

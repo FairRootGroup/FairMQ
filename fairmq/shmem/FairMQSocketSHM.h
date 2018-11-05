@@ -26,7 +26,7 @@ class FairMQSocketSHM final : public FairMQSocket
     std::string GetId() override { return fId; }
 
     bool Bind(const std::string& address) override;
-    void Connect(const std::string& address) override;
+    bool Connect(const std::string& address) override;
 
     int Send(FairMQMessagePtr& msg, const int timeout = -1) override;
     int Receive(FairMQMessagePtr& msg, const int timeout = -1) override;
