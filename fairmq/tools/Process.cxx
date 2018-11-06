@@ -15,6 +15,7 @@
 #include <thread>
 
 using namespace std;
+namespace bp = boost::process;
 
 namespace fair
 {
@@ -44,10 +45,17 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
     out << prefix << cmd << endl;
 
     // Execute command and capture stdout, add prefix line by line
-    boost::process::ipstream c_stdout;
-    boost::process::opstream c_stdin;
-    boost::process::child c(
-        cmd, boost::process::std_out > c_stdout, boost::process::std_in < c_stdin);
+    bp::ipstream c_stdout;
+    bp::opstream c_stdin;
+    bp::child c(cmd, bp::std_out > c_stdout, bp::std_in < c_stdin);
+
+    while (c.valid() && !c.running()) {
+        ;
+    }
+
+    if (!c.valid()) {
+        throw runtime_error("Can't execute the given process.");
+    }
 
     // Optionally, write to stdin of the child
     if (input != "") {
@@ -57,8 +65,7 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
     }
 
     string line;
-    while (getline(c_stdout, line))
-    {
+    while (c.running() && getline(c_stdout, line)) {
         // print full line thread-safe
         stringstream printLine;
         printLine << prefix << line << "\n";
