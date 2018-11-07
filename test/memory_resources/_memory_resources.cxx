@@ -87,7 +87,7 @@ TEST(MemoryResources, allocator_test)
         v.emplace_back(1);
         v.emplace_back(2);
         v.emplace_back(3);
-        EXPECT_TRUE((byte*)&(*v.end()) - (byte*)&(*v.begin()) == 3 * sizeof(testData));
+        EXPECT_TRUE((fair::mq::byte*)&(*v.end()) - (fair::mq::byte*)&(*v.begin()) == 3 * sizeof(testData));
         EXPECT_TRUE(testData::nallocated == 3);
     }
     EXPECT_TRUE(testData::nallocated == 0);

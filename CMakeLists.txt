@@ -6,7 +6,7 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-cmake_minimum_required(VERSION 3.9.4 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
 
 # Project ######################################################################
@@ -18,6 +18,12 @@ get_git_version()
 
 project(FairMQ VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 message(STATUS "${BWhite}${PROJECT_NAME}${CR} ${PROJECT_GIT_VERSION} from ${PROJECT_DATE}")
+
+if(BUILD_OFI_TRANSPORT)
+  set(PROJECT_MIN_CXX_STANDARD 17)
+else()
+  set(PROJECT_MIN_CXX_STANDARD 11)
+endif()
 
 set_fairmq_defaults()
 
@@ -47,14 +53,6 @@ endif()
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
-
-if(BUILD_FAIRMQ)
-  find_package2(PUBLIC Boost VERSION 1.64 REQUIRED
-    COMPONENTS container program_options thread system filesystem regex date_time
-  )
-  find_package2(PUBLIC FairLogger VERSION 1.2.0 REQUIRED)
-  find_package2(PRIVATE ZeroMQ VERSION 4.1.5 REQUIRED)
-endif()
 
 if(BUILD_NANOMSG_TRANSPORT)
   find_package2(PRIVATE nanomsg REQUIRED)
@@ -301,9 +299,9 @@ else()
 endif()
 message(STATUS "  ${BWhite}nanomsg_transport${CR}  ${nn_summary}")
 if(BUILD_OFI_TRANSPORT)
-  set(ofi_summary "${BGreen}YES${CR}    EXPERIMENTAL (disable with ${BMagenta}-DBUILD_OFI_TRANSPORT=OFF${CR})")
+  set(ofi_summary "${BGreen}YES${CR}    EXPERIMENTAL (requires C++17) (disable with ${BMagenta}-DBUILD_OFI_TRANSPORT=OFF${CR})")
 else()
-  set(ofi_summary "${BRed} NO${CR}    EXPERIMENTAL (default, enable with ${BMagenta}-DBUILD_OFI_TRANSPORT=ON${CR})")
+  set(ofi_summary "${BRed} NO${CR}    EXPERIMENTAL (requires C++17) (default, enable with ${BMagenta}-DBUILD_OFI_TRANSPORT=ON${CR})")
 endif()
 message(STATUS "  ${BWhite}ofi_transport${CR}      ${ofi_summary}")
 if(BUILD_DDS_PLUGIN)
