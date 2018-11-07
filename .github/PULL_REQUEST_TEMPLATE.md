@@ -1,6 +1,6 @@
 Describe your proposal.
 
-Mention any issue this PR is resolves or is related to.
+Mention any issue this PR resolves or is related to.
 
 ---
 
