@@ -47,6 +47,8 @@
 #
 #
 
+include(GoogleTest)
+
 function(add_testsuite suitename)
     cmake_parse_arguments(testsuite
         ""
@@ -73,13 +75,23 @@ function(add_testsuite suitename)
         target_compile_definitions("${target}" PUBLIC ${testsuite_DEFINITIONS})
     endif()
 
-    add_test(NAME "${suitename}" WORKING_DIRECTORY ${CMAKE_BINARY_DIR} COMMAND ${target})
+    # add_test(NAME "${suitename}" WORKING_DIRECTORY ${CMAKE_BINARY_DIR} COMMAND ${target})
     if(testsuite_TIMEOUT)
-        set_tests_properties("${suitename}" PROPERTIES TIMEOUT ${testsuite_TIMEOUT})
+        # set_tests_properties("${suitename}" PROPERTIES TIMEOUT ${testsuite_TIMEOUT})
+    else()
+        set(testsuite_TIMEOUT 10)
     endif()
     if(testsuite_RUN_SERIAL)
-        set_tests_properties("${suitename}" PROPERTIES RUN_SERIAL ${testsuite_RUN_SERIAL})
+        # set_tests_properties("${suitename}" PROPERTIES RUN_SERIAL ${testsuite_RUN_SERIAL})
+    else()
+        set(testsuite_RUN_SERIAL OFF)
     endif()
+    gtest_discover_tests(${target}
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      TEST_PREFIX ${suitename}.
+      PROPERTIES RUN_SERIAL ${testsuite_RUN_SERIAL}
+                 TIMEOUT ${testsuite_TIMEOUT}
+    )
 
     list(APPEND ALL_TEST_TARGETS ${target})
     set(ALL_TEST_TARGETS ${ALL_TEST_TARGETS} PARENT_SCOPE)
