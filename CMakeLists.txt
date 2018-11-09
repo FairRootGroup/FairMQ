@@ -67,6 +67,8 @@ if(BUILD_OFI_TRANSPORT)
     VERSION ${asiofi_OFI_VERSION}
     COMPONENTS ${asiofi_OFI_COMPONENTS}
   )
+  find_package2(PRIVATE AZMQ REQUIRED)
+  set(PROJECT_AZMQ_VERSION 1.0.2)
 endif()
 
 if(BUILD_NANOMSG_TRANSPORT)
@@ -195,6 +197,11 @@ if(BUILD_DDS_PLUGIN)
     DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
   )
 endif()
+if(BUILD_OFI_TRANSPORT)
+  install(FILES cmake/FindAZMQ.cmake
+    DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
+  )
+endif()
 if(BUILD_DOCS)
   install(DIRECTORY ${CMAKE_BINARY_DIR}/doxygen/html
     DESTINATION ${PROJECT_INSTALL_DATADIR}/docs
@@ -299,9 +306,9 @@ else()
 endif()
 message(STATUS "  ${BWhite}nanomsg_transport${CR}  ${nn_summary}")
 if(BUILD_OFI_TRANSPORT)
-  set(ofi_summary "${BGreen}YES${CR}    EXPERIMENTAL (requires C++17) (disable with ${BMagenta}-DBUILD_OFI_TRANSPORT=OFF${CR})")
+  set(ofi_summary "${BGreen}YES${CR}    EXPERIMENTAL (requires C++17, Linux) (disable with ${BMagenta}-DBUILD_OFI_TRANSPORT=OFF${CR})")
 else()
-  set(ofi_summary "${BRed} NO${CR}    EXPERIMENTAL (requires C++17) (default, enable with ${BMagenta}-DBUILD_OFI_TRANSPORT=ON${CR})")
+  set(ofi_summary "${BRed} NO${CR}    EXPERIMENTAL (requires C++17, Linux) (default, enable with ${BMagenta}-DBUILD_OFI_TRANSPORT=ON${CR})")
 endif()
 message(STATUS "  ${BWhite}ofi_transport${CR}      ${ofi_summary}")
 if(BUILD_DDS_PLUGIN)
