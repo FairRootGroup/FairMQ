@@ -222,6 +222,7 @@ if(BUILD_OFI_TRANSPORT)
   set(OFI_DEPS
     asiofi::asiofi
     Boost::container
+    AZMQ::AZMQ
   )
 endif()
 set(optional_deps ${NANOMSG_DEPS} ${OFI_DEPS})
