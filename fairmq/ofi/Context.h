@@ -48,9 +48,7 @@ class Context
     ~Context();
 
     // auto CreateOfiEndpoint() -> fid_ep*;
-    auto GetZmqVersion() const -> std::string;
     auto GetAsiofiVersion() const -> std::string;
-    auto GetZmqContext() const -> void* { return fZmqContext; }
     auto GetIoContext() -> boost::asio::io_context& { return fIoContext; }
     struct Address {
         std::string Protocol;
@@ -70,7 +68,6 @@ class Context
     auto Resume() -> void { LOG(debug) << "OFI transport: Resumed (NOOP - not implemented)."; }
 
   private:
-    void* fZmqContext;
     std::unique_ptr<asiofi::info> fOfiInfo;
     std::unique_ptr<asiofi::fabric> fOfiFabric;
     std::unique_ptr<asiofi::domain> fOfiDomain;

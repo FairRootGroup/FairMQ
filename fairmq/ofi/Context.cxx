@@ -21,7 +21,6 @@
 #include <string>
 #include <string.h>
 #include <sys/socket.h>
-#include <zmq.h>
 
 namespace fair
 {
@@ -33,15 +32,11 @@ namespace ofi
 using namespace std;
 
 Context::Context(int numberIoThreads)
-    : fZmqContext(zmq_ctx_new())
-    , fOfiInfo(nullptr)
+    : fOfiInfo(nullptr)
     , fOfiFabric(nullptr)
     , fOfiDomain(nullptr)
     , fIoWork(fIoContext)
 {
-    if (!fZmqContext)
-        throw ContextError{tools::ToString("Failed creating zmq context, reason: ", zmq_strerror(errno))};
-
     InitThreadPool(numberIoThreads);
 }
 
@@ -63,16 +58,6 @@ Context::~Context()
     fIoContext.stop();
     for (auto& thread : fThreadPool)
         thread.join();
-
-    if (zmq_ctx_term(fZmqContext) != 0)
-        LOG(error) << "Failed closing zmq context, reason: " << zmq_strerror(errno);
-}
-
-auto Context::GetZmqVersion() const -> string
-{
-    int major, minor, patch;
-    zmq_version(&major, &minor, &patch);
-    return tools::ToString(major, ".", minor, ".", patch);
 }
 
 auto Context::GetAsiofiVersion() const -> string
