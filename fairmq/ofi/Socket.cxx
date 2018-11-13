@@ -12,15 +12,17 @@
 #include <fairmq/Tools.h>
 #include <FairMQLogger.h>
 
-#include <arpa/inet.h>
 #include <asiofi.hpp>
+#include <azmq/message.hpp>
+#include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/post.hpp>
 #include <cstring>
-#include <netinet/in.h>
+#include <functional>
+#include <memory>
 #include <sstream>
 #include <string.h>
 #include <sys/socket.h>
-#include <zmq.h>
 
 #include <mutex>
 #include <condition_variable>
@@ -35,8 +37,7 @@ namespace ofi
 using namespace std;
 
 Socket::Socket(Context& context, const string& type, const string& name, const string& id /*= ""*/)
-    : fControlSocket(nullptr)
-    // , fMonitorSocket(nullptr)
+    : fContext(context)
     , fPassiveDataEndpoint(nullptr)
     , fDataEndpoint(nullptr)
     , fId(id + "." + name + "." + type)
@@ -44,46 +45,37 @@ Socket::Socket(Context& context, const string& type, const string& name, const s
     , fBytesRx(0)
     , fMessagesTx(0)
     , fMessagesRx(0)
-    , fContext(context)
     , fIoStrand(fContext.GetIoContext())
+    , fControlEndpoint(fIoStrand.context(), ZMQ_PAIR)
     , fSndTimeout(100)
     , fRcvTimeout(100)
+    , fQueue1(fIoStrand.context())
+    , fQueue2(fIoStrand.context())
 {
     if (type != "pair") {
         throw SocketError{tools::ToString("Socket type '", type, "' not implemented for ofi transport.")};
     } else {
-        fControlSocket = zmq_socket(fContext.GetZmqContext(), ZMQ_PAIR);
-
-        if (fControlSocket == nullptr)
-            throw SocketError{tools::ToString("Failed creating zmq meta socket ", fId, ", reason: ", zmq_strerror(errno))};
-
-        if (zmq_setsockopt(fControlSocket, ZMQ_IDENTITY, fId.c_str(), fId.length()) != 0)
-            throw SocketError{tools::ToString("Failed setting ZMQ_IDENTITY socket option, reason: ", zmq_strerror(errno))};
+        fControlEndpoint.set_option(azmq::socket::identity(fId));
 
         // Tell socket to try and send/receive outstanding messages for <linger> milliseconds before terminating.
         // Default value for ZeroMQ is -1, which is to wait forever.
-        int linger = 1000;
-        if (zmq_setsockopt(fControlSocket, ZMQ_LINGER, &linger, sizeof(linger)) != 0)
-            throw SocketError{tools::ToString("Failed setting ZMQ_LINGER socket option, reason: ", zmq_strerror(errno))};
+        fControlEndpoint.set_option(azmq::socket::linger(1000));
 
-        // TODO enable again and implement retries
-        // if (zmq_setsockopt(fControlSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0)
-        //     throw SocketError{tools::ToString("Failed setting ZMQ_SNDTIMEO socket option, reason: ", zmq_strerror(errno))};
-        //
-        // if (zmq_setsockopt(fControlSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0)
-        //     throw SocketError{tools::ToString("Failed setting ZMQ_RCVTIMEO socket option, reason: ", zmq_strerror(errno))};
-
-        // fMonitorSocket = zmq_socket(fContext.GetZmqContext(), ZMQ_PAIR);
-        //
-        // if (fMonitorSocket == nullptr)
-        //     throw SocketError{tools::ToString("Failed creating zmq monitor socket ", fId, ", reason: ", zmq_strerror(errno))};
-        //
-        // auto mon_addr = tools::ToString("inproc://", fId);
-        // if (zmq_socket_monitor(fControlSocket, mon_addr.c_str(), ZMQ_EVENT_ACCEPTED | ZMQ_EVENT_CONNECTED) < 0)
-        //     throw SocketError{tools::ToString("Failed setting up monitor on meta socket, reason: ", zmq_strerror(errno))};
-        //
-        // if (zmq_connect(fMonitorSocket, mon_addr.c_str()) != 0)
-        //     throw SocketError{tools::ToString("Failed connecting monitor socket to meta socket, reason: ", zmq_strerror(errno))};
+        // Setup internal queue
+        auto hashed_id = std::hash<std::string>()(fId);
+        auto queue_id = tools::ToString("inproc://QUEUE", hashed_id);
+        LOG(debug) << "OFI transport (" << fId << "): " << "Binding Q1: " << queue_id;
+        fQueue1.bind(queue_id);
+        LOG(debug) << "OFI transport (" << fId << "): " << "Connecting Q2: " << queue_id;
+        fQueue2.connect(queue_id);
+        azmq::socket::snd_hwm send_max(100);
+        azmq::socket::rcv_hwm recv_max(100);
+        fQueue1.set_option(send_max);
+        fQueue1.set_option(recv_max);
+        fQueue2.set_option(send_max);
+        fQueue2.set_option(recv_max);
+        fControlEndpoint.set_option(send_max);
+        fControlEndpoint.set_option(recv_max);
     }
 }
 
@@ -91,12 +83,14 @@ auto Socket::Bind(const string& address) -> bool
 try {
     auto addr = Context::VerifyAddress(address);
 
-    BindControlSocket(addr);
+    BindControlEndpoint(addr);
 
     // TODO make data port choice more robust
     addr.Port += 555;
     fLocalDataAddr = addr;
     BindDataEndpoint();
+
+    boost::asio::post(fIoStrand, std::bind(&Socket::SendQueueReader, this));
 
     return true;
 }
@@ -115,23 +109,24 @@ catch (const SocketError& e)
 auto Socket::Connect(const string& address) -> bool
 {
     auto addr = Context::VerifyAddress(address);
+    fRemoteDataAddr = addr;
 
-    ConnectControlSocket(addr);
+    ConnectControlEndpoint(addr);
 
-    ProcessControlMessage(
-        StaticUniquePtrDowncast<DataAddressAnnouncement>(ReceiveControlMessage()));
+    ReceiveDataAddressAnnouncement();
 
     ConnectDataEndpoint();
 }
 
-auto Socket::BindControlSocket(Context::Address address) -> void
+auto Socket::BindControlEndpoint(Context::Address address) -> void
 {
     auto addr = tools::ToString("tcp://", address.Ip, ":", address.Port);
 
-    if (zmq_bind(fControlSocket, addr.c_str()) != 0) {
-        if (errno == EADDRINUSE) throw SilentSocketError("EADDRINUSE");
-        throw SocketError(tools::ToString("Failed binding control socket ", fId, ", reason: ", zmq_strerror(errno)));
-    }
+    fControlEndpoint.bind(addr);
+    // if (zmq_bind(fControlSocket, addr.c_str()) != 0) {
+        // TODO if (errno == EADDRINUSE) throw SilentSocketError("EADDRINUSE");
+        // throw SocketError(tools::ToString("Failed binding control socket ", fId, ", reason: ", zmq_strerror(errno)));
+    // }
 
     LOG(debug) << "OFI transport (" << fId << "): control band bound to " << address;
 }
@@ -170,12 +165,13 @@ auto Socket::BindDataEndpoint() -> void
     LOG(debug) << "OFI transport (" << fId << "): data band connection accepted.";
 }
 
-auto Socket::ConnectControlSocket(Context::Address address) -> void
+auto Socket::ConnectControlEndpoint(Context::Address address) -> void
 {
     auto addr = tools::ToString("tcp://", address.Ip, ":", address.Port);
 
-    if (zmq_connect(fControlSocket, addr.c_str()) != 0)
-        throw SocketError(tools::ToString("Failed connecting control socket ", fId, ", reason: ", zmq_strerror(errno)));
+    fControlEndpoint.connect(addr);
+
+    LOG(debug) << "OFI transport (" << fId << "): control band connected to " << address;
 }
 
 auto Socket::ConnectDataEndpoint() -> void
@@ -191,8 +187,12 @@ auto Socket::ConnectDataEndpoint() -> void
     });
 }
 
-auto Socket::ProcessControlMessage(CtrlMsgPtr<DataAddressAnnouncement> daa) -> void
+auto Socket::ReceiveDataAddressAnnouncement() -> void
 {
+    azmq::message ctrl;
+    auto recv = fControlEndpoint.receive(ctrl);
+    assert(recv == sizeof(DataAddressAnnouncement)); (void)recv;
+    auto daa(static_cast<const DataAddressAnnouncement*>(ctrl.data()));
     assert(daa->type == ControlMessageType::DataAddressAnnouncement);
 
     sockaddr_in remoteAddr;
@@ -201,191 +201,130 @@ auto Socket::ProcessControlMessage(CtrlMsgPtr<DataAddressAnnouncement> daa) -> v
     remoteAddr.sin_addr.s_addr = daa->ipv4;
 
     auto addr = Context::ConvertAddress(remoteAddr);
+    addr.Protocol = fRemoteDataAddr.Protocol;
     LOG(debug) << "OFI transport (" << fId << "): Data address announcement of remote endpoint received: " << addr;
     fRemoteDataAddr = addr;
 }
 
 auto Socket::AnnounceDataAddress() -> void
-try {
+{
     // fLocalDataAddr = fDataEndpoint->get_local_address();
     // LOG(debug) << "Address of local ofi endpoint in socket " << fId << ": " << Context::ConvertAddress(fLocalDataAddr);
 
     // Create new data address announcement message
-    auto daa = MakeControlMessage<DataAddressAnnouncement>(&fCtrlMemPool);
+    auto daa = MakeControlMessage<DataAddressAnnouncement>();
     auto addr = Context::ConvertAddress(fLocalDataAddr);
-    daa->ipv4 = addr.sin_addr.s_addr;
-    daa->port = addr.sin_port;
+    daa.ipv4 = addr.sin_addr.s_addr;
+    daa.port = addr.sin_port;
 
-    SendControlMessage(StaticUniquePtrUpcast<ControlMessage>(std::move(daa)));
+    auto sent = fControlEndpoint.send(boost::asio::buffer(daa));
+    assert(sent == sizeof(addr)); (void)sent;
 
-    LOG(debug) << "OFI transport (" << fId << "): data address announced.";
-} catch (const SocketError& e) {
-    throw SocketError(tools::ToString("Failed to announce data address, reason: ", e.what()));
+    LOG(debug) << "OFI transport (" << fId << "): data band address " << fLocalDataAddr << " announced.";
 }
 
-auto Socket::SendControlMessage(CtrlMsgPtr<ControlMessage> ctrl) -> void
+auto Socket::Send(MessagePtr& msg, const int /*timeout*/) -> int
 {
-    assert(fControlSocket);
-    // LOG(debug) << "About to send control message: " << ctrl->DebugString();
+    LOG(debug) << "OFI transport (" << fId << "): ENTER Send: size=" << msg->GetSize();
 
-    // Serialize
-    struct ZmqMsg
-    {
-        zmq_msg_t msg;
-        ~ZmqMsg() { zmq_msg_close(&msg); }
-        operator zmq_msg_t*() { return &msg; }
-    } msg;
+    MessagePtr* msgptr(new std::unique_ptr<Message>(std::move(msg)));
+    try {
+        auto res = fQueue1.send(boost::asio::const_buffer(msgptr, sizeof(MessagePtr)), 0);
 
-    switch (ctrl->type) {
-        case ControlMessageType::DataAddressAnnouncement:
-            {
-                auto ret = zmq_msg_init_size(msg, sizeof(DataAddressAnnouncement));
-                (void)ret;
-                assert(ret == 0);
-                std::memcpy(zmq_msg_data(msg), ctrl.get(), sizeof(DataAddressAnnouncement));
-            }
-            break;
-        case ControlMessageType::PostBuffer:
-            {
-                auto ret = zmq_msg_init_size(msg, sizeof(PostBuffer));
-                (void)ret;
-                assert(ret == 0);
-                std::memcpy(zmq_msg_data(msg), ctrl.get(), sizeof(PostBuffer));
-            }
-            break;
-        default:
-            throw SocketError(tools::ToString("Cannot send control message of unknown type."));
-    }
-
-    // Send
-    if (zmq_msg_send(msg, fControlSocket, 0) == -1) {
-        throw SocketError(
-            tools::ToString("Failed to send control message, reason: ", zmq_strerror(errno)));
+        LOG(debug) << "OFI transport (" << fId << "): LEAVE Send";
+        return res;
+    } catch (const std::exception& e) {
+        msg = std::move(*msgptr);
+        LOG(error) << e.what();
+        return -1;
+    } catch (const boost::system::error_code& e) {
+        msg = std::move(*msgptr);
+        LOG(error) << e;
+        return -1;
     }
 }
 
-auto Socket::ReceiveControlMessage() -> CtrlMsgPtr<ControlMessage>
-{
-    assert(fControlSocket);
-
-    // Receive
-    struct ZmqMsg
-    {
-        zmq_msg_t msg;
-        ~ZmqMsg() { zmq_msg_close(&msg); }
-        operator zmq_msg_t*() { return &msg; }
-    } msg;
-    auto ret = zmq_msg_init(msg);
-    (void)ret;
-    assert(ret == 0);
-    if (zmq_msg_recv(msg, fControlSocket, 0) == -1) {
-        throw SocketError(
-            tools::ToString("Failed to receive control message, reason: ", zmq_strerror(errno)));
-    }
-
-    // Deserialize and sanity check
-    const void* msg_data = zmq_msg_data(msg);
-    const size_t msg_size = zmq_msg_size(msg);
-    (void)msg_size;
-    assert(msg_size >= sizeof(ControlMessage));
-
-    switch (static_cast<const ControlMessage*>(msg_data)->type) {
-        case ControlMessageType::DataAddressAnnouncement: {
-            assert(msg_size == sizeof(DataAddressAnnouncement));
-            auto daa = MakeControlMessage<DataAddressAnnouncement>(&fCtrlMemPool);
-            std::memcpy(daa.get(), msg_data, sizeof(DataAddressAnnouncement));
-            // LOG(debug) << "Received control message: " << ctrl->DebugString();
-            return StaticUniquePtrUpcast<ControlMessage>(std::move(daa));
-        }
-        case ControlMessageType::PostBuffer: {
-            assert(msg_size == sizeof(PostBuffer));
-            auto pb = MakeControlMessage<PostBuffer>(&fCtrlMemPool);
-            std::memcpy(pb.get(), msg_data, sizeof(PostBuffer));
-            // LOG(debug) << "Received control message: " << ctrl->DebugString();
-            return StaticUniquePtrUpcast<ControlMessage>(std::move(pb));
-        }
-        default:
-            throw SocketError(tools::ToString("Received control message of unknown type."));
-    }
-}
-
-auto Socket::Send(MessagePtr& msg, const int timeout) -> int { return SendImpl(msg, 0, timeout); }
-auto Socket::Receive(MessagePtr& msg, const int timeout) -> int { return ReceiveImpl(msg, 0, timeout); }
+auto Socket::Receive(MessagePtr& msg, const int timeout) -> int { return 0; /*ReceiveImpl(msg, 0, timeout);*/ }
 auto Socket::Send(std::vector<MessagePtr>& msgVec, const int timeout) -> int64_t { return SendImpl(msgVec, 0, timeout); }
 auto Socket::Receive(std::vector<MessagePtr>& msgVec, const int timeout) -> int64_t { return ReceiveImpl(msgVec, 0, timeout); }
 
-auto Socket::SendImpl(FairMQMessagePtr& msg, const int /*flags*/, const int /*timeout*/) -> int
-try {
+auto Socket::SendQueueReader() -> void
+{
+    fQueue2.async_receive(boost::asio::bind_executor(
+        fIoStrand,
+        [&](const boost::system::error_code& ec, azmq::message& zmsg, size_t bytes_transferred) {
+            if (!ec) {
+                OnSend(zmsg, bytes_transferred);
+            }
+        }));
+}
+
+auto Socket::OnSend(azmq::message& zmsg, size_t bytes_transferred) -> void
+{
+    LOG(debug) << "OFI transport (" << fId << "): ENTER OnSend: bytes_transferred=" << bytes_transferred;
+
+    MessagePtr msg(std::move(*(static_cast<MessagePtr*>(zmsg.buffer().data()))));
     auto size = msg->GetSize();
-    // LOG(debug) << "OFI transport (" << fId << "): ENTER SendImpl";
+
+    LOG(debug) << "OFI transport (" << fId << "): >>>>> OnSend: size=" << size;
 
     // Create and send control message
-    auto pb = MakeControlMessage<PostBuffer>(&fCtrlMemPool);
-    pb->size = size;
-    SendControlMessage(StaticUniquePtrUpcast<ControlMessage>(std::move(pb)));
-    // LOG(debug) << "OFI transport (" << fId << "): >>>>> SendImpl: Control message sent, size=" << size;
-    // LOG(debug) << "OFI transport (" << fId << "): >>>>> SendImpl: msg->GetData()=" << msg->GetData() << ",msg->GetSize()=" << msg->GetSize();
+    auto pb = MakeControlMessage<PostBuffer>();
+    pb.size = size;
+    fControlEndpoint.async_send(
+        azmq::message(boost::asio::buffer(pb)),
+        [&, msg2 = std::move(msg)](const boost::system::error_code& ec, size_t bytes_transferred2) mutable {
+            if (!ec) {
+                OnControlMessageSent(bytes_transferred2, std::move(msg2));
+            }
+        });
+
+    LOG(debug) << "OFI transport (" << fId << "): LEAVE OnSend";
+}
+
+auto Socket::OnControlMessageSent(size_t bytes_transferred, MessagePtr msg) -> void
+{
+    LOG(debug) << "OFI transport (" << fId << "): ENTER OnControlMessageSent: bytes_transferred=" << bytes_transferred;
+    assert(bytes_transferred == sizeof(PostBuffer));
+
+    auto size = msg->GetSize();
 
     if (size) {
         // Receive ack
-        auto ack = StaticUniquePtrDowncast<PostBuffer>(ReceiveControlMessage());
-        assert(ack.get());
-        auto size_ack = ack->size;
-        assert(size == size_ack);
-        // LOG(debug) << "OFI transport (" << fId << "): >>>>> SendImpl: Control ack received, size_ack=" << size_ack;
+        // azmq::message ctrl;
+        // auto recv = fControlEndpoint.receive(ctrl);
+        // assert(recv == sizeof(PostBuffer));
+        // (void)recv;
+        // auto ack(static_cast<const PostBuffer*>(ctrl.data()));
+        // assert(ack->type == ControlMessageType::PostBuffer);
+        // (void)ack;
+        // LOG(debug) << "OFI transport (" << fId << "): >>>>> SendImpl: Control ack
+        // received, size_ack=" << size_ack;
 
         boost::asio::mutable_buffer buffer(msg->GetData(), size);
         asiofi::memory_region mr(fContext.GetDomain(), buffer, asiofi::mr::access::send);
 
-        std::mutex m;
-        std::condition_variable cv;
-        bool completed(false);
-
-        fDataEndpoint->send(
-            buffer,
-            mr.desc(),
-            [&](boost::asio::mutable_buffer) {
-                {
-                    std::unique_lock<std::mutex> lk(m);
-                    completed = true;
-                }
-                cv.notify_one();
-                // LOG(debug) << "OFI transport (" << fId << "):     > SendImpl: Data buffer sent";
-            }
-        );
-        
-        {
-            std::unique_lock<std::mutex> lk(m);
-            cv.wait(lk, [&](){ return completed; });
-        }
-        // LOG(debug) << "OFI transport (" << fId << "): >>>>> SendImpl: Data send buffer posted";
+        fDataEndpoint->send(buffer, mr.desc(), [&, mr2 = std::move(mr)](boost::asio::mutable_buffer) {
+            LOG(debug) << "OFI transport (" << fId << "): >>>>> Data buffer sent";
+            fBytesTx += size;
+            fMessagesTx++;
+        });
     }
 
-    msg.reset(nullptr);
-    fBytesTx += size;
-    fMessagesTx++;
-
-    // LOG(debug) << "OFI transport (" << fId << "): LEAVE SendImpl";
-    return size;
-}
-catch (const SilentSocketError& e)
-{
-    return -2;
-}
-catch (const std::exception& e)
-{
-    LOG(error) << e.what();
-    return -1;
+    LOG(debug) << "OFI transport (" << fId << "): LEAVE OnControlMessageSent";
 }
 
 auto Socket::ReceiveImpl(FairMQMessagePtr& msg, const int /*flags*/, const int /*timeout*/) -> int
 try {
-    // LOG(debug) << "OFI transport (" << fId << "): ENTER ReceiveImpl";
+    LOG(debug) << "OFI transport (" << fId << "): ENTER ReceiveImpl";
     // Receive and process control message
-    auto pb = StaticUniquePtrDowncast<PostBuffer>(ReceiveControlMessage());
-    assert(pb.get());
+    azmq::message ctrl;
+    auto recv = fControlEndpoint.receive(ctrl);
+    assert(recv == sizeof(PostBuffer)); (void)recv;
+    auto pb(static_cast<const PostBuffer*>(ctrl.data()));
+    assert(pb->type == ControlMessageType::PostBuffer);
     auto size = pb->size;
-    // LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Control message received, size=" << size;
+    LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Control message received, size=" << size;
 
     // Receive data
     if (size) {
@@ -407,9 +346,10 @@ try {
         );
         // LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Data buffer posted";
 
-        auto ack = MakeControlMessage<PostBuffer>(&fCtrlMemPool);
-        ack->size = size;
-        SendControlMessage(StaticUniquePtrUpcast<ControlMessage>(std::move(ack)));
+        auto ack = MakeControlMessage<PostBuffer>();
+        ack.size = size;
+        auto sent = fControlEndpoint.send(boost::asio::buffer(ack));
+        assert(sent == sizeof(PostBuffer)); (void)sent;
         // LOG(debug) << "OFI transport (" << fId << "): <<<<< ReceiveImpl: Control Ack sent";
 
         {
@@ -606,113 +546,85 @@ auto Socket::ReceiveImpl(vector<FairMQMessagePtr>& /*msgVec*/, const int /*flags
     // }
 }
 
-auto Socket::Close() -> void
-{
-    if (zmq_close(fControlSocket) != 0)
-        throw SocketError(tools::ToString("Failed closing zmq meta socket, reason: ", zmq_strerror(errno)));
-
-    // if (zmq_close(fMonitorSocket) != 0)
-        // throw SocketError(tools::ToString("Failed closing zmq monitor socket, reason: ", zmq_strerror(errno)));
-}
+auto Socket::Close() -> void {}
 
 auto Socket::SetOption(const string& option, const void* value, size_t valueSize) -> void
 {
-    if (zmq_setsockopt(fControlSocket, GetConstant(option), value, valueSize) < 0) {
-        throw SocketError{tools::ToString("Failed setting socket option, reason: ", zmq_strerror(errno))};
-    }
+    // if (zmq_setsockopt(fControlSocket, GetConstant(option), value, valueSize) < 0) {
+        // throw SocketError{tools::ToString("Failed setting socket option, reason: ", zmq_strerror(errno))};
+    // }
 }
 
 auto Socket::GetOption(const string& option, void* value, size_t* valueSize) -> void
 {
-    if (zmq_getsockopt(fControlSocket, GetConstant(option), value, valueSize) < 0) {
-        throw SocketError{tools::ToString("Failed getting socket option, reason: ", zmq_strerror(errno))};
-    }
-}
-
-int Socket::GetLinger() const
-{
-    int value = 0;
-    size_t valueSize;
-    if (zmq_getsockopt(fControlSocket, ZMQ_LINGER, &value, &valueSize) < 0) {
-        throw SocketError(tools::ToString("failed getting ZMQ_LINGER, reason: ", zmq_strerror(errno)));
-    }
-    return value;
+    // if (zmq_getsockopt(fControlSocket, GetConstant(option), value, valueSize) < 0) {
+        // throw SocketError{tools::ToString("Failed getting socket option, reason: ", zmq_strerror(errno))};
+    // }
 }
 
 void Socket::SetLinger(const int value)
 {
-    if (zmq_setsockopt(fControlSocket, ZMQ_LINGER, &value, sizeof(value)) < 0) {
-        throw SocketError(tools::ToString("failed setting ZMQ_LINGER, reason: ", zmq_strerror(errno)));
-    }
+    azmq::socket::linger opt(value);
+    fControlEndpoint.set_option(opt);
 }
 
+int Socket::GetLinger() const
+{
+    azmq::socket::linger opt(0);
+    fControlEndpoint.get_option(opt);
+    return opt.value();
+}
 
 void Socket::SetSndBufSize(const int value)
 {
-    if (zmq_setsockopt(fControlSocket, ZMQ_SNDHWM, &value, sizeof(value)) < 0) {
-        throw SocketError(tools::ToString("failed setting ZMQ_SNDHWM, reason: ", zmq_strerror(errno)));
-    }
+    azmq::socket::snd_hwm opt(value);
+    fControlEndpoint.set_option(opt);
 }
 
 int Socket::GetSndBufSize() const
 {
-    int value = 0;
-    size_t valueSize;
-    if (zmq_getsockopt(fControlSocket, ZMQ_SNDHWM, &value, &valueSize) < 0) {
-        throw SocketError(tools::ToString("failed getting ZMQ_SNDHWM, reason: ", zmq_strerror(errno)));
-    }
-    return value;
+    azmq::socket::snd_hwm opt(0);
+    fControlEndpoint.get_option(opt);
+    return opt.value();
 }
 
 void Socket::SetRcvBufSize(const int value)
 {
-    if (zmq_setsockopt(fControlSocket, ZMQ_RCVHWM, &value, sizeof(value)) < 0) {
-        throw SocketError(tools::ToString("failed setting ZMQ_RCVHWM, reason: ", zmq_strerror(errno)));
-    }
+    azmq::socket::rcv_hwm opt(value);
+    fControlEndpoint.set_option(opt);
 }
 
 int Socket::GetRcvBufSize() const
 {
-    int value = 0;
-    size_t valueSize;
-    if (zmq_getsockopt(fControlSocket, ZMQ_RCVHWM, &value, &valueSize) < 0) {
-        throw SocketError(tools::ToString("failed getting ZMQ_RCVHWM, reason: ", zmq_strerror(errno)));
-    }
-    return value;
+    azmq::socket::rcv_hwm opt(0);
+    fControlEndpoint.get_option(opt);
+    return opt.value();
 }
 
 void Socket::SetSndKernelSize(const int value)
 {
-    if (zmq_setsockopt(fControlSocket, ZMQ_SNDBUF, &value, sizeof(value)) < 0) {
-        throw SocketError(tools::ToString("failed getting ZMQ_SNDBUF, reason: ", zmq_strerror(errno)));
-    }
+    azmq::socket::snd_buf opt(value);
+    fControlEndpoint.set_option(opt);
 }
 
 int Socket::GetSndKernelSize() const
 {
-    int value = 0;
-    size_t valueSize;
-    if (zmq_getsockopt(fControlSocket, ZMQ_SNDBUF, &value, &valueSize) < 0) {
-        throw SocketError(tools::ToString("failed getting ZMQ_SNDBUF, reason: ", zmq_strerror(errno)));
-    }
-    return value;
+    azmq::socket::snd_buf opt(0);
+    fControlEndpoint.get_option(opt);
+    return opt.value();
 }
 
 void Socket::SetRcvKernelSize(const int value)
 {
-    if (zmq_setsockopt(fControlSocket, ZMQ_RCVBUF, &value, sizeof(value)) < 0) {
-        throw SocketError(tools::ToString("failed getting ZMQ_RCVBUF, reason: ", zmq_strerror(errno)));
-    }
+    azmq::socket::rcv_buf opt(value);
+    fControlEndpoint.set_option(opt);
 }
 
 int Socket::GetRcvKernelSize() const
 {
-    int value = 0;
-    size_t valueSize;
-    if (zmq_getsockopt(fControlSocket, ZMQ_RCVBUF, &value, &valueSize) < 0) {
-        throw SocketError(tools::ToString("failed getting ZMQ_RCVBUF, reason: ", zmq_strerror(errno)));
-    }
-    return value;
+    azmq::socket::rcv_buf opt(0);
+    fControlEndpoint.get_option(opt);
+    return opt.value();
 }
 
 auto Socket::GetConstant(const string& constant) -> int

@@ -26,7 +26,7 @@ using namespace std;
 TransportFactory::TransportFactory(const string& id, const FairMQProgOptions* /*config*/)
 try : FairMQTransportFactory{id}
 {
-    LOG(debug) << "OFI transport: Using ZeroMQ (" << fContext.GetZmqVersion() << ") & "
+    LOG(debug) << "OFI transport: Using AZMQ & "
                << "asiofi (" << fContext.GetAsiofiVersion() << ")";
 }
 catch (ContextError& e)
@@ -65,19 +65,19 @@ auto TransportFactory::CreateSocket(const string& type, const string& name) -> S
     return SocketPtr{new Socket(fContext, type, name, GetId(), this)};
 }
 
-auto TransportFactory::CreatePoller(const vector<FairMQChannel>& channels) const -> PollerPtr
+auto TransportFactory::CreatePoller(const vector<FairMQChannel>& /*channels*/) const -> PollerPtr
 {
     throw runtime_error{"Not yet implemented (Poller)."};
     // return PollerPtr{new Poller(channels)};
 }
 
-auto TransportFactory::CreatePoller(const vector<FairMQChannel*>& channels) const -> PollerPtr
+auto TransportFactory::CreatePoller(const vector<FairMQChannel*>& /*channels*/) const -> PollerPtr
 {
     throw runtime_error{"Not yet implemented (Poller)."};
     // return PollerPtr{new Poller(channels)};
 }
 
-auto TransportFactory::CreatePoller(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList) const -> PollerPtr
+auto TransportFactory::CreatePoller(const unordered_map<string, vector<FairMQChannel>>& /*channelsMap*/, const vector<string>& /*channelList*/) const -> PollerPtr
 {
     throw runtime_error{"Not yet implemented (Poller)."};
     // return PollerPtr{new Poller(channelsMap, channelList)};
