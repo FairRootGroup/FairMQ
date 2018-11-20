@@ -19,7 +19,6 @@
 #include <boost/asio.hpp>
 #include <memory> // unique_ptr
 #include <netinet/in.h>
-class FairMQTransportFactory;
 
 namespace fair
 {
@@ -37,7 +36,7 @@ namespace ofi
 class Socket final : public fair::mq::Socket
 {
   public:
-    Socket(Context& factory, const std::string& type, const std::string& name, const std::string& id = "", FairMQTransportFactory* fac);
+    Socket(Context& context, const std::string& type, const std::string& name, const std::string& id = "");
     Socket(const Socket&) = delete;
     Socket operator=(const Socket&) = delete;
 
@@ -93,11 +92,16 @@ class Socket final : public fair::mq::Socket
     mutable azmq::socket fControlEndpoint;
     int fSndTimeout;
     int fRcvTimeout;
-    azmq::pair_socket fQueue1, fQueue2;
+    azmq::socket fSendQueueWrite, fSendQueueRead;
+    azmq::socket fRecvQueueWrite, fRecvQueueRead;
+    std::atomic<unsigned long> fSentCount;
 
     auto SendQueueReader() -> void;
     auto OnSend(azmq::message& msg, size_t bytes_transferred) -> void;
     auto OnControlMessageSent(size_t bytes_transferred, MessagePtr msg) -> void;
+    auto RecvControlQueueReader() -> void;
+    auto OnRecvControl(azmq::message& msg, size_t bytes_transferred) -> void;
+    auto OnReceive() -> void;
     auto ReceiveImpl(MessagePtr& msg, const int flags, const int timeout) -> int;
     auto SendImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
     auto ReceiveImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
