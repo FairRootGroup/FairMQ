@@ -24,13 +24,12 @@ namespace ofi
 using namespace std;
 
 TransportFactory::TransportFactory(const string& id, const FairMQProgOptions* /*config*/)
-try : FairMQTransportFactory{id}
+try : FairMQTransportFactory(id)
+    , fContext(*this, 1)
 {
     LOG(debug) << "OFI transport: Using AZMQ & "
                << "asiofi (" << fContext.GetAsiofiVersion() << ")";
-}
-catch (ContextError& e)
-{
+} catch (ContextError& e) {
     throw TransportFactoryError{e.what()};
 }
 

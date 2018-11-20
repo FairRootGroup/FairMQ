@@ -10,6 +10,7 @@
 #define FAIR_MQ_OFI_CONTEXT_H
 
 #include <FairMQLogger.h>
+#include <FairMQTransportFactory.h>
 
 #include <asiofi/connected_endpoint.hpp>
 #include <asiofi/domain.hpp>
@@ -44,7 +45,7 @@ enum class Direction : bool { Receive, Transmit };
 class Context
 {
   public:
-    Context(int numberIoThreads = 1);
+    Context(FairMQTransportFactory& receiveFactory, int numberIoThreads = 1);
     ~Context();
 
     // auto CreateOfiEndpoint() -> fid_ep*;
@@ -66,6 +67,7 @@ class Context
     auto GetDomain() const -> const asiofi::domain& { return *fOfiDomain; }
     auto Interrupt() -> void { LOG(debug) << "OFI transport: Interrupted (NOOP - not implemented)."; }
     auto Resume() -> void { LOG(debug) << "OFI transport: Resumed (NOOP - not implemented)."; }
+    auto MakeReceiveMessage(size_t size) -> MessagePtr;
 
   private:
     std::unique_ptr<asiofi::info> fOfiInfo;
@@ -74,6 +76,7 @@ class Context
     boost::asio::io_context fIoContext;
     boost::asio::io_context::work fIoWork;
     std::vector<std::thread> fThreadPool;
+    FairMQTransportFactory& fReceiveFactory;
 
     auto InitThreadPool(int numberIoThreads) -> void;
     auto InitOfi(ConnectionType type, Address address) -> void;

@@ -31,11 +31,12 @@ namespace ofi
 
 using namespace std;
 
-Context::Context(int numberIoThreads)
+Context::Context(FairMQTransportFactory& receiveFactory, int numberIoThreads)
     : fOfiInfo(nullptr)
     , fOfiFabric(nullptr)
     , fOfiDomain(nullptr)
     , fIoWork(fIoContext)
+    , fReceiveFactory(receiveFactory)
 {
     InitThreadPool(numberIoThreads);
 }
@@ -174,6 +175,11 @@ auto Context::VerifyAddress(const std::string& address) -> Address
         throw ContextError("Wrong protocol: Supported protocols are: tcp:// and verbs://");
 
     return addr;
+}
+
+auto Context::MakeReceiveMessage(size_t size) -> MessagePtr
+{
+    return fReceiveFactory.CreateMessage(size);
 }
 
 } /* namespace ofi */
