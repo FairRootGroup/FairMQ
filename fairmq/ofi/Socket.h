@@ -15,6 +15,7 @@
 #include <fairmq/ofi/ControlMessages.h>
 
 #include <asiofi/connected_endpoint.hpp>
+#include <asiofi/semaphore.hpp>
 #include <azmq/socket.hpp>
 #include <boost/asio.hpp>
 #include <memory> // unique_ptr
@@ -94,7 +95,7 @@ class Socket final : public fair::mq::Socket
     int fRcvTimeout;
     azmq::socket fSendQueueWrite, fSendQueueRead;
     azmq::socket fRecvQueueWrite, fRecvQueueRead;
-    std::atomic<unsigned long> fSentCount;
+    asiofi::semaphore fSendSem, fRecvSem;
 
     auto SendQueueReader() -> void;
     auto OnSend(azmq::message& msg, size_t bytes_transferred) -> void;
