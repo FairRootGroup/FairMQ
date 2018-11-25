@@ -15,6 +15,8 @@
 #include <fairmq/ofi/ControlMessages.h>
 
 #include <asiofi/connected_endpoint.hpp>
+#include <asiofi/memory_resources.hpp>
+#include <asiofi/passive_endpoint.hpp>
 #include <asiofi/semaphore.hpp>
 #include <azmq/socket.hpp>
 #include <boost/asio.hpp>
@@ -51,7 +53,7 @@ class Socket final : public fair::mq::Socket
     auto Send(std::vector<MessagePtr>& msgVec, int timeout = 0) -> int64_t override;
     auto Receive(std::vector<MessagePtr>& msgVec, int timeout = 0) -> int64_t override;
 
-    auto GetSocket() const -> void* { return fControlEndpoint.native_handle(); }
+    auto GetSocket() const -> void* { return nullptr; }
 
     void SetLinger(const int value) override;
     int GetLinger() const override;
@@ -80,40 +82,40 @@ class Socket final : public fair::mq::Socket
 
   private:
     Context& fContext;
-    std::unique_ptr<asiofi::passive_endpoint> fPassiveDataEndpoint;
-    std::unique_ptr<asiofi::connected_endpoint> fDataEndpoint;
+    std::unique_ptr<asiofi::passive_endpoint> fPassiveEndpoint;
+    std::unique_ptr<asiofi::connected_endpoint> fDataEndpoint, fControlEndpoint;
     std::string fId;
     std::atomic<unsigned long> fBytesTx;
     std::atomic<unsigned long> fBytesRx;
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
-    Context::Address fRemoteDataAddr;
-    Context::Address fLocalDataAddr;
+    Context::Address fRemoteAddr;
+    Context::Address fLocalAddr;
     boost::asio::io_service::strand fIoStrand;
-    mutable azmq::socket fControlEndpoint;
     int fSndTimeout;
     int fRcvTimeout;
     azmq::socket fSendQueueWrite, fSendQueueRead;
     azmq::socket fRecvQueueWrite, fRecvQueueRead;
     asiofi::semaphore fSendSem, fRecvSem;
+    asiofi::allocated_pool_resource fControlMemPool;
+    std::atomic<bool> fNeedOfiMemoryRegistration;
 
     auto SendQueueReader() -> void;
     auto OnSend(azmq::message& msg, size_t bytes_transferred) -> void;
-    auto OnControlMessageSent(size_t bytes_transferred, MessagePtr msg) -> void;
     auto RecvControlQueueReader() -> void;
-    auto OnRecvControl(azmq::message& msg, size_t bytes_transferred) -> void;
+    auto OnRecvControl(ofi::unique_ptr<PostBuffer> ctrl) -> void;
     auto OnReceive() -> void;
     auto ReceiveImpl(MessagePtr& msg, const int flags, const int timeout) -> int;
     auto SendImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
     auto ReceiveImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
 
     // auto WaitForControlPeer() -> void;
-    auto AnnounceDataAddress() -> void;
-    auto ConnectControlEndpoint(Context::Address address) -> void;
-    auto BindControlEndpoint(Context::Address address) -> void;
+    // auto AnnounceDataAddress() -> void;
+    auto BindControlEndpoint() -> void;
     auto BindDataEndpoint() -> void;
+    auto ConnectControlEndpoint() -> void;
     auto ConnectDataEndpoint() -> void;
-    auto ReceiveDataAddressAnnouncement() -> void;
+    // auto ReceiveDataAddressAnnouncement() -> void;
 }; /* class Socket */
 
 struct SilentSocketError : SocketError { using SocketError::SocketError; };
