@@ -31,12 +31,15 @@ namespace ofi
 
 using namespace std;
 
-Context::Context(FairMQTransportFactory& receiveFactory, int numberIoThreads)
+Context::Context(FairMQTransportFactory& sendFactory,
+                 FairMQTransportFactory& receiveFactory,
+                 int numberIoThreads)
     : fOfiInfo(nullptr)
     , fOfiFabric(nullptr)
     , fOfiDomain(nullptr)
     , fIoWork(fIoContext)
     , fReceiveFactory(receiveFactory)
+    , fSendFactory(sendFactory)
 {
     InitThreadPool(numberIoThreads);
 }
@@ -66,72 +69,26 @@ auto Context::GetAsiofiVersion() const -> string
     return ASIOFI_VERSION;
 }
 
-auto Context::InitOfi(ConnectionType type, Address addr) -> void
+auto Context::InitOfi(Address addr) -> void
 {
-    assert(!fOfiInfo);
-    assert(!fOfiFabric);
-    assert(!fOfiDomain);
+    if (!fOfiInfo) {
+      assert(!fOfiFabric);
+      assert(!fOfiDomain);
 
-    asiofi::hints hints;
-    if (addr.Protocol == "tcp") {
-        hints.set_provider("sockets");
-    } else if (addr.Protocol == "verbs") {
-        hints.set_provider("verbs");
+      asiofi::hints hints;
+      if (addr.Protocol == "tcp") {
+          hints.set_provider("sockets");
+      } else if (addr.Protocol == "verbs") {
+          hints.set_provider("verbs");
+      }
+      fOfiInfo = tools::make_unique<asiofi::info>(addr.Ip.c_str(), std::to_string(addr.Port).c_str(), 0, hints);
+      // LOG(debug) << "OFI transport: " << *fOfiInfo;
+
+      fOfiFabric = tools::make_unique<asiofi::fabric>(*fOfiInfo);
+
+      fOfiDomain = tools::make_unique<asiofi::domain>(*fOfiFabric);
     }
-    if (type == ConnectionType::Bind) {
-        fOfiInfo = tools::make_unique<asiofi::info>(addr.Ip.c_str(), std::to_string(addr.Port).c_str(), FI_SOURCE, hints);
-    } else {
-        fOfiInfo = tools::make_unique<asiofi::info>(addr.Ip.c_str(), std::to_string(addr.Port).c_str(), 0, hints);
-    }
-    // LOG(debug) << "OFI transport: " << *fOfiInfo;
-
-    fOfiFabric = tools::make_unique<asiofi::fabric>(*fOfiInfo);
-
-    fOfiDomain = tools::make_unique<asiofi::domain>(*fOfiFabric);
 }
-
-auto Context::MakeOfiPassiveEndpoint(Address addr) -> unique_ptr<asiofi::passive_endpoint>
-{
-    InitOfi(ConnectionType::Bind, addr);
-
-    return tools::make_unique<asiofi::passive_endpoint>(fIoContext, *fOfiFabric);
-}
-
-auto Context::MakeOfiConnectedEndpoint(const asiofi::info& info) -> std::unique_ptr<asiofi::connected_endpoint>
-{
-    assert(fOfiDomain);
-
-    return tools::make_unique<asiofi::connected_endpoint>(fIoContext, *fOfiDomain, info);
-}
-
-auto Context::MakeOfiConnectedEndpoint(Address addr) -> std::unique_ptr<asiofi::connected_endpoint>
-{
-    InitOfi(ConnectionType::Connect, addr);
-
-    return tools::make_unique<asiofi::connected_endpoint>(fIoContext, *fOfiDomain);
-}
-// auto Context::CreateOfiEndpoint() -> fid_ep*
-// {
-    // assert(fOfiDomain);
-    // assert(fOfiInfo);
-    // fid_ep* ep = nullptr;
-    // fi_context ctx;
-    // auto ret = fi_endpoint(fOfiDomain, fOfiInfo, &ep, &ctx);
-    // if (ret != FI_SUCCESS)
-        // throw ContextError{tools::ToString("Failed creating ofi endpoint, reason: ", fi_strerror(ret))};
-
-    //assert(fOfiEventQueue);
-    //ret = fi_ep_bind(ep, &fOfiEventQueue->fid, 0);
-    //if (ret != FI_SUCCESS)
-    //    throw ContextError{tools::ToString("Failed binding ofi event queue to ofi endpoint, reason: ", fi_strerror(ret))};
-
-    // assert(fOfiAddressVector);
-    // ret = fi_ep_bind(ep, &fOfiAddressVector->fid, 0);
-    // if (ret != FI_SUCCESS)
-        // throw ContextError{tools::ToString("Failed binding ofi address vector to ofi endpoint, reason: ", fi_strerror(ret))};
-//
-    // return ep;
-// }
 
 auto Context::ConvertAddress(std::string address) -> Address
 {
@@ -180,6 +137,11 @@ auto Context::VerifyAddress(const std::string& address) -> Address
 auto Context::MakeReceiveMessage(size_t size) -> MessagePtr
 {
     return fReceiveFactory.CreateMessage(size);
+}
+
+auto Context::MakeSendMessage(size_t size) -> MessagePtr
+{
+    return fSendFactory.CreateMessage(size);
 }
 
 } /* namespace ofi */

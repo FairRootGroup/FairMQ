@@ -11,6 +11,7 @@
 
 #include <FairMQLogger.h>
 #include <boost/asio/buffer.hpp>
+#include <boost/container/pmr/memory_resource.hpp>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -54,6 +55,28 @@ struct PostBuffer : ControlMessage
 {
     uint64_t size;   // buffer size (size_t)
 };
+
+template<typename T>
+using unique_ptr = std::unique_ptr<T, std::function<void(T*)>>;
+
+template<typename T, typename... Args>
+auto MakeControlMessageWithPmr(boost::container::pmr::memory_resource* pmr, Args&&... args)
+    -> ofi::unique_ptr<T>
+{
+    void* mem = pmr->allocate(sizeof(T));
+    T* ctrl = new (mem) T(std::forward<Args>(args)...);
+
+    if (std::is_same<T, DataAddressAnnouncement>::value) {
+        ctrl->type = ControlMessageType::DataAddressAnnouncement;
+    } else if (std::is_same<T, PostBuffer>::value) {
+        ctrl->type = ControlMessageType::PostBuffer;
+    }
+
+    return ofi::unique_ptr<T>(ctrl, [=](T* p) {
+        p->~T();
+        pmr->deallocate(p, sizeof(T));
+    });
+}
 
 template<typename T, typename... Args>
 auto MakeControlMessage(Args&&... args) -> T

@@ -25,7 +25,7 @@ using namespace std;
 
 TransportFactory::TransportFactory(const string& id, const FairMQProgOptions* /*config*/)
 try : FairMQTransportFactory(id)
-    , fContext(*this, 1)
+    , fContext(*this, *this, 1)
 {
     LOG(debug) << "OFI transport: Using AZMQ & "
                << "asiofi (" << fContext.GetAsiofiVersion() << ")";

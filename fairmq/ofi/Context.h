@@ -12,11 +12,9 @@
 #include <FairMQLogger.h>
 #include <FairMQTransportFactory.h>
 
-#include <asiofi/connected_endpoint.hpp>
 #include <asiofi/domain.hpp>
 #include <asiofi/fabric.hpp>
 #include <asiofi/info.hpp>
-#include <asiofi/passive_endpoint.hpp>
 #include <boost/asio/io_context.hpp>
 #include <memory>
 #include <netinet/in.h>
@@ -33,9 +31,6 @@ namespace mq
 namespace ofi
 {
 
-enum class ConnectionType : bool { Bind, Connect };
-enum class Direction : bool { Receive, Transmit };
-
 /**
  * @class Context Context.h <fairmq/ofi/Context.h>
  * @brief Transport-wide context
@@ -45,10 +40,11 @@ enum class Direction : bool { Receive, Transmit };
 class Context
 {
   public:
-    Context(FairMQTransportFactory& receiveFactory, int numberIoThreads = 1);
+    Context(FairMQTransportFactory& sendFactory,
+            FairMQTransportFactory& receiveFactory,
+            int numberIoThreads = 1);
     ~Context();
 
-    // auto CreateOfiEndpoint() -> fid_ep*;
     auto GetAsiofiVersion() const -> std::string;
     auto GetIoContext() -> boost::asio::io_context& { return fIoContext; }
     struct Address {
@@ -57,17 +53,18 @@ class Context
         unsigned int Port;
         friend auto operator<<(std::ostream& os, const Address& a) -> std::ostream& { return os << a.Protocol << "://" << a.Ip << ":" << a.Port; }
     };
-    auto MakeOfiPassiveEndpoint(Address addr) -> std::unique_ptr<asiofi::passive_endpoint>;
-    auto MakeOfiConnectedEndpoint(Address addr) -> std::unique_ptr<asiofi::connected_endpoint>;
-    auto MakeOfiConnectedEndpoint(const asiofi::info& info) -> std::unique_ptr<asiofi::connected_endpoint>;
+    auto InitOfi(Address address) -> void;
+    auto GetOfiInfo() const -> const asiofi::info& { return *fOfiInfo; }
+    auto GetOfiFabric() const -> const asiofi::fabric& { return *fOfiFabric; }
+    auto GetOfiDomain() const -> const asiofi::domain& { return *fOfiDomain; }
     static auto ConvertAddress(std::string address) -> Address;
     static auto ConvertAddress(Address address) -> sockaddr_in;
     static auto ConvertAddress(sockaddr_in address) -> Address;
     static auto VerifyAddress(const std::string& address) -> Address;
-    auto GetDomain() const -> const asiofi::domain& { return *fOfiDomain; }
     auto Interrupt() -> void { LOG(debug) << "OFI transport: Interrupted (NOOP - not implemented)."; }
     auto Resume() -> void { LOG(debug) << "OFI transport: Resumed (NOOP - not implemented)."; }
     auto MakeReceiveMessage(size_t size) -> MessagePtr;
+    auto MakeSendMessage(size_t size) -> MessagePtr;
 
   private:
     std::unique_ptr<asiofi::info> fOfiInfo;
@@ -77,9 +74,9 @@ class Context
     boost::asio::io_context::work fIoWork;
     std::vector<std::thread> fThreadPool;
     FairMQTransportFactory& fReceiveFactory;
+    FairMQTransportFactory& fSendFactory;
 
     auto InitThreadPool(int numberIoThreads) -> void;
-    auto InitOfi(ConnectionType type, Address address) -> void;
 }; /* class Context */
 
 struct ContextError : std::runtime_error { using std::runtime_error::runtime_error; };
