@@ -34,10 +34,7 @@ using namespace std;
 Context::Context(FairMQTransportFactory& sendFactory,
                  FairMQTransportFactory& receiveFactory,
                  int numberIoThreads)
-    : fOfiInfo(nullptr)
-    , fOfiFabric(nullptr)
-    , fOfiDomain(nullptr)
-    , fIoWork(fIoContext)
+    : fIoWork(fIoContext)
     , fReceiveFactory(receiveFactory)
     , fSendFactory(sendFactory)
 {
@@ -67,27 +64,6 @@ Context::~Context()
 auto Context::GetAsiofiVersion() const -> string
 {
     return ASIOFI_VERSION;
-}
-
-auto Context::InitOfi(Address addr) -> void
-{
-    if (!fOfiInfo) {
-      assert(!fOfiFabric);
-      assert(!fOfiDomain);
-
-      asiofi::hints hints;
-      if (addr.Protocol == "tcp") {
-          hints.set_provider("sockets");
-      } else if (addr.Protocol == "verbs") {
-          hints.set_provider("verbs");
-      }
-      fOfiInfo = tools::make_unique<asiofi::info>(addr.Ip.c_str(), std::to_string(addr.Port).c_str(), 0, hints);
-      // LOG(debug) << "OFI transport: " << *fOfiInfo;
-
-      fOfiFabric = tools::make_unique<asiofi::fabric>(*fOfiInfo);
-
-      fOfiDomain = tools::make_unique<asiofi::domain>(*fOfiFabric);
-    }
 }
 
 auto Context::ConvertAddress(std::string address) -> Address
