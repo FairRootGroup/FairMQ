@@ -38,6 +38,9 @@ using namespace std;
 
 Socket::Socket(Context& context, const string& type, const string& name, const string& id /*= ""*/)
     : fContext(context)
+    , fOfiInfo(nullptr)
+    , fOfiFabric(nullptr)
+    , fOfiDomain(nullptr)
     , fPassiveEndpoint(nullptr)
     , fDataEndpoint(nullptr)
     , fControlEndpoint(nullptr)
@@ -87,6 +90,32 @@ Socket::Socket(Context& context, const string& type, const string& name, const s
     }
 }
 
+auto Socket::InitOfi(Address addr) -> void
+{
+    if (!fOfiInfo) {
+      assert(!fOfiFabric);
+      assert(!fOfiDomain);
+
+      asiofi::hints hints;
+      if (addr.Protocol == "tcp") {
+          hints.set_provider("sockets");
+      } else if (addr.Protocol == "verbs") {
+          hints.set_provider("verbs");
+      }
+      if (fRemoteAddr == addr) {
+          fOfiInfo = tools::make_unique<asiofi::info>(addr.Ip.c_str(), std::to_string(addr.Port).c_str(), 0, hints);
+      } else {
+          fOfiInfo = tools::make_unique<asiofi::info>(addr.Ip.c_str(), std::to_string(addr.Port).c_str(), FI_SOURCE, hints);
+      }
+
+      // LOG(debug) << "OFI transport: " << *fOfiInfo;
+
+      fOfiFabric = tools::make_unique<asiofi::fabric>(*fOfiInfo);
+
+      fOfiDomain = tools::make_unique<asiofi::domain>(*fOfiFabric);
+    }
+}
+
 auto Socket::Bind(const string& addr) -> bool
 try {
     fLocalAddr = Context::VerifyAddress(addr);
@@ -94,14 +123,12 @@ try {
         fNeedOfiMemoryRegistration = true;
     }
 
-    fContext.InitOfi(fLocalAddr);
+    InitOfi(fLocalAddr);
 
-    fPassiveEndpoint = tools::make_unique<asiofi::passive_endpoint>(fIoStrand.context(), fContext.GetOfiFabric());
+    fPassiveEndpoint = tools::make_unique<asiofi::passive_endpoint>(fIoStrand.context(), *fOfiFabric);
     fPassiveEndpoint->set_local_address(Context::ConvertAddress(fLocalAddr));
 
     BindControlEndpoint();
-
-    BindDataEndpoint();
 
     return true;
 }
@@ -126,10 +153,12 @@ auto Socket::BindControlEndpoint() -> void
         LOG(debug) << "OFI transport (" << fId
                    << "): control band connection request received. Accepting ...";
         fControlEndpoint = tools::make_unique<asiofi::connected_endpoint>(
-            fIoStrand.context(), fContext.GetOfiDomain(), info);
+            fIoStrand.context(), *fOfiDomain, info);
         fControlEndpoint->enable();
         fControlEndpoint->accept([&]() {
             LOG(debug) << "OFI transport (" << fId << "): control band connection accepted.";
+
+            BindDataEndpoint();
         });
     });
 
@@ -144,7 +173,7 @@ auto Socket::BindDataEndpoint() -> void
         LOG(debug) << "OFI transport (" << fId
                    << "): data band connection request received. Accepting ...";
         fDataEndpoint = tools::make_unique<asiofi::connected_endpoint>(
-            fIoStrand.context(), fContext.GetOfiDomain(), info);
+            fIoStrand.context(), *fOfiDomain, info);
         fDataEndpoint->enable();
         fDataEndpoint->accept([&]() {
             LOG(debug) << "OFI transport (" << fId << "): data band connection accepted.";
@@ -164,7 +193,7 @@ auto Socket::Connect(const string& address) -> void
         fNeedOfiMemoryRegistration = true;
     }
 
-    fContext.InitOfi(fRemoteAddr);
+    InitOfi(fRemoteAddr);
 
     ConnectControlEndpoint();
 
@@ -183,7 +212,7 @@ auto Socket::ConnectControlEndpoint() -> void
     bool completed(false);
 
     fControlEndpoint =
-        tools::make_unique<asiofi::connected_endpoint>(fIoStrand.context(), fContext.GetOfiDomain());
+        tools::make_unique<asiofi::connected_endpoint>(fIoStrand.context(), *fOfiDomain);
     fControlEndpoint->enable();
 
     fControlEndpoint->connect(Context::ConvertAddress(fRemoteAddr), [&]() {
@@ -213,7 +242,7 @@ auto Socket::ConnectDataEndpoint() -> void
     bool completed(false);
 
     fDataEndpoint =
-        tools::make_unique<asiofi::connected_endpoint>(fIoStrand.context(), fContext.GetOfiDomain());
+        tools::make_unique<asiofi::connected_endpoint>(fIoStrand.context(), *fOfiDomain);
     fDataEndpoint->enable();
 
     fDataEndpoint->connect(Context::ConvertAddress(fRemoteAddr), [&]() {
@@ -353,7 +382,7 @@ auto Socket::OnSend(azmq::message& zmsg, size_t /*bytes_transferred*/) -> void
     ctrl->size = size;
     auto ctrl_msg = boost::asio::mutable_buffer(ctrl.get(), sizeof(PostBuffer));
     if (fNeedOfiMemoryRegistration) {
-        asiofi::memory_region mr(fContext.GetOfiDomain(), ctrl_msg, asiofi::mr::access::send);
+        asiofi::memory_region mr(*fOfiDomain, ctrl_msg, asiofi::mr::access::send);
         auto desc = mr.desc();
         fControlEndpoint->send(
             ctrl_msg, desc, [&, ctrl2 = std::move(ctrl)](boost::asio::mutable_buffer) mutable {
@@ -371,7 +400,7 @@ auto Socket::OnSend(azmq::message& zmsg, size_t /*bytes_transferred*/) -> void
         boost::asio::mutable_buffer buffer(msg->GetData(), size);
 
         if (fNeedOfiMemoryRegistration) {
-            asiofi::memory_region mr(fContext.GetOfiDomain(), buffer, asiofi::mr::access::send);
+            asiofi::memory_region mr(*fOfiDomain, buffer, asiofi::mr::access::send);
             auto desc = mr.desc();
 
             fDataEndpoint->send(buffer,
@@ -445,7 +474,7 @@ auto Socket::OnRecvControl(ofi::unique_ptr<PostBuffer> ctrl) -> void
         boost::asio::mutable_buffer buffer(msg->GetData(), size);
 
         if (fNeedOfiMemoryRegistration) {
-            asiofi::memory_region mr(fContext.GetOfiDomain(), buffer, asiofi::mr::access::recv);
+            asiofi::memory_region mr(*fOfiDomain, buffer, asiofi::mr::access::recv);
             auto desc = mr.desc();
 
             fDataEndpoint->recv(

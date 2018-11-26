@@ -31,6 +31,22 @@ namespace mq
 namespace ofi
 {
 
+enum class ConnectionType : bool { Bind, Connect };
+
+struct Address {
+    std::string Protocol;
+    std::string Ip;
+    unsigned int Port;
+    friend auto operator<<(std::ostream& os, const Address& a) -> std::ostream&
+    {
+        return os << a.Protocol << "://" << a.Ip << ":" << a.Port;
+    }
+    friend auto operator==(const Address& lhs, const Address& rhs) -> bool
+    {
+        return (lhs.Protocol == rhs.Protocol) && (lhs.Ip == rhs.Ip) && (lhs.Port == rhs.Port);
+    }
+};
+
 /**
  * @class Context Context.h <fairmq/ofi/Context.h>
  * @brief Transport-wide context
@@ -47,16 +63,6 @@ class Context
 
     auto GetAsiofiVersion() const -> std::string;
     auto GetIoContext() -> boost::asio::io_context& { return fIoContext; }
-    struct Address {
-        std::string Protocol;
-        std::string Ip;
-        unsigned int Port;
-        friend auto operator<<(std::ostream& os, const Address& a) -> std::ostream& { return os << a.Protocol << "://" << a.Ip << ":" << a.Port; }
-    };
-    auto InitOfi(Address address) -> void;
-    auto GetOfiInfo() const -> const asiofi::info& { return *fOfiInfo; }
-    auto GetOfiFabric() const -> const asiofi::fabric& { return *fOfiFabric; }
-    auto GetOfiDomain() const -> const asiofi::domain& { return *fOfiDomain; }
     static auto ConvertAddress(std::string address) -> Address;
     static auto ConvertAddress(Address address) -> sockaddr_in;
     static auto ConvertAddress(sockaddr_in address) -> Address;
@@ -67,9 +73,6 @@ class Context
     auto MakeSendMessage(size_t size) -> MessagePtr;
 
   private:
-    std::unique_ptr<asiofi::info> fOfiInfo;
-    std::unique_ptr<asiofi::fabric> fOfiFabric;
-    std::unique_ptr<asiofi::domain> fOfiDomain;
     boost::asio::io_context fIoContext;
     boost::asio::io_context::work fIoWork;
     std::vector<std::thread> fThreadPool;
