@@ -32,6 +32,7 @@ auto RunSingleThreadedMultipart(string transport, string address) -> void {
     FairMQProgOptions config;
     config.SetValue<string>("session", std::to_string(session));
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
+    FairMQTransportFactory* factoryptr = factory.get();
     auto push = FairMQChannel{"Push", "push", factory};
     ASSERT_TRUE(push.Bind(address));
     auto pull = FairMQChannel{"Pull", "pull", factory};
@@ -55,8 +56,9 @@ auto RunSingleThreadedMultipart(string transport, string address) -> void {
     ASSERT_GE(pull.Receive(receivedMsg), 0);
 
     stringstream out;
-    for_each(receivedMsg.cbegin(), receivedMsg.cend(), [&out](const FairMQMessagePtr& part) {
+    for_each(receivedMsg.cbegin(), receivedMsg.cend(), [&out,&factoryptr](const FairMQMessagePtr& part) {
         out << string{static_cast<char*>(part->GetData()), part->GetSize()};
+        ASSERT_EQ(part->GetTransport(),factoryptr);
     });
     ASSERT_EQ(out.str(), "123");
 }
