@@ -62,7 +62,7 @@ class FairMQTransportFactory
     virtual FairMQMessagePtr CreateMessage(FairMQUnmanagedRegionPtr& unmanagedRegion, void* data, const size_t size, void* hint = 0) = 0;
 
     /// Create a socket
-    virtual FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name) const = 0;
+    virtual FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name) = 0;
 
     /// Create a poller for a single channel (all subchannels)
     virtual FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const = 0;

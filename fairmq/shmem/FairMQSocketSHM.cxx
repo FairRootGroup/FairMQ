@@ -23,8 +23,9 @@ using namespace fair::mq;
 
 atomic<bool> FairMQSocketSHM::fInterrupted(false);
 
-FairMQSocketSHM::FairMQSocketSHM(Manager& manager, const string& type, const string& name, const string& id /*= ""*/, void* context)
-    : fSocket(nullptr)
+FairMQSocketSHM::FairMQSocketSHM(Manager& manager, const string& type, const string& name, const string& id /*= ""*/, void* context, FairMQTransportFactory* fac /*=nullptr*/)
+    : FairMQSocket{fac}
+    , fSocket(nullptr)
     , fManager(manager)
     , fId(id + "." + name + "." + type)
     , fBytesTx(0)
@@ -377,7 +378,7 @@ int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int tim
                 MetaHeader metaHeader;
                 memcpy(&metaHeader, &hdrVec[m], sizeof(MetaHeader));
 
-                msgVec.emplace_back(fair::mq::tools::make_unique<FairMQMessageSHM>(fManager));
+                msgVec.emplace_back(fair::mq::tools::make_unique<FairMQMessageSHM>(fManager, GetTransport()));
 
                 FairMQMessageSHM* msg = static_cast<FairMQMessageSHM*>(msgVec.back().get());
                 MetaHeader* msgHdr = static_cast<MetaHeader*>(zmq_msg_data(msg->GetMessage()));

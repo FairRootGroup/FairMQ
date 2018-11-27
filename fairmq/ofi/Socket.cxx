@@ -31,8 +31,9 @@ namespace ofi
 
 using namespace std;
 
-Socket::Socket(Context& context, const string& type, const string& name, const string& id /*= ""*/)
-    : fDataEndpoint(nullptr)
+Socket::Socket(Context& context, const string& type, const string& name, const string& id /*= ""*/, FairMQTransportFactory* fac)
+    : FairMQSocket{fac}
+    , fDataEndpoint(nullptr)
     , fDataCompletionQueueTx(nullptr)
     , fDataCompletionQueueRx(nullptr)
     , fId(id + "." + name + "." + type)
@@ -515,7 +516,7 @@ auto Socket::ReceiveImpl(vector<FairMQMessagePtr>& msgVec, const int flags, cons
     //
     //     do
     //     {
-    //         FairMQMessagePtr part(new FairMQMessageSHM(fManager));
+    //         FairMQMessagePtr part(new FairMQMessageSHM(fManager, GetTransport()));
     //         zmq_msg_t* msgPtr = static_cast<FairMQMessageSHM*>(part.get())->GetMessage();
     //
     //         int nbytes = zmq_msg_recv(msgPtr, fSocket, flags);

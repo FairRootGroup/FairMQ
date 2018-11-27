@@ -32,8 +32,9 @@ using namespace fair::mq;
 
 atomic<bool> FairMQSocketNN::fInterrupted(false);
 
-FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const string& id /*= ""*/)
-    : fSocket(-1)
+FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const string& id /*= ""*/, FairMQTransportFactory* fac /*=nullptr*/)
+    : FairMQSocket{fac}
+    , fSocket(-1)
     , fId(id + "." + name + "." + type)
     , fBytesTx(0)
     , fBytesRx(0)
@@ -368,7 +369,7 @@ int64_t FairMQSocketNN::Receive(vector<FairMQMessagePtr>& msgVec, const int time
                 object.convert(buf);
                 // get the single message size
                 size_t size = buf.size() * sizeof(char);
-                FairMQMessagePtr part(new FairMQMessageNN(size));
+                FairMQMessagePtr part(new FairMQMessageNN(size, GetTransport()));
                 static_cast<FairMQMessageNN*>(part.get())->fReceiving = true;
                 memcpy(part->GetData(), buf.data(), size);
                 msgVec.push_back(move(part));

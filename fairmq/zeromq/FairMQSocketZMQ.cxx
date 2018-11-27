@@ -20,8 +20,9 @@ using namespace fair::mq;
 
 atomic<bool> FairMQSocketZMQ::fInterrupted(false);
 
-FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const string& id /*= ""*/, void* context)
-    : fSocket(nullptr)
+FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const string& id /*= ""*/, void* context, FairMQTransportFactory* fac)
+    : FairMQSocket{fac}
+    , fSocket(nullptr)
     , fId(id + "." + name + "." + type)
     , fBytesTx(0)
     , fBytesRx(0)
@@ -314,7 +315,7 @@ int64_t FairMQSocketZMQ::Receive(vector<FairMQMessagePtr>& msgVec, const int tim
 
         do
         {
-            unique_ptr<FairMQMessage> part(new FairMQMessageZMQ());
+            unique_ptr<FairMQMessage> part(new FairMQMessageZMQ(GetTransport()));
 
             int nbytes = zmq_msg_recv(static_cast<FairMQMessageZMQ*>(part.get())->GetMessage(), fSocket, flags);
             if (nbytes >= 0)

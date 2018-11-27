@@ -38,7 +38,7 @@ class TransportFactory final : public FairMQTransportFactory
     auto CreateMessage(void* data, const std::size_t size, fairmq_free_fn* ffn, void* hint = nullptr) const -> MessagePtr override;
     auto CreateMessage(UnmanagedRegionPtr& region, void* data, const std::size_t size, void* hint = nullptr) const -> MessagePtr override;
 
-    auto CreateSocket(const std::string& type, const std::string& name) const -> SocketPtr override;
+    auto CreateSocket(const std::string& type, const std::string& name) -> SocketPtr override;
 
     auto CreatePoller(const std::vector<FairMQChannel>& channels) const -> PollerPtr override;
     auto CreatePoller(const std::vector<const FairMQChannel*>& channels) const -> PollerPtr override;

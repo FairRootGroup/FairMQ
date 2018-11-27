@@ -233,10 +233,10 @@ FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(FairMQUnmanagedRegionP
     return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, region, data, size, hint, this));
 }
 
-FairMQSocketPtr FairMQTransportFactorySHM::CreateSocket(const string& type, const string& name) const
+FairMQSocketPtr FairMQTransportFactorySHM::CreateSocket(const string& type, const string& name)
 {
     assert(fContext);
-    return unique_ptr<FairMQSocket>(new FairMQSocketSHM(*fManager, type, name, GetId(), fContext));
+    return unique_ptr<FairMQSocket>(new FairMQSocketSHM(*fManager, type, name, GetId(), fContext, this));
 }
 
 FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const vector<FairMQChannel>& channels) const
