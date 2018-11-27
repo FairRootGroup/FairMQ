@@ -41,7 +41,7 @@ struct DDSConfig
     // container of sub channel addresses
     std::vector<std::string> fSubChannelAddresses;
     // dds values for the channel
-    std::unordered_map<std::string, std::string> fDDSValues;
+    std::unordered_map<uint64_t, std::string> fDDSValues;
 };
 
 struct IofN
