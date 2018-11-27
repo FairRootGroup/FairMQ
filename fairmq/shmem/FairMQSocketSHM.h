@@ -15,11 +15,12 @@
 
 #include <atomic>
 #include <memory> // unique_ptr
+class FairMQTransportFactory;
 
 class FairMQSocketSHM final : public FairMQSocket
 {
   public:
-    FairMQSocketSHM(fair::mq::shmem::Manager& manager, const std::string& type, const std::string& name, const std::string& id = "", void* context = nullptr);
+    FairMQSocketSHM(fair::mq::shmem::Manager& manager, const std::string& type, const std::string& name, const std::string& id = "", void* context = nullptr, FairMQTransportFactory* fac = nullptr);
     FairMQSocketSHM(const FairMQSocketSHM&) = delete;
     FairMQSocketSHM operator=(const FairMQSocketSHM&) = delete;
 

@@ -18,6 +18,7 @@
 #include <memory> // unique_ptr
 #include <netinet/in.h>
 #include <rdma/fabric.h>
+class FairMQTransportFactory;
 
 namespace fair
 {
@@ -35,7 +36,7 @@ namespace ofi
 class Socket final : public fair::mq::Socket
 {
   public:
-    Socket(Context& factory, const std::string& type, const std::string& name, const std::string& id = "");
+    Socket(Context& factory, const std::string& type, const std::string& name, const std::string& id = "", FairMQTransportFactory* fac);
     Socket(const Socket&) = delete;
     Socket operator=(const Socket&) = delete;
 

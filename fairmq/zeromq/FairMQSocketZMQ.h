@@ -15,11 +15,12 @@
 
 #include "FairMQSocket.h"
 #include "FairMQMessage.h"
+class FairMQTransportFactory;
 
 class FairMQSocketZMQ final : public FairMQSocket
 {
   public:
-    FairMQSocketZMQ(const std::string& type, const std::string& name, const std::string& id = "", void* context = nullptr);
+    FairMQSocketZMQ(const std::string& type, const std::string& name, const std::string& id = "", void* context = nullptr, FairMQTransportFactory* factory = nullptr);
     FairMQSocketZMQ(const FairMQSocketZMQ&) = delete;
     FairMQSocketZMQ operator=(const FairMQSocketZMQ&) = delete;
 

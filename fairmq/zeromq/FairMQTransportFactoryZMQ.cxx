@@ -69,10 +69,10 @@ FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(FairMQUnmanagedRegionP
     return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(region, data, size, hint, this));
 }
 
-FairMQSocketPtr FairMQTransportFactoryZMQ::CreateSocket(const string& type, const string& name) const
+FairMQSocketPtr FairMQTransportFactoryZMQ::CreateSocket(const string& type, const string& name) 
 {
     assert(fContext);
-    return unique_ptr<FairMQSocket>(new FairMQSocketZMQ(type, name, GetId(), fContext));
+    return unique_ptr<FairMQSocket>(new FairMQSocketZMQ(type, name, GetId(), fContext, this));
 }
 
 FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQChannel>& channels) const

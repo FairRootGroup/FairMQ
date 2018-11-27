@@ -30,7 +30,7 @@ class FairMQTransportFactoryNN final : public FairMQTransportFactory
     FairMQMessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override;
     FairMQMessagePtr CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0) override;
 
-    FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name) const override;
+    FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name) override;
 
     FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const override;
     FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel*>& channels) const override;

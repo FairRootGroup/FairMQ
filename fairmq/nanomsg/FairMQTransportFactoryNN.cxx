@@ -43,9 +43,9 @@ FairMQMessagePtr FairMQTransportFactoryNN::CreateMessage(FairMQUnmanagedRegionPt
     return unique_ptr<FairMQMessage>(new FairMQMessageNN(region, data, size, hint, this));
 }
 
-FairMQSocketPtr FairMQTransportFactoryNN::CreateSocket(const string& type, const string& name) const
+FairMQSocketPtr FairMQTransportFactoryNN::CreateSocket(const string& type, const string& name)
 {
-    unique_ptr<FairMQSocket> socket(new FairMQSocketNN(type, name, GetId()));
+    unique_ptr<FairMQSocket> socket(new FairMQSocketNN(type, name, GetId(), this));
     fSockets.push_back(socket.get());
     return socket;
 }
