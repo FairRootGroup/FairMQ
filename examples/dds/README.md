@@ -47,7 +47,7 @@ The configuration of the channel connection addresses is done by the DDS plugin 
 
 Note that the attributes `value` contain a different value.
 
-##### 4. Start DDS server.
+##### 4. Start DDS session.
 
 First you need to initialize DDS environment:
 
@@ -55,10 +55,10 @@ First you need to initialize DDS environment:
 source DDS_env.sh  # this script is located in the DDS installation directory
 ```
 
-The DDS server is started with:
+The DDS session is started with:
 
 ```bash
-dds-server start -s
+dds-session start
 ```
 
 ##### 5. Submit DDS Agents (configured in the hosts file).
@@ -91,7 +91,7 @@ A simple utility (fairmq-dds-command-ui) is included with FairMQ to send command
 
 To see it in action, start the fairmq-dds-command-ui while the topology is running. Run the utility with `-h` to see everything that it can do.
 
-The utility requires a session parameter to connect to appropriate DDS session. The session value is given when starting dds-server.
+The utility requires a session parameter to connect to appropriate DDS session. The session value is given when starting dds-session.
 
 By default the command UI sends commands to all tasks. This can be further refined by giving a specific topology path via `-p` argument.
 Given our topology file, here are some examples of valid paths:
@@ -108,15 +108,15 @@ Given our topology file, here are some examples of valid paths:
 ./fairmq/plugins/DDS/fairmq-dds-command-ui -s 937ffbca-b524-44d8-9898-1d69aedc3751 -c c -p main/ProcessorGroup/Processor_9
 ```
 
-##### 9. Stop DDS server/topology.
+##### 9. Stop DDS session/topology.
 
 The execution of tasks can be stopped with:
 ```bash
 dds-topology --stop
 ```
-Or by stopping the DDS server:
+Or by stopping the DDS session:
 ```bash
-dds-server stop
+dds-session stop
 ```
 
 For general DDS documentation please refer to [DDS Website](http://dds.gsi.de/).

@@ -91,7 +91,7 @@ class FairMQChannel
 
     /// Get channel index
     /// @return Returns channel index (e.g. 0 in "data[0]")
-    std::string GetChannelIndex() const { return GetPrefix(); } // TODO: deprecate this in favor of following
+    std::string GetChannelIndex() const { return GetIndex(); } // TODO: deprecate this in favor of following
     std::string GetIndex() const;
 
     /// Get socket type

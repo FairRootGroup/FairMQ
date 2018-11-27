@@ -614,7 +614,7 @@ bool FairMQChannel::BindEndpoint(string& endpoint)
             uniform_int_distribution<int> randomPort(fPortRangeMin, fPortRangeMax);
 
             do {
-                LOG(debug) << "Could not bind to configured (TCP) port, trying random port in range " << fPortRangeMin << "-" << fPortRangeMax;
+                LOG(debug) << "Could not bind to configured (TCP) port (" << endpoint << "), trying random port in range " << fPortRangeMin << "-" << fPortRangeMax;
                 ++numAttempts;
 
                 if (numAttempts > maxAttempts) {
@@ -624,7 +624,7 @@ bool FairMQChannel::BindEndpoint(string& endpoint)
 
                 size_t pos = endpoint.rfind(':');
                 endpoint = endpoint.substr(0, pos + 1) + fair::mq::tools::ToString(static_cast<int>(randomPort(generator)));
-            } while (fSocket->Bind(endpoint));
+            } while (!fSocket->Bind(endpoint));
 
             return true;
         } else {
