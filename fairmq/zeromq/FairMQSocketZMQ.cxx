@@ -71,7 +71,7 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const s
         }
     }
 
-    // LOG(info) << "created socket " << fId;
+    LOG(debug) << "Created socket " << GetId();
 }
 
 string FairMQSocketZMQ::GetId()

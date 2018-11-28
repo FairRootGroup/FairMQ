@@ -74,14 +74,14 @@ add_testsuite(FairMQ.Parts
     TIMEOUT 5
 )
 
-add_testsuite(FairMQ.MessageResize
+add_testsuite(FairMQ.Message
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
-    message_resize/_message_resize.cxx
+    message/_message.cxx
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
-             ${CMAKE_CURRENT_SOURCE_DIR}/message_resize
+             ${CMAKE_CURRENT_SOURCE_DIR}/message
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 5
     ${definitions}
