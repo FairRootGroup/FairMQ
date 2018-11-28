@@ -88,7 +88,7 @@ FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const str
     }
 #endif
 
-    // LOG(info) << "created socket " << fId;
+    LOG(debug) << "Created socket " << GetId();
 }
 
 string FairMQSocketNN::GetId()

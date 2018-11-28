@@ -21,8 +21,8 @@ namespace
 
 using namespace std;
 
-auto RunPushPullWithMsgResize(string transport, string address) -> void {
-
+void RunPushPullWithMsgResize(const string& transport, const string& address)
+{
     size_t session{fair::mq::tools::UuidHash()};
 
     FairMQProgOptions config;
@@ -53,6 +53,29 @@ auto RunPushPullWithMsgResize(string transport, string address) -> void {
     ASSERT_EQ(inMsg->GetSize(), 250);
 }
 
+void RunMsgRebuild(const string& transport)
+{
+    size_t session{fair::mq::tools::UuidHash()};
+
+    FairMQProgOptions config;
+    config.SetValue<string>("session", to_string(session));
+
+    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
+
+    FairMQMessagePtr msg(factory->CreateMessage());
+    EXPECT_EQ(msg->GetSize(), 0);
+    msg->Rebuild(100);
+    EXPECT_EQ(msg->GetSize(), 100);
+    string* str = new string("asdf");
+    msg->Rebuild(const_cast<char*>(str->c_str()),
+                 str->length(),
+                 [](void* /*data*/, void* obj) { delete static_cast<string*>(obj); },
+                 str);
+    EXPECT_NE(msg->GetSize(), 100);
+    EXPECT_EQ(msg->GetSize(), string("asdf").length());
+    EXPECT_EQ(string(static_cast<char*>(msg->GetData()), msg->GetSize()), string("asdf"));
+}
+
 TEST(MessageResize, ZeroMQ)
 {
     RunPushPullWithMsgResize("zeromq", "ipc://test_message_resize");
@@ -67,6 +90,23 @@ TEST(MessageResize, shmem)
 TEST(MessageResize, nanomsg)
 {
     RunPushPullWithMsgResize("nanomsg", "ipc://test_message_resize");
+}
+#endif /* BUILD_NANOMSG_TRANSPORT */
+
+TEST(MessageRebuild, ZeroMQ)
+{
+    RunMsgRebuild("zeromq");
+}
+
+TEST(MessageRebuild, shmem)
+{
+    RunMsgRebuild("shmem");
+}
+
+#ifdef BUILD_NANOMSG_TRANSPORT
+TEST(MessageRebuild, nanomsg)
+{
+    RunMsgRebuild("nanomsg");
 }
 #endif /* BUILD_NANOMSG_TRANSPORT */
 

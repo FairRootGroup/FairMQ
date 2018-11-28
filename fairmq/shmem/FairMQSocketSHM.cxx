@@ -81,7 +81,7 @@ FairMQSocketSHM::FairMQSocketSHM(Manager& manager, const string& type, const str
         throw fair::mq::SocketError("PUB/SUB socket type is not supported for shared memory transport");
     }
 
-    // LOG(info) << "created socket " << fId;
+    LOG(debug) << "Created socket " << GetId();
 }
 
 bool FairMQSocketSHM::Bind(const string& address)
