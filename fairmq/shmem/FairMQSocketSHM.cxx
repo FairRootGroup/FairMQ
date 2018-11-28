@@ -286,7 +286,7 @@ int64_t FairMQSocketSHM::Send(vector<FairMQMessagePtr>& msgVec, const int timeou
         }
         else if (nbytes > 0)
         {
-            assert(nbytes == (vecSize * sizeof(MetaHeader))); // all or nothing
+            assert(static_cast<unsigned int>(nbytes) == (vecSize * sizeof(MetaHeader))); // all or nothing
 
             for (auto& msg : msgVec)
             {
