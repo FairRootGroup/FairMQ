@@ -53,7 +53,6 @@ class Message final : public fair::mq::Message
     auto GetType() const -> fair::mq::Transport override { return fair::mq::Transport::OFI; }
 
     auto Copy(const fair::mq::Message& msg) -> void override;
-    auto Copy(const fair::mq::MessagePtr& msg) -> void override;
 
     ~Message() override;
 

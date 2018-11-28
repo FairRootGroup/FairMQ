@@ -220,24 +220,6 @@ void FairMQMessageZMQ::Copy(const FairMQMessage& msg)
     }
 }
 
-void FairMQMessageZMQ::Copy(const FairMQMessagePtr& msg)
-{
-    FairMQMessageZMQ* msgPtr = static_cast<FairMQMessageZMQ*>(msg.get());
-    // Shares the message buffer between msg and this fMsg.
-    if (zmq_msg_copy(fMsg.get(), msgPtr->GetMessage()) != 0)
-    {
-        LOG(error) << "failed copying message, reason: " << zmq_strerror(errno);
-        return;
-    }
-
-    // if the target message has been resized, apply same to this message also
-    if (msgPtr->fUsedSizeModified)
-    {
-        fUsedSizeModified = true;
-        fUsedSize = msgPtr->fUsedSize;
-    }
-}
-
 void FairMQMessageZMQ::CloseMessage()
 {
     if (!fViewMsg)

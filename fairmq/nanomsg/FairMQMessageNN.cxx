@@ -205,30 +205,6 @@ void FairMQMessageNN::Copy(const FairMQMessage& msg)
     }
 }
 
-void FairMQMessageNN::Copy(const FairMQMessagePtr& msg)
-{
-    if (fMessage)
-    {
-        if (nn_freemsg(fMessage) < 0)
-        {
-            LOG(error) << "failed freeing message, reason: " << nn_strerror(errno);
-        }
-    }
-
-    size_t size = msg->GetSize();
-
-    fMessage = nn_allocmsg(size, 0);
-    if (!fMessage)
-    {
-        LOG(error) << "failed allocating message, reason: " << nn_strerror(errno);
-    }
-    else
-    {
-        memcpy(fMessage, static_cast<FairMQMessageNN*>(msg.get())->GetMessage(), size);
-        fSize = size;
-    }
-}
-
 void FairMQMessageNN::CloseMessage()
 {
     if (nn_freemsg(fMessage) < 0)
