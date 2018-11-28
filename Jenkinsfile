@@ -14,7 +14,7 @@ def jobMatrix(String prefix, List specs, Closure callback) {
         try {
           deleteDir()
           checkout scm
-          
+
           sh """\
             echo "export SIMPATH=\${SIMPATH_PREFIX}${spec.fairsoft}" >> Dart.cfg
             echo "export FAIRSOFT_VERSION=${spec.fairsoft}" >> Dart.cfg
@@ -31,6 +31,7 @@ def jobMatrix(String prefix, List specs, Closure callback) {
             echo "export SOURCEDIR=$PWD" >> Dart.cfg
             echo "export PATH=\\\$SIMPATH/bin:\\\$PATH" >> Dart.cfg
             echo "export GIT_BRANCH=$JOB_BASE_NAME" >> Dart.cfg
+            echo "export EXTRA_FLAGS='-DCMAKE_CXX_COMPILER=g++'" >> Dart.cfg
             echo "echo \\\$PATH" >> Dart.cfg
           '''
           sh 'cat Dart.cfg'
