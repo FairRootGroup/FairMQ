@@ -316,29 +316,6 @@ void FairMQMessageSHM::Copy(const FairMQMessage& msg)
     }
 }
 
-void FairMQMessageSHM::Copy(const FairMQMessagePtr& msg)
-{
-    if (fHandle < 0)
-    {
-        bipc::managed_shared_memory::handle_t otherHandle = static_cast<FairMQMessageSHM*>(msg.get())->fHandle;
-        if (otherHandle)
-        {
-            if (InitializeChunk(msg->GetSize()))
-            {
-                memcpy(GetData(), msg->GetData(), msg->GetSize());
-            }
-        }
-        else
-        {
-            LOG(error) << "copy fail: source message not initialized!";
-        }
-    }
-    else
-    {
-        LOG(error) << "copy fail: target message already initialized!";
-    }
-}
-
 void FairMQMessageSHM::CloseMessage()
 {
     if (fHandle >= 0 && !fQueued)

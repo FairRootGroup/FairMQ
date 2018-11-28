@@ -49,7 +49,6 @@ class FairMQMessageNN final : public FairMQMessage
     fair::mq::Transport GetType() const override;
 
     void Copy(const FairMQMessage& msg) override;
-    void Copy(const FairMQMessagePtr& msg) override;
 
     ~FairMQMessageNN() override;
 

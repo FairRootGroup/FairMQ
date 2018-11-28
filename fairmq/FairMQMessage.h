@@ -35,7 +35,6 @@ class FairMQMessage
     FairMQTransportFactory* GetTransport() { return fTransport; }
     //void SetTransport(FairMQTransportFactory* transport) { fTransport = transport; }
 
-    virtual void Copy(const std::unique_ptr<FairMQMessage>& msg) __attribute__((deprecated("Use 'Copy(const FairMQMessage& msg)'"))) = 0;
     virtual void Copy(const FairMQMessage& msg) = 0;
 
     virtual ~FairMQMessage() {};

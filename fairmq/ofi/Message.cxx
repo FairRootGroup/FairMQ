@@ -138,11 +138,6 @@ auto Message::Copy(const fair::mq::Message& /*msg*/) -> void
     throw MessageError{"Not yet implemented."};
 }
 
-auto Message::Copy(const fair::mq::MessagePtr& /*msg*/) -> void
-{
-    throw MessageError{"Not yet implemented."};
-}
-
 Message::~Message()
 {
     if (fFreeFunction) {
