@@ -346,7 +346,7 @@ void FairMQMessageSHM::CloseMessage()
         if (fRegionId == 0)
         {
             fManager.Segment().deallocate(fManager.Segment().get_address_from_handle(fHandle));
-            fHandle = 0;
+            fHandle = -1;
         }
         else
         {
@@ -402,6 +402,7 @@ void FairMQMessageSHM::CloseMessage()
         {
             LOG(error) << "failed closing message, reason: " << zmq_strerror(errno);
         }
+        fMetaCreated = false;
     }
 }
 
