@@ -43,8 +43,9 @@ TEST(StateMachine, RegularFSM)
     });
 
     fsm.SubscribeToStateChange("test", [&](S newState, S lastState){
-        if (newState == S::Idle && lastState == S::ResettingDevice)
+        if (newState == S::Idle && lastState == S::ResettingDevice) {
             ASSERT_NO_THROW(fsm.ChangeState(T::End));
+        }
     });
 
     ASSERT_NO_THROW(fsm.ChangeState(T::ResetDevice));
