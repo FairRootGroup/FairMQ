@@ -1,0 +1,5 @@
+<map id="FairMQUnmanagedRegion" name="FairMQUnmanagedRegion">
+<area shape="rect" id="node2" href="$classFairMQUnmanagedRegionNN.html" title="FairMQUnmanagedRegionNN" alt="" coords="5,80,201,107"/>
+<area shape="rect" id="node3" href="$classFairMQUnmanagedRegionSHM.html" title="FairMQUnmanagedRegionSHM" alt="" coords="225,80,432,107"/>
+<area shape="rect" id="node4" href="$classFairMQUnmanagedRegionZMQ.html" title="FairMQUnmanagedRegionZMQ" alt="" coords="457,80,662,107"/>
+</map>
