@@ -45,15 +45,21 @@ FairMQMessagePtr getMessage(ContainerT &&container_, FairMQMemoryResource *targe
             const_cast<typename std::remove_const<typename ContainerT::value_type>::type *>(
                 container.data())));
         if (message)
+        {
             message->SetUsedSize(containerSizeBytes);
-        return message;
-    } else {
-        auto message = targetResource->getTransportFactory()->CreateMessage(containerSizeBytes);
-        std::memcpy(static_cast<fair::mq::byte *>(message->GetData()),
-                    container.data(),
-                    containerSizeBytes);
-        return message;
+            return message;
+        } else {
+          //container is not required to allocate (like in std::string small string optimization)
+          //in case we get no message we fall back to default (copy) behaviour)
+          targetResource = resource;
+        }
     }
+
+    auto message = targetResource->getTransportFactory()->CreateMessage(containerSizeBytes);
+    std::memcpy(static_cast<fair::mq::byte *>(message->GetData()),
+        container.data(),
+        containerSizeBytes);
+    return message;
 };
 
 } /* namespace mq */
