@@ -43,6 +43,7 @@ class FairMQTransportFactory
 
     /// Get a pointer to the associated polymorphic memory resource
     fair::mq::ChannelResource* GetMemoryResource() { return &fMemoryResource; }
+    operator fair::mq::ChannelResource*() { return &fMemoryResource; }
 
     /// @brief Create empty FairMQMessage
     /// @return pointer to FairMQMessage

@@ -127,10 +127,11 @@ TEST(MemoryResources, getMessage_test)
         v.emplace_back(5);
         v.emplace_back(6);
         void* vectorBeginPtr = &v[0];
-        message = getMessage(std::move(v), allocSHM);
+        message = getMessage(std::move(v), *factorySHM);
         EXPECT_TRUE(message != nullptr);
         EXPECT_TRUE(message->GetData() != vectorBeginPtr);
     }
+
     EXPECT_TRUE(message->GetSize() == 3 * sizeof(testData));
     messageArray = static_cast<int*>(message->GetData());
     EXPECT_TRUE(messageArray[0] == 4 && messageArray[1] == 5 && messageArray[2] == 6);
