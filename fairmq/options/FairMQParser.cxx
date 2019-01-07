@@ -136,6 +136,7 @@ void ChannelParser(const boost::property_tree::ptree& tree, FairMQChannelMap& ch
                 commonChannel.UpdateSndKernelSize(q.second.get<int>("sndKernelSize", commonChannel.GetSndKernelSize()));
                 commonChannel.UpdateRcvKernelSize(q.second.get<int>("rcvKernelSize", commonChannel.GetRcvKernelSize()));
                 commonChannel.UpdateLinger(q.second.get<int>("linger", commonChannel.GetLinger()));
+                commonChannel.UpdateRateLogging(q.second.get<int>("rateLogging", commonChannel.GetRateLogging()));
                 commonChannel.UpdatePortRangeMin(q.second.get<int>("portRangeMin", commonChannel.GetPortRangeMin()));
                 commonChannel.UpdatePortRangeMax(q.second.get<int>("portRangeMax", commonChannel.GetPortRangeMax()));
                 commonChannel.UpdateAutoBind(q.second.get<bool>("autoBind", commonChannel.GetAutoBind()));
