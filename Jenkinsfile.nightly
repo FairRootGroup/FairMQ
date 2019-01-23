@@ -63,8 +63,9 @@ pipeline{
       steps{
         script {
           parallel(buildMatrix([
-            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc8.1.0',         fairsoft: 'fairmq_dev'],
-            [os: 'MacOS10.13', arch: 'x86_64', compiler: 'AppleLLVM10.0.0',  fairsoft: 'fairmq_dev'],
+            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc8.1.0',        fairsoft: 'fairmq_dev'],
+            [os: 'MacOS10.13', arch: 'x86_64', compiler: 'AppleLLVM10.0.0', fairsoft: 'fairmq_dev'],
+            [os: 'MacOS10.14', arch: 'x86_64', compiler: 'AppleLLVM10.0.0', fairsoft: 'fairmq_dev'],
           ]) { spec, label ->
             sh './Dart.sh Nightly Dart.cfg'
             sh './Dart.sh Profile Dart.cfg'
