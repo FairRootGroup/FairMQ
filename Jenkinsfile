@@ -66,14 +66,15 @@ pipeline{
       steps{
         script {
           def build_jobs = jobMatrix('alfa-ci/build', [
-            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc8.1.0',          fairsoft: 'fairmq_dev'],
+            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc8.1.0',        fairsoft: 'fairmq_dev'],
             [os: 'MacOS10.13', arch: 'x86_64', compiler: 'AppleLLVM10.0.0', fairsoft: 'fairmq_dev'],
+            [os: 'MacOS10.14', arch: 'x86_64', compiler: 'AppleLLVM10.0.0', fairsoft: 'fairmq_dev'],
           ]) { spec, label ->
             sh './Dart.sh alfa_ci Dart.cfg'
           }
 
           def profile_jobs = jobMatrix('alfa-ci/codecov', [
-            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc8.1.0',          fairsoft: 'fairmq_dev'],
+            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc8.1.0',        fairsoft: 'fairmq_dev'],
           ]) { spec, label ->
             withCredentials([string(credentialsId: 'fairmq_codecov_token', variable: 'CODECOV_TOKEN')]) {
               sh './Dart.sh codecov Dart.cfg'
