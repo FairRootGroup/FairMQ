@@ -153,15 +153,21 @@ void waitMode(const string& waitForState,
     StateSubscription stateSubscription(topologyPath, ddsCustomCmd);
 
     auto condition = [&] {
-        return all_of(waitForStateMap.cbegin(),
-                      waitForStateMap.cend(),
-                      [&](WaitForStateMap::value_type i) { return i.second == waitForState; });
+        return !waitForStateMap.empty() // TODO once DDS provides an API to retrieve actual number of tasks, use it here
+               && all_of(waitForStateMap.cbegin(),
+                         waitForStateMap.cend(),
+                         [&](WaitForStateMap::value_type i) { return i.second == waitForState; });
     };
 
     unique_lock<mutex> lock(waitForStateMutex);
-    if (!waitForStateCV.wait_for(lock, timeout, condition)) {
-        throw runtime_error("timeout");
-    };
+
+    if (timeout > std::chrono::milliseconds(0)) {
+        if (!waitForStateCV.wait_for(lock, timeout, condition)) {
+            throw runtime_error("timeout");
+        }
+    } else {
+        waitForStateCV.wait(lock, condition);
+    }
 }
 
 int main(int argc, char* argv[])
