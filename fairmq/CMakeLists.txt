@@ -248,7 +248,6 @@ target_link_libraries(${_target}
   Boost::filesystem
   Boost::regex
   Boost::date_time
-  Boost::signals
   FairLogger::FairLogger
 
   PRIVATE # only libFairMQ links against private dependencies
