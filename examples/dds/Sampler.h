@@ -25,9 +25,14 @@ class Sampler : public FairMQDevice
   public:
     Sampler();
     virtual ~Sampler();
+    void InitTask() override;
 
   protected:
     virtual bool ConditionalRun();
+
+  private:
+    uint64_t fIterations;
+    uint64_t fCounter;
 };
 
 } // namespace example_dds
