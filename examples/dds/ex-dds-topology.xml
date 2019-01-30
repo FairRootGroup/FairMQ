@@ -7,8 +7,8 @@
     <declrequirement name="ProcessorWorker" type="wnname" value="processor"/>
     <declrequirement name="SinkWorker" type="wnname" value="sink"/>
 
-    <decltask name="Sampler">
-        <exe reachable="true">@EX_BIN_DIR@/fairmq-ex-dds-sampler --id sampler --color false --channel-config name=data1,type=push,method=bind -S "&lt;@DDS_PLUGIN_LIB_DIR@/" -P dds</exe>
+    <decltask id="Sampler">
+        <exe reachable="true">fairmq-ex-dds-sampler --id sampler --channel-config name=data1,type=push,method=bind -S "&lt;@PLUGIN_DIR@/" -P dds</exe>
         <requirements>
             <name>SamplerWorker</name>
         </requirements>
@@ -17,10 +17,10 @@
         </properties>
     </decltask>
 
-    <decltask name="Processor">
-        <exe reachable="true">@EX_BIN_DIR@/fairmq-ex-dds-processor --id processor_%taskIndex% --config-key processor --color false --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -S "&lt;@DDS_PLUGIN_LIB_DIR@/" -P dds</exe>
+    <decltask id="Processor">
+        <exe reachable="true">fairmq-ex-dds-processor --id processor_%taskIndex% --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -S "&lt;@PLUGIN_DIR@/" -P dds</exe>
         <requirements>
-            <name>ProcessorWorker</name>
+            <id>ProcessWorker</id>
         </requirements>
         <properties>
             <name access="read">data1</name>
@@ -28,8 +28,8 @@
         </properties>
     </decltask>
 
-    <decltask name="Sink">
-        <exe reachable="true">@EX_BIN_DIR@/fairmq-ex-dds-sink --id sink --color false --channel-config name=data2,type=pull,method=bind -S "&lt;@DDS_PLUGIN_LIB_DIR@/" -P dds</exe>
+    <decltask id="Sink">
+        <exe reachable="true">fairmq-ex-dds-sink --id sink --channel-config name=data2,type=pull,method=bind -S "&lt;@PLUGIN_DIR@/" -P dds</exe>
         <requirements>
             <name>SinkWorker</name>
         </requirements>
