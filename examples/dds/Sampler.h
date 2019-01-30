@@ -28,7 +28,7 @@ class Sampler : public FairMQDevice
     void InitTask() override;
 
   protected:
-    virtual bool ConditionalRun();
+    bool ConditionalRun() override;
 
   private:
     uint64_t fIterations;
