@@ -25,9 +25,14 @@ class Sink : public FairMQDevice
   public:
     Sink();
     virtual ~Sink();
+    void InitTask() override;
 
   protected:
     bool HandleData(FairMQMessagePtr&, int);
+
+  private:
+    uint64_t fIterations;
+    uint64_t fCounter;
 };
 
 } // namespace example_dds
