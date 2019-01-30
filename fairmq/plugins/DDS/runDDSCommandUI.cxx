@@ -9,7 +9,9 @@
 #include <algorithm>
 #include <atomic>
 #include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/program_options.hpp>
 #include <condition_variable>
 #include <cstdlib>
@@ -73,71 +75,66 @@ void printControlsHelp()
     cout << "To quit press Ctrl+C" << endl;
 }
 
-void commandMode(char command, const string& topologyPath, CCustomCmd& ddsCustomCmd) {
+void commandMode(const string& command_in, const string& topologyPath, CCustomCmd& ddsCustomCmd) {
     char c;
+    string command(command_in);
     TerminalConfig tconfig;
 
-    if (command != ' ') {
-        cin.putback(command);
-    } else {
+    if (command == "") {
         printControlsHelp();
+        cin >> c;
+        command = c;
     }
 
-    while (cin >> c) {
-        switch (c) {
-            case 'c':
-                cout << " > checking state of the devices" << endl;
-                ddsCustomCmd.send("check-state", topologyPath);
-                break;
-            case 'o':
-                cout << " > dumping config of the devices" << endl;
-                ddsCustomCmd.send("dump-config", topologyPath);
-                break;
-            case 'i':
-                cout << " > init devices" << endl;
-                ddsCustomCmd.send("INIT DEVICE", topologyPath);
-                break;
-            case 'j':
-                cout << " > init tasks" << endl;
-                ddsCustomCmd.send("INIT TASK", topologyPath);
-                break;
-            case 'p':
-                cout << " > pause devices" << endl;
-                ddsCustomCmd.send("PAUSE", topologyPath);
-                break;
-            case 'r':
-                cout << " > run tasks" << endl;
-                ddsCustomCmd.send("RUN", topologyPath);
-                break;
-            case 's':
-                cout << " > stop devices" << endl;
-                ddsCustomCmd.send("STOP", topologyPath);
-                break;
-            case 't':
-                cout << " > reset tasks" << endl;
-                ddsCustomCmd.send("RESET TASK", topologyPath);
-                break;
-            case 'd':
-                cout << " > reset devices" << endl;
-                ddsCustomCmd.send("RESET DEVICE", topologyPath);
-                break;
-            case 'h':
-                cout << " > help" << endl;
-                printControlsHelp();
-                break;
-            case 'q':
-                cout << " > end" << endl;
-                ddsCustomCmd.send("END", topologyPath);
-                break;
-            default:
-                cout << "Invalid input: [" << c << "]" << endl;
-                printControlsHelp();
-                break;
+    while (true) {
+        if (command == "c") {
+            cout << " > checking state of the devices" << endl;
+            ddsCustomCmd.send("check-state", topologyPath);
+        } else if (command == "o") {
+            cout << " > dumping config of the devices" << endl;
+            ddsCustomCmd.send("dump-config", topologyPath);
+        } else if (command == "i") {
+            cout << " > init devices" << endl;
+            ddsCustomCmd.send("INIT DEVICE", topologyPath);
+        } else if (command == "j") {
+            cout << " > init tasks" << endl;
+            ddsCustomCmd.send("INIT TASK", topologyPath);
+        } else if (command == "p") {
+            cout << " > pause devices" << endl;
+            ddsCustomCmd.send("PAUSE", topologyPath);
+        } else if (command == "r") {
+            cout << " > run tasks" << endl;
+            ddsCustomCmd.send("RUN", topologyPath);
+        } else if (command == "s") {
+            cout << " > stop devices" << endl;
+            ddsCustomCmd.send("STOP", topologyPath);
+        } else if (command == "t") {
+            cout << " > reset tasks" << endl;
+            ddsCustomCmd.send("RESET TASK", topologyPath);
+        } else if (command == "d") {
+            cout << " > reset devices" << endl;
+            ddsCustomCmd.send("RESET DEVICE", topologyPath);
+        } else if (command == "h") {
+            cout << " > help" << endl;
+            printControlsHelp();
+        } else if (command == "q") {
+            cout << " > end" << endl;
+            ddsCustomCmd.send("END", topologyPath);
+        } else if (command == "q!") {
+            ddsCustomCmd.send("SHUTDOWN", topologyPath);
+        } else if (command == "r!") {
+            ddsCustomCmd.send("STARTUP", topologyPath);
+        } else {
+            cout << "Invalid input: [" << c << "]" << endl;
+            printControlsHelp();
         }
 
-        if (command != ' ') {
+        if (command_in != "") {
             this_thread::sleep_for(chrono::milliseconds(100)); // give dds a chance to complete request
             break;
+        } else {
+            cin >> c;
+            command = c;
         }
     }
 }
@@ -153,10 +150,13 @@ void waitMode(const string& waitForState,
     StateSubscription stateSubscription(topologyPath, ddsCustomCmd);
 
     auto condition = [&] {
-        return !waitForStateMap.empty() // TODO once DDS provides an API to retrieve actual number of tasks, use it here
+        return !waitForStateMap.empty()   // TODO once DDS provides an API to retrieve actual number
+                                          // of tasks, use it here
                && all_of(waitForStateMap.cbegin(),
                          waitForStateMap.cend(),
-                         [&](WaitForStateMap::value_type i) { return i.second == waitForState; });
+                         [&](WaitForStateMap::value_type i) {
+                             return boost::algorithm::ends_with(i.second, waitForState);
+                         });
     };
 
     unique_lock<mutex> lock(waitForStateMutex);
@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
 {
     try {
         string sessionID;
-        char command = ' ';
+        string command;
         string topologyPath;
         string waitForState;
         unsigned int timeout;
@@ -183,18 +183,27 @@ int main(int argc, char* argv[])
         WaitForStateMap waitForStateMap;
 
         bpo::options_description options("Common options");
+
+        auto env_session_id = std::getenv("DDS_SESSION_ID");
+        if (env_session_id) {
+            options.add_options()("session,s",
+                                  bpo::value<string>(&sessionID)->default_value(env_session_id),
+                                  "DDS Session ID (overrides any value in env var $DDS_SESSION_ID)");
+        } else {
+            options.add_options()("session,s",
+                                  bpo::value<string>(&sessionID)->required(),
+                                  "DDS Session ID (overrides any value in env var $DDS_SESSION_ID)");
+        }
+
         options.add_options()
-            ("session,s",        bpo::value<string> (&sessionID)->required(),
-                                 "DDS Session ID")
-            ("command,c",        bpo::value<char>   (&command)->default_value(' '),
+            ("command,c",        bpo::value<string> (&command)->default_value(""),
                                  "Command character")
             ("path,p",           bpo::value<string> (&topologyPath)->default_value(""),
-                                 "DDS Topology path to send command to")
+                                 "DDS Topology path to send command to (empty - send to all tasks)")
             ("wait-for-state,w", bpo::value<string> (&waitForState)->default_value(""),
                                  "Wait until targeted FairMQ devices reach the given state")
             ("timeout,t",        bpo::value<unsigned int> (&timeout)->default_value(0),
                                  "Timeout in milliseconds when waiting for a device state (0 - wait infinitely)")
-
             ("help,h", "Produce help message");
 
         bpo::variables_map vm;
@@ -212,23 +221,29 @@ int main(int argc, char* argv[])
         CCustomCmd ddsCustomCmd(service);
 
         service.subscribeOnError([](const EErrorCode errorCode, const string& errorMsg) {
-            cout << "DDS error received: error code: " << errorCode << ", error message: " << errorMsg << endl;
+            cerr << "DDS error received: error code: " << errorCode << ", error message: " << errorMsg << endl;
         });
 
         // subscribe to receive messages from DDS
         ddsCustomCmd.subscribe([&](const string& msg, const string& /*condition*/, uint64_t senderId) {
+            cout << "Received: " << endl << msg << endl;
             vector<string> parts;
             boost::algorithm::split(parts, msg, boost::algorithm::is_any_of(":,"));
             if (parts[0] == "state-change") {
                 {
                     unique_lock<mutex> lock(waitForStateMutex);
+                    boost::trim(parts[2]);
                     waitForStateMap[senderId] = parts[2];
                 }
                 waitForStateCV.notify_one();
             } else if (parts[0] == "state-changes-subscription") {
-                // ok, stay silent
+                if (parts[2] != "OK") {
+                    cerr << "state-changes-subscription failed with return code: " << parts[2];
+                }
             } else if (parts[0] == "state-changes-unsubscription") {
-                // ok, stay silent
+                if (parts[2] != "OK") {
+                    cerr << "state-changes-unsubscription failed with return code: " << parts[2];
+                }
             } else {
                 cout << "Received: " << endl << msg << endl;
             }
@@ -298,7 +313,7 @@ int main(int argc, char* argv[])
                     break;
             }
 
-            if (command != ' ') {
+            if (command != "") {
                 commandMode(command, topologyPath, ddsCustomCmd);
             }
             waitMode(waitForState,

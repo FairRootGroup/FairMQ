@@ -67,7 +67,7 @@ REGISTER_FAIRMQ_PLUGIN(
     control,   // Plugin name (string, lower case chars only)
     (Plugin::Version{FAIRMQ_VERSION_MAJOR, FAIRMQ_VERSION_MINOR, FAIRMQ_VERSION_PATCH}), // Version
     "FairRootGroup <fairroot@gsi.de>",             // Maintainer
-    "https://github.com/FairRootGroup/FairRoot",   // Homepage
+    "https://github.com/FairRootGroup/FairMQ",     // Homepage
     ControlPluginProgramOptions   // Free function which declares custom program options for the
                                   // plugin signature: () ->
                                   // boost::optional<boost::program_options::options_description>
