@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+################################################################################
+#    Copyright (C) 2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
+#                                                                              #
+#              This software is distributed under the terms of the             #
+#              GNU Lesser General Public Licence (LGPL) version 3,             #
+#                  copied verbatim in the file "LICENSE"                       #
+################################################################################
+
+set -e
+
+cleanup() {
+  dds-session stop $1
+  echo "CLEANUP PERFORMED"
+}
+
+source @DDS_INCLUDE_DIR@/../DDS_env.sh
+export PATH=@BIN_DIR@:@PLUGIN_DIR@:$PATH
+
+exec 5>&1
+output=$(dds-session start | tee >(cat - >&5))
+export DDS_SESSION_ID=$(echo ${output} | grep "DDS session ID: " | cut -d' ' -f4)
+echo "SESSION ID: ${DDS_SESSION_ID}"
+
+trap "cleanup ${DDS_SESSION_ID}" EXIT
+
+requiredNofAgents=12
+dds-submit -s ${DDS_SESSION_ID} -r localhost -n ${requiredNofAgents}
+dds-info -s ${DDS_SESSION_ID} --wait-for-idle-agents ${requiredNofAgents}
+
+topologyFile=@DATA_DIR@/ex-dds-topology.xml
+echo "TOPOLOGY FILE: ${topologyFile}"
+
+dds-topology -s ${DDS_SESSION_ID} --disable-validation --activate ${topologyFile}
+
+echo "------------------------"
+echo "Waiting for Topology to finish ..."
+sampler_and_sink="main/(Sampler|Sink)"
+fairmq-dds-command-ui -p $sampler_and_sink --wait-for-state RUNNING->READY
+echo "..."
+fairmq-dds-command-ui -c q! -w EXITING
+echo "..."
+dds-info -s ${DDS_SESSION_ID} --wait-for-idle-agents ${requiredNofAgents}
+echo "------------------------"
+
+dds-topology -s ${DDS_SESSION_ID} --stop
+
+dds-agent-cmd getlog -a -s ${DDS_SESSION_ID}
+logDir="${wrkDir}/logs"
+for file in $(find "${logDir}" -name "*.tar.gz"); do tar -xf ${file} -C "${logDir}" ; done
+echo "AGENT LOG FILES IN: ${logDir}"
+
+# Cleanup function is called by EXIT trap

@@ -1,5 +1,5 @@
 ################################################################################
-#    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
+#  Copyright (C) 2014-2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -28,12 +28,12 @@ target_link_libraries(fairmq-ex-dds-sink PRIVATE ExampleDDSLib)
 
 add_custom_target(ExampleDDS DEPENDS fairmq-ex-dds-sampler fairmq-ex-dds-processor fairmq-ex-dds-sink)
 
-set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
-set(DDS_PLUGIN_LIB_DIR ${CMAKE_BINARY_DIR}/fairmq/plugins/DDS)
-set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
+set(BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(PLUGIN_DIR ${CMAKE_BINARY_DIR}/fairmq/plugins/DDS)
+set(DATA_DIR ${CMAKE_CURRENT_BINARY_DIR})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-dds-topology.xml ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology.xml @ONLY)
-
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-dds-hosts.cfg ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-hosts.cfg COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-dds.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-dds.sh @ONLY)
 
 # test
 
@@ -50,10 +50,11 @@ install(
 )
 
 # configure run script with different executable paths for build and for install directories
-set(EX_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR})
-set(DDS_PLUGIN_LIB_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR})
-set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
+set(BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR})
+set(PLUGIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR})
+set(DATA_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-dds-topology.xml ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology.xml_install @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-dds.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-dds.sh_install @ONLY)
 
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology.xml_install
@@ -64,4 +65,10 @@ install(
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-hosts.cfg
     DESTINATION ${PROJECT_INSTALL_DATADIR}
+)
+
+install(
+    PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-dds.sh_install
+    DESTINATION ${PROJECT_INSTALL_BINDIR}
+    RENAME fairmq-start-ex-dds.sh
 )
