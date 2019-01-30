@@ -25,11 +25,24 @@ Sink::Sink()
     OnData("data2", &Sink::HandleData);
 }
 
+void Sink::InitTask()
+{
+    fIterations = fConfig->GetValue<uint64_t>("iterations");
+    fCounter = 0;
+}
+
 // handler is called whenever a message arrives on "data2", with a reference to the message and a sub-channel index (here 0)
 bool Sink::HandleData(FairMQMessagePtr& msg, int /*index*/)
 {
     LOG(info) << "Received: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
 
+    if (fIterations > 0) {
+        ++fCounter;
+        if (fCounter >= fIterations) {
+            LOG(info) << "Received " << fCounter << " messages. Finished.";
+            return false;
+        }
+    }
     // return true if want to be called again (otherwise go to IDLE state)
     return true;
 }

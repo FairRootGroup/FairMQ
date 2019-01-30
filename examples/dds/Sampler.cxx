@@ -26,6 +26,12 @@ Sampler::Sampler()
 {
 }
 
+void Sampler::InitTask()
+{
+    fIterations = fConfig->GetValue<uint64_t>("iterations");
+    fCounter = 0;
+}
+
 bool Sampler::ConditionalRun()
 {
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -41,6 +47,14 @@ bool Sampler::ConditionalRun()
     if (Send(msg, "data1") < 0)
     {
         return false;
+    }
+
+    if (fIterations > 0) {
+        ++fCounter;
+        if (fCounter >= fIterations) {
+            LOG(info) << "Sent " << fCounter << " messages. Finished.";
+            return false;
+        }
     }
 
     return true;
