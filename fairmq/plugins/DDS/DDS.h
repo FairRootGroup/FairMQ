@@ -10,6 +10,7 @@
 #define FAIR_MQ_PLUGINS_DDS
 
 #include <fairmq/Plugin.h>
+#include <fairmq/Version.h>
 
 #include <dds_intercom.h>
 
@@ -55,7 +56,6 @@ struct IofN
     unsigned int fI;
     unsigned int fN;
     std::vector<std::string> fEntries;
-
 };
 
 class DDS : public Plugin
@@ -95,6 +95,7 @@ class DDS : public Plugin
     std::queue<DeviceState> fEvents;
     std::mutex fEventsMutex;
     std::condition_variable fNewEvent;
+    DeviceState fCurrentState, fLastState;
 
     std::atomic<bool> fDeviceTerminationRequested;
 
@@ -120,9 +121,11 @@ Plugin::ProgOptions DDSProgramOptions()
 REGISTER_FAIRMQ_PLUGIN(
     DDS,                                         // Class name
     dds,                                         // Plugin name (string, lower case chars only)
-    (Plugin::Version{1,0,0}),                    // Version
+    (Plugin::Version{FAIRMQ_VERSION_MAJOR,
+                     FAIRMQ_VERSION_MINOR,
+                     FAIRMQ_VERSION_PATCH}),     // Version
     "FairRootGroup <fairroot@gsi.de>",           // Maintainer
-    "https://github.com/FairRootGroup/FairRoot", // Homepage
+    "https://github.com/FairRootGroup/FairMQ",   // Homepage
     DDSProgramOptions                            // custom program options for the plugin
 )
 
