@@ -29,7 +29,7 @@ using boost::optional;
 const std::string fair::mq::PluginManager::fgkLibPrefix = "FairMQPlugin_";
 
 fair::mq::PluginManager::PluginManager()
-    : fSearchPaths{{"."}}
+    : fSearchPaths{}
     , fPluginFactories()
     , fPluginServices()
     , fPlugins()
@@ -39,7 +39,7 @@ fair::mq::PluginManager::PluginManager()
 }
 
 fair::mq::PluginManager::PluginManager(const vector<string> args)
-    : fSearchPaths{{"."}}
+    : fSearchPaths{}
     , fPluginFactories()
     , fPluginServices()
     , fPlugins()
@@ -115,7 +115,8 @@ auto fair::mq::PluginManager::ProgramOptions() -> po::options_description
                                                                             "* Append(>) or prepend(<) to default search path, e.g.\n"
                                                                             "  -S >/lib </home/user/lib\n"
                                                                             "* If you mix the overriding and appending/prepending syntaxes, the overriding paths act as default search path, e.g.\n"
-                                                                            "  -S /usr/lib >/lib </home/user/lib /usr/local/lib results in /home/user/lib,/usr/local/lib,/usr/lib/,/lib")
+                                                                            "  -S /usr/lib >/lib </home/user/lib /usr/local/lib results in /home/user/lib,/usr/local/lib,/usr/lib/,/lib\n"
+                                                                            "If nothing is found, the default dynamic library lookup is performed, see man ld.so(8) for details.")
         ("plugin,P", po::value<vector<string>>(), "List of plugin names to load in order,"
                                                   "e.g. if the file is called 'libFairMQPlugin_example.so', just list 'example' or 'd:example' here."
                                                   "To load a prelinked plugin, list 'p:example' here.");
@@ -170,29 +171,42 @@ auto fair::mq::PluginManager::LoadPluginDynamic(const string& pluginName) -> voi
     if (fPluginFactories.find(pluginName) == fPluginFactories.end())
     {
         auto success = false;
-        for(const auto& searchPath : SearchPaths())
-        {
-            try
-            {
-                LoadSymbols(
-                    pluginName,
-                    searchPath / ToString(LibPrefix(), pluginName),
-                    dll::load_mode::append_decorations
-                );
-
+        for (const auto& searchPath : SearchPaths()) {
+            try {
+                LoadSymbols(pluginName,
+                            searchPath / ToString(LibPrefix(), pluginName),
+                            dll::load_mode::append_decorations);
                 fPluginOrder.push_back(pluginName);
                 success = true;
                 break;
-            }
-            catch (boost::system::system_error& e)
-            {
-                if(string{e.what()}.find("No such file or directory") == string::npos)
-                {
-                    throw PluginLoadError(ToString("An error occurred while loading dynamic plugin ", pluginName, ": ", e.what()));
+            } catch (boost::system::system_error& e) {
+                if (string{e.what()}.find("No such file or directory") == string::npos) {
+                    throw PluginLoadError(
+                        ToString("An error occurred while loading dynamic plugin ",
+                                 pluginName, ": ", e.what()));
                 }
             }
         }
-        if(!success) { throw PluginLoadError(ToString("The plugin ", pluginName, " could not be found in the plugin search paths.")); }
+
+        if (!success) {
+            try {
+                // LoadSymbols(pluginName,
+                            // ToString(LibPrefix(), pluginName),
+                            // dll::load_mode::search_system_folders | dll::load_mode::append_decorations);
+                // Not sure, why the above does not work. Workaround for now:
+                LoadSymbols(pluginName,
+                            ToString("lib",
+                                     LibPrefix(),
+                                     pluginName,
+                                     boost::dll::detail::shared_library_impl::suffix().native()),
+                            dll::load_mode::search_system_folders);
+                fPluginOrder.push_back(pluginName);
+            } catch (boost::system::system_error& e) {
+                throw PluginLoadError(
+                    ToString("An error occurred while loading dynamic plugin ",
+                             pluginName, ": ", e.what()));
+            }
+        }
     }
 }
 
