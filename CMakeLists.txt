@@ -49,7 +49,7 @@ find_package(Threads REQUIRED)
 
 if(BUILD_DDS_PLUGIN)
   find_package2(PRIVATE DDS VERSION 2.2 REQUIRED)
-  set(DDS_Boost_COMPONENTS log log_setup system filesystem regex thread program_options)
+  set(DDS_Boost_COMPONENTS log log_setup system filesystem regex thread program_options signals)
   set(DDS_Boost_VERSION 1.67)
 endif()
 
@@ -152,11 +152,6 @@ if(BUILD_FAIRMQ)
   )
 
   install(FILES cmake/FindZeroMQ.cmake
-    DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
-  )
-endif()
-if(BUILD_DDS_PLUGIN)
-  install(FILES cmake/FindDDS.cmake
     DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
   )
 endif()
