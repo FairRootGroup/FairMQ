@@ -8,7 +8,7 @@
     <declrequirement id="SinkWorker" type="wnname" value="sink"/>
 
     <decltask id="Sampler">
-        <exe reachable="true">fairmq-ex-dds-sampler --id sampler --channel-config name=data1,type=push,method=bind -S "&lt;@PLUGIN_DIR@/" -P dds</exe>
+        <exe reachable="true">fairmq-ex-dds-sampler --id sampler --channel-config name=data1,type=push,method=bind -P dds</exe>
         <requirements>
             <id>SamplerWorker</id>
         </requirements>
@@ -18,7 +18,7 @@
     </decltask>
 
     <decltask id="Processor">
-        <exe reachable="true">fairmq-ex-dds-processor --id processor_%taskIndex% --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -S "&lt;@PLUGIN_DIR@/" -P dds</exe>
+        <exe reachable="true">fairmq-ex-dds-processor --id processor_%taskIndex% --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P dds</exe>
         <requirements>
             <id>ProcessWorker</id>
         </requirements>
@@ -29,7 +29,7 @@
     </decltask>
 
     <decltask id="Sink">
-        <exe reachable="true">fairmq-ex-dds-sink --id sink --channel-config name=data2,type=pull,method=bind -S "&lt;@PLUGIN_DIR@/" -P dds</exe>
+        <exe reachable="true">fairmq-ex-dds-sink --id sink --channel-config name=data2,type=pull,method=bind -P dds</exe>
         <requirements>
             <id>SinkWorker</id>
         </requirements>
