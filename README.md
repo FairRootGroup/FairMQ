@@ -38,7 +38,8 @@ a simulation, reconstruction and analysis framework.
   * PUBLIC: [**Boost**](https://www.boost.org/), [**FairLogger**](https://github.com/FairRootGroup/FairLogger)
   * BUILD: [CMake](https://cmake.org/), [GTest](https://github.com/google/googletest), [Doxygen](http://www.doxygen.org/)
   * PRIVATE: [ZeroMQ](http://zeromq.org/), [Msgpack](https://msgpack.org/index.html), [nanomsg](http://nanomsg.org/),
-[OFI](https://ofiwg.github.io/libfabric/), [Protobuf](https://developers.google.com/protocol-buffers/), [DDS](http://dds.gsi.de)
+[OFI](https://ofiwg.github.io/libfabric/), [Protobuf](https://developers.google.com/protocol-buffers/), [DDS](http://dds.gsi.de),
+[PMIx](https://pmix.org/)
 
   Supported platforms: Linux and MacOS.
 
@@ -104,6 +105,7 @@ On command line:
   * `-DBUILD_NANOMSG_TRANSPORT=ON` enables building of nanomsg transport.
   * `-DBUILD_OFI_TRANSPORT=ON` enables building of the experimental OFI transport.
   * `-DBUILD_DDS_PLUGIN=ON` enables building of the DDS plugin.
+  * `-DBUILD_PMIX_PLUGIN=ON` enables building of the PMIx plugin.
   * `-DBUILD_DOCS=ON` enables building of API docs.
   * You can hint non-system installations for dependent packages, see the #Installation section above
 

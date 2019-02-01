@@ -12,6 +12,9 @@
 if(BUILD_DDS_PLUGIN)
   add_subdirectory(plugins/DDS)
 endif()
+if(BUILD_PMIX_PLUGIN)
+  add_subdirectory(plugins/PMIx)
+endif()
 
 
 ############################
