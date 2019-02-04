@@ -175,7 +175,7 @@ auto fair::mq::PluginManager::LoadPluginDynamic(const string& pluginName) -> voi
             try {
                 LoadSymbols(pluginName,
                             searchPath / ToString(LibPrefix(), pluginName),
-                            dll::load_mode::append_decorations);
+                            dll::load_mode::append_decorations | dll::load_mode::rtld_global);
                 fPluginOrder.push_back(pluginName);
                 success = true;
                 break;
@@ -199,7 +199,7 @@ auto fair::mq::PluginManager::LoadPluginDynamic(const string& pluginName) -> voi
                                      LibPrefix(),
                                      pluginName,
                                      boost::dll::detail::shared_library_impl::suffix().native()),
-                            dll::load_mode::search_system_folders);
+                            dll::load_mode::search_system_folders | dll::load_mode::rtld_global);
                 fPluginOrder.push_back(pluginName);
             } catch (boost::system::system_error& e) {
                 throw PluginLoadError(
