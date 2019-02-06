@@ -7,7 +7,11 @@
 ################################################################################
 
 set(plugin FairMQPlugin_pmix)
-add_library(${plugin} SHARED ${CMAKE_CURRENT_SOURCE_DIR}/PMIx.cxx ${CMAKE_CURRENT_SOURCE_DIR}/PMIx.h)
+add_library(${plugin} SHARED
+  ${CMAKE_CURRENT_SOURCE_DIR}/PMIxPlugin.cxx
+  ${CMAKE_CURRENT_SOURCE_DIR}/PMIxPlugin.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/PMIx.hpp
+)
 target_link_libraries(${plugin} FairMQ PMIx::libpmix)
 target_include_directories(${plugin} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(${plugin} PROPERTIES
