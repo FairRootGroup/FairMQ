@@ -1,8 +1,8 @@
 /********************************************************************************
  *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
- *              This software is distributed under the terms of the             * 
- *              GNU Lesser General Public Licence (LGPL) version 3,             *  
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
@@ -57,7 +57,7 @@ class FairMQSink : public FairMQDevice//, public OutputPolicy
         LOG(info) << "Starting the benchmark and expecting to receive " << fMaxIterations << " messages.";
         auto tStart = std::chrono::high_resolution_clock::now();
 
-        while (CheckCurrentState(RUNNING))
+        while (!NewStatePending())
         {
             if (fMultipart)
             {
