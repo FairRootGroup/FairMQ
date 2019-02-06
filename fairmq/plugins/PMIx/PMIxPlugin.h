@@ -9,12 +9,20 @@
 #ifndef FAIR_MQ_PLUGINS_PMIX
 #define FAIR_MQ_PLUGINS_PMIX
 
+#include "PMIx.hpp"
+
 #include <fairmq/Plugin.h>
 #include <fairmq/Version.h>
+#include <FairMQLogger.h>
 
-#include <pmix.h>
+#include <string>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 #include <sys/types.h>
 #include <unistd.h>
+#include <unordered_map>
+#include <vector>
 
 namespace fair
 {
@@ -23,19 +31,41 @@ namespace mq
 namespace plugins
 {
 
-class PMIx : public Plugin
+struct ConnectingChannel
+{
+    ConnectingChannel()
+        : fSubChannelAddresses()
+        , fValues()
+    {}
+
+    std::vector<std::string> fSubChannelAddresses;
+    std::unordered_map<uint64_t, std::string> fValues;
+};
+
+class PMIxPlugin : public Plugin
 {
   public:
-    PMIx(const std::string& name,
+    PMIxPlugin(const std::string& name,
          const Plugin::Version version,
          const std::string& maintainer,
          const std::string& homepage,
          PluginServices* pluginServices);
-    ~PMIx();
+    ~PMIxPlugin();
+    auto PMIxClient() const -> std::string 
+    {
+        std::stringstream ss;
+        ss << "PMIx client(pid=" << fPid << ")";
+        return ss.str();
+    }
 
   private:
-    pmix_proc_t fPMIxProc;
+    pmix::proc fProc;
     pid_t fPid;
+    std::unordered_map<std::string, std::vector<std::string>> fBindingChannels;
+    std::unordered_map<std::string, ConnectingChannel> fConnectingChannels;
+
+    auto FillChannelContainers() -> void;
+    auto PublishBoundChannels() -> void;
 };
 
 Plugin::ProgOptions PMIxProgramOptions()
@@ -47,7 +77,7 @@ Plugin::ProgOptions PMIxProgramOptions()
 }
 
 REGISTER_FAIRMQ_PLUGIN(
-    PMIx,                                        // Class name
+    PMIxPlugin,                                  // Class name
     pmix,                                        // Plugin name (string, lower case chars only)
     (Plugin::Version{FAIRMQ_VERSION_MAJOR,
                      FAIRMQ_VERSION_MINOR,
@@ -61,4 +91,4 @@ REGISTER_FAIRMQ_PLUGIN(
 } /* namespace mq */
 } /* namespace fair */
 
-#endif /* FAIR_MQ_PLUGINS_DDS */
+#endif /* FAIR_MQ_PLUGINS_PMIX */
