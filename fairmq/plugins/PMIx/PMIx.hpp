@@ -173,6 +173,17 @@ auto publish(const std::vector<info>& info) -> void
     }
 }
 
+auto fence(const std::vector<proc>& procs = {}, const std::vector<info>& info = {}) -> void
+{
+    status rc;
+
+    rc = PMIx_Fence(procs.data(), procs.size(), info.data(), info.size());
+    if (rc != PMIX_SUCCESS) {
+        throw runtime_error("pmix::fence() failed: rc=" + rc);
+    }
+}
+
+
 } /* namespace pmix */
 
 #endif /* PMIX_HPP */
