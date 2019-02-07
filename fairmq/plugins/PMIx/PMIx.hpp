@@ -124,7 +124,15 @@ struct info : pmix_info_t
     {
         (void)strncpy(key, k.c_str(), PMIX_MAX_KEYLEN);
         flags = 0;
-        value = pmix::value(std::forward<Args>(args)...);
+
+        pmix::value rhs(std::forward<Args>(args)...);
+        auto lhs(&value);
+        status rc;
+        PMIX_VALUE_XFER(rc, lhs, static_cast<pmix_value_t*>(&rhs));
+
+        if (rc != PMIX_SUCCESS) {
+            throw runtime_error("pmix::info ctor failed: rc=" + rc);
+        }
     }
 };
 
