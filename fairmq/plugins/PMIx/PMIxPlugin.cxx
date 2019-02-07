@@ -40,13 +40,14 @@ PMIxPlugin::PMIxPlugin(const std::string& name,
 
                 PublishBoundChannels();
 
-                // pmix_proc_t proc;
-                // rc = PMIx_Fence(&proc, 1, NULL, 0)
-                // fence
+                {
+                    pmix::proc all(fProc);
+                    all.rank = pmix::rank::wildcard;
+
+                    pmix::fence({all});
+                }
 
                 // lookup
-
-                // fence
                 break;
         case DeviceState::Exiting:
             UnsubscribeFromDeviceStateChange();
