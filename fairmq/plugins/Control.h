@@ -36,7 +36,10 @@ class Control : public Plugin
 
   private:
     auto InteractiveMode() -> void;
+    static auto PrintInteractiveHelpColor() -> void;
     static auto PrintInteractiveHelp() -> void;
+    static auto PrintStateMachineColor() -> void;
+    static auto PrintStateMachine() -> void;
     auto StaticMode() -> void;
     auto WaitForNextState() -> DeviceState;
     auto SignalHandler() -> void;
@@ -62,9 +65,7 @@ auto ControlPluginProgramOptions() -> Plugin::ProgOptions;
 REGISTER_FAIRMQ_PLUGIN(
     Control,   // Class name
     control,   // Plugin name (string, lower case chars only)
-    (Plugin::Version{FAIRMQ_VERSION_MAJOR,
-                     FAIRMQ_VERSION_MINOR,
-                     FAIRMQ_VERSION_PATCH}),       // Version
+    (Plugin::Version{FAIRMQ_VERSION_MAJOR, FAIRMQ_VERSION_MINOR, FAIRMQ_VERSION_PATCH}), // Version
     "FairRootGroup <fairroot@gsi.de>",             // Maintainer
     "https://github.com/FairRootGroup/FairRoot",   // Homepage
     ControlPluginProgramOptions   // Free function which declares custom program options for the

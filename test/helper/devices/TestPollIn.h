@@ -31,14 +31,10 @@ class PollIn : public FairMQDevice
     {}
 
   protected:
-    auto Init() -> void override
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
-
     auto InitTask() -> void override
     {
         fPollType = fConfig->GetValue<int>("poll-type");
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 
     auto Run() -> void override

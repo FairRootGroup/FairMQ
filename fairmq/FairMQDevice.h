@@ -9,7 +9,7 @@
 #ifndef FAIRMQDEVICE_H_
 #define FAIRMQDEVICE_H_
 
-#include <FairMQStateMachine.h>
+#include <StateMachine.h>
 #include <FairMQTransportFactory.h>
 #include <fairmq/Transports.h>
 
@@ -32,6 +32,7 @@
 #include <assert.h> // static_assert
 #include <type_traits> // is_trivially_copyable
 #include <stdexcept>
+#include <queue>
 
 #include <mutex>
 #include <condition_variable>
@@ -43,11 +44,43 @@ using FairMQChannelMap = std::unordered_map<std::string, std::vector<FairMQChann
 using InputMsgCallback = std::function<bool(FairMQMessagePtr&, int)>;
 using InputMultipartCallback = std::function<bool(FairMQParts&, int)>;
 
-class FairMQDevice : public FairMQStateMachine
+class FairMQDevice
 {
     friend class FairMQChannel;
 
   public:
+    // backwards-compatibility enum for old state machine interface, todo: delete this
+    enum Event
+    {
+        INIT_DEVICE,
+        internal_DEVICE_READY,
+        INIT_TASK,
+        internal_READY,
+        RUN,
+        STOP,
+        RESET_TASK,
+        RESET_DEVICE,
+        internal_IDLE,
+        END,
+        ERROR_FOUND
+    };
+
+    // backwards-compatibility enum for old state machine interface, todo: delete this
+    enum State
+    {
+        OK,
+        Error,
+        IDLE,
+        INITIALIZING_DEVICE,
+        DEVICE_READY,
+        INITIALIZING_TASK,
+        READY,
+        RUNNING,
+        RESETTING_TASK,
+        RESETTING_DEVICE,
+        EXITING
+    };
+
     /// Default constructor
     FairMQDevice();
     /// Constructor with external FairMQProgOptions
@@ -330,7 +363,6 @@ class FairMQDevice : public FairMQStateMachine
     } catch (const std::out_of_range& oor) {
         LOG(error) << "out of range: " << oor.what();
         LOG(error) << "requested channel has not been configured? check channel names/configuration.";
-        fRateLogging = false;
         throw;
     }
 
@@ -339,8 +371,7 @@ class FairMQDevice : public FairMQStateMachine
     bool RegisterChannelEndpoint(const std::string& channelName, uint16_t minNumSubChannels = 1, uint16_t maxNumSubChannels = 1)
     {
         bool ok = fChannelRegistry.insert(std::make_pair(channelName, std::make_pair(minNumSubChannels, maxNumSubChannels))).second;
-        if (!ok)
-        {
+        if (!ok) {
             LOG(warn) << "Registering channel: name already registered: \"" << channelName << "\"";
         }
         return ok;
@@ -348,14 +379,10 @@ class FairMQDevice : public FairMQStateMachine
 
     void PrintRegisteredChannels()
     {
-        if (fChannelRegistry.size() < 1)
-        {
+        if (fChannelRegistry.size() < 1) {
             std::cout << "no channels registered." << std::endl;
-        }
-        else
-        {
-            for (const auto& c : fChannelRegistry)
-            {
+        } else {
+            for (const auto& c : fChannelRegistry) {
                 std::cout << c.first << ":" << c.second.first << ":" << c.second.second << std::endl;
             }
         }
@@ -389,8 +416,7 @@ class FairMQDevice : public FairMQStateMachine
 
     void RunStateMachine()
     {
-      CallStateChangeCallbacks(FairMQStateMachine::IDLE);
-      ProcessWork();
+        fStateMachine.ProcessWork();
     };
 
     /// Wait for the supplied amount of time or for interruption.
@@ -399,8 +425,7 @@ class FairMQDevice : public FairMQStateMachine
     template<class Rep, class Period>
     bool WaitFor(std::chrono::duration<Rep, Period> const& duration)
     {
-        std::unique_lock<std::mutex> lock(fInterruptedMtx);
-        return !fInterruptedCV.wait_for(lock, duration, [&] { return fInterrupted.load(); }); // return true if no interruption happened
+        return fStateMachine.WaitForPendingStateFor(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
     }
 
   protected:
@@ -421,53 +446,90 @@ class FairMQDevice : public FairMQStateMachine
     std::string fId; ///< Device ID
 
     /// Additional user initialization (can be overloaded in child classes). Prefer to use InitTask().
-    virtual void Init();
+    virtual void Init() {}
+
+    virtual void Bind() {}
+
+    virtual void Connect() {}
 
     /// Task initialization (can be overloaded in child classes)
-    virtual void InitTask();
+    virtual void InitTask() {}
 
     /// Runs the device (to be overloaded in child classes)
-    virtual void Run();
+    virtual void Run() {}
 
     /// Called in the RUNNING state once before executing the Run()/ConditionalRun() method
-    virtual void PreRun();
+    virtual void PreRun() {}
 
     /// Called during RUNNING state repeatedly until it returns false or device state changes
-    virtual bool ConditionalRun();
+    virtual bool ConditionalRun() { return false; }
 
     /// Called in the RUNNING state once after executing the Run()/ConditionalRun() method
-    virtual void PostRun();
+    virtual void PostRun() {}
 
-    /// Handles the PAUSE state
-    virtual void Pause();
+    virtual void Pause() __attribute__((deprecated("PAUSE state is removed. This method is never called. To pause Run, go to READY with STOP transition and back to RUNNING with RUN to resume."))) {}
 
     /// Resets the user task (to be overloaded in child classes)
-    virtual void ResetTask();
+    virtual void ResetTask() {}
 
     /// Resets the device (can be overloaded in child classes)
-    virtual void Reset();
+    virtual void Reset() {}
+
+  public:
+    bool ChangeState(const fair::mq::Transition transition) { return fStateMachine.ChangeState(transition); }
+    bool ChangeState(const std::string& transition) { return fStateMachine.ChangeState(fair::mq::StateMachine::GetTransition(transition)); }
+
+    void WaitForEndOfState(const fair::mq::Transition transition) __attribute__((deprecated("Use WaitForState(fair::mq::State expectedState).")));
+    void WaitForEndOfState(const std::string& transition) __attribute__((deprecated("Use WaitForState(fair::mq::State expectedState)."))) { WaitForState(transition); }
+
+    fair::mq::State WaitForNextState();
+    void WaitForState(fair::mq::State state);
+    void WaitForState(const std::string& state) { fair::mq::StateMachine::GetState(state); }
+
+    void SubscribeToStateChange(const std::string& key, std::function<void(const fair::mq::State)> callback) { fStateMachine.SubscribeToStateChange(key, callback); }
+    void UnsubscribeFromStateChange(const std::string& key) { fStateMachine.UnsubscribeFromStateChange(key); }
+
+    void SubscribeToNewTransition(const std::string& key, std::function<void(const fair::mq::Transition)> callback) { fStateMachine.SubscribeToNewTransition(key, callback); }
+    void UnsubscribeFromNewTransition(const std::string& key) { fStateMachine.UnsubscribeFromNewTransition(key); }
+
+    bool CheckCurrentState(const int /* state */) const __attribute__((deprecated("Use NewStatePending()."))) { return !fStateMachine.NewStatePending(); }
+    bool CheckCurrentState(const std::string& /* state */) const __attribute__((deprecated("Use NewStatePending()."))) { return !fStateMachine.NewStatePending(); }
+
+    /// Returns true is a new state has been requested, signaling the current handler to stop.
+    bool NewStatePending() const { return fStateMachine.NewStatePending(); }
+
+    fair::mq::State GetCurrentState() const { return fStateMachine.GetCurrentState(); }
+    std::string GetCurrentStateName() const { return fStateMachine.GetCurrentStateName(); }
+
+    static std::string GetStateName(const fair::mq::State state) { return fair::mq::StateMachine::GetStateName(state); }
+    static std::string GetTransitionName(const fair::mq::Transition transition) { return fair::mq::StateMachine::GetTransitionName(transition); }
+
+    struct DeviceStateError : std::runtime_error { using std::runtime_error::runtime_error; };
 
   private:
     fair::mq::Transport fDefaultTransportType; ///< Default transport for the device
+    fair::mq::StateMachine fStateMachine;
 
-    /// Handles the initialization and the Init() method
+    /// Handles the initialization
     void InitWrapper();
+    /// Initializes binding channels
+    void BindWrapper();
+    /// Initializes connecting channels
+    void ConnectWrapper();
     /// Handles the InitTask() method
     void InitTaskWrapper();
     /// Handles the Run() method
     void RunWrapper();
-    /// Handles the Pause() method
-    void PauseWrapper();
     /// Handles the ResetTask() method
     void ResetTaskWrapper();
     /// Handles the Reset() method
     void ResetWrapper();
 
-    /// Unblocks blocking channel send/receive calls
-    void Unblock();
+    /// Notifies transports to cease any blocking activity
+    void UnblockTransports();
 
     /// Shuts down the transports and the device
-    void Exit();
+    void Exit() {}
 
     /// Attach (bind/connect) channels in the list
     void AttachChannels(std::vector<FairMQChannel*>& chans);
@@ -483,6 +545,9 @@ class FairMQDevice : public FairMQStateMachine
 
     void CreateOwnConfig();
 
+    std::vector<FairMQChannel*> fUninitializedBindingChannels;
+    std::vector<FairMQChannel*> fUninitializedConnectingChannels;
+
     bool fDataCallbacks;
     std::unordered_map<std::string, InputMsgCallback> fMsgInputs;
     std::unordered_map<std::string, InputMultipartCallback> fMultipartInputs;
@@ -496,10 +561,9 @@ class FairMQDevice : public FairMQStateMachine
     float fRate; ///< Rate limiting for ConditionalRun
     std::vector<std::string> fRawCmdLineArgs;
 
-    std::atomic<bool> fInterrupted;
-    std::condition_variable fInterruptedCV;
-    std::mutex fInterruptedMtx;
-    mutable std::atomic<bool> fRateLogging;
+    std::queue<fair::mq::State> fStates;
+    std::mutex fStatesMtx;
+    std::condition_variable fStatesCV;
 };
 
 #endif /* FAIRMQDEVICE_H_ */

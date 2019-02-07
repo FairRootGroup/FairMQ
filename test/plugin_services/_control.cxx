@@ -38,11 +38,19 @@ TEST_F(PluginServices, OnlySingleController)
     ASSERT_NO_THROW(mServices.ChangeDeviceState("foo", DeviceStateTransition::InitDevice));
     EXPECT_EQ(mServices.GetDeviceController(), string{"foo"});
 
+    mDevice.WaitForState(fair::mq::State::InitializingDevice);
+    mServices.ChangeDeviceState("foo", DeviceStateTransition::CompleteInit);
+    mDevice.WaitForState(fair::mq::State::Initialized);
+    mServices.ChangeDeviceState("foo", DeviceStateTransition::Bind);
+    mDevice.WaitForState(fair::mq::State::Bound);
+    mServices.ChangeDeviceState("foo", DeviceStateTransition::Connect);
+
     // park device
-    mDevice.WaitForEndOfState(FairMQDevice::DEVICE_READY);
+    mDevice.WaitForState(fair::mq::State::DeviceReady);
     mServices.ChangeDeviceState("foo", DeviceStateTransition::ResetDevice);
-    mDevice.WaitForEndOfState(FairMQDevice::RESET_DEVICE);
+    mDevice.WaitForState(fair::mq::State::Idle);
     mServices.ChangeDeviceState("foo", DeviceStateTransition::End);
+    mDevice.WaitForState(fair::mq::State::Exiting);
 }
 
 TEST_F(PluginServices, Control)
@@ -66,14 +74,23 @@ TEST_F(PluginServices, Control)
         }
     });
 
+    mDevice.WaitForState(fair::mq::State::InitializingDevice);
+    mServices.ChangeDeviceState("foo", DeviceStateTransition::CompleteInit);
+    mDevice.WaitForState(fair::mq::State::Initialized);
+    mServices.ChangeDeviceState("foo", DeviceStateTransition::Bind);
+    mDevice.WaitForState(fair::mq::State::Bound);
+    mServices.ChangeDeviceState("foo", DeviceStateTransition::Connect);
+    mDevice.WaitForState(fair::mq::State::DeviceReady);
+
     unique_lock<mutex> lock{cv_m};
-    cv.wait(lock);
+    cv.wait(lock, [&]{ return nextState == DeviceState::DeviceReady; });
 
     ASSERT_EQ(mServices.GetCurrentDeviceState(), DeviceState::DeviceReady);
 
     mServices.ChangeDeviceState("foo", DeviceStateTransition::ResetDevice);
-    mDevice.WaitForEndOfState(FairMQDevice::RESET_DEVICE);
+    mDevice.WaitForState(fair::mq::State::Idle);
     mServices.ChangeDeviceState("foo", DeviceStateTransition::End);
+    mDevice.WaitForState(fair::mq::State::Exiting);
 }
 
 TEST_F(PluginServices, ControlStateConversions)
@@ -82,11 +99,12 @@ TEST_F(PluginServices, ControlStateConversions)
     EXPECT_NO_THROW(mServices.ToDeviceState("ERROR"));
     EXPECT_NO_THROW(mServices.ToDeviceState("IDLE"));
     EXPECT_NO_THROW(mServices.ToDeviceState("INITIALIZING DEVICE"));
+    EXPECT_NO_THROW(mServices.ToDeviceState("BINDING"));
+    EXPECT_NO_THROW(mServices.ToDeviceState("CONNECTING"));
     EXPECT_NO_THROW(mServices.ToDeviceState("DEVICE READY"));
     EXPECT_NO_THROW(mServices.ToDeviceState("INITIALIZING TASK"));
     EXPECT_NO_THROW(mServices.ToDeviceState("READY"));
     EXPECT_NO_THROW(mServices.ToDeviceState("RUNNING"));
-    EXPECT_NO_THROW(mServices.ToDeviceState("PAUSED"));
     EXPECT_NO_THROW(mServices.ToDeviceState("RESETTING TASK"));
     EXPECT_NO_THROW(mServices.ToDeviceState("RESETTING DEVICE"));
     EXPECT_NO_THROW(mServices.ToDeviceState("EXITING"));
@@ -94,11 +112,12 @@ TEST_F(PluginServices, ControlStateConversions)
     EXPECT_NO_THROW(mServices.ToStr(DeviceState::Error));
     EXPECT_NO_THROW(mServices.ToStr(DeviceState::Idle));
     EXPECT_NO_THROW(mServices.ToStr(DeviceState::InitializingDevice));
+    EXPECT_NO_THROW(mServices.ToStr(DeviceState::Binding));
+    EXPECT_NO_THROW(mServices.ToStr(DeviceState::Connecting));
     EXPECT_NO_THROW(mServices.ToStr(DeviceState::DeviceReady));
     EXPECT_NO_THROW(mServices.ToStr(DeviceState::InitializingTask));
     EXPECT_NO_THROW(mServices.ToStr(DeviceState::Ready));
     EXPECT_NO_THROW(mServices.ToStr(DeviceState::Running));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::Paused));
     EXPECT_NO_THROW(mServices.ToStr(DeviceState::ResettingTask));
     EXPECT_NO_THROW(mServices.ToStr(DeviceState::ResettingDevice));
     EXPECT_NO_THROW(mServices.ToStr(DeviceState::Exiting));
@@ -107,18 +126,18 @@ TEST_F(PluginServices, ControlStateConversions)
 TEST_F(PluginServices, ControlStateTransitionConversions)
 {
     EXPECT_NO_THROW(mServices.ToDeviceStateTransition("INIT DEVICE"));
+    EXPECT_NO_THROW(mServices.ToDeviceStateTransition("COMPLETE INIT"));
     EXPECT_NO_THROW(mServices.ToDeviceStateTransition("INIT TASK"));
     EXPECT_NO_THROW(mServices.ToDeviceStateTransition("RUN"));
-    EXPECT_NO_THROW(mServices.ToDeviceStateTransition("PAUSE"));
     EXPECT_NO_THROW(mServices.ToDeviceStateTransition("STOP"));
     EXPECT_NO_THROW(mServices.ToDeviceStateTransition("RESET TASK"));
     EXPECT_NO_THROW(mServices.ToDeviceStateTransition("RESET DEVICE"));
     EXPECT_NO_THROW(mServices.ToDeviceStateTransition("END"));
     EXPECT_NO_THROW(mServices.ToDeviceStateTransition("ERROR FOUND"));
     EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::InitDevice));
+    EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::CompleteInit));
     EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::InitTask));
     EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::Run));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::Pause));
     EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::Stop));
     EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::ResetTask));
     EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::ResetDevice));

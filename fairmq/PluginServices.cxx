@@ -16,11 +16,14 @@ const std::unordered_map<std::string, PluginServices::DeviceState> PluginService
     {"ERROR",               DeviceState::Error},
     {"IDLE",                DeviceState::Idle},
     {"INITIALIZING DEVICE", DeviceState::InitializingDevice},
+    {"INITIALIZED",         DeviceState::Initialized},
+    {"BINDING",             DeviceState::Binding},
+    {"BOUND",               DeviceState::Bound},
+    {"CONNECTING",          DeviceState::Connecting},
     {"DEVICE READY",        DeviceState::DeviceReady},
     {"INITIALIZING TASK",   DeviceState::InitializingTask},
     {"READY",               DeviceState::Ready},
     {"RUNNING",             DeviceState::Running},
-    {"PAUSED",              DeviceState::Paused},
     {"RESETTING TASK",      DeviceState::ResettingTask},
     {"RESETTING DEVICE",    DeviceState::ResettingDevice},
     {"EXITING",             DeviceState::Exiting}
@@ -30,83 +33,96 @@ const std::unordered_map<PluginServices::DeviceState, std::string, tools::HashEn
     {DeviceState::Error,              "ERROR"},
     {DeviceState::Idle,               "IDLE"},
     {DeviceState::InitializingDevice, "INITIALIZING DEVICE"},
+    {DeviceState::Initialized,        "INITIALIZED"},
+    {DeviceState::Binding,            "BINDING"},
+    {DeviceState::Bound,              "BOUND"},
+    {DeviceState::Connecting,         "CONNECTING"},
     {DeviceState::DeviceReady,        "DEVICE READY"},
     {DeviceState::InitializingTask,   "INITIALIZING TASK"},
     {DeviceState::Ready,              "READY"},
     {DeviceState::Running,            "RUNNING"},
-    {DeviceState::Paused,             "PAUSED"},
     {DeviceState::ResettingTask,      "RESETTING TASK"},
     {DeviceState::ResettingDevice,    "RESETTING DEVICE"},
     {DeviceState::Exiting,            "EXITING"}
 };
 const std::unordered_map<std::string, PluginServices::DeviceStateTransition> PluginServices::fkDeviceStateTransitionStrMap = {
-    {"INIT DEVICE",  DeviceStateTransition::InitDevice},
-    {"INIT TASK",    DeviceStateTransition::InitTask},
-    {"RUN",          DeviceStateTransition::Run},
-    {"PAUSE",        DeviceStateTransition::Pause},
-    {"RESUME",       DeviceStateTransition::Resume},
-    {"STOP",         DeviceStateTransition::Stop},
-    {"RESET TASK",   DeviceStateTransition::ResetTask},
-    {"RESET DEVICE", DeviceStateTransition::ResetDevice},
-    {"END",          DeviceStateTransition::End},
-    {"ERROR FOUND",  DeviceStateTransition::ErrorFound},
+    {"AUTO",          DeviceStateTransition::Auto},
+    {"INIT DEVICE",   DeviceStateTransition::InitDevice},
+    {"COMPLETE INIT", DeviceStateTransition::CompleteInit},
+    {"BIND",          DeviceStateTransition::Bind},
+    {"CONNECT",       DeviceStateTransition::Connect},
+    {"INIT TASK",     DeviceStateTransition::InitTask},
+    {"RUN",           DeviceStateTransition::Run},
+    {"STOP",          DeviceStateTransition::Stop},
+    {"RESET TASK",    DeviceStateTransition::ResetTask},
+    {"RESET DEVICE",  DeviceStateTransition::ResetDevice},
+    {"END",           DeviceStateTransition::End},
+    {"ERROR FOUND",   DeviceStateTransition::ErrorFound},
 };
 const std::unordered_map<PluginServices::DeviceStateTransition, std::string, tools::HashEnum<PluginServices::DeviceStateTransition>> PluginServices::fkStrDeviceStateTransitionMap = {
-    {DeviceStateTransition::InitDevice,  "INIT DEVICE"},
-    {DeviceStateTransition::InitTask,    "INIT TASK"},
-    {DeviceStateTransition::Run,         "RUN"},
-    {DeviceStateTransition::Pause,       "PAUSE"},
-    {DeviceStateTransition::Resume,      "RESUME"},
-    {DeviceStateTransition::Stop,        "STOP"},
-    {DeviceStateTransition::ResetTask,   "RESET TASK"},
-    {DeviceStateTransition::ResetDevice, "RESET DEVICE"},
-    {DeviceStateTransition::End,         "END"},
-    {DeviceStateTransition::ErrorFound,  "ERROR FOUND"},
+    {DeviceStateTransition::Auto,         "Auto"},
+    {DeviceStateTransition::InitDevice,   "INIT DEVICE"},
+    {DeviceStateTransition::CompleteInit, "COMPLETE INIT"},
+    {DeviceStateTransition::Bind,         "BIND"},
+    {DeviceStateTransition::Connect,      "CONNECT"},
+    {DeviceStateTransition::InitTask,     "INIT TASK"},
+    {DeviceStateTransition::Run,          "RUN"},
+    {DeviceStateTransition::Stop,         "STOP"},
+    {DeviceStateTransition::ResetTask,    "RESET TASK"},
+    {DeviceStateTransition::ResetDevice,  "RESET DEVICE"},
+    {DeviceStateTransition::End,          "END"},
+    {DeviceStateTransition::ErrorFound,   "ERROR FOUND"},
 };
-const std::unordered_map<FairMQDevice::State, PluginServices::DeviceState, fair::mq::tools::HashEnum<FairMQDevice::State>> PluginServices::fkDeviceStateMap = {
-    {FairMQDevice::OK,                  DeviceState::Ok},
-    {FairMQDevice::Error,               DeviceState::Error},
-    {FairMQDevice::IDLE,                DeviceState::Idle},
-    {FairMQDevice::INITIALIZING_DEVICE, DeviceState::InitializingDevice},
-    {FairMQDevice::DEVICE_READY,        DeviceState::DeviceReady},
-    {FairMQDevice::INITIALIZING_TASK,   DeviceState::InitializingTask},
-    {FairMQDevice::READY,               DeviceState::Ready},
-    {FairMQDevice::RUNNING,             DeviceState::Running},
-    {FairMQDevice::PAUSED,              DeviceState::Paused},
-    {FairMQDevice::RESETTING_TASK,      DeviceState::ResettingTask},
-    {FairMQDevice::RESETTING_DEVICE,    DeviceState::ResettingDevice},
-    {FairMQDevice::EXITING,             DeviceState::Exiting}
+const std::unordered_map<fair::mq::State, PluginServices::DeviceState, fair::mq::tools::HashEnum<fair::mq::State>> PluginServices::fkDeviceStateMap = {
+    {fair::mq::State::Ok,                 DeviceState::Ok},
+    {fair::mq::State::Error,              DeviceState::Error},
+    {fair::mq::State::Idle,               DeviceState::Idle},
+    {fair::mq::State::InitializingDevice, DeviceState::InitializingDevice},
+    {fair::mq::State::Initialized,        DeviceState::Initialized},
+    {fair::mq::State::Binding,            DeviceState::Binding},
+    {fair::mq::State::Bound,              DeviceState::Bound},
+    {fair::mq::State::Connecting,         DeviceState::Connecting},
+    {fair::mq::State::DeviceReady,        DeviceState::DeviceReady},
+    {fair::mq::State::InitializingTask,   DeviceState::InitializingTask},
+    {fair::mq::State::Ready,              DeviceState::Ready},
+    {fair::mq::State::Running,            DeviceState::Running},
+    {fair::mq::State::ResettingTask,      DeviceState::ResettingTask},
+    {fair::mq::State::ResettingDevice,    DeviceState::ResettingDevice},
+    {fair::mq::State::Exiting,            DeviceState::Exiting}
 };
-const std::unordered_map<PluginServices::DeviceStateTransition, FairMQDevice::Event, tools::HashEnum<PluginServices::DeviceStateTransition>> PluginServices::fkDeviceStateTransitionMap = {
-    {DeviceStateTransition::InitDevice,  FairMQDevice::INIT_DEVICE},
-    {DeviceStateTransition::InitTask,    FairMQDevice::INIT_TASK},
-    {DeviceStateTransition::Run,         FairMQDevice::RUN},
-    {DeviceStateTransition::Pause,       FairMQDevice::PAUSE},
-    {DeviceStateTransition::Resume,      FairMQDevice::RUN},
-    {DeviceStateTransition::Stop,        FairMQDevice::STOP},
-    {DeviceStateTransition::ResetTask,   FairMQDevice::RESET_TASK},
-    {DeviceStateTransition::ResetDevice, FairMQDevice::RESET_DEVICE},
-    {DeviceStateTransition::End,         FairMQDevice::END},
-    {DeviceStateTransition::ErrorFound,  FairMQDevice::ERROR_FOUND}
+const std::unordered_map<PluginServices::DeviceStateTransition, fair::mq::Transition, tools::HashEnum<PluginServices::DeviceStateTransition>> PluginServices::fkDeviceStateTransitionMap = {
+    {DeviceStateTransition::Auto,         fair::mq::Transition::Auto},
+    {DeviceStateTransition::InitDevice,   fair::mq::Transition::InitDevice},
+    {DeviceStateTransition::CompleteInit, fair::mq::Transition::CompleteInit},
+    {DeviceStateTransition::Bind,         fair::mq::Transition::Bind},
+    {DeviceStateTransition::Connect,      fair::mq::Transition::Connect},
+    {DeviceStateTransition::InitTask,     fair::mq::Transition::InitTask},
+    {DeviceStateTransition::Run,          fair::mq::Transition::Run},
+    {DeviceStateTransition::Stop,         fair::mq::Transition::Stop},
+    {DeviceStateTransition::ResetTask,    fair::mq::Transition::ResetTask},
+    {DeviceStateTransition::ResetDevice,  fair::mq::Transition::ResetDevice},
+    {DeviceStateTransition::End,          fair::mq::Transition::End},
+    {DeviceStateTransition::ErrorFound,   fair::mq::Transition::ErrorFound}
 };
 
-auto PluginServices::ChangeDeviceState(const std::string& controller, const DeviceStateTransition next) -> void
+auto PluginServices::ChangeDeviceState(const std::string& controller, const DeviceStateTransition next) -> bool
 {
     lock_guard<mutex> lock{fDeviceControllerMutex};
 
     if (!fDeviceController) fDeviceController = controller;
 
-    if (fDeviceController == controller)
-    {
-        fDevice.ChangeState(fkDeviceStateTransitionMap.at(next));
-    }
-    else
-    {
+    bool result = false;
+
+    if (fDeviceController == controller) {
+        result = fDevice.ChangeState(fkDeviceStateTransitionMap.at(next));
+    } else {
         throw DeviceControlError{tools::ToString(
             "Plugin '", controller, "' is not allowed to change device states. ",
             "Currently, plugin '", *fDeviceController, "' has taken control."
         )};
     }
+
+    return result;
 }
 
 auto PluginServices::TakeDeviceControl(const std::string& controller) -> void

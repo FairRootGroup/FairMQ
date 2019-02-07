@@ -14,6 +14,8 @@
 #include <cstdlib>
 #include <functional>
 #include <atomic>
+#include <thread>
+#include <chrono>
 
 using namespace std;
 
@@ -53,8 +55,8 @@ Control::Control(const string& name, const Plugin::Version version, const string
     , fDeviceHasShutdown(false)
     , fPluginShutdownRequested(false)
 {
-    SubscribeToDeviceStateChange([&](DeviceState newState)
-    {
+    SubscribeToDeviceStateChange([&](DeviceState newState) {
+        LOG(trace) << "control plugin notified on new state: " << newState;
         {
             lock_guard<mutex> lock{fEventsMutex};
             fEvents.push(newState);
@@ -62,45 +64,50 @@ Control::Control(const string& name, const Plugin::Version version, const string
         fNewEvent.notify_one();
     });
 
-    try
-    {
+    try {
         TakeDeviceControl();
 
         auto control = GetProperty<string>("control");
 
-        if (control == "static")
-        {
+        if (control == "static") {
             LOG(debug) << "Running builtin controller: static";
             fControllerThread = thread(&Control::StaticMode, this);
-        }
-        else if (control == "interactive")
-        {
+        } else if (control == "interactive") {
             LOG(debug) << "Running builtin controller: interactive";
             fControllerThread = thread(&Control::InteractiveMode, this);
-        }
-        else
-        {
+        } else {
             LOG(error) << "Unrecognized control mode '" << control << "' requested. " << "Ignoring and falling back to static control mode.";
             fControllerThread = thread(&Control::StaticMode, this);
         }
-    }
-    catch (PluginServices::DeviceControlError& e)
-    {
+    } catch (PluginServices::DeviceControlError& e) {
         // If we are here, it means another plugin has taken control. That's fine, just print the exception message and do nothing else.
         LOG(debug) << e.what();
     }
 
-    LOG(debug) << "catch-signals: " << GetProperty<int>("catch-signals");
-    if (GetProperty<int>("catch-signals") > 0)
-    {
+    if (GetProperty<int>("catch-signals") > 0) {
+        LOG(debug) << "Plugin '" << name << "' is setting up signal handling for SIGINT and SIGTERM";
         fSignalHandlerThread = thread(&Control::SignalHandler, this);
         signal(SIGINT, signal_handler);
         signal(SIGTERM, signal_handler);
-    }
-    else
-    {
+    } else {
         LOG(warn) << "Signal handling (e.g. Ctrl-C) has been deactivated.";
     }
+}
+
+auto Control::RunStartupSequence() -> void
+{
+    ChangeDeviceState(DeviceStateTransition::InitDevice);
+    while (WaitForNextState() != DeviceState::InitializingDevice) {}
+    ChangeDeviceState(DeviceStateTransition::CompleteInit);
+    while (WaitForNextState() != DeviceState::Initialized) {}
+    ChangeDeviceState(DeviceStateTransition::Bind);
+    while (WaitForNextState() != DeviceState::Bound) {}
+    ChangeDeviceState(DeviceStateTransition::Connect);
+    while (WaitForNextState() != DeviceState::DeviceReady) {}
+    ChangeDeviceState(DeviceStateTransition::InitTask);
+    while (WaitForNextState() != DeviceState::Ready) {}
+    ChangeDeviceState(DeviceStateTransition::Run);
+    while (WaitForNextState() != DeviceState::Running) {}
 }
 
 auto ControlPluginProgramOptions() -> Plugin::ProgOptions
@@ -135,8 +142,7 @@ struct terminal_config
 };
 
 auto Control::InteractiveMode() -> void
-try
-{
+try {
     RunStartupSequence();
 
     char input; // hold the user console input
@@ -147,129 +153,226 @@ try
 
     terminal_config tconfig;
 
-    PrintInteractiveHelp();
+    bool color = GetProperty<bool>("color");
+
+    if (color) {
+        PrintInteractiveHelpColor();
+    } else {
+        PrintInteractiveHelp();
+    }
 
     bool keepRunning = true;
 
-    while (keepRunning)
-    {
-        if (poll(cinfd, 1, 500))
-        {
-            if (fDeviceShutdownRequested)
-            {
+    while (keepRunning) {
+        if (poll(cinfd, 1, 500)) {
+            if (fDeviceShutdownRequested) {
                 break;
             }
 
             cin >> input;
 
-            switch (input)
-            {
+            switch (input) {
+                case 'c':
+                    cout << "\n --> [i] check current state\n\n" << flush;
+                    LOG(state) << GetCurrentDeviceState();
+                break;
                 case 'i':
-                    LOG(info) << "\n\n --> [i] init device\n";
+                    cout << "\n --> [i] init device\n\n" << flush;
                     ChangeDeviceState(DeviceStateTransition::InitDevice);
+                    while (WaitForNextState() != DeviceState::InitializingDevice) {}
+                    ChangeDeviceState(DeviceStateTransition::CompleteInit);
+                break;
+                case 'b':
+                    cout << "\n --> [b] bind\n\n" << flush;
+                    ChangeDeviceState(DeviceStateTransition::Bind);
+                break;
+                case 'x':
+                    cout << "\n --> [x] connect\n\n" << flush;
+                    ChangeDeviceState(DeviceStateTransition::Connect);
                 break;
                 case 'j':
-                    LOG(info) << "\n\n --> [j] init task\n";
+                    cout << "\n --> [j] init task\n\n" << flush;
                     ChangeDeviceState(DeviceStateTransition::InitTask);
                 break;
-                case 'p':
-                    LOG(info) << "\n\n --> [p] pause\n";
-                    ChangeDeviceState(DeviceStateTransition::Pause);
-                break;
                 case 'r':
-                    LOG(info) << "\n\n --> [r] run\n";
+                    cout << "\n --> [r] run\n\n" << flush;
                     ChangeDeviceState(DeviceStateTransition::Run);
                 break;
                 case 's':
-                    LOG(info) << "\n\n --> [s] stop\n";
+                    cout << "\n --> [s] stop\n\n" << flush;
                     ChangeDeviceState(DeviceStateTransition::Stop);
                 break;
                 case 't':
-                    LOG(info) << "\n\n --> [t] reset task\n";
+                    cout << "\n --> [t] reset task\n\n" << flush;
                     ChangeDeviceState(DeviceStateTransition::ResetTask);
                 break;
                 case 'd':
-                    LOG(info) << "\n\n --> [d] reset device\n";
+                    cout << "\n --> [d] reset device\n\n" << flush;
                     ChangeDeviceState(DeviceStateTransition::ResetDevice);
                 break;
                 case 'k':
-                    LOG(info) << "\n\n --> [k] increase log severity\n";
+                    cout << "\n --> [k] increase log severity\n\n" << flush;
                     CycleLogConsoleSeverityUp();
                 break;
                 case 'l':
-                    LOG(info) << "\n\n --> [l] decrease log severity\n";
+                    cout << "\n --> [l] decrease log severity\n\n" << flush;
                     CycleLogConsoleSeverityDown();
                 break;
                 case 'n':
-                    LOG(info) << "\n\n --> [n] increase log verbosity\n";
+                    cout << "\n --> [n] increase log verbosity\n\n" << flush;
                     CycleLogVerbosityUp();
                 break;
                 case 'm':
-                    LOG(info) << "\n\n --> [m] decrease log verbosity\n";
+                    cout << "\n --> [m] decrease log verbosity\n\n" << flush;
                     CycleLogVerbosityDown();
                 break;
                 case 'h':
-                    LOG(info) << "\n\n --> [h] help\n";
-                    PrintInteractiveHelp();
+                    cout << "\n --> [h] help\n\n" << flush;
+                    if (color) {
+                        PrintInteractiveHelpColor();
+                        PrintStateMachineColor();
+                    } else {
+                        PrintInteractiveHelp();
+                        PrintStateMachine();
+                    }
                 break;
-                // case 'x':
-                //     LOG(info) << "\n\n --> [x] ERROR\n";
-                //     ChangeDeviceState(DeviceStateTransition::ERROR_FOUND);
-                //     break;
                 case 'q':
-                    LOG(info) << "\n\n --> [q] end\n";
+                    cout << "\n --> [q] end\n\n" << flush;
                     keepRunning = false;
                 break;
                 default:
-                    LOG(info) << "Invalid input: [" << input << "]";
+                    cout << "Invalid input: [" << input << "]. " << flush;
                     PrintInteractiveHelp();
                 break;
             }
         }
 
-        if (GetCurrentDeviceState() == DeviceState::Error)
-        {
+        if (GetCurrentDeviceState() == DeviceState::Error) {
             throw DeviceErrorState("Controlled device transitioned to error state.");
         }
 
-        if (fDeviceShutdownRequested)
-        {
+        if (fDeviceShutdownRequested) {
             break;
         }
     }
 
     RunShutdownSequence();
-}
-catch (PluginServices::DeviceControlError& e)
-{
+} catch (PluginServices::DeviceControlError& e) {
     // If we are here, it means another plugin has taken control. That's fine, just print the exception message and do nothing else.
     LOG(debug) << e.what();
+} catch (DeviceErrorState&) {
 }
-catch (DeviceErrorState&)
+
+auto Control::PrintInteractiveHelpColor() -> void
 {
+    stringstream ss;
+    ss << "Following control commands are available:\n\n"
+       << " [\033[01;32mh\033[0m] help, [\033[01;32mc\033[0m] check current device state,\n"
+       << " [\033[01;32mi\033[0m] init device, [\033[01;32mb\033[0m] bind, [\033[01;32mx\033[0m] connect, [\033[01;32mj\033[0m] init task,"
+       << " [\033[01;32mr\033[0m] run, [\033[01;32ms\033[0m] stop,\n"
+       << " [\033[01;32mt\033[0m] reset task, [\033[01;32md\033[0m] reset device, [\033[01;32mq\033[0m] end,\n"
+       << " [\033[01;32mk\033[0m] increase log severity [\033[01;32ml\033[0m] decrease log severity [\033[01;32mn\033[0m] increase log verbosity [\033[01;32mm\033[0m] decrease log verbosity\n\n";
+    cout << ss.str() << flush;
 }
 
 auto Control::PrintInteractiveHelp() -> void
 {
     stringstream ss;
-    ss << "\nFollowing control commands are available:\n\n"
-       << "[h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device\n"
-       << "[k] increase log severity [l] decrease log severity [n] increase log verbosity [m] decrease log verbosity\n\n";
+    ss << "Following control commands are available:\n\n"
+       << " [h] help, [c] check current device state,\n"
+       << " [i] init device, [b] bind, [x] connect, [j] init task,\n"
+       << " [r] run, [s] stop,\n"
+       << " [t] reset task, [d] reset device, [q] end,\n"
+       << " [k] increase log severity, [l] decrease log severity, [n] increase log verbosity, [m] decrease log verbosity.\n\n";
+    cout << ss.str() << flush;
+}
+
+void Control::PrintStateMachineColor()
+{
+    stringstream ss;
+    ss << "               @                                \n"
+       << "   ┌───────────╨─────────────┐  ┌───────────┐   \n"
+       << "   │           \033[01;36mIDLE\033[0m         [\033[01;32mq\033[0m]─▶  \033[01;33mEXITING\033[0m  │   \n"
+       << "   └[\033[01;32mi\033[0m]─────────────────── ▲ ┘  └───────────┘   \n"
+       << " ╔══ ▼ ════════════════╗ ╔═╩══════════════════╗ \n"
+       << " ║ \033[01;33mINITIALIZING DEVICE\033[0m ║ ║  \033[01;33mRESETTING DEVICE\033[0m  ║ \n"
+       << " ╚══════════╦══════════╝ ╚════════ ▲ ═════════╝ \n"
+       << " ┌───────── ▼ ─────────┐           │  ┌────────────────────────────┐ \n"
+       << " │     \033[01;36mINITIALIZED\033[0m     │           │  │ Legend:                    │ \n"
+       << " └─────────[\033[01;32mb\033[0m]─────────┘           │  │----------------------------│ \n"
+       << " ╔═════════ ▼ ═════════╗           │  │ [\033[01;32mk\033[0m] keyboard shortcut for  │ \n"
+       << " ║       \033[01;33mBINDING\033[0m       ║           │  │     interactive controller │ \n"
+       << " ╚══════════╦══════════╝           │  │ ┌────────────────────────┐ │ \n"
+       << " ┌───────── ▼ ─────────┐           │  │ │      \033[01;36mIDLING STATE\033[0m      │ │ \n"
+       << " │        \033[01;36mBOUND\033[0m        │           │  │ └────────────────────────┘ │ \n"
+       << " └─────────[\033[01;32mx\033[0m]─────────┘           │  │ ╔════════════════════════╗ │ \n"
+       << " ╔═════════ ▼ ═════════╗           │  │ ║      \033[01;33mWORKING STATE\033[0m     ║ │ \n"
+       << " ║     \033[01;33mCONNECTING\033[0m      ║           │  │ ╚════════════════════════╝ │ \n"
+       << " ╚══════════╦══════════╝           │  └────────────────────────────┘ \n"
+       << "   ┌─────── ▼ ────────────────────[\033[01;32md\033[0m]───────┐   \n"
+       << "   │              \033[01;36mDEVICE READY\033[0m              │   \n"
+       << "   └───────[\033[01;32mj\033[0m]──────────────────── ▲ ───────┘   \n"
+       << " ╔═════════ ▼ ═════════╗ ╔═════════╩══════════╗ \n"
+       << " ║  \033[01;33mINITIALIZING TASK\033[0m  ║ ║   \033[01;33mRESETTING TASK\033[0m   ║ \n"
+       << " ╚══════════╦══════════╝ ╚════════ ▲ ═════════╝ \n"
+       << "   ┌─────── ▼ ────────────────────[\033[01;32mt\033[0m]───────┐   \n"
+       << "   │                 \033[01;36mREADY\033[0m                  │   \n"
+       << "   └───────[\033[01;32mr\033[0m]──────────────────── ▲ ───────┘   \n"
+       << "    ╔══════ ▼ ════════════════════[\033[01;32ms\033[0m]══════╗    \n"
+       << "    ║               \033[01;33mRUNNING\033[0m                ║    \n"
+       << "    ╚══════════════════════════════════════╝    \n"
+       << "                                                \n";
+    cout << ss.str() << flush;
+}
+
+void Control::PrintStateMachine()
+{
+    stringstream ss;
+    ss << "               @                                                     \n"
+       << "   ┌───────────╨─────────────┐  ┌───────────┐                        \n"
+       << "   │           IDLE         [q]─▶  EXITING  │                        \n"
+       << "   └[i]─────────────────── ▲ ┘  └───────────┘                        \n"
+       << " ╔══ ▼ ════════════════╗ ╔═╩══════════════════╗                      \n"
+       << " ║ INITIALIZING DEVICE ║ ║  RESETTING DEVICE  ║                      \n"
+       << " ╚══════════╦══════════╝ ╚════════ ▲ ═════════╝                      \n"
+       << " ┌───────── ▼ ─────────┐           │  ┌────────────────────────────┐ \n"
+       << " │     INITIALIZED     │           │  │ Legend:                    │ \n"
+       << " └─────────[b]─────────┘           │  │----------------------------│ \n"
+       << " ╔═════════ ▼ ═════════╗           │  │ [k] keyboard shortcut for  │ \n"
+       << " ║       BINDING       ║           │  │     interactive controller │ \n"
+       << " ╚══════════╦══════════╝           │  │ ┌────────────────────────┐ │ \n"
+       << " ┌───────── ▼ ─────────┐           │  │ │      IDLING STATE      │ │ \n"
+       << " │        BOUND        │           │  │ └────────────────────────┘ │ \n"
+       << " └─────────[x]─────────┘           │  │ ╔════════════════════════╗ │ \n"
+       << " ╔═════════ ▼ ═════════╗           │  │ ║      WORKING STATE     ║ │ \n"
+       << " ║     CONNECTING      ║           │  │ ╚════════════════════════╝ │ \n"
+       << " ╚══════════╦══════════╝           │  └────────────────────────────┘ \n"
+       << "   ┌─────── ▼ ────────────────────[d]───────┐                        \n"
+       << "   │              DEVICE READY              │                        \n"
+       << "   └───────[j]──────────────────── ▲ ───────┘                        \n"
+       << " ╔═════════ ▼ ═════════╗ ╔═════════╩══════════╗                      \n"
+       << " ║  INITIALIZING TASK  ║ ║   RESETTING TASK   ║                      \n"
+       << " ╚══════════╦══════════╝ ╚════════ ▲ ═════════╝                      \n"
+       << "   ┌─────── ▼ ────────────────────[t]───────┐                        \n"
+       << "   │                 READY                  │                        \n"
+       << "   └───────[r]──────────────────── ▲ ───────┘                        \n"
+       << "    ╔══════ ▼ ════════════════════[s]══════╗                         \n"
+       << "    ║               RUNNING                ║                         \n"
+       << "    ╚══════════════════════════════════════╝                         \n"
+       << "                                                                     \n";
     cout << ss.str() << flush;
 }
 
 auto Control::WaitForNextState() -> DeviceState
 {
     unique_lock<mutex> lock{fEventsMutex};
-    while (fEvents.empty())
-    {
+    while (fEvents.empty()) {
         fNewEvent.wait_for(lock, chrono::milliseconds(50));
     }
 
     auto result = fEvents.front();
 
-    if (result == DeviceState::Error)
-    {
+    if (result == DeviceState::Error) {
         throw DeviceErrorState("Controlled device transitioned to error state.");
     }
 
@@ -351,14 +454,16 @@ auto Control::SignalHandler() -> void
 auto Control::RunShutdownSequence() -> void
 {
     auto nextState = GetCurrentDeviceState();
-    EmptyEventQueue();
-    while (nextState != DeviceState::Exiting && nextState != DeviceState::Error)
-    {
-        switch (nextState)
-        {
+    if (nextState != DeviceState::Error) {
+        EmptyEventQueue();
+    }
+    while (nextState != DeviceState::Exiting && nextState != DeviceState::Error) {
+        switch (nextState) {
             case DeviceState::Idle:
                 ChangeDeviceState(DeviceStateTransition::End);
                 break;
+            case DeviceState::Initialized:
+            case DeviceState::Bound:
             case DeviceState::DeviceReady:
                 ChangeDeviceState(DeviceStateTransition::ResetDevice);
                 break;
@@ -368,11 +473,8 @@ auto Control::RunShutdownSequence() -> void
             case DeviceState::Running:
                 ChangeDeviceState(DeviceStateTransition::Stop);
                 break;
-            case DeviceState::Paused:
-                ChangeDeviceState(DeviceStateTransition::Resume);
-                break;
             default:
-                LOG(debug) << "Controller ignoring event: " << nextState;
+                // LOG(debug) << "Controller ignoring event: " << nextState;
                 break;
         }
 
@@ -381,16 +483,6 @@ auto Control::RunShutdownSequence() -> void
 
     fDeviceHasShutdown = true;
     ReleaseDeviceControl();
-}
-
-auto Control::RunStartupSequence() -> void
-{
-    ChangeDeviceState(DeviceStateTransition::InitDevice);
-    while (WaitForNextState() != DeviceState::DeviceReady) {}
-    ChangeDeviceState(DeviceStateTransition::InitTask);
-    while (WaitForNextState() != DeviceState::Ready) {}
-    ChangeDeviceState(DeviceStateTransition::Run);
-    while (WaitForNextState() != DeviceState::Running) {}
 }
 
 auto Control::EmptyEventQueue() -> void

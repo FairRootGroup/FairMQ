@@ -74,15 +74,14 @@ auto DeviceRunner::Run() -> int
     fDevice->RegisterChannelEndpoints();
     if (fConfig.Count("print-channels")) {
         fDevice->PrintRegisteredChannels();
-        fDevice->ChangeState(FairMQDevice::END);
+        fDevice->ChangeState(fair::mq::Transition::End);
         return 0;
     }
 
     // Handle --version
     if (fConfig.Count("version")) {
         std::cout << "User device version: " << fDevice->GetVersion() << std::endl;
-        std::cout << "FAIRMQ_INTERFACE_VERSION: " << FAIRMQ_INTERFACE_VERSION << std::endl;
-        fDevice->ChangeState(FairMQDevice::END);
+        fDevice->ChangeState(fair::mq::Transition::End);
         return 0;
     }
 

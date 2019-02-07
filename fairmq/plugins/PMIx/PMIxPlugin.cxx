@@ -29,7 +29,7 @@ PMIxPlugin::PMIxPlugin(const std::string& name,
 {
     SubscribeToDeviceStateChange([&](DeviceState newState) {
         switch (newState) {
-            case DeviceState::InitializingDevice:
+            case DeviceState::Connecting:
                 Init();
                 Publish();
                 Fence();
@@ -83,6 +83,7 @@ auto PMIxPlugin::Publish() -> void
             for (int i = 0; i < c.second; ++i) {
                 std::string addressKey{"chans." + c.first + "." + std::to_string(i) + ".address"};
                 info.emplace_back(addressKey, GetProperty<std::string>(addressKey));
+                LOG(debug) << PMIxClient() << info.back();
             }
         }
     }
@@ -123,16 +124,21 @@ auto PMIxPlugin::Lookup() -> void
         LOG(debug) << PMIxClient() << " pmix::lookup() OK";
     }
 
+    LOG(info) << pdata.size();
+
     for (const auto& p : pdata) {
         if (p.value.type == PMIX_UNDEF) {
             LOG(debug) << PMIxClient() << " pmix::lookup() not found: key=" << p.key;
         } else if (p.value.type == PMIX_STRING) {
-            SetProperty<std::string>(p.key, p.value.data.string);
             LOG(debug) << PMIxClient() << " pmix::lookup() found: key=" << p.key << ",value=" << p.value.data.string;
+            SetProperty<std::string>(p.key, p.value.data.string);
+            LOG(info) << GetProperty<std::string>(p.key);
         } else {
             LOG(debug) << PMIxClient() << " pmix::lookup() wrong type returned: key=" << p.key << ",type=" << p.value.type;
         }
     }
+
+    LOG(info) << pdata.size();
 }
 
 } /* namespace plugins */
