@@ -31,14 +31,15 @@ The state machine can be querried and controlled via `GetCurrentStateName()` and
 If the device is running in interactive mode (default), states can be changed via keyboard input:
 
  - `'h'` - help
- - `'p'` - pause
  - `'r'` - run
  - `'s'` - stop
  - `'t'` - reset task
  - `'d'` - reset device
  - `'q'` - end
  - `'j'` - init task
- - `'i'` - init device
+ - `'i'` - initialize
+ - `'b'` - bind
+ - `'x'` - connect
 
 Without the interactive mode, for example for a run in background, two other control mechanisms are available:
 
