@@ -46,9 +46,11 @@ struct rank
         wildcard = PMIX_RANK_WILDCARD,
         local_node = PMIX_RANK_LOCAL_NODE
     };
-    rank(pmix_rank_t r)
+
+    explicit rank(pmix_rank_t r)
         : m_value(r)
     {}
+
     operator pmix_rank_t() { return m_value; }
 
   private:
@@ -59,6 +61,7 @@ struct proc : pmix_proc_t
 {
     proc() { PMIX_PROC_CONSTRUCT(static_cast<pmix_proc_t*>(this)); }
     ~proc() { PMIX_PROC_DESTRUCT(static_cast<pmix_proc_t*>(this)); }
+
     proc(pmix::nspace ns, pmix::rank r)
     {
         PMIX_PROC_LOAD(static_cast<pmix_proc_t*>(this), ns, static_cast<pmix_rank_t>(r));
@@ -80,16 +83,19 @@ struct value : pmix_value_t
     // {
         // PMIX_VALUE_LOAD(static_cast<pmix_value_t*>(this), const_cast<void*>(val), dt);
     // }
+
     template<typename T>
-    value(T)
+    explicit value(T)
     {
         throw runtime_error("Given value type not supported or not yet implemented.");
     }
-    value(const char* val)
+
+    explicit value(const char* val)
     {
         PMIX_VALUE_LOAD(static_cast<pmix_value_t*>(this), const_cast<char*>(val), PMIX_STRING);
     }
-    value(const std::string& val)
+
+    explicit value(const std::string& val)
     {
         PMIX_VALUE_LOAD(
             static_cast<pmix_value_t*>(this), const_cast<char*>(val.c_str()), PMIX_STRING);
