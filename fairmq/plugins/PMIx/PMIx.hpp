@@ -76,7 +76,19 @@ struct proc : pmix_proc_t
 struct value : pmix_value_t
 {
     value() { PMIX_VALUE_CONSTRUCT(static_cast<pmix_value_t*>(this)); }
-    ~value() { /*PMIX_VALUE_DESTRUCT(static_cast<pmix_value_t*>(this));*/ }
+    ~value() { PMIX_VALUE_DESTRUCT(static_cast<pmix_value_t*>(this)); }
+
+    value(const value& rhs)
+    {
+      LOG(warn) << "copy ctor";
+        status rc;
+        auto lhs(static_cast<pmix_value_t*>(this));
+        PMIX_VALUE_XFER(rc, lhs, static_cast<pmix_value_t*>(const_cast<value*>(&rhs)));
+
+        if (rc != PMIX_SUCCESS) {
+            throw runtime_error("pmix::value copy ctor failed: rc=" + rc);
+        }
+    }
 
     // template<typename T>
     // value(const T* val, data_type dt)
