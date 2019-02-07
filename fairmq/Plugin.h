@@ -78,7 +78,7 @@ class Plugin
     auto TakeDeviceControl() -> void { fPluginServices->TakeDeviceControl(fkName); };
     auto StealDeviceControl() -> void { fPluginServices->StealDeviceControl(fkName); };
     auto ReleaseDeviceControl() -> void { fPluginServices->ReleaseDeviceControl(fkName); };
-    auto ChangeDeviceState(const DeviceStateTransition next) -> void { fPluginServices->ChangeDeviceState(fkName, next); }
+    auto ChangeDeviceState(const DeviceStateTransition next) -> bool { return fPluginServices->ChangeDeviceState(fkName, next); }
     auto SubscribeToDeviceStateChange(std::function<void(DeviceState)> callback) -> void { fPluginServices->SubscribeToDeviceStateChange(fkName, callback); }
     auto UnsubscribeFromDeviceStateChange() -> void { fPluginServices->UnsubscribeFromDeviceStateChange(fkName); }
 

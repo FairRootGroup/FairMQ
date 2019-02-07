@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -7,189 +7,488 @@
  ********************************************************************************/
 
 #include "StateMachine.h"
+#include <fairmq/Tools.h>
 
-using namespace fair::mq;
+// Increase maximum number of boost::msm states (default is 10)
+// This #define has to be before any msm header includes
+#define FUSION_MAX_VECTOR_SIZE 20
+
+#include <boost/mpl/for_each.hpp>
+#include <boost/msm/back/state_machine.hpp>
+#include <boost/msm/back/tools.hpp>
+#include <boost/msm/back/metafunctions.hpp>
+#include <boost/msm/front/state_machine_def.hpp>
+#include <boost/msm/front/functor_row.hpp>
+#include <boost/core/demangle.hpp>
+#include <boost/signals2.hpp> // signal/slot for onStateChange callbacks
+
+#include <atomic>
+#include <condition_variable>
+#include <chrono>
+#include <array>
+#include <unordered_map>
+#include <mutex>
+
 using namespace std;
+using namespace boost::msm;
+using namespace boost::msm::front;
+using namespace boost::msm::back;
+namespace bmpl = boost::mpl;
 
-const std::unordered_map<std::string, StateMachine::State> StateMachine::fkStateStrMap = {
-    {"OK",                  State::Ok},
-    {"ERROR",               State::Error},
-    {"IDLE",                State::Idle},
-    {"INITIALIZING DEVICE", State::InitializingDevice},
-    {"DEVICE READY",        State::DeviceReady},
-    {"INITIALIZING TASK",   State::InitializingTask},
-    {"READY",               State::Ready},
-    {"RUNNING",             State::Running},
-    {"RESETTING TASK",      State::ResettingTask},
-    {"RESETTING DEVICE",    State::ResettingDevice},
-    {"EXITING",             State::Exiting}
-};
-const std::unordered_map<StateMachine::State, std::string, tools::HashEnum<StateMachine::State>> StateMachine::fkStrStateMap = {
-    {State::Ok,                 "OK"},
-    {State::Error,              "ERROR"},
-    {State::Idle,               "IDLE"},
-    {State::InitializingDevice, "INITIALIZING DEVICE"},
-    {State::DeviceReady,        "DEVICE READY"},
-    {State::InitializingTask,   "INITIALIZING TASK"},
-    {State::Ready,              "READY"},
-    {State::Running,            "RUNNING"},
-    {State::ResettingTask,      "RESETTING TASK"},
-    {State::ResettingDevice,    "RESETTING DEVICE"},
-    {State::Exiting,            "EXITING"}
-};
-const std::unordered_map<std::string, StateMachine::StateTransition> StateMachine::fkStateTransitionStrMap = {
-    {"INIT DEVICE",  StateTransition::InitDevice},
-    {"INIT TASK",    StateTransition::InitTask},
-    {"RUN",          StateTransition::Run},
-    {"STOP",         StateTransition::Stop},
-    {"RESET TASK",   StateTransition::ResetTask},
-    {"RESET DEVICE", StateTransition::ResetDevice},
-    {"END",          StateTransition::End},
-    {"ERROR FOUND",  StateTransition::ErrorFound},
-    {"AUTOMATIC",    StateTransition::Automatic},
-};
-const std::unordered_map<StateMachine::StateTransition, std::string, tools::HashEnum<StateMachine::StateTransition>> StateMachine::fkStrStateTransitionMap = {
-    {StateTransition::InitDevice,  "INIT DEVICE"},
-    {StateTransition::InitTask,    "INIT TASK"},
-    {StateTransition::Run,         "RUN"},
-    {StateTransition::Stop,        "STOP"},
-    {StateTransition::ResetTask,   "RESET TASK"},
-    {StateTransition::ResetDevice, "RESET DEVICE"},
-    {StateTransition::End,         "END"},
-    {StateTransition::ErrorFound,  "ERROR FOUND"},
-    {StateTransition::Automatic,   "AUTOMATIC"},
-};
-
-auto StateMachine::Run() -> void
+namespace std
 {
-    LOG(state) << "Starting FairMQ state machine";
 
-    LOG(debug) << "Entering initial " << fErrorState << " state (orthogonal error state machine)";
-    LOG(state) << "Entering initial " << fState << " state";
+template<>
+struct hash<fair::mq::Transition> : fair::mq::tools::HashEnum<fair::mq::Transition> {};
 
-    std::unique_lock<std::mutex> lock{fMutex};
-    while (true)
+template<>
+struct hash<fair::mq::State> : fair::mq::tools::HashEnum<fair::mq::State> {};
+
+} /* namespace std */
+
+namespace fair
+{
+namespace mq
+{
+namespace fsm
+{
+
+// list of FSM states
+struct OK_S                  : public state<> { static string Name() { return "OK"; }                  static State Type() { return State::Ok; } };
+
+struct IDLE_S                : public state<> { static string Name() { return "IDLE"; }                static State Type() { return State::Idle; } };
+struct INITIALIZING_DEVICE_S : public state<> { static string Name() { return "INITIALIZING_DEVICE"; } static State Type() { return State::InitializingDevice; } };
+struct INITIALIZED_S         : public state<> { static string Name() { return "INITIALIZED"; }         static State Type() { return State::Initialized; } };
+struct BINDING_S             : public state<> { static string Name() { return "BINDING"; }             static State Type() { return State::Binding; } };
+struct BOUND_S               : public state<> { static string Name() { return "BOUND"; }               static State Type() { return State::Bound; } };
+struct CONNECTING_S          : public state<> { static string Name() { return "CONNECTING"; }          static State Type() { return State::Connecting; } };
+struct DEVICE_READY_S        : public state<> { static string Name() { return "DEVICE_READY"; }        static State Type() { return State::DeviceReady; } };
+struct INITIALIZING_TASK_S   : public state<> { static string Name() { return "INITIALIZING_TASK"; }   static State Type() { return State::InitializingTask; } };
+struct READY_S               : public state<> { static string Name() { return "READY"; }               static State Type() { return State::Ready; } };
+struct RUNNING_S             : public state<> { static string Name() { return "RUNNING"; }             static State Type() { return State::Running; } };
+struct RESETTING_TASK_S      : public state<> { static string Name() { return "RESETTING_TASK"; }      static State Type() { return State::ResettingTask; } };
+struct RESETTING_DEVICE_S    : public state<> { static string Name() { return "RESETTING_DEVICE"; }    static State Type() { return State::ResettingDevice; } };
+struct EXITING_S             : public state<> { static string Name() { return "EXITING"; }             static State Type() { return State::Exiting; } };
+
+struct ERROR_S               : public terminate_state<> { static string Name() { return "ERROR"; }     static State Type() { return State::Error; } };
+
+// list of FSM transitions (events)
+struct AUTO_E          { static string Name() { return "AUTO"; }          static Transition Type() { return Transition::Auto; } };
+struct INIT_DEVICE_E   { static string Name() { return "INIT_DEVICE"; }   static Transition Type() { return Transition::InitDevice; } };
+struct COMPLETE_INIT_E { static string Name() { return "COMPLETE_INIT"; } static Transition Type() { return Transition::CompleteInit; } };
+struct BIND_E          { static string Name() { return "BIND"; }          static Transition Type() { return Transition::Bind; } };
+struct CONNECT_E       { static string Name() { return "CONNECT"; }       static Transition Type() { return Transition::Connect; } };
+struct INIT_TASK_E     { static string Name() { return "INIT_TASK"; }     static Transition Type() { return Transition::InitTask; } };
+struct RUN_E           { static string Name() { return "RUN"; }           static Transition Type() { return Transition::Run; } };
+struct STOP_E          { static string Name() { return "STOP"; }          static Transition Type() { return Transition::Stop; } };
+struct RESET_TASK_E    { static string Name() { return "RESET_TASK"; }    static Transition Type() { return Transition::ResetTask; } };
+struct RESET_DEVICE_E  { static string Name() { return "RESET_DEVICE"; }  static Transition Type() { return Transition::ResetDevice; } };
+struct END_E           { static string Name() { return "END"; }           static Transition Type() { return Transition::End; } };
+struct ERROR_FOUND_E   { static string Name() { return "ERROR_FOUND"; }   static Transition Type() { return Transition::ErrorFound; } };
+
+static array<string, 15> stateNames =
+{
     {
-        while (fNextStates.empty())
+        "OK",
+        "Error",
+        "IDLE",
+        "INITIALIZING_DEVICE",
+        "INITIALIZED",
+        "BINDING",
+        "BOUND",
+        "CONNECTING",
+        "DEVICE_READY",
+        "INITIALIZING_TASK",
+        "READY",
+        "RUNNING",
+        "RESETTING_TASK",
+        "RESETTING_DEVICE",
+        "EXITING"
+    }
+};
+
+static array<string, 12> transitionNames =
+{
+    {
+        "AUTO",
+        "INIT_DEVICE",
+        "COMPLETE_INIT",
+        "BIND",
+        "CONNECT",
+        "INIT_TASK",
+        "RUN",
+        "STOP",
+        "RESET_TASK",
+        "RESET_DEVICE",
+        "END",
+        "ERROR_FOUND"
+    }
+};
+
+static map<string, State> stateNumbers =
+{
+    { "OK",                  State::Ok },
+    { "Error",               State::Error },
+    { "IDLE",                State::Idle },
+    { "INITIALIZING_DEVICE", State::InitializingDevice },
+    { "INITIALIZED",         State::Initialized },
+    { "BINDING",             State::Binding },
+    { "BOUND",               State::Bound },
+    { "CONNECTING",          State::Connecting },
+    { "DEVICE_READY",        State::DeviceReady },
+    { "INITIALIZING_TASK",   State::InitializingTask },
+    { "READY",               State::Ready },
+    { "RUNNING",             State::Running },
+    { "RESETTING_TASK",      State::ResettingTask },
+    { "RESETTING_DEVICE",    State::ResettingDevice },
+    { "EXITING",             State::Exiting }
+};
+
+static map<string, Transition> transitionNumbers =
+{
+    { "AUTO",          Transition::Auto },
+    { "INIT_DEVICE",   Transition::InitDevice },
+    { "COMPLETE_INIT", Transition::CompleteInit },
+    { "BIND",          Transition::Bind },
+    { "CONNECT",       Transition::Connect },
+    { "INIT_TASK",     Transition::InitTask },
+    { "RUN",           Transition::Run },
+    { "STOP",          Transition::Stop },
+    { "RESET_TASK",    Transition::ResetTask },
+    { "RESET_DEVICE",  Transition::ResetDevice },
+    { "END",           Transition::End },
+    { "ERROR_FOUND",   Transition::ErrorFound }
+};
+
+// defining the boost MSM state machine
+struct Machine_ : public state_machine_def<Machine_>
+{
+  public:
+    Machine_()
+        : fLastTransitionResult(true)
+        , fNewStatePending(false)
+        , fWorkOngoing(false)
+    {}
+
+    virtual ~Machine_() {}
+
+    // initial states
+    using initial_state = bmpl::vector<IDLE_S, OK_S>;
+
+    template<typename Transition, typename FSM>
+    void on_entry(Transition const&, FSM& /* fsm */)
+    {
+        LOG(state) << "Starting FairMQ state machine --> IDLE";
+        fState = State::Idle;
+    }
+
+    template<typename Transition, typename FSM>
+    void on_exit(Transition const&, FSM& /*fsm*/)
+    {
+        LOG(state) << "Exiting FairMQ state machine";
+    }
+
+    struct DefaultFct
+    {
+        template<typename EVT, typename FSM, typename SourceState, typename TargetState>
+        void operator()(EVT const& e, FSM& fsm, SourceState& /* ss */, TargetState& ts)
         {
-            fNewState.wait(lock);
+            fsm.fNewState = ts.Type();
+            fsm.fLastTransitionResult = true;
+            fsm.CallNewTransitionCallbacks(e.Type());
+            fsm.fNewStatePending = true;
+            fsm.fNewStatePendingCV.notify_all();
         }
+    };
 
-        State lastState;
-
-        if (fNextStates.front() == State::Error)
+    struct ErrorFct
+    {
+        template<typename EVT, typename FSM, typename SourceState, typename TargetState>
+        void operator()(EVT const& e, FSM& fsm, SourceState& /* ss */, TargetState& ts)
         {
-            // advance error FSM
-            lastState = fErrorState;
-            fErrorState = fNextStates.front();
-            fNextStates.pop_front();
-            LOG(error) << "Entering " << fErrorState << " state (orthogonal error state machine)";
+            fsm.fState = ts.Type();
+            fsm.fLastTransitionResult = true;
+            fsm.CallNewTransitionCallbacks(e.Type());
+            fsm.CallStateChangeCallbacks(ts.Type());
+            fsm.fNewStatePending = true;
+            fsm.fNewStatePendingCV.notify_all();
         }
-        else
+    };
+
+    struct transition_table : bmpl::vector<
+        //  Start                  Transition       Next                   Action      Guard
+        Row<IDLE_S,                END_E,           EXITING_S,             DefaultFct, none>,
+        Row<IDLE_S,                INIT_DEVICE_E,   INITIALIZING_DEVICE_S, DefaultFct, none>,
+
+        Row<INITIALIZING_DEVICE_S, COMPLETE_INIT_E, INITIALIZED_S,         DefaultFct, none>,
+        Row<INITIALIZED_S,         BIND_E,          BINDING_S,             DefaultFct, none>,
+        Row<INITIALIZED_S,         RESET_DEVICE_E,  RESETTING_DEVICE_S,    DefaultFct, none>,
+
+        Row<BINDING_S,             AUTO_E,          BOUND_S,               DefaultFct, none>,
+        Row<BOUND_S,               CONNECT_E,       CONNECTING_S,          DefaultFct, none>,
+        Row<BOUND_S,               RESET_DEVICE_E,  RESETTING_DEVICE_S,    DefaultFct, none>,
+
+        Row<CONNECTING_S,          AUTO_E,          DEVICE_READY_S,        DefaultFct, none>,
+        Row<DEVICE_READY_S,        INIT_TASK_E,     INITIALIZING_TASK_S,   DefaultFct, none>,
+        Row<DEVICE_READY_S,        RESET_DEVICE_E,  RESETTING_DEVICE_S,    DefaultFct, none>,
+
+        Row<INITIALIZING_TASK_S,   AUTO_E,          READY_S,               DefaultFct, none>,
+
+        Row<READY_S,               RUN_E,           RUNNING_S,             DefaultFct, none>,
+        Row<READY_S,               RESET_TASK_E,    RESETTING_TASK_S,      DefaultFct, none>,
+
+        Row<RUNNING_S,             STOP_E,          READY_S,               DefaultFct, none>,
+
+        Row<RESETTING_TASK_S,      AUTO_E,          DEVICE_READY_S,        DefaultFct, none>,
+        Row<RESETTING_DEVICE_S,    AUTO_E,          IDLE_S,                DefaultFct, none>,
+
+        Row<OK_S,                  ERROR_FOUND_E,   ERROR_S,               ErrorFct,   none>> {};
+
+    void CallStateChangeCallbacks(const State state) const
+    {
+        if (!fStateChangeSignal.empty()) {
+            fStateChangeSignal(state);
+        }
+    }
+
+    void CallStateHandler(const State state) const
+    {
+        if (!fStateHandleSignal.empty()) {
+            fStateHandleSignal(state);
+        }
+    }
+
+    void CallNewTransitionCallbacks(const Transition transition) const
+    {
+        if (!fNewTransitionSignal.empty()) {
+            fNewTransitionSignal(transition);
+        }
+    }
+
+
+    atomic<State> fState;
+    atomic<State> fNewState;
+    atomic<bool> fLastTransitionResult;
+
+    mutex fStateMtx;
+    atomic<bool> fNewStatePending;
+    atomic<bool> fWorkOngoing;
+    condition_variable fNewStatePendingCV;
+    condition_variable fWorkDoneCV;
+
+    boost::signals2::signal<void(const State)> fStateChangeSignal;
+    boost::signals2::signal<void(const State)> fStateHandleSignal;
+    boost::signals2::signal<void(const Transition)> fNewTransitionSignal;
+    unordered_map<string, boost::signals2::connection> fStateChangeSignalsMap;
+    unordered_map<string, boost::signals2::connection> fNewTransitionSignalsMap;
+
+    void ProcessWork()
+    {
+        bool stop = false;
+
+        while (!stop) {
+            {
+                unique_lock<mutex> lock(fStateMtx);
+
+                while (!fNewStatePending) {
+                    fNewStatePendingCV.wait_for(lock, chrono::milliseconds(100));
+                }
+
+                LOG(state) << fState << " ---> " << fNewState;
+                fState = static_cast<State>(fNewState);
+                fNewStatePending = false;
+                fWorkOngoing = true;
+
+                if (fState == State::Exiting || fState == State::Error) {
+                    stop = true;
+                }
+            }
+
+            CallStateChangeCallbacks(fState);
+            CallStateHandler(fState);
+
+            {
+                lock_guard<mutex> lock(fStateMtx);
+                fWorkOngoing = false;
+                fWorkDoneCV.notify_one();
+            }
+        }
+    }
+
+    // replaces the default no-transition response.
+    template<typename FSM, typename Transition>
+    void no_transition(Transition const& t, FSM& fsm, int state)
+    {
+        using RecursiveStt = typename recursive_get_transition_table<FSM>::type;
+        using AllStates = typename generate_state_set<RecursiveStt>::type;
+
+        string stateName;
+
+        bmpl::for_each<AllStates, wrap<bmpl::placeholders::_1>>(get_state_name<RecursiveStt>(stateName, state));
+
+        stateName = boost::core::demangle(stateName.c_str());
+        size_t pos = stateName.rfind(":");
+        stateName = stateName.substr(pos + 1);
+        size_t pos2 = stateName.rfind("_");
+        stateName = stateName.substr(0, pos2);
+
+        if (stateName != "OK") {
+            LOG(state) << "No transition from state " << stateName << " on transition " << t.Name();
+        }
+        fsm.fLastTransitionResult = false;
+    }
+}; // Machine_
+
+using FairMQFSM = state_machine<Machine_>;
+
+} // namespace fsm
+} // namespace mq
+} // namespace fair
+
+using namespace fair::mq::fsm;
+using namespace fair::mq;
+
+StateMachine::StateMachine() : fFsm(new FairMQFSM) {}
+void StateMachine::Start() { static_pointer_cast<FairMQFSM>(fFsm)->start(); }
+StateMachine::~StateMachine() { static_pointer_cast<FairMQFSM>(fFsm)->stop(); }
+
+bool StateMachine::ChangeState(const Transition transition)
+try {
+    auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+    lock_guard<mutex> lock(fsm->fStateMtx);
+    if (!static_cast<bool>(fsm->fNewStatePending) || transition == Transition::ErrorFound) {
+        switch (transition) {
+            case Transition::Auto:
+                fsm->process_event(AUTO_E());
+                return fsm->fLastTransitionResult;
+            case Transition::InitDevice:
+                fsm->process_event(INIT_DEVICE_E());
+                return fsm->fLastTransitionResult;
+            case Transition::CompleteInit:
+                fsm->process_event(COMPLETE_INIT_E());
+                return fsm->fLastTransitionResult;
+            case Transition::Bind:
+                fsm->process_event(BIND_E());
+                return fsm->fLastTransitionResult;
+            case Transition::Connect:
+                fsm->process_event(CONNECT_E());
+                return fsm->fLastTransitionResult;
+            case Transition::InitTask:
+                fsm->process_event(INIT_TASK_E());
+                return fsm->fLastTransitionResult;
+            case Transition::Run:
+                fsm->process_event(RUN_E());
+                return fsm->fLastTransitionResult;
+            case Transition::Stop:
+                fsm->process_event(STOP_E());
+                return fsm->fLastTransitionResult;
+            case Transition::ResetDevice:
+                fsm->process_event(RESET_DEVICE_E());
+                return fsm->fLastTransitionResult;
+            case Transition::ResetTask:
+                fsm->process_event(RESET_TASK_E());
+                return fsm->fLastTransitionResult;
+            case Transition::End:
+                fsm->process_event(END_E());
+                return fsm->fLastTransitionResult;
+            case Transition::ErrorFound:
+                fsm->process_event(ERROR_FOUND_E());
+                return fsm->fLastTransitionResult;
+            default:
+                LOG(error) << "Requested unsupported state transition: " << transition << endl;
+                return false;
+             }
+    } else {
+        LOG(state) << "Transition " << transitionNames.at(static_cast<int>(transition)) << " incoming, but another state transition is already ongoing.";
+        return false;
+    }
+} catch (exception& e) {
+    LOG(error) << "Exception in StateMachine::ChangeState(): " << e.what();
+    return false;
+}
+
+void StateMachine::SubscribeToStateChange(const string& key, function<void(const State)> callback)
+{
+    static_pointer_cast<FairMQFSM>(fFsm)->fStateChangeSignalsMap.insert({key, static_pointer_cast<FairMQFSM>(fFsm)->fStateChangeSignal.connect(callback)});
+}
+
+void StateMachine::UnsubscribeFromStateChange(const string& key)
+{
+    auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+    if (fsm->fStateChangeSignalsMap.count(key)) {
+        fsm->fStateChangeSignalsMap.at(key).disconnect();
+        fsm->fStateChangeSignalsMap.erase(key);
+    }
+}
+
+void StateMachine::HandleStates(function<void(const State)> callback)
+{
+    auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+    if (fsm->fStateHandleSignal.empty()) {
+        fsm->fStateHandleSignal.connect(callback);
+    } else {
+        LOG(error) << "state handler is already set";
+    }
+}
+
+void StateMachine::StopHandlingStates()
+{
+    auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+    if (!fsm->fStateHandleSignal.empty()) {
+        fsm->fStateHandleSignal.disconnect_all_slots();
+    }
+}
+
+void StateMachine::SubscribeToNewTransition(const string& key, function<void(const Transition)> callback)
+{
+    static_pointer_cast<FairMQFSM>(fFsm)->fNewTransitionSignalsMap.insert({key, static_pointer_cast<FairMQFSM>(fFsm)->fNewTransitionSignal.connect(callback)});
+}
+
+void StateMachine::UnsubscribeFromNewTransition(const string& key)
+{
+    auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+    if (fsm->fNewTransitionSignalsMap.count(key)) {
+        fsm->fNewTransitionSignalsMap.at(key).disconnect();
+        fsm->fNewTransitionSignalsMap.erase(key);
+    }
+}
+
+State StateMachine::GetCurrentState() const { return static_pointer_cast<FairMQFSM>(fFsm)->fState; }
+string StateMachine::GetCurrentStateName() const { return GetStateName(static_pointer_cast<FairMQFSM>(fFsm)->fState); }
+
+bool StateMachine::NewStatePending() const { return static_cast<bool>(static_pointer_cast<FairMQFSM>(fFsm)->fNewStatePending); }
+void StateMachine::WaitForPendingState() const
+{
+    auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+    unique_lock<mutex> lock(fsm->fStateMtx);
+    fsm->fNewStatePendingCV.wait(lock, [&]{ return static_cast<bool>(fsm->fNewStatePending); });
+}
+bool StateMachine::WaitForPendingStateFor(const int durationInMs) const
+{
+    auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+    unique_lock<mutex> lock(fsm->fStateMtx);
+    return fsm->fNewStatePendingCV.wait_for(lock, std::chrono::milliseconds(durationInMs), [&]{ return static_cast<bool>(fsm->fNewStatePending); });
+}
+
+void StateMachine::ProcessWork()
+{
+    auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+
+    try {
+        fsm->CallStateChangeCallbacks(State::Idle);
+        fsm->ProcessWork();
+    } catch(...) {
         {
-            // advance regular FSM
-            lastState = fState;
-            fState = fNextStates.front();
-            fNextStates.pop_front();
-            LOG(state) << "Entering " << fState << " state";
+            lock_guard<mutex> lock(fsm->fStateMtx);
+            fsm->fWorkOngoing = false;
+            fsm->fWorkDoneCV.notify_one();
         }
-        lock.unlock();
-
-        fCallbacks.Emit<StateChange, State>(fState, lastState);
-
-        lock.lock();
-        if (fState == State::Exiting || fErrorState == State::Error) break;
+        ChangeState(Transition::ErrorFound);
+        throw;
     }
-
-    LOG(state) << "Exiting FairMQ state machine";
 }
 
-auto StateMachine::ChangeState(StateTransition transition) -> void
-{
-    State lastState;
-
-    std::unique_lock<std::mutex> lock{fMutex};
-
-    if (transition == StateTransition::ErrorFound)
-    {
-        lastState = fErrorState;
-    }
-    else if (fNextStates.empty())
-    {
-        lastState = fState;
-    }
-    else
-    {
-        lastState = fNextStates.back();
-    }
-
-    const State nextState{Transition(lastState, transition)};
-    fNextStates.push_back(nextState);
-    lock.unlock();
-
-    fCallbacks.Emit<StateQueued, State>(nextState, lastState);
-    fNewState.notify_one();
-}
-    
-auto StateMachine::Transition(const State currentState, const StateTransition transition) -> State
-{
-    switch (currentState) {
-        case State::Idle:
-            if (transition == StateTransition::InitDevice ) return State::InitializingDevice;
-            if (transition == StateTransition::End        ) return State::Exiting;
-            break;
-        case State::InitializingDevice:
-            if (transition == StateTransition::Automatic  ) return State::DeviceReady;
-            break;
-        case State::DeviceReady:
-            if (transition == StateTransition::InitTask   ) return State::InitializingTask;
-            if (transition == StateTransition::ResetDevice) return State::ResettingDevice;
-            break;
-        case State::InitializingTask:
-            if (transition == StateTransition::Automatic  ) return State::Ready;
-            break;
-        case State::Ready:
-            if (transition == StateTransition::Run        ) return State::Running;
-            if (transition == StateTransition::ResetTask  ) return State::ResettingTask;
-            break;
-        case State::Running:
-            if (transition == StateTransition::Stop       ) return State::Ready;
-            break;
-        case State::ResettingTask:
-            if (transition == StateTransition::Automatic  ) return State::DeviceReady;
-            break;
-        case State::ResettingDevice:
-            if (transition == StateTransition::Automatic  ) return State::Idle;
-            break;
-        case State::Exiting:
-            break;
-        case State::Ok:
-            if (transition == StateTransition::ErrorFound ) return State::Error;
-            break;
-        case State::Error:
-            break;
-    }
-    throw IllegalTransition{tools::ToString("No transition ", transition, " from state ", currentState, ".")};
-}
-
-StateMachine::StateMachine()
-: fState{State::Idle}
-, fErrorState{State::Ok}
-{
-}
-
-auto StateMachine::Reset() -> void
-{
-    std::unique_lock<std::mutex> lock{fMutex};
-
-    fState = State::Idle;
-    fErrorState = State::Ok;
-    fNextStates.clear();
-}
-
-auto StateMachine::NextStatePending() -> bool
-{
-    std::unique_lock<std::mutex> lock{fMutex};
-
-    return fNextStates.size() > 0;
-}
+string StateMachine::GetStateName(const State state) { return stateNames.at(static_cast<int>(state)); }
+string StateMachine::GetTransitionName(const Transition transition) { return transitionNames.at(static_cast<int>(transition)); }
+State StateMachine::GetState(const string& state) { return stateNumbers.at(state); }
+Transition StateMachine::GetTransition(const string& transition) { return transitionNumbers.at(transition); }

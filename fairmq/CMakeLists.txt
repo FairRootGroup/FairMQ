@@ -50,7 +50,7 @@ set(FAIRMQ_PUBLIC_HEADER_FILES
   FairMQPoller.h
   FairMQUnmanagedRegion.h
   FairMQSocket.h
-  FairMQStateMachine.h
+  StateMachine.h
   FairMQTransportFactory.h
   MemoryResources.h
   MemoryResourceTools.h
@@ -83,7 +83,6 @@ set(FAIRMQ_PRIVATE_HEADER_FILES
   options/FairProgOptionsHelper.h
   plugins/Builtin.h
   plugins/Control.h
-  StateMachine.h
   shmem/FairMQMessageSHM.h
   shmem/FairMQPollerSHM.h
   shmem/FairMQUnmanagedRegionSHM.h
@@ -130,7 +129,7 @@ set(FAIRMQ_SOURCE_FILES
   FairMQMessage.cxx
   FairMQPoller.cxx
   FairMQSocket.cxx
-  FairMQStateMachine.cxx
+  StateMachine.cxx
   FairMQTransportFactory.cxx
   devices/FairMQBenchmarkSampler.cxx
   devices/FairMQMerger.cxx
@@ -144,7 +143,6 @@ set(FAIRMQ_SOURCE_FILES
   PluginManager.cxx
   PluginServices.cxx
   plugins/Control.cxx
-  StateMachine.cxx
   shmem/FairMQMessageSHM.cxx
   shmem/FairMQPollerSHM.cxx
   shmem/FairMQUnmanagedRegionSHM.cxx

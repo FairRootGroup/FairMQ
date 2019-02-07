@@ -22,20 +22,26 @@ using namespace std;
 
 void control(FairMQDevice& device)
 {
-    device.ChangeState("INIT_DEVICE");
-    device.WaitForEndOfState("INIT_DEVICE");
-    device.ChangeState("INIT_TASK");
-    device.WaitForEndOfState("INIT_TASK");
+    device.ChangeState(fair::mq::Transition::InitDevice);
+    device.WaitForState(fair::mq::State::InitializingDevice);
+    device.ChangeState(fair::mq::Transition::CompleteInit);
+    device.WaitForState(fair::mq::State::Initialized);
+    device.ChangeState(fair::mq::Transition::Bind);
+    device.WaitForState(fair::mq::State::Bound);
+    device.ChangeState(fair::mq::Transition::Connect);
+    device.WaitForState(fair::mq::State::DeviceReady);
+    device.ChangeState(fair::mq::Transition::InitTask);
+    device.WaitForState(fair::mq::State::Ready);
 
-    device.ChangeState("RUN");
-    device.WaitForEndOfState("RUN");
+    device.ChangeState(fair::mq::Transition::Run);
+    device.WaitForState(fair::mq::State::Ready);
 
-    device.ChangeState("RESET_TASK");
-    device.WaitForEndOfState("RESET_TASK");
-    device.ChangeState("RESET_DEVICE");
-    device.WaitForEndOfState("RESET_DEVICE");
+    device.ChangeState(fair::mq::Transition::ResetTask);
+    device.WaitForState(fair::mq::State::DeviceReady);
+    device.ChangeState(fair::mq::Transition::ResetDevice);
+    device.WaitForState(fair::mq::State::Idle);
 
-    device.ChangeState("END");
+    device.ChangeState(fair::mq::Transition::End);
 }
 
 class MultipleDevices : public ::testing::Test {
@@ -57,8 +63,7 @@ class MultipleDevices : public ::testing::Test {
 
         sender.RunStateMachine();
 
-        if (t.joinable())
-        {
+        if (t.joinable()) {
             t.join();
         }
 
@@ -79,8 +84,7 @@ class MultipleDevices : public ::testing::Test {
 
         receiver.RunStateMachine();
 
-        if (t.joinable())
-        {
+        if (t.joinable()) {
             t.join();
         }
 

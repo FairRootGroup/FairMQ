@@ -25,14 +25,18 @@ namespace test
 
 inline auto control(FairMQDevice& device) -> void
 {
-    for (const auto event : {
-        FairMQDevice::INIT_DEVICE,
-        FairMQDevice::RESET_DEVICE,
-        FairMQDevice::END,
-    }) {
-        device.ChangeState(event);
-        if (event != FairMQDevice::END) device.WaitForEndOfState(event);
-    }
+    device.ChangeState(fair::mq::Transition::InitDevice);
+    device.WaitForState(fair::mq::State::InitializingDevice);
+    device.ChangeState(fair::mq::Transition::CompleteInit);
+    device.WaitForState(fair::mq::State::Initialized);
+    device.ChangeState(fair::mq::Transition::Bind);
+    device.WaitForState(fair::mq::State::Bound);
+    device.ChangeState(fair::mq::Transition::Connect);
+    device.WaitForState(fair::mq::State::DeviceReady);
+    device.ChangeState(fair::mq::Transition::ResetDevice);
+    device.WaitForState(fair::mq::State::Idle);
+
+    device.ChangeState(fair::mq::Transition::End);
 }
 
 struct PluginServices : ::testing::Test {
@@ -48,7 +52,7 @@ struct PluginServices : ::testing::Test {
 
     ~PluginServices()
     {
-        if (mDevice.GetCurrentState() == FairMQDevice::IDLE) control(mDevice);
+        if (mDevice.GetCurrentState() == fair::mq::State::Idle) control(mDevice);
         if (fRunStateMachineThread.joinable()) {
             fRunStateMachineThread.join();
         }

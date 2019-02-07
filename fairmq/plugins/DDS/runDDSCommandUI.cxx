@@ -25,7 +25,7 @@ namespace bpo = boost::program_options;
 void PrintControlsHelp()
 {
     cout << "Use keys to control the devices:" << endl;
-    cout << "[c] check states, [o] dump config, [h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device" << endl;
+    cout << "[c] check states, [o] dump config, [h] help, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device, [b] bind, [x] connect" << endl;
     cout << "To quit press Ctrl+C" << endl;
 }
 
@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
 
         if (vm.count("help")) {
             cout << "FairMQ DDS Command UI" << endl << options << endl;
-            cout << "Commands: [c] check state, [o] dump config, [h] help, [p] pause, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device" << endl;
+            cout << "Commands: [c] check state, [o] dump config, [h] help, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device" << endl;
             return EXIT_SUCCESS;
         }
 
@@ -96,13 +96,17 @@ int main(int argc, char* argv[])
                     cout << " > init devices" << endl;
                     ddsCustomCmd.send("INIT DEVICE", topologyPath);
                     break;
+                case 'b':
+                    cout << " > bind" << endl;
+                    ddsCustomCmd.send("BIND", topologyPath);
+                    break;
+                case 'x':
+                    cout << " > connect" << endl;
+                    ddsCustomCmd.send("CONNECT", topologyPath);
+                    break;
                 case 'j':
                     cout << " > init tasks" << endl;
                     ddsCustomCmd.send("INIT TASK", topologyPath);
-                    break;
-                case 'p':
-                    cout << " > pause devices" << endl;
-                    ddsCustomCmd.send("PAUSE", topologyPath);
                     break;
                 case 'r':
                     cout << " > run tasks" << endl;

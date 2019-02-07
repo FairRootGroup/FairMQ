@@ -23,21 +23,71 @@ using namespace std;
 
 void control(FairMQDevice& device)
 {
-    device.ChangeState("INIT_DEVICE");
-    device.WaitForEndOfState("INIT_DEVICE");
-    device.ChangeState("INIT_TASK");
-    device.WaitForEndOfState("INIT_TASK");
+    device.ChangeState(fair::mq::Transition::InitDevice);
+    device.WaitForState(fair::mq::State::InitializingDevice);
+    device.ChangeState(fair::mq::Transition::CompleteInit);
+    device.WaitForState(fair::mq::State::Initialized);
+    device.ChangeState(fair::mq::Transition::Bind);
+    device.WaitForState(fair::mq::State::Bound);
+    device.ChangeState(fair::mq::Transition::Connect);
+    device.WaitForState(fair::mq::State::DeviceReady);
+    device.ChangeState(fair::mq::Transition::InitTask);
+    device.WaitForState(fair::mq::State::Ready);
 
-    device.ChangeState("RUN");
-    device.WaitForEndOfState("RUN");
+    device.ChangeState(fair::mq::Transition::Run);
+    device.WaitForState(fair::mq::State::Ready);
 
-    device.ChangeState("RESET_TASK");
-    device.WaitForEndOfState("RESET_TASK");
-    device.ChangeState("RESET_DEVICE");
-    device.WaitForEndOfState("RESET_DEVICE");
+    device.ChangeState(fair::mq::Transition::ResetTask);
+    device.WaitForState(fair::mq::State::DeviceReady);
+    device.ChangeState(fair::mq::Transition::ResetDevice);
+    device.WaitForState(fair::mq::State::Idle);
 
-    device.ChangeState("END");
+    device.ChangeState(fair::mq::Transition::End);
 }
+
+class TestDevice : public FairMQDevice
+{
+  public:
+    TestDevice(const string& transport)
+    {
+        fDeviceThread = thread(&FairMQDevice::RunStateMachine, this);
+
+        SetTransport(transport);
+
+        ChangeState(fair::mq::Transition::InitDevice);
+        WaitForState(fair::mq::State::InitializingDevice);
+        ChangeState(fair::mq::Transition::CompleteInit);
+        WaitForState(fair::mq::State::Initialized);
+        ChangeState(fair::mq::Transition::Bind);
+        WaitForState(fair::mq::State::Bound);
+        ChangeState(fair::mq::Transition::Connect);
+        WaitForState(fair::mq::State::DeviceReady);
+        ChangeState(fair::mq::Transition::InitTask);
+        WaitForState(fair::mq::State::Ready);
+
+        ChangeState(fair::mq::Transition::Run);
+    }
+
+    ~TestDevice()
+    {
+        WaitForState(fair::mq::State::Running);
+        ChangeState(fair::mq::Transition::Stop);
+        WaitForState(fair::mq::State::Ready);
+        ChangeState(fair::mq::Transition::ResetTask);
+        WaitForState(fair::mq::State::DeviceReady);
+        ChangeState(fair::mq::Transition::ResetDevice);
+        WaitForState(fair::mq::State::Idle);
+
+        ChangeState(fair::mq::Transition::End);
+
+        if (fDeviceThread.joinable()) {
+            fDeviceThread.join();
+        }
+    }
+
+  private:
+    thread fDeviceThread;
+};
 
 class DeviceConfig : public ::testing::Test
 {
@@ -51,8 +101,7 @@ class DeviceConfig : public ::testing::Test
 
         vector<string> emptyArgs = {"dummy", "--id", "test", "--color", "false"};
 
-        if (config.ParseAll(emptyArgs, true))
-        {
+        if (config.ParseAll(emptyArgs, true)) {
             return 0;
         }
 
@@ -71,10 +120,16 @@ class DeviceConfig : public ::testing::Test
 
         device.RunStateMachine();
 
-        if (t.joinable())
-        {
+        if (t.joinable()) {
             t.join();
         }
+
+        return device.GetTransportName();
+    }
+
+    string TestDeviceControlInConstructor(const string& transport)
+    {
+        TestDevice device(transport);
 
         return device.GetTransportName();
     }
@@ -90,12 +145,11 @@ class DeviceConfig : public ::testing::Test
         channel.UpdateAddress("tcp://localhost:5558");
         device.AddChannel("data", channel);
 
-        std::thread t(control, std::ref(device));
+        thread t(&FairMQDevice::RunStateMachine, &device);
 
-        device.RunStateMachine();
+        control(device);
 
-        if (t.joinable())
-        {
+        if (t.joinable()) {
             t.join();
         }
 
@@ -115,6 +169,14 @@ TEST_F(DeviceConfig, SetTransport)
 {
     string transport = "zeromq";
     string returnedTransport = TestDeviceSetTransport(transport);
+
+    EXPECT_EQ(transport, returnedTransport);
+}
+
+TEST_F(DeviceConfig, ControlInConstructor)
+{
+    string transport = "zeromq";
+    string returnedTransport = TestDeviceControlInConstructor(transport);
 
     EXPECT_EQ(transport, returnedTransport);
 }

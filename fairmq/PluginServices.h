@@ -63,11 +63,14 @@ class PluginServices
         Error,
         Idle,
         InitializingDevice,
+        Initialized,
+        Binding,
+        Bound,
+        Connecting,
         DeviceReady,
         InitializingTask,
         Ready,
         Running,
-        Paused,
         ResettingTask,
         ResettingDevice,
         Exiting
@@ -75,11 +78,13 @@ class PluginServices
 
     enum class DeviceStateTransition : int // transition event between DeviceStates
     {
+        Auto,
         InitDevice,
+        CompleteInit,
+        Bind,
+        Connect,
         InitTask,
         Run,
-        Pause,
-        Resume,
         Stop,
         ResetTask,
         ResetDevice,
@@ -115,7 +120,7 @@ class PluginServices
     friend auto operator<<(std::ostream& os, const DeviceStateTransition& transition) -> std::ostream& { return os << ToStr(transition); }
 
     /// @return current device state
-    auto GetCurrentDeviceState() const -> DeviceState { return fkDeviceStateMap.at(static_cast<FairMQDevice::State>(fDevice.GetCurrentState())); }
+    auto GetCurrentDeviceState() const -> DeviceState { return fkDeviceStateMap.at(static_cast<fair::mq::State>(fDevice.GetCurrentState())); }
 
     /// @brief Become device controller
     /// @param controller id
@@ -151,7 +156,7 @@ class PluginServices
     /// The state transition may not happen immediately, but when the current state evaluates the
     /// pending transition event and terminates. In other words, the device states are scheduled cooperatively.
     /// If the device control role has not been taken yet, calling this function will take over control implicitely.
-    auto ChangeDeviceState(const std::string& controller, const DeviceStateTransition next) -> void;
+    auto ChangeDeviceState(const std::string& controller, const DeviceStateTransition next) -> bool;
 
     /// @brief Subscribe with a callback to device state changes
     /// @param subscriber id
@@ -161,7 +166,7 @@ class PluginServices
     /// the state is running in.
     auto SubscribeToDeviceStateChange(const std::string& subscriber, std::function<void(DeviceState /*newState*/)> callback) -> void
     {
-        fDevice.SubscribeToStateChange(subscriber, [&,callback](FairMQDevice::State newState){
+        fDevice.SubscribeToStateChange(subscriber, [&,callback](fair::mq::State newState){
             callback(fkDeviceStateMap.at(newState));
         });
     }
@@ -187,12 +192,13 @@ class PluginServices
     {
         auto currentState = GetCurrentDeviceState();
         if (   (currentState == DeviceState::InitializingDevice)
-            || ((currentState == DeviceState::Idle) && (key == "channel-config")))
-        {
+            || (currentState == DeviceState::Initialized)
+            || (currentState == DeviceState::Binding)
+            || (currentState == DeviceState::Bound)
+            || (currentState == DeviceState::Connecting)
+            || (currentState == DeviceState::Idle && key == "channel-config")) {
             fConfig.SetValue(key, val);
-        }
-        else
-        {
+        } else {
             throw InvalidStateError{
                 tools::ToString("PluginServices::SetProperty is not supported in device state ", currentState, ". ",
                                 "Supported state is ", DeviceState::InitializingDevice, ".")};
@@ -271,8 +277,8 @@ class PluginServices
     static const std::unordered_map<DeviceState, std::string, tools::HashEnum<DeviceState>> fkStrDeviceStateMap;
     static const std::unordered_map<std::string, DeviceStateTransition> fkDeviceStateTransitionStrMap;
     static const std::unordered_map<DeviceStateTransition, std::string, tools::HashEnum<DeviceStateTransition>> fkStrDeviceStateTransitionMap;
-    static const std::unordered_map<FairMQDevice::State, DeviceState, tools::HashEnum<FairMQDevice::State>> fkDeviceStateMap;
-    static const std::unordered_map<DeviceStateTransition, FairMQDevice::Event, tools::HashEnum<DeviceStateTransition>> fkDeviceStateTransitionMap;
+    static const std::unordered_map<fair::mq::State, DeviceState, tools::HashEnum<fair::mq::State>> fkDeviceStateMap;
+    static const std::unordered_map<DeviceStateTransition, fair::mq::Transition, tools::HashEnum<DeviceStateTransition>> fkDeviceStateTransitionMap;
 
   private:
     FairMQProgOptions& fConfig;

@@ -40,7 +40,7 @@ DDS::DDS(const string& name, const Plugin::Version version, const string& mainta
     , fConnectingChans()
     , fStopMutex()
     , fStopCondition()
-    , fCommands({ "INIT DEVICE", "INIT TASK", "PAUSE", "RUN", "STOP", "RESET TASK", "RESET DEVICE" })
+    , fCommands({ "BIND", "CONNECT", "INIT TASK", "RUN", "STOP", "RESET TASK", "RESET DEVICE" })
     , fControllerThread()
     , fEvents()
     , fEventsMutex()
@@ -96,6 +96,10 @@ auto DDS::HandleControl() -> void
 
         ChangeDeviceState(DeviceStateTransition::InitDevice);
         while (WaitForNextState() != DeviceState::InitializingDevice) {}
+        ChangeDeviceState(DeviceStateTransition::CompleteInit);
+        while (WaitForNextState() != DeviceState::Initialized) {}
+        ChangeDeviceState(DeviceStateTransition::Bind);
+        while (WaitForNextState() != DeviceState::Bound) {}
 
         // in the Initializing state subscribe to receive addresses of connecting channels from DDS
         // and propagate addresses of bound channels to DDS.
@@ -114,6 +118,7 @@ auto DDS::HandleControl() -> void
         // publish bound addresses via DDS at keys corresponding to the channel prefixes, e.g. 'data' in data[i]
         PublishBoundChannels();
 
+        ChangeDeviceState(DeviceStateTransition::Connect);
         while (WaitForNextState() != DeviceState::DeviceReady) {}
 
         ChangeDeviceState(DeviceStateTransition::InitTask);
@@ -305,13 +310,26 @@ auto DDS::SubscribeForCustomCommands() -> void
 
         if (cmd == "check-state") {
             fDDSCustomCmd.send(id + ": " + ToStr(GetCurrentDeviceState()) + " (pid: " + pid + ")", to_string(senderId));
+        } else if (cmd == "INIT DEVICE") {
+            if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
+                fDDSCustomCmd.send(id + ": queued " + cmd + " transition", to_string(senderId));
+                while (WaitForNextState() != DeviceState::InitializingDevice) {}
+                ChangeDeviceState(DeviceStateTransition::CompleteInit);
+            } else {
+                fDDSCustomCmd.send(id + ": could not queue " + cmd + " transition", to_string(senderId));
+            }
         } else if (fCommands.find(cmd) != fCommands.end()) {
-            fDDSCustomCmd.send(id + ": attempting to " + cmd, to_string(senderId));
-            ChangeDeviceState(ToDeviceStateTransition(cmd));
+            if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
+                fDDSCustomCmd.send(id + ": queued " + cmd + " transition", to_string(senderId));
+            } else {
+                fDDSCustomCmd.send(id + ": could not queue " + cmd + " transition", to_string(senderId));
+            }
         } else if (cmd == "END") {
-            fDDSCustomCmd.send(id + ": attempting to " + cmd, to_string(senderId));
-            ChangeDeviceState(ToDeviceStateTransition(cmd));
-            fDDSCustomCmd.send(id + ": " + ToStr(GetCurrentDeviceState()), to_string(senderId));
+            if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
+                fDDSCustomCmd.send(id + ": queued " + cmd + " transition", to_string(senderId));
+            } else {
+                fDDSCustomCmd.send(id + ": could not queue " + cmd + " transition", to_string(senderId));
+            }
             if (ToStr(GetCurrentDeviceState()) == "EXITING") {
                 unique_lock<mutex> lock(fStopMutex);
                 fStopCondition.notify_one();
@@ -363,7 +381,7 @@ auto DDS::WaitForNextState() -> DeviceState
 {
     unique_lock<mutex> lock{fEventsMutex};
     while (fEvents.empty()) {
-        fNewEvent.wait(lock);
+        fNewEvent.wait_for(lock, chrono::milliseconds(50));
     }
 
     auto result = fEvents.front();
