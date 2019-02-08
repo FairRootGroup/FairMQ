@@ -54,7 +54,7 @@ void FairMQBenchmarkSampler::Run()
 
     fair::mq::tools::RateLimiter rateLimiter(fMsgRate);
 
-    while (CheckCurrentState(RUNNING))
+    while (!NewStatePending())
     {
         if (fMultipart)
         {

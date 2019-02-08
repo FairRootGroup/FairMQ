@@ -41,7 +41,7 @@ void Sampler::Run()
 {
     FairMQPollerPtr poller(NewPoller("data", "broadcast"));
 
-    while (CheckCurrentState(RUNNING))
+    while (!NewStatePending())
     {
         poller->Poll(100);
 
