@@ -60,7 +60,7 @@ void FairMQMerger::Run()
 
     if (fMultipart)
     {
-        while (CheckCurrentState(RUNNING))
+        while (!NewStatePending())
         {
             poller->Poll(100);
 
@@ -91,7 +91,7 @@ void FairMQMerger::Run()
     }
     else
     {
-        while (CheckCurrentState(RUNNING))
+        while (!NewStatePending())
         {
             poller->Poll(100);
 

@@ -134,6 +134,11 @@ struct info : pmix_info_t
             throw runtime_error("pmix::info ctor failed: rc=" + std::to_string(rc));
         }
     }
+
+    friend std::ostream& operator<<(std::ostream& os, const info& p)
+    {
+        return os << "key=" << p.key << ",value='" << p.value.data.string << "'";
+    }
 };
 
 struct pdata : pmix_pdata_t

@@ -41,7 +41,7 @@ void FairMQProxy::Run()
 {
     if (fMultipart)
     {
-        while (CheckCurrentState(RUNNING))
+        while (!NewStatePending())
         {
             FairMQParts payload;
             if (Receive(payload, fInChannelName) >= 0)
@@ -61,7 +61,7 @@ void FairMQProxy::Run()
     }
     else
     {
-        while (CheckCurrentState(RUNNING))
+        while (!NewStatePending())
         {
             unique_ptr<FairMQMessage> payload(fTransportFactory->CreateMessage());
             if (Receive(payload, fInChannelName) >= 0)

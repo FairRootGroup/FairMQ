@@ -35,7 +35,7 @@ void Sink::Run()
 {
     FairMQChannel& dataInChannel = fChannels.at("data").at(0);
 
-    while (CheckCurrentState(RUNNING))
+    while (!NewStatePending())
     {
         FairMQMessagePtr msg(dataInChannel.Transport()->CreateMessage());
         dataInChannel.Receive(msg);

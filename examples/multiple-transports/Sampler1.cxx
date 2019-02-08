@@ -60,7 +60,7 @@ void Sampler1::ListenForAcks()
 {
     uint64_t numAcks = 0;
 
-    while (CheckCurrentState(RUNNING))
+    while (!NewStatePending())
     {
         FairMQMessagePtr ack(NewMessageFor("ack", 0));
         if (Receive(ack, "ack") < 0)
