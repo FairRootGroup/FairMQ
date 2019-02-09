@@ -21,7 +21,6 @@
 #include <string>
 #include <sys/types.h>
 #include <unistd.h>
-#include <unordered_map>
 #include <vector>
 
 namespace fair
@@ -30,17 +29,6 @@ namespace mq
 {
 namespace plugins
 {
-
-struct ConnectingChannel
-{
-    ConnectingChannel()
-        : fSubChannelAddresses()
-        , fValues()
-    {}
-
-    std::vector<std::string> fSubChannelAddresses;
-    std::unordered_map<uint64_t, std::string> fValues;
-};
 
 class PMIxPlugin : public Plugin
 {
@@ -51,21 +39,16 @@ class PMIxPlugin : public Plugin
          const std::string& homepage,
          PluginServices* pluginServices);
     ~PMIxPlugin();
-    auto PMIxClient() const -> std::string 
-    {
-        std::stringstream ss;
-        ss << "PMIx client(pid=" << fPid << ")";
-        return ss.str();
-    }
+    auto PMIxClient() const -> std::string;
 
   private:
     pmix::proc fProc;
     pid_t fPid;
-    std::unordered_map<std::string, std::vector<std::string>> fBindingChannels;
-    std::unordered_map<std::string, ConnectingChannel> fConnectingChannels;
 
-    auto FillChannelContainers() -> void;
-    auto PublishBoundChannels() -> void;
+    auto Init() -> void;
+    auto Publish() -> void;
+    auto Fence() -> void;
+    auto Lookup() -> void;
 };
 
 Plugin::ProgOptions PMIxProgramOptions()
