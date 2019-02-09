@@ -131,8 +131,24 @@ struct info : pmix_info_t
         PMIX_VALUE_XFER(rc, lhs, static_cast<pmix_value_t*>(&rhs));
 
         if (rc != PMIX_SUCCESS) {
-            throw runtime_error("pmix::info ctor failed: rc=" + rc);
+            throw runtime_error("pmix::info ctor failed: rc=" + std::to_string(rc));
         }
+    }
+};
+
+struct pdata : pmix_pdata_t
+{
+    pdata() { PMIX_PDATA_CONSTRUCT(static_cast<pmix_pdata_t*>(this)); }
+    ~pdata() { PMIX_PDATA_DESTRUCT(static_cast<pmix_pdata_t*>(this)); }
+    pdata(const pdata& rhs)
+    {
+        PMIX_PDATA_XFER(static_cast<pmix_pdata_t*>(this),
+                        static_cast<pmix_pdata_t*>(const_cast<pdata*>(&rhs)));
+    }
+
+    auto set_key(const std::string& new_key) -> void
+    {
+        (void)strncpy(key, new_key.c_str(), PMIX_MAX_KEYLEN);
     }
 };
 
@@ -143,7 +159,7 @@ auto init(const std::vector<info>& info = {}) -> proc
 
     rc = PMIx_Init(&res, const_cast<pmix::info*>(info.data()), info.size());
     if (rc != PMIX_SUCCESS) {
-        throw runtime_error("pmix::init() failed: rc=" + rc);
+        throw runtime_error("pmix::init() failed: rc=" + std::to_string(rc));
     }
 
     return res;
@@ -159,7 +175,7 @@ auto finalize(const std::vector<info>& info = {}) -> void
 
     rc = PMIx_Finalize(info.data(), info.size());
     if (rc != PMIX_SUCCESS) {
-        throw runtime_error("pmix::finalize() failed: rc=" + rc);
+        throw runtime_error("pmix::finalize() failed: rc=" + std::to_string(rc));
     }
 }
 
@@ -169,7 +185,7 @@ auto publish(const std::vector<info>& info) -> void
 
     rc = PMIx_Publish(info.data(), info.size());
     if (rc != PMIX_SUCCESS) {
-        throw runtime_error("pmix::publish() failed: rc=" + rc);
+        throw runtime_error("pmix::publish() failed: rc=" + std::to_string(rc));
     }
 }
 
@@ -179,10 +195,19 @@ auto fence(const std::vector<proc>& procs = {}, const std::vector<info>& info = 
 
     rc = PMIx_Fence(procs.data(), procs.size(), info.data(), info.size());
     if (rc != PMIX_SUCCESS) {
-        throw runtime_error("pmix::fence() failed: rc=" + rc);
+        throw runtime_error("pmix::fence() failed: rc=" + std::to_string(rc));
     }
 }
 
+auto lookup(std::vector<pdata>& pdata, const std::vector<info>& info = {}) -> void
+{
+    status rc;
+
+    rc = PMIx_Lookup(pdata.data(), pdata.size(), info.data(), info.size());
+    if (rc != PMIX_SUCCESS) {
+        throw runtime_error("pmix::lookup() failed: rc=" + std::to_string(rc));
+    }
+}
 
 } /* namespace pmix */
 
