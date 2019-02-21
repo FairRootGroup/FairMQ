@@ -81,6 +81,7 @@ FairMQDevice::FairMQDevice(FairMQProgOptions* config, const fair::mq::tools::Ver
     , fMultitransportProceed(false)
     , fVersion(version)
     , fRate(0.)
+    , fMaxRunRuntimeInS(0)
     , fRawCmdLineArgs()
 {
     SubscribeToNewTransition("device", [&](fair::mq::Transition transition) {
@@ -175,6 +176,7 @@ void FairMQDevice::InitWrapper()
     Init();
 
     fRate = fConfig->GetValue<float>("rate");
+    fMaxRunRuntimeInS = fConfig->GetValue<uint64_t>("max-run-time");
 
     try {
         fDefaultTransportType = fair::mq::TransportTypes.at(fConfig->GetValue<string>("transport"));
@@ -701,9 +703,6 @@ void FairMQDevice::SetConfig(FairMQProgOptions& config)
 
 void FairMQDevice::LogSocketRates()
 {
-    chrono::time_point<chrono::high_resolution_clock> t0;
-    chrono::time_point<chrono::high_resolution_clock> t1;
-
     vector<FairMQSocket*> filteredSockets;
     vector<string> filteredChannelNames;
     vector<int> logIntervals;
@@ -712,13 +711,10 @@ void FairMQDevice::LogSocketRates()
     size_t chanNameLen = 0;
 
     // iterate over the channels map
-    for (const auto& mi : fChannels)
-    {
+    for (const auto& mi : fChannels) {
         // iterate over the channels vector
-        for (auto vi = (mi.second).begin(); vi != (mi.second).end(); ++vi)
-        {
-            if (vi->fRateLogging > 0)
-            {
+        for (auto vi = (mi.second).begin(); vi != (mi.second).end(); ++vi) {
+            if (vi->fRateLogging > 0) {
                 filteredSockets.push_back(vi->fSocket.get());
                 logIntervals.push_back(vi->fRateLogging);
                 intervalCounters.push_back(0);
@@ -728,55 +724,50 @@ void FairMQDevice::LogSocketRates()
         }
     }
 
-    unsigned int numFilteredSockets = filteredSockets.size();
+    vector<unsigned long> bytesIn(filteredSockets.size());
+    vector<unsigned long> msgIn(filteredSockets.size());
+    vector<unsigned long> bytesOut(filteredSockets.size());
+    vector<unsigned long> msgOut(filteredSockets.size());
 
-    if (numFilteredSockets > 0)
-    {
-        vector<unsigned long> bytesIn(numFilteredSockets);
-        vector<unsigned long> msgIn(numFilteredSockets);
-        vector<unsigned long> bytesOut(numFilteredSockets);
-        vector<unsigned long> msgOut(numFilteredSockets);
+    vector<unsigned long> bytesInNew(filteredSockets.size());
+    vector<unsigned long> msgInNew(filteredSockets.size());
+    vector<unsigned long> bytesOutNew(filteredSockets.size());
+    vector<unsigned long> msgOutNew(filteredSockets.size());
 
-        vector<unsigned long> bytesInNew(numFilteredSockets);
-        vector<unsigned long> msgInNew(numFilteredSockets);
-        vector<unsigned long> bytesOutNew(numFilteredSockets);
-        vector<unsigned long> msgOutNew(numFilteredSockets);
+    vector<double> mbPerSecIn(filteredSockets.size());
+    vector<double> msgPerSecIn(filteredSockets.size());
+    vector<double> mbPerSecOut(filteredSockets.size());
+    vector<double> msgPerSecOut(filteredSockets.size());
 
-        vector<double> mbPerSecIn(numFilteredSockets);
-        vector<double> msgPerSecIn(numFilteredSockets);
-        vector<double> mbPerSecOut(numFilteredSockets);
-        vector<double> msgPerSecOut(numFilteredSockets);
+    int i = 0;
+    for (const auto& vi : filteredSockets) {
+        bytesIn.at(i) = vi->GetBytesRx();
+        bytesOut.at(i) = vi->GetBytesTx();
+        msgIn.at(i) = vi->GetMessagesRx();
+        msgOut.at(i) = vi->GetMessagesTx();
+        ++i;
+    }
 
-        int i = 0;
-        for (const auto& vi : filteredSockets)
-        {
-            bytesIn.at(i) = vi->GetBytesRx();
-            bytesOut.at(i) = vi->GetBytesTx();
-            msgIn.at(i) = vi->GetMessagesRx();
-            msgOut.at(i) = vi->GetMessagesTx();
-            ++i;
-        }
+    chrono::time_point<chrono::high_resolution_clock> t0(chrono::high_resolution_clock::now());
+    chrono::time_point<chrono::high_resolution_clock> t1;
+    uint64_t secondsElapsed = 0;
 
-        t0 = chrono::high_resolution_clock::now();
+    while (!NewStatePending()) {
+        WaitFor(chrono::seconds(1));
 
-        LOG(debug) << "<channel>: in: <#msgs> (<MB>) out: <#msgs> (<MB>)";
+        t1 = chrono::high_resolution_clock::now();
 
-        while (!NewStatePending())
-        {
-            t1 = chrono::high_resolution_clock::now();
+        uint64_t msSinceLastLog = chrono::duration_cast<chrono::milliseconds>(t1 - t0).count();
 
-            unsigned long long msSinceLastLog = chrono::duration_cast<chrono::milliseconds>(t1 - t0).count();
+        i = 0;
 
-            i = 0;
+        for (const auto& vi : filteredSockets) {
+            intervalCounters.at(i)++;
 
-            for (const auto& vi : filteredSockets)
-            {
-                intervalCounters.at(i)++;
+            if (intervalCounters.at(i) == logIntervals.at(i)) {
+                intervalCounters.at(i) = 0;
 
-                if (intervalCounters.at(i) == logIntervals.at(i))
-                {
-                    intervalCounters.at(i) = 0;
-
+                if (msSinceLastLog > 0) {
                     bytesInNew.at(i) = vi->GetBytesRx();
                     msgInNew.at(i) = vi->GetMessagesRx();
                     bytesOutNew.at(i) = vi->GetBytesTx();
@@ -796,12 +787,14 @@ void FairMQDevice::LogSocketRates()
                               << "in: " << msgPerSecIn.at(i) << " (" << mbPerSecIn.at(i) << " MB) "
                               << "out: " << msgPerSecOut.at(i) << " (" << mbPerSecOut.at(i) << " MB)";
                 }
-
-                ++i;
             }
 
-            t0 = t1;
-            WaitFor(chrono::milliseconds(1000));
+            ++i;
+        }
+
+        t0 = t1;
+        if (fMaxRunRuntimeInS > 0 && ++secondsElapsed >= fMaxRunRuntimeInS) {
+            ChangeState(fair::mq::Transition::Stop);
         }
     }
 }
