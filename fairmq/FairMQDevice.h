@@ -103,9 +103,6 @@ class FairMQDevice
     /// Default destructor
     virtual ~FairMQDevice();
 
-    /// Catches interrupt signals (SIGINT, SIGTERM)
-    void CatchSignals();
-
     /// Outputs the socket transfer rates
     virtual void LogSocketRates();
 
@@ -542,8 +539,6 @@ class FairMQDevice
 
     bool HandleMsgInput(const std::string& chName, const InputMsgCallback& callback, int i);
     bool HandleMultipartInput(const std::string& chName, const InputMultipartCallback& callback, int i);
-
-    void CreateOwnConfig();
 
     std::vector<FairMQChannel*> fUninitializedBindingChannels;
     std::vector<FairMQChannel*> fUninitializedConnectingChannels;
