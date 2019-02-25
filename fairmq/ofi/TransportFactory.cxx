@@ -61,7 +61,7 @@ auto TransportFactory::CreateMessage(UnmanagedRegionPtr& region,
 
 auto TransportFactory::CreateSocket(const string& type, const string& name) -> SocketPtr
 {
-    return SocketPtr{new Socket(fContext, type, name, GetId(), this)};
+    return SocketPtr{new Socket(fContext, type, name, GetId())};
 }
 
 auto TransportFactory::CreatePoller(const vector<FairMQChannel>& /*channels*/) const -> PollerPtr

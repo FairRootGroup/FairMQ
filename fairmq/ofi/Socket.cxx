@@ -186,8 +186,8 @@ auto Socket::BindDataEndpoint() -> void
     LOG(debug) << "OFI transport (" << fId << "): data band bound to " << fLocalAddr;
 }
 
-auto Socket::Connect(const string& address) -> void
-{
+auto Socket::Connect(const string& address) -> bool
+try {
     fRemoteAddr = Context::VerifyAddress(address);
     if (fRemoteAddr.Protocol == "verbs") {
         fNeedOfiMemoryRegistration = true;
@@ -201,6 +201,20 @@ auto Socket::Connect(const string& address) -> void
 
     boost::asio::post(fIoStrand, std::bind(&Socket::SendQueueReader, this));
     boost::asio::post(fIoStrand, std::bind(&Socket::RecvControlQueueReader, this));
+
+    return true;
+}
+// TODO catch the correct ofi error
+catch (const SilentSocketError& e)
+{
+    // do not print error in this case, this is handled by FairMQDevice
+    // in case no connection could be established after trying a number of random ports from a range.
+    return false;
+}
+catch (const SocketError& e)
+{
+    LOG(error) << "OFI transport: " << e.what();
+    return false;
 }
 
 auto Socket::ConnectControlEndpoint() -> void
