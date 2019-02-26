@@ -117,8 +117,8 @@ class Socket final : public fair::mq::Socket
     auto InitOfi(Address addr) -> void;
     auto BindControlEndpoint() -> void;
     auto BindDataEndpoint() -> void;
-    auto ConnectControlEndpoint() -> void;
-    auto ConnectDataEndpoint() -> void;
+    enum class Band { Control, Data };
+    auto ConnectEndpoint(std::unique_ptr<asiofi::connected_endpoint>& endpoint, Band type) -> void;
     // auto ReceiveDataAddressAnnouncement() -> void;
 }; /* class Socket */
 
