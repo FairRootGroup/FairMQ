@@ -476,6 +476,8 @@ class FairMQDevice
     bool ChangeState(const fair::mq::Transition transition) { return fStateMachine.ChangeState(transition); }
     bool ChangeState(const std::string& transition) { return fStateMachine.ChangeState(fair::mq::StateMachine::GetTransition(transition)); }
 
+    bool ChangeState(const int transition) __attribute__((deprecated("Use ChangeState(const fair::mq::Transition transition).")));
+
     void WaitForEndOfState(const fair::mq::Transition transition) __attribute__((deprecated("Use WaitForState(fair::mq::State expectedState).")));
     void WaitForEndOfState(const std::string& transition) __attribute__((deprecated("Use WaitForState(fair::mq::State expectedState)."))) { WaitForState(transition); }
 

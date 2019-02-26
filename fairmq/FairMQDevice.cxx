@@ -40,6 +40,21 @@ static map<fair::mq::Transition, fair::mq::State> backwardsCompatibilityWaitForE
     { fair::mq::Transition::ResetDevice,  fair::mq::State::Idle }
 };
 
+static map<int, fair::mq::Transition> backwardsCompatibilityChangeStateHelper =
+{
+    { FairMQDevice::Event::INIT_DEVICE, fair::mq::Transition::InitDevice },
+    { FairMQDevice::Event::internal_DEVICE_READY, fair::mq::Transition::Auto },
+    { FairMQDevice::Event::INIT_TASK, fair::mq::Transition::InitTask },
+    { FairMQDevice::Event::internal_READY, fair::mq::Transition::Auto },
+    { FairMQDevice::Event::RUN, fair::mq::Transition::Run },
+    { FairMQDevice::Event::STOP, fair::mq::Transition::Stop },
+    { FairMQDevice::Event::RESET_TASK, fair::mq::Transition::ResetTask },
+    { FairMQDevice::Event::RESET_DEVICE, fair::mq::Transition::ResetDevice },
+    { FairMQDevice::Event::internal_IDLE, fair::mq::Transition::Auto },
+    { FairMQDevice::Event::END, fair::mq::Transition::End },
+    { FairMQDevice::Event::ERROR_FOUND, fair::mq::Transition::ErrorFound }
+};
+
 FairMQDevice::FairMQDevice()
     : FairMQDevice(nullptr, {0, 0, 0})
 {
@@ -160,6 +175,11 @@ fair::mq::State FairMQDevice::WaitForNextState()
 void FairMQDevice::WaitForState(fair::mq::State state)
 {
     while (WaitForNextState() != state) {}
+}
+
+bool FairMQDevice::ChangeState(const int transition)
+{
+    return ChangeState(backwardsCompatibilityChangeStateHelper.at(transition));
 }
 
 void FairMQDevice::WaitForEndOfState(fair::mq::Transition transition)
