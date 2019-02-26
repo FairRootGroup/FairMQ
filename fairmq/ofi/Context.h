@@ -69,6 +69,7 @@ class Context
     static auto VerifyAddress(const std::string& address) -> Address;
     auto Interrupt() -> void { LOG(debug) << "OFI transport: Interrupted (NOOP - not implemented)."; }
     auto Resume() -> void { LOG(debug) << "OFI transport: Resumed (NOOP - not implemented)."; }
+    auto Reset() -> void;
     auto MakeReceiveMessage(size_t size) -> MessagePtr;
     auto MakeSendMessage(size_t size) -> MessagePtr;
 

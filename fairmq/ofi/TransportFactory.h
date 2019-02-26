@@ -52,7 +52,7 @@ class TransportFactory final : public FairMQTransportFactory
 
     void Interrupt() override { fContext.Interrupt(); }
     void Resume() override { fContext.Resume(); }
-    void Reset() override {}
+    void Reset() override { fContext.Reset(); }
 
   private:
     mutable Context fContext;

@@ -54,9 +54,13 @@ auto Context::InitThreadPool(int numberIoThreads) -> void
     }
 }
 
-Context::~Context()
+auto Context::Reset() -> void
 {
     fIoContext.stop();
+}
+
+Context::~Context()
+{
     for (auto& thread : fThreadPool)
         thread.join();
 }
