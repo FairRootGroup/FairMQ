@@ -201,20 +201,6 @@ struct Machine_ : public state_machine_def<Machine_>
         }
     };
 
-    struct ErrorFct
-    {
-        template<typename EVT, typename FSM, typename SourceState, typename TargetState>
-        void operator()(EVT const& e, FSM& fsm, SourceState& /* ss */, TargetState& ts)
-        {
-            fsm.fState = ts.Type();
-            fsm.fLastTransitionResult = true;
-            fsm.CallNewTransitionCallbacks(e.Type());
-            fsm.CallStateChangeCallbacks(ts.Type());
-            fsm.fNewStatePending = true;
-            fsm.fNewStatePendingCV.notify_all();
-        }
-    };
-
     struct transition_table : bmpl::vector<
         //  Start                  Transition       Next                   Action      Guard
         Row<IDLE_S,                END_E,           EXITING_S,             DefaultFct, none>,
@@ -242,7 +228,7 @@ struct Machine_ : public state_machine_def<Machine_>
         Row<RESETTING_TASK_S,      AUTO_E,          DEVICE_READY_S,        DefaultFct, none>,
         Row<RESETTING_DEVICE_S,    AUTO_E,          IDLE_S,                DefaultFct, none>,
 
-        Row<OK_S,                  ERROR_FOUND_E,   ERROR_S,               ErrorFct,   none>> {};
+        Row<OK_S,                  ERROR_FOUND_E,   ERROR_S,               DefaultFct,   none>> {};
 
     void CallStateChangeCallbacks(const State state) const
     {
@@ -480,6 +466,8 @@ void StateMachine::ProcessWork()
     } catch(...) {
         {
             lock_guard<mutex> lock(fsm->fStateMtx);
+            fsm->fState = State::Error;
+            fsm->CallStateChangeCallbacks(State::Error);
             fsm->fWorkOngoing = false;
             fsm->fWorkDoneCV.notify_one();
         }
