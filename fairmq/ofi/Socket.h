@@ -82,6 +82,7 @@ class Socket final : public fair::mq::Socket
 
   private:
     Context& fContext;
+    asiofi::allocated_pool_resource fControlMemPool;
     std::unique_ptr<asiofi::info> fOfiInfo;
     std::unique_ptr<asiofi::fabric> fOfiFabric;
     std::unique_ptr<asiofi::domain> fOfiDomain;
@@ -100,7 +101,6 @@ class Socket final : public fair::mq::Socket
     azmq::socket fSendQueueWrite, fSendQueueRead;
     azmq::socket fRecvQueueWrite, fRecvQueueRead;
     asiofi::semaphore fSendSem, fRecvSem;
-    asiofi::allocated_pool_resource fControlMemPool;
     std::atomic<bool> fNeedOfiMemoryRegistration;
 
     auto SendQueueReader() -> void;
