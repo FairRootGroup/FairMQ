@@ -17,12 +17,14 @@
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/post.hpp>
+#include <chrono>
 #include <cstring>
 #include <functional>
 #include <memory>
 #include <sstream>
 #include <string.h>
 #include <sys/socket.h>
+#include <thread>
 
 #include <mutex>
 #include <condition_variable>
@@ -149,7 +151,7 @@ auto Socket::BindControlEndpoint() -> void
 {
     assert(!fControlEndpoint);
 
-    fPassiveEndpoint->listen([&](fid_t /*handle*/, asiofi::info&& info) {
+    fPassiveEndpoint->listen([&](asiofi::info&& info) {
         LOG(debug) << "OFI transport (" << fId
                    << "): control band connection request received. Accepting ...";
         fControlEndpoint = tools::make_unique<asiofi::connected_endpoint>(
@@ -169,7 +171,7 @@ auto Socket::BindDataEndpoint() -> void
 {
     assert(!fDataEndpoint);
 
-    fPassiveEndpoint->listen([&](fid_t /*handle*/, asiofi::info&& info) {
+    fPassiveEndpoint->listen([&](asiofi::info&& info) {
         LOG(debug) << "OFI transport (" << fId
                    << "): data band connection request received. Accepting ...";
         fDataEndpoint = tools::make_unique<asiofi::connected_endpoint>(
@@ -195,86 +197,65 @@ try {
 
     InitOfi(fRemoteAddr);
 
-    ConnectControlEndpoint();
+    ConnectEndpoint(fControlEndpoint, Band::Control);
 
-    ConnectDataEndpoint();
+    ConnectEndpoint(fDataEndpoint, Band::Data);
 
     boost::asio::post(fIoStrand, std::bind(&Socket::SendQueueReader, this));
     boost::asio::post(fIoStrand, std::bind(&Socket::RecvControlQueueReader, this));
 
     return true;
 }
-// TODO catch the correct ofi error
 catch (const SilentSocketError& e)
 {
     // do not print error in this case, this is handled by FairMQDevice
     // in case no connection could be established after trying a number of random ports from a range.
     return false;
 }
-catch (const SocketError& e)
+catch (const std::exception& e)
 {
     LOG(error) << "OFI transport: " << e.what();
     return false;
 }
 
-auto Socket::ConnectControlEndpoint() -> void
+auto Socket::ConnectEndpoint(std::unique_ptr<asiofi::connected_endpoint>& endpoint, Band type) -> void
 {
-    assert(!fControlEndpoint);
+    assert(!endpoint);
 
     std::mutex m;
     std::condition_variable cv;
-    bool completed(false);
+    asiofi::eq::event status(asiofi::eq::event::connrefused);
+    std::string band(type == Band::Control ? "control" : "data");
 
-    fControlEndpoint =
-        tools::make_unique<asiofi::connected_endpoint>(fIoStrand.context(), *fOfiDomain);
-    fControlEndpoint->enable();
+    endpoint = tools::make_unique<asiofi::connected_endpoint>(fIoStrand.context(), *fOfiDomain);
+    endpoint->enable();
 
-    fControlEndpoint->connect(Context::ConvertAddress(fRemoteAddr), [&]() {
-        {
-            std::unique_lock<std::mutex> lk(m);
-            completed = true;
-        }
-        cv.notify_one();
-    });
-
-    LOG(debug) << "OFI transport (" << fId << "): control band connection request sent to "
+    LOG(debug) << "OFI transport (" << fId << "): Sending " << band << " band connection request to "
                << fRemoteAddr;
 
-    {
-        std::unique_lock<std::mutex> lk(m);
-        cv.wait(lk, [&]() { return completed; });
-    }
-    LOG(debug) << "OFI transport (" << fId << "): control band connected.";
-}
+    while (true) {
+        endpoint->connect(Context::ConvertAddress(fRemoteAddr), [&](asiofi::eq::event event) {
+            {
+                std::unique_lock<std::mutex> lk(m);
+                status = event;
+            }
+            cv.notify_one();
+        });
 
-auto Socket::ConnectDataEndpoint() -> void
-{
-    assert(!fDataEndpoint);
-
-    std::mutex m;
-    std::condition_variable cv;
-    bool completed(false);
-
-    fDataEndpoint =
-        tools::make_unique<asiofi::connected_endpoint>(fIoStrand.context(), *fOfiDomain);
-    fDataEndpoint->enable();
-
-    fDataEndpoint->connect(Context::ConvertAddress(fRemoteAddr), [&]() {
         {
             std::unique_lock<std::mutex> lk(m);
-            completed = true;
+            cv.wait(lk);
+
+            if (status == asiofi::eq::event::connected) {
+                break;
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                continue;
+            }
         }
-        cv.notify_one();
-    });
-
-    LOG(debug) << "OFI transport (" << fId << "): data band connection request sent to "
-               << fRemoteAddr;
-
-    {
-        std::unique_lock<std::mutex> lk(m);
-        cv.wait(lk, [&]() { return completed; });
     }
-    LOG(debug) << "OFI transport (" << fId << "): data band connected.";
+
+    LOG(debug) << "OFI transport (" << fId << "): " << band << " band connected.";
 }
 
 // auto Socket::ReceiveDataAddressAnnouncement() -> void
@@ -362,15 +343,22 @@ auto Socket::Receive(MessagePtr& msg, const int /*timeout*/) -> int
     }
 }
 
-auto Socket::Send(std::vector<MessagePtr>& msgVec, const int timeout) -> int64_t { return SendImpl(msgVec, 0, timeout); }
-auto Socket::Receive(std::vector<MessagePtr>& msgVec, const int timeout) -> int64_t { return ReceiveImpl(msgVec, 0, timeout); }
+auto Socket::Send(std::vector<MessagePtr>& msgVec, const int timeout) -> int64_t
+{
+    return SendImpl(msgVec, 0, timeout);
+}
+auto Socket::Receive(std::vector<MessagePtr>& msgVec, const int timeout) -> int64_t
+{
+    return ReceiveImpl(msgVec, 0, timeout);
+}
 
 auto Socket::SendQueueReader() -> void
 {
     fSendSem.async_wait(
         boost::asio::bind_executor(fIoStrand, [&](const boost::system::error_code& ec) {
             if (!ec) {
-                // LOG(debug) << "OFI transport (" << fId << "):     < Wait fSendSem=" << fSendSem.get_value();
+                // LOG(debug) << "OFI transport (" << fId << "):     < Wait fSendSem=" <<
+                // fSendSem.get_value();
                 fSendQueueRead.async_receive([&](const boost::system::error_code& ec2,
                                                  azmq::message& zmsg,
                                                  size_t bytes_transferred) {
