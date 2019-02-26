@@ -453,7 +453,7 @@ int FairMQProgOptions::PrintOptions()
            << "\n";
     }
 
-    LOG(info) << ss.str();
+    LOG(debug) << ss.str();
 
     return 0;
 }
