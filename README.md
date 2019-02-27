@@ -120,7 +120,7 @@ After the `find_package(FairMQ)` call the following CMake variables are defined:
 | `${FairMQ_#COMPONENT#_FOUND}` | `TRUE` if this component was built |
 | `${FairMQ_VERSION}` | the version in format `MAJOR.MINOR.PATCH` |
 | `${FairMQ_GIT_VERSION}` | the version in the format returned by `git describe --tags --dirty --match "v*"` |
-| `${FairMQ_ROOT}` | the actual installation prefix, notice the difference to the hint variable `FAIRMQ_ROOT` |
+| `${FairMQ_PREFIX}` | the actual installation prefix |
 | `${FairMQ_BINDIR}` | the installation bin directory |
 | `${FairMQ_INCDIR}` | the installation include directory |
 | `${FairMQ_LIBDIR}` | the installation lib directory |
