@@ -95,7 +95,6 @@ class Socket final : public fair::mq::Socket
     std::atomic<unsigned long> fMessagesRx;
     Address fRemoteAddr;
     Address fLocalAddr;
-    boost::asio::io_service::strand fIoStrand;
     int fSndTimeout;
     int fRcvTimeout;
     azmq::socket fSendQueueWrite, fSendQueueRead;
