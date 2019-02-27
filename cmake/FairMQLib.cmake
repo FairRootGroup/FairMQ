@@ -40,6 +40,7 @@ macro(set_fairmq_cmake_policies)
     CMP0042 # MACOSX_RPATH is enabled by default.
     CMP0048 # The ``project()`` command manages VERSION variables.
     CMP0054 # Only interpret ``if()`` arguments as variables or keywords when unquoted.
+    CMP0074 # ``find_package()`` uses ``<PackageName>_ROOT`` variables.
   )
     if(POLICY ${policy})
       cmake_policy(SET ${policy} NEW)
