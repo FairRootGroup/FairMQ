@@ -84,12 +84,9 @@ if(BUILD_FAIRMQ)
     COMPONENTS
     container
     program_options
-    thread
-    system
     filesystem
-    regex
     date_time
-    signals
+    regex
     ${asiofi_Boost_COMPONENTS}
   )
   find_package2(PUBLIC FairLogger REQUIRED
@@ -213,6 +210,8 @@ install_cmake_package()
 
 
 # Summary ######################################################################
+message(STATUS "  ")
+message(STATUS "  ${Cyan}CXX STANDARD${CR}       ${BGreen}C++${CMAKE_CXX_STANDARD}${CR} (>= C++${PROJECT_MIN_CXX_STANDARD}, change with ${BMagenta}-DCMAKE_CXX_STANDARD=17${CR})")
 if(CMAKE_CXX_FLAGS)
   message(STATUS "  ")
   message(STATUS "  ${Cyan}GLOBAL CXX FLAGS${CR}  ${BGreen}${CMAKE_CXX_FLAGS}${CR}")
