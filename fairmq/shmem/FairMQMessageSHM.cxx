@@ -350,6 +350,7 @@ void FairMQMessageSHM::CloseMessage()
                 }
                 if (fRegionPtr)
                 {
+                    // LOG(debug) << "sending ack";
                     if (fRegionPtr->fQueue->timed_send(&block, sizeof(RegionBlock), 0, sndTill))
                     {
                         success = true;
