@@ -17,17 +17,6 @@ if(BUILD_PMIX_PLUGIN)
 endif()
 
 
-############################
-# preprocessor definitions #
-############################
-if(BUILD_NANOMSG_TRANSPORT)
-  add_definitions(-DBUILD_NANOMSG_TRANSPORT)
-endif()
-if(BUILD_OFI_TRANSPORT)
-  add_definitions(-DBUILD_OFI_TRANSPORT)
-endif()
-
-
 ##########################
 # libFairMQ header files #
 ##########################
@@ -200,6 +189,19 @@ if(FAST_BUILD)
   set_target_properties(${_target} PROPERTIES OUTPUT_NAME FairMQ)
 endif()
 
+
+############################
+# preprocessor definitions #
+############################
+target_compile_definitions(${_target} PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
+if(BUILD_NANOMSG_TRANSPORT)
+  target_compile_definitions(${_target} PRIVATE BUILD_NANOMSG_TRANSPORT)
+endif()
+if(BUILD_OFI_TRANSPORT)
+  target_compile_definitions(${_target} PRIVATE BUILD_OFI_TRANSPORT)
+endif()
+
+
 #######################
 # include directories #
 #######################
@@ -240,11 +242,8 @@ target_link_libraries(${_target}
   $<$<PLATFORM_ID:Linux>:rt>
   Boost::boost
   Boost::program_options
-  Boost::thread
-  Boost::system
   Boost::filesystem
   Boost::regex
-  Boost::date_time
   FairLogger::FairLogger
 
   PRIVATE # only libFairMQ links against private dependencies
