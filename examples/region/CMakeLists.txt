@@ -9,6 +9,7 @@
 add_library(ExampleRegionLib STATIC
     "Sampler.cxx"
     "Sampler.h"
+    "Builder.h"
     "Sink.cxx"
     "Sink.h"
 )
@@ -18,6 +19,8 @@ target_link_libraries(ExampleRegionLib PUBLIC FairMQ)
 add_executable(fairmq-ex-region-sampler runSampler.cxx)
 target_link_libraries(fairmq-ex-region-sampler PRIVATE ExampleRegionLib)
 
+add_executable(fairmq-ex-region-builder runBuilder.cxx)
+target_link_libraries(fairmq-ex-region-builder PRIVATE ExampleRegionLib)
 
 add_executable(fairmq-ex-region-sink runSink.cxx)
 target_link_libraries(fairmq-ex-region-sink PRIVATE ExampleRegionLib)

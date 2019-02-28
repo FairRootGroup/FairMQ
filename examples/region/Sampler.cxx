@@ -35,7 +35,7 @@ void Sampler::InitTask()
     fMsgSize = fConfig->GetValue<int>("msg-size");
     fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
 
-    fRegion = FairMQUnmanagedRegionPtr(NewUnmanagedRegionFor("data",
+    fRegion = FairMQUnmanagedRegionPtr(NewUnmanagedRegionFor("data1",
                                                              0,
                                                              10000000,
                                                              [this](void* /*data*/, size_t /*size*/, void* /*hint*/) { // callback to be called when message buffers no longer needed by transport
@@ -50,7 +50,7 @@ void Sampler::InitTask()
 
 bool Sampler::ConditionalRun()
 {
-    FairMQMessagePtr msg(NewMessageFor("data", // channel
+    FairMQMessagePtr msg(NewMessageFor("data1", // channel
                                         0, // sub-channel
                                         fRegion, // region
                                         fRegion->GetData(), // ptr within region
@@ -58,7 +58,7 @@ bool Sampler::ConditionalRun()
                                         nullptr // hint
                                         ));
 
-    if (Send(msg, "data", 0) > 0)
+    if (Send(msg, "data1", 0) > 0)
     {
         ++fNumUnackedMsgs;
 
