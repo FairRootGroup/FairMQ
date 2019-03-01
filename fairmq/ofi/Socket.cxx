@@ -483,9 +483,7 @@ auto Socket::OnRecvControl(ofi::unique_ptr<PostBuffer> ctrl) -> void
                                 // << bytes_transferred2;
                                 fRecvSem.async_signal([&](const boost::system::error_code& ec2) {
                                     if (!ec2) {
-                                        // LOG(debug)
-                                        // << "OFI transport (" << fId << "):     < Signal
-                                        // fRecvSem";
+                                        //LOG(debug) << "OFI transport (" << fId << "):     < Signal fRecvSem";
                                     }
                                 });
                             }
@@ -505,9 +503,7 @@ auto Socket::OnRecvControl(ofi::unique_ptr<PostBuffer> ctrl) -> void
                                 // << bytes_transferred2;
                                 fRecvSem.async_signal([&](const boost::system::error_code& ec2) {
                                     if (!ec2) {
-                                        // LOG(debug)
-                                        // << "OFI transport (" << fId << "):     < Signal
-                                        // fRecvSem";
+                                        // LOG(debug) << "OFI transport (" << fId << "):     < Signal fRecvSem";
                                     }
                                 });
                             }
@@ -520,8 +516,8 @@ auto Socket::OnRecvControl(ofi::unique_ptr<PostBuffer> ctrl) -> void
             [&](const boost::system::error_code& ec, size_t /*bytes_transferred2*/) {
                 if (!ec) {
                     // LOG(debug) << "OFI transport (" << fId
-                               // << "): <<<<< Data buffer received, bytes_transferred2="
-                               // << bytes_transferred2;
+                    //            << "): <<<<< Data buffer received, bytes_transferred2="
+                    //            << bytes_transferred2;
                     fRecvSem.async_signal([&](const boost::system::error_code& ec2) {
                         if (!ec2) {
                             // LOG(debug) << "OFI transport (" << fId << "):     < Signal fRecvSem";
