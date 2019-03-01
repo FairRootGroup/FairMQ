@@ -366,7 +366,7 @@ auto Socket::OnSend(azmq::message& zmsg, size_t /*bytes_transferred*/) -> void
         asiofi::memory_region mr(*fOfiDomain, ctrl_msg, asiofi::mr::access::send);
         auto desc = mr.desc();
         fControlEndpoint->send(
-            ctrl_msg, desc, [&, ctrl2 = std::move(ctrl)](boost::asio::mutable_buffer) mutable {
+            ctrl_msg, desc, [&, ctrl2 = std::move(ctrl), mr2 = std::move(mr)](boost::asio::mutable_buffer) mutable {
                 // LOG(debug) << "OFI transport (" << fId << "): >>>>> Control message sent";
             });
     } else {
