@@ -189,7 +189,9 @@ auto Socket::BindDataEndpoint() -> void
 auto Socket::Connect(const string& address) -> bool
 try {
     fRemoteAddr = Context::VerifyAddress(address);
-    fNeedOfiMemoryRegistration = (fRemoteAddr.Protocol == "verbs");
+    if (fRemoteAddr.Protocol == "verbs") {
+        fNeedOfiMemoryRegistration = true;
+    }
 
     InitOfi(fRemoteAddr);
 
