@@ -72,8 +72,8 @@ Socket::Socket(Context& context, const string& type, const string& name, const s
         fSendQueueWrite.set_option(recv_max);
         fRecvQueueRead.set_option(send_max);
         fRecvQueueRead.set_option(recv_max);
-        fSendQueueWrite.set_option(send_max);
-        fSendQueueWrite.set_option(recv_max);
+        fRecvQueueWrite.set_option(send_max);
+        fRecvQueueWrite.set_option(recv_max);
 
         // Setup internal queue
         auto hashed_id = std::hash<std::string>()(fId);
