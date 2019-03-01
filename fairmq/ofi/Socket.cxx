@@ -434,10 +434,20 @@ auto Socket::RecvControlQueueReader() -> void
             auto ctrl = MakeControlMessageWithPmr<PostBuffer>(&fControlMemPool);
             auto ctrl_msg = boost::asio::mutable_buffer(ctrl.get(), sizeof(PostBuffer));
 
-            fControlEndpoint->recv(
-                ctrl_msg, [&, ctrl2 = std::move(ctrl)](boost::asio::mutable_buffer) mutable {
-                    OnRecvControl(std::move(ctrl2));
-                });
+            if (fNeedOfiMemoryRegistration) {
+                asiofi::memory_region mr(*fOfiDomain, ctrl_msg, asiofi::mr::access::recv);
+                auto desc = mr.desc();
+
+                fControlEndpoint->recv(
+                    ctrl_msg, desc, [&, ctrl2 = std::move(ctrl), mr2 = std::move(mr)](boost::asio::mutable_buffer) mutable {
+                        OnRecvControl(std::move(ctrl2));
+                    });
+	    } else {
+                fControlEndpoint->recv(
+                    ctrl_msg, [&, ctrl2 = std::move(ctrl)](boost::asio::mutable_buffer) mutable {
+                        OnRecvControl(std::move(ctrl2));
+                    });
+	    }
         }
     });
 }
