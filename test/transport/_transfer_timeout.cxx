@@ -31,18 +31,18 @@ auto RunTransferTimeout(string transport) -> void
     exit(res.exit_code);
 }
 
-TEST(TransferTimeout, ZeroMQ)
+TEST(TransferTimeout, zeromq)
 {
     EXPECT_EXIT(RunTransferTimeout("zeromq"), ::testing::ExitedWithCode(0), "Transfer timeout test successfull");
 }
 
-TEST(TransferTimeout, ShMem)
+TEST(TransferTimeout, shmem)
 {
     EXPECT_EXIT(RunTransferTimeout("shmem"), ::testing::ExitedWithCode(0), "Transfer timeout test successfull");
 }
 
 #ifdef BUILD_NANOMSG_TRANSPORT
-TEST(TransferTimeout, Nanomsg)
+TEST(TransferTimeout, nanomsg)
 {
     EXPECT_EXIT(RunTransferTimeout("nanomsg"), ::testing::ExitedWithCode(0), "Transfer timeout test successfull");
 }

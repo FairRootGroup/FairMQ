@@ -45,79 +45,79 @@ void RunExceptionIn(const std::string& state, const std::string& input = "")
     exit(result.exit_code);
 }
 
-TEST(Exceptions, InInit_______static)
+TEST(Exceptions, static_InInit)
 {
     EXPECT_EXIT(RunExceptionIn("Init"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InInitTask___static)
+TEST(Exceptions, static_InInitTask)
 {
     EXPECT_EXIT(RunExceptionIn("InitTask"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InPreRun_____static)
+TEST(Exceptions, static_InPreRun)
 {
     EXPECT_EXIT(RunExceptionIn("PreRun"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InRun________static)
+TEST(Exceptions, static_InRun)
 {
     EXPECT_EXIT(RunExceptionIn("Run"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InPostRun____static)
+TEST(Exceptions, static_InPostRun)
 {
     EXPECT_EXIT(RunExceptionIn("PostRun"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InResetTask__static)
+TEST(Exceptions, static_InResetTask)
 {
     EXPECT_EXIT(RunExceptionIn("ResetTask"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InReset______static)
+TEST(Exceptions, static_InReset)
 {
     EXPECT_EXIT(RunExceptionIn("Reset"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InInit_______interactive)
+TEST(Exceptions, interactive_InInit)
 {
     EXPECT_EXIT(RunExceptionIn("Init", "q"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InInitTask___interactive)
+TEST(Exceptions, interactive_InInitTask)
 {
     EXPECT_EXIT(RunExceptionIn("InitTask", "q"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InPreRun_____interactive)
+TEST(Exceptions, interactive_InPreRun)
 {
     EXPECT_EXIT(RunExceptionIn("PreRun", "q"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InRun________interactive)
+TEST(Exceptions, interactive_InRun)
 {
     EXPECT_EXIT(RunExceptionIn("Run", "q"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InPostRun____interactive)
+TEST(Exceptions, interactive_InPostRun)
 {
     EXPECT_EXIT(RunExceptionIn("PostRun", "q"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InResetTask__interactive)
+TEST(Exceptions, interactive_InResetTask)
 {
     EXPECT_EXIT(RunExceptionIn("ResetTask", "q"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InReset______interactive)
+TEST(Exceptions, interactive_InReset)
 {
     EXPECT_EXIT(RunExceptionIn("Reset", "q"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InInit_______interactive_invalid)
+TEST(Exceptions, interactive_invalid_InInit)
 {
     EXPECT_EXIT(RunExceptionIn("Init", "_"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InInitTask___interactive_invalid)
+TEST(Exceptions, interactive_invalid_InInitTask)
 {
     EXPECT_EXIT(RunExceptionIn("InitTask", "_"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InPreRun_____interactive_invalid)
+TEST(Exceptions, interactive_invalid_InPreRun)
 {
     EXPECT_EXIT(RunExceptionIn("PreRun", "_"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InRun________interactive_invalid)
+TEST(Exceptions, interactive_invalid_InRun)
 {
     EXPECT_EXIT(RunExceptionIn("Run", "_"), ::testing::ExitedWithCode(1), "");
 }
-TEST(Exceptions, InPostRun____interactive_invalid)
+TEST(Exceptions, interactive_invalid_InPostRun)
 {
     EXPECT_EXIT(RunExceptionIn("PostRun", "_"), ::testing::ExitedWithCode(1), "");
 }

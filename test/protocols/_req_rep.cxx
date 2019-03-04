@@ -55,18 +55,18 @@ auto RunReqRep(string transport) -> void
     exit(req1.exit_code + req2.exit_code + rep.exit_code);
 }
 
-TEST(ReqRep, ZeroMQ)
+TEST(ReqRep, zeromq)
 {
     EXPECT_EXIT(RunReqRep("zeromq"), ::testing::ExitedWithCode(0), "REQ-REP test successfull");
 }
 
-TEST(ReqRep, ShMem)
+TEST(ReqRep, shmem)
 {
     EXPECT_EXIT(RunReqRep("shmem"), ::testing::ExitedWithCode(0), "REQ-REP test successfull");
 }
 
 #ifdef BUILD_NANOMSG_TRANSPORT
-TEST(ReqRep, Nanomsg)
+TEST(ReqRep, nanomsg)
 {
     EXPECT_EXIT(RunReqRep("nanomsg"), ::testing::ExitedWithCode(0), "REQ-REP test successfull");
 }

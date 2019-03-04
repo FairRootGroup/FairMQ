@@ -32,16 +32,16 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-req-rep.sh.in ${CMAKE
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-req-rep.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-req-rep.sh)
 
-add_test(NAME Example-ReqRep-zeromq COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-req-rep.sh zeromq)
-set_tests_properties(Example-ReqRep-zeromq PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received reply from server: ")
+add_test(NAME Example.ReqRep.zeromq COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-req-rep.sh zeromq)
+set_tests_properties(Example.ReqRep.zeromq PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received reply from server: ")
 
 if(BUILD_NANOMSG_TRANSPORT)
-  add_test(NAME Example-ReqRep-nanomsg COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-req-rep.sh nanomsg)
-  set_tests_properties(Example-ReqRep-nanomsg PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received reply from server: ")
+  add_test(NAME Example.ReqRep.nanomsg COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-req-rep.sh nanomsg)
+  set_tests_properties(Example.ReqRep.nanomsg PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received reply from server: ")
 endif()
 
-add_test(NAME Example-ReqRep-shmem COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-req-rep.sh shmem)
-set_tests_properties(Example-ReqRep-shmem PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received reply from server: ")
+add_test(NAME Example.ReqRep.shmem COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-req-rep.sh shmem)
+set_tests_properties(Example.ReqRep.shmem PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received reply from server: ")
 
 # install
 

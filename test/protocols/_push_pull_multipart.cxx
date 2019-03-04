@@ -105,71 +105,71 @@ auto RunMultiThreadedMultipart(string transport, string address) -> void
     puller.join();
 }
 
-TEST(PushPull, ST_ZeroMQ__inproc_Multipart)
+TEST(PushPull, Multipart_ST_inproc_zeromq)
 {
     RunSingleThreadedMultipart("zeromq", "inproc://test");
 }
 
-TEST(PushPull, ST_Shmem___inproc_Multipart)
+TEST(PushPull, Multipart_ST_inproc_shmem)
 {
     RunSingleThreadedMultipart("shmem", "inproc://test");
 }
 
 #ifdef BUILD_NANOMSG_TRANSPORT
-TEST(PushPull, ST_Nanomsg_inproc_Multipart)
+TEST(PushPull, Multipart_ST_inproc_nanomsg)
 {
     RunSingleThreadedMultipart("nanomsg", "inproc://test");
 }
 #endif /* BUILD_NANOMSG_TRANSPORT */
 
-TEST(PushPull, ST_ZeroMQ__ipc____Multipart)
+TEST(PushPull, Multipart_ST_ipc_zeromq)
 {
-    RunSingleThreadedMultipart("zeromq", "ipc://test_ST_ZeroMQ__ipc____Multipart");
+    RunSingleThreadedMultipart("zeromq", "ipc://test_Multipart_ST_ipc_zeromq");
 }
 
-TEST(PushPull, ST_Shmen___ipc____Multipart)
+TEST(PushPull, Multipart_ST_ipc_shmen)
 {
-    RunSingleThreadedMultipart("shmem", "ipc://test_ST_Shmen___ipc____Multipart");
+    RunSingleThreadedMultipart("shmem", "ipc://test_Multipart_ST_ipc_shmen");
 }
 
 #ifdef BUILD_NANOMSG_TRANSPORT
-TEST(PushPull, ST_Nanomsg_ipc____Multipart)
+TEST(PushPull, Multipart_ST_ipc_nanomsg)
 {
-    RunSingleThreadedMultipart("nanomsg", "ipc://test_ST_Nanomsg_ipc____Multipart");
+    RunSingleThreadedMultipart("nanomsg", "ipc://test_Multipart_ST_ipc_nanomsg");
 }
 #endif /* BUILD_NANOMSG_TRANSPORT */
 
-TEST(PushPull, MT_ZeroMQ__inproc_Multipart)
+TEST(PushPull, Multipart_MT_inproc_zeromq)
 {
     RunMultiThreadedMultipart("zeromq", "inproc://test");
 }
 
-TEST(PushPull, MT_Shmem___inproc_Multipart)
+TEST(PushPull, Multipart_MT_inproc_shmem)
 {
     RunMultiThreadedMultipart("shmem", "inproc://test");
 }
 
 #ifdef BUILD_NANOMSG_TRANSPORT
-TEST(PushPull, MT_Nanomsg_inproc_Multipart)
+TEST(PushPull, Multipart_MT_inproc_nanomsg)
 {
     RunMultiThreadedMultipart("nanomsg", "inproc://test");
 }
 #endif /* BUILD_NANOMSG_TRANSPORT */
 
-TEST(PushPull, MT_ZeroMQ__ipc____Multipart)
+TEST(PushPull, Multipart_MT_ipc_zeromq)
 {
-    RunMultiThreadedMultipart("zeromq", "ipc://test_MT_ZeroMQ__ipc____Multipart");
+    RunMultiThreadedMultipart("zeromq", "ipc://test_Multipart_MT_ipc_zeromq");
 }
 
-TEST(PushPull, MT_Shmem___ipc____Multipart)
+TEST(PushPull, Multipart_MT_ipc_shmem)
 {
-    RunMultiThreadedMultipart("shmem", "ipc://test_MT_Shmem___ipc____Multipart");
+    RunMultiThreadedMultipart("shmem", "ipc://test_Multipart_MT_ipc_shmem");
 }
 
 #ifdef BUILD_NANOMSG_TRANSPORT
-TEST(PushPull, MT_Nanomsg_ipc____Multipart)
+TEST(PushPull, Multipart_MT_ipc_nanomsg)
 {
-    RunMultiThreadedMultipart("nanomsg", "ipc://test_MT_Nanomsg_ipc____Multipart");
+    RunMultiThreadedMultipart("nanomsg", "ipc://test_Multipart_MT_ipc_nanomsg");
 }
 #endif /* BUILD_NANOMSG_TRANSPORT */
 

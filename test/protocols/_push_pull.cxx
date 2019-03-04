@@ -46,18 +46,18 @@ auto RunPushPull(string transport) -> void
     exit(push.exit_code + pull.exit_code);
 }
 
-TEST(PushPull, MP_ZeroMQ__tcp____SingleMsg)
+TEST(PushPull, SingleMsg_MP_tcp_zeromq)
 {
     EXPECT_EXIT(RunPushPull("zeromq"), ::testing::ExitedWithCode(0), "PUSH-PULL test successfull");
 }
 
-TEST(PushPull, MP_ShMem___tcp____SingleMsg)
+TEST(PushPull, SingleMsg_MP_tcp_shmem)
 {
     EXPECT_EXIT(RunPushPull("shmem"), ::testing::ExitedWithCode(0), "PUSH-PULL test successfull");
 }
 
 #ifdef BUILD_NANOMSG_TRANSPORT
-TEST(PushPull, MP_Nanomsg_tcp____SingleMsg)
+TEST(PushPull, SingleMsg_MP_tcp_nanomsg)
 {
     EXPECT_EXIT(RunPushPull("nanomsg"), ::testing::ExitedWithCode(0), "PUSH-PULL test successfull");
 }

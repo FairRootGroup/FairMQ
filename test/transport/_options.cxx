@@ -78,7 +78,7 @@ void RunOptionsTest(const string& transport)
     ASSERT_EQ(channel.GetSocket().GetRcvKernelSize(), 8000);
 }
 
-TEST(Options, ZeroMQ)
+TEST(Options, zeromq)
 {
     RunOptionsTest("zeromq");
 }

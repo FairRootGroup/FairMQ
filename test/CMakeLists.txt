@@ -51,7 +51,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/protocols/config.json.in ${MQ_CONFIG}
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/runner.cxx.in ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/TestEnvironment.h.in ${CMAKE_CURRENT_BINARY_DIR}/TestEnvironment.h)
 
-add_testsuite(FairMQ.Protocols
+add_testsuite(Protocols
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     protocols/_pair.cxx
@@ -70,7 +70,7 @@ add_testsuite(FairMQ.Protocols
     ${definitions}
 )
 
-add_testsuite(FairMQ.Parts
+add_testsuite(Parts
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     parts/_iterator_interface.cxx
@@ -82,7 +82,7 @@ add_testsuite(FairMQ.Parts
     TIMEOUT 5
 )
 
-add_testsuite(FairMQ.Message
+add_testsuite(Message
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     message/_message.cxx
@@ -95,14 +95,14 @@ add_testsuite(FairMQ.Message
     ${definitions}
 )
 
-add_testsuite(FairMQ.Device
+add_testsuite(Device
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     device/TestSender.h
     device/TestReceiver.h
     device/_multiple_devices.cxx
-    device/_device_version.cxx
-    device/_device_config.cxx
+    device/_version.cxx
+    device/_config.cxx
     device/_waitfor.cxx
     device/_exceptions.cxx
 
@@ -147,7 +147,7 @@ add_testlib(FairMQPlugin_test_dummy2
     VERSION ${VERSION}
 )
 
-add_testsuite(FairMQ.Plugins
+add_testsuite(Plugins
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     plugins/_plugin.cxx
@@ -160,7 +160,7 @@ add_testsuite(FairMQ.Plugins
     TIMEOUT 5
 )
 
-add_testsuite(FairMQ.PluginsPrelinked
+add_testsuite(PluginsPrelinked
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     plugins/_plugin_manager_prelink.cxx
@@ -171,7 +171,7 @@ add_testsuite(FairMQ.PluginsPrelinked
     TIMEOUT 5
 )
 
-add_testsuite(FairMQ.PluginServices
+add_testsuite(PluginServices
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     plugin_services/_config.cxx
@@ -184,7 +184,7 @@ add_testsuite(FairMQ.PluginServices
     TIMEOUT 5
 )
 
-add_testsuite(FairMQ.EventManager
+add_testsuite(EventManager
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     event_manager/_event_manager.cxx
@@ -195,7 +195,7 @@ add_testsuite(FairMQ.EventManager
     TIMEOUT 5
 )
 
-# add_testsuite(FairMQ.StateMachine
+# add_testsuite(StateMachine
 #     SOURCES
 #     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
 #     state_machine/_state_machine.cxx
@@ -206,7 +206,7 @@ add_testsuite(FairMQ.EventManager
     # TIMEOUT 5
 # )
 
-add_testsuite(FairMQ.Tools
+add_testsuite(Tools
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     tools/_network.cxx
@@ -217,7 +217,7 @@ add_testsuite(FairMQ.Tools
     TIMEOUT 5
 )
 
-add_testsuite(FairMQ.Channel
+add_testsuite(Channel
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     channel/_channel.cxx
@@ -228,7 +228,7 @@ add_testsuite(FairMQ.Channel
     TIMEOUT 5
 )
 
-add_testsuite(FairMQ.Transport
+add_testsuite(Transport
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     transport/_transfer_timeout.cxx
@@ -241,7 +241,7 @@ add_testsuite(FairMQ.Transport
     ${definitions}
 )
 
-add_testsuite(FairMQ.Poller
+add_testsuite(Poller
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     poller/_poller.cxx
@@ -254,7 +254,7 @@ add_testsuite(FairMQ.Poller
     ${definitions}
 )
 
-add_testsuite(FairMQ.MemoryResources
+add_testsuite(MemoryResources
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     memory_resources/_memory_resources.cxx

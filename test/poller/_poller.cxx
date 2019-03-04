@@ -50,36 +50,36 @@ auto RunPoller(string transport, int pollType) -> void
     exit(pollout.exit_code + pollin.exit_code);
 }
 
-TEST(Poller, ZeroMQ_subchannel)
+TEST(Subchannel, zeromq)
 {
     EXPECT_EXIT(RunPoller("zeromq", 0), ::testing::ExitedWithCode(0), "POLL test successfull");
 }
 
 #ifdef BUILD_NANOMSG_TRANSPORT
-TEST(Poller, Nanomsg_subchannel)
+TEST(Subchannel, nanomsg)
 {
     EXPECT_EXIT(RunPoller("nanomsg", 0), ::testing::ExitedWithCode(0), "POLL test successfull");
 }
 #endif /* BUILD_NANOMSG_TRANSPORT */
 
-TEST(Poller, ShMem_subchannel)
+TEST(Subchannel, shmem)
 {
     EXPECT_EXIT(RunPoller("shmem", 0), ::testing::ExitedWithCode(0), "POLL test successfull");
 }
 
-TEST(Poller, ZeroMQ_channel)
+TEST(Channel, zeromq)
 {
     EXPECT_EXIT(RunPoller("zeromq", 1), ::testing::ExitedWithCode(0), "POLL test successfull");
 }
 
 #ifdef BUILD_NANOMSG_TRANSPORT
-TEST(Poller, Nanomsg_channel)
+TEST(Channel, nanomsg)
 {
     EXPECT_EXIT(RunPoller("nanomsg", 1), ::testing::ExitedWithCode(0), "POLL test successfull");
 }
 #endif /* BUILD_NANOMSG_TRANSPORT */
 
-TEST(Poller, ShMem_channel)
+TEST(Channel, shmem)
 {
     EXPECT_EXIT(RunPoller("shmem", 1), ::testing::ExitedWithCode(0), "POLL test successfull");
 }
