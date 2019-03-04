@@ -97,13 +97,13 @@ class Socket final : public fair::mq::Socket
     Address fLocalAddr;
     int fSndTimeout;
     int fRcvTimeout;
-    azmq::socket fSendQueueWrite, fSendQueueRead;
     azmq::socket fRecvQueueWrite, fRecvQueueRead;
     asiofi::semaphore fSendSem, fRecvSem;
     std::atomic<bool> fNeedOfiMemoryRegistration;
+    std::atomic<bool> fBound;
+    std::atomic<bool> fConnected;
 
-    auto SendQueueReader() -> void;
-    auto OnSend(azmq::message& msg, size_t bytes_transferred) -> void;
+    auto OnSend(MessagePtr& msg) -> void;
     auto RecvControlQueueReader() -> void;
     auto OnRecvControl(ofi::unique_ptr<PostBuffer> ctrl) -> void;
     auto OnReceive() -> void;

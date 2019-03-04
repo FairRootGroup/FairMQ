@@ -43,6 +43,8 @@ Message::Message(boost::container::pmr::memory_resource* pmr, const size_t size)
     , fPmr(pmr)
 {
     if (size) {
+        // static void* buffer = fPmr->allocate(size);
+        // fData = buffer;
         fData = fPmr->allocate(size);
         assert(fData);
     }
