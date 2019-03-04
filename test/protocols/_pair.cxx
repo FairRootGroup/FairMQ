@@ -46,25 +46,25 @@ auto RunPair(string transport) -> void
     exit(pairleft.exit_code + pairright.exit_code);
 }
 
-TEST(Pair, MP_ZeroMQ__tcp____SingleMsg)
+TEST(Pair, SingleMsg_MP_tcp_zeromq)
 {
     EXPECT_EXIT(RunPair("zeromq"), ::testing::ExitedWithCode(0), "PAIR test successfull");
 }
 
-TEST(Pair, MP_ShMem___tcp____SingleMsg)
+TEST(Pair, SingleMsg_MP_tcp_shmem)
 {
     EXPECT_EXIT(RunPair("shmem"), ::testing::ExitedWithCode(0), "PAIR test successfull");
 }
 
 #ifdef BUILD_NANOMSG_TRANSPORT
-TEST(Pair, MP_Nanomsg_tcp____SingleMsg)
+TEST(Pair, SingleMsg_MP_tcp_nanomsg)
 {
     EXPECT_EXIT(RunPair("nanomsg"), ::testing::ExitedWithCode(0), "PAIR test successfull");
 }
 #endif /* BUILD_NANOMSG_TRANSPORT */
 
 #ifdef BUILD_OFI_TRANSPORT
-TEST(Pair, MP_Ofi_____tcp____SingleMsg)
+TEST(Pair, SingleMsg_MP_tcp_ofi)
 {
     EXPECT_EXIT(RunPair("ofi"), ::testing::ExitedWithCode(0), "PAIR test successfull");
 }

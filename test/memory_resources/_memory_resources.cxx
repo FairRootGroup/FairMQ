@@ -64,7 +64,7 @@ int testData::ndeallocations = 0;
 auto allocZMQ = factoryZMQ -> GetMemoryResource();
 auto allocSHM = factorySHM -> GetMemoryResource();
 
-TEST(MemoryResources, transportallocatormap_test)
+TEST(MemoryResources, transportallocatormap)
 {
     EXPECT_TRUE(allocZMQ != nullptr && allocSHM != allocZMQ);
     auto _tmp = factoryZMQ->GetMemoryResource();
@@ -73,7 +73,7 @@ TEST(MemoryResources, transportallocatormap_test)
 
 using namespace fair::mq::pmr;
 
-TEST(MemoryResources, allocator_test)
+TEST(MemoryResources, allocator)
 {
     testData::nallocations = 0;
     testData::ndeallocations = 0;
@@ -94,7 +94,7 @@ TEST(MemoryResources, allocator_test)
     EXPECT_TRUE(testData::nallocations == testData::ndeallocations);
 }
 
-TEST(MemoryResources, getMessage_test)
+TEST(MemoryResources, getMessage)
 {
     testData::nallocations = 0;
     testData::ndeallocations = 0;

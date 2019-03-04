@@ -31,16 +31,16 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-region.sh.in ${CMAKE_
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-region.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-region.sh)
 
-add_test(NAME Example-Region-zeromq COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-region.sh zeromq)
-set_tests_properties(Example-Region-zeromq PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received ack")
+add_test(NAME Example.Region.zeromq COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-region.sh zeromq)
+set_tests_properties(Example.Region.zeromq PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received ack")
 
 if(BUILD_NANOMSG_TRANSPORT)
-  add_test(NAME Example-Region-nanomsg COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-region.sh nanomsg)
-  set_tests_properties(Example-Region-nanomsg PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received ack")
+  add_test(NAME Example.Region.nanomsg COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-region.sh nanomsg)
+  set_tests_properties(Example.Region.nanomsg PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received ack")
 endif()
 
-add_test(NAME Example-Region-shmem COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-region.sh shmem)
-set_tests_properties(Example-Region-shmem PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received ack")
+add_test(NAME Example.Region.shmem COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-region.sh shmem)
+set_tests_properties(Example.Region.shmem PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received ack")
 
 # install
 

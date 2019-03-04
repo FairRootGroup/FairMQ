@@ -76,35 +76,35 @@ void RunMsgRebuild(const string& transport)
     EXPECT_EQ(string(static_cast<char*>(msg->GetData()), msg->GetSize()), string("asdf"));
 }
 
-TEST(MessageResize, ZeroMQ)
+TEST(Resize, zeromq)
 {
     RunPushPullWithMsgResize("zeromq", "ipc://test_message_resize");
 }
 
-TEST(MessageResize, shmem)
+TEST(Resize, shmem)
 {
     RunPushPullWithMsgResize("shmem", "ipc://test_message_resize");
 }
 
 #ifdef BUILD_NANOMSG_TRANSPORT
-TEST(MessageResize, nanomsg)
+TEST(Resize, nanomsg)
 {
     RunPushPullWithMsgResize("nanomsg", "ipc://test_message_resize");
 }
 #endif /* BUILD_NANOMSG_TRANSPORT */
 
-TEST(MessageRebuild, ZeroMQ)
+TEST(Rebuild, zeromq)
 {
     RunMsgRebuild("zeromq");
 }
 
-TEST(MessageRebuild, shmem)
+TEST(Rebuild, shmem)
 {
     RunMsgRebuild("shmem");
 }
 
 #ifdef BUILD_NANOMSG_TRANSPORT
-TEST(MessageRebuild, nanomsg)
+TEST(Rebuild, nanomsg)
 {
     RunMsgRebuild("nanomsg");
 }

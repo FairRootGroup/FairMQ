@@ -28,10 +28,10 @@ class TestVersion : public FairMQDevice
     {}
 };
 
-class DeviceVersion : public ::testing::Test
+class Version : public ::testing::Test
 {
   public:
-    DeviceVersion()
+    Version()
     {}
 
     fair::mq::tools::Version TestDeviceVersion()
@@ -43,7 +43,7 @@ class DeviceVersion : public ::testing::Test
     }
 };
 
-TEST_F(DeviceVersion, getter)
+TEST_F(Version, getter)
 {
     struct fair::mq::tools::Version v{1, 2, 3};
     fair::mq::tools::Version version = TestDeviceVersion();

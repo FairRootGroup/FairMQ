@@ -89,10 +89,10 @@ class TestDevice : public FairMQDevice
     thread fDeviceThread;
 };
 
-class DeviceConfig : public ::testing::Test
+class Config : public ::testing::Test
 {
   public:
-    DeviceConfig()
+    Config()
     {}
 
     string TestDeviceSetConfig(const string& transport)
@@ -157,7 +157,7 @@ class DeviceConfig : public ::testing::Test
     }
 };
 
-TEST_F(DeviceConfig, SetConfig)
+TEST_F(Config, SetConfig)
 {
     string transport = "zeromq";
     string returnedTransport = TestDeviceSetConfig(transport);
@@ -165,7 +165,7 @@ TEST_F(DeviceConfig, SetConfig)
     EXPECT_EQ(transport, returnedTransport);
 }
 
-TEST_F(DeviceConfig, SetTransport)
+TEST_F(Config, SetTransport)
 {
     string transport = "zeromq";
     string returnedTransport = TestDeviceSetTransport(transport);
@@ -173,7 +173,7 @@ TEST_F(DeviceConfig, SetTransport)
     EXPECT_EQ(transport, returnedTransport);
 }
 
-TEST_F(DeviceConfig, ControlInConstructor)
+TEST_F(Config, ControlInConstructor)
 {
     string transport = "zeromq";
     string returnedTransport = TestDeviceControlInConstructor(transport);

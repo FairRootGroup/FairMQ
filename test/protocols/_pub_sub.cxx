@@ -55,13 +55,13 @@ auto RunPubSub(string transport) -> void
     exit(pub.exit_code + sub1.exit_code + sub2.exit_code);
 }
 
-TEST(PubSub, ZeroMQ)
+TEST(PubSub, zeromq)
 {
     EXPECT_EXIT(RunPubSub("zeromq"), ::testing::ExitedWithCode(0), "PUB-SUB test successfull");
 }
 
 #ifdef BUILD_NANOMSG_TRANSPORT
-TEST(PubSub, Nanomsg)
+TEST(PubSub, nanomsg)
 {
     EXPECT_EXIT(RunPubSub("nanomsg"), ::testing::ExitedWithCode(0), "PUB-SUB test successfull");
 }
