@@ -82,12 +82,11 @@ class Socket final : public fair::mq::Socket
 
   private:
     Context& fContext;
-    asiofi::allocated_pool_resource fControlMemPool;
     std::unique_ptr<asiofi::info> fOfiInfo;
     std::unique_ptr<asiofi::fabric> fOfiFabric;
     std::unique_ptr<asiofi::domain> fOfiDomain;
     std::unique_ptr<asiofi::passive_endpoint> fPassiveEndpoint;
-    std::unique_ptr<asiofi::connected_endpoint> fDataEndpoint, fControlEndpoint;
+    std::unique_ptr<asiofi::connected_endpoint> fDataEndpoint;
     std::string fId;
     std::atomic<unsigned long> fBytesTx;
     std::atomic<unsigned long> fBytesRx;
@@ -104,9 +103,7 @@ class Socket final : public fair::mq::Socket
     std::atomic<bool> fConnected;
 
     auto OnSend(MessagePtr& msg) -> void;
-    auto RecvControlQueueReader() -> void;
-    auto OnRecvControl(ofi::unique_ptr<PostBuffer> ctrl) -> void;
-    auto OnReceive() -> void;
+    auto RecvQueueReader() -> void;
     auto ReceiveImpl(MessagePtr& msg, const int flags, const int timeout) -> int;
     auto SendImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
     auto ReceiveImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
@@ -114,10 +111,6 @@ class Socket final : public fair::mq::Socket
     // auto WaitForControlPeer() -> void;
     // auto AnnounceDataAddress() -> void;
     auto InitOfi(Address addr) -> void;
-    auto BindControlEndpoint() -> void;
-    auto BindDataEndpoint() -> void;
-    enum class Band { Control, Data };
-    auto ConnectEndpoint(std::unique_ptr<asiofi::connected_endpoint>& endpoint, Band type) -> void;
     // auto ReceiveDataAddressAnnouncement() -> void;
 }; /* class Socket */
 

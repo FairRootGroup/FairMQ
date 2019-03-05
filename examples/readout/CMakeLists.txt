@@ -25,7 +25,7 @@ target_link_libraries(fairmq-ex-readout-builder PRIVATE ExampleReadoutLib)
 add_executable(fairmq-ex-readout-sink runSink.cxx)
 target_link_libraries(fairmq-ex-readout-sink PRIVATE ExampleReadoutLib)
 
-add_custom_target(Examplereadout DEPENDS fairmq-ex-readout-sampler fairmq-ex-readout-sink)
+add_custom_target(ExampleReadout DEPENDS fairmq-ex-readout-sampler fairmq-ex-readout-builder fairmq-ex-readout-sink)
 
 set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
@@ -36,6 +36,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-readout.sh.in ${CMAKE
 install(
     TARGETS
     fairmq-ex-readout-sampler
+    fairmq-ex-readout-builder
     fairmq-ex-readout-sink
 
     LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
