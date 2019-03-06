@@ -61,7 +61,7 @@ endif()
 
 if(BUILD_OFI_TRANSPORT)
   find_package2(PRIVATE asiofi REQUIRED
-    VERSION 0.0.0
+    VERSION 0.2.0
   )
   find_package2(PRIVATE OFI REQUIRED
     VERSION ${asiofi_OFI_VERSION}
