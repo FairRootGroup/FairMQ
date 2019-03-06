@@ -58,7 +58,8 @@ Ctest_Configure(BUILD "${CTEST_BINARY_DIRECTORY}"
 Ctest_Build(BUILD "${CTEST_BINARY_DIRECTORY}")
 
 Ctest_Test(BUILD "${CTEST_BINARY_DIRECTORY}" 
-           PARALLEL_LEVEL $ENV{number_of_processors}
+           # PARALLEL_LEVEL $ENV{number_of_processors}
+           PARALLEL_LEVEL 1
            RETURN_VALUE _ctest_test_ret_val
           )
 If("$ENV{do_codecov_upload}")
