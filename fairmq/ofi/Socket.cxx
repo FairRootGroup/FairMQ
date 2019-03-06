@@ -213,7 +213,7 @@ auto Socket::OnSend(MessagePtr& msg) -> void
 {
     // LOG(debug) << "OFI transport (" << fId << "): ENTER OnSend";
 
-    auto size = 2000000;
+    auto size = msg->GetSize();
 
     // LOG(debug) << "OFI transport (" << fId << "):       OnSend: data=" << msg->GetData() << ",size=" << msg->GetSize();
 
@@ -283,7 +283,7 @@ auto Socket::RecvQueueReader() -> void
 {
     fRecvSem.async_wait([&](const boost::system::error_code& ec) {
         if (!ec) {
-            auto size = 2000000;
+            static size_t size = fContext.GetSizeHint(); // temporary hack to provide expected message size for receive
 
             auto msg = fContext.MakeReceiveMessage(size);
             boost::asio::mutable_buffer buffer(msg->GetData(), size);

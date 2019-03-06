@@ -37,6 +37,7 @@ Context::Context(FairMQTransportFactory& sendFactory,
     : fIoWork(fIoContext)
     , fReceiveFactory(receiveFactory)
     , fSendFactory(sendFactory)
+    , fSizeHint(2000000) // temporary hack to provide expected message size for receive
 {
     InitThreadPool(numberIoThreads);
 }

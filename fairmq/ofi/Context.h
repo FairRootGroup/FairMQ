@@ -72,6 +72,8 @@ class Context
     auto Reset() -> void;
     auto MakeReceiveMessage(size_t size) -> MessagePtr;
     auto MakeSendMessage(size_t size) -> MessagePtr;
+    size_t GetSizeHint() { return fSizeHint; } // temporary hack to provide expected message size for receive
+    void SetSizeHint(size_t size) { fSizeHint = size; } // temporary hack to provide expected message size for receive
 
   private:
     boost::asio::io_context fIoContext;
@@ -79,6 +81,8 @@ class Context
     std::vector<std::thread> fThreadPool;
     FairMQTransportFactory& fReceiveFactory;
     FairMQTransportFactory& fSendFactory;
+
+    size_t fSizeHint; // temporary hack to provide expected message size for receive
 
     auto InitThreadPool(int numberIoThreads) -> void;
 }; /* class Context */

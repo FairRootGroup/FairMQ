@@ -2,7 +2,7 @@
 
 export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
 
-msgSize="1000000"
+msgSize="2000000"
 
 if [[ $1 =~ ^[0-9]+$ ]]; then
     msgSize=$1
@@ -19,6 +19,7 @@ xterm -geometry 80x23+0+0 -hold -e @EX_BIN_DIR@/$SAMPLER &
 BUILDER="fairmq-ex-readout-builder"
 BUILDER+=" --id builder1"
 BUILDER+=" --severity debug"
+BUILDER+=" --ofi-size-hint $msgSize"
 BUILDER+=" --channel-config name=data1,type=pair,method=connect,address=tcp://127.0.0.1:7777,transport=shmem"
 BUILDER+="                  name=data2,type=pair,method=connect,address=tcp://127.0.0.1:7778,transport=ofi"
 xterm -geometry 80x23+500+0 -hold -e @EX_BIN_DIR@/$BUILDER &
@@ -26,5 +27,6 @@ xterm -geometry 80x23+500+0 -hold -e @EX_BIN_DIR@/$BUILDER &
 SINK="fairmq-ex-readout-sink"
 SINK+=" --id sink1"
 SINK+=" --severity debug"
+SINK+=" --ofi-size-hint $msgSize"
 SINK+=" --channel-config name=data,type=pair,method=bind,address=tcp://127.0.0.1:7778,transport=ofi"
 xterm -geometry 80x23+1000+0 -hold -e @EX_BIN_DIR@/$SINK &
