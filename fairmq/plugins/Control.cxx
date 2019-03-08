@@ -29,8 +29,7 @@ namespace
         ++gSignalCount;
         gLastSignal = signal;
 
-        if (gSignalCount > 1)
-        {
+        if (gSignalCount > 1) {
             std::abort();
         }
     }
@@ -57,11 +56,18 @@ Control::Control(const string& name, const Plugin::Version version, const string
 {
     SubscribeToDeviceStateChange([&](DeviceState newState) {
         LOG(trace) << "control plugin notified on new state: " << newState;
+
         {
             lock_guard<mutex> lock{fEventsMutex};
             fEvents.push(newState);
         }
         fNewEvent.notify_one();
+
+        if (newState == DeviceState::Error) {
+            fPluginShutdownRequested = true;
+            fDeviceShutdownRequested = true;
+            // throw DeviceErrorState("Controlled device transitioned to error state.");
+        }
     });
 
     try {
@@ -108,6 +114,25 @@ auto Control::RunStartupSequence() -> void
     while (WaitForNextState() != DeviceState::Ready) {}
     ChangeDeviceState(DeviceStateTransition::Run);
     while (WaitForNextState() != DeviceState::Running) {}
+}
+
+auto Control::WaitForNextState() -> DeviceState
+{
+    unique_lock<mutex> lock{fEventsMutex};
+    while (fEvents.empty()) {
+        fNewEvent.wait_for(lock, chrono::milliseconds(50));
+    }
+
+    auto result = fEvents.front();
+
+    if (result == DeviceState::Error) {
+        ReleaseDeviceControl();
+        throw DeviceErrorState("Controlled device transitioned to error state.");
+    }
+
+    fEvents.pop();
+
+    return result;
 }
 
 auto ControlPluginProgramOptions() -> Plugin::ProgOptions
@@ -248,6 +273,7 @@ try {
         }
 
         if (GetCurrentDeviceState() == DeviceState::Error) {
+            ReleaseDeviceControl();
             throw DeviceErrorState("Controlled device transitioned to error state.");
         }
 
@@ -363,64 +389,38 @@ void Control::PrintStateMachine()
     cout << ss.str() << flush;
 }
 
-auto Control::WaitForNextState() -> DeviceState
-{
-    unique_lock<mutex> lock{fEventsMutex};
-    while (fEvents.empty()) {
-        fNewEvent.wait_for(lock, chrono::milliseconds(50));
-    }
-
-    auto result = fEvents.front();
-
-    if (result == DeviceState::Error) {
-        throw DeviceErrorState("Controlled device transitioned to error state.");
-    }
-
-    fEvents.pop();
-
-    return result;
-}
-
 auto Control::StaticMode() -> void
-try
-{
+try {
     RunStartupSequence();
 
     {
         // Wait for next state, which is DeviceState::Ready,
         // or for device shutdown request (Ctrl-C)
         unique_lock<mutex> lock{fEventsMutex};
-        while (fEvents.empty() && !fDeviceShutdownRequested)
-        {
+        while (fEvents.empty() && !fDeviceShutdownRequested) {
             fNewEvent.wait_for(lock, chrono::milliseconds(50));
         }
 
-        if (fEvents.front() == DeviceState::Error)
-        {
+        if (fEvents.front() == DeviceState::Error) {
+            ReleaseDeviceControl();
             throw DeviceErrorState("Controlled device transitioned to error state.");
         }
     }
 
     RunShutdownSequence();
-}
-catch (PluginServices::DeviceControlError& e)
-{
+} catch (PluginServices::DeviceControlError& e) {
     // If we are here, it means another plugin has taken control. That's fine, just print the exception message and do nothing else.
     LOG(debug) << e.what();
-}
-catch (DeviceErrorState&)
-{
+} catch (DeviceErrorState&) {
 }
 
 auto Control::SignalHandler() -> void
 {
-    while (gSignalCount == 0 && !fPluginShutdownRequested)
-    {
+    while (gSignalCount == 0 && !fPluginShutdownRequested) {
         this_thread::sleep_for(chrono::milliseconds(100));
     }
 
-    if (!fPluginShutdownRequested)
-    {
+    if (!fPluginShutdownRequested) {
         LOG(info) << "Received device shutdown request (signal " << gLastSignal << ").";
         LOG(info) << "Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.";
 
@@ -431,20 +431,14 @@ auto Control::SignalHandler() -> void
             if (fControllerThread.joinable()) fControllerThread.join();
         }
 
-        if (!fDeviceHasShutdown)
-        {
+        if (!fDeviceHasShutdown) {
             // Take over control and attempt graceful shutdown
             StealDeviceControl();
-            try
-            {
+            try {
                 RunShutdownSequence();
-            }
-            catch (PluginServices::DeviceControlError& e)
-            {
+            } catch (PluginServices::DeviceControlError& e) {
                 LOG(info) << "Graceful device shutdown failed: " << e.what() << " If hanging, hit Ctrl-C again to abort immediately.";
-            }
-            catch (...)
-            {
+            } catch (...) {
                 LOG(info) << "Graceful device shutdown failed. If hanging, hit Ctrl-C again to abort immediately.";
             }
         }

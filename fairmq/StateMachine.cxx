@@ -28,6 +28,7 @@
 #include <array>
 #include <unordered_map>
 #include <mutex>
+#include <stdexcept>
 
 using namespace std;
 using namespace boost::msm;
@@ -299,6 +300,10 @@ struct Machine_ : public state_machine_def<Machine_>
                 fWorkDoneCV.notify_one();
             }
         }
+
+        if (fState == State::Error) {
+            throw StateMachine::ErrorStateException("Device transitioned to error state");
+        }
     }
 
     // replaces the default no-transition response.
@@ -463,7 +468,11 @@ void StateMachine::ProcessWork()
     try {
         fsm->CallStateChangeCallbacks(State::Idle);
         fsm->ProcessWork();
+    } catch(ErrorStateException& ese) {
+        LOG(trace) << "ErrorStateException caught in ProcessWork(), rethrowing";
+        throw;
     } catch(...) {
+        LOG(debug) << "Exception caught in ProcessWork(), going to Error state and rethrowing";
         {
             lock_guard<mutex> lock(fsm->fStateMtx);
             fsm->fState = State::Error;
@@ -480,3 +489,4 @@ string StateMachine::GetStateName(const State state) { return stateNames.at(stat
 string StateMachine::GetTransitionName(const Transition transition) { return transitionNames.at(static_cast<int>(transition)); }
 State StateMachine::GetState(const string& state) { return stateNumbers.at(state); }
 Transition StateMachine::GetTransition(const string& transition) { return transitionNumbers.at(transition); }
+

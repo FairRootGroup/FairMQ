@@ -19,6 +19,8 @@
 #include "devices/TestTransferTimeout.h"
 #include "devices/TestWaitFor.h"
 #include "devices/TestExceptions.h"
+#include "devices/TestErrorState.h"
+#include "devices/TestSignals.h"
 
 #include <runFairMQDevice.h>
 
@@ -40,60 +42,38 @@ auto getDevice(const FairMQProgOptions& config) -> FairMQDevicePtr
     using namespace fair::mq::test;
 
     auto id = config.GetValue<std::string>("id");
-    if (0 == id.find("pull_"))
-    {
+
+    if (0 == id.find("pull_")) {
         return new Pull;
-    }
-    else if (0 == id.find("push_"))
-    {
+    } else if (0 == id.find("push_")) {
         return new Push;
-    }
-    else if (0 == id.find("sub_"))
-    {
+    } else if (0 == id.find("sub_")) {
         return new Sub;
-    }
-    else if (0 == id.find("pub_"))
-    {
+    } else if (0 == id.find("pub_")) {
         return new Pub;
-    }
-    else if (0 == id.find("req_"))
-    {
+    } else if (0 == id.find("req_")) {
         return new Req;
-    }
-    else if (0 == id.find("rep_"))
-    {
+    } else if (0 == id.find("rep_")) {
         return new Rep;
-    }
-    else if (0 == id.find("transfer_timeout_"))
-    {
+    } else if (0 == id.find("transfer_timeout_")) {
         return new TransferTimeout;
-    }
-    else if (0 == id.find("pollout_"))
-    {
+    } else if (0 == id.find("pollout_")) {
         return new PollOut;
-    }
-    else if (0 == id.find("pollin_"))
-    {
+    } else if (0 == id.find("pollin_")) {
         return new PollIn;
-    }
-    else if (0 == id.find("pairleft_"))
-    {
+    } else if (0 == id.find("pairleft_")) {
         return new PairLeft;
-    }
-    else if (0 == id.find("pairright_"))
-    {
+    } else if (0 == id.find("pairright_")) {
         return new PairRight;
-    }
-    else if (0 == id.find("waitfor_"))
-    {
+    } else if (0 == id.find("waitfor_")) {
         return new TestWaitFor;
-    }
-    else if (0 == id.find("exceptions_"))
-    {
+    } else if (0 == id.find("exceptions_")) {
         return new Exceptions;
-    }
-    else
-    {
+    } else if (0 == id.find("error_state_")) {
+        return new ErrorState;
+    } else if (0 == id.find("signals_")) {
+        return new Signals;
+    } else {
         cerr << "Don't know id '" << id << "'" << endl;
         return nullptr;
     }

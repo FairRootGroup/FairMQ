@@ -49,6 +49,14 @@ TEST(Exceptions, static_InInit)
 {
     EXPECT_EXIT(RunExceptionIn("Init"), ::testing::ExitedWithCode(1), "");
 }
+TEST(Exceptions, static_InBind)
+{
+    EXPECT_EXIT(RunExceptionIn("Bind"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, static_InConnect)
+{
+    EXPECT_EXIT(RunExceptionIn("Connect"), ::testing::ExitedWithCode(1), "");
+}
 TEST(Exceptions, static_InInitTask)
 {
     EXPECT_EXIT(RunExceptionIn("InitTask"), ::testing::ExitedWithCode(1), "");
@@ -77,6 +85,14 @@ TEST(Exceptions, interactive_InInit)
 {
     EXPECT_EXIT(RunExceptionIn("Init", "q"), ::testing::ExitedWithCode(1), "");
 }
+TEST(Exceptions, interactive_InBind)
+{
+    EXPECT_EXIT(RunExceptionIn("Bind", "q"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, interactive_InConnect)
+{
+    EXPECT_EXIT(RunExceptionIn("Connect", "q"), ::testing::ExitedWithCode(1), "");
+}
 TEST(Exceptions, interactive_InInitTask)
 {
     EXPECT_EXIT(RunExceptionIn("InitTask", "q"), ::testing::ExitedWithCode(1), "");
@@ -104,6 +120,14 @@ TEST(Exceptions, interactive_InReset)
 TEST(Exceptions, interactive_invalid_InInit)
 {
     EXPECT_EXIT(RunExceptionIn("Init", "_"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, interactive_invalid_InBind)
+{
+    EXPECT_EXIT(RunExceptionIn("Bind", "_"), ::testing::ExitedWithCode(1), "");
+}
+TEST(Exceptions, interactive_invalid_InConnect)
+{
+    EXPECT_EXIT(RunExceptionIn("Connect", "_"), ::testing::ExitedWithCode(1), "");
 }
 TEST(Exceptions, interactive_invalid_InInitTask)
 {

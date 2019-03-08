@@ -6,14 +6,13 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIR_MQ_TEST_EXCEPTIONS_H
-#define FAIR_MQ_TEST_EXCEPTIONS_H
+#ifndef FAIR_MQ_TEST_ERROR_STATE_H
+#define FAIR_MQ_TEST_ERROR_STATE_H
 
 #include <FairMQDevice.h>
 #include <FairMQLogger.h>
 
 #include <iostream>
-#include <stdexcept>
 
 namespace fair
 {
@@ -22,76 +21,85 @@ namespace mq
 namespace test
 {
 
-class Exceptions : public FairMQDevice
+class ErrorState : public FairMQDevice
 {
   public:
-    auto Init() -> void override
+    void Init() override
     {
         std::string state("Init");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "going to change to Error state from " << state << "()";
+            ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
-    auto Bind() -> void override
+    void Bind() override
     {
         std::string state("Bind");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "going to change to Error state from " << state << "()";
+            ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
-    auto Connect() -> void override
+    void Connect() override
     {
         std::string state("Connect");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "going to change to Error state from " << state << "()";
+            ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
 
-    auto InitTask() -> void override
+    void InitTask() override
     {
         std::string state("InitTask");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "going to change to Error state from " << state << "()";
+            ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
 
-    auto PreRun() -> void override
+    void PreRun() override
     {
         std::string state("PreRun");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "going to change to Error state from " << state << "()";
+            ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
 
-    auto Run() -> void override
+    void Run() override
     {
         std::string state("Run");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "going to change to Error state from " << state << "()";
+            ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
 
-    auto PostRun() -> void override
+    void PostRun() override
     {
         std::string state("PostRun");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "going to change to Error state from " << state << "()";
+            ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
 
-    auto ResetTask() -> void override
+    void ResetTask() override
     {
         std::string state("ResetTask");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "going to change to Error state from " << state << "()";
+            ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
 
-    auto Reset() -> void override
+    void Reset() override
     {
         std::string state("Reset");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "going to change to Error state from " << state << "()";
+            ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
 };
@@ -100,4 +108,4 @@ class Exceptions : public FairMQDevice
 } // namespace mq
 } // namespace fair
 
-#endif /* FAIR_MQ_TEST_EXCEPTIONS_H */
+#endif /* FAIR_MQ_TEST_ERROR_STATE_H */
