@@ -227,9 +227,9 @@ class FairMQDevice
         return GetChannel(channel, index).NewSimpleMessage(data);
     }
 
-    FairMQUnmanagedRegionPtr NewUnmanagedRegion(const size_t size)
+    FairMQUnmanagedRegionPtr NewUnmanagedRegion(const size_t size, FairMQRegionCallback callback = nullptr)
     {
-        return Transport()->CreateUnmanagedRegion(size);
+        return Transport()->CreateUnmanagedRegion(size, callback);
     }
 
     FairMQUnmanagedRegionPtr NewUnmanagedRegionFor(const std::string& channel, int index, const size_t size, FairMQRegionCallback callback = nullptr)

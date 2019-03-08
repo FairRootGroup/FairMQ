@@ -11,6 +11,7 @@ fi
 SAMPLER="fairmq-ex-readout-sampler"
 SAMPLER+=" --id sampler1"
 SAMPLER+=" --severity debug"
+SAMPLER+=" --transport shmem"
 SAMPLER+=" --msg-size $msgSize"
 # SAMPLER+=" --rate 10"
 SAMPLER+=" --channel-config name=data1,type=pair,method=bind,address=tcp://127.0.0.1:7777,transport=shmem"
