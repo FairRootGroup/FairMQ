@@ -6,14 +6,14 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIR_MQ_TEST_EXCEPTIONS_H
-#define FAIR_MQ_TEST_EXCEPTIONS_H
+#ifndef FAIR_MQ_TEST_SIGNALS_H
+#define FAIR_MQ_TEST_SIGNALS_H
 
 #include <FairMQDevice.h>
 #include <FairMQLogger.h>
 
 #include <iostream>
-#include <stdexcept>
+#include <csignal>
 
 namespace fair
 {
@@ -22,76 +22,85 @@ namespace mq
 namespace test
 {
 
-class Exceptions : public FairMQDevice
+class Signals : public FairMQDevice
 {
   public:
-    auto Init() -> void override
+    void Init() override
     {
         std::string state("Init");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "raising SIGINT from " << state << "()";
+            raise(SIGINT);
         }
     }
-    auto Bind() -> void override
+    void Bind() override
     {
         std::string state("Bind");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "raising SIGINT from " << state << "()";
+            raise(SIGINT);
         }
     }
-    auto Connect() -> void override
+    void Connect() override
     {
         std::string state("Connect");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "raising SIGINT from " << state << "()";
+            raise(SIGINT);
         }
     }
 
-    auto InitTask() -> void override
+    void InitTask() override
     {
         std::string state("InitTask");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "raising SIGINT from " << state << "()";
+            raise(SIGINT);
         }
     }
 
-    auto PreRun() -> void override
+    void PreRun() override
     {
         std::string state("PreRun");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "raising SIGINT from " << state << "()";
+            raise(SIGINT);
         }
     }
 
-    auto Run() -> void override
+    void Run() override
     {
         std::string state("Run");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "raising SIGINT from " << state << "()";
+            raise(SIGINT);
         }
     }
 
-    auto PostRun() -> void override
+    void PostRun() override
     {
         std::string state("PostRun");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "raising SIGINT from " << state << "()";
+            raise(SIGINT);
         }
     }
 
-    auto ResetTask() -> void override
+    void ResetTask() override
     {
         std::string state("ResetTask");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "raising SIGINT from " << state << "()";
+            raise(SIGINT);
         }
     }
 
-    auto Reset() -> void override
+    void Reset() override
     {
         std::string state("Reset");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            throw std::runtime_error("exception in " + state + "()");
+            LOG(debug) << "raising SIGINT from " << state << "()";
+            raise(SIGINT);
         }
     }
 };
@@ -100,4 +109,4 @@ class Exceptions : public FairMQDevice
 } // namespace mq
 } // namespace fair
 
-#endif /* FAIR_MQ_TEST_EXCEPTIONS_H */
+#endif /* FAIR_MQ_TEST_SIGNALS_H */

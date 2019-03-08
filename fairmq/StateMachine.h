@@ -94,6 +94,8 @@ class StateMachine
     static State GetState(const std::string& state);
     static Transition GetTransition(const std::string& transition);
 
+    struct ErrorStateException : std::runtime_error { using std::runtime_error::runtime_error; };
+
   private:
     std::shared_ptr<void> fFsm;
 };
