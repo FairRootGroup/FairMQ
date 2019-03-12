@@ -168,7 +168,6 @@ struct Machine_ : public state_machine_def<Machine_>
     Machine_()
         : fLastTransitionResult(true)
         , fNewStatePending(false)
-        , fWorkOngoing(false)
     {}
 
     virtual ~Machine_() {}
@@ -259,9 +258,7 @@ struct Machine_ : public state_machine_def<Machine_>
 
     mutex fStateMtx;
     atomic<bool> fNewStatePending;
-    atomic<bool> fWorkOngoing;
     condition_variable fNewStatePendingCV;
-    condition_variable fWorkDoneCV;
 
     boost::signals2::signal<void(const State)> fStateChangeSignal;
     boost::signals2::signal<void(const State)> fStateHandleSignal;
@@ -284,7 +281,6 @@ struct Machine_ : public state_machine_def<Machine_>
                 LOG(state) << fState << " ---> " << fNewState;
                 fState = static_cast<State>(fNewState);
                 fNewStatePending = false;
-                fWorkOngoing = true;
 
                 if (fState == State::Exiting || fState == State::Error) {
                     stop = true;
@@ -293,12 +289,6 @@ struct Machine_ : public state_machine_def<Machine_>
 
             CallStateChangeCallbacks(fState);
             CallStateHandler(fState);
-
-            {
-                lock_guard<mutex> lock(fStateMtx);
-                fWorkOngoing = false;
-                fWorkDoneCV.notify_one();
-            }
         }
 
         if (fState == State::Error) {
@@ -477,8 +467,6 @@ void StateMachine::ProcessWork()
             lock_guard<mutex> lock(fsm->fStateMtx);
             fsm->fState = State::Error;
             fsm->CallStateChangeCallbacks(State::Error);
-            fsm->fWorkOngoing = false;
-            fsm->fWorkDoneCV.notify_one();
         }
         ChangeState(Transition::ErrorFound);
         throw;
