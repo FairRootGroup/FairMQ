@@ -38,12 +38,9 @@ class Sender : public FairMQDevice
     auto Run() -> void override
     {
         auto msg = FairMQMessagePtr{NewMessage()};
-        if (Send(msg, fChannelName) >= 0)
-        {
+        if (Send(msg, fChannelName) >= 0) {
             LOG(info) << "sent empty message";
-        }
-        else
-        {
+        } else {
             LOG(error) << "fair::mq::test::Sender::Run(): Send(msg, fChannelName) < 0";
         }
     };
