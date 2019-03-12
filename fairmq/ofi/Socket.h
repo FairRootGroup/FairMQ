@@ -99,7 +99,7 @@ class Socket final : public fair::mq::Socket
     int fRcvTimeout;
     azmq::socket fSendQueueWrite, fSendQueueRead;
     azmq::socket fRecvQueueWrite, fRecvQueueRead;
-    asiofi::semaphore fSendSem, fRecvSem;
+    asiofi::synchronized_semaphore fSendSem, fRecvSem;
     std::atomic<bool> fNeedOfiMemoryRegistration;
 
     auto SendQueueReader() -> void;
