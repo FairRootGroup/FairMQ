@@ -24,7 +24,6 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <thread>
-
 #include <mutex>
 #include <condition_variable>
 
@@ -196,6 +195,10 @@ try {
     InitOfi(fRemoteAddr);
 
     ConnectEndpoint(fControlEndpoint, Band::Control);
+    ConnectEndpoint(fDataEndpoint, Band::Data);
+
+    boost::asio::post(fContext.GetIoContext(), std::bind(&Socket::SendQueueReader, this));
+    boost::asio::post(fContext.GetIoContext(), std::bind(&Socket::RecvControlQueueReader, this));
 
     return true;
 }
@@ -221,20 +224,38 @@ auto Socket::ConnectEndpoint(std::unique_ptr<asiofi::connected_endpoint>& endpoi
 
     LOG(debug) << "OFI transport (" << fId << "): Sending " << band << " band connection request to " << fRemoteAddr;
 
-    endpoint->connect(Context::ConvertAddress(fRemoteAddr), [&, band, type](asiofi::eq::event event) {
-        LOG(debug) << "OFI transport (" << fId << "): " << band << " band conn event happened";
-        if (event == asiofi::eq::event::connected) {
-            LOG(debug) << "OFI transport (" << fId << "): " << band << " band connected.";
-            if (type == Band::Control) {
-                ConnectEndpoint(fDataEndpoint, Band::Data);
+    std::mutex mtx;
+    std::condition_variable cv;
+    bool notified(false), connected(false);
+
+    while (true) {
+        endpoint->connect(Context::ConvertAddress(fRemoteAddr), [&, band](asiofi::eq::event event) {
+            // LOG(debug) << "OFI transport (" << fId << "): " << band << " band conn event happened";
+            std::unique_lock<std::mutex> lk2(mtx);
+            notified = true;
+            if (event == asiofi::eq::event::connected) {
+                LOG(debug) << "OFI transport (" << fId << "): " << band << " band connected.";
+                connected = true;
             } else {
-                boost::asio::post(fContext.GetIoContext(), std::bind(&Socket::SendQueueReader, this));
-                boost::asio::post(fContext.GetIoContext(), std::bind(&Socket::RecvControlQueueReader, this));
+                // LOG(debug) << "OFI transport (" << fId << "): " << band << " band connection refused. Trying again.";
             }
-        } else {
-            LOG(error) << "asdf";
+            lk2.unlock();
+            cv.notify_one();
+        });
+
+        {
+            std::unique_lock<std::mutex> lk(mtx);
+            cv.wait(lk, [&] { return notified; });
+
+            if (connected) {
+                break;
+            } else {
+                notified = false;
+                lk.unlock();
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
         }
-    });
+    }
 }
 
 // auto Socket::ReceiveDataAddressAnnouncement() -> void
