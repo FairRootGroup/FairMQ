@@ -38,12 +38,9 @@ class Receiver : public FairMQDevice
     auto Run() -> void override
     {
         auto msg = FairMQMessagePtr{NewMessage()};
-        if (Receive(msg, fChannelName) >= 0)
-        {
+        if (Receive(msg, fChannelName) >= 0) {
             LOG(info) << "received empty message";
-        }
-        else
-        {
+        } else {
             LOG(error) << "fair::mq::test::Receiver::Run(): Receive(msg, fChannelName) < 0";
         }
     };
