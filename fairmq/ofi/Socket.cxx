@@ -334,18 +334,16 @@ auto Socket::Receive(std::vector<MessagePtr>& msgVec, const int timeout) -> int6
 
 auto Socket::SendQueueReader() -> void
 {
-    fSendSem.async_wait([&](const boost::system::error_code& ec) {
-        if (!ec) {
-            // LOG(debug) << "OFI transport (" << fId << "):     < Wait fSendSem=" <<
-            // fSendSem.get_value();
-            fSendQueueRead.async_receive([&](const boost::system::error_code& ec2,
-                                             azmq::message& zmsg,
-                                             size_t bytes_transferred) {
-                if (!ec2) {
-                    OnSend(zmsg, bytes_transferred);
-                }
-            });
-        }
+    fSendSem.async_wait([&] {
+        // LOG(debug) << "OFI transport (" << fId << "):     < Wait fSendSem=" <<
+        // fSendSem.get_value();
+        fSendQueueRead.async_receive([&](const boost::system::error_code& ec2,
+                                         azmq::message& zmsg,
+                                         size_t bytes_transferred) {
+            if (!ec2) {
+                OnSend(zmsg, bytes_transferred);
+            }
+        });
     });
 }
 
@@ -392,11 +390,9 @@ auto Socket::OnSend(azmq::message& zmsg, size_t /*bytes_transferred*/) -> void
                                     // buffer sent";
                                     fBytesTx += size;
                                     fMessagesTx++;
-                                    fSendSem.async_signal([&](const boost::system::error_code& ec) {
-                                        if (!ec) {
-                                            // LOG(debug) << "OFI transport (" << fId << "):     >
-                                            // Signal fSendSem=" << fSendSem.get_value();
-                                        }
+                                    fSendSem.async_signal([&] {
+                                        // LOG(debug) << "OFI transport (" << fId << "):     >
+                                        // Signal fSendSem=" << fSendSem.get_value();
                                     });
                                 });
 
@@ -406,20 +402,16 @@ auto Socket::OnSend(azmq::message& zmsg, size_t /*bytes_transferred*/) -> void
                     // LOG(debug) << "OFI transport (" << fId << "): >>>>> Data buffer sent";
                     fBytesTx += size;
                     fMessagesTx++;
-                    fSendSem.async_signal([&](const boost::system::error_code& ec) {
-                        if (!ec) {
-                            // LOG(debug) << "OFI transport (" << fId << "):     > Signal fSendSem="
-                            // << fSendSem.get_value();
-                        }
+                    fSendSem.async_signal([&] {
+                        // LOG(debug) << "OFI transport (" << fId << "):     > Signal fSendSem="
+                        // << fSendSem.get_value();
                     });
                 });
         }
     } else {
         ++fMessagesTx;
-        fSendSem.async_signal([&](const boost::system::error_code& ec) {
-            if (!ec) {
-                // LOG(debug) << "OFI transport (" << fId << "):     > Signal fSendSem=" << fSendSem.get_value();
-            }
+        fSendSem.async_signal([&] {
+            // LOG(debug) << "OFI transport (" << fId << "):     > Signal fSendSem=" << fSendSem.get_value();
         });
     }
 
@@ -429,25 +421,24 @@ auto Socket::OnSend(azmq::message& zmsg, size_t /*bytes_transferred*/) -> void
 
 auto Socket::RecvControlQueueReader() -> void
 {
-    fRecvSem.async_wait([&](const boost::system::error_code& ec) {
-        if (!ec) {
-            auto ctrl = MakeControlMessageWithPmr<PostBuffer>(&fControlMemPool);
-            auto ctrl_msg = boost::asio::mutable_buffer(ctrl.get(), sizeof(PostBuffer));
+    fRecvSem.async_wait([&] {
+        auto ctrl = MakeControlMessageWithPmr<PostBuffer>(&fControlMemPool);
+        auto ctrl_msg = boost::asio::mutable_buffer(ctrl.get(), sizeof(PostBuffer));
 
-            if (fNeedOfiMemoryRegistration) {
-                asiofi::memory_region mr(*fOfiDomain, ctrl_msg, asiofi::mr::access::recv);
-                auto desc = mr.desc();
+        if (fNeedOfiMemoryRegistration) {
+            asiofi::memory_region mr(*fOfiDomain, ctrl_msg, asiofi::mr::access::recv);
+            auto desc = mr.desc();
 
-                fControlEndpoint->recv(
-                    ctrl_msg, desc, [&, ctrl2 = std::move(ctrl), mr2 = std::move(mr)](boost::asio::mutable_buffer) mutable {
-                        OnRecvControl(std::move(ctrl2));
-                    });
-	    } else {
-                fControlEndpoint->recv(
-                    ctrl_msg, [&, ctrl2 = std::move(ctrl)](boost::asio::mutable_buffer) mutable {
-                        OnRecvControl(std::move(ctrl2));
-                    });
-	    }
+            fControlEndpoint->recv(
+                ctrl_msg,
+                desc,
+                [&, ctrl2 = std::move(ctrl), mr2 = std::move(mr)](
+                    boost::asio::mutable_buffer) mutable { OnRecvControl(std::move(ctrl2)); });
+        } else {
+            fControlEndpoint->recv(
+                ctrl_msg, [&, ctrl2 = std::move(ctrl)](boost::asio::mutable_buffer) mutable {
+                    OnRecvControl(std::move(ctrl2));
+                });
         }
     });
 }
@@ -481,10 +472,8 @@ auto Socket::OnRecvControl(ofi::unique_ptr<PostBuffer> ctrl) -> void
                                 // LOG(debug) << "OFI transport (" << fId
                                 // << "): <<<<< Data buffer received, bytes_transferred2="
                                 // << bytes_transferred2;
-                                fRecvSem.async_signal([&](const boost::system::error_code& ec2) {
-                                    if (!ec2) {
-                                        //LOG(debug) << "OFI transport (" << fId << "):     < Signal fRecvSem";
-                                    }
+                                fRecvSem.async_signal([&] {
+                                    //LOG(debug) << "OFI transport (" << fId << "):     < Signal fRecvSem";
                                 });
                             }
                         });
@@ -501,10 +490,8 @@ auto Socket::OnRecvControl(ofi::unique_ptr<PostBuffer> ctrl) -> void
                                 // LOG(debug) << "OFI transport (" << fId
                                 // << "): <<<<< Data buffer received, bytes_transferred2="
                                 // << bytes_transferred2;
-                                fRecvSem.async_signal([&](const boost::system::error_code& ec2) {
-                                    if (!ec2) {
-                                        // LOG(debug) << "OFI transport (" << fId << "):     < Signal fRecvSem";
-                                    }
+                                fRecvSem.async_signal([&] {
+                                    // LOG(debug) << "OFI transport (" << fId << "):     < Signal fRecvSem";
                                 });
                             }
                         });
@@ -518,10 +505,8 @@ auto Socket::OnRecvControl(ofi::unique_ptr<PostBuffer> ctrl) -> void
                     // LOG(debug) << "OFI transport (" << fId
                     //            << "): <<<<< Data buffer received, bytes_transferred2="
                     //            << bytes_transferred2;
-                    fRecvSem.async_signal([&](const boost::system::error_code& ec2) {
-                        if (!ec2) {
-                            // LOG(debug) << "OFI transport (" << fId << "):     < Signal fRecvSem";
-                        }
+                    fRecvSem.async_signal([&] {
+                        // LOG(debug) << "OFI transport (" << fId << "):     < Signal fRecvSem";
                     });
                 }
             });
