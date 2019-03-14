@@ -47,9 +47,15 @@ auto Context::InitThreadPool(int numberIoThreads) -> void
 
     for (int i = 1; i <= numberIoThreads; ++i) {
         fThreadPool.emplace_back([&, i, numberIoThreads]{
-            LOG(debug) << "OFI transport: I/O thread #" << i << " of " << numberIoThreads << " started";
-            fIoContext.run();
-            LOG(debug) << "OFI transport: I/O thread #" << i << " of " << numberIoThreads << " stopped";
+            try {
+                LOG(debug) << "OFI transport: I/O thread #" << i << " of " << numberIoThreads << " started";
+                fIoContext.run();
+                LOG(debug) << "OFI transport: I/O thread #" << i << " of " << numberIoThreads << " stopped";
+            } catch (const std::exception& e) {
+                LOG(error) << "OFI transport: Uncaught exception in I/O thread #" << i << ": " << e.what();
+            } catch (...) {
+                LOG(error) << "OFI transport: Uncaught exception in I/O thread #" << i;
+            }
         });
     }
 }

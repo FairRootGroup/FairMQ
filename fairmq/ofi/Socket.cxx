@@ -138,9 +138,14 @@ catch (const SilentSocketError& e)
     // in case no connection could be established after trying a number of random ports from a range.
     return false;
 }
-catch (const SocketError& e)
+catch (const std::exception& e)
 {
     LOG(error) << "OFI transport: " << e.what();
+    return false;
+}
+catch (...)
+{
+    LOG(error) << "OFI transport: Unknown exception in ofi::Socket::Bind";
     return false;
 }
 
@@ -210,6 +215,11 @@ catch (const SilentSocketError& e)
 catch (const std::exception& e)
 {
     LOG(error) << "OFI transport: " << e.what();
+    return false;
+}
+catch (...)
+{
+    LOG(error) << "OFI transport: Unknown exception in ofi::Socket::Connect";
     return false;
 }
 
