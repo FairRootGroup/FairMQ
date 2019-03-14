@@ -53,6 +53,13 @@ bool Sampler::ConditionalRun()
     parts.AddPart(NewSimpleMessage(header));
     parts.AddPart(NewMessage(1000));
 
+    // create more data parts, testing the FairMQParts in-place constructor
+    FairMQParts auxData{ NewMessage(500), NewMessage(600), NewMessage(700) };
+    assert(auxData.Size() == 3);
+    parts.AddPart(std::move(auxData));
+    assert(auxData.Size() == 0);
+    assert(parts.Size() == 5);
+
     LOG(info) << "Sending body of size: " << parts.At(1)->GetSize();
 
     Send(parts, "data");

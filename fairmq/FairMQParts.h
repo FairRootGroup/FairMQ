@@ -31,6 +31,9 @@ class FairMQParts
     FairMQParts(FairMQParts&& p) = default;
     /// Assignment operator
     FairMQParts& operator=(const FairMQParts&) = delete;
+    /// Constructor from argument pack of std::unique_ptr<FairMQMessage> rvalues
+    template <typename... Ts>
+    FairMQParts(Ts&&... messages) : fParts() {AddPart(std::forward<Ts>(messages)...);}
     /// Default destructor
     ~FairMQParts() {};
 
@@ -43,18 +46,27 @@ class FairMQParts
 
     /// Adds part (std::unique_ptr<FairMQMessage>&) to the container (move)
     /// @param msg unique pointer to FairMQMessage
-    /// lvalue ref (move not required when passing argument)
-    // inline void AddPart(std::unique_ptr<FairMQMessage>& msg)
-    // {
-    //     fParts.push_back(std::move(msg));
-    // }
-
-    /// Adds part (std::unique_ptr<FairMQMessage>&) to the container (move)
-    /// @param msg unique pointer to FairMQMessage
     /// rvalue ref (move required when passing argument)
     void AddPart(std::unique_ptr<FairMQMessage>&& msg)
     {
         fParts.push_back(std::move(msg));
+    }
+
+    /// Add variable list of parts to the container (move)
+    template <typename... Ts>
+    void AddPart(std::unique_ptr<FairMQMessage>&& first, Ts&&... remaining)
+    {
+        AddPart(std::move(first));
+        AddPart(std::forward<Ts>(remaining)...);
+    }
+
+    /// Add content of another object by move
+    void AddPart(FairMQParts&& other)
+    {
+      container parts = std::move(other.fParts);
+      for (auto& part : parts) {
+	fParts.push_back(std::move(part));
+      }
     }
 
     /// Get reference to part in the container at index (without bounds check)
