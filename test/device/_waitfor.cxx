@@ -9,66 +9,65 @@
 #include "runner.h"
 
 #include <gtest/gtest.h>
-#include <boost/process.hpp>
+#include <fairmq/Tools.h>
 
-#include <sys/types.h>
-#include <signal.h>
+#include <signal.h> // kill
 
 #include <string>
 #include <thread>
-#include <chrono>
 #include <iostream>
-#include <future> // std::async, std::future
 
 namespace
 {
 
 using namespace std;
 using namespace fair::mq::test;
+using namespace fair::mq::tools;
 
-void RunWaitFor()
+void RunWaitFor(const string& state, const string& control)
 {
-    std::mutex mtx;
-    std::condition_variable cv;
-
-    int pid = 0;
-    int exit_code = 0;
-
-    thread deviceThread([&]() {
+    execute_result result;
+    thread device_thread([&] {
         stringstream cmd;
-        cmd << runTestDevice << " --id waitfor_" << " --control static " << " --severity nolog";
-
-        boost::process::ipstream stdout;
-        boost::process::child c(cmd.str(), boost::process::std_out > stdout);
-        string line;
-        getline(stdout, line);
-
-        {
-            std::lock_guard<std::mutex> lock(mtx);
-            pid = c.id();
-        }
-        cv.notify_one();
-
-        c.wait();
-
-        exit_code = c.exit_code();
+        cmd << runTestDevice
+            << " --id waitfor_" << state
+            << " --control " << control
+            << " --session " << UuidHash()
+            << " --severity debug"
+            << " --color false";
+        result = execute(cmd.str(), "[WaitFor]", "", SIGINT);
     });
 
-    {
-        std::unique_lock<std::mutex> lock(mtx);
-        cv.wait(lock, [&pid]{ return pid != 0; });
-    }
+    device_thread.join();
 
-    kill(pid, SIGINT);
+    ASSERT_NE(string::npos, result.console_out.find("Sleeping Done. Interrupted."));
 
-    deviceThread.join();
-
-    exit(exit_code);
+    exit(result.exit_code);
 }
 
-TEST(Device, WaitFor)
+TEST(WaitFor, static_InPreRun)
 {
-    EXPECT_EXIT(RunWaitFor(), ::testing::ExitedWithCode(0), "");
+    EXPECT_EXIT(RunWaitFor("PreRun", "static"), ::testing::ExitedWithCode(0), "");
+}
+TEST(WaitFor, static_InRun)
+{
+    EXPECT_EXIT(RunWaitFor("Run", "static"), ::testing::ExitedWithCode(0), "");
+}
+TEST(WaitFor, static_InPostRun)
+{
+    EXPECT_EXIT(RunWaitFor("PostRun", "static"), ::testing::ExitedWithCode(0), "");
+}
+TEST(WaitFor, interactive_InPreRun)
+{
+    EXPECT_EXIT(RunWaitFor("PreRun", "interactive"), ::testing::ExitedWithCode(0), "");
+}
+TEST(WaitFor, interactive_InRun)
+{
+    EXPECT_EXIT(RunWaitFor("Run", "interactive"), ::testing::ExitedWithCode(0), "");
+}
+TEST(WaitFor, interactive_InPostRun)
+{
+    EXPECT_EXIT(RunWaitFor("PostRun", "interactive"), ::testing::ExitedWithCode(0), "");
 }
 
 } // namespace

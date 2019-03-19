@@ -32,6 +32,7 @@ class ErrorState : public FairMQDevice
             ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
+
     void Bind() override
     {
         std::string state("Bind");
@@ -40,6 +41,7 @@ class ErrorState : public FairMQDevice
             ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
+
     void Connect() override
     {
         std::string state("Connect");
