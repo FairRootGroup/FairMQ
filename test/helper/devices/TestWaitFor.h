@@ -24,10 +24,34 @@ namespace test
 class TestWaitFor : public FairMQDevice
 {
   public:
-    void Run()
+    void PreRun() override
     {
-        std::cout << "hello" << std::endl;
-        WaitFor(std::chrono::seconds(60));
+        std::string state("PreRun");
+        if (std::string::npos != GetId().find("_" + state)) {
+            LOG(info) << "Going to sleep via WaitFor() in " << state << "...";
+            bool result = WaitFor(std::chrono::seconds(60));
+            LOG(info) << (result == true ? "Sleeping Done. Not interrupted." : "Sleeping Done. Interrupted.");
+        }
+    }
+
+    void Run() override
+    {
+        std::string state("Run");
+        if (std::string::npos != GetId().find("_" + state)) {
+            LOG(info) << "Going to sleep via WaitFor() in " << state << "...";
+            bool result = WaitFor(std::chrono::seconds(60));
+            LOG(info) << (result == true ? "Sleeping Done. Not interrupted." : "Sleeping Done. Interrupted.");
+        }
+    }
+
+    void PostRun() override
+    {
+        std::string state("PostRun");
+        if (std::string::npos != GetId().find("_" + state)) {
+            LOG(info) << "Going to sleep via WaitFor() in " << state << "...";
+            bool result = WaitFor(std::chrono::seconds(60));
+            LOG(info) << (result == true ? "Sleeping Done. Not interrupted." : "Sleeping Done. Interrupted.");
+        }
     }
 };
 

@@ -189,7 +189,7 @@ try {
     bool keepRunning = true;
 
     while (keepRunning) {
-        if (poll(cinfd, 1, 500)) {
+        if (poll(cinfd, 1, 100)) {
             if (fDeviceShutdownRequested) {
                 break;
             }

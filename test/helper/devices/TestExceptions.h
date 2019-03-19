@@ -32,6 +32,7 @@ class Exceptions : public FairMQDevice
             throw std::runtime_error("exception in " + state + "()");
         }
     }
+
     auto Bind() -> void override
     {
         std::string state("Bind");
@@ -39,6 +40,7 @@ class Exceptions : public FairMQDevice
             throw std::runtime_error("exception in " + state + "()");
         }
     }
+
     auto Connect() -> void override
     {
         std::string state("Connect");
