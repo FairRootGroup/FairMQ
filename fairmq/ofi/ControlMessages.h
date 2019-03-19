@@ -35,59 +35,76 @@ namespace ofi {
 
 enum class ControlMessageType
 {
-    DataAddressAnnouncement = 1,
+    Empty = 1,
     PostBuffer,
-    PostBufferAcknowledgement
+    PostMultiPartStartBuffer
+};
+
+struct Empty
+{};
+
+struct PostBuffer
+{
+    uint64_t size;   // buffer size (size_t)
+};
+
+struct PostMultiPartStartBuffer
+{
+    uint32_t numParts;   // buffer size (size_t)
+    uint64_t size;       // buffer size (size_t)
+};
+
+union ControlMessageContent
+{
+    PostBuffer postBuffer;
+    PostMultiPartStartBuffer postMultiPartStartBuffer;
 };
 
 struct ControlMessage
 {
     ControlMessageType type;
-};
-
-struct DataAddressAnnouncement : ControlMessage
-{
-    uint32_t ipv4;   // in_addr_t from <netinet/in.h>
-    uint32_t port;   // in_port_t from <netinet/in.h>
-};
-
-struct PostBuffer : ControlMessage
-{
-    uint64_t size;   // buffer size (size_t)
+    ControlMessageContent msg;
 };
 
 template<typename T>
 using unique_ptr = std::unique_ptr<T, std::function<void(T*)>>;
 
 template<typename T, typename... Args>
-auto MakeControlMessageWithPmr(boost::container::pmr::memory_resource* pmr, Args&&... args)
-    -> ofi::unique_ptr<T>
+auto MakeControlMessageWithPmr(boost::container::pmr::memory_resource& pmr, Args&&... args)
+    -> ofi::unique_ptr<ControlMessage>
 {
-    void* mem = pmr->allocate(sizeof(T));
-    T* ctrl = new (mem) T(std::forward<Args>(args)...);
+    void* mem = pmr.allocate(sizeof(ControlMessage));
+    ControlMessage* ctrl = new (mem) ControlMessage();
 
-    if (std::is_same<T, DataAddressAnnouncement>::value) {
-        ctrl->type = ControlMessageType::DataAddressAnnouncement;
-    } else if (std::is_same<T, PostBuffer>::value) {
+    if (std::is_same<T, PostBuffer>::value) {
         ctrl->type = ControlMessageType::PostBuffer;
+        ctrl->msg.postBuffer = PostBuffer(std::forward<Args>(args)...);
+    } else if (std::is_same<T, PostMultiPartStartBuffer>::value) {
+        ctrl->type = ControlMessageType::PostMultiPartStartBuffer;
+        ctrl->msg.postMultiPartStartBuffer = PostMultiPartStartBuffer(std::forward<Args>(args)...);
+    } else if (std::is_same<T, Empty>::value) {
+        ctrl->type = ControlMessageType::Empty;
     }
 
-    return ofi::unique_ptr<T>(ctrl, [=](T* p) {
-        p->~T();
-        pmr->deallocate(p, sizeof(T));
+    return ofi::unique_ptr<ControlMessage>(ctrl, [&pmr](ControlMessage* p) {
+        p->~ControlMessage();
+        pmr.deallocate(p, sizeof(T));
     });
 }
 
 template<typename T, typename... Args>
-auto MakeControlMessage(Args&&... args) -> T
+auto MakeControlMessage(Args&&... args) -> ControlMessage
 {
-    T ctrl = T(std::forward<Args>(args)...);
+    ControlMessage ctrl;
 
-    if (std::is_same<T, DataAddressAnnouncement>::value) {
-        ctrl.type = ControlMessageType::DataAddressAnnouncement;
-    } else if (std::is_same<T, PostBuffer>::value) {
+    if (std::is_same<T, PostBuffer>::value) {
         ctrl.type = ControlMessageType::PostBuffer;
+    } else if (std::is_same<T, PostMultiPartStartBuffer>::value) {
+        ctrl.type = ControlMessageType::PostMultiPartStartBuffer;
+    } else if (std::is_same<T, Empty>::value) {
+        ctrl.type = ControlMessageType::Empty;
     }
+    ctrl.msg = T(std::forward<Args>(args)...);
 
     return ctrl;
 }
