@@ -38,7 +38,8 @@ struct execute_result
  */
 execute_result execute(const std::string& cmd,
                        const std::string& prefix = "",
-                       const std::string& input = "");
+                       const std::string& input = "",
+                       int sig = -1);
 
 } /* namespace tools */
 } /* namespace mq */
