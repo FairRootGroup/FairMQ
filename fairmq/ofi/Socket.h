@@ -18,10 +18,10 @@
 #include <asiofi/memory_resources.hpp>
 #include <asiofi/passive_endpoint.hpp>
 #include <asiofi/semaphore.hpp>
-#include <azmq/socket.hpp>
 #include <boost/asio.hpp>
 #include <memory> // unique_ptr
-#include <netinet/in.h>
+#include <mutex>
+
 
 namespace fair
 {
@@ -97,28 +97,22 @@ class Socket final : public fair::mq::Socket
     Address fLocalAddr;
     int fSndTimeout;
     int fRcvTimeout;
-    azmq::socket fSendQueueWrite, fSendQueueRead;
-    azmq::socket fRecvQueueWrite, fRecvQueueRead;
-    asiofi::synchronized_semaphore fSendSem, fRecvSem;
+    std::mutex fSendQueueMutex, fRecvQueueMutex;
+    std::queue<std::vector<MessagePtr>> fSendQueue, fRecvQueue;
+    std::vector<MessagePtr> fInflightMultiPartMessage;
+    int64_t fMultiPartRecvCounter;
+    asiofi::synchronized_semaphore fSendPushSem, fSendPopSem, fRecvPushSem, fRecvPopSem;
     std::atomic<bool> fNeedOfiMemoryRegistration;
 
-    auto SendQueueReader() -> void;
-    auto OnSend(azmq::message& msg, size_t bytes_transferred) -> void;
-    auto RecvControlQueueReader() -> void;
-    auto OnRecvControl(ofi::unique_ptr<PostBuffer> ctrl) -> void;
-    auto OnReceive() -> void;
-    auto ReceiveImpl(MessagePtr& msg, const int flags, const int timeout) -> int;
-    auto SendImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
-    auto ReceiveImpl(std::vector<MessagePtr>& msgVec, const int flags, const int timeout) -> int64_t;
-
-    // auto WaitForControlPeer() -> void;
-    // auto AnnounceDataAddress() -> void;
     auto InitOfi(Address addr) -> void;
     auto BindControlEndpoint() -> void;
     auto BindDataEndpoint() -> void;
     enum class Band { Control, Data };
     auto ConnectEndpoint(std::unique_ptr<asiofi::connected_endpoint>& endpoint, Band type) -> void;
-    // auto ReceiveDataAddressAnnouncement() -> void;
+    auto SendQueueReader() -> void;
+    auto RecvControlQueueReader() -> void;
+    auto OnRecvControl(ofi::unique_ptr<ControlMessage> ctrl) -> void;
+    auto DataMessageReceived(MessagePtr msg) -> void;
 }; /* class Socket */
 
 struct SilentSocketError : SocketError { using SocketError::SocketError; };
