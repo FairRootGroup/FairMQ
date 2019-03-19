@@ -430,7 +430,7 @@ class FairMQDevice
     template<class Rep, class Period>
     bool WaitFor(std::chrono::duration<Rep, Period> const& duration)
     {
-        return fStateMachine.WaitForPendingStateFor(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+        return !fStateMachine.WaitForPendingStateFor(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
     }
 
   protected:
