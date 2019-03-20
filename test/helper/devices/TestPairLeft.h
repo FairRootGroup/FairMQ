@@ -57,6 +57,7 @@ class PairLeft : public FairMQDevice
         if (counter == 6) LOG(info) << "Simple message with short text data successfull";
 
         assert(counter == 6);
+        if (counter == 6) LOG(info) << "PAIR test successfull.";
     };
 };
 

@@ -55,9 +55,6 @@ class PairRight : public FairMQDevice
         auto msg6(NewSimpleMessageFor("data", 0, "testdata1234"));
         if (Send(msg6, "data") >= 0) counter++;
         if (counter == 6) LOG(info) << "Simple message with short text data successfull";
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        if (counter == 6) LOG(info) << "PAIR test successfull.";
     };
 };
 
