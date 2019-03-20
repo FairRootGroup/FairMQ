@@ -62,6 +62,9 @@ auto Context::InitThreadPool(int numberIoThreads) -> void
 
 auto Context::Reset() -> void
 {
+    // TODO "Linger", rethink this
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
     fIoContext.stop();
 }
 
