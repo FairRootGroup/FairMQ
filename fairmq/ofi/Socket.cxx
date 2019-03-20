@@ -329,7 +329,6 @@ auto Socket::SendQueueReader() -> void
                                             fMessagesTx++;
                                             fSendPushSem.signal();
                                         });
-
                 } else {
                     fDataEndpoint->send(
                         buffer, [&, size, msg2 = std::move(msg)](boost::asio::mutable_buffer) mutable {
@@ -477,21 +476,24 @@ auto Socket::DataMessageReceived(MessagePtr msg) -> void
 {
     if (fMultiPartRecvCounter > 0) {
         --fMultiPartRecvCounter;
-        fInflightMultiPartMessage.emplace_back(std::move(msg));
+        fInflightMultiPartMessage.push_back(std::move(msg));
     }
 
-    std::unique_lock<std::mutex> lk(fRecvQueueMutex);
     if (fMultiPartRecvCounter == 0) {
+        std::unique_lock<std::mutex> lk(fRecvQueueMutex);
         fRecvQueue.push(std::move(fInflightMultiPartMessage));
+        lk.unlock();
         fMultiPartRecvCounter = -1;
-    } else {
+        fRecvPopSem.signal();
+    } else if (fMultiPartRecvCounter == -1) {
         std::vector<MessagePtr> msgVec;
         msgVec.push_back(std::move(msg));
+        std::unique_lock<std::mutex> lk(fRecvQueueMutex);
         fRecvQueue.push(std::move(msgVec));
+        lk.unlock();
+        fRecvPopSem.signal();
     }
-    lk.unlock();
 
-    fRecvPopSem.signal();
 }
 
 auto Socket::Close() -> void {}
