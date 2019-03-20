@@ -20,7 +20,7 @@ SAMPLER+=" --verbosity veryhigh"
 SAMPLER+=" --session $SESSION"
 SAMPLER+=" --max-iterations 1"
 SAMPLER+=" --control static --color false"
-SAMPLER+=" --channel-config name=data,type=push,method=connect,rateLogging=0,address=tcp://127.0.0.1:5555"
+SAMPLER+=" --channel-config name=data,type=pair,method=connect,rateLogging=0,address=tcp://127.0.0.1:5555"
 @CMAKE_CURRENT_BINARY_DIR@/$SAMPLER &
 SAMPLER_PID=$!
 
@@ -30,7 +30,7 @@ SINK+=" --transport $transport"
 SINK+=" --verbosity veryhigh"
 SINK+=" --session $SESSION"
 SINK+=" --control static --color false"
-SINK+=" --channel-config name=data,type=pull,method=bind,rateLogging=0,address=tcp://127.0.0.1:5555"
+SINK+=" --channel-config name=data,type=pair,method=bind,rateLogging=0,address=tcp://127.0.0.1:5555"
 @CMAKE_CURRENT_BINARY_DIR@/$SINK &
 SINK_PID=$!
 
