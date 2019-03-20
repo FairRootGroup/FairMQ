@@ -514,121 +514,62 @@ auto Socket::GetOption(const string& /*option*/, void* /*value*/, size_t* /*valu
 
 void Socket::SetLinger(const int /*value*/)
 {
-    // azmq::socket::linger opt(value);
-    // fControlEndpoint.set_option(opt);
+    LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
 }
 
 int Socket::GetLinger() const
 {
-    // azmq::socket::linger opt(0);
-    // fControlEndpoint.get_option(opt);
-    // return opt.value();
+    LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
     return 0;
 }
 
 void Socket::SetSndBufSize(const int /*value*/)
 {
-    // azmq::socket::snd_hwm opt(value);
-    // fControlEndpoint.set_option(opt);
+    LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
 }
 
 int Socket::GetSndBufSize() const
 {
-    // azmq::socket::snd_hwm opt(0);
-    // fControlEndpoint.get_option(opt);
-    // return opt.value();
+    LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
     return 0;
 }
 
 void Socket::SetRcvBufSize(const int /*value*/)
 {
-    // azmq::socket::rcv_hwm opt(value);
-    // fControlEndpoint.set_option(opt);
+    LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
 }
 
 int Socket::GetRcvBufSize() const
 {
-    // azmq::socket::rcv_hwm opt(0);
-    // fControlEndpoint.get_option(opt);
-    // return opt.value();
+    LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
     return 0;
 }
 
 void Socket::SetSndKernelSize(const int /*value*/)
 {
-    // azmq::socket::snd_buf opt(value);
-    // fControlEndpoint.set_option(opt);
+    LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
 }
 
 int Socket::GetSndKernelSize() const
 {
-    // azmq::socket::snd_buf opt(0);
-    // fControlEndpoint.get_option(opt);
-    // return opt.value();
+    LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
     return 0;
 }
 
 void Socket::SetRcvKernelSize(const int /*value*/)
 {
-    // azmq::socket::rcv_buf opt(value);
-    // fControlEndpoint.set_option(opt);
+    LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
 }
 
 int Socket::GetRcvKernelSize() const
 {
-    // azmq::socket::rcv_buf opt(0);
-    // fControlEndpoint.get_option(opt);
-    // return opt.value();
+    LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
     return 0;
 }
 
 auto Socket::GetConstant(const string& /*constant*/) -> int
 {
-    // if (constant == "")
-        // return 0;
-    // if (constant == "sub")
-        // return ZMQ_SUB;
-    // if (constant == "pub")
-        // return ZMQ_PUB;
-    // if (constant == "xsub")
-        // return ZMQ_XSUB;
-    // if (constant == "xpub")
-        // return ZMQ_XPUB;
-    // if (constant == "push")
-        // return ZMQ_PUSH;
-    // if (constant == "pull")
-        // return ZMQ_PULL;
-    // if (constant == "req")
-        // return ZMQ_REQ;
-    // if (constant == "rep")
-        // return ZMQ_REP;
-    // if (constant == "dealer")
-        // return ZMQ_DEALER;
-    // if (constant == "router")
-        // return ZMQ_ROUTER;
-    // if (constant == "pair")
-        // return ZMQ_PAIR;
-//
-    // if (constant == "snd-hwm")
-        // return ZMQ_SNDHWM;
-    // if (constant == "rcv-hwm")
-        // return ZMQ_RCVHWM;
-    // if (constant == "snd-size")
-        // return ZMQ_SNDBUF;
-    // if (constant == "rcv-size")
-        // return ZMQ_RCVBUF;
-    // if (constant == "snd-more")
-        // return ZMQ_SNDMORE;
-    // if (constant == "rcv-more")
-        // return ZMQ_RCVMORE;
-//
-    // if (constant == "linger")
-        // return ZMQ_LINGER;
-    // if (constant == "no-block")
-        // return ZMQ_DONTWAIT;
-    // if (constant == "snd-more no-block")
-        // return ZMQ_DONTWAIT|ZMQ_SNDMORE;
-//
+    LOG(debug) << "OFI transport: Not yet implemented.";
     return -1;
 }
 
