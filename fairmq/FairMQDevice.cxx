@@ -118,7 +118,7 @@ FairMQDevice::FairMQDevice(FairMQProgOptions* config, const fair::mq::tools::Ver
             lock_guard<mutex> lock(fStatesMtx);
             fStates.push(state);
         }
-        fStatesCV.notify_one();
+        fStatesCV.notify_all();
 
         switch (state) {
             case fair::mq::State::InitializingDevice:
