@@ -24,7 +24,7 @@ FairMQ devices communicate via the communication patterns offered by ZeroMQ (or 
 
 Each FairMQ device has an internal state machine:
 
-![FairMQ state machine](images/device_states.png?raw=true "FairMQ state machine")
+![FairMQ state machine](images/device_states.svg "FairMQ state machine")
 
 The state machine can be querried and controlled via `GetCurrentStateName()` and `ChangeState("<state name>")` methods. Only legal state transitions are allowed (see image above). Illegal transitions will fail with an error.
 
