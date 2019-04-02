@@ -5,42 +5,33 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * Sampler.h
- *
- * @since 2014-10-10
- * @author A. Rybalchenko
- */
-
-#ifndef FAIRMQEXAMPLEREGIONSAMPLER_H
-#define FAIRMQEXAMPLEREGIONSAMPLER_H
-
-#include <atomic>
+#ifndef FAIRMQEXAMPLEREGIONPROCESSOR_H
+#define FAIRMQEXAMPLEREGIONPROCESSOR_H
 
 #include "FairMQDevice.h"
 
-namespace example_region
+namespace example_readout
 {
 
-class Sampler : public FairMQDevice
+class Processor : public FairMQDevice
 {
   public:
-    Sampler();
-    virtual ~Sampler();
+    Processor() {
+        OnData("bp", &Processor::HandleData);
+    }
 
   protected:
-    virtual void InitTask();
-    virtual bool ConditionalRun();
-    virtual void ResetTask();
+    bool HandleData(FairMQMessagePtr& msg, int /*index*/)
+    {
+        FairMQMessagePtr msg2(NewMessageFor("ps", 0, msg->GetSize()));
+        if (Send(msg2, "ps") < 0) {
+            return false;
+        }
 
-  private:
-    int fMsgSize;
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
-    FairMQUnmanagedRegionPtr fRegion;
-    std::atomic<uint64_t> fNumUnackedMsgs;
+        return true;
+    }
 };
 
-} // namespace example_region
+} // namespace example_readout
 
-#endif /* FAIRMQEXAMPLEREGIONSAMPLER_H */
+#endif /* FAIRMQEXAMPLEREGIONPROCESSOR_H */

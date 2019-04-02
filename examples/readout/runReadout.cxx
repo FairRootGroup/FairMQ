@@ -5,38 +5,20 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * Sink.h
- *
- * @since 2014-10-10
- * @author A. Rybalchenko
- */
 
-#ifndef FAIRMQEXAMPLEREGIONSINK_H
-#define FAIRMQEXAMPLEREGIONSINK_H
+#include "runFairMQDevice.h"
+#include "Readout.h"
 
-#include <string>
+namespace bpo = boost::program_options;
 
-#include "FairMQDevice.h"
-
-namespace example_region
+void addCustomOptions(bpo::options_description& options)
 {
+    options.add_options()
+        ("msg-size", bpo::value<int>()->default_value(1000), "Message size in bytes")
+        ("max-iterations", bpo::value<uint64_t>()->default_value(0), "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
+}
 
-class Sink : public FairMQDevice
+FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)
 {
-  public:
-    Sink();
-    virtual ~Sink();
-
-  protected:
-    virtual void Run();
-    virtual void InitTask();
-
-  private:
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
-};
-
-} // namespace example_region
-
-#endif /* FAIRMQEXAMPLEREGIONSINK_H */
+    return new example_readout::Readout();
+}

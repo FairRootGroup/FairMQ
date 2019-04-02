@@ -5,8 +5,8 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-#ifndef FAIRMQEXAMPLEREGIONBUILDER_H
-#define FAIRMQEXAMPLEREGIONBUILDER_H
+#ifndef FAIRMQEXAMPLEREGIONSENDER_H
+#define FAIRMQEXAMPLEREGIONSENDER_H
 
 #include "FairMQDevice.h"
 
@@ -15,22 +15,22 @@
 namespace example_readout
 {
 
-class Builder : public FairMQDevice
+class Sender : public FairMQDevice
 {
   public:
-    Builder()
-        : fOutputChannelName()
+    Sender()
+        : fInputChannelName()
     {}
 
     void Init() override
     {
-        fOutputChannelName = fConfig->GetValue<std::string>("output-name");
-        OnData("rb", &Builder::HandleData);
+        fInputChannelName = fConfig->GetValue<std::string>("input-name");
+        OnData(fInputChannelName, &Sender::HandleData);
     }
 
     bool HandleData(FairMQMessagePtr& msg, int /*index*/)
     {
-        if (Send(msg, fOutputChannelName) < 0) {
+        if (Send(msg, "sr") < 0) {
             return false;
         }
 
@@ -38,9 +38,9 @@ class Builder : public FairMQDevice
     }
 
   private:
-    std::string fOutputChannelName;
+    std::string fInputChannelName;
 };
 
 } // namespace example_readout
 
-#endif /* FAIRMQEXAMPLEREGIONBUILDER_H */
+#endif /* FAIRMQEXAMPLEREGIONSENDER_H */
