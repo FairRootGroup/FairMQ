@@ -7,17 +7,17 @@
  ********************************************************************************/
 
 #include "runFairMQDevice.h"
-#include "Builder.h"
+#include "Receiver.h"
 
 namespace bpo = boost::program_options;
 
 void addCustomOptions(bpo::options_description& options)
 {
     options.add_options()
-        ("output-name", bpo::value<std::string>()->default_value("bs"), "Output channel name");
+        ("max-iterations", bpo::value<uint64_t>()->default_value(0), "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
 }
 
 FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)
 {
-    return new example_readout::Builder();
+    return new example_readout::Receiver();
 }
