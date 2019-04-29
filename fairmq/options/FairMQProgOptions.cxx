@@ -66,6 +66,7 @@ FairMQProgOptions::FairMQProgOptions()
         ("print-channels",         po::value<bool    >()->implicit_value(true),      "Print registered channel endpoints in a machine-readable format (<channel name>:<min num subchannels>:<max num subchannels>)")
         ("shm-segment-size",       po::value<size_t  >()->default_value(2000000000), "Shared memory: size of the shared memory segment (in bytes).")
         ("shm-monitor",            po::value<bool    >()->default_value(true),       "Shared memory: run monitor daemon.")
+        ("ofi-size-hint",          po::value<size_t  >()->default_value(0),          "EXPERIMENTAL: OFI size hint for the allocator.")
         ("rate",                   po::value<float   >()->default_value(0.),         "Rate for conditional run loop (Hz).")
         ("session",                po::value<string  >()->default_value("default"),  "Session name.");
 

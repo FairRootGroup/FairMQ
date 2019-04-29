@@ -154,8 +154,17 @@ auto Socket::BindDataEndpoint() -> void
         fDataEndpoint->accept([&]() {
             LOG(debug) << "OFI transport (" << fId << "): data band connection accepted.";
 
-            boost::asio::post(fContext.GetIoContext(), std::bind(&Socket::SendQueueReader, this));
-            boost::asio::post(fContext.GetIoContext(), std::bind(&Socket::RecvControlQueueReader, this));
+            if (fContext.GetSizeHint()) {
+                boost::asio::post(fContext.GetIoContext(),
+                                  std::bind(&Socket::SendQueueReaderStatic, this));
+                boost::asio::post(fContext.GetIoContext(),
+                                  std::bind(&Socket::RecvQueueReaderStatic, this));
+            } else {
+                boost::asio::post(fContext.GetIoContext(),
+                                  std::bind(&Socket::SendQueueReader, this));
+                boost::asio::post(fContext.GetIoContext(),
+                                  std::bind(&Socket::RecvControlQueueReader, this));
+            }
         });
     });
 
@@ -174,8 +183,13 @@ try {
     ConnectEndpoint(fControlEndpoint, Band::Control);
     ConnectEndpoint(fDataEndpoint, Band::Data);
 
-    boost::asio::post(fContext.GetIoContext(), std::bind(&Socket::SendQueueReader, this));
-    boost::asio::post(fContext.GetIoContext(), std::bind(&Socket::RecvControlQueueReader, this));
+    if (fContext.GetSizeHint()) {
+        boost::asio::post(fContext.GetIoContext(), std::bind(&Socket::SendQueueReaderStatic, this));
+        boost::asio::post(fContext.GetIoContext(), std::bind(&Socket::RecvQueueReaderStatic, this));
+    } else {
+        boost::asio::post(fContext.GetIoContext(), std::bind(&Socket::SendQueueReader, this));
+        boost::asio::post(fContext.GetIoContext(), std::bind(&Socket::RecvControlQueueReader, this));
+    }
 
     return true;
 }
@@ -347,6 +361,57 @@ auto Socket::SendQueueReader() -> void
     });
 }
 
+auto Socket::SendQueueReaderStatic() -> void
+{
+    fSendPopSem.async_wait([&] {
+        // Read msg from send queue
+        std::unique_lock<std::mutex> lk(fSendQueueMutex);
+        std::vector<MessagePtr> msgVec(std::move(fSendQueue.front()));
+        fSendQueue.pop();
+        lk.unlock();
+
+        bool postMultiPartStartBuffer = msgVec.size() > 1;
+        if (postMultiPartStartBuffer) {
+            throw SocketError{tools::ToString("Multipart API not supported in static size mode.")};
+        }
+
+        MessagePtr& msg = msgVec[0];
+
+        // Send data message
+        const auto size = msg->GetSize();
+
+        if (size) {
+            boost::asio::mutable_buffer buffer(msg->GetData(), size);
+
+            if (fNeedOfiMemoryRegistration) {
+                asiofi::memory_region mr(*fOfiDomain, buffer, asiofi::mr::access::send);
+                auto desc = mr.desc();
+
+                fDataEndpoint->send(buffer,
+                                    desc,
+                                    [&, size, msg2 = std::move(msg), mr2 = std::move(mr)](
+                                        boost::asio::mutable_buffer) mutable {
+                                        fBytesTx += size;
+                                        fMessagesTx++;
+                                        fSendPushSem.signal();
+                                    });
+            } else {
+                fDataEndpoint->send(
+                    buffer, [&, size, msg2 = std::move(msg)](boost::asio::mutable_buffer) mutable {
+                        fBytesTx += size;
+                        fMessagesTx++;
+                        fSendPushSem.signal();
+                    });
+            }
+        } else {
+            ++fMessagesTx;
+            fSendPushSem.signal();
+        }
+
+        boost::asio::dispatch(fContext.GetIoContext(), std::bind(&Socket::SendQueueReaderStatic, this));
+    });
+}
+
 auto Socket::Receive(MessagePtr& msg, const int /*timeout*/) -> int
 try {
     // timeout argument not yet implemented
@@ -470,6 +535,42 @@ auto Socket::OnRecvControl(ofi::unique_ptr<ControlMessage> ctrl) -> void
 
     boost::asio::dispatch(fContext.GetIoContext(),
                           std::bind(&Socket::RecvControlQueueReader, this));
+}
+
+auto Socket::RecvQueueReaderStatic() -> void
+{
+    fRecvPushSem.async_wait([&] {
+        static size_t size = fContext.GetSizeHint();
+        // Receive data
+        auto msg = fContext.MakeReceiveMessage(size);
+
+        if (size) {
+            boost::asio::mutable_buffer buffer(msg->GetData(), size);
+
+            if (fNeedOfiMemoryRegistration) {
+                asiofi::memory_region mr(*fOfiDomain, buffer, asiofi::mr::access::recv);
+                auto desc = mr.desc();
+
+                fDataEndpoint->recv(buffer,
+                                    desc,
+                                    [&, msg2 = std::move(msg), mr2 = std::move(mr)](
+                                        boost::asio::mutable_buffer) mutable {
+                                        DataMessageReceived(std::move(msg2));
+                                    });
+
+            } else {
+                fDataEndpoint->recv(
+                    buffer, [&, msg2 = std::move(msg)](boost::asio::mutable_buffer) mutable {
+                        DataMessageReceived(std::move(msg2));
+                    });
+            }
+        } else {
+            DataMessageReceived(std::move(msg));
+        }
+
+        boost::asio::dispatch(fContext.GetIoContext(),
+                              std::bind(&Socket::RecvQueueReaderStatic, this));
+    });
 }
 
 auto Socket::DataMessageReceived(MessagePtr msg) -> void

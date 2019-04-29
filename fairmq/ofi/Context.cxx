@@ -37,6 +37,7 @@ Context::Context(FairMQTransportFactory& sendFactory,
     : fIoWork(fIoContext)
     , fReceiveFactory(receiveFactory)
     , fSendFactory(sendFactory)
+    , fSizeHint(0)
 {
     InitThreadPool(numberIoThreads);
 }

@@ -72,6 +72,8 @@ class Context
     auto Reset() -> void;
     auto MakeReceiveMessage(size_t size) -> MessagePtr;
     auto MakeSendMessage(size_t size) -> MessagePtr;
+    auto GetSizeHint() -> size_t { return fSizeHint; }
+    auto SetSizeHint(size_t size) -> void { fSizeHint = size; }
 
   private:
     boost::asio::io_context fIoContext;
@@ -79,6 +81,7 @@ class Context
     std::vector<std::thread> fThreadPool;
     FairMQTransportFactory& fReceiveFactory;
     FairMQTransportFactory& fSendFactory;
+    size_t fSizeHint;
 
     auto InitThreadPool(int numberIoThreads) -> void;
 }; /* class Context */
