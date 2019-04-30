@@ -327,50 +327,19 @@ void FairMQMessageSHM::CloseMessage()
         }
         else
         {
-            // send notification back to the receiver
-            // RegionBlock block(fHandle, fSize);
-            // if (fManager.GetRegionQueue(fRegionId).try_send(static_cast<void*>(&block), sizeof(RegionBlock), 0))
-            // {
-            //     // LOG(info) << "true";
-            // }
-            // // else
-            // // {
-            // //     LOG(debug) << "could not send ack";
-            // // }
-
-            // timed version
-            RegionBlock block(fHandle, fSize, fHint);
-            bool success = false;
-            do
+            if (!fRegionPtr)
             {
-                auto sndTill = bpt::microsec_clock::universal_time() + bpt::milliseconds(200);
-                if (!fRegionPtr)
-                {
-                    fRegionPtr = fManager.GetRemoteRegion(fRegionId);
-                }
-                if (fRegionPtr)
-                {
-                    // LOG(debug) << "sending ack";
-                    if (fRegionPtr->fQueue->timed_send(&block, sizeof(RegionBlock), 0, sndTill))
-                    {
-                        success = true;
-                    }
-                    else
-                    {
-                        if (fInterrupted)
-                        {
-                            break;
-                        }
-                        LOG(debug) << "region ack queue is full, retrying...";
-                    }
-                }
-                else
-                {
-                    // LOG(warn) << "region ack queue for id " << fRegionId << " no longer exist. Not sending ack";
-                    success = true;
-                }
+                fRegionPtr = fManager.GetRemoteRegion(fRegionId);
             }
-            while (!success);
+
+            if (fRegionPtr)
+            {
+                fRegionPtr->ReleaseBlock({fHandle, fSize, fHint});
+            }
+            else
+            {
+                LOG(warn) << "region ack queue for id " << fRegionId << " no longer exist. Not sending ack";
+            }
         }
     }
 

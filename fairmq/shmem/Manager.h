@@ -66,7 +66,7 @@ class Manager
     std::string fManagementSegmentName;
     boost::interprocess::managed_shared_memory fSegment;
     boost::interprocess::managed_shared_memory fManagementSegment;
-    static std::unordered_map<uint64_t, Region> fRegions;
+    static std::unordered_map<uint64_t, std::unique_ptr<Region>> fRegions;
 };
 
 } // namespace shmem
