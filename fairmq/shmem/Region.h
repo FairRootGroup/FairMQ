@@ -19,11 +19,14 @@
 #include "FairMQUnmanagedRegion.h"
 
 #include <fairmq/Tools.h>
+#include <fairmq/shmem/Common.h>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
 
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 #include <unordered_map>
 
 namespace fair
@@ -47,6 +50,9 @@ struct Region
     void StartReceivingAcks();
     void ReceiveAcks();
 
+    void ReleaseBlock(const RegionBlock &);
+    void SendAcks();
+
     ~Region();
 
     Manager& fManager;
@@ -56,8 +62,15 @@ struct Region
     std::string fQueueName;
     boost::interprocess::shared_memory_object fShmemObject;
     boost::interprocess::mapped_region fRegion;
+
+    std::mutex fBlockLock;
+    std::condition_variable fBlockSendCV;
+    std::vector<RegionBlock> fBlocksToFree;
+    const std::size_t fAckBunchSize = 256;
     std::unique_ptr<boost::interprocess::message_queue> fQueue;
-    std::thread fWorker;
+
+    std::thread fReceiveAcksWorker;
+    std::thread fSendAcksWorker;
     FairMQRegionCallback fCallback;
 };
 

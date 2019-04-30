@@ -19,7 +19,7 @@ namespace mq
 namespace shmem
 {
 
-std::unordered_map<uint64_t, Region> Manager::fRegions;
+std::unordered_map<uint64_t, std::unique_ptr<Region>> Manager::fRegions;
 
 Manager::Manager(const string& name, size_t size)
     : fSessionName(name)
@@ -43,7 +43,7 @@ void Manager::Resume()
     // close remote regions before processing new transfers
     for (auto it = fRegions.begin(); it != fRegions.end(); /**/)
     {
-        if (it->second.fRemote)
+        if (it->second->fRemote)
         {
            it = fRegions.erase(it);
         }
@@ -64,11 +64,11 @@ bipc::mapped_region* Manager::CreateRegion(const size_t size, const uint64_t id,
     }
     else
     {
-        auto r = fRegions.emplace(id, Region{*this, id, size, false, callback});
+        auto r = fRegions.emplace(id, fair::mq::tools::make_unique<Region>(*this, id, size, false, callback));
 
-        r.first->second.StartReceivingAcks();
+        r.first->second->StartReceivingAcks();
 
-        return &(r.first->second.fRegion);
+        return &(r.first->second->fRegion);
     }
 }
 
@@ -78,14 +78,14 @@ Region* Manager::GetRemoteRegion(const uint64_t id)
     auto it = fRegions.find(id);
     if (it != fRegions.end())
     {
-        return &(it->second);
+        return it->second.get();
     }
     else
     {
         try
         {
-            auto r = fRegions.emplace(id, Region{*this, id, 0, true, nullptr});
-            return &(r.first->second);
+            auto r = fRegions.emplace(id, fair::mq::tools::make_unique<Region>(*this, id, 0, true, nullptr));
+            return r.first->second.get();
         }
         catch (bipc::interprocess_exception& e)
         {
