@@ -196,6 +196,7 @@ class PluginServices
             || (currentState == DeviceState::Binding)
             || (currentState == DeviceState::Bound)
             || (currentState == DeviceState::Connecting)
+            || (currentState == DeviceState::Ready)
             || (currentState == DeviceState::Idle && key == "channel-config")) {
             fConfig.SetValue(key, val);
         } else {
