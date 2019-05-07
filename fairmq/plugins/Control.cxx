@@ -203,9 +203,10 @@ try {
                 break;
                 case 'i':
                     cout << "\n --> [i] init device\n\n" << flush;
-                    ChangeDeviceState(DeviceStateTransition::InitDevice);
-                    while (WaitForNextState() != DeviceState::InitializingDevice) {}
-                    ChangeDeviceState(DeviceStateTransition::CompleteInit);
+                    if (ChangeDeviceState(DeviceStateTransition::InitDevice)) {
+                        while (WaitForNextState() != DeviceState::InitializingDevice) {}
+                        ChangeDeviceState(DeviceStateTransition::CompleteInit);
+                    }
                 break;
                 case 'b':
                     cout << "\n --> [b] bind\n\n" << flush;
