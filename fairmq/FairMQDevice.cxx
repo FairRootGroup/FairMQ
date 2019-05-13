@@ -293,7 +293,7 @@ void FairMQDevice::ConnectWrapper()
         this_thread::sleep_for(chrono::milliseconds(sleepTimeInMS));
 
         for (auto& chan : fUninitializedConnectingChannels) {
-            string key{"chans." + chan->GetChannelPrefix() + "." + chan->GetChannelIndex() + ".address"};
+            string key{"chans." + chan->GetPrefix() + "." + chan->GetIndex() + ".address"};
             string newAddress = fConfig->GetValue<string>(key);
             if (newAddress != chan->GetAddress()) {
                 chan->UpdateAddress(newAddress);
@@ -322,7 +322,7 @@ void FairMQDevice::AttachChannels(vector<FairMQChannel*>& chans)
     auto itr = chans.begin();
 
     while (itr != chans.end()) {
-        if ((*itr)->ValidateChannel()) {
+        if ((*itr)->Validate()) {
             (*itr)->Init();
             if (AttachChannel(**itr)) {
                 (*itr)->SetModified(false);
