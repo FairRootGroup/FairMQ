@@ -34,8 +34,7 @@ namespace mq
 template<class T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& v)
 {
-    for (const auto& i : v)
-    {
+    for (const auto& i : v) {
         os << i << "  ";
     }
     return os;
@@ -105,12 +104,9 @@ struct ConvertVariableValue : T
     {
         std::string defaulted;
 
-        if (varVal.defaulted())
-        {
+        if (varVal.defaulted()) {
             defaulted = " [default]";
-        }
-        else
-        {
+        } else {
             defaulted = " [provided]";
         }
 

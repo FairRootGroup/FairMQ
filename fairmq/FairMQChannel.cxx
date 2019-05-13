@@ -432,6 +432,13 @@ try {
         return true;
     }
 
+    // validate channel name
+    if (fName.find(".") != string::npos) {
+        ss << "INVALID";
+        LOG(error) << "channel name must not contain '.'";
+        return false;
+    }
+
     // validate socket type
     const set<string> socketTypes{ "sub", "pub", "pull", "push", "req", "rep", "xsub", "xpub", "dealer", "router", "pair" };
     if (socketTypes.find(fType) == socketTypes.end()) {

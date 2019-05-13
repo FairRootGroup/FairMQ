@@ -54,17 +54,14 @@ class FairMQProgOptions
     template<typename T>
     int SetValue(const std::string& key, T val)
     {
-        std::unique_lock<std::mutex> lock(fConfigMutex);
+        std::unique_lock<std::mutex> lock(fMtx);
 
         // update variable map
         UpdateVarMap<typename std::decay<T>::type>(key, val);
 
-        if (key == "channel-config")
-        {
+        if (key == "channel-config") {
             ParseChannelsFromCmdLine();
-        }
-        else if (fChannelKeyMap.count(key))
-        {
+        } else if (fChannelKeyMap.count(key)) {
             UpdateChannelValue(fChannelKeyMap.at(key).channel, fChannelKeyMap.at(key).index, fChannelKeyMap.at(key).member, val);
         }
 
@@ -80,7 +77,7 @@ class FairMQProgOptions
     template <typename T>
     void Subscribe(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, T)> func)
     {
-        std::unique_lock<std::mutex> lock(fConfigMutex);
+        std::lock_guard<std::mutex> lock(fMtx);
 
         static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value,
             "In template member FairMQProgOptions::Subscribe<T>(key,Lambda) the types const char* or char* for the calback signatures are not supported.");
@@ -91,21 +88,21 @@ class FairMQProgOptions
     template <typename T>
     void Unsubscribe(const std::string& subscriber)
     {
-        std::unique_lock<std::mutex> lock(fConfigMutex);
+        std::lock_guard<std::mutex> lock(fMtx);
 
         fEvents.Unsubscribe<fair::mq::PropertyChange, T>(subscriber);
     }
 
     void SubscribeAsString(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, std::string)> func)
     {
-        std::unique_lock<std::mutex> lock(fConfigMutex);
+        std::lock_guard<std::mutex> lock(fMtx);
 
         fEvents.Subscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber, func);
     }
 
     void UnsubscribeAsString(const std::string& subscriber)
     {
-        std::unique_lock<std::mutex> lock(fConfigMutex);
+        std::lock_guard<std::mutex> lock(fMtx);
 
         fEvents.Unsubscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber);
     }
@@ -116,16 +113,13 @@ class FairMQProgOptions
     template<typename T>
     T GetValue(const std::string& key) const
     {
-        std::unique_lock<std::mutex> lock(fConfigMutex);
+        std::lock_guard<std::mutex> lock(fMtx);
 
         T val = T();
 
-        if (fVarMap.count(key))
-        {
+        if (fVarMap.count(key)) {
             val = fVarMap[key].as<T>();
-        }
-        else
-        {
+        } else {
             LOG(warn) << "Config has no key: " << key << ". Returning default constructed object.";
         }
 
@@ -137,27 +131,9 @@ class FairMQProgOptions
 
     int Count(const std::string& key) const;
 
-    template<typename T>
-    T ConvertTo(const std::string& strValue)
-    {
-        if (std::is_arithmetic<T>::value)
-        {
-            std::istringstream iss(strValue);
-            T val;
-            iss >> val;
-            return val;
-        }
-        else
-        {
-            LOG(error) << "the provided string " << strValue << " cannot be converted to the requested type. The target type must be arithmetic type.";
-        }
-    }
-
     //  add options_description
     int AddToCmdLineOptions(const boost::program_options::options_description optDesc, bool visible = true);
     boost::program_options::options_description& GetCmdLineOptions();
-
-    const boost::program_options::variables_map& GetVarMap() const { return fVarMap; }
 
     int PrintOptions();
     int PrintOptionsRaw();
@@ -183,7 +159,7 @@ class FairMQProgOptions
     boost::program_options::options_description fMQOptions; ///< MQ options descriptions
     boost::program_options::options_description fParserOptions; ///< MQ Parser options descriptions
 
-    mutable std::mutex fConfigMutex;
+    mutable std::mutex fMtx;
 
     std::unordered_map<std::string, int> fChannelInfo; ///< channel name - number of subchannels
     std::unordered_map<std::string, ChannelKey> fChannelKeyMap;// key=full path - val=key info
@@ -198,16 +174,6 @@ class FairMQProgOptions
     // create key for variable map as follow : channelName.index.memberName
     void UpdateMQValues();
     int Store(const FairMQChannelMap& channels);
-
-    template<typename T>
-    void EmitUpdate(const std::string& key, T val)
-    {
-        // compile time check whether T is const char* or char*, and in that case a compile time error is thrown.
-        static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value,
-            "In template member FairMQProgOptions::EmitUpdate<T>(key,val) the types const char* or char* for the calback signatures are not supported.");
-        fEvents.Emit<fair::mq::PropertyChange, T>(key, val);
-        fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetStringValue(key));
-    }
 
     int UpdateChannelMap(const FairMQChannelMap& map);
     template<typename T>

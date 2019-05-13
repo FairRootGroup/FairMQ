@@ -88,12 +88,6 @@ int main(int argc, char** argv)
         MyDevice device;
         device.SetConfig(config);
 
-        // getting as string and conversion helpers
-
-        // string dataRateStr = config.GetStringValue("data-rate");
-        // double dataRate = config.ConvertTo<double>(dataRateStr);
-        // LOG(info) << "dataRate: " << dataRate;
-
         LOG(info) << "Subscribing: <string>(chans.data.0.address)";
         config.Subscribe<string>("test", [&device](const string& key, string value)
         {
