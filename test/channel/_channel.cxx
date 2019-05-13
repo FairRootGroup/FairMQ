@@ -85,8 +85,8 @@ TEST(Channel, Validation)
     ASSERT_EQ(channel2.IsValid(), true);
     ASSERT_EQ(channel2.Validate(), true);
 
-    channel2.UpdateChannelName("Kanal");
-    ASSERT_EQ(channel2.GetChannelName(), "Kanal");
+    channel2.UpdateName("Kanal");
+    ASSERT_EQ(channel2.GetName(), "Kanal");
 
     channel2.ResetChannel();
     ASSERT_EQ(channel2.IsValid(), false);
