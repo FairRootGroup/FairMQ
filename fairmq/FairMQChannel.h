@@ -247,17 +247,6 @@ class FairMQChannel
         return fSocket->Receive(msg, rcvTimeoutInMs);
     }
 
-    int SendAsync(FairMQMessagePtr& msg) __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(msg, timeout);")))
-    {
-        CheckSendCompatibility(msg);
-        return fSocket->Send(msg, 0);
-    }
-    int ReceiveAsync(FairMQMessagePtr& msg) __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(msg, timeout);")))
-    {
-        CheckReceiveCompatibility(msg);
-        return fSocket->Receive(msg, 0);
-    }
-
     /// Send a vector of messages
     /// @param msgVec message vector reference
     /// @param sndTimeoutInMs send timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
@@ -278,17 +267,6 @@ class FairMQChannel
         return fSocket->Receive(msgVec, rcvTimeoutInMs);
     }
 
-    int64_t SendAsync(std::vector<FairMQMessagePtr>& msgVec) __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(msgVec, timeout);")))
-    {
-        CheckSendCompatibility(msgVec);
-        return fSocket->Send(msgVec, 0);
-    }
-    int64_t ReceiveAsync(std::vector<FairMQMessagePtr>& msgVec) __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(msgVec, timeout);")))
-    {
-        CheckReceiveCompatibility(msgVec);
-        return fSocket->Receive(msgVec, 0);
-    }
-
     /// Send FairMQParts
     /// @param parts FairMQParts reference
     /// @param sndTimeoutInMs send timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
@@ -305,16 +283,6 @@ class FairMQChannel
     int64_t Receive(FairMQParts& parts, int rcvTimeoutInMs = -1)
     {
         return Receive(parts.fParts, rcvTimeoutInMs);
-    }
-
-    int64_t SendAsync(FairMQParts& parts) __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(parts, timeout);")))
-    {
-        return Send(parts.fParts, 0);
-    }
-
-    int64_t ReceiveAsync(FairMQParts& parts) __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(parts, timeout);")))
-    {
-        return Receive(parts.fParts, 0);
     }
 
     unsigned long GetBytesTx() const { return fSocket->GetBytesTx(); }

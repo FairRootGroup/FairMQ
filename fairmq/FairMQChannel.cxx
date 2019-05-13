@@ -5,12 +5,6 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQChannel.cxx
- *
- * @since 2015-06-02
- * @author A. Rybalchenko
- */
 
 #include "FairMQChannel.h"
 #include <fairmq/Tools.h>
