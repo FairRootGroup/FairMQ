@@ -40,7 +40,7 @@ FairMQProgOptions::FairMQProgOptions()
     , fGeneralOptions("General options")
     , fMQOptions("FairMQ device options")
     , fParserOptions("FairMQ channel config parser options")
-    , fConfigMutex()
+    , fMtx()
     , fChannelInfo()
     , fChannelKeyMap()
     , fUnregisteredOptions()
@@ -89,8 +89,7 @@ int FairMQProgOptions::ParseAll(const vector<string>& cmdLineArgs, bool allowUnr
 {
     vector<const char*> argv(cmdLineArgs.size());
 
-    transform(cmdLineArgs.begin(), cmdLineArgs.end(), argv.begin(), [](const string& str)
-    {
+    transform(cmdLineArgs.begin(), cmdLineArgs.end(), argv.begin(), [](const string& str) {
         return str.c_str();
     });
 
@@ -102,20 +101,17 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
     ParseCmdLine(argc, argv, allowUnregistered);
 
     // if this option is provided, handle them and return stop value
-    if (fVarMap.count("help"))
-    {
+    if (fVarMap.count("help")) {
         cout << fAllOptions << endl;
         return 1;
     }
     // if this option is provided, handle them and return stop value
-    if (fVarMap.count("print-options"))
-    {
+    if (fVarMap.count("print-options")) {
         PrintOptionsRaw();
         return 1;
     }
     // if these options are provided, do no further checks and let the device handle them
-    if (fVarMap.count("print-channels") || fVarMap.count("version"))
-    {
+    if (fVarMap.count("print-channels") || fVarMap.count("version")) {
         fair::Logger::SetConsoleSeverity("nolog");
         return 0;
     }
@@ -127,13 +123,10 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
     string verbosity = GetValue<string>("verbosity");
     fair::Logger::SetVerbosity(verbosity);
 
-    if (logFile != "")
-    {
+    if (logFile != "") {
         fair::Logger::InitFileSink(severity, logFile);
         fair::Logger::SetConsoleSeverity("nolog");
-    }
-    else
-    {
+    } else {
         fair::Logger::SetConsoleColor(color);
         fair::Logger::SetConsoleSeverity(severity);
     }
@@ -141,39 +134,27 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
     string idForParser;
 
     // check if config-key for config parser is provided
-    if (fVarMap.count("config-key"))
-    {
+    if (fVarMap.count("config-key")) {
         idForParser = fVarMap["config-key"].as<string>();
-    }
-    else if (fVarMap.count("id"))
-    {
+    } else if (fVarMap.count("id")) {
         idForParser = fVarMap["id"].as<string>();
     }
 
     // check if any config parser is selected
-    try
-    {
-        if (fVarMap.count("mq-config"))
-        {
+    try {
+        if (fVarMap.count("mq-config")) {
             LOG(debug) << "mq-config: Using default JSON parser";
             UpdateChannelMap(parser::JSON().UserParser(fVarMap.at("mq-config").as<string>(), idForParser));
-        }
-        else if (fVarMap.count("channel-config"))
-        {
+        } else if (fVarMap.count("channel-config")) {
             LOG(debug) << "channel-config: Parsing channel configuration";
             ParseChannelsFromCmdLine();
-        }
-        else
-        {
+        } else {
             LOG(warn) << "FairMQProgOptions: no channels configuration provided via neither of:";
-            for (const auto& p : fParserOptions.options())
-            {
+            for (const auto& p : fParserOptions.options()) {
                 LOG(warn) << "--" << p->canonical_display_name();
             }
         }
-    }
-    catch (exception& e)
-    {
+    } catch (exception& e) {
         LOG(error) << e.what();
         return 1;
     }
@@ -188,12 +169,9 @@ void FairMQProgOptions::ParseChannelsFromCmdLine()
     string idForParser;
 
     // check if config-key for config parser is provided
-    if (fVarMap.count("config-key"))
-    {
+    if (fVarMap.count("config-key")) {
         idForParser = fVarMap["config-key"].as<string>();
-    }
-    else if (fVarMap.count("id"))
-    {
+    } else if (fVarMap.count("id")) {
         idForParser = fVarMap["id"].as<string>();
     }
 
@@ -206,17 +184,14 @@ void FairMQProgOptions::ParseCmdLine(const int argc, char const* const* argv, bo
 
     // get options from cmd line and store in variable map
     // here we use command_line_parser instead of parse_command_line, to allow unregistered and positional options
-    if (allowUnregistered)
-    {
+    if (allowUnregistered) {
         po::command_line_parser parser{argc, argv};
         parser.options(fAllOptions).allow_unregistered();
         po::parsed_options parsed = parser.run();
         fUnregisteredOptions = po::collect_unrecognized(parsed.options, po::include_positional);
 
         po::store(parsed, fVarMap);
-    }
-    else
-    {
+    } else {
         po::store(po::parse_command_line(argc, argv, fAllOptions), fVarMap);
     }
 
@@ -229,8 +204,7 @@ void FairMQProgOptions::ParseDefaults()
 
     vector<const char*> argv(emptyArgs.size());
 
-    transform(emptyArgs.begin(), emptyArgs.end(), argv.begin(), [](const string& str)
-    {
+    transform(emptyArgs.begin(), emptyArgs.end(), argv.begin(), [](const string& str) {
         return str.c_str();
     });
 
@@ -259,8 +233,7 @@ int FairMQProgOptions::UpdateChannelMap(const unordered_map<string, vector<FairM
 void FairMQProgOptions::UpdateChannelInfo()
 {
     fChannelInfo.clear();
-    for (const auto& c : fFairMQChannelMap)
-    {
+    for (const auto& c : fFairMQChannelMap) {
         fChannelInfo.insert(make_pair(c.first, c.second.size()));
     }
 }
@@ -379,12 +352,11 @@ int FairMQProgOptions::UpdateChannelValue(const string& channelName, int index, 
 
 vector<string> FairMQProgOptions::GetPropertyKeys() const
 {
-    lock_guard<mutex> lock{fConfigMutex};
+    lock_guard<mutex> lock(fMtx);
 
     vector<string> result;
 
-    for (const auto& it : fVarMap)
-    {
+    for (const auto& it : fVarMap) {
         result.push_back(it.first.c_str());
     }
 
@@ -418,8 +390,7 @@ int FairMQProgOptions::PrintOptions()
     int maxLenType = 0;
     int maxLenDefault = 0;
 
-    for (const auto& m : fVarMap)
-    {
+    for (const auto& m : fVarMap) {
         maxLenKey = max(maxLenKey, static_cast<int>(m.first.length()));
 
         VarValInfo valinfo = ConvertVariableValue<options::ToVarValInfo>()((m.second));
@@ -431,21 +402,18 @@ int FairMQProgOptions::PrintOptions()
     }
 
     // TODO : limit the value len field in a better way
-    if (maxLenValue > 100)
-    {
+    if (maxLenValue > 100) {
         maxLenValue = 100;
     }
 
-    for (const auto& o : fUnregisteredOptions)
-    {
+    for (const auto& o : fUnregisteredOptions) {
         LOG(debug) << "detected unregistered option: " << o;
     }
 
     stringstream ss;
     ss << "Configuration: \n";
 
-    for (const auto& p : mapinfo)
-    {
+    for (const auto& p : mapinfo) {
         ss << setfill(' ') << left
            << setw(maxLenKey) << p.first << " = "
            << setw(maxLenValue) << p.second.value << " "
@@ -463,11 +431,9 @@ int FairMQProgOptions::PrintOptionsRaw()
 {
     const vector<boost::shared_ptr<po::option_description>>& options = fAllOptions.options();
 
-    for (const auto& o : options)
-    {
+    for (const auto& o : options) {
         VarValInfo value;
-        if (fVarMap.count(o->canonical_display_name()))
-        {
+        if (fVarMap.count(o->canonical_display_name())) {
             value = ConvertVariableValue<options::ToVarValInfo>()((fVarMap[o->canonical_display_name()]));
         }
 
@@ -483,18 +449,14 @@ int FairMQProgOptions::PrintOptionsRaw()
 
 string FairMQProgOptions::GetStringValue(const string& key)
 {
-    unique_lock<mutex> lock(fConfigMutex);
+    lock_guard<mutex> lock(fMtx);
 
     string valueStr;
-    try
-    {
-        if (fVarMap.count(key))
-        {
+    try {
+        if (fVarMap.count(key)) {
             valueStr = ConvertVariableValue<options::ToString>()(fVarMap.at(key));
         }
-    }
-    catch (exception& e)
-    {
+    } catch (exception& e) {
         LOG(error) << "Exception thrown for the key '" << key << "'";
         LOG(error) << e.what();
     }
@@ -504,7 +466,7 @@ string FairMQProgOptions::GetStringValue(const string& key)
 
 int FairMQProgOptions::Count(const string& key) const
 {
-    unique_lock<mutex> lock(fConfigMutex);
+    lock_guard<mutex> lock(fMtx);
 
     return fVarMap.count(key);
 }
