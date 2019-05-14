@@ -17,10 +17,12 @@
 #include <boost/program_options.hpp>
 
 #include <unordered_map>
+#include <map>
 #include <functional>
 #include <string>
 #include <vector>
 #include <mutex>
+#include <regex>
 #include <sstream>
 
 namespace fair
@@ -124,6 +126,20 @@ class FairMQProgOptions
         }
 
         return val;
+    }
+
+    std::map<std::string, boost::any> GetProperties(const std::string& q)
+    {
+        std::regex re(q);
+        std::map<std::string, boost::any> result;
+
+        for (const auto& m : fVarMap) {
+            if (std::regex_search(m.first, re)) {
+                result.emplace(m.first, m.second.value());
+            }
+        }
+
+        return result;
     }
 
     // Given a key, convert the variable value to string
