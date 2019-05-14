@@ -1,1 +1,0 @@
-#warning "This header file is deprecated. Use FairMQProgOptions class directly which now contains all FairProgOptions functionality. Note, that FairMQProgOptions is also available if you include FairMQDevice."
