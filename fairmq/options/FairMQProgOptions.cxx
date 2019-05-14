@@ -14,24 +14,122 @@
 
 #include "FairMQLogger.h"
 #include "FairMQProgOptions.h"
-#include "FairProgOptionsHelper.h"
 
 #include "FairMQParser.h"
 #include "FairMQSuboptParser.h"
 
 #include "tools/Unique.h"
 
+#include <boost/filesystem.hpp>
+#include <boost/any.hpp>
 #include <boost/algorithm/string.hpp> // join/split
+#include <boost/core/demangle.hpp>
 
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <exception>
+#include <typeinfo>
 
 using namespace std;
 using namespace fair::mq;
+using boost::any_cast;
 
 namespace po = boost::program_options;
+
+template<class T>
+ostream& operator<<(ostream& os, const vector<T>& v)
+{
+    for (unsigned int i = 0; i < v.size(); ++i) {
+        os << v[i];
+        if (i != v.size() - 1) {
+            os << ", ";
+        }
+    }
+    return os;
+}
+
+template<typename T>
+pair<string, string> getString(const boost::any& v, const string& label)
+{
+    return { to_string(any_cast<T>(v)), label };
+}
+
+
+template<typename T>
+pair<string, string> getStringPair(const boost::any& v, const string& label)
+{
+    stringstream ss;
+    ss << any_cast<T>(v);
+    return { ss.str(), label };
+}
+
+unordered_map<type_index, pair<string, string>(*)(const boost::any&)> FairMQProgOptions::fValInfos = {
+    { type_index(typeid(string)),                          [](const boost::any& v) { return pair<string, string>{ any_cast<string>(v), "<string>" }; } },
+    { type_index(typeid(int)),                             [](const boost::any& v) { return getString<int>(v, "<int>"); } },
+    { type_index(typeid(size_t)),                          [](const boost::any& v) { return getString<size_t>(v, "<size_t>"); } },
+    { type_index(typeid(uint32_t)),                        [](const boost::any& v) { return getString<uint32_t>(v, "<uint32_t>"); } },
+    { type_index(typeid(uint64_t)),                        [](const boost::any& v) { return getString<uint64_t>(v, "<uint64_t>"); } },
+    { type_index(typeid(long)),                            [](const boost::any& v) { return getString<long>(v, "<long>"); } },
+    { type_index(typeid(long long)),                       [](const boost::any& v) { return getString<long long>(v, "<long long>"); } },
+    { type_index(typeid(unsigned)),                        [](const boost::any& v) { return getString<unsigned>(v, "<unsigned>"); } },
+    { type_index(typeid(unsigned long)),                   [](const boost::any& v) { return getString<unsigned long>(v, "<unsigned long>"); } },
+    { type_index(typeid(unsigned long long)),              [](const boost::any& v) { return getString<unsigned long long>(v, "<unsigned long long>"); } },
+    { type_index(typeid(float)),                           [](const boost::any& v) { return getString<float>(v, "<float>"); } },
+    { type_index(typeid(double)),                          [](const boost::any& v) { return getString<double>(v, "<double>"); } },
+    { type_index(typeid(long double)),                     [](const boost::any& v) { return getString<long double>(v, "<long double>"); } },
+    { type_index(typeid(bool)),                            [](const boost::any& v) { stringstream ss; ss << boolalpha << any_cast<bool>(v); return pair<string, string>{ ss.str(), "<bool>" }; } },
+    { type_index(typeid(vector<bool>)),                    [](const boost::any& v) { stringstream ss; ss << boolalpha << any_cast<vector<bool>>(v); return pair<string, string>{ ss.str(), "<vector<bool>>" }; } },
+    { type_index(typeid(boost::filesystem::path)),         [](const boost::any& v) { return getStringPair<boost::filesystem::path>(v, "<boost::filesystem::path>"); } },
+    { type_index(typeid(vector<string>)),                  [](const boost::any& v) { return getStringPair<vector<string>>(v, "<vector<string>>"); } },
+    { type_index(typeid(vector<int>)),                     [](const boost::any& v) { return getStringPair<vector<int>>(v, "<vector<int>>"); } },
+    { type_index(typeid(vector<size_t>)),                  [](const boost::any& v) { return getStringPair<vector<size_t>>(v, "<vector<size_t>>"); } },
+    { type_index(typeid(vector<uint32_t>)),                [](const boost::any& v) { return getStringPair<vector<uint32_t>>(v, "<vector<uint32_t>>"); } },
+    { type_index(typeid(vector<uint64_t>)),                [](const boost::any& v) { return getStringPair<vector<uint64_t>>(v, "<vector<uint64_t>>"); } },
+    { type_index(typeid(vector<long>)),                    [](const boost::any& v) { return getStringPair<vector<long>>(v, "<vector<long>>"); } },
+    { type_index(typeid(vector<long long>)),               [](const boost::any& v) { return getStringPair<vector<long long>>(v, "<vector<long long>>"); } },
+    { type_index(typeid(vector<unsigned>)),                [](const boost::any& v) { return getStringPair<vector<unsigned>>(v, "<vector<unsigned>>"); } },
+    { type_index(typeid(vector<unsigned long>)),           [](const boost::any& v) { return getStringPair<vector<unsigned long>>(v, "<vector<unsigned long>>"); } },
+    { type_index(typeid(vector<unsigned long long>)),      [](const boost::any& v) { return getStringPair<vector<unsigned long long>>(v, "<vector<unsigned long long>>"); } },
+    { type_index(typeid(vector<float>)),                   [](const boost::any& v) { return getStringPair<vector<float>>(v, "<vector<float>>"); } },
+    { type_index(typeid(vector<double>)),                  [](const boost::any& v) { return getStringPair<vector<double>>(v, "<vector<double>>"); } },
+    { type_index(typeid(vector<long double>)),             [](const boost::any& v) { return getStringPair<vector<long double>>(v, "<vector<long double>>"); } },
+    { type_index(typeid(vector<boost::filesystem::path>)), [](const boost::any& v) { return getStringPair<vector<boost::filesystem::path>>(v, "<vector<boost::filesystem::path>>"); } },
+};
+
+namespace fair
+{
+namespace mq
+{
+
+ValInfo ConvertVarValToValInfo(const po::variable_value& v)
+{
+    string origin;
+
+    if (v.defaulted()) {
+        origin = "[default]";
+    } else if (v.empty()) {
+        origin = "[empty]";
+    } else {
+        origin = "[provided]";
+    }
+
+    try {
+        pair<string, string> info = FairMQProgOptions::fValInfos.at(v.value().type())(v.value());
+         return {info.first, info.second, origin};
+    } catch (out_of_range& oor)
+    {
+        return {string("[unidentified]"), string("[unidentified]"), origin};
+    }
+};
+
+string ConvertVarValToString(const po::variable_value& v)
+{
+    return ConvertVarValToValInfo(v).value;
+}
+
+} // namespace mq
+} // namespace fair
 
 FairMQProgOptions::FairMQProgOptions()
     : fVarMap()
@@ -99,6 +197,8 @@ int FairMQProgOptions::ParseAll(const vector<string>& cmdLineArgs, bool allowUnr
 int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool allowUnregistered)
 {
     ParseCmdLine(argc, argv, allowUnregistered);
+
+    UpdateVarMap<string>("blubblub", "yarhar");
 
     // if this option is provided, handle them and return stop value
     if (fVarMap.count("help")) {
@@ -382,7 +482,7 @@ int FairMQProgOptions::PrintOptions()
     // string, int, float, double, short, boost::filesystem::path
     // vector<string>, vector<int>, vector<float>, vector<double>, vector<short>
 
-    map<string, VarValInfo> mapinfo;
+    map<string, ValInfo> mapinfo;
 
     // get string length for formatting and convert varmap values into string
     int maxLenKey = 0;
@@ -393,15 +493,14 @@ int FairMQProgOptions::PrintOptions()
     for (const auto& m : fVarMap) {
         maxLenKey = max(maxLenKey, static_cast<int>(m.first.length()));
 
-        VarValInfo valinfo = ConvertVariableValue<options::ToVarValInfo>()((m.second));
+        ValInfo valinfo = ConvertVarValToValInfo(m.second);
         mapinfo[m.first] = valinfo;
 
         maxLenValue = max(maxLenValue, static_cast<int>(valinfo.value.length()));
         maxLenType = max(maxLenType, static_cast<int>(valinfo.type.length()));
-        maxLenDefault = max(maxLenDefault, static_cast<int>(valinfo.defaulted.length()));
+        maxLenDefault = max(maxLenDefault, static_cast<int>(valinfo.origin.length()));
     }
 
-    // TODO : limit the value len field in a better way
     if (maxLenValue > 100) {
         maxLenValue = 100;
     }
@@ -418,7 +517,7 @@ int FairMQProgOptions::PrintOptions()
            << setw(maxLenKey) << p.first << " = "
            << setw(maxLenValue) << p.second.value << " "
            << setw(maxLenType) << p.second.type
-           << setw(maxLenDefault) << p.second.defaulted
+           << setw(maxLenDefault) << p.second.origin
            << "\n";
     }
 
@@ -432,9 +531,9 @@ int FairMQProgOptions::PrintOptionsRaw()
     const vector<boost::shared_ptr<po::option_description>>& options = fAllOptions.options();
 
     for (const auto& o : options) {
-        VarValInfo value;
+        ValInfo value;
         if (fVarMap.count(o->canonical_display_name())) {
-            value = ConvertVariableValue<options::ToVarValInfo>()((fVarMap[o->canonical_display_name()]));
+            value = ConvertVarValToValInfo(fVarMap[o->canonical_display_name()]);
         }
 
         string description = o->description();
@@ -454,7 +553,7 @@ string FairMQProgOptions::GetStringValue(const string& key)
     string valueStr;
     try {
         if (fVarMap.count(key)) {
-            valueStr = ConvertVariableValue<options::ToString>()(fVarMap.at(key));
+            valueStr = ConvertVarValToString(fVarMap.at(key));
         }
     } catch (exception& e) {
         LOG(error) << "Exception thrown for the key '" << key << "'";

@@ -24,6 +24,8 @@
 #include <mutex>
 #include <regex>
 #include <sstream>
+#include <typeindex>
+#include <stdexcept>
 
 namespace fair
 {
@@ -32,6 +34,13 @@ namespace mq
 
 struct PropertyChange : Event<std::string> {};
 struct PropertyChangeAsString : Event<std::string> {};
+
+struct ValInfo
+{
+    std::string value;
+    std::string type;
+    std::string origin;
+};
 
 } /* namespace mq */
 } /* namespace fair */
@@ -45,6 +54,8 @@ class FairMQProgOptions
     FairMQProgOptions();
     virtual ~FairMQProgOptions();
 
+    struct PropertyNotFoundException : std::runtime_error { using std::runtime_error::runtime_error; };
+
     int ParseAll(const std::vector<std::string>& cmdLineArgs, bool allowUnregistered);
     // parse command line.
     // default parser for the mq-configuration file (JSON) is called if command line key mq-config is called
@@ -52,80 +63,36 @@ class FairMQProgOptions
 
     FairMQChannelMap GetFairMQMap() const;
     std::unordered_map<std::string, int> GetChannelInfo() const;
-
-    template<typename T>
-    int SetValue(const std::string& key, T val)
-    {
-        std::unique_lock<std::mutex> lock(fMtx);
-
-        // update variable map
-        UpdateVarMap<typename std::decay<T>::type>(key, val);
-
-        if (key == "channel-config") {
-            ParseChannelsFromCmdLine();
-        } else if (fChannelKeyMap.count(key)) {
-            UpdateChannelValue(fChannelKeyMap.at(key).channel, fChannelKeyMap.at(key).index, fChannelKeyMap.at(key).member, val);
-        }
-
-        lock.unlock();
-
-        //if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)//if one wants to restrict type
-        fEvents.Emit<fair::mq::PropertyChange, typename std::decay<T>::type>(key, val);
-        fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetStringValue(key));
-
-        return 0;
-    }
-
-    template <typename T>
-    void Subscribe(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, T)> func)
-    {
-        std::lock_guard<std::mutex> lock(fMtx);
-
-        static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value,
-            "In template member FairMQProgOptions::Subscribe<T>(key,Lambda) the types const char* or char* for the calback signatures are not supported.");
-
-        fEvents.Subscribe<fair::mq::PropertyChange, T>(subscriber, func);
-    }
-
-    template <typename T>
-    void Unsubscribe(const std::string& subscriber)
-    {
-        std::lock_guard<std::mutex> lock(fMtx);
-
-        fEvents.Unsubscribe<fair::mq::PropertyChange, T>(subscriber);
-    }
-
-    void SubscribeAsString(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, std::string)> func)
-    {
-        std::lock_guard<std::mutex> lock(fMtx);
-
-        fEvents.Subscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber, func);
-    }
-
-    void UnsubscribeAsString(const std::string& subscriber)
-    {
-        std::lock_guard<std::mutex> lock(fMtx);
-
-        fEvents.Unsubscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber);
-    }
-
     std::vector<std::string> GetPropertyKeys() const;
 
-    // get value corresponding to the key
     template<typename T>
-    T GetValue(const std::string& key) const
+    T GetProperty(const std::string& key) const
     {
         std::lock_guard<std::mutex> lock(fMtx);
 
-        T val = T();
-
         if (fVarMap.count(key)) {
-            val = fVarMap[key].as<T>();
-        } else {
-            LOG(warn) << "Config has no key: " << key << ". Returning default constructed object.";
+            return fVarMap[key].as<T>();
         }
 
-        return val;
+       throw PropertyNotFoundException(fair::mq::tools::ToString("Config has no key: ", key));
+    }
+
+    template<typename T>
+    T GetProperty(const std::string& key, const T& ifNotFound) const
+    {
+        std::lock_guard<std::mutex> lock(fMtx);
+
+        if (fVarMap.count(key)) {
+            return fVarMap[key].as<T>();
+        }
+
+        return ifNotFound;
+    }
+
+    template<typename T>
+    T GetValue(const std::string& key) const // TODO: deprecate this
+    {
+        return GetProperty<T>(key);
     }
 
     std::map<std::string, boost::any> GetProperties(const std::string& q)
@@ -145,6 +112,64 @@ class FairMQProgOptions
     // Given a key, convert the variable value to string
     std::string GetStringValue(const std::string& key);
 
+    template<typename T>
+    void SetProperty(const std::string& key, T val)
+    {
+        std::unique_lock<std::mutex> lock(fMtx);
+
+        // update variable map
+        UpdateVarMap<typename std::decay<T>::type>(key, val);
+
+        if (key == "channel-config") {
+            ParseChannelsFromCmdLine();
+        } else if (fChannelKeyMap.count(key)) {
+            UpdateChannelValue(fChannelKeyMap.at(key).channel, fChannelKeyMap.at(key).index, fChannelKeyMap.at(key).member, val);
+        }
+
+        lock.unlock();
+
+        //if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)//if one wants to restrict type
+        fEvents.Emit<fair::mq::PropertyChange, typename std::decay<T>::type>(key, val);
+        fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetStringValue(key));
+    }
+
+    template<typename T>
+    int SetValue(const std::string& key, T val) // TODO: deprecate this
+    {
+        SetProperty(key, val);
+        return 0;
+    }
+
+    template <typename T>
+    void Subscribe(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, T)> func)
+    {
+        std::lock_guard<std::mutex> lock(fMtx);
+
+        static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value,
+            "In template member FairMQProgOptions::Subscribe<T>(key,Lambda) the types const char* or char* for the calback signatures are not supported.");
+
+        fEvents.Subscribe<fair::mq::PropertyChange, T>(subscriber, func);
+    }
+
+    template <typename T>
+    void Unsubscribe(const std::string& subscriber)
+    {
+        std::lock_guard<std::mutex> lock(fMtx);
+        fEvents.Unsubscribe<fair::mq::PropertyChange, T>(subscriber);
+    }
+
+    void SubscribeAsString(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, std::string)> func)
+    {
+        std::lock_guard<std::mutex> lock(fMtx);
+        fEvents.Subscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber, func);
+    }
+
+    void UnsubscribeAsString(const std::string& subscriber)
+    {
+        std::lock_guard<std::mutex> lock(fMtx);
+        fEvents.Unsubscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber);
+    }
+
     int Count(const std::string& key) const;
 
     //  add options_description
@@ -158,6 +183,8 @@ class FairMQProgOptions
     {
         fFairMQChannelMap[channelName].push_back(channel);
     }
+
+    static std::unordered_map<std::type_index, std::pair<std::string, std::string>(*)(const boost::any&)> fValInfos;
 
   private:
     struct ChannelKey
