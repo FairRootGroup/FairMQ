@@ -119,7 +119,7 @@ ValInfo ConvertVarValToValInfo(const po::variable_value& v)
          return {info.first, info.second, origin};
     } catch (out_of_range& oor)
     {
-        return {string("[unidentified]"), string("[unidentified]"), origin};
+        return {string("[unidentified_type]"), string("[unidentified_type]"), origin};
     }
 };
 
@@ -177,21 +177,6 @@ FairMQProgOptions::FairMQProgOptions()
     fAllOptions.add(fParserOptions);
 
     ParseDefaults();
-}
-
-FairMQProgOptions::~FairMQProgOptions()
-{
-}
-
-int FairMQProgOptions::ParseAll(const vector<string>& cmdLineArgs, bool allowUnregistered)
-{
-    vector<const char*> argv(cmdLineArgs.size());
-
-    transform(cmdLineArgs.begin(), cmdLineArgs.end(), argv.begin(), [](const string& str) {
-        return str.c_str();
-    });
-
-    return ParseAll(argv.size(), const_cast<char**>(argv.data()), allowUnregistered);
 }
 
 int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool allowUnregistered)
@@ -372,24 +357,24 @@ void FairMQProgOptions::UpdateMQValues()
             fChannelKeyMap[portRangeMaxKey] = ChannelKey{p.first, index, "portRangeMax"};
             fChannelKeyMap[autoBindKey] = ChannelKey{p.first, index, "autoBind"};
 
-            UpdateVarMap<string>(typeKey, channel.GetType());
-            UpdateVarMap<string>(methodKey, channel.GetMethod());
-            UpdateVarMap<string>(addressKey, channel.GetAddress());
-            UpdateVarMap<string>(transportKey, channel.GetTransportName());
-            UpdateVarMap<int>(sndBufSizeKey, channel.GetSndBufSize());
-            UpdateVarMap<int>(rcvBufSizeKey, channel.GetRcvBufSize());
-            UpdateVarMap<int>(sndKernelSizeKey, channel.GetSndKernelSize());
-            UpdateVarMap<int>(rcvKernelSizeKey, channel.GetRcvKernelSize());
-            UpdateVarMap<int>(lingerKey, channel.GetLinger());
-            UpdateVarMap<int>(rateLoggingKey, channel.GetRateLogging());
-            UpdateVarMap<int>(portRangeMinKey, channel.GetPortRangeMin());
-            UpdateVarMap<int>(portRangeMaxKey, channel.GetPortRangeMax());
-            UpdateVarMap<bool>(autoBindKey, channel.GetAutoBind());
+            SetVarMapValue<string>(typeKey, channel.GetType());
+            SetVarMapValue<string>(methodKey, channel.GetMethod());
+            SetVarMapValue<string>(addressKey, channel.GetAddress());
+            SetVarMapValue<string>(transportKey, channel.GetTransportName());
+            SetVarMapValue<int>(sndBufSizeKey, channel.GetSndBufSize());
+            SetVarMapValue<int>(rcvBufSizeKey, channel.GetRcvBufSize());
+            SetVarMapValue<int>(sndKernelSizeKey, channel.GetSndKernelSize());
+            SetVarMapValue<int>(rcvKernelSizeKey, channel.GetRcvKernelSize());
+            SetVarMapValue<int>(lingerKey, channel.GetLinger());
+            SetVarMapValue<int>(rateLoggingKey, channel.GetRateLogging());
+            SetVarMapValue<int>(portRangeMinKey, channel.GetPortRangeMin());
+            SetVarMapValue<int>(portRangeMaxKey, channel.GetPortRangeMax());
+            SetVarMapValue<bool>(autoBindKey, channel.GetAutoBind());
 
             index++;
         }
 
-        UpdateVarMap<int>("chans." + p.first + ".numSockets", index);
+        SetVarMapValue<int>("chans." + p.first + ".numSockets", index);
     }
 }
 
