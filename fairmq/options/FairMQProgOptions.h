@@ -52,13 +52,19 @@ class FairMQProgOptions
 
   public:
     FairMQProgOptions();
-    virtual ~FairMQProgOptions();
+    virtual ~FairMQProgOptions() {}
 
     struct PropertyNotFoundException : std::runtime_error { using std::runtime_error::runtime_error; };
 
-    int ParseAll(const std::vector<std::string>& cmdLineArgs, bool allowUnregistered);
-    // parse command line.
-    // default parser for the mq-configuration file (JSON) is called if command line key mq-config is called
+    int ParseAll(const std::vector<std::string>& cmdArgs, bool allowUnregistered)
+    {
+        std::vector<const char*> argv(cmdArgs.size());
+        transform(cmdArgs.begin(), cmdArgs.end(), argv.begin(), [](const std::string& str) {
+            return str.c_str();
+        });
+        return ParseAll(argv.size(), const_cast<char**>(argv.data()), allowUnregistered);
+    }
+
     int ParseAll(const int argc, char const* const* argv, bool allowUnregistered = true);
 
     FairMQChannelMap GetFairMQMap() const;
@@ -100,6 +106,8 @@ class FairMQProgOptions
         std::regex re(q);
         std::map<std::string, boost::any> result;
 
+        std::lock_guard<std::mutex> lock(fMtx);
+
         for (const auto& m : fVarMap) {
             if (std::regex_search(m.first, re)) {
                 result.emplace(m.first, m.second.value());
@@ -109,7 +117,6 @@ class FairMQProgOptions
         return result;
     }
 
-    // Given a key, convert the variable value to string
     std::string GetStringValue(const std::string& key);
 
     template<typename T>
@@ -117,8 +124,7 @@ class FairMQProgOptions
     {
         std::unique_lock<std::mutex> lock(fMtx);
 
-        // update variable map
-        UpdateVarMap<typename std::decay<T>::type>(key, val);
+        SetVarMapValue<typename std::decay<T>::type>(key, val);
 
         if (key == "channel-config") {
             ParseChannelsFromCmdLine();
@@ -128,7 +134,6 @@ class FairMQProgOptions
 
         lock.unlock();
 
-        //if (std::is_same<T, int>::value || std::is_same<T, std::string>::value)//if one wants to restrict type
         fEvents.Emit<fair::mq::PropertyChange, typename std::decay<T>::type>(key, val);
         fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetStringValue(key));
     }
@@ -142,20 +147,30 @@ class FairMQProgOptions
 
     void SetProperties(const std::map<std::string, boost::any>& input)
     {
+        std::lock_guard<std::mutex> lock(fMtx);
+
         std::map<std::string, boost::program_options::variable_value>& vm = fVarMap;
         for (const auto& m : input) {
             vm[m.first].value() = m.second;
         }
+
+        // TODO: call subscriptions here (after unlock)
+    }
+
+    void DeleteProperty(const std::string& key)
+    {
+        std::lock_guard<std::mutex> lock(fMtx);
+
+        std::map<std::string, boost::program_options::variable_value>& vm = fVarMap;
+        vm.erase(key);
     }
 
     template <typename T>
     void Subscribe(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, T)> func)
     {
         std::lock_guard<std::mutex> lock(fMtx);
-
         static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value,
             "In template member FairMQProgOptions::Subscribe<T>(key,Lambda) the types const char* or char* for the calback signatures are not supported.");
-
         fEvents.Subscribe<fair::mq::PropertyChange, T>(subscriber, func);
     }
 
@@ -239,9 +254,9 @@ class FairMQProgOptions
 
     void UpdateChannelInfo();
 
-    // helper to modify the value of variable map after calling boost::program_options::store
+    // modify the value of variable map after calling boost::program_options::store
     template<typename T>
-    void UpdateVarMap(const std::string& key, const T& val)
+    void SetVarMapValue(const std::string& key, const T& val)
     {
         std::map<std::string, boost::program_options::variable_value>& vm = fVarMap;
         vm[key].value() = boost::any(val);
