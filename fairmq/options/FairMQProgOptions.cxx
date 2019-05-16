@@ -198,8 +198,6 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
 {
     ParseCmdLine(argc, argv, allowUnregistered);
 
-    UpdateVarMap<string>("blubblub", "yarhar");
-
     // if this option is provided, handle them and return stop value
     if (fVarMap.count("help")) {
         cout << fAllOptions << endl;

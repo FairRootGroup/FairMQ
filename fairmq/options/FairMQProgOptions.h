@@ -140,6 +140,14 @@ class FairMQProgOptions
         return 0;
     }
 
+    void SetProperties(const std::map<std::string, boost::any>& input)
+    {
+        std::map<std::string, boost::program_options::variable_value>& vm = fVarMap;
+        for (const auto& m : input) {
+            vm[m.first].value() = m.second;
+        }
+    }
+
     template <typename T>
     void Subscribe(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, T)> func)
     {
