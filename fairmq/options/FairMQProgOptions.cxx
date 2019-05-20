@@ -263,10 +263,9 @@ void FairMQProgOptions::ParseChannelsFromCmdLine()
 
 void FairMQProgOptions::ParseCmdLine(const int argc, char const* const* argv, bool allowUnregistered)
 {
+    // clear the container because it was filled with default values and subsequent calls to store() do not overwrite the existing values
     fVarMap.clear();
 
-    // get options from cmd line and store in variable map
-    // here we use command_line_parser instead of parse_command_line, to allow unregistered and positional options
     if (allowUnregistered) {
         po::command_line_parser parser{argc, argv};
         parser.options(fAllOptions).allow_unregistered();
@@ -321,8 +320,6 @@ void FairMQProgOptions::UpdateChannelInfo()
     }
 }
 
-// read FairMQChannelMap and insert/update corresponding values in variable map
-// create key for variable map as follow : channelName.index.memberName
 void FairMQProgOptions::UpdateMQValues()
 {
     for (const auto& p : fFairMQChannelMap) {

@@ -33,6 +33,10 @@ class FairMQChannel
     FairMQChannel();
 
     /// Constructor
+    /// @param name Channel name
+    FairMQChannel(const std::string& name);
+
+    /// Constructor
     /// @param type Socket type (push/pull/pub/sub/spub/xsub/pair/req/rep/dealer/router/)
     /// @param method Socket method (bind/connect)
     /// @param address Network address to bind/connect to (e.g. "tcp://127.0.0.1:5555" or "ipc://abc")
@@ -55,10 +59,19 @@ class FairMQChannel
     /// Copy Constructor
     FairMQChannel(const FairMQChannel&);
 
+    /// Copy Constructor (with new name)
+    FairMQChannel(const FairMQChannel&, const std::string& name);
+
+    /// Move constructor
+    FairMQChannel(FairMQChannel&&) = default;
+
     /// Assignment operator
     FairMQChannel& operator=(const FairMQChannel&);
 
-    /// Default destructor
+    /// Move assignment operator
+    FairMQChannel& operator=(FairMQChannel&&) = default;
+
+    /// Destructor
     virtual ~FairMQChannel() {}
 
     struct ChannelConfigurationError : std::runtime_error { using std::runtime_error::runtime_error; };
@@ -106,9 +119,13 @@ class FairMQChannel
     /// @return Returns socket address (e.g. "tcp://127.0.0.1:5555" or "ipc://abc")
     std::string GetAddress() const;
 
-    /// Get channel transport ("default", "zeromq", "nanomsg" or "shmem")
-    /// @return Returns channel transport (e.g. "default", "zeromq", "nanomsg" or "shmem")
+    /// Get channel transport name ("default", "zeromq", "nanomsg" or "shmem")
+    /// @return Returns channel transport name (e.g. "default", "zeromq", "nanomsg" or "shmem")
     std::string GetTransportName() const;
+
+    /// Get channel transport type
+    /// @return Returns channel transport type
+    fair::mq::Transport GetTransportType() const;
 
     /// Get socket send buffer size (in number of messages)
     /// @return Returns socket send buffer size (in number of messages)
@@ -320,6 +337,7 @@ class FairMQChannel
     fair::mq::Transport fTransportType;
     std::unique_ptr<FairMQSocket> fSocket;
 
+    std::string fName;
     std::string fType;
     std::string fMethod;
     std::string fAddress;
@@ -333,23 +351,17 @@ class FairMQChannel
     int fPortRangeMax;
     bool fAutoBind;
 
-    std::string fName;
-    std::atomic<bool> fIsValid;
-
-    // use static mutex to make the class easily copyable
-    // implication: same mutex is used for all instances of the class
-    // this does not hurt much, because mutex is used only during initialization with very low contention
-    // possible TODO: improve this
-    static std::mutex fChannelMutex;
+    bool fIsValid;
 
     bool fMultipart;
     bool fModified;
     bool fReset;
 
+    mutable std::mutex fMtx;
+
     void CheckSendCompatibility(FairMQMessagePtr& msg)
     {
         if (fTransportType != msg->GetType()) {
-            // LOG(debug) << "Channel type does not match message type. Creating wrapper";
             FairMQMessagePtr msgWrapper(NewMessage(
                 msg->GetData(),
                 msg->GetSize(),
@@ -365,7 +377,7 @@ class FairMQChannel
     {
         for (auto& msg : msgVec) {
             if (fTransportType != msg->GetType()) {
-                // LOG(debug) << "Channel type does not match message type. Creating wrapper";
+
                 FairMQMessagePtr msgWrapper(NewMessage(
                     msg->GetData(),
                     msg->GetSize(),
@@ -381,7 +393,6 @@ class FairMQChannel
     void CheckReceiveCompatibility(FairMQMessagePtr& msg)
     {
         if (fTransportType != msg->GetType()) {
-            // LOG(debug) << "Channel type does not match message type. Creating wrapper";
             FairMQMessagePtr newMsg(NewMessage());
             msg = move(newMsg);
         }
@@ -391,7 +402,7 @@ class FairMQChannel
     {
         for (auto& msg : msgVec) {
             if (fTransportType != msg->GetType()) {
-                // LOG(debug) << "Channel type does not match message type. Creating wrapper";
+
                 FairMQMessagePtr newMsg(NewMessage());
                 msg = move(newMsg);
             }
@@ -403,7 +414,24 @@ class FairMQChannel
         fTransportFactory = factory;
         fTransportType = factory->GetType();
     }
+
     auto SetModified(const bool modified) -> void;
+
+    static constexpr fair::mq::Transport DefaultTransportType = fair::mq::Transport::DEFAULT;
+    static constexpr const char* DefaultTransportName = "default";
+    static constexpr const char* DefaultName = "";
+    static constexpr const char* DefaultType = "unspecified";
+    static constexpr const char* DefaultMethod = "unspecified";
+    static constexpr const char* DefaultAddress = "unspecified";
+    static constexpr int DefaultSndBufSize = 1000;
+    static constexpr int DefaultRcvBufSize = 1000;
+    static constexpr int DefaultSndKernelSize = 0;
+    static constexpr int DefaultRcvKernelSize = 0;
+    static constexpr int DefaultLinger = 500;
+    static constexpr int DefaultRateLogging = 1;
+    static constexpr int DefaultPortRangeMin = 22000;
+    static constexpr int DefaultPortRangeMax = 23000;
+    static constexpr bool DefaultAutoBind = true;
 };
 
 #endif /* FAIRMQCHANNEL_H_ */
