@@ -64,7 +64,7 @@ TEST_F(PluginServices, ConfigCallbacks)
     });
 
     mServices.SubscribeToPropertyChange<int>("test", [](const string& key, int /*value*/) {
-        if(key == "chans.data.0.rcvBufSize") {
+        if (key == "chans.data.0.rcvBufSize") {
             FAIL(); // should not be called because we unsubscribed
         }
     });

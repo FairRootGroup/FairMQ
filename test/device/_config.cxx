@@ -114,7 +114,7 @@ class Config : public ::testing::Test
         channel.UpdateType("pub");
         channel.UpdateMethod("connect");
         channel.UpdateAddress("tcp://localhost:5558");
-        device.AddChannel("data", channel);
+        device.AddChannel("data", std::move(channel));
 
         thread t(control, ref(device));
 
@@ -143,7 +143,7 @@ class Config : public ::testing::Test
         channel.UpdateType("pub");
         channel.UpdateMethod("connect");
         channel.UpdateAddress("tcp://localhost:5558");
-        device.AddChannel("data", channel);
+        device.AddChannel("data", std::move(channel));
 
         thread t(&FairMQDevice::RunStateMachine, &device);
 

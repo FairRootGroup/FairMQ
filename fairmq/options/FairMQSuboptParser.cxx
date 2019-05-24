@@ -29,7 +29,7 @@ namespace parser
 
 constexpr const char* SUBOPT::channelOptionKeys[];
 
-FairMQChannelMap SUBOPT::UserParser(const vector<string>& channelConfig, const string& deviceId, const string& rootNode)
+fair::mq::Properties SUBOPT::UserParser(const vector<string>& channelConfig, const string& deviceId)
 {
     ptree pt;
 
@@ -38,8 +38,7 @@ FairMQChannelMap SUBOPT::UserParser(const vector<string>& channelConfig, const s
 
     ptree channelsArray;
 
-    for (auto token : channelConfig)
-    {
+    for (auto token : channelConfig) {
         string channelName;
         ptree channelProperties;
 
@@ -48,32 +47,23 @@ FairMQChannelMap SUBOPT::UserParser(const vector<string>& channelConfig, const s
         string argString(token);
         char* subopts = &argString[0];
         char* value = nullptr;
-        while (subopts && *subopts != 0 && *subopts != ' ')
-        {
+        while (subopts && *subopts != 0 && *subopts != ' ') {
             int subopt = getsubopt(&subopts, (char**)channelOptionKeys, &value);
-            if (subopt == NAME)
-            {
+            if (subopt == NAME) {
                 channelName = value;
                 channelProperties.put("name", channelName);
-            }
-            else if (subopt == ADDRESS)
-            {
+            } else if (subopt == ADDRESS) {
                 ptree socketProperties;
                 socketProperties.put(channelOptionKeys[subopt], value);
                 socketsArray.push_back(make_pair("", socketProperties));
-            }
-            else if (subopt >= 0 && value != nullptr)
-            {
+            } else if (subopt >= 0 && value != nullptr) {
                 channelProperties.put(channelOptionKeys[subopt], value);
             }
         }
 
-        if (channelName != "")
-        {
+        if (channelName != "") {
             channelProperties.add_child("sockets", socketsArray);
-        }
-        else
-        {
+        } else {
             // TODO: what is the error policy here, should we abort?
             LOG(error) << "missing channel name in argument of option --channel-config";
         }
@@ -88,7 +78,7 @@ FairMQChannelMap SUBOPT::UserParser(const vector<string>& channelConfig, const s
 
     pt.add_child("fairMQOptions.devices", devicesArray);
 
-    return ptreeToMQMap(pt, deviceId, rootNode);
+    return ptreeToProperties(pt, deviceId);
 }
 
 }

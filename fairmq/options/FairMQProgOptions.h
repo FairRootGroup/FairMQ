@@ -12,9 +12,11 @@
 #include <fairmq/EventManager.h>
 #include "FairMQLogger.h"
 #include "FairMQChannel.h"
+#include "Properties.h"
 #include <fairmq/Tools.h>
 
 #include <boost/program_options.hpp>
+#include <boost/core/demangle.hpp>
 
 #include <unordered_map>
 #include <map>
@@ -22,9 +24,10 @@
 #include <string>
 #include <vector>
 #include <mutex>
-#include <regex>
 #include <sstream>
 #include <typeindex>
+#include <typeinfo>
+#include <utility> // pair
 #include <stdexcept>
 
 namespace fair
@@ -35,39 +38,20 @@ namespace mq
 struct PropertyChange : Event<std::string> {};
 struct PropertyChangeAsString : Event<std::string> {};
 
-struct ValInfo
-{
-    std::string value;
-    std::string type;
-    std::string origin;
-};
-
 } /* namespace mq */
 } /* namespace fair */
 
 class FairMQProgOptions
 {
-  private:
-    using FairMQChannelMap = std::unordered_map<std::string, std::vector<FairMQChannel>>;
-
   public:
     FairMQProgOptions();
     virtual ~FairMQProgOptions() {}
 
     struct PropertyNotFoundException : std::runtime_error { using std::runtime_error::runtime_error; };
 
-    int ParseAll(const std::vector<std::string>& cmdArgs, bool allowUnregistered)
-    {
-        std::vector<const char*> argv(cmdArgs.size());
-        transform(cmdArgs.begin(), cmdArgs.end(), argv.begin(), [](const std::string& str) {
-            return str.c_str();
-        });
-        return ParseAll(argv.size(), const_cast<char**>(argv.data()), allowUnregistered);
-    }
-
+    int ParseAll(const std::vector<std::string>& cmdArgs, bool allowUnregistered);
     int ParseAll(const int argc, char const* const* argv, bool allowUnregistered = true);
 
-    FairMQChannelMap GetFairMQMap() const;
     std::unordered_map<std::string, int> GetChannelInfo() const;
     std::vector<std::string> GetPropertyKeys() const;
 
@@ -80,7 +64,7 @@ class FairMQProgOptions
             return fVarMap[key].as<T>();
         }
 
-       throw PropertyNotFoundException(fair::mq::tools::ToString("Config has no key: ", key));
+        throw PropertyNotFoundException(fair::mq::tools::ToString("Config has no key: ", key));
     }
 
     template<typename T>
@@ -95,29 +79,22 @@ class FairMQProgOptions
         return ifNotFound;
     }
 
+    fair::mq::Properties GetProperties(const std::string& q) const;
+    std::map<std::string, std::string> GetPropertiesAsString(const std::string& q) const;
+    fair::mq::Properties GetPropertiesStartingWith(const std::string& q) const;
+
     template<typename T>
     T GetValue(const std::string& key) const // TODO: deprecate this
     {
         return GetProperty<T>(key);
     }
 
-    std::map<std::string, boost::any> GetProperties(const std::string& q)
+    std::string GetPropertyAsString(const std::string& key) const;
+
+    std::string GetStringValue(const std::string& key) const // TODO: deprecate this
     {
-        std::regex re(q);
-        std::map<std::string, boost::any> result;
-
-        std::lock_guard<std::mutex> lock(fMtx);
-
-        for (const auto& m : fVarMap) {
-            if (std::regex_search(m.first, re)) {
-                result.emplace(m.first, m.second.value());
-            }
-        }
-
-        return result;
+        return GetPropertyAsString(key);
     }
-
-    std::string GetStringValue(const std::string& key);
 
     template<typename T>
     void SetProperty(const std::string& key, T val)
@@ -128,8 +105,6 @@ class FairMQProgOptions
 
         if (key == "channel-config") {
             ParseChannelsFromCmdLine();
-        } else if (fChannelKeyMap.count(key)) {
-            UpdateChannelValue(fChannelKeyMap.at(key).channel, fChannelKeyMap.at(key).index, fChannelKeyMap.at(key).member, val);
         }
 
         lock.unlock();
@@ -145,28 +120,11 @@ class FairMQProgOptions
         return 0;
     }
 
-    void SetProperties(const std::map<std::string, boost::any>& input)
-    {
-        std::lock_guard<std::mutex> lock(fMtx);
+    void SetProperties(const fair::mq::Properties& input);
+    void DeleteProperty(const std::string& key);
 
-        std::map<std::string, boost::program_options::variable_value>& vm = fVarMap;
-        for (const auto& m : input) {
-            vm[m.first].value() = m.second;
-        }
-
-        // TODO: call subscriptions here (after unlock)
-    }
-
-    void DeleteProperty(const std::string& key)
-    {
-        std::lock_guard<std::mutex> lock(fMtx);
-
-        std::map<std::string, boost::program_options::variable_value>& vm = fVarMap;
-        vm.erase(key);
-    }
-
-    template <typename T>
-    void Subscribe(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, T)> func)
+    template<typename T>
+    void Subscribe(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, T)> func) const
     {
         std::lock_guard<std::mutex> lock(fMtx);
         static_assert(!std::is_same<T,const char*>::value || !std::is_same<T, char*>::value,
@@ -174,20 +132,20 @@ class FairMQProgOptions
         fEvents.Subscribe<fair::mq::PropertyChange, T>(subscriber, func);
     }
 
-    template <typename T>
-    void Unsubscribe(const std::string& subscriber)
+    template<typename T>
+    void Unsubscribe(const std::string& subscriber) const
     {
         std::lock_guard<std::mutex> lock(fMtx);
         fEvents.Unsubscribe<fair::mq::PropertyChange, T>(subscriber);
     }
 
-    void SubscribeAsString(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, std::string)> func)
+    void SubscribeAsString(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, std::string)> func) const
     {
         std::lock_guard<std::mutex> lock(fMtx);
         fEvents.Subscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber, func);
     }
 
-    void UnsubscribeAsString(const std::string& subscriber)
+    void UnsubscribeAsString(const std::string& subscriber) const
     {
         std::lock_guard<std::mutex> lock(fMtx);
         fEvents.Unsubscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber);
@@ -202,23 +160,26 @@ class FairMQProgOptions
     int PrintOptions();
     int PrintOptionsRaw();
 
-    void AddChannel(const std::string& channelName, const FairMQChannel& channel)
+    void AddChannel(const std::string& name, const FairMQChannel& channel);
+
+    template<typename T>
+    static void AddType(std::string label = "")
     {
-        fFairMQChannelMap[channelName].push_back(channel);
+        if (label == "") {
+            label = boost::core::demangle(typeid(T).name());
+        }
+        fTypeInfos[std::type_index(typeid(T))] = [label](const fair::mq::Property& p) {
+            std::stringstream ss;
+            ss << boost::any_cast<T>(p);
+            return std::pair<std::string, std::string>{ss.str(), label};
+        };
     }
 
-    static std::unordered_map<std::type_index, std::pair<std::string, std::string>(*)(const boost::any&)> fValInfos;
+    static std::unordered_map<std::type_index, std::function<std::pair<std::string, std::string>(const fair::mq::Property&)>> fTypeInfos;
+    static std::unordered_map<std::type_index, void(*)(const fair::mq::EventManager&, const std::string&, const fair::mq::Property&)> fEventEmitters;
 
   private:
-    struct ChannelKey
-    {
-        std::string channel;
-        int index;
-        std::string member;
-    };
-
     boost::program_options::variables_map fVarMap; ///< options container
-    FairMQChannelMap fFairMQChannelMap;
 
     boost::program_options::options_description fAllOptions; ///< all options descriptions
     boost::program_options::options_description fGeneralOptions; ///< general options descriptions
@@ -227,32 +188,14 @@ class FairMQProgOptions
 
     mutable std::mutex fMtx;
 
-    std::unordered_map<std::string, int> fChannelInfo; ///< channel name - number of subchannels
-    std::unordered_map<std::string, ChannelKey> fChannelKeyMap;// key=full path - val=key info
     std::vector<std::string> fUnregisteredOptions; ///< container with unregistered options
 
-    fair::mq::EventManager fEvents;
+    mutable fair::mq::EventManager fEvents;
 
     void ParseCmdLine(const int argc, char const* const* argv, bool allowUnregistered = true);
     void ParseDefaults();
 
-    // read FairMQChannelMap and insert/update corresponding values in variable map
-    // create key for variable map as follow : channelName.index.memberName
-    void UpdateMQValues();
-    int Store(const FairMQChannelMap& channels);
-
-    int UpdateChannelMap(const FairMQChannelMap& map);
-    template<typename T>
-    int UpdateChannelValue(const std::string&, int, const std::string&, T)
-    {
-        LOG(error)  << "update of FairMQChannel map failed, because value type not supported";
-        return 1;
-    }
-    int UpdateChannelValue(const std::string& channelName, int index, const std::string& member, const std::string& val);
-    int UpdateChannelValue(const std::string& channelName, int index, const std::string& member, int val);
-    int UpdateChannelValue(const std::string& channelName, int index, const std::string& member, bool val);
-
-    void UpdateChannelInfo();
+    std::unordered_map<std::string, int> GetChannelInfoImpl() const;
 
     // modify the value of variable map after calling boost::program_options::store
     template<typename T>

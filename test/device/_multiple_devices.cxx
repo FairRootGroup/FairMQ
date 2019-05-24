@@ -57,7 +57,7 @@ class MultipleDevices : public ::testing::Test {
 
         FairMQChannel channel("push", "connect", "ipc://multiple-devices-test");
         channel.UpdateRateLogging(0);
-        sender.AddChannel("data", channel);
+        sender.AddChannel("data", std::move(channel));
 
         thread t(control, std::ref(sender));
 
@@ -78,7 +78,7 @@ class MultipleDevices : public ::testing::Test {
 
         FairMQChannel channel("pull", "bind", "ipc://multiple-devices-test");
         channel.UpdateRateLogging(0);
-        receiver.AddChannel("data", channel);
+        receiver.AddChannel("data", std::move(channel));
 
         thread t(control, std::ref(receiver));
 

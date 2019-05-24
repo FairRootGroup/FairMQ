@@ -23,19 +23,25 @@
 #include <boost/filesystem.hpp>
 #include <boost/any.hpp>
 #include <boost/algorithm/string.hpp> // join/split
-#include <boost/core/demangle.hpp>
+#include <boost/regex.hpp>
 
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <exception>
-#include <typeinfo>
 
 using namespace std;
 using namespace fair::mq;
 using boost::any_cast;
 
 namespace po = boost::program_options;
+
+struct ValInfo
+{
+    string value;
+    string type;
+    string origin;
+};
 
 template<class T>
 ostream& operator<<(ostream& os, const vector<T>& v)
@@ -64,43 +70,90 @@ pair<string, string> getStringPair(const boost::any& v, const string& label)
     return { ss.str(), label };
 }
 
-unordered_map<type_index, pair<string, string>(*)(const boost::any&)> FairMQProgOptions::fValInfos = {
-    { type_index(typeid(string)),                          [](const boost::any& v) { return pair<string, string>{ any_cast<string>(v), "<string>" }; } },
-    { type_index(typeid(int)),                             [](const boost::any& v) { return getString<int>(v, "<int>"); } },
-    { type_index(typeid(size_t)),                          [](const boost::any& v) { return getString<size_t>(v, "<size_t>"); } },
-    { type_index(typeid(uint32_t)),                        [](const boost::any& v) { return getString<uint32_t>(v, "<uint32_t>"); } },
-    { type_index(typeid(uint64_t)),                        [](const boost::any& v) { return getString<uint64_t>(v, "<uint64_t>"); } },
-    { type_index(typeid(long)),                            [](const boost::any& v) { return getString<long>(v, "<long>"); } },
-    { type_index(typeid(long long)),                       [](const boost::any& v) { return getString<long long>(v, "<long long>"); } },
-    { type_index(typeid(unsigned)),                        [](const boost::any& v) { return getString<unsigned>(v, "<unsigned>"); } },
-    { type_index(typeid(unsigned long)),                   [](const boost::any& v) { return getString<unsigned long>(v, "<unsigned long>"); } },
-    { type_index(typeid(unsigned long long)),              [](const boost::any& v) { return getString<unsigned long long>(v, "<unsigned long long>"); } },
-    { type_index(typeid(float)),                           [](const boost::any& v) { return getString<float>(v, "<float>"); } },
-    { type_index(typeid(double)),                          [](const boost::any& v) { return getString<double>(v, "<double>"); } },
-    { type_index(typeid(long double)),                     [](const boost::any& v) { return getString<long double>(v, "<long double>"); } },
-    { type_index(typeid(bool)),                            [](const boost::any& v) { stringstream ss; ss << boolalpha << any_cast<bool>(v); return pair<string, string>{ ss.str(), "<bool>" }; } },
-    { type_index(typeid(vector<bool>)),                    [](const boost::any& v) { stringstream ss; ss << boolalpha << any_cast<vector<bool>>(v); return pair<string, string>{ ss.str(), "<vector<bool>>" }; } },
-    { type_index(typeid(boost::filesystem::path)),         [](const boost::any& v) { return getStringPair<boost::filesystem::path>(v, "<boost::filesystem::path>"); } },
-    { type_index(typeid(vector<string>)),                  [](const boost::any& v) { return getStringPair<vector<string>>(v, "<vector<string>>"); } },
-    { type_index(typeid(vector<int>)),                     [](const boost::any& v) { return getStringPair<vector<int>>(v, "<vector<int>>"); } },
-    { type_index(typeid(vector<size_t>)),                  [](const boost::any& v) { return getStringPair<vector<size_t>>(v, "<vector<size_t>>"); } },
-    { type_index(typeid(vector<uint32_t>)),                [](const boost::any& v) { return getStringPair<vector<uint32_t>>(v, "<vector<uint32_t>>"); } },
-    { type_index(typeid(vector<uint64_t>)),                [](const boost::any& v) { return getStringPair<vector<uint64_t>>(v, "<vector<uint64_t>>"); } },
-    { type_index(typeid(vector<long>)),                    [](const boost::any& v) { return getStringPair<vector<long>>(v, "<vector<long>>"); } },
-    { type_index(typeid(vector<long long>)),               [](const boost::any& v) { return getStringPair<vector<long long>>(v, "<vector<long long>>"); } },
-    { type_index(typeid(vector<unsigned>)),                [](const boost::any& v) { return getStringPair<vector<unsigned>>(v, "<vector<unsigned>>"); } },
-    { type_index(typeid(vector<unsigned long>)),           [](const boost::any& v) { return getStringPair<vector<unsigned long>>(v, "<vector<unsigned long>>"); } },
-    { type_index(typeid(vector<unsigned long long>)),      [](const boost::any& v) { return getStringPair<vector<unsigned long long>>(v, "<vector<unsigned long long>>"); } },
-    { type_index(typeid(vector<float>)),                   [](const boost::any& v) { return getStringPair<vector<float>>(v, "<vector<float>>"); } },
-    { type_index(typeid(vector<double>)),                  [](const boost::any& v) { return getStringPair<vector<double>>(v, "<vector<double>>"); } },
-    { type_index(typeid(vector<long double>)),             [](const boost::any& v) { return getStringPair<vector<long double>>(v, "<vector<long double>>"); } },
-    { type_index(typeid(vector<boost::filesystem::path>)), [](const boost::any& v) { return getStringPair<vector<boost::filesystem::path>>(v, "<vector<boost::filesystem::path>>"); } },
+unordered_map<type_index, function<pair<string, string>(const Property&)>> FairMQProgOptions::fTypeInfos = {
+    { type_index(typeid(char)),                            [](const Property& p) { return pair<string, string>{ string(1, any_cast<char>(p)), "char" }; } },
+    { type_index(typeid(unsigned char)),                   [](const Property& p) { return pair<string, string>{ string(1, any_cast<unsigned char>(p)), "unsigned char" }; } },
+    { type_index(typeid(string)),                          [](const Property& p) { return pair<string, string>{ any_cast<string>(p), "string" }; } },
+    { type_index(typeid(int)),                             [](const Property& p) { return getString<int>(p, "int"); } },
+    { type_index(typeid(size_t)),                          [](const Property& p) { return getString<size_t>(p, "size_t"); } },
+    { type_index(typeid(uint32_t)),                        [](const Property& p) { return getString<uint32_t>(p, "uint32_t"); } },
+    { type_index(typeid(uint64_t)),                        [](const Property& p) { return getString<uint64_t>(p, "uint64_t"); } },
+    { type_index(typeid(long)),                            [](const Property& p) { return getString<long>(p, "long"); } },
+    { type_index(typeid(long long)),                       [](const Property& p) { return getString<long long>(p, "long long"); } },
+    { type_index(typeid(unsigned)),                        [](const Property& p) { return getString<unsigned>(p, "unsigned"); } },
+    { type_index(typeid(unsigned long)),                   [](const Property& p) { return getString<unsigned long>(p, "unsigned long"); } },
+    { type_index(typeid(unsigned long long)),              [](const Property& p) { return getString<unsigned long long>(p, "unsigned long long"); } },
+    { type_index(typeid(float)),                           [](const Property& p) { return getString<float>(p, "float"); } },
+    { type_index(typeid(double)),                          [](const Property& p) { return getString<double>(p, "double"); } },
+    { type_index(typeid(long double)),                     [](const Property& p) { return getString<long double>(p, "long double"); } },
+    { type_index(typeid(bool)),                            [](const Property& p) { stringstream ss; ss << boolalpha << any_cast<bool>(p); return pair<string, string>{ ss.str(), "bool" }; } },
+    { type_index(typeid(vector<bool>)),                    [](const Property& p) { stringstream ss; ss << boolalpha << any_cast<vector<bool>>(p); return pair<string, string>{ ss.str(), "vector<bool>>" }; } },
+    { type_index(typeid(boost::filesystem::path)),         [](const Property& p) { return getStringPair<boost::filesystem::path>(p, "boost::filesystem::path"); } },
+    { type_index(typeid(vector<char>)),                    [](const Property& p) { return getStringPair<vector<char>>(p, "vector<char>"); } },
+    { type_index(typeid(vector<unsigned char>)),           [](const Property& p) { return getStringPair<vector<unsigned char>>(p, "vector<unsigned char>"); } },
+    { type_index(typeid(vector<string>)),                  [](const Property& p) { return getStringPair<vector<string>>(p, "vector<string>"); } },
+    { type_index(typeid(vector<int>)),                     [](const Property& p) { return getStringPair<vector<int>>(p, "vector<int>"); } },
+    { type_index(typeid(vector<size_t>)),                  [](const Property& p) { return getStringPair<vector<size_t>>(p, "vector<size_t>"); } },
+    { type_index(typeid(vector<uint32_t>)),                [](const Property& p) { return getStringPair<vector<uint32_t>>(p, "vector<uint32_t>"); } },
+    { type_index(typeid(vector<uint64_t>)),                [](const Property& p) { return getStringPair<vector<uint64_t>>(p, "vector<uint64_t>"); } },
+    { type_index(typeid(vector<long>)),                    [](const Property& p) { return getStringPair<vector<long>>(p, "vector<long>"); } },
+    { type_index(typeid(vector<long long>)),               [](const Property& p) { return getStringPair<vector<long long>>(p, "vector<long long>"); } },
+    { type_index(typeid(vector<unsigned>)),                [](const Property& p) { return getStringPair<vector<unsigned>>(p, "vector<unsigned>"); } },
+    { type_index(typeid(vector<unsigned long>)),           [](const Property& p) { return getStringPair<vector<unsigned long>>(p, "vector<unsigned long>"); } },
+    { type_index(typeid(vector<unsigned long long>)),      [](const Property& p) { return getStringPair<vector<unsigned long long>>(p, "vector<unsigned long long>"); } },
+    { type_index(typeid(vector<float>)),                   [](const Property& p) { return getStringPair<vector<float>>(p, "vector<float>"); } },
+    { type_index(typeid(vector<double>)),                  [](const Property& p) { return getStringPair<vector<double>>(p, "vector<double>"); } },
+    { type_index(typeid(vector<long double>)),             [](const Property& p) { return getStringPair<vector<long double>>(p, "vector<long double>"); } },
+    { type_index(typeid(vector<boost::filesystem::path>)), [](const Property& p) { return getStringPair<vector<boost::filesystem::path>>(p, "vector<boost::filesystem::path>"); } },
+};
+
+unordered_map<type_index, void(*)(const EventManager&, const string&, const Property&)> FairMQProgOptions::fEventEmitters = {
+    { type_index(typeid(char)),                            [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, char>(k, any_cast<char>(p)); } },
+    { type_index(typeid(unsigned char)),                   [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, unsigned char>(k, any_cast<unsigned char>(p)); } },
+    { type_index(typeid(string)),                          [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, string>(k, any_cast<string>(p)); } },
+    { type_index(typeid(int)),                             [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, int>(k, any_cast<int>(p)); } },
+    { type_index(typeid(size_t)),                          [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, size_t>(k, any_cast<size_t>(p)); } },
+    { type_index(typeid(uint32_t)),                        [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, uint32_t>(k, any_cast<uint32_t>(p)); } },
+    { type_index(typeid(uint64_t)),                        [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, uint64_t>(k, any_cast<uint64_t>(p)); } },
+    { type_index(typeid(long)),                            [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, long>(k, any_cast<long>(p)); } },
+    { type_index(typeid(long long)),                       [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, long long>(k, any_cast<long long>(p)); } },
+    { type_index(typeid(unsigned)),                        [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, unsigned>(k, any_cast<unsigned>(p)); } },
+    { type_index(typeid(unsigned long)),                   [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, unsigned long>(k, any_cast<unsigned long>(p)); } },
+    { type_index(typeid(unsigned long long)),              [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, unsigned long long>(k, any_cast<unsigned long long>(p)); } },
+    { type_index(typeid(float)),                           [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, float>(k, any_cast<float>(p)); } },
+    { type_index(typeid(double)),                          [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, double>(k, any_cast<double>(p)); } },
+    { type_index(typeid(long double)),                     [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, long double>(k, any_cast<long double>(p)); } },
+    { type_index(typeid(bool)),                            [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, bool>(k, any_cast<bool>(p)); } },
+    { type_index(typeid(vector<bool>)),                    [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<bool>>(k, any_cast<vector<bool>>(p)); } },
+    { type_index(typeid(boost::filesystem::path)),         [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, boost::filesystem::path>(k, any_cast<boost::filesystem::path>(p)); } },
+    { type_index(typeid(vector<char>)),                    [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<char>>(k, any_cast<vector<char>>(p)); } },
+    { type_index(typeid(vector<unsigned char>)),           [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<unsigned char>>(k, any_cast<vector<unsigned char>>(p)); } },
+    { type_index(typeid(vector<string>)),                  [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<string>>(k, any_cast<vector<string>>(p)); } },
+    { type_index(typeid(vector<int>)),                     [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<int>>(k, any_cast<vector<int>>(p)); } },
+    { type_index(typeid(vector<size_t>)),                  [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<size_t>>(k, any_cast<vector<size_t>>(p)); } },
+    { type_index(typeid(vector<uint32_t>)),                [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<uint32_t>>(k, any_cast<vector<uint32_t>>(p)); } },
+    { type_index(typeid(vector<uint64_t>)),                [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<uint64_t>>(k, any_cast<vector<uint64_t>>(p)); } },
+    { type_index(typeid(vector<long>)),                    [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<long>>(k, any_cast<vector<long>>(p)); } },
+    { type_index(typeid(vector<long long>)),               [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<long long>>(k, any_cast<vector<long long>>(p)); } },
+    { type_index(typeid(vector<unsigned>)),                [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<unsigned>>(k, any_cast<vector<unsigned>>(p)); } },
+    { type_index(typeid(vector<unsigned long>)),           [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<unsigned long>>(k, any_cast<vector<unsigned long>>(p)); } },
+    { type_index(typeid(vector<unsigned long long>)),      [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<unsigned long long>>(k, any_cast<vector<unsigned long long>>(p)); } },
+    { type_index(typeid(vector<float>)),                   [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<float>>(k, any_cast<vector<float>>(p)); } },
+    { type_index(typeid(vector<double>)),                  [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<double>>(k, any_cast<vector<double>>(p)); } },
+    { type_index(typeid(vector<long double>)),             [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<long double>>(k, any_cast<vector<long double>>(p)); } },
+    { type_index(typeid(vector<boost::filesystem::path>)), [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<boost::filesystem::path>>(k, any_cast<vector<boost::filesystem::path>>(p)); } },
 };
 
 namespace fair
 {
 namespace mq
 {
+
+string ConvertPropertyToString(const Property& p)
+{
+    pair<string, string> info = FairMQProgOptions::fTypeInfos.at(p.type())(p);
+    return info.first;
+}
 
 ValInfo ConvertVarValToValInfo(const po::variable_value& v)
 {
@@ -115,10 +168,9 @@ ValInfo ConvertVarValToValInfo(const po::variable_value& v)
     }
 
     try {
-        pair<string, string> info = FairMQProgOptions::fValInfos.at(v.value().type())(v.value());
+        pair<string, string> info = FairMQProgOptions::fTypeInfos.at(v.value().type())(v.value());
          return {info.first, info.second, origin};
-    } catch (out_of_range& oor)
-    {
+    } catch (out_of_range& oor) {
         return {string("[unidentified_type]"), string("[unidentified_type]"), origin};
     }
 };
@@ -133,14 +185,11 @@ string ConvertVarValToString(const po::variable_value& v)
 
 FairMQProgOptions::FairMQProgOptions()
     : fVarMap()
-    , fFairMQChannelMap()
     , fAllOptions("FairMQ Command Line Options")
     , fGeneralOptions("General options")
     , fMQOptions("FairMQ device options")
     , fParserOptions("FairMQ channel config parser options")
     , fMtx()
-    , fChannelInfo()
-    , fChannelKeyMap()
     , fUnregisteredOptions()
     , fEvents()
 {
@@ -177,6 +226,149 @@ FairMQProgOptions::FairMQProgOptions()
     fAllOptions.add(fParserOptions);
 
     ParseDefaults();
+}
+
+unordered_map<string, int> FairMQProgOptions::GetChannelInfo() const
+{
+    lock_guard<mutex> lock(fMtx);
+    return GetChannelInfoImpl();
+}
+
+unordered_map<string, int> FairMQProgOptions::GetChannelInfoImpl() const
+{
+    unordered_map<string, int> info;
+
+    boost::regex re("chans\\..*\\.type");
+    for (const auto& m : fVarMap) {
+        if (boost::regex_match(m.first, re)) {
+            string chan = m.first.substr(6);
+            string::size_type n = chan.find(".");
+            string chanName = chan.substr(0, n);
+
+            if (info.find(chanName) == info.end()) {
+                info.emplace(chanName, 1);
+            } else {
+                info[chanName] = info[chanName] + 1;
+            }
+        }
+    }
+
+    return info;
+}
+
+Properties FairMQProgOptions::GetProperties(const string& q) const
+{
+    boost::regex re(q);
+    Properties result;
+
+    lock_guard<mutex> lock(fMtx);
+
+    for (const auto& m : fVarMap) {
+        if (boost::regex_match(m.first, re)) {
+            result.emplace(m.first, m.second.value());
+        }
+    }
+
+    if (result.size() == 0) {
+        LOG(warn) << "could not find anything with \"" << q << "\"";
+    }
+
+    return result;
+}
+
+map<string, string> FairMQProgOptions::GetPropertiesAsString(const string& q) const
+{
+    boost::regex re(q);
+    map<string, string> result;
+
+    lock_guard<mutex> lock(fMtx);
+
+    for (const auto& m : fVarMap) {
+        if (boost::regex_match(m.first, re)) {
+            result.emplace(m.first, ConvertPropertyToString(m.second.value()));
+        }
+    }
+
+    if (result.size() == 0) {
+        LOG(warn) << "could not find anything with \"" << q << "\"";
+    }
+
+    return result;
+}
+
+Properties FairMQProgOptions::GetPropertiesStartingWith(const string& q) const
+{
+    Properties result;
+
+    lock_guard<mutex> lock(fMtx);
+
+    for (const auto& m : fVarMap) {
+        if (m.first.compare(0, q.length(), q) == 0) {
+            result.emplace(m.first, m.second.value());
+        }
+    }
+
+    return result;
+}
+
+void FairMQProgOptions::SetProperties(const Properties& input)
+{
+    unique_lock<mutex> lock(fMtx);
+
+    map<string, boost::program_options::variable_value>& vm = fVarMap;
+    for (const auto& m : input) {
+        vm[m.first].value() = m.second;
+    }
+
+    lock.unlock();
+
+    for (const auto& m : input) {
+        fEventEmitters.at(m.second.type())(fEvents, m.first, m.second);
+        fEvents.Emit<PropertyChangeAsString, string>(m.first, ConvertPropertyToString(m.second));
+    }
+}
+
+void FairMQProgOptions::AddChannel(const std::string& name, const FairMQChannel& channel)
+{
+    lock_guard<mutex> lock(fMtx);
+    unordered_map<string, int> existingChannels = GetChannelInfoImpl();
+    int index = 0;
+    if (existingChannels.count(name) > 0) {
+        index = existingChannels.at(name);
+    }
+
+    string prefix = fair::mq::tools::ToString("chans.", name, ".", index, ".");
+
+    SetVarMapValue<string>(string(prefix + "type"), channel.GetType());
+    SetVarMapValue<string>(string(prefix + "method"), channel.GetMethod());
+    SetVarMapValue<string>(string(prefix + "address"), channel.GetAddress());
+    SetVarMapValue<string>(string(prefix + "transport"), channel.GetTransportName());
+    SetVarMapValue<int>(string(prefix + "sndBufSize"), channel.GetSndBufSize());
+    SetVarMapValue<int>(string(prefix + "rcvBufSize"), channel.GetRcvBufSize());
+    SetVarMapValue<int>(string(prefix + "sndKernelSize"), channel.GetSndKernelSize());
+    SetVarMapValue<int>(string(prefix + "rcvKernelSize"), channel.GetRcvKernelSize());
+    SetVarMapValue<int>(string(prefix + "linger"), channel.GetLinger());
+    SetVarMapValue<int>(string(prefix + "rateLogging"), channel.GetRateLogging());
+    SetVarMapValue<int>(string(prefix + "portRangeMin"), channel.GetPortRangeMin());
+    SetVarMapValue<int>(string(prefix + "portRangeMax"), channel.GetPortRangeMax());
+    SetVarMapValue<bool>(string(prefix + "autoBind"), channel.GetAutoBind());
+}
+
+void FairMQProgOptions::DeleteProperty(const string& key)
+{
+    lock_guard<mutex> lock(fMtx);
+
+    map<string, boost::program_options::variable_value>& vm = fVarMap;
+    vm.erase(key);
+}
+
+int FairMQProgOptions::ParseAll(const vector<string>& cmdArgs, bool allowUnregistered)
+{
+    vector<const char*> argv(cmdArgs.size());
+    transform(cmdArgs.begin(), cmdArgs.end(), argv.begin(), [](const string& str) {
+        return str.c_str();
+    });
+    return ParseAll(argv.size(), const_cast<char**>(argv.data()), allowUnregistered);
 }
 
 int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool allowUnregistered)
@@ -227,7 +419,7 @@ int FairMQProgOptions::ParseAll(const int argc, char const* const* argv, bool al
     try {
         if (fVarMap.count("mq-config")) {
             LOG(debug) << "mq-config: Using default JSON parser";
-            UpdateChannelMap(parser::JSON().UserParser(fVarMap.at("mq-config").as<string>(), idForParser));
+            SetProperties(parser::JSON().UserParser(fVarMap.at("mq-config").as<string>(), idForParser));
         } else if (fVarMap.count("channel-config")) {
             LOG(debug) << "channel-config: Parsing channel configuration";
             ParseChannelsFromCmdLine();
@@ -258,7 +450,7 @@ void FairMQProgOptions::ParseChannelsFromCmdLine()
         idForParser = fVarMap["id"].as<string>();
     }
 
-    UpdateChannelMap(parser::SUBOPT().UserParser(fVarMap.at("channel-config").as<vector<string>>(), idForParser));
+    SetProperties(parser::SUBOPT().UserParser(fVarMap.at("channel-config").as<vector<string>>(), idForParser));
 }
 
 void FairMQProgOptions::ParseCmdLine(const int argc, char const* const* argv, bool allowUnregistered)
@@ -293,143 +485,6 @@ void FairMQProgOptions::ParseDefaults()
     po::store(po::parse_command_line(argv.size(), const_cast<char**>(argv.data()), fAllOptions), fVarMap);
 }
 
-unordered_map<string, vector<FairMQChannel>> FairMQProgOptions::GetFairMQMap() const
-{
-    return fFairMQChannelMap;
-}
-
-unordered_map<string, int> FairMQProgOptions::GetChannelInfo() const
-{
-    return fChannelInfo;
-}
-
-// replace FairMQChannelMap, and update variable map accordingly
-int FairMQProgOptions::UpdateChannelMap(const unordered_map<string, vector<FairMQChannel>>& channels)
-{
-    fFairMQChannelMap = channels;
-    UpdateChannelInfo();
-    UpdateMQValues();
-    return 0;
-}
-
-void FairMQProgOptions::UpdateChannelInfo()
-{
-    fChannelInfo.clear();
-    for (const auto& c : fFairMQChannelMap) {
-        fChannelInfo.insert(make_pair(c.first, c.second.size()));
-    }
-}
-
-void FairMQProgOptions::UpdateMQValues()
-{
-    for (const auto& p : fFairMQChannelMap) {
-        int index = 0;
-
-        for (const auto& channel : p.second) {
-            string typeKey = "chans." + p.first + "." + to_string(index) + ".type";
-            string methodKey = "chans." + p.first + "." + to_string(index) + ".method";
-            string addressKey = "chans." + p.first + "." + to_string(index) + ".address";
-            string transportKey = "chans." + p.first + "." + to_string(index) + ".transport";
-            string sndBufSizeKey = "chans." + p.first + "." + to_string(index) + ".sndBufSize";
-            string rcvBufSizeKey = "chans." + p.first + "." + to_string(index) + ".rcvBufSize";
-            string sndKernelSizeKey = "chans." + p.first + "." + to_string(index) + ".sndKernelSize";
-            string rcvKernelSizeKey = "chans." + p.first + "." + to_string(index) + ".rcvKernelSize";
-            string lingerKey = "chans." + p.first + "." + to_string(index) + ".linger";
-            string rateLoggingKey = "chans." + p.first + "." + to_string(index) + ".rateLogging";
-            string portRangeMinKey = "chans." + p.first + "." + to_string(index) + ".portRangeMin";
-            string portRangeMaxKey = "chans." + p.first + "." + to_string(index) + ".portRangeMax";
-            string autoBindKey = "chans." + p.first + "." + to_string(index) + ".autoBind";
-
-            fChannelKeyMap[typeKey] = ChannelKey{p.first, index, "type"};
-            fChannelKeyMap[methodKey] = ChannelKey{p.first, index, "method"};
-            fChannelKeyMap[addressKey] = ChannelKey{p.first, index, "address"};
-            fChannelKeyMap[transportKey] = ChannelKey{p.first, index, "transport"};
-            fChannelKeyMap[sndBufSizeKey] = ChannelKey{p.first, index, "sndBufSize"};
-            fChannelKeyMap[rcvBufSizeKey] = ChannelKey{p.first, index, "rcvBufSize"};
-            fChannelKeyMap[sndKernelSizeKey] = ChannelKey{p.first, index, "sndKernelSize"};
-            fChannelKeyMap[rcvKernelSizeKey] = ChannelKey{p.first, index, "rcvkernelSize"};
-            fChannelKeyMap[lingerKey] = ChannelKey{p.first, index, "linger"};
-            fChannelKeyMap[rateLoggingKey] = ChannelKey{p.first, index, "rateLogging"};
-            fChannelKeyMap[portRangeMinKey] = ChannelKey{p.first, index, "portRangeMin"};
-            fChannelKeyMap[portRangeMaxKey] = ChannelKey{p.first, index, "portRangeMax"};
-            fChannelKeyMap[autoBindKey] = ChannelKey{p.first, index, "autoBind"};
-
-            SetVarMapValue<string>(typeKey, channel.GetType());
-            SetVarMapValue<string>(methodKey, channel.GetMethod());
-            SetVarMapValue<string>(addressKey, channel.GetAddress());
-            SetVarMapValue<string>(transportKey, channel.GetTransportName());
-            SetVarMapValue<int>(sndBufSizeKey, channel.GetSndBufSize());
-            SetVarMapValue<int>(rcvBufSizeKey, channel.GetRcvBufSize());
-            SetVarMapValue<int>(sndKernelSizeKey, channel.GetSndKernelSize());
-            SetVarMapValue<int>(rcvKernelSizeKey, channel.GetRcvKernelSize());
-            SetVarMapValue<int>(lingerKey, channel.GetLinger());
-            SetVarMapValue<int>(rateLoggingKey, channel.GetRateLogging());
-            SetVarMapValue<int>(portRangeMinKey, channel.GetPortRangeMin());
-            SetVarMapValue<int>(portRangeMaxKey, channel.GetPortRangeMax());
-            SetVarMapValue<bool>(autoBindKey, channel.GetAutoBind());
-
-            index++;
-        }
-
-        SetVarMapValue<int>("chans." + p.first + ".numSockets", index);
-    }
-}
-
-int FairMQProgOptions::UpdateChannelValue(const string& channelName, int index, const string& member, const string& val)
-{
-    if (member == "type") {
-        fFairMQChannelMap.at(channelName).at(index).UpdateType(val);
-    } else if (member == "method") {
-        fFairMQChannelMap.at(channelName).at(index).UpdateMethod(val);
-    } else if (member == "address") {
-        fFairMQChannelMap.at(channelName).at(index).UpdateAddress(val);
-    } else if (member == "transport") {
-        fFairMQChannelMap.at(channelName).at(index).UpdateTransport(val);
-    } else {
-        LOG(error)  << "update of FairMQChannel map failed for the following key: " << channelName << "." << index << "." << member;
-        return 1;
-    }
-
-    return 0;
-}
-
-int FairMQProgOptions::UpdateChannelValue(const string& channelName, int index, const string& member, int val)
-{
-    if (member == "sndBufSize") {
-        fFairMQChannelMap.at(channelName).at(index).UpdateSndBufSize(val);
-    } else if (member == "rcvBufSize") {
-        fFairMQChannelMap.at(channelName).at(index).UpdateRcvBufSize(val);
-    } else if (member == "sndKernelSize") {
-        fFairMQChannelMap.at(channelName).at(index).UpdateSndKernelSize(val);
-    } else if (member == "rcvKernelSize") {
-        fFairMQChannelMap.at(channelName).at(index).UpdateRcvKernelSize(val);
-    } else if (member == "linger") {
-        fFairMQChannelMap.at(channelName).at(index).UpdateLinger(val);
-    } else if (member == "rateLogging") {
-        fFairMQChannelMap.at(channelName).at(index).UpdateRateLogging(val);
-    } else if (member == "portRangeMin") {
-        fFairMQChannelMap.at(channelName).at(index).UpdatePortRangeMin(val);
-    } else if (member == "portRangeMax") {
-        fFairMQChannelMap.at(channelName).at(index).UpdatePortRangeMax(val);
-    } else {
-        LOG(error)  << "update of FairMQChannel map failed for the following key: " << channelName << "." << index << "." << member;
-        return 1;
-    }
-
-    return 0;
-}
-
-int FairMQProgOptions::UpdateChannelValue(const string& channelName, int index, const string& member, bool val)
-{
-    if (member == "autoBind") {
-        fFairMQChannelMap.at(channelName).at(index).UpdateAutoBind(val);
-        return 0;
-    } else {
-        LOG(error)  << "update of FairMQChannel map failed for the following key: " << channelName << "." << index << "." << member;
-        return 1;
-    }
-}
-
 vector<string> FairMQProgOptions::GetPropertyKeys() const
 {
     lock_guard<mutex> lock(fMtx);
@@ -457,11 +512,6 @@ po::options_description& FairMQProgOptions::GetCmdLineOptions()
 
 int FairMQProgOptions::PrintOptions()
 {
-    // -> loop over variable map and print its content
-    // -> In this example the following types are supported:
-    // string, int, float, double, short, boost::filesystem::path
-    // vector<string>, vector<int>, vector<float>, vector<double>, vector<short>
-
     map<string, ValInfo> mapinfo;
 
     // get string length for formatting and convert varmap values into string
@@ -493,10 +543,11 @@ int FairMQProgOptions::PrintOptions()
     ss << "Configuration: \n";
 
     for (const auto& p : mapinfo) {
+        string type("<" + p.second.type + ">");
         ss << setfill(' ') << left
            << setw(maxLenKey) << p.first << " = "
            << setw(maxLenValue) << p.second.value << " "
-           << setw(maxLenType) << p.second.type
+           << setw(maxLenType + 2) << type << " "
            << setw(maxLenDefault) << p.second.origin
            << "\n";
     }
@@ -526,21 +577,15 @@ int FairMQProgOptions::PrintOptionsRaw()
     return 0;
 }
 
-string FairMQProgOptions::GetStringValue(const string& key)
+string FairMQProgOptions::GetPropertyAsString(const string& key) const
 {
     lock_guard<mutex> lock(fMtx);
 
-    string valueStr;
-    try {
-        if (fVarMap.count(key)) {
-            valueStr = ConvertVarValToString(fVarMap.at(key));
-        }
-    } catch (exception& e) {
-        LOG(error) << "Exception thrown for the key '" << key << "'";
-        LOG(error) << e.what();
+    if (fVarMap.count(key)) {
+        return ConvertVarValToString(fVarMap.at(key));
     }
 
-    return valueStr;
+    throw PropertyNotFoundException(fair::mq::tools::ToString("Config has no key: ", key));
 }
 
 int FairMQProgOptions::Count(const string& key) const

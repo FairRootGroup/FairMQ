@@ -1,4 +1,11 @@
-/* 
+/********************************************************************************
+ * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ *                                                                              *
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
+ *                  copied verbatim in the file "LICENSE"                       *
+ ********************************************************************************/
+/*
  * File:   FairMQParser.h
  * Author: winckler
  *
@@ -16,6 +23,7 @@
 #include <boost/property_tree/ptree_fwd.hpp>
 
 #include "FairMQChannel.h"
+#include "Properties.h"
 
 namespace fair
 {
@@ -24,24 +32,21 @@ namespace mq
 namespace parser
 {
 
-using FairMQChannelMap = std::unordered_map<std::string, std::vector<FairMQChannel>>;
-
 struct ParserError : std::runtime_error { using std::runtime_error::runtime_error; };
 
-FairMQChannelMap ptreeToMQMap(const boost::property_tree::ptree& pt, const std::string& deviceId, const std::string& rootNode);
+fair::mq::Properties ptreeToProperties(const boost::property_tree::ptree& pt, const std::string& deviceId);
 
 struct JSON
 {
-    FairMQChannelMap UserParser(const std::string& filename, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
+    fair::mq::Properties UserParser(const std::string& filename, const std::string& deviceId);
 };
 
 namespace Helper
 {
 
-void PrintDeviceList(const boost::property_tree::ptree& tree);
-void DeviceParser(const boost::property_tree::ptree& tree, FairMQChannelMap& channelMap, const std::string& deviceId);
-void ChannelParser(const boost::property_tree::ptree& tree, FairMQChannelMap& channelMap);
-void SocketParser(const boost::property_tree::ptree& tree, std::vector<FairMQChannel>& channelList, const std::string& channelName, const FairMQChannel& commonChannel);
+fair::mq::Properties DeviceParser(const boost::property_tree::ptree& tree, const std::string& deviceId);
+void ChannelParser(const boost::property_tree::ptree& tree, fair::mq::Properties& properties);
+void SubChannelParser(const boost::property_tree::ptree& tree, fair::mq::Properties& properties, const std::string& channelName, const fair::mq::Properties& commonProperties);
 
 } // Helper namespace
 

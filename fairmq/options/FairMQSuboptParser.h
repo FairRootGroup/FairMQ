@@ -14,7 +14,7 @@
 #ifndef FAIRMQPARSER_SUBOPT_H
 #define FAIRMQPARSER_SUBOPT_H
 
-#include "FairMQParser.h" // for FairMQChannelMap
+#include "FairMQParser.h" // for FairMQProperties
 #include <boost/program_options.hpp>
 #include <cstring>
 #include <vector>
@@ -65,7 +65,7 @@ struct SUBOPT
         lastsocketkey
     };
 
-    constexpr static const char *channelOptionKeys[] = {
+    constexpr static const char* channelOptionKeys[] = {
         /*[NAME]          = */ "name",
         /*[TYPE]          = */ "type",
         /*[METHOD]        = */ "method",
@@ -84,7 +84,7 @@ struct SUBOPT
         nullptr
     };
 
-    FairMQChannelMap UserParser(const std::vector<std::string>& channelConfig, const std::string& deviceId, const std::string& rootNode = "fairMQOptions");
+    fair::mq::Properties UserParser(const std::vector<std::string>& channelConfig, const std::string& deviceId);
 };
 
 }

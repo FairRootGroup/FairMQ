@@ -9,6 +9,16 @@
 #ifndef FAIRMQCHANNEL_H_
 #define FAIRMQCHANNEL_H_
 
+#include <FairMQTransportFactory.h>
+#include <FairMQSocket.h>
+#include <fairmq/Transports.h>
+#include <FairMQLogger.h>
+#include <FairMQParts.h>
+#include <options/Properties.h>
+#include <FairMQMessage.h>
+
+#include <boost/any.hpp>
+
 #include <string>
 #include <memory> // unique_ptr, shared_ptr
 #include <vector>
@@ -16,13 +26,6 @@
 #include <mutex>
 #include <stdexcept>
 #include <utility> // std::move
-
-#include <FairMQTransportFactory.h>
-#include <FairMQSocket.h>
-#include <fairmq/Transports.h>
-#include <FairMQLogger.h>
-#include <FairMQParts.h>
-#include <FairMQMessage.h>
 
 class FairMQChannel
 {
@@ -55,6 +58,8 @@ class FairMQChannel
     /// @param address Network address to bind/connect to (e.g. "tcp://127.0.0.1:5555" or "ipc://abc")
     /// @param factory TransportFactory
     FairMQChannel(const std::string& name, const std::string& type, const std::string& method, const std::string& address, std::shared_ptr<FairMQTransportFactory> factory);
+
+    FairMQChannel(const std::string& name, int index, const fair::mq::Properties& properties);
 
     /// Copy Constructor
     FairMQChannel(const FairMQChannel&);
@@ -332,6 +337,22 @@ class FairMQChannel
         return Transport()->CreateUnmanagedRegion(size, callback, path, flags);
     }
 
+    static constexpr fair::mq::Transport DefaultTransportType = fair::mq::Transport::DEFAULT;
+    static constexpr const char* DefaultTransportName = "default";
+    static constexpr const char* DefaultName = "";
+    static constexpr const char* DefaultType = "unspecified";
+    static constexpr const char* DefaultMethod = "unspecified";
+    static constexpr const char* DefaultAddress = "unspecified";
+    static constexpr int DefaultSndBufSize = 1000;
+    static constexpr int DefaultRcvBufSize = 1000;
+    static constexpr int DefaultSndKernelSize = 0;
+    static constexpr int DefaultRcvKernelSize = 0;
+    static constexpr int DefaultLinger = 500;
+    static constexpr int DefaultRateLogging = 1;
+    static constexpr int DefaultPortRangeMin = 22000;
+    static constexpr int DefaultPortRangeMax = 23000;
+    static constexpr bool DefaultAutoBind = true;
+
   private:
     std::shared_ptr<FairMQTransportFactory> fTransportFactory;
     fair::mq::Transport fTransportType;
@@ -416,22 +437,6 @@ class FairMQChannel
     }
 
     auto SetModified(const bool modified) -> void;
-
-    static constexpr fair::mq::Transport DefaultTransportType = fair::mq::Transport::DEFAULT;
-    static constexpr const char* DefaultTransportName = "default";
-    static constexpr const char* DefaultName = "";
-    static constexpr const char* DefaultType = "unspecified";
-    static constexpr const char* DefaultMethod = "unspecified";
-    static constexpr const char* DefaultAddress = "unspecified";
-    static constexpr int DefaultSndBufSize = 1000;
-    static constexpr int DefaultRcvBufSize = 1000;
-    static constexpr int DefaultSndKernelSize = 0;
-    static constexpr int DefaultRcvKernelSize = 0;
-    static constexpr int DefaultLinger = 500;
-    static constexpr int DefaultRateLogging = 1;
-    static constexpr int DefaultPortRangeMin = 22000;
-    static constexpr int DefaultPortRangeMax = 23000;
-    static constexpr bool DefaultAutoBind = true;
 };
 
 #endif /* FAIRMQCHANNEL_H_ */
