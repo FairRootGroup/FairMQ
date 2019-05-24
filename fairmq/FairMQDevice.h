@@ -428,7 +428,7 @@ class FairMQDevice
     /// Wait for the supplied amount of time or for interruption.
     /// If interrupted, returns false, otherwise true.
     /// @param duration wait duration
-    template<class Rep, class Period>
+    template<typename Rep, typename Period>
     bool WaitFor(std::chrono::duration<Rep, Period> const& duration)
     {
         return !fStateMachine.WaitForPendingStateFor(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
@@ -443,9 +443,9 @@ class FairMQDevice
     std::unique_ptr<FairMQProgOptions> fInternalConfig; ///< Internal program options configuration
     FairMQProgOptions* fConfig; ///< Pointer to config (internal or external)
 
-    void AddChannel(const std::string& channelName, const FairMQChannel& channel)
+    void AddChannel(const std::string& name, FairMQChannel&& channel)
     {
-        fConfig->AddChannel(channelName, channel);
+        fConfig->AddChannel(name, channel);
     }
 
   protected:

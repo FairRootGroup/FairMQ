@@ -298,7 +298,7 @@ auto Control::PrintInteractiveHelpColor() -> void
        << " [\033[01;32mi\033[0m] init device, [\033[01;32mb\033[0m] bind, [\033[01;32mx\033[0m] connect, [\033[01;32mj\033[0m] init task,"
        << " [\033[01;32mr\033[0m] run, [\033[01;32ms\033[0m] stop,\n"
        << " [\033[01;32mt\033[0m] reset task, [\033[01;32md\033[0m] reset device, [\033[01;32mq\033[0m] end,\n"
-       << " [\033[01;32mk\033[0m] increase log severity [\033[01;32ml\033[0m] decrease log severity [\033[01;32mn\033[0m] increase log verbosity [\033[01;32mm\033[0m] decrease log verbosity\n\n";
+       << " [\033[01;32mk\033[0m] increase log severity, [\033[01;32ml\033[0m] decrease log severity, [\033[01;32mn\033[0m] increase log verbosity, [\033[01;32mm\033[0m] decrease log verbosity\n\n";
     cout << ss.str() << flush;
 }
 

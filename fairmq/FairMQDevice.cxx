@@ -207,13 +207,10 @@ void FairMQDevice::InitWrapper()
         throw;
     }
 
-    for (auto& c : fConfig->GetFairMQMap()) {
-        if (fChannels.find(c.first) == fChannels.end()) {
-            LOG(debug) << "Inserting new device channel from config: " << c.first;
-            fChannels.insert(c);
-        } else {
-            LOG(debug) << "Updating existing device channel from config: " << c.first;
-            fChannels[c.first] = c.second;
+    unordered_map<string, int> infos = fConfig->GetChannelInfo();
+    for (const auto& info : infos) {
+        for (int i = 0; i < info.second; ++i) {
+            fChannels[info.first].emplace_back(info.first, i, fConfig->GetPropertiesStartingWith(tools::ToString("chans.", info.first, ".", i, ".")));
         }
     }
 
@@ -226,9 +223,6 @@ void FairMQDevice::InitWrapper()
     for (auto& mi : fChannels) {
         int subChannelIndex = 0;
         for (auto& vi : mi.second) {
-            // set channel name: name + vector index
-            vi.fName = tools::ToString(mi.first, "[", subChannelIndex, "]");
-
             // set channel transport
             LOG(debug) << "Initializing transport for channel " << vi.fName << ": " << fair::mq::TransportNames.at(vi.fTransportType);
             vi.InitTransport(AddTransport(vi.fTransportType));

@@ -23,7 +23,7 @@ void addCustomOptions(bpo::options_description& options)
         ("msg-rate", bpo::value<float>()->default_value(0), "Msg rate limit in maximum number of messages per second");
 }
 
-FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)
+FairMQDevicePtr getDevice(const FairMQProgOptions& /* config */)
 {
     return new FairMQBenchmarkSampler();
 }
