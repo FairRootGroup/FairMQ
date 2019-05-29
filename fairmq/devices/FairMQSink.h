@@ -20,7 +20,6 @@
 
 #include "../FairMQDevice.h"
 #include "../FairMQLogger.h"
-#include "../options/FairMQProgOptions.h"
 
 // template<typename OutputPolicy>
 class FairMQSink : public FairMQDevice//, public OutputPolicy
@@ -44,9 +43,9 @@ class FairMQSink : public FairMQDevice//, public OutputPolicy
 
     virtual void InitTask()
     {
-        fMultipart = fConfig->GetValue<bool>("multipart");
-        fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
-        fInChannelName = fConfig->GetValue<std::string>("in-channel");
+        fMultipart = fConfig->GetProperty<bool>("multipart");
+        fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
+        fInChannelName = fConfig->GetProperty<std::string>("in-channel");
     }
 
     virtual void Run()

@@ -31,7 +31,7 @@ Sink::Sink()
 
 void Sink::InitTask()
 {
-    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
+    fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 }
 
 // handler is called whenever a message arrives on "data", with a reference to the message and a sub-channel index (here 0)

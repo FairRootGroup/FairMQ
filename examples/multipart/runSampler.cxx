@@ -17,7 +17,7 @@ void addCustomOptions(bpo::options_description& options)
         ("max-iterations", bpo::value<uint64_t>()->default_value(5), "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
 }
 
-FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)
+FairMQDevicePtr getDevice(const fair::mq::ProgOptions& /*config*/)
 {
     return new example_multipart::Sampler();
 }

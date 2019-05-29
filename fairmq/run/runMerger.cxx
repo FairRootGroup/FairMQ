@@ -19,7 +19,7 @@ void addCustomOptions(bpo::options_description& options)
         ("multipart", bpo::value<bool>()->default_value(true), "Handle multipart payloads");
 }
 
-FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)
+FairMQDevicePtr getDevice(const fair::mq::ProgOptions& /*config*/)
 {
     return new FairMQMerger();
 }

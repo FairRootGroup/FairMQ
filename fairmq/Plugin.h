@@ -85,13 +85,25 @@ class Plugin
     // device config API
     // see <fairmq/PluginServices.h> for docs
     auto PropertyExists(const std::string& key) -> int { return fPluginServices->PropertyExists(key); }
+
     template<typename T>
-    auto SetProperty(const std::string& key, T val) -> void { fPluginServices->SetProperty(key, val); }
+    T GetProperty(const std::string& key) const { return fPluginServices->GetProperty<T>(key); }
     template<typename T>
-    auto GetProperty(const std::string& key) const -> T { return fPluginServices->GetProperty<T>(key); }
-    auto GetPropertyAsString(const std::string& key) const -> std::string { return fPluginServices->GetPropertyAsString(key); }
+    T GetProperty(const std::string& key, const T& ifNotFound) const { return fPluginServices->GetProperty(key, ifNotFound); }
+    std::string GetPropertyAsString(const std::string& key) const { return fPluginServices->GetPropertyAsString(key); }
+    std::string GetPropertyAsString(const std::string& key, const std::string& ifNotFound) const  { return fPluginServices->GetPropertyAsString(key, ifNotFound); }
+    fair::mq::Properties GetProperties(const std::string& q) const { return fPluginServices->GetProperties(q); }
+    fair::mq::Properties GetPropertiesStartingWith(const std::string& q) const { return fPluginServices->GetPropertiesStartingWith(q); };
+    std::map<std::string, std::string> GetPropertiesAsString(const std::string& q) const { return fPluginServices->GetPropertiesAsString(q); }
+    std::map<std::string, std::string> GetPropertiesAsStringStartingWith(const std::string& q) const { return fPluginServices->GetPropertiesAsStringStartingWith(q); };
+
     auto GetChannelInfo() const -> std::unordered_map<std::string, int> { return fPluginServices->GetChannelInfo(); }
     auto GetPropertyKeys() const -> std::vector<std::string> { return fPluginServices->GetPropertyKeys(); }
+
+    template<typename T>
+    auto SetProperty(const std::string& key, T val) -> void { fPluginServices->SetProperty(key, val); }
+    void SetProperties(const fair::mq::Properties& props) { fPluginServices->SetProperties(props); }
+
     template<typename T>
     auto SubscribeToPropertyChange(std::function<void(const std::string& key, T newValue)> callback) -> void { fPluginServices->SubscribeToPropertyChange<T>(fkName, callback); }
     template<typename T>

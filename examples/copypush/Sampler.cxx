@@ -33,12 +33,11 @@ Sampler::Sampler()
 void Sampler::InitTask()
 {
     fNumDataChannels = fChannels.at("data").size();
-    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
+    fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 }
 
 bool Sampler::ConditionalRun()
 {
-
     // NewSimpleMessage creates a copy of the data and takes care of its destruction (after the transfer takes place).
     // Should only be used for small data because of the cost of an additional copy
     FairMQMessagePtr msg(NewSimpleMessage(fCounter++));

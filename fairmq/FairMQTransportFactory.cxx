@@ -27,7 +27,7 @@ FairMQTransportFactory::FairMQTransportFactory(const std::string& id)
 {
 }
 
-auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, const std::string& id, const FairMQProgOptions* config) -> std::shared_ptr<FairMQTransportFactory>
+auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, const std::string& id, const fair::mq::ProgOptions* config) -> std::shared_ptr<FairMQTransportFactory>
 {
     using namespace std;
 

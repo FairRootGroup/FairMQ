@@ -129,16 +129,11 @@ auto PluginServices::TakeDeviceControl(const std::string& controller) -> void
 {
     lock_guard<mutex> lock{fDeviceControllerMutex};
 
-    if (!fDeviceController)
-    {
+    if (!fDeviceController) {
         fDeviceController = controller;
-    }
-    else if (fDeviceController == controller)
-    {
+    } else if (fDeviceController == controller) {
         // nothing to do
-    }
-    else
-    {
+    } else {
         throw DeviceControlError{tools::ToString(
             "Plugin '", controller, "' is not allowed to take over control. ",
             "Currently, plugin '", *fDeviceController, "' has taken control."
@@ -158,12 +153,9 @@ auto PluginServices::ReleaseDeviceControl(const std::string& controller) -> void
     {
         lock_guard<mutex> lock{fDeviceControllerMutex};
 
-        if (fDeviceController == controller)
-        {
+        if (fDeviceController == controller) {
             fDeviceController = boost::none;
-        }
-        else
-        {
+        } else {
             throw DeviceControlError{tools::ToString("Plugin '", controller, "' cannot release control because it has not taken over control.")};
         }
     }
@@ -182,8 +174,7 @@ auto PluginServices::WaitForReleaseDeviceControl() -> void
 {
     unique_lock<mutex> lock{fDeviceControllerMutex};
 
-    while (fDeviceController)
-    {
+    while (fDeviceController) {
         fReleaseDeviceControlCondition.wait(lock);
     }
 }

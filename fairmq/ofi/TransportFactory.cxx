@@ -23,14 +23,14 @@ namespace ofi
 
 using namespace std;
 
-TransportFactory::TransportFactory(const string& id, const FairMQProgOptions* config)
+TransportFactory::TransportFactory(const string& id, const fair::mq::ProgOptions* config)
 try : FairMQTransportFactory(id)
     , fContext(*this, *this, 1)
 {
     LOG(debug) << "OFI transport: asiofi (" << fContext.GetAsiofiVersion() << ")";
 
     if (config) {
-        fContext.SetSizeHint(config->GetValue<size_t>("ofi-size-hint"));
+        fContext.SetSizeHint(config->GetProperty<size_t>("ofi-size-hint", 0));
     }
 } catch (ContextError& e) {
     throw TransportFactoryError{e.what()};

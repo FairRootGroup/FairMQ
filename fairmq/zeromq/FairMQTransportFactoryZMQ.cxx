@@ -13,7 +13,7 @@ using namespace std;
 
 fair::mq::Transport FairMQTransportFactoryZMQ::fTransportType = fair::mq::Transport::ZMQ;
 
-FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id, const FairMQProgOptions* config)
+FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id, const fair::mq::ProgOptions* config)
     : FairMQTransportFactory(id)
     , fContext(zmq_ctx_new())
 {
@@ -35,11 +35,11 @@ FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id, const Fai
     int numIoThreads = 1;
     if (config)
     {
-        numIoThreads = config->GetValue<int>("io-threads");
+        numIoThreads = config->GetProperty<int>("io-threads", numIoThreads);
     }
     else
     {
-        LOG(debug) << "FairMQProgOptions not available! Using defaults.";
+        LOG(debug) << "fair::mq::ProgOptions not available! Using defaults.";
     }
 
     if (zmq_ctx_set(fContext, ZMQ_IO_THREADS, numIoThreads) != 0)

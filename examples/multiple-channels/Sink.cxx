@@ -31,7 +31,7 @@ Sink::Sink()
 
 void Sink::InitTask()
 {
-    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
+    fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 }
 
 bool Sink::HandleBroadcast(FairMQMessagePtr& msg, int /*index*/)

@@ -12,7 +12,7 @@
 #include <gtest/gtest.h>
 #include <fairmq/PluginServices.h>
 #include <FairMQDevice.h>
-#include <options/FairMQProgOptions.h>
+#include <fairmq/ProgOptions.h>
 #include <memory>
 #include <thread>
 
@@ -58,7 +58,7 @@ struct PluginServices : ::testing::Test {
         }
     }
 
-    FairMQProgOptions mConfig;
+    fair::mq::ProgOptions mConfig;
     FairMQDevice mDevice;
     fair::mq::PluginServices mServices;
     std::thread fRunStateMachineThread;

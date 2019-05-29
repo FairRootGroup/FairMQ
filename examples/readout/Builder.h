@@ -24,7 +24,7 @@ class Builder : public FairMQDevice
 
     void Init() override
     {
-        fOutputChannelName = fConfig->GetValue<std::string>("output-name");
+        fOutputChannelName = fConfig->GetProperty<std::string>("output-name");
         OnData("rb", &Builder::HandleData);
     }
 

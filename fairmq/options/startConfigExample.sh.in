@@ -1,5 +1,0 @@
-#!/bin/bash
-
-DEVICE="runConfigExample"
-DEVICE+=" --id sampler1 --channel-config name=data,type=push,method=bind,address=tcp://*:5555,rateLogging=0"
-@CMAKE_CURRENT_BINARY_DIR@/$DEVICE

@@ -12,7 +12,7 @@
 #include <FairMQLogger.h>
 #include <FairMQTransportFactory.h>
 #include <fairmq/Tools.h>
-#include <options/FairMQProgOptions.h>
+#include <fairmq/ProgOptions.h>
 
 #include <algorithm>
 #include <memory>
@@ -29,8 +29,8 @@ auto RunSingleThreadedMultipart(string transport, string address) -> void {
 
     size_t session{fair::mq::tools::UuidHash()};
 
-    FairMQProgOptions config;
-    config.SetValue<string>("session", std::to_string(session));
+    fair::mq::ProgOptions config;
+    config.SetProperty<string>("session", std::to_string(session));
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
     FairMQTransportFactory* factoryptr = factory.get();
     auto push = FairMQChannel{"Push", "push", factory};
@@ -67,10 +67,10 @@ auto RunMultiThreadedMultipart(string transport, string address) -> void
 {
     size_t session{fair::mq::tools::UuidHash()};
 
-    FairMQProgOptions config;
-    config.SetValue<string>("session", std::to_string(session));
-    config.SetValue<int>("io-threads", 1);
-    config.SetValue<size_t>("shm-segment-size", 20000000);
+    fair::mq::ProgOptions config;
+    config.SetProperty<string>("session", std::to_string(session));
+    config.SetProperty<int>("io-threads", 1);
+    config.SetProperty<size_t>("shm-segment-size", 20000000);
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
     auto push = FairMQChannel{"Push", "push", factory};
     ASSERT_TRUE(push.Bind(address));

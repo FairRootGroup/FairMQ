@@ -10,7 +10,6 @@
 
 #include <fairmq/Tools.h>
 #include "../FairMQLogger.h"
-#include "../options/FairMQProgOptions.h"
 
 #include <vector>
 #include <chrono>
@@ -34,12 +33,12 @@ FairMQBenchmarkSampler::~FairMQBenchmarkSampler()
 
 void FairMQBenchmarkSampler::InitTask()
 {
-    fMultipart = fConfig->GetValue<bool>("multipart");
-    fNumParts = fConfig->GetValue<size_t>("num-parts");
-    fMsgSize = fConfig->GetValue<size_t>("msg-size");
-    fMsgRate = fConfig->GetValue<float>("msg-rate");
-    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
-    fOutChannelName = fConfig->GetValue<string>("out-channel");
+    fMultipart = fConfig->GetProperty<bool>("multipart");
+    fNumParts = fConfig->GetProperty<size_t>("num-parts");
+    fMsgSize = fConfig->GetProperty<size_t>("msg-size");
+    fMsgRate = fConfig->GetProperty<float>("msg-rate");
+    fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
+    fOutChannelName = fConfig->GetProperty<string>("out-channel");
 }
 
 void FairMQBenchmarkSampler::Run()

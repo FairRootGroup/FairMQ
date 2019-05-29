@@ -32,8 +32,8 @@ Sampler::Sampler()
 void Sampler::InitTask()
 {
     // Get the fText and fMaxIterations values from the command line options (via fConfig)
-    fText = fConfig->GetValue<string>("text");
-    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
+    fText = fConfig->GetProperty<string>("text");
+    fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 }
 
 bool Sampler::ConditionalRun()

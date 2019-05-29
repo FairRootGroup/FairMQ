@@ -29,7 +29,7 @@ Server::Server()
 void Server::InitTask()
 {
     // Get the fMaxIterations value from the command line options (via fConfig)
-    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
+    fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 }
 
 bool Server::HandleData(FairMQMessagePtr& req, int /*index*/)

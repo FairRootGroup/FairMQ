@@ -5,24 +5,16 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-#ifndef FAIR_MQ_PROPERTIES_H
-#define FAIR_MQ_PROPERTIES_H
+#ifndef FAIR_MQ_PROPERTYOUT_H
+#define FAIR_MQ_PROPERTYOUT_H
 
-#include <boost/any.hpp>
+#include <fairmq/Properties.h>
 
-#include <map>
-#include <string>
+#include <sstream>
 
-namespace fair
+inline std::ostream& operator<<(std::ostream& os, const fair::mq::Property& p)
 {
-namespace mq
-{
-
-using Property = boost::any;
-
-using Properties = std::map<std::string, Property>;
-
-}
+    return os << fair::mq::PropertyHelper::GetPropertyInfo(p).first;
 }
 
-#endif /* FAIR_MQ_PROPERTIES_H */
+#endif /* FAIR_MQ_PROPERTYOUT_H */

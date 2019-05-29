@@ -12,6 +12,7 @@
 #include <FairMQLogger.h>
 #include <FairMQMessage.h>
 #include <FairMQPoller.h>
+#include <fairmq/ProgOptionsFwd.h>
 #include <FairMQSocket.h>
 #include <FairMQUnmanagedRegion.h>
 #include <fairmq/MemoryResources.h>
@@ -23,7 +24,6 @@
 #include <unordered_map>
 
 class FairMQChannel;
-class FairMQProgOptions;
 
 class FairMQTransportFactory
 {
@@ -83,7 +83,7 @@ class FairMQTransportFactory
 
     virtual ~FairMQTransportFactory() {};
 
-    static auto CreateTransportFactory(const std::string& type, const std::string& id = "", const FairMQProgOptions* config = nullptr) -> std::shared_ptr<FairMQTransportFactory>;
+    static auto CreateTransportFactory(const std::string& type, const std::string& id = "", const fair::mq::ProgOptions* config = nullptr) -> std::shared_ptr<FairMQTransportFactory>;
 
     static void FairMQNoCleanup(void* /*data*/, void* /*obj*/)
     {

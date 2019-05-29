@@ -31,8 +31,8 @@ Client::Client()
 
 void Client::InitTask()
 {
-    fText = fConfig->GetValue<string>("text");
-    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
+    fText = fConfig->GetProperty<string>("text");
+    fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 }
 
 bool Client::ConditionalRun()

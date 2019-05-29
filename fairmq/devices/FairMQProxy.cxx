@@ -15,7 +15,6 @@
 #include "FairMQProxy.h"
 
 #include "../FairMQLogger.h"
-#include "../options/FairMQProgOptions.h"
 
 using namespace std;
 
@@ -32,9 +31,9 @@ FairMQProxy::~FairMQProxy()
 
 void FairMQProxy::InitTask()
 {
-    fMultipart = fConfig->GetValue<bool>("multipart");
-    fInChannelName = fConfig->GetValue<string>("in-channel");
-    fOutChannelName = fConfig->GetValue<string>("out-channel");
+    fMultipart = fConfig->GetProperty<bool>("multipart");
+    fInChannelName = fConfig->GetProperty<string>("in-channel");
+    fOutChannelName = fConfig->GetProperty<string>("out-channel");
 }
 
 void FairMQProxy::Run()

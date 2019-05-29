@@ -15,7 +15,6 @@
 #include "FairMQSplitter.h"
 
 #include "../FairMQLogger.h"
-#include "../options/FairMQProgOptions.h"
 
 using namespace std;
 
@@ -34,9 +33,9 @@ FairMQSplitter::~FairMQSplitter()
 
 void FairMQSplitter::InitTask()
 {
-    fMultipart = fConfig->GetValue<bool>("multipart");
-    fInChannelName = fConfig->GetValue<string>("in-channel");
-    fOutChannelName = fConfig->GetValue<string>("out-channel");
+    fMultipart = fConfig->GetProperty<bool>("multipart");
+    fInChannelName = fConfig->GetProperty<string>("in-channel");
+    fOutChannelName = fConfig->GetProperty<string>("out-channel");
     fNumOutputs = fChannels.at(fOutChannelName).size();
     fDirection = 0;
 

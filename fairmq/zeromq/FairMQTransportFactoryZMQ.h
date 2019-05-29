@@ -23,12 +23,12 @@
 #include "FairMQSocketZMQ.h"
 #include "FairMQPollerZMQ.h"
 #include "FairMQUnmanagedRegionZMQ.h"
-#include <options/FairMQProgOptions.h>
+#include <fairmq/ProgOptions.h>
 
 class FairMQTransportFactoryZMQ final : public FairMQTransportFactory
 {
   public:
-    FairMQTransportFactoryZMQ(const std::string& id = "", const FairMQProgOptions* config = nullptr);
+    FairMQTransportFactoryZMQ(const std::string& id = "", const fair::mq::ProgOptions* config = nullptr);
     FairMQTransportFactoryZMQ(const FairMQTransportFactoryZMQ&) = delete;
     FairMQTransportFactoryZMQ operator=(const FairMQTransportFactoryZMQ&) = delete;
 

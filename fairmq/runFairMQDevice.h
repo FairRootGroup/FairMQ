@@ -14,7 +14,7 @@
 using FairMQDevicePtr = FairMQDevice*;
 
 // to be implemented by the user to return a child class of FairMQDevice
-FairMQDevicePtr getDevice(const FairMQProgOptions& config);
+FairMQDevicePtr getDevice(const fair::mq::ProgOptions& config);
 
 // to be implemented by the user to add custom command line options (or just with empty body)
 void addCustomOptions(boost::program_options::options_description&);
@@ -24,8 +24,7 @@ int main(int argc, char* argv[])
     using namespace fair::mq;
     using namespace fair::mq::hooks;
 
-    try
-    {
+    try {
         fair::mq::DeviceRunner runner{argc, argv};
 
         // runner.AddHook<LoadPlugins>([](DeviceRunner& r){
@@ -53,14 +52,10 @@ int main(int argc, char* argv[])
 
         // Run with builtin catch all exception handler, just:
         // return runner.RunWithExceptionHandlers();
-    }
-    catch (std::exception& e)
-    {
+    } catch (std::exception& e) {
         LOG(error) << "Uncaught exception reached the top of main: " << e.what();
         return 1;
-    }
-    catch (...)
-    {
+    } catch (...) {
         LOG(error) << "Uncaught exception reached the top of main.";
         return 1;
     }

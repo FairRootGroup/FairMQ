@@ -12,8 +12,8 @@
  * Created on May 14, 2015, 5:01 PM
  */
 
-#ifndef FAIRMQPARSER_H
-#define FAIRMQPARSER_H
+#ifndef FAIR_MQ_JSONPARSER_H
+#define FAIR_MQ_JSONPARSER_H
 
 #include <string>
 #include <vector>
@@ -23,35 +23,29 @@
 #include <boost/property_tree/ptree_fwd.hpp>
 
 #include "FairMQChannel.h"
-#include "Properties.h"
+#include <fairmq/Properties.h>
 
 namespace fair
 {
 namespace mq
 {
-namespace parser
-{
 
 struct ParserError : std::runtime_error { using std::runtime_error::runtime_error; };
 
-fair::mq::Properties ptreeToProperties(const boost::property_tree::ptree& pt, const std::string& deviceId);
+fair::mq::Properties PtreeParser(const boost::property_tree::ptree& pt, const std::string& deviceId);
 
-struct JSON
-{
-    fair::mq::Properties UserParser(const std::string& filename, const std::string& deviceId);
-};
+fair::mq::Properties JSONParser(const std::string& filename, const std::string& deviceId);
 
-namespace Helper
+namespace helper
 {
 
 fair::mq::Properties DeviceParser(const boost::property_tree::ptree& tree, const std::string& deviceId);
 void ChannelParser(const boost::property_tree::ptree& tree, fair::mq::Properties& properties);
 void SubChannelParser(const boost::property_tree::ptree& tree, fair::mq::Properties& properties, const std::string& channelName, const fair::mq::Properties& commonProperties);
 
-} // Helper namespace
+} // helper namespace
 
-} // namespace parser
 } // namespace mq
 } // namespace fair
 
-#endif /* FAIRMQPARSER_H */
+#endif /* FAIR_MQ_JSONPARSER_H */

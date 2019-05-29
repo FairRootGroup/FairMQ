@@ -14,7 +14,7 @@ namespace bpo = boost::program_options;
 void addCustomOptions(bpo::options_description& /* options */)
 {}
 
-FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)
+FairMQDevicePtr getDevice(const fair::mq::ProgOptions& /*config*/)
 {
     return new example_readout::Processor();
 }
