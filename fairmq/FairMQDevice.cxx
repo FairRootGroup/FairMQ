@@ -58,32 +58,28 @@ static map<int, Transition> backwardsCompatibilityChangeStateHelper =
 
 FairMQDevice::FairMQDevice()
     : FairMQDevice(nullptr, {0, 0, 0})
-{
-}
+{}
 
-FairMQDevice::FairMQDevice(FairMQProgOptions& config)
+FairMQDevice::FairMQDevice(ProgOptions& config)
     : FairMQDevice(&config, {0, 0, 0})
-{
-}
+{}
 
 FairMQDevice::FairMQDevice(const tools::Version version)
     : FairMQDevice(nullptr, version)
-{
-}
+{}
 
-FairMQDevice::FairMQDevice(FairMQProgOptions& config, const tools::Version version)
+FairMQDevice::FairMQDevice(ProgOptions& config, const tools::Version version)
     : FairMQDevice(&config, version)
-{
-}
+{}
 
-FairMQDevice::FairMQDevice(FairMQProgOptions* config, const tools::Version version)
+FairMQDevice::FairMQDevice(ProgOptions* config, const tools::Version version)
     : fTransportFactory(nullptr)
     , fTransports()
     , fChannels()
-    , fInternalConfig(config ? nullptr : tools::make_unique<FairMQProgOptions>())
+    , fInternalConfig(config ? nullptr : tools::make_unique<ProgOptions>())
     , fConfig(config ? config : fInternalConfig.get())
-    , fId()
-    , fDefaultTransportType(fair::mq::Transport::ZMQ)
+    , fId(DefaultId)
+    , fDefaultTransportType(DefaultTransportType)
     , fStateMachine()
     , fUninitializedBindingChannels()
     , fUninitializedConnectingChannels()
@@ -96,8 +92,8 @@ FairMQDevice::FairMQDevice(FairMQProgOptions* config, const tools::Version versi
     , fMultitransportMutex()
     , fMultitransportProceed(false)
     , fVersion(version)
-    , fRate(0.)
-    , fMaxRunRuntimeInS(0)
+    , fRate(DefaultRate)
+    , fMaxRunRuntimeInS(DefaultMaxRunTime)
     , fRawCmdLineArgs()
 {
     SubscribeToNewTransition("device", [&](Transition transition) {
@@ -192,18 +188,18 @@ void FairMQDevice::InitWrapper()
 {
     fStateMachine.WaitForPendingState();
 
-    fId = fConfig->GetValue<string>("id");
+    fId = fConfig->GetProperty<string>("id", DefaultId);
 
     Init();
 
-    fRate = fConfig->GetValue<float>("rate");
-    fMaxRunRuntimeInS = fConfig->GetValue<uint64_t>("max-run-time");
+    fRate = fConfig->GetProperty<float>("rate", DefaultRate);
+    fMaxRunRuntimeInS = fConfig->GetProperty<uint64_t>("max-run-time", DefaultMaxRunTime);
 
     try {
-        fDefaultTransportType = fair::mq::TransportTypes.at(fConfig->GetValue<string>("transport"));
+        fDefaultTransportType = fair::mq::TransportTypes.at(fConfig->GetProperty<string>("transport", DefaultTransportName));
     } catch (const exception& e) {
         LOG(error) << "exception: " << e.what();
-        LOG(error) << "invalid transport type provided: " << fConfig->GetValue<string>("transport");
+        LOG(error) << "invalid transport type provided: " << fConfig->GetProperty<string>("transport", "not provided");
         throw;
     }
 
@@ -217,7 +213,7 @@ void FairMQDevice::InitWrapper()
     LOG(debug) << "Setting '" << fair::mq::TransportNames.at(fDefaultTransportType) << "' as default transport for the device";
     fTransportFactory = AddTransport(fDefaultTransportType);
 
-    string networkInterface = fConfig->GetValue<string>("network-interface");
+    string networkInterface = fConfig->GetProperty<string>("network-interface", DefaultNetworkInterface);
 
     // Fill the uninitialized channel containers
     for (auto& mi : fChannels) {
@@ -274,7 +270,7 @@ void FairMQDevice::BindWrapper()
 
 void FairMQDevice::ConnectWrapper()
 {
-    int initializationTimeoutInS = fConfig->GetValue<int>("initialization-timeout");
+    int initializationTimeoutInS = fConfig->GetProperty<int>("init-timeout", DefaultInitTimeout);
 
     // go over the list of channels until all are initialized (and removed from the uninitialized list)
     int numAttempts = 1;
@@ -288,7 +284,7 @@ void FairMQDevice::ConnectWrapper()
 
         for (auto& chan : fUninitializedConnectingChannels) {
             string key{"chans." + chan->GetPrefix() + "." + chan->GetIndex() + ".address"};
-            string newAddress = fConfig->GetValue<string>(key);
+            string newAddress = fConfig->GetProperty<string>(key);
             if (newAddress != chan->GetAddress()) {
                 chan->UpdateAddress(newAddress);
             }
@@ -399,7 +395,7 @@ bool FairMQDevice::AttachChannel(FairMQChannel& chan)
         chan.UpdateAddress(newAddress);
 
         // update address in the config, it could have been modified during binding
-        fConfig->SetValue({"chans." + chan.GetPrefix() + "." + chan.GetIndex() + ".address"}, newAddress);
+        fConfig->SetProperty({"chans." + chan.GetPrefix() + "." + chan.GetIndex() + ".address"}, newAddress);
     }
 
     return true;
@@ -710,7 +706,7 @@ shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(fair::mq::Transpor
     }
 }
 
-void FairMQDevice::SetConfig(FairMQProgOptions& config)
+void FairMQDevice::SetConfig(ProgOptions& config)
 {
     fInternalConfig.reset();
     fConfig = &config;

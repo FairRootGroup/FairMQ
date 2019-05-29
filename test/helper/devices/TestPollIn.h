@@ -11,7 +11,7 @@
 
 #include <FairMQDevice.h>
 #include <FairMQLogger.h>
-#include <options/FairMQProgOptions.h>
+#include <fairmq/ProgOptions.h>
 #include <thread>
 
 namespace fair
@@ -33,7 +33,7 @@ class PollIn : public FairMQDevice
   protected:
     auto InitTask() -> void override
     {
-        fPollType = fConfig->GetValue<int>("poll-type");
+        fPollType = fConfig->GetProperty<int>("poll-type");
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 

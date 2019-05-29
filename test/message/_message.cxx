@@ -9,7 +9,7 @@
 #include <FairMQChannel.h>
 #include <FairMQLogger.h>
 #include <FairMQTransportFactory.h>
-#include <options/FairMQProgOptions.h>
+#include <fairmq/ProgOptions.h>
 #include <fairmq/Tools.h>
 
 #include <gtest/gtest.h>
@@ -25,8 +25,8 @@ void RunPushPullWithMsgResize(const string& transport, const string& address)
 {
     size_t session{fair::mq::tools::UuidHash()};
 
-    FairMQProgOptions config;
-    config.SetValue<string>("session", to_string(session));
+    fair::mq::ProgOptions config;
+    config.SetProperty<string>("session", to_string(session));
 
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
 
@@ -57,8 +57,8 @@ void RunMsgRebuild(const string& transport)
 {
     size_t session{fair::mq::tools::UuidHash()};
 
-    FairMQProgOptions config;
-    config.SetValue<string>("session", to_string(session));
+    fair::mq::ProgOptions config;
+    config.SetProperty<string>("session", to_string(session));
 
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
 

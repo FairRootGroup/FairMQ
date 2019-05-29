@@ -11,7 +11,7 @@
 #include <fairmq/PluginServices.h>
 #include <fairmq/Tools.h>
 #include <FairMQDevice.h>
-#include <options/FairMQProgOptions.h>
+#include <fairmq/ProgOptions.h>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -44,7 +44,7 @@ auto control(FairMQDevice& device) -> void
 
 TEST(Plugin, Operators)
 {
-    FairMQProgOptions config;
+    fair::mq::ProgOptions config;
     FairMQDevice device;
     PluginServices services{config, device};
     Plugin p1{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
@@ -61,7 +61,7 @@ TEST(Plugin, Operators)
 
 TEST(Plugin, OstreamOperators)
 {
-    FairMQProgOptions config;
+    fair::mq::ProgOptions config;
     FairMQDevice device;
     PluginServices services{config, device};
     Plugin p1{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};

@@ -49,13 +49,11 @@ fair::mq::PluginManager::PluginManager(const vector<string> args)
     // Parse command line options
     auto options = ProgramOptions();
     auto vm = po::variables_map{};
-    try
-    {
+    try {
         auto parsed = po::command_line_parser(args).options(options).allow_unregistered().run();
         po::store(parsed, vm);
         po::notify(vm);
-    } catch (const po::error& e)
-    {
+    } catch (const po::error& e) {
         throw ProgramOptionsParseError{ToString("Error occured while parsing the 'Plugin Manager' program options: ", e.what())};
     }
 
@@ -63,10 +61,8 @@ fair::mq::PluginManager::PluginManager(const vector<string> args)
     auto append = vector<fs::path>{};
     auto prepend = vector<fs::path>{};
     auto searchPaths = vector<fs::path>{};
-    if (vm.count("plugin-search-path"))
-    {
-        for (const auto& path : vm["plugin-search-path"].as<vector<string>>())
-        {
+    if (vm.count("plugin-search-path")) {
+        for (const auto& path : vm["plugin-search-path"].as<vector<string>>()) {
             if      (path.substr(0, 1) == "<") { prepend.emplace_back(path.substr(1)); }
             else if (path.substr(0, 1) == ">") { append.emplace_back(path.substr(1)); }
             else                               { searchPaths.emplace_back(path); }
@@ -126,23 +122,16 @@ auto fair::mq::PluginManager::ProgramOptions() -> po::options_description
 
 auto fair::mq::PluginManager::LoadPlugin(const string& pluginName) -> void
 {
-    if (pluginName.substr(0,2) == "p:")
-    {
+    if (pluginName.substr(0,2) == "p:") {
         // Mechanism A: prelinked dynamic
         LoadPluginPrelinkedDynamic(pluginName.substr(2));
-    }
-    else if (pluginName.substr(0,2) == "d:")
-    {
+    } else if (pluginName.substr(0,2) == "d:") {
         // Mechanism B: dynamic
         LoadPluginDynamic(pluginName.substr(2));
-    }
-    else if (pluginName.substr(0,2) == "s:")
-    {
+    } else if (pluginName.substr(0,2) == "s:") {
         // Mechanism C: static (builtin)
         LoadPluginStatic(pluginName.substr(2));
-    }
-    else
-    {
+    } else {
         // Mechanism B: dynamic (default)
         LoadPluginDynamic(pluginName);
     }
@@ -151,15 +140,11 @@ auto fair::mq::PluginManager::LoadPlugin(const string& pluginName) -> void
 auto fair::mq::PluginManager::LoadPluginPrelinkedDynamic(const string& pluginName) -> void
 {
     // Load symbol
-    if (fPluginFactories.find(pluginName) == fPluginFactories.end())
-    {
-        try
-        {
+    if (fPluginFactories.find(pluginName) == fPluginFactories.end()) {
+        try {
             LoadSymbols(pluginName, dll::program_location());
             fPluginOrder.push_back(pluginName);
-        }
-        catch (boost::system::system_error& e)
-        {
+        } catch (boost::system::system_error& e) {
             throw PluginLoadError(ToString("An error occurred while loading prelinked dynamic plugin ", pluginName, ": ", e.what()));
         }
     }
@@ -168,13 +153,11 @@ auto fair::mq::PluginManager::LoadPluginPrelinkedDynamic(const string& pluginNam
 auto fair::mq::PluginManager::LoadPluginDynamic(const string& pluginName) -> void
 {
     // Search plugin and load, if found
-    if (fPluginFactories.find(pluginName) == fPluginFactories.end())
-    {
+    if (fPluginFactories.find(pluginName) == fPluginFactories.end()) {
         auto success = false;
         for (const auto& searchPath : SearchPaths()) {
             try {
-                LoadSymbols(pluginName,
-                            searchPath / ToString(LibPrefix(), pluginName),
+                LoadSymbols(pluginName, searchPath / ToString(LibPrefix(), pluginName),
                             dll::load_mode::append_decorations | dll::load_mode::rtld_global);
                 fPluginOrder.push_back(pluginName);
                 success = true;
@@ -213,15 +196,11 @@ auto fair::mq::PluginManager::LoadPluginDynamic(const string& pluginName) -> voi
 auto fair::mq::PluginManager::LoadPluginStatic(const string& pluginName) -> void
 {
     // Load symbol
-    if (fPluginFactories.find(pluginName) == fPluginFactories.end())
-    {
-        try
-        {
+    if (fPluginFactories.find(pluginName) == fPluginFactories.end()) {
+        try {
             LoadSymbols(pluginName, dll::program_location());
             fPluginOrder.push_back(pluginName);
-        }
-        catch (boost::system::system_error& e)
-        {
+        } catch (boost::system::system_error& e) {
             throw PluginLoadError(ToString("An error occurred while loading static plugin ", pluginName, ": ", e.what()));
         }
     }
@@ -229,22 +208,17 @@ auto fair::mq::PluginManager::LoadPluginStatic(const string& pluginName) -> void
 
 auto fair::mq::PluginManager::InstantiatePlugin(const string& pluginName) -> void
 {
-    if (fPlugins.find(pluginName) == fPlugins.end())
-    {
+    if (fPlugins.find(pluginName) == fPlugins.end()) {
         fPlugins[pluginName] = fPluginFactories[pluginName](*fPluginServices);
     }
 }
 
 auto fair::mq::PluginManager::InstantiatePlugins() -> void
 {
-    for(const auto& pluginName : fPluginOrder)
-    {
-        try
-        {
+    for(const auto& pluginName : fPluginOrder) {
+        try {
             InstantiatePlugin(pluginName);
-        }
-        catch (std::exception& e)
-        {
+        } catch (std::exception& e) {
             throw PluginInstantiationError(ToString("An error occurred while instantiating plugin ", pluginName, ": ", e.what()));
         }
     }

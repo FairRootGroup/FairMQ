@@ -32,8 +32,8 @@ Sampler::Sampler()
 
 void Sampler::InitTask()
 {
-    fMsgSize = fConfig->GetValue<int>("msg-size");
-    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
+    fMsgSize = fConfig->GetProperty<int>("msg-size");
+    fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 
     fRegion = FairMQUnmanagedRegionPtr(NewUnmanagedRegionFor("data",
                                                              0,

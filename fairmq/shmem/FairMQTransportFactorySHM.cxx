@@ -33,7 +33,7 @@ namespace bipc = ::boost::interprocess;
 
 fair::mq::Transport FairMQTransportFactorySHM::fTransportType = fair::mq::Transport::SHM;
 
-FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const FairMQProgOptions* config)
+FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const fair::mq::ProgOptions* config)
     : FairMQTransportFactory(id)
     , fDeviceId(id)
     , fShmId()
@@ -57,12 +57,12 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const Fai
     size_t segmentSize = 2000000000;
     bool autolaunchMonitor = false;
     if (config) {
-        numIoThreads = config->GetValue<int>("io-threads");
-        sessionName = config->GetValue<string>("session");
-        segmentSize = config->GetValue<size_t>("shm-segment-size");
-        autolaunchMonitor = config->GetValue<bool>("shm-monitor");
+        numIoThreads = config->GetProperty<int>("io-threads", numIoThreads);
+        sessionName = config->GetProperty<string>("session", sessionName);
+        segmentSize = config->GetProperty<size_t>("shm-segment-size", segmentSize);
+        autolaunchMonitor = config->GetProperty<bool>("shm-monitor", autolaunchMonitor);
     } else {
-        LOG(debug) << "FairMQProgOptions not available! Using defaults.";
+        LOG(debug) << "fair::mq::ProgOptions not available! Using defaults.";
     }
 
     fShmId = buildShmIdFromSessionIdAndUserId(sessionName);

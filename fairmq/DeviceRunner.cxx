@@ -25,6 +25,8 @@ DeviceRunner::DeviceRunner(int argc, char* const argv[], bool printLogo)
 
 auto DeviceRunner::Run() -> int
 {
+    fPluginManager.LoadPlugin("s:config");
+
     ////// CALL HOOK ///////
     fEvents.Emit<hooks::LoadPlugins>(*this);
     ////////////////////////
@@ -46,18 +48,49 @@ auto DeviceRunner::Run() -> int
     fEvents.Emit<hooks::ModifyRawCmdLineArgs>(*this);
     ////////////////////////
 
-    if (fConfig.ParseAll(fRawCmdLineArgs, true)) {
+    fConfig.ParseAll(fRawCmdLineArgs, true);
+
+    if (fConfig.Count("help")) {
+        fConfig.PrintHelp();
         return 0;
     }
 
-    if (fPrintLogo) {
-        LOG(info) << std::endl
-                  << "      ______      _    _______  _________ " << std::endl
-                  << "     / ____/___ _(_)_______   |/  /_  __ \\    version " << FAIRMQ_GIT_VERSION << std::endl
-                  << "    / /_  / __ `/ / ___/__  /|_/ /_  / / /    build " << FAIRMQ_BUILD_TYPE << std::endl
-                  << "   / __/ / /_/ / / /    _  /  / / / /_/ /     " << FAIRMQ_REPO_URL << std::endl
-                  << "  /_/    \\__,_/_/_/     /_/  /_/  \\___\\_\\     " << FAIRMQ_LICENSE << "  © " << FAIRMQ_COPYRIGHT << std::endl;
+    if (fConfig.Count("print-options")) {
+        fConfig.PrintOptionsRaw();
+        return 0;
     }
+
+    if (fConfig.Count("print-channels") || fConfig.Count("version")) {
+        fair::Logger::SetConsoleSeverity("nolog");
+    } else {
+        std::string severity = fConfig.GetProperty<std::string>("severity");
+        std::string logFile = fConfig.GetProperty<std::string>("log-to-file");
+        bool color = fConfig.GetProperty<bool>("color");
+
+        std::string verbosity = fConfig.GetProperty<std::string>("verbosity");
+        fair::Logger::SetVerbosity(verbosity);
+
+        if (logFile != "") {
+            fair::Logger::InitFileSink(severity, logFile);
+            fair::Logger::SetConsoleSeverity("nolog");
+        } else {
+            fair::Logger::SetConsoleColor(color);
+            fair::Logger::SetConsoleSeverity(severity);
+        }
+
+        if (fPrintLogo) {
+            LOG(info) << std::endl
+                    << "      ______      _    _______  _________ " << std::endl
+                    << "     / ____/___ _(_)_______   |/  /_  __ \\    version " << FAIRMQ_GIT_VERSION << std::endl
+                    << "    / /_  / __ `/ / ___/__  /|_/ /_  / / /    build " << FAIRMQ_BUILD_TYPE << std::endl
+                    << "   / __/ / /_/ / / /    _  /  / / / /_/ /     " << FAIRMQ_REPO_URL << std::endl
+                    << "  /_/    \\__,_/_/_/     /_/  /_/  \\___\\_\\     " << FAIRMQ_LICENSE << "  © " << FAIRMQ_COPYRIGHT << std::endl;
+        }
+
+        fConfig.PrintOptions();
+    }
+
+    fConfig.Notify();
 
     ////// CALL HOOK ///////
     fEvents.Emit<hooks::InstantiateDevice>(*this);
@@ -80,6 +113,7 @@ auto DeviceRunner::Run() -> int
 
     // Handle --version
     if (fConfig.Count("version")) {
+        std::cout << "FairMQ version: " << FAIRMQ_GIT_VERSION << std::endl;
         std::cout << "User device version: " << fDevice->GetVersion() << std::endl;
         fDevice->ChangeState(fair::mq::Transition::End);
         return 0;

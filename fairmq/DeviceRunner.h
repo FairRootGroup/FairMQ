@@ -11,9 +11,9 @@
 
 #include <fairmq/EventManager.h>
 #include <fairmq/PluginManager.h>
+#include <fairmq/ProgOptions.h>
 #include <FairMQDevice.h>
 #include <FairMQLogger.h>
-#include <options/FairMQProgOptions.h>
 
 #include <functional>
 #include <memory>
@@ -68,7 +68,7 @@ class DeviceRunner
     }
 
     std::vector<std::string> fRawCmdLineArgs;
-    FairMQProgOptions fConfig;
+    fair::mq::ProgOptions fConfig;
     std::unique_ptr<FairMQDevice> fDevice;
     PluginManager fPluginManager;
     const bool fPrintLogo;

@@ -36,12 +36,12 @@ auto addCustomOptions(bpo::options_description& options) -> void
         ("poll-type", bpo::value<int>()->default_value(0), "Poll type switch(0 - vector of (sub-)channels, 1 - vector of channel names)");
 }
 
-auto getDevice(const FairMQProgOptions& config) -> FairMQDevicePtr
+auto getDevice(const fair::mq::ProgOptions& config) -> FairMQDevicePtr
 {
     using namespace std;
     using namespace fair::mq::test;
 
-    auto id = config.GetValue<std::string>("id");
+    auto id = config.GetProperty<std::string>("id");
 
     if (0 == id.find("pull_")) {
         return new Pull;

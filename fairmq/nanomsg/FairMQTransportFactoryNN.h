@@ -14,7 +14,7 @@
 #include "FairMQSocketNN.h"
 #include "FairMQPollerNN.h"
 #include "FairMQUnmanagedRegionNN.h"
-#include <options/FairMQProgOptions.h>
+#include <fairmq/ProgOptions.h>
 
 #include <vector>
 #include <string>
@@ -22,7 +22,7 @@
 class FairMQTransportFactoryNN final : public FairMQTransportFactory
 {
   public:
-    FairMQTransportFactoryNN(const std::string& id = "", const FairMQProgOptions* config = nullptr);
+    FairMQTransportFactoryNN(const std::string& id = "", const fair::mq::ProgOptions* config = nullptr);
     ~FairMQTransportFactoryNN() override;
 
     FairMQMessagePtr CreateMessage() override;

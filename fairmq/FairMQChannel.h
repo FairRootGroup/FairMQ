@@ -14,7 +14,7 @@
 #include <fairmq/Transports.h>
 #include <FairMQLogger.h>
 #include <FairMQParts.h>
-#include <options/Properties.h>
+#include <fairmq/Properties.h>
 #include <FairMQMessage.h>
 
 #include <boost/any.hpp>

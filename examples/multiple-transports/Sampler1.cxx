@@ -22,7 +22,7 @@ Sampler1::Sampler1()
 
 void Sampler1::InitTask()
 {
-    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
+    fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 }
 
 void Sampler1::PreRun()

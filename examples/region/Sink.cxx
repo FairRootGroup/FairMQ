@@ -28,7 +28,7 @@ Sink::Sink()
 void Sink::InitTask()
 {
     // Get the fMaxIterations value from the command line options (via fConfig)
-    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
+    fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 }
 
 void Sink::Run()

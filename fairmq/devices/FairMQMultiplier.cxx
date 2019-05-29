@@ -9,7 +9,6 @@
 #include "FairMQMultiplier.h"
 
 #include "../FairMQLogger.h"
-#include "../options/FairMQProgOptions.h"
 
 using namespace std;
 
@@ -27,9 +26,9 @@ FairMQMultiplier::~FairMQMultiplier()
 
 void FairMQMultiplier::InitTask()
 {
-    fMultipart = fConfig->GetValue<bool>("multipart");
-    fInChannelName = fConfig->GetValue<string>("in-channel");
-    fOutChannelNames = fConfig->GetValue<vector<string>>("out-channel");
+    fMultipart = fConfig->GetProperty<bool>("multipart");
+    fInChannelName = fConfig->GetProperty<string>("in-channel");
+    fOutChannelNames = fConfig->GetProperty<vector<string>>("out-channel");
     fNumOutputs = fChannels.at(fOutChannelNames.at(0)).size();
 
     if (fMultipart)

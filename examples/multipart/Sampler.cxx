@@ -31,7 +31,7 @@ Sampler::Sampler()
 
 void Sampler::InitTask()
 {
-    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
+    fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 }
 
 bool Sampler::ConditionalRun()

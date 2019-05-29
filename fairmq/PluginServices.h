@@ -11,7 +11,8 @@
 
 #include <fairmq/Tools.h>
 #include <FairMQDevice.h>
-#include <options/FairMQProgOptions.h>
+#include <fairmq/ProgOptions.h>
+#include <fairmq/Properties.h>
 
 #include <boost/optional.hpp>
 #include <boost/optional/optional_io.hpp>
@@ -20,6 +21,7 @@
 #include <string>
 #include <unordered_map>
 #include <mutex>
+#include <map>
 #include <condition_variable>
 #include <stdexcept>
 
@@ -39,7 +41,7 @@ class PluginServices
 {
   public:
     PluginServices() = delete;
-    PluginServices(FairMQProgOptions& config, FairMQDevice& device)
+    PluginServices(ProgOptions& config, FairMQDevice& device)
         : fConfig(config)
         , fDevice(device)
         , fDeviceController()
@@ -196,41 +198,74 @@ class PluginServices
             || (currentState == DeviceState::Binding)
             || (currentState == DeviceState::Bound)
             || (currentState == DeviceState::Connecting)
-            || (currentState == DeviceState::Ready)
-            || (currentState == DeviceState::Idle && key == "channel-config")) {
-            fConfig.SetValue(key, val);
+            || (currentState == DeviceState::Ready)) {
+            fConfig.SetProperty(key, val);
         } else {
             throw InvalidStateError{
                 tools::ToString("PluginServices::SetProperty is not supported in device state ", currentState, ". ",
                                 "Supported state is ", DeviceState::InitializingDevice, ".")};
         }
     }
+    void SetProperties(const fair::mq::Properties& props)
+    {
+        fConfig.SetProperties(props);
+    }
     struct InvalidStateError : std::runtime_error { using std::runtime_error::runtime_error; };
 
     /// @brief Read config property
     /// @param key
-    /// @return config property value
+    /// @return config property
     ///
     /// TODO Currently, if a non-existing key is requested and a default constructed object is returned.
     /// This behaviour will be changed in the future to throw an exception in that case to provide a proper sentinel.
     template<typename T>
-    auto GetProperty(const std::string& key) const -> T {
+    auto GetProperty(const std::string& key) const -> T
+    {
         if (PropertyExists(key)) {
-            return fConfig.GetValue<T>(key);
+            return fConfig.GetProperty<T>(key);
         }
         throw PropertyNotFoundError(fair::mq::tools::ToString("Config has no key: ", key));
     }
 
+    template<typename T>
+    T GetProperty(const std::string& key, const T& ifNotFound) const
+    {
+        return fConfig.GetProperty(key, ifNotFound);
+    }
+
     /// @brief Read config property as string
     /// @param key
-    /// @return config property value converted to string
+    /// @return config property converted to string
     ///
     /// If a type is not supported, the user can provide support by overloading the ostream operator for this type
-    auto GetPropertyAsString(const std::string& key) const -> std::string {
+    auto GetPropertyAsString(const std::string& key) const -> std::string
+    {
         if (PropertyExists(key)) {
-            return fConfig.GetStringValue(key);
+            return fConfig.GetPropertyAsString(key);
         }
         throw PropertyNotFoundError(fair::mq::tools::ToString("Config has no key: ", key));
+    }
+
+    auto GetPropertyAsString(const std::string& key, const std::string& ifNotFound) const -> std::string
+    {
+        return fConfig.GetPropertyAsString(key, ifNotFound);
+    }
+
+    fair::mq::Properties GetProperties(const std::string& q) const
+    {
+        return fConfig.GetProperties(q);
+    }
+    fair::mq::Properties GetPropertiesStartingWith(const std::string& q) const
+    {
+        return fConfig.GetPropertiesStartingWith(q);
+    }
+    std::map<std::string, std::string> GetPropertiesAsString(const std::string& q) const
+    {
+        return fConfig.GetPropertiesAsString(q);
+    }
+    std::map<std::string, std::string> GetPropertiesAsStringStartingWith(const std::string& q) const
+    {
+        return fConfig.GetPropertiesAsStringStartingWith(q);
     }
 
     auto GetChannelInfo() const -> std::unordered_map<std::string, int> { return fConfig.GetChannelInfo(); }
@@ -282,7 +317,7 @@ class PluginServices
     static const std::unordered_map<DeviceStateTransition, fair::mq::Transition, tools::HashEnum<DeviceStateTransition>> fkDeviceStateTransitionMap;
 
   private:
-    FairMQProgOptions& fConfig;
+    fair::mq::ProgOptions& fConfig;
     FairMQDevice& fDevice;
     boost::optional<std::string> fDeviceController;
     mutable std::mutex fDeviceControllerMutex;

@@ -17,7 +17,7 @@ void addCustomOptions(bpo::options_description& options)
         ("input-name", bpo::value<std::string>()->default_value("bs"), "Input channel name");
 }
 
-FairMQDevicePtr getDevice(const FairMQProgOptions& /*config*/)
+FairMQDevicePtr getDevice(const fair::mq::ProgOptions& /*config*/)
 {
     return new example_readout::Sender();
 }

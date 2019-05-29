@@ -33,8 +33,8 @@ Sampler::Sampler()
 
 void Sampler::InitTask()
 {
-    fText = fConfig->GetValue<string>("text");
-    fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
+    fText = fConfig->GetProperty<string>("text");
+    fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 }
 
 void Sampler::Run()

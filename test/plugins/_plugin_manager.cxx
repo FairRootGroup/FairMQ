@@ -10,7 +10,7 @@
 #include <fairmq/PluginManager.h>
 #include <fairmq/PluginServices.h>
 #include <FairMQDevice.h>
-#include <options/FairMQProgOptions.h>
+#include <fairmq/ProgOptions.h>
 #include <FairMQLogger.h>
 #include <fstream>
 #include <memory>
@@ -45,7 +45,7 @@ auto control(FairMQDevice& device) -> void
 
 TEST(PluginManager, LoadPluginDynamic)
 {
-    FairMQProgOptions config;
+    fair::mq::ProgOptions config;
     FairMQDevice device;
     PluginManager mgr;
     mgr.EmplacePluginServices(config, device);
@@ -83,9 +83,9 @@ TEST(PluginManager, LoadPluginStatic)
 
     ASSERT_NO_THROW(mgr.LoadPlugin("s:control"));
 
-    FairMQProgOptions config;
-    config.SetValue<string>("control", "static");
-    config.SetValue("catch-signals", 0);
+    fair::mq::ProgOptions config;
+    config.SetProperty<string>("control", "static");
+    config.SetProperty("catch-signals", 0);
     mgr.EmplacePluginServices(config, device);
 
     ASSERT_NO_THROW(mgr.InstantiatePlugins());

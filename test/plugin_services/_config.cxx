@@ -50,7 +50,7 @@ TEST_F(PluginServices, ConfigInvalidStateError)
 
 TEST_F(PluginServices, KeyDiscovery)
 {
-    mConfig.SetValue("foo", 0);
+    mConfig.SetProperty("foo", 0);
 
     auto keys(mServices.GetPropertyKeys());
 

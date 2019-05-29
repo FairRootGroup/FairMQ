@@ -24,7 +24,7 @@ class Sender : public FairMQDevice
 
     void Init() override
     {
-        fInputChannelName = fConfig->GetValue<std::string>("input-name");
+        fInputChannelName = fConfig->GetProperty<std::string>("input-name");
         OnData(fInputChannelName, &Sender::HandleData);
     }
 

@@ -6,12 +6,12 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-/// @file   FairMQSuboptParser.cxx
+/// @file   SuboptParser.cxx
 /// @author Matthias.Richter@scieq.net
 /// @since  2017-03-30
 /// @brief  Parser implementation for key-value subopt format
 
-#include "FairMQSuboptParser.h"
+#include <fairmq/SuboptParser.h>
 
 #include <boost/property_tree/ptree.hpp>
 #include <cstring>
@@ -24,12 +24,47 @@ namespace fair
 {
 namespace mq
 {
-namespace parser
+
+enum channelOptionKeyIds
 {
+    NAME = 0,       // name of the channel
+    TYPE,           // push, pull, publish, subscribe, etc
+    METHOD,         // bind or connect
+    ADDRESS,        // host, protocol and port address
+    TRANSPORT,      //
+    SNDBUFSIZE,     // size of the send queue
+    RCVBUFSIZE,     // size of the receive queue
+    SNDKERNELSIZE,
+    RCVKERNELSIZE,
+    LINGER,
+    RATELOGGING,    // logging rate
+    PORTRANGEMIN,
+    PORTRANGEMAX,
+    AUTOBIND,
+    NUMSOCKETS,
+    lastsocketkey
+};
 
-constexpr const char* SUBOPT::channelOptionKeys[];
+constexpr static const char* channelOptionKeys[] = {
+    /*[NAME]          = */ "name",
+    /*[TYPE]          = */ "type",
+    /*[METHOD]        = */ "method",
+    /*[ADDRESS]       = */ "address",
+    /*[TRANSPORT]     = */ "transport",
+    /*[SNDBUFSIZE]    = */ "sndBufSize",
+    /*[RCVBUFSIZE]    = */ "rcvBufSize",
+    /*[SNDKERNELSIZE] = */ "sndKernelSize",
+    /*[RCVKERNELSIZE] = */ "rcvKernelSize",
+    /*[LINGER]        = */ "linger",
+    /*[RATELOGGING]   = */ "rateLogging",
+    /*[PORTRANGEMIN]  = */ "portRangeMin",
+    /*[PORTRANGEMAX]  = */ "portRangeMax",
+    /*[AUTOBIND]      = */ "autoBind",
+    /*[NUMSOCKETS]    = */ "numSockets",
+    nullptr
+};
 
-fair::mq::Properties SUBOPT::UserParser(const vector<string>& channelConfig, const string& deviceId)
+Properties SuboptParser(const vector<string>& channelConfig, const string& deviceId)
 {
     ptree pt;
 
@@ -78,9 +113,8 @@ fair::mq::Properties SUBOPT::UserParser(const vector<string>& channelConfig, con
 
     pt.add_child("fairMQOptions.devices", devicesArray);
 
-    return ptreeToProperties(pt, deviceId);
+    return PtreeParser(pt, deviceId);
 }
 
-}
 }
 }

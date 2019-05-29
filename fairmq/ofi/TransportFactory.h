@@ -10,7 +10,7 @@
 #define FAIR_MQ_OFI_TRANSPORTFACTORY_H
 
 #include <FairMQTransportFactory.h>
-#include <options/FairMQProgOptions.h>
+#include <fairmq/ProgOptions.h>
 #include <fairmq/ofi/Context.h>
 
 #include <asiofi.hpp>
@@ -31,7 +31,7 @@ namespace ofi
 class TransportFactory final : public FairMQTransportFactory
 {
   public:
-    TransportFactory(const std::string& id = "", const FairMQProgOptions* config = nullptr);
+    TransportFactory(const std::string& id = "", const fair::mq::ProgOptions* config = nullptr);
     TransportFactory(const TransportFactory&) = delete;
     TransportFactory operator=(const TransportFactory&) = delete;
 

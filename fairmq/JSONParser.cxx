@@ -6,13 +6,14 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /*
- * File:   FairMQParser.cxx
+ * File:   JSONParser.cxx
  * Author: winckler
  *
  * Created on May 14, 2015, 5:01 PM
  */
 
-#include "FairMQParser.h"
+#include <fairmq/PropertyOutput.h>
+#include "JSONParser.h"
 #include "FairMQLogger.h"
 #include <fairmq/Tools.h>
 
@@ -20,7 +21,10 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/any.hpp>
 
+#include <ios>
+
 using namespace std;
+using namespace fair::mq;
 using namespace fair::mq::tools;
 using namespace boost::property_tree;
 
@@ -28,27 +32,27 @@ namespace fair
 {
 namespace mq
 {
-namespace parser
-{
 
-fair::mq::Properties ptreeToProperties(const ptree& pt, const string& id)
+fair::mq::Properties PtreeParser(const ptree& pt, const string& id)
 {
     if (id == "") {
         throw ParserError("no device ID provided. Provide with `--id` cmd option");
     }
 
-    return Helper::DeviceParser(pt.get_child("fairMQOptions"), id);
+    // json_parser::write_json(cout, pt);
+
+    return helper::DeviceParser(pt.get_child("fairMQOptions"), id);
 }
 
-fair::mq::Properties JSON::UserParser(const string& filename, const string& deviceId)
+fair::mq::Properties JSONParser(const string& filename, const string& deviceId)
 {
-    ptree input;
+    ptree pt;
     LOG(debug) << "Parsing JSON from " << filename << " ...";
-    read_json(filename, input);
-    return ptreeToProperties(input, deviceId);
+    read_json(filename, pt);
+    return PtreeParser(pt, deviceId);
 }
 
-namespace Helper
+namespace helper
 {
 
 fair::mq::Properties DeviceParser(const ptree& fairMQOptions, const string& deviceId)
@@ -58,16 +62,8 @@ fair::mq::Properties DeviceParser(const ptree& fairMQOptions, const string& devi
     for (const auto& node : fairMQOptions) {
         if (node.first == "devices") {
             for (const auto& device : node.second) {
-                string deviceIdKey;
-
                 // check if key is provided, otherwise use id
-                string key = device.second.get<string>("key", "");
-
-                if (key != "") {
-                    deviceIdKey = key;
-                } else {
-                    deviceIdKey = device.second.get<string>("id");
-                }
+                string deviceIdKey = device.second.get<string>("key", device.second.get<string>("id", ""));
 
                 // if not correct device id, do not fill MQMap
                 if (deviceId != deviceIdKey) {
@@ -75,7 +71,6 @@ fair::mq::Properties DeviceParser(const ptree& fairMQOptions, const string& devi
                 }
 
                 LOG(trace) << "Found following channels for device ID '" << deviceId << "' :";
-
                 ChannelParser(device.second, properties);
             }
         }
@@ -111,20 +106,9 @@ void ChannelParser(const ptree& tree, fair::mq::Properties& properties)
                     LOG(trace) << name << ":";
                     LOG(trace) << "\tnumSockets of " << numSockets << " specified, applying common settings to each:";
 
-                    // TODO: make a loop out of this
-                    LOG(trace) << "\ttype          = " << boost::any_cast<string>(commonProperties.at("type"));
-                    LOG(trace) << "\tmethod        = " << boost::any_cast<string>(commonProperties.at("method"));
-                    LOG(trace) << "\taddress       = " << boost::any_cast<string>(commonProperties.at("address"));
-                    LOG(trace) << "\ttransport     = " << boost::any_cast<string>(commonProperties.at("transport"));
-                    LOG(trace) << "\tsndBufSize    = " << boost::any_cast<int>(commonProperties.at("sndBufSize"));
-                    LOG(trace) << "\trcvBufSize    = " << boost::any_cast<int>(commonProperties.at("rcvBufSize"));
-                    LOG(trace) << "\tsndKernelSize = " << boost::any_cast<int>(commonProperties.at("sndKernelSize"));
-                    LOG(trace) << "\trcvKernelSize = " << boost::any_cast<int>(commonProperties.at("rcvKernelSize"));
-                    LOG(trace) << "\tlinger        = " << boost::any_cast<int>(commonProperties.at("linger"));
-                    LOG(trace) << "\trateLogging   = " << boost::any_cast<int>(commonProperties.at("rateLogging"));
-                    LOG(trace) << "\tportRangeMin  = " << boost::any_cast<int>(commonProperties.at("portRangeMin"));
-                    LOG(trace) << "\tportRangeMax  = " << boost::any_cast<int>(commonProperties.at("portRangeMax"));
-                    LOG(trace) << "\tautoBind      = " << boost::any_cast<bool>(commonProperties.at("autoBind"));
+                    for (auto& p : commonProperties) {
+                        LOG(trace) << "\t" << setw(13) << left << p.first << " : " << p.second;
+                    }
 
                     for (int i = 0; i < numSockets; ++i) {
                         for (const auto& p : commonProperties) {
@@ -166,20 +150,9 @@ void SubChannelParser(const ptree& channelTree, fair::mq::Properties& properties
                 newProperties["autoBind"] = sn.second.get<bool>("autoBind", boost::any_cast<bool>(commonProperties.at("autoBind")));
 
                 LOG(trace) << "" << channelName << "[" << i << "]:";
-                // TODO: make a loop out of this
-                LOG(trace) << "\ttype          = " << boost::any_cast<string>(newProperties.at("type"));
-                LOG(trace) << "\tmethod        = " << boost::any_cast<string>(newProperties.at("method"));
-                LOG(trace) << "\taddress       = " << boost::any_cast<string>(newProperties.at("address"));
-                LOG(trace) << "\ttransport     = " << boost::any_cast<string>(newProperties.at("transport"));
-                LOG(trace) << "\tsndBufSize    = " << boost::any_cast<int>(newProperties.at("sndBufSize"));
-                LOG(trace) << "\trcvBufSize    = " << boost::any_cast<int>(newProperties.at("rcvBufSize"));
-                LOG(trace) << "\tsndKernelSize = " << boost::any_cast<int>(newProperties.at("sndKernelSize"));
-                LOG(trace) << "\trcvKernelSize = " << boost::any_cast<int>(newProperties.at("rcvKernelSize"));
-                LOG(trace) << "\tlinger        = " << boost::any_cast<int>(newProperties.at("linger"));
-                LOG(trace) << "\trateLogging   = " << boost::any_cast<int>(newProperties.at("rateLogging"));
-                LOG(trace) << "\tportRangeMin  = " << boost::any_cast<int>(newProperties.at("portRangeMin"));
-                LOG(trace) << "\tportRangeMax  = " << boost::any_cast<int>(newProperties.at("portRangeMax"));
-                LOG(trace) << "\tautoBind      = " << boost::any_cast<bool>(newProperties.at("autoBind"));
+                for (auto& p : newProperties) {
+                    LOG(trace) << "\t" << setw(13) << left << p.first << " : " << p.second;
+                }
 
                 for (const auto& p : newProperties) {
                     properties.emplace(ToString("chans.", channelName, ".", i, ".", p.first), p.second);
@@ -187,31 +160,21 @@ void SubChannelParser(const ptree& channelTree, fair::mq::Properties& properties
                 ++i;
             }
         }
-    } // end socket loop
+    }
 
     if (i > 0) {
         LOG(trace) << "Found " << i << " socket(s) in channel.";
     } else {
+        // if no sockets are specified, apply common channel properties
         LOG(trace) << "" << channelName << ":";
         LOG(trace) << "\tNo sockets specified,";
         LOG(trace) << "\tapplying common settings to the channel:";
 
         fair::mq::Properties newProperties(commonProperties);
 
-        // TODO: make a loop out of this
-        LOG(trace) << "\ttype          = " << boost::any_cast<string>(newProperties.at("type"));
-        LOG(trace) << "\tmethod        = " << boost::any_cast<string>(newProperties.at("method"));
-        LOG(trace) << "\taddress       = " << boost::any_cast<string>(newProperties.at("address"));
-        LOG(trace) << "\ttransport     = " << boost::any_cast<string>(newProperties.at("transport"));
-        LOG(trace) << "\tsndBufSize    = " << boost::any_cast<int>(newProperties.at("sndBufSize"));
-        LOG(trace) << "\trcvBufSize    = " << boost::any_cast<int>(newProperties.at("rcvBufSize"));
-        LOG(trace) << "\tsndKernelSize = " << boost::any_cast<int>(newProperties.at("sndKernelSize"));
-        LOG(trace) << "\trcvKernelSize = " << boost::any_cast<int>(newProperties.at("rcvKernelSize"));
-        LOG(trace) << "\tlinger        = " << boost::any_cast<int>(newProperties.at("linger"));
-        LOG(trace) << "\trateLogging   = " << boost::any_cast<int>(newProperties.at("rateLogging"));
-        LOG(trace) << "\tportRangeMin  = " << boost::any_cast<int>(newProperties.at("portRangeMin"));
-        LOG(trace) << "\tportRangeMax  = " << boost::any_cast<int>(newProperties.at("portRangeMax"));
-        LOG(trace) << "\tautoBind      = " << boost::any_cast<bool>(newProperties.at("autoBind"));
+        for (auto& p : newProperties) {
+            LOG(trace) << "\t" << setw(13) << left << p.first << " : " << p.second;
+        }
 
         for (const auto& p : newProperties) {
             properties.emplace(ToString("chans.", channelName, ".0.", p.first), p.second);
@@ -219,8 +182,6 @@ void SubChannelParser(const ptree& channelTree, fair::mq::Properties& properties
     }
 }
 
-} // Helper namespace
-
-} // namespace parser
+} // helper namespace
 } // namespace mq
 } // namespace fair

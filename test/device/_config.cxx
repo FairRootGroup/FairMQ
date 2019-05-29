@@ -7,7 +7,7 @@
  ********************************************************************************/
 
 #include <FairMQDevice.h>
-#include <options/FairMQProgOptions.h>
+#include <fairmq/ProgOptions.h>
 
 #include <fairmq/Tools.h>
 
@@ -97,15 +97,13 @@ class Config : public ::testing::Test
 
     string TestDeviceSetConfig(const string& transport)
     {
-        FairMQProgOptions config;
+        fair::mq::ProgOptions config;
 
         vector<string> emptyArgs = {"dummy", "--id", "test", "--color", "false"};
 
-        if (config.ParseAll(emptyArgs, true)) {
-            return 0;
-        }
+        config.ParseAll(emptyArgs, true);
 
-        config.SetValue<string>("transport", transport);
+        config.SetProperty("transport", transport);
 
         FairMQDevice device;
         device.SetConfig(config);

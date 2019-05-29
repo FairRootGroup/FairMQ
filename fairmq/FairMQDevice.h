@@ -19,7 +19,7 @@
 #include <FairMQParts.h>
 #include <FairMQUnmanagedRegion.h>
 #include <FairMQLogger.h>
-#include <options/FairMQProgOptions.h>
+#include <fairmq/ProgOptions.h>
 
 #include <vector>
 #include <memory> // unique_ptr
@@ -83,17 +83,17 @@ class FairMQDevice
 
     /// Default constructor
     FairMQDevice();
-    /// Constructor with external FairMQProgOptions
-    FairMQDevice(FairMQProgOptions& config);
+    /// Constructor with external fair::mq::ProgOptions
+    FairMQDevice(fair::mq::ProgOptions& config);
 
     /// Constructor that sets the version
     FairMQDevice(const fair::mq::tools::Version version);
 
-    /// Constructor that sets the version and external FairMQProgOptions
-    FairMQDevice(FairMQProgOptions& config, const fair::mq::tools::Version version);
+    /// Constructor that sets the version and external fair::mq::ProgOptions
+    FairMQDevice(fair::mq::ProgOptions& config, const fair::mq::tools::Version version);
 
   private:
-    FairMQDevice(FairMQProgOptions* config, const fair::mq::tools::Version version);
+    FairMQDevice(fair::mq::ProgOptions* config, const fair::mq::tools::Version version);
 
   public:
     /// Copy constructor (disabled)
@@ -296,9 +296,9 @@ class FairMQDevice
     std::shared_ptr<FairMQTransportFactory> AddTransport(const fair::mq::Transport transport);
 
     /// Assigns config to the device
-    void SetConfig(FairMQProgOptions& config);
+    void SetConfig(fair::mq::ProgOptions& config);
     /// Get pointer to the config
-    FairMQProgOptions* GetConfig() const
+    fair::mq::ProgOptions* GetConfig() const
     {
         return fConfig;
     }
@@ -399,23 +399,23 @@ class FairMQDevice
 
     const fair::mq::tools::Version GetVersion() const { return fVersion; }
 
-    void SetNumIoThreads(int numIoThreads) { fConfig->SetValue<int>("io-threads", numIoThreads);}
-    int GetNumIoThreads() const { return fConfig->GetValue<int>("io-threads"); }
+    void SetNumIoThreads(int numIoThreads) { fConfig->SetProperty("io-threads", numIoThreads);}
+    int GetNumIoThreads() const { return fConfig->GetProperty<int>("io-threads", DefaultIOThreads); }
 
-    void SetNetworkInterface(const std::string& networkInterface) { fConfig->SetValue<std::string>("network-interface", networkInterface); }
-    std::string GetNetworkInterface() const { return fConfig->GetValue<std::string>("network-interface"); }
+    void SetNetworkInterface(const std::string& networkInterface) { fConfig->SetProperty("network-interface", networkInterface); }
+    std::string GetNetworkInterface() const { return fConfig->GetProperty<std::string>("network-interface", DefaultNetworkInterface); }
 
-    void SetDefaultTransport(const std::string& name) { fConfig->SetValue<std::string>("transport", name); }
-    std::string GetDefaultTransport() const { return fConfig->GetValue<std::string>("transport"); }
+    void SetDefaultTransport(const std::string& name) { fConfig->SetProperty("transport", name); }
+    std::string GetDefaultTransport() const { return fConfig->GetProperty<std::string>("transport", DefaultTransportName); }
 
-    void SetInitializationTimeoutInS(int initializationTimeoutInS) { fConfig->SetValue<int>("initialization-timeout", initializationTimeoutInS); }
-    int GetInitializationTimeoutInS() const { return fConfig->GetValue<int>("initialization-timeout"); }
+    void SetInitTimeoutInS(int initTimeoutInS) { fConfig->SetProperty("init-timeout", initTimeoutInS); }
+    int GetInitTimeoutInS() const { return fConfig->GetProperty<int>("init-timeout", DefaultInitTimeout); }
 
     /// Sets the default transport for the device
     /// @param transport  Transport string ("zeromq"/"nanomsg"/"shmem")
-    void SetTransport(const std::string& transport) { fConfig->SetValue<std::string>("transport", transport); }
+    void SetTransport(const std::string& transport) { fConfig->SetProperty("transport", transport); }
     /// Gets the default transport name
-    std::string GetTransportName() const { return fConfig->GetValue<std::string>("transport"); }
+    std::string GetTransportName() const { return fConfig->GetProperty<std::string>("transport", DefaultTransportName); }
 
     void SetRawCmdLineArgs(const std::vector<std::string>& args) { fRawCmdLineArgs = args; }
     std::vector<std::string> GetRawCmdLineArgs() const { return fRawCmdLineArgs; }
@@ -440,8 +440,8 @@ class FairMQDevice
 
   public:
     std::unordered_map<std::string, std::vector<FairMQChannel>> fChannels; ///< Device channels
-    std::unique_ptr<FairMQProgOptions> fInternalConfig; ///< Internal program options configuration
-    FairMQProgOptions* fConfig; ///< Pointer to config (internal or external)
+    std::unique_ptr<fair::mq::ProgOptions> fInternalConfig; ///< Internal program options configuration
+    fair::mq::ProgOptions* fConfig; ///< Pointer to config (internal or external)
 
     void AddChannel(const std::string& name, FairMQChannel&& channel)
     {
@@ -513,6 +513,16 @@ class FairMQDevice
     static std::string GetTransitionName(const fair::mq::Transition transition) { return fair::mq::StateMachine::GetTransitionName(transition); }
 
     struct DeviceStateError : std::runtime_error { using std::runtime_error::runtime_error; };
+
+    static constexpr const char* DefaultId = "";
+    static constexpr int DefaultIOThreads = 1;
+    static constexpr const char* DefaultTransportName = "zeromq";
+    static constexpr fair::mq::Transport DefaultTransportType = fair::mq::Transport::ZMQ;
+    static constexpr const char* DefaultNetworkInterface = "default";
+    static constexpr int DefaultInitTimeout = 120;
+    static constexpr uint64_t DefaultMaxRunTime = 0;
+    static constexpr float DefaultRate = 0.;
+    static constexpr const char* DefaultSession = "default";
 
   private:
     fair::mq::Transport fDefaultTransportType; ///< Default transport for the device

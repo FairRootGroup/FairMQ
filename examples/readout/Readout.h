@@ -31,8 +31,8 @@ class Readout : public FairMQDevice
   protected:
     void InitTask() override
     {
-        fMsgSize = fConfig->GetValue<int>("msg-size");
-        fMaxIterations = fConfig->GetValue<uint64_t>("max-iterations");
+        fMsgSize = fConfig->GetProperty<int>("msg-size");
+        fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 
         fRegion = FairMQUnmanagedRegionPtr(NewUnmanagedRegionFor("rb",
                                                                 0,

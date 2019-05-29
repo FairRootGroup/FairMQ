@@ -32,12 +32,20 @@ The basic structure looks like this:
 The top level key is `fairMQOptions`, followed by one or more devices (with their IDs), each containing one or more channels (with their names), each containing one or more sockets.
 
 The socket parameters accept following values:
-- `type` (default = ""): "push"/"pull", "pub"/"sub", "req"/"rep", "xsub"/"xpub", "dealer/router", "pair".
+- `type` (default = ""): "push"/"pull", "pub"/"sub", "req"/"rep", "pair".
 - `method` (default = ""): "bind"/"connect".
 - `address` (default = ""): address to bind/connect.
 - `sndBufSize` (default = 1000): socket send queue size in number of messages.
 - `rcvBufSize` (default = 1000): socket receive queue size in number of messages.
+- `sndKernelSize"` (default = ): 
+- `rcvKernelSize"` (default = ): 
 - `rateLogging` (default = 1): log socket transfer rates in seconds. 0 for no logging of this socket.
+- `transport"` (default = ): override the default device transport for this channel.
+- `linger"` (default = ): 
+- `portRangeMin"` (default = ): 
+- `portRangeMax"` (default = ): 
+- `autoBind"` (default = ): 
+- `numSockets"` (default = ): 
 
 If a parameter is not specified, its default value will be set.
 

@@ -17,7 +17,7 @@
 #include "FairMQSocketSHM.h"
 #include "FairMQPollerSHM.h"
 #include "FairMQUnmanagedRegionSHM.h"
-#include <options/FairMQProgOptions.h>
+#include <fairmq/ProgOptions.h>
 
 #include <vector>
 #include <string>
@@ -27,7 +27,7 @@
 class FairMQTransportFactorySHM final : public FairMQTransportFactory
 {
   public:
-    FairMQTransportFactorySHM(const std::string& id = "", const FairMQProgOptions* config = nullptr);
+    FairMQTransportFactorySHM(const std::string& id = "", const fair::mq::ProgOptions* config = nullptr);
     FairMQTransportFactorySHM(const FairMQTransportFactorySHM&) = delete;
     FairMQTransportFactorySHM operator=(const FairMQTransportFactorySHM&) = delete;
 
