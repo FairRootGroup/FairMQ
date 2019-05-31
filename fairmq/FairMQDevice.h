@@ -366,8 +366,9 @@ class FairMQDevice
     try {
         return fChannels.at(channelName).at(index);
     } catch (const std::out_of_range& oor) {
-        LOG(error) << "out of range: " << oor.what();
         LOG(error) << "requested channel has not been configured? check channel names/configuration.";
+        LOG(error) << "channel: " << channelName << ", index: " << index;
+        LOG(error) << "out of range: " << oor.what();
         throw;
     }
 
