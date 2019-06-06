@@ -9,23 +9,21 @@
 #ifndef FAIR_MQ_PROGOPTIONS_H
 #define FAIR_MQ_PROGOPTIONS_H
 
-#include <fairmq/EventManager.h>
-#include "FairMQLogger.h"
 #include "FairMQChannel.h"
+#include "FairMQLogger.h"
+#include <fairmq/EventManager.h>
+#include <fairmq/ProgOptionsFwd.h>
 #include <fairmq/Properties.h>
 #include <fairmq/Tools.h>
-#include <fairmq/ProgOptionsFwd.h>
 
 #include <boost/program_options.hpp>
 
-#include <unordered_map>
-#include <map>
 #include <functional>
-#include <string>
-#include <vector>
+#include <map>
 #include <mutex>
-#include <sstream>
-#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace fair
 {
@@ -90,10 +88,30 @@ class ProgOptions
         lock.unlock();
 
         fEvents.Emit<fair::mq::PropertyChange, typename std::decay<T>::type>(key, val);
-        fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetStringValue(key));
+        fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetPropertyAsString(key));
+    }
+
+    template<typename T>
+    bool UpdateProperty(const std::string& key, T val)
+    {
+        std::unique_lock<std::mutex> lock(fMtx);
+
+        if (fVarMap.count(key)) {
+            SetVarMapValue<typename std::decay<T>::type>(key, val);
+
+            lock.unlock();
+
+            fEvents.Emit<fair::mq::PropertyChange, typename std::decay<T>::type>(key, val);
+            fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetPropertyAsString(key));
+            return true;
+        } else {
+            LOG(debug) << "UpdateProperty failed, no property found with key '" << key << "'";
+            return false;
+        }
     }
 
     void SetProperties(const fair::mq::Properties& input);
+    bool UpdateProperties(const fair::mq::Properties& input);
     void DeleteProperty(const std::string& key);
 
     void AddChannel(const std::string& name, const FairMQChannel& channel);

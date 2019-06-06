@@ -38,10 +38,9 @@ auto DeviceRunner::Run() -> int
     fEvents.Emit<hooks::SetCustomCmdLineOptions>(*this);
     ////////////////////////
 
-    fPluginManager.ForEachPluginProgOptions(
-        [&](boost::program_options::options_description options) {
-            fConfig.AddToCmdLineOptions(options);
-        });
+    fPluginManager.ForEachPluginProgOptions([&](boost::program_options::options_description options) {
+        fConfig.AddToCmdLineOptions(options);
+    });
     fConfig.AddToCmdLineOptions(fPluginManager.ProgramOptions());
 
     ////// CALL HOOK ///////
@@ -80,11 +79,11 @@ auto DeviceRunner::Run() -> int
 
         if (fPrintLogo) {
             LOG(info) << std::endl
-                    << "      ______      _    _______  _________ " << std::endl
-                    << "     / ____/___ _(_)_______   |/  /_  __ \\    version " << FAIRMQ_GIT_VERSION << std::endl
-                    << "    / /_  / __ `/ / ___/__  /|_/ /_  / / /    build " << FAIRMQ_BUILD_TYPE << std::endl
-                    << "   / __/ / /_/ / / /    _  /  / / / /_/ /     " << FAIRMQ_REPO_URL << std::endl
-                    << "  /_/    \\__,_/_/_/     /_/  /_/  \\___\\_\\     " << FAIRMQ_LICENSE << "  © " << FAIRMQ_COPYRIGHT << std::endl;
+                << "      ______      _    _______  _________ " << std::endl
+                << "     / ____/___ _(_)_______   |/  /_  __ \\    version " << FAIRMQ_GIT_VERSION << std::endl
+                << "    / /_  / __ `/ / ___/__  /|_/ /_  / / /    build " << FAIRMQ_BUILD_TYPE << std::endl
+                << "   / __/ / /_/ / / /    _  /  / / / /_/ /     " << FAIRMQ_REPO_URL << std::endl
+                << "  /_/    \\__,_/_/_/     /_/  /_/  \\___\\_\\     " << FAIRMQ_LICENSE << "  © " << FAIRMQ_COPYRIGHT << std::endl;
         }
 
         fConfig.PrintOptions();

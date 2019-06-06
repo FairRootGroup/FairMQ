@@ -21,9 +21,10 @@
 #include <boost/regex.hpp>
 
 #include <algorithm>
+#include <exception>
 #include <iomanip>
 #include <iostream>
-#include <exception>
+#include <sstream>
 #include <utility> // pair
 
 using namespace std;
@@ -111,6 +112,7 @@ void ProgOptions::ParseAll(const vector<string>& cmdArgs, bool allowUnregistered
 
 void ProgOptions::ParseAll(const int argc, char const* const* argv, bool allowUnregistered)
 {
+    lock_guard<mutex> lock(fMtx);
     // clear the container because it was filled with default values and subsequent calls to store() do not overwrite the existing values
     fVarMap.clear();
 
@@ -128,11 +130,13 @@ void ProgOptions::ParseAll(const int argc, char const* const* argv, bool allowUn
 
 void ProgOptions::Notify()
 {
+    lock_guard<mutex> lock(fMtx);
     po::notify(fVarMap);
 }
 
 void ProgOptions::AddToCmdLineOptions(const po::options_description optDesc, bool /* visible */)
 {
+    lock_guard<mutex> lock(fMtx);
     fAllOptions.add(optDesc);
 }
 
@@ -296,6 +300,32 @@ void ProgOptions::SetProperties(const Properties& input)
         PropertyHelper::fEventEmitters.at(m.second.type())(fEvents, m.first, m.second);
         fEvents.Emit<PropertyChangeAsString, string>(m.first, PropertyHelper::ConvertPropertyToString(m.second));
     }
+}
+
+bool ProgOptions::UpdateProperties(const Properties& input)
+{
+    unique_lock<mutex> lock(fMtx);
+
+    for (const auto& m : input) {
+        if (fVarMap.count(m.first) == 0) {
+            LOG(debug) << "UpdateProperties failed, no property found with key '" << m.first << "'";
+            return false;
+        }
+    }
+
+    map<string, boost::program_options::variable_value>& vm = fVarMap;
+    for (const auto& m : input) {
+        vm[m.first].value() = m.second;
+    }
+
+    lock.unlock();
+
+    for (const auto& m : input) {
+        PropertyHelper::fEventEmitters.at(m.second.type())(fEvents, m.first, m.second);
+        fEvents.Emit<PropertyChangeAsString, string>(m.first, PropertyHelper::ConvertPropertyToString(m.second));
+    }
+
+    return true;
 }
 
 void ProgOptions::DeleteProperty(const string& key)

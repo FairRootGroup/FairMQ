@@ -19,5 +19,4 @@ class ProgOptions;
 
 using FairMQProgOptions = fair::mq::ProgOptions;
 
-#endif
-
+#endif /* FAIR_MQ_PROGOPTIONSFWD_H */

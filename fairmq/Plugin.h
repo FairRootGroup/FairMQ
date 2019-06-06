@@ -103,6 +103,9 @@ class Plugin
     template<typename T>
     auto SetProperty(const std::string& key, T val) -> void { fPluginServices->SetProperty(key, val); }
     void SetProperties(const fair::mq::Properties& props) { fPluginServices->SetProperties(props); }
+    template<typename T>
+    bool UpdateProperty(const std::string& key, T val) { return fPluginServices->UpdateProperty(key, val); }
+    bool UpdateProperties(const fair::mq::Properties& input) { return fPluginServices->UpdateProperties(input); }
 
     template<typename T>
     auto SubscribeToPropertyChange(std::function<void(const std::string& key, T newValue)> callback) -> void { fPluginServices->SubscribeToPropertyChange<T>(fkName, callback); }
