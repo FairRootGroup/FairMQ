@@ -41,10 +41,13 @@ class PropertyHelper
         if (label == "") {
             label = boost::core::demangle(typeid(T).name());
         }
-        fTypeInfos[std::type_index(typeid(T))] = [label](const fair::mq::Property& p) {
+        fTypeInfos[std::type_index(typeid(T))] = [label](const Property& p) {
             std::stringstream ss;
             ss << boost::any_cast<T>(p);
             return std::pair<std::string, std::string>{ss.str(), label};
+        };
+        fEventEmitters[std::type_index(typeid(T))] = [](const fair::mq::EventManager& em, const std::string& k, const Property& p) {
+            em.Emit<PropertyChange, T>(k, boost::any_cast<T>(p));
         };
     }
 
@@ -63,9 +66,9 @@ class PropertyHelper
         }
     }
 
-    static std::unordered_map<std::type_index, void(*)(const fair::mq::EventManager&, const std::string&, const fair::mq::Property&)> fEventEmitters;
+    static std::unordered_map<std::type_index, void(*)(const fair::mq::EventManager&, const std::string&, const Property&)> fEventEmitters;
   private:
-    static std::unordered_map<std::type_index, std::function<std::pair<std::string, std::string>(const fair::mq::Property&)>> fTypeInfos;
+    static std::unordered_map<std::type_index, std::function<std::pair<std::string, std::string>(const Property&)>> fTypeInfos;
 };
 
 }
