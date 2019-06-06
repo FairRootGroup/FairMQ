@@ -32,6 +32,14 @@ This parser reads channel configuration from a JSON file. Example:
                                 "address": "tcp://*:5555",
                                 "sndBufSize": 1000,
                                 "rcvBufSize": 1000,
+                                "sndKernelSize" : 0,
+                                "rcvKernelSize" : 0,
+                                "transport": "shmem",
+                                "linger": "500",
+                                "portRangeMin": "22000",
+                                "portRangeMax": "23000",
+                                "autoBind": false,
+                                "numSockets": 0,
                                 "rateLogging": 1
                             }
                         ]
@@ -48,9 +56,7 @@ This parser reads channel configuration from a JSON file. Example:
                                 "type": "pull",
                                 "method": "connect",
                                 "address": "tcp://localhost:5555",
-                                "sndBufSize": 1000,
-                                "rcvBufSize": 1000,
-                                "rateLogging": 1
+                                "transport": "shmem"
                             }
                         ]
                     }
