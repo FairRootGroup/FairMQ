@@ -206,10 +206,11 @@ class PluginServices
                                 "Supported state is ", DeviceState::InitializingDevice, ".")};
         }
     }
-    void SetProperties(const fair::mq::Properties& props)
-    {
-        fConfig.SetProperties(props);
-    }
+    void SetProperties(const fair::mq::Properties& props) { fConfig.SetProperties(props); }
+    template<typename T>
+    bool UpdateProperty(const std::string& key, T val) { return fConfig.UpdateProperty(key, val); }
+    bool UpdateProperties(const fair::mq::Properties& input) { return fConfig.UpdateProperties(input); }
+
     struct InvalidStateError : std::runtime_error { using std::runtime_error::runtime_error; };
 
     /// @brief Read config property
