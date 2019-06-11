@@ -56,6 +56,11 @@ class DeviceRunner
     auto Run() -> int;
     auto RunWithExceptionHandlers() -> int;
 
+    bool HandleGeneralOptions();
+
+    void SubscribeForConfigChange();
+    void UnsubscribeFromConfigChange();
+
     template<typename H>
     auto AddHook(std::function<void(DeviceRunner&)> hook) -> void
     {

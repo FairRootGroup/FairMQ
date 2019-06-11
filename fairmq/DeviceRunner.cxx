@@ -12,6 +12,7 @@
 #include <fairmq/Tools.h>
 #include <fairmq/Version.h>
 
+using namespace std;
 using namespace fair::mq;
 
 DeviceRunner::DeviceRunner(int argc, char* const argv[], bool printLogo)
@@ -22,6 +23,78 @@ DeviceRunner::DeviceRunner(int argc, char* const argv[], bool printLogo)
     , fPrintLogo(printLogo)
     , fEvents()
 {}
+
+bool DeviceRunner::HandleGeneralOptions()
+{
+    if (fConfig.Count("help")) {
+        fConfig.PrintHelp();
+        return false;
+    }
+
+    if (fConfig.Count("print-options")) {
+        fConfig.PrintOptionsRaw();
+        return false;
+    }
+
+    if (fConfig.Count("print-channels") || fConfig.Count("version")) {
+        fair::Logger::SetConsoleSeverity("nolog");
+    } else {
+        string severity = fConfig.GetProperty<string>("severity");
+        string logFile = fConfig.GetProperty<string>("log-to-file");
+        string logFileSeverity = fConfig.GetProperty<string>("file-severity");
+        bool color = fConfig.GetProperty<bool>("color");
+
+        string verbosity = fConfig.GetProperty<string>("verbosity");
+        fair::Logger::SetVerbosity(verbosity);
+
+        if (logFile != "") {
+            fair::Logger::InitFileSink(logFileSeverity, logFile);
+            fair::Logger::SetConsoleSeverity("nolog");
+        } else {
+            fair::Logger::SetConsoleColor(color);
+            fair::Logger::SetConsoleSeverity(severity);
+        }
+
+        if (fPrintLogo) {
+            LOG(info) << endl
+                << "      ______      _    _______  _________ " << endl
+                << "     / ____/___ _(_)_______   |/  /_  __ \\    version " << FAIRMQ_GIT_VERSION << endl
+                << "    / /_  / __ `/ / ___/__  /|_/ /_  / / /    build " << FAIRMQ_BUILD_TYPE << endl
+                << "   / __/ / /_/ / / /    _  /  / / / /_/ /     " << FAIRMQ_REPO_URL << endl
+                << "  /_/    \\__,_/_/_/     /_/  /_/  \\___\\_\\     " << FAIRMQ_LICENSE << "  © " << FAIRMQ_COPYRIGHT << endl;
+        }
+
+        fConfig.PrintOptions();
+    }
+
+    return true;
+}
+
+void DeviceRunner::SubscribeForConfigChange()
+{
+    fConfig.Subscribe<bool>("device-runner", [](const std::string& key, const bool val) {
+        if (key == "color") {
+            fair::Logger::SetConsoleColor(val);
+        }
+    });
+    fConfig.Subscribe<string>("device-runner", [&](const std::string& key, const std::string val) {
+        if (key == "severity") {
+            fair::Logger::SetConsoleSeverity(val);
+        } else if (key == "file-severity") {
+            fair::Logger::SetFileSeverity(val);
+        } else if (key == "verbosity") {
+            fair::Logger::SetVerbosity(val);
+        } else if (key == "log-to-file") {
+            string fileSeverity = fConfig.GetProperty<string>("file-severity");
+            fair::Logger::InitFileSink(fileSeverity, val);
+        }
+    });
+}
+void DeviceRunner::UnsubscribeFromConfigChange()
+{
+    fConfig.Unsubscribe<bool>("device-runner");
+    fConfig.Unsubscribe<string>("device-runner");
+}
 
 auto DeviceRunner::Run() -> int
 {
@@ -49,47 +122,14 @@ auto DeviceRunner::Run() -> int
 
     fConfig.ParseAll(fRawCmdLineArgs, true);
 
-    if (fConfig.Count("help")) {
-        fConfig.PrintHelp();
+    if (!HandleGeneralOptions()) {
         return 0;
-    }
-
-    if (fConfig.Count("print-options")) {
-        fConfig.PrintOptionsRaw();
-        return 0;
-    }
-
-    if (fConfig.Count("print-channels") || fConfig.Count("version")) {
-        fair::Logger::SetConsoleSeverity("nolog");
-    } else {
-        std::string severity = fConfig.GetProperty<std::string>("severity");
-        std::string logFile = fConfig.GetProperty<std::string>("log-to-file");
-        bool color = fConfig.GetProperty<bool>("color");
-
-        std::string verbosity = fConfig.GetProperty<std::string>("verbosity");
-        fair::Logger::SetVerbosity(verbosity);
-
-        if (logFile != "") {
-            fair::Logger::InitFileSink(severity, logFile);
-            fair::Logger::SetConsoleSeverity("nolog");
-        } else {
-            fair::Logger::SetConsoleColor(color);
-            fair::Logger::SetConsoleSeverity(severity);
-        }
-
-        if (fPrintLogo) {
-            LOG(info) << std::endl
-                << "      ______      _    _______  _________ " << std::endl
-                << "     / ____/___ _(_)_______   |/  /_  __ \\    version " << FAIRMQ_GIT_VERSION << std::endl
-                << "    / /_  / __ `/ / ___/__  /|_/ /_  / / /    build " << FAIRMQ_BUILD_TYPE << std::endl
-                << "   / __/ / /_/ / / /    _  /  / / / /_/ /     " << FAIRMQ_REPO_URL << std::endl
-                << "  /_/    \\__,_/_/_/     /_/  /_/  \\___\\_\\     " << FAIRMQ_LICENSE << "  © " << FAIRMQ_COPYRIGHT << std::endl;
-        }
-
-        fConfig.PrintOptions();
     }
 
     fConfig.Notify();
+
+    // handle configuration updates (for general options)
+    SubscribeForConfigChange();
 
     ////// CALL HOOK ///////
     fEvents.Emit<hooks::InstantiateDevice>(*this);
@@ -112,8 +152,8 @@ auto DeviceRunner::Run() -> int
 
     // Handle --version
     if (fConfig.Count("version")) {
-        std::cout << "FairMQ version: " << FAIRMQ_GIT_VERSION << std::endl;
-        std::cout << "User device version: " << fDevice->GetVersion() << std::endl;
+        cout << "FairMQ version: " << FAIRMQ_GIT_VERSION << endl;
+        cout << "User device version: " << fDevice->GetVersion() << endl;
         fDevice->ChangeState(fair::mq::Transition::End);
         return 0;
     }
@@ -135,6 +175,9 @@ auto DeviceRunner::Run() -> int
     // Wait for control plugin to release device control
     fPluginManager.WaitForPluginsToReleaseDeviceControl();
 
+    // stop handling configuration updates (for general options)
+    UnsubscribeFromConfigChange();
+
     return 0;
 }
 
@@ -142,7 +185,7 @@ auto DeviceRunner::RunWithExceptionHandlers() -> int
 {
     try {
         return Run();
-    } catch (std::exception& e) {
+    } catch (exception& e) {
         LOG(error) << "Uncaught exception reached the top of DeviceRunner: " << e.what();
         return 1;
     } catch (...) {
