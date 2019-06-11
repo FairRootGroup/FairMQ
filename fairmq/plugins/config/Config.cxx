@@ -61,7 +61,7 @@ Plugin::ProgOptions ConfigPluginProgramOptions()
     namespace po = boost::program_options;
     auto pluginOptions = po::options_description{"FairMQ device options"};
     pluginOptions.add_options()
-        ("id",                po::value<string        >()->default_value(""),         "Device ID (required argument).")
+        ("id",                po::value<string        >()->default_value(""),         "Device ID.")
         ("io-threads",        po::value<int           >()->default_value(1),          "Number of I/O threads.")
         ("transport",         po::value<string        >()->default_value("zeromq"),   "Transport ('zeromq'/'nanomsg'/'shmem').")
         ("network-interface", po::value<string        >()->default_value("default"),  "Network interface to bind on (e.g. eth0, ib0..., default will try to detect the interface of the default route).")
