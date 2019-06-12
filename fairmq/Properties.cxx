@@ -50,6 +50,7 @@ pair<string, string> getStringPair(const boost::any& v, const string& label)
 unordered_map<type_index, function<pair<string, string>(const Property&)>> PropertyHelper::fTypeInfos = {
     { type_index(typeid(char)),                            [](const Property& p) { return pair<string, string>{ string(1, any_cast<char>(p)), "char" }; } },
     { type_index(typeid(unsigned char)),                   [](const Property& p) { return pair<string, string>{ string(1, any_cast<unsigned char>(p)), "unsigned char" }; } },
+    { type_index(typeid(const char*)),                     [](const Property& p) { return pair<string, string>{ string(any_cast<const char*>(p)), "string" }; } },
     { type_index(typeid(string)),                          [](const Property& p) { return pair<string, string>{ any_cast<string>(p), "string" }; } },
     { type_index(typeid(int)),                             [](const Property& p) { return getString<int>(p, "int"); } },
     { type_index(typeid(size_t)),                          [](const Property& p) { return getString<size_t>(p, "size_t"); } },
@@ -87,6 +88,7 @@ unordered_map<type_index, function<pair<string, string>(const Property&)>> Prope
 unordered_map<type_index, void(*)(const EventManager&, const string&, const Property&)> PropertyHelper::fEventEmitters = {
     { type_index(typeid(char)),                            [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, char>(k, any_cast<char>(p)); } },
     { type_index(typeid(unsigned char)),                   [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, unsigned char>(k, any_cast<unsigned char>(p)); } },
+    { type_index(typeid(const char*)),                     [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, string>(k, string(any_cast<const char*>(p))); } },
     { type_index(typeid(string)),                          [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, string>(k, any_cast<string>(p)); } },
     { type_index(typeid(int)),                             [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, int>(k, any_cast<int>(p)); } },
     { type_index(typeid(size_t)),                          [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, size_t>(k, any_cast<size_t>(p)); } },

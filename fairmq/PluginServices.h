@@ -185,33 +185,20 @@ class PluginServices
     /// @brief Set config property
     /// @param key
     /// @param val
-    /// @throws fair::mq::PluginServices::InvalidStateError if method is called in unsupported device states
     ///
     /// Setting a config property will store the value in the FairMQ internal config store and notify any subscribers about the update.
     /// It is property dependent, if the call to this method will have an immediate, delayed or any effect at all.
     template<typename T>
     auto SetProperty(const std::string& key, T val) -> void
     {
-        auto currentState = GetCurrentDeviceState();
-        if (   (currentState == DeviceState::InitializingDevice)
-            || (currentState == DeviceState::Initialized)
-            || (currentState == DeviceState::Binding)
-            || (currentState == DeviceState::Bound)
-            || (currentState == DeviceState::Connecting)
-            || (currentState == DeviceState::Ready)) {
-            fConfig.SetProperty(key, val);
-        } else {
-            throw InvalidStateError{
-                tools::ToString("PluginServices::SetProperty is not supported in device state ", currentState, ". ",
-                                "Supported state is ", DeviceState::InitializingDevice, ".")};
-        }
+        fConfig.SetProperty(key, val);
     }
     void SetProperties(const fair::mq::Properties& props) { fConfig.SetProperties(props); }
     template<typename T>
     bool UpdateProperty(const std::string& key, T val) { return fConfig.UpdateProperty(key, val); }
     bool UpdateProperties(const fair::mq::Properties& input) { return fConfig.UpdateProperties(input); }
 
-    struct InvalidStateError : std::runtime_error { using std::runtime_error::runtime_error; };
+    void DeleteProperty(const std::string& key) { fConfig.DeleteProperty(key); }
 
     /// @brief Read config property
     /// @param key
