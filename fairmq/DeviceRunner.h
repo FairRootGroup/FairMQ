@@ -56,7 +56,7 @@ class DeviceRunner
     auto Run() -> int;
     auto RunWithExceptionHandlers() -> int;
 
-    bool HandleGeneralOptions();
+    static bool HandleGeneralOptions(const fair::mq::ProgOptions& config, bool printLogo = true);
 
     void SubscribeForConfigChange();
     void UnsubscribeFromConfigChange();

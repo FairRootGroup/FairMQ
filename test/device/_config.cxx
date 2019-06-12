@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include <FairMQDevice.h>
+#include <fairmq/DeviceRunner.h>
 #include <fairmq/ProgOptions.h>
 
 #include <fairmq/Tools.h>
@@ -125,6 +126,46 @@ class Config : public ::testing::Test
         return device.GetTransportName();
     }
 
+    string TestDeviceSetConfigWithPlugins(const string& transport)
+    {
+        fair::mq::ProgOptions config;
+
+        vector<string> emptyArgs = {"dummy", "--id", "test", "--color", "false"};
+
+        config.SetProperty("transport", transport);
+
+        FairMQDevice device;
+        fair::mq::PluginManager mgr;
+        mgr.LoadPlugin("s:config");
+        mgr.ForEachPluginProgOptions([&](boost::program_options::options_description options) {
+            config.AddToCmdLineOptions(options);
+        });
+        mgr.EmplacePluginServices(config, device);
+        mgr.InstantiatePlugins();
+
+        config.ParseAll(emptyArgs, true);
+        fair::mq::DeviceRunner::HandleGeneralOptions(config);
+        device.SetConfig(config);
+
+        FairMQChannel channel;
+        channel.UpdateType("pub");
+        channel.UpdateMethod("connect");
+        channel.UpdateAddress("tcp://localhost:5558");
+        device.AddChannel("data", std::move(channel));
+
+        thread t(control, ref(device));
+
+        device.RunStateMachine();
+
+        config.PrintOptions();
+
+        if (t.joinable()) {
+            t.join();
+        }
+
+        return device.GetTransportName();
+    }
+
     string TestDeviceControlInConstructor(const string& transport)
     {
         TestDevice device(transport);
@@ -159,6 +200,14 @@ TEST_F(Config, SetConfig)
 {
     string transport = "zeromq";
     string returnedTransport = TestDeviceSetConfig(transport);
+
+    EXPECT_EQ(transport, returnedTransport);
+}
+
+TEST_F(Config, SetConfigWithPlugins)
+{
+    string transport = "zeromq";
+    string returnedTransport = TestDeviceSetConfigWithPlugins(transport);
 
     EXPECT_EQ(transport, returnedTransport);
 }

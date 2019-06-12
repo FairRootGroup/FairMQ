@@ -24,27 +24,27 @@ DeviceRunner::DeviceRunner(int argc, char* const argv[], bool printLogo)
     , fEvents()
 {}
 
-bool DeviceRunner::HandleGeneralOptions()
+bool DeviceRunner::HandleGeneralOptions(const fair::mq::ProgOptions& config, bool printLogo)
 {
-    if (fConfig.Count("help")) {
-        fConfig.PrintHelp();
+    if (config.Count("help")) {
+        config.PrintHelp();
         return false;
     }
 
-    if (fConfig.Count("print-options")) {
-        fConfig.PrintOptionsRaw();
+    if (config.Count("print-options")) {
+        config.PrintOptionsRaw();
         return false;
     }
 
-    if (fConfig.Count("print-channels") || fConfig.Count("version")) {
+    if (config.Count("print-channels") || config.Count("version")) {
         fair::Logger::SetConsoleSeverity("nolog");
     } else {
-        string severity = fConfig.GetProperty<string>("severity");
-        string logFile = fConfig.GetProperty<string>("log-to-file");
-        string logFileSeverity = fConfig.GetProperty<string>("file-severity");
-        bool color = fConfig.GetProperty<bool>("color");
+        string severity = config.GetProperty<string>("severity");
+        string logFile = config.GetProperty<string>("log-to-file");
+        string logFileSeverity = config.GetProperty<string>("file-severity");
+        bool color = config.GetProperty<bool>("color");
 
-        string verbosity = fConfig.GetProperty<string>("verbosity");
+        string verbosity = config.GetProperty<string>("verbosity");
         fair::Logger::SetVerbosity(verbosity);
 
         if (logFile != "") {
@@ -55,7 +55,7 @@ bool DeviceRunner::HandleGeneralOptions()
             fair::Logger::SetConsoleSeverity(severity);
         }
 
-        if (fPrintLogo) {
+        if (printLogo) {
             LOG(info) << endl
                 << "      ______      _    _______  _________ " << endl
                 << "     / ____/___ _(_)_______   |/  /_  __ \\    version " << FAIRMQ_GIT_VERSION << endl
@@ -64,7 +64,7 @@ bool DeviceRunner::HandleGeneralOptions()
                 << "  /_/    \\__,_/_/_/     /_/  /_/  \\___\\_\\     " << FAIRMQ_LICENSE << "  © " << FAIRMQ_COPYRIGHT << endl;
         }
 
-        fConfig.PrintOptions();
+        config.PrintOptions();
     }
 
     return true;
@@ -122,7 +122,7 @@ auto DeviceRunner::Run() -> int
 
     fConfig.ParseAll(fRawCmdLineArgs, true);
 
-    if (!HandleGeneralOptions()) {
+    if (!HandleGeneralOptions(fConfig)) {
         return 0;
     }
 

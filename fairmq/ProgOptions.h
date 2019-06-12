@@ -144,9 +144,9 @@ class ProgOptions
         fEvents.Unsubscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber);
     }
 
-    void PrintHelp();
-    void PrintOptions();
-    void PrintOptionsRaw();
+    void PrintHelp() const;
+    void PrintOptions() const;
+    void PrintOptionsRaw() const;
 
     const boost::program_options::variables_map& GetVarMap() const { return fVarMap; }
 

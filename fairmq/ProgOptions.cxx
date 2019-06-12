@@ -363,12 +363,12 @@ void ProgOptions::AddChannel(const string& name, const FairMQChannel& channel)
     SetVarMapValue<bool>(string(prefix + "autoBind"), channel.GetAutoBind());
 }
 
-void ProgOptions::PrintHelp()
+void ProgOptions::PrintHelp() const
 {
     cout << fAllOptions << endl;
 }
 
-void ProgOptions::PrintOptions()
+void ProgOptions::PrintOptions() const
 {
     map<string, ValInfo> mapinfo;
 
@@ -412,7 +412,7 @@ void ProgOptions::PrintOptions()
     LOG(debug) << ss.str();
 }
 
-void ProgOptions::PrintOptionsRaw()
+void ProgOptions::PrintOptionsRaw() const
 {
     const vector<boost::shared_ptr<po::option_description>>& options = fAllOptions.options();
 
