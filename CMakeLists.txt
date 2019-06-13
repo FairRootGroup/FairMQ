@@ -106,7 +106,6 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     container
     program_options
     filesystem
-    regex
     date_time
     regex
 
