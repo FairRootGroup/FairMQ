@@ -12,9 +12,14 @@
 
 #include <sstream>
 
-inline std::ostream& operator<<(std::ostream& os, const fair::mq::Property& p)
+namespace boost
+{
+
+inline std::ostream& operator<<(std::ostream& os, const boost::any& p)
 {
     return os << fair::mq::PropertyHelper::GetPropertyInfo(p).first;
+}
+
 }
 
 #endif /* FAIR_MQ_PROPERTYOUT_H */
