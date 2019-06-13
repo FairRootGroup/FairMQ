@@ -56,6 +56,16 @@ static map<int, Transition> backwardsCompatibilityChangeStateHelper =
     { FairMQDevice::Event::ERROR_FOUND,           Transition::ErrorFound }
 };
 
+constexpr const char* FairMQDevice::DefaultId;
+constexpr int FairMQDevice::DefaultIOThreads;
+constexpr const char* FairMQDevice::DefaultTransportName;
+constexpr fair::mq::Transport FairMQDevice::DefaultTransportType;
+constexpr const char* FairMQDevice::DefaultNetworkInterface;
+constexpr int FairMQDevice::DefaultInitTimeout;
+constexpr uint64_t FairMQDevice::DefaultMaxRunTime;
+constexpr float FairMQDevice::DefaultRate;
+constexpr const char* FairMQDevice::DefaultSession;
+
 FairMQDevice::FairMQDevice()
     : FairMQDevice(nullptr, {0, 0, 0})
 {}
