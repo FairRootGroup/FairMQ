@@ -11,6 +11,7 @@
 
 #include <boost/algorithm/string.hpp> // join/split
 
+#include <regex>
 #include <set>
 #include <random>
 
@@ -480,9 +481,11 @@ try {
     }
 
     // validate channel name
-    if (fName.find(".") != string::npos) {
+    smatch m;
+    if (regex_search(fName, m, regex("[^a-zA-Z0-9\\-_\\[\\]#]"))) {
         ss << "INVALID";
-        LOG(error) << "channel name must not contain '.'";
+        LOG(debug) << ss.str();
+        LOG(error) << "channel name contains illegal character: '" << m.str(0) << "', allowed characters are: a-z, A-Z, 0-9, -, _, [, ], #";
         return false;
     }
 
