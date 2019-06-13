@@ -27,6 +27,22 @@ T GetPropertyOrDefault(const fair::mq::Properties& m, const string& k, const T& 
     return ifNotFound;
 }
 
+constexpr fair::mq::Transport FairMQChannel::DefaultTransportType;
+constexpr const char* FairMQChannel::DefaultTransportName;
+constexpr const char* FairMQChannel::DefaultName;
+constexpr const char* FairMQChannel::DefaultType;
+constexpr const char* FairMQChannel::DefaultMethod;
+constexpr const char* FairMQChannel::DefaultAddress;
+constexpr int FairMQChannel::DefaultSndBufSize;
+constexpr int FairMQChannel::DefaultRcvBufSize;
+constexpr int FairMQChannel::DefaultSndKernelSize;
+constexpr int FairMQChannel::DefaultRcvKernelSize;
+constexpr int FairMQChannel::DefaultLinger;
+constexpr int FairMQChannel::DefaultRateLogging;
+constexpr int FairMQChannel::DefaultPortRangeMin;
+constexpr int FairMQChannel::DefaultPortRangeMax;
+constexpr bool FairMQChannel::DefaultAutoBind;
+
 FairMQChannel::FairMQChannel()
     : FairMQChannel(DefaultName, DefaultType, DefaultMethod, DefaultAddress, nullptr)
 {}
