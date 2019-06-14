@@ -32,6 +32,28 @@ ostream& operator<<(ostream& os, const vector<T>& v)
     return os;
 }
 
+ostream& operator<<(ostream& os, const vector<signed char>& v)
+{
+    for (unsigned int i = 0; i < v.size(); ++i) {
+        os << to_string(v[i]);
+        if (i != v.size() - 1) {
+            os << ", ";
+        }
+    }
+    return os;
+}
+
+ostream& operator<<(ostream& os, const vector<unsigned char>& v)
+{
+    for (unsigned int i = 0; i < v.size(); ++i) {
+        os << to_string(v[i]);
+        if (i != v.size() - 1) {
+            os << ", ";
+        }
+    }
+    return os;
+}
+
 template<typename T>
 pair<string, string> getString(const boost::any& v, const string& label)
 {
@@ -49,31 +71,27 @@ pair<string, string> getStringPair(const boost::any& v, const string& label)
 
 unordered_map<type_index, function<pair<string, string>(const Property&)>> PropertyHelper::fTypeInfos = {
     { type_index(typeid(char)),                            [](const Property& p) { return pair<string, string>{ string(1, any_cast<char>(p)), "char" }; } },
-    { type_index(typeid(unsigned char)),                   [](const Property& p) { return pair<string, string>{ string(1, any_cast<unsigned char>(p)), "unsigned char" }; } },
+    { type_index(typeid(signed char)),                     [](const Property& p) { return getString<signed char>(p, "signed char"); } },
+    { type_index(typeid(unsigned char)),                   [](const Property& p) { return getString<unsigned char>(p, "unsigned char"); } },
     { type_index(typeid(const char*)),                     [](const Property& p) { return pair<string, string>{ string(any_cast<const char*>(p)), "string" }; } },
     { type_index(typeid(string)),                          [](const Property& p) { return pair<string, string>{ any_cast<string>(p), "string" }; } },
     { type_index(typeid(int)),                             [](const Property& p) { return getString<int>(p, "int"); } },
-    { type_index(typeid(size_t)),                          [](const Property& p) { return getString<size_t>(p, "size_t"); } },
-    { type_index(typeid(uint32_t)),                        [](const Property& p) { return getString<uint32_t>(p, "uint32_t"); } },
-    { type_index(typeid(uint64_t)),                        [](const Property& p) { return getString<uint64_t>(p, "uint64_t"); } },
     { type_index(typeid(long)),                            [](const Property& p) { return getString<long>(p, "long"); } },
     { type_index(typeid(long long)),                       [](const Property& p) { return getString<long long>(p, "long long"); } },
     { type_index(typeid(unsigned)),                        [](const Property& p) { return getString<unsigned>(p, "unsigned"); } },
     { type_index(typeid(unsigned long)),                   [](const Property& p) { return getString<unsigned long>(p, "unsigned long"); } },
     { type_index(typeid(unsigned long long)),              [](const Property& p) { return getString<unsigned long long>(p, "unsigned long long"); } },
-    { type_index(typeid(float)),                           [](const Property& p) { return getString<float>(p, "float"); } },
-    { type_index(typeid(double)),                          [](const Property& p) { return getString<double>(p, "double"); } },
-    { type_index(typeid(long double)),                     [](const Property& p) { return getString<long double>(p, "long double"); } },
+    { type_index(typeid(float)),                           [](const Property& p) { return getStringPair<float>(p, "float"); } },
+    { type_index(typeid(double)),                          [](const Property& p) { return getStringPair<double>(p, "double"); } },
+    { type_index(typeid(long double)),                     [](const Property& p) { return getStringPair<long double>(p, "long double"); } },
     { type_index(typeid(bool)),                            [](const Property& p) { stringstream ss; ss << boolalpha << any_cast<bool>(p); return pair<string, string>{ ss.str(), "bool" }; } },
     { type_index(typeid(vector<bool>)),                    [](const Property& p) { stringstream ss; ss << boolalpha << any_cast<vector<bool>>(p); return pair<string, string>{ ss.str(), "vector<bool>>" }; } },
     { type_index(typeid(boost::filesystem::path)),         [](const Property& p) { return getStringPair<boost::filesystem::path>(p, "boost::filesystem::path"); } },
     { type_index(typeid(vector<char>)),                    [](const Property& p) { return getStringPair<vector<char>>(p, "vector<char>"); } },
+    { type_index(typeid(vector<signed char>)),             [](const Property& p) { return getStringPair<vector<signed char>>(p, "vector<signed char>"); } },
     { type_index(typeid(vector<unsigned char>)),           [](const Property& p) { return getStringPair<vector<unsigned char>>(p, "vector<unsigned char>"); } },
     { type_index(typeid(vector<string>)),                  [](const Property& p) { return getStringPair<vector<string>>(p, "vector<string>"); } },
     { type_index(typeid(vector<int>)),                     [](const Property& p) { return getStringPair<vector<int>>(p, "vector<int>"); } },
-    { type_index(typeid(vector<size_t>)),                  [](const Property& p) { return getStringPair<vector<size_t>>(p, "vector<size_t>"); } },
-    { type_index(typeid(vector<uint32_t>)),                [](const Property& p) { return getStringPair<vector<uint32_t>>(p, "vector<uint32_t>"); } },
-    { type_index(typeid(vector<uint64_t>)),                [](const Property& p) { return getStringPair<vector<uint64_t>>(p, "vector<uint64_t>"); } },
     { type_index(typeid(vector<long>)),                    [](const Property& p) { return getStringPair<vector<long>>(p, "vector<long>"); } },
     { type_index(typeid(vector<long long>)),               [](const Property& p) { return getStringPair<vector<long long>>(p, "vector<long long>"); } },
     { type_index(typeid(vector<unsigned>)),                [](const Property& p) { return getStringPair<vector<unsigned>>(p, "vector<unsigned>"); } },
@@ -87,13 +105,11 @@ unordered_map<type_index, function<pair<string, string>(const Property&)>> Prope
 
 unordered_map<type_index, void(*)(const EventManager&, const string&, const Property&)> PropertyHelper::fEventEmitters = {
     { type_index(typeid(char)),                            [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, char>(k, any_cast<char>(p)); } },
+    { type_index(typeid(signed char)),                     [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, signed char>(k, any_cast<signed char>(p)); } },
     { type_index(typeid(unsigned char)),                   [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, unsigned char>(k, any_cast<unsigned char>(p)); } },
     { type_index(typeid(const char*)),                     [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, string>(k, string(any_cast<const char*>(p))); } },
     { type_index(typeid(string)),                          [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, string>(k, any_cast<string>(p)); } },
     { type_index(typeid(int)),                             [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, int>(k, any_cast<int>(p)); } },
-    { type_index(typeid(size_t)),                          [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, size_t>(k, any_cast<size_t>(p)); } },
-    { type_index(typeid(uint32_t)),                        [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, uint32_t>(k, any_cast<uint32_t>(p)); } },
-    { type_index(typeid(uint64_t)),                        [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, uint64_t>(k, any_cast<uint64_t>(p)); } },
     { type_index(typeid(long)),                            [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, long>(k, any_cast<long>(p)); } },
     { type_index(typeid(long long)),                       [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, long long>(k, any_cast<long long>(p)); } },
     { type_index(typeid(unsigned)),                        [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, unsigned>(k, any_cast<unsigned>(p)); } },
@@ -106,12 +122,10 @@ unordered_map<type_index, void(*)(const EventManager&, const string&, const Prop
     { type_index(typeid(vector<bool>)),                    [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<bool>>(k, any_cast<vector<bool>>(p)); } },
     { type_index(typeid(boost::filesystem::path)),         [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, boost::filesystem::path>(k, any_cast<boost::filesystem::path>(p)); } },
     { type_index(typeid(vector<char>)),                    [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<char>>(k, any_cast<vector<char>>(p)); } },
+    { type_index(typeid(vector<signed char>)),             [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<signed char>>(k, any_cast<vector<signed char>>(p)); } },
     { type_index(typeid(vector<unsigned char>)),           [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<unsigned char>>(k, any_cast<vector<unsigned char>>(p)); } },
     { type_index(typeid(vector<string>)),                  [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<string>>(k, any_cast<vector<string>>(p)); } },
     { type_index(typeid(vector<int>)),                     [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<int>>(k, any_cast<vector<int>>(p)); } },
-    { type_index(typeid(vector<size_t>)),                  [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<size_t>>(k, any_cast<vector<size_t>>(p)); } },
-    { type_index(typeid(vector<uint32_t>)),                [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<uint32_t>>(k, any_cast<vector<uint32_t>>(p)); } },
-    { type_index(typeid(vector<uint64_t>)),                [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<uint64_t>>(k, any_cast<vector<uint64_t>>(p)); } },
     { type_index(typeid(vector<long>)),                    [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<long>>(k, any_cast<vector<long>>(p)); } },
     { type_index(typeid(vector<long long>)),               [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<long long>>(k, any_cast<vector<long long>>(p)); } },
     { type_index(typeid(vector<unsigned>)),                [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<unsigned>>(k, any_cast<vector<unsigned>>(p)); } },
