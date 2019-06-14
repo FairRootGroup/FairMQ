@@ -197,6 +197,17 @@ add_testsuite(EventManager
     TIMEOUT 5
 )
 
+add_testsuite(Properties
+    SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    properties/_properties.cxx
+
+    LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
+             ${CMAKE_CURRENT_BINARY_DIR}
+    TIMEOUT 5
+)
+
 # add_testsuite(StateMachine
 #     SOURCES
 #     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
