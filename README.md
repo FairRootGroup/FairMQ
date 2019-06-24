@@ -157,3 +157,10 @@ After the `find_package(FairMQ)` call the following CMake variables are defined:
    4. [File output](docs/Logging.md#54-file-output)
    5. [Custom sinks](docs/Logging.md#55-custom-sinks)
 6. [Examples](docs/Examples.md#6-examples)
+7. [Plugins](docs/Plugins.md#7-plugins)
+   1. [Usage](docs/Plugins.md#71-usage)
+   2. [Development](docs/Plugins.md#72-development)
+   3. [Provided Plugins](docs/Plugins.md#73-provided-plugins)
+       1. [DDS](docs/Plugins.md#731-dds)
+       2. [PMIx](docs/Plugins.md#732-pmix)
+
