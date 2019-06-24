@@ -126,9 +126,11 @@ After the `find_package(FairMQ)` call the following CMake variables are defined:
 | `${FairMQ_LIBDIR}` | the installation lib directory |
 | `${FairMQ_DATADIR}` | the installation data directory (`../share/fairmq`) |
 | `${FairMQ_CMAKEMODDIR}` | the installation directory of shipped CMake find modules |
-| `${FairMQ_CXX_STANDARD_REQUIRED}` | the value of `CMAKE_CXX_STANDARD_REQUIRED` at built-time |
-| `${FairMQ_CXX_STANDARD}` | the value of `CMAKE_CXX_STANDARD` at built-time |
-| `${FairMQ_CXX_EXTENSIONS}` | the values of `CMAKE_CXX_EXTENSIONS` at built-time |
+| `${FairMQ_CXX_STANDARD_REQUIRED}` | the value of `CMAKE_CXX_STANDARD_REQUIRED` at build-time |
+| `${FairMQ_CXX_STANDARD}` | the value of `CMAKE_CXX_STANDARD` at build-time |
+| `${FairMQ_CXX_EXTENSIONS}` | the values of `CMAKE_CXX_EXTENSIONS` at build-time |
+| `${FairMQ_BUILD_TYPE}` | the value of `CMAKE_BUILD_TYPE` at build-time |
+| `${FairMQ_CXX_FLAGS}` | the values of `CMAKE_CXX_FLAGS` and `CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}` at build-time |
 
 ## Documentation
 
