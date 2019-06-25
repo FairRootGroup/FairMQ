@@ -1,47 +1,47 @@
-<topology id="ExampleDDS">
+<topology name="ExampleDDS">
 
-    <property id="data1" />
-    <property id="data2" />
+    <property name="data1" />
+    <property name="data2" />
 
-    <declrequirement id="SamplerWorker" type="wnname" value="sampler"/>
-    <declrequirement id="ProcessorWorker" type="wnname" value="processor"/>
-    <declrequirement id="SinkWorker" type="wnname" value="sink"/>
+    <declrequirement name="SamplerWorker" type="wnname" value="sampler"/>
+    <declrequirement name="ProcessorWorker" type="wnname" value="processor"/>
+    <declrequirement name="SinkWorker" type="wnname" value="sink"/>
 
-    <decltask id="Sampler">
+    <decltask name="Sampler">
         <exe reachable="true">@EX_BIN_DIR@/fairmq-ex-dds-sampler --id sampler --color false --channel-config name=data1,type=push,method=bind -S "&lt;@DDS_PLUGIN_LIB_DIR@/" -P dds</exe>
         <requirements>
-            <id>SamplerWorker</id>
+            <name>SamplerWorker</name>
         </requirements>
         <properties>
-            <id access="write">data1</id>
+            <name access="write">data1</name>
         </properties>
     </decltask>
 
-    <decltask id="Processor">
+    <decltask name="Processor">
         <exe reachable="true">@EX_BIN_DIR@/fairmq-ex-dds-processor --id processor_%taskIndex% --config-key processor --color false --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -S "&lt;@DDS_PLUGIN_LIB_DIR@/" -P dds</exe>
         <requirements>
-            <id>ProcessorWorker</id>
+            <name>ProcessorWorker</name>
         </requirements>
         <properties>
-            <id access="read">data1</id>
-            <id access="read">data2</id>
+            <name access="read">data1</name>
+            <name access="read">data2</name>
         </properties>
     </decltask>
 
-    <decltask id="Sink">
+    <decltask name="Sink">
         <exe reachable="true">@EX_BIN_DIR@/fairmq-ex-dds-sink --id sink --color false --channel-config name=data2,type=pull,method=bind -S "&lt;@DDS_PLUGIN_LIB_DIR@/" -P dds</exe>
         <requirements>
-            <id>SinkWorker</id>
+            <name>SinkWorker</name>
         </requirements>
         <properties>
-            <id access="write">data2</id>
+            <name access="write">data2</name>
         </properties>
     </decltask>
 
-    <main id="main">
+    <main name="main">
         <task>Sampler</task>
         <task>Sink</task>
-        <group id="ProcessorGroup" n="10">
+        <group name="ProcessorGroup" n="10">
             <task>Processor</task>
         </group>
     </main>

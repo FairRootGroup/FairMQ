@@ -11,7 +11,7 @@
 
 #include <fairmq/Plugin.h>
 
-#include <dds_intercom.h>
+#include <DDS/dds_intercom.h>
 
 #include <condition_variable>
 #include <mutex>

@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <dds_intercom.h>
+#include <DDS/dds_intercom.h>
 
 #include <termios.h> // raw mode console input
 
