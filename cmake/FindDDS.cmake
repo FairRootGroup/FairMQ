@@ -9,7 +9,7 @@
 find_path(DDS_INCLUDE_DIR
   NAMES dds_intercom.h
   HINTS ${DDS_ROOT} $ENV{DDS_ROOT}
-  PATH_SUFFIXES include
+  PATH_SUFFIXES include include/DDS
 )
 
 find_path(DDS_LIBRARY_DIR
