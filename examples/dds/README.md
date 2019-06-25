@@ -40,9 +40,9 @@ The configuration of the channel connection addresses is done by the DDS plugin 
 
 **If you chose step 2b earlier**, then modify the provided `ex-dds-topology.xml` in the top that the following lines read as following:
 ```xml
-<declrequirement id="SamplerWorker" type="wnname" value=".*"/>
-<declrequirement id="ProcessorWorker" type="wnname" value=".*"/>
-<declrequirement id="SinkWorker" type="wnname" value=".*"/>
+<declrequirement name="SamplerWorker" type="wnname" value=".*"/>
+<declrequirement name="ProcessorWorker" type="wnname" value=".*"/>
+<declrequirement name="SinkWorker" type="wnname" value=".*"/>
 ```
 
 Note that the attributes `value` contain a different value.

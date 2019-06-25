@@ -74,6 +74,10 @@ if(BUILD_NANOMSG_TRANSPORT)
   )
 endif()
 
+if(BUILD_DDS_PLUGIN)
+  set(DDS_Boost_COMPONENTS system log log_setup)
+endif()
+
 if(BUILD_FAIRMQ)
   find_package2(PUBLIC Boost REQUIRED
     VERSION 1.64 ${asiofi_Boost_VERSION}
@@ -85,6 +89,7 @@ if(BUILD_FAIRMQ)
     date_time
     regex
     ${asiofi_Boost_COMPONENTS}
+    ${DDS_Boost_COMPONENTS}
   )
   find_package2(PUBLIC FairLogger REQUIRED
     VERSION 1.2.0
@@ -95,7 +100,7 @@ if(BUILD_FAIRMQ)
 endif()
 
 if(BUILD_DDS_PLUGIN)
-  find_package2(PRIVATE DDS VERSION 2.2 REQUIRED)
+  find_package2(PRIVATE DDS VERSION 2.4 REQUIRED)
 endif()
 
 if(BUILD_PMIX_PLUGIN)
@@ -183,11 +188,6 @@ if(BUILD_FAIRMQ)
   )
 
   install(FILES cmake/FindZeroMQ.cmake
-    DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
-  )
-endif()
-if(BUILD_DDS_PLUGIN)
-  install(FILES cmake/FindDDS.cmake
     DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
   )
 endif()
