@@ -63,8 +63,7 @@ if(BUILD_OFI_TRANSPORT)
     VERSION 0.3.1
   )
   find_package2(PRIVATE OFI REQUIRED
-    VERSION ${asiofi_OFI_VERSION}
-    COMPONENTS ${asiofi_OFI_COMPONENTS}
+    ADD_REQUIREMENTS_OF asiofi
   )
 endif()
 
@@ -75,12 +74,24 @@ if(BUILD_NANOMSG_TRANSPORT)
 endif()
 
 if(BUILD_DDS_PLUGIN)
+  find_package2(PRIVATE DDS REQUIRED
+    VERSION 2.4
+  )
   set(DDS_Boost_COMPONENTS system log log_setup)
 endif()
 
+if(BUILD_PMIX_PLUGIN)
+  find_package2(PRIVATE PMIx REQUIRED
+    VERSION 2.1.4
+  )
+endif()
+
 if(BUILD_FAIRMQ)
+  find_package2(PUBLIC FairLogger REQUIRED
+    VERSION 1.2.0
+  )
   find_package2(PUBLIC Boost REQUIRED
-    VERSION 1.64 ${asiofi_Boost_VERSION}
+    VERSION 1.64
 
     COMPONENTS
     container
@@ -88,23 +99,15 @@ if(BUILD_FAIRMQ)
     filesystem
     date_time
     regex
-    ${asiofi_Boost_COMPONENTS}
-    ${DDS_Boost_COMPONENTS}
-  )
-  find_package2(PUBLIC FairLogger REQUIRED
-    VERSION 1.2.0
+
+    ADD_REQUIREMENTS_OF
+    asiofi
+    DDS
+    FairLogger
   )
   find_package2(PRIVATE ZeroMQ REQUIRED
     VERSION 4.1.5
   )
-endif()
-
-if(BUILD_DDS_PLUGIN)
-  find_package2(PRIVATE DDS VERSION 2.4 REQUIRED)
-endif()
-
-if(BUILD_PMIX_PLUGIN)
-  find_package2(PRIVATE PMIx VERSION 2.1.4 REQUIRED)
 endif()
 
 if(BUILD_TESTING)
