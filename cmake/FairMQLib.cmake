@@ -324,7 +324,7 @@ endmacro()
 # COMPONENTS and VERSION args are then just passed to the native find_package.
 #
 macro(find_package2 qualifier pkgname)
-  cmake_parse_arguments(ARGS "" "" "VERSION;COMPONENTS;ADD_REQUIREMENTS_OF" ${ARGN})
+  cmake_parse_arguments(ARGS "" "VERSION" "COMPONENTS;ADD_REQUIREMENTS_OF" ${ARGN})
 
   string(TOUPPER ${pkgname} pkgname_upper)
   set(__old_cpp__ ${CMAKE_PREFIX_PATH})
