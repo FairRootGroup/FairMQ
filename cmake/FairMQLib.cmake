@@ -362,7 +362,7 @@ macro(find_package2 qualifier pkgname)
   endif()
   # deduplicate required component list
   if(__components__)
-    list(REMOVE_DUPLICATES ARGS_COMPONENTS)
+    list(REMOVE_DUPLICATES __components__)
   endif()
 
   # call native find_package
