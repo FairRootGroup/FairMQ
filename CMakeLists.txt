@@ -91,6 +91,13 @@ if(BUILD_FAIRMQ)
   find_package2(PUBLIC FairLogger REQUIRED
     VERSION 1.2.0
   )
+
+  if(NOT DEFINED Boost_NO_BOOST_CMAKE AND CMAKE_VERSION VERSION_LESS 3.15)
+    # Since Boost 1.70 a CMake package is shipped by default. Unfortunately, it has a number
+    # of problems that are only fixed in Boost 1.71 or CMake 3.15. By default we skip the
+    # BoostConfig lookup. This can be overridden on the command line via -DBoost_NO_BOOST_CMAKE=OFF
+    set(Boost_NO_BOOST_CMAKE ON)
+  endif()
   find_package2(PUBLIC Boost REQUIRED
     VERSION 1.64
 
@@ -237,7 +244,11 @@ if(PROJECT_PACKAGE_DEPENDENCIES)
   foreach(dep IN LISTS PROJECT_PACKAGE_DEPENDENCIES)
     if(${dep}_VERSION)
       if(${dep} STREQUAL Boost)
-        set(version_str "${BGreen}${${dep}_MAJOR_VERSION}.${${dep}_MINOR_VERSION}${CR}")
+        if(Boost_VERSION_MAJOR)
+          set(version_str "${BGreen}${${dep}_VERSION_MAJOR}.${${dep}_VERSION_MINOR}${CR}")
+        else()
+          set(version_str "${BGreen}${${dep}_MAJOR_VERSION}.${${dep}_MINOR_VERSION}${CR}")
+        endif()
       else()
         set(version_str "${BGreen}${${dep}_VERSION}${CR}")
       endif()
@@ -270,6 +281,13 @@ if(PROJECT_PACKAGE_DEPENDENCIES)
     elseif(${dep} STREQUAL DDS)
       get_target_property(dds_include DDS::dds_intercom_lib INTERFACE_INCLUDE_DIRECTORIES)
       get_filename_component(prefix ${dds_include}/.. ABSOLUTE)
+    elseif(${dep} STREQUAL Boost)
+      if(TARGET Boost::headers)
+        get_target_property(boost_include Boost::headers INTERFACE_INCLUDE_DIRECTORIES)
+      else()
+        get_target_property(boost_include Boost::boost INTERFACE_INCLUDE_DIRECTORIES)
+      endif()
+      get_filename_component(prefix ${boost_include}/.. ABSOLUTE)
     elseif(${dep} STREQUAL Doxygen)
       get_target_property(doxygen_bin Doxygen::doxygen INTERFACE_LOCATION)
       get_filename_component(prefix ${doxygen_bin} DIRECTORY)
