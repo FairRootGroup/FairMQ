@@ -12,7 +12,7 @@
 #define _GNU_SOURCE // To get defns of NI_MAXSERV and NI_MAXHOST
 #endif
 
-#include "FairMQLogger.h"
+#include <fairlogger/Logger.h>
 
 #include <sys/socket.h>
 #include <sys/types.h>

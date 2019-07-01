@@ -9,7 +9,7 @@
 #ifndef FAIRMQSTATEMACHINE_H_
 #define FAIRMQSTATEMACHINE_H_
 
-#include "FairMQLogger.h"
+#include <fairlogger/Logger.h>
 
 #include <string>
 #include <memory>

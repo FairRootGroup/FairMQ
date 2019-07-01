@@ -9,7 +9,7 @@
 ################
 # libFairMQSDK #
 ################
-set(target FairMQ_SDK)
+set(target SDK)
 
 set(SDK_PUBLIC_HEADER_FILES
   Session.h
@@ -39,14 +39,17 @@ target_include_directories(${target}
 target_link_libraries(${target}
   PUBLIC
   FairLogger::FairLogger
+  StateMachine
 
   PRIVATE
+  Tools
   DDS::dds_intercom_lib
   DDS::dds_protocol_lib
 )
 set_target_properties(${target} PROPERTIES
   VERSION ${PROJECT_GIT_VERSION}
   SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+  OUTPUT_NAME FairMQ_${target}
 )
 
 ###############
@@ -55,13 +58,13 @@ set_target_properties(${target} PROPERTIES
 add_executable(fairmq runFairMQ.cxx)
 target_link_libraries(fairmq
   PRIVATE
-  FairMQ_SDK
+  SDK
   Boost::program_options
 )
 
 install(
   TARGETS
-  FairMQ_SDK
+  SDK
   fairmq
 
   EXPORT ${PROJECT_EXPORT_SET}
@@ -71,9 +74,9 @@ install(
 )
 
 # preserve relative path and prepend fairmq
-foreach(HEADER ${SDK_PUBLIC_HEADER_FILES})
+foreach(HEADER IN LISTS SDK_PUBLIC_HEADER_FILES)
   get_filename_component(_path ${HEADER} DIRECTORY)
-  file(TO_CMAKE_PATH ${PROJECT_INSTALL_INCDIR}/${_path} _destination)
+  file(TO_CMAKE_PATH ${PROJECT_INSTALL_INCDIR}/sdk/${_path} _destination)
   install(FILES ${HEADER}
     DESTINATION ${_destination}
   )
