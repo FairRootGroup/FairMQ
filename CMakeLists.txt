@@ -39,6 +39,7 @@ cmake_dependent_option(BUILD_OFI_TRANSPORT "Build experimental OFI transport." O
 cmake_dependent_option(BUILD_DDS_PLUGIN "Build DDS plugin." OFF "BUILD_FAIRMQ" OFF)
 cmake_dependent_option(BUILD_PMIX_PLUGIN "Build PMIx plugin." OFF "BUILD_FAIRMQ" OFF)
 cmake_dependent_option(BUILD_EXAMPLES "Build FairMQ examples." ON "BUILD_FAIRMQ" OFF)
+option(BUILD_SDK "Build the FairMQ controller SDK." OFF)
 option(BUILD_DOCS "Build FairMQ documentation." OFF)
 option(FAST_BUILD "Fast production build. Not recommended for development." OFF)
 ################################################################################
@@ -73,7 +74,7 @@ if(BUILD_NANOMSG_TRANSPORT)
   )
 endif()
 
-if(BUILD_DDS_PLUGIN)
+if(BUILD_DDS_PLUGIN OR BUILD_SDK)
   find_package2(PRIVATE DDS REQUIRED
     VERSION 2.4
   )
@@ -87,7 +88,7 @@ if(BUILD_PMIX_PLUGIN)
   )
 endif()
 
-if(BUILD_FAIRMQ)
+if(BUILD_FAIRMQ OR BUILD_SDK)
   find_package2(PUBLIC FairLogger REQUIRED
     VERSION 1.2.0
   )
@@ -113,6 +114,9 @@ if(BUILD_FAIRMQ)
     DDS
     FairLogger
   )
+endif()
+
+if(BUILD_FAIRMQ)
   find_package2(PRIVATE ZeroMQ REQUIRED
     VERSION 4.1.5
   )
@@ -161,6 +165,10 @@ if(BUILD_DOCS)
   doxygen_add_docs(doxygen README.md fairmq)
   add_custom_target(docs ALL DEPENDS doxygen)
 endif()
+
+if(BUILD_SDK)
+  add_subdirectory(fairmq/sdk)
+endif()
 ################################################################################
 
 
@@ -188,6 +196,9 @@ if(BUILD_EXAMPLES)
 endif()
 if(BUILD_DOCS)
   list(APPEND PROJECT_PACKAGE_COMPONENTS docs)
+endif()
+if(BUILD_SDK)
+  list(APPEND PROJECT_PACKAGE_COMPONENTS sdk)
 endif()
 ################################################################################
 
@@ -355,6 +366,12 @@ else()
   set(docs_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_DOCS=ON${CR})")
 endif()
 message(STATUS "  ${BWhite}docs${CR}               ${docs_summary}")
+if(BUILD_SDK)
+  set(sdk_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_SDK=OFF${CR})")
+else()
+  set(sdk_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_SDK=ON${CR})")
+endif()
+message(STATUS "  ${BWhite}sdk${CR}                ${sdk_summary}")
 message(STATUS "  ")
 if(RUN_STATIC_ANALYSIS)
   list(LENGTH PROJECT_STATIC_ANALYSERS size)
