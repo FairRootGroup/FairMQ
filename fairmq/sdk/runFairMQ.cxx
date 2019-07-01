@@ -7,9 +7,12 @@
  ********************************************************************************/
 
 #include <fairmq/sdk/Topology.h>
+#include <fairmq/StateMachine.h>
+#include <iostream>
 
-int main(int argc, char *argv[])
+int main(int /*argc*/, char ** /*argv*/)
 {
-  
+  std::cout << fair::mq::State::Idle << std::endl;
+   
   return 0;
 }

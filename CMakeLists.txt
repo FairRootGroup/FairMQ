@@ -139,12 +139,7 @@ endif()
 
 
 # Targets ######################################################################
-if(BUILD_FAIRMQ)
-  configure_file(${PROJECT_NAME_LOWER}/Version.h.in
-    ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
-    @ONLY
-  )
-
+if(BUILD_FAIRMQ OR BUILD_SDK)
   add_subdirectory(fairmq)
 endif()
 
@@ -164,10 +159,6 @@ if(BUILD_DOCS)
   set(DOXYGEN_HTML_FOOTER docs/footer.html)
   doxygen_add_docs(doxygen README.md fairmq)
   add_custom_target(docs ALL DEPENDS doxygen)
-endif()
-
-if(BUILD_SDK)
-  add_subdirectory(fairmq/sdk)
 endif()
 ################################################################################
 
@@ -205,10 +196,6 @@ endif()
 
 # Installation #################################################################
 if(BUILD_FAIRMQ)
-  install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
-    DESTINATION ${PROJECT_INSTALL_INCDIR}
-  )
-
   install(FILES cmake/FindZeroMQ.cmake
     DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
   )
