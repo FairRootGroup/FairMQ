@@ -12,6 +12,7 @@
 #include "FairMQUnmanagedRegion.h"
 
 #include <cstddef> // size_t
+#include <string>
 
 class FairMQUnmanagedRegionZMQ final : public FairMQUnmanagedRegion
 {
@@ -19,7 +20,7 @@ class FairMQUnmanagedRegionZMQ final : public FairMQUnmanagedRegion
     friend class FairMQMessageZMQ;
 
   public:
-    FairMQUnmanagedRegionZMQ(const size_t size, FairMQRegionCallback callback);
+    FairMQUnmanagedRegionZMQ(const size_t size, FairMQRegionCallback callback, const std::string& path = "", int flags = 0);
     FairMQUnmanagedRegionZMQ(const FairMQUnmanagedRegionZMQ&) = delete;
     FairMQUnmanagedRegionZMQ operator=(const FairMQUnmanagedRegionZMQ&) = delete;
 

@@ -375,20 +375,20 @@ int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int tim
 
             for (size_t m = 0; m < numMessages; m++)
             {
-                MetaHeader metaHeader;
-                memcpy(&metaHeader, &hdrVec[m], sizeof(MetaHeader));
+                MetaHeader hdr;
+                memcpy(&hdr, &hdrVec[m], sizeof(MetaHeader));
 
                 msgVec.emplace_back(fair::mq::tools::make_unique<FairMQMessageSHM>(fManager, GetTransport()));
 
                 FairMQMessageSHM* msg = static_cast<FairMQMessageSHM*>(msgVec.back().get());
                 MetaHeader* msgHdr = static_cast<MetaHeader*>(zmq_msg_data(msg->GetMessage()));
 
-                memcpy(msgHdr, &metaHeader, sizeof(MetaHeader));
+                memcpy(msgHdr, &hdr, sizeof(MetaHeader));
 
-                msg->fHandle = metaHeader.fHandle;
-                msg->fSize = metaHeader.fSize;
-                msg->fRegionId = metaHeader.fRegionId;
-                msg->fHint = metaHeader.fHint;
+                msg->fHandle = hdr.fHandle;
+                msg->fSize = hdr.fSize;
+                msg->fRegionId = hdr.fRegionId;
+                msg->fHint = hdr.fHint;
 
                 totalSize += msg->GetSize();
             }

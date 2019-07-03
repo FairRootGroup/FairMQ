@@ -35,14 +35,15 @@ void Sink::Run()
 {
     FairMQChannel& dataInChannel = fChannels.at("data").at(0);
 
-    while (!NewStatePending())
-    {
+    while (!NewStatePending()) {
         FairMQMessagePtr msg(dataInChannel.Transport()->CreateMessage());
         dataInChannel.Receive(msg);
-        // void* ptr = msg->GetData();
 
-        if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
-        {
+        // void* ptr = msg->GetData();
+        // char* cptr = static_cast<char*>(ptr);
+        // LOG(info) << "check: " << cptr[3];
+
+        if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
             LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
             break;
         }

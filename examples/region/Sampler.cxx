@@ -40,8 +40,7 @@ void Sampler::InitTask()
                                                              10000000,
                                                              [this](void* /*data*/, size_t /*size*/, void* /*hint*/) { // callback to be called when message buffers no longer needed by transport
                                                                  --fNumUnackedMsgs;
-                                                                 if (fMaxIterations > 0)
-                                                                 {
+                                                                 if (fMaxIterations > 0) {
                                                                      LOG(debug) << "Received ack";
                                                                  }
                                                              }
@@ -58,12 +57,14 @@ bool Sampler::ConditionalRun()
                                         nullptr // hint
                                         ));
 
-    if (Send(msg, "data", 0) > 0)
-    {
+    // static_cast<char*>(fRegion->GetData())[3] = 97;
+    // LOG(info) << "check: " << static_cast<char*>(fRegion->GetData())[3];
+    // std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    if (Send(msg, "data", 0) > 0) {
         ++fNumUnackedMsgs;
 
-        if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
-        {
+        if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
             LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
             return false;
         }
@@ -75,8 +76,7 @@ bool Sampler::ConditionalRun()
 void Sampler::ResetTask()
 {
     // if not all messages acknowledged, wait for a bit. But only once, since receiver could be already dead.
-    if (fNumUnackedMsgs != 0)
-    {
+    if (fNumUnackedMsgs != 0) {
         LOG(debug) << "waiting for all acknowledgements... (" << fNumUnackedMsgs << ")";
         this_thread::sleep_for(chrono::milliseconds(500));
         LOG(debug) << "done, still unacked: " << fNumUnackedMsgs;

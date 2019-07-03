@@ -10,7 +10,10 @@
 #include <fairmq/shmem/Common.h>
 #include <fairmq/shmem/Manager.h>
 
+#include <boost/filesystem.hpp>
+#include <boost/process.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <cerrno>
 
 #include <chrono>
 
@@ -26,64 +29,77 @@ namespace mq
 namespace shmem
 {
 
-Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, FairMQRegionCallback callback)
+Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, FairMQRegionCallback callback, const string& path /* = "" */, int flags /* = 0 */)
     : fManager(manager)
     , fRemote(remote)
     , fStop(false)
-    , fName("fmq_" + fManager.fSessionName +"_rg_" + to_string(id))
-    , fQueueName("fmq_" + fManager.fSessionName +"_rgq_" + to_string(id))
+    , fName("fmq_" + fManager.fShmId + "_rg_" + to_string(id))
+    , fQueueName("fmq_" + fManager.fShmId + "_rgq_" + to_string(id))
     , fShmemObject()
+    , fFile(nullptr)
+    , fFileMapping()
     , fQueue(nullptr)
     , fReceiveAcksWorker()
     , fSendAcksWorker()
     , fCallback(callback)
 {
-    if (fRemote)
-    {
-        fShmemObject = bipc::shared_memory_object(bipc::open_only, fName.c_str(), bipc::read_write);
-        LOG(debug) << "shmem: located remote region: " << fName;
+    if (path != "") {
+        fName = string(path + fName);
 
-        fQueue = fair::mq::tools::make_unique<bipc::message_queue>(bipc::open_only, fQueueName.c_str());
-        LOG(debug) << "shmem: located remote region queue: " << fQueueName;
+        fFile = fopen(fName.c_str(), fRemote ? "r+" : "w+");
+
+        if (!fFile) {
+            LOG(error) << "Failed to initialize file: " << fName;
+            LOG(error) << "errno: " << errno << ": " << strerror(errno);
+            throw runtime_error(tools::ToString("Failed to initialize file for shared memory region: ", strerror(errno)));
+        }
+        fFileMapping = bipc::file_mapping(fName.c_str(), bipc::read_write);
+        LOG(debug) << "shmem: initialized file: " << fName;
+        fRegion = bipc::mapped_region(fFileMapping, bipc::read_write, 0, size, 0, flags);
+    } else {
+        if (fRemote) {
+            fShmemObject = bipc::shared_memory_object(bipc::open_only, fName.c_str(), bipc::read_write);
+        } else {
+            fShmemObject = bipc::shared_memory_object(bipc::create_only, fName.c_str(), bipc::read_write);
+            fShmemObject.truncate(size);
+        }
+        fRegion = bipc::mapped_region(fShmemObject, bipc::read_write, 0, 0, 0, flags);
     }
-    else
-    {
-        fShmemObject = bipc::shared_memory_object(bipc::create_only, fName.c_str(), bipc::read_write);
-        LOG(debug) << "shmem: created region: " << fName;
-        fShmemObject.truncate(size);
 
-        fQueue = fair::mq::tools::make_unique<bipc::message_queue>(bipc::create_only, fQueueName.c_str(), 1024, fAckBunchSize * sizeof(RegionBlock));
-        LOG(debug) << "shmem: created region queue: " << fQueueName;
+    InitializeQueues();
+    LOG(debug) << "shmem: initialized region: " << fName;
+    fSendAcksWorker = thread(&Region::SendAcks, this);
+}
+
+void Region::InitializeQueues()
+{
+    if (fRemote) {
+        fQueue = tools::make_unique<bipc::message_queue>(bipc::open_only, fQueueName.c_str());
+    } else {
+        fQueue = tools::make_unique<bipc::message_queue>(bipc::create_only, fQueueName.c_str(), 1024, fAckBunchSize * sizeof(RegionBlock));
     }
-    fRegion = bipc::mapped_region(fShmemObject, bipc::read_write); // TODO: add HUGEPAGES flag here
-    // fRegion = bipc::mapped_region(fShmemObject, bipc::read_write, 0, 0, 0, MAP_ANONYMOUS | MAP_HUGETLB);
-
-    fSendAcksWorker = std::thread(&Region::SendAcks, this);
+    LOG(debug) << "shmem: initialized region queue: " << fQueueName;
 }
 
 void Region::StartReceivingAcks()
 {
-    fReceiveAcksWorker = std::thread(&Region::ReceiveAcks, this);
+    fReceiveAcksWorker = thread(&Region::ReceiveAcks, this);
 }
 
 void Region::ReceiveAcks()
 {
     unsigned int priority;
     bipc::message_queue::size_type recvdSize;
-    std::unique_ptr<RegionBlock[]> blocks = fair::mq::tools::make_unique<RegionBlock[]>(fAckBunchSize);
+    unique_ptr<RegionBlock[]> blocks = tools::make_unique<RegionBlock[]>(fAckBunchSize);
 
-    while (!fStop) // end thread condition (should exist until region is destroyed)
-    {
+    while (!fStop) { // end thread condition (should exist until region is destroyed)
         auto rcvTill = bpt::microsec_clock::universal_time() + bpt::milliseconds(500);
 
-        while (fQueue->timed_receive(blocks.get(), fAckBunchSize * sizeof(RegionBlock), recvdSize, priority, rcvTill))
-        {
+        while (fQueue->timed_receive(blocks.get(), fAckBunchSize * sizeof(RegionBlock), recvdSize, priority, rcvTill)) {
             // LOG(debug) << "received: " << block.fHandle << " " << block.fSize << " " << block.fMessageId;
-            if (fCallback)
-            {
+            if (fCallback) {
                 const auto numBlocks = recvdSize / sizeof(RegionBlock);
-                for (size_t i = 0; i < numBlocks; i++)
-                {
+                for (size_t i = 0; i < numBlocks; i++) {
                     fCallback(reinterpret_cast<char*>(fRegion.get_address()) + blocks[i].fHandle, blocks[i].fSize, reinterpret_cast<void*>(blocks[i].fHint));
                 }
             }
@@ -95,12 +111,11 @@ void Region::ReceiveAcks()
 
 void Region::ReleaseBlock(const RegionBlock &block)
 {
-    std::unique_lock<std::mutex> lock(fBlockLock);
+    unique_lock<mutex> lock(fBlockLock);
 
     fBlocksToFree.emplace_back(block);
 
-    if (fBlocksToFree.size() >= fAckBunchSize)
-    {
+    if (fBlocksToFree.size() >= fAckBunchSize) {
         lock.unlock(); // reduces contention on fBlockLock
         fBlockSendCV.notify_one();
     }
@@ -108,40 +123,33 @@ void Region::ReleaseBlock(const RegionBlock &block)
 
 void Region::SendAcks()
 {
-    std::unique_ptr<RegionBlock[]> blocks = fair::mq::tools::make_unique<RegionBlock[]>(fAckBunchSize);
+    unique_ptr<RegionBlock[]> blocks = tools::make_unique<RegionBlock[]>(fAckBunchSize);
 
-    while (true) // we'll try to send all acks before stopping
-    {
+    while (true) { // we'll try to send all acks before stopping
         size_t blocksToSend = 0;
 
         {   // mutex locking block
-            std::unique_lock<std::mutex> lock(fBlockLock);
+            unique_lock<mutex> lock(fBlockLock);
 
             // try to get more blocks without waiting (we can miss a notify from CloseMessage())
-            if (!fStop && (fBlocksToFree.size() < fAckBunchSize))
-            {
+            if (!fStop && (fBlocksToFree.size() < fAckBunchSize)) {
                 // cv.wait() timeout: send whatever blocks we have
-                fBlockSendCV.wait_for(lock, std::chrono::milliseconds(500));
+                fBlockSendCV.wait_for(lock, chrono::milliseconds(500));
             }
 
-            blocksToSend = std::min(fBlocksToFree.size(), fAckBunchSize);
+            blocksToSend = min(fBlocksToFree.size(), fAckBunchSize);
 
-            std::copy_n(fBlocksToFree.end() - blocksToSend, blocksToSend, blocks.get());
+            copy_n(fBlocksToFree.end() - blocksToSend, blocksToSend, blocks.get());
             fBlocksToFree.resize(fBlocksToFree.size() - blocksToSend);
         } // unlock the block mutex here while sending over IPC
 
-        if (blocksToSend > 0)
-        {
-            while (!fQueue->try_send(blocks.get(), blocksToSend * sizeof(RegionBlock), 0) && !fStop)
-            {
+        if (blocksToSend > 0) {
+            while (!fQueue->try_send(blocks.get(), blocksToSend * sizeof(RegionBlock), 0) && !fStop) {
                 // receiver slow? yield and try again...
                 this_thread::yield();
             }
-        }
-        else // blocksToSend == 0
-        {
-            if (fStop)
-            {
+        } else { // blocksToSend == 0
+            if (fStop) {
                 break;
             }
         }
@@ -154,30 +162,31 @@ Region::~Region()
 {
     fStop = true;
 
-    if (fSendAcksWorker.joinable())
-    {
+    if (fSendAcksWorker.joinable()) {
         fSendAcksWorker.join();
     }
 
-    if (!fRemote)
-    {
-        if (fReceiveAcksWorker.joinable())
-        {
+    if (!fRemote) {
+        if (fReceiveAcksWorker.joinable()) {
             fReceiveAcksWorker.join();
         }
 
-        if (bipc::shared_memory_object::remove(fName.c_str()))
-        {
+        if (bipc::shared_memory_object::remove(fName.c_str())) {
             LOG(debug) << "shmem: destroyed region " << fName;
         }
 
-        if (bipc::message_queue::remove(fQueueName.c_str()))
-        {
-            LOG(debug) << "shmem: removed region queue " << fName;
+        if (bipc::file_mapping::remove(fName.c_str())) {
+            LOG(debug) << "shmem: destroyed file mapping " << fName;
         }
-    }
-    else
-    {
+
+        if (fFile) {
+            fclose(fFile);
+        }
+
+        if (bipc::message_queue::remove(fQueueName.c_str())) {
+            LOG(debug) << "shmem: removed region queue " << fQueueName;
+        }
+    } else {
         // LOG(debug) << "shmem: region '" << fName << "' is remote, no cleanup necessary.";
         LOG(debug) << "shmem: region queue '" << fQueueName << "' is remote, no cleanup necessary";
     }

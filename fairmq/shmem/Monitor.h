@@ -26,7 +26,7 @@ namespace shmem
 class Monitor
 {
   public:
-    Monitor(const std::string& sessionName, bool selfDestruct, bool interactive, unsigned int timeoutInMS, bool runAsDaemon, bool cleanOnExit);
+    Monitor(const std::string& shmId, bool selfDestruct, bool interactive, unsigned int timeoutInMS, bool runAsDaemon, bool cleanOnExit);
 
     Monitor(const Monitor&) = delete;
     Monitor operator=(const Monitor&) = delete;
@@ -36,8 +36,9 @@ class Monitor
 
     virtual ~Monitor();
 
-    static void Cleanup(const std::string& sessionName);
+    static void Cleanup(const std::string& shmId);
     static void RemoveObject(const std::string&);
+    static void RemoveFileMapping(const std::string&);
     static void RemoveQueue(const std::string&);
     static void RemoveMutex(const std::string&);
 

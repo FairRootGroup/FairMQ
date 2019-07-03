@@ -22,6 +22,7 @@
 #include <fairmq/shmem/Common.h>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
+#include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
 
 #include <thread>
@@ -40,12 +41,14 @@ class Manager;
 
 struct Region
 {
-    Region(Manager& manager, uint64_t id, uint64_t size, bool remote, FairMQRegionCallback callback = nullptr);
+    Region(Manager& manager, uint64_t id, uint64_t size, bool remote, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0);
 
     Region() = delete;
 
     Region(const Region&) = default;
     Region(Region&&) = default;
+
+    void InitializeQueues();
 
     void StartReceivingAcks();
     void ReceiveAcks();
@@ -61,6 +64,8 @@ struct Region
     std::string fName;
     std::string fQueueName;
     boost::interprocess::shared_memory_object fShmemObject;
+    FILE* fFile;
+    boost::interprocess::file_mapping fFileMapping;
     boost::interprocess::mapped_region fRegion;
 
     std::mutex fBlockLock;

@@ -345,9 +345,9 @@ class FairMQChannel
         return Transport()->NewStaticMessage(data);
     }
 
-    FairMQUnmanagedRegionPtr NewUnmanagedRegion(const size_t size, FairMQRegionCallback callback = nullptr)
+    FairMQUnmanagedRegionPtr NewUnmanagedRegion(const size_t size, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0)
     {
-        return Transport()->CreateUnmanagedRegion(size, callback);
+        return Transport()->CreateUnmanagedRegion(size, callback, path, flags);
     }
 
   private:

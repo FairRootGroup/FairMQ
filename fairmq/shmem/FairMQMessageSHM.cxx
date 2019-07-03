@@ -223,25 +223,16 @@ zmq_msg_t* FairMQMessageSHM::GetMessage()
 
 void* FairMQMessageSHM::GetData() const
 {
-    if (fLocalPtr)
-    {
+    if (fLocalPtr) {
         return fLocalPtr;
-    }
-    else
-    {
-        if (fRegionId == 0)
-        {
+    } else {
+        if (fRegionId == 0) {
             return fManager.Segment().get_address_from_handle(fHandle);
-        }
-        else
-        {
+        } else {
             fRegionPtr = fManager.GetRemoteRegion(fRegionId);
-            if (fRegionPtr)
-            {
+            if (fRegionPtr) {
                 fLocalPtr = reinterpret_cast<char*>(fRegionPtr->fRegion.get_address()) + fHandle;
-            }
-            else
-            {
+            } else {
                 // LOG(warn) << "could not get pointer from a region message";
                 fLocalPtr = nullptr;
             }
@@ -257,15 +248,10 @@ size_t FairMQMessageSHM::GetSize() const
 
 bool FairMQMessageSHM::SetUsedSize(const size_t size)
 {
-    if (size == fSize)
-    {
+    if (size == fSize) {
         return true;
-    }
-    else if (size <= fSize)
-    {
-        try
-        {
-
+    } else if (size <= fSize) {
+        try {
             bipc::managed_shared_memory::size_type shrunkSize = size;
             fLocalPtr = fManager.Segment().allocation_command<char>(bipc::shrink_in_place, fSize + 128, shrunkSize, fLocalPtr);
             fSize = size;
@@ -274,15 +260,11 @@ bool FairMQMessageSHM::SetUsedSize(const size_t size)
             MetaHeader* hdrPtr = static_cast<MetaHeader*>(zmq_msg_data(&fMessage));
             hdrPtr->fSize = fSize;
             return true;
-        }
-        catch (bipc::interprocess_exception& e)
-        {
+        } catch (bipc::interprocess_exception& e) {
             LOG(info) << "could not set used size: " << e.what();
             return false;
         }
-    }
-    else
-    {
+    } else {
         LOG(error) << "cannot set used size higher than original.";
         return false;
     }
