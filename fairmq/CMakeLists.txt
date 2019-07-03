@@ -157,7 +157,12 @@ if(BUILD_FAIRMQ)
     MemoryResourceTools.h
     Transports.h
     options/FairMQProgOptions.h
-    options/FairProgOptions.h
+    JSONParser.h
+    ProgOptionsFwd.h
+    ProgOptions.h
+    Properties.h
+    PropertyOutput.h
+    SuboptParser.h
     Plugin.h
     PluginManager.h
     PluginServices.h
@@ -171,10 +176,8 @@ if(BUILD_FAIRMQ)
     devices/FairMQProxy.h
     devices/FairMQSink.h
     devices/FairMQSplitter.h
-    options/FairMQParser.h
-    options/FairMQSuboptParser.h
-    options/FairProgOptionsHelper.h
     plugins/Builtin.h
+    plugins/config/Config.h
     plugins/Control.h
     shmem/FairMQMessageSHM.h
     shmem/FairMQPollerSHM.h
@@ -228,12 +231,14 @@ if(BUILD_FAIRMQ)
     devices/FairMQMultiplier.cxx
     devices/FairMQProxy.cxx
     devices/FairMQSplitter.cxx
-    options/FairMQParser.cxx
-    options/FairMQProgOptions.cxx
-    options/FairMQSuboptParser.cxx
     Plugin.cxx
     PluginManager.cxx
     PluginServices.cxx
+    ProgOptions.cxx
+    JSONParser.cxx
+    Properties.cxx
+    SuboptParser.cxx
+    plugins/config/Config.cxx
     plugins/Control.cxx
     shmem/FairMQMessageSHM.cxx
     shmem/FairMQPollerSHM.cxx
@@ -276,8 +281,6 @@ if(BUILD_FAIRMQ)
   ###################
   set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run/startMQBenchmark.sh.in ${CMAKE_CURRENT_BINARY_DIR}/startMQBenchmark.sh)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/options/startConfigExample.sh.in ${CMAKE_CURRENT_BINARY_DIR}/startConfigExample.sh)
-
 
   #################################
   # define libFairMQ build target #
@@ -401,9 +404,6 @@ if(BUILD_FAIRMQ)
 
   add_executable(fairmq-splitter run/runSplitter.cxx)
   target_link_libraries(fairmq-splitter FairMQ)
-
-  add_executable(runConfigExample options/runConfigEx.cxx)
-  target_link_libraries(runConfigExample FairMQ)
 
   add_executable(fairmq-shmmonitor shmem/Monitor.cxx shmem/Monitor.h shmem/runMonitor.cxx)
   target_link_libraries(fairmq-shmmonitor PUBLIC
