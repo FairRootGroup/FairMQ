@@ -18,6 +18,7 @@
 #include <boost/interprocess/mapped_region.hpp>
 
 #include <cstddef> // size_t
+#include <string>
 
 class FairMQUnmanagedRegionSHM final : public FairMQUnmanagedRegion
 {
@@ -25,7 +26,7 @@ class FairMQUnmanagedRegionSHM final : public FairMQUnmanagedRegion
     friend class FairMQMessageSHM;
 
   public:
-    FairMQUnmanagedRegionSHM(fair::mq::shmem::Manager& manager, const size_t size, FairMQRegionCallback callback = nullptr);
+    FairMQUnmanagedRegionSHM(fair::mq::shmem::Manager& manager, const size_t size, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0);
 
     void* GetData() const override;
     size_t GetSize() const override;

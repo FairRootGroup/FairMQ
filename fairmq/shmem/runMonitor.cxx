@@ -39,36 +39,30 @@ static void daemonize()
     umask(0);
 
     // Create a new SID for the child process
-    if (setsid() < 0)
-    {
+    if (setsid() < 0) {
         exit(1);
     }
 
     // Change the current working directory. This prevents the current directory from being locked; hence not being able to remove it.
-    if ((chdir("/")) < 0)
-    {
+    if ((chdir("/")) < 0) {
         exit(1);
     }
 
     // Redirect standard files to /dev/null
-    if (!freopen("/dev/null", "r", stdin))
-    {
+    if (!freopen("/dev/null", "r", stdin)) {
         cout << "could not redirect stdin to /dev/null" << endl;
     }
-    if (!freopen("/dev/null", "w", stdout))
-    {
+    if (!freopen("/dev/null", "w", stdout)) {
         cout << "could not redirect stdout to /dev/null" << endl;
     }
-    if (!freopen("/dev/null", "w", stderr))
-    {
+    if (!freopen("/dev/null", "w", stderr)) {
         cout << "could not redirect stderr to /dev/null" << endl;
     }
 }
 
 int main(int argc, char** argv)
 {
-    try
-    {
+    try {
         string sessionName;
         string shmId;
         bool cleanup = false;
@@ -93,26 +87,22 @@ int main(int argc, char** argv)
         variables_map vm;
         store(parse_command_line(argc, argv, desc), vm);
 
-        if (vm.count("help"))
-        {
+        if (vm.count("help")) {
             cout << "FairMQ Shared Memory Monitor" << endl << desc << endl;
             return 0;
         }
 
         notify(vm);
 
-        if (runAsDaemon)
-        {
+        if (runAsDaemon) {
             daemonize();
         }
 
-        if (shmId == "")
-        {
+        if (shmId == "") {
             shmId = buildShmIdFromSessionIdAndUserId(sessionName);
         }
 
-        if (cleanup)
-        {
+        if (cleanup) {
             cout << "Cleaning up \"" << shmId << "\"..." << endl;
             Monitor::Cleanup(shmId);
             Monitor::RemoveQueue("fmq_" + shmId + "_cq");
@@ -125,9 +115,7 @@ int main(int argc, char** argv)
 
         monitor.CatchSignals();
         monitor.Run();
-    }
-    catch (exception& e)
-    {
+    } catch (exception& e) {
         cerr << "Unhandled Exception reached the top of main: " << e.what() << ", application will now exit" << endl;
         return 2;
     }

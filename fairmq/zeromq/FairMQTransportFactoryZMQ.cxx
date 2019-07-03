@@ -69,7 +69,7 @@ FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage(FairMQUnmanagedRegionP
     return unique_ptr<FairMQMessage>(new FairMQMessageZMQ(region, data, size, hint, this));
 }
 
-FairMQSocketPtr FairMQTransportFactoryZMQ::CreateSocket(const string& type, const string& name) 
+FairMQSocketPtr FairMQTransportFactoryZMQ::CreateSocket(const string& type, const string& name)
 {
     assert(fContext);
     return unique_ptr<FairMQSocket>(new FairMQSocketZMQ(type, name, GetId(), fContext, this));
@@ -90,9 +90,9 @@ FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const unordered_map<stri
     return unique_ptr<FairMQPoller>(new FairMQPollerZMQ(channelsMap, channelList));
 }
 
-FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback) const
+FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */) const
 {
-    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionZMQ(size, callback));
+    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionZMQ(size, callback, path, flags));
 }
 
 fair::mq::Transport FairMQTransportFactoryZMQ::GetType() const

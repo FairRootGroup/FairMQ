@@ -8,11 +8,10 @@
 
 #include <fairmq/shmem/Monitor.h>
 #include <fairmq/shmem/Common.h>
+#include <fairmq/Tools.h>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
-#include <boost/interprocess/containers/vector.hpp>
-#include <boost/interprocess/containers/string.hpp>
-#include <boost/interprocess/allocators/allocator.hpp>
+#include <boost/interprocess/file_mapping.hpp>
 
 #include <boost/interprocess/sync/named_mutex.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
@@ -28,11 +27,6 @@
 using namespace std;
 namespace bipc = ::boost::interprocess;
 namespace bpt = ::boost::posix_time;
-
-using CharAllocator   = bipc::allocator<char, bipc::managed_shared_memory::segment_manager>;
-using String          = bipc::basic_string<char, char_traits<char>, CharAllocator>;
-using StringAllocator = bipc::allocator<String, bipc::managed_shared_memory::segment_manager>;
-using StringVector    = bipc::vector<String, StringAllocator>;
 
 namespace
 {
@@ -70,8 +64,7 @@ Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, unsig
     , fDeviceHeartbeats()
 {
     MonitorStatus* monitorStatus = fManagementSegment.find<MonitorStatus>(bipc::unique_instance).first;
-    if (monitorStatus != nullptr)
-    {
+    if (monitorStatus != nullptr) {
         cout << "fairmq-shmmonitor already started or not properly exited. Try `fairmq-shmmonitor --cleanup`" << endl;
         exit(EXIT_FAILURE);
     }
@@ -89,16 +82,12 @@ void Monitor::CatchSignals()
 
 void Monitor::SignalMonitor()
 {
-    while (true)
-    {
-        if (gSignalStatus != 0)
-        {
+    while (true) {
+        if (gSignalStatus != 0) {
             fTerminating = true;
             cout << "signal: " << gSignalStatus << endl;
             break;
-        }
-        else if (fTerminating)
-        {
+        } else if (fTerminating) {
             break;
         }
 
@@ -110,14 +99,10 @@ void Monitor::Run()
 {
     thread heartbeatThread(&Monitor::MonitorHeartbeats, this);
 
-    if (fInteractive)
-    {
+    if (fInteractive) {
         Interactive();
-    }
-    else
-    {
-        while (!fTerminating)
-        {
+    } else {
+        while (!fTerminating) {
             this_thread::sleep_for(chrono::milliseconds(100));
             CheckSegment();
         }
@@ -128,32 +113,25 @@ void Monitor::Run()
 
 void Monitor::MonitorHeartbeats()
 {
-    try
-    {
+    try {
         bipc::message_queue mq(bipc::open_or_create, fControlQueueName.c_str(), 1000, 256);
 
         unsigned int priority;
         bipc::message_queue::size_type recvdSize;
         char msg[256] = {0};
 
-        while (!fTerminating)
-        {
+        while (!fTerminating) {
             bpt::ptime rcvTill = bpt::microsec_clock::universal_time() + bpt::milliseconds(100);
-            if (mq.timed_receive(&msg, sizeof(msg), recvdSize, priority, rcvTill))
-            {
+            if (mq.timed_receive(&msg, sizeof(msg), recvdSize, priority, rcvTill)) {
                 fHeartbeatTriggered = true;
                 fLastHeartbeat = chrono::high_resolution_clock::now();
                 string deviceId(msg, recvdSize);
                 fDeviceHeartbeats[deviceId] = fLastHeartbeat;
-            }
-            else
-            {
+            } else {
                 // cout << "control queue timeout" << endl;
             }
         }
-    }
-    catch (bipc::interprocess_exception& ie)
-    {
+    } catch (bipc::interprocess_exception& ie) {
         cout << ie.what() << endl;
     }
 
@@ -178,19 +156,15 @@ void Monitor::Interactive()
     cout << endl;
     PrintHeader();
 
-    while (!fTerminating)
-    {
-        if (poll(cinfd, 1, 100))
-        {
-            if (fTerminating || gSignalStatus != 0)
-            {
+    while (!fTerminating) {
+        if (poll(cinfd, 1, 100)) {
+            if (fTerminating || gSignalStatus != 0) {
                 break;
             }
 
             c = getchar();
 
-            switch (c)
-            {
+            switch (c) {
                 case 'q':
                     cout << "\n[q] --> quitting." << endl;
                     fTerminating = true;
@@ -216,23 +190,20 @@ void Monitor::Interactive()
                     break;
             }
 
-            if (fTerminating)
-            {
+            if (fTerminating) {
                 break;
             }
 
             PrintHeader();
         }
 
-        if (fTerminating)
-        {
+        if (fTerminating) {
             break;
         }
 
         CheckSegment();
 
-        if (!fTerminating)
-        {
+        if (!fTerminating) {
             cout << "\r";
         }
     }
@@ -247,12 +218,10 @@ void Monitor::CheckSegment()
 {
     char c = '#';
 
-    if (fInteractive)
-    {
+    if (fInteractive) {
         static uint64_t counter = 0;
         int mod = counter++ % 5;
-        switch (mod)
-        {
+        switch (mod) {
             case 0:
                 c = '-';
                 break;
@@ -273,37 +242,33 @@ void Monitor::CheckSegment()
         }
     }
 
-    try
-    {
+    try {
         bipc::managed_shared_memory segment(bipc::open_only, fSegmentName.c_str());
+        bipc::managed_shared_memory managementSegment(bipc::open_only, fManagementSegmentName.c_str());
 
         fSeenOnce = true;
 
         unsigned int numDevices = 0;
 
-        fair::mq::shmem::DeviceCounter* dc = segment.find<fair::mq::shmem::DeviceCounter>(bipc::unique_instance).first;
-        if (dc)
-        {
+        fair::mq::shmem::DeviceCounter* dc = managementSegment.find<fair::mq::shmem::DeviceCounter>(bipc::unique_instance).first;
+        if (dc) {
             numDevices = dc->fCount;
         }
 
         auto now = chrono::high_resolution_clock::now();
         unsigned int duration = chrono::duration_cast<chrono::milliseconds>(now - fLastHeartbeat).count();
 
-        if (fHeartbeatTriggered && duration > fTimeoutInMS)
-        {
+        if (fHeartbeatTriggered && duration > fTimeoutInMS) {
             cout << "no heartbeats since over " << fTimeoutInMS << " milliseconds, cleaning..." << endl;
             Cleanup(fShmId);
             fHeartbeatTriggered = false;
-            if (fSelfDestruct)
-            {
+            if (fSelfDestruct) {
                 cout << "\nself destructing" << endl;
                 fTerminating = true;
             }
         }
 
-        if (fInteractive)
-        {
+        if (fInteractive) {
             cout << "| "
                 << setw(18) << fSegmentName << " | "
                 << setw(10) << segment.get_size() << " | "
@@ -317,12 +282,9 @@ void Monitor::CheckSegment()
                 << c
                 << flush;
         }
-    }
-    catch (bipc::interprocess_exception& ie)
-    {
+    } catch (bipc::interprocess_exception& ie) {
         fHeartbeatTriggered = false;
-        if (fInteractive)
-        {
+        if (fInteractive) {
             cout << "| "
                 << setw(18) << "-" << " | "
                 << setw(10) << "-" << " | "
@@ -338,21 +300,17 @@ void Monitor::CheckSegment()
         auto now = chrono::high_resolution_clock::now();
         unsigned int duration = chrono::duration_cast<chrono::milliseconds>(now - fLastHeartbeat).count();
 
-        if (fIsDaemon && duration > fTimeoutInMS * 2)
-        {
+        if (fIsDaemon && duration > fTimeoutInMS * 2) {
             Cleanup(fShmId);
             fHeartbeatTriggered = false;
-            if (fSelfDestruct)
-            {
+            if (fSelfDestruct) {
                 cout << "\nself destructing" << endl;
                 fTerminating = true;
             }
         }
 
-        if (fSelfDestruct)
-        {
-            if (fSeenOnce)
-            {
+        if (fSelfDestruct) {
+            if (fSeenOnce) {
                 cout << "self destructing" << endl;
                 fTerminating = true;
             }
@@ -363,29 +321,38 @@ void Monitor::CheckSegment()
 void Monitor::Cleanup(const string& shmId)
 {
     string managementSegmentName("fmq_" + shmId + "_mng");
-    try
-    {
+    try {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
         RegionCounter* rc = managementSegment.find<RegionCounter>(bipc::unique_instance).first;
-        if (rc)
-        {
+        if (rc) {
             cout << "Region counter found: " << rc->fCount << endl;
-            unsigned int regionCount = rc->fCount;
-            for (unsigned int i = 1; i <= regionCount; ++i)
-            {
-                RemoveObject("fmq_" + shmId + "_rg_" + to_string(i));
+            uint64_t regionCount = rc->fCount;
+
+            Uint64RegionInfoMap* m = managementSegment.find<Uint64RegionInfoMap>(bipc::unique_instance).first;
+
+            for (uint64_t i = 1; i <= regionCount; ++i) {
+                if (m != nullptr) {
+                    RegionInfo ri = m->at(i);
+                    string path = ri.fPath.c_str();
+                    int flags = ri.fFlags;
+                    cout << "Found RegionInfo with path: '" << path << "', flags: " << flags << "'." << endl;
+                    if (path != "") {
+                        RemoveFileMapping(tools::ToString(path, "fmq_" + shmId + "_rg_" + to_string(i)));
+                    } else {
+                        RemoveObject("fmq_" + shmId + "_rg_" + to_string(i));
+                    }
+                } else {
+                    RemoveObject("fmq_" + shmId + "_rg_" + to_string(i));
+                }
+
                 RemoveQueue(string("fmq_" + shmId + "_rgq_" + to_string(i)));
             }
-        }
-        else
-        {
-            cout << "shmem: no region counter found. no regions to cleanup." << endl;
+        } else {
+            cout << "No region counter found. no regions to cleanup." << endl;
         }
 
         RemoveObject(managementSegmentName.c_str());
-    }
-    catch (bipc::interprocess_exception& ie)
-    {
+    } catch (bipc::interprocess_exception& ie) {
         cout << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup." << endl;
     }
 
@@ -397,36 +364,36 @@ void Monitor::Cleanup(const string& shmId)
 
 void Monitor::RemoveObject(const string& name)
 {
-    if (bipc::shared_memory_object::remove(name.c_str()))
-    {
+    if (bipc::shared_memory_object::remove(name.c_str())) {
         cout << "Successfully removed \"" << name << "\"." << endl;
+    } else {
+        cout << "Did not remove \"" << name << "\". Already removed?" << endl;
     }
-    else
-    {
+}
+
+void Monitor::RemoveFileMapping(const string& name)
+{
+    if (bipc::file_mapping::remove(name.c_str())) {
+        cout << "Successfully removed \"" << name << "\"." << endl;
+    } else {
         cout << "Did not remove \"" << name << "\". Already removed?" << endl;
     }
 }
 
 void Monitor::RemoveQueue(const string& name)
 {
-    if (bipc::message_queue::remove(name.c_str()))
-    {
+    if (bipc::message_queue::remove(name.c_str())) {
         cout << "Successfully removed \"" << name << "\"." << endl;
-    }
-    else
-    {
+    } else {
         cout << "Did not remove \"" << name << "\". Already removed?" << endl;
     }
 }
 
 void Monitor::RemoveMutex(const string& name)
 {
-    if (bipc::named_mutex::remove(name.c_str()))
-    {
+    if (bipc::named_mutex::remove(name.c_str())) {
         cout << "Successfully removed \"" << name << "\"." << endl;
-    }
-    else
-    {
+    } else {
         cout << "Did not remove \"" << name << "\". Already removed?" << endl;
     }
 }
@@ -435,47 +402,34 @@ void Monitor::PrintQueues()
 {
     cout << '\n';
 
-    try
-    {
+    try {
         bipc::managed_shared_memory segment(bipc::open_only, fSegmentName.c_str());
-        StringVector* queues = segment.find<StringVector>(string("fmq_" + fShmId + "_qs").c_str()).first;
-        if (queues)
-        {
+        StrVector* queues = segment.find<StrVector>(string("fmq_" + fShmId + "_qs").c_str()).first;
+        if (queues) {
             cout << "found " << queues->size() << " queue(s):" << endl;
 
-            for (const auto& queue : *queues)
-            {
+            for (const auto& queue : *queues) {
                 string name(queue.c_str());
                 cout << '\t' << name << " : ";
                 atomic<int>* queueSize = segment.find<atomic<int>>(name.c_str()).first;
-                if (queueSize)
-                {
+                if (queueSize) {
                     cout << *queueSize << " messages" << endl;
-                }
-                else
-                {
+                } else {
                     cout << "\tqueue does not have a queue size entry." << endl;
                 }
             }
-        }
-        else
-        {
+        } else {
             cout << "\tno queues found" << endl;
         }
-    }
-    catch (bipc::interprocess_exception& ie)
-    {
+    } catch (bipc::interprocess_exception& ie) {
         cout << "\tno queues found" << endl;
-    }
-    catch (out_of_range& ie)
-    {
+    } catch (out_of_range& ie) {
         cout << "\tno queues found" << endl;
     }
 
     cout << "\n    --> last heartbeats: " << endl << endl;
     auto now = chrono::high_resolution_clock::now();
-    for (const auto& h : fDeviceHeartbeats)
-    {
+    for (const auto& h : fDeviceHeartbeats)  {
         cout << "\t" << h.first << " : " << chrono::duration<double, milli>(now - h.second).count() << "ms ago." << endl;
     }
 
@@ -505,12 +459,10 @@ void Monitor::PrintHelp()
 Monitor::~Monitor()
 {
     fManagementSegment.destroy<MonitorStatus>(bipc::unique_instance);
-    if (fSignalThread.joinable())
-    {
+    if (fSignalThread.joinable()) {
         fSignalThread.join();
     }
-    if (fCleanOnExit)
-    {
+    if (fCleanOnExit) {
         Cleanup(fShmId);
     }
 }

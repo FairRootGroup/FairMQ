@@ -24,6 +24,7 @@
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
+#include <boost/interprocess/sync/named_mutex.hpp>
 
 #include <string>
 #include <unordered_map>
@@ -40,32 +41,41 @@ class Manager
     friend struct Region;
 
   public:
-    Manager(const std::string& name, size_t size);
+    Manager(const std::string& id, size_t size);
 
     Manager() = delete;
 
     Manager(const Manager&) = delete;
     Manager operator=(const Manager&) = delete;
 
+    ~Manager();
+
     boost::interprocess::managed_shared_memory& Segment();
+    boost::interprocess::managed_shared_memory& ManagementSegment();
+
+    void StartMonitor();
 
     static void Interrupt();
     static void Resume();
 
-    boost::interprocess::mapped_region* CreateRegion(const size_t size, const uint64_t id, FairMQRegionCallback callback);
+    int GetDeviceCounter();
+    int IncrementDeviceCounter();
+    int DecrementDeviceCounter();
+
+    boost::interprocess::mapped_region* CreateRegion(const size_t size, const uint64_t id, FairMQRegionCallback callback, const std::string& path = "", int flags = 0);
     Region* GetRemoteRegion(const uint64_t id);
     void RemoveRegion(const uint64_t id);
 
-    void RemoveSegment();
-
-    boost::interprocess::managed_shared_memory& ManagementSegment();
+    void RemoveSegments();
 
   private:
-    std::string fSessionName;
+    std::string fShmId;
     std::string fSegmentName;
     std::string fManagementSegmentName;
     boost::interprocess::managed_shared_memory fSegment;
     boost::interprocess::managed_shared_memory fManagementSegment;
+    boost::interprocess::named_mutex fShmMtx;
+    fair::mq::shmem::DeviceCounter* fDeviceCounter;
     static std::unordered_map<uint64_t, std::unique_ptr<Region>> fRegions;
 };
 

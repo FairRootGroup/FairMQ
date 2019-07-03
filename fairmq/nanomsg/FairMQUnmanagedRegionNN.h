@@ -12,13 +12,14 @@
 #include "FairMQUnmanagedRegion.h"
 
 #include <cstddef> // size_t
+#include <string>
 
 class FairMQUnmanagedRegionNN final : public FairMQUnmanagedRegion
 {
     friend class FairMQSocketNN;
 
   public:
-    FairMQUnmanagedRegionNN(const size_t size, FairMQRegionCallback callback);
+    FairMQUnmanagedRegionNN(const size_t size, FairMQRegionCallback callback, const std::string& path = "", int flags = 0);
     FairMQUnmanagedRegionNN(const FairMQUnmanagedRegionNN&) = delete;
     FairMQUnmanagedRegionNN operator=(const FairMQUnmanagedRegionNN&) = delete;
 

@@ -15,22 +15,18 @@ using namespace fair::mq::shmem;
 
 namespace bipc = ::boost::interprocess;
 
-FairMQUnmanagedRegionSHM::FairMQUnmanagedRegionSHM(Manager& manager, const size_t size, FairMQRegionCallback callback)
+FairMQUnmanagedRegionSHM::FairMQUnmanagedRegionSHM(Manager& manager, const size_t size, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)
     : fManager(manager)
     , fRegion(nullptr)
     , fRegionId(0)
 {
-    try
-    {
+    try {
         RegionCounter* rc = fManager.ManagementSegment().find<RegionCounter>(bipc::unique_instance).first;
-        if (rc)
-        {
+        if (rc) {
             LOG(debug) << "region counter found, with value of " << rc->fCount << ". incrementing.";
             (rc->fCount)++;
             LOG(debug) << "incremented region counter, now: " << rc->fCount;
-        }
-        else
-        {
+        } else {
             LOG(debug) << "no region counter found, creating one and initializing with 1";
             rc = fManager.ManagementSegment().construct<RegionCounter>(bipc::unique_instance)(1);
             LOG(debug) << "initialized region counter with: " << rc->fCount;
@@ -38,13 +34,11 @@ FairMQUnmanagedRegionSHM::FairMQUnmanagedRegionSHM(Manager& manager, const size_
 
         fRegionId = rc->fCount;
 
-        fRegion = fManager.CreateRegion(size, fRegionId, callback);
-    }
-    catch (bipc::interprocess_exception& e)
-    {
+        fRegion = fManager.CreateRegion(size, fRegionId, callback, path, flags);
+    } catch (bipc::interprocess_exception& e) {
         LOG(error) << "cannot create region. Already created/not cleaned up?";
         LOG(error) << e.what();
-        exit(EXIT_FAILURE);
+        throw;
     }
 }
 

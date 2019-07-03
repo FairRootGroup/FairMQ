@@ -10,8 +10,13 @@
 
 #include <atomic>
 #include <string>
+#include <unordered_map>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
+#include <boost/interprocess/allocators/allocator.hpp>
+#include <boost/interprocess/containers/map.hpp>
+#include <boost/interprocess/containers/string.hpp>
+#include <boost/interprocess/containers/vector.hpp>
 #include <boost/functional/hash.hpp>
 
 #include <unistd.h>
@@ -24,6 +29,32 @@ namespace mq
 namespace shmem
 {
 
+using SegmentManager = boost::interprocess::managed_shared_memory::segment_manager;
+using VoidAlloc      = boost::interprocess::allocator<void, SegmentManager>;
+using CharAlloc      = boost::interprocess::allocator<char, SegmentManager>;
+using Str            = boost::interprocess::basic_string<char, std::char_traits<char>, CharAlloc>;
+using StrAlloc       = boost::interprocess::allocator<Str, SegmentManager>;
+using StrVector      = boost::interprocess::vector<Str, StrAlloc>;
+
+struct RegionInfo
+{
+    RegionInfo(const VoidAlloc& alloc)
+        : fPath("", alloc)
+        , fFlags(0)
+    {}
+
+    RegionInfo(const char* path, int flags, const VoidAlloc& alloc)
+        : fPath(path, alloc)
+        , fFlags(flags)
+    {}
+
+    Str fPath;
+    int fFlags;
+};
+
+using Uint64RegionInfoPairAlloc = boost::interprocess::allocator<std::pair<const uint64_t, RegionInfo>, SegmentManager>;
+using Uint64RegionInfoMap = boost::interprocess::map<uint64_t, RegionInfo, std::less<uint64_t>, Uint64RegionInfoPairAlloc>;
+
 struct DeviceCounter
 {
     DeviceCounter(unsigned int c)
@@ -35,11 +66,11 @@ struct DeviceCounter
 
 struct RegionCounter
 {
-    RegionCounter(unsigned int c)
+    RegionCounter(uint64_t c)
         : fCount(c)
     {}
 
-    std::atomic<unsigned int> fCount;
+    std::atomic<uint64_t> fCount;
 };
 
 struct MonitorStatus

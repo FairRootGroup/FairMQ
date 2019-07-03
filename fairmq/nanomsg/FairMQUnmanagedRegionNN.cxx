@@ -11,7 +11,7 @@
 
 using namespace std;
 
-FairMQUnmanagedRegionNN::FairMQUnmanagedRegionNN(const size_t size, FairMQRegionCallback callback)
+FairMQUnmanagedRegionNN::FairMQUnmanagedRegionNN(const size_t size, FairMQRegionCallback callback, const std::string& /*path = "" */, int /*flags = 0 */)
     : fBuffer(malloc(size))
     , fSize(size)
     , fCallback(callback)

@@ -85,7 +85,7 @@ auto TransportFactory::CreatePoller(const unordered_map<string, vector<FairMQCha
     // return PollerPtr{new Poller(channelsMap, channelList)};
 }
 
-auto TransportFactory::CreateUnmanagedRegion(const size_t /*size*/, FairMQRegionCallback /*callback*/) const -> UnmanagedRegionPtr
+auto TransportFactory::CreateUnmanagedRegion(const size_t /*size*/, FairMQRegionCallback /*callback*/, const std::string& /* path = "" */, int /* flags = 0 */) const -> UnmanagedRegionPtr
 {
     throw runtime_error{"Not yet implemented UMR."};
 }
