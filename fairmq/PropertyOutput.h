@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ *    Copyright (C) 2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,8 +9,6 @@
 #define FAIR_MQ_PROPERTYOUT_H
 
 #include <fairmq/Properties.h>
-
-#include <sstream>
 
 namespace boost
 {
