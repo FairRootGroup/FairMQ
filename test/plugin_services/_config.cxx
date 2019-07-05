@@ -15,6 +15,7 @@ struct MyClass
 {
     MyClass() : msg() {}
     MyClass(const std::string& a) : msg(a) {}
+    MyClass(const MyClass&) = default;
     MyClass& operator=(const MyClass& b) { msg = b.msg; return *this; };
     std::string msg;
 };
