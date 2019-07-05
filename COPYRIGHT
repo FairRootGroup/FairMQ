@@ -4,9 +4,9 @@ Upstream-Contact: Mohammad Al-Turany <m.al-turany@gsi.de>
 Source: https://github.com/FairRootGroup/FairMQ
 
 Files: *
-Copyright: 2012-2018, GSI Helmholtzzentrum fuer Schwerionenforschung GmbH
-Copyright: 2012-2018, [see AUTHORS file]
-Copyright: 2012-2018, [see CONTRIBUTORS file]
+Copyright: 2012-2019, GSI Helmholtzzentrum fuer Schwerionenforschung GmbH
+Copyright: 2012-2019, [see AUTHORS file]
+Copyright: 2012-2019, [see CONTRIBUTORS file]
 Comment: The copyright of individual contributors is documented in the
   Git history.
 License: LGPL-3.0-only
