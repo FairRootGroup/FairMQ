@@ -1,0 +1,3 @@
+---
+Checks:          '*,-google-*,-fuchsia-*,-cert-*'
+HeaderFilterRegex: '.*/(boost|fairlogger)/.*'
