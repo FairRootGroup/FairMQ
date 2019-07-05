@@ -6,168 +6,190 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <fairmq/EventManager.h>
 #include <fairmq/ProgOptions.h>
 
 #include <boost/filesystem.hpp>
 #include <gtest/gtest.h>
-
+#include <iostream>
 #include <string>
 
 namespace
 {
 
 using namespace std;
+using namespace fair::mq;
 
-struct TestEvent : fair::mq::Event<const std::string&> {};
-
-TEST(Properties, ConversionToString)
+template<typename T>
+auto set_and_get(ProgOptions& options, const string& key, T value) -> void
 {
-    fair::mq::ProgOptions o;
-    o.SetProperty<char>("_char", 'a');
-    o.SetProperty<signed char>("_signed char", -2);
-    o.SetProperty<unsigned char>("_unsigned char", 2);
-    o.SetProperty<const char*>("_const char*", "testcstring");
-    o.SetProperty<string>("_string", "teststring");
-    o.SetProperty<int>("_int", 1);
-    o.SetProperty<size_t>("_size_t", 11);
-    o.SetProperty<uint32_t>("_uint32_t", 12);
-    o.SetProperty<uint64_t>("_uint64_t", 123);
-    o.SetProperty<long>("_long", 1234);
-    o.SetProperty<long long>("_long long", 12345);
-    o.SetProperty<unsigned>("_unsigned", 3);
-    o.SetProperty<unsigned long>("_unsigned long", 32);
-    o.SetProperty<unsigned long long>("_unsigned long long", 321);
-    o.SetProperty<float>("_float", 3.2);
-    o.SetProperty<double>("_double", 33.22);
-    o.SetProperty<long double>("_long double", 333.222);
-    o.SetProperty<bool>("_bool", true);
-    o.SetProperty<vector<bool>>("_vector<bool>", { true, true });
-    o.SetProperty<boost::filesystem::path>("_boost::filesystem::path", boost::filesystem::path("C:\\Windows"));
-    o.SetProperty<vector<char>>("_vector<char>", { 'a', 'b', 'c' });
-    o.SetProperty<vector<signed char>>("_vector<signed char>", { -1, -2, -3 });
-    o.SetProperty<vector<unsigned char>>("_vector<unsigned char>", { 1, 2, 3 });
-    o.SetProperty<vector<string>>("_vector<string>", { "aa", "bb", "cc" });
-    o.SetProperty<vector<int>>("_vector<int>", { 1, 2, 3 });
-    o.SetProperty<vector<size_t>>("_vector<size_t>", { 1, 2, 3 });
-    o.SetProperty<vector<uint32_t>>("_vector<uint32_t>", { 12, 13, 14 });
-    o.SetProperty<vector<uint64_t>>("_vector<uint64_t>", { 123, 124, 125 });
-    o.SetProperty<vector<long>>("_vector<long>", { 1234, 1235, 1236 });
-    o.SetProperty<vector<long long>>("_vector<long long>", { 12345, 12346, 12347 });
-    o.SetProperty<vector<unsigned>>("_vector<unsigned>", { 3, 4, 5 });
-    o.SetProperty<vector<unsigned long>>("_vector<unsigned long>", { 32, 33, 34 });
-    o.SetProperty<vector<unsigned long long>>("_vector<unsigned long long>", { 321, 322, 323 });
-    o.SetProperty<vector<float>>("_vector<float>", { 3.2, 3.3, 3.4 });
-    o.SetProperty<vector<double>>("_vector<double>", { 33.22, 33.23, 33.24 });
-    o.SetProperty<vector<long double>>("_vector<long double>", { 333.222, 333.223, 333.224 });
-    o.SetProperty<vector<boost::filesystem::path>>("_vector<boost::filesystem::path>", { boost::filesystem::path("C:\\Windows"), boost::filesystem::path("C:\\Windows\\System32") });
-
-    ASSERT_EQ(o.GetPropertyAsString("_char"), "a");
-    ASSERT_EQ(o.GetPropertyAsString("_signed char"), "-2");
-    ASSERT_EQ(o.GetPropertyAsString("_unsigned char"), "2");
-    ASSERT_EQ(o.GetPropertyAsString("_const char*"), "testcstring");
-    ASSERT_EQ(o.GetPropertyAsString("_string"), "teststring");
-    ASSERT_EQ(o.GetPropertyAsString("_int"), "1");
-    ASSERT_EQ(o.GetPropertyAsString("_size_t"), "11");
-    ASSERT_EQ(o.GetPropertyAsString("_uint32_t"), "12");
-    ASSERT_EQ(o.GetPropertyAsString("_uint64_t"), "123");
-    ASSERT_EQ(o.GetPropertyAsString("_long"), "1234");
-    ASSERT_EQ(o.GetPropertyAsString("_long long"), "12345");
-    ASSERT_EQ(o.GetPropertyAsString("_unsigned"), "3");
-    ASSERT_EQ(o.GetPropertyAsString("_unsigned long"), "32");
-    ASSERT_EQ(o.GetPropertyAsString("_unsigned long long"), "321");
-    ASSERT_EQ(o.GetPropertyAsString("_float"), "3.2");
-    ASSERT_EQ(o.GetPropertyAsString("_double"), "33.22");
-    ASSERT_EQ(o.GetPropertyAsString("_long double"), "333.222");
-    ASSERT_EQ(o.GetPropertyAsString("_bool"), "true");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<bool>"), "true, true");
-    ASSERT_EQ(o.GetPropertyAsString("_boost::filesystem::path"), "\"C:\\Windows\"");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<char>"), "a, b, c");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<signed char>"), "-1, -2, -3");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<unsigned char>"), "1, 2, 3");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<string>"), "aa, bb, cc");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<int>"), "1, 2, 3");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<size_t>"), "1, 2, 3");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<uint32_t>"), "12, 13, 14");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<uint64_t>"), "123, 124, 125");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<long>"), "1234, 1235, 1236");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<long long>"), "12345, 12346, 12347");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<unsigned>"), "3, 4, 5");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<unsigned long>"), "32, 33, 34");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<unsigned long long>"), "321, 322, 323");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<float>"), "3.2, 3.3, 3.4");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<double>"), "33.22, 33.23, 33.24");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<long double>"), "333.222, 333.223, 333.224");
-    ASSERT_EQ(o.GetPropertyAsString("_vector<boost::filesystem::path>"), "\"C:\\Windows\", \"C:\\Windows\\System32\"");
+    std::cout << key << std::endl;
+    options.SetProperty(key, value);
+    EXPECT_EQ(options.GetPropertyAsString(key),
+              PropertyHelper::ConvertPropertyToString(Property(value)));
+    EXPECT_EQ(options.GetProperty<T>(key), value);
 }
 
-TEST(Properties, EventEmissionAndStringConversion)
+TEST(ProgOptions, SetAndGet)
 {
-    fair::mq::ProgOptions o;
+    ProgOptions o;
 
-    o.Subscribe<char>("test", [](const string& /* key */, char e) { ASSERT_EQ(e, 'a'); });
-    o.Subscribe<signed char>("test", [](const string& /* key */, signed char e) { ASSERT_EQ(e, -2); });
-    o.Subscribe<unsigned char>("test", [](const string& /* key */, unsigned char e) { ASSERT_EQ(e, 2); });
-    o.Subscribe<const char*>("test", [](const string& /* key */, const char* e) { ASSERT_EQ(e, "testcstring"); });
-    o.Subscribe<string>("test", [](const string& /* key */, string e) { ASSERT_EQ(e, "teststring"); });
-    o.Subscribe<int>("test", [](const string& /* key */, int e) { ASSERT_EQ(e, 1); });
-    o.Subscribe<long>("test", [](const string& /* key */, long e) { ASSERT_EQ(e, 1234); });
-    o.Subscribe<long long>("test", [](const string& /* key */, long long e) { ASSERT_EQ(e, 12345); });
-    o.Subscribe<unsigned>("test", [](const string& /* key */, unsigned e) { ASSERT_EQ(e, 3); });
-    o.Subscribe<unsigned long>("test", [](const string& /* key */, unsigned long e) { ASSERT_EQ(e, 32); });
-    o.Subscribe<unsigned long long>("test", [](const string& /* key */, unsigned long long e) { ASSERT_EQ(e, 321); });
-    o.Subscribe<float>("test", [](const string& /* key */, float e) { ASSERT_EQ(e, 3.2f); });
-    o.Subscribe<double>("test", [](const string& /* key */, double e) { ASSERT_EQ(e, 33.22); });
-    o.Subscribe<long double>("test", [](const string& /* key */, long double e) { ASSERT_EQ(e, 333.222); });
-    o.Subscribe<bool>("test", [](const string& /* key */, bool e) { ASSERT_EQ(e, true); });
-    o.Subscribe<boost::filesystem::path>("test", [](const string& /* key */, boost::filesystem::path e) { ASSERT_EQ(e, boost::filesystem::path("C:\\Windows")); });
-    o.Subscribe<vector<bool>>("test", [](const string& /* key */, vector<bool> e) { ASSERT_EQ(e, vector<bool>({ true, true })); });
-    o.Subscribe<vector<char>>("test", [](const string& /* key */, vector<char> e) { ASSERT_EQ(e, vector<char>({ 'a', 'b', 'c' })); });
-    o.Subscribe<vector<signed char>>("test", [](const string& /* key */, vector<signed char> e) { ASSERT_EQ(e, vector<signed char>({ -1, -2, -3 })); });
-    o.Subscribe<vector<unsigned char>>("test", [](const string& /* key */, vector<unsigned char> e) { ASSERT_EQ(e, vector<unsigned char>({ 1, 2, 3 })); });
-    o.Subscribe<vector<string>>("test", [](const string& /* key */, vector<string> e) { ASSERT_EQ(e, vector<string>({ "aa", "bb", "cc" })); });
-    o.Subscribe<vector<int>>("test", [](const string& /* key */, vector<int> e) { ASSERT_EQ(e, vector<int>({ 1, 2, 3 })); });
-    o.Subscribe<vector<long>>("test", [](const string& /* key */, vector<long> e) { ASSERT_EQ(e, vector<long>({ 1234, 1235, 1236 })); });
-    o.Subscribe<vector<long long>>("test", [](const string& /* key */, vector<long long> e) { ASSERT_EQ(e, vector<long long>({ 12345, 12346, 12347 })); });
-    o.Subscribe<vector<unsigned>>("test", [](const string& /* key */, vector<unsigned> e) { ASSERT_EQ(e, vector<unsigned>({ 3, 4, 5 })); });
-    o.Subscribe<vector<unsigned long>>("test", [](const string& /* key */, vector<unsigned long> e) { ASSERT_EQ(e, vector<unsigned long>({ 32, 33, 34 })); });
-    o.Subscribe<vector<unsigned long long>>("test", [](const string& /* key */, vector<unsigned long long> e) { ASSERT_EQ(e, vector<unsigned long long>({ 321, 322, 323 })); });
-    o.Subscribe<vector<float>>("test", [](const string& /* key */, vector<float> e) { ASSERT_EQ(e, vector<float>({ 3.2, 3.3, 3.4 })); });
-    o.Subscribe<vector<double>>("test", [](const string& /* key */, vector<double> e) { ASSERT_EQ(e, vector<double>({ 33.22, 33.23, 33.24 })); });
-    o.Subscribe<vector<long double>>("test", [](const string& /* key */, vector<long double> e) { ASSERT_EQ(e, vector<long double>({ 333.222, 333.223, 333.224 })); });
-    o.Subscribe<vector<boost::filesystem::path>>("test", [](const string& /* key */, vector<boost::filesystem::path> e) { ASSERT_EQ(e, vector<boost::filesystem::path>({ boost::filesystem::path("C:\\Windows"), boost::filesystem::path("C:\\Windows\\System32") })); });
+    set_and_get<char>(o, "_char", 'a');
+    set_and_get<signed char>(o, "_signed char", -2);
+    set_and_get<unsigned char>(o, "_unsigned char", 2);
+    set_and_get<const char*>(o, "_const char*", "testcstring");
+    set_and_get<string>(o, "_string", "teststring");
+    set_and_get<int>(o, "_int", 1);
+    set_and_get<size_t>(o, "_size_t", 11);
+    set_and_get<uint32_t>(o, "_uint32_t", 12);
+    set_and_get<uint64_t>(o, "_uint64_t", 123);
+    set_and_get<long>(o, "_long", 1234);
+    set_and_get<long long>(o, "_long long", 12345);
+    set_and_get<unsigned>(o, "_unsigned", 3);
+    set_and_get<unsigned long>(o, "_unsigned long", 32);
+    set_and_get<unsigned long long>(o, "_unsigned long long", 321);
+    set_and_get<float>(o, "_float", 3.2);
+    set_and_get<double>(o, "_double", 33.22);
+    set_and_get<long double>(o, "_long double", 333.222);
+    set_and_get<bool>(o, "_bool", true);
+    set_and_get<boost::filesystem::path>(o, "_boost::filesystem::path", boost::filesystem::path("C:\\Windows"));
+    set_and_get<vector<bool>>(o, "_vector<bool>", { true, true });
+    set_and_get<vector<char>>(o, "_vector<char>", { 'a', 'b', 'c' });
+    set_and_get<vector<signed char>>(o, "_vector<signed char>", { -1, -2, -3 });
+    set_and_get<vector<unsigned char>>(o, "_vector<unsigned char>", { 1, 2, 3 });
+    set_and_get<vector<string>>(o, "_vector<string>", { "aa", "bb", "cc" });
+    set_and_get<vector<int>>(o, "_vector<int>", { 1, 2, 3 });
+    set_and_get<vector<size_t>>(o, "_vector<size_t>", { 1, 2, 3 });
+    set_and_get<vector<uint32_t>>(o, "_vector<uint32_t>", { 12, 13, 14 });
+    set_and_get<vector<uint64_t>>(o, "_vector<uint64_t>", { 123, 124, 125 });
+    set_and_get<vector<long>>(o, "_vector<long>", { 1234, 1235, 1236 });
+    set_and_get<vector<long long>>(o, "_vector<long long>", { 12345, 12346, 12347 });
+    set_and_get<vector<unsigned>>(o, "_vector<unsigned>", { 3, 4, 5 });
+    set_and_get<vector<unsigned long>>(o, "_vector<unsigned long>", { 32, 33, 34 });
+    set_and_get<vector<unsigned long long>>(o, "_vector<unsigned long long>", { 321, 322, 323 });
+    set_and_get<vector<float>>(o, "_vector<float>", { 3.2, 3.3, 3.4 });
+    set_and_get<vector<double>>(o, "_vector<double>", { 33.22, 33.23, 33.24 });
+    set_and_get<vector<long double>>(o, "_vector<long double>", { 333.222, 333.223, 333.224 });
+    set_and_get<vector<boost::filesystem::path>>(o, "_vector<boost::filesystem::path>", { boost::filesystem::path("C:\\Windows"), boost::filesystem::path("C:\\Windows\\System32") });
+}
 
-    o.SetProperty<char>("_char", 'a');
-    o.SetProperty<signed char>("_signed char", -2);
-    o.SetProperty<unsigned char>("_unsigned char", 2);
-    o.SetProperty<const char*>("_const char*", "testcstring");
-    o.SetProperty<string>("_string", "teststring");
-    o.SetProperty<int>("_int", 1);
-    o.SetProperty<long>("_long", 1234);
-    o.SetProperty<long long>("_long long", 12345);
-    o.SetProperty<unsigned>("_unsigned", 3);
-    o.SetProperty<unsigned long>("_unsigned long", 32);
-    o.SetProperty<unsigned long long>("_unsigned long long", 321);
-    o.SetProperty<float>("_float", 3.2);
-    o.SetProperty<double>("_double", 33.22);
-    o.SetProperty<long double>("_long double", 333.222);
-    o.SetProperty<bool>("_bool", true);
-    o.SetProperty<vector<bool>>("_vector<bool>", { true, true });
-    o.SetProperty<boost::filesystem::path>("_boost::filesystem::path", boost::filesystem::path("C:\\Windows"));
-    o.SetProperty<vector<char>>("_vector<char>", { 'a', 'b', 'c' });
-    o.SetProperty<vector<signed char>>("_vector<signed char>", { -1, -2, -3 });
-    o.SetProperty<vector<unsigned char>>("_vector<unsigned char>", { 1, 2, 3 });
-    o.SetProperty<vector<string>>("_vector<string>", { "aa", "bb", "cc" });
-    o.SetProperty<vector<int>>("_vector<int>", { 1, 2, 3 });
-    o.SetProperty<vector<long>>("_vector<long>", { 1234, 1235, 1236 });
-    o.SetProperty<vector<long long>>("_vector<long long>", { 12345, 12346, 12347 });
-    o.SetProperty<vector<unsigned>>("_vector<unsigned>", { 3, 4, 5 });
-    o.SetProperty<vector<unsigned long>>("_vector<unsigned long>", { 32, 33, 34 });
-    o.SetProperty<vector<unsigned long long>>("_vector<unsigned long long>", { 321, 322, 323 });
-    o.SetProperty<vector<float>>("_vector<float>", { 3.2, 3.3, 3.4 });
-    o.SetProperty<vector<double>>("_vector<double>", { 33.22, 33.23, 33.24 });
-    o.SetProperty<vector<long double>>("_vector<long double>", { 333.222, 333.223, 333.224 });
-    o.SetProperty<vector<boost::filesystem::path>>("_vector<boost::filesystem::path>", { boost::filesystem::path("C:\\Windows"), boost::filesystem::path("C:\\Windows\\System32") });
+template<typename T>
+auto subscribe_and_set(ProgOptions& options, const string& expected_key, T expected_value)
+    -> void
+{
+    std::cout << expected_key << std::endl;
+    const string subscriber("test");
+    const string different_key("different");
+    ASSERT_NE(expected_key, different_key);
+    int type_events(0);
+    int asstring_events(0);
+    int total_events(0);
+    options.Subscribe<T>(subscriber, [&](const string& key, T value) {
+        if (expected_key == key) {
+            ++type_events;
+            EXPECT_EQ(value, expected_value);
+        }
+        ++total_events;
+    });
+    options.SubscribeAsString(subscriber, [&](const string& key, string value) {
+        if (expected_key == key) {
+            ++asstring_events;
+            EXPECT_EQ(value, PropertyHelper::ConvertPropertyToString(Property(value)));
+        }
+        ++total_events;
+    });
+    options.SetProperty<T>(expected_key, expected_value);
+    options.Unsubscribe<T>(subscriber);
+    options.SetProperty<T>(different_key, expected_value);
+    options.SetProperty<T>(expected_key, expected_value);
+    options.UnsubscribeAsString(subscriber);
+    options.SetProperty<T>(expected_key, expected_value);
+    EXPECT_EQ(type_events, 1);
+    EXPECT_EQ(asstring_events, 2);
+    EXPECT_EQ(total_events, 4);
+}
+
+TEST(ProgOptions, SubscribeAndSet)
+{
+    ProgOptions o;
+
+    subscribe_and_set<char>(o, "_char", 'a');
+    subscribe_and_set<signed char>(o, "_signed char", -2);
+    subscribe_and_set<unsigned char>(o, "_unsigned char", 2);
+    subscribe_and_set<const char*>(o, "_const char*", "testcstring");
+    subscribe_and_set<string>(o, "_string", "teststring");
+    subscribe_and_set<int>(o, "_int", 1);
+    subscribe_and_set<size_t>(o, "_size_t", 11);
+    subscribe_and_set<uint32_t>(o, "_uint32_t", 12);
+    subscribe_and_set<uint64_t>(o, "_uint64_t", 123);
+    subscribe_and_set<long>(o, "_long", 1234);
+    subscribe_and_set<long long>(o, "_long long", 12345);
+    subscribe_and_set<unsigned>(o, "_unsigned", 3);
+    subscribe_and_set<unsigned long>(o, "_unsigned long", 32);
+    subscribe_and_set<unsigned long long>(o, "_unsigned long long", 321);
+    subscribe_and_set<float>(o, "_float", 3.2);
+    subscribe_and_set<double>(o, "_double", 33.22);
+    subscribe_and_set<long double>(o, "_long double", 333.222);
+    subscribe_and_set<bool>(o, "_bool", true);
+    subscribe_and_set<boost::filesystem::path>(o, "_boost::filesystem::path", boost::filesystem::path("C:\\Windows"));
+    subscribe_and_set<vector<bool>>(o, "_vector<bool>", { true, true });
+    subscribe_and_set<vector<char>>(o, "_vector<char>", { 'a', 'b', 'c' });
+    subscribe_and_set<vector<signed char>>(o, "_vector<signed char>", { -1, -2, -3 });
+    subscribe_and_set<vector<unsigned char>>(o, "_vector<unsigned char>", { 1, 2, 3 });
+    subscribe_and_set<vector<string>>(o, "_vector<string>", { "aa", "bb", "cc" });
+    subscribe_and_set<vector<int>>(o, "_vector<int>", { 1, 2, 3 });
+    subscribe_and_set<vector<size_t>>(o, "_vector<size_t>", { 1, 2, 3 });
+    subscribe_and_set<vector<uint32_t>>(o, "_vector<uint32_t>", { 12, 13, 14 });
+    subscribe_and_set<vector<uint64_t>>(o, "_vector<uint64_t>", { 123, 124, 125 });
+    subscribe_and_set<vector<long>>(o, "_vector<long>", { 1234, 1235, 1236 });
+    subscribe_and_set<vector<long long>>(o, "_vector<long long>", { 12345, 12346, 12347 });
+    subscribe_and_set<vector<unsigned>>(o, "_vector<unsigned>", { 3, 4, 5 });
+    subscribe_and_set<vector<unsigned long>>(o, "_vector<unsigned long>", { 32, 33, 34 });
+    subscribe_and_set<vector<unsigned long long>>(o, "_vector<unsigned long long>", { 321, 322, 323 });
+    subscribe_and_set<vector<float>>(o, "_vector<float>", { 3.2, 3.3, 3.4 });
+    subscribe_and_set<vector<double>>(o, "_vector<double>", { 33.22, 33.23, 33.24 });
+    subscribe_and_set<vector<long double>>(o, "_vector<long double>", { 333.222, 333.223, 333.224 });
+    subscribe_and_set<vector<boost::filesystem::path>>(o, "_vector<boost::filesystem::path>", { boost::filesystem::path("C:\\Windows"), boost::filesystem::path("C:\\Windows\\System32") });
+}
+
+TEST(PropertyHelper, ConvertPropertyToString)
+{
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<char>('a'))), "a");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<signed char>(-2))), "-2");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<unsigned char>(2))), "2");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<const char*>("testcstring"))), "testcstring");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<string>("teststring"))), "teststring");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<int>(1))), "1");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<size_t>(11))), "11");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<uint32_t>(12))), "12");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<uint64_t>(123))), "123");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<long>(1234))), "1234");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<long long>(12345))), "12345");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<unsigned>(3))), "3");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<unsigned long>(32))), "32");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<unsigned long long>(321))), "321");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<float>(3.2))), "3.2");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<double>(33.22))), "33.22");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<long double>(333.222))), "333.222");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<bool>(true))), "true");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(boost::filesystem::path("C:\\Windows"))), "\"C:\\Windows\"");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<char>({ 'a', 'b', 'c' }))), "a, b, c");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<signed char>({ -1, -2, -3 }))), "-1, -2, -3");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<unsigned char>({ 1, 2, 3 }))), "1, 2, 3");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<string>({ "aa", "bb", "cc" }))), "aa, bb, cc");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<int>({ 1, 2, 3 }))), "1, 2, 3");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<size_t>({ 1, 2, 3 }))), "1, 2, 3");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<uint32_t>({ 12, 13, 14 }))), "12, 13, 14");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<uint64_t>({ 123, 124, 125 }))), "123, 124, 125");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<long>({ 1234, 1235, 1236 }))), "1234, 1235, 1236");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<long long>({ 12345, 12346, 12347 }))), "12345, 12346, 12347");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<unsigned>({ 3, 4, 5 }))), "3, 4, 5");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<unsigned long>({ 32, 33, 34 }))), "32, 33, 34");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<unsigned long long>({ 321, 322, 323 }))), "321, 322, 323");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<float>({ 3.2, 3.3, 3.4 }))), "3.2, 3.3, 3.4");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<double>({ 33.22, 33.23, 33.24 }))), "33.22, 33.23, 33.24");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<long double>({ 333.222, 333.223, 333.224 }))), "333.222, 333.223, 333.224");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<bool>({ true, true }))), "true, true");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<boost::filesystem::path>({ boost::filesystem::path("C:\\Windows"), boost::filesystem::path("C:\\Windows\\System32") }))), "\"C:\\Windows\", \"C:\\Windows\\System32\"");
 }
 
 } // namespace
