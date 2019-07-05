@@ -12,10 +12,10 @@
 // otherwise on some systems we'd get boost::uuids::entropy_error
 #define BOOST_UUID_RANDOM_PROVIDER_FORCE_POSIX
 
+#include <boost/functional/hash.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-#include <boost/functional/hash.hpp>
 
 using namespace std;
 

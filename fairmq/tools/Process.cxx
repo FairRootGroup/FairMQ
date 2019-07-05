@@ -9,16 +9,15 @@
 #include <fairmq/tools/Process.h>
 #include <fairmq/tools/Strings.h>
 
-#include <boost/process.hpp>
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-
-#include <signal.h> // kill, signals
-
+#include <boost/process.hpp>
+#include <csignal>   // kill, signals
 #include <iostream>
 #include <sstream>
-#include <thread>
 #include <stdexcept>
+#include <thread>
+#include <utility>
 
 using namespace std;
 namespace bp = boost::process;
@@ -28,9 +27,9 @@ namespace bs = boost::system;
 class LinePrinter
 {
   public:
-    LinePrinter(stringstream& out, const string& prefix)
+    LinePrinter(stringstream& out, string prefix)
         : fOut(out)
-        , fPrefix(prefix)
+        , fPrefix(move(prefix))
     {}
 
     // prints line with prefix on both cout (thread-safe) and output stream
@@ -82,8 +81,8 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
     bp::async_pipe errorPipe(ios);
 
     const string delimiter = "\n";
-    ba::deadline_timer inputTimer(ios, boost::posix_time::milliseconds(100));
-    ba::deadline_timer signalTimer(ios, boost::posix_time::milliseconds(100));
+    ba::deadline_timer inputTimer(ios, boost::posix_time::milliseconds(100)); // NOLINT
+    ba::deadline_timer signalTimer(ios, boost::posix_time::milliseconds(100)); // NOLINT
 
     // child process
     bp::child c(cmd, bp::std_out > outputPipe, bp::std_err > errorPipe, bp::std_in < inputPipe);
@@ -91,7 +90,7 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
     p.Print(ToString("fair::mq::tools::execute: pid: ", pid));
 
     // handle std_in with a delay
-    if (input != "") {
+    if (!input.empty()) {
         inputTimer.async_wait([&](const bs::error_code& ec1) {
             if (!ec1) {
                 ba::async_write(inputPipe, inputBuffer, [&](const bs::error_code& ec2, size_t /* n */) {

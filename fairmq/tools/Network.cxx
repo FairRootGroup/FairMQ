@@ -12,24 +12,21 @@
 #define _GNU_SOURCE // To get defns of NI_MAXSERV and NI_MAXHOST
 #endif
 
+#include <algorithm>
+#include <array>
+#include <boost/algorithm/string.hpp>   // trim
+#include <boost/asio.hpp>
+#include <cstdio>
+#include <exception>
 #include <fairlogger/Logger.h>
-
+#include <ifaddrs.h>
+#include <iostream>
+#include <map>
+#include <netdb.h>
+#include <stdexcept>
+#include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <netdb.h>
-#include <ifaddrs.h>
-#include <stdio.h>
-
-#include <boost/algorithm/string.hpp> // trim
-#include <boost/asio.hpp>
-
-#include <map>
-#include <string>
-#include <iostream>
-#include <array>
-#include <exception>
-#include <stdexcept>
-#include <algorithm>
 
 using namespace std;
 
@@ -44,9 +41,10 @@ namespace tools
 map<string, string> getHostIPs()
 {
     map<string, string> addressMap;
-    struct ifaddrs *ifaddr, *ifa;
+    ifaddrs* ifaddr;
+    ifaddrs* ifa;
     int s;
-    char host[NI_MAXHOST];
+    array<char, NI_MAXHOST> host{};
 
     if (getifaddrs(&ifaddr) == -1) {
         perror("getifaddrs");
@@ -59,13 +57,13 @@ map<string, string> getHostIPs()
         }
 
         if (ifa->ifa_addr->sa_family == AF_INET) {
-            s = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST);
+            s = getnameinfo(ifa->ifa_addr, sizeof(sockaddr_in), host.data(), NI_MAXHOST, nullptr, 0, NI_NUMERICHOST);
             if (s != 0) {
                 cout << "getnameinfo() failed: " << gai_strerror(s) << endl;
                 throw runtime_error("getnameinfo() failed");
             }
 
-            addressMap.insert(pair<string, string>(ifa->ifa_name, host));
+            addressMap.insert({ifa->ifa_name, host.data()});
         }
     }
 
@@ -79,12 +77,11 @@ string getInterfaceIP(const string& interface)
 {
     try {
         auto IPs = getHostIPs();
-        if (IPs.count(interface)) {
+        if (IPs.count(interface) > 0) {
             return IPs[interface];
-        } else {
-            LOG(error) << "Could not find provided network interface: \"" << interface << "\"!, exiting.";
-            return "";
         }
+        LOG(error) << "Could not find provided network interface: \"" << interface << "\"!, exiting.";
+        return "";
     } catch (runtime_error& re) {
         cout << "could not get interface IP: " << re.what();
         return "";
@@ -94,7 +91,8 @@ string getInterfaceIP(const string& interface)
 // get name of the default route interface
 string getDefaultRouteNetworkInterface()
 {
-    array<char, 128> buffer;
+    const int BUFSIZE(128);
+    array<char, BUFSIZE> buffer{};
     string interfaceName;
 
 #ifdef __APPLE__ // MacOS
@@ -108,15 +106,15 @@ string getDefaultRouteNetworkInterface()
         return "";
     }
 
-    while (!feof(file.get())) {
-        if (fgets(buffer.data(), 128, file.get()) != nullptr) {
+    while (feof(file.get()) == 0) {
+        if (fgets(buffer.data(), BUFSIZE, file.get()) != nullptr) {
             interfaceName += buffer.data();
         }
     }
 
     boost::algorithm::trim(interfaceName);
 
-    if (interfaceName == "") {
+    if (interfaceName.empty()) {
         LOG(error) << "Could not detect default route network interface name";
     } else {
         LOG(debug) << "Detected network interface name for the default route: " << interfaceName;
