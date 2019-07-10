@@ -26,18 +26,18 @@ echo "SESSION ID: ${DDS_SESSION_ID}"
 trap "cleanup ${DDS_SESSION_ID}" EXIT
 
 requiredNofAgents=12
-dds-submit -s ${DDS_SESSION_ID} -r localhost -n ${requiredNofAgents}
-dds-info -s ${DDS_SESSION_ID} --wait-for-idle-agents ${requiredNofAgents}
+dds-submit -r localhost -n ${requiredNofAgents}
+dds-info --wait-for-idle-agents ${requiredNofAgents}
 
 topologyFile=@DATA_DIR@/ex-dds-topology.xml
 echo "TOPOLOGY FILE: ${topologyFile}"
 
-dds-topology -s ${DDS_SESSION_ID} --disable-validation --activate ${topologyFile}
+dds-topology --disable-validation --activate ${topologyFile}
 
 echo "------------------------"
 echo "Waiting for Topology to finish ..."
 sampler_and_sink="main/(Sampler|Sink)"
-fairmq-dds-command-ui -p $sampler_and_sink --wait-for-state RUNNING->READY
+fairmq-dds-command-ui -p $sampler_and_sink --wait-for-state "RUNNING->READY"
 echo "..."
 fairmq-dds-command-ui -c s -w READY
 fairmq-dds-command-ui -c t -w "DEVICE READY"
@@ -45,12 +45,12 @@ fairmq-dds-command-ui -c d -w IDLE
 fairmq-dds-command-ui -c q -w EXITING
 # fairmq-dds-command-ui -c q! -w EXITING
 echo "..."
-dds-info -s ${DDS_SESSION_ID} --wait-for-idle-agents ${requiredNofAgents}
+dds-info --wait-for-idle-agents ${requiredNofAgents}
 echo "------------------------"
 
-dds-topology -s ${DDS_SESSION_ID} --stop
+dds-topology --stop
 
-dds-agent-cmd getlog -a -s ${DDS_SESSION_ID}
+dds-agent-cmd getlog -a
 logDir="${wrkDir}/logs"
 for file in $(find "${logDir}" -name "*.tar.gz"); do tar -xf ${file} -C "${logDir}" ; done
 echo "AGENT LOG FILES IN: ${logDir}"

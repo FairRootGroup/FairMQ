@@ -98,6 +98,7 @@ class DDS : public Plugin
     DeviceState fCurrentState, fLastState;
 
     std::atomic<bool> fDeviceTerminationRequested;
+    std::atomic<bool> fServiceStarted;
 
     std::set<uint64_t> fHeartbeatSubscribers;
     std::mutex fHeartbeatSubscriberMutex;

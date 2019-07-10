@@ -18,7 +18,7 @@
 #include <DDS/dds_intercom.h>
 #include <exception>
 #include <iostream>
-#include <map>
+#include <unordered_map>
 #include <mutex>
 #include <termios.h>   // raw mode console input
 #include <thread>
@@ -28,7 +28,6 @@
 using namespace std;
 using namespace dds::intercom_api;
 namespace bpo = boost::program_options;
-using WaitForStateMap = map<uint64_t, string>;
 
 struct TerminalConfig
 {
@@ -75,9 +74,9 @@ void printControlsHelp()
     cout << "To quit press Ctrl+C" << endl;
 }
 
-void commandMode(const string& command_in, const string& topologyPath, CCustomCmd& ddsCustomCmd) {
+void commandMode(const string& commandIn, const string& topologyPath, CCustomCmd& ddsCustomCmd) {
     char c;
-    string command(command_in);
+    string command(commandIn);
     TerminalConfig tconfig;
 
     if (command == "") {
@@ -88,48 +87,54 @@ void commandMode(const string& command_in, const string& topologyPath, CCustomCm
 
     while (true) {
         if (command == "c") {
-            cout << " > checking state of the devices" << endl;
+            cout << "\033[01;32m > checking state of the devices\033[0m" << endl;
             ddsCustomCmd.send("check-state", topologyPath);
         } else if (command == "o") {
-            cout << " > dumping config of the devices" << endl;
+            cout << "\033[01;32m > dumping config of the devices\033[0m" << endl;
             ddsCustomCmd.send("dump-config", topologyPath);
         } else if (command == "i") {
-            cout << " > init devices" << endl;
+            cout << "\033[01;32m > init devices\033[0m" << endl;
             ddsCustomCmd.send("INIT DEVICE", topologyPath);
+        } else if (command == "b") {
+            cout << "\033[01;32m > bind devices\033[0m" << endl;
+            ddsCustomCmd.send("BIND", topologyPath);
+        } else if (command == "x") {
+            cout << "\033[01;32m > connect devices\033[0m" << endl;
+            ddsCustomCmd.send("CONNECT", topologyPath);
         } else if (command == "j") {
-            cout << " > init tasks" << endl;
+            cout << "\033[01;32m > init tasks\033[0m" << endl;
             ddsCustomCmd.send("INIT TASK", topologyPath);
         } else if (command == "p") {
-            cout << " > pause devices" << endl;
+            cout << "\033[01;32m > pause devices\033[0m" << endl;
             ddsCustomCmd.send("PAUSE", topologyPath);
         } else if (command == "r") {
-            cout << " > run tasks" << endl;
+            cout << "\033[01;32m > run tasks\033[0m" << endl;
             ddsCustomCmd.send("RUN", topologyPath);
         } else if (command == "s") {
-            cout << " > stop devices" << endl;
+            cout << "\033[01;32m > stop devices\033[0m" << endl;
             ddsCustomCmd.send("STOP", topologyPath);
         } else if (command == "t") {
-            cout << " > reset tasks" << endl;
+            cout << "\033[01;32m > reset tasks\033[0m" << endl;
             ddsCustomCmd.send("RESET TASK", topologyPath);
         } else if (command == "d") {
-            cout << " > reset devices" << endl;
+            cout << "\033[01;32m > reset devices\033[0m" << endl;
             ddsCustomCmd.send("RESET DEVICE", topologyPath);
         } else if (command == "h") {
-            cout << " > help" << endl;
+            cout << "\033[01;32m > help\033[0m" << endl;
             printControlsHelp();
         } else if (command == "q") {
-            cout << " > end" << endl;
+            cout << "\033[01;32m > end\033[0m" << endl;
             ddsCustomCmd.send("END", topologyPath);
         } else if (command == "q!") {
             ddsCustomCmd.send("SHUTDOWN", topologyPath);
         } else if (command == "r!") {
             ddsCustomCmd.send("STARTUP", topologyPath);
         } else {
-            cout << "Invalid input: [" << c << "]" << endl;
+            cout << "\033[01;32mInvalid input: [" << c << "]\033[0m" << endl;
             printControlsHelp();
         }
 
-        if (command_in != "") {
+        if (commandIn != "") {
             this_thread::sleep_for(chrono::milliseconds(100)); // give dds a chance to complete request
             break;
         } else {
@@ -139,36 +144,49 @@ void commandMode(const string& command_in, const string& topologyPath, CCustomCm
     }
 }
 
-void waitMode(const string& waitForState,
-              mutex& waitForStateMutex,
-              condition_variable& waitForStateCV,
-              const WaitForStateMap& waitForStateMap,
-              const string& topologyPath,
-              CCustomCmd& ddsCustomCmd,
-              chrono::milliseconds timeout)
+struct WaitMode
 {
-    StateSubscription stateSubscription(topologyPath, ddsCustomCmd);
+    explicit WaitMode(const string& targetState)
+        : fTargetState(targetState)
+    {}
 
-    auto condition = [&] {
-        return !waitForStateMap.empty()   // TODO once DDS provides an API to retrieve actual number
-                                          // of tasks, use it here
-               && all_of(waitForStateMap.cbegin(),
-                         waitForStateMap.cend(),
-                         [&](WaitForStateMap::value_type i) {
-                             return boost::algorithm::ends_with(i.second, waitForState);
-                         });
-    };
+    void Run(const chrono::milliseconds& timeout, const string& topologyPath, CCustomCmd& ddsCustomCmd)
+    {
+        StateSubscription stateSubscription(topologyPath, ddsCustomCmd);
 
-    unique_lock<mutex> lock(waitForStateMutex);
+        // TODO once DDS provides an API to retrieve actual number of tasks, use it here
+        auto condition = [&] { return !fTargetStates.empty() && all_of(fTargetStates.cbegin(),
+                                                                    fTargetStates.cend(),
+                                                                    [&](unordered_map<uint64_t, string>::value_type i) {
+                                                                        return boost::algorithm::ends_with(i.second, fTargetState);
+                                                                    });
+        };
 
-    if (timeout > std::chrono::milliseconds(0)) {
-        if (!waitForStateCV.wait_for(lock, timeout, condition)) {
-            throw runtime_error("timeout");
+        unique_lock<mutex> lock(fMtx);
+
+        if (timeout > chrono::milliseconds(0)) {
+            if (!fCV.wait_for(lock, timeout, condition)) {
+                throw runtime_error("timeout");
+            }
+        } else {
+            fCV.wait(lock, condition);
         }
-    } else {
-        waitForStateCV.wait(lock, condition);
     }
-}
+
+    void AddNewStateEntry(uint64_t senderId, const string& state)
+    {
+        {
+            unique_lock<mutex> lock(fMtx);
+            fTargetStates[senderId] = state;
+        }
+        fCV.notify_one();
+    }
+
+    mutex fMtx;
+    condition_variable fCV;
+    unordered_map<uint64_t, string> fTargetStates;
+    string fTargetState;
+};
 
 int main(int argc, char* argv[])
 {
@@ -176,34 +194,23 @@ int main(int argc, char* argv[])
         string sessionID;
         string command;
         string topologyPath;
-        string waitForState;
+        string targetState;
         unsigned int timeout;
-        mutex waitForStateMutex;
-        condition_variable waitForStateCV;
-        WaitForStateMap waitForStateMap;
 
         bpo::options_description options("Common options");
 
-        auto env_session_id = std::getenv("DDS_SESSION_ID");
-        if (env_session_id) {
-            options.add_options()("session,s",
-                                  bpo::value<string>(&sessionID)->default_value(env_session_id),
-                                  "DDS Session ID (overrides any value in env var $DDS_SESSION_ID)");
+        auto envSessionId = getenv("DDS_SESSION_ID");
+        if (envSessionId) {
+            options.add_options()("session,s", bpo::value<string>(&sessionID)->default_value(envSessionId), "DDS Session ID (overrides any value in env var $DDS_SESSION_ID)");
         } else {
-            options.add_options()("session,s",
-                                  bpo::value<string>(&sessionID)->required(),
-                                  "DDS Session ID (overrides any value in env var $DDS_SESSION_ID)");
+            options.add_options()("session,s", bpo::value<string>(&sessionID)->required(), "DDS Session ID (overrides any value in env var $DDS_SESSION_ID)");
         }
 
         options.add_options()
-            ("command,c",        bpo::value<string> (&command)->default_value(""),
-                                 "Command character")
-            ("path,p",           bpo::value<string> (&topologyPath)->default_value(""),
-                                 "DDS Topology path to send command to (empty - send to all tasks)")
-            ("wait-for-state,w", bpo::value<string> (&waitForState)->default_value(""),
-                                 "Wait until targeted FairMQ devices reach the given state")
-            ("timeout,t",        bpo::value<unsigned int> (&timeout)->default_value(0),
-                                 "Timeout in milliseconds when waiting for a device state (0 - wait infinitely)")
+            ("command,c",        bpo::value<string> (&command)->default_value(""), "Command character")
+            ("path,p",           bpo::value<string> (&topologyPath)->default_value(""), "DDS Topology path to send command to (empty - send to all tasks)")
+            ("wait-for-state,w", bpo::value<string> (&targetState)->default_value(""), "Wait until targeted FairMQ devices reach the given state")
+            ("timeout,t",        bpo::value<unsigned int> (&timeout)->default_value(0), "Timeout in milliseconds when waiting for a device state (0 - wait infinitely)")
             ("help,h", "Produce help message");
 
         bpo::variables_map vm;
@@ -217,6 +224,8 @@ int main(int argc, char* argv[])
 
         bpo::notify(vm);
 
+        WaitMode waitMode(targetState);
+
         CIntercomService service;
         CCustomCmd ddsCustomCmd(service);
 
@@ -226,16 +235,12 @@ int main(int argc, char* argv[])
 
         // subscribe to receive messages from DDS
         ddsCustomCmd.subscribe([&](const string& msg, const string& /*condition*/, uint64_t senderId) {
-            cout << "Received: " << endl << msg << endl;
+            cerr << "Received: " << msg << endl;
             vector<string> parts;
             boost::algorithm::split(parts, msg, boost::algorithm::is_any_of(":,"));
             if (parts[0] == "state-change") {
-                {
-                    unique_lock<mutex> lock(waitForStateMutex);
-                    boost::trim(parts[2]);
-                    waitForStateMap[senderId] = parts[2];
-                }
-                waitForStateCV.notify_one();
+                boost::trim(parts[2]);
+                waitMode.AddNewStateEntry(senderId, parts[2]);
             } else if (parts[0] == "state-changes-subscription") {
                 if (parts[2] != "OK") {
                     cerr << "state-changes-subscription failed with return code: " << parts[2];
@@ -245,13 +250,14 @@ int main(int argc, char* argv[])
                     cerr << "state-changes-unsubscription failed with return code: " << parts[2];
                 }
             } else {
-                cout << "Received: " << endl << msg << endl;
+                // cout << "Received: " << msg << endl;
             }
         });
 
         service.start(sessionID);
 
-        if (waitForState == "") {
+
+        if (targetState == "") {
             commandMode(command, topologyPath, ddsCustomCmd);
         } else {
             PrintControlsHelp();
@@ -316,13 +322,7 @@ int main(int argc, char* argv[])
             if (command != "") {
                 commandMode(command, topologyPath, ddsCustomCmd);
             }
-            waitMode(waitForState,
-                     waitForStateMutex,
-                     waitForStateCV,
-                     waitForStateMap,
-                     topologyPath,
-                     ddsCustomCmd,
-                     chrono::milliseconds(timeout));
+            waitMode.Run(chrono::milliseconds(timeout), topologyPath, ddsCustomCmd);
         }
     } catch (exception& e) {
         cerr << "Error: " << e.what() << endl;
