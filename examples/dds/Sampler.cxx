@@ -42,8 +42,7 @@ bool Sampler::ConditionalRun()
 
     // in case of error or transfer interruption, return false to go to IDLE state
     // successfull transfer will return number of bytes transfered (can be 0 if sending an empty message).
-    if (Send(msg, "data1") < 0)
-    {
+    if (Send(msg, "data1") < 0) {
         return false;
     }
 
