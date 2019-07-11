@@ -148,7 +148,7 @@ TEST_F(PluginServices, Accessors)
     // property should no longer exist after deletion
     ASSERT_EQ(mServices.PropertyExists("custom3"), false);
     // accessing this property should throw an exception
-    ASSERT_THROW(mServices.GetProperty<int>("custom3"), fair::mq::PluginServices::PropertyNotFoundError);
+    ASSERT_THROW(mServices.GetProperty<int>("custom3"), fair::mq::PropertyNotFoundError);
 
     mServices.SetProperty("customType", MyClass("message"));
     // without adding custom type information, proper string value will not be returned

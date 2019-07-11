@@ -102,6 +102,7 @@ fair::mq::Transport FairMQTransportFactoryZMQ::GetType() const
 
 FairMQTransportFactoryZMQ::~FairMQTransportFactoryZMQ()
 {
+    LOG(debug) << "Destroying ZeroMQ transport...";
     if (fContext)
     {
         if (zmq_ctx_term(fContext) != 0)

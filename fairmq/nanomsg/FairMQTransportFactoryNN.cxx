@@ -88,6 +88,7 @@ void FairMQTransportFactoryNN::Reset()
 
 FairMQTransportFactoryNN::~FairMQTransportFactoryNN()
 {
+    LOG(debug) << "Destroying Shared Memory transport...";
     // nn_term();
     // see https://www.freelists.org/post/nanomsg/Getting-rid-of-nn-init-and-nn-term,8
 }

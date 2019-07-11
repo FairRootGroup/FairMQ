@@ -178,8 +178,10 @@ class PluginServices
     auto UnsubscribeFromDeviceStateChange(const std::string& subscriber) -> void { fDevice.UnsubscribeFromStateChange(subscriber); }
 
     // Config API
-    struct PropertyNotFoundError : std::runtime_error { using std::runtime_error::runtime_error; };
 
+    /// @brief Checks a property with the given key exist in the configuration
+    /// @param key
+    /// @return true if it exists, false otherwise
     auto PropertyExists(const std::string& key) const -> bool { return fConfig.Count(key) > 0; }
 
     /// @brief Set config property
@@ -189,73 +191,78 @@ class PluginServices
     /// Setting a config property will store the value in the FairMQ internal config store and notify any subscribers about the update.
     /// It is property dependent, if the call to this method will have an immediate, delayed or any effect at all.
     template<typename T>
-    auto SetProperty(const std::string& key, T val) -> void
-    {
-        fConfig.SetProperty(key, val);
-    }
+    auto SetProperty(const std::string& key, T val) -> void { fConfig.SetProperty(key, val); }
+    /// @brief Set multiple config properties
+    /// @param props fair::mq::Properties as an alias for std::map<std::string, Property>, where property is boost::any
     void SetProperties(const fair::mq::Properties& props) { fConfig.SetProperties(props); }
+    /// @brief Updates an existing config property (or fails if it doesn't exist)
+    /// @param key
+    /// @param val
     template<typename T>
     bool UpdateProperty(const std::string& key, T val) { return fConfig.UpdateProperty(key, val); }
+    /// @brief Updates multiple existing config properties (or fails of any of then do not exist, leaving property store unchanged)
+    /// @param props (fair::mq::Properties as an alias for std::map<std::string, Property>, where property is boost::any)
     bool UpdateProperties(const fair::mq::Properties& input) { return fConfig.UpdateProperties(input); }
 
+    /// @brief Deletes a property with the given key from the config store
+    /// @param key
     void DeleteProperty(const std::string& key) { fConfig.DeleteProperty(key); }
 
-    /// @brief Read config property
+    /// @brief Read config property, throw if no property with this key exists
     /// @param key
     /// @return config property
-    ///
-    /// TODO Currently, if a non-existing key is requested and a default constructed object is returned.
-    /// This behaviour will be changed in the future to throw an exception in that case to provide a proper sentinel.
     template<typename T>
-    auto GetProperty(const std::string& key) const -> T
-    {
-        if (PropertyExists(key)) {
-            return fConfig.GetProperty<T>(key);
-        }
-        throw PropertyNotFoundError(fair::mq::tools::ToString("Config has no key: ", key));
-    }
+    auto GetProperty(const std::string& key) const -> T { return fConfig.GetProperty<T>(key); }
 
+    /// @brief Read config property, return provided value if no property with this key exists
+    /// @param key
+    /// @param ifNotFound value to return if key is not found
+    /// @return config property
     template<typename T>
-    T GetProperty(const std::string& key, const T& ifNotFound) const
-    {
-        return fConfig.GetProperty(key, ifNotFound);
-    }
+    T GetProperty(const std::string& key, const T& ifNotFound) const { return fConfig.GetProperty(key, ifNotFound); }
 
-    /// @brief Read config property as string
+    /// @brief Read config property as string, throw if no property with this key exists
     /// @param key
     /// @return config property converted to string
     ///
-    /// If a type is not supported, the user can provide support by overloading the ostream operator for this type
-    auto GetPropertyAsString(const std::string& key) const -> std::string
-    {
-        if (PropertyExists(key)) {
-            return fConfig.GetPropertyAsString(key);
-        }
-        throw PropertyNotFoundError(fair::mq::tools::ToString("Config has no key: ", key));
-    }
+    /// Supports conversion to string for a fixed set of types,
+    /// for custom/unsupported types add them via `fair::mq::PropertyHelper::AddType<MyType>("optional label")`
+    /// the provided type must then be convertible to string via operator<<
+    auto GetPropertyAsString(const std::string& key) const -> std::string { return fConfig.GetPropertyAsString(key); }
 
-    auto GetPropertyAsString(const std::string& key, const std::string& ifNotFound) const -> std::string
-    {
-        return fConfig.GetPropertyAsString(key, ifNotFound);
-    }
+    /// @brief Read config property, return provided value if no property with this key exists
+    /// @param key
+    /// @param ifNotFound value to return if key is not found
+    /// @return config property converted to string
+    ///
+    /// Supports conversion to string for a fixed set of types,
+    /// for custom/unsupported types add them via `fair::mq::PropertyHelper::AddType<MyType>("optional label")`
+    /// the provided type must then be convertible to string via operator<<
+    auto GetPropertyAsString(const std::string& key, const std::string& ifNotFound) const -> std::string { return fConfig.GetPropertyAsString(key, ifNotFound); }
 
-    fair::mq::Properties GetProperties(const std::string& q) const
-    {
-        return fConfig.GetProperties(q);
-    }
-    fair::mq::Properties GetPropertiesStartingWith(const std::string& q) const
-    {
-        return fConfig.GetPropertiesStartingWith(q);
-    }
-    std::map<std::string, std::string> GetPropertiesAsString(const std::string& q) const
-    {
-        return fConfig.GetPropertiesAsString(q);
-    }
-    std::map<std::string, std::string> GetPropertiesAsStringStartingWith(const std::string& q) const
-    {
-        return fConfig.GetPropertiesAsStringStartingWith(q);
-    }
+    /// @brief Read several config properties whose keys match the provided regular expression
+    /// @param q regex string to match for
+    /// @return container with properties (fair::mq::Properties as an alias for std::map<std::string, Property>, where property is boost::any)
+    fair::mq::Properties GetProperties(const std::string& q) const { return fConfig.GetProperties(q); }
+    /// @brief Read several config properties whose keys start with the provided string
+    /// @param q string to match for
+    /// @return container with properties (fair::mq::Properties as an alias for std::map<std::string, Property>, where property is boost::any)
+    ///
+    /// Typically more performant than GetProperties with regex
+    fair::mq::Properties GetPropertiesStartingWith(const std::string& q) const { return fConfig.GetPropertiesStartingWith(q); }
+    /// @brief Read several config properties as string whose keys match the provided regular expression
+    /// @param q regex string to match for
+    /// @return container with properties (fair::mq::Properties as an alias for std::map<std::string, Property>, where property is boost::any)
+    std::map<std::string, std::string> GetPropertiesAsString(const std::string& q) const { return fConfig.GetPropertiesAsString(q); }
+    /// @brief Read several config properties as string whose keys start with the provided string
+    /// @param q string to match for
+    /// @return container with properties (fair::mq::Properties as an alias for std::map<std::string, Property>, where property is boost::any)
+    ///
+    /// Typically more performant than GetPropertiesAsString with regex
+    std::map<std::string, std::string> GetPropertiesAsStringStartingWith(const std::string& q) const { return fConfig.GetPropertiesAsStringStartingWith(q); }
 
+    /// @brief Retrieve current channel information
+    /// @return a map of <channel name, number of subchannels>
     auto GetChannelInfo() const -> std::unordered_map<std::string, int> { return fConfig.GetChannelInfo(); }
 
     /// @brief Discover the list of property keys
@@ -292,9 +299,13 @@ class PluginServices
     /// @param subscriber
     auto UnsubscribeFromPropertyChangeAsString(const std::string& subscriber) -> void { fConfig.UnsubscribeAsString(subscriber); }
 
+    /// @brief Increases console logging severity, or sets it to lowest if it is already highest
     auto CycleLogConsoleSeverityUp() -> void { Logger::CycleConsoleSeverityUp(); }
+    /// @brief Decreases console logging severity, or sets it to highest if it is already lowest
     auto CycleLogConsoleSeverityDown() -> void { Logger::CycleConsoleSeverityDown(); }
+    /// @brief Increases logging verbosity, or sets it to lowest if it is already highest
     auto CycleLogVerbosityUp() -> void { Logger::CycleVerbosityUp(); }
+    /// @brief Decreases logging verbosity, or sets it to highest if it is already lowest
     auto CycleLogVerbosityDown() -> void { Logger::CycleVerbosityDown(); }
 
     static const std::unordered_map<std::string, DeviceState> fkDeviceStateStrMap;
