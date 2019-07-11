@@ -12,7 +12,6 @@
 set(target SDK)
 
 set(SDK_PUBLIC_HEADER_FILES
-  Session.h
   Topology.h
 )
 
@@ -20,7 +19,6 @@ set(SDK_PRIVATE_HEADER_FILES
 )
 
 set(SDK_SOURCE_FILES
-  Session.cxx
   Topology.cxx
 )
 
