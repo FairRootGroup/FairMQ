@@ -492,7 +492,7 @@ class FairMQDevice
 
     fair::mq::State WaitForNextState();
     void WaitForState(fair::mq::State state);
-    void WaitForState(const std::string& state) { fair::mq::StateMachine::GetState(state); }
+    void WaitForState(const std::string& state) { WaitForState(fair::mq::StateMachine::GetState(state)); }
 
     void SubscribeToStateChange(const std::string& key, std::function<void(const fair::mq::State)> callback) { fStateMachine.SubscribeToStateChange(key, callback); }
     void UnsubscribeFromStateChange(const std::string& key) { fStateMachine.UnsubscribeFromStateChange(key); }
