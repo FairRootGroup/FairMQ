@@ -163,6 +163,7 @@ fair::mq::Transport FairMQTransportFactorySHM::GetType() const
 
 FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
 {
+    LOG(debug) << "Destroying Shared Memory transport...";
     fSendHeartbeats = false;
     fHeartbeatThread.join();
 
