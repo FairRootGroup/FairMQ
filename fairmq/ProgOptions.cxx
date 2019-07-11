@@ -200,6 +200,17 @@ string ProgOptions::GetPropertyAsString(const string& key) const
     if (fVarMap.count(key)) {
         return ConvertVarValToString(fVarMap.at(key));
     } else {
+        throw PropertyNotFoundError(fair::mq::tools::ToString("Config has no key: ", key));
+    }
+}
+
+string ProgOptions::GetStringValue(const string& key) const
+{
+    lock_guard<mutex> lock(fMtx);
+
+    if (fVarMap.count(key)) {
+        return ConvertVarValToString(fVarMap.at(key));
+    } else {
         LOG(warn) << "Config has no key: " << key << ". Returning default constructed object.";
         return string();
     }

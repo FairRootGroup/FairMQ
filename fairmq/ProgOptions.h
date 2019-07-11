@@ -24,11 +24,14 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <stdexcept>
 
 namespace fair
 {
 namespace mq
 {
+
+struct PropertyNotFoundError : std::runtime_error { using std::runtime_error::runtime_error; };
 
 class ProgOptions
 {
@@ -48,6 +51,9 @@ class ProgOptions
     std::unordered_map<std::string, int> GetChannelInfo() const;
     std::vector<std::string> GetPropertyKeys() const;
 
+    /// @brief Read config property, throw if no property with this key exists
+    /// @param key
+    /// @return config property
     template<typename T>
     T GetProperty(const std::string& key) const
     {
@@ -55,8 +61,7 @@ class ProgOptions
         if (fVarMap.count(key)) {
             return fVarMap[key].as<T>();
         } else {
-            LOG(warn) << "Config has no key: " << key << ". Returning default constructed object.";
-            return T();
+            throw PropertyNotFoundError(fair::mq::tools::ToString("Config has no key: ", key));
         }
     }
 
@@ -70,6 +75,13 @@ class ProgOptions
         return ifNotFound;
     }
 
+    /// @brief Read config property as string, throw if no property with this key exists
+    /// @param key
+    /// @return config property converted to string
+    ///
+    /// Supports conversion to string for a fixed set of types,
+    /// for custom/unsupported types add them via `fair::mq::PropertyHelper::AddType<MyType>("optional label")`
+    /// the provided type must then be convertible to string via operator<<
     std::string GetPropertyAsString(const std::string& key) const;
     std::string GetPropertyAsString(const std::string& key, const std::string& ifNotFound) const;
 
@@ -150,11 +162,26 @@ class ProgOptions
 
     const boost::program_options::variables_map& GetVarMap() const { return fVarMap; }
 
+    /// @brief Read config property, return default-constructed object if key doesn't exist
+    /// @param key
+    /// @return config property
     template<typename T>
-    T GetValue(const std::string& key) const /* TODO: deprecate this */ { return GetProperty<T>(key); }
+    T GetValue(const std::string& key) const /* TODO: deprecate this */
+    {
+        std::lock_guard<std::mutex> lock(fMtx);
+        if (fVarMap.count(key)) {
+            return fVarMap[key].as<T>();
+        } else {
+            LOG(warn) << "Config has no key: " << key << ". Returning default constructed object.";
+            return T();
+        }
+    }
     template<typename T>
     int SetValue(const std::string& key, T val) /* TODO: deprecate this */ { SetProperty(key, val); return 0; }
-    std::string GetStringValue(const std::string& key) const /* TODO: deprecate this */ { return GetPropertyAsString(key); }
+    /// @brief Read config property as string, return default-constructed object if key doesn't exist
+    /// @param key
+    /// @return config property
+    std::string GetStringValue(const std::string& key) const; /* TODO: deprecate this */
 
   private:
     void ParseDefaults();

@@ -178,7 +178,6 @@ class PluginServices
     auto UnsubscribeFromDeviceStateChange(const std::string& subscriber) -> void { fDevice.UnsubscribeFromStateChange(subscriber); }
 
     // Config API
-    struct PropertyNotFoundError : std::runtime_error { using std::runtime_error::runtime_error; };
 
     auto PropertyExists(const std::string& key) const -> bool { return fConfig.Count(key) > 0; }
 
@@ -200,20 +199,11 @@ class PluginServices
 
     void DeleteProperty(const std::string& key) { fConfig.DeleteProperty(key); }
 
-    /// @brief Read config property
+    /// @brief Read config property, throw if no property with this key exists
     /// @param key
     /// @return config property
-    ///
-    /// TODO Currently, if a non-existing key is requested and a default constructed object is returned.
-    /// This behaviour will be changed in the future to throw an exception in that case to provide a proper sentinel.
     template<typename T>
-    auto GetProperty(const std::string& key) const -> T
-    {
-        if (PropertyExists(key)) {
-            return fConfig.GetProperty<T>(key);
-        }
-        throw PropertyNotFoundError(fair::mq::tools::ToString("Config has no key: ", key));
-    }
+    auto GetProperty(const std::string& key) const -> T { return fConfig.GetProperty<T>(key); }
 
     template<typename T>
     T GetProperty(const std::string& key, const T& ifNotFound) const
@@ -221,18 +211,14 @@ class PluginServices
         return fConfig.GetProperty(key, ifNotFound);
     }
 
-    /// @brief Read config property as string
+    /// @brief Read config property as string, throw if no property with this key exists
     /// @param key
     /// @return config property converted to string
     ///
-    /// If a type is not supported, the user can provide support by overloading the ostream operator for this type
-    auto GetPropertyAsString(const std::string& key) const -> std::string
-    {
-        if (PropertyExists(key)) {
-            return fConfig.GetPropertyAsString(key);
-        }
-        throw PropertyNotFoundError(fair::mq::tools::ToString("Config has no key: ", key));
-    }
+    /// Supports conversion to string for a fixed set of types,
+    /// for custom/unsupported types add them via `fair::mq::PropertyHelper::AddType<MyType>("optional label")`
+    /// the provided type must then be convertible to string via operator<<
+    auto GetPropertyAsString(const std::string& key) const -> std::string { return fConfig.GetPropertyAsString(key); }
 
     auto GetPropertyAsString(const std::string& key, const std::string& ifNotFound) const -> std::string
     {
