@@ -836,21 +836,15 @@ void FairMQDevice::ResetTaskWrapper()
 
 void FairMQDevice::ResetWrapper()
 {
-    for (auto& t : fTransports) {
-        t.second->Reset();
-    }
-
-    // iterate over the channels map
-    for (auto& mi : fChannels) {
-        // iterate over the channels vector
-        for (auto& vi : mi.second) {
-            // vi.fReset = true;
-            vi.fSocket.reset(); // destroy FairMQSocket
-        }
+    for (auto& transport : fTransports) {
+        transport.second->Reset();
     }
 
     Reset();
 
+    fChannels.clear();
+    fTransports.clear();
+    fTransportFactory.reset();
     ChangeState(Transition::Auto);
 }
 
