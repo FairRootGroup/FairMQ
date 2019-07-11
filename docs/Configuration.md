@@ -4,7 +4,37 @@
 
 ## 3.1 Device Configuration
 
-Devices receive configuration primarily via provided command line options (that can be extended per device).
+Device Configuration is stored in configuration object - `fair::mq::ProgOptions`. It is accessible by the device, plugins or from DeviceRunner/main:
+
+Plugins <---read/write---> ProgOptions <---read/write---> Device
+
+Whenever a configuration property is set, it is set in ProgOptions. Device/Channels/User code read this value and apply it as necessary at different stages:
+ - apply it immidiately
+ - apply it in device/channels during InitializingDevice/Binding/Connecting states
+
+Here is an overview of the device/channel options and when they are applied:
+
+| Property | Applied in |
+| --- | --- |
+| `severity` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<runFairMQDevice.h>`)) |
+| `file-severity` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<runFairMQDevice.h>`)) |
+| `verbosity` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<runFairMQDevice.h>`)) |
+| `color` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<runFairMQDevice.h>`)) |
+| `log-to-file` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<runFairMQDevice.h>`)) |
+| `id` | at the end of `fair::mq::State::InitializingDevice` |
+| `io-threads` | at the end of `fair::mq::State::InitializingDevice` |
+| `transport` | at the end of `fair::mq::State::InitializingDevice` |
+| `network-interface` | at the end of `fair::mq::State::InitializingDevice` |
+| `init-timeout` | at the end of `fair::mq::State::InitializingDevice` |
+| `max-run-time` | at the end of `fair::mq::State::InitializingDevice` |
+| `shm-segment-size` | at the end of `fair::mq::State::InitializingDevice` |
+| `shm-monitor` | at the end of `fair::mq::State::InitializingDevice` |
+| `ofi-size-hint` | at the end of `fair::mq::State::InitializingDevice` |
+| `rate` | at the end of `fair::mq::State::InitializingDevice` |
+| `session` | at the end of `fair::mq::State::InitializingDevice` |
+| `chan.*` | at the end of `fair::mq::State::InitializingDevice` (channel addresses can be also applied during `fair::mq::State::Binding`/`fair::mq::State::Connecting`) |
+
+## 3.2 Configuration options
 
 ## 3.2 Communication Channels Configuration
 

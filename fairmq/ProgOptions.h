@@ -46,9 +46,16 @@ class ProgOptions
     void AddToCmdLineOptions(const boost::program_options::options_description optDesc, bool visible = true);
     boost::program_options::options_description& GetCmdLineOptions();
 
+    /// @brief Checks a property with the given key exist in the configuration
+    /// @param key
+    /// @return 1 if it exists, 0 otherwise
     int Count(const std::string& key) const;
 
+    /// @brief Retrieve current channel information
+    /// @return a map of <channel name, number of subchannels>
     std::unordered_map<std::string, int> GetChannelInfo() const;
+    /// @brief Discover the list of property keys
+    /// @return list of property keys
     std::vector<std::string> GetPropertyKeys() const;
 
     /// @brief Read config property, throw if no property with this key exists
@@ -65,6 +72,10 @@ class ProgOptions
         }
     }
 
+    /// @brief Read config property, return provided value if no property with this key exists
+    /// @param key
+    /// @param ifNotFound value to return if key is not found
+    /// @return config property
     template<typename T>
     T GetProperty(const std::string& key, const T& ifNotFound) const
     {
@@ -83,13 +94,40 @@ class ProgOptions
     /// for custom/unsupported types add them via `fair::mq::PropertyHelper::AddType<MyType>("optional label")`
     /// the provided type must then be convertible to string via operator<<
     std::string GetPropertyAsString(const std::string& key) const;
+    /// @brief Read config property, return provided value if no property with this key exists
+    /// @param key
+    /// @param ifNotFound value to return if key is not found
+    /// @return config property converted to string
+    ///
+    /// Supports conversion to string for a fixed set of types,
+    /// for custom/unsupported types add them via `fair::mq::PropertyHelper::AddType<MyType>("optional label")`
+    /// the provided type must then be convertible to string via operator<<
     std::string GetPropertyAsString(const std::string& key, const std::string& ifNotFound) const;
 
+    /// @brief Read several config properties whose keys match the provided regular expression
+    /// @param q regex string to match for
+    /// @return container with properties (fair::mq::Properties as an alias for std::map<std::string, Property>, where property is boost::any)
     fair::mq::Properties GetProperties(const std::string& q) const;
+    /// @brief Read several config properties whose keys start with the provided string
+    /// @param q string to match for
+    /// @return container with properties (fair::mq::Properties as an alias for std::map<std::string, Property>, where property is boost::any)
+    ///
+    /// Typically more performant than GetProperties with regex
     fair::mq::Properties GetPropertiesStartingWith(const std::string& q) const;
+    /// @brief Read several config properties as string whose keys match the provided regular expression
+    /// @param q regex string to match for
+    /// @return container with properties (fair::mq::Properties as an alias for std::map<std::string, Property>, where property is boost::any)
     std::map<std::string, std::string> GetPropertiesAsString(const std::string& q) const;
+    /// @brief Read several config properties as string whose keys start with the provided string
+    /// @param q string to match for
+    /// @return container with properties (fair::mq::Properties as an alias for std::map<std::string, Property>, where property is boost::any)
+    ///
+    /// Typically more performant than GetPropertiesAsString with regex
     std::map<std::string, std::string> GetPropertiesAsStringStartingWith(const std::string& q) const;
 
+    /// @brief Set config property
+    /// @param key
+    /// @param val
     template<typename T>
     void SetProperty(const std::string& key, T val)
     {
@@ -103,6 +141,9 @@ class ProgOptions
         fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetPropertyAsString(key));
     }
 
+    /// @brief Updates an existing config property (or fails if it doesn't exist)
+    /// @param key
+    /// @param val
     template<typename T>
     bool UpdateProperty(const std::string& key, T val)
     {
@@ -122,12 +163,26 @@ class ProgOptions
         }
     }
 
+    /// @brief Set multiple config properties
+    /// @param props fair::mq::Properties as an alias for std::map<std::string, Property>, where property is boost::any
     void SetProperties(const fair::mq::Properties& input);
+    /// @brief Updates multiple existing config properties (or fails of any of then do not exist, leaving property store unchanged)
+    /// @param props (fair::mq::Properties as an alias for std::map<std::string, Property>, where property is boost::any)
     bool UpdateProperties(const fair::mq::Properties& input);
+    /// @brief Deletes a property with the given key from the config store
+    /// @param key
     void DeleteProperty(const std::string& key);
 
+    /// @brief Takes the provided channel and creates properties based on it
+    /// @param name channel name
+    /// @param channel FairMQChannel reference
     void AddChannel(const std::string& name, const FairMQChannel& channel);
 
+    /// @brief Subscribe to property updates of type T
+    /// @param subscriber
+    /// @param callback function
+    ///
+    /// Subscribe to property changes with a callback to monitor property changes in an event based fashion.
     template<typename T>
     void Subscribe(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, T)> func) const
     {
@@ -137,6 +192,8 @@ class ProgOptions
         fEvents.Subscribe<fair::mq::PropertyChange, T>(subscriber, func);
     }
 
+    /// @brief Unsubscribe from property updates of type T
+    /// @param subscriber
     template<typename T>
     void Unsubscribe(const std::string& subscriber) const
     {
@@ -144,22 +201,33 @@ class ProgOptions
         fEvents.Unsubscribe<fair::mq::PropertyChange, T>(subscriber);
     }
 
+    /// @brief Subscribe to property updates, with values converted to string
+    /// @param subscriber
+    /// @param callback function
+    ///
+    /// Subscribe to property changes with a callback to monitor property changes in an event based fashion. Will convert the property to string.
     void SubscribeAsString(const std::string& subscriber, std::function<void(typename fair::mq::PropertyChange::KeyType, std::string)> func) const
     {
         std::lock_guard<std::mutex> lock(fMtx);
         fEvents.Subscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber, func);
     }
 
+    /// @brief Unsubscribe from property updates that convert to string
+    /// @param subscriber
     void UnsubscribeAsString(const std::string& subscriber) const
     {
         std::lock_guard<std::mutex> lock(fMtx);
         fEvents.Unsubscribe<fair::mq::PropertyChangeAsString, std::string>(subscriber);
     }
 
+    /// @brief prints full options description
     void PrintHelp() const;
+    /// @brief prints properties stored in the property container
     void PrintOptions() const;
+    /// @brief prints full options description in a compact machine-readable format
     void PrintOptionsRaw() const;
 
+    /// @brief returns the property container
     const boost::program_options::variables_map& GetVarMap() const { return fVarMap; }
 
     /// @brief Read config property, return default-constructed object if key doesn't exist
