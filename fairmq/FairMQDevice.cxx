@@ -104,6 +104,7 @@ FairMQDevice::FairMQDevice(ProgOptions* config, const tools::Version version)
     , fVersion(version)
     , fRate(DefaultRate)
     , fMaxRunRuntimeInS(DefaultMaxRunTime)
+    , fInitializationTimeoutInS(DefaultInitTimeout)
     , fRawCmdLineArgs()
 {
     SubscribeToNewTransition("device", [&](Transition transition) {
@@ -204,6 +205,7 @@ void FairMQDevice::InitWrapper()
 
     fRate = fConfig->GetProperty<float>("rate", DefaultRate);
     fMaxRunRuntimeInS = fConfig->GetProperty<uint64_t>("max-run-time", DefaultMaxRunTime);
+    fInitializationTimeoutInS = fConfig->GetProperty<int>("init-timeout", DefaultInitTimeout);
 
     try {
         fDefaultTransportType = fair::mq::TransportTypes.at(fConfig->GetProperty<string>("transport", DefaultTransportName));
@@ -280,12 +282,10 @@ void FairMQDevice::BindWrapper()
 
 void FairMQDevice::ConnectWrapper()
 {
-    int initializationTimeoutInS = fConfig->GetProperty<int>("init-timeout", DefaultInitTimeout);
-
     // go over the list of channels until all are initialized (and removed from the uninitialized list)
     int numAttempts = 1;
     auto sleepTimeInMS = 50;
-    auto maxAttempts = initializationTimeoutInS * 1000 / sleepTimeInMS;
+    auto maxAttempts = fInitializationTimeoutInS * 1000 / sleepTimeInMS;
     // first attempt
     AttachChannels(fUninitializedConnectingChannels);
     // if not all channels could be connected, update their address values from config and retry
@@ -301,8 +301,8 @@ void FairMQDevice::ConnectWrapper()
         }
 
         if (numAttempts++ > maxAttempts) {
-            LOG(error) << "could not connect all channels after " << initializationTimeoutInS << " attempts";
-            throw runtime_error(tools::ToString("could not connect all channels after ", initializationTimeoutInS, " attempts"));
+            LOG(error) << "could not connect all channels after " << fInitializationTimeoutInS << " attempts";
+            throw runtime_error(tools::ToString("could not connect all channels after ", fInitializationTimeoutInS, " attempts"));
         }
 
         AttachChannels(fUninitializedConnectingChannels);
