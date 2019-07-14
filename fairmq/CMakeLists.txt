@@ -38,6 +38,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     tools/Network.h
     tools/Process.h
     tools/RateLimit.h
+    tools/Semaphore.h
     tools/Strings.h
     tools/Unique.h
     tools/Version.h
@@ -47,6 +48,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
   set(TOOLS_SOURCE_FILES
     tools/Network.cxx
     tools/Process.cxx
+    tools/Semaphore.cxx
     tools/Unique.cxx
   )
 
