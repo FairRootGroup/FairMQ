@@ -14,6 +14,7 @@
 #include <fairmq/tools/Network.h>
 #include <fairmq/tools/Process.h>
 #include <fairmq/tools/RateLimit.h>
+#include <fairmq/tools/Semaphore.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/tools/Unique.h>
 #include <fairmq/tools/Version.h>
