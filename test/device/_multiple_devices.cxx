@@ -19,83 +19,75 @@ namespace
 {
 
 using namespace std;
+using namespace fair::mq;
 
 void control(FairMQDevice& device)
 {
-    device.ChangeState(fair::mq::Transition::InitDevice);
-    device.WaitForState(fair::mq::State::InitializingDevice);
-    device.ChangeState(fair::mq::Transition::CompleteInit);
-    device.WaitForState(fair::mq::State::Initialized);
-    device.ChangeState(fair::mq::Transition::Bind);
-    device.WaitForState(fair::mq::State::Bound);
-    device.ChangeState(fair::mq::Transition::Connect);
-    device.WaitForState(fair::mq::State::DeviceReady);
-    device.ChangeState(fair::mq::Transition::InitTask);
-    device.WaitForState(fair::mq::State::Ready);
+    thread t([&] {
+        device.ChangeState(Transition::InitDevice);
+        device.WaitForState(State::InitializingDevice);
+        device.ChangeState(Transition::CompleteInit);
+        device.WaitForState(State::Initialized);
+        device.ChangeState(Transition::Bind);
+        device.WaitForState(State::Bound);
+        device.ChangeState(Transition::Connect);
+        device.WaitForState(State::DeviceReady);
+        device.ChangeState(Transition::InitTask);
+        device.WaitForState(State::Ready);
 
-    device.ChangeState(fair::mq::Transition::Run);
-    device.WaitForState(fair::mq::State::Ready);
+        device.ChangeState(Transition::Run);
+        device.WaitForState(State::Ready);
 
-    device.ChangeState(fair::mq::Transition::ResetTask);
-    device.WaitForState(fair::mq::State::DeviceReady);
-    device.ChangeState(fair::mq::Transition::ResetDevice);
-    device.WaitForState(fair::mq::State::Idle);
+        device.ChangeState(Transition::ResetTask);
+        device.WaitForState(State::DeviceReady);
+        device.ChangeState(Transition::ResetDevice);
+        device.WaitForState(State::Idle);
 
-    device.ChangeState(fair::mq::Transition::End);
+        device.ChangeState(Transition::End);
+    });
+
+    device.RunStateMachine();
+
+    if (t.joinable()) {
+        t.join();
+    }
 }
 
 class MultipleDevices : public ::testing::Test {
   public:
-    MultipleDevices()
-    {}
+    MultipleDevices() {}
 
     bool TestFirst()
     {
-        fair::mq::test::Sender sender("data");
-
+        test::Sender sender("data");
         sender.SetTransport("zeromq");
 
         FairMQChannel channel("push", "connect", "ipc://multiple-devices-test");
         channel.UpdateRateLogging(0);
         sender.AddChannel("data", std::move(channel));
 
-        thread t(control, std::ref(sender));
-
-        sender.RunStateMachine();
-
-        if (t.joinable()) {
-            t.join();
-        }
-
+        control(sender);
         return true;
     }
 
     bool TestSecond()
     {
-        fair::mq::test::Receiver receiver("data");
-
+        test::Receiver receiver("data");
         receiver.SetTransport("zeromq");
 
         FairMQChannel channel("pull", "bind", "ipc://multiple-devices-test");
         channel.UpdateRateLogging(0);
         receiver.AddChannel("data", std::move(channel));
 
-        thread t(control, std::ref(receiver));
-
-        receiver.RunStateMachine();
-
-        if (t.joinable()) {
-            t.join();
-        }
-
+        control(receiver);
         return true;
     }
 };
 
 TEST_F(MultipleDevices, TwoInSameProcess)
 {
-    std::future<bool> fut1 = std::async(std::launch::async, &MultipleDevices::TestFirst, this);
-    std::future<bool> fut2 = std::async(std::launch::async, &MultipleDevices::TestSecond, this);
+    future<bool> fut1 = async(launch::async, &MultipleDevices::TestFirst, this);
+    future<bool> fut2 = async(launch::async, &MultipleDevices::TestSecond, this);
 
     bool first = fut1.get();
     bool second = fut2.get();
