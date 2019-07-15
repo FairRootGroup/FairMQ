@@ -6,12 +6,17 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-################
-# libFairMQSDK #
-################
+#################
+# libFairMQ_SDK #
+#################
+configure_file(DDSInfo.h.in ${CMAKE_CURRENT_BINARY_DIR}/DDSInfo.h @ONLY)
+
 set(target SDK)
 
 set(SDK_PUBLIC_HEADER_FILES
+  DDSEnvironment.h
+  ${CMAKE_CURRENT_BINARY_DIR}/DDSInfo.h
+  DDSSession.h
   Topology.h
 )
 
@@ -19,6 +24,8 @@ set(SDK_PRIVATE_HEADER_FILES
 )
 
 set(SDK_SOURCE_FILES
+  DDSEnvironment.cxx
+  DDSSession.cxx
   Topology.cxx
 )
 
@@ -32,17 +39,21 @@ target_compile_definitions(${target} PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
 target_include_directories(${target}
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
   $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(${target}
   PUBLIC
+  Boost::filesystem
   FairLogger::FairLogger
   StateMachine
 
   PRIVATE
-  Tools
+  Boost::boost
   DDS::dds_intercom_lib
-  DDS::dds_protocol_lib
+  DDS::dds_tools_lib
+  DDS::dds_topology_lib
+  Tools
 )
 set_target_properties(${target} PROPERTIES
   VERSION ${PROJECT_GIT_VERSION}
