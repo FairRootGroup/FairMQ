@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include <FairMQDevice.h>
+#include <FairMQLogger.h>
 
 #include <gtest/gtest.h>
 
@@ -19,7 +20,19 @@ namespace
 using namespace std;
 using namespace fair::mq;
 
-void transitionTo(const std::vector<State>& states, int numExpectedStates)
+class SlowDevice : public FairMQDevice
+{
+  public:
+    SlowDevice() {}
+
+  protected:
+    void Init()
+    {
+        this_thread::sleep_for(chrono::milliseconds(100));
+    }
+};
+
+void transitionTo(const vector<State>& states, int numExpectedStates)
 {
     FairMQDevice device;
 
@@ -53,6 +66,35 @@ TEST(Transitions, TransitionTo)
     transitionTo({State::DeviceReady, State::Bound, State::Running, State::Exiting}, 24);
     transitionTo({State::Ready, State::Exiting}, 14);
     transitionTo({State::Running, State::Exiting}, 16);
+}
+
+TEST(Transitions, ConcurrentTransitionTos)
+{
+    fair::Logger::SetConsoleSeverity("debug");
+    SlowDevice slowDevice;
+
+    vector<State> states({State::Ready, State::Exiting});
+
+    thread t1([&] {
+        for (const auto& s : states) {
+            slowDevice.TransitionTo(s);
+        }
+    });
+
+    thread t2([&] {
+        this_thread::sleep_for(chrono::milliseconds(50));
+        ASSERT_THROW(slowDevice.TransitionTo(State::Exiting), OngoingTransition);
+    });
+
+    slowDevice.RunStateMachine();
+
+    if (t1.joinable()) {
+        t1.join();
+    }
+
+    if (t2.joinable()) {
+        t2.join();
+    }
 }
 
 } // namespace

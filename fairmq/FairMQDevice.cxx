@@ -106,6 +106,11 @@ FairMQDevice::FairMQDevice(ProgOptions* config, const tools::Version version)
     , fMaxRunRuntimeInS(DefaultMaxRunTime)
     , fInitializationTimeoutInS(DefaultInitTimeout)
     , fRawCmdLineArgs()
+    , fStates()
+    , fStatesMtx()
+    , fStatesCV()
+    , fTransitionMtx()
+    , fTransitioning(false)
 {
     SubscribeToNewTransition("device", [&](Transition transition) {
         LOG(trace) << "device notified on new transition: " << transition;
@@ -187,6 +192,15 @@ void FairMQDevice::WaitForState(fair::mq::State state)
 
 void FairMQDevice::TransitionTo(const fair::mq::State s)
 {
+    {
+        lock_guard<mutex> lock(fTransitionMtx);
+        if (fTransitioning) {
+            LOG(debug) << "Attempting a transition with TransitionTo() while another one is already in progress";
+            throw OngoingTransition("Attempting a transition with TransitionTo() while another one is already in progress");
+        }
+        fTransitioning = true;
+    }
+
     using fair::mq::State;
     State currentState = GetCurrentState();
 
@@ -224,6 +238,11 @@ void FairMQDevice::TransitionTo(const fair::mq::State s)
         }
 
         currentState = WaitForNextState();
+    }
+
+    {
+        lock_guard<mutex> lock(fTransitionMtx);
+        fTransitioning = false;
     }
 }
 
