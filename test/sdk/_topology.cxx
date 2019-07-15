@@ -6,32 +6,16 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIR_MQ_SDK_TOPOLOGY_H
-#define FAIR_MQ_SDK_TOPOLOGY_H
+// #include "TopologyFixture.h"
 
-#include <memory>
+// #include <fairmq/sdk/Topology.h>
+#include <fairmq/sdk/DDSSession.h>
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace {
 
-/**
- * @class Topology Topology.h <fairmq/sdk/Topology.h>
- * @brief Represents a FairMQ topology
- */
-class Topology
-{
-  public:
 
-    /// Construct a FairMQ topology from a existing DDS session via the dds::topology_api
-    /// @param topo a shared_ptr to an initialized CTopology object
-    explicit Topology();
+// TEST_F(Topology, Basic) { fair::mq::sdk::Topology topo; }
+// TEST_F(Topology, Basic2) { fair::mq::sdk::Topology topo; }
 
-  private:
-};
 
-}   // namespace sdk
-}   // namespace mq
-}   // namespace fair
-
-#endif /* FAIR_MQ_SDK_TOPOLOGY_H */
+}   // namespace

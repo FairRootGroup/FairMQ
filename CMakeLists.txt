@@ -74,9 +74,14 @@ if(BUILD_NANOMSG_TRANSPORT)
   )
 endif()
 
+if(BUILD_SDK)
+  set(required_dds_version 2.5.4)
+else()
+  set(required_dds_version 2.4)
+endif()
 if(BUILD_DDS_PLUGIN OR BUILD_SDK)
   find_package2(PRIVATE DDS REQUIRED
-    VERSION 2.4
+    VERSION ${required_dds_version}
   )
   set(DDS_Boost_COMPONENTS system log log_setup)
   set(DDS_Boost_VERSION 1.67)

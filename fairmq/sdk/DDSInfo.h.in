@@ -6,32 +6,24 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIR_MQ_SDK_TOPOLOGY_H
-#define FAIR_MQ_SDK_TOPOLOGY_H
+#ifndef FAIR_MQ_SDK_DDSINFO_H
+#define FAIR_MQ_SDK_DDSINFO_H
 
-#include <memory>
+#include <string>
 
 namespace fair {
 namespace mq {
 namespace sdk {
 
-/**
- * @class Topology Topology.h <fairmq/sdk/Topology.h>
- * @brief Represents a FairMQ topology
- */
-class Topology
-{
-  public:
-
-    /// Construct a FairMQ topology from a existing DDS session via the dds::topology_api
-    /// @param topo a shared_ptr to an initialized CTopology object
-    explicit Topology();
-
-  private:
-};
+const std::string DDSVersion("@DDS_VERSION@");
+const std::string DDSInstallPrefix("@DDS_INSTALL_PREFIX@");
+const std::string DDSExecutableDir("@DDS_BINDIR@");
+const std::string DDSIncludeDir("@DDS_INCDIR@");
+const std::string DDSLibraryDir("@DDS_LIBDIR@");
+const std::string DDSPluginDir("@DDS_PLUGINDIR@");
 
 }   // namespace sdk
 }   // namespace mq
 }   // namespace fair
 
-#endif /* FAIR_MQ_SDK_TOPOLOGY_H */
+#endif /* FAIR_MQ_SDK_DDSINFO_H */
