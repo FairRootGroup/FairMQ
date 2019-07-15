@@ -169,20 +169,62 @@ fair::mq::State FairMQDevice::WaitForNextState()
         fStatesCV.wait_for(lock, chrono::milliseconds(50));
     }
 
-    auto result = fStates.front();
+    auto state = fStates.front();
 
-    if (result == fair::mq::State::Error) {
+    if (state == fair::mq::State::Error) {
         throw DeviceStateError("Device transitioned to error state.");
     }
 
     fStates.pop();
 
-    return result;
+    return state;
 }
 
 void FairMQDevice::WaitForState(fair::mq::State state)
 {
     while (WaitForNextState() != state) {}
+}
+
+void FairMQDevice::TransitionTo(const fair::mq::State s)
+{
+    using fair::mq::State;
+    State currentState = GetCurrentState();
+
+    while (s != currentState) {
+        switch (currentState) {
+            case State::Idle:
+                if (s == State::Exiting) { ChangeState(Transition::End); }
+                else { ChangeState(Transition::InitDevice); }
+            break;
+            case State::InitializingDevice:
+                ChangeState(Transition::CompleteInit);
+            break;
+            case State::Initialized:
+                if (s == State::Exiting || s == State::Idle) { ChangeState(Transition::ResetDevice); }
+                else { ChangeState(Transition::Bind); }
+            break;
+            case State::Bound:
+                if (s == State::DeviceReady || s == State::Ready || s == State::Running) { ChangeState(Transition::Connect); }
+                else { ChangeState(Transition::ResetDevice); }
+            break;
+            case State::DeviceReady:
+                if (s == State::Running || s == State::Ready) { ChangeState(Transition::InitTask); }
+                else { ChangeState(Transition::ResetDevice); }
+            break;
+            case State::Ready:
+                if (s == State::Running) { ChangeState(Transition::Run); }
+                else { ChangeState(Transition::ResetTask); }
+            break;
+            case State::Running:
+                ChangeState(Transition::Stop);
+            break;
+            default: // Binding, Connecting, InitializingTask, ResettingDevice, ResettingTask
+                LOG(debug) << "TransitionTo ignoring state: " << currentState;
+            break;
+        }
+
+        currentState = WaitForNextState();
+    }
 }
 
 bool FairMQDevice::ChangeState(const int transition)

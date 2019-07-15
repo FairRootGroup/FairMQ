@@ -107,6 +107,7 @@ add_testsuite(Device
     device/_exceptions.cxx
     device/_error_state.cxx
     device/_signals.cxx
+    device/_transitions.cxx
 
     LINKS FairMQ
     DEPENDS testhelper_runTestDevice
