@@ -40,7 +40,7 @@ DDS::DDS(const string& name, const Plugin::Version version, const string& mainta
     , fConnectingChans()
     , fStopMutex()
     , fStopCondition()
-    , fCommands({ "BIND", "CONNECT", "INIT TASK", "RUN", "STOP", "RESET TASK", "RESET DEVICE", "SHUTDOWN", "STARTUP" })
+    , fTransitions({ "BIND", "CONNECT", "INIT TASK", "RUN", "STOP", "RESET TASK", "RESET DEVICE" })
     , fControllerThread()
     , fEvents()
     , fEventsMutex()
@@ -326,7 +326,7 @@ auto DDS::SubscribeForCustomCommands() -> void
             } else {
                 fDDSCustomCmd.send(id + ": could not queue " + cmd + " transition", to_string(senderId));
             }
-        } else if (fCommands.find(cmd) != fCommands.end()) {
+        } else if (fTransitions.find(cmd) != fTransitions.end()) {
             if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
                 fDDSCustomCmd.send(id + ": queued " + cmd + " transition", to_string(senderId));
             } else {

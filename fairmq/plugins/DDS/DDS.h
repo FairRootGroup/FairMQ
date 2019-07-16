@@ -89,7 +89,7 @@ class DDS : public Plugin
     std::mutex fStopMutex;
     std::condition_variable fStopCondition;
 
-    const std::set<std::string> fCommands;
+    const std::set<std::string> fTransitions;
 
     std::thread fControllerThread;
     std::queue<DeviceState> fEvents;
