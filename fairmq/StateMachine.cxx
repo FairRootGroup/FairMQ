@@ -36,17 +36,6 @@ using namespace boost::msm::front;
 using namespace boost::msm::back;
 namespace bmpl = boost::mpl;
 
-namespace std
-{
-
-template<>
-struct hash<fair::mq::Transition> : fair::mq::tools::HashEnum<fair::mq::Transition> {};
-
-template<>
-struct hash<fair::mq::State> : fair::mq::tools::HashEnum<fair::mq::State> {};
-
-} /* namespace std */
-
 namespace fair
 {
 namespace mq
