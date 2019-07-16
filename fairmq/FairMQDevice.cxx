@@ -232,7 +232,14 @@ void FairMQDevice::TransitionTo(const fair::mq::State s)
             case State::Running:
                 ChangeState(Transition::Stop);
             break;
-            default: // Binding, Connecting, InitializingTask, ResettingDevice, ResettingTask
+            case State::Binding:
+            case State::Connecting:
+            case State::InitializingTask:
+            case State::ResettingDevice:
+            case State::ResettingTask:
+                LOG(debug) << "TransitionTo ignoring state: " << currentState << " (expected, automatic transition).";
+            break;
+            default:
                 LOG(debug) << "TransitionTo ignoring state: " << currentState;
             break;
         }

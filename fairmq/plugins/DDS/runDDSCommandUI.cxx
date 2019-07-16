@@ -87,47 +87,49 @@ void commandMode(const string& commandIn, const string& topologyPath, CCustomCmd
 
     while (true) {
         if (command == "c") {
-            cout << "\033[01;32m > checking state of the devices\033[0m" << endl;
+            cout << "> checking state of the devices" << endl;
             ddsCustomCmd.send("check-state", topologyPath);
         } else if (command == "o") {
-            cout << "\033[01;32m > dumping config of the devices\033[0m" << endl;
+            cout << "> dumping config of the devices" << endl;
             ddsCustomCmd.send("dump-config", topologyPath);
         } else if (command == "i") {
-            cout << "\033[01;32m > init devices\033[0m" << endl;
+            cout << "> init devices" << endl;
             ddsCustomCmd.send("INIT DEVICE", topologyPath);
         } else if (command == "b") {
-            cout << "\033[01;32m > bind devices\033[0m" << endl;
+            cout << "> bind devices" << endl;
             ddsCustomCmd.send("BIND", topologyPath);
         } else if (command == "x") {
-            cout << "\033[01;32m > connect devices\033[0m" << endl;
+            cout << "> connect devices" << endl;
             ddsCustomCmd.send("CONNECT", topologyPath);
         } else if (command == "j") {
-            cout << "\033[01;32m > init tasks\033[0m" << endl;
+            cout << "> init tasks" << endl;
             ddsCustomCmd.send("INIT TASK", topologyPath);
         } else if (command == "p") {
-            cout << "\033[01;32m > pause devices\033[0m" << endl;
+            cout << "> pause devices" << endl;
             ddsCustomCmd.send("PAUSE", topologyPath);
         } else if (command == "r") {
-            cout << "\033[01;32m > run tasks\033[0m" << endl;
+            cout << "> run tasks" << endl;
             ddsCustomCmd.send("RUN", topologyPath);
         } else if (command == "s") {
-            cout << "\033[01;32m > stop devices\033[0m" << endl;
+            cout << "> stop devices" << endl;
             ddsCustomCmd.send("STOP", topologyPath);
         } else if (command == "t") {
-            cout << "\033[01;32m > reset tasks\033[0m" << endl;
+            cout << "> reset tasks" << endl;
             ddsCustomCmd.send("RESET TASK", topologyPath);
         } else if (command == "d") {
-            cout << "\033[01;32m > reset devices\033[0m" << endl;
+            cout << "> reset devices" << endl;
             ddsCustomCmd.send("RESET DEVICE", topologyPath);
         } else if (command == "h") {
-            cout << "\033[01;32m > help\033[0m" << endl;
+            cout << "> help" << endl;
             printControlsHelp();
         } else if (command == "q") {
-            cout << "\033[01;32m > end\033[0m" << endl;
+            cout << "> end" << endl;
             ddsCustomCmd.send("END", topologyPath);
         } else if (command == "q!") {
+            cout << "> shutdown" << endl;
             ddsCustomCmd.send("SHUTDOWN", topologyPath);
         } else if (command == "r!") {
+            cout << "> startup" << endl;
             ddsCustomCmd.send("STARTUP", topologyPath);
         } else {
             cout << "\033[01;32mInvalid input: [" << c << "]\033[0m" << endl;
@@ -150,9 +152,13 @@ struct WaitMode
         : fTargetState(targetState)
     {}
 
-    void Run(const chrono::milliseconds& timeout, const string& topologyPath, CCustomCmd& ddsCustomCmd)
+    void Run(const chrono::milliseconds& timeout, const string& topologyPath, CCustomCmd& ddsCustomCmd, const string& command = "")
     {
         StateSubscription stateSubscription(topologyPath, ddsCustomCmd);
+
+        if (command != "") {
+            commandMode(command, topologyPath, ddsCustomCmd);
+        }
 
         // TODO once DDS provides an API to retrieve actual number of tasks, use it here
         auto condition = [&] { return !fTargetStates.empty() && all_of(fTargetStates.cbegin(),
@@ -256,73 +262,10 @@ int main(int argc, char* argv[])
 
         service.start(sessionID);
 
-
         if (targetState == "") {
             commandMode(command, topologyPath, ddsCustomCmd);
         } else {
-            PrintControlsHelp();
-        }
-
-        while (cin >> c) {
-            switch (c) {
-                case 'c':
-                    cout << " > checking state of the devices" << endl;
-                    ddsCustomCmd.send("check-state", topologyPath);
-                    break;
-                case 'o':
-                    cout << " > dumping config of the devices" << endl;
-                    ddsCustomCmd.send("dump-config", topologyPath);
-                    break;
-                case 'i':
-                    cout << " > init devices" << endl;
-                    ddsCustomCmd.send("INIT DEVICE", topologyPath);
-                    break;
-                case 'b':
-                    cout << " > bind" << endl;
-                    ddsCustomCmd.send("BIND", topologyPath);
-                    break;
-                case 'x':
-                    cout << " > connect" << endl;
-                    ddsCustomCmd.send("CONNECT", topologyPath);
-                    break;
-                case 'j':
-                    cout << " > init tasks" << endl;
-                    ddsCustomCmd.send("INIT TASK", topologyPath);
-                    break;
-                case 'r':
-                    cout << " > run tasks" << endl;
-                    ddsCustomCmd.send("RUN", topologyPath);
-                    break;
-                case 's':
-                    cout << " > stop devices" << endl;
-                    ddsCustomCmd.send("STOP", topologyPath);
-                    break;
-                case 't':
-                    cout << " > reset tasks" << endl;
-                    ddsCustomCmd.send("RESET TASK", topologyPath);
-                    break;
-                case 'd':
-                    cout << " > reset devices" << endl;
-                    ddsCustomCmd.send("RESET DEVICE", topologyPath);
-                    break;
-                case 'h':
-                    cout << " > help" << endl;
-                    PrintControlsHelp();
-                    break;
-                case 'q':
-                    cout << " > end" << endl;
-                    ddsCustomCmd.send("END", topologyPath);
-                    break;
-                default:
-                    cout << "Invalid input: [" << c << "]" << endl;
-                    PrintControlsHelp();
-                    break;
-            }
-
-            if (command != "") {
-                commandMode(command, topologyPath, ddsCustomCmd);
-            }
-            waitMode.Run(chrono::milliseconds(timeout), topologyPath, ddsCustomCmd);
+            waitMode.Run(chrono::milliseconds(timeout), topologyPath, ddsCustomCmd, command);
         }
     } catch (exception& e) {
         cerr << "Error: " << e.what() << endl;

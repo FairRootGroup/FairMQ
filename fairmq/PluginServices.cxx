@@ -90,6 +90,23 @@ const unordered_map<State, PluginServices::DeviceState, tools::HashEnum<State>> 
     {State::ResettingDevice,    DeviceState::ResettingDevice},
     {State::Exiting,            DeviceState::Exiting}
 };
+const unordered_map<PluginServices::DeviceState, State> PluginServices::fkStateMap = {
+    {DeviceState::Ok,                 State::Ok},
+    {DeviceState::Error,              State::Error},
+    {DeviceState::Idle,               State::Idle},
+    {DeviceState::InitializingDevice, State::InitializingDevice},
+    {DeviceState::Initialized,        State::Initialized},
+    {DeviceState::Binding,            State::Binding},
+    {DeviceState::Bound,              State::Bound},
+    {DeviceState::Connecting,         State::Connecting},
+    {DeviceState::DeviceReady,        State::DeviceReady},
+    {DeviceState::InitializingTask,   State::InitializingTask},
+    {DeviceState::Ready,              State::Ready},
+    {DeviceState::Running,            State::Running},
+    {DeviceState::ResettingTask,      State::ResettingTask},
+    {DeviceState::ResettingDevice,    State::ResettingDevice},
+    {DeviceState::Exiting,            State::Exiting}
+};
 const unordered_map<PluginServices::DeviceStateTransition, Transition, tools::HashEnum<PluginServices::DeviceStateTransition>> PluginServices::fkDeviceStateTransitionMap = {
     {DeviceStateTransition::Auto,         Transition::Auto},
     {DeviceStateTransition::InitDevice,   Transition::InitDevice},
@@ -123,6 +140,22 @@ auto PluginServices::ChangeDeviceState(const string& controller, const DeviceSta
     }
 
     return result;
+}
+
+void PluginServices::TransitionDeviceStateTo(const std::string& controller, DeviceState state)
+{
+    lock_guard<mutex> lock{fDeviceControllerMutex};
+
+    if (!fDeviceController) fDeviceController = controller;
+
+    if (fDeviceController == controller) {
+        fDevice.TransitionTo(fkStateMap.at(state));
+    } else {
+        throw DeviceControlError{tools::ToString(
+            "Plugin '", controller, "' is not allowed to change device states. ",
+            "Currently, plugin '", *fDeviceController, "' has taken control."
+        )};
+    }
 }
 
 auto PluginServices::TakeDeviceControl(const string& controller) -> void

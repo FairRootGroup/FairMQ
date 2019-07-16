@@ -35,16 +35,12 @@ echo "TOPOLOGY FILE: ${topologyFile}"
 dds-topology --disable-validation --activate ${topologyFile}
 
 echo "------------------------"
-echo "Waiting for Topology to finish ..."
+echo "...waiting for Topology to finish..."
 sampler_and_sink="main/(Sampler|Sink)"
-fairmq-dds-command-ui -p $sampler_and_sink --wait-for-state "RUNNING->READY"
-echo "..."
-fairmq-dds-command-ui -c s -w READY
-fairmq-dds-command-ui -c t -w "DEVICE READY"
-fairmq-dds-command-ui -c d -w IDLE
-fairmq-dds-command-ui -c q -w EXITING
-# fairmq-dds-command-ui -c q! -w EXITING
-echo "..."
+fairmq-dds-command-ui -p $sampler_and_sink -w "RUNNING->READY"
+echo "...$sampler_and_sink are READY, sending shutdown..."
+fairmq-dds-command-ui -c q! -w "EXITING"
+echo "...waiting for ${requiredNofAgents} idle agents..."
 dds-info --wait-for-idle-agents ${requiredNofAgents}
 echo "------------------------"
 
