@@ -379,6 +379,10 @@ auto DDS::SubscribeForCustomCommands() -> void
                 fStateChangeSubscribers.erase(senderId);
             }
             fDDSCustomCmd.send("state-changes-unsubscription: " + id + ",OK", to_string(senderId));
+        } else if (cmd == "SHUTDOWN") {
+                TransitionDeviceStateTo(DeviceState::Exiting);
+        } else if (cmd == "STARTUP") {
+                TransitionDeviceStateTo(DeviceState::Ready);
         } else {
             LOG(warn) << "Unknown command: " << cmd;
             LOG(warn) << "Origin: " << senderId;

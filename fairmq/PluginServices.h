@@ -160,6 +160,8 @@ class PluginServices
     /// If the device control role has not been taken yet, calling this function will take over control implicitely.
     auto ChangeDeviceState(const std::string& controller, const DeviceStateTransition next) -> bool;
 
+    void TransitionDeviceStateTo(const std::string& controller, DeviceState state);
+
     /// @brief Subscribe with a callback to device state changes
     /// @param subscriber id
     /// @param callback
@@ -313,6 +315,7 @@ class PluginServices
     static const std::unordered_map<std::string, DeviceStateTransition> fkDeviceStateTransitionStrMap;
     static const std::unordered_map<DeviceStateTransition, std::string, tools::HashEnum<DeviceStateTransition>> fkStrDeviceStateTransitionMap;
     static const std::unordered_map<fair::mq::State, DeviceState, tools::HashEnum<fair::mq::State>> fkDeviceStateMap;
+    static const std::unordered_map<DeviceState, fair::mq::State> fkStateMap;
     static const std::unordered_map<DeviceStateTransition, fair::mq::Transition, tools::HashEnum<DeviceStateTransition>> fkDeviceStateTransitionMap;
 
   private:
