@@ -8,6 +8,9 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
+# fairmq-start-ex-dds.sh [localhost]   -> submit agents with localhost plugin
+# fairmq-start-ex-dds.sh ssh           -> submit agents with ssh plugin
+
 set -e
 
 cleanup() {
@@ -18,6 +21,8 @@ cleanup() {
 source @DDS_INSTALL_PREFIX@/DDS_env.sh
 export PATH=@BIN_DIR@:$PATH
 
+plugin=${1:-localhost}
+
 exec 5>&1
 output=$(dds-session start | tee >(cat - >&5))
 export DDS_SESSION_ID=$(echo ${output} | grep "DDS session ID: " | cut -d' ' -f4)
@@ -26,7 +31,12 @@ echo "SESSION ID: ${DDS_SESSION_ID}"
 trap "cleanup ${DDS_SESSION_ID}" EXIT
 
 requiredNofAgents=12
-dds-submit -r localhost -n ${requiredNofAgents}
+if [[ "$plugin" == "ssh" ]]; then
+  dds-submit -r ${plugin} -c @DATA_DIR@/ex-dds-hosts.cfg
+else
+  dds-submit -r ${plugin} -n ${requiredNofAgents}
+fi
+echo "...waiting for ${requiredNofAgents} idle agents..."
 dds-info --wait-for-idle-agents ${requiredNofAgents}
 
 topologyFile=@DATA_DIR@/ex-dds-topology.xml
