@@ -32,6 +32,7 @@ set(BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_BINARY_DIR}/fairmq/plugins/DDS)
 set(DATA_DIR ${CMAKE_CURRENT_BINARY_DIR})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-dds-topology.xml ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology.xml @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-dds-hosts.cfg ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-hosts.cfg COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-ex-dds-env.sh ${CMAKE_CURRENT_BINARY_DIR}/fairmq-ex-dds-env.sh @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-dds.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-dds.sh @ONLY)
 
 # test
@@ -52,6 +53,7 @@ install(
 set(BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR})
 set(DATA_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-dds-topology.xml ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology.xml_install @ONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-ex-dds-env.sh ${CMAKE_CURRENT_BINARY_DIR}/fairmq-ex-dds-env.sh_install @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-dds.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-dds.sh_install @ONLY)
 
 install(
@@ -63,6 +65,12 @@ install(
 install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-hosts.cfg
     DESTINATION ${PROJECT_INSTALL_DATADIR}
+)
+
+install(
+    PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-ex-dds-env.sh_install
+    DESTINATION ${PROJECT_INSTALL_BINDIR}
+    RENAME fairmq-ex-dds-env.sh
 )
 
 install(

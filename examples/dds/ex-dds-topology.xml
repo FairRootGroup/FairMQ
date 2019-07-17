@@ -8,6 +8,7 @@
     <declrequirement name="SinkWorker" type="wnname" value="sink"/>
 
     <decltask name="Sampler">
+        <env reachable="false">fairmq-ex-dds-env.sh</env>
         <exe>fairmq-ex-dds-sampler --id sampler --color false --channel-config name=data1,type=push,method=bind -P dds --iterations 10</exe>
         <requirements>
             <name>SamplerWorker</name>
@@ -18,6 +19,7 @@
     </decltask>
 
     <decltask name="Processor">
+        <env reachable="false">fairmq-ex-dds-env.sh</env>
         <exe>fairmq-ex-dds-processor --id processor_%taskIndex% --color false --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P dds</exe>
         <requirements>
             <id>ProcessorWorker</id>
@@ -29,6 +31,7 @@
     </decltask>
 
     <decltask name="Sink">
+        <env reachable="false">fairmq-ex-dds-env.sh</env>
         <exe>fairmq-ex-dds-sink --id sink --color false --channel-config name=data2,type=pull,method=bind -P dds --iterations 10</exe>
         <requirements>
             <name>SinkWorker</name>
