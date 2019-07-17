@@ -34,8 +34,6 @@ void Sampler::InitTask()
 
 bool Sampler::ConditionalRun()
 {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
     // NewSimpleMessage creates a copy of the data and takes care of its destruction (after the transfer takes place).
     // Should only be used for small data because of the cost of an additional copy
     FairMQMessagePtr msg(NewSimpleMessage("Data"));
