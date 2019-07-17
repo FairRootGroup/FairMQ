@@ -46,10 +46,7 @@ Control::Control(const string& name, const Plugin::Version version, const string
     : Plugin(name, version, maintainer, homepage, pluginServices)
     , fControllerThread()
     , fSignalHandlerThread()
-    , fEvents()
-    , fEventsMutex()
     , fControllerMutex()
-    , fNewEvent()
     , fDeviceShutdownRequested(false)
     , fDeviceHasShutdown(false)
     , fPluginShutdownRequested(false)
@@ -57,16 +54,11 @@ Control::Control(const string& name, const Plugin::Version version, const string
     SubscribeToDeviceStateChange([&](DeviceState newState) {
         LOG(trace) << "control plugin notified on new state: " << newState;
 
-        {
-            lock_guard<mutex> lock{fEventsMutex};
-            fEvents.push(newState);
-        }
-        fNewEvent.notify_one();
+        fStateQueue.Push(newState);
 
         if (newState == DeviceState::Error) {
             fPluginShutdownRequested = true;
             fDeviceShutdownRequested = true;
-            // throw DeviceErrorState("Controlled device transitioned to error state.");
         }
     });
 
@@ -103,36 +95,17 @@ Control::Control(const string& name, const Plugin::Version version, const string
 auto Control::RunStartupSequence() -> void
 {
     ChangeDeviceState(DeviceStateTransition::InitDevice);
-    while (WaitForNextState() != DeviceState::InitializingDevice) {}
+    while (fStateQueue.WaitForNext() != DeviceState::InitializingDevice) {}
     ChangeDeviceState(DeviceStateTransition::CompleteInit);
-    while (WaitForNextState() != DeviceState::Initialized) {}
+    while (fStateQueue.WaitForNext() != DeviceState::Initialized) {}
     ChangeDeviceState(DeviceStateTransition::Bind);
-    while (WaitForNextState() != DeviceState::Bound) {}
+    while (fStateQueue.WaitForNext() != DeviceState::Bound) {}
     ChangeDeviceState(DeviceStateTransition::Connect);
-    while (WaitForNextState() != DeviceState::DeviceReady) {}
+    while (fStateQueue.WaitForNext() != DeviceState::DeviceReady) {}
     ChangeDeviceState(DeviceStateTransition::InitTask);
-    while (WaitForNextState() != DeviceState::Ready) {}
+    while (fStateQueue.WaitForNext() != DeviceState::Ready) {}
     ChangeDeviceState(DeviceStateTransition::Run);
-    while (WaitForNextState() != DeviceState::Running) {}
-}
-
-auto Control::WaitForNextState() -> DeviceState
-{
-    unique_lock<mutex> lock{fEventsMutex};
-    while (fEvents.empty()) {
-        fNewEvent.wait_for(lock, chrono::milliseconds(50));
-    }
-
-    auto result = fEvents.front();
-
-    if (result == DeviceState::Error) {
-        ReleaseDeviceControl();
-        throw DeviceErrorState("Controlled device transitioned to error state.");
-    }
-
-    fEvents.pop();
-
-    return result;
+    while (fStateQueue.WaitForNext() != DeviceState::Running) {}
 }
 
 auto ControlPluginProgramOptions() -> Plugin::ProgOptions
@@ -204,7 +177,7 @@ try {
                 case 'i':
                     cout << "\n --> [i] init device\n\n" << flush;
                     if (ChangeDeviceState(DeviceStateTransition::InitDevice)) {
-                        while (WaitForNextState() != DeviceState::InitializingDevice) {}
+                        while (fStateQueue.WaitForNext() != DeviceState::InitializingDevice) {}
                         ChangeDeviceState(DeviceStateTransition::CompleteInit);
                     }
                 break;
@@ -274,7 +247,6 @@ try {
         }
 
         if (GetCurrentDeviceState() == DeviceState::Error) {
-            ReleaseDeviceControl();
             throw DeviceErrorState("Controlled device transitioned to error state.");
         }
 
@@ -288,6 +260,7 @@ try {
     // If we are here, it means another plugin has taken control. That's fine, just print the exception message and do nothing else.
     LOG(debug) << e.what();
 } catch (DeviceErrorState&) {
+    ReleaseDeviceControl();
 }
 
 auto Control::PrintInteractiveHelpColor() -> void
@@ -397,15 +370,10 @@ try {
     {
         // Wait for next state, which is DeviceState::Ready,
         // or for device shutdown request (Ctrl-C)
-        unique_lock<mutex> lock{fEventsMutex};
-        while (fEvents.empty() && !fDeviceShutdownRequested) {
-            fNewEvent.wait_for(lock, chrono::milliseconds(50));
-        }
-
-        if (fEvents.front() == DeviceState::Error) {
-            ReleaseDeviceControl();
-            throw DeviceErrorState("Controlled device transitioned to error state.");
-        }
+        pair<bool, fair::mq::State> result;
+        do {
+            result = fStateQueue.WaitForNext(chrono::milliseconds(50));
+        } while (result.first == false && !fDeviceShutdownRequested);
     }
 
     RunShutdownSequence();
@@ -413,6 +381,7 @@ try {
     // If we are here, it means another plugin has taken control. That's fine, just print the exception message and do nothing else.
     LOG(debug) << e.what();
 } catch (DeviceErrorState&) {
+    ReleaseDeviceControl();
 }
 
 auto Control::SignalHandler() -> void
@@ -440,6 +409,7 @@ auto Control::SignalHandler() -> void
             } catch (PluginServices::DeviceControlError& e) {
                 LOG(info) << "Graceful device shutdown failed: " << e.what() << " If hanging, hit Ctrl-C again to abort immediately.";
             } catch (...) {
+                ReleaseDeviceControl();
                 LOG(info) << "Graceful device shutdown failed. If hanging, hit Ctrl-C again to abort immediately.";
             }
         }
@@ -450,7 +420,7 @@ auto Control::RunShutdownSequence() -> void
 {
     auto nextState = GetCurrentDeviceState();
     if (nextState != DeviceState::Error) {
-        EmptyEventQueue();
+        fStateQueue.Clear();
     }
     while (nextState != DeviceState::Exiting && nextState != DeviceState::Error) {
         switch (nextState) {
@@ -473,17 +443,11 @@ auto Control::RunShutdownSequence() -> void
                 break;
         }
 
-        nextState = WaitForNextState();
+        nextState = fStateQueue.WaitForNext();
     }
 
     fDeviceHasShutdown = true;
     ReleaseDeviceControl();
-}
-
-auto Control::EmptyEventQueue() -> void
-{
-    lock_guard<mutex> lock{fEventsMutex};
-    fEvents = queue<DeviceState>{};
 }
 
 Control::~Control()

@@ -42,9 +42,6 @@ DDS::DDS(const string& name, const Plugin::Version version, const string& mainta
     , fStopCondition()
     , fTransitions({ "BIND", "CONNECT", "INIT TASK", "RUN", "STOP", "RESET TASK", "RESET DEVICE" })
     , fControllerThread()
-    , fEvents()
-    , fEventsMutex()
-    , fNewEvent()
     , fCurrentState(DeviceState::Idle)
     , fLastState(DeviceState::Idle)
     , fDeviceTerminationRequested(false)
@@ -86,11 +83,7 @@ auto DDS::HandleControl() -> void
 
         // subscribe to device state changes, pushing new state changes into the event queue
         SubscribeToDeviceStateChange([&](DeviceState newState) {
-            {
-                lock_guard<mutex> lock{fEventsMutex};
-                fEvents.push(newState);
-            }
-            fNewEvent.notify_one();
+            fStateQueue.Push(newState);
             if (newState == DeviceState::Exiting) {
                 fDeviceTerminationRequested = true;
             }
@@ -108,11 +101,11 @@ auto DDS::HandleControl() -> void
         });
 
         ChangeDeviceState(DeviceStateTransition::InitDevice);
-        while (WaitForNextState() != DeviceState::InitializingDevice) {}
+        while (fStateQueue.WaitForNext() != DeviceState::InitializingDevice) {}
         ChangeDeviceState(DeviceStateTransition::CompleteInit);
-        while (WaitForNextState() != DeviceState::Initialized) {}
+        while (fStateQueue.WaitForNext() != DeviceState::Initialized) {}
         ChangeDeviceState(DeviceStateTransition::Bind);
-        while (WaitForNextState() != DeviceState::Bound) {}
+        while (fStateQueue.WaitForNext() != DeviceState::Bound) {}
 
         // in the Initializing state subscribe to receive addresses of connecting channels from DDS
         // and propagate addresses of bound channels to DDS.
@@ -126,10 +119,10 @@ auto DDS::HandleControl() -> void
         PublishBoundChannels();
 
         ChangeDeviceState(DeviceStateTransition::Connect);
-        while (WaitForNextState() != DeviceState::DeviceReady) {}
+        while (fStateQueue.WaitForNext() != DeviceState::DeviceReady) {}
 
         ChangeDeviceState(DeviceStateTransition::InitTask);
-        while (WaitForNextState() != DeviceState::Ready) {}
+        while (fStateQueue.WaitForNext() != DeviceState::Ready) {}
         ChangeDeviceState(DeviceStateTransition::Run);
 
         // wait until stop signal
@@ -138,6 +131,8 @@ auto DDS::HandleControl() -> void
             fStopCondition.wait_for(lock, chrono::seconds(1));
         }
         LOG(debug) << "Stopping DDS control plugin";
+    } catch (DeviceErrorState&) {
+        ReleaseDeviceControl();
     } catch (exception& e) {
         LOG(error) << "Error: " << e.what() << endl;
         return;
@@ -321,7 +316,7 @@ auto DDS::SubscribeForCustomCommands() -> void
         } else if (cmd == "INIT DEVICE") {
             if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
                 fDDSCustomCmd.send(id + ": queued " + cmd + " transition", to_string(senderId));
-                while (WaitForNextState() != DeviceState::InitializingDevice) {}
+                while (fStateQueue.WaitForNext() != DeviceState::InitializingDevice) {}
                 ChangeDeviceState(DeviceStateTransition::CompleteInit);
             } else {
                 fDDSCustomCmd.send(id + ": could not queue " + cmd + " transition", to_string(senderId));
@@ -389,18 +384,6 @@ auto DDS::SubscribeForCustomCommands() -> void
             LOG(warn) << "Destination: " << cond;
         }
     });
-}
-
-auto DDS::WaitForNextState() -> DeviceState
-{
-    unique_lock<mutex> lock{fEventsMutex};
-    while (fEvents.empty()) {
-        fNewEvent.wait_for(lock, chrono::milliseconds(50));
-    }
-
-    auto result = fEvents.front();
-    fEvents.pop();
-    return result;
 }
 
 DDS::~DDS()

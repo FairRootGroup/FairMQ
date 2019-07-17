@@ -11,6 +11,7 @@
 
 #include <fairmq/Plugin.h>
 #include <fairmq/Version.h>
+#include <fairmq/StateQueue.h>
 
 #include <DDS/dds_intercom.h>
 
@@ -67,7 +68,6 @@ class DDS : public Plugin
 
   private:
     auto HandleControl() -> void;
-    auto WaitForNextState() -> DeviceState;
 
     auto FillChannelContainers() -> void;
     auto SubscribeForConnectingChannels() -> void;
@@ -92,10 +92,8 @@ class DDS : public Plugin
     const std::set<std::string> fTransitions;
 
     std::thread fControllerThread;
-    std::queue<DeviceState> fEvents;
-    std::mutex fEventsMutex;
-    std::condition_variable fNewEvent;
     DeviceState fCurrentState, fLastState;
+    fair::mq::StateQueue fStateQueue;
 
     std::atomic<bool> fDeviceTerminationRequested;
     std::atomic<bool> fServiceStarted;
