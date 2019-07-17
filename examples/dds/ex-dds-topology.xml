@@ -20,7 +20,7 @@
     <decltask id="Processor">
         <exe reachable="true">fairmq-ex-dds-processor --id processor_%taskIndex% --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P dds</exe>
         <requirements>
-            <id>ProcessWorker</id>
+            <id>ProcessorWorker</id>
         </requirements>
         <properties>
             <name access="read">data1</name>
