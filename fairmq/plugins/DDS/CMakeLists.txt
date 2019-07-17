@@ -14,6 +14,7 @@ set_target_properties(${plugin} PROPERTIES CXX_VISIBILITY_PRESET hidden)
 set_target_properties(${plugin} PROPERTIES
   VERSION ${PROJECT_GIT_VERSION}
   SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/fairmq
 )
 
 set(exe fairmq-dds-command-ui)
