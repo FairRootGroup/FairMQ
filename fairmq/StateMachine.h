@@ -9,56 +9,19 @@
 #ifndef FAIRMQSTATEMACHINE_H_
 #define FAIRMQSTATEMACHINE_H_
 
+#include <fairmq/States.h>
+
 #include <fairlogger/Logger.h>
 
 #include <string>
 #include <memory>
 #include <functional>
-#include <condition_variable>
-#include <ostream>
-#include <queue>
-#include <mutex>
 #include <stdexcept>
 
 namespace fair
 {
 namespace mq
 {
-
-enum class State : int
-{
-    Ok,
-    Error,
-    Idle,
-    InitializingDevice,
-    Initialized,
-    Binding,
-    Bound,
-    Connecting,
-    DeviceReady,
-    InitializingTask,
-    Ready,
-    Running,
-    ResettingTask,
-    ResettingDevice,
-    Exiting
-};
-
-enum class Transition : int
-{
-    Auto,
-    InitDevice,
-    CompleteInit,
-    Bind,
-    Connect,
-    InitTask,
-    Run,
-    Stop,
-    ResetTask,
-    ResetDevice,
-    End,
-    ErrorFound
-};
 
 class StateMachine
 {
@@ -89,19 +52,11 @@ class StateMachine
 
     void ProcessWork();
 
-    static std::string GetStateName(const State);
-    static std::string GetTransitionName(const Transition);
-    static State GetState(const std::string& state);
-    static Transition GetTransition(const std::string& transition);
-
     struct ErrorStateException : std::runtime_error { using std::runtime_error::runtime_error; };
 
   private:
     std::shared_ptr<void> fFsm;
 };
-
-inline std::ostream& operator<<(std::ostream& os, const State& state) { return os << StateMachine::GetStateName(state); }
-inline std::ostream& operator<<(std::ostream& os, const Transition& transition) { return os << StateMachine::GetTransitionName(transition); }
 
 } // namespace mq
 } // namespace fair

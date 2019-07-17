@@ -491,7 +491,7 @@ class FairMQDevice
 
   public:
     bool ChangeState(const fair::mq::Transition transition) { return fStateMachine.ChangeState(transition); }
-    bool ChangeState(const std::string& transition) { return fStateMachine.ChangeState(fair::mq::StateMachine::GetTransition(transition)); }
+    bool ChangeState(const std::string& transition) { return fStateMachine.ChangeState(fair::mq::GetTransition(transition)); }
 
     bool ChangeState(const int transition) __attribute__((deprecated("Use ChangeState(const fair::mq::Transition transition).")));
 
@@ -500,7 +500,7 @@ class FairMQDevice
 
     fair::mq::State WaitForNextState();
     void WaitForState(fair::mq::State state);
-    void WaitForState(const std::string& state) { WaitForState(fair::mq::StateMachine::GetState(state)); }
+    void WaitForState(const std::string& state) { WaitForState(fair::mq::GetState(state)); }
 
     void TransitionTo(const fair::mq::State state);
 
@@ -519,8 +519,8 @@ class FairMQDevice
     fair::mq::State GetCurrentState() const { return fStateMachine.GetCurrentState(); }
     std::string GetCurrentStateName() const { return fStateMachine.GetCurrentStateName(); }
 
-    static std::string GetStateName(const fair::mq::State state) { return fair::mq::StateMachine::GetStateName(state); }
-    static std::string GetTransitionName(const fair::mq::Transition transition) { return fair::mq::StateMachine::GetTransitionName(transition); }
+    static std::string GetStateName(const fair::mq::State state) { return fair::mq::GetStateName(state); }
+    static std::string GetTransitionName(const fair::mq::Transition transition) { return fair::mq::GetTransitionName(transition); }
 
     struct DeviceStateError : std::runtime_error { using std::runtime_error::runtime_error; };
 

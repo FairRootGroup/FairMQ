@@ -27,7 +27,6 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
   install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
     DESTINATION ${PROJECT_INSTALL_INCDIR}
   )
-  
 
   #########
   # Tools #
@@ -71,7 +70,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     OUTPUT_NAME FairMQ${target}
   )
   install(
-    TARGETS ${target} 
+    TARGETS ${target}
     EXPORT ${PROJECT_EXPORT_SET}
     RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
     LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
@@ -92,10 +91,12 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
 
   set(FSM_PUBLIC_HEADER_FILES
     StateMachine.h
+    States.h
   )
 
   set(FSM_SOURCE_FILES
     StateMachine.cxx
+    States.cxx
   )
 
   add_library(${target}
@@ -111,7 +112,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
   target_link_libraries(${target}
     PUBLIC
     FairLogger::FairLogger
-    
+
     PRIVATE
     Boost::boost
     Tools
@@ -122,7 +123,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     OUTPUT_NAME FairMQ${target}
   )
   install(
-    TARGETS ${target} 
+    TARGETS ${target}
     EXPORT ${PROJECT_EXPORT_SET}
     RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
     LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}

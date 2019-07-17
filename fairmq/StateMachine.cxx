@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "StateMachine.h"
+#include <fairmq/StateMachine.h>
 #include <fairmq/Tools.h>
 
 // Increase maximum number of boost::msm states (default is 10)
@@ -25,10 +25,8 @@
 #include <atomic>
 #include <condition_variable>
 #include <chrono>
-#include <array>
 #include <unordered_map>
 #include <mutex>
-#include <stdexcept>
 
 using namespace std;
 using namespace boost::msm;
@@ -75,80 +73,6 @@ struct RESET_TASK_E    { static string Name() { return "RESET_TASK"; }    static
 struct RESET_DEVICE_E  { static string Name() { return "RESET_DEVICE"; }  static Transition Type() { return Transition::ResetDevice; } };
 struct END_E           { static string Name() { return "END"; }           static Transition Type() { return Transition::End; } };
 struct ERROR_FOUND_E   { static string Name() { return "ERROR_FOUND"; }   static Transition Type() { return Transition::ErrorFound; } };
-
-static array<string, 15> stateNames =
-{
-    {
-        "OK",
-        "Error",
-        "IDLE",
-        "INITIALIZING_DEVICE",
-        "INITIALIZED",
-        "BINDING",
-        "BOUND",
-        "CONNECTING",
-        "DEVICE_READY",
-        "INITIALIZING_TASK",
-        "READY",
-        "RUNNING",
-        "RESETTING_TASK",
-        "RESETTING_DEVICE",
-        "EXITING"
-    }
-};
-
-static array<string, 12> transitionNames =
-{
-    {
-        "AUTO",
-        "INIT_DEVICE",
-        "COMPLETE_INIT",
-        "BIND",
-        "CONNECT",
-        "INIT_TASK",
-        "RUN",
-        "STOP",
-        "RESET_TASK",
-        "RESET_DEVICE",
-        "END",
-        "ERROR_FOUND"
-    }
-};
-
-static map<string, State> stateNumbers =
-{
-    { "OK",                  State::Ok },
-    { "Error",               State::Error },
-    { "IDLE",                State::Idle },
-    { "INITIALIZING_DEVICE", State::InitializingDevice },
-    { "INITIALIZED",         State::Initialized },
-    { "BINDING",             State::Binding },
-    { "BOUND",               State::Bound },
-    { "CONNECTING",          State::Connecting },
-    { "DEVICE_READY",        State::DeviceReady },
-    { "INITIALIZING_TASK",   State::InitializingTask },
-    { "READY",               State::Ready },
-    { "RUNNING",             State::Running },
-    { "RESETTING_TASK",      State::ResettingTask },
-    { "RESETTING_DEVICE",    State::ResettingDevice },
-    { "EXITING",             State::Exiting }
-};
-
-static map<string, Transition> transitionNumbers =
-{
-    { "AUTO",          Transition::Auto },
-    { "INIT_DEVICE",   Transition::InitDevice },
-    { "COMPLETE_INIT", Transition::CompleteInit },
-    { "BIND",          Transition::Bind },
-    { "CONNECT",       Transition::Connect },
-    { "INIT_TASK",     Transition::InitTask },
-    { "RUN",           Transition::Run },
-    { "STOP",          Transition::Stop },
-    { "RESET_TASK",    Transition::ResetTask },
-    { "RESET_DEVICE",  Transition::ResetDevice },
-    { "END",           Transition::End },
-    { "ERROR_FOUND",   Transition::ErrorFound }
-};
 
 // defining the boost MSM state machine
 struct Machine_ : public state_machine_def<Machine_>
@@ -369,7 +293,7 @@ try {
                 return false;
              }
     } else {
-        LOG(state) << "Transition " << transitionNames.at(static_cast<int>(transition)) << " incoming, but another state transition is already ongoing.";
+        LOG(state) << "Transition " << GetTransitionName(transition) << " incoming, but another state transition is already ongoing.";
         return false;
     }
 } catch (exception& e) {
@@ -461,9 +385,3 @@ void StateMachine::ProcessWork()
         throw;
     }
 }
-
-string StateMachine::GetStateName(const State state) { return stateNames.at(static_cast<int>(state)); }
-string StateMachine::GetTransitionName(const Transition transition) { return transitionNames.at(static_cast<int>(transition)); }
-State StateMachine::GetState(const string& state) { return stateNumbers.at(state); }
-Transition StateMachine::GetTransition(const string& transition) { return transitionNumbers.at(transition); }
-
