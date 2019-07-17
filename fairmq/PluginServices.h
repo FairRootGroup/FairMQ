@@ -10,6 +10,7 @@
 #define FAIR_MQ_PLUGINSERVICES_H
 
 #include <fairmq/Tools.h>
+#include <fairmq/States.h>
 #include <FairMQDevice.h>
 #include <fairmq/ProgOptions.h>
 #include <fairmq/Properties.h>
@@ -58,41 +59,8 @@ class PluginServices
     PluginServices(const PluginServices&) = delete;
     PluginServices operator=(const PluginServices&) = delete;
 
-    /// See https://github.com/FairRootGroup/FairRoot/blob/dev/fairmq/docs/Device.md#13-state-machine
-    enum class DeviceState : int
-    {
-        Ok,
-        Error,
-        Idle,
-        InitializingDevice,
-        Initialized,
-        Binding,
-        Bound,
-        Connecting,
-        DeviceReady,
-        InitializingTask,
-        Ready,
-        Running,
-        ResettingTask,
-        ResettingDevice,
-        Exiting
-    };
-
-    enum class DeviceStateTransition : int // transition event between DeviceStates
-    {
-        Auto,
-        InitDevice,
-        CompleteInit,
-        Bind,
-        Connect,
-        InitTask,
-        Run,
-        Stop,
-        ResetTask,
-        ResetDevice,
-        End,
-        ErrorFound
-    };
+    using DeviceState = fair::mq::State;
+    using DeviceStateTransition = fair::mq::Transition;
 
     // Control API
 
@@ -100,29 +68,26 @@ class PluginServices
     /// @param state to convert
     /// @return DeviceState enum entry
     /// @throw std::out_of_range if a string cannot be resolved to a DeviceState
-    static auto ToDeviceState(const std::string& state) -> DeviceState { return fkDeviceStateStrMap.at(state); }
+    static auto ToDeviceState(const std::string& state) -> DeviceState { return GetState(state); }
 
     /// @brief Convert string to DeviceStateTransition
     /// @param transition to convert
     /// @return DeviceStateTransition enum entry
     /// @throw std::out_of_range if a string cannot be resolved to a DeviceStateTransition
-    static auto ToDeviceStateTransition(const std::string& transition) -> DeviceStateTransition { return fkDeviceStateTransitionStrMap.at(transition); }
+    static auto ToDeviceStateTransition(const std::string& transition) -> DeviceStateTransition { return GetTransition(transition); }
 
     /// @brief Convert DeviceState to string
     /// @param state to convert
     /// @return string representation of DeviceState enum entry
-    static auto ToStr(DeviceState state) -> std::string { return fkStrDeviceStateMap.at(state); }
+    static auto ToStr(DeviceState state) -> std::string { return GetStateName(state); }
 
     /// @brief Convert DeviceStateTransition to string
     /// @param transition to convert
     /// @return string representation of DeviceStateTransition enum entry
-    static auto ToStr(DeviceStateTransition transition) -> std::string { return fkStrDeviceStateTransitionMap.at(transition); }
-
-    friend auto operator<<(std::ostream& os, const DeviceState& state) -> std::ostream& { return os << ToStr(state); }
-    friend auto operator<<(std::ostream& os, const DeviceStateTransition& transition) -> std::ostream& { return os << ToStr(transition); }
+    static auto ToStr(DeviceStateTransition transition) -> std::string { return GetTransitionName(transition); }
 
     /// @return current device state
-    auto GetCurrentDeviceState() const -> DeviceState { return fkDeviceStateMap.at(static_cast<fair::mq::State>(fDevice.GetCurrentState())); }
+    auto GetCurrentDeviceState() const -> DeviceState { return fDevice.GetCurrentState(); }
 
     /// @brief Become device controller
     /// @param controller id
@@ -171,7 +136,7 @@ class PluginServices
     auto SubscribeToDeviceStateChange(const std::string& subscriber, std::function<void(DeviceState /*newState*/)> callback) -> void
     {
         fDevice.SubscribeToStateChange(subscriber, [&,callback](fair::mq::State newState){
-            callback(fkDeviceStateMap.at(newState));
+            callback(newState);
         });
     }
 
@@ -309,14 +274,6 @@ class PluginServices
     auto CycleLogVerbosityUp() -> void { Logger::CycleVerbosityUp(); }
     /// @brief Decreases logging verbosity, or sets it to highest if it is already lowest
     auto CycleLogVerbosityDown() -> void { Logger::CycleVerbosityDown(); }
-
-    static const std::unordered_map<std::string, DeviceState> fkDeviceStateStrMap;
-    static const std::unordered_map<DeviceState, std::string, tools::HashEnum<DeviceState>> fkStrDeviceStateMap;
-    static const std::unordered_map<std::string, DeviceStateTransition> fkDeviceStateTransitionStrMap;
-    static const std::unordered_map<DeviceStateTransition, std::string, tools::HashEnum<DeviceStateTransition>> fkStrDeviceStateTransitionMap;
-    static const std::unordered_map<fair::mq::State, DeviceState, tools::HashEnum<fair::mq::State>> fkDeviceStateMap;
-    static const std::unordered_map<DeviceState, fair::mq::State> fkStateMap;
-    static const std::unordered_map<DeviceStateTransition, fair::mq::Transition, tools::HashEnum<DeviceStateTransition>> fkDeviceStateTransitionMap;
 
   private:
     fair::mq::ProgOptions& fConfig;
