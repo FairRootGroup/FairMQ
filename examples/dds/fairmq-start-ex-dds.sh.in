@@ -16,7 +16,7 @@ cleanup() {
 }
 
 source @DDS_INSTALL_PREFIX@/DDS_env.sh
-export PATH=@BIN_DIR@:@PLUGIN_DIR@:$PATH
+export PATH=@BIN_DIR@:$PATH
 
 exec 5>&1
 output=$(dds-session start | tee >(cat - >&5))
