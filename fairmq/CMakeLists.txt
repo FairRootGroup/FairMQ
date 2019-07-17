@@ -92,6 +92,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
   set(FSM_PUBLIC_HEADER_FILES
     StateMachine.h
     States.h
+    StateQueue.h
   )
 
   set(FSM_SOURCE_FILES

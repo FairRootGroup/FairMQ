@@ -11,6 +11,7 @@
 
 #include <string>
 #include <ostream>
+#include <stdexcept>
 
 namespace fair
 {
@@ -56,6 +57,8 @@ std::string GetStateName(const State);
 std::string GetTransitionName(const Transition);
 State GetState(const std::string& state);
 Transition GetTransition(const std::string& transition);
+
+struct DeviceErrorState : std::runtime_error { using std::runtime_error::runtime_error; };
 
 inline std::ostream& operator<<(std::ostream& os, const State& state) { return os << GetStateName(state); }
 inline std::ostream& operator<<(std::ostream& os, const Transition& transition) { return os << GetTransitionName(transition); }

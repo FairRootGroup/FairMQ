@@ -12,6 +12,7 @@
 #include <StateMachine.h>
 #include <FairMQTransportFactory.h>
 #include <fairmq/Transports.h>
+#include <fairmq/StateQueue.h>
 
 #include <FairMQSocket.h>
 #include <FairMQChannel.h>
@@ -498,8 +499,8 @@ class FairMQDevice
     void WaitForEndOfState(const fair::mq::Transition transition) __attribute__((deprecated("Use WaitForState(fair::mq::State expectedState).")));
     void WaitForEndOfState(const std::string& transition) __attribute__((deprecated("Use WaitForState(fair::mq::State expectedState)."))) { WaitForState(transition); }
 
-    fair::mq::State WaitForNextState();
-    void WaitForState(fair::mq::State state);
+    fair::mq::State WaitForNextState() { return fStateQueue.WaitForNext(); }
+    void WaitForState(fair::mq::State state) { fStateQueue.WaitForState(state); }
     void WaitForState(const std::string& state) { WaitForState(fair::mq::GetState(state)); }
 
     void TransitionTo(const fair::mq::State state);
@@ -521,8 +522,6 @@ class FairMQDevice
 
     static std::string GetStateName(const fair::mq::State state) { return fair::mq::GetStateName(state); }
     static std::string GetTransitionName(const fair::mq::Transition transition) { return fair::mq::GetTransitionName(transition); }
-
-    struct DeviceStateError : std::runtime_error { using std::runtime_error::runtime_error; };
 
     static constexpr const char* DefaultId = "";
     static constexpr int DefaultIOThreads = 1;
@@ -589,9 +588,7 @@ class FairMQDevice
     int fInitializationTimeoutInS;
     std::vector<std::string> fRawCmdLineArgs;
 
-    std::queue<fair::mq::State> fStates;
-    std::mutex fStatesMtx;
-    std::condition_variable fStatesCV;
+    fair::mq::StateQueue fStateQueue;
 
     std::mutex fTransitionMtx;
     bool fTransitioning;

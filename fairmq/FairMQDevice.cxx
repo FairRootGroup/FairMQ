@@ -66,6 +66,27 @@ constexpr uint64_t FairMQDevice::DefaultMaxRunTime;
 constexpr float FairMQDevice::DefaultRate;
 constexpr const char* FairMQDevice::DefaultSession;
 
+struct StateSubscription
+{
+    fair::mq::StateMachine& fStateMachine;
+    fair::mq::StateQueue& fStateQueue;
+    string fId;
+
+    explicit StateSubscription(const string& id, fair::mq::StateMachine& stateMachine, fair::mq::StateQueue& stateQueue)
+        : fStateMachine(stateMachine)
+        , fStateQueue(stateQueue)
+        , fId(id)
+    {
+        fStateMachine.SubscribeToStateChange(fId, [&](fair::mq::State state) {
+            fStateQueue.Push(state);
+        });
+    }
+
+    ~StateSubscription() {
+        fStateMachine.UnsubscribeFromStateChange(fId);
+    }
+};
+
 FairMQDevice::FairMQDevice()
     : FairMQDevice(nullptr, {0, 0, 0})
 {}
@@ -106,9 +127,6 @@ FairMQDevice::FairMQDevice(ProgOptions* config, const tools::Version version)
     , fMaxRunRuntimeInS(DefaultMaxRunTime)
     , fInitializationTimeoutInS(DefaultInitTimeout)
     , fRawCmdLineArgs()
-    , fStates()
-    , fStatesMtx()
-    , fStatesCV()
     , fTransitionMtx()
     , fTransitioning(false)
 {
@@ -127,11 +145,7 @@ FairMQDevice::FairMQDevice(ProgOptions* config, const tools::Version version)
     fStateMachine.HandleStates([&](fair::mq::State state) {
         LOG(trace) << "device notified on new state: " << state;
 
-        {
-            lock_guard<mutex> lock(fStatesMtx);
-            fStates.push(state);
-        }
-        fStatesCV.notify_all();
+        fStateQueue.Push(state);
 
         switch (state) {
             case fair::mq::State::InitializingDevice:
@@ -167,29 +181,6 @@ FairMQDevice::FairMQDevice(ProgOptions* config, const tools::Version version)
     fStateMachine.Start();
 }
 
-fair::mq::State FairMQDevice::WaitForNextState()
-{
-    unique_lock<mutex> lock(fStatesMtx);
-    while (fStates.empty()) {
-        fStatesCV.wait_for(lock, chrono::milliseconds(50));
-    }
-
-    auto state = fStates.front();
-
-    if (state == fair::mq::State::Error) {
-        throw DeviceStateError("Device transitioned to error state.");
-    }
-
-    fStates.pop();
-
-    return state;
-}
-
-void FairMQDevice::WaitForState(fair::mq::State state)
-{
-    while (WaitForNextState() != state) {}
-}
-
 void FairMQDevice::TransitionTo(const fair::mq::State s)
 {
     {
@@ -202,6 +193,10 @@ void FairMQDevice::TransitionTo(const fair::mq::State s)
     }
 
     using fair::mq::State;
+
+    StateQueue sq;
+    StateSubscription ss(tools::ToString(fId, ".TransitionTo"), fStateMachine, sq);
+
     State currentState = GetCurrentState();
 
     while (s != currentState) {
@@ -244,7 +239,7 @@ void FairMQDevice::TransitionTo(const fair::mq::State s)
             break;
         }
 
-        currentState = WaitForNextState();
+        currentState = sq.WaitForNext();
     }
 
     {
