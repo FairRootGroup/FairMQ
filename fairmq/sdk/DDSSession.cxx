@@ -76,10 +76,6 @@ struct DDSSession::Impl
         }
     }
 
-    ~Impl()
-    {
-        fSession.shutdown();
-    }
     struct Tag {};
     friend auto operator<<(std::ostream& os, Tag) -> std::ostream& { return os << "DDSSession"; }
     tools::InstanceLimiter<Tag, 1> fCount;
@@ -102,6 +98,8 @@ DDSSession::DDSSession(DDSEnvironment env, DDSRMSPlugin default_plugin, Id exist
 auto DDSSession::IsRunning() const -> bool { return fImpl->fSession.IsRunning(); }
 
 auto DDSSession::GetId() const -> Id { return fImpl->fId; }
+
+auto DDSSession::Stop() -> void { return fImpl->fSession.shutdown(); }
 
 auto DDSSession::GetDefaultPlugin() const -> DDSRMSPlugin { return fImpl->fDefaultPlugin; }
 
