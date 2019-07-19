@@ -53,25 +53,36 @@ auto operator>>(std::istream& is, DDSRMSPlugin& plugin) -> std::istream&
 struct DDSSession::Impl
 {
     Impl(DDSEnvironment env, DDSRMSPlugin plugin)
-        : fEnv(std::move(env))
+        : fCount()
+        , fEnv(std::move(env))
         , fDefaultPlugin(std::move(plugin))
         , fSession()
         , fId(to_string(fSession.create()))
-    {}
+    {
+        setenv("DDS_SESSION_ID", fId.c_str(), 1);
+    }
 
     Impl(DDSEnvironment env, DDSRMSPlugin plugin, Id existing_id)
-        : fEnv(std::move(env))
+        : fCount()
+        , fEnv(std::move(env))
         , fDefaultPlugin(std::move(plugin))
         , fSession()
         , fId(std::move(existing_id))
     {
         fSession.attach(fId);
+        std::string envId(std::getenv("DDS_SESSION_ID"));
+        if (envId != fId) {
+            setenv("DDS_SESSION_ID", fId.c_str(), 1);
+        }
     }
 
     ~Impl()
     {
         fSession.shutdown();
     }
+    struct Tag {};
+    friend auto operator<<(std::ostream& os, Tag) -> std::ostream& { return os << "DDSSession"; }
+    tools::InstanceLimiter<Tag, 1> fCount;
 
     const DDSEnvironment fEnv;
     const DDSRMSPlugin fDefaultPlugin;
