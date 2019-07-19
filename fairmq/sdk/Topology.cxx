@@ -14,7 +14,8 @@ namespace fair {
 namespace mq {
 namespace sdk {
 
-Topology::Topology()
+Topology::Topology(dds::topology_api::CTopology topo)
+    : fDDSTopology(std::move(topo))
 {}
 
 }   // namespace sdk
