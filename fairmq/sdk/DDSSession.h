@@ -11,7 +11,6 @@
 
 #include <boost/filesystem.hpp>
 #include <cstdint>
-#include <fairmq/sdk/DDSEnvironment.h>
 #include <fairmq/sdk/DDSInfo.h>
 #include <istream>
 #include <memory>
@@ -22,6 +21,8 @@
 namespace fair {
 namespace mq {
 namespace sdk {
+
+class DDSEnvironment;
 
 /**
  * @enum DDSRMSPlugin DDSSession.h <fairmq/sdk/DDSSession.h>

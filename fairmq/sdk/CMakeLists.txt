@@ -48,12 +48,12 @@ target_link_libraries(${target}
   Boost::filesystem
   FairLogger::FairLogger
   StateMachine
-  DDS::dds_topology_lib # TODO Eventually hide this in the future
 
   PRIVATE
   Boost::boost
   DDS::dds_intercom_lib
   DDS::dds_tools_lib
+  DDS::dds_topology_lib
   Tools
 )
 set_target_properties(${target} PROPERTIES
