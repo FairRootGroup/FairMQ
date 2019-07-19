@@ -61,11 +61,13 @@ struct TopologyFixture : ::testing::Test
         LOG(info) << mDDSEnv;
         LOG(info) << mDDSSession;
         mDDSSession.SubmitAgents(2);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(1)); // TODO implement WaitForIdleAgents
         mDDSSession.ActivateTopology(mDDSTopologyFile);
     }
 
-    auto TearDown() -> void override {}
+    auto TearDown() -> void override {
+        mDDSSession.Stop();
+    }
 
     LoggerConfig mLoggerConfig;
     std::string mDDSTopologyFile;
