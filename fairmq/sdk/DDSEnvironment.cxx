@@ -33,6 +33,7 @@ auto LoadDDSEnv(const boost::filesystem::path& config_home, const boost::filesys
     std::istringstream cmd;
     cmd.str("DDS_CFG=`dds-user-defaults --ignore-default-sid -p`\n"
             "if [ -z \"$DDS_CFG\" ]; then\n"
+            "  mkdir -p \"$HOME/.DDS\"\n"
             "  dds-user-defaults --ignore-default-sid -d -c \"$HOME/.DDS/DDS.cfg\"\n"
             "fi");
     std::system(cmd.str().c_str());

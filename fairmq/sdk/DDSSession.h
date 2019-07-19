@@ -58,6 +58,8 @@ class DDSSession
     auto SubmitAgents(Quantity agents, DDSRMSPlugin plugin) -> void;
     auto SubmitAgents(Quantity agents, DDSRMSPlugin plugin, const Path& config) -> void;
     auto SubmitAgents(Quantity agents, const Path& config) -> void;
+    auto RequestAgentInfo() -> void;
+    auto ActivateTopology(Path topologyFile) -> void;
 
     friend auto operator<<(std::ostream& os, DDSSession session) -> std::ostream&;
   private:
