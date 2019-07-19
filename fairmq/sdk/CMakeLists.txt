@@ -14,6 +14,7 @@ configure_file(DDSInfo.h.in ${CMAKE_CURRENT_BINARY_DIR}/DDSInfo.h @ONLY)
 set(target SDK)
 
 set(SDK_PUBLIC_HEADER_FILES
+  ../SDK.h
   DDSEnvironment.h
   ${CMAKE_CURRENT_BINARY_DIR}/DDSInfo.h
   DDSSession.h
