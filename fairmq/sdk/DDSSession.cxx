@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include "DDSSession.h"
+#include "DDSEnvironment.h"
 
 #include <DDS/Tools.h>
 #include <boost/uuid/uuid_io.hpp>
@@ -157,7 +158,6 @@ auto DDSSession::ActivateTopology(Path topologyFile) -> void
     dds::tools_api::STopologyRequestData topologyInfo;
     topologyInfo.m_updateType = dds::tools_api::STopologyRequestData::EUpdateType::ACTIVATE;
     topologyInfo.m_topologyFile = topologyFile.string();
-    LOG(warn) << topologyFile.string() << " :::: " << topologyFile;
 
     tools::Semaphore blocker;
     auto topologyRequest = dds::tools_api::STopologyRequest::makeRequest(topologyInfo);

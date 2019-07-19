@@ -8,14 +8,24 @@
 
 #include "Topology.h"
 
+#include <DDS/Topology.h>
 #include <utility>
 
 namespace fair {
 namespace mq {
 namespace sdk {
 
+struct Topology::Impl
+{
+    Impl(dds::topology_api::CTopology topo)
+        : fDDSTopology(std::move(topo))
+    {}
+
+    dds::topology_api::CTopology fDDSTopology;
+};
+
 Topology::Topology(dds::topology_api::CTopology topo)
-    : fDDSTopology(std::move(topo))
+    : fImpl(std::make_shared<Impl>(std::move(topo)))
 {}
 
 }   // namespace sdk
