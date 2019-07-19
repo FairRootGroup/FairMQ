@@ -14,9 +14,9 @@ namespace {
 
 using Topology = fair::mq::test::TopologyFixture;
 
-TEST_F(Topology, Basic)
+TEST_F(Topology, Construction)
 {
-  fair::mq::sdk::Topology topo;
+  fair::mq::sdk::Topology topo(mDDSTopology);
 }
 
 }   // namespace

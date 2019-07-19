@@ -9,6 +9,7 @@
 #ifndef FAIR_MQ_SDK_TOPOLOGY_H
 #define FAIR_MQ_SDK_TOPOLOGY_H
 
+#include <DDS/Topology.h>
 #include <memory>
 
 namespace fair {
@@ -23,11 +24,12 @@ class Topology
 {
   public:
 
-    /// Construct a FairMQ topology from a existing DDS session via the dds::topology_api
-    /// @param topo a shared_ptr to an initialized CTopology object
-    explicit Topology();
+    /// Construct a FairMQ topology from an existing DDS session via the dds::topology_api
+    /// @param topo An initialized CTopology object
+    explicit Topology(dds::topology_api::CTopology topo);
 
   private:
+    dds::topology_api::CTopology fDDSTopology;
 };
 
 }   // namespace sdk
