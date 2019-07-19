@@ -69,7 +69,6 @@ struct DDSSession::Impl
 
     ~Impl()
     {
-        fSession.stop();
         fSession.shutdown();
     }
 
@@ -133,6 +132,39 @@ auto DDSSession::SubmitAgents(Quantity agents, DDSRMSPlugin plugin, const Path& 
     });
 
     fImpl->fSession.sendRequest<dds::tools_api::SSubmitRequest>(submitRequest);
+    blocker.Wait();
+}
+
+auto DDSSession::RequestAgentInfo() -> void
+{
+    dds::tools_api::SAgentInfoRequestData agentInfoInfo;
+    tools::Semaphore blocker;
+    auto agentInfoRequest = dds::tools_api::SAgentInfoRequest::makeRequest(agentInfoInfo);
+    agentInfoRequest->setResponseCallback(
+        [&](const dds::tools_api::SAgentInfoResponseData& _response) {
+            LOG(debug) << "agent: " << _response.m_index << "/" << _response.m_activeAgentsCount;
+            LOG(debug) << "info: " << _response.m_agentInfo;
+        });
+    agentInfoRequest->setMessageCallback(
+        [](const dds::tools_api::SMessageResponseData& _message) { LOG(debug) << _message; });
+    agentInfoRequest->setDoneCallback([&]() { blocker.Signal(); });
+    fImpl->fSession.sendRequest<dds::tools_api::SAgentInfoRequest>(agentInfoRequest);
+    blocker.Wait();
+}
+
+auto DDSSession::ActivateTopology(Path topologyFile) -> void
+{
+    dds::tools_api::STopologyRequestData topologyInfo;
+    topologyInfo.m_updateType = dds::tools_api::STopologyRequestData::EUpdateType::ACTIVATE;
+    topologyInfo.m_topologyFile = topologyFile.string();
+    LOG(warn) << topologyFile.string() << " :::: " << topologyFile;
+
+    tools::Semaphore blocker;
+    auto topologyRequest = dds::tools_api::STopologyRequest::makeRequest(topologyInfo);
+    topologyRequest->setMessageCallback(
+        [](const dds::tools_api::SMessageResponseData& _message) { LOG(debug) << _message; });
+    topologyRequest->setDoneCallback([&]() { blocker.Signal(); });
+    fImpl->fSession.sendRequest<dds::tools_api::STopologyRequest>(topologyRequest);
     blocker.Wait();
 }
 
