@@ -15,7 +15,7 @@
 
 namespace {
 
-auto session_test() -> void
+auto setup() -> void
 {
     fair::Logger::SetConsoleSeverity("debug");
     fair::Logger::DefineVerbosity("user1",
@@ -23,35 +23,24 @@ auto session_test() -> void
                                                           fair::VerbositySpec::Info::severity));
     fair::Logger::SetVerbosity("user1");
     fair::Logger::SetConsoleColor();
+}
+
+TEST(DDS, Environment)
+{
+    setup();
 
     fair::mq::sdk::DDSEnvironment env(CMAKE_CURRENT_BINARY_DIR);
     LOG(debug) << env;
-    {
-        fair::mq::sdk::DDSSession session(env);
-        LOG(debug) << session;
-        session.SubmitAgents(5);
-        session.SubmitAgents(5);
-    }
-    {
-        fair::mq::sdk::DDSSession session(env);
-        LOG(debug) << session;
-        session.SubmitAgents(5);
-    }
-    {
-        fair::mq::sdk::DDSSession session(env);
-        LOG(debug) << session;
-        session.SubmitAgents(5);
-    }
 }
 
 TEST(DDS, Session)
 {
-    session_test();
-}
+    setup();
 
-TEST(DDS, Session2)
-{
-    session_test();
+    fair::mq::sdk::DDSEnvironment env(CMAKE_CURRENT_BINARY_DIR);
+    fair::mq::sdk::DDSSession session(env);
+    session.StopOnDestruction();
+    LOG(debug) << session;
 }
 
 }   // namespace

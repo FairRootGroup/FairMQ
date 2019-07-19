@@ -10,7 +10,6 @@
 #define FAIR_MQ_SDK_DDSENVIRONMENT_H
 
 #include <boost/filesystem.hpp>
-#include <fairmq/sdk/DDSInfo.h>
 #include <memory>
 #include <ostream>
 
@@ -27,9 +26,10 @@ class DDSEnvironment
   public:
     using Path = boost::filesystem::path;
 
-    /// @brief See fair::mq::sdk::LoadDDSEnv
-    explicit DDSEnvironment(Path config_home = "");
+    DDSEnvironment();
+    explicit DDSEnvironment(Path);
 
+    auto GetLocation() const -> Path;
     auto GetConfigHome() const -> Path;
 
     friend auto operator<<(std::ostream& os, DDSEnvironment env) -> std::ostream&;
@@ -37,6 +37,8 @@ class DDSEnvironment
     struct Impl;
     std::shared_ptr<Impl> fImpl;
 };
+
+using DDSEnv = DDSEnvironment;
 
 }   // namespace sdk
 }   // namespace mq

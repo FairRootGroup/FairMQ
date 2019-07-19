@@ -11,6 +11,20 @@
 
 #include <string>
 
+namespace dds {
+namespace tools_api {
+
+class CSession;
+
+}   // namespace tools_api
+
+namespace topology_api {
+
+class CTopology;
+
+}   // namespace topology_api
+}   // namespace dds
+
 namespace fair {
 namespace mq {
 namespace sdk {

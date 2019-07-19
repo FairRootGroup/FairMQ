@@ -7,16 +7,19 @@
  ********************************************************************************/
 
 #include "DDSSession.h"
-#include "DDSEnvironment.h"
+
+#include <fairmq/sdk/DDSEnvironment.h>
+#include <fairmq/Tools.h>
+
+#include <fairlogger/Logger.h>
 
 #include <DDS/Tools.h>
+
 #include <boost/uuid/uuid_io.hpp>
+
 #include <cassert>
 #include <cstdlib>
-#include <fairlogger/Logger.h>
-#include <fairmq/Tools.h>
 #include <sstream>
-#include <stdlib.h>
 #include <utility>
 
 namespace fair {
@@ -52,48 +55,76 @@ auto operator>>(std::istream& is, DDSRMSPlugin& plugin) -> std::istream&
 
 struct DDSSession::Impl
 {
-    Impl(DDSEnvironment env, DDSRMSPlugin plugin)
-        : fCount()
-        , fEnv(std::move(env))
-        , fDefaultPlugin(std::move(plugin))
-        , fSession()
+    explicit Impl(DDSEnvironment env)
+        : fEnv(std::move(env))
+        , fRMSPlugin(DDSRMSPlugin::localhost)
+        , fDDSService()
+        , fDDSCustomCmd(fDDSService)
         , fId(to_string(fSession.create()))
+        , fStopOnDestruction(false)
     {
         setenv("DDS_SESSION_ID", fId.c_str(), 1);
+
+        fDDSService.subscribeOnError([](const dds::intercom_api::EErrorCode errorCode, const std::string& msg) {
+            std::cerr << "DDS error, error code: " << errorCode << ", error message: " << msg << std::endl;
+        });
     }
 
-    Impl(DDSEnvironment env, DDSRMSPlugin plugin, Id existing_id)
-        : fCount()
-        , fEnv(std::move(env))
-        , fDefaultPlugin(std::move(plugin))
-        , fSession()
-        , fId(std::move(existing_id))
+    explicit Impl(Id existing, DDSEnvironment env)
+        : fEnv(std::move(env))
+        , fRMSPlugin(DDSRMSPlugin::localhost)
+        , fDDSService()
+        , fDDSCustomCmd(fDDSService)
+        , fId(std::move(existing))
+        , fStopOnDestruction(false)
     {
         fSession.attach(fId);
         std::string envId(std::getenv("DDS_SESSION_ID"));
         if (envId != fId) {
             setenv("DDS_SESSION_ID", fId.c_str(), 1);
         }
+
+        fDDSService.subscribeOnError([](const dds::intercom_api::EErrorCode errorCode, const std::string& msg) {
+            std::cerr << "DDS error, error code: " << errorCode << ", error message: " << msg << std::endl;
+        });
     }
+
+    ~Impl()
+    {
+        if (fStopOnDestruction) {
+            fSession.shutdown();
+        }
+    }
+
+    Impl() = delete;
+    Impl(const Impl&) = delete;
+    Impl& operator=(const Impl&) = delete;
+    Impl(Impl&&) = delete;
+    Impl& operator=(Impl&&) = delete;
 
     struct Tag {};
     friend auto operator<<(std::ostream& os, Tag) -> std::ostream& { return os << "DDSSession"; }
     tools::InstanceLimiter<Tag, 1> fCount;
 
-    const DDSEnvironment fEnv;
-    const DDSRMSPlugin fDefaultPlugin;
+    DDSEnvironment fEnv;
+    DDSRMSPlugin fRMSPlugin;
+    Path fRMSConfig;
     dds::tools_api::CSession fSession;
-    const Id fId;
+    dds::intercom_api::CIntercomService fDDSService;
+    dds::intercom_api::CCustomCmd fDDSCustomCmd;
+    Id fId;
+    bool fStopOnDestruction;
 };
 
-DDSSession::DDSSession(DDSEnvironment env, DDSRMSPlugin default_plugin)
-: fImpl(std::make_shared<Impl>(std::move(env), std::move(default_plugin))) {}
+DDSSession::DDSSession(DDSEnvironment env)
+    : fImpl(std::make_shared<Impl>(env))
+{}
 
-DDSSession::DDSSession(DDSEnvironment env, Id existing_id)
-: fImpl(std::make_shared<Impl>(std::move(env), DDSRMSPlugin::localhost, std::move(existing_id))) {}
+DDSSession::DDSSession(Id existing, DDSEnvironment env)
+    : fImpl(std::make_shared<Impl>(std::move(existing), env))
+{}
 
-DDSSession::DDSSession(DDSEnvironment env, DDSRMSPlugin default_plugin, Id existing_id)
-: fImpl(std::make_shared<Impl>(std::move(env), std::move(default_plugin), std::move(existing_id))) {}
+auto DDSSession::GetEnv() const -> DDSEnvironment { return fImpl->fEnv; }
 
 auto DDSSession::IsRunning() const -> bool { return fImpl->fSession.IsRunning(); }
 
@@ -101,36 +132,30 @@ auto DDSSession::GetId() const -> Id { return fImpl->fId; }
 
 auto DDSSession::Stop() -> void { return fImpl->fSession.shutdown(); }
 
-auto DDSSession::GetDefaultPlugin() const -> DDSRMSPlugin { return fImpl->fDefaultPlugin; }
+auto DDSSession::GetRMSPlugin() const -> DDSRMSPlugin { return fImpl->fRMSPlugin; }
+
+auto DDSSession::SetRMSPlugin(DDSRMSPlugin plugin) -> void { fImpl->fRMSPlugin = plugin; }
+
+auto DDSSession::GetRMSConfig() const -> Path { return fImpl->fRMSConfig; }
+
+auto DDSSession::SetRMSConfig(Path configFile) const -> void
+{
+    fImpl->fRMSConfig = std::move(configFile);
+}
+
+auto DDSSession::IsStoppedOnDestruction() const -> bool { return fImpl->fStopOnDestruction; }
+
+auto DDSSession::StopOnDestruction(bool stop) -> void { fImpl->fStopOnDestruction = stop; }
 
 auto DDSSession::SubmitAgents(Quantity agents) -> void
 {
-    SubmitAgents(agents, GetDefaultPlugin(), Path());
-}
-
-auto DDSSession::SubmitAgents(Quantity agents, DDSRMSPlugin plugin) -> void
-{
-    SubmitAgents(agents, plugin, Path());
-}
-
-auto DDSSession::SubmitAgents(Quantity agents, const Path& config) -> void
-{
-    SubmitAgents(agents, GetDefaultPlugin(), std::move(config));
-}
-
-auto DDSSession::SubmitAgents(Quantity agents, DDSRMSPlugin plugin, const Path& config) -> void
-{
     // Requesting to submit 0 agents is not meaningful
     assert(agents > 0);
-    // The config argument is required with all plugins except localhost
-    if (plugin != DDSRMSPlugin::localhost) {
-        assert(exists(config));
-    }
 
     dds::tools_api::SSubmitRequestData submitInfo;
-    submitInfo.m_rms = tools::ToString(plugin);
+    submitInfo.m_rms = tools::ToString(GetRMSPlugin());
     submitInfo.m_instances = agents;
-    submitInfo.m_config = config.string();
+    submitInfo.m_config = GetRMSConfig().string();
 
     tools::Semaphore blocker;
     auto submitRequest = dds::tools_api::SSubmitRequest::makeRequest(submitInfo);
@@ -162,7 +187,28 @@ auto DDSSession::RequestAgentInfo() -> void
     blocker.Wait();
 }
 
-auto DDSSession::ActivateTopology(Path topologyFile) -> void
+auto DDSSession::RequestCommanderInfo() -> void
+{
+    dds::tools_api::SCommanderInfoRequestData commanderInfoInfo;
+    tools::Semaphore blocker;
+    auto commanderInfoRequest =
+        dds::tools_api::SCommanderInfoRequest::makeRequest(commanderInfoInfo);
+    commanderInfoRequest->setResponseCallback(
+        [&](const dds::tools_api::SCommanderInfoResponseData& _response) {
+            LOG(debug) << "pid: " << _response.m_pid;
+            LOG(debug) << "idle agents: " << _response.m_idleAgentsCount;
+            // LOG(debug) << "active topology: "
+            // << ((_response.m_hasActiveTopology) ? _response.m_activeTopologyName
+            // : "<none>");
+        });
+    commanderInfoRequest->setMessageCallback(
+        [](const dds::tools_api::SMessageResponseData& _message) { LOG(debug) << _message; });
+    commanderInfoRequest->setDoneCallback([&]() { blocker.Signal(); });
+    fImpl->fSession.sendRequest<dds::tools_api::SCommanderInfoRequest>(commanderInfoRequest);
+    blocker.Wait();
+}
+
+auto DDSSession::ActivateTopology(const Path& topologyFile) -> void
 {
     dds::tools_api::STopologyRequestData topologyInfo;
     topologyInfo.m_updateType = dds::tools_api::STopologyRequestData::EUpdateType::ACTIVATE;
@@ -177,7 +223,16 @@ auto DDSSession::ActivateTopology(Path topologyFile) -> void
     blocker.Wait();
 }
 
-auto operator<<(std::ostream& os, DDSSession session) -> std::ostream&
+void DDSSession::StartDDSService() { fImpl->fDDSService.start(fImpl->fId); }
+
+void DDSSession::SubscribeToCommands(std::function<void(const std::string& msg, const std::string& condition, uint64_t senderId)> cb)
+{
+    fImpl->fDDSCustomCmd.subscribe(cb);
+}
+
+void DDSSession::SendCommand(const std::string& cmd) { fImpl->fDDSCustomCmd.send(cmd, ""); }
+
+auto operator<<(std::ostream& os, const DDSSession& session) -> std::ostream&
 {
     return os << "$DDS_SESSION_ID: " << session.GetId();
 }

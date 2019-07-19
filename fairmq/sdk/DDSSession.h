@@ -9,14 +9,18 @@
 #ifndef FAIR_MQ_SDK_DDSSESSION_H
 #define FAIR_MQ_SDK_DDSSESSION_H
 
-#include <boost/filesystem.hpp>
-#include <cstdint>
+#include <fairmq/sdk/DDSEnvironment.h>
 #include <fairmq/sdk/DDSInfo.h>
+
+#include <boost/filesystem.hpp>
+
+#include <cstdint>
 #include <istream>
 #include <memory>
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <functional>
 
 namespace fair {
 namespace mq {
@@ -47,23 +51,29 @@ class DDSSession
     using Quantity = std::uint32_t;
     using Path = boost::filesystem::path;
 
-    DDSSession() = delete;
-    explicit DDSSession(DDSEnvironment env, DDSRMSPlugin default_plugin = DDSRMSPlugin::localhost);
-    explicit DDSSession(DDSEnvironment env, Id existing_id);
-    explicit DDSSession(DDSEnvironment env, DDSRMSPlugin default_plugin, Id existing_id);
+    explicit DDSSession(DDSEnvironment env = DDSEnvironment());
+    explicit DDSSession(Id existing, DDSEnvironment env = DDSEnvironment());
 
+    auto GetEnv() const -> DDSEnvironment;
     auto GetId() const -> Id;
-    auto GetDefaultPlugin() const -> DDSRMSPlugin;
+    auto GetRMSPlugin() const -> DDSRMSPlugin;
+    auto SetRMSPlugin(DDSRMSPlugin) -> void;
+    auto GetRMSConfig() const -> Path;
+    auto SetRMSConfig(Path) const -> void;
+    auto IsStoppedOnDestruction() const -> bool;
+    auto StopOnDestruction(bool stop = true) -> void;
     auto IsRunning() const -> bool;
     auto SubmitAgents(Quantity agents) -> void;
-    auto SubmitAgents(Quantity agents, DDSRMSPlugin plugin) -> void;
-    auto SubmitAgents(Quantity agents, DDSRMSPlugin plugin, const Path& config) -> void;
-    auto SubmitAgents(Quantity agents, const Path& config) -> void;
     auto RequestAgentInfo() -> void;
-    auto ActivateTopology(Path topologyFile) -> void;
+    auto RequestCommanderInfo() -> void;
+    auto ActivateTopology(const Path& topologyFile) -> void;
     auto Stop() -> void;
 
-    friend auto operator<<(std::ostream& os, DDSSession session) -> std::ostream&;
+    void StartDDSService();
+    void SubscribeToCommands(std::function<void(const std::string& msg, const std::string& condition, uint64_t senderId)>);
+    void SendCommand(const std::string&);
+
+    friend auto operator<<(std::ostream& os, const DDSSession& session) -> std::ostream&;
   private:
     struct Impl;
     std::shared_ptr<Impl> fImpl;

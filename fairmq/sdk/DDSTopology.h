@@ -9,17 +9,10 @@
 #ifndef FAIR_MQ_SDK_DDSTOPOLOGY_H
 #define FAIR_MQ_SDK_DDSTOPOLOGY_H
 
-#include <fairmq/sdk/DDSInfo.h>
+#include <boost/filesystem.hpp>
+#include <fairmq/sdk/DDSEnvironment.h>
 #include <memory>
 #include <string>
-
-namespace dds {
-namespace topology_api {
-
-class CTopology;
-
-}   // namespace topology_api
-}   // namespace dds
 
 namespace fair {
 namespace mq {
@@ -29,23 +22,44 @@ namespace sdk {
  * @class DDSTopology DDSTopology.h <fairmq/sdk/DDSTopology.h>
  * @brief Represents a DDS topology
  */
-class DDSSession
+class DDSTopology
 {
   public:
-    using CSessionPtr = std::shared_ptr<dds::tools_api::CSession>;
+    using Path = boost::filesystem::path;
 
-    explicit DDSSession();
-    explicit DDSSession(std::string existing_session_id);
+    DDSTopology() = delete;
 
-    auto GetId() const -> const std::string&;
-    auto IsRunning() const -> bool;
+    /// @brief Construct from file
+    /// @param topoFile DDS topology xml file
+    /// @param env DDS environment
+    explicit DDSTopology(Path topoFile, DDSEnvironment env = DDSEnvironment());
+
+    /// @brief Get associated DDS environment
+    auto GetEnv() const -> DDSEnvironment;
+
+    /// @brief Get path to DDS topology xml, if it is known
+    /// @throw std::runtime_error
+    auto GetTopoFile() const -> Path;
+
+    void CreateTopology(Path);
+
+    /// @brief Get number of required agents for this topology
+    int GetNumRequiredAgents();
+
+    /// @brief Get list of devices
+    std::vector<uint64_t> GetDeviceList();
+
+    /// @brief Get the name of the topology
+    // auto GetName() const -> std::string;
+
+    friend auto operator<<(std::ostream&, const DDSTopology&) -> std::ostream&;
+
   private:
-    CSessionPtr fSession;
-    const std::string fId;
+    struct Impl;
+    std::shared_ptr<Impl> fImpl;
 };
 
-auto LoadDDSEnv(const std::string& config_home = "", const std::string& prefix = DDSInstallPrefix)
-    -> void;
+using DDSTopo = DDSTopology;
 
 }   // namespace sdk
 }   // namespace mq
