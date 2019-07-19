@@ -287,14 +287,14 @@ if(BUILD_SDK)
     add_testsuite(SDK
         SOURCES
         ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
-        sdk/_dds.cxx
+        # sdk/_dds.cxx
         sdk/_topology.cxx
         sdk/TopologyFixture.h
 
         LINKS
         SDK
         Tools
-        DDS::dds_tools_lib
+        DDS::dds_topology_lib
         INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
                  ${CMAKE_CURRENT_BINARY_DIR}
         TIMEOUT 15
