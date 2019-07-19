@@ -6,16 +6,17 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-// #include "TopologyFixture.h"
+#include "TopologyFixture.h"
 
-// #include <fairmq/sdk/Topology.h>
-#include <fairmq/sdk/DDSSession.h>
+#include <fairmq/sdk/Topology.h>
 
 namespace {
 
+using Topology = fair::mq::test::TopologyFixture;
 
-// TEST_F(Topology, Basic) { fair::mq::sdk::Topology topo; }
-// TEST_F(Topology, Basic2) { fair::mq::sdk::Topology topo; }
-
+TEST_F(Topology, Basic)
+{
+  fair::mq::sdk::Topology topo;
+}
 
 }   // namespace
