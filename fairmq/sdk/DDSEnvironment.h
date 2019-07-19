@@ -19,14 +19,6 @@ namespace mq {
 namespace sdk {
 
 /**
- * @brief Sets up the DDS environment
- * @param config_home Path under which DDS creates a ".DDS" runtime directory for configuration and logs
- * @param prefix Path where DDS is installed
- */
-auto LoadDDSEnv(const boost::filesystem::path& config_home = "", const boost::filesystem::path& prefix = DDSInstallPrefix)
-    -> void;
-
-/**
  * @class DDSEnvironment DDSSession.h <fairmq/sdk/DDSSession.h>
  * @brief Sets up the DDS environment (object helper)
  */
@@ -36,10 +28,9 @@ class DDSEnvironment
     using Path = boost::filesystem::path;
 
     /// @brief See fair::mq::sdk::LoadDDSEnv
-    explicit DDSEnvironment(Path config_home = "", Path prefix = DDSInstallPrefix);
+    explicit DDSEnvironment(Path config_home = "");
 
     auto GetConfigHome() const -> Path;
-    auto GetInstallPrefix() const -> Path;
 
     friend auto operator<<(std::ostream& os, DDSEnvironment env) -> std::ostream&;
   private:
