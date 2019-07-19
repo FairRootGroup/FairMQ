@@ -16,12 +16,12 @@ set(target SDK)
 set(SDK_PUBLIC_HEADER_FILES
   ../SDK.h
   DDSEnvironment.h
-  ${CMAKE_CURRENT_BINARY_DIR}/DDSInfo.h
   DDSSession.h
   Topology.h
 )
 
 set(SDK_PRIVATE_HEADER_FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/DDSInfo.h
 )
 
 set(SDK_SOURCE_FILES
@@ -91,3 +91,7 @@ foreach(HEADER IN LISTS SDK_PUBLIC_HEADER_FILES)
     DESTINATION ${_destination}
   )
 endforeach()
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/DDSInfo.h
+  DESTINATION ${PROJECT_INSTALL_INCDIR}/sdk
+)
