@@ -21,9 +21,10 @@ namespace
 
 using namespace std;
 
-void RunPushPullWithMsgResize(const string& transport, const string& address)
+void RunPushPullWithMsgResize(const string& transport, const string& _address)
 {
     size_t session{fair::mq::tools::UuidHash()};
+    std::string address(fair::mq::tools::ToString(_address, "_", transport));
 
     fair::mq::ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
