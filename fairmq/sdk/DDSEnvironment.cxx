@@ -8,73 +8,119 @@
 
 #include "DDSEnvironment.h"
 
-#include <DDS/Tools.h>
-#include <cstdlib>
 #include <fairmq/Tools.h>
+#include <fairmq/sdk/DDSInfo.h>
+
+#include <fairlogger/Logger.h>
+
+#include <DDS/Tools.h>
+#include <DDS/dds_intercom.h>
+
+#include <cstdlib>
 #include <sstream>
-#include <stdlib.h>
 #include <utility>
 
 namespace fair {
 namespace mq {
 namespace sdk {
 
-// TODO https://github.com/FairRootGroup/DDS/issues/224
-auto LoadDDSEnv(const boost::filesystem::path& config_home)
-    -> void
-{
-    setenv("DDS_LOCATION", DDSInstallPrefix.c_str(), 1);
-    if (!config_home.empty()) {
-        setenv("HOME", config_home.c_str(), 1);
-    }
-    std::string path(std::getenv("PATH"));
-    path = DDSExecutableDir + std::string(":") + path;
-    setenv("PATH", path.c_str(), 1);
-
-#ifndef __APPLE__
-    std::string ldVar("LD_LIBRARY_PATH");
-    std::string ld(std::getenv(ldVar.c_str()));
-    ld = DDSLibraryDir + std::string(":") + ld;
-    setenv(ldVar.c_str(), ld.c_str(), 1);
-#endif
-
-    std::istringstream cmd;
-    cmd.str("DDS_CFG=`dds-user-defaults --ignore-default-sid -p`\n"
-            "if [ -z \"$DDS_CFG\" ]; then\n"
-            "  mkdir -p \"$HOME/.DDS\"\n"
-            "  dds-user-defaults --ignore-default-sid -d -c \"$HOME/.DDS/DDS.cfg\"\n"
-            "fi");
-    std::system(cmd.str().c_str());
-}
-
 struct DDSEnvironment::Impl
 {
-    explicit Impl(Path config_home)
-        : fCount()
-        , fConfigHome(std::move(config_home))
+    explicit Impl(Path configHome)
+        : fLocation(DDSInstallPrefix)
+        , fConfigHome(std::move(configHome))
     {
-        LoadDDSEnv(fConfigHome);
-        if (fConfigHome.empty()) {
-            fConfigHome = std::getenv("HOME");
+        SetupLocation();
+        SetupDynamicLoader();
+        SetupPath();
+        SetupConfigHome();
+    }
+
+    auto SetupLocation() -> void
+    {
+        std::string location(GetEnv("DDS_LOCATION"));
+        if (location != DDSInstallPrefix) {
+            if (location.empty()) {
+                setenv("DDS_LOCATION", DDSInstallPrefix.c_str(), 1);
+            } else {
+                LOG(debug) << "$DDS_LOCATION appears to point to a different installation than this"
+                           << "program was linked against. Things might still work out, so not"
+                           << "touching it.";
+                fLocation = location;
+            }
         }
+    }
+
+    auto SetupConfigHome() -> void
+    {
+        if (fConfigHome.empty()) {
+            fConfigHome = GetEnv("HOME");
+        } else {
+            setenv("HOME", fConfigHome.c_str(), 1);
+        }
+
+        std::istringstream cmd;
+        cmd.str("DDS_CFG=`dds-user-defaults --ignore-default-sid -p`\n"
+                "if [ -z \"$DDS_CFG\" ]; then\n"
+                "  mkdir -p \"$HOME/.DDS\"\n"
+                "  dds-user-defaults --ignore-default-sid -d -c \"$HOME/.DDS/DDS.cfg\"\n"
+                "fi");
+        std::system(cmd.str().c_str());
+    }
+
+    auto SetupPath() -> void
+    {
+        std::string path(GetEnv("PATH"));
+        Path ddsExecDir = (fLocation == DDSInstallPrefix) ? DDSExecutableDir : fLocation / Path("bin");
+        path = ddsExecDir.string() + std::string(":") + path;
+        setenv("PATH", path.c_str(), 1);
+    }
+
+    auto SetupDynamicLoader() -> void
+    {
+#ifdef __APPLE__
+        std::string ldVar("DYLD_LIBRARY_PATH");
+#else
+        std::string ldVar("LD_LIBRARY_PATH");
+#endif
+        std::string ld(GetEnv(ldVar));
+        Path ddsLibDir = (fLocation == DDSInstallPrefix) ? DDSLibraryDir : fLocation / Path("lib");
+        ld = ddsLibDir.string() + std::string(":") + ld;
+        setenv(ldVar.c_str(), ld.c_str(), 1);
+    }
+
+    auto GetEnv(const std::string& key) -> std::string
+    {
+        auto value = std::getenv(key.c_str());
+        if (value) {
+            return {value};
+        }
+        return {};
     }
 
     struct Tag {};
     friend auto operator<<(std::ostream& os, Tag) -> std::ostream& { return os << "DDSEnvironment"; }
     tools::InstanceLimiter<Tag, 1> fCount;
 
+    Path fLocation;
     Path fConfigHome;
 };
 
-DDSEnvironment::DDSEnvironment(Path config_home)
-    : fImpl(std::make_shared<Impl>(std::move(config_home)))
+DDSEnvironment::DDSEnvironment()
+    : DDSEnvironment(Path())
 {}
+
+DDSEnvironment::DDSEnvironment(Path configHome)
+    : fImpl(std::make_shared<Impl>(std::move(configHome)))
+{}
+
+auto DDSEnvironment::GetLocation() const -> Path { return fImpl->fLocation; }
 
 auto DDSEnvironment::GetConfigHome() const -> Path { return fImpl->fConfigHome; }
 
 auto operator<<(std::ostream& os, DDSEnvironment env) -> std::ostream&
 {
-    return os << "$DDS_LOCATION: " << DDSInstallPrefix << ", "
+    return os << "$DDS_LOCATION: " << env.GetLocation() << ", "
               << "$DDS_CONFIG_HOME: " << env.GetConfigHome() / DDSEnvironment::Path(".DDS");
 }
 

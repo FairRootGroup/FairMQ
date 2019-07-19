@@ -17,6 +17,7 @@ set(SDK_PUBLIC_HEADER_FILES
   ../SDK.h
   DDSEnvironment.h
   DDSSession.h
+  DDSTopology.h
   Topology.h
 )
 
@@ -27,6 +28,7 @@ set(SDK_PRIVATE_HEADER_FILES
 set(SDK_SOURCE_FILES
   DDSEnvironment.cxx
   DDSSession.cxx
+  DDSTopology.cxx
   Topology.cxx
 )
 

@@ -413,6 +413,7 @@ if(BUILD_FAIRMQ)
   target_link_libraries(fairmq-splitter FairMQ)
 
   add_executable(fairmq-shmmonitor shmem/Monitor.cxx shmem/Monitor.h shmem/runMonitor.cxx)
+  target_compile_definitions(fairmq-shmmonitor PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
   target_link_libraries(fairmq-shmmonitor PUBLIC
     Threads::Threads
     $<$<PLATFORM_ID:Linux>:rt>

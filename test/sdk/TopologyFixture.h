@@ -13,12 +13,10 @@
 #include <fairmq/SDK.h>
 #include <fairmq/Tools.h>
 
-#include <DDS/Topology.h>
 #include <chrono>
 #include <cstdlib>
 #include <fairlogger/Logger.h>
 #include <gtest/gtest.h>
-#include <stdlib.h>
 #include <thread>
 
 namespace fair {
@@ -45,14 +43,14 @@ struct LoggerConfig
 struct TopologyFixture : ::testing::Test
 {
     TopologyFixture()
-        : mLoggerConfig()
-        , mDDSTopologyFile(std::string(SDK_TESTSUITE_SOURCE_DIR) + "/test_topo.xml")
+        : mDDSTopoFile(tools::ToString(SDK_TESTSUITE_SOURCE_DIR, "/test_topo.xml"))
         , mDDSEnv(CMAKE_CURRENT_BINARY_DIR)
         , mDDSSession(mDDSEnv)
-        , mDDSTopology(mDDSTopologyFile)
-    {}
-    //
-//
+        , mDDSTopo(mDDSTopoFile, mDDSEnv)
+    {
+        mDDSSession.StopOnDestruction();
+    }
+
     // auto ActivateDDSTopology(const std::string& topology_file) -> void {
         // LOG(debug) << "ActivateDDSTopology(\"" << topology_file << "\")";
     // }
@@ -60,20 +58,22 @@ struct TopologyFixture : ::testing::Test
     auto SetUp() -> void override {
         LOG(info) << mDDSEnv;
         LOG(info) << mDDSSession;
+        mDDSSession.RequestCommanderInfo();
         mDDSSession.SubmitAgents(2);
+        mDDSSession.RequestCommanderInfo();
         std::this_thread::sleep_for(std::chrono::seconds(1)); // TODO implement WaitForIdleAgents
-        mDDSSession.ActivateTopology(mDDSTopologyFile);
+        mDDSSession.ActivateTopology(mDDSTopoFile);
+        mDDSSession.RequestCommanderInfo();
     }
 
     auto TearDown() -> void override {
-        mDDSSession.Stop();
     }
 
     LoggerConfig mLoggerConfig;
-    std::string mDDSTopologyFile;
+    std::string mDDSTopoFile;
     sdk::DDSEnvironment mDDSEnv;
     sdk::DDSSession mDDSSession;
-    dds::topology_api::CTopology mDDSTopology;
+    sdk::DDSTopology mDDSTopo;
 };
 
 } /* namespace test */
