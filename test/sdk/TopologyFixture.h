@@ -10,7 +10,7 @@
 #define FAIR_MQ_TEST_TOPOLOGYFIXTURE
 
 #include "TestEnvironment.h"
-#include <fairmq/sdk/DDSSession.h>
+#include <fairmq/SDK.h>
 #include <fairmq/Tools.h>
 
 #include <DDS/Topology.h>
