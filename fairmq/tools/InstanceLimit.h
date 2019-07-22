@@ -19,6 +19,10 @@ template<typename Tag, int Max>
 struct InstanceLimiter
 {
     InstanceLimiter() { Increment(); }
+    explicit InstanceLimiter(const InstanceLimiter&) = delete;
+    explicit InstanceLimiter(InstanceLimiter&&) = delete;
+    InstanceLimiter& operator=(const InstanceLimiter&) = delete;
+    InstanceLimiter& operator=(InstanceLimiter&&) = delete;
     ~InstanceLimiter() { Decrement(); }
     auto GetCount() -> int { return fCount; }
 

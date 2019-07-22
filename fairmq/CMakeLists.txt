@@ -66,6 +66,8 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
   target_link_libraries(${target}
     PRIVATE
     FairLogger::FairLogger
+    PUBLIC
+    Boost::boost
   )
   set_target_properties(${target} PROPERTIES
     VERSION ${PROJECT_GIT_VERSION}

@@ -48,7 +48,9 @@ public:
    *             to 0 set the rate to 1 GHz (which is impossible to achieve, even with a
    *             loop that only calls RateLimiter::maybe_sleep).
    */
-  RateLimiter(float rate) : tw_req(std::chrono::seconds(1)), start_time(clock::now())
+  explicit RateLimiter(float rate)
+      : tw_req(std::chrono::seconds(1))
+      , start_time(clock::now())
   {
     if (rate <= 0) {
       tw_req = std::chrono::nanoseconds(1);

@@ -53,8 +53,8 @@ enum class Transition : int
     ErrorFound
 };
 
-std::string GetStateName(const State);
-std::string GetTransitionName(const Transition);
+std::string GetStateName(State);
+std::string GetTransitionName(Transition);
 State GetState(const std::string& state);
 Transition GetTransition(const std::string& transition);
 

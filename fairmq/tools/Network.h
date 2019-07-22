@@ -19,7 +19,7 @@ namespace asio
 {
 
 class io_context;
-typedef class io_context io_service;
+using io_service = class io_context;
 
 } // namespace asio
 } // namespace boost
