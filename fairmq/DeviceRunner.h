@@ -51,7 +51,7 @@ namespace mq {
 class DeviceRunner
 {
   public:
-    DeviceRunner(int argc, char* const argv[], bool printLogo = true);
+    DeviceRunner(int argc, char*const* argv, bool printLogo = true);
 
     auto Run() -> int;
     auto RunWithExceptionHandlers() -> int;

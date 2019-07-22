@@ -15,7 +15,7 @@
 using namespace std;
 using namespace fair::mq;
 
-DeviceRunner::DeviceRunner(int argc, char* const argv[], bool printLogo)
+DeviceRunner::DeviceRunner(int argc, char*const* argv, bool printLogo)
     : fRawCmdLineArgs(tools::ToStrVector(argc, argv, false))
     , fConfig()
     , fDevice(nullptr)
