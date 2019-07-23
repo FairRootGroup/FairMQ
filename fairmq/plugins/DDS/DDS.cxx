@@ -36,6 +36,7 @@ DDS::DDS(const string& name, const Plugin::Version version, const string& mainta
     , fService()
     , fDDSCustomCmd(fService)
     , fDDSKeyValue(fService)
+    , fDDSTaskId(dds::env_prop<dds::task_id>())
     , fBindingChans()
     , fConnectingChans()
     , fStopMutex()
@@ -68,8 +69,12 @@ auto DDS::HandleControl() -> void
         LOG(debug) << "$DDS_TASK_NAME: " << getenv("DDS_TASK_NAME");
         LOG(debug) << "$DDS_TASK_INDEX: " << getenv("DDS_TASK_INDEX");
         LOG(debug) << "$DDS_COLLECTION_INDEX: " << getenv("DDS_COLLECTION_INDEX");
+        LOG(debug) << "$DDS_TASK_ID: " << getenv("DDS_TASK_ID");
+        LOG(debug) << "$DDS_LOCATION: " << getenv("DDS_LOCATION");
         string dds_session_id(getenv("DDS_SESSION_ID"));
         LOG(debug) << "$DDS_SESSION_ID: " << dds_session_id;
+
+        LOG(info) << "DDS Task Id (from API): " << fDDSTaskId;
 
         // subscribe for state changes from DDS (subscriptions start firing after fService.start() is called)
         SubscribeForCustomCommands();
@@ -95,7 +100,7 @@ auto DDS::HandleControl() -> void
                 fCurrentState = newState;
                 for (auto subscriberId : fStateChangeSubscribers) {
                     LOG(debug) << "Publishing state-change: " << fLastState << "->" << newState << " to " << subscriberId;
-                    fDDSCustomCmd.send("state-change: " + id + "," + ToStr(fLastState) + "->" + ToStr(newState), to_string(subscriberId));
+                    fDDSCustomCmd.send("state-change: " + id + "," + ToString(fDDSTaskId) + "," + ToStr(fLastState) + "->" + ToStr(newState), to_string(subscriberId));
                 }
             }
         });
@@ -309,7 +314,7 @@ auto DDS::SubscribeForCustomCommands() -> void
     string id = GetProperty<string>("id");
 
     fDDSCustomCmd.subscribe([id, this](const string& cmd, const string& cond, uint64_t senderId) {
-        LOG(info) << "Received command: " << cmd;
+        LOG(info) << "Received command: '" << cmd << "' from " << senderId;
 
         if (cmd == "check-state") {
             fDDSCustomCmd.send(id + ": " + ToStr(GetCurrentDeviceState()), to_string(senderId));
@@ -366,7 +371,8 @@ auto DDS::SubscribeForCustomCommands() -> void
             {
                 lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                 LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState << " to " << senderId;
-                fDDSCustomCmd.send("state-change: " + id + "," + ToStr(fLastState) + "->" + ToStr(fCurrentState), to_string(senderId));
+                // fDDSCustomCmd.send("state-change: " + id + "," + ToStr(fLastState) + "->" + ToStr(fCurrentState), to_string(senderId));
+                fDDSCustomCmd.send("state-change: " + id + "," + ToString(fDDSTaskId) + "," + ToStr(fLastState) + "->" + ToStr(fCurrentState), to_string(senderId));
             }
         } else if (cmd == "unsubscribe-from-state-changes") {
             {
