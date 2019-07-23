@@ -26,6 +26,7 @@
 namespace fair {
 namespace mq {
 
+// TODO make this a struct with a readable string error msg
 enum class AsyncOpResult {
     Ok,
     Timeout,
@@ -70,7 +71,7 @@ class Topology
     /// @brief Initiate state transition on all FairMQ devices in this topology
     /// @param t FairMQ device state machine transition
     /// @param cb Completion callback
-    auto ChangeState(TopologyTransition t, ChangeStateCallback cb, const std::chrono::milliseconds& timeout = std::chrono::milliseconds(0)) -> void;
+    auto ChangeState(TopologyTransition t, ChangeStateCallback cb, std::chrono::milliseconds timeout = std::chrono::milliseconds(0)) -> void;
 
     static const std::unordered_map<DeviceTransition, DeviceState, tools::HashEnum<DeviceTransition>> fkExpectedState;
 
