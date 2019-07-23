@@ -68,7 +68,7 @@ Topology::Topology(DDSTopology topo, DDSSession session)
         LOG(info) << "fair::mq::Topology Adding device " << d;
         fTopologyState.emplace(d, DeviceStatus{ false, DeviceState::Ok });
     }
-    fDDSSession.SubscribeToCommands([this](const std::string& msg, const std::string& condition, uint64_t senderId) {
+    fDDSSession.SubscribeToCommands([this](const std::string& msg, const std::string& /* condition */, uint64_t senderId) {
         LOG(debug) << "Received from " << senderId << ": " << msg;
         std::vector<std::string> parts;
         boost::algorithm::split(parts, msg, boost::algorithm::is_any_of(":,"));
@@ -97,22 +97,21 @@ Topology::Topology(DDSTopology topo, DDSSession session)
     fExecutionThread = std::thread(&Topology::WaitForState, this);
 }
 
-auto Topology::ChangeState(fair::mq::Transition transition, ChangeStateCallback cb, const std::chrono::milliseconds& timeout) -> void
+auto Topology::ChangeState(fair::mq::Transition transition, ChangeStateCallback cb, std::chrono::milliseconds timeout) -> void
 {
     {
         std::lock_guard<std::mutex> guard(fMtx);
         if (fStateChangeOngoing) {
             LOG(error) << "State change already in progress, concurrent requested not yet supported";
-            return;
+            return; // TODO call the callback with error msg
         }
         LOG(info) << "Initiating ChangeState with " << transition << " to " << fkExpectedState.at(transition);
         fStateChangeOngoing = true;
         fChangeStateCallback = cb;
         fStateChangeTimeout = timeout;
+        fTargetState = fkExpectedState.at(transition);
 
         fDDSSession.SendCommand(GetTransitionName(transition));
-
-        fTargetState = fkExpectedState.at(transition);
     }
     fExecutionCV.notify_one();
 }
@@ -121,33 +120,39 @@ void Topology::WaitForState()
 {
     while (!fShutdown) {
         if (fStateChangeOngoing) {
-            auto condition = [&] {
-                LOG(info) << "checking condition";
-                LOG(info) << "fShutdown: " << fShutdown;
-                LOG(info) << "condition: " << std::all_of(fTopologyState.cbegin(), fTopologyState.cend(), [&](TopologyState::value_type i) { return i.second.state == fTargetState; });
-                return fShutdown || std::all_of(fTopologyState.cbegin(), fTopologyState.cend(), [&](TopologyState::value_type i) {
-                    return i.second.state == fTargetState;
-                });
-            };
+            try {
+                auto condition = [&] {
+                    // LOG(info) << "checking condition";
+                    // LOG(info) << "fShutdown: " << fShutdown;
+                    // LOG(info) << "condition: " << std::all_of(fTopologyState.cbegin(), fTopologyState.cend(), [&](TopologyState::value_type i) { return i.second.state == fTargetState; });
+                    return fShutdown || std::all_of(fTopologyState.cbegin(), fTopologyState.cend(), [&](TopologyState::value_type i) {
+                        return i.second.state == fTargetState;
+                    });
+                };
 
-            std::unique_lock<std::mutex> lock(fMtx);
+                std::unique_lock<std::mutex> lock(fMtx);
 
-            // TODO Fix the timeout version
-            if (fStateChangeTimeout > std::chrono::milliseconds(0)) {
-                LOG(debug) << "initiating wait with timeout";
-                if (!fCV.wait_for(lock, fStateChangeTimeout, condition)) {
-                    LOG(debug) << "timeout";
-                    fStateChangeOngoing = false;
+                // TODO Fix the timeout version
+                if (fStateChangeTimeout > std::chrono::milliseconds(0)) {
+                    LOG(debug) << "initiating wait with timeout";
+                    if (!fCV.wait_for(lock, fStateChangeTimeout, condition)) {
+                        LOG(debug) << "timeout";
+                        fStateChangeOngoing = false;
+                        break;
+                    }
+                } else {
+                    LOG(debug) << "initiating wait without timeout";
+                    fCV.wait(lock, condition);
+                }
+
+                fStateChangeOngoing = false;
+                if (fShutdown) {
+                    // TODO call the callback here with Aborted result
                     break;
                 }
-            } else {
-                LOG(debug) << "initiating wait without timeout";
-                fCV.wait(lock, condition);
-            }
-
-            fStateChangeOngoing = false;
-            if (fShutdown) {
-                break;
+            } catch(std::exception& e) {
+                LOG(error) << "Error while processing state request: " << e.what();
+                fChangeStateCallback(ChangeStateResult{AsyncOpResult::Error, fTopologyState});
             }
 
             fChangeStateCallback(ChangeStateResult{AsyncOpResult::Ok, fTopologyState});
