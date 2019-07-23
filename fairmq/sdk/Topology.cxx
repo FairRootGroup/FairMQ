@@ -182,6 +182,7 @@ void Topology::AddNewStateEntry(uint64_t senderId, const std::string& state)
 
 Topology::~Topology()
 {
+    fDDSSession.UnsubscribeFromCommands();
     {
         std::lock_guard<std::mutex> guard(fMtx);
         fShutdown = true;

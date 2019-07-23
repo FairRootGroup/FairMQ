@@ -234,6 +234,11 @@ void DDSSession::SubscribeToCommands(std::function<void(const std::string& msg, 
     // });
 }
 
+void DDSSession::UnsubscribeFromCommands()
+{
+    fImpl->fDDSCustomCmd.unsubscribe();
+}
+
 void DDSSession::SendCommand(const std::string& cmd) { fImpl->fDDSCustomCmd.send(cmd, ""); }
 
 auto operator<<(std::ostream& os, const DDSSession& session) -> std::ostream&

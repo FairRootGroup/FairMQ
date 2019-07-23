@@ -71,6 +71,7 @@ class DDSSession
 
     void StartDDSService();
     void SubscribeToCommands(std::function<void(const std::string& msg, const std::string& condition, uint64_t senderId)>);
+    void UnsubscribeFromCommands();
     void SendCommand(const std::string&);
 
     friend auto operator<<(std::ostream& os, const DDSSession& session) -> std::ostream&;
