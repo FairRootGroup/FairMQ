@@ -75,7 +75,7 @@ std::vector<uint64_t> DDSTopology::GetDeviceList()
     });
 
     for (auto& it = taskIt.first; it != taskIt.second; ++it) {
-        LOG(debug) << "Found task " << it->first << " : " << it->second.m_task->getPath();
+        LOG(debug) << "Found task " << it->first << " : " << "Path: " << it->second.m_task->getPath() << "Name: " << it->second.m_task->getName();
         taskIDs.push_back(it->first);
     }
 

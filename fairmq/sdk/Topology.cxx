@@ -69,12 +69,18 @@ Topology::Topology(DDSTopology topo, DDSSession session)
         fTopologyState.emplace(d, DeviceStatus{ false, DeviceState::Ok });
     }
     fDDSSession.SubscribeToCommands([this](const std::string& msg, const std::string& condition, uint64_t senderId) {
-        LOG(info) << "Received from " << senderId << ": " << msg;
+        LOG(debug) << "Received from " << senderId << ": " << msg;
         std::vector<std::string> parts;
         boost::algorithm::split(parts, msg, boost::algorithm::is_any_of(":,"));
+
+        for (unsigned int i = 0; i < parts.size(); ++i) {
+            boost::trim(parts.at(i));
+            LOG(info) << "parts[" << i << "]: " << parts.at(i);
+        }
+
         if (parts[0] == "state-change") {
-            boost::trim(parts[2]);
-            AddNewStateEntry(senderId, parts[2]);
+            boost::trim(parts[3]);
+            AddNewStateEntry(std::stoull(parts[2]), parts[3]);
         } else if (parts[0] == "state-changes-subscription") {
             if (parts[2] != "OK") {
                 LOG(error) << "state-changes-subscription failed with return code: " << parts[2];
@@ -99,6 +105,7 @@ auto Topology::ChangeState(fair::mq::Transition transition, ChangeStateCallback 
             LOG(error) << "State change already in progress, concurrent requested not yet supported";
             return;
         }
+        LOG(info) << "Initiating ChangeState with " << transition << " to " << fkExpectedState.at(transition);
         fStateChangeOngoing = true;
         fChangeStateCallback = cb;
         fStateChangeTimeout = timeout;
@@ -114,43 +121,61 @@ void Topology::WaitForState()
 {
     while (!fShutdown) {
         if (fStateChangeOngoing) {
-            auto condition = [&] { return fShutdown || std::all_of(fTopologyState.cbegin(),
-                                                                   fTopologyState.cend(),
-                                                                   [&](TopologyState::value_type i) {
-                                                                       return i.second.state == fTargetState;
-                                                                   });
+            auto condition = [&] {
+                LOG(info) << "checking condition";
+                LOG(info) << "fShutdown: " << fShutdown;
+                LOG(info) << "condition: " << std::all_of(fTopologyState.cbegin(), fTopologyState.cend(), [&](TopologyState::value_type i) { return i.second.state == fTargetState; });
+                return fShutdown || std::all_of(fTopologyState.cbegin(), fTopologyState.cend(), [&](TopologyState::value_type i) {
+                    return i.second.state == fTargetState;
+                });
             };
 
             std::unique_lock<std::mutex> lock(fMtx);
 
+            // TODO Fix the timeout version
             if (fStateChangeTimeout > std::chrono::milliseconds(0)) {
+                LOG(debug) << "initiating wait with timeout";
                 if (!fCV.wait_for(lock, fStateChangeTimeout, condition)) {
                     LOG(debug) << "timeout";
-                    // TODO: catch this from another thread...
-                    throw std::runtime_error("timeout");
+                    fStateChangeOngoing = false;
+                    break;
                 }
             } else {
+                LOG(debug) << "initiating wait without timeout";
                 fCV.wait(lock, condition);
             }
 
+            fStateChangeOngoing = false;
             if (fShutdown) {
                 break;
             }
 
-            fStateChangeOngoing = false;
             fChangeStateCallback(ChangeStateResult{AsyncOpResult::Ok, fTopologyState});
         } else {
             std::unique_lock<std::mutex> lock(fExecutionMtx);
             fExecutionCV.wait(lock);
         }
     }
+    LOG(debug) << "WaitForState shutting down";
 };
 
 void Topology::AddNewStateEntry(uint64_t senderId, const std::string& state)
 {
+    std::size_t pos = state.find("->");
+    std::string endState = state.substr(pos + 2);
+    LOG(info) << "Adding new state entry: " << senderId << ", " << state << ", end state: " << endState;
     {
-        std::unique_lock<std::mutex> lock(fMtx);
-        fTopologyState[senderId] = DeviceStatus{ true, fair::mq::GetState(state) };
+        try {
+            std::unique_lock<std::mutex> lock(fMtx);
+            fTopologyState[senderId] = DeviceStatus{ true, fair::mq::GetState(endState) };
+        } catch(const std::exception& e) {
+            LOG(error) << "Exception in AddNewStateEntry: " << e.what();
+        }
+
+        LOG(info) << "fTopologyState after update: ";
+        for (auto& e : fTopologyState) {
+            LOG(info) << e.first << ": " << e.second.state;
+        }
     }
     fCV.notify_one();
 }

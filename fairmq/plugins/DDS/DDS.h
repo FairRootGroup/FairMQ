@@ -14,6 +14,7 @@
 #include <fairmq/StateQueue.h>
 
 #include <DDS/dds_intercom.h>
+#include <DDS/dds_env_prop.h>
 
 #include <condition_variable>
 #include <mutex>
@@ -79,6 +80,7 @@ class DDS : public Plugin
     dds::intercom_api::CIntercomService fService;
     dds::intercom_api::CCustomCmd fDDSCustomCmd;
     dds::intercom_api::CKeyValue fDDSKeyValue;
+    uint64_t fDDSTaskId;
 
     std::unordered_map<std::string, std::vector<std::string>> fBindingChans;
     std::unordered_map<std::string, DDSConfig> fConnectingChans;
