@@ -46,8 +46,6 @@ bool Sampler::ConditionalRun()
         return false;
     }
 
-    this_thread::sleep_for(chrono::seconds(5));
-
     if (fIterations > 0) {
         ++fCounter;
         if (fCounter >= fIterations) {

@@ -227,7 +227,11 @@ void DDSSession::StartDDSService() { fImpl->fDDSService.start(fImpl->fId); }
 
 void DDSSession::SubscribeToCommands(std::function<void(const std::string& msg, const std::string& condition, uint64_t senderId)> cb)
 {
+    fImpl->fSession.unsubscribe(); // TODO REMOVE THIS HACK!!!!
     fImpl->fDDSCustomCmd.subscribe(cb);
+    fImpl->fDDSCustomCmd.subscribeOnReply([](const std::string& reply) {
+        LOG(debug) << reply;
+    });
 }
 
 void DDSSession::SendCommand(const std::string& cmd) { fImpl->fDDSCustomCmd.send(cmd, ""); }

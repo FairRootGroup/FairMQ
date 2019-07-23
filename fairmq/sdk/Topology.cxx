@@ -65,6 +65,7 @@ Topology::Topology(DDSTopology topo, DDSSession session)
 
     std::vector<uint64_t> deviceList = fDDSTopo.GetDeviceList();
     for (const auto& d : deviceList) {
+        LOG(info) << "fair::mq::Topology Adding device " << d;
         fTopologyState.emplace(d, DeviceStatus{ false, DeviceState::Ok });
     }
     fDDSSession.SubscribeToCommands([this](const std::string& msg, const std::string& condition, uint64_t senderId) {

@@ -18,21 +18,21 @@ using Topology = fair::mq::test::TopologyFixture;
 
 TEST_F(Topology, Construction)
 {
-  fair::mq::sdk::Topology topo(mDDSTopo, mDDSSession);
+    fair::mq::sdk::Topology topo(mDDSTopo, mDDSSession);
 }
 
 TEST_F(Topology, ChangeState)
 {
-  using fair::mq::sdk::Topology;
-  using fair::mq::sdk::TopologyTransition;
+    using fair::mq::sdk::Topology;
+    using fair::mq::sdk::TopologyTransition;
 
-  Topology topo(mDDSTopo, mDDSSession);
-  fair::mq::tools::Semaphore blocker;
-  topo.ChangeState(TopologyTransition::Stop, [&](Topology::ChangeStateResult result) {
-      LOG(info) << result;
-      blocker.Signal();
-  });
-  blocker.Wait();
+    Topology topo(mDDSTopo, mDDSSession);
+    fair::mq::tools::Semaphore blocker;
+    topo.ChangeState(TopologyTransition::Stop, [&](Topology::ChangeStateResult result) {
+        LOG(info) << result;
+        blocker.Signal();
+    });
+    blocker.Wait();
 }
 
 }   // namespace

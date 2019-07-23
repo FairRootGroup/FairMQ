@@ -141,7 +141,7 @@ struct Machine_ : public state_machine_def<Machine_>
         Row<RESETTING_TASK_S,      AUTO_E,          DEVICE_READY_S,        DefaultFct, none>,
         Row<RESETTING_DEVICE_S,    AUTO_E,          IDLE_S,                DefaultFct, none>,
 
-        Row<OK_S,                  ERROR_FOUND_E,   ERROR_S,               DefaultFct,   none>> {};
+        Row<OK_S,                  ERROR_FOUND_E,   ERROR_S,               DefaultFct, none>> {};
 
     void CallStateChangeCallbacks(const State state) const
     {
