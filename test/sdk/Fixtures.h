@@ -57,7 +57,7 @@ struct TopologyFixture : ::testing::Test
         LOG(info) << mDDSTopo;
         auto n(mDDSTopo.GetNumRequiredAgents());
         mDDSSession.SubmitAgents(n);
-        mDDSSession.ActivateTopology(mDDSTopoFile);
+        mDDSSession.ActivateTopology(mDDSTopo);
     }
 
     auto TearDown() -> void override {

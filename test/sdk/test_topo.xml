@@ -27,7 +27,7 @@
 
     <main name="main">
         <task>Sampler</task>
-        <group name="SinkGroup" n="50">
+        <group name="SinkGroup" n="5">
             <task>Sink</task>
         </group>
     </main>
