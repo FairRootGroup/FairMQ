@@ -39,26 +39,28 @@ auto operator<<(std::ostream& os, AsyncOpResultCode v) -> std::ostream&
 
 auto operator<<(std::ostream& os, AsyncOpResult v) -> std::ostream&
 {
-    (void)(os << "[" << v.code << "]");
-    if (v.msg.empty()) {
-        (void)(os << " " << v.msg);
+    os << "[" << v.code << "]";
+    if (!v.msg.empty()) {
+        os << " " << v.msg;
     }
     return os;
 }
 
 namespace sdk {
 
-const std::unordered_map<DeviceTransition, DeviceState, tools::HashEnum<DeviceTransition>>
-    expectedState = {{Transition::InitDevice,   DeviceState::InitializingDevice},
-                     {Transition::CompleteInit, DeviceState::Initialized},
-                     {Transition::Bind,         DeviceState::Bound},
-                     {Transition::Connect,      DeviceState::DeviceReady},
-                     {Transition::InitTask,     DeviceState::InitializingTask},
-                     {Transition::Run,          DeviceState::Running},
-                     {Transition::Stop,         DeviceState::Ready},
-                     {Transition::ResetTask,    DeviceState::DeviceReady},
-                     {Transition::ResetDevice,  DeviceState::Idle},
-                     {Transition::End,          DeviceState::Exiting}};
+const std::unordered_map<DeviceTransition, DeviceState, tools::HashEnum<DeviceTransition>> expectedState =
+{
+    { Transition::InitDevice,   DeviceState::InitializingDevice },
+    { Transition::CompleteInit, DeviceState::Initialized },
+    { Transition::Bind,         DeviceState::Bound },
+    { Transition::Connect,      DeviceState::DeviceReady },
+    { Transition::InitTask,     DeviceState::InitializingTask },
+    { Transition::Run,          DeviceState::Running },
+    { Transition::Stop,         DeviceState::Ready },
+    { Transition::ResetTask,    DeviceState::DeviceReady },
+    { Transition::ResetDevice,  DeviceState::Idle },
+    { Transition::End,          DeviceState::Exiting }
+};
 
 Topology::Topology(DDSTopology topo, DDSSession session)
     : fDDSSession(std::move(session))
@@ -70,8 +72,8 @@ Topology::Topology(DDSTopology topo, DDSSession session)
 {
     std::vector<uint64_t> deviceList = fDDSTopo.GetDeviceList();
     for (const auto& d : deviceList) {
-        LOG(info) << "fair::mq::Topology Adding device " << d;
-        fTopologyState.emplace(d, DeviceStatus{ false, DeviceState::Ok });
+        LOG(info) << "Adding device " << d;
+        fState.emplace(d, DeviceStatus{ false, DeviceState::Ok });
     }
     fDDSSession.SubscribeToCommands([this](const std::string& msg, const std::string& /* condition */, uint64_t senderId) {
         LOG(debug) << "Received from " << senderId << ": " << msg;
@@ -83,7 +85,6 @@ Topology::Topology(DDSTopology topo, DDSSession session)
         }
 
         if (parts[0] == "state-change") {
-            boost::trim(parts[3]);
             AddNewStateEntry(std::stoull(parts[2]), parts[3]);
         } else if (parts[0] == "state-changes-subscription") {
             if (parts[2] != "OK") {
@@ -104,10 +105,12 @@ Topology::Topology(DDSTopology topo, DDSSession session)
 auto Topology::ChangeState(TopologyTransition transition, ChangeStateCallback cb, Duration timeout) -> void
 {
     {
-        std::lock_guard<std::mutex> guard(fMtx);
+        std::unique_lock<std::mutex> lock(fMtx);
         if (fStateChangeOngoing) {
-            LOG(error) << "State change already in progress, concurrent requested not yet supported";
-            return; // TODO call the callback with error msg
+            LOG(error) << "A state change request is already in progress, concurrent requests are currently not supported";
+            lock.unlock();
+            cb({{AsyncOpResultCode::Error, "A state change request is already in progress, concurrent requests are currently not supported"}, fState});
+            return;
         }
         LOG(info) << "Initiating ChangeState with " << transition << " to " << expectedState.at(transition);
         fStateChangeOngoing = true;
@@ -143,38 +146,42 @@ void Topology::WaitForState()
                 auto condition = [&] {
                     // LOG(info) << "checking condition";
                     // LOG(info) << "fShutdown: " << fShutdown;
-                    // LOG(info) << "condition: " << std::all_of(fTopologyState.cbegin(), fTopologyState.cend(), [&](TopologyState::value_type i) { return i.second.state == fTargetState; });
-                    return fShutdown || std::all_of(fTopologyState.cbegin(), fTopologyState.cend(), [&](TopologyState::value_type i) {
+                    // LOG(info) << "condition: " << std::all_of(fState.cbegin(), fState.cend(), [&](TopologyState::value_type i) { return i.second.state == fTargetState; });
+                    return fShutdown || std::all_of(fState.cbegin(), fState.cend(), [&](TopologyState::value_type i) {
                         return i.second.state == fTargetState;
                     });
                 };
 
                 std::unique_lock<std::mutex> lock(fMtx);
 
-                // TODO Fix the timeout version
                 if (fStateChangeTimeout > std::chrono::milliseconds(0)) {
-                    LOG(debug) << "initiating wait with timeout";
                     if (!fCV.wait_for(lock, fStateChangeTimeout, condition)) {
-                        LOG(debug) << "timeout";
+                        // LOG(debug) << "timeout";
                         fStateChangeOngoing = false;
+                        TopologyState state = fState;
+                        lock.unlock();
+                        fChangeStateCallback({{AsyncOpResultCode::Timeout, "timeout"}, std::move(state)});
                         break;
                     }
                 } else {
-                    LOG(debug) << "initiating wait without timeout";
                     fCV.wait(lock, condition);
                 }
 
                 fStateChangeOngoing = false;
                 if (fShutdown) {
-                    // TODO call the callback here with Aborted result
+                    LOG(debug) << "Aborting because a shutdown was requested";
+                    TopologyState state = fState;
+                    lock.unlock();
+                    fChangeStateCallback({{AsyncOpResultCode::Aborted, "Aborted because a shutdown was requested"}, std::move(state)});
                     break;
                 }
-            } catch(std::exception& e) {
+            } catch (std::exception& e) {
+                fStateChangeOngoing = false;
                 LOG(error) << "Error while processing state request: " << e.what();
-                fChangeStateCallback({{AsyncOpResultCode::Error, ""}, fTopologyState});
+                fChangeStateCallback({{AsyncOpResultCode::Error, tools::ToString("Exception thrown: ", e.what())}, fState});
             }
 
-            fChangeStateCallback({{AsyncOpResultCode::Ok, ""}, fTopologyState});
+            fChangeStateCallback({{AsyncOpResultCode::Ok, "success"}, fState});
         } else {
             std::unique_lock<std::mutex> lock(fExecutionMtx);
             fExecutionCV.wait(lock);
@@ -191,14 +198,14 @@ void Topology::AddNewStateEntry(uint64_t senderId, const std::string& state)
     {
         try {
             std::unique_lock<std::mutex> lock(fMtx);
-            fTopologyState[senderId] = DeviceStatus{ true, fair::mq::GetState(endState) };
-        } catch(const std::exception& e) {
+            fState[senderId] = DeviceStatus{ true, fair::mq::GetState(endState) };
+        } catch (const std::exception& e) {
             LOG(error) << "Exception in AddNewStateEntry: " << e.what();
         }
 
-        // LOG(info) << "fTopologyState after update: ";
-        // for (auto& e : fTopologyState) {
-            // LOG(info) << e.first << ": " << e.second.state;
+        // LOG(info) << "fState after update: ";
+        // for (auto& e : fState) {
+        //     LOG(info) << e.first << ": " << e.second.state;
         // }
     }
     fCV.notify_one();
@@ -208,7 +215,7 @@ Topology::~Topology()
 {
     fDDSSession.UnsubscribeFromCommands();
     {
-        std::lock_guard<std::mutex> guard(fMtx);
+        std::lock_guard<std::mutex> guard(fExecutionMtx);
         fShutdown = true;
     }
     fExecutionCV.notify_one();

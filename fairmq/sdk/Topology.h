@@ -22,11 +22,13 @@
 #include <ostream>
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 namespace fair {
 namespace mq {
 
-enum class AsyncOpResultCode {
+enum class AsyncOpResultCode
+{
     Ok,
     Timeout,
     Error,
@@ -56,6 +58,26 @@ struct DeviceStatus
 
 using TopologyState = std::unordered_map<uint64_t, DeviceStatus>;
 using TopologyTransition = fair::mq::Transition;
+
+struct MixedState : std::runtime_error { using std::runtime_error::runtime_error; };
+
+DeviceState AggregateState(const TopologyState& topologyState)
+{
+    DeviceState first = topologyState.begin()->second.state;
+
+    if (std::all_of(topologyState.cbegin(), topologyState.cend(), [&](TopologyState::value_type i) {
+        return i.second.state == first;
+    })) {
+        return first;
+    } else {
+        throw MixedState("State is not uniform");
+    }
+}
+
+bool StateEqualsTo(const TopologyState& topologyState, DeviceState state)
+{
+    return AggregateState(topologyState) == state;
+}
 
 /**
  * @class Topology Topology.h <fairmq/sdk/Topology.h>
@@ -95,14 +117,22 @@ class Topology
     /// @return The result of the state transition
     auto ChangeState(TopologyTransition t, Duration timeout = std::chrono::milliseconds(0)) -> ChangeStateResult;
 
+    /// @brief Returns the current state of the topology
+    /// @return map of id : DeviceStatus (initialized, state)
+    TopologyState GetCurrentState() const { std::lock_guard<std::mutex> guard(fMtx); return fState; }
+
+    DeviceState AggregateState() { return sdk::AggregateState(fState); }
+
+    bool StateEqualsTo(DeviceState state) { return sdk::StateEqualsTo(fState, state); }
+
   private:
     DDSSession fDDSSession;
     DDSTopology fDDSTopo;
-    TopologyState fTopologyState;
+    TopologyState fState;
     bool fStateChangeOngoing;
     DeviceState fTargetState;
-    std::mutex fMtx;
-    std::mutex fExecutionMtx;
+    mutable std::mutex fMtx;
+    mutable std::mutex fExecutionMtx;
     std::condition_variable fCV;
     std::condition_variable fExecutionCV;
     std::thread fExecutionThread;
