@@ -33,20 +33,10 @@ namespace plugins
 
 DDS::DDS(const string& name, const Plugin::Version version, const string& maintainer, const string& homepage, PluginServices* pluginServices)
     : Plugin(name, version, maintainer, homepage, pluginServices)
-    , fService()
-    , fDDSCustomCmd(fService)
-    , fDDSKeyValue(fService)
-    , fDDSTaskId(dds::env_prop<dds::task_id>())
-    , fBindingChans()
-    , fConnectingChans()
-    , fStopMutex()
-    , fStopCondition()
     , fTransitions({ "BIND", "CONNECT", "INIT TASK", "RUN", "STOP", "RESET TASK", "RESET DEVICE" })
-    , fControllerThread()
     , fCurrentState(DeviceState::Idle)
     , fLastState(DeviceState::Idle)
     , fDeviceTerminationRequested(false)
-    , fServiceStarted(false)
     , fHeartbeatInterval(100)
 {
     try {
@@ -63,94 +53,68 @@ DDS::DDS(const string& name, const Plugin::Version version, const string& mainta
 auto DDS::HandleControl() -> void
 {
     try {
-        LOG(debug) << "$DDS_TASK_PATH: " << getenv("DDS_TASK_PATH");
-        LOG(debug) << "$DDS_GROUP_NAME: " << getenv("DDS_GROUP_NAME");
-        LOG(debug) << "$DDS_COLLECTION_NAME: " << getenv("DDS_COLLECTION_NAME");
-        LOG(debug) << "$DDS_TASK_NAME: " << getenv("DDS_TASK_NAME");
-        LOG(debug) << "$DDS_TASK_INDEX: " << getenv("DDS_TASK_INDEX");
-        LOG(debug) << "$DDS_COLLECTION_INDEX: " << getenv("DDS_COLLECTION_INDEX");
-        LOG(debug) << "$DDS_TASK_ID: " << getenv("DDS_TASK_ID");
-        LOG(debug) << "$DDS_LOCATION: " << getenv("DDS_LOCATION");
-        string dds_session_id(getenv("DDS_SESSION_ID"));
-        LOG(debug) << "$DDS_SESSION_ID: " << dds_session_id;
+        auto control = GetProperty<string>("control");
+        bool staticMode(false);
+        if (control == "static") {
+            LOG(debug) << "Running DDS controller: static";
+            staticMode = true;
+        } else if (control == "dynamic" || control == "external" || control == "interactive") {
+            LOG(debug) << "Running DDS controller: external";
+        } else {
+            LOG(error) << "Unrecognized control mode '" << control << "' requested. " << "Ignoring and falling back to static control mode.";
+            staticMode = true;
+        }
 
-        LOG(info) << "DDS Task Id (from API): " << fDDSTaskId;
-
-        // subscribe for state changes from DDS (subscriptions start firing after fService.start() is called)
         SubscribeForCustomCommands();
-
-        // subscribe for DDS service errors.
-        fService.subscribeOnError([](const dds::intercom_api::EErrorCode errorCode, const string& errorMsg) {
-            LOG(error) << "DDS Error received: error code: " << errorCode << ", error message: " << errorMsg << endl;
-        });
-
         SubscribeForConnectingChannels();
 
         // subscribe to device state changes, pushing new state changes into the event queue
         SubscribeToDeviceStateChange([&](DeviceState newState) {
             fStateQueue.Push(newState);
-            if (newState == DeviceState::Exiting) {
+            switch(newState) {
+              case DeviceState::Bound:
+                // Receive addresses of connecting channels from DDS
+                // and propagate addresses of bound channels to DDS.
+                FillChannelContainers();
+
+                // publish bound addresses via DDS at keys corresponding to the channel prefixes, e.g. 'data' in data[i]
+                PublishBoundChannels();
+                break;
+              case DeviceState::Exiting:
                 fDeviceTerminationRequested = true;
+                UnsubscribeFromDeviceStateChange();
+                ReleaseDeviceControl();
+                break;
+              default:
+                break;
             }
 
-            if (fServiceStarted) {
-                lock_guard<mutex> lock{fStateChangeSubscriberMutex};
-                string id = GetProperty<string>("id");
-                fLastState = fCurrentState;
-                fCurrentState = newState;
-                for (auto subscriberId : fStateChangeSubscribers) {
-                    LOG(debug) << "Publishing state-change: " << fLastState << "->" << newState << " to " << subscriberId;
-                    fDDSCustomCmd.send("state-change: " + id + "," + ToString(fDDSTaskId) + "," + ToStr(fLastState) + "->" + ToStr(newState), to_string(subscriberId));
-                }
+            lock_guard<mutex> lock{fStateChangeSubscriberMutex};
+            string id = GetProperty<string>("id");
+            fLastState = fCurrentState;
+            fCurrentState = newState;
+            for (auto subscriberId : fStateChangeSubscribers) {
+                LOG(debug) << "Publishing state-change: " << fLastState << "->" << newState << " to " << subscriberId;
+                fDDS.Send("state-change: " + id + "," + ToString(dds::env_prop<dds::task_id>()) + "," + ToStr(fLastState) + "->" + ToStr(newState), to_string(subscriberId));
             }
         });
 
-        ChangeDeviceState(DeviceStateTransition::InitDevice);
-        while (fStateQueue.WaitForNext() != DeviceState::InitializingDevice) {}
-        ChangeDeviceState(DeviceStateTransition::CompleteInit);
-        while (fStateQueue.WaitForNext() != DeviceState::Initialized) {}
-        ChangeDeviceState(DeviceStateTransition::Bind);
-        while (fStateQueue.WaitForNext() != DeviceState::Bound) {}
+        if (staticMode) {
+            TransitionDeviceStateTo(DeviceState::Running);
 
-        // in the Initializing state subscribe to receive addresses of connecting channels from DDS
-        // and propagate addresses of bound channels to DDS.
-        FillChannelContainers();
-
-        // start DDS service - subscriptions will only start firing after this step
-        fService.start(dds_session_id);
-        fServiceStarted = true;
-
-        // publish bound addresses via DDS at keys corresponding to the channel prefixes, e.g. 'data' in data[i]
-        PublishBoundChannels();
-
-        ChangeDeviceState(DeviceStateTransition::Connect);
-        while (fStateQueue.WaitForNext() != DeviceState::DeviceReady) {}
-
-        ChangeDeviceState(DeviceStateTransition::InitTask);
-        while (fStateQueue.WaitForNext() != DeviceState::Ready) {}
-        ChangeDeviceState(DeviceStateTransition::Run);
-
-        // wait until stop signal
-        unique_lock<mutex> lock(fStopMutex);
-        while (!fDeviceTerminationRequested) {
-            fStopCondition.wait_for(lock, chrono::seconds(1));
+            // wait until stop signal
+            unique_lock<mutex> lock(fStopMutex);
+            while (!fDeviceTerminationRequested) {
+                fStopCondition.wait_for(lock, chrono::seconds(1));
+            }
+            LOG(debug) << "Stopping DDS control plugin";
         }
-        LOG(debug) << "Stopping DDS control plugin";
     } catch (DeviceErrorState&) {
         ReleaseDeviceControl();
     } catch (exception& e) {
+        ReleaseDeviceControl();
         LOG(error) << "Error: " << e.what() << endl;
         return;
-    }
-
-    fDDSKeyValue.unsubscribe();
-    fDDSCustomCmd.unsubscribe();
-
-    try {
-        UnsubscribeFromDeviceStateChange();
-        ReleaseDeviceControl();
-    } catch (fair::mq::PluginServices::DeviceControlError& e) {
-        LOG(error) << e.what();
     }
 }
 
@@ -228,7 +192,7 @@ auto DDS::SubscribeForConnectingChannels() -> void
 {
     LOG(debug) << "Subscribing for DDS properties.";
 
-    fDDSKeyValue.subscribe([&] (const string& propertyId, const string& value, uint64_t senderTaskID) {
+    fDDS.SubscribeKeyValue([&] (const string& propertyId, const string& value, uint64_t senderTaskID) {
         try {
             LOG(debug) << "Received update for " << propertyId << ": value=" << value << ", senderTaskID=" << senderTaskID;
             string val = value;
@@ -286,7 +250,7 @@ auto DDS::PublishBoundChannels() -> void
     for (const auto& chan : fBindingChans) {
         string joined = boost::algorithm::join(chan.second, ",");
         LOG(debug) << "Publishing " << chan.first << " bound addresses (" << chan.second.size() << ") to DDS under '" << chan.first << "' property name.";
-        fDDSKeyValue.putValue(chan.first, joined);
+        fDDS.PutValue(chan.first, joined);
     }
 }
 
@@ -299,7 +263,7 @@ auto DDS::HeartbeatSender() -> void
             lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
 
             for (const auto subscriberId : fHeartbeatSubscribers) {
-                fDDSCustomCmd.send("heartbeat: " + id , to_string(subscriberId));
+                fDDS.Send("heartbeat: " + id , to_string(subscriberId));
             }
         }
 
@@ -313,30 +277,30 @@ auto DDS::SubscribeForCustomCommands() -> void
 
     string id = GetProperty<string>("id");
 
-    fDDSCustomCmd.subscribe([id, this](const string& cmd, const string& cond, uint64_t senderId) {
+    fDDS.SubscribeCustomCmd([id, this](const string& cmd, const string& cond, uint64_t senderId) {
         LOG(info) << "Received command: '" << cmd << "' from " << senderId;
 
         if (cmd == "check-state") {
-            fDDSCustomCmd.send(id + ": " + ToStr(GetCurrentDeviceState()), to_string(senderId));
+            fDDS.Send(id + ": " + ToStr(GetCurrentDeviceState()), to_string(senderId));
         } else if (cmd == "INIT DEVICE") {
             if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
-                fDDSCustomCmd.send(id + ": queued, " + cmd, to_string(senderId));
+                fDDS.Send(id + ": queued, " + cmd, to_string(senderId));
                 while (fStateQueue.WaitForNext() != DeviceState::InitializingDevice) {}
                 ChangeDeviceState(DeviceStateTransition::CompleteInit);
             } else {
-                fDDSCustomCmd.send(id + ": could not queue, " + cmd , to_string(senderId));
+                fDDS.Send(id + ": could not queue, " + cmd, to_string(senderId));
             }
         } else if (fTransitions.find(cmd) != fTransitions.end()) {
             if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
-                fDDSCustomCmd.send(id + ": queued, " + cmd, to_string(senderId));
+                fDDS.Send(id + ": queued, " + cmd, to_string(senderId));
             } else {
-                fDDSCustomCmd.send(id + ": could not queue, " + cmd , to_string(senderId));
+                fDDS.Send(id + ": could not queue, " + cmd, to_string(senderId));
             }
         } else if (cmd == "END") {
             if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
-                fDDSCustomCmd.send(id + ": queued, " + cmd, to_string(senderId));
+                fDDS.Send(id + ": queued, " + cmd, to_string(senderId));
             } else {
-                fDDSCustomCmd.send(id + ": could not queue, " + cmd , to_string(senderId));
+                fDDS.Send(id + ": could not queue, " + cmd, to_string(senderId));
             }
             if (ToStr(GetCurrentDeviceState()) == "EXITING") {
                 unique_lock<mutex> lock(fStopMutex);
@@ -347,43 +311,43 @@ auto DDS::SubscribeForCustomCommands() -> void
             for (const auto pKey: GetPropertyKeys()) {
                 ss << id << ": " << pKey << " -> " << GetPropertyAsString(pKey) << endl;
             }
-            fDDSCustomCmd.send(ss.str(), to_string(senderId));
+            fDDS.Send(ss.str(), to_string(senderId));
         } else if (cmd == "subscribe-to-heartbeats") {
             {
                 // auto size = fHeartbeatSubscribers.size();
                 lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
                 fHeartbeatSubscribers.insert(senderId);
             }
-            fDDSCustomCmd.send("heartbeat-subscription: " + id + ",OK", to_string(senderId));
+            fDDS.Send("heartbeat-subscription: " + id + ",OK", to_string(senderId));
         } else if (cmd == "unsubscribe-from-heartbeats") {
             {
                 lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
                 fHeartbeatSubscribers.erase(senderId);
             }
-            fDDSCustomCmd.send("heartbeat-unsubscription: " + id + ",OK", to_string(senderId));
+            fDDS.Send("heartbeat-unsubscription: " + id + ",OK", to_string(senderId));
         } else if (cmd == "subscribe-to-state-changes") {
             {
                 // auto size = fStateChangeSubscribers.size();
                 lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                 fStateChangeSubscribers.insert(senderId);
             }
-            fDDSCustomCmd.send("state-changes-subscription: " + id + ",OK", to_string(senderId));
+            fDDS.Send("state-changes-subscription: " + id + ",OK", to_string(senderId));
             {
                 lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                 LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState << " to " << senderId;
                 // fDDSCustomCmd.send("state-change: " + id + "," + ToStr(fLastState) + "->" + ToStr(fCurrentState), to_string(senderId));
-                fDDSCustomCmd.send("state-change: " + id + "," + ToString(fDDSTaskId) + "," + ToStr(fLastState) + "->" + ToStr(fCurrentState), to_string(senderId));
+                fDDS.Send("state-change: " + id + "," + ToString(dds::env_prop<dds::task_id>()) + "," + ToStr(fLastState) + "->" + ToStr(fCurrentState), to_string(senderId));
             }
         } else if (cmd == "unsubscribe-from-state-changes") {
             {
                 lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                 fStateChangeSubscribers.erase(senderId);
             }
-            fDDSCustomCmd.send("state-changes-unsubscription: " + id + ",OK", to_string(senderId));
+            fDDS.Send("state-changes-unsubscription: " + id + ",OK", to_string(senderId));
         } else if (cmd == "SHUTDOWN") {
                 TransitionDeviceStateTo(DeviceState::Exiting);
         } else if (cmd == "STARTUP") {
-                TransitionDeviceStateTo(DeviceState::Ready);
+                TransitionDeviceStateTo(DeviceState::Running);
         } else {
             LOG(warn) << "Unknown command: " << cmd;
             LOG(warn) << "Origin: " << senderId;
@@ -394,6 +358,9 @@ auto DDS::SubscribeForCustomCommands() -> void
 
 DDS::~DDS()
 {
+    UnsubscribeFromDeviceStateChange();
+    ReleaseDeviceControl();
+
     if (fControllerThread.joinable()) {
         fControllerThread.join();
     }

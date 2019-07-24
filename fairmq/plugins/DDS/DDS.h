@@ -9,23 +9,22 @@
 #ifndef FAIR_MQ_PLUGINS_DDS
 #define FAIR_MQ_PLUGINS_DDS
 
-#include <fairmq/Plugin.h>
-#include <fairmq/Version.h>
-#include <fairmq/StateQueue.h>
-
-#include <DDS/dds_intercom.h>
 #include <DDS/dds_env_prop.h>
-
-#include <condition_variable>
-#include <mutex>
-#include <string>
-#include <queue>
-#include <thread>
-#include <vector>
-#include <unordered_map>
-#include <set>
+#include <DDS/dds_intercom.h>
+#include <cassert>
 #include <chrono>
+#include <condition_variable>
+#include <fairmq/Plugin.h>
+#include <fairmq/StateQueue.h>
+#include <fairmq/Version.h>
 #include <functional>
+#include <mutex>
+#include <queue>
+#include <set>
+#include <string>
+#include <thread>
+#include <unordered_map>
+#include <vector>
 
 namespace fair
 {
@@ -36,15 +35,71 @@ namespace plugins
 
 struct DDSConfig
 {
-    DDSConfig()
-        : fSubChannelAddresses()
-        , fDDSValues()
-    {}
-
     // container of sub channel addresses
     std::vector<std::string> fSubChannelAddresses;
     // dds values for the channel
     std::unordered_map<uint64_t, std::string> fDDSValues;
+};
+
+struct DDSSubscription
+{
+    DDSSubscription()
+    : fDDSCustomCmd(fService)
+    , fDDSKeyValue(fService)
+    {
+        LOG(debug) << "$DDS_TASK_PATH: " << dds::env_prop<dds::task_path>();
+        LOG(debug) << "$DDS_GROUP_NAME: " << dds::env_prop<dds::group_name>();
+        LOG(debug) << "$DDS_COLLECTION_NAME: " << dds::env_prop<dds::collection_name>();
+        LOG(debug) << "$DDS_TASK_NAME: " << dds::env_prop<dds::task_name>();
+        LOG(debug) << "$DDS_TASK_INDEX: " << dds::env_prop<dds::task_index>();
+        LOG(debug) << "$DDS_COLLECTION_INDEX: " << dds::env_prop<dds::collection_index>();
+        LOG(debug) << "$DDS_TASK_ID: " << dds::env_prop<dds::task_id>();
+        LOG(debug) << "$DDS_LOCATION: " << dds::env_prop<dds::dds_location>();
+        std::string dds_session_id(dds::env_prop<dds::dds_session_id>());
+        LOG(debug) << "$DDS_SESSION_ID: " << dds_session_id;
+
+        // subscribe for DDS service errors.
+        fService.subscribeOnError([](const dds::intercom_api::EErrorCode errorCode, const std::string& errorMsg) {
+            LOG(error) << "DDS Error received: error code: " << errorCode << ", error message: " << errorMsg;
+        });
+
+        assert(!dds_session_id.empty());
+        fService.start(dds_session_id);
+    }
+
+    ~DDSSubscription() {
+        fDDSKeyValue.unsubscribe();
+        fDDSCustomCmd.unsubscribe();
+    }
+
+    template<typename... Args>
+    auto SubscribeCustomCmd(Args&&... args) -> void
+    {
+        fDDSCustomCmd.subscribe(std::forward<Args>(args)...);
+    }
+
+    template<typename... Args>
+    auto SubscribeKeyValue(Args&&... args) -> void
+    {
+        fDDSKeyValue.subscribe(std::forward<Args>(args)...);
+    }
+
+    template<typename... Args>
+    auto Send(Args&&... args) -> void
+    {
+        fDDSCustomCmd.send(std::forward<Args>(args)...);
+    }
+
+    template<typename... Args>
+    auto PutValue(Args&&... args) -> void
+    {
+        fDDSKeyValue.putValue(std::forward<Args>(args)...);
+    }
+
+  private:
+    dds::intercom_api::CIntercomService fService;
+    dds::intercom_api::CCustomCmd fDDSCustomCmd;
+    dds::intercom_api::CKeyValue fDDSKeyValue;
 };
 
 struct IofN
@@ -52,7 +107,6 @@ struct IofN
     IofN(int i, int n)
         : fI(i)
         , fN(n)
-        , fEntries()
     {}
 
     unsigned int fI;
@@ -77,10 +131,7 @@ class DDS : public Plugin
 
     auto HeartbeatSender() -> void;
 
-    dds::intercom_api::CIntercomService fService;
-    dds::intercom_api::CCustomCmd fDDSCustomCmd;
-    dds::intercom_api::CKeyValue fDDSKeyValue;
-    uint64_t fDDSTaskId;
+    DDSSubscription fDDS;
 
     std::unordered_map<std::string, std::vector<std::string>> fBindingChans;
     std::unordered_map<std::string, DDSConfig> fConnectingChans;
@@ -98,7 +149,6 @@ class DDS : public Plugin
     fair::mq::StateQueue fStateQueue;
 
     std::atomic<bool> fDeviceTerminationRequested;
-    std::atomic<bool> fServiceStarted;
 
     std::set<uint64_t> fHeartbeatSubscribers;
     std::mutex fHeartbeatSubscriberMutex;

@@ -70,7 +70,7 @@ Control::Control(const string& name, const Plugin::Version version, const string
         if (control == "static") {
             LOG(debug) << "Running builtin controller: static";
             fControllerThread = thread(&Control::StaticMode, this);
-        } else if (control == "interactive") {
+        } else if (control == "dynamic" || control == "external" || control == "interactive") {
             LOG(debug) << "Running builtin controller: interactive";
             fControllerThread = thread(&Control::InteractiveMode, this);
         } else {
@@ -113,7 +113,7 @@ auto ControlPluginProgramOptions() -> Plugin::ProgOptions
     namespace po = boost::program_options;
     auto pluginOptions = po::options_description{"Control (builtin) Plugin"};
     pluginOptions.add_options()
-        ("control",       po::value<string>()->default_value("interactive"), "Control mode, 'static' or 'interactive'")
+        ("control",       po::value<string>()->default_value("dynamic"), "Control mode, 'static' or 'dynamic' (aliases for dynamic are external and interactive)")
         ("catch-signals", po::value<int   >()->default_value(1),             "Enable signal handling (1/0).");
     return pluginOptions;
 }
