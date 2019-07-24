@@ -65,7 +65,12 @@ class DDSSession
     auto IsRunning() const -> bool;
     auto SubmitAgents(Quantity agents) -> void;
     auto RequestAgentInfo() -> void;
-    auto RequestCommanderInfo() -> void;
+    struct CommanderInfo {
+        int pid;
+        Quantity idleAgentsCount;
+    };
+    auto RequestCommanderInfo() -> CommanderInfo;
+    auto WaitForIdleAgents(Quantity) -> void;
     auto ActivateTopology(const Path& topologyFile) -> void;
     auto Stop() -> void;
 

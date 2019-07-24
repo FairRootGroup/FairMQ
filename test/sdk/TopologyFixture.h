@@ -58,12 +58,13 @@ struct TopologyFixture : ::testing::Test
     auto SetUp() -> void override {
         LOG(info) << mDDSEnv;
         LOG(info) << mDDSSession;
-        mDDSSession.RequestCommanderInfo();
-        mDDSSession.SubmitAgents(2);
-        mDDSSession.RequestCommanderInfo();
-        std::this_thread::sleep_for(std::chrono::seconds(1)); // TODO implement WaitForIdleAgents
+        LOG(info) << mDDSTopo;
+        auto n(mDDSTopo.GetNumRequiredAgents());
+        mDDSSession.SubmitAgents(n);
+        mDDSSession.WaitForIdleAgents(n);
         mDDSSession.ActivateTopology(mDDSTopoFile);
-        mDDSSession.RequestCommanderInfo();
+        std::this_thread::sleep_for(std::chrono::seconds(1)); // TODO implement WaitForActiveAgents
+        mDDSSession.RequestAgentInfo();
     }
 
     auto TearDown() -> void override {

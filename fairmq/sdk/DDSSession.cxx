@@ -187,25 +187,36 @@ auto DDSSession::RequestAgentInfo() -> void
     blocker.Wait();
 }
 
-auto DDSSession::RequestCommanderInfo() -> void
+auto DDSSession::RequestCommanderInfo() -> CommanderInfo
 {
     dds::tools_api::SCommanderInfoRequestData commanderInfoInfo;
     tools::Semaphore blocker;
     auto commanderInfoRequest =
         dds::tools_api::SCommanderInfoRequest::makeRequest(commanderInfoInfo);
+    CommanderInfo info;
     commanderInfoRequest->setResponseCallback(
-        [&](const dds::tools_api::SCommanderInfoResponseData& _response) {
-            LOG(debug) << "pid: " << _response.m_pid;
-            LOG(debug) << "idle agents: " << _response.m_idleAgentsCount;
-            // LOG(debug) << "active topology: "
-            // << ((_response.m_hasActiveTopology) ? _response.m_activeTopologyName
-            // : "<none>");
+        [&info](const dds::tools_api::SCommanderInfoResponseData& _response) {
+            info.pid = _response.m_pid;
+            info.idleAgentsCount = _response.m_idleAgentsCount;
         });
     commanderInfoRequest->setMessageCallback(
         [](const dds::tools_api::SMessageResponseData& _message) { LOG(debug) << _message; });
     commanderInfoRequest->setDoneCallback([&]() { blocker.Signal(); });
     fImpl->fSession.sendRequest<dds::tools_api::SCommanderInfoRequest>(commanderInfoRequest);
     blocker.Wait();
+
+    return info;
+}
+
+auto DDSSession::WaitForIdleAgents(Quantity minCount) -> void
+{
+    auto info(RequestCommanderInfo());
+    int interval(8);
+    while (info.idleAgentsCount < minCount) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(8));
+        interval = std::min(256, interval * 2);
+        info = RequestCommanderInfo();
+    }
 }
 
 auto DDSSession::ActivateTopology(const Path& topologyFile) -> void
