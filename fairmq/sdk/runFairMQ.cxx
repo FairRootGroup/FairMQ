@@ -6,8 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <fairmq/sdk/Topology.h>
-#include <fairmq/StateMachine.h>
+#include <fairmq/States.h>
 #include <iostream>
 
 int main(int /*argc*/, char ** /*argv*/)

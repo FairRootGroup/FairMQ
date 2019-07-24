@@ -22,43 +22,50 @@
 namespace fair {
 namespace mq {
 
-auto operator<<(std::ostream& os, AsyncOpResult v) -> std::ostream&
+auto operator<<(std::ostream& os, AsyncOpResultCode v) -> std::ostream&
 {
     switch (v) {
-        case AsyncOpResult::Aborted:
+        case AsyncOpResultCode::Aborted:
             return os << "Aborted";
-        case AsyncOpResult::Timeout:
+        case AsyncOpResultCode::Timeout:
             return os << "Timeout";
-        case AsyncOpResult::Error:
+        case AsyncOpResultCode::Error:
             return os << "Error";
-        case AsyncOpResult::Ok:
+        case AsyncOpResultCode::Ok:
         default:
             return os << "Ok";
     }
 }
 
+auto operator<<(std::ostream& os, AsyncOpResult v) -> std::ostream&
+{
+    (void)(os << "[" << v.code << "]");
+    if (v.msg.empty()) {
+        (void)(os << " " << v.msg);
+    }
+    return os;
+}
+
 namespace sdk {
 
-const std::unordered_map<DeviceTransition, DeviceState, tools::HashEnum<DeviceTransition>> Topology::fkExpectedState =
-{
-    { Transition::InitDevice,   DeviceState::InitializingDevice },
-    { Transition::CompleteInit, DeviceState::Initialized },
-    { Transition::Bind,         DeviceState::Bound },
-    { Transition::Connect,      DeviceState::DeviceReady },
-    { Transition::InitTask,     DeviceState::InitializingTask },
-    { Transition::Run,          DeviceState::Running },
-    { Transition::Stop,         DeviceState::Ready },
-    { Transition::ResetTask,    DeviceState::DeviceReady },
-    { Transition::ResetDevice,  DeviceState::Idle },
-    { Transition::End,          DeviceState::Exiting }
-};
+const std::unordered_map<DeviceTransition, DeviceState, tools::HashEnum<DeviceTransition>>
+    expectedState = {{Transition::InitDevice,   DeviceState::InitializingDevice},
+                     {Transition::CompleteInit, DeviceState::Initialized},
+                     {Transition::Bind,         DeviceState::Bound},
+                     {Transition::Connect,      DeviceState::DeviceReady},
+                     {Transition::InitTask,     DeviceState::InitializingTask},
+                     {Transition::Run,          DeviceState::Running},
+                     {Transition::Stop,         DeviceState::Ready},
+                     {Transition::ResetTask,    DeviceState::DeviceReady},
+                     {Transition::ResetDevice,  DeviceState::Idle},
+                     {Transition::End,          DeviceState::Exiting}};
 
 Topology::Topology(DDSTopology topo, DDSSession session)
     : fDDSSession(std::move(session))
     , fDDSTopo(std::move(topo))
-    , fTopologyState()
     , fStateChangeOngoing(false)
-    , fExecutionThread()
+    , fTargetState(DeviceState::Idle)
+    , fStateChangeTimeout(0)
     , fShutdown(false)
 {
     std::vector<uint64_t> deviceList = fDDSTopo.GetDeviceList();
@@ -73,7 +80,6 @@ Topology::Topology(DDSTopology topo, DDSSession session)
 
         for (unsigned int i = 0; i < parts.size(); ++i) {
             boost::trim(parts.at(i));
-            LOG(info) << "parts[" << i << "]: " << parts.at(i);
         }
 
         if (parts[0] == "state-change") {
@@ -95,7 +101,7 @@ Topology::Topology(DDSTopology topo, DDSSession session)
     fExecutionThread = std::thread(&Topology::WaitForState, this);
 }
 
-auto Topology::ChangeState(fair::mq::Transition transition, ChangeStateCallback cb, std::chrono::milliseconds timeout) -> void
+auto Topology::ChangeState(TopologyTransition transition, ChangeStateCallback cb, Duration timeout) -> void
 {
     {
         std::lock_guard<std::mutex> guard(fMtx);
@@ -103,15 +109,30 @@ auto Topology::ChangeState(fair::mq::Transition transition, ChangeStateCallback 
             LOG(error) << "State change already in progress, concurrent requested not yet supported";
             return; // TODO call the callback with error msg
         }
-        LOG(info) << "Initiating ChangeState with " << transition << " to " << fkExpectedState.at(transition);
+        LOG(info) << "Initiating ChangeState with " << transition << " to " << expectedState.at(transition);
         fStateChangeOngoing = true;
         fChangeStateCallback = cb;
         fStateChangeTimeout = timeout;
-        fTargetState = fkExpectedState.at(transition);
+        fTargetState = expectedState.at(transition);
 
         fDDSSession.SendCommand(GetTransitionName(transition));
     }
     fExecutionCV.notify_one();
+}
+
+auto Topology::ChangeState(TopologyTransition t, Duration timeout) -> ChangeStateResult
+{
+    fair::mq::tools::Semaphore blocker;
+    ChangeStateResult res;
+    ChangeState(
+        t,
+        [&blocker, &res](Topology::ChangeStateResult _res) {
+            res = _res;
+            blocker.Signal();
+        },
+        timeout);
+    blocker.Wait();
+    return res;
 }
 
 void Topology::WaitForState()
@@ -150,10 +171,10 @@ void Topology::WaitForState()
                 }
             } catch(std::exception& e) {
                 LOG(error) << "Error while processing state request: " << e.what();
-                fChangeStateCallback(ChangeStateResult{AsyncOpResult::Error, fTopologyState});
+                fChangeStateCallback({{AsyncOpResultCode::Error, ""}, fTopologyState});
             }
 
-            fChangeStateCallback(ChangeStateResult{AsyncOpResult::Ok, fTopologyState});
+            fChangeStateCallback({{AsyncOpResultCode::Ok, ""}, fTopologyState});
         } else {
             std::unique_lock<std::mutex> lock(fExecutionMtx);
             fExecutionCV.wait(lock);

@@ -21,27 +21,39 @@ TEST_F(Topology, Construction)
     fair::mq::sdk::Topology topo(mDDSTopo, mDDSSession);
 }
 
-TEST_F(Topology, ChangeState)
+TEST_F(Topology, ChangeState_async1)
 {
     using fair::mq::sdk::Topology;
     using fair::mq::sdk::TopologyTransition;
 
     Topology topo(mDDSTopo, mDDSSession);
-    Topology::ChangeStateResult r;
     fair::mq::tools::Semaphore blocker;
-    topo.ChangeState(TopologyTransition::Stop, [&](Topology::ChangeStateResult result) {
+    topo.ChangeState(TopologyTransition::Stop, [&blocker](Topology::ChangeStateResult result) {
         LOG(info) << result;
-        r = result;
+        EXPECT_EQ(result.rc, fair::mq::AsyncOpResultCode::Ok);
+        // TODO add the helper to check state consistency
+        for (const auto& e : result.state) {
+            EXPECT_EQ(e.second.state, fair::mq::sdk::DeviceState::Ready);
+        }
         blocker.Signal();
     });
     blocker.Wait();
-    EXPECT_EQ(r.rc, fair::mq::AsyncOpResult::Ok);
+}
+
+TEST_F(Topology, ChangeState_sync)
+{
+    using fair::mq::sdk::Topology;
+    using fair::mq::sdk::TopologyTransition;
+
+    Topology topo(mDDSTopo, mDDSSession);
+    auto result(topo.ChangeState(TopologyTransition::Stop));
+
+    EXPECT_EQ(result.rc, fair::mq::AsyncOpResultCode::Ok);
     // TODO add the helper to check state consistency
-    for (const auto& e : r.state) {
+    for (const auto& e : result.state) {
         EXPECT_EQ(e.second.state, fair::mq::sdk::DeviceState::Ready);
     }
 }
-
 // TEST_F(Topology, Timeout)
 // {
 //     using fair::mq::sdk::Topology;

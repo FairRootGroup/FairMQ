@@ -16,7 +16,7 @@
     </decltask>
 
     <decltask name="Sink">
-        <exe reachable="true">fairmq-sink --id sink --color false --channel-config name=data,type=pull,method=connect -P dds</exe>
+        <exe reachable="true">fairmq-sink --id sink_%taskIndex% --color false --channel-config name=data,type=pull,method=connect -P dds</exe>
         <requirements>
             <name>SinkWorker</name>
         </requirements>
@@ -27,7 +27,9 @@
 
     <main name="main">
         <task>Sampler</task>
-        <task>Sink</task>
+        <group name="SinkGroup" n="50">
+            <task>Sink</task>
+        </group>
     </main>
 
 </topology>

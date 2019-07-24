@@ -26,12 +26,20 @@
 namespace fair {
 namespace mq {
 
-// TODO make this a struct with a readable string error msg
-enum class AsyncOpResult {
+enum class AsyncOpResultCode {
     Ok,
     Timeout,
     Error,
     Aborted
+};
+auto operator<<(std::ostream& os, AsyncOpResultCode v) -> std::ostream&;
+
+using AsyncOpResultMessage = std::string;
+
+struct AsyncOpResult {
+    AsyncOpResultCode code;
+    AsyncOpResultMessage msg;
+    operator AsyncOpResultCode() const { return code; }
 };
 auto operator<<(std::ostream& os, AsyncOpResult v) -> std::ostream&;
 
@@ -59,6 +67,12 @@ class Topology
     /// @brief (Re)Construct a FairMQ topology from an existing DDS topology
     /// @param topo Initialized DDS CTopology
     explicit Topology(DDSTopology topo, DDSSession session = DDSSession());
+
+    explicit Topology(const Topology&) = delete;
+    Topology& operator=(const Topology&) = delete;
+    explicit Topology(Topology&&) = delete;
+    Topology& operator=(Topology&&) = delete;
+
     ~Topology();
 
     struct ChangeStateResult {
@@ -67,14 +81,21 @@ class Topology
         friend auto operator<<(std::ostream& os, ChangeStateResult v) -> std::ostream&;
     };
     using ChangeStateCallback = std::function<void(ChangeStateResult)>;
+    using Duration = std::chrono::milliseconds;
 
     /// @brief Initiate state transition on all FairMQ devices in this topology
     /// @param t FairMQ device state machine transition
     /// @param cb Completion callback
-    auto ChangeState(TopologyTransition t, ChangeStateCallback cb, std::chrono::milliseconds timeout = std::chrono::milliseconds(0)) -> void;
+    /// @param timeout Timeout in milliseconds, 0 means no timeout
+    auto ChangeState(TopologyTransition t, ChangeStateCallback cb, Duration timeout = std::chrono::milliseconds(0)) -> void;
 
-    static const std::unordered_map<DeviceTransition, DeviceState, tools::HashEnum<DeviceTransition>> fkExpectedState;
+    /// @brief Perform a state transition on all FairMQ devices in this topology
+    /// @param t FairMQ device state machine transition
+    /// @param timeout Timeout in milliseconds, 0 means no timeout
+    /// @return The result of the state transition
+    auto ChangeState(TopologyTransition t, Duration timeout = std::chrono::milliseconds(0)) -> ChangeStateResult;
 
+    
   private:
     DDSSession fDDSSession;
     DDSTopology fDDSTopo;
