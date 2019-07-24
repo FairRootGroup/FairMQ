@@ -94,6 +94,8 @@ Topology::Topology(DDSTopology topo, DDSSession session)
             if (parts[2] != "OK") {
                 LOG(error) << "state-changes-unsubscription failed with return code: " << parts[2];
             }
+        } else if (parts[1] == "could not queue") {
+            LOG(warn) << "Could not queue " << parts[2] << " transition on " << senderId;
         }
     });
     fDDSSession.StartDDSService();

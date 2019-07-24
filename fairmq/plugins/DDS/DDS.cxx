@@ -320,23 +320,23 @@ auto DDS::SubscribeForCustomCommands() -> void
             fDDSCustomCmd.send(id + ": " + ToStr(GetCurrentDeviceState()), to_string(senderId));
         } else if (cmd == "INIT DEVICE") {
             if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
-                fDDSCustomCmd.send(id + ": queued " + cmd + " transition", to_string(senderId));
+                fDDSCustomCmd.send(id + ": queued, " + cmd, to_string(senderId));
                 while (fStateQueue.WaitForNext() != DeviceState::InitializingDevice) {}
                 ChangeDeviceState(DeviceStateTransition::CompleteInit);
             } else {
-                fDDSCustomCmd.send(id + ": could not queue " + cmd + " transition", to_string(senderId));
+                fDDSCustomCmd.send(id + ": could not queue, " + cmd , to_string(senderId));
             }
         } else if (fTransitions.find(cmd) != fTransitions.end()) {
             if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
-                fDDSCustomCmd.send(id + ": queued " + cmd + " transition", to_string(senderId));
+                fDDSCustomCmd.send(id + ": queued, " + cmd, to_string(senderId));
             } else {
-                fDDSCustomCmd.send(id + ": could not queue " + cmd + " transition", to_string(senderId));
+                fDDSCustomCmd.send(id + ": could not queue, " + cmd , to_string(senderId));
             }
         } else if (cmd == "END") {
             if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
-                fDDSCustomCmd.send(id + ": queued " + cmd + " transition", to_string(senderId));
+                fDDSCustomCmd.send(id + ": queued, " + cmd, to_string(senderId));
             } else {
-                fDDSCustomCmd.send(id + ": could not queue " + cmd + " transition", to_string(senderId));
+                fDDSCustomCmd.send(id + ": could not queue, " + cmd , to_string(senderId));
             }
             if (ToStr(GetCurrentDeviceState()) == "EXITING") {
                 unique_lock<mutex> lock(fStopMutex);

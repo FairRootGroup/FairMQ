@@ -28,6 +28,14 @@ TEST_F(Topology, ChangeStateAsync)
 
     Topology topo(mDDSTopo, mDDSSession);
     fair::mq::tools::Semaphore blocker;
+    topo.ChangeState(TopologyTransition::Run, [&blocker, &topo](Topology::ChangeStateResult result) {
+        LOG(info) << result;
+        EXPECT_EQ(result.rc, fair::mq::AsyncOpResultCode::Ok);
+        EXPECT_NO_THROW(fair::mq::sdk::AggregateState(result.state));
+        EXPECT_EQ(fair::mq::sdk::StateEqualsTo(result.state, fair::mq::sdk::DeviceState::Running), true);
+        blocker.Signal();
+    });
+    blocker.Wait();
     topo.ChangeState(TopologyTransition::Stop, [&blocker, &topo](Topology::ChangeStateResult result) {
         LOG(info) << result;
         EXPECT_EQ(result.rc, fair::mq::AsyncOpResultCode::Ok);
@@ -44,6 +52,7 @@ TEST_F(Topology, ChangeStateSync)
     using fair::mq::sdk::TopologyTransition;
 
     Topology topo(mDDSTopo, mDDSSession);
+    EXPECT_EQ(topo.ChangeState(TopologyTransition::Run).rc, fair::mq::AsyncOpResultCode::Ok);
     auto result(topo.ChangeState(TopologyTransition::Stop));
 
     EXPECT_EQ(result.rc, fair::mq::AsyncOpResultCode::Ok);
@@ -58,7 +67,7 @@ TEST_F(Topology, ChangeStateConcurrent)
 
     Topology topo(mDDSTopo, mDDSSession);
     fair::mq::tools::Semaphore blocker;
-    topo.ChangeState(TopologyTransition::Stop, [&blocker](Topology::ChangeStateResult result) {
+    topo.ChangeState(TopologyTransition::Run, [&blocker](Topology::ChangeStateResult result) {
         LOG(info) << "result for valid ChangeState: " << result;
         blocker.Signal();
     });

@@ -80,6 +80,7 @@ class DDSSession
     };
     auto RequestCommanderInfo() -> CommanderInfo;
     auto WaitForIdleAgents(Quantity) -> void;
+    auto WaitForOnlyIdleAgents() -> void;
     auto WaitForExecutingAgents(Quantity) -> void;
     auto ActivateTopology(const Path& topoFile) -> void;
     auto ActivateTopology(DDSTopology) -> void;

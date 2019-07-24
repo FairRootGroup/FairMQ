@@ -170,7 +170,7 @@ auto DDSSession::SubmitAgents(Quantity agents) -> void
     fImpl->fSession.sendRequest<dds::tools_api::SSubmitRequest>(submitRequest);
     blocker.Wait();
 
-    // Not perfect, but best we can do 
+    // perfect
     WaitForIdleAgents(agents);
 }
 
