@@ -41,8 +41,13 @@ dds-info --wait-for-idle-agents ${requiredNofAgents}
 
 topologyFile=@DATA_DIR@/ex-dds-topology.xml
 echo "TOPOLOGY FILE: ${topologyFile}"
+# TODO Uncomment once DDS 2.6 is released
+# echo "TOPOLOGY NAME: $(dds-topology --disable-validation --topology-name ${topologyFile})"
 
+# TODO Uncomment once DDS 2.6 is released
+# dds-info --active-topology
 dds-topology --disable-validation --activate ${topologyFile}
+# dds-info --active-topology
 
 echo "------------------------"
 echo "...waiting for Topology to finish..."
@@ -54,7 +59,10 @@ echo "...waiting for ${requiredNofAgents} idle agents..."
 dds-info --wait-for-idle-agents ${requiredNofAgents}
 echo "------------------------"
 
+# TODO Uncomment once DDS 2.6 is released
+# dds-info --active-topology
 dds-topology --stop
+# dds-info --active-topology
 
 dds-agent-cmd getlog -a
 logDir="${wrkDir}/logs"

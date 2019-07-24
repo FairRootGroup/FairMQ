@@ -50,7 +50,7 @@ class DDSTopology
     std::vector<uint64_t> GetDeviceList();
 
     /// @brief Get the name of the topology
-    // auto GetName() const -> std::string;
+    auto GetName() const -> std::string;
 
     friend auto operator<<(std::ostream&, const DDSTopology&) -> std::ostream&;
 

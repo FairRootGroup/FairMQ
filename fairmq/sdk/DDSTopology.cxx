@@ -82,13 +82,13 @@ std::vector<uint64_t> DDSTopology::GetDeviceList()
     return taskIDs;
 }
 
-// auto DDSTopology::GetName() const -> std::string { return fImpl->fTopo.getName(); }
+auto DDSTopology::GetName() const -> std::string { return fImpl->fTopo.getName(); }
 
 auto operator<<(std::ostream& os, const DDSTopology& t) -> std::ostream&
 try {
-    return os << "DDS topology: " /*<< t.GetName() <<*/ " (loaded from " << t.GetTopoFile() << ")";
+    return os << "DDS topology: " << t.GetName() << " (loaded from " << t.GetTopoFile() << ")";
 } catch (std::runtime_error&) {
-    return os << "DDS topology: " /*<< t.GetName()*/;
+    return os << "DDS topology: " << t.GetName();
 }
 
 }   // namespace sdk
