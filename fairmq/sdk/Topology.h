@@ -95,7 +95,6 @@ class Topology
     /// @return The result of the state transition
     auto ChangeState(TopologyTransition t, Duration timeout = std::chrono::milliseconds(0)) -> ChangeStateResult;
 
-    
   private:
     DDSSession fDDSSession;
     DDSTopology fDDSTopo;

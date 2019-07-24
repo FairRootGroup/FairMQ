@@ -65,13 +65,15 @@ std::vector<uint64_t> DDSTopology::GetDeviceList()
     taskIDs.reserve(GetNumRequiredAgents());
 
     // TODO make sure returned tasks are actually devices
-    dds::topology_api::STopoRuntimeTask::FilterIteratorPair_t taskIt = fImpl->fTopo->getRuntimeTaskIterator([](const dds::topology_api::STopoRuntimeTask::FilterIterator_t::value_type& value) -> bool {
-        return true;
-    });
+    auto itPair = fImpl->fTopo.getRuntimeTaskIterator(
+        [](const dds::topology_api::STopoRuntimeTask::FilterIterator_t::value_type& /*value*/) -> bool { return true; });
+    auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
 
-    for (auto& it = taskIt.first; it != taskIt.second; ++it) {
-        LOG(debug) << "Found task " << it->first << " : " << "Path: " << it->second.m_task->getPath() << "Name: " << it->second.m_task->getName();
-        taskIDs.push_back(it->first);
+    for (auto task : tasks) {
+        LOG(debug) << "Found task " << task.first << ": "
+                   << "Path: " << task.second.m_taskPath << ", "
+                   << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex;
+        taskIDs.push_back(task.first);
     }
 
     return taskIDs;
