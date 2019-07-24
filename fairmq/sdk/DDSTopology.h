@@ -41,8 +41,6 @@ class DDSTopology
     /// @throw std::runtime_error
     auto GetTopoFile() const -> Path;
 
-    void CreateTopology(Path);
-
     /// @brief Get number of required agents for this topology
     int GetNumRequiredAgents();
 

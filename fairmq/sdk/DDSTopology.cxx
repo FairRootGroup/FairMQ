@@ -8,6 +8,8 @@
 
 #include "DDSTopology.h"
 
+#include <boost/range/iterator_range.hpp>
+
 #include <fairmq/sdk/DDSEnvironment.h>
 #include <fairmq/Tools.h>
 
@@ -29,14 +31,12 @@ struct DDSTopology::Impl
     explicit Impl(Path topoFile, DDSEnvironment env)
         : fEnv(std::move(env))
         , fTopoFile(std::move(topoFile))
-        , fTopo(nullptr)
-    {
-        LOG(warn) << topoFile;
-    }
+        , fTopo(fTopoFile.string())
+    {}
 
     DDSEnvironment fEnv;
     Path fTopoFile;
-    std::unique_ptr<dds::topology_api::CTopology> fTopo;
+    dds::topology_api::CTopology fTopo;
 };
 
 DDSTopology::DDSTopology(Path topoFile, DDSEnvironment env)
@@ -54,20 +54,15 @@ auto DDSTopology::GetTopoFile() const -> Path
     return file;
 }
 
-void DDSTopology::CreateTopology(Path topoFile)
-{
-    fImpl->fTopo = tools::make_unique<dds::topology_api::CTopology>(fImpl->fTopoFile.c_str());
-}
-
 int DDSTopology::GetNumRequiredAgents()
 {
-    return fImpl->fTopo->getRequiredNofAgents();
+    return fImpl->fTopo.getRequiredNofAgents();
 }
 
 std::vector<uint64_t> DDSTopology::GetDeviceList()
 {
     std::vector<uint64_t> taskIDs;
-    taskIDs.reserve(fImpl->fTopo->getRequiredNofAgents());
+    taskIDs.reserve(GetNumRequiredAgents());
 
     // TODO make sure returned tasks are actually devices
     dds::topology_api::STopoRuntimeTask::FilterIteratorPair_t taskIt = fImpl->fTopo->getRuntimeTaskIterator([](const dds::topology_api::STopoRuntimeTask::FilterIterator_t::value_type& value) -> bool {

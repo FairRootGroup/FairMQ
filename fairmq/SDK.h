@@ -13,6 +13,7 @@
 #include <fairmq/sdk/DDSInfo.h>
 #include <fairmq/sdk/DDSEnvironment.h>
 #include <fairmq/sdk/DDSSession.h>
+#include <fairmq/sdk/DDSTopology.h>
 #include <fairmq/sdk/Topology.h>
 // IWYU pragma: end_exports
 

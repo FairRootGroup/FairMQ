@@ -61,8 +61,6 @@ Topology::Topology(DDSTopology topo, DDSSession session)
     , fExecutionThread()
     , fShutdown(false)
 {
-    fDDSTopo.CreateTopology(fDDSTopo.GetTopoFile());
-
     std::vector<uint64_t> deviceList = fDDSTopo.GetDeviceList();
     for (const auto& d : deviceList) {
         LOG(info) << "fair::mq::Topology Adding device " << d;
