@@ -9,6 +9,7 @@
 #include "DDSSession.h"
 
 #include <fairmq/sdk/DDSEnvironment.h>
+#include <fairmq/sdk/DDSTopology.h>
 #include <fairmq/Tools.h>
 
 #include <fairlogger/Logger.h>
@@ -168,23 +169,34 @@ auto DDSSession::SubmitAgents(Quantity agents) -> void
 
     fImpl->fSession.sendRequest<dds::tools_api::SSubmitRequest>(submitRequest);
     blocker.Wait();
+
+    // Not perfect, but best we can do 
+    WaitForIdleAgents(agents);
 }
 
-auto DDSSession::RequestAgentInfo() -> void
+auto DDSSession::RequestAgentInfo() -> AgentInfo
 {
     dds::tools_api::SAgentInfoRequestData agentInfoInfo;
     tools::Semaphore blocker;
+    AgentInfo info;
     auto agentInfoRequest = dds::tools_api::SAgentInfoRequest::makeRequest(agentInfoInfo);
     agentInfoRequest->setResponseCallback(
-        [&](const dds::tools_api::SAgentInfoResponseData& _response) {
-            LOG(debug) << "agent: " << _response.m_index << "/" << _response.m_activeAgentsCount;
-            LOG(debug) << "info: " << _response.m_agentInfo;
+        [this, &info](const dds::tools_api::SAgentInfoResponseData& _response) {
+            if (_response.m_index == 0) {
+                info.activeAgentsCount = _response.m_activeAgentsCount;
+                info.idleAgentsCount = _response.m_idleAgentsCount;
+                info.executingAgentsCount = _response.m_executingAgentsCount;
+                info.agents.reserve(_response.m_activeAgentsCount);
+            }
+            info.agents.emplace_back(*this, std::move(_response.m_agentInfo));
         });
     agentInfoRequest->setMessageCallback(
         [](const dds::tools_api::SMessageResponseData& _message) { LOG(debug) << _message; });
     agentInfoRequest->setDoneCallback([&]() { blocker.Signal(); });
     fImpl->fSession.sendRequest<dds::tools_api::SAgentInfoRequest>(agentInfoRequest);
     blocker.Wait();
+
+    return info;
 }
 
 auto DDSSession::RequestCommanderInfo() -> CommanderInfo
@@ -197,7 +209,7 @@ auto DDSSession::RequestCommanderInfo() -> CommanderInfo
     commanderInfoRequest->setResponseCallback(
         [&info](const dds::tools_api::SCommanderInfoResponseData& _response) {
             info.pid = _response.m_pid;
-            info.idleAgentsCount = _response.m_idleAgentsCount;
+            info.activeTopologyName = std::move(_response.m_activeTopologyName);
         });
     commanderInfoRequest->setMessageCallback(
         [](const dds::tools_api::SMessageResponseData& _message) { LOG(debug) << _message; });
@@ -208,22 +220,33 @@ auto DDSSession::RequestCommanderInfo() -> CommanderInfo
     return info;
 }
 
-auto DDSSession::WaitForIdleAgents(Quantity minCount) -> void
+auto DDSSession::WaitForExecutingAgents(Quantity minCount) -> void
 {
-    auto info(RequestCommanderInfo());
+    auto info(RequestAgentInfo());
     int interval(8);
-    while (info.idleAgentsCount < minCount) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(8));
+    while (info.executingAgentsCount < minCount) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(interval));
         interval = std::min(256, interval * 2);
-        info = RequestCommanderInfo();
+        info = RequestAgentInfo();
     }
 }
 
-auto DDSSession::ActivateTopology(const Path& topologyFile) -> void
+auto DDSSession::WaitForIdleAgents(Quantity minCount) -> void
+{
+    auto info(RequestAgentInfo());
+    int interval(8);
+    while (info.idleAgentsCount < minCount) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+        interval = std::min(256, interval * 2);
+        info = RequestAgentInfo();
+    }
+}
+
+auto DDSSession::ActivateTopology(DDSTopology topo) -> void
 {
     dds::tools_api::STopologyRequestData topologyInfo;
     topologyInfo.m_updateType = dds::tools_api::STopologyRequestData::EUpdateType::ACTIVATE;
-    topologyInfo.m_topologyFile = topologyFile.string();
+    topologyInfo.m_topologyFile = topo.GetTopoFile().string();
 
     tools::Semaphore blocker;
     auto topologyRequest = dds::tools_api::STopologyRequest::makeRequest(topologyInfo);
@@ -232,6 +255,13 @@ auto DDSSession::ActivateTopology(const Path& topologyFile) -> void
     topologyRequest->setDoneCallback([&]() { blocker.Signal(); });
     fImpl->fSession.sendRequest<dds::tools_api::STopologyRequest>(topologyRequest);
     blocker.Wait();
+
+    WaitForExecutingAgents(topo.GetNumRequiredAgents());
+}
+
+auto DDSSession::ActivateTopology(const Path& topoFile) -> void
+{
+    ActivateTopology(DDSTopology(topoFile, GetEnv()));
 }
 
 void DDSSession::StartDDSService() { fImpl->fDDSService.start(fImpl->fId); }
@@ -254,6 +284,21 @@ void DDSSession::SendCommand(const std::string& cmd) { fImpl->fDDSCustomCmd.send
 auto operator<<(std::ostream& os, const DDSSession& session) -> std::ostream&
 {
     return os << "$DDS_SESSION_ID: " << session.GetId();
+}
+
+auto DDSAgent::GetSession() const -> DDSSession
+{
+    return fSession;
+}
+
+auto DDSAgent::GetInfoStr() const -> std::string
+{
+    return fInfoStr;
+}
+
+auto operator<<(std::ostream& os, const DDSAgent& agent) -> std::ostream&
+{
+    return os << agent.GetInfoStr();
 }
 
 }   // namespace sdk

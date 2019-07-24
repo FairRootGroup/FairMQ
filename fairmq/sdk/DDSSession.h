@@ -40,6 +40,9 @@ enum class DDSRMSPlugin
 auto operator<<(std::ostream& os, DDSRMSPlugin plugin) -> std::ostream&;
 auto operator>>(std::istream& is, DDSRMSPlugin& plugin) -> std::istream&;
 
+class DDSTopology;
+class DDSAgent;
+
 /**
  * @class DDSSession DDSSession.h <fairmq/sdk/DDSSession.h>
  * @brief Represents a DDS session
@@ -64,14 +67,22 @@ class DDSSession
     auto StopOnDestruction(bool stop = true) -> void;
     auto IsRunning() const -> bool;
     auto SubmitAgents(Quantity agents) -> void;
-    auto RequestAgentInfo() -> void;
+    struct AgentInfo {
+        Quantity idleAgentsCount;
+        Quantity activeAgentsCount;
+        Quantity executingAgentsCount;
+        std::vector<DDSAgent> agents;
+    };
+    auto RequestAgentInfo() -> AgentInfo;
     struct CommanderInfo {
         int pid;
-        Quantity idleAgentsCount;
+        std::string activeTopologyName;
     };
     auto RequestCommanderInfo() -> CommanderInfo;
     auto WaitForIdleAgents(Quantity) -> void;
-    auto ActivateTopology(const Path& topologyFile) -> void;
+    auto WaitForExecutingAgents(Quantity) -> void;
+    auto ActivateTopology(const Path& topoFile) -> void;
+    auto ActivateTopology(DDSTopology) -> void;
     auto Stop() -> void;
 
     void StartDDSService();
@@ -85,6 +96,27 @@ class DDSSession
     std::shared_ptr<Impl> fImpl;
 };
 
+/**
+ * @class DDSAgent DDSSession.h <fairmq/sdk/DDSSession.h>
+ * @brief Represents a DDS agent
+ */
+class DDSAgent
+{
+  public:
+    explicit DDSAgent(DDSSession session, std::string infostr)
+        : fInfoStr(std::move(infostr))
+        , fSession(std::move(session))
+    {}
+
+    auto GetSession() const -> DDSSession;
+    auto GetInfoStr() const -> std::string;
+
+    friend auto operator<<(std::ostream& os, const DDSAgent& plugin) -> std::ostream&;
+
+  private:
+    std::string fInfoStr;
+    DDSSession fSession;
+};
 }   // namespace sdk
 }   // namespace mq
 }   // namespace fair

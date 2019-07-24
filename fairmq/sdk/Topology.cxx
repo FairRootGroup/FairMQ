@@ -196,10 +196,10 @@ void Topology::AddNewStateEntry(uint64_t senderId, const std::string& state)
             LOG(error) << "Exception in AddNewStateEntry: " << e.what();
         }
 
-        LOG(info) << "fTopologyState after update: ";
-        for (auto& e : fTopologyState) {
-            LOG(info) << e.first << ": " << e.second.state;
-        }
+        // LOG(info) << "fTopologyState after update: ";
+        // for (auto& e : fTopologyState) {
+            // LOG(info) << e.first << ": " << e.second.state;
+        // }
     }
     fCV.notify_one();
 }
