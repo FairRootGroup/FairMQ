@@ -226,19 +226,31 @@ auto DDSSession::RequestCommanderInfo() -> CommanderInfo
 {
     dds::tools_api::SCommanderInfoRequestData commanderInfoInfo;
     tools::Semaphore blocker;
+    std::string error;
     auto commanderInfoRequest =
         dds::tools_api::SCommanderInfoRequest::makeRequest(commanderInfoInfo);
     CommanderInfo info;
     commanderInfoRequest->setResponseCallback(
         [&info](const dds::tools_api::SCommanderInfoResponseData& _response) {
             info.pid = _response.m_pid;
-            info.activeTopologyName = std::move(_response.m_activeTopologyName);
+            info.activeTopologyName = _response.m_activeTopologyName;
         });
     commanderInfoRequest->setMessageCallback(
-        [](const dds::tools_api::SMessageResponseData& _message) { LOG(debug) << _message; });
+        [&](const dds::tools_api::SMessageResponseData& _message) {
+            if (_message.m_severity == dds::intercom_api::EMsgSeverity::error) {
+                error = _message.m_msg;
+                blocker.Signal();
+            } else {
+                LOG(debug) << _message;
+            }
+        });
     commanderInfoRequest->setDoneCallback([&]() { blocker.Signal(); });
     fImpl->fSession->sendRequest<dds::tools_api::SCommanderInfoRequest>(commanderInfoRequest);
     blocker.Wait();
+
+    if (!error.empty()) {
+        throw std::runtime_error(error);
+    }
 
     return info;
 }
