@@ -285,8 +285,6 @@ auto DDS::SubscribeForCustomCommands() -> void
         } else if (cmd == "INIT DEVICE") {
             if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
                 fDDS.Send(id + ": queued, " + cmd, to_string(senderId));
-                while (fStateQueue.WaitForNext() != DeviceState::InitializingDevice) {}
-                ChangeDeviceState(DeviceStateTransition::CompleteInit);
             } else {
                 fDDS.Send(id + ": could not queue, " + cmd, to_string(senderId));
             }
