@@ -105,20 +105,22 @@ Topology::Topology(DDSTopology topo, DDSSession session)
 }
 
 Topology::Topology(dds::topology_api::CTopology nativeTopo,
-                   dds::tools_api::CSession nativeSession,
+                   std::shared_ptr<dds::tools_api::CSession> nativeSession,
                    DDSEnv env)
     : Topology(DDSTopo(std::move(nativeTopo), env), DDSSession(std::move(nativeSession), env))
-{}
+{
+    if (fDDSSession.RequestCommanderInfo().activeTopologyName != fDDSTopo.GetName()) {
+        throw std::runtime_error("Given topology must be activated");
+    }
+}
 
 auto Topology::ChangeState(TopologyTransition transition, ChangeStateCallback cb, Duration timeout) -> void
 {
     {
         std::unique_lock<std::mutex> lock(fMtx);
         if (fStateChangeOngoing) {
-            LOG(error) << "A state change request is already in progress, concurrent requests are currently not supported";
+            throw std::runtime_error("A state change request is already in progress, concurrent requests are currently not supported");
             lock.unlock();
-            cb({{AsyncOpResultCode::Error, "A state change request is already in progress, concurrent requests are currently not supported"}, fState});
-            return;
         }
         LOG(info) << "Initiating ChangeState with " << transition << " to " << expectedState.at(transition);
         fStateChangeOngoing = true;

@@ -59,8 +59,9 @@ struct DDSSession::Impl
     explicit Impl(DDSEnvironment env)
         : fEnv(std::move(env))
         , fRMSPlugin(DDSRMSPlugin::localhost)
+        , fSession(std::make_shared<dds::tools_api::CSession>())
         , fDDSCustomCmd(fDDSService)
-        , fId(to_string(fSession.create()))
+        , fId(to_string(fSession->create()))
         , fStopOnDestruction(false)
     {
         setenv("DDS_SESSION_ID", fId.c_str(), 1);
@@ -73,13 +74,14 @@ struct DDSSession::Impl
     explicit Impl(Id existing, DDSEnvironment env)
         : fEnv(std::move(env))
         , fRMSPlugin(DDSRMSPlugin::localhost)
+        , fSession(std::make_shared<dds::tools_api::CSession>())
         , fDDSCustomCmd(fDDSService)
         , fId(std::move(existing))
         , fStopOnDestruction(false)
     {
-        fSession.attach(fId);
-        std::string envId(std::getenv("DDS_SESSION_ID"));
-        if (envId != fId) {
+        fSession->attach(fId);
+        auto envId(std::getenv("DDS_SESSION_ID"));
+        if (envId != nullptr && std::string(envId) != fId) {
             setenv("DDS_SESSION_ID", fId.c_str(), 1);
         }
 
@@ -88,16 +90,21 @@ struct DDSSession::Impl
         });
     }
 
-    explicit Impl(dds::tools_api::CSession nativeSession, DDSEnv env)
+    explicit Impl(std::shared_ptr<dds::tools_api::CSession> nativeSession, DDSEnv env)
         : fEnv(std::move(env))
         , fRMSPlugin(DDSRMSPlugin::localhost)
         , fSession(std::move(nativeSession))
         , fDDSCustomCmd(fDDSService)
-        , fId(to_string(fSession.getSessionID()))
+        , fId(to_string(fSession->getSessionID()))
         , fStopOnDestruction(false)
     {
+        auto envId(std::getenv("DDS_SESSION_ID"));
+        if (envId != nullptr && std::string(envId) != fId) {
+            setenv("DDS_SESSION_ID", fId.c_str(), 1);
+        }
+
         // Sanity check
-        if (!fSession.IsRunning()) {
+        if (!fSession->IsRunning()) {
             throw std::runtime_error("Given CSession must be running");
         }
     }
@@ -105,7 +112,7 @@ struct DDSSession::Impl
     ~Impl()
     {
         if (fStopOnDestruction) {
-            fSession.shutdown();
+            fSession->shutdown();
         }
     }
 
@@ -122,7 +129,7 @@ struct DDSSession::Impl
     DDSEnvironment fEnv;
     DDSRMSPlugin fRMSPlugin;
     Path fRMSConfig;
-    dds::tools_api::CSession fSession;
+    std::shared_ptr<dds::tools_api::CSession> fSession;
     dds::intercom_api::CIntercomService fDDSService;
     dds::intercom_api::CCustomCmd fDDSCustomCmd;
     Id fId;
@@ -137,17 +144,17 @@ DDSSession::DDSSession(Id existing, DDSEnvironment env)
     : fImpl(std::make_shared<Impl>(std::move(existing), std::move(env)))
 {}
 
-DDSSession::DDSSession(dds::tools_api::CSession nativeSession, DDSEnv env)
+DDSSession::DDSSession(std::shared_ptr<dds::tools_api::CSession> nativeSession, DDSEnv env)
     : fImpl(std::make_shared<Impl>(std::move(nativeSession), std::move(env)))
 {}
 
 auto DDSSession::GetEnv() const -> DDSEnvironment { return fImpl->fEnv; }
 
-auto DDSSession::IsRunning() const -> bool { return fImpl->fSession.IsRunning(); }
+auto DDSSession::IsRunning() const -> bool { return fImpl->fSession->IsRunning(); }
 
 auto DDSSession::GetId() const -> Id { return fImpl->fId; }
 
-auto DDSSession::Stop() -> void { return fImpl->fSession.shutdown(); }
+auto DDSSession::Stop() -> void { return fImpl->fSession->shutdown(); }
 
 auto DDSSession::GetRMSPlugin() const -> DDSRMSPlugin { return fImpl->fRMSPlugin; }
 
@@ -183,7 +190,7 @@ auto DDSSession::SubmitAgents(Quantity agents) -> void
         blocker.Signal();
     });
 
-    fImpl->fSession.sendRequest<dds::tools_api::SSubmitRequest>(submitRequest);
+    fImpl->fSession->sendRequest<dds::tools_api::SSubmitRequest>(submitRequest);
     blocker.Wait();
 
     // perfect
@@ -204,12 +211,12 @@ auto DDSSession::RequestAgentInfo() -> AgentInfo
                 info.executingAgentsCount = _response.m_executingAgentsCount;
                 info.agents.reserve(_response.m_activeAgentsCount);
             }
-            info.agents.emplace_back(*this, std::move(_response.m_agentInfo));
+            info.agents.emplace_back(*this, _response.m_agentInfo);
         });
     agentInfoRequest->setMessageCallback(
         [](const dds::tools_api::SMessageResponseData& _message) { LOG(debug) << _message; });
     agentInfoRequest->setDoneCallback([&]() { blocker.Signal(); });
-    fImpl->fSession.sendRequest<dds::tools_api::SAgentInfoRequest>(agentInfoRequest);
+    fImpl->fSession->sendRequest<dds::tools_api::SAgentInfoRequest>(agentInfoRequest);
     blocker.Wait();
 
     return info;
@@ -230,7 +237,7 @@ auto DDSSession::RequestCommanderInfo() -> CommanderInfo
     commanderInfoRequest->setMessageCallback(
         [](const dds::tools_api::SMessageResponseData& _message) { LOG(debug) << _message; });
     commanderInfoRequest->setDoneCallback([&]() { blocker.Signal(); });
-    fImpl->fSession.sendRequest<dds::tools_api::SCommanderInfoRequest>(commanderInfoRequest);
+    fImpl->fSession->sendRequest<dds::tools_api::SCommanderInfoRequest>(commanderInfoRequest);
     blocker.Wait();
 
     return info;
@@ -269,7 +276,7 @@ auto DDSSession::ActivateTopology(DDSTopology topo) -> void
     topologyRequest->setMessageCallback(
         [](const dds::tools_api::SMessageResponseData& _message) { LOG(debug) << _message; });
     topologyRequest->setDoneCallback([&]() { blocker.Signal(); });
-    fImpl->fSession.sendRequest<dds::tools_api::STopologyRequest>(topologyRequest);
+    fImpl->fSession->sendRequest<dds::tools_api::STopologyRequest>(topologyRequest);
     blocker.Wait();
 
     WaitForExecutingAgents(topo.GetNumRequiredAgents());

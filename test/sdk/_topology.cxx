@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "TopologyFixture.h"
+#include "Fixtures.h"
 
 #include <DDS/Topology.h>
 #include <DDS/Tools.h>
@@ -20,13 +20,15 @@ using Topology = fair::mq::test::TopologyFixture;
 TEST(Topology2, ConstructionWithNativeDdsApiObjects)
 {
     // This is only needed for this unit test
+    fair::mq::test::LoggerConfig cfg;
     fair::mq::sdk::DDSEnv env(CMAKE_CURRENT_BINARY_DIR);
+    /////////////////////////////////////////
 
     // Example usage:
     dds::topology_api::CTopology nativeTopo(fair::mq::tools::ToString(SDK_TESTSUITE_SOURCE_DIR, "/test_topo.xml"));
-    dds::tools_api::CSession nativeSession;
-    nativeSession.create();
-    fair::mq::sdk::Topology topo(nativeTopo, nativeSession, env);
+    auto nativeSession(std::make_shared<dds::tools_api::CSession>());
+    nativeSession->create();
+    EXPECT_THROW(fair::mq::sdk::Topology topo(nativeTopo, nativeSession, env), std::runtime_error);
 }
 
 TEST_F(Topology, Construction)

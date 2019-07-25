@@ -61,20 +61,21 @@ using TopologyTransition = fair::mq::Transition;
 
 struct MixedState : std::runtime_error { using std::runtime_error::runtime_error; };
 
-DeviceState AggregateState(const TopologyState& topologyState)
+inline DeviceState AggregateState(const TopologyState& topologyState)
 {
     DeviceState first = topologyState.begin()->second.state;
 
     if (std::all_of(topologyState.cbegin(), topologyState.cend(), [&](TopologyState::value_type i) {
-        return i.second.state == first;
-    })) {
+            return i.second.state == first;
+        })) {
         return first;
-    } else {
-        throw MixedState("State is not uniform");
     }
+
+    throw MixedState("State is not uniform");
+
 }
 
-bool StateEqualsTo(const TopologyState& topologyState, DeviceState state)
+inline bool StateEqualsTo(const TopologyState& topologyState, DeviceState state)
 {
     return AggregateState(topologyState) == state;
 }
@@ -92,11 +93,11 @@ class Topology
     explicit Topology(DDSTopology topo, DDSSession session = DDSSession());
 
     /// @brief (Re)Construct a FairMQ topology based on already existing native DDS API objects
-    /// @param nativeTopo Existing CTopology
     /// @param nativeSession Existing and initialized CSession (either via create() or attach())
+    /// @param nativeTopo Existing CTopology that is activated on the given nativeSession
     /// @param env Optional DDSEnv (needed primarily for unit testing)
     explicit Topology(dds::topology_api::CTopology nativeTopo,
-                      dds::tools_api::CSession nativeSession,
+                      std::shared_ptr<dds::tools_api::CSession> nativeSession,
                       DDSEnv env = {});
 
     explicit Topology(const Topology&) = delete;

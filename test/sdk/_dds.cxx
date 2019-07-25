@@ -6,41 +6,44 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <TestEnvironment.h>
-#include <fairlogger/Logger.h>
-#include <fairmq/sdk/DDSEnvironment.h>
-#include <fairmq/sdk/DDSInfo.h>
-#include <fairmq/sdk/DDSSession.h>
-#include <gtest/gtest.h>
+#include "Fixtures.h"
+
+#include <DDS/Topology.h>
+#include <DDS/Tools.h>
 
 namespace {
 
-auto setup() -> void
+TEST(DDSEnvironment, Construction)
 {
-    fair::Logger::SetConsoleSeverity("debug");
-    fair::Logger::DefineVerbosity("user1",
-                                fair::VerbositySpec::Make(fair::VerbositySpec::Info::timestamp_us,
-                                                          fair::VerbositySpec::Info::severity));
-    fair::Logger::SetVerbosity("user1");
-    fair::Logger::SetConsoleColor();
-}
-
-TEST(DDS, Environment)
-{
-    setup();
+    fair::mq::test::LoggerConfig cfg;
 
     fair::mq::sdk::DDSEnvironment env(CMAKE_CURRENT_BINARY_DIR);
     LOG(debug) << env;
 }
 
-TEST(DDS, Session)
+TEST(DDSSession, Construction)
 {
-    setup();
-
+    fair::mq::test::LoggerConfig cfg;
     fair::mq::sdk::DDSEnvironment env(CMAKE_CURRENT_BINARY_DIR);
+
     fair::mq::sdk::DDSSession session(env);
     session.StopOnDestruction();
     LOG(debug) << session;
+}
+
+TEST(DDSSession, Construction2)
+{
+    fair::mq::test::LoggerConfig cfg;
+    fair::mq::sdk::DDSEnvironment env(CMAKE_CURRENT_BINARY_DIR);
+
+    auto nativeSession(std::make_shared<dds::tools_api::CSession>());
+    nativeSession->create();
+
+    fair::mq::sdk::DDSSession session(nativeSession, env);
+    session.StopOnDestruction();
+    LOG(debug) << session;
+
+    session.RequestCommanderInfo();
 }
 
 }   // namespace

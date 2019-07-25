@@ -60,7 +60,7 @@ class DDSSession
     /// @brief Construct with already existing native DDS API objects
     /// @param nativeSession Existing and initialized CSession (either via create() or attach())
     /// @param env Optional DDSEnv
-    explicit DDSSession(dds::tools_api::CSession nativeSession, DDSEnv env = {});
+    explicit DDSSession(std::shared_ptr<dds::tools_api::CSession> nativeSession, DDSEnv env = {});
 
     auto GetEnv() const -> DDSEnvironment;
     auto GetId() const -> Id;

@@ -6,8 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIR_MQ_TEST_TOPOLOGYFIXTURE
-#define FAIR_MQ_TEST_TOPOLOGYFIXTURE
+#ifndef FAIR_MQ_TEST_FIXTURES
+#define FAIR_MQ_TEST_FIXTURES
 
 #include "TestEnvironment.h"
 #include <fairmq/SDK.h>
@@ -51,10 +51,6 @@ struct TopologyFixture : ::testing::Test
         mDDSSession.StopOnDestruction();
     }
 
-    // auto ActivateDDSTopology(const std::string& topology_file) -> void {
-        // LOG(debug) << "ActivateDDSTopology(\"" << topology_file << "\")";
-    // }
-
     auto SetUp() -> void override {
         LOG(info) << mDDSEnv;
         LOG(info) << mDDSSession;
@@ -78,5 +74,5 @@ struct TopologyFixture : ::testing::Test
 } /* namespace mq */
 } /* namespace fair */
 
-#endif /* FAIR_MQ_TEST_TOPOLOGYFIXTURE */
+#endif /* FAIR_MQ_TEST_FIXTURES */
 

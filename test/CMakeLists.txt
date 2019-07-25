@@ -289,7 +289,7 @@ if(BUILD_SDK)
         ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
         sdk/_dds.cxx
         sdk/_topology.cxx
-        sdk/TopologyFixture.h
+        sdk/Fixtures.h
 
         LINKS
         SDK
