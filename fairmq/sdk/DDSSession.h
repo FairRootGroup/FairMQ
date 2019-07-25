@@ -73,14 +73,14 @@ class DDSSession
     auto IsRunning() const -> bool;
     auto SubmitAgents(Quantity agents) -> void;
     struct AgentInfo {
-        Quantity idleAgentsCount;
-        Quantity activeAgentsCount;
-        Quantity executingAgentsCount;
+        Quantity idleAgentsCount = 0;
+        Quantity activeAgentsCount = 0;
+        Quantity executingAgentsCount = 0;
         std::vector<DDSAgent> agents;
     };
     auto RequestAgentInfo() -> AgentInfo;
     struct CommanderInfo {
-        int pid;
+        int pid = -1;
         std::string activeTopologyName;
     };
     auto RequestCommanderInfo() -> CommanderInfo;
