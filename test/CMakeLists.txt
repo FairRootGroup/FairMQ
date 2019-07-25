@@ -295,6 +295,7 @@ if(BUILD_SDK)
         SDK
         Tools
         DDS::dds_topology_lib
+        DDS::dds_tools_lib
         INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
                  ${CMAKE_CURRENT_BINARY_DIR}
         TIMEOUT 15

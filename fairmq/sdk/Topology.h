@@ -87,8 +87,17 @@ class Topology
 {
   public:
     /// @brief (Re)Construct a FairMQ topology from an existing DDS topology
-    /// @param topo Initialized DDS CTopology
+    /// @param topo DDSTopology
+    /// @param session DDSSession
     explicit Topology(DDSTopology topo, DDSSession session = DDSSession());
+
+    /// @brief (Re)Construct a FairMQ topology based on already existing native DDS API objects
+    /// @param nativeTopo Existing CTopology
+    /// @param nativeSession Existing and initialized CSession (either via create() or attach())
+    /// @param env Optional DDSEnv (needed primarily for unit testing)
+    explicit Topology(dds::topology_api::CTopology nativeTopo,
+                      dds::tools_api::CSession nativeSession,
+                      DDSEnv env = {});
 
     explicit Topology(const Topology&) = delete;
     Topology& operator=(const Topology&) = delete;

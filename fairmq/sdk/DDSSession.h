@@ -57,6 +57,11 @@ class DDSSession
     explicit DDSSession(DDSEnvironment env = DDSEnvironment());
     explicit DDSSession(Id existing, DDSEnvironment env = DDSEnvironment());
 
+    /// @brief Construct with already existing native DDS API objects
+    /// @param nativeSession Existing and initialized CSession (either via create() or attach())
+    /// @param env Optional DDSEnv
+    explicit DDSSession(dds::tools_api::CSession nativeSession, DDSEnv env = {});
+
     auto GetEnv() const -> DDSEnvironment;
     auto GetId() const -> Id;
     auto GetRMSPlugin() const -> DDSRMSPlugin;
@@ -92,6 +97,7 @@ class DDSSession
     void SendCommand(const std::string&);
 
     friend auto operator<<(std::ostream& os, const DDSSession& session) -> std::ostream&;
+
   private:
     struct Impl;
     std::shared_ptr<Impl> fImpl;

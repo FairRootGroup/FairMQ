@@ -59,7 +59,6 @@ struct DDSSession::Impl
     explicit Impl(DDSEnvironment env)
         : fEnv(std::move(env))
         , fRMSPlugin(DDSRMSPlugin::localhost)
-        , fDDSService()
         , fDDSCustomCmd(fDDSService)
         , fId(to_string(fSession.create()))
         , fStopOnDestruction(false)
@@ -74,7 +73,6 @@ struct DDSSession::Impl
     explicit Impl(Id existing, DDSEnvironment env)
         : fEnv(std::move(env))
         , fRMSPlugin(DDSRMSPlugin::localhost)
-        , fDDSService()
         , fDDSCustomCmd(fDDSService)
         , fId(std::move(existing))
         , fStopOnDestruction(false)
@@ -88,6 +86,20 @@ struct DDSSession::Impl
         fDDSService.subscribeOnError([](const dds::intercom_api::EErrorCode errorCode, const std::string& msg) {
             std::cerr << "DDS error, error code: " << errorCode << ", error message: " << msg << std::endl;
         });
+    }
+
+    explicit Impl(dds::tools_api::CSession nativeSession, DDSEnv env)
+        : fEnv(std::move(env))
+        , fRMSPlugin(DDSRMSPlugin::localhost)
+        , fSession(std::move(nativeSession))
+        , fDDSCustomCmd(fDDSService)
+        , fId(to_string(fSession.getSessionID()))
+        , fStopOnDestruction(false)
+    {
+        // Sanity check
+        if (!fSession.IsRunning()) {
+            throw std::runtime_error("Given CSession must be running");
+        }
     }
 
     ~Impl()
@@ -118,11 +130,15 @@ struct DDSSession::Impl
 };
 
 DDSSession::DDSSession(DDSEnvironment env)
-    : fImpl(std::make_shared<Impl>(env))
+    : fImpl(std::make_shared<Impl>(std::move(env)))
 {}
 
 DDSSession::DDSSession(Id existing, DDSEnvironment env)
-    : fImpl(std::make_shared<Impl>(std::move(existing), env))
+    : fImpl(std::make_shared<Impl>(std::move(existing), std::move(env)))
+{}
+
+DDSSession::DDSSession(dds::tools_api::CSession nativeSession, DDSEnv env)
+    : fImpl(std::make_shared<Impl>(std::move(nativeSession), std::move(env)))
 {}
 
 auto DDSSession::GetEnv() const -> DDSEnvironment { return fImpl->fEnv; }

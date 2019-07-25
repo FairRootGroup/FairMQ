@@ -8,16 +8,16 @@
 
 #include "Topology.h"
 
-#include <fairlogger/Logger.h>
-
+#include <DDS/Tools.h>
+#include <DDS/Topology.h>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
-
-#include <utility>
-#include <thread>
+#include <condition_variable>
+#include <fairlogger/Logger.h>
 #include <future>
 #include <mutex>
-#include <condition_variable>
+#include <thread>
+#include <utility>
 
 namespace fair {
 namespace mq {
@@ -103,6 +103,12 @@ Topology::Topology(DDSTopology topo, DDSSession session)
 
     fExecutionThread = std::thread(&Topology::WaitForState, this);
 }
+
+Topology::Topology(dds::topology_api::CTopology nativeTopo,
+                   dds::tools_api::CSession nativeSession,
+                   DDSEnv env)
+    : Topology(DDSTopo(std::move(nativeTopo), env), DDSSession(std::move(nativeSession), env))
+{}
 
 auto Topology::ChangeState(TopologyTransition transition, ChangeStateCallback cb, Duration timeout) -> void
 {

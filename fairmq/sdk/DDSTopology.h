@@ -10,6 +10,7 @@
 #define FAIR_MQ_SDK_DDSTOPOLOGY_H
 
 #include <boost/filesystem.hpp>
+#include <fairmq/sdk/DDSInfo.h>
 #include <fairmq/sdk/DDSEnvironment.h>
 #include <memory>
 #include <string>
@@ -33,6 +34,11 @@ class DDSTopology
     /// @param topoFile DDS topology xml file
     /// @param env DDS environment
     explicit DDSTopology(Path topoFile, DDSEnvironment env = DDSEnvironment());
+
+    /// @brief Construct with already existing native DDS API objects
+    /// @param nativeTopology Existing and initialized CTopology
+    /// @param env Optional DDSEnv
+    explicit DDSTopology(dds::topology_api::CTopology nativeTopology, DDSEnv env = {});
 
     /// @brief Get associated DDS environment
     auto GetEnv() const -> DDSEnvironment;

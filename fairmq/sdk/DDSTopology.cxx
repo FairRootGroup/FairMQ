@@ -34,6 +34,11 @@ struct DDSTopology::Impl
         , fTopo(fTopoFile.string())
     {}
 
+    explicit Impl(dds::topology_api::CTopology nativeTopology, DDSEnvironment env)
+        : fEnv(std::move(env))
+        , fTopo(std::move(nativeTopology))
+    {}
+
     DDSEnvironment fEnv;
     Path fTopoFile;
     dds::topology_api::CTopology fTopo;
@@ -41,6 +46,10 @@ struct DDSTopology::Impl
 
 DDSTopology::DDSTopology(Path topoFile, DDSEnvironment env)
     : fImpl(std::make_shared<Impl>(std::move(topoFile), std::move(env)))
+{}
+
+DDSTopology::DDSTopology(dds::topology_api::CTopology nativeTopology, DDSEnv env)
+    : fImpl(std::make_shared<Impl>(std::move(nativeTopology), std::move(env)))
 {}
 
 auto DDSTopology::GetEnv() const -> DDSEnvironment { return fImpl->fEnv; }

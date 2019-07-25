@@ -9,12 +9,25 @@
 #include "TopologyFixture.h"
 
 #include <DDS/Topology.h>
+#include <DDS/Tools.h>
 #include <fairmq/sdk/Topology.h>
 #include <fairmq/Tools.h>
 
 namespace {
 
 using Topology = fair::mq::test::TopologyFixture;
+
+TEST(Topology2, ConstructionWithNativeDdsApiObjects)
+{
+    // This is only needed for this unit test
+    fair::mq::sdk::DDSEnv env(CMAKE_CURRENT_BINARY_DIR);
+
+    // Example usage:
+    dds::topology_api::CTopology nativeTopo(fair::mq::tools::ToString(SDK_TESTSUITE_SOURCE_DIR, "/test_topo.xml"));
+    dds::tools_api::CSession nativeSession;
+    nativeSession.create();
+    fair::mq::sdk::Topology topo(nativeTopo, nativeSession, env);
+}
 
 TEST_F(Topology, Construction)
 {
