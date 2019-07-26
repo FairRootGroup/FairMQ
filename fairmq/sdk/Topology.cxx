@@ -72,7 +72,7 @@ Topology::Topology(DDSTopology topo, DDSSession session)
 {
     std::vector<uint64_t> deviceList = fDDSTopo.GetDeviceList();
     for (const auto& d : deviceList) {
-        LOG(info) << "Adding device " << d;
+        // LOG(debug) << "Adding device " << d;
         fState.emplace(d, DeviceStatus{ false, DeviceState::Ok });
     }
     fDDSSession.SubscribeToCommands([this](const std::string& msg, const std::string& /* condition */, uint64_t senderId) {
@@ -122,7 +122,7 @@ auto Topology::ChangeState(TopologyTransition transition, ChangeStateCallback cb
             throw std::runtime_error("A state change request is already in progress, concurrent requests are currently not supported");
             lock.unlock();
         }
-        LOG(info) << "Initiating ChangeState with " << transition << " to " << expectedState.at(transition);
+        LOG(debug) << "Initiating ChangeState with " << transition << " to " << expectedState.at(transition);
         fStateChangeOngoing = true;
         fChangeStateCallback = cb;
         fStateChangeTimeout = timeout;
@@ -204,7 +204,7 @@ void Topology::AddNewStateEntry(uint64_t senderId, const std::string& state)
 {
     std::size_t pos = state.find("->");
     std::string endState = state.substr(pos + 2);
-    LOG(info) << "Adding new state entry: " << senderId << ", " << state << ", end state: " << endState;
+    // LOG(debug) << "Adding new state entry: " << senderId << ", " << state << ", end state: " << endState;
     {
         try {
             std::unique_lock<std::mutex> lock(fMtx);

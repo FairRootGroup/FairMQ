@@ -48,13 +48,26 @@ echo "TOPOLOGY FILE: ${topologyFile}"
 # dds-info --active-topology
 dds-topology --disable-validation --activate ${topologyFile}
 # dds-info --active-topology
+# dds-info --wait-for-executing-agents ${requiredNofAgents}
+sleep 1
 
 echo "------------------------"
 echo "...waiting for Topology to finish..."
+# TODO Retrieve number of devices from DDS topology API instead of having the user pass it explicitely
+fairmq-dds-command-ui -w "IDLE" -n ${requiredNofAgents}
+fairmq-dds-command-ui -c i -w "INITIALIZING DEVICE" -n ${requiredNofAgents}
+fairmq-dds-command-ui -c k -w "INITIALIZED" -n ${requiredNofAgents}
+fairmq-dds-command-ui -c b -w "BOUND" -n ${requiredNofAgents}
+fairmq-dds-command-ui -c x -w "DEVICE READY" -n ${requiredNofAgents}
+fairmq-dds-command-ui -c j -w "READY" -n ${requiredNofAgents}
+fairmq-dds-command-ui -c r
 sampler_and_sink="main/(Sampler|Sink)"
-fairmq-dds-command-ui -p $sampler_and_sink -w "RUNNING->READY"
+fairmq-dds-command-ui -p $sampler_and_sink -w "RUNNING->READY" -n 2
 echo "...$sampler_and_sink are READY, sending shutdown..."
-fairmq-dds-command-ui -c q! -w "EXITING"
+fairmq-dds-command-ui -c s -w "RUNNING->READY" -n ${requiredNofAgents}
+fairmq-dds-command-ui -c t -w "DEVICE READY" -n ${requiredNofAgents}
+fairmq-dds-command-ui -c d -w "IDLE" -n ${requiredNofAgents}
+fairmq-dds-command-ui -c q
 echo "...waiting for ${requiredNofAgents} idle agents..."
 dds-info --wait-for-idle-agents ${requiredNofAgents}
 echo "------------------------"
