@@ -9,7 +9,7 @@
 
     <decltask name="Sampler">
         <env reachable="false">fairmq-ex-dds-env.sh</env>
-        <exe>fairmq-ex-dds-sampler --id sampler --color false --channel-config name=data1,type=push,method=bind -P dds</exe>
+        <exe>fairmq-ex-dds-sampler --id sampler --color false --channel-config name=data1,type=push,method=bind --rate 100 -P dds</exe>
         <requirements>
             <name>SamplerWorker</name>
         </requirements>

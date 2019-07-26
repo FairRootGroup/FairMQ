@@ -65,6 +65,12 @@ install(
 )
 
 install(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology-infinite.xml_install
+    DESTINATION ${PROJECT_INSTALL_DATADIR}
+    RENAME ex-dds-topology-infinite.xml
+)
+
+install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-hosts.cfg
     DESTINATION ${PROJECT_INSTALL_DATADIR}
 )
