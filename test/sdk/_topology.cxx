@@ -25,7 +25,8 @@ TEST(Topology2, ConstructionWithNativeDdsApiObjects)
     /////////////////////////////////////////
 
     // Example usage:
-    dds::topology_api::CTopology nativeTopo(fair::mq::tools::ToString(SDK_TESTSUITE_SOURCE_DIR, "/test_topo.xml"));
+    dds::topology_api::CTopology nativeTopo(
+        fair::mq::tools::ToString(SDK_TESTSUITE_SOURCE_DIR, "/test_topo.xml"));
     auto nativeSession(std::make_shared<dds::tools_api::CSession>());
     nativeSession->create();
     EXPECT_THROW(fair::mq::sdk::Topology topo(nativeTopo, nativeSession, env), std::runtime_error);
@@ -43,13 +44,16 @@ TEST_F(Topology, ChangeStateAsync)
 
     Topology topo(mDDSTopo, mDDSSession);
     fair::mq::tools::Semaphore blocker;
-    topo.ChangeState(TopologyTransition::InitDevice, [&blocker, &topo](Topology::ChangeStateResult result) {
-        LOG(info) << result;
-        EXPECT_EQ(result.rc, fair::mq::AsyncOpResultCode::Ok);
-        EXPECT_NO_THROW(fair::mq::sdk::AggregateState(result.state));
-        EXPECT_EQ(fair::mq::sdk::StateEqualsTo(result.state, fair::mq::sdk::DeviceState::Running), true);
-        blocker.Signal();
-    });
+    topo.ChangeState(
+        TopologyTransition::InitDevice, [&blocker, &topo](Topology::ChangeStateResult result) {
+            LOG(info) << result;
+            EXPECT_EQ(result.rc, fair::mq::AsyncOpResultCode::Ok);
+            EXPECT_NO_THROW(fair::mq::sdk::AggregateState(result.state));
+            EXPECT_EQ(
+                fair::mq::sdk::StateEqualsTo(result.state, fair::mq::sdk::DeviceState::InitializingDevice),
+                true);
+            blocker.Signal();
+        });
     blocker.Wait();
 }
 
@@ -59,12 +63,13 @@ TEST_F(Topology, ChangeStateSync)
     using fair::mq::sdk::TopologyTransition;
 
     Topology topo(mDDSTopo, mDDSSession);
-    EXPECT_EQ(topo.ChangeState(TopologyTransition::Run).rc, fair::mq::AsyncOpResultCode::Ok);
-    auto result(topo.ChangeState(TopologyTransition::Stop));
+    auto result(topo.ChangeState(TopologyTransition::InitDevice));
 
     EXPECT_EQ(result.rc, fair::mq::AsyncOpResultCode::Ok);
     EXPECT_NO_THROW(fair::mq::sdk::AggregateState(result.state));
-    EXPECT_EQ(fair::mq::sdk::StateEqualsTo(result.state, fair::mq::sdk::DeviceState::Ready), true);
+    EXPECT_EQ(
+        fair::mq::sdk::StateEqualsTo(result.state, fair::mq::sdk::DeviceState::InitializingDevice),
+        true);
 }
 
 TEST_F(Topology, ChangeStateConcurrent)
@@ -74,14 +79,14 @@ TEST_F(Topology, ChangeStateConcurrent)
 
     Topology topo(mDDSTopo, mDDSSession);
     fair::mq::tools::Semaphore blocker;
-    topo.ChangeState(TopologyTransition::Run, [&blocker](Topology::ChangeStateResult result) {
-        LOG(info) << "result for valid ChangeState: " << result;
-        blocker.Signal();
-    });
-    topo.ChangeState(TopologyTransition::Stop, [&blocker](Topology::ChangeStateResult result) {
-        LOG(info) << "result for invalid ChangeState: " << result;
-        EXPECT_EQ(result.rc, fair::mq::AsyncOpResultCode::Error);
-    });
+    topo.ChangeState(TopologyTransition::InitDevice,
+                     [&blocker](Topology::ChangeStateResult result) {
+                         LOG(info) << "result for valid ChangeState: " << result;
+                         blocker.Signal();
+                     });
+    EXPECT_THROW(topo.ChangeState(TopologyTransition::Stop,
+                                  [&blocker](Topology::ChangeStateResult) {}),
+                 std::runtime_error);
     blocker.Wait();
 }
 
@@ -92,12 +97,32 @@ TEST_F(Topology, ChangeStateTimeout)
 
     Topology topo(mDDSTopo, mDDSSession);
     fair::mq::tools::Semaphore blocker;
-    topo.ChangeState(TopologyTransition::End, [&](Topology::ChangeStateResult result) {
+    topo.ChangeState(TopologyTransition::InitDevice, [&](Topology::ChangeStateResult result) {
         LOG(info) << result;
         EXPECT_EQ(result.rc, fair::mq::AsyncOpResultCode::Timeout);
         blocker.Signal();
     }, std::chrono::milliseconds(1));
     blocker.Wait();
+}
+
+TEST_F(Topology, ChangeStateFullDeviceLifetime)
+{
+    using fair::mq::sdk::Topology;
+    using fair::mq::sdk::TopologyTransition;
+
+    Topology topo(mDDSTopo, mDDSSession);
+    for (auto transition : {TopologyTransition::InitDevice,
+                            TopologyTransition::CompleteInit,
+                            TopologyTransition::Bind,
+                            TopologyTransition::Connect,
+                            TopologyTransition::InitTask,
+                            TopologyTransition::Run,
+                            TopologyTransition::Stop,
+                            TopologyTransition::ResetTask,
+                            TopologyTransition::ResetDevice,
+                            TopologyTransition::End}) {
+        ASSERT_EQ(topo.ChangeState(transition).rc, fair::mq::AsyncOpResultCode::Ok);
+    }
 }
 
 }   // namespace

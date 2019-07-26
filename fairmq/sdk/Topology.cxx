@@ -54,7 +54,7 @@ const std::unordered_map<DeviceTransition, DeviceState, tools::HashEnum<DeviceTr
     { Transition::CompleteInit, DeviceState::Initialized },
     { Transition::Bind,         DeviceState::Bound },
     { Transition::Connect,      DeviceState::DeviceReady },
-    { Transition::InitTask,     DeviceState::InitializingTask },
+    { Transition::InitTask,     DeviceState::Ready },
     { Transition::Run,          DeviceState::Running },
     { Transition::Stop,         DeviceState::Ready },
     { Transition::ResetTask,    DeviceState::DeviceReady },
@@ -76,7 +76,7 @@ Topology::Topology(DDSTopology topo, DDSSession session)
         fState.emplace(d, DeviceStatus{ false, DeviceState::Ok });
     }
     fDDSSession.SubscribeToCommands([this](const std::string& msg, const std::string& /* condition */, uint64_t senderId) {
-        LOG(debug) << "Received from " << senderId << ": " << msg;
+        // LOG(debug) << "Received from " << senderId << ": " << msg;
         std::vector<std::string> parts;
         boost::algorithm::split(parts, msg, boost::algorithm::is_any_of(":,"));
 
@@ -87,6 +87,7 @@ Topology::Topology(DDSTopology topo, DDSSession session)
         if (parts[0] == "state-change") {
             AddNewStateEntry(std::stoull(parts[2]), parts[3]);
         } else if (parts[0] == "state-changes-subscription") {
+            LOG(debug) << "Received from " << senderId << ": " << msg;
             if (parts[2] != "OK") {
                 LOG(error) << "state-changes-subscription failed with return code: " << parts[2];
             }
@@ -99,6 +100,7 @@ Topology::Topology(DDSTopology topo, DDSSession session)
         }
     });
     fDDSSession.StartDDSService();
+    LOG(debug) << "subscribe-to-state-changes";
     fDDSSession.SendCommand("subscribe-to-state-changes");
 
     fExecutionThread = std::thread(&Topology::WaitForState, this);
@@ -156,10 +158,16 @@ void Topology::WaitForState()
                 auto condition = [&] {
                     // LOG(info) << "checking condition";
                     // LOG(info) << "fShutdown: " << fShutdown;
-                    // LOG(info) << "condition: " << std::all_of(fState.cbegin(), fState.cend(), [&](TopologyState::value_type i) { return i.second.state == fTargetState; });
-                    return fShutdown || std::all_of(fState.cbegin(), fState.cend(), [&](TopologyState::value_type i) {
-                        return i.second.state == fTargetState;
-                    });
+                    // LOG(info) << "condition: " << std::all_of(fState.cbegin(), fState.cend(),
+                    // [&](TopologyState::value_type i) { return i.second.state == fTargetState; });
+                    return fShutdown
+                           || std::all_of(
+                               fState.cbegin(), fState.cend(), [&](TopologyState::value_type i) {
+                                   // TODO Check, if we can make sure that EXITING state change event are not missed
+                                   return (fTargetState == DeviceState::Exiting)
+                                          || ((i.second.state == fTargetState)
+                                              && i.second.initialized);
+                               });
                 };
 
                 std::unique_lock<std::mutex> lock(fMtx);
@@ -170,7 +178,8 @@ void Topology::WaitForState()
                         fStateChangeOngoing = false;
                         TopologyState state = fState;
                         lock.unlock();
-                        fChangeStateCallback({{AsyncOpResultCode::Timeout, "timeout"}, std::move(state)});
+                        fChangeStateCallback(
+                            {{AsyncOpResultCode::Timeout, "timeout"}, std::move(state)});
                         break;
                     }
                 } else {
@@ -182,13 +191,17 @@ void Topology::WaitForState()
                     LOG(debug) << "Aborting because a shutdown was requested";
                     TopologyState state = fState;
                     lock.unlock();
-                    fChangeStateCallback({{AsyncOpResultCode::Aborted, "Aborted because a shutdown was requested"}, std::move(state)});
+                    fChangeStateCallback(
+                        {{AsyncOpResultCode::Aborted, "Aborted because a shutdown was requested"},
+                         std::move(state)});
                     break;
                 }
             } catch (std::exception& e) {
                 fStateChangeOngoing = false;
                 LOG(error) << "Error while processing state request: " << e.what();
-                fChangeStateCallback({{AsyncOpResultCode::Error, tools::ToString("Exception thrown: ", e.what())}, fState});
+                fChangeStateCallback(
+                    {{AsyncOpResultCode::Error, tools::ToString("Exception thrown: ", e.what())},
+                     fState});
             }
 
             fChangeStateCallback({{AsyncOpResultCode::Ok, "success"}, fState});

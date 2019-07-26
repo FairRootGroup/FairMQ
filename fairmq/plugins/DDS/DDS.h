@@ -64,7 +64,10 @@ struct DDSSubscription
         });
 
         assert(!dds_session_id.empty());
-        fService.start(dds_session_id);
+    }
+
+    auto Start() -> void {
+        fService.start(dds::env_prop<dds::dds_session_id>());
     }
 
     ~DDSSubscription() {
