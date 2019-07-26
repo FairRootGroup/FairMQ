@@ -70,7 +70,7 @@ struct StateSubscription {
 void printControlsHelp()
 {
     cout << "Use keys to control the devices:" << endl;
-    cout << "[c] check states, [o] dump config, [h] help, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device, [b] bind, [x] connect" << endl;
+    cout << "[c] check states, [o] dump config, [h] help, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device, [k] complete init, [b] bind, [x] connect" << endl;
     cout << "To quit press Ctrl+C" << endl;
 }
 
@@ -95,6 +95,9 @@ void commandMode(const string& commandIn, const string& topologyPath, CCustomCmd
         } else if (command == "i") {
             cout << "> init devices" << endl;
             ddsCustomCmd.send("INIT DEVICE", topologyPath);
+        } else if (command == "k") {
+            cout << "> complete init" << endl;
+            ddsCustomCmd.send("COMPLETE INIT", topologyPath);
         } else if (command == "b") {
             cout << "> bind devices" << endl;
             ddsCustomCmd.send("BIND", topologyPath);
@@ -152,7 +155,11 @@ struct WaitMode
         : fTargetState(targetState)
     {}
 
-    void Run(const chrono::milliseconds& timeout, const string& topologyPath, CCustomCmd& ddsCustomCmd, const string& command = "")
+    void Run(const chrono::milliseconds& timeout,
+             const string& topologyPath,
+             CCustomCmd& ddsCustomCmd,
+             unsigned int numberDevices,
+             const string& command = "")
     {
         StateSubscription stateSubscription(topologyPath, ddsCustomCmd);
 
@@ -161,11 +168,18 @@ struct WaitMode
         }
 
         // TODO once DDS provides an API to retrieve actual number of tasks, use it here
-        auto condition = [&] { return !fTargetStates.empty() && all_of(fTargetStates.cbegin(),
-                                                                    fTargetStates.cend(),
-                                                                    [&](unordered_map<uint64_t, string>::value_type i) {
-                                                                        return boost::algorithm::ends_with(i.second, fTargetState);
-                                                                    });
+        auto condition = [&] {
+            bool res(!fTargetStates.empty()
+                   && all_of(fTargetStates.cbegin(),
+                             fTargetStates.cend(),
+                             [&](unordered_map<uint64_t, string>::value_type i) {
+                                 return boost::algorithm::ends_with(i.second, fTargetState);
+                             }));
+            if (numberDevices > 0) {
+                res = res && (fTargetStates.size() == numberDevices);
+            }
+            cout << "waiting for " << numberDevices << " devices to reach " << fTargetState << ", condition check: " << res << endl;
+            return res;
         };
 
         unique_lock<mutex> lock(fMtx);
@@ -202,6 +216,7 @@ int main(int argc, char* argv[])
         string topologyPath;
         string targetState;
         unsigned int timeout;
+        unsigned int numberDevices(0);
 
         bpo::options_description options("Common options");
 
@@ -217,6 +232,7 @@ int main(int argc, char* argv[])
             ("path,p",           bpo::value<string> (&topologyPath)->default_value(""), "DDS Topology path to send command to (empty - send to all tasks)")
             ("wait-for-state,w", bpo::value<string> (&targetState)->default_value(""), "Wait until targeted FairMQ devices reach the given state")
             ("timeout,t",        bpo::value<unsigned int> (&timeout)->default_value(0), "Timeout in milliseconds when waiting for a device state (0 - wait infinitely)")
+            ("number-devices,n", bpo::value<unsigned int> (&numberDevices)->default_value(0), "Number of devices (will be removed in the future)")
             ("help,h", "Produce help message");
 
         bpo::variables_map vm;
@@ -224,7 +240,7 @@ int main(int argc, char* argv[])
 
         if (vm.count("help")) {
             cout << "FairMQ DDS Command UI" << endl << options << endl;
-            cout << "Commands: [c] check state, [o] dump config, [h] help, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device" << endl;
+            cout << "Commands: [c] check state, [o] dump config, [h] help, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device, [k] complete init, [b] bind, [x] connect" << endl;
             return EXIT_SUCCESS;
         }
 
@@ -241,12 +257,13 @@ int main(int argc, char* argv[])
 
         // subscribe to receive messages from DDS
         ddsCustomCmd.subscribe([&](const string& msg, const string& /*condition*/, uint64_t senderId) {
-            cerr << "Received: " << msg << endl;
+            // cerr << "Received: " << msg << endl;
             vector<string> parts;
             boost::algorithm::split(parts, msg, boost::algorithm::is_any_of(":,"));
             if (parts[0] == "state-change") {
+                // cerr << "Received: " << msg << endl;
                 boost::trim(parts[2]);
-                waitMode.AddNewStateEntry(senderId, parts[2]);
+                waitMode.AddNewStateEntry(senderId, parts[3]);
             } else if (parts[0] == "state-changes-subscription") {
                 if (parts[2] != "OK") {
                     cerr << "state-changes-subscription failed with return code: " << parts[2];
@@ -265,7 +282,7 @@ int main(int argc, char* argv[])
         if (targetState == "") {
             commandMode(command, topologyPath, ddsCustomCmd);
         } else {
-            waitMode.Run(chrono::milliseconds(timeout), topologyPath, ddsCustomCmd, command);
+            waitMode.Run(chrono::milliseconds(timeout), topologyPath, ddsCustomCmd, numberDevices, command);
         }
     } catch (exception& e) {
         cerr << "Error: " << e.what() << endl;

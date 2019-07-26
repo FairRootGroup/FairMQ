@@ -43,19 +43,11 @@ TEST_F(Topology, ChangeStateAsync)
 
     Topology topo(mDDSTopo, mDDSSession);
     fair::mq::tools::Semaphore blocker;
-    topo.ChangeState(TopologyTransition::Run, [&blocker, &topo](Topology::ChangeStateResult result) {
+    topo.ChangeState(TopologyTransition::InitDevice, [&blocker, &topo](Topology::ChangeStateResult result) {
         LOG(info) << result;
         EXPECT_EQ(result.rc, fair::mq::AsyncOpResultCode::Ok);
         EXPECT_NO_THROW(fair::mq::sdk::AggregateState(result.state));
         EXPECT_EQ(fair::mq::sdk::StateEqualsTo(result.state, fair::mq::sdk::DeviceState::Running), true);
-        blocker.Signal();
-    });
-    blocker.Wait();
-    topo.ChangeState(TopologyTransition::Stop, [&blocker, &topo](Topology::ChangeStateResult result) {
-        LOG(info) << result;
-        EXPECT_EQ(result.rc, fair::mq::AsyncOpResultCode::Ok);
-        EXPECT_NO_THROW(fair::mq::sdk::AggregateState(result.state));
-        EXPECT_EQ(fair::mq::sdk::StateEqualsTo(result.state, fair::mq::sdk::DeviceState::Ready), true);
         blocker.Signal();
     });
     blocker.Wait();

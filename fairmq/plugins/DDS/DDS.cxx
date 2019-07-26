@@ -31,9 +31,22 @@ namespace mq
 namespace plugins
 {
 
-DDS::DDS(const string& name, const Plugin::Version version, const string& maintainer, const string& homepage, PluginServices* pluginServices)
+DDS::DDS(const string& name,
+         const Plugin::Version version,
+         const string& maintainer,
+         const string& homepage,
+         PluginServices* pluginServices)
     : Plugin(name, version, maintainer, homepage, pluginServices)
-    , fTransitions({ "BIND", "CONNECT", "INIT TASK", "RUN", "STOP", "RESET TASK", "RESET DEVICE" })
+    , fTransitions({"INIT DEVICE",
+                    "COMPLETE INIT",
+                    "BIND",
+                    "CONNECT",
+                    "INIT TASK",
+                    "RUN",
+                    "STOP",
+                    "RESET TASK",
+                    "RESET DEVICE",
+                    "END"})
     , fCurrentState(DeviceState::Idle)
     , fLastState(DeviceState::Idle)
     , fDeviceTerminationRequested(false)
@@ -282,25 +295,13 @@ auto DDS::SubscribeForCustomCommands() -> void
 
         if (cmd == "check-state") {
             fDDS.Send(id + ": " + ToStr(GetCurrentDeviceState()), to_string(senderId));
-        } else if (cmd == "INIT DEVICE") {
-            if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
-                fDDS.Send(id + ": queued, " + cmd, to_string(senderId));
-            } else {
-                fDDS.Send(id + ": could not queue, " + cmd, to_string(senderId));
-            }
         } else if (fTransitions.find(cmd) != fTransitions.end()) {
             if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
                 fDDS.Send(id + ": queued, " + cmd, to_string(senderId));
             } else {
                 fDDS.Send(id + ": could not queue, " + cmd, to_string(senderId));
             }
-        } else if (cmd == "END") {
-            if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
-                fDDS.Send(id + ": queued, " + cmd, to_string(senderId));
-            } else {
-                fDDS.Send(id + ": could not queue, " + cmd, to_string(senderId));
-            }
-            if (ToStr(GetCurrentDeviceState()) == "EXITING") {
+            if (cmd == "END" && ToStr(GetCurrentDeviceState()) == "EXITING") {
                 unique_lock<mutex> lock(fStopMutex);
                 fStopCondition.notify_one();
             }
@@ -343,9 +344,9 @@ auto DDS::SubscribeForCustomCommands() -> void
             }
             fDDS.Send("state-changes-unsubscription: " + id + ",OK", to_string(senderId));
         } else if (cmd == "SHUTDOWN") {
-                TransitionDeviceStateTo(DeviceState::Exiting);
+            TransitionDeviceStateTo(DeviceState::Exiting);
         } else if (cmd == "STARTUP") {
-                TransitionDeviceStateTo(DeviceState::Running);
+            TransitionDeviceStateTo(DeviceState::Running);
         } else {
             LOG(warn) << "Unknown command: " << cmd;
             LOG(warn) << "Origin: " << senderId;
