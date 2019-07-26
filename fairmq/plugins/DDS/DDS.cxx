@@ -80,6 +80,7 @@ auto DDS::HandleControl() -> void
 
         SubscribeForCustomCommands();
         SubscribeForConnectingChannels();
+        fDDS.Start();
 
         // subscribe to device state changes, pushing new state changes into the event queue
         SubscribeToDeviceStateChange([&](DeviceState newState) {
