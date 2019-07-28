@@ -63,8 +63,6 @@ bool DeviceRunner::HandleGeneralOptions(const fair::mq::ProgOptions& config, boo
                 << "   / __/ / /_/ / / /    _  /  / / / /_/ /     " << FAIRMQ_REPO_URL << endl
                 << "  /_/    \\__,_/_/_/     /_/  /_/  \\___\\_\\     " << FAIRMQ_LICENSE << "  © " << FAIRMQ_COPYRIGHT << endl;
         }
-
-        config.PrintOptions();
     }
 
     return true;
@@ -168,6 +166,9 @@ auto DeviceRunner::Run() -> int
 
     // Instantiate and run plugins
     fPluginManager.InstantiatePlugins();
+
+    // Log IDLE configuration
+    fConfig.PrintOptions();
 
     // Run the device
     fDevice->RunStateMachine();

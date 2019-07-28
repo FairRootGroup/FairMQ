@@ -55,18 +55,18 @@ DDS::DDS(const string& name,
 {
     try {
         TakeDeviceControl();
-        fControllerThread = thread(&DDS::HandleControl, this);
-        fHeartbeatThread = thread(&DDS::HeartbeatSender, this);
-    } catch (PluginServices::DeviceControlError& e) {
-        LOG(debug) << e.what();
-    } catch (exception& e) {
-        LOG(error) << "Error in plugin initialization: " << e.what();
-    }
-}
 
-auto DDS::HandleControl() -> void
-{
-    try {
+        fHeartbeatThread = thread(&DDS::HeartbeatSender, this);
+
+        std::string deviceId(GetProperty<std::string>("id"));
+        if (deviceId.empty()) {
+            SetProperty<std::string>("id", dds::env_prop<dds::task_path>());
+        }
+        std::string sessionId(GetProperty<std::string>("session"));
+        if (sessionId == "default") {
+            SetProperty<std::string>("session", dds::env_prop<dds::dds_session_id>());
+        }
+
         auto control = GetProperty<string>("control");
         bool staticMode(false);
         if (control == "static") {
@@ -121,15 +121,26 @@ auto DDS::HandleControl() -> void
         });
 
         if (staticMode) {
-            TransitionDeviceStateTo(DeviceState::Running);
-
-            // wait until stop signal
-            unique_lock<mutex> lock(fStopMutex);
-            while (!fDeviceTerminationRequested) {
-                fStopCondition.wait_for(lock, chrono::seconds(1));
-            }
-            LOG(debug) << "Stopping DDS control plugin";
+            fControllerThread = thread(&DDS::StaticControl, this);
         }
+    } catch (PluginServices::DeviceControlError& e) {
+        LOG(debug) << e.what();
+    } catch (exception& e) {
+        LOG(error) << "Error in plugin initialization: " << e.what();
+    }
+}
+
+auto DDS::StaticControl() -> void
+{
+    try {
+        TransitionDeviceStateTo(DeviceState::Running);
+
+        // wait until stop signal
+        unique_lock<mutex> lock(fStopMutex);
+        while (!fDeviceTerminationRequested) {
+            fStopCondition.wait_for(lock, chrono::seconds(1));
+        }
+        LOG(debug) << "Stopping DDS plugin static controller";
     } catch (DeviceErrorState&) {
         ReleaseDeviceControl();
     } catch (exception& e) {
