@@ -128,7 +128,7 @@ class DDS : public Plugin
     ~DDS();
 
   private:
-    auto HandleControl() -> void;
+    auto StaticControl() -> void;
 
     auto FillChannelContainers() -> void;
     auto SubscribeForConnectingChannels() -> void;
