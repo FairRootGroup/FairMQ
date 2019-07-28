@@ -163,6 +163,10 @@ class DDS : public Plugin
 
     std::thread fHeartbeatThread;
     std::chrono::milliseconds fHeartbeatInterval;
+
+    bool fUpdatesAllowed;
+    std::mutex fUpdateMutex;
+    std::condition_variable fUpdateCondition;
 };
 
 Plugin::ProgOptions DDSProgramOptions()
