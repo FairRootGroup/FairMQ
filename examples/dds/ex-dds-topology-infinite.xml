@@ -22,7 +22,7 @@
         <exe>fairmq-ex-dds-processor --color false --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P dds</exe>
         <env reachable="false">fairmq-ex-dds-env.sh</env>
         <requirements>
-            <id>ProcessorWorker</id>
+            <name>ProcessorWorker</name>
         </requirements>
         <properties>
             <name access="read">data1</name>

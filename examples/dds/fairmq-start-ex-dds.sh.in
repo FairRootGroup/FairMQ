@@ -46,7 +46,7 @@ echo "TOPOLOGY FILE: ${topologyFile}"
 
 # TODO Uncomment once DDS 2.6 is released
 # dds-info --active-topology
-dds-topology --disable-validation --activate ${topologyFile}
+dds-topology --activate ${topologyFile}
 # dds-info --active-topology
 # dds-info --wait-for-executing-agents ${requiredNofAgents}
 sleep 1
