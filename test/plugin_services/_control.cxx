@@ -26,10 +26,7 @@ TEST_F(PluginServices, OnlySingleController)
         mServices.ChangeDeviceState("bar", DeviceStateTransition::InitDevice),
         fair::mq::PluginServices::DeviceControlError
     );
-    ASSERT_THROW( // no control for bar
-        mServices.ReleaseDeviceControl("bar"),
-        fair::mq::PluginServices::DeviceControlError
-    );
+    ASSERT_NO_THROW(mServices.ReleaseDeviceControl("bar"));
 
     ASSERT_NO_THROW(mServices.ReleaseDeviceControl("foo"));
     ASSERT_FALSE(mServices.GetDeviceController());
