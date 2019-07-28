@@ -75,7 +75,7 @@ Topology::Topology(DDSTopology topo, DDSSession session)
         // LOG(debug) << "Adding device " << d;
         fState.emplace(d, DeviceStatus{ false, DeviceState::Ok });
     }
-    fDDSSession.SubscribeToCommands([this](const std::string& msg, const std::string& /* condition */, uint64_t senderId) {
+    fDDSSession.SubscribeToCommands([this](const std::string& msg, const std::string& /* condition */, DDSChannel::Id senderId) {
         // LOG(debug) << "Received from " << senderId << ": " << msg;
         std::vector<std::string> parts;
         boost::algorithm::split(parts, msg, boost::algorithm::is_any_of(":,"));
@@ -85,7 +85,9 @@ Topology::Topology(DDSTopology topo, DDSSession session)
         }
 
         if (parts[0] == "state-change") {
-            AddNewStateEntry(std::stoull(parts[2]), parts[3]);
+            DDSTask::Id taskId(std::stoull(parts[2]));
+            fDDSSession.UpdateChannelToTaskAssociation(senderId, taskId);
+            AddNewStateEntry(taskId, parts[3]);
         } else if (parts[0] == "state-changes-subscription") {
             LOG(debug) << "Received from " << senderId << ": " << msg;
             if (parts[2] != "OK") {

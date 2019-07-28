@@ -20,7 +20,9 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <mutex>
 #include <sstream>
+#include <unordered_map>
 #include <utility>
 
 namespace fair {
@@ -134,6 +136,8 @@ struct DDSSession::Impl
     dds::intercom_api::CCustomCmd fDDSCustomCmd;
     Id fId;
     bool fStopOnDestruction;
+    mutable std::mutex fMtx;
+    std::unordered_map<DDSChannel::Id, DDSTask::Id> fTaskIdByChannelIdMap;
 };
 
 DDSSession::DDSSession(DDSEnvironment env)
@@ -315,6 +319,18 @@ void DDSSession::UnsubscribeFromCommands()
 }
 
 void DDSSession::SendCommand(const std::string& cmd) { fImpl->fDDSCustomCmd.send(cmd, ""); }
+
+auto DDSSession::UpdateChannelToTaskAssociation(DDSChannel::Id channelId, DDSTask::Id taskId) -> void
+{
+    std::lock_guard<std::mutex> lk(fImpl->fMtx);
+    fImpl->fTaskIdByChannelIdMap[channelId] = taskId;
+}
+
+auto DDSSession::GetTaskId(DDSChannel::Id channelId) const -> DDSTask::Id
+{
+    std::lock_guard<std::mutex> lk(fImpl->fMtx);
+    return fImpl->fTaskIdByChannelIdMap.at(channelId);
+}
 
 auto operator<<(std::ostream& os, const DDSSession& session) -> std::ostream&
 {

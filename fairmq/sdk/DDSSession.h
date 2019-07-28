@@ -43,6 +43,18 @@ auto operator>>(std::istream& is, DDSRMSPlugin& plugin) -> std::istream&;
 class DDSTopology;
 class DDSAgent;
 
+class DDSTask
+{
+  public:
+    using Id = std::uint64_t;
+};
+
+class DDSChannel
+{
+  public:
+    using Id = std::uint64_t;
+};
+
 /**
  * @class DDSSession DDSSession.h <fairmq/sdk/DDSSession.h>
  * @brief Represents a DDS session
@@ -95,6 +107,8 @@ class DDSSession
     void SubscribeToCommands(std::function<void(const std::string& msg, const std::string& condition, uint64_t senderId)>);
     void UnsubscribeFromCommands();
     void SendCommand(const std::string&);
+    auto UpdateChannelToTaskAssociation(DDSChannel::Id, DDSTask::Id) -> void;
+    auto GetTaskId(DDSChannel::Id) const -> DDSTask::Id;
 
     friend auto operator<<(std::ostream& os, const DDSSession& session) -> std::ostream&;
 

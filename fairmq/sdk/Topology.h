@@ -56,7 +56,7 @@ struct DeviceStatus
     DeviceState state;
 };
 
-using TopologyState = std::unordered_map<uint64_t, DeviceStatus>;
+using TopologyState = std::unordered_map<DDSTask::Id, DeviceStatus>;
 using TopologyTransition = fair::mq::Transition;
 
 struct MixedState : std::runtime_error { using std::runtime_error::runtime_error; };
