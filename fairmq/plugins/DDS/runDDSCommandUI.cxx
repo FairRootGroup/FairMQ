@@ -273,7 +273,7 @@ int main(int argc, char* argv[])
                     cerr << "state-changes-unsubscription failed with return code: " << parts[2];
                 }
             } else {
-                // cout << "Received: " << msg << endl;
+                cout << "Received: " << msg << endl;
             }
         });
 

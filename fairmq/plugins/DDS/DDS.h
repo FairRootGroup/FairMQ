@@ -63,6 +63,9 @@ struct DDSSubscription
             LOG(error) << "DDS Error received: error code: " << errorCode << ", error message: " << errorMsg;
         });
 
+        // fDDSCustomCmd.subscribe([](const std::string& cmd, const std::string& cond, uint64_t senderId) {
+            // LOG(debug) << "cmd: " << cmd << ", cond: " << cond << ", senderId: " << senderId;
+        // });
         assert(!dds_session_id.empty());
     }
 

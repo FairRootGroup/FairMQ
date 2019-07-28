@@ -74,7 +74,8 @@ auto PluginServices::ReleaseDeviceControl(const string& controller) -> void
         if (fDeviceController == controller) {
             fDeviceController = boost::none;
         } else {
-            throw DeviceControlError{tools::ToString("Plugin '", controller, "' cannot release control because it has not taken over control.")};
+            LOG(debug) << "Plugin '" << controller << "' cannot release control "
+                       << "because it has no control.";
         }
     }
 
