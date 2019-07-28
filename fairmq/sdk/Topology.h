@@ -150,6 +150,7 @@ class Topology
     ChangeStateCallback fChangeStateCallback;
     std::chrono::milliseconds fStateChangeTimeout;
     bool fShutdown;
+    std::string fStateChangeError;
 
     void WaitForState();
     void AddNewStateEntry(uint64_t senderId, const std::string& state);

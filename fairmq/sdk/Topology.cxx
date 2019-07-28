@@ -98,7 +98,16 @@ Topology::Topology(DDSTopology topo, DDSSession session)
                 LOG(error) << "state-changes-unsubscription failed with return code: " << parts[2];
             }
         } else if (parts[1] == "could not queue") {
-            LOG(warn) << "Could not queue " << parts[2] << " transition on " << senderId;
+            std::unique_lock<std::mutex> lock(fMtx);
+
+            if (fStateChangeOngoing) {
+                if (fState.at(fDDSSession.GetTaskId(senderId)).state != fTargetState) {
+                    fStateChangeError =
+                        tools::ToString("Could not queue ", parts[2], " transition on ", senderId);
+                    lock.unlock();
+                    fCV.notify_one();
+                }
+            }
         }
     });
     fDDSSession.StartDDSService();
@@ -124,13 +133,13 @@ auto Topology::ChangeState(TopologyTransition transition, ChangeStateCallback cb
         std::unique_lock<std::mutex> lock(fMtx);
         if (fStateChangeOngoing) {
             throw std::runtime_error("A state change request is already in progress, concurrent requests are currently not supported");
-            lock.unlock();
         }
         LOG(debug) << "Initiating ChangeState with " << transition << " to " << expectedState.at(transition);
         fStateChangeOngoing = true;
         fChangeStateCallback = cb;
         fStateChangeTimeout = timeout;
         fTargetState = expectedState.at(transition);
+        fStateChangeError.clear();
 
         fDDSSession.SendCommand(GetTransitionName(transition));
     }
@@ -157,12 +166,15 @@ void Topology::WaitForState()
     while (!fShutdown) {
         if (fStateChangeOngoing) {
             try {
+                std::unique_lock<std::mutex> lock(fMtx);
+
                 auto condition = [&] {
                     // LOG(info) << "checking condition";
                     // LOG(info) << "fShutdown: " << fShutdown;
                     // LOG(info) << "condition: " << std::all_of(fState.cbegin(), fState.cend(),
                     // [&](TopologyState::value_type i) { return i.second.state == fTargetState; });
                     return fShutdown
+                           || !fStateChangeError.empty()
                            || std::all_of(
                                fState.cbegin(), fState.cend(), [&](TopologyState::value_type i) {
                                    // TODO Check, if we can make sure that EXITING state change event are not missed
@@ -171,8 +183,6 @@ void Topology::WaitForState()
                                               && i.second.initialized);
                                });
                 };
-
-                std::unique_lock<std::mutex> lock(fMtx);
 
                 if (fStateChangeTimeout > std::chrono::milliseconds(0)) {
                     if (!fCV.wait_for(lock, fStateChangeTimeout, condition)) {
@@ -189,6 +199,15 @@ void Topology::WaitForState()
                 }
 
                 fStateChangeOngoing = false;
+
+                if (!fStateChangeError.empty()) {
+                    TopologyState state = fState;
+                    lock.unlock();
+                    fChangeStateCallback(
+                        {{AsyncOpResultCode::Error, fStateChangeError}, std::move(state)});
+                    break;
+                }
+
                 if (fShutdown) {
                     LOG(debug) << "Aborting because a shutdown was requested";
                     TopologyState state = fState;
