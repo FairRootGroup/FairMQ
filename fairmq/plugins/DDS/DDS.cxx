@@ -51,6 +51,7 @@ DDS::DDS(const string& name,
     , fLastState(DeviceState::Idle)
     , fDeviceTerminationRequested(false)
     , fHeartbeatInterval(100)
+    , fUpdatesAllowed(false)
 {
     try {
         TakeDeviceControl();
@@ -85,22 +86,28 @@ auto DDS::HandleControl() -> void
         // subscribe to device state changes, pushing new state changes into the event queue
         SubscribeToDeviceStateChange([&](DeviceState newState) {
             fStateQueue.Push(newState);
-            switch(newState) {
-              case DeviceState::Bound:
-                // Receive addresses of connecting channels from DDS
-                // and propagate addresses of bound channels to DDS.
-                FillChannelContainers();
+            switch (newState) {
+                case DeviceState::Bound:
+                    // Receive addresses of connecting channels from DDS
+                    // and propagate addresses of bound channels to DDS.
+                    FillChannelContainers();
 
-                // publish bound addresses via DDS at keys corresponding to the channel prefixes, e.g. 'data' in data[i]
-                PublishBoundChannels();
-                break;
-              case DeviceState::Exiting:
-                fDeviceTerminationRequested = true;
-                UnsubscribeFromDeviceStateChange();
-                ReleaseDeviceControl();
-                break;
-              default:
-                break;
+                    // publish bound addresses via DDS at keys corresponding to the channel
+                    // prefixes, e.g. 'data' in data[i]
+                    PublishBoundChannels();
+                    break;
+                case DeviceState::ResettingDevice: {
+                    std::lock_guard<std::mutex> lk(fUpdateMutex);
+                    fUpdatesAllowed = false;
+                    break;
+                }
+                case DeviceState::Exiting:
+                    fDeviceTerminationRequested = true;
+                    UnsubscribeFromDeviceStateChange();
+                    ReleaseDeviceControl();
+                    break;
+                default:
+                    break;
             }
 
             lock_guard<mutex> lock{fStateChangeSubscriberMutex};
@@ -197,6 +204,11 @@ auto DDS::FillChannelContainers() -> void
             LOG(debug) << "dds-i-n: adding " << chanName << " -> i: " << i << " n: " << n;
             fIofN.insert(make_pair(chanName, IofN(i, n)));
         }
+        {
+            std::lock_guard<std::mutex> lk(fUpdateMutex);
+            fUpdatesAllowed = true;
+        }
+        fUpdateCondition.notify_one();
     } catch (const exception& e) {
         LOG(error) << "Error filling channel containers: " << e.what();
     }
@@ -209,6 +221,10 @@ auto DDS::SubscribeForConnectingChannels() -> void
     fDDS.SubscribeKeyValue([&] (const string& propertyId, const string& value, uint64_t senderTaskID) {
         try {
             LOG(debug) << "Received update for " << propertyId << ": value=" << value << ", senderTaskID=" << senderTaskID;
+
+            std::unique_lock<std::mutex> lk(fUpdateMutex);
+            fUpdateCondition.wait(lk, [&]{ return fUpdatesAllowed; });
+
             string val = value;
             // check if it is to handle as one out of multiple values
             auto it = fIofN.find(propertyId);
