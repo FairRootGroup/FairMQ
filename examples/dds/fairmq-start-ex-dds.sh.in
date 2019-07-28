@@ -82,4 +82,7 @@ logDir="${wrkDir}/logs"
 for file in $(find "${logDir}" -name "*.tar.gz"); do tar -xf ${file} -C "${logDir}" ; done
 echo "AGENT LOG FILES IN: ${logDir}"
 
+# This string is used by ctest to detect success
+echo "Example successful :)"
+
 # Cleanup function is called by EXIT trap
