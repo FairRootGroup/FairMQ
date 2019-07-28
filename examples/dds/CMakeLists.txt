@@ -37,6 +37,12 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-ex-dds-env.sh ${CMAKE_CURRENT_
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-dds.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-dds.sh @ONLY)
 
 # test
+add_test(NAME Example.DDS.localhost COMMAND ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-dds.sh localhost)
+set_tests_properties(Example.DDS.localhost PROPERTIES
+  TIMEOUT 15
+  RUN_SERIAL true
+  PASS_REGULAR_EXPRESSION "Example successful"
+)
 
 # install
 
