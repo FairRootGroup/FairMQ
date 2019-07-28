@@ -105,7 +105,7 @@ TEST_F(Topology, ChangeStateTimeout)
     blocker.Wait();
 }
 
-TEST_F(Topology, ChangeStateFullDeviceLifetime)
+TEST_F(Topology, ChangeStateFullDeviceLifecycle)
 {
     using fair::mq::sdk::Topology;
     using fair::mq::sdk::TopologyTransition;
@@ -125,4 +125,27 @@ TEST_F(Topology, ChangeStateFullDeviceLifetime)
     }
 }
 
+TEST_F(Topology, ChangeStateFullDeviceLifecycle2)
+{
+    using fair::mq::sdk::Topology;
+    using fair::mq::sdk::TopologyTransition;
+
+    Topology topo(mDDSTopo, mDDSSession);
+    for (int i(0); i < 10; ++i) {
+        for (auto transition : {TopologyTransition::InitDevice,
+                                TopologyTransition::CompleteInit,
+                                TopologyTransition::Bind,
+                                TopologyTransition::Connect,
+                                TopologyTransition::InitTask,
+                                TopologyTransition::Run}) {
+            ASSERT_EQ(topo.ChangeState(transition).rc, fair::mq::AsyncOpResultCode::Ok);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        for (auto transition : {TopologyTransition::Stop,
+                                TopologyTransition::ResetTask,
+                                TopologyTransition::ResetDevice}) {
+            ASSERT_EQ(topo.ChangeState(transition).rc, fair::mq::AsyncOpResultCode::Ok);
+        }
+    }
+}
 }   // namespace
