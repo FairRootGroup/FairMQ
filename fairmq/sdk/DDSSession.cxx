@@ -8,23 +8,21 @@
 
 #include "DDSSession.h"
 
+#include <DDS/Tools.h>
+#include <boost/process.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <cassert>
+#include <cstdlib>
+#include <fairlogger/Logger.h>
+#include <fairmq/Tools.h>
 #include <fairmq/sdk/DDSAgent.h>
 #include <fairmq/sdk/DDSEnvironment.h>
 #include <fairmq/sdk/DDSTopology.h>
-#include <fairmq/Tools.h>
-
-#include <fairlogger/Logger.h>
-
-#include <DDS/Tools.h>
-
-#include <boost/uuid/uuid_io.hpp>
-
-#include <cassert>
-#include <cstdlib>
 #include <mutex>
 #include <sstream>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace fair {
 namespace mq {
@@ -373,6 +371,39 @@ auto DDSSession::GetTaskId(DDSChannel::Id channelId) const -> DDSTask::Id
 auto operator<<(std::ostream& os, const DDSSession& session) -> std::ostream&
 {
     return os << "$DDS_SESSION_ID: " << session.GetId();
+}
+
+auto getMostRecentRunningDDSSession(DDSEnv env) -> DDSSession
+{
+    boost::process::ipstream pipeStream;
+    boost::process::child c("dds-session list all", boost::process::std_out > pipeStream);
+    std::string lastLine;
+    std::string currentLine;
+
+    while (pipeStream && std::getline(pipeStream, currentLine) && !currentLine.empty()) {
+        lastLine = currentLine;
+    }
+    c.wait();
+    std::string sessionId;
+
+    if (!lastLine.empty()) {
+        std::vector<std::string> words;
+        std::istringstream iss(lastLine);
+        for (std::string s; iss >> s;) {
+            if (s != "*") {
+                words.push_back(s);
+            }
+        }
+        if (words.back() == "RUNNING") {
+            sessionId = words.front();
+        }
+    }
+
+    if (sessionId.empty()) {
+        throw std::runtime_error("could not find most recent DDS session");
+    }
+
+    return DDSSession(DDSSession::Id(sessionId), std::move(env));
 }
 
 }   // namespace sdk
