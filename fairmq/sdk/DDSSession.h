@@ -27,8 +27,6 @@ namespace fair {
 namespace mq {
 namespace sdk {
 
-class DDSEnvironment;
-
 /**
  * @enum DDSRMSPlugin DDSSession.h <fairmq/sdk/DDSSession.h>
  * @brief Supported DDS resource management system plugins
@@ -132,6 +130,8 @@ class DDSSession
     struct Impl;
     std::shared_ptr<Impl> fImpl;
 };
+
+auto getMostRecentRunningDDSSession(DDSEnv env = {}) -> DDSSession;
 
 }   // namespace sdk
 }   // namespace mq
