@@ -71,6 +71,11 @@ set_target_properties(${target} PROPERTIES
   OUTPUT_NAME FairMQ_${target}
 )
 
+##############
+# fairmq-top #
+##############
+add_subdirectory(top)
+
 ###############
 # executables #
 ###############

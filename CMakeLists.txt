@@ -1,5 +1,5 @@
 ################################################################################
-#    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
+#  Copyright (C) 2018-2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -151,6 +151,13 @@ if(BUILD_SDK)
     build_bundled(asio extern/asio)
     find_package2(PRIVATE asio REQUIRED)
   endif()
+endif()
+
+if(BUILD_SDK)
+  find_package2(PRIVATE Ncurses REQUIRED
+    VERSION 6
+    COMPONENTS ncursesw
+  )
 endif()
 
 if(BUILD_FAIRMQ)
@@ -320,6 +327,8 @@ if(PROJECT_PACKAGE_DEPENDENCIES)
     elseif(${dep} STREQUAL msgpack)
       get_target_property(msgpack_include msgpackc-cxx INTERFACE_INCLUDE_DIRECTORIES)
       get_filename_component(prefix ${msgpack_include}/.. ABSOLUTE)
+    elseif(${dep} STREQUAL Ncurses)
+      set(prefix ${Ncurses_PREFIX})
     elseif(${dep} STREQUAL asiofi)
       set(prefix ${asiofi_ROOT})
     elseif(${dep} STREQUAL OFI)
