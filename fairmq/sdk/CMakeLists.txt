@@ -44,20 +44,22 @@ target_include_directories(${target}
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_link_libraries(${target}
   PUBLIC
+  asio::headers
+  Boost::boost
   Boost::filesystem
   FairLogger::FairLogger
+  Threads::Threads
+  Tools
   StateMachine
 
   PRIVATE
-  Boost::boost
   DDS::dds_intercom_lib
   DDS::dds_tools_lib
   DDS::dds_topology_lib
-  Tools
 )
 set_target_properties(${target} PROPERTIES
   VERSION ${PROJECT_GIT_VERSION}
