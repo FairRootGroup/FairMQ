@@ -36,6 +36,14 @@ find_package_handle_standard_args(asio
   HANDLE_COMPONENTS
 )
 
+if(asio_FOUND AND asio_BUNDLED)
+  add_library(bundled_asio_headers INTERFACE)
+  target_include_directories(bundled_asio_headers INTERFACE
+    $<BUILD_INTERFACE:${asio_BUILD_INCLUDE_DIR}>
+    $<INSTALL_INTERFACE:${asio_INSTALL_INCLUDE_DIR}>
+  )
+  add_library(asio::headers ALIAS bundled_asio_headers)
+endif()
 if(asio_FOUND AND NOT TARGET asio::headers)
   add_library(asio::headers INTERFACE IMPORTED)
   set_target_properties(asio::headers PROPERTIES

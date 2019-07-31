@@ -6,8 +6,8 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-cmake_policy(VERSION 3.10...3.14)
+cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
+cmake_policy(VERSION 3.11...3.15)
 
 # Project ######################################################################
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
@@ -18,7 +18,7 @@ get_git_version()
 project(FairMQ VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 message(STATUS "${BWhite}${PROJECT_NAME}${CR} ${PROJECT_GIT_VERSION} from ${PROJECT_DATE}")
 
-if(BUILD_OFI_TRANSPORT)
+if(BUILD_OFI_TRANSPORT OR BUILD_SDK)
   set(PROJECT_MIN_CXX_STANDARD 14)
 else()
   set(PROJECT_MIN_CXX_STANDARD 11)
@@ -79,6 +79,7 @@ if(BUILD_SDK)
 else()
   set(required_dds_version 2.4)
 endif()
+
 if(BUILD_DDS_PLUGIN OR BUILD_SDK)
   find_package2(PRIVATE DDS REQUIRED
     VERSION ${required_dds_version}
@@ -126,6 +127,21 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     DDS
     FairLogger
   )
+
+  # Normalize Boost version
+  if(CMAKE_VERSION VERSION_LESS 3.15)
+    set(Boost_VERSION "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
+  endif()
+endif()
+
+if(BUILD_SDK)
+  find_package2(BUNDLED asio
+    VERSION 1.13.0
+  )
+  if(NOT asio_FOUND)
+    build_bundled(asio extern/asio)
+    find_package2(PRIVATE asio REQUIRED)
+  endif()
 endif()
 
 if(BUILD_FAIRMQ)
@@ -219,6 +235,22 @@ if(BUILD_DOCS)
     DESTINATION ${PROJECT_INSTALL_DATADIR}/docs
   )
 endif()
+if(BUILD_SDK)
+  install(FILES cmake/Findasio.cmake
+    DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
+  )
+  if(asio_BUNDLED)
+    install(TARGETS bundled_asio_headers EXPORT ${PROJECT_EXPORT_SET})
+    install(DIRECTORY "${asio_BUILD_INCLUDE_DIR}/asio"
+      DESTINATION ${asio_INSTALL_INCLUDE_DIR}
+      PATTERN "Makefile.am" EXCLUDE
+      PATTERN ".gitignore" EXCLUDE
+    )
+    install(FILES "${asio_BUILD_INCLUDE_DIR}/asio.hpp"
+      DESTINATION ${asio_INSTALL_INCLUDE_DIR}
+    )
+  endif()
+endif()
 
 install_cmake_package()
 ################################################################################
@@ -255,15 +287,7 @@ if(PROJECT_PACKAGE_DEPENDENCIES)
   message(STATUS "  ${Cyan}DEPENDENCY FOUND     VERSION                   PREFIX${CR}")
   foreach(dep IN LISTS PROJECT_PACKAGE_DEPENDENCIES)
     if(${dep}_VERSION)
-      if(${dep} STREQUAL Boost)
-        if(Boost_VERSION_MAJOR)
-          set(version_str "${BGreen}${${dep}_VERSION_MAJOR}.${${dep}_VERSION_MINOR}${CR}")
-        else()
-          set(version_str "${BGreen}${${dep}_MAJOR_VERSION}.${${dep}_MINOR_VERSION}${CR}")
-        endif()
-      else()
-        set(version_str "${BGreen}${${dep}_VERSION}${CR}")
-      endif()
+      set(version_str "${BGreen}${${dep}_VERSION}${CR}")
     else()
       set(version_str "${BYellow}unknown${CR}")
     endif()
@@ -372,9 +396,9 @@ else()
 endif()
 message(STATUS "  ${BWhite}docs${CR}               ${docs_summary}")
 if(BUILD_SDK)
-  set(sdk_summary "${BGreen}YES${CR}    EXPERIMENTAL (disable with ${BMagenta}-DBUILD_SDK=OFF${CR})")
+  set(sdk_summary "${BGreen}YES${CR}    EXPERIMENTAL (required C++14) (disable with ${BMagenta}-DBUILD_SDK=OFF${CR})")
 else()
-  set(sdk_summary "${BRed} NO${CR}    EXPERIMENTAL (default, enable with ${BMagenta}-DBUILD_SDK=ON${CR})")
+  set(sdk_summary "${BRed} NO${CR}    EXPERIMENTAL (required C++14) (default, enable with ${BMagenta}-DBUILD_SDK=ON${CR})")
 endif()
 message(STATUS "  ${BWhite}sdk${CR}                ${sdk_summary}")
 message(STATUS "  ")

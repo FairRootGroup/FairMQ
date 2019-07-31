@@ -1,3 +1,3 @@
 ---
 Checks:          '*,-google-*,-fuchsia-*,-cert-*,-llvm-header-guard,-readability-named-parameter,-misc-non-private-member-variables-in-classes,-*-magic-numbers,-llvm-include-order,-hicpp-no-array-decay,-performance-unnecessary-value-param,-cppcoreguidelines-pro-bounds-array-to-pointer-decay'
-HeaderFilterRegex: '/(fairmq/|FairMQ)'
+HeaderFilterRegex: '/(fairmq/)'
