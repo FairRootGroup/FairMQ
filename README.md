@@ -48,7 +48,9 @@ cmake --install fairmq_build
 cmake --build fairmq_build --target install
 ```
 
-If dependencies are not installed in standard system directories, you can hint the installation location via `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `GTEST`, `BOOST`, `FAIRLOGGER`, `ZEROMQ`, `MSGPACK`, `NANOMSG`, `OFI`, `PMIX`, `ASIOFI` or `DDS` (`*_ROOT` variables can also be environment variables).
+Please consult the [manpages of your CMake version](https://cmake.org/cmake/help/latest/manual/cmake.1.html) for more options.
+
+If dependencies are not installed in standard system directories, you can hint the installation location via `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `GTEST`, `BOOST`, `FAIRLOGGER`, `ZEROMQ`, `MSGPACK`, `NANOMSG`, `OFI`, `PMIX`, `ASIO`, `ASIOFI` or `DDS` (`*_ROOT` variables can also be environment variables).
 
 ## Usage
 
@@ -94,7 +96,7 @@ When building FairMQ, CMake will print a summary table of all available package 
 
 ## Dependencies
 
-  * [asio](https://github.com/chriskohlhoff/asio)
+  * [asio](https://github.com/chriskohlhoff/asio) (optionally bundled)
   * [asiofi](https://github.com/FairRootGroup/asiofi)
   * [Boost](https://www.boost.org/)
   * [CMake](https://cmake.org/)

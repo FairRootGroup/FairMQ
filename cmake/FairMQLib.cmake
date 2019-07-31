@@ -266,6 +266,19 @@ check_required_components(${PROJECT_NAME})
 set(PACKAGE_COMPONENTS ${PACKAGE_COMPONENTS} PARENT_SCOPE)
 endfunction()
 
+function(generate_bundled_packages)
+  if(asio_BUNDLED)
+  set(BUNDLED_PACKAGES "\
+####### Expanded from @BUNDLED_PACKAGES@ by configure_package_config_file() #########
+
+add_library(asio::headers ALIAS ${PROJECT_NAME}::bundled_asio)
+set(asio_VERSION ${asio_VERSION})
+
+")
+  endif()
+set(BUNDLED_PACKAGES ${BUNDLED_PACKAGES} PARENT_SCOPE)
+endfunction()
+
 # Configure/Install CMake package
 macro(install_cmake_package)
   list(SORT PROJECT_PACKAGE_DEPENDENCIES)
@@ -288,6 +301,7 @@ macro(install_cmake_package)
   )
   generate_package_dependencies() # fills ${PACKAGE_DEPENDENCIES}
   generate_package_components() # fills ${PACKAGE_COMPONENTS}
+  generate_bundled_packages() # fills ${BUNDLED_PACKAGES}
   string(TOUPPER ${CMAKE_BUILD_TYPE} PROJECT_BUILD_TYPE_UPPER)
   set(PROJECT_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${PROJECT_BUILD_TYPE_UPPER}})
   configure_package_config_file(
@@ -312,10 +326,11 @@ endmacro()
 #
 # Wrapper around CMake's native find_package command to add some features and bookkeeping.
 #
-# The qualifier (PRIVATE|PUBLIC|INTERFACE) to the package to populate
+# The qualifier (PRIVATE|PUBLIC|INTERFACE|BUNDLED) to the package to populate
 # the variables PROJECT_[INTERFACE]_<pkgname>_([VERSION]|[COMPONENTS]|PACKAGE_DEPENDENCIES)
 # accordingly. This bookkeeping information is used to print our dependency found summary
-# table and to generate a part of our CMake package.
+# table and to generate a part of our CMake package. BUNDLED decays to PUBLIC if the variable
+# <pkgname>_BUNDLED is false and to PRIVATE otherwise.
 #
 # When a dependending package is listed with ADD_REQUIREMENTS_OF the variables
 # <dep_pkgname>_<pkgname>_VERSION|COMPONENTS are looked up to and added to the native
@@ -372,25 +387,36 @@ macro(find_package2 qualifier pkgname)
     find_package(${pkgname} ${__version__} QUIET ${ARGS_UNPARSED_ARGUMENTS})
   endif()
 
+  if(${qualifier} STREQUAL BUNDLED)
+    if(${pkgname}_BUNDLED)
+      set(__qualifier__ PRIVATE)
+    else()
+      set(__qualifier__ PUBLIC)
+    endif()
+  else()
+    set(__qualifier__ ${qualifier})
+  endif()
+
   if(${pkgname}_FOUND)
-    if(${qualifier} STREQUAL PRIVATE)
+    if(${__qualifier__} STREQUAL PRIVATE)
       set(PROJECT_${pkgname}_VERSION ${__version__})
       set(PROJECT_${pkgname}_COMPONENTS ${__components__})
       set(PROJECT_PACKAGE_DEPENDENCIES ${PROJECT_PACKAGE_DEPENDENCIES} ${pkgname})
-    elseif(${qualifier} STREQUAL PUBLIC)
+    elseif(${__qualifier__} STREQUAL PUBLIC)
       set(PROJECT_${pkgname}_VERSION ${__version__})
       set(PROJECT_${pkgname}_COMPONENTS ${__components__})
       set(PROJECT_PACKAGE_DEPENDENCIES ${PROJECT_PACKAGE_DEPENDENCIES} ${pkgname})
       set(PROJECT_INTERFACE_${pkgname}_VERSION ${__version__})
       set(PROJECT_INTERFACE_${pkgname}_COMPONENTS ${__components__})
       set(PROJECT_INTERFACE_PACKAGE_DEPENDENCIES ${PROJECT_INTERFACE_PACKAGE_DEPENDENCIES} ${pkgname})
-    elseif(${qualifier} STREQUAL INTERFACE)
+    elseif(${__qualifier__} STREQUAL INTERFACE)
       set(PROJECT_INTERFACE_${pkgname}_VERSION ${__version__})
       set(PROJECT_INTERFACE_${pkgname}_COMPONENTS ${__components__})
       set(PROJECT_INTERFACE_PACKAGE_DEPENDENCIES ${PROJECT_INTERFACE_PACKAGE_DEPENDENCIES} ${pkgname})
     endif()
   endif()
 
+  unset(__qualifier__)
   unset(__version__)
   unset(__components__)
   unset(__required_versions__)
@@ -421,26 +447,31 @@ function(build_bundled package bundle)
   set(${package}_SOURCE_DIR ${CMAKE_SOURCE_DIR}/${bundle})
   set(${package}_BINARY_DIR ${CMAKE_BINARY_DIR}/${bundle})
   file(MAKE_DIRECTORY ${${package}_BINARY_DIR})
-  set(${package}_INSTALL_DIR ${CMAKE_BINARY_DIR}/${bundle}_install)
-  file(MAKE_DIRECTORY ${${package}_INSTALL_DIR})
   set(${package}_BUILD_LOGFILE ${${package}_BINARY_DIR}/build.log)
   file(REMOVE ${${package}_BUILD_LOGFILE})
-  set(${package}_ROOT ${${package}_INSTALL_DIR})
 
   if(Git_FOUND)
     exec(${GIT_EXECUTABLE} submodule update --init --recursive --depth 1 -- ${${package}_SOURCE_DIR})
   endif()
 
   if(${package} STREQUAL GTest)
+    set(${package}_INSTALL_DIR ${CMAKE_BINARY_DIR}/${bundle}_install)
+    file(MAKE_DIRECTORY ${${package}_INSTALL_DIR})
+    set(${package}_ROOT ${${package}_INSTALL_DIR})
+
     exec(${CMAKE_COMMAND} -S ${${package}_SOURCE_DIR} -B ${${package}_BINARY_DIR} -G ${CMAKE_GENERATOR}
       -DCMAKE_INSTALL_PREFIX=${${package}_INSTALL_DIR} -DBUILD_GMOCK=OFF
     )
     exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR})
     exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR} --target install)
+  elseif(${package} STREQUAL asio)
+    set(${package}_BUILD_INCLUDE_DIR ${${package}_SOURCE_DIR}/asio/include CACHE PATH "Bundled ${package} build-interface include dir")
+    set(${package}_INSTALL_INCLUDE_DIR ${PROJECT_INSTALL_INCDIR}/bundled CACHE PATH "Bundled ${package} install-interface include dir")
+    set(${package}_ROOT ${${package}_SOURCE_DIR}/asio)
   endif()
 
   string(TOUPPER ${package} package_upper)
-  set(${package_upper}_ROOT "${${package}_INSTALL_DIR}" CACHE PATH "Bundled ${package} install dir")
+  set(${package_upper}_ROOT "${${package}_ROOT}" CACHE PATH "Bundled ${package} install prefix search hint")
   set(${package}_BUNDLED ON CACHE BOOL "Whether bundled ${package} was used")
 
   message(STATUS "Building bundled ${package} - done")
