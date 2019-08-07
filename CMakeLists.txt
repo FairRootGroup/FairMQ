@@ -105,7 +105,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     set(Boost_NO_BOOST_CMAKE ON)
   endif()
   find_package2(PUBLIC Boost REQUIRED
-    VERSION 1.64
+    VERSION 1.66
 
     COMPONENTS
     container
