@@ -7,13 +7,12 @@
 ################################################################################
 
 cmake_minimum_required(VERSION 3.9.4 FATAL_ERROR)
-
+cmake_policy(VERSION 3.9...3.15)
 
 # Project ######################################################################
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(FairMQLib)
 
-set_fairmq_cmake_policies()
 get_git_version()
 
 project(FairMQ VERSION ${PROJECT_VERSION} LANGUAGES CXX)
