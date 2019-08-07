@@ -48,7 +48,7 @@ find_package(Threads REQUIRED)
 
 if(BUILD_FAIRMQ)
   find_package2(PUBLIC Boost VERSION 1.64 REQUIRED
-    COMPONENTS container program_options thread system filesystem regex date_time signals
+    COMPONENTS container program_options thread system filesystem regex date_time
   )
   # Normalize Boost version
   if(CMAKE_VERSION VERSION_LESS 3.15)
