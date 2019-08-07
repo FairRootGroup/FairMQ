@@ -51,6 +51,10 @@ if(BUILD_FAIRMQ)
   find_package2(PUBLIC Boost VERSION 1.64 REQUIRED
     COMPONENTS container program_options thread system filesystem regex date_time signals
   )
+  # Normalize Boost version
+  if(CMAKE_VERSION VERSION_LESS 3.15)
+    set(Boost_VERSION "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
+  endif()
   find_package2(PUBLIC FairLogger VERSION 1.2.0 REQUIRED)
   find_package2(PRIVATE ZeroMQ VERSION 4.1.5 REQUIRED)
 endif()
