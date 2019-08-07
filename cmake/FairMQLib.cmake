@@ -29,25 +29,6 @@ if(NOT WIN32 AND NOT DISABLE_COLOR)
   set(BWhite   "${Esc}[1;37m")
 endif()
 
-# set_fairmq_cmake_policies()
-#
-# Sets CMake policies.
-macro(set_fairmq_cmake_policies)
-  # Find more details to each policy with cmake --help-policy CMPXXXX
-  foreach(policy
-    CMP0025 # Compiler id for Apple Clang is now AppleClang.
-    CMP0028 # Double colon in target name means ALIAS or IMPORTED target.
-    CMP0042 # MACOSX_RPATH is enabled by default.
-    CMP0048 # The ``project()`` command manages VERSION variables.
-    CMP0054 # Only interpret ``if()`` arguments as variables or keywords when unquoted.
-  )
-    if(POLICY ${policy})
-      cmake_policy(SET ${policy} NEW)
-    endif()
-  endforeach()
-endmacro()
-
-
 find_package(Git)
 # get_git_version([DEFAULT_VERSION version] [DEFAULT_DATE date] [OUTVAR_PREFIX prefix])
 #
