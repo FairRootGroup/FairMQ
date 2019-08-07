@@ -11,6 +11,13 @@ find_path(DDS_INCLUDE_DIR
   HINTS ${DDS_ROOT} $ENV{DDS_ROOT}
   PATH_SUFFIXES include
 )
+if(NOT DDS_INCLUDE_DIR)
+find_path(DDS_INCLUDE_DIR
+  NAMES dds_intercom.h
+  HINTS ${DDS_ROOT} $ENV{DDS_ROOT}
+  PATH_SUFFIXES include/DDS
+)
+endif()
 
 find_path(DDS_LIBRARY_DIR
   NAMES libdds_intercom_lib.dylib libdds_intercom_lib.so
