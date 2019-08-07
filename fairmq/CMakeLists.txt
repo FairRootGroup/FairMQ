@@ -206,6 +206,9 @@ set_target_properties(${_target} PROPERTIES LABELS coverage)
 if(FAST_BUILD)
   set_target_properties(${_target} PROPERTIES OUTPUT_NAME FairMQ)
 endif()
+if(Boost_VERSION VERSION_LESS 1.66)
+  target_compile_definitions(${_target} PUBLIC FAIR_MQ_HAS_NO_ASIO_IO_CONTEXT)
+endif()
 
 #######################
 # include directories #

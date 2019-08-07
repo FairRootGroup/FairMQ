@@ -18,8 +18,12 @@ namespace boost
 namespace asio
 {
 
+#ifdef FAIR_MQ_HAS_NO_ASIO_IO_CONTEXT
+class io_service;
+#else
 class io_context;
 typedef class io_context io_service;
+#endif
 
 } // namespace asio
 } // namespace boost
