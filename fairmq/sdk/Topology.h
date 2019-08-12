@@ -139,7 +139,6 @@ class Topology
     DDSSession fDDSSession;
     DDSTopology fDDSTopo;
     TopologyState fState;
-    std::unordered_map<uint64_t, DeviceStatus> fStateChangesSubscriptions;
     bool fStateChangeOngoing;
     DeviceState fTargetState;
     mutable std::mutex fMtx;
@@ -153,7 +152,7 @@ class Topology
     std::string fStateChangeError;
 
     void WaitForState();
-    void AddNewStateEntry(uint64_t senderId, const std::string& state);
+    void AddNewStateEntry(DDSTask::Id senderId, const std::string& state);
 };
 
 using Topo = Topology;
