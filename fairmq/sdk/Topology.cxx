@@ -234,7 +234,7 @@ void Topology::WaitForState()
     LOG(debug) << "WaitForState shutting down";
 };
 
-void Topology::AddNewStateEntry(uint64_t senderId, const std::string& state)
+void Topology::AddNewStateEntry(DDSTask::Id senderId, const std::string& state)
 {
     std::size_t pos = state.find("->");
     std::string endState = state.substr(pos + 2);
