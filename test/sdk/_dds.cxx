@@ -16,8 +16,8 @@ namespace {
 TEST(DDSEnvironment, Construction)
 {
     fair::mq::test::LoggerConfig cfg;
-
     fair::mq::sdk::DDSEnvironment env(CMAKE_CURRENT_BINARY_DIR);
+
     LOG(debug) << env;
 }
 

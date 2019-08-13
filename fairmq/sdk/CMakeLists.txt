@@ -15,6 +15,7 @@ set(target SDK)
 
 set(SDK_PUBLIC_HEADER_FILES
   ../SDK.h
+  DDSAgent.h
   DDSEnvironment.h
   DDSSession.h
   DDSTopology.h

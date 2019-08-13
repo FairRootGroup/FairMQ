@@ -152,7 +152,7 @@ class Topology
     std::string fStateChangeError;
 
     void WaitForState();
-    void AddNewStateEntry(DDSTask::Id senderId, const std::string& state);
+    void AddNewStateEntry(DDSTask::Id taskId, const std::string& state);
 };
 
 using Topo = Topology;

@@ -10,6 +10,7 @@
 #define FAIR_MQ_SDK_H
 
 // IWYU pragma: begin_exports
+#include <fairmq/sdk/DDSAgent.h>
 #include <fairmq/sdk/DDSInfo.h>
 #include <fairmq/sdk/DDSEnvironment.h>
 #include <fairmq/sdk/DDSSession.h>

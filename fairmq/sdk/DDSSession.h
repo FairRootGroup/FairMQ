@@ -21,6 +21,7 @@
 #include <stdexcept>
 #include <string>
 #include <functional>
+#include <vector>
 
 namespace fair {
 namespace mq {
@@ -47,6 +48,20 @@ class DDSTask
 {
   public:
     using Id = std::uint64_t;
+
+    explicit DDSTask(Id id)
+        : fId(id)
+    {}
+
+    Id GetId() const { return fId; }
+
+    friend auto operator<<(std::ostream& os, const DDSTask& task) -> std::ostream&
+    {
+        return os << "DDSTask id: " << task.fId;
+    }
+
+  private:
+    Id fId;
 };
 
 class DDSChannel
@@ -84,13 +99,14 @@ class DDSSession
     auto StopOnDestruction(bool stop = true) -> void;
     auto IsRunning() const -> bool;
     auto SubmitAgents(Quantity agents) -> void;
-    struct AgentInfo {
-        Quantity idleAgentsCount = 0;
-        Quantity activeAgentsCount = 0;
-        Quantity executingAgentsCount = 0;
-        std::vector<DDSAgent> agents;
+    struct AgentCount {
+        Quantity idle = 0;
+        Quantity active = 0;
+        Quantity executing = 0;
     };
-    auto RequestAgentInfo() -> AgentInfo;
+    auto RequestAgentCount() -> AgentCount;
+    auto RequestAgentInfo() -> std::vector<DDSAgent>;
+    auto RequestTaskInfo() -> std::vector<DDSTask>;
     struct CommanderInfo {
         int pid = -1;
         std::string activeTopologyName;
@@ -117,27 +133,6 @@ class DDSSession
     std::shared_ptr<Impl> fImpl;
 };
 
-/**
- * @class DDSAgent DDSSession.h <fairmq/sdk/DDSSession.h>
- * @brief Represents a DDS agent
- */
-class DDSAgent
-{
-  public:
-    explicit DDSAgent(DDSSession session, std::string infostr)
-        : fInfoStr(std::move(infostr))
-        , fSession(std::move(session))
-    {}
-
-    auto GetSession() const -> DDSSession;
-    auto GetInfoStr() const -> std::string;
-
-    friend auto operator<<(std::ostream& os, const DDSAgent& plugin) -> std::ostream&;
-
-  private:
-    std::string fInfoStr;
-    DDSSession fSession;
-};
 }   // namespace sdk
 }   // namespace mq
 }   // namespace fair
