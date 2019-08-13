@@ -75,7 +75,7 @@ if(BUILD_NANOMSG_TRANSPORT)
 endif()
 
 if(BUILD_SDK)
-  set(required_dds_version 2.5.22)
+  set(required_dds_version 2.5.36)
 else()
   set(required_dds_version 2.4)
 endif()

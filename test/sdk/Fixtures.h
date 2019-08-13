@@ -46,7 +46,7 @@ struct TopologyFixture : ::testing::Test
         : mDDSTopoFile(tools::ToString(SDK_TESTSUITE_SOURCE_DIR, "/test_topo.xml"))
         , mDDSEnv(CMAKE_CURRENT_BINARY_DIR)
         , mDDSSession(mDDSEnv)
-        , mDDSTopo(mDDSTopoFile, mDDSEnv)
+        , mDDSTopo(sdk::DDSTopology::Path(mDDSTopoFile), mDDSEnv)
     {
         mDDSSession.StopOnDestruction();
     }
@@ -58,6 +58,14 @@ struct TopologyFixture : ::testing::Test
         auto n(mDDSTopo.GetNumRequiredAgents());
         mDDSSession.SubmitAgents(n);
         mDDSSession.ActivateTopology(mDDSTopo);
+        std::vector<sdk::DDSAgent> agents = mDDSSession.RequestAgentInfo();
+        for (const auto& a : agents) {
+            LOG(debug) << a;
+        }
+        std::vector<sdk::DDSTask> tasks = mDDSSession.RequestTaskInfo();
+        for (const auto& t : tasks) {
+            LOG(debug) << t;
+        }
     }
 
     auto TearDown() -> void override {

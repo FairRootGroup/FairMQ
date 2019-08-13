@@ -231,18 +231,18 @@ void Topology::WaitForState()
             fExecutionCV.wait(lock);
         }
     }
-    LOG(debug) << "WaitForState shutting down";
+    LOG(debug) << "Topology::WaitForState shutting down";
 };
 
-void Topology::AddNewStateEntry(DDSTask::Id senderId, const std::string& state)
+void Topology::AddNewStateEntry(DDSTask::Id taskId, const std::string& state)
 {
     std::size_t pos = state.find("->");
     std::string endState = state.substr(pos + 2);
-    // LOG(debug) << "Adding new state entry: " << senderId << ", " << state << ", end state: " << endState;
+    // LOG(debug) << "Adding new state entry: " << taskId << ", " << state << ", end state: " << endState;
     {
         try {
             std::unique_lock<std::mutex> lock(fMtx);
-            fState[senderId] = DeviceStatus{ true, fair::mq::GetState(endState) };
+            fState[taskId] = DeviceStatus{ true, fair::mq::GetState(endState) };
         } catch (const std::exception& e) {
             LOG(error) << "Exception in AddNewStateEntry: " << e.what();
         }
