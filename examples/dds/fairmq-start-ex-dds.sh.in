@@ -37,7 +37,7 @@ else
   dds-submit -r ${plugin} -n ${requiredNofAgents}
 fi
 echo "...waiting for ${requiredNofAgents} idle agents..."
-dds-info --wait-for-idle-agents ${requiredNofAgents}
+@WAIT_COMMAND@ ${requiredNofAgents}
 
 topologyFile=@DATA_DIR@/ex-dds-topology.xml
 echo "TOPOLOGY FILE: ${topologyFile}"
@@ -69,7 +69,7 @@ fairmq-dds-command-ui -c t -w "DEVICE READY" -n ${requiredNofAgents}
 fairmq-dds-command-ui -c d -w "IDLE" -n ${requiredNofAgents}
 fairmq-dds-command-ui -c q
 echo "...waiting for ${requiredNofAgents} idle agents..."
-dds-info --wait-for-idle-agents ${requiredNofAgents}
+@WAIT_COMMAND@ ${requiredNofAgents}
 echo "------------------------"
 
 # TODO Uncomment once DDS 2.6 is released
