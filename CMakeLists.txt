@@ -384,6 +384,8 @@ if(RUN_STATIC_ANALYSIS)
 else()
   set(static_ana_summary "${BRed}OFF${CR}  (default, enable with ${BMagenta}-DRUN_STATIC_ANALYSIS=ON${CR})")
 endif()
+message(STATUS "  ${Cyan}INSTALL PREFIX${CR}     ${BGreen}${CMAKE_INSTALL_PREFIX}${CR} (change with ${BMagenta}-DCMAKE_INSTALL_PREFIX=...${CR})")
+message(STATUS "  ")
 message(STATUS "  ${Cyan}RUN STATIC ANALYSIS  ${static_ana_summary}")
 message(STATUS "  ")
 ################################################################################
