@@ -44,11 +44,14 @@ a simulation, reconstruction and analysis framework.
 
 ## Installation from Source
 
+Recommended:
+
 ```bash
-git clone https://github.com/FairRootGroup/FairMQ fairmq
-mkdir fairmq_build && cd fairmq_build
-cmake -DCMAKE_INSTALL_PREFIX=./fairmq_install ../fairmq
-cmake --build . --target install
+git clone https://github.com/FairRootGroup/FairMQ fairmq_source
+cmake -S fairmq_source -B fairmq_build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=fairmq_install
+cmake --build fairmq_build
+cd fairmq_build; ctest -j4; cd ..
+cmake --build fairmq_build --target install
 ```
 
 If dependencies are not installed in standard system directories, you can hint the installation location via `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `GTEST`, `BOOST`, `FAIRLOGGER`, `ZEROMQ`, `MSGPACK`, `NANOMSG`, `OFI`, `PMIX`, `ASIOFI` or `DDS` (`*_ROOT` variables can also be environment variables).
@@ -70,26 +73,27 @@ find_package(FairMQ)
 
 `find_package(FairMQ)` will define an imported target `FairMQ::FairMQ`.
 
-In order to succesfully compile and link against the `FairMQ::FairMQ` target, you need to discover its public package dependencies, too.
+In order to succesfully compile and link against the `FairMQ::FairMQ` target, you need to discover its public package dependencies:
 
 ```cmake
 find_package(FairMQ)
 if(FairMQ_FOUND)
-  find_package(FairLogger ${FairMQ_FairLogger_VERSION})
-  find_package(Boost ${FairMQ_Boost_VERSION} COMPONENTS ${FairMQ_Boost_COMPONENTS})
+  foreach(dep IN LISTS FairMQ_PACKAGE_DEPENDENCIES)
+    if(FairMQ_${dep}_COMPONENTS)
+      find_package(${dep} ${FairMQ_${dep}_VERSION} COMPONENTS ${FairMQ_${dep}_COMPONENTS})
+    else()
+      find_package(${dep} ${FairMQ_${dep}_VERSION})
+    endif()
+  endforeach()
 endif()
 ```
 
-Of course, feel free to customize the above commands to your needs.
+If your project shares a dependency with FairMQ or if you want to omit a certain dependency, you may want to customize the above example code to your needs.
 
 Optionally, you can require certain FairMQ package components and a minimum version:
 
 ```cmake
 find_package(FairMQ 1.1.0 COMPONENTS nanomsg_transport dds_plugin)
-if(FairMQ_FOUND)
-  find_package(FairLogger ${FairMQ_FairLogger_VERSION})
-  find_package(Boost ${FairMQ_Boost_VERSION} COMPONENTS ${FairMQ_Boost_COMPONENTS})
-endif()
 ```
 
 When building FairMQ, CMake will print a summary table of all available package components.
