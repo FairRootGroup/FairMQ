@@ -397,3 +397,51 @@ macro(find_package2 qualifier pkgname)
   set(CMAKE_PREFIX_PATH ${__old_cpp__})
   unset(__old_cpp__)
 endmacro()
+
+macro(exec cmd)
+  join("${ARGN}" " " args)
+  file(APPEND ${${package}_BUILD_LOGFILE} ">>> ${cmd} ${args}\n")
+
+  execute_process(COMMAND ${cmd} ${ARGN}
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    OUTPUT_VARIABLE log
+    ERROR_VARIABLE log
+    RESULT_VARIABLE res
+  )
+  file(APPEND ${${package}_BUILD_LOGFILE} ${log})
+
+  if(res)
+    message(FATAL_ERROR "${res} \nSee also \"${${package}_BUILD_LOGFILE}\"")
+  endif()
+endmacro()
+
+function(build_bundled package bundle)
+  message(STATUS "Building bundled ${package}")
+
+  set(${package}_SOURCE_DIR ${CMAKE_SOURCE_DIR}/${bundle})
+  set(${package}_BINARY_DIR ${CMAKE_BINARY_DIR}/${bundle})
+  file(MAKE_DIRECTORY ${${package}_BINARY_DIR})
+  set(${package}_INSTALL_DIR ${CMAKE_BINARY_DIR}/${bundle}_install)
+  file(MAKE_DIRECTORY ${${package}_INSTALL_DIR})
+  set(${package}_BUILD_LOGFILE ${${package}_BINARY_DIR}/build.log)
+  file(REMOVE ${${package}_BUILD_LOGFILE})
+  set(${package}_ROOT ${${package}_INSTALL_DIR})
+
+  if(Git_FOUND)
+    exec(${GIT_EXECUTABLE} submodule update --init --recursive --depth 1 -- ${${package}_SOURCE_DIR})
+  endif()
+
+  if(${package} STREQUAL GTest)
+    exec(${CMAKE_COMMAND} -S ${${package}_SOURCE_DIR} -B ${${package}_BINARY_DIR} -G ${CMAKE_GENERATOR}
+      -DCMAKE_INSTALL_PREFIX=${${package}_INSTALL_DIR} -DBUILD_GMOCK=OFF
+    )
+    exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR})
+    exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR} --target install)
+  endif()
+
+  string(TOUPPER ${package} package_upper)
+  set(${package_upper}_ROOT "${${package}_INSTALL_DIR}" CACHE PATH "Bundled ${package} install dir")
+  set(${package}_BUNDLED ON CACHE BOOL "Whether bundled ${package} was used")
+
+  message(STATUS "Building bundled ${package} - done")
+endfunction()
