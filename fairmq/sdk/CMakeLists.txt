@@ -61,7 +61,7 @@ target_link_libraries(${target}
   Tools
 )
 set_target_properties(${target} PROPERTIES
-  VERSION ${PROJECT_GIT_VERSION}
+  VERSION ${PROJECT_VERSION}
   SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
   OUTPUT_NAME FairMQ_${target}
 )
