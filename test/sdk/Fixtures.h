@@ -10,12 +10,13 @@
 #define FAIR_MQ_TEST_FIXTURES
 
 #include "TestEnvironment.h"
-#include <fairmq/SDK.h>
-#include <fairmq/Tools.h>
 
+#include <asio/io_context.hpp>
 #include <chrono>
 #include <cstdlib>
 #include <fairlogger/Logger.h>
+#include <fairmq/SDK.h>
+#include <fairmq/Tools.h>
 #include <gtest/gtest.h>
 #include <thread>
 
@@ -76,6 +77,19 @@ struct TopologyFixture : ::testing::Test
     sdk::DDSEnvironment mDDSEnv;
     sdk::DDSSession mDDSSession;
     sdk::DDSTopology mDDSTopo;
+    asio::io_context mIoContext;
+};
+
+struct AsyncOpFixture : ::testing::Test
+{
+    auto SetUp() -> void override {
+    }
+
+    auto TearDown() -> void override {
+    }
+
+    LoggerConfig mLoggerConfig;
+    asio::io_context mIoContext;
 };
 
 } /* namespace test */
