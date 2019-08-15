@@ -16,7 +16,7 @@ target_link_libraries(${plugin} FairMQ PMIx::libpmix)
 target_include_directories(${plugin} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(${plugin} PROPERTIES
   CXX_VISIBILITY_PRESET hidden
-  VERSION ${PROJECT_GIT_VERSION}
+  VERSION ${PROJECT_VERSION}
   SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
 )
 

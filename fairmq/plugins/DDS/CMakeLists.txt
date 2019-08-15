@@ -12,7 +12,7 @@ target_link_libraries(${plugin} FairMQ DDS::dds_intercom_lib DDS::dds_protocol_l
 target_include_directories(${plugin} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(${plugin} PROPERTIES CXX_VISIBILITY_PRESET hidden)
 set_target_properties(${plugin} PROPERTIES
-  VERSION ${PROJECT_GIT_VERSION}
+  VERSION ${PROJECT_VERSION}
   SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/fairmq
 )
