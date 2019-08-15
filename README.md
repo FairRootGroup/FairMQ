@@ -33,15 +33,6 @@ configuration and control services.
 FairMQ has been developed in the context of its mother project [FairRoot](https://github.com/FairRootGroup/FairRoot) -
 a simulation, reconstruction and analysis framework.
 
-## Dependencies
-
-  * PUBLIC: [**Boost**](https://www.boost.org/), [**FairLogger**](https://github.com/FairRootGroup/FairLogger)
-  * BUILD: [CMake](https://cmake.org/), [GTest](https://github.com/google/googletest), [Doxygen](http://www.doxygen.org/)
-  * PRIVATE: [ZeroMQ](http://zeromq.org/), [Msgpack](https://msgpack.org/index.html), [nanomsg](http://nanomsg.org/),
-[asiofi](https://github.com/FairRootGroup/asiofi), [DDS](http://dds.gsi.de), [PMIx](https://pmix.org/)
-
-  Supported platforms: Linux and MacOS.
-
 ## Installation from Source
 
 Recommended:
@@ -100,6 +91,26 @@ find_package(FairMQ 1.1.0 COMPONENTS nanomsg_transport dds_plugin)
 ```
 
 When building FairMQ, CMake will print a summary table of all available package components.
+
+## Dependencies
+
+  * [asio](https://github.com/chriskohlhoff/asio)
+  * [asiofi](https://github.com/FairRootGroup/asiofi)
+  * [Boost](https://www.boost.org/)
+  * [CMake](https://cmake.org/)
+  * [DDS](http://dds.gsi.de)
+  * [Doxygen](http://www.doxygen.org/)
+  * [FairLogger](https://github.com/FairRootGroup/FairLogger)
+  * [GTest](https://github.com/google/googletest) (optionally bundled)
+  * [Msgpack](https://msgpack.org/index.html)
+  * [nanomsg](http://nanomsg.org/)
+  * [ncurses](https://www.gnu.org/software/ncurses/ncurses.html)
+  * [PMIx](https://pmix.org/)
+  * [ZeroMQ](http://zeromq.org/)
+
+  Which dependencies are required depends on which components are built.
+
+  Supported platforms: Linux and MacOS.
 
 ## CMake options
 
