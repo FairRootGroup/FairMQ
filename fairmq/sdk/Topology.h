@@ -9,46 +9,53 @@
 #ifndef FAIR_MQ_SDK_TOPOLOGY_H
 #define FAIR_MQ_SDK_TOPOLOGY_H
 
+#include <asio/async_result.hpp>
+#include <asio/associated_executor.hpp>
+#include <asio/steady_timer.hpp>
+#include <asio/system_executor.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <chrono>
+#include <fairlogger/Logger.h>
 #include <fairmq/States.h>
 #include <fairmq/Tools.h>
+#include <fairmq/sdk/AsioAsyncOp.h>
+#include <fairmq/sdk/AsioBase.h>
 #include <fairmq/sdk/DDSInfo.h>
 #include <fairmq/sdk/DDSSession.h>
 #include <fairmq/sdk/DDSTopology.h>
 #include <fairmq/sdk/Error.h>
 #include <functional>
+#include <map>
 #include <memory>
+#include <mutex>
 #include <ostream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace fair {
 namespace mq {
-
-enum class AsyncOpResultCode
-{
-    Ok,
-    Timeout,
-    Error,
-    Aborted
-};
-auto operator<<(std::ostream& os, AsyncOpResultCode v) -> std::ostream&;
-
-using AsyncOpResultMessage = std::string;
-
-struct AsyncOpResult {
-    AsyncOpResultCode code;
-    AsyncOpResultMessage msg;
-    operator AsyncOpResultCode() const { return code; }
-};
-auto operator<<(std::ostream& os, AsyncOpResult v) -> std::ostream&;
-
 namespace sdk {
 
 using DeviceState = fair::mq::State;
 using DeviceTransition = fair::mq::Transition;
+
+const std::map<DeviceTransition, DeviceState> expectedState =
+{
+    { DeviceTransition::InitDevice,   DeviceState::InitializingDevice },
+    { DeviceTransition::CompleteInit, DeviceState::Initialized },
+    { DeviceTransition::Bind,         DeviceState::Bound },
+    { DeviceTransition::Connect,      DeviceState::DeviceReady },
+    { DeviceTransition::InitTask,     DeviceState::Ready },
+    { DeviceTransition::Run,          DeviceState::Running },
+    { DeviceTransition::Stop,         DeviceState::Ready },
+    { DeviceTransition::ResetTask,    DeviceState::DeviceReady },
+    { DeviceTransition::ResetDevice,  DeviceState::Idle },
+    { DeviceTransition::End,          DeviceState::Exiting }
+};
 
 struct DeviceStatus
 {
@@ -58,8 +65,6 @@ struct DeviceStatus
 
 using TopologyState = std::unordered_map<DDSTask::Id, DeviceStatus>;
 using TopologyTransition = fair::mq::Transition;
-
-struct MixedState : std::runtime_error { using std::runtime_error::runtime_error; };
 
 inline DeviceState AggregateState(const TopologyState& topologyState)
 {
@@ -71,7 +76,7 @@ inline DeviceState AggregateState(const TopologyState& topologyState)
         return first;
     }
 
-    throw MixedState("State is not uniform");
+    throw MixedStateError("State is not uniform");
 
 }
 
@@ -81,81 +86,250 @@ inline bool StateEqualsTo(const TopologyState& topologyState, DeviceState state)
 }
 
 /**
- * @class Topology Topology.h <fairmq/sdk/Topology.h>
+ * @class BasicTopology Topology.h <fairmq/sdk/Topology.h>
+ * @tparam Executor Associated I/O executor
+ * @tparam Allocator Associated default allocator
  * @brief Represents a FairMQ topology
+ *
+ * @par Thread Safety
+ * @e Distinct @e objects: Safe.@n
+ * @e Shared @e objects: Safe.
  */
-class Topology
+template <typename Executor, typename Allocator>
+class BasicTopology : public AsioBase<Executor, Allocator>
 {
   public:
     /// @brief (Re)Construct a FairMQ topology from an existing DDS topology
     /// @param topo DDSTopology
     /// @param session DDSSession
-    explicit Topology(DDSTopology topo, DDSSession session = DDSSession());
+    BasicTopology(DDSTopology topo, DDSSession session)
+        : BasicTopology<Executor, Allocator>(asio::system_executor(),
+                                             std::move(topo),
+                                             std::move(session))
+    {}
 
-    /// @brief (Re)Construct a FairMQ topology based on already existing native DDS API objects
-    /// @param nativeSession Existing and initialized CSession (either via create() or attach())
-    /// @param nativeTopo Existing CTopology that is activated on the given nativeSession
-    /// @param env Optional DDSEnv (needed primarily for unit testing)
-    explicit Topology(dds::topology_api::CTopology nativeTopo,
-                      std::shared_ptr<dds::tools_api::CSession> nativeSession,
-                      DDSEnv env = {});
+    /// @brief (Re)Construct a FairMQ topology from an existing DDS topology
+    /// @param ex I/O executor to be associated
+    /// @param topo DDSTopology
+    /// @param session DDSSession
+    /// @throws RuntimeError
+    BasicTopology(const Executor& ex,
+                  DDSTopology topo,
+                  DDSSession session,
+                  Allocator alloc = DefaultAllocator())
+        : AsioBase<Executor, Allocator>(ex, std::move(alloc))
+        , fDDSSession(std::move(session))
+        , fDDSTopo(std::move(topo))
+        , fState(makeTopologyState(fDDSTopo))
+        , fChangeStateOp()
+        , fChangeStateOpTimer(ex)
+        , fChangeStateTarget(DeviceState::Idle)
+    {
+        std::string activeTopo(fDDSSession.RequestCommanderInfo().activeTopologyName);
+        std::string givenTopo(fDDSTopo.GetName());
+        if (activeTopo != givenTopo) {
+            throw RuntimeError("Given topology ", givenTopo,
+                               " is not activated (active: ", activeTopo, ")");
+        }
 
-    explicit Topology(const Topology&) = delete;
-    Topology& operator=(const Topology&) = delete;
-    explicit Topology(Topology&&) = delete;
-    Topology& operator=(Topology&&) = delete;
+        fDDSSession.SubscribeToCommands([&](const std::string& msg,
+                                            const std::string& /* condition */,
+                                            DDSChannel::Id senderId) {
+            // LOG(debug) << "Received from " << senderId << ": " << msg;
+            std::vector<std::string> parts;
+            boost::algorithm::split(parts, msg, boost::algorithm::is_any_of(":,"));
 
-    ~Topology();
+            for (unsigned int i = 0; i < parts.size(); ++i) {
+                boost::trim(parts.at(i));
+            }
 
-    struct ChangeStateResult {
-        AsyncOpResult rc;
-        TopologyState state;
-        friend auto operator<<(std::ostream& os, ChangeStateResult v) -> std::ostream&;
-    };
-    using ChangeStateCallback = std::function<void(ChangeStateResult)>;
+            if (parts[0] == "state-change") {
+                DDSTask::Id taskId(std::stoull(parts[2]));
+                fDDSSession.UpdateChannelToTaskAssociation(senderId, taskId);
+                UpdateStateEntry(taskId, parts[3]);
+            } else if (parts[0] == "state-changes-subscription") {
+                LOG(debug) << "Received from " << senderId << ": " << msg;
+                if (parts[2] != "OK") {
+                    LOG(error) << "state-changes-subscription failed with return code: "
+                               << parts[2];
+                }
+            } else if (parts[0] == "state-changes-unsubscription") {
+                if (parts[2] != "OK") {
+                    LOG(error) << "state-changes-unsubscription failed with return code: "
+                               << parts[2];
+                }
+            } else if (parts[1] == "could not queue") {
+                std::lock_guard<std::mutex> lk(fMtx);
+                if (!fChangeStateOp.IsCompleted()
+                    && fState.at(fDDSSession.GetTaskId(senderId)).state != fChangeStateTarget) {
+                    fChangeStateOpTimer.cancel();
+                    fChangeStateOp.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed),
+                                            fState);
+                }
+            }
+        });
+        fDDSSession.StartDDSService();
+        LOG(debug) << "subscribe-to-state-changes";
+        fDDSSession.SendCommand("subscribe-to-state-changes");
+    }
+
+    /// not copyable
+    BasicTopology(const BasicTopology&) = delete;
+    BasicTopology& operator=(const BasicTopology&) = delete;
+
+    /// movable
+    BasicTopology(BasicTopology&&) noexcept = default;
+    BasicTopology& operator=(BasicTopology&&) noexcept = default;
+
+    ~BasicTopology()
+    {
+        fDDSSession.UnsubscribeFromCommands();
+        try {
+            fChangeStateOp.Cancel(fState);
+        } catch (...) {}
+    }
+
     using Duration = std::chrono::milliseconds;
+    using ChangeStateCompletionSignature = void(std::error_code, TopologyState);
 
     /// @brief Initiate state transition on all FairMQ devices in this topology
-    /// @param t FairMQ device state machine transition
-    /// @param cb Completion callback
+    /// @param transition FairMQ device state machine transition
     /// @param timeout Timeout in milliseconds, 0 means no timeout
-    auto ChangeState(TopologyTransition t, ChangeStateCallback cb, Duration timeout = std::chrono::milliseconds(0)) -> void;
+    /// @param token Asio completion token
+    /// @tparam CompletionToken Asio completion token type
+    /// @throws std::system_error
+    /// TODO usage examples
+    template<typename CompletionToken>
+    auto AsyncChangeState(TopologyTransition transition,
+                          Duration timeout,
+                          CompletionToken&& token)
+    {
+        return asio::async_initiate<CompletionToken, ChangeStateCompletionSignature>(
+            [&](auto handler) {
+                std::lock_guard<std::mutex> lk(fMtx);
 
-    /// @brief Perform a state transition on all FairMQ devices in this topology
-    /// @param t FairMQ device state machine transition
+                if (fChangeStateOp.IsCompleted()) {
+                    fChangeStateOp = ChangeStateOp(AsioBase<Executor, Allocator>::GetExecutor(),
+                                                   AsioBase<Executor, Allocator>::GetAllocator(),
+                                                   std::move(handler));
+                    fChangeStateTarget = expectedState.at(transition);
+                    fDDSSession.SendCommand(GetTransitionName(transition));
+                    if (timeout > std::chrono::milliseconds(0)) {
+                        fChangeStateOpTimer.expires_after(timeout);
+                        fChangeStateOpTimer.async_wait([&](std::error_code ec) {
+                            if (!ec) {
+                                std::lock_guard<std::mutex> lk2(fMtx);
+                                fChangeStateOp.Timeout(fState);
+                            }
+                        });
+                    }
+                } else {
+                    throw std::system_error(MakeErrorCode(ErrorCode::OperationInProgress),
+                                            "AsyncChangeState");
+                }
+            },
+            token);
+    }
+
+    template<typename CompletionToken>
+    auto AsyncChangeState(TopologyTransition transition, CompletionToken&& token)
+    {
+        return AsyncChangeState(transition, Duration(0), std::move(token));
+    }
+
+    /// @brief Initiate state transition on all FairMQ devices in this topology
+    /// @param transition FairMQ device state machine transition
     /// @param timeout Timeout in milliseconds, 0 means no timeout
-    /// @return The result of the state transition
-    auto ChangeState(TopologyTransition t, Duration timeout = std::chrono::milliseconds(0)) -> ChangeStateResult;
+    /// @tparam CompletionToken Asio completion token type
+    /// @throws std::system_error
+    auto ChangeState(TopologyTransition transition, Duration timeout = Duration(0))
+        -> std::pair<std::error_code, TopologyState>
+    {
+        tools::Semaphore blocker;
+        std::error_code ec;
+        TopologyState state;
+        AsyncChangeState(transition, timeout, [&](std::error_code _ec, TopologyState _state) mutable {
+            ec = _ec;
+            state = _state;
+            blocker.Signal();
+        });
+        blocker.Wait();
+        return {ec, state};
+    }
 
     /// @brief Returns the current state of the topology
     /// @return map of id : DeviceStatus (initialized, state)
-    TopologyState GetCurrentState() const { std::lock_guard<std::mutex> guard(fMtx); return fState; }
+    auto GetCurrentState() const -> TopologyState
+    {
+        std::lock_guard<std::mutex> lk(fMtx);
+        return fState;
+    }
 
-    DeviceState AggregateState() { return sdk::AggregateState(fState); }
+    auto AggregateState() const -> DeviceState { return sdk::AggregateState(GetCurrentState()); }
 
-    bool StateEqualsTo(DeviceState state) { return sdk::StateEqualsTo(fState, state); }
+    auto StateEqualsTo(DeviceState state) const -> bool { return sdk::StateEqualsTo(GetCurrentState(), state); }
 
   private:
     DDSSession fDDSSession;
     DDSTopology fDDSTopo;
     TopologyState fState;
-    bool fStateChangeOngoing;
-    DeviceState fTargetState;
     mutable std::mutex fMtx;
-    mutable std::mutex fExecutionMtx;
-    std::condition_variable fCV;
-    std::condition_variable fExecutionCV;
-    std::thread fExecutionThread;
-    ChangeStateCallback fChangeStateCallback;
-    std::chrono::milliseconds fStateChangeTimeout;
-    bool fShutdown;
-    std::string fStateChangeError;
 
-    void WaitForState();
-    void AddNewStateEntry(DDSTask::Id taskId, const std::string& state);
+    using ChangeStateOp = AsioAsyncOp<Executor, Allocator, ChangeStateCompletionSignature>;
+    ChangeStateOp fChangeStateOp;
+    asio::steady_timer fChangeStateOpTimer;
+    DeviceState fChangeStateTarget;
+
+    static auto makeTopologyState(const DDSTopo& topo) -> TopologyState
+    {
+        TopologyState state;
+        for (const auto& task : topo.GetTasks()) {
+            state.emplace(task.GetId(), DeviceStatus{false, DeviceState::Ok});
+        }
+        return state;
+    }
+
+    auto UpdateStateEntry(DDSTask::Id taskId, const std::string& state) -> void
+    {
+        std::size_t pos = state.find("->");
+        std::string endState = state.substr(pos + 2);
+        try {
+            std::lock_guard<std::mutex> lk(fMtx);
+            fState[taskId] = DeviceStatus{true, fair::mq::GetState(endState)};
+            LOG(debug) << "Updated state entry: taskId=" << taskId << ",state=" << state;
+            TryChangeStateCompletion();
+        } catch (const std::exception& e) {
+            LOG(error) << "Exception in UpdateStateEntry: " << e.what();
+        }
+    }
+
+    /// call only under locked fMtx!
+    auto TryChangeStateCompletion() -> void
+    {
+        bool targetStateReached(
+            std::all_of(fState.cbegin(), fState.cend(), [&](TopologyState::value_type i) {
+                // TODO Check, if we can make sure that EXITING state change event are not missed
+                return fChangeStateTarget == DeviceState::Exiting
+                       || ((i.second.state == fChangeStateTarget) && i.second.initialized);
+            }));
+
+        if (!fChangeStateOp.IsCompleted() && targetStateReached) {
+            fChangeStateOpTimer.cancel();
+            fChangeStateOp.Complete(fState);
+        }
+    }
 };
 
+using Topology = BasicTopology<DefaultExecutor, DefaultAllocator>;
 using Topo = Topology;
+
+/// @brief Helper to (Re)Construct a FairMQ topology based on already existing native DDS API objects
+/// @param nativeSession Existing and initialized CSession (either via create() or attach())
+/// @param nativeTopo Existing CTopology that is activated on the given nativeSession
+/// @param env Optional DDSEnv (needed primarily for unit testing)
+auto MakeTopology(dds::topology_api::CTopology nativeTopo,
+                  std::shared_ptr<dds::tools_api::CSession> nativeSession,
+                  DDSEnv env = {}) -> Topology;
 
 }   // namespace sdk
 }   // namespace mq

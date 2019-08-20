@@ -45,7 +45,6 @@ add_library(${target}
   ${SDK_PRIVATE_HEADER_FILES} # for IDE integration
 )
 set_target_properties(${target} PROPERTIES LABELS coverage)
-target_compile_definitions(${target} PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
 target_include_directories(${target}
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
