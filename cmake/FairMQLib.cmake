@@ -455,7 +455,7 @@ function(build_bundled package bundle)
   file(REMOVE ${${package}_BUILD_LOGFILE})
 
   if(Git_FOUND)
-    exec(${GIT_EXECUTABLE} submodule update --init --recursive --depth 1 -- ${${package}_SOURCE_DIR})
+    exec(${GIT_EXECUTABLE} submodule update --init --recursive -- ${${package}_SOURCE_DIR})
   endif()
 
   if(${package} STREQUAL GTest)
