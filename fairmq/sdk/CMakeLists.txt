@@ -15,11 +15,16 @@ set(target SDK)
 
 set(SDK_PUBLIC_HEADER_FILES
   ../SDK.h
+  AsioAsyncOp.h
+  AsioBase.h
   DDSAgent.h
   DDSEnvironment.h
   DDSSession.h
+  DDSTask.h
   DDSTopology.h
+  Error.h
   Topology.h
+  Traits.h
 )
 
 set(SDK_PRIVATE_HEADER_FILES
