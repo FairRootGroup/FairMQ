@@ -63,29 +63,30 @@ auto DDSTopology::GetTopoFile() const -> Path
     return file;
 }
 
-int DDSTopology::GetNumRequiredAgents()
+auto DDSTopology::GetNumRequiredAgents() const -> int
 {
     return fImpl->fTopo.getRequiredNofAgents();
 }
 
-std::vector<uint64_t> DDSTopology::GetDeviceList()
+auto DDSTopology::GetTasks() const -> std::vector<DDSTask>
 {
-    std::vector<uint64_t> taskIDs;
-    taskIDs.reserve(GetNumRequiredAgents());
+    std::vector<DDSTask> list;
+    list.reserve(GetNumRequiredAgents());
 
-    // TODO make sure returned tasks are actually devices
     auto itPair = fImpl->fTopo.getRuntimeTaskIterator(
-        [](const dds::topology_api::STopoRuntimeTask::FilterIterator_t::value_type& /*value*/) -> bool { return true; });
+        [](const dds::topology_api::STopoRuntimeTask::FilterIterator_t::value_type&) -> bool {
+            return true;
+        });
     auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
 
-    for (auto task : tasks) {
+    for (const auto& task : tasks) {
         LOG(debug) << "Found task " << task.first << ": "
                    << "Path: " << task.second.m_taskPath << ", "
                    << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex;
-        taskIDs.push_back(task.first);
+        list.emplace_back(task.first);
     }
 
-    return taskIDs;
+    return list;
 }
 
 auto DDSTopology::GetName() const -> std::string { return fImpl->fTopo.getName(); }

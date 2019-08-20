@@ -10,8 +10,9 @@
 #define FAIR_MQ_SDK_DDSTOPOLOGY_H
 
 #include <boost/filesystem.hpp>
-#include <fairmq/sdk/DDSInfo.h>
 #include <fairmq/sdk/DDSEnvironment.h>
+#include <fairmq/sdk/DDSInfo.h>
+#include <fairmq/sdk/DDSTask.h>
 #include <memory>
 #include <string>
 
@@ -48,10 +49,10 @@ class DDSTopology
     auto GetTopoFile() const -> Path;
 
     /// @brief Get number of required agents for this topology
-    int GetNumRequiredAgents();
+    auto GetNumRequiredAgents() const -> int;
 
-    /// @brief Get list of devices
-    std::vector<uint64_t> GetDeviceList();
+    /// @brief Get list of tasks in this topology
+    auto GetTasks() const -> std::vector<DDSTask>;
 
     /// @brief Get the name of the topology
     auto GetName() const -> std::string;
