@@ -8,33 +8,9 @@
 
 #include "Top.h"
 
-#include <exception>
-#include <iostream>
-
 namespace fair {
 namespace mq {
 namespace sdk {
-
-Top::Top(boost::asio::executor executor, DDSSession session)
-    : fExecutor(std::move(executor))
-    , fDDSSession(std::move(session))
-{
-    initscr();
-    cbreak();
-    noecho();
-    nonl();
-    intrflush(stdscr, FALSE);
-    keypad(stdscr, TRUE);
-}
-
-Top::~Top()
-{
-    endwin();
-}
-
-auto Top::AsyncRun() -> void
-{
-}
 
 } /* namespace sdk */
 } /* namespace mq */

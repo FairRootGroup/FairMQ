@@ -6,14 +6,20 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <boost/asio/executor.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/signal_set.hpp>
+#include <asio/associated_executor.hpp>
+#include <asio/executor.hpp>
+#include <asio/io_context.hpp>
+#include <asio/signal_set.hpp>
+#include <asio/use_future.hpp>
 #include <boost/program_options.hpp>
 #include <fairmq/sdk/top/Top.h>
 #include <fairmq/sdk/DDSSession.h>
 #include <fairmq/Version.h>
+#include <future>
 #include <iostream>
+#include <thread>
+
+namespace {
 
 auto printHelp(const boost::program_options::options_description& options) -> void
 {
@@ -27,58 +33,105 @@ auto printHelp(const boost::program_options::options_description& options) -> vo
     std::cout << "FairMQ v" << FAIRMQ_GIT_VERSION << " ©" << FAIRMQ_COPYRIGHT <<std::endl;
 }
 
-auto makeTop(boost::asio::executor executor, fair::mq::sdk::DDSSession::Id sessionId)
-    -> fair::mq::sdk::Top
+template<typename Executor>
+auto makeTop(Executor ex, fair::mq::sdk::DDSSession::Id sessionId) -> fair::mq::sdk::Top
 {
+    using namespace fair::mq;
+
     if (sessionId.empty()) {
-        return fair::mq::sdk::Top(std::move(executor),
-                                  fair::mq::sdk::getMostRecentRunningDDSSession());
-    } else {
-        return fair::mq::sdk::Top(std::move(executor), fair::mq::sdk::DDSSession(sessionId));
+        return sdk::Top(std::move(ex), sdk::getMostRecentRunningDDSSession());
     }
+    return sdk::Top(std::move(ex), sdk::DDSSession(sessionId));
 }
+
+struct NoCopy
+{
+    NoCopy(const NoCopy&) = delete;
+    NoCopy& operator=(const NoCopy&) = delete;
+
+    NoCopy() = default;
+    NoCopy(NoCopy&&) = default;
+    NoCopy& operator=(NoCopy&&) = default;
+    ~NoCopy() = default;
+};
+
+} // anonymous namespace
 
 int main(int argc, char const* argv[])
 {
-    fair::mq::sdk::DDSSession::Id sessionId;
+    using namespace fair::mq;
 
-    auto sessionOptionValue(boost::program_options::value<fair::mq::sdk::DDSSession::Id>(&sessionId));
+    sdk::DDSSession::Id sessionId;
+    auto sessionOptionValue(boost::program_options::value<sdk::DDSSession::Id>(&sessionId));
     auto envSessionId = getenv("DDS_SESSION_ID");
     if (envSessionId != nullptr) {
-        sessionOptionValue->default_value(fair::mq::sdk::DDSSession::Id(envSessionId));
+        sessionOptionValue->default_value(sdk::DDSSession::Id(envSessionId));
     }
+
     boost::program_options::options_description options("Options");
     options.add_options()
-        ("session,s", sessionOptionValue, "DDS Session ID (overrides $DDS_SESSION_ID). If no session id is provided it tries to find most recent running session.")
+        ("session,s", sessionOptionValue,
+                      "DDS Session ID (overrides $DDS_SESSION_ID). If no session id is "
+                      "provided it tries to find most recent running session.")
         ("help,h", "Print usage help");
 
-    boost::program_options::variables_map vm;
-
     try {
+        boost::program_options::variables_map vm;
         boost::program_options::store(
             boost::program_options::command_line_parser(argc, argv).options(options).run(), vm);
         boost::program_options::notify(vm);
 
-        if (vm.count("help")) {
+        if (vm.count("help") > 0) {
             printHelp(options);
             return EXIT_SUCCESS;
         }
 
         // Execution context
-        boost::asio::io_context context;
-        auto executor(context.get_executor());
+        asio::io_context context;
 
         // Abort on SIGINT and SIGTERM
-        boost::asio::signal_set signals(context, SIGINT, SIGTERM);
-        signals.async_wait([&](const boost::system::error_code&, int) { context.stop(); });
+        asio::signal_set signals(context.get_executor(), SIGINT, SIGTERM);
+        signals.async_wait([&](std::error_code, int) { context.stop(); });
 
         // Run fairmq-top
-        auto app = makeTop(executor, sessionId);
+        auto app = makeTop(context.get_executor(), sessionId);
         int rc(EXIT_SUCCESS);
-        app.AsyncRun();
 
-        // Run app single-threaded
+        ///// move-only lambda
+        //
+        NoCopy noCopy; // just to check completion lambda is never copied
+        app.AsyncRun([&, nc=std::move(noCopy)](std::error_code ec) {
+            if (ec) {
+                rc = EXIT_FAILURE;
+            } else {
+                rc = EXIT_SUCCESS;
+            }
+            context.stop();
+        });
+
         context.run();
+        //
+        /////////////////////
+
+        /// OR
+
+        ///// std::future
+        //
+        // std::thread ctxThread([&]{ context.run(); });
+//
+        // std::future<void> future = app.AsyncRun(asio::use_future);
+//
+        // try {
+        // future.get();
+        // rc = EXIT_SUCCESS;
+        // } catch (const system::error_code& e) {
+        // rc = EXIT_FAILURE;
+        // }
+//
+        // context.stop();
+        // ctxThread.join();
+        //
+        /////////////////////
 
         return rc;
     } catch (const std::exception& e) {

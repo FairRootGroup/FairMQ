@@ -144,6 +144,11 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
 endif()
 
 if(BUILD_SDK)
+  find_package2(PRIVATE Ncurses REQUIRED
+    VERSION 6
+    COMPONENTS ncursesw panelw
+  )
+
   find_package2(BUNDLED asio
     VERSION 1.13.0
   )

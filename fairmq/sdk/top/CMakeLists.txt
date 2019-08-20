@@ -17,6 +17,7 @@ target_link_libraries(${exe}
   Boost::boost
   Boost::program_options
   Threads::Threads
+  Ncurses::panelw
   Ncurses::ncursesw
   SDK
 )

@@ -9,30 +9,115 @@
 #ifndef FAIR_MQ_SDK_TOP_H
 #define FAIR_MQ_SDK_TOP_H
 
-#include <boost/asio/executor.hpp>
+#include <asio/associated_executor.hpp>
+#include <asio/async_result.hpp>
+#include <asio/detail/non_const_lvalue.hpp>
+#include <asio/error.hpp>
+#include <asio/executor.hpp>
 #include <cstddef>
-#include <curses.h>
 #include <fairmq/sdk/DDSSession.h>
+#include <fairmq/sdk/Traits.h>
+#include <iostream>
+#include <ncurses.h>
+#include <utility>
 
 namespace fair {
 namespace mq {
 namespace sdk {
 
 /**
- * @class Top Top.h <fairmq/sdk/top/Top.h>
  * @brief fairmq-top ncurses application
+ * @tparam Executor Associated I/O executor
+ *
+ * @par Thread Safety
+ * @e Distinct @e objects: Safe.@n
+ * @e Shared @e objects: Unsafe.
  */
-class Top
+template<typename Executor>
+class BasicTop
 {
   public:
-    Top(boost::asio::executor, DDSSession);
-    ~Top();
-    auto AsyncRun() -> void;
+    /// Member type of associated I/O executor
+    using ExecutorType = Executor;
+    /// Associated I/O executor
+    auto GetExecutor() const noexcept -> ExecutorType { return fExecutor; }
+
+    /// No default construction
+    BasicTop() = delete;
+    /// No copy construction
+    BasicTop(const BasicTop&) = delete;
+    /// No copy assignment
+    BasicTop& operator=(const BasicTop&) = delete;
+    /// Default move construction
+    BasicTop(BasicTop&&) noexcept = default;
+    /// Default move assignment
+    BasicTop& operator=(BasicTop&&) noexcept = default;
+
+    /// Construct Top application
+    BasicTop(ExecutorType ex, DDSSession session)
+        : fExecutor(std::move(ex))
+        , fDDSSession(std::move(session))
+    {
+        setlocale(LC_ALL, "");
+        initscr();
+        cbreak();
+        noecho();
+        nonl();
+        intrflush(stdscr, FALSE);
+        keypad(stdscr, TRUE);
+        printw("Hello World !!!");
+        refresh();
+    }
+
+    /// Construct Top application
+    explicit BasicTop(DDSSession session)
+      : BasicTop(Executor(), std::move(session))
+    {}
+
+    ~BasicTop() { endwin(); }
+
+    /**
+     * @brief Run application
+     * @tparam CompletionToken Asio completion token type
+     */
+    template<typename CompletionToken>
+    auto AsyncRun(CompletionToken&& token)
+    {
+        asio::async_completion<CompletionToken, void(std::error_code)> completion(token);
+
+        auto ex(asio::get_associated_executor(completion.completion_handler, fExecutor));
+        auto alloc(asio::get_associated_allocator(completion.completion_handler));
+
+        ex.post([h = std::move(completion.completion_handler)]() mutable { h(std::error_code()); },
+                alloc);
+
+        return completion.result.get();
+
+        // return asio::async_initiate<CompletionToken, void(system::error_code)>(
+            // [&](auto handler) {
+                // auto ex(asio::get_associated_executor(handler, fExecutor));
+                // auto alloc(asio::get_associated_allocator(handler));
+//
+                // ex.post(
+                    // [h = std::move(handler)]() {
+                        // typename std::decay<decltype(h)>::type h2(std::move(h));
+                        // h2(system::errc::make_error_code(system::errc::success));
+                    // },
+                    // alloc);
+            // },
+            // token);
+    }
 
   private:
-    boost::asio::executor fExecutor;
+    ExecutorType fExecutor;
     DDSSession fDDSSession;
-}; /* class Top */
+}; /* class BasicTop */
+
+/**
+ * @class Top Top.h <fairmq/sdk/top/Top.h>
+ * @brief Usual instantiation of BasicTop template
+ */
+using Top = BasicTop<asio::executor>;
 
 } /* namespace sdk */
 } /* namespace mq */
