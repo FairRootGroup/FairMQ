@@ -11,6 +11,7 @@
 
 #include <fairmq/sdk/DDSEnvironment.h>
 #include <fairmq/sdk/DDSInfo.h>
+#include <fairmq/sdk/DDSTask.h>
 
 #include <boost/filesystem.hpp>
 
@@ -41,26 +42,6 @@ auto operator>>(std::istream& is, DDSRMSPlugin& plugin) -> std::istream&;
 
 class DDSTopology;
 class DDSAgent;
-
-class DDSTask
-{
-  public:
-    using Id = std::uint64_t;
-
-    explicit DDSTask(Id id)
-        : fId(id)
-    {}
-
-    Id GetId() const { return fId; }
-
-    friend auto operator<<(std::ostream& os, const DDSTask& task) -> std::ostream&
-    {
-        return os << "DDSTask id: " << task.fId;
-    }
-
-  private:
-    Id fId;
-};
 
 class DDSChannel
 {
