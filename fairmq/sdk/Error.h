@@ -6,8 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIR_MQ_SDK_EXCEPTIONS_H
-#define FAIR_MQ_SDK_EXCEPTIONS_H
+#ifndef FAIR_MQ_SDK_ERROR_H
+#define FAIR_MQ_SDK_ERROR_H
 
 #include <fairmq/Tools.h>
 #include <stdexcept>
@@ -31,7 +31,32 @@ struct MixedStateError : RuntimeError
 };
 
 } /* namespace sdk */
+
+enum class ErrorCode
+{
+    OperationInProgress = 10,
+    OperationTimeout,
+    OperationCanceled,
+    DeviceChangeStateFailed
+};
+
+std::error_code MakeErrorCode(ErrorCode);
+
+struct ErrorCategory : std::error_category
+{
+  const char* name() const noexcept override;
+  std::string message(int ev) const override;
+};
+
 } /* namespace mq */
 } /* namespace fair */
 
-#endif /* FAIR_MQ_SDK_EXCEPTIONS_H */
+namespace std {
+
+template<>
+struct is_error_code_enum<fair::mq::ErrorCode> : true_type
+{};
+
+}   // namespace std
+
+#endif /* FAIR_MQ_SDK_ERROR_H */

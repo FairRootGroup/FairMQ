@@ -9,20 +9,20 @@
 #ifndef FAIR_MQ_SDK_TOPOLOGY_H
 #define FAIR_MQ_SDK_TOPOLOGY_H
 
+#include <chrono>
+#include <fairmq/States.h>
+#include <fairmq/Tools.h>
 #include <fairmq/sdk/DDSInfo.h>
 #include <fairmq/sdk/DDSSession.h>
 #include <fairmq/sdk/DDSTopology.h>
-#include <fairmq/States.h>
-#include <fairmq/Tools.h>
-
+#include <fairmq/sdk/Error.h>
 #include <functional>
-#include <unordered_map>
 #include <memory>
-#include <chrono>
 #include <ostream>
-#include <string>
-#include <vector>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace fair {
 namespace mq {

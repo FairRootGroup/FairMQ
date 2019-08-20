@@ -14,7 +14,7 @@
 #include <asio/executor_work_guard.hpp>
 #include <asio/system_executor.hpp>
 #include <chrono>
-#include <fairmq/sdk/Exceptions.h>
+#include <fairmq/sdk/Error.h>
 #include <fairmq/sdk/Traits.h>
 #include <functional>
 #include <memory>
