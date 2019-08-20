@@ -14,6 +14,8 @@
 #include <asio/executor_work_guard.hpp>
 #include <asio/system_executor.hpp>
 #include <chrono>
+#include <exception>
+#include <fairlogger/Logger.h>
 #include <fairmq/sdk/Error.h>
 #include <fairmq/sdk/Traits.h>
 #include <functional>
@@ -29,7 +31,7 @@ namespace sdk {
 template<typename... SignatureArgTypes>
 struct AsioAsyncOpImplBase
 {
-    virtual auto Complete(std::error_code, SignatureArgTypes&&...) -> void = 0;
+    virtual auto Complete(std::error_code, SignatureArgTypes...) -> void = 0;
     virtual auto IsCompleted() const -> bool = 0;
 };
 
@@ -57,7 +59,7 @@ struct AsioAsyncOpImpl : AsioAsyncOpImplBase<SignatureArgTypes...>
     auto GetAlloc2() const -> Allocator2 { return asio::get_associated_allocator(fHandler, fAlloc1); }
     auto GetEx2() const -> Executor2 { return asio::get_associated_executor(fWork2); }
 
-    auto Complete(std::error_code ec, SignatureArgTypes&&... args) -> void override
+    auto Complete(std::error_code ec, SignatureArgTypes... args) -> void override
     {
         if (IsCompleted()) {
             throw RuntimeError("Async operation already completed");
@@ -65,7 +67,13 @@ struct AsioAsyncOpImpl : AsioAsyncOpImplBase<SignatureArgTypes...>
 
         GetEx2().dispatch(
             [=, handler = std::move(fHandler)]() mutable {
-                handler(ec, std::forward<SignatureArgTypes>(args)...);
+                try {
+                    handler(ec, args...);
+                } catch (const std::exception& e) {
+                    LOG(error) << "Uncaught exception in AsioAsyncOp completion handler: " << e.what();
+                } catch (...) {
+                    LOG(error) << "Unknown uncaught exception in AsioAsyncOp completion handler.";
+                }
             },
             GetAlloc2());
 
@@ -181,25 +189,29 @@ struct AsioAsyncOp<Executor,
 
     auto IsCompleted() -> bool { return (fImpl == nullptr) || fImpl->IsCompleted(); }
 
-    auto Complete(std::error_code ec, SignatureArgTypes&&... args) -> void
+    auto Complete(std::error_code ec, SignatureArgTypes... args) -> void
     {
         if(IsCompleted()) {
             throw RuntimeError("Async operation already completed");
         }
 
-        fImpl->Complete(ec, std::forward<SignatureArgTypes>(args)...);
+        fImpl->Complete(ec, args...);
         fImpl.reset(nullptr);
     }
 
-    auto Complete(SignatureArgTypes&&... args) -> void
+    auto Complete(SignatureArgTypes... args) -> void
     {
-        Complete(std::error_code(), std::forward<SignatureArgTypes>(args)...);
+        Complete(std::error_code(), args...);
     }
 
-    auto Cancel(SignatureArgTypes&&... args) -> void
+    auto Cancel(SignatureArgTypes... args) -> void
     {
-        Complete(std::make_error_code(std::errc::operation_canceled),
-                 std::forward<SignatureArgTypes>(args)...);
+        Complete(MakeErrorCode(ErrorCode::OperationCanceled), args...);
+    }
+
+    auto Timeout(SignatureArgTypes... args) -> void
+    {
+        Complete(MakeErrorCode(ErrorCode::OperationTimeout), args...);
     }
 };
 
