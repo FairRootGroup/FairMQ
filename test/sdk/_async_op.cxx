@@ -57,12 +57,12 @@ TEST_F(AsyncOp, Complete)
 
 TEST_F(AsyncOp, Cancel)
 {
-    using namespace fair::mq::sdk;
+    using namespace fair::mq;
 
-    AsioAsyncOp<DefaultExecutor, DefaultAllocator, void(std::error_code)> op(
+    sdk::AsioAsyncOp<sdk::DefaultExecutor, sdk::DefaultAllocator, void(std::error_code)> op(
         [](std::error_code ec) {
             EXPECT_TRUE(ec); // error
-            EXPECT_EQ(ec, std::make_error_code(std::errc::operation_canceled));
+            EXPECT_EQ(ec, MakeErrorCode(ErrorCode::OperationCanceled));
         });
 
     op.Cancel();
@@ -70,26 +70,26 @@ TEST_F(AsyncOp, Cancel)
 
 TEST_F(AsyncOp, Timeout)
 {
-    using namespace fair::mq::sdk;
+    using namespace fair::mq;
 
     asio::steady_timer timer(mIoContext.get_executor(), std::chrono::milliseconds(50));
-    AsioAsyncOp<DefaultExecutor, DefaultAllocator, void(std::error_code)> op(
+    sdk::AsioAsyncOp<sdk::DefaultExecutor, sdk::DefaultAllocator, void(std::error_code)> op(
         mIoContext.get_executor(),
         [&timer](std::error_code ec) {
             timer.cancel();
             std::cout << "Completion with: " << ec.message() << std::endl;
             EXPECT_TRUE(ec); // error
-            EXPECT_EQ(ec, std::make_error_code(std::errc::operation_canceled));
+            EXPECT_EQ(ec, MakeErrorCode(ErrorCode::OperationTimeout));
         });
     timer.async_wait([&op](asio::error_code ec) {
         std::cout << "Timer event" << std::endl;
         if (ec != asio::error::operation_aborted) {
-            op.Cancel();
+            op.Timeout();
         }
     });
 
     mIoContext.run();
-    EXPECT_THROW(op.Complete(), RuntimeError);
+    EXPECT_THROW(op.Complete(), sdk::RuntimeError);
 }
 
 TEST_F(AsyncOp, Timeout2)
@@ -108,7 +108,7 @@ TEST_F(AsyncOp, Timeout2)
     timer.async_wait([&op](asio::error_code ec) {
         std::cout << "Timer event" << std::endl;
         if (ec != asio::error::operation_aborted) {
-            op.Cancel();
+            op.Timeout();
         }
     });
 
