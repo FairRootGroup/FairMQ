@@ -482,32 +482,6 @@ void FairMQDevice::InitTaskWrapper()
     ChangeState(Transition::Auto);
 }
 
-bool FairMQDevice::SortSocketsByAddress(const FairMQChannel &lhs, const FairMQChannel &rhs)
-{
-    return lhs.fAddress < rhs.fAddress;
-}
-
-void FairMQDevice::SortChannel(const string& name, const bool reindex)
-{
-    if (fChannels.find(name) != fChannels.end())
-    {
-        sort(fChannels.at(name).begin(), fChannels.at(name).end(), SortSocketsByAddress);
-
-        if (reindex)
-        {
-            for (auto vi = fChannels.at(name).begin(); vi != fChannels.at(name).end(); ++vi)
-            {
-                // set channel name: name + vector index
-                vi->fName = tools::ToString(name, "[", vi - fChannels.at(name).begin(), "]");
-            }
-        }
-    }
-    else
-    {
-        LOG(error) << "Sorting failed: no channel with the name \"" << name << "\".";
-    }
-}
-
 void FairMQDevice::RunWrapper()
 {
     LOG(info) << "DEVICE: Running...";
