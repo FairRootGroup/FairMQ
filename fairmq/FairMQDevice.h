@@ -115,11 +115,6 @@ class FairMQDevice
     /// Outputs the socket transfer rates
     virtual void LogSocketRates();
 
-    /// Sorts a channel by address, with optional reindexing of the sorted values
-    /// @param name    Channel name
-    /// @param reindex Should reindexing be done
-    void SortChannel(const std::string& name, const bool reindex = true);
-
     template<typename Serializer, typename DataType, typename... Args>
     void Serialize(FairMQMessage& msg, DataType&& data, Args&&... args) const
     {
@@ -311,11 +306,6 @@ class FairMQDevice
     {
         return fConfig;
     }
-
-    /// Implements the sort algorithm used in SortChannel()
-    /// @param lhs Right hand side value for comparison
-    /// @param rhs Left hand side value for comparison
-    static bool SortSocketsByAddress(const FairMQChannel &lhs, const FairMQChannel &rhs);
 
     // overload to easily bind member functions
     template<typename T>
