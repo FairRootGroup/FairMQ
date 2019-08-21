@@ -178,8 +178,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     BasicTopology& operator=(const BasicTopology&) = delete;
 
     /// movable
-    BasicTopology(BasicTopology&&) noexcept = default;
-    BasicTopology& operator=(BasicTopology&&) noexcept = default;
+    BasicTopology(BasicTopology&&) = default;
+    BasicTopology& operator=(BasicTopology&&) = default;
 
     ~BasicTopology()
     {
