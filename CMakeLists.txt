@@ -46,7 +46,7 @@ fairmq_build_option(BUILD_PMIX_PLUGIN       "Build PMIx plugin."
 fairmq_build_option(BUILD_EXAMPLES          "Build FairMQ examples."
                                              DEFAULT ON  REQUIRES "BUILD_FAIRMQ")
 fairmq_build_option(BUILD_SDK               "Build the FairMQ controller SDK."
-                                             DEFAULT OFF)
+                                             DEFAULT OFF REQUIRES "BUILD_DDS_PLUGIN")
 fairmq_build_option(BUILD_DOCS              "Build FairMQ documentation."
                                              DEFAULT OFF)
 fairmq_build_option(FAST_BUILD              "Fast production build. Not recommended for development."
