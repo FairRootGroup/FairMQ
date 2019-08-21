@@ -101,7 +101,7 @@ TEST_F(Topology, AsyncChangeStateConcurrent)
                               blocker.Signal();
                           });
     EXPECT_THROW(topo.AsyncChangeState(sdk::TopologyTransition::Stop,
-                                       [&blocker](std::error_code, sdk::TopologyState) {}),
+                                       [](std::error_code, sdk::TopologyState) {}),
                  std::system_error);
     blocker.Wait();
 }
