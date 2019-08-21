@@ -33,9 +33,9 @@ auto RunSingleThreadedMultipart(string transport, string address) -> void {
     config.SetProperty<string>("session", std::to_string(session));
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
     FairMQTransportFactory* factoryptr = factory.get();
-    auto push = FairMQChannel{"Push", "push", factory};
+    FairMQChannel push("Push", "push", factory);
     ASSERT_TRUE(push.Bind(address));
-    auto pull = FairMQChannel{"Pull", "pull", factory};
+    FairMQChannel pull("Pull", "pull", factory);
     pull.Connect(address);
 
     // TODO validate that fTransportFactory is not nullptr
@@ -72,9 +72,9 @@ auto RunMultiThreadedMultipart(string transport, string address) -> void
     config.SetProperty<int>("io-threads", 1);
     config.SetProperty<size_t>("shm-segment-size", 20000000);
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
-    auto push = FairMQChannel{"Push", "push", factory};
+    FairMQChannel push("Push", "push", factory);
     ASSERT_TRUE(push.Bind(address));
-    auto pull = FairMQChannel{"Pull", "pull", factory};
+    FairMQChannel pull("Pull", "pull", factory);
     pull.Connect(address);
 
     auto pusher = thread{[&push](){
