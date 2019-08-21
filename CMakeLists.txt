@@ -31,17 +31,26 @@ include(CTest)
 
 
 # Build options ################################################################
-include(CMakeDependentOption)
-option(BUILD_FAIRMQ "Build FairMQ library and devices." ON)
-cmake_dependent_option(BUILD_TESTING "Build tests." OFF "BUILD_FAIRMQ" OFF)
-cmake_dependent_option(BUILD_NANOMSG_TRANSPORT "Build nanomsg transport." OFF "BUILD_FAIRMQ" OFF)
-cmake_dependent_option(BUILD_OFI_TRANSPORT "Build experimental OFI transport." OFF "BUILD_FAIRMQ" OFF)
-cmake_dependent_option(BUILD_DDS_PLUGIN "Build DDS plugin." OFF "BUILD_FAIRMQ" OFF)
-cmake_dependent_option(BUILD_PMIX_PLUGIN "Build PMIx plugin." OFF "BUILD_FAIRMQ" OFF)
-cmake_dependent_option(BUILD_EXAMPLES "Build FairMQ examples." ON "BUILD_FAIRMQ" OFF)
-option(BUILD_SDK "Build the FairMQ controller SDK." OFF)
-option(BUILD_DOCS "Build FairMQ documentation." OFF)
-option(FAST_BUILD "Fast production build. Not recommended for development." OFF)
+fairmq_build_option(BUILD_FAIRMQ            "Build FairMQ library and devices."
+                                             DEFAULT ON)
+fairmq_build_option(BUILD_TESTING           "Build tests."
+                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
+fairmq_build_option(BUILD_NANOMSG_TRANSPORT "Build nanomsg transport."
+                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
+fairmq_build_option(BUILD_OFI_TRANSPORT     "Build experimental OFI transport."
+                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
+fairmq_build_option(BUILD_DDS_PLUGIN        "Build DDS plugin."
+                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
+fairmq_build_option(BUILD_PMIX_PLUGIN       "Build PMIx plugin."
+                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
+fairmq_build_option(BUILD_EXAMPLES          "Build FairMQ examples."
+                                             DEFAULT ON  REQUIRES "BUILD_FAIRMQ")
+fairmq_build_option(BUILD_SDK               "Build the FairMQ controller SDK."
+                                             DEFAULT OFF)
+fairmq_build_option(BUILD_DOCS              "Build FairMQ documentation."
+                                             DEFAULT OFF)
+fairmq_build_option(FAST_BUILD              "Fast production build. Not recommended for development."
+                                             DEFAULT OFF)
 ################################################################################
 
 
