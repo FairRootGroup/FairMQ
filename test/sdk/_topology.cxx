@@ -8,6 +8,7 @@
 
 #include "Fixtures.h"
 
+#include <asio.hpp>
 #include <DDS/Topology.h>
 #include <DDS/Tools.h>
 #include <fairmq/sdk/Topology.h>
@@ -75,6 +76,54 @@ TEST_F(Topology, AsyncChangeStateWithCustomExecutor)
 
     mIoContext.run();
 }
+
+TEST_F(Topology, AsyncChangeStateFuture)
+{
+    using namespace fair::mq;
+
+    sdk::Topology topo(mIoContext.get_executor(), mDDSTopo, mDDSSession);
+    auto fut(topo.AsyncChangeState(
+        sdk::TopologyTransition::InitDevice,
+        asio::use_future));
+    std::thread t([&]() { mIoContext.run(); });
+    bool success(false);
+
+    try {
+        sdk::TopologyState state = fut.get();
+        success = true;
+    } catch (const std::system_error& ex) {
+        LOG(error) << ex.what();
+    }
+
+    EXPECT_TRUE(success);
+    t.join();
+}
+
+#if defined(ASIO_HAS_CO_AWAIT)
+TEST_F(Topology, AsyncChangeStateCoroutine)
+{
+    using namespace fair::mq;
+
+    bool success(false);
+    asio::co_spawn(
+        mIoContext.get_executor(),
+        [&]() mutable -> asio::awaitable<void> {
+            auto executor = co_await asio::this_coro::executor;
+            sdk::Topology topo(executor, mDDSTopo, mDDSSession);
+            try {
+                sdk::TopologyState state = co_await topo.AsyncChangeState(
+                    sdk::TopologyTransition::InitDevice, asio::use_awaitable);
+                success = true;
+            } catch (const std::system_error& ex) {
+                LOG(error) << ex.what();
+            }
+        },
+        asio::detached);
+
+    mIoContext.run();
+    EXPECT_TRUE(success);
+}
+#endif
 
 TEST_F(Topology, ChangeState)
 {
