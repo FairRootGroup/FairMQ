@@ -198,7 +198,80 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param token Asio completion token
     /// @tparam CompletionToken Asio completion token type
     /// @throws std::system_error
-    /// TODO usage examples
+    ///
+    /// @par Usage examples
+    /// With lambda:
+    /// @code
+    /// topo.AsyncChangeState(
+    ///     fair::mq::sdk::TopologyTransition::InitDevice,
+    ///     std::chrono::milliseconds(500),
+    ///     [](std::error_code ec, TopologyState state) {
+    ///         if (!ec) {
+    ///             // success
+    ///          } else if (ec.category().name() == "fairmq") {
+    ///             switch (static_cast<fair::mq::ErrorCode>(ec.value())) {
+    ///               case fair::mq::ErrorCode::OperationTimeout:
+    ///                 // async operation timed out
+    ///               case fair::mq::ErrorCode::OperationCanceled:
+    ///                 // async operation canceled
+    ///               case fair::mq::ErrorCode::DeviceChangeStateFailed:
+    ///                 // failed to change state of a fairmq device
+    ///               case fair::mq::ErrorCode::OperationInProgress:
+    ///                 // async operation already in progress
+    ///               default:
+    ///             }
+    ///         }
+    ///     }
+    /// );
+    /// @endcode
+    /// With future:
+    /// @code
+    /// auto fut = topo.AsyncChangeState(fair::mq::sdk::TopologyTransition::InitDevice,
+    ///                                  std::chrono::milliseconds(500),
+    ///                                  asio::use_future);
+    /// try {
+    ///     fair::mq::sdk::TopologyState state = fut.get();
+    ///     // success
+    /// } catch (const std::system_error& ex) {
+    ///     if (ex.code().category().name() == "fairmq") {
+    ///         switch (static_cast<fair::mq::ErrorCode>(ec.value())) {
+    ///           case fair::mq::ErrorCode::OperationTimeout:
+    ///             // async operation timed out
+    ///           case fair::mq::ErrorCode::OperationCanceled:
+    ///             // async operation canceled
+    ///           case fair::mq::ErrorCode::DeviceChangeStateFailed:
+    ///             // failed to change state of a fairmq device
+    ///           case fair::mq::ErrorCode::OperationInProgress:
+    ///             // async operation already in progress
+    ///           default:
+    ///         }
+    ///     }
+    /// }
+    /// @endcode
+    /// With coroutine (C++20, see https://en.cppreference.com/w/cpp/language/coroutines):
+    /// @code
+    /// try {
+    ///     fair::mq::sdk::TopologyState state = co_await
+    ///         topo.AsyncChangeState(fair::mq::sdk::TopologyTransition::InitDevice,
+    ///                               std::chrono::milliseconds(500),
+    ///                               asio::use_awaitable);
+    ///     // success
+    /// } catch (const std::system_error& ex) {
+    ///     if (ex.code().category().name() == "fairmq") {
+    ///         switch (static_cast<fair::mq::ErrorCode>(ec.value())) {
+    ///           case fair::mq::ErrorCode::OperationTimeout:
+    ///             // async operation timed out
+    ///           case fair::mq::ErrorCode::OperationCanceled:
+    ///             // async operation canceled
+    ///           case fair::mq::ErrorCode::DeviceChangeStateFailed:
+    ///             // failed to change state of a fairmq device
+    ///           case fair::mq::ErrorCode::OperationInProgress:
+    ///             // async operation already in progress
+    ///           default:
+    ///         }
+    ///     }
+    /// }
+    /// @endcode
     template<typename CompletionToken>
     auto AsyncChangeState(TopologyTransition transition,
                           Duration timeout,
@@ -237,7 +310,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         return AsyncChangeState(transition, Duration(0), std::move(token));
     }
 
-    /// @brief Initiate state transition on all FairMQ devices in this topology
+    /// @brief Perform state transition on all FairMQ devices in this topology
     /// @param transition FairMQ device state machine transition
     /// @param timeout Timeout in milliseconds, 0 means no timeout
     /// @tparam CompletionToken Asio completion token type
