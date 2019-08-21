@@ -126,7 +126,7 @@ On command line:
   * `-DBUILD_DDS_PLUGIN=ON` enables building of the DDS plugin.
   * `-DBUILD_PMIX_PLUGIN=ON` enables building of the PMIx plugin.
   * `-DBUILD_DOCS=ON` enables building of API docs.
-  * You can hint non-system installations for dependent packages, see the #Installation section above
+  * You can hint non-system installations for dependent packages, see the #installation-from-source section above
 
 After the `find_package(FairMQ)` call the following CMake variables are defined:
 
