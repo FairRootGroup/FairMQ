@@ -45,8 +45,8 @@ struct Region
 
     Region() = delete;
 
-    Region(const Region&) = default;
-    Region(Region&&) = default;
+    Region(const Region&) = delete;
+    Region(Region&&) = delete;
 
     void InitializeQueues();
 
