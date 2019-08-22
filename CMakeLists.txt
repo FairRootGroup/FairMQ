@@ -98,6 +98,13 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     VERSION 1.2.0
   )
 
+  foreach(dep IN LISTS FairLogger_PACKAGE_DEPENDENCIES)
+    if(NOT dep STREQUAL "Boost")
+      find_package2(PUBLIC ${dep} REQUIRED VERSION ${FairLogger_${dep}_VERSION})
+      set(PROJECT_${dep}_VERSION ${FairLogger_${dep}_VERSION})
+    endif()
+  endforeach()
+
   if(NOT DEFINED Boost_NO_BOOST_CMAKE AND CMAKE_VERSION VERSION_LESS 3.15)
     # Since Boost 1.70 a CMake package is shipped by default. Unfortunately, it has a number
     # of problems that are only fixed in Boost 1.71 or CMake 3.15. By default we skip the
@@ -298,6 +305,9 @@ if(PROJECT_PACKAGE_DEPENDENCIES)
       get_target_property(doxygen_bin Doxygen::doxygen INTERFACE_LOCATION)
       get_filename_component(prefix ${doxygen_bin} DIRECTORY)
       get_filename_component(prefix ${prefix}/.. ABSOLUTE)
+    elseif(${dep} STREQUAL fmt)
+      get_target_property(fmt_include fmt::fmt INTERFACE_INCLUDE_DIRECTORIES)
+      get_filename_component(prefix ${fmt_include}/.. ABSOLUTE)
     else()
       get_filename_component(prefix ${${dep}_INCLUDE_DIR}/.. ABSOLUTE)
     endif()
