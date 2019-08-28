@@ -32,7 +32,6 @@ TEST(TopologyHelper, MakeTopology)
     auto nativeSession(std::make_shared<dds::tools_api::CSession>());
     nativeSession->create();
     EXPECT_THROW(sdk::MakeTopology(nativeTopo, nativeSession, env), sdk::RuntimeError);
-    nativeSession->stop();
     nativeSession->shutdown();
 }
 
