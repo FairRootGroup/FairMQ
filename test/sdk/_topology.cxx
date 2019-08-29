@@ -37,12 +37,12 @@ TEST(TopologyHelper, MakeTopology)
 
 TEST_F(Topology, Construction)
 {
-		fair::mq::sdk::Topology topo(mDDSTopo, mDDSSession);
+    fair::mq::sdk::Topology topo(mDDSTopo, mDDSSession);
 }
 
 TEST_F(Topology, Construction2)
 {
-		fair::mq::sdk::Topology topo(mIoContext.get_executor(), mDDSTopo, mDDSSession);
+    fair::mq::sdk::Topology topo(mIoContext.get_executor(), mDDSTopo, mDDSSession);
 }
 
 TEST_F(Topology, AsyncChangeState)
@@ -55,7 +55,7 @@ TEST_F(Topology, AsyncChangeState)
         sdk::TopologyTransition::InitDevice,
         [&](std::error_code ec, sdk::TopologyState) {
             LOG(info) << ec;
-				    EXPECT_EQ(ec, std::error_code());
+            EXPECT_EQ(ec, std::error_code());
             blocker.Signal();
         });
     blocker.Wait();
