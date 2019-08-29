@@ -299,8 +299,20 @@ if(BUILD_SDK)
         DDS::dds_tools_lib
         INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
                  ${CMAKE_CURRENT_BINARY_DIR}
-        TIMEOUT 15
-        RUN_SERIAL ON
+        TIMEOUT 30
         ${definitions}
     )
+
+    if(DDS_TESTS)
+        foreach(i RANGE 1 ${DDS_TESTS})
+            add_test(NAME DDSToolsAPIStabilityTest_${i}
+                     COMMAND ${CMAKE_CURRENT_BINARY_DIR}/testsuite_SDK --gtest_filter=TopologyHelper.MakeTopology --gtest_also_run_disabled_tests
+            )
+            set_tests_properties(DDSToolsAPIStabilityTest_${i} PROPERTIES TIMEOUT 10)
+        endforeach()
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/DDSToolsAPIStabilityTest.cmake.in
+                       ${CMAKE_BINARY_DIR}/DDSToolsAPIStabilityTest.cmake
+                       @ONLY
+        )
+    endif()
 endif()
