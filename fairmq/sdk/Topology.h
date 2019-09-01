@@ -338,14 +338,15 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     auto ChangeState(TopologyTransition transition, Duration timeout = Duration(0))
         -> std::pair<std::error_code, TopologyState>
     {
-        tools::Semaphore blocker;
+        tools::SharedSemaphore blocker;
         std::error_code ec;
         TopologyState state;
-        AsyncChangeState(transition, timeout, [&](std::error_code _ec, TopologyState _state) mutable {
-            ec = _ec;
-            state = _state;
-            blocker.Signal();
-        });
+        AsyncChangeState(
+            transition, timeout, [&, blocker](std::error_code _ec, TopologyState _state) mutable {
+                ec = _ec;
+                state = _state;
+                blocker.Signal();
+            });
         blocker.Wait();
         return {ec, state};
     }

@@ -30,11 +30,11 @@ struct Semaphore
 
   auto Wait() -> void;
   auto Signal() -> void;
-  auto GetCount() -> std::size_t;
+  auto GetCount() const -> std::size_t;
 
 private:
   std::size_t fCount;
-  std::mutex fMutex;
+  mutable std::mutex fMutex;
   std::condition_variable fCv;
 };
 
@@ -49,7 +49,7 @@ struct SharedSemaphore
 
   auto Wait() -> void;
   auto Signal() -> void;
-  auto GetCount() -> std::size_t;
+  auto GetCount() const -> std::size_t;
 
 private:
   std::shared_ptr<Semaphore> fSemaphore;

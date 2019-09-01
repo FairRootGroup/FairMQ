@@ -39,7 +39,7 @@ auto Semaphore::Signal() -> void
     fCv.notify_one();
 }
 
-auto Semaphore::GetCount() -> std::size_t
+auto Semaphore::GetCount() const -> std::size_t
 {
     std::unique_lock<std::mutex> lk(fMutex);
     return fCount;
@@ -63,7 +63,7 @@ auto SharedSemaphore::Signal() -> void
     fSemaphore->Signal();
 }
 
-auto SharedSemaphore::GetCount() -> std::size_t
+auto SharedSemaphore::GetCount() const -> std::size_t
 {
     return fSemaphore->GetCount();
 }
