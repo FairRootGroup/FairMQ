@@ -45,6 +45,29 @@ auto Semaphore::GetCount() -> std::size_t
     return fCount;
 }
 
+SharedSemaphore::SharedSemaphore()
+    : fSemaphore(std::make_shared<Semaphore>())
+{}
+
+SharedSemaphore::SharedSemaphore(std::size_t initial_count)
+    : fSemaphore(std::make_shared<Semaphore>(initial_count))
+{}
+
+auto SharedSemaphore::Wait() -> void
+{
+    fSemaphore->Wait();
+}
+
+auto SharedSemaphore::Signal() -> void
+{
+    fSemaphore->Signal();
+}
+
+auto SharedSemaphore::GetCount() -> std::size_t
+{
+    return fSemaphore->GetCount();
+}
+
 } /* namespace tools */
 } /* namespace mq */
 } /* namespace fair */
