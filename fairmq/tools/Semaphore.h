@@ -12,6 +12,7 @@
 #include <condition_variable>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <mutex>
 
 namespace fair {
@@ -24,7 +25,7 @@ namespace tools {
  */
 struct Semaphore
 {
-  explicit Semaphore();
+  Semaphore();
   explicit Semaphore(std::size_t initial_count);
 
   auto Wait() -> void;
@@ -35,6 +36,23 @@ private:
   std::size_t fCount;
   std::mutex fMutex;
   std::condition_variable fCv;
+};
+
+/**
+ * @struct SharedSemaphore Semaphore.h <fairmq/tools/Semaphore.h>
+ * @brief A simple copyable blocking semaphore.
+ */
+struct SharedSemaphore
+{
+  SharedSemaphore();
+  explicit SharedSemaphore(std::size_t initial_count);
+
+  auto Wait() -> void;
+  auto Signal() -> void;
+  auto GetCount() -> std::size_t;
+
+private:
+  std::shared_ptr<Semaphore> fSemaphore;
 };
 
 } /* namespace tools */
