@@ -5,34 +5,36 @@
 #include <string>
 
 int main(int argc, char *argv[]) {
-  fair::Logger::SetConsoleSeverity("debug");
+  fair::Logger::SetConsoleSeverity("info");
+  fair::Logger::DefineVerbosity(
+      "user1", fair::VerbositySpec::Make(fair::VerbositySpec::Info::timestamp_us,
+                                         fair::VerbositySpec::Info::severity));
+  fair::Logger::SetVerbosity("user1");
+  fair::Logger::SetConsoleColor();
 
   // workaround https://github.com/FairRootGroup/DDS/issues/24
   std::string path(std::getenv("PATH"));
   path = std::string("@FairMQ_BINDIR@:") + path;
   setenv("PATH", path.c_str(), 1);
 
-  LOG(debug) << "FairMQ " << FAIRMQ_GIT_VERSION << " build "
-             << FAIRMQ_BUILD_TYPE;
+  LOG(info) << "FairMQ " << FAIRMQ_GIT_VERSION << " build "
+            << FAIRMQ_BUILD_TYPE;
 
   fair::mq::sdk::DDSEnvironment ddsEnv;
-  LOG(debug) << ddsEnv;
+  LOG(info) << ddsEnv;
 
   fair::mq::sdk::DDSSession ddsSession(ddsEnv);
   ddsSession.StopOnDestruction();
-  LOG(debug) << ddsSession;
+  LOG(info) << ddsSession;
 
   fair::mq::sdk::DDSTopology ddsTopo(
       "@FairMQ_DATADIR@/ex-dds-topology-infinite.xml", ddsEnv);
-  LOG(debug) << ddsTopo;
+  LOG(info) << ddsTopo;
 
   ddsSession.SubmitAgents(ddsTopo.GetNumRequiredAgents());
 
   ddsSession.ActivateTopology(ddsTopo);
-
-  for (const auto &ddsAgent : ddsSession.RequestAgentInfo()) {
-    LOG(debug) << ddsAgent;
-  }
+  auto ddsAgents(ddsSession.RequestAgentInfo());
 
   fair::mq::sdk::Topology fairmqTopo(ddsTopo, ddsSession);
 
@@ -55,6 +57,12 @@ int main(int argc, char *argv[]) {
       LOG(error) << ec;
       return ec.value();
     }
+  }
+
+  LOG(info) << "DDS commander logs in " << ddsEnv.GetConfigHome() / ".DDS/log/sessions" / ddsSession.GetId();
+  LOG(info) << "DDS agent logs in ";
+  for (const auto& ddsAgent : ddsAgents) {
+    LOG(info) << "  " << ddsAgent.GetDDSPath();
   }
 
   return 0;
