@@ -49,11 +49,11 @@ TEST_F(Topology, AsyncChangeState)
 {
     using namespace fair::mq;
 
-    tools::Semaphore blocker;
+    tools::SharedSemaphore blocker;
     sdk::Topology topo(mDDSTopo, mDDSSession);
     topo.AsyncChangeState(
         sdk::TopologyTransition::InitDevice,
-        [&](std::error_code ec, sdk::TopologyState) {
+        [=](std::error_code ec, sdk::TopologyState) mutable {
             LOG(info) << ec;
             EXPECT_EQ(ec, std::error_code());
             blocker.Signal();
@@ -142,9 +142,9 @@ TEST_F(Topology, AsyncChangeStateConcurrent)
     using namespace fair::mq;
 
     sdk::Topology topo(mDDSTopo, mDDSSession);
-    tools::Semaphore blocker;
+    tools::SharedSemaphore blocker;
     topo.AsyncChangeState(sdk::TopologyTransition::InitDevice,
-                          [&blocker](std::error_code ec, sdk::TopologyState) {
+                          [blocker](std::error_code ec, sdk::TopologyState) mutable {
                               LOG(info) << "result for valid ChangeState: " << ec;
                               blocker.Signal();
                           });

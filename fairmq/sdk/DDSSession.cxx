@@ -186,12 +186,12 @@ auto DDSSession::SubmitAgents(Quantity agents) -> void
     submitInfo.m_instances = agents;
     submitInfo.m_config = GetRMSConfig().string();
 
-    tools::Semaphore blocker;
+    tools::SharedSemaphore blocker;
     auto submitRequest = SSubmitRequest::makeRequest(submitInfo);
     submitRequest->setMessageCallback([](const SMessageResponseData& message){
         LOG(debug) << message.m_msg;
     });
-    submitRequest->setDoneCallback([&]() {
+    submitRequest->setDoneCallback([agents, blocker]() mutable {
         LOG(debug) << agents << " Agents submitted";
         blocker.Signal();
     });
@@ -265,7 +265,7 @@ auto DDSSession::RequestCommanderInfo() -> CommanderInfo
     using namespace dds::tools_api;
 
     SCommanderInfoRequestData commanderInfo;
-    tools::Semaphore blocker;
+    tools::SharedSemaphore blocker;
     std::string error;
     auto commanderInfoRequest = SCommanderInfoRequest::makeRequest(commanderInfo);
     CommanderInfo info;
@@ -281,7 +281,7 @@ auto DDSSession::RequestCommanderInfo() -> CommanderInfo
             LOG(debug) << _message.m_msg;
         }
     });
-    commanderInfoRequest->setDoneCallback([&]() { blocker.Signal(); });
+    commanderInfoRequest->setDoneCallback([blocker]() mutable { blocker.Signal(); });
     fImpl->fSession->sendRequest<SCommanderInfoRequest>(commanderInfoRequest);
     blocker.Wait();
 
@@ -322,12 +322,12 @@ auto DDSSession::ActivateTopology(DDSTopology topo) -> void
     topologyInfo.m_updateType = STopologyRequestData::EUpdateType::ACTIVATE;
     topologyInfo.m_topologyFile = topo.GetTopoFile().string();
 
-    tools::Semaphore blocker;
+    tools::SharedSemaphore blocker;
     auto topologyRequest = STopologyRequest::makeRequest(topologyInfo);
     topologyRequest->setMessageCallback([](const SMessageResponseData& _message) {
         LOG(debug) << _message.m_msg;
     });
-    topologyRequest->setDoneCallback([&]() { blocker.Signal(); });
+    topologyRequest->setDoneCallback([blocker]() mutable { blocker.Signal(); });
     fImpl->fSession->sendRequest<STopologyRequest>(topologyRequest);
     blocker.Wait();
 
