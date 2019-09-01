@@ -10,12 +10,17 @@
 #define FAIR_MQ_SDK_H
 
 // IWYU pragma: begin_exports
+#include <fairmq/sdk/AsioAsyncOp.h>
+#include <fairmq/sdk/AsioBase.h>
 #include <fairmq/sdk/DDSAgent.h>
-#include <fairmq/sdk/DDSInfo.h>
 #include <fairmq/sdk/DDSEnvironment.h>
+#include <fairmq/sdk/DDSInfo.h>
 #include <fairmq/sdk/DDSSession.h>
+#include <fairmq/sdk/DDSTask.h>
 #include <fairmq/sdk/DDSTopology.h>
+#include <fairmq/sdk/Error.h>
 #include <fairmq/sdk/Topology.h>
+#include <fairmq/sdk/Traits.h>
 // IWYU pragma: end_exports
 
 #endif // FAIR_MQ_SDK_H
