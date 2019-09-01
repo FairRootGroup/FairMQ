@@ -57,6 +57,7 @@ class DDSAgent
     Pid GetPid() const { return fPid; }
     std::string GetState() const { return fState; }
     std::string GetHost() const { return fHost; }
+    std::string GetDDSPath() const { return fDDSPath; }
     bool IsLobbyLeader() const { return fLobbyLeader; }
     std::chrono::milliseconds GetStartupTime() const { return fStartupTime; }
     std::string GetUsername() const { return fUsername; }
