@@ -129,6 +129,7 @@ class DDS : public Plugin
 
   private:
     auto StaticControl() -> void;
+    auto WaitForExitingAck() -> void;
 
     auto FillChannelContainers() -> void;
     auto SubscribeForConnectingChannels() -> void;
@@ -158,7 +159,11 @@ class DDS : public Plugin
 
     std::set<uint64_t> fHeartbeatSubscribers;
     std::mutex fHeartbeatSubscriberMutex;
+
     std::set<uint64_t> fStateChangeSubscribers;
+    uint64_t fLastExternalController;
+    bool fExitingAckedByLastExternalController;
+    std::condition_variable fExitingAcked;
     std::mutex fStateChangeSubscriberMutex;
 
     std::thread fHeartbeatThread;
@@ -174,7 +179,8 @@ Plugin::ProgOptions DDSProgramOptions()
     boost::program_options::options_description options{"DDS Plugin"};
     options.add_options()
         ("dds-i", boost::program_options::value<std::vector<std::string>>()->multitoken()->composing(), "Task index for chosing connection target (single channel n to m). When all values come via same update.")
-        ("dds-i-n", boost::program_options::value<std::vector<std::string>>()->multitoken()->composing(), "Task index for chosing connection target (one out of n values to take). When values come as independent updates.");
+        ("dds-i-n", boost::program_options::value<std::vector<std::string>>()->multitoken()->composing(), "Task index for chosing connection target (one out of n values to take). When values come as independent updates.")
+        ("wait-for-exiting-ack-timeout", boost::program_options::value<unsigned int>()->default_value(1000), "Wait timeout for EXITING state-change acknowledgement by external controller in milliseconds.");
 
     return options;
 }
