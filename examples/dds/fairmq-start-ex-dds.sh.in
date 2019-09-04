@@ -67,7 +67,7 @@ echo "...$sampler_and_sink are READY, sending shutdown..."
 fairmq-dds-command-ui -c s -w "RUNNING->READY" -n ${requiredNofAgents}
 fairmq-dds-command-ui -c t -w "DEVICE READY" -n ${requiredNofAgents}
 fairmq-dds-command-ui -c d -w "IDLE" -n ${requiredNofAgents}
-fairmq-dds-command-ui -c q
+fairmq-dds-command-ui -c q -w "EXITING" -n ${requiredNofAgents}
 echo "...waiting for ${requiredNofAgents} idle agents..."
 @WAIT_COMMAND@ ${requiredNofAgents}
 echo "------------------------"

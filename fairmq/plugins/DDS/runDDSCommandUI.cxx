@@ -264,6 +264,9 @@ int main(int argc, char* argv[])
                 // cerr << "Received: " << msg << endl;
                 boost::trim(parts[2]);
                 waitMode.AddNewStateEntry(senderId, parts[3]);
+                if(parts[3] == "IDLE->EXITING") {
+                    ddsCustomCmd.send("state-change-exiting-received", std::to_string(senderId));
+                }
             } else if (parts[0] == "state-changes-subscription") {
                 if (parts[2] != "OK") {
                     cerr << "state-changes-subscription failed with return code: " << parts[2];

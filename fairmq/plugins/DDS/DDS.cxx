@@ -50,6 +50,8 @@ DDS::DDS(const string& name,
     , fCurrentState(DeviceState::Idle)
     , fLastState(DeviceState::Idle)
     , fDeviceTerminationRequested(false)
+    , fLastExternalController(0)
+    , fExitingAckedByLastExternalController(false)
     , fHeartbeatInterval(100)
     , fUpdatesAllowed(false)
 {
@@ -128,6 +130,15 @@ DDS::DDS(const string& name,
     } catch (exception& e) {
         LOG(error) << "Error in plugin initialization: " << e.what();
     }
+}
+
+auto DDS::WaitForExitingAck() -> void
+{
+    unique_lock<mutex> lock(fStateChangeSubscriberMutex);
+    fExitingAcked.wait_for(
+        lock,
+        chrono::milliseconds(GetProperty<unsigned int>("wait-for-exiting-ack-timeout")),
+        [this]() { return fExitingAckedByLastExternalController; });
 }
 
 auto DDS::StaticControl() -> void
@@ -333,6 +344,10 @@ auto DDS::SubscribeForCustomCommands() -> void
                 unique_lock<mutex> lock(fStopMutex);
                 fStopCondition.notify_one();
             }
+            {
+                lock_guard<mutex> lock{fStateChangeSubscriberMutex};
+                fLastExternalController = senderId;
+            }
         } else if (cmd == "dump-config") {
             stringstream ss;
             for (const auto pKey: GetPropertyKeys()) {
@@ -352,11 +367,22 @@ auto DDS::SubscribeForCustomCommands() -> void
                 fHeartbeatSubscribers.erase(senderId);
             }
             fDDS.Send("heartbeat-unsubscription: " + id + ",OK", to_string(senderId));
+        } else if (cmd == "state-change-exiting-received") {
+            {
+                lock_guard<mutex> lock{fStateChangeSubscriberMutex};
+                if (fLastExternalController == senderId) {
+                    fExitingAckedByLastExternalController = true;
+                }
+            }
+            fExitingAcked.notify_one();
         } else if (cmd == "subscribe-to-state-changes") {
             {
                 // auto size = fStateChangeSubscribers.size();
                 lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                 fStateChangeSubscribers.insert(senderId);
+                if (!fControllerThread.joinable()) {
+                    fControllerThread = thread(&DDS::WaitForExitingAck, this);
+                }
             }
             fDDS.Send("state-changes-subscription: " + id + ",OK", to_string(senderId));
             {

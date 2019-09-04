@@ -356,6 +356,11 @@ void DDSSession::UnsubscribeFromCommands()
 
 void DDSSession::SendCommand(const std::string& cmd) { fImpl->fDDSCustomCmd.send(cmd, ""); }
 
+void DDSSession::SendCommand(const std::string& cmd, DDSChannel::Id recipient)
+{
+    fImpl->fDDSCustomCmd.send(cmd, std::to_string(recipient));
+}
+
 auto DDSSession::UpdateChannelToTaskAssociation(DDSChannel::Id channelId, DDSTask::Id taskId) -> void
 {
     std::lock_guard<std::mutex> lk(fImpl->fMtx);

@@ -146,6 +146,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             if (parts[0] == "state-change") {
                 DDSTask::Id taskId(std::stoull(parts[2]));
                 fDDSSession.UpdateChannelToTaskAssociation(senderId, taskId);
+                if(parts[3] == "IDLE->EXITING") {
+                    fDDSSession.SendCommand("state-change-exiting-received", senderId);
+                }
                 UpdateStateEntry(taskId, parts[3]);
             } else if (parts[0] == "state-changes-subscription") {
                 LOG(debug) << "Received from " << senderId << ": " << msg;
@@ -402,9 +405,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         bool targetStateReached(
             std::all_of(fState.cbegin(), fState.cend(), [&](TopologyState::value_type i) {
-                // TODO Check, if we can make sure that EXITING state change event are not missed
-                return fChangeStateTarget == DeviceState::Exiting
-                       || ((i.second.state == fChangeStateTarget) && i.second.initialized);
+                return (i.second.state == fChangeStateTarget) && i.second.initialized;
             }));
 
         if (!fChangeStateOp.IsCompleted() && targetStateReached) {
