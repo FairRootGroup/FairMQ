@@ -48,11 +48,8 @@ int main(int argc, char *argv[]) {
     auto [ec, states] =
         fairmqTopo.ChangeState(transition, std::chrono::milliseconds(300));
     if (!ec) {
-      // End transition does not yet wait for devices to acknowledge in v1.4.8
-      if (transition != TopologyTransition::End) {
-        LOG(info) << states.size() << " devices transitioned to "
-                  << fair::mq::sdk::AggregateState(states);
-      }
+      LOG(info) << states.size() << " devices transitioned to "
+                << fair::mq::sdk::AggregateState(states);
     } else {
       LOG(error) << ec;
       return ec.value();
