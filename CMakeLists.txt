@@ -3,7 +3,7 @@ cmake_policy(VERSION 3.11...3.15)
 
 project(sdk_tester VERSION 1 LANGUAGES CXX)
 
-find_package(FairMQ COMPONENTS sdk REQUIRED QUIET)
+find_package(FairMQ 1.4.8 COMPONENTS sdk REQUIRED QUIET)
 foreach(dep IN LISTS FairMQ_PACKAGE_DEPENDENCIES)
   if(FairMQ_${dep}_COMPONENTS)
     find_package(${dep} ${FairMQ_${dep}_VERSION} COMPONENTS ${FairMQ_${dep}_COMPONENTS} QUIET)
