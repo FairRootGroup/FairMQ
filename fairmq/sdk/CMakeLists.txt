@@ -18,6 +18,7 @@ set(SDK_PUBLIC_HEADER_FILES
   AsioAsyncOp.h
   AsioBase.h
   DDSAgent.h
+  DDSCollection.h
   DDSEnvironment.h
   DDSSession.h
   DDSTask.h
