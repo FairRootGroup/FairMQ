@@ -9,7 +9,7 @@
 #ifndef FAIR_MQ_SDK_DDSTASK_H
 #define FAIR_MQ_SDK_DDSTASK_H
 
-// #include <fairmq/sdk/DDSAgent.h>
+#include <fairmq/sdk/DDSCollection.h>
 
 #include <ostream>
 #include <cstdint>
@@ -27,19 +27,22 @@ class DDSTask
   public:
     using Id = std::uint64_t;
 
-    explicit DDSTask(Id id)
+    explicit DDSTask(Id id, Id collectionId)
         : fId(id)
+        , fCollectionId(collectionId)
     {}
 
     Id GetId() const { return fId; }
+    DDSCollection::Id GetCollectionId() const { return fCollectionId; }
 
     friend auto operator<<(std::ostream& os, const DDSTask& task) -> std::ostream&
     {
-        return os << "DDSTask id: " << task.fId;
+        return os << "DDSTask id: " << task.fId << ", collection id: " << task.fCollectionId;
     }
 
   private:
     Id fId;
+    DDSCollection::Id fCollectionId;
 };
 
 }   // namespace sdk

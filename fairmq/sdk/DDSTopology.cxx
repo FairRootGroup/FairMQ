@@ -80,10 +80,31 @@ auto DDSTopology::GetTasks() const -> std::vector<DDSTask>
     auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
 
     for (const auto& task : tasks) {
-        LOG(debug) << "Found task " << task.first << ": "
+        LOG(debug) << "Found task with id: " << task.first << ", "
                    << "Path: " << task.second.m_taskPath << ", "
+                   << "Collection id: " << task.second.m_taskCollectionId << ", "
                    << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex;
-        list.emplace_back(task.first);
+        list.emplace_back(task.first, task.second.m_taskCollectionId);
+    }
+
+    return list;
+}
+
+auto DDSTopology::GetCollections() const -> std::vector<DDSCollection>
+{
+    std::vector<DDSCollection> list;
+
+    auto itPair = fImpl->fTopo.getRuntimeCollectionIterator(
+        [](const dds::topology_api::STopoRuntimeCollection::FilterIterator_t::value_type&) -> bool {
+            return true;
+        });
+    auto collections = boost::make_iterator_range(itPair.first, itPair.second);
+
+    for (const auto& c : collections) {
+        LOG(debug) << "Found collection with id: " << c.first << ", "
+                   << "Index: " << c.second.m_collectionIndex << ", "
+                   << "Path: " << c.second.m_collectionPath;
+        list.emplace_back(c.first);
     }
 
     return list;

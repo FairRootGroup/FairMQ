@@ -254,7 +254,7 @@ auto DDSSession::RequestTaskInfo() -> std::vector<DDSTask>
     std::vector<DDSTask> taskInfo;
     taskInfo.reserve(res.size());
     for (auto& a : res) {
-        taskInfo.emplace_back(a.m_taskID);
+        taskInfo.emplace_back(a.m_taskID, 0);
     }
 
     return taskInfo;
