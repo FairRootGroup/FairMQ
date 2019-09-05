@@ -29,13 +29,13 @@ Set(configure_options "${configure_options};-DCMAKE_PREFIX_PATH=$ENV{SIMPATH}")
 Set(configure_options "${configure_options};-DBUILD_NANOMSG_TRANSPORT=ON")
 # Set(configure_options "${configure_options};-DBUILD_OFI_TRANSPORT=ON")
 Set(configure_options "${configure_options};-DBUILD_DDS_PLUGIN=ON")
-Set(configure_options "${configure_options};-DBUILD_SDK=OFF")
+Set(configure_options "${configure_options};-DBUILD_SDK=ON")
 Set(configure_options "${configure_options};-DFAST_BUILD=ON")
 Set(configure_options "${configure_options};-DCOTIRE_MAXIMUM_NUMBER_OF_UNITY_INCLUDES=-j$ENV{number_of_processors}")
 
 Set(EXTRA_FLAGS $ENV{EXTRA_FLAGS})
 If(EXTRA_FLAGS)
-  Set(configure_options "${configure_options};${EXTRA_FLAGS}") 
+  Set(configure_options "${configure_options};${EXTRA_FLAGS}")
 EndIf()
 
 If($ENV{ctest_model} MATCHES Profile)
@@ -58,7 +58,7 @@ Ctest_Configure(BUILD "${CTEST_BINARY_DIRECTORY}"
 
 Ctest_Build(BUILD "${CTEST_BINARY_DIRECTORY}")
 
-Ctest_Test(BUILD "${CTEST_BINARY_DIRECTORY}" 
+Ctest_Test(BUILD "${CTEST_BINARY_DIRECTORY}"
            # PARALLEL_LEVEL $ENV{number_of_processors}
            PARALLEL_LEVEL $ENV{number_of_processors}
            RETURN_VALUE _ctest_test_ret_val
@@ -78,7 +78,7 @@ If("$ENV{do_codecov_upload}")
 EndIf()
 
 Ctest_Submit()
- 
+
 if (_ctest_test_ret_val)
   Message(FATAL_ERROR "Some tests failed.")
 endif()
