@@ -22,11 +22,11 @@ def jobMatrix(String prefix, List specs, Closure callback) {
             echo "export SIMPATH=\${SIMPATH_PREFIX}${fairsoft}" >> Dart.cfg
             echo "export FAIRSOFT_VERSION=${fairsoft}" >> Dart.cfg
           """
-          if (os =~ /Debian/ && compiler =~ /gcc8/) {
+          if (os =~ /Debian/ && compiler =~ /gcc9/) {
             sh '''\
               echo "source /etc/profile.d/modules.sh" >> Dart.cfg
               echo "module use /cvmfs/it.gsi.de/modulefiles" >> Dart.cfg
-              echo "module load compiler/gcc/8" >> Dart.cfg
+              echo "module load compiler/gcc/9.1.0" >> Dart.cfg
             '''
           }
           if (os =~ /MacOS/) {
@@ -66,7 +66,7 @@ pipeline{
       steps{
         script {
           def build_jobs = jobMatrix('alfa-ci/build', [
-            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc8.1.0',        fairsoft: 'fairmq_dev'],
+            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc9.1.0',        fairsoft: 'fairmq_dev'],
             [os: 'MacOS10.13', arch: 'x86_64', compiler: 'AppleLLVM10.0.0', fairsoft: 'fairmq_dev'],
             [os: 'MacOS10.14', arch: 'x86_64', compiler: 'AppleLLVM10.0.0', fairsoft: 'fairmq_dev'],
           ]) { spec, label ->
@@ -74,7 +74,7 @@ pipeline{
           }
 
           def profile_jobs = jobMatrix('alfa-ci/codecov', [
-            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc8.1.0',        fairsoft: 'fairmq_dev'],
+            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc9.1.0',        fairsoft: 'fairmq_dev'],
           ]) { spec, label ->
             withCredentials([string(credentialsId: 'fairmq_codecov_token', variable: 'CODECOV_TOKEN')]) {
               sh './Dart.sh codecov Dart.cfg'
