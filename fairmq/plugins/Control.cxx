@@ -427,6 +427,9 @@ auto Control::RunShutdownSequence() -> void
             case DeviceState::Idle:
                 ChangeDeviceState(DeviceStateTransition::End);
                 break;
+            case DeviceState::InitializingDevice:
+                ChangeDeviceState(DeviceStateTransition::CompleteInit);
+                break;
             case DeviceState::Initialized:
             case DeviceState::Bound:
             case DeviceState::DeviceReady:
