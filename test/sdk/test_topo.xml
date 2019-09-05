@@ -25,10 +25,16 @@
         </properties>
     </decltask>
 
+    <declcollection name="Sinks">
+        <tasks>
+            <name>Sink</name>
+        </tasks>
+    </declcollection>
+
     <main name="main">
         <task>Sampler</task>
         <group name="SinkGroup" n="5">
-            <task>Sink</task>
+            <collection>Sinks</collection>
         </group>
     </main>
 
