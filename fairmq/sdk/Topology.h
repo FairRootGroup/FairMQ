@@ -102,6 +102,16 @@ inline TopologyStateByCollection GroupByCollectionId(const TopologyState& topolo
     return state;
 }
 
+inline TopologyStateByTask GroupByTaskId(const TopologyState& topologyState)
+{
+    TopologyStateByTask state;
+    for (const auto& ds : topologyState) {
+        state[ds.taskId] = ds;
+    }
+
+    return state;
+}
+
 /**
  * @class BasicTopology Topology.h <fairmq/sdk/Topology.h>
  * @tparam Executor Associated I/O executor
