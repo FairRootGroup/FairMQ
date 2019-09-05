@@ -59,13 +59,26 @@ struct TopologyFixture : ::testing::Test
         auto n(mDDSTopo.GetNumRequiredAgents());
         mDDSSession.SubmitAgents(n);
         mDDSSession.ActivateTopology(mDDSTopo);
+
         std::vector<sdk::DDSAgent> agents = mDDSSession.RequestAgentInfo();
+        LOG(debug) << "##### AgentInfo:";
+        LOG(debug) << "size: " << agents.size();
         for (const auto& a : agents) {
             LOG(debug) << a;
         }
+
         std::vector<sdk::DDSTask> tasks = mDDSSession.RequestTaskInfo();
+        LOG(debug) << "##### TaskInfo:";
+        LOG(debug) << "size: " << tasks.size();
         for (const auto& t : tasks) {
             LOG(debug) << t;
+        }
+
+        std::vector<sdk::DDSCollection> collections = mDDSTopo.GetCollections();
+        LOG(debug) << "##### CollectionInfo:";
+        LOG(debug) << "size: " << collections.size();
+        for (const auto& c : collections) {
+            LOG(debug) << c;
         }
     }
 

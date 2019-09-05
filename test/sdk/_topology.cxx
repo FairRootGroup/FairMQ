@@ -171,6 +171,35 @@ TEST_F(Topology, AsyncChangeStateTimeout)
     mIoContext.run();
 }
 
+TEST_F(Topology, AsyncChangeStateCollectionView)
+{
+    using namespace fair::mq;
+
+    tools::SharedSemaphore blocker;
+    sdk::Topology topo(mDDSTopo, mDDSSession);
+    topo.AsyncChangeState(
+        sdk::TopologyTransition::InitDevice,
+        [=](std::error_code ec, sdk::TopologyState state) mutable {
+            LOG(info) << ec;
+            sdk::TopologyStateByCollection cstate(sdk::GroupByCollectionId(state));
+            LOG(debug) << "num collections: " << cstate.size();
+            ASSERT_EQ(cstate.size(), 5);
+            for (const auto& c : cstate) {
+                LOG(debug) << "\t" << c.first;
+                State s;
+                ASSERT_NO_THROW(s = sdk::AggregateState(c.second));
+                ASSERT_EQ(s, State::InitializingDevice);
+                LOG(debug) << "\tAggregated state: " << s;
+                for (const auto& ds : c.second) {
+                    LOG(debug) << "\t\t" << ds.state;
+                }
+            }
+            EXPECT_EQ(ec, std::error_code());
+            blocker.Signal();
+        });
+    blocker.Wait();
+}
+
 TEST_F(Topology, ChangeStateFullDeviceLifecycle)
 {
     using namespace fair::mq;
