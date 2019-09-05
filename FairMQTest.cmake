@@ -43,6 +43,7 @@ If($ENV{ctest_model} MATCHES Profile)
   If(GCOV_COMMAND)
     Message("Found GCOV: ${GCOV_COMMAND}")
     Set(CTEST_COVERAGE_COMMAND ${GCOV_COMMAND})
+    set(CTEST_COVERAGE_EXTRA_FLAGS "-p")
   EndIf(GCOV_COMMAND)
 EndIf()
 
