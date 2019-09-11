@@ -445,6 +445,23 @@ macro(exec cmd)
   endif()
 endmacro()
 
+macro(exec_source cmd)
+  join("${ARGN}" " " args)
+  file(APPEND ${${package}_BUILD_LOGFILE} ">>> ${cmd} ${args}\n")
+
+  execute_process(COMMAND ${cmd} ${ARGN}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE log
+    ERROR_VARIABLE log
+    RESULT_VARIABLE res
+  )
+  file(APPEND ${${package}_BUILD_LOGFILE} ${log})
+
+  if(res)
+    message(FATAL_ERROR "${res} \nSee also \"${${package}_BUILD_LOGFILE}\"")
+  endif()
+endmacro()
+
 function(build_bundled package bundle)
   message(STATUS "Building bundled ${package}")
 
@@ -455,7 +472,7 @@ function(build_bundled package bundle)
   file(REMOVE ${${package}_BUILD_LOGFILE})
 
   if(Git_FOUND)
-    exec(${GIT_EXECUTABLE} submodule update --init --recursive -- ${${package}_SOURCE_DIR})
+    exec_source(${GIT_EXECUTABLE} submodule update --init -- ${${package}_SOURCE_DIR})
   endif()
 
   if(${package} STREQUAL GTest)
