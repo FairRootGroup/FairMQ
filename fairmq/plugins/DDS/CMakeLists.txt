@@ -19,7 +19,7 @@ set_target_properties(${plugin} PROPERTIES
 
 set(exe fairmq-dds-command-ui)
 add_executable(${exe} ${CMAKE_CURRENT_SOURCE_DIR}/runDDSCommandUI.cxx)
-target_link_libraries(${exe} FairMQ DDS::dds_intercom_lib DDS::dds_protocol_lib)
+target_link_libraries(${exe} FairMQ DDS::dds_intercom_lib DDS::dds_protocol_lib Boost::boost)
 target_include_directories(${exe} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 install(TARGETS ${plugin} ${exe}

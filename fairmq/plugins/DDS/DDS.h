@@ -11,6 +11,9 @@
 
 #include <DDS/dds_env_prop.h>
 #include <DDS/dds_intercom.h>
+#include <boost/asio/executor.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
 #include <cassert>
 #include <chrono>
 #include <condition_variable>
@@ -172,6 +175,10 @@ class DDS : public Plugin
     bool fUpdatesAllowed;
     std::mutex fUpdateMutex;
     std::condition_variable fUpdateCondition;
+
+    std::thread fWorkerThread;
+    boost::asio::io_context fWorkerQueue;
+    boost::asio::executor_work_guard<boost::asio::executor> fWorkGuard;
 };
 
 Plugin::ProgOptions DDSProgramOptions()
