@@ -133,8 +133,11 @@ class DDS : public Plugin
   private:
     auto StaticControl() -> void;
     auto WaitForExitingAck() -> void;
+    auto StartWorkerThread() -> void;
 
     auto FillChannelContainers() -> void;
+    auto EmptyChannelContainers() -> void;
+
     auto SubscribeForConnectingChannels() -> void;
     auto PublishBoundChannels() -> void;
     auto SubscribeForCustomCommands() -> void;
