@@ -9,6 +9,7 @@
 #ifndef FAIR_MQ_SDK_TOPOLOGY_H
 #define FAIR_MQ_SDK_TOPOLOGY_H
 
+#include <algorithm>
 #include <asio/async_result.hpp>
 #include <asio/associated_executor.hpp>
 #include <asio/steady_timer.hpp>
@@ -450,12 +451,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// call only under locked fMtx!
     auto ResetTransitionedCount(DeviceState targetState) -> void
     {
-        fTransitionedCount = 0;
-        for (const auto& s : fState) {
-            if (s.second.state == targetState) {
-                ++fTransitionedCount;
-            }
-        }
+        fTransitionedCount = std::count_if(fState.cbegin(), fState.cend(), [=](const auto& s) {
+            return s.second.state == targetState;
+        });
     }
 
     /// call only under locked fMtx!
