@@ -319,6 +319,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                                                    AsioBase<Executor, Allocator>::GetAllocator(),
                                                    std::move(handler));
                     fChangeStateTarget = expectedState.at(transition);
+                    ResetTransitionedCount(fChangeStateTarget);
                     fDDSSession.SendCommand(GetTransitionName(transition));
                     if (timeout > std::chrono::milliseconds(0)) {
                         fChangeStateOpTimer.expires_after(timeout);
@@ -394,6 +395,10 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     auto StateEqualsTo(DeviceState state) const -> bool { return sdk::StateEqualsTo(GetCurrentState(), state); }
 
   private:
+    using TransitionedCount = unsigned int;
+    // using TransitionCounts = std::map<DeviceState, TransitionedCount>;
+
+
     DDSSession fDDSSession;
     DDSTopology fDDSTopo;
     TopologyStateByTask fState;
@@ -403,6 +408,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     ChangeStateOp fChangeStateOp;
     asio::steady_timer fChangeStateOpTimer;
     DeviceState fChangeStateTarget;
+    TransitionedCount fTransitionedCount;
 
     static auto makeTopologyState(const DDSTopo& topo) -> TopologyStateByTask
     {
@@ -422,6 +428,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             DeviceStatus& task = fState.at(taskId);
             task.initialized = true;
             task.state = fair::mq::GetState(endState);
+            if (task.state == fChangeStateTarget) {
+                ++fTransitionedCount;
+            }
             LOG(debug) << "Updated state entry: taskId=" << taskId << ",state=" << state;
             TryChangeStateCompletion();
         } catch (const std::exception& e) {
@@ -432,14 +441,20 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// call only under locked fMtx!
     auto TryChangeStateCompletion() -> void
     {
-        bool targetStateReached(
-            std::all_of(fState.cbegin(), fState.cend(), [&](TopologyStateByTask::value_type i) {
-                return (i.second.state == fChangeStateTarget) && i.second.initialized;
-            }));
-
-        if (!fChangeStateOp.IsCompleted() && targetStateReached) {
+        if (!fChangeStateOp.IsCompleted() && fTransitionedCount == fState.size()) {
             fChangeStateOpTimer.cancel();
             fChangeStateOp.Complete(MakeTopologyStateFromMap());
+        }
+    }
+
+    /// call only under locked fMtx!
+    auto ResetTransitionedCount(DeviceState targetState) -> void
+    {
+        fTransitionedCount = 0;
+        for (const auto& s : fState) {
+            if (s.second.state == targetState) {
+                ++fTransitionedCount;
+            }
         }
     }
 
