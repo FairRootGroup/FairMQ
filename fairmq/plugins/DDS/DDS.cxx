@@ -100,8 +100,12 @@ DDS::DDS(const string& name,
                     PublishBoundChannels();
                     break;
                 case DeviceState::ResettingDevice: {
-                    std::lock_guard<std::mutex> lk(fUpdateMutex);
-                    fUpdatesAllowed = false;
+                    {
+                        std::lock_guard<std::mutex> lk(fUpdateMutex);
+                        fUpdatesAllowed = false;
+                    }
+
+                    EmptyChannelContainers();
                     break;
                 }
                 case DeviceState::Exiting:
@@ -127,13 +131,7 @@ DDS::DDS(const string& name,
         if (staticMode) {
             fControllerThread = thread(&DDS::StaticControl, this);
         } else {
-            fWorkerThread = thread([this]() {
-                {
-                    std::unique_lock<std::mutex> lk(fUpdateMutex);
-                    fUpdateCondition.wait(lk, [&]{ return fUpdatesAllowed; });
-                }
-                fWorkerQueue.run();
-            });
+            StartWorkerThread();
         }
 
         fDDS.Start();
@@ -142,6 +140,19 @@ DDS::DDS(const string& name,
     } catch (exception& e) {
         LOG(error) << "Error in plugin initialization: " << e.what();
     }
+}
+
+void DDS::EmptyChannelContainers()
+{
+    fBindingChans.clear();
+    fConnectingChans.clear();
+}
+
+auto DDS::StartWorkerThread() -> void
+{
+    fWorkerThread = thread([this]() {
+        fWorkerQueue.run();
+    });
 }
 
 auto DDS::WaitForExitingAck() -> void
@@ -257,6 +268,10 @@ auto DDS::SubscribeForConnectingChannels() -> void
 
         boost::asio::post(fWorkerQueue, [=]() {
             try {
+                {
+                    std::unique_lock<std::mutex> lk(fUpdateMutex);
+                    fUpdateCondition.wait(lk, [&]{ return fUpdatesAllowed; });
+                }
                 string val = value;
                 // check if it is to handle as one out of multiple values
                 auto it = fIofN.find(propertyId);
