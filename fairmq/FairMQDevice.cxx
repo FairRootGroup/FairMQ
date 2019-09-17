@@ -10,10 +10,6 @@
 
 #include <boost/algorithm/string.hpp> // join/split
 
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
-
 #include <list>
 #include <cstdlib>
 #include <chrono>
