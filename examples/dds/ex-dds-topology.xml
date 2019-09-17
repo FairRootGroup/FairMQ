@@ -1,7 +1,7 @@
 <topology name="ExampleDDS">
 
-    <property name="data1" />
-    <property name="data2" />
+    <property name="fmqchan_data1" />
+    <property name="fmqchan_data2" />
 
     <declrequirement name="SamplerWorker" type="wnname" value="sampler"/>
     <declrequirement name="ProcessorWorker" type="wnname" value="processor"/>
@@ -14,7 +14,7 @@
             <name>SamplerWorker</name>
         </requirements>
         <properties>
-            <name access="write">data1</name>
+            <name access="write">fmqchan_data1</name>
         </properties>
     </decltask>
 
@@ -25,8 +25,8 @@
             <name>ProcessorWorker</name>
         </requirements>
         <properties>
-            <name access="read">data1</name>
-            <name access="read">data2</name>
+            <name access="read">fmqchan_data1</name>
+            <name access="read">fmqchan_data2</name>
         </properties>
     </decltask>
 
@@ -37,7 +37,7 @@
             <name>SinkWorker</name>
         </requirements>
         <properties>
-            <name access="write">data2</name>
+            <name access="write">fmqchan_data2</name>
         </properties>
     </decltask>
 
