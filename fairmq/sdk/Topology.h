@@ -69,7 +69,7 @@ struct DeviceStatus
 };
 
 using TopologyState = std::vector<DeviceStatus>;
-using TopologyStateIndex = std::unordered_map<DDSTask::Id, size_t>; //  task id -> index in the data vector
+using TopologyStateIndex = std::unordered_map<DDSTask::Id, int>; //  task id -> index in the data vector
 using TopologyStateByTask = std::unordered_map<DDSTask::Id, DeviceStatus>;
 using TopologyStateByCollection = std::unordered_map<DDSCollection::Id, std::vector<DeviceStatus>>;
 using TopologyTransition = fair::mq::Transition;
@@ -411,7 +411,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         fStateData.reserve(fDDSTopo.GetTasks().size());
 
-        size_t index = 0;
+        int index = 0;
 
         for (const auto& task : fDDSTopo.GetTasks()) {
             fStateData.push_back(DeviceStatus{false, DeviceState::Ok, task.GetId(), task.GetCollectionId()});
