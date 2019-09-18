@@ -16,6 +16,7 @@
 #include <fairmq/sdk/DDSTask.h>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace fair {
 namespace mq {
