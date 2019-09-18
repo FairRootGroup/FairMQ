@@ -46,6 +46,10 @@ def buildMatrix(List specs, Closure callback) {
 
           deleteDir()
         } catch (e) {
+          def tarball = "${label}_dds_logs.tar.gz"
+          sh "tar czvf ${tarball} -C \${WORKSPACE}/build/test/ .DDS/"
+          archiveArtifacts tarball
+
           deleteDir()
           throw e
         }

@@ -49,6 +49,10 @@ def jobMatrix(String prefix, List specs, Closure callback) {
           deleteDir()
           githubNotify(context: "${prefix}/${label}", description: 'Success', status: 'SUCCESS')
         } catch (e) {
+          def tarball = "${prefix}_${label}_dds_logs.tar.gz"
+          sh "tar czvf ${tarball} -C \${WORKSPACE}/build/test/ .DDS/"
+          archiveArtifacts tarball
+
           deleteDir()
           githubNotify(context: "${prefix}/${label}", description: 'Error', status: 'ERROR')
           throw e
@@ -65,7 +69,7 @@ pipeline{
     stage("Run CI Matrix") {
       steps{
         script {
-          def build_jobs = jobMatrix('alfa-ci/build', [
+          def build_jobs = jobMatrix('build', [
             [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc9.1.0',        fairsoft: 'fairmq_dev'],
             [os: 'MacOS10.13', arch: 'x86_64', compiler: 'AppleLLVM10.0.0', fairsoft: 'fairmq_dev'],
             [os: 'MacOS10.14', arch: 'x86_64', compiler: 'AppleLLVM10.0.0', fairsoft: 'fairmq_dev'],
@@ -73,7 +77,7 @@ pipeline{
             sh './Dart.sh alfa_ci Dart.cfg'
           }
 
-          def profile_jobs = jobMatrix('alfa-ci/codecov', [
+          def profile_jobs = jobMatrix('codecov', [
             [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc9.1.0',        fairsoft: 'fairmq_dev'],
           ]) { spec, label ->
             withCredentials([string(credentialsId: 'fairmq_codecov_token', variable: 'CODECOV_TOKEN')]) {
