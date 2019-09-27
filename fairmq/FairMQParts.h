@@ -33,7 +33,7 @@ class FairMQParts
     FairMQParts& operator=(const FairMQParts&) = delete;
     /// Constructor from argument pack of std::unique_ptr<FairMQMessage> rvalues
     template <typename... Ts>
-    FairMQParts(Ts&&... messages) : fParts() {AddPart(std::forward<Ts>(messages)...);}
+    FairMQParts(Ts&&... messages) : fParts() { AddPart(std::forward<Ts>(messages)...); }
     /// Default destructor
     ~FairMQParts() {};
 
@@ -63,10 +63,10 @@ class FairMQParts
     /// Add content of another object by move
     void AddPart(FairMQParts&& other)
     {
-      container parts = std::move(other.fParts);
-      for (auto& part : parts) {
-	fParts.push_back(std::move(part));
-      }
+        container parts = std::move(other.fParts);
+        for (auto& part : parts) {
+            fParts.push_back(std::move(part));
+        }
     }
 
     /// Get reference to part in the container at index (without bounds check)

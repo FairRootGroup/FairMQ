@@ -39,14 +39,16 @@ fairmq_build_option(BUILD_NANOMSG_TRANSPORT "Build nanomsg transport."
                                              DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
 fairmq_build_option(BUILD_OFI_TRANSPORT     "Build experimental OFI transport."
                                              DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
+fairmq_build_option(BUILD_SDK_COMMANDS      "Build the FairMQ SDK commands."
+                                             DEFAULT OFF)
 fairmq_build_option(BUILD_DDS_PLUGIN        "Build DDS plugin."
-                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
+                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ;BUILD_SDK_COMMANDS")
 fairmq_build_option(BUILD_PMIX_PLUGIN       "Build PMIx plugin."
                                              DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
 fairmq_build_option(BUILD_EXAMPLES          "Build FairMQ examples."
                                              DEFAULT ON  REQUIRES "BUILD_FAIRMQ")
 fairmq_build_option(BUILD_SDK               "Build the FairMQ controller SDK."
-                                             DEFAULT OFF REQUIRES "BUILD_DDS_PLUGIN")
+                                             DEFAULT OFF REQUIRES "BUILD_DDS_PLUGIN;BUILD_SDK_COMMANDS")
 fairmq_build_option(BUILD_DOCS              "Build FairMQ documentation."
                                              DEFAULT OFF)
 fairmq_build_option(FAST_BUILD              "Fast production build. Not recommended for development."
@@ -87,6 +89,10 @@ if(BUILD_SDK)
   set(required_dds_version 2.5.46)
 else()
   set(required_dds_version 2.4)
+endif()
+
+if(BUILD_SDK_COMMANDS)
+  find_package2(PRIVATE Flatbuffers REQUIRED)
 endif()
 
 if(BUILD_DDS_PLUGIN OR BUILD_SDK)
@@ -230,6 +236,9 @@ endif()
 if(BUILD_SDK)
   list(APPEND PROJECT_PACKAGE_COMPONENTS sdk)
 endif()
+if(BUILD_SDK_COMMANDS)
+  list(APPEND PROJECT_PACKAGE_COMPONENTS sdk_commands)
+endif()
 ################################################################################
 
 
@@ -343,6 +352,9 @@ if(PROJECT_PACKAGE_DEPENDENCIES)
     elseif(${dep} STREQUAL fmt)
       get_target_property(fmt_include fmt::fmt INTERFACE_INCLUDE_DIRECTORIES)
       get_filename_component(prefix ${fmt_include}/.. ABSOLUTE)
+    elseif(${dep} STREQUAL Flatbuffers)
+      get_target_property(flatbuffers_include flatbuffers::flatbuffers INTERFACE_INCLUDE_DIRECTORIES)
+      get_filename_component(prefix ${flatbuffers_include}/.. ABSOLUTE)
     else()
       get_filename_component(prefix ${${dep}_INCLUDE_DIR}/.. ABSOLUTE)
     endif()
@@ -410,6 +422,12 @@ else()
   set(sdk_summary "${BRed} NO${CR}    EXPERIMENTAL (required C++14) (default, enable with ${BMagenta}-DBUILD_SDK=ON${CR})")
 endif()
 message(STATUS "  ${BWhite}sdk${CR}                ${sdk_summary}")
+if(BUILD_SDK_COMMANDS)
+  set(sdk_commands_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_SDK_COMMANDS=OFF${CR})")
+else()
+  set(sdk_commands_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_SDK_COMMANDS=ON${CR})")
+endif()
+message(STATUS "  ${BWhite}sdk_commands${CR}       ${sdk_commands_summary}")
 message(STATUS "  ")
 if(RUN_STATIC_ANALYSIS)
   list(LENGTH PROJECT_STATIC_ANALYSERS size)
