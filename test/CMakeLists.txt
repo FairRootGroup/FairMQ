@@ -316,3 +316,20 @@ if(BUILD_SDK)
         )
     endif()
 endif()
+
+if(BUILD_SDK_COMMANDS)
+    add_testsuite(Commands
+        SOURCES
+        ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+        commands/_commands.cxx
+
+        LINKS
+        Commands
+        StateMachine
+        Tools
+        INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
+                 ${CMAKE_CURRENT_BINARY_DIR}
+        TIMEOUT 30
+        ${definitions}
+    )
+endif()
