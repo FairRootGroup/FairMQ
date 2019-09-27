@@ -8,6 +8,8 @@
 
 #include "DDS.h"
 
+#include <fairmq/sdk/commands/Commands.h>
+
 #include <fairmq/Tools.h>
 
 #include <boost/algorithm/string/join.hpp>
@@ -62,13 +64,13 @@ DDS::DDS(const string& name,
 
         fHeartbeatThread = thread(&DDS::HeartbeatSender, this);
 
-        std::string deviceId(GetProperty<std::string>("id"));
+        string deviceId(GetProperty<string>("id"));
         if (deviceId.empty()) {
-            SetProperty<std::string>("id", dds::env_prop<dds::task_path>());
+            SetProperty<string>("id", dds::env_prop<dds::task_path>());
         }
-        std::string sessionId(GetProperty<std::string>("session"));
+        string sessionId(GetProperty<string>("session"));
         if (sessionId == "default") {
-            SetProperty<std::string>("session", dds::env_prop<dds::dds_session_id>());
+            SetProperty<string>("session", dds::env_prop<dds::dds_session_id>());
         }
 
         auto control = GetProperty<string>("control");
@@ -101,7 +103,7 @@ DDS::DDS(const string& name,
                     break;
                 case DeviceState::ResettingDevice: {
                     {
-                        std::lock_guard<std::mutex> lk(fUpdateMutex);
+                        lock_guard<mutex> lk(fUpdateMutex);
                         fUpdatesAllowed = false;
                     }
 
@@ -122,9 +124,12 @@ DDS::DDS(const string& name,
             string id = GetProperty<string>("id");
             fLastState = fCurrentState;
             fCurrentState = newState;
+            using namespace sdk::cmd;
             for (auto subscriberId : fStateChangeSubscribers) {
                 LOG(debug) << "Publishing state-change: " << fLastState << "->" << newState << " to " << subscriberId;
-                fDDS.Send("state-change: " + id + "," + ToString(dds::env_prop<dds::task_id>()) + "," + ToStr(fLastState) + "->" + ToStr(newState), to_string(subscriberId));
+
+                Cmds cmds(make<StateChange>(id, dds::env_prop<dds::task_id>(), fLastState, fCurrentState));
+                fDDS.Send(cmds.Serialize(), to_string(subscriberId));
             }
         });
 
@@ -250,7 +255,7 @@ auto DDS::FillChannelContainers() -> void
             fIofN.insert(make_pair(chanName, IofN(i, n)));
         }
         {
-            std::lock_guard<std::mutex> lk(fUpdateMutex);
+            lock_guard<mutex> lk(fUpdateMutex);
             fUpdatesAllowed = true;
         }
         fUpdateCondition.notify_one();
@@ -276,7 +281,7 @@ auto DDS::SubscribeForConnectingChannels() -> void
         boost::asio::post(fWorkerQueue, [=]() {
             try {
                 {
-                    std::unique_lock<std::mutex> lk(fUpdateMutex);
+                    unique_lock<mutex> lk(fUpdateMutex);
                     fUpdateCondition.wait(lk, [&]{ return fUpdatesAllowed; });
                 }
                 string val = value;
@@ -341,6 +346,7 @@ auto DDS::PublishBoundChannels() -> void
 
 auto DDS::HeartbeatSender() -> void
 {
+    using namespace sdk::cmd;
     string id = GetProperty<string>("id");
 
     while (!fDeviceTerminationRequested) {
@@ -348,7 +354,7 @@ auto DDS::HeartbeatSender() -> void
             lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
 
             for (const auto subscriberId : fHeartbeatSubscribers) {
-                fDDS.Send("heartbeat: " + id , to_string(subscriberId));
+                fDDS.Send(Cmds(make<Heartbeat>(id)).Serialize(), to_string(subscriberId));
             }
         }
 
@@ -358,86 +364,100 @@ auto DDS::HeartbeatSender() -> void
 
 auto DDS::SubscribeForCustomCommands() -> void
 {
+    using namespace sdk::cmd;
     LOG(debug) << "Subscribing for DDS custom commands.";
 
     string id = GetProperty<string>("id");
 
-    fDDS.SubscribeCustomCmd([id, this](const string& cmd, const string& cond, uint64_t senderId) {
-        LOG(info) << "Received command: '" << cmd << "' from " << senderId;
+    fDDS.SubscribeCustomCmd([id, this](const string& cmdStr, const string& cond, uint64_t senderId) {
+        // LOG(info) << "Received command: '" << cmdStr << "' from " << senderId;
 
-        if (cmd == "check-state") {
-            fDDS.Send(id + ": " + ToStr(GetCurrentDeviceState()), to_string(senderId));
-        } else if (fTransitions.find(cmd) != fTransitions.end()) {
-            if (ChangeDeviceState(ToDeviceStateTransition(cmd))) {
-                fDDS.Send(id + ": queued, " + cmd, to_string(senderId));
-            } else {
-                fDDS.Send(id + ": could not queue, " + cmd, to_string(senderId));
-            }
-            if (cmd == "END" && ToStr(GetCurrentDeviceState()) == "EXITING") {
-                unique_lock<mutex> lock(fStopMutex);
-                fStopCondition.notify_one();
-            }
-            {
-                lock_guard<mutex> lock{fStateChangeSubscriberMutex};
-                fLastExternalController = senderId;
-            }
-        } else if (cmd == "dump-config") {
-            stringstream ss;
-            for (const auto pKey: GetPropertyKeys()) {
-                ss << id << ": " << pKey << " -> " << GetPropertyAsString(pKey) << endl;
-            }
-            fDDS.Send(ss.str(), to_string(senderId));
-        } else if (cmd == "subscribe-to-heartbeats") {
-            {
-                // auto size = fHeartbeatSubscribers.size();
-                lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
-                fHeartbeatSubscribers.insert(senderId);
-            }
-            fDDS.Send("heartbeat-subscription: " + id + ",OK", to_string(senderId));
-        } else if (cmd == "unsubscribe-from-heartbeats") {
-            {
-                lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
-                fHeartbeatSubscribers.erase(senderId);
-            }
-            fDDS.Send("heartbeat-unsubscription: " + id + ",OK", to_string(senderId));
-        } else if (cmd == "state-change-exiting-received") {
-            {
-                lock_guard<mutex> lock{fStateChangeSubscriberMutex};
-                if (fLastExternalController == senderId) {
-                    fExitingAckedByLastExternalController = true;
+        Cmds inCmds;
+        inCmds.Deserialize(cmdStr);
+
+        for (const auto& cmd : inCmds) {
+            switch (cmd->GetType()) {
+                case Type::check_state: {
+                    fDDS.Send(Cmds(make<CurrentState>(id, GetCurrentDeviceState())).Serialize(), to_string(senderId));
                 }
-            }
-            fExitingAcked.notify_one();
-        } else if (cmd == "subscribe-to-state-changes") {
-            {
-                // auto size = fStateChangeSubscribers.size();
-                lock_guard<mutex> lock{fStateChangeSubscriberMutex};
-                fStateChangeSubscribers.insert(senderId);
-                if (!fControllerThread.joinable()) {
-                    fControllerThread = thread(&DDS::WaitForExitingAck, this);
+                break;
+                case Type::change_state: {
+                    Transition transition = static_cast<ChangeState&>(*cmd).GetTransition();
+                    if (ChangeDeviceState(transition)) {
+                        Cmds outCmds(make<TransitionStatus>(id, Result::Ok, transition));
+                        fDDS.Send(outCmds.Serialize(), to_string(senderId));
+                    } else {
+                        Cmds outCmds(make<TransitionStatus>(id, Result::Failure, transition));
+                        fDDS.Send(outCmds.Serialize(), to_string(senderId));
+                    }
                 }
+                break;
+                case Type::dump_config: {
+                    stringstream ss;
+                    for (const auto pKey: GetPropertyKeys()) {
+                        ss << id << ": " << pKey << " -> " << GetPropertyAsString(pKey) << endl;
+                    }
+                    Cmds outCmds(make<Config>(id, ss.str()));
+                    fDDS.Send(outCmds.Serialize(), to_string(senderId));
+                }
+                break;
+                case Type::subscribe_to_heartbeats: {
+                    {
+                        lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
+                        fHeartbeatSubscribers.insert(senderId);
+                    }
+                    Cmds outCmds(make<HeartbeatSubscription>(id, Result::Ok));
+                    fDDS.Send(outCmds.Serialize(), to_string(senderId));
+                }
+                break;
+                case Type::unsubscribe_from_heartbeats: {
+                    {
+                        lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
+                        fHeartbeatSubscribers.erase(senderId);
+                    }
+                    Cmds outCmds(make<HeartbeatUnsubscription>(id, Result::Ok));
+                    fDDS.Send(outCmds.Serialize(), to_string(senderId));
+                }
+                break;
+                case Type::state_change_exiting_received: {
+                    {
+                        lock_guard<mutex> lock{fStateChangeSubscriberMutex};
+                        if (fLastExternalController == senderId) {
+                            fExitingAckedByLastExternalController = true;
+                        }
+                    }
+                    fExitingAcked.notify_one();
+                }
+                break;
+                case Type::subscribe_to_state_change: {
+                    lock_guard<mutex> lock{fStateChangeSubscriberMutex};
+                    fStateChangeSubscribers.insert(senderId);
+                    if (!fControllerThread.joinable()) {
+                        fControllerThread = thread(&DDS::WaitForExitingAck, this);
+                    }
+
+                    LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState << " to " << senderId;
+
+                    Cmds outCmds(make<StateChangeSubscription>(id, Result::Ok), make<StateChange>(id, dds::env_prop<dds::task_id>(), fLastState, fCurrentState));
+
+                    fDDS.Send(outCmds.Serialize(), to_string(senderId));
+                }
+                break;
+                case Type::unsubscribe_from_state_change: {
+                    {
+                        lock_guard<mutex> lock{fStateChangeSubscriberMutex};
+                        fStateChangeSubscribers.erase(senderId);
+                    }
+                    Cmds outCmds(make<StateChangeUnsubscription>(id, Result::Ok));
+                    fDDS.Send(outCmds.Serialize(), to_string(senderId));
+                }
+                break;
+                default:
+                    LOG(warn) << "Unexpected/unknown command received: " << cmdStr;
+                    LOG(warn) << "Origin: " << senderId;
+                    LOG(warn) << "Destination: " << cond;
+                break;
             }
-            fDDS.Send("state-changes-subscription: " + id + ",OK", to_string(senderId));
-            {
-                lock_guard<mutex> lock{fStateChangeSubscriberMutex};
-                LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState << " to " << senderId;
-                // fDDSCustomCmd.send("state-change: " + id + "," + ToStr(fLastState) + "->" + ToStr(fCurrentState), to_string(senderId));
-                fDDS.Send("state-change: " + id + "," + ToString(dds::env_prop<dds::task_id>()) + "," + ToStr(fLastState) + "->" + ToStr(fCurrentState), to_string(senderId));
-            }
-        } else if (cmd == "unsubscribe-from-state-changes") {
-            {
-                lock_guard<mutex> lock{fStateChangeSubscriberMutex};
-                fStateChangeSubscribers.erase(senderId);
-            }
-            fDDS.Send("state-changes-unsubscription: " + id + ",OK", to_string(senderId));
-        } else if (cmd == "SHUTDOWN") {
-            TransitionDeviceStateTo(DeviceState::Exiting);
-        } else if (cmd == "STARTUP") {
-            TransitionDeviceStateTo(DeviceState::Running);
-        } else {
-            LOG(warn) << "Unknown command: " << cmd;
-            LOG(warn) << "Origin: " << senderId;
-            LOG(warn) << "Destination: " << cond;
         }
     });
 }

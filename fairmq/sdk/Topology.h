@@ -9,25 +9,27 @@
 #ifndef FAIR_MQ_SDK_TOPOLOGY_H
 #define FAIR_MQ_SDK_TOPOLOGY_H
 
-#include <algorithm>
-#include <asio/async_result.hpp>
-#include <asio/associated_executor.hpp>
-#include <asio/steady_timer.hpp>
-#include <asio/system_executor.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <chrono>
-#include <fairlogger/Logger.h>
-#include <fairmq/States.h>
-#include <fairmq/Tools.h>
 #include <fairmq/sdk/AsioAsyncOp.h>
 #include <fairmq/sdk/AsioBase.h>
+#include <fairmq/sdk/commands/Commands.h>
 #include <fairmq/sdk/DDSCollection.h>
 #include <fairmq/sdk/DDSInfo.h>
 #include <fairmq/sdk/DDSSession.h>
 #include <fairmq/sdk/DDSTask.h>
 #include <fairmq/sdk/DDSTopology.h>
 #include <fairmq/sdk/Error.h>
+#include <fairmq/States.h>
+#include <fairmq/Tools.h>
+
+#include <fairlogger/Logger.h>
+
+#include <asio/associated_executor.hpp>
+#include <asio/async_result.hpp>
+#include <asio/steady_timer.hpp>
+#include <asio/system_executor.hpp>
+
+#include <algorithm>
+#include <chrono>
 #include <functional>
 #include <map>
 #include <memory>
@@ -161,44 +163,58 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             throw RuntimeError("Given topology ", givenTopo, " is not activated (active: ", activeTopo, ")");
         }
 
+        using namespace fair::mq::sdk::cmd;
         fDDSSession.SubscribeToCommands([&](const std::string& msg, const std::string& /* condition */, DDSChannel::Id senderId) {
-            // LOG(debug) << "Received from " << senderId << ": " << msg;
-            std::vector<std::string> parts;
-            boost::algorithm::split(parts, msg, boost::algorithm::is_any_of(":,"));
-
-            for (unsigned int i = 0; i < parts.size(); ++i) {
-                boost::trim(parts.at(i));
-            }
-
-            if (parts[0] == "state-change") {
-                DDSTask::Id taskId(std::stoull(parts[2]));
-                fDDSSession.UpdateChannelToTaskAssociation(senderId, taskId);
-                if (parts[3] == "IDLE->EXITING") {
-                    fDDSSession.SendCommand("state-change-exiting-received", senderId);
-                }
-                UpdateStateEntry(taskId, parts[3]);
-            } else if (parts[0] == "state-changes-subscription") {
-                LOG(debug) << "Received from " << senderId << ": " << msg;
-                if (parts[2] != "OK") {
-                    LOG(error) << "state-changes-subscription failed with return code: " << parts[2];
-                }
-            } else if (parts[0] == "state-changes-unsubscription") {
-                LOG(debug) << "Received from " << senderId << ": " << msg;
-                if (parts[2] != "OK") {
-                    LOG(error) << "state-changes-unsubscription failed with return code: " << parts[2];
-                }
-            } else if (parts[1] == "could not queue") {
-                std::lock_guard<std::mutex> lk(fMtx);
-                if (!fChangeStateOp.IsCompleted() && fStateData.at(fStateIndex.at(fDDSSession.GetTaskId(senderId))).state != fChangeStateTarget) {
-                    fChangeStateOpTimer.cancel();
-                    fChangeStateOp.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed), fStateData);
+            Cmds inCmds;
+            inCmds.Deserialize(msg);
+            // LOG(debug) << "Received " << inCmds.Size() << " command(s) with total size of " << msg.length() << " bytes: ";
+            for (const auto& cmd : inCmds) {
+                // LOG(debug) << " > " << cmd->GetType();
+                switch (cmd->GetType()) {
+                    case Type::state_change: {
+                        DDSTask::Id taskId(static_cast<StateChange&>(*cmd).GetTaskId());
+                        fDDSSession.UpdateChannelToTaskAssociation(senderId, taskId);
+                        if (static_cast<StateChange&>(*cmd).GetCurrentState() == DeviceState::Exiting) {
+                            Cmds outCmds;
+                            outCmds.Add<StateChangeExitingReceived>();
+                            fDDSSession.SendCommand(outCmds.Serialize(), senderId);
+                        }
+                        UpdateStateEntry(taskId, static_cast<StateChange&>(*cmd).GetCurrentState());
+                    }
+                    break;
+                    case Type::state_change_subscription:
+                        if (static_cast<StateChangeSubscription&>(*cmd).GetResult() != Result::Ok) {
+                            LOG(error) << "State change subscription failed for " << static_cast<StateChangeSubscription&>(*cmd).GetDeviceId();
+                        }
+                    break;
+                    case Type::state_change_unsubscription:
+                        if (static_cast<StateChangeUnsubscription&>(*cmd).GetResult() != Result::Ok) {
+                            LOG(error) << "State change unsubscription failed for " << static_cast<StateChangeUnsubscription&>(*cmd).GetDeviceId();
+                        }
+                    break;
+                    case Type::transition_status: {
+                        if (static_cast<TransitionStatus&>(*cmd).GetResult() != Result::Ok) {
+                            LOG(error) << "Transition failed for " << static_cast<TransitionStatus&>(*cmd).GetDeviceId();
+                            std::lock_guard<std::mutex> lk(fMtx);
+                            if (!fChangeStateOp.IsCompleted() && fStateData.at(fStateIndex.at(fDDSSession.GetTaskId(senderId))).state != fChangeStateTarget) {
+                                fChangeStateOpTimer.cancel();
+                                fChangeStateOp.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed), fStateData);
+                            }
+                        }
+                    }
+                    break;
+                    default:
+                        LOG(warn) << "Unexpected/unknown command received: " << cmd->GetType();
+                        LOG(warn) << "Origin: " << senderId;
+                    break;
                 }
             }
         });
 
         fDDSSession.StartDDSService();
-        LOG(debug) << "subscribe-to-state-changes";
-        fDDSSession.SendCommand("subscribe-to-state-changes");
+        LOG(debug) << "Subscribing to state change";
+        Cmds cmds(make<SubscribeToStateChange>());
+        fDDSSession.SendCommand(cmds.Serialize());
     }
 
     /// not copyable
@@ -318,7 +334,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                                                    std::move(handler));
                     fChangeStateTarget = expectedState.at(transition);
                     ResetTransitionedCount(fChangeStateTarget);
-                    fDDSSession.SendCommand(GetTransitionName(transition));
+                    cmd::Cmds cmds(cmd::make<cmd::ChangeState>(transition));
+                    fDDSSession.SendCommand(cmds.Serialize());
                     if (timeout > std::chrono::milliseconds(0)) {
                         fChangeStateOpTimer.expires_after(timeout);
                         fChangeStateOpTimer.async_wait([&](std::error_code ec) {
@@ -330,10 +347,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     }
                 } else {
                     // TODO refactor to hide boiler plate
-                    auto ex2(asio::get_associated_executor(
-                        handler, AsioBase<Executor, Allocator>::GetExecutor()));
-                    auto alloc2(asio::get_associated_allocator(
-                        handler, AsioBase<Executor, Allocator>::GetAllocator()));
+                    auto ex2(asio::get_associated_executor(handler, AsioBase<Executor, Allocator>::GetExecutor()));
+                    auto alloc2(asio::get_associated_allocator(handler, AsioBase<Executor, Allocator>::GetAllocator()));
                     auto state(GetCurrentStateUnsafe());
 
                     ex2.post(
@@ -341,8 +356,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                             try {
                                 h(MakeErrorCode(ErrorCode::OperationInProgress), s);
                             } catch (const std::exception& e) {
-                                LOG(error)
-                                    << "Uncaught exception in completion handler: " << e.what();
+                                LOG(error) << "Uncaught exception in completion handler: " << e.what();
                             } catch (...) {
                                 LOG(error) << "Unknown uncaught exception in completion handler.";
                             }
@@ -420,19 +434,17 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         }
     }
 
-    auto UpdateStateEntry(DDSTask::Id taskId, const std::string& state) -> void
+    auto UpdateStateEntry(const DDSTask::Id taskId, const DeviceState state) -> void
     {
-        std::size_t pos = state.find("->");
-        std::string endState = state.substr(pos + 2);
         try {
             std::lock_guard<std::mutex> lk(fMtx);
             DeviceStatus& task = fStateData.at(fStateIndex.at(taskId));
             task.initialized = true;
-            task.state = fair::mq::GetState(endState);
+            task.state = state;
             if (task.state == fChangeStateTarget) {
                 ++fTransitionedCount;
             }
-            // LOG(debug) << "Updated state entry: taskId=" << taskId << ", state=" << endState;
+            // LOG(debug) << "Updated state entry: taskId=" << taskId << ", state=" << state;
             TryChangeStateCompletion();
         } catch (const std::exception& e) {
             LOG(error) << "Exception in UpdateStateEntry: " << e.what();

@@ -61,6 +61,7 @@ target_link_libraries(${target}
   Threads::Threads
   Tools
   StateMachine
+  Commands
 
   PRIVATE
   DDS::dds_intercom_lib

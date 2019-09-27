@@ -1,0 +1,79 @@
+namespace fair.mq.sdk.cmd;
+
+enum FBResult:byte {
+    Ok,
+    Failure
+}
+
+enum FBState:byte {
+    Ok,
+    Error,
+    Idle,
+    InitializingDevice,
+    Initialized,
+    Binding,
+    Bound,
+    Connecting,
+    DeviceReady,
+    InitializingTask,
+    Ready,
+    Running,
+    ResettingTask,
+    ResettingDevice,
+    Exiting
+}
+
+enum FBTransition:byte {
+    Auto,
+    InitDevice,
+    CompleteInit,
+    Bind,
+    Connect,
+    InitTask,
+    Run,
+    Stop,
+    ResetTask,
+    ResetDevice,
+    End,
+    ErrorFound
+}
+
+enum FBCmd:byte {
+    check_state,                   // args: { }
+    change_state,                  // args: { transition }
+    dump_config,                   // args: { }
+    subscribe_to_heartbeats,       // args: { }
+    unsubscribe_from_heartbeats,   // args: { }
+    subscribe_to_state_change,     // args: { }
+    unsubscribe_from_state_change, // args: { }
+    state_change_exiting_received, // args: { }
+
+    current_state,                 // args: { device_id, current_state }
+    transition_status,             // args: { device_id, Result, transition }
+    config,                        // args: { device_id, config_string }
+    heartbeat_subscription,        // args: { device_id, Result }
+    heartbeat_unsubscription,      // args: { device_id, Result }
+    heartbeat,                     // args: { device_id }
+    state_change_subscription,     // args: { device_id, Result }
+    state_change_unsubscription,   // args: { device_id, Result }
+    state_change                   // args: { device_id, task_id, last_state, current_state }
+}
+
+table FBCommand {
+    command_id:FBCmd;
+    device_id:string;
+    task_id:uint64;
+    state:FBState;
+    transition:FBTransition;
+    result:FBResult;
+    config_string:string;
+    last_state:FBState;
+    current_state:FBState;
+    debug:string;
+}
+
+table FBCommands {
+    commands:[FBCommand];
+}
+
+root_type FBCommands;

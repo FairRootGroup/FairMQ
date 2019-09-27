@@ -460,6 +460,10 @@ if(BUILD_FAIRMQ)
   endforeach()
 endif()
 
+if(BUILD_SDK_COMMANDS)
+  add_subdirectory(sdk/commands)
+endif()
+
 if(BUILD_SDK)
   add_subdirectory(sdk)
 endif()
