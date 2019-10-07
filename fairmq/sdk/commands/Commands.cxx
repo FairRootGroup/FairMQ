@@ -8,7 +8,10 @@
 
 #include "Commands.h"
 
+#include <fairmq/sdk/commands/CommandsFormatDef.h>
 #include <fairmq/sdk/commands/CommandsFormat.h>
+
+#include <flatbuffers/idl.h>
 
 #include <array>
 
@@ -203,7 +206,7 @@ string GetTypeName(const Type type) { return typeNames.at(static_cast<int>(type)
 
 FBCmd GetFBCmd(const Type type) { return typeToFBCmd.at(static_cast<int>(type)); }
 
-string Cmds::Serialize() const
+string Cmds::Serialize(const Format type) const
 {
     flatbuffers::FlatBufferBuilder fbb;
     vector<flatbuffers::Offset<FBCommand>> commandOffsets;
@@ -327,14 +330,39 @@ string Cmds::Serialize() const
     auto cmds = CreateFBCommands(fbb, commands);
     fbb.Finish(cmds);
 
-    return string(reinterpret_cast<char*>(fbb.GetBufferPointer()), fbb.GetSize());
+    if (type == Format::Binary) {
+        return string(reinterpret_cast<char*>(fbb.GetBufferPointer()), fbb.GetSize());
+    } else { // Type == Format::JSON
+        flatbuffers::Parser parser;
+        if (!parser.Parse(commandsFormatDefFbs)) {
+            throw CommandFormatError("Serialize couldn't parse commands format");
+        }
+        std::string json;
+        if (!flatbuffers::GenerateText(parser, fbb.GetBufferPointer(), &json)) {
+            throw CommandFormatError("Serialize couldn't serialize parsed data to JSON!");
+        }
+        return json;
+    }
 }
 
-void Cmds::Deserialize(const string& str)
+void Cmds::Deserialize(const string& str, const Format type)
 {
     fCmds.clear();
 
-    auto cmds = cmd::GetFBCommands(const_cast<char*>(str.c_str()))->commands();
+    const flatbuffers::Vector<flatbuffers::Offset<FBCommand>>* cmds;
+
+    if (type == Format::Binary) {
+        cmds = cmd::GetFBCommands(const_cast<char*>(str.c_str()))->commands();
+    } else { // Type == Format::JSON
+        flatbuffers::Parser parser;
+        if (!parser.Parse(commandsFormatDefFbs)) {
+            throw CommandFormatError("Deserialize couldn't parse commands format");
+        }
+        if (!parser.Parse(str.c_str())) {
+            throw CommandFormatError("Deserialize couldn't parse incoming JSON string");
+        }
+        cmds = cmd::GetFBCommands(parser.builder_.GetBufferPointer())->commands();
+    }
 
     for (unsigned int i = 0; i < cmds->size(); ++i) {
         const fair::mq::sdk::cmd::FBCommand& cmdPtr = *(cmds->Get(i));

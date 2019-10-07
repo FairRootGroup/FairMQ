@@ -77,39 +77,34 @@ TEST(Format, Construction)
     ASSERT_EQ(static_cast<StateChange&>(stateChangeCmds.At(0)).GetCurrentState(), State::Ready);
 }
 
-TEST(Format, Serialization)
+void fillCommands(Cmds& cmds)
 {
-    Cmds outCmds;
+    cmds.Add<CheckState>();
+    cmds.Add<ChangeState>(Transition::Stop);
+    cmds.Add<DumpConfig>();
+    cmds.Add<SubscribeToHeartbeats>();
+    cmds.Add<UnsubscribeFromHeartbeats>();
+    cmds.Add<SubscribeToStateChange>();
+    cmds.Add<UnsubscribeFromStateChange>();
+    cmds.Add<StateChangeExitingReceived>();
+    cmds.Add<CurrentState>("somedeviceid", State::Running);
+    cmds.Add<TransitionStatus>("somedeviceid", Result::Ok, Transition::Stop);
+    cmds.Add<Config>("somedeviceid", "someconfig");
+    cmds.Add<HeartbeatSubscription>("somedeviceid", Result::Ok);
+    cmds.Add<HeartbeatUnsubscription>("somedeviceid", Result::Ok);
+    cmds.Add<Heartbeat>("somedeviceid");
+    cmds.Add<StateChangeSubscription>("somedeviceid", Result::Ok);
+    cmds.Add<StateChangeUnsubscription>("somedeviceid", Result::Ok);
+    cmds.Add<StateChange>("somedeviceid", 123456, State::Running, State::Ready);
+}
 
-    outCmds.Add<CheckState>();
-    outCmds.Add<ChangeState>(Transition::Stop);
-    outCmds.Add<DumpConfig>();
-    outCmds.Add<SubscribeToHeartbeats>();
-    outCmds.Add<UnsubscribeFromHeartbeats>();
-    outCmds.Add<SubscribeToStateChange>();
-    outCmds.Add<UnsubscribeFromStateChange>();
-    outCmds.Add<StateChangeExitingReceived>();
-    outCmds.Add<CurrentState>("somedeviceid", State::Running);
-    outCmds.Add<TransitionStatus>("somedeviceid", Result::Ok, Transition::Stop);
-    outCmds.Add<Config>("somedeviceid", "someconfig");
-    outCmds.Add<HeartbeatSubscription>("somedeviceid", Result::Ok);
-    outCmds.Add<HeartbeatUnsubscription>("somedeviceid", Result::Ok);
-    outCmds.Add<Heartbeat>("somedeviceid");
-    outCmds.Add<StateChangeSubscription>("somedeviceid", Result::Ok);
-    outCmds.Add<StateChangeUnsubscription>("somedeviceid", Result::Ok);
-    outCmds.Add<StateChange>("somedeviceid", 123456, State::Running, State::Ready);
-
-    std::string buffer(outCmds.Serialize());
-
-    Cmds inCmds;
-
-    inCmds.Deserialize(buffer);
-
-    ASSERT_EQ(inCmds.Size(), 17);
+void checkCommands(Cmds& cmds)
+{
+    ASSERT_EQ(cmds.Size(), 17);
 
     int count = 0;
 
-    for (const auto& cmd : inCmds) {
+    for (const auto& cmd : cmds) {
         switch (cmd->GetType()) {
             case Type::check_state:
                 ++count;
@@ -190,6 +185,28 @@ TEST(Format, Serialization)
     }
 
     ASSERT_EQ(count, 17);
+}
+
+TEST(Format, SerializationBinary)
+{
+    Cmds outCmds;
+    fillCommands(outCmds);
+    std::string buffer(outCmds.Serialize());
+
+    Cmds inCmds;
+    inCmds.Deserialize(buffer);
+    checkCommands(inCmds);
+}
+
+TEST(Format, SerializationJSON)
+{
+    Cmds outCmds;
+    fillCommands(outCmds);
+    std::string buffer(outCmds.Serialize(Format::JSON));
+
+    Cmds inCmds;
+    inCmds.Deserialize(buffer, Format::JSON);
+    checkCommands(inCmds);
 }
 
 } // namespace

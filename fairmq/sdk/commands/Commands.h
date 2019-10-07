@@ -27,6 +27,11 @@ namespace sdk
 namespace cmd
 {
 
+enum class Format : int {
+    Binary,
+    JSON
+};
+
 enum class Result : int {
     Ok,
     Failure
@@ -133,7 +138,7 @@ struct CurrentState : Cmd
 
 struct TransitionStatus : Cmd
 {
-    explicit TransitionStatus(const std::string& id, Result result, Transition transition)
+    explicit TransitionStatus(const std::string& id, const Result result, const Transition transition)
         : Cmd(Type::transition_status)
         , fDeviceId(id)
         , fResult(result)
@@ -143,9 +148,9 @@ struct TransitionStatus : Cmd
     std::string GetDeviceId() const { return fDeviceId; }
     void SetDeviceId(const std::string& deviceId) { fDeviceId = deviceId; }
     Result GetResult() const { return fResult; }
-    void SetResult(Result result) { fResult = result; }
+    void SetResult(const Result result) { fResult = result; }
     Transition GetTransition() const { return fTransition; }
-    void SetTransition(Transition transition) { fTransition = transition; }
+    void SetTransition(const Transition transition) { fTransition = transition; }
 
   private:
     std::string fDeviceId;
@@ -173,7 +178,7 @@ struct Config : Cmd
 
 struct HeartbeatSubscription : Cmd
 {
-    explicit HeartbeatSubscription(const std::string& id, Result result)
+    explicit HeartbeatSubscription(const std::string& id, const Result result)
         : Cmd(Type::heartbeat_subscription)
         , fDeviceId(id)
         , fResult(result)
@@ -182,7 +187,7 @@ struct HeartbeatSubscription : Cmd
     std::string GetDeviceId() const { return fDeviceId; }
     void SetDeviceId(const std::string& deviceId) { fDeviceId = deviceId; }
     Result GetResult() const { return fResult; }
-    void SetResult(Result result) { fResult = result; }
+    void SetResult(const Result result) { fResult = result; }
 
   private:
     std::string fDeviceId;
@@ -191,7 +196,7 @@ struct HeartbeatSubscription : Cmd
 
 struct HeartbeatUnsubscription : Cmd
 {
-    explicit HeartbeatUnsubscription(const std::string& id, Result result)
+    explicit HeartbeatUnsubscription(const std::string& id, const Result result)
         : Cmd(Type::heartbeat_unsubscription)
         , fDeviceId(id)
         , fResult(result)
@@ -200,7 +205,7 @@ struct HeartbeatUnsubscription : Cmd
     std::string GetDeviceId() const { return fDeviceId; }
     void SetDeviceId(const std::string& deviceId) { fDeviceId = deviceId; }
     Result GetResult() const { return fResult; }
-    void SetResult(Result result) { fResult = result; }
+    void SetResult(const Result result) { fResult = result; }
 
   private:
     std::string fDeviceId;
@@ -223,7 +228,7 @@ struct Heartbeat : Cmd
 
 struct StateChangeSubscription : Cmd
 {
-    explicit StateChangeSubscription(const std::string& id, Result result)
+    explicit StateChangeSubscription(const std::string& id, const Result result)
         : Cmd(Type::state_change_subscription)
         , fDeviceId(id)
         , fResult(result)
@@ -232,7 +237,7 @@ struct StateChangeSubscription : Cmd
     std::string GetDeviceId() const { return fDeviceId; }
     void SetDeviceId(const std::string& deviceId) { fDeviceId = deviceId; }
     Result GetResult() const { return fResult; }
-    void SetResult(Result result) { fResult = result; }
+    void SetResult(const Result result) { fResult = result; }
 
   private:
     std::string fDeviceId;
@@ -241,7 +246,7 @@ struct StateChangeSubscription : Cmd
 
 struct StateChangeUnsubscription : Cmd
 {
-    explicit StateChangeUnsubscription(const std::string& id, Result result)
+    explicit StateChangeUnsubscription(const std::string& id, const Result result)
         : Cmd(Type::state_change_unsubscription)
         , fDeviceId(id)
         , fResult(result)
@@ -250,7 +255,7 @@ struct StateChangeUnsubscription : Cmd
     std::string GetDeviceId() const { return fDeviceId; }
     void SetDeviceId(const std::string& deviceId) { fDeviceId = deviceId; }
     Result GetResult() const { return fResult; }
-    void SetResult(Result result) { fResult = result; }
+    void SetResult(const Result result) { fResult = result; }
 
   private:
     std::string fDeviceId;
@@ -259,7 +264,7 @@ struct StateChangeUnsubscription : Cmd
 
 struct StateChange : Cmd
 {
-    explicit StateChange(const std::string& deviceId, uint64_t taskId, State lastState, State currentState)
+    explicit StateChange(const std::string& deviceId, const uint64_t taskId, const State lastState, const State currentState)
         : Cmd(Type::state_change)
         , fDeviceId(deviceId)
         , fTaskId(taskId)
@@ -270,11 +275,11 @@ struct StateChange : Cmd
     std::string GetDeviceId() const { return fDeviceId; }
     void SetDeviceId(const std::string& deviceId) { fDeviceId = deviceId; }
     uint64_t GetTaskId() const { return fTaskId; }
-    void SetTaskId(uint64_t taskId) { fTaskId = taskId; }
+    void SetTaskId(const uint64_t taskId) { fTaskId = taskId; }
     fair::mq::State GetLastState() const { return fLastState; }
-    void SetLastState(fair::mq::State state) { fLastState = state; }
+    void SetLastState(const fair::mq::State state) { fLastState = state; }
     fair::mq::State GetCurrentState() const { return fCurrentState; }
-    void SetCurrentState(fair::mq::State state) { fCurrentState = state; }
+    void SetCurrentState(const fair::mq::State state) { fCurrentState = state; }
 
   private:
     std::string fDeviceId;
@@ -314,11 +319,11 @@ struct Cmds
 
     Cmd& At(size_t i) { return *(fCmds.at(i)); }
 
-    size_t Size() { return fCmds.size(); }
+    size_t Size() const { return fCmds.size(); }
     void Reset() { fCmds.clear(); }
 
-    std::string Serialize() const;
-    void Deserialize(const std::string&);
+    std::string Serialize(const Format type = Format::Binary) const;
+    void Deserialize(const std::string&, const Format type = Format::Binary);
 
   private:
     container fCmds;
