@@ -15,7 +15,12 @@ add_custom_command(
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_library(${target} Commands.cxx Commands.h ${CMAKE_CURRENT_BINARY_DIR}/CommandsFormat.h)
+# JSON serialization needs to see the .fbs file at run time, save it as constexpr string instead of locating/opening it every time
+file(STRINGS CommandsFormat.fbs tmp)
+list(JOIN tmp "\n" commands_format_def_fbs)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CommandsFormatDef.h.in ${CMAKE_CURRENT_BINARY_DIR}/CommandsFormatDef.h)
+
+add_library(${target} Commands.cxx Commands.h ${CMAKE_CURRENT_BINARY_DIR}/CommandsFormat.h ${CMAKE_CURRENT_BINARY_DIR}/CommandsFormatDef.h)
 add_library(FairMQ::${target} ALIAS ${target})
 
 target_link_libraries(${target}
