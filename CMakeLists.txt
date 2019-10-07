@@ -161,7 +161,7 @@ endif()
 
 if(BUILD_FAIRMQ)
   find_package2(PRIVATE ZeroMQ REQUIRED
-    VERSION 4.1.5
+    VERSION 4.1.4
   )
 endif()
 
