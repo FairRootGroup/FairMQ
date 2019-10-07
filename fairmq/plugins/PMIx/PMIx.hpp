@@ -21,7 +21,7 @@
 #include <vector>
 #include <FairMQLogger.h>
 
-// C++ PMIx v2.1 API
+// C++ PMIx v2.2 API
 namespace pmix
 {
 
@@ -90,12 +90,6 @@ struct value : pmix_value_t
         }
     }
 
-    // template<typename T>
-    // value(const T* val, data_type dt)
-    // {
-        // PMIX_VALUE_LOAD(static_cast<pmix_value_t*>(this), const_cast<void*>(val), dt);
-    // }
-
     template<typename T>
     explicit value(T)
     {
@@ -111,6 +105,11 @@ struct value : pmix_value_t
     {
         PMIX_VALUE_LOAD(
             static_cast<pmix_value_t*>(this), const_cast<char*>(val.c_str()), PMIX_STRING);
+    }
+
+    explicit value(int val)
+    {
+        PMIX_VALUE_LOAD(static_cast<pmix_value_t*>(this), &val, PMIX_INT);
     }
 };
 
