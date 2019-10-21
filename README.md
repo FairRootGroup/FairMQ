@@ -181,4 +181,5 @@ After the `find_package(FairMQ)` call the following CMake variables are defined:
    3. [Provided Plugins](docs/Plugins.md#73-provided-plugins)
        1. [DDS](docs/Plugins.md#731-dds)
        2. [PMIx](docs/Plugins.md#732-pmix)
+8. [Controller SDK](docs/SDK.md)
 
