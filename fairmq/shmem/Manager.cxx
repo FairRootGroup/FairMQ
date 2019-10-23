@@ -132,9 +132,10 @@ bipc::mapped_region* Manager::CreateRegion(const size_t size, const uint64_t id,
         {
             bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
             VoidAlloc voidAlloc(fManagementSegment.get_segment_manager());
-            Uint64RegionInfoMap* m = fManagementSegment.find_or_construct<Uint64RegionInfoMap>(bipc::unique_instance)(voidAlloc);
-            m->emplace(id, RegionInfo(path.c_str(), flags, voidAlloc));
+            Uint64RegionInfoMap* infoMap = fManagementSegment.find_or_construct<Uint64RegionInfoMap>(bipc::unique_instance)(voidAlloc);
+            infoMap->emplace(id, RegionInfo(path.c_str(), flags, voidAlloc));
         }
+        // LOG(debug) << "Created region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
 
         auto r = fRegions.emplace(id, fair::mq::tools::make_unique<Region>(*this, id, size, false, callback, path, flags));
 
@@ -158,13 +159,16 @@ Region* Manager::GetRemoteRegion(const uint64_t id)
             // get region info
             {
                 bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
-                VoidAlloc voidAlloc(fSegment.get_segment_manager());
-                Uint64RegionInfoMap* m = fManagementSegment.find<Uint64RegionInfoMap>(bipc::unique_instance).first;
-                RegionInfo ri = m->at(id);
-                path = ri.fPath.c_str();
-                flags = ri.fFlags;
-                // LOG(debug) << "path: " << path << ", flags: " << flags;
+                Uint64RegionInfoMap* infoMap = fManagementSegment.find<Uint64RegionInfoMap>(bipc::unique_instance).first;
+                if (infoMap == nullptr) {
+                    LOG(error) << "Unable to locate the region info";
+                    throw SharedMemoryError("Unable to locate remote region info");
+                }
+                RegionInfo regionInfo = infoMap->at(id);
+                path = regionInfo.fPath.c_str();
+                flags = regionInfo.fFlags;
             }
+            // LOG(debug) << "Located remote region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
 
             auto r = fRegions.emplace(id, fair::mq::tools::make_unique<Region>(*this, id, 0, true, nullptr, path, flags));
             return r.first->second.get();

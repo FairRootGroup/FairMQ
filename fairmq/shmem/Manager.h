@@ -28,6 +28,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <stdexcept>
 
 namespace fair
 {
@@ -35,6 +36,8 @@ namespace mq
 {
 namespace shmem
 {
+
+struct SharedMemoryError : std::runtime_error { using std::runtime_error::runtime_error; };
 
 class Manager
 {
