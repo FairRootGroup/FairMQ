@@ -14,7 +14,6 @@
 #include <fairmq/Transports.h>
 #include <fairmq/StateQueue.h>
 
-#include <FairMQSocket.h>
 #include <FairMQChannel.h>
 #include <FairMQMessage.h>
 #include <FairMQParts.h>
@@ -24,21 +23,19 @@
 
 #include <vector>
 #include <memory> // unique_ptr
-#include <algorithm> // std::sort()
+#include <algorithm> // find
 #include <string>
 #include <chrono>
 #include <iostream>
 #include <unordered_map>
 #include <functional>
-#include <assert.h> // static_assert
-#include <type_traits> // is_trivially_copyable
 #include <stdexcept>
-#include <queue>
-
 #include <mutex>
-#include <condition_variable>
+#include <atomic>
+#include <cstddef>
+#include <utility> // pair
 
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Version.h>
 
 using FairMQChannelMap = std::unordered_map<std::string, std::vector<FairMQChannel>>;
 

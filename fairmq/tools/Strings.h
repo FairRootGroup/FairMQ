@@ -10,7 +10,6 @@
 #define FAIR_MQ_TOOLS_STRINGS_H
 
 #include <array>
-#include <boost/beast/core/span.hpp>
 #include <initializer_list>
 #include <sstream>
 #include <string>
@@ -37,16 +36,11 @@ auto ToString(T&&... t) -> std::string
 /// @brief convert command line arguments from main function to vector of strings
 inline auto ToStrVector(const int argc, char*const* argv, const bool dropProgramName = true) -> std::vector<std::string>
 {
-    auto res = std::vector<std::string>{};
-    boost::beast::span<char*const> argvView(argv, argc);
-    if (dropProgramName)
-    {
-        res.assign(argvView.begin() + 1, argvView.end());
-    } else
-    {
-        res.assign(argvView.begin(), argvView.end());
+    if (dropProgramName) {
+        return std::vector<std::string>(argv + 1, argv + argc);
+    } else {
+        return std::vector<std::string>(argv, argv + argc);
     }
-    return res;
 }
 
 } /* namespace tools */

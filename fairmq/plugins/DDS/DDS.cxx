@@ -10,19 +10,16 @@
 
 #include <fairmq/sdk/commands/Commands.h>
 
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/asio/post.hpp>
 
-#include <termios.h> // for the interactive mode
-#include <poll.h> // for the interactive mode
-#include <sstream>
-#include <iostream>
 #include <cstdlib>
 #include <stdexcept>
+#include <sstream>
 
 using namespace std;
 using fair::mq::tools::ToString;
@@ -184,7 +181,7 @@ auto DDS::StaticControl() -> void
         ReleaseDeviceControl();
     } catch (exception& e) {
         ReleaseDeviceControl();
-        LOG(error) << "Error: " << e.what() << endl;
+        LOG(error) << "Error: " << e.what() << "\n";
         return;
     }
 }
@@ -395,7 +392,7 @@ auto DDS::SubscribeForCustomCommands() -> void
                 case Type::dump_config: {
                     stringstream ss;
                     for (const auto pKey: GetPropertyKeys()) {
-                        ss << id << ": " << pKey << " -> " << GetPropertyAsString(pKey) << endl;
+                        ss << id << ": " << pKey << " -> " << GetPropertyAsString(pKey) << "\n";
                     }
                     Cmds outCmds(make<Config>(id, ss.str()));
                     fDDS.Send(outCmds.Serialize(), to_string(senderId));

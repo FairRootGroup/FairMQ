@@ -7,7 +7,8 @@
  ********************************************************************************/
 
 #include "FairMQChannel.h"
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
+#include <fairmq/Properties.h>
 
 #include <boost/algorithm/string.hpp> // join/split
 

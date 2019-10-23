@@ -9,22 +9,24 @@
 #ifndef FAIR_MQ_PLUGINS_DDS
 #define FAIR_MQ_PLUGINS_DDS
 
-#include <DDS/dds_env_prop.h>
-#include <DDS/dds_intercom.h>
-#include <boost/asio/executor.hpp>
-#include <boost/asio/executor_work_guard.hpp>
-#include <boost/asio/io_context.hpp>
-#include <cassert>
-#include <chrono>
-#include <condition_variable>
 #include <fairmq/Plugin.h>
 #include <fairmq/StateQueue.h>
 #include <fairmq/Version.h>
-#include <functional>
+
+#include <DDS/dds_env_prop.h>
+#include <DDS/dds_intercom.h>
+
+#include <boost/asio/executor.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
+
+#include <cassert>
+#include <chrono>
+#include <condition_variable>
 #include <mutex>
-#include <queue>
 #include <set>
 #include <string>
+#include <atomic>
 #include <thread>
 #include <unordered_map>
 #include <vector>

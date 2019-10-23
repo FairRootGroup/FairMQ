@@ -10,7 +10,7 @@
 #define FAIR_MQ_SDK_COMMANDFACTORY
 
 #include <fairmq/States.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/CppSTL.h>
 
 #include <vector>
 #include <string>

@@ -9,7 +9,8 @@
 #ifndef FAIR_MQ_PLUGIN_H
 #define FAIR_MQ_PLUGIN_H
 
-#include <fairmq/Tools.h>
+#include <fairmq/tools/CppSTL.h>
+#include <fairmq/tools/Version.h>
 #include <fairmq/PluginServices.h>
 
 #include <boost/dll/alias.hpp>

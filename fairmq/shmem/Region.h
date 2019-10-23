@@ -18,7 +18,6 @@
 #include "FairMQLogger.h"
 #include "FairMQUnmanagedRegion.h"
 
-#include <fairmq/Tools.h>
 #include <fairmq/shmem/Common.h>
 
 #include <boost/interprocess/managed_shared_memory.hpp>

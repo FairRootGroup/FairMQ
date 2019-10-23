@@ -8,6 +8,8 @@
 
 #include <fairmq/shmem/Manager.h>
 #include <fairmq/shmem/Common.h>
+#include <fairmq/tools/CppSTL.h>
+#include <fairmq/tools/Strings.h>
 
 #include <boost/process.hpp>
 #include <boost/filesystem.hpp>

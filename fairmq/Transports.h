@@ -9,7 +9,7 @@
 #ifndef FAIR_MQ_TRANSPORTS_H
 #define FAIR_MQ_TRANSPORTS_H
 
-#include <fairmq/Tools.h>
+#include <fairmq/tools/CppSTL.h>
 
 #include <memory>
 #include <string>

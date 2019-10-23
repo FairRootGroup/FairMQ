@@ -11,8 +11,9 @@
 
 #include <fairmq/Plugin.h>
 #include <fairmq/PluginServices.h>
-#include <fairmq/Tools.h>
-#include <FairMQDevice.h>
+#include <fairmq/tools/CppSTL.h>
+#include <fairmq/tools/Strings.h>
+
 #define BOOST_FILESYSTEM_VERSION 3
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
@@ -21,13 +22,14 @@
 #include <boost/dll/import.hpp>
 #include <boost/dll/shared_library.hpp>
 #include <boost/dll/runtime_symbol_info.hpp>
+
 #include <functional>
 #include <map>
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <tuple>
 #include <vector>
+#include <utility> // forward
 
 namespace fair
 {

@@ -16,7 +16,7 @@
 #include <cstdlib>
 #include <fairlogger/Logger.h>
 #include <fairmq/SDK.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 #include <gtest/gtest.h>
 #include <thread>
 

@@ -8,7 +8,7 @@
 
 #include <fairmq/plugins/Builtin.h>
 #include <fairmq/PluginManager.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 #include <boost/program_options.hpp>
 #include <algorithm>
 #include <iterator>

@@ -6,9 +6,6 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <thread> // this_thread::sleep_for
-#include <chrono>
-
 #include "Sampler.h"
 
 using namespace std;
