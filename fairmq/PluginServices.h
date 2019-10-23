@@ -9,7 +9,6 @@
 #ifndef FAIR_MQ_PLUGINSERVICES_H
 #define FAIR_MQ_PLUGINSERVICES_H
 
-#include <fairmq/Tools.h>
 #include <fairmq/States.h>
 #include <FairMQDevice.h>
 #include <fairmq/ProgOptions.h>

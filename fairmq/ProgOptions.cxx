@@ -15,7 +15,7 @@
 #include "FairMQLogger.h"
 #include <fairmq/ProgOptions.h>
 
-#include "tools/Unique.h"
+#include <fairmq/tools/Strings.h>
 
 #include <boost/any.hpp>
 #include <boost/regex.hpp>

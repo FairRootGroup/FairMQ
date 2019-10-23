@@ -10,6 +10,7 @@
 #define FAIRMQCHANNEL_H_
 
 #include <FairMQTransportFactory.h>
+#include <FairMQUnmanagedRegion.h>
 #include <FairMQSocket.h>
 #include <fairmq/Transports.h>
 #include <FairMQLogger.h>
@@ -17,15 +18,14 @@
 #include <fairmq/Properties.h>
 #include <FairMQMessage.h>
 
-#include <boost/any.hpp>
-
 #include <string>
 #include <memory> // unique_ptr, shared_ptr
 #include <vector>
-#include <atomic>
 #include <mutex>
 #include <stdexcept>
 #include <utility> // std::move
+#include <cstddef> // size_t
+#include <cstdint> // int64_t
 
 class FairMQChannel
 {

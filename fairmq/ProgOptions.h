@@ -14,7 +14,7 @@
 #include <fairmq/EventManager.h>
 #include <fairmq/ProgOptionsFwd.h>
 #include <fairmq/Properties.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 
 #include <boost/program_options.hpp>
 

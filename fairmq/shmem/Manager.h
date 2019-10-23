@@ -15,7 +15,6 @@
 #ifndef FAIR_MQ_SHMEM_MANAGER_H_
 #define FAIR_MQ_SHMEM_MANAGER_H_
 
-#include <fairmq/Tools.h>
 #include <fairmq/shmem/Region.h>
 #include <fairmq/shmem/Common.h>
 

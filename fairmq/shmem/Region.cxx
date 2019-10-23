@@ -9,6 +9,8 @@
 #include <fairmq/shmem/Region.h>
 #include <fairmq/shmem/Common.h>
 #include <fairmq/shmem/Manager.h>
+#include <fairmq/tools/CppSTL.h>
+#include <fairmq/tools/Strings.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/process.hpp>

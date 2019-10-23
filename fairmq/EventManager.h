@@ -12,12 +12,10 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <tuple>
 #include <typeindex>
-#include <typeinfo>
 #include <unordered_map>
 #include <utility>
-#include <vector>
+#include <functional>
 
 #include <boost/any.hpp>
 #include <boost/functional/hash.hpp>

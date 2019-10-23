@@ -11,21 +11,14 @@
 
 #include <DDS/dds_intercom.h>
 
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/program_options.hpp>
 
-#include <algorithm>
-#include <atomic>
 #include <condition_variable>
 #include <cstdlib>
-#include <exception>
 #include <iostream>
 #include <mutex>
 #include <string>
-#include <termios.h>   // raw mode console input
+#include <termios.h> // raw mode console input
 #include <thread>
 #include <utility>
 #include <unistd.h>

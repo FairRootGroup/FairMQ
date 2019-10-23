@@ -9,7 +9,7 @@
 #ifndef FAIR_MQ_SDK_ERROR_H
 #define FAIR_MQ_SDK_ERROR_H
 
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 #include <stdexcept>
 #include <system_error>
 

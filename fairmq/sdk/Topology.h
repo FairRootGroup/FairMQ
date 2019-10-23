@@ -19,7 +19,7 @@
 #include <fairmq/sdk/DDSTopology.h>
 #include <fairmq/sdk/Error.h>
 #include <fairmq/States.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Semaphore.h>
 
 #include <fairlogger/Logger.h>
 

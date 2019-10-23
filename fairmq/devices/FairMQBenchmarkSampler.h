@@ -10,8 +10,10 @@
 #define FAIRMQBENCHMARKSAMPLER_H_
 
 #include <string>
-#include <thread>
 #include <atomic>
+#include <cstddef> // size_t
+#include <cstdint> // uint64_t
+
 
 #include "FairMQDevice.h"
 
@@ -23,7 +25,7 @@ class FairMQBenchmarkSampler : public FairMQDevice
 {
   public:
     FairMQBenchmarkSampler();
-    virtual ~FairMQBenchmarkSampler();
+    virtual ~FairMQBenchmarkSampler() {}
 
   protected:
     bool fMultipart;

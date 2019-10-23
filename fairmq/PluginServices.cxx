@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include <fairmq/PluginServices.h>
+#include <fairmq/tools/Strings.h>
 
 using namespace fair::mq;
 using namespace std;

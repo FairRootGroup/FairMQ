@@ -8,10 +8,9 @@
 
 #include "FairMQBenchmarkSampler.h"
 
-#include <fairmq/Tools.h>
+#include "tools/RateLimit.h"
 #include "../FairMQLogger.h"
 
-#include <vector>
 #include <chrono>
 
 using namespace std;
@@ -24,10 +23,6 @@ FairMQBenchmarkSampler::FairMQBenchmarkSampler()
     , fNumIterations(0)
     , fMaxIterations(0)
     , fOutChannelName()
-{
-}
-
-FairMQBenchmarkSampler::~FairMQBenchmarkSampler()
 {
 }
 

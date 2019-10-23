@@ -12,7 +12,6 @@
 #include <FairMQLogger.h>
 #include <FairMQMessage.h>
 #include <FairMQPoller.h>
-#include <fairmq/ProgOptionsFwd.h>
 #include <FairMQSocket.h>
 #include <FairMQUnmanagedRegion.h>
 #include <fairmq/MemoryResources.h>
@@ -22,8 +21,11 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
+#include <stdexcept>
+#include <cstddef> // size_t
 
 class FairMQChannel;
+namespace fair { namespace mq { class ProgOptions; } }
 
 class FairMQTransportFactory
 {

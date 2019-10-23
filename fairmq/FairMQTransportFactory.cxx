@@ -16,11 +16,10 @@
 #include <fairmq/ofi/TransportFactory.h>
 #endif
 #include <FairMQLogger.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Unique.h>
 
 #include <memory>
 #include <string>
-#include <sstream>
 
 FairMQTransportFactory::FairMQTransportFactory(const std::string& id)
     : fkId(id)

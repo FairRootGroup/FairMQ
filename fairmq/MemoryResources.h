@@ -23,11 +23,7 @@ class FairMQTransportFactory;
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
 #include <boost/container/pmr/polymorphic_allocator.hpp>
 #include <cstring>
-#include <string>
-#include <type_traits>
-#include <unordered_map>
 #include <utility>
-#include <vector>
 
 namespace fair {
 namespace mq {
