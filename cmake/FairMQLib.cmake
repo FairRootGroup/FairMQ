@@ -524,7 +524,7 @@ macro(fairmq_build_option option description)
   endif()
 
   if(__requires__)
-    cmake_dependent_option(${option} ${description} ${__default__} ${__requires__} OFF)
+    cmake_dependent_option(${option} ${description} ${__default__} "${__requires__}" OFF)
   else()
     option(${option} ${description} ${__default__})
   endif()
