@@ -26,19 +26,25 @@ using namespace fair::mq::shmem;
 static void daemonize()
 {
     // already a daemon?
-    // if (getppid() == 1) return;
+    if (getppid() == 1) {
+        return;
+    }
 
-    // Fork off the parent process
-    // pid_t pid = fork();
-    // if (pid < 0) exit(1);
+    // Fork
+    pid_t pid = fork();
+    if (pid < 0) {
+        exit(1);
+    }
 
     // If we got a good PID, then we can exit the parent process.
-    // if (pid > 0) exit(0);
+    if (pid > 0) {
+        exit(0);
+    }
 
     // Change the file mode mask
     umask(0);
 
-    // Create a new SID for the child process
+    // Create a new session with the calling process as its leader.
     if (setsid() < 0) {
         exit(1);
     }
