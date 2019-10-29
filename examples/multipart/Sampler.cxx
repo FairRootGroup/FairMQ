@@ -63,6 +63,10 @@ bool Sampler::ConditionalRun()
 
     assert(parts.Size() == 6);
 
+    parts.AddPart(NewMessage(100));
+
+    assert(parts.Size() == 7);
+
     LOG(info) << "Sending body of size: " << parts.At(1)->GetSize();
 
     Send(parts, "data");
