@@ -272,7 +272,18 @@ int64_t FairMQSocketSHM::Send(vector<FairMQMessagePtr>& msgVec, const int timeou
     for (auto& msg : msgVec)
     {
         zmq_msg_t* metaMsg = static_cast<FairMQMessageSHM*>(msg.get())->GetMessage();
-        memcpy(metas++, zmq_msg_data(metaMsg), sizeof(MetaHeader));
+        if (zmq_msg_size(metaMsg) > 0) {
+            memcpy(metas++, zmq_msg_data(metaMsg), sizeof(MetaHeader));
+        } else {
+            // if the message is empty, create meta data to reflect this
+            // (always creating meta data for empty messages would add an unnecessary allocation for the receive case, so we do it lazily here)
+            MetaHeader hdr;
+            hdr.fSize = 0;
+            hdr.fHandle = -1;
+            hdr.fRegionId = 0;
+            hdr.fHint = 0;
+            memcpy(metas++, &hdr, sizeof(MetaHeader));
+        }
     }
 
     while (!fInterrupted)
