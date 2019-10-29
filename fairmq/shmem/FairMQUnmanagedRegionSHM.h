@@ -28,10 +28,10 @@ class FairMQUnmanagedRegionSHM final : public FairMQUnmanagedRegion
   public:
     FairMQUnmanagedRegionSHM(fair::mq::shmem::Manager& manager, const size_t size, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0);
 
-    void* GetData() const override;
-    size_t GetSize() const override;
+    void* GetData() const override { return fRegion->get_address(); }
+    size_t GetSize() const override { return fRegion->get_size(); }
 
-    ~FairMQUnmanagedRegionSHM() override;
+    ~FairMQUnmanagedRegionSHM() override { fManager.RemoveRegion(fRegionId); }
 
   private:
     fair::mq::shmem::Manager& fManager;

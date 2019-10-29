@@ -34,7 +34,7 @@ class FairMQSocketSHM final : public FairMQSocket
     int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int timeout = -1) override;
     int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int timeout = -1) override;
 
-    void* GetSocket() const;
+    void* GetSocket() const { return fSocket; }
 
     void Close() override;
 
@@ -55,14 +55,14 @@ class FairMQSocketSHM final : public FairMQSocket
     void SetRcvKernelSize(const int value) override;
     int GetRcvKernelSize() const override;
 
-    unsigned long GetBytesTx() const override;
-    unsigned long GetBytesRx() const override;
-    unsigned long GetMessagesTx() const override;
-    unsigned long GetMessagesRx() const override;
+    unsigned long GetBytesTx() const override { return fBytesTx; }
+    unsigned long GetBytesRx() const override { return fBytesRx; }
+    unsigned long GetMessagesTx() const override { return fMessagesTx; }
+    unsigned long GetMessagesRx() const override { return fMessagesRx; }
 
     static int GetConstant(const std::string& constant);
 
-    ~FairMQSocketSHM() override;
+    ~FairMQSocketSHM() override { Close(); }
 
   private:
     void* fSocket;

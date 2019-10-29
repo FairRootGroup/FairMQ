@@ -40,15 +40,15 @@ class FairMQMessageSHM final : public FairMQMessage
     void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override;
 
     void* GetData() const override;
-    size_t GetSize() const override;
+    size_t GetSize() const override { return fSize; }
 
     bool SetUsedSize(const size_t size) override;
 
-    fair::mq::Transport GetType() const override;
+    fair::mq::Transport GetType() const override { return fTransportType; }
 
     void Copy(const FairMQMessage& msg) override;
 
-    ~FairMQMessageSHM() override;
+    ~FairMQMessageSHM() override { CloseMessage(); }
 
   private:
     fair::mq::shmem::Manager& fManager;
@@ -65,7 +65,7 @@ class FairMQMessageSHM final : public FairMQMessage
     mutable char* fLocalPtr;
 
     bool InitializeChunk(const size_t size);
-    zmq_msg_t* GetMessage();
+    zmq_msg_t* GetMessage() { return &fMessage; }
     void CloseMessage();
 };
 
