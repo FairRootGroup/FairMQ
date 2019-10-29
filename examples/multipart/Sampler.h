@@ -24,7 +24,7 @@ class Sampler : public FairMQDevice
 {
   public:
     Sampler();
-    virtual ~Sampler();
+    virtual ~Sampler() {}
 
   protected:
     virtual void InitTask();

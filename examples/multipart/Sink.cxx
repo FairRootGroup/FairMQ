@@ -20,11 +20,6 @@ using namespace std;
 namespace example_multipart
 {
 
-Sink::Sink()
-{
-    OnData("data", &Sink::HandleData);
-}
-
 bool Sink::HandleData(FairMQParts& parts, int /*index*/)
 {
     Header header;
@@ -35,17 +30,12 @@ bool Sink::HandleData(FairMQParts& parts, int /*index*/)
     LOG(info) << "Received header with stopFlag: " << header.stopFlag;
     LOG(info) << "Received body of size: " << parts.At(1)->GetSize();
 
-    if (header.stopFlag == 1)
-    {
+    if (header.stopFlag == 1) {
         LOG(info) << "stopFlag is 1, going IDLE";
         return false;
     }
 
     return true;
-}
-
-Sink::~Sink()
-{
 }
 
 }

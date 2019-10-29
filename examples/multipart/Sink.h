@@ -23,8 +23,8 @@ namespace example_multipart
 class Sink : public FairMQDevice
 {
   public:
-    Sink();
-    virtual ~Sink();
+    Sink() { OnData("data", &Sink::HandleData); }
+    virtual ~Sink() {}
 
   protected:
     bool HandleData(FairMQParts&, int);

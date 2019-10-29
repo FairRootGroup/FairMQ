@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <fairmq/shmem/Common.h>
+#include "Common.h"
 
 #include "FairMQUnmanagedRegionSHM.h"
 
@@ -40,19 +40,4 @@ FairMQUnmanagedRegionSHM::FairMQUnmanagedRegionSHM(Manager& manager, const size_
         LOG(error) << e.what();
         throw;
     }
-}
-
-void* FairMQUnmanagedRegionSHM::GetData() const
-{
-    return fRegion->get_address();
-}
-
-size_t FairMQUnmanagedRegionSHM::GetSize() const
-{
-    return fRegion->get_size();
-}
-
-FairMQUnmanagedRegionSHM::~FairMQUnmanagedRegionSHM()
-{
-    fManager.RemoveRegion(fRegionId);
 }

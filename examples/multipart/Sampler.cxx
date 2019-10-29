@@ -40,8 +40,7 @@ bool Sampler::ConditionalRun()
     header.stopFlag = 0;
 
     // Set stopFlag to 1 for last message.
-    if (fMaxIterations > 0 && fNumIterations == fMaxIterations - 1)
-    {
+    if (fMaxIterations > 0 && fNumIterations == fMaxIterations - 1) {
         header.stopFlag = 1;
     }
     LOG(info) << "Sending header with stopFlag: " << header.stopFlag;
@@ -60,13 +59,16 @@ bool Sampler::ConditionalRun()
     assert(auxData.Size() == 0);
     assert(parts.Size() == 5);
 
+    parts.AddPart(NewMessage());
+
+    assert(parts.Size() == 6);
+
     LOG(info) << "Sending body of size: " << parts.At(1)->GetSize();
 
     Send(parts, "data");
 
     // Go out of the sending loop if the stopFlag was sent.
-    if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
-    {
+    if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
         LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
         return false;
     }
@@ -75,10 +77,6 @@ bool Sampler::ConditionalRun()
     this_thread::sleep_for(chrono::seconds(1));
 
     return true;
-}
-
-Sampler::~Sampler()
-{
 }
 
 } // namespace example_multipart
