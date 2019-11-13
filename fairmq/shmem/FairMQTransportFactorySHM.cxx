@@ -77,11 +77,12 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const fai
             LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
         }
 
+        if (autolaunchMonitor) {
+            Manager::StartMonitor(fShmId);
+        }
+
         fManager = fair::mq::tools::make_unique<Manager>(fShmId, segmentSize);
 
-        if (autolaunchMonitor) {
-            fManager->StartMonitor();
-        }
     } catch (bipc::interprocess_exception& e) {
         LOG(error) << "Could not initialize shared memory transport: " << e.what();
         throw runtime_error(fair::mq::tools::ToString("Could not initialize shared memory transport: ", e.what()));

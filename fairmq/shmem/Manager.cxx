@@ -15,6 +15,7 @@
 #include <boost/filesystem.hpp>
 
 using namespace std;
+using bie = ::boost::interprocess::interprocess_exception;
 namespace bipc = ::boost::interprocess;
 namespace bfs = ::boost::filesystem;
 
@@ -53,57 +54,42 @@ Manager::Manager(const std::string& id, size_t size)
     }
 }
 
-bipc::managed_shared_memory& Manager::Segment()
-{
-    return fSegment;
-}
-
-bipc::managed_shared_memory& Manager::ManagementSegment()
-{
-    return fManagementSegment;
-}
-
-void Manager::StartMonitor()
+void Manager::StartMonitor(const std::string& id)
 {
     try {
-        MonitorStatus* monitorStatus = fManagementSegment.find<MonitorStatus>(bipc::unique_instance).first;
-        if (monitorStatus == nullptr) {
-            LOG(debug) << "no fairmq-shmmonitor found, starting...";
-            auto env = boost::this_process::environment();
+        bipc::named_mutex monitorStatus(bipc::open_only, string("fmq_" + id + "_ms").c_str());
+        LOG(debug) << "Found fairmq-shmmonitor for shared memory id " << id;
+    } catch (bie&) {
+        LOG(debug) << "no fairmq-shmmonitor found for shared memory id " << id << ", starting...";
+        auto env = boost::this_process::environment();
 
-            vector<bfs::path> ownPath = boost::this_process::path();
+        vector<bfs::path> ownPath = boost::this_process::path();
 
-            if (const char* fmqp = getenv("FAIRMQ_PATH")) {
-                ownPath.insert(ownPath.begin(), bfs::path(fmqp));
-            }
-
-            bfs::path p = boost::process::search_path("fairmq-shmmonitor", ownPath);
-
-            if (!p.empty()) {
-                boost::process::spawn(p, "-x", "--shmid", fShmId, "-d", "-t", "2000", env);
-                int numTries = 0;
-                do {
-                    monitorStatus = fManagementSegment.find<MonitorStatus>(bipc::unique_instance).first;
-                    if (monitorStatus) {
-                        LOG(debug) << "fairmq-shmmonitor started";
-                        break;
-                    } else {
-                        this_thread::sleep_for(chrono::milliseconds(10));
-                        if (++numTries > 1000) {
-                            LOG(error) << "Did not get response from fairmq-shmmonitor after " << 10 * 1000 << " milliseconds. Exiting.";
-                            throw runtime_error(fair::mq::tools::ToString("Did not get response from fairmq-shmmonitor after ", 10 * 1000, " milliseconds. Exiting."));
-                        }
-                    }
-                } while (true);
-            } else {
-                LOG(warn) << "could not find fairmq-shmmonitor in the path";
-            }
-        } else {
-            LOG(debug) << "found fairmq-shmmonitor.";
+        if (const char* fmqp = getenv("FAIRMQ_PATH")) {
+            ownPath.insert(ownPath.begin(), bfs::path(fmqp));
         }
-    } catch (std::exception& e) {
-        LOG(error) << "Exception during fairmq-shmmonitor initialization: " << e.what() << ", application will now exit";
-        exit(EXIT_FAILURE);
+
+        bfs::path p = boost::process::search_path("fairmq-shmmonitor", ownPath);
+
+        if (!p.empty()) {
+            boost::process::spawn(p, "-x", "--shmid", id, "-d", "-t", "2000", env);
+            int numTries = 0;
+            do {
+                try {
+                    bipc::named_mutex monitorStatus(bipc::open_only, string("fmq_" + id + "_ms").c_str());
+                    LOG(debug) << "Started fairmq-shmmonitor for shared memory id " << id;
+                    break;
+                } catch (bie&) {
+                    this_thread::sleep_for(chrono::milliseconds(10));
+                    if (++numTries > 1000) {
+                        LOG(error) << "Did not get response from fairmq-shmmonitor after " << 10 * 1000 << " milliseconds. Exiting.";
+                        throw runtime_error(fair::mq::tools::ToString("Did not get response from fairmq-shmmonitor after ", 10 * 1000, " milliseconds. Exiting."));
+                    }
+                }
+            } while (true);
+        } else {
+            LOG(warn) << "could not find fairmq-shmmonitor in the path";
+        }
     }
 }
 
@@ -174,7 +160,7 @@ Region* Manager::GetRemoteRegion(const uint64_t id)
 
             auto r = fRegions.emplace(id, fair::mq::tools::make_unique<Region>(*this, id, 0, true, nullptr, path, flags));
             return r.first->second.get();
-        } catch (bipc::interprocess_exception& e) {
+        } catch (bie& e) {
             LOG(warn) << "Could not get remote region for id: " << id;
             return nullptr;
         }

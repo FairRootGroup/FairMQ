@@ -25,6 +25,7 @@
 #include <poll.h>
 
 using namespace std;
+using bie = ::boost::interprocess::interprocess_exception;
 namespace bipc = ::boost::interprocess;
 namespace bpt = ::boost::posix_time;
 
@@ -45,11 +46,12 @@ void signalHandler(int signal)
     gSignalStatus = signal;
 }
 
-Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, unsigned int timeoutInMS, bool runAsDaemon, bool cleanOnExit)
+Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, bool runAsDaemon, bool cleanOnExit)
     : fSelfDestruct(selfDestruct)
     , fInteractive(interactive)
-    , fSeenOnce(false)
+    , fViewOnly(viewOnly)
     , fIsDaemon(runAsDaemon)
+    , fSeenOnce(false)
     , fCleanOnExit(cleanOnExit)
     , fTimeoutInMS(timeoutInMS)
     , fShmId(shmId)
@@ -63,14 +65,14 @@ Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, unsig
     , fManagementSegment(bipc::open_or_create, fManagementSegmentName.c_str(), 65536)
     , fDeviceHeartbeats()
 {
-    MonitorStatus* monitorStatus = fManagementSegment.find<MonitorStatus>(bipc::unique_instance).first;
-    if (monitorStatus != nullptr) {
-        cout << "fairmq-shmmonitor already started or not properly exited. Try `fairmq-shmmonitor --cleanup`" << endl;
-        exit(EXIT_FAILURE);
+    if (!fViewOnly) {
+        try {
+            bipc::named_mutex monitorStatus(bipc::create_only, string("fmq_" + fShmId + "_ms").c_str());
+        } catch (bie&) {
+            cout << "fairmq-shmmonitor for shared memory id " << fShmId << " already started or not properly exited. Try `fairmq-shmmonitor --cleanup --shmid " << fShmId << "`" << endl;
+            throw DaemonPresent(tools::ToString("fairmq-shmmonitor for shared memory id ", fShmId, " already started or not properly exited."));
+        }
     }
-    fManagementSegment.construct<MonitorStatus>(bipc::unique_instance)();
-
-    RemoveQueue(fControlQueueName);
 }
 
 void Monitor::CatchSignals()
@@ -97,7 +99,11 @@ void Monitor::SignalMonitor()
 
 void Monitor::Run()
 {
-    thread heartbeatThread(&Monitor::MonitorHeartbeats, this);
+    thread heartbeatThread;
+    if (!fViewOnly) {
+        RemoveQueue(fControlQueueName);
+        heartbeatThread = thread(&Monitor::MonitorHeartbeats, this);
+    }
 
     if (fInteractive) {
         Interactive();
@@ -108,7 +114,9 @@ void Monitor::Run()
         }
     }
 
-    heartbeatThread.join();
+    if (!fViewOnly) {
+        heartbeatThread.join();
+    }
 }
 
 void Monitor::MonitorHeartbeats()
@@ -131,12 +139,33 @@ void Monitor::MonitorHeartbeats()
                 // cout << "control queue timeout" << endl;
             }
         }
-    } catch (bipc::interprocess_exception& ie) {
+    } catch (bie& ie) {
         cout << ie.what() << endl;
     }
 
     RemoveQueue(fControlQueueName);
 }
+
+struct TerminalConfig
+{
+    TerminalConfig()
+    {
+        termios t;
+        tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
+        t.c_lflag &= ~ICANON; // disable canonical input
+        t.c_lflag &= ~ECHO; // do not echo input chars
+        tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
+    }
+
+    ~TerminalConfig()
+    {
+        termios t;
+        tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
+        t.c_lflag |= ICANON; // re-enable canonical input
+        t.c_lflag |= ECHO; // echo input chars
+        tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
+    }
+};
 
 void Monitor::Interactive()
 {
@@ -145,11 +174,7 @@ void Monitor::Interactive()
     cinfd[0].fd = fileno(stdin);
     cinfd[0].events = POLLIN;
 
-    struct termios t;
-    tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
-    t.c_lflag &= ~ICANON; // disable canonical input
-    t.c_lflag &= ~ECHO; // do not echo input chars
-    tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
+    TerminalConfig tcfg;
 
     cout << endl;
     PrintHelp();
@@ -175,7 +200,11 @@ void Monitor::Interactive()
                     break;
                 case 'x':
                     cout << "\n[x] --> closing shared memory:" << endl;
-                    Cleanup(fShmId);
+                    if (!fViewOnly) {
+                        Cleanup(fShmId);
+                    } else {
+                        cout << "cannot close because in view only mode" << endl;
+                    }
                     break;
                 case 'h':
                     cout << "\n[h] --> help:" << endl << endl;
@@ -207,11 +236,6 @@ void Monitor::Interactive()
             cout << "\r";
         }
     }
-
-    tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
-    t.c_lflag |= ICANON; // re-enable canonical input
-    t.c_lflag |= ECHO; // echo input chars
-    tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
 }
 
 void Monitor::CheckSegment()
@@ -250,9 +274,11 @@ void Monitor::CheckSegment()
 
         unsigned int numDevices = 0;
 
-        fair::mq::shmem::DeviceCounter* dc = managementSegment.find<fair::mq::shmem::DeviceCounter>(bipc::unique_instance).first;
-        if (dc) {
-            numDevices = dc->fCount;
+        if (fInteractive) {
+            fair::mq::shmem::DeviceCounter* dc = managementSegment.find<fair::mq::shmem::DeviceCounter>(bipc::unique_instance).first;
+            if (dc) {
+                numDevices = dc->fCount;
+            }
         }
 
         auto now = chrono::high_resolution_clock::now();
@@ -270,31 +296,23 @@ void Monitor::CheckSegment()
 
         if (fInteractive) {
             cout << "| "
-                << setw(18) << fSegmentName << " | "
-                << setw(10) << segment.get_size() << " | "
-                << setw(10) << segment.get_free_memory() << " | "
-                // << setw(15) << segment.all_memory_deallocated() << " | "
-                << setw(2) << segment.check_sanity() << " | "
-                // << setw(10) << segment.get_num_named_objects() << " | "
-                << setw(10) << numDevices << " | "
-                // << setw(10) << segment.get_num_unique_objects() << " |"
-                << setw(10) << duration << " |"
-                << c
-                << flush;
+                 << setw(18) << fSegmentName                                    << " | "
+                 << setw(10) << segment.get_size()                              << " | "
+                 << setw(10) << segment.get_free_memory()                       << " | "
+                 << setw(8)  << numDevices                                      << " | "
+                 << setw(10) << (fViewOnly ? "view only" : to_string(duration)) << " |"
+                 << c << flush;
         }
-    } catch (bipc::interprocess_exception& ie) {
+    } catch (bie&) {
         fHeartbeatTriggered = false;
         if (fInteractive) {
             cout << "| "
-                << setw(18) << "-" << " | "
-                << setw(10) << "-" << " | "
-                << setw(10) << "-" << " | "
-                // << setw(15) << "-" << " | "
-                << setw(2) << "-" << " | "
-                << setw(10) << "-" << " | "
-                << setw(10) << "-" << " |"
-                << c
-                << flush;
+                 << setw(18) << "-" << " | "
+                 << setw(10) << "-" << " | "
+                 << setw(10) << "-" << " | "
+                 << setw(8)  << "-" << " | "
+                 << setw(10) << "-" << " |"
+                 << c << flush;
         }
 
         auto now = chrono::high_resolution_clock::now();
@@ -318,48 +336,58 @@ void Monitor::CheckSegment()
     }
 }
 
-void Monitor::Cleanup(const string& shmId)
+void Monitor::PrintQueues()
 {
-    string managementSegmentName("fmq_" + shmId + "_mng");
+    cout << '\n';
+
     try {
-        bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
-        RegionCounter* rc = managementSegment.find<RegionCounter>(bipc::unique_instance).first;
-        if (rc) {
-            cout << "Region counter found: " << rc->fCount << endl;
-            uint64_t regionCount = rc->fCount;
+        bipc::managed_shared_memory segment(bipc::open_only, fSegmentName.c_str());
+        StrVector* queues = segment.find<StrVector>(string("fmq_" + fShmId + "_qs").c_str()).first;
+        if (queues) {
+            cout << "found " << queues->size() << " queue(s):" << endl;
 
-            Uint64RegionInfoMap* m = managementSegment.find<Uint64RegionInfoMap>(bipc::unique_instance).first;
-
-            for (uint64_t i = 1; i <= regionCount; ++i) {
-                if (m != nullptr) {
-                    RegionInfo ri = m->at(i);
-                    string path = ri.fPath.c_str();
-                    int flags = ri.fFlags;
-                    cout << "Found RegionInfo with path: '" << path << "', flags: " << flags << "'." << endl;
-                    if (path != "") {
-                        RemoveFileMapping(tools::ToString(path, "fmq_" + shmId + "_rg_" + to_string(i)));
-                    } else {
-                        RemoveObject("fmq_" + shmId + "_rg_" + to_string(i));
-                    }
+            for (const auto& queue : *queues) {
+                string name(queue.c_str());
+                cout << '\t' << name << " : ";
+                atomic<int>* queueSize = segment.find<atomic<int>>(name.c_str()).first;
+                if (queueSize) {
+                    cout << *queueSize << " messages" << endl;
                 } else {
-                    RemoveObject("fmq_" + shmId + "_rg_" + to_string(i));
+                    cout << "\tqueue does not have a queue size entry." << endl;
                 }
-
-                RemoveQueue(string("fmq_" + shmId + "_rgq_" + to_string(i)));
             }
         } else {
-            cout << "No region counter found. no regions to cleanup." << endl;
+            cout << "\tno queues found" << endl;
         }
-
-        RemoveObject(managementSegmentName.c_str());
-    } catch (bipc::interprocess_exception& ie) {
-        cout << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup." << endl;
+    } catch (bie&) {
+        cout << "\tno queues found" << endl;
+    } catch (out_of_range&) {
+        cout << "\tno queues found" << endl;
     }
 
-    RemoveObject("fmq_" + shmId + "_main");
-    RemoveMutex("fmq_" + shmId + "_mtx");
+    cout << "\n    --> last heartbeats: " << endl << endl;
+    auto now = chrono::high_resolution_clock::now();
+    for (const auto& h : fDeviceHeartbeats)  {
+        cout << "\t" << h.first << " : " << chrono::duration<double, milli>(now - h.second).count() << "ms ago." << endl;
+    }
 
     cout << endl;
+}
+
+void Monitor::PrintHeader()
+{
+    cout << "| "
+         << setw(18) << "name"    << " | "
+         << setw(10) << "size"    << " | "
+         << setw(10) << "free"    << " | "
+         << setw(8)  << "devices" << " | "
+         << setw(10) << "last hb" << " |"
+         << endl;
+}
+
+void Monitor::PrintHelp()
+{
+    cout << "controls: [x] close memory, [p] print queues, [h] help, [q] quit." << endl;
 }
 
 void Monitor::RemoveObject(const string& name)
@@ -398,72 +426,60 @@ void Monitor::RemoveMutex(const string& name)
     }
 }
 
-void Monitor::PrintQueues()
+void Monitor::Cleanup(const string& shmId)
 {
-    cout << '\n';
-
+    string managementSegmentName("fmq_" + shmId + "_mng");
     try {
-        bipc::managed_shared_memory segment(bipc::open_only, fSegmentName.c_str());
-        StrVector* queues = segment.find<StrVector>(string("fmq_" + fShmId + "_qs").c_str()).first;
-        if (queues) {
-            cout << "found " << queues->size() << " queue(s):" << endl;
+        bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
+        RegionCounter* rc = managementSegment.find<RegionCounter>(bipc::unique_instance).first;
+        if (rc) {
+            cout << "Region counter found: " << rc->fCount << endl;
+            uint64_t regionCount = rc->fCount;
 
-            for (const auto& queue : *queues) {
-                string name(queue.c_str());
-                cout << '\t' << name << " : ";
-                atomic<int>* queueSize = segment.find<atomic<int>>(name.c_str()).first;
-                if (queueSize) {
-                    cout << *queueSize << " messages" << endl;
+            Uint64RegionInfoMap* m = managementSegment.find<Uint64RegionInfoMap>(bipc::unique_instance).first;
+
+            for (uint64_t i = 1; i <= regionCount; ++i) {
+                if (m != nullptr) {
+                    RegionInfo ri = m->at(i);
+                    string path = ri.fPath.c_str();
+                    int flags = ri.fFlags;
+                    cout << "Found RegionInfo with path: '" << path << "', flags: " << flags << "'." << endl;
+                    if (path != "") {
+                        RemoveFileMapping(tools::ToString(path, "fmq_" + shmId + "_rg_" + to_string(i)));
+                    } else {
+                        RemoveObject("fmq_" + shmId + "_rg_" + to_string(i));
+                    }
                 } else {
-                    cout << "\tqueue does not have a queue size entry." << endl;
+                    RemoveObject("fmq_" + shmId + "_rg_" + to_string(i));
                 }
+
+                RemoveQueue(string("fmq_" + shmId + "_rgq_" + to_string(i)));
             }
         } else {
-            cout << "\tno queues found" << endl;
+            cout << "No region counter found. no regions to cleanup." << endl;
         }
-    } catch (bipc::interprocess_exception& ie) {
-        cout << "\tno queues found" << endl;
-    } catch (out_of_range& ie) {
-        cout << "\tno queues found" << endl;
+
+        RemoveObject(managementSegmentName.c_str());
+    } catch (bie&) {
+        cout << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup." << endl;
     }
 
-    cout << "\n    --> last heartbeats: " << endl << endl;
-    auto now = chrono::high_resolution_clock::now();
-    for (const auto& h : fDeviceHeartbeats)  {
-        cout << "\t" << h.first << " : " << chrono::duration<double, milli>(now - h.second).count() << "ms ago." << endl;
-    }
+    RemoveObject("fmq_" + shmId + "_main");
+    RemoveMutex("fmq_" + shmId + "_mtx");
 
     cout << endl;
 }
 
-void Monitor::PrintHeader()
-{
-    cout << "| "
-        << "\033[01;32m" << setw(18) << "name"            << "\033[0m" << " | "
-        << "\033[01;32m" << setw(10) << "size"            << "\033[0m" << " | "
-        << "\033[01;32m" << setw(10) << "free"            << "\033[0m" << " | "
-        // << "\033[01;32m" << setw(15) << "all deallocated" << "\033[0m" << " | "
-        << "\033[01;32m" << setw(2)  << "ok"              << "\033[0m" << " | "
-        // << "\033[01;32m" << setw(10) << "# named"         << "\033[0m" << " | "
-        << "\033[01;32m" << setw(10) << "# devices"       << "\033[0m" << " | "
-        // << "\033[01;32m" << setw(10) << "# unique"        << "\033[0m" << " |"
-        << "\033[01;32m" << setw(10) << "ms since"        << "\033[0m" << " |"
-        << endl;
-}
-
-void Monitor::PrintHelp()
-{
-    cout << "controls: [x] close memory, [p] print queues, [h] help, [q] quit." << endl;
-}
-
 Monitor::~Monitor()
 {
-    fManagementSegment.destroy<MonitorStatus>(bipc::unique_instance);
     if (fSignalThread.joinable()) {
         fSignalThread.join();
     }
     if (fCleanOnExit) {
         Cleanup(fShmId);
+    }
+    if (!fViewOnly) {
+        RemoveMutex("fmq_" + fShmId + "_ms");
     }
 }
 

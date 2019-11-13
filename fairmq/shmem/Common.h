@@ -73,15 +73,6 @@ struct RegionCounter
     std::atomic<uint64_t> fCount;
 };
 
-struct MonitorStatus
-{
-    MonitorStatus()
-        : fActive(true)
-    {}
-
-    bool fActive;
-};
-
 struct MetaHeader
 {
     size_t fSize;

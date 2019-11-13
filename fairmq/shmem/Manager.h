@@ -52,10 +52,10 @@ class Manager
 
     ~Manager();
 
-    boost::interprocess::managed_shared_memory& Segment();
-    boost::interprocess::managed_shared_memory& ManagementSegment();
+    boost::interprocess::managed_shared_memory& Segment() { return fSegment; }
+    boost::interprocess::managed_shared_memory& ManagementSegment() { return fManagementSegment; }
 
-    void StartMonitor();
+    static void StartMonitor(const std::string&);
 
     static void Interrupt();
     static void Resume();

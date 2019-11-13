@@ -74,20 +74,22 @@ int main(int argc, char** argv)
         bool cleanup = false;
         bool selfDestruct = false;
         bool interactive = false;
+        bool viewOnly = false;
         unsigned int timeoutInMS = 5000;
         bool runAsDaemon = false;
         bool cleanOnExit = false;
 
         options_description desc("Options");
         desc.add_options()
-            ("session,s", value<string>(&sessionName)->default_value("default"), "session id which to monitor")
-            ("shmid", value<string>(&shmId)->default_value(""), "Shmem Id to monitor (if not provided, it is generated out of session id and user id)")
-            ("cleanup,c", value<bool>(&cleanup)->implicit_value(true), "Perform cleanup and quit")
-            ("self-destruct,x", value<bool>(&selfDestruct)->implicit_value(true), "Quit after first closing of the memory")
-            ("interactive,i", value<bool>(&interactive)->implicit_value(true), "Interactive run")
-            ("timeout,t", value<unsigned int>(&timeoutInMS)->default_value(5000), "Heartbeat timeout in milliseconds")
-            ("daemonize,d", value<bool>(&runAsDaemon)->implicit_value(true), "Daemonize the monitor")
-            ("clean-on-exit,e", value<bool>(&cleanOnExit)->implicit_value(true), "Perform cleanup on exit")
+            ("session,s"      , value<string>(&sessionName)->default_value("default"),  "Session id")
+            ("shmid"          , value<string>(&shmId)->default_value(""),               "Shmem id (if not provided, it is generated out of session id and user id)")
+            ("cleanup,c"      , value<bool>(&cleanup)->implicit_value(true),            "Perform cleanup and quit")
+            ("self-destruct,x", value<bool>(&selfDestruct)->implicit_value(true),       "Quit after first closing of the memory")
+            ("interactive,i"  , value<bool>(&interactive)->implicit_value(true),        "Interactive run")
+            ("view,v"         , value<bool>(&viewOnly)->implicit_value(true),           "Run in view only mode")
+            ("timeout,t"      , value<unsigned int>(&timeoutInMS)->default_value(5000), "Heartbeat timeout in milliseconds")
+            ("daemonize,d"    , value<bool>(&runAsDaemon)->implicit_value(true),        "Daemonize the monitor")
+            ("clean-on-exit,e", value<bool>(&cleanOnExit)->implicit_value(true),        "Perform cleanup on exit")
             ("help,h", "Print help");
 
         variables_map vm;
@@ -117,10 +119,12 @@ int main(int argc, char** argv)
 
         cout << "Starting shared memory monitor for session: \"" << sessionName << "\" (shmId: " << shmId << ")..." << endl;
 
-        Monitor monitor{shmId, selfDestruct, interactive, timeoutInMS, runAsDaemon, cleanOnExit};
+        Monitor monitor(shmId, selfDestruct, interactive, viewOnly, timeoutInMS, runAsDaemon, cleanOnExit);
 
         monitor.CatchSignals();
         monitor.Run();
+    } catch (Monitor::DaemonPresent& dp) {
+        return 0;
     } catch (exception& e) {
         cerr << "Unhandled Exception reached the top of main: " << e.what() << ", application will now exit" << endl;
         return 2;
