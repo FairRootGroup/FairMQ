@@ -14,6 +14,7 @@
 #include <chrono>
 #include <atomic>
 #include <string>
+#include <stdexcept>
 #include <unordered_map>
 
 namespace fair
@@ -26,21 +27,23 @@ namespace shmem
 class Monitor
 {
   public:
-    Monitor(const std::string& shmId, bool selfDestruct, bool interactive, unsigned int timeoutInMS, bool runAsDaemon, bool cleanOnExit);
+    Monitor(const std::string& shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, bool runAsDaemon, bool cleanOnExit);
 
     Monitor(const Monitor&) = delete;
     Monitor operator=(const Monitor&) = delete;
 
+    virtual ~Monitor();
+
     void CatchSignals();
     void Run();
-
-    virtual ~Monitor();
 
     static void Cleanup(const std::string& shmId);
     static void RemoveObject(const std::string&);
     static void RemoveFileMapping(const std::string&);
     static void RemoveQueue(const std::string&);
     static void RemoveMutex(const std::string&);
+
+    struct DaemonPresent : std::runtime_error { using std::runtime_error::runtime_error; };
 
   private:
     void PrintHeader();
@@ -53,8 +56,9 @@ class Monitor
 
     bool fSelfDestruct; // will self-destruct after the memory has been closed
     bool fInteractive; // running in interactive mode
-    bool fSeenOnce; // true is segment has been opened successfully at least once
+    bool fViewOnly; // view only mode
     bool fIsDaemon;
+    bool fSeenOnce; // true is segment has been opened successfully at least once
     bool fCleanOnExit;
     unsigned int fTimeoutInMS;
     std::string fShmId;

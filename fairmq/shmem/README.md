@@ -32,5 +32,6 @@ FairMQ Shared Memory currently uses following names to register shared memory on
 `fmq_<shmId>_mng` - management segment name, used for storing management data.
 `fmq_<shmId>_cq` - message queue for communicating between shm transport and shm monitor (exists independent of above segments).
 `fmq_<shmId>_mtx` - boost::interprocess::named_mutex for management purposes (exists independent of above segments).
+`fmq_<shmId>_ms` - shmmonitor status used to signal if it is active or not (exists independent of above segments).
 `fmq_<shmId>_rg_<index>` - names of unmanaged regions.
 `fmq_<shmId>_rgq_<index>` - names of queues for the unmanaged regions.
