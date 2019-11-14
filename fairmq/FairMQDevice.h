@@ -146,15 +146,6 @@ class FairMQDevice
         return GetChannel(channel, index).Receive(msg, rcvTimeoutInMs);
     }
 
-    int SendAsync(FairMQMessagePtr& msg, const std::string& channel, const int index = 0) __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(msg, \"channelA\", subchannelIndex, timeout);")))
-    {
-        return GetChannel(channel, index).Send(msg, 0);
-    }
-    int ReceiveAsync(FairMQMessagePtr& msg, const std::string& channel, const int index = 0) __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(msg, \"channelA\", subchannelIndex, timeout);")))
-    {
-        return GetChannel(channel, index).Receive(msg, 0);
-    }
-
     /// Shorthand method to send FairMQParts on `chan` at index `i`
     /// @param parts parts reference
     /// @param chan channel name
@@ -175,15 +166,6 @@ class FairMQDevice
     int64_t Receive(FairMQParts& parts, const std::string& channel, const int index = 0, int rcvTimeoutInMs = -1)
     {
         return GetChannel(channel, index).Receive(parts.fParts, rcvTimeoutInMs);
-    }
-
-    int64_t SendAsync(FairMQParts& parts, const std::string& channel, const int index = 0) __attribute__((deprecated("For non-blocking Send, use timeout version with timeout of 0: Send(parts, \"channelA\", subchannelIndex, timeout);")))
-    {
-        return GetChannel(channel, index).Send(parts.fParts, 0);
-    }
-    int64_t ReceiveAsync(FairMQParts& parts, const std::string& channel, const int index = 0) __attribute__((deprecated("For non-blocking Receive, use timeout version with timeout of 0: Receive(parts, \"channelA\", subchannelIndex, timeout);")))
-    {
-        return GetChannel(channel, index).Receive(parts.fParts, 0);
     }
 
     /// @brief Getter for default transport factory
@@ -288,9 +270,6 @@ class FairMQDevice
 
         return channels.at(0)->Transport()->CreatePoller(channels);
     }
-
-    /// Waits for the first initialization run to finish
-    void WaitForInitialValidation() __attribute__((deprecated("This method will have no effect in future versions and will be removed. Instead subscribe for state changes and inspect configuration values."))) {}
 
     /// Adds a transport to the device if it doesn't exist
     /// @param transport  Transport string ("zeromq"/"nanomsg"/"shmem")
