@@ -194,6 +194,13 @@ macro(set_fairmq_defaults)
     endif()
     list(APPEND PROJECT_STATIC_ANALYSERS "${analyser}")
   endif()
+
+  if(CMAKE_GENERATOR STREQUAL Ninja AND ENABLE_CCACHE)
+    find_program(CCACHE ccache)
+    if(CCACHE)
+      set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE})
+    endif()
+  endif()
 endmacro()
 
 function(join VALUES GLUE OUTPUT)
