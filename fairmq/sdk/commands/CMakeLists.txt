@@ -23,13 +23,19 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CommandsFormatDef.h.in ${CMAKE_CURREN
 add_library(${target} Commands.cxx Commands.h ${CMAKE_CURRENT_BINARY_DIR}/CommandsFormat.h ${CMAKE_CURRENT_BINARY_DIR}/CommandsFormatDef.h)
 add_library(FairMQ::${target} ALIAS ${target})
 
+# Some distros may not package the static library (e.g. Fedora), so we pick up the dynamic library instead
+set(_flatbuffers flatbuffers::flatbuffers)
+if(NOT TARGET flatbuffers::flatbuffers AND TARGET flatbuffers::flatbuffers_shared)
+  set(_flatbuffers flatbuffers::flatbuffers_shared)
+endif()
+
 target_link_libraries(${target}
   PUBLIC
   StateMachine
   Tools
 
   PRIVATE
-  flatbuffers::flatbuffers
+  ${_flatbuffers}
 )
 
 target_include_directories(${target}
