@@ -75,7 +75,7 @@ void DeviceRunner::SubscribeForConfigChange()
             fair::Logger::SetConsoleColor(val);
         }
     });
-    fConfig.Subscribe<string>("device-runner", [&](const std::string& key, const std::string val) {
+    fConfig.Subscribe<string>("device-runner", [&](const std::string& key, const std::string& val) {
         if (key == "severity") {
             fair::Logger::SetConsoleSeverity(val);
         } else if (key == "file-severity") {
