@@ -87,7 +87,6 @@ DDS::DDS(const string& name,
 
         // subscribe to device state changes, pushing new state changes into the event queue
         SubscribeToDeviceStateChange([&](DeviceState newState) {
-            fStateQueue.Push(newState);
             switch (newState) {
                 case DeviceState::Bound:
                     // Receive addresses of connecting channels from DDS
@@ -109,7 +108,11 @@ DDS::DDS(const string& name,
                 }
                 case DeviceState::Exiting:
                     fWorkGuard.reset();
-                    fDeviceTerminationRequested = true;
+                    {
+                        unique_lock<mutex> lock(fStopMutex);
+                        fDeviceTerminationRequested = true;
+                    }
+                    fStopCondition.notify_one();
                     UnsubscribeFromDeviceStateChange();
                     ReleaseDeviceControl();
                     break;
@@ -373,6 +376,7 @@ auto DDS::SubscribeForCustomCommands() -> void
         inCmds.Deserialize(cmdStr);
 
         for (const auto& cmd : inCmds) {
+            // LOG(info) << "Received command type: '" << cmd->GetType() << "' from " << senderId;
             switch (cmd->GetType()) {
                 case Type::check_state: {
                     fDDS.Send(Cmds(make<CurrentState>(id, GetCurrentDeviceState())).Serialize(), to_string(senderId));
@@ -386,6 +390,10 @@ auto DDS::SubscribeForCustomCommands() -> void
                     } else {
                         Cmds outCmds(make<TransitionStatus>(id, Result::Failure, transition));
                         fDDS.Send(outCmds.Serialize(), to_string(senderId));
+                    }
+                    {
+                        lock_guard<mutex> lock{fStateChangeSubscriberMutex};
+                        fLastExternalController = senderId;
                     }
                 }
                 break;
