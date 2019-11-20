@@ -161,7 +161,6 @@ class DDS : public Plugin
 
     std::thread fControllerThread;
     DeviceState fCurrentState, fLastState;
-    fair::mq::StateQueue fStateQueue;
 
     std::atomic<bool> fDeviceTerminationRequested;
 
