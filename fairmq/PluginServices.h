@@ -124,8 +124,6 @@ class PluginServices
     /// If the device control role has not been taken yet, calling this function will take over control implicitely.
     auto ChangeDeviceState(const std::string& controller, const DeviceStateTransition next) -> bool;
 
-    void TransitionDeviceStateTo(const std::string& controller, DeviceState state);
-
     /// @brief Subscribe with a callback to device state changes
     /// @param subscriber id
     /// @param callback
