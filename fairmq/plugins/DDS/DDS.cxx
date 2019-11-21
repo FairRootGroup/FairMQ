@@ -37,16 +37,6 @@ DDS::DDS(const string& name,
          const string& homepage,
          PluginServices* pluginServices)
     : Plugin(name, version, maintainer, homepage, pluginServices)
-    , fTransitions({"INIT DEVICE",
-                    "COMPLETE INIT",
-                    "BIND",
-                    "CONNECT",
-                    "INIT TASK",
-                    "RUN",
-                    "STOP",
-                    "RESET TASK",
-                    "RESET DEVICE",
-                    "END"})
     , fCurrentState(DeviceState::Idle)
     , fLastState(DeviceState::Idle)
     , fDeviceTerminationRequested(false)
@@ -71,15 +61,13 @@ DDS::DDS(const string& name,
         }
 
         auto control = GetProperty<string>("control");
-        bool staticMode(false);
         if (control == "static") {
-            LOG(debug) << "Running DDS controller: static";
-            staticMode = true;
+            LOG(error) << "DDS Plugin: static mode is not supported";
+            throw invalid_argument("DDS Plugin: static mode is not supported");
         } else if (control == "dynamic" || control == "external" || control == "interactive") {
             LOG(debug) << "Running DDS controller: external";
         } else {
-            LOG(error) << "Unrecognized control mode '" << control << "' requested. " << "Ignoring and falling back to static control mode.";
-            staticMode = true;
+            LOG(error) << "Unrecognized control mode '" << control << "' requested. " << "Ignoring and starting in external control mode.";
         }
 
         SubscribeForCustomCommands();
@@ -108,11 +96,7 @@ DDS::DDS(const string& name,
                 }
                 case DeviceState::Exiting:
                     fWorkGuard.reset();
-                    {
-                        unique_lock<mutex> lock(fStopMutex);
-                        fDeviceTerminationRequested = true;
-                    }
-                    fStopCondition.notify_one();
+                    fDeviceTerminationRequested = true;
                     UnsubscribeFromDeviceStateChange();
                     ReleaseDeviceControl();
                     break;
@@ -133,11 +117,7 @@ DDS::DDS(const string& name,
             }
         });
 
-        if (staticMode) {
-            fControllerThread = thread(&DDS::StaticControl, this);
-        } else {
-            StartWorkerThread();
-        }
+        StartWorkerThread();
 
         fDDS.Start();
     } catch (PluginServices::DeviceControlError& e) {
@@ -167,26 +147,6 @@ auto DDS::WaitForExitingAck() -> void
         lock,
         chrono::milliseconds(GetProperty<unsigned int>("wait-for-exiting-ack-timeout")),
         [this]() { return fExitingAckedByLastExternalController; });
-}
-
-auto DDS::StaticControl() -> void
-{
-    try {
-        TransitionDeviceStateTo(DeviceState::Running);
-
-        // wait until stop signal
-        unique_lock<mutex> lock(fStopMutex);
-        while (!fDeviceTerminationRequested) {
-            fStopCondition.wait_for(lock, chrono::seconds(1));
-        }
-        LOG(debug) << "Stopping DDS plugin static controller";
-    } catch (DeviceErrorState&) {
-        ReleaseDeviceControl();
-    } catch (exception& e) {
-        ReleaseDeviceControl();
-        LOG(error) << "Error: " << e.what() << "\n";
-        return;
-    }
 }
 
 auto DDS::FillChannelContainers() -> void

@@ -133,7 +133,6 @@ class DDS : public Plugin
     ~DDS();
 
   private:
-    auto StaticControl() -> void;
     auto WaitForExitingAck() -> void;
     auto StartWorkerThread() -> void;
 
@@ -153,11 +152,6 @@ class DDS : public Plugin
 
     std::unordered_map<std::string, int> fI;
     std::unordered_map<std::string, IofN> fIofN;
-
-    std::mutex fStopMutex;
-    std::condition_variable fStopCondition;
-
-    const std::set<std::string> fTransitions;
 
     std::thread fControllerThread;
     DeviceState fCurrentState, fLastState;
