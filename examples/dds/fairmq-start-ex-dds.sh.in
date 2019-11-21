@@ -62,6 +62,7 @@ fairmq-dds-command-ui -c x -w "DEVICE READY" -n ${requiredNofAgents}
 fairmq-dds-command-ui -c j -w "READY" -n ${requiredNofAgents}
 fairmq-dds-command-ui -c r
 sampler_and_sink="main/(Sampler|Sink)"
+# processors="main/ProcessorGroup/Processor"
 fairmq-dds-command-ui -p $sampler_and_sink -w "RUNNING->READY" -n 2
 echo "...$sampler_and_sink are READY, sending shutdown..."
 fairmq-dds-command-ui -c s -w "RUNNING->READY" -n ${requiredNofAgents}
