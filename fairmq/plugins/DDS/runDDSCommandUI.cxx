@@ -74,7 +74,8 @@ void printControlsHelp()
     cout << "To quit press Ctrl+C" << endl;
 }
 
-void sendCommand(const string& commandIn, const string& topologyPath, CCustomCmd& ddsCustomCmd) {
+void sendCommand(const string& commandIn, const string& topologyPath, CCustomCmd& ddsCustomCmd)
+{
     char c;
     string command(commandIn);
     TerminalConfig tconfig;
@@ -159,8 +160,6 @@ struct WaitMode
 
     void Run(const chrono::milliseconds& timeout, const string& topologyPath, CCustomCmd& ddsCustomCmd, unsigned int numDevices, const string& command = "")
     {
-        StateSubscription stateSubscription(topologyPath, ddsCustomCmd);
-
         if (command != "") {
             sendCommand(command, topologyPath, ddsCustomCmd);
         }
@@ -288,12 +287,18 @@ int main(int argc, char* argv[])
                         }
                     break;
                     case Type::transition_status: {
-                        // if (static_cast<TransitionStatus&>(*cmd).GetResult() == Result::Ok) {
-                        //     cout << "Device " << static_cast<TransitionStatus&>(*cmd).GetDeviceId() << " started to transition with " << static_cast<TransitionStatus&>(*cmd).GetTransition() << endl;
-                        // } else {
-                        //     cout << "Device " << static_cast<TransitionStatus&>(*cmd).GetDeviceId() << " cannot transition with " << static_cast<TransitionStatus&>(*cmd).GetTransition() << endl;
-                        // }
+                        if (static_cast<TransitionStatus&>(*cmd).GetResult() == Result::Ok) {
+                            cout << "Device " << static_cast<TransitionStatus&>(*cmd).GetDeviceId() << " started to transition with " << static_cast<TransitionStatus&>(*cmd).GetTransition() << endl;
+                        } else {
+                            cout << "Device " << static_cast<TransitionStatus&>(*cmd).GetDeviceId() << " cannot transition with " << static_cast<TransitionStatus&>(*cmd).GetTransition() << endl;
+                        }
                     }
+                    break;
+                    case Type::current_state:
+                        cout << "Device " << static_cast<CurrentState&>(*cmd).GetDeviceId() << " is in " << static_cast<CurrentState&>(*cmd).GetCurrentState() << " state" << endl;
+                    break;
+                    case Type::config:
+                        cout << "Received config for device " << static_cast<Config&>(*cmd).GetDeviceId() << ":\n" << static_cast<Config&>(*cmd).GetConfig() << endl;
                     break;
                     default:
                         cout << "Unexpected/unknown command received: " << cmd->GetType() << endl;
@@ -304,6 +309,8 @@ int main(int argc, char* argv[])
         });
 
         service.start(sessionID);
+
+        StateSubscription stateSubscription(topologyPath, ddsCustomCmd);
 
         if (targetState == "") {
             sendCommand(command, topologyPath, ddsCustomCmd);
