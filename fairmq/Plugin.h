@@ -60,10 +60,10 @@ class Plugin
     friend auto operator!=(const Plugin& lhs, const Plugin& rhs) -> bool { return !(lhs == rhs); }
     friend auto operator<<(std::ostream& os, const Plugin& p) -> std::ostream&
     {
-        return os << "'" << p.GetName() << "', "
-                  << "version '" << p.GetVersion() << "', "
+        return os << "'"            << p.GetName()       << "', "
+                  << "version '"    << p.GetVersion()    << "', "
                   << "maintainer '" << p.GetMaintainer() << "', "
-                  << "homepage '" << p.GetHomepage() << "'";
+                  << "homepage '"   << p.GetHomepage()   << "'";
     }
     static auto NoProgramOptions() -> ProgOptions { return boost::none; }
 
@@ -80,7 +80,6 @@ class Plugin
     auto StealDeviceControl() -> void { fPluginServices->StealDeviceControl(fkName); };
     auto ReleaseDeviceControl() -> void { fPluginServices->ReleaseDeviceControl(fkName); };
     auto ChangeDeviceState(const DeviceStateTransition next) -> bool { return fPluginServices->ChangeDeviceState(fkName, next); }
-    void TransitionDeviceStateTo(const DeviceState state) { return fPluginServices->TransitionDeviceStateTo(fkName, state); }
     auto SubscribeToDeviceStateChange(std::function<void(DeviceState)> callback) -> void { fPluginServices->SubscribeToDeviceStateChange(fkName, callback); }
     auto UnsubscribeFromDeviceStateChange() -> void { fPluginServices->UnsubscribeFromDeviceStateChange(fkName); }
 

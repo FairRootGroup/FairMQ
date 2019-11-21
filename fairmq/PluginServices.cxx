@@ -28,22 +28,6 @@ auto PluginServices::ChangeDeviceState(const string& controller, const DeviceSta
     }
 }
 
-void PluginServices::TransitionDeviceStateTo(const std::string& controller, DeviceState state)
-{
-    lock_guard<mutex> lock{fDeviceControllerMutex};
-
-    if (!fDeviceController) fDeviceController = controller;
-
-    if (fDeviceController == controller) {
-        fDevice.TransitionTo(state);
-    } else {
-        throw DeviceControlError{tools::ToString(
-            "Plugin '", controller, "' is not allowed to change device states. ",
-            "Currently, plugin '", *fDeviceController, "' has taken control."
-        )};
-    }
-}
-
 auto PluginServices::TakeDeviceControl(const string& controller) -> void
 {
     lock_guard<mutex> lock{fDeviceControllerMutex};
