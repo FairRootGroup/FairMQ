@@ -183,7 +183,8 @@ auto DDSSession::SubmitAgents(Quantity agents) -> void
 
     SSubmitRequestData submitInfo;
     submitInfo.m_rms = tools::ToString(GetRMSPlugin());
-    submitInfo.m_instances = agents;
+    submitInfo.m_instances = 1;
+    submitInfo.m_slots = agents; // TODO new api: get slots from agents
     submitInfo.m_config = GetRMSConfig().string();
 
     tools::SharedSemaphore blocker;
@@ -210,9 +211,9 @@ auto DDSSession::RequestAgentCount() -> AgentCount
     fImpl->fSession->syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), res);
 
     AgentCount count;
-    count.active = res.m_activeAgentsCount;
-    count.idle = res.m_idleAgentsCount;
-    count.executing = res.m_executingAgentsCount;
+    count.active = res.m_activeSlotsCount;
+    count.idle = res.m_idleSlotsCount;
+    count.executing = res.m_executingSlotsCount;
 
     return count;
 }
@@ -231,13 +232,11 @@ auto DDSSession::RequestAgentInfo() -> std::vector<DDSAgent>
             *this,
             a.m_agentID,
             a.m_agentPid,
-            a.m_agentState,
             a.m_DDSPath,
             a.m_host,
-            a.m_lobbyLeader,
             a.m_startUpTime,
-            a.m_taskID,
             a.m_username
+            // a.m_nSlots
         );
     }
 
@@ -254,7 +253,8 @@ auto DDSSession::RequestTaskInfo() -> std::vector<DDSTask>
     std::vector<DDSTask> taskInfo;
     taskInfo.reserve(res.size());
     for (auto& a : res) {
-        taskInfo.emplace_back(a.m_taskID, 0);
+        //taskInfo.emplace_back(a.m_taskID, 0);
+        taskInfo.emplace_back(0, 0);
     }
 
     return taskInfo;

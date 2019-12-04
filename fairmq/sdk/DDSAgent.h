@@ -33,32 +33,24 @@ class DDSAgent
     explicit DDSAgent(DDSSession session,
                       Id id,
                       Pid pid,
-                      std::string state,
                       std::string path,
                       std::string host,
-                      bool lobbyLeader,
                       std::chrono::milliseconds startupTime,
-                      Id taskId,
                       std::string username)
         : fSession(std::move(session))
         , fId(id)
         , fPid(pid)
-        , fState(std::move(state))
         , fDDSPath(std::move(path))
         , fHost(std::move(host))
-        , fLobbyLeader(lobbyLeader)
         , fStartupTime(startupTime)
-        , fTaskId(taskId)
         , fUsername(std::move(username))
     {}
 
     DDSSession GetSession() const { return fSession; }
     Id GetId() const { return fId; }
     Pid GetPid() const { return fPid; }
-    std::string GetState() const { return fState; }
     std::string GetHost() const { return fHost; }
     std::string GetDDSPath() const { return fDDSPath; }
-    bool IsLobbyLeader() const { return fLobbyLeader; }
     std::chrono::milliseconds GetStartupTime() const { return fStartupTime; }
     std::string GetUsername() const { return fUsername; }
 
@@ -66,12 +58,9 @@ class DDSAgent
     {
         return os << "DDSAgent id: " << agent.fId
                   << ", pid: " << agent.fPid
-                  << ", state: " << agent.fState
                   << ", path: " << agent.fDDSPath
                   << ", host: " << agent.fHost
-                  << ", lobbyLeader: " << agent.fLobbyLeader
                   << ", startupTime: " << agent.fStartupTime.count()
-                  << ", taskId: " << agent.fTaskId
                   << ", username: " << agent.fUsername;
     }
 
@@ -79,12 +68,9 @@ class DDSAgent
     DDSSession fSession;
     Id fId;
     Pid fPid;
-    std::string fState;
     std::string fDDSPath;
     std::string fHost;
-    bool fLobbyLeader;
     std::chrono::milliseconds fStartupTime;
-    Id fTaskId;
     std::string fUsername;
 };
 
