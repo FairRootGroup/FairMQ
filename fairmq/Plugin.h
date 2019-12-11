@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -44,7 +44,11 @@ class Plugin
     using Version = tools::Version;
 
     Plugin() = delete;
-    Plugin(const std::string name, const Version version, const std::string maintainer, const std::string homepage, PluginServices* pluginServices);
+    Plugin(std::string name,
+           Version version,
+           std::string maintainer,
+           std::string homepage,
+           PluginServices* pluginServices);
 
     Plugin(const Plugin&) = delete;
     Plugin operator=(const Plugin&) = delete;
