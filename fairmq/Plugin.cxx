@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -8,15 +8,20 @@
 
 #include <fairmq/Plugin.h>
 #include <FairMQLogger.h>
+#include <utility>
 
 using namespace std;
 
-fair::mq::Plugin::Plugin(const string name, const Version version, const string maintainer, const string homepage, PluginServices* pluginServices)
-    : fkName{name}
+fair::mq::Plugin::Plugin(string name,
+                         Version version,
+                         string maintainer,
+                         string homepage,
+                         PluginServices* pluginServices)
+    : fkName(std::move(name))
     , fkVersion(version)
-    , fkMaintainer{maintainer}
-    , fkHomepage{homepage}
-    , fPluginServices{pluginServices}
+    , fkMaintainer(std::move(maintainer))
+    , fkHomepage(std::move(homepage))
+    , fPluginServices(pluginServices)
 {
     LOG(debug) << "Loaded plugin: " << *this;
 }
