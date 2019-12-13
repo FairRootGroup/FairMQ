@@ -8,15 +8,11 @@
 
 #include "DDSEnvironment.h"
 
+#include <cstdlib>
+#include <dds/dds.h>
+#include <fairlogger/Logger.h>
 #include <fairmq/Tools.h>
 #include <fairmq/sdk/DDSInfo.h>
-
-#include <fairlogger/Logger.h>
-
-#include <DDS/Tools.h>
-#include <DDS/dds_intercom.h>
-
-#include <cstdlib>
 #include <sstream>
 #include <utility>
 

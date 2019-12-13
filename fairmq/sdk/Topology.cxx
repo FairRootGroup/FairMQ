@@ -8,8 +8,7 @@
 
 #include "Topology.h"
 
-#include <DDS/Tools.h>
-#include <DDS/Topology.h>
+#include <dds/dds.h>
 
 namespace fair {
 namespace mq {

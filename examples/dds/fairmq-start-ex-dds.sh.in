@@ -36,20 +36,18 @@ if [[ "$plugin" == "ssh" ]]; then
 else
   dds-submit -r ${plugin} --slots ${requiredNofSlots}
 fi
-echo "...waiting for ${requiredNofSlots} slots..."
-@WAIT_COMMAND@ ${requiredNofSlots}
+echo "...waiting for ${requiredNofSlots} idle slots..."
+dds-info --idle-count --wait ${requiredNofSlots}
 
 topologyFile=@DATA_DIR@/ex-dds-topology.xml
 echo "TOPOLOGY FILE: ${topologyFile}"
-# TODO Uncomment once DDS 2.6 is released
-# echo "TOPOLOGY NAME: $(dds-topology --disable-validation --topology-name ${topologyFile})"
+echo "TOPOLOGY NAME: $(dds-topology --disable-validation --topology-name ${topologyFile})"
 
-# TODO Uncomment once DDS 2.6 is released
-# dds-info --active-topology
+dds-info --active-topology
 dds-topology --activate ${topologyFile}
-# dds-info --active-topology
-# dds-info --wait-for-executing-agents ${requiredNofSlots}
-sleep 1
+dds-info --active-topology
+echo "...waiting for ${requiredNofSlots} executing slots..."
+dds-info --executing-count --wait ${requiredNofSlots}
 
 echo "------------------------"
 echo "...waiting for Topology to finish..."
@@ -69,14 +67,13 @@ fairmq-dds-command-ui -c s -w "RUNNING->READY" -n ${requiredNofSlots}
 fairmq-dds-command-ui -c t -w "DEVICE READY" -n ${requiredNofSlots}
 fairmq-dds-command-ui -c d -w "IDLE" -n ${requiredNofSlots}
 fairmq-dds-command-ui -c q -w "EXITING" -n ${requiredNofSlots}
-echo "...waiting for ${requiredNofSlots} slots..."
-@WAIT_COMMAND@ ${requiredNofSlots}
+echo "...waiting for ${requiredNofSlots} idle slots..."
+dds-info --idle-count --wait ${requiredNofSlots}
 echo "------------------------"
 
-# TODO Uncomment once DDS 2.6 is released
-# dds-info --active-topology
+dds-info --active-topology
 dds-topology --stop
-# dds-info --active-topology
+dds-info --active-topology
 
 dds-agent-cmd getlog -a
 logDir="${wrkDir}/logs"

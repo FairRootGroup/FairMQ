@@ -9,18 +9,14 @@
 #include "DDSTopology.h"
 
 #include <boost/range/iterator_range.hpp>
-
-#include <fairmq/sdk/DDSEnvironment.h>
-#include <fairmq/Tools.h>
-
+#include <dds/dds.h>
 #include <fairlogger/Logger.h>
-
-#include <DDS/Topology.h>
-
+#include <fairmq/Tools.h>
+#include <fairmq/sdk/DDSEnvironment.h>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <utility>
-#include <memory>
 
 namespace fair {
 namespace mq {

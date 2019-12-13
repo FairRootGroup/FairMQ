@@ -85,21 +85,15 @@ if(BUILD_NANOMSG_TRANSPORT)
   )
 endif()
 
-if(BUILD_SDK)
-  set(required_dds_version 2.5.100)
-else()
-  set(required_dds_version 2.4)
-endif()
-
 if(BUILD_SDK_COMMANDS)
   find_package2(PRIVATE Flatbuffers REQUIRED)
 endif()
 
 if(BUILD_DDS_PLUGIN OR BUILD_SDK)
   find_package2(PRIVATE DDS REQUIRED
-    VERSION ${required_dds_version}
+    VERSION 3.0
   )
-  set(DDS_Boost_COMPONENTS system log log_setup)
+  set(DDS_Boost_COMPONENTS system log log_setup regex filesystem thread)
   set(DDS_Boost_VERSION 1.67)
 endif()
 

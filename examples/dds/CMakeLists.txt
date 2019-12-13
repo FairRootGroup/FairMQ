@@ -28,12 +28,6 @@ target_link_libraries(fairmq-ex-dds-sink PRIVATE ExampleDDSLib)
 
 add_custom_target(ExampleDDS DEPENDS fairmq-ex-dds-sampler fairmq-ex-dds-processor fairmq-ex-dds-sink)
 
-if(DDS_VERSION VERSION_LESS 2.5.25)
-    set(WAIT_COMMAND "dds-info --wait-for-idle-agents")
-else()
-    set(WAIT_COMMAND "dds-info --idle-count --wait")
-endif()
-
 set(BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_BINARY_DIR}/fairmq/plugins/DDS)
 set(DATA_DIR ${CMAKE_CURRENT_BINARY_DIR})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-dds-topology.xml ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology.xml @ONLY)
@@ -47,7 +41,6 @@ if(DDS_FOUND)
     add_test(NAME Example.DDS.localhost COMMAND ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-dds.sh localhost)
     set_tests_properties(Example.DDS.localhost PROPERTIES
     TIMEOUT 15
-    RUN_SERIAL true
     PASS_REGULAR_EXPRESSION "Example successful"
     )
 endif()

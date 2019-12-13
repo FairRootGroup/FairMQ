@@ -8,8 +8,7 @@
 
 #include "Fixtures.h"
 
-#include <DDS/Topology.h>
-#include <DDS/Tools.h>
+#include <dds/dds.h>
 
 namespace {
 
