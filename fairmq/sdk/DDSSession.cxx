@@ -8,11 +8,11 @@
 
 #include "DDSSession.h"
 
-#include <DDS/Tools.h>
 #include <boost/process.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <cassert>
 #include <cstdlib>
+#include <dds/dds.h>
 #include <fairlogger/Logger.h>
 #include <fairmq/Tools.h>
 #include <fairmq/sdk/DDSAgent.h>

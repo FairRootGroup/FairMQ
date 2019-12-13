@@ -9,8 +9,7 @@
 #include "Fixtures.h"
 
 #include <asio.hpp>
-#include <DDS/Topology.h>
-#include <DDS/Tools.h>
+#include <dds/dds.h>
 #include <fairmq/sdk/Topology.h>
 #include <fairmq/Tools.h>
 

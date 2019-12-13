@@ -13,8 +13,7 @@
 #include <fairmq/StateQueue.h>
 #include <fairmq/Version.h>
 
-#include <DDS/dds_env_prop.h>
-#include <DDS/dds_intercom.h>
+#include <dds/dds.h>
 
 #include <boost/asio/executor.hpp>
 #include <boost/asio/executor_work_guard.hpp>

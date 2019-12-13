@@ -9,7 +9,7 @@
 #include <fairmq/sdk/commands/Commands.h>
 #include <fairmq/States.h>
 
-#include <DDS/dds_intercom.h>
+#include <dds/dds.h>
 
 #include <boost/program_options.hpp>
 
