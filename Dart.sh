@@ -65,7 +65,7 @@ if [ "$1" == "alfa_ci" ]; then
   export ctest_model=Experimental
 elif [ "$1" == "codecov" ]; then
   export ctest_model=Profile
-  export do_codecov_upload=1
+  export do_codecov_upload=0
 else
   export ctest_model=$1
 fi
