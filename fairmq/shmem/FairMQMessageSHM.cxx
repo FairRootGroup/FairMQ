@@ -60,6 +60,27 @@ FairMQMessageSHM::FairMQMessageSHM(Manager& manager, const size_t size, FairMQTr
     InitializeChunk(size);
 }
 
+FairMQMessageSHM::FairMQMessageSHM(Manager& manager, MetaHeader* hdr, FairMQTransportFactory* factory)
+    : FairMQMessage{factory}
+    , fManager(manager)
+    , fMessage()
+    , fQueued(false)
+    , fMetaCreated(false)
+    , fRegionId(hdr->fRegionId)
+    , fRegionPtr(nullptr)
+    , fHandle(hdr->fHandle)
+    , fSize(hdr->fSize)
+    , fHint(hdr->fHint)
+    , fLocalPtr(nullptr)
+{
+    if (zmq_msg_init_size(&fMessage, sizeof(MetaHeader)) != 0) {
+        LOG(error) << "failed initializing message, reason: " << zmq_strerror(errno);
+    }
+    // fill the zmq buffer with the delivered meta data
+    memcpy(zmq_msg_data(&fMessage), hdr, sizeof(MetaHeader));
+    fMetaCreated = true;
+}
+
 FairMQMessageSHM::FairMQMessageSHM(Manager& manager, void* data, const size_t size, fairmq_free_fn* ffn, void* hint, FairMQTransportFactory* factory)
     : FairMQMessage{factory}
     , fManager(manager)

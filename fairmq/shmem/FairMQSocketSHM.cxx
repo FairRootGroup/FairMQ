@@ -213,10 +213,6 @@ int64_t FairMQSocketSHM::Send(vector<FairMQMessagePtr>& msgVec, const int timeou
     const unsigned int vecSize = msgVec.size();
     int elapsed = 0;
 
-    if (vecSize == 1) {
-        return Send(msgVec.back(), timeout);
-    }
-
     // put it into zmq message
     zmq_msg_t zmqMsg;
     zmq_msg_init_size(&zmqMsg, vecSize * sizeof(MetaHeader));
@@ -322,16 +318,8 @@ int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int tim
                 MetaHeader* hdr = &hdrVec[m];
 
                 // create new message (part)
-                msgVec.emplace_back(tools::make_unique<FairMQMessageSHM>(fManager, GetTransport()));
+                msgVec.emplace_back(tools::make_unique<FairMQMessageSHM>(fManager, hdr, GetTransport()));
                 FairMQMessageSHM* shmMsg = static_cast<FairMQMessageSHM*>(msgVec.back().get());
-                // fill the zmq buffer with the delivered meta data
-                memcpy(zmq_msg_data(shmMsg->GetMessage()), hdr, sizeof(MetaHeader));
-                // set the message members with the meta data
-                shmMsg->fHandle = hdr->fHandle;
-                shmMsg->fSize = hdr->fSize;
-                shmMsg->fRegionId = hdr->fRegionId;
-                shmMsg->fHint = hdr->fHint;
-
                 totalSize += shmMsg->GetSize();
             }
 
