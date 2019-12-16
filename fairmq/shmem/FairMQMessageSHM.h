@@ -21,6 +21,16 @@
 #include <atomic>
 
 class FairMQSocketSHM;
+namespace fair
+{
+namespace mq
+{
+namespace shmem
+{
+class MetaHeader;
+}
+}
+}
 
 class FairMQMessageSHM final : public FairMQMessage
 {
@@ -31,6 +41,8 @@ class FairMQMessageSHM final : public FairMQMessage
     FairMQMessageSHM(fair::mq::shmem::Manager& manager, const size_t size, FairMQTransportFactory* factory = nullptr);
     FairMQMessageSHM(fair::mq::shmem::Manager& manager, void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr, FairMQTransportFactory* factory = nullptr);
     FairMQMessageSHM(fair::mq::shmem::Manager& manager, FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, FairMQTransportFactory* factory = nullptr);
+
+    FairMQMessageSHM(fair::mq::shmem::Manager& manager, fair::mq::shmem::MetaHeader* hdr, FairMQTransportFactory* factory = nullptr);
 
     FairMQMessageSHM(const FairMQMessageSHM&) = delete;
     FairMQMessageSHM operator=(const FairMQMessageSHM&) = delete;
