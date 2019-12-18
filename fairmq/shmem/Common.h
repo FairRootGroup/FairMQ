@@ -77,8 +77,8 @@ struct MetaHeader
 {
     size_t fSize;
     size_t fRegionId;
-    boost::interprocess::managed_shared_memory::handle_t fHandle;
     size_t fHint;
+    boost::interprocess::managed_shared_memory::handle_t fHandle;
 };
 
 struct RegionBlock

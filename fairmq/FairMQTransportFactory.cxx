@@ -8,7 +8,7 @@
 
 #include <FairMQTransportFactory.h>
 #include <zeromq/FairMQTransportFactoryZMQ.h>
-#include <shmem/FairMQTransportFactorySHM.h>
+#include <fairmq/shmem/TransportFactory.h>
 #ifdef BUILD_NANOMSG_TRANSPORT
 #include <nanomsg/FairMQTransportFactoryNN.h>
 #endif /* BUILD_NANOMSG_TRANSPORT */
@@ -44,7 +44,7 @@ auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, con
     }
     else if (type == "shmem")
     {
-        return make_shared<FairMQTransportFactorySHM>(finalId, config);
+        return make_shared<fair::mq::shmem::TransportFactory>(finalId, config);
     }
 #ifdef BUILD_NANOMSG_TRANSPORT
     else if (type == "nanomsg")

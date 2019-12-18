@@ -6,13 +6,13 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIRMQUNMANAGEDREGIONSHM_H_
-#define FAIRMQUNMANAGEDREGIONSHM_H_
+#ifndef FAIR_MQ_SHMEM_UNMANAGEDREGION_H_
+#define FAIR_MQ_SHMEM_UNMANAGEDREGION_H_
 
-#include <fairmq/shmem/Manager.h>
+#include "Manager.h"
 
-#include "FairMQUnmanagedRegion.h"
-#include "FairMQLogger.h"
+#include <FairMQUnmanagedRegion.h>
+#include <FairMQLogger.h>
 
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
@@ -20,23 +20,37 @@
 #include <cstddef> // size_t
 #include <string>
 
-class FairMQUnmanagedRegionSHM final : public FairMQUnmanagedRegion
+namespace fair
 {
-    friend class FairMQSocketSHM;
-    friend class FairMQMessageSHM;
+namespace mq
+{
+namespace shmem
+{
+
+class Message;
+class Socket;
+
+class UnmanagedRegion final : public fair::mq::UnmanagedRegion
+{
+    friend class Message;
+    friend class Socket;
 
   public:
-    FairMQUnmanagedRegionSHM(fair::mq::shmem::Manager& manager, const size_t size, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0);
+    UnmanagedRegion(Manager& manager, const size_t size, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0);
 
     void* GetData() const override { return fRegion->get_address(); }
     size_t GetSize() const override { return fRegion->get_size(); }
 
-    ~FairMQUnmanagedRegionSHM() override { fManager.RemoveRegion(fRegionId); }
+    ~UnmanagedRegion() override { fManager.RemoveRegion(fRegionId); }
 
   private:
-    fair::mq::shmem::Manager& fManager;
+    Manager& fManager;
     boost::interprocess::mapped_region* fRegion;
     uint64_t fRegionId;
 };
 
-#endif /* FAIRMQUNMANAGEDREGIONSHM_H_ */
+}
+}
+}
+
+#endif /* FAIR_MQ_SHMEM_UNMANAGEDREGION_H_ */

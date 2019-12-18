@@ -6,21 +6,29 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * FairMQPollerSHM.cxx
+ * Poller.cxx
  *
  * @since 2014-01-23
  * @author A. Rybalchenko
  */
 
-#include "FairMQPollerSHM.h"
-#include "FairMQSocketSHM.h"
-#include "FairMQLogger.h"
+#include "Poller.h"
+#include "Socket.h"
+
+#include <FairMQLogger.h>
 
 #include <zmq.h>
 
 using namespace std;
 
-FairMQPollerSHM::FairMQPollerSHM(const vector<FairMQChannel>& channels)
+namespace fair
+{
+namespace mq
+{
+namespace shmem
+{
+
+Poller::Poller(const vector<FairMQChannel>& channels)
     : fItems()
     , fNumItems(0)
     , fOffsetMap()
@@ -30,19 +38,19 @@ FairMQPollerSHM::FairMQPollerSHM(const vector<FairMQChannel>& channels)
 
     for (int i = 0; i < fNumItems; ++i)
     {
-        fItems[i].socket = static_cast<const FairMQSocketSHM*>(&(channels.at(i).GetSocket()))->GetSocket();
+        fItems[i].socket = static_cast<const Socket*>(&(channels.at(i).GetSocket()))->GetSocket();
         fItems[i].fd = 0;
         fItems[i].revents = 0;
 
         int type = 0;
         size_t size = sizeof(type);
-        zmq_getsockopt(static_cast<const FairMQSocketSHM*>(&(channels.at(i).GetSocket()))->GetSocket(), ZMQ_TYPE, &type, &size);
+        zmq_getsockopt(static_cast<const Socket*>(&(channels.at(i).GetSocket()))->GetSocket(), ZMQ_TYPE, &type, &size);
 
         SetItemEvents(fItems[i], type);
     }
 }
 
-FairMQPollerSHM::FairMQPollerSHM(const vector<FairMQChannel*>& channels)
+Poller::Poller(const vector<FairMQChannel*>& channels)
     : fItems()
     , fNumItems(0)
     , fOffsetMap()
@@ -52,19 +60,19 @@ FairMQPollerSHM::FairMQPollerSHM(const vector<FairMQChannel*>& channels)
 
     for (int i = 0; i < fNumItems; ++i)
     {
-        fItems[i].socket = static_cast<const FairMQSocketSHM*>(&(channels.at(i)->GetSocket()))->GetSocket();
+        fItems[i].socket = static_cast<const Socket*>(&(channels.at(i)->GetSocket()))->GetSocket();
         fItems[i].fd = 0;
         fItems[i].revents = 0;
 
         int type = 0;
         size_t size = sizeof(type);
-        zmq_getsockopt(static_cast<const FairMQSocketSHM*>(&(channels.at(i)->GetSocket()))->GetSocket(), ZMQ_TYPE, &type, &size);
+        zmq_getsockopt(static_cast<const Socket*>(&(channels.at(i)->GetSocket()))->GetSocket(), ZMQ_TYPE, &type, &size);
 
         SetItemEvents(fItems[i], type);
     }
 }
 
-FairMQPollerSHM::FairMQPollerSHM(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList)
+Poller::Poller(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList)
     : fItems()
     , fNumItems(0)
     , fOffsetMap()
@@ -89,19 +97,19 @@ FairMQPollerSHM::FairMQPollerSHM(const unordered_map<string, vector<FairMQChanne
             {
                 index = fOffsetMap[channel] + i;
 
-                fItems[index].socket = static_cast<const FairMQSocketSHM*>(&(channelsMap.at(channel).at(i).GetSocket()))->GetSocket();
+                fItems[index].socket = static_cast<const Socket*>(&(channelsMap.at(channel).at(i).GetSocket()))->GetSocket();
                 fItems[index].fd = 0;
                 fItems[index].revents = 0;
 
                 int type = 0;
                 size_t size = sizeof(type);
-                zmq_getsockopt(static_cast<const FairMQSocketSHM*>(&(channelsMap.at(channel).at(i).GetSocket()))->GetSocket(), ZMQ_TYPE, &type, &size);
+                zmq_getsockopt(static_cast<const Socket*>(&(channelsMap.at(channel).at(i).GetSocket()))->GetSocket(), ZMQ_TYPE, &type, &size);
 
                 SetItemEvents(fItems[index], type);
             }
         }
     }
-    catch (const std::out_of_range& oor)
+    catch (const out_of_range& oor)
     {
         LOG(error) << "at least one of the provided channel keys for poller initialization is invalid";
         LOG(error) << "out of range error: " << oor.what() << '\n';
@@ -109,7 +117,7 @@ FairMQPollerSHM::FairMQPollerSHM(const unordered_map<string, vector<FairMQChanne
     }
 }
 
-void FairMQPollerSHM::SetItemEvents(zmq_pollitem_t& item, const int type)
+void Poller::SetItemEvents(zmq_pollitem_t& item, const int type)
 {
     if (type == ZMQ_REQ || type == ZMQ_REP || type == ZMQ_PAIR || type == ZMQ_DEALER || type == ZMQ_ROUTER)
     {
@@ -130,7 +138,7 @@ void FairMQPollerSHM::SetItemEvents(zmq_pollitem_t& item, const int type)
     }
 }
 
-void FairMQPollerSHM::Poll(const int timeout)
+void Poller::Poll(const int timeout)
 {
     if (zmq_poll(fItems, fNumItems, timeout) < 0)
     {
@@ -141,12 +149,12 @@ void FairMQPollerSHM::Poll(const int timeout)
         else
         {
             LOG(error) << "polling failed, reason: " << zmq_strerror(errno);
-            throw std::runtime_error("polling failed");
+            throw runtime_error("polling failed");
         }
     }
 }
 
-bool FairMQPollerSHM::CheckInput(const int index)
+bool Poller::CheckInput(const int index)
 {
     if (fItems[index].revents & ZMQ_POLLIN)
     {
@@ -156,7 +164,7 @@ bool FairMQPollerSHM::CheckInput(const int index)
     return false;
 }
 
-bool FairMQPollerSHM::CheckOutput(const int index)
+bool Poller::CheckOutput(const int index)
 {
     if (fItems[index].revents & ZMQ_POLLOUT)
     {
@@ -166,7 +174,7 @@ bool FairMQPollerSHM::CheckOutput(const int index)
     return false;
 }
 
-bool FairMQPollerSHM::CheckInput(const string& channelKey, const int index)
+bool Poller::CheckInput(const string& channelKey, const int index)
 {
     try
     {
@@ -177,7 +185,7 @@ bool FairMQPollerSHM::CheckInput(const string& channelKey, const int index)
 
         return false;
     }
-    catch (const std::out_of_range& oor)
+    catch (const out_of_range& oor)
     {
         LOG(error) << "invalid channel key: \"" << channelKey << "\"";
         LOG(error) << "out of range error: " << oor.what() << '\n';
@@ -185,7 +193,7 @@ bool FairMQPollerSHM::CheckInput(const string& channelKey, const int index)
     }
 }
 
-bool FairMQPollerSHM::CheckOutput(const string& channelKey, const int index)
+bool Poller::CheckOutput(const string& channelKey, const int index)
 {
     try
     {
@@ -196,7 +204,7 @@ bool FairMQPollerSHM::CheckOutput(const string& channelKey, const int index)
 
         return false;
     }
-    catch (const std::out_of_range& oor)
+    catch (const out_of_range& oor)
     {
         LOG(error) << "Invalid channel key: \"" << channelKey << "\"";
         LOG(error) << "out of range error: " << oor.what() << '\n';
@@ -204,7 +212,11 @@ bool FairMQPollerSHM::CheckOutput(const string& channelKey, const int index)
     }
 }
 
-FairMQPollerSHM::~FairMQPollerSHM()
+Poller::~Poller()
 {
     delete[] fItems;
+}
+
+}
+}
 }

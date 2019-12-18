@@ -31,7 +31,9 @@ namespace fair
 namespace mq
 {
 
-using UnmanagedRegionPtr = std::unique_ptr<FairMQUnmanagedRegion>;
+using RegionCallback = FairMQRegionCallback;
+using UnmanagedRegion = FairMQUnmanagedRegion;
+using UnmanagedRegionPtr = FairMQUnmanagedRegionPtr;
 
 } /* namespace mq */
 } /* namespace fair */

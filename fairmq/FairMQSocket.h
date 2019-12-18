@@ -22,7 +22,7 @@ class FairMQSocket
     FairMQSocket() {}
     FairMQSocket(FairMQTransportFactory* fac): fTransport(fac) {}
 
-    virtual std::string GetId() = 0;
+    virtual std::string GetId() const = 0;
 
     virtual bool Bind(const std::string& address) = 0;
     virtual bool Connect(const std::string& address) = 0;

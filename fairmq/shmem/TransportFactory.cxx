@@ -6,9 +6,9 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "FairMQLogger.h"
-#include "FairMQTransportFactorySHM.h"
+#include "TransportFactory.h"
 
+#include <FairMQLogger.h>
 #include <fairmq/Tools.h>
 
 #include <zmq.h>
@@ -26,15 +26,21 @@
 #include <cstdlib> // getenv
 
 using namespace std;
-using namespace fair::mq::shmem;
 
 namespace bpt = ::boost::posix_time;
 namespace bipc = ::boost::interprocess;
 
-fair::mq::Transport FairMQTransportFactorySHM::fTransportType = fair::mq::Transport::SHM;
+namespace fair
+{
+namespace mq
+{
+namespace shmem
+{
 
-FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const fair::mq::ProgOptions* config)
-    : FairMQTransportFactory(id)
+Transport TransportFactory::fTransportType = Transport::SHM;
+
+TransportFactory::TransportFactory(const string& id, const ProgOptions* config)
+    : fair::mq::TransportFactory(id)
     , fDeviceId(id)
     , fShmId()
     , fZMQContext(nullptr)
@@ -49,7 +55,7 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const fai
 
     fZMQContext = zmq_ctx_new();
     if (!fZMQContext) {
-        throw runtime_error(fair::mq::tools::ToString("failed creating context, reason: ", zmq_strerror(errno)));
+        throw runtime_error(tools::ToString("failed creating context, reason: ", zmq_strerror(errno)));
     }
 
     int numIoThreads = 1;
@@ -62,7 +68,7 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const fai
         segmentSize = config->GetProperty<size_t>("shm-segment-size", segmentSize);
         autolaunchMonitor = config->GetProperty<bool>("shm-monitor", autolaunchMonitor);
     } else {
-        LOG(debug) << "fair::mq::ProgOptions not available! Using defaults.";
+        LOG(debug) << "ProgOptions not available! Using defaults.";
     }
 
     fShmId = buildShmIdFromSessionIdAndUserId(sessionName);
@@ -81,18 +87,18 @@ FairMQTransportFactorySHM::FairMQTransportFactorySHM(const string& id, const fai
             Manager::StartMonitor(fShmId);
         }
 
-        fManager = fair::mq::tools::make_unique<Manager>(fShmId, segmentSize);
+        fManager = tools::make_unique<Manager>(fShmId, segmentSize);
 
     } catch (bipc::interprocess_exception& e) {
         LOG(error) << "Could not initialize shared memory transport: " << e.what();
-        throw runtime_error(fair::mq::tools::ToString("Could not initialize shared memory transport: ", e.what()));
+        throw runtime_error(tools::ToString("Could not initialize shared memory transport: ", e.what()));
     }
 
     fSendHeartbeats = true;
-    fHeartbeatThread = thread(&FairMQTransportFactorySHM::SendHeartbeats, this);
+    fHeartbeatThread = thread(&TransportFactory::SendHeartbeats, this);
 }
 
-void FairMQTransportFactorySHM::SendHeartbeats()
+void TransportFactory::SendHeartbeats()
 {
     string controlQueueName("fmq_" + fShmId + "_cq");
     while (fSendHeartbeats) {
@@ -111,58 +117,58 @@ void FairMQTransportFactorySHM::SendHeartbeats()
     }
 }
 
-FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage()
+MessagePtr TransportFactory::CreateMessage()
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, this));
+    return tools::make_unique<Message>(*fManager, this);
 }
 
-FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(const size_t size)
+MessagePtr TransportFactory::CreateMessage(const size_t size)
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, size, this));
+    return tools::make_unique<Message>(*fManager, size, this);
 }
 
-FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
+MessagePtr TransportFactory::CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint)
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, data, size, ffn, hint, this));
+    return tools::make_unique<Message>(*fManager, data, size, ffn, hint, this);
 }
 
-FairMQMessagePtr FairMQTransportFactorySHM::CreateMessage(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint)
+MessagePtr TransportFactory::CreateMessage(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint)
 {
-    return unique_ptr<FairMQMessage>(new FairMQMessageSHM(*fManager, region, data, size, hint, this));
+    return tools::make_unique<Message>(*fManager, region, data, size, hint, this);
 }
 
-FairMQSocketPtr FairMQTransportFactorySHM::CreateSocket(const string& type, const string& name)
+SocketPtr TransportFactory::CreateSocket(const string& type, const string& name)
 {
     assert(fZMQContext);
-    return unique_ptr<FairMQSocket>(new FairMQSocketSHM(*fManager, type, name, GetId(), fZMQContext, this));
+    return tools::make_unique<Socket>(*fManager, type, name, GetId(), fZMQContext, this);
 }
 
-FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const vector<FairMQChannel>& channels) const
+PollerPtr TransportFactory::CreatePoller(const vector<FairMQChannel>& channels) const
 {
-    return unique_ptr<FairMQPoller>(new FairMQPollerSHM(channels));
+    return tools::make_unique<Poller>(channels);
 }
 
-FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const vector<FairMQChannel*>& channels) const
+PollerPtr TransportFactory::CreatePoller(const vector<FairMQChannel*>& channels) const
 {
-    return unique_ptr<FairMQPoller>(new FairMQPollerSHM(channels));
+    return tools::make_unique<Poller>(channels);
 }
 
-FairMQPollerPtr FairMQTransportFactorySHM::CreatePoller(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList) const
+PollerPtr TransportFactory::CreatePoller(const unordered_map<string, vector<FairMQChannel>>& channelsMap, const vector<string>& channelList) const
 {
-    return unique_ptr<FairMQPoller>(new FairMQPollerSHM(channelsMap, channelList));
+    return tools::make_unique<Poller>(channelsMap, channelList);
 }
 
-FairMQUnmanagedRegionPtr FairMQTransportFactorySHM::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */) const
+UnmanagedRegionPtr TransportFactory::CreateUnmanagedRegion(const size_t size, RegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */) const
 {
-    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionSHM(*fManager, size, callback, path, flags));
+    return tools::make_unique<UnmanagedRegion>(*fManager, size, callback, path, flags);
 }
 
-fair::mq::Transport FairMQTransportFactorySHM::GetType() const
+Transport TransportFactory::GetType() const
 {
     return fTransportType;
 }
 
-FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
+TransportFactory::~TransportFactory()
 {
     LOG(debug) << "Destroying Shared Memory transport...";
     fSendHeartbeats = false;
@@ -181,3 +187,7 @@ FairMQTransportFactorySHM::~FairMQTransportFactorySHM()
         LOG(error) << "context not available for shutdown";
     }
 }
+
+} // namespace shmem
+} // namespace mq
+} // namespace fair

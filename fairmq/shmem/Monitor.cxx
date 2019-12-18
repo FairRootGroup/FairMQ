@@ -6,8 +6,9 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <fairmq/shmem/Monitor.h>
-#include <fairmq/shmem/Common.h>
+#include "Monitor.h"
+#include "Common.h"
+
 #include <fairmq/Tools.h>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
@@ -275,7 +276,7 @@ void Monitor::CheckSegment()
         unsigned int numDevices = 0;
 
         if (fInteractive) {
-            fair::mq::shmem::DeviceCounter* dc = managementSegment.find<fair::mq::shmem::DeviceCounter>(bipc::unique_instance).first;
+            DeviceCounter* dc = managementSegment.find<DeviceCounter>(bipc::unique_instance).first;
             if (dc) {
                 numDevices = dc->fCount;
             }

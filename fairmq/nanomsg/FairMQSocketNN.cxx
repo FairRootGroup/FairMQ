@@ -91,11 +91,6 @@ FairMQSocketNN::FairMQSocketNN(const string& type, const string& name, const str
     LOG(debug) << "Created socket " << GetId();
 }
 
-string FairMQSocketNN::GetId()
-{
-    return fId;
-}
-
 bool FairMQSocketNN::Bind(const string& address)
 {
     // LOG(info) << "bind socket " << fId << " on " << address;

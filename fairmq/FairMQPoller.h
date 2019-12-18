@@ -31,8 +31,8 @@ namespace fair
 namespace mq
 {
 
-using PollerPtr = std::unique_ptr<FairMQPoller>;
-
+using Poller = FairMQPoller;
+using PollerPtr = FairMQPollerPtr;
 struct PollerError : std::runtime_error { using std::runtime_error::runtime_error; };
 
 } /* namespace mq */
