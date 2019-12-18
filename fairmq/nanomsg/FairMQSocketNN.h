@@ -23,7 +23,7 @@ class FairMQSocketNN final : public FairMQSocket
     FairMQSocketNN(const FairMQSocketNN&) = delete;
     FairMQSocketNN operator=(const FairMQSocketNN&) = delete;
 
-    std::string GetId() override;
+    std::string GetId() const override { return fId; }
 
     bool Bind(const std::string& address) override;
     bool Connect(const std::string& address) override;

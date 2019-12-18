@@ -6,7 +6,7 @@
 *                  copied verbatim in the file "LICENSE"                       *
 ********************************************************************************/
 /**
-* FairMQShmManager.h
+* Region.h
 *
 * @since 2016-04-08
 * @author A. Rybalchenko
@@ -15,10 +15,10 @@
 #ifndef FAIR_MQ_SHMEM_REGION_H_
 #define FAIR_MQ_SHMEM_REGION_H_
 
-#include "FairMQLogger.h"
-#include "FairMQUnmanagedRegion.h"
+#include "Common.h"
 
-#include <fairmq/shmem/Common.h>
+#include <FairMQLogger.h>
+#include <FairMQUnmanagedRegion.h>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/file_mapping.hpp>
@@ -40,7 +40,7 @@ class Manager;
 
 struct Region
 {
-    Region(Manager& manager, uint64_t id, uint64_t size, bool remote, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0);
+    Region(Manager& manager, uint64_t id, uint64_t size, bool remote, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0);
 
     Region() = delete;
 
@@ -75,7 +75,7 @@ struct Region
 
     std::thread fReceiveAcksWorker;
     std::thread fSendAcksWorker;
-    FairMQRegionCallback fCallback;
+    RegionCallback fCallback;
 };
 
 } // namespace shmem

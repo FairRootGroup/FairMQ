@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 /**
- * FairMQShmManager.h
+ * Manager.h
  *
  * @since 2016-04-08
  * @author A. Rybalchenko
@@ -15,11 +15,10 @@
 #ifndef FAIR_MQ_SHMEM_MANAGER_H_
 #define FAIR_MQ_SHMEM_MANAGER_H_
 
-#include <fairmq/shmem/Region.h>
-#include <fairmq/shmem/Common.h>
+#include "Region.h"
+#include "Common.h"
 
-#include "FairMQLogger.h"
-#include "FairMQMessage.h"
+#include <FairMQLogger.h>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
@@ -64,7 +63,7 @@ class Manager
     int IncrementDeviceCounter();
     int DecrementDeviceCounter();
 
-    boost::interprocess::mapped_region* CreateRegion(const size_t size, const uint64_t id, FairMQRegionCallback callback, const std::string& path = "", int flags = 0);
+    boost::interprocess::mapped_region* CreateRegion(const size_t size, const uint64_t id, RegionCallback callback, const std::string& path = "", int flags = 0);
     Region* GetRemoteRegion(const uint64_t id);
     void RemoveRegion(const uint64_t id);
 
@@ -77,7 +76,7 @@ class Manager
     boost::interprocess::managed_shared_memory fSegment;
     boost::interprocess::managed_shared_memory fManagementSegment;
     boost::interprocess::named_mutex fShmMtx;
-    fair::mq::shmem::DeviceCounter* fDeviceCounter;
+    DeviceCounter* fDeviceCounter;
     static std::unordered_map<uint64_t, std::unique_ptr<Region>> fRegions;
 };
 

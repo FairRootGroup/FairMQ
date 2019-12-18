@@ -43,7 +43,7 @@ class Socket final : public fair::mq::Socket
     Socket(const Socket&) = delete;
     Socket operator=(const Socket&) = delete;
 
-    auto GetId() -> std::string { return fId; }
+    auto GetId() const -> std::string override { return fId; }
 
     auto Bind(const std::string& address) -> bool override;
     auto Connect(const std::string& address) -> bool override;

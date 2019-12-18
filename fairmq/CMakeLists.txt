@@ -192,11 +192,11 @@ if(BUILD_FAIRMQ)
     plugins/Builtin.h
     plugins/config/Config.h
     plugins/Control.h
-    shmem/FairMQMessageSHM.h
-    shmem/FairMQPollerSHM.h
-    shmem/FairMQUnmanagedRegionSHM.h
-    shmem/FairMQSocketSHM.h
-    shmem/FairMQTransportFactorySHM.h
+    shmem/Message.h
+    shmem/Poller.h
+    shmem/UnmanagedRegion.h
+    shmem/Socket.h
+    shmem/TransportFactory.h
     shmem/Common.h
     shmem/Manager.h
     shmem/Region.h
@@ -253,11 +253,11 @@ if(BUILD_FAIRMQ)
     SuboptParser.cxx
     plugins/config/Config.cxx
     plugins/Control.cxx
-    shmem/FairMQMessageSHM.cxx
-    shmem/FairMQPollerSHM.cxx
-    shmem/FairMQUnmanagedRegionSHM.cxx
-    shmem/FairMQSocketSHM.cxx
-    shmem/FairMQTransportFactorySHM.cxx
+    shmem/Message.cxx
+    shmem/Poller.cxx
+    shmem/UnmanagedRegion.cxx
+    shmem/Socket.cxx
+    shmem/TransportFactory.cxx
     shmem/Manager.cxx
     shmem/Region.cxx
     zeromq/FairMQMessageZMQ.cxx

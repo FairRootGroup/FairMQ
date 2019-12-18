@@ -5,32 +5,35 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-#ifndef FAIRMQPOLLERSHM_H_
-#define FAIRMQPOLLERSHM_H_
+#ifndef FAIR_MQ_SHMEM_POLLER_H_
+#define FAIR_MQ_SHMEM_POLLER_H_
+
+#include <zmq.h>
+
+#include <FairMQPoller.h>
+#include <FairMQChannel.h>
 
 #include <vector>
 #include <unordered_map>
 
-#include <zmq.h>
-
-#include "FairMQPoller.h"
-#include "FairMQChannel.h"
-#include "FairMQTransportFactorySHM.h"
-
 class FairMQChannel;
 
-class FairMQPollerSHM final : public FairMQPoller
+namespace fair
 {
-    friend class FairMQChannel;
-    friend class FairMQTransportFactorySHM;
+namespace mq
+{
+namespace shmem
+{
 
+class Poller final : public fair::mq::Poller
+{
   public:
-    FairMQPollerSHM(const std::vector<FairMQChannel>& channels);
-    FairMQPollerSHM(const std::vector<FairMQChannel*>& channels);
-    FairMQPollerSHM(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList);
+    Poller(const std::vector<FairMQChannel>& channels);
+    Poller(const std::vector<FairMQChannel*>& channels);
+    Poller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList);
 
-    FairMQPollerSHM(const FairMQPollerSHM&) = delete;
-    FairMQPollerSHM operator=(const FairMQPollerSHM&) = delete;
+    Poller(const Poller&) = delete;
+    Poller operator=(const Poller&) = delete;
 
     void SetItemEvents(zmq_pollitem_t& item, const int type);
 
@@ -40,7 +43,7 @@ class FairMQPollerSHM final : public FairMQPoller
     bool CheckInput(const std::string& channelKey, const int index) override;
     bool CheckOutput(const std::string& channelKey, const int index) override;
 
-    ~FairMQPollerSHM() override;
+    ~Poller() override;
 
   private:
     zmq_pollitem_t* fItems;
@@ -49,4 +52,8 @@ class FairMQPollerSHM final : public FairMQPoller
     std::unordered_map<std::string, int> fOffsetMap;
 };
 
-#endif /* FAIRMQPOLLERSHM_H_ */
+}
+}
+}
+
+#endif /* FAIR_MQ_SHMEM_POLLER_H_ */

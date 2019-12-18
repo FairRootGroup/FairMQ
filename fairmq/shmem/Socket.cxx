@@ -5,12 +5,13 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-#include "Common.h"
 
-#include "FairMQSocketSHM.h"
-#include "FairMQMessageSHM.h"
-#include "FairMQUnmanagedRegionSHM.h"
-#include "FairMQLogger.h"
+#include "Common.h"
+#include "Socket.h"
+#include "Message.h"
+#include "UnmanagedRegion.h"
+
+#include <FairMQLogger.h>
 #include <fairmq/Tools.h>
 
 #include <zmq.h>
@@ -18,13 +19,31 @@
 #include <stdexcept>
 
 using namespace std;
-using namespace fair::mq::shmem;
-using namespace fair::mq;
 
-atomic<bool> FairMQSocketSHM::fInterrupted(false);
+namespace fair
+{
+namespace mq
+{
+namespace shmem
+{
 
-FairMQSocketSHM::FairMQSocketSHM(Manager& manager, const string& type, const string& name, const string& id /*= ""*/, void* context, FairMQTransportFactory* fac /*=nullptr*/)
-    : FairMQSocket{fac}
+atomic<bool> Socket::fInterrupted(false);
+
+struct ZMsg
+{
+    ZMsg()            { int rc __attribute__((unused)) = zmq_msg_init(&fMsg);            assert(rc == 0); }
+    explicit ZMsg(size_t size) { int rc __attribute__((unused)) = zmq_msg_init_size(&fMsg, size); assert(rc == 0); }
+    ~ZMsg()           { int rc __attribute__((unused)) = zmq_msg_close(&fMsg);           assert(rc == 0); }
+
+    void* Data()      { return zmq_msg_data(&fMsg); }
+    size_t Size()     { return zmq_msg_size(&fMsg); }
+    zmq_msg_t* Msg()  { return &fMsg; }
+
+    zmq_msg_t fMsg;
+};
+
+Socket::Socket(Manager& manager, const string& type, const string& name, const string& id /*= ""*/, void* context, FairMQTransportFactory* fac /*=nullptr*/)
+    : fair::mq::Socket{fac}
     , fSocket(nullptr)
     , fManager(manager)
     , fId(id + "." + name + "." + type)
@@ -40,7 +59,7 @@ FairMQSocketSHM::FairMQSocketSHM(Manager& manager, const string& type, const str
 
     if (fSocket == nullptr) {
         LOG(error) << "Failed creating socket " << fId << ", reason: " << zmq_strerror(errno);
-        exit(EXIT_FAILURE);
+        throw SocketError(tools::ToString("Failed creating socket ", fId, ", reason: ", zmq_strerror(errno)));
     }
 
     if (zmq_setsockopt(fSocket, ZMQ_IDENTITY, fId.c_str(), fId.length()) != 0) {
@@ -72,16 +91,14 @@ FairMQSocketSHM::FairMQSocketSHM(Manager& manager, const string& type, const str
 
     if (type == "sub" || type == "pub") {
         LOG(error) << "PUB/SUB socket type is not supported for shared memory transport";
-        throw fair::mq::SocketError("PUB/SUB socket type is not supported for shared memory transport");
+        throw SocketError("PUB/SUB socket type is not supported for shared memory transport");
     }
-
     LOG(debug) << "Created socket " << GetId();
 }
 
-bool FairMQSocketSHM::Bind(const string& address)
+bool Socket::Bind(const string& address)
 {
     // LOG(info) << "binding socket " << fId << " on " << address;
-
     if (zmq_bind(fSocket, address.c_str()) != 0) {
         if (errno == EADDRINUSE) {
             // do not print error in this case, this is handled by FairMQDevice in case no connection could be established after trying a number of random ports from a range.
@@ -93,19 +110,17 @@ bool FairMQSocketSHM::Bind(const string& address)
     return true;
 }
 
-bool FairMQSocketSHM::Connect(const string& address)
+bool Socket::Connect(const string& address)
 {
     // LOG(info) << "connecting socket " << fId << " on " << address;
-
     if (zmq_connect(fSocket, address.c_str()) != 0) {
         LOG(error) << "Failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
         return false;
     }
-
     return true;
 }
 
-int FairMQSocketSHM::Send(FairMQMessagePtr& msg, const int timeout)
+int Socket::Send(MessagePtr& msg, const int timeout)
 {
     int flags = 0;
     if (timeout == 0) {
@@ -113,16 +128,17 @@ int FairMQSocketSHM::Send(FairMQMessagePtr& msg, const int timeout)
     }
     int elapsed = 0;
 
+    Message* shmMsg = static_cast<Message*>(msg.get());
+    ZMsg zmqMsg(sizeof(MetaHeader));
+    std::memcpy(zmqMsg.Data(), &(shmMsg->fMeta), sizeof(MetaHeader));
+
     while (true && !fInterrupted) {
-        int nbytes = zmq_msg_send(static_cast<FairMQMessageSHM*>(msg.get())->GetMessage(), fSocket, flags);
-        if (nbytes == 0) {
+        int nbytes = zmq_msg_send(zmqMsg.Msg(), fSocket, flags);
+        if (nbytes > 0) {
+            shmMsg->fQueued = true;
             ++fMessagesTx;
-            return nbytes;
-        } else if (nbytes > 0) {
-            static_cast<FairMQMessageSHM*>(msg.get())->fQueued = true;
             size_t size = msg->GetSize();
             fBytesTx += size;
-            ++fMessagesTx;
             return size;
         } else if (zmq_errno() == EAGAIN) {
             if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0)) {
@@ -140,7 +156,7 @@ int FairMQSocketSHM::Send(FairMQMessagePtr& msg, const int timeout)
             LOG(info) << "terminating socket " << fId;
             return -1;
         } else {
-            LOG(error) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
             return nbytes;
         }
     }
@@ -148,7 +164,7 @@ int FairMQSocketSHM::Send(FairMQMessagePtr& msg, const int timeout)
     return -1;
 }
 
-int FairMQSocketSHM::Receive(FairMQMessagePtr& msg, const int timeout)
+int Socket::Receive(MessagePtr& msg, const int timeout)
 {
     int flags = 0;
     if (timeout == 0) {
@@ -156,28 +172,18 @@ int FairMQSocketSHM::Receive(FairMQMessagePtr& msg, const int timeout)
     }
     int elapsed = 0;
 
+    ZMsg zmqMsg;
+
     while (true) {
-        FairMQMessageSHM* shmMsg = static_cast<FairMQMessageSHM*>(msg.get());
-        zmq_msg_t* zmqMsg = shmMsg->GetMessage();
-        int nbytes = zmq_msg_recv(zmqMsg, fSocket, flags);
-        if (nbytes == 0) {
-            ++fMessagesRx;
-            return nbytes;
-        } else if (nbytes > 0) {
+        Message* shmMsg = static_cast<Message*>(msg.get());
+        int nbytes = zmq_msg_recv(zmqMsg.Msg(), fSocket, flags);
+        if (nbytes > 0) {
             // check for number of received messages. must be 1
-            const auto numMsgs = nbytes / sizeof(MetaHeader);
-            if (numMsgs > 1) {
-                LOG(error) << "Receiving SHM multipart with a single message receive call";
-            }
+            assert((nbytes / sizeof(MetaHeader)) == 1);
 
-            assert(numMsgs == 1);
-
-            MetaHeader* hdr = static_cast<MetaHeader*>(zmq_msg_data(zmqMsg));
+            MetaHeader* hdr = static_cast<MetaHeader*>(zmqMsg.Data());
             size_t size = hdr->fSize;
-            shmMsg->fHandle = hdr->fHandle;
-            shmMsg->fSize = size;
-            shmMsg->fRegionId = hdr->fRegionId;
-            shmMsg->fHint = hdr->fHint;
+            shmMsg->fMeta = *hdr;
 
             fBytesRx += size;
             ++fMessagesRx;
@@ -198,95 +204,74 @@ int FairMQSocketSHM::Receive(FairMQMessagePtr& msg, const int timeout)
             LOG(info) << "terminating socket " << fId;
             return -1;
         } else {
-            LOG(error) << "Failed receiving on socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed receiving on socket " << fId << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
             return nbytes;
         }
     }
 }
 
-int64_t FairMQSocketSHM::Send(vector<FairMQMessagePtr>& msgVec, const int timeout)
+int64_t Socket::Send(vector<MessagePtr>& msgVec, const int timeout)
 {
     int flags = 0;
     if (timeout == 0) {
         flags = ZMQ_DONTWAIT;
     }
-    const unsigned int vecSize = msgVec.size();
     int elapsed = 0;
 
     // put it into zmq message
-    zmq_msg_t zmqMsg;
-    zmq_msg_init_size(&zmqMsg, vecSize * sizeof(MetaHeader));
+    const unsigned int vecSize = msgVec.size();
+    ZMsg zmqMsg(vecSize * sizeof(MetaHeader));
 
     // prepare the message with shm metas
-    MetaHeader* metas = static_cast<MetaHeader*>(zmq_msg_data(&zmqMsg));
+    MetaHeader* metas = static_cast<MetaHeader*>(zmqMsg.Data());
 
     for (auto& msg : msgVec) {
-        zmq_msg_t* metaMsg = static_cast<FairMQMessageSHM*>(msg.get())->GetMessage();
-        if (zmq_msg_size(metaMsg) > 0) {
-            memcpy(metas++, zmq_msg_data(metaMsg), sizeof(MetaHeader));
-        } else {
-            // if the message is empty, create meta data to reflect this
-            // (always creating meta data for empty messages would add an unnecessary allocation for the receive case, so we do it lazily here)
-            MetaHeader hdr;
-            hdr.fSize = 0;
-            hdr.fHandle = -1;
-            hdr.fRegionId = 0;
-            hdr.fHint = 0;
-            memcpy(metas++, &hdr, sizeof(MetaHeader));
-        }
+        Message* shmMsg = static_cast<Message*>(msg.get());
+        std::memcpy(metas++, &(shmMsg->fMeta), sizeof(MetaHeader));
     }
 
     while (!fInterrupted) {
         int64_t totalSize = 0;
-        int nbytes = zmq_msg_send(&zmqMsg, fSocket, flags);
-        if (nbytes == 0) {
-            zmq_msg_close(&zmqMsg);
-            return nbytes;
-        } else if (nbytes > 0) {
+        int nbytes = zmq_msg_send(zmqMsg.Msg(), fSocket, flags);
+        if (nbytes > 0) {
             assert(static_cast<unsigned int>(nbytes) == (vecSize * sizeof(MetaHeader))); // all or nothing
 
             for (auto& msg : msgVec) {
-                FairMQMessageSHM* shmMsg = static_cast<FairMQMessageSHM*>(msg.get());
+                Message* shmMsg = static_cast<Message*>(msg.get());
                 shmMsg->fQueued = true;
-                totalSize += shmMsg->fSize;
+                totalSize += shmMsg->fMeta.fSize;
             }
 
             // store statistics on how many messages have been sent
             fMessagesTx++;
             fBytesTx += totalSize;
 
-            zmq_msg_close(&zmqMsg);
             return totalSize;
         } else if (zmq_errno() == EAGAIN) {
             if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0)) {
                 if (timeout > 0) {
                     elapsed += fSndTimeout;
                     if (elapsed >= timeout) {
-                        zmq_msg_close(&zmqMsg);
                         return -2;
                     }
                 }
                 continue;
             } else {
-                zmq_msg_close(&zmqMsg);
                 return -2;
             }
         } else if (zmq_errno() == ETERM) {
-            zmq_msg_close(&zmqMsg);
             LOG(info) << "terminating socket " << fId;
             return -1;
         } else {
-            zmq_msg_close(&zmqMsg);
-            LOG(error) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
             return nbytes;
         }
     }
 
-    zmq_msg_close(&zmqMsg);
     return -1;
 }
 
-int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int timeout)
+int64_t Socket::Receive(vector<MessagePtr>& msgVec, const int timeout)
 {
     int flags = 0;
     if (timeout == 0) {
@@ -294,18 +279,14 @@ int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int tim
     }
     int elapsed = 0;
 
-    zmq_msg_t zmqMsg;
-    zmq_msg_init(&zmqMsg);
+    ZMsg zmqMsg;
 
     while (!fInterrupted) {
         int64_t totalSize = 0;
-        int nbytes = zmq_msg_recv(&zmqMsg, fSocket, flags);
-        if (nbytes == 0) {
-            zmq_msg_close(&zmqMsg);
-            return 0;
-        } else if (nbytes > 0) {
-            MetaHeader* hdrVec = static_cast<MetaHeader*>(zmq_msg_data(&zmqMsg));
-            const auto hdrVecSize = zmq_msg_size(&zmqMsg);
+        int nbytes = zmq_msg_recv(zmqMsg.Msg(), fSocket, flags);
+        if (nbytes > 0) {
+            MetaHeader* hdrVec = static_cast<MetaHeader*>(zmqMsg.Data());
+            const auto hdrVecSize = zmqMsg.Size();
             assert(hdrVecSize > 0);
             assert(hdrVecSize % sizeof(MetaHeader) == 0);
 
@@ -314,12 +295,9 @@ int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int tim
             msgVec.reserve(numMessages);
 
             for (size_t m = 0; m < numMessages; m++) {
-                // get the meta data pointer
-                MetaHeader* hdr = &hdrVec[m];
-
                 // create new message (part)
-                msgVec.emplace_back(tools::make_unique<FairMQMessageSHM>(fManager, hdr, GetTransport()));
-                FairMQMessageSHM* shmMsg = static_cast<FairMQMessageSHM*>(msgVec.back().get());
+                msgVec.emplace_back(tools::make_unique<Message>(fManager, hdrVec[m], GetTransport()));
+                Message* shmMsg = static_cast<Message*>(msgVec.back().get());
                 totalSize += shmMsg->GetSize();
             }
 
@@ -327,34 +305,29 @@ int64_t FairMQSocketSHM::Receive(vector<FairMQMessagePtr>& msgVec, const int tim
             fMessagesRx++;
             fBytesRx += totalSize;
 
-            zmq_msg_close(&zmqMsg);
             return totalSize;
         } else if (zmq_errno() == EAGAIN) {
             if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0)) {
                 if (timeout > 0) {
                     elapsed += fRcvTimeout;
                     if (elapsed >= timeout) {
-                        zmq_msg_close(&zmqMsg);
                         return -2;
                     }
                 }
                 continue;
             } else {
-                zmq_msg_close(&zmqMsg);
                 return -2;
             }
         } else {
-            zmq_msg_close(&zmqMsg);
-            LOG(error) << "Failed receiving on socket " << fId << ", reason: " << zmq_strerror(errno);
+            LOG(error) << "Failed receiving on socket " << fId << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
             return nbytes;
         }
     }
 
-    zmq_msg_close(&zmqMsg);
     return -1;
 }
 
-void FairMQSocketSHM::Close()
+void Socket::Close()
 {
     // LOG(debug) << "Closing socket " << fId;
 
@@ -369,42 +342,42 @@ void FairMQSocketSHM::Close()
     fSocket = nullptr;
 }
 
-void FairMQSocketSHM::Interrupt()
+void Socket::Interrupt()
 {
     Manager::Interrupt();
-    FairMQMessageSHM::fInterrupted = true;
+    Message::fInterrupted = true;
     fInterrupted = true;
 }
 
-void FairMQSocketSHM::Resume()
+void Socket::Resume()
 {
     Manager::Resume();
-    FairMQMessageSHM::fInterrupted = false;
+    Message::fInterrupted = false;
     fInterrupted = false;
 }
 
-void FairMQSocketSHM::SetOption(const string& option, const void* value, size_t valueSize)
+void Socket::SetOption(const string& option, const void* value, size_t valueSize)
 {
     if (zmq_setsockopt(fSocket, GetConstant(option), value, valueSize) < 0) {
         LOG(error) << "Failed setting socket option, reason: " << zmq_strerror(errno);
     }
 }
 
-void FairMQSocketSHM::GetOption(const string& option, void* value, size_t* valueSize)
+void Socket::GetOption(const string& option, void* value, size_t* valueSize)
 {
     if (zmq_getsockopt(fSocket, GetConstant(option), value, valueSize) < 0) {
         LOG(error) << "Failed getting socket option, reason: " << zmq_strerror(errno);
     }
 }
 
-void FairMQSocketSHM::SetLinger(const int value)
+void Socket::SetLinger(const int value)
 {
     if (zmq_setsockopt(fSocket, ZMQ_LINGER, &value, sizeof(value)) < 0) {
         throw SocketError(tools::ToString("failed setting ZMQ_LINGER, reason: ", zmq_strerror(errno)));
     }
 }
 
-int FairMQSocketSHM::GetLinger() const
+int Socket::GetLinger() const
 {
     int value = 0;
     size_t valueSize = sizeof(value);
@@ -414,14 +387,14 @@ int FairMQSocketSHM::GetLinger() const
     return value;
 }
 
-void FairMQSocketSHM::SetSndBufSize(const int value)
+void Socket::SetSndBufSize(const int value)
 {
     if (zmq_setsockopt(fSocket, ZMQ_SNDHWM, &value, sizeof(value)) < 0) {
         throw SocketError(tools::ToString("failed setting ZMQ_SNDHWM, reason: ", zmq_strerror(errno)));
     }
 }
 
-int FairMQSocketSHM::GetSndBufSize() const
+int Socket::GetSndBufSize() const
 {
     int value = 0;
     size_t valueSize = sizeof(value);
@@ -431,14 +404,14 @@ int FairMQSocketSHM::GetSndBufSize() const
     return value;
 }
 
-void FairMQSocketSHM::SetRcvBufSize(const int value)
+void Socket::SetRcvBufSize(const int value)
 {
     if (zmq_setsockopt(fSocket, ZMQ_RCVHWM, &value, sizeof(value)) < 0) {
         throw SocketError(tools::ToString("failed setting ZMQ_RCVHWM, reason: ", zmq_strerror(errno)));
     }
 }
 
-int FairMQSocketSHM::GetRcvBufSize() const
+int Socket::GetRcvBufSize() const
 {
     int value = 0;
     size_t valueSize = sizeof(value);
@@ -448,14 +421,14 @@ int FairMQSocketSHM::GetRcvBufSize() const
     return value;
 }
 
-void FairMQSocketSHM::SetSndKernelSize(const int value)
+void Socket::SetSndKernelSize(const int value)
 {
     if (zmq_setsockopt(fSocket, ZMQ_SNDBUF, &value, sizeof(value)) < 0) {
         throw SocketError(tools::ToString("failed getting ZMQ_SNDBUF, reason: ", zmq_strerror(errno)));
     }
 }
 
-int FairMQSocketSHM::GetSndKernelSize() const
+int Socket::GetSndKernelSize() const
 {
     int value = 0;
     size_t valueSize = sizeof(value);
@@ -465,14 +438,14 @@ int FairMQSocketSHM::GetSndKernelSize() const
     return value;
 }
 
-void FairMQSocketSHM::SetRcvKernelSize(const int value)
+void Socket::SetRcvKernelSize(const int value)
 {
     if (zmq_setsockopt(fSocket, ZMQ_RCVBUF, &value, sizeof(value)) < 0) {
         throw SocketError(tools::ToString("failed getting ZMQ_RCVBUF, reason: ", zmq_strerror(errno)));
     }
 }
 
-int FairMQSocketSHM::GetRcvKernelSize() const
+int Socket::GetRcvKernelSize() const
 {
     int value = 0;
     size_t valueSize = sizeof(value);
@@ -482,7 +455,7 @@ int FairMQSocketSHM::GetRcvKernelSize() const
     return value;
 }
 
-int FairMQSocketSHM::GetConstant(const string& constant)
+int Socket::GetConstant(const string& constant)
 {
     if (constant == "") return 0;
     if (constant == "sub") return ZMQ_SUB;
@@ -509,4 +482,8 @@ int FairMQSocketSHM::GetConstant(const string& constant)
     if (constant == "snd-more no-block") return ZMQ_DONTWAIT|ZMQ_SNDMORE;
 
     return -1;
+}
+
+}
+}
 }

@@ -24,7 +24,7 @@ class FairMQSocketZMQ final : public FairMQSocket
     FairMQSocketZMQ(const FairMQSocketZMQ&) = delete;
     FairMQSocketZMQ operator=(const FairMQSocketZMQ&) = delete;
 
-    std::string GetId() override;
+    std::string GetId() const override { return fId; }
 
     bool Bind(const std::string& address) override;
     bool Connect(const std::string& address) override;

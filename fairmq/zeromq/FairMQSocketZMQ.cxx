@@ -74,11 +74,6 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const s
     LOG(debug) << "Created socket " << GetId();
 }
 
-string FairMQSocketZMQ::GetId()
-{
-    return fId;
-}
-
 bool FairMQSocketZMQ::Bind(const string& address)
 {
     // LOG(info) << "bind socket " << fId << " on " << address;

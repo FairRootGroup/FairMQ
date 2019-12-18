@@ -6,8 +6,9 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <fairmq/shmem/Manager.h>
-#include <fairmq/shmem/Common.h>
+#include "Manager.h"
+#include "Common.h"
+
 #include <fairmq/tools/CppSTL.h>
 #include <fairmq/tools/Strings.h>
 
@@ -83,7 +84,7 @@ void Manager::StartMonitor(const std::string& id)
                     this_thread::sleep_for(chrono::milliseconds(10));
                     if (++numTries > 1000) {
                         LOG(error) << "Did not get response from fairmq-shmmonitor after " << 10 * 1000 << " milliseconds. Exiting.";
-                        throw runtime_error(fair::mq::tools::ToString("Did not get response from fairmq-shmmonitor after ", 10 * 1000, " milliseconds. Exiting."));
+                        throw runtime_error(tools::ToString("Did not get response from fairmq-shmmonitor after ", 10 * 1000, " milliseconds. Exiting."));
                     }
                 }
             } while (true);
@@ -109,7 +110,7 @@ void Manager::Resume()
     }
 }
 
-bipc::mapped_region* Manager::CreateRegion(const size_t size, const uint64_t id, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)
+bipc::mapped_region* Manager::CreateRegion(const size_t size, const uint64_t id, RegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)
 {
     auto it = fRegions.find(id);
     if (it != fRegions.end()) {
@@ -125,7 +126,7 @@ bipc::mapped_region* Manager::CreateRegion(const size_t size, const uint64_t id,
         }
         // LOG(debug) << "Created region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
 
-        auto r = fRegions.emplace(id, fair::mq::tools::make_unique<Region>(*this, id, size, false, callback, path, flags));
+        auto r = fRegions.emplace(id, tools::make_unique<Region>(*this, id, size, false, callback, path, flags));
 
         r.first->second->StartReceivingAcks();
 
@@ -158,7 +159,7 @@ Region* Manager::GetRemoteRegion(const uint64_t id)
             }
             // LOG(debug) << "Located remote region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
 
-            auto r = fRegions.emplace(id, fair::mq::tools::make_unique<Region>(*this, id, 0, true, nullptr, path, flags));
+            auto r = fRegions.emplace(id, tools::make_unique<Region>(*this, id, 0, true, nullptr, path, flags));
             return r.first->second.get();
         } catch (bie& e) {
             LOG(warn) << "Could not get remote region for id: " << id;

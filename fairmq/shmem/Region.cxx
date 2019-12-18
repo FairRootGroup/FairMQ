@@ -6,17 +6,18 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <fairmq/shmem/Region.h>
-#include <fairmq/shmem/Common.h>
-#include <fairmq/shmem/Manager.h>
+#include "Region.h"
+#include "Common.h"
+#include "Manager.h"
+
 #include <fairmq/tools/CppSTL.h>
 #include <fairmq/tools/Strings.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/process.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <cerrno>
 
+#include <cerrno>
 #include <chrono>
 
 using namespace std;
@@ -31,7 +32,7 @@ namespace mq
 namespace shmem
 {
 
-Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, FairMQRegionCallback callback, const string& path /* = "" */, int flags /* = 0 */)
+Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, RegionCallback callback, const string& path /* = "" */, int flags /* = 0 */)
     : fManager(manager)
     , fRemote(remote)
     , fStop(false)

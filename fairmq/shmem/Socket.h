@@ -5,34 +5,42 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-#ifndef FAIRMQSOCKETSHM_H_
-#define FAIRMQSOCKETSHM_H_
+#ifndef FAIR_MQ_SHMEM_SOCKET_H_
+#define FAIR_MQ_SHMEM_SOCKET_H_
 
-#include "FairMQSocket.h"
-#include "FairMQMessage.h"
+#include "Manager.h"
 
-#include <fairmq/shmem/Manager.h>
+#include <FairMQSocket.h>
+#include <FairMQMessage.h>
 
 #include <atomic>
 #include <memory> // unique_ptr
+
 class FairMQTransportFactory;
 
-class FairMQSocketSHM final : public FairMQSocket
+namespace fair
+{
+namespace mq
+{
+namespace shmem
+{
+
+class Socket final : public fair::mq::Socket
 {
   public:
-    FairMQSocketSHM(fair::mq::shmem::Manager& manager, const std::string& type, const std::string& name, const std::string& id = "", void* context = nullptr, FairMQTransportFactory* fac = nullptr);
-    FairMQSocketSHM(const FairMQSocketSHM&) = delete;
-    FairMQSocketSHM operator=(const FairMQSocketSHM&) = delete;
+    Socket(Manager& manager, const std::string& type, const std::string& name, const std::string& id = "", void* context = nullptr, FairMQTransportFactory* fac = nullptr);
+    Socket(const Socket&) = delete;
+    Socket operator=(const Socket&) = delete;
 
-    std::string GetId() override { return fId; }
+    std::string GetId() const override { return fId; }
 
     bool Bind(const std::string& address) override;
     bool Connect(const std::string& address) override;
 
-    int Send(FairMQMessagePtr& msg, const int timeout = -1) override;
-    int Receive(FairMQMessagePtr& msg, const int timeout = -1) override;
-    int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int timeout = -1) override;
-    int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, const int timeout = -1) override;
+    int Send(MessagePtr& msg, const int timeout = -1) override;
+    int Receive(MessagePtr& msg, const int timeout = -1) override;
+    int64_t Send(std::vector<MessagePtr>& msgVec, const int timeout = -1) override;
+    int64_t Receive(std::vector<MessagePtr>& msgVec, const int timeout = -1) override;
 
     void* GetSocket() const { return fSocket; }
 
@@ -62,11 +70,11 @@ class FairMQSocketSHM final : public FairMQSocket
 
     static int GetConstant(const std::string& constant);
 
-    ~FairMQSocketSHM() override { Close(); }
+    ~Socket() override { Close(); }
 
   private:
     void* fSocket;
-    fair::mq::shmem::Manager& fManager;
+    Manager& fManager;
     std::string fId;
     std::atomic<unsigned long> fBytesTx;
     std::atomic<unsigned long> fBytesRx;
@@ -79,4 +87,8 @@ class FairMQSocketSHM final : public FairMQSocket
     int fRcvTimeout;
 };
 
-#endif /* FAIRMQSOCKETSHM_H_ */
+}
+}
+}
+
+#endif /* FAIR_MQ_SHMEM_SOCKET_H_ */

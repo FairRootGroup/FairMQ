@@ -7,15 +7,20 @@
  ********************************************************************************/
 
 #include "Common.h"
-
-#include "FairMQUnmanagedRegionSHM.h"
+#include "UnmanagedRegion.h"
 
 using namespace std;
-using namespace fair::mq::shmem;
 
 namespace bipc = ::boost::interprocess;
 
-FairMQUnmanagedRegionSHM::FairMQUnmanagedRegionSHM(Manager& manager, const size_t size, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)
+namespace fair
+{
+namespace mq
+{
+namespace shmem
+{
+
+UnmanagedRegion::UnmanagedRegion(Manager& manager, const size_t size, RegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)
     : fManager(manager)
     , fRegion(nullptr)
     , fRegionId(0)
@@ -40,4 +45,8 @@ FairMQUnmanagedRegionSHM::FairMQUnmanagedRegionSHM(Manager& manager, const size_
         LOG(error) << e.what();
         throw;
     }
+}
+
+}
+}
 }
