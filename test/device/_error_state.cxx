@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 #include <boost/process.hpp>
 #include <fairmq/Tools.h>
+#include <FairMQDevice.h>
 
 #include <string>
 #include <thread>
@@ -22,6 +23,39 @@ namespace
 using namespace std;
 using namespace fair::mq::test;
 using namespace fair::mq::tools;
+
+class BadDevice : public FairMQDevice
+{
+  public:
+    BadDevice()
+    {
+        fDeviceThread = thread([&](){
+            EXPECT_THROW(RunStateMachine(), fair::mq::MessageError);
+        });
+
+        SetTransport("shmem");
+
+        ChangeState(fair::mq::Transition::InitDevice);
+        WaitForState(fair::mq::State::InitializingDevice);
+        ChangeState(fair::mq::Transition::CompleteInit);
+        WaitForState(fair::mq::State::Initialized);
+
+        parts.AddPart(NewMessage());
+    }
+
+    ~BadDevice()
+    {
+        ChangeState(fair::mq::Transition::ResetDevice);
+
+        if (fDeviceThread.joinable()) {
+            fDeviceThread.join();
+        }
+    }
+
+  private:
+    thread fDeviceThread;
+    FairMQParts parts;
+};
 
 void RunErrorStateIn(const string& state, const string& control, const string& input = "")
 {
@@ -116,6 +150,11 @@ TEST(ErrorState, interactive_InResetTask)
 TEST(ErrorState, interactive_InReset)
 {
     EXPECT_EXIT(RunErrorStateIn("Reset", "interactive", "q"), ::testing::ExitedWithCode(1), "");
+}
+
+TEST(ErrorState, OrphanMessages)
+{
+    BadDevice badDevice;
 }
 
 } // namespace

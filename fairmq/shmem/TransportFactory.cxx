@@ -47,6 +47,7 @@ TransportFactory::TransportFactory(const string& id, const ProgOptions* config)
     , fManager(nullptr)
     , fHeartbeatThread()
     , fSendHeartbeats(true)
+    , fMsgCounter(0)
 {
     int major, minor, patch;
     zmq_version(&major, &minor, &patch);
@@ -167,6 +168,15 @@ Transport TransportFactory::GetType() const
 {
     return fTransportType;
 }
+
+void TransportFactory::Reset()
+{
+    if (fMsgCounter.load() != 0) {
+        LOG(error) << "Message counter during Reset expected to be 0, found: " << fMsgCounter.load();
+        throw MessageError(tools::ToString("Message counter during Reset expected to be 0, found: ", fMsgCounter.load()));
+    }
+}
+
 
 TransportFactory::~TransportFactory()
 {
