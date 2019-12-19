@@ -6,6 +6,8 @@ maxIterations="0"
 msgSize="1000000"
 transport="zeromq"
 affinity="false"
+multipart="false"
+numParts="1"
 affinitySamp=""
 affinitySink=""
 
@@ -24,6 +26,14 @@ fi
 
 if [[ $4 =~ ^[a-z]+$ ]]; then
     affinity=$4
+fi
+
+if [[ $5 =~ ^[a-z]+$ ]]; then
+    multipart=$5
+fi
+
+if [[ $6 =~ ^[0-9]+$ ]]; then
+    numParts=$6
 fi
 
 
@@ -58,7 +68,8 @@ SAMPLER+=" --id bsampler1"
 SAMPLER+=" --transport $transport"
 SAMPLER+=" --severity debug"
 SAMPLER+=" --msg-size $msgSize"
-SAMPLER+=" --num-parts 1"
+SAMPLER+=" --multipart $multipart"
+SAMPLER+=" --num-parts $numParts"
 # SAMPLER+=" --msg-rate 1000"
 SAMPLER+=" --max-iterations $maxIterations"
 SAMPLER+=" --channel-config name=data,type=pair,method=bind,address=tcp://127.0.0.1:5555"
@@ -73,7 +84,7 @@ SINK+=" --id sink1"
 #SINK+=" --control static"
 SINK+=" --transport $transport"
 SINK+=" --severity debug"
-SINK+=" --multipart false"
+SINK+=" --multipart $multipart"
 SINK+=" --max-iterations $maxIterations"
 SINK+=" --channel-config name=data,type=pair,method=connect,address=tcp://127.0.0.1:5555"
 xterm -geometry 90x50+550+0 -hold -e $affinitySink @CMAKE_CURRENT_BINARY_DIR@/$SINK &
