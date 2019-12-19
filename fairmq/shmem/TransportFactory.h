@@ -55,7 +55,10 @@ class TransportFactory final : public fair::mq::TransportFactory
 
     void Interrupt() override { Socket::Interrupt(); }
     void Resume() override { Socket::Resume(); }
-    void Reset() override {}
+    void Reset() override;
+
+    void IncrementMsgCounter() { ++fMsgCounter; }
+    void DecrementMsgCounter() { --fMsgCounter; }
 
     ~TransportFactory() override;
 
@@ -69,6 +72,7 @@ class TransportFactory final : public fair::mq::TransportFactory
     std::unique_ptr<Manager> fManager;
     std::thread fHeartbeatThread;
     std::atomic<bool> fSendHeartbeats;
+    std::atomic<int32_t> fMsgCounter;
 };
 
 } // namespace shmem

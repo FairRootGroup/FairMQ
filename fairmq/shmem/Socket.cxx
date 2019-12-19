@@ -10,6 +10,7 @@
 #include "Socket.h"
 #include "Message.h"
 #include "UnmanagedRegion.h"
+#include "TransportFactory.h"
 
 #include <FairMQLogger.h>
 #include <fairmq/Tools.h>

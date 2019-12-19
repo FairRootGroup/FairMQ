@@ -9,6 +9,7 @@
 #include "Region.h"
 #include "Message.h"
 #include "UnmanagedRegion.h"
+#include "TransportFactory.h"
 
 #include <FairMQLogger.h>
 
@@ -39,6 +40,7 @@ Message::Message(Manager& manager, FairMQTransportFactory* factory)
     , fRegionPtr(nullptr)
     , fLocalPtr(nullptr)
 {
+    static_cast<TransportFactory*>(GetTransport())->IncrementMsgCounter();
 }
 
 Message::Message(Manager& manager, const size_t size, FairMQTransportFactory* factory)
@@ -50,6 +52,7 @@ Message::Message(Manager& manager, const size_t size, FairMQTransportFactory* fa
     , fLocalPtr(nullptr)
 {
     InitializeChunk(size);
+    static_cast<TransportFactory*>(GetTransport())->IncrementMsgCounter();
 }
 
 Message::Message(Manager& manager, MetaHeader& hdr, FairMQTransportFactory* factory)
@@ -60,6 +63,7 @@ Message::Message(Manager& manager, MetaHeader& hdr, FairMQTransportFactory* fact
     , fRegionPtr(nullptr)
     , fLocalPtr(nullptr)
 {
+    static_cast<TransportFactory*>(GetTransport())->IncrementMsgCounter();
 }
 
 Message::Message(Manager& manager, void* data, const size_t size, fairmq_free_fn* ffn, void* hint, FairMQTransportFactory* factory)
@@ -78,6 +82,7 @@ Message::Message(Manager& manager, void* data, const size_t size, fairmq_free_fn
             free(data);
         }
     }
+    static_cast<TransportFactory*>(GetTransport())->IncrementMsgCounter();
 }
 
 Message::Message(Manager& manager, UnmanagedRegionPtr& region, void* data, const size_t size, void* hint, FairMQTransportFactory* factory)
@@ -95,6 +100,7 @@ Message::Message(Manager& manager, UnmanagedRegionPtr& region, void* data, const
         LOG(error) << "trying to create region message with data from outside the region";
         throw runtime_error("trying to create region message with data from outside the region");
     }
+    static_cast<TransportFactory*>(GetTransport())->IncrementMsgCounter();
 }
 
 bool Message::InitializeChunk(const size_t size)
@@ -225,6 +231,8 @@ void Message::CloseMessage()
             }
         }
     }
+
+    static_cast<TransportFactory*>(GetTransport())->DecrementMsgCounter();
 }
 
 }
