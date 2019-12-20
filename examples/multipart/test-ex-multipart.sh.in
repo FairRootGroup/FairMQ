@@ -20,7 +20,7 @@ SAMPLER+=" --verbosity veryhigh"
 SAMPLER+=" --session $SESSION"
 SAMPLER+=" --max-iterations 1"
 SAMPLER+=" --control static --color false"
-SAMPLER+=" --channel-config name=data,type=pair,method=connect,rateLogging=0,address=tcp://127.0.0.1:5555"
+SAMPLER+=" --channel-config name=data,type=pair,method=connect,rateLogging=0,address=tcp://127.0.0.1:5555,linger=1000"
 @CMAKE_CURRENT_BINARY_DIR@/$SAMPLER &
 SAMPLER_PID=$!
 
