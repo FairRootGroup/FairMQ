@@ -6,16 +6,6 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-####################
-# external plugins #
-####################
-if(BUILD_DDS_PLUGIN)
-  add_subdirectory(plugins/DDS)
-endif()
-if(BUILD_PMIX_PLUGIN)
-  add_subdirectory(plugins/PMIx)
-endif()
-
 if(BUILD_FAIRMQ OR BUILD_SDK)
   ###########
   # Version #
@@ -472,4 +462,14 @@ endif()
 
 if(BUILD_SDK)
   add_subdirectory(sdk)
+endif()
+
+####################
+# external plugins #
+####################
+if(BUILD_DDS_PLUGIN)
+  add_subdirectory(plugins/DDS)
+endif()
+if(BUILD_PMIX_PLUGIN)
+  add_subdirectory(plugins/PMIx)
 endif()

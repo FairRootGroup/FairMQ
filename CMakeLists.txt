@@ -18,7 +18,7 @@ get_git_version()
 project(FairMQ VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 message(STATUS "${BWhite}${PROJECT_NAME}${CR} ${PROJECT_GIT_VERSION} from ${PROJECT_DATE}")
 
-if(BUILD_OFI_TRANSPORT OR BUILD_SDK)
+if(BUILD_OFI_TRANSPORT OR BUILD_SDK OR BUILD_PMIX_PLUGIN)
   set(PROJECT_MIN_CXX_STANDARD 14)
 else()
   set(PROJECT_MIN_CXX_STANDARD 11)
@@ -44,7 +44,7 @@ fairmq_build_option(BUILD_SDK_COMMANDS      "Build the FairMQ SDK commands."
 fairmq_build_option(BUILD_DDS_PLUGIN        "Build DDS plugin."
                                              DEFAULT OFF REQUIRES "BUILD_FAIRMQ;BUILD_SDK_COMMANDS")
 fairmq_build_option(BUILD_PMIX_PLUGIN       "Build PMIx plugin."
-                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
+                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ;BUILD_SDK_COMMANDS")
 fairmq_build_option(BUILD_EXAMPLES          "Build FairMQ examples."
                                              DEFAULT ON  REQUIRES "BUILD_FAIRMQ")
 fairmq_build_option(BUILD_SDK               "Build the FairMQ controller SDK."
@@ -397,9 +397,9 @@ else()
 endif()
 message(STATUS "  ${BWhite}dds_plugin${CR}         ${dds_summary}")
 if(BUILD_PMIX_PLUGIN)
-  set(pmix_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_PMIX_PLUGIN=OFF${CR})")
+  set(pmix_summary "${BGreen}YES${CR}    EXPERIMENTAL (requires C++14) (disable with ${BMagenta}-DBUILD_PMIX_PLUGIN=OFF${CR})")
 else()
-  set(pmix_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_PMIX_PLUGIN=ON${CR})")
+  set(pmix_summary "${BRed} NO${CR}    EXPERIMENTAL (requires C++14) (default, enable with ${BMagenta}-DBUILD_PMIX_PLUGIN=ON${CR})")
 endif()
 message(STATUS "  ${BWhite}pmix_plugin${CR}        ${pmix_summary}")
 if(BUILD_EXAMPLES)

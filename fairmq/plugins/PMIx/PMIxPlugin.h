@@ -10,6 +10,7 @@
 #define FAIR_MQ_PLUGINS_PMIX
 
 #include "PMIx.hpp"
+#include "PMIxCommands.h"
 
 #include <fairmq/Plugin.h>
 #include <fairmq/Version.h>
@@ -39,23 +40,40 @@ class PMIxPlugin : public Plugin
          const std::string& homepage,
          PluginServices* pluginServices);
     ~PMIxPlugin();
-    auto PMIxClient() const -> std::string;
+
+    auto PMIxClient() const -> std::string { return fPMIxClient; };
 
   private:
-    pmix::proc fProc;
+    pmix::proc fProcess;
     pid_t fPid;
+    std::string fPMIxClient;
+    std::string fDeviceId;
+    pmix::Commands fCommands;
 
-    auto Init() -> void;
+    std::set<uint32_t> fStateChangeSubscribers;
+    uint32_t fLastExternalController;
+    bool fExitingAckedByLastExternalController;
+    std::condition_variable fExitingAcked;
+    std::mutex fStateChangeSubscriberMutex;
+
+    DeviceState fCurrentState;
+    DeviceState fLastState;
+
+    auto Init() -> pmix::proc;
     auto Publish() -> void;
     auto Fence() -> void;
+    auto Fence(const std::string& label) -> void;
     auto Lookup() -> void;
+
+    auto SubscribeForCommands() -> void;
+    auto WaitForExitingAck() -> void;
 };
 
 Plugin::ProgOptions PMIxProgramOptions()
 {
-    boost::program_options::options_description options{"PMIx Plugin"};
-    options.add_options()(
-        "pmix-dummy", boost::program_options::value<int>()->default_value(0), "Dummy.");
+    boost::program_options::options_description options("PMIx Plugin");
+    options.add_options()
+        ("pmix-dummy", boost::program_options::value<int>()->default_value(0), "Dummy.");
     return options;
 }
 
