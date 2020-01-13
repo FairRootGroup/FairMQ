@@ -20,7 +20,7 @@ using namespace std;
 using namespace fair::mq;
 
 template<typename T>
-T GetPropertyOrDefault(const fair::mq::Properties& m, const string& k, const T& ifNotFound) noexcept
+T GetPropertyOrDefault(const fair::mq::Properties& m, const string& k, const T& ifNotFound)
 {
     if (m.count(k)) {
         return boost::any_cast<T>(m.at(k));
