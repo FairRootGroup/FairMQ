@@ -79,7 +79,9 @@ struct Machine_ : public state_machine_def<Machine_>
 {
   public:
     Machine_()
-        : fLastTransitionResult(true)
+        : fState(State::Ok)
+        , fNewState(State::Ok)
+        , fLastTransitionResult(true)
         , fNewStatePending(false)
     {}
 
