@@ -133,26 +133,31 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan, const string& newName)
 
 FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
 {
-    fTransportFactory = nullptr;
-    fTransportType = chan.fTransportType;
-    fSocket = nullptr;
-    fName = chan.fName;
-    fType = chan.fType;
-    fMethod = chan.fMethod;
-    fAddress = chan.fAddress;
-    fSndBufSize = chan.fSndBufSize;
-    fRcvBufSize = chan.fRcvBufSize;
-    fSndKernelSize = chan.fSndKernelSize;
-    fRcvKernelSize = chan.fRcvKernelSize;
-    fLinger = chan.fLinger;
-    fRateLogging = chan.fRateLogging;
-    fPortRangeMin = chan.fPortRangeMin;
-    fPortRangeMax = chan.fPortRangeMax;
-    fAutoBind = chan.fAutoBind;
-    fIsValid = false;
-    fMultipart = chan.fMultipart;
-    fModified = chan.fModified;
-    fReset = false;
+    {
+        lock_guard<mutex> lock1(fMtx);
+        lock_guard<mutex> lock2(chan.fMtx);
+
+        fTransportFactory = nullptr;
+        fTransportType = chan.fTransportType;
+        fSocket = nullptr;
+        fName = chan.fName;
+        fType = chan.fType;
+        fMethod = chan.fMethod;
+        fAddress = chan.fAddress;
+        fSndBufSize = chan.fSndBufSize;
+        fRcvBufSize = chan.fRcvBufSize;
+        fSndKernelSize = chan.fSndKernelSize;
+        fRcvKernelSize = chan.fRcvKernelSize;
+        fLinger = chan.fLinger;
+        fRateLogging = chan.fRateLogging;
+        fPortRangeMin = chan.fPortRangeMin;
+        fPortRangeMax = chan.fPortRangeMax;
+        fAutoBind = chan.fAutoBind;
+        fIsValid = false;
+        fMultipart = chan.fMultipart;
+        fModified = chan.fModified;
+        fReset = false;
+    }
 
     return *this;
 }
