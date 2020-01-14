@@ -235,6 +235,17 @@ void Message::CloseMessage()
     static_cast<TransportFactory*>(GetTransport())->DecrementMsgCounter();
 }
 
+Message::~Message()
+{
+    try {
+        CloseMessage();
+    } catch(SharedMemoryError& sme) {
+        LOG(error) << "error closing message: " << sme.what();
+    } catch(bipc::lock_exception& le) {
+        LOG(error) << "error closing message: " << le.what();
+    }
+}
+
 }
 }
 }

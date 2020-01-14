@@ -56,7 +56,7 @@ class Message final : public fair::mq::Message
 
     void Copy(const fair::mq::Message& msg) override;
 
-    ~Message() override { CloseMessage(); }
+    ~Message() override;
 
   private:
     Manager& fManager;
