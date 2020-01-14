@@ -463,6 +463,8 @@ void Monitor::Cleanup(const string& shmId)
         RemoveObject(managementSegmentName.c_str());
     } catch (bie&) {
         cout << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup." << endl;
+    } catch(std::out_of_range& oor) {
+        cout << "Could not locate element in the region map, out of range: " << oor.what() << endl;
     }
 
     RemoveObject("fmq_" + shmId + "_main");
