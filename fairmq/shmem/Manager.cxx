@@ -193,7 +193,7 @@ Manager::~Manager()
 {
     bool lastRemoved = false;
 
-    {
+    try {
         bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
 
         (fDeviceCounter->fCount)--;
@@ -206,6 +206,8 @@ Manager::~Manager()
         } else {
             LOG(debug) << "other segment users present (" << fDeviceCounter->fCount << "), not removing it.";
         }
+    } catch(bie& e) {
+        LOG(error) << "error while acquiring lock in Manager destructor: " << e.what();
     }
 
     if (lastRemoved) {
