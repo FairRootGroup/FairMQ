@@ -133,9 +133,15 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan, const string& newName)
 
 FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
 {
+    if (this == &chan) {
+        return *this;
+    }
+
     {
-        lock_guard<mutex> lock1(fMtx);
-        lock_guard<mutex> lock2(chan.fMtx);
+        // TODO: replace this with std::scoped_lock (c++17)
+        lock(fMtx, chan.fMtx);
+        lock_guard<mutex> lock1(fMtx, adopt_lock);
+        lock_guard<mutex> lock2(chan.fMtx, adopt_lock);
 
         fTransportFactory = nullptr;
         fTransportType = chan.fTransportType;
