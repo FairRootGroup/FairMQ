@@ -6,27 +6,30 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include <fairlogger/Logger.h>
 #include <fairmq/tools/Network.h>
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE // To get defns of NI_MAXSERV and NI_MAXHOST
 #endif
 
-#include <algorithm>
-#include <array>
 #include <boost/algorithm/string.hpp>   // trim
 #include <boost/asio.hpp>
-#include <cstdio>
-#include <exception>
-#include <fairlogger/Logger.h>
+
 #include <ifaddrs.h>
-#include <iostream>
-#include <map>
 #include <netdb.h>
-#include <stdexcept>
-#include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdio>
+#include <exception>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <stdexcept>
+#include <string>
 
 using namespace std;
 
@@ -98,6 +101,30 @@ string getDefaultRouteNetworkInterface()
 #ifdef __APPLE__ // MacOS
     unique_ptr<FILE, decltype(pclose) *> file(popen("route -n get default | grep interface | cut -d \":\" -f 2", "r"), pclose);
 #else // Linux
+    ifstream is("/proc/net/route");
+    string line;
+
+    // discard header
+    getline(is, line);
+
+    // check each line, until 00000000 destination is found
+    while (!is.eof()) {
+        getline(is, line);
+        size_t pos = line.find('\t');
+
+        if (pos == string::npos) {
+            break;
+        }
+
+        if (line.substr(pos + 1, 8) == "00000000") {
+            interfaceName = line.substr(0, pos);
+            LOG(debug) << "Detected network interface name for the default route: " << interfaceName;
+            return interfaceName;
+        }
+    }
+
+    LOG(debug) << "could not get network interface of the default route from /proc/net/route, going to try via 'ip route'";
+
     unique_ptr<FILE, decltype(pclose) *> file(popen("ip route | grep default | cut -d \" \" -f 5 | head -n 1", "r"), pclose);
 #endif
 
@@ -115,7 +142,8 @@ string getDefaultRouteNetworkInterface()
     boost::algorithm::trim(interfaceName);
 
     if (interfaceName.empty()) {
-        LOG(error) << "Could not detect default route network interface name";
+        LOG(debug) << "Could not detect default route network interface name from /proc/net/route nor 'ip route'";
+        throw DefaultRouteDetectionError("Could not detect default route network interface name from /proc/net/route nor 'ip route'");
     } else {
         LOG(debug) << "Detected network interface name for the default route: " << interfaceName;
     }

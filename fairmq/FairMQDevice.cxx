@@ -299,10 +299,15 @@ void FairMQDevice::InitWrapper()
                 // if binding address is not specified, try getting it from the configured network interface
                 if (subChannel.fAddress == "unspecified" || subChannel.fAddress == "") {
                     // if the configured network interface is default, get its name from the default route
-                    if (networkInterface == "default") {
-                        networkInterface = tools::getDefaultRouteNetworkInterface();
+                    try {
+                        if (networkInterface == "default") {
+                            networkInterface = tools::getDefaultRouteNetworkInterface();
+                        }
+                        subChannel.fAddress = "tcp://" + tools::getInterfaceIP(networkInterface) + ":1";
+                    } catch(const tools::DefaultRouteDetectionError& e) {
+                        LOG(debug) << "binding on tcp://*:1";
+                        subChannel.fAddress = "tcp://*:1";
                     }
-                    subChannel.fAddress = "tcp://" + tools::getInterfaceIP(networkInterface) + ":1";
                 }
                 // fill the uninitialized list
                 fUninitializedBindingChannels.push_back(&subChannel);
