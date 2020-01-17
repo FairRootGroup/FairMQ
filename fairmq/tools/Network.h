@@ -11,6 +11,7 @@
 
 #include <map>
 #include <string>
+#include <stdexcept>
 
 // forward declarations
 namespace boost
@@ -30,6 +31,8 @@ namespace mq
 {
 namespace tools
 {
+
+struct DefaultRouteDetectionError : std::runtime_error { using std::runtime_error::runtime_error; };
 
 // returns a map with network interface names as keys and their IP addresses as values
 std::map<std::string, std::string> getHostIPs();
