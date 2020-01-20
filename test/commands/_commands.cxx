@@ -19,6 +19,8 @@ using namespace fair::mq::sdk::cmd;
 
 TEST(Format, Construction)
 {
+    auto const props(std::vector<std::pair<std::string, std::string>>({{"k1", "v1"}, {"k2", "v2"}}));
+
     Cmds checkStateCmds(make<CheckState>());
     Cmds changeStateCmds(make<ChangeState>(Transition::Stop));
     Cmds dumpConfigCmds(make<DumpConfig>());
@@ -27,6 +29,7 @@ TEST(Format, Construction)
     Cmds subscribeToStateChangeCmds(make<SubscribeToStateChange>());
     Cmds unsubscribeFromStateChangeCmds(make<UnsubscribeFromStateChange>());
     Cmds stateChangeExitingReceivedCmds(make<StateChangeExitingReceived>());
+    Cmds setPropertiesCmds(make<SetProperties>(42, props));
     Cmds currentStateCmds(make<CurrentState>("somedeviceid", State::Running));
     Cmds transitionStatusCmds(make<TransitionStatus>("somedeviceid", Result::Ok, Transition::Stop));
     Cmds configCmds(make<Config>("somedeviceid", "someconfig"));
@@ -36,6 +39,7 @@ TEST(Format, Construction)
     Cmds stateChangeSubscriptionCmds(make<StateChangeSubscription>("somedeviceid", Result::Ok));
     Cmds stateChangeUnsubscriptionCmds(make<StateChangeUnsubscription>("somedeviceid", Result::Ok));
     Cmds stateChangeCmds(make<StateChange>("somedeviceid", 123456, State::Running, State::Ready));
+    Cmds propertiesSetCmds(make<PropertiesSet>("somedeviceid", 42, Result::Ok));
 
     ASSERT_EQ(checkStateCmds.At(0).GetType(), Type::check_state);
     ASSERT_EQ(changeStateCmds.At(0).GetType(), Type::change_state);
@@ -46,6 +50,9 @@ TEST(Format, Construction)
     ASSERT_EQ(subscribeToStateChangeCmds.At(0).GetType(), Type::subscribe_to_state_change);
     ASSERT_EQ(unsubscribeFromStateChangeCmds.At(0).GetType(), Type::unsubscribe_from_state_change);
     ASSERT_EQ(stateChangeExitingReceivedCmds.At(0).GetType(), Type::state_change_exiting_received);
+    ASSERT_EQ(setPropertiesCmds.At(0).GetType(), Type::set_properties);
+    ASSERT_EQ(static_cast<SetProperties&>(setPropertiesCmds.At(0)).GetRequestId(), 42);
+    ASSERT_EQ(static_cast<SetProperties&>(setPropertiesCmds.At(0)).GetProps(), props);
     ASSERT_EQ(currentStateCmds.At(0).GetType(), Type::current_state);
     ASSERT_EQ(static_cast<CurrentState&>(currentStateCmds.At(0)).GetDeviceId(), "somedeviceid");
     ASSERT_EQ(static_cast<CurrentState&>(currentStateCmds.At(0)).GetCurrentState(), State::Running);
@@ -75,10 +82,16 @@ TEST(Format, Construction)
     ASSERT_EQ(static_cast<StateChange&>(stateChangeCmds.At(0)).GetTaskId(), 123456);
     ASSERT_EQ(static_cast<StateChange&>(stateChangeCmds.At(0)).GetLastState(), State::Running);
     ASSERT_EQ(static_cast<StateChange&>(stateChangeCmds.At(0)).GetCurrentState(), State::Ready);
+    ASSERT_EQ(propertiesSetCmds.At(0).GetType(), Type::properties_set);
+    ASSERT_EQ(static_cast<PropertiesSet&>(propertiesSetCmds.At(0)).GetDeviceId(), "somedeviceid");
+    ASSERT_EQ(static_cast<PropertiesSet&>(propertiesSetCmds.At(0)).GetRequestId(), 42);
+    ASSERT_EQ(static_cast<PropertiesSet&>(propertiesSetCmds.At(0)).GetResult(), Result::Ok);
 }
 
 void fillCommands(Cmds& cmds)
 {
+    auto const props(std::vector<std::pair<std::string, std::string>>({{"k1", "v1"}, {"k2", "v2"}}));
+
     cmds.Add<CheckState>();
     cmds.Add<ChangeState>(Transition::Stop);
     cmds.Add<DumpConfig>();
@@ -87,6 +100,7 @@ void fillCommands(Cmds& cmds)
     cmds.Add<SubscribeToStateChange>();
     cmds.Add<UnsubscribeFromStateChange>();
     cmds.Add<StateChangeExitingReceived>();
+    cmds.Add<SetProperties>(42, props);
     cmds.Add<CurrentState>("somedeviceid", State::Running);
     cmds.Add<TransitionStatus>("somedeviceid", Result::Ok, Transition::Stop);
     cmds.Add<Config>("somedeviceid", "someconfig");
@@ -96,13 +110,15 @@ void fillCommands(Cmds& cmds)
     cmds.Add<StateChangeSubscription>("somedeviceid", Result::Ok);
     cmds.Add<StateChangeUnsubscription>("somedeviceid", Result::Ok);
     cmds.Add<StateChange>("somedeviceid", 123456, State::Running, State::Ready);
+    cmds.Add<PropertiesSet>("somedeviceid", 42, Result::Ok);
 }
 
 void checkCommands(Cmds& cmds)
 {
-    ASSERT_EQ(cmds.Size(), 17);
+    ASSERT_EQ(cmds.Size(), 19);
 
     int count = 0;
+    auto const props(std::vector<std::pair<std::string, std::string>>({{"k1", "v1"}, {"k2", "v2"}}));
 
     for (const auto& cmd : cmds) {
         switch (cmd->GetType()) {
@@ -130,6 +146,11 @@ void checkCommands(Cmds& cmds)
             break;
             case Type::state_change_exiting_received:
                 ++count;
+            break;
+            case Type::set_properties:
+                ++count;
+                ASSERT_EQ(static_cast<SetProperties&>(*cmd).GetRequestId(), 42);
+                ASSERT_EQ(static_cast<SetProperties&>(*cmd).GetProps(), props);
             break;
             case Type::current_state:
                 ++count;
@@ -178,13 +199,19 @@ void checkCommands(Cmds& cmds)
                 ASSERT_EQ(static_cast<StateChange&>(*cmd).GetLastState(), State::Running);
                 ASSERT_EQ(static_cast<StateChange&>(*cmd).GetCurrentState(), State::Ready);
             break;
+            case Type::properties_set:
+                ++count;
+                ASSERT_EQ(static_cast<PropertiesSet&>(*cmd).GetDeviceId(), "somedeviceid");
+                ASSERT_EQ(static_cast<PropertiesSet&>(*cmd).GetRequestId(), 42);
+                ASSERT_EQ(static_cast<PropertiesSet&>(*cmd).GetResult(), Result::Ok);
+            break;
             default:
                 ASSERT_TRUE(false);
             break;
         }
     }
 
-    ASSERT_EQ(count, 17);
+    ASSERT_EQ(count, 19);
 }
 
 TEST(Format, SerializationBinary)

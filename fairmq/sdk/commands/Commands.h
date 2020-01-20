@@ -47,6 +47,7 @@ enum class Type : int
     subscribe_to_state_change,     // args: { }
     unsubscribe_from_state_change, // args: { }
     state_change_exiting_received, // args: { }
+    set_properties,                // args: { request_id, properties }
 
     current_state,                 // args: { device_id, current_state }
     transition_status,             // args: { device_id, Result, transition }
@@ -56,12 +57,14 @@ enum class Type : int
     heartbeat,                     // args: { device_id }
     state_change_subscription,     // args: { device_id, Result }
     state_change_unsubscription,   // args: { device_id, Result }
-    state_change                   // args: { device_id, task_id, last_state, current_state }
+    state_change,                  // args: { device_id, task_id, last_state, current_state }
+    properties_set                 // args: { device_id, request_id, Result }
 };
 
 struct Cmd
 {
     explicit Cmd(const Type type) : fType(type) {}
+    virtual ~Cmd() = default;
 
     Type GetType() const { return fType; }
 
@@ -116,6 +119,24 @@ struct UnsubscribeFromStateChange : Cmd
 struct StateChangeExitingReceived : Cmd
 {
     explicit StateChangeExitingReceived() : Cmd(Type::state_change_exiting_received) {}
+};
+
+struct SetProperties : Cmd
+{
+    SetProperties(std::size_t request_id, std::vector<std::pair<std::string, std::string>> properties)
+        : Cmd(Type::set_properties)
+        , fRequestId(request_id)
+        , fProperties(std::move(properties))
+    {}
+
+    auto GetRequestId() const -> std::size_t { return fRequestId; }
+    auto SetRequestId(std::size_t requestId) -> void { fRequestId = requestId; }
+    auto GetProps() const -> std::vector<std::pair<std::string, std::string>> { return fProperties; }
+    auto SetProps(std::vector<std::pair<std::string, std::string>> properties) -> void { fProperties = std::move(properties); }
+
+  private:
+    std::size_t fRequestId;
+    std::vector<std::pair<std::string, std::string>> fProperties;
 };
 
 struct CurrentState : Cmd
@@ -288,6 +309,27 @@ struct StateChange : Cmd
     fair::mq::State fCurrentState;
 };
 
+struct PropertiesSet : Cmd {
+    PropertiesSet(std::string deviceId, std::size_t requestId, Result result)
+        : Cmd(Type::properties_set)
+        , fDeviceId(std::move(deviceId))
+        , fRequestId(requestId)
+        , fResult(result)
+    {}
+
+    auto GetDeviceId() const -> std::string { return fDeviceId; }
+    auto SetDeviceId(std::string deviceId) -> void { fDeviceId = std::move(deviceId); }
+    auto GetRequestId() const -> std::size_t { return fRequestId; }
+    auto SetRequestId(std::size_t requestId) -> void { fRequestId = requestId; }
+    auto GetResult() const -> Result { return fResult; }
+    auto SetResult(Result result) -> void { fResult = result; }
+
+  private:
+    std::string fDeviceId;
+    std::size_t fRequestId;
+    Result fResult;
+};
+
 template<typename C, typename... Args>
 std::unique_ptr<Cmd> make(Args&&... args)
 {
@@ -306,7 +348,6 @@ struct Cmds
     {
         Unpack(std::forward<std::unique_ptr<Cmd>&&>(first), std::forward<Rest>(rest)...);
     }
-
 
     void Add(std::unique_ptr<Cmd>&& cmd) { fCmds.emplace_back(std::move(cmd)); }
 
