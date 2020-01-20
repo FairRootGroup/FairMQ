@@ -324,7 +324,6 @@ auto DDS::HeartbeatSender() -> void
 
 auto DDS::SubscribeForCustomCommands() -> void
 {
-    using namespace sdk::cmd;
     LOG(debug) << "Subscribing for DDS custom commands.";
 
     string id = GetProperty<string>("id");
@@ -332,59 +331,59 @@ auto DDS::SubscribeForCustomCommands() -> void
     fDDS.SubscribeCustomCmd([id, this](const string& cmdStr, const string& cond, uint64_t senderId) {
         // LOG(info) << "Received command: '" << cmdStr << "' from " << senderId;
 
-        Cmds inCmds;
+        using namespace fair::mq::sdk;
+        cmd::Cmds inCmds;
         inCmds.Deserialize(cmdStr);
 
         for (const auto& cmd : inCmds) {
             // LOG(info) << "Received command type: '" << cmd->GetType() << "' from " << senderId;
             switch (cmd->GetType()) {
-                case Type::check_state: {
-                    fDDS.Send(Cmds(make<CurrentState>(id, GetCurrentDeviceState())).Serialize(), to_string(senderId));
-                }
-                break;
-                case Type::change_state: {
-                    Transition transition = static_cast<ChangeState&>(*cmd).GetTransition();
+                case cmd::Type::check_state: {
+                    fDDS.Send(cmd::Cmds(cmd::make<cmd::CurrentState>(id, GetCurrentDeviceState()))
+                                  .Serialize(),
+                              to_string(senderId));
+                } break;
+                case cmd::Type::change_state: {
+                    Transition transition = static_cast<cmd::ChangeState&>(*cmd).GetTransition();
                     if (ChangeDeviceState(transition)) {
-                        Cmds outCmds(make<TransitionStatus>(id, Result::Ok, transition));
+                        cmd::Cmds outCmds(
+                            cmd::make<cmd::TransitionStatus>(id, cmd::Result::Ok, transition));
                         fDDS.Send(outCmds.Serialize(), to_string(senderId));
                     } else {
-                        Cmds outCmds(make<TransitionStatus>(id, Result::Failure, transition));
+                        sdk::cmd::Cmds outCmds(
+                            cmd::make<cmd::TransitionStatus>(id, cmd::Result::Failure, transition));
                         fDDS.Send(outCmds.Serialize(), to_string(senderId));
                     }
                     {
                         lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                         fLastExternalController = senderId;
                     }
-                }
-                break;
-                case Type::dump_config: {
+                } break;
+                case cmd::Type::dump_config: {
                     stringstream ss;
-                    for (const auto pKey: GetPropertyKeys()) {
+                    for (const auto pKey : GetPropertyKeys()) {
                         ss << id << ": " << pKey << " -> " << GetPropertyAsString(pKey) << "\n";
                     }
-                    Cmds outCmds(make<Config>(id, ss.str()));
+                    cmd::Cmds outCmds(cmd::make<cmd::Config>(id, ss.str()));
                     fDDS.Send(outCmds.Serialize(), to_string(senderId));
-                }
-                break;
-                case Type::subscribe_to_heartbeats: {
+                } break;
+                case cmd::Type::subscribe_to_heartbeats: {
                     {
                         lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
                         fHeartbeatSubscribers.insert(senderId);
                     }
-                    Cmds outCmds(make<HeartbeatSubscription>(id, Result::Ok));
+                    cmd::Cmds outCmds(cmd::make<cmd::HeartbeatSubscription>(id, cmd::Result::Ok));
                     fDDS.Send(outCmds.Serialize(), to_string(senderId));
-                }
-                break;
-                case Type::unsubscribe_from_heartbeats: {
+                } break;
+                case cmd::Type::unsubscribe_from_heartbeats: {
                     {
                         lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
                         fHeartbeatSubscribers.erase(senderId);
                     }
-                    Cmds outCmds(make<HeartbeatUnsubscription>(id, Result::Ok));
+                    cmd::Cmds outCmds(cmd::make<cmd::HeartbeatUnsubscription>(id, cmd::Result::Ok));
                     fDDS.Send(outCmds.Serialize(), to_string(senderId));
-                }
-                break;
-                case Type::state_change_exiting_received: {
+                } break;
+                case cmd::Type::state_change_exiting_received: {
                     {
                         lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                         if (fLastExternalController == senderId) {
@@ -392,31 +391,50 @@ auto DDS::SubscribeForCustomCommands() -> void
                         }
                     }
                     fExitingAcked.notify_one();
-                }
-                break;
-                case Type::subscribe_to_state_change: {
+                } break;
+                case cmd::Type::subscribe_to_state_change: {
                     lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                     fStateChangeSubscribers.insert(senderId);
                     if (!fControllerThread.joinable()) {
                         fControllerThread = thread(&DDS::WaitForExitingAck, this);
                     }
 
-                    LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState << " to " << senderId;
+                    LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState
+                               << " to " << senderId;
 
-                    Cmds outCmds(make<StateChangeSubscription>(id, Result::Ok), make<StateChange>(id, dds::env_prop<dds::task_id>(), fLastState, fCurrentState));
+                    cmd::Cmds outCmds(
+                        cmd::make<cmd::StateChangeSubscription>(id, cmd::Result::Ok),
+                        cmd::make<cmd::StateChange>(
+                            id, dds::env_prop<dds::task_id>(), fLastState, fCurrentState));
 
                     fDDS.Send(outCmds.Serialize(), to_string(senderId));
-                }
-                break;
-                case Type::unsubscribe_from_state_change: {
+                } break;
+                case cmd::Type::unsubscribe_from_state_change: {
                     {
                         lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                         fStateChangeSubscribers.erase(senderId);
                     }
-                    Cmds outCmds(make<StateChangeUnsubscription>(id, Result::Ok));
+                    cmd::Cmds outCmds(
+                        cmd::make<cmd::StateChangeUnsubscription>(id, cmd::Result::Ok));
                     fDDS.Send(outCmds.Serialize(), to_string(senderId));
-                }
-                break;
+                } break;
+                case cmd::Type::set_properties: {
+                    auto _cmd(static_cast<cmd::SetProperties&>(*cmd));
+                    auto const request_id(_cmd.GetRequestId());
+                    auto result(cmd::Result::Ok);
+                    try {
+                        fair::mq::Properties props;
+                        for (auto const& prop : _cmd.GetProps()) {
+                            props.insert({prop.first, fair::mq::Property(prop.second)});
+                        }
+                        SetProperties(props);
+                    } catch (...) {
+                        LOG(warn) << "Setting properties (request id: " << request_id << ") failed";
+                        result = cmd::Result::Failure;
+                    }
+                    cmd::Cmds const outCmds(cmd::make<cmd::PropertiesSet>(id, request_id, result));
+                    fDDS.Send(outCmds.Serialize(), to_string(senderId));
+                } break;
                 default:
                     LOG(warn) << "Unexpected/unknown command received: " << cmdStr;
                     LOG(warn) << "Origin: " << senderId;

@@ -243,4 +243,104 @@ TEST_F(Topology, ChangeStateFullDeviceLifecycle2)
     }
 }
 
+TEST_F(Topology, SetProperties)
+{
+    using namespace fair::mq;
+    using fair::mq::sdk::TopologyTransition;
+
+    sdk::Topology topo(mDDSTopo, mDDSSession);
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
+
+    auto const result1 = topo.SetProperties({{"key1", "val1"}});
+    LOG(info) << result1.first;
+    ASSERT_EQ(result1.first, std::error_code());
+    ASSERT_EQ(result1.second.size(), 0);
+    auto const result2 = topo.SetProperties({{"key2", "val2"}, {"key3", "val3"}});
+    LOG(info) << result2.first;
+    ASSERT_EQ(result2.first, std::error_code());
+    ASSERT_EQ(result2.second.size(), 0);
+
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::CompleteInit).first, std::error_code());
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::ResetDevice).first, std::error_code());
+}
+
+TEST_F(Topology, AsyncSetPropertiesConcurrent)
+{
+    using namespace fair::mq;
+    using fair::mq::sdk::TopologyTransition;
+
+    sdk::Topology topo(mDDSTopo, mDDSSession);
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
+
+    tools::SharedSemaphore blocker(2);
+    topo.AsyncSetProperties(
+        {{"key1", "val1"}},
+        [=](std::error_code ec, sdk::Topology::FailedDevices failed) mutable {
+            LOG(info) << ec;
+            ASSERT_EQ(ec, std::error_code());
+            ASSERT_EQ(failed.size(), 0);
+            blocker.Signal();
+        });
+    topo.AsyncSetProperties(
+        {{"key2", "val2"}, {"key3", "val3"}},
+        [=](std::error_code ec, sdk::Topology::FailedDevices failed) mutable {
+            LOG(info) << ec;
+            ASSERT_EQ(ec, std::error_code());
+            ASSERT_EQ(failed.size(), 0);
+            blocker.Signal();
+        });
+    blocker.Wait();
+
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::CompleteInit).first, std::error_code());
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::ResetDevice).first, std::error_code());
+}
+
+TEST_F(Topology, AsyncSetPropertiesTimeout)
+{
+    using namespace fair::mq;
+    using fair::mq::sdk::TopologyTransition;
+
+    sdk::Topology topo(mDDSTopo, mDDSSession);
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
+
+    topo.AsyncSetProperties({{"key1", "val1"}},
+                            std::chrono::milliseconds(1),
+                            [=](std::error_code ec, sdk::Topology::FailedDevices) mutable {
+                                LOG(info) << ec;
+                                EXPECT_EQ(ec, MakeErrorCode(ErrorCode::OperationTimeout));
+                            });
+
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::CompleteInit).first, std::error_code());
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::ResetDevice).first, std::error_code());
+}
+
+TEST_F(Topology, SetPropertiesMixed)
+{
+    using namespace fair::mq;
+    using fair::mq::sdk::TopologyTransition;
+
+    sdk::Topology topo(mDDSTopo, mDDSSession);
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
+
+    tools::SharedSemaphore blocker;
+    topo.AsyncSetProperties(
+        {{"key1", "val1"}},
+        [=](std::error_code ec, sdk::Topology::FailedDevices failed) mutable {
+            LOG(info) << ec;
+            ASSERT_EQ(ec, std::error_code());
+            ASSERT_EQ(failed.size(), 0);
+            blocker.Signal();
+        });
+
+    auto result = topo.SetProperties({{"key2", "val2"}});
+    LOG(info) << result.first;
+    ASSERT_EQ(result.first, std::error_code());
+    ASSERT_EQ(result.second.size(), 0);
+
+    blocker.Wait();
+
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::CompleteInit).first, std::error_code());
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::ResetDevice).first, std::error_code());
+}
+
 }   // namespace
