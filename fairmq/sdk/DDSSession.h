@@ -101,7 +101,7 @@ class DDSSession
     void StartDDSService();
     void SubscribeToCommands(std::function<void(const std::string& msg, const std::string& condition, uint64_t senderId)>);
     void UnsubscribeFromCommands();
-    void SendCommand(const std::string&);
+    void SendCommand(const std::string&, const std::string& = "");
     void SendCommand(const std::string&, DDSChannel::Id);
     auto UpdateChannelToTaskAssociation(DDSChannel::Id, DDSTask::Id) -> void;
     auto GetTaskId(DDSChannel::Id) const -> DDSTask::Id;
