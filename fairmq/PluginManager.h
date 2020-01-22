@@ -80,7 +80,7 @@ class PluginManager
     auto ForEachPluginProgOptions(std::function<void (boost::program_options::options_description)> func) const -> void { for(const auto& pair : fPluginProgOptions) { func(pair.second); } }
 
     template<typename... Args>
-    auto EmplacePluginServices(Args&&... args) -> void { fPluginServices = fair::mq::tools::make_unique<PluginServices>(std::forward<Args>(args)...); };
+    auto EmplacePluginServices(Args&&... args) -> void { fPluginServices = fair::mq::tools::make_unique<PluginServices>(std::forward<Args>(args)...); }
 
     auto WaitForPluginsToReleaseDeviceControl() -> void { fPluginServices->WaitForReleaseDeviceControl(); }
 

@@ -144,14 +144,16 @@ macro(set_fairmq_defaults)
 
   # Configure build types
   set(CMAKE_CONFIGURATION_TYPES "Debug" "Release" "RelWithDebInfo" "Nightly" "Profile" "Experimental" "AdressSan" "ThreadSan")
-  set(CMAKE_CXX_FLAGS_DEBUG          "-g -Wshadow -Wall -Wextra")
+  set(_warnings "-Wshadow -Wall -Wextra -Wpedantic")
+  set(CMAKE_CXX_FLAGS_DEBUG          "-g ${_warnings}")
   set(CMAKE_CXX_FLAGS_RELEASE        "-O2 -DNDEBUG")
-  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -Wshadow -Wall -Wextra -DNDEBUG")
-  set(CMAKE_CXX_FLAGS_NIGHTLY        "-O2 -g -Wshadow -Wall -Wextra")
-  set(CMAKE_CXX_FLAGS_PROFILE        "-g3 -Wshadow -Wall -Wextra -fno-inline -ftest-coverage -fprofile-arcs")
-  set(CMAKE_CXX_FLAGS_EXPERIMENTAL   "-O2 -g -Wshadow -Wall -Wextra -DNDEBUG")
-  set(CMAKE_CXX_FLAGS_ADRESSSAN      "-O2 -g -Wshadow -Wall -Wextra -fsanitize=address -fno-omit-frame-pointer")
-  set(CMAKE_CXX_FLAGS_THREADSAN      "-O2 -g -Wshadow -Wall -Wextra -fsanitize=thread")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g ${_warnings} -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_NIGHTLY        "-O2 -g ${_warnings}")
+  set(CMAKE_CXX_FLAGS_PROFILE        "-g3 ${_warnings} -fno-inline -ftest-coverage -fprofile-arcs")
+  set(CMAKE_CXX_FLAGS_EXPERIMENTAL   "-O2 -g ${_warnings} -DNDEBUG")
+  set(CMAKE_CXX_FLAGS_ADRESSSAN      "-O2 -g ${_warnings} -fsanitize=address -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS_THREADSAN      "-O2 -g ${_warnings} -fsanitize=thread")
+  unset(_warnings)
 
   if(CMAKE_GENERATOR STREQUAL "Ninja" AND
      ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9) OR
