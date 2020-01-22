@@ -60,7 +60,7 @@ FairMQMessagePtr getMessage(ContainerT &&container_, FairMQMemoryResource *targe
         container.data(),
         containerSizeBytes);
     return message;
-};
+}
 
 } /* namespace mq */
 } /* namespace fair */

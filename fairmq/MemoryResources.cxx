@@ -18,5 +18,5 @@
 void *fair::mq::ChannelResource::do_allocate(std::size_t bytes, std::size_t /*alignment*/)
 {
     return setMessage(factory->CreateMessage(bytes));
-};
+}
 

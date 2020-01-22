@@ -62,7 +62,7 @@ ValInfo ConvertVarValToValInfo(const po::variable_value& v)
     } catch (out_of_range& oor) {
         return {string("[unidentified_type]"), string("[unidentified_type]"), origin};
     }
-};
+}
 
 string ConvertVarValToString(const po::variable_value& v)
 {
