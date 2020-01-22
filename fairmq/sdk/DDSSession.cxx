@@ -355,7 +355,7 @@ void DDSSession::UnsubscribeFromCommands()
     fImpl->fDDSCustomCmd.unsubscribe();
 }
 
-void DDSSession::SendCommand(const std::string& cmd) { fImpl->fDDSCustomCmd.send(cmd, ""); }
+void DDSSession::SendCommand(const std::string& cmd, const std::string& path /* = "" */) { fImpl->fDDSCustomCmd.send(cmd, path); }
 
 void DDSSession::SendCommand(const std::string& cmd, DDSChannel::Id recipient)
 {
