@@ -56,6 +56,9 @@ class DDSTopology
     /// @brief Get list of tasks in this topology
     auto GetTasks() const -> std::vector<DDSTask>;
 
+    /// @brief Get list of tasks matching the provided topology path
+    auto GetTasksMatchingPath(const std::string&) const -> std::vector<DDSTask>;
+
     /// @brief Get list of tasks in this topology
     auto GetCollections() const -> std::vector<DDSCollection>;
 
