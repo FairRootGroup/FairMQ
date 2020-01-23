@@ -69,10 +69,25 @@ auto DDSTopology::GetTasks() const -> std::vector<DDSTask>
     std::vector<DDSTask> list;
     list.reserve(GetNumRequiredAgents());
 
-    auto itPair = fImpl->fTopo.getRuntimeTaskIterator(
-        [](const dds::topology_api::STopoRuntimeTask::FilterIterator_t::value_type&) -> bool {
-            return true;
-        });
+    auto itPair = fImpl->fTopo.getRuntimeTaskIterator(nullptr); // passing nullptr will get all tasks
+    auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
+
+    for (const auto& task : tasks) {
+        LOG(debug) << "Found task with id: " << task.first << ", "
+                   << "Path: " << task.second.m_taskPath << ", "
+                   << "Collection id: " << task.second.m_taskCollectionId << ", "
+                   << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex;
+        list.emplace_back(task.first, task.second.m_taskCollectionId);
+    }
+
+    return list;
+}
+
+auto DDSTopology::GetTasksMatchingPath(const std::string& path) const -> std::vector<DDSTask>
+{
+    std::vector<DDSTask> list;
+
+    auto itPair = fImpl->fTopo.getRuntimeTaskIteratorMatchingPath(path);
     auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
 
     for (const auto& task : tasks) {
@@ -90,10 +105,7 @@ auto DDSTopology::GetCollections() const -> std::vector<DDSCollection>
 {
     std::vector<DDSCollection> list;
 
-    auto itPair = fImpl->fTopo.getRuntimeCollectionIterator(
-        [](const dds::topology_api::STopoRuntimeCollection::FilterIterator_t::value_type&) -> bool {
-            return true;
-        });
+    auto itPair = fImpl->fTopo.getRuntimeCollectionIterator(nullptr); // passing nullptr will get all collections
     auto collections = boost::make_iterator_range(itPair.first, itPair.second);
 
     for (const auto& c : collections) {
