@@ -48,8 +48,8 @@ struct DDSConfig
 struct DDSSubscription
 {
     DDSSubscription()
-    : fDDSCustomCmd(fService)
-    , fDDSKeyValue(fService)
+        : fDDSCustomCmd(fService)
+        , fDDSKeyValue(fService)
     {
         LOG(debug) << "$DDS_TASK_PATH: " << dds::env_prop<dds::task_path>();
         LOG(debug) << "$DDS_GROUP_NAME: " << dds::env_prop<dds::group_name>();

@@ -64,30 +64,16 @@ auto DDSTopology::GetNumRequiredAgents() const -> int
     return fImpl->fTopo.getRequiredNofAgents();
 }
 
-auto DDSTopology::GetTasks() const -> std::vector<DDSTask>
+auto DDSTopology::GetTasks(const std::string& path /* = "" */) const -> std::vector<DDSTask>
 {
     std::vector<DDSTask> list;
-    list.reserve(GetNumRequiredAgents());
 
-    auto itPair = fImpl->fTopo.getRuntimeTaskIterator(nullptr); // passing nullptr will get all tasks
-    auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
-
-    for (const auto& task : tasks) {
-        LOG(debug) << "Found task with id: " << task.first << ", "
-                   << "Path: " << task.second.m_taskPath << ", "
-                   << "Collection id: " << task.second.m_taskCollectionId << ", "
-                   << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex;
-        list.emplace_back(task.first, task.second.m_taskCollectionId);
+    dds::topology_api::STopoRuntimeTask::FilterIteratorPair_t itPair;
+    if (path == "") {
+        itPair = fImpl->fTopo.getRuntimeTaskIterator(nullptr); // passing nullptr will get all tasks
+    } else {
+        itPair = fImpl->fTopo.getRuntimeTaskIteratorMatchingPath(path);
     }
-
-    return list;
-}
-
-auto DDSTopology::GetTasksMatchingPath(const std::string& path) const -> std::vector<DDSTask>
-{
-    std::vector<DDSTask> list;
-
-    auto itPair = fImpl->fTopo.getRuntimeTaskIteratorMatchingPath(path);
     auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
 
     for (const auto& task : tasks) {
