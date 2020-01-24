@@ -49,7 +49,7 @@ struct AsioAsyncOpImpl : AsioAsyncOpImplBase<SignatureArgTypes...>
     using Executor2 = typename asio::associated_executor<Handler, Executor1>::type;
 
     /// Ctor
-    AsioAsyncOpImpl(const Executor1& ex1, Allocator1&& alloc1, Handler&& handler)
+    AsioAsyncOpImpl(const Executor1& ex1, Allocator1 alloc1, Handler&& handler)
         : fWork1(ex1)
         , fWork2(asio::get_associated_executor(handler, ex1))
         , fHandler(std::move(handler))
@@ -149,7 +149,7 @@ struct AsioAsyncOp<Executor,
 
     /// Ctor with handler
     template<typename Handler>
-    AsioAsyncOp(Executor&& ex1, Allocator&& alloc1, Handler&& handler)
+    AsioAsyncOp(Executor ex1, Allocator alloc1, Handler&& handler)
         : AsioAsyncOp()
     {
         // Async operation type to be allocated and constructed
@@ -165,8 +165,8 @@ struct AsioAsyncOp<Executor,
         auto mem(std::allocator_traits<OpAllocator>::allocate(opAlloc, 1));
 
         // Construct object
-        auto ptr(new (mem) Op(std::forward<Executor>(ex1),
-                              std::forward<Allocator>(alloc1),
+        auto ptr(new (mem) Op(std::move(ex1),
+                              std::move(alloc1),
                               std::forward<Handler>(handler)));
 
         // Assign ownership to this object
@@ -177,8 +177,8 @@ struct AsioAsyncOp<Executor,
 
     /// Ctor with handler #2
     template<typename Handler>
-    AsioAsyncOp(Executor&& ex1, Handler&& handler)
-        : AsioAsyncOp(std::forward<Executor>(ex1), Allocator(), std::forward<Handler>(handler))
+    AsioAsyncOp(Executor ex1, Handler&& handler)
+        : AsioAsyncOp(std::move(ex1), Allocator(), std::forward<Handler>(handler))
     {}
 
     /// Ctor with handler #3
