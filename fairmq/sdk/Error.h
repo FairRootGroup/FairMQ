@@ -38,6 +38,7 @@ enum class ErrorCode
     OperationTimeout,
     OperationCanceled,
     DeviceChangeStateFailed,
+    DeviceGetPropertiesFailed,
     DeviceSetPropertiesFailed
 };
 

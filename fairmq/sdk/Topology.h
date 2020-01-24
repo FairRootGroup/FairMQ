@@ -75,6 +75,18 @@ struct DeviceStatus
 
 using DeviceProperty = std::pair<std::string, std::string>; /// pair := (key, value)
 using DeviceProperties = std::vector<DeviceProperty>;
+using DevicePropertyQuery = std::string; /// Boost regex supported
+using FailedDevices = std::set<DeviceId>;
+
+struct GetPropertiesResult
+{
+    struct Device
+    {
+        DeviceProperties props;
+    };
+    std::unordered_map<DeviceId, Device> devices;
+    FailedDevices failed;
+};
 
 using TopologyState = std::vector<DeviceStatus>;
 using TopologyStateIndex = std::unordered_map<DDSTask::Id, int>; //  task id -> index in the data vector
@@ -208,6 +220,10 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                                 fChangeStateOp.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed), fStateData);
                             }
                         }
+                    }
+                    break;
+                    case Type::properties: {
+                        HandleCmd(static_cast<cmd::Properties&>(*cmd));
                     }
                     break;
                     case Type::properties_set: {
@@ -415,7 +431,146 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     auto StateEqualsTo(DeviceState state) const -> bool { return sdk::StateEqualsTo(GetCurrentState(), state); }
 
-    using FailedDevices = std::set<DeviceId>;
+    using GetPropertiesCompletionSignature = void(std::error_code, GetPropertiesResult);
+
+  private:
+    struct GetPropertiesOp
+    {
+        using Id = std::size_t;
+        using GetCount = unsigned int;
+
+        template<typename Handler>
+        GetPropertiesOp(Id id,
+                        GetCount expectedCount,
+                        Duration timeout,
+                        std::mutex& mutex,
+                        Executor const & ex,
+                        Allocator const & alloc,
+                        Handler&& handler)
+            : fId(id)
+            , fOp(ex, alloc, std::move(handler))
+            , fTimer(ex)
+            , fCount(0)
+            , fExpectedCount(expectedCount)
+            , fMtx(mutex)
+        {
+            if (timeout > std::chrono::milliseconds(0)) {
+                fTimer.expires_after(timeout);
+                fTimer.async_wait([&](std::error_code ec) {
+                    if (!ec) {
+                        std::lock_guard<std::mutex> lk(fMtx);
+                        fOp.Timeout(fResult);
+                    }
+                });
+            }
+            // LOG(debug) << "GetProperties " << fId << " with expected count of " << fExpectedCount << " started.";
+        }
+        GetPropertiesOp() = delete;
+        GetPropertiesOp(const GetPropertiesOp&) = delete;
+        GetPropertiesOp& operator=(const GetPropertiesOp&) = delete;
+        GetPropertiesOp(GetPropertiesOp&&) = default;
+        GetPropertiesOp& operator=(GetPropertiesOp&&) = default;
+        ~GetPropertiesOp() = default;
+
+        auto Update(const std::string& deviceId, cmd::Result result, DeviceProperties props) -> void
+        {
+            std::lock_guard<std::mutex> lk(fMtx);
+            if (cmd::Result::Ok != result) {
+                fResult.failed.insert(deviceId);
+            } else {
+                fResult.devices.insert({deviceId, {std::move(props)}});
+            }
+            ++fCount;
+            TryCompletion();
+        }
+
+      private:
+        Id const fId;
+        AsioAsyncOp<Executor, Allocator, GetPropertiesCompletionSignature> fOp;
+        asio::steady_timer fTimer;
+        GetCount fCount;
+        GetCount const fExpectedCount;
+        GetPropertiesResult fResult;
+        std::mutex& fMtx;
+
+        /// precondition: fMtx is locked.
+        auto TryCompletion() -> void
+        {
+            if (!fOp.IsCompleted() && fCount == fExpectedCount) {
+                fTimer.cancel();
+                if (fResult.failed.size() > 0) {
+                    fOp.Complete(MakeErrorCode(ErrorCode::DeviceGetPropertiesFailed), std::move(fResult));
+                } else {
+                    fOp.Complete(std::move(fResult));
+                }
+            }
+        }
+    };
+
+    auto HandleCmd(cmd::Properties const& cmd) -> void
+    {
+        std::unique_lock<std::mutex> lk(fMtx);
+        try {
+            auto& op(fGetPropertiesOps.at(cmd.GetRequestId()));
+            lk.unlock();
+            op.Update(cmd.GetDeviceId(), cmd.GetResult(), cmd.GetProps());
+        } catch (std::out_of_range& e) {
+            LOG(debug) << "GetProperties operation (request id: " << cmd.GetRequestId()
+                       << ") not found (probably completed or timed out), "
+                       << "discarding reply of device " << cmd.GetDeviceId();
+        }
+    }
+
+  public:
+    template<typename CompletionToken>
+    auto AsyncGetProperties(DevicePropertyQuery const& query,
+                            Duration timeout,
+                            CompletionToken&& token)
+    {
+        return asio::async_initiate<CompletionToken, GetPropertiesCompletionSignature>(
+            [&](auto handler) {
+                typename GetPropertiesOp::Id const id(tools::UuidHash());
+
+                std::lock_guard<std::mutex> lk(fMtx);
+                fGetPropertiesOps.emplace(
+                    std::piecewise_construct,
+                    std::forward_as_tuple(id),
+                    std::forward_as_tuple(id,
+                                          fStateData.size(),
+                                          timeout,
+                                          fMtx,
+                                          AsioBase<Executor, Allocator>::GetExecutor(),
+                                          AsioBase<Executor, Allocator>::GetAllocator(),
+                                          std::move(handler)));
+
+                cmd::Cmds const cmds(cmd::make<cmd::GetProperties>(id, query));
+                fDDSSession.SendCommand(cmds.Serialize());
+            },
+            token);
+    }
+
+    template<typename CompletionToken>
+    auto AsyncGetProperties(DevicePropertyQuery const& query, CompletionToken&& token)
+    {
+        return AsyncGetProperties(query, Duration(0), std::move(token));
+    }
+
+    auto GetProperties(DevicePropertyQuery const& query, Duration timeout = Duration(0))
+        -> std::pair<std::error_code, GetPropertiesResult>
+    {
+        tools::SharedSemaphore blocker;
+        std::error_code ec;
+        GetPropertiesResult result;
+        AsyncGetProperties(
+            query, timeout, [&, blocker](std::error_code _ec, GetPropertiesResult _result) mutable {
+                ec = _ec;
+                result = _result;
+                blocker.Signal();
+            });
+        blocker.Wait();
+        return {ec, result};
+    }
+
     using SetPropertiesCompletionSignature = void(std::error_code, FailedDevices);
 
   private:
@@ -437,7 +592,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             , fTimer(ex)
             , fCount(0)
             , fExpectedCount(expectedCount)
-            , fFailedDevices(alloc)
+            , fFailedDevices()
             , fMtx(mutex)
         {
             if (timeout > std::chrono::milliseconds(0)) {
@@ -571,6 +726,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     TransitionedCount fTransitionedCount;
 
     std::unordered_map<typename SetPropertiesOp::Id, SetPropertiesOp> fSetPropertiesOps;
+    std::unordered_map<typename GetPropertiesOp::Id, GetPropertiesOp> fGetPropertiesOps;
 
     auto makeTopologyState() -> void
     {

@@ -275,7 +275,7 @@ TEST_F(Topology, AsyncSetPropertiesConcurrent)
     tools::SharedSemaphore blocker(2);
     topo.AsyncSetProperties(
         {{"key1", "val1"}},
-        [=](std::error_code ec, sdk::Topology::FailedDevices failed) mutable {
+        [=](std::error_code ec, sdk::FailedDevices failed) mutable {
             LOG(info) << ec;
             ASSERT_EQ(ec, std::error_code());
             ASSERT_EQ(failed.size(), 0);
@@ -283,7 +283,7 @@ TEST_F(Topology, AsyncSetPropertiesConcurrent)
         });
     topo.AsyncSetProperties(
         {{"key2", "val2"}, {"key3", "val3"}},
-        [=](std::error_code ec, sdk::Topology::FailedDevices failed) mutable {
+        [=](std::error_code ec, sdk::FailedDevices failed) mutable {
             LOG(info) << ec;
             ASSERT_EQ(ec, std::error_code());
             ASSERT_EQ(failed.size(), 0);
@@ -305,7 +305,7 @@ TEST_F(Topology, AsyncSetPropertiesTimeout)
 
     topo.AsyncSetProperties({{"key1", "val1"}},
                             std::chrono::milliseconds(1),
-                            [=](std::error_code ec, sdk::Topology::FailedDevices) mutable {
+                            [=](std::error_code ec, sdk::FailedDevices) mutable {
                                 LOG(info) << ec;
                                 EXPECT_EQ(ec, MakeErrorCode(ErrorCode::OperationTimeout));
                             });
@@ -325,7 +325,7 @@ TEST_F(Topology, SetPropertiesMixed)
     tools::SharedSemaphore blocker;
     topo.AsyncSetProperties(
         {{"key1", "val1"}},
-        [=](std::error_code ec, sdk::Topology::FailedDevices failed) mutable {
+        [=](std::error_code ec, sdk::FailedDevices failed) mutable {
             LOG(info) << ec;
             ASSERT_EQ(ec, std::error_code());
             ASSERT_EQ(failed.size(), 0);
@@ -338,6 +338,30 @@ TEST_F(Topology, SetPropertiesMixed)
     ASSERT_EQ(result.second.size(), 0);
 
     blocker.Wait();
+
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::CompleteInit).first, std::error_code());
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::ResetDevice).first, std::error_code());
+}
+
+TEST_F(Topology, GetProperties)
+{
+    using namespace fair::mq;
+    using fair::mq::sdk::TopologyTransition;
+
+    sdk::Topology topo(mDDSTopo, mDDSSession);
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
+
+    auto const result = topo.GetProperties("^(session|id)$");
+    LOG(info) << result.first;
+    ASSERT_EQ(result.first, std::error_code());
+    ASSERT_EQ(result.second.failed.size(), 0);
+    for (auto const& d : result.second.devices) {
+        LOG(info) << d.first;
+        ASSERT_EQ(d.second.props.size(), 2);
+        for (auto const& p : d.second.props) {
+            LOG(info) << p.first << " : " << p.second;
+        }
+    }
 
     ASSERT_EQ(topo.ChangeState(TopologyTransition::CompleteInit).first, std::error_code());
     ASSERT_EQ(topo.ChangeState(TopologyTransition::ResetDevice).first, std::error_code());

@@ -29,6 +29,7 @@ TEST(Format, Construction)
     Cmds subscribeToStateChangeCmds(make<SubscribeToStateChange>());
     Cmds unsubscribeFromStateChangeCmds(make<UnsubscribeFromStateChange>());
     Cmds stateChangeExitingReceivedCmds(make<StateChangeExitingReceived>());
+    Cmds getPropertiesCmds(make<GetProperties>(66, "k[12]"));
     Cmds setPropertiesCmds(make<SetProperties>(42, props));
     Cmds currentStateCmds(make<CurrentState>("somedeviceid", State::Running));
     Cmds transitionStatusCmds(make<TransitionStatus>("somedeviceid", Result::Ok, Transition::Stop));
@@ -39,6 +40,7 @@ TEST(Format, Construction)
     Cmds stateChangeSubscriptionCmds(make<StateChangeSubscription>("somedeviceid", Result::Ok));
     Cmds stateChangeUnsubscriptionCmds(make<StateChangeUnsubscription>("somedeviceid", Result::Ok));
     Cmds stateChangeCmds(make<StateChange>("somedeviceid", 123456, State::Running, State::Ready));
+    Cmds propertiesCmds(make<Properties>("somedeviceid", 66, Result::Ok, props));
     Cmds propertiesSetCmds(make<PropertiesSet>("somedeviceid", 42, Result::Ok));
 
     ASSERT_EQ(checkStateCmds.At(0).GetType(), Type::check_state);
@@ -50,6 +52,9 @@ TEST(Format, Construction)
     ASSERT_EQ(subscribeToStateChangeCmds.At(0).GetType(), Type::subscribe_to_state_change);
     ASSERT_EQ(unsubscribeFromStateChangeCmds.At(0).GetType(), Type::unsubscribe_from_state_change);
     ASSERT_EQ(stateChangeExitingReceivedCmds.At(0).GetType(), Type::state_change_exiting_received);
+    ASSERT_EQ(getPropertiesCmds.At(0).GetType(), Type::get_properties);
+    ASSERT_EQ(static_cast<GetProperties&>(getPropertiesCmds.At(0)).GetRequestId(), 66);
+    ASSERT_EQ(static_cast<GetProperties&>(getPropertiesCmds.At(0)).GetQuery(), "k[12]");
     ASSERT_EQ(setPropertiesCmds.At(0).GetType(), Type::set_properties);
     ASSERT_EQ(static_cast<SetProperties&>(setPropertiesCmds.At(0)).GetRequestId(), 42);
     ASSERT_EQ(static_cast<SetProperties&>(setPropertiesCmds.At(0)).GetProps(), props);
@@ -82,6 +87,11 @@ TEST(Format, Construction)
     ASSERT_EQ(static_cast<StateChange&>(stateChangeCmds.At(0)).GetTaskId(), 123456);
     ASSERT_EQ(static_cast<StateChange&>(stateChangeCmds.At(0)).GetLastState(), State::Running);
     ASSERT_EQ(static_cast<StateChange&>(stateChangeCmds.At(0)).GetCurrentState(), State::Ready);
+    ASSERT_EQ(propertiesCmds.At(0).GetType(), Type::properties);
+    ASSERT_EQ(static_cast<Properties&>(propertiesCmds.At(0)).GetDeviceId(), "somedeviceid");
+    ASSERT_EQ(static_cast<Properties&>(propertiesCmds.At(0)).GetRequestId(), 66);
+    ASSERT_EQ(static_cast<Properties&>(propertiesCmds.At(0)).GetResult(), Result::Ok);
+    ASSERT_EQ(static_cast<Properties&>(propertiesCmds.At(0)).GetProps(), props);
     ASSERT_EQ(propertiesSetCmds.At(0).GetType(), Type::properties_set);
     ASSERT_EQ(static_cast<PropertiesSet&>(propertiesSetCmds.At(0)).GetDeviceId(), "somedeviceid");
     ASSERT_EQ(static_cast<PropertiesSet&>(propertiesSetCmds.At(0)).GetRequestId(), 42);
@@ -100,6 +110,7 @@ void fillCommands(Cmds& cmds)
     cmds.Add<SubscribeToStateChange>();
     cmds.Add<UnsubscribeFromStateChange>();
     cmds.Add<StateChangeExitingReceived>();
+    cmds.Add<GetProperties>(66, "k[12]");
     cmds.Add<SetProperties>(42, props);
     cmds.Add<CurrentState>("somedeviceid", State::Running);
     cmds.Add<TransitionStatus>("somedeviceid", Result::Ok, Transition::Stop);
@@ -110,12 +121,13 @@ void fillCommands(Cmds& cmds)
     cmds.Add<StateChangeSubscription>("somedeviceid", Result::Ok);
     cmds.Add<StateChangeUnsubscription>("somedeviceid", Result::Ok);
     cmds.Add<StateChange>("somedeviceid", 123456, State::Running, State::Ready);
+    cmds.Add<Properties>("somedeviceid", 66, Result::Ok, props);
     cmds.Add<PropertiesSet>("somedeviceid", 42, Result::Ok);
 }
 
 void checkCommands(Cmds& cmds)
 {
-    ASSERT_EQ(cmds.Size(), 19);
+    ASSERT_EQ(cmds.Size(), 21);
 
     int count = 0;
     auto const props(std::vector<std::pair<std::string, std::string>>({{"k1", "v1"}, {"k2", "v2"}}));
@@ -146,6 +158,11 @@ void checkCommands(Cmds& cmds)
             break;
             case Type::state_change_exiting_received:
                 ++count;
+            break;
+            case Type::get_properties:
+                ++count;
+                ASSERT_EQ(static_cast<GetProperties&>(*cmd).GetRequestId(), 66);
+                ASSERT_EQ(static_cast<GetProperties&>(*cmd).GetQuery(), "k[12]");
             break;
             case Type::set_properties:
                 ++count;
@@ -199,6 +216,13 @@ void checkCommands(Cmds& cmds)
                 ASSERT_EQ(static_cast<StateChange&>(*cmd).GetLastState(), State::Running);
                 ASSERT_EQ(static_cast<StateChange&>(*cmd).GetCurrentState(), State::Ready);
             break;
+            case Type::properties:
+                ++count;
+                ASSERT_EQ(static_cast<Properties&>(*cmd).GetDeviceId(), "somedeviceid");
+                ASSERT_EQ(static_cast<Properties&>(*cmd).GetRequestId(), 66);
+                ASSERT_EQ(static_cast<Properties&>(*cmd).GetResult(), Result::Ok);
+                ASSERT_EQ(static_cast<Properties&>(*cmd).GetProps(), props);
+            break;
             case Type::properties_set:
                 ++count;
                 ASSERT_EQ(static_cast<PropertiesSet&>(*cmd).GetDeviceId(), "somedeviceid");
@@ -211,7 +235,7 @@ void checkCommands(Cmds& cmds)
         }
     }
 
-    ASSERT_EQ(count, 19);
+    ASSERT_EQ(count, 21);
 }
 
 TEST(Format, SerializationBinary)

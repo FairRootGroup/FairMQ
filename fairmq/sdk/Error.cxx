@@ -27,6 +27,8 @@ std::string ErrorCategory::message(int ev) const
             return "async operation canceled";
         case ErrorCode::DeviceChangeStateFailed:
             return "failed to change state of a fairmq device";
+        case ErrorCode::DeviceGetPropertiesFailed:
+            return "failed to get fairmq device properties";
         case ErrorCode::DeviceSetPropertiesFailed:
             return "failed to set fairmq device properties";
         default:

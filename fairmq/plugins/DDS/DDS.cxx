@@ -418,6 +418,22 @@ auto DDS::SubscribeForCustomCommands() -> void
                         cmd::make<cmd::StateChangeUnsubscription>(id, cmd::Result::Ok));
                     fDDS.Send(outCmds.Serialize(), to_string(senderId));
                 } break;
+                case cmd::Type::get_properties: {
+                    auto _cmd = static_cast<cmd::GetProperties&>(*cmd);
+                    auto const request_id(_cmd.GetRequestId());
+                    auto result(cmd::Result::Ok);
+                    std::vector<std::pair<std::string, std::string>> props;
+                    try {
+                        for (auto const& prop : GetPropertiesAsString(_cmd.GetQuery())) {
+                            props.push_back({prop.first, prop.second});
+                        }
+                    } catch (std::exception const& e) {
+                        LOG(warn) << "Getting properties (request id: " << request_id << ") failed: " << e.what();
+                        result = cmd::Result::Failure;
+                    }
+                    cmd::Cmds const outCmds(cmd::make<cmd::Properties>(id, request_id, result, props));
+                    fDDS.Send(outCmds.Serialize(), to_string(senderId));
+                } break;
                 case cmd::Type::set_properties: {
                     auto _cmd(static_cast<cmd::SetProperties&>(*cmd));
                     auto const request_id(_cmd.GetRequestId());
@@ -427,9 +443,10 @@ auto DDS::SubscribeForCustomCommands() -> void
                         for (auto const& prop : _cmd.GetProps()) {
                             props.insert({prop.first, fair::mq::Property(prop.second)});
                         }
+                        // TODO Handle builtin keys with different value type than string
                         SetProperties(props);
-                    } catch (...) {
-                        LOG(warn) << "Setting properties (request id: " << request_id << ") failed";
+                    } catch (std::exception const& e) {
+                        LOG(warn) << "Setting properties (request id: " << request_id << ") failed: " << e.what();
                         result = cmd::Result::Failure;
                     }
                     cmd::Cmds const outCmds(cmd::make<cmd::PropertiesSet>(id, request_id, result));
