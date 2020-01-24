@@ -304,6 +304,7 @@ TEST_F(Topology, AsyncSetPropertiesTimeout)
     ASSERT_EQ(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
 
     topo.AsyncSetProperties({{"key1", "val1"}},
+                            "",
                             std::chrono::milliseconds(1),
                             [=](std::error_code ec, sdk::FailedDevices) mutable {
                                 LOG(info) << ec;

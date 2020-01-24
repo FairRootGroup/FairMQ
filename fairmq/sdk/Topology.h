@@ -524,6 +524,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
   public:
     template<typename CompletionToken>
     auto AsyncGetProperties(DevicePropertyQuery const& query,
+                            const std::string& path,
                             Duration timeout,
                             CompletionToken&& token)
     {
@@ -536,7 +537,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     std::piecewise_construct,
                     std::forward_as_tuple(id),
                     std::forward_as_tuple(id,
-                                          fStateData.size(),
+                                          fDDSTopo.GetTasks(path).size(),
                                           timeout,
                                           fMtx,
                                           AsioBase<Executor, Allocator>::GetExecutor(),
@@ -544,7 +545,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                                           std::move(handler)));
 
                 cmd::Cmds const cmds(cmd::make<cmd::GetProperties>(id, query));
-                fDDSSession.SendCommand(cmds.Serialize());
+                fDDSSession.SendCommand(cmds.Serialize(), path);
             },
             token);
     }
@@ -552,21 +553,20 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     template<typename CompletionToken>
     auto AsyncGetProperties(DevicePropertyQuery const& query, CompletionToken&& token)
     {
-        return AsyncGetProperties(query, Duration(0), std::move(token));
+        return AsyncGetProperties(query, "", Duration(0), std::move(token));
     }
 
-    auto GetProperties(DevicePropertyQuery const& query, Duration timeout = Duration(0))
+    auto GetProperties(DevicePropertyQuery const& query, const std::string& path = "", Duration timeout = Duration(0))
         -> std::pair<std::error_code, GetPropertiesResult>
     {
         tools::SharedSemaphore blocker;
         std::error_code ec;
         GetPropertiesResult result;
-        AsyncGetProperties(
-            query, timeout, [&, blocker](std::error_code _ec, GetPropertiesResult _result) mutable {
-                ec = _ec;
-                result = _result;
-                blocker.Signal();
-            });
+        AsyncGetProperties(query, path, timeout, [&, blocker](std::error_code _ec, GetPropertiesResult _result) mutable {
+            ec = _ec;
+            result = _result;
+            blocker.Signal();
+        });
         blocker.Wait();
         return {ec, result};
     }
@@ -663,6 +663,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
   public:
     template<typename CompletionToken>
     auto AsyncSetProperties(const DeviceProperties& props,
+                            const std::string& path,
                             Duration timeout,
                             CompletionToken&& token)
     {
@@ -675,7 +676,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     std::piecewise_construct,
                     std::forward_as_tuple(id),
                     std::forward_as_tuple(id,
-                                          fStateData.size(),
+                                          fDDSTopo.GetTasks(path).size(),
                                           timeout,
                                           fMtx,
                                           AsioBase<Executor, Allocator>::GetExecutor(),
@@ -683,7 +684,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                                           std::move(handler)));
 
                 cmd::Cmds const cmds(cmd::make<cmd::SetProperties>(id, props));
-                fDDSSession.SendCommand(cmds.Serialize());
+                fDDSSession.SendCommand(cmds.Serialize(), path);
             },
             token);
     }
@@ -691,21 +692,20 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     template<typename CompletionToken>
     auto AsyncSetProperties(DeviceProperties const & properties, CompletionToken&& token)
     {
-        return AsyncSetProperties(properties, Duration(0), std::move(token));
+        return AsyncSetProperties(properties, "", Duration(0), std::move(token));
     }
 
-    auto SetProperties(DeviceProperties const& properties, Duration timeout = Duration(0))
+    auto SetProperties(DeviceProperties const& properties, const std::string& path = "", Duration timeout = Duration(0))
         -> std::pair<std::error_code, FailedDevices>
     {
         tools::SharedSemaphore blocker;
         std::error_code ec;
         FailedDevices failed;
-        AsyncSetProperties(
-            properties, timeout, [&, blocker](std::error_code _ec, FailedDevices _failed) mutable {
-                ec = _ec;
-                failed = _failed;
-                blocker.Signal();
-            });
+        AsyncSetProperties(properties, path, timeout, [&, blocker](std::error_code _ec, FailedDevices _failed) mutable {
+            ec = _ec;
+            failed = _failed;
+            blocker.Signal();
+        });
         blocker.Wait();
         return {ec, failed};
     }
