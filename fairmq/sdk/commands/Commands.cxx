@@ -46,7 +46,7 @@ array<string, 2> resultNames =
     }
 };
 
-array<string, 18> typeNames =
+array<string, 21> typeNames =
 {
     {
         "CheckState",
@@ -57,6 +57,7 @@ array<string, 18> typeNames =
         "SubscribeToStateChange",
         "UnsubscribeFromStateChange",
         "StateChangeExitingReceived",
+        "GetProperties",
         "SetProperties",
 
         "CurrentState",
@@ -68,6 +69,7 @@ array<string, 18> typeNames =
         "StateChangeSubscription",
         "StateChangeUnsubscription",
         "StateChange",
+        "Properties",
         "PropertiesSet"
     }
 };
@@ -150,7 +152,7 @@ array<sdk::cmd::FBTransition, 12> mqTransitionToFBTransition =
     }
 };
 
-array<FBCmd, 19> typeToFBCmd =
+array<FBCmd, 21> typeToFBCmd =
 {
     {
         FBCmd::FBCmd_check_state,
@@ -161,6 +163,7 @@ array<FBCmd, 19> typeToFBCmd =
         FBCmd::FBCmd_subscribe_to_state_change,
         FBCmd::FBCmd_unsubscribe_from_state_change,
         FBCmd::FBCmd_state_change_exiting_received,
+        FBCmd::FBCmd_get_properties,
         FBCmd::FBCmd_set_properties,
         FBCmd::FBCmd_current_state,
         FBCmd::FBCmd_transition_status,
@@ -171,11 +174,12 @@ array<FBCmd, 19> typeToFBCmd =
         FBCmd::FBCmd_state_change_subscription,
         FBCmd::FBCmd_state_change_unsubscription,
         FBCmd::FBCmd_state_change,
+        FBCmd::FBCmd_properties,
         FBCmd::FBCmd_properties_set
     }
 };
 
-array<Type, 19> fbCmdToType =
+array<Type, 21> fbCmdToType =
 {
     {
         Type::check_state,
@@ -186,6 +190,7 @@ array<Type, 19> fbCmdToType =
         Type::subscribe_to_state_change,
         Type::unsubscribe_from_state_change,
         Type::state_change_exiting_received,
+        Type::get_properties,
         Type::set_properties,
         Type::current_state,
         Type::transition_status,
@@ -196,6 +201,7 @@ array<Type, 19> fbCmdToType =
         Type::state_change_subscription,
         Type::state_change_unsubscription,
         Type::state_change,
+        Type::properties,
         Type::properties_set
     }
 };
@@ -253,6 +259,14 @@ string Cmds::Serialize(const Format type) const
             break;
             case Type::state_change_exiting_received: {
                 cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
+            }
+            break;
+            case Type::get_properties: {
+                auto _cmd = static_cast<GetProperties&>(*cmd);
+                auto query = fbb.CreateString(_cmd.GetQuery());
+                cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
+                cmdBuilder->add_request_id(_cmd.GetRequestId());
+                cmdBuilder->add_property_query(query);
             }
             break;
             case Type::set_properties: {
@@ -343,6 +357,25 @@ string Cmds::Serialize(const Format type) const
                 cmdBuilder->add_current_state(GetFBState(_cmd.GetCurrentState()));
             }
             break;
+            case Type::properties: {
+                auto _cmd = static_cast<Properties&>(*cmd);
+                auto deviceId = fbb.CreateString(_cmd.GetDeviceId());
+
+                std::vector<flatbuffers::Offset<FBProperty>> propsVector;
+                for (const auto& e : _cmd.GetProps()) {
+                    auto key = fbb.CreateString(e.first);
+                    auto val = fbb.CreateString(e.second);
+                    auto prop = CreateFBProperty(fbb, key, val);
+                    propsVector.push_back(prop);
+                }
+                auto props = fbb.CreateVector(propsVector);
+                cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
+                cmdBuilder->add_device_id(deviceId);
+                cmdBuilder->add_request_id(_cmd.GetRequestId());
+                cmdBuilder->add_result(GetFBResult(_cmd.GetResult()));
+                cmdBuilder->add_properties(props);
+            }
+            break;
             case Type::properties_set: {
                 auto _cmd = static_cast<PropertiesSet&>(*cmd);
                 auto deviceId = fbb.CreateString(_cmd.GetDeviceId());
@@ -428,6 +461,9 @@ void Cmds::Deserialize(const string& str, const Format type)
             case FBCmd_state_change_exiting_received:
                 fCmds.emplace_back(make<StateChangeExitingReceived>());
             break;
+            case FBCmd_get_properties:
+                fCmds.emplace_back(make<GetProperties>(cmdPtr.request_id(), cmdPtr.property_query()->str()));
+            break;
             case FBCmd_set_properties: {
                 std::vector<std::pair<std::string, std::string>> properties;
                 auto props = cmdPtr.properties();
@@ -463,6 +499,14 @@ void Cmds::Deserialize(const string& str, const Format type)
             case FBCmd_state_change:
                 fCmds.emplace_back(make<StateChange>(cmdPtr.device_id()->str(), cmdPtr.task_id(), GetMQState(cmdPtr.last_state()), GetMQState(cmdPtr.current_state())));
             break;
+            case FBCmd_properties: {
+                std::vector<std::pair<std::string, std::string>> properties;
+                auto props = cmdPtr.properties();
+                for (unsigned int j = 0; j < props->size(); ++j) {
+                    properties.emplace_back(props->Get(j)->key()->str(), props->Get(j)->value()->str());
+                }
+                fCmds.emplace_back(make<Properties>(cmdPtr.device_id()->str(), cmdPtr.request_id(), GetResult(cmdPtr.result()), properties));
+            } break;
             case FBCmd_properties_set:
                 fCmds.emplace_back(make<PropertiesSet>(cmdPtr.device_id()->str(), cmdPtr.request_id(), GetResult(cmdPtr.result())));
             break;

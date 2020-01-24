@@ -52,7 +52,8 @@ enum FBCmd:byte {
     subscribe_to_state_change,     // args: { }
     unsubscribe_from_state_change, // args: { }
     state_change_exiting_received, // args: { }
-    set_properties,                // args: { key, value }
+    get_properties,                // args: { request_id, property_query }
+    set_properties,                // args: { request_id, properties }
 
     current_state,                 // args: { device_id, current_state }
     transition_status,             // args: { device_id, Result, transition }
@@ -63,6 +64,7 @@ enum FBCmd:byte {
     state_change_subscription,     // args: { device_id, Result }
     state_change_unsubscription,   // args: { device_id, Result }
     state_change,                  // args: { device_id, task_id, last_state, current_state }
+    properties,                    // args: { device_id, request_id, Result, properties }
     properties_set                 // args: { device_id, request_id, Result }
 }
 
@@ -79,6 +81,7 @@ table FBCommand {
     current_state:FBState;
     debug:string;
     properties:[FBProperty];
+    property_query:string;
 }
 
 table FBCommands {

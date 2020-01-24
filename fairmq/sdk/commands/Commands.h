@@ -47,6 +47,7 @@ enum class Type : int
     subscribe_to_state_change,     // args: { }
     unsubscribe_from_state_change, // args: { }
     state_change_exiting_received, // args: { }
+    get_properties,                // args: { request_id, property_query }
     set_properties,                // args: { request_id, properties }
 
     current_state,                 // args: { device_id, current_state }
@@ -58,6 +59,7 @@ enum class Type : int
     state_change_subscription,     // args: { device_id, Result }
     state_change_unsubscription,   // args: { device_id, Result }
     state_change,                  // args: { device_id, task_id, last_state, current_state }
+    properties,                    // args: { device_id, request_id, Result, properties }
     properties_set                 // args: { device_id, request_id, Result }
 };
 
@@ -119,6 +121,24 @@ struct UnsubscribeFromStateChange : Cmd
 struct StateChangeExitingReceived : Cmd
 {
     explicit StateChangeExitingReceived() : Cmd(Type::state_change_exiting_received) {}
+};
+
+struct GetProperties : Cmd
+{
+    GetProperties(std::size_t request_id, std::string query)
+        : Cmd(Type::get_properties)
+        , fRequestId(request_id)
+        , fQuery(std::move(query))
+    {}
+
+    auto GetRequestId() const -> std::size_t { return fRequestId; }
+    auto SetRequestId(std::size_t requestId) -> void { fRequestId = requestId; }
+    auto GetQuery() const -> std::string { return fQuery; }
+    auto SetQuery(std::string query) -> void { fQuery = std::move(query); }
+
+  private:
+    std::size_t fRequestId;
+    std::string fQuery;
 };
 
 struct SetProperties : Cmd
@@ -307,6 +327,32 @@ struct StateChange : Cmd
     uint64_t fTaskId;
     fair::mq::State fLastState;
     fair::mq::State fCurrentState;
+};
+
+struct Properties : Cmd
+{
+    Properties(std::string deviceId, std::size_t requestId, const Result result, std::vector<std::pair<std::string, std::string>> properties)
+        : Cmd(Type::properties)
+        , fDeviceId(std::move(deviceId))
+        , fRequestId(requestId)
+        , fResult(result)
+        , fProperties(std::move(properties))
+    {}
+
+    auto GetDeviceId() const -> std::string { return fDeviceId; }
+    auto SetDeviceId(std::string deviceId) -> void { fDeviceId = std::move(deviceId); }
+    auto GetRequestId() const -> std::size_t { return fRequestId; }
+    auto SetRequestId(std::size_t requestId) -> void { fRequestId = requestId; }
+    auto GetResult() const -> Result { return fResult; }
+    auto SetResult(Result result) -> void { fResult = result; }
+    auto GetProps() const -> std::vector<std::pair<std::string, std::string>> { return fProperties; }
+    auto SetProps(std::vector<std::pair<std::string, std::string>> properties) -> void { fProperties = std::move(properties); }
+
+  private:
+    std::string fDeviceId;
+    std::size_t fRequestId;
+    Result fResult;
+    std::vector<std::pair<std::string, std::string>> fProperties;
 };
 
 struct PropertiesSet : Cmd {
