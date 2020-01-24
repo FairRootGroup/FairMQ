@@ -53,11 +53,8 @@ class DDSTopology
     /// @brief Get number of required agents for this topology
     auto GetNumRequiredAgents() const -> int;
 
-    /// @brief Get list of tasks in this topology
-    auto GetTasks() const -> std::vector<DDSTask>;
-
-    /// @brief Get list of tasks matching the provided topology path
-    auto GetTasksMatchingPath(const std::string&) const -> std::vector<DDSTask>;
+    /// @brief Get list of tasks in this topology, optionally matching provided path
+    auto GetTasks(const std::string& = "") const -> std::vector<DDSTask>;
 
     /// @brief Get list of tasks in this topology
     auto GetCollections() const -> std::vector<DDSCollection>;
