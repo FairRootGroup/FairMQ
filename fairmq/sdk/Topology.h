@@ -401,7 +401,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @brief Perform state transition on all FairMQ devices in this topology
     /// @param transition FairMQ device state machine transition
     /// @param timeout Timeout in milliseconds, 0 means no timeout
-    /// @tparam CompletionToken Asio completion token type
     /// @throws std::system_error
     auto ChangeState(const TopologyTransition transition, Duration timeout = Duration(0))
         -> std::pair<std::error_code, TopologyState>
@@ -522,6 +521,13 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     }
 
   public:
+    /// @brief Initiate property query on selected FairMQ devices in this topology
+    /// @param query Key(s) to be queried (regex)
+    /// @param path Select a subset of FairMQ devices in this topology, empty selects all
+    /// @param timeout Timeout in milliseconds, 0 means no timeout
+    /// @param token Asio completion token
+    /// @tparam CompletionToken Asio completion token type
+    /// @throws std::system_error
     template<typename CompletionToken>
     auto AsyncGetProperties(DevicePropertyQuery const& query,
                             const std::string& path,
@@ -532,6 +538,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             [&](auto handler) {
                 typename GetPropertiesOp::Id const id(tools::UuidHash());
 
+                // TODO Implement garbage collection of completed ops
                 std::lock_guard<std::mutex> lk(fMtx);
                 fGetPropertiesOps.emplace(
                     std::piecewise_construct,
@@ -550,12 +557,22 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             token);
     }
 
+    /// @brief Initiate property query on selected FairMQ devices in this topology
+    /// @param query Key(s) to be queried (regex)
+    /// @param token Asio completion token
+    /// @tparam CompletionToken Asio completion token type
+    /// @throws std::system_error
     template<typename CompletionToken>
     auto AsyncGetProperties(DevicePropertyQuery const& query, CompletionToken&& token)
     {
         return AsyncGetProperties(query, "", Duration(0), std::move(token));
     }
 
+    /// @brief Query properties on selected FairMQ devices in this topology
+    /// @param query Key(s) to be queried (regex)
+    /// @param path Select a subset of FairMQ devices in this topology, empty selects all
+    /// @param timeout Timeout in milliseconds, 0 means no timeout
+    /// @throws std::system_error
     auto GetProperties(DevicePropertyQuery const& query, const std::string& path = "", Duration timeout = Duration(0))
         -> std::pair<std::error_code, GetPropertiesResult>
     {
@@ -661,6 +678,13 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     }
 
   public:
+    /// @brief Initiate property update on selected FairMQ devices in this topology
+    /// @param props Properties to set
+    /// @param path Select a subset of FairMQ devices in this topology, empty selects all
+    /// @param timeout Timeout in milliseconds, 0 means no timeout
+    /// @param token Asio completion token
+    /// @tparam CompletionToken Asio completion token type
+    /// @throws std::system_error
     template<typename CompletionToken>
     auto AsyncSetProperties(const DeviceProperties& props,
                             const std::string& path,
@@ -671,6 +695,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             [&](auto handler) {
                 typename SetPropertiesOp::Id const id(tools::UuidHash());
 
+                // TODO Implement garbage collection of completed ops
                 std::lock_guard<std::mutex> lk(fMtx);
                 fSetPropertiesOps.emplace(
                     std::piecewise_construct,
@@ -689,12 +714,22 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             token);
     }
 
+    /// @brief Initiate property update on selected FairMQ devices in this topology
+    /// @param props Properties to set
+    /// @param token Asio completion token
+    /// @tparam CompletionToken Asio completion token type
+    /// @throws std::system_error
     template<typename CompletionToken>
-    auto AsyncSetProperties(DeviceProperties const & properties, CompletionToken&& token)
+    auto AsyncSetProperties(DeviceProperties const & props, CompletionToken&& token)
     {
-        return AsyncSetProperties(properties, "", Duration(0), std::move(token));
+        return AsyncSetProperties(props, "", Duration(0), std::move(token));
     }
 
+    /// @brief Set properties on selected FairMQ devices in this topology
+    /// @param props Properties to set
+    /// @param path Select a subset of FairMQ devices in this topology, empty selects all
+    /// @param timeout Timeout in milliseconds, 0 means no timeout
+    /// @throws std::system_error
     auto SetProperties(DeviceProperties const& properties, const std::string& path = "", Duration timeout = Duration(0))
         -> std::pair<std::error_code, FailedDevices>
     {
