@@ -368,4 +368,32 @@ TEST_F(Topology, GetProperties)
     ASSERT_EQ(topo.ChangeState(TopologyTransition::ResetDevice).first, std::error_code());
 }
 
+TEST_F(Topology, SetAndGetProperties)
+{
+    using namespace fair::mq;
+    using fair::mq::sdk::TopologyTransition;
+
+    sdk::Topology topo(mDDSTopo, mDDSSession);
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
+
+    sdk::DeviceProperties const props{{"key1", "val1"}, {"key2", "val2"}};
+
+    auto const result1 = topo.SetProperties(props);
+    LOG(info) << result1.first;
+    ASSERT_EQ(result1.first, std::error_code());
+    ASSERT_EQ(result1.second.size(), 0);
+
+    auto const result2 = topo.GetProperties("^key.*");
+    LOG(info) << result2.first;
+    ASSERT_EQ(result2.first, std::error_code());
+    ASSERT_EQ(result2.second.failed.size(), 0);
+    ASSERT_EQ(result2.second.devices.size(), 6);
+    for (auto const& d : result2.second.devices) {
+        ASSERT_EQ(d.second.props, props);
+    }
+
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::CompleteInit).first, std::error_code());
+    ASSERT_EQ(topo.ChangeState(TopologyTransition::ResetDevice).first, std::error_code());
+}
+
 }   // namespace
