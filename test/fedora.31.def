@@ -1,0 +1,19 @@
+# Rebuild:
+#   singularity build -f -F fedora.31.sif fedora.31.def
+
+Bootstrap: docker
+From: fedora:31
+
+%post
+    dnf -y update
+    dnf -y groupinstall "C Development Tools and Libraries"
+    dnf -y install gcc-gfortran wget curl which git xz patch procps unzip cmake boost-devel zeromq-devel nanomsg-devel flatbuffers-devel clang-tools-extra pmix-devel fmt-devel ninja-build msgpack-devel glibc-common glibc-langpack-en
+    dnf -y clean all
+    echo 'LANG="en_US.UTF-8"' > /etc/locale.conf
+    export LANG="en_US.UTF-8"
+    tmp=$(mktemp -d)
+    cd $tmp && git clone -b master https://github.com/FairRootGroup/FairLogger && cd FairLogger
+    cmake -S. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/usr -DUSE_BOOST_PRETTY_FUNCTION=ON -DUSE_EXTERNAL_FMT=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build --target install
+    cd $tmp && git clone -b master https://github.com/FairRootGroup/DDS && cd DDS
+    cmake -S. -Bbuild -GNinja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release && cmake --build build --target wn_bin && cmake --build build --target install
+    cd && rm -rf $tmp

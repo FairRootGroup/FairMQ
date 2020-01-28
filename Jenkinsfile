@@ -1,61 +1,67 @@
 #!groovy
 
-def specToLabel(Map spec) {
-  return "${spec.os}-${spec.arch}-${spec.compiler}-FairSoft_${spec.fairsoft}"
-}
-
-def jobMatrix(String prefix, List specs, Closure callback) {
+def jobMatrix(String type, List specs, Closure callback) {
   def nodes = [:]
   for (spec in specs) {
-    def label = specToLabel(spec)
-    def fairsoft = spec.fairsoft
-    def os = spec.os
-    def compiler = spec.compiler
-    nodes["${prefix}/${label}"] = {
-      node(label) {
-        githubNotify(context: "${prefix}/${label}", description: 'Building ...', status: 'PENDING')
-        try {
-          deleteDir()
-          checkout scm
+    if (type == 'macos') {
+      def label = "${spec.type}-${spec.os}-FairSoft_${spec.fairsoft}-${env.JOB_BASE_NAME}"
+      nodes["${label}"] = {
+        node("${spec.os}-${spec.fairsoft}") {
+          githubNotify(context: "${label}", description: 'Building ...', status: 'PENDING')
+          try {
+            deleteDir()
+            checkout scm
 
-          sh """\
-            echo "export SIMPATH=\${SIMPATH_PREFIX}${fairsoft}" >> Dart.cfg
-            echo "export FAIRSOFT_VERSION=${fairsoft}" >> Dart.cfg
-          """
-          if (os =~ /Debian/ && compiler =~ /gcc9/) {
-            sh '''\
-              echo "source /etc/profile.d/modules.sh" >> Dart.cfg
-              echo "module use /cvmfs/it.gsi.de/modulefiles" >> Dart.cfg
-              echo "module load compiler/gcc/9.1.0" >> Dart.cfg
-            '''
+            callback.call(spec, label)
+
+            deleteDir()
+            githubNotify(context: "${label}", description: 'Success', status: 'SUCCESS')
+          } catch (e) {
+            def tarball = "build_${label}_dds_logs.tar.gz"
+            sh "tar czvf ${tarball} -C \${WORKSPACE}/build/test/ .DDS/"
+            archiveArtifacts tarball
+
+            deleteDir()
+            githubNotify(context: "${label}", description: 'Error', status: 'ERROR')
+            throw e
           }
-          if (os =~ /MacOS/) {
-            sh "echo \"export EXTRA_FLAGS='-DCMAKE_CXX_COMPILER=clang++'\" >> Dart.cfg"
-          } else {
-            sh "echo \"export EXTRA_FLAGS='-DCMAKE_CXX_COMPILER=g++'\" >> Dart.cfg"
+        }
+      }
+    } else {
+      def label = "${spec.type}-${spec.os}-${spec.compiler}-${env.JOB_BASE_NAME}"
+      nodes["${label}"] = {
+        node("slurm") {
+          githubNotify(context: "${label}", description: 'Building ...', status: 'PENDING')
+          def tarball = "${label}_dds_logs.tar.gz"
+          try {
+            deleteDir()
+            checkout scm
+            sh 'mktemp -d -p /dev/shm > tmpdir'
+            sh """\
+              echo "#!/bin/bash" > job.sh
+              echo "set -x" >> job.sh
+              echo "cleanup() {" >> job.sh
+              echo "  rm -rf \\\$1" >> job.sh
+              echo "}" >> job.sh
+              echo "env" >> job.sh
+              echo "tmp=\$(cat ./tmpdir)" >> job.sh
+              echo "trap 'cleanup \\\$tmp' EXIT" >> job.sh
+              echo "cp -r . \\\$tmp/" >> job.sh
+              echo "cd \\\$tmp" >> job.sh
+              echo "img=${env.SINGULARITY_CONTAINER_ROOT}/fairmq/${spec.container}" >> job.sh
+              echo "cp \\\$img \\\$tmp/" >> job.sh
+              echo "singularity exec \\\$tmp/${spec.container} bash -c \\\"LD_LIBRARY_PATH=/usr/lib ctest -DCTEST_BUILD_NAME='${label}' -DCTEST_MODEL=${spec.track} -DCMAKE_BUILD_TYPE=${spec.type} -DCTEST_SITE=${env.CTEST_SITE} -V -S test/FairMQTest.cmake\\\"" >> job.sh
+            """
+            sh 'cat job.sh'
+            sh 'env'
+            callback.call(spec, label)
+            deleteDir()
+            githubNotify(context: "${label}", description: 'Success', status: 'SUCCESS')
+          } catch (e) {
+            deleteDir()
+            githubNotify(context: "${label}", description: 'Error', status: 'ERROR')
+            throw e
           }
-
-          sh '''\
-            echo "export BUILDDIR=$PWD/build" >> Dart.cfg
-            echo "export SOURCEDIR=$PWD" >> Dart.cfg
-            echo "export PATH=\\\$SIMPATH/bin:\\\$PATH" >> Dart.cfg
-            echo "export GIT_BRANCH=$JOB_BASE_NAME" >> Dart.cfg
-            echo "echo \\\$PATH" >> Dart.cfg
-          '''
-          sh 'cat Dart.cfg'
-
-          callback.call(spec, label)
-
-          deleteDir()
-          githubNotify(context: "${prefix}/${label}", description: 'Success', status: 'SUCCESS')
-        } catch (e) {
-          def tarball = "${prefix}_${label}_dds_logs.tar.gz"
-          sh "tar czvf ${tarball} -C \${WORKSPACE}/build/test/ .DDS/"
-          archiveArtifacts tarball
-
-          deleteDir()
-          githubNotify(context: "${prefix}/${label}", description: 'Error', status: 'ERROR')
-          throw e
         }
       }
     }
@@ -66,26 +72,24 @@ def jobMatrix(String prefix, List specs, Closure callback) {
 pipeline{
   agent none
   stages {
-    stage("Run CI Matrix") {
+    stage("Run checks") {
       steps{
         script {
-          def build_jobs = jobMatrix('build', [
-            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc9.1.0',        fairsoft: 'fairmq_dev'],
-            [os: 'MacOS10.13', arch: 'x86_64', compiler: 'AppleLLVM10.0.0', fairsoft: 'fairmq_dev'],
-            [os: 'MacOS10.14', arch: 'x86_64', compiler: 'AppleLLVM10.0.0', fairsoft: 'fairmq_dev'],
+          def mac_jobs = jobMatrix('macos', [
+            [os: 'macOS10.13', arch: 'x86_64', fairsoft: 'fairmq_dev', type: 'RelWithDebInfo'],
+            [os: 'macOS10.14', arch: 'x86_64', fairsoft: 'fairmq_dev', type: 'RelWithDebInfo'],
           ]) { spec, label ->
-            sh './Dart.sh alfa_ci Dart.cfg'
+            sh "ctest -DCTEST_BUILD_NAME='${label}' -DCTEST_MODEL=Continuous -DCTEST_CMAKE_GENERATOR='Unix Makefiles' -DCMAKE_BUILD_TYPE=${spec.type} -DCMAKE_INSTALL_PREFIX=${env.SIMPATH_PREFIX}${spec.fairsoft} -DBUILD_PMIX_PLUGIN=OFF -V -S test/FairMQTest.cmake"
           }
 
-          def profile_jobs = jobMatrix('codecov', [
-            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc9.1.0',        fairsoft: 'fairmq_dev'],
+          def linux_jobs = jobMatrix('virgo', [
+            [os: 'Fedora31', arch: 'x86_64', compiler: 'gcc9.2', container: 'fedora.31.sif', track: 'Continuous', type: 'RelWithDebInfo'],
+            [os: 'Fedora31', arch: 'x86_64', compiler: 'gcc9.2', container: 'fedora.31.sif', track: 'Coverage'  , type: 'Profile'],
           ]) { spec, label ->
-            withCredentials([string(credentialsId: 'fairmq_codecov_token', variable: 'CODECOV_TOKEN')]) {
-              sh './Dart.sh codecov Dart.cfg'
-            }
+            sh "srun -p main -c 16 -n 1 -t 30:00 --job-name='alfaci-${label}' bash job.sh"
           }
 
-          parallel(build_jobs + profile_jobs)
+          parallel(mac_jobs + linux_jobs)
         }
       }
     }
