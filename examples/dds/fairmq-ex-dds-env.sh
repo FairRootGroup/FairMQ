@@ -9,3 +9,8 @@
 ################################################################################
 
 export PATH=@BIN_DIR@:$PATH
+
+OS=$(uname -s 2>&1)
+if [ "$OS" == "Darwin" ]; then
+   export DYLD_LIBRARY_PATH=@LIB_DIR@:$DYLD_LIBRARY_PATH
+fi

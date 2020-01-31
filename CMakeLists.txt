@@ -6,8 +6,8 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
-cmake_policy(VERSION 3.11...3.15)
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+cmake_policy(VERSION 3.12...3.15)
 
 # Project ######################################################################
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
