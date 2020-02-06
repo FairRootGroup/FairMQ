@@ -37,6 +37,11 @@ target_link_libraries(${target}
   PRIVATE
   ${_flatbuffers}
 )
+set_target_properties(${target} PROPERTIES
+  VERSION ${PROJECT_VERSION}
+  SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+  OUTPUT_NAME FairMQ${target}
+)
 
 target_include_directories(${target}
   PUBLIC
