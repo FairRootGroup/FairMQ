@@ -18,7 +18,7 @@
 #include <vector>
 #include <thread>
 
-namespace
+namespace _plugin
 {
 
 using namespace std;

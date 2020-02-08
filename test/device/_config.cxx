@@ -17,7 +17,7 @@
 #include <sstream> // std::stringstream
 #include <thread>
 
-namespace
+namespace _config
 {
 
 using namespace std;

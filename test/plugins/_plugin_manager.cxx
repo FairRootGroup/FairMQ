@@ -17,7 +17,7 @@
 #include <vector>
 #include <thread>
 
-namespace
+namespace _plugin_manager
 {
 
 using namespace fair::mq;
