@@ -347,11 +347,11 @@ auto DDS::SubscribeForCustomCommands() -> void
                     Transition transition = static_cast<cmd::ChangeState&>(*cmd).GetTransition();
                     if (ChangeDeviceState(transition)) {
                         cmd::Cmds outCmds(
-                            cmd::make<cmd::TransitionStatus>(id, cmd::Result::Ok, transition));
+                            cmd::make<cmd::TransitionStatus>(id, dds::env_prop<dds::task_id>(), cmd::Result::Ok, transition));
                         fDDS.Send(outCmds.Serialize(), to_string(senderId));
                     } else {
                         sdk::cmd::Cmds outCmds(
-                            cmd::make<cmd::TransitionStatus>(id, cmd::Result::Failure, transition));
+                            cmd::make<cmd::TransitionStatus>(id, dds::env_prop<dds::task_id>(), cmd::Result::Failure, transition));
                         fDDS.Send(outCmds.Serialize(), to_string(senderId));
                     }
                     {

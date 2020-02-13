@@ -51,7 +51,7 @@ enum class Type : int
     set_properties,                // args: { request_id, properties }
 
     current_state,                 // args: { device_id, current_state }
-    transition_status,             // args: { device_id, Result, transition }
+    transition_status,             // args: { device_id, task_id, Result, transition }
     config,                        // args: { device_id, config_string }
     heartbeat_subscription,        // args: { device_id, Result }
     heartbeat_unsubscription,      // args: { device_id, Result }
@@ -179,15 +179,18 @@ struct CurrentState : Cmd
 
 struct TransitionStatus : Cmd
 {
-    explicit TransitionStatus(const std::string& id, const Result result, const Transition transition)
+    explicit TransitionStatus(const std::string& deviceId, const uint64_t taskId, const Result result, const Transition transition)
         : Cmd(Type::transition_status)
-        , fDeviceId(id)
+        , fDeviceId(deviceId)
+        , fTaskId(taskId)
         , fResult(result)
         , fTransition(transition)
     {}
 
     std::string GetDeviceId() const { return fDeviceId; }
     void SetDeviceId(const std::string& deviceId) { fDeviceId = deviceId; }
+    uint64_t GetTaskId() const { return fTaskId; }
+    void SetTaskId(const uint64_t taskId) { fTaskId = taskId; }
     Result GetResult() const { return fResult; }
     void SetResult(const Result result) { fResult = result; }
     Transition GetTransition() const { return fTransition; }
@@ -195,6 +198,7 @@ struct TransitionStatus : Cmd
 
   private:
     std::string fDeviceId;
+    uint64_t fTaskId;
     Result fResult;
     Transition fTransition;
 };

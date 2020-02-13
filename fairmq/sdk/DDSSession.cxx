@@ -135,8 +135,6 @@ struct DDSSession::Impl
     dds::intercom_api::CCustomCmd fDDSCustomCmd;
     Id fId;
     bool fStopOnDestruction;
-    mutable std::mutex fMtx;
-    std::unordered_map<DDSChannel::Id, DDSTask::Id> fTaskIdByChannelIdMap;
 };
 
 DDSSession::DDSSession(DDSEnvironment env)
@@ -360,18 +358,6 @@ void DDSSession::SendCommand(const std::string& cmd, const std::string& path /* 
 void DDSSession::SendCommand(const std::string& cmd, DDSChannel::Id recipient)
 {
     fImpl->fDDSCustomCmd.send(cmd, std::to_string(recipient));
-}
-
-auto DDSSession::UpdateChannelToTaskAssociation(DDSChannel::Id channelId, DDSTask::Id taskId) -> void
-{
-    std::lock_guard<std::mutex> lk(fImpl->fMtx);
-    fImpl->fTaskIdByChannelIdMap[channelId] = taskId;
-}
-
-auto DDSSession::GetTaskId(DDSChannel::Id channelId) const -> DDSTask::Id
-{
-    std::lock_guard<std::mutex> lk(fImpl->fMtx);
-    return fImpl->fTaskIdByChannelIdMap.at(channelId);
 }
 
 auto operator<<(std::ostream& os, const DDSSession& session) -> std::ostream&
