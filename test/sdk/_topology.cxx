@@ -26,8 +26,8 @@ TEST(TopologyHelper, MakeTopology)
     sdk::DDSEnv env(CMAKE_CURRENT_BINARY_DIR);
     /////////////////////////////////////
 
-    dds::topology_api::CTopology nativeTopo(
-        tools::ToString(SDK_TESTSUITE_SOURCE_DIR, "/test_topo.xml"));
+    std::string topoFile(tools::ToString(SDK_TESTSUITE_SOURCE_DIR, "/test_topo.xml"));
+    dds::topology_api::CTopology nativeTopo(topoFile);
     auto nativeSession(std::make_shared<dds::tools_api::CSession>());
     nativeSession->create();
     EXPECT_THROW(sdk::MakeTopology(nativeTopo, nativeSession, env), sdk::RuntimeError);
@@ -216,6 +216,27 @@ TEST_F(Topology, ChangeStateFullDeviceLifecycle)
                             TopologyTransition::ResetDevice,
                             TopologyTransition::End}) {
         ASSERT_EQ(topo.ChangeState(transition).first, std::error_code());
+    }
+}
+
+TEST_F(Topology, WaitForStateFullDeviceLifecycle)
+{
+    using namespace fair::mq;
+    using fair::mq::sdk::TopologyTransition;
+
+    sdk::Topology topo(mDDSTopo, mDDSSession);
+    for (auto transition : {TopologyTransition::InitDevice,
+                            TopologyTransition::CompleteInit,
+                            TopologyTransition::Bind,
+                            TopologyTransition::Connect,
+                            TopologyTransition::InitTask,
+                            TopologyTransition::Run,
+                            TopologyTransition::Stop,
+                            TopologyTransition::ResetTask,
+                            TopologyTransition::ResetDevice,
+                            TopologyTransition::End}) {
+        LOG(info) << topo.ChangeState(transition).first;
+        ASSERT_EQ(topo.WaitForState(sdk::expectedState.at(transition)), std::error_code());
     }
 }
 
