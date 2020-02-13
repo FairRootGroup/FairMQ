@@ -1,0 +1,79 @@
+#!/bin/bash
+
+################################################################################
+#    Copyright (C) 2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
+#                                                                              #
+#              This software is distributed under the terms of the             #
+#              GNU Lesser General Public Licence (LGPL) version 3,             #
+#                  copied verbatim in the file "LICENSE"                       #
+################################################################################
+
+# fairmq-start-ex-qc.sh -> submit agents with localhost plugin
+
+set -e
+
+cleanup() {
+  dds-session stop $1
+  echo "CLEANUP PERFORMED"
+}
+
+source @DDS_INSTALL_PREFIX@/DDS_env.sh
+export PATH=@BIN_DIR@:$PATH
+
+exec 5>&1
+output=$(dds-session start | tee >(cat - >&5))
+export FAIRMQ_DDS_SESSION_ID=$(echo ${output} | grep "DDS session ID: " | cut -d' ' -f4)
+echo "SESSION ID: ${FAIRMQ_DDS_SESSION_ID}"
+
+trap "cleanup ${FAIRMQ_DDS_SESSION_ID}" EXIT
+
+requiredNofSlots=4
+dds-submit -r localhost --slots ${requiredNofSlots}
+echo "...waiting for ${requiredNofSlots} idle slots..."
+dds-info --idle-count --wait ${requiredNofSlots}
+
+export FAIRMQ_DDS_TOPO_FILE=@DATA_DIR@/ex-qc-topology.xml
+echo "TOPOLOGY FILE: ${FAIRMQ_DDS_TOPO_FILE}"
+echo "TOPOLOGY NAME: $(dds-topology --disable-validation --topology-name ${FAIRMQ_DDS_TOPO_FILE})"
+
+dds-info --active-topology
+dds-topology --activate ${FAIRMQ_DDS_TOPO_FILE}
+dds-info --active-topology
+echo "...waiting for ${requiredNofSlots} executing slots..."
+dds-info --executing-count --wait ${requiredNofSlots}
+
+echo "------------------------"
+echo "...waiting for Topology to finish..."
+# TODO Retrieve number of devices from DDS topology API instead of having the user pass it explicitely
+fairmq-dds-command-ui -w "IDLE" -n ${requiredNofSlots}
+fairmq-dds-command-ui -c i -w "INITIALIZING DEVICE" -n ${requiredNofSlots}
+fairmq-dds-command-ui -c k -w "INITIALIZED" -n ${requiredNofSlots}
+fairmq-dds-command-ui -c b -w "BOUND" -n ${requiredNofSlots}
+fairmq-dds-command-ui -c x -w "DEVICE READY" -n ${requiredNofSlots}
+fairmq-dds-command-ui -c j -w "READY" -n ${requiredNofSlots}
+fairmq-dds-command-ui -c r
+sampler_and_sink="main/(Sampler|Sink)"
+# processors="main/ProcessorGroup/Processor"
+fairmq-dds-command-ui -p $sampler_and_sink -w "RUNNING->READY" -n 2
+echo "...$sampler_and_sink are READY, sending shutdown..."
+fairmq-dds-command-ui -c s -w "RUNNING->READY" -n ${requiredNofSlots}
+fairmq-dds-command-ui -c t -w "DEVICE READY" -n ${requiredNofSlots}
+fairmq-dds-command-ui -c d -w "IDLE" -n ${requiredNofSlots}
+fairmq-dds-command-ui -c q -w "EXITING" -n ${requiredNofSlots}
+echo "...waiting for ${requiredNofSlots} idle slots..."
+dds-info --idle-count --wait ${requiredNofSlots}
+echo "------------------------"
+
+dds-info --active-topology
+dds-topology --stop
+dds-info --active-topology
+
+dds-agent-cmd getlog -a
+logDir="${wrkDir}/logs"
+for file in $(find "${logDir}" -name "*.tar.gz"); do tar -xf ${file} -C "${logDir}" ; done
+echo "AGENT LOG FILES IN: ${logDir}"
+
+# This string is used by ctest to detect success
+echo "Example successful :)"
+
+# Cleanup function is called by EXIT trap
