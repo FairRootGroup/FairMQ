@@ -55,12 +55,17 @@ struct DDSEnvironment::Impl
             setenv("HOME", fConfigHome.c_str(), 1);
         }
 
-        std::istringstream cmd;
-        cmd.str("DDS_CFG=`dds-user-defaults --ignore-default-sid -p`\n"
-                "if [ -z \"$DDS_CFG\" ]; then\n"
-                "  mkdir -p \"$HOME/.DDS\"\n"
-                "  dds-user-defaults --ignore-default-sid -d -c \"$HOME/.DDS/DDS.cfg\"\n"
-                "fi");
+        std::stringstream cmd;
+#ifdef __APPLE__
+        // On macOS System Integrity Protection might filter out the DYLD_LIBRARY_PATH, so we pass it
+        // through explicitely here.
+        cmd << "export " << fgLdVar << "=" << GetEnv(fgLdVar) << "\n";
+#endif
+        cmd << "DDS_CFG=`dds-user-defaults --ignore-default-sid -p`\n"
+               "if [ -z \"$DDS_CFG\" ]; then\n"
+               "  mkdir -p \"$HOME/.DDS\"\n"
+               "  dds-user-defaults --ignore-default-sid -d -c \"$HOME/.DDS/DDS.cfg\"\n"
+               "fi\n";
         std::system(cmd.str().c_str());
     }
 
@@ -72,20 +77,23 @@ struct DDSEnvironment::Impl
         setenv("PATH", path.c_str(), 1);
     }
 
-    auto SetupDynamicLoader() -> void
+    auto GenerateDDSLibDir() const -> Path
     {
-#ifdef __APPLE__
-        std::string ldVar("DYLD_LIBRARY_PATH");
-#else
-        std::string ldVar("LD_LIBRARY_PATH");
-#endif
-        std::string ld(GetEnv(ldVar));
-        Path ddsLibDir = (fLocation == DDSInstallPrefix) ? DDSLibraryDir : fLocation / Path("lib");
-        ld = ddsLibDir.string() + std::string(":") + ld;
-        setenv(ldVar.c_str(), ld.c_str(), 1);
+        return {(fLocation == DDSInstallPrefix) ? DDSLibraryDir : fLocation / Path("lib")};
     }
 
-    auto GetEnv(const std::string& key) -> std::string
+    auto SetupDynamicLoader() -> void
+    {
+        std::string ld(GetEnv(fgLdVar));
+        if (ld.empty()) {
+            ld = GenerateDDSLibDir().string();
+        } else {
+            ld = GenerateDDSLibDir().string() + std::string(":") + ld;
+        }
+        setenv(fgLdVar.c_str(), ld.c_str(), 1);
+    }
+
+    auto GetEnv(const std::string& key) const -> std::string
     {
         auto value = std::getenv(key.c_str());
         if (value) {
@@ -100,6 +108,11 @@ struct DDSEnvironment::Impl
 
     Path fLocation;
     Path fConfigHome;
+#ifdef __APPLE__
+    std::string const fgLdVar = "DYLD_LIBRARY_PATH";
+#else
+    std::string const fgLdVar = "LD_LIBRARY_PATH";
+#endif
 };
 
 DDSEnvironment::DDSEnvironment()
