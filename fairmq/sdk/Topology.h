@@ -193,7 +193,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     case Type::state_change: {
                         auto _cmd = static_cast<StateChange&>(*cmd);
                         DDSTask::Id taskId(_cmd.GetTaskId());
-                        fDDSSession.UpdateChannelToTaskAssociation(senderId, taskId);
                         if (_cmd.GetCurrentState() == DeviceState::Exiting) {
                             Cmds outCmds;
                             outCmds.Add<StateChangeExitingReceived>();
@@ -212,10 +211,11 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                         }
                     break;
                     case Type::transition_status: {
-                        if (static_cast<TransitionStatus&>(*cmd).GetResult() != Result::Ok) {
-                            LOG(error) << "Transition failed for " << static_cast<TransitionStatus&>(*cmd).GetDeviceId();
+                        auto _cmd = static_cast<TransitionStatus&>(*cmd);
+                        if (_cmd.GetResult() != Result::Ok) {
+                            LOG(error) << "Transition failed for " << _cmd.GetDeviceId();
                             std::lock_guard<std::mutex> lk(fMtx);
-                            if (!fChangeStateOp.IsCompleted() && fStateData.at(fStateIndex.at(fDDSSession.GetTaskId(senderId))).state != fChangeStateTarget) {
+                            if (!fChangeStateOp.IsCompleted() && fStateData.at(fStateIndex.at(_cmd.GetTaskId())).state != fChangeStateTarget) {
                                 fChangeStateOpTimer.cancel();
                                 fChangeStateOp.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed), fStateData);
                             }

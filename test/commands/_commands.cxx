@@ -32,7 +32,7 @@ TEST(Format, Construction)
     Cmds getPropertiesCmds(make<GetProperties>(66, "k[12]"));
     Cmds setPropertiesCmds(make<SetProperties>(42, props));
     Cmds currentStateCmds(make<CurrentState>("somedeviceid", State::Running));
-    Cmds transitionStatusCmds(make<TransitionStatus>("somedeviceid", Result::Ok, Transition::Stop));
+    Cmds transitionStatusCmds(make<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop));
     Cmds configCmds(make<Config>("somedeviceid", "someconfig"));
     Cmds heartbeatSubscriptionCmds(make<HeartbeatSubscription>("somedeviceid", Result::Ok));
     Cmds heartbeatUnsubscriptionCmds(make<HeartbeatUnsubscription>("somedeviceid", Result::Ok));
@@ -63,6 +63,7 @@ TEST(Format, Construction)
     ASSERT_EQ(static_cast<CurrentState&>(currentStateCmds.At(0)).GetCurrentState(), State::Running);
     ASSERT_EQ(transitionStatusCmds.At(0).GetType(), Type::transition_status);
     ASSERT_EQ(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetDeviceId(), "somedeviceid");
+    ASSERT_EQ(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetTaskId(), 123456);
     ASSERT_EQ(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetResult(), Result::Ok);
     ASSERT_EQ(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetTransition(), Transition::Stop);
     ASSERT_EQ(configCmds.At(0).GetType(), Type::config);
@@ -113,7 +114,7 @@ void fillCommands(Cmds& cmds)
     cmds.Add<GetProperties>(66, "k[12]");
     cmds.Add<SetProperties>(42, props);
     cmds.Add<CurrentState>("somedeviceid", State::Running);
-    cmds.Add<TransitionStatus>("somedeviceid", Result::Ok, Transition::Stop);
+    cmds.Add<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop);
     cmds.Add<Config>("somedeviceid", "someconfig");
     cmds.Add<HeartbeatSubscription>("somedeviceid", Result::Ok);
     cmds.Add<HeartbeatUnsubscription>("somedeviceid", Result::Ok);
@@ -177,6 +178,7 @@ void checkCommands(Cmds& cmds)
             case Type::transition_status:
                 ++count;
                 ASSERT_EQ(static_cast<TransitionStatus&>(*cmd).GetDeviceId(), "somedeviceid");
+                ASSERT_EQ(static_cast<TransitionStatus&>(*cmd).GetTaskId(), 123456);
                 ASSERT_EQ(static_cast<TransitionStatus&>(*cmd).GetResult(), Result::Ok);
                 ASSERT_EQ(static_cast<TransitionStatus&>(*cmd).GetTransition(), Transition::Stop);
             break;

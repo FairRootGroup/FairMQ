@@ -103,7 +103,6 @@ class DDSSession
     void UnsubscribeFromCommands();
     void SendCommand(const std::string&, const std::string& = "");
     void SendCommand(const std::string&, DDSChannel::Id);
-    auto UpdateChannelToTaskAssociation(DDSChannel::Id, DDSTask::Id) -> void;
     auto GetTaskId(DDSChannel::Id) const -> DDSTask::Id;
 
     friend auto operator<<(std::ostream& os, const DDSSession& session) -> std::ostream&;
