@@ -1,0 +1,48 @@
+<topology name="ExampleQC">
+
+    <property name="fmqchan_data1" />
+    <property name="fmqchan_data2" />
+    <property name="fmqchan_qc" />
+
+    <decltask name="Sampler">
+        <exe>fairmq-ex-qc-sampler --color false --channel-config name=data1,type=push,method=bind -P dds --max-iterations 1000</exe>
+        <env reachable="false">fairmq-ex-qc-env.sh</env>
+        <properties>
+            <name access="write">fmqchan_data1</name>
+        </properties>
+    </decltask>
+
+    <decltask name="QCProducer">
+        <exe>fairmq-ex-qc-producer --color false --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect name=qc,type=push,method=connect -P dds</exe>
+        <env reachable="false">fairmq-ex-qc-env.sh</env>
+        <properties>
+            <name access="read">fmqchan_data1</name>
+            <name access="read">fmqchan_data2</name>
+            <name access="read">fmqchan_qc</name>
+        </properties>
+    </decltask>
+
+    <decltask name="QCConsumer">
+        <exe>fairmq-ex-qc-consumer --color false --channel-config name=qc,type=pull,method=bind -P dds</exe>
+        <env reachable="false">fairmq-ex-qc-env.sh</env>
+        <properties>
+            <name access="write">fmqchan_qc</name>
+        </properties>
+    </decltask>
+
+    <decltask name="Sink">
+        <exe>fairmq-ex-qc-sink --color false --channel-config name=data2,type=pull,method=bind -P dds --max-iterations 1000</exe>
+        <env reachable="false">fairmq-ex-qc-env.sh</env>
+        <properties>
+            <name access="write">fmqchan_data2</name>
+        </properties>
+    </decltask>
+
+    <main name="main">
+        <task>Sampler</task>
+        <task>QCProducer</task>
+        <task>QCConsumer</task>
+        <task>Sink</task>
+    </main>
+
+</topology>
