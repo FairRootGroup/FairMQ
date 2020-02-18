@@ -468,7 +468,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             , fTargetLastState(targetLastState)
             , fTargetCurrentState(targetCurrentState)
             , fMtx(mutex)
-            , fCompleted(false)
         {
             if (timeout > std::chrono::milliseconds(0)) {
                 fTimer.expires_after(timeout);
@@ -490,7 +489,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         /// precondition: fMtx is locked.
         auto ResetCount(const TopologyStateIndex& stateIndex, const TopologyState& stateData) -> void
         {
-            LOG(info) << "Resetting count and expecting fTargetLastState=" << fTargetLastState << ",fTargetCurrentState=" << fTargetCurrentState;
             fCount = std::count_if(stateIndex.cbegin(), stateIndex.cend(), [=](const auto& s) {
                 if (ContainsTask(stateData.at(s.second).taskId)) {
                     if (stateData.at(s.second).state == fTargetCurrentState &&
@@ -509,8 +507,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         /// precondition: fMtx is locked.
         auto Update(const DDSTask::Id taskId, const DeviceState lastState, const DeviceState currentState) -> void
         {
-            if (!fCompleted && ContainsTask(taskId)) {
-                LOG(info) << "Update: lastState=" << lastState << ",currentState=" << currentState;
+            if (!fOp.IsCompleted() && ContainsTask(taskId)) {
                 if (currentState == fTargetCurrentState &&
                     (lastState == fTargetLastState ||
                      fTargetLastState == DeviceState::Ok)) {
@@ -523,13 +520,13 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         /// precondition: fMtx is locked.
         auto TryCompletion() -> void
         {
-            LOG(info) << "fCount: " << fCount;
             if (!fOp.IsCompleted() && fCount == fTasks.size()) {
-                fCompleted = true;
                 fTimer.cancel();
                 fOp.Complete();
             }
         }
+
+        bool IsCompleted() { return fOp.IsCompleted(); }
 
       private:
         Id const fId;
@@ -540,7 +537,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         DeviceState fTargetLastState;
         DeviceState fTargetCurrentState;
         std::mutex& fMtx;
-        bool fCompleted;
 
         /// precondition: fMtx is locked.
         auto ContainsTask(DDSTask::Id id) -> bool
@@ -574,6 +570,15 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
             // TODO Implement garbage collection of completed ops
             std::lock_guard<std::mutex> lk(fMtx);
+
+            for (auto it = begin(fWaitForStateOps); it != end(fWaitForStateOps);) {
+                if (it->second.IsCompleted()) {
+                    it = fWaitForStateOps.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+
             auto p = fWaitForStateOps.emplace(
                 std::piecewise_construct,
                 std::forward_as_tuple(id),
@@ -689,6 +694,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             TryCompletion();
         }
 
+        bool IsCompleted() { return fOp.IsCompleted(); }
+
       private:
         Id const fId;
         AsioAsyncOp<Executor, Allocator, GetPropertiesCompletionSignature> fOp;
@@ -744,8 +751,16 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             [&](auto handler) {
                 typename GetPropertiesOp::Id const id(tools::UuidHash());
 
-                // TODO Implement garbage collection of completed ops
                 std::lock_guard<std::mutex> lk(fMtx);
+
+                for (auto it = begin(fGetPropertiesOps); it != end(fGetPropertiesOps);) {
+                    if (it->second.IsCompleted()) {
+                        it = fGetPropertiesOps.erase(it);
+                    } else {
+                        ++it;
+                    }
+                }
+
                 fGetPropertiesOps.emplace(
                     std::piecewise_construct,
                     std::forward_as_tuple(id),
@@ -846,6 +861,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             TryCompletion();
         }
 
+        bool IsCompleted() { return fOp.IsCompleted(); }
+
       private:
         Id const fId;
         AsioAsyncOp<Executor, Allocator, SetPropertiesCompletionSignature> fOp;
@@ -901,8 +918,16 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             [&](auto handler) {
                 typename SetPropertiesOp::Id const id(tools::UuidHash());
 
-                // TODO Implement garbage collection of completed ops
                 std::lock_guard<std::mutex> lk(fMtx);
+
+                for (auto it = begin(fGetPropertiesOps); it != end(fGetPropertiesOps);) {
+                    if (it->second.IsCompleted()) {
+                        it = fGetPropertiesOps.erase(it);
+                    } else {
+                        ++it;
+                    }
+                }
+
                 fSetPropertiesOps.emplace(
                     std::piecewise_construct,
                     std::forward_as_tuple(id),

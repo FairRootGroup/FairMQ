@@ -225,6 +225,9 @@ TEST_F(Topology, WaitForStateFullDeviceLifecycle)
     using fair::mq::sdk::TopologyTransition;
 
     sdk::Topology topo(mDDSTopo, mDDSSession);
+    topo.AsyncWaitForState(sdk::DeviceState::ResettingDevice, [](std::error_code ec){
+        ASSERT_EQ(ec, std::error_code());
+    });
     for (auto transition : {TopologyTransition::InitDevice,
                             TopologyTransition::CompleteInit,
                             TopologyTransition::Bind,
@@ -235,7 +238,7 @@ TEST_F(Topology, WaitForStateFullDeviceLifecycle)
                             TopologyTransition::ResetTask,
                             TopologyTransition::ResetDevice,
                             TopologyTransition::End}) {
-        LOG(info) << topo.ChangeState(transition).first;
+        topo.ChangeState(transition);
         ASSERT_EQ(topo.WaitForState(sdk::expectedState.at(transition)), std::error_code());
     }
 }

@@ -77,10 +77,10 @@ auto DDSTopology::GetTasks(const std::string& path /* = "" */) const -> std::vec
     auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
 
     for (const auto& task : tasks) {
-        LOG(debug) << "Found task with id: " << task.first << ", "
-                   << "Path: " << task.second.m_taskPath << ", "
-                   << "Collection id: " << task.second.m_taskCollectionId << ", "
-                   << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex;
+        // LOG(debug) << "Found task with id: " << task.first << ", "
+        //            << "Path: " << task.second.m_taskPath << ", "
+        //            << "Collection id: " << task.second.m_taskCollectionId << ", "
+        //            << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex;
         list.emplace_back(task.first, task.second.m_taskCollectionId);
     }
 
