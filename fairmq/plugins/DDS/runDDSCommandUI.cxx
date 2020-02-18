@@ -8,23 +8,23 @@
 
 #include <fairmq/sdk/commands/Commands.h>
 #include <fairmq/States.h>
-
-#include <dds/dds.h>
+#include <fairmq/SDK.h>
 
 #include <boost/program_options.hpp>
 
+#include <termios.h> // raw mode console input
+#include <unistd.h>
 #include <condition_variable>
 #include <cstdlib>
 #include <iostream>
 #include <mutex>
 #include <string>
-#include <termios.h> // raw mode console input
 #include <thread>
 #include <utility>
-#include <unistd.h>
 
 using namespace std;
-using namespace dds::intercom_api;
+using namespace fair::mq;
+using namespace fair::mq::sdk;
 using namespace fair::mq::sdk::cmd;
 namespace bpo = boost::program_options;
 
@@ -49,24 +49,6 @@ struct TerminalConfig
     }
 };
 
-struct StateSubscription
-{
-    const string& fTopologyPath;
-    CCustomCmd& fDdsCustomCmd;
-
-    explicit StateSubscription(const string& topologyPath, CCustomCmd& ddsCustomCmd)
-        : fTopologyPath(topologyPath)
-        , fDdsCustomCmd(ddsCustomCmd)
-    {
-        fDdsCustomCmd.send(Cmds(make<SubscribeToStateChange>()).Serialize(), fTopologyPath);
-    }
-
-    ~StateSubscription() {
-        fDdsCustomCmd.send(Cmds(make<UnsubscribeFromStateChange>()).Serialize(), fTopologyPath);
-        this_thread::sleep_for(chrono::milliseconds(100)); // give dds a chance to complete request
-    }
-};
-
 void printControlsHelp()
 {
     cout << "Use keys to control the devices:" << endl;
@@ -74,254 +56,154 @@ void printControlsHelp()
     cout << "To quit press Ctrl+C" << endl;
 }
 
-void sendCommand(const string& commandIn, const string& topologyPath, CCustomCmd& ddsCustomCmd)
+void handleCommand(const string& command, const string& path, unsigned int timeout, Topology& topo)
 {
-    char c;
-    string command(commandIn);
-    TerminalConfig tconfig;
-
-    if (command == "") {
+    if (command == "c") {
+        cout << "> checking state of the devices" << endl;
+        auto const result = topo.GetCurrentState();
+        for (const auto& d : result) {
+            cout << d.taskId << " : " << d.state << endl;
+        }
+    } else if (command == "o") {
+        cout << "> dumping config of the devices" << endl;
+        // TODO: extend this regex to return all properties, once command size limitation is removed.
+        auto const result = topo.GetProperties("^(session|id)$", path, std::chrono::milliseconds(timeout));
+        for (const auto& d : result.second.devices) {
+            for (auto const& p : d.second.props) {
+                cout << d.first << ": " << p.first << " : " << p.second << endl;
+            }
+        }
+    } else if (command == "i") {
+        cout << "> init devices" << endl;
+        topo.ChangeState(TopologyTransition::InitDevice, std::chrono::milliseconds(timeout));
+    } else if (command == "k") {
+        cout << "> complete init" << endl;
+        topo.ChangeState(TopologyTransition::CompleteInit, std::chrono::milliseconds(timeout));
+    } else if (command == "b") {
+        cout << "> bind devices" << endl;
+        topo.ChangeState(TopologyTransition::Bind, std::chrono::milliseconds(timeout));
+    } else if (command == "x") {
+        cout << "> connect devices" << endl;
+        topo.ChangeState(TopologyTransition::Connect, std::chrono::milliseconds(timeout));
+    } else if (command == "j") {
+        cout << "> init tasks" << endl;
+        topo.ChangeState(TopologyTransition::InitTask, std::chrono::milliseconds(timeout));
+    } else if (command == "r") {
+        cout << "> run tasks" << endl;
+        topo.ChangeState(TopologyTransition::Run, std::chrono::milliseconds(timeout));
+    } else if (command == "s") {
+        cout << "> stop devices" << endl;
+        topo.ChangeState(TopologyTransition::Stop, std::chrono::milliseconds(timeout));
+    } else if (command == "t") {
+        cout << "> reset tasks" << endl;
+        topo.ChangeState(TopologyTransition::ResetTask, std::chrono::milliseconds(timeout));
+    } else if (command == "d") {
+        cout << "> reset devices" << endl;
+        topo.ChangeState(TopologyTransition::ResetDevice, std::chrono::milliseconds(timeout));
+    } else if (command == "h") {
+        cout << "> help" << endl;
         printControlsHelp();
-        cin >> c;
-        command = c;
-    }
-
-    while (true) {
-        if (command == "c") {
-            cout << "> checking state of the devices" << endl;
-            ddsCustomCmd.send(Cmds(make<CheckState>()).Serialize(), topologyPath);
-        } else if (command == "o") {
-            cout << "> dumping config of the devices" << endl;
-            ddsCustomCmd.send(Cmds(make<DumpConfig>()).Serialize(), topologyPath);
-        } else if (command == "i") {
-            cout << "> init devices" << endl;
-            ddsCustomCmd.send(Cmds(make<ChangeState>(fair::mq::Transition::InitDevice)).Serialize(), topologyPath);
-        } else if (command == "k") {
-            cout << "> complete init" << endl;
-            ddsCustomCmd.send(Cmds(make<ChangeState>(fair::mq::Transition::CompleteInit)).Serialize(), topologyPath);
-        } else if (command == "b") {
-            cout << "> bind devices" << endl;
-            ddsCustomCmd.send(Cmds(make<ChangeState>(fair::mq::Transition::Bind)).Serialize(), topologyPath);
-        } else if (command == "x") {
-            cout << "> connect devices" << endl;
-            ddsCustomCmd.send(Cmds(make<ChangeState>(fair::mq::Transition::Connect)).Serialize(), topologyPath);
-        } else if (command == "j") {
-            cout << "> init tasks" << endl;
-            ddsCustomCmd.send(Cmds(make<ChangeState>(fair::mq::Transition::InitTask)).Serialize(), topologyPath);
-        } else if (command == "r") {
-            cout << "> run tasks" << endl;
-            ddsCustomCmd.send(Cmds(make<ChangeState>(fair::mq::Transition::Run)).Serialize(), topologyPath);
-        } else if (command == "s") {
-            cout << "> stop devices" << endl;
-            ddsCustomCmd.send(Cmds(make<ChangeState>(fair::mq::Transition::Stop)).Serialize(), topologyPath);
-        } else if (command == "t") {
-            cout << "> reset tasks" << endl;
-            ddsCustomCmd.send(Cmds(make<ChangeState>(fair::mq::Transition::ResetTask)).Serialize(), topologyPath);
-        } else if (command == "d") {
-            cout << "> reset devices" << endl;
-            ddsCustomCmd.send(Cmds(make<ChangeState>(fair::mq::Transition::ResetDevice)).Serialize(), topologyPath);
-        } else if (command == "h") {
-            cout << "> help" << endl;
-            printControlsHelp();
-        } else if (command == "q") {
-            cout << "> end" << endl;
-            ddsCustomCmd.send(Cmds(make<ChangeState>(fair::mq::Transition::End)).Serialize(), topologyPath);
-        } else {
-            cout << "\033[01;32mInvalid input: [" << c << "]\033[0m" << endl;
-            printControlsHelp();
-        }
-
-        if (commandIn != "") {
-            this_thread::sleep_for(chrono::milliseconds(100)); // give dds a chance to complete request
-            break;
-        } else {
-            cin >> c;
-            command = c;
-        }
+    } else if (command == "q") {
+        cout << "> end" << endl;
+        topo.ChangeState(TopologyTransition::End, std::chrono::milliseconds(timeout));
+    } else {
+        cout << "\033[01;32mInvalid input: [" << command << "]\033[0m" << endl;
+        printControlsHelp();
     }
 }
 
-struct WaitMode
+void sendCommand(const string& commandIn, const string& path, unsigned int timeout, Topology& topo)
 {
-    explicit WaitMode(const string& targetState)
-        : fTransitionedCount(0)
-    {
-        if (targetState != "") {
-            size_t n = targetState.find("->");
-            if (n == string::npos) {
-                fTargetStatePair.first = fair::mq::State::Ok;
-                fTargetStatePair.second = fair::mq::GetState(targetState);
-            } else {
-                fTargetStatePair.first = fair::mq::GetState(targetState.substr(0, n));
-                fTargetStatePair.second = fair::mq::GetState(targetState.substr(n + 2));
-            }
-        }
+    if (commandIn != "") {
+        handleCommand(commandIn, path, timeout, topo);
+        return;
     }
 
-    void Run(const chrono::milliseconds& timeout, const string& topologyPath, CCustomCmd& ddsCustomCmd, unsigned int numDevices, const string& command = "")
-    {
-        if (command != "") {
-            sendCommand(command, topologyPath, ddsCustomCmd);
-        }
+    char c;
+    string command;
+    TerminalConfig tconfig;
 
-        // TODO once DDS provides an API to retrieve actual number of tasks, use it here
-        auto condition = [&] {
-            bool res = fTransitionedCount == numDevices;
-            if (fTargetStatePair.first == fair::mq::State::Ok) {
-                cout << "Waiting for " << numDevices << " devices to reach " << fTargetStatePair.second << ", condition check: " << res << endl;
-            } else {
-                cout << "Waiting for " << numDevices << " devices to reach " << fTargetStatePair.first << "->" << fTargetStatePair.second << ", condition check: " << res << endl;
-            }
-            return res;
-        };
+    printControlsHelp();
+    cin >> c;
+    command = c;
 
-        unique_lock<mutex> lock(fMtx);
-
-        if (timeout > chrono::milliseconds(0)) {
-            if (!fCV.wait_for(lock, timeout, condition)) {
-                throw runtime_error("timeout");
-            }
-        } else {
-            fCV.wait(lock, condition);
-        }
-
-        // cout << "WaitMode.Run() finished" << endl;
+    while (true) {
+        handleCommand(command, path, timeout, topo);
+        cin >> c;
+        command = c;
     }
-
-    void CountStates(fair::mq::State lastState, fair::mq::State currentState)
-    {
-        {
-            unique_lock<mutex> lock(fMtx);
-            if (fTargetStatePair.first == fair::mq::State::Ok) {
-                if (fTargetStatePair.second == currentState) {
-                    fTransitionedCount++;
-                    // cout << "fTransitionedCount = " << fTransitionedCount << " for single value" << endl;
-                }
-            } else {
-                if (fTargetStatePair.first == lastState && fTargetStatePair.second == currentState) {
-                    fTransitionedCount++;
-                    // cout << "fTransitionedCount = " << fTransitionedCount << " for double value" << endl;
-                }
-            }
-        }
-        fCV.notify_one();
-    }
-
-    mutex fMtx;
-    condition_variable fCV;
-    pair<fair::mq::State, fair::mq::State> fTargetStatePair;
-    unsigned int fTransitionedCount;
-};
+}
 
 int main(int argc, char* argv[])
-{
-    try {
-        string sessionID;
-        string command;
-        string topologyPath;
-        string targetState;
-        unsigned int timeout;
-        unsigned int numDevices(0);
+try {
+    string sessionID;
+    string topoFile;
 
-        bpo::options_description options("Common options");
+    string command;
+    string path;
+    string targetState;
+    unsigned int timeout;
 
-        auto envSessionId = getenv("DDS_SESSION_ID");
-        if (envSessionId) {
-            options.add_options()("session,s", bpo::value<string>(&sessionID)->default_value(envSessionId), "DDS Session ID (overrides any value in env var $DDS_SESSION_ID)");
-        } else {
-            options.add_options()("session,s", bpo::value<string>(&sessionID)->required(), "DDS Session ID (overrides any value in env var $DDS_SESSION_ID)");
-        }
+    fair::Logger::SetConsoleSeverity("debug");
 
-        options.add_options()
-            ("command,c",        bpo::value<string> (&command)->default_value(""), "Command character")
-            ("path,p",           bpo::value<string> (&topologyPath)->default_value(""), "DDS Topology path to send command to (empty - send to all tasks)")
-            ("wait-for-state,w", bpo::value<string> (&targetState)->default_value(""), "Wait until targeted FairMQ devices reach the given state")
-            ("timeout,t",        bpo::value<unsigned int> (&timeout)->default_value(0), "Timeout in milliseconds when waiting for a device state (0 - wait infinitely)")
-            ("number-devices,n", bpo::value<unsigned int> (&numDevices)->default_value(0), "Number of devices (will be removed in the future)")
-            ("help,h", "Produce help message");
+    bpo::options_description options("Common options");
 
-        bpo::variables_map vm;
-        bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
-
-        if (vm.count("help")) {
-            cout << "FairMQ DDS Command UI" << endl << options << endl;
-            cout << "Commands: [c] check state, [o] dump config, [h] help, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device, [k] complete init, [b] bind, [x] connect" << endl;
-            return EXIT_SUCCESS;
-        }
-
-        bpo::notify(vm);
-
-        WaitMode waitMode(targetState);
-
-        CIntercomService service;
-        CCustomCmd ddsCustomCmd(service);
-
-        service.subscribeOnError([](const EErrorCode errorCode, const string& errorMsg) {
-            cerr << "DDS error received: error code: " << errorCode << ", error message: " << errorMsg << endl;
-        });
-
-        // subscribe to receive messages from DDS
-        ddsCustomCmd.subscribe([&](const string& msg, const string& /*condition*/, uint64_t senderId) {
-            Cmds cmds;
-            cmds.Deserialize(msg);
-            // cout << "Received " << cmds.Size() << " command(s) with total size of " << msg.length() << " bytes: " << endl;
-            for (const auto& cmd : cmds) {
-                // cout << " > " << cmd->GetType() << endl;
-                switch (cmd->GetType()) {
-                    case Type::state_change: {
-                        cout << "Received state_change from " << static_cast<StateChange&>(*cmd).GetDeviceId() << ": " << static_cast<StateChange&>(*cmd).GetLastState() << "->" << static_cast<StateChange&>(*cmd).GetCurrentState() << endl;
-                        if (static_cast<StateChange&>(*cmd).GetCurrentState() == fair::mq::State::Exiting) {
-                            ddsCustomCmd.send(Cmds(make<StateChangeExitingReceived>()).Serialize(), to_string(senderId));
-                        }
-                        waitMode.CountStates(static_cast<StateChange&>(*cmd).GetLastState(), static_cast<StateChange&>(*cmd).GetCurrentState());
-                    }
-                    break;
-                    case Type::state_change_subscription:
-                        if (static_cast<StateChangeSubscription&>(*cmd).GetResult() != Result::Ok) {
-                            cout << "State change subscription failed for " << static_cast<StateChangeSubscription&>(*cmd).GetDeviceId() << endl;
-                        }
-                    break;
-                    case Type::state_change_unsubscription:
-                        if (static_cast<StateChangeUnsubscription&>(*cmd).GetResult() != Result::Ok) {
-                            cout << "State change unsubscription failed for " << static_cast<StateChangeUnsubscription&>(*cmd).GetDeviceId() << endl;
-                        }
-                    break;
-                    case Type::transition_status: {
-                        if (static_cast<TransitionStatus&>(*cmd).GetResult() == Result::Ok) {
-                            cout << "Device " << static_cast<TransitionStatus&>(*cmd).GetDeviceId() << " started to transition with " << static_cast<TransitionStatus&>(*cmd).GetTransition() << endl;
-                        } else {
-                            cout << "Device " << static_cast<TransitionStatus&>(*cmd).GetDeviceId() << " cannot transition with " << static_cast<TransitionStatus&>(*cmd).GetTransition() << endl;
-                        }
-                    }
-                    break;
-                    case Type::current_state:
-                        cout << "Device " << static_cast<CurrentState&>(*cmd).GetDeviceId() << " is in " << static_cast<CurrentState&>(*cmd).GetCurrentState() << " state" << endl;
-                    break;
-                    case Type::config:
-                        cout << "Received config for device " << static_cast<Config&>(*cmd).GetDeviceId() << ":\n" << static_cast<Config&>(*cmd).GetConfig() << endl;
-                    break;
-                    default:
-                        cout << "Unexpected/unknown command received: " << cmd->GetType() << endl;
-                        cout << "Origin: " << senderId << endl;
-                    break;
-                }
-            }
-        });
-
-        service.start(sessionID);
-
-        StateSubscription stateSubscription(topologyPath, ddsCustomCmd);
-
-        if (targetState == "") {
-            sendCommand(command, topologyPath, ddsCustomCmd);
-        } else {
-            waitMode.Run(chrono::milliseconds(timeout), topologyPath, ddsCustomCmd, numDevices, command);
-        }
-
-        ddsCustomCmd.unsubscribe();
-    } catch (exception& e) {
-        cerr << "Error: " << e.what() << endl;
-        return EXIT_FAILURE;
+    auto envSessionId = getenv("FAIRMQ_DDS_SESSION_ID");
+    if (envSessionId) {
+        options.add_options()("session,s", bpo::value<string>(&sessionID)->default_value(envSessionId), "DDS Session ID (overrides any value in env var $FAIRMQ_DDS_SESSION_ID)");
+    } else {
+        options.add_options()("session,s", bpo::value<string>(&sessionID)->required(), "DDS Session ID (overrides any value in env var $FAIRMQ_DDS_SESSION_ID)");
     }
+
+    auto envTopoFile = getenv("FAIRMQ_DDS_TOPO_FILE");
+    if (envTopoFile) {
+        options.add_options()("topology-file,f", bpo::value<string>(&topoFile)->default_value(envTopoFile), "DDS topology file path");
+    } else {
+        options.add_options()("topology-file,f", bpo::value<string>(&topoFile)->required(), "DDS topology file path");
+    }
+
+    options.add_options()
+        ("command,c",        bpo::value<string>(&command)->default_value(""), "Command character")
+        ("path,p",           bpo::value<string>(&path)->default_value(""), "DDS Topology path to send command to (empty - send to all tasks)")
+        ("wait-for-state,w", bpo::value<string>(&targetState)->default_value(""), "Wait until targeted FairMQ devices reach the given state")
+        ("timeout,t",        bpo::value<unsigned int>(&timeout)->default_value(0), "Timeout in milliseconds when waiting for a device state (0 - wait infinitely)")
+        ("help,h",           "Produce help message");
+
+    bpo::variables_map vm;
+    bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
+
+    if (vm.count("help")) {
+        cout << "FairMQ DDS Command UI" << endl << options << endl;
+        cout << "Commands: [c] check state, [o] dump config, [h] help, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device, [k] complete init, [b] bind, [x] connect" << endl;
+        return EXIT_SUCCESS;
+    }
+
+    bpo::notify(vm);
+
+    DDSEnvironment env;
+    DDSSession session(sessionID, env);
+    DDSTopology ddsTopo(DDSTopology::Path(topoFile), env);
+
+    Topology topo(ddsTopo, session);
+
+    if (targetState != "") {
+        if (command != "") {
+            sendCommand(command, path, timeout, topo);
+        }
+        size_t pos = targetState.find("->");
+        if (pos == string::npos) {
+            /* auto ec =  */topo.WaitForState(GetState(targetState), path, std::chrono::milliseconds(timeout));
+            // cout << "WaitForState(" << targetState << ") result: " << ec.message() << endl;
+        } else {
+            /* auto ec =  */topo.WaitForState(GetState(targetState.substr(0, pos)), GetState(targetState.substr(pos + 2)), path, std::chrono::milliseconds(timeout));
+            // cout << "WaitForState(" << targetState << ") result: " << ec.message() << endl;
+        }
+    } else {
+        sendCommand(command, path, timeout, topo);
+    }
+
     return EXIT_SUCCESS;
+} catch (exception& e) {
+    cerr << "Error: " << e.what() << endl;
+    return EXIT_FAILURE;
 }

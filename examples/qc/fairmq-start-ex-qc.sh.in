@@ -45,21 +45,20 @@ dds-info --executing-count --wait ${requiredNofSlots}
 echo "------------------------"
 echo "...waiting for Topology to finish..."
 # TODO Retrieve number of devices from DDS topology API instead of having the user pass it explicitely
-fairmq-dds-command-ui -w "IDLE" -n ${requiredNofSlots}
-fairmq-dds-command-ui -c i -w "INITIALIZING DEVICE" -n ${requiredNofSlots}
-fairmq-dds-command-ui -c k -w "INITIALIZED" -n ${requiredNofSlots}
-fairmq-dds-command-ui -c b -w "BOUND" -n ${requiredNofSlots}
-fairmq-dds-command-ui -c x -w "DEVICE READY" -n ${requiredNofSlots}
-fairmq-dds-command-ui -c j -w "READY" -n ${requiredNofSlots}
+fairmq-dds-command-ui -w "IDLE"
+fairmq-dds-command-ui -c i
+fairmq-dds-command-ui -c k
+fairmq-dds-command-ui -c b
+fairmq-dds-command-ui -c x
+fairmq-dds-command-ui -c j
 fairmq-dds-command-ui -c r
-sampler_and_sink="main/(Sampler|Sink)"
-# processors="main/ProcessorGroup/Processor"
-fairmq-dds-command-ui -p $sampler_and_sink -w "RUNNING->READY" -n 2
+sampler_and_sink="main/(Sampler|Sink).*"
+fairmq-dds-command-ui -w "RUNNING->READY" -p $sampler_and_sink
 echo "...$sampler_and_sink are READY, sending shutdown..."
-fairmq-dds-command-ui -c s -w "RUNNING->READY" -n ${requiredNofSlots}
-fairmq-dds-command-ui -c t -w "DEVICE READY" -n ${requiredNofSlots}
-fairmq-dds-command-ui -c d -w "IDLE" -n ${requiredNofSlots}
-fairmq-dds-command-ui -c q -w "EXITING" -n ${requiredNofSlots}
+fairmq-dds-command-ui -c s
+fairmq-dds-command-ui -c t
+fairmq-dds-command-ui -c d
+fairmq-dds-command-ui -c q
 echo "...waiting for ${requiredNofSlots} idle slots..."
 dds-info --idle-count --wait ${requiredNofSlots}
 echo "------------------------"
