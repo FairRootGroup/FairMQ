@@ -194,9 +194,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     case Type::state_change: {
                         auto _cmd = static_cast<StateChange&>(*cmd);
                         if (_cmd.GetCurrentState() == DeviceState::Exiting) {
-                            Cmds outCmds;
-                            outCmds.Add<StateChangeExitingReceived>();
-                            fDDSSession.SendCommand(outCmds.Serialize(), senderId);
+                            fDDSSession.SendCommand(Cmds(make<StateChangeExitingReceived>()).Serialize(), senderId);
                         }
                         HandleCmd(_cmd);
                     } break;
@@ -213,7 +211,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     case Type::transition_status: {
                         auto _cmd = static_cast<TransitionStatus&>(*cmd);
                         if (_cmd.GetResult() != Result::Ok) {
-                            LOG(error) << "Transition failed for " << _cmd.GetDeviceId();
+                            LOG(error) << _cmd.GetTransition() << " transition failed for " << _cmd.GetDeviceId();
                             std::lock_guard<std::mutex> lk(fMtx);
                             if (!fChangeStateOp.IsCompleted() && fStateData.at(fStateIndex.at(_cmd.GetTaskId())).state != fChangeStateTarget) {
                                 fChangeStateOpTimer.cancel();
@@ -568,7 +566,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         return asio::async_initiate<CompletionToken, WaitForStateCompletionSignature>([&](auto handler) {
             typename GetPropertiesOp::Id const id(tools::UuidHash());
 
-            // TODO Implement garbage collection of completed ops
             std::lock_guard<std::mutex> lk(fMtx);
 
             for (auto it = begin(fWaitForStateOps); it != end(fWaitForStateOps);) {
@@ -578,6 +575,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     ++it;
                 }
             }
+
+            LOG(info) << fDDSTopo.GetTasks(path).size();
 
             auto p = fWaitForStateOps.emplace(
                 std::piecewise_construct,

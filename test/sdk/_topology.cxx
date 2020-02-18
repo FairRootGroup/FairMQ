@@ -134,6 +134,9 @@ TEST_F(Topology, ChangeState)
     EXPECT_EQ(result.first, std::error_code());
     EXPECT_NO_THROW(sdk::AggregateState(result.second));
     EXPECT_EQ(sdk::StateEqualsTo(result.second, sdk::DeviceState::InitializingDevice), true);
+    auto const currentState = topo.GetCurrentState();
+    EXPECT_NO_THROW(sdk::AggregateState(currentState));
+    EXPECT_EQ(sdk::StateEqualsTo(currentState, sdk::DeviceState::InitializingDevice), true);
 }
 
 TEST_F(Topology, AsyncChangeStateConcurrent)

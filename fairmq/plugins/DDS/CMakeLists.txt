@@ -19,15 +19,10 @@ set_target_properties(${plugin} PROPERTIES
 
 set(exe1 fairmq-dds-command-ui)
 add_executable(${exe1} ${CMAKE_CURRENT_SOURCE_DIR}/runDDSCommandUI.cxx)
-target_link_libraries(${exe1} FairMQ Commands StateMachine DDS::dds_intercom_lib DDS::dds_protocol_lib)
+target_link_libraries(${exe1} FairMQ Commands SDK StateMachine DDS::dds_intercom_lib DDS::dds_protocol_lib)
 target_include_directories(${exe1} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-set(exe2 fairmq-dds-command-ui-new)
-add_executable(${exe2} ${CMAKE_CURRENT_SOURCE_DIR}/runDDSCommandUInew.cxx)
-target_link_libraries(${exe2} FairMQ Commands SDK StateMachine DDS::dds_intercom_lib DDS::dds_protocol_lib)
-target_include_directories(${exe2} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
-install(TARGETS ${plugin} ${exe1} ${exe2}
+install(TARGETS ${plugin} ${exe1}
   EXPORT ${PROJECT_EXPORT_SET}
   LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
