@@ -39,6 +39,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -250,11 +251,18 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     BasicTopology(BasicTopology&&) = default;
     BasicTopology& operator=(BasicTopology&&) = default;
 
+    void UnsubscribeFromStateChanges()
+    {
+        using namespace fair::mq::sdk::cmd;
+
+        fDDSSession.SendCommand(Cmds(make<UnsubscribeFromStateChange>()).Serialize());
+        // give dds a chance to complete request, TODO: track each individual task and its subscription status
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
     ~BasicTopology()
     {
-        
-
-
+        UnsubscribeFromStateChanges();
 
         std::lock_guard<std::mutex> lk(fMtx);
         fDDSSession.UnsubscribeFromCommands();
