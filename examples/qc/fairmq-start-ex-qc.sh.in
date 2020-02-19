@@ -28,19 +28,19 @@ echo "SESSION ID: ${FAIRMQ_DDS_SESSION_ID}"
 trap "cleanup ${FAIRMQ_DDS_SESSION_ID}" EXIT
 
 requiredNofSlots=4
-dds-submit -r localhost --slots ${requiredNofSlots}
+dds-submit -r localhost --slots ${requiredNofSlots} -s ${FAIRMQ_DDS_SESSION_ID}
 echo "...waiting for ${requiredNofSlots} idle slots..."
-dds-info --idle-count --wait ${requiredNofSlots}
+dds-info --idle-count --wait ${requiredNofSlots} -s ${FAIRMQ_DDS_SESSION_ID}
 
 export FAIRMQ_DDS_TOPO_FILE=@DATA_DIR@/ex-qc-topology.xml
 echo "TOPOLOGY FILE: ${FAIRMQ_DDS_TOPO_FILE}"
 echo "TOPOLOGY NAME: $(dds-topology --disable-validation --topology-name ${FAIRMQ_DDS_TOPO_FILE})"
 
-dds-info --active-topology
-dds-topology --activate ${FAIRMQ_DDS_TOPO_FILE}
-dds-info --active-topology
+dds-info --active-topology -s ${FAIRMQ_DDS_SESSION_ID}
+dds-topology --activate ${FAIRMQ_DDS_TOPO_FILE} -s ${FAIRMQ_DDS_SESSION_ID}
+dds-info --active-topology -s ${FAIRMQ_DDS_SESSION_ID}
 echo "...waiting for ${requiredNofSlots} executing slots..."
-dds-info --executing-count --wait ${requiredNofSlots}
+dds-info --executing-count --wait ${requiredNofSlots} -s ${FAIRMQ_DDS_SESSION_ID}
 
 echo "------------------------"
 echo "...waiting for Topology to finish..."
@@ -60,14 +60,14 @@ fairmq-dds-command-ui -c t
 fairmq-dds-command-ui -c d
 fairmq-dds-command-ui -c q
 echo "...waiting for ${requiredNofSlots} idle slots..."
-dds-info --idle-count --wait ${requiredNofSlots}
+dds-info --idle-count --wait ${requiredNofSlots} -s ${FAIRMQ_DDS_SESSION_ID}
 echo "------------------------"
 
-dds-info --active-topology
-dds-topology --stop
-dds-info --active-topology
+dds-info --active-topology -s ${FAIRMQ_DDS_SESSION_ID}
+dds-topology --stop -s ${FAIRMQ_DDS_SESSION_ID}
+dds-info --active-topology -s ${FAIRMQ_DDS_SESSION_ID}
 
-dds-agent-cmd getlog -a
+dds-agent-cmd getlog -a -s ${FAIRMQ_DDS_SESSION_ID}
 logDir="${wrkDir}/logs"
 for file in $(find "${logDir}" -name "*.tar.gz"); do tar -xf ${file} -C "${logDir}" ; done
 echo "AGENT LOG FILES IN: ${logDir}"
