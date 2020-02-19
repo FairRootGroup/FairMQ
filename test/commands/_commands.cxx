@@ -24,8 +24,6 @@ TEST(Format, Construction)
     Cmds checkStateCmds(make<CheckState>());
     Cmds changeStateCmds(make<ChangeState>(Transition::Stop));
     Cmds dumpConfigCmds(make<DumpConfig>());
-    Cmds subscribeToHeartbeatsCmds(make<SubscribeToHeartbeats>());
-    Cmds unsubscribeFromHeartbeatsCmds(make<UnsubscribeFromHeartbeats>());
     Cmds subscribeToStateChangeCmds(make<SubscribeToStateChange>());
     Cmds unsubscribeFromStateChangeCmds(make<UnsubscribeFromStateChange>());
     Cmds stateChangeExitingReceivedCmds(make<StateChangeExitingReceived>());
@@ -34,9 +32,6 @@ TEST(Format, Construction)
     Cmds currentStateCmds(make<CurrentState>("somedeviceid", State::Running));
     Cmds transitionStatusCmds(make<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop));
     Cmds configCmds(make<Config>("somedeviceid", "someconfig"));
-    Cmds heartbeatSubscriptionCmds(make<HeartbeatSubscription>("somedeviceid", Result::Ok));
-    Cmds heartbeatUnsubscriptionCmds(make<HeartbeatUnsubscription>("somedeviceid", Result::Ok));
-    Cmds heartbeatCmds(make<Heartbeat>("somedeviceid"));
     Cmds stateChangeSubscriptionCmds(make<StateChangeSubscription>("somedeviceid", Result::Ok));
     Cmds stateChangeUnsubscriptionCmds(make<StateChangeUnsubscription>("somedeviceid", Result::Ok));
     Cmds stateChangeCmds(make<StateChange>("somedeviceid", 123456, State::Running, State::Ready));
@@ -47,8 +42,6 @@ TEST(Format, Construction)
     ASSERT_EQ(changeStateCmds.At(0).GetType(), Type::change_state);
     ASSERT_EQ(static_cast<ChangeState&>(changeStateCmds.At(0)).GetTransition(), Transition::Stop);
     ASSERT_EQ(dumpConfigCmds.At(0).GetType(), Type::dump_config);
-    ASSERT_EQ(subscribeToHeartbeatsCmds.At(0).GetType(), Type::subscribe_to_heartbeats);
-    ASSERT_EQ(unsubscribeFromHeartbeatsCmds.At(0).GetType(), Type::unsubscribe_from_heartbeats);
     ASSERT_EQ(subscribeToStateChangeCmds.At(0).GetType(), Type::subscribe_to_state_change);
     ASSERT_EQ(unsubscribeFromStateChangeCmds.At(0).GetType(), Type::unsubscribe_from_state_change);
     ASSERT_EQ(stateChangeExitingReceivedCmds.At(0).GetType(), Type::state_change_exiting_received);
@@ -69,14 +62,6 @@ TEST(Format, Construction)
     ASSERT_EQ(configCmds.At(0).GetType(), Type::config);
     ASSERT_EQ(static_cast<Config&>(configCmds.At(0)).GetDeviceId(), "somedeviceid");
     ASSERT_EQ(static_cast<Config&>(configCmds.At(0)).GetConfig(), "someconfig");
-    ASSERT_EQ(heartbeatSubscriptionCmds.At(0).GetType(), Type::heartbeat_subscription);
-    ASSERT_EQ(static_cast<HeartbeatSubscription&>(heartbeatSubscriptionCmds.At(0)).GetDeviceId(), "somedeviceid");
-    ASSERT_EQ(static_cast<HeartbeatSubscription&>(heartbeatSubscriptionCmds.At(0)).GetResult(), Result::Ok);
-    ASSERT_EQ(heartbeatUnsubscriptionCmds.At(0).GetType(), Type::heartbeat_unsubscription);
-    ASSERT_EQ(static_cast<HeartbeatUnsubscription&>(heartbeatUnsubscriptionCmds.At(0)).GetDeviceId(), "somedeviceid");
-    ASSERT_EQ(static_cast<HeartbeatUnsubscription&>(heartbeatUnsubscriptionCmds.At(0)).GetResult(), Result::Ok);
-    ASSERT_EQ(heartbeatCmds.At(0).GetType(), Type::heartbeat);
-    ASSERT_EQ(static_cast<Heartbeat&>(heartbeatCmds.At(0)).GetDeviceId(), "somedeviceid");
     ASSERT_EQ(stateChangeSubscriptionCmds.At(0).GetType(), Type::state_change_subscription);
     ASSERT_EQ(static_cast<StateChangeSubscription&>(stateChangeSubscriptionCmds.At(0)).GetDeviceId(), "somedeviceid");
     ASSERT_EQ(static_cast<StateChangeSubscription&>(stateChangeSubscriptionCmds.At(0)).GetResult(), Result::Ok);
@@ -106,8 +91,6 @@ void fillCommands(Cmds& cmds)
     cmds.Add<CheckState>();
     cmds.Add<ChangeState>(Transition::Stop);
     cmds.Add<DumpConfig>();
-    cmds.Add<SubscribeToHeartbeats>();
-    cmds.Add<UnsubscribeFromHeartbeats>();
     cmds.Add<SubscribeToStateChange>();
     cmds.Add<UnsubscribeFromStateChange>();
     cmds.Add<StateChangeExitingReceived>();
@@ -116,9 +99,6 @@ void fillCommands(Cmds& cmds)
     cmds.Add<CurrentState>("somedeviceid", State::Running);
     cmds.Add<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop);
     cmds.Add<Config>("somedeviceid", "someconfig");
-    cmds.Add<HeartbeatSubscription>("somedeviceid", Result::Ok);
-    cmds.Add<HeartbeatUnsubscription>("somedeviceid", Result::Ok);
-    cmds.Add<Heartbeat>("somedeviceid");
     cmds.Add<StateChangeSubscription>("somedeviceid", Result::Ok);
     cmds.Add<StateChangeUnsubscription>("somedeviceid", Result::Ok);
     cmds.Add<StateChange>("somedeviceid", 123456, State::Running, State::Ready);
@@ -128,7 +108,7 @@ void fillCommands(Cmds& cmds)
 
 void checkCommands(Cmds& cmds)
 {
-    ASSERT_EQ(cmds.Size(), 21);
+    ASSERT_EQ(cmds.Size(), 16);
 
     int count = 0;
     auto const props(std::vector<std::pair<std::string, std::string>>({{"k1", "v1"}, {"k2", "v2"}}));
@@ -143,12 +123,6 @@ void checkCommands(Cmds& cmds)
                 ASSERT_EQ(static_cast<ChangeState&>(*cmd).GetTransition(), Transition::Stop);
             break;
             case Type::dump_config:
-                ++count;
-            break;
-            case Type::subscribe_to_heartbeats:
-                ++count;
-            break;
-            case Type::unsubscribe_from_heartbeats:
                 ++count;
             break;
             case Type::subscribe_to_state_change:
@@ -187,20 +161,6 @@ void checkCommands(Cmds& cmds)
                 ASSERT_EQ(static_cast<Config&>(*cmd).GetDeviceId(), "somedeviceid");
                 ASSERT_EQ(static_cast<Config&>(*cmd).GetConfig(), "someconfig");
             break;
-            case Type::heartbeat_subscription:
-                ++count;
-                ASSERT_EQ(static_cast<HeartbeatSubscription&>(*cmd).GetDeviceId(), "somedeviceid");
-                ASSERT_EQ(static_cast<HeartbeatSubscription&>(*cmd).GetResult(), Result::Ok);
-            break;
-            case Type::heartbeat_unsubscription:
-                ++count;
-                ASSERT_EQ(static_cast<HeartbeatUnsubscription&>(*cmd).GetDeviceId(), "somedeviceid");
-                ASSERT_EQ(static_cast<HeartbeatUnsubscription&>(*cmd).GetResult(), Result::Ok);
-            break;
-            case Type::heartbeat:
-                ++count;
-                ASSERT_EQ(static_cast<Heartbeat&>(*cmd).GetDeviceId(), "somedeviceid");
-            break;
             case Type::state_change_subscription:
                 ++count;
                 ASSERT_EQ(static_cast<StateChangeSubscription&>(*cmd).GetDeviceId(), "somedeviceid");
@@ -237,7 +197,7 @@ void checkCommands(Cmds& cmds)
         }
     }
 
-    ASSERT_EQ(count, 21);
+    ASSERT_EQ(count, 16);
 }
 
 TEST(Format, SerializationBinary)

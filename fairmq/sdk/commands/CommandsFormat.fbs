@@ -47,8 +47,6 @@ enum FBCmd:byte {
     check_state,                   // args: { }
     change_state,                  // args: { transition }
     dump_config,                   // args: { }
-    subscribe_to_heartbeats,       // args: { }
-    unsubscribe_from_heartbeats,   // args: { }
     subscribe_to_state_change,     // args: { }
     unsubscribe_from_state_change, // args: { }
     state_change_exiting_received, // args: { }
@@ -58,9 +56,6 @@ enum FBCmd:byte {
     current_state,                 // args: { device_id, current_state }
     transition_status,             // args: { device_id, Result, transition }
     config,                        // args: { device_id, config_string }
-    heartbeat_subscription,        // args: { device_id, Result }
-    heartbeat_unsubscription,      // args: { device_id, Result }
-    heartbeat,                     // args: { device_id }
     state_change_subscription,     // args: { device_id, Result }
     state_change_unsubscription,   // args: { device_id, Result }
     state_change,                  // args: { device_id, task_id, last_state, current_state }

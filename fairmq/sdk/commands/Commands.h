@@ -42,8 +42,6 @@ enum class Type : int
     check_state,                   // args: { }
     change_state,                  // args: { transition }
     dump_config,                   // args: { }
-    subscribe_to_heartbeats,       // args: { }
-    unsubscribe_from_heartbeats,   // args: { }
     subscribe_to_state_change,     // args: { }
     unsubscribe_from_state_change, // args: { }
     state_change_exiting_received, // args: { }
@@ -53,9 +51,6 @@ enum class Type : int
     current_state,                 // args: { device_id, current_state }
     transition_status,             // args: { device_id, task_id, Result, transition }
     config,                        // args: { device_id, config_string }
-    heartbeat_subscription,        // args: { device_id, Result }
-    heartbeat_unsubscription,      // args: { device_id, Result }
-    heartbeat,                     // args: { device_id }
     state_change_subscription,     // args: { device_id, Result }
     state_change_unsubscription,   // args: { device_id, Result }
     state_change,                  // args: { device_id, task_id, last_state, current_state }
@@ -96,16 +91,6 @@ struct ChangeState : Cmd
 struct DumpConfig : Cmd
 {
     explicit DumpConfig() : Cmd(Type::dump_config) {}
-};
-
-struct SubscribeToHeartbeats : Cmd
-{
-    explicit SubscribeToHeartbeats() : Cmd(Type::subscribe_to_heartbeats) {}
-};
-
-struct UnsubscribeFromHeartbeats : Cmd
-{
-    explicit UnsubscribeFromHeartbeats() : Cmd(Type::unsubscribe_from_heartbeats) {}
 };
 
 struct SubscribeToStateChange : Cmd
@@ -219,56 +204,6 @@ struct Config : Cmd
   private:
     std::string fDeviceId;
     std::string fConfig;
-};
-
-struct HeartbeatSubscription : Cmd
-{
-    explicit HeartbeatSubscription(const std::string& id, const Result result)
-        : Cmd(Type::heartbeat_subscription)
-        , fDeviceId(id)
-        , fResult(result)
-    {}
-
-    std::string GetDeviceId() const { return fDeviceId; }
-    void SetDeviceId(const std::string& deviceId) { fDeviceId = deviceId; }
-    Result GetResult() const { return fResult; }
-    void SetResult(const Result result) { fResult = result; }
-
-  private:
-    std::string fDeviceId;
-    Result fResult;
-};
-
-struct HeartbeatUnsubscription : Cmd
-{
-    explicit HeartbeatUnsubscription(const std::string& id, const Result result)
-        : Cmd(Type::heartbeat_unsubscription)
-        , fDeviceId(id)
-        , fResult(result)
-    {}
-
-    std::string GetDeviceId() const { return fDeviceId; }
-    void SetDeviceId(const std::string& deviceId) { fDeviceId = deviceId; }
-    Result GetResult() const { return fResult; }
-    void SetResult(const Result result) { fResult = result; }
-
-  private:
-    std::string fDeviceId;
-    Result fResult;
-};
-
-struct Heartbeat : Cmd
-{
-    explicit Heartbeat(const std::string& id)
-        : Cmd(Type::heartbeat)
-        , fDeviceId(id)
-    {}
-
-    std::string GetDeviceId() const { return fDeviceId; }
-    void SetDeviceId(const std::string& deviceId) { fDeviceId = deviceId; }
-
-  private:
-    std::string fDeviceId;
 };
 
 struct StateChangeSubscription : Cmd

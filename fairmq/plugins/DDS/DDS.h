@@ -142,8 +142,6 @@ class DDS : public Plugin
     auto PublishBoundChannels() -> void;
     auto SubscribeForCustomCommands() -> void;
 
-    auto HeartbeatSender() -> void;
-
     DDSSubscription fDDS;
 
     std::unordered_map<std::string, std::vector<std::string>> fBindingChans;
@@ -157,17 +155,11 @@ class DDS : public Plugin
 
     std::atomic<bool> fDeviceTerminationRequested;
 
-    std::set<uint64_t> fHeartbeatSubscribers;
-    std::mutex fHeartbeatSubscriberMutex;
-
     std::set<uint64_t> fStateChangeSubscribers;
     uint64_t fLastExternalController;
     bool fExitingAckedByLastExternalController;
     std::condition_variable fExitingAcked;
     std::mutex fStateChangeSubscriberMutex;
-
-    std::thread fHeartbeatThread;
-    std::chrono::milliseconds fHeartbeatInterval;
 
     bool fUpdatesAllowed;
     std::mutex fUpdateMutex;
