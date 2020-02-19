@@ -428,18 +428,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     auto StateEqualsTo(DeviceState state) const -> bool { return sdk::StateEqualsTo(GetCurrentState(), state); }
 
-
-
-
-
-
-
-
-
-
-
-
-
     using WaitForStateCompletionSignature = void(std::error_code);
 
   private:
@@ -576,8 +564,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 }
             }
 
-            LOG(info) << fDDSTopo.GetTasks(path).size();
-
             auto p = fWaitForStateOps.emplace(
                 std::piecewise_construct,
                 std::forward_as_tuple(id),
@@ -626,19 +612,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         return WaitForState(DeviceState::Ok, targetCurrentState, path, timeout);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     using GetPropertiesCompletionSignature = void(std::error_code, GetPropertiesResult);
 
