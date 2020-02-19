@@ -42,14 +42,11 @@ DDS::DDS(const string& name,
     , fDeviceTerminationRequested(false)
     , fLastExternalController(0)
     , fExitingAckedByLastExternalController(false)
-    , fHeartbeatInterval(100)
     , fUpdatesAllowed(false)
     , fWorkGuard(fWorkerQueue.get_executor())
 {
     try {
         TakeDeviceControl();
-
-        fHeartbeatThread = thread(&DDS::HeartbeatSender, this);
 
         string deviceId(GetProperty<string>("id"));
         if (deviceId.empty()) {
@@ -304,24 +301,6 @@ auto DDS::PublishBoundChannels() -> void
     }
 }
 
-auto DDS::HeartbeatSender() -> void
-{
-    using namespace sdk::cmd;
-    string id = GetProperty<string>("id");
-
-    while (!fDeviceTerminationRequested) {
-        {
-            lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
-
-            for (const auto subscriberId : fHeartbeatSubscribers) {
-                fDDS.Send(Cmds(make<Heartbeat>(id)).Serialize(), to_string(subscriberId));
-            }
-        }
-
-        this_thread::sleep_for(chrono::milliseconds(fHeartbeatInterval));
-    }
-}
-
 auto DDS::SubscribeForCustomCommands() -> void
 {
     LOG(debug) << "Subscribing for DDS custom commands.";
@@ -365,22 +344,6 @@ auto DDS::SubscribeForCustomCommands() -> void
                         ss << id << ": " << pKey << " -> " << GetPropertyAsString(pKey) << "\n";
                     }
                     cmd::Cmds outCmds(cmd::make<cmd::Config>(id, ss.str()));
-                    fDDS.Send(outCmds.Serialize(), to_string(senderId));
-                } break;
-                case cmd::Type::subscribe_to_heartbeats: {
-                    {
-                        lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
-                        fHeartbeatSubscribers.insert(senderId);
-                    }
-                    cmd::Cmds outCmds(cmd::make<cmd::HeartbeatSubscription>(id, cmd::Result::Ok));
-                    fDDS.Send(outCmds.Serialize(), to_string(senderId));
-                } break;
-                case cmd::Type::unsubscribe_from_heartbeats: {
-                    {
-                        lock_guard<mutex> lock{fHeartbeatSubscriberMutex};
-                        fHeartbeatSubscribers.erase(senderId);
-                    }
-                    cmd::Cmds outCmds(cmd::make<cmd::HeartbeatUnsubscription>(id, cmd::Result::Ok));
                     fDDS.Send(outCmds.Serialize(), to_string(senderId));
                 } break;
                 case cmd::Type::state_change_exiting_received: {
@@ -469,10 +432,6 @@ DDS::~DDS()
 
     if (fControllerThread.joinable()) {
         fControllerThread.join();
-    }
-
-    if (fHeartbeatThread.joinable()) {
-        fHeartbeatThread.join();
     }
 
     fWorkGuard.reset();

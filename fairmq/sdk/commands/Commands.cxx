@@ -46,14 +46,12 @@ array<string, 2> resultNames =
     }
 };
 
-array<string, 21> typeNames =
+array<string, 16> typeNames =
 {
     {
         "CheckState",
         "ChangeState",
         "DumpConfig",
-        "SubscribeToHeartbeats",
-        "UnsubscribeFromHeartbeats",
         "SubscribeToStateChange",
         "UnsubscribeFromStateChange",
         "StateChangeExitingReceived",
@@ -63,9 +61,6 @@ array<string, 21> typeNames =
         "CurrentState",
         "TransitionStatus",
         "Config",
-        "HeartbeatSubscription",
-        "HeartbeatUnsubscription",
-        "Heartbeat",
         "StateChangeSubscription",
         "StateChangeUnsubscription",
         "StateChange",
@@ -152,14 +147,12 @@ array<sdk::cmd::FBTransition, 12> mqTransitionToFBTransition =
     }
 };
 
-array<FBCmd, 21> typeToFBCmd =
+array<FBCmd, 16> typeToFBCmd =
 {
     {
         FBCmd::FBCmd_check_state,
         FBCmd::FBCmd_change_state,
         FBCmd::FBCmd_dump_config,
-        FBCmd::FBCmd_subscribe_to_heartbeats,
-        FBCmd::FBCmd_unsubscribe_from_heartbeats,
         FBCmd::FBCmd_subscribe_to_state_change,
         FBCmd::FBCmd_unsubscribe_from_state_change,
         FBCmd::FBCmd_state_change_exiting_received,
@@ -168,9 +161,6 @@ array<FBCmd, 21> typeToFBCmd =
         FBCmd::FBCmd_current_state,
         FBCmd::FBCmd_transition_status,
         FBCmd::FBCmd_config,
-        FBCmd::FBCmd_heartbeat_subscription,
-        FBCmd::FBCmd_heartbeat_unsubscription,
-        FBCmd::FBCmd_heartbeat,
         FBCmd::FBCmd_state_change_subscription,
         FBCmd::FBCmd_state_change_unsubscription,
         FBCmd::FBCmd_state_change,
@@ -179,14 +169,12 @@ array<FBCmd, 21> typeToFBCmd =
     }
 };
 
-array<Type, 21> fbCmdToType =
+array<Type, 16> fbCmdToType =
 {
     {
         Type::check_state,
         Type::change_state,
         Type::dump_config,
-        Type::subscribe_to_heartbeats,
-        Type::unsubscribe_from_heartbeats,
         Type::subscribe_to_state_change,
         Type::unsubscribe_from_state_change,
         Type::state_change_exiting_received,
@@ -195,9 +183,6 @@ array<Type, 21> fbCmdToType =
         Type::current_state,
         Type::transition_status,
         Type::config,
-        Type::heartbeat_subscription,
-        Type::heartbeat_unsubscription,
-        Type::heartbeat,
         Type::state_change_subscription,
         Type::state_change_unsubscription,
         Type::state_change,
@@ -241,13 +226,6 @@ string Cmds::Serialize(const Format type) const
                 cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
             }
             break;
-            case Type::subscribe_to_heartbeats: {
-                cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
-            }
-            break;
-            case Type::unsubscribe_from_heartbeats: {
-                cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
-            }
             break;
             case Type::subscribe_to_state_change: {
                 cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
@@ -308,28 +286,6 @@ string Cmds::Serialize(const Format type) const
                 cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
                 cmdBuilder->add_device_id(deviceId);
                 cmdBuilder->add_config_string(config);
-            }
-            break;
-            case Type::heartbeat_subscription: {
-                auto _cmd = static_cast<HeartbeatSubscription&>(*cmd);
-                auto deviceId = fbb.CreateString(_cmd.GetDeviceId());
-                cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
-                cmdBuilder->add_device_id(deviceId);
-                cmdBuilder->add_result(GetFBResult(_cmd.GetResult()));
-            }
-            break;
-            case Type::heartbeat_unsubscription: {
-                auto _cmd = static_cast<HeartbeatUnsubscription&>(*cmd);
-                auto deviceId = fbb.CreateString(_cmd.GetDeviceId());
-                cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
-                cmdBuilder->add_device_id(deviceId);
-                cmdBuilder->add_result(GetFBResult(_cmd.GetResult()));
-            }
-            break;
-            case Type::heartbeat: {
-                auto deviceId = fbb.CreateString(static_cast<Heartbeat&>(*cmd).GetDeviceId());
-                cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
-                cmdBuilder->add_device_id(deviceId);
             }
             break;
             case Type::state_change_subscription: {
@@ -447,12 +403,6 @@ void Cmds::Deserialize(const string& str, const Format type)
             case FBCmd_dump_config:
                 fCmds.emplace_back(make<DumpConfig>());
             break;
-            case FBCmd_subscribe_to_heartbeats:
-                fCmds.emplace_back(make<SubscribeToHeartbeats>());
-            break;
-            case FBCmd_unsubscribe_from_heartbeats:
-                fCmds.emplace_back(make<UnsubscribeFromHeartbeats>());
-            break;
             case FBCmd_subscribe_to_state_change:
                 fCmds.emplace_back(make<SubscribeToStateChange>());
             break;
@@ -481,15 +431,6 @@ void Cmds::Deserialize(const string& str, const Format type)
             break;
             case FBCmd_config:
                 fCmds.emplace_back(make<Config>(cmdPtr.device_id()->str(), cmdPtr.config_string()->str()));
-            break;
-            case FBCmd_heartbeat_subscription:
-                fCmds.emplace_back(make<HeartbeatSubscription>(cmdPtr.device_id()->str(), GetResult(cmdPtr.result())));
-            break;
-            case FBCmd_heartbeat_unsubscription:
-                fCmds.emplace_back(make<HeartbeatUnsubscription>(cmdPtr.device_id()->str(), GetResult(cmdPtr.result())));
-            break;
-            case FBCmd_heartbeat:
-                fCmds.emplace_back(make<Heartbeat>(cmdPtr.device_id()->str()));
             break;
             case FBCmd_state_change_subscription:
                 fCmds.emplace_back(make<StateChangeSubscription>(cmdPtr.device_id()->str(), GetResult(cmdPtr.result())));

@@ -252,6 +252,10 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     ~BasicTopology()
     {
+        
+
+
+
         std::lock_guard<std::mutex> lk(fMtx);
         fDDSSession.UnsubscribeFromCommands();
         try {
