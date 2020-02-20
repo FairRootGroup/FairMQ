@@ -148,11 +148,11 @@ try {
 
     bpo::options_description options("Common options");
 
-    auto envSessionId = getenv("FAIRMQ_DDS_SESSION_ID");
+    auto envSessionId = getenv("DDS_SESSION_ID");
     if (envSessionId) {
-        options.add_options()("session,s", bpo::value<string>(&sessionID)->default_value(envSessionId), "DDS Session ID (overrides any value in env var $FAIRMQ_DDS_SESSION_ID)");
+        options.add_options()("session,s", bpo::value<string>(&sessionID)->default_value(envSessionId), "DDS Session ID (overrides any value in env var $DDS_SESSION_ID)");
     } else {
-        options.add_options()("session,s", bpo::value<string>(&sessionID)->required(), "DDS Session ID (overrides any value in env var $FAIRMQ_DDS_SESSION_ID)");
+        options.add_options()("session,s", bpo::value<string>(&sessionID)->required(), "DDS Session ID (overrides any value in env var $DDS_SESSION_ID)");
     }
 
     auto envTopoFile = getenv("FAIRMQ_DDS_TOPO_FILE");
