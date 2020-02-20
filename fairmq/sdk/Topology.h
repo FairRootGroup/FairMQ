@@ -238,7 +238,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         });
 
         fDDSSession.StartDDSService();
-        LOG(debug) << "Subscribing to state change";
+        // LOG(debug) << "Subscribing to state change";
         Cmds cmds(make<SubscribeToStateChange>());
         fDDSSession.SendCommand(cmds.Serialize());
     }
