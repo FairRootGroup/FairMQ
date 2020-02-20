@@ -52,11 +52,11 @@ struct TerminalConfig
 void printControlsHelp()
 {
     cout << "Use keys to control the devices:" << endl;
-    cout << "[c] check states, [o] dump config, [h] help, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device, [k] complete init, [b] bind, [x] connect" << endl;
+    cout << "[c] check states, [o] dump config, [h] help, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device, [k] complete init, [b] bind, [x] connect, [p] set property" << endl;
     cout << "To quit press Ctrl+C" << endl;
 }
 
-void handleCommand(const string& command, const string& path, unsigned int timeout, Topology& topo)
+void handleCommand(const string& command, const string& path, unsigned int timeout, Topology& topo, const string& pKey, const string& pVal)
 {
     if (command == "c") {
         cout << "> checking state of the devices" << endl;
@@ -73,6 +73,16 @@ void handleCommand(const string& command, const string& path, unsigned int timeo
                 cout << d.first << ": " << p.first << " : " << p.second << endl;
             }
         }
+    } else if (command == "p") {
+        if (pKey == "" || pVal == "") {
+            cout << "cannot send property with empty key and/or value! given key: '" << pKey << "', value: '" << pVal << "'." << endl;
+            return;
+        }
+        const DeviceProperties props{{pKey, pVal}};
+        cout << "> sending property" << endl;
+        topo.SetProperties(props, path);
+        // give dds time to complete request
+        this_thread::sleep_for(chrono::milliseconds(100));
     } else if (command == "i") {
         cout << "> init devices" << endl;
         topo.ChangeState(TopologyTransition::InitDevice, std::chrono::milliseconds(timeout));
@@ -112,10 +122,10 @@ void handleCommand(const string& command, const string& path, unsigned int timeo
     }
 }
 
-void sendCommand(const string& commandIn, const string& path, unsigned int timeout, Topology& topo)
+void sendCommand(const string& commandIn, const string& path, unsigned int timeout, Topology& topo, const string& pKey, const string& pVal)
 {
     if (commandIn != "") {
-        handleCommand(commandIn, path, timeout, topo);
+        handleCommand(commandIn, path, timeout, topo, pKey, pVal);
         return;
     }
 
@@ -128,7 +138,7 @@ void sendCommand(const string& commandIn, const string& path, unsigned int timeo
     command = c;
 
     while (true) {
-        handleCommand(command, path, timeout, topo);
+        handleCommand(command, path, timeout, topo, pKey, pVal);
         cin >> c;
         command = c;
     }
@@ -142,6 +152,8 @@ try {
     string command;
     string path;
     string targetState;
+    string pKey;
+    string pVal;
     unsigned int timeout;
 
     fair::Logger::SetConsoleSeverity("debug");
@@ -166,6 +178,8 @@ try {
     options.add_options()
         ("command,c",        bpo::value<string>(&command)->default_value(""), "Command character")
         ("path,p",           bpo::value<string>(&path)->default_value(""), "DDS Topology path to send command to (empty - send to all tasks)")
+        ("property-key",     bpo::value<string>(&pKey)->default_value(""), "property key to be used with 'p' command")
+        ("property-value",   bpo::value<string>(&pVal)->default_value(""), "property value to be used with 'p' command")
         ("wait-for-state,w", bpo::value<string>(&targetState)->default_value(""), "Wait until targeted FairMQ devices reach the given state")
         ("timeout,t",        bpo::value<unsigned int>(&timeout)->default_value(0), "Timeout in milliseconds when waiting for a device state (0 - wait infinitely)")
         ("help,h",           "Produce help message");
@@ -175,7 +189,7 @@ try {
 
     if (vm.count("help")) {
         cout << "FairMQ DDS Command UI" << endl << options << endl;
-        cout << "Commands: [c] check state, [o] dump config, [h] help, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device, [k] complete init, [b] bind, [x] connect" << endl;
+        cout << "Commands: [c] check state, [o] dump config, [h] help, [r] run, [s] stop, [t] reset task, [d] reset device, [q] end, [j] init task, [i] init device, [k] complete init, [b] bind, [x] connect, [p] set property" << endl;
         return EXIT_SUCCESS;
     }
 
@@ -189,7 +203,7 @@ try {
 
     if (targetState != "") {
         if (command != "") {
-            sendCommand(command, path, timeout, topo);
+            sendCommand(command, path, timeout, topo, pKey, pVal);
         }
         size_t pos = targetState.find("->");
         if (pos == string::npos) {
@@ -200,7 +214,7 @@ try {
             // cout << "WaitForState(" << targetState << ") result: " << ec.message() << endl;
         }
     } else {
-        sendCommand(command, path, timeout, topo);
+        sendCommand(command, path, timeout, topo, pKey, pVal);
     }
 
     return EXIT_SUCCESS;

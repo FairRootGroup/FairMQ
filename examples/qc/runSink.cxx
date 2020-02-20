@@ -14,38 +14,12 @@
 class Sink : public FairMQDevice
 {
   public:
-    Sink()
-        : fMaxIterations(0)
-        , fNumIterations(0)
-    {
-        OnData("data2", &Sink::HandleData);
-    }
+    Sink() { OnData("data2", &Sink::HandleData); }
 
   protected:
-    virtual void InitTask()
-    {
-        fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
-    }
-
-    bool HandleData(FairMQMessagePtr& /*msg*/, int /*index*/)
-    {
-        if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
-            LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
-            return false;
-        }
-
-        return true;
-    }
-
-  private:
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
+    bool HandleData(FairMQMessagePtr& /*msg*/, int /*index*/) { return true; }
 };
 
 namespace bpo = boost::program_options;
-void addCustomOptions(bpo::options_description& options)
-{
-    options.add_options()
-        ("max-iterations", bpo::value<uint64_t>()->default_value(0), "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
-}
+void addCustomOptions(bpo::options_description& options) {}
 FairMQDevicePtr getDevice(const fair::mq::ProgOptions& /*config*/) { return new Sink(); }

@@ -14,15 +14,13 @@ class QCProducer : public FairMQDevice
   public:
     QCProducer()
         : fDoQC(false)
-        , fCounter(0)
-        , fInterval(100)
     {
         OnData("data1", &QCProducer::HandleData);
     }
 
     void InitTask() override
     {
-        GetConfig()->Subscribe<std::string>("qc", [&](const std::string& key, std::string value) {
+        GetConfig()->Subscribe<std::string>("qcdevice", [&](const std::string& key, std::string value) {
             if (key == "qc") {
                 if (value == "active") {
                     fDoQC.store(true);
@@ -37,13 +35,10 @@ class QCProducer : public FairMQDevice
     bool HandleData(FairMQMessagePtr& msg, int)
     {
         if (fDoQC.load() == true) {
-            if (++fCounter == fInterval) {
-                fCounter = 0;
-                FairMQMessagePtr msgCopy(NewMessage());
-                msgCopy->Copy(*msg);
-                if (Send(msg, "qc") < 0) {
-                    return false;
-                }
+            FairMQMessagePtr msgCopy(NewMessage());
+            msgCopy->Copy(*msg);
+            if (Send(msg, "qc") < 0) {
+                return false;
             }
         }
 
@@ -54,12 +49,10 @@ class QCProducer : public FairMQDevice
         return true;
     }
 
-    void ResetTask() override { GetConfig()->Unsubscribe<std::string>("qc"); }
+    void ResetTask() override { GetConfig()->Unsubscribe<std::string>("qcdevice"); }
 
   private:
     std::atomic<bool> fDoQC;
-    int fCounter;
-    int fInterval;
 };
 
 void addCustomOptions(boost::program_options::options_description& /*options*/) {}
