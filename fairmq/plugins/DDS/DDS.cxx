@@ -92,6 +92,9 @@ DDS::DDS(const string& name,
                     break;
                 }
                 case DeviceState::Exiting:
+                    if (!fControllerThread.joinable()) {
+                        fControllerThread = thread(&DDS::WaitForExitingAck, this);
+                    }
                     fWorkGuard.reset();
                     fDeviceTerminationRequested = true;
                     UnsubscribeFromDeviceStateChange();
@@ -358,9 +361,6 @@ auto DDS::SubscribeForCustomCommands() -> void
                 case cmd::Type::subscribe_to_state_change: {
                     lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                     fStateChangeSubscribers.insert(senderId);
-                    if (!fControllerThread.joinable()) {
-                        fControllerThread = thread(&DDS::WaitForExitingAck, this);
-                    }
 
                     LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState
                                << " to " << senderId;

@@ -145,6 +145,7 @@ try {
     unsigned int timeout;
 
     fair::Logger::SetConsoleSeverity("debug");
+    fair::Logger::SetConsoleColor(true);
 
     bpo::options_description options("Common options");
 
