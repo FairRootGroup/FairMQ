@@ -52,9 +52,11 @@ fairmq-dds-command-ui -c b
 fairmq-dds-command-ui -c x
 fairmq-dds-command-ui -c j
 fairmq-dds-command-ui -c r
-sampler_and_sink="main/(Sampler|Sink).*"
-fairmq-dds-command-ui -w "RUNNING->READY" -p $sampler_and_sink
-echo "...$sampler_and_sink are READY, sending shutdown..."
+qcconsumer="main/QCConsumer.*"
+qcproducer="main/QCProducer.*"
+fairmq-dds-command-ui -c p --property-key qc --property-value active -p $qcproducer
+fairmq-dds-command-ui -w "RUNNING->READY" -p $qcconsumer
+echo "...$qcconsumer received data and transitioned to READY, sending shutdown..."
 fairmq-dds-command-ui -c s
 fairmq-dds-command-ui -c t
 fairmq-dds-command-ui -c d

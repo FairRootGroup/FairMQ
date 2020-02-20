@@ -15,41 +15,22 @@
 class Sampler : public FairMQDevice
 {
   public:
-    Sampler()
-        : fMaxIterations(0)
-        , fNumIterations(0)
-    {}
+    Sampler() {}
 
   protected:
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
-
-    virtual void InitTask()
-    {
-        fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
-    }
-
     virtual bool ConditionalRun()
     {
         FairMQMessagePtr msg(NewMessage(1000));
 
         if (Send(msg, "data1") < 0) {
             return false;
-        } else if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
-            LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
-            return false;
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
         return true;
     }
 };
 
 namespace bpo = boost::program_options;
-void addCustomOptions(bpo::options_description& options)
-{
-    options.add_options()
-        ("max-iterations", bpo::value<uint64_t>()->default_value(0), "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
-}
+void addCustomOptions(bpo::options_description& options) {}
 FairMQDevicePtr getDevice(const fair::mq::ProgOptions& /*config*/) { return new Sampler(); }

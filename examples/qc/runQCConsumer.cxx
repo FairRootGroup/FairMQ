@@ -14,9 +14,9 @@ class QCConsumer : public FairMQDevice
   public:
     QCConsumer()
     {
-        OnData("qc", [](FairMQMessagePtr& /*msg*/, int){
+        OnData("qc", [](FairMQMessagePtr& /*msg*/, int) {
             LOG(info) << "received data";
-            return true;
+            return false;
         });
     }
 };
