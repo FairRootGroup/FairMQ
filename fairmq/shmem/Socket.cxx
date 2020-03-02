@@ -156,7 +156,10 @@ int Socket::Send(MessagePtr& msg, const int timeout)
         } else if (zmq_errno() == ETERM) {
             LOG(info) << "terminating socket " << fId;
             return -1;
-        } else {
+        } else if (zmq_errno() == EINTR) {
+            LOG(debug) << "Send interrupted by system call";
+            return nbytes;
+        }else {
             LOG(error) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
             return nbytes;
         }
@@ -204,8 +207,11 @@ int Socket::Receive(MessagePtr& msg, const int timeout)
         } else if (zmq_errno() == ETERM) {
             LOG(info) << "terminating socket " << fId;
             return -1;
-        } else {
-            LOG(error) << "Failed receiving on socket " << fId << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
+        } else if (zmq_errno() == EINTR) {
+            LOG(debug) << "Receive interrupted by system call";
+            return nbytes;
+        }else {
+            LOG(error) << "Failed receiving on socket " << fId << ", errno: " << errno << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
             return nbytes;
         }
     }
@@ -263,7 +269,10 @@ int64_t Socket::Send(vector<MessagePtr>& msgVec, const int timeout)
         } else if (zmq_errno() == ETERM) {
             LOG(info) << "terminating socket " << fId;
             return -1;
-        } else {
+        } else if (zmq_errno() == EINTR) {
+            LOG(debug) << "Send interrupted by system call";
+            return nbytes;
+        }else {
             LOG(error) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
             return nbytes;
         }
@@ -319,8 +328,11 @@ int64_t Socket::Receive(vector<MessagePtr>& msgVec, const int timeout)
             } else {
                 return -2;
             }
+        } else if (zmq_errno() == EINTR) {
+            LOG(debug) << "Receive interrupted by system call";
+            return nbytes;
         } else {
-            LOG(error) << "Failed receiving on socket " << fId << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
+            LOG(error) << "Failed receiving on socket " << fId << ", errno: " << errno << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
             return nbytes;
         }
     }
