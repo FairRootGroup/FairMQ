@@ -183,7 +183,9 @@ int Socket::Receive(MessagePtr& msg, const int timeout)
         int nbytes = zmq_msg_recv(zmqMsg.Msg(), fSocket, flags);
         if (nbytes > 0) {
             // check for number of received messages. must be 1
-            assert((nbytes / sizeof(MetaHeader)) == 1);
+            if (nbytes != sizeof(MetaHeader)) {
+                throw SocketError("Received message is not a valid FairMQ shared memory message. Possibly due to a misconfigured transport on the sender side.");
+            }
 
             MetaHeader* hdr = static_cast<MetaHeader*>(zmqMsg.Data());
             size_t size = hdr->fSize;
@@ -297,11 +299,13 @@ int64_t Socket::Receive(vector<MessagePtr>& msgVec, const int timeout)
         if (nbytes > 0) {
             MetaHeader* hdrVec = static_cast<MetaHeader*>(zmqMsg.Data());
             const auto hdrVecSize = zmqMsg.Size();
+
             assert(hdrVecSize > 0);
-            assert(hdrVecSize % sizeof(MetaHeader) == 0);
+            if (hdrVecSize % sizeof(MetaHeader) != 0) {
+                throw SocketError("Received message is not a valid FairMQ shared memory message. Possibly due to a misconfigured transport on the sender side.");
+            }
 
             const auto numMessages = hdrVecSize / sizeof(MetaHeader);
-
             msgVec.reserve(numMessages);
 
             for (size_t m = 0; m < numMessages; m++) {
