@@ -15,7 +15,6 @@
 #include <asio/system_executor.hpp>
 #include <chrono>
 #include <exception>
-#include <fairlogger/Logger.h>
 #include <fairmq/sdk/Error.h>
 #include <fairmq/sdk/Traits.h>
 #include <functional>
@@ -23,6 +22,11 @@
 #include <system_error>
 #include <type_traits>
 #include <utility>
+
+#include <fairlogger/Logger.h>
+#ifndef FAIR_LOG
+#define FAIR_LOG LOG
+#endif /* ifndef FAIR_LOG */
 
 namespace fair {
 namespace mq {
@@ -70,9 +74,9 @@ struct AsioAsyncOpImpl : AsioAsyncOpImplBase<SignatureArgTypes...>
                 try {
                     handler(ec, args...);
                 } catch (const std::exception& e) {
-                    LOG(error) << "Uncaught exception in AsioAsyncOp completion handler: " << e.what();
+                    FAIR_LOG(error) << "Uncaught exception in AsioAsyncOp completion handler: " << e.what();
                 } catch (...) {
-                    LOG(error) << "Unknown uncaught exception in AsioAsyncOp completion handler.";
+                    FAIR_LOG(error) << "Unknown uncaught exception in AsioAsyncOp completion handler.";
                 }
             },
             GetAlloc2());

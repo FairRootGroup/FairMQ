@@ -23,6 +23,9 @@
 #include <fairmq/tools/Unique.h>
 
 #include <fairlogger/Logger.h>
+#ifndef FAIR_LOG
+#define FAIR_LOG LOG
+#endif /* ifndef FAIR_LOG */
 
 #include <asio/associated_executor.hpp>
 #include <asio/async_result.hpp>
@@ -187,10 +190,10 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         fDDSSession.SubscribeToCommands([&](const std::string& msg, const std::string& /* condition */, DDSChannel::Id senderId) {
             Cmds inCmds;
             inCmds.Deserialize(msg);
-            // LOG(debug) << "Received " << inCmds.Size() << " command(s) with total size of " << msg.length() << " bytes: ";
+            // FAIR_LOG(debug) << "Received " << inCmds.Size() << " command(s) with total size of " << msg.length() << " bytes: ";
 
             for (const auto& cmd : inCmds) {
-                // LOG(debug) << " > " << cmd->GetType();
+                // FAIR_LOG(debug) << " > " << cmd->GetType();
                 switch (cmd->GetType()) {
                     case Type::state_change: {
                         auto _cmd = static_cast<StateChange&>(*cmd);
@@ -201,18 +204,18 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     } break;
                     case Type::state_change_subscription:
                         if (static_cast<StateChangeSubscription&>(*cmd).GetResult() != Result::Ok) {
-                            LOG(error) << "State change subscription failed for " << static_cast<StateChangeSubscription&>(*cmd).GetDeviceId();
+                            FAIR_LOG(error) << "State change subscription failed for " << static_cast<StateChangeSubscription&>(*cmd).GetDeviceId();
                         }
                     break;
                     case Type::state_change_unsubscription:
                         if (static_cast<StateChangeUnsubscription&>(*cmd).GetResult() != Result::Ok) {
-                            LOG(error) << "State change unsubscription failed for " << static_cast<StateChangeUnsubscription&>(*cmd).GetDeviceId();
+                            FAIR_LOG(error) << "State change unsubscription failed for " << static_cast<StateChangeUnsubscription&>(*cmd).GetDeviceId();
                         }
                     break;
                     case Type::transition_status: {
                         auto _cmd = static_cast<TransitionStatus&>(*cmd);
                         if (_cmd.GetResult() != Result::Ok) {
-                            LOG(error) << _cmd.GetTransition() << " transition failed for " << _cmd.GetDeviceId();
+                            FAIR_LOG(error) << _cmd.GetTransition() << " transition failed for " << _cmd.GetDeviceId();
                             std::lock_guard<std::mutex> lk(fMtx);
                             if (!fChangeStateOp.IsCompleted() && fStateData.at(fStateIndex.at(_cmd.GetTaskId())).state != fChangeStateTarget) {
                                 fChangeStateOpTimer.cancel();
@@ -230,15 +233,15 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     }
                     break;
                     default:
-                        LOG(warn) << "Unexpected/unknown command received: " << cmd->GetType();
-                        LOG(warn) << "Origin: " << senderId;
+                        FAIR_LOG(warn) << "Unexpected/unknown command received: " << cmd->GetType();
+                        FAIR_LOG(warn) << "Origin: " << senderId;
                     break;
                 }
             }
         });
 
         fDDSSession.StartDDSService();
-        // LOG(debug) << "Subscribing to state change";
+        // FAIR_LOG(debug) << "Subscribing to state change";
         Cmds cmds(make<SubscribeToStateChange>());
         fDDSSession.SendCommand(cmds.Serialize());
     }
@@ -391,9 +394,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     try {
                         h(MakeErrorCode(ErrorCode::OperationInProgress), s);
                     } catch (const std::exception& e) {
-                        LOG(error) << "Uncaught exception in completion handler: " << e.what();
+                        FAIR_LOG(error) << "Uncaught exception in completion handler: " << e.what();
                     } catch (...) {
-                        LOG(error) << "Unknown uncaught exception in completion handler.";
+                        FAIR_LOG(error) << "Unknown uncaught exception in completion handler.";
                     }
                 },
                 alloc2);
@@ -687,7 +690,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     }
                 });
             }
-            // LOG(debug) << "GetProperties " << fId << " with expected count of " << fExpectedCount << " started.";
+            // FAIR_LOG(debug) << "GetProperties " << fId << " with expected count of " << fExpectedCount << " started.";
         }
         GetPropertiesOp() = delete;
         GetPropertiesOp(const GetPropertiesOp&) = delete;
@@ -741,9 +744,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             lk.unlock();
             op.Update(cmd.GetDeviceId(), cmd.GetResult(), cmd.GetProps());
         } catch (std::out_of_range& e) {
-            LOG(debug) << "GetProperties operation (request id: " << cmd.GetRequestId()
-                       << ") not found (probably completed or timed out), "
-                       << "discarding reply of device " << cmd.GetDeviceId();
+            FAIR_LOG(debug) << "GetProperties operation (request id: " << cmd.GetRequestId()
+                            << ") not found (probably completed or timed out), "
+                            << "discarding reply of device " << cmd.GetDeviceId();
         }
     }
 
@@ -856,7 +859,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     }
                 });
             }
-            // LOG(debug) << "SetProperties " << fId << " with expected count of " << fExpectedCount << " started.";
+            // FAIR_LOG(debug) << "SetProperties " << fId << " with expected count of " << fExpectedCount << " started.";
         }
         SetPropertiesOp() = delete;
         SetPropertiesOp(const SetPropertiesOp&) = delete;
@@ -908,9 +911,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             lk.unlock();
             op.Update(cmd.GetDeviceId(), cmd.GetResult());
         } catch (std::out_of_range& e) {
-            LOG(debug) << "SetProperties operation (request id: " << cmd.GetRequestId()
-                       << ") not found (probably completed or timed out), "
-                       << "discarding reply of device " << cmd.GetDeviceId();
+            FAIR_LOG(debug) << "SetProperties operation (request id: " << cmd.GetRequestId()
+                            << ") not found (probably completed or timed out), "
+                            << "discarding reply of device " << cmd.GetDeviceId();
         }
     }
 
@@ -1033,10 +1036,10 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             if (task.state == fChangeStateTarget) {
                 ++fTransitionedCount;
             }
-            // LOG(debug) << "Updated state entry: taskId=" << taskId << ", state=" << state;
+            // FAIR_LOG(debug) << "Updated state entry: taskId=" << taskId << ", state=" << state;
             TryChangeStateCompletion();
         } catch (const std::exception& e) {
-            LOG(error) << "Exception in UpdateStateEntry: " << e.what();
+            FAIR_LOG(error) << "Exception in UpdateStateEntry: " << e.what();
         }
     }
 
