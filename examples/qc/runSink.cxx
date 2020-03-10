@@ -21,5 +21,5 @@ class Sink : public FairMQDevice
 };
 
 namespace bpo = boost::program_options;
-void addCustomOptions(bpo::options_description& options) {}
+void addCustomOptions(bpo::options_description&) {}
 FairMQDevicePtr getDevice(const fair::mq::ProgOptions& /*config*/) { return new Sink(); }
