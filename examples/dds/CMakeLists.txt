@@ -7,12 +7,12 @@
 ################################################################################
 
 add_library(ExampleDDSLib STATIC
-    "Sampler.cxx"
-    "Sampler.h"
-    "Processor.cxx"
-    "Processor.h"
-    "Sink.cxx"
-    "Sink.h"
+  "Sampler.cxx"
+  "Sampler.h"
+  "Processor.cxx"
+  "Processor.h"
+  "Sink.cxx"
+  "Sink.h"
 )
 
 target_link_libraries(ExampleDDSLib PUBLIC FairMQ)
@@ -39,24 +39,24 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-dds.sh.in ${CMAKE_CUR
 
 # test
 if(DDS_FOUND)
-    add_test(NAME Example.DDS.localhost COMMAND ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-dds.sh localhost)
-    set_tests_properties(Example.DDS.localhost PROPERTIES
+  add_test(NAME Example.DDS.localhost COMMAND ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-dds.sh localhost)
+  set_tests_properties(Example.DDS.localhost PROPERTIES
     TIMEOUT 15
     RUN_SERIAL true
     PASS_REGULAR_EXPRESSION "Example successful"
-    )
+  )
 endif()
 
 # install
 
 install(
-    TARGETS
-    fairmq-ex-dds-sampler
-    fairmq-ex-dds-processor
-    fairmq-ex-dds-sink
+  TARGETS
+  fairmq-ex-dds-sampler
+  fairmq-ex-dds-processor
+  fairmq-ex-dds-sink
 
-    LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
 )
 
 # configure run script with different executable paths for build and for install directories
@@ -68,30 +68,30 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-ex-dds-env.sh ${CMAKE_CURRENT_
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-dds.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-dds.sh_install @ONLY)
 
 install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology.xml_install
-    DESTINATION ${PROJECT_INSTALL_DATADIR}
-    RENAME ex-dds-topology.xml
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology.xml_install
+  DESTINATION ${PROJECT_INSTALL_DATADIR}
+  RENAME ex-dds-topology.xml
 )
 
 install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology-infinite.xml_install
-    DESTINATION ${PROJECT_INSTALL_DATADIR}
-    RENAME ex-dds-topology-infinite.xml
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-topology-infinite.xml_install
+  DESTINATION ${PROJECT_INSTALL_DATADIR}
+  RENAME ex-dds-topology-infinite.xml
 )
 
 install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-hosts.cfg
-    DESTINATION ${PROJECT_INSTALL_DATADIR}
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-dds-hosts.cfg
+  DESTINATION ${PROJECT_INSTALL_DATADIR}
 )
 
 install(
-    PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-ex-dds-env.sh_install
-    DESTINATION ${PROJECT_INSTALL_BINDIR}
-    RENAME fairmq-ex-dds-env.sh
+  PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-ex-dds-env.sh_install
+  DESTINATION ${PROJECT_INSTALL_BINDIR}
+  RENAME fairmq-ex-dds-env.sh
 )
 
 install(
-    PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-dds.sh_install
-    DESTINATION ${PROJECT_INSTALL_BINDIR}
-    RENAME fairmq-start-ex-dds.sh
+  PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-dds.sh_install
+  DESTINATION ${PROJECT_INSTALL_BINDIR}
+  RENAME fairmq-start-ex-dds.sh
 )
