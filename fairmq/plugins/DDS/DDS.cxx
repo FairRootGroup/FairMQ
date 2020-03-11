@@ -165,9 +165,7 @@ auto DDS::FillChannelContainers() -> void
             } else if (GetProperty<string>(methodKey) == "connect") {
                 fConnectingChans.insert(make_pair(c.first, DDSConfig()));
                 LOG(debug) << "preparing to connect: " << c.first << " with " << c.second << " sub-channels.";
-                for (int i = 0; i < c.second; ++i) {
-                    fConnectingChans.at(c.first).fSubChannelAddresses.push_back(string());
-                }
+                fConnectingChans.at(c.first).fNumSubChannels = c.second;
             } else {
                 LOG(error) << "Cannot update address configuration. Channel method (bind/connect) not specified.";
                 return;
@@ -273,19 +271,13 @@ auto DDS::SubscribeForConnectingChannels() -> void
                     fConnectingChans.at(channelName).fDDSValues.insert({senderTaskID, val.c_str()});
                 }
 
-                // update channels and remove them from unfinished container
-                for (auto mi = fConnectingChans.begin(); mi != fConnectingChans.end(); /* no increment */) {
-                    if (mi->second.fSubChannelAddresses.size() == mi->second.fDDSValues.size()) {
-                        // when multiple subChannels are used, their order on every device should be the same, irregardless of arrival order from DDS.
-                        sort(mi->second.fSubChannelAddresses.begin(), mi->second.fSubChannelAddresses.end());
-                        auto it3 = mi->second.fDDSValues.begin();
-                        for (unsigned int i = 0; i < mi->second.fSubChannelAddresses.size(); ++i) {
-                            SetProperty<string>(string{"chans." + mi->first + "." + to_string(i) + ".address"}, it3->second);
-                            ++it3;
+                for (const auto& mi : fConnectingChans) {
+                    if (mi.second.fNumSubChannels == mi.second.fDDSValues.size()) {
+                        int i = 0;
+                        for (const auto& e : mi.second.fDDSValues) {
+                            SetProperty<string>(string{"chans." + mi.first + "." + to_string(i) + ".address"}, e.second);
+                            ++i;
                         }
-                        fConnectingChans.erase(mi++);
-                    } else {
-                        ++mi;
                     }
                 }
             } catch (const exception& e) {

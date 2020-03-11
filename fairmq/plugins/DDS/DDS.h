@@ -27,6 +27,7 @@
 #include <string>
 #include <atomic>
 #include <thread>
+#include <map>
 #include <unordered_map>
 #include <vector>
 
@@ -40,9 +41,9 @@ namespace plugins
 struct DDSConfig
 {
     // container of sub channel addresses
-    std::vector<std::string> fSubChannelAddresses;
+    unsigned int fNumSubChannels;
     // dds values for the channel
-    std::unordered_map<uint64_t, std::string> fDDSValues;
+    std::map<uint64_t, std::string> fDDSValues;
 };
 
 struct DDSSubscription
