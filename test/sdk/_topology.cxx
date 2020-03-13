@@ -144,18 +144,21 @@ TEST_F(Topology, AsyncChangeStateConcurrent)
     using namespace fair::mq;
 
     sdk::Topology topo(mDDSTopo, mDDSSession);
-    tools::SharedSemaphore blocker;
-    topo.AsyncChangeState(sdk::TopologyTransition::InitDevice,
-                          [blocker](std::error_code ec, sdk::TopologyState) mutable {
-                              LOG(info) << "result for valid ChangeState: " << ec;
-                              blocker.Signal();
+    topo.AsyncChangeState(sdk::TopologyTransition::InitDevice, "main/Sampler.*",
+                          [](std::error_code ec, sdk::TopologyState) mutable {
+                              LOG(info) << "ChangeState for Sampler: " << ec;
+                              EXPECT_EQ(ec, std::error_code());
                           });
-    topo.AsyncChangeState(sdk::TopologyTransition::Stop,
-                          [](std::error_code ec, sdk::TopologyState) {
-                              LOG(ERROR) << "Expected error: " << ec;
-                              EXPECT_EQ(ec, MakeErrorCode(ErrorCode::OperationInProgress));
+    topo.AsyncChangeState(sdk::TopologyTransition::InitDevice, "main/SinkGroup/.*",
+                          [](std::error_code ec, sdk::TopologyState) mutable {
+                              LOG(info) << "ChangeState for Sinks: " << ec;
+                              EXPECT_EQ(ec, std::error_code());
                           });
-    blocker.Wait();
+
+    topo.WaitForState(sdk::DeviceState::InitializingDevice);
+    auto const currentState = topo.GetCurrentState();
+    EXPECT_NO_THROW(sdk::AggregateState(currentState));
+    EXPECT_EQ(sdk::StateEqualsTo(currentState, sdk::DeviceState::InitializingDevice), true);
 }
 
 TEST_F(Topology, AsyncChangeStateTimeout)
