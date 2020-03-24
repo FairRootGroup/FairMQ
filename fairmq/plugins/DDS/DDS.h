@@ -144,6 +144,7 @@ class DDS : public Plugin
     auto SubscribeForCustomCommands() -> void;
 
     DDSSubscription fDDS;
+    size_t fDDSTaskId;
 
     std::unordered_map<std::string, std::vector<std::string>> fBindingChans;
     std::unordered_map<std::string, DDSConfig> fConnectingChans;

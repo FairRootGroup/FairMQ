@@ -37,6 +37,7 @@ DDS::DDS(const string& name,
          const string& homepage,
          PluginServices* pluginServices)
     : Plugin(name, version, maintainer, homepage, pluginServices)
+    , fDDSTaskId(dds::env_prop<dds::task_id>())
     , fCurrentState(DeviceState::Idle)
     , fLastState(DeviceState::Idle)
     , fDeviceTerminationRequested(false)
@@ -112,7 +113,7 @@ DDS::DDS(const string& name,
             for (auto subscriberId : fStateChangeSubscribers) {
                 LOG(debug) << "Publishing state-change: " << fLastState << "->" << newState << " to " << subscriberId;
 
-                Cmds cmds(make<StateChange>(id, dds::env_prop<dds::task_id>(), fLastState, fCurrentState));
+                Cmds cmds(make<StateChange>(id, fDDSTaskId, fLastState, fCurrentState));
                 fDDS.Send(cmds.Serialize(), to_string(subscriberId));
             }
         });
@@ -143,10 +144,10 @@ auto DDS::StartWorkerThread() -> void
 auto DDS::WaitForExitingAck() -> void
 {
     unique_lock<mutex> lock(fStateChangeSubscriberMutex);
-    fExitingAcked.wait_for(
-        lock,
-        chrono::milliseconds(GetProperty<unsigned int>("wait-for-exiting-ack-timeout")),
-        [this]() { return fExitingAckedByLastExternalController; });
+    auto timeout = GetProperty<unsigned int>("wait-for-exiting-ack-timeout");
+    fExitingAcked.wait_for(lock, chrono::milliseconds(timeout), [this]() {
+        return fExitingAckedByLastExternalController;
+    });
 }
 
 auto DDS::FillChannelContainers() -> void
@@ -321,11 +322,11 @@ auto DDS::SubscribeForCustomCommands() -> void
                     Transition transition = static_cast<cmd::ChangeState&>(*cmd).GetTransition();
                     if (ChangeDeviceState(transition)) {
                         cmd::Cmds outCmds(
-                            cmd::make<cmd::TransitionStatus>(id, dds::env_prop<dds::task_id>(), cmd::Result::Ok, transition));
+                            cmd::make<cmd::TransitionStatus>(id, fDDSTaskId, cmd::Result::Ok, transition));
                         fDDS.Send(outCmds.Serialize(), to_string(senderId));
                     } else {
                         sdk::cmd::Cmds outCmds(
-                            cmd::make<cmd::TransitionStatus>(id, dds::env_prop<dds::task_id>(), cmd::Result::Failure, transition));
+                            cmd::make<cmd::TransitionStatus>(id, fDDSTaskId, cmd::Result::Failure, transition));
                         fDDS.Send(outCmds.Serialize(), to_string(senderId));
                     }
                     {
@@ -359,8 +360,7 @@ auto DDS::SubscribeForCustomCommands() -> void
 
                     cmd::Cmds outCmds(
                         cmd::make<cmd::StateChangeSubscription>(id, cmd::Result::Ok),
-                        cmd::make<cmd::StateChange>(
-                            id, dds::env_prop<dds::task_id>(), fLastState, fCurrentState));
+                        cmd::make<cmd::StateChange>(id, fDDSTaskId, fLastState, fCurrentState));
 
                     fDDS.Send(outCmds.Serialize(), to_string(senderId));
                 } break;
