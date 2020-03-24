@@ -283,7 +283,10 @@ auto DDS::SubscribeForConnectingChannels() -> void
                     if (mi.second.fNumSubChannels == mi.second.fDDSValues.size()) {
                         int i = 0;
                         for (const auto& e : mi.second.fDDSValues) {
-                            SetProperty<string>(string{"chans." + mi.first + "." + to_string(i) + ".address"}, e.second);
+                            auto result = UpdateProperty<string>(string{"chans." + mi.first + "." + to_string(i) + ".address"}, e.second);
+                            if (!result) {
+                                LOG(error) << "UpdateProperty failed for: " << "chans." << mi.first << "." << to_string(i) << ".address" << " - property does not exist";
+                            }
                             ++i;
                         }
                     }
