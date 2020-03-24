@@ -243,6 +243,12 @@ auto DDS::SubscribeForConnectingChannels() -> void
                     unique_lock<mutex> lk(fUpdateMutex);
                     fUpdateCondition.wait(lk, [&]{ return fUpdatesAllowed; });
                 }
+
+                if (fConnectingChans.find(channelName) == fConnectingChans.end()) {
+                    LOG(error) << "Received an update for a connecting channel, but either no channel with given channel name exists or it has already been configured: '" << channelName << "', ignoring...";
+                    return;
+                }
+
                 string val = value;
                 // check if it is to handle as one out of multiple values
                 auto it = fIofN.find(channelName);
