@@ -12,6 +12,7 @@
 #include <fairmq/Plugin.h>
 #include <fairmq/StateQueue.h>
 #include <fairmq/Version.h>
+#include <fairmq/sdk/commands/Commands.h>
 
 #include <dds/dds.h>
 
@@ -142,6 +143,7 @@ class DDS : public Plugin
     auto SubscribeForConnectingChannels() -> void;
     auto PublishBoundChannels() -> void;
     auto SubscribeForCustomCommands() -> void;
+    auto HandleCmd(const std::string& id, sdk::cmd::Cmd& cmd, const std::string& cond, uint64_t senderId) -> void;
 
     DDSSubscription fDDS;
     size_t fDDSTaskId;
