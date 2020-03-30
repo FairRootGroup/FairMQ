@@ -12,8 +12,8 @@
         </properties>
     </decltask>
 
-    <decltask name="QCProducer">
-        <exe>fairmq-ex-qc-producer --color false --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect name=qc,type=push,method=connect -P dds</exe>
+    <decltask name="QCDispatcher">
+        <exe>fairmq-ex-qc-dispatcher --color false --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect name=qc,type=push,method=connect -P dds</exe>
         <env reachable="false">fairmq-ex-qc-env.sh</env>
         <properties>
             <name access="read">fmqchan_data1</name>
@@ -22,8 +22,8 @@
         </properties>
     </decltask>
 
-    <decltask name="QCConsumer">
-        <exe>fairmq-ex-qc-consumer --color false --channel-config name=qc,type=pull,method=bind -P dds</exe>
+    <decltask name="QCTask">
+        <exe>fairmq-ex-qc-task --color false --channel-config name=qc,type=pull,method=bind -P dds</exe>
         <env reachable="false">fairmq-ex-qc-env.sh</env>
         <properties>
             <name access="write">fmqchan_qc</name>
@@ -40,8 +40,8 @@
 
     <main name="main">
         <task>Sampler</task>
-        <task>QCProducer</task>
-        <task>QCConsumer</task>
+        <task>QCDispatcher</task>
+        <task>QCTask</task>
         <task>Sink</task>
     </main>
 

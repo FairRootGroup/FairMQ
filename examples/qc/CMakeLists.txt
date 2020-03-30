@@ -9,16 +9,16 @@
 add_executable(fairmq-ex-qc-sampler runSampler.cxx)
 target_link_libraries(fairmq-ex-qc-sampler PRIVATE FairMQ)
 
-add_executable(fairmq-ex-qc-producer runQCProducer.cxx)
-target_link_libraries(fairmq-ex-qc-producer PRIVATE FairMQ)
+add_executable(fairmq-ex-qc-dispatcher runQCDispatcher.cxx)
+target_link_libraries(fairmq-ex-qc-dispatcher PRIVATE FairMQ)
 
-add_executable(fairmq-ex-qc-consumer runQCConsumer.cxx)
-target_link_libraries(fairmq-ex-qc-consumer PRIVATE FairMQ)
+add_executable(fairmq-ex-qc-task runQCTask.cxx)
+target_link_libraries(fairmq-ex-qc-task PRIVATE FairMQ)
 
 add_executable(fairmq-ex-qc-sink runSink.cxx)
 target_link_libraries(fairmq-ex-qc-sink PRIVATE FairMQ)
 
-add_custom_target(ExampleQC DEPENDS fairmq-ex-qc-sampler fairmq-ex-qc-producer fairmq-ex-qc-consumer fairmq-ex-qc-sink)
+add_custom_target(ExampleQC DEPENDS fairmq-ex-qc-sampler fairmq-ex-qc-dispatcher fairmq-ex-qc-task fairmq-ex-qc-sink)
 
 list(JOIN Boost_LIBRARY_DIRS ":" LIB_DIR)
 set(BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_BINARY_DIR}/fairmq/plugins/DDS)
@@ -37,8 +37,8 @@ endif()
 install(
   TARGETS
   fairmq-ex-qc-sampler
-  fairmq-ex-qc-producer
-  fairmq-ex-qc-consumer
+  fairmq-ex-qc-dispatcher
+  fairmq-ex-qc-task
   fairmq-ex-qc-sink
 
   LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
