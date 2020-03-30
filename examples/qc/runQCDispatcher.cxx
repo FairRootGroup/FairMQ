@@ -9,13 +9,13 @@
 #include "runFairMQDevice.h"
 #include "FairMQDevice.h"
 
-class QCProducer : public FairMQDevice
+class QCDispatcher : public FairMQDevice
 {
   public:
-    QCProducer()
+    QCDispatcher()
         : fDoQC(false)
     {
-        OnData("data1", &QCProducer::HandleData);
+        OnData("data1", &QCDispatcher::HandleData);
     }
 
     void InitTask() override
@@ -56,4 +56,4 @@ class QCProducer : public FairMQDevice
 };
 
 void addCustomOptions(boost::program_options::options_description& /*options*/) {}
-FairMQDevicePtr getDevice(const fair::mq::ProgOptions& /*config*/) { return new QCProducer(); }
+FairMQDevicePtr getDevice(const fair::mq::ProgOptions& /*config*/) { return new QCDispatcher(); }

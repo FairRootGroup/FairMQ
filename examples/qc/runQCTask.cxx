@@ -9,10 +9,10 @@
 #include "runFairMQDevice.h"
 #include "FairMQDevice.h"
 
-class QCConsumer : public FairMQDevice
+class QCTask : public FairMQDevice
 {
   public:
-    QCConsumer()
+    QCTask()
     {
         OnData("qc", [](FairMQMessagePtr& /*msg*/, int) {
             LOG(info) << "received data";
@@ -23,4 +23,4 @@ class QCConsumer : public FairMQDevice
 
 namespace bpo = boost::program_options;
 void addCustomOptions(bpo::options_description& /*options*/) {}
-FairMQDevicePtr getDevice(const fair::mq::ProgOptions& /*config*/) { return new QCConsumer(); }
+FairMQDevicePtr getDevice(const fair::mq::ProgOptions& /*config*/) { return new QCTask(); }
