@@ -293,6 +293,7 @@ string Cmds::Serialize(const Format type) const
                 auto deviceId = fbb.CreateString(_cmd.GetDeviceId());
                 cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
                 cmdBuilder->add_device_id(deviceId);
+                cmdBuilder->add_task_id(_cmd.GetTaskId());
                 cmdBuilder->add_result(GetFBResult(_cmd.GetResult()));
             }
             break;
@@ -301,6 +302,7 @@ string Cmds::Serialize(const Format type) const
                 auto deviceId = fbb.CreateString(_cmd.GetDeviceId());
                 cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
                 cmdBuilder->add_device_id(deviceId);
+                cmdBuilder->add_task_id(_cmd.GetTaskId());
                 cmdBuilder->add_result(GetFBResult(_cmd.GetResult()));
             }
             break;
@@ -433,10 +435,10 @@ void Cmds::Deserialize(const string& str, const Format type)
                 fCmds.emplace_back(make<Config>(cmdPtr.device_id()->str(), cmdPtr.config_string()->str()));
             break;
             case FBCmd_state_change_subscription:
-                fCmds.emplace_back(make<StateChangeSubscription>(cmdPtr.device_id()->str(), GetResult(cmdPtr.result())));
+                fCmds.emplace_back(make<StateChangeSubscription>(cmdPtr.device_id()->str(), cmdPtr.task_id(), GetResult(cmdPtr.result())));
             break;
             case FBCmd_state_change_unsubscription:
-                fCmds.emplace_back(make<StateChangeUnsubscription>(cmdPtr.device_id()->str(), GetResult(cmdPtr.result())));
+                fCmds.emplace_back(make<StateChangeUnsubscription>(cmdPtr.device_id()->str(), cmdPtr.task_id(), GetResult(cmdPtr.result())));
             break;
             case FBCmd_state_change:
                 fCmds.emplace_back(make<StateChange>(cmdPtr.device_id()->str(), cmdPtr.task_id(), GetMQState(cmdPtr.last_state()), GetMQState(cmdPtr.current_state())));

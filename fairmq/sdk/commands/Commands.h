@@ -51,8 +51,8 @@ enum class Type : int
     current_state,                 // args: { device_id, current_state }
     transition_status,             // args: { device_id, task_id, Result, transition }
     config,                        // args: { device_id, config_string }
-    state_change_subscription,     // args: { device_id, Result }
-    state_change_unsubscription,   // args: { device_id, Result }
+    state_change_subscription,     // args: { device_id, task_id, Result }
+    state_change_unsubscription,   // args: { device_id, task_id, Result }
     state_change,                  // args: { device_id, task_id, last_state, current_state }
     properties,                    // args: { device_id, request_id, Result, properties }
     properties_set                 // args: { device_id, request_id, Result }
@@ -208,37 +208,45 @@ struct Config : Cmd
 
 struct StateChangeSubscription : Cmd
 {
-    explicit StateChangeSubscription(const std::string& id, const Result result)
+    explicit StateChangeSubscription(const std::string& id, const uint64_t taskId, const Result result)
         : Cmd(Type::state_change_subscription)
         , fDeviceId(id)
+        , fTaskId(taskId)
         , fResult(result)
     {}
 
     std::string GetDeviceId() const { return fDeviceId; }
     void SetDeviceId(const std::string& deviceId) { fDeviceId = deviceId; }
+    uint64_t GetTaskId() const { return fTaskId; }
+    void SetTaskId(const uint64_t taskId) { fTaskId = taskId; }
     Result GetResult() const { return fResult; }
     void SetResult(const Result result) { fResult = result; }
 
   private:
     std::string fDeviceId;
+    uint64_t fTaskId;
     Result fResult;
 };
 
 struct StateChangeUnsubscription : Cmd
 {
-    explicit StateChangeUnsubscription(const std::string& id, const Result result)
+    explicit StateChangeUnsubscription(const std::string& id, const uint64_t taskId, const Result result)
         : Cmd(Type::state_change_unsubscription)
         , fDeviceId(id)
+        , fTaskId(taskId)
         , fResult(result)
     {}
 
     std::string GetDeviceId() const { return fDeviceId; }
     void SetDeviceId(const std::string& deviceId) { fDeviceId = deviceId; }
+    uint64_t GetTaskId() const { return fTaskId; }
+    void SetTaskId(const uint64_t taskId) { fTaskId = taskId; }
     Result GetResult() const { return fResult; }
     void SetResult(const Result result) { fResult = result; }
 
   private:
     std::string fDeviceId;
+    uint64_t fTaskId;
     Result fResult;
 };
 

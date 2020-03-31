@@ -54,10 +54,10 @@ enum FBCmd:byte {
     set_properties,                // args: { request_id, properties }
 
     current_state,                 // args: { device_id, current_state }
-    transition_status,             // args: { device_id, Result, transition }
+    transition_status,             // args: { device_id, task_id, Result, transition }
     config,                        // args: { device_id, config_string }
-    state_change_subscription,     // args: { device_id, Result }
-    state_change_unsubscription,   // args: { device_id, Result }
+    state_change_subscription,     // args: { device_id, task_id, Result }
+    state_change_unsubscription,   // args: { device_id, task_id, Result }
     state_change,                  // args: { device_id, task_id, last_state, current_state }
     properties,                    // args: { device_id, request_id, Result, properties }
     properties_set                 // args: { device_id, request_id, Result }

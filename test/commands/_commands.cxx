@@ -32,8 +32,8 @@ TEST(Format, Construction)
     Cmds currentStateCmds(make<CurrentState>("somedeviceid", State::Running));
     Cmds transitionStatusCmds(make<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop));
     Cmds configCmds(make<Config>("somedeviceid", "someconfig"));
-    Cmds stateChangeSubscriptionCmds(make<StateChangeSubscription>("somedeviceid", Result::Ok));
-    Cmds stateChangeUnsubscriptionCmds(make<StateChangeUnsubscription>("somedeviceid", Result::Ok));
+    Cmds stateChangeSubscriptionCmds(make<StateChangeSubscription>("somedeviceid", 123456, Result::Ok));
+    Cmds stateChangeUnsubscriptionCmds(make<StateChangeUnsubscription>("somedeviceid", 123456, Result::Ok));
     Cmds stateChangeCmds(make<StateChange>("somedeviceid", 123456, State::Running, State::Ready));
     Cmds propertiesCmds(make<Properties>("somedeviceid", 66, Result::Ok, props));
     Cmds propertiesSetCmds(make<PropertiesSet>("somedeviceid", 42, Result::Ok));
@@ -64,9 +64,11 @@ TEST(Format, Construction)
     ASSERT_EQ(static_cast<Config&>(configCmds.At(0)).GetConfig(), "someconfig");
     ASSERT_EQ(stateChangeSubscriptionCmds.At(0).GetType(), Type::state_change_subscription);
     ASSERT_EQ(static_cast<StateChangeSubscription&>(stateChangeSubscriptionCmds.At(0)).GetDeviceId(), "somedeviceid");
+    ASSERT_EQ(static_cast<StateChangeSubscription&>(stateChangeSubscriptionCmds.At(0)).GetTaskId(), 123456);
     ASSERT_EQ(static_cast<StateChangeSubscription&>(stateChangeSubscriptionCmds.At(0)).GetResult(), Result::Ok);
     ASSERT_EQ(stateChangeUnsubscriptionCmds.At(0).GetType(), Type::state_change_unsubscription);
     ASSERT_EQ(static_cast<StateChangeUnsubscription&>(stateChangeUnsubscriptionCmds.At(0)).GetDeviceId(), "somedeviceid");
+    ASSERT_EQ(static_cast<StateChangeUnsubscription&>(stateChangeUnsubscriptionCmds.At(0)).GetTaskId(), 123456);
     ASSERT_EQ(static_cast<StateChangeUnsubscription&>(stateChangeUnsubscriptionCmds.At(0)).GetResult(), Result::Ok);
     ASSERT_EQ(stateChangeCmds.At(0).GetType(), Type::state_change);
     ASSERT_EQ(static_cast<StateChange&>(stateChangeCmds.At(0)).GetDeviceId(), "somedeviceid");
@@ -99,8 +101,8 @@ void fillCommands(Cmds& cmds)
     cmds.Add<CurrentState>("somedeviceid", State::Running);
     cmds.Add<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop);
     cmds.Add<Config>("somedeviceid", "someconfig");
-    cmds.Add<StateChangeSubscription>("somedeviceid", Result::Ok);
-    cmds.Add<StateChangeUnsubscription>("somedeviceid", Result::Ok);
+    cmds.Add<StateChangeSubscription>("somedeviceid", 123456, Result::Ok);
+    cmds.Add<StateChangeUnsubscription>("somedeviceid", 123456, Result::Ok);
     cmds.Add<StateChange>("somedeviceid", 123456, State::Running, State::Ready);
     cmds.Add<Properties>("somedeviceid", 66, Result::Ok, props);
     cmds.Add<PropertiesSet>("somedeviceid", 42, Result::Ok);
@@ -164,11 +166,13 @@ void checkCommands(Cmds& cmds)
             case Type::state_change_subscription:
                 ++count;
                 ASSERT_EQ(static_cast<StateChangeSubscription&>(*cmd).GetDeviceId(), "somedeviceid");
+                ASSERT_EQ(static_cast<StateChangeSubscription&>(*cmd).GetTaskId(), 123456);
                 ASSERT_EQ(static_cast<StateChangeSubscription&>(*cmd).GetResult(), Result::Ok);
             break;
             case Type::state_change_unsubscription:
                 ++count;
                 ASSERT_EQ(static_cast<StateChangeUnsubscription&>(*cmd).GetDeviceId(), "somedeviceid");
+                ASSERT_EQ(static_cast<StateChangeUnsubscription&>(*cmd).GetTaskId(), 123456);
                 ASSERT_EQ(static_cast<StateChangeUnsubscription&>(*cmd).GetResult(), Result::Ok);
             break;
             case Type::state_change:
