@@ -71,7 +71,7 @@ const std::map<DeviceTransition, DeviceState> expectedState =
 
 struct DeviceStatus
 {
-    bool initialized;
+    bool subscribed_to_state_changes;
     DeviceState lastState;
     DeviceState state;
     DDSTask::Id taskId;
@@ -265,15 +265,35 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     auto HandleCmd(cmd::StateChangeSubscription const& cmd) -> void
     {
-        if (cmd.GetResult() != cmd::Result::Ok) {
-            FAIR_LOG(error) << "State change subscription failed for " << cmd.GetDeviceId();
+        if (cmd.GetResult() == cmd::Result::Ok) {
+            DDSTask::Id taskId(cmd.GetTaskId());
+            std::lock_guard<std::mutex> lk(fMtx);
+
+            try {
+                DeviceStatus& task = fStateData.at(fStateIndex.at(taskId));
+                task.subscribed_to_state_changes = true;
+            } catch (const std::exception& e) {
+                FAIR_LOG(error) << "Exception in HandleCmd(cmd::StateChangeSubscription const&): " << e.what();
+            }
+        } else {
+            FAIR_LOG(error) << "State change subscription failed for device: " << cmd.GetDeviceId() << ", task id: " << cmd.GetTaskId();
         }
     }
 
     auto HandleCmd(cmd::StateChangeUnsubscription const& cmd) -> void
     {
-        if (cmd.GetResult() != cmd::Result::Ok) {
-            FAIR_LOG(error) << "State change unsubscription failed for " << cmd.GetDeviceId();
+        if (cmd.GetResult() == cmd::Result::Ok) {
+            DDSTask::Id taskId(cmd.GetTaskId());
+            std::lock_guard<std::mutex> lk(fMtx);
+
+            try {
+                DeviceStatus& task = fStateData.at(fStateIndex.at(taskId));
+                task.subscribed_to_state_changes = false;
+            } catch (const std::exception& e) {
+                FAIR_LOG(error) << "Exception in HandleCmd(cmd::StateChangeUnsubscription const&): " << e.what();
+            }
+        } else {
+            FAIR_LOG(error) << "State change unsubscription failed for device: " << cmd.GetDeviceId() << ", task id: " << cmd.GetTaskId();
         }
     }
 
@@ -290,7 +310,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
         try {
             DeviceStatus& task = fStateData.at(fStateIndex.at(taskId));
-            task.initialized = true;
             task.lastState = cmd.GetLastState();
             task.state = cmd.GetCurrentState();
             // FAIR_LOG(debug) << "Updated state entry: taskId=" << taskId << ", state=" << state;
@@ -310,11 +329,11 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         if (cmd.GetResult() != cmd::Result::Ok) {
             FAIR_LOG(error) << cmd.GetTransition() << " transition failed for " << cmd.GetDeviceId();
-            DDSTask::Id id(cmd.GetTaskId());
+            DDSTask::Id taskId(cmd.GetTaskId());
             std::lock_guard<std::mutex> lk(fMtx);
             for (auto& op : fChangeStateOps) {
-                if (!op.second.IsCompleted() && op.second.ContainsTask(id) &&
-                    fStateData.at(fStateIndex.at(id)).state != op.second.GetTargetState()) {
+                if (!op.second.IsCompleted() && op.second.ContainsTask(taskId) &&
+                    fStateData.at(fStateIndex.at(taskId)).state != op.second.GetTargetState()) {
                     op.second.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
                 }
             }

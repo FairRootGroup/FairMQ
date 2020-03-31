@@ -367,7 +367,7 @@ auto DDS::HandleCmd(const string& id, sdk::cmd::Cmd& cmd, const string& cond, ui
 
             LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState << " to " << senderId;
 
-            Cmds outCmds(make<StateChangeSubscription>(id, Result::Ok),
+            Cmds outCmds(make<StateChangeSubscription>(id, fDDSTaskId, Result::Ok),
                          make<StateChange>(id, fDDSTaskId, fLastState, fCurrentState));
 
             fDDS.Send(outCmds.Serialize(), to_string(senderId));
@@ -377,7 +377,7 @@ auto DDS::HandleCmd(const string& id, sdk::cmd::Cmd& cmd, const string& cond, ui
                 lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                 fStateChangeSubscribers.erase(senderId);
             }
-            Cmds outCmds(make<StateChangeUnsubscription>(id, Result::Ok));
+            Cmds outCmds(make<StateChangeUnsubscription>(id, fDDSTaskId, Result::Ok));
             fDDS.Send(outCmds.Serialize(), to_string(senderId));
         } break;
         case Type::get_properties: {
