@@ -197,6 +197,19 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     BasicTopology(BasicTopology&&) = default;
     BasicTopology& operator=(BasicTopology&&) = default;
 
+    ~BasicTopology()
+    {
+        UnsubscribeFromStateChanges();
+
+        std::lock_guard<std::mutex> lk(fMtx);
+        fDDSSession.UnsubscribeFromCommands();
+        try {
+            for (auto& op : fChangeStateOps) {
+                op.second.Complete(MakeErrorCode(ErrorCode::OperationCanceled));
+            }
+        } catch (...) {}
+    }
+
     void SubscribeToStateChanges()
     {
         using namespace fair::mq::sdk::cmd;
@@ -215,54 +228,31 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     void SubscribeToCommands()
     {
-        using namespace fair::mq::sdk::cmd;
         fDDSSession.SubscribeToCommands([&](const std::string& msg, const std::string& /* condition */, DDSChannel::Id senderId) {
-            Cmds inCmds;
+            cmd::Cmds inCmds;
             inCmds.Deserialize(msg);
             // FAIR_LOG(debug) << "Received " << inCmds.Size() << " command(s) with total size of " << msg.length() << " bytes: ";
 
             for (const auto& cmd : inCmds) {
                 // FAIR_LOG(debug) << " > " << cmd->GetType();
                 switch (cmd->GetType()) {
-                    case Type::state_change: {
-                        auto _cmd = static_cast<StateChange&>(*cmd);
-                        if (_cmd.GetCurrentState() == DeviceState::Exiting) {
-                            fDDSSession.SendCommand(Cmds(make<StateChangeExitingReceived>()).Serialize(), senderId);
-                        }
-                        HandleCmd(_cmd);
-                    } break;
-                    case Type::state_change_subscription:
-                        if (static_cast<StateChangeSubscription&>(*cmd).GetResult() != Result::Ok) {
-                            FAIR_LOG(error) << "State change subscription failed for " << static_cast<StateChangeSubscription&>(*cmd).GetDeviceId();
-                        }
+                    case cmd::Type::state_change_subscription:
+                        HandleCmd(static_cast<cmd::StateChangeSubscription&>(*cmd));
                     break;
-                    case Type::state_change_unsubscription:
-                        if (static_cast<StateChangeUnsubscription&>(*cmd).GetResult() != Result::Ok) {
-                            FAIR_LOG(error) << "State change unsubscription failed for " << static_cast<StateChangeUnsubscription&>(*cmd).GetDeviceId();
-                        }
+                    case cmd::Type::state_change_unsubscription:
+                        HandleCmd(static_cast<cmd::StateChangeUnsubscription&>(*cmd));
                     break;
-                    case Type::transition_status: {
-                        auto _cmd = static_cast<TransitionStatus&>(*cmd);
-                        if (_cmd.GetResult() != Result::Ok) {
-                            FAIR_LOG(error) << _cmd.GetTransition() << " transition failed for " << _cmd.GetDeviceId();
-                            DDSTask::Id id(_cmd.GetTaskId());
-                            std::lock_guard<std::mutex> lk(fMtx);
-                            for (auto& op : fChangeStateOps) {
-                                if (!op.second.IsCompleted() && op.second.ContainsTask(id) &&
-                                    fStateData.at(fStateIndex.at(id)).state != op.second.GetTargetState()) {
-                                    op.second.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
-                                }
-                            }
-                        }
-                    }
+                    case cmd::Type::state_change:
+                        HandleCmd(static_cast<cmd::StateChange&>(*cmd), senderId);
                     break;
-                    case Type::properties: {
+                    case cmd::Type::transition_status:
+                        HandleCmd(static_cast<cmd::TransitionStatus&>(*cmd));
+                    break;
+                    case cmd::Type::properties:
                         HandleCmd(static_cast<cmd::Properties&>(*cmd));
-                    }
                     break;
-                    case Type::properties_set: {
+                    case cmd::Type::properties_set:
                         HandleCmd(static_cast<cmd::PropertiesSet&>(*cmd));
-                    }
                     break;
                     default:
                         FAIR_LOG(warn) << "Unexpected/unknown command received: " << cmd->GetType();
@@ -273,21 +263,28 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         });
     }
 
-    ~BasicTopology()
+    auto HandleCmd(cmd::StateChangeSubscription const& cmd) -> void
     {
-        UnsubscribeFromStateChanges();
-
-        std::lock_guard<std::mutex> lk(fMtx);
-        fDDSSession.UnsubscribeFromCommands();
-        try {
-            for (auto& op : fChangeStateOps) {
-                op.second.Complete(MakeErrorCode(ErrorCode::OperationCanceled));
-            }
-        } catch (...) {}
+        if (cmd.GetResult() != cmd::Result::Ok) {
+            FAIR_LOG(error) << "State change subscription failed for " << cmd.GetDeviceId();
+        }
     }
 
-    auto HandleCmd(cmd::StateChange const& cmd) -> void
+    auto HandleCmd(cmd::StateChangeUnsubscription const& cmd) -> void
     {
+        if (cmd.GetResult() != cmd::Result::Ok) {
+            FAIR_LOG(error) << "State change unsubscription failed for " << cmd.GetDeviceId();
+        }
+    }
+
+    auto HandleCmd(cmd::StateChange const& cmd, DDSChannel::Id const& senderId) -> void
+    {
+        using namespace fair::mq::sdk::cmd;
+
+        if (cmd.GetCurrentState() == DeviceState::Exiting) {
+            fDDSSession.SendCommand(Cmds(make<StateChangeExitingReceived>()).Serialize(), senderId);
+        }
+
         DDSTask::Id taskId(cmd.GetTaskId());
         std::lock_guard<std::mutex> lk(fMtx);
 
@@ -306,6 +303,21 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             }
         } catch (const std::exception& e) {
             FAIR_LOG(error) << "Exception in HandleCmd(cmd::StateChange const&): " << e.what();
+        }
+    }
+
+    auto HandleCmd(cmd::TransitionStatus const& cmd) -> void
+    {
+        if (cmd.GetResult() != cmd::Result::Ok) {
+            FAIR_LOG(error) << cmd.GetTransition() << " transition failed for " << cmd.GetDeviceId();
+            DDSTask::Id id(cmd.GetTaskId());
+            std::lock_guard<std::mutex> lk(fMtx);
+            for (auto& op : fChangeStateOps) {
+                if (!op.second.IsCompleted() && op.second.ContainsTask(id) &&
+                    fStateData.at(fStateIndex.at(id)).state != op.second.GetTargetState()) {
+                    op.second.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
+                }
+            }
         }
     }
 
@@ -629,7 +641,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     }
 
     /// @brief Returns the current state of the topology
-    /// @return map of id : DeviceStatus (initialized, state)
+    /// @return map of id : DeviceStatus
     auto GetCurrentState() const -> TopologyState
     {
         std::lock_guard<std::mutex> lk(fMtx);
