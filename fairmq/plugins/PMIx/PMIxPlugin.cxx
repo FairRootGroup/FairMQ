@@ -171,7 +171,7 @@ auto PMIxPlugin::SubscribeForCommands() -> void
 
                     LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState
                                << " to " << sender;
-                    Cmds outCmds(make<StateChangeSubscription>(fDeviceId, Result::Ok),
+                    Cmds outCmds(make<StateChangeSubscription>(fDeviceId, fProcess.rank, Result::Ok),
                                  make<StateChange>(fDeviceId, 0, fLastState, fCurrentState));
                     fCommands.Send(outCmds.Serialize(Format::JSON), {sender});
                 }
@@ -181,7 +181,7 @@ auto PMIxPlugin::SubscribeForCommands() -> void
                         lock_guard<mutex> lock{fStateChangeSubscriberMutex};
                         fStateChangeSubscribers.erase(sender.rank);
                     }
-                    fCommands.Send(Cmds(make<StateChangeUnsubscription>(fDeviceId, Result::Ok))
+                    fCommands.Send(Cmds(make<StateChangeUnsubscription>(fDeviceId, fProcess.rank, Result::Ok))
                                        .Serialize(Format::JSON),
                                    {sender});
                 }
