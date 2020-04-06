@@ -28,6 +28,8 @@ using boost::optional;
 
 const std::string fair::mq::PluginManager::fgkLibPrefix = "FairMQPlugin_";
 
+std::vector<boost::dll::shared_library> fair::mq::PluginManager::fgDLLKeepAlive = std::vector<boost::dll::shared_library>();
+
 fair::mq::PluginManager::PluginManager()
     : fSearchPaths{}
     , fPluginFactories()
