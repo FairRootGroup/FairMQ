@@ -97,6 +97,7 @@ class PluginManager
         using fair::mq::tools::ToString;
 
         auto lib = shared_library{std::forward<Args>(args)...};
+        fgDLLKeepAlive.push_back(lib);
 
         fPluginFactories[pluginName] = import_alias<PluginFactory>(
             shared_library{lib},
@@ -117,6 +118,7 @@ class PluginManager
 
     static const std::string fgkLibPrefix;
     std::vector<boost::filesystem::path> fSearchPaths;
+    static std::vector<boost::dll::shared_library> fgDLLKeepAlive;
     std::map<std::string, std::function<PluginFactory>> fPluginFactories;
     std::unique_ptr<PluginServices> fPluginServices;
     std::map<std::string, std::unique_ptr<Plugin>> fPlugins;
