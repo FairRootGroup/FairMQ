@@ -143,7 +143,7 @@ macro(set_fairmq_defaults)
   set(PROJECT_EXPORT_SET ${PROJECT_NAME}Targets)
 
   # Configure build types
-  set(CMAKE_CONFIGURATION_TYPES "Debug" "Release" "RelWithDebInfo" "Nightly" "Profile" "Experimental" "AdressSan" "ThreadSan")
+  set(CMAKE_CONFIGURATION_TYPES "Debug" "Release" "RelWithDebInfo" "Nightly" "Profile" "Experimental" "AddressSan" "ThreadSan")
   set(_warnings "-Wshadow -Wall -Wextra -Wpedantic")
   set(CMAKE_CXX_FLAGS_DEBUG          "-g ${_warnings}")
   set(CMAKE_CXX_FLAGS_RELEASE        "-O2 -DNDEBUG")
@@ -151,7 +151,7 @@ macro(set_fairmq_defaults)
   set(CMAKE_CXX_FLAGS_NIGHTLY        "-O2 -g ${_warnings}")
   set(CMAKE_CXX_FLAGS_PROFILE        "-g3 ${_warnings} -fno-inline -ftest-coverage -fprofile-arcs")
   set(CMAKE_CXX_FLAGS_EXPERIMENTAL   "-O2 -g ${_warnings} -DNDEBUG")
-  set(CMAKE_CXX_FLAGS_ADRESSSAN      "-O2 -g ${_warnings} -fsanitize=address -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS_ADDRESSSAN     "-O2 -g ${_warnings} -fsanitize=address -fno-omit-frame-pointer")
   set(CMAKE_CXX_FLAGS_THREADSAN      "-O2 -g ${_warnings} -fsanitize=thread")
   unset(_warnings)
 
