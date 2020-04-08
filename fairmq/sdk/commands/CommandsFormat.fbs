@@ -47,11 +47,12 @@ enum FBCmd:byte {
     check_state,                   // args: { }
     change_state,                  // args: { transition }
     dump_config,                   // args: { }
-    subscribe_to_state_change,     // args: { }
+    subscribe_to_state_change,     // args: { interval }
     unsubscribe_from_state_change, // args: { }
     state_change_exiting_received, // args: { }
     get_properties,                // args: { request_id, property_query }
     set_properties,                // args: { request_id, properties }
+    subscription_heartbeat,        // args: { interval }
 
     current_state,                 // args: { device_id, current_state }
     transition_status,             // args: { device_id, task_id, Result, transition }
@@ -68,6 +69,7 @@ table FBCommand {
     device_id:string;
     task_id:uint64;
     request_id:uint64;
+    interval:int64;
     state:FBState;
     transition:FBTransition;
     result:FBResult;

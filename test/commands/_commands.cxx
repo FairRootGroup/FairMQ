@@ -24,11 +24,12 @@ TEST(Format, Construction)
     Cmds checkStateCmds(make<CheckState>());
     Cmds changeStateCmds(make<ChangeState>(Transition::Stop));
     Cmds dumpConfigCmds(make<DumpConfig>());
-    Cmds subscribeToStateChangeCmds(make<SubscribeToStateChange>());
+    Cmds subscribeToStateChangeCmds(make<SubscribeToStateChange>(60000));
     Cmds unsubscribeFromStateChangeCmds(make<UnsubscribeFromStateChange>());
     Cmds stateChangeExitingReceivedCmds(make<StateChangeExitingReceived>());
     Cmds getPropertiesCmds(make<GetProperties>(66, "k[12]"));
     Cmds setPropertiesCmds(make<SetProperties>(42, props));
+    Cmds subscriptionHeartbeatCmds(make<SubscriptionHeartbeat>(60000));
     Cmds currentStateCmds(make<CurrentState>("somedeviceid", State::Running));
     Cmds transitionStatusCmds(make<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop));
     Cmds configCmds(make<Config>("somedeviceid", "someconfig"));
@@ -43,6 +44,7 @@ TEST(Format, Construction)
     ASSERT_EQ(static_cast<ChangeState&>(changeStateCmds.At(0)).GetTransition(), Transition::Stop);
     ASSERT_EQ(dumpConfigCmds.At(0).GetType(), Type::dump_config);
     ASSERT_EQ(subscribeToStateChangeCmds.At(0).GetType(), Type::subscribe_to_state_change);
+    ASSERT_EQ(static_cast<SubscribeToStateChange&>(subscribeToStateChangeCmds.At(0)).GetInterval(), 60000);
     ASSERT_EQ(unsubscribeFromStateChangeCmds.At(0).GetType(), Type::unsubscribe_from_state_change);
     ASSERT_EQ(stateChangeExitingReceivedCmds.At(0).GetType(), Type::state_change_exiting_received);
     ASSERT_EQ(getPropertiesCmds.At(0).GetType(), Type::get_properties);
@@ -51,6 +53,8 @@ TEST(Format, Construction)
     ASSERT_EQ(setPropertiesCmds.At(0).GetType(), Type::set_properties);
     ASSERT_EQ(static_cast<SetProperties&>(setPropertiesCmds.At(0)).GetRequestId(), 42);
     ASSERT_EQ(static_cast<SetProperties&>(setPropertiesCmds.At(0)).GetProps(), props);
+    ASSERT_EQ(subscriptionHeartbeatCmds.At(0).GetType(), Type::subscription_heartbeat);
+    ASSERT_EQ(static_cast<SubscriptionHeartbeat&>(subscriptionHeartbeatCmds.At(0)).GetInterval(), 60000);
     ASSERT_EQ(currentStateCmds.At(0).GetType(), Type::current_state);
     ASSERT_EQ(static_cast<CurrentState&>(currentStateCmds.At(0)).GetDeviceId(), "somedeviceid");
     ASSERT_EQ(static_cast<CurrentState&>(currentStateCmds.At(0)).GetCurrentState(), State::Running);
@@ -93,11 +97,12 @@ void fillCommands(Cmds& cmds)
     cmds.Add<CheckState>();
     cmds.Add<ChangeState>(Transition::Stop);
     cmds.Add<DumpConfig>();
-    cmds.Add<SubscribeToStateChange>();
+    cmds.Add<SubscribeToStateChange>(60000);
     cmds.Add<UnsubscribeFromStateChange>();
     cmds.Add<StateChangeExitingReceived>();
     cmds.Add<GetProperties>(66, "k[12]");
     cmds.Add<SetProperties>(42, props);
+    cmds.Add<SubscriptionHeartbeat>(60000);
     cmds.Add<CurrentState>("somedeviceid", State::Running);
     cmds.Add<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop);
     cmds.Add<Config>("somedeviceid", "someconfig");
@@ -110,7 +115,7 @@ void fillCommands(Cmds& cmds)
 
 void checkCommands(Cmds& cmds)
 {
-    ASSERT_EQ(cmds.Size(), 16);
+    ASSERT_EQ(cmds.Size(), 17);
 
     int count = 0;
     auto const props(std::vector<std::pair<std::string, std::string>>({{"k1", "v1"}, {"k2", "v2"}}));
@@ -129,6 +134,7 @@ void checkCommands(Cmds& cmds)
             break;
             case Type::subscribe_to_state_change:
                 ++count;
+                ASSERT_EQ(static_cast<SubscribeToStateChange&>(*cmd).GetInterval(), 60000);
             break;
             case Type::unsubscribe_from_state_change:
                 ++count;
@@ -145,6 +151,10 @@ void checkCommands(Cmds& cmds)
                 ++count;
                 ASSERT_EQ(static_cast<SetProperties&>(*cmd).GetRequestId(), 42);
                 ASSERT_EQ(static_cast<SetProperties&>(*cmd).GetProps(), props);
+            break;
+            case Type::subscription_heartbeat:
+                ++count;
+                ASSERT_EQ(static_cast<SubscriptionHeartbeat&>(*cmd).GetInterval(), 60000);
             break;
             case Type::current_state:
                 ++count;
@@ -201,7 +211,7 @@ void checkCommands(Cmds& cmds)
         }
     }
 
-    ASSERT_EQ(count, 16);
+    ASSERT_EQ(count, 17);
 }
 
 TEST(Format, SerializationBinary)
