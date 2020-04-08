@@ -47,6 +47,7 @@ enum class Type : int
     state_change_exiting_received, // args: { }
     get_properties,                // args: { request_id, property_query }
     set_properties,                // args: { request_id, properties }
+    subscription_heartbeat,        // args: { interval }
 
     current_state,                 // args: { device_id, current_state }
     transition_status,             // args: { device_id, task_id, Result, transition }
@@ -95,7 +96,16 @@ struct DumpConfig : Cmd
 
 struct SubscribeToStateChange : Cmd
 {
-    explicit SubscribeToStateChange() : Cmd(Type::subscribe_to_state_change) {}
+    explicit SubscribeToStateChange(int64_t interval)
+        : Cmd(Type::subscribe_to_state_change)
+        , fInterval(interval)
+    {}
+
+    int64_t GetInterval() const { return fInterval; }
+    void SetInterval(int64_t interval) { fInterval = interval; }
+
+  private:
+    int64_t fInterval;
 };
 
 struct UnsubscribeFromStateChange : Cmd
@@ -142,6 +152,20 @@ struct SetProperties : Cmd
   private:
     std::size_t fRequestId;
     std::vector<std::pair<std::string, std::string>> fProperties;
+};
+
+struct SubscriptionHeartbeat : Cmd
+{
+    explicit SubscriptionHeartbeat(int64_t interval)
+        : Cmd(Type::subscription_heartbeat)
+        , fInterval(interval)
+    {}
+
+    int64_t GetInterval() const { return fInterval; }
+    void SetInterval(int64_t interval) { fInterval = interval; }
+
+  private:
+    int64_t fInterval;
 };
 
 struct CurrentState : Cmd

@@ -46,7 +46,7 @@ array<string, 2> resultNames =
     }
 };
 
-array<string, 16> typeNames =
+array<string, 17> typeNames =
 {
     {
         "CheckState",
@@ -57,6 +57,7 @@ array<string, 16> typeNames =
         "StateChangeExitingReceived",
         "GetProperties",
         "SetProperties",
+        "SubscriptionHeartbeat",
 
         "CurrentState",
         "TransitionStatus",
@@ -147,7 +148,7 @@ array<sdk::cmd::FBTransition, 12> mqTransitionToFBTransition =
     }
 };
 
-array<FBCmd, 16> typeToFBCmd =
+array<FBCmd, 17> typeToFBCmd =
 {
     {
         FBCmd::FBCmd_check_state,
@@ -158,6 +159,7 @@ array<FBCmd, 16> typeToFBCmd =
         FBCmd::FBCmd_state_change_exiting_received,
         FBCmd::FBCmd_get_properties,
         FBCmd::FBCmd_set_properties,
+        FBCmd::FBCmd_subscription_heartbeat,
         FBCmd::FBCmd_current_state,
         FBCmd::FBCmd_transition_status,
         FBCmd::FBCmd_config,
@@ -169,7 +171,7 @@ array<FBCmd, 16> typeToFBCmd =
     }
 };
 
-array<Type, 16> fbCmdToType =
+array<Type, 17> fbCmdToType =
 {
     {
         Type::check_state,
@@ -180,6 +182,7 @@ array<Type, 16> fbCmdToType =
         Type::state_change_exiting_received,
         Type::get_properties,
         Type::set_properties,
+        Type::subscription_heartbeat,
         Type::current_state,
         Type::transition_status,
         Type::config,
@@ -228,7 +231,9 @@ string Cmds::Serialize(const Format type) const
             break;
             break;
             case Type::subscribe_to_state_change: {
+                auto _cmd = static_cast<SubscribeToStateChange&>(*cmd);
                 cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
+                cmdBuilder->add_interval(_cmd.GetInterval());
             }
             break;
             case Type::unsubscribe_from_state_change: {
@@ -259,6 +264,12 @@ string Cmds::Serialize(const Format type) const
                 cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
                 cmdBuilder->add_request_id(_cmd.GetRequestId());
                 cmdBuilder->add_properties(props);
+            }
+            break;
+            case Type::subscription_heartbeat: {
+                auto _cmd = static_cast<SubscriptionHeartbeat&>(*cmd);
+                cmdBuilder = tools::make_unique<FBCommandBuilder>(fbb);
+                cmdBuilder->add_interval(_cmd.GetInterval());
             }
             break;
             case Type::current_state: {
@@ -406,7 +417,7 @@ void Cmds::Deserialize(const string& str, const Format type)
                 fCmds.emplace_back(make<DumpConfig>());
             break;
             case FBCmd_subscribe_to_state_change:
-                fCmds.emplace_back(make<SubscribeToStateChange>());
+                fCmds.emplace_back(make<SubscribeToStateChange>(cmdPtr.interval()));
             break;
             case FBCmd_unsubscribe_from_state_change:
                 fCmds.emplace_back(make<UnsubscribeFromStateChange>());
@@ -425,6 +436,9 @@ void Cmds::Deserialize(const string& str, const Format type)
                 }
                 fCmds.emplace_back(make<SetProperties>(cmdPtr.request_id(), properties));
             } break;
+            case FBCmd_subscription_heartbeat:
+                fCmds.emplace_back(make<SubscriptionHeartbeat>(cmdPtr.interval()));
+            break;
             case FBCmd_current_state:
                 fCmds.emplace_back(make<CurrentState>(cmdPtr.device_id()->str(), GetMQState(cmdPtr.current_state())));
             break;
