@@ -175,6 +175,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         , fDDSTopo(std::move(topo))
         , fStateData()
         , fStateIndex()
+        , fHeartbeatsTimer(asio::system_executor())
+        , fHeartbeatInterval(600000)
     {
         makeTopologyState();
 
@@ -213,16 +215,36 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     void SubscribeToStateChanges()
     {
-        using namespace fair::mq::sdk::cmd;
         // FAIR_LOG(debug) << "Subscribing to state change";
-        Cmds cmds(make<SubscribeToStateChange>());
+        cmd::Cmds cmds(cmd::make<cmd::SubscribeToStateChange>(fHeartbeatInterval.count()));
         fDDSSession.SendCommand(cmds.Serialize());
+
+        fHeartbeatsTimer.expires_after(fHeartbeatInterval);
+        fHeartbeatsTimer.async_wait(std::bind(&BasicTopology::SendSubscriptionHeartbeats, this, std::placeholders::_1));
+    }
+
+    void SendSubscriptionHeartbeats(const std::error_code& ec)
+    {
+        if (!ec) {
+            // Timer expired.
+            fDDSSession.SendCommand(cmd::Cmds(cmd::make<cmd::SubscriptionHeartbeat>(fHeartbeatInterval.count())).Serialize());
+            // schedule again
+            fHeartbeatsTimer.expires_after(fHeartbeatInterval);
+            fHeartbeatsTimer.async_wait(std::bind(&BasicTopology::SendSubscriptionHeartbeats, this, std::placeholders::_1));
+        } else if (ec == asio::error::operation_aborted) {
+            // FAIR_LOG(debug) << "Heartbeats timer canceled";
+        } else {
+            FAIR_LOG(error) << "Timer error: " << ec;
+        }
     }
 
     void UnsubscribeFromStateChanges()
     {
-        using namespace fair::mq::sdk::cmd;
-        fDDSSession.SendCommand(Cmds(make<UnsubscribeFromStateChange>()).Serialize());
+        // stop sending heartbeats
+        fHeartbeatsTimer.cancel();
+
+        // unsubscribe from state changes
+        fDDSSession.SendCommand(cmd::Cmds(cmd::make<cmd::UnsubscribeFromStateChange>()).Serialize());
 
         // wait for all tasks to confirm unsubscription
         std::unique_lock<std::mutex> lk(fMtx);
@@ -309,10 +331,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     auto HandleCmd(cmd::StateChange const& cmd, DDSChannel::Id const& senderId) -> void
     {
-        using namespace fair::mq::sdk::cmd;
-
         if (cmd.GetCurrentState() == DeviceState::Exiting) {
-            fDDSSession.SendCommand(Cmds(make<StateChangeExitingReceived>()).Serialize(), senderId);
+            fDDSSession.SendCommand(cmd::Cmds(cmd::make<cmd::StateChangeExitingReceived>()).Serialize(), senderId);
         }
 
         DDSTask::Id taskId(cmd.GetTaskId());
@@ -1193,6 +1213,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         return {ec, failed};
     }
 
+    Duration GetHeartbeatInterval() const { return fHeartbeatInterval; }
+    void SetHeartbeatInterval(Duration duration) { fHeartbeatInterval = duration; }
+
   private:
     using TransitionedCount = unsigned int;
 
@@ -1200,8 +1223,12 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     DDSTopology fDDSTopo;
     TopologyState fStateData;
     TopologyStateIndex fStateIndex;
+
     mutable std::mutex fMtx;
+
     std::condition_variable fStateChangeUnsubscriptionCV;
+    asio::steady_timer fHeartbeatsTimer;
+    Duration fHeartbeatInterval;
 
     std::unordered_map<typename ChangeStateOp::Id, ChangeStateOp> fChangeStateOps;
     std::unordered_map<typename WaitForStateOp::Id, WaitForStateOp> fWaitForStateOps;
