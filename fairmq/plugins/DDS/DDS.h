@@ -24,12 +24,12 @@
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
-#include <set>
 #include <string>
 #include <atomic>
 #include <thread>
 #include <map>
 #include <unordered_map>
+#include <utility> // pair
 #include <vector>
 
 namespace fair
@@ -159,7 +159,7 @@ class DDS : public Plugin
 
     std::atomic<bool> fDeviceTerminationRequested;
 
-    std::set<uint64_t> fStateChangeSubscribers;
+    std::unordered_map<uint64_t, std::pair<std::chrono::steady_clock::time_point, int64_t>> fStateChangeSubscribers;
     uint64_t fLastExternalController;
     bool fExitingAckedByLastExternalController;
     std::condition_variable fExitingAcked;

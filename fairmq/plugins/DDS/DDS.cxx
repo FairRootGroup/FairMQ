@@ -109,16 +109,27 @@ DDS::DDS(const string& name,
                     break;
             }
 
-            lock_guard<mutex> lock{fStateChangeSubscriberMutex};
+            using namespace sdk::cmd;
+            auto now = chrono::steady_clock::now();
             string id = GetProperty<string>("id");
             fLastState = fCurrentState;
             fCurrentState = newState;
-            using namespace sdk::cmd;
-            for (auto subscriberId : fStateChangeSubscribers) {
-                LOG(debug) << "Publishing state-change: " << fLastState << "->" << newState << " to " << subscriberId;
 
-                Cmds cmds(make<StateChange>(id, fDDSTaskId, fLastState, fCurrentState));
-                fDDS.Send(cmds.Serialize(), to_string(subscriberId));
+            lock_guard<mutex> lock{fStateChangeSubscriberMutex};
+            for (auto it = fStateChangeSubscribers.cbegin(); it != fStateChangeSubscribers.end();) {
+                // if a subscriber did not send a heartbeat in more than 3 times the promised interval,
+                // remove it from the subscriber list
+                if (chrono::duration<double>(now - it->second.first).count() > 3 * it->second.second) {
+                    LOG(warn) << "Controller '" << it->first
+                              << "' did not send heartbeats since over 3 intervals ("
+                              << 3 * it->second.second << " ms), removing it.";
+                    fStateChangeSubscribers.erase(it++);
+                } else {
+                    LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState << " to " << it->first;
+                    Cmds cmds(make<StateChange>(id, fDDSTaskId, fLastState, fCurrentState));
+                    fDDS.Send(cmds.Serialize(), to_string(it->first));
+                    ++it;
+                }
             }
         });
 
@@ -150,7 +161,7 @@ auto DDS::WaitForExitingAck() -> void
     unique_lock<mutex> lock(fStateChangeSubscriberMutex);
     auto timeout = GetProperty<unsigned int>("wait-for-exiting-ack-timeout");
     fExitingAcked.wait_for(lock, chrono::milliseconds(timeout), [this]() {
-        return fExitingAckedByLastExternalController;
+        return fExitingAckedByLastExternalController || fStateChangeSubscribers.empty();
     });
 }
 
@@ -362,8 +373,9 @@ auto DDS::HandleCmd(const string& id, sdk::cmd::Cmd& cmd, const string& cond, ui
             fExitingAcked.notify_one();
         } break;
         case Type::subscribe_to_state_change: {
+            auto _cmd = static_cast<cmd::SubscribeToStateChange&>(cmd);
             lock_guard<mutex> lock{fStateChangeSubscriberMutex};
-            fStateChangeSubscribers.insert(senderId);
+            fStateChangeSubscribers.emplace(senderId, make_pair(chrono::steady_clock::now(), _cmd.GetInterval()));
 
             LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState << " to " << senderId;
 
@@ -371,6 +383,15 @@ auto DDS::HandleCmd(const string& id, sdk::cmd::Cmd& cmd, const string& cond, ui
                          make<StateChange>(id, fDDSTaskId, fLastState, fCurrentState));
 
             fDDS.Send(outCmds.Serialize(), to_string(senderId));
+        } break;
+        case Type::subscription_heartbeat: {
+            try {
+                auto _cmd = static_cast<cmd::SubscriptionHeartbeat&>(cmd);
+                lock_guard<mutex> lock{fStateChangeSubscriberMutex};
+                fStateChangeSubscribers.at(senderId) = make_pair(chrono::steady_clock::now(), _cmd.GetInterval());
+            } catch(out_of_range& oor) {
+                LOG(warn) << "Received subscription heartbeat from an unknown controller with id '" << senderId << "'";
+            }
         } break;
         case Type::unsubscribe_from_state_change: {
             {
@@ -384,12 +405,12 @@ auto DDS::HandleCmd(const string& id, sdk::cmd::Cmd& cmd, const string& cond, ui
             auto _cmd = static_cast<cmd::GetProperties&>(cmd);
             auto const request_id(_cmd.GetRequestId());
             auto result(Result::Ok);
-            std::vector<std::pair<std::string, std::string>> props;
+            vector<pair<string, string>> props;
             try {
                 for (auto const& prop : GetPropertiesAsString(_cmd.GetQuery())) {
                     props.push_back({prop.first, prop.second});
                 }
-            } catch (std::exception const& e) {
+            } catch (exception const& e) {
                 LOG(warn) << "Getting properties (request id: " << request_id << ") failed: " << e.what();
                 result = Result::Failure;
             }
@@ -407,7 +428,7 @@ auto DDS::HandleCmd(const string& id, sdk::cmd::Cmd& cmd, const string& cond, ui
                 }
                 // TODO Handle builtin keys with different value type than string
                 SetProperties(props);
-            } catch (std::exception const& e) {
+            } catch (exception const& e) {
                 LOG(warn) << "Setting properties (request id: " << request_id << ") failed: " << e.what();
                 result = Result::Failure;
             }

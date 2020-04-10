@@ -53,7 +53,7 @@ struct StateSubscription
     explicit StateSubscription(pmix::Commands& commands)
         : fCommands(commands)
     {
-        fCommands.Send(Cmds(make<SubscribeToStateChange>()).Serialize(Format::JSON));
+        fCommands.Send(Cmds(make<SubscribeToStateChange>(600000)).Serialize(Format::JSON));
     }
 
     ~StateSubscription()
