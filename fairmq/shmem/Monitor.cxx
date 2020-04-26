@@ -15,6 +15,7 @@
 #include <boost/interprocess/file_mapping.hpp>
 
 #include <boost/interprocess/sync/named_mutex.hpp>
+#include <boost/interprocess/sync/named_condition.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -427,6 +428,15 @@ void Monitor::RemoveMutex(const string& name)
     }
 }
 
+void Monitor::RemoveCondition(const string& name)
+{
+    if (bipc::named_condition::remove(name.c_str())) {
+        cout << "Successfully removed \"" << name << "\"." << endl;
+    } else {
+        cout << "Did not remove \"" << name << "\". Already removed?" << endl;
+    }
+}
+
 void Monitor::Cleanup(const string& shmId)
 {
     string managementSegmentName("fmq_" + shmId + "_mng");
@@ -469,6 +479,7 @@ void Monitor::Cleanup(const string& shmId)
 
     RemoveObject("fmq_" + shmId + "_main");
     RemoveMutex("fmq_" + shmId + "_mtx");
+    RemoveCondition("fmq_" + shmId + "_cv");
 
     cout << endl;
 }

@@ -41,15 +41,21 @@ struct RegionInfo
     RegionInfo(const VoidAlloc& alloc)
         : fPath("", alloc)
         , fFlags(0)
+        , fUserFlags(0)
+        , fDestroyed(false)
     {}
 
-    RegionInfo(const char* path, int flags, const VoidAlloc& alloc)
+    RegionInfo(const char* path, const int flags, const uint64_t userFlags, const VoidAlloc& alloc)
         : fPath(path, alloc)
         , fFlags(flags)
+        , fUserFlags(userFlags)
+        , fDestroyed(false)
     {}
 
     Str fPath;
     int fFlags;
+    uint64_t fUserFlags;
+    bool fDestroyed;
 };
 
 using Uint64RegionInfoPairAlloc = boost::interprocess::allocator<std::pair<const uint64_t, RegionInfo>, SegmentManager>;

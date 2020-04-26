@@ -70,6 +70,11 @@ FairMQUnmanagedRegionPtr FairMQTransportFactoryNN::CreateUnmanagedRegion(const s
     return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionNN(size, callback, path, flags));
 }
 
+FairMQUnmanagedRegionPtr FairMQTransportFactoryNN::CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */) const
+{
+    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionNN(size, userFlags, callback, path, flags));
+}
+
 fair::mq::Transport FairMQTransportFactoryNN::GetType() const
 {
     return fTransportType;

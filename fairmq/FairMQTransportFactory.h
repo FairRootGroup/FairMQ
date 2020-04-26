@@ -75,6 +75,12 @@ class FairMQTransportFactory
     virtual FairMQPollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const = 0;
 
     virtual FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0) const = 0;
+    virtual FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0) const = 0;
+
+    virtual void SubscribeToRegionEvents(FairMQRegionEventCallback callback) = 0;
+    virtual void UnsubscribeFromRegionEvents() = 0;
+
+    virtual std::vector<FairMQRegionInfo> GetRegionInfo() = 0;
 
     /// Get transport type
     virtual fair::mq::Transport GetType() const = 0;

@@ -95,6 +95,11 @@ FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(const 
     return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionZMQ(size, callback, path, flags));
 }
 
+FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */) const
+{
+    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionZMQ(size, userFlags, callback, path, flags));
+}
+
 fair::mq::Transport FairMQTransportFactoryZMQ::GetType() const
 {
     return fTransportType;

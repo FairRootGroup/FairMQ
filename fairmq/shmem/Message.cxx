@@ -29,7 +29,6 @@ namespace mq
 namespace shmem
 {
 
-atomic<bool> Message::fInterrupted(false);
 Transport Message::fTransportType = Transport::SHM;
 
 Message::Message(Manager& manager, FairMQTransportFactory* factory)
@@ -113,7 +112,7 @@ bool Message::InitializeChunk(const size_t size)
         } catch (bipc::bad_alloc& ba) {
             // LOG(warn) << "Shared memory full...";
             this_thread::sleep_for(chrono::milliseconds(50));
-            if (fInterrupted) {
+            if (fManager.Interrupted()) {
                 return false;
             } else {
                 continue;
@@ -164,7 +163,7 @@ void* Message::GetData() const
                 fLocalPtr = nullptr;
             }
         } else {
-            fRegionPtr = fManager.GetRemoteRegion(fMeta.fRegionId);
+            fRegionPtr = fManager.GetRegion(fMeta.fRegionId);
             if (fRegionPtr) {
                 fLocalPtr = reinterpret_cast<char*>(fRegionPtr->fRegion.get_address()) + fMeta.fHandle;
             } else {
@@ -221,7 +220,7 @@ void Message::CloseMessage()
             fMeta.fHandle = -1;
         } else {
             if (!fRegionPtr) {
-                fRegionPtr = fManager.GetRemoteRegion(fMeta.fRegionId);
+                fRegionPtr = fManager.GetRegion(fMeta.fRegionId);
             }
 
             if (fRegionPtr) {

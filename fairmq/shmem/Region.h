@@ -49,11 +49,11 @@ struct Region
 
     void InitializeQueues();
 
+    void StartSendingAcks();
+    void SendAcks();
     void StartReceivingAcks();
     void ReceiveAcks();
-
     void ReleaseBlock(const RegionBlock &);
-    void SendAcks();
 
     ~Region();
 
@@ -67,7 +67,7 @@ struct Region
     boost::interprocess::file_mapping fFileMapping;
     boost::interprocess::mapped_region fRegion;
 
-    std::mutex fBlockLock;
+    std::mutex fBlockMtx;
     std::condition_variable fBlockSendCV;
     std::vector<RegionBlock> fBlocksToFree;
     const std::size_t fAckBunchSize = 256;

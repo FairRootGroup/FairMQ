@@ -42,6 +42,7 @@ class Monitor
     static void RemoveFileMapping(const std::string&);
     static void RemoveQueue(const std::string&);
     static void RemoveMutex(const std::string&);
+    static void RemoveCondition(const std::string&);
 
     struct DaemonPresent : std::runtime_error { using std::runtime_error::runtime_error; };
 

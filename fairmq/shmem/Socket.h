@@ -46,9 +46,6 @@ class Socket final : public fair::mq::Socket
 
     void Close() override;
 
-    static void Interrupt();
-    static void Resume();
-
     void SetOption(const std::string& option, const void* value, size_t valueSize) override;
     void GetOption(const std::string& option, void* value, size_t* valueSize) override;
 
@@ -80,8 +77,6 @@ class Socket final : public fair::mq::Socket
     std::atomic<unsigned long> fBytesRx;
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
-
-    static std::atomic<bool> fInterrupted;
 
     int fSndTimeout;
     int fRcvTimeout;
