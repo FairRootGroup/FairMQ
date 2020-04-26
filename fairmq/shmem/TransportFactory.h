@@ -50,11 +50,16 @@ class TransportFactory final : public fair::mq::TransportFactory
     PollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const override;
 
     UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0) const override;
+    UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, int64_t userFlags, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0) const override;
+
+    void SubscribeToRegionEvents(RegionEventCallback callback) override;
+    void UnsubscribeFromRegionEvents() override;
+    std::vector<fair::mq::RegionInfo> GetRegionInfo() override;
 
     Transport GetType() const override;
 
-    void Interrupt() override { Socket::Interrupt(); }
-    void Resume() override { Socket::Resume(); }
+    void Interrupt() override { fManager->Interrupt(); }
+    void Resume() override { fManager->Resume(); }
     void Reset() override;
 
     void IncrementMsgCounter() { ++fMsgCounter; }

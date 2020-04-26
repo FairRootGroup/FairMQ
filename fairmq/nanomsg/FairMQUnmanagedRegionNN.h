@@ -20,6 +20,8 @@ class FairMQUnmanagedRegionNN final : public FairMQUnmanagedRegion
 
   public:
     FairMQUnmanagedRegionNN(const size_t size, FairMQRegionCallback callback, const std::string& path = "", int flags = 0);
+    FairMQUnmanagedRegionNN(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const std::string& path = "", int flags = 0);
+
     FairMQUnmanagedRegionNN(const FairMQUnmanagedRegionNN&) = delete;
     FairMQUnmanagedRegionNN operator=(const FairMQUnmanagedRegionNN&) = delete;
 

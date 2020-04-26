@@ -35,6 +35,14 @@ void Sampler::InitTask()
     fMsgSize = fConfig->GetProperty<int>("msg-size");
     fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 
+    fChannels.at("data").at(0).Transport()->SubscribeToRegionEvents([](FairMQRegionInfo info) {
+        LOG(warn) << ">>>" << info.event;
+        LOG(warn) << "id: " << info.id;
+        LOG(warn) << "ptr: " << info.ptr;
+        LOG(warn) << "size: " << info.size;
+        LOG(warn) << "flags: " << info.flags;
+    });
+
     fRegion = FairMQUnmanagedRegionPtr(NewUnmanagedRegionFor("data",
                                                              0,
                                                              10000000,
@@ -82,6 +90,7 @@ void Sampler::ResetTask()
         LOG(debug) << "done, still unacked: " << fNumUnackedMsgs;
     }
     fRegion.reset();
+    fChannels.at("data").at(0).Transport()->UnsubscribeFromRegionEvents();
 }
 
 Sampler::~Sampler()

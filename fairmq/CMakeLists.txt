@@ -245,7 +245,6 @@ if(BUILD_FAIRMQ)
     plugins/Control.cxx
     shmem/Message.cxx
     shmem/Poller.cxx
-    shmem/UnmanagedRegion.cxx
     shmem/Socket.cxx
     shmem/TransportFactory.cxx
     shmem/Manager.cxx

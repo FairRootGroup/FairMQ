@@ -31,6 +31,7 @@ class Sink : public FairMQDevice
   protected:
     virtual void Run();
     virtual void InitTask();
+    virtual void ResetTask();
 
   private:
     uint64_t fMaxIterations;

@@ -65,7 +65,6 @@ class Message final : public fair::mq::Message
     mutable Region* fRegionPtr;
     mutable char* fLocalPtr;
 
-    static std::atomic<bool> fInterrupted;
     static Transport fTransportType;
 
     bool InitializeChunk(const size_t size);

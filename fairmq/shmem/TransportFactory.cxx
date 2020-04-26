@@ -164,6 +164,26 @@ UnmanagedRegionPtr TransportFactory::CreateUnmanagedRegion(const size_t size, Re
     return tools::make_unique<UnmanagedRegion>(*fManager, size, callback, path, flags);
 }
 
+UnmanagedRegionPtr TransportFactory::CreateUnmanagedRegion(const size_t size, const int64_t userFlags, RegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */) const
+{
+    return tools::make_unique<UnmanagedRegion>(*fManager, size, userFlags, callback, path, flags);
+}
+
+void TransportFactory::SubscribeToRegionEvents(RegionEventCallback callback)
+{
+    fManager->SubscribeToRegionEvents(callback);
+}
+
+void TransportFactory::UnsubscribeFromRegionEvents()
+{
+    fManager->UnsubscribeFromRegionEvents();
+}
+
+vector<fair::mq::RegionInfo> TransportFactory::GetRegionInfo()
+{
+    return fManager->GetRegionInfo();
+}
+
 Transport TransportFactory::GetType() const
 {
     return fTransportType;

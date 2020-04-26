@@ -28,8 +28,6 @@ namespace mq
 namespace shmem
 {
 
-atomic<bool> Socket::fInterrupted(false);
-
 struct ZMsg
 {
     ZMsg()            { int rc __attribute__((unused)) = zmq_msg_init(&fMsg);            assert(rc == 0); }
@@ -133,7 +131,7 @@ int Socket::Send(MessagePtr& msg, const int timeout)
     ZMsg zmqMsg(sizeof(MetaHeader));
     std::memcpy(zmqMsg.Data(), &(shmMsg->fMeta), sizeof(MetaHeader));
 
-    while (true && !fInterrupted) {
+    while (true && !fManager.Interrupted()) {
         int nbytes = zmq_msg_send(zmqMsg.Msg(), fSocket, flags);
         if (nbytes > 0) {
             shmMsg->fQueued = true;
@@ -142,7 +140,7 @@ int Socket::Send(MessagePtr& msg, const int timeout)
             fBytesTx += size;
             return size;
         } else if (zmq_errno() == EAGAIN) {
-            if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0)) {
+            if (!fManager.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
                 if (timeout > 0) {
                     elapsed += fSndTimeout;
                     if (elapsed >= timeout) {
@@ -198,7 +196,7 @@ int Socket::Receive(MessagePtr& msg, const int timeout)
             ++fMessagesRx;
             return size;
         } else if (zmq_errno() == EAGAIN) {
-            if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0)) {
+            if (!fManager.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
                 if (timeout > 0) {
                     elapsed += fRcvTimeout;
                     if (elapsed >= timeout) {
@@ -242,7 +240,7 @@ int64_t Socket::Send(vector<MessagePtr>& msgVec, const int timeout)
         std::memcpy(metas++, &(shmMsg->fMeta), sizeof(MetaHeader));
     }
 
-    while (!fInterrupted) {
+    while (!fManager.Interrupted()) {
         int64_t totalSize = 0;
         int nbytes = zmq_msg_send(zmqMsg.Msg(), fSocket, flags);
         if (nbytes > 0) {
@@ -260,7 +258,7 @@ int64_t Socket::Send(vector<MessagePtr>& msgVec, const int timeout)
 
             return totalSize;
         } else if (zmq_errno() == EAGAIN) {
-            if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0)) {
+            if (!fManager.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
                 if (timeout > 0) {
                     elapsed += fSndTimeout;
                     if (elapsed >= timeout) {
@@ -296,7 +294,7 @@ int64_t Socket::Receive(vector<MessagePtr>& msgVec, const int timeout)
 
     ZMsg zmqMsg;
 
-    while (!fInterrupted) {
+    while (!fManager.Interrupted()) {
         int64_t totalSize = 0;
         int nbytes = zmq_msg_recv(zmqMsg.Msg(), fSocket, flags);
         if (nbytes > 0) {
@@ -327,7 +325,7 @@ int64_t Socket::Receive(vector<MessagePtr>& msgVec, const int timeout)
 
             return totalSize;
         } else if (zmq_errno() == EAGAIN) {
-            if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0)) {
+            if (!fManager.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
                 if (timeout > 0) {
                     elapsed += fRcvTimeout;
                     if (elapsed >= timeout) {
@@ -363,20 +361,6 @@ void Socket::Close()
     }
 
     fSocket = nullptr;
-}
-
-void Socket::Interrupt()
-{
-    Manager::Interrupt();
-    Message::fInterrupted = true;
-    fInterrupted = true;
-}
-
-void Socket::Resume()
-{
-    Manager::Resume();
-    Message::fInterrupted = false;
-    fInterrupted = false;
 }
 
 void Socket::SetOption(const string& option, const void* value, size_t valueSize)

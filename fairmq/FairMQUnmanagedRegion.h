@@ -12,8 +12,24 @@
 #include <cstddef> // size_t
 #include <memory> // std::unique_ptr
 #include <functional> // std::function
+#include <ostream> // std::ostream
+
+enum class FairMQRegionEvent : int
+{
+    created,
+    destroyed
+};
+
+struct FairMQRegionInfo {
+    uint64_t id;   // id of the region
+    void* ptr;     // pointer to the start of the region
+    size_t size;   // region size
+    int64_t flags; // custom flags set by the creator
+    FairMQRegionEvent event;
+};
 
 using FairMQRegionCallback = std::function<void(void*, size_t, void*)>;
+using FairMQRegionEventCallback = std::function<void(FairMQRegionInfo)>;
 
 class FairMQUnmanagedRegion
 {
@@ -26,12 +42,24 @@ class FairMQUnmanagedRegion
 
 using FairMQUnmanagedRegionPtr = std::unique_ptr<FairMQUnmanagedRegion>;
 
+inline std::ostream& operator<<(std::ostream& os, const FairMQRegionEvent& event)
+{
+    if (event == FairMQRegionEvent::created) {
+        return os << "created";
+    } else {
+        return os << "destroyed";
+    }
+}
+
 namespace fair
 {
 namespace mq
 {
 
 using RegionCallback = FairMQRegionCallback;
+using RegionEventCallback = FairMQRegionEventCallback;
+using RegionEvent = FairMQRegionEvent;
+using RegionInfo = FairMQRegionInfo;
 using UnmanagedRegion = FairMQUnmanagedRegion;
 using UnmanagedRegionPtr = FairMQUnmanagedRegionPtr;
 

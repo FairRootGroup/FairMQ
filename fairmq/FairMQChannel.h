@@ -340,6 +340,11 @@ class FairMQChannel
         return Transport()->CreateUnmanagedRegion(size, callback, path, flags);
     }
 
+    FairMQUnmanagedRegionPtr NewUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0)
+    {
+        return Transport()->CreateUnmanagedRegion(size, userFlags, callback, path, flags);
+    }
+
     static constexpr fair::mq::Transport DefaultTransportType = fair::mq::Transport::DEFAULT;
     static constexpr const char* DefaultTransportName = "default";
     static constexpr const char* DefaultName = "";

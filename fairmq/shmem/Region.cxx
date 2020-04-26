@@ -71,7 +71,6 @@ Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, Region
 
     InitializeQueues();
     LOG(debug) << "shmem: initialized region: " << fName;
-    fSendAcksWorker = thread(&Region::SendAcks, this);
 }
 
 void Region::InitializeQueues()
@@ -82,6 +81,11 @@ void Region::InitializeQueues()
         fQueue = tools::make_unique<bipc::message_queue>(bipc::create_only, fQueueName.c_str(), 1024, fAckBunchSize * sizeof(RegionBlock));
     }
     LOG(debug) << "shmem: initialized region queue: " << fQueueName;
+}
+
+void Region::StartSendingAcks()
+{
+    fSendAcksWorker = thread(&Region::SendAcks, this);
 }
 
 void Region::StartReceivingAcks()
@@ -114,12 +118,12 @@ void Region::ReceiveAcks()
 
 void Region::ReleaseBlock(const RegionBlock &block)
 {
-    unique_lock<mutex> lock(fBlockLock);
+    unique_lock<mutex> lock(fBlockMtx);
 
     fBlocksToFree.emplace_back(block);
 
     if (fBlocksToFree.size() >= fAckBunchSize) {
-        lock.unlock(); // reduces contention on fBlockLock
+        lock.unlock(); // reduces contention on fBlockMtx
         fBlockSendCV.notify_one();
     }
 }
@@ -132,7 +136,7 @@ void Region::SendAcks()
         size_t blocksToSend = 0;
 
         {   // mutex locking block
-            unique_lock<mutex> lock(fBlockLock);
+            unique_lock<mutex> lock(fBlockMtx);
 
             // try to get more blocks without waiting (we can miss a notify from CloseMessage())
             if (!fStop && (fBlocksToFree.size() < fAckBunchSize)) {
@@ -166,6 +170,7 @@ Region::~Region()
     fStop = true;
 
     if (fSendAcksWorker.joinable()) {
+        fBlockSendCV.notify_one();
         fSendAcksWorker.join();
     }
 

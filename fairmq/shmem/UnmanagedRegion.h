@@ -36,7 +36,19 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
     friend class Socket;
 
   public:
-    UnmanagedRegion(Manager& manager, const size_t size, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0);
+    UnmanagedRegion(Manager& manager, const size_t size, RegionCallback callback, const std::string& path = "", int flags = 0)
+        : UnmanagedRegion(manager, size, 0, callback, path, flags)
+    {}
+
+    UnmanagedRegion(Manager& manager, const size_t size, const int64_t userFlags, RegionCallback callback, const std::string& path = "", int flags = 0)
+        : fManager(manager)
+        , fRegion(nullptr)
+        , fRegionId(0)
+    {
+        auto result = fManager.CreateRegion(size, userFlags, callback, path, flags);
+        fRegion = result.first;
+        fRegionId = result.second;
+    }
 
     void* GetData() const override { return fRegion->get_address(); }
     size_t GetSize() const override { return fRegion->get_size(); }

@@ -7,8 +7,8 @@
  ********************************************************************************/
 
 #include <FairMQTransportFactory.h>
-#include <zeromq/FairMQTransportFactoryZMQ.h>
 #include <fairmq/shmem/TransportFactory.h>
+#include <zeromq/FairMQTransportFactoryZMQ.h>
 #ifdef BUILD_NANOMSG_TRANSPORT
 #include <nanomsg/FairMQTransportFactoryNN.h>
 #endif /* BUILD_NANOMSG_TRANSPORT */
@@ -17,50 +17,46 @@
 #endif
 #include <FairMQLogger.h>
 #include <fairmq/tools/Unique.h>
-
 #include <memory>
 #include <string>
 
-FairMQTransportFactory::FairMQTransportFactory(const std::string& id)
+using namespace std;
+
+FairMQTransportFactory::FairMQTransportFactory(const string& id)
     : fkId(id)
-{
-}
+{}
 
-auto FairMQTransportFactory::CreateTransportFactory(const std::string& type, const std::string& id, const fair::mq::ProgOptions* config) -> std::shared_ptr<FairMQTransportFactory>
+auto FairMQTransportFactory::CreateTransportFactory(const string& type,
+                                                    const string& id,
+                                                    const fair::mq::ProgOptions* config)
+    -> shared_ptr<FairMQTransportFactory>
 {
-    using namespace std;
-
     auto finalId = id;
 
     // Generate uuid if empty
-    if (finalId == "")
-    {
+    if (finalId == "") {
         finalId = fair::mq::tools::Uuid();
     }
 
-    if (type == "zeromq")
-    {
+    if (type == "zeromq") {
         return make_shared<FairMQTransportFactoryZMQ>(finalId, config);
-    }
-    else if (type == "shmem")
-    {
+    } else if (type == "shmem") {
         return make_shared<fair::mq::shmem::TransportFactory>(finalId, config);
     }
 #ifdef BUILD_NANOMSG_TRANSPORT
-    else if (type == "nanomsg")
-    {
+    else if (type == "nanomsg") {
         return make_shared<FairMQTransportFactoryNN>(finalId, config);
     }
 #endif /* BUILD_NANOMSG_TRANSPORT */
 #ifdef BUILD_OFI_TRANSPORT
-    else if (type == "ofi")
-    {
+    else if (type == "ofi") {
         return make_shared<fair::mq::ofi::TransportFactory>(finalId, config);
     }
 #endif /* BUILD_OFI_TRANSPORT */
-    else
-    {
-        LOG(error) << "Unavailable transport requested: " << "\"" << type << "\"" << ". Available are: "
+    else {
+        LOG(error) << "Unavailable transport requested: "
+                   << "\"" << type << "\""
+                   << ". Available are: "
                    << "\"zeromq\""
                    << "\"shmem\""
 #ifdef BUILD_NANOMSG_TRANSPORT

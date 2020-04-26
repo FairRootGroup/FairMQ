@@ -7,7 +7,6 @@
  ********************************************************************************/
 
 #include "Manager.h"
-#include "Common.h"
 
 #include <fairmq/tools/CppSTL.h>
 #include <fairmq/tools/Strings.h>
@@ -19,6 +18,7 @@ using namespace std;
 using bie = ::boost::interprocess::interprocess_exception;
 namespace bipc = ::boost::interprocess;
 namespace bfs = ::boost::filesystem;
+namespace bpt = ::boost::posix_time;
 
 namespace fair
 {
@@ -27,18 +27,25 @@ namespace mq
 namespace shmem
 {
 
-std::unordered_map<uint64_t, std::unique_ptr<Region>> Manager::fRegions;
-
-Manager::Manager(const std::string& id, size_t size)
+Manager::Manager(const string& id, size_t size)
     : fShmId(id)
     , fSegmentName("fmq_" + fShmId + "_main")
     , fManagementSegmentName("fmq_" + fShmId + "_mng")
     , fSegment(bipc::open_or_create, fSegmentName.c_str(), size)
-    , fManagementSegment(bipc::open_or_create, fManagementSegmentName.c_str(), 65536)
+    , fManagementSegment(bipc::open_or_create, fManagementSegmentName.c_str(), 655360)
+    , fShmVoidAlloc(fManagementSegment.get_segment_manager())
     , fShmMtx(bipc::open_or_create, string("fmq_" + fShmId + "_mtx").c_str())
+    , fRegionEventsCV(bipc::open_or_create, string("fmq_" + fShmId + "_cv").c_str())
+    , fRegionEventsSubscriptionActive(false)
     , fDeviceCounter(nullptr)
+    , fRegionInfos(nullptr)
+    , fInterrupted(false)
 {
     LOG(debug) << "created/opened shared memory segment '" << "fmq_" << fShmId << "_main" << "' of " << size << " bytes. Available are " << fSegment.get_free_memory() << " bytes.";
+
+    fRegionInfos = fManagementSegment.find_or_construct<Uint64RegionInfoMap>(bipc::unique_instance)(fShmVoidAlloc);
+    // store info about the managed segment as region with id 0
+    fRegionInfos->emplace(0, RegionInfo("", 0, 0, fShmVoidAlloc));
 
     bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
 
@@ -55,7 +62,7 @@ Manager::Manager(const std::string& id, size_t size)
     }
 }
 
-void Manager::StartMonitor(const std::string& id)
+void Manager::StartMonitor(const string& id)
 {
     try {
         bipc::named_mutex monitorStatus(bipc::open_only, string("fmq_" + id + "_ms").c_str());
@@ -94,47 +101,74 @@ void Manager::StartMonitor(const std::string& id)
     }
 }
 
-void Manager::Interrupt()
+pair<bipc::mapped_region*, uint64_t> Manager::CreateRegion(const size_t size, const int64_t userFlags, RegionCallback callback, const string& path /* = "" */, int flags /* = 0 */)
 {
-}
+    try {
 
-void Manager::Resume()
-{
-    // close remote regions before processing new transfers
-    for (auto it = fRegions.begin(); it != fRegions.end(); /**/) {
-        if (it->second->fRemote) {
-           it = fRegions.erase(it);
-        } else {
-            ++it;
-        }
-    }
-}
+        pair<bipc::mapped_region*, uint64_t> result;
 
-bipc::mapped_region* Manager::CreateRegion(const size_t size, const uint64_t id, RegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)
-{
-    auto it = fRegions.find(id);
-    if (it != fRegions.end()) {
-        LOG(error) << "Trying to create a region that already exists";
-        return nullptr;
-    } else {
-        // create region info
         {
+            uint64_t id = 0;
             bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
-            VoidAlloc voidAlloc(fManagementSegment.get_segment_manager());
-            Uint64RegionInfoMap* infoMap = fManagementSegment.find_or_construct<Uint64RegionInfoMap>(bipc::unique_instance)(voidAlloc);
-            infoMap->emplace(id, RegionInfo(path.c_str(), flags, voidAlloc));
+
+            RegionCounter* rc = fManagementSegment.find<RegionCounter>(bipc::unique_instance).first;
+
+            if (rc) {
+                LOG(debug) << "region counter found, with value of " << rc->fCount << ". incrementing.";
+                (rc->fCount)++;
+                LOG(debug) << "incremented region counter, now: " << rc->fCount;
+            } else {
+                LOG(debug) << "no region counter found, creating one and initializing with 1";
+                rc = fManagementSegment.construct<RegionCounter>(bipc::unique_instance)(1);
+                LOG(debug) << "initialized region counter with: " << rc->fCount;
+            }
+
+            id = rc->fCount;
+
+            auto it = fRegions.find(id);
+            if (it != fRegions.end()) {
+                LOG(error) << "Trying to create a region that already exists";
+                return {nullptr, id};
+            }
+
+            // create region info
+            fRegionInfos->emplace(id, RegionInfo(path.c_str(), flags, userFlags, fShmVoidAlloc));
+
+            auto r = fRegions.emplace(id, tools::make_unique<Region>(*this, id, size, false, callback, path, flags));
+            // LOG(debug) << "Created region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
+
+            r.first->second->StartReceivingAcks();
+            result.first = &(r.first->second->fRegion);
+            result.second = id;
         }
-        // LOG(debug) << "Created region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
+        fRegionEventsCV.notify_all();
 
-        auto r = fRegions.emplace(id, tools::make_unique<Region>(*this, id, size, false, callback, path, flags));
+        return result;
 
-        r.first->second->StartReceivingAcks();
-
-        return &(r.first->second->fRegion);
+    } catch (bipc::interprocess_exception& e) {
+        LOG(error) << "cannot create region. Already created/not cleaned up?";
+        LOG(error) << e.what();
+        throw;
     }
 }
 
-Region* Manager::GetRemoteRegion(const uint64_t id)
+void Manager::RemoveRegion(const uint64_t id)
+{
+    {
+        bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
+        fRegions.erase(id);
+        fRegionInfos->at(id).fDestroyed = true;
+    }
+    fRegionEventsCV.notify_all();
+}
+
+Region* Manager::GetRegion(const uint64_t id)
+{
+    bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
+    return GetRegionUnsafe(id);
+}
+
+Region* Manager::GetRegionUnsafe(const uint64_t id)
 {
     // remote region could actually be a local one if a message originates from this device (has been sent out and returned)
     auto it = fRegions.find(id);
@@ -142,36 +176,108 @@ Region* Manager::GetRemoteRegion(const uint64_t id)
         return it->second.get();
     } else {
         try {
-            string path;
-            int flags;
-
             // get region info
-            {
-                bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
-                Uint64RegionInfoMap* infoMap = fManagementSegment.find<Uint64RegionInfoMap>(bipc::unique_instance).first;
-                if (infoMap == nullptr) {
-                    LOG(error) << "Unable to locate the region info";
-                    throw SharedMemoryError("Unable to locate remote region info");
-                }
-                RegionInfo regionInfo = infoMap->at(id);
-                path = regionInfo.fPath.c_str();
-                flags = regionInfo.fFlags;
-            }
+            RegionInfo regionInfo = fRegionInfos->at(id);
+            string path = regionInfo.fPath.c_str();
+            int flags = regionInfo.fFlags;
             // LOG(debug) << "Located remote region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
 
             auto r = fRegions.emplace(id, tools::make_unique<Region>(*this, id, 0, true, nullptr, path, flags));
+            r.first->second->StartSendingAcks();
             return r.first->second.get();
         } catch (bie& e) {
             LOG(warn) << "Could not get remote region for id: " << id;
             return nullptr;
         }
-
     }
 }
 
-void Manager::RemoveRegion(const uint64_t id)
+vector<fair::mq::RegionInfo> Manager::GetRegionInfo()
 {
-    fRegions.erase(id);
+    bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
+    return GetRegionInfoUnsafe();
+}
+
+vector<fair::mq::RegionInfo> Manager::GetRegionInfoUnsafe()
+{
+    vector<fair::mq::RegionInfo> result;
+
+    for (const auto& e : *fRegionInfos) {
+        fair::mq::RegionInfo info;
+        info.id = e.first;
+        info.flags = e.second.fUserFlags;
+        info.event = e.second.fDestroyed ? RegionEvent::destroyed : RegionEvent::created;
+        if (info.id != 0) {
+            if (!e.second.fDestroyed) {
+                auto region = GetRegionUnsafe(info.id);
+                info.ptr = region->fRegion.get_address();
+                info.size = region->fRegion.get_size();
+            } else {
+                info.ptr = nullptr;
+                info.size = 0;
+            }
+            result.push_back(info);
+        } else {
+            if (!e.second.fDestroyed) {
+                info.ptr = fSegment.get_address();
+                info.size = fSegment.get_size();
+            } else {
+                info.ptr = nullptr;
+                info.size = 0;
+            }
+            result.push_back(info);
+        }
+    }
+
+    return result;
+}
+
+void Manager::SubscribeToRegionEvents(RegionEventCallback callback)
+{
+    bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
+    if (fRegionEventThread.joinable()) {
+        fRegionEventsSubscriptionActive.store(false);
+        fRegionEventThread.join();
+    }
+    fRegionEventCallback = callback;
+    fRegionEventsSubscriptionActive.store(true);
+    fRegionEventThread = thread(&Manager::RegionEventsSubscription, this);
+}
+
+void Manager::UnsubscribeFromRegionEvents()
+{
+    if (fRegionEventThread.joinable()) {
+        fRegionEventsSubscriptionActive.store(false);
+        fRegionEventsCV.notify_all();
+        fRegionEventThread.join();
+    }
+    bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
+    fRegionEventCallback = nullptr;
+}
+
+void Manager::RegionEventsSubscription()
+{
+    while (fRegionEventsSubscriptionActive.load()) {
+        bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
+        auto infos = GetRegionInfoUnsafe();
+        for (const auto& i : infos) {
+            auto el = fObservedRegionEvents.find(i.id);
+            if (el == fObservedRegionEvents.end()) {
+                fRegionEventCallback(i);
+                fObservedRegionEvents.emplace(i.id, i.event);
+            } else {
+                if (el->second == RegionEvent::created && i.event == RegionEvent::destroyed) {
+                    fRegionEventCallback(i);
+                    el->second = i.event;
+                } else {
+                    // LOG(debug) << "ignoring event for id" << i.id << ":";
+                    // LOG(debug) << "incoming event: " << i.event;
+                    // LOG(debug) << "stored event: " << el->second;
+                }
+            }
+        }
+        fRegionEventsCV.wait(lock);
+    }
 }
 
 void Manager::RemoveSegments()
@@ -193,6 +299,12 @@ Manager::~Manager()
 {
     bool lastRemoved = false;
 
+    if (fRegionEventThread.joinable()) {
+        fRegionEventsSubscriptionActive.store(false);
+        fRegionEventsCV.notify_all();
+        fRegionEventThread.join();
+    }
+
     try {
         bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
 
@@ -212,6 +324,7 @@ Manager::~Manager()
 
     if (lastRemoved) {
         bipc::named_mutex::remove(string("fmq_" + fShmId + "_mtx").c_str());
+        bipc::named_condition::remove(string("fmq_" + fShmId + "_cv").c_str());
     }
 }
 

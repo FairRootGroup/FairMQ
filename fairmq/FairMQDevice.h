@@ -217,15 +217,45 @@ class FairMQDevice
     }
 
     // creates unamanaged region with the default device transport
-    FairMQUnmanagedRegionPtr NewUnmanagedRegion(const size_t size, FairMQRegionCallback callback = nullptr)
+    FairMQUnmanagedRegionPtr NewUnmanagedRegion(const size_t size,
+                                                FairMQRegionCallback callback = nullptr,
+                                                const std::string& path = "",
+                                                int flags = 0)
     {
-        return Transport()->CreateUnmanagedRegion(size, callback);
+        return Transport()->CreateUnmanagedRegion(size, callback, path, flags);
+    }
+
+    // creates unamanaged region with the default device transport
+    FairMQUnmanagedRegionPtr NewUnmanagedRegion(const size_t size,
+                                                const int64_t userFlags,
+                                                FairMQRegionCallback callback = nullptr,
+                                                const std::string& path = "",
+                                                int flags = 0)
+    {
+        return Transport()->CreateUnmanagedRegion(size, userFlags, callback, path, flags);
     }
 
     // creates unmanaged region with the transport of the specified channel
-    FairMQUnmanagedRegionPtr NewUnmanagedRegionFor(const std::string& channel, int index, const size_t size, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0)
+    FairMQUnmanagedRegionPtr NewUnmanagedRegionFor(const std::string& channel,
+                                                   int index,
+                                                   const size_t size,
+                                                   FairMQRegionCallback callback = nullptr,
+                                                   const std::string& path = "",
+                                                   int flags = 0)
     {
         return GetChannel(channel, index).NewUnmanagedRegion(size, callback, path, flags);
+    }
+
+    // creates unmanaged region with the transport of the specified channel
+    FairMQUnmanagedRegionPtr NewUnmanagedRegionFor(const std::string& channel,
+                                                   int index,
+                                                   const size_t size,
+                                                   const int64_t userFlags,
+                                                   FairMQRegionCallback callback = nullptr,
+                                                   const std::string& path = "",
+                                                   int flags = 0)
+    {
+        return GetChannel(channel, index).NewUnmanagedRegion(size, userFlags, callback, path, flags);
     }
 
     template<typename ...Ts>

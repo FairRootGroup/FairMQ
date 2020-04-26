@@ -18,6 +18,13 @@ FairMQUnmanagedRegionZMQ::FairMQUnmanagedRegionZMQ(const size_t size, FairMQRegi
 {
 }
 
+FairMQUnmanagedRegionZMQ::FairMQUnmanagedRegionZMQ(const size_t size, int64_t /* userFlags */, FairMQRegionCallback callback, const std::string& /* path = "" */, int /* flags = 0 */)
+    : fBuffer(malloc(size))
+    , fSize(size)
+    , fCallback(callback)
+{
+}
+
 void* FairMQUnmanagedRegionZMQ::GetData() const
 {
     return fBuffer;
