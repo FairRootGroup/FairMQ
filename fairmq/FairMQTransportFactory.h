@@ -61,23 +61,43 @@ class FairMQTransportFactory
     /// @param obj optional helper pointer that can be used in the callback
     /// @return pointer to FairMQMessage
     virtual FairMQMessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) = 0;
-
+    /// @brief create a message with the buffer located within the corresponding unmanaged region
+    /// @param unmanagedRegion the unmanaged region that this message buffer belongs to
+    /// @param data message buffer (must be within the region - checked at runtime by the transport)
+    /// @param size size of the message
+    /// @param hint optional parameter, returned to the user in the FairMQRegionCallback
     virtual FairMQMessagePtr CreateMessage(FairMQUnmanagedRegionPtr& unmanagedRegion, void* data, const size_t size, void* hint = 0) = 0;
 
-    /// Create a socket
+    /// @brief Create a socket
     virtual FairMQSocketPtr CreateSocket(const std::string& type, const std::string& name) = 0;
 
-    /// Create a poller for a single channel (all subchannels)
+    /// @brief Create a poller for a single channel (all subchannels)
     virtual FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const = 0;
-    /// Create a poller for specific channels
+    /// @brief Create a poller for specific channels
     virtual FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel*>& channels) const = 0;
-    /// Create a poller for specific channels (all subchannels)
+    /// @brief Create a poller for specific channels (all subchannels)
     virtual FairMQPollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const = 0;
 
+    /// @brief Create new UnmanagedRegion
+    /// @param size size of the region
+    /// @param callback callback to be called when a message belonging to this region is no longer needed by the transport
+    /// @param path optional parameter to pass to the underlying transport
+    /// @param flags optional parameter to pass to the underlying transport
+    /// @return pointer to UnmanagedRegion
     virtual FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0) const = 0;
+    /// @brief Create new UnmanagedRegion
+    /// @param size size of the region
+    /// @param userFlags flags to be stored with the region, have no effect on the transport, but can be retrieved from the region by the user
+    /// @param callback callback to be called when a message belonging to this region is no longer needed by the transport
+    /// @param path optional parameter to pass to the underlying transport
+    /// @param flags optional parameter to pass to the underlying transport
+    /// @return pointer to UnmanagedRegion
     virtual FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0) const = 0;
 
+    /// @brief Subscribe to region events (creation, destruction, ...)
+    /// @param callback the callback that is called when a region event occurs
     virtual void SubscribeToRegionEvents(FairMQRegionEventCallback callback) = 0;
+    /// @brief Unsubscribe from region events
     virtual void UnsubscribeFromRegionEvents() = 0;
 
     virtual std::vector<FairMQRegionInfo> GetRegionInfo() = 0;
