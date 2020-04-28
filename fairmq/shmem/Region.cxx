@@ -19,6 +19,7 @@
 
 #include <cerrno>
 #include <chrono>
+#include <ios>
 
 using namespace std;
 
@@ -49,7 +50,17 @@ Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, Region
     if (path != "") {
         fName = string(path + fName);
 
-        fFile = fopen(fName.c_str(), fRemote ? "r+" : "w+");
+        if (!fRemote) {
+            // create a file
+            filebuf fbuf;
+            if (fbuf.open(fName, ios_base::in | ios_base::out | ios_base::trunc | ios_base::binary)) {
+                // set the size
+                fbuf.pubseekoff(size - 1, ios_base::beg);
+                fbuf.sputc(0);
+            }
+        }
+
+        fFile = fopen(fName.c_str(), "r+");
 
         if (!fFile) {
             LOG(error) << "Failed to initialize file: " << fName;
