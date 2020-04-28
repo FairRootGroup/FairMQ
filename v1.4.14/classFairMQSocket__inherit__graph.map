@@ -1,0 +1,6 @@
+<map id="FairMQSocket" name="FairMQSocket">
+<area shape="rect" id="node2" href="$classfair_1_1mq_1_1ofi_1_1Socket.html" title="fair::mq::ofi::Socket" alt="" coords="5,80,143,107"/>
+<area shape="rect" id="node3" href="$classfair_1_1mq_1_1shmem_1_1Socket.html" title="fair::mq::shmem::Socket" alt="" coords="167,80,333,107"/>
+<area shape="rect" id="node4" href="$classFairMQSocketNN.html" title="FairMQSocketNN" alt="" coords="357,80,484,107"/>
+<area shape="rect" id="node5" href="$classFairMQSocketZMQ.html" title="FairMQSocketZMQ" alt="" coords="508,80,643,107"/>
+</map>

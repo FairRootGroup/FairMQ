@@ -1,0 +1,25 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node2" href="$structfair_1_1mq_1_1DeviceErrorState.html" title="fair::mq::DeviceErrorState" alt="" coords="188,5,363,32"/>
+<area shape="rect" id="node3" href="$structfair_1_1mq_1_1MessageError.html" title="fair::mq::MessageError" alt="" coords="198,56,353,83"/>
+<area shape="rect" id="node4" href="$structfair_1_1mq_1_1ofi_1_1ContextError.html" title="fair::mq::ofi::ContextError" alt="" coords="190,107,361,133"/>
+<area shape="rect" id="node5" href="$structfair_1_1mq_1_1OngoingTransition.html" title="fair::mq::OngoingTransition" alt="" coords="186,157,365,184"/>
+<area shape="rect" id="node6" href="$structfair_1_1mq_1_1ParserError.html" title="fair::mq::ParserError" alt="" coords="205,208,345,235"/>
+<area shape="rect" id="node7" href="$structfair_1_1mq_1_1PluginManager_1_1PluginInstantiationError.html" title="fair::mq::PluginManager\l::PluginInstantiationError" alt="" coords="193,259,358,301"/>
+<area shape="rect" id="node8" href="$structfair_1_1mq_1_1PluginManager_1_1PluginLoadError.html" title="fair::mq::PluginManager\l::PluginLoadError" alt="" coords="195,325,355,366"/>
+<area shape="rect" id="node9" href="$structfair_1_1mq_1_1PluginManager_1_1ProgramOptionsParseError.html" title="fair::mq::PluginManager\l::ProgramOptionsParseError" alt="" coords="182,390,369,431"/>
+<area shape="rect" id="node10" href="$structfair_1_1mq_1_1PluginServices_1_1DeviceControlError.html" title="fair::mq::PluginServices\l::DeviceControlError" alt="" coords="195,455,356,497"/>
+<area shape="rect" id="node11" href="$structfair_1_1mq_1_1PollerError.html" title="fair::mq::PollerError" alt="" coords="208,521,343,548"/>
+<area shape="rect" id="node12" href="$structfair_1_1mq_1_1PropertyNotFoundError.html" title="fair::mq::PropertyNotFound\lError" alt="" coords="185,573,365,614"/>
+<area shape="rect" id="node13" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1Cmds_1_1CommandFormatError.html" title="fair::mq::sdk::cmd\l::Cmds::CommandFormatError" alt="" coords="174,638,377,679"/>
+<area shape="rect" id="node14" href="$structfair_1_1mq_1_1sdk_1_1RuntimeError.html" title="fair::mq::sdk::RuntimeError" alt="" coords="185,704,365,731"/>
+<area shape="rect" id="node16" href="$structfair_1_1mq_1_1shmem_1_1Monitor_1_1DaemonPresent.html" title="fair::mq::shmem::Monitor\l::DaemonPresent" alt="" coords="191,755,359,797"/>
+<area shape="rect" id="node17" href="$structfair_1_1mq_1_1shmem_1_1SharedMemoryError.html" title="fair::mq::shmem::SharedMemory\lError" alt="" coords="169,821,382,862"/>
+<area shape="rect" id="node18" href="$structfair_1_1mq_1_1SocketError.html" title="fair::mq::SocketError" alt="" coords="204,887,347,913"/>
+<area shape="rect" id="node20" href="$structfair_1_1mq_1_1StateMachine_1_1ErrorStateException.html" title="fair::mq::StateMachine\l::ErrorStateException" alt="" coords="198,938,353,979"/>
+<area shape="rect" id="node21" href="$structfair_1_1mq_1_1tools_1_1DefaultRouteDetectionError.html" title="fair::mq::tools::Default\lRouteDetectionError" alt="" coords="199,1003,351,1045"/>
+<area shape="rect" id="node22" href="$structfair_1_1mq_1_1TransportFactoryError.html" title="fair::mq::TransportFactory\lError" alt="" coords="189,1069,362,1110"/>
+<area shape="rect" id="node23" href="$structFairMQChannel_1_1ChannelConfigurationError.html" title="FairMQChannel::ChannelConfiguration\lError" alt="" coords="152,1134,399,1175"/>
+<area shape="rect" id="node24" href="$structpmix_1_1runtime__error.html" title="pmix::runtime_error" alt="" coords="208,1200,343,1227"/>
+<area shape="rect" id="node15" href="$structfair_1_1mq_1_1sdk_1_1MixedStateError.html" title="fair::mq::sdk::MixedState\lError" alt="" coords="447,697,617,738"/>
+<area shape="rect" id="node19" href="$structfair_1_1mq_1_1ofi_1_1SilentSocketError.html" title="fair::mq::ofi::SilentSocket\lError" alt="" coords="447,879,617,921"/>
+</map>

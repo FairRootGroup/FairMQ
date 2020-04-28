@@ -1,0 +1,19 @@
+<map id="fair::mq::sdk::cmd::Cmd" name="fair::mq::sdk::cmd::Cmd">
+<area shape="rect" id="node2" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1ChangeState.html" title="fair::mq::sdk::cmd\l::ChangeState" alt="" coords="258,5,386,47"/>
+<area shape="rect" id="node3" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1CheckState.html" title="fair::mq::sdk::cmd\l::CheckState" alt="" coords="258,71,386,112"/>
+<area shape="rect" id="node4" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1Config.html" title="fair::mq::sdk::cmd\l::Config" alt="" coords="258,136,386,177"/>
+<area shape="rect" id="node5" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1CurrentState.html" title="fair::mq::sdk::cmd\l::CurrentState" alt="" coords="258,201,386,243"/>
+<area shape="rect" id="node6" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1DumpConfig.html" title="fair::mq::sdk::cmd\l::DumpConfig" alt="" coords="258,267,386,308"/>
+<area shape="rect" id="node7" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1GetProperties.html" title="fair::mq::sdk::cmd\l::GetProperties" alt="" coords="258,332,386,373"/>
+<area shape="rect" id="node8" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1Properties.html" title="fair::mq::sdk::cmd\l::Properties" alt="" coords="258,397,386,439"/>
+<area shape="rect" id="node9" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1PropertiesSet.html" title="fair::mq::sdk::cmd\l::PropertiesSet" alt="" coords="258,463,386,504"/>
+<area shape="rect" id="node10" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1SetProperties.html" title="fair::mq::sdk::cmd\l::SetProperties" alt="" coords="258,528,386,569"/>
+<area shape="rect" id="node11" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1StateChange.html" title="fair::mq::sdk::cmd\l::StateChange" alt="" coords="258,593,386,635"/>
+<area shape="rect" id="node12" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1StateChangeExitingReceived.html" title="fair::mq::sdk::cmd\l::StateChangeExitingReceived" alt="" coords="221,659,423,700"/>
+<area shape="rect" id="node13" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1StateChangeSubscription.html" title="fair::mq::sdk::cmd\l::StateChangeSubscription" alt="" coords="233,724,411,765"/>
+<area shape="rect" id="node14" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1StateChangeUnsubscription.html" title="fair::mq::sdk::cmd\l::StateChangeUnsubscription" alt="" coords="225,789,419,831"/>
+<area shape="rect" id="node15" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1SubscribeToStateChange.html" title="fair::mq::sdk::cmd\l::SubscribeToStateChange" alt="" coords="233,855,411,896"/>
+<area shape="rect" id="node16" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1SubscriptionHeartbeat.html" title="fair::mq::sdk::cmd\l::SubscriptionHeartbeat" alt="" coords="243,920,401,961"/>
+<area shape="rect" id="node17" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1TransitionStatus.html" title="fair::mq::sdk::cmd\l::TransitionStatus" alt="" coords="258,985,386,1027"/>
+<area shape="rect" id="node18" href="$structfair_1_1mq_1_1sdk_1_1cmd_1_1UnsubscribeFromStateChange.html" title="fair::mq::sdk::cmd\l::UnsubscribeFromStateChange" alt="" coords="217,1051,427,1092"/>
+</map>

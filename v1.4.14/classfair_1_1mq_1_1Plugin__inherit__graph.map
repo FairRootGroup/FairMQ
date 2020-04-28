@@ -1,0 +1,6 @@
+<map id="fair::mq::Plugin" name="fair::mq::Plugin">
+<area shape="rect" id="node2" href="$classfair_1_1mq_1_1plugins_1_1Config.html" title="fair::mq::plugins::\lConfig" alt="" coords="179,5,301,47"/>
+<area shape="rect" id="node3" href="$classfair_1_1mq_1_1plugins_1_1Control.html" title="fair::mq::plugins::\lControl" alt="" coords="179,71,301,112"/>
+<area shape="rect" id="node4" href="$classfair_1_1mq_1_1plugins_1_1DDS.html" title="fair::mq::plugins::DDS" alt="" coords="164,137,316,163"/>
+<area shape="rect" id="node5" href="$classfair_1_1mq_1_1plugins_1_1PMIxPlugin.html" title="fair::mq::plugins::\lPMIxPlugin" alt="" coords="179,188,301,229"/>
+</map>

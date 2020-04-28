@@ -1,0 +1,5 @@
+<map id="StateSubscription" name="StateSubscription">
+<area shape="rect" id="node2" href="$classpmix_1_1Commands.html" title="pmix::Commands" alt="" coords="5,5,131,32"/>
+<area shape="rect" id="node3" href="$classfair_1_1mq_1_1StateMachine.html" title="fair::mq::StateMachine" alt="" coords="155,5,309,32"/>
+<area shape="rect" id="node4" href="$classfair_1_1mq_1_1StateQueue.html" title="fair::mq::StateQueue" alt="" coords="334,5,477,32"/>
+</map>

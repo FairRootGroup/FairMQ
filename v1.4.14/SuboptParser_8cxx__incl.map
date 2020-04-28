@@ -1,0 +1,17 @@
+<map id="fairmq/SuboptParser.cxx" name="fairmq/SuboptParser.cxx">
+<area shape="rect" id="node2" href="$SuboptParser_8h_source.html" title="fairmq/SuboptParser.h" alt="" coords="2253,87,2405,114"/>
+<area shape="rect" id="node3" href="$JSONParser_8h_source.html" title="fairmq/JSONParser.h" alt="" coords="2111,169,2257,196"/>
+<area shape="rect" id="node9" href="$FairMQChannel_8h_source.html" title="FairMQChannel.h" alt="" coords="1978,251,2102,278"/>
+<area shape="rect" id="node33" href="$Properties_8h_source.html" title="fairmq/Properties.h" alt="" coords="2457,565,2589,591"/>
+<area shape="rect" id="node10" href="$FairMQTransportFactory_8h_source.html" title="FairMQTransportFactory.h" alt="" coords="1107,408,1282,435"/>
+<area shape="rect" id="node11" href="$FairMQLogger_8h_source.html" title="FairMQLogger.h" alt="" coords="2075,483,2189,509"/>
+<area shape="rect" id="node13" href="$FairMQMessage_8h_source.html" title="FairMQMessage.h" alt="" coords="499,565,629,591"/>
+<area shape="rect" id="node16" href="$Transports_8h_source.html" title="fairmq/Transports.h" alt="" coords="650,647,785,673"/>
+<area shape="rect" id="node21" href="$FairMQSocket_8h_source.html" title="FairMQSocket.h" alt="" coords="448,483,565,509"/>
+<area shape="rect" id="node22" href="$FairMQUnmanagedRegion_8h_source.html" title="FairMQUnmanagedRegion.h" alt="" coords="1763,565,1949,591"/>
+<area shape="rect" id="node32" href="$FairMQParts_8h_source.html" title="FairMQParts.h" alt="" coords="408,333,515,360"/>
+<area shape="rect" id="node20" href="$FairMQPoller_8h_source.html" title="FairMQPoller.h" alt="" coords="516,647,625,673"/>
+<area shape="rect" id="node24" href="$MemoryResources_8h_source.html" title="fairmq/MemoryResources.h" alt="" coords="1103,483,1286,509"/>
+<area shape="rect" id="node17" href="$CppSTL_8h_source.html" title="fairmq/tools/CppSTL.h" alt="" coords="1745,721,1898,748"/>
+<area shape="rect" id="node34" href="$EventManager_8h_source.html" title="fairmq/EventManager.h" alt="" coords="2785,647,2943,673"/>
+</map>
