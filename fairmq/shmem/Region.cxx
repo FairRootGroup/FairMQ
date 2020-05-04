@@ -81,6 +81,7 @@ Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, Region
     }
 
     InitializeQueues();
+    StartSendingAcks();
     LOG(debug) << "shmem: initialized region: " << fName;
 }
 

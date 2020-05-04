@@ -183,7 +183,6 @@ Region* Manager::GetRegionUnsafe(const uint64_t id)
             // LOG(debug) << "Located remote region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
 
             auto r = fRegions.emplace(id, tools::make_unique<Region>(*this, id, 0, true, nullptr, path, flags));
-            r.first->second->StartSendingAcks();
             return r.first->second.get();
         } catch (bie& e) {
             LOG(warn) << "Could not get remote region for id: " << id;
