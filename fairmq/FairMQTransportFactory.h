@@ -84,7 +84,7 @@ class FairMQTransportFactory
     /// @param path optional parameter to pass to the underlying transport
     /// @param flags optional parameter to pass to the underlying transport
     /// @return pointer to UnmanagedRegion
-    virtual FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0) const = 0;
+    virtual FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0) = 0;
     /// @brief Create new UnmanagedRegion
     /// @param size size of the region
     /// @param userFlags flags to be stored with the region, have no effect on the transport, but can be retrieved from the region by the user
@@ -92,7 +92,7 @@ class FairMQTransportFactory
     /// @param path optional parameter to pass to the underlying transport
     /// @param flags optional parameter to pass to the underlying transport
     /// @return pointer to UnmanagedRegion
-    virtual FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0) const = 0;
+    virtual FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0) = 0;
 
     /// @brief Subscribe to region events (creation, destruction, ...)
     /// @param callback the callback that is called when a region event occurs

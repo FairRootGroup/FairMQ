@@ -15,9 +15,6 @@
 #ifndef FAIRMQTRANSPORTFACTORYZMQ_H_
 #define FAIRMQTRANSPORTFACTORYZMQ_H_
 
-#include <vector>
-#include <string>
-
 #include "FairMQTransportFactory.h"
 #include "FairMQMessageZMQ.h"
 #include "FairMQSocketZMQ.h"
@@ -25,14 +22,20 @@
 #include "FairMQUnmanagedRegionZMQ.h"
 #include <fairmq/ProgOptions.h>
 
+#include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <thread>
+#include <vector>
+
 class FairMQTransportFactoryZMQ final : public FairMQTransportFactory
 {
   public:
     FairMQTransportFactoryZMQ(const std::string& id = "", const fair::mq::ProgOptions* config = nullptr);
     FairMQTransportFactoryZMQ(const FairMQTransportFactoryZMQ&) = delete;
     FairMQTransportFactoryZMQ operator=(const FairMQTransportFactoryZMQ&) = delete;
-
-    ~FairMQTransportFactoryZMQ() override;
 
     FairMQMessagePtr CreateMessage() override;
     FairMQMessagePtr CreateMessage(const size_t size) override;
@@ -45,12 +48,14 @@ class FairMQTransportFactoryZMQ final : public FairMQTransportFactory
     FairMQPollerPtr CreatePoller(const std::vector<FairMQChannel*>& channels) const override;
     FairMQPollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const override;
 
-    FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback, const std::string& path = "", int flags = 0) const override;
-    FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, int64_t userFlags, FairMQRegionCallback callback = nullptr, const std::string& path = "", int flags = 0) const override;
+    FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback, const std::string& path = "", int flags = 0) override;
+    FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const std::string& path = "", int flags = 0) override;
 
-    void SubscribeToRegionEvents(FairMQRegionEventCallback /* callback */) override { LOG(error) << "SubscribeToRegionEvents not yet implemented for ZeroMQ"; }
-    void UnsubscribeFromRegionEvents() override { LOG(error) << "UnsubscribeFromRegionEvents not yet implemented for ZeroMQ"; }
-    std::vector<FairMQRegionInfo> GetRegionInfo() override { LOG(error) << "GetRegionInfo not yet implemented for ZeroMQ, returning empty vector"; return std::vector<FairMQRegionInfo>(); }
+    void SubscribeToRegionEvents(FairMQRegionEventCallback callback) override;
+    void UnsubscribeFromRegionEvents() override;
+    void RegionEventsSubscription();
+    std::vector<fair::mq::RegionInfo> GetRegionInfo() override;
+    void RemoveRegion(uint64_t id);
 
     fair::mq::Transport GetType() const override;
 
@@ -58,9 +63,20 @@ class FairMQTransportFactoryZMQ final : public FairMQTransportFactory
     void Resume() override { FairMQSocketZMQ::Resume(); }
     void Reset() override {}
 
+    ~FairMQTransportFactoryZMQ() override;
+
   private:
     static fair::mq::Transport fTransportType;
     void* fContext;
+
+    std::mutex fMtx;
+    uint64_t fRegionCounter;
+    std::condition_variable fRegionEventsCV;
+    std::vector<fair::mq::RegionInfo> fRegionInfos;
+    std::queue<fair::mq::RegionInfo> fRegionEvents;
+    std::thread fRegionEventThread;
+    std::function<void(fair::mq::RegionInfo)> fRegionEventCallback;
+    bool fRegionEventsSubscriptionActive;
 };
 
 #endif /* FAIRMQTRANSPORTFACTORYZMQ_H_ */

@@ -11,15 +11,17 @@
 
 using namespace std;
 
-FairMQUnmanagedRegionNN::FairMQUnmanagedRegionNN(const size_t size, FairMQRegionCallback callback, const std::string& /*path = "" */, int /*flags = 0 */)
-    : fBuffer(malloc(size))
+FairMQUnmanagedRegionNN::FairMQUnmanagedRegionNN(const size_t size, FairMQRegionCallback callback, const std::string& /*path = "" */, int /*flags = 0 */, FairMQTransportFactory* factory /* = nullptr */)
+    : FairMQUnmanagedRegion(factory)
+    , fBuffer(malloc(size))
     , fSize(size)
     , fCallback(callback)
 {
 }
 
-FairMQUnmanagedRegionNN::FairMQUnmanagedRegionNN(const size_t size, const int64_t /*userFlags*/, FairMQRegionCallback callback, const std::string& /*path = "" */, int /*flags = 0 */)
-    : fBuffer(malloc(size))
+FairMQUnmanagedRegionNN::FairMQUnmanagedRegionNN(const size_t size, const int64_t /*userFlags*/, FairMQRegionCallback callback, const std::string& /*path = "" */, int /*flags = 0 */, FairMQTransportFactory* factory /* = nullptr */)
+    : FairMQUnmanagedRegion(factory)
+    , fBuffer(malloc(size))
     , fSize(size)
     , fCallback(callback)
 {
