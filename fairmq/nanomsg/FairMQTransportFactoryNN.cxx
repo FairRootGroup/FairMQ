@@ -65,14 +65,14 @@ FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const unordered_map<strin
     return unique_ptr<FairMQPoller>(new FairMQPollerNN(channelsMap, channelList));
 }
 
-FairMQUnmanagedRegionPtr FairMQTransportFactoryNN::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */) const
+FairMQUnmanagedRegionPtr FairMQTransportFactoryNN::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)
 {
-    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionNN(size, callback, path, flags));
+    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionNN(size, callback, path, flags, this));
 }
 
-FairMQUnmanagedRegionPtr FairMQTransportFactoryNN::CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */) const
+FairMQUnmanagedRegionPtr FairMQTransportFactoryNN::CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)
 {
-    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionNN(size, userFlags, callback, path, flags));
+    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionNN(size, userFlags, callback, path, flags, this));
 }
 
 fair::mq::Transport FairMQTransportFactoryNN::GetType() const

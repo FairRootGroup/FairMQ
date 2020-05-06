@@ -159,14 +159,14 @@ PollerPtr TransportFactory::CreatePoller(const unordered_map<string, vector<Fair
     return tools::make_unique<Poller>(channelsMap, channelList);
 }
 
-UnmanagedRegionPtr TransportFactory::CreateUnmanagedRegion(const size_t size, RegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */) const
+UnmanagedRegionPtr TransportFactory::CreateUnmanagedRegion(const size_t size, RegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)
 {
-    return tools::make_unique<UnmanagedRegion>(*fManager, size, callback, path, flags);
+    return tools::make_unique<UnmanagedRegion>(*fManager, size, callback, path, flags, this);
 }
 
-UnmanagedRegionPtr TransportFactory::CreateUnmanagedRegion(const size_t size, const int64_t userFlags, RegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */) const
+UnmanagedRegionPtr TransportFactory::CreateUnmanagedRegion(const size_t size, const int64_t userFlags, RegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)
 {
-    return tools::make_unique<UnmanagedRegion>(*fManager, size, userFlags, callback, path, flags);
+    return tools::make_unique<UnmanagedRegion>(*fManager, size, userFlags, callback, path, flags, this);
 }
 
 void TransportFactory::SubscribeToRegionEvents(RegionEventCallback callback)

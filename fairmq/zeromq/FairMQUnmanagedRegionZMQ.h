@@ -13,6 +13,7 @@
 
 #include <cstddef> // size_t
 #include <string>
+class FairMQTransportFactory;
 
 class FairMQUnmanagedRegionZMQ final : public FairMQUnmanagedRegion
 {
@@ -20,19 +21,23 @@ class FairMQUnmanagedRegionZMQ final : public FairMQUnmanagedRegion
     friend class FairMQMessageZMQ;
 
   public:
-    FairMQUnmanagedRegionZMQ(const size_t size, FairMQRegionCallback callback, const std::string& path = "", int flags = 0);
-    FairMQUnmanagedRegionZMQ(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const std::string& path = "", int flags = 0);
+    FairMQUnmanagedRegionZMQ(uint64_t id, const size_t size, int64_t userFlags, FairMQRegionCallback callback, const std::string& /* path = "" */, int /* flags = 0 */, FairMQTransportFactory* factory = nullptr);
+
     FairMQUnmanagedRegionZMQ(const FairMQUnmanagedRegionZMQ&) = delete;
     FairMQUnmanagedRegionZMQ operator=(const FairMQUnmanagedRegionZMQ&) = delete;
 
+    uint64_t GetId() const { return fId; }
     virtual void* GetData() const override;
     virtual size_t GetSize() const override;
+    int64_t GetUserFlags() const { return fUserFlags; }
 
     virtual ~FairMQUnmanagedRegionZMQ();
 
   private:
+    uint64_t fId;
     void* fBuffer;
     size_t fSize;
+    int64_t fUserFlags;
     FairMQRegionCallback fCallback;
 };
 

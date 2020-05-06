@@ -9,6 +9,8 @@
 #include "FairMQTransportFactoryZMQ.h"
 #include <zmq.h>
 
+#include <algorithm> // find_if
+
 using namespace std;
 
 fair::mq::Transport FairMQTransportFactoryZMQ::fTransportType = fair::mq::Transport::ZMQ;
@@ -16,6 +18,7 @@ fair::mq::Transport FairMQTransportFactoryZMQ::fTransportType = fair::mq::Transp
 FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id, const fair::mq::ProgOptions* config)
     : FairMQTransportFactory(id)
     , fContext(zmq_ctx_new())
+    , fRegionCounter(0)
 {
     int major, minor, patch;
     zmq_version(&major, &minor, &patch);
@@ -80,7 +83,7 @@ FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQChann
     return unique_ptr<FairMQPoller>(new FairMQPollerZMQ(channels));
 }
 
-FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const std::vector<FairMQChannel*>& channels) const
+FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const vector<FairMQChannel*>& channels) const
 {
     return unique_ptr<FairMQPoller>(new FairMQPollerZMQ(channels));
 }
@@ -90,14 +93,93 @@ FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const unordered_map<stri
     return unique_ptr<FairMQPoller>(new FairMQPollerZMQ(channelsMap, channelList));
 }
 
-FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */) const
+FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback, const string& path /* = "" */, int flags /* = 0 */)
 {
-    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionZMQ(size, callback, path, flags));
+    return CreateUnmanagedRegion(size, 0, callback, path, flags);
 }
 
-FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */) const
+FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const string& path /* = "" */, int flags /* = 0 */)
 {
-    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionZMQ(size, userFlags, callback, path, flags));
+    unique_ptr<FairMQUnmanagedRegion> ptr = nullptr;
+    {
+        lock_guard<mutex> lock(fMtx);
+
+        ++fRegionCounter;
+        ptr = unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionZMQ(fRegionCounter, size, userFlags, callback, path, flags, this));
+        auto zPtr = static_cast<FairMQUnmanagedRegionZMQ*>(ptr.get());
+        fRegionInfos.emplace_back(zPtr->GetId(), zPtr->GetData(), zPtr->GetSize(), zPtr->GetUserFlags(), fair::mq::RegionEvent::created);
+        fRegionEvents.emplace(zPtr->GetId(), zPtr->GetData(), zPtr->GetSize(), zPtr->GetUserFlags(), fair::mq::RegionEvent::created);
+    }
+    fRegionEventsCV.notify_one();
+    return ptr;
+}
+
+void FairMQTransportFactoryZMQ::SubscribeToRegionEvents(FairMQRegionEventCallback callback)
+{
+    if (fRegionEventThread.joinable()) {
+        LOG(debug) << "Already subscribed. Overwriting previous subscription.";
+        {
+            lock_guard<mutex> lock(fMtx);
+            fRegionEventsSubscriptionActive = false;
+        }
+        fRegionEventsCV.notify_one();
+        fRegionEventThread.join();
+    }
+    lock_guard<mutex> lock(fMtx);
+    fRegionEventCallback = callback;
+    fRegionEventsSubscriptionActive = true;
+    fRegionEventThread = thread(&FairMQTransportFactoryZMQ::RegionEventsSubscription, this);
+}
+
+void FairMQTransportFactoryZMQ::UnsubscribeFromRegionEvents()
+{
+    if (fRegionEventThread.joinable()) {
+        unique_lock<mutex> lock(fMtx);
+        fRegionEventsSubscriptionActive = false;
+        lock.unlock();
+        fRegionEventsCV.notify_one();
+        fRegionEventThread.join();
+        lock.lock();
+        fRegionEventCallback = nullptr;
+    }
+}
+
+void FairMQTransportFactoryZMQ::RegionEventsSubscription()
+{
+    unique_lock<mutex> lock(fMtx);
+    while (fRegionEventsSubscriptionActive) {
+
+        while (!fRegionEvents.empty()) {
+            auto i = fRegionEvents.front();
+            fRegionEventCallback(i);
+            fRegionEvents.pop();
+        }
+        fRegionEventsCV.wait(lock, [&]() { return !fRegionEventsSubscriptionActive || !fRegionEvents.empty(); });
+    }
+}
+
+vector<fair::mq::RegionInfo> FairMQTransportFactoryZMQ::GetRegionInfo()
+{
+    lock_guard<mutex> lock(fMtx);
+    return fRegionInfos;
+}
+
+void FairMQTransportFactoryZMQ::RemoveRegion(uint64_t id)
+{
+    {
+        lock_guard<mutex> lock(fMtx);
+        auto it = find_if(fRegionInfos.begin(), fRegionInfos.end(), [id](const fair::mq::RegionInfo& i) {
+            return i.id == id;
+        });
+        if (it != fRegionInfos.end()) {
+            fRegionEvents.push(*it);
+            fRegionEvents.back().event = fair::mq::RegionEvent::destroyed;
+            fRegionInfos.erase(it);
+        } else {
+            LOG(error) << "RemoveRegion: given id (" << id << ") not found.";
+        }
+    }
+    fRegionEventsCV.notify_one();
 }
 
 fair::mq::Transport FairMQTransportFactoryZMQ::GetType() const
@@ -108,23 +190,19 @@ fair::mq::Transport FairMQTransportFactoryZMQ::GetType() const
 FairMQTransportFactoryZMQ::~FairMQTransportFactoryZMQ()
 {
     LOG(debug) << "Destroying ZeroMQ transport...";
-    if (fContext)
-    {
-        if (zmq_ctx_term(fContext) != 0)
-        {
-            if (errno == EINTR)
-            {
+
+    UnsubscribeFromRegionEvents();
+
+    if (fContext) {
+        if (zmq_ctx_term(fContext) != 0) {
+            if (errno == EINTR) {
                 LOG(error) << " failed closing context, reason: " << zmq_strerror(errno);
-            }
-            else
-            {
+            } else {
                 fContext = nullptr;
                 return;
             }
         }
-    }
-    else
-    {
+    } else {
         LOG(error) << "context not available for shutdown";
     }
 }

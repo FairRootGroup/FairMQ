@@ -7,23 +7,17 @@
  ********************************************************************************/
 
 #include "FairMQUnmanagedRegionZMQ.h"
+#include "FairMQTransportFactoryZMQ.h"
 #include "FairMQLogger.h"
 
-using namespace std;
-
-FairMQUnmanagedRegionZMQ::FairMQUnmanagedRegionZMQ(const size_t size, FairMQRegionCallback callback, const std::string& /* path = "" */, int /* flags = 0 */)
-    : fBuffer(malloc(size))
+FairMQUnmanagedRegionZMQ::FairMQUnmanagedRegionZMQ(uint64_t id, const size_t size, int64_t userFlags, FairMQRegionCallback callback, const std::string& /* path = "" */, int /* flags = 0 */, FairMQTransportFactory* factory /* = nullptr */)
+    : FairMQUnmanagedRegion(factory)
+    , fId(id)
+    , fBuffer(malloc(size))
     , fSize(size)
+    , fUserFlags(userFlags)
     , fCallback(callback)
-{
-}
-
-FairMQUnmanagedRegionZMQ::FairMQUnmanagedRegionZMQ(const size_t size, int64_t /* userFlags */, FairMQRegionCallback callback, const std::string& /* path = "" */, int /* flags = 0 */)
-    : fBuffer(malloc(size))
-    , fSize(size)
-    , fCallback(callback)
-{
-}
+{}
 
 void* FairMQUnmanagedRegionZMQ::GetData() const
 {
@@ -38,5 +32,6 @@ size_t FairMQUnmanagedRegionZMQ::GetSize() const
 FairMQUnmanagedRegionZMQ::~FairMQUnmanagedRegionZMQ()
 {
     LOG(debug) << "destroying region";
+    static_cast<FairMQTransportFactoryZMQ*>(GetTransport())->RemoveRegion(fId);
     free(fBuffer);
 }
