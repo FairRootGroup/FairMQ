@@ -55,13 +55,6 @@ TEST(Subchannel, zeromq)
     EXPECT_EXIT(RunPoller("zeromq", 0), ::testing::ExitedWithCode(0), "POLL test successfull");
 }
 
-#ifdef BUILD_NANOMSG_TRANSPORT
-TEST(Subchannel, nanomsg)
-{
-    EXPECT_EXIT(RunPoller("nanomsg", 0), ::testing::ExitedWithCode(0), "POLL test successfull");
-}
-#endif /* BUILD_NANOMSG_TRANSPORT */
-
 TEST(Subchannel, shmem)
 {
     EXPECT_EXIT(RunPoller("shmem", 0), ::testing::ExitedWithCode(0), "POLL test successfull");
@@ -71,13 +64,6 @@ TEST(Channel, zeromq)
 {
     EXPECT_EXIT(RunPoller("zeromq", 1), ::testing::ExitedWithCode(0), "POLL test successfull");
 }
-
-#ifdef BUILD_NANOMSG_TRANSPORT
-TEST(Channel, nanomsg)
-{
-    EXPECT_EXIT(RunPoller("nanomsg", 1), ::testing::ExitedWithCode(0), "POLL test successfull");
-}
-#endif /* BUILD_NANOMSG_TRANSPORT */
 
 TEST(Channel, shmem)
 {

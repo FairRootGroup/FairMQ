@@ -18,7 +18,7 @@ Topology configuration is currently happening via setup scripts. This is very ru
 
 ## 1.2 Communication Patterns
 
-FairMQ devices communicate via the communication patterns offered by ZeroMQ (or nanomsg): PUSH-PULL, PUB-SUB, REQ-REP, PAIR, [more info here](http://api.zeromq.org/4-0:zmq-socket). Each transport may provide further patterns.
+FairMQ devices communicate via the communication patterns offered by ZeroMQ: PUSH-PULL, PUB-SUB, REQ-REP, PAIR, [more info here](http://api.zeromq.org/4-0:zmq-socket). Each transport may provide further patterns.
 
 ## 1.3 State Machine
 

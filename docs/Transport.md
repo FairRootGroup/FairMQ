@@ -2,7 +2,7 @@
 
 # 2. Transport Interface
 
-The communication layer is available through the transport interface. Three interface implementations are currently available. Main implementation uses the [ZeroMQ](http://zeromq.org) library. Alternative implementation relies on the [nanomsg](http://nanomsg.org) library. Third transport implementation is using shared memory via boost::interprocess & ZeroMQ combination.
+The communication layer is available through the transport interface. Three interface implementations are currently available. Main implementation uses the [ZeroMQ](http://zeromq.org) library. Second transport implementation is using shared memory via boost::interprocess & ZeroMQ combination.
 
 Here is an overview to give an idea how the interface is implemented:
 
@@ -10,20 +10,20 @@ Here is an overview to give an idea how the interface is implemented:
 
 Currently, the transports have been tested to work with these communication patterns:
 
-|               | zeromq | nanomsg | shmem |
-| ------------- |--------| ------- | ----- |
-| PAIR          | yes    | yes     | yes   |
-| PUSH/PULL     | yes    | yes     | yes   |
-| PUB/SUB       | yes    | yes     | no    |
-| REQ/REP       | yes    | yes     | yes   |
+|               | zeromq | shmem |
+| ------------- |--------| ----- |
+| PAIR          | yes    | yes   |
+| PUSH/PULL     | yes    | yes   |
+| PUB/SUB       | yes    | no    |
+| REQ/REP       | yes    | yes   |
 
 The next table shows the supported address types for each transport implementation:
 
-|             | zeromq | nanomsg | shmem | comment                                       |
-| ----------- | ------ | ------- | ----- | --------------------------------------------- |
-| `inproc://` | yes    | yes     | yes   | in process: useful for unit testing           |
-| `ipc://`    | yes    | yes     | yes   | inter process comm: useful on single machine  |
-| `tcp://`    | yes    | yes     | yes   | useful for any communication, local or remote |
+|             | zeromq | shmem | comment                                       |
+| ----------- | ------ | ----- | --------------------------------------------- |
+| `inproc://` | yes    | yes   | in process: useful for unit testing           |
+| `ipc://`    | yes    | yes   | inter process comm: useful on single machine  |
+| `tcp://`    | yes    | yes   | useful for any communication, local or remote |
 
 ## 2.1 Message
 

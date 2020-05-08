@@ -32,10 +32,6 @@ add_testhelper(runTestDevice
     LINKS FairMQ
 )
 
-if(BUILD_NANOMSG_TRANSPORT)
-  list(APPEND definitions BUILD_NANOMSG_TRANSPORT)
-endif()
-
 if(BUILD_OFI_TRANSPORT)
   LIST(APPEND definitions BUILD_OFI_TRANSPORT)
 endif()

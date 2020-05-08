@@ -32,7 +32,7 @@ This example demonstrates how to work with multiple channels and multiplex betwe
 
 ## Multiple Transports
 
-This examples shows how to combine different channel transports (zeromq/nanomsg/shmem) inside of one device and/or topology.
+This examples shows how to combine different channel transports (zeromq/shmem) inside of one device and/or topology.
 
 ## n-m
 

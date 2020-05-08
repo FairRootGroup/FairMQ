@@ -56,13 +56,6 @@ TEST(Pair, SingleMsg_MP_tcp_shmem)
     EXPECT_EXIT(RunPair("shmem"), ::testing::ExitedWithCode(0), "PAIR test successfull");
 }
 
-#ifdef BUILD_NANOMSG_TRANSPORT
-TEST(Pair, SingleMsg_MP_tcp_nanomsg)
-{
-    EXPECT_EXIT(RunPair("nanomsg"), ::testing::ExitedWithCode(0), "PAIR test successfull");
-}
-#endif /* BUILD_NANOMSG_TRANSPORT */
-
 #ifdef BUILD_OFI_TRANSPORT
 TEST(Pair, SingleMsg_MP_tcp_ofi)
 {

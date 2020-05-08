@@ -34,11 +34,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-1-1.sh.in ${CMAKE_CURRENT_BIN
 add_test(NAME Example.1-1.zeromq COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-1.sh zeromq)
 set_tests_properties(Example.1-1.zeromq PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received: ")
 
-if(BUILD_NANOMSG_TRANSPORT)
-  add_test(NAME Example.1-1.nanomsg COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-1.sh nanomsg)
-  set_tests_properties(Example.1-1.nanomsg PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received: ")
-endif()
-
 add_test(NAME Example.1-1.shmem COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-1.sh shmem)
 set_tests_properties(Example.1-1.shmem PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received: ")
 

@@ -35,8 +35,6 @@ fairmq_build_option(BUILD_FAIRMQ            "Build FairMQ library and devices."
                                              DEFAULT ON)
 fairmq_build_option(BUILD_TESTING           "Build tests."
                                              DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
-fairmq_build_option(BUILD_NANOMSG_TRANSPORT "Build nanomsg transport."
-                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
 fairmq_build_option(BUILD_OFI_TRANSPORT     "Build experimental OFI transport."
                                              DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
 fairmq_build_option(BUILD_SDK_COMMANDS      "Build the FairMQ SDK commands."
@@ -65,23 +63,12 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
-if(BUILD_NANOMSG_TRANSPORT)
-  find_package2(PRIVATE nanomsg REQUIRED)
-  set(PROJECT_nanomsg_VERSION 1.1.3) # Once upstream releases 1.1.5, we should bump again and use version check
-endif()
-
 if(BUILD_OFI_TRANSPORT)
   find_package2(PRIVATE asiofi REQUIRED
     VERSION 0.3.1
   )
   find_package2(PRIVATE OFI REQUIRED
     ADD_REQUIREMENTS_OF asiofi
-  )
-endif()
-
-if(BUILD_NANOMSG_TRANSPORT)
-  find_package2(PRIVATE msgpack REQUIRED
-    VERSION 3.1.0
   )
 endif()
 
@@ -215,9 +202,6 @@ endif()
 if(BUILD_PMIX_PLUGIN)
   list(APPEND PROJECT_PACKAGE_COMPONENTS pmix_plugin)
 endif()
-if(BUILD_NANOMSG_TRANSPORT)
-  list(APPEND PROJECT_PACKAGE_COMPONENTS nanomsg_transport)
-endif()
 if(BUILD_OFI_TRANSPORT)
   list(APPEND PROJECT_PACKAGE_COMPONENTS ofi_transport)
 endif()
@@ -320,16 +304,10 @@ if(PROJECT_PACKAGE_DEPENDENCIES)
       endif()
     elseif(${dep} STREQUAL GTest)
       get_filename_component(prefix ${GTEST_INCLUDE_DIRS}/.. ABSOLUTE)
-    elseif(${dep} STREQUAL msgpack)
-      get_target_property(msgpack_include msgpackc-cxx INTERFACE_INCLUDE_DIRECTORIES)
-      get_filename_component(prefix ${msgpack_include}/.. ABSOLUTE)
     elseif(${dep} STREQUAL asiofi)
       set(prefix ${asiofi_ROOT})
     elseif(${dep} STREQUAL OFI)
       get_filename_component(prefix ${${dep}_INCLUDE_DIRS}/.. ABSOLUTE)
-    elseif(${dep} STREQUAL nanomsg)
-      get_target_property(nn_include nanomsg INTERFACE_INCLUDE_DIRECTORIES)
-      get_filename_component(prefix ${nn_include}/.. ABSOLUTE)
     elseif(${dep} STREQUAL DDS)
       set(prefix "${DDS_INSTALL_PREFIX}")
     elseif(${dep} STREQUAL Boost)
@@ -378,12 +356,6 @@ else()
   set(tests_summary "${BRed} NO${CR}    (enable with ${BMagenta}-DBUILD_TESTING=ON${CR})")
 endif()
 message(STATUS "  ${BWhite}tests${CR}              ${tests_summary}")
-if(BUILD_NANOMSG_TRANSPORT)
-  set(nn_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_NANOMSG_TRANSPORT=OFF${CR})")
-else()
-  set(nn_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_NANOMSG_TRANSPORT=ON${CR})")
-endif()
-message(STATUS "  ${BWhite}nanomsg_transport${CR}  ${nn_summary}")
 if(BUILD_OFI_TRANSPORT)
   set(ofi_summary "${BGreen}YES${CR}    EXPERIMENTAL (requires C++14) (disable with ${BMagenta}-DBUILD_OFI_TRANSPORT=OFF${CR})")
 else()

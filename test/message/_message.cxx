@@ -87,13 +87,6 @@ TEST(Resize, shmem)
     RunPushPullWithMsgResize("shmem", "ipc://test_message_resize");
 }
 
-#ifdef BUILD_NANOMSG_TRANSPORT
-TEST(Resize, nanomsg)
-{
-    RunPushPullWithMsgResize("nanomsg", "ipc://test_message_resize");
-}
-#endif /* BUILD_NANOMSG_TRANSPORT */
-
 TEST(Rebuild, zeromq)
 {
     RunMsgRebuild("zeromq");
@@ -103,12 +96,5 @@ TEST(Rebuild, shmem)
 {
     RunMsgRebuild("shmem");
 }
-
-#ifdef BUILD_NANOMSG_TRANSPORT
-TEST(Rebuild, nanomsg)
-{
-    RunMsgRebuild("nanomsg");
-}
-#endif /* BUILD_NANOMSG_TRANSPORT */
 
 } // namespace

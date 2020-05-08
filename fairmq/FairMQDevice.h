@@ -302,7 +302,7 @@ class FairMQDevice
     }
 
     /// Adds a transport to the device if it doesn't exist
-    /// @param transport  Transport string ("zeromq"/"nanomsg"/"shmem")
+    /// @param transport  Transport string ("zeromq"/"shmem")
     std::shared_ptr<FairMQTransportFactory> AddTransport(const fair::mq::Transport transport);
 
     /// Assigns config to the device
@@ -417,7 +417,7 @@ class FairMQDevice
     int GetInitTimeoutInS() const { return fConfig->GetProperty<int>("init-timeout", DefaultInitTimeout); }
 
     /// Sets the default transport for the device
-    /// @param transport  Transport string ("zeromq"/"nanomsg"/"shmem")
+    /// @param transport  Transport string ("zeromq"/"shmem")
     void SetTransport(const std::string& transport) { fConfig->SetProperty("transport", transport); }
     /// Gets the default transport name
     std::string GetTransportName() const { return fConfig->GetProperty<std::string>("transport", DefaultTransportName); }

@@ -32,11 +32,7 @@ void CheckOldOptionInterface(FairMQChannel& channel, const string& option, const
     value = 0;
     size_t valueSize = sizeof(value);
     channel.GetSocket().GetOption(option, &value, &valueSize);
-    if (transport == "nanomsg" && (option == "snd-hwm" || option == "rcv-hwm")) {
-        ASSERT_EQ(value, -1);
-    } else {
-        ASSERT_EQ(value, 500);
-    }
+    ASSERT_EQ(value, 500);
 }
 
 void RunOptionsTest(const string& transport)
@@ -58,18 +54,10 @@ void RunOptionsTest(const string& transport)
     ASSERT_EQ(channel.GetSocket().GetLinger(), 300);
 
     channel.GetSocket().SetSndBufSize(500);
-    if (transport == "nanomsg") { // nanomsg doesn't use this option and the getter always returns -1
-        ASSERT_EQ(channel.GetSocket().GetSndBufSize(), -1);
-    } else {
-        ASSERT_EQ(channel.GetSocket().GetSndBufSize(), 500);
-    }
+    ASSERT_EQ(channel.GetSocket().GetSndBufSize(), 500);
 
     channel.GetSocket().SetRcvBufSize(500);
-    if (transport == "nanomsg") { // nanomsg doesn't use this option and the getter always returns -1
-        ASSERT_EQ(channel.GetSocket().GetRcvBufSize(), -1);
-    } else {
-        ASSERT_EQ(channel.GetSocket().GetRcvBufSize(), 500);
-    }
+    ASSERT_EQ(channel.GetSocket().GetRcvBufSize(), 500);
 
     channel.GetSocket().SetSndKernelSize(8000);
     ASSERT_EQ(channel.GetSocket().GetSndKernelSize(), 8000);
@@ -87,12 +75,5 @@ TEST(Options, shmem)
 {
     RunOptionsTest("shmem");
 }
-
-#ifdef BUILD_NANOMSG_TRANSPORT
-TEST(Options, nanomsg)
-{
-    RunOptionsTest("nanomsg");
-}
-#endif /* BUILD_NANOMSG_TRANSPORT */
 
 } // namespace

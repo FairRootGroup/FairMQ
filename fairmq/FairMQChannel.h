@@ -127,8 +127,8 @@ class FairMQChannel
     /// @return Returns socket address (e.g. "tcp://127.0.0.1:5555" or "ipc://abc")
     std::string GetAddress() const;
 
-    /// Get channel transport name ("default", "zeromq", "nanomsg" or "shmem")
-    /// @return Returns channel transport name (e.g. "default", "zeromq", "nanomsg" or "shmem")
+    /// Get channel transport name ("default", "zeromq" or "shmem")
+    /// @return Returns channel transport name (e.g. "default", "zeromq" or "shmem")
     std::string GetTransportName() const;
 
     /// Get channel transport type
@@ -184,7 +184,7 @@ class FairMQChannel
     void UpdateAddress(const std::string& address);
 
     /// Set channel transport
-    /// @param transport transport string ("default", "zeromq", "nanomsg" or "shmem")
+    /// @param transport transport string ("default", "zeromq" or "shmem")
     void UpdateTransport(const std::string& transport);
 
     /// Set socket send buffer size
