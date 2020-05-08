@@ -19,7 +19,8 @@ class FairMQTransportFactory;
 enum class FairMQRegionEvent : int
 {
     created,
-    destroyed
+    destroyed,
+    local_only
 };
 
 struct FairMQRegionInfo
@@ -72,10 +73,15 @@ using FairMQUnmanagedRegionPtr = std::unique_ptr<FairMQUnmanagedRegion>;
 
 inline std::ostream& operator<<(std::ostream& os, const FairMQRegionEvent& event)
 {
-    if (event == FairMQRegionEvent::created) {
-        return os << "created";
-    } else {
-        return os << "destroyed";
+    switch (event) {
+        case FairMQRegionEvent::created:
+            return os << "created";
+        case FairMQRegionEvent::destroyed:
+            return os << "destroyed";
+        case FairMQRegionEvent::local_only:
+            return os << "local_only";
+        default:
+            return os << "unrecognized event";
     }
 }
 

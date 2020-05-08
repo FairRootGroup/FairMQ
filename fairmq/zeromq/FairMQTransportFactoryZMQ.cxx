@@ -50,6 +50,7 @@ FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id, const fai
         LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
     }
 
+    fRegionEvents.emplace(0, nullptr, 0, 0, fair::mq::RegionEvent::local_only);
 }
 
 FairMQMessagePtr FairMQTransportFactoryZMQ::CreateMessage()
