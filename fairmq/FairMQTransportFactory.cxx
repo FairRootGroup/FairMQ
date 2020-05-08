@@ -9,9 +9,6 @@
 #include <FairMQTransportFactory.h>
 #include <fairmq/shmem/TransportFactory.h>
 #include <zeromq/FairMQTransportFactoryZMQ.h>
-#ifdef BUILD_NANOMSG_TRANSPORT
-#include <nanomsg/FairMQTransportFactoryNN.h>
-#endif /* BUILD_NANOMSG_TRANSPORT */
 #ifdef BUILD_OFI_TRANSPORT
 #include <fairmq/ofi/TransportFactory.h>
 #endif
@@ -43,11 +40,6 @@ auto FairMQTransportFactory::CreateTransportFactory(const string& type,
     } else if (type == "shmem") {
         return make_shared<fair::mq::shmem::TransportFactory>(finalId, config);
     }
-#ifdef BUILD_NANOMSG_TRANSPORT
-    else if (type == "nanomsg") {
-        return make_shared<FairMQTransportFactoryNN>(finalId, config);
-    }
-#endif /* BUILD_NANOMSG_TRANSPORT */
 #ifdef BUILD_OFI_TRANSPORT
     else if (type == "ofi") {
         return make_shared<fair::mq::ofi::TransportFactory>(finalId, config);
@@ -57,11 +49,8 @@ auto FairMQTransportFactory::CreateTransportFactory(const string& type,
         LOG(error) << "Unavailable transport requested: "
                    << "\"" << type << "\""
                    << ". Available are: "
-                   << "\"zeromq\""
+                   << "\"zeromq\","
                    << "\"shmem\""
-#ifdef BUILD_NANOMSG_TRANSPORT
-                   << ", \"nanomsg\""
-#endif /* BUILD_NANOMSG_TRANSPORT */
 #ifdef BUILD_OFI_TRANSPORT
                    << ", and \"ofi\""
 #endif /* BUILD_OFI_TRANSPORT */

@@ -13,7 +13,7 @@ xterm -geometry 80x30+0+0 -hold -e @EX_BIN_DIR@/$SAMPLER1 &
 SAMPLER2="fairmq-ex-multiple-transports-sampler2"
 SAMPLER2+=" --id sampler2"
 SAMPLER2+=" --severity debug"
-SAMPLER2+=" --transport nanomsg"
+SAMPLER2+=" --transport shmem"
 SAMPLER2+=" --channel-config name=data2,type=push,method=bind,address=tcp://127.0.0.1:5556"
 xterm -geometry 80x30+0+450 -hold -e @EX_BIN_DIR@/$SAMPLER2 &
 
@@ -22,6 +22,6 @@ SINK+=" --id sink1"
 SINK+=" --severity debug"
 SINK+=" --transport shmem"
 SINK+=" --channel-config name=data1,type=pull,method=connect,address=tcp://127.0.0.1:5555"
-SINK+="                  name=data2,type=pull,method=connect,address=tcp://127.0.0.1:5556,transport=nanomsg"
+SINK+="                  name=data2,type=pull,method=connect,address=tcp://127.0.0.1:5556,transport=shmem"
 SINK+="                  name=ack,type=pub,method=connect,address=tcp://127.0.0.1:5557,transport=zeromq"
 xterm -geometry 80x30+500+225 -hold -e @EX_BIN_DIR@/$SINK &

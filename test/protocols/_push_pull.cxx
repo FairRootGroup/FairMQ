@@ -56,11 +56,4 @@ TEST(PushPull, SingleMsg_MP_tcp_shmem)
     EXPECT_EXIT(RunPushPull("shmem"), ::testing::ExitedWithCode(0), "PUSH-PULL test successfull");
 }
 
-#ifdef BUILD_NANOMSG_TRANSPORT
-TEST(PushPull, SingleMsg_MP_tcp_nanomsg)
-{
-    EXPECT_EXIT(RunPushPull("nanomsg"), ::testing::ExitedWithCode(0), "PUSH-PULL test successfull");
-}
-#endif /* BUILD_NANOMSG_TRANSPORT */
-
 } // namespace

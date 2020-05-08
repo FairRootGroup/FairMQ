@@ -59,7 +59,7 @@ else
 fi
 
 echo ""
-echo "Usage: startBenchmark [message size=1000000] [number of iterations=0] [transport=zeromq/nanomsg/shmem] [affinity=false]"
+echo "Usage: startBenchmark [message size=1000000] [number of iterations=0] [transport=zeromq/shmem] [affinity=false]"
 
 SAMPLER="fairmq-bsampler"
 SAMPLER+=" --id bsampler1"

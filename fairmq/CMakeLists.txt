@@ -197,16 +197,6 @@ if(BUILD_FAIRMQ)
     zeromq/FairMQTransportFactoryZMQ.h
   )
 
-  if(BUILD_NANOMSG_TRANSPORT)
-    set(FAIRMQ_PRIVATE_HEADER_FILES ${FAIRMQ_PRIVATE_HEADER_FILES}
-      nanomsg/FairMQMessageNN.h
-      nanomsg/FairMQPollerNN.h
-      nanomsg/FairMQUnmanagedRegionNN.h
-      nanomsg/FairMQSocketNN.h
-      nanomsg/FairMQTransportFactoryNN.h
-    )
-  endif()
-
   if(BUILD_OFI_TRANSPORT)
     set(FAIRMQ_PRIVATE_HEADER_FILES ${FAIRMQ_PRIVATE_HEADER_FILES}
       ofi/Context.h
@@ -257,16 +247,6 @@ if(BUILD_FAIRMQ)
     MemoryResources.cxx
   )
 
-  if(BUILD_NANOMSG_TRANSPORT)
-    set(FAIRMQ_SOURCE_FILES ${FAIRMQ_SOURCE_FILES}
-      nanomsg/FairMQMessageNN.cxx
-      nanomsg/FairMQPollerNN.cxx
-      nanomsg/FairMQUnmanagedRegionNN.cxx
-      nanomsg/FairMQSocketNN.cxx
-      nanomsg/FairMQTransportFactoryNN.cxx
-    )
-  endif()
-
   if(BUILD_OFI_TRANSPORT)
     set(FAIRMQ_SOURCE_FILES ${FAIRMQ_SOURCE_FILES}
       ofi/Context.cxx
@@ -307,9 +287,6 @@ if(BUILD_FAIRMQ)
   # preprocessor definitions #
   ############################
   target_compile_definitions(${_target} PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
-  if(BUILD_NANOMSG_TRANSPORT)
-    target_compile_definitions(${_target} PRIVATE BUILD_NANOMSG_TRANSPORT)
-  endif()
   if(BUILD_OFI_TRANSPORT)
     target_compile_definitions(${_target} PRIVATE BUILD_OFI_TRANSPORT)
   endif()
@@ -330,16 +307,13 @@ if(BUILD_FAIRMQ)
   ##################
   # link libraries #
   ##################
-  if(BUILD_NANOMSG_TRANSPORT)
-    set(NANOMSG_DEPS nanomsg msgpackc-cxx)
-  endif()
   if(BUILD_OFI_TRANSPORT)
     set(OFI_DEPS
       asiofi::asiofi
       Boost::container
     )
   endif()
-  set(optional_deps ${NANOMSG_DEPS} ${OFI_DEPS})
+  set(optional_deps ${OFI_DEPS})
   if(optional_deps)
     list(REMOVE_DUPLICATES optional_deps)
   endif()
@@ -362,7 +336,6 @@ if(BUILD_FAIRMQ)
 
     PRIVATE # only libFairMQ links against private dependencies
     libzmq
-    ${NANOMSG_DEPS}
     ${OFI_DEPS}
   )
   set_target_properties(${_target} PROPERTIES

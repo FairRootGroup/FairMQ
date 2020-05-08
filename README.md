@@ -21,7 +21,7 @@ FairMQ is designed to help implementing large-scale data processing workflows ne
 The core of FairMQ provides an abstract asynchronous message passing API with scalability protocols
 inspired by [ZeroMQ](https://github.com/zeromq/libzmq) (e.g. PUSH/PULL, PUB/SUB).
 FairMQ provides multiple implementations for its API (so-called "transports",
-e.g. `zeromq`, `shmem`, `nanomsg`, and `ofi` (in development)) to cover a variety of use cases
+e.g. `zeromq`, `shmem` and `ofi` (in development)) to cover a variety of use cases
 (e.g. inter-thread, inter-process, inter-node communication) and machines (e.g. Ethernet, Infiniband).
 In addition to this core functionality FairMQ provides a framework for creating "devices" - actors which
 are communicating through message passing. FairMQ does not only allow the user to use different transport but also to mix them; i.e: A Device can communicate using different transport on different channels at the same time. Device execution is modelled as a simple state machine that
@@ -47,7 +47,7 @@ cmake --build fairmq_build --target install
 
 Please consult the [manpages of your CMake version](https://cmake.org/cmake/help/latest/manual/cmake.1.html) for more options.
 
-If dependencies are not installed in standard system directories, you can hint the installation location via `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `GTEST`, `BOOST`, `FAIRLOGGER`, `ZEROMQ`, `MSGPACK`, `NANOMSG`, `OFI`, `PMIX`, `ASIO`, `ASIOFI` or `DDS` (`*_ROOT` variables can also be environment variables).
+If dependencies are not installed in standard system directories, you can hint the installation location via `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `GTEST`, `BOOST`, `FAIRLOGGER`, `ZEROMQ`, `OFI`, `PMIX`, `ASIO`, `ASIOFI` or `DDS` (`*_ROOT` variables can also be environment variables).
 
 ## Usage
 
@@ -86,7 +86,7 @@ If your project shares a dependency with FairMQ or if you want to omit a certain
 Optionally, you can require certain FairMQ package components and a minimum version:
 
 ```cmake
-find_package(FairMQ 1.1.0 COMPONENTS nanomsg_transport dds_plugin)
+find_package(FairMQ 1.1.0 COMPONENTS dds_plugin)
 ```
 
 When building FairMQ, CMake will print a summary table of all available package components.
@@ -101,8 +101,6 @@ When building FairMQ, CMake will print a summary table of all available package 
   * [Doxygen](http://www.doxygen.org/)
   * [FairLogger](https://github.com/FairRootGroup/FairLogger)
   * [GTest](https://github.com/google/googletest) (optionally bundled)
-  * [Msgpack](https://msgpack.org/index.html)
-  * [nanomsg](http://nanomsg.org/)
   * [PMIx](https://pmix.org/)
   * [ZeroMQ](http://zeromq.org/)
 
@@ -117,7 +115,6 @@ On command line:
   * `-DDISABLE_COLOR=ON` disables coloured console output.
   * `-DBUILD_TESTING=OFF` disables building of tests.
   * `-DBUILD_EXAMPLES=OFF` disables building of examples.
-  * `-DBUILD_NANOMSG_TRANSPORT=ON` enables building of nanomsg transport.
   * `-DBUILD_OFI_TRANSPORT=ON` enables building of the experimental OFI transport.
   * `-DBUILD_DDS_PLUGIN=ON` enables building of the DDS plugin.
   * `-DBUILD_PMIX_PLUGIN=ON` enables building of the PMIx plugin.
@@ -182,4 +179,3 @@ After the `find_package(FairMQ)` call the following CMake variables are defined:
        1. [DDS](docs/Plugins.md#731-dds)
        2. [PMIx](docs/Plugins.md#732-pmix)
 8. [Controller SDK](docs/SDK.md)
-

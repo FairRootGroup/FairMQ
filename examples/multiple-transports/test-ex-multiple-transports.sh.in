@@ -14,7 +14,7 @@ SINK+=" --max-iterations 1"
 SINK+=" --control static --color false"
 SINK+=" --transport shmem"
 SINK+=" --channel-config name=data1,type=pull,method=connect,address=tcp://127.0.0.1:5555"
-SINK+="                  name=data2,type=pull,method=connect,address=tcp://127.0.0.1:5556,transport=nanomsg"
+SINK+="                  name=data2,type=pull,method=connect,address=tcp://127.0.0.1:5556,transport=zeromq"
 SINK+="                  name=ack,type=pub,method=connect,address=tcp://127.0.0.1:5557,transport=zeromq"
 @CMAKE_CURRENT_BINARY_DIR@/$SINK &
 SINK_PID=$!
@@ -37,7 +37,7 @@ SAMPLER2+=" --session $SESSION"
 SAMPLER2+=" --verbosity veryhigh"
 SAMPLER2+=" --max-iterations 1"
 SAMPLER2+=" --control static --color false"
-SAMPLER2+=" --transport nanomsg"
+SAMPLER2+=" --transport zeromq"
 SAMPLER2+=" --channel-config name=data2,type=push,method=bind,address=tcp://127.0.0.1:5556"
 @CMAKE_CURRENT_BINARY_DIR@/$SAMPLER2 &
 SAMPLER2_PID=$!

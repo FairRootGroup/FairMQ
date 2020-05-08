@@ -41,11 +41,4 @@ TEST(TransferTimeout, shmem)
     EXPECT_EXIT(RunTransferTimeout("shmem"), ::testing::ExitedWithCode(0), "Transfer timeout test successfull");
 }
 
-#ifdef BUILD_NANOMSG_TRANSPORT
-TEST(TransferTimeout, nanomsg)
-{
-    EXPECT_EXIT(RunTransferTimeout("nanomsg"), ::testing::ExitedWithCode(0), "Transfer timeout test successfull");
-}
-#endif /* BUILD_NANOMSG_TRANSPORT */
-
 } // namespace

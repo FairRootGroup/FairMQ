@@ -28,32 +28,6 @@
                 ]
             },
             {
-                "id": "pairleft_nanomsg",
-                "channels": [
-                    {
-                        "address": "tcp://127.0.0.1:5757",
-                        "method": "bind",
-                        "name": "data",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "pair"
-                    }
-                ]
-            },
-            {
-                "id": "pairright_nanomsg",
-                "channels": [
-                    {
-                        "address": "tcp://127.0.0.1:5757",
-                        "method": "connect",
-                        "name": "data",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "pair"
-                    }
-                ]
-            },
-            {
                 "id": "pairleft_shmem",
                 "channels": [
                     {
@@ -132,32 +106,6 @@
                 ]
             },
             {
-                "id": "push_nanomsg",
-                "channels": [
-                    {
-                        "address": "tcp://127.0.0.1:5757",
-                        "method": "bind",
-                        "name": "data",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "push"
-                    }
-                ]
-            },
-            {
-                "id": "pull_nanomsg",
-                "channels": [
-                    {
-                        "address": "tcp://127.0.0.1:5757",
-                        "method": "connect",
-                        "name": "data",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "pull"
-                    }
-                ]
-            },
-            {
                 "id": "push_shmem",
                 "channels": [
                     {
@@ -205,27 +153,6 @@
                 ]
             },
             {
-                "id": "pub_nanomsg",
-                "channels": [
-                    {
-                        "address": "tcp://127.0.0.1:5756",
-                        "method": "bind",
-                        "name": "data",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "pub"
-                    },
-                    {
-                        "address": "tcp://127.0.0.1:5755",
-                        "method": "bind",
-                        "name": "control",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "pull"
-                    }
-                ]
-            },
-            {
                 "id": "sub_1zeromq",
                 "channels": [
                     {
@@ -268,48 +195,6 @@
                 ]
             },
             {
-                "id": "sub_1nanomsg",
-                "channels": [
-                    {
-                        "address": "tcp://127.0.0.1:5756",
-                        "method": "connect",
-                        "name": "data",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "sub"
-                    },
-                    {
-                        "address": "tcp://127.0.0.1:5755",
-                        "method": "connect",
-                        "name": "control",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "push"
-                    }
-                ]
-            },
-            {
-                "id": "sub_2nanomsg",
-                "channels": [
-                    {
-                        "address": "tcp://127.0.0.1:5756",
-                        "method": "connect",
-                        "name": "data",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "sub"
-                    },
-                    {
-                        "address": "tcp://127.0.0.1:5755",
-                        "method": "connect",
-                        "name": "control",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "push"
-                    }
-                ]
-            },
-            {
                 "id": "req_1zeromq",
                 "channels": [
                     {
@@ -323,19 +208,6 @@
                 ]
             },
             {
-                "id": "req_1nanomsg",
-                "channels": [
-                    {
-                        "address": "tcp://127.0.0.1:5758",
-                        "method": "connect",
-                        "name": "data",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "req"
-                    }
-                ]
-            },
-            {
                 "id": "req_2zeromq",
                 "channels": [
                     {
@@ -344,19 +216,6 @@
                         "name": "data",
                         "rateLogging": 0,
                         "transport": "zeromq",
-                        "type": "req"
-                    }
-                ]
-            },
-            {
-                "id": "req_2nanomsg",
-                "channels": [
-                    {
-                        "address": "tcp://127.0.0.1:5758",
-                        "method": "connect",
-                        "name": "data",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
                         "type": "req"
                     }
                 ]
@@ -396,19 +255,6 @@
                         "name": "data",
                         "rateLogging": 0,
                         "transport": "zeromq",
-                        "type": "rep"
-                    }
-                ]
-            },
-            {
-                "id": "rep_nanomsg",
-                "channels": [
-                    {
-                        "address": "tcp://127.0.0.1:5758",
-                        "method": "bind",
-                        "name": "data",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
                         "type": "rep"
                     }
                 ]
@@ -469,27 +315,6 @@
                 ]
             },
             {
-                "id": "transfer_timeout_nanomsg",
-                "channels": [
-                    {
-                        "address": "tcp://127.0.0.1:5759",
-                        "method": "bind",
-                        "name": "data-in",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "pull"
-                    },
-                    {
-                        "address": "tcp://127.0.0.1:5560",
-                        "method": "bind",
-                        "name": "data-out",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "push"
-                    }
-                ]
-            },
-            {
                 "id": "pollout_zeromq",
                 "channels": [
                     {
@@ -527,48 +352,6 @@
                         "name": "data2",
                         "rateLogging": 0,
                         "transport": "zeromq",
-                        "type": "pull"
-                    }
-                ]
-            },
-            {
-                "id": "pollout_nanomsg",
-                "channels": [
-                    {
-                        "address": "tcp://127.0.0.1:6002",
-                        "method": "bind",
-                        "name": "data1",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "push"
-                    },
-                    {
-                        "address": "tcp://127.0.0.1:6003",
-                        "method": "bind",
-                        "name": "data2",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "push"
-                    }
-                ]
-            },
-            {
-                "id": "pollin_nanomsg",
-                "channels": [
-                    {
-                        "address": "tcp://127.0.0.1:6002",
-                        "method": "connect",
-                        "name": "data1",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
-                        "type": "pull"
-                    },
-                    {
-                        "address": "tcp://127.0.0.1:6003",
-                        "method": "connect",
-                        "name": "data2",
-                        "rateLogging": 0,
-                        "transport": "nanomsg",
                         "type": "pull"
                     }
                 ]

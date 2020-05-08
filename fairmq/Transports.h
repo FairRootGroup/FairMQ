@@ -24,7 +24,6 @@ enum class Transport
 {
     DEFAULT,
     ZMQ,
-    NN,
     SHM,
     OFI
 };
@@ -48,7 +47,6 @@ namespace mq
 static std::unordered_map<std::string, Transport> TransportTypes {
     { "default", Transport::DEFAULT },
     { "zeromq", Transport::ZMQ },
-    { "nanomsg", Transport::NN },
     { "shmem", Transport::SHM },
     { "ofi", Transport::OFI }
 };
@@ -56,7 +54,6 @@ static std::unordered_map<std::string, Transport> TransportTypes {
 static std::unordered_map<Transport, std::string> TransportNames {
     { Transport::DEFAULT, "default" },
     { Transport::ZMQ, "zeromq" },
-    { Transport::NN, "nanomsg" },
     { Transport::SHM, "shmem" },
     { Transport::OFI, "ofi" }
 };

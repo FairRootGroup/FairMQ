@@ -158,13 +158,6 @@ TEST(PushPull, Multipart_ST_inproc_shmem)
     RunSingleThreadedMultipart("shmem", "inproc://test1", "inproc://test2");
 }
 
-#ifdef BUILD_NANOMSG_TRANSPORT
-TEST(PushPull, Multipart_ST_inproc_nanomsg)
-{
-    RunSingleThreadedMultipart("nanomsg", "inproc://test1", "inproc://test2");
-}
-#endif /* BUILD_NANOMSG_TRANSPORT */
-
 TEST(PushPull, Multipart_ST_ipc_zeromq)
 {
     RunSingleThreadedMultipart("zeromq", "ipc://test_Multipart_ST_ipc_zeromq_1", "ipc://test_Multipart_ST_ipc_zeromq_2");
@@ -174,13 +167,6 @@ TEST(PushPull, Multipart_ST_ipc_shmen)
 {
     RunSingleThreadedMultipart("shmem", "ipc://test_Multipart_ST_ipc_shmen_1", "ipc://test_Multipart_ST_ipc_shmen_2");
 }
-
-#ifdef BUILD_NANOMSG_TRANSPORT
-TEST(PushPull, Multipart_ST_ipc_nanomsg)
-{
-    RunSingleThreadedMultipart("nanomsg", "ipc://test_Multipart_ST_ipc_nanomsg_1", "ipc://test_Multipart_ST_ipc_nanomsg_2");
-}
-#endif /* BUILD_NANOMSG_TRANSPORT */
 
 TEST(PushPull, Multipart_MT_inproc_zeromq)
 {
@@ -192,13 +178,6 @@ TEST(PushPull, Multipart_MT_inproc_shmem)
     RunMultiThreadedMultipart("shmem", "inproc://test_1");
 }
 
-#ifdef BUILD_NANOMSG_TRANSPORT
-TEST(PushPull, Multipart_MT_inproc_nanomsg)
-{
-    RunMultiThreadedMultipart("nanomsg", "inproc://test_1");
-}
-#endif /* BUILD_NANOMSG_TRANSPORT */
-
 TEST(PushPull, Multipart_MT_ipc_zeromq)
 {
     RunMultiThreadedMultipart("zeromq", "ipc://test_Multipart_MT_ipc_zeromq_1");
@@ -208,12 +187,5 @@ TEST(PushPull, Multipart_MT_ipc_shmem)
 {
     RunMultiThreadedMultipart("shmem", "ipc://test_Multipart_MT_ipc_shmem_1");
 }
-
-#ifdef BUILD_NANOMSG_TRANSPORT
-TEST(PushPull, Multipart_MT_ipc_nanomsg)
-{
-    RunMultiThreadedMultipart("nanomsg", "ipc://test_Multipart_MT_ipc_nanomsg_1");
-}
-#endif /* BUILD_NANOMSG_TRANSPORT */
 
 } // namespace
