@@ -233,31 +233,37 @@ vector<fair::mq::RegionInfo> Manager::GetRegionInfoUnsafe()
 
 void Manager::SubscribeToRegionEvents(RegionEventCallback callback)
 {
-    bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
     if (fRegionEventThread.joinable()) {
-        fRegionEventsSubscriptionActive.store(false);
+        LOG(debug) << "Already subscribed. Overwriting previous subscription.";
+        bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
+        fRegionEventsSubscriptionActive = false;
+        lock.unlock();
+        fRegionEventsCV.notify_all();
         fRegionEventThread.join();
     }
+    bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
     fRegionEventCallback = callback;
-    fRegionEventsSubscriptionActive.store(true);
+    fRegionEventsSubscriptionActive = true;
     fRegionEventThread = thread(&Manager::RegionEventsSubscription, this);
 }
 
 void Manager::UnsubscribeFromRegionEvents()
 {
     if (fRegionEventThread.joinable()) {
-        fRegionEventsSubscriptionActive.store(false);
+        bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
+        fRegionEventsSubscriptionActive = false;
+        lock.unlock();
         fRegionEventsCV.notify_all();
         fRegionEventThread.join();
+        lock.lock();
+        fRegionEventCallback = nullptr;
     }
-    bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
-    fRegionEventCallback = nullptr;
 }
 
 void Manager::RegionEventsSubscription()
 {
-    while (fRegionEventsSubscriptionActive.load()) {
-        bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
+    bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);
+    while (fRegionEventsSubscriptionActive) {
         auto infos = GetRegionInfoUnsafe();
         for (const auto& i : infos) {
             auto el = fObservedRegionEvents.find(i.id);
@@ -298,11 +304,7 @@ Manager::~Manager()
 {
     bool lastRemoved = false;
 
-    if (fRegionEventThread.joinable()) {
-        fRegionEventsSubscriptionActive.store(false);
-        fRegionEventsCV.notify_all();
-        fRegionEventThread.join();
-    }
+    UnsubscribeFromRegionEvents();
 
     try {
         bipc::scoped_lock<bipc::named_mutex> lock(fShmMtx);

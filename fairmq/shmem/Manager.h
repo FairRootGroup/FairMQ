@@ -94,7 +94,7 @@ class Manager
 
     boost::interprocess::named_condition fRegionEventsCV;
     std::thread fRegionEventThread;
-    std::atomic<bool> fRegionEventsSubscriptionActive;
+    bool fRegionEventsSubscriptionActive;
     std::function<void(fair::mq::RegionInfo)> fRegionEventCallback;
     std::unordered_map<uint64_t, RegionEvent> fObservedRegionEvents;
 
