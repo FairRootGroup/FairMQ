@@ -52,6 +52,7 @@ class FairMQTransportFactoryZMQ final : public FairMQTransportFactory
     FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const std::string& path = "", int flags = 0) override;
 
     void SubscribeToRegionEvents(FairMQRegionEventCallback callback) override;
+    bool SubscribedToRegionEvents() override;
     void UnsubscribeFromRegionEvents() override;
     void RegionEventsSubscription();
     std::vector<fair::mq::RegionInfo> GetRegionInfo() override;

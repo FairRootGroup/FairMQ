@@ -132,6 +132,11 @@ void FairMQTransportFactoryZMQ::SubscribeToRegionEvents(FairMQRegionEventCallbac
     fRegionEventThread = thread(&FairMQTransportFactoryZMQ::RegionEventsSubscription, this);
 }
 
+bool FairMQTransportFactoryZMQ::SubscribedToRegionEvents()
+{
+    return fRegionEventThread.joinable();
+}
+
 void FairMQTransportFactoryZMQ::UnsubscribeFromRegionEvents()
 {
     if (fRegionEventThread.joinable()) {

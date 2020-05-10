@@ -97,6 +97,9 @@ class FairMQTransportFactory
     /// @brief Subscribe to region events (creation, destruction, ...)
     /// @param callback the callback that is called when a region event occurs
     virtual void SubscribeToRegionEvents(FairMQRegionEventCallback callback) = 0;
+    /// @brief Check if there is an active subscription to region events
+    /// @return true/false
+    virtual bool SubscribedToRegionEvents() = 0;
     /// @brief Unsubscribe from region events
     virtual void UnsubscribeFromRegionEvents() = 0;
 

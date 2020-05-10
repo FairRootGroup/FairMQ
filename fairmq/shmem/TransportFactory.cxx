@@ -174,6 +174,11 @@ void TransportFactory::SubscribeToRegionEvents(RegionEventCallback callback)
     fManager->SubscribeToRegionEvents(callback);
 }
 
+bool TransportFactory::SubscribedToRegionEvents()
+{
+    return fManager->SubscribedToRegionEvents();
+}
+
 void TransportFactory::UnsubscribeFromRegionEvents()
 {
     fManager->UnsubscribeFromRegionEvents();
