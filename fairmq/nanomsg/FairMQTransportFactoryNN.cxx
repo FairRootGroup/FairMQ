@@ -19,6 +19,7 @@ fair::mq::Transport FairMQTransportFactoryNN::fTransportType = fair::mq::Transpo
 
 FairMQTransportFactoryNN::FairMQTransportFactoryNN(const string& id, const fair::mq::ProgOptions* /*config*/)
     : FairMQTransportFactory(id)
+    , fRegionCounter(0)
 {
     LOG(debug) << "Transport: Using nanomsg library";
 }
@@ -67,7 +68,7 @@ FairMQPollerPtr FairMQTransportFactoryNN::CreatePoller(const unordered_map<strin
 
 FairMQUnmanagedRegionPtr FairMQTransportFactoryNN::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)
 {
-    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionNN(size, callback, path, flags, this));
+    return unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionNN(++fRegionCounter, size, callback, path, flags, this));
 }
 
 FairMQUnmanagedRegionPtr FairMQTransportFactoryNN::CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)

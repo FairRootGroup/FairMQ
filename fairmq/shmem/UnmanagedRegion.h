@@ -53,6 +53,7 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
 
     void* GetData() const override { return fRegion->get_address(); }
     size_t GetSize() const override { return fRegion->get_size(); }
+    uint64_t GetId() const override { return fRegionId; }
 
     ~UnmanagedRegion() override { fManager.RemoveRegion(fRegionId); }
 
