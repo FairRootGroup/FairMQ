@@ -19,18 +19,20 @@ class FairMQUnmanagedRegionNN final : public FairMQUnmanagedRegion
     friend class FairMQSocketNN;
 
   public:
-    FairMQUnmanagedRegionNN(const size_t size, FairMQRegionCallback callback, const std::string& path = "", int flags = 0, FairMQTransportFactory* factory = nullptr);
-    FairMQUnmanagedRegionNN(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const std::string& path = "", int flags = 0, FairMQTransportFactory* factory = nullptr);
+    FairMQUnmanagedRegionNN(uint64_t id, const size_t size, FairMQRegionCallback callback, const std::string& path = "", int flags = 0, FairMQTransportFactory* factory = nullptr);
+    FairMQUnmanagedRegionNN(uint64_t id, const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const std::string& path = "", int flags = 0, FairMQTransportFactory* factory = nullptr);
 
     FairMQUnmanagedRegionNN(const FairMQUnmanagedRegionNN&) = delete;
     FairMQUnmanagedRegionNN operator=(const FairMQUnmanagedRegionNN&) = delete;
 
-    virtual void* GetData() const override;
-    virtual size_t GetSize() const override;
+    void* GetData() const override;
+    size_t GetSize() const override;
+    uint64_t GetId() const override;
 
     virtual ~FairMQUnmanagedRegionNN();
 
   private:
+    uint64_t fId;
     void* fBuffer;
     size_t fSize;
     FairMQRegionCallback fCallback;

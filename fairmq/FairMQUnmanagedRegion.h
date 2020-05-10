@@ -59,6 +59,7 @@ class FairMQUnmanagedRegion
 
     virtual void* GetData() const = 0;
     virtual size_t GetSize() const = 0;
+    virtual uint64_t GetId() const = 0;
 
     FairMQTransportFactory* GetTransport() { return fTransport; }
     void SetTransport(FairMQTransportFactory* transport) { fTransport = transport; }

@@ -52,6 +52,7 @@ class FairMQTransportFactoryNN final : public FairMQTransportFactory
 
   private:
     static fair::mq::Transport fTransportType;
+    uint64_t fRegionCounter;
     mutable std::vector<FairMQSocket*> fSockets;
 };
 

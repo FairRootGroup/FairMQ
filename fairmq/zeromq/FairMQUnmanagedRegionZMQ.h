@@ -26,9 +26,9 @@ class FairMQUnmanagedRegionZMQ final : public FairMQUnmanagedRegion
     FairMQUnmanagedRegionZMQ(const FairMQUnmanagedRegionZMQ&) = delete;
     FairMQUnmanagedRegionZMQ operator=(const FairMQUnmanagedRegionZMQ&) = delete;
 
-    uint64_t GetId() const { return fId; }
     virtual void* GetData() const override;
     virtual size_t GetSize() const override;
+    uint64_t GetId() const override { return fId; }
     int64_t GetUserFlags() const { return fUserFlags; }
 
     virtual ~FairMQUnmanagedRegionZMQ();
