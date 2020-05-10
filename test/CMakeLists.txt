@@ -96,6 +96,19 @@ add_testsuite(Message
     ${definitions}
 )
 
+add_testsuite(Region
+    SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    region/_region.cxx
+
+    LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
+             ${CMAKE_CURRENT_SOURCE_DIR}/region
+             ${CMAKE_CURRENT_BINARY_DIR}
+    TIMEOUT 5
+    ${definitions}
+)
+
 add_testsuite(Device
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
