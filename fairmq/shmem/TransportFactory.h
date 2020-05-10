@@ -53,6 +53,7 @@ class TransportFactory final : public fair::mq::TransportFactory
     UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, int64_t userFlags, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0) override;
 
     void SubscribeToRegionEvents(RegionEventCallback callback) override;
+    bool SubscribedToRegionEvents() override;
     void UnsubscribeFromRegionEvents() override;
     std::vector<fair::mq::RegionInfo> GetRegionInfo() override;
 

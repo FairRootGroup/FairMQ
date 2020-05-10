@@ -247,6 +247,11 @@ void Manager::SubscribeToRegionEvents(RegionEventCallback callback)
     fRegionEventThread = thread(&Manager::RegionEventsSubscription, this);
 }
 
+bool Manager::SubscribedToRegionEvents()
+{
+    return fRegionEventThread.joinable();
+}
+
 void Manager::UnsubscribeFromRegionEvents()
 {
     if (fRegionEventThread.joinable()) {

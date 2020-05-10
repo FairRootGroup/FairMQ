@@ -78,6 +78,7 @@ class Manager
     std::vector<fair::mq::RegionInfo> GetRegionInfo();
     std::vector<fair::mq::RegionInfo> GetRegionInfoUnsafe();
     void SubscribeToRegionEvents(RegionEventCallback callback);
+    bool SubscribedToRegionEvents();
     void UnsubscribeFromRegionEvents();
     void RegionEventsSubscription();
 
