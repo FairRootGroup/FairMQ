@@ -90,7 +90,17 @@ auto TransportFactory::CreateUnmanagedRegion(const size_t /*size*/, FairMQRegion
     throw runtime_error{"Not yet implemented UMR."};
 }
 
+auto TransportFactory::CreateUnmanagedRegion(const size_t /*size*/, FairMQRegionBulkCallback /*callback*/, const std::string& /* path = "" */, int /* flags = 0 */) -> UnmanagedRegionPtr
+{
+    throw runtime_error{"Not yet implemented UMR."};
+}
+
 auto TransportFactory::CreateUnmanagedRegion(const size_t /*size*/, const int64_t /*userFlags*/, FairMQRegionCallback /*callback*/, const std::string& /* path = "" */, int /* flags = 0 */) -> UnmanagedRegionPtr
+{
+    throw runtime_error{"Not yet implemented UMR."};
+}
+
+auto TransportFactory::CreateUnmanagedRegion(const size_t /*size*/, const int64_t /*userFlags*/, FairMQRegionBulkCallback /*callback*/, const std::string& /* path = "" */, int /* flags = 0 */) -> UnmanagedRegionPtr
 {
     throw runtime_error{"Not yet implemented UMR."};
 }

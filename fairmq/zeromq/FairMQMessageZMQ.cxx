@@ -81,7 +81,12 @@ FairMQMessageZMQ::FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data,
 
     memcpy(zmq_msg_data(fMsg.get()), data, size);
     // call region callback
-    static_cast<FairMQUnmanagedRegionZMQ*>(region.get())->fCallback(data, size, hint);
+    auto ptr = static_cast<FairMQUnmanagedRegionZMQ*>(region.get());
+    if (ptr->fBulkCallback) {
+        ptr->fBulkCallback({{data, size, hint}});
+    } else if (ptr->fCallback) {
+        ptr->fCallback(data, size, hint);
+    }
 
     // if (zmq_msg_init_data(fMsg.get(), data, size, [](void*, void*){}, nullptr) != 0)
     // {

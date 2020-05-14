@@ -13,6 +13,7 @@
 #include <memory> // std::unique_ptr
 #include <functional> // std::function
 #include <ostream> // std::ostream
+#include <vector>
 
 class FairMQTransportFactory;
 
@@ -48,14 +49,25 @@ struct FairMQRegionInfo
     FairMQRegionEvent event;
 };
 
+struct FairMQRegionBlock {
+    void* ptr;
+    size_t size;
+    void* hint;
+
+    FairMQRegionBlock(void* p, size_t s, void* h)
+        : ptr(p), size(s), hint(h)
+    {}
+};
+
 using FairMQRegionCallback = std::function<void(void*, size_t, void*)>;
+using FairMQRegionBulkCallback = std::function<void(const std::vector<FairMQRegionBlock>&)>;
 using FairMQRegionEventCallback = std::function<void(FairMQRegionInfo)>;
 
 class FairMQUnmanagedRegion
 {
   public:
     FairMQUnmanagedRegion() {}
-    FairMQUnmanagedRegion(FairMQTransportFactory* factory): fTransport(factory) {}
+    FairMQUnmanagedRegion(FairMQTransportFactory* factory) : fTransport(factory) {}
 
     virtual void* GetData() const = 0;
     virtual size_t GetSize() const = 0;
@@ -92,9 +104,11 @@ namespace mq
 {
 
 using RegionCallback = FairMQRegionCallback;
+using RegionBulkCallback = FairMQRegionBulkCallback;
 using RegionEventCallback = FairMQRegionEventCallback;
 using RegionEvent = FairMQRegionEvent;
 using RegionInfo = FairMQRegionInfo;
+using RegionBlock = FairMQRegionBlock;
 using UnmanagedRegion = FairMQUnmanagedRegion;
 using UnmanagedRegionPtr = FairMQUnmanagedRegionPtr;
 

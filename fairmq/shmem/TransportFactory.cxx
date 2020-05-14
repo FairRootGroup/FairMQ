@@ -161,12 +161,22 @@ PollerPtr TransportFactory::CreatePoller(const unordered_map<string, vector<Fair
 
 UnmanagedRegionPtr TransportFactory::CreateUnmanagedRegion(const size_t size, RegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)
 {
-    return tools::make_unique<UnmanagedRegion>(*fManager, size, callback, path, flags, this);
+    return tools::make_unique<UnmanagedRegion>(*fManager, size, 0, callback, nullptr, path, flags, this);
+}
+
+UnmanagedRegionPtr TransportFactory::CreateUnmanagedRegion(const size_t size, RegionBulkCallback bulkCallback, const std::string& path /* = "" */, int flags /* = 0 */)
+{
+    return tools::make_unique<UnmanagedRegion>(*fManager, size, 0, nullptr, bulkCallback, path, flags, this);
 }
 
 UnmanagedRegionPtr TransportFactory::CreateUnmanagedRegion(const size_t size, const int64_t userFlags, RegionCallback callback, const std::string& path /* = "" */, int flags /* = 0 */)
 {
-    return tools::make_unique<UnmanagedRegion>(*fManager, size, userFlags, callback, path, flags, this);
+    return tools::make_unique<UnmanagedRegion>(*fManager, size, userFlags, callback, nullptr, path, flags, this);
+}
+
+UnmanagedRegionPtr TransportFactory::CreateUnmanagedRegion(const size_t size, const int64_t userFlags, RegionBulkCallback bulkCallback, const std::string& path /* = "" */, int flags /* = 0 */)
+{
+    return tools::make_unique<UnmanagedRegion>(*fManager, size, userFlags, nullptr, bulkCallback, path, flags, this);
 }
 
 void TransportFactory::SubscribeToRegionEvents(RegionEventCallback callback)

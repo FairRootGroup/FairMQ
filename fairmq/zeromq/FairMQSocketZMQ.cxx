@@ -84,7 +84,7 @@ bool FairMQSocketZMQ::Bind(const string& address)
             // do not print error in this case, this is handled by FairMQDevice in case no connection could be established after trying a number of random ports from a range.
             return false;
         }
-        LOG(error) << "Failed binding socket " << fId << ", reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed binding socket " << fId << ", address: " << address << ", reason: " << zmq_strerror(errno);
         return false;
     }
 
@@ -97,7 +97,7 @@ bool FairMQSocketZMQ::Connect(const string& address)
 
     if (zmq_connect(fSocket, address.c_str()) != 0)
     {
-        LOG(error) << "Failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
+        LOG(error) << "Failed connecting socket " << fId << ", address: " << address << ", reason: " << zmq_strerror(errno);
         return false;
     }
 

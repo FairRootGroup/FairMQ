@@ -33,7 +33,7 @@ namespace mq
 namespace shmem
 {
 
-Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, RegionCallback callback, const string& path /* = "" */, int flags /* = 0 */)
+Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, RegionCallback callback, RegionBulkCallback bulkCallback, const string& path, int flags)
     : fManager(manager)
     , fRemote(remote)
     , fStop(false)
@@ -46,6 +46,7 @@ Region::Region(Manager& manager, uint64_t id, uint64_t size, bool remote, Region
     , fReceiveAcksWorker()
     , fSendAcksWorker()
     , fCallback(callback)
+    , fBulkCallback(bulkCallback)
 {
     if (path != "") {
         fName = string(path + fName);
@@ -110,14 +111,22 @@ void Region::ReceiveAcks()
     unsigned int priority;
     bipc::message_queue::size_type recvdSize;
     unique_ptr<RegionBlock[]> blocks = tools::make_unique<RegionBlock[]>(fAckBunchSize);
+    std::vector<fair::mq::RegionBlock> result;
+    result.reserve(fAckBunchSize);
 
     while (!fStop) { // end thread condition (should exist until region is destroyed)
         auto rcvTill = bpt::microsec_clock::universal_time() + bpt::milliseconds(500);
 
         while (fQueue->timed_receive(blocks.get(), fAckBunchSize * sizeof(RegionBlock), recvdSize, priority, rcvTill)) {
             // LOG(debug) << "received: " << block.fHandle << " " << block.fSize << " " << block.fMessageId;
-            if (fCallback) {
-                const auto numBlocks = recvdSize / sizeof(RegionBlock);
+            const auto numBlocks = recvdSize / sizeof(RegionBlock);
+            if (fBulkCallback) {
+                result.clear();
+                for (size_t i = 0; i < numBlocks; i++) {
+                    result.emplace_back(reinterpret_cast<char*>(fRegion.get_address()) + blocks[i].fHandle, blocks[i].fSize, reinterpret_cast<void*>(blocks[i].fHint));
+                }
+                fBulkCallback(result);
+            } else if (fCallback) {
                 for (size_t i = 0; i < numBlocks; i++) {
                     fCallback(reinterpret_cast<char*>(fRegion.get_address()) + blocks[i].fHandle, blocks[i].fSize, reinterpret_cast<void*>(blocks[i].fHint));
                 }
@@ -125,7 +134,7 @@ void Region::ReceiveAcks()
         }
     } // while !fStop
 
-    LOG(debug) << "receive ack worker for " << fName << " leaving.";
+    LOG(debug) << "ReceiveAcks() worker for " << fName << " leaving.";
 }
 
 void Region::ReleaseBlock(const RegionBlock &block)

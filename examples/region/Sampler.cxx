@@ -46,10 +46,10 @@ void Sampler::InitTask()
     fRegion = FairMQUnmanagedRegionPtr(NewUnmanagedRegionFor("data",
                                                              0,
                                                              10000000,
-                                                             [this](void* /*data*/, size_t /*size*/, void* /*hint*/) { // callback to be called when message buffers no longer needed by transport
-                                                                 --fNumUnackedMsgs;
+                                                             [this](const std::vector<fair::mq::RegionBlock>& blocks) { // callback to be called when message buffers no longer needed by transport
+                                                                 fNumUnackedMsgs -= blocks.size();
                                                                  if (fMaxIterations > 0) {
-                                                                     LOG(debug) << "Received ack";
+                                                                    LOG(debug) << "Received " << blocks.size() << " acks";
                                                                  }
                                                              }
                                                              ));
