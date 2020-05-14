@@ -40,7 +40,7 @@ class Manager;
 
 struct Region
 {
-    Region(Manager& manager, uint64_t id, uint64_t size, bool remote, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0);
+    Region(Manager& manager, uint64_t id, uint64_t size, bool remote, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string& path, int flags);
 
     Region() = delete;
 
@@ -76,6 +76,7 @@ struct Region
     std::thread fReceiveAcksWorker;
     std::thread fSendAcksWorker;
     RegionCallback fCallback;
+    RegionBulkCallback fBulkCallback;
 };
 
 } // namespace shmem

@@ -94,19 +94,55 @@ FairMQPollerPtr FairMQTransportFactoryZMQ::CreatePoller(const unordered_map<stri
     return unique_ptr<FairMQPoller>(new FairMQPollerZMQ(channelsMap, channelList));
 }
 
-FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(const size_t size, FairMQRegionCallback callback, const string& path /* = "" */, int flags /* = 0 */)
+FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(
+    const size_t size,
+    FairMQRegionCallback callback,
+    const string& path /* = "" */,
+    int flags /* = 0 */)
 {
-    return CreateUnmanagedRegion(size, 0, callback, path, flags);
+    return CreateUnmanagedRegion(size, 0, callback, nullptr, path, flags);
+}
+FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(
+    const size_t size,
+    FairMQRegionBulkCallback bulkCallback,
+    const string& path /* = "" */,
+    int flags /* = 0 */)
+{
+    return CreateUnmanagedRegion(size, 0, nullptr, bulkCallback, path, flags);
+}
+FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(
+    const size_t size,
+    const int64_t userFlags,
+    FairMQRegionCallback callback,
+    const string& path /* = "" */,
+    int flags /* = 0 */)
+{
+    return CreateUnmanagedRegion(size, userFlags, callback, nullptr, path, flags);
+}
+FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(
+    const size_t size,
+    const int64_t userFlags,
+    FairMQRegionBulkCallback bulkCallback,
+    const string& path /* = "" */,
+    int flags /* = 0 */)
+{
+    return CreateUnmanagedRegion(size, userFlags, nullptr, bulkCallback, path, flags);
 }
 
-FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, const string& path /* = "" */, int flags /* = 0 */)
+FairMQUnmanagedRegionPtr FairMQTransportFactoryZMQ::CreateUnmanagedRegion(
+    const size_t size,
+    const int64_t userFlags,
+    FairMQRegionCallback callback,
+    FairMQRegionBulkCallback bulkCallback,
+    const string& path /* = "" */,
+    int flags /* = 0 */)
 {
     unique_ptr<FairMQUnmanagedRegion> ptr = nullptr;
     {
         lock_guard<mutex> lock(fMtx);
 
         ++fRegionCounter;
-        ptr = unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionZMQ(fRegionCounter, size, userFlags, callback, path, flags, this));
+        ptr = unique_ptr<FairMQUnmanagedRegion>(new FairMQUnmanagedRegionZMQ(fRegionCounter, size, userFlags, callback, bulkCallback, path, flags, this));
         auto zPtr = static_cast<FairMQUnmanagedRegionZMQ*>(ptr.get());
         fRegionInfos.emplace_back(zPtr->GetId(), zPtr->GetData(), zPtr->GetSize(), zPtr->GetUserFlags(), fair::mq::RegionEvent::created);
         fRegionEvents.emplace(zPtr->GetId(), zPtr->GetData(), zPtr->GetSize(), zPtr->GetUserFlags(), fair::mq::RegionEvent::created);

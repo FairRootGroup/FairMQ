@@ -25,7 +25,7 @@ namespace
 
 using namespace std;
 
-void CheckOldOptionInterface(FairMQChannel& channel, const string& option, const string& transport)
+void CheckOldOptionInterface(FairMQChannel& channel, const string& option)
 {
     int value = 500;
     channel.GetSocket().SetOption(option, &value, sizeof(value));
@@ -44,11 +44,11 @@ void RunOptionsTest(const string& transport)
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
     FairMQChannel channel("Push", "push", factory);
 
-    CheckOldOptionInterface(channel, "linger", transport);
-    CheckOldOptionInterface(channel, "snd-hwm", transport);
-    CheckOldOptionInterface(channel, "rcv-hwm", transport);
-    CheckOldOptionInterface(channel, "snd-size", transport);
-    CheckOldOptionInterface(channel, "rcv-size", transport);
+    CheckOldOptionInterface(channel, "linger");
+    CheckOldOptionInterface(channel, "snd-hwm");
+    CheckOldOptionInterface(channel, "rcv-hwm");
+    CheckOldOptionInterface(channel, "snd-size");
+    CheckOldOptionInterface(channel, "rcv-size");
 
     channel.GetSocket().SetLinger(300);
     ASSERT_EQ(channel.GetSocket().GetLinger(), 300);

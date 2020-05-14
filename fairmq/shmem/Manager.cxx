@@ -101,7 +101,12 @@ void Manager::StartMonitor(const string& id)
     }
 }
 
-pair<bipc::mapped_region*, uint64_t> Manager::CreateRegion(const size_t size, const int64_t userFlags, RegionCallback callback, const string& path /* = "" */, int flags /* = 0 */)
+pair<bipc::mapped_region*, uint64_t> Manager::CreateRegion(const size_t size,
+                                                           const int64_t userFlags,
+                                                           RegionCallback callback,
+                                                           RegionBulkCallback bulkCallback,
+                                                           const string& path /* = "" */,
+                                                           int flags /* = 0 */)
 {
     try {
 
@@ -134,7 +139,7 @@ pair<bipc::mapped_region*, uint64_t> Manager::CreateRegion(const size_t size, co
             // create region info
             fRegionInfos->emplace(id, RegionInfo(path.c_str(), flags, userFlags, fShmVoidAlloc));
 
-            auto r = fRegions.emplace(id, tools::make_unique<Region>(*this, id, size, false, callback, path, flags));
+            auto r = fRegions.emplace(id, tools::make_unique<Region>(*this, id, size, false, callback, bulkCallback, path, flags));
             // LOG(debug) << "Created region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
 
             r.first->second->StartReceivingAcks();
@@ -182,7 +187,7 @@ Region* Manager::GetRegionUnsafe(const uint64_t id)
             int flags = regionInfo.fFlags;
             // LOG(debug) << "Located remote region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
 
-            auto r = fRegions.emplace(id, tools::make_unique<Region>(*this, id, 0, true, nullptr, path, flags));
+            auto r = fRegions.emplace(id, tools::make_unique<Region>(*this, id, 0, true, nullptr, nullptr, path, flags));
             return r.first->second.get();
         } catch (bie& e) {
             LOG(warn) << "Could not get remote region for id: " << id;

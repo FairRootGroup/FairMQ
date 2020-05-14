@@ -70,7 +70,12 @@ class Manager
     int IncrementDeviceCounter();
     int DecrementDeviceCounter();
 
-    std::pair<boost::interprocess::mapped_region*, uint64_t> CreateRegion(const size_t size, const int64_t userFlags, RegionCallback callback, const std::string& path = "", int flags = 0);
+    std::pair<boost::interprocess::mapped_region*, uint64_t> CreateRegion(const size_t size,
+                                                                          const int64_t userFlags,
+                                                                          RegionCallback callback,
+                                                                          RegionBulkCallback bulkCallback,
+                                                                          const std::string& path = "",
+                                                                          int flags = 0);
     Region* GetRegion(const uint64_t id);
     Region* GetRegionUnsafe(const uint64_t id);
     void RemoveRegion(const uint64_t id);
