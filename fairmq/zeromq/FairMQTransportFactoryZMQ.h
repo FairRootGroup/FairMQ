@@ -61,7 +61,7 @@ class FairMQTransportFactoryZMQ final : public FairMQTransportFactory
     std::vector<fair::mq::RegionInfo> GetRegionInfo() override;
     void RemoveRegion(uint64_t id);
 
-    fair::mq::Transport GetType() const override;
+    fair::mq::Transport GetType() const override { return fair::mq::Transport::ZMQ; }
 
     void Interrupt() override { FairMQSocketZMQ::Interrupt(); }
     void Resume() override { FairMQSocketZMQ::Resume(); }
@@ -70,7 +70,6 @@ class FairMQTransportFactoryZMQ final : public FairMQTransportFactory
     ~FairMQTransportFactoryZMQ() override;
 
   private:
-    static fair::mq::Transport fTransportType;
     void* fContext;
 
     std::mutex fMtx;

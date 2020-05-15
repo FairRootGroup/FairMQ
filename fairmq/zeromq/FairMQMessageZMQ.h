@@ -47,7 +47,7 @@ class FairMQMessageZMQ final : public FairMQMessage
     bool SetUsedSize(const size_t size) override;
     void ApplyUsedSize();
 
-    fair::mq::Transport GetType() const override;
+    fair::mq::Transport GetType() const override { return fair::mq::Transport::ZMQ; }
 
     void Copy(const FairMQMessage& msg) override;
 
@@ -58,7 +58,6 @@ class FairMQMessageZMQ final : public FairMQMessage
     size_t fUsedSize;
     std::unique_ptr<zmq_msg_t> fMsg;
     std::unique_ptr<zmq_msg_t> fViewMsg; // view on a subset of fMsg (treating it as user buffer)
-    static fair::mq::Transport fTransportType;
 
     zmq_msg_t* GetMessage() const;
     void CloseMessage();

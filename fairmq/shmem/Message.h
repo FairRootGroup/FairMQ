@@ -52,7 +52,7 @@ class Message final : public fair::mq::Message
 
     bool SetUsedSize(const size_t size) override;
 
-    Transport GetType() const override { return fTransportType; }
+    Transport GetType() const override { return fair::mq::Transport::SHM; }
 
     void Copy(const fair::mq::Message& msg) override;
 
@@ -64,8 +64,6 @@ class Message final : public fair::mq::Message
     MetaHeader fMeta;
     mutable Region* fRegionPtr;
     mutable char* fLocalPtr;
-
-    static Transport fTransportType;
 
     bool InitializeChunk(const size_t size);
     void CloseMessage();
