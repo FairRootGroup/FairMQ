@@ -23,8 +23,6 @@
 
 using namespace std;
 
-fair::mq::Transport FairMQMessageZMQ::fTransportType = fair::mq::Transport::ZMQ;
-
 FairMQMessageZMQ::FairMQMessageZMQ(FairMQTransportFactory* factory)
     : FairMQMessage{factory}
     , fUsedSizeModified(false)
@@ -200,11 +198,6 @@ void FairMQMessageZMQ::ApplyUsedSize()
             LOG(error) << "failed initializing view message, reason: " << zmq_strerror(errno);
         }
     }
-}
-
-fair::mq::Transport FairMQMessageZMQ::GetType() const
-{
-    return fTransportType;
 }
 
 void FairMQMessageZMQ::Copy(const FairMQMessage& msg)

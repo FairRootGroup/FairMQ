@@ -29,8 +29,6 @@ namespace mq
 namespace shmem
 {
 
-Transport Message::fTransportType = Transport::SHM;
-
 Message::Message(Manager& manager, FairMQTransportFactory* factory)
     : fair::mq::Message{factory}
     , fManager(manager)

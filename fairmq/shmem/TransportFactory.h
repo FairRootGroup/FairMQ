@@ -59,7 +59,7 @@ class TransportFactory final : public fair::mq::TransportFactory
     void UnsubscribeFromRegionEvents() override;
     std::vector<fair::mq::RegionInfo> GetRegionInfo() override;
 
-    Transport GetType() const override;
+    Transport GetType() const override { return fair::mq::Transport::SHM; }
 
     void Interrupt() override { fManager->Interrupt(); }
     void Resume() override { fManager->Resume(); }
@@ -73,7 +73,6 @@ class TransportFactory final : public fair::mq::TransportFactory
   private:
     void SendHeartbeats();
 
-    static Transport fTransportType;
     std::string fDeviceId;
     std::string fShmId;
     void* fZMQContext;

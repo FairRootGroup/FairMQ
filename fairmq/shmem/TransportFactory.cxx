@@ -37,8 +37,6 @@ namespace mq
 namespace shmem
 {
 
-Transport TransportFactory::fTransportType = Transport::SHM;
-
 TransportFactory::TransportFactory(const string& id, const ProgOptions* config)
     : fair::mq::TransportFactory(id)
     , fDeviceId(id)
@@ -197,11 +195,6 @@ void TransportFactory::UnsubscribeFromRegionEvents()
 vector<fair::mq::RegionInfo> TransportFactory::GetRegionInfo()
 {
     return fManager->GetRegionInfo();
-}
-
-Transport TransportFactory::GetType() const
-{
-    return fTransportType;
 }
 
 void TransportFactory::Reset()

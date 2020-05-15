@@ -13,8 +13,6 @@
 
 using namespace std;
 
-fair::mq::Transport FairMQTransportFactoryZMQ::fTransportType = fair::mq::Transport::ZMQ;
-
 FairMQTransportFactoryZMQ::FairMQTransportFactoryZMQ(const string& id, const fair::mq::ProgOptions* config)
     : FairMQTransportFactory(id)
     , fContext(zmq_ctx_new())
@@ -222,11 +220,6 @@ void FairMQTransportFactoryZMQ::RemoveRegion(uint64_t id)
         }
     }
     fRegionEventsCV.notify_one();
-}
-
-fair::mq::Transport FairMQTransportFactoryZMQ::GetType() const
-{
-    return fTransportType;
 }
 
 FairMQTransportFactoryZMQ::~FairMQTransportFactoryZMQ()
