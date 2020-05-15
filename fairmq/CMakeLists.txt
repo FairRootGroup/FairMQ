@@ -232,12 +232,6 @@ if(BUILD_FAIRMQ)
     SuboptParser.cxx
     plugins/config/Config.cxx
     plugins/Control.cxx
-    shmem/Message.cxx
-    shmem/Poller.cxx
-    shmem/Socket.cxx
-    shmem/TransportFactory.cxx
-    shmem/Manager.cxx
-    shmem/Region.cxx
     zeromq/FairMQMessageZMQ.cxx
     zeromq/FairMQPollerZMQ.cxx
     zeromq/FairMQUnmanagedRegionZMQ.cxx
