@@ -219,7 +219,6 @@ if(BUILD_FAIRMQ)
     FairMQPoller.cxx
     FairMQSocket.cxx
     FairMQTransportFactory.cxx
-    devices/FairMQBenchmarkSampler.cxx
     devices/FairMQMerger.cxx
     devices/FairMQMultiplier.cxx
     devices/FairMQProxy.cxx

@@ -15,14 +15,14 @@
 #ifndef FAIRMQSINK_H_
 #define FAIRMQSINK_H_
 
-#include <string>
-#include <chrono>
-
 #include "../FairMQDevice.h"
 #include "../FairMQLogger.h"
 
+#include <chrono>
+#include <string>
+
 // template<typename OutputPolicy>
-class FairMQSink : public FairMQDevice//, public OutputPolicy
+class FairMQSink : public FairMQDevice   //, public OutputPolicy
 {
   public:
     FairMQSink()
@@ -32,8 +32,7 @@ class FairMQSink : public FairMQDevice//, public OutputPolicy
         , fInChannelName()
     {}
 
-    virtual ~FairMQSink()
-    {}
+    virtual ~FairMQSink() {}
 
   protected:
     bool fMultipart;
@@ -56,35 +55,25 @@ class FairMQSink : public FairMQDevice//, public OutputPolicy
         LOG(info) << "Starting the benchmark and expecting to receive " << fMaxIterations << " messages.";
         auto tStart = std::chrono::high_resolution_clock::now();
 
-        while (!NewStatePending())
-        {
-            if (fMultipart)
-            {
+        while (!NewStatePending()) {
+            if (fMultipart) {
                 FairMQParts parts;
 
-                if (dataInChannel.Receive(parts) >= 0)
-                {
-                    if (fMaxIterations > 0)
-                    {
-                        if (fNumIterations >= fMaxIterations)
-                        {
+                if (dataInChannel.Receive(parts) >= 0) {
+                    if (fMaxIterations > 0) {
+                        if (fNumIterations >= fMaxIterations) {
                             LOG(info) << "Configured maximum number of iterations reached.";
                             break;
                         }
                     }
                     fNumIterations++;
                 }
-            }
-            else
-            {
+            } else {
                 FairMQMessagePtr msg(dataInChannel.NewMessage());
 
-                if (dataInChannel.Receive(msg) >= 0)
-                {
-                    if (fMaxIterations > 0)
-                    {
-                        if (fNumIterations >= fMaxIterations)
-                        {
+                if (dataInChannel.Receive(msg) >= 0) {
+                    if (fMaxIterations > 0) {
+                        if (fNumIterations >= fMaxIterations) {
                             LOG(info) << "Configured maximum number of iterations reached.";
                             break;
                         }
@@ -96,7 +85,8 @@ class FairMQSink : public FairMQDevice//, public OutputPolicy
 
         auto tEnd = std::chrono::high_resolution_clock::now();
 
-        LOG(info) << "Leaving RUNNING state. Received " << fNumIterations << " messages in " << std::chrono::duration<double, std::milli>(tEnd - tStart).count() << "ms.";
+        LOG(info) << "Leaving RUNNING state. Received " << fNumIterations << " messages in "
+                  << std::chrono::duration<double, std::milli>(tEnd - tStart).count() << "ms.";
     }
 };
 
