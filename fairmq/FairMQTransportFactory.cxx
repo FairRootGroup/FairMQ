@@ -8,7 +8,7 @@
 
 #include <FairMQTransportFactory.h>
 #include <fairmq/shmem/TransportFactory.h>
-#include <zeromq/FairMQTransportFactoryZMQ.h>
+#include <fairmq/zeromq/TransportFactory.h>
 #ifdef BUILD_OFI_TRANSPORT
 #include <fairmq/ofi/TransportFactory.h>
 #endif
@@ -36,7 +36,7 @@ auto FairMQTransportFactory::CreateTransportFactory(const string& type,
     }
 
     if (type == "zeromq") {
-        return make_shared<FairMQTransportFactoryZMQ>(finalId, config);
+        return make_shared<fair::mq::zmq::TransportFactory>(finalId, config);
     } else if (type == "shmem") {
         return make_shared<fair::mq::shmem::TransportFactory>(finalId, config);
     }

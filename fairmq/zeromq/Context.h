@@ -56,13 +56,13 @@ class Context
             throw ContextError(tools::ToString("failed configuring context, reason: ", zmq_strerror(errno)));
         }
 
-        fRegionEvents.emplace(0, nullptr, 0, 0, fair::mq::RegionEvent::local_only);
+        fRegionEvents.emplace(0, nullptr, 0, 0, RegionEvent::local_only);
     }
 
     Context(const Context&) = delete;
     Context operator=(const Context&) = delete;
 
-    void SubscribeToRegionEvents(FairMQRegionEventCallback callback)
+    void SubscribeToRegionEvents(RegionEventCallback callback)
     {
         if (fRegionEventThread.joinable()) {
             LOG(debug) << "Already subscribed. Overwriting previous subscription.";
@@ -108,7 +108,7 @@ class Context
         }
     }
 
-    std::vector<fair::mq::RegionInfo> GetRegionInfo() const
+    std::vector<RegionInfo> GetRegionInfo() const
     {
         std::lock_guard<std::mutex> lock(fMtx);
         return fRegionInfos;
@@ -120,7 +120,7 @@ class Context
         return fRegionCounter;
     }
 
-    void AddRegion(uint64_t id, void* ptr, size_t size, int64_t userFlags, fair::mq::RegionEvent event)
+    void AddRegion(uint64_t id, void* ptr, size_t size, int64_t userFlags, RegionEvent event)
     {
         {
             std::lock_guard<std::mutex> lock(fMtx);
@@ -135,12 +135,12 @@ class Context
     {
         {
             std::lock_guard<std::mutex> lock(fMtx);
-            auto it = find_if(fRegionInfos.begin(), fRegionInfos.end(), [id](const fair::mq::RegionInfo& i) {
+            auto it = find_if(fRegionInfos.begin(), fRegionInfos.end(), [id](const RegionInfo& i) {
                 return i.id == id;
             });
             if (it != fRegionInfos.end()) {
                 fRegionEvents.push(*it);
-                fRegionEvents.back().event = fair::mq::RegionEvent::destroyed;
+                fRegionEvents.back().event = RegionEvent::destroyed;
                 fRegionInfos.erase(it);
             } else {
                 LOG(error) << "RemoveRegion: given id (" << id << ") not found.";
@@ -181,10 +181,10 @@ class Context
 
     uint64_t fRegionCounter;
     std::condition_variable fRegionEventsCV;
-    std::vector<fair::mq::RegionInfo> fRegionInfos;
-    std::queue<fair::mq::RegionInfo> fRegionEvents;
+    std::vector<RegionInfo> fRegionInfos;
+    std::queue<RegionInfo> fRegionEvents;
     std::thread fRegionEventThread;
-    std::function<void(fair::mq::RegionInfo)> fRegionEventCallback;
+    std::function<void(RegionInfo)> fRegionEventCallback;
     bool fRegionEventsSubscriptionActive;
 };
 
