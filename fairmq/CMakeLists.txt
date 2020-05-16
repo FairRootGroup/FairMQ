@@ -233,11 +233,6 @@ if(BUILD_FAIRMQ)
     SuboptParser.cxx
     plugins/config/Config.cxx
     plugins/Control.cxx
-    zeromq/FairMQMessageZMQ.cxx
-    zeromq/FairMQPollerZMQ.cxx
-    zeromq/FairMQUnmanagedRegionZMQ.cxx
-    zeromq/FairMQSocketZMQ.cxx
-    zeromq/FairMQTransportFactoryZMQ.cxx
     MemoryResources.cxx
   )
 

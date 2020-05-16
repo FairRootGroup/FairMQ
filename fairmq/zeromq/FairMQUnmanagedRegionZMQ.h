@@ -10,10 +10,12 @@
 #define FAIRMQUNMANAGEDREGIONZMQ_H_
 
 #include <fairmq/zeromq/Context.h>
-#include "FairMQUnmanagedRegion.h"
+#include <FairMQUnmanagedRegion.h>
+#include <FairMQLogger.h>
 
 #include <cstddef> // size_t
 #include <string>
+
 class FairMQTransportFactory;
 
 class FairMQUnmanagedRegionZMQ final : public FairMQUnmanagedRegion
@@ -27,19 +29,33 @@ class FairMQUnmanagedRegionZMQ final : public FairMQUnmanagedRegion
                              int64_t userFlags,
                              FairMQRegionCallback callback,
                              FairMQRegionBulkCallback bulkCallback,
-                             const std::string& path = "",
-                             int flags = 0,
-                             FairMQTransportFactory* factory = nullptr);
+                             const std::string& /* path = "" */,
+                             int /* flags = 0 */,
+                             FairMQTransportFactory* factory = nullptr)
+        : FairMQUnmanagedRegion(factory)
+        , fCtx(ctx)
+        , fId(fCtx.RegionCount())
+        , fBuffer(malloc(size))
+        , fSize(size)
+        , fUserFlags(userFlags)
+        , fCallback(callback)
+        , fBulkCallback(bulkCallback)
+    {}
 
     FairMQUnmanagedRegionZMQ(const FairMQUnmanagedRegionZMQ&) = delete;
     FairMQUnmanagedRegionZMQ operator=(const FairMQUnmanagedRegionZMQ&) = delete;
 
-    virtual void* GetData() const override;
-    virtual size_t GetSize() const override;
+    virtual void* GetData() const override { return fBuffer; }
+    virtual size_t GetSize() const override { return fSize; }
     uint64_t GetId() const override { return fId; }
     int64_t GetUserFlags() const { return fUserFlags; }
 
-    virtual ~FairMQUnmanagedRegionZMQ();
+    virtual ~FairMQUnmanagedRegionZMQ()
+    {
+        LOG(debug) << "destroying region " << fId;
+        fCtx.RemoveRegion(fId);
+        free(fBuffer);
+    }
 
   private:
     fair::mq::zmq::Context& fCtx;
