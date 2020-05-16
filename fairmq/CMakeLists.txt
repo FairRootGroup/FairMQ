@@ -191,11 +191,11 @@ if(BUILD_FAIRMQ)
     shmem/Manager.h
     shmem/Region.h
     zeromq/Context.h
-    zeromq/FairMQMessageZMQ.h
-    zeromq/FairMQPollerZMQ.h
-    zeromq/FairMQUnmanagedRegionZMQ.h
-    zeromq/FairMQSocketZMQ.h
-    zeromq/FairMQTransportFactoryZMQ.h
+    zeromq/Message.h
+    zeromq/Poller.h
+    zeromq/UnmanagedRegion.h
+    zeromq/Socket.h
+    zeromq/TransportFactory.h
   )
 
   if(BUILD_OFI_TRANSPORT)

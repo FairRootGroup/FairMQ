@@ -6,11 +6,11 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIRMQMESSAGEZMQ_H_
-#define FAIRMQMESSAGEZMQ_H_
+#ifndef FAIR_MQ_ZMQ_MESSAGE_H
+#define FAIR_MQ_ZMQ_MESSAGE_H
 
 #include <fairmq/Tools.h>
-#include "FairMQUnmanagedRegionZMQ.h"
+#include <fairmq/zeromq/UnmanagedRegion.h>
 #include <FairMQLogger.h>
 #include <FairMQMessage.h>
 #include <FairMQUnmanagedRegion.h>
@@ -22,20 +22,25 @@
 #include <memory>
 #include <string>
 
-class FairMQTransportFactory;
-
-class FairMQSocketZMQ;
-
-class FairMQMessageZMQ final : public FairMQMessage
+namespace fair
 {
-    friend class FairMQSocketZMQ;
+namespace mq
+{
+namespace zmq
+{
+
+class Socket;
+
+class Message final : public fair::mq::Message
+{
+    friend class Socket;
 
   public:
-    FairMQMessageZMQ(FairMQTransportFactory* factory = nullptr)
-        : FairMQMessage(factory)
+    Message(FairMQTransportFactory* factory = nullptr)
+        : fair::mq::Message(factory)
         , fUsedSizeModified(false)
         , fUsedSize()
-        , fMsg(fair::mq::tools::make_unique<zmq_msg_t>())
+        , fMsg(tools::make_unique<zmq_msg_t>())
         , fViewMsg(nullptr)
     {
         if (zmq_msg_init(fMsg.get()) != 0) {
@@ -43,11 +48,11 @@ class FairMQMessageZMQ final : public FairMQMessage
         }
     }
 
-    FairMQMessageZMQ(const size_t size, FairMQTransportFactory* factory = nullptr)
-        : FairMQMessage(factory)
+    Message(const size_t size, FairMQTransportFactory* factory = nullptr)
+        : fair::mq::Message(factory)
         , fUsedSizeModified(false)
         , fUsedSize(size)
-        , fMsg(fair::mq::tools::make_unique<zmq_msg_t>())
+        , fMsg(tools::make_unique<zmq_msg_t>())
         , fViewMsg(nullptr)
     {
         if (zmq_msg_init_size(fMsg.get(), size) != 0) {
@@ -55,11 +60,11 @@ class FairMQMessageZMQ final : public FairMQMessage
         }
     }
 
-    FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr, FairMQTransportFactory* factory = nullptr)
-        : FairMQMessage(factory)
+    Message(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr, FairMQTransportFactory* factory = nullptr)
+        : fair::mq::Message(factory)
         , fUsedSizeModified(false)
         , fUsedSize()
-        , fMsg(fair::mq::tools::make_unique<zmq_msg_t>())
+        , fMsg(tools::make_unique<zmq_msg_t>())
         , fViewMsg(nullptr)
     {
         if (zmq_msg_init_data(fMsg.get(), data, size, ffn, hint) != 0) {
@@ -67,11 +72,11 @@ class FairMQMessageZMQ final : public FairMQMessage
         }
     }
 
-    FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, FairMQTransportFactory* factory = nullptr)
-        : FairMQMessage(factory)
+    Message(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, FairMQTransportFactory* factory = nullptr)
+        : fair::mq::Message(factory)
         , fUsedSizeModified(false)
         , fUsedSize()
-        , fMsg(fair::mq::tools::make_unique<zmq_msg_t>())
+        , fMsg(tools::make_unique<zmq_msg_t>())
         , fViewMsg(nullptr)
     {
         // FIXME: make this zero-copy:
@@ -83,7 +88,7 @@ class FairMQMessageZMQ final : public FairMQMessage
 
         std::memcpy(zmq_msg_data(fMsg.get()), data, size);
         // call region callback
-        auto ptr = static_cast<FairMQUnmanagedRegionZMQ*>(region.get());
+        auto ptr = static_cast<UnmanagedRegion*>(region.get());
         if (ptr->fBulkCallback) {
             ptr->fBulkCallback({{data, size, hint}});
         } else if (ptr->fCallback) {
@@ -100,7 +105,7 @@ class FairMQMessageZMQ final : public FairMQMessage
     void Rebuild() override
     {
         CloseMessage();
-        fMsg = fair::mq::tools::make_unique<zmq_msg_t>();
+        fMsg = tools::make_unique<zmq_msg_t>();
         if (zmq_msg_init(fMsg.get()) != 0) {
             LOG(error) << "failed initializing message, reason: " << zmq_strerror(errno);
         }
@@ -109,7 +114,7 @@ class FairMQMessageZMQ final : public FairMQMessage
     void Rebuild(const size_t size) override
     {
         CloseMessage();
-        fMsg = fair::mq::tools::make_unique<zmq_msg_t>();
+        fMsg = tools::make_unique<zmq_msg_t>();
         if (zmq_msg_init_size(fMsg.get(), size) != 0) {
             LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
         }
@@ -118,7 +123,7 @@ class FairMQMessageZMQ final : public FairMQMessage
     void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
     {
         CloseMessage();
-        fMsg = fair::mq::tools::make_unique<zmq_msg_t>();
+        fMsg = tools::make_unique<zmq_msg_t>();
         if (zmq_msg_init_data(fMsg.get(), data, size, ffn, hint) != 0) {
             LOG(error) << "failed initializing message with data, reason: " << zmq_strerror(errno);
         }
@@ -165,7 +170,7 @@ class FairMQMessageZMQ final : public FairMQMessage
         // The check is needed because a send could fail and can be reattempted by the user, in this
         // case we do not want to modify buffer again.
         if (fUsedSizeModified && !fViewMsg) {
-            fViewMsg = fair::mq::tools::make_unique<zmq_msg_t>();
+            fViewMsg = tools::make_unique<zmq_msg_t>();
             void* ptr = zmq_msg_data(fMsg.get());
             if (zmq_msg_init_data(fViewMsg.get(), ptr, fUsedSize, [](void* /* data */, void* obj) {
                     zmq_msg_close(static_cast<zmq_msg_t*>(obj));
@@ -176,11 +181,11 @@ class FairMQMessageZMQ final : public FairMQMessage
         }
     }
 
-    fair::mq::Transport GetType() const override { return fair::mq::Transport::ZMQ; }
+    Transport GetType() const override { return Transport::ZMQ; }
 
-    void Copy(const FairMQMessage& msg) override
+    void Copy(const fair::mq::Message& msg) override
     {
-        const FairMQMessageZMQ& zMsg = static_cast<const FairMQMessageZMQ&>(msg);
+        const Message& zMsg = static_cast<const Message&>(msg);
         // Shares the message buffer between msg and this fMsg.
         if (zmq_msg_copy(fMsg.get(), zMsg.GetMessage()) != 0) {
             LOG(error) << "failed copying message, reason: " << zmq_strerror(errno);
@@ -194,7 +199,7 @@ class FairMQMessageZMQ final : public FairMQMessage
         }
     }
 
-    ~FairMQMessageZMQ() override { CloseMessage(); }
+    ~Message() override { CloseMessage(); }
 
   private:
     bool fUsedSizeModified;
@@ -231,4 +236,8 @@ class FairMQMessageZMQ final : public FairMQMessage
     }
 };
 
-#endif /* FAIRMQMESSAGEZMQ_H_ */
+}   // namespace zmq
+}   // namespace mq
+}   // namespace fair
+
+#endif /* FAIR_MQ_ZMQ_MESSAGE_H */
