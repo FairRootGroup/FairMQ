@@ -17,14 +17,13 @@
 #include "FairMQLogger.h"
 #include <fairmq/Tools.h>
 #include "FairMQUnmanagedRegionZMQ.h"
-#include <FairMQTransportFactory.h>
 
 #include <cstring>
 
 using namespace std;
 
 FairMQMessageZMQ::FairMQMessageZMQ(FairMQTransportFactory* factory)
-    : FairMQMessage{factory}
+    : FairMQMessage(factory)
     , fUsedSizeModified(false)
     , fUsedSize()
     , fMsg(fair::mq::tools::make_unique<zmq_msg_t>())
@@ -37,7 +36,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(FairMQTransportFactory* factory)
 }
 
 FairMQMessageZMQ::FairMQMessageZMQ(const size_t size, FairMQTransportFactory* factory)
-    : FairMQMessage{factory}
+    : FairMQMessage(factory)
     , fUsedSizeModified(false)
     , fUsedSize(size)
     , fMsg(fair::mq::tools::make_unique<zmq_msg_t>())
@@ -50,7 +49,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(const size_t size, FairMQTransportFactory* fa
 }
 
 FairMQMessageZMQ::FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn* ffn, void* hint, FairMQTransportFactory* factory)
-    : FairMQMessage{factory}
+    : FairMQMessage(factory)
     , fUsedSizeModified(false)
     , fUsedSize()
     , fMsg(fair::mq::tools::make_unique<zmq_msg_t>())
@@ -63,7 +62,7 @@ FairMQMessageZMQ::FairMQMessageZMQ(void* data, const size_t size, fairmq_free_fn
 }
 
 FairMQMessageZMQ::FairMQMessageZMQ(FairMQUnmanagedRegionPtr& region, void* data, const size_t size, void* hint, FairMQTransportFactory* factory)
-    : FairMQMessage{factory}
+    : FairMQMessage(factory)
     , fUsedSizeModified(false)
     , fUsedSize()
     , fMsg(fair::mq::tools::make_unique<zmq_msg_t>())
