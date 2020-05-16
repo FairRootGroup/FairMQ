@@ -190,6 +190,7 @@ if(BUILD_FAIRMQ)
     shmem/Common.h
     shmem/Manager.h
     shmem/Region.h
+    zeromq/Context.h
     zeromq/FairMQMessageZMQ.h
     zeromq/FairMQPollerZMQ.h
     zeromq/FairMQUnmanagedRegionZMQ.h

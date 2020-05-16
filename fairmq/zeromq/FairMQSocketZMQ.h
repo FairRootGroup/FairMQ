@@ -9,18 +9,20 @@
 #ifndef FAIRMQSOCKETZMQ_H_
 #define FAIRMQSOCKETZMQ_H_
 
-#include <atomic>
-
-#include <memory> // unique_ptr
-
+#include <fairmq/zeromq/Context.h>
 #include "FairMQSocket.h"
 #include "FairMQMessage.h"
+
+#include <atomic>
+#include <memory> // unique_ptr
+
 class FairMQTransportFactory;
 
 class FairMQSocketZMQ final : public FairMQSocket
 {
   public:
-    FairMQSocketZMQ(const std::string& type, const std::string& name, const std::string& id = "", void* context = nullptr, FairMQTransportFactory* factory = nullptr);
+    FairMQSocketZMQ(fair::mq::zmq::Context& ctx, const std::string& type, const std::string& name, const std::string& id = "", FairMQTransportFactory* factory = nullptr);
+
     FairMQSocketZMQ(const FairMQSocketZMQ&) = delete;
     FairMQSocketZMQ operator=(const FairMQSocketZMQ&) = delete;
 
@@ -37,9 +39,6 @@ class FairMQSocketZMQ final : public FairMQSocket
     void* GetSocket() const;
 
     void Close() override;
-
-    static void Interrupt();
-    static void Resume();
 
     void SetOption(const std::string& option, const void* value, size_t valueSize) override;
     void GetOption(const std::string& option, void* value, size_t* valueSize) override;
@@ -65,14 +64,13 @@ class FairMQSocketZMQ final : public FairMQSocket
     ~FairMQSocketZMQ() override;
 
   private:
+    fair::mq::zmq::Context& fCtx;
     void* fSocket;
     std::string fId;
     std::atomic<unsigned long> fBytesTx;
     std::atomic<unsigned long> fBytesRx;
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
-
-    static std::atomic<bool> fInterrupted;
 
     int fSndTimeout;
     int fRcvTimeout;

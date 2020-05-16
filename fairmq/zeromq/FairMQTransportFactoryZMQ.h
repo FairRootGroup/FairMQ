@@ -15,19 +15,16 @@
 #ifndef FAIRMQTRANSPORTFACTORYZMQ_H_
 #define FAIRMQTRANSPORTFACTORYZMQ_H_
 
+#include <fairmq/zeromq/Context.h>
+#include <fairmq/ProgOptions.h>
 #include "FairMQTransportFactory.h"
 #include "FairMQMessageZMQ.h"
 #include "FairMQSocketZMQ.h"
 #include "FairMQPollerZMQ.h"
 #include "FairMQUnmanagedRegionZMQ.h"
-#include <fairmq/ProgOptions.h>
 
-#include <condition_variable>
-#include <functional>
-#include <mutex>
-#include <queue>
+#include <memory> // unique_ptr
 #include <string>
-#include <thread>
 #include <vector>
 
 class FairMQTransportFactoryZMQ final : public FairMQTransportFactory
@@ -54,32 +51,21 @@ class FairMQTransportFactoryZMQ final : public FairMQTransportFactory
     FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionBulkCallback bulkCallback, const std::string& path = "", int flags = 0) override;
     FairMQUnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, const int64_t userFlags, FairMQRegionCallback callback, FairMQRegionBulkCallback bulkCallback, const std::string& path = "", int flags = 0);
 
-    void SubscribeToRegionEvents(FairMQRegionEventCallback callback) override;
-    bool SubscribedToRegionEvents() override;
-    void UnsubscribeFromRegionEvents() override;
-    void RegionEventsSubscription();
-    std::vector<fair::mq::RegionInfo> GetRegionInfo() override;
-    void RemoveRegion(uint64_t id);
+    void SubscribeToRegionEvents(FairMQRegionEventCallback callback) override { fCtx->SubscribeToRegionEvents(callback); }
+    bool SubscribedToRegionEvents() override { return fCtx->SubscribedToRegionEvents(); }
+    void UnsubscribeFromRegionEvents() override { fCtx->UnsubscribeFromRegionEvents(); }
+    std::vector<fair::mq::RegionInfo> GetRegionInfo() override { return fCtx->GetRegionInfo(); }
 
     fair::mq::Transport GetType() const override { return fair::mq::Transport::ZMQ; }
 
-    void Interrupt() override { FairMQSocketZMQ::Interrupt(); }
-    void Resume() override { FairMQSocketZMQ::Resume(); }
-    void Reset() override {}
+    void Interrupt() override { fCtx->Interrupt(); }
+    void Resume() override { fCtx->Resume(); }
+    void Reset() override { fCtx->Reset(); }
 
     ~FairMQTransportFactoryZMQ() override;
 
   private:
-    void* fContext;
-
-    std::mutex fMtx;
-    uint64_t fRegionCounter;
-    std::condition_variable fRegionEventsCV;
-    std::vector<fair::mq::RegionInfo> fRegionInfos;
-    std::queue<fair::mq::RegionInfo> fRegionEvents;
-    std::thread fRegionEventThread;
-    std::function<void(fair::mq::RegionInfo)> fRegionEventCallback;
-    bool fRegionEventsSubscriptionActive;
+    std::unique_ptr<fair::mq::zmq::Context> fCtx;
 };
 
 #endif /* FAIRMQTRANSPORTFACTORYZMQ_H_ */

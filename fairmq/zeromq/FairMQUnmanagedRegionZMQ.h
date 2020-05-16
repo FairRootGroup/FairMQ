@@ -9,6 +9,7 @@
 #ifndef FAIRMQUNMANAGEDREGIONZMQ_H_
 #define FAIRMQUNMANAGEDREGIONZMQ_H_
 
+#include <fairmq/zeromq/Context.h>
 #include "FairMQUnmanagedRegion.h"
 
 #include <cstddef> // size_t
@@ -21,7 +22,14 @@ class FairMQUnmanagedRegionZMQ final : public FairMQUnmanagedRegion
     friend class FairMQMessageZMQ;
 
   public:
-    FairMQUnmanagedRegionZMQ(uint64_t id, const size_t size, int64_t userFlags, FairMQRegionCallback callback, FairMQRegionBulkCallback bulkCallback, const std::string& /* path = "" */, int /* flags = 0 */, FairMQTransportFactory* factory = nullptr);
+    FairMQUnmanagedRegionZMQ(fair::mq::zmq::Context& ctx,
+                             size_t size,
+                             int64_t userFlags,
+                             FairMQRegionCallback callback,
+                             FairMQRegionBulkCallback bulkCallback,
+                             const std::string& path = "",
+                             int flags = 0,
+                             FairMQTransportFactory* factory = nullptr);
 
     FairMQUnmanagedRegionZMQ(const FairMQUnmanagedRegionZMQ&) = delete;
     FairMQUnmanagedRegionZMQ operator=(const FairMQUnmanagedRegionZMQ&) = delete;
@@ -34,6 +42,7 @@ class FairMQUnmanagedRegionZMQ final : public FairMQUnmanagedRegion
     virtual ~FairMQUnmanagedRegionZMQ();
 
   private:
+    fair::mq::zmq::Context& fCtx;
     uint64_t fId;
     void* fBuffer;
     size_t fSize;

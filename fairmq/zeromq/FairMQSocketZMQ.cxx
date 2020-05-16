@@ -13,16 +13,13 @@
 
 #include <zmq.h>
 
-#include <cassert>
-
 using namespace std;
 using namespace fair::mq;
 
-atomic<bool> FairMQSocketZMQ::fInterrupted(false);
-
-FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const string& id /*= ""*/, void* context, FairMQTransportFactory* fac)
-    : FairMQSocket{fac}
-    , fSocket(nullptr)
+FairMQSocketZMQ::FairMQSocketZMQ(fair::mq::zmq::Context& ctx, const string& type, const string& name, const string& id /*= ""*/, FairMQTransportFactory* factory)
+    : FairMQSocket(factory)
+    , fCtx(ctx)
+    , fSocket(zmq_socket(fCtx.GetZmqCtx(), GetConstant(type)))
     , fId(id + "." + name + "." + type)
     , fBytesTx(0)
     , fBytesRx(0)
@@ -31,9 +28,6 @@ FairMQSocketZMQ::FairMQSocketZMQ(const string& type, const string& name, const s
     , fSndTimeout(100)
     , fRcvTimeout(100)
 {
-    assert(context);
-    fSocket = zmq_socket(context, GetConstant(type));
-
     if (fSocket == nullptr)
     {
         LOG(error) << "Failed creating socket " << fId << ", reason: " << zmq_strerror(errno);
@@ -122,7 +116,7 @@ int FairMQSocketZMQ::Send(FairMQMessagePtr& msg, const int timeout)
 
             return nbytes;
         } else if (zmq_errno() == EAGAIN) {
-            if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0)) {
+            if (!fCtx.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
                 if (timeout > 0) {
                     elapsed += fSndTimeout;
                     if (elapsed >= timeout) {
@@ -161,7 +155,7 @@ int FairMQSocketZMQ::Receive(FairMQMessagePtr& msg, const int timeout)
             ++fMessagesRx;
             return nbytes;
         } else if (zmq_errno() == EAGAIN) {
-            if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0)) {
+            if (!fCtx.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
                 if (timeout > 0) {
                     elapsed += fRcvTimeout;
                     if (elapsed >= timeout) {
@@ -213,7 +207,7 @@ int64_t FairMQSocketZMQ::Send(vector<FairMQMessagePtr>& msgVec, const int timeou
                 } else {
                     // according to ZMQ docs, this can only occur for the first part
                     if (zmq_errno() == EAGAIN) {
-                        if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0)) {
+                        if (!fCtx.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
                             if (timeout > 0) {
                                 elapsed += fSndTimeout;
                                 if (elapsed >= timeout) {
@@ -278,7 +272,7 @@ int64_t FairMQSocketZMQ::Receive(vector<FairMQMessagePtr>& msgVec, const int tim
                 msgVec.push_back(move(part));
                 totalSize += nbytes;
             } else if (zmq_errno() == EAGAIN) {
-                if (!fInterrupted && ((flags & ZMQ_DONTWAIT) == 0)) {
+                if (!fCtx.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
                     if (timeout > 0) {
                         elapsed += fRcvTimeout;
                         if (elapsed >= timeout) {
@@ -327,16 +321,6 @@ void FairMQSocketZMQ::Close()
     }
 
     fSocket = nullptr;
-}
-
-void FairMQSocketZMQ::Interrupt()
-{
-    fInterrupted = true;
-}
-
-void FairMQSocketZMQ::Resume()
-{
-    fInterrupted = false;
 }
 
 void* FairMQSocketZMQ::GetSocket() const

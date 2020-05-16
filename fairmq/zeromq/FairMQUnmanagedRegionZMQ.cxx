@@ -7,19 +7,19 @@
  ********************************************************************************/
 
 #include "FairMQUnmanagedRegionZMQ.h"
-#include "FairMQTransportFactoryZMQ.h"
 #include "FairMQLogger.h"
 
-FairMQUnmanagedRegionZMQ::FairMQUnmanagedRegionZMQ(uint64_t id,
-                                                   const size_t size,
+FairMQUnmanagedRegionZMQ::FairMQUnmanagedRegionZMQ(fair::mq::zmq::Context& ctx,
+                                                   size_t size,
                                                    int64_t userFlags,
                                                    FairMQRegionCallback callback,
                                                    FairMQRegionBulkCallback bulkCallback,
                                                    const std::string& /* path = "" */,
                                                    int /* flags = 0 */,
-                                                   FairMQTransportFactory* factory /* = nullptr */)
+                                                   FairMQTransportFactory* factory)
     : FairMQUnmanagedRegion(factory)
-    , fId(id)
+    , fCtx(ctx)
+    , fId(fCtx.RegionCount())
     , fBuffer(malloc(size))
     , fSize(size)
     , fUserFlags(userFlags)
@@ -39,7 +39,7 @@ size_t FairMQUnmanagedRegionZMQ::GetSize() const
 
 FairMQUnmanagedRegionZMQ::~FairMQUnmanagedRegionZMQ()
 {
-    LOG(debug) << "destroying region";
-    static_cast<FairMQTransportFactoryZMQ*>(GetTransport())->RemoveRegion(fId);
+    LOG(debug) << "destroying region " << fId;
+    fCtx.RemoveRegion(fId);
     free(fBuffer);
 }
