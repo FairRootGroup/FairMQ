@@ -20,7 +20,7 @@ class FairMQSocket
 {
   public:
     FairMQSocket() {}
-    FairMQSocket(FairMQTransportFactory* fac): fTransport(fac) {}
+    FairMQSocket(FairMQTransportFactory* fac) : fTransport(fac) {}
 
     virtual std::string GetId() const = 0;
 
@@ -54,7 +54,7 @@ class FairMQSocket
     virtual unsigned long GetMessagesRx() const = 0;
 
     FairMQTransportFactory* GetTransport() { return fTransport; }
-    void SetTransport(FairMQTransportFactory* transport) { fTransport=transport; }
+    void SetTransport(FairMQTransportFactory* transport) { fTransport = transport; }
 
     virtual ~FairMQSocket() {};
 

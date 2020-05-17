@@ -52,7 +52,7 @@ struct SharedMemoryError : std::runtime_error { using std::runtime_error::runtim
 class Manager
 {
   public:
-    Manager(std::string id, std::string deviceId, size_t size)
+    Manager(std::string id, std::string deviceId, size_t size, bool throwOnBadAlloc)
         : fShmId(std::move(id))
         , fDeviceId(std::move(deviceId))
         , fSegmentName("fmq_" + fShmId + "_main")
@@ -69,6 +69,7 @@ class Manager
         , fMsgCounter(0)
         , fHeartbeatThread()
         , fSendHeartbeats(true)
+        , fThrowOnBadAlloc(throwOnBadAlloc)
     {
         using namespace boost::interprocess;
         LOG(debug) << "created/opened shared memory segment '" << "fmq_" << fShmId << "_main" << "' of " << size << " bytes. Available are " << fSegment.get_free_memory() << " bytes.";
@@ -415,6 +416,8 @@ class Manager
         }
     }
 
+    bool ThrowingOnBadAlloc() const { return fThrowOnBadAlloc; }
+
   private:
     std::string fShmId;
     std::string fDeviceId;
@@ -440,6 +443,7 @@ class Manager
 
     std::thread fHeartbeatThread;
     std::atomic<bool> fSendHeartbeats;
+    bool fThrowOnBadAlloc;
 };
 
 } // namespace shmem
