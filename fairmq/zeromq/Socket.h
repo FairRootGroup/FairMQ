@@ -9,29 +9,24 @@
 #ifndef FAIR_MQ_ZMQ_SOCKET_H
 #define FAIR_MQ_ZMQ_SOCKET_H
 
+#include <FairMQLogger.h>
+#include <FairMQMessage.h>
+#include <FairMQSocket.h>
+#include <atomic>
+#include <fairmq/Tools.h>
 #include <fairmq/zeromq/Context.h>
 #include <fairmq/zeromq/Message.h>
-#include <fairmq/Tools.h>
-#include <FairMQLogger.h>
-#include <FairMQSocket.h>
-#include <FairMQMessage.h>
-
+#include <memory>   // unique_ptr
 #include <zmq.h>
 
-#include <atomic>
-#include <memory> // unique_ptr
-
-namespace fair
-{
-namespace mq
-{
-namespace zmq
-{
+namespace fair {
+namespace mq {
+namespace zmq {
 
 class Socket final : public fair::mq::Socket
 {
   public:
-    Socket(Context& ctx, const std::string& type, const std::string& name, const std::string& id = "", FairMQTransportFactory* factory = nullptr)
+    Socket(Context& ctx, const std::string& type, const std::string& name, const std::string& id, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Socket(factory)
         , fCtx(ctx)
         , fSocket(zmq_socket(fCtx.GetZmqCtx(), GetConstant(type)))
@@ -43,39 +38,32 @@ class Socket final : public fair::mq::Socket
         , fSndTimeout(100)
         , fRcvTimeout(100)
     {
-        if (fSocket == nullptr)
-        {
+        if (fSocket == nullptr) {
             LOG(error) << "Failed creating socket " << fId << ", reason: " << zmq_strerror(errno);
             exit(EXIT_FAILURE);
         }
 
-        if (zmq_setsockopt(fSocket, ZMQ_IDENTITY, fId.c_str(), fId.length()) != 0)
-        {
+        if (zmq_setsockopt(fSocket, ZMQ_IDENTITY, fId.c_str(), fId.length()) != 0) {
             LOG(error) << "Failed setting ZMQ_IDENTITY socket option, reason: " << zmq_strerror(errno);
         }
 
-        // Tell socket to try and send/receive outstanding messages for <linger> milliseconds before terminating.
-        // Default value for ZeroMQ is -1, which is to wait forever.
+        // Tell socket to try and send/receive outstanding messages for <linger> milliseconds before
+        // terminating. Default value for ZeroMQ is -1, which is to wait forever.
         int linger = 1000;
-        if (zmq_setsockopt(fSocket, ZMQ_LINGER, &linger, sizeof(linger)) != 0)
-        {
+        if (zmq_setsockopt(fSocket, ZMQ_LINGER, &linger, sizeof(linger)) != 0) {
             LOG(error) << "Failed setting ZMQ_LINGER socket option, reason: " << zmq_strerror(errno);
         }
 
-        if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0)
-        {
+        if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0) {
             LOG(error) << "Failed setting ZMQ_SNDTIMEO socket option, reason: " << zmq_strerror(errno);
         }
 
-        if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0)
-        {
+        if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0) {
             LOG(error) << "Failed setting ZMQ_RCVTIMEO socket option, reason: " << zmq_strerror(errno);
         }
 
-        if (type == "sub")
-        {
-            if (zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, nullptr, 0) != 0)
-            {
+        if (type == "sub") {
+            if (zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, nullptr, 0) != 0) {
                 LOG(error) << "Failed setting ZMQ_SUBSCRIBE socket option, reason: " << zmq_strerror(errno);
             }
         }
@@ -92,10 +80,11 @@ class Socket final : public fair::mq::Socket
     {
         // LOG(info) << "bind socket " << fId << " on " << address;
 
-        if (zmq_bind(fSocket, address.c_str()) != 0)
-        {
+        if (zmq_bind(fSocket, address.c_str()) != 0) {
             if (errno == EADDRINUSE) {
-                // do not print error in this case, this is handled by FairMQDevice in case no connection could be established after trying a number of random ports from a range.
+                // do not print error in this case, this is handled by FairMQDevice in case no
+                // connection could be established after trying a number of random ports from a
+                // range.
                 return false;
             }
             LOG(error) << "Failed binding socket " << fId << ", address: " << address << ", reason: " << zmq_strerror(errno);
@@ -109,8 +98,7 @@ class Socket final : public fair::mq::Socket
     {
         // LOG(info) << "connect socket " << fId << " on " << address;
 
-        if (zmq_connect(fSocket, address.c_str()) != 0)
-        {
+        if (zmq_connect(fSocket, address.c_str()) != 0) {
             LOG(error) << "Failed connecting socket " << fId << ", address: " << address << ", reason: " << zmq_strerror(errno);
             return false;
         }
@@ -219,9 +207,7 @@ class Socket final : public fair::mq::Socket
                 for (unsigned int i = 0; i < vecSize; ++i) {
                     static_cast<Message*>(msgVec[i].get())->ApplyUsedSize();
 
-                    int nbytes = zmq_msg_send(static_cast<Message*>(msgVec[i].get())->GetMessage(),
-                                        fSocket,
-                                        (i < vecSize - 1) ? ZMQ_SNDMORE|flags : flags);
+                    int nbytes = zmq_msg_send(static_cast<Message*>(msgVec[i].get())->GetMessage(), fSocket, (i < vecSize - 1) ? ZMQ_SNDMORE | flags : flags);
                     if (nbytes >= 0) {
                         totalSize += nbytes;
                     } else {
@@ -257,15 +243,16 @@ class Socket final : public fair::mq::Socket
                     continue;
                 }
 
-                // store statistics on how many messages have been sent (handle all parts as a single message)
+                // store statistics on how many messages have been sent (handle all parts as a
+                // single message)
                 ++fMessagesTx;
                 fBytesTx += totalSize;
                 return totalSize;
             }
-        } // If there's only one part, send it as a regular message
+        }   // If there's only one part, send it as a regular message
         else if (vecSize == 1) {
             return Send(msgVec.back(), timeout);
-        } else { // if the vector is empty, something might be wrong
+        } else {   // if the vector is empty, something might be wrong
             LOG(warn) << "Will not send empty vector";
             return -1;
         }
@@ -319,7 +306,8 @@ class Socket final : public fair::mq::Socket
                 continue;
             }
 
-            // store statistics on how many messages have been received (handle all parts as a single message)
+            // store statistics on how many messages have been received (handle all parts as a
+            // single message)
             ++fMessagesRx;
             fBytesRx += totalSize;
             return totalSize;
@@ -332,13 +320,11 @@ class Socket final : public fair::mq::Socket
     {
         // LOG(debug) << "Closing socket " << fId;
 
-        if (fSocket == nullptr)
-        {
+        if (fSocket == nullptr) {
             return;
         }
 
-        if (zmq_close(fSocket) != 0)
-        {
+        if (zmq_close(fSocket) != 0) {
             LOG(error) << "Failed closing socket " << fId << ", reason: " << zmq_strerror(errno);
         }
 
@@ -347,16 +333,14 @@ class Socket final : public fair::mq::Socket
 
     void SetOption(const std::string& option, const void* value, size_t valueSize) override
     {
-        if (zmq_setsockopt(fSocket, GetConstant(option), value, valueSize) < 0)
-        {
+        if (zmq_setsockopt(fSocket, GetConstant(option), value, valueSize) < 0) {
             LOG(error) << "Failed setting socket option, reason: " << zmq_strerror(errno);
         }
     }
 
     void GetOption(const std::string& option, void* value, size_t* valueSize) override
     {
-        if (zmq_getsockopt(fSocket, GetConstant(option), value, valueSize) < 0)
-        {
+        if (zmq_getsockopt(fSocket, GetConstant(option), value, valueSize) < 0) {
             LOG(error) << "Failed getting socket option, reason: " << zmq_strerror(errno);
         }
     }

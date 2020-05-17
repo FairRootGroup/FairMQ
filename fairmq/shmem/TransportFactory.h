@@ -25,11 +25,9 @@
 
 #include <zmq.h>
 
-#include <vector>
+#include <memory> // unique_ptr
 #include <string>
-#include <atomic>
-#include <chrono>
-#include <thread>
+#include <vector>
 
 namespace fair
 {
@@ -45,7 +43,7 @@ class TransportFactory final : public fair::mq::TransportFactory
         : fair::mq::TransportFactory(id)
         , fDeviceId(id)
         , fShmId()
-        , fZMQContext(nullptr)
+        , fZMQContext(zmq_ctx_new())
         , fManager(nullptr)
     {
         int major, minor, patch;
@@ -53,7 +51,6 @@ class TransportFactory final : public fair::mq::TransportFactory
         LOG(debug) << "Transport: Using ZeroMQ (" << major << "." << minor << "." << patch << ") & "
                 << "boost::interprocess (" << (BOOST_VERSION / 100000) << "." << (BOOST_VERSION / 100 % 1000) << "." << (BOOST_VERSION % 100) << ")";
 
-        fZMQContext = zmq_ctx_new();
         if (!fZMQContext) {
             throw std::runtime_error(tools::ToString("failed creating context, reason: ", zmq_strerror(errno)));
         }
@@ -120,7 +117,6 @@ class TransportFactory final : public fair::mq::TransportFactory
 
     SocketPtr CreateSocket(const std::string& type, const std::string& name) override
     {
-        assert(fZMQContext);
         return tools::make_unique<Socket>(*fManager, type, name, GetId(), fZMQContext, this);
     }
 
@@ -141,43 +137,33 @@ class TransportFactory final : public fair::mq::TransportFactory
 
     UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0) override
     {
-        return tools::make_unique<UnmanagedRegion>(*fManager, size, 0, callback, nullptr, path, flags, this);
+        return CreateUnmanagedRegion(size, 0, callback, nullptr, path, flags);
     }
 
     UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, RegionBulkCallback bulkCallback = nullptr, const std::string& path = "", int flags = 0) override
     {
-        return tools::make_unique<UnmanagedRegion>(*fManager, size, 0, nullptr, bulkCallback, path, flags, this);
+        return CreateUnmanagedRegion(size, 0, nullptr, bulkCallback, path, flags);
     }
 
     UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, int64_t userFlags, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0) override
     {
-        return tools::make_unique<UnmanagedRegion>(*fManager, size, userFlags, callback, nullptr, path, flags, this);
+        return CreateUnmanagedRegion(size, userFlags, callback, nullptr, path, flags);
     }
 
     UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, int64_t userFlags, RegionBulkCallback bulkCallback = nullptr, const std::string& path = "", int flags = 0) override
     {
-        return tools::make_unique<UnmanagedRegion>(*fManager, size, userFlags, nullptr, bulkCallback, path, flags, this);
+        return CreateUnmanagedRegion(size, userFlags, nullptr, bulkCallback, path, flags);
     }
 
-    void SubscribeToRegionEvents(RegionEventCallback callback) override
+    UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, int64_t userFlags, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string& path, int flags)
     {
-        fManager->SubscribeToRegionEvents(callback);
+        return tools::make_unique<UnmanagedRegion>(*fManager, size, userFlags, callback, bulkCallback, path, flags, this);
     }
 
-    bool SubscribedToRegionEvents() override
-    {
-        return fManager->SubscribedToRegionEvents();
-    }
-
-    void UnsubscribeFromRegionEvents() override
-    {
-        fManager->UnsubscribeFromRegionEvents();
-    }
-
-    std::vector<fair::mq::RegionInfo> GetRegionInfo() override
-    {
-        return fManager->GetRegionInfo();
-    }
+    void SubscribeToRegionEvents(RegionEventCallback callback) override { fManager->SubscribeToRegionEvents(callback); }
+    bool SubscribedToRegionEvents() override { return fManager->SubscribedToRegionEvents(); }
+    void UnsubscribeFromRegionEvents() override { fManager->UnsubscribeFromRegionEvents(); }
+    std::vector<fair::mq::RegionInfo> GetRegionInfo() override { return fManager->GetRegionInfo(); }
 
     Transport GetType() const override { return fair::mq::Transport::SHM; }
 
