@@ -13,7 +13,8 @@
 #include <fairmq/ofi/TransportFactory.h>
 #endif
 #include <FairMQLogger.h>
-#include <fairmq/tools/Unique.h>
+#include <fairmq/Tools.h>
+
 #include <memory>
 #include <string>
 
@@ -55,6 +56,6 @@ auto FairMQTransportFactory::CreateTransportFactory(const string& type,
                    << ", and \"ofi\""
 #endif /* BUILD_OFI_TRANSPORT */
                    << ". Exiting.";
-        exit(EXIT_FAILURE);
+        throw fair::mq::TransportFactoryError(fair::mq::tools::ToString("Unavailable transport requested: ", type));
     }
 }

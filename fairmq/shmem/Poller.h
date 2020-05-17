@@ -9,13 +9,15 @@
 #define FAIR_MQ_SHMEM_POLLER_H_
 
 #include "Socket.h"
-
+#include <fairmq/Tools.h>
 #include <FairMQChannel.h>
 #include <FairMQLogger.h>
 #include <FairMQPoller.h>
+
+#include <zmq.h>
+
 #include <unordered_map>
 #include <vector>
-#include <zmq.h>
 
 class FairMQChannel;
 
@@ -101,9 +103,8 @@ class Poller final : public fair::mq::Poller
                 }
             }
         } catch (const std::out_of_range& oor) {
-            LOG(error) << "at least one of the provided channel keys for poller initialization is invalid";
-            LOG(error) << "out of range error: " << oor.what() << '\n';
-            exit(EXIT_FAILURE);
+            LOG(error) << "At least one of the provided channel keys for poller initialization is invalid." << " Out of range error: " << oor.what();
+            throw fair::mq::PollerError(fair::mq::tools::ToString("At least one of the provided channel keys for poller initialization is invalid. ", "Out of range error: ", oor.what()));
         }
     }
 
@@ -120,7 +121,7 @@ class Poller final : public fair::mq::Poller
             item.events = ZMQ_POLLIN;
         } else {
             LOG(error) << "invalid poller configuration, exiting.";
-            exit(EXIT_FAILURE);
+            throw fair::mq::PollerError("Invalid poller configuration, exiting.");
         }
     }
 
@@ -131,7 +132,7 @@ class Poller final : public fair::mq::Poller
                 LOG(debug) << "polling exited, reason: " << zmq_strerror(errno);
             } else {
                 LOG(error) << "polling failed, reason: " << zmq_strerror(errno);
-                throw std::runtime_error("polling failed");
+                throw fair::mq::PollerError(fair::mq::tools::ToString("Polling failed, reason: ", zmq_strerror(errno)));
             }
         }
     }
@@ -163,9 +164,9 @@ class Poller final : public fair::mq::Poller
 
             return false;
         } catch (const std::out_of_range& oor) {
-            LOG(error) << "invalid channel key: \"" << channelKey << "\"";
-            LOG(error) << "out of range error: " << oor.what() << '\n';
-            exit(EXIT_FAILURE);
+            LOG(error) << "invalid channel key: '" << channelKey << "'";
+            LOG(error) << "out of range error: " << oor.what();
+            throw fair::mq::PollerError(fair::mq::tools::ToString("Invalid channel key '", channelKey, "'. Out of range error: ", oor.what()));
         }
     }
 
@@ -178,9 +179,9 @@ class Poller final : public fair::mq::Poller
 
             return false;
         } catch (const std::out_of_range& oor) {
-            LOG(error) << "Invalid channel key: \"" << channelKey << "\"";
-            LOG(error) << "out of range error: " << oor.what() << '\n';
-            exit(EXIT_FAILURE);
+            LOG(error) << "invalid channel key: '" << channelKey << "'";
+            LOG(error) << "out of range error: " << oor.what();
+            throw fair::mq::PollerError(fair::mq::tools::ToString("Invalid channel key '", channelKey, "'. Out of range error: ", oor.what()));
         }
     }
 
