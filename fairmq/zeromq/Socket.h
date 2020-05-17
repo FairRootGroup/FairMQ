@@ -40,7 +40,7 @@ class Socket final : public fair::mq::Socket
     {
         if (fSocket == nullptr) {
             LOG(error) << "Failed creating socket " << fId << ", reason: " << zmq_strerror(errno);
-            exit(EXIT_FAILURE);
+            throw SocketError(tools::ToString("Unavailable transport requested: ", type));
         }
 
         if (zmq_setsockopt(fSocket, ZMQ_IDENTITY, fId.c_str(), fId.length()) != 0) {
