@@ -30,13 +30,11 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
 
   public:
     UnmanagedRegion(Context& ctx,
-                             size_t size,
-                             int64_t userFlags,
-                             RegionCallback callback,
-                             RegionBulkCallback bulkCallback,
-                             const std::string& /* path = "" */,
-                             int /* flags = 0 */,
-                             FairMQTransportFactory* factory = nullptr)
+                    size_t size,
+                    int64_t userFlags,
+                    RegionCallback callback,
+                    RegionBulkCallback bulkCallback,
+                    FairMQTransportFactory* factory = nullptr)
         : fair::mq::UnmanagedRegion(factory)
         , fCtx(ctx)
         , fId(fCtx.RegionCount())

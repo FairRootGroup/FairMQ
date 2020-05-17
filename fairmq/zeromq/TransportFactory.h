@@ -55,14 +55,17 @@ class TransportFactory final : public FairMQTransportFactory
     {
         return tools::make_unique<Message>(this);
     }
+
     MessagePtr CreateMessage(const size_t size) override
     {
         return tools::make_unique<Message>(size, this);
     }
+
     MessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
     {
         return tools::make_unique<Message>(data, size, ffn, hint, this);
     }
+
     MessagePtr CreateMessage(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0) override
     {
         return tools::make_unique<Message>(region, data, size, hint, this);
@@ -77,10 +80,12 @@ class TransportFactory final : public FairMQTransportFactory
     {
         return tools::make_unique<Poller>(channels);
     }
+
     PollerPtr CreatePoller(const std::vector<FairMQChannel*>& channels) const override
     {
         return tools::make_unique<Poller>(channels);
     }
+
     PollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const override
     {
         return tools::make_unique<Poller>(channelsMap, channelList);
@@ -90,21 +95,25 @@ class TransportFactory final : public FairMQTransportFactory
     {
         return CreateUnmanagedRegion(size, 0, callback, nullptr, path, flags);
     }
+
     UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, RegionBulkCallback bulkCallback, const std::string& path = "", int flags = 0) override
     {
         return CreateUnmanagedRegion(size, 0, nullptr, bulkCallback, path, flags);
     }
+
     UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, const int64_t userFlags, RegionCallback callback, const std::string& path = "", int flags = 0) override
     {
         return CreateUnmanagedRegion(size, userFlags, callback, nullptr, path, flags);
     }
+
     UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, const int64_t userFlags, RegionBulkCallback bulkCallback, const std::string& path = "", int flags = 0) override
     {
         return CreateUnmanagedRegion(size, userFlags, nullptr, bulkCallback, path, flags);
     }
-    UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, const int64_t userFlags, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string& path = "", int flags = 0)
+
+    UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, const int64_t userFlags, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string&, int)
     {
-        UnmanagedRegionPtr ptr = tools::make_unique<UnmanagedRegion>(*fCtx, size, userFlags, callback, bulkCallback, path, flags, this);
+        UnmanagedRegionPtr ptr = tools::make_unique<UnmanagedRegion>(*fCtx, size, userFlags, callback, bulkCallback, this);
         auto zPtr = static_cast<UnmanagedRegion*>(ptr.get());
         fCtx->AddRegion(zPtr->GetId(), zPtr->GetData(), zPtr->GetSize(), zPtr->GetUserFlags(), RegionEvent::created);
         return ptr;
