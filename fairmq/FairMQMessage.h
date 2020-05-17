@@ -21,7 +21,7 @@ class FairMQMessage
 {
   public:
     FairMQMessage() = default;
-    FairMQMessage(FairMQTransportFactory* factory):fTransport{factory} {}
+    FairMQMessage(FairMQTransportFactory* factory) : fTransport(factory) {}
     virtual void Rebuild() = 0;
     virtual void Rebuild(const size_t size) = 0;
     virtual void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) = 0;
@@ -33,7 +33,7 @@ class FairMQMessage
 
     virtual fair::mq::Transport GetType() const = 0;
     FairMQTransportFactory* GetTransport() { return fTransport; }
-    //void SetTransport(FairMQTransportFactory* transport) { fTransport = transport; }
+    void SetTransport(FairMQTransportFactory* transport) { fTransport = transport; }
 
     virtual void Copy(const FairMQMessage& msg) = 0;
 
@@ -53,6 +53,7 @@ namespace mq
 using Message = FairMQMessage;
 using MessagePtr = FairMQMessagePtr;
 struct MessageError : std::runtime_error { using std::runtime_error::runtime_error; };
+struct MessageBadAlloc : std::runtime_error { using std::runtime_error::runtime_error; };
 
 } /* namespace mq */
 } /* namespace fair */

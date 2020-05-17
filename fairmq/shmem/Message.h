@@ -12,7 +12,7 @@
 #include "Manager.h"
 #include "Region.h"
 #include "UnmanagedRegion.h"
-
+#include <fairmq/Tools.h>
 #include <FairMQLogger.h>
 #include <FairMQMessage.h>
 #include <FairMQUnmanagedRegion.h>
@@ -37,7 +37,7 @@ class Message final : public fair::mq::Message
 
   public:
     Message(Manager& manager, FairMQTransportFactory* factory = nullptr)
-        : fair::mq::Message{factory}
+        : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
         , fMeta{0, 0, 0, -1}
@@ -48,7 +48,7 @@ class Message final : public fair::mq::Message
     }
 
     Message(Manager& manager, const size_t size, FairMQTransportFactory* factory = nullptr)
-        : fair::mq::Message{factory}
+        : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
         , fMeta{0, 0, 0, -1}
@@ -60,7 +60,7 @@ class Message final : public fair::mq::Message
     }
 
     Message(Manager& manager, void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr, FairMQTransportFactory* factory = nullptr)
-        : fair::mq::Message{factory}
+        : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
         , fMeta{0, 0, 0, -1}
@@ -79,7 +79,7 @@ class Message final : public fair::mq::Message
     }
 
     Message(Manager& manager, UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, FairMQTransportFactory* factory = nullptr)
-        : fair::mq::Message{factory}
+        : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
         , fMeta{size, static_cast<UnmanagedRegion*>(region.get())->fRegionId, reinterpret_cast<size_t>(hint), -1}
@@ -97,7 +97,7 @@ class Message final : public fair::mq::Message
     }
 
     Message(Manager& manager, MetaHeader& hdr, FairMQTransportFactory* factory = nullptr)
-        : fair::mq::Message{factory}
+        : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
         , fMeta{hdr}
@@ -221,6 +221,8 @@ class Message final : public fair::mq::Message
 
     bool InitializeChunk(const size_t size)
     {
+        tools::RateLimiter rateLimiter(20);
+
         while (fMeta.fHandle < 0) {
             try {
                 boost::interprocess::managed_shared_memory::size_type actualSize = size;
@@ -228,7 +230,10 @@ class Message final : public fair::mq::Message
                 fLocalPtr = fManager.Segment().allocation_command<char>(boost::interprocess::allocate_new, size, actualSize, hint);
             } catch (boost::interprocess::bad_alloc& ba) {
                 // LOG(warn) << "Shared memory full...";
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                if (fManager.ThrowingOnBadAlloc()) {
+                    throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size));
+                }
+                rateLimiter.maybe_sleep();
                 if (fManager.Interrupted()) {
                     return false;
                 } else {
