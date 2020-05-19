@@ -101,9 +101,19 @@ class TransportFactory final : public fair::mq::TransportFactory
         return tools::make_unique<Message>(*fManager, this);
     }
 
+    MessagePtr CreateMessage(Alignment alignment) override
+    {
+        return tools::make_unique<Message>(*fManager, alignment, this);
+    }
+
     MessagePtr CreateMessage(const size_t size) override
     {
         return tools::make_unique<Message>(*fManager, size, this);
+    }
+
+    MessagePtr CreateMessage(const size_t size, Alignment alignment) override
+    {
+        return tools::make_unique<Message>(*fManager, size, alignment, this);
     }
 
     MessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override

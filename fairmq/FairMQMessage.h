@@ -17,11 +17,26 @@
 using fairmq_free_fn = void(void* data, void* hint);
 class FairMQTransportFactory;
 
+namespace fair
+{
+namespace mq
+{
+
+struct Alignment
+{
+    size_t alignment;
+    explicit operator size_t() const { return alignment; }
+};
+
+} /* namespace mq */
+} /* namespace fair */
+
 class FairMQMessage
 {
   public:
     FairMQMessage() = default;
     FairMQMessage(FairMQTransportFactory* factory) : fTransport(factory) {}
+
     virtual void Rebuild() = 0;
     virtual void Rebuild(const size_t size) = 0;
     virtual void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) = 0;

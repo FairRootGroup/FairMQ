@@ -41,8 +41,20 @@ auto TransportFactory::CreateMessage() -> MessagePtr
     return MessagePtr{new Message(&fMemoryResource)};
 }
 
+auto TransportFactory::CreateMessage(Alignment /* alignment */) -> MessagePtr
+{
+    // TODO Do not ignore alignment
+    return MessagePtr{new Message(&fMemoryResource)};
+}
+
 auto TransportFactory::CreateMessage(const size_t size) -> MessagePtr
 {
+    return MessagePtr{new Message(&fMemoryResource, size)};
+}
+
+auto TransportFactory::CreateMessage(const size_t size, Alignment /* alignment */) -> MessagePtr
+{
+    // TODO Do not ignore alignment
     return MessagePtr{new Message(&fMemoryResource, size)};
 }
 

@@ -34,7 +34,9 @@ class Message final : public fair::mq::Message
 {
   public:
     Message(boost::container::pmr::memory_resource* pmr);
+    Message(boost::container::pmr::memory_resource* pmr, Alignment alignment);
     Message(boost::container::pmr::memory_resource* pmr, const size_t size);
+    Message(boost::container::pmr::memory_resource* pmr, const size_t size, Alignment alignment);
     Message(boost::container::pmr::memory_resource* pmr,
             void* data,
             const size_t size,

@@ -18,7 +18,7 @@
 #include <fairmq/Transports.h>
 
 #include <string>
-#include <memory>
+#include <memory> // shared_ptr
 #include <vector>
 #include <unordered_map>
 #include <stdexcept>
@@ -47,13 +47,22 @@ class FairMQTransportFactory
     fair::mq::ChannelResource* GetMemoryResource() { return &fMemoryResource; }
     operator fair::mq::ChannelResource*() { return &fMemoryResource; }
 
-    /// @brief Create empty FairMQMessage
+    /// @brief Create empty FairMQMessage (for receiving)
     /// @return pointer to FairMQMessage
     virtual FairMQMessagePtr CreateMessage() = 0;
+    /// @brief Create empty FairMQMessage (for receiving), align received buffer to specified alignment
+    /// @param alignment alignment to align received buffer to
+    /// @return pointer to FairMQMessage
+    virtual FairMQMessagePtr CreateMessage(fair::mq::Alignment alignment) = 0;
     /// @brief Create new FairMQMessage of specified size
     /// @param size message size
     /// @return pointer to FairMQMessage
     virtual FairMQMessagePtr CreateMessage(const size_t size) = 0;
+    /// @brief Create new FairMQMessage of specified size and alignment
+    /// @param size message size
+    /// @param alignment message alignment
+    /// @return pointer to FairMQMessage
+    virtual FairMQMessagePtr CreateMessage(const size_t size, fair::mq::Alignment alignment) = 0;
     /// @brief Create new FairMQMessage with user provided buffer and size
     /// @param data pointer to user provided buffer
     /// @param size size of the user provided buffer

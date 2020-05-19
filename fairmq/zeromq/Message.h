@@ -47,8 +47,31 @@ class Message final : public fair::mq::Message
             LOG(error) << "failed initializing message, reason: " << zmq_strerror(errno);
         }
     }
+    Message(Alignment /* alignment */, FairMQTransportFactory* factory = nullptr)
+        : fair::mq::Message(factory)
+        , fUsedSizeModified(false)
+        , fUsedSize()
+        , fMsg(tools::make_unique<zmq_msg_t>())
+        , fViewMsg(nullptr)
+    {
+        if (zmq_msg_init(fMsg.get()) != 0) {
+            LOG(error) << "failed initializing message, reason: " << zmq_strerror(errno);
+        }
+    }
 
     Message(const size_t size, FairMQTransportFactory* factory = nullptr)
+        : fair::mq::Message(factory)
+        , fUsedSizeModified(false)
+        , fUsedSize(size)
+        , fMsg(tools::make_unique<zmq_msg_t>())
+        , fViewMsg(nullptr)
+    {
+        if (zmq_msg_init_size(fMsg.get(), size) != 0) {
+            LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
+        }
+    }
+
+    Message(const size_t size, Alignment /* alignment */, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fUsedSizeModified(false)
         , fUsedSize(size)
