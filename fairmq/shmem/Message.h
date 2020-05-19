@@ -47,6 +47,17 @@ class Message final : public fair::mq::Message
         fManager.IncrementMsgCounter();
     }
 
+    Message(Manager& manager, Alignment /* alignment */, FairMQTransportFactory* factory = nullptr)
+        : fair::mq::Message(factory)
+        , fManager(manager)
+        , fQueued(false)
+        , fMeta{0, 0, 0, -1}
+        , fRegionPtr(nullptr)
+        , fLocalPtr(nullptr)
+    {
+        fManager.IncrementMsgCounter();
+    }
+
     Message(Manager& manager, const size_t size, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
@@ -56,6 +67,18 @@ class Message final : public fair::mq::Message
         , fLocalPtr(nullptr)
     {
         InitializeChunk(size);
+        fManager.IncrementMsgCounter();
+    }
+
+    Message(Manager& manager, const size_t size, Alignment alignment, FairMQTransportFactory* factory = nullptr)
+        : fair::mq::Message(factory)
+        , fManager(manager)
+        , fQueued(false)
+        , fMeta{0, 0, 0, -1}
+        , fRegionPtr(nullptr)
+        , fLocalPtr(nullptr)
+    {
+        InitializeChunk(size, static_cast<size_t>(alignment));
         fManager.IncrementMsgCounter();
     }
 
@@ -219,19 +242,24 @@ class Message final : public fair::mq::Message
     mutable Region* fRegionPtr;
     mutable char* fLocalPtr;
 
-    bool InitializeChunk(const size_t size)
+    bool InitializeChunk(const size_t size, size_t alignment = 0)
     {
         tools::RateLimiter rateLimiter(20);
 
         while (fMeta.fHandle < 0) {
             try {
-                boost::interprocess::managed_shared_memory::size_type actualSize = size;
-                char* hint = 0; // unused for boost::interprocess::allocate_new
-                fLocalPtr = fManager.Segment().allocation_command<char>(boost::interprocess::allocate_new, size, actualSize, hint);
+                // boost::interprocess::managed_shared_memory::size_type actualSize = size;
+                // char* hint = 0; // unused for boost::interprocess::allocate_new
+                // fLocalPtr = fManager.Segment().allocation_command<char>(boost::interprocess::allocate_new, size, actualSize, hint);
+                if (alignment == 0) {
+                    fLocalPtr = reinterpret_cast<char*>(fManager.Segment().allocate(size));
+                } else {
+                    fLocalPtr = reinterpret_cast<char*>(fManager.Segment().allocate_aligned(size, alignment));
+                }
             } catch (boost::interprocess::bad_alloc& ba) {
                 // LOG(warn) << "Shared memory full...";
                 if (fManager.ThrowingOnBadAlloc()) {
-                    throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size));
+                    throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default"));
                 }
                 rateLimiter.maybe_sleep();
                 if (fManager.Interrupted()) {

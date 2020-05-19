@@ -34,7 +34,31 @@ Message::Message(boost::container::pmr::memory_resource* pmr)
 {
 }
 
+Message::Message(boost::container::pmr::memory_resource* pmr, Alignment /* alignment */)
+    : fInitialSize(0)
+    , fSize(0)
+    , fData(nullptr)
+    , fFreeFunction(nullptr)
+    , fHint(nullptr)
+    , fPmr(pmr)
+{
+}
+
 Message::Message(boost::container::pmr::memory_resource* pmr, const size_t size)
+    : fInitialSize(size)
+    , fSize(size)
+    , fData(nullptr)
+    , fFreeFunction(nullptr)
+    , fHint(nullptr)
+    , fPmr(pmr)
+{
+    if (size) {
+        fData = fPmr->allocate(size);
+        assert(fData);
+    }
+}
+
+Message::Message(boost::container::pmr::memory_resource* pmr, const size_t size, Alignment /* alignment */)
     : fInitialSize(size)
     , fSize(size)
     , fData(nullptr)

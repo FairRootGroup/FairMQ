@@ -15,6 +15,7 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <cstdint>
 
 namespace
 {
@@ -77,6 +78,19 @@ void RunMsgRebuild(const string& transport)
     EXPECT_EQ(string(static_cast<char*>(msg->GetData()), msg->GetSize()), string("asdf"));
 }
 
+void Alignment(const string& transport)
+{
+    size_t session{fair::mq::tools::UuidHash()};
+
+    fair::mq::ProgOptions config;
+    config.SetProperty<string>("session", to_string(session));
+
+    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
+
+    FairMQMessagePtr msg(factory->CreateMessage(100, fair::mq::Alignment{64}));
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(msg->GetData()) % 64, 0);
+}
+
 TEST(Resize, zeromq)
 {
     RunPushPullWithMsgResize("zeromq", "ipc://test_message_resize");
@@ -95,6 +109,11 @@ TEST(Rebuild, zeromq)
 TEST(Rebuild, shmem)
 {
     RunMsgRebuild("shmem");
+}
+
+TEST(Alignment, shmem) // TODO: add test for ZeroMQ once it is implemented
+{
+    Alignment("shmem");
 }
 
 } // namespace

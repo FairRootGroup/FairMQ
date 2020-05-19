@@ -36,7 +36,9 @@ class TransportFactory final : public FairMQTransportFactory
     TransportFactory operator=(const TransportFactory&) = delete;
 
     auto CreateMessage() -> MessagePtr override;
+    auto CreateMessage(Alignment alignment) -> MessagePtr override;
     auto CreateMessage(const std::size_t size) -> MessagePtr override;
+    auto CreateMessage(const std::size_t size, Alignment alignment) -> MessagePtr override;
     auto CreateMessage(void* data, const std::size_t size, fairmq_free_fn* ffn, void* hint = nullptr) -> MessagePtr override;
     auto CreateMessage(UnmanagedRegionPtr& region, void* data, const std::size_t size, void* hint = nullptr) -> MessagePtr override;
 
