@@ -51,6 +51,8 @@ fairmq_build_option(BUILD_DOCS              "Build FairMQ documentation."
                                              DEFAULT OFF)
 fairmq_build_option(FAST_BUILD              "Fast production build. Not recommended for development."
                                              DEFAULT OFF)
+fairmq_build_option(USE_EXTERNAL_GTEST      "Do not use bundled GTest. Not recommended."
+                                             DEFAULT OFF)
 ################################################################################
 
 
@@ -147,7 +149,9 @@ if(BUILD_FAIRMQ)
 endif()
 
 if(BUILD_TESTING)
-  find_package2(PRIVATE GTest VERSION 1.7.0)
+  if(USE_EXTERNAL_GTEST)
+    find_package2(PRIVATE GTest VERSION 1.7.0)
+  endif()
   if(NOT GTest_FOUND)
     build_bundled(GTest extern/googletest)
     find_package2(PRIVATE GTest REQUIRED)
