@@ -24,7 +24,7 @@ namespace
     std::atomic<sig_atomic_t> gLastSignal(0);
     std::atomic<int> gSignalCount(0);
 
-    extern "C" auto signal_handler(int signal) -> void
+    extern "C" auto sigint_handler(int signal) -> void
     {
         ++gSignalCount;
         gLastSignal = signal;
@@ -32,6 +32,11 @@ namespace
         if (gSignalCount > 1) {
             std::abort();
         }
+    }
+
+    extern "C" auto sigterm_handler(int signal) -> void
+    {
+        gLastSignal = signal;
     }
 }
 
@@ -85,8 +90,8 @@ Control::Control(const string& name, const Plugin::Version version, const string
     if (GetProperty<int>("catch-signals") > 0) {
         LOG(debug) << "Plugin '" << name << "' is setting up signal handling for SIGINT and SIGTERM";
         fSignalHandlerThread = thread(&Control::SignalHandler, this);
-        signal(SIGINT, signal_handler);
-        signal(SIGTERM, signal_handler);
+        signal(SIGINT, sigint_handler);
+        signal(SIGTERM, sigterm_handler);
     } else {
         LOG(warn) << "Signal handling (e.g. Ctrl-C) has been deactivated.";
     }
