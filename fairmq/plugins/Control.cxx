@@ -23,7 +23,6 @@ namespace
 {
     std::atomic<sig_atomic_t> gLastSignal(0);
     std::atomic<int> gSignalCount(0);
-    std::atomic<bool> gSigtermRequested(false);
 
     extern "C" auto sigint_handler(int signal) -> void
     {
@@ -38,7 +37,6 @@ namespace
     extern "C" auto sigterm_handler(int signal) -> void
     {
         ++gSignalCount;
-        gSigtermRequested = true;
         gLastSignal = signal;
     }
 }
@@ -398,7 +396,7 @@ auto Control::SignalHandler() -> void
         this_thread::sleep_for(chrono::milliseconds(100));
     }
 
-    if (!fPluginShutdownRequested || gSigtermRequested) {
+    if (!fPluginShutdownRequested) {
         LOG(info) << "Received device shutdown request (signal " << gLastSignal << ").";
         LOG(info) << "Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.";
 
