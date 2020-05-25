@@ -117,16 +117,22 @@ void ProgOptions::ParseAll(const int argc, char const* const* argv, bool allowUn
     // clear the container because it was filled with default values and subsequent calls to store() do not overwrite the existing values
     fVarMap.clear();
 
-    if (allowUnregistered) {
-        po::command_line_parser parser(argc, argv);
-        parser.options(fAllOptions).allow_unregistered();
-        po::parsed_options parsed = parser.run();
-        fUnregisteredOptions = po::collect_unrecognized(parsed.options, po::include_positional);
 
-        po::store(parsed, fVarMap);
-    } else {
-        po::store(po::parse_command_line(argc, argv, fAllOptions), fVarMap);
+    po::command_line_parser parser(argc, argv);
+
+    if (allowUnregistered) {
+        parser.options(fAllOptions).allow_unregistered();
     }
+
+    using namespace po::command_line_style;
+    style_t style = style_t(allow_short | short_allow_adjacent | short_allow_next | allow_long | long_allow_adjacent | long_allow_next | allow_sticky | allow_dash_for_short);
+    parser.style(style);
+
+    po::parsed_options parsed = parser.run();
+
+    fUnregisteredOptions = po::collect_unrecognized(parsed.options, po::include_positional);
+
+    po::store(parsed, fVarMap);
 }
 
 void ProgOptions::Notify()
