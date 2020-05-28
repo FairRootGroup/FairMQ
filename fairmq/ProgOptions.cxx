@@ -120,8 +120,10 @@ void ProgOptions::ParseAll(const int argc, char const* const* argv, bool allowUn
 
     po::command_line_parser parser(argc, argv);
 
+    parser.options(fAllOptions);
+
     if (allowUnregistered) {
-        parser.options(fAllOptions).allow_unregistered();
+        parser.allow_unregistered();
     }
 
     using namespace po::command_line_style;
