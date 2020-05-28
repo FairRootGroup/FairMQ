@@ -70,6 +70,9 @@ TEST(ProgOptions, SetAndGet)
     set_and_get<vector<double>>(o, "_vector<double>", { 33.22, 33.23, 33.24 });
     set_and_get<vector<long double>>(o, "_vector<long double>", { 333.222, 333.223, 333.224 });
     set_and_get<vector<boost::filesystem::path>>(o, "_vector<boost::filesystem::path>", { boost::filesystem::path("C:\\Windows"), boost::filesystem::path("C:\\Windows\\System32") });
+
+    ASSERT_THROW(o.ParseAll({"cmd", "--unregistered", "option"}, false), boost::program_options::unknown_option);
+    ASSERT_NO_THROW(o.ParseAll({"cmd", "--unregistered", "option"}, true));
 }
 
 template<typename T>
