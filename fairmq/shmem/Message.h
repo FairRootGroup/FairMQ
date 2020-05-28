@@ -109,7 +109,7 @@ class Message final : public fair::mq::Message
         , fRegionPtr(nullptr)
         , fLocalPtr(static_cast<char*>(data))
     {
-        if (reinterpret_cast<const char*>(data) >= reinterpret_cast<const char*>(region->GetData()) ||
+        if (reinterpret_cast<const char*>(data) >= reinterpret_cast<const char*>(region->GetData()) &&
             reinterpret_cast<const char*>(data) <= reinterpret_cast<const char*>(region->GetData()) + region->GetSize()) {
             fMeta.fHandle = (boost::interprocess::managed_shared_memory::handle_t)(reinterpret_cast<const char*>(data) - reinterpret_cast<const char*>(region->GetData()));
         } else {
