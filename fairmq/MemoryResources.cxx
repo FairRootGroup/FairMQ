@@ -15,8 +15,7 @@
 #include <fairmq/FairMQTransportFactory.h>
 #include <fairmq/MemoryResources.h>
 
-void *fair::mq::ChannelResource::do_allocate(std::size_t bytes, std::size_t /*alignment*/)
+void *fair::mq::ChannelResource::do_allocate(std::size_t bytes, std::size_t alignment)
 {
-    return setMessage(factory->CreateMessage(bytes));
+    return setMessage(factory->CreateMessage(bytes, fair::mq::Alignment{alignment}));
 }
-
