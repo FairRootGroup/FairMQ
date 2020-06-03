@@ -505,6 +505,8 @@ class Socket final : public fair::mq::Socket
         if (constant == "no-block") return ZMQ_DONTWAIT;
         if (constant == "snd-more no-block") return ZMQ_DONTWAIT|ZMQ_SNDMORE;
 
+        if (constant == "fd") return ZMQ_FD;
+
         return -1;
     }
 
