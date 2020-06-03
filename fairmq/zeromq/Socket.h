@@ -459,6 +459,8 @@ class Socket final : public fair::mq::Socket
 
         if (constant == "linger") return ZMQ_LINGER;
 
+        if (constant == "fd") return ZMQ_FD;
+
         return -1;
     }
 
