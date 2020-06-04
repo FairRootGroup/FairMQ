@@ -8,6 +8,8 @@
 #ifndef FAIR_MQ_SHMEM_COMMON_H_
 #define FAIR_MQ_SHMEM_COMMON_H_
 
+#include <picosha2.h>
+
 #include <atomic>
 #include <string>
 #include <unordered_map>
@@ -110,9 +112,9 @@ struct RegionBlock
 // a hash of user id + session id, truncated to 8 characters (to accommodate for name size limit on some systems (MacOS)).
 inline std::string buildShmIdFromSessionIdAndUserId(const std::string& sessionId)
 {
-    boost::hash<std::string> stringHash;
-    std::string shmId(std::to_string(stringHash(std::string((std::to_string(geteuid()) + sessionId)))));
-    shmId.resize(8, '_');
+    std::string seed((std::to_string(geteuid()) + sessionId));
+    std::string shmId = picosha2::hash256_hex_string(seed);
+    shmId.resize(10, '_');
     return shmId;
 }
 
