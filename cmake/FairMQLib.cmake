@@ -498,6 +498,8 @@ function(build_bundled package bundle)
     set(${package}_BUILD_INCLUDE_DIR ${${package}_SOURCE_DIR}/asio/include CACHE PATH "Bundled ${package} build-interface include dir")
     set(${package}_INSTALL_INCLUDE_DIR ${PROJECT_INSTALL_INCDIR}/bundled CACHE PATH "Bundled ${package} install-interface include dir")
     set(${package}_ROOT ${${package}_SOURCE_DIR}/asio)
+  elseif(${package} STREQUAL PicoSHA2)
+    set(${package}_ROOT ${${package}_SOURCE_DIR})
   endif()
 
   string(TOUPPER ${package} package_upper)

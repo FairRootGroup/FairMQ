@@ -325,6 +325,7 @@ if(BUILD_FAIRMQ)
 
     PRIVATE # only libFairMQ links against private dependencies
     libzmq
+    PicoSHA2
     ${OFI_DEPS}
   )
   set_target_properties(${_target} PROPERTIES
@@ -377,6 +378,7 @@ if(BUILD_FAIRMQ)
     Boost::boost
     Boost::date_time
     Boost::program_options
+    PicoSHA2
   )
   target_include_directories(fairmq-shmmonitor PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
