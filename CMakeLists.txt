@@ -146,6 +146,8 @@ if(BUILD_FAIRMQ)
   find_package2(PRIVATE ZeroMQ REQUIRED
     VERSION 4.1.4
   )
+  build_bundled(PicoSHA2 extern/PicoSHA2)
+  find_package2(PRIVATE PicoSHA2 REQUIRED)
 endif()
 
 if(BUILD_TESTING)
