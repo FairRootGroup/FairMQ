@@ -4,3 +4,6 @@
 [submodule "extern/asio"]
 	path = extern/asio
 	url = https://github.com/chriskohlhoff/asio
+[submodule "extern/PicoSHA2"]
+	path = extern/PicoSHA2
+	url = https://github.com/okdshin/PicoSHA2
