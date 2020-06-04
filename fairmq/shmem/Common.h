@@ -18,6 +18,7 @@
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/containers/vector.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/format.hpp>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -107,13 +108,14 @@ struct RegionBlock
 };
 
 // find id for unique shmem name:
-// a hash of user id + session id, truncated to 8 characters (to accommodate for name size limit on some systems (MacOS)).
+// a hash of user id + session id, then we represent it as hex (to increase per
+// char information) and we keep the lower part of the number (because its the one 
+// that varies the most when you have short strings with the same start).
 inline std::string buildShmIdFromSessionIdAndUserId(const std::string& sessionId)
 {
-    boost::hash<std::string> stringHash;
-    std::string shmId(std::to_string(stringHash(std::string((std::to_string(geteuid()) + sessionId)))));
-    shmId.resize(8, '_');
-    return shmId;
+    size_t seed = geteuid();
+    boost::hash_combine(seed, sessionId);
+    return (boost::format("%x") % (int) seed).str();
 }
 
 } // namespace shmem
