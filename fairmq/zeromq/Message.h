@@ -155,9 +155,17 @@ class Message final : public fair::mq::Message
     void* GetData() const override
     {
         if (!fViewMsg) {
-            return zmq_msg_data(fMsg.get());
+            if (zmq_msg_size(fMsg.get()) > 0) {
+                return zmq_msg_data(fMsg.get());
+            } else {
+                return nullptr;
+            }
         } else {
-            return zmq_msg_data(fViewMsg.get());
+            if (zmq_msg_size(fViewMsg.get()) > 0) {
+                return zmq_msg_data(fViewMsg.get());
+            } else {
+                return nullptr;
+            }
         }
     }
 
