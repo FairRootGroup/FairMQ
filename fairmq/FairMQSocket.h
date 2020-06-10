@@ -9,9 +9,10 @@
 #ifndef FAIRMQSOCKET_H_
 #define FAIRMQSOCKET_H_
 
+#include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <memory>
 
 #include "FairMQMessage.h"
 class FairMQTransportFactory;
