@@ -11,6 +11,7 @@
 
 #include <cstddef> // for size_t
 #include <memory> // unique_ptr
+#include <stdexcept>
 
 #include <fairmq/Transports.h>
 
