@@ -27,8 +27,7 @@ Sampler::Sampler()
     , fNumIterations(0)
     , fRegion(nullptr)
     , fNumUnackedMsgs(0)
-{
-}
+{}
 
 void Sampler::InitTask()
 {
@@ -36,20 +35,22 @@ void Sampler::InitTask()
     fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 
     fChannels.at("data").at(0).Transport()->SubscribeToRegionEvents([](FairMQRegionInfo info) {
-        LOG(warn) << ">>>" << info.event;
-        LOG(warn) << "id: " << info.id;
-        LOG(warn) << "ptr: " << info.ptr;
-        LOG(warn) << "size: " << info.size;
-        LOG(warn) << "flags: " << info.flags;
+        LOG(info) << "Region event: " << info.event
+                  << ", id: " << info.id
+                  << ", ptr: " << info.ptr
+                  << ", size: " << info.size
+                  << ", flags: " << info.flags;
     });
 
     fRegion = FairMQUnmanagedRegionPtr(NewUnmanagedRegionFor("data",
                                                              0,
                                                              10000000,
                                                              [this](const std::vector<fair::mq::RegionBlock>& blocks) { // callback to be called when message buffers no longer needed by transport
+                                                                 lock_guard<mutex> lock(fMtx);
                                                                  fNumUnackedMsgs -= blocks.size();
+
                                                                  if (fMaxIterations > 0) {
-                                                                    LOG(debug) << "Received " << blocks.size() << " acks";
+                                                                    LOG(info) << "Received " << blocks.size() << " acks";
                                                                  }
                                                              }
                                                              ));
@@ -69,14 +70,14 @@ bool Sampler::ConditionalRun()
     // LOG(info) << "check: " << static_cast<char*>(fRegion->GetData())[3];
     // std::this_thread::sleep_for(std::chrono::seconds(1));
 
+    lock_guard<mutex> lock(fMtx);
     if (Send(msg, "data", 0) > 0) {
-        ++fNumUnackedMsgs;
-
         if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
             LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
             return false;
         }
     }
+    ++fNumUnackedMsgs;
 
     return true;
 }
@@ -84,10 +85,17 @@ bool Sampler::ConditionalRun()
 void Sampler::ResetTask()
 {
     // if not all messages acknowledged, wait for a bit. But only once, since receiver could be already dead.
-    if (fNumUnackedMsgs != 0) {
-        LOG(debug) << "waiting for all acknowledgements... (" << fNumUnackedMsgs << ")";
-        this_thread::sleep_for(chrono::milliseconds(500));
-        LOG(debug) << "done, still unacked: " << fNumUnackedMsgs;
+    {
+        unique_lock<mutex> lock(fMtx);
+        if (fNumUnackedMsgs != 0) {
+            LOG(info) << "Waiting for all acknowledgements... (" << fNumUnackedMsgs << ")";
+            lock.unlock();
+            this_thread::sleep_for(chrono::milliseconds(500));
+            lock.lock();
+            LOG(info) << "Done, still not acknowledged: " << fNumUnackedMsgs;
+        } else {
+            LOG(info) << "All acknowledgements received";
+        }
     }
     fRegion.reset();
     fChannels.at("data").at(0).Transport()->UnsubscribeFromRegionEvents();
