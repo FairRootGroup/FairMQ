@@ -30,11 +30,11 @@ void Sink::InitTask()
     // Get the fMaxIterations value from the command line options (via fConfig)
     fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
     fChannels.at("data").at(0).Transport()->SubscribeToRegionEvents([](FairMQRegionInfo info) {
-        LOG(warn) << ">>>" << info.event;
-        LOG(warn) << "id: " << info.id;
-        LOG(warn) << "ptr: " << info.ptr;
-        LOG(warn) << "size: " << info.size;
-        LOG(warn) << "flags: " << info.flags;
+        LOG(info) << "Region event: " << info.event
+                  << ", id: " << info.id
+                  << ", ptr: " << info.ptr
+                  << ", size: " << info.size
+                  << ", flags: " << info.flags;
     });
 }
 

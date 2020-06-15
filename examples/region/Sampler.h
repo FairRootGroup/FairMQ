@@ -15,7 +15,8 @@
 #ifndef FAIRMQEXAMPLEREGIONSAMPLER_H
 #define FAIRMQEXAMPLEREGIONSAMPLER_H
 
-#include <atomic>
+#include <mutex>
+#include <cstdint>
 
 #include "FairMQDevice.h"
 
@@ -38,7 +39,8 @@ class Sampler : public FairMQDevice
     uint64_t fMaxIterations;
     uint64_t fNumIterations;
     FairMQUnmanagedRegionPtr fRegion;
-    std::atomic<uint64_t> fNumUnackedMsgs;
+    std::mutex fMtx;
+    uint64_t fNumUnackedMsgs;
 };
 
 } // namespace example_region
