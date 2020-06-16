@@ -32,6 +32,8 @@
 #include <boost/interprocess/ipc/message_queue.hpp>
 
 #include <cstdlib> // getenv
+#include <condition_variable>
+#include <mutex>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -99,39 +101,6 @@ class Manager
 
     Manager(const Manager&) = delete;
     Manager operator=(const Manager&) = delete;
-
-    ~Manager()
-    {
-        using namespace boost::interprocess;
-        bool lastRemoved = false;
-
-        UnsubscribeFromRegionEvents();
-
-        fSendHeartbeats = false;
-        fHeartbeatThread.join();
-
-        try {
-            boost::interprocess::scoped_lock<named_mutex> lock(fShmMtx);
-
-            (fDeviceCounter->fCount)--;
-
-            if (fDeviceCounter->fCount == 0) {
-                LOG(debug) << "last segment user, removing segment.";
-
-                RemoveSegments();
-                lastRemoved = true;
-            } else {
-                LOG(debug) << "other segment users present (" << fDeviceCounter->fCount << "), not removing it.";
-            }
-        } catch(interprocess_exception& e) {
-            LOG(error) << "error while acquiring lock in Manager destructor: " << e.what();
-        }
-
-        if (lastRemoved) {
-            named_mutex::remove(std::string("fmq_" + fShmId + "_mtx").c_str());
-            named_condition::remove(std::string("fmq_" + fShmId + "_cv").c_str());
-        }
-    }
 
     boost::interprocess::managed_shared_memory& Segment() { return fSegment; }
     boost::interprocess::managed_shared_memory& ManagementSegment() { return fManagementSegment; }
@@ -274,9 +243,9 @@ class Manager
 
     void RemoveRegion(const uint64_t id)
     {
+        fRegions.erase(id);
         {
             boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
-            fRegions.erase(id);
             fRegionInfos->at(id).fDestroyed = true;
         }
         fRegionEventsCV.notify_all();
@@ -385,38 +354,78 @@ class Manager
     {
         using namespace boost::interprocess;
         if (shared_memory_object::remove(fSegmentName.c_str())) {
-            LOG(debug) << "successfully removed '" << fSegmentName << "' segment after the device has stopped.";
+            LOG(debug) << "Removed '" << fSegmentName << "' segment after the device has stopped.";
         } else {
-            LOG(debug) << "did not remove " << fSegmentName << " segment after the device stopped. Already removed?";
+            LOG(debug) << "Did not remove " << fSegmentName << " segment after the device stopped. Already removed?";
         }
 
         if (shared_memory_object::remove(fManagementSegmentName.c_str())) {
-            LOG(debug) << "successfully removed '" << fManagementSegmentName << "' segment after the device has stopped.";
+            LOG(debug) << "Removed '" << fManagementSegmentName << "' segment after the device has stopped.";
         } else {
-            LOG(debug) << "did not remove '" << fManagementSegmentName << "' segment after the device stopped. Already removed?";
+            LOG(debug) << "Did not remove '" << fManagementSegmentName << "' segment after the device stopped. Already removed?";
         }
     }
 
     void SendHeartbeats()
     {
         std::string controlQueueName("fmq_" + fShmId + "_cq");
+        std::unique_lock<std::mutex> lock(fHeartbeatsMtx);
         while (fSendHeartbeats) {
             try {
                 boost::interprocess::message_queue mq(boost::interprocess::open_only, controlQueueName.c_str());
                 boost::posix_time::ptime sndTill = boost::posix_time::microsec_clock::universal_time() + boost::posix_time::milliseconds(100);
                 if (mq.timed_send(fDeviceId.c_str(), fDeviceId.size(), 0, sndTill)) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    fHeartbeatsCV.wait_for(lock, std::chrono::milliseconds(100), [&]() { return !fSendHeartbeats; });
                 } else {
                     LOG(debug) << "control queue timeout";
                 }
             } catch (boost::interprocess::interprocess_exception& ie) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                // LOG(warn) << "no " << controlQueueName << " found";
+                fHeartbeatsCV.wait_for(lock, std::chrono::milliseconds(500), [&]() { return !fSendHeartbeats; });
+                // LOG(debug) << "no " << controlQueueName << " found";
             }
         }
     }
 
     bool ThrowingOnBadAlloc() const { return fThrowOnBadAlloc; }
+
+    ~Manager()
+    {
+        using namespace boost::interprocess;
+        bool lastRemoved = false;
+
+        UnsubscribeFromRegionEvents();
+
+        {
+            std::unique_lock<std::mutex> lock(fHeartbeatsMtx);
+            fSendHeartbeats = false;
+        }
+        fHeartbeatsCV.notify_one();
+        if (fHeartbeatThread.joinable()) {
+            fHeartbeatThread.join();
+        }
+
+        try {
+            boost::interprocess::scoped_lock<named_mutex> lock(fShmMtx);
+
+            (fDeviceCounter->fCount)--;
+
+            if (fDeviceCounter->fCount == 0) {
+                LOG(debug) << "Last segment user, removing segment.";
+
+                RemoveSegments();
+                lastRemoved = true;
+            } else {
+                LOG(debug) << "Other segment users present (" << fDeviceCounter->fCount << "), skipping removal.";
+            }
+        } catch(interprocess_exception& e) {
+            LOG(error) << "Manager could not acquire lock: " << e.what();
+        }
+
+        if (lastRemoved) {
+            named_mutex::remove(std::string("fmq_" + fShmId + "_mtx").c_str());
+            named_condition::remove(std::string("fmq_" + fShmId + "_cv").c_str());
+        }
+    }
 
   private:
     std::string fShmId;
@@ -442,7 +451,10 @@ class Manager
     std::atomic<int32_t> fMsgCounter; // TODO: find a better lifetime solution instead of the counter
 
     std::thread fHeartbeatThread;
-    std::atomic<bool> fSendHeartbeats;
+    bool fSendHeartbeats;
+    std::mutex fHeartbeatsMtx;
+    std::condition_variable fHeartbeatsCV;
+
     bool fThrowOnBadAlloc;
 };
 
