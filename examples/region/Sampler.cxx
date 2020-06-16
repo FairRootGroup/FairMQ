@@ -23,6 +23,7 @@ namespace example_region
 
 Sampler::Sampler()
     : fMsgSize(10000)
+    , fLinger(100)
     , fMaxIterations(0)
     , fNumIterations(0)
     , fRegion(nullptr)
@@ -32,6 +33,7 @@ Sampler::Sampler()
 void Sampler::InitTask()
 {
     fMsgSize = fConfig->GetProperty<int>("msg-size");
+    fLinger = fConfig->GetProperty<uint32_t>("region-linger");
     fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 
     fChannels.at("data").at(0).Transport()->SubscribeToRegionEvents([](FairMQRegionInfo info) {
@@ -54,6 +56,7 @@ void Sampler::InitTask()
                                                                  }
                                                              }
                                                              ));
+    fRegion->SetLinger(fLinger);
 }
 
 bool Sampler::ConditionalRun()
@@ -84,20 +87,16 @@ bool Sampler::ConditionalRun()
 
 void Sampler::ResetTask()
 {
-    // if not all messages acknowledged, wait for a bit. But only once, since receiver could be already dead.
+    // On destruction UnmanagedRegion will try to TODO
+    fRegion.reset();
     {
-        unique_lock<mutex> lock(fMtx);
+        lock_guard<mutex> lock(fMtx);
         if (fNumUnackedMsgs != 0) {
-            LOG(info) << "Waiting for all acknowledgements... (" << fNumUnackedMsgs << ")";
-            lock.unlock();
-            this_thread::sleep_for(chrono::milliseconds(500));
-            lock.lock();
             LOG(info) << "Done, still not acknowledged: " << fNumUnackedMsgs;
         } else {
-            LOG(info) << "All acknowledgements received";
+            LOG(info) << "All acknowledgements received.";
         }
     }
-    fRegion.reset();
     fChannels.at("data").at(0).Transport()->UnsubscribeFromRegionEvents();
 }
 

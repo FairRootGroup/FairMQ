@@ -15,6 +15,7 @@ void addCustomOptions(bpo::options_description& options)
 {
     options.add_options()
         ("msg-size", bpo::value<int>()->default_value(1000), "Message size in bytes")
+        ("region-linger", bpo::value<uint32_t>()->default_value(100), "Linger period for regions")
         ("max-iterations", bpo::value<uint64_t>()->default_value(0), "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
 }
 
