@@ -58,8 +58,8 @@ struct Region
         , fFile(nullptr)
         , fFileMapping()
         , fQueue(nullptr)
-        , fReceiveAcksWorker()
-        , fSendAcksWorker()
+        , fAcksReceiver()
+        , fAcksSender()
         , fCallback(callback)
         , fBulkCallback(bulkCallback)
     {
@@ -120,38 +120,35 @@ struct Region
         LOG(debug) << "shmem: initialized region queue: " << fQueueName;
     }
 
-    void StartSendingAcks()
-    {
-        fSendAcksWorker = std::thread(&Region::SendAcks, this);
-    }
-
+    void StartSendingAcks() { fAcksSender = std::thread(&Region::SendAcks, this); }
     void SendAcks()
     {
         std::unique_ptr<RegionBlock[]> blocks = tools::make_unique<RegionBlock[]>(fAckBunchSize);
+        size_t blocksToSend = 0;
 
-        while (true) { // we'll try to send all acks before stopping
-            size_t blocksToSend = 0;
-
-            {   // mutex locking block
+        while (true) {
+            blocksToSend = 0;
+            {
                 std::unique_lock<std::mutex> lock(fBlockMtx);
 
-                // try to get more blocks without waiting (we can miss a notify from CloseMessage())
-                if (!fStop && (fBlocksToFree.size() < fAckBunchSize)) {
-                    // cv.wait() timeout: send whatever blocks we have
+                // try to get <fAckBunchSize> blocks
+                if (fBlocksToFree.size() < fAckBunchSize) {
                     fBlockSendCV.wait_for(lock, std::chrono::milliseconds(500));
                 }
 
+                // send whatever blocks we have
                 blocksToSend = std::min(fBlocksToFree.size(), fAckBunchSize);
 
                 copy_n(fBlocksToFree.end() - blocksToSend, blocksToSend, blocks.get());
                 fBlocksToFree.resize(fBlocksToFree.size() - blocksToSend);
-            } // unlock the block mutex here while sending over IPC
+            }
 
             if (blocksToSend > 0) {
                 while (!fQueue->try_send(blocks.get(), blocksToSend * sizeof(RegionBlock), 0) && !fStop) {
                     // receiver slow? yield and try again...
                     std::this_thread::yield();
                 }
+                // LOG(debug) << "Sent " << blocksToSend << " blocks.";
             } else { // blocksToSend == 0
                 if (fStop) {
                     break;
@@ -159,14 +156,11 @@ struct Region
             }
         }
 
-        LOG(debug) << "send ack worker for " << fName << " leaving.";
+        LOG(debug) << "AcksSender for " << fName << " leaving " << "(blocks left to free: " << fBlocksToFree.size() << ", "
+                                                                << " blocks left to send: " << blocksToSend << ").";
     }
 
-    void StartReceivingAcks()
-    {
-        fReceiveAcksWorker = std::thread(&Region::ReceiveAcks, this);
-    }
-
+    void StartReceivingAcks() { fAcksReceiver = std::thread(&Region::ReceiveAcks, this); }
     void ReceiveAcks()
     {
         unsigned int priority;
@@ -175,12 +169,18 @@ struct Region
         std::vector<fair::mq::RegionBlock> result;
         result.reserve(fAckBunchSize);
 
-        while (!fStop) { // end thread condition (should exist until region is destroyed)
-            auto rcvTill = boost::posix_time::microsec_clock::universal_time() + boost::posix_time::milliseconds(500);
+        while (true) {
+            uint32_t timeout = 100;
+            bool leave = false;
+            if (fStop) {
+                timeout = fLinger;
+                leave = true;
+            }
+            auto rcvTill = boost::posix_time::microsec_clock::universal_time() + boost::posix_time::milliseconds(timeout);
 
             while (fQueue->timed_receive(blocks.get(), fAckBunchSize * sizeof(RegionBlock), recvdSize, priority, rcvTill)) {
-                // LOG(debug) << "received: " << block.fHandle << " " << block.fSize << " " << block.fMessageId;
                 const auto numBlocks = recvdSize / sizeof(RegionBlock);
+                // LOG(debug) << "Received " << numBlocks << " blocks (recvdSize: " << recvdSize << "). (remaining queue size: " << fQueue->get_num_msg() << ").";
                 if (fBulkCallback) {
                     result.clear();
                     for (size_t i = 0; i < numBlocks; i++) {
@@ -193,9 +193,13 @@ struct Region
                     }
                 }
             }
-        } // while !fStop
 
-        LOG(debug) << "ReceiveAcks() worker for " << fName << " leaving.";
+            if (leave) {
+                break;
+            }
+        }
+
+        LOG(debug) << "AcksReceiver for " << fName << " leaving (remaining queue size: " << fQueue->get_num_msg() << ").";
     }
 
     void ReleaseBlock(const RegionBlock& block)
@@ -205,7 +209,7 @@ struct Region
         fBlocksToFree.emplace_back(block);
 
         if (fBlocksToFree.size() >= fAckBunchSize) {
-            lock.unlock(); // reduces contention on fBlockMtx
+            lock.unlock();
             fBlockSendCV.notify_one();
         }
     }
@@ -217,22 +221,22 @@ struct Region
     {
         fStop = true;
 
-        if (fSendAcksWorker.joinable()) {
+        if (fAcksSender.joinable()) {
             fBlockSendCV.notify_one();
-            fSendAcksWorker.join();
+            fAcksSender.join();
         }
 
         if (!fRemote) {
-            if (fReceiveAcksWorker.joinable()) {
-                fReceiveAcksWorker.join();
+            if (fAcksReceiver.joinable()) {
+                fAcksReceiver.join();
             }
 
             if (boost::interprocess::shared_memory_object::remove(fName.c_str())) {
-                LOG(debug) << "shmem: destroyed region " << fName;
+                LOG(debug) << "Region " << fName << " destroyed.";
             }
 
             if (boost::interprocess::file_mapping::remove(fName.c_str())) {
-                LOG(debug) << "shmem: destroyed file mapping " << fName;
+                LOG(debug) << "File mapping " << fName << " destroyed.";
             }
 
             if (fFile) {
@@ -240,12 +244,14 @@ struct Region
             }
 
             if (boost::interprocess::message_queue::remove(fQueueName.c_str())) {
-                LOG(debug) << "shmem: removed region queue " << fQueueName;
+                LOG(debug) << "Region queue " << fQueueName << " destroyed.";
             }
         } else {
             // LOG(debug) << "shmem: region '" << fName << "' is remote, no cleanup necessary.";
-            LOG(debug) << "shmem: region queue '" << fQueueName << "' is remote, no cleanup necessary";
+            LOG(debug) << "Region queue '" << fQueueName << "' is remote, no cleanup necessary";
         }
+
+        LOG(debug) << "Region " << fName << " (" << (fRemote ? "remote" : "local") << ") destructed.";
     }
 
     bool fRemote;
@@ -264,8 +270,8 @@ struct Region
     const std::size_t fAckBunchSize = 256;
     std::unique_ptr<boost::interprocess::message_queue> fQueue;
 
-    std::thread fReceiveAcksWorker;
-    std::thread fSendAcksWorker;
+    std::thread fAcksReceiver;
+    std::thread fAcksSender;
     RegionCallback fCallback;
     RegionBulkCallback fBulkCallback;
 };
