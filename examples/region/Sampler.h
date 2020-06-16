@@ -36,6 +36,7 @@ class Sampler : public FairMQDevice
 
   private:
     int fMsgSize;
+    uint32_t fLinger;
     uint64_t fMaxIterations;
     uint64_t fNumIterations;
     FairMQUnmanagedRegionPtr fRegion;
