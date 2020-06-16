@@ -145,7 +145,7 @@ macro(set_fairmq_defaults)
   # Configure build types
   set(CMAKE_CONFIGURATION_TYPES "Debug" "Release" "RelWithDebInfo" "Nightly" "Profile" "Experimental" "AddressSan" "ThreadSan")
   set(_warnings "-Wshadow -Wall -Wextra -Wpedantic")
-  set(CMAKE_CXX_FLAGS_DEBUG          "-g ${_warnings}")
+  set(CMAKE_CXX_FLAGS_DEBUG          "-Og -g ${_warnings}")
   set(CMAKE_CXX_FLAGS_RELEASE        "-O2 -DNDEBUG")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g ${_warnings} -DNDEBUG")
   set(CMAKE_CXX_FLAGS_NIGHTLY        "-O2 -g ${_warnings}")
