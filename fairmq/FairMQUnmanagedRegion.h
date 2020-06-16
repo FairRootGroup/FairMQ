@@ -10,6 +10,7 @@
 #define FAIRMQUNMANAGEDREGION_H_
 
 #include <cstddef> // size_t
+#include <cstdint> // uint32_t
 #include <memory> // std::unique_ptr
 #include <functional> // std::function
 #include <ostream> // std::ostream
@@ -72,6 +73,8 @@ class FairMQUnmanagedRegion
     virtual void* GetData() const = 0;
     virtual size_t GetSize() const = 0;
     virtual uint64_t GetId() const = 0;
+    virtual void SetLinger(uint32_t linger) = 0;
+    virtual uint32_t GetLinger() const = 0;
 
     FairMQTransportFactory* GetTransport() { return fTransport; }
     void SetTransport(FairMQTransportFactory* transport) { fTransport = transport; }

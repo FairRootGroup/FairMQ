@@ -57,6 +57,8 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
     void* GetData() const override { return fRegion->get_address(); }
     size_t GetSize() const override { return fRegion->get_size(); }
     uint64_t GetId() const override { return fRegionId; }
+    void SetLinger(uint32_t linger) override { fManager.GetRegion(fRegionId)->SetLinger(linger); }
+    uint32_t GetLinger() const override { return fManager.GetRegion(fRegionId)->GetLinger(); }
 
     ~UnmanagedRegion() override { fManager.RemoveRegion(fRegionId); }
 
