@@ -163,9 +163,9 @@ TEST(PushPull, Multipart_ST_ipc_zeromq)
     RunSingleThreadedMultipart("zeromq", "ipc://test_Multipart_ST_ipc_zeromq_1", "ipc://test_Multipart_ST_ipc_zeromq_2");
 }
 
-TEST(PushPull, Multipart_ST_ipc_shmen)
+TEST(PushPull, Multipart_ST_ipc_shmem)
 {
-    RunSingleThreadedMultipart("shmem", "ipc://test_Multipart_ST_ipc_shmen_1", "ipc://test_Multipart_ST_ipc_shmen_2");
+    RunSingleThreadedMultipart("shmem", "ipc://test_Multipart_ST_ipc_shmem_1", "ipc://test_Multipart_ST_ipc_shmem_2");
 }
 
 TEST(PushPull, Multipart_MT_inproc_zeromq)
