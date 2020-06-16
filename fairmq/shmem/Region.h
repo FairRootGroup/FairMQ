@@ -30,6 +30,7 @@
 #include <boost/interprocess/ipc/message_queue.hpp>
 
 #include <algorithm> // min
+#include <atomic>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -49,6 +50,7 @@ struct Region
 {
     Region(const std::string& shmId, uint64_t id, uint64_t size, bool remote, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string& path, int flags)
         : fRemote(remote)
+        , fLinger(100)
         , fStop(false)
         , fName("fmq_" + shmId + "_rg_" + std::to_string(id))
         , fQueueName("fmq_" + shmId + "_rgq_" + std::to_string(id))
@@ -208,6 +210,9 @@ struct Region
         }
     }
 
+    void SetLinger(uint32_t linger) { fLinger = linger; }
+    uint32_t GetLinger() const { return fLinger; }
+
     ~Region()
     {
         fStop = true;
@@ -244,7 +249,8 @@ struct Region
     }
 
     bool fRemote;
-    bool fStop;
+    uint32_t fLinger;
+    std::atomic<bool> fStop;
     std::string fName;
     std::string fQueueName;
     boost::interprocess::shared_memory_object fShmemObject;
