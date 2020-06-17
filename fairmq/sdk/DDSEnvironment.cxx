@@ -66,7 +66,10 @@ struct DDSEnvironment::Impl
                "  mkdir -p \"$HOME/.DDS\"\n"
                "  dds-user-defaults --ignore-default-sid -d -c \"$HOME/.DDS/DDS.cfg\"\n"
                "fi\n";
-        std::system(cmd.str().c_str());
+        auto rc(std::system(cmd.str().c_str()));
+        if (rc != 0) {
+            LOG(warn) << "DDSEnvironment::SetupConfigHome failed";
+        }
     }
 
     auto SetupPath() -> void
