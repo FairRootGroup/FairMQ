@@ -33,23 +33,22 @@ void Sink::InitTask()
     fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 }
 
-// handler is called whenever a message arrives on "data", with a reference to the message and a sub-channel index (here 0)
+// handler is called whenever a message arrives on "data", with a reference to the message and a
+// sub-channel index (here 0)
 bool Sink::HandleData(FairMQMessagePtr& msg, int /*index*/)
 {
     LOG(info) << "Received: \"" << string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
 
-    if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations)
-    {
+    if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
         LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
         return false;
     }
 
-    // return true if want to be called again (otherwise return false go to IDLE state)
+    // return true if you want the handler to be called again (otherwise return false go to the
+    // Ready state)
     return true;
 }
 
-Sink::~Sink()
-{
-}
+Sink::~Sink() {}
 
 } // namespace example_1_1
