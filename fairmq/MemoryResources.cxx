@@ -15,7 +15,13 @@
 #include <fairmq/FairMQTransportFactory.h>
 #include <fairmq/MemoryResources.h>
 
-void *fair::mq::ChannelResource::do_allocate(std::size_t bytes, std::size_t alignment)
+namespace fair {
+namespace mq {
+
+auto createMessage(TransportFactory* factory, std::size_t bytes, Alignment alignment) -> MessagePtr
 {
-    return setMessage(factory->CreateMessage(bytes, fair::mq::Alignment{alignment}));
+    return factory->CreateMessage(bytes, alignment);
 }
+
+}   // namespace mq
+}   // namespace fair

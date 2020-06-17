@@ -137,4 +137,13 @@ TEST(MemoryResources, getMessage)
     EXPECT_TRUE(messageArray[0] == 4 && messageArray[1] == 5 && messageArray[2] == 6);
 }
 
+TEST(MemoryResources, AlignedChannelResource)
+{
+    auto factory = TransportFactory::CreateTransportFactory("shmem");
+    constexpr std::size_t alignment(64);
+    AlignedChannelResource<alignment> pmr(factory.get());
+    auto ptr = pmr.allocate(100);
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(ptr) % 64, 0);
+}
+
 }   // namespace
