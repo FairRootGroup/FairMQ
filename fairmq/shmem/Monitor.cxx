@@ -64,7 +64,6 @@ Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool 
     , fHeartbeatTriggered(false)
     , fLastHeartbeat(chrono::high_resolution_clock::now())
     , fSignalThread()
-    , fManagementSegment(bipc::open_or_create, fManagementSegmentName.c_str(), 65536)
     , fDeviceHeartbeats()
 {
     if (!fViewOnly) {
@@ -203,7 +202,7 @@ void Monitor::Interactive()
                 case 'x':
                     cout << "\n[x] --> closing shared memory:" << endl;
                     if (!fViewOnly) {
-                        Cleanup(fShmId);
+                        Cleanup(ShmId{fShmId});
                     } else {
                         cout << "cannot close because in view only mode" << endl;
                     }
@@ -288,7 +287,7 @@ void Monitor::CheckSegment()
 
         if (fHeartbeatTriggered && duration > fTimeoutInMS) {
             cout << "no heartbeats since over " << fTimeoutInMS << " milliseconds, cleaning..." << endl;
-            Cleanup(fShmId);
+            Cleanup(ShmId{fShmId});
             fHeartbeatTriggered = false;
             if (fSelfDestruct) {
                 cout << "\nself destructing" << endl;
@@ -321,7 +320,7 @@ void Monitor::CheckSegment()
         unsigned int duration = chrono::duration_cast<chrono::milliseconds>(now - fLastHeartbeat).count();
 
         if (fIsDaemon && duration > fTimeoutInMS * 2) {
-            Cleanup(fShmId);
+            Cleanup(ShmId{fShmId});
             fHeartbeatTriggered = false;
             if (fSelfDestruct) {
                 cout << "\nself destructing" << endl;
@@ -395,51 +394,52 @@ void Monitor::PrintHelp()
 void Monitor::RemoveObject(const string& name)
 {
     if (bipc::shared_memory_object::remove(name.c_str())) {
-        cout << "Successfully removed \"" << name << "\"." << endl;
+        cout << "Successfully removed '" << name << "'." << endl;
     } else {
-        cout << "Did not remove \"" << name << "\". Already removed?" << endl;
+        cout << "Did not remove '" << name << "'. Already removed?" << endl;
     }
 }
 
 void Monitor::RemoveFileMapping(const string& name)
 {
     if (bipc::file_mapping::remove(name.c_str())) {
-        cout << "Successfully removed \"" << name << "\"." << endl;
+        cout << "Successfully removed '" << name << "'." << endl;
     } else {
-        cout << "Did not remove \"" << name << "\". Already removed?" << endl;
+        cout << "Did not remove '" << name << "'. Already removed?" << endl;
     }
 }
 
 void Monitor::RemoveQueue(const string& name)
 {
     if (bipc::message_queue::remove(name.c_str())) {
-        cout << "Successfully removed \"" << name << "\"." << endl;
+        cout << "Successfully removed '" << name << "'." << endl;
     } else {
-        cout << "Did not remove \"" << name << "\". Already removed?" << endl;
+        cout << "Did not remove '" << name << "'. Already removed?" << endl;
     }
 }
 
 void Monitor::RemoveMutex(const string& name)
 {
     if (bipc::named_mutex::remove(name.c_str())) {
-        cout << "Successfully removed \"" << name << "\"." << endl;
+        cout << "Successfully removed '" << name << "'." << endl;
     } else {
-        cout << "Did not remove \"" << name << "\". Already removed?" << endl;
+        cout << "Did not remove '" << name << "'. Already removed?" << endl;
     }
 }
 
 void Monitor::RemoveCondition(const string& name)
 {
     if (bipc::named_condition::remove(name.c_str())) {
-        cout << "Successfully removed \"" << name << "\"." << endl;
+        cout << "Successfully removed '" << name << "'." << endl;
     } else {
-        cout << "Did not remove \"" << name << "\". Already removed?" << endl;
+        cout << "Did not remove '" << name << "'. Already removed?" << endl;
     }
 }
 
-void Monitor::Cleanup(const string& shmId)
+void Monitor::Cleanup(const ShmId& shmId)
 {
-    string managementSegmentName("fmq_" + shmId + "_mng");
+    cout << "Cleaning up for shared memory id '" << shmId.shmId << "'..." << endl;
+    string managementSegmentName("fmq_" + shmId.shmId + "_mng");
     try {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
         RegionCounter* rc = managementSegment.find<RegionCounter>(bipc::unique_instance).first;
@@ -454,20 +454,20 @@ void Monitor::Cleanup(const string& shmId)
                     RegionInfo ri = m->at(i);
                     string path = ri.fPath.c_str();
                     int flags = ri.fFlags;
-                    cout << "Found RegionInfo with path: '" << path << "', flags: " << flags << "'." << endl;
+                    cout << "Found RegionInfo with path: '" << path << "', flags: " << flags << ", fDestroyed: " << ri.fDestroyed << "." << endl;
                     if (path != "") {
-                        RemoveFileMapping(tools::ToString(path, "fmq_" + shmId + "_rg_" + to_string(i)));
+                        RemoveFileMapping(tools::ToString(path, "fmq_" + shmId.shmId + "_rg_" + to_string(i)));
                     } else {
-                        RemoveObject("fmq_" + shmId + "_rg_" + to_string(i));
+                        RemoveObject("fmq_" + shmId.shmId + "_rg_" + to_string(i));
                     }
                 } else {
-                    RemoveObject("fmq_" + shmId + "_rg_" + to_string(i));
+                    RemoveObject("fmq_" + shmId.shmId + "_rg_" + to_string(i));
                 }
 
-                RemoveQueue(string("fmq_" + shmId + "_rgq_" + to_string(i)));
+                RemoveQueue(string("fmq_" + shmId.shmId + "_rgq_" + to_string(i)));
             }
         } else {
-            cout << "No region counter found. no regions to cleanup." << endl;
+            cout << "No region counter found. No regions to cleanup." << endl;
         }
 
         RemoveObject(managementSegmentName.c_str());
@@ -477,11 +477,32 @@ void Monitor::Cleanup(const string& shmId)
         cout << "Could not locate element in the region map, out of range: " << oor.what() << endl;
     }
 
-    RemoveObject("fmq_" + shmId + "_main");
-    RemoveMutex("fmq_" + shmId + "_mtx");
-    RemoveCondition("fmq_" + shmId + "_cv");
+    RemoveObject("fmq_" + shmId.shmId + "_main");
+    RemoveMutex("fmq_" + shmId.shmId + "_mtx");
+    RemoveCondition("fmq_" + shmId.shmId + "_cv");
 
     cout << endl;
+}
+
+void Monitor::Cleanup(const SessionId& sessionId)
+{
+    ShmId shmId{buildShmIdFromSessionIdAndUserId(sessionId.sessionId)};
+    cout << "Cleanup called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'" << endl;
+    Cleanup(shmId);
+}
+
+void Monitor::CleanupFull(const ShmId& shmId)
+{
+    Cleanup(shmId);
+    RemoveMutex("fmq_" + shmId.shmId + "_ms");
+    RemoveQueue("fmq_" + shmId.shmId + "_cq");
+}
+
+void Monitor::CleanupFull(const SessionId& sessionId)
+{
+    ShmId shmId{buildShmIdFromSessionIdAndUserId(sessionId.sessionId)};
+    cout << "Cleanup called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'" << endl;
+    CleanupFull(shmId);
 }
 
 Monitor::~Monitor()
@@ -490,7 +511,7 @@ Monitor::~Monitor()
         fSignalThread.join();
     }
     if (fCleanOnExit) {
-        Cleanup(fShmId);
+        Cleanup(ShmId{fShmId});
     }
     if (!fViewOnly) {
         RemoveMutex("fmq_" + fShmId + "_ms");

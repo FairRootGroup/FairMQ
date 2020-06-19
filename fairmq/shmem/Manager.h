@@ -17,6 +17,7 @@
 
 #include "Common.h"
 #include "Region.h"
+#include "Monitor.h"
 
 #include <FairMQLogger.h>
 #include <FairMQMessage.h>
@@ -57,10 +58,8 @@ class Manager
     Manager(std::string id, std::string deviceId, size_t size, bool throwOnBadAlloc)
         : fShmId(std::move(id))
         , fDeviceId(std::move(deviceId))
-        , fSegmentName("fmq_" + fShmId + "_main")
-        , fManagementSegmentName("fmq_" + fShmId + "_mng")
-        , fSegment(boost::interprocess::open_or_create, fSegmentName.c_str(), size)
-        , fManagementSegment(boost::interprocess::open_or_create, fManagementSegmentName.c_str(), 655360)
+        , fSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_main").c_str(), size)
+        , fManagementSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mng").c_str(), 655360)
         , fShmVoidAlloc(fManagementSegment.get_segment_manager())
         , fShmMtx(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mtx").c_str())
         , fRegionEventsCV(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_cv").c_str())
@@ -350,22 +349,6 @@ class Manager
     void IncrementMsgCounter() { ++fMsgCounter; }
     void DecrementMsgCounter() { --fMsgCounter; }
 
-    void RemoveSegments()
-    {
-        using namespace boost::interprocess;
-        if (shared_memory_object::remove(fSegmentName.c_str())) {
-            LOG(debug) << "Removed '" << fSegmentName << "' segment after the device has stopped.";
-        } else {
-            LOG(debug) << "Did not remove " << fSegmentName << " segment after the device stopped. Already removed?";
-        }
-
-        if (shared_memory_object::remove(fManagementSegmentName.c_str())) {
-            LOG(debug) << "Removed '" << fManagementSegmentName << "' segment after the device has stopped.";
-        } else {
-            LOG(debug) << "Did not remove '" << fManagementSegmentName << "' segment after the device stopped. Already removed?";
-        }
-    }
-
     void SendHeartbeats()
     {
         std::string controlQueueName("fmq_" + fShmId + "_cq");
@@ -411,8 +394,6 @@ class Manager
 
             if (fDeviceCounter->fCount == 0) {
                 LOG(debug) << "Last segment user, removing segment.";
-
-                RemoveSegments();
                 lastRemoved = true;
             } else {
                 LOG(debug) << "Other segment users present (" << fDeviceCounter->fCount << "), skipping removal.";
@@ -422,16 +403,13 @@ class Manager
         }
 
         if (lastRemoved) {
-            named_mutex::remove(std::string("fmq_" + fShmId + "_mtx").c_str());
-            named_condition::remove(std::string("fmq_" + fShmId + "_cv").c_str());
+            Monitor::Cleanup(ShmId{fShmId});
         }
     }
 
   private:
     std::string fShmId;
     std::string fDeviceId;
-    std::string fSegmentName;
-    std::string fManagementSegmentName;
     boost::interprocess::managed_shared_memory fSegment;
     boost::interprocess::managed_shared_memory fManagementSegment;
     VoidAlloc fShmVoidAlloc;

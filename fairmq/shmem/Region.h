@@ -232,11 +232,11 @@ struct Region
             }
 
             if (boost::interprocess::shared_memory_object::remove(fName.c_str())) {
-                LOG(debug) << "Region " << fName << " destroyed.";
+                LOG(debug) << "Region '" << fName << "' destroyed.";
             }
 
             if (boost::interprocess::file_mapping::remove(fName.c_str())) {
-                LOG(debug) << "File mapping " << fName << " destroyed.";
+                LOG(debug) << "File mapping '" << fName << "' destroyed.";
             }
 
             if (fFile) {
@@ -244,14 +244,14 @@ struct Region
             }
 
             if (boost::interprocess::message_queue::remove(fQueueName.c_str())) {
-                LOG(debug) << "Region queue " << fQueueName << " destroyed.";
+                LOG(debug) << "Region queue '" << fQueueName << "' destroyed.";
             }
         } else {
             // LOG(debug) << "shmem: region '" << fName << "' is remote, no cleanup necessary.";
             LOG(debug) << "Region queue '" << fQueueName << "' is remote, no cleanup necessary";
         }
 
-        LOG(debug) << "Region " << fName << " (" << (fRemote ? "remote" : "local") << ") destructed.";
+        LOG(debug) << "Region '" << fName << "' (" << (fRemote ? "remote" : "local") << ") destructed.";
     }
 
     bool fRemote;

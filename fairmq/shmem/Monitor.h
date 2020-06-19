@@ -8,8 +8,6 @@
 #ifndef FAIR_MQ_SHMEM_MONITOR_H_
 #define FAIR_MQ_SHMEM_MONITOR_H_
 
-#include <boost/interprocess/managed_shared_memory.hpp>
-
 #include <thread>
 #include <chrono>
 #include <atomic>
@@ -24,6 +22,18 @@ namespace mq
 namespace shmem
 {
 
+struct SessionId
+{
+    std::string sessionId;
+    explicit operator std::string() const { return sessionId; }
+};
+
+struct ShmId
+{
+    std::string shmId;
+    explicit operator std::string() const { return shmId; }
+};
+
 class Monitor
 {
   public:
@@ -37,7 +47,19 @@ class Monitor
     void CatchSignals();
     void Run();
 
-    static void Cleanup(const std::string& shmId);
+    /// @brief Cleanup all shared memory artifacts created by devices
+    /// @param shmId shared memory id
+    static void Cleanup(const ShmId& shmId);
+    /// @brief Cleanup all shared memory artifacts created by devices
+    /// @param sessionId session id
+    static void Cleanup(const SessionId& sessionId);
+    /// @brief Cleanup all shared memory artifacts created by devices and monitors
+    /// @param shmId shared memory id
+    static void CleanupFull(const ShmId& shmId);
+    /// @brief Cleanup all shared memory artifacts created by devices and monitors
+    /// @param sessionId session id
+    static void CleanupFull(const SessionId& sessionId);
+
     static void RemoveObject(const std::string&);
     static void RemoveFileMapping(const std::string&);
     static void RemoveQueue(const std::string&);
@@ -70,7 +92,6 @@ class Monitor
     std::atomic<bool> fHeartbeatTriggered;
     std::chrono::high_resolution_clock::time_point fLastHeartbeat;
     std::thread fSignalThread;
-    boost::interprocess::managed_shared_memory fManagementSegment;
     std::unordered_map<std::string, std::chrono::high_resolution_clock::time_point> fDeviceHeartbeats;
 };
 
