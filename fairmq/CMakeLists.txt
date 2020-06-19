@@ -170,6 +170,7 @@ if(BUILD_FAIRMQ)
     PluginManager.h
     PluginServices.h
     runFairMQDevice.h
+    shmem/Monitor.h
   )
 
   set(FAIRMQ_PRIVATE_HEADER_FILES
@@ -234,6 +235,7 @@ if(BUILD_FAIRMQ)
     plugins/config/Config.cxx
     plugins/Control.cxx
     MemoryResources.cxx
+    shmem/Monitor.cxx
   )
 
   if(BUILD_OFI_TRANSPORT)

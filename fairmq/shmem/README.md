@@ -6,6 +6,23 @@ The transport manages shared memory via boost::interprocess library. The transfe
 
 Devices track and cleanup shared memory on shutdown. For more information on the current shared memory segment and additional cleanup options, see following section.
 
+# Shared Memory objects / files
+
+FairMQ Shared Memory currently uses the following names to register shared memory on the system:
+
+| name                      | info                                           | created by         | used by                        |
+| ------------------------- | ---------------------------------------------- | ------------------ | ------------------------------ |
+| `fmq_<shmId>_main`        | main segment (user data)                       | one of the devices | devices                        |
+| `fmq_<shmId>_mng`         | management segment (management data)           | one of the devices | devices                        |
+| `fmq_<shmId>_mtx`         | mutex                                          | one of the devices | devices                        |
+| `fmq_<shmId>_cv`          | condition variable                             | one of the devices | devices with unmanaged regions |
+| `fmq_<shmId>_rg_<index>`  | unmanaged region(s)                            | one of the devices | devices with unmanaged regions |
+| `fmq_<shmId>_rgq_<index>` | unmanaged region queue(s)                      | one of the devices | devices with unmanaged regions |
+| `fmq_<shmId>_ms`          | shmmonitor status                              | shmmonitor         | devices, shmmonitor            |
+| `fmq_<shmId>_cq`          | message queue between transport and shmmonitor | shmmonitor         | devices, shmmonitor            |
+
+The shmId is generated out of session id and user id.
+
 ## Shared memory monitor
 
 The shared memory monitor tool, supplied with the shared memory transport can be used to monitor shared memory use and automatically cleanup shared memory in case of device crashes.
@@ -25,13 +42,3 @@ Without the `--self-destruct` option, the monitor will run continuously, moitori
 Possible further implementation would be to run the monitor with `--self-destruct` with each topology.
 
 The Monitor class can also be used independently from the supplied executable (built from `runMonitor.cxx`), allowing integration on any level. For example invoking the monitor could be a functionality that a device offers.
-
-FairMQ Shared Memory currently uses following names to register shared memory on the system:
-
-`fmq_<shmId>_main` - main segment name, used for user data (the shmId is generated out of session id and user id).
-`fmq_<shmId>_mng` - management segment name, used for storing management data.
-`fmq_<shmId>_cq` - message queue for communicating between shm transport and shm monitor (exists independent of above segments).
-`fmq_<shmId>_mtx` - boost::interprocess::named_mutex for management purposes (exists independent of above segments).
-`fmq_<shmId>_ms` - shmmonitor status used to signal if it is active or not (exists independent of above segments).
-`fmq_<shmId>_rg_<index>` - names of unmanaged regions.
-`fmq_<shmId>_rgq_<index>` - names of queues for the unmanaged regions.

@@ -111,9 +111,7 @@ int main(int argc, char** argv)
         }
 
         if (cleanup) {
-            cout << "Cleaning up \"" << shmId << "\"..." << endl;
-            Monitor::Cleanup(shmId);
-            Monitor::RemoveQueue("fmq_" + shmId + "_cq");
+            Monitor::CleanupFull(ShmId{shmId});
             return 0;
         }
 
