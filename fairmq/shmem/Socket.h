@@ -55,8 +55,7 @@ class Socket final : public fair::mq::Socket
         , fBytesRx(0)
         , fMessagesTx(0)
         , fMessagesRx(0)
-        , fSndTimeout(100)
-        , fRcvTimeout(100)
+        , fTimeout(100)
     {
         assert(context);
         fSocket = zmq_socket(context, GetConstant(type));
@@ -77,11 +76,11 @@ class Socket final : public fair::mq::Socket
             LOG(error) << "Failed setting ZMQ_LINGER socket option, reason: " << zmq_strerror(errno);
         }
 
-        if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &fSndTimeout, sizeof(fSndTimeout)) != 0) {
+        if (zmq_setsockopt(fSocket, ZMQ_SNDTIMEO, &fTimeout, sizeof(fTimeout)) != 0) {
             LOG(error) << "Failed setting ZMQ_SNDTIMEO socket option, reason: " << zmq_strerror(errno);
         }
 
-        if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &fRcvTimeout, sizeof(fRcvTimeout)) != 0) {
+        if (zmq_setsockopt(fSocket, ZMQ_RCVTIMEO, &fTimeout, sizeof(fTimeout)) != 0) {
             LOG(error) << "Failed setting ZMQ_RCVTIMEO socket option, reason: " << zmq_strerror(errno);
         }
 
@@ -129,6 +128,35 @@ class Socket final : public fair::mq::Socket
         return true;
     }
 
+    bool ShouldRetry(int flags, int timeout, int& elapsed) const
+    {
+        if (!fManager.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
+            if (timeout > 0) {
+                elapsed += fTimeout;
+                if (elapsed >= timeout) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    int HandleErrors() const
+    {
+        if (zmq_errno() == ETERM) {
+            LOG(debug) << "Terminating socket " << fId;
+            return -1;
+        } else if (zmq_errno() == EINTR) {
+            LOG(debug) << "Transfer interrupted by system call";
+            return -1;
+        } else {
+            LOG(error) << "Failed transfer on socket " << fId << ", reason: " << zmq_strerror(errno);
+            return -1;
+        }
+    }
+
     int Send(MessagePtr& msg, const int timeout = -1) override
     {
         int flags = 0;
@@ -150,26 +178,13 @@ class Socket final : public fair::mq::Socket
                 fBytesTx += size;
                 return size;
             } else if (zmq_errno() == EAGAIN) {
-                if (!fManager.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
-                    if (timeout > 0) {
-                        elapsed += fSndTimeout;
-                        if (elapsed >= timeout) {
-                            return -2;
-                        }
-                    }
+                if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
                     return -2;
                 }
-            } else if (zmq_errno() == ETERM) {
-                LOG(info) << "terminating socket " << fId;
-                return -1;
-            } else if (zmq_errno() == EINTR) {
-                LOG(debug) << "Send interrupted by system call";
-                return nbytes;
-            }else {
-                LOG(error) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
-                return nbytes;
+            } else {
+                return HandleErrors();
             }
         }
 
@@ -206,26 +221,13 @@ class Socket final : public fair::mq::Socket
                 ++fMessagesRx;
                 return size;
             } else if (zmq_errno() == EAGAIN) {
-                if (!fManager.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
-                    if (timeout > 0) {
-                        elapsed += fRcvTimeout;
-                        if (elapsed >= timeout) {
-                            return -2;
-                        }
-                    }
+                if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
                     return -2;
                 }
-            } else if (zmq_errno() == ETERM) {
-                LOG(info) << "terminating socket " << fId;
-                return -1;
-            } else if (zmq_errno() == EINTR) {
-                LOG(debug) << "Receive interrupted by system call";
-                return nbytes;
-            }else {
-                LOG(error) << "Failed receiving on socket " << fId << ", errno: " << errno << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
-                return nbytes;
+            } else {
+                return HandleErrors();
             }
         }
     }
@@ -268,26 +270,13 @@ class Socket final : public fair::mq::Socket
 
                 return totalSize;
             } else if (zmq_errno() == EAGAIN) {
-                if (!fManager.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
-                    if (timeout > 0) {
-                        elapsed += fSndTimeout;
-                        if (elapsed >= timeout) {
-                            return -2;
-                        }
-                    }
+                if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
                     return -2;
                 }
-            } else if (zmq_errno() == ETERM) {
-                LOG(info) << "terminating socket " << fId;
-                return -1;
-            } else if (zmq_errno() == EINTR) {
-                LOG(debug) << "Send interrupted by system call";
-                return nbytes;
-            }else {
-                LOG(error) << "Failed sending on socket " << fId << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
-                return nbytes;
+            } else {
+                return HandleErrors();
             }
         }
 
@@ -335,23 +324,13 @@ class Socket final : public fair::mq::Socket
 
                 return totalSize;
             } else if (zmq_errno() == EAGAIN) {
-                if (!fManager.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
-                    if (timeout > 0) {
-                        elapsed += fRcvTimeout;
-                        if (elapsed >= timeout) {
-                            return -2;
-                        }
-                    }
+                if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
                     return -2;
                 }
-            } else if (zmq_errno() == EINTR) {
-                LOG(debug) << "Receive interrupted by system call";
-                return nbytes;
             } else {
-                LOG(error) << "Failed receiving on socket " << fId << ", errno: " << errno << ", reason: " << zmq_strerror(errno) << ", nbytes = " << nbytes;
-                return nbytes;
+                return HandleErrors();
             }
         }
 
@@ -521,8 +500,7 @@ class Socket final : public fair::mq::Socket
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
 
-    int fSndTimeout;
-    int fRcvTimeout;
+    int fTimeout;
 };
 
 }
