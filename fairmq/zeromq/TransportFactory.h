@@ -55,7 +55,7 @@ class TransportFactory final : public FairMQTransportFactory
     {
         return tools::make_unique<Message>(this);
     }
-    
+
     MessagePtr CreateMessage(Alignment alignment) override
     {
         return tools::make_unique<Message>(alignment, this);
