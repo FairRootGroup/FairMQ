@@ -233,8 +233,12 @@ class Manager
 
                 auto r = fRegions.emplace(id, tools::make_unique<Region>(fShmId, id, 0, true, nullptr, nullptr, path, flags));
                 return r.first->second.get();
+            } catch (std::out_of_range& oor) {
+                LOG(error) << "Could not get remote region with id '" << id << "'. Does the region creator run with the same session id?";
+                LOG(error) << oor.what();
+                return nullptr;
             } catch (boost::interprocess::interprocess_exception& e) {
-                LOG(warn) << "Could not get remote region for id: " << id;
+                LOG(warn) << "Could not get remote region for id '" << id << "'";
                 return nullptr;
             }
         }
@@ -398,7 +402,7 @@ class Manager
             } else {
                 LOG(debug) << "Other segment users present (" << fDeviceCounter->fCount << "), skipping removal.";
             }
-        } catch(interprocess_exception& e) {
+        } catch (interprocess_exception& e) {
             LOG(error) << "Manager could not acquire lock: " << e.what();
         }
 
