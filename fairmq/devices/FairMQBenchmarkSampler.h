@@ -17,6 +17,7 @@
 #include <chrono>
 #include <cstddef>   // size_t
 #include <cstdint>   // uint64_t
+#include <cstring>   // memset
 #include <string>
 
 /**
@@ -28,6 +29,7 @@ class FairMQBenchmarkSampler : public FairMQDevice
   public:
     FairMQBenchmarkSampler()
         : fMultipart(false)
+        , fMemSet(false)
         , fNumParts(1)
         , fMsgSize(10000)
         , fMsgRate(0)
@@ -39,6 +41,7 @@ class FairMQBenchmarkSampler : public FairMQDevice
     void InitTask() override
     {
         fMultipart = fConfig->GetProperty<bool>("multipart");
+        fMemSet = fConfig->GetProperty<bool>("memset");
         fNumParts = fConfig->GetProperty<size_t>("num-parts");
         fMsgSize = fConfig->GetProperty<size_t>("msg-size");
         fMsgRate = fConfig->GetProperty<float>("msg-rate");
@@ -64,6 +67,9 @@ class FairMQBenchmarkSampler : public FairMQDevice
 
                 for (size_t i = 0; i < fNumParts; ++i) {
                     parts.AddPart(dataOutChannel.NewMessage(fMsgSize));
+                    if (fMemSet) {
+                        std::memset(parts.At(i)->GetData(), 0, parts.At(i)->GetSize());
+                    }
                 }
 
                 if (dataOutChannel.Send(parts) >= 0) {
@@ -76,6 +82,9 @@ class FairMQBenchmarkSampler : public FairMQDevice
                 }
             } else {
                 FairMQMessagePtr msg(dataOutChannel.NewMessage(fMsgSize));
+                if (fMemSet) {
+                    std::memset(msg->GetData(), 0, msg->GetSize());
+                }
 
                 if (dataOutChannel.Send(msg) >= 0) {
                     if (fMaxIterations > 0) {
@@ -101,6 +110,7 @@ class FairMQBenchmarkSampler : public FairMQDevice
 
   protected:
     bool fMultipart;
+    bool fMemSet;
     size_t fNumParts;
     size_t fMsgSize;
     std::atomic<int> fMsgCounter;
