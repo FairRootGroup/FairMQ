@@ -32,6 +32,7 @@ Set(configure_options "${configure_options};-DBUILD_SDK=ON")
 Set(configure_options "${configure_options};-DBUILD_SDK_COMMANDS=ON")
 Set(configure_options "${configure_options};-DFAST_BUILD=ON")
 Set(configure_options "${configure_options};-DCOTIRE_MAXIMUM_NUMBER_OF_UNITY_INCLUDES=-j$ENV{number_of_processors}")
+Set(configure_options "${configure_options};-DBoost_NO_BOOST_CMAKE=ON")
 
 Set(EXTRA_FLAGS $ENV{EXTRA_FLAGS})
 If(EXTRA_FLAGS)
