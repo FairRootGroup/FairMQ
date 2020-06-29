@@ -57,7 +57,7 @@ class TransportFactory final : public fair::mq::TransportFactory
 
         int numIoThreads = 1;
         std::string sessionName = "default";
-        size_t segmentSize = 2000000000;
+        size_t segmentSize = 2ULL << 30;
         bool autolaunchMonitor = false;
         bool throwOnBadAlloc = true;
         if (config) {
@@ -71,6 +71,7 @@ class TransportFactory final : public fair::mq::TransportFactory
         }
 
         fShmId = buildShmIdFromSessionIdAndUserId(sessionName);
+        LOG(debug) << "Generated shmid '" << fShmId << "' out of session id '" << sessionName << "'.";
 
         try {
             if (zmq_ctx_set(fZMQContext, ZMQ_IO_THREADS, numIoThreads) != 0) {

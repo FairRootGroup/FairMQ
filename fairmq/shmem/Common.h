@@ -12,7 +12,6 @@
 
 #include <atomic>
 #include <string>
-#include <unordered_map>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
@@ -113,8 +112,11 @@ struct RegionBlock
 inline std::string buildShmIdFromSessionIdAndUserId(const std::string& sessionId)
 {
     std::string seed((std::to_string(geteuid()) + sessionId));
-    std::string shmId = picosha2::hash256_hex_string(seed);
-    shmId.resize(10, '_');
+    // generate a 8-digit hex value out of sha256 hash
+    std::vector<unsigned char> hash(4);
+    picosha2::hash256(seed.begin(), seed.end(), hash.begin(), hash.end());
+    std::string shmId = picosha2::bytes_to_hex_string(hash.begin(), hash.end());
+
     return shmId;
 }
 
