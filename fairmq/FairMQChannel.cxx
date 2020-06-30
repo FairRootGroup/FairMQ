@@ -671,7 +671,6 @@ void FairMQChannel::Init()
 bool FairMQChannel::ConnectEndpoint(const string& endpoint)
 {
     lock_guard<mutex> lock(fMtx);
-
     return fSocket->Connect(endpoint);
 }
 
@@ -683,6 +682,13 @@ bool FairMQChannel::BindEndpoint(string& endpoint)
     if (fSocket->Bind(endpoint)) {
         return true;
     } else {
+        // auto-bind only implemented for TCP
+        size_t protocolPos = endpoint.find(':');
+        string protocol = endpoint.substr(0, protocolPos);
+        if (protocol != "tcp") {
+            return false;
+        }
+
         if (fAutoBind) {
             // number of attempts when choosing a random port
             int numAttempts = 0;
