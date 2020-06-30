@@ -54,8 +54,6 @@ class FairMQBenchmarkSampler : public FairMQDevice
         // store the channel reference to avoid traversing the map on every loop iteration
         FairMQChannel& dataOutChannel = fChannels.at(fOutChannelName).at(0);
 
-        FairMQMessagePtr baseMsg(dataOutChannel.NewMessage(fMsgSize));
-
         LOG(info) << "Starting the benchmark with message size of " << fMsgSize << " and " << fMaxIterations << " iterations.";
         auto tStart = std::chrono::high_resolution_clock::now();
 
