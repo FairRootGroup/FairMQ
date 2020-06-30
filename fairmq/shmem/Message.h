@@ -251,6 +251,10 @@ class Message final : public fair::mq::Message
                 // boost::interprocess::managed_shared_memory::size_type actualSize = size;
                 // char* hint = 0; // unused for boost::interprocess::allocate_new
                 // fLocalPtr = fManager.Segment().allocation_command<char>(boost::interprocess::allocate_new, size, actualSize, hint);
+                size_t segmentSize = fManager.Segment().get_size();
+                if (size > segmentSize) {
+                    throw MessageBadAlloc(tools::ToString("Requested message size (", size, ") exceeds segment size (", segmentSize, ")"));
+                }
                 if (alignment == 0) {
                     fLocalPtr = reinterpret_cast<char*>(fManager.Segment().allocate(size));
                 } else {
