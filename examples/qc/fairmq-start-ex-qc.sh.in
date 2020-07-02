@@ -51,7 +51,7 @@ fairmq-dds-command-ui -c k
 fairmq-dds-command-ui -c b
 fairmq-dds-command-ui -c x
 fairmq-dds-command-ui -c j
-allexceptqctasks="main/(Sampler|QCDispatcher|Sink)"
+allexceptqctasks="main/(Sampler|QCDispatcher|Sink).*"
 fairmq-dds-command-ui -c r -p $allexceptqctasks
 qctask="main/QCTask.*"
 qcdispatcher="main/QCDispatcher.*"
