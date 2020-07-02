@@ -439,6 +439,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     }
                 });
             }
+            if (fTasks.empty()) {
+                FAIR_LOG(warn) << "ChangeState initiated on an empty set of tasks, check the path argument.";
+            }
         }
         ChangeStateOp() = delete;
         ChangeStateOp(const ChangeStateOp&) = delete;
@@ -741,6 +744,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     }
                 });
             }
+            if (fTasks.empty()) {
+                FAIR_LOG(warn) << "WaitForState initiated on an empty set of tasks, check the path argument.";
+            }
         }
         WaitForStateOp() = delete;
         WaitForStateOp(const WaitForStateOp&) = delete;
@@ -938,6 +944,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     }
                 });
             }
+            if (expectedCount == 0) {
+                FAIR_LOG(warn) << "GetProperties initiated on an empty set of tasks, check the path argument.";
+            }
             // FAIR_LOG(debug) << "GetProperties " << fId << " with expected count of " << fExpectedCount << " started.";
         }
         GetPropertiesOp() = delete;
@@ -1092,6 +1101,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                         fOp.Timeout(fFailedDevices);
                     }
                 });
+            }
+            if (expectedCount == 0) {
+                FAIR_LOG(warn) << "SetProperties initiated on an empty set of tasks, check the path argument.";
             }
             // FAIR_LOG(debug) << "SetProperties " << fId << " with expected count of " << fExpectedCount << " started.";
         }
