@@ -65,7 +65,7 @@ void handleCommand(const string& command, const string& path, unsigned int timeo
             cout << d.taskId << " : " << d.state << endl;
         }
     } else if (command == "o") {
-        cout << "> dumping config of the devices (" << path << ")" << endl;
+        cout << "> dumping config of " << (path == "" ? "all" : path) << endl;
         // TODO: extend this regex to return all properties, once command size limitation is removed.
         auto const result = topo.GetProperties("^(session|id)$", path, std::chrono::milliseconds(timeout));
         for (const auto& d : result.second.devices) {
@@ -79,39 +79,39 @@ void handleCommand(const string& command, const string& path, unsigned int timeo
             return;
         }
         const DeviceProperties props{{pKey, pVal}};
-        cout << "> sending property (" << path << ")" << endl;
+        cout << "> setting properties --> " << (path == "" ? "all" : path) << endl;
         topo.SetProperties(props, path);
         // give dds time to complete request
         this_thread::sleep_for(chrono::milliseconds(100));
     } else if (command == "i") {
-        cout << "> init devices (" << path << ")" << endl;
+        cout << "> initiating InitDevice transition --> " << (path == "" ? "all" : path) << endl;
         topo.ChangeState(TopologyTransition::InitDevice, path, std::chrono::milliseconds(timeout));
     } else if (command == "k") {
-        cout << "> complete init (" << path << ")" << endl;
+        cout << "> initiating CompleteInit transition --> " << (path == "" ? "all" : path) << endl;
         topo.ChangeState(TopologyTransition::CompleteInit, path, std::chrono::milliseconds(timeout));
     } else if (command == "b") {
-        cout << "> bind devices (" << path << ")" << endl;
+        cout << "> initiating Bind transition --> " << (path == "" ? "all" : path) << endl;
         topo.ChangeState(TopologyTransition::Bind, path, std::chrono::milliseconds(timeout));
     } else if (command == "x") {
-        cout << "> connect devices (" << path << ")" << endl;
+        cout << "> initiating Connect transition --> " << (path == "" ? "all" : path) << endl;
         topo.ChangeState(TopologyTransition::Connect, path, std::chrono::milliseconds(timeout));
     } else if (command == "j") {
-        cout << "> init tasks (" << path << ")" << endl;
+        cout << "> initiating InitTask transition --> " << (path == "" ? "all" : path) << endl;
         topo.ChangeState(TopologyTransition::InitTask, path, std::chrono::milliseconds(timeout));
     } else if (command == "r") {
-        cout << "> run tasks (" << path << ")" << endl;
+        cout << "> initiating Run transition --> " << (path == "" ? "all" : path) << endl;
         topo.ChangeState(TopologyTransition::Run, path, std::chrono::milliseconds(timeout));
     } else if (command == "s") {
-        cout << "> stop devices (" << path << ")" << endl;
+        cout << "> initiating Stop transition --> " << (path == "" ? "all" : path) << endl;
         topo.ChangeState(TopologyTransition::Stop, path, std::chrono::milliseconds(timeout));
     } else if (command == "t") {
-        cout << "> reset tasks (" << path << ")" << endl;
+        cout << "> initiating ResetTask transition --> " << (path == "" ? "all" : path) << endl;
         topo.ChangeState(TopologyTransition::ResetTask, path, std::chrono::milliseconds(timeout));
     } else if (command == "d") {
-        cout << "> reset devices (" << path << ")" << endl;
+        cout << "> initiating ResetDevice transition --> " << (path == "" ? "all" : path) << endl;
         topo.ChangeState(TopologyTransition::ResetDevice, path, std::chrono::milliseconds(timeout));
     } else if (command == "q") {
-        cout << "> end (" << path << ")" << endl;
+        cout << "> initiating End transition --> " << (path == "" ? "all" : path) << endl;
         topo.ChangeState(TopologyTransition::End, path, std::chrono::milliseconds(timeout));
     } else if (command == "h") {
         cout << "> help" << endl;
@@ -206,6 +206,7 @@ try {
             sendCommand(command, path, timeout, topo, pKey, pVal);
         }
         size_t pos = targetState.find("->");
+        cout << "> waiting for " << (path == "" ? "all" : path) << " to reach " << targetState << endl;
         if (pos == string::npos) {
             /* auto ec =  */topo.WaitForState(GetState(targetState), path, std::chrono::milliseconds(timeout));
             // cout << "WaitForState(" << targetState << ") result: " << ec.message() << endl;
