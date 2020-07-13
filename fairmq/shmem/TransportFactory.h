@@ -58,14 +58,10 @@ class TransportFactory final : public fair::mq::TransportFactory
         int numIoThreads = 1;
         std::string sessionName = "default";
         size_t segmentSize = 2ULL << 30;
-        bool autolaunchMonitor = false;
-        bool throwOnBadAlloc = true;
         if (config) {
             numIoThreads = config->GetProperty<int>("io-threads", numIoThreads);
             sessionName = config->GetProperty<std::string>("session", sessionName);
             segmentSize = config->GetProperty<size_t>("shm-segment-size", segmentSize);
-            autolaunchMonitor = config->GetProperty<bool>("shm-monitor", autolaunchMonitor);
-            throwOnBadAlloc = config->GetProperty<bool>("shm-throw-bad-alloc", throwOnBadAlloc);
         } else {
             LOG(debug) << "ProgOptions not available! Using defaults.";
         }
@@ -83,11 +79,7 @@ class TransportFactory final : public fair::mq::TransportFactory
                 LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
             }
 
-            if (autolaunchMonitor) {
-                Manager::StartMonitor(fShmId);
-            }
-
-            fManager = tools::make_unique<Manager>(fShmId, fDeviceId, segmentSize, throwOnBadAlloc);
+            fManager = tools::make_unique<Manager>(fShmId, fDeviceId, segmentSize, config);
         } catch (boost::interprocess::interprocess_exception& e) {
             LOG(error) << "Could not initialize shared memory transport: " << e.what();
             throw std::runtime_error(tools::ToString("Could not initialize shared memory transport: ", e.what()));
