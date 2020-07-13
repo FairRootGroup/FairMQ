@@ -21,6 +21,7 @@
 
 #include <FairMQLogger.h>
 #include <FairMQMessage.h>
+#include <fairmq/ProgOptions.h>
 #include <fairmq/tools/CppSTL.h>
 #include <fairmq/tools/Strings.h>
 
@@ -43,6 +44,8 @@
 #include <utility> // pair
 #include <vector>
 
+#include <sys/mman.h> // mlock
+
 namespace fair
 {
 namespace mq
@@ -55,8 +58,8 @@ struct SharedMemoryError : std::runtime_error { using std::runtime_error::runtim
 class Manager
 {
   public:
-    Manager(std::string id, std::string deviceId, size_t size, bool throwOnBadAlloc)
-        : fShmId(std::move(id))
+    Manager(std::string shmId, std::string deviceId, size_t size, const ProgOptions* config)
+        : fShmId(std::move(shmId))
         , fDeviceId(std::move(deviceId))
         , fSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_main").c_str(), size)
         , fManagementSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mng").c_str(), 655360)
@@ -70,10 +73,37 @@ class Manager
         , fMsgCounter(0)
         , fHeartbeatThread()
         , fSendHeartbeats(true)
-        , fThrowOnBadAlloc(throwOnBadAlloc)
+        , fThrowOnBadAlloc(true)
     {
         using namespace boost::interprocess;
+
+        bool mlockSegment = false;
+        bool zeroSegment = false;
+        bool autolaunchMonitor = false;
+        if (config) {
+            mlockSegment = config->GetProperty<bool>("shm-mlock-segment", mlockSegment);
+            zeroSegment = config->GetProperty<bool>("shm-zero-segment", zeroSegment);
+            autolaunchMonitor = config->GetProperty<bool>("shm-monitor", autolaunchMonitor);
+            fThrowOnBadAlloc = config->GetProperty<bool>("shm-throw-bad-alloc", fThrowOnBadAlloc);
+        } else {
+            LOG(debug) << "ProgOptions not available! Using defaults.";
+        }
+
+        if (autolaunchMonitor) {
+            StartMonitor(fShmId);
+        }
+
         LOG(debug) << "created/opened shared memory segment '" << "fmq_" << fShmId << "_main" << "' of " << fSegment.get_size() << " bytes. Available are " << fSegment.get_free_memory() << " bytes.";
+        if (mlockSegment) {
+            LOG(debug) << "Locking the memory pages behind the managed segment...";
+            mlock(fSegment.get_address(), fSegment.get_size());
+            LOG(debug) << "Successfully locked the memory pages.";
+        }
+        if (zeroSegment) {
+            LOG(debug) << "Zeroing the free memory of the managed segment...";
+            fSegment.zero_free_memory();
+            LOG(debug) << "Successfully zeroed the free memory of the managed segment";
+        }
 
         fRegionInfos = fManagementSegment.find_or_construct<Uint64RegionInfoMap>(unique_instance)(fShmVoidAlloc);
         // store info about the managed segment as region with id 0
