@@ -375,6 +375,15 @@ class Socket final : public fair::mq::Socket
         }
     }
 
+    void Events(uint32_t* events) override
+    {
+        size_t eventsSize = sizeof(uint32_t);
+        if (zmq_getsockopt(fSocket, ZMQ_EVENTS, events, &eventsSize) < 0) {
+            throw SocketError(
+                tools::ToString("failed setting ZMQ_EVENTS, reason: ", zmq_strerror(errno)));
+        }
+    }
+
     int GetLinger() const override
     {
         int value = 0;
@@ -485,6 +494,12 @@ class Socket final : public fair::mq::Socket
         if (constant == "snd-more no-block") return ZMQ_DONTWAIT|ZMQ_SNDMORE;
 
         if (constant == "fd") return ZMQ_FD;
+        if (constant == "events")
+            return ZMQ_EVENTS;
+        if (constant == "pollin")
+            return ZMQ_POLLIN;
+        if (constant == "pollout")
+            return ZMQ_POLLOUT;
 
         return -1;
     }

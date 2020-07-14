@@ -38,6 +38,7 @@ class FairMQSocket
     virtual void SetOption(const std::string& option, const void* value, size_t valueSize) = 0;
     virtual void GetOption(const std::string& option, void* value, size_t* valueSize) = 0;
 
+    virtual void Events(uint32_t* events) = 0;
     virtual void SetLinger(const int value) = 0;
     virtual int GetLinger() const = 0;
     virtual void SetSndBufSize(const int value) = 0;

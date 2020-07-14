@@ -318,6 +318,15 @@ class Socket final : public fair::mq::Socket
         }
     }
 
+    void Events(uint32_t* events) override
+    {
+        size_t eventsSize = sizeof(uint32_t);
+        if (zmq_getsockopt(fSocket, ZMQ_EVENTS, events, &eventsSize) < 0) {
+            throw SocketError(
+                tools::ToString("failed setting ZMQ_EVENTS, reason: ", zmq_strerror(errno)));
+        }
+    }
+
     void SetLinger(const int value) override
     {
         if (zmq_setsockopt(fSocket, ZMQ_LINGER, &value, sizeof(value)) < 0) {
@@ -433,6 +442,12 @@ class Socket final : public fair::mq::Socket
         if (constant == "linger") return ZMQ_LINGER;
 
         if (constant == "fd") return ZMQ_FD;
+        if (constant == "events")
+            return ZMQ_EVENTS;
+        if (constant == "pollin")
+            return ZMQ_POLLIN;
+        if (constant == "pollout")
+            return ZMQ_POLLOUT;
 
         return -1;
     }
