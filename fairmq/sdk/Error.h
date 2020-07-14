@@ -25,11 +25,6 @@ struct RuntimeError : ::std::runtime_error
     {}
 };
 
-struct MixedStateError : RuntimeError
-{
-    using RuntimeError::RuntimeError;
-};
-
 } /* namespace sdk */
 
 enum class ErrorCode

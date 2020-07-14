@@ -6,6 +6,7 @@ enum FBResult:byte {
 }
 
 enum FBState:byte {
+    Undefined,
     Ok,
     Error,
     Idle,

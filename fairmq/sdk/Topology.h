@@ -70,6 +70,37 @@ const std::map<DeviceTransition, DeviceState> expectedState =
     { DeviceTransition::End,          DeviceState::Exiting }
 };
 
+// mirrors DeviceState, but adds a "Mixed" state that represents a topology where devices are currently not in the same state.
+enum class AggregatedTopologyState : int
+{
+    Undefined = static_cast<int>(fair::mq::State::Undefined),
+    Ok = static_cast<int>(fair::mq::State::Ok),
+    Error = static_cast<int>(fair::mq::State::Error),
+    Idle = static_cast<int>(fair::mq::State::Idle),
+    InitializingDevice = static_cast<int>(fair::mq::State::InitializingDevice),
+    Initialized = static_cast<int>(fair::mq::State::Initialized),
+    Binding = static_cast<int>(fair::mq::State::Binding),
+    Bound = static_cast<int>(fair::mq::State::Bound),
+    Connecting = static_cast<int>(fair::mq::State::Connecting),
+    DeviceReady = static_cast<int>(fair::mq::State::DeviceReady),
+    InitializingTask = static_cast<int>(fair::mq::State::InitializingTask),
+    Ready = static_cast<int>(fair::mq::State::Ready),
+    Running = static_cast<int>(fair::mq::State::Running),
+    ResettingTask = static_cast<int>(fair::mq::State::ResettingTask),
+    ResettingDevice = static_cast<int>(fair::mq::State::ResettingDevice),
+    Exiting = static_cast<int>(fair::mq::State::Exiting),
+    Mixed
+};
+
+inline std::ostream& operator<<(std::ostream& os, const AggregatedTopologyState& state)
+{
+    if (state == AggregatedTopologyState::Mixed) {
+        return os << "Mixed";
+    } else {
+        return os << static_cast<DeviceState>(state);
+    }
+}
+
 struct DeviceStatus
 {
     bool subscribed_to_state_changes;
@@ -100,22 +131,22 @@ using TopologyStateByTask = std::unordered_map<DDSTask::Id, DeviceStatus>;
 using TopologyStateByCollection = std::unordered_map<DDSCollection::Id, std::vector<DeviceStatus>>;
 using TopologyTransition = fair::mq::Transition;
 
-inline DeviceState AggregateState(const TopologyState& topologyState)
+inline AggregatedTopologyState AggregateState(const TopologyState& topologyState)
 {
     DeviceState first = topologyState.begin()->state;
 
     if (std::all_of(topologyState.cbegin(), topologyState.cend(), [&](TopologyState::value_type i) {
             return i.state == first;
         })) {
-        return first;
+        return static_cast<AggregatedTopologyState>(first);
     }
 
-    throw MixedStateError("State is not uniform");
+    return AggregatedTopologyState::Mixed;
 }
 
 inline bool StateEqualsTo(const TopologyState& topologyState, DeviceState state)
 {
-    return AggregateState(topologyState) == state;
+    return AggregateState(topologyState) == static_cast<AggregatedTopologyState>(state);
 }
 
 inline TopologyStateByCollection GroupByCollectionId(const TopologyState& topologyState)
@@ -760,9 +791,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         {
             fCount = std::count_if(stateIndex.cbegin(), stateIndex.cend(), [=](const auto& s) {
                 if (ContainsTask(stateData.at(s.second).taskId)) {
-                    return stateData.at(s.second).state == fTargetCurrentState
-                           &&
-                           (stateData.at(s.second).lastState == fTargetLastState || fTargetLastState == DeviceState::Ok);
+                    return stateData.at(s.second).state == fTargetCurrentState &&
+                          (stateData.at(s.second).lastState == fTargetLastState || fTargetLastState == DeviceState::Undefined);
                 } else {
                     return false;
                 }
@@ -774,8 +804,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         {
             if (!fOp.IsCompleted() && ContainsTask(taskId)) {
                 if (currentState == fTargetCurrentState &&
-                    (lastState == fTargetLastState ||
-                     fTargetLastState == DeviceState::Ok)) {
+                    (lastState == fTargetLastState || fTargetLastState == DeviceState::Undefined)) {
                     ++fCount;
                 }
                 TryCompletion();
@@ -879,7 +908,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     template<typename CompletionToken>
     auto AsyncWaitForState(const DeviceState targetCurrentState, CompletionToken&& token)
     {
-        return AsyncWaitForState(DeviceState::Ok, targetCurrentState, "", Duration(0), std::move(token));
+        return AsyncWaitForState(DeviceState::Undefined, targetCurrentState, "", Duration(0), std::move(token));
     }
 
     /// @brief Wait for selected FairMQ devices to reach given last & current state in this topology
@@ -909,7 +938,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     auto WaitForState(const DeviceState targetCurrentState, const std::string& path = "", Duration timeout = Duration(0))
         -> std::error_code
     {
-        return WaitForState(DeviceState::Ok, targetCurrentState, path, timeout);
+        return WaitForState(DeviceState::Undefined, targetCurrentState, path, timeout);
     }
 
     using GetPropertiesCompletionSignature = void(std::error_code, GetPropertiesResult);
@@ -1254,7 +1283,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         int index = 0;
 
         for (const auto& task : fDDSTopo.GetTasks()) {
-            fStateData.push_back(DeviceStatus{false, DeviceState::Ok, DeviceState::Ok, task.GetId(), task.GetCollectionId()});
+            fStateData.push_back(DeviceStatus{false, DeviceState::Undefined, DeviceState::Undefined, task.GetId(), task.GetCollectionId()});
             fStateIndex.emplace(task.GetId(), index);
             index++;
         }
