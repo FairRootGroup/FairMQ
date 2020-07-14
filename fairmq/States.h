@@ -20,6 +20,7 @@ namespace mq
 
 enum class State : int
 {
+    Undefined = 0,
     Ok,
     Error,
     Idle,
@@ -39,7 +40,7 @@ enum class State : int
 
 enum class Transition : int
 {
-    Auto,
+    Auto = 0,
     InitDevice,
     CompleteInit,
     Bind,

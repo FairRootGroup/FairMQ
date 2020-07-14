@@ -18,9 +18,10 @@ namespace fair
 namespace mq
 {
 
-array<string, 15> stateNames =
+array<string, 16> stateNames =
 {
     {
+        "UNDEFINED",
         "OK",
         "ERROR",
         "IDLE",
@@ -41,6 +42,7 @@ array<string, 15> stateNames =
 
 unordered_map<string, State> states =
 {
+    { "UNDEFINED",           State::Undefined },
     { "OK",                  State::Ok },
     { "ERROR",               State::Error },
     { "IDLE",                State::Idle },

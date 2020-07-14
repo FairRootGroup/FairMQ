@@ -70,9 +70,10 @@ array<string, 17> typeNames =
     }
 };
 
-array<fair::mq::State, 15> fbStateToMQState =
+array<fair::mq::State, 16> fbStateToMQState =
 {
     {
+        fair::mq::State::Undefined,
         fair::mq::State::Ok,
         fair::mq::State::Error,
         fair::mq::State::Idle,
@@ -91,9 +92,10 @@ array<fair::mq::State, 15> fbStateToMQState =
     }
 };
 
-array<sdk::cmd::FBState, 15> mqStateToFBState =
+array<sdk::cmd::FBState, 16> mqStateToFBState =
 {
     {
+        sdk::cmd::FBState_Undefined,
         sdk::cmd::FBState_Ok,
         sdk::cmd::FBState_Error,
         sdk::cmd::FBState_Idle,

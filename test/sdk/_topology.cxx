@@ -139,6 +139,32 @@ TEST_F(Topology, ChangeState)
     EXPECT_EQ(sdk::StateEqualsTo(currentState, sdk::DeviceState::InitializingDevice), true);
 }
 
+TEST_F(Topology, MixedState)
+{
+    using namespace fair::mq;
+
+    sdk::Topology topo(mDDSTopo, mDDSSession);
+    auto result1(topo.ChangeState(sdk::TopologyTransition::InitDevice, "main/Sampler.*"));
+    LOG(info) << result1.first;
+
+    EXPECT_EQ(result1.first, std::error_code());
+    EXPECT_EQ(sdk::AggregateState(result1.second), sdk::AggregatedTopologyState::Mixed);
+    EXPECT_EQ(sdk::StateEqualsTo(result1.second, sdk::DeviceState::InitializingDevice), false);
+    auto const currentState1 = topo.GetCurrentState();
+    EXPECT_EQ(sdk::AggregateState(currentState1), sdk::AggregatedTopologyState::Mixed);
+    EXPECT_EQ(sdk::StateEqualsTo(currentState1, sdk::DeviceState::InitializingDevice), false);
+
+    auto result2(topo.ChangeState(sdk::TopologyTransition::InitDevice, "main/SinkGroup/.*"));
+    LOG(info) << result2.first;
+
+    EXPECT_EQ(result2.first, std::error_code());
+    EXPECT_EQ(sdk::AggregateState(result2.second), sdk::AggregatedTopologyState::InitializingDevice);
+    EXPECT_EQ(sdk::StateEqualsTo(result2.second, sdk::DeviceState::InitializingDevice), true);
+    auto const currentState2 = topo.GetCurrentState();
+    EXPECT_EQ(sdk::AggregateState(currentState2), sdk::AggregatedTopologyState::InitializingDevice);
+    EXPECT_EQ(sdk::StateEqualsTo(currentState2, sdk::DeviceState::InitializingDevice), true);
+}
+
 TEST_F(Topology, AsyncChangeStateConcurrent)
 {
     using namespace fair::mq;
@@ -191,9 +217,9 @@ TEST_F(Topology, AsyncChangeStateCollectionView)
             ASSERT_EQ(cstate.size(), 5);
             for (const auto& c : cstate) {
                 LOG(debug) << "\t" << c.first;
-                State s;
+                sdk::AggregatedTopologyState s;
                 ASSERT_NO_THROW(s = sdk::AggregateState(c.second));
-                ASSERT_EQ(s, State::InitializingDevice);
+                ASSERT_EQ(s, static_cast<sdk::AggregatedTopologyState>(State::InitializingDevice));
                 LOG(debug) << "\tAggregated state: " << s;
                 for (const auto& ds : c.second) {
                     LOG(debug) << "\t\t" << ds.state;
