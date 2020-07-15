@@ -452,4 +452,26 @@ TEST_F(Topology, SetAndGetProperties)
     ASSERT_EQ(topo.ChangeState(TopologyTransition::ResetDevice).first, std::error_code());
 }
 
+TEST(Topology2, AggregatedTopologyStateComparison)
+{
+    using namespace fair::mq::sdk;
+    ASSERT_TRUE(DeviceState::Undefined == AggregatedTopologyState::Undefined);
+    ASSERT_TRUE(AggregatedTopologyState::Undefined == DeviceState::Undefined);
+    ASSERT_TRUE(DeviceState::Ok == AggregatedTopologyState::Ok);
+    ASSERT_TRUE(DeviceState::Error == AggregatedTopologyState::Error);
+    ASSERT_TRUE(DeviceState::Idle == AggregatedTopologyState::Idle);
+    ASSERT_TRUE(DeviceState::InitializingDevice == AggregatedTopologyState::InitializingDevice);
+    ASSERT_TRUE(DeviceState::Initialized == AggregatedTopologyState::Initialized);
+    ASSERT_TRUE(DeviceState::Binding == AggregatedTopologyState::Binding);
+    ASSERT_TRUE(DeviceState::Bound == AggregatedTopologyState::Bound);
+    ASSERT_TRUE(DeviceState::Connecting == AggregatedTopologyState::Connecting);
+    ASSERT_TRUE(DeviceState::DeviceReady == AggregatedTopologyState::DeviceReady);
+    ASSERT_TRUE(DeviceState::InitializingTask == AggregatedTopologyState::InitializingTask);
+    ASSERT_TRUE(DeviceState::Ready == AggregatedTopologyState::Ready);
+    ASSERT_TRUE(DeviceState::Running == AggregatedTopologyState::Running);
+    ASSERT_TRUE(DeviceState::ResettingTask == AggregatedTopologyState::ResettingTask);
+    ASSERT_TRUE(DeviceState::ResettingDevice == AggregatedTopologyState::ResettingDevice);
+    ASSERT_TRUE(DeviceState::Exiting == AggregatedTopologyState::Exiting);
+}
+
 }   // namespace

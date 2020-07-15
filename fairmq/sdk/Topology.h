@@ -92,6 +92,16 @@ enum class AggregatedTopologyState : int
     Mixed
 };
 
+inline auto operator==(DeviceState lhs, AggregatedTopologyState rhs) -> bool
+{
+    return static_cast<int>(lhs) == static_cast<int>(rhs);
+}
+
+inline auto operator==(AggregatedTopologyState lhs, DeviceState rhs) -> bool
+{
+    return static_cast<int>(lhs) == static_cast<int>(rhs);
+}
+
 inline std::ostream& operator<<(std::ostream& os, const AggregatedTopologyState& state)
 {
     if (state == AggregatedTopologyState::Mixed) {
