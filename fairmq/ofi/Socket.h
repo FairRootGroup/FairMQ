@@ -45,6 +45,7 @@ class Socket final : public fair::mq::Socket
 
     auto GetId() const -> std::string override { return fId; }
 
+    auto Events(uint32_t *events) -> void override { *events = 0; }
     auto Bind(const std::string& address) -> bool override;
     auto Connect(const std::string& address) -> bool override;
 
