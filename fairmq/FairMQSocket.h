@@ -38,6 +38,9 @@ class FairMQSocket
     virtual void SetOption(const std::string& option, const void* value, size_t valueSize) = 0;
     virtual void GetOption(const std::string& option, void* value, size_t* valueSize) = 0;
 
+    /// If the backend supports it, fills the unsigned integer @a events with the ZMQ_EVENTS value
+    /// DISCLAIMER: this API is experimental and unsupported and might be dropped / refactored in
+    /// the future.
     virtual void Events(uint32_t* events) = 0;
     virtual void SetLinger(const int value) = 0;
     virtual int GetLinger() const = 0;
