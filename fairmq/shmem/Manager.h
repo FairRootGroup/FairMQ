@@ -95,14 +95,14 @@ class Manager
 
         LOG(debug) << "created/opened shared memory segment '" << "fmq_" << fShmId << "_main" << "' of " << fSegment.get_size() << " bytes. Available are " << fSegment.get_free_memory() << " bytes.";
         if (mlockSegment) {
-            LOG(debug) << "Locking the memory pages behind the managed segment...";
+            LOG(debug) << "Locking the managed segment memory pages...";
             mlock(fSegment.get_address(), fSegment.get_size());
-            LOG(debug) << "Successfully locked the memory pages.";
+            LOG(debug) << "Successfully locked the managed segment memory pages.";
         }
         if (zeroSegment) {
-            LOG(debug) << "Zeroing the free memory of the managed segment...";
+            LOG(debug) << "Zeroing the managed segment free memory...";
             fSegment.zero_free_memory();
-            LOG(debug) << "Successfully zeroed the free memory of the managed segment";
+            LOG(debug) << "Successfully zeroed the managed segment free memory.";
         }
 
         fRegionInfos = fManagementSegment.find_or_construct<Uint64RegionInfoMap>(unique_instance)(fShmVoidAlloc);

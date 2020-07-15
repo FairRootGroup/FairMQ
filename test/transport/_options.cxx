@@ -66,6 +66,24 @@ void RunOptionsTest(const string& transport)
     ASSERT_EQ(channel.GetSocket().GetRcvKernelSize(), 8000);
 }
 
+void ZeroingAndMlock(const string& transport)
+{
+    size_t session{fair::mq::tools::UuidHash()};
+
+    fair::mq::ProgOptions config;
+    config.SetProperty<string>("session", to_string(session));
+    config.SetProperty<size_t>("shm-segment-size", 16384);
+    config.SetProperty<bool>("shm-zero-segment", true);
+    config.SetProperty<bool>("shm-mlock-segment", true);
+
+    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
+
+    FairMQMessagePtr outMsg(factory->CreateMessage(10000));
+    char test[10000];
+    memset(test, 0, sizeof(test));
+    ASSERT_EQ(memcmp(test, outMsg->GetData(), outMsg->GetSize()), 0);
+}
+
 TEST(Options, zeromq)
 {
     RunOptionsTest("zeromq");
@@ -74,6 +92,11 @@ TEST(Options, zeromq)
 TEST(Options, shmem)
 {
     RunOptionsTest("shmem");
+}
+
+TEST(ZeroingAndMlock, shmem)
+{
+    ZeroingAndMlock("shmem");
 }
 
 } // namespace
