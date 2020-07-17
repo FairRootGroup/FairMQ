@@ -472,6 +472,42 @@ TEST(Topology2, AggregatedTopologyStateComparison)
     ASSERT_TRUE(DeviceState::ResettingTask == AggregatedTopologyState::ResettingTask);
     ASSERT_TRUE(DeviceState::ResettingDevice == AggregatedTopologyState::ResettingDevice);
     ASSERT_TRUE(DeviceState::Exiting == AggregatedTopologyState::Exiting);
+
+    ASSERT_TRUE(GetAggregatedTopologyState("UNDEFINED") == AggregatedTopologyState::Undefined);
+    ASSERT_TRUE(GetAggregatedTopologyState("OK") == AggregatedTopologyState::Ok);
+    ASSERT_TRUE(GetAggregatedTopologyState("ERROR") == AggregatedTopologyState::Error);
+    ASSERT_TRUE(GetAggregatedTopologyState("IDLE") == AggregatedTopologyState::Idle);
+    ASSERT_TRUE(GetAggregatedTopologyState("INITIALIZING DEVICE") == AggregatedTopologyState::InitializingDevice);
+    ASSERT_TRUE(GetAggregatedTopologyState("INITIALIZED") == AggregatedTopologyState::Initialized);
+    ASSERT_TRUE(GetAggregatedTopologyState("BINDING") == AggregatedTopologyState::Binding);
+    ASSERT_TRUE(GetAggregatedTopologyState("BOUND") == AggregatedTopologyState::Bound);
+    ASSERT_TRUE(GetAggregatedTopologyState("CONNECTING") == AggregatedTopologyState::Connecting);
+    ASSERT_TRUE(GetAggregatedTopologyState("DEVICE READY") == AggregatedTopologyState::DeviceReady);
+    ASSERT_TRUE(GetAggregatedTopologyState("INITIALIZING TASK") == AggregatedTopologyState::InitializingTask);
+    ASSERT_TRUE(GetAggregatedTopologyState("READY") == AggregatedTopologyState::Ready);
+    ASSERT_TRUE(GetAggregatedTopologyState("RUNNING") == AggregatedTopologyState::Running);
+    ASSERT_TRUE(GetAggregatedTopologyState("RESETTING TASK") == AggregatedTopologyState::ResettingTask);
+    ASSERT_TRUE(GetAggregatedTopologyState("RESETTING DEVICE") == AggregatedTopologyState::ResettingDevice);
+    ASSERT_TRUE(GetAggregatedTopologyState("EXITING") == AggregatedTopologyState::Exiting);
+    ASSERT_TRUE(GetAggregatedTopologyState("MIXED") == AggregatedTopologyState::Mixed);
+
+    ASSERT_TRUE("UNDEFINED" == GetAggregatedTopologyStateName(AggregatedTopologyState::Undefined));
+    ASSERT_TRUE("OK" == GetAggregatedTopologyStateName(AggregatedTopologyState::Ok));
+    ASSERT_TRUE("ERROR" == GetAggregatedTopologyStateName(AggregatedTopologyState::Error));
+    ASSERT_TRUE("IDLE" == GetAggregatedTopologyStateName(AggregatedTopologyState::Idle));
+    ASSERT_TRUE("INITIALIZING DEVICE" == GetAggregatedTopologyStateName(AggregatedTopologyState::InitializingDevice));
+    ASSERT_TRUE("INITIALIZED" == GetAggregatedTopologyStateName(AggregatedTopologyState::Initialized));
+    ASSERT_TRUE("BINDING" == GetAggregatedTopologyStateName(AggregatedTopologyState::Binding));
+    ASSERT_TRUE("BOUND" == GetAggregatedTopologyStateName(AggregatedTopologyState::Bound));
+    ASSERT_TRUE("CONNECTING" == GetAggregatedTopologyStateName(AggregatedTopologyState::Connecting));
+    ASSERT_TRUE("DEVICE READY" == GetAggregatedTopologyStateName(AggregatedTopologyState::DeviceReady));
+    ASSERT_TRUE("INITIALIZING TASK" == GetAggregatedTopologyStateName(AggregatedTopologyState::InitializingTask));
+    ASSERT_TRUE("READY" == GetAggregatedTopologyStateName(AggregatedTopologyState::Ready));
+    ASSERT_TRUE("RUNNING" == GetAggregatedTopologyStateName(AggregatedTopologyState::Running));
+    ASSERT_TRUE("RESETTING TASK" == GetAggregatedTopologyStateName(AggregatedTopologyState::ResettingTask));
+    ASSERT_TRUE("RESETTING DEVICE" == GetAggregatedTopologyStateName(AggregatedTopologyState::ResettingDevice));
+    ASSERT_TRUE("EXITING" == GetAggregatedTopologyStateName(AggregatedTopologyState::Exiting));
+    ASSERT_TRUE("MIXED" == GetAggregatedTopologyStateName(AggregatedTopologyState::Mixed));
 }
 
 }   // namespace
