@@ -105,9 +105,27 @@ inline auto operator==(AggregatedTopologyState lhs, DeviceState rhs) -> bool
 inline std::ostream& operator<<(std::ostream& os, const AggregatedTopologyState& state)
 {
     if (state == AggregatedTopologyState::Mixed) {
-        return os << "Mixed";
+        return os << "MIXED";
     } else {
         return os << static_cast<DeviceState>(state);
+    }
+}
+
+inline std::string GetAggregatedTopologyStateName(AggregatedTopologyState s)
+{
+    if (s == AggregatedTopologyState::Mixed) {
+        return "MIXED";
+    } else {
+        return GetStateName(static_cast<State>(s));
+    }
+}
+
+inline AggregatedTopologyState GetAggregatedTopologyState(const std::string& state)
+{
+    if (state == "MIXED") {
+        return AggregatedTopologyState::Mixed;
+    } else {
+        return static_cast<AggregatedTopologyState>(GetState(state));
     }
 }
 
