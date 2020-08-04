@@ -96,7 +96,9 @@ class Manager
         LOG(debug) << "created/opened shared memory segment '" << "fmq_" << fShmId << "_main" << "' of " << fSegment.get_size() << " bytes. Available are " << fSegment.get_free_memory() << " bytes.";
         if (mlockSegment) {
             LOG(debug) << "Locking the managed segment memory pages...";
-            mlock(fSegment.get_address(), fSegment.get_size());
+            if (mlock(fSegment.get_address(), fSegment.get_size()) == -1) {
+                LOG(error) << "Could not lock the managed segment memory. Code: " << errno << ", reason: " << strerror(errno);
+            }
             LOG(debug) << "Successfully locked the managed segment memory pages.";
         }
         if (zeroSegment) {
