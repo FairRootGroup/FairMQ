@@ -32,6 +32,7 @@ class FairMQBenchmarkSampler : public FairMQDevice
         , fMemSet(false)
         , fNumParts(1)
         , fMsgSize(10000)
+        , fMsgAlignment(0)
         , fMsgRate(0)
         , fNumIterations(0)
         , fMaxIterations(0)
@@ -44,6 +45,7 @@ class FairMQBenchmarkSampler : public FairMQDevice
         fMemSet = fConfig->GetProperty<bool>("memset");
         fNumParts = fConfig->GetProperty<size_t>("num-parts");
         fMsgSize = fConfig->GetProperty<size_t>("msg-size");
+        fMsgAlignment = fConfig->GetProperty<size_t>("msg-alignment");
         fMsgRate = fConfig->GetProperty<float>("msg-rate");
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
         fOutChannelName = fConfig->GetProperty<std::string>("out-channel");
@@ -64,7 +66,7 @@ class FairMQBenchmarkSampler : public FairMQDevice
                 FairMQParts parts;
 
                 for (size_t i = 0; i < fNumParts; ++i) {
-                    parts.AddPart(dataOutChannel.NewMessage(fMsgSize));
+                    parts.AddPart(dataOutChannel.NewMessage(fMsgSize, fair::mq::Alignment{fMsgAlignment}));
                     if (fMemSet) {
                         std::memset(parts.At(i)->GetData(), 0, parts.At(i)->GetSize());
                     }
@@ -79,7 +81,7 @@ class FairMQBenchmarkSampler : public FairMQDevice
                     ++fNumIterations;
                 }
             } else {
-                FairMQMessagePtr msg(dataOutChannel.NewMessage(fMsgSize));
+                FairMQMessagePtr msg(dataOutChannel.NewMessage(fMsgSize, fair::mq::Alignment{fMsgAlignment}));
                 if (fMemSet) {
                     std::memset(msg->GetData(), 0, msg->GetSize());
                 }
@@ -111,6 +113,7 @@ class FairMQBenchmarkSampler : public FairMQDevice
     bool fMemSet;
     size_t fNumParts;
     size_t fMsgSize;
+    size_t fMsgAlignment;
     std::atomic<int> fMsgCounter;
     float fMsgRate;
     uint64_t fNumIterations;
