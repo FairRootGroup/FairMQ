@@ -37,7 +37,7 @@ struct ShmId
 class Monitor
 {
   public:
-    Monitor(const std::string& shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, bool runAsDaemon, bool cleanOnExit);
+    Monitor(const std::string& shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, unsigned int intervalInMS, bool runAsDaemon, bool cleanOnExit);
 
     Monitor(const Monitor&) = delete;
     Monitor operator=(const Monitor&) = delete;
@@ -84,6 +84,7 @@ class Monitor
     bool fSeenOnce; // true is segment has been opened successfully at least once
     bool fCleanOnExit;
     unsigned int fTimeoutInMS;
+    unsigned int fIntervalInMS;
     std::string fShmId;
     std::string fSegmentName;
     std::string fManagementSegmentName;

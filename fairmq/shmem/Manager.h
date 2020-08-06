@@ -25,13 +25,15 @@
 #include <fairmq/tools/CppSTL.h>
 #include <fairmq/tools/Strings.h>
 
-#include <boost/process.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/interprocess/indexes/null_index.hpp>
+#include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/sync/named_condition.hpp>
 #include <boost/interprocess/sync/named_mutex.hpp>
-#include <boost/interprocess/ipc/message_queue.hpp>
+#include <boost/interprocess/mem_algo/simple_seq_fit.hpp>
+#include <boost/process.hpp>
 
 #include <cstdlib> // getenv
 #include <condition_variable>
@@ -54,6 +56,13 @@ namespace shmem
 {
 
 struct SharedMemoryError : std::runtime_error { using std::runtime_error::runtime_error; };
+
+using SimpleSeqFitSegment = boost::interprocess::basic_managed_shared_memory<char,
+    boost::interprocess::simple_seq_fit<boost::interprocess::mutex_family>,
+    boost::interprocess::iset_index>;
+using RBTreeBestFitSegment = boost::interprocess::basic_managed_shared_memory<char,
+    boost::interprocess::rbtree_best_fit<boost::interprocess::mutex_family>,
+    boost::interprocess::iset_index>;
 
 class Manager
 {
@@ -133,7 +142,7 @@ class Manager
     Manager(const Manager&) = delete;
     Manager operator=(const Manager&) = delete;
 
-    boost::interprocess::managed_shared_memory& Segment() { return fSegment; }
+    RBTreeBestFitSegment& Segment() { return fSegment; }
     boost::interprocess::managed_shared_memory& ManagementSegment() { return fManagementSegment; }
 
     static void StartMonitor(const std::string& id)
@@ -446,7 +455,8 @@ class Manager
   private:
     std::string fShmId;
     std::string fDeviceId;
-    boost::interprocess::managed_shared_memory fSegment;
+    // boost::interprocess::managed_shared_memory fSegment;
+    RBTreeBestFitSegment fSegment;
     boost::interprocess::managed_shared_memory fManagementSegment;
     VoidAlloc fShmVoidAlloc;
     boost::interprocess::named_mutex fShmMtx;

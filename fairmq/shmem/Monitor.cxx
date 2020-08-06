@@ -22,6 +22,10 @@
 #include <csignal>
 #include <iostream>
 #include <iomanip>
+#include <chrono>
+#include <ctime>
+#include <time.h>
+#include <iomanip>
 
 #include <termios.h>
 #include <poll.h>
@@ -48,7 +52,7 @@ void signalHandler(int signal)
     gSignalStatus = signal;
 }
 
-Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, bool runAsDaemon, bool cleanOnExit)
+Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, unsigned int intervalInMS, bool runAsDaemon, bool cleanOnExit)
     : fSelfDestruct(selfDestruct)
     , fInteractive(interactive)
     , fViewOnly(viewOnly)
@@ -56,6 +60,7 @@ Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool 
     , fSeenOnce(false)
     , fCleanOnExit(cleanOnExit)
     , fTimeoutInMS(timeoutInMS)
+    , fIntervalInMS(intervalInMS)
     , fShmId(shmId)
     , fSegmentName("fmq_" + fShmId + "_main")
     , fManagementSegmentName("fmq_" + fShmId + "_mng")
@@ -110,7 +115,7 @@ void Monitor::Run()
         Interactive();
     } else {
         while (!fTerminating) {
-            this_thread::sleep_for(chrono::milliseconds(100));
+            this_thread::sleep_for(chrono::milliseconds(fIntervalInMS));
             CheckSegment();
         }
     }
@@ -183,7 +188,7 @@ void Monitor::Interactive()
     PrintHeader();
 
     while (!fTerminating) {
-        if (poll(cinfd, 1, 100)) {
+        if (poll(cinfd, 1, fIntervalInMS)) {
             if (fTerminating || gSignalStatus != 0) {
                 break;
             }
@@ -275,7 +280,7 @@ void Monitor::CheckSegment()
 
         unsigned int numDevices = 0;
 
-        if (fInteractive) {
+        if (fInteractive || fViewOnly) {
             DeviceCounter* dc = managementSegment.find<DeviceCounter>(bipc::unique_instance).first;
             if (dc) {
                 numDevices = dc->fCount;
@@ -303,6 +308,18 @@ void Monitor::CheckSegment()
                  << setw(8)  << numDevices                                      << " | "
                  << setw(10) << (fViewOnly ? "view only" : to_string(duration)) << " |"
                  << c << flush;
+        } else if (fViewOnly) {
+            time_t current = chrono::system_clock::to_time_t(now);
+            chrono::milliseconds ms = chrono::duration_cast<chrono::milliseconds>(now.time_since_epoch());
+            struct tm local;
+            localtime_r(&current, &local);
+            char timeBuffer[80];
+            size_t count = strftime(timeBuffer, 80, "%F %T", &local);
+            cout << (count != 0 ? timeBuffer : "") << "." << setfill('0') << setw(6) << ms.count() % 1000000
+                 << ", name: " << fSegmentName
+                 << ", size: " << segment.get_size()
+                 << ", free: " << segment.get_free_memory()
+                 << ", numDevices: " << numDevices << endl;
         }
     } catch (bie&) {
         fHeartbeatTriggered = false;
@@ -473,7 +490,7 @@ void Monitor::Cleanup(const ShmId& shmId)
         RemoveObject(managementSegmentName.c_str());
     } catch (bie&) {
         cout << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup." << endl;
-    } catch(std::out_of_range& oor) {
+    } catch(out_of_range& oor) {
         cout << "Could not locate element in the region map, out of range: " << oor.what() << endl;
     }
 
