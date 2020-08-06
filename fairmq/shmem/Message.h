@@ -263,7 +263,7 @@ class Message final : public fair::mq::Message
             } catch (boost::interprocess::bad_alloc& ba) {
                 // LOG(warn) << "Shared memory full...";
                 if (fManager.ThrowingOnBadAlloc()) {
-                    throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default"));
+                    throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default", ", free memory: ", fManager.Segment().get_free_memory()));
                 }
                 rateLimiter.maybe_sleep();
                 if (fManager.Interrupted()) {
