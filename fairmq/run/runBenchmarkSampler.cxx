@@ -19,6 +19,7 @@ void addCustomOptions(bpo::options_description& options)
         ("memset", bpo::value<bool>()->default_value(false), "Memset allocated buffers to 0")
         ("num-parts", bpo::value<size_t>()->default_value(1), "Number of parts to send. 1 will send single messages, not parts")
         ("msg-size", bpo::value<size_t>()->default_value(1000000), "Message size in bytes")
+        ("msg-alignment", bpo::value<size_t>()->default_value(0), "Message alignment")
         ("max-iterations", bpo::value<uint64_t>()->default_value(0), "Number of run iterations (0 - infinite)")
         ("msg-rate", bpo::value<float>()->default_value(0), "Msg rate limit in maximum number of messages per second");
 }
