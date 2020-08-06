@@ -76,6 +76,7 @@ int main(int argc, char** argv)
         bool interactive = false;
         bool viewOnly = false;
         unsigned int timeoutInMS = 5000;
+        unsigned int intervalInMS = 100;
         bool runAsDaemon = false;
         bool cleanOnExit = false;
 
@@ -90,6 +91,7 @@ int main(int argc, char** argv)
             ("timeout,t"      , value<unsigned int>(&timeoutInMS)->default_value(5000), "Heartbeat timeout in milliseconds")
             ("daemonize,d"    , value<bool>(&runAsDaemon)->implicit_value(true),        "Daemonize the monitor")
             ("clean-on-exit,e", value<bool>(&cleanOnExit)->implicit_value(true),        "Perform cleanup on exit")
+            ("interval"       , value<unsigned int>(&intervalInMS)->default_value(100), "Output interval for interactive/view-only mode")
             ("help,h", "Print help");
 
         variables_map vm;
@@ -117,7 +119,7 @@ int main(int argc, char** argv)
 
         cout << "Starting shared memory monitor for session: \"" << sessionName << "\" (shmId: " << shmId << ")..." << endl;
 
-        Monitor monitor(shmId, selfDestruct, interactive, viewOnly, timeoutInMS, runAsDaemon, cleanOnExit);
+        Monitor monitor(shmId, selfDestruct, interactive, viewOnly, timeoutInMS, intervalInMS, runAsDaemon, cleanOnExit);
 
         monitor.CatchSignals();
         monitor.Run();
