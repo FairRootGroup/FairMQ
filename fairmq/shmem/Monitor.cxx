@@ -10,6 +10,7 @@
 #include "Common.h"
 
 #include <fairmq/Tools.h>
+#include <fairlogger/Logger.h>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/file_mapping.hpp>
@@ -79,6 +80,10 @@ Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool 
             throw DaemonPresent(tools::ToString("fairmq-shmmonitor for shared memory id ", fShmId, " already started or not properly exited."));
         }
     }
+
+    Logger::SetConsoleColor(false);
+    Logger::DefineVerbosity(Verbosity::user1, VerbositySpec::Make(VerbositySpec::Info::timestamp_us));
+    Logger::SetVerbosity(Verbosity::verylow);
 }
 
 void Monitor::CatchSignals()
@@ -309,17 +314,10 @@ void Monitor::CheckSegment()
                  << setw(10) << (fViewOnly ? "view only" : to_string(duration)) << " |"
                  << c << flush;
         } else if (fViewOnly) {
-            time_t current = chrono::system_clock::to_time_t(now);
-            chrono::milliseconds ms = chrono::duration_cast<chrono::milliseconds>(now.time_since_epoch());
-            struct tm local;
-            localtime_r(&current, &local);
-            char timeBuffer[80];
-            size_t count = strftime(timeBuffer, 80, "%F %T", &local);
-            cout << (count != 0 ? timeBuffer : "") << "." << setfill('0') << setw(6) << ms.count() % 1000000
-                 << ", name: " << fSegmentName
-                 << ", size: " << segment.get_size()
-                 << ", free: " << segment.get_free_memory()
-                 << ", numDevices: " << numDevices << endl;
+            LOGV(info, user1) << "name: " << fSegmentName
+                                          << ", size: " << segment.get_size()
+                                          << ", free: " << segment.get_free_memory()
+                                          << ", numDevices: " << numDevices;
         }
     } catch (bie&) {
         fHeartbeatTriggered = false;
