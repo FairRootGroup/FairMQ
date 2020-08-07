@@ -12,13 +12,15 @@
 
 #include <atomic>
 #include <string>
+#include <functional> // std::equal_to
 
-#include <boost/interprocess/managed_shared_memory.hpp>
+#include <boost/functional/hash.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/containers/map.hpp>
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/containers/vector.hpp>
-#include <boost/functional/hash.hpp>
+#include <boost/interprocess/managed_shared_memory.hpp>
+#include <boost/unordered_map.hpp>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -71,6 +73,15 @@ struct DeviceCounter
     std::atomic<unsigned int> fCount;
 };
 
+struct MsgCounter
+{
+    MsgCounter(unsigned int c)
+        : fCount(c)
+    {}
+
+    std::atomic<unsigned int> fCount;
+};
+
 struct RegionCounter
 {
     RegionCounter(uint64_t c)
@@ -87,6 +98,23 @@ struct MetaHeader
     size_t fHint;
     boost::interprocess::managed_shared_memory::handle_t fHandle;
 };
+
+struct MsgDebug
+{
+    MsgDebug(pid_t pid, size_t size, const uint64_t creationTime)
+        : fPid(pid)
+        , fSize(size)
+        , fCreationTime(creationTime)
+    {}
+
+    pid_t fPid;
+    size_t fSize;
+    uint64_t fCreationTime;
+};
+
+using Uint64MsgDebugPairAlloc = boost::interprocess::allocator<std::pair<const size_t, MsgDebug>, SegmentManager>;
+using Uint64MsgDebugHashMap = boost::unordered_map<size_t, MsgDebug, boost::hash<size_t>, std::equal_to<size_t>, Uint64MsgDebugPairAlloc>;
+using Uint64MsgDebugMap = boost::interprocess::map<size_t, MsgDebug, std::less<size_t>, Uint64MsgDebugPairAlloc>;
 
 struct RegionBlock
 {

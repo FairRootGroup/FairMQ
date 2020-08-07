@@ -78,6 +78,7 @@ int main(int argc, char** argv)
         unsigned int timeoutInMS = 5000;
         unsigned int intervalInMS = 100;
         bool runAsDaemon = false;
+        bool debug = false;
         bool cleanOnExit = false;
 
         options_description desc("Options");
@@ -90,6 +91,7 @@ int main(int argc, char** argv)
             ("view,v"         , value<bool>(&viewOnly)->implicit_value(true),           "Run in view only mode")
             ("timeout,t"      , value<unsigned int>(&timeoutInMS)->default_value(5000), "Heartbeat timeout in milliseconds")
             ("daemonize,d"    , value<bool>(&runAsDaemon)->implicit_value(true),        "Daemonize the monitor")
+            ("debug,b"        , value<bool>(&debug)->implicit_value(true),             "Debug - Print a list of messages)")
             ("clean-on-exit,e", value<bool>(&cleanOnExit)->implicit_value(true),        "Perform cleanup on exit")
             ("interval"       , value<unsigned int>(&intervalInMS)->default_value(100), "Output interval for interactive/view-only mode")
             ("help,h", "Print help");
@@ -114,6 +116,11 @@ int main(int argc, char** argv)
 
         if (cleanup) {
             Monitor::CleanupFull(ShmId{shmId});
+            return 0;
+        }
+
+        if (debug) {
+            Monitor::PrintDebug(ShmId{shmId});
             return 0;
         }
 
