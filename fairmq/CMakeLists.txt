@@ -380,6 +380,7 @@ if(BUILD_FAIRMQ)
     Boost::boost
     Boost::date_time
     Boost::program_options
+    FairLogger::FairLogger
     PicoSHA2
   )
   target_include_directories(fairmq-shmmonitor PUBLIC
