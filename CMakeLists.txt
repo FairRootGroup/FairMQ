@@ -94,7 +94,7 @@ endif()
 
 if(BUILD_FAIRMQ OR BUILD_SDK)
   find_package2(PUBLIC FairLogger REQUIRED
-    VERSION 1.2.0
+    VERSION 1.6.0
   )
 
   foreach(dep IN LISTS FairLogger_PACKAGE_DEPENDENCIES)
