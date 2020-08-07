@@ -314,10 +314,14 @@ void Monitor::CheckSegment()
                  << setw(10) << (fViewOnly ? "view only" : to_string(duration)) << " |"
                  << c << flush;
         } else if (fViewOnly) {
-            LOGV(info, user1) << "name: " << fSegmentName
-                                          << ", size: " << segment.get_size()
-                                          << ", free: " << segment.get_free_memory()
-                                          << ", numDevices: " << numDevices;
+            size_t free = segment.get_free_memory();
+            size_t total = segment.get_size();
+            size_t used = total - free;
+            LOGV(info, user1) << "[" << fSegmentName
+                              << "] devices: " << numDevices
+                              << ", total: " << total
+                              << ", free: " << free
+                              << ", used: " << used;
         }
     } catch (bie&) {
         fHeartbeatTriggered = false;
