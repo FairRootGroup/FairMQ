@@ -60,6 +60,8 @@ class Monitor
     /// @param sessionId session id
     static void CleanupFull(const SessionId& sessionId);
 
+    static void PrintDebug(const ShmId& shmId);
+
     static void RemoveObject(const std::string&);
     static void RemoveFileMapping(const std::string&);
     static void RemoveQueue(const std::string&);

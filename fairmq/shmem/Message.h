@@ -22,6 +22,9 @@
 #include <cstddef> // size_t
 #include <atomic>
 
+#include <sys/types.h> // getpid
+#include <unistd.h> // pid_t
+
 namespace fair
 {
 namespace mq
@@ -274,6 +277,9 @@ class Message final : public fair::mq::Message
                 }
             }
             fMeta.fHandle = fManager.Segment().get_handle_from_address(fLocalPtr);
+            boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fManager.GetMtx());
+            fManager.IncrementShmMsgCounter();
+            fManager.AddMsgDebug(getpid(), size, static_cast<size_t>(fMeta.fHandle), std::chrono::system_clock::now().time_since_epoch().count());
         }
 
         fMeta.fSize = size;
@@ -285,6 +291,9 @@ class Message final : public fair::mq::Message
         if (fMeta.fHandle >= 0 && !fQueued) {
             if (fMeta.fRegionId == 0) {
                 fManager.Segment().deallocate(fManager.Segment().get_address_from_handle(fMeta.fHandle));
+                boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fManager.GetMtx());
+                fManager.DecrementShmMsgCounter();
+                fManager.RemoveMsgDebug(fMeta.fHandle);
                 fMeta.fHandle = -1;
             } else {
                 if (!fRegionPtr) {

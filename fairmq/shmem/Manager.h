@@ -71,7 +71,7 @@ class Manager
         : fShmId(std::move(shmId))
         , fDeviceId(std::move(deviceId))
         , fSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_main").c_str(), size)
-        , fManagementSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mng").c_str(), 655360)
+        , fManagementSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mng").c_str(), 6553600)
         , fShmVoidAlloc(fManagementSegment.get_segment_manager())
         , fShmMtx(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mtx").c_str())
         , fRegionEventsCV(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_cv").c_str())
@@ -80,6 +80,8 @@ class Manager
         , fRegionInfos(nullptr)
         , fInterrupted(false)
         , fMsgCounter(0)
+        , fMsgDebug(nullptr)
+        , fShmMsgCounter(nullptr)
         , fHeartbeatThread()
         , fSendHeartbeats(true)
         , fThrowOnBadAlloc(true)
@@ -117,6 +119,7 @@ class Manager
         }
 
         fRegionInfos = fManagementSegment.find_or_construct<Uint64RegionInfoMap>(unique_instance)(fShmVoidAlloc);
+        fMsgDebug = fManagementSegment.find_or_construct<Uint64MsgDebugMap>(unique_instance)(fShmVoidAlloc);
         // store info about the managed segment as region with id 0
         fRegionInfos->emplace(0, RegionInfo("", 0, 0, fShmVoidAlloc));
 
@@ -132,6 +135,16 @@ class Manager
             LOG(debug) << "no device counter found, creating one and initializing with 1";
             fDeviceCounter = fManagementSegment.construct<DeviceCounter>(unique_instance)(1);
             LOG(debug) << "initialized device counter with: " << fDeviceCounter->fCount;
+        }
+
+        fShmMsgCounter = fManagementSegment.find<MsgCounter>(unique_instance).first;
+
+        if (fShmMsgCounter) {
+            LOG(debug) << "message counter found, with value of " << fShmMsgCounter->fCount << ".";
+        } else {
+            LOG(debug) << "no message counter found, creating one and initializing with 0";
+            fShmMsgCounter = fManagementSegment.construct<MsgCounter>(unique_instance)(0);
+            LOG(debug) << "initialized message counter with: " << fShmMsgCounter->fCount;
         }
 
         fHeartbeatThread = std::thread(&Manager::SendHeartbeats, this);
@@ -394,6 +407,21 @@ class Manager
     void IncrementMsgCounter() { fMsgCounter.fetch_add(1, std::memory_order_relaxed); }
     void DecrementMsgCounter() { fMsgCounter.fetch_sub(1, std::memory_order_relaxed); }
 
+    void IncrementShmMsgCounter() { ++(fShmMsgCounter->fCount); }
+    void DecrementShmMsgCounter() { --(fShmMsgCounter->fCount); }
+
+    void AddMsgDebug(pid_t pid, size_t size, size_t handle, uint64_t time)
+    {
+        fMsgDebug->emplace(handle, MsgDebug(pid, size, time));
+    }
+
+    void RemoveMsgDebug(size_t handle)
+    {
+        fMsgDebug->erase(handle);
+    }
+
+    boost::interprocess::named_mutex& GetMtx() { return fShmMtx; }
+
     void SendHeartbeats()
     {
         std::string controlQueueName("fmq_" + fShmId + "_cq");
@@ -473,6 +501,8 @@ class Manager
 
     std::atomic<bool> fInterrupted;
     std::atomic<int32_t> fMsgCounter; // TODO: find a better lifetime solution instead of the counter
+    Uint64MsgDebugMap* fMsgDebug;
+    MsgCounter* fShmMsgCounter;
 
     std::thread fHeartbeatThread;
     bool fSendHeartbeats;

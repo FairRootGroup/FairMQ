@@ -225,6 +225,9 @@ void Monitor::Interactive()
                 case '\n':
                     cout << "\n[\\n] --> invalid input." << endl;
                     break;
+                case 'b':
+                    PrintDebug(ShmId{fShmId});
+                    break;
                 default:
                     cout << "\n[" << c << "] --> invalid input." << endl;
                     break;
@@ -284,11 +287,16 @@ void Monitor::CheckSegment()
         fSeenOnce = true;
 
         unsigned int numDevices = 0;
+        unsigned int numMessages = 0;
 
         if (fInteractive || fViewOnly) {
             DeviceCounter* dc = managementSegment.find<DeviceCounter>(bipc::unique_instance).first;
             if (dc) {
                 numDevices = dc->fCount;
+            }
+            MsgCounter* mc = managementSegment.find<MsgCounter>(bipc::unique_instance).first;
+            if (mc) {
+                numMessages = mc->fCount;
             }
         }
 
@@ -311,17 +319,27 @@ void Monitor::CheckSegment()
                  << setw(10) << segment.get_size()                              << " | "
                  << setw(10) << segment.get_free_memory()                       << " | "
                  << setw(8)  << numDevices                                      << " | "
+                 << setw(8)  << numMessages                                     << " | "
                  << setw(10) << (fViewOnly ? "view only" : to_string(duration)) << " |"
                  << c << flush;
         } else if (fViewOnly) {
             size_t free = segment.get_free_memory();
             size_t total = segment.get_size();
             size_t used = total - free;
+            // size_t mfree = managementSegment.get_free_memory();
+            // size_t mtotal = managementSegment.get_size();
+            // size_t mused = mtotal - mfree;
             LOGV(info, user1) << "[" << fSegmentName
                               << "] devices: " << numDevices
                               << ", total: " << total
+                              << ", msgs: " << numMessages
                               << ", free: " << free
                               << ", used: " << used;
+                            //   << "\n                  "
+                            //   << "[" << fManagementSegmentName
+                            //   << "] total: " << mtotal
+                            //   << ", free: " << mfree
+                            //   << ", used: " << mused;
         }
     } catch (bie&) {
         fHeartbeatTriggered = false;
@@ -330,6 +348,7 @@ void Monitor::CheckSegment()
                  << setw(18) << "-" << " | "
                  << setw(10) << "-" << " | "
                  << setw(10) << "-" << " | "
+                 << setw(8)  << "-" << " | "
                  << setw(8)  << "-" << " | "
                  << setw(10) << "-" << " |"
                  << c << flush;
@@ -353,6 +372,35 @@ void Monitor::CheckSegment()
                 fTerminating = true;
             }
         }
+    }
+}
+
+void Monitor::PrintDebug(const ShmId& shmId)
+{
+    string managementSegmentName("fmq_" + shmId.shmId + "_mng");
+    try {
+        bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
+        boost::interprocess::named_mutex mtx(boost::interprocess::open_only, std::string("fmq_" + shmId.shmId + "_mtx").c_str());
+        boost::interprocess::scoped_lock<bipc::named_mutex> lock(mtx);
+
+        Uint64MsgDebugMap* debug = managementSegment.find<Uint64MsgDebugMap>(bipc::unique_instance).first;
+
+        cout << endl << "found " << debug->size() << " message(s):" << endl;
+
+        for (const auto& e : *debug) {
+            using time_point = std::chrono::system_clock::time_point;
+            time_point tmpt{std::chrono::duration_cast<time_point::duration>(std::chrono::nanoseconds(e.second.fCreationTime))};
+            std::time_t t = std::chrono::system_clock::to_time_t(tmpt);
+            uint64_t ms = e.second.fCreationTime % 1000000;
+            auto tm = localtime(&t);
+            cout << "offset: " << setw(12) << setfill(' ') << e.first
+                 << ", size: " << setw(10) << setfill(' ') << e.second.fSize
+                 << ", creator PID: " << e.second.fPid << setfill('0')
+                 << ", at: " << setw(2) << tm->tm_hour << ":" << setw(2) << tm->tm_min << ":" << setw(2) << tm->tm_sec << "." << setw(6) << ms << endl;
+        }
+        cout << setfill(' ');
+    } catch (bie&) {
+        cout << "no segment found" << endl;
     }
 }
 
@@ -401,13 +449,14 @@ void Monitor::PrintHeader()
          << setw(10) << "size"    << " | "
          << setw(10) << "free"    << " | "
          << setw(8)  << "devices" << " | "
+         << setw(8)  << "msgs"    << " | "
          << setw(10) << "last hb" << " |"
          << endl;
 }
 
 void Monitor::PrintHelp()
 {
-    cout << "controls: [x] close memory, [p] print queues, [h] help, [q] quit." << endl;
+    cout << "controls: [x] close memory, [p] print queues, [] print a list of allocated messages, [h] help, [q] quit." << endl;
 }
 
 void Monitor::RemoveObject(const string& name)
