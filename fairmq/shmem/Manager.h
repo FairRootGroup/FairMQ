@@ -391,8 +391,8 @@ class Manager
         }
     }
 
-    void IncrementMsgCounter() { ++fMsgCounter; }
-    void DecrementMsgCounter() { --fMsgCounter; }
+    void IncrementMsgCounter() { fMsgCounter.fetch_add(1, std::memory_order_relaxed); }
+    void DecrementMsgCounter() { fMsgCounter.fetch_sub(1, std::memory_order_relaxed); }
 
     void SendHeartbeats()
     {
