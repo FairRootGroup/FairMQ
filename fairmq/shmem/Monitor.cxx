@@ -287,17 +287,21 @@ void Monitor::CheckSegment()
         fSeenOnce = true;
 
         unsigned int numDevices = 0;
+#ifdef FAIRMQ_DEBUG_MODE
         unsigned int numMessages = 0;
+#endif
 
         if (fInteractive || fViewOnly) {
             DeviceCounter* dc = managementSegment.find<DeviceCounter>(bipc::unique_instance).first;
             if (dc) {
                 numDevices = dc->fCount;
             }
+#ifdef FAIRMQ_DEBUG_MODE
             MsgCounter* mc = managementSegment.find<MsgCounter>(bipc::unique_instance).first;
             if (mc) {
                 numMessages = mc->fCount;
             }
+#endif
         }
 
         auto now = chrono::high_resolution_clock::now();
@@ -319,7 +323,11 @@ void Monitor::CheckSegment()
                  << setw(10) << segment.get_size()                              << " | "
                  << setw(10) << segment.get_free_memory()                       << " | "
                  << setw(8)  << numDevices                                      << " | "
+#ifdef FAIRMQ_DEBUG_MODE
                  << setw(8)  << numMessages                                     << " | "
+#else
+                 << setw(8)  << "nodebug"                                       << " | "
+#endif
                  << setw(10) << (fViewOnly ? "view only" : to_string(duration)) << " |"
                  << c << flush;
         } else if (fViewOnly) {
@@ -332,7 +340,11 @@ void Monitor::CheckSegment()
             LOGV(info, user1) << "[" << fSegmentName
                               << "] devices: " << numDevices
                               << ", total: " << total
+#ifdef FAIRMQ_DEBUG_MODE
                               << ", msgs: " << numMessages
+#else
+                              << ", msgs: NODEBUG"
+#endif
                               << ", free: " << free
                               << ", used: " << used;
                             //   << "\n                  "
@@ -375,8 +387,9 @@ void Monitor::CheckSegment()
     }
 }
 
-void Monitor::PrintDebug(const ShmId& shmId)
+void Monitor::PrintDebug(const ShmId& shmId __attribute__((unused)))
 {
+#ifdef FAIRMQ_DEBUG_MODE
     string managementSegmentName("fmq_" + shmId.shmId + "_mng");
     try {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
@@ -402,6 +415,9 @@ void Monitor::PrintDebug(const ShmId& shmId)
     } catch (bie&) {
         cout << "no segment found" << endl;
     }
+#else
+    cout << "FairMQ was not compiled in debug mode (FAIRMQ_DEBUG_MODE)" << endl;
+#endif
 }
 
 void Monitor::PrintQueues()
@@ -456,7 +472,11 @@ void Monitor::PrintHeader()
 
 void Monitor::PrintHelp()
 {
-    cout << "controls: [x] close memory, [p] print queues, [] print a list of allocated messages, [h] help, [q] quit." << endl;
+    cout << "controls: [x] close memory, "
+         << "[p] print queues, "
+         << "[b] print a list of allocated messages (only available when compiled with FAIMQ_DEBUG_MODE=ON), "
+         << "[h] help, "
+         << "[q] quit." << endl;
 }
 
 void Monitor::RemoveObject(const string& name)
