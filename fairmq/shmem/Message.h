@@ -277,9 +277,11 @@ class Message final : public fair::mq::Message
                 }
             }
             fMeta.fHandle = fManager.Segment().get_handle_from_address(fLocalPtr);
+#ifdef FAIRMQ_DEBUG_MODE
             boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fManager.GetMtx());
             fManager.IncrementShmMsgCounter();
             fManager.AddMsgDebug(getpid(), size, static_cast<size_t>(fMeta.fHandle), std::chrono::system_clock::now().time_since_epoch().count());
+#endif
         }
 
         fMeta.fSize = size;
@@ -291,9 +293,11 @@ class Message final : public fair::mq::Message
         if (fMeta.fHandle >= 0 && !fQueued) {
             if (fMeta.fRegionId == 0) {
                 fManager.Segment().deallocate(fManager.Segment().get_address_from_handle(fMeta.fHandle));
+#ifdef FAIRMQ_DEBUG_MODE
                 boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fManager.GetMtx());
                 fManager.DecrementShmMsgCounter();
                 fManager.RemoveMsgDebug(fMeta.fHandle);
+#endif
                 fMeta.fHandle = -1;
             } else {
                 if (!fRegionPtr) {

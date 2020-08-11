@@ -278,6 +278,9 @@ if(BUILD_FAIRMQ)
   # preprocessor definitions #
   ############################
   target_compile_definitions(${_target} PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
+  if(FAIRMQ_DEBUG_MODE)
+    target_compile_definitions(${_target} PUBLIC FAIRMQ_DEBUG_MODE)
+  endif()
   if(BUILD_OFI_TRANSPORT)
     target_compile_definitions(${_target} PRIVATE BUILD_OFI_TRANSPORT)
   endif()
@@ -374,6 +377,9 @@ if(BUILD_FAIRMQ)
 
   add_executable(fairmq-shmmonitor shmem/Monitor.cxx shmem/Monitor.h shmem/runMonitor.cxx)
   target_compile_definitions(fairmq-shmmonitor PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
+  if(FAIRMQ_DEBUG_MODE)
+    target_compile_definitions(fairmq-shmmonitor PUBLIC FAIRMQ_DEBUG_MODE)
+  endif()
   target_link_libraries(fairmq-shmmonitor PUBLIC
     Threads::Threads
     $<$<PLATFORM_ID:Linux>:rt>

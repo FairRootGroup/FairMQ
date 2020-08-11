@@ -53,6 +53,8 @@ fairmq_build_option(FAST_BUILD          "Fast production build. Not recommended 
                                          DEFAULT OFF)
 fairmq_build_option(USE_EXTERNAL_GTEST  "Do not use bundled GTest. Not recommended."
                                          DEFAULT OFF)
+fairmq_build_option(FAIRMQ_DEBUG_MODE   "Compile in debug mode (may decrease performance)."
+                                         DEFAULT OFF)
 ################################################################################
 
 
@@ -428,5 +430,11 @@ endif()
 message(STATUS "  ${Cyan}INSTALL PREFIX${CR}     ${BGreen}${CMAKE_INSTALL_PREFIX}${CR} (change with ${BMagenta}-DCMAKE_INSTALL_PREFIX=...${CR})")
 message(STATUS "  ")
 message(STATUS "  ${Cyan}RUN STATIC ANALYSIS  ${static_ana_summary}")
+message(STATUS "  ")
+if(FAIRMQ_DEBUG_MODE)
+  message(STATUS "  ${Cyan}DEBUG_MODE${CR}         ${BGreen}${FAIRMQ_DEBUG_MODE}${CR} (disable with ${BMagenta}-DFAIRMQ_DEBUG_MODE=OFF${CR})")
+else()
+  message(STATUS "  ${Cyan}DEBUG_MODE${CR}         ${BRed}${FAIRMQ_DEBUG_MODE}${CR} (enable with ${BMagenta}-DFAIRMQ_DEBUG_MODE=ON${CR})")
+endif()
 message(STATUS "  ")
 ################################################################################

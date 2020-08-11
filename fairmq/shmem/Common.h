@@ -73,6 +73,7 @@ struct DeviceCounter
     std::atomic<unsigned int> fCount;
 };
 
+#ifdef FAIRMQ_DEBUG_MODE
 struct MsgCounter
 {
     MsgCounter(unsigned int c)
@@ -81,6 +82,7 @@ struct MsgCounter
 
     std::atomic<unsigned int> fCount;
 };
+#endif
 
 struct RegionCounter
 {
@@ -99,6 +101,7 @@ struct MetaHeader
     boost::interprocess::managed_shared_memory::handle_t fHandle;
 };
 
+#ifdef FAIRMQ_DEBUG_MODE
 struct MsgDebug
 {
     MsgDebug(pid_t pid, size_t size, const uint64_t creationTime)
@@ -115,6 +118,7 @@ struct MsgDebug
 using Uint64MsgDebugPairAlloc = boost::interprocess::allocator<std::pair<const size_t, MsgDebug>, SegmentManager>;
 using Uint64MsgDebugHashMap = boost::unordered_map<size_t, MsgDebug, boost::hash<size_t>, std::equal_to<size_t>, Uint64MsgDebugPairAlloc>;
 using Uint64MsgDebugMap = boost::interprocess::map<size_t, MsgDebug, std::less<size_t>, Uint64MsgDebugPairAlloc>;
+#endif
 
 struct RegionBlock
 {

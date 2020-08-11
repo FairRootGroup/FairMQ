@@ -80,8 +80,10 @@ class Manager
         , fRegionInfos(nullptr)
         , fInterrupted(false)
         , fMsgCounter(0)
+#ifdef FAIRMQ_DEBUG_MODE
         , fMsgDebug(nullptr)
         , fShmMsgCounter(nullptr)
+#endif
         , fHeartbeatThread()
         , fSendHeartbeats(true)
         , fThrowOnBadAlloc(true)
@@ -119,7 +121,9 @@ class Manager
         }
 
         fRegionInfos = fManagementSegment.find_or_construct<Uint64RegionInfoMap>(unique_instance)(fShmVoidAlloc);
+#ifdef FAIRMQ_DEBUG_MODE
         fMsgDebug = fManagementSegment.find_or_construct<Uint64MsgDebugMap>(unique_instance)(fShmVoidAlloc);
+#endif
         // store info about the managed segment as region with id 0
         fRegionInfos->emplace(0, RegionInfo("", 0, 0, fShmVoidAlloc));
 
@@ -137,6 +141,7 @@ class Manager
             LOG(debug) << "initialized device counter with: " << fDeviceCounter->fCount;
         }
 
+#ifdef FAIRMQ_DEBUG_MODE
         fShmMsgCounter = fManagementSegment.find<MsgCounter>(unique_instance).first;
 
         if (fShmMsgCounter) {
@@ -146,6 +151,7 @@ class Manager
             fShmMsgCounter = fManagementSegment.construct<MsgCounter>(unique_instance)(0);
             LOG(debug) << "initialized message counter with: " << fShmMsgCounter->fCount;
         }
+#endif
 
         fHeartbeatThread = std::thread(&Manager::SendHeartbeats, this);
     }
@@ -407,6 +413,7 @@ class Manager
     void IncrementMsgCounter() { fMsgCounter.fetch_add(1, std::memory_order_relaxed); }
     void DecrementMsgCounter() { fMsgCounter.fetch_sub(1, std::memory_order_relaxed); }
 
+#ifdef FAIRMQ_DEBUG_MODE
     void IncrementShmMsgCounter() { ++(fShmMsgCounter->fCount); }
     void DecrementShmMsgCounter() { --(fShmMsgCounter->fCount); }
 
@@ -419,6 +426,7 @@ class Manager
     {
         fMsgDebug->erase(handle);
     }
+#endif
 
     boost::interprocess::named_mutex& GetMtx() { return fShmMtx; }
 
@@ -501,8 +509,10 @@ class Manager
 
     std::atomic<bool> fInterrupted;
     std::atomic<int32_t> fMsgCounter; // TODO: find a better lifetime solution instead of the counter
+#ifdef FAIRMQ_DEBUG_MODE
     Uint64MsgDebugMap* fMsgDebug;
     MsgCounter* fShmMsgCounter;
+#endif
 
     std::thread fHeartbeatThread;
     bool fSendHeartbeats;
