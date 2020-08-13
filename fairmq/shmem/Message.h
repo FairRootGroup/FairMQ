@@ -244,7 +244,7 @@ class Message final : public fair::mq::Message
 
     bool InitializeChunk(const size_t size, size_t alignment = 0)
     {
-        tools::RateLimiter rateLimiter(20);
+        // tools::RateLimiter rateLimiter(20);
 
         while (fMeta.fHandle < 0) {
             try {
@@ -265,7 +265,8 @@ class Message final : public fair::mq::Message
                 if (fManager.ThrowingOnBadAlloc()) {
                     throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default", ", free memory: ", fManager.Segment().get_free_memory()));
                 }
-                rateLimiter.maybe_sleep();
+                // rateLimiter.maybe_sleep();
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 if (fManager.Interrupted()) {
                     return false;
                 } else {
