@@ -10,7 +10,7 @@
         <exe reachable="true">fairmq-ex-n-m-synchronizer --id sync --rate 100 --color false -P dds --channel-config name=sync,type=pub,method=bind</exe>
         <env reachable="false">fairmq-ex-n-m-env.sh</env>
         <properties>
-            <name access="write">fmqchan_sync</id>
+            <name access="write">fmqchan_sync</name>
         </properties>
     </decltask>
 
@@ -18,8 +18,8 @@
         <exe reachable="true">fairmq-ex-n-m-sender --id sender%taskIndex% --timeframe-size 100000 --num-receivers ${numReceivers} --color false -P dds --channel-config name=sync,type=sub,method=connect name=data,type=pair,method=connect,numSockets=${numReceivers} --dds-i data:%taskIndex%</exe>
         <env reachable="false">fairmq-ex-n-m-env.sh</env>
         <properties>
-            <name access="read">fmqchan_sync</id>
-            <name access="read">fmqchan_data</id>
+            <name access="read">fmqchan_sync</name>
+            <name access="read">fmqchan_data</name>
         </properties>
     </decltask>
 
@@ -27,7 +27,7 @@
         <exe reachable="true">fairmq-ex-n-m-receiver --id receiver%taskIndex% --num-senders ${numSenders} --color false -P dds --max-timeframes 10 --channel-config name=data,type=pair,method=bind,numSockets=${numSenders}</exe>
         <env reachable="false">fairmq-ex-n-m-env.sh</env>
         <properties>
-            <name access="write">fmqchan_data</id>
+            <name access="write">fmqchan_data</name>
         </properties>
     </decltask>
 
