@@ -169,7 +169,7 @@ class Message final : public fair::mq::Message
         if (!fLocalPtr) {
             if (fMeta.fRegionId == 0) {
                 if (fMeta.fSize > 0) {
-                    fLocalPtr = reinterpret_cast<char*>(fManager.Segment().get_address_from_handle(fMeta.fHandle));
+                    fLocalPtr = reinterpret_cast<char*>(fManager.GetAddressFromHandle(fMeta.fHandle));
                 } else {
                     fLocalPtr = nullptr;
                 }
@@ -189,15 +189,14 @@ class Message final : public fair::mq::Message
 
     size_t GetSize() const override { return fMeta.fSize; }
 
-    bool SetUsedSize(const size_t size) override
+    bool SetUsedSize(const size_t newSize) override
     {
-        if (size == fMeta.fSize) {
+        if (newSize == fMeta.fSize) {
             return true;
-        } else if (size <= fMeta.fSize) {
+        } else if (newSize <= fMeta.fSize) {
             try {
-                boost::interprocess::managed_shared_memory::size_type shrunkSize = size;
-                fLocalPtr = fManager.Segment().allocation_command<char>(boost::interprocess::shrink_in_place, fMeta.fSize + 128, shrunkSize, fLocalPtr);
-                fMeta.fSize = size;
+                fLocalPtr = fManager.ShrinkInPlace(fMeta.fSize, newSize, fLocalPtr);
+                fMeta.fSize = newSize;
                 return true;
             } catch (boost::interprocess::interprocess_exception& e) {
                 LOG(info) << "could not set used size: " << e.what();
@@ -245,59 +244,21 @@ class Message final : public fair::mq::Message
     mutable Region* fRegionPtr;
     mutable char* fLocalPtr;
 
-    bool InitializeChunk(const size_t size, size_t alignment = 0)
+    char* InitializeChunk(const size_t size, size_t alignment = 0)
     {
-        // tools::RateLimiter rateLimiter(20);
-
-        while (fMeta.fHandle < 0) {
-            try {
-                // boost::interprocess::managed_shared_memory::size_type actualSize = size;
-                // char* hint = 0; // unused for boost::interprocess::allocate_new
-                // fLocalPtr = fManager.Segment().allocation_command<char>(boost::interprocess::allocate_new, size, actualSize, hint);
-                size_t segmentSize = fManager.Segment().get_size();
-                if (size > segmentSize) {
-                    throw MessageBadAlloc(tools::ToString("Requested message size (", size, ") exceeds segment size (", segmentSize, ")"));
-                }
-                if (alignment == 0) {
-                    fLocalPtr = reinterpret_cast<char*>(fManager.Segment().allocate(size));
-                } else {
-                    fLocalPtr = reinterpret_cast<char*>(fManager.Segment().allocate_aligned(size, alignment));
-                }
-            } catch (boost::interprocess::bad_alloc& ba) {
-                // LOG(warn) << "Shared memory full...";
-                if (fManager.ThrowingOnBadAlloc()) {
-                    throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default", ", free memory: ", fManager.Segment().get_free_memory()));
-                }
-                // rateLimiter.maybe_sleep();
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
-                if (fManager.Interrupted()) {
-                    return false;
-                } else {
-                    continue;
-                }
-            }
-            fMeta.fHandle = fManager.Segment().get_handle_from_address(fLocalPtr);
-#ifdef FAIRMQ_DEBUG_MODE
-            boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fManager.GetMtx());
-            fManager.IncrementShmMsgCounter();
-            fManager.AddMsgDebug(getpid(), size, static_cast<size_t>(fMeta.fHandle), std::chrono::system_clock::now().time_since_epoch().count());
-#endif
+        fLocalPtr = fManager.Allocate(size, alignment);
+        if (fLocalPtr) {
+            fMeta.fHandle = fManager.GetHandleFromAddress(fLocalPtr);
+            fMeta.fSize = size;
         }
-
-        fMeta.fSize = size;
-        return true;
+        return fLocalPtr;
     }
 
     void CloseMessage()
     {
         if (fMeta.fHandle >= 0 && !fQueued) {
             if (fMeta.fRegionId == 0) {
-                fManager.Segment().deallocate(fManager.Segment().get_address_from_handle(fMeta.fHandle));
-#ifdef FAIRMQ_DEBUG_MODE
-                boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fManager.GetMtx());
-                fManager.DecrementShmMsgCounter();
-                fManager.RemoveMsgDebug(fMeta.fHandle);
-#endif
+                fManager.Deallocate(fMeta.fHandle);
                 fMeta.fHandle = -1;
             } else {
                 if (!fRegionPtr) {
@@ -311,6 +272,8 @@ class Message final : public fair::mq::Message
                 }
             }
         }
+        fLocalPtr = nullptr;
+        fMeta.fSize = 0;
 
         fManager.DecrementMsgCounter();
     }
