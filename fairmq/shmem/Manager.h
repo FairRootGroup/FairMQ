@@ -34,6 +34,7 @@
 #include <boost/interprocess/sync/named_mutex.hpp>
 #include <boost/interprocess/mem_algo/simple_seq_fit.hpp>
 #include <boost/process.hpp>
+#include <boost/variant.hpp>
 
 #include <cstdlib> // getenv
 #include <condition_variable>
@@ -172,9 +173,6 @@ class Manager
 
     Manager(const Manager&) = delete;
     Manager operator=(const Manager&) = delete;
-
-    RBTreeBestFitSegment& Segment() { return fSegments.at(0); }
-    boost::interprocess::managed_shared_memory& ManagementSegment() { return fManagementSegment; }
 
     static void StartMonitor(const std::string& id)
     {
@@ -463,6 +461,68 @@ class Manager
     }
 
     bool ThrowingOnBadAlloc() const { return fThrowOnBadAlloc; }
+
+    boost::interprocess::managed_shared_memory::handle_t GetHandleFromAddress(const void* ptr) const { return fSegments.at(0).get_handle_from_address(ptr); }
+    void* GetAddressFromHandle(const boost::interprocess::managed_shared_memory::handle_t handle) const { return fSegments.at(0).get_address_from_handle(handle); }
+
+    char* Allocate(const size_t size, size_t alignment = 0)
+    {
+        char* ptr = nullptr;
+        // tools::RateLimiter rateLimiter(20);
+
+        while (ptr == nullptr) {
+            try {
+                // boost::interprocess::managed_shared_memory::size_type actualSize = size;
+                // char* hint = 0; // unused for boost::interprocess::allocate_new
+                // ptr = fSegments.at(0).allocation_command<char>(boost::interprocess::allocate_new, size, actualSize, hint);
+                size_t segmentSize = fSegments.at(0).get_size();
+                if (size > segmentSize) {
+                    throw MessageBadAlloc(tools::ToString("Requested message size (", size, ") exceeds segment size (", segmentSize, ")"));
+                }
+                if (alignment == 0) {
+                    ptr = reinterpret_cast<char*>(fSegments.at(0).allocate(size));
+                } else {
+                    ptr = reinterpret_cast<char*>(fSegments.at(0).allocate_aligned(size, alignment));
+                }
+            } catch (boost::interprocess::bad_alloc& ba) {
+                // LOG(warn) << "Shared memory full...";
+                if (ThrowingOnBadAlloc()) {
+                    throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default", ", free memory: ", fSegments.at(0).get_free_memory()));
+                }
+                // rateLimiter.maybe_sleep();
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                if (Interrupted()) {
+                    return ptr;
+                } else {
+                    continue;
+                }
+            }
+#ifdef FAIRMQ_DEBUG_MODE
+            boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
+            IncrementShmMsgCounter();
+            AddMsgDebug(getpid(), size, static_cast<size_t>(GetHandleFromAddress(ptr)), std::chrono::system_clock::now().time_since_epoch().count());
+#endif
+        }
+
+        return ptr;
+    }
+
+    void Deallocate(boost::interprocess::managed_shared_memory::handle_t handle)
+    {
+        fSegments.at(0).deallocate(GetAddressFromHandle(handle));
+#ifdef FAIRMQ_DEBUG_MODE
+        boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
+        DecrementShmMsgCounter();
+        RemoveMsgDebug(handle);
+#endif
+    }
+
+    char* ShrinkInPlace(size_t oldSize, size_t newSize, char* localPtr)
+    {
+        using namespace boost::interprocess;
+        managed_shared_memory::size_type shrunkSize = newSize;
+        return fSegments.at(0).allocation_command<char>(shrink_in_place, oldSize + 128, shrunkSize, localPtr);
+    }
 
     ~Manager()
     {
