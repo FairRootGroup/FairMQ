@@ -120,7 +120,7 @@ int main(int argc, char** argv)
         }
 
         if (debug) {
-            Monitor::PrintDebug(ShmId{shmId});
+            Monitor::PrintDebugInfo(ShmId{shmId});
             return 0;
         }
 

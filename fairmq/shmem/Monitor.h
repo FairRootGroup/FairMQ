@@ -14,6 +14,7 @@
 #include <string>
 #include <stdexcept>
 #include <unordered_map>
+#include <vector>
 
 namespace fair
 {
@@ -32,6 +33,21 @@ struct ShmId
 {
     std::string shmId;
     explicit operator std::string() const { return shmId; }
+};
+
+struct BufferDebugInfo
+{
+    BufferDebugInfo(size_t offset, pid_t pid, size_t size, uint64_t creationTime)
+        : fOffset(offset)
+        , fPid(pid)
+        , fSize(size)
+        , fCreationTime(creationTime)
+    {}
+
+    size_t fOffset;
+    pid_t fPid;
+    size_t fSize;
+    uint64_t fCreationTime;
 };
 
 class Monitor
@@ -60,7 +76,10 @@ class Monitor
     /// @param sessionId session id
     static void CleanupFull(const SessionId& sessionId);
 
-    static void PrintDebug(const ShmId& shmId);
+    static void PrintDebugInfo(const ShmId& shmId);
+    static void PrintDebugInfo(const SessionId& shmId);
+    static std::vector<BufferDebugInfo> GetDebugInfo(const ShmId& shmId);
+    static std::vector<BufferDebugInfo> GetDebugInfo(const SessionId& shmId);
 
     static void RemoveObject(const std::string&);
     static void RemoveFileMapping(const std::string&);

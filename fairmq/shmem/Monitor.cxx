@@ -226,7 +226,7 @@ void Monitor::Interactive()
                     cout << "\n[\\n] --> invalid input." << endl;
                     break;
                 case 'b':
-                    PrintDebug(ShmId{fShmId});
+                    PrintDebugInfo(ShmId{fShmId});
                     break;
                 default:
                     cout << "\n[" << c << "] --> invalid input." << endl;
@@ -387,23 +387,23 @@ void Monitor::CheckSegment()
     }
 }
 
-void Monitor::PrintDebug(const ShmId& shmId __attribute__((unused)))
+void Monitor::PrintDebugInfo(const ShmId& shmId __attribute__((unused)))
 {
 #ifdef FAIRMQ_DEBUG_MODE
     string managementSegmentName("fmq_" + shmId.shmId + "_mng");
     try {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
-        boost::interprocess::named_mutex mtx(boost::interprocess::open_only, std::string("fmq_" + shmId.shmId + "_mtx").c_str());
+        boost::interprocess::named_mutex mtx(boost::interprocess::open_only, string("fmq_" + shmId.shmId + "_mtx").c_str());
         boost::interprocess::scoped_lock<bipc::named_mutex> lock(mtx);
 
-        Uint64MsgDebugMap* debug = managementSegment.find<Uint64MsgDebugMap>(bipc::unique_instance).first;
+        SizetMsgDebugMap* debug = managementSegment.find<SizetMsgDebugMap>(bipc::unique_instance).first;
 
         cout << endl << "found " << debug->size() << " message(s):" << endl;
 
         for (const auto& e : *debug) {
-            using time_point = std::chrono::system_clock::time_point;
-            time_point tmpt{std::chrono::duration_cast<time_point::duration>(std::chrono::nanoseconds(e.second.fCreationTime))};
-            std::time_t t = std::chrono::system_clock::to_time_t(tmpt);
+            using time_point = chrono::system_clock::time_point;
+            time_point tmpt{chrono::duration_cast<time_point::duration>(chrono::nanoseconds(e.second.fCreationTime))};
+            time_t t = chrono::system_clock::to_time_t(tmpt);
             uint64_t ms = e.second.fCreationTime % 1000000;
             auto tm = localtime(&t);
             cout << "offset: " << setw(12) << setfill(' ') << e.first
@@ -418,6 +418,45 @@ void Monitor::PrintDebug(const ShmId& shmId __attribute__((unused)))
 #else
     cout << "FairMQ was not compiled in debug mode (FAIRMQ_DEBUG_MODE)" << endl;
 #endif
+}
+
+void Monitor::PrintDebugInfo(const SessionId& sessionId)
+{
+    ShmId shmId{buildShmIdFromSessionIdAndUserId(sessionId.sessionId)};
+    PrintDebugInfo(shmId);
+}
+
+vector<BufferDebugInfo> Monitor::GetDebugInfo(const ShmId& shmId __attribute__((unused)))
+{
+    vector<BufferDebugInfo> result;
+
+#ifdef FAIRMQ_DEBUG_MODE
+    string managementSegmentName("fmq_" + shmId.shmId + "_mng");
+    try {
+        bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
+        boost::interprocess::named_mutex mtx(boost::interprocess::open_only, string("fmq_" + shmId.shmId + "_mtx").c_str());
+        boost::interprocess::scoped_lock<bipc::named_mutex> lock(mtx);
+
+        SizetMsgDebugMap* debug = managementSegment.find<SizetMsgDebugMap>(bipc::unique_instance).first;
+
+        result.reserve(debug->size());
+
+        for (const auto& e : *debug) {
+            result.emplace_back(e.first, e.second.fPid, e.second.fSize, e.second.fCreationTime);
+        }
+    } catch (bie&) {
+        cout << "no segment found" << endl;
+    }
+#else
+    cout << "FairMQ was not compiled in debug mode (FAIRMQ_DEBUG_MODE)" << endl;
+#endif
+
+    return result;
+}
+vector<BufferDebugInfo> Monitor::GetDebugInfo(const SessionId& sessionId)
+{
+    ShmId shmId{buildShmIdFromSessionIdAndUserId(sessionId.sessionId)};
+    return GetDebugInfo(shmId);
 }
 
 void Monitor::PrintQueues()
