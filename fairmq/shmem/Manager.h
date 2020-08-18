@@ -70,14 +70,15 @@ class Manager
     Manager(std::string shmId, std::string deviceId, size_t size, const ProgOptions* config)
         : fShmId(std::move(shmId))
         , fDeviceId(std::move(deviceId))
-        , fSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_main").c_str(), size)
+        // , fSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_main").c_str(), size)
+        , fSegments()
         , fManagementSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mng").c_str(), 6553600)
         , fShmVoidAlloc(fManagementSegment.get_segment_manager())
         , fShmMtx(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mtx").c_str())
         , fRegionEventsCV(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_cv").c_str())
         , fRegionEventsSubscriptionActive(false)
         , fDeviceCounter(nullptr)
-        , fRegionInfos(nullptr)
+        , fShmRegions(nullptr)
         , fInterrupted(false)
         , fMsgCounter(0)
 #ifdef FAIRMQ_DEBUG_MODE
@@ -106,28 +107,39 @@ class Manager
             StartMonitor(fShmId);
         }
 
-        LOG(debug) << "created/opened shared memory segment '" << "fmq_" << fShmId << "_main" << "' of " << fSegment.get_size() << " bytes. Available are " << fSegment.get_free_memory() << " bytes.";
+        {
+            boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
+
+            try {
+                fSegments.emplace(0, RBTreeBestFitSegment(open_only, std::string("fmq_" + fShmId + "_main").c_str()));
+                LOG(debug) << "opened shared memory segment '" << "fmq_" << fShmId << "_main" << "' of " << fSegments.at(0).get_size() << " bytes. Available are " << fSegments.at(0).get_free_memory() << " bytes.";
+            } catch(interprocess_exception&) {
+                fSegments.emplace(0, RBTreeBestFitSegment(create_only, std::string("fmq_" + fShmId + "_main").c_str(), size));
+                LOG(debug) << "created shared memory segment '" << "fmq_" << fShmId << "_main" << "' of " << fSegments.at(0).get_size() << " bytes. Available are " << fSegments.at(0).get_free_memory() << " bytes.";
+            }
+        }
+
         if (mlockSegment) {
             LOG(debug) << "Locking the managed segment memory pages...";
-            if (mlock(fSegment.get_address(), fSegment.get_size()) == -1) {
+            if (mlock(fSegments.at(0).get_address(), fSegments.at(0).get_size()) == -1) {
                 LOG(error) << "Could not lock the managed segment memory. Code: " << errno << ", reason: " << strerror(errno);
             }
             LOG(debug) << "Successfully locked the managed segment memory pages.";
         }
         if (zeroSegment) {
             LOG(debug) << "Zeroing the managed segment free memory...";
-            fSegment.zero_free_memory();
+            fSegments.at(0).zero_free_memory();
             LOG(debug) << "Successfully zeroed the managed segment free memory.";
         }
 
-        fRegionInfos = fManagementSegment.find_or_construct<Uint64RegionInfoMap>(unique_instance)(fShmVoidAlloc);
+        boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
+
+        fShmRegions = fManagementSegment.find_or_construct<Uint64RegionInfoHashMap>(unique_instance)(fShmVoidAlloc);
 #ifdef FAIRMQ_DEBUG_MODE
-        fMsgDebug = fManagementSegment.find_or_construct<Uint64MsgDebugMap>(unique_instance)(fShmVoidAlloc);
+        fMsgDebug = fManagementSegment.find_or_construct<SizetMsgDebugMap>(unique_instance)(fShmVoidAlloc);
 #endif
         // store info about the managed segment as region with id 0
-        fRegionInfos->emplace(0, RegionInfo("", 0, 0, fShmVoidAlloc));
-
-        boost::interprocess::scoped_lock<named_mutex> lock(fShmMtx);
+        fShmRegions->emplace(0, RegionInfo("", 0, 0, fShmVoidAlloc));
 
         fDeviceCounter = fManagementSegment.find<DeviceCounter>(unique_instance).first;
 
@@ -161,7 +173,7 @@ class Manager
     Manager(const Manager&) = delete;
     Manager operator=(const Manager&) = delete;
 
-    RBTreeBestFitSegment& Segment() { return fSegment; }
+    RBTreeBestFitSegment& Segment() { return fSegments.at(0); }
     boost::interprocess::managed_shared_memory& ManagementSegment() { return fManagementSegment; }
 
     static void StartMonitor(const std::string& id)
@@ -251,7 +263,7 @@ class Manager
                 }
 
                 // create region info
-                fRegionInfos->emplace(id, RegionInfo(path.c_str(), flags, userFlags, fShmVoidAlloc));
+                fShmRegions->emplace(id, RegionInfo(path.c_str(), flags, userFlags, fShmVoidAlloc));
 
                 auto r = fRegions.emplace(id, tools::make_unique<Region>(fShmId, id, size, false, callback, bulkCallback, path, flags));
                 // LOG(debug) << "Created region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
@@ -286,7 +298,7 @@ class Manager
         } else {
             try {
                 // get region info
-                RegionInfo regionInfo = fRegionInfos->at(id);
+                RegionInfo regionInfo = fShmRegions->at(id);
                 std::string path = regionInfo.fPath.c_str();
                 int flags = regionInfo.fFlags;
                 // LOG(debug) << "Located remote region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
@@ -309,7 +321,7 @@ class Manager
         fRegions.erase(id);
         {
             boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
-            fRegionInfos->at(id).fDestroyed = true;
+            fShmRegions->at(id).fDestroyed = true;
         }
         fRegionEventsCV.notify_all();
     }
@@ -324,7 +336,7 @@ class Manager
     {
         std::vector<fair::mq::RegionInfo> result;
 
-        for (const auto& e : *fRegionInfos) {
+        for (const auto& e : *fShmRegions) {
             fair::mq::RegionInfo info;
             info.id = e.first;
             info.flags = e.second.fUserFlags;
@@ -341,8 +353,8 @@ class Manager
                 result.push_back(info);
             } else {
                 if (!e.second.fDestroyed) {
-                    info.ptr = fSegment.get_address();
-                    info.size = fSegment.get_size();
+                    info.ptr = fSegments.at(0).get_address();
+                    info.size = fSegments.at(0).get_size();
                 } else {
                     info.ptr = nullptr;
                     info.size = 0;
@@ -492,7 +504,7 @@ class Manager
     std::string fShmId;
     std::string fDeviceId;
     // boost::interprocess::managed_shared_memory fSegment;
-    RBTreeBestFitSegment fSegment;
+    std::unordered_map<uint64_t, RBTreeBestFitSegment> fSegments;
     boost::interprocess::managed_shared_memory fManagementSegment;
     VoidAlloc fShmVoidAlloc;
     boost::interprocess::named_mutex fShmMtx;
@@ -504,13 +516,13 @@ class Manager
     std::unordered_map<uint64_t, RegionEvent> fObservedRegionEvents;
 
     DeviceCounter* fDeviceCounter;
-    Uint64RegionInfoMap* fRegionInfos;
+    Uint64RegionInfoHashMap* fShmRegions;
     std::unordered_map<uint64_t, std::unique_ptr<Region>> fRegions;
 
     std::atomic<bool> fInterrupted;
     std::atomic<int32_t> fMsgCounter; // TODO: find a better lifetime solution instead of the counter
 #ifdef FAIRMQ_DEBUG_MODE
-    Uint64MsgDebugMap* fMsgDebug;
+    SizetMsgDebugMap* fMsgDebug;
     MsgCounter* fShmMsgCounter;
 #endif
 

@@ -40,7 +40,7 @@ struct FairMQRegionInfo
         , ptr(_ptr)
         , size(_size)
         , flags(_flags)
-        , event (_event)
+        , event(_event)
     {}
 
     uint64_t id;   // id of the region
