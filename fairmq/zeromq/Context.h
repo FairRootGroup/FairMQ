@@ -56,7 +56,7 @@ class Context
             throw ContextError(tools::ToString("failed configuring context, reason: ", zmq_strerror(errno)));
         }
 
-        fRegionEvents.emplace(0, nullptr, 0, 0, RegionEvent::local_only);
+        fRegionEvents.emplace(true, 0, nullptr, 0, 0, RegionEvent::local_only);
     }
 
     Context(const Context&) = delete;
@@ -120,13 +120,13 @@ class Context
         return fRegionCounter;
     }
 
-    void AddRegion(uint64_t id, void* ptr, size_t size, int64_t userFlags, RegionEvent event)
+    void AddRegion(bool managed, uint64_t id, void* ptr, size_t size, int64_t userFlags, RegionEvent event)
     {
         {
             std::lock_guard<std::mutex> lock(fMtx);
             ++fRegionCounter;
-            fRegionInfos.emplace_back(id, ptr, size, userFlags, event);
-            fRegionEvents.emplace(id, ptr, size, userFlags, event);
+            fRegionInfos.emplace_back(managed, id, ptr, size, userFlags, event);
+            fRegionEvents.emplace(managed, id, ptr, size, userFlags, event);
         }
         fRegionEventsCV.notify_one();
     }

@@ -28,21 +28,24 @@ enum class FairMQRegionEvent : int
 struct FairMQRegionInfo
 {
     FairMQRegionInfo()
-        : id(0)
+        : managed(true)
+        , id(0)
         , ptr(nullptr)
         , size(0)
         , flags(0)
         , event(FairMQRegionEvent::created)
     {}
 
-    FairMQRegionInfo(uint64_t _id, void* _ptr, size_t _size, int64_t _flags, FairMQRegionEvent _event)
-        : id(_id)
+    FairMQRegionInfo(bool _managed, uint64_t _id, void* _ptr, size_t _size, int64_t _flags, FairMQRegionEvent _event)
+        : managed(_managed)
+        , id(_id)
         , ptr(_ptr)
         , size(_size)
         , flags(_flags)
         , event(_event)
     {}
 
+    bool managed;  // managed/unmanaged
     uint64_t id;   // id of the region
     void* ptr;     // pointer to the start of the region
     size_t size;   // region size

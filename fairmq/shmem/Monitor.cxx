@@ -205,10 +205,6 @@ void Monitor::Interactive()
                     cout << "\n[q] --> quitting." << endl;
                     fTerminating = true;
                     break;
-                case 'p':
-                    cout << "\n[p] --> active queues:" << endl;
-                    PrintQueues();
-                    break;
                 case 'x':
                     cout << "\n[x] --> closing shared memory:" << endl;
                     if (!fViewOnly) {
@@ -254,6 +250,7 @@ void Monitor::Interactive()
 
 void Monitor::CheckSegment()
 {
+    using namespace boost::interprocess;
     char c = '#';
 
     if (fInteractive) {
@@ -281,8 +278,27 @@ void Monitor::CheckSegment()
     }
 
     try {
-        bipc::managed_shared_memory segment(bipc::open_only, fSegmentName.c_str());
-        bipc::managed_shared_memory managementSegment(bipc::open_only, fManagementSegmentName.c_str());
+        managed_shared_memory managementSegment(open_only, fManagementSegmentName.c_str());
+
+        Uint64SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint64SegmentInfoHashMap>(unique_instance).first;
+        std::unordered_map<uint64_t, boost::variant<RBTreeBestFitSegment, SimpleSeqFitSegment>> segments;
+
+        if (!segmentInfos) {
+            cout << "Found management segment, but cannot locate segment info, something went wrong..." << endl;
+            return;
+        }
+
+        const uint64_t id = 0;
+
+        auto it = segmentInfos->find(id);
+        if (it != segmentInfos->end()) {
+            // found segment with the given id, opening
+            if (it->second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
+                segments.emplace(id, RBTreeBestFitSegment(open_only, fSegmentName.c_str()));
+            } else {
+                segments.emplace(id, SimpleSeqFitSegment(open_only, fSegmentName.c_str()));
+            }
+        }
 
         fSeenOnce = true;
 
@@ -292,12 +308,12 @@ void Monitor::CheckSegment()
 #endif
 
         if (fInteractive || fViewOnly) {
-            DeviceCounter* dc = managementSegment.find<DeviceCounter>(bipc::unique_instance).first;
+            DeviceCounter* dc = managementSegment.find<DeviceCounter>(unique_instance).first;
             if (dc) {
                 numDevices = dc->fCount;
             }
 #ifdef FAIRMQ_DEBUG_MODE
-            MsgCounter* mc = managementSegment.find<MsgCounter>(bipc::unique_instance).first;
+            MsgCounter* mc = managementSegment.find<MsgCounter>(unique_instance).first;
             if (mc) {
                 numMessages = mc->fCount;
             }
@@ -319,20 +335,20 @@ void Monitor::CheckSegment()
 
         if (fInteractive) {
             cout << "| "
-                 << setw(18) << fSegmentName                                    << " | "
-                 << setw(10) << segment.get_size()                              << " | "
-                 << setw(10) << segment.get_free_memory()                       << " | "
-                 << setw(8)  << numDevices                                      << " | "
+                 << setw(18) << fSegmentName                                               << " | "
+                 << setw(10) << boost::apply_visitor(SegmentSize{}, segments.at(id))       << " | "
+                 << setw(10) << boost::apply_visitor(SegmentFreeMemory{}, segments.at(id)) << " | "
+                 << setw(8)  << numDevices                                                 << " | "
 #ifdef FAIRMQ_DEBUG_MODE
-                 << setw(8)  << numMessages                                     << " | "
+                 << setw(8)  << numMessages                                                << " | "
 #else
-                 << setw(8)  << "nodebug"                                       << " | "
+                 << setw(8)  << "nodebug"                                                  << " | "
 #endif
-                 << setw(10) << (fViewOnly ? "view only" : to_string(duration)) << " |"
+                 << setw(10) << (fViewOnly ? "view only" : to_string(duration))            << " |"
                  << c << flush;
         } else if (fViewOnly) {
-            size_t free = segment.get_free_memory();
-            size_t total = segment.get_size();
+            size_t free = boost::apply_visitor(SegmentFreeMemory{}, segments.at(id));
+            size_t total = boost::apply_visitor(SegmentSize{}, segments.at(id));
             size_t used = total - free;
             // size_t mfree = managementSegment.get_free_memory();
             // size_t mtotal = managementSegment.get_size();
@@ -459,44 +475,6 @@ vector<BufferDebugInfo> Monitor::GetDebugInfo(const SessionId& sessionId)
     return GetDebugInfo(shmId);
 }
 
-void Monitor::PrintQueues()
-{
-    cout << '\n';
-
-    try {
-        bipc::managed_shared_memory segment(bipc::open_only, fSegmentName.c_str());
-        StrVector* queues = segment.find<StrVector>(string("fmq_" + fShmId + "_qs").c_str()).first;
-        if (queues) {
-            cout << "found " << queues->size() << " queue(s):" << endl;
-
-            for (const auto& queue : *queues) {
-                string name(queue.c_str());
-                cout << '\t' << name << " : ";
-                atomic<int>* queueSize = segment.find<atomic<int>>(name.c_str()).first;
-                if (queueSize) {
-                    cout << *queueSize << " messages" << endl;
-                } else {
-                    cout << "\tqueue does not have a queue size entry." << endl;
-                }
-            }
-        } else {
-            cout << "\tno queues found" << endl;
-        }
-    } catch (bie&) {
-        cout << "\tno queues found" << endl;
-    } catch (out_of_range&) {
-        cout << "\tno queues found" << endl;
-    }
-
-    cout << "\n    --> last heartbeats: " << endl << endl;
-    auto now = chrono::high_resolution_clock::now();
-    for (const auto& h : fDeviceHeartbeats)  {
-        cout << "\t" << h.first << " : " << chrono::duration<double, milli>(now - h.second).count() << "ms ago." << endl;
-    }
-
-    cout << endl;
-}
-
 void Monitor::PrintHeader()
 {
     cout << "| "
@@ -512,7 +490,6 @@ void Monitor::PrintHeader()
 void Monitor::PrintHelp()
 {
     cout << "controls: [x] close memory, "
-         << "[p] print queues, "
          << "[b] print a list of allocated messages (only available when compiled with FAIMQ_DEBUG_MODE=ON), "
          << "[h] help, "
          << "[q] quit." << endl;
