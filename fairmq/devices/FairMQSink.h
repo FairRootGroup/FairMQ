@@ -32,7 +32,7 @@ class FairMQSink : public FairMQDevice   //, public OutputPolicy
         , fInChannelName()
     {}
 
-    virtual ~FairMQSink() {}
+    ~FairMQSink() {}
 
   protected:
     bool fMultipart;
@@ -40,14 +40,14 @@ class FairMQSink : public FairMQDevice   //, public OutputPolicy
     uint64_t fNumIterations;
     std::string fInChannelName;
 
-    virtual void InitTask()
+    void InitTask() override
     {
         fMultipart = fConfig->GetProperty<bool>("multipart");
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
         fInChannelName = fConfig->GetProperty<std::string>("in-channel");
     }
 
-    virtual void Run()
+    void Run() override
     {
         // store the channel reference to avoid traversing the map on every loop iteration
         FairMQChannel& dataInChannel = fChannels.at(fInChannelName).at(0);

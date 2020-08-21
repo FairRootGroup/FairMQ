@@ -22,16 +22,55 @@
 class FairMQProxy : public FairMQDevice
 {
   public:
-    FairMQProxy();
-    virtual ~FairMQProxy();
+    FairMQProxy()
+        : fMultipart(true)
+        , fInChannelName()
+        , fOutChannelName()
+    {}
+    ~FairMQProxy() {}
 
   protected:
     bool fMultipart;
     std::string fInChannelName;
     std::string fOutChannelName;
 
-    virtual void Run();
-    virtual void InitTask();
+    void InitTask() override
+    {
+        fMultipart = fConfig->GetProperty<bool>("multipart");
+        fInChannelName = fConfig->GetProperty<std::string>("in-channel");
+        fOutChannelName = fConfig->GetProperty<std::string>("out-channel");
+    }
+
+    void Run() override
+    {
+        if (fMultipart) {
+            while (!NewStatePending()) {
+                FairMQParts payload;
+                if (Receive(payload, fInChannelName) >= 0) {
+                    if (Send(payload, fOutChannelName) < 0) {
+                        LOG(debug) << "Transfer interrupted";
+                        break;
+                    }
+                } else {
+                    LOG(debug) << "Transfer interrupted";
+                    break;
+                }
+            }
+        } else {
+            while (!NewStatePending()) {
+                FairMQMessagePtr payload(fTransportFactory->CreateMessage());
+                if (Receive(payload, fInChannelName) >= 0) {
+                    if (Send(payload, fOutChannelName) < 0) {
+                        LOG(debug) << "Transfer interrupted";
+                        break;
+                    }
+                } else {
+                    LOG(debug) << "Transfer interrupted";
+                    break;
+                }
+            }
+        }
+    }
 };
 
 #endif /* FAIRMQPROXY_H_ */

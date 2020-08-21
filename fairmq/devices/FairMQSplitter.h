@@ -22,8 +22,14 @@
 class FairMQSplitter : public FairMQDevice
 {
   public:
-    FairMQSplitter();
-    virtual ~FairMQSplitter();
+    FairMQSplitter()
+        : fMultipart(true)
+        , fNumOutputs(0)
+        , fDirection(0)
+        , fInChannelName()
+        , fOutChannelName()
+    {}
+    ~FairMQSplitter() {}
 
   protected:
     bool fMultipart;
@@ -32,10 +38,32 @@ class FairMQSplitter : public FairMQDevice
     std::string fInChannelName;
     std::string fOutChannelName;
 
-    virtual void InitTask();
+    void InitTask() override
+    {
+        fMultipart = fConfig->GetProperty<bool>("multipart");
+        fInChannelName = fConfig->GetProperty<std::string>("in-channel");
+        fOutChannelName = fConfig->GetProperty<std::string>("out-channel");
+        fNumOutputs = fChannels.at(fOutChannelName).size();
+        fDirection = 0;
 
-    bool HandleSingleData(std::unique_ptr<FairMQMessage>&, int);
-    bool HandleMultipartData(FairMQParts&, int);
+        if (fMultipart) {
+            OnData(fInChannelName, &FairMQSplitter::HandleData<FairMQParts>);
+        } else {
+            OnData(fInChannelName, &FairMQSplitter::HandleData<FairMQMessagePtr>);
+        }
+    }
+
+    template<typename T>
+    bool HandleData(T& payload, int)
+    {
+        Send(payload, fOutChannelName, fDirection);
+
+        if (++fDirection >= fNumOutputs) {
+            fDirection = 0;
+        }
+
+        return true;
+    }
 };
 
 #endif /* FAIRMQSPLITTER_H_ */
