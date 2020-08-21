@@ -174,12 +174,6 @@ if(BUILD_FAIRMQ)
   )
 
   set(FAIRMQ_PRIVATE_HEADER_FILES
-    devices/FairMQBenchmarkSampler.h
-    devices/FairMQMerger.h
-    devices/FairMQMultiplier.h
-    devices/FairMQProxy.h
-    devices/FairMQSink.h
-    devices/FairMQSplitter.h
     plugins/Builtin.h
     plugins/config/Config.h
     plugins/Control.h
@@ -221,10 +215,6 @@ if(BUILD_FAIRMQ)
     FairMQPoller.cxx
     FairMQSocket.cxx
     FairMQTransportFactory.cxx
-    devices/FairMQMerger.cxx
-    devices/FairMQMultiplier.cxx
-    devices/FairMQProxy.cxx
-    devices/FairMQSplitter.cxx
     Plugin.cxx
     PluginManager.cxx
     PluginServices.cxx

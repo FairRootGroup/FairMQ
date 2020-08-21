@@ -12,12 +12,18 @@
 #include "FairMQDevice.h"
 
 #include <string>
+#include <vector>
 
 class FairMQMultiplier : public FairMQDevice
 {
   public:
-    FairMQMultiplier();
-    virtual ~FairMQMultiplier();
+    FairMQMultiplier()
+        : fMultipart(true)
+        , fNumOutputs(0)
+        , fInChannelName()
+        , fOutChannelNames()
+    {}
+    ~FairMQMultiplier() {}
 
   protected:
     bool fMultipart;
@@ -25,10 +31,80 @@ class FairMQMultiplier : public FairMQDevice
     std::string fInChannelName;
     std::vector<std::string> fOutChannelNames;
 
-    virtual void InitTask();
+    void InitTask() override
+    {
+        fMultipart = fConfig->GetProperty<bool>("multipart");
+        fInChannelName = fConfig->GetProperty<std::string>("in-channel");
+        fOutChannelNames = fConfig->GetProperty<std::vector<std::string>>("out-channel");
+        fNumOutputs = fChannels.at(fOutChannelNames.at(0)).size();
 
-    bool HandleSingleData(std::unique_ptr<FairMQMessage>&, int);
-    bool HandleMultipartData(FairMQParts&, int);
+        if (fMultipart) {
+            OnData(fInChannelName, &FairMQMultiplier::HandleMultipartData);
+        } else {
+            OnData(fInChannelName, &FairMQMultiplier::HandleSingleData);
+        }
+    }
+
+
+    bool HandleSingleData(std::unique_ptr<FairMQMessage>& payload, int)
+    {
+        for (unsigned int i = 0; i < fOutChannelNames.size() - 1; ++i) { // all except last channel
+            for (unsigned int j = 0; j < fChannels.at(fOutChannelNames.at(i)).size(); ++j) { // all subChannels in a channel
+                FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage());
+                msgCopy->Copy(*payload);
+
+                Send(msgCopy, fOutChannelNames.at(i), j);
+            }
+        }
+
+        unsigned int lastChannelSize = fChannels.at(fOutChannelNames.back()).size();
+
+        for (unsigned int i = 0; i < lastChannelSize - 1; ++i) { // iterate over all except last subChannels of the last channel
+            FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage());
+            msgCopy->Copy(*payload);
+
+            Send(msgCopy, fOutChannelNames.back(), i);
+        }
+
+        Send(payload, fOutChannelNames.back(), lastChannelSize - 1); // send final message to last subChannel of last channel
+
+        return true;
+    }
+
+    bool HandleMultipartData(FairMQParts& payload, int)
+    {
+        for (unsigned int i = 0; i < fOutChannelNames.size() - 1; ++i) { // all except last channel
+            for (unsigned int j = 0; j < fChannels.at(fOutChannelNames.at(i)).size(); ++j) { // all subChannels in a channel
+                FairMQParts parts;
+
+                for (int k = 0; k < payload.Size(); ++k) {
+                    FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage());
+                    msgCopy->Copy(payload.AtRef(k));
+                    parts.AddPart(std::move(msgCopy));
+                }
+
+                Send(parts, fOutChannelNames.at(i), j);
+            }
+        }
+
+        unsigned int lastChannelSize = fChannels.at(fOutChannelNames.back()).size();
+
+        for (unsigned int i = 0; i < lastChannelSize - 1; ++i) { // iterate over all except last subChannels of the last channel
+            FairMQParts parts;
+
+            for (int k = 0; k < payload.Size(); ++k) {
+                FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage());
+                msgCopy->Copy(payload.AtRef(k));
+                parts.AddPart(std::move(msgCopy));
+            }
+
+            Send(parts, fOutChannelNames.back(), i);
+        }
+
+        Send(payload, fOutChannelNames.back(), lastChannelSize - 1); // send final message to last subChannel of last channel
+
+        return true;
+    }
 };
 
 #endif /* FAIRMQMULTIPLIER_H_ */
