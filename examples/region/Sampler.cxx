@@ -38,6 +38,7 @@ void Sampler::InitTask()
 
     fChannels.at("data").at(0).Transport()->SubscribeToRegionEvents([](FairMQRegionInfo info) {
         LOG(info) << "Region event: " << info.event
+                  << ", managed: " << info.managed
                   << ", id: " << info.id
                   << ", ptr: " << info.ptr
                   << ", size: " << info.size

@@ -125,7 +125,7 @@ class TransportFactory final : public FairMQTransportFactory
     {
         UnmanagedRegionPtr ptr = tools::make_unique<UnmanagedRegion>(*fCtx, size, userFlags, callback, bulkCallback, this);
         auto zPtr = static_cast<UnmanagedRegion*>(ptr.get());
-        fCtx->AddRegion(zPtr->GetId(), zPtr->GetData(), zPtr->GetSize(), zPtr->GetUserFlags(), RegionEvent::created);
+        fCtx->AddRegion(false, zPtr->GetId(), zPtr->GetData(), zPtr->GetSize(), zPtr->GetUserFlags(), RegionEvent::created);
         return ptr;
     }
 

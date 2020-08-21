@@ -92,7 +92,6 @@ class Monitor
   private:
     void PrintHeader();
     void PrintHelp();
-    void PrintQueues();
     void MonitorHeartbeats();
     void CheckSegment();
     void Interactive();
