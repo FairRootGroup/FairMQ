@@ -495,60 +495,44 @@ void Monitor::PrintHelp()
          << "[q] quit." << endl;
 }
 
-void Monitor::RemoveObject(const string& name)
+
+std::pair<std::string, bool> RunRemoval(std::function<bool(const std::string&)> f, std::string name, bool verbose)
 {
-    if (bipc::shared_memory_object::remove(name.c_str())) {
-        cout << "Successfully removed '" << name << "'." << endl;
+    if (f(name)) {
+        if (verbose) {
+            cout << "Successfully removed '" << name << "'." << endl;
+        }
+        return {name, true};
     } else {
-        cout << "Did not remove '" << name << "'. Already removed?" << endl;
+        if (verbose) {
+            cout << "Did not remove '" << name << "'. Already removed?" << endl;
+        }
+        return {name, false};
     }
 }
 
-void Monitor::RemoveFileMapping(const string& name)
-{
-    if (bipc::file_mapping::remove(name.c_str())) {
-        cout << "Successfully removed '" << name << "'." << endl;
-    } else {
-        cout << "Did not remove '" << name << "'. Already removed?" << endl;
-    }
-}
+bool Monitor::RemoveObject(const string& name)      { return bipc::shared_memory_object::remove(name.c_str()); }
+bool Monitor::RemoveFileMapping(const string& name) { return bipc::file_mapping::remove(name.c_str()); }
+bool Monitor::RemoveQueue(const string& name)       { return bipc::message_queue::remove(name.c_str()); }
+bool Monitor::RemoveMutex(const string& name)       { return bipc::named_mutex::remove(name.c_str()); }
+bool Monitor::RemoveCondition(const string& name)   { return bipc::named_condition::remove(name.c_str()); }
 
-void Monitor::RemoveQueue(const string& name)
+std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, bool verbose /* = true */)
 {
-    if (bipc::message_queue::remove(name.c_str())) {
-        cout << "Successfully removed '" << name << "'." << endl;
-    } else {
-        cout << "Did not remove '" << name << "'. Already removed?" << endl;
-    }
-}
+    std::vector<std::pair<std::string, bool>> result;
 
-void Monitor::RemoveMutex(const string& name)
-{
-    if (bipc::named_mutex::remove(name.c_str())) {
-        cout << "Successfully removed '" << name << "'." << endl;
-    } else {
-        cout << "Did not remove '" << name << "'. Already removed?" << endl;
+    if (verbose) {
+        cout << "Cleaning up for shared memory id '" << shmId.shmId << "'..." << endl;
     }
-}
 
-void Monitor::RemoveCondition(const string& name)
-{
-    if (bipc::named_condition::remove(name.c_str())) {
-        cout << "Successfully removed '" << name << "'." << endl;
-    } else {
-        cout << "Did not remove '" << name << "'. Already removed?" << endl;
-    }
-}
-
-void Monitor::Cleanup(const ShmId& shmId)
-{
-    cout << "Cleaning up for shared memory id '" << shmId.shmId << "'..." << endl;
     string managementSegmentName("fmq_" + shmId.shmId + "_mng");
     try {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
         RegionCounter* rc = managementSegment.find<RegionCounter>(bipc::unique_instance).first;
         if (rc) {
-            cout << "Region counter found: " << rc->fCount << endl;
+            if (verbose) {
+                cout << "Region counter found: " << rc->fCount << endl;
+            }
             uint64_t regionCount = rc->fCount;
 
             Uint64RegionInfoMap* m = managementSegment.find<Uint64RegionInfoMap>(bipc::unique_instance).first;
@@ -558,55 +542,68 @@ void Monitor::Cleanup(const ShmId& shmId)
                     RegionInfo ri = m->at(i);
                     string path = ri.fPath.c_str();
                     int flags = ri.fFlags;
-                    cout << "Found RegionInfo with path: '" << path << "', flags: " << flags << ", fDestroyed: " << ri.fDestroyed << "." << endl;
+                    if (verbose) {
+                        cout << "Found RegionInfo with path: '" << path << "', flags: " << flags << ", fDestroyed: " << ri.fDestroyed << "." << endl;
+                    }
                     if (path != "") {
-                        RemoveFileMapping(tools::ToString(path, "fmq_" + shmId.shmId + "_rg_" + to_string(i)));
+                        result.emplace_back(RunRemoval(Monitor::RemoveFileMapping, path + "fmq_" + shmId.shmId + "_rg_" + to_string(i), verbose));
                     } else {
-                        RemoveObject("fmq_" + shmId.shmId + "_rg_" + to_string(i));
+                        result.emplace_back(RunRemoval(Monitor::RemoveObject, "fmq_" + shmId.shmId + "_rg_" + to_string(i), verbose));
                     }
                 } else {
-                    RemoveObject("fmq_" + shmId.shmId + "_rg_" + to_string(i));
+                    result.emplace_back(RunRemoval(Monitor::RemoveObject, "fmq_" + shmId.shmId + "_rg_" + to_string(i), verbose));
                 }
 
-                RemoveQueue(string("fmq_" + shmId.shmId + "_rgq_" + to_string(i)));
+                result.emplace_back(RunRemoval(Monitor::RemoveQueue, string("fmq_" + shmId.shmId + "_rgq_" + to_string(i)), verbose));
             }
         } else {
-            cout << "No region counter found. No regions to cleanup." << endl;
+            if (verbose) {
+                cout << "No region counter found. No regions to cleanup." << endl;
+            }
         }
 
-        RemoveObject(managementSegmentName.c_str());
+        result.emplace_back(RunRemoval(Monitor::RemoveObject, managementSegmentName.c_str(), verbose));
     } catch (bie&) {
-        cout << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup." << endl;
+        if (verbose) {
+            cout << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup." << endl;
+        }
     } catch(out_of_range& oor) {
-        cout << "Could not locate element in the region map, out of range: " << oor.what() << endl;
+        if (verbose) {
+            cout << "Could not locate element in the region map, out of range: " << oor.what() << endl;
+        }
     }
 
-    RemoveObject("fmq_" + shmId.shmId + "_main");
-    RemoveMutex("fmq_" + shmId.shmId + "_mtx");
-    RemoveCondition("fmq_" + shmId.shmId + "_cv");
+    result.emplace_back(RunRemoval(Monitor::RemoveObject, "fmq_" + shmId.shmId + "_main", verbose));
+    result.emplace_back(RunRemoval(Monitor::RemoveMutex, "fmq_" + shmId.shmId + "_mtx", verbose));
+    result.emplace_back(RunRemoval(Monitor::RemoveCondition, "fmq_" + shmId.shmId + "_cv", verbose));
 
-    cout << endl;
+    return result;
 }
 
-void Monitor::Cleanup(const SessionId& sessionId)
+std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const SessionId& sessionId, bool verbose /* = true */)
 {
     ShmId shmId{buildShmIdFromSessionIdAndUserId(sessionId.sessionId)};
-    cout << "Cleanup called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'" << endl;
-    Cleanup(shmId);
+    if (verbose) {
+        cout << "Cleanup called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'" << endl;
+    }
+    return Cleanup(shmId, verbose);
 }
 
-void Monitor::CleanupFull(const ShmId& shmId)
+std::vector<std::pair<std::string, bool>> Monitor::CleanupFull(const ShmId& shmId, bool verbose /* = true */)
 {
-    Cleanup(shmId);
-    RemoveMutex("fmq_" + shmId.shmId + "_ms");
-    RemoveQueue("fmq_" + shmId.shmId + "_cq");
+    auto result = Cleanup(shmId, verbose);
+    result.emplace_back(RunRemoval(Monitor::RemoveMutex, "fmq_" + shmId.shmId + "_ms", verbose));
+    result.emplace_back(RunRemoval(Monitor::RemoveQueue, "fmq_" + shmId.shmId + "_cq", verbose));
+    return result;
 }
 
-void Monitor::CleanupFull(const SessionId& sessionId)
+std::vector<std::pair<std::string, bool>> Monitor::CleanupFull(const SessionId& sessionId, bool verbose /* = true */)
 {
     ShmId shmId{buildShmIdFromSessionIdAndUserId(sessionId.sessionId)};
-    cout << "Cleanup called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'" << endl;
-    CleanupFull(shmId);
+    if (verbose) {
+        cout << "Cleanup called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'" << endl;
+    }
+    return CleanupFull(shmId, verbose);
 }
 
 Monitor::~Monitor()
