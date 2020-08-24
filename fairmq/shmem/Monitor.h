@@ -14,6 +14,7 @@
 #include <string>
 #include <stdexcept>
 #include <unordered_map>
+#include <utility> // pair
 #include <vector>
 
 namespace fair
@@ -65,27 +66,31 @@ class Monitor
 
     /// @brief Cleanup all shared memory artifacts created by devices
     /// @param shmId shared memory id
-    static void Cleanup(const ShmId& shmId);
+    /// @param verbose output cleanup results to stdout
+    static std::vector<std::pair<std::string, bool>> Cleanup(const ShmId& shmId, bool verbose = true);
     /// @brief Cleanup all shared memory artifacts created by devices
     /// @param sessionId session id
-    static void Cleanup(const SessionId& sessionId);
+    /// @param verbose output cleanup results to stdout
+    static std::vector<std::pair<std::string, bool>> Cleanup(const SessionId& sessionId, bool verbose = true);
     /// @brief Cleanup all shared memory artifacts created by devices and monitors
     /// @param shmId shared memory id
-    static void CleanupFull(const ShmId& shmId);
+    /// @param verbose output cleanup results to stdout
+    static std::vector<std::pair<std::string, bool>> CleanupFull(const ShmId& shmId, bool verbose = true);
     /// @brief Cleanup all shared memory artifacts created by devices and monitors
     /// @param sessionId session id
-    static void CleanupFull(const SessionId& sessionId);
+    /// @param verbose output cleanup results to stdout
+    static std::vector<std::pair<std::string, bool>> CleanupFull(const SessionId& sessionId, bool verbose = true);
 
     static void PrintDebugInfo(const ShmId& shmId);
     static void PrintDebugInfo(const SessionId& shmId);
     static std::vector<BufferDebugInfo> GetDebugInfo(const ShmId& shmId);
     static std::vector<BufferDebugInfo> GetDebugInfo(const SessionId& shmId);
 
-    static void RemoveObject(const std::string&);
-    static void RemoveFileMapping(const std::string&);
-    static void RemoveQueue(const std::string&);
-    static void RemoveMutex(const std::string&);
-    static void RemoveCondition(const std::string&);
+    static bool RemoveObject(const std::string& name);
+    static bool RemoveFileMapping(const std::string& name);
+    static bool RemoveQueue(const std::string& name);
+    static bool RemoveMutex(const std::string& name);
+    static bool RemoveCondition(const std::string& name);
 
     struct DaemonPresent : std::runtime_error { using std::runtime_error::runtime_error; };
 
