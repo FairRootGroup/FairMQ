@@ -81,9 +81,9 @@ struct RegionInfo
     bool fDestroyed;
 };
 
-using Uint64RegionInfoPairAlloc = boost::interprocess::allocator<std::pair<const uint64_t, RegionInfo>, SegmentManager>;
-using Uint64RegionInfoMap = boost::interprocess::map<uint64_t, RegionInfo, std::less<uint64_t>, Uint64RegionInfoPairAlloc>;
-using Uint64RegionInfoHashMap = boost::unordered_map<uint64_t, RegionInfo, boost::hash<uint64_t>, std::equal_to<uint64_t>, Uint64RegionInfoPairAlloc>;
+using Uint16RegionInfoPairAlloc = boost::interprocess::allocator<std::pair<const uint16_t, RegionInfo>, SegmentManager>;
+using Uint16RegionInfoMap = boost::interprocess::map<uint16_t, RegionInfo, std::less<uint16_t>, Uint16RegionInfoPairAlloc>;
+using Uint16RegionInfoHashMap = boost::unordered_map<uint16_t, RegionInfo, boost::hash<uint16_t>, std::equal_to<uint16_t>, Uint16RegionInfoPairAlloc>;
 
 struct SegmentInfo
 {
@@ -94,9 +94,9 @@ struct SegmentInfo
     AllocationAlgorithm fAllocationAlgorithm;
 };
 
-using Uint64SegmentInfoPairAlloc = boost::interprocess::allocator<std::pair<const uint64_t, SegmentInfo>, SegmentManager>;
-using Uint64SegmentInfoMap = boost::interprocess::map<uint64_t, SegmentInfo, std::less<uint64_t>, Uint64SegmentInfoPairAlloc>;
-using Uint64SegmentInfoHashMap = boost::unordered_map<uint64_t, SegmentInfo, boost::hash<uint64_t>, std::equal_to<uint64_t>, Uint64SegmentInfoPairAlloc>;
+using Uint16SegmentInfoPairAlloc = boost::interprocess::allocator<std::pair<const uint16_t, SegmentInfo>, SegmentManager>;
+using Uint16SegmentInfoMap = boost::interprocess::map<uint16_t, SegmentInfo, std::less<uint16_t>, Uint16SegmentInfoPairAlloc>;
+using Uint16SegmentInfoHashMap = boost::unordered_map<uint16_t, SegmentInfo, boost::hash<uint16_t>, std::equal_to<uint16_t>, Uint16SegmentInfoPairAlloc>;
 
 struct DeviceCounter
 {
@@ -120,18 +120,19 @@ struct MsgCounter
 
 struct RegionCounter
 {
-    RegionCounter(uint64_t c)
+    RegionCounter(uint16_t c)
         : fCount(c)
     {}
 
-    std::atomic<uint64_t> fCount;
+    std::atomic<uint16_t> fCount;
 };
 
 struct MetaHeader
 {
     size_t fSize;
-    size_t fRegionId;
     size_t fHint;
+    uint16_t fRegionId;
+    uint16_t fSegmentId;
     boost::interprocess::managed_shared_memory::handle_t fHandle;
 };
 

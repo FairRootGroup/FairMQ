@@ -63,7 +63,7 @@ Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool 
     , fTimeoutInMS(timeoutInMS)
     , fIntervalInMS(intervalInMS)
     , fShmId(shmId)
-    , fSegmentName("fmq_" + fShmId + "_main")
+    , fSegmentName("fmq_" + fShmId + "_m_0")
     , fManagementSegmentName("fmq_" + fShmId + "_mng")
     , fControlQueueName("fmq_" + fShmId + "_cq")
     , fTerminating(false)
@@ -280,23 +280,19 @@ void Monitor::CheckSegment()
     try {
         managed_shared_memory managementSegment(open_only, fManagementSegmentName.c_str());
 
-        Uint64SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint64SegmentInfoHashMap>(unique_instance).first;
-        std::unordered_map<uint64_t, boost::variant<RBTreeBestFitSegment, SimpleSeqFitSegment>> segments;
+        Uint16SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
+        std::unordered_map<uint16_t, boost::variant<RBTreeBestFitSegment, SimpleSeqFitSegment>> segments;
 
         if (!segmentInfos) {
             cout << "Found management segment, but cannot locate segment info, something went wrong..." << endl;
             return;
         }
 
-        const uint64_t id = 0;
-
-        auto it = segmentInfos->find(id);
-        if (it != segmentInfos->end()) {
-            // found segment with the given id, opening
-            if (it->second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
-                segments.emplace(id, RBTreeBestFitSegment(open_only, fSegmentName.c_str()));
+        for (const auto& s : *segmentInfos) {
+            if (s.second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
+                segments.emplace(s.first, RBTreeBestFitSegment(open_only, std::string("fmq_" + fShmId + "_m_" + to_string(s.first)).c_str()));
             } else {
-                segments.emplace(id, SimpleSeqFitSegment(open_only, fSegmentName.c_str()));
+                segments.emplace(s.first, SimpleSeqFitSegment(open_only, std::string("fmq_" + fShmId + "_m_" + to_string(s.first)).c_str()));
             }
         }
 
@@ -336,8 +332,8 @@ void Monitor::CheckSegment()
         if (fInteractive) {
             cout << "| "
                  << setw(18) << fSegmentName                                               << " | "
-                 << setw(10) << boost::apply_visitor(SegmentSize{}, segments.at(id))       << " | "
-                 << setw(10) << boost::apply_visitor(SegmentFreeMemory{}, segments.at(id)) << " | "
+                 << setw(10) << boost::apply_visitor(SegmentSize{}, segments.at(0))        << " | "
+                 << setw(10) << boost::apply_visitor(SegmentFreeMemory{}, segments.at(0))  << " | "
                  << setw(8)  << numDevices                                                 << " | "
 #ifdef FAIRMQ_DEBUG_MODE
                  << setw(8)  << numMessages                                                << " | "
@@ -347,8 +343,8 @@ void Monitor::CheckSegment()
                  << setw(10) << (fViewOnly ? "view only" : to_string(duration))            << " |"
                  << c << flush;
         } else if (fViewOnly) {
-            size_t free = boost::apply_visitor(SegmentFreeMemory{}, segments.at(id));
-            size_t total = boost::apply_visitor(SegmentSize{}, segments.at(id));
+            size_t free = boost::apply_visitor(SegmentFreeMemory{}, segments.at(0));
+            size_t total = boost::apply_visitor(SegmentSize{}, segments.at(0));
             size_t used = total - free;
             // size_t mfree = managementSegment.get_free_memory();
             // size_t mtotal = managementSegment.get_size();
@@ -528,38 +524,51 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
     string managementSegmentName("fmq_" + shmId.shmId + "_mng");
     try {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
-        RegionCounter* rc = managementSegment.find<RegionCounter>(bipc::unique_instance).first;
-        if (rc) {
-            if (verbose) {
-                cout << "Region counter found: " << rc->fCount << endl;
-            }
-            uint64_t regionCount = rc->fCount;
 
-            Uint64RegionInfoMap* m = managementSegment.find<Uint64RegionInfoMap>(bipc::unique_instance).first;
+        try {
+            RegionCounter* rc = managementSegment.find<RegionCounter>(bipc::unique_instance).first;
+            if (rc) {
+                if (verbose) {
+                    cout << "Region counter found: " << rc->fCount << endl;
+                }
+                uint16_t regionCount = rc->fCount;
 
-            for (uint64_t i = 1; i <= regionCount; ++i) {
-                if (m != nullptr) {
-                    RegionInfo ri = m->at(i);
-                    string path = ri.fPath.c_str();
-                    int flags = ri.fFlags;
-                    if (verbose) {
-                        cout << "Found RegionInfo with path: '" << path << "', flags: " << flags << ", fDestroyed: " << ri.fDestroyed << "." << endl;
-                    }
-                    if (path != "") {
-                        result.emplace_back(RunRemoval(Monitor::RemoveFileMapping, path + "fmq_" + shmId.shmId + "_rg_" + to_string(i), verbose));
+                Uint16RegionInfoMap* m = managementSegment.find<Uint16RegionInfoMap>(bipc::unique_instance).first;
+
+                for (uint16_t i = 1; i <= regionCount; ++i) {
+                    if (m != nullptr) {
+                        RegionInfo ri = m->at(i);
+                        string path = ri.fPath.c_str();
+                        int flags = ri.fFlags;
+                        if (verbose) {
+                            cout << "Found RegionInfo with path: '" << path << "', flags: " << flags << ", fDestroyed: " << ri.fDestroyed << "." << endl;
+                        }
+                        if (path != "") {
+                            result.emplace_back(RunRemoval(Monitor::RemoveFileMapping, path + "fmq_" + shmId.shmId + "_rg_" + to_string(i), verbose));
+                        } else {
+                            result.emplace_back(RunRemoval(Monitor::RemoveObject, "fmq_" + shmId.shmId + "_rg_" + to_string(i), verbose));
+                        }
                     } else {
                         result.emplace_back(RunRemoval(Monitor::RemoveObject, "fmq_" + shmId.shmId + "_rg_" + to_string(i), verbose));
                     }
-                } else {
-                    result.emplace_back(RunRemoval(Monitor::RemoveObject, "fmq_" + shmId.shmId + "_rg_" + to_string(i), verbose));
-                }
 
-                result.emplace_back(RunRemoval(Monitor::RemoveQueue, string("fmq_" + shmId.shmId + "_rgq_" + to_string(i)), verbose));
+                    result.emplace_back(RunRemoval(Monitor::RemoveQueue, string("fmq_" + shmId.shmId + "_rgq_" + to_string(i)), verbose));
+                }
+            } else {
+                if (verbose) {
+                    cout << "No region counter found. No regions to cleanup." << endl;
+                }
             }
-        } else {
+        } catch(out_of_range& oor) {
             if (verbose) {
-                cout << "No region counter found. No regions to cleanup." << endl;
+                cout << "Could not locate element in the region map, out of range: " << oor.what() << endl;
             }
+        }
+
+        Uint16SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint16SegmentInfoHashMap>(bipc::unique_instance).first;
+
+        for (const auto& s : *segmentInfos) {
+            result.emplace_back(RunRemoval(Monitor::RemoveObject, "fmq_" + shmId.shmId + "_m_" + to_string(s.first), verbose));
         }
 
         result.emplace_back(RunRemoval(Monitor::RemoveObject, managementSegmentName.c_str(), verbose));
@@ -567,13 +576,8 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
         if (verbose) {
             cout << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup." << endl;
         }
-    } catch(out_of_range& oor) {
-        if (verbose) {
-            cout << "Could not locate element in the region map, out of range: " << oor.what() << endl;
-        }
     }
 
-    result.emplace_back(RunRemoval(Monitor::RemoveObject, "fmq_" + shmId.shmId + "_main", verbose));
     result.emplace_back(RunRemoval(Monitor::RemoveMutex, "fmq_" + shmId.shmId + "_mtx", verbose));
     result.emplace_back(RunRemoval(Monitor::RemoveCondition, "fmq_" + shmId.shmId + "_cv", verbose));
 

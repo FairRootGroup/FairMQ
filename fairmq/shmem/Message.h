@@ -43,7 +43,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, 0, -1}
+        , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
@@ -54,7 +54,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, 0, -1}
+        , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
@@ -65,7 +65,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, 0, -1}
+        , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
@@ -77,7 +77,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, 0, -1}
+        , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
@@ -89,7 +89,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, 0, -1}
+        , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
@@ -108,7 +108,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{size, static_cast<UnmanagedRegion*>(region.get())->fRegionId, reinterpret_cast<size_t>(hint), -1}
+        , fMeta{size, reinterpret_cast<size_t>(hint), static_cast<UnmanagedRegion*>(region.get())->fRegionId, fManager.GetSegmentId(), -1}
         , fRegionPtr(nullptr)
         , fLocalPtr(static_cast<char*>(data))
     {
@@ -169,7 +169,8 @@ class Message final : public fair::mq::Message
         if (!fLocalPtr) {
             if (fMeta.fRegionId == 0) {
                 if (fMeta.fSize > 0) {
-                    fLocalPtr = reinterpret_cast<char*>(fManager.GetAddressFromHandle(fMeta.fHandle));
+                    fManager.GetSegment(fMeta.fSegmentId);
+                    fLocalPtr = reinterpret_cast<char*>(fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId));
                 } else {
                     fLocalPtr = nullptr;
                 }
@@ -195,7 +196,7 @@ class Message final : public fair::mq::Message
             return true;
         } else if (newSize <= fMeta.fSize) {
             try {
-                fLocalPtr = fManager.ShrinkInPlace(fMeta.fSize, newSize, fLocalPtr);
+                fLocalPtr = fManager.ShrinkInPlace(fMeta.fSize, newSize, fLocalPtr, fMeta.fSegmentId);
                 fMeta.fSize = newSize;
                 return true;
             } catch (boost::interprocess::interprocess_exception& e) {
@@ -248,7 +249,7 @@ class Message final : public fair::mq::Message
     {
         fLocalPtr = fManager.Allocate(size, alignment);
         if (fLocalPtr) {
-            fMeta.fHandle = fManager.GetHandleFromAddress(fLocalPtr);
+            fMeta.fHandle = fManager.GetHandleFromAddress(fLocalPtr, fMeta.fSegmentId);
             fMeta.fSize = size;
         }
         return fLocalPtr;
@@ -258,7 +259,8 @@ class Message final : public fair::mq::Message
     {
         if (fMeta.fHandle >= 0 && !fQueued) {
             if (fMeta.fRegionId == 0) {
-                fManager.Deallocate(fMeta.fHandle);
+                fManager.GetSegment(fMeta.fSegmentId);
+                fManager.Deallocate(fMeta.fHandle, fMeta.fSegmentId);
                 fMeta.fHandle = -1;
             } else {
                 if (!fRegionPtr) {
