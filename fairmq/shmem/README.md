@@ -10,16 +10,16 @@ Devices track and cleanup shared memory on shutdown. For more information on the
 
 FairMQ Shared Memory currently uses the following names to register shared memory on the system:
 
-| name                      | info                                           | created by         | used by                        |
-| ------------------------- | ---------------------------------------------- | ------------------ | ------------------------------ |
-| `fmq_<shmId>_main`        | main segment (user data)                       | one of the devices | devices                        |
-| `fmq_<shmId>_mng`         | management segment (management data)           | one of the devices | devices                        |
-| `fmq_<shmId>_mtx`         | mutex                                          | one of the devices | devices                        |
-| `fmq_<shmId>_cv`          | condition variable                             | one of the devices | devices with unmanaged regions |
-| `fmq_<shmId>_rg_<index>`  | unmanaged region(s)                            | one of the devices | devices with unmanaged regions |
-| `fmq_<shmId>_rgq_<index>` | unmanaged region queue(s)                      | one of the devices | devices with unmanaged regions |
-| `fmq_<shmId>_ms`          | shmmonitor status                              | shmmonitor         | devices, shmmonitor            |
-| `fmq_<shmId>_cq`          | message queue between transport and shmmonitor | shmmonitor         | devices, shmmonitor            |
+| name                        | info                                           | created by         | used by                        |
+| --------------------------- | ---------------------------------------------- | ------------------ | ------------------------------ |
+| `fmq_<shmId>_m_<segmentId>` | managed segment(s) (user data)                 | one of the devices | devices                        |
+| `fmq_<shmId>_mng`           | management segment (management data)           | one of the devices | devices                        |
+| `fmq_<shmId>_mtx`           | mutex                                          | one of the devices | devices                        |
+| `fmq_<shmId>_cv`            | condition variable                             | one of the devices | devices with unmanaged regions |
+| `fmq_<shmId>_rg_<index>`    | unmanaged region(s)                            | one of the devices | devices with unmanaged regions |
+| `fmq_<shmId>_rgq_<index>`   | unmanaged region queue(s)                      | one of the devices | devices with unmanaged regions |
+| `fmq_<shmId>_ms`            | shmmonitor status                              | shmmonitor         | devices, shmmonitor            |
+| `fmq_<shmId>_cq`            | message queue between transport and shmmonitor | shmmonitor         | devices, shmmonitor            |
 
 The shmId is generated out of session id and user id.
 

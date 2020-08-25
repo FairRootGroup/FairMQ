@@ -48,7 +48,7 @@ namespace shmem
 
 struct Region
 {
-    Region(const std::string& shmId, uint64_t id, uint64_t size, bool remote, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string& path, int flags)
+    Region(const std::string& shmId, uint16_t id, uint64_t size, bool remote, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string& path, int flags)
         : fRemote(remote)
         , fLinger(100)
         , fStop(false)

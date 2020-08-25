@@ -50,7 +50,7 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
 
     virtual void* GetData() const override { return fBuffer; }
     virtual size_t GetSize() const override { return fSize; }
-    uint64_t GetId() const override { return fId; }
+    uint16_t GetId() const override { return fId; }
     int64_t GetUserFlags() const { return fUserFlags; }
     void SetLinger(uint32_t /* linger */) override { LOG(debug) << "ZeroMQ UnmanagedRegion linger option not implemented. Acknowledgements are local."; }
     uint32_t GetLinger() const override { LOG(debug) << "ZeroMQ UnmanagedRegion linger option not implemented. Acknowledgements are local."; return 0; }
@@ -64,7 +64,7 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
 
   private:
     Context& fCtx;
-    uint64_t fId;
+    uint16_t fId;
     void* fBuffer;
     size_t fSize;
     int64_t fUserFlags;

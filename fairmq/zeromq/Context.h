@@ -114,13 +114,13 @@ class Context
         return fRegionInfos;
     }
 
-    uint64_t RegionCount() const
+    uint16_t RegionCount() const
     {
         std::lock_guard<std::mutex> lock(fMtx);
         return fRegionCounter;
     }
 
-    void AddRegion(bool managed, uint64_t id, void* ptr, size_t size, int64_t userFlags, RegionEvent event)
+    void AddRegion(bool managed, uint16_t id, void* ptr, size_t size, int64_t userFlags, RegionEvent event)
     {
         {
             std::lock_guard<std::mutex> lock(fMtx);
@@ -131,7 +131,7 @@ class Context
         fRegionEventsCV.notify_one();
     }
 
-    void RemoveRegion(uint64_t id)
+    void RemoveRegion(uint16_t id)
     {
         {
             std::lock_guard<std::mutex> lock(fMtx);
@@ -182,7 +182,7 @@ class Context
     mutable std::mutex fMtx;
     std::atomic<bool> fInterrupted;
 
-    uint64_t fRegionCounter;
+    uint16_t fRegionCounter;
     std::condition_variable fRegionEventsCV;
     std::vector<RegionInfo> fRegionInfos;
     std::queue<RegionInfo> fRegionEvents;
