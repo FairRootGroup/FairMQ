@@ -161,13 +161,16 @@ class Context
         UnsubscribeFromRegionEvents();
 
         if (fZmqCtx) {
-            if (zmq_ctx_term(fZmqCtx) != 0) {
-                if (errno == EINTR) {
-                    LOG(error) << " failed closing context, reason: " << zmq_strerror(errno);
-                } else {
-                    fZmqCtx = nullptr;
-                    return;
+            while (true) {
+                if (zmq_ctx_term(fZmqCtx) != 0) {
+                    if (errno == EINTR) {
+                        LOG(debug) << "zmq_ctx_term interrupted by system call, retrying";
+                        continue;
+                    } else {
+                        fZmqCtx = nullptr;
+                    }
                 }
+                break;
             }
         } else {
             LOG(error) << "context not available for shutdown";

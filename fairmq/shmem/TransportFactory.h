@@ -43,7 +43,7 @@ class TransportFactory final : public fair::mq::TransportFactory
         : fair::mq::TransportFactory(id)
         , fDeviceId(id)
         , fShmId()
-        , fZMQContext(zmq_ctx_new())
+        , fZmqCtx(zmq_ctx_new())
         , fManager(nullptr)
     {
         int major, minor, patch;
@@ -51,7 +51,7 @@ class TransportFactory final : public fair::mq::TransportFactory
         LOG(debug) << "Transport: Using ZeroMQ (" << major << "." << minor << "." << patch << ") & "
                 << "boost::interprocess (" << (BOOST_VERSION / 100000) << "." << (BOOST_VERSION / 100 % 1000) << "." << (BOOST_VERSION % 100) << ")";
 
-        if (!fZMQContext) {
+        if (!fZmqCtx) {
             throw std::runtime_error(tools::ToString("failed creating context, reason: ", zmq_strerror(errno)));
         }
 
@@ -70,12 +70,12 @@ class TransportFactory final : public fair::mq::TransportFactory
         LOG(debug) << "Generated shmid '" << fShmId << "' out of session id '" << sessionName << "'.";
 
         try {
-            if (zmq_ctx_set(fZMQContext, ZMQ_IO_THREADS, numIoThreads) != 0) {
+            if (zmq_ctx_set(fZmqCtx, ZMQ_IO_THREADS, numIoThreads) != 0) {
                 LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
             }
 
             // Set the maximum number of allowed sockets on the context.
-            if (zmq_ctx_set(fZMQContext, ZMQ_MAX_SOCKETS, 10000) != 0) {
+            if (zmq_ctx_set(fZmqCtx, ZMQ_MAX_SOCKETS, 10000) != 0) {
                 LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
             }
 
@@ -121,7 +121,7 @@ class TransportFactory final : public fair::mq::TransportFactory
 
     SocketPtr CreateSocket(const std::string& type, const std::string& name) override
     {
-        return tools::make_unique<Socket>(*fManager, type, name, GetId(), fZMQContext, this);
+        return tools::make_unique<Socket>(*fManager, type, name, GetId(), fZmqCtx, this);
     }
 
     PollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const override
@@ -179,14 +179,17 @@ class TransportFactory final : public fair::mq::TransportFactory
     {
         LOG(debug) << "Destroying Shared Memory transport...";
 
-        if (fZMQContext) {
-            if (zmq_ctx_term(fZMQContext) != 0) {
-                if (errno == EINTR) {
-                    LOG(error) << "failed closing context, reason: " << zmq_strerror(errno);
-                } else {
-                    fZMQContext = nullptr;
-                    return;
+        if (fZmqCtx) {
+            while (true) {
+                if (zmq_ctx_term(fZmqCtx) != 0) {
+                    if (errno == EINTR) {
+                        LOG(debug) << "zmq_ctx_term interrupted by system call, retrying";
+                        continue;
+                    } else {
+                        fZmqCtx = nullptr;
+                    }
                 }
+                break;
             }
         } else {
             LOG(error) << "context not available for shutdown";
@@ -196,7 +199,7 @@ class TransportFactory final : public fair::mq::TransportFactory
   private:
     std::string fDeviceId;
     std::string fShmId;
-    void* fZMQContext;
+    void* fZmqCtx;
     std::unique_ptr<Manager> fManager;
 };
 
