@@ -127,13 +127,20 @@ class Poller final : public fair::mq::Poller
 
     void Poll(const int timeout) override
     {
-        if (zmq_poll(fItems, fNumItems, timeout) < 0) {
-            if (errno == ETERM) {
-                LOG(debug) << "polling exited, reason: " << zmq_strerror(errno);
-            } else {
-                LOG(error) << "polling failed, reason: " << zmq_strerror(errno);
-                throw fair::mq::PollerError(fair::mq::tools::ToString("Polling failed, reason: ", zmq_strerror(errno)));
+        while (true) {
+            if (zmq_poll(fItems, fNumItems, timeout) < 0) {
+                if (errno == ETERM) {
+                    LOG(debug) << "polling exited, reason: " << zmq_strerror(errno);
+                    return;
+                } else if (errno == EINTR) {
+                    LOG(debug) << "polling interrupted by system call";
+                    continue;
+                } else {
+                    LOG(error) << "polling failed, reason: " << zmq_strerror(errno);
+                    throw fair::mq::PollerError(fair::mq::tools::ToString("Polling failed, reason: ", zmq_strerror(errno)));
+                }
             }
+            break;
         }
     }
 

@@ -126,9 +126,6 @@ class Socket final : public fair::mq::Socket
         if (zmq_errno() == ETERM) {
             LOG(debug) << "Terminating socket " << fId;
             return -1;
-        } else if (zmq_errno() == EINTR) {
-            LOG(debug) << "Transfer interrupted by system call";
-            return -1;
         } else {
             LOG(error) << "Failed transfer on socket " << fId << ", errno: " << errno << ", reason: " << zmq_strerror(errno);
             return -1;
@@ -151,7 +148,7 @@ class Socket final : public fair::mq::Socket
                 fBytesTx += nbytes;
                 ++fMessagesTx;
                 return nbytes;
-            } else if (zmq_errno() == EAGAIN) {
+            } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
@@ -177,7 +174,7 @@ class Socket final : public fair::mq::Socket
                 fBytesRx += nbytes;
                 ++fMessagesRx;
                 return nbytes;
-            } else if (zmq_errno() == EAGAIN) {
+            } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
@@ -212,7 +209,7 @@ class Socket final : public fair::mq::Socket
                     int nbytes = zmq_msg_send(static_cast<Message*>(msgVec[i].get())->GetMessage(), fSocket, (i < vecSize - 1) ? ZMQ_SNDMORE | flags : flags);
                     if (nbytes >= 0) {
                         totalSize += nbytes;
-                    } else if (zmq_errno() == EAGAIN) {
+                    } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                         if (ShouldRetry(flags, timeout, elapsed)) {
                             repeat = true;
                             break;
@@ -261,7 +258,7 @@ class Socket final : public fair::mq::Socket
                 if (nbytes >= 0) {
                     msgVec.push_back(move(part));
                     totalSize += nbytes;
-                } else if (zmq_errno() == EAGAIN) {
+                } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                     if (ShouldRetry(flags, timeout, elapsed)) {
                         repeat = true;
                         break;

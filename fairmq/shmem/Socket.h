@@ -148,9 +148,6 @@ class Socket final : public fair::mq::Socket
         if (zmq_errno() == ETERM) {
             LOG(debug) << "Terminating socket " << fId;
             return -1;
-        } else if (zmq_errno() == EINTR) {
-            LOG(debug) << "Transfer interrupted by system call";
-            return -1;
         } else {
             LOG(error) << "Failed transfer on socket " << fId << ", reason: " << zmq_strerror(errno);
             return -1;
@@ -177,7 +174,7 @@ class Socket final : public fair::mq::Socket
                 size_t size = msg->GetSize();
                 fBytesTx += size;
                 return size;
-            } else if (zmq_errno() == EAGAIN) {
+            } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
@@ -220,7 +217,7 @@ class Socket final : public fair::mq::Socket
                 fBytesRx += size;
                 ++fMessagesRx;
                 return size;
-            } else if (zmq_errno() == EAGAIN) {
+            } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
@@ -269,7 +266,7 @@ class Socket final : public fair::mq::Socket
                 fBytesTx += totalSize;
 
                 return totalSize;
-            } else if (zmq_errno() == EAGAIN) {
+            } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
@@ -323,7 +320,7 @@ class Socket final : public fair::mq::Socket
                 fBytesRx += totalSize;
 
                 return totalSize;
-            } else if (zmq_errno() == EAGAIN) {
+            } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
