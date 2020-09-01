@@ -27,6 +27,7 @@
 #include <ctime>
 #include <time.h>
 #include <iomanip>
+#include <sstream>
 
 #include <termios.h>
 #include <poll.h>
@@ -189,8 +190,6 @@ void Monitor::Interactive()
 
     cout << endl;
     PrintHelp();
-    cout << endl;
-    PrintHeader();
 
     while (!fTerminating) {
         if (poll(cinfd, 1, fIntervalInMS)) {
@@ -232,8 +231,6 @@ void Monitor::Interactive()
             if (fTerminating) {
                 break;
             }
-
-            PrintHeader();
         }
 
         if (fTerminating) {
@@ -251,34 +248,10 @@ void Monitor::Interactive()
 void Monitor::CheckSegment()
 {
     using namespace boost::interprocess;
-    char c = '#';
-
-    if (fInteractive) {
-        static uint64_t counter = 0;
-        int mod = counter++ % 5;
-        switch (mod) {
-            case 0:
-                c = '-';
-                break;
-            case 1:
-                c = '\\';
-                break;
-            case 2:
-                c = '|';
-                break;
-            case 3:
-                c = '-';
-                break;
-            case 4:
-                c = '/';
-                break;
-            default:
-                break;
-        }
-    }
 
     try {
         managed_shared_memory managementSegment(open_only, fManagementSegmentName.c_str());
+        VoidAlloc allocInstance(managementSegment.get_segment_manager());
 
         Uint16SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
         std::unordered_map<uint16_t, boost::variant<RBTreeBestFitSegment, SimpleSeqFitSegment>> segments;
@@ -300,7 +273,7 @@ void Monitor::CheckSegment()
 
         unsigned int numDevices = 0;
 #ifdef FAIRMQ_DEBUG_MODE
-        unsigned int numMessages = 0;
+        Uint16MsgCounterHashMap* msgCounters = nullptr;
 #endif
 
         if (fInteractive || fViewOnly) {
@@ -309,10 +282,7 @@ void Monitor::CheckSegment()
                 numDevices = dc->fCount;
             }
 #ifdef FAIRMQ_DEBUG_MODE
-            MsgCounter* mc = managementSegment.find<MsgCounter>(unique_instance).first;
-            if (mc) {
-                numMessages = mc->fCount;
-            }
+            msgCounters = managementSegment.find_or_construct<Uint16MsgCounterHashMap>(unique_instance)(allocInstance);
 #endif
         }
 
@@ -329,54 +299,37 @@ void Monitor::CheckSegment()
             }
         }
 
-        if (fInteractive) {
-            cout << "| "
-                 << setw(18) << fSegmentName                                               << " | "
-                 << setw(10) << boost::apply_visitor(SegmentSize{}, segments.at(0))        << " | "
-                 << setw(10) << boost::apply_visitor(SegmentFreeMemory{}, segments.at(0))  << " | "
-                 << setw(8)  << numDevices                                                 << " | "
+        if (fInteractive || fViewOnly) {
+            stringstream ss;
+            size_t mfree = managementSegment.get_free_memory();
+            size_t mtotal = managementSegment.get_size();
+            size_t mused = mtotal - mfree;
+
+            ss << "shm id: " << fShmId
+               << ", devices: " << numDevices << ", segments:\n";
+            for (const auto& s : segments) {
+                size_t free = boost::apply_visitor(SegmentFreeMemory{}, s.second);
+                size_t total = boost::apply_visitor(SegmentSize{}, s.second);
+                size_t used = total - free;
+                ss << "   [" << s.first
+                   << "]: total: " << total
 #ifdef FAIRMQ_DEBUG_MODE
-                 << setw(8)  << numMessages                                                << " | "
+                   << ", msgs: " << (*msgCounters)[s.first].fCount
 #else
-                 << setw(8)  << "nodebug"                                                  << " | "
+                   << ", msgs: NODEBUG"
 #endif
-                 << setw(10) << (fViewOnly ? "view only" : to_string(duration))            << " |"
-                 << c << flush;
-        } else if (fViewOnly) {
-            size_t free = boost::apply_visitor(SegmentFreeMemory{}, segments.at(0));
-            size_t total = boost::apply_visitor(SegmentSize{}, segments.at(0));
-            size_t used = total - free;
-            // size_t mfree = managementSegment.get_free_memory();
-            // size_t mtotal = managementSegment.get_size();
-            // size_t mused = mtotal - mfree;
-            LOGV(info, user1) << "[" << fSegmentName
-                              << "] devices: " << numDevices
-                              << ", total: " << total
-#ifdef FAIRMQ_DEBUG_MODE
-                              << ", msgs: " << numMessages
-#else
-                              << ", msgs: NODEBUG"
-#endif
-                              << ", free: " << free
-                              << ", used: " << used;
-                            //   << "\n                  "
-                            //   << "[" << fManagementSegmentName
-                            //   << "] total: " << mtotal
-                            //   << ", free: " << mfree
-                            //   << ", used: " << mused;
+                   << ", free: " << free
+                   << ", used: " << used
+                   << "\n";
+            }
+            ss << "   [m]: "
+               << "total: " << mtotal
+               << ", free: " << mfree
+               << ", used: " << mused;
+            LOGV(info, user1) << ss.str();
         }
     } catch (bie&) {
         fHeartbeatTriggered = false;
-        if (fInteractive) {
-            cout << "| "
-                 << setw(18) << "-" << " | "
-                 << setw(10) << "-" << " | "
-                 << setw(10) << "-" << " | "
-                 << setw(8)  << "-" << " | "
-                 << setw(8)  << "-" << " | "
-                 << setw(10) << "-" << " |"
-                 << c << flush;
-        }
 
         auto now = chrono::high_resolution_clock::now();
         unsigned int duration = chrono::duration_cast<chrono::milliseconds>(now - fLastHeartbeat).count();
@@ -408,24 +361,32 @@ void Monitor::PrintDebugInfo(const ShmId& shmId __attribute__((unused)))
         boost::interprocess::named_mutex mtx(boost::interprocess::open_only, string("fmq_" + shmId.shmId + "_mtx").c_str());
         boost::interprocess::scoped_lock<bipc::named_mutex> lock(mtx);
 
-        SizetMsgDebugMap* debug = managementSegment.find<SizetMsgDebugMap>(bipc::unique_instance).first;
+        Uint16MsgDebugMapHashMap* debug = managementSegment.find<Uint16MsgDebugMapHashMap>(bipc::unique_instance).first;
 
-        cout << endl << "found " << debug->size() << " message(s):" << endl;
+        size_t numMessages = 0;
 
         for (const auto& e : *debug) {
-            using time_point = chrono::system_clock::time_point;
-            time_point tmpt{chrono::duration_cast<time_point::duration>(chrono::nanoseconds(e.second.fCreationTime))};
-            time_t t = chrono::system_clock::to_time_t(tmpt);
-            uint64_t ms = e.second.fCreationTime % 1000000;
-            auto tm = localtime(&t);
-            cout << "offset: " << setw(12) << setfill(' ') << e.first
-                 << ", size: " << setw(10) << setfill(' ') << e.second.fSize
-                 << ", creator PID: " << e.second.fPid << setfill('0')
-                 << ", at: " << setw(2) << tm->tm_hour << ":" << setw(2) << tm->tm_min << ":" << setw(2) << tm->tm_sec << "." << setw(6) << ms << endl;
+            numMessages += e.second.size();
+        }
+        cout << endl << "found " << numMessages << " messages." << endl;
+
+        for (const auto& s : *debug) {
+            for (const auto& e : s.second) {
+                using time_point = chrono::system_clock::time_point;
+                time_point tmpt{chrono::duration_cast<time_point::duration>(chrono::nanoseconds(e.second.fCreationTime))};
+                time_t t = chrono::system_clock::to_time_t(tmpt);
+                uint64_t ms = e.second.fCreationTime % 1000000;
+                auto tm = localtime(&t);
+                cout << "segment: " << setw(3) << setfill(' ') << s.first
+                     << ", offset: " << setw(12) << setfill(' ') << e.first
+                     << ", size: " << setw(10) << setfill(' ') << e.second.fSize
+                     << ", creator PID: " << e.second.fPid << setfill('0')
+                     << ", at: " << setw(2) << tm->tm_hour << ":" << setw(2) << tm->tm_min << ":" << setw(2) << tm->tm_sec << "." << setw(6) << ms << endl;
+            }
         }
         cout << setfill(' ');
     } catch (bie&) {
-        cout << "no segment found" << endl;
+        cout << "no segments found" << endl;
     }
 #else
     cout << "FairMQ was not compiled in debug mode (FAIRMQ_DEBUG_MODE)" << endl;
@@ -438,9 +399,9 @@ void Monitor::PrintDebugInfo(const SessionId& sessionId)
     PrintDebugInfo(shmId);
 }
 
-vector<BufferDebugInfo> Monitor::GetDebugInfo(const ShmId& shmId __attribute__((unused)))
+unordered_map<uint16_t, std::vector<BufferDebugInfo>> Monitor::GetDebugInfo(const ShmId& shmId __attribute__((unused)))
 {
-    vector<BufferDebugInfo> result;
+    unordered_map<uint16_t, std::vector<BufferDebugInfo>> result;
 
 #ifdef FAIRMQ_DEBUG_MODE
     string managementSegmentName("fmq_" + shmId.shmId + "_mng");
@@ -449,15 +410,18 @@ vector<BufferDebugInfo> Monitor::GetDebugInfo(const ShmId& shmId __attribute__((
         boost::interprocess::named_mutex mtx(boost::interprocess::open_only, string("fmq_" + shmId.shmId + "_mtx").c_str());
         boost::interprocess::scoped_lock<bipc::named_mutex> lock(mtx);
 
-        SizetMsgDebugMap* debug = managementSegment.find<SizetMsgDebugMap>(bipc::unique_instance).first;
+        Uint16MsgDebugMapHashMap* debug = managementSegment.find<Uint16MsgDebugMapHashMap>(bipc::unique_instance).first;
 
         result.reserve(debug->size());
 
-        for (const auto& e : *debug) {
-            result.emplace_back(e.first, e.second.fPid, e.second.fSize, e.second.fCreationTime);
+        for (const auto& s : *debug) {
+            result[s.first].reserve(s.second.size());
+            for (const auto& e : s.second) {
+                result[s.first][e.first] = BufferDebugInfo(e.first, e.second.fPid, e.second.fSize, e.second.fCreationTime);
+            }
         }
     } catch (bie&) {
-        cout << "no segment found" << endl;
+        cout << "no segments found" << endl;
     }
 #else
     cout << "FairMQ was not compiled in debug mode (FAIRMQ_DEBUG_MODE)" << endl;
@@ -465,22 +429,10 @@ vector<BufferDebugInfo> Monitor::GetDebugInfo(const ShmId& shmId __attribute__((
 
     return result;
 }
-vector<BufferDebugInfo> Monitor::GetDebugInfo(const SessionId& sessionId)
+unordered_map<uint16_t, std::vector<BufferDebugInfo>> Monitor::GetDebugInfo(const SessionId& sessionId)
 {
     ShmId shmId{buildShmIdFromSessionIdAndUserId(sessionId.sessionId)};
     return GetDebugInfo(shmId);
-}
-
-void Monitor::PrintHeader()
-{
-    cout << "| "
-         << setw(18) << "name"    << " | "
-         << setw(10) << "size"    << " | "
-         << setw(10) << "free"    << " | "
-         << setw(8)  << "devices" << " | "
-         << setw(8)  << "msgs"    << " | "
-         << setw(10) << "last hb" << " |"
-         << endl;
 }
 
 void Monitor::PrintHelp()

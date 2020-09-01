@@ -83,8 +83,8 @@ class Monitor
 
     static void PrintDebugInfo(const ShmId& shmId);
     static void PrintDebugInfo(const SessionId& shmId);
-    static std::vector<BufferDebugInfo> GetDebugInfo(const ShmId& shmId);
-    static std::vector<BufferDebugInfo> GetDebugInfo(const SessionId& shmId);
+    static std::unordered_map<uint16_t, std::vector<BufferDebugInfo>> GetDebugInfo(const ShmId& shmId);
+    static std::unordered_map<uint16_t, std::vector<BufferDebugInfo>> GetDebugInfo(const SessionId& shmId);
 
     static bool RemoveObject(const std::string& name);
     static bool RemoveFileMapping(const std::string& name);
@@ -95,7 +95,6 @@ class Monitor
     struct DaemonPresent : std::runtime_error { using std::runtime_error::runtime_error; };
 
   private:
-    void PrintHeader();
     void PrintHelp();
     void MonitorHeartbeats();
     void CheckSegment();

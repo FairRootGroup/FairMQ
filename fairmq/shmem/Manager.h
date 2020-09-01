@@ -60,7 +60,7 @@ class Manager
   public:
     Manager(std::string shmId, std::string deviceId, size_t size, const ProgOptions* config)
         : fShmId(std::move(shmId))
-        , fSegmentId(0)
+        , fSegmentId(config ? config->GetProperty<uint16_t>("shm-segment-id", 0) : 0)
         , fDeviceId(std::move(deviceId))
         , fSegments()
         , fManagementSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mng").c_str(), 6553600)
@@ -75,11 +75,11 @@ class Manager
         , fMsgCounter(0)
 #ifdef FAIRMQ_DEBUG_MODE
         , fMsgDebug(nullptr)
-        , fShmMsgCounter(nullptr)
+        , fShmMsgCounters(nullptr)
 #endif
         , fHeartbeatThread()
         , fSendHeartbeats(true)
-        , fThrowOnBadAlloc(true)
+        , fThrowOnBadAlloc(config ? config->GetProperty<bool>("shm-throw-bad-alloc", true) : true)
     {
         using namespace boost::interprocess;
 
@@ -89,18 +89,11 @@ class Manager
         std::string allocationAlgorithm("rbtree_best_fit");
         if (config) {
             mlockSegment = config->GetProperty<bool>("shm-mlock-segment", mlockSegment);
-            fSegmentId = config->GetProperty<uint16_t>("shm-segment-id", fSegmentId);
             zeroSegment = config->GetProperty<bool>("shm-zero-segment", zeroSegment);
             autolaunchMonitor = config->GetProperty<bool>("shm-monitor", autolaunchMonitor);
-            fThrowOnBadAlloc = config->GetProperty<bool>("shm-throw-bad-alloc", fThrowOnBadAlloc);
             allocationAlgorithm = config->GetProperty<std::string>("shm-allocation", allocationAlgorithm);
         } else {
             LOG(debug) << "ProgOptions not available! Using defaults.";
-        }
-
-        if (allocationAlgorithm != "rbtree_best_fit" && allocationAlgorithm != "simple_seq_fit") {
-            LOG(error) << "Provided shared memory allocation algorithm '" << allocationAlgorithm << "' is not supported. Supported are 'rbtree_best_fit'/'simple_seq_fit'";
-            throw SharedMemoryError(tools::ToString("Provided shared memory allocation algorithm '", allocationAlgorithm, "' is not supported. Supported are 'rbtree_best_fit'/'simple_seq_fit'"));
         }
 
         if (autolaunchMonitor) {
@@ -170,10 +163,6 @@ class Manager
 
             fShmRegions = fManagementSegment.find_or_construct<Uint16RegionInfoHashMap>(unique_instance)(fShmVoidAlloc);
 
-#ifdef FAIRMQ_DEBUG_MODE
-            fMsgDebug = fManagementSegment.find_or_construct<SizetMsgDebugMap>(unique_instance)(fShmVoidAlloc);
-#endif
-
             fDeviceCounter = fManagementSegment.find<DeviceCounter>(unique_instance).first;
 
             if (fDeviceCounter) {
@@ -187,15 +176,8 @@ class Manager
             }
 
 #ifdef FAIRMQ_DEBUG_MODE
-            fShmMsgCounter = fManagementSegment.find<MsgCounter>(unique_instance).first;
-
-            if (fShmMsgCounter) {
-                LOG(debug) << "message counter found, with value of " << fShmMsgCounter->fCount << ".";
-            } else {
-                LOG(debug) << "no message counter found, creating one and initializing with 0";
-                fShmMsgCounter = fManagementSegment.construct<MsgCounter>(unique_instance)(0);
-                LOG(debug) << "initialized message counter with: " << fShmMsgCounter->fCount;
-            }
+            fMsgDebug = fManagementSegment.find_or_construct<Uint16MsgDebugMapHashMap>(unique_instance)(fShmVoidAlloc);
+            fShmMsgCounters = fManagementSegment.find_or_construct<Uint16MsgCounterHashMap>(unique_instance)(fShmVoidAlloc);
 #endif
         }
 
@@ -457,18 +439,8 @@ class Manager
     void DecrementMsgCounter() { fMsgCounter.fetch_sub(1, std::memory_order_relaxed); }
 
 #ifdef FAIRMQ_DEBUG_MODE
-    void IncrementShmMsgCounter() { ++(fShmMsgCounter->fCount); }
-    void DecrementShmMsgCounter() { --(fShmMsgCounter->fCount); }
-
-    void AddMsgDebug(pid_t pid, size_t size, size_t handle, uint64_t time)
-    {
-        fMsgDebug->emplace(handle, MsgDebug(pid, size, time));
-    }
-
-    void RemoveMsgDebug(size_t handle)
-    {
-        fMsgDebug->erase(handle);
-    }
+    void IncrementShmMsgCounter(uint16_t segmentId) { ++((*fShmMsgCounters)[segmentId].fCount); }
+    void DecrementShmMsgCounter(uint16_t segmentId) { --((*fShmMsgCounters)[segmentId].fCount); }
 #endif
 
     boost::interprocess::named_mutex& GetMtx() { return fShmMtx; }
@@ -562,8 +534,14 @@ class Manager
             }
 #ifdef FAIRMQ_DEBUG_MODE
             boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
-            IncrementShmMsgCounter();
-            AddMsgDebug(getpid(), size, static_cast<size_t>(GetHandleFromAddress(ptr)), std::chrono::system_clock::now().time_since_epoch().count());
+            IncrementShmMsgCounter(fSegmentId);
+            if (fMsgDebug->count(fSegmentId) == 0) {
+                (*fMsgDebug).emplace(fSegmentId, fShmVoidAlloc);
+            }
+            (*fMsgDebug).at(fSegmentId).emplace(
+                static_cast<size_t>(GetHandleFromAddress(ptr, fSegmentId)),
+                MsgDebug(getpid(), size, std::chrono::system_clock::now().time_since_epoch().count())
+            );
 #endif
         }
 
@@ -575,8 +553,12 @@ class Manager
         boost::apply_visitor(SegmentDeallocate{GetAddressFromHandle(handle, segmentId)}, fSegments.at(segmentId));
 #ifdef FAIRMQ_DEBUG_MODE
         boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
-        DecrementShmMsgCounter();
-        RemoveMsgDebug(handle);
+        DecrementShmMsgCounter(segmentId);
+        try {
+            (*fMsgDebug).at(segmentId).erase(handle);
+        } catch(const std::out_of_range& oor) {
+            LOG(debug) << "could not locate debug container for " << segmentId << ": " << oor.what();
+        }
 #endif
     }
 
@@ -646,8 +628,8 @@ class Manager
     std::atomic<bool> fInterrupted;
     std::atomic<int32_t> fMsgCounter; // TODO: find a better lifetime solution instead of the counter
 #ifdef FAIRMQ_DEBUG_MODE
-    SizetMsgDebugMap* fMsgDebug;
-    MsgCounter* fShmMsgCounter;
+    Uint16MsgDebugMapHashMap* fMsgDebug;
+    Uint16MsgCounterHashMap* fShmMsgCounters;
 #endif
 
     std::thread fHeartbeatThread;

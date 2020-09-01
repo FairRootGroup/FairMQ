@@ -95,8 +95,8 @@ struct SegmentInfo
 };
 
 using Uint16SegmentInfoPairAlloc = boost::interprocess::allocator<std::pair<const uint16_t, SegmentInfo>, SegmentManager>;
-using Uint16SegmentInfoMap = boost::interprocess::map<uint16_t, SegmentInfo, std::less<uint16_t>, Uint16SegmentInfoPairAlloc>;
 using Uint16SegmentInfoHashMap = boost::unordered_map<uint16_t, SegmentInfo, boost::hash<uint16_t>, std::equal_to<uint16_t>, Uint16SegmentInfoPairAlloc>;
+// using Uint16SegmentInfoMap = boost::interprocess::map<uint16_t, SegmentInfo, std::less<uint16_t>, Uint16SegmentInfoPairAlloc>;
 
 struct DeviceCounter
 {
@@ -106,17 +106,6 @@ struct DeviceCounter
 
     std::atomic<unsigned int> fCount;
 };
-
-#ifdef FAIRMQ_DEBUG_MODE
-struct MsgCounter
-{
-    MsgCounter(unsigned int c)
-        : fCount(c)
-    {}
-
-    std::atomic<unsigned int> fCount;
-};
-#endif
 
 struct RegionCounter
 {
@@ -137,8 +126,30 @@ struct MetaHeader
 };
 
 #ifdef FAIRMQ_DEBUG_MODE
+struct MsgCounter
+{
+    MsgCounter()
+        : fCount(0)
+    {}
+
+    MsgCounter(unsigned int c)
+        : fCount(c)
+    {}
+
+    std::atomic<unsigned int> fCount;
+};
+
+using Uint16MsgCounterPairAlloc = boost::interprocess::allocator<std::pair<const uint16_t, MsgCounter>, SegmentManager>;
+using Uint16MsgCounterHashMap = boost::unordered_map<uint16_t, MsgCounter, boost::hash<uint16_t>, std::equal_to<uint16_t>, Uint16MsgCounterPairAlloc>;
+
 struct MsgDebug
 {
+    MsgDebug()
+        : fPid(0)
+        , fSize(0)
+        , fCreationTime(0)
+    {}
+
     MsgDebug(pid_t pid, size_t size, const uint64_t creationTime)
         : fPid(pid)
         , fSize(size)
@@ -151,8 +162,10 @@ struct MsgDebug
 };
 
 using SizetMsgDebugPairAlloc = boost::interprocess::allocator<std::pair<const size_t, MsgDebug>, SegmentManager>;
-using SizetMsgDebugHashMap = boost::unordered_map<size_t, MsgDebug, boost::hash<size_t>, std::equal_to<size_t>, SizetMsgDebugPairAlloc>;
+// using SizetMsgDebugHashMap = boost::unordered_map<size_t, MsgDebug, boost::hash<size_t>, std::equal_to<size_t>, SizetMsgDebugPairAlloc>;
 using SizetMsgDebugMap = boost::interprocess::map<size_t, MsgDebug, std::less<size_t>, SizetMsgDebugPairAlloc>;
+using Uint16MsgDebugMapPairAlloc = boost::interprocess::allocator<std::pair<const uint16_t, SizetMsgDebugMap>, SegmentManager>;
+using Uint16MsgDebugMapHashMap = boost::unordered_map<uint16_t, SizetMsgDebugMap, boost::hash<uint16_t>, std::equal_to<uint16_t>, Uint16MsgDebugMapPairAlloc>;
 #endif
 
 struct RegionBlock

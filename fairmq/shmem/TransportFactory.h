@@ -58,12 +58,19 @@ class TransportFactory final : public fair::mq::TransportFactory
         int numIoThreads = 1;
         std::string sessionName = "default";
         size_t segmentSize = 2ULL << 30;
+        std::string allocationAlgorithm("rbtree_best_fit");
         if (config) {
             numIoThreads = config->GetProperty<int>("io-threads", numIoThreads);
             sessionName = config->GetProperty<std::string>("session", sessionName);
             segmentSize = config->GetProperty<size_t>("shm-segment-size", segmentSize);
+            allocationAlgorithm = config->GetProperty<std::string>("shm-allocation", allocationAlgorithm);
         } else {
             LOG(debug) << "ProgOptions not available! Using defaults.";
+        }
+
+        if (allocationAlgorithm != "rbtree_best_fit" && allocationAlgorithm != "simple_seq_fit") {
+            LOG(error) << "Provided shared memory allocation algorithm '" << allocationAlgorithm << "' is not supported. Supported are 'rbtree_best_fit'/'simple_seq_fit'";
+            throw SharedMemoryError(tools::ToString("Provided shared memory allocation algorithm '", allocationAlgorithm, "' is not supported. Supported are 'rbtree_best_fit'/'simple_seq_fit'"));
         }
 
         fShmId = buildShmIdFromSessionIdAndUserId(sessionName);
