@@ -12,16 +12,19 @@
  * Created on May 14, 2015, 5:01 PM
  */
 
-#include <fairmq/PropertyOutput.h>
 #include "JSONParser.h"
-#include "FairMQLogger.h"
-#include <fairmq/Tools.h>
+#include "FairMQChannel.h"
+#include <fairmq/PropertyOutput.h>
+#include <fairmq/tools/CppSTL.h>
+#include <fairmq/tools/Strings.h>
+
+#include <fairlogger/Logger.h>
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/any.hpp>
 
-#include <ios>
+#include <iomanip>
 
 using namespace std;
 using namespace fair::mq;

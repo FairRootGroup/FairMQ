@@ -8,9 +8,13 @@
 
 #include "DeviceRunner.h"
 
-#include <exception>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
+#include <fairmq/tools/Version.h>
 #include <fairmq/Version.h>
+
+#include <fairlogger/Logger.h>
+
+#include <exception>
 
 using namespace std;
 using namespace fair::mq;

@@ -16,6 +16,7 @@
 #include <functional>
 #include <map>
 #include <unordered_map>
+#include <stdexcept>
 #include <string>
 #include <typeindex>
 #include <typeinfo>

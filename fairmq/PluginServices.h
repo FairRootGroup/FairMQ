@@ -17,13 +17,14 @@
 #include <boost/optional.hpp>
 #include <boost/optional/optional_io.hpp>
 
+#include <condition_variable>
 #include <functional>
+#include <map>
+#include <mutex>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
-#include <mutex>
-#include <map>
-#include <condition_variable>
-#include <stdexcept>
+#include <vector>
 
 namespace fair
 {

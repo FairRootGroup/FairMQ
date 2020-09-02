@@ -7,7 +7,8 @@
  ********************************************************************************/
 
 #include <fairmq/StateMachine.h>
-#include <fairmq/Tools.h>
+
+#include <fairlogger/Logger.h>
 
 // Increase maximum number of boost::msm states (default is 10)
 // This #define has to be before any msm header includes

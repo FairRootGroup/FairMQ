@@ -14,7 +14,7 @@
 #ifndef FAIR_MQ_SUBOPTPARSER_H
 #define FAIR_MQ_SUBOPTPARSER_H
 
-#include <fairmq/JSONParser.h>
+#include <fairmq/Properties.h>
 
 #include <vector>
 #include <string>

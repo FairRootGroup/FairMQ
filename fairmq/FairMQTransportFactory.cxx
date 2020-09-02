@@ -15,6 +15,8 @@
 #include <FairMQLogger.h>
 #include <fairmq/Tools.h>
 
+#include <fairlogger/Logger.h>
+
 #include <memory>
 #include <string>
 

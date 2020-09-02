@@ -13,7 +13,6 @@
 #include <fairmq/PluginManager.h>
 #include <fairmq/ProgOptions.h>
 #include <FairMQDevice.h>
-#include <FairMQLogger.h>
 
 #include <functional>
 #include <memory>

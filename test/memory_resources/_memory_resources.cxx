@@ -9,6 +9,7 @@
 #include <cstring>
 #include <fairmq/FairMQTransportFactory.h>
 #include <fairmq/MemoryResourceTools.h>
+#include <boost/container/pmr/polymorphic_allocator.hpp>
 #include <gtest/gtest.h>
 #include <vector>
 
@@ -79,8 +80,7 @@ TEST(MemoryResources, allocator)
     testData::ndeallocations = 0;
 
     {
-        std::vector<testData, polymorphic_allocator<testData>> v(
-            polymorphic_allocator<testData>{allocZMQ});
+        std::vector<testData, polymorphic_allocator<testData>> v(polymorphic_allocator<testData>{allocZMQ});
         v.reserve(3);
         EXPECT_TRUE(v.capacity() == 3);
         EXPECT_TRUE(allocZMQ->getNumberOfMessages() == 1);
@@ -105,8 +105,7 @@ TEST(MemoryResources, getMessage)
 
     // test message creation on the same channel it was allocated with
     {
-        std::vector<testData, polymorphic_allocator<testData>> v(
-            polymorphic_allocator<testData>{allocZMQ});
+        std::vector<testData, polymorphic_allocator<testData>> v(polymorphic_allocator<testData>{allocZMQ});
         v.emplace_back(1);
         v.emplace_back(2);
         v.emplace_back(3);
@@ -121,8 +120,7 @@ TEST(MemoryResources, getMessage)
 
     // test message creation on a different channel than it was allocated with
     {
-        std::vector<testData, polymorphic_allocator<testData>> v(
-            polymorphic_allocator<testData>{allocZMQ});
+        std::vector<testData, polymorphic_allocator<testData>> v(polymorphic_allocator<testData>{allocZMQ});
         v.emplace_back(4);
         v.emplace_back(5);
         v.emplace_back(6);
