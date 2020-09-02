@@ -11,8 +11,6 @@
 
 #include <fairmq/States.h>
 
-#include <fairlogger/Logger.h>
-
 #include <string>
 #include <memory>
 #include <functional>

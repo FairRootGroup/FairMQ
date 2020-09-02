@@ -7,11 +7,15 @@
  ********************************************************************************/
 
 #include "FairMQChannel.h"
+
 #include <fairmq/tools/Strings.h>
 #include <fairmq/Properties.h>
 
+#include <fairlogger/Logger.h>
+
 #include <boost/algorithm/string.hpp> // join/split
 
+#include <cstddef> // size_t
 #include <regex>
 #include <set>
 #include <random>

@@ -9,7 +9,6 @@
 #ifndef FAIRMQTRANSPORTFACTORY_H_
 #define FAIRMQTRANSPORTFACTORY_H_
 
-#include <FairMQLogger.h>
 #include <FairMQMessage.h>
 #include <FairMQPoller.h>
 #include <FairMQSocket.h>

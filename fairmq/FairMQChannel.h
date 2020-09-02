@@ -13,7 +13,6 @@
 #include <FairMQUnmanagedRegion.h>
 #include <FairMQSocket.h>
 #include <fairmq/Transports.h>
-#include <FairMQLogger.h>
 #include <FairMQParts.h>
 #include <fairmq/Properties.h>
 #include <FairMQMessage.h>
@@ -24,7 +23,6 @@
 #include <mutex>
 #include <stdexcept>
 #include <utility> // std::move
-#include <cstddef> // size_t
 #include <cstdint> // int64_t
 
 class FairMQChannel

@@ -12,9 +12,12 @@
 /// @brief  Parser implementation for key-value subopt format
 
 #include <fairmq/SuboptParser.h>
+#include <fairmq/JSONParser.h>
+
+#include <fairlogger/Logger.h>
 
 #include <boost/property_tree/ptree.hpp>
-#include <cstring>
+
 #include <utility> // make_pair
 
 using boost::property_tree::ptree;

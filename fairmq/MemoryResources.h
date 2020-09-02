@@ -18,11 +18,12 @@
 #include <fairmq/FairMQMessage.h>
 class FairMQTransportFactory;
 
+#include <boost/container/container_fwd.hpp>
 #include <boost/container/flat_map.hpp>
 #include <boost/container/pmr/memory_resource.hpp>
-#include <boost/container/pmr/monotonic_buffer_resource.hpp>
-#include <boost/container/pmr/polymorphic_allocator.hpp>
+
 #include <cstring>
+#include <stdexcept>
 #include <utility>
 
 namespace fair {

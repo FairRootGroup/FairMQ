@@ -15,15 +15,11 @@
 #ifndef FAIR_MQ_JSONPARSER_H
 #define FAIR_MQ_JSONPARSER_H
 
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <exception>
-
+#include <fairmq/Properties.h>
 #include <boost/property_tree/ptree_fwd.hpp>
 
-#include "FairMQChannel.h"
-#include <fairmq/Properties.h>
+#include <stdexcept>
+#include <string>
 
 namespace fair
 {
