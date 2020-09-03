@@ -18,7 +18,7 @@ target_link_libraries(fairmq-ex-n-m-receiver PRIVATE FairMQ)
 add_custom_target(ExampleNM DEPENDS fairmq-ex-n-m-synchronizer fairmq-ex-n-m-sender fairmq-ex-n-m-receiver)
 
 list(JOIN Boost_LIBRARY_DIRS ":" LIB_DIR)
-set(BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_BINARY_DIR}/fairmq/plugins/DDS)
+set(BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_BINARY_DIR}/fairmq/sdk)
 set(DATA_DIR ${CMAKE_CURRENT_BINARY_DIR})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-n-m-topology.xml                ${CMAKE_CURRENT_BINARY_DIR}/ex-n-m-topology.xml @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-n-m-pair-topology.xml           ${CMAKE_CURRENT_BINARY_DIR}/ex-n-m-pair-topology.xml @ONLY)

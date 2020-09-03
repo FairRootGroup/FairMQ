@@ -31,28 +31,28 @@ include(CTest)
 
 
 # Build options ################################################################
-fairmq_build_option(BUILD_FAIRMQ            "Build FairMQ library and devices."
-                                             DEFAULT ON)
-fairmq_build_option(BUILD_TESTING           "Build tests."
-                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
-fairmq_build_option(BUILD_OFI_TRANSPORT     "Build experimental OFI transport."
-                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
-fairmq_build_option(BUILD_SDK_COMMANDS      "Build the FairMQ SDK commands."
-                                             DEFAULT OFF)
-fairmq_build_option(BUILD_DDS_PLUGIN        "Build DDS plugin."
-                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ;BUILD_SDK_COMMANDS")
-fairmq_build_option(BUILD_PMIX_PLUGIN       "Build PMIx plugin."
-                                             DEFAULT OFF REQUIRES "BUILD_FAIRMQ;BUILD_SDK_COMMANDS")
-fairmq_build_option(BUILD_EXAMPLES          "Build FairMQ examples."
-                                             DEFAULT ON  REQUIRES "BUILD_FAIRMQ")
-fairmq_build_option(BUILD_SDK               "Build the FairMQ controller SDK."
-                                             DEFAULT OFF REQUIRES "BUILD_DDS_PLUGIN;BUILD_SDK_COMMANDS")
-fairmq_build_option(BUILD_DOCS              "Build FairMQ documentation."
-                                             DEFAULT OFF)
-fairmq_build_option(FAST_BUILD              "Fast production build. Not recommended for development."
-                                             DEFAULT OFF)
-fairmq_build_option(USE_EXTERNAL_GTEST      "Do not use bundled GTest. Not recommended."
-                                             DEFAULT OFF)
+fairmq_build_option(BUILD_FAIRMQ        "Build FairMQ library and devices."
+                                         DEFAULT ON)
+fairmq_build_option(BUILD_TESTING       "Build tests."
+                                         DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
+fairmq_build_option(BUILD_OFI_TRANSPORT "Build experimental OFI transport."
+                                         DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
+fairmq_build_option(BUILD_SDK_COMMANDS  "Build the FairMQ SDK commands."
+                                         DEFAULT OFF)
+fairmq_build_option(BUILD_DDS_PLUGIN    "Build DDS plugin."
+                                         DEFAULT OFF REQUIRES "BUILD_FAIRMQ;BUILD_SDK_COMMANDS")
+fairmq_build_option(BUILD_PMIX_PLUGIN   "Build PMIx plugin."
+                                         DEFAULT OFF REQUIRES "BUILD_FAIRMQ;BUILD_SDK_COMMANDS")
+fairmq_build_option(BUILD_EXAMPLES      "Build FairMQ examples."
+                                         DEFAULT ON  REQUIRES "BUILD_FAIRMQ")
+fairmq_build_option(BUILD_SDK           "Build the FairMQ controller SDK."
+                                         DEFAULT OFF REQUIRES "BUILD_DDS_PLUGIN;BUILD_SDK_COMMANDS")
+fairmq_build_option(BUILD_DOCS          "Build FairMQ documentation."
+                                         DEFAULT OFF)
+fairmq_build_option(FAST_BUILD          "Fast production build. Not recommended for development."
+                                         DEFAULT OFF)
+fairmq_build_option(USE_EXTERNAL_GTEST  "Do not use bundled GTest. Not recommended."
+                                         DEFAULT OFF)
 ################################################################################
 
 

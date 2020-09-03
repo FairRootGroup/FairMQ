@@ -21,7 +21,7 @@ target_link_libraries(fairmq-ex-qc-sink PRIVATE FairMQ)
 add_custom_target(ExampleQC DEPENDS fairmq-ex-qc-sampler fairmq-ex-qc-dispatcher fairmq-ex-qc-task fairmq-ex-qc-sink)
 
 list(JOIN Boost_LIBRARY_DIRS ":" LIB_DIR)
-set(BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_BINARY_DIR}/fairmq/plugins/DDS)
+set(BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_BINARY_DIR}/fairmq/sdk)
 set(DATA_DIR ${CMAKE_CURRENT_BINARY_DIR})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-qc-topology.xml ${CMAKE_CURRENT_BINARY_DIR}/ex-qc-topology.xml @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-ex-qc-env.sh ${CMAKE_CURRENT_BINARY_DIR}/fairmq-ex-qc-env.sh @ONLY)
