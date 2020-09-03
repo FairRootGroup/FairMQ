@@ -84,10 +84,19 @@ target_link_libraries(fairmq
   Boost::program_options
 )
 
+add_executable(fairmq-dds-command-ui ${CMAKE_CURRENT_SOURCE_DIR}/runDDSCommandUI.cxx)
+target_link_libraries(fairmq-dds-command-ui
+  FairMQ
+  Commands
+  SDK
+  StateMachine
+)
+
 install(
   TARGETS
   SDK
   fairmq
+  fairmq-dds-command-ui
 
   EXPORT ${PROJECT_EXPORT_SET}
   RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}

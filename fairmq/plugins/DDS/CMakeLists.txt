@@ -17,13 +17,7 @@ set_target_properties(${plugin} PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/fairmq
 )
 
-set(exe fairmq-dds-command-ui)
-add_executable(${exe} ${CMAKE_CURRENT_SOURCE_DIR}/runDDSCommandUI.cxx)
-target_link_libraries(${exe} FairMQ Commands SDK StateMachine)
-target_include_directories(${exe} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
-install(TARGETS ${plugin} ${exe}
+install(TARGETS ${plugin}
   EXPORT ${PROJECT_EXPORT_SET}
   LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
 )
