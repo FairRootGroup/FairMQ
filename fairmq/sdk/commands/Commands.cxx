@@ -290,6 +290,7 @@ string Cmds::Serialize(const Format type) const
                 cmdBuilder->add_task_id(_cmd.GetTaskId());
                 cmdBuilder->add_result(GetFBResult(_cmd.GetResult()));
                 cmdBuilder->add_transition(GetFBTransition(_cmd.GetTransition()));
+                cmdBuilder->add_current_state(GetFBState(_cmd.GetCurrentState()));
             }
             break;
             case Type::config: {
@@ -445,7 +446,7 @@ void Cmds::Deserialize(const string& str, const Format type)
                 fCmds.emplace_back(make<CurrentState>(cmdPtr.device_id()->str(), GetMQState(cmdPtr.current_state())));
             break;
             case FBCmd_transition_status:
-                fCmds.emplace_back(make<TransitionStatus>(cmdPtr.device_id()->str(), cmdPtr.task_id(), GetResult(cmdPtr.result()), GetMQTransition(cmdPtr.transition())));
+                fCmds.emplace_back(make<TransitionStatus>(cmdPtr.device_id()->str(), cmdPtr.task_id(), GetResult(cmdPtr.result()), GetMQTransition(cmdPtr.transition()), GetMQState(cmdPtr.current_state())));
             break;
             case FBCmd_config:
                 fCmds.emplace_back(make<Config>(cmdPtr.device_id()->str(), cmdPtr.config_string()->str()));

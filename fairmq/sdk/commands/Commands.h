@@ -50,7 +50,7 @@ enum class Type : int
     subscription_heartbeat,        // args: { interval }
 
     current_state,                 // args: { device_id, current_state }
-    transition_status,             // args: { device_id, task_id, Result, transition }
+    transition_status,             // args: { device_id, task_id, Result, transition, current_state }
     config,                        // args: { device_id, config_string }
     state_change_subscription,     // args: { device_id, task_id, Result }
     state_change_unsubscription,   // args: { device_id, task_id, Result }
@@ -188,12 +188,13 @@ struct CurrentState : Cmd
 
 struct TransitionStatus : Cmd
 {
-    explicit TransitionStatus(const std::string& deviceId, const uint64_t taskId, const Result result, const Transition transition)
+    explicit TransitionStatus(const std::string& deviceId, const uint64_t taskId, const Result result, const Transition transition, State currentState)
         : Cmd(Type::transition_status)
         , fDeviceId(deviceId)
         , fTaskId(taskId)
         , fResult(result)
         , fTransition(transition)
+        , fCurrentState(currentState)
     {}
 
     std::string GetDeviceId() const { return fDeviceId; }
@@ -204,12 +205,15 @@ struct TransitionStatus : Cmd
     void SetResult(const Result result) { fResult = result; }
     Transition GetTransition() const { return fTransition; }
     void SetTransition(const Transition transition) { fTransition = transition; }
+    fair::mq::State GetCurrentState() const { return fCurrentState; }
+    void SetCurrentState(fair::mq::State state) { fCurrentState = state; }
 
   private:
     std::string fDeviceId;
     uint64_t fTaskId;
     Result fResult;
     Transition fTransition;
+    fair::mq::State fCurrentState;
 };
 
 struct Config : Cmd

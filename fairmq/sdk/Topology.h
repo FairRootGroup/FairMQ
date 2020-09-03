@@ -421,13 +421,16 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     auto HandleCmd(cmd::TransitionStatus const& cmd) -> void
     {
         if (cmd.GetResult() != cmd::Result::Ok) {
-            FAIR_LOG(error) << cmd.GetTransition() << " transition failed for " << cmd.GetDeviceId();
             DDSTask::Id taskId(cmd.GetTaskId());
             std::lock_guard<std::mutex> lk(fMtx);
             for (auto& op : fChangeStateOps) {
-                if (!op.second.IsCompleted() && op.second.ContainsTask(taskId) &&
-                    fStateData.at(fStateIndex.at(taskId)).state != op.second.GetTargetState()) {
-                    op.second.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
+                if (!op.second.IsCompleted() && op.second.ContainsTask(taskId)) {
+                    if (fStateData.at(fStateIndex.at(taskId)).state != op.second.GetTargetState()) {
+                        FAIR_LOG(error) << cmd.GetTransition() << " transition failed for " << cmd.GetDeviceId() << ", device is in " << cmd.GetCurrentState() << " state.";
+                        op.second.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
+                    } else {
+                        FAIR_LOG(debug) << cmd.GetTransition() << " transition failed for " << cmd.GetDeviceId() << ", device is already in " << cmd.GetCurrentState() << " state.";
+                    }
                 }
             }
         }
