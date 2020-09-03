@@ -31,7 +31,7 @@ TEST(Format, Construction)
     Cmds setPropertiesCmds(make<SetProperties>(42, props));
     Cmds subscriptionHeartbeatCmds(make<SubscriptionHeartbeat>(60000));
     Cmds currentStateCmds(make<CurrentState>("somedeviceid", State::Running));
-    Cmds transitionStatusCmds(make<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop));
+    Cmds transitionStatusCmds(make<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop, State::Running));
     Cmds configCmds(make<Config>("somedeviceid", "someconfig"));
     Cmds stateChangeSubscriptionCmds(make<StateChangeSubscription>("somedeviceid", 123456, Result::Ok));
     Cmds stateChangeUnsubscriptionCmds(make<StateChangeUnsubscription>("somedeviceid", 123456, Result::Ok));
@@ -63,6 +63,7 @@ TEST(Format, Construction)
     ASSERT_EQ(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetTaskId(), 123456);
     ASSERT_EQ(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetResult(), Result::Ok);
     ASSERT_EQ(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetTransition(), Transition::Stop);
+    ASSERT_EQ(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetCurrentState(), State::Running);
     ASSERT_EQ(configCmds.At(0).GetType(), Type::config);
     ASSERT_EQ(static_cast<Config&>(configCmds.At(0)).GetDeviceId(), "somedeviceid");
     ASSERT_EQ(static_cast<Config&>(configCmds.At(0)).GetConfig(), "someconfig");
@@ -104,7 +105,7 @@ void fillCommands(Cmds& cmds)
     cmds.Add<SetProperties>(42, props);
     cmds.Add<SubscriptionHeartbeat>(60000);
     cmds.Add<CurrentState>("somedeviceid", State::Running);
-    cmds.Add<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop);
+    cmds.Add<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop, State::Running);
     cmds.Add<Config>("somedeviceid", "someconfig");
     cmds.Add<StateChangeSubscription>("somedeviceid", 123456, Result::Ok);
     cmds.Add<StateChangeUnsubscription>("somedeviceid", 123456, Result::Ok);
@@ -167,6 +168,7 @@ void checkCommands(Cmds& cmds)
                 ASSERT_EQ(static_cast<TransitionStatus&>(*cmd).GetTaskId(), 123456);
                 ASSERT_EQ(static_cast<TransitionStatus&>(*cmd).GetResult(), Result::Ok);
                 ASSERT_EQ(static_cast<TransitionStatus&>(*cmd).GetTransition(), Transition::Stop);
+                ASSERT_EQ(static_cast<TransitionStatus&>(*cmd).GetCurrentState(), State::Running);
             break;
             case Type::config:
                 ++count;

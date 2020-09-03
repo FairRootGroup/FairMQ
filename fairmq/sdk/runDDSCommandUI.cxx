@@ -58,12 +58,15 @@ void printControlsHelp()
 
 void handleCommand(const string& command, const string& path, unsigned int timeout, Topology& topo, const string& pKey, const string& pVal)
 {
+    std::pair<std::error_code, fair::mq::sdk::TopologyState> changeStateResult;
+
     if (command == "c") {
         cout << "> checking state of the devices" << endl;
         auto const result = topo.GetCurrentState();
         for (const auto& d : result) {
             cout << d.taskId << " : " << d.state << endl;
         }
+        return;
     } else if (command == "o") {
         cout << "> dumping config of " << (path == "" ? "all" : path) << endl;
         // TODO: extend this regex to return all properties, once command size limitation is removed.
@@ -73,6 +76,7 @@ void handleCommand(const string& command, const string& path, unsigned int timeo
                 cout << d.first << ": " << p.first << " : " << p.second << endl;
             }
         }
+        return;
     } else if (command == "p") {
         if (pKey == "" || pVal == "") {
             cout << "cannot send property with empty key and/or value! given key: '" << pKey << "', value: '" << pVal << "'." << endl;
@@ -83,42 +87,48 @@ void handleCommand(const string& command, const string& path, unsigned int timeo
         topo.SetProperties(props, path);
         // give dds time to complete request
         this_thread::sleep_for(chrono::milliseconds(100));
+        return;
     } else if (command == "i") {
         cout << "> initiating InitDevice transition --> " << (path == "" ? "all" : path) << endl;
-        topo.ChangeState(TopologyTransition::InitDevice, path, std::chrono::milliseconds(timeout));
+        changeStateResult = topo.ChangeState(TopologyTransition::InitDevice, path, std::chrono::milliseconds(timeout));
     } else if (command == "k") {
         cout << "> initiating CompleteInit transition --> " << (path == "" ? "all" : path) << endl;
-        topo.ChangeState(TopologyTransition::CompleteInit, path, std::chrono::milliseconds(timeout));
+        changeStateResult = topo.ChangeState(TopologyTransition::CompleteInit, path, std::chrono::milliseconds(timeout));
     } else if (command == "b") {
         cout << "> initiating Bind transition --> " << (path == "" ? "all" : path) << endl;
-        topo.ChangeState(TopologyTransition::Bind, path, std::chrono::milliseconds(timeout));
+        changeStateResult = topo.ChangeState(TopologyTransition::Bind, path, std::chrono::milliseconds(timeout));
     } else if (command == "x") {
         cout << "> initiating Connect transition --> " << (path == "" ? "all" : path) << endl;
-        topo.ChangeState(TopologyTransition::Connect, path, std::chrono::milliseconds(timeout));
+        changeStateResult = topo.ChangeState(TopologyTransition::Connect, path, std::chrono::milliseconds(timeout));
     } else if (command == "j") {
         cout << "> initiating InitTask transition --> " << (path == "" ? "all" : path) << endl;
-        topo.ChangeState(TopologyTransition::InitTask, path, std::chrono::milliseconds(timeout));
+        changeStateResult = topo.ChangeState(TopologyTransition::InitTask, path, std::chrono::milliseconds(timeout));
     } else if (command == "r") {
         cout << "> initiating Run transition --> " << (path == "" ? "all" : path) << endl;
-        topo.ChangeState(TopologyTransition::Run, path, std::chrono::milliseconds(timeout));
+        changeStateResult = topo.ChangeState(TopologyTransition::Run, path, std::chrono::milliseconds(timeout));
     } else if (command == "s") {
         cout << "> initiating Stop transition --> " << (path == "" ? "all" : path) << endl;
-        topo.ChangeState(TopologyTransition::Stop, path, std::chrono::milliseconds(timeout));
+        changeStateResult = topo.ChangeState(TopologyTransition::Stop, path, std::chrono::milliseconds(timeout));
     } else if (command == "t") {
         cout << "> initiating ResetTask transition --> " << (path == "" ? "all" : path) << endl;
-        topo.ChangeState(TopologyTransition::ResetTask, path, std::chrono::milliseconds(timeout));
+        changeStateResult = topo.ChangeState(TopologyTransition::ResetTask, path, std::chrono::milliseconds(timeout));
     } else if (command == "d") {
         cout << "> initiating ResetDevice transition --> " << (path == "" ? "all" : path) << endl;
-        topo.ChangeState(TopologyTransition::ResetDevice, path, std::chrono::milliseconds(timeout));
+        changeStateResult = topo.ChangeState(TopologyTransition::ResetDevice, path, std::chrono::milliseconds(timeout));
     } else if (command == "q") {
         cout << "> initiating End transition --> " << (path == "" ? "all" : path) << endl;
-        topo.ChangeState(TopologyTransition::End, path, std::chrono::milliseconds(timeout));
+        changeStateResult = topo.ChangeState(TopologyTransition::End, path, std::chrono::milliseconds(timeout));
     } else if (command == "h") {
         cout << "> help" << endl;
         printControlsHelp();
+        return;
     } else {
         cout << "\033[01;32mInvalid input: [" << command << "]\033[0m" << endl;
         printControlsHelp();
+        return;
+    }
+    if (changeStateResult.first != std::error_code()) {
+        cout << "ERROR: ChangeState failed for '" << path << "': " << changeStateResult.first.message() << endl;
     }
 }
 

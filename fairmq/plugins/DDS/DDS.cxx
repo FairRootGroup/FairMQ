@@ -344,10 +344,10 @@ auto DDS::HandleCmd(const string& id, sdk::cmd::Cmd& cmd, const string& cond, ui
         case Type::change_state: {
             Transition transition = static_cast<ChangeState&>(cmd).GetTransition();
             if (ChangeDeviceState(transition)) {
-                Cmds outCmds(make<TransitionStatus>(id, fDDSTaskId, Result::Ok, transition));
+                Cmds outCmds(make<TransitionStatus>(id, fDDSTaskId, Result::Ok, transition, GetCurrentDeviceState()));
                 fDDS.Send(outCmds.Serialize(), to_string(senderId));
             } else {
-                Cmds outCmds(make<TransitionStatus>(id, fDDSTaskId, Result::Failure, transition));
+                Cmds outCmds(make<TransitionStatus>(id, fDDSTaskId, Result::Failure, transition, GetCurrentDeviceState()));
                 fDDS.Send(outCmds.Serialize(), to_string(senderId));
             }
             {
