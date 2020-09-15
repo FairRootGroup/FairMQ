@@ -9,13 +9,30 @@
 #ifndef FAIRMQSOCKET_H_
 #define FAIRMQSOCKET_H_
 
+#include "FairMQMessage.h"
+
 #include <memory>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
-#include "FairMQMessage.h"
 class FairMQTransportFactory;
+
+namespace fair
+{
+namespace mq
+{
+
+enum class TransferResult : int
+{
+    error = -1,
+    timeout = -2,
+    interrupted = -3
+};
+
+} // namespace mq
+} // namespace fair
 
 class FairMQSocket
 {

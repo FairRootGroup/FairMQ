@@ -108,7 +108,7 @@ class Socket final : public fair::mq::Socket
 
     bool ShouldRetry(int flags, int timeout, int& elapsed) const
     {
-        if (!fCtx.Interrupted() && ((flags & ZMQ_DONTWAIT) == 0)) {
+        if ((flags & ZMQ_DONTWAIT) == 0) {
             if (timeout > 0) {
                 elapsed += fTimeout;
                 if (elapsed >= timeout) {
@@ -125,10 +125,10 @@ class Socket final : public fair::mq::Socket
     {
         if (zmq_errno() == ETERM) {
             LOG(debug) << "Terminating socket " << fId;
-            return -1;
+            return static_cast<int>(TransferResult::error);
         } else {
             LOG(error) << "Failed transfer on socket " << fId << ", errno: " << errno << ", reason: " << zmq_strerror(errno);
-            return -1;
+            return static_cast<int>(TransferResult::error);
         }
     }
 
@@ -149,10 +149,12 @@ class Socket final : public fair::mq::Socket
                 ++fMessagesTx;
                 return nbytes;
             } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
-                if (ShouldRetry(flags, timeout, elapsed)) {
+                if (fCtx.Interrupted()) {
+                    return static_cast<int>(TransferResult::interrupted);
+                } else if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
-                    return -2;
+                    return static_cast<int>(TransferResult::timeout);
                 }
             } else {
                 return HandleErrors();
@@ -175,10 +177,12 @@ class Socket final : public fair::mq::Socket
                 ++fMessagesRx;
                 return nbytes;
             } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
-                if (ShouldRetry(flags, timeout, elapsed)) {
+                if (fCtx.Interrupted()) {
+                    return static_cast<int>(TransferResult::interrupted);
+                } else if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
-                    return -2;
+                    return static_cast<int>(TransferResult::timeout);
                 }
             } else {
                 return HandleErrors();
@@ -210,11 +214,13 @@ class Socket final : public fair::mq::Socket
                     if (nbytes >= 0) {
                         totalSize += nbytes;
                     } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
-                        if (ShouldRetry(flags, timeout, elapsed)) {
+                        if (fCtx.Interrupted()) {
+                            return static_cast<int>(TransferResult::interrupted);
+                        } else if (ShouldRetry(flags, timeout, elapsed)) {
                             repeat = true;
                             break;
                         } else {
-                            return -2;
+                            return static_cast<int>(TransferResult::timeout);
                         }
                     } else {
                         return HandleErrors();
@@ -234,7 +240,7 @@ class Socket final : public fair::mq::Socket
             return Send(msgVec.back(), timeout);
         } else { // if the vector is empty, something might be wrong
             LOG(warn) << "Will not send empty vector";
-            return -1;
+            return static_cast<int>(TransferResult::error);
         }
     }
 
@@ -259,11 +265,13 @@ class Socket final : public fair::mq::Socket
                     msgVec.push_back(move(part));
                     totalSize += nbytes;
                 } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
-                    if (ShouldRetry(flags, timeout, elapsed)) {
+                    if (fCtx.Interrupted()) {
+                        return static_cast<int>(TransferResult::interrupted);
+                    } else if (ShouldRetry(flags, timeout, elapsed)) {
                         repeat = true;
                         break;
                     } else {
-                        return -2;
+                        return static_cast<int>(TransferResult::timeout);
                     }
                 } else {
                     return HandleErrors();
@@ -446,7 +454,7 @@ class Socket final : public fair::mq::Socket
         if (constant == "pollout")
             return ZMQ_POLLOUT;
 
-        return -1;
+        throw SocketError(tools::ToString("GetConstant called with an invalid argument: ", constant));
     }
 
     ~Socket() override { Close(); }

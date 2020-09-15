@@ -272,7 +272,7 @@ try {
     int size(0);
     for (auto& msg : msgVec) {
         size += msg->GetSize();
-    } 
+    }
 
     fSendPushSem.wait();
     {
@@ -284,7 +284,7 @@ try {
     return size;
 } catch (const std::exception& e) {
     LOG(error) << e.what();
-    return -1;
+    return TransferResult::error;
 }
 
 auto Socket::SendQueueReader() -> void
@@ -431,7 +431,7 @@ try {
     return size;
 } catch (const std::exception& e) {
     LOG(error) << e.what();
-    return -1;
+    return TransferResult::error;
 }
 
 auto Socket::Receive(std::vector<MessagePtr>& msgVec, const int /*timeout*/) -> int64_t
@@ -449,14 +449,14 @@ try {
     int64_t size(0);
     for (auto& msg : msgVec) {
         size += msg->GetSize();
-    } 
+    }
     fBytesRx += size;
     ++fMessagesRx;
 
-    return size; 
+    return size;
 } catch (const std::exception& e) {
     LOG(error) << e.what();
-    return -1;
+    return TransferResult::error;
 }
 
 auto Socket::RecvControlQueueReader() -> void
