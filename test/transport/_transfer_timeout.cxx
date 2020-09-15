@@ -7,9 +7,16 @@
  ********************************************************************************/
 
 #include "runner.h"
+#include <FairMQChannel.h>
+#include <FairMQLogger.h>
+#include <FairMQTransportFactory.h>
+#include <fairmq/ProgOptions.h>
 #include <fairmq/Tools.h>
 #include <gtest/gtest.h>
+
+#include <chrono>
 #include <sstream> // std::stringstream
+#include <thread>
 
 namespace
 {
@@ -17,6 +24,12 @@ namespace
 using namespace std;
 using namespace fair::mq::test;
 using namespace fair::mq::tools;
+
+void delayedInterruptor(FairMQTransportFactory& transport)
+{
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    transport.Interrupt();
+}
 
 auto RunTransferTimeout(string transport) -> void
 {
@@ -31,6 +44,28 @@ auto RunTransferTimeout(string transport) -> void
     exit(res.exit_code);
 }
 
+void InterruptTransfer(const string& transport, const string& _address)
+{
+    size_t session{fair::mq::tools::UuidHash()};
+    std::string address(fair::mq::tools::ToString(_address, "_", transport));
+
+    fair::mq::ProgOptions config;
+    config.SetProperty<string>("session", to_string(session));
+
+    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
+
+    FairMQChannel pull{"Pull", "pull", factory};
+    pull.Bind(address);
+
+    FairMQMessagePtr msg(pull.NewMessage());
+
+    auto t = thread(delayedInterruptor, ref(*factory));
+
+    auto result = pull.Receive(msg);
+    t.join();
+    ASSERT_EQ(result, static_cast<int>(fair::mq::TransferResult::interrupted));
+}
+
 TEST(TransferTimeout, zeromq)
 {
     EXPECT_EXIT(RunTransferTimeout("zeromq"), ::testing::ExitedWithCode(0), "Transfer timeout test successfull");
@@ -39,6 +74,16 @@ TEST(TransferTimeout, zeromq)
 TEST(TransferTimeout, shmem)
 {
     EXPECT_EXIT(RunTransferTimeout("shmem"), ::testing::ExitedWithCode(0), "Transfer timeout test successfull");
+}
+
+TEST(InterruptTransfer, zeromq)
+{
+    InterruptTransfer("zeromq", "ipc://test_interrupt_transfer");
+}
+
+TEST(InterruptTransfer, shmem)
+{
+    InterruptTransfer("shmem", "ipc://test_interrupt_transfer");
 }
 
 } // namespace
