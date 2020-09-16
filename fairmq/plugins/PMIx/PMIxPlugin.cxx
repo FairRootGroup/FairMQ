@@ -148,12 +148,12 @@ auto PMIxPlugin::SubscribeForCommands() -> void
                     Transition transition = static_cast<ChangeState&>(*cmd).GetTransition();
                     if (ChangeDeviceState(transition)) {
                         fCommands.Send(
-                            Cmds(make<TransitionStatus>(fDeviceId, 0, Result::Ok, transition))
+                            Cmds(make<TransitionStatus>(fDeviceId, 0, Result::Ok, transition, GetCurrentDeviceState()))
                                 .Serialize(Format::JSON),
                             {sender});
                     } else {
                         fCommands.Send(
-                            Cmds(make<TransitionStatus>(fDeviceId, 0, Result::Failure, transition))
+                            Cmds(make<TransitionStatus>(fDeviceId, 0, Result::Failure, transition, GetCurrentDeviceState()))
                                 .Serialize(Format::JSON),
                             {sender});
                     }
