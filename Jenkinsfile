@@ -8,11 +8,15 @@ def jobMatrix(String prefix, List specs, Closure callback) {
   def nodes = [:]
   for (spec in specs) {
     def label = specToLabel(spec)
+    def node_tag = label
+    if (spec.os =~ /macOS/) {
+      node_tag = spec.os
+    }
     def fairsoft = spec.fairsoft
     def os = spec.os
     def compiler = spec.compiler
     nodes["${prefix}/${label}"] = {
-      node(label) {
+      node(node_tag) {
         githubNotify(context: "${prefix}/${label}", description: 'Building ...', status: 'PENDING')
         try {
           deleteDir()
@@ -29,7 +33,7 @@ def jobMatrix(String prefix, List specs, Closure callback) {
               echo "module load compiler/gcc/9.1.0" >> Dart.cfg
             '''
           }
-          if (os =~ /MacOS/) {
+          if (os =~ /[Mm]acOS/) {
             sh "echo \"export EXTRA_FLAGS='-DCMAKE_CXX_COMPILER=clang++'\" >> Dart.cfg"
           } else {
             sh "echo \"export EXTRA_FLAGS='-DCMAKE_CXX_COMPILER=g++'\" >> Dart.cfg"
@@ -71,8 +75,7 @@ pipeline{
         script {
           def build_jobs = jobMatrix('build', [
             [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc9.1.0',        fairsoft: 'fairmq_dev'],
-            [os: 'MacOS10.13', arch: 'x86_64', compiler: 'AppleLLVM10.0.0', fairsoft: 'fairmq_dev'],
-            [os: 'MacOS10.14', arch: 'x86_64', compiler: 'AppleLLVM10.0.0', fairsoft: 'fairmq_dev'],
+            [os: 'macOS10.15', arch: 'x86_64', compiler: 'AppleLLVM11.0.3', fairsoft: 'fairmq_dev'],
           ]) { spec, label ->
             sh './Dart.sh alfa_ci Dart.cfg'
           }
