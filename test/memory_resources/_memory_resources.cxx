@@ -6,67 +6,83 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <cstring>
 #include <fairmq/FairMQTransportFactory.h>
 #include <fairmq/MemoryResourceTools.h>
+#include <fairmq/ProgOptions.h>
+#include <fairmq/Tools.h>
+
 #include <boost/container/pmr/polymorphic_allocator.hpp>
+
 #include <gtest/gtest.h>
+
+#include <cstring>
 #include <vector>
 
-namespace {
+namespace
+{
 
 using namespace std;
 using namespace fair::mq;
-using factoryType = std::shared_ptr<FairMQTransportFactory>;
 
-factoryType factoryZMQ = FairMQTransportFactory::CreateTransportFactory("zeromq");
-factoryType factorySHM = FairMQTransportFactory::CreateTransportFactory("shmem");
+using FactoryType = shared_ptr<FairMQTransportFactory>;
 
-struct testData
+struct TestData
 {
     int i{1};
     static int nallocated;
     static int nallocations;
     static int ndeallocations;
-    testData()
+
+    TestData()
     {
         ++nallocated;
         ++nallocations;
     }
-    testData(const testData& in)
+
+    TestData(const TestData& in)
         : i{in.i}
     {
         ++nallocated;
         ++nallocations;
     }
-    testData(const testData&& in)
+
+    TestData(const TestData&& in)
         : i{in.i}
     {
         ++nallocated;
         ++nallocations;
     }
-    testData(int in)
+
+    TestData(int in)
         : i{in}
     {
         ++nallocated;
         ++nallocations;
     }
-    ~testData()
+
+    ~TestData()
     {
         --nallocated;
         ++ndeallocations;
     }
 };
 
-int testData::nallocated = 0;
-int testData::nallocations = 0;
-int testData::ndeallocations = 0;
+int TestData::nallocated = 0;
+int TestData::nallocations = 0;
+int TestData::ndeallocations = 0;
 
-auto allocZMQ = factoryZMQ -> GetMemoryResource();
-auto allocSHM = factorySHM -> GetMemoryResource();
-
-TEST(MemoryResources, transportallocatormap)
+TEST(MemoryResources, transportAllocatorMap)
 {
+    size_t session{tools::UuidHash()};
+    ProgOptions config;
+    config.SetProperty<string>("session", to_string(session));
+
+    FactoryType factoryZMQ = FairMQTransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
+    FactoryType factorySHM = FairMQTransportFactory::CreateTransportFactory("shmem", fair::mq::tools::Uuid(), &config);
+
+    auto allocZMQ = factoryZMQ->GetMemoryResource();
+    auto allocSHM = factorySHM->GetMemoryResource();
+
     EXPECT_TRUE(allocZMQ != nullptr && allocSHM != allocZMQ);
     auto _tmp = factoryZMQ->GetMemoryResource();
     EXPECT_TRUE(_tmp == allocZMQ);
@@ -76,28 +92,45 @@ using namespace fair::mq::pmr;
 
 TEST(MemoryResources, allocator)
 {
-    testData::nallocations = 0;
-    testData::ndeallocations = 0;
+    TestData::nallocations = 0;
+    TestData::ndeallocations = 0;
+
+    size_t session{tools::UuidHash()};
+    ProgOptions config;
+    config.SetProperty<string>("session", to_string(session));
+
+    FactoryType factoryZMQ = FairMQTransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
+
+    auto allocZMQ = factoryZMQ->GetMemoryResource();
 
     {
-        std::vector<testData, polymorphic_allocator<testData>> v(polymorphic_allocator<testData>{allocZMQ});
+        std::vector<TestData, polymorphic_allocator<TestData>> v(polymorphic_allocator<TestData>{allocZMQ});
         v.reserve(3);
         EXPECT_TRUE(v.capacity() == 3);
         EXPECT_TRUE(allocZMQ->getNumberOfMessages() == 1);
         v.emplace_back(1);
         v.emplace_back(2);
         v.emplace_back(3);
-        EXPECT_TRUE((fair::mq::byte*)&(*v.end()) - (fair::mq::byte*)&(*v.begin()) == 3 * sizeof(testData));
-        EXPECT_TRUE(testData::nallocated == 3);
+        EXPECT_TRUE((fair::mq::byte*)&(*v.end()) - (fair::mq::byte*)&(*v.begin()) == 3 * sizeof(TestData));
+        EXPECT_TRUE(TestData::nallocated == 3);
     }
-    EXPECT_TRUE(testData::nallocated == 0);
-    EXPECT_TRUE(testData::nallocations == testData::ndeallocations);
+    EXPECT_TRUE(TestData::nallocated == 0);
+    EXPECT_TRUE(TestData::nallocations == TestData::ndeallocations);
 }
 
 TEST(MemoryResources, getMessage)
 {
-    testData::nallocations = 0;
-    testData::ndeallocations = 0;
+    TestData::nallocations = 0;
+    TestData::ndeallocations = 0;
+
+    size_t session{tools::UuidHash()};
+    ProgOptions config;
+    config.SetProperty<string>("session", to_string(session));
+
+    FactoryType factoryZMQ = FairMQTransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
+    FactoryType factorySHM = FairMQTransportFactory::CreateTransportFactory("shmem", fair::mq::tools::Uuid(), &config);
+
+    auto allocZMQ = factoryZMQ->GetMemoryResource();
 
     FairMQMessagePtr message{nullptr};
 
@@ -105,7 +138,7 @@ TEST(MemoryResources, getMessage)
 
     // test message creation on the same channel it was allocated with
     {
-        std::vector<testData, polymorphic_allocator<testData>> v(polymorphic_allocator<testData>{allocZMQ});
+        std::vector<TestData, polymorphic_allocator<TestData>> v(polymorphic_allocator<TestData>{allocZMQ});
         v.emplace_back(1);
         v.emplace_back(2);
         v.emplace_back(3);
@@ -114,13 +147,13 @@ TEST(MemoryResources, getMessage)
         EXPECT_TRUE(message != nullptr);
         EXPECT_TRUE(message->GetData() == vectorBeginPtr);
     }
-    EXPECT_TRUE(message->GetSize() == 3 * sizeof(testData));
+    EXPECT_TRUE(message->GetSize() == 3 * sizeof(TestData));
     messageArray = static_cast<int*>(message->GetData());
     EXPECT_TRUE(messageArray[0] == 1 && messageArray[1] == 2 && messageArray[2] == 3);
 
     // test message creation on a different channel than it was allocated with
     {
-        std::vector<testData, polymorphic_allocator<testData>> v(polymorphic_allocator<testData>{allocZMQ});
+        std::vector<TestData, polymorphic_allocator<TestData>> v(polymorphic_allocator<TestData>{allocZMQ});
         v.emplace_back(4);
         v.emplace_back(5);
         v.emplace_back(6);
@@ -130,7 +163,7 @@ TEST(MemoryResources, getMessage)
         EXPECT_TRUE(message->GetData() != vectorBeginPtr);
     }
 
-    EXPECT_TRUE(message->GetSize() == 3 * sizeof(testData));
+    EXPECT_TRUE(message->GetSize() == 3 * sizeof(TestData));
     messageArray = static_cast<int*>(message->GetData());
     EXPECT_TRUE(messageArray[0] == 4 && messageArray[1] == 5 && messageArray[2] == 6);
 }
