@@ -361,7 +361,7 @@ TEST_F(Topology, AsyncSetPropertiesTimeout)
 
     topo.AsyncSetProperties({{"key1", "val1"}},
                             "",
-                            std::chrono::milliseconds(1),
+                            std::chrono::microseconds(1),
                             [=](std::error_code ec, sdk::FailedDevices) mutable {
                                 LOG(info) << ec;
                                 EXPECT_EQ(ec, MakeErrorCode(ErrorCode::OperationTimeout));

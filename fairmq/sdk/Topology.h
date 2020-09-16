@@ -464,7 +464,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         }
     }
 
-    using Duration = std::chrono::milliseconds;
+    using Duration = std::chrono::microseconds;
     using ChangeStateCompletionSignature = void(std::error_code, TopologyState);
 
   private:
