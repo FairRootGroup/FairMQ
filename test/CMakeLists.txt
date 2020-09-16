@@ -12,6 +12,18 @@ include(GTestHelper)
 # FairMQ Testsuites/helpers #
 #############################
 
+if(FairLogger_VERSION VERSION_LESS 1.9.0 AND FairLogger_VERSION VERSION_GREATER_EQUAL 1.7.0)
+  LIST(APPEND definitions FAIR_MIN_SEVERITY=trace)
+endif()
+
+if(BUILD_OFI_TRANSPORT)
+  LIST(APPEND definitions BUILD_OFI_TRANSPORT)
+endif()
+
+if(definitions)
+  set(definitions DEFINITIONS ${definitions})
+endif()
+
 add_testhelper(runTestDevice
     SOURCES
     helper/runTestDevice.cxx
@@ -30,15 +42,8 @@ add_testhelper(runTestDevice
     helper/devices/TestExceptions.h
 
     LINKS FairMQ
+    ${definitions}
 )
-
-if(BUILD_OFI_TRANSPORT)
-  LIST(APPEND definitions BUILD_OFI_TRANSPORT)
-endif()
-
-if(definitions)
-  set(definitions DEFINITIONS ${definitions})
-endif()
 
 set(MQ_CONFIG "${CMAKE_BINARY_DIR}/test/testsuite_FairMQ.IOPatterns_config.json")
 set(RUN_TEST_DEVICE "${CMAKE_BINARY_DIR}/test/testhelper_runTestDevice")
