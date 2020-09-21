@@ -66,13 +66,13 @@ class FairMQChannel
     FairMQChannel(const FairMQChannel&, const std::string& name);
 
     /// Move constructor
-    FairMQChannel(FairMQChannel&&) = delete;
+    // FairMQChannel(FairMQChannel&&) = delete;
 
     /// Assignment operator
     FairMQChannel& operator=(const FairMQChannel&);
 
     /// Move assignment operator
-    FairMQChannel& operator=(FairMQChannel&&) = delete;
+    // FairMQChannel& operator=(FairMQChannel&&) = delete;
 
     /// Destructor
     virtual ~FairMQChannel()
