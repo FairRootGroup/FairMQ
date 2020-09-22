@@ -83,26 +83,28 @@ FairMQChannel::FairMQChannel(const string& name, const string& type, const strin
     , fAutoBind(DefaultAutoBind)
     , fValid(false)
     , fMultipart(false)
-{}
+{
+    // LOG(warn) << "Constructing channel '" << fName << "'";
+}
 
 FairMQChannel::FairMQChannel(const string& name, int index, const fair::mq::Properties& properties)
     : FairMQChannel(tools::ToString(name, "[", index, "]"), "unspecified", "unspecified", "unspecified", nullptr)
 {
     string prefix(tools::ToString("chans.", name, ".", index, "."));
 
-    fType = GetPropertyOrDefault(properties, string(prefix + "type"), fType);
-    fMethod = GetPropertyOrDefault(properties, string(prefix + "method"), fMethod);
-    fAddress = GetPropertyOrDefault(properties, string(prefix + "address"), fAddress);
-    fTransportType = TransportTypes.at(GetPropertyOrDefault(properties, string(prefix + "transport"), TransportNames.at(fTransportType)));
-    fSndBufSize = GetPropertyOrDefault(properties, string(prefix + "sndBufSize"), fSndBufSize);
-    fRcvBufSize = GetPropertyOrDefault(properties, string(prefix + "rcvBufSize"), fRcvBufSize);
-    fSndKernelSize = GetPropertyOrDefault(properties, string(prefix + "sndKernelSize"), fSndKernelSize);
-    fRcvKernelSize = GetPropertyOrDefault(properties, string(prefix + "rcvKernelSize"), fRcvKernelSize);
-    fLinger = GetPropertyOrDefault(properties, string(prefix + "linger"), fLinger);
-    fRateLogging = GetPropertyOrDefault(properties, string(prefix + "rateLogging"), fRateLogging);
-    fPortRangeMin = GetPropertyOrDefault(properties, string(prefix + "portRangeMin"), fPortRangeMin);
-    fPortRangeMax = GetPropertyOrDefault(properties, string(prefix + "portRangeMax"), fPortRangeMax);
-    fAutoBind = GetPropertyOrDefault(properties, string(prefix + "autoBind"), fAutoBind);
+    fType = GetPropertyOrDefault(properties, string(prefix + "type"), std::string(DefaultType));
+    fMethod = GetPropertyOrDefault(properties, string(prefix + "method"), std::string(DefaultMethod));
+    fAddress = GetPropertyOrDefault(properties, string(prefix + "address"), std::string(DefaultAddress));
+    fTransportType = TransportType(GetPropertyOrDefault(properties, string(prefix + "transport"), std::string(DefaultTransportName)));
+    fSndBufSize = GetPropertyOrDefault(properties, string(prefix + "sndBufSize"), DefaultSndBufSize);
+    fRcvBufSize = GetPropertyOrDefault(properties, string(prefix + "rcvBufSize"), DefaultRcvBufSize);
+    fSndKernelSize = GetPropertyOrDefault(properties, string(prefix + "sndKernelSize"), DefaultSndKernelSize);
+    fRcvKernelSize = GetPropertyOrDefault(properties, string(prefix + "rcvKernelSize"), DefaultRcvKernelSize);
+    fLinger = GetPropertyOrDefault(properties, string(prefix + "linger"), DefaultLinger);
+    fRateLogging = GetPropertyOrDefault(properties, string(prefix + "rateLogging"), DefaultRateLogging);
+    fPortRangeMin = GetPropertyOrDefault(properties, string(prefix + "portRangeMin"), DefaultPortRangeMin);
+    fPortRangeMax = GetPropertyOrDefault(properties, string(prefix + "portRangeMax"), DefaultPortRangeMax);
+    fAutoBind = GetPropertyOrDefault(properties, string(prefix + "autoBind"), DefaultAutoBind);
 }
 
 FairMQChannel::FairMQChannel(const FairMQChannel& chan)
@@ -156,191 +158,6 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     fMultipart = chan.fMultipart;
 
     return *this;
-}
-
-FairMQSocket & FairMQChannel::GetSocket() const
-{
-    assert(fSocket);
-    return *fSocket;
-}
-
-string FairMQChannel::GetName() const
-{
-    return fName;
-}
-
-string FairMQChannel::GetPrefix() const
-{
-    string prefix = fName;
-    prefix = prefix.erase(fName.rfind('['));
-    return prefix;
-}
-
-string FairMQChannel::GetIndex() const
-{
-    string indexStr = fName;
-    indexStr.erase(indexStr.rfind(']'));
-    indexStr.erase(0, indexStr.rfind('[') + 1);
-    return indexStr;
-}
-
-string FairMQChannel::GetType() const
-{
-    return fType;
-}
-
-string FairMQChannel::GetMethod() const
-{
-    return fMethod;
-}
-
-string FairMQChannel::GetAddress() const
-{
-    return fAddress;
-}
-
-string FairMQChannel::GetTransportName() const
-{
-    return TransportNames.at(fTransportType);
-}
-
-Transport FairMQChannel::GetTransportType() const
-{
-    return fTransportType;
-}
-
-int FairMQChannel::GetSndBufSize() const
-{
-    return fSndBufSize;
-}
-
-int FairMQChannel::GetRcvBufSize() const
-{
-    return fRcvBufSize;
-}
-
-int FairMQChannel::GetSndKernelSize() const
-{
-    return fSndKernelSize;
-}
-
-int FairMQChannel::GetRcvKernelSize() const
-{
-    return fRcvKernelSize;
-}
-
-int FairMQChannel::GetLinger() const
-{
-    return fLinger;
-}
-
-int FairMQChannel::GetRateLogging() const
-{
-    return fRateLogging;
-}
-
-int FairMQChannel::GetPortRangeMin() const
-{
-    return fPortRangeMin;
-}
-
-int FairMQChannel::GetPortRangeMax() const
-{
-    return fPortRangeMax;
-}
-
-bool FairMQChannel::GetAutoBind() const
-{
-    return fAutoBind;
-}
-
-void FairMQChannel::UpdateType(const string& type)
-{
-    fIsValid = false;
-    fType = type;
-}
-
-void FairMQChannel::UpdateMethod(const string& method)
-{
-    fIsValid = false;
-    fMethod = method;
-}
-
-void FairMQChannel::UpdateAddress(const string& address)
-{
-    fIsValid = false;
-    fAddress = address;
-}
-
-void FairMQChannel::UpdateTransport(const string& transport)
-{
-    fIsValid = false;
-    fTransportType = TransportTypes.at(transport);
-}
-
-void FairMQChannel::UpdateSndBufSize(const int sndBufSize)
-{
-    fIsValid = false;
-    fSndBufSize = sndBufSize;
-}
-
-void FairMQChannel::UpdateRcvBufSize(const int rcvBufSize)
-{
-    fIsValid = false;
-    fRcvBufSize = rcvBufSize;
-}
-
-void FairMQChannel::UpdateSndKernelSize(const int sndKernelSize)
-{
-    fIsValid = false;
-    fSndKernelSize = sndKernelSize;
-}
-
-void FairMQChannel::UpdateRcvKernelSize(const int rcvKernelSize)
-{
-    fIsValid = false;
-    fRcvKernelSize = rcvKernelSize;
-}
-
-void FairMQChannel::UpdateLinger(const int duration)
-{
-    fIsValid = false;
-    fLinger = duration;
-}
-
-void FairMQChannel::UpdateRateLogging(const int rateLogging)
-{
-    fIsValid = false;
-    fRateLogging = rateLogging;
-}
-
-void FairMQChannel::UpdatePortRangeMin(const int minPort)
-{
-    fIsValid = false;
-    fPortRangeMin = minPort;
-}
-
-void FairMQChannel::UpdatePortRangeMax(const int maxPort)
-{
-    fIsValid = false;
-    fPortRangeMax = maxPort;
-}
-
-void FairMQChannel::UpdateAutoBind(const bool autobind)
-{
-    fIsValid = false;
-    fAutoBind = autobind;
-}
-
-void FairMQChannel::UpdateName(const string& name)
-{
-    fIsValid = false;
-    fName = name;
-}
-
-bool FairMQChannel::IsValid() const
-{
-    return fIsValid;
 }
 
 bool FairMQChannel::Validate()

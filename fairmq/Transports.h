@@ -10,8 +10,10 @@
 #define FAIR_MQ_TRANSPORTS_H
 
 #include <fairmq/tools/CppSTL.h>
+#include <fairmq/tools/Strings.h>
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -27,6 +29,8 @@ enum class Transport
     SHM,
     OFI
 };
+
+struct TransportError : std::runtime_error { using std::runtime_error::runtime_error; };
 
 } /* namespace mq */
 } /* namespace fair */
@@ -57,6 +61,18 @@ static std::unordered_map<Transport, std::string> TransportNames {
     { Transport::SHM, "shmem" },
     { Transport::OFI, "ofi" }
 };
+
+inline std::string TransportName(Transport transport)
+{
+    return TransportNames[transport];
+}
+
+inline Transport TransportType(const std::string& transport)
+try {
+    return TransportTypes.at(transport);
+} catch (std::out_of_range&) {
+    throw TransportError(tools::ToString("Unknown transport provided: ", transport));
+}
 
 } /* namespace mq */
 } /* namespace fair */
