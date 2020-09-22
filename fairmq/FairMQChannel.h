@@ -230,7 +230,7 @@ class FairMQChannel
 
     /// Checks if the configured channel settings are valid (checks the validity parameter, without running full validation (as oposed to ValidateChannel()))
     /// @return true if channel settings are valid, false otherwise.
-    bool IsValid() const;
+    bool IsValid() const { return fValid; }
 
     /// Validates channel configuration
     /// @return true if channel settings are valid, false otherwise.
@@ -242,8 +242,8 @@ class FairMQChannel
 
     bool BindEndpoint(std::string& endpoint);
 
-    /// Resets the channel (requires validation to be used again).
-    void ResetChannel();
+    /// invalidates the channel (requires validation to be used again).
+    void Invalidate() { fValid = false; }
 
     /// Sends a message to the socket queue.
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
@@ -369,7 +369,7 @@ class FairMQChannel
     int fPortRangeMax;
     bool fAutoBind;
 
-    bool fIsValid;
+    bool fValid;
 
     bool fMultipart;
 

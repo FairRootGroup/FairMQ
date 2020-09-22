@@ -81,7 +81,7 @@ FairMQChannel::FairMQChannel(const string& name, const string& type, const strin
     , fPortRangeMin(DefaultPortRangeMin)
     , fPortRangeMax(DefaultPortRangeMax)
     , fAutoBind(DefaultAutoBind)
-    , fIsValid(false)
+    , fValid(false)
     , fMultipart(false)
 {}
 
@@ -126,7 +126,7 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan, const string& newName)
     , fPortRangeMin(chan.fPortRangeMin)
     , fPortRangeMax(chan.fPortRangeMax)
     , fAutoBind(chan.fAutoBind)
-    , fIsValid(false)
+    , fValid(false)
     , fMultipart(chan.fMultipart)
 {}
 
@@ -152,7 +152,7 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     fPortRangeMin = chan.fPortRangeMin;
     fPortRangeMax = chan.fPortRangeMax;
     fAutoBind = chan.fAutoBind;
-    fIsValid = false;
+    fValid = false;
     fMultipart = chan.fMultipart;
 
     return *this;
@@ -348,7 +348,7 @@ try {
     stringstream ss;
     ss << "Validating channel '" << fName << "'... ";
 
-    if (fIsValid) {
+    if (fValid) {
         ss << "ALREADY VALID";
         LOG(debug) << ss.str();
         return true;
@@ -483,7 +483,7 @@ try {
         throw ChannelConfigurationError(tools::ToString("invalid socket rate logging interval (cannot be negative): '", fRateLogging, "'"));
     }
 
-    fIsValid = true;
+    fValid = true;
     ss << "VALID";
     LOG(debug) << ss.str();
     return true;
@@ -558,10 +558,4 @@ bool FairMQChannel::BindEndpoint(string& endpoint)
         }
     }
 
-}
-
-void FairMQChannel::ResetChannel()
-{
-    fIsValid = false;
-    // TODO: implement channel resetting
 }
