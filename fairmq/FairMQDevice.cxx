@@ -390,7 +390,6 @@ void FairMQDevice::AttachChannels(vector<FairMQChannel*>& chans)
         if ((*itr)->Validate()) {
             (*itr)->Init();
             if (AttachChannel(**itr)) {
-                (*itr)->SetModified(false);
                 // remove the channel from the uninitialized container
                 itr = chans.erase(itr);
             } else {

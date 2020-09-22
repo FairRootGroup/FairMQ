@@ -83,8 +83,6 @@ FairMQChannel::FairMQChannel(const string& name, const string& type, const strin
     , fAutoBind(DefaultAutoBind)
     , fIsValid(false)
     , fMultipart(false)
-    , fModified(true)
-    , fReset(false)
 {}
 
 FairMQChannel::FairMQChannel(const string& name, int index, const fair::mq::Properties& properties)
@@ -130,8 +128,6 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan, const string& newName)
     , fAutoBind(chan.fAutoBind)
     , fIsValid(false)
     , fMultipart(chan.fMultipart)
-    , fModified(chan.fModified)
-    , fReset(false)
 {}
 
 FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
@@ -158,8 +154,6 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     fAutoBind = chan.fAutoBind;
     fIsValid = false;
     fMultipart = chan.fMultipart;
-    fModified = chan.fModified;
-    fReset = false;
 
     return *this;
 }
@@ -264,103 +258,84 @@ void FairMQChannel::UpdateType(const string& type)
 {
     fIsValid = false;
     fType = type;
-    fModified = true;
 }
 
 void FairMQChannel::UpdateMethod(const string& method)
 {
     fIsValid = false;
     fMethod = method;
-    fModified = true;
 }
 
 void FairMQChannel::UpdateAddress(const string& address)
 {
     fIsValid = false;
     fAddress = address;
-    fModified = true;
 }
 
 void FairMQChannel::UpdateTransport(const string& transport)
 {
     fIsValid = false;
     fTransportType = TransportTypes.at(transport);
-    fModified = true;
 }
 
 void FairMQChannel::UpdateSndBufSize(const int sndBufSize)
 {
     fIsValid = false;
     fSndBufSize = sndBufSize;
-    fModified = true;
 }
 
 void FairMQChannel::UpdateRcvBufSize(const int rcvBufSize)
 {
     fIsValid = false;
     fRcvBufSize = rcvBufSize;
-    fModified = true;
 }
 
 void FairMQChannel::UpdateSndKernelSize(const int sndKernelSize)
 {
     fIsValid = false;
     fSndKernelSize = sndKernelSize;
-    fModified = true;
 }
 
 void FairMQChannel::UpdateRcvKernelSize(const int rcvKernelSize)
 {
     fIsValid = false;
     fRcvKernelSize = rcvKernelSize;
-    fModified = true;
 }
 
 void FairMQChannel::UpdateLinger(const int duration)
 {
     fIsValid = false;
     fLinger = duration;
-    fModified = true;
 }
 
 void FairMQChannel::UpdateRateLogging(const int rateLogging)
 {
     fIsValid = false;
     fRateLogging = rateLogging;
-    fModified = true;
 }
 
 void FairMQChannel::UpdatePortRangeMin(const int minPort)
 {
     fIsValid = false;
     fPortRangeMin = minPort;
-    fModified = true;
 }
 
 void FairMQChannel::UpdatePortRangeMax(const int maxPort)
 {
     fIsValid = false;
     fPortRangeMax = maxPort;
-    fModified = true;
 }
 
 void FairMQChannel::UpdateAutoBind(const bool autobind)
 {
     fIsValid = false;
     fAutoBind = autobind;
-    fModified = true;
-}
-
-auto FairMQChannel::SetModified(const bool modified) -> void
-{
-    fModified = modified;
 }
 
 void FairMQChannel::UpdateName(const string& name)
 {
     fIsValid = false;
     fName = name;
-    fModified = true;
 }
 
 bool FairMQChannel::IsValid() const
