@@ -372,8 +372,6 @@ class FairMQChannel
     bool fIsValid;
 
     bool fMultipart;
-    bool fModified;
-    bool fReset;
 
     void CheckSendCompatibility(FairMQMessagePtr& msg)
     {
@@ -430,8 +428,6 @@ class FairMQChannel
         fTransportFactory = factory;
         fTransportType = factory->GetType();
     }
-
-    auto SetModified(const bool modified) -> void;
 };
 
 #endif /* FAIRMQCHANNEL_H_ */
