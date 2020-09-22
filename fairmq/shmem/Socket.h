@@ -97,11 +97,6 @@ class Socket final : public fair::mq::Socket
         //         LOG(error) << "Failed setting ZMQ_SUBSCRIBE socket option, reason: " << zmq_strerror(errno);
         //     }
         // }
-
-        if (type == "sub" || type == "pub") {
-            LOG(error) << "PUB/SUB socket type is not supported for shared memory transport";
-            throw SocketError("PUB/SUB socket type is not supported for shared memory transport");
-        }
         LOG(debug) << "Created socket " << GetId();
     }
 
