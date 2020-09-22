@@ -58,6 +58,12 @@ class Socket final : public fair::mq::Socket
         , fTimeout(100)
     {
         assert(context);
+
+        if (type == "sub" || type == "pub") {
+            LOG(error) << "PUB/SUB socket type is not supported for shared memory transport";
+            throw SocketError("PUB/SUB socket type is not supported for shared memory transport");
+        }
+
         fSocket = zmq_socket(context, GetConstant(type));
 
         if (fSocket == nullptr) {
