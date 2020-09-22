@@ -100,17 +100,14 @@ class FairMQChannel
 
     /// Get channel name
     /// @return Returns full channel name (e.g. "data[0]")
-    std::string GetChannelName() const __attribute__((deprecated("Use GetName()"))) { return GetName(); }
     std::string GetName() const ;
 
     /// Get channel prefix
     /// @return Returns channel prefix (e.g. "data" in "data[0]")
-    std::string GetChannelPrefix() const  __attribute__((deprecated("Use GetPrefix()"))) { return GetPrefix(); }
     std::string GetPrefix() const;
 
     /// Get channel index
     /// @return Returns channel index (e.g. 0 in "data[0]")
-    std::string GetChannelIndex() const __attribute__((deprecated("Use GetIndex()"))) { return GetIndex(); }
     std::string GetIndex() const;
 
     /// Get socket type
@@ -223,16 +220,11 @@ class FairMQChannel
 
     /// Set channel name
     /// @param name Arbitrary channel name
-    void UpdateChannelName(const std::string& name) __attribute__((deprecated("Use UpdateName()"))) { UpdateName(name); }
     void UpdateName(const std::string& name);
 
     /// Checks if the configured channel settings are valid (checks the validity parameter, without running full validation (as oposed to ValidateChannel()))
     /// @return true if channel settings are valid, false otherwise.
     bool IsValid() const;
-
-    /// Validates channel configuration
-    /// @return true if channel settings are valid, false otherwise.
-    bool ValidateChannel() __attribute__((deprecated("Use Validate()"))) { return Validate(); }
 
     /// Validates channel configuration
     /// @return true if channel settings are valid, false otherwise.
