@@ -25,6 +25,12 @@
 #include <utility> // std::move
 #include <cstdint> // int64_t
 
+/**
+ * @class FairMQChannel FairMQChannel.h <FairMQChannel.h>
+ * @brief Wrapper class for FairMQSocket and related methods
+ *
+ * The class is not thread-safe.
+ */
 class FairMQChannel
 {
     friend class FairMQDevice;
@@ -100,7 +106,7 @@ class FairMQChannel
 
     /// Get channel name
     /// @return Returns full channel name (e.g. "data[0]")
-    std::string GetName() const ;
+    std::string GetName() const;
 
     /// Get channel prefix
     /// @return Returns channel prefix (e.g. "data" in "data[0]")
@@ -302,10 +308,7 @@ class FairMQChannel
     unsigned long GetMessagesTx() const { return fSocket->GetMessagesTx(); }
     unsigned long GetMessagesRx() const { return fSocket->GetMessagesRx(); }
 
-    auto Transport() -> FairMQTransportFactory*
-    {
-        return fTransportFactory.get();
-    };
+    auto Transport() -> FairMQTransportFactory* { return fTransportFactory.get(); };
 
     template<typename... Args>
     FairMQMessagePtr NewMessage(Args&&... args)
@@ -371,8 +374,6 @@ class FairMQChannel
     bool fMultipart;
     bool fModified;
     bool fReset;
-
-    mutable std::mutex fMtx;
 
     void CheckSendCompatibility(FairMQMessagePtr& msg)
     {
