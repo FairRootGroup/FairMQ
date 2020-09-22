@@ -381,7 +381,7 @@ try {
     } else {
         vector<string> endpoints;
         boost::algorithm::split(endpoints, fAddress, boost::algorithm::is_any_of(";"));
-        for (const auto endpoint : endpoints) {
+        for (const auto& endpoint : endpoints) {
             string address;
             if (endpoint[0] == '@' || endpoint[0] == '+' || endpoint[0] == '>') {
                 address = endpoint.substr(1);
