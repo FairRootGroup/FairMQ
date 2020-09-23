@@ -8,14 +8,16 @@
 
 #include "Control.h"
 
-#include <termios.h> // for the interactive mode
-#include <poll.h> // for the interactive mode
+#include <atomic>
+#include <chrono>
 #include <csignal> // catching system signals
 #include <cstdlib>
 #include <functional>
-#include <atomic>
+#include <iostream>
 #include <thread>
-#include <chrono>
+
+#include <poll.h> // for the interactive mode
+#include <termios.h> // for the interactive mode
 
 using namespace std;
 

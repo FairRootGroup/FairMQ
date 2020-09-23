@@ -154,8 +154,8 @@ auto DeviceRunner::Run() -> int
 
     // Handle --version
     if (fConfig.Count("version")) {
-        cout << "FairMQ version: " << FAIRMQ_GIT_VERSION << endl;
-        cout << "User device version: " << fDevice->GetVersion() << endl;
+        LOGV(info, verylow) << "FairMQ version: " << FAIRMQ_GIT_VERSION;
+        LOGV(info, verylow) << "User device version: " << fDevice->GetVersion();
         fDevice->ChangeState(fair::mq::Transition::End);
         return 0;
     }
