@@ -26,7 +26,6 @@
 #include <algorithm> // find
 #include <string>
 #include <chrono>
-#include <iostream>
 #include <unordered_map>
 #include <functional>
 #include <stdexcept>
@@ -363,10 +362,10 @@ class FairMQDevice
     void PrintRegisteredChannels()
     {
         if (fChannelRegistry.size() < 1) {
-            std::cout << "no channels registered." << std::endl;
+            LOGV(info, verylow) << "no channels registered.";
         } else {
             for (const auto& c : fChannelRegistry) {
-                std::cout << c.first << ":" << c.second.first << ":" << c.second.second << std::endl;
+                LOGV(info, verylow) << c.first << ":" << c.second.first << ":" << c.second.second;
             }
         }
     }
