@@ -40,8 +40,9 @@ TEST(ProgOptions, SetAndGet)
     set_and_get<string>(o, "_string", "teststring");
     set_and_get<int>(o, "_int", 1);
     set_and_get<size_t>(o, "_size_t", 11);
-    set_and_get<uint32_t>(o, "_uint32_t", 12);
-    set_and_get<uint64_t>(o, "_uint64_t", 123);
+    set_and_get<uint16_t>(o, "_uint16_t", 12);
+    set_and_get<uint32_t>(o, "_uint32_t", 123);
+    set_and_get<uint64_t>(o, "_uint64_t", 1234);
     set_and_get<long>(o, "_long", 1234);
     set_and_get<long long>(o, "_long long", 12345);
     set_and_get<unsigned>(o, "_unsigned", 3);
@@ -59,8 +60,9 @@ TEST(ProgOptions, SetAndGet)
     set_and_get<vector<string>>(o, "_vector<string>", { "aa", "bb", "cc" });
     set_and_get<vector<int>>(o, "_vector<int>", { 1, 2, 3 });
     set_and_get<vector<size_t>>(o, "_vector<size_t>", { 1, 2, 3 });
-    set_and_get<vector<uint32_t>>(o, "_vector<uint32_t>", { 12, 13, 14 });
-    set_and_get<vector<uint64_t>>(o, "_vector<uint64_t>", { 123, 124, 125 });
+    set_and_get<vector<uint16_t>>(o, "_vector<uint16_t>", { 12, 13, 14 });
+    set_and_get<vector<uint32_t>>(o, "_vector<uint32_t>", { 123, 124, 125 });
+    set_and_get<vector<uint64_t>>(o, "_vector<uint64_t>", { 1234, 1235, 1236 });
     set_and_get<vector<long>>(o, "_vector<long>", { 1234, 1235, 1236 });
     set_and_get<vector<long long>>(o, "_vector<long long>", { 12345, 12346, 12347 });
     set_and_get<vector<unsigned>>(o, "_vector<unsigned>", { 3, 4, 5 });
@@ -122,8 +124,9 @@ TEST(ProgOptions, SubscribeAndSet)
     subscribe_and_set<string>(o, "_string", "teststring");
     subscribe_and_set<int>(o, "_int", 1);
     subscribe_and_set<size_t>(o, "_size_t", 11);
-    subscribe_and_set<uint32_t>(o, "_uint32_t", 12);
-    subscribe_and_set<uint64_t>(o, "_uint64_t", 123);
+    subscribe_and_set<uint16_t>(o, "_uint16_t", 12);
+    subscribe_and_set<uint32_t>(o, "_uint32_t", 123);
+    subscribe_and_set<uint64_t>(o, "_uint64_t", 1234);
     subscribe_and_set<long>(o, "_long", 1234);
     subscribe_and_set<long long>(o, "_long long", 12345);
     subscribe_and_set<unsigned>(o, "_unsigned", 3);
@@ -141,6 +144,7 @@ TEST(ProgOptions, SubscribeAndSet)
     subscribe_and_set<vector<string>>(o, "_vector<string>", { "aa", "bb", "cc" });
     subscribe_and_set<vector<int>>(o, "_vector<int>", { 1, 2, 3 });
     subscribe_and_set<vector<size_t>>(o, "_vector<size_t>", { 1, 2, 3 });
+    subscribe_and_set<vector<uint16_t>>(o, "_vector<uint16_t>", { 12, 13, 14 });
     subscribe_and_set<vector<uint32_t>>(o, "_vector<uint32_t>", { 12, 13, 14 });
     subscribe_and_set<vector<uint64_t>>(o, "_vector<uint64_t>", { 123, 124, 125 });
     subscribe_and_set<vector<long>>(o, "_vector<long>", { 1234, 1235, 1236 });
@@ -163,6 +167,7 @@ TEST(PropertyHelper, ConvertPropertyToString)
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<string>("teststring"))), "teststring");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<int>(1))), "1");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<size_t>(11))), "11");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<uint16_t>(12))), "12");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<uint32_t>(12))), "12");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<uint64_t>(123))), "123");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<long>(1234))), "1234");
@@ -181,6 +186,7 @@ TEST(PropertyHelper, ConvertPropertyToString)
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<string>({ "aa", "bb", "cc" }))), "aa, bb, cc");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<int>({ 1, 2, 3 }))), "1, 2, 3");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<size_t>({ 1, 2, 3 }))), "1, 2, 3");
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<uint16_t>({ 12, 13, 14 }))), "12, 13, 14");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<uint32_t>({ 12, 13, 14 }))), "12, 13, 14");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<uint64_t>({ 123, 124, 125 }))), "123, 124, 125");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<long>({ 1234, 1235, 1236 }))), "1234, 1235, 1236");
