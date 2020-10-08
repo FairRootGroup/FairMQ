@@ -65,8 +65,6 @@ struct DDSSession::Impl
         , fId(to_string(fSession->create()))
         , fStopOnDestruction(false)
     {
-        setenv("DDS_SESSION_ID", fId.c_str(), 1);
-
         fDDSService.subscribeOnError([](const dds::intercom_api::EErrorCode errorCode, const std::string& msg) {
             std::cerr << "DDS error, error code: " << errorCode << ", error message: " << msg << std::endl;
         });
@@ -81,10 +79,6 @@ struct DDSSession::Impl
         , fStopOnDestruction(false)
     {
         fSession->attach(fId);
-        auto envId(std::getenv("DDS_SESSION_ID"));
-        if (envId != nullptr && std::string(envId) != fId) {
-            setenv("DDS_SESSION_ID", fId.c_str(), 1);
-        }
 
         fDDSService.subscribeOnError([](const dds::intercom_api::EErrorCode errorCode, const std::string& msg) {
             std::cerr << "DDS error, error code: " << errorCode << ", error message: " << msg << std::endl;
@@ -99,11 +93,6 @@ struct DDSSession::Impl
         , fId(to_string(fSession->getSessionID()))
         , fStopOnDestruction(false)
     {
-        auto envId(std::getenv("DDS_SESSION_ID"));
-        if (envId != nullptr && std::string(envId) != fId) {
-            setenv("DDS_SESSION_ID", fId.c_str(), 1);
-        }
-
         // Sanity check
         if (!fSession->IsRunning()) {
             throw std::runtime_error("Given CSession must be running");
@@ -122,10 +111,6 @@ struct DDSSession::Impl
     Impl& operator=(const Impl&) = delete;
     Impl(Impl&&) = delete;
     Impl& operator=(Impl&&) = delete;
-
-    struct Tag {};
-    friend auto operator<<(std::ostream& os, Tag) -> std::ostream& { return os << "DDSSession"; }
-    tools::InstanceLimiter<Tag, 1> fCount;
 
     DDSEnvironment fEnv;
     DDSRMSPlugin fRMSPlugin;
