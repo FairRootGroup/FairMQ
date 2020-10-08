@@ -11,13 +11,18 @@
 
 #include "TestEnvironment.h"
 
-#include <asio/io_context.hpp>
-#include <chrono>
-#include <cstdlib>
-#include <fairlogger/Logger.h>
 #include <fairmq/SDK.h>
 #include <fairmq/tools/Strings.h>
+
+#include <fairlogger/Logger.h>
+
+#include <asio/io_context.hpp>
 #include <gtest/gtest.h>
+
+#include <algorithm> // for_each
+#include <array>
+#include <chrono>
+#include <cstdlib>
 #include <thread>
 
 namespace fair {
@@ -82,8 +87,7 @@ struct TopologyFixture : ::testing::Test
         }
     }
 
-    auto TearDown() -> void override {
-    }
+    auto TearDown() -> void override {}
 
     LoggerConfig mLoggerConfig;
     std::string mDDSTopoFile;
@@ -93,13 +97,69 @@ struct TopologyFixture : ::testing::Test
     asio::io_context mIoContext;
 };
 
-struct AsyncOpFixture : ::testing::Test
+struct MultipleTopologiesFixture : ::testing::Test
 {
-    auto SetUp() -> void override {
+    MultipleTopologiesFixture()
+        : mDDSTopoFile(tools::ToString(SDK_TESTSUITE_SOURCE_DIR, "/test_topo.xml"))
+        , mDDSEnv(CMAKE_CURRENT_BINARY_DIR)
+        , mDDSSessions{ sdk::DDSSession(mDDSEnv),
+                        sdk::DDSSession(mDDSEnv) }
+        , mDDSTopologies{ sdk::DDSTopology(sdk::DDSTopology::Path(mDDSTopoFile), mDDSEnv),
+                          sdk::DDSTopology(sdk::DDSTopology::Path(mDDSTopoFile), mDDSEnv) }
+    {
+        std::for_each(mDDSSessions.begin(), mDDSSessions.end(), [](sdk::DDSSession& s) {
+            s.StopOnDestruction();
+        });
     }
 
-    auto TearDown() -> void override {
+    auto SetUp() -> void override
+    {
+        LOG(info) << mDDSEnv;
+        for (int i = 0; i < mNumSessions; ++i) {
+            LOG(info) << "##### SESSION " << i << " #####";
+            LOG(info) << mDDSSessions[i];
+            LOG(info) << mDDSTopologies[i];
+            auto n(mDDSTopologies[i].GetNumRequiredAgents());
+            mDDSSessions[i].SubmitAgents(n);
+            mDDSSessions[i].ActivateTopology(mDDSTopologies[i]);
+
+            std::vector<sdk::DDSAgent> agents = mDDSSessions[i].RequestAgentInfo();
+            LOG(info) << "##### AgentInfo:";
+            LOG(info) << "size: " << agents.size();
+            for (const auto& a : agents) {
+                LOG(info) << a;
+            }
+
+            std::vector<sdk::DDSTask> tasks = mDDSSessions[i].RequestTaskInfo();
+            LOG(info) << "##### TaskInfo:";
+            LOG(info) << "size: " << tasks.size();
+            for (const auto& t : tasks) {
+                LOG(info) << t;
+            }
+
+            std::vector<sdk::DDSCollection> collections = mDDSTopologies[i].GetCollections();
+            LOG(info) << "##### CollectionInfo:";
+            LOG(info) << "size: " << collections.size();
+            for (const auto& c : collections) {
+                LOG(info) << c;
+            }
+        }
     }
+
+    auto TearDown() -> void override {}
+
+    static constexpr int mNumSessions = 2;
+    LoggerConfig mLoggerConfig;
+    std::string mDDSTopoFile;
+    sdk::DDSEnvironment mDDSEnv;
+    std::array<sdk::DDSSession, mNumSessions> mDDSSessions;
+    std::array<sdk::DDSTopology, mNumSessions> mDDSTopologies;
+};
+
+struct AsyncOpFixture : ::testing::Test
+{
+    auto SetUp() -> void override {}
+    auto TearDown() -> void override {}
 
     LoggerConfig mLoggerConfig;
     asio::io_context mIoContext;

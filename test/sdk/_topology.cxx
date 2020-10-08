@@ -13,9 +13,30 @@
 #include <fairmq/sdk/Topology.h>
 #include <fairmq/Tools.h>
 
+#include <thread>
+
 namespace {
 
 using Topology = fair::mq::test::TopologyFixture;
+using MultipleTopologies = fair::mq::test::MultipleTopologiesFixture;
+
+void control(fair::mq::sdk::Topology& topo)
+{
+    using fair::mq::sdk::TopologyTransition;
+
+    for (auto transition : {TopologyTransition::InitDevice,
+                            TopologyTransition::CompleteInit,
+                            TopologyTransition::Bind,
+                            TopologyTransition::Connect,
+                            TopologyTransition::InitTask,
+                            TopologyTransition::Run,
+                            TopologyTransition::Stop,
+                            TopologyTransition::ResetTask,
+                            TopologyTransition::ResetDevice,
+                            TopologyTransition::End}) {
+        ASSERT_EQ(topo.ChangeState(transition).first, std::error_code());
+    }
+}
 
 TEST(TopologyHelper, MakeTopology)
 {
@@ -24,7 +45,6 @@ TEST(TopologyHelper, MakeTopology)
     // This is only needed for this unit test
     test::LoggerConfig cfg;
     sdk::DDSEnv env(CMAKE_CURRENT_BINARY_DIR);
-    /////////////////////////////////////
 
     std::string topoFile(tools::ToString(SDK_TESTSUITE_SOURCE_DIR, "/test_topo.xml"));
     dds::topology_api::CTopology nativeTopo(topoFile);
@@ -33,6 +53,59 @@ TEST(TopologyHelper, MakeTopology)
     EXPECT_THROW(sdk::MakeTopology(nativeTopo, nativeSession, env), sdk::RuntimeError);
     nativeSession->shutdown();
 }
+
+TEST_F(MultipleTopologies, Construction)
+{
+    using namespace fair::mq;
+
+    std::array<sdk::Topology, mNumSessions> topos{
+        sdk::Topology(mDDSTopologies[0], mDDSSessions[0]),
+        sdk::Topology(mDDSTopologies[1], mDDSSessions[1])
+    };
+}
+
+TEST_F(MultipleTopologies, ChangeStateFullDeviceLifecycle)
+{
+    using namespace fair::mq;
+
+    std::array<sdk::Topology, mNumSessions> topos{
+        sdk::Topology(mDDSTopologies[0], mDDSSessions[0]),
+        sdk::Topology(mDDSTopologies[1], mDDSSessions[1])
+    };
+
+    for (int i = 0; i < mNumSessions; ++i) {
+        using fair::mq::sdk::TopologyTransition;
+
+        for (auto transition : {TopologyTransition::InitDevice,
+                                TopologyTransition::CompleteInit,
+                                TopologyTransition::Bind,
+                                TopologyTransition::Connect,
+                                TopologyTransition::InitTask,
+                                TopologyTransition::Run,
+                                TopologyTransition::Stop,
+                                TopologyTransition::ResetTask,
+                                TopologyTransition::ResetDevice,
+                                TopologyTransition::End}) {
+            ASSERT_EQ(topos[i].ChangeState(transition).first, std::error_code());
+        }
+    }
+}
+
+TEST_F(MultipleTopologies, ChangeStateFullDeviceLifecycleConcurrent)
+{
+    using namespace fair::mq;
+
+    std::array<sdk::Topology, mNumSessions> topos{
+        sdk::Topology(mDDSTopologies[0], mDDSSessions[0]),
+        sdk::Topology(mDDSTopologies[1], mDDSSessions[1])
+    };
+
+    std::thread t0(control, std::ref(topos[0]));
+    std::thread t1(control, std::ref(topos[1]));
+    t0.join();
+    t1.join();
+}
+
 
 TEST_F(Topology, Construction)
 {
