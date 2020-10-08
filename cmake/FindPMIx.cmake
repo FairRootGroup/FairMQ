@@ -6,28 +6,35 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
+
+# The "lib/${CMAKE_LIBRARY_ARCHITECTURE}/pmix" part in all
+# the PATH_SUFFIXES is here to be able to find Debian's
+# libpmix-dev package. It installs everything below
+# /usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}/pmix
+
+
 find_path(PMIx_INCLUDE_DIR
   NAMES pmix.h
   HINTS ${PMIX_ROOT} $ENV{PMIX_ROOT}
-  PATH_SUFFIXES include
+  PATH_SUFFIXES include lib/${CMAKE_LIBRARY_ARCHITECTURE}/pmix/include
 )
 
 find_path(PMIx_LIBRARY_DIR
   NAMES libpmix.dylib libpmix.so
   HINTS ${PMIX_ROOT} $ENV{PMIX_ROOT}
-  PATH_SUFFIXES lib lib64
+  PATH_SUFFIXES lib lib64 lib/${CMAKE_LIBRARY_ARCHITECTURE}/pmix/lib
 )
 
 find_library(PMIx_LIBRARY_SHARED
   NAMES libpmix.dylib libpmix.so
   HINTS ${PMIX_ROOT} $ENV{PMIX_ROOT}
-  PATH_SUFFIXES lib lib64
+  PATH_SUFFIXES lib lib64 lib/${CMAKE_LIBRARY_ARCHITECTURE}/pmix/lib
 )
 
 find_file(PMIx_VERSION_FILE
   NAMES pmix_version.h
   HINTS ${PMIX_ROOT} $ENV{PMIX_ROOT}
-  PATH_SUFFIXES include
+  PATH_SUFFIXES include lib/${CMAKE_LIBRARY_ARCHITECTURE}/pmix/include
 )
 
 file(READ "${PMIx_VERSION_FILE}" __version_raw)
