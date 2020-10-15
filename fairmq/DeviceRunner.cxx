@@ -56,7 +56,9 @@ bool DeviceRunner::HandleGeneralOptions(const fair::mq::ProgOptions& config, boo
             fair::Logger::SetConsoleSeverity("nolog");
         } else {
             fair::Logger::SetConsoleColor(color);
-            fair::Logger::SetConsoleSeverity(severity);
+            if (severity != "") {
+                fair::Logger::SetConsoleSeverity(severity);
+            }
         }
 
         if (printLogo) {

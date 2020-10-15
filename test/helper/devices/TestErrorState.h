@@ -28,7 +28,7 @@ class ErrorState : public FairMQDevice
     {
         std::string state("Init");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "going to change to Error state from " << state << "()";
+            LOG(info) << "going to change to Error state from " << state << "()";
             ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
@@ -37,7 +37,7 @@ class ErrorState : public FairMQDevice
     {
         std::string state("Bind");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "going to change to Error state from " << state << "()";
+            LOG(info) << "going to change to Error state from " << state << "()";
             ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
@@ -46,7 +46,7 @@ class ErrorState : public FairMQDevice
     {
         std::string state("Connect");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "going to change to Error state from " << state << "()";
+            LOG(info) << "going to change to Error state from " << state << "()";
             ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
@@ -55,7 +55,7 @@ class ErrorState : public FairMQDevice
     {
         std::string state("InitTask");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "going to change to Error state from " << state << "()";
+            LOG(info) << "going to change to Error state from " << state << "()";
             ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
@@ -64,7 +64,7 @@ class ErrorState : public FairMQDevice
     {
         std::string state("PreRun");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "going to change to Error state from " << state << "()";
+            LOG(info) << "going to change to Error state from " << state << "()";
             ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
@@ -73,7 +73,7 @@ class ErrorState : public FairMQDevice
     {
         std::string state("Run");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "going to change to Error state from " << state << "()";
+            LOG(info) << "going to change to Error state from " << state << "()";
             ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
@@ -82,7 +82,7 @@ class ErrorState : public FairMQDevice
     {
         std::string state("PostRun");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "going to change to Error state from " << state << "()";
+            LOG(info) << "going to change to Error state from " << state << "()";
             ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
@@ -91,7 +91,7 @@ class ErrorState : public FairMQDevice
     {
         std::string state("ResetTask");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "going to change to Error state from " << state << "()";
+            LOG(info) << "going to change to Error state from " << state << "()";
             ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
@@ -100,7 +100,7 @@ class ErrorState : public FairMQDevice
     {
         std::string state("Reset");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "going to change to Error state from " << state << "()";
+            LOG(info) << "going to change to Error state from " << state << "()";
             ChangeState(fair::mq::Transition::ErrorFound);
         }
     }
