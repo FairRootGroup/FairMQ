@@ -29,7 +29,7 @@ class Signals : public FairMQDevice
     {
         std::string state("Init");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "raising SIGINT from " << state << "()";
+            LOG(info) << "raising SIGINT from " << state << "()";
             raise(SIGINT);
         }
     }
@@ -37,7 +37,7 @@ class Signals : public FairMQDevice
     {
         std::string state("Bind");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "raising SIGINT from " << state << "()";
+            LOG(info) << "raising SIGINT from " << state << "()";
             raise(SIGINT);
         }
     }
@@ -45,7 +45,7 @@ class Signals : public FairMQDevice
     {
         std::string state("Connect");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "raising SIGINT from " << state << "()";
+            LOG(info) << "raising SIGINT from " << state << "()";
             raise(SIGINT);
         }
     }
@@ -54,7 +54,7 @@ class Signals : public FairMQDevice
     {
         std::string state("InitTask");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "raising SIGINT from " << state << "()";
+            LOG(info) << "raising SIGINT from " << state << "()";
             raise(SIGINT);
         }
     }
@@ -63,7 +63,7 @@ class Signals : public FairMQDevice
     {
         std::string state("PreRun");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "raising SIGINT from " << state << "()";
+            LOG(info) << "raising SIGINT from " << state << "()";
             raise(SIGINT);
         }
     }
@@ -72,7 +72,7 @@ class Signals : public FairMQDevice
     {
         std::string state("Run");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "raising SIGINT from " << state << "()";
+            LOG(info) << "raising SIGINT from " << state << "()";
             raise(SIGINT);
         }
     }
@@ -81,7 +81,7 @@ class Signals : public FairMQDevice
     {
         std::string state("PostRun");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "raising SIGINT from " << state << "()";
+            LOG(info) << "raising SIGINT from " << state << "()";
             raise(SIGINT);
         }
     }
@@ -90,7 +90,7 @@ class Signals : public FairMQDevice
     {
         std::string state("ResetTask");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "raising SIGINT from " << state << "()";
+            LOG(info) << "raising SIGINT from " << state << "()";
             raise(SIGINT);
         }
     }
@@ -99,7 +99,7 @@ class Signals : public FairMQDevice
     {
         std::string state("Reset");
         if (std::string::npos != GetId().find("_" + state + "_")) {
-            LOG(debug) << "raising SIGINT from " << state << "()";
+            LOG(info) << "raising SIGINT from " << state << "()";
             raise(SIGINT);
         }
     }
