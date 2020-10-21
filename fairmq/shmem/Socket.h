@@ -148,10 +148,10 @@ class Socket final : public fair::mq::Socket
     {
         if (zmq_errno() == ETERM) {
             LOG(debug) << "Terminating socket " << fId;
-            return static_cast<int>(TransferResult::error);
+            return static_cast<int>(TransferCode::error);
         } else {
             LOG(error) << "Failed transfer on socket " << fId << ", reason: " << zmq_strerror(errno);
-            return static_cast<int>(TransferResult::error);
+            return static_cast<int>(TransferCode::error);
         }
     }
 
@@ -177,18 +177,18 @@ class Socket final : public fair::mq::Socket
                 return size;
             } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (fManager.Interrupted()) {
-                    return static_cast<int>(TransferResult::interrupted);
+                    return static_cast<int>(TransferCode::interrupted);
                 } else if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
-                    return static_cast<int>(TransferResult::timeout);
+                    return static_cast<int>(TransferCode::timeout);
                 }
             } else {
                 return HandleErrors();
             }
         }
 
-        return static_cast<int>(TransferResult::error);
+        return static_cast<int>(TransferCode::error);
     }
 
     int64_t Receive(MessagePtr& msg, const int timeout = -1) override
@@ -222,11 +222,11 @@ class Socket final : public fair::mq::Socket
                 return size;
             } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (fManager.Interrupted()) {
-                    return static_cast<int>(TransferResult::interrupted);
+                    return static_cast<int>(TransferCode::interrupted);
                 } else if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
-                    return static_cast<int>(TransferResult::timeout);
+                    return static_cast<int>(TransferCode::timeout);
                 }
             } else {
                 return HandleErrors();
@@ -273,18 +273,18 @@ class Socket final : public fair::mq::Socket
                 return totalSize;
             } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (fManager.Interrupted()) {
-                    return static_cast<int>(TransferResult::interrupted);
+                    return static_cast<int>(TransferCode::interrupted);
                 } else if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
-                    return static_cast<int>(TransferResult::timeout);
+                    return static_cast<int>(TransferCode::timeout);
                 }
             } else {
                 return HandleErrors();
             }
         }
 
-        return static_cast<int>(TransferResult::error);
+        return static_cast<int>(TransferCode::error);
     }
 
     int64_t Receive(std::vector<MessagePtr>& msgVec, const int timeout = -1) override
@@ -329,18 +329,18 @@ class Socket final : public fair::mq::Socket
                 return totalSize;
             } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (fManager.Interrupted()) {
-                    return static_cast<int>(TransferResult::interrupted);
+                    return static_cast<int>(TransferCode::interrupted);
                 } else if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
-                    return static_cast<int>(TransferResult::timeout);
+                    return static_cast<int>(TransferCode::timeout);
                 }
             } else {
                 return HandleErrors();
             }
         }
 
-        return static_cast<int>(TransferResult::error);
+        return static_cast<int>(TransferCode::error);
     }
 
     void* GetSocket() const { return fSocket; }
