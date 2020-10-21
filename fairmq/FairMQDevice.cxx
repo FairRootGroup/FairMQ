@@ -83,6 +83,7 @@ FairMQDevice::FairMQDevice(ProgOptions* config, const tools::Version version)
     , fUninitializedBindingChannels()
     , fUninitializedConnectingChannels()
     , fDataCallbacks(false)
+    , fMessageInputs()
     , fMsgInputs()
     , fMultipartInputs()
     , fMultitransportInputs()
@@ -504,18 +505,17 @@ void FairMQDevice::HandleSingleChannelInput()
 {
     bool proceed = true;
 
-    if (fMsgInputs.size() > 0)
-    {
-        while (!NewStatePending() && proceed)
-        {
-            proceed = HandleMsgInput(fInputChannelKeys.at(0), fMsgInputs.begin()->second, 0);
+    if (!fMessageInputs.empty()) {
+        while (!NewStatePending() && proceed) {
+            proceed = HandleMessageInput(fInputChannelKeys.at(0), fMessageInputs.begin()->second, 0);
         }
-    }
-    else if (fMultipartInputs.size() > 0)
-    {
-        while (!NewStatePending() && proceed)
-        {
+    } else if (!fMultipartInputs.empty()) {
+        while (!NewStatePending() && proceed) {
             proceed = HandleMultipartInput(fInputChannelKeys.at(0), fMultipartInputs.begin()->second, 0);
+        }
+    } else if (!fMsgInputs.empty()) {
+        while (!NewStatePending() && proceed) {
+            proceed = HandleInput(fInputChannelKeys.at(0), fMsgInputs.begin()->second, 0);
         }
     }
 }
@@ -524,75 +524,63 @@ void FairMQDevice::HandleMultipleChannelInput()
 {
     // check if more than one transport is used
     fMultitransportInputs.clear();
-    for (const auto& k : fInputChannelKeys)
-    {
+    for (const auto& k : fInputChannelKeys) {
         fair::mq::Transport t = fChannels.at(k).at(0).fTransportType;
-        if (fMultitransportInputs.find(t) == fMultitransportInputs.end())
-        {
+        if (fMultitransportInputs.find(t) == fMultitransportInputs.end()) {
             fMultitransportInputs.insert(pair<fair::mq::Transport, vector<string>>(t, vector<string>()));
             fMultitransportInputs.at(t).push_back(k);
-        }
-        else
-        {
+        } else {
             fMultitransportInputs.at(t).push_back(k);
         }
     }
 
-    for (const auto& mi : fMsgInputs)
-    {
-        for (auto& i : fChannels.at(mi.first))
-        {
-            i.fMultipart = false;
+    for (const auto& mi : fMessageInputs) {
+        for (auto& i : fChannels.at(mi.first)) {
+            i.fMultipart = 0;
         }
     }
 
-    for (const auto& mi : fMultipartInputs)
-    {
-        for (auto& i : fChannels.at(mi.first))
-        {
-            i.fMultipart = true;
+    for (const auto& mi : fMultipartInputs) {
+        for (auto& i : fChannels.at(mi.first)) {
+            i.fMultipart = 1;
+        }
+    }
+
+    for (const auto& mi : fMsgInputs) {
+        for (auto& i : fChannels.at(mi.first)) {
+            i.fMultipart = 2;
         }
     }
 
     // if more than one transport is used, handle poll of each in a separate thread
-    if (fMultitransportInputs.size() > 1)
-    {
+    if (fMultitransportInputs.size() > 1) {
         HandleMultipleTransportInput();
-    }
-    else // otherwise poll directly
-    {
+    } else { // otherwise poll directly
         bool proceed = true;
 
         FairMQPollerPtr poller(fChannels.at(fInputChannelKeys.at(0)).at(0).fTransportFactory->CreatePoller(fChannels, fInputChannelKeys));
 
-        while (!NewStatePending() && proceed)
-        {
+        while (!NewStatePending() && proceed) {
             poller->Poll(200);
 
             // check which inputs are ready and call their data handlers if they are.
-            for (const auto& ch : fInputChannelKeys)
-            {
-                for (unsigned int i = 0; i < fChannels.at(ch).size(); ++i)
-                {
-                    if (poller->CheckInput(ch, i))
-                    {
-                        if (fChannels.at(ch).at(i).fMultipart)
-                        {
+            for (const auto& ch : fInputChannelKeys) {
+                for (unsigned int i = 0; i < fChannels.at(ch).size(); ++i) {
+                    if (poller->CheckInput(ch, i)) {
+                        if (fChannels.at(ch).at(i).fMultipart == 1) {
                             proceed = HandleMultipartInput(ch, fMultipartInputs.at(ch), i);
-                        }
-                        else
-                        {
-                            proceed = HandleMsgInput(ch, fMsgInputs.at(ch), i);
+                        } else if (fChannels.at(ch).at(i).fMultipart == 0) {
+                            proceed = HandleMessageInput(ch, fMessageInputs.at(ch), i);
+                        } else if (fChannels.at(ch).at(i).fMultipart == 2) {
+                            proceed = HandleInput(ch, fMsgInputs.at(ch), i);
                         }
 
-                        if (!proceed)
-                        {
+                        if (!proceed) {
                             break;
                         }
                     }
                 }
-                if (!proceed)
-                {
+                if (!proceed) {
                     break;
                 }
             }
@@ -606,79 +594,72 @@ void FairMQDevice::HandleMultipleTransportInput()
 
     fMultitransportProceed = true;
 
-    for (const auto& i : fMultitransportInputs)
-    {
+    for (const auto& i : fMultitransportInputs) {
         threads.emplace_back(thread(&FairMQDevice::PollForTransport, this, fTransports.at(i.first).get(), i.second));
     }
 
-    for (thread& t : threads)
-    {
+    for (thread& t : threads) {
         t.join();
     }
 }
 
 void FairMQDevice::PollForTransport(const FairMQTransportFactory* factory, const vector<string>& channelKeys)
-{
-    try
-    {
-        FairMQPollerPtr poller(factory->CreatePoller(fChannels, channelKeys));
+try {
+    FairMQPollerPtr poller(factory->CreatePoller(fChannels, channelKeys));
 
-        while (!NewStatePending() && fMultitransportProceed)
-        {
-            poller->Poll(500);
+    while (!NewStatePending() && fMultitransportProceed) {
+        poller->Poll(500);
 
-            for (const auto& ch : channelKeys)
-            {
-                for (unsigned int i = 0; i < fChannels.at(ch).size(); ++i)
-                {
-                    if (poller->CheckInput(ch, i))
-                    {
-                        lock_guard<mutex> lock(fMultitransportMutex);
+        for (const auto& ch : channelKeys) {
+            for (unsigned int i = 0; i < fChannels.at(ch).size(); ++i) {
+                if (poller->CheckInput(ch, i)) {
+                    lock_guard<mutex> lock(fMultitransportMutex);
 
-                        if (!fMultitransportProceed)
-                        {
-                            break;
-                        }
+                    if (!fMultitransportProceed) {
+                        break;
+                    }
 
-                        if (fChannels.at(ch).at(i).fMultipart)
-                        {
-                            fMultitransportProceed = HandleMultipartInput(ch, fMultipartInputs.at(ch), i);
-                        }
-                        else
-                        {
-                            fMultitransportProceed = HandleMsgInput(ch, fMsgInputs.at(ch), i);
-                        }
+                    if (fChannels.at(ch).at(i).fMultipart == 1) {
+                        fMultitransportProceed = HandleMultipartInput(ch, fMultipartInputs.at(ch), i);
+                    } else if (fChannels.at(ch).at(i).fMultipart == 0) {
+                        fMultitransportProceed = HandleMessageInput(ch, fMessageInputs.at(ch), i);
+                    } else if (fChannels.at(ch).at(i).fMultipart == 2) {
+                        fMultitransportProceed = HandleInput(ch, fMsgInputs.at(ch), i);
+                    }
 
-                        if (!fMultitransportProceed)
-                        {
-                            break;
-                        }
+                    if (!fMultitransportProceed) {
+                        break;
                     }
                 }
-                if (!fMultitransportProceed)
-                {
-                    break;
-                }
+            }
+            if (!fMultitransportProceed) {
+                break;
             }
         }
     }
-    catch (exception& e)
-    {
-        LOG(error) << "FairMQDevice::PollForTransport() failed: " << e.what() << ", going to ERROR state.";
-        throw runtime_error(tools::ToString("FairMQDevice::PollForTransport() failed: ", e.what(), ", going to ERROR state."));
+} catch (exception& e) {
+    LOG(error) << "FairMQDevice::PollForTransport() failed: " << e.what() << ", going to ERROR state.";
+    throw runtime_error(tools::ToString("FairMQDevice::PollForTransport() failed: ", e.what(), ", going to ERROR state."));
+}
+
+bool FairMQDevice::HandleInput(const string& chName, const InputCallback& callback, int i)
+{
+    TransferResult result = Receive(chName, i);
+
+    if (result.code == TransferCode::success) {
+        return callback(std::move(result.msg.value()), i);
+    } else {
+        return false;
     }
 }
 
-bool FairMQDevice::HandleMsgInput(const string& chName, const InputMsgCallback& callback, int i)
+bool FairMQDevice::HandleMessageInput(const string& chName, const InputMessageCallback& callback, int i)
 {
     unique_ptr<FairMQMessage> input(fChannels.at(chName).at(i).fTransportFactory->CreateMessage());
 
-    if (Receive(input, chName, i) >= 0)
-    {
+    if (Receive(input, chName, i) >= 0) {
         return callback(input, i);
-    }
-    else
-    {
+    } else {
         return false;
     }
 }
@@ -687,12 +668,9 @@ bool FairMQDevice::HandleMultipartInput(const string& chName, const InputMultipa
 {
     FairMQParts input;
 
-    if (Receive(input, chName, i) >= 0)
-    {
+    if (Receive(input, chName, i) >= 0) {
         return callback(input, 0);
-    }
-    else
-    {
+    } else {
         return false;
     }
 }

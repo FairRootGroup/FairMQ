@@ -10,8 +10,11 @@
 #define FAIRMQSOCKET_H_
 
 #include "FairMQMessage.h"
+#include <fairmq/Buffer.h>
+#include <fairmq/Msg.h>
 
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <stdexcept>
 #include <string>
@@ -32,6 +35,13 @@ enum class TransferCode : int
     interrupted = -3
 };
 
+struct TransferResult
+{
+    size_t nbytes;
+    TransferCode code;
+    std::optional<Msg> msg;
+};
+
 } // namespace mq
 } // namespace fair
 
@@ -48,8 +58,12 @@ class FairMQSocket
 
     virtual int64_t Send(FairMQMessagePtr& msg, int timeout = -1) = 0;
     virtual int64_t Receive(FairMQMessagePtr& msg, int timeout = -1) = 0;
-    virtual int64_t Send(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int timeout = -1) = 0;
-    virtual int64_t Receive(std::vector<std::unique_ptr<FairMQMessage>>& msgVec, int timeout = -1) = 0;
+    virtual int64_t Send(std::vector<FairMQMessagePtr>& msgVec, int timeout = -1) = 0;
+    virtual int64_t Receive(std::vector<FairMQMessagePtr>& msgVec, int timeout = -1) = 0;
+
+    virtual fair::mq::TransferResult Send(fair::mq::Buffer buf, int timeout = -1) = 0;
+    virtual fair::mq::TransferResult Send(fair::mq::Msg msg, int timeout = -1) = 0;
+    virtual fair::mq::TransferResult Receive(int timeout = -1) = 0;
 
     virtual void Close() = 0;
 

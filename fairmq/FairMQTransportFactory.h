@@ -9,6 +9,7 @@
 #ifndef FAIRMQTRANSPORTFACTORY_H_
 #define FAIRMQTRANSPORTFACTORY_H_
 
+#include <Buffer.h>
 #include <FairMQMessage.h>
 #include <FairMQPoller.h>
 #include <FairMQSocket.h>
@@ -45,6 +46,9 @@ class FairMQTransportFactory
     /// Get a pointer to the associated polymorphic memory resource
     fair::mq::ChannelResource* GetMemoryResource() { return &fMemoryResource; }
     operator fair::mq::ChannelResource*() { return &fMemoryResource; }
+
+    template<typename... Args>
+    fair::mq::Buffer NewBuffer(Args&&... args) { return CreateMessage(std::forward<Args>(args)...); }
 
     /// @brief Create empty FairMQMessage (for receiving)
     /// @return pointer to FairMQMessage
@@ -126,14 +130,18 @@ class FairMQTransportFactory
 
     static auto CreateTransportFactory(const std::string& type, const std::string& id = "", const fair::mq::ProgOptions* config = nullptr) -> std::shared_ptr<FairMQTransportFactory>;
 
-    static void FairMQNoCleanup(void* /*data*/, void* /*obj*/)
-    {
-    }
+    static void FairMQNoCleanup(void* /*data*/, void* /*obj*/) {}
 
     template<typename T>
     static void FairMQSimpleMsgCleanup(void* /*data*/, void* obj)
     {
         delete static_cast<T*>(obj);
+    }
+
+    template<typename... Args>
+    fair::mq::Buffer NewSimpleBuffer(Args&&... args)
+    {
+        return NewSimpleMessage(std::forward<Args>(args)...);
     }
 
     template<typename T>
@@ -154,9 +162,14 @@ class FairMQTransportFactory
 
     FairMQMessagePtr NewSimpleMessage(const std::string& str)
     {
-
         std::string* msgStr = new std::string(str);
         return CreateMessage(const_cast<char*>(msgStr->c_str()), msgStr->length(), FairMQSimpleMsgCleanup<std::string>, msgStr);
+    }
+
+    template<typename... Args>
+    fair::mq::Buffer NewStaticBuffer(Args&&... args)
+    {
+        return NewStaticMessage(std::forward<Args>(args)...);
     }
 
     template<typename T>

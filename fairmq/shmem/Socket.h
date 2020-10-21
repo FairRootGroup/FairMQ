@@ -155,6 +155,28 @@ class Socket final : public fair::mq::Socket
         }
     }
 
+    TransferResult HandleErrors2(Msg msg) const
+    {
+        if (zmq_errno() == ETERM) {
+            LOG(debug) << "Terminating socket " << fId;
+            return {0, TransferCode::error, std::move(msg)};
+        } else {
+            LOG(error) << "Failed transfer on socket " << fId << ", errno: " << errno << ", reason: " << zmq_strerror(errno);
+            return {0, TransferCode::error, std::move(msg)};
+        }
+    }
+
+    TransferResult HandleErrors3() const
+    {
+        if (zmq_errno() == ETERM) {
+            LOG(debug) << "Terminating socket " << fId;
+            return {0, TransferCode::error, {}};
+        } else {
+            LOG(error) << "Failed transfer on socket " << fId << ", errno: " << errno << ", reason: " << zmq_strerror(errno);
+            return {0, TransferCode::error, {}};
+        }
+    }
+
     int64_t Send(MessagePtr& msg, const int timeout = -1) override
     {
         int flags = 0;
@@ -340,7 +362,158 @@ class Socket final : public fair::mq::Socket
             }
         }
 
-        return static_cast<int>(TransferResult::error);
+        return static_cast<int>(TransferCode::error);
+    }
+
+    TransferResult Send(Buffer buf, const int timeout = -1) override
+    {
+        int flags = 0;
+        if (timeout == 0) {
+            flags = ZMQ_DONTWAIT;
+        }
+        int elapsed = 0;
+
+        Message& shmMsg = static_cast<Message&>(*(buf.fBuffer.get()));
+        ZMsg zmqMsg(sizeof(MetaHeader));
+        std::memcpy(zmqMsg.Data(), &(shmMsg.fMeta), sizeof(MetaHeader));
+
+        while (true) {
+            int nbytes = zmq_msg_send(zmqMsg.Msg(), fSocket, flags);
+            if (nbytes > 0) {
+                shmMsg.fQueued = true;
+                ++fMessagesTx;
+                size_t size = buf.GetSize();
+                fBytesTx += size;
+                return {size, TransferCode::success, {}};
+            } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
+                if (fManager.Interrupted()) {
+                    return {0, TransferCode::interrupted, std::move(buf)};
+                } else if (ShouldRetry(flags, timeout, elapsed)) {
+                    continue;
+                } else {
+                    return {0, TransferCode::timeout, std::move(buf)};
+                }
+            } else {
+                return HandleErrors2(std::move(buf));
+            }
+        }
+
+        return {0, TransferCode::error, std::move(buf)};
+    }
+
+    TransferResult Send(Msg msg, int timeout = -1) override
+    {
+        const size_t vecSize = msg.Size();
+
+        if (vecSize == 0) {
+            LOG(warn) << "Will not send empty vector";
+            return {0, TransferCode::error, std::move(msg)};
+        }
+
+        int flags = 0;
+        if (timeout == 0) {
+            flags = ZMQ_DONTWAIT;
+        }
+        int elapsed = 0;
+
+        // put it into zmq message
+        ZMsg zmqMsg(vecSize * sizeof(MetaHeader));
+
+        // prepare the message with shm metas
+        MetaHeader* metas = static_cast<MetaHeader*>(zmqMsg.Data());
+
+        for (auto& buf : msg) {
+            Message& shmMsg = static_cast<Message&>(*(buf.fBuffer));
+            std::memcpy(metas++, &(shmMsg.fMeta), sizeof(MetaHeader));
+        }
+
+        while (true) {
+            size_t totalSize = 0;
+            int nbytes = zmq_msg_send(zmqMsg.Msg(), fSocket, flags);
+            if (nbytes > 0) {
+                assert(static_cast<unsigned int>(nbytes) == (vecSize * sizeof(MetaHeader))); // all or nothing
+
+                for (auto& buf : msg) {
+                    Message& shmMsg = static_cast<Message&>(*(buf.fBuffer));
+                    shmMsg.fQueued = true;
+                    totalSize += shmMsg.fMeta.fSize;
+                }
+
+                // store statistics on how many messages have been sent
+                fMessagesTx++;
+                fBytesTx += totalSize;
+
+                return {totalSize, TransferCode::success, {}};
+            } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
+                if (fManager.Interrupted()) {
+                    return {0, TransferCode::interrupted, std::move(msg)};
+                } else if (ShouldRetry(flags, timeout, elapsed)) {
+                    continue;
+                } else {
+                    return {0, TransferCode::timeout, std::move(msg)};
+                }
+            } else {
+                return HandleErrors2(std::move(msg));
+            }
+        }
+
+        return {0, TransferCode::error, std::move(msg)};
+    }
+
+    TransferResult Receive(int timeout = -1) override
+    {
+        int flags = 0;
+        if (timeout == 0) {
+            flags = ZMQ_DONTWAIT;
+        }
+        int elapsed = 0;
+
+        ZMsg zmqMsg;
+
+        while (true) {
+            size_t totalSize = 0;
+            int nbytes = zmq_msg_recv(zmqMsg.Msg(), fSocket, flags);
+            if (nbytes > 0) {
+                MetaHeader* hdrVec = static_cast<MetaHeader*>(zmqMsg.Data());
+                const auto hdrVecSize = zmqMsg.Size();
+
+                assert(hdrVecSize > 0);
+                if (hdrVecSize % sizeof(MetaHeader) != 0) {
+                    throw SocketError(
+                        tools::ToString("Received message is not a valid FairMQ shared memory message. ",
+                            "Possibly due to a misconfigured transport on the sender side. ",
+                            "Expected size of ", sizeof(MetaHeader), " bytes, received ", nbytes));
+                }
+
+                const auto numMessages = hdrVecSize / sizeof(MetaHeader);
+                Msg msg(numMessages);
+
+                for (size_t m = 0; m < numMessages; m++) {
+                    // create new message buffer
+                    msg.fBuffers.emplace_back(tools::make_unique<Message>(fManager, hdrVec[m], GetTransport()));
+                    Message& shmMsg = static_cast<Message&>(*(msg.fBuffers.back().fBuffer));
+                    totalSize += shmMsg.GetSize();
+                }
+
+                // store statistics on how many messages have been received (handle all parts as a single message)
+                fMessagesRx++;
+                fBytesRx += totalSize;
+
+                return {totalSize, TransferCode::success, std::move(msg)};
+            } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
+                if (fManager.Interrupted()) {
+                    return {0, TransferCode::interrupted, {}};
+                } else if (ShouldRetry(flags, timeout, elapsed)) {
+                    continue;
+                } else {
+                    return {0, TransferCode::timeout, {}};
+                }
+            } else {
+                return HandleErrors3();
+            }
+        }
+
+        return {0, TransferCode::error, {}};
     }
 
     void* GetSocket() const { return fSocket; }

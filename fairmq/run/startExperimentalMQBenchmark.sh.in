@@ -1,0 +1,86 @@
+#!/bin/bash
+
+export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
+
+maxIterations="0"
+bufSize="1000000"
+transport="zeromq"
+affinity="false"
+numBufs="1"
+affinitySamp=""
+affinitySink=""
+
+if [[ $1 =~ ^[0-9]+$ ]]; then
+    bufSize=$1
+fi
+
+if [[ $2 =~ ^[0-9]+$ ]]; then
+    maxIterations=$2
+fi
+
+if [[ $3 =~ ^[a-z]+$ ]]; then
+    transport=$3
+fi
+
+if [[ $4 =~ ^[a-z]+$ ]]; then
+    affinity=$4
+fi
+
+if [[ $6 =~ ^[0-9]+$ ]]; then
+    numBufs=$6
+fi
+
+echo "Starting experimental benchmark with following settings:"
+
+echo ""
+echo "buffer size: $bufSize bytes, number of buffers: $numBufs"
+
+if [ $maxIterations = 0 ]; then
+    echo "number of iterations: unlimited"
+else
+    echo "number of iterations: $maxIterations"
+fi
+
+echo "transport: $transport"
+
+if [ $affinity = "true" ]; then
+    affinitySamp="taskset -c 0"
+    affinitySink="taskset -c 1"
+    echo "affinity: assigning sampler to core 0, sink to core 1"
+else
+    echo ""
+fi
+
+echo ""
+echo "Usage: startBenchmark [message size=1000000] [number of iterations=0] [transport=zeromq/shmem] [affinity=false]"
+
+SAMPLER="fairmq-exp-bsampler"
+SAMPLER+=" --id bsampler1"
+#SAMPLER+=" --io-threads 2"
+#SAMPLER+=" --control static"
+SAMPLER+=" --transport $transport"
+SAMPLER+=" --severity debug"
+SAMPLER+=" --buf-size $bufSize"
+SAMPLER+=" --num-buffers $numBufs"
+SAMPLER+=" --shm-throw-bad-alloc false"
+# SAMPLER+=" --msg-rate 1000"
+SAMPLER+=" --max-iterations $maxIterations"
+SAMPLER+=" --channel-config name=data,type=pair,method=bind,address=tcp://127.0.0.1:5555"
+xterm -geometry 90x50+0+0 -hold -e $affinitySamp @CMAKE_CURRENT_BINARY_DIR@/$SAMPLER &
+echo ""
+echo "started: xterm -geometry 90x50+0+0 -hold -e $affinitySamp @CMAKE_CURRENT_BINARY_DIR@/$SAMPLER"
+echo "pid: $!"
+
+SINK="fairmq-exp-sink"
+SINK+=" --id sink1"
+#SINK+=" --io-threads 2"
+#SINK+=" --control static"
+SINK+=" --transport $transport"
+SINK+=" --severity debug"
+SINK+=" --max-iterations $maxIterations"
+SINK+=" --channel-config name=data,type=pair,method=connect,address=tcp://127.0.0.1:5555"
+xterm -geometry 90x50+550+0 -hold -e $affinitySink @CMAKE_CURRENT_BINARY_DIR@/$SINK &
+echo ""
+echo "started: xterm -geometry 90x50+550+0 -hold -e $affinitySink @CMAKE_CURRENT_BINARY_DIR@/$SINK"
+echo "pid: $!"
+echo ""

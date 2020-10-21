@@ -145,6 +145,7 @@ if(BUILD_FAIRMQ)
   # libFairMQ header files #
   ##########################
   set(FAIRMQ_PUBLIC_HEADER_FILES
+    Buffer.h
     DeviceRunner.h
     EventManager.h
     FairMQChannel.h
@@ -158,6 +159,7 @@ if(BUILD_FAIRMQ)
     FairMQTransportFactory.h
     MemoryResources.h
     MemoryResourceTools.h
+    Msg.h
     Transports.h
     options/FairMQProgOptions.h
     JSONParser.h
@@ -244,6 +246,7 @@ if(BUILD_FAIRMQ)
   ###################
   set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run/startMQBenchmark.sh.in ${CMAKE_CURRENT_BINARY_DIR}/startMQBenchmark.sh)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run/startExperimentalMQBenchmark.sh.in ${CMAKE_CURRENT_BINARY_DIR}/startExperimentalMQBenchmark.sh)
 
   #################################
   # define libFairMQ build target #
@@ -350,6 +353,9 @@ if(BUILD_FAIRMQ)
   add_executable(fairmq-bsampler run/runBenchmarkSampler.cxx)
   target_link_libraries(fairmq-bsampler FairMQ)
 
+  add_executable(fairmq-exp-bsampler run/runExperimentalBenchmarkSampler.cxx)
+  target_link_libraries(fairmq-exp-bsampler FairMQ)
+
   add_executable(fairmq-merger run/runMerger.cxx)
   target_link_libraries(fairmq-merger FairMQ)
 
@@ -361,6 +367,9 @@ if(BUILD_FAIRMQ)
 
   add_executable(fairmq-sink run/runSink.cxx)
   target_link_libraries(fairmq-sink FairMQ)
+
+  add_executable(fairmq-exp-sink run/runExperimentalSink.cxx)
+  target_link_libraries(fairmq-exp-sink FairMQ)
 
   add_executable(fairmq-splitter run/runSplitter.cxx)
   target_link_libraries(fairmq-splitter FairMQ)

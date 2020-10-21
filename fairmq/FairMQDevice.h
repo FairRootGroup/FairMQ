@@ -16,6 +16,7 @@
 
 #include <FairMQChannel.h>
 #include <FairMQMessage.h>
+#include <fairmq/Msg.h>
 #include <FairMQParts.h>
 #include <FairMQUnmanagedRegion.h>
 #include <FairMQLogger.h>
@@ -38,8 +39,9 @@
 
 using FairMQChannelMap = std::unordered_map<std::string, std::vector<FairMQChannel>>;
 
-using InputMsgCallback = std::function<bool(FairMQMessagePtr&, int)>;
+using InputMessageCallback = std::function<bool(FairMQMessagePtr&, int)>;
 using InputMultipartCallback = std::function<bool(FairMQParts&, int)>;
+using InputCallback = std::function<bool(fair::mq::Msg, int)>;
 
 namespace fair
 {
@@ -135,11 +137,17 @@ class FairMQDevice
         return GetChannel(channel, index).Receive(parts.fParts, rcvTimeoutInMs);
     }
 
-    /// @brief Getter for default transport factory
-    auto Transport() const -> FairMQTransportFactory*
+    fair::mq::TransferResult Send(fair::mq::Msg msg, const std::string& channel, const int index = 0, int sndTimeoutInMs = -1)
     {
-        return fTransportFactory.get();
+        return GetChannel(channel, index).Send(std::move(msg), sndTimeoutInMs);
     }
+    fair::mq::TransferResult Receive(const std::string& channel, const int index = 0, int rcvTimeoutInMs = -1)
+    {
+        return GetChannel(channel, index).Receive(rcvTimeoutInMs);
+    }
+
+    /// @brief Getter for default transport factory
+    auto Transport() const -> FairMQTransportFactory* { return fTransportFactory.get(); }
 
     // creates message with the default device transport
     template<typename... Args>
@@ -153,6 +161,20 @@ class FairMQDevice
     FairMQMessagePtr NewMessageFor(const std::string& channel, int index, Args&&... args)
     {
         return GetChannel(channel, index).NewMessage(std::forward<Args>(args)...);
+    }
+
+    // creates buffer with the default device transport
+    template<typename... Args>
+    fair::mq::Buffer NewBuffer(Args&&... args)
+    {
+        return Transport()->NewBuffer(std::forward<Args>(args)...);
+    }
+
+    // creates buffer with the transport of the specified channel
+    template<typename... Args>
+    fair::mq::Buffer NewBufferFor(const std::string& channel, int index, Args&&... args)
+    {
+        return GetChannel(channel, index).NewBuffer(std::forward<Args>(args)...);
     }
 
     // creates a message that will not be cleaned up after transfer, with the default device transport
@@ -169,6 +191,18 @@ class FairMQDevice
         return GetChannel(channel, index).NewStaticMessage(data);
     }
 
+    template<typename T>
+    fair::mq::Buffer NewStaticBuffer(const T& data)
+    {
+        return Transport()->NewStaticBuffer(data);
+    }
+
+    template<typename T>
+    fair::mq::Buffer NewStaticBufferFor(const std::string& channel, int index, const T& data)
+    {
+        return GetChannel(channel, index).NewStaticBuffer(data);
+    }
+
     // creates a message with a copy of the provided data, with the default device transport
     template<typename T>
     FairMQMessagePtr NewSimpleMessage(const T& data)
@@ -181,6 +215,18 @@ class FairMQDevice
     FairMQMessagePtr NewSimpleMessageFor(const std::string& channel, int index, const T& data)
     {
         return GetChannel(channel, index).NewSimpleMessage(data);
+    }
+
+    template<typename T>
+    fair::mq::Buffer NewSimpleBuffer(const T& data)
+    {
+        return Transport()->NewSimpleBuffer(data);
+    }
+
+    template<typename T>
+    fair::mq::Buffer NewSimpleBufferFor(const std::string& channel, int index, const T& data)
+    {
+        return GetChannel(channel, index).NewSimpleBuffer(data);
     }
 
     // creates unamanaged region with the default device transport
@@ -257,24 +303,21 @@ class FairMQDevice
     void OnData(const std::string& channelName, bool (T::* memberFunction)(FairMQMessagePtr& msg, int index))
     {
         fDataCallbacks = true;
-        fMsgInputs.insert(std::make_pair(channelName, [this, memberFunction](FairMQMessagePtr& msg, int index)
-        {
+        fMessageInputs.insert(std::make_pair(channelName, [this, memberFunction](FairMQMessagePtr& msg, int index) {
             return (static_cast<T*>(this)->*memberFunction)(msg, index);
         }));
 
-        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end())
-        {
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end()) {
             fInputChannelKeys.push_back(channelName);
         }
     }
 
-    void OnData(const std::string& channelName, InputMsgCallback callback)
+    void OnData(const std::string& channelName, InputMessageCallback callback)
     {
         fDataCallbacks = true;
-        fMsgInputs.insert(make_pair(channelName, callback));
+        fMessageInputs.insert(make_pair(channelName, callback));
 
-        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end())
-        {
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end()) {
             fInputChannelKeys.push_back(channelName);
         }
     }
@@ -284,13 +327,11 @@ class FairMQDevice
     void OnData(const std::string& channelName, bool (T::* memberFunction)(FairMQParts& parts, int index))
     {
         fDataCallbacks = true;
-        fMultipartInputs.insert(std::make_pair(channelName, [this, memberFunction](FairMQParts& parts, int index)
-        {
+        fMultipartInputs.insert(std::make_pair(channelName, [this, memberFunction](FairMQParts& parts, int index) {
             return (static_cast<T*>(this)->*memberFunction)(parts, index);
         }));
 
-        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end())
-        {
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end()) {
             fInputChannelKeys.push_back(channelName);
         }
     }
@@ -300,8 +341,31 @@ class FairMQDevice
         fDataCallbacks = true;
         fMultipartInputs.insert(make_pair(channelName, callback));
 
-        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end())
-        {
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end()) {
+            fInputChannelKeys.push_back(channelName);
+        }
+    }
+
+    // overload to easily bind member functions
+    template<typename T>
+    void OnData(const std::string& channelName, bool (T::* memberFunction)(fair::mq::Msg msg, int index))
+    {
+        fDataCallbacks = true;
+        fMsgInputs.insert(std::make_pair(channelName, [this, memberFunction](fair::mq::Msg msg, int index) {
+            return (static_cast<T*>(this)->*memberFunction)(std::move(msg), index);
+        }));
+
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end()) {
+            fInputChannelKeys.push_back(channelName);
+        }
+    }
+
+    void OnData(const std::string& channelName, InputCallback callback)
+    {
+        fDataCallbacks = true;
+        fMsgInputs.insert(make_pair(channelName, callback));
+
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end()) {
             fInputChannelKeys.push_back(channelName);
         }
     }
@@ -492,14 +556,16 @@ class FairMQDevice
     void HandleMultipleTransportInput();
     void PollForTransport(const FairMQTransportFactory* factory, const std::vector<std::string>& channelKeys);
 
-    bool HandleMsgInput(const std::string& chName, const InputMsgCallback& callback, int i);
+    bool HandleInput(const std::string& chName, const InputCallback& callback, int i);
+    bool HandleMessageInput(const std::string& chName, const InputMessageCallback& callback, int i);
     bool HandleMultipartInput(const std::string& chName, const InputMultipartCallback& callback, int i);
 
     std::vector<FairMQChannel*> fUninitializedBindingChannels;
     std::vector<FairMQChannel*> fUninitializedConnectingChannels;
 
     bool fDataCallbacks;
-    std::unordered_map<std::string, InputMsgCallback> fMsgInputs;
+    std::unordered_map<std::string, InputMessageCallback> fMessageInputs;
+    std::unordered_map<std::string, InputCallback> fMsgInputs;
     std::unordered_map<std::string, InputMultipartCallback> fMultipartInputs;
     std::unordered_map<fair::mq::Transport, std::vector<std::string>> fMultitransportInputs;
     std::unordered_map<std::string, std::pair<uint16_t, uint16_t>> fChannelRegistry;

@@ -82,7 +82,7 @@ FairMQChannel::FairMQChannel(const string& name, const string& type, const strin
     , fPortRangeMax(DefaultPortRangeMax)
     , fAutoBind(DefaultAutoBind)
     , fValid(false)
-    , fMultipart(false)
+    , fMultipart(0)
 {
     // LOG(warn) << "Constructing channel '" << fName << "'";
 }

@@ -12,6 +12,7 @@
 #include <FairMQTransportFactory.h>
 #include <FairMQUnmanagedRegion.h>
 #include <FairMQSocket.h>
+#include <fairmq/Msg.h>
 #include <fairmq/Transports.h>
 #include <FairMQParts.h>
 #include <fairmq/Properties.h>
@@ -256,7 +257,7 @@ class FairMQChannel
     /// Sends a message to the socket queue.
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
     /// @param sndTimeoutInMs send timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
-    /// @return Number of bytes that have been queued, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been queued,TransferCode::timeout if timed out,TransferCode::error if there was an error,TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Send(FairMQMessagePtr& msg, int sndTimeoutInMs = -1)
     {
         CheckSendCompatibility(msg);
@@ -266,7 +267,7 @@ class FairMQChannel
     /// Receives a message from the socket queue.
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
     /// @param rcvTimeoutInMs receive timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
-    /// @return Number of bytes that have been received, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been received,TransferCode::timeout if timed out,TransferCode::error if there was an error,TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Receive(FairMQMessagePtr& msg, int rcvTimeoutInMs = -1)
     {
         CheckReceiveCompatibility(msg);
@@ -276,7 +277,7 @@ class FairMQChannel
     /// Send a vector of messages
     /// @param msgVec message vector reference
     /// @param sndTimeoutInMs send timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
-    /// @return Number of bytes that have been queued, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been queued,TransferCode::timeout if timed out,TransferCode::error if there was an error,TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Send(std::vector<FairMQMessagePtr>& msgVec, int sndTimeoutInMs = -1)
     {
         CheckSendCompatibility(msgVec);
@@ -286,7 +287,7 @@ class FairMQChannel
     /// Receive a vector of messages
     /// @param msgVec message vector reference
     /// @param rcvTimeoutInMs receive timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
-    /// @return Number of bytes that have been received, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been received,TransferCode::timeout if timed out,TransferCode::error if there was an error,TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Receive(std::vector<FairMQMessagePtr>& msgVec, int rcvTimeoutInMs = -1)
     {
         CheckReceiveCompatibility(msgVec);
@@ -296,7 +297,7 @@ class FairMQChannel
     /// Send FairMQParts
     /// @param parts FairMQParts reference
     /// @param sndTimeoutInMs send timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
-    /// @return Number of bytes that have been queued, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been queued,TransferCode::timeout if timed out,TransferCode::error if there was an error,TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Send(FairMQParts& parts, int sndTimeoutInMs = -1)
     {
         return Send(parts.fParts, sndTimeoutInMs);
@@ -305,10 +306,26 @@ class FairMQChannel
     /// Receive FairMQParts
     /// @param parts FairMQParts reference
     /// @param rcvTimeoutInMs receive timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
-    /// @return Number of bytes that have been received, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been received,TransferCode::timeout if timed out,TransferCode::error if there was an error,TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Receive(FairMQParts& parts, int rcvTimeoutInMs = -1)
     {
         return Receive(parts.fParts, rcvTimeoutInMs);
+    }
+
+    fair::mq::TransferResult Send(fair::mq::Buffer buf, int sndTimeoutInMs = -1)
+    {
+        CheckSendCompatibility(buf.fBuffer);
+        return fSocket->Send(std::move(buf), sndTimeoutInMs);
+    }
+
+    fair::mq::TransferResult Send(fair::mq::Msg msg, int sndTimeoutInMs = -1)
+    {
+        CheckSendCompatibility(msg.fBuffers);
+        return fSocket->Send(std::move(msg), sndTimeoutInMs);
+    }
+    fair::mq::TransferResult Receive(int rcvTimeoutInMs = -1)
+    {
+        return fSocket->Receive(rcvTimeoutInMs);
     }
 
     unsigned long GetBytesTx() const { return fSocket->GetBytesTx(); }
@@ -319,28 +336,20 @@ class FairMQChannel
     auto Transport() -> FairMQTransportFactory* { return fTransportFactory.get(); };
 
     template<typename... Args>
-    FairMQMessagePtr NewMessage(Args&&... args)
-    {
-        return Transport()->CreateMessage(std::forward<Args>(args)...);
-    }
-
+    FairMQMessagePtr NewMessage(Args&&... args)      { return Transport()->CreateMessage(std::forward<Args>(args)...); }
+    template<typename... Args>
+    fair::mq::Buffer NewBuffer(Args&&... args)       { return Transport()->NewBuffer(std::forward<Args>(args)...); }
     template<typename T>
-    FairMQMessagePtr NewSimpleMessage(const T& data)
-    {
-        return Transport()->NewSimpleMessage(data);
-    }
-
+    FairMQMessagePtr NewSimpleMessage(const T& data) { return Transport()->NewSimpleMessage(data); }
     template<typename T>
-    FairMQMessagePtr NewStaticMessage(const T& data)
-    {
-        return Transport()->NewStaticMessage(data);
-    }
+    fair::mq::Buffer NewSimpleBuffer(const T& data)  { return Transport()->NewSimpleBuffer(data); }
+    template<typename T>
+    FairMQMessagePtr NewStaticMessage(const T& data) { return Transport()->NewStaticMessage(data); }
+    template<typename T>
+    fair::mq::Buffer NewStaticBuffer(const T& data)  { return Transport()->NewStaticBuffer(data); }
 
     template<typename... Args>
-    FairMQUnmanagedRegionPtr NewUnmanagedRegion(Args&&... args)
-    {
-        return Transport()->CreateUnmanagedRegion(std::forward<Args>(args)...);
-    }
+    FairMQUnmanagedRegionPtr NewUnmanagedRegion(Args&&... args) { return Transport()->CreateUnmanagedRegion(std::forward<Args>(args)...); }
 
     static constexpr fair::mq::Transport DefaultTransportType = fair::mq::Transport::DEFAULT;
     static constexpr const char* DefaultTransportName = "default";
@@ -379,7 +388,7 @@ class FairMQChannel
 
     bool fValid;
 
-    bool fMultipart;
+    short fMultipart;
 
     void CheckSendCompatibility(FairMQMessagePtr& msg)
     {
@@ -399,7 +408,6 @@ class FairMQChannel
     {
         for (auto& msg : msgVec) {
             if (fTransportType != msg->GetType()) {
-
                 FairMQMessagePtr msgWrapper(NewMessage(
                     msg->GetData(),
                     msg->GetSize(),
@@ -408,6 +416,22 @@ class FairMQChannel
                 ));
                 msg.release();
                 msg = move(msgWrapper);
+            }
+        }
+    }
+
+    void CheckSendCompatibility(std::vector<fair::mq::Buffer>& bufVec)
+    {
+        for (auto& buf : bufVec) {
+            if (fTransportType != buf.GetType()) {
+                fair::mq::Buffer bufWrapper(NewBuffer(
+                    buf.GetData(),
+                    buf.GetSize(),
+                    [](void* /*data*/, void* _buf) { delete static_cast<FairMQMessage*>(_buf); },
+                    buf.fBuffer.get()
+                ));
+                buf.fBuffer.release();
+                buf = std::move(bufWrapper);
             }
         }
     }
@@ -424,7 +448,6 @@ class FairMQChannel
     {
         for (auto& msg : msgVec) {
             if (fTransportType != msg->GetType()) {
-
                 FairMQMessagePtr newMsg(NewMessage());
                 msg = move(newMsg);
             }
