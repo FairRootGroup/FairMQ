@@ -56,6 +56,10 @@ bool DeviceRunner::HandleGeneralOptions(const fair::mq::ProgOptions& config, boo
             fair::Logger::SetConsoleSeverity("nolog");
         } else {
             fair::Logger::SetConsoleColor(color);
+            auto envFairMQSeverity = getenv("FAIRMQ_SEVERITY");
+            if (envFairMQSeverity) {
+                severity = envFairMQSeverity;
+            }
             if (severity != "") {
                 fair::Logger::SetConsoleSeverity(severity);
             }
