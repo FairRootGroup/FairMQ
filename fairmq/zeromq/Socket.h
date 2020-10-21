@@ -125,10 +125,10 @@ class Socket final : public fair::mq::Socket
     {
         if (zmq_errno() == ETERM) {
             LOG(debug) << "Terminating socket " << fId;
-            return static_cast<int>(TransferResult::error);
+            return static_cast<int>(TransferCode::error);
         } else {
             LOG(error) << "Failed transfer on socket " << fId << ", errno: " << errno << ", reason: " << zmq_strerror(errno);
-            return static_cast<int>(TransferResult::error);
+            return static_cast<int>(TransferCode::error);
         }
     }
 
@@ -150,11 +150,11 @@ class Socket final : public fair::mq::Socket
                 return nbytes;
             } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (fCtx.Interrupted()) {
-                    return static_cast<int>(TransferResult::interrupted);
+                    return static_cast<int>(TransferCode::interrupted);
                 } else if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
-                    return static_cast<int>(TransferResult::timeout);
+                    return static_cast<int>(TransferCode::timeout);
                 }
             } else {
                 return HandleErrors();
@@ -178,11 +178,11 @@ class Socket final : public fair::mq::Socket
                 return nbytes;
             } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (fCtx.Interrupted()) {
-                    return static_cast<int>(TransferResult::interrupted);
+                    return static_cast<int>(TransferCode::interrupted);
                 } else if (ShouldRetry(flags, timeout, elapsed)) {
                     continue;
                 } else {
-                    return static_cast<int>(TransferResult::timeout);
+                    return static_cast<int>(TransferCode::timeout);
                 }
             } else {
                 return HandleErrors();
@@ -215,12 +215,12 @@ class Socket final : public fair::mq::Socket
                         totalSize += nbytes;
                     } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                         if (fCtx.Interrupted()) {
-                            return static_cast<int>(TransferResult::interrupted);
+                            return static_cast<int>(TransferCode::interrupted);
                         } else if (ShouldRetry(flags, timeout, elapsed)) {
                             repeat = true;
                             break;
                         } else {
-                            return static_cast<int>(TransferResult::timeout);
+                            return static_cast<int>(TransferCode::timeout);
                         }
                     } else {
                         return HandleErrors();
@@ -240,7 +240,7 @@ class Socket final : public fair::mq::Socket
             return Send(msgVec.back(), timeout);
         } else { // if the vector is empty, something might be wrong
             LOG(warn) << "Will not send empty vector";
-            return static_cast<int>(TransferResult::error);
+            return static_cast<int>(TransferCode::error);
         }
     }
 
@@ -254,7 +254,7 @@ class Socket final : public fair::mq::Socket
 
         while (true) {
             int64_t totalSize = 0;
-            int64_t more = 0;
+            int more = 0;
             bool repeat = false;
 
             do {
@@ -266,12 +266,12 @@ class Socket final : public fair::mq::Socket
                     totalSize += nbytes;
                 } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                     if (fCtx.Interrupted()) {
-                        return static_cast<int>(TransferResult::interrupted);
+                        return static_cast<int>(TransferCode::interrupted);
                     } else if (ShouldRetry(flags, timeout, elapsed)) {
                         repeat = true;
                         break;
                     } else {
-                        return static_cast<int>(TransferResult::timeout);
+                        return static_cast<int>(TransferCode::timeout);
                     }
                 } else {
                     return HandleErrors();

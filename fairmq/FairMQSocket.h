@@ -24,8 +24,9 @@ namespace fair
 namespace mq
 {
 
-enum class TransferResult : int
+enum class TransferCode : int
 {
+    success = 0,
     error = -1,
     timeout = -2,
     interrupted = -3

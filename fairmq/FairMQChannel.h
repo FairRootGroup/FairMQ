@@ -256,7 +256,7 @@ class FairMQChannel
     /// Sends a message to the socket queue.
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
     /// @param sndTimeoutInMs send timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
-    /// @return Number of bytes that have been queued, TransferResult::timeout if timed out, TransferResult::error if there was an error, TransferResult::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been queued, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Send(FairMQMessagePtr& msg, int sndTimeoutInMs = -1)
     {
         CheckSendCompatibility(msg);
@@ -266,7 +266,7 @@ class FairMQChannel
     /// Receives a message from the socket queue.
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
     /// @param rcvTimeoutInMs receive timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
-    /// @return Number of bytes that have been received, TransferResult::timeout if timed out, TransferResult::error if there was an error, TransferResult::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been received, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Receive(FairMQMessagePtr& msg, int rcvTimeoutInMs = -1)
     {
         CheckReceiveCompatibility(msg);
@@ -276,7 +276,7 @@ class FairMQChannel
     /// Send a vector of messages
     /// @param msgVec message vector reference
     /// @param sndTimeoutInMs send timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
-    /// @return Number of bytes that have been queued, TransferResult::timeout if timed out, TransferResult::error if there was an error, TransferResult::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been queued, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Send(std::vector<FairMQMessagePtr>& msgVec, int sndTimeoutInMs = -1)
     {
         CheckSendCompatibility(msgVec);
@@ -286,7 +286,7 @@ class FairMQChannel
     /// Receive a vector of messages
     /// @param msgVec message vector reference
     /// @param rcvTimeoutInMs receive timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
-    /// @return Number of bytes that have been received, TransferResult::timeout if timed out, TransferResult::error if there was an error, TransferResult::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been received, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Receive(std::vector<FairMQMessagePtr>& msgVec, int rcvTimeoutInMs = -1)
     {
         CheckReceiveCompatibility(msgVec);
@@ -296,7 +296,7 @@ class FairMQChannel
     /// Send FairMQParts
     /// @param parts FairMQParts reference
     /// @param sndTimeoutInMs send timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
-    /// @return Number of bytes that have been queued, TransferResult::timeout if timed out, TransferResult::error if there was an error, TransferResult::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been queued, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Send(FairMQParts& parts, int sndTimeoutInMs = -1)
     {
         return Send(parts.fParts, sndTimeoutInMs);
@@ -305,7 +305,7 @@ class FairMQChannel
     /// Receive FairMQParts
     /// @param parts FairMQParts reference
     /// @param rcvTimeoutInMs receive timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
-    /// @return Number of bytes that have been received, TransferResult::timeout if timed out, TransferResult::error if there was an error, TransferResult::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been received, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Receive(FairMQParts& parts, int rcvTimeoutInMs = -1)
     {
         return Receive(parts.fParts, rcvTimeoutInMs);
