@@ -54,38 +54,6 @@ class FairMQDevice
     friend class FairMQChannel;
 
   public:
-    // backwards-compatibility enum for old state machine interface, todo: delete this
-    enum Event
-    {
-        INIT_DEVICE,
-        internal_DEVICE_READY,
-        INIT_TASK,
-        internal_READY,
-        RUN,
-        STOP,
-        RESET_TASK,
-        RESET_DEVICE,
-        internal_IDLE,
-        END,
-        ERROR_FOUND
-    };
-
-    // backwards-compatibility enum for old state machine interface, todo: delete this
-    enum State
-    {
-        OK,
-        Error,
-        IDLE,
-        INITIALIZING_DEVICE,
-        DEVICE_READY,
-        INITIALIZING_TASK,
-        READY,
-        RUNNING,
-        RESETTING_TASK,
-        RESETTING_DEVICE,
-        EXITING
-    };
-
     /// Default constructor
     FairMQDevice();
     /// Constructor with external fair::mq::ProgOptions
@@ -449,8 +417,6 @@ class FairMQDevice
     /// Called in the RUNNING state once after executing the Run()/ConditionalRun() method
     virtual void PostRun() {}
 
-    virtual void Pause() __attribute__((deprecated("PAUSE state is removed. This method is never called. To pause Run, go to READY with STOP transition and back to RUNNING with RUN to resume."))) {}
-
     /// Resets the user task (to be overloaded in child classes)
     virtual void ResetTask() {}
 
@@ -460,11 +426,6 @@ class FairMQDevice
   public:
     bool ChangeState(const fair::mq::Transition transition) { return fStateMachine.ChangeState(transition); }
     bool ChangeState(const std::string& transition) { return fStateMachine.ChangeState(fair::mq::GetTransition(transition)); }
-
-    bool ChangeState(const int transition) __attribute__((deprecated("Use ChangeState(const fair::mq::Transition transition).")));
-
-    void WaitForEndOfState(const fair::mq::Transition transition) __attribute__((deprecated("Use WaitForState(fair::mq::State expectedState).")));
-    void WaitForEndOfState(const std::string& transition) __attribute__((deprecated("Use WaitForState(fair::mq::State expectedState)."))) { WaitForState(transition); }
 
     fair::mq::State WaitForNextState() { return fStateQueue.WaitForNext(); }
     void WaitForState(fair::mq::State state) { fStateQueue.WaitForState(state); }
@@ -477,9 +438,6 @@ class FairMQDevice
 
     void SubscribeToNewTransition(const std::string& key, std::function<void(const fair::mq::Transition)> callback) { fStateMachine.SubscribeToNewTransition(key, callback); }
     void UnsubscribeFromNewTransition(const std::string& key) { fStateMachine.UnsubscribeFromNewTransition(key); }
-
-    bool CheckCurrentState(const int /* state */) const __attribute__((deprecated("Use NewStatePending()."))) { return !fStateMachine.NewStatePending(); }
-    bool CheckCurrentState(const std::string& /* state */) const __attribute__((deprecated("Use NewStatePending()."))) { return !fStateMachine.NewStatePending(); }
 
     /// Returns true is a new state has been requested, signaling the current handler to stop.
     bool NewStatePending() const { return fStateMachine.NewStatePending(); }
