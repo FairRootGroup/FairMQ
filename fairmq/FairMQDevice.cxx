@@ -24,34 +24,6 @@
 using namespace std;
 using namespace fair::mq;
 
-static map<Transition, State> backwardsCompatibilityWaitForEndOfStateHelper =
-{
-    { Transition::InitDevice,   State::InitializingDevice },
-    { Transition::CompleteInit, State::Initialized },
-    { Transition::Bind,         State::Bound },
-    { Transition::Connect,      State::DeviceReady },
-    { Transition::InitTask,     State::Ready },
-    { Transition::Run,          State::Ready },
-    { Transition::Stop,         State::Ready },
-    { Transition::ResetTask,    State::DeviceReady },
-    { Transition::ResetDevice,  State::Idle }
-};
-
-static map<int, Transition> backwardsCompatibilityChangeStateHelper =
-{
-    { FairMQDevice::Event::INIT_DEVICE,           Transition::InitDevice },
-    { FairMQDevice::Event::internal_DEVICE_READY, Transition::Auto },
-    { FairMQDevice::Event::INIT_TASK,             Transition::InitTask },
-    { FairMQDevice::Event::internal_READY,        Transition::Auto },
-    { FairMQDevice::Event::RUN,                   Transition::Run },
-    { FairMQDevice::Event::STOP,                  Transition::Stop },
-    { FairMQDevice::Event::RESET_TASK,            Transition::ResetTask },
-    { FairMQDevice::Event::RESET_DEVICE,          Transition::ResetDevice },
-    { FairMQDevice::Event::internal_IDLE,         Transition::Auto },
-    { FairMQDevice::Event::END,                   Transition::End },
-    { FairMQDevice::Event::ERROR_FOUND,           Transition::ErrorFound }
-};
-
 constexpr const char* FairMQDevice::DefaultId;
 constexpr int FairMQDevice::DefaultIOThreads;
 constexpr const char* FairMQDevice::DefaultTransportName;
@@ -242,16 +214,6 @@ void FairMQDevice::TransitionTo(const fair::mq::State s)
         lock_guard<mutex> lock(fTransitionMtx);
         fTransitioning = false;
     }
-}
-
-bool FairMQDevice::ChangeState(const int transition)
-{
-    return ChangeState(backwardsCompatibilityChangeStateHelper.at(transition));
-}
-
-void FairMQDevice::WaitForEndOfState(Transition transition)
-{
-    WaitForState(backwardsCompatibilityWaitForEndOfStateHelper.at(transition));
 }
 
 void FairMQDevice::InitWrapper()
