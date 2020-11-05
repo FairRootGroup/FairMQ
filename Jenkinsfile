@@ -74,8 +74,9 @@ pipeline{
       steps{
         script {
           def build_jobs = jobMatrix('build', [
-            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc9.1.0',        fairsoft: 'fairmq_dev'],
-            [os: 'macOS10.15', arch: 'x86_64', compiler: 'AppleLLVM11.0.3', fairsoft: 'fairmq_dev'],
+            [os: 'Debian8',    arch: 'x86_64', compiler: 'gcc9.1.0',       fairsoft: 'fairmq_dev'],
+            [os: 'macOS10.14', arch: 'x86_64', compiler: 'AppleClang11.0', fairsoft: 'fairmq_dev'],
+            [os: 'macOS10.15', arch: 'x86_64', compiler: 'AppleClang12.0', fairsoft: 'fairmq_dev'],
           ]) { spec, label ->
             sh './Dart.sh alfa_ci Dart.cfg'
           }
