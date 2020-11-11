@@ -9,6 +9,7 @@
 #include <fairmq/sdk/commands/Commands.h>
 #include <fairmq/States.h>
 #include <fairmq/SDK.h>
+#include <fairmq/Tools.h>
 
 #include <boost/program_options.hpp>
 
@@ -63,14 +64,25 @@ void handleCommand(const string& command, const string& path, unsigned int timeo
     if (command == "c") {
         cout << "> checking state of the devices" << endl;
         auto const result = topo.GetCurrentState();
+        bool error = false;
         for (const auto& d : result) {
             cout << d.taskId << " : " << d.state << endl;
+            if (d.state == sdk::DeviceState::Error) {
+                error = true;
+            }
+        }
+        if (error) {
+            throw runtime_error("Some of the devices are in the Error state");
         }
         return;
     } else if (command == "o") {
         cout << "> dumping config of " << (path == "" ? "all" : path) << endl;
         // TODO: extend this regex to return all properties, once command size limitation is removed.
         auto const result = topo.GetProperties("^(session|id)$", path, std::chrono::milliseconds(timeout));
+        if (result.first != std::error_code()) {
+            cout << "ERROR: GetProperties failed for '" << path << "': " << result.first.message() << endl;
+            throw runtime_error(tools::ToString("GetProperties failed for '", path, "': ", result.first.message()));
+        }
         for (const auto& d : result.second.devices) {
             for (auto const& p : d.second.props) {
                 cout << d.first << ": " << p.first << " : " << p.second << endl;
@@ -80,11 +92,15 @@ void handleCommand(const string& command, const string& path, unsigned int timeo
     } else if (command == "p") {
         if (pKey == "" || pVal == "") {
             cout << "cannot send property with empty key and/or value! given key: '" << pKey << "', value: '" << pVal << "'." << endl;
-            return;
+            throw runtime_error(tools::ToString("cannot send property with empty key and/or value! given key: '", pKey, "', value: '", pVal, "'."));
         }
         const DeviceProperties props{{pKey, pVal}};
         cout << "> setting properties --> " << (path == "" ? "all" : path) << endl;
-        topo.SetProperties(props, path);
+        auto const result = topo.SetProperties(props, path);
+        if (result.first != std::error_code()) {
+            cout << "ERROR: SetProperties failed for '" << path << "': " << result.first.message() << endl;
+            throw runtime_error(tools::ToString("SetProperties failed for '", path, "': ", result.first.message()));
+        }
         // give dds time to complete request
         this_thread::sleep_for(chrono::milliseconds(100));
         return;
@@ -125,10 +141,11 @@ void handleCommand(const string& command, const string& path, unsigned int timeo
     } else {
         cout << "\033[01;32mInvalid input: [" << command << "]\033[0m" << endl;
         printControlsHelp();
-        return;
+        throw runtime_error(tools::ToString("\033[01;32mInvalid input: [", command, "]\033[0m"));
     }
     if (changeStateResult.first != std::error_code()) {
         cout << "ERROR: ChangeState failed for '" << path << "': " << changeStateResult.first.message() << endl;
+        throw runtime_error(tools::ToString("ERROR: ChangeState failed for '", path, "': ", changeStateResult.first.message()));
     }
 }
 
@@ -148,7 +165,11 @@ void sendCommand(const string& commandIn, const string& path, unsigned int timeo
     command = c;
 
     while (true) {
-        handleCommand(command, path, timeout, topo, pKey, pVal);
+        try {
+            handleCommand(command, path, timeout, topo, pKey, pVal);
+        } catch(exception& e) {
+            cout << "Error: " << e.what() << endl;
+        }
         cin >> c;
         command = c;
     }
