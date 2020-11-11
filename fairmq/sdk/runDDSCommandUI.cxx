@@ -209,7 +209,7 @@ try {
     DDSSession session(sessionID, env);
     DDSTopology ddsTopo(DDSTopology::Path(topoFile), env);
 
-    Topology topo(ddsTopo, session);
+    Topology topo(ddsTopo, session, true);
 
     if (targetState != "") {
         if (command != "") {

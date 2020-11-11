@@ -18,11 +18,13 @@ namespace sdk {
 /// @param nativeSession Existing and initialized CSession (either via create() or attach())
 /// @param nativeTopo Existing CTopology that is activated on the given nativeSession
 /// @param env Optional DDSEnv (needed primarily for unit testing)
+/// @param blockUntilConnected if true, ctor will wait for all tasks to confirm subscriptions
 auto MakeTopology(dds::topology_api::CTopology nativeTopo,
                   std::shared_ptr<dds::tools_api::CSession> nativeSession,
-                  DDSEnv env) -> Topology
+                  DDSEnv env,
+                  bool blockUntilConnected) -> Topology
 {
-    return {DDSTopo(std::move(nativeTopo), env), DDSSession(std::move(nativeSession), env)};
+    return {DDSTopo(std::move(nativeTopo), env), DDSSession(std::move(nativeSession), env), blockUntilConnected};
 }
 
 }   // namespace sdk
