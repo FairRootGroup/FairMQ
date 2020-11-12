@@ -357,7 +357,7 @@ auto DDS::HandleCmd(const string& id, sdk::cmd::Cmd& cmd, const string& cond, ui
         } break;
         case Type::dump_config: {
             stringstream ss;
-            for (const auto pKey : GetPropertyKeys()) {
+            for (const auto& pKey : GetPropertyKeys()) {
                 ss << id << ": " << pKey << " -> " << GetPropertyAsString(pKey) << "\n";
             }
             Cmds outCmds(make<Config>(id, ss.str()));
