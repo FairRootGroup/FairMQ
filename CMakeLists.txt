@@ -82,7 +82,7 @@ endif()
 
 if(BUILD_DDS_PLUGIN OR BUILD_SDK)
   find_package2(PRIVATE DDS REQUIRED
-    VERSION 3.0
+    VERSION 3.5.3
   )
   set(DDS_Boost_COMPONENTS system log log_setup regex filesystem thread)
   set(DDS_Boost_VERSION 1.67)
