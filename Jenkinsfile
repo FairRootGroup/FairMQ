@@ -46,6 +46,11 @@ def jobMatrix(String prefix, List specs, Closure callback) {
             echo "export GIT_BRANCH=$JOB_BASE_NAME" >> Dart.cfg
             echo "echo \\\$PATH" >> Dart.cfg
           '''
+
+          if (os =~ /macOS10.14/) {
+            sh "echo \"export EXCLUDE_UNSTABLE_DDS_TESTS=1\" >> Dart.cfg"
+          }
+
           sh 'cat Dart.cfg'
 
           callback.call(spec, label)

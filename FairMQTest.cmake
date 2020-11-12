@@ -57,8 +57,13 @@ Ctest_Configure(BUILD "${CTEST_BINARY_DIRECTORY}"
 
 Ctest_Build(BUILD "${CTEST_BINARY_DIRECTORY}")
 
+unset(exclude_tests)
+if($ENV{EXCLUDE_UNSTABLE_DDS_TESTS})
+  set(exclude_tests EXCLUDE ".*\\.localhost$")
+endif()
 Ctest_Test(BUILD "${CTEST_BINARY_DIRECTORY}"
            # PARALLEL_LEVEL $ENV{number_of_processors}
+           ${exclude_tests}
            PARALLEL_LEVEL $ENV{number_of_processors}
            RETURN_VALUE _ctest_test_ret_val
           )
