@@ -9,7 +9,7 @@
 #ifndef FAIR_MQ_SDK_ASIOBASE_H
 #define FAIR_MQ_SDK_ASIOBASE_H
 
-#include <asio/executor.hpp>
+#include <asio/any_io_executor.hpp>
 #include <fairmq/sdk/Traits.h>
 #include <memory>
 #include <utility>
@@ -18,7 +18,7 @@ namespace fair {
 namespace mq {
 namespace sdk {
 
-using DefaultExecutor = asio::executor;
+using DefaultExecutor = asio::any_io_executor;
 using DefaultAllocator = std::allocator<int>;
 
 /**

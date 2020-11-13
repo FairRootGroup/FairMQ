@@ -136,7 +136,7 @@ endif()
 
 if(BUILD_SDK)
   find_package2(BUNDLED asio
-    VERSION 1.13.0
+    VERSION 1.18.0
   )
   if(NOT asio_FOUND)
     build_bundled(asio extern/asio)

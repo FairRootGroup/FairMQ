@@ -12,6 +12,7 @@
 #include <asio/associated_allocator.hpp>
 #include <asio/associated_executor.hpp>
 #include <asio/executor_work_guard.hpp>
+#include <asio/dispatch.hpp>
 #include <asio/system_executor.hpp>
 #include <chrono>
 #include <exception>
@@ -69,17 +70,16 @@ struct AsioAsyncOpImpl : AsioAsyncOpImplBase<SignatureArgTypes...>
             throw RuntimeError("Async operation already completed");
         }
 
-        GetEx2().dispatch(
-            [=, handler = std::move(fHandler)]() mutable {
-                try {
-                    handler(ec, args...);
-                } catch (const std::exception& e) {
-                    FAIR_LOG(error) << "Uncaught exception in AsioAsyncOp completion handler: " << e.what();
-                } catch (...) {
-                    FAIR_LOG(error) << "Unknown uncaught exception in AsioAsyncOp completion handler.";
-                }
-            },
-            GetAlloc2());
+        asio::dispatch(GetEx2(),
+          [=, handler = std::move(fHandler)]() mutable {
+              try {
+                  handler(ec, args...);
+              } catch (const std::exception& e) {
+                  FAIR_LOG(error) << "Uncaught exception in AsioAsyncOp completion handler: " << e.what();
+              } catch (...) {
+                  FAIR_LOG(error) << "Unknown uncaught exception in AsioAsyncOp completion handler.";
+              }
+          });
 
         fWork1.reset();
         fWork2.reset();
