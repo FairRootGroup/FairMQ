@@ -254,7 +254,7 @@ auto Socket::ConnectEndpoint(std::unique_ptr<asiofi::connected_endpoint>& endpoi
     }
 }
 
-auto Socket::Send(MessagePtr& msg, const int /*timeout*/) -> int
+auto Socket::Send(MessagePtr& msg, const int /*timeout*/) -> int64_t
 {
     // timeout argument not yet implemented
 
@@ -412,7 +412,7 @@ auto Socket::SendQueueReaderStatic() -> void
     });
 }
 
-auto Socket::Receive(MessagePtr& msg, const int /*timeout*/) -> int
+auto Socket::Receive(MessagePtr& msg, const int /*timeout*/) -> int64_t
 try {
     // timeout argument not yet implemented
 

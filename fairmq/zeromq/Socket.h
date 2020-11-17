@@ -132,7 +132,7 @@ class Socket final : public fair::mq::Socket
         }
     }
 
-    int Send(MessagePtr& msg, const int timeout = -1) override
+    int64_t Send(MessagePtr& msg, const int timeout = -1) override
     {
         int flags = 0;
         if (timeout == 0) {
@@ -162,7 +162,7 @@ class Socket final : public fair::mq::Socket
         }
     }
 
-    int Receive(MessagePtr& msg, const int timeout = -1) override
+    int64_t Receive(MessagePtr& msg, const int timeout = -1) override
     {
         int flags = 0;
         if (timeout == 0) {
