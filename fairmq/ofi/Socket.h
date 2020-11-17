@@ -49,8 +49,8 @@ class Socket final : public fair::mq::Socket
     auto Bind(const std::string& address) -> bool override;
     auto Connect(const std::string& address) -> bool override;
 
-    auto Send(MessagePtr& msg, int timeout = 0) -> int override;
-    auto Receive(MessagePtr& msg, int timeout = 0) -> int override;
+    auto Send(MessagePtr& msg, int timeout = 0) -> int64_t override;
+    auto Receive(MessagePtr& msg, int timeout = 0) -> int64_t override;
     auto Send(std::vector<MessagePtr>& msgVec, int timeout = 0) -> int64_t override;
     auto Receive(std::vector<MessagePtr>& msgVec, int timeout = 0) -> int64_t override;
 

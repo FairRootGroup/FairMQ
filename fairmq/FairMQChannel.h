@@ -257,7 +257,7 @@ class FairMQChannel
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
     /// @param sndTimeoutInMs send timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
     /// @return Number of bytes that have been queued, TransferResult::timeout if timed out, TransferResult::error if there was an error, TransferResult::interrupted if interrupted (e.g. by requested state change)
-    int Send(FairMQMessagePtr& msg, int sndTimeoutInMs = -1)
+    int64_t Send(FairMQMessagePtr& msg, int sndTimeoutInMs = -1)
     {
         CheckSendCompatibility(msg);
         return fSocket->Send(msg, sndTimeoutInMs);
@@ -267,7 +267,7 @@ class FairMQChannel
     /// @param msg Constant reference of unique_ptr to a FairMQMessage
     /// @param rcvTimeoutInMs receive timeout in ms. -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
     /// @return Number of bytes that have been received, TransferResult::timeout if timed out, TransferResult::error if there was an error, TransferResult::interrupted if interrupted (e.g. by requested state change)
-    int Receive(FairMQMessagePtr& msg, int rcvTimeoutInMs = -1)
+    int64_t Receive(FairMQMessagePtr& msg, int rcvTimeoutInMs = -1)
     {
         CheckReceiveCompatibility(msg);
         return fSocket->Receive(msg, rcvTimeoutInMs);
