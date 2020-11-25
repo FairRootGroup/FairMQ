@@ -367,13 +367,20 @@ class Manager
         }
 
         for (const auto& e : *fShmSegments) {
-            fair::mq::RegionInfo info;
-            info.managed = true;
-            info.id = e.first;
-            info.event = RegionEvent::created;
-            info.ptr = boost::apply_visitor(SegmentAddress{}, fSegments.at(e.first));
-            info.size = boost::apply_visitor(SegmentSize{}, fSegments.at(e.first));
-            result.push_back(info);
+            // make sure any segments in the session are found
+            GetSegment(e.first);
+            try {
+                fair::mq::RegionInfo info;
+                info.managed = true;
+                info.id = e.first;
+                info.event = RegionEvent::created;
+                info.ptr = boost::apply_visitor(SegmentAddress{}, fSegments.at(e.first));
+                info.size = boost::apply_visitor(SegmentSize{}, fSegments.at(e.first));
+                result.push_back(info);
+            } catch (const std::out_of_range& oor) {
+                LOG(error) << "could not find segment with id " << e.first;
+                LOG(error) << oor.what();
+            }
         }
 
         return result;
@@ -474,7 +481,7 @@ class Manager
             try {
                 // get region info
                 SegmentInfo segmentInfo = fShmSegments->at(id);
-                LOG(info) << "LOCATED SEGMENT WITH ID '" << id << "'";
+                LOG(debug) << "Located segment with id '" << id << "'";
 
                 using namespace boost::interprocess;
 
