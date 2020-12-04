@@ -143,23 +143,19 @@ class Manager
             } catch(interprocess_exception& bie) {
                 LOG(error) << "something went wrong: " << bie.what();
             }
-        }
 
-        if (mlockSegment) {
-            LOG(debug) << "Locking the managed segment memory pages...";
-            if (mlock(boost::apply_visitor(SegmentAddress{}, fSegments.at(fSegmentId)), boost::apply_visitor(SegmentSize{}, fSegments.at(fSegmentId))) == -1) {
-                LOG(error) << "Could not lock the managed segment memory. Code: " << errno << ", reason: " << strerror(errno);
+            if (mlockSegment) {
+                LOG(debug) << "Locking the managed segment memory pages...";
+                if (mlock(boost::apply_visitor(SegmentAddress{}, fSegments.at(fSegmentId)), boost::apply_visitor(SegmentSize{}, fSegments.at(fSegmentId))) == -1) {
+                    LOG(error) << "Could not lock the managed segment memory. Code: " << errno << ", reason: " << strerror(errno);
+                }
+                LOG(debug) << "Successfully locked the managed segment memory pages.";
             }
-            LOG(debug) << "Successfully locked the managed segment memory pages.";
-        }
-        if (zeroSegment) {
-            LOG(debug) << "Zeroing the managed segment free memory...";
-            boost::apply_visitor(SegmentMemoryZeroer{}, fSegments.at(fSegmentId));
-            LOG(debug) << "Successfully zeroed the managed segment free memory.";
-        }
-
-        {
-            boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
+            if (zeroSegment) {
+                LOG(debug) << "Zeroing the managed segment free memory...";
+                boost::apply_visitor(SegmentMemoryZeroer{}, fSegments.at(fSegmentId));
+                LOG(debug) << "Successfully zeroed the managed segment free memory.";
+            }
 
             fShmRegions = fManagementSegment.find_or_construct<Uint16RegionInfoHashMap>(unique_instance)(fShmVoidAlloc);
 
