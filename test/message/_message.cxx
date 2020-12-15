@@ -78,17 +78,31 @@ void RunMsgRebuild(const string& transport)
     EXPECT_EQ(string(static_cast<char*>(msg->GetData()), msg->GetSize()), string("asdf"));
 }
 
-void Alignment(const string& transport)
+void Alignment(const string& transport, const string& _address)
 {
     size_t session{fair::mq::tools::UuidHash()};
+    std::string address(fair::mq::tools::ToString(_address, "_", transport));
 
     fair::mq::ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
 
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
 
-    FairMQMessagePtr msg(factory->CreateMessage(100, fair::mq::Alignment{64}));
-    ASSERT_EQ(reinterpret_cast<uintptr_t>(msg->GetData()) % 64, 0);
+    FairMQChannel push{"Push", "push", factory};
+    push.Bind(address);
+
+    FairMQChannel pull{"Pull", "pull", factory};
+    pull.Connect(address);
+
+    size_t alignment = 64;
+
+    FairMQMessagePtr outMsg(push.NewMessage(100, fair::mq::Alignment{alignment}));
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(outMsg->GetData()) % alignment, 0);
+    ASSERT_EQ(push.Send(outMsg), 100);
+
+    FairMQMessagePtr inMsg(pull.NewMessage());
+    ASSERT_EQ(pull.Receive(inMsg), 100);
+    // ASSERT_EQ(reinterpret_cast<uintptr_t>(inMsg->GetData()) % alignment, 0);
 }
 
 void EmptyMessage(const string& transport, const string& _address)
@@ -136,9 +150,14 @@ TEST(Rebuild, shmem)
     RunMsgRebuild("shmem");
 }
 
-TEST(Alignment, shmem) // TODO: add test for ZeroMQ once it is implemented
+TEST(Alignment, shmem)
 {
-    Alignment("shmem");
+    Alignment("shmem", "ipc://test_message_alignment");
+}
+
+TEST(Alignment, zeromq)
+{
+    Alignment("zeromq", "ipc://test_message_alignment");
 }
 
 TEST(EmptyMessage, zeromq)

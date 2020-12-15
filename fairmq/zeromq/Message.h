@@ -18,6 +18,7 @@
 #include <zmq.h>
 
 #include <cstddef>
+#include <cstdlib> // malloc, aligned_alloc
 #include <cstring>
 #include <memory>
 #include <string>
@@ -39,7 +40,8 @@ class Message final : public fair::mq::Message
     Message(FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fUsedSizeModified(false)
-        , fUsedSize()
+        , fUsedSize(0)
+        , fAlignment(0)
         , fMsg(tools::make_unique<zmq_msg_t>())
         , fViewMsg(nullptr)
     {
@@ -47,10 +49,11 @@ class Message final : public fair::mq::Message
             LOG(error) << "failed initializing message, reason: " << zmq_strerror(errno);
         }
     }
-    Message(Alignment /* alignment */, FairMQTransportFactory* factory = nullptr)
+    Message(Alignment alignment, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fUsedSizeModified(false)
-        , fUsedSize()
+        , fUsedSize(0)
+        , fAlignment(alignment.alignment)
         , fMsg(tools::make_unique<zmq_msg_t>())
         , fViewMsg(nullptr)
     {
@@ -63,22 +66,37 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fUsedSizeModified(false)
         , fUsedSize(size)
+        , fAlignment(0)
         , fMsg(tools::make_unique<zmq_msg_t>())
         , fViewMsg(nullptr)
     {
-        if (zmq_msg_init_size(fMsg.get(), size) != 0) {
+        void* ptr = malloc(size);
+        if (!ptr) {
+            LOG(error) << "failed to allocate buffer with provided size (" << size << ").";
+        }
+        if (zmq_msg_init_data(fMsg.get(), ptr, size, [](void* data, void*) { free(data); }, nullptr) != 0) {
             LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
         }
     }
 
-    Message(const size_t size, Alignment /* alignment */, FairMQTransportFactory* factory = nullptr)
+    Message(const size_t size, Alignment alignment, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fUsedSizeModified(false)
         , fUsedSize(size)
+        , fAlignment(alignment.alignment)
         , fMsg(tools::make_unique<zmq_msg_t>())
         , fViewMsg(nullptr)
     {
-        if (zmq_msg_init_size(fMsg.get(), size) != 0) {
+        void* ptr = nullptr;
+        if (alignment.alignment != 0) {
+            ptr = aligned_alloc(size, fAlignment);
+        } else {
+            ptr = malloc(size);
+        }
+        if (!ptr) {
+            LOG(error) << "failed to allocate buffer with provided size (" << size << ") and alignment (" << alignment.alignment << ").";
+        }
+        if (zmq_msg_init_data(fMsg.get(), ptr, size, [](void* data, void*) { free(data); }, nullptr) != 0) {
             LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
         }
     }
@@ -86,7 +104,8 @@ class Message final : public fair::mq::Message
     Message(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fUsedSizeModified(false)
-        , fUsedSize()
+        , fUsedSize(0)
+        , fAlignment(0)
         , fMsg(tools::make_unique<zmq_msg_t>())
         , fViewMsg(nullptr)
     {
@@ -98,7 +117,8 @@ class Message final : public fair::mq::Message
     Message(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fUsedSizeModified(false)
-        , fUsedSize()
+        , fUsedSize(0)
+        , fAlignment(0)
         , fMsg(tools::make_unique<zmq_msg_t>())
         , fViewMsg(nullptr)
     {
@@ -212,6 +232,14 @@ class Message final : public fair::mq::Message
         }
     }
 
+    // void Realign()
+    // {
+    //     if (fAlignment != 0) {
+    //         if (reinterpret_cast<uintptr_t>(GetData()) % fAlignment) {
+    //         }
+    //     }
+    // }
+
     Transport GetType() const override { return Transport::ZMQ; }
 
     void Copy(const fair::mq::Message& msg) override
@@ -235,6 +263,7 @@ class Message final : public fair::mq::Message
   private:
     bool fUsedSizeModified;
     size_t fUsedSize;
+    size_t fAlignment;
     std::unique_ptr<zmq_msg_t> fMsg;
     std::unique_ptr<zmq_msg_t> fViewMsg;   // view on a subset of fMsg (treating it as user buffer)
 
