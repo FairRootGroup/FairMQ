@@ -52,7 +52,9 @@ class Message final : public fair::mq::Message
     Message operator=(const Message&) = delete;
 
     auto Rebuild() -> void override;
+    auto Rebuild(Alignment alignment) -> void override;
     auto Rebuild(const size_t size) -> void override;
+    auto Rebuild(const size_t size, Alignment alignment) -> void override;
     auto Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) -> void override;
 
     auto GetData() const -> void* override;

@@ -18,8 +18,10 @@
 #include <zmq.h>
 
 #include <cstddef>
+#include <cstdlib> // malloc
 #include <cstring>
 #include <memory>
+#include <new> // bad_alloc
 #include <string>
 
 namespace fair
@@ -38,14 +40,17 @@ class Message final : public fair::mq::Message
   public:
     Message(FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
+        , fAlignment(0)
         , fMsg(tools::make_unique<zmq_msg_t>())
     {
         if (zmq_msg_init(fMsg.get()) != 0) {
             LOG(error) << "failed initializing message, reason: " << zmq_strerror(errno);
         }
     }
-    Message(Alignment /* alignment */, FairMQTransportFactory* factory = nullptr)
+
+    Message(Alignment alignment, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
+        , fAlignment(alignment.alignment)
         , fMsg(tools::make_unique<zmq_msg_t>())
     {
         if (zmq_msg_init(fMsg.get()) != 0) {
@@ -55,6 +60,7 @@ class Message final : public fair::mq::Message
 
     Message(const size_t size, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
+        , fAlignment(0)
         , fMsg(tools::make_unique<zmq_msg_t>())
     {
         if (zmq_msg_init_size(fMsg.get(), size) != 0) {
@@ -62,17 +68,40 @@ class Message final : public fair::mq::Message
         }
     }
 
-    Message(const size_t size, Alignment /* alignment */, FairMQTransportFactory* factory = nullptr)
+    static std::pair<void*, void*> AllocateAligned(size_t size, size_t alignment)
+    {
+        char* fullBufferPtr = static_cast<char*>(malloc(size + alignment));
+        if (!fullBufferPtr) {
+            LOG(error) << "failed to allocate buffer with provided size (" << size << ") and alignment (" << alignment << ").";
+            throw std::bad_alloc();
+        }
+
+        size_t offset = alignment - (reinterpret_cast<uintptr_t>(fullBufferPtr) % alignment);
+        char* alignedPartPtr = fullBufferPtr + offset;
+
+        return {static_cast<void*>(fullBufferPtr), static_cast<void*>(alignedPartPtr)};
+    }
+
+    Message(const size_t size, Alignment alignment, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
+        , fAlignment(alignment.alignment)
         , fMsg(tools::make_unique<zmq_msg_t>())
     {
-        if (zmq_msg_init_size(fMsg.get(), size) != 0) {
-            LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
+        if (fAlignment != 0) {
+            auto ptrs = AllocateAligned(size, fAlignment);
+            if (zmq_msg_init_data(fMsg.get(), ptrs.second, size, [](void* /* data */, void* hint) { free(hint); }, ptrs.first) != 0) {
+                LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
+            }
+        } else {
+            if (zmq_msg_init_size(fMsg.get(), size) != 0) {
+                LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
+            }
         }
     }
 
     Message(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
+        , fAlignment(0)
         , fMsg(tools::make_unique<zmq_msg_t>())
     {
         if (zmq_msg_init_data(fMsg.get(), data, size, ffn, hint) != 0) {
@@ -82,6 +111,7 @@ class Message final : public fair::mq::Message
 
     Message(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
+        , fAlignment(0)
         , fMsg(tools::make_unique<zmq_msg_t>())
     {
         // FIXME: make this zero-copy:
@@ -116,12 +146,40 @@ class Message final : public fair::mq::Message
         }
     }
 
+    void Rebuild(Alignment alignment) override
+    {
+        CloseMessage();
+        fAlignment = alignment.alignment;
+        fMsg = tools::make_unique<zmq_msg_t>();
+        if (zmq_msg_init(fMsg.get()) != 0) {
+            LOG(error) << "failed initializing message, reason: " << zmq_strerror(errno);
+        }
+    }
+
     void Rebuild(const size_t size) override
     {
         CloseMessage();
         fMsg = tools::make_unique<zmq_msg_t>();
         if (zmq_msg_init_size(fMsg.get(), size) != 0) {
             LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
+        }
+    }
+
+    void Rebuild(const size_t size, Alignment alignment) override
+    {
+        CloseMessage();
+        fAlignment = alignment.alignment;
+        fMsg = tools::make_unique<zmq_msg_t>();
+
+        if (fAlignment != 0) {
+            auto ptrs = AllocateAligned(size, fAlignment);
+            if (zmq_msg_init_data(fMsg.get(), ptrs.second, size, [](void* /* data */, void* hint) { free(hint); }, ptrs.first) != 0) {
+                LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
+            }
+        } else {
+            if (zmq_msg_init_size(fMsg.get(), size) != 0) {
+                LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
+            }
         }
     }
 
@@ -174,6 +232,23 @@ class Message final : public fair::mq::Message
         }
     }
 
+    void Realign()
+    {
+        // if alignment is provided
+        if (fAlignment != 0) {
+            void* data = GetData();
+            size_t size = GetSize();
+            // if buffer is valid && not already aligned with the given alignment
+            if (data != nullptr && reinterpret_cast<uintptr_t>(GetData()) % fAlignment) {
+                // create new aligned buffer
+                auto ptrs = AllocateAligned(size, fAlignment);
+                std::memcpy(ptrs.second, zmq_msg_data(fMsg.get()), size);
+                // rebuild the message with the new buffer
+                Rebuild(ptrs.second, size, [](void* /* buf */, void* hint) { free(hint); }, ptrs.first);
+            }
+        }
+    }
+
     Transport GetType() const override { return Transport::ZMQ; }
 
     void Copy(const fair::mq::Message& msg) override
@@ -189,6 +264,7 @@ class Message final : public fair::mq::Message
     ~Message() override { CloseMessage(); }
 
   private:
+    size_t fAlignment;
     std::unique_ptr<zmq_msg_t> fMsg;
 
     zmq_msg_t* GetMessage() const { return fMsg.get(); }
@@ -200,6 +276,7 @@ class Message final : public fair::mq::Message
         }
         // reset the message object to allow reuse in Rebuild
         fMsg.reset(nullptr);
+        fAlignment = 0;
     }
 };
 

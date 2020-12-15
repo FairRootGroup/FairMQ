@@ -91,17 +91,54 @@ void RunMsgRebuild(const string& transport)
     EXPECT_EQ(string(static_cast<char*>(msg->GetData()), msg->GetSize()), string("asdf"));
 }
 
-void Alignment(const string& transport)
+void Alignment(const string& transport, const string& _address)
 {
     size_t session{fair::mq::tools::UuidHash()};
+    std::string address(fair::mq::tools::ToString(_address, "_", transport));
 
     fair::mq::ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
 
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
 
-    FairMQMessagePtr msg(factory->CreateMessage(100, fair::mq::Alignment{64}));
-    ASSERT_EQ(reinterpret_cast<uintptr_t>(msg->GetData()) % 64, 0);
+    FairMQChannel push{"Push", "push", factory};
+    push.Bind(address);
+
+    FairMQChannel pull{"Pull", "pull", factory};
+    pull.Connect(address);
+
+    size_t alignment = 64;
+
+    FairMQMessagePtr outMsg1(push.NewMessage(100, fair::mq::Alignment{alignment}));
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(outMsg1->GetData()) % alignment, 0);
+    ASSERT_EQ(push.Send(outMsg1), 100);
+
+    FairMQMessagePtr inMsg1(pull.NewMessage(fair::mq::Alignment{alignment}));
+    ASSERT_EQ(pull.Receive(inMsg1), 100);
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(inMsg1->GetData()) % alignment, 0);
+
+    FairMQMessagePtr outMsg2(push.NewMessage(32, fair::mq::Alignment{alignment}));
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(outMsg2->GetData()) % alignment, 0);
+    ASSERT_EQ(push.Send(outMsg2), 32);
+
+    FairMQMessagePtr inMsg2(pull.NewMessage(fair::mq::Alignment{alignment}));
+    ASSERT_EQ(pull.Receive(inMsg2), 32);
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(inMsg2->GetData()) % alignment, 0);
+
+    FairMQMessagePtr outMsg3(push.NewMessage(100, fair::mq::Alignment{0}));
+    ASSERT_EQ(push.Send(outMsg3), 100);
+
+    FairMQMessagePtr inMsg3(pull.NewMessage(fair::mq::Alignment{0}));
+    ASSERT_EQ(pull.Receive(inMsg3), 100);
+
+    FairMQMessagePtr msg1(push.NewMessage(25));
+    msg1->Rebuild(50, fair::mq::Alignment{alignment});
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(msg1->GetData()) % alignment, 0);
+
+    size_t alignment2 = 32;
+    FairMQMessagePtr msg2(push.NewMessage(25, fair::mq::Alignment{alignment}));
+    msg2->Rebuild(50, fair::mq::Alignment{alignment2});
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(msg2->GetData()) % alignment2, 0);
 }
 
 void EmptyMessage(const string& transport, const string& _address)
@@ -149,9 +186,14 @@ TEST(Rebuild, shmem)
     RunMsgRebuild("shmem");
 }
 
-TEST(Alignment, shmem) // TODO: add test for ZeroMQ once it is implemented
+TEST(Alignment, shmem)
 {
-    Alignment("shmem");
+    Alignment("shmem", "ipc://test_message_alignment");
+}
+
+TEST(Alignment, zeromq)
+{
+    Alignment("zeromq", "ipc://test_message_alignment");
 }
 
 TEST(EmptyMessage, zeromq)
