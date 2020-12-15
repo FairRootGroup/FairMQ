@@ -173,6 +173,7 @@ class Socket final : public fair::mq::Socket
         while (true) {
             int nbytes = zmq_msg_recv(static_cast<Message*>(msg.get())->GetMessage(), fSocket, flags);
             if (nbytes >= 0) {
+                static_cast<Message*>(msg.get())->Realign();
                 int64_t actualBytes = zmq_msg_size(static_cast<Message*>(msg.get())->GetMessage());
                 fBytesRx += actualBytes;
                 ++fMessagesRx;
@@ -261,6 +262,7 @@ class Socket final : public fair::mq::Socket
 
                 int nbytes = zmq_msg_recv(static_cast<Message*>(part.get())->GetMessage(), fSocket, flags);
                 if (nbytes >= 0) {
+                    static_cast<Message*>(part.get())->Realign();
                     msgVec.push_back(move(part));
                     totalSize += nbytes;
                 } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {

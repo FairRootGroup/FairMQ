@@ -110,6 +110,12 @@ auto Message::Rebuild() -> void
     fHint = nullptr;
 }
 
+auto Message::Rebuild(Alignment /* alignment */) -> void
+{
+    // TODO: implement alignment
+    Rebuild();
+}
+
 auto Message::Rebuild(const size_t size) -> void
 {
     if (fFreeFunction) {
@@ -129,6 +135,12 @@ auto Message::Rebuild(const size_t size) -> void
     fSize = size;
     fFreeFunction = nullptr;
     fHint = nullptr;
+}
+
+auto Message::Rebuild(const size_t size, Alignment /* alignment */) -> void
+{
+    // TODO: implement alignment
+    Rebuild(size);
 }
 
 auto Message::Rebuild(void* /*data*/, const size_t size, fairmq_free_fn* ffn, void* hint) -> void

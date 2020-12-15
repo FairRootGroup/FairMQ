@@ -39,7 +39,9 @@ class FairMQMessage
     FairMQMessage(FairMQTransportFactory* factory) : fTransport(factory) {}
 
     virtual void Rebuild() = 0;
+    virtual void Rebuild(fair::mq::Alignment alignment) = 0;
     virtual void Rebuild(const size_t size) = 0;
+    virtual void Rebuild(const size_t size, fair::mq::Alignment alignment) = 0;
     virtual void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) = 0;
 
     virtual void* GetData() const = 0;

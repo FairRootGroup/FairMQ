@@ -50,11 +50,12 @@ class Message final : public fair::mq::Message
         fManager.IncrementMsgCounter();
     }
 
-    Message(Manager& manager, Alignment /* alignment */, FairMQTransportFactory* factory = nullptr)
+    Message(Manager& manager, Alignment alignment, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
         , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
+        , fAlignment(alignment.alignment)
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
@@ -78,10 +79,11 @@ class Message final : public fair::mq::Message
         , fManager(manager)
         , fQueued(false)
         , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
+        , fAlignment(alignment.alignment)
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
-        InitializeChunk(size, static_cast<size_t>(alignment));
+        InitializeChunk(size, fAlignment);
         fManager.IncrementMsgCounter();
     }
 
@@ -142,11 +144,26 @@ class Message final : public fair::mq::Message
         fQueued = false;
     }
 
+    void Rebuild(Alignment alignment) override
+    {
+        CloseMessage();
+        fQueued = false;
+        fAlignment = alignment.alignment;
+    }
+
     void Rebuild(const size_t size) override
     {
         CloseMessage();
         fQueued = false;
         InitializeChunk(size);
+    }
+
+    void Rebuild(const size_t size, Alignment alignment) override
+    {
+        CloseMessage();
+        fQueued = false;
+        fAlignment = alignment.alignment;
+        InitializeChunk(size, fAlignment);
     }
 
     void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
@@ -242,6 +259,7 @@ class Message final : public fair::mq::Message
     Manager& fManager;
     bool fQueued;
     MetaHeader fMeta;
+    size_t fAlignment; // TODO: put this to debug mode
     mutable Region* fRegionPtr;
     mutable char* fLocalPtr;
 
@@ -276,8 +294,9 @@ class Message final : public fair::mq::Message
         }
         fLocalPtr = nullptr;
         fMeta.fSize = 0;
+        fAlignment = 0;
 
-        fManager.DecrementMsgCounter();
+        fManager.DecrementMsgCounter(); // TODO: put this to debug mode
     }
 };
 
