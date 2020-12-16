@@ -140,8 +140,6 @@ class Socket final : public fair::mq::Socket
         }
         int elapsed = 0;
 
-        static_cast<Message*>(msg.get())->ApplyUsedSize();
-
         int64_t actualBytes = zmq_msg_size(static_cast<Message*>(msg.get())->GetMessage());
 
         while (true) {
@@ -211,8 +209,6 @@ class Socket final : public fair::mq::Socket
                 bool repeat = false;
 
                 for (unsigned int i = 0; i < vecSize; ++i) {
-                    static_cast<Message*>(msgVec[i].get())->ApplyUsedSize();
-
                     int nbytes = zmq_msg_send(static_cast<Message*>(msgVec[i].get())->GetMessage(), fSocket, (i < vecSize - 1) ? ZMQ_SNDMORE | flags : flags);
                     if (nbytes >= 0) {
                         totalSize += nbytes;

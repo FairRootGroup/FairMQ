@@ -40,10 +40,20 @@ void RunPushPullWithMsgResize(const string& transport, const string& _address)
 
     FairMQMessagePtr outMsg(push.NewMessage(1000));
     ASSERT_EQ(outMsg->GetSize(), 1000);
-    outMsg->SetUsedSize(500);
+    memcpy(outMsg->GetData(), "ABC", 3);
+    ASSERT_EQ(outMsg->SetUsedSize(500), true);
+    ASSERT_EQ(outMsg->SetUsedSize(500), true);
+    ASSERT_EQ(outMsg->SetUsedSize(700), false);
     ASSERT_EQ(outMsg->GetSize(), 500);
-    outMsg->SetUsedSize(250);
+    // check if the data is still intact
+    ASSERT_EQ(static_cast<char*>(outMsg->GetData())[0], 'A');
+    ASSERT_EQ(static_cast<char*>(outMsg->GetData())[1], 'B');
+    ASSERT_EQ(static_cast<char*>(outMsg->GetData())[2], 'C');
+    ASSERT_EQ(outMsg->SetUsedSize(250), true);
     ASSERT_EQ(outMsg->GetSize(), 250);
+    ASSERT_EQ(static_cast<char*>(outMsg->GetData())[0], 'A');
+    ASSERT_EQ(static_cast<char*>(outMsg->GetData())[1], 'B');
+    ASSERT_EQ(static_cast<char*>(outMsg->GetData())[2], 'C');
     FairMQMessagePtr msgCopy(push.NewMessage());
     msgCopy->Copy(*outMsg);
     ASSERT_EQ(msgCopy->GetSize(), 250);
@@ -53,6 +63,9 @@ void RunPushPullWithMsgResize(const string& transport, const string& _address)
     FairMQMessagePtr inMsg(pull.NewMessage());
     ASSERT_EQ(pull.Receive(inMsg), 250);
     ASSERT_EQ(inMsg->GetSize(), 250);
+    ASSERT_EQ(static_cast<char*>(inMsg->GetData())[0], 'A');
+    ASSERT_EQ(static_cast<char*>(inMsg->GetData())[1], 'B');
+    ASSERT_EQ(static_cast<char*>(inMsg->GetData())[2], 'C');
 }
 
 void RunMsgRebuild(const string& transport)
