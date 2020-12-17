@@ -13,7 +13,6 @@
 #include "FairMQDevice.h"
 #include "tools/RateLimit.h"
 
-#include <atomic>
 #include <chrono>
 #include <cstddef>   // size_t
 #include <cstdint>   // uint64_t
@@ -106,15 +105,12 @@ class FairMQBenchmarkSampler : public FairMQDevice
         LOG(info) << "Done " << fNumIterations << " iterations in " << std::chrono::duration<double, std::milli>(tEnd - tStart).count() << "ms.";
     }
 
-    virtual ~FairMQBenchmarkSampler() {}
-
   protected:
     bool fMultipart;
     bool fMemSet;
     size_t fNumParts;
     size_t fMsgSize;
     size_t fMsgAlignment;
-    std::atomic<int> fMsgCounter;
     float fMsgRate;
     uint64_t fNumIterations;
     uint64_t fMaxIterations;
