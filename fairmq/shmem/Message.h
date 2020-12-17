@@ -50,11 +50,12 @@ class Message final : public fair::mq::Message
         fManager.IncrementMsgCounter();
     }
 
-    Message(Manager& manager, Alignment /* alignment */, FairMQTransportFactory* factory = nullptr)
+    Message(Manager& manager, Alignment alignment, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
         , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
+        , fAlignment(alignment.alignment)
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
@@ -78,10 +79,11 @@ class Message final : public fair::mq::Message
         , fManager(manager)
         , fQueued(false)
         , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
+        , fAlignment(alignment.alignment)
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
-        InitializeChunk(size, static_cast<size_t>(alignment));
+        InitializeChunk(size, static_cast<size_t>(fAlignment));
         fManager.IncrementMsgCounter();
     }
 
@@ -242,6 +244,7 @@ class Message final : public fair::mq::Message
     Manager& fManager;
     bool fQueued;
     MetaHeader fMeta;
+    size_t fAlignment;
     mutable Region* fRegionPtr;
     mutable char* fLocalPtr;
 

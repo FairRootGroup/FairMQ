@@ -18,6 +18,7 @@
 #include <zmq.h>
 
 #include <cstddef>
+#include <cstdlib> // malloc, aligned_alloc
 #include <cstring>
 #include <memory>
 #include <string>
@@ -38,21 +39,17 @@ class Message final : public fair::mq::Message
   public:
     Message(FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
-        , fUsedSizeModified(false)
-        , fUsedSize()
+        , fAlignment(0)
         , fMsg(tools::make_unique<zmq_msg_t>())
-        , fViewMsg(nullptr)
     {
         if (zmq_msg_init(fMsg.get()) != 0) {
             LOG(error) << "failed initializing message, reason: " << zmq_strerror(errno);
         }
     }
-    Message(Alignment /* alignment */, FairMQTransportFactory* factory = nullptr)
+    Message(Alignment alignment, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
-        , fUsedSizeModified(false)
-        , fUsedSize()
+        , fAlignment(alignment.alignment)
         , fMsg(tools::make_unique<zmq_msg_t>())
-        , fViewMsg(nullptr)
     {
         if (zmq_msg_init(fMsg.get()) != 0) {
             LOG(error) << "failed initializing message, reason: " << zmq_strerror(errno);
@@ -61,34 +58,41 @@ class Message final : public fair::mq::Message
 
     Message(const size_t size, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
-        , fUsedSizeModified(false)
-        , fUsedSize(size)
+        , fAlignment(0)
         , fMsg(tools::make_unique<zmq_msg_t>())
-        , fViewMsg(nullptr)
     {
-        if (zmq_msg_init_size(fMsg.get(), size) != 0) {
+        void* ptr = malloc(size);
+        if (!ptr) {
+            LOG(error) << "failed to allocate buffer with provided size (" << size << ").";
+        }
+        if (zmq_msg_init_data(fMsg.get(), ptr, size, [](void* data, void*) { free(data); }, nullptr) != 0) {
             LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
         }
     }
 
-    Message(const size_t size, Alignment /* alignment */, FairMQTransportFactory* factory = nullptr)
+    Message(const size_t size, Alignment alignment, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
-        , fUsedSizeModified(false)
-        , fUsedSize(size)
+        , fAlignment(alignment.alignment)
         , fMsg(tools::make_unique<zmq_msg_t>())
-        , fViewMsg(nullptr)
     {
-        if (zmq_msg_init_size(fMsg.get(), size) != 0) {
+        void* ptr = nullptr;
+        if (alignment.alignment != 0) {
+            ptr = aligned_alloc(size, fAlignment);
+        } else {
+            ptr = malloc(size);
+        }
+        if (!ptr) {
+            LOG(error) << "failed to allocate buffer with provided size (" << size << ") and alignment (" << alignment.alignment << ").";
+        }
+        if (zmq_msg_init_data(fMsg.get(), ptr, size, [](void* data, void*) { free(data); }, nullptr) != 0) {
             LOG(error) << "failed initializing message with size, reason: " << zmq_strerror(errno);
         }
     }
 
     Message(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
-        , fUsedSizeModified(false)
-        , fUsedSize()
+        , fAlignment(0)
         , fMsg(tools::make_unique<zmq_msg_t>())
-        , fViewMsg(nullptr)
     {
         if (zmq_msg_init_data(fMsg.get(), data, size, ffn, hint) != 0) {
             LOG(error) << "failed initializing message with data, reason: " << zmq_strerror(errno);
@@ -97,10 +101,8 @@ class Message final : public fair::mq::Message
 
     Message(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
-        , fUsedSizeModified(false)
-        , fUsedSize()
+        , fAlignment(0)
         , fMsg(tools::make_unique<zmq_msg_t>())
-        , fViewMsg(nullptr)
     {
         // FIXME: make this zero-copy:
         // simply taking over the provided buffer can casue premature delete, since region could be
@@ -154,29 +156,14 @@ class Message final : public fair::mq::Message
 
     void* GetData() const override
     {
-        if (!fViewMsg) {
-            if (zmq_msg_size(fMsg.get()) > 0) {
-                return zmq_msg_data(fMsg.get());
-            } else {
-                return nullptr;
-            }
+        if (zmq_msg_size(fMsg.get()) > 0) {
+            return zmq_msg_data(fMsg.get());
         } else {
-            if (zmq_msg_size(fViewMsg.get()) > 0) {
-                return zmq_msg_data(fViewMsg.get());
-            } else {
-                return nullptr;
-            }
+            return nullptr;
         }
     }
 
-    size_t GetSize() const override
-    {
-        if (fUsedSizeModified) {
-            return fUsedSize;
-        } else {
-            return zmq_msg_size(fMsg.get());
-        }
-    }
+    size_t GetSize() const override { return zmq_msg_size(fMsg.get()); }
 
     // To emulate shrinking, a new message is created with the new size (ViewMsg), that points to
     // the original buffer with the new size. Once the "view message" is transfered, the original is
@@ -185,32 +172,35 @@ class Message final : public fair::mq::Message
     // happens.
     bool SetUsedSize(const size_t size) override
     {
-        if (size <= zmq_msg_size(fMsg.get())) {
-            fUsedSize = size;
-            fUsedSizeModified = true;
+        if (size == GetSize()) {
+            // nothing to do
             return true;
-        } else {
+        } else if (size > GetSize()) {
             LOG(error) << "cannot set used size higher than original.";
             return false;
+        } else {
+            auto newMsg = tools::make_unique<zmq_msg_t>();
+            void* data = GetData();
+            if (zmq_msg_init_data(newMsg.get(), data, size, [](void* /* data */, void* obj) {
+                    zmq_msg_close(static_cast<zmq_msg_t*>(obj));
+                    delete static_cast<zmq_msg_t*>(obj);
+                }, fMsg.get()) != 0) {
+                LOG(error) << "failed initializing message with data, reason: " << zmq_strerror(errno);
+                return false;
+            }
+            fMsg.release();
+            fMsg.swap(newMsg);
+            return true;
         }
     }
 
-    void ApplyUsedSize()
-    {
-        // Apply only once (before actual send).
-        // The check is needed because a send could fail and can be reattempted by the user, in this
-        // case we do not want to modify buffer again.
-        if (fUsedSizeModified && !fViewMsg) {
-            fViewMsg = tools::make_unique<zmq_msg_t>();
-            void* ptr = zmq_msg_data(fMsg.get());
-            if (zmq_msg_init_data(fViewMsg.get(), ptr, fUsedSize, [](void* /* data */, void* obj) {
-                    zmq_msg_close(static_cast<zmq_msg_t*>(obj));
-                    delete static_cast<zmq_msg_t*>(obj);
-                }, fMsg.release()) != 0) {
-                LOG(error) << "failed initializing view message, reason: " << zmq_strerror(errno);
-            }
-        }
-    }
+    // void Realign()
+    // {
+    //     if (fAlignment != 0) {
+    //         if (reinterpret_cast<uintptr_t>(GetData()) % fAlignment) {
+    //         }
+    //     }
+    // }
 
     Transport GetType() const override { return Transport::ZMQ; }
 
@@ -222,48 +212,23 @@ class Message final : public fair::mq::Message
             LOG(error) << "failed copying message, reason: " << zmq_strerror(errno);
             return;
         }
-
-        // if the target message has been resized, apply same to this message also
-        if (zMsg.fUsedSizeModified) {
-            fUsedSizeModified = true;
-            fUsedSize = zMsg.fUsedSize;
-        }
     }
 
     ~Message() override { CloseMessage(); }
 
   private:
-    bool fUsedSizeModified;
-    size_t fUsedSize;
+    size_t fAlignment;
     std::unique_ptr<zmq_msg_t> fMsg;
-    std::unique_ptr<zmq_msg_t> fViewMsg;   // view on a subset of fMsg (treating it as user buffer)
 
-    zmq_msg_t* GetMessage() const
-    {
-        if (!fViewMsg) {
-            return fMsg.get();
-        } else {
-            return fViewMsg.get();
-        }
-    }
+    zmq_msg_t* GetMessage() const { return fMsg.get(); }
 
     void CloseMessage()
     {
-        if (!fViewMsg) {
-            if (zmq_msg_close(fMsg.get()) != 0) {
-                LOG(error) << "failed closing message, reason: " << zmq_strerror(errno);
-            }
-            // reset the message object to allow reuse in Rebuild
-            fMsg.reset(nullptr);
-        } else {
-            if (zmq_msg_close(fViewMsg.get()) != 0) {
-                LOG(error) << "failed closing message, reason: " << zmq_strerror(errno);
-            }
-            // reset the message object to allow reuse in Rebuild
-            fViewMsg.reset(nullptr);
+        if (zmq_msg_close(fMsg.get()) != 0) {
+            LOG(error) << "failed closing message, reason: " << zmq_strerror(errno);
         }
-        fUsedSizeModified = false;
-        fUsedSize = 0;
+        // reset the message object to allow reuse in Rebuild
+        fMsg.reset(nullptr);
     }
 };
 

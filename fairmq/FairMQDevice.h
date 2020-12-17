@@ -16,6 +16,7 @@
 
 #include <FairMQChannel.h>
 #include <FairMQMessage.h>
+#include <fairmq/Msg.h>
 #include <FairMQParts.h>
 #include <FairMQUnmanagedRegion.h>
 #include <FairMQLogger.h>
@@ -38,8 +39,9 @@
 
 using FairMQChannelMap = std::unordered_map<std::string, std::vector<FairMQChannel>>;
 
-using InputMsgCallback = std::function<bool(FairMQMessagePtr&, int)>;
+using InputMessageCallback = std::function<bool(FairMQMessagePtr&, int)>;
 using InputMultipartCallback = std::function<bool(FairMQParts&, int)>;
+using InputCallback = std::function<bool(fair::mq::Msg, int)>;
 
 namespace fair
 {
@@ -54,38 +56,6 @@ class FairMQDevice
     friend class FairMQChannel;
 
   public:
-    // backwards-compatibility enum for old state machine interface, todo: delete this
-    enum Event
-    {
-        INIT_DEVICE,
-        internal_DEVICE_READY,
-        INIT_TASK,
-        internal_READY,
-        RUN,
-        STOP,
-        RESET_TASK,
-        RESET_DEVICE,
-        internal_IDLE,
-        END,
-        ERROR_FOUND
-    };
-
-    // backwards-compatibility enum for old state machine interface, todo: delete this
-    enum State
-    {
-        OK,
-        Error,
-        IDLE,
-        INITIALIZING_DEVICE,
-        DEVICE_READY,
-        INITIALIZING_TASK,
-        READY,
-        RUNNING,
-        RESETTING_TASK,
-        RESETTING_DEVICE,
-        EXITING
-    };
-
     /// Default constructor
     FairMQDevice();
     /// Constructor with external fair::mq::ProgOptions
@@ -128,7 +98,7 @@ class FairMQDevice
     /// @param chan channel name
     /// @param i channel index
     /// @param sndTimeoutInMs send timeout in ms, -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
-    /// @return Number of bytes that have been queued, TransferResult::timeout if timed out, TransferResult::error if there was an error, TransferResult::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been queued, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Send(FairMQMessagePtr& msg, const std::string& channel, const int index = 0, int sndTimeoutInMs = -1)
     {
         return GetChannel(channel, index).Send(msg, sndTimeoutInMs);
@@ -139,7 +109,7 @@ class FairMQDevice
     /// @param chan channel name
     /// @param i channel index
     /// @param rcvTimeoutInMs receive timeout in ms, -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
-    /// @return Number of bytes that have been received, TransferResult::timeout if timed out, TransferResult::error if there was an error, TransferResult::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been received, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Receive(FairMQMessagePtr& msg, const std::string& channel, const int index = 0, int rcvTimeoutInMs = -1)
     {
         return GetChannel(channel, index).Receive(msg, rcvTimeoutInMs);
@@ -150,7 +120,7 @@ class FairMQDevice
     /// @param chan channel name
     /// @param i channel index
     /// @param sndTimeoutInMs send timeout in ms, -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot send)
-    /// @return Number of bytes that have been queued, TransferResult::timeout if timed out, TransferResult::error if there was an error, TransferResult::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been queued, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Send(FairMQParts& parts, const std::string& channel, const int index = 0, int sndTimeoutInMs = -1)
     {
         return GetChannel(channel, index).Send(parts.fParts, sndTimeoutInMs);
@@ -161,17 +131,23 @@ class FairMQDevice
     /// @param chan channel name
     /// @param i channel index
     /// @param rcvTimeoutInMs receive timeout in ms, -1 will wait forever (or until interrupt (e.g. via state change)), 0 will not wait (return immediately if cannot receive)
-    /// @return Number of bytes that have been received, TransferResult::timeout if timed out, TransferResult::error if there was an error, TransferResult::interrupted if interrupted (e.g. by requested state change)
+    /// @return Number of bytes that have been received, TransferCode::timeout if timed out, TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by requested state change)
     int64_t Receive(FairMQParts& parts, const std::string& channel, const int index = 0, int rcvTimeoutInMs = -1)
     {
         return GetChannel(channel, index).Receive(parts.fParts, rcvTimeoutInMs);
     }
 
-    /// @brief Getter for default transport factory
-    auto Transport() const -> FairMQTransportFactory*
+    fair::mq::TransferResult Send(fair::mq::Msg msg, const std::string& channel, const int index = 0, int sndTimeoutInMs = -1)
     {
-        return fTransportFactory.get();
+        return GetChannel(channel, index).Send(std::move(msg), sndTimeoutInMs);
     }
+    fair::mq::TransferResult Receive(const std::string& channel, const int index = 0, int rcvTimeoutInMs = -1)
+    {
+        return GetChannel(channel, index).Receive(rcvTimeoutInMs);
+    }
+
+    /// @brief Getter for default transport factory
+    auto Transport() const -> FairMQTransportFactory* { return fTransportFactory.get(); }
 
     // creates message with the default device transport
     template<typename... Args>
@@ -185,6 +161,20 @@ class FairMQDevice
     FairMQMessagePtr NewMessageFor(const std::string& channel, int index, Args&&... args)
     {
         return GetChannel(channel, index).NewMessage(std::forward<Args>(args)...);
+    }
+
+    // creates buffer with the default device transport
+    template<typename... Args>
+    fair::mq::Buffer NewBuffer(Args&&... args)
+    {
+        return Transport()->NewBuffer(std::forward<Args>(args)...);
+    }
+
+    // creates buffer with the transport of the specified channel
+    template<typename... Args>
+    fair::mq::Buffer NewBufferFor(const std::string& channel, int index, Args&&... args)
+    {
+        return GetChannel(channel, index).NewBuffer(std::forward<Args>(args)...);
     }
 
     // creates a message that will not be cleaned up after transfer, with the default device transport
@@ -201,6 +191,18 @@ class FairMQDevice
         return GetChannel(channel, index).NewStaticMessage(data);
     }
 
+    template<typename T>
+    fair::mq::Buffer NewStaticBuffer(const T& data)
+    {
+        return Transport()->NewStaticBuffer(data);
+    }
+
+    template<typename T>
+    fair::mq::Buffer NewStaticBufferFor(const std::string& channel, int index, const T& data)
+    {
+        return GetChannel(channel, index).NewStaticBuffer(data);
+    }
+
     // creates a message with a copy of the provided data, with the default device transport
     template<typename T>
     FairMQMessagePtr NewSimpleMessage(const T& data)
@@ -213,6 +215,18 @@ class FairMQDevice
     FairMQMessagePtr NewSimpleMessageFor(const std::string& channel, int index, const T& data)
     {
         return GetChannel(channel, index).NewSimpleMessage(data);
+    }
+
+    template<typename T>
+    fair::mq::Buffer NewSimpleBuffer(const T& data)
+    {
+        return Transport()->NewSimpleBuffer(data);
+    }
+
+    template<typename T>
+    fair::mq::Buffer NewSimpleBufferFor(const std::string& channel, int index, const T& data)
+    {
+        return GetChannel(channel, index).NewSimpleBuffer(data);
     }
 
     // creates unamanaged region with the default device transport
@@ -289,24 +303,21 @@ class FairMQDevice
     void OnData(const std::string& channelName, bool (T::* memberFunction)(FairMQMessagePtr& msg, int index))
     {
         fDataCallbacks = true;
-        fMsgInputs.insert(std::make_pair(channelName, [this, memberFunction](FairMQMessagePtr& msg, int index)
-        {
+        fMessageInputs.insert(std::make_pair(channelName, [this, memberFunction](FairMQMessagePtr& msg, int index) {
             return (static_cast<T*>(this)->*memberFunction)(msg, index);
         }));
 
-        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end())
-        {
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end()) {
             fInputChannelKeys.push_back(channelName);
         }
     }
 
-    void OnData(const std::string& channelName, InputMsgCallback callback)
+    void OnData(const std::string& channelName, InputMessageCallback callback)
     {
         fDataCallbacks = true;
-        fMsgInputs.insert(make_pair(channelName, callback));
+        fMessageInputs.insert(make_pair(channelName, callback));
 
-        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end())
-        {
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end()) {
             fInputChannelKeys.push_back(channelName);
         }
     }
@@ -316,13 +327,11 @@ class FairMQDevice
     void OnData(const std::string& channelName, bool (T::* memberFunction)(FairMQParts& parts, int index))
     {
         fDataCallbacks = true;
-        fMultipartInputs.insert(std::make_pair(channelName, [this, memberFunction](FairMQParts& parts, int index)
-        {
+        fMultipartInputs.insert(std::make_pair(channelName, [this, memberFunction](FairMQParts& parts, int index) {
             return (static_cast<T*>(this)->*memberFunction)(parts, index);
         }));
 
-        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end())
-        {
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end()) {
             fInputChannelKeys.push_back(channelName);
         }
     }
@@ -332,8 +341,31 @@ class FairMQDevice
         fDataCallbacks = true;
         fMultipartInputs.insert(make_pair(channelName, callback));
 
-        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end())
-        {
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end()) {
+            fInputChannelKeys.push_back(channelName);
+        }
+    }
+
+    // overload to easily bind member functions
+    template<typename T>
+    void OnData(const std::string& channelName, bool (T::* memberFunction)(fair::mq::Msg msg, int index))
+    {
+        fDataCallbacks = true;
+        fMsgInputs.insert(std::make_pair(channelName, [this, memberFunction](fair::mq::Msg msg, int index) {
+            return (static_cast<T*>(this)->*memberFunction)(std::move(msg), index);
+        }));
+
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end()) {
+            fInputChannelKeys.push_back(channelName);
+        }
+    }
+
+    void OnData(const std::string& channelName, InputCallback callback)
+    {
+        fDataCallbacks = true;
+        fMsgInputs.insert(make_pair(channelName, callback));
+
+        if (find(fInputChannelKeys.begin(), fInputChannelKeys.end(), channelName) == fInputChannelKeys.end()) {
             fInputChannelKeys.push_back(channelName);
         }
     }
@@ -449,8 +481,6 @@ class FairMQDevice
     /// Called in the RUNNING state once after executing the Run()/ConditionalRun() method
     virtual void PostRun() {}
 
-    virtual void Pause() __attribute__((deprecated("PAUSE state is removed. This method is never called. To pause Run, go to READY with STOP transition and back to RUNNING with RUN to resume."))) {}
-
     /// Resets the user task (to be overloaded in child classes)
     virtual void ResetTask() {}
 
@@ -460,11 +490,6 @@ class FairMQDevice
   public:
     bool ChangeState(const fair::mq::Transition transition) { return fStateMachine.ChangeState(transition); }
     bool ChangeState(const std::string& transition) { return fStateMachine.ChangeState(fair::mq::GetTransition(transition)); }
-
-    bool ChangeState(const int transition) __attribute__((deprecated("Use ChangeState(const fair::mq::Transition transition).")));
-
-    void WaitForEndOfState(const fair::mq::Transition transition) __attribute__((deprecated("Use WaitForState(fair::mq::State expectedState).")));
-    void WaitForEndOfState(const std::string& transition) __attribute__((deprecated("Use WaitForState(fair::mq::State expectedState)."))) { WaitForState(transition); }
 
     fair::mq::State WaitForNextState() { return fStateQueue.WaitForNext(); }
     void WaitForState(fair::mq::State state) { fStateQueue.WaitForState(state); }
@@ -477,9 +502,6 @@ class FairMQDevice
 
     void SubscribeToNewTransition(const std::string& key, std::function<void(const fair::mq::Transition)> callback) { fStateMachine.SubscribeToNewTransition(key, callback); }
     void UnsubscribeFromNewTransition(const std::string& key) { fStateMachine.UnsubscribeFromNewTransition(key); }
-
-    bool CheckCurrentState(const int /* state */) const __attribute__((deprecated("Use NewStatePending()."))) { return !fStateMachine.NewStatePending(); }
-    bool CheckCurrentState(const std::string& /* state */) const __attribute__((deprecated("Use NewStatePending()."))) { return !fStateMachine.NewStatePending(); }
 
     /// Returns true is a new state has been requested, signaling the current handler to stop.
     bool NewStatePending() const { return fStateMachine.NewStatePending(); }
@@ -534,14 +556,16 @@ class FairMQDevice
     void HandleMultipleTransportInput();
     void PollForTransport(const FairMQTransportFactory* factory, const std::vector<std::string>& channelKeys);
 
-    bool HandleMsgInput(const std::string& chName, const InputMsgCallback& callback, int i);
+    bool HandleInput(const std::string& chName, const InputCallback& callback, int i);
+    bool HandleMessageInput(const std::string& chName, const InputMessageCallback& callback, int i);
     bool HandleMultipartInput(const std::string& chName, const InputMultipartCallback& callback, int i);
 
     std::vector<FairMQChannel*> fUninitializedBindingChannels;
     std::vector<FairMQChannel*> fUninitializedConnectingChannels;
 
     bool fDataCallbacks;
-    std::unordered_map<std::string, InputMsgCallback> fMsgInputs;
+    std::unordered_map<std::string, InputMessageCallback> fMessageInputs;
+    std::unordered_map<std::string, InputCallback> fMsgInputs;
     std::unordered_map<std::string, InputMultipartCallback> fMultipartInputs;
     std::unordered_map<fair::mq::Transport, std::vector<std::string>> fMultitransportInputs;
     std::unordered_map<std::string, std::pair<uint16_t, uint16_t>> fChannelRegistry;

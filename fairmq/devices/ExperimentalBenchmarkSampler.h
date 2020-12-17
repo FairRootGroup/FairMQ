@@ -6,12 +6,13 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIRMQBENCHMARKSAMPLER_H_
-#define FAIRMQBENCHMARKSAMPLER_H_
+#ifndef FAIR_MQ_EXPERIMENTALBENCHMARKSAMPLER_H_
+#define FAIR_MQ_EXPERIMENTALBENCHMARKSAMPLER_H_
 
-#include "../FairMQLogger.h"
 #include "FairMQDevice.h"
 #include "tools/RateLimit.h"
+
+#include <fairlogger/Logger.h>
 
 #include <chrono>
 #include <cstddef>   // size_t
@@ -23,15 +24,19 @@
  * Sampler to generate traffic for benchmarking.
  */
 
-class FairMQBenchmarkSampler : public FairMQDevice
+namespace fair
+{
+namespace mq
+{
+
+class ExperimentalBenchmarkSampler : public FairMQDevice
 {
   public:
-    FairMQBenchmarkSampler()
-        : fMultipart(false)
-        , fMemSet(false)
-        , fNumParts(1)
-        , fMsgSize(10000)
-        , fMsgAlignment(0)
+    ExperimentalBenchmarkSampler()
+        : fMemSet(false)
+        , fNumBuffers(1)
+        , fBufSize(10000)
+        , fBufAlignment(0)
         , fMsgRate(0)
         , fNumIterations(0)
         , fMaxIterations(0)
@@ -40,13 +45,12 @@ class FairMQBenchmarkSampler : public FairMQDevice
 
     void InitTask() override
     {
-        fMultipart = fConfig->GetProperty<bool>("multipart");
-        fMemSet = fConfig->GetProperty<bool>("memset");
-        fNumParts = fConfig->GetProperty<size_t>("num-parts");
-        fMsgSize = fConfig->GetProperty<size_t>("msg-size");
-        fMsgAlignment = fConfig->GetProperty<size_t>("msg-alignment");
-        fMsgRate = fConfig->GetProperty<float>("msg-rate");
-        fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
+        fMemSet         = fConfig->GetProperty<bool>("memset");
+        fNumBuffers     = fConfig->GetProperty<size_t>("num-buffers");
+        fBufSize        = fConfig->GetProperty<size_t>("buf-size");
+        fBufAlignment   = fConfig->GetProperty<size_t>("buf-alignment");
+        fMsgRate        = fConfig->GetProperty<float>("msg-rate");
+        fMaxIterations  = fConfig->GetProperty<uint64_t>("max-iterations");
         fOutChannelName = fConfig->GetProperty<std::string>("out-channel");
     }
 
@@ -55,23 +59,23 @@ class FairMQBenchmarkSampler : public FairMQDevice
         // store the channel reference to avoid traversing the map on every loop iteration
         FairMQChannel& dataOutChannel = fChannels.at(fOutChannelName).at(0);
 
-        LOG(info) << "Starting the benchmark with message size of " << fMsgSize << " and " << fMaxIterations << " iterations.";
+        LOG(info) << "Starting the benchmark with messages consisting of " << fNumBuffers << " buffer(s) of size " << fBufSize << " and " << fMaxIterations << " iterations.";
         auto tStart = std::chrono::high_resolution_clock::now();
 
-        fair::mq::tools::RateLimiter rateLimiter(fMsgRate);
+        tools::RateLimiter rateLimiter(fMsgRate);
 
         while (!NewStatePending()) {
-            if (fMultipart) {
-                FairMQParts parts;
+            if (fNumBuffers > 1) {
+                Msg msg(fNumBuffers);
 
-                for (size_t i = 0; i < fNumParts; ++i) {
-                    parts.AddPart(dataOutChannel.NewMessage(fMsgSize, fair::mq::Alignment{fMsgAlignment}));
+                for (size_t i = 0; i < fNumBuffers; ++i) {
+                    const auto& buffer = msg.Add(dataOutChannel.NewBuffer(fBufSize, Alignment{fBufAlignment}));
                     if (fMemSet) {
-                        std::memset(parts.At(i)->GetData(), 0, parts.At(i)->GetSize());
+                        std::memset(buffer.GetData(), 0, buffer.GetSize());
                     }
                 }
 
-                if (dataOutChannel.Send(parts) >= 0) {
+                if (dataOutChannel.Send(std::move(msg)).code == TransferCode::success) {
                     if (fMaxIterations > 0) {
                         if (fNumIterations >= fMaxIterations) {
                             break;
@@ -80,12 +84,12 @@ class FairMQBenchmarkSampler : public FairMQDevice
                     ++fNumIterations;
                 }
             } else {
-                FairMQMessagePtr msg(dataOutChannel.NewMessage(fMsgSize, fair::mq::Alignment{fMsgAlignment}));
+                Buffer buf(dataOutChannel.NewBuffer(fBufSize, Alignment{fBufAlignment}));
                 if (fMemSet) {
-                    std::memset(msg->GetData(), 0, msg->GetSize());
+                    std::memset(buf.GetData(), 0, buf.GetSize());
                 }
 
-                if (dataOutChannel.Send(msg) >= 0) {
+                if (dataOutChannel.Send(std::move(buf)).code == TransferCode::success) {
                     if (fMaxIterations > 0) {
                         if (fNumIterations >= fMaxIterations) {
                             break;
@@ -106,15 +110,17 @@ class FairMQBenchmarkSampler : public FairMQDevice
     }
 
   protected:
-    bool fMultipart;
     bool fMemSet;
-    size_t fNumParts;
-    size_t fMsgSize;
-    size_t fMsgAlignment;
+    size_t fNumBuffers;
+    size_t fBufSize;
+    size_t fBufAlignment;
     float fMsgRate;
     uint64_t fNumIterations;
     uint64_t fMaxIterations;
     std::string fOutChannelName;
 };
 
-#endif /* FAIRMQBENCHMARKSAMPLER_H_ */
+} // namespace mq
+} // namespace fair
+
+#endif /* FAIR_MQ_EXPERIMENTALBENCHMARKSAMPLER_H_ */

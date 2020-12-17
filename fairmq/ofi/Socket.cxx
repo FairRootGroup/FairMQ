@@ -284,7 +284,7 @@ try {
     return size;
 } catch (const std::exception& e) {
     LOG(error) << e.what();
-    return static_cast<int64_t>(TransferResult::error);
+    return static_cast<int64_t>(TransferCode::error);
 }
 
 auto Socket::SendQueueReader() -> void
@@ -431,7 +431,7 @@ try {
     return size;
 } catch (const std::exception& e) {
     LOG(error) << e.what();
-    return static_cast<int>(TransferResult::error);
+    return static_cast<int>(TransferCode::error);
 }
 
 auto Socket::Receive(std::vector<MessagePtr>& msgVec, const int /*timeout*/) -> int64_t
@@ -456,7 +456,7 @@ try {
     return size;
 } catch (const std::exception& e) {
     LOG(error) << e.what();
-    return static_cast<int64_t>(TransferResult::error);
+    return static_cast<int64_t>(TransferCode::error);
 }
 
 auto Socket::RecvControlQueueReader() -> void

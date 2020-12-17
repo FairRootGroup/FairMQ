@@ -9,7 +9,6 @@
 #ifndef FAIRMQPARTS_H_
 #define FAIRMQPARTS_H_
 
-#include "FairMQTransportFactory.h"
 #include "FairMQMessage.h"
 
 #include <vector>

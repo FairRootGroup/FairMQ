@@ -63,7 +63,7 @@ void InterruptTransfer(const string& transport, const string& _address)
 
     auto result = pull.Receive(msg);
     t.join();
-    ASSERT_EQ(result, static_cast<int>(fair::mq::TransferResult::interrupted));
+    ASSERT_EQ(result, static_cast<int>(fair::mq::TransferCode::interrupted));
 }
 
 TEST(TransferTimeout, zeromq)
