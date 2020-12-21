@@ -267,9 +267,8 @@ struct SegmentAllocateAligned : public boost::static_visitor<void*>
 
 struct SegmentBufferShrink : public boost::static_visitor<char*>
 {
-    SegmentBufferShrink(const size_t _old_size, const size_t _new_size, char* _local_ptr)
-        : old_size(_old_size)
-        , new_size(_new_size)
+    SegmentBufferShrink(const size_t _new_size, char* _local_ptr)
+        : new_size(_new_size)
         , local_ptr(_local_ptr)
     {}
 
@@ -277,10 +276,9 @@ struct SegmentBufferShrink : public boost::static_visitor<char*>
     char* operator()(S& s) const
     {
         boost::interprocess::managed_shared_memory::size_type shrunk_size = new_size;
-        return s.template allocation_command<char>(boost::interprocess::shrink_in_place, old_size + 128, shrunk_size, local_ptr);
+        return s.template allocation_command<char>(boost::interprocess::shrink_in_place, new_size + 128, shrunk_size, local_ptr);
     }
 
-    const size_t old_size;
     const size_t new_size;
     mutable char* local_ptr;
 };
