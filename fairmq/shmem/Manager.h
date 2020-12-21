@@ -565,9 +565,9 @@ class Manager
 #endif
     }
 
-    char* ShrinkInPlace(size_t oldSize, size_t newSize, char* localPtr, uint16_t segmentId)
+    char* ShrinkInPlace(size_t newSize, char* localPtr, uint16_t segmentId)
     {
-        return boost::apply_visitor(SegmentBufferShrink{oldSize, newSize, localPtr}, fSegments.at(segmentId));
+        return boost::apply_visitor(SegmentBufferShrink{newSize, localPtr}, fSegments.at(segmentId));
     }
 
     uint16_t GetSegmentId() const { return fSegmentId; }

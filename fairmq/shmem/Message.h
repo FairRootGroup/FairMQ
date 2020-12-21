@@ -196,7 +196,7 @@ class Message final : public fair::mq::Message
             return true;
         } else if (newSize <= fMeta.fSize) {
             try {
-                fLocalPtr = fManager.ShrinkInPlace(fMeta.fSize, newSize, fLocalPtr, fMeta.fSegmentId);
+                fLocalPtr = fManager.ShrinkInPlace(newSize, fLocalPtr, fMeta.fSegmentId);
                 fMeta.fSize = newSize;
                 return true;
             } catch (boost::interprocess::interprocess_exception& e) {
