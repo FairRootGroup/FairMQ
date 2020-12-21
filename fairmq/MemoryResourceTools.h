@@ -1,10 +1,10 @@
 /********************************************************************************
- *    Copyright (C) 2018 CERN and copyright holders of ALICE O2 *
- *    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH *
+ *    Copyright (C) 2018 CERN and copyright holders of ALICE O2                 *
+ *    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
  *                                                                              *
- *              This software is distributed under the terms of the *
- *              GNU Lesser General Public Licence (LGPL) version 3, *
- *                  copied verbatim in the file "LICENSE" *
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
+ *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
 /// @brief Tools for interfacing containers to the transport via polymorphic
