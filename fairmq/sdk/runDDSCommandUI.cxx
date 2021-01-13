@@ -9,7 +9,7 @@
 #include <fairmq/sdk/commands/Commands.h>
 #include <fairmq/States.h>
 #include <fairmq/SDK.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 
 #include <boost/program_options.hpp>
 

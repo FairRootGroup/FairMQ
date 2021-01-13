@@ -10,7 +10,7 @@
 #define FAIR_MQ_ZMQ_POLLER_H
 
 #include <fairmq/zeromq/Socket.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 #include <FairMQChannel.h>
 #include <FairMQLogger.h>
 #include <FairMQPoller.h>

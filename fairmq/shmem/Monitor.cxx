@@ -9,7 +9,7 @@
 #include "Monitor.h"
 #include "Common.h"
 
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 #include <fairlogger/Logger.h>
 
 #include <boost/interprocess/managed_shared_memory.hpp>

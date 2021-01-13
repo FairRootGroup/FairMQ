@@ -5,7 +5,7 @@
 *              GNU Lesser General Public Licence (LGPL) version 3,             *
 *                  copied verbatim in the file "LICENSE"                       *
 ********************************************************************************/
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Unique.h>
 
 #include <boost/program_options.hpp>
 

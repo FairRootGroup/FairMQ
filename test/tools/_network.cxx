@@ -7,7 +7,7 @@
  ********************************************************************************/
 
 #include <gtest/gtest.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Network.h>
 
 #include <string>
 

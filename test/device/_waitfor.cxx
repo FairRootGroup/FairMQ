@@ -9,7 +9,9 @@
 #include "runner.h"
 
 #include <gtest/gtest.h>
-#include <fairmq/Tools.h>
+
+#include <fairmq/tools/Unique.h>
+#include <fairmq/tools/Process.h>
 
 #include <signal.h> // kill
 

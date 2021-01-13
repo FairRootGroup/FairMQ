@@ -10,8 +10,6 @@
 #include <fairmq/DeviceRunner.h>
 #include <fairmq/ProgOptions.h>
 
-#include <fairmq/Tools.h>
-
 #include <gtest/gtest.h>
 
 #include <sstream> // std::stringstream

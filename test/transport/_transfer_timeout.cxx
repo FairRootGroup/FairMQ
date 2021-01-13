@@ -11,7 +11,9 @@
 #include <FairMQLogger.h>
 #include <FairMQTransportFactory.h>
 #include <fairmq/ProgOptions.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Process.h>
+#include <fairmq/tools/Strings.h>
+#include <fairmq/tools/Unique.h>
 #include <gtest/gtest.h>
 
 #include <chrono>

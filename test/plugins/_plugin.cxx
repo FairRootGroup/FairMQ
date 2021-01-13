@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 #include <fairmq/Plugin.h>
 #include <fairmq/PluginServices.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Version.h>
 #include <FairMQDevice.h>
 #include <fairmq/ProgOptions.h>
 #include <memory>

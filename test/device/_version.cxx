@@ -8,7 +8,7 @@
 
 #include <FairMQDevice.h>
 
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Version.h>
 
 #include <gtest/gtest.h>
 

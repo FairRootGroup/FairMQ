@@ -15,7 +15,7 @@
 #include <FairMQSocket.h>
 #include <FairMQMessage.h>
 #include <FairMQLogger.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 
 #include <zmq.h>
 
@@ -386,8 +386,7 @@ class Socket final : public fair::mq::Socket
     {
         size_t eventsSize = sizeof(uint32_t);
         if (zmq_getsockopt(fSocket, ZMQ_EVENTS, events, &eventsSize) < 0) {
-            throw SocketError(
-                tools::ToString("failed setting ZMQ_EVENTS, reason: ", zmq_strerror(errno)));
+            throw SocketError(tools::ToString("failed setting ZMQ_EVENTS, reason: ", zmq_strerror(errno)));
         }
     }
 

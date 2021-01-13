@@ -7,7 +7,7 @@
  ********************************************************************************/
 
 #include "Fixture.h"
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 #include <fairmq/PropertyOutput.h>
 #include <algorithm>
 

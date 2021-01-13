@@ -11,7 +11,8 @@
 #include <asio.hpp>
 #include <dds/dds.h>
 #include <fairmq/sdk/Topology.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
+#include <fairmq/tools/Semaphore.h>
 
 #include <thread>
 

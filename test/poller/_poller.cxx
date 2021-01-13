@@ -7,7 +7,9 @@
  ********************************************************************************/
 
 #include "runner.h"
-#include <fairmq/Tools.h>
+
+#include <fairmq/tools/Unique.h>
+#include <fairmq/tools/Process.h>
 #include <gtest/gtest.h>
 #include <sstream> // std::stringstream
 #include <thread>

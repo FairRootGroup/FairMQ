@@ -8,7 +8,7 @@
 
 #include <fairmq/ofi/Poller.h>
 #include <fairmq/ofi/Socket.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 #include <FairMQLogger.h>
 
 #include <zmq.h>

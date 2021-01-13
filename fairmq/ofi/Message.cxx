@@ -7,7 +7,6 @@
  ********************************************************************************/
 
 #include <fairmq/ofi/Message.h>
-#include <fairmq/Tools.h>
 #include <FairMQLogger.h>
 
 #include <asiofi.hpp>
