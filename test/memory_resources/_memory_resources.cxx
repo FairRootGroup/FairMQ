@@ -9,7 +9,7 @@
 #include <fairmq/FairMQTransportFactory.h>
 #include <fairmq/MemoryResourceTools.h>
 #include <fairmq/ProgOptions.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Unique.h>
 
 #include <boost/container/pmr/polymorphic_allocator.hpp>
 

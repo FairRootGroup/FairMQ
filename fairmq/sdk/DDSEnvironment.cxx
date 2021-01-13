@@ -11,7 +11,7 @@
 #include <cstdlib>
 #include <dds/dds.h>
 #include <fairlogger/Logger.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/InstanceLimit.h>
 #include <fairmq/sdk/DDSInfo.h>
 #include <sstream>
 #include <utility>

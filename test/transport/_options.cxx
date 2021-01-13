@@ -11,7 +11,7 @@
 #include <FairMQParts.h>
 #include <FairMQLogger.h>
 #include <FairMQTransportFactory.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Unique.h>
 #include <fairmq/ProgOptions.h>
 
 #include <algorithm>

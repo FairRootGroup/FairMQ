@@ -12,7 +12,7 @@
 #include <FairMQLogger.h>
 #include <FairMQMessage.h>
 #include <FairMQSocket.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 #include <fairmq/zeromq/Context.h>
 #include <fairmq/zeromq/Message.h>
 

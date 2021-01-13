@@ -9,7 +9,7 @@
 #include "PMIxPlugin.h"
 
 #include <fairmq/sdk/commands/Commands.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 
 #include <sstream>
 #include <stdexcept>

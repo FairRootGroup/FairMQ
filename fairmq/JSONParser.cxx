@@ -15,7 +15,6 @@
 #include "JSONParser.h"
 #include "FairMQChannel.h"
 #include <fairmq/PropertyOutput.h>
-#include <fairmq/tools/CppSTL.h>
 #include <fairmq/tools/Strings.h>
 
 #include <fairlogger/Logger.h>

@@ -13,7 +13,8 @@
 #include <fairmq/ofi/TransportFactory.h>
 #endif
 #include <FairMQLogger.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Unique.h>
+#include <fairmq/tools/Strings.h>
 
 #include <fairlogger/Logger.h>
 

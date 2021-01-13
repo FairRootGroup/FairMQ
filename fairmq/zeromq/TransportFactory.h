@@ -14,7 +14,6 @@
 #include <fairmq/zeromq/Socket.h>
 #include <fairmq/zeromq/Poller.h>
 #include <fairmq/zeromq/UnmanagedRegion.h>
-#include <fairmq/Tools.h>
 #include <FairMQTransportFactory.h>
 #include <fairmq/ProgOptions.h>
 

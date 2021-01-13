@@ -9,7 +9,7 @@
 #define FAIR_MQ_SHMEM_POLLER_H_
 
 #include "Socket.h"
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 #include <FairMQChannel.h>
 #include <FairMQLogger.h>
 #include <FairMQPoller.h>

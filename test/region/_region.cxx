@@ -9,10 +9,13 @@
 #include <FairMQLogger.h>
 #include <FairMQTransportFactory.h>
 #include <fairmq/ProgOptions.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Unique.h>
+#include <fairmq/tools/Semaphore.h>
+#include <fairmq/tools/Strings.h>
 
 #include <gtest/gtest.h>
 
+#include <memory> // make_unique
 #include <string>
 
 namespace
@@ -101,8 +104,8 @@ void RegionCallbacks(const string& transport, const string& _address)
 
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
 
-    unique_ptr<int> intPtr1 = fair::mq::tools::make_unique<int>(42);
-    unique_ptr<int> intPtr2 = fair::mq::tools::make_unique<int>(43);
+    unique_ptr<int> intPtr1 = make_unique<int>(42);
+    unique_ptr<int> intPtr2 = make_unique<int>(43);
     fair::mq::tools::Semaphore blocker;
 
     FairMQChannel push("Push", "push", factory);

@@ -19,7 +19,7 @@
 #include <FairMQTransportFactory.h>
 #include <fairmq/ProgOptions.h>
 #include <FairMQLogger.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 
 #include <boost/version.hpp>
 

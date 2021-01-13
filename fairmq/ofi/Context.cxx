@@ -7,7 +7,7 @@
  ********************************************************************************/
 
 #include <fairmq/ofi/Context.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 #include <FairMQLogger.h>
 
 #include <asiofi/version.hpp>

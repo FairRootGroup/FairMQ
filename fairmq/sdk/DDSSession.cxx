@@ -14,7 +14,8 @@
 #include <cstdlib>
 #include <dds/dds.h>
 #include <fairlogger/Logger.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
+#include <fairmq/tools/Semaphore.h>
 #include <fairmq/sdk/DDSAgent.h>
 #include <fairmq/sdk/DDSEnvironment.h>
 #include <fairmq/sdk/DDSTopology.h>

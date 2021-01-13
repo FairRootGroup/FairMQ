@@ -10,7 +10,8 @@
 #include <FairMQLogger.h>
 #include <FairMQTransportFactory.h>
 #include <fairmq/ProgOptions.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Unique.h>
+#include <fairmq/tools/Strings.h>
 
 #include <gtest/gtest.h>
 

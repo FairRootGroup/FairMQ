@@ -11,7 +11,6 @@
 #include <boost/range/iterator_range.hpp>
 #include <dds/dds.h>
 #include <fairlogger/Logger.h>
-#include <fairmq/Tools.h>
 #include <fairmq/sdk/DDSEnvironment.h>
 #include <memory>
 #include <sstream>

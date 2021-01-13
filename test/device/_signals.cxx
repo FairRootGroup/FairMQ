@@ -10,7 +10,8 @@
 
 #include <gtest/gtest.h>
 #include <boost/process.hpp>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Unique.h>
+#include <fairmq/tools/Process.h>
 
 #include <string>
 #include <thread>

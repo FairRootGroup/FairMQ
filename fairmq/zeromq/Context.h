@@ -9,7 +9,7 @@
 #ifndef FAIR_MQ_ZMQ_CONTEXT_H_
 #define FAIR_MQ_ZMQ_CONTEXT_H_
 
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 #include <FairMQLogger.h>
 #include <FairMQUnmanagedRegion.h>
 

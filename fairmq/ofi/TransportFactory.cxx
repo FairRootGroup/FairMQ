@@ -10,7 +10,6 @@
 #include <fairmq/ofi/Poller.h>
 #include <fairmq/ofi/Socket.h>
 #include <fairmq/ofi/TransportFactory.h>
-#include <fairmq/Tools.h>
 
 #include <stdexcept>
 

@@ -7,12 +7,10 @@
  ********************************************************************************/
 
 #include <fairmq/Properties.h>
-#include <fairmq/Tools.h>
 
 #include <boost/filesystem.hpp>
 
 using namespace std;
-using namespace fair::mq::tools;
 using boost::any_cast;
 
 namespace fair
