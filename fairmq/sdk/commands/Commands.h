@@ -10,7 +10,6 @@
 #define FAIR_MQ_SDK_COMMANDFACTORY
 
 #include <fairmq/States.h>
-#include <fairmq/tools/CppSTL.h>
 
 #include <vector>
 #include <string>
@@ -354,7 +353,7 @@ struct PropertiesSet : Cmd {
 template<typename C, typename... Args>
 std::unique_ptr<Cmd> make(Args&&... args)
 {
-    return fair::mq::tools::make_unique<C>(std::forward<Args>(args)...);
+    return std::make_unique<C>(std::forward<Args>(args)...);
 }
 
 struct Cmds

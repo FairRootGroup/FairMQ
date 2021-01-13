@@ -19,7 +19,7 @@
 #include <zmq.h>
 
 #include <atomic>
-#include <memory> // unique_ptr
+#include <memory> // unique_ptr, make_unique
 
 namespace fair {
 namespace mq {
@@ -258,7 +258,7 @@ class Socket final : public fair::mq::Socket
             bool repeat = false;
 
             do {
-                FairMQMessagePtr part = tools::make_unique<Message>(GetTransport());
+                FairMQMessagePtr part = std::make_unique<Message>(GetTransport());
 
                 int nbytes = zmq_msg_recv(static_cast<Message*>(part.get())->GetMessage(), fSocket, flags);
                 if (nbytes >= 0) {
@@ -328,8 +328,7 @@ class Socket final : public fair::mq::Socket
     {
         size_t eventsSize = sizeof(uint32_t);
         if (zmq_getsockopt(fSocket, ZMQ_EVENTS, events, &eventsSize) < 0) {
-            throw SocketError(
-                tools::ToString("failed setting ZMQ_EVENTS, reason: ", zmq_strerror(errno)));
+            throw SocketError(tools::ToString("failed setting ZMQ_EVENTS, reason: ", zmq_strerror(errno)));
         }
     }
 

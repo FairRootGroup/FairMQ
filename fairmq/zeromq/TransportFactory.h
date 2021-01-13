@@ -18,7 +18,7 @@
 #include <FairMQTransportFactory.h>
 #include <fairmq/ProgOptions.h>
 
-#include <memory> // unique_ptr
+#include <memory> // unique_ptr, make_unique
 #include <string>
 #include <vector>
 
@@ -41,10 +41,10 @@ class TransportFactory final : public FairMQTransportFactory
         LOG(debug) << "Transport: Using ZeroMQ library, version: " << major << "." << minor << "." << patch;
 
         if (config) {
-            fCtx = tools::make_unique<Context>(config->GetProperty<int>("io-threads", 1));
+            fCtx = std::make_unique<Context>(config->GetProperty<int>("io-threads", 1));
         } else {
             LOG(debug) << "fair::mq::ProgOptions not available! Using defaults.";
-            fCtx = tools::make_unique<Context>(1);
+            fCtx = std::make_unique<Context>(1);
         }
     }
 
@@ -53,52 +53,52 @@ class TransportFactory final : public FairMQTransportFactory
 
     MessagePtr CreateMessage() override
     {
-        return tools::make_unique<Message>(this);
+        return std::make_unique<Message>(this);
     }
 
     MessagePtr CreateMessage(Alignment alignment) override
     {
-        return tools::make_unique<Message>(alignment, this);
+        return std::make_unique<Message>(alignment, this);
     }
 
     MessagePtr CreateMessage(const size_t size) override
     {
-        return tools::make_unique<Message>(size, this);
+        return std::make_unique<Message>(size, this);
     }
 
     MessagePtr CreateMessage(const size_t size, Alignment alignment) override
     {
-        return tools::make_unique<Message>(size, alignment, this);
+        return std::make_unique<Message>(size, alignment, this);
     }
 
     MessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
     {
-        return tools::make_unique<Message>(data, size, ffn, hint, this);
+        return std::make_unique<Message>(data, size, ffn, hint, this);
     }
 
     MessagePtr CreateMessage(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0) override
     {
-        return tools::make_unique<Message>(region, data, size, hint, this);
+        return std::make_unique<Message>(region, data, size, hint, this);
     }
 
     SocketPtr CreateSocket(const std::string& type, const std::string& name) override
     {
-        return tools::make_unique<Socket>(*fCtx, type, name, GetId(), this);
+        return std::make_unique<Socket>(*fCtx, type, name, GetId(), this);
     }
 
     PollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const override
     {
-        return tools::make_unique<Poller>(channels);
+        return std::make_unique<Poller>(channels);
     }
 
     PollerPtr CreatePoller(const std::vector<FairMQChannel*>& channels) const override
     {
-        return tools::make_unique<Poller>(channels);
+        return std::make_unique<Poller>(channels);
     }
 
     PollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const override
     {
-        return tools::make_unique<Poller>(channelsMap, channelList);
+        return std::make_unique<Poller>(channelsMap, channelList);
     }
 
     UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, RegionCallback callback, const std::string& path = "", int flags = 0) override
@@ -123,7 +123,7 @@ class TransportFactory final : public FairMQTransportFactory
 
     UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, const int64_t userFlags, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string&, int)
     {
-        UnmanagedRegionPtr ptr = tools::make_unique<UnmanagedRegion>(*fCtx, size, userFlags, callback, bulkCallback, this);
+        UnmanagedRegionPtr ptr = std::make_unique<UnmanagedRegion>(*fCtx, size, userFlags, callback, bulkCallback, this);
         auto zPtr = static_cast<UnmanagedRegion*>(ptr.get());
         fCtx->AddRegion(false, zPtr->GetId(), zPtr->GetData(), zPtr->GetSize(), zPtr->GetUserFlags(), RegionEvent::created);
         return ptr;

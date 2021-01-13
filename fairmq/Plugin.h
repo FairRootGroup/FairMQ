@@ -9,7 +9,6 @@
 #ifndef FAIR_MQ_PLUGIN_H
 #define FAIR_MQ_PLUGIN_H
 
-#include <fairmq/tools/CppSTL.h>
 #include <fairmq/tools/Version.h>
 #include <fairmq/PluginServices.h>
 
@@ -140,7 +139,7 @@ class Plugin
 #define REGISTER_FAIRMQ_PLUGIN(KLASS, NAME, VERSION, MAINTAINER, HOMEPAGE, PROGOPTIONS) \
 static auto Make_##NAME##_Plugin(fair::mq::PluginServices* pluginServices) -> std::unique_ptr<fair::mq::Plugin> \
 { \
-    return fair::mq::tools::make_unique<KLASS>(std::string{#NAME}, VERSION, std::string{MAINTAINER}, std::string{HOMEPAGE}, pluginServices); \
+    return std::make_unique<KLASS>(std::string{#NAME}, VERSION, std::string{MAINTAINER}, std::string{HOMEPAGE}, pluginServices); \
 } \
 BOOST_DLL_ALIAS(Make_##NAME##_Plugin, make_##NAME##_plugin) \
 BOOST_DLL_ALIAS(PROGOPTIONS, get_##NAME##_plugin_progoptions)
