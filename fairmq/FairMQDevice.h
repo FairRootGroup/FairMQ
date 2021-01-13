@@ -41,12 +41,9 @@ using FairMQChannelMap = std::unordered_map<std::string, std::vector<FairMQChann
 using InputMsgCallback = std::function<bool(FairMQMessagePtr&, int)>;
 using InputMultipartCallback = std::function<bool(FairMQParts&, int)>;
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 struct OngoingTransition : std::runtime_error { using std::runtime_error::runtime_error; };
-}
 }
 
 class FairMQDevice

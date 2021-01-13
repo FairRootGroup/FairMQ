@@ -16,11 +16,7 @@
 #include <memory>
 #include <thread>
 
-namespace fair
-{
-namespace mq
-{
-namespace test
+namespace fair::mq::test
 {
 
 inline auto control(FairMQDevice& device) -> void
@@ -64,8 +60,6 @@ struct PluginServices : ::testing::Test {
     std::thread fRunStateMachineThread;
 };
 
-} /* namespace test */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::test
 
 #endif /* FAIR_MQ_TEST_FIXTURE */

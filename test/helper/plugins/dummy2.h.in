@@ -11,11 +11,7 @@
 
 #include <fairmq/Plugin.h>
 
-namespace fair
-{
-namespace mq
-{
-namespace test
+namespace fair::mq::test
 {
 
 class Dummy2Plugin : public fair::mq::Plugin
@@ -37,8 +33,6 @@ REGISTER_FAIRMQ_PLUGIN(
     fair::mq::Plugin::NoProgramOptions
 )
 
-} /* namespace test */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::test
 
 #endif /* FAIR_MQ_TEST_PLUGIN_DUMMY */

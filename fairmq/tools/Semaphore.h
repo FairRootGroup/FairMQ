@@ -15,9 +15,8 @@
 #include <memory>
 #include <mutex>
 
-namespace fair {
-namespace mq {
-namespace tools {
+namespace fair::mq::tools
+{
 
 /**
  * @struct Semaphore Semaphore.h <fairmq/tools/Semaphore.h>
@@ -55,8 +54,6 @@ private:
   std::shared_ptr<Semaphore> fSemaphore;
 };
 
-} /* namespace tools */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::tools
 
 #endif /* FAIR_MQ_TOOLS_SEMAPHORE_H */

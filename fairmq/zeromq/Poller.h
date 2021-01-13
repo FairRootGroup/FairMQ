@@ -20,11 +20,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace fair
-{
-namespace mq
-{
-namespace zmq
+namespace fair::mq::zmq
 {
 
 class Poller final : public fair::mq::Poller
@@ -204,8 +200,6 @@ class Poller final : public fair::mq::Poller
     std::unordered_map<std::string, int> fOffsetMap;
 };
 
-}   // namespace zmq
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::zmq
 
 #endif /* FAIR_MQ_ZMQ_POLLER_H */

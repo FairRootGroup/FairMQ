@@ -18,11 +18,7 @@
 
 #include <zmq.h>
 
-namespace fair
-{
-namespace mq
-{
-namespace ofi
+namespace fair::mq::ofi
 {
 
 class TransportFactory;
@@ -63,8 +59,6 @@ class Poller final : public FairMQPoller
     std::unordered_map<std::string, int> fOffsetMap;
 }; /* class Poller */
 
-} /* namespace ofi */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::ofi
 
 #endif /* FAIR_MQ_OFI_POLLER_H */

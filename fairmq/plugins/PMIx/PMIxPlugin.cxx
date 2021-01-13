@@ -18,11 +18,7 @@
 using namespace std;
 using namespace fair::mq::sdk::cmd;
 
-namespace fair
-{
-namespace mq
-{
-namespace plugins
+namespace fair::mq::plugins
 {
 
 PMIxPlugin::PMIxPlugin(const string& name,
@@ -304,6 +300,4 @@ auto PMIxPlugin::WaitForExitingAck() -> void
     });
 }
 
-} /* namespace plugins */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::plugins

@@ -24,11 +24,7 @@
 #include <unistd.h>
 #include <vector>
 
-namespace fair
-{
-namespace mq
-{
-namespace plugins
+namespace fair::mq::plugins
 {
 
 class PMIxPlugin : public Plugin
@@ -88,8 +84,6 @@ REGISTER_FAIRMQ_PLUGIN(
     PMIxProgramOptions                           // custom program options for the plugin
 )
 
-} /* namespace plugins */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::plugins
 
 #endif /* FAIR_MQ_PLUGINS_PMIX */

@@ -8,14 +8,11 @@
 
 #include <string>
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq::sdk
+{
 namespace cmd {
 
 constexpr auto commandsFormatDefFbs = R"(@commands_format_def_fbs@)";
 
 }   // namespace cmd
-}   // namespace sdk
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::sdk

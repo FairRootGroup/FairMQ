@@ -29,9 +29,8 @@
 #define FAIR_LOG LOG
 #endif /* ifndef FAIR_LOG */
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq::sdk
+{
 
 template<typename... SignatureArgTypes>
 struct AsioAsyncOpImplBase
@@ -219,9 +218,6 @@ struct AsioAsyncOp<Executor,
     }
 };
 
-} /* namespace sdk */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::sdk
 
 #endif /* FAIR_MQ_SDK_ASIOASYNCOP_H */
-

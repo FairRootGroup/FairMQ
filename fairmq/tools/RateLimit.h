@@ -16,11 +16,7 @@
 #include <thread>
 #include <chrono>
 
-namespace fair
-{
-namespace mq
-{
-namespace tools
+namespace fair::mq::tools
 {
 
 /**
@@ -136,8 +132,6 @@ class RateLimiter
     int skip_check_count = 1;
 };
 
-} /* namespace tools */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::tools
 
 #endif  // FAIR_MQ_TOOLS_RATELIMIT_H

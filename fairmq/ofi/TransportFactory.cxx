@@ -13,11 +13,7 @@
 
 #include <stdexcept>
 
-namespace fair
-{
-namespace mq
-{
-namespace ofi
+namespace fair::mq::ofi
 {
 
 using namespace std;
@@ -121,6 +117,4 @@ auto TransportFactory::GetType() const -> Transport
     return Transport::OFI;
 }
 
-} /* namespace ofi */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::ofi

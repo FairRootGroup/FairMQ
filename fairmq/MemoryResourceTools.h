@@ -15,8 +15,8 @@
 #include <fairmq/FairMQTransportFactory.h>
 #include <fairmq/MemoryResources.h>
 
-namespace fair {
-namespace mq {
+namespace fair::mq
+{
 
 using BytePmrAllocator = pmr::polymorphic_allocator<fair::mq::byte>;
 
@@ -62,5 +62,4 @@ FairMQMessagePtr getMessage(ContainerT &&container_, FairMQMemoryResource *targe
     return message;
 }
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq

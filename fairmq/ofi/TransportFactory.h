@@ -15,11 +15,7 @@
 
 #include <asiofi.hpp>
 
-namespace fair
-{
-namespace mq
-{
-namespace ofi
+namespace fair::mq::ofi
 {
 
 /**
@@ -69,8 +65,6 @@ class TransportFactory final : public FairMQTransportFactory
     asiofi::allocated_pool_resource fMemoryResource;
 }; /* class TransportFactory */  
 
-} /* namespace ofi */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::ofi
 
 #endif /* FAIR_MQ_OFI_TRANSPORTFACTORY_H */

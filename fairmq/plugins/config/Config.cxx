@@ -15,11 +15,7 @@
 
 using namespace std;
 
-namespace fair
-{
-namespace mq
-{
-namespace plugins
+namespace fair::mq::plugins
 {
 
 Config::Config(const string& name, const Plugin::Version version, const string& maintainer, const string& homepage, PluginServices* pluginServices)
@@ -89,6 +85,4 @@ Config::~Config()
     UnsubscribeFromDeviceStateChange();
 }
 
-} /* namespace plugins */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::plugins

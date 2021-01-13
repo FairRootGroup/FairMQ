@@ -13,9 +13,7 @@
 
 using namespace std;
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 array<string, 16> stateNames =
@@ -114,5 +112,4 @@ Transition GetTransition(const string& transition)
     return transitions.at(transition);
 }
 
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq

@@ -30,9 +30,7 @@ using namespace fair::mq;
 using namespace fair::mq::tools;
 using namespace boost::property_tree;
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 fair::mq::Properties PtreeParser(const ptree& pt, const string& id)
@@ -185,5 +183,4 @@ void SubChannelParser(const ptree& channelTree, fair::mq::Properties& properties
 }
 
 } // helper namespace
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq

@@ -104,9 +104,7 @@ inline std::ostream& operator<<(std::ostream& os, const FairMQRegionEvent& event
     }
 }
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 using RegionCallback = FairMQRegionCallback;
@@ -118,7 +116,6 @@ using RegionBlock = FairMQRegionBlock;
 using UnmanagedRegion = FairMQUnmanagedRegion;
 using UnmanagedRegionPtr = FairMQUnmanagedRegionPtr;
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
 #endif /* FAIRMQUNMANAGEDREGION_H_ */

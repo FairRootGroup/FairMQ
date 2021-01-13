@@ -39,9 +39,7 @@ struct ValInfo
     string origin;
 };
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 ValInfo ConvertVarValToValInfo(const po::variable_value& v)
@@ -449,6 +447,4 @@ void ProgOptions::PrintOptionsRaw() const
     }
 }
 
-
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq

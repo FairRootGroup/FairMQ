@@ -24,11 +24,7 @@
 #include <thread>
 #include <vector>
 
-namespace fair
-{
-namespace mq
-{
-namespace ofi
+namespace fair::mq::ofi
 {
 
 enum class ConnectionType : bool { Bind, Connect };
@@ -88,8 +84,6 @@ class Context
 
 struct ContextError : std::runtime_error { using std::runtime_error::runtime_error; };
 
-} /* namespace ofi */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::ofi
 
 #endif /* FAIR_MQ_OFI_CONTEXT_H */

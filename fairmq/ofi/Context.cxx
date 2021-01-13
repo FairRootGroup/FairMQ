@@ -22,11 +22,7 @@
 #include <string.h>
 #include <sys/socket.h>
 
-namespace fair
-{
-namespace mq
-{
-namespace ofi
+namespace fair::mq::ofi
 {
 
 using namespace std;
@@ -134,6 +130,4 @@ auto Context::MakeSendMessage(size_t size) -> MessagePtr
     return fSendFactory.CreateMessage(size);
 }
 
-} /* namespace ofi */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::ofi

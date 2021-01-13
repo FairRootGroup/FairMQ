@@ -48,11 +48,7 @@
 
 #include <sys/mman.h> // mlock
 
-namespace fair
-{
-namespace mq
-{
-namespace shmem
+namespace fair::mq::shmem
 {
 
 class Manager
@@ -643,8 +639,6 @@ class Manager
     bool fThrowOnBadAlloc;
 };
 
-} // namespace shmem
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq::shmem
 
 #endif /* FAIR_MQ_SHMEM_MANAGER_H_ */

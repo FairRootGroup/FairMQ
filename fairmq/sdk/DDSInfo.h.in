@@ -11,23 +11,11 @@
 
 #include <string>
 
-namespace dds {
-namespace tools_api {
+namespace dds::tools_api { class CSession; }
+namespace dds::topology_api { class CTopology; }
 
-class CSession;
-
-}   // namespace tools_api
-
-namespace topology_api {
-
-class CTopology;
-
-}   // namespace topology_api
-}   // namespace dds
-
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq::sdk
+{
 
 const std::string DDSVersion("@DDS_VERSION@");
 const std::string DDSInstallPrefix("@DDS_INSTALL_PREFIX@");
@@ -36,8 +24,6 @@ const std::string DDSIncludeDir("@DDS_INCDIR@");
 const std::string DDSLibraryDir("@DDS_LIBDIR@");
 const std::string DDSPluginDir("@DDS_PLUGINDIR@");
 
-}   // namespace sdk
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::sdk
 
 #endif /* FAIR_MQ_SDK_DDSINFO_H */

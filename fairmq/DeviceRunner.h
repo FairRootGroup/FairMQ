@@ -19,8 +19,8 @@
 #include <string>
 #include <vector>
 
-namespace fair {
-namespace mq {
+namespace fair::mq
+{
 
 /**
  * @class DeviceRunner DeviceRunner.h <fairmq/DeviceRunner.h>
@@ -88,7 +88,6 @@ struct ModifyRawCmdLineArgs : Event<DeviceRunner&> {};
 struct InstantiateDevice : Event<DeviceRunner&> {};
 } /* namespace hooks */
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
 #endif /* FAIR_MQ_DEVICERUNNER_H */

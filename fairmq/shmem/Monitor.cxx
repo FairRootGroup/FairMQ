@@ -42,11 +42,7 @@ namespace
     volatile sig_atomic_t gSignalStatus = 0;
 }
 
-namespace fair
-{
-namespace mq
-{
-namespace shmem
+namespace fair::mq::shmem
 {
 
 void signalHandler(int signal)
@@ -575,6 +571,4 @@ Monitor::~Monitor()
     }
 }
 
-} // namespace shmem
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq::shmem

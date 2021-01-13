@@ -24,7 +24,7 @@
 #include <cstddef> // size_t
 
 class FairMQChannel;
-namespace fair { namespace mq { class ProgOptions; } }
+namespace fair::mq { class ProgOptions; }
 
 class FairMQTransportFactory
 {
@@ -171,15 +171,12 @@ class FairMQTransportFactory
     }
 };
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 using TransportFactory = FairMQTransportFactory;
 struct TransportFactoryError : std::runtime_error { using std::runtime_error::runtime_error; };
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
 #endif /* FAIRMQTRANSPORTFACTORY_H_ */

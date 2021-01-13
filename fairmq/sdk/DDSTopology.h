@@ -18,9 +18,8 @@
 #include <string>
 #include <vector>
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq::sdk
+{
 
 /**
  * @class DDSTopology DDSTopology.h <fairmq/sdk/DDSTopology.h>
@@ -71,8 +70,6 @@ class DDSTopology
 
 using DDSTopo = DDSTopology;
 
-}   // namespace sdk
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::sdk
 
 #endif /* FAIR_MQ_SDK_DDSTOPOLOGY_H */

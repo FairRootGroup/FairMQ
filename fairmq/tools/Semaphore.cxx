@@ -8,9 +8,8 @@
 
 #include "Semaphore.h"
 
-namespace fair {
-namespace mq {
-namespace tools {
+namespace fair::mq::tools
+{
 
 Semaphore::Semaphore()
     : Semaphore(0)
@@ -68,6 +67,4 @@ auto SharedSemaphore::GetCount() const -> std::size_t
     return fSemaphore->GetCount();
 }
 
-} /* namespace tools */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::tools

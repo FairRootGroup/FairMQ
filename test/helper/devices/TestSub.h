@@ -14,11 +14,7 @@
 #include <chrono>
 #include <thread>
 
-namespace fair
-{
-namespace mq
-{
-namespace test
+namespace fair::mq::test
 {
 
 class Sub : public FairMQDevice
@@ -64,8 +60,6 @@ class Sub : public FairMQDevice
     }
 };
 
-} // namespace test
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq::test
 
 #endif /* FAIR_MQ_TEST_SUB_H */

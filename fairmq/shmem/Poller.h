@@ -21,9 +21,8 @@
 
 class FairMQChannel;
 
-namespace fair {
-namespace mq {
-namespace shmem {
+namespace fair::mq::shmem
+{
 
 class Poller final : public fair::mq::Poller
 {
@@ -201,8 +200,6 @@ class Poller final : public fair::mq::Poller
     std::unordered_map<std::string, int> fOffsetMap;
 };
 
-}   // namespace shmem
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::shmem
 
 #endif /* FAIR_MQ_SHMEM_POLLER_H_ */

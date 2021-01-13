@@ -19,11 +19,7 @@
 
 using namespace std;
 
-namespace fair
-{
-namespace mq
-{
-namespace tools
+namespace fair::mq::tools
 {
 
 // generates UUID string
@@ -43,6 +39,4 @@ size_t UuidHash()
     return uuid_hasher(u);
 }
 
-} /* namespace tools */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::tools

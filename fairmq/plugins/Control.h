@@ -21,11 +21,7 @@
 #include <atomic>
 #include <stdexcept>
 
-namespace fair
-{
-namespace mq
-{
-namespace plugins
+namespace fair::mq::plugins
 {
 
 class Control : public Plugin
@@ -68,8 +64,6 @@ REGISTER_FAIRMQ_PLUGIN(
                                   // boost::optional<boost::program_options::options_description>
 )
 
-} /* namespace plugins */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::plugins
 
 #endif /* FAIR_MQ_PLUGINS_CONTROL */

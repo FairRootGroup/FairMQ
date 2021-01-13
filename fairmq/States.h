@@ -13,9 +13,7 @@
 #include <ostream>
 #include <stdexcept>
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 enum class State : int
@@ -64,7 +62,6 @@ struct DeviceErrorState : std::runtime_error { using std::runtime_error::runtime
 inline std::ostream& operator<<(std::ostream& os, const State& state) { return os << GetStateName(state); }
 inline std::ostream& operator<<(std::ostream& os, const Transition& transition) { return os << GetTransitionName(transition); }
 
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq
 
 #endif /* FAIRMQSTATES_H_ */

@@ -23,11 +23,7 @@
 #include <mutex>
 
 
-namespace fair
-{
-namespace mq
-{
-namespace ofi
+namespace fair::mq::ofi
 {
 
 /**
@@ -120,8 +116,6 @@ class Socket final : public fair::mq::Socket
 
 struct SilentSocketError : SocketError { using SocketError::SocketError; };
 
-} /* namespace ofi */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::ofi
 
 #endif /* FAIR_MQ_OFI_SOCKET_H */

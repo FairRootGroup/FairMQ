@@ -48,9 +48,8 @@
 #include <utility>
 #include <vector>
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq::sdk
+{
 
 using DeviceId = std::string;
 using DeviceState = fair::mq::State;
@@ -1366,8 +1365,6 @@ auto MakeTopology(dds::topology_api::CTopology nativeTopo,
                   DDSEnv env = {},
                   bool blockUntilConnected = false) -> Topology;
 
-}   // namespace sdk
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::sdk
 
 #endif /* FAIR_MQ_SDK_TOPOLOGY_H */

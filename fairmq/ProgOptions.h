@@ -26,9 +26,7 @@
 #include <vector>
 #include <stdexcept>
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 struct PropertyNotFoundError : std::runtime_error { using std::runtime_error::runtime_error; };
@@ -270,7 +268,6 @@ class ProgOptions
     mutable std::mutex fMtx;
 };
 
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq
 
 #endif /* FAIR_MQ_PROGOPTIONS_H */

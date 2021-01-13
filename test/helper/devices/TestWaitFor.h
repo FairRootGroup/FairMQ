@@ -14,11 +14,7 @@
 
 #include <iostream>
 
-namespace fair
-{
-namespace mq
-{
-namespace test
+namespace fair::mq::test
 {
 
 class TestWaitFor : public FairMQDevice
@@ -55,8 +51,6 @@ class TestWaitFor : public FairMQDevice
     }
 };
 
-} // namespace test
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq::test
 
 #endif /* FAIR_MQ_TEST_WAITFOR_H */

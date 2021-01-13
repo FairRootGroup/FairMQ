@@ -24,11 +24,7 @@
 #include <sys/types.h> // getpid
 #include <unistd.h> // pid_t
 
-namespace fair
-{
-namespace mq
-{
-namespace shmem
+namespace fair::mq::shmem
 {
 
 class Socket;
@@ -299,8 +295,6 @@ class Message final : public fair::mq::Message
     }
 };
 
-}
-}
-}
+} // namespace fair::mq::shmem
 
 #endif /* FAIR_MQ_SHMEM_MESSAGE_H_ */

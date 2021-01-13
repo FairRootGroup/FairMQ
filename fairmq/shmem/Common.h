@@ -28,11 +28,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-namespace fair
-{
-namespace mq
-{
-namespace shmem
+namespace fair::mq::shmem
 {
 
 struct SharedMemoryError : std::runtime_error { using std::runtime_error::runtime_error; };
@@ -293,8 +289,6 @@ struct SegmentDeallocate : public boost::static_visitor<>
     void* ptr;
 };
 
-} // namespace shmem
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq::shmem
 
 #endif /* FAIR_MQ_SHMEM_COMMON_H_ */

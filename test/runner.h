@@ -11,18 +11,12 @@
 
 #include <string>
 
-namespace fair
-{
-namespace mq
-{
-namespace test
+namespace fair::mq::test
 {
 
 extern std::string runTestDevice; /// Path to test device executable.
 extern std::string mqConfig; /// Path to FairMQ device config file.
 
-} /* namespace test */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::test
 
 #endif /* FAIR_MQ_TEST_RUNNER_H */

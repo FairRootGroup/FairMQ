@@ -43,11 +43,7 @@ namespace
     }
 }
 
-namespace fair
-{
-namespace mq
-{
-namespace plugins
+namespace fair::mq::plugins
 {
 
 Control::Control(const string& name, const Plugin::Version version, const string& maintainer, const string& homepage, PluginServices* pluginServices)
@@ -475,6 +471,4 @@ Control::~Control()
     UnsubscribeFromDeviceStateChange();
 }
 
-} /* namespace plugins */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::plugins

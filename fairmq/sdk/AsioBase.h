@@ -14,9 +14,8 @@
 #include <memory>
 #include <utility>
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq::sdk
+{
 
 using DefaultExecutor = asio::any_io_executor;
 using DefaultAllocator = std::allocator<int>;
@@ -69,8 +68,6 @@ class AsioBase
     AllocatorType fAllocator;
 };
 
-} /* namespace sdk */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::sdk
 
 #endif /* FAIR_MQ_SDK_ASIOBASE_H */

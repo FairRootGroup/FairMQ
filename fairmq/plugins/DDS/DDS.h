@@ -32,11 +32,7 @@
 #include <utility> // pair
 #include <vector>
 
-namespace fair
-{
-namespace mq
-{
-namespace plugins
+namespace fair::mq::plugins
 {
 
 struct DDSConfig
@@ -196,8 +192,6 @@ REGISTER_FAIRMQ_PLUGIN(
     DDSProgramOptions                            // custom program options for the plugin
 )
 
-} /* namespace plugins */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::plugins
 
 #endif /* FAIR_MQ_PLUGINS_DDS */
