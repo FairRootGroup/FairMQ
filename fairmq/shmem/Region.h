@@ -19,7 +19,6 @@
 
 #include <FairMQLogger.h>
 #include <FairMQUnmanagedRegion.h>
-#include <fairmq/tools/CppSTL.h>
 #include <fairmq/tools/Strings.h>
 
 #include <boost/filesystem.hpp>
@@ -32,6 +31,7 @@
 #include <algorithm> // min
 #include <atomic>
 #include <thread>
+#include <memory> // make_unique
 #include <mutex>
 #include <condition_variable>
 #include <unordered_map>
@@ -113,9 +113,9 @@ struct Region
         using namespace boost::interprocess;
 
         if (fRemote) {
-            fQueue = tools::make_unique<message_queue>(open_only, fQueueName.c_str());
+            fQueue = std::make_unique<message_queue>(open_only, fQueueName.c_str());
         } else {
-            fQueue = tools::make_unique<message_queue>(create_only, fQueueName.c_str(), 1024, fAckBunchSize * sizeof(RegionBlock));
+            fQueue = std::make_unique<message_queue>(create_only, fQueueName.c_str(), 1024, fAckBunchSize * sizeof(RegionBlock));
         }
         LOG(debug) << "shmem: initialized region queue: " << fQueueName;
     }
@@ -123,7 +123,7 @@ struct Region
     void StartSendingAcks() { fAcksSender = std::thread(&Region::SendAcks, this); }
     void SendAcks()
     {
-        std::unique_ptr<RegionBlock[]> blocks = tools::make_unique<RegionBlock[]>(fAckBunchSize);
+        std::unique_ptr<RegionBlock[]> blocks = std::make_unique<RegionBlock[]>(fAckBunchSize);
         size_t blocksToSend = 0;
 
         while (true) {
@@ -165,7 +165,7 @@ struct Region
     {
         unsigned int priority;
         boost::interprocess::message_queue::size_type recvdSize;
-        std::unique_ptr<RegionBlock[]> blocks = tools::make_unique<RegionBlock[]>(fAckBunchSize);
+        std::unique_ptr<RegionBlock[]> blocks = std::make_unique<RegionBlock[]>(fAckBunchSize);
         std::vector<fair::mq::RegionBlock> result;
         result.reserve(fAckBunchSize);
 

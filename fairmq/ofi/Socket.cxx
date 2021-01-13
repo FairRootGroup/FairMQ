@@ -9,7 +9,7 @@
 #include <fairmq/ofi/ControlMessages.h>
 #include <fairmq/ofi/Socket.h>
 #include <fairmq/ofi/TransportFactory.h>
-#include <fairmq/Tools.h>
+#include <fairmq/tools/Strings.h>
 #include <FairMQLogger.h>
 
 #include <asiofi.hpp>
@@ -74,16 +74,16 @@ auto Socket::InitOfi(Address addr) -> void
           hints.set_provider("verbs");
       }
       if (fRemoteAddr == addr) {
-          fOfiInfo = tools::make_unique<asiofi::info>(addr.Ip.c_str(), std::to_string(addr.Port).c_str(), 0, hints);
+          fOfiInfo = make_unique<asiofi::info>(addr.Ip.c_str(), std::to_string(addr.Port).c_str(), 0, hints);
       } else {
-          fOfiInfo = tools::make_unique<asiofi::info>(addr.Ip.c_str(), std::to_string(addr.Port).c_str(), FI_SOURCE, hints);
+          fOfiInfo = make_unique<asiofi::info>(addr.Ip.c_str(), std::to_string(addr.Port).c_str(), FI_SOURCE, hints);
       }
 
       LOG(debug) << "OFI transport (" << fId << "): " << *fOfiInfo;
 
-      fOfiFabric = tools::make_unique<asiofi::fabric>(*fOfiInfo);
+      fOfiFabric = make_unique<asiofi::fabric>(*fOfiInfo);
 
-      fOfiDomain = tools::make_unique<asiofi::domain>(*fOfiFabric);
+      fOfiDomain = make_unique<asiofi::domain>(*fOfiFabric);
     }
 }
 
@@ -96,7 +96,7 @@ try {
 
     InitOfi(fLocalAddr);
 
-    fPassiveEndpoint = tools::make_unique<asiofi::passive_endpoint>(fContext.GetIoContext(), *fOfiFabric);
+    fPassiveEndpoint = make_unique<asiofi::passive_endpoint>(fContext.GetIoContext(), *fOfiFabric);
     //fPassiveEndpoint->set_local_address(Context::ConvertAddress(fLocalAddr));
 
     BindControlEndpoint();
@@ -128,7 +128,7 @@ auto Socket::BindControlEndpoint() -> void
     fPassiveEndpoint->listen([&](asiofi::info&& info) {
         LOG(debug) << "OFI transport (" << fId
                    << "): control band connection request received. Accepting ...";
-        fControlEndpoint = tools::make_unique<asiofi::connected_endpoint>(
+        fControlEndpoint = make_unique<asiofi::connected_endpoint>(
             fContext.GetIoContext(), *fOfiDomain, info);
         fControlEndpoint->enable();
         fControlEndpoint->accept([&]() {
@@ -148,7 +148,7 @@ auto Socket::BindDataEndpoint() -> void
     fPassiveEndpoint->listen([&](asiofi::info&& info) {
         LOG(debug) << "OFI transport (" << fId
                    << "): data band connection request received. Accepting ...";
-        fDataEndpoint = tools::make_unique<asiofi::connected_endpoint>(
+        fDataEndpoint = make_unique<asiofi::connected_endpoint>(
             fContext.GetIoContext(), *fOfiDomain, info);
         fDataEndpoint->enable();
         fDataEndpoint->accept([&]() {
@@ -215,7 +215,7 @@ auto Socket::ConnectEndpoint(std::unique_ptr<asiofi::connected_endpoint>& endpoi
 
     std::string band(type == Band::Control ? "control" : "data");
 
-    endpoint = tools::make_unique<asiofi::connected_endpoint>(fContext.GetIoContext(), *fOfiDomain);
+    endpoint = make_unique<asiofi::connected_endpoint>(fContext.GetIoContext(), *fOfiDomain);
     endpoint->enable();
 
     LOG(debug) << "OFI transport (" << fId << "): Sending " << band << " band connection request to " << fRemoteAddr;

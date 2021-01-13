@@ -13,7 +13,7 @@
 
 #include <FairMQLogger.h>
 #include <fairmq/tools/Semaphore.h>
-#include <fairmq/tools/CppSTL.h>
+#include <memory> // make_unique
 #include <string>
 
 namespace pmix
@@ -156,7 +156,7 @@ class Commands
 
     void Send(const std::string& msg, const std::vector<proc>& destination)
     {
-        std::unique_ptr<Holder> holder = fair::mq::tools::make_unique<Holder>();
+        std::unique_ptr<Holder> holder = std::make_unique<Holder>();
 
         PMIX_DATA_ARRAY_CREATE(holder->fData, destination.size(), PMIX_PROC);
         memcpy(holder->fData->array, destination.data(), destination.size() * sizeof(pmix_proc_t));

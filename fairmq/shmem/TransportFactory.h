@@ -25,7 +25,7 @@
 
 #include <zmq.h>
 
-#include <memory> // unique_ptr
+#include <memory> // unique_ptr, make_unique
 #include <string>
 #include <vector>
 
@@ -86,7 +86,7 @@ class TransportFactory final : public fair::mq::TransportFactory
                 LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
             }
 
-            fManager = tools::make_unique<Manager>(fShmId, fDeviceId, segmentSize, config);
+            fManager = std::make_unique<Manager>(fShmId, fDeviceId, segmentSize, config);
         } catch (boost::interprocess::interprocess_exception& e) {
             LOG(error) << "Could not initialize shared memory transport: " << e.what();
             throw std::runtime_error(tools::ToString("Could not initialize shared memory transport: ", e.what()));
@@ -98,52 +98,52 @@ class TransportFactory final : public fair::mq::TransportFactory
 
     MessagePtr CreateMessage() override
     {
-        return tools::make_unique<Message>(*fManager, this);
+        return std::make_unique<Message>(*fManager, this);
     }
 
     MessagePtr CreateMessage(Alignment alignment) override
     {
-        return tools::make_unique<Message>(*fManager, alignment, this);
+        return std::make_unique<Message>(*fManager, alignment, this);
     }
 
     MessagePtr CreateMessage(const size_t size) override
     {
-        return tools::make_unique<Message>(*fManager, size, this);
+        return std::make_unique<Message>(*fManager, size, this);
     }
 
     MessagePtr CreateMessage(const size_t size, Alignment alignment) override
     {
-        return tools::make_unique<Message>(*fManager, size, alignment, this);
+        return std::make_unique<Message>(*fManager, size, alignment, this);
     }
 
     MessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
     {
-        return tools::make_unique<Message>(*fManager, data, size, ffn, hint, this);
+        return std::make_unique<Message>(*fManager, data, size, ffn, hint, this);
     }
 
     MessagePtr CreateMessage(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0) override
     {
-        return tools::make_unique<Message>(*fManager, region, data, size, hint, this);
+        return std::make_unique<Message>(*fManager, region, data, size, hint, this);
     }
 
     SocketPtr CreateSocket(const std::string& type, const std::string& name) override
     {
-        return tools::make_unique<Socket>(*fManager, type, name, GetId(), fZmqCtx, this);
+        return std::make_unique<Socket>(*fManager, type, name, GetId(), fZmqCtx, this);
     }
 
     PollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const override
     {
-        return tools::make_unique<Poller>(channels);
+        return std::make_unique<Poller>(channels);
     }
 
     PollerPtr CreatePoller(const std::vector<FairMQChannel*>& channels) const override
     {
-        return tools::make_unique<Poller>(channels);
+        return std::make_unique<Poller>(channels);
     }
 
     PollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const override
     {
-        return tools::make_unique<Poller>(channelsMap, channelList);
+        return std::make_unique<Poller>(channelsMap, channelList);
     }
 
     UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0) override
@@ -168,7 +168,7 @@ class TransportFactory final : public fair::mq::TransportFactory
 
     UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, int64_t userFlags, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string& path, int flags)
     {
-        return tools::make_unique<UnmanagedRegion>(*fManager, size, userFlags, callback, bulkCallback, path, flags, this);
+        return std::make_unique<UnmanagedRegion>(*fManager, size, userFlags, callback, bulkCallback, path, flags, this);
     }
 
     void SubscribeToRegionEvents(RegionEventCallback callback) override { fManager->SubscribeToRegionEvents(callback); }

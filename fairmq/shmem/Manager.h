@@ -22,7 +22,6 @@
 #include <FairMQLogger.h>
 #include <FairMQMessage.h>
 #include <fairmq/ProgOptions.h>
-#include <fairmq/tools/CppSTL.h>
 #include <fairmq/tools/Strings.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -36,6 +35,7 @@
 
 #include <cstdlib> // getenv
 #include <condition_variable>
+#include <memory> // make_unique
 #include <mutex>
 #include <set>
 #include <sstream>
@@ -274,7 +274,7 @@ class Manager
                 // create region info
                 fShmRegions->emplace(id, RegionInfo(path.c_str(), flags, userFlags, fShmVoidAlloc));
 
-                auto r = fRegions.emplace(id, tools::make_unique<Region>(fShmId, id, size, false, callback, bulkCallback, path, flags));
+                auto r = fRegions.emplace(id, std::make_unique<Region>(fShmId, id, size, false, callback, bulkCallback, path, flags));
                 // LOG(debug) << "Created region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
 
                 r.first->second->StartReceivingAcks();
@@ -312,7 +312,7 @@ class Manager
                 int flags = regionInfo.fFlags;
                 // LOG(debug) << "Located remote region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
 
-                auto r = fRegions.emplace(id, tools::make_unique<Region>(fShmId, id, 0, true, nullptr, nullptr, path, flags));
+                auto r = fRegions.emplace(id, std::make_unique<Region>(fShmId, id, 0, true, nullptr, nullptr, path, flags));
                 return r.first->second.get();
             } catch (std::out_of_range& oor) {
                 LOG(error) << "Could not get remote region with id '" << id << "'. Does the region creator run with the same session id?";

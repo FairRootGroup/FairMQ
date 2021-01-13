@@ -20,20 +20,6 @@ namespace mq
 namespace tools
 {
 
-// make_unique implementation, until C++14 is default
-template<typename T, typename ...Args>
-std::unique_ptr<T> make_unique(Args&& ...args)
-{
-    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-
-// make_unique implementation (array variant), until C++14 is default
-template<typename T>
-std::unique_ptr<T> make_unique(std::size_t size)
-{
-    return std::unique_ptr<T>(new typename std::remove_extent<T>::type[size]());
-}
-
 // provide an enum hasher to compensate std::hash not supporting enums in C++11
 template<typename Enum>
 struct HashEnum

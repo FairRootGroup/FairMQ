@@ -20,6 +20,7 @@
 #include <zmq.h>
 
 #include <atomic>
+#include <memory> // make_unique
 
 class FairMQTransportFactory;
 
@@ -317,7 +318,7 @@ class Socket final : public fair::mq::Socket
 
                 for (size_t m = 0; m < numMessages; m++) {
                     // create new message (part)
-                    msgVec.emplace_back(tools::make_unique<Message>(fManager, hdrVec[m], GetTransport()));
+                    msgVec.emplace_back(std::make_unique<Message>(fManager, hdrVec[m], GetTransport()));
                     Message* shmMsg = static_cast<Message*>(msgVec.back().get());
                     totalSize += shmMsg->GetSize();
                 }
