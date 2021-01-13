@@ -25,11 +25,7 @@ using io_service = class io_context;
 } // namespace asio
 } // namespace boost
 
-namespace fair
-{
-namespace mq
-{
-namespace tools
+namespace fair::mq::tools
 {
 
 struct DefaultRouteDetectionError : std::runtime_error { using std::runtime_error::runtime_error; };
@@ -47,8 +43,6 @@ std::string getIpFromHostname(const std::string& hostname);
 
 std::string getIpFromHostname(const std::string& hostname, boost::asio::io_service& ios);
 
-} /* namespace tools */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::tools
 
 #endif /* FAIR_MQ_TOOLS_NETWORK_H */

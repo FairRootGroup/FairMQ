@@ -13,9 +13,7 @@
 using namespace std;
 using boost::any_cast;
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 template<class T>
@@ -143,5 +141,4 @@ unordered_map<type_index, void(*)(const EventManager&, const string&, const Prop
     { type_index(typeid(vector<boost::filesystem::path>)), [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<boost::filesystem::path>>(k, any_cast<vector<boost::filesystem::path>>(p)); } },
 };
 
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq

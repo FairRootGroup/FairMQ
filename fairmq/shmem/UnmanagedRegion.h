@@ -20,11 +20,7 @@
 #include <cstddef> // size_t
 #include <string>
 
-namespace fair
-{
-namespace mq
-{
-namespace shmem
+namespace fair::mq::shmem
 {
 
 class Message;
@@ -68,8 +64,6 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
     uint16_t fRegionId;
 };
 
-}
-}
-}
+} // namespace fair::mq::shmem
 
 #endif /* FAIR_MQ_SHMEM_UNMANAGEDREGION_H_ */

@@ -16,11 +16,7 @@
 #include <cstddef> // size_t
 #include <string>
 
-namespace fair
-{
-namespace mq
-{
-namespace zmq
+namespace fair::mq::zmq
 {
 
 class UnmanagedRegion final : public fair::mq::UnmanagedRegion
@@ -72,8 +68,6 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
     RegionBulkCallback fBulkCallback;
 };
 
-}   // namespace zmq
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::zmq
 
 #endif /* FAIR_MQ_ZMQ_UNMANAGEDREGION_H */

@@ -13,9 +13,11 @@
 #include <stdexcept>
 #include <system_error>
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq
+{
+
+namespace sdk
+{
 
 struct RuntimeError : ::std::runtime_error
 {
@@ -45,15 +47,15 @@ struct ErrorCategory : std::error_category
   std::string message(int ev) const override;
 };
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
-namespace std {
+namespace std
+{
 
 template<>
 struct is_error_code_enum<fair::mq::ErrorCode> : true_type
 {};
 
-}   // namespace std
+} // namespace std
 
 #endif /* FAIR_MQ_SDK_ERROR_H */

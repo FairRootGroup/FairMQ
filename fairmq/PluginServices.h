@@ -26,9 +26,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 /**
@@ -281,7 +279,6 @@ class PluginServices
     std::condition_variable fReleaseDeviceControlCondition;
 }; /* class PluginServices */
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
 #endif /* FAIR_MQ_PLUGINSERVICES_H */

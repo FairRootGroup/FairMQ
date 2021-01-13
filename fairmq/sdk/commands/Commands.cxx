@@ -17,10 +17,8 @@
 
 using namespace std;
 
-namespace fair {
-namespace mq {
-namespace sdk {
-namespace cmd {
+namespace fair::mq::sdk::cmd
+{
 
 array<Result, 2> fbResultToResult =
 {
@@ -478,7 +476,4 @@ void Cmds::Deserialize(const string& str, const Format type)
     }
 }
 
-}   // namespace cmd
-}   // namespace sdk
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::sdk::cmd

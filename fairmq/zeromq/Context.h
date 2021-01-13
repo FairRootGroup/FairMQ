@@ -25,11 +25,7 @@
 #include <thread>
 #include <vector>
 
-namespace fair
-{
-namespace mq
-{
-namespace zmq
+namespace fair::mq::zmq
 {
 
 struct ContextError : std::runtime_error { using std::runtime_error::runtime_error; };
@@ -191,8 +187,6 @@ class Context
     bool fRegionEventsSubscriptionActive;
 };
 
-}   // namespace zmq
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::zmq
 
 #endif /* FAIR_MQ_ZMQ_CONTEXT_H_ */

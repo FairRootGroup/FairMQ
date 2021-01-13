@@ -18,9 +18,7 @@
 using fairmq_free_fn = void(void* data, void* hint);
 class FairMQTransportFactory;
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 struct Alignment
@@ -29,8 +27,7 @@ struct Alignment
     explicit operator size_t() const { return alignment; }
 };
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
 class FairMQMessage
 {
@@ -63,9 +60,7 @@ class FairMQMessage
 
 using FairMQMessagePtr = std::unique_ptr<FairMQMessage>;
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 using Message = FairMQMessage;
@@ -73,7 +68,6 @@ using MessagePtr = FairMQMessagePtr;
 struct MessageError : std::runtime_error { using std::runtime_error::runtime_error; };
 struct MessageBadAlloc : std::runtime_error { using std::runtime_error::runtime_error; };
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
 #endif /* FAIRMQMESSAGE_H_ */

@@ -22,11 +22,7 @@
 using namespace std;
 using fair::mq::tools::ToString;
 
-namespace fair
-{
-namespace mq
-{
-namespace plugins
+namespace fair::mq::plugins
 {
 
 DDS::DDS(const string& name,
@@ -458,6 +454,4 @@ DDS::~DDS()
     }
 }
 
-} /* namespace plugins */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::plugins

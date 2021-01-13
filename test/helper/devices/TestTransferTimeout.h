@@ -12,11 +12,7 @@
 #include <FairMQDevice.h>
 #include <FairMQLogger.h>
 
-namespace fair
-{
-namespace mq
-{
-namespace test
+namespace fair::mq::test
 {
 
 class TransferTimeout : public FairMQDevice
@@ -156,8 +152,6 @@ class TransferTimeout : public FairMQDevice
     };
 };
 
-} // namespace test
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq::test
 
 #endif /* FAIR_MQ_TEST_TRANSFERTIMEOUT_H */

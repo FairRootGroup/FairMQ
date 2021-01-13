@@ -33,11 +33,7 @@
 
 using namespace std;
 
-namespace fair
-{
-namespace mq
-{
-namespace tools
+namespace fair::mq::tools
 {
 
 // returns a map with network interface names as keys and their IP addresses as values
@@ -184,6 +180,4 @@ string getIpFromHostname(const string& hostname, boost::asio::io_service& ios)
     }
 }
 
-} /* namespace tools */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::tools

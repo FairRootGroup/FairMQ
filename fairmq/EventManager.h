@@ -21,9 +21,7 @@
 #include <boost/functional/hash.hpp>
 #include <boost/signals2.hpp>
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 // Inherit from this base event type to create custom event types
@@ -137,7 +135,6 @@ class EventManager
     }
 }; /* class EventManager */
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
 #endif /* FAIR_MQ_EVENTMANAGER_H */

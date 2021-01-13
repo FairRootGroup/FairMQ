@@ -11,9 +11,8 @@
 
 #include "Strings.h"
 
-namespace fair {
-namespace mq {
-namespace tools {
+namespace fair::mq::tools
+{
 
 template<typename Tag, int Max>
 struct InstanceLimiter
@@ -50,8 +49,6 @@ struct InstanceLimiter
 template<typename Tag, int Max>
 int InstanceLimiter<Tag, Max>::fCount(0);
 
-} /* namespace tools */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::tools
 
 #endif /* FAIR_MQ_TOOLS_INSTANCELIMIT_H */

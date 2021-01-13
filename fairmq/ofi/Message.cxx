@@ -14,11 +14,7 @@
 #include <cstdlib>
 #include <zmq.h>
 
-namespace fair
-{
-namespace mq
-{
-namespace ofi
+namespace fair::mq::ofi
 {
 
 using namespace std;
@@ -201,6 +197,4 @@ Message::~Message()
     }
 }
 
-} /* namespace ofi */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::ofi

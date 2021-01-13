@@ -21,9 +21,8 @@
 #include <atomic>
 #include <memory> // unique_ptr, make_unique
 
-namespace fair {
-namespace mq {
-namespace zmq {
+namespace fair::mq::zmq
+{
 
 class Socket final : public fair::mq::Socket
 {
@@ -471,8 +470,6 @@ class Socket final : public fair::mq::Socket
     int fTimeout;
 };
 
-}   // namespace zmq
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::zmq
 
 #endif /* FAIR_MQ_ZMQ_SOCKET_H */

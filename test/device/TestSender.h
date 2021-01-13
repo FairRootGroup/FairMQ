@@ -15,11 +15,7 @@
 #include <string>
 #include <thread>
 
-namespace fair
-{
-namespace mq
-{
-namespace test
+namespace fair::mq::test
 {
 
 class Sender : public FairMQDevice
@@ -48,8 +44,6 @@ class Sender : public FairMQDevice
     std::string fChannelName;
 };
 
-} // namespace test
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq::test
 
 #endif // FAIR_MQ_TEST_TESTSENDER_H

@@ -17,9 +17,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 enum class Transport
@@ -32,8 +30,7 @@ enum class Transport
 
 struct TransportError : std::runtime_error { using std::runtime_error::runtime_error; };
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
 namespace std
 {
@@ -43,9 +40,7 @@ struct hash<fair::mq::Transport> : fair::mq::tools::HashEnum<fair::mq::Transport
 
 } /* namespace std */
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 static std::unordered_map<std::string, Transport> TransportTypes {
@@ -74,7 +69,6 @@ try {
     throw TransportError(tools::ToString("Unknown transport provided: ", transport));
 }
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
 #endif /* FAIR_MQ_TRANSPORTS_H */

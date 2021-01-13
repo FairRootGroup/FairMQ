@@ -15,11 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace fair
-{
-namespace mq
-{
-namespace tools
+namespace fair::mq::tools
 {
 
 /// @brief concatenates a variable number of args with the << operator via a stringstream
@@ -43,8 +39,6 @@ inline auto ToStrVector(const int argc, char*const* argv, const bool dropProgram
     }
 }
 
-} /* namespace tools */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::tools
 
 #endif /* FAIR_MQ_TOOLS_STRINGS_H */

@@ -44,11 +44,7 @@ class LinePrinter
     const string fPrefix;
 };
 
-namespace fair
-{
-namespace mq
-{
-namespace tools
+namespace fair::mq::tools
 {
 
 /**
@@ -167,6 +163,4 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
     return result;
 }
 
-} /* namespace tools */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::tools

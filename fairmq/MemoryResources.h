@@ -26,8 +26,8 @@ class FairMQTransportFactory;
 #include <stdexcept>
 #include <utility>
 
-namespace fair {
-namespace mq {
+namespace fair::mq
+{
 
 using byte = unsigned char;
 namespace pmr = boost::container::pmr;
@@ -107,7 +107,6 @@ class ChannelResource : public FairMQMemoryResource
     };
 };
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
 #endif /* FAIR_MQ_MEMORY_RESOURCES_H */

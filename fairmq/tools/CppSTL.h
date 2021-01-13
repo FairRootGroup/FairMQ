@@ -13,11 +13,7 @@
 #include <memory>
 #include <type_traits>
 
-namespace fair
-{
-namespace mq
-{
-namespace tools
+namespace fair::mq::tools
 {
 
 // provide an enum hasher to compensate std::hash not supporting enums in C++11
@@ -32,8 +28,6 @@ struct HashEnum
     }
 };
 
-} /* namespace tools */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::tools
 
 #endif /* FAIR_MQ_TOOLS_CPPSTL_H */

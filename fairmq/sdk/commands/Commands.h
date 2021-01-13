@@ -17,13 +17,7 @@
 #include <type_traits>
 #include <stdexcept>
 
-namespace fair
-{
-namespace mq
-{
-namespace sdk
-{
-namespace cmd
+namespace fair::mq::sdk::cmd
 {
 
 enum class Format : int {
@@ -414,9 +408,6 @@ std::string GetTypeName(const Type type);
 inline std::ostream& operator<<(std::ostream& os, const Result& result) { return os << GetResultName(result); }
 inline std::ostream& operator<<(std::ostream& os, const Type& type) { return os << GetTypeName(type); }
 
-} /* namespace cmd */
-} /* namespace sdk */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::sdk::cmd
 
 #endif /* FAIR_MQ_SDK_COMMANDFACTORY */

@@ -23,9 +23,7 @@
 using boost::property_tree::ptree;
 using namespace std;
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 enum channelOptionKeyIds
@@ -119,5 +117,4 @@ Properties SuboptParser(const vector<string>& channelConfig, const string& devic
     return PtreeParser(pt, deviceId);
 }
 
-}
 }

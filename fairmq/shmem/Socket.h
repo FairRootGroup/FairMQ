@@ -24,11 +24,7 @@
 
 class FairMQTransportFactory;
 
-namespace fair
-{
-namespace mq
-{
-namespace shmem
+namespace fair::mq::shmem
 {
 
 struct ZMsg
@@ -524,8 +520,6 @@ class Socket final : public fair::mq::Socket
     int fTimeout;
 };
 
-}
-}
-}
+} // namespace fair::mq::shmem
 
 #endif /* FAIR_MQ_SHMEM_SOCKET_H_ */

@@ -39,11 +39,7 @@
 #include <chrono>
 #include <ios>
 
-namespace fair
-{
-namespace mq
-{
-namespace shmem
+namespace fair::mq::shmem
 {
 
 struct Region
@@ -276,8 +272,6 @@ struct Region
     RegionBulkCallback fBulkCallback;
 };
 
-} // namespace shmem
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq::shmem
 
 #endif /* FAIR_MQ_SHMEM_REGION_H_ */

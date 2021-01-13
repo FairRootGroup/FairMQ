@@ -9,12 +9,9 @@
 #ifndef FAIR_MQ_PROGOPTIONSFWD_H
 #define FAIR_MQ_PROGOPTIONSFWD_H
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 class ProgOptions;
-}
 }
 
 using FairMQProgOptions = fair::mq::ProgOptions;

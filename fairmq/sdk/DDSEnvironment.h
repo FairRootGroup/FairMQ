@@ -13,9 +13,8 @@
 #include <memory>
 #include <ostream>
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq::sdk
+{
 
 /**
  * @class DDSEnvironment DDSSession.h <fairmq/sdk/DDSSession.h>
@@ -40,8 +39,6 @@ class DDSEnvironment
 
 using DDSEnv = DDSEnvironment;
 
-}   // namespace sdk
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::sdk
 
 #endif /* FAIR_MQ_SDK_DDSENVIRONMENT_H */

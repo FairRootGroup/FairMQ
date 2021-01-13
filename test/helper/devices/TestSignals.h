@@ -15,11 +15,7 @@
 #include <iostream>
 #include <csignal>
 
-namespace fair
-{
-namespace mq
-{
-namespace test
+namespace fair::mq::test
 {
 
 class Signals : public FairMQDevice
@@ -105,8 +101,6 @@ class Signals : public FairMQDevice
     }
 };
 
-} // namespace test
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq::test
 
 #endif /* FAIR_MQ_TEST_SIGNALS_H */

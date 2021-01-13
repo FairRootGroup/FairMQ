@@ -8,8 +8,8 @@
 
 #include "Error.h"
 
-namespace fair {
-namespace mq {
+namespace fair::mq
+{
 
 const char* ErrorCategory::name() const noexcept
 {
@@ -40,5 +40,4 @@ const ErrorCategory errorCategory{};
 
 std::error_code MakeErrorCode(ErrorCode e) { return {static_cast<int>(e), errorCategory}; }
 
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq

@@ -13,8 +13,7 @@
 #include <asio/associated_executor.hpp>
 #include <type_traits>
 
-namespace asio {
-namespace detail {
+namespace asio::detail {
 
 /// Specialize to match our coding conventions
 template<typename T, typename Executor>
@@ -44,7 +43,6 @@ struct associated_allocator_impl<T,
     }
 };
 
-} /* namespace detail */
-} /* namespace asio */
+} /* namespace asio::detail */
 
 #endif /* FAIR_MQ_SDK_TRAITS_H */

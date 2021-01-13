@@ -17,11 +17,7 @@
 #include <utility> // pair
 #include <vector>
 
-namespace fair
-{
-namespace mq
-{
-namespace shmem
+namespace fair::mq::shmem
 {
 
 struct SessionId
@@ -120,8 +116,6 @@ class Monitor
     std::unordered_map<std::string, std::chrono::high_resolution_clock::time_point> fDeviceHeartbeats;
 };
 
-} // namespace shmem
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq::shmem
 
 #endif /* FAIR_MQ_SHMEM_MONITOR_H_ */

@@ -10,9 +10,8 @@
 
 #include <dds/dds.h>
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq::sdk
+{
 
 /// @brief Helper to (Re)Construct a FairMQ topology based on already existing native DDS API objects
 /// @param nativeSession Existing and initialized CSession (either via create() or attach())
@@ -27,6 +26,4 @@ auto MakeTopology(dds::topology_api::CTopology nativeTopo,
     return {DDSTopo(std::move(nativeTopo), env), DDSSession(std::move(nativeSession), env), blockUntilConnected};
 }
 
-}   // namespace sdk
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::sdk

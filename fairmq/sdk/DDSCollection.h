@@ -14,9 +14,8 @@
 #include <ostream>
 #include <cstdint>
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq::sdk
+{
 
 /**
  * @class DDSCollection <fairmq/sdk/DDSCollection.h>
@@ -42,8 +41,6 @@ class DDSCollection
     Id fId;
 };
 
-}   // namespace sdk
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::sdk
 
 #endif /* FAIR_MQ_SDK_DDSCOLLECTION_H */

@@ -16,9 +16,8 @@
 #include <chrono>
 #include <cstdint>
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq::sdk
+{
 
 /**
  * @class DDSAgent <fairmq/sdk/DDSAgent.h>
@@ -74,8 +73,6 @@ class DDSAgent
     std::string fUsername;
 };
 
-}   // namespace sdk
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::sdk
 
 #endif /* FAIR_MQ_SDK_DDSSAGENT_H */

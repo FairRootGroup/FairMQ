@@ -17,9 +17,7 @@
 #include <utility> // pair
 #include <condition_variable>
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 class StateQueue
@@ -88,7 +86,6 @@ class StateQueue
     std::condition_variable fCV;
 };
 
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq
 
 #endif /* FAIRMQSTATEQUEUE_H_ */

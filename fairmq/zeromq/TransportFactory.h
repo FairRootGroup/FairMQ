@@ -21,11 +21,7 @@
 #include <string>
 #include <vector>
 
-namespace fair
-{
-namespace mq
-{
-namespace zmq
+namespace fair::mq::zmq
 {
 
 class TransportFactory final : public FairMQTransportFactory
@@ -145,8 +141,6 @@ class TransportFactory final : public FairMQTransportFactory
     std::unique_ptr<Context> fCtx;
 };
 
-}   // namespace zmq
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::zmq
 
 #endif /* FAIR_MQ_ZMQ_TRANSPORTFACTORY_H */

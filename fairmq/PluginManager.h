@@ -30,9 +30,7 @@
 #include <vector>
 #include <utility> // forward
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 /**
@@ -125,7 +123,6 @@ class PluginManager
     std::map<std::string, boost::program_options::options_description> fPluginProgOptions;
 }; /* class PluginManager */
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
 #endif /* FAIR_MQ_PLUGINMANAGER_H */

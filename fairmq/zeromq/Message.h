@@ -23,11 +23,7 @@
 #include <new> // bad_alloc
 #include <string>
 
-namespace fair
-{
-namespace mq
-{
-namespace zmq
+namespace fair::mq::zmq
 {
 
 class Socket;
@@ -279,8 +275,6 @@ class Message final : public fair::mq::Message
     }
 };
 
-}   // namespace zmq
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::zmq
 
 #endif /* FAIR_MQ_ZMQ_MESSAGE_H */

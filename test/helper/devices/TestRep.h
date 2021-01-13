@@ -13,11 +13,7 @@
 #include <FairMQLogger.h>
 #include <thread>
 
-namespace fair
-{
-namespace mq
-{
-namespace test
+namespace fair::mq::test
 {
 
 class Rep : public FairMQDevice
@@ -49,8 +45,6 @@ class Rep : public FairMQDevice
     };
 };
 
-} // namespace test
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq::test
 
 #endif /* FAIR_MQ_TEST_REP_H */

@@ -22,9 +22,7 @@
 #include <typeinfo>
 #include <utility> // pair
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 using Property = boost::any;
@@ -72,7 +70,6 @@ class PropertyHelper
     static std::unordered_map<std::type_index, std::function<std::pair<std::string, std::string>(const Property&)>> fTypeInfos;
 };
 
-}
 }
 
 #endif /* FAIR_MQ_PROPERTIES_H */

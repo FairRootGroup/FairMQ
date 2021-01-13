@@ -24,9 +24,7 @@
 #include <tuple>
 #include <utility>
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 /**
@@ -133,8 +131,7 @@ class Plugin
     PluginServices* fPluginServices;
 }; /* class Plugin */
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
 #define REGISTER_FAIRMQ_PLUGIN(KLASS, NAME, VERSION, MAINTAINER, HOMEPAGE, PROGOPTIONS) \
 static auto Make_##NAME##_Plugin(fair::mq::PluginServices* pluginServices) -> std::unique_ptr<fair::mq::Plugin> \

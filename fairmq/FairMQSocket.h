@@ -19,9 +19,7 @@
 
 class FairMQTransportFactory;
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 enum class TransferCode : int
@@ -32,8 +30,7 @@ enum class TransferCode : int
     interrupted = -3
 };
 
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq
 
 class FairMQSocket
 {
@@ -87,16 +84,13 @@ class FairMQSocket
 
 using FairMQSocketPtr = std::unique_ptr<FairMQSocket>;
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 using Socket = FairMQSocket;
 using SocketPtr = FairMQSocketPtr;
 struct SocketError : std::runtime_error { using std::runtime_error::runtime_error; };
 
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq
 
 #endif /* FAIRMQSOCKET_H_ */

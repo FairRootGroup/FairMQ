@@ -17,11 +17,7 @@
 #include <cstddef> // size_t
 #include <zmq.h>
 
-namespace fair
-{
-namespace mq
-{
-namespace ofi
+namespace fair::mq::ofi
 {
 
 /**
@@ -77,8 +73,6 @@ class Message final : public fair::mq::Message
     boost::container::pmr::memory_resource* fPmr;
 }; /* class Message */  
 
-} /* namespace ofi */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::ofi
 
 #endif /* FAIR_MQ_OFI_MESSAGE_H */

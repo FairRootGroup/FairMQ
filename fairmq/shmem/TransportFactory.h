@@ -29,11 +29,7 @@
 #include <string>
 #include <vector>
 
-namespace fair
-{
-namespace mq
-{
-namespace shmem
+namespace fair::mq::shmem
 {
 
 class TransportFactory final : public fair::mq::TransportFactory
@@ -210,8 +206,6 @@ class TransportFactory final : public fair::mq::TransportFactory
     std::unique_ptr<Manager> fManager;
 };
 
-} // namespace shmem
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq::shmem
 
 #endif /* FAIR_MQ_SHMEM_TRANSPORTFACTORY_H_ */

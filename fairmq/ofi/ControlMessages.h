@@ -17,8 +17,8 @@
 #include <memory>
 #include <type_traits>
 
-namespace boost {
-namespace asio {
+namespace boost::asio
+{
 
 template<typename PodType>
 auto buffer(const PodType& obj) -> boost::asio::const_buffer
@@ -26,12 +26,10 @@ auto buffer(const PodType& obj) -> boost::asio::const_buffer
     return boost::asio::const_buffer(static_cast<const void*>(&obj), sizeof(PodType));
 }
 
-}   // namespace asio
-}   // namespace boost
+} // namespace boost::asio
 
-namespace fair {
-namespace mq {
-namespace ofi {
+namespace fair::mq::ofi
+{
 
 enum class ControlMessageType
 {
@@ -109,8 +107,6 @@ auto MakeControlMessage(Args&&... args) -> ControlMessage
     return ctrl;
 }
 
-}   // namespace ofi
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::ofi
 
 #endif /* FAIR_MQ_OFI_CONTROLMESSAGES_H */ 

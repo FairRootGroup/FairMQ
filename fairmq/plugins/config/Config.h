@@ -14,11 +14,7 @@
 
 #include <string>
 
-namespace fair
-{
-namespace mq
-{
-namespace plugins
+namespace fair::mq::plugins
 {
 
 class Config : public Plugin
@@ -40,8 +36,6 @@ REGISTER_FAIRMQ_PLUGIN(
     ConfigPluginProgramOptions
 )
 
-} /* namespace plugins */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::plugins
 
 #endif /* FAIR_MQ_PLUGINS_CONFIG */

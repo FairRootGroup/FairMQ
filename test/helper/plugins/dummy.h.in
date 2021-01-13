@@ -15,11 +15,7 @@
 #include <tuple>
 #include <vector>
 
-namespace fair
-{
-namespace mq
-{
-namespace test
+namespace fair::mq::test
 {
 
 class DummyPlugin : public fair::mq::Plugin
@@ -67,8 +63,6 @@ REGISTER_FAIRMQ_PLUGIN(
     fair::mq::test::DummyPluginProgramOptions    // Free function which declares custom program options for the plugin
 )
 
-} /* namespace test */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::test
 
 #endif /* FAIR_MQ_TEST_PLUGIN_DUMMY */

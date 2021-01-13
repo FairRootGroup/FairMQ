@@ -35,9 +35,7 @@ using namespace boost::msm::front;
 using namespace boost::msm::back;
 namespace bmpl = boost::mpl;
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 namespace fsm
 {
@@ -239,8 +237,7 @@ struct Machine_ : public state_machine_def<Machine_>
 using FairMQFSM = state_machine<Machine_>;
 
 } // namespace fsm
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq
 
 using namespace fair::mq::fsm;
 using namespace fair::mq;

@@ -13,11 +13,7 @@
 
 #include <string>
 
-namespace fair
-{
-namespace mq
-{
-namespace test
+namespace fair::mq::test
 {
 
 using namespace std;
@@ -25,9 +21,7 @@ using namespace std;
 string runTestDevice = "@RUN_TEST_DEVICE@";
 string mqConfig = "@MQ_CONFIG@";
 
-} /* namespace test */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::test
 
 int main(int argc, char** argv)
 {

@@ -16,9 +16,7 @@
 #include <functional>
 #include <stdexcept>
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 class StateMachine
@@ -56,7 +54,6 @@ class StateMachine
     std::shared_ptr<void> fFsm;
 };
 
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq
 
 #endif /* FAIRMQSTATEMACHINE_H_ */

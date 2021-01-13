@@ -16,9 +16,8 @@
 #include <sstream>
 #include <utility>
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq::sdk
+{
 
 struct DDSEnvironment::Impl
 {
@@ -133,6 +132,4 @@ auto operator<<(std::ostream& os, DDSEnvironment env) -> std::ostream&
               << "$DDS_CONFIG_HOME: " << env.GetConfigHome() / DDSEnvironment::Path(".DDS");
 }
 
-}   // namespace sdk
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::sdk

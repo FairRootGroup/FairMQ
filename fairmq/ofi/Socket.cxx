@@ -25,11 +25,7 @@
 #include <mutex>
 #include <queue>
 
-namespace fair
-{
-namespace mq
-{
-namespace ofi
+namespace fair::mq::ofi
 {
 
 using namespace std;
@@ -683,6 +679,4 @@ Socket::~Socket()
     }
 }
 
-} /* namespace ofi */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::ofi

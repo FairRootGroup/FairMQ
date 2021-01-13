@@ -25,9 +25,8 @@
 #include <utility>
 #include <vector>
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq::sdk
+{
 
 auto operator<<(std::ostream& os, DDSRMSPlugin plugin) -> std::ostream&
 {
@@ -384,6 +383,4 @@ auto getMostRecentRunningDDSSession(DDSEnv env) -> DDSSession
     return DDSSession(DDSSession::Id(sessionId), std::move(env));
 }
 
-}   // namespace sdk
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::sdk

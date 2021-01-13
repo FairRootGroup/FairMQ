@@ -12,11 +12,7 @@
 #include <ostream>
 #include <tuple>
 
-namespace fair
-{
-namespace mq
-{
-namespace tools
+namespace fair::mq::tools
 {
 
 struct Version
@@ -32,8 +28,6 @@ struct Version
     friend auto operator<<(std::ostream& os, const Version& v) -> std::ostream& { return os << v.fkMajor << "." << v.fkMinor << "." << v.fkPatch; }
 };
 
-} /* namespace tools */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::tools
 
 #endif /* FAIR_MQ_TOOLS_VERSION_H */

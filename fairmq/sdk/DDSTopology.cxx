@@ -17,9 +17,8 @@
 #include <stdexcept>
 #include <utility>
 
-namespace fair {
-namespace mq {
-namespace sdk {
+namespace fair::mq::sdk
+{
 
 struct DDSTopology::Impl
 {
@@ -112,6 +111,4 @@ try {
     return os << "DDS topology: " << t.GetName();
 }
 
-}   // namespace sdk
-}   // namespace mq
-}   // namespace fair
+} // namespace fair::mq::sdk

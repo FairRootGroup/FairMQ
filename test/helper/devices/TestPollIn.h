@@ -14,11 +14,7 @@
 #include <fairmq/ProgOptions.h>
 #include <thread>
 
-namespace fair
-{
-namespace mq
-{
-namespace test
+namespace fair::mq::test
 {
 
 using namespace std;
@@ -123,8 +119,6 @@ class PollIn : public FairMQDevice
     int fPollType;
 };
 
-} // namespace test
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq::test
 
 #endif /* FAIR_MQ_TEST_POLLIN_H */

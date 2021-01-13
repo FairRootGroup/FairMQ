@@ -11,11 +11,7 @@
 
 #include <string>
 
-namespace fair
-{
-namespace mq
-{
-namespace tools
+namespace fair::mq::tools
 {
 
 /**
@@ -41,8 +37,6 @@ execute_result execute(const std::string& cmd,
                        const std::string& input = "",
                        int sig = -1);
 
-} /* namespace tools */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::tools
 
 #endif /* FAIR_MQ_TOOLS_PROCESS_H */

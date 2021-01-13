@@ -11,11 +11,7 @@
 
 #include <string>
 
-namespace fair
-{
-namespace mq
-{
-namespace tools
+namespace fair::mq::tools
 {
 
 // generates UUID string
@@ -24,8 +20,6 @@ std::string Uuid();
 // generates UUID and returns its hash
 std::size_t UuidHash();
 
-} /* namespace tools */
-} /* namespace mq */
-} /* namespace fair */
+} // namespace fair::mq::tools
 
 #endif /* FAIR_MQ_TOOLS_UNIQUE_H */

@@ -21,9 +21,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 struct ParserError : std::runtime_error { using std::runtime_error::runtime_error; };
@@ -41,7 +39,6 @@ void SubChannelParser(const boost::property_tree::ptree& tree, fair::mq::Propert
 
 } // helper namespace
 
-} // namespace mq
-} // namespace fair
+} // namespace fair::mq
 
 #endif /* FAIR_MQ_JSONPARSER_H */

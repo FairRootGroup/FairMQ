@@ -19,9 +19,7 @@
 #include <vector>
 #include <string>
 
-namespace fair
-{
-namespace mq
+namespace fair::mq
 {
 
 /**
@@ -43,7 +41,6 @@ namespace mq
 
 Properties SuboptParser(const std::vector<std::string>& channelConfig, const std::string& deviceId);
 
-}
 }
 
 #endif /* FAIR_MQ_SUBOPTPARSER_H */
