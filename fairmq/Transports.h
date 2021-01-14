@@ -9,7 +9,6 @@
 #ifndef FAIR_MQ_TRANSPORTS_H
 #define FAIR_MQ_TRANSPORTS_H
 
-#include <fairmq/tools/CppSTL.h>
 #include <fairmq/tools/Strings.h>
 
 #include <memory>
@@ -31,14 +30,6 @@ enum class Transport
 struct TransportError : std::runtime_error { using std::runtime_error::runtime_error; };
 
 } // namespace fair::mq
-
-namespace std
-{
-
-template<>
-struct hash<fair::mq::Transport> : fair::mq::tools::HashEnum<fair::mq::Transport> {};
-
-} /* namespace std */
 
 namespace fair::mq
 {
