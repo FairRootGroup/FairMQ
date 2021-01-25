@@ -39,34 +39,49 @@ void RunPushPullWithMsgResize(const string& transport, const string& _address)
     FairMQChannel pull{"Pull", "pull", factory};
     pull.Connect(address);
 
-    FairMQMessagePtr outMsg(push.NewMessage(1000));
-    ASSERT_EQ(outMsg->GetSize(), 1000);
-    memcpy(outMsg->GetData(), "ABC", 3);
-    ASSERT_EQ(outMsg->SetUsedSize(500), true);
-    ASSERT_EQ(outMsg->SetUsedSize(500), true);
-    ASSERT_EQ(outMsg->SetUsedSize(700), false);
-    ASSERT_EQ(outMsg->GetSize(), 500);
-    // check if the data is still intact
-    ASSERT_EQ(static_cast<char*>(outMsg->GetData())[0], 'A');
-    ASSERT_EQ(static_cast<char*>(outMsg->GetData())[1], 'B');
-    ASSERT_EQ(static_cast<char*>(outMsg->GetData())[2], 'C');
-    ASSERT_EQ(outMsg->SetUsedSize(250), true);
-    ASSERT_EQ(outMsg->GetSize(), 250);
-    ASSERT_EQ(static_cast<char*>(outMsg->GetData())[0], 'A');
-    ASSERT_EQ(static_cast<char*>(outMsg->GetData())[1], 'B');
-    ASSERT_EQ(static_cast<char*>(outMsg->GetData())[2], 'C');
-    FairMQMessagePtr msgCopy(push.NewMessage());
-    msgCopy->Copy(*outMsg);
-    ASSERT_EQ(msgCopy->GetSize(), 250);
+    {
+        FairMQMessagePtr outMsg(push.NewMessage(1000));
+        ASSERT_EQ(outMsg->GetSize(), 1000);
+        memcpy(outMsg->GetData(), "ABC", 3);
+        ASSERT_EQ(outMsg->SetUsedSize(500), true);
+        ASSERT_EQ(outMsg->SetUsedSize(500), true);
+        ASSERT_EQ(outMsg->SetUsedSize(700), false);
+        ASSERT_EQ(outMsg->GetSize(), 500);
+        // check if the data is still intact
+        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[0], 'A');
+        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[1], 'B');
+        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[2], 'C');
+        ASSERT_EQ(outMsg->SetUsedSize(250), true);
+        ASSERT_EQ(outMsg->GetSize(), 250);
+        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[0], 'A');
+        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[1], 'B');
+        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[2], 'C');
+        FairMQMessagePtr msgCopy(push.NewMessage());
+        msgCopy->Copy(*outMsg);
+        ASSERT_EQ(msgCopy->GetSize(), 250);
 
-    ASSERT_EQ(push.Send(outMsg), 250);
+        ASSERT_EQ(push.Send(outMsg), 250);
 
-    FairMQMessagePtr inMsg(pull.NewMessage());
-    ASSERT_EQ(pull.Receive(inMsg), 250);
-    ASSERT_EQ(inMsg->GetSize(), 250);
-    ASSERT_EQ(static_cast<char*>(inMsg->GetData())[0], 'A');
-    ASSERT_EQ(static_cast<char*>(inMsg->GetData())[1], 'B');
-    ASSERT_EQ(static_cast<char*>(inMsg->GetData())[2], 'C');
+        FairMQMessagePtr inMsg(pull.NewMessage());
+        ASSERT_EQ(pull.Receive(inMsg), 250);
+        ASSERT_EQ(inMsg->GetSize(), 250);
+        ASSERT_EQ(static_cast<char*>(inMsg->GetData())[0], 'A');
+        ASSERT_EQ(static_cast<char*>(inMsg->GetData())[1], 'B');
+        ASSERT_EQ(static_cast<char*>(inMsg->GetData())[2], 'C');
+    }
+
+    {
+        FairMQMessagePtr outMsg(push.NewMessage(1000));
+        ASSERT_EQ(outMsg->SetUsedSize(0), true);
+        ASSERT_EQ(outMsg->GetSize(), 0);
+        FairMQMessagePtr msgCopy(push.NewMessage());
+        msgCopy->Copy(*outMsg);
+        ASSERT_EQ(msgCopy->GetSize(), 0);
+        ASSERT_EQ(push.Send(outMsg), 0);
+        FairMQMessagePtr inMsg(pull.NewMessage());
+        ASSERT_EQ(pull.Receive(inMsg), 0);
+        ASSERT_EQ(inMsg->GetSize(), 0);
+    }
 }
 
 void RunMsgRebuild(const string& transport)
