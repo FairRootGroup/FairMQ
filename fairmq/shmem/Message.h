@@ -206,6 +206,9 @@ class Message final : public fair::mq::Message
     {
         if (newSize == fMeta.fSize) {
             return true;
+        } else if (newSize == 0) {
+            Deallocate();
+            return true;
         } else if (newSize <= fMeta.fSize) {
             try {
                 fLocalPtr = fManager.ShrinkInPlace(newSize, fLocalPtr, fMeta.fSegmentId);
@@ -268,7 +271,7 @@ class Message final : public fair::mq::Message
         return fLocalPtr;
     }
 
-    void CloseMessage()
+    void Deallocate()
     {
         if (fMeta.fHandle >= 0 && !fQueued) {
             if (fMeta.fRegionId == 0) {
@@ -289,6 +292,11 @@ class Message final : public fair::mq::Message
         }
         fLocalPtr = nullptr;
         fMeta.fSize = 0;
+    }
+
+    void CloseMessage()
+    {
+        Deallocate();
         fAlignment = 0;
 
         fManager.DecrementMsgCounter(); // TODO: put this to debug mode
