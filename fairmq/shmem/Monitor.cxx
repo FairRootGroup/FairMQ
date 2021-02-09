@@ -45,6 +45,27 @@ namespace
 namespace fair::mq::shmem
 {
 
+struct TerminalConfig
+{
+    TerminalConfig()
+    {
+        termios t;
+        tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
+        t.c_lflag &= ~ICANON; // disable canonical input
+        t.c_lflag &= ~ECHO; // do not echo input chars
+        tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
+    }
+
+    ~TerminalConfig()
+    {
+        termios t;
+        tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
+        t.c_lflag |= ICANON; // re-enable canonical input
+        t.c_lflag |= ECHO; // echo input chars
+        tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
+    }
+};
+
 void signalHandler(int signal)
 {
     gSignalStatus = signal;
@@ -116,10 +137,7 @@ void Monitor::Run()
     if (fInteractive) {
         Interactive();
     } else {
-        while (!fTerminating) {
-            this_thread::sleep_for(chrono::milliseconds(fIntervalInMS));
-            CheckSegment();
-        }
+        CheckSegment();
     }
 
     if (!fViewOnly) {
@@ -153,27 +171,6 @@ void Monitor::MonitorHeartbeats()
 
     RemoveQueue(fControlQueueName);
 }
-
-struct TerminalConfig
-{
-    TerminalConfig()
-    {
-        termios t;
-        tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
-        t.c_lflag &= ~ICANON; // disable canonical input
-        t.c_lflag &= ~ECHO; // do not echo input chars
-        tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
-    }
-
-    ~TerminalConfig()
-    {
-        termios t;
-        tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
-        t.c_lflag |= ICANON; // re-enable canonical input
-        t.c_lflag |= ECHO; // echo input chars
-        tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
-    }
-};
 
 void Monitor::Interactive()
 {

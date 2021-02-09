@@ -125,13 +125,12 @@ int main(int argc, char** argv)
         }
 
         cout << "Starting shared memory monitor for session: \"" << sessionName << "\" (shmId: " << shmId << ")..." << endl;
-        if (viewOnly && !interactive) {
-            cout << "running in non-interactive view-only mode, outputting with interval of " << intervalInMS << "ms. (change with --interval), press ctrl+C to exit." << endl;
-        }
 
         Monitor monitor(shmId, selfDestruct, interactive, viewOnly, timeoutInMS, intervalInMS, runAsDaemon, cleanOnExit);
 
-        monitor.CatchSignals();
+        if (interactive || !viewOnly) {
+            monitor.CatchSignals();
+        }
         monitor.Run();
     } catch (Monitor::DaemonPresent& dp) {
         return 0;
