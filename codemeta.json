@@ -1,0 +1,115 @@
+{
+    "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+    "@type": "SoftwareSourceCode",
+    "name": "FairRootGroup/FairMQ",
+    "description": "C++ Message Queuing Library and Framework",
+    "license": "./COPYRIGHT",
+    "version": "v1.3.9",
+    "datePublished": "2019-08-07",
+    "contributor": [
+        {
+            "@type": "Person",
+            "familyName": "Alexey Rybalchenko"
+        },
+        {
+            "@type": "Person",
+            "familyName": "Dennis Klein",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "GSI Helmholtz Centre for Heavy Ion Research GmbH"
+            }
+        },
+        {
+            "@type": "Person",
+            "familyName": "Nicolas Winckler",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Bull-Atos"
+            }
+        },
+        {
+            "@type": "Person",
+            "familyName": "fuhlig1"
+        },
+        {
+            "@type": "Person",
+            "familyName": "Mikolaj Krzewicki"
+        },
+        {
+            "@type": "Person",
+            "familyName": "Mohammad Al-Turany",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "GSI"
+            }
+        },
+        {
+            "@type": "Person",
+            "familyName": "Matthias Richter",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Scieq"
+            }
+        },
+        {
+            "@type": "Person",
+            "familyName": "Sebastien Binet",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "CNRS/IN2P3"
+            }
+        },
+        {
+            "@type": "Person",
+            "familyName": "Radoslaw Karabowicz",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "GSI Helmholtzzentrum f\u00fcr Schwerionenforschung GmbH"
+            }
+        },
+        {
+            "@type": "Person",
+            "familyName": "Gvozden Neskovic"
+        },
+        {
+            "@type": "Person",
+            "familyName": "Giulio Eulisse",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "CERN"
+            }
+        },
+        {
+            "@type": "Person",
+            "familyName": "Laurent Aphecetche",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "CNRS"
+            }
+        },
+        {
+            "@type": "Person",
+            "familyName": "TKollegger"
+        },
+        {
+            "@type": "Person",
+            "familyName": "Teo Mrnjavac",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "CERN"
+            }
+        },
+        {
+            "@type": "Person",
+            "familyName": "Sandro Wenzel"
+        },
+        {
+            "@type": "Person",
+            "familyName": "Matthias Kretz",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "GSI Helmholtzzentrum f\u00fcr Schwerionenforschung"
+            }
+        }
+    ]
+}
