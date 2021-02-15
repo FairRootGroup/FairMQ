@@ -1,0 +1,12 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "name": "FairMQ",
+  "description": "C++ Message Queuing Library and Framework",
+  "license": "./COPYRIGHT",
+  "datePublished": "2018-04-15",
+  "developmentStatus": "active",
+  "codeRepository": "https://github.com/FairRootGroup/FairMQ/",
+  "issueTracker": "https://github.com/FairRootGroup/FairMQ/issues",
+  "identifier": "https://doi.org/10.5281/zenodo.1689985"
+}
