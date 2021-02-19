@@ -136,8 +136,13 @@ void Monitor::Run()
 
     if (fInteractive) {
         Interactive();
-    } else {
+    } else if (fViewOnly) {
         CheckSegment();
+    } else {
+        while (!fTerminating) {
+            this_thread::sleep_for(chrono::milliseconds(fIntervalInMS));
+            CheckSegment();
+        }
     }
 
     if (!fViewOnly) {
