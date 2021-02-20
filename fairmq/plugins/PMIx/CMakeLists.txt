@@ -13,6 +13,7 @@ add_library(${plugin} SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/PMIxCommands.h
   ${CMAKE_CURRENT_SOURCE_DIR}/PMIx.hpp
 )
+target_compile_features(${plugin} PUBLIC cxx_std_17)
 target_link_libraries(${plugin} PUBLIC FairMQ PMIx::libpmix PRIVATE Commands)
 target_include_directories(${plugin} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(${plugin} PROPERTIES

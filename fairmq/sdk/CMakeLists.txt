@@ -45,6 +45,7 @@ add_library(${target}
   ${SDK_PUBLIC_HEADER_FILES} # for IDE integration
   ${SDK_PRIVATE_HEADER_FILES} # for IDE integration
 )
+target_compile_features(${target} PUBLIC cxx_std_17)
 set_target_properties(${target} PROPERTIES LABELS coverage)
 target_include_directories(${target}
   PUBLIC
