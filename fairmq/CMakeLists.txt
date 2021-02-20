@@ -47,6 +47,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     ${TOOLS_SOURCE_FILES}
     ${TOOLS_PUBLIC_HEADER_FILES}
   )
+  target_compile_features(${target} PUBLIC cxx_std_17)
   target_compile_definitions(${target} PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
   # workaround https://github.com/boostorg/asio/commit/43874d5497414c67655d901e48c939ef01337edb
   if(    Boost_VERSION VERSION_LESS 1.69
@@ -106,6 +107,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     ${FSM_SOURCE_FILES}
     ${FSM_PUBLIC_HEADER_FILES}
   )
+  target_compile_features(${target} PUBLIC cxx_std_17)
   target_compile_definitions(${target} PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
   target_include_directories(${target}
     PUBLIC
@@ -263,6 +265,7 @@ if(BUILD_FAIRMQ)
     ${FAIRMQ_PUBLIC_HEADER_FILES} # for IDE integration
     ${FAIRMQ_PRIVATE_HEADER_FILES} # for IDE integration
   )
+  target_compile_features(${target} PUBLIC cxx_std_17)
   set_target_properties(${target} PROPERTIES LABELS coverage)
 
 
@@ -350,6 +353,7 @@ if(BUILD_FAIRMQ)
   target_link_libraries(fairmq-splitter FairMQ)
 
   add_executable(fairmq-shmmonitor shmem/Monitor.cxx shmem/Monitor.h shmem/runMonitor.cxx)
+  target_compile_features(fairmq-shmmonitor PUBLIC cxx_std_17)
   target_compile_definitions(fairmq-shmmonitor PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
   if(FAIRMQ_DEBUG_MODE)
     target_compile_definitions(fairmq-shmmonitor PUBLIC FAIRMQ_DEBUG_MODE)
