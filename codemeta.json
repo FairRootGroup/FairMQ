@@ -8,5 +8,101 @@
   "developmentStatus": "active",
   "codeRepository": "https://github.com/FairRootGroup/FairMQ/",
   "issueTracker": "https://github.com/FairRootGroup/FairMQ/issues",
-  "identifier": "https://doi.org/10.5281/zenodo.1689985"
+  "identifier": "https://doi.org/10.5281/zenodo.1689985",
+  "author": [
+    {
+      "@type": "Person",
+      "givenName": "Mohammad",
+      "familyName": "Al-Turany"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Dennis",
+      "familyName": "Klein"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Thorsten",
+      "familyName": "Kollegger"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Alexey",
+      "familyName": "Rybalchenko"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Nicolas",
+      "familyName": "Winckler"
+    }
+  ],
+  "contributor": [
+    {
+      "@type": "Person",
+      "givenName": "Laurent",
+      "familyName": "Aphecetche"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Sebastien",
+      "familyName": "Binet"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Giulio",
+      "familyName": "Eulisse"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Radoslaw",
+      "familyName": "Karabowicz"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Matthias",
+      "familyName": "Kretz",
+      "email": "kretz@kde.org"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Mikolaj",
+      "familyName": "Krzewicki"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Andrey",
+      "familyName": "Lebedev"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Teo",
+      "familyName": "Mrnjavac",
+      "email": "teo.m@cern.ch"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Gvozden",
+      "familyName": "Neskovic"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Matthias",
+      "familyName": "Richter"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Christian",
+      "familyName": "Tacke"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Florian",
+      "familyName": "Uhlig"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Sandro",
+      "familyName": "Wenzel"
+    }
+  ]
 }
