@@ -82,6 +82,23 @@ function(get_git_version)
   set(${ARGS_OUTVAR_PREFIX}_GIT_DATE ${${ARGS_OUTVAR_PREFIX}_GIT_DATE} PARENT_SCOPE)
 endfunction()
 
+function(get_codemeta_version)
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.19)
+    file(READ "${CMAKE_SOURCE_DIR}/codemeta.json" codemeta_content)
+    string(JSON codemeta_version ERROR_VARIABLE json_error
+           GET "${codemeta_content}" "softwareVersion")
+    if(NOT "${json_error}" STREQUAL "NOTFOUND")
+      string(JSON codemeta_version ERROR_VARIABLE json_error
+             GET "${codemeta_content}" "version")
+    endif()
+    if(NOT "${json_error}" STREQUAL "NOTFOUND")
+      return()
+    endif()
+    string(REGEX REPLACE "^v" "" codemeta_version "${codemeta_version}")
+    set(PROJECT_CODEMETA_VERSION "${codemeta_version}" PARENT_SCOPE)
+  endif()
+endfunction()
+
 
 # Set defaults
 macro(set_fairmq_defaults)

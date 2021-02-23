@@ -13,7 +13,9 @@ cmake_policy(VERSION 3.12...3.15)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(FairMQLib)
 
-get_git_version()
+get_codemeta_version()
+message(STATUS "At main: ${PROJECT_CODEMETA_VERSION}")
+get_git_version(DEFAULT_VERSION "${PROJECT_CODEMETA_VERSION}")
 
 project(FairMQ VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 message(STATUS "${BWhite}${PROJECT_NAME}${CR} ${PROJECT_GIT_VERSION} from ${PROJECT_DATE}")
