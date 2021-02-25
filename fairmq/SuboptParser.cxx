@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public License (LGPL) version 3,             *
@@ -84,6 +84,7 @@ Properties SuboptParser(const vector<string>& channelConfig, const string& devic
         char* subopts = &argString[0];
         char* value = nullptr;
         while (subopts && *subopts != 0 && *subopts != ' ') {
+            char* cur = subopts;
             int subopt = getsubopt(&subopts, (char**)channelOptionKeys, &value);
             if (subopt == NAME) {
                 channelName = value;
@@ -94,6 +95,8 @@ Properties SuboptParser(const vector<string>& channelConfig, const string& devic
                 socketsArray.push_back(make_pair("", socketProperties));
             } else if (subopt >= 0 && value != nullptr) {
                 channelProperties.put(channelOptionKeys[subopt], value);
+            } else if (subopt == -1) {
+                LOG(warn) << "Ignoring unknown argument in --channel-config: " << cur;
             }
         }
 
