@@ -50,12 +50,12 @@ void RegionEventSubscriptions(const string& transport)
 
         ASSERT_EQ(factory->SubscribedToRegionEvents(), false);
         factory->SubscribeToRegionEvents([&](FairMQRegionInfo info) {
-            LOG(warn) << ">>>" << info.event;
-            LOG(warn) << "managed: " << info.managed;
-            LOG(warn) << "id: " << info.id;
-            LOG(warn) << "ptr: " << info.ptr;
-            LOG(warn) << "size: " << info.size;
-            LOG(warn) << "flags: " << info.flags;
+            LOG(info) << ">>> " << info.event << ": "
+                      << (info.managed ? "managed" : "unmanaged")
+                      << ", id: " << info.id
+                      << ", ptr: " << info.ptr
+                      << ", size: " << info.size
+                      << ", flags: " << info.flags;
             if (info.event == FairMQRegionEvent::created) {
                 if (info.id == id1) {
                     ASSERT_EQ(info.size, size1);
