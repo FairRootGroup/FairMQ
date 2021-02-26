@@ -103,6 +103,15 @@ struct DeviceCounter
     std::atomic<unsigned int> fCount;
 };
 
+struct EventCounter
+{
+    EventCounter(uint64_t c)
+        : fCount(c)
+    {}
+
+    std::atomic<uint64_t> fCount;
+};
+
 struct RegionCounter
 {
     RegionCounter(uint16_t c)
