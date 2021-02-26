@@ -415,10 +415,10 @@ class Manager
         while (fRegionEventsSubscriptionActive) {
             auto infos = GetRegionInfoUnsafe();
             for (const auto& i : infos) {
-                auto el = fObservedRegionEvents.find(i.id);
+                auto el = fObservedRegionEvents.find({i.id, i.managed});
                 if (el == fObservedRegionEvents.end()) {
                     fRegionEventCallback(i);
-                    fObservedRegionEvents.emplace(i.id, i.event);
+                    fObservedRegionEvents.emplace(std::make_pair(i.id, i.managed), i.event);
                 } else {
                     if (el->second == RegionEvent::created && i.event == RegionEvent::destroyed) {
                         fRegionEventCallback(i);
@@ -617,7 +617,7 @@ class Manager
     std::thread fRegionEventThread;
     bool fRegionEventsSubscriptionActive;
     std::function<void(fair::mq::RegionInfo)> fRegionEventCallback;
-    std::unordered_map<uint16_t, RegionEvent> fObservedRegionEvents;
+    std::map<std::pair<uint16_t, bool>, RegionEvent> fObservedRegionEvents;
 
     DeviceCounter* fDeviceCounter;
     Uint16SegmentInfoHashMap* fShmSegments;
