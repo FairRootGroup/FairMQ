@@ -7,10 +7,10 @@
  ################################################################################
 
 add_library(ExampleRegionLib STATIC
-    "Sampler.cxx"
-    "Sampler.h"
-    "Sink.cxx"
-    "Sink.h"
+  "Sampler.cxx"
+  "Sampler.h"
+  "Sink.cxx"
+  "Sink.h"
 )
 
 target_link_libraries(ExampleRegionLib PUBLIC FairMQ)
@@ -40,12 +40,12 @@ set_tests_properties(Example.Region.shmem PROPERTIES TIMEOUT "30" RUN_SERIAL tru
 # install
 
 install(
-    TARGETS
-    fairmq-ex-region-sampler
-    fairmq-ex-region-sink
+  TARGETS
+  fairmq-ex-region-sampler
+  fairmq-ex-region-sink
 
-    LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
 )
 
 # configure run script with different executable paths for build and for install directories
@@ -54,7 +54,7 @@ set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-region.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-region.sh_install)
 
 install(
-    PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-region.sh_install
-    DESTINATION ${PROJECT_INSTALL_BINDIR}
-    RENAME fairmq-start-ex-region.sh
+  PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-region.sh_install
+  DESTINATION ${PROJECT_INSTALL_BINDIR}
+  RENAME fairmq-start-ex-region.sh
 )

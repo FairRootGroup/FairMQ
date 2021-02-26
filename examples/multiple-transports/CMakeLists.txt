@@ -7,12 +7,12 @@
  ################################################################################
 
 add_library(ExampleMultipleTransportsLib STATIC
-    "Sampler1.cxx"
-    "Sampler1.h"
-    "Sampler2.cxx"
-    "Sampler2.h"
-    "Sink.cxx"
-    "Sink.h"
+  "Sampler1.cxx"
+  "Sampler1.h"
+  "Sampler2.cxx"
+  "Sampler2.h"
+  "Sink.cxx"
+  "Sink.h"
 )
 
 target_link_libraries(ExampleMultipleTransportsLib PUBLIC FairMQ)
@@ -41,13 +41,13 @@ set_tests_properties(Example.MultipleTransports PROPERTIES TIMEOUT "30" RUN_SERI
 # install
 
 install(
-    TARGETS
-    fairmq-ex-multiple-transports-sampler1
-    fairmq-ex-multiple-transports-sampler2
-    fairmq-ex-multiple-transports-sink
+  TARGETS
+  fairmq-ex-multiple-transports-sampler1
+  fairmq-ex-multiple-transports-sampler2
+  fairmq-ex-multiple-transports-sink
 
-    LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
 )
 
 # configure run script with different executable paths for install directories
@@ -56,7 +56,7 @@ set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-multiple-transports.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-multiple-transports.sh_install)
 
 install(
-    PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-multiple-transports.sh_install
-    DESTINATION ${PROJECT_INSTALL_BINDIR}
-    RENAME fairmq-start-ex-multiple-transports.sh
+  PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-multiple-transports.sh_install
+  DESTINATION ${PROJECT_INSTALL_BINDIR}
+  RENAME fairmq-start-ex-multiple-transports.sh
 )

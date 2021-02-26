@@ -7,10 +7,10 @@
  ################################################################################
 
 add_library(ExampleReqRepLib STATIC
-    "Client.cxx"
-    "Client.h"
-    "Server.cxx"
-    "Server.h"
+  "Client.cxx"
+  "Client.h"
+  "Server.cxx"
+  "Server.h"
 )
 
 target_link_libraries(ExampleReqRepLib PUBLIC FairMQ)
@@ -41,12 +41,12 @@ set_tests_properties(Example.ReqRep.shmem PROPERTIES TIMEOUT "30" RUN_SERIAL tru
 # install
 
 install(
-    TARGETS
-    fairmq-ex-req-rep-client
-    fairmq-ex-req-rep-server
+  TARGETS
+  fairmq-ex-req-rep-client
+  fairmq-ex-req-rep-server
 
-    LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
 )
 
 # configure run script with different executable paths for build and for install directories
@@ -55,7 +55,7 @@ set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-req-rep.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-req-rep.sh_install)
 
 install(
-    PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-req-rep.sh_install
-    DESTINATION ${PROJECT_INSTALL_BINDIR}
-    RENAME fairmq-start-ex-req-rep.sh
+  PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-req-rep.sh_install
+  DESTINATION ${PROJECT_INSTALL_BINDIR}
+  RENAME fairmq-start-ex-req-rep.sh
 )
