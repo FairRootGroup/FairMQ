@@ -34,7 +34,7 @@ set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-builtin-devices.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-builtin-devices.sh_install)
 
 install(
-    PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-builtin-devices.sh_install
-    DESTINATION ${PROJECT_INSTALL_BINDIR}
-    RENAME fairmq-start-ex-builtin-devices.sh
+  PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-builtin-devices.sh_install
+  DESTINATION ${PROJECT_INSTALL_BINDIR}
+  RENAME fairmq-start-ex-builtin-devices.sh
 )

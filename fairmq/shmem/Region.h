@@ -152,7 +152,7 @@ struct Region
             }
         }
 
-        LOG(debug) << "AcksSender for " << fName << " leaving " << "(blocks left to free: " << fBlocksToFree.size() << ", "
+        LOG(trace) << "AcksSender for " << fName << " leaving " << "(blocks left to free: " << fBlocksToFree.size() << ", "
                                                                 << " blocks left to send: " << blocksToSend << ").";
     }
 
@@ -195,7 +195,7 @@ struct Region
             }
         }
 
-        LOG(debug) << "AcksReceiver for " << fName << " leaving (remaining queue size: " << fQueue->get_num_msg() << ").";
+        LOG(trace) << "AcksReceiver for " << fName << " leaving (remaining queue size: " << fQueue->get_num_msg() << ").";
     }
 
     void ReleaseBlock(const RegionBlock& block)
