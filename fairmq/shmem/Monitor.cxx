@@ -393,7 +393,7 @@ void Monitor::PrintDebugInfo(const ShmId& shmId __attribute__((unused)))
 
 void Monitor::PrintDebugInfo(const SessionId& sessionId)
 {
-    ShmId shmId{buildShmIdFromSessionIdAndUserId(sessionId.sessionId)};
+    ShmId shmId{makeShmIdStr(sessionId.sessionId)};
     PrintDebugInfo(shmId);
 }
 
@@ -429,7 +429,7 @@ unordered_map<uint16_t, std::vector<BufferDebugInfo>> Monitor::GetDebugInfo(cons
 }
 unordered_map<uint16_t, std::vector<BufferDebugInfo>> Monitor::GetDebugInfo(const SessionId& sessionId)
 {
-    ShmId shmId{buildShmIdFromSessionIdAndUserId(sessionId.sessionId)};
+    ShmId shmId{makeShmIdStr(sessionId.sessionId)};
     return GetDebugInfo(shmId);
 }
 
@@ -536,7 +536,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
 
 std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const SessionId& sessionId, bool verbose /* = true */)
 {
-    ShmId shmId{buildShmIdFromSessionIdAndUserId(sessionId.sessionId)};
+    ShmId shmId{makeShmIdStr(sessionId.sessionId)};
     if (verbose) {
         cout << "Cleanup called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'" << endl;
     }
@@ -553,7 +553,7 @@ std::vector<std::pair<std::string, bool>> Monitor::CleanupFull(const ShmId& shmI
 
 std::vector<std::pair<std::string, bool>> Monitor::CleanupFull(const SessionId& sessionId, bool verbose /* = true */)
 {
-    ShmId shmId{buildShmIdFromSessionIdAndUserId(sessionId.sessionId)};
+    ShmId shmId{makeShmIdStr(sessionId.sessionId)};
     if (verbose) {
         cout << "Cleanup called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'" << endl;
     }

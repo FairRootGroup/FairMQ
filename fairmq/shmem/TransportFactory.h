@@ -35,10 +35,8 @@ namespace fair::mq::shmem
 class TransportFactory final : public fair::mq::TransportFactory
 {
   public:
-    TransportFactory(const std::string& id = "", const ProgOptions* config = nullptr)
-        : fair::mq::TransportFactory(id)
-        , fDeviceId(id)
-        , fShmId()
+    TransportFactory(const std::string& deviceId = "", const ProgOptions* config = nullptr)
+        : fair::mq::TransportFactory(deviceId)
         , fZmqCtx(zmq_ctx_new())
         , fManager(nullptr)
     {
@@ -69,8 +67,8 @@ class TransportFactory final : public fair::mq::TransportFactory
             throw SharedMemoryError(tools::ToString("Provided shared memory allocation algorithm '", allocationAlgorithm, "' is not supported. Supported are 'rbtree_best_fit'/'simple_seq_fit'"));
         }
 
-        fShmId = buildShmIdFromSessionIdAndUserId(sessionName);
-        LOG(debug) << "Generated shmid '" << fShmId << "' out of session id '" << sessionName << "'.";
+        std::string shmId = makeShmIdStr(sessionName);
+        LOG(debug) << "Generated shmid '" << shmId << "' out of session id '" << sessionName << "'.";
 
         try {
             if (zmq_ctx_set(fZmqCtx, ZMQ_IO_THREADS, numIoThreads) != 0) {
@@ -82,7 +80,7 @@ class TransportFactory final : public fair::mq::TransportFactory
                 LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
             }
 
-            fManager = std::make_unique<Manager>(fShmId, fDeviceId, segmentSize, config);
+            fManager = std::make_unique<Manager>(shmId, deviceId, segmentSize, config);
         } catch (boost::interprocess::interprocess_exception& e) {
             LOG(error) << "Could not initialize shared memory transport: " << e.what();
             throw std::runtime_error(tools::ToString("Could not initialize shared memory transport: ", e.what()));
@@ -200,8 +198,6 @@ class TransportFactory final : public fair::mq::TransportFactory
     }
 
   private:
-    std::string fDeviceId;
-    std::string fShmId;
     void* fZmqCtx;
     std::unique_ptr<Manager> fManager;
 };

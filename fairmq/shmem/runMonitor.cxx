@@ -111,7 +111,7 @@ int main(int argc, char** argv)
         }
 
         if (shmId == "") {
-            shmId = buildShmIdFromSessionIdAndUserId(sessionName);
+            shmId = makeShmIdStr(sessionName);
         }
 
         if (cleanup) {
