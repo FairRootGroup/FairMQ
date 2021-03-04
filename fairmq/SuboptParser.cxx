@@ -17,8 +17,9 @@
 #include <fairlogger/Logger.h>
 
 #include <boost/property_tree/ptree.hpp>
-
-#include <utility> // make_pair
+#include <string_view>
+#include <utility>   // make_pair
+#include <cstring>
 
 using boost::property_tree::ptree;
 using namespace std;
@@ -83,6 +84,14 @@ Properties SuboptParser(const vector<string>& channelConfig, const string& devic
         string argString(token);
         char* subopts = &argString[0];
         char* value = nullptr;
+        // Find either a : or a =. If we find the former first, we consider what is before it
+        // the channel name
+        char* firstSep = strpbrk(subopts, ":=");
+        if (firstSep && *firstSep == ':') {
+            channelName = std::string_view(subopts, firstSep - subopts);
+            channelProperties.put("name", channelName);
+            subopts = firstSep + 1;
+        }
         while (subopts && *subopts != 0 && *subopts != ' ') {
             char* cur = subopts;
             int subopt = getsubopt(&subopts, (char**)channelOptionKeys, &value);
