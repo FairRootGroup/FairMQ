@@ -644,7 +644,7 @@ bool FairMQDevice::HandleMultipartInput(const string& chName, const InputMultipa
     FairMQParts input;
 
     if (Receive(input, chName, i) >= 0) {
-        return callback(input, 0);
+        return callback(input, i);
     } else {
         return false;
     }
