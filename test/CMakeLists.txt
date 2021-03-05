@@ -217,6 +217,7 @@ add_testsuite(Properties
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     properties/_properties.cxx
+    properties/_suboptparser.cxx
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
