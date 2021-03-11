@@ -421,28 +421,64 @@ class FairMQDevice
     virtual void Reset() {}
 
   public:
+    /// @brief Request a device state transition
+    /// @param transition state transition
+    ///
+    /// The state transition may not happen immediately, but when the current state evaluates the
+    /// pending transition event and terminates. In other words, the device states are scheduled cooperatively.
     bool ChangeState(const fair::mq::Transition transition) { return fStateMachine.ChangeState(transition); }
+    /// @brief Request a device state transition
+    /// @param transition state transition
+    ///
+    /// The state transition may not happen immediately, but when the current state evaluates the
+    /// pending transition event and terminates. In other words, the device states are scheduled cooperatively.
     bool ChangeState(const std::string& transition) { return fStateMachine.ChangeState(fair::mq::GetTransition(transition)); }
 
+    /// @brief waits for the next state (any) to occur
     fair::mq::State WaitForNextState() { return fStateQueue.WaitForNext(); }
+    /// @brief waits for the specified state to occur
+    /// @param state state to wait for
     void WaitForState(fair::mq::State state) { fStateQueue.WaitForState(state); }
+    /// @brief waits for the specified state to occur
+    /// @param state state to wait for
     void WaitForState(const std::string& state) { WaitForState(fair::mq::GetState(state)); }
 
     void TransitionTo(const fair::mq::State state);
 
+    /// @brief Subscribe with a callback to state changes
+    /// @param key id to identify your subscription
+    /// @param callback callback (called with the new state as the parameter)
+    ///
+    /// The callback is called at the beginning of a new state.
+    /// The callback is called from the thread the state is running in.
     void SubscribeToStateChange(const std::string& key, std::function<void(const fair::mq::State)> callback) { fStateMachine.SubscribeToStateChange(key, callback); }
+    /// @brief Unsubscribe from state changes
+    /// @param key id (that was used when subscribing)
     void UnsubscribeFromStateChange(const std::string& key) { fStateMachine.UnsubscribeFromStateChange(key); }
 
+    /// @brief Subscribe with a callback to incoming state transitions
+    /// @param key id to identify your subscription
+    /// @param callback callback (called with the incoming transition as the parameter)
+    /// The callback is called when new transition is initiated.
+    /// The callback is called from the thread that initiates the transition (via ChangeState).
     void SubscribeToNewTransition(const std::string& key, std::function<void(const fair::mq::Transition)> callback) { fStateMachine.SubscribeToNewTransition(key, callback); }
+    /// @brief Unsubscribe from state transitions
+    /// @param key id (that was used when subscribing)
     void UnsubscribeFromNewTransition(const std::string& key) { fStateMachine.UnsubscribeFromNewTransition(key); }
 
-    /// Returns true is a new state has been requested, signaling the current handler to stop.
+    /// @brief Returns true if a new state has been requested, signaling the current handler to stop.
     bool NewStatePending() const { return fStateMachine.NewStatePending(); }
 
+    /// @brief Returns the current state
     fair::mq::State GetCurrentState() const { return fStateMachine.GetCurrentState(); }
+    /// @brief Returns the name of the current state as a string
     std::string GetCurrentStateName() const { return fStateMachine.GetCurrentStateName(); }
 
+    /// @brief Returns name of the given state as a string
+    /// @param state state
     static std::string GetStateName(const fair::mq::State state) { return fair::mq::GetStateName(state); }
+    /// @brief Returns name of the given transition as a string
+    /// @param transition transition
     static std::string GetTransitionName(const fair::mq::Transition transition) { return fair::mq::GetTransitionName(transition); }
 
     static constexpr const char* DefaultId = "";
