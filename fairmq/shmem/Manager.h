@@ -78,6 +78,7 @@ class Manager
         , fHeartbeatThread()
         , fSendHeartbeats(true)
         , fThrowOnBadAlloc(config ? config->GetProperty<bool>("shm-throw-bad-alloc", true) : true)
+        , fNoCleanup(config ? config->GetProperty<bool>("shm-no-cleanup", false) : false)
     {
         using namespace boost::interprocess;
 
@@ -608,7 +609,7 @@ class Manager
             (fDeviceCounter->fCount)--;
 
             if (fDeviceCounter->fCount == 0) {
-                LOG(debug) << "Last segment user, removing segment.";
+                LOG(debug) << "Last segment user, " << (fNoCleanup ? "skipping removal (--shm-no-cleanup is true)." : "removing segment.");
                 lastRemoved = true;
             } else {
                 LOG(debug) << "Other segment users present (" << fDeviceCounter->fCount << "), skipping removal.";
@@ -617,7 +618,7 @@ class Manager
             LOG(error) << "Manager could not acquire lock: " << e.what();
         }
 
-        if (lastRemoved) {
+        if (lastRemoved && !fNoCleanup) {
             Monitor::Cleanup(ShmId{fShmId});
         }
     }
@@ -657,6 +658,7 @@ class Manager
     std::condition_variable fHeartbeatsCV;
 
     bool fThrowOnBadAlloc;
+    bool fNoCleanup;
 };
 
 } // namespace fair::mq::shmem
