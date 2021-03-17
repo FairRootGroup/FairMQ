@@ -151,7 +151,8 @@ class Manager
                 << " Allocation algorithm: " << allocationAlgorithm;
                 LOG(debug) << ss.str();
             } catch(interprocess_exception& bie) {
-                LOG(error) << "something went wrong: " << bie.what();
+                LOG(error) << "Failed to create/open shared memory segment (" << "fmq_" << fShmId << "_m_" << fSegmentId << "): " << bie.what();
+                throw std::runtime_error(tools::ToString("Failed to create/open shared memory segment (", "fmq_", fShmId, "_m_", fSegmentId, "): ", bie.what()));
             }
 
             if (mlockSegment) {
