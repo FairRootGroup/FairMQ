@@ -28,6 +28,7 @@
 #include <memory> // unique_ptr, make_unique
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 namespace fair::mq::shmem
 {
@@ -82,6 +83,9 @@ class TransportFactory final : public fair::mq::TransportFactory
 
             fManager = std::make_unique<Manager>(shmId, deviceId, segmentSize, config);
         } catch (boost::interprocess::interprocess_exception& e) {
+            LOG(error) << "Could not initialize shared memory transport: " << e.what();
+            throw std::runtime_error(tools::ToString("Could not initialize shared memory transport: ", e.what()));
+        } catch (const std::exception& e) {
             LOG(error) << "Could not initialize shared memory transport: " << e.what();
             throw std::runtime_error(tools::ToString("Could not initialize shared memory transport: ", e.what()));
         }
