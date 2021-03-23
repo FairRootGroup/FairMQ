@@ -146,8 +146,8 @@ class Manager
                     ss << "Opened ";
                 }
                 ss << "shared memory segment '" << "fmq_" << fShmId << "_m_" << fSegmentId << "'."
-                << " Size: " << boost::apply_visitor(SegmentSize{}, fSegments.at(fSegmentId)) << " bytes."
-                << " Available: " << boost::apply_visitor(SegmentFreeMemory{}, fSegments.at(fSegmentId)) << " bytes."
+                << " Size: " << boost::apply_visitor(SegmentSize(), fSegments.at(fSegmentId)) << " bytes."
+                << " Available: " << boost::apply_visitor(SegmentFreeMemory(), fSegments.at(fSegmentId)) << " bytes."
                 << " Allocation algorithm: " << allocationAlgorithm;
                 LOG(debug) << ss.str();
             } catch(interprocess_exception& bie) {
@@ -157,14 +157,14 @@ class Manager
 
             if (mlockSegment) {
                 LOG(debug) << "Locking the managed segment memory pages...";
-                if (mlock(boost::apply_visitor(SegmentAddress{}, fSegments.at(fSegmentId)), boost::apply_visitor(SegmentSize{}, fSegments.at(fSegmentId))) == -1) {
+                if (mlock(boost::apply_visitor(SegmentAddress(), fSegments.at(fSegmentId)), boost::apply_visitor(SegmentSize(), fSegments.at(fSegmentId))) == -1) {
                     LOG(error) << "Could not lock the managed segment memory. Code: " << errno << ", reason: " << strerror(errno);
                 }
                 LOG(debug) << "Successfully locked the managed segment memory pages.";
             }
             if (zeroSegment) {
                 LOG(debug) << "Zeroing the managed segment free memory...";
-                boost::apply_visitor(SegmentMemoryZeroer{}, fSegments.at(fSegmentId));
+                boost::apply_visitor(SegmentMemoryZeroer(), fSegments.at(fSegmentId));
                 LOG(debug) << "Successfully zeroed the managed segment free memory.";
             }
 
@@ -384,8 +384,8 @@ class Manager
                 info.managed = true;
                 info.id = e.first;
                 info.event = RegionEvent::created;
-                info.ptr = boost::apply_visitor(SegmentAddress{}, fSegments.at(e.first));
-                info.size = boost::apply_visitor(SegmentSize{}, fSegments.at(e.first));
+                info.ptr = boost::apply_visitor(SegmentAddress(), fSegments.at(e.first));
+                info.size = boost::apply_visitor(SegmentSize(), fSegments.at(e.first));
                 result.push_back(info);
             } catch (const std::out_of_range& oor) {
                 LOG(error) << "could not find segment with id " << e.first;
@@ -512,11 +512,11 @@ class Manager
 
     boost::interprocess::managed_shared_memory::handle_t GetHandleFromAddress(const void* ptr, uint16_t segmentId) const
     {
-        return boost::apply_visitor(SegmentHandleFromAddress{ptr}, fSegments.at(segmentId));
+        return boost::apply_visitor(SegmentHandleFromAddress(ptr), fSegments.at(segmentId));
     }
     void* GetAddressFromHandle(const boost::interprocess::managed_shared_memory::handle_t handle, uint16_t segmentId) const
     {
-        return boost::apply_visitor(SegmentAddressFromHandle{handle}, fSegments.at(segmentId));
+        return boost::apply_visitor(SegmentAddressFromHandle(handle), fSegments.at(segmentId));
     }
 
     char* Allocate(const size_t size, size_t alignment = 0)
@@ -529,7 +529,7 @@ class Manager
                 // boost::interprocess::managed_shared_memory::size_type actualSize = size;
                 // char* hint = 0; // unused for boost::interprocess::allocate_new
                 // ptr = fSegments.at(fSegmentId).allocation_command<char>(boost::interprocess::allocate_new, size, actualSize, hint);
-                size_t segmentSize = boost::apply_visitor(SegmentSize{}, fSegments.at(fSegmentId));
+                size_t segmentSize = boost::apply_visitor(SegmentSize(), fSegments.at(fSegmentId));
                 if (size > segmentSize) {
                     throw MessageBadAlloc(tools::ToString("Requested message size (", size, ") exceeds segment size (", segmentSize, ")"));
                 }
@@ -541,7 +541,7 @@ class Manager
             } catch (boost::interprocess::bad_alloc& ba) {
                 // LOG(warn) << "Shared memory full...";
                 if (ThrowingOnBadAlloc()) {
-                    throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default", ", free memory: ", boost::apply_visitor(SegmentFreeMemory{}, fSegments.at(fSegmentId))));
+                    throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default", ", free memory: ", boost::apply_visitor(SegmentFreeMemory(), fSegments.at(fSegmentId))));
                 }
                 // rateLimiter.maybe_sleep();
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -569,7 +569,7 @@ class Manager
 
     void Deallocate(boost::interprocess::managed_shared_memory::handle_t handle, uint16_t segmentId)
     {
-        boost::apply_visitor(SegmentDeallocate{GetAddressFromHandle(handle, segmentId)}, fSegments.at(segmentId));
+        boost::apply_visitor(SegmentDeallocate(GetAddressFromHandle(handle, segmentId)), fSegments.at(segmentId));
 #ifdef FAIRMQ_DEBUG_MODE
         boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
         DecrementShmMsgCounter(segmentId);
@@ -583,7 +583,7 @@ class Manager
 
     char* ShrinkInPlace(size_t newSize, char* localPtr, uint16_t segmentId)
     {
-        return boost::apply_visitor(SegmentBufferShrink{newSize, localPtr}, fSegments.at(segmentId));
+        return boost::apply_visitor(SegmentBufferShrink(newSize, localPtr), fSegments.at(segmentId));
     }
 
     uint16_t GetSegmentId() const { return fSegmentId; }
