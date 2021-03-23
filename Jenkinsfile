@@ -29,7 +29,7 @@ def jobMatrix(String prefix, String type, List specs) {
             sh "cat ${jobscript}"
             sh "bash ${jobscript}"
           } else {
-            def containercmd = "singularity exec -B/shared ${env.SINGULARITY_CONTAINER_ROOT}/fairmq/${os}.${ver}.sif bash -l -c \\\"${ctestcmd}\\\""
+            def containercmd = "singularity exec -B/shared ${env.SINGULARITY_CONTAINER_ROOT}/fairmq/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} -DRUN_STATIC_ANALYSIS=ON\\\""
             sh """\
               echo \"echo \\\"*** Job started at .......: \\\$(date -R)\\\"\" >> ${jobscript}
               echo \"echo \\\"*** Job ID ...............: \\\${SLURM_JOB_ID}\\\"\" >> ${jobscript}
@@ -58,7 +58,7 @@ def jobMatrix(String prefix, String type, List specs) {
 pipeline{
   agent none
   stages {
-    stage("Run CI Matrix") {
+    stage("CI") {
       steps{
         script {
           def builds = jobMatrix('alfa-ci', 'build', [

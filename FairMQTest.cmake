@@ -44,8 +44,10 @@ list(APPEND options
   "-DDISABLE_COLOR=ON"
   "-DBUILD_SDK_COMMANDS=ON"
   "-DBUILD_SDK=ON"
-  "-DBUILD_DDS_PLUGIN=ON"
-  )
+  "-DBUILD_DDS_PLUGIN=ON")
+if(RUN_STATIC_ANALYSIS)
+  list(APPEND options "-DRUN_STATIC_ANALYSIS=ON")
+endif()
 list(JOIN options ";" optionsstr)
 ctest_configure(OPTIONS "${optionsstr}")
 
