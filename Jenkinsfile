@@ -1,6 +1,6 @@
 #!groovy
 
-def jobMatrix(String prefix, String type, List specs) {
+def jobMatrix(String type, List specs) {
   def nodes = [:]
   for (spec in specs) {
     job = "${spec.os}-${spec.ver}-${spec.arch}-${spec.compiler}"
@@ -12,7 +12,7 @@ def jobMatrix(String prefix, String type, List specs) {
 
     nodes[label] = {
       node(selector) {
-        githubNotify(context: "${prefix}/${label}", description: 'Building ...', status: 'PENDING')
+        githubNotify(context: "${label}", description: 'Building ...', status: 'PENDING')
         try {
           deleteDir()
           checkout scm
@@ -40,13 +40,20 @@ def jobMatrix(String prefix, String type, List specs) {
             """
             sh "cat ${jobscript}"
             sh "test/ci/slurm-submit.sh \"FairMQ \${JOB_BASE_NAME} ${label}\" ${jobscript}"
+
+            withChecks('Static Analysis') {
+              recordIssues(enabledForFailure: true,
+                           tools: [gcc(pattern: 'build/Testing/Temporary/*.log')],
+                           filters: [excludeFile('extern/*'), excludeFile('usr/*')],
+                           skipBlames: true)
+            }
           }
 
           deleteDir()
-          githubNotify(context: "${prefix}/${label}", description: 'Success', status: 'SUCCESS')
+          githubNotify(context: "${label}", description: 'Success', status: 'SUCCESS')
         } catch (e) {
           deleteDir()
-          githubNotify(context: "${prefix}/${label}", description: 'Error', status: 'ERROR')
+          githubNotify(context: "${label}", description: 'Error', status: 'ERROR')
           throw e
         }
       }
@@ -61,7 +68,7 @@ pipeline{
     stage("CI") {
       steps{
         script {
-          def builds = jobMatrix('alfa-ci', 'build', [
+          def builds = jobMatrix('build', [
             [os: 'fedora', ver: '32',    arch: 'x86_64', compiler: 'gcc-10'],
             [os: 'macos',  ver: '11',    arch: 'x86_64', compiler: 'apple-clang-12'],
           ])
