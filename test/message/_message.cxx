@@ -40,34 +40,34 @@ void RunPushPullWithMsgResize(const string& transport, const string& _address)
     pull.Connect(address);
 
     {
-        FairMQMessagePtr outMsg(push.NewMessage(1000));
-        ASSERT_EQ(outMsg->GetSize(), 1000);
-        memcpy(outMsg->GetData(), "ABC", 3);
-        ASSERT_EQ(outMsg->SetUsedSize(500), true);
-        ASSERT_EQ(outMsg->SetUsedSize(500), true);
-        ASSERT_EQ(outMsg->SetUsedSize(700), false);
-        ASSERT_EQ(outMsg->GetSize(), 500);
+        FairMQMessagePtr outMsg(push.NewMessage(6));
+        ASSERT_EQ(outMsg->GetSize(), 6);
+        memcpy(outMsg->GetData(), "ABCDEF", 6);
+        ASSERT_EQ(outMsg->SetUsedSize(5), true);
+        ASSERT_EQ(outMsg->SetUsedSize(5), true);
+        ASSERT_EQ(outMsg->SetUsedSize(7), false);
+        ASSERT_EQ(outMsg->GetSize(), 5);
         // check if the data is still intact
         ASSERT_EQ(static_cast<char*>(outMsg->GetData())[0], 'A');
         ASSERT_EQ(static_cast<char*>(outMsg->GetData())[1], 'B');
         ASSERT_EQ(static_cast<char*>(outMsg->GetData())[2], 'C');
-        ASSERT_EQ(outMsg->SetUsedSize(250), true);
-        ASSERT_EQ(outMsg->GetSize(), 250);
+        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[3], 'D');
+        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[4], 'E');
+        ASSERT_EQ(outMsg->SetUsedSize(2), true);
+        ASSERT_EQ(outMsg->GetSize(), 2);
         ASSERT_EQ(static_cast<char*>(outMsg->GetData())[0], 'A');
         ASSERT_EQ(static_cast<char*>(outMsg->GetData())[1], 'B');
-        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[2], 'C');
         FairMQMessagePtr msgCopy(push.NewMessage());
         msgCopy->Copy(*outMsg);
-        ASSERT_EQ(msgCopy->GetSize(), 250);
+        ASSERT_EQ(msgCopy->GetSize(), 2);
 
-        ASSERT_EQ(push.Send(outMsg), 250);
+        ASSERT_EQ(push.Send(outMsg), 2);
 
         FairMQMessagePtr inMsg(pull.NewMessage());
-        ASSERT_EQ(pull.Receive(inMsg), 250);
-        ASSERT_EQ(inMsg->GetSize(), 250);
+        ASSERT_EQ(pull.Receive(inMsg), 2);
+        ASSERT_EQ(inMsg->GetSize(), 2);
         ASSERT_EQ(static_cast<char*>(inMsg->GetData())[0], 'A');
         ASSERT_EQ(static_cast<char*>(inMsg->GetData())[1], 'B');
-        ASSERT_EQ(static_cast<char*>(inMsg->GetData())[2], 'C');
     }
 
     {
