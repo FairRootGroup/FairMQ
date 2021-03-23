@@ -1,0 +1,9 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classFairMQDevice.html" title=" " alt="" coords="5,132,117,159"/>
+<area shape="rect" id="node2" href="$classFairMQBenchmarkSampler.html" title=" " alt="" coords="165,5,360,32"/>
+<area shape="rect" id="node3" href="$classFairMQMerger.html" title=" " alt="" coords="206,56,319,83"/>
+<area shape="rect" id="node4" href="$classFairMQMultiplier.html" title=" " alt="" coords="198,107,327,133"/>
+<area shape="rect" id="node5" href="$classFairMQProxy.html" title=" " alt="" coords="211,157,315,184"/>
+<area shape="rect" id="node6" href="$classFairMQSink.html" title=" " alt="" coords="215,208,310,235"/>
+<area shape="rect" id="node7" href="$classFairMQSplitter.html" title=" " alt="" coords="205,259,320,285"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classfair_1_1mq_1_1Plugin.html" title="Base class for FairMQ plugins." alt="" coords="5,107,127,134"/>
+<area shape="rect" id="node2" href="$classfair_1_1mq_1_1plugins_1_1Config.html" title=" " alt="" coords="189,5,325,47"/>
+<area shape="rect" id="node3" href="$classfair_1_1mq_1_1plugins_1_1Control.html" title=" " alt="" coords="189,71,325,112"/>
+<area shape="rect" id="node4" href="$classfair_1_1mq_1_1plugins_1_1DDS.html" title=" " alt="" coords="175,137,339,163"/>
+<area shape="rect" id="node5" href="$classfair_1_1mq_1_1plugins_1_1PMIxPlugin.html" title=" " alt="" coords="189,188,325,229"/>
+</map>

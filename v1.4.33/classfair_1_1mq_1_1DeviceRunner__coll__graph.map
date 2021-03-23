@@ -1,0 +1,5 @@
+<map id="fair::mq::DeviceRunner" name="fair::mq::DeviceRunner">
+<area shape="rect" id="node1" title="Utility class to facilitate a convenient top&#45;level device launch/shutdown." alt="" coords="105,95,277,121"/>
+<area shape="rect" id="node2" href="$classfair_1_1mq_1_1PluginManager.html" title="manages and owns plugin instances" alt="" coords="5,5,184,32"/>
+<area shape="rect" id="node3" href="$classfair_1_1mq_1_1ProgOptions.html" title=" " alt="" coords="208,5,368,32"/>
+</map>

@@ -1,0 +1,4 @@
+<map id="fair::mq::sdk::AsioBase&lt; Executor, Allocator &gt;" name="fair::mq::sdk::AsioBase&lt; Executor, Allocator &gt;">
+<area shape="rect" id="node1" title="Base for creating Asio&#45;enabled I/O objects." alt="" coords="21,5,195,47"/>
+<area shape="rect" id="node2" href="$classfair_1_1mq_1_1sdk_1_1BasicTopology.html" title="Represents a FairMQ topology." alt="" coords="5,95,211,136"/>
+</map>

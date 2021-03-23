@@ -1,0 +1,6 @@
+<map id="fair::mq::ofi::ControlMessage" name="fair::mq::ofi::ControlMessage">
+<area shape="rect" id="node1" title=" " alt="" coords="82,213,293,240"/>
+<area shape="rect" id="node2" href="$unionfair_1_1mq_1_1ofi_1_1ControlMessageContent.html" title=" " alt="" coords="82,109,293,151"/>
+<area shape="rect" id="node3" href="$structfair_1_1mq_1_1ofi_1_1PostBuffer.html" title=" " alt="" coords="5,13,177,39"/>
+<area shape="rect" id="node4" href="$structfair_1_1mq_1_1ofi_1_1PostMultiPartStartBuffer.html" title=" " alt="" coords="201,5,368,47"/>
+</map>
