@@ -306,8 +306,8 @@ void Monitor::CheckSegment()
             ss << "shm id: " << fShmId
                << ", devices: " << numDevices << ", segments:\n";
             for (const auto& s : segments) {
-                size_t free = boost::apply_visitor(SegmentFreeMemory{}, s.second);
-                size_t total = boost::apply_visitor(SegmentSize{}, s.second);
+                size_t free = boost::apply_visitor(SegmentFreeMemory(), s.second);
+                size_t total = boost::apply_visitor(SegmentSize(), s.second);
                 size_t used = total - free;
                 ss << "   [" << s.first
                    << "]: total: " << total
