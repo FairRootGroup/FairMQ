@@ -211,11 +211,31 @@ class Message final : public fair::mq::Message
             return true;
         } else if (newSize <= fMeta.fSize) {
             try {
-                fLocalPtr = fManager.ShrinkInPlace(newSize, fLocalPtr, fMeta.fSegmentId);
-                fMeta.fSize = newSize;
-                return true;
+                try {
+                    fLocalPtr = fManager.ShrinkInPlace(newSize, fLocalPtr, fMeta.fSegmentId);
+                    fMeta.fSize = newSize;
+                    return true;
+                } catch (boost::interprocess::bad_alloc& e) {
+                    // if shrinking fails (can happen due to boost alignment requirements):
+                    // unused size >= 1000000 bytes: reallocate fully
+                    // unused size < 1000000 bytes: simply reset the size and keep the rest of the buffer until message destruction
+                    if (fMeta.fSize - newSize >= 1000000) {
+                        char* newPtr = fManager.Allocate(newSize, fAlignment);
+                        if (newPtr) {
+                            std::memcpy(newPtr, fLocalPtr, newSize);
+                            fManager.Deallocate(fMeta.fHandle, fMeta.fSegmentId);
+                            fLocalPtr = newPtr;
+                            fMeta.fHandle = fManager.GetHandleFromAddress(fLocalPtr, fMeta.fSegmentId);
+                        } else {
+                            LOG(debug) << "could not set used size: " << e.what();
+                            return false;
+                        }
+                    }
+                    fMeta.fSize = newSize;
+                    return true;
+                }
             } catch (boost::interprocess::interprocess_exception& e) {
-                LOG(info) << "could not set used size: " << e.what();
+                LOG(debug) << "could not set used size: " << e.what();
                 return false;
             }
         } else {
@@ -257,7 +277,7 @@ class Message final : public fair::mq::Message
     Manager& fManager;
     bool fQueued;
     MetaHeader fMeta;
-    size_t fAlignment; // TODO: put this to debug mode
+    size_t fAlignment;
     mutable Region* fRegionPtr;
     mutable char* fLocalPtr;
 
