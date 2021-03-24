@@ -176,7 +176,7 @@ if(BUILD_FAIRMQ)
   set(FAIRMQ_PRIVATE_HEADER_FILES
     plugins/Builtin.h
     plugins/config/Config.h
-    plugins/Control.h
+    plugins/control/Control.h
     shmem/Message.h
     shmem/Poller.h
     shmem/UnmanagedRegion.h
@@ -223,7 +223,7 @@ if(BUILD_FAIRMQ)
     Properties.cxx
     SuboptParser.cxx
     plugins/config/Config.cxx
-    plugins/Control.cxx
+    plugins/control/Control.cxx
     MemoryResources.cxx
     shmem/Monitor.cxx
   )
