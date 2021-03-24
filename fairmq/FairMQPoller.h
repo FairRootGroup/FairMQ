@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,8 +9,9 @@
 #ifndef FAIRMQPOLLER_H_
 #define FAIRMQPOLLER_H_
 
-#include <string>
 #include <memory>
+#include <stdexcept>
+#include <string>
 
 class FairMQPoller
 {

@@ -62,6 +62,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
   target_link_libraries(${target}
     PRIVATE
     FairLogger::FairLogger
+    Threads::Threads
     PUBLIC
     Boost::boost
   )
@@ -385,8 +386,11 @@ if(BUILD_FAIRMQ)
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
   )
 
-  add_executable(fairmq-uuid-gen run/runUuidGenerator.cxx)
-  target_link_libraries(fairmq-uuid-gen FairMQ)
+  add_executable(fairmq-uuid-gen tools/runUuidGenerator.cxx)
+  target_link_libraries(fairmq-uuid-gen PUBLIC
+    Boost::program_options
+    Tools
+  )
 
 
   ###########
