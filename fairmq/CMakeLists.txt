@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2012-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2012-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -145,6 +145,7 @@ if(BUILD_FAIRMQ)
   # libFairMQ header files #
   ##########################
   set(FAIRMQ_PUBLIC_HEADER_FILES
+    Device.h
     DeviceRunner.h
     EventManager.h
     FairMQChannel.h
