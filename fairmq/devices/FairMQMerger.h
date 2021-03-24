@@ -16,8 +16,8 @@
 #define FAIRMQMERGER_H_
 
 #include "FairMQDevice.h"
-#include "../FairMQPoller.h"
-#include "../FairMQLogger.h"
+#include "FairMQPoller.h"
+#include "FairMQLogger.h"
 
 #include <string>
 #include <vector>

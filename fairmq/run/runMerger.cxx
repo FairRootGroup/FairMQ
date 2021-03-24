@@ -7,7 +7,7 @@
  ********************************************************************************/
 
 #include <runFairMQDevice.h>
-#include <devices/FairMQMerger.h>
+#include <fairmq/devices/FairMQMerger.h>
 
 namespace bpo = boost::program_options;
 

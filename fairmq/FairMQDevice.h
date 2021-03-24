@@ -9,17 +9,17 @@
 #ifndef FAIRMQDEVICE_H_
 #define FAIRMQDEVICE_H_
 
-#include <StateMachine.h>
-#include <FairMQTransportFactory.h>
-#include <fairmq/Transports.h>
-#include <fairmq/StateQueue.h>
-
 #include <FairMQChannel.h>
+#include <FairMQLogger.h>
 #include <FairMQMessage.h>
 #include <FairMQParts.h>
+#include <FairMQTransportFactory.h>
 #include <FairMQUnmanagedRegion.h>
-#include <FairMQLogger.h>
 #include <fairmq/ProgOptions.h>
+#include <fairmq/StateMachine.h>
+#include <fairmq/StateQueue.h>
+#include <fairmq/Transports.h>
+#include <fairmq/tools/Version.h>
 
 #include <vector>
 #include <memory> // unique_ptr
@@ -33,8 +33,6 @@
 #include <atomic>
 #include <cstddef>
 #include <utility> // pair
-
-#include <fairmq/tools/Version.h>
 
 using FairMQChannelMap = std::unordered_map<std::string, std::vector<FairMQChannel>>;
 

@@ -9,9 +9,9 @@
 #ifndef FAIRMQBENCHMARKSAMPLER_H_
 #define FAIRMQBENCHMARKSAMPLER_H_
 
-#include "../FairMQLogger.h"
+#include "FairMQLogger.h"
 #include "FairMQDevice.h"
-#include "tools/RateLimit.h"
+#include "fairmq/tools/RateLimit.h"
 
 #include <chrono>
 #include <cstddef>   // size_t

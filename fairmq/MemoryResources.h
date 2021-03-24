@@ -15,7 +15,7 @@
 #ifndef FAIR_MQ_MEMORY_RESOURCES_H
 #define FAIR_MQ_MEMORY_RESOURCES_H
 
-#include <fairmq/FairMQMessage.h>
+#include <FairMQMessage.h>
 class FairMQTransportFactory;
 
 #include <boost/container/container_fwd.hpp>

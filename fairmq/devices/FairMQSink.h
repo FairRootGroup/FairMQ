@@ -15,8 +15,8 @@
 #ifndef FAIRMQSINK_H_
 #define FAIRMQSINK_H_
 
-#include "../FairMQDevice.h"
-#include "../FairMQLogger.h"
+#include "FairMQDevice.h"
+#include "FairMQLogger.h"
 #include <fairmq/tools/Strings.h>
 
 #include <chrono>
