@@ -1,33 +1,31 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQSink.h
- *
- * @since 2013-01-09
- * @author D. Klein, A. Rybalchenko
- */
 
-#ifndef FAIRMQSINK_H_
-#define FAIRMQSINK_H_
+#ifndef FAIR_MQ_SINK_H
+#define FAIR_MQ_SINK_H
 
-#include "FairMQDevice.h"
-#include "FairMQLogger.h"
+#include <FairMQPoller.h>
+#include <fairmq/Device.h>
 #include <fairmq/tools/Strings.h>
 
 #include <chrono>
-#include <string>
+#include <fairlogger/Logger.h>
 #include <fstream>
+#include <string>
 #include <stdexcept>
 
-class FairMQSink : public FairMQDevice
+namespace fair::mq
+{
+
+class Sink : public Device
 {
   public:
-    FairMQSink()
+    Sink()
         : fMultipart(false)
         , fMaxIterations(0)
         , fNumIterations(0)
@@ -36,8 +34,6 @@ class FairMQSink : public FairMQDevice
         , fInChannelName()
         , fOutFilename()
     {}
-
-    ~FairMQSink() {}
 
   protected:
     bool fMultipart;
@@ -145,4 +141,6 @@ class FairMQSink : public FairMQDevice
     }
 };
 
-#endif /* FAIRMQSINK_H_ */
+} // namespace fair::mq
+
+#endif /* FAIR_MQ_SINK_H */

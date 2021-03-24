@@ -1,33 +1,29 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQProxy.h
- *
- * @since 2013-10-02
- * @author A. Rybalchenko
- */
 
-#ifndef FAIRMQPROXY_H_
-#define FAIRMQPROXY_H_
+#ifndef FAIR_MQ_PROXY_H
+#define FAIR_MQ_PROXY_H
 
-#include "FairMQDevice.h"
+#include <fairmq/Device.h>
 
 #include <string>
 
-class FairMQProxy : public FairMQDevice
+namespace fair::mq
+{
+
+class Proxy : public Device
 {
   public:
-    FairMQProxy()
+    Proxy()
         : fMultipart(true)
         , fInChannelName()
         , fOutChannelName()
     {}
-    ~FairMQProxy() {}
 
   protected:
     bool fMultipart;
@@ -73,4 +69,6 @@ class FairMQProxy : public FairMQDevice
     }
 };
 
-#endif /* FAIRMQPROXY_H_ */
+} // namespace fair::mq
+
+#endif /* FAIR_MQ_PROXY_H */

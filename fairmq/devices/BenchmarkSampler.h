@@ -1,32 +1,35 @@
 /********************************************************************************
- * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIRMQBENCHMARKSAMPLER_H_
-#define FAIRMQBENCHMARKSAMPLER_H_
+#ifndef FAIR_MQ_BENCHMARKSAMPLER_H
+#define FAIR_MQ_BENCHMARKSAMPLER_H
 
-#include "FairMQLogger.h"
-#include "FairMQDevice.h"
-#include "fairmq/tools/RateLimit.h"
+#include <fairmq/Device.h>
+#include <fairmq/tools/RateLimit.h>
 
 #include <chrono>
 #include <cstddef>   // size_t
 #include <cstdint>   // uint64_t
 #include <cstring>   // memset
+#include <fairlogger/Logger.h>
 #include <string>
+
+namespace fair::mq
+{
 
 /**
  * Sampler to generate traffic for benchmarking.
  */
 
-class FairMQBenchmarkSampler : public FairMQDevice
+class BenchmarkSampler : public Device
 {
   public:
-    FairMQBenchmarkSampler()
+    BenchmarkSampler()
         : fMultipart(false)
         , fMemSet(false)
         , fNumParts(1)
@@ -117,4 +120,6 @@ class FairMQBenchmarkSampler : public FairMQDevice
     std::string fOutChannelName;
 };
 
-#endif /* FAIRMQBENCHMARKSAMPLER_H_ */
+} // namespace fair::mq
+
+#endif /* FAIR_MQ_BENCHMARKSAMPLER_H */

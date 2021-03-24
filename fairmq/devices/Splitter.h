@@ -1,35 +1,31 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQSplitter.h
- *
- * @since 2012-12-06
- * @author D. Klein, A. Rybalchenko
- */
 
-#ifndef FAIRMQSPLITTER_H_
-#define FAIRMQSPLITTER_H_
+#ifndef FAIR_MQ_SPLITTER_H
+#define FAIR_MQ_SPLITTER_H
 
-#include "FairMQDevice.h"
+#include <fairmq/Device.h>
 
 #include <string>
 
-class FairMQSplitter : public FairMQDevice
+namespace fair::mq
+{
+
+class Splitter : public Device
 {
   public:
-    FairMQSplitter()
+    Splitter()
         : fMultipart(true)
         , fNumOutputs(0)
         , fDirection(0)
         , fInChannelName()
         , fOutChannelName()
     {}
-    ~FairMQSplitter() {}
 
   protected:
     bool fMultipart;
@@ -47,9 +43,9 @@ class FairMQSplitter : public FairMQDevice
         fDirection = 0;
 
         if (fMultipart) {
-            OnData(fInChannelName, &FairMQSplitter::HandleData<FairMQParts>);
+            OnData(fInChannelName, &Splitter::HandleData<FairMQParts>);
         } else {
-            OnData(fInChannelName, &FairMQSplitter::HandleData<FairMQMessagePtr>);
+            OnData(fInChannelName, &Splitter::HandleData<FairMQMessagePtr>);
         }
     }
 
@@ -66,4 +62,6 @@ class FairMQSplitter : public FairMQDevice
     }
 };
 
-#endif /* FAIRMQSPLITTER_H_ */
+} // namespace fair::mq
+
+#endif /* FAIR_MQ_SPLITTER_H */

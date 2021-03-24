@@ -1,13 +1,13 @@
 /********************************************************************************
- * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <runFairMQDevice.h>
-#include <fairmq/devices/FairMQBenchmarkSampler.h>
+#include <fairmq/devices/BenchmarkSampler.h>
+#include <fairmq/runDevice.h>
 
 namespace bpo = boost::program_options;
 
@@ -24,7 +24,7 @@ void addCustomOptions(bpo::options_description& options)
         ("msg-rate", bpo::value<float>()->default_value(0), "Msg rate limit in maximum number of messages per second");
 }
 
-FairMQDevicePtr getDevice(const fair::mq::ProgOptions& /* config */)
+std::unique_ptr<fair::mq::Device> getDevice(const fair::mq::ProgOptions& /* config */)
 {
-    return new FairMQBenchmarkSampler();
+    return std::make_unique<fair::mq::BenchmarkSampler>();
 }

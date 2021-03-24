@@ -1,36 +1,32 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * FairMQMerger.h
- *
- * @since 2012-12-06
- * @author D. Klein, A. Rybalchenko
- */
 
-#ifndef FAIRMQMERGER_H_
-#define FAIRMQMERGER_H_
+#ifndef FAIR_MQ_MERGER_H
+#define FAIR_MQ_MERGER_H
 
-#include "FairMQDevice.h"
-#include "FairMQPoller.h"
-#include "FairMQLogger.h"
+#include <FairMQPoller.h>
+#include <fairmq/Device.h>
 
+#include <fairlogger/Logger.h>
 #include <string>
 #include <vector>
 
-class FairMQMerger : public FairMQDevice
+namespace fair::mq
+{
+
+class Merger : public Device
 {
   public:
-    FairMQMerger()
+    Merger()
         : fMultipart(true)
         , fInChannelName("data-in")
         , fOutChannelName("data-out")
     {}
-    ~FairMQMerger() {}
 
   protected:
     bool fMultipart;
@@ -112,4 +108,6 @@ class FairMQMerger : public FairMQDevice
     }
 };
 
-#endif /* FAIRMQMERGER_H_ */
+} // namespace fair::mq
+
+#endif /* FAIR_MQ_MERGER_H */
