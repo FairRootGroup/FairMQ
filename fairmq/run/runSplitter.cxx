@@ -7,7 +7,7 @@
  ********************************************************************************/
 
 #include <runFairMQDevice.h>
-#include <devices/FairMQSplitter.h>
+#include <fairmq/devices/FairMQSplitter.h>
 
 namespace bpo = boost::program_options;
 
