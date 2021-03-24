@@ -1,29 +1,31 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIRMQMULTIPLIER_H_
-#define FAIRMQMULTIPLIER_H_
+#ifndef FAIR_MQ_MULTIPLIER_H
+#define FAIR_MQ_MULTIPLIER_H
 
-#include "FairMQDevice.h"
+#include <fairmq/Device.h>
 
 #include <string>
 #include <vector>
 
-class FairMQMultiplier : public FairMQDevice
+namespace fair::mq
+{
+
+class Multiplier : public Device
 {
   public:
-    FairMQMultiplier()
+    Multiplier()
         : fMultipart(true)
         , fNumOutputs(0)
         , fInChannelName()
         , fOutChannelNames()
     {}
-    ~FairMQMultiplier() {}
 
   protected:
     bool fMultipart;
@@ -39,9 +41,9 @@ class FairMQMultiplier : public FairMQDevice
         fNumOutputs = fChannels.at(fOutChannelNames.at(0)).size();
 
         if (fMultipart) {
-            OnData(fInChannelName, &FairMQMultiplier::HandleMultipartData);
+            OnData(fInChannelName, &Multiplier::HandleMultipartData);
         } else {
-            OnData(fInChannelName, &FairMQMultiplier::HandleSingleData);
+            OnData(fInChannelName, &Multiplier::HandleSingleData);
         }
     }
 
@@ -107,4 +109,6 @@ class FairMQMultiplier : public FairMQDevice
     }
 };
 
-#endif /* FAIRMQMULTIPLIER_H_ */
+} // namespace fair::mq
+
+#endif /* FAIR_MQ_MULTIPLIER_H */

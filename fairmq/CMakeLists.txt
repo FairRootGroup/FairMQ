@@ -177,6 +177,12 @@ if(BUILD_FAIRMQ)
   )
 
   set(FAIRMQ_PRIVATE_HEADER_FILES
+    devices/BenchmarkSampler.h
+    devices/Merger.h
+    devices/Multiplier.h
+    devices/Proxy.h
+    devices/Sink.h
+    devices/Splitter.h
     plugins/Builtin.h
     plugins/config/Config.h
     plugins/control/Control.h
@@ -246,7 +252,7 @@ if(BUILD_FAIRMQ)
   # configure files #
   ###################
   set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/run/startMQBenchmark.sh.in ${CMAKE_CURRENT_BINARY_DIR}/startMQBenchmark.sh)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/devices/startMQBenchmark.sh.in ${CMAKE_CURRENT_BINARY_DIR}/startMQBenchmark.sh)
 
   #################################
   # define libFairMQ build target #
@@ -350,22 +356,22 @@ if(BUILD_FAIRMQ)
   ###############
   # executables #
   ###############
-  add_executable(fairmq-bsampler run/runBenchmarkSampler.cxx)
+  add_executable(fairmq-bsampler devices/runBenchmarkSampler.cxx)
   target_link_libraries(fairmq-bsampler FairMQ)
 
-  add_executable(fairmq-merger run/runMerger.cxx)
+  add_executable(fairmq-merger devices/runMerger.cxx)
   target_link_libraries(fairmq-merger FairMQ)
 
-  add_executable(fairmq-multiplier run/runMultiplier.cxx)
+  add_executable(fairmq-multiplier devices/runMultiplier.cxx)
   target_link_libraries(fairmq-multiplier FairMQ)
 
-  add_executable(fairmq-proxy run/runProxy.cxx)
+  add_executable(fairmq-proxy devices/runProxy.cxx)
   target_link_libraries(fairmq-proxy FairMQ)
 
-  add_executable(fairmq-sink run/runSink.cxx)
+  add_executable(fairmq-sink devices/runSink.cxx)
   target_link_libraries(fairmq-sink FairMQ)
 
-  add_executable(fairmq-splitter run/runSplitter.cxx)
+  add_executable(fairmq-splitter devices/runSplitter.cxx)
   target_link_libraries(fairmq-splitter FairMQ)
 
   add_executable(fairmq-shmmonitor shmem/Monitor.cxx shmem/Monitor.h shmem/runMonitor.cxx)
