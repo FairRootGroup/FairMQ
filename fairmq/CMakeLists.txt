@@ -170,6 +170,7 @@ if(BUILD_FAIRMQ)
     Plugin.h
     PluginManager.h
     PluginServices.h
+    runDevice.h
     runFairMQDevice.h
     shmem/Monitor.h
   )
