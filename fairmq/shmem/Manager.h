@@ -215,7 +215,7 @@ class Manager
             boost::filesystem::path p = boost::process::search_path("fairmq-shmmonitor", ownPath);
 
             if (!p.empty()) {
-                boost::process::spawn(p, "-x", "--shmid", id, "-d", "-t", "2000", env);
+                boost::process::spawn(p, "-x", "-m", "--shmid", id, "-d", "-t", "2000", env);
                 int numTries = 0;
                 do {
                     try {

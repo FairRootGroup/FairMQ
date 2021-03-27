@@ -71,11 +71,11 @@ void signalHandler(int signal)
     gSignalStatus = signal;
 }
 
-Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, unsigned int intervalInMS, bool runAsDaemon, bool cleanOnExit)
+Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, unsigned int intervalInMS, bool monitor, bool cleanOnExit)
     : fSelfDestruct(selfDestruct)
     , fInteractive(interactive)
     , fViewOnly(viewOnly)
-    , fIsDaemon(runAsDaemon)
+    , fMonitor(monitor)
     , fSeenOnce(false)
     , fCleanOnExit(cleanOnExit)
     , fTimeoutInMS(timeoutInMS)
@@ -90,12 +90,12 @@ Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool 
     , fSignalThread()
     , fDeviceHeartbeats()
 {
-    if (!fViewOnly) {
+    if (fMonitor) {
         try {
             bipc::named_mutex monitorStatus(bipc::create_only, string("fmq_" + fShmId + "_ms").c_str());
         } catch (bie&) {
-            cout << "fairmq-shmmonitor for shared memory id " << fShmId << " already started or not properly exited. Try `fairmq-shmmonitor --cleanup --shmid " << fShmId << "`" << endl;
-            throw DaemonPresent(tools::ToString("fairmq-shmmonitor for shared memory id ", fShmId, " already started or not properly exited."));
+            cout << "fairmq-shmmonitor (in monitoring mode) for shared memory id " << fShmId << " already started or did not not properly exited. Try `fairmq-shmmonitor --cleanup --shmid " << fShmId << "`" << endl;
+            throw DaemonPresent(tools::ToString("fairmq-shmmonitor (in monitoring mode) for shared memory id ", fShmId, " already started or did not not properly exited."));
         }
     }
 
@@ -140,7 +140,7 @@ void Monitor::Run()
         CheckSegment();
     } else {
         while (!fTerminating) {
-            this_thread::sleep_for(chrono::milliseconds(fIntervalInMS));
+            this_thread::sleep_for(chrono::milliseconds(500));
             CheckSegment();
         }
     }
@@ -288,11 +288,12 @@ void Monitor::CheckSegment()
         unsigned int duration = chrono::duration_cast<chrono::milliseconds>(now - fLastHeartbeat).count();
 
         if (fHeartbeatTriggered && duration > fTimeoutInMS) {
+            // memory is present, but no heartbeats since timeout duration
             cout << "no heartbeats since over " << fTimeoutInMS << " milliseconds, cleaning..." << endl;
             Cleanup(ShmId{fShmId});
             fHeartbeatTriggered = false;
             if (fSelfDestruct) {
-                cout << "\nself destructing" << endl;
+                cout << "self destructing (segment has been observed and cleaned up by the monitor)" << endl;
                 fTerminating = true;
             }
         }
@@ -329,22 +330,22 @@ void Monitor::CheckSegment()
     } catch (bie&) {
         fHeartbeatTriggered = false;
 
-        auto now = chrono::high_resolution_clock::now();
-        unsigned int duration = chrono::duration_cast<chrono::milliseconds>(now - fLastHeartbeat).count();
-
-        if (fIsDaemon && duration > fTimeoutInMS * 2) {
-            Cleanup(ShmId{fShmId});
-            fHeartbeatTriggered = false;
-            if (fSelfDestruct) {
-                cout << "\nself destructing" << endl;
-                fTerminating = true;
-            }
-        }
-
         if (fSelfDestruct) {
             if (fSeenOnce) {
-                cout << "self destructing" << endl;
+                // segment has been observed at least once, can self-destruct
+                cout << "self destructing (segment has been observed and cleaned up orderly)" << endl;
                 fTerminating = true;
+            } else {
+                // if self-destruct is requested, and no segment has ever been observed, quit after double timeout duration
+                auto now = chrono::high_resolution_clock::now();
+                unsigned int duration = chrono::duration_cast<chrono::milliseconds>(now - fLastHeartbeat).count();
+
+                if (fMonitor && duration > fTimeoutInMS * 2) {
+                    // clean just in case any other artifacts are left.
+                    Cleanup(ShmId{fShmId});
+                    cout << "self destructing (no segments observed within (timeout * 2) since start)" << endl;
+                    fTerminating = true;
+                }
             }
         }
     }
