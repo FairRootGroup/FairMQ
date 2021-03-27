@@ -78,6 +78,7 @@ int main(int argc, char** argv)
         unsigned int timeoutInMS = 5000;
         unsigned int intervalInMS = 100;
         bool runAsDaemon = false;
+        bool monitor = false;
         bool debug = false;
         bool cleanOnExit = false;
         bool getShmId = false;
@@ -93,11 +94,12 @@ int main(int argc, char** argv)
             ("view,v"         , value<bool>(&viewOnly)->implicit_value(true),           "Run in view only mode")
             ("timeout,t"      , value<unsigned int>(&timeoutInMS)->default_value(5000), "Heartbeat timeout in milliseconds")
             ("daemonize,d"    , value<bool>(&runAsDaemon)->implicit_value(true),        "Daemonize the monitor")
+            ("monitor,m"      , value<bool>(&monitor)->implicit_value(true),            "Run in monitoring mode")
             ("debug,b"        , value<bool>(&debug)->implicit_value(true),              "Debug - Print a list of messages)")
             ("clean-on-exit,e", value<bool>(&cleanOnExit)->implicit_value(true),        "Perform cleanup on exit")
             ("interval"       , value<unsigned int>(&intervalInMS)->default_value(100), "Output interval for interactive/view-only mode")
             ("get-shmid"      , value<bool>(&getShmId)->implicit_value(true),           "Translate given session id and user id to a shmem id (uses current user id if none provided)")
-            ("user-id"        , value<int>(&userId)->default_value(-1),                  "User id")
+            ("user-id"        , value<int>(&userId)->default_value(-1),                 "User id (used with --get-shmid)")
             ("help,h", "Print help");
 
         variables_map vm;
@@ -141,12 +143,17 @@ int main(int argc, char** argv)
 
         cout << "Starting shared memory monitor for session: \"" << sessionName << "\" (shmId: " << shmId << ")..." << endl;
 
-        Monitor monitor(shmId, selfDestruct, interactive, viewOnly, timeoutInMS, intervalInMS, runAsDaemon, cleanOnExit);
+        if (!viewOnly && !interactive && !monitor) {
+            // if neither of the run modes are selected, use view only mode.
+            viewOnly = true;
+        }
+
+        Monitor shmmonitor(shmId, selfDestruct, interactive, viewOnly, timeoutInMS, intervalInMS, monitor, cleanOnExit);
 
         if (interactive || !viewOnly) {
-            monitor.CatchSignals();
+            shmmonitor.CatchSignals();
         }
-        monitor.Run();
+        shmmonitor.Run();
     } catch (Monitor::DaemonPresent& dp) {
         return 0;
     } catch (exception& e) {

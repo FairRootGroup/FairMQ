@@ -100,7 +100,7 @@ class Monitor
     bool fSelfDestruct; // will self-destruct after the memory has been closed
     bool fInteractive; // running in interactive mode
     bool fViewOnly; // view only mode
-    bool fIsDaemon;
+    bool fMonitor;
     bool fSeenOnce; // true is segment has been opened successfully at least once
     bool fCleanOnExit;
     unsigned int fTimeoutInMS;
