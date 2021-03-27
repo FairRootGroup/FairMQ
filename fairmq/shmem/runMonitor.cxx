@@ -80,6 +80,8 @@ int main(int argc, char** argv)
         bool runAsDaemon = false;
         bool debug = false;
         bool cleanOnExit = false;
+        bool getShmId = false;
+        int userId = -1;
 
         options_description desc("Options");
         desc.add_options()
@@ -91,9 +93,11 @@ int main(int argc, char** argv)
             ("view,v"         , value<bool>(&viewOnly)->implicit_value(true),           "Run in view only mode")
             ("timeout,t"      , value<unsigned int>(&timeoutInMS)->default_value(5000), "Heartbeat timeout in milliseconds")
             ("daemonize,d"    , value<bool>(&runAsDaemon)->implicit_value(true),        "Daemonize the monitor")
-            ("debug,b"        , value<bool>(&debug)->implicit_value(true),             "Debug - Print a list of messages)")
+            ("debug,b"        , value<bool>(&debug)->implicit_value(true),              "Debug - Print a list of messages)")
             ("clean-on-exit,e", value<bool>(&cleanOnExit)->implicit_value(true),        "Perform cleanup on exit")
             ("interval"       , value<unsigned int>(&intervalInMS)->default_value(100), "Output interval for interactive/view-only mode")
+            ("get-shmid"      , value<bool>(&getShmId)->implicit_value(true),           "Translate given session id and user id to a shmem id (uses current user id if none provided)")
+            ("user-id"        , value<int>(&userId)->default_value(-1),                  "User id")
             ("help,h", "Print help");
 
         variables_map vm;
@@ -110,7 +114,18 @@ int main(int argc, char** argv)
             daemonize();
         }
 
-        if (shmId == "") {
+        if (getShmId) {
+            if (userId == -1) {
+                cout << "shmem id for session '" << sessionName << "' and current user id " << geteuid()
+                     << " is: " << makeShmIdStr(sessionName) << endl;
+            } else {
+                cout << "shmem id for session '" << sessionName << "' and user id " << userId
+                     << " is: " << makeShmIdStr(sessionName, to_string(userId)) << endl;
+            }
+            return 0;
+        }
+
+        if (shmId.empty()) {
             shmId = makeShmIdStr(sessionName);
         }
 
