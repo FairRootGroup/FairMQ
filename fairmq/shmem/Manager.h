@@ -46,6 +46,9 @@
 #include <utility> // pair
 #include <vector>
 
+#include <unistd.h> // getuid
+#include <sys/types.h> // getuid
+
 #include <sys/mman.h> // mlock
 
 namespace fair::mq::shmem
@@ -54,8 +57,8 @@ namespace fair::mq::shmem
 class Manager
 {
   public:
-    Manager(std::string shmId, std::string deviceId, size_t size, const ProgOptions* config)
-        : fShmId(std::move(shmId))
+    Manager(const std::string& sessionName, std::string deviceId, size_t size, const ProgOptions* config)
+        : fShmId(makeShmIdStr(sessionName))
         , fSegmentId(config ? config->GetProperty<uint16_t>("shm-segment-id", 0) : 0)
         , fDeviceId(std::move(deviceId))
         , fSegments()
@@ -82,6 +85,8 @@ class Manager
     {
         using namespace boost::interprocess;
 
+        LOG(debug) << "Generated shmid '" << fShmId << "' out of session id '" << sessionName << "'.";
+
         bool mlockSegment = false;
         bool zeroSegment = false;
         bool autolaunchMonitor = false;
@@ -105,8 +110,16 @@ class Manager
 
             fShmSegments = fManagementSegment.find_or_construct<Uint16SegmentInfoHashMap>(unique_instance)(fShmVoidAlloc);
 
-            fEventCounter = fManagementSegment.find<EventCounter>(unique_instance).first;
+            SessionInfo* sessionInfo = fManagementSegment.find<SessionInfo>(unique_instance).first;
+            if (sessionInfo) {
+                LOG(debug) << "session info found, name: " << sessionInfo->fSessionName << ", creator id: " << sessionInfo->fCreatorId;
+            } else {
+                LOG(debug) << "no session info found, creating and initializing";
+                sessionInfo = fManagementSegment.construct<SessionInfo>(unique_instance)(sessionName.c_str(), geteuid(), fShmVoidAlloc);
+                LOG(debug) << "initialized session info, name: " << sessionInfo->fSessionName << ", creator id: " << sessionInfo->fCreatorId;
+            }
 
+            fEventCounter = fManagementSegment.find<EventCounter>(unique_instance).first;
             if (fEventCounter) {
                 LOG(debug) << "event counter found: " << fEventCounter->fCount;
             } else {
@@ -171,7 +184,6 @@ class Manager
             fShmRegions = fManagementSegment.find_or_construct<Uint16RegionInfoHashMap>(unique_instance)(fShmVoidAlloc);
 
             fDeviceCounter = fManagementSegment.find<DeviceCounter>(unique_instance).first;
-
             if (fDeviceCounter) {
                 LOG(debug) << "device counter found, with value of " << fDeviceCounter->fCount << ". incrementing.";
                 (fDeviceCounter->fCount)++;
