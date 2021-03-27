@@ -248,7 +248,7 @@ void Monitor::CheckSegment()
     using namespace boost::interprocess;
 
     try {
-        managed_shared_memory managementSegment(open_only, fManagementSegmentName.c_str());
+        managed_shared_memory managementSegment(open_read_only, fManagementSegmentName.c_str());
         VoidAlloc allocInstance(managementSegment.get_segment_manager());
 
         Uint16SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
@@ -261,9 +261,9 @@ void Monitor::CheckSegment()
 
         for (const auto& s : *segmentInfos) {
             if (s.second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
-                segments.emplace(s.first, RBTreeBestFitSegment(open_only, std::string("fmq_" + fShmId + "_m_" + to_string(s.first)).c_str()));
+                segments.emplace(s.first, RBTreeBestFitSegment(open_read_only, std::string("fmq_" + fShmId + "_m_" + to_string(s.first)).c_str()));
             } else {
-                segments.emplace(s.first, SimpleSeqFitSegment(open_only, std::string("fmq_" + fShmId + "_m_" + to_string(s.first)).c_str()));
+                segments.emplace(s.first, SimpleSeqFitSegment(open_read_only, std::string("fmq_" + fShmId + "_m_" + to_string(s.first)).c_str()));
             }
         }
 
@@ -280,7 +280,7 @@ void Monitor::CheckSegment()
                 numDevices = dc->fCount;
             }
 #ifdef FAIRMQ_DEBUG_MODE
-            msgCounters = managementSegment.find_or_construct<Uint16MsgCounterHashMap>(unique_instance)(allocInstance);
+            msgCounters = managementSegment.find<Uint16MsgCounterHashMap>(unique_instance).first;
 #endif
         }
 
@@ -313,7 +313,7 @@ void Monitor::CheckSegment()
                 ss << "   [" << s.first
                    << "]: total: " << total
 #ifdef FAIRMQ_DEBUG_MODE
-                   << ", msgs: " << (*msgCounters)[s.first].fCount
+                   << ", msgs: " << ( (msgCounters != nullptr) ? to_string((*msgCounters)[s.first].fCount) : "unknown")
 #else
                    << ", msgs: NODEBUG"
 #endif
