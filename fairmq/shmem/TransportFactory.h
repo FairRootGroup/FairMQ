@@ -68,9 +68,6 @@ class TransportFactory final : public fair::mq::TransportFactory
             throw SharedMemoryError(tools::ToString("Provided shared memory allocation algorithm '", allocationAlgorithm, "' is not supported. Supported are 'rbtree_best_fit'/'simple_seq_fit'"));
         }
 
-        std::string shmId = makeShmIdStr(sessionName);
-        LOG(debug) << "Generated shmid '" << shmId << "' out of session id '" << sessionName << "'.";
-
         try {
             if (zmq_ctx_set(fZmqCtx, ZMQ_IO_THREADS, numIoThreads) != 0) {
                 LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
@@ -81,7 +78,7 @@ class TransportFactory final : public fair::mq::TransportFactory
                 LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
             }
 
-            fManager = std::make_unique<Manager>(shmId, deviceId, segmentSize, config);
+            fManager = std::make_unique<Manager>(sessionName, deviceId, segmentSize, config);
         } catch (boost::interprocess::interprocess_exception& e) {
             LOG(error) << "Could not initialize shared memory transport: " << e.what();
             throw std::runtime_error(tools::ToString("Could not initialize shared memory transport: ", e.what()));

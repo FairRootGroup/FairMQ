@@ -270,6 +270,8 @@ void Monitor::CheckSegment()
         fSeenOnce = true;
 
         unsigned int numDevices = 0;
+        int creatorId = -1;
+        std::string sessionName;
 #ifdef FAIRMQ_DEBUG_MODE
         Uint16MsgCounterHashMap* msgCounters = nullptr;
 #endif
@@ -278,6 +280,11 @@ void Monitor::CheckSegment()
             DeviceCounter* dc = managementSegment.find<DeviceCounter>(unique_instance).first;
             if (dc) {
                 numDevices = dc->fCount;
+            }
+            SessionInfo* si = managementSegment.find<SessionInfo>(unique_instance).first;
+            if (si) {
+                creatorId = si->fCreatorId;
+                sessionName = si->fSessionName;
             }
 #ifdef FAIRMQ_DEBUG_MODE
             msgCounters = managementSegment.find<Uint16MsgCounterHashMap>(unique_instance).first;
@@ -305,7 +312,10 @@ void Monitor::CheckSegment()
             size_t mused = mtotal - mfree;
 
             ss << "shm id: " << fShmId
-               << ", devices: " << numDevices << ", segments:\n";
+               << ", session: " << sessionName
+               << ", creator id: " << creatorId
+               << ", devices: " << numDevices
+               << ", segments:\n";
             for (const auto& s : segments) {
                 size_t free = boost::apply_visitor(SegmentFreeMemory(), s.second);
                 size_t total = boost::apply_visitor(SegmentSize(), s.second);
@@ -328,6 +338,9 @@ void Monitor::CheckSegment()
             LOGV(info, user1) << ss.str();
         }
     } catch (bie&) {
+        if (!fMonitor && !fInteractive) {
+            cout << "No segments found." << endl;
+        }
         fHeartbeatTriggered = false;
 
         if (fSelfDestruct) {

@@ -91,6 +91,17 @@ struct SegmentInfo
     AllocationAlgorithm fAllocationAlgorithm;
 };
 
+struct SessionInfo
+{
+    SessionInfo(const char* sessionName, int creatorId, const VoidAlloc& alloc)
+        : fSessionName(sessionName, alloc)
+        , fCreatorId(creatorId)
+    {}
+
+    Str fSessionName;
+    int fCreatorId;
+};
+
 using Uint16SegmentInfoPairAlloc = boost::interprocess::allocator<std::pair<const uint16_t, SegmentInfo>, SegmentManager>;
 using Uint16SegmentInfoHashMap = boost::unordered_map<uint16_t, SegmentInfo, boost::hash<uint16_t>, std::equal_to<uint16_t>, Uint16SegmentInfoPairAlloc>;
 // using Uint16SegmentInfoMap = boost::interprocess::map<uint16_t, SegmentInfo, std::less<uint16_t>, Uint16SegmentInfoPairAlloc>;
