@@ -105,6 +105,8 @@ class Manager
             StartMonitor(fShmId);
         }
 
+        fHeartbeatThread = std::thread(&Manager::SendHeartbeats, this);
+
         {
             std::stringstream ss;
             boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
@@ -200,8 +202,6 @@ class Manager
             fShmMsgCounters = fManagementSegment.find_or_construct<Uint16MsgCounterHashMap>(unique_instance)(fShmVoidAlloc);
 #endif
         }
-
-        fHeartbeatThread = std::thread(&Manager::SendHeartbeats, this);
     }
 
     Manager() = delete;
