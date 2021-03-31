@@ -8,6 +8,8 @@
 #ifndef FAIR_MQ_SHMEM_MONITOR_H_
 #define FAIR_MQ_SHMEM_MONITOR_H_
 
+#include <fairlogger/Logger.h>
+
 #include <thread>
 #include <chrono>
 #include <atomic>
@@ -82,6 +84,8 @@ class Monitor
     static std::unordered_map<uint16_t, std::vector<BufferDebugInfo>> GetDebugInfo(const ShmId& shmId);
     static std::unordered_map<uint16_t, std::vector<BufferDebugInfo>> GetDebugInfo(const SessionId& shmId);
 
+    static bool PrintShm(const ShmId& shmId);
+
     static bool RemoveObject(const std::string& name);
     static bool RemoveFileMapping(const std::string& name);
     static bool RemoveQueue(const std::string& name);
@@ -92,7 +96,8 @@ class Monitor
 
   private:
     void PrintHelp();
-    void MonitorHeartbeats();
+    void Watch();
+    void ReceiveHeartbeats();
     void CheckSegment();
     void Interactive();
     void SignalMonitor();
@@ -106,8 +111,6 @@ class Monitor
     unsigned int fTimeoutInMS;
     unsigned int fIntervalInMS;
     std::string fShmId;
-    std::string fSegmentName;
-    std::string fManagementSegmentName;
     std::string fControlQueueName;
     std::atomic<bool> fTerminating;
     std::atomic<bool> fHeartbeatTriggered;

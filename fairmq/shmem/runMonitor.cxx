@@ -69,6 +69,10 @@ static void daemonize()
 int main(int argc, char** argv)
 {
     try {
+        fair::Logger::SetConsoleColor(false);
+        fair::Logger::DefineVerbosity(fair::Verbosity::user1, fair::VerbositySpec::Make(fair::VerbositySpec::Info::timestamp_us));
+        fair::Logger::SetVerbosity(fair::Verbosity::verylow);
+
         string sessionName;
         string shmId;
         bool cleanup = false;
@@ -97,7 +101,7 @@ int main(int argc, char** argv)
             ("monitor,m"      , value<bool>(&monitor)->implicit_value(true),            "Run in monitoring mode")
             ("debug,b"        , value<bool>(&debug)->implicit_value(true),              "Debug - Print a list of messages)")
             ("clean-on-exit,e", value<bool>(&cleanOnExit)->implicit_value(true),        "Perform cleanup on exit")
-            ("interval"       , value<unsigned int>(&intervalInMS)->default_value(100), "Output interval for interactive/view-only mode")
+            ("interval"       , value<unsigned int>(&intervalInMS)->default_value(100), "Output interval for interactive mode")
             ("get-shmid"      , value<bool>(&getShmId)->implicit_value(true),           "Translate given session id and user id to a shmem id (uses current user id if none provided)")
             ("user-id"        , value<int>(&userId)->default_value(-1),                 "User id (used with --get-shmid)")
             ("help,h", "Print help");
@@ -141,18 +145,22 @@ int main(int argc, char** argv)
             return 0;
         }
 
-        cout << "Starting shared memory monitor for session: \"" << sessionName << "\" (shmId: " << shmId << ")..." << endl;
-
         if (!viewOnly && !interactive && !monitor) {
             // if neither of the run modes are selected, use view only mode.
             viewOnly = true;
         }
 
-        Monitor shmmonitor(shmId, selfDestruct, interactive, viewOnly, timeoutInMS, intervalInMS, monitor, cleanOnExit);
-
-        if (interactive || !viewOnly) {
-            shmmonitor.CatchSignals();
+        if (viewOnly && !interactive) {
+            if (!Monitor::PrintShm(ShmId{shmId})) {
+                cout << "No segments found." << endl;
+            }
+            return 0;
         }
+
+        cout << "Starting shared memory monitor for session: \"" << sessionName << "\" (shm id: " << shmId << ")..." << endl;
+
+        Monitor shmmonitor(shmId, selfDestruct, interactive, viewOnly, timeoutInMS, intervalInMS, monitor, cleanOnExit);
+        shmmonitor.CatchSignals();
         shmmonitor.Run();
     } catch (Monitor::DaemonPresent& dp) {
         return 0;
