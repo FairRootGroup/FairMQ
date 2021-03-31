@@ -104,13 +104,13 @@ int main(int argc, char** argv)
             ("interval"       , value<unsigned int>(&intervalInMS)->default_value(100), "Output interval for interactive mode")
             ("get-shmid"      , value<bool>(&getShmId)->implicit_value(true),           "Translate given session id and user id to a shmem id (uses current user id if none provided)")
             ("user-id"        , value<int>(&userId)->default_value(-1),                 "User id (used with --get-shmid)")
-            ("help,h", "Print help");
+            ("help,h",                                                                  "Print help");
 
         variables_map vm;
         store(parse_command_line(argc, argv, desc), vm);
 
         if (vm.count("help")) {
-            cout << "FairMQ Shared Memory Monitor" << endl << desc << endl;
+            LOG(info) << "FairMQ Shared Memory Monitor" << "\n" << desc;
             return 0;
         }
 
@@ -122,11 +122,11 @@ int main(int argc, char** argv)
 
         if (getShmId) {
             if (userId == -1) {
-                cout << "shmem id for session '" << sessionName << "' and current user id " << geteuid()
-                     << " is: " << makeShmIdStr(sessionName) << endl;
+                LOG(info) << "shmem id for session '" << sessionName << "' and current user id " << geteuid()
+                          << " is: " << makeShmIdStr(sessionName);
             } else {
-                cout << "shmem id for session '" << sessionName << "' and user id " << userId
-                     << " is: " << makeShmIdStr(sessionName, to_string(userId)) << endl;
+                LOG(info) << "shmem id for session '" << sessionName << "' and user id " << userId
+                          << " is: " << makeShmIdStr(sessionName, to_string(userId));
             }
             return 0;
         }
@@ -152,12 +152,12 @@ int main(int argc, char** argv)
 
         if (viewOnly && !interactive) {
             if (!Monitor::PrintShm(ShmId{shmId})) {
-                cout << "No segments found." << endl;
+                LOG(info) << "No segments found.";
             }
             return 0;
         }
 
-        cout << "Starting shared memory monitor for session: \"" << sessionName << "\" (shm id: " << shmId << ")..." << endl;
+        LOG(info) << "Starting shared memory monitor for session: \"" << sessionName << "\" (shm id: " << shmId << ")...";
 
         Monitor shmmonitor(shmId, selfDestruct, interactive, viewOnly, timeoutInMS, intervalInMS, monitor, cleanOnExit);
         shmmonitor.CatchSignals();
@@ -165,7 +165,7 @@ int main(int argc, char** argv)
     } catch (Monitor::DaemonPresent& dp) {
         return 0;
     } catch (exception& e) {
-        cerr << "Unhandled Exception reached the top of main: " << e.what() << ", application will now exit" << endl;
+        LOG(error) << "Unhandled Exception reached the top of main: " << e.what() << ", application will now exit";
         return 2;
     }
 

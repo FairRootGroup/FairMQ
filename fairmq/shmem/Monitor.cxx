@@ -92,9 +92,9 @@ Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool 
             bipc::named_mutex monitorStatus(bipc::create_only, string("fmq_" + fShmId + "_ms").c_str());
         } catch (bie&) {
             if (fInteractive) {
-                cout << "fairmq-shmmonitor for shm id " << fShmId << " is already running. Try `fairmq-shmmonitor --cleanup --shmid " << fShmId << "`, or run in view-only mode (-v)" << endl;
+                LOG(error) << "fairmq-shmmonitor for shm id " << fShmId << " is already running. Try `fairmq-shmmonitor --cleanup --shmid " << fShmId << "`, or run in view-only mode (-v)";
             } else {
-                cout << "fairmq-shmmonitor for shm id " << fShmId << " is already running. Try `fairmq-shmmonitor --cleanup --shmid " << fShmId << "`" << endl;
+                LOG(error) << "fairmq-shmmonitor for shm id " << fShmId << " is already running. Try `fairmq-shmmonitor --cleanup --shmid " << fShmId << "`";
             }
             throw DaemonPresent(tools::ToString("fairmq-shmmonitor (in monitoring mode) for shm id ", fShmId, " is already running."));
         }
@@ -113,7 +113,7 @@ void Monitor::SignalMonitor()
     while (true) {
         if (gSignalStatus != 0) {
             fTerminating = true;
-            cout << "signal: " << gSignalStatus << endl;
+            LOG(info) << "signal: " << gSignalStatus;
             break;
         } else if (fTerminating) {
             break;
@@ -157,11 +157,11 @@ void Monitor::Watch()
 
             if (fHeartbeatTriggered && duration > fTimeoutInMS) {
                 // memory is present, but no heartbeats since timeout duration
-                cout << "no heartbeats since over " << fTimeoutInMS << " milliseconds, cleaning..." << endl;
+                LOG(info) << "no heartbeats since over " << fTimeoutInMS << " milliseconds, cleaning...";
                 Cleanup(ShmId{fShmId});
                 fHeartbeatTriggered = false;
                 if (fSelfDestruct) {
-                    cout << "self destructing (segment has been observed and cleaned up by the monitor)" << endl;
+                    LOG(info) << "self destructing (segment has been observed and cleaned up by the monitor)";
                     fTerminating = true;
                 }
             }
@@ -171,7 +171,7 @@ void Monitor::Watch()
             if (fSelfDestruct) {
                 if (fSeenOnce) {
                     // segment has been observed at least once, can self-destruct
-                    cout << "self destructing (segment has been observed and cleaned up orderly)" << endl;
+                    LOG(info) << "self destructing (segment has been observed and cleaned up orderly)";
                     fTerminating = true;
                 } else {
                     // if self-destruct is requested, and no segment has ever been observed, quit after double timeout duration
@@ -180,7 +180,7 @@ void Monitor::Watch()
 
                     if (duration > fTimeoutInMS * 2) {
                         Cleanup(ShmId{fShmId});
-                        cout << "self destructing (no segments observed within (timeout * 2) since start)" << endl;
+                        LOG(info) << "self destructing (no segments observed within (timeout * 2) since start)";
                         fTerminating = true;
                     }
                 }
@@ -203,7 +203,7 @@ bool Monitor::PrintShm(const ShmId& shmId)
         std::unordered_map<uint16_t, boost::variant<RBTreeBestFitSegment, SimpleSeqFitSegment>> segments;
 
         if (!segmentInfos) {
-            cout << "Found management segment, but cannot locate segment info, something went wrong..." << endl;
+            LOG(error) << "Found management segment, but cannot locate segment info, something went wrong...";
             return false;
         }
 
@@ -288,11 +288,11 @@ void Monitor::ReceiveHeartbeats()
                 string deviceId(msg, recvdSize);
                 fDeviceHeartbeats[deviceId] = fLastHeartbeat;
             } else {
-                // cout << "control queue timeout" << endl;
+                // LOG(info) << "control queue timeout";
             }
         }
     } catch (bie& ie) {
-        cout << ie.what() << endl;
+        LOG(info) << ie.what();
     }
 
     RemoveQueue(fControlQueueName);
@@ -307,7 +307,7 @@ void Monitor::Interactive()
 
     TerminalConfig tcfg;
 
-    cout << endl;
+    LOG(info) << "\n";
     PrintHelp();
 
     while (!fTerminating) {
@@ -320,30 +320,30 @@ void Monitor::Interactive()
 
             switch (c) {
                 case 'q':
-                    cout << "\n[q] --> quitting." << endl;
+                    LOG(info) << "\n[q] --> quitting.";
                     fTerminating = true;
                     break;
                 case 'x':
-                    cout << "\n[x] --> closing shared memory:" << endl;
+                    LOG(info) << "\n[x] --> closing shared memory:";
                     if (!fViewOnly) {
                         Cleanup(ShmId{fShmId});
                     } else {
-                        cout << "cannot close because in view only mode" << endl;
+                        LOG(info) << "cannot close because in view only mode";
                     }
                     break;
                 case 'h':
-                    cout << "\n[h] --> help:" << endl << endl;
+                    LOG(info) << "\n[h] --> help:\n";
                     PrintHelp();
-                    cout << endl;
+                    LOG(info);
                     break;
                 case '\n':
-                    cout << "\n[\\n] --> invalid input." << endl;
+                    LOG(info) << "\n[\\n] --> invalid input.";
                     break;
                 case 'b':
                     PrintDebugInfo(ShmId{fShmId});
                     break;
                 default:
-                    cout << "\n[" << c << "] --> invalid input." << endl;
+                    LOG(info) << "\n[" << c << "] --> invalid input.";
                     break;
             }
 
@@ -376,7 +376,7 @@ void Monitor::PrintDebugInfo(const ShmId& shmId __attribute__((unused)))
         for (const auto& e : *debug) {
             numMessages += e.second.size();
         }
-        cout << endl << "found " << numMessages << " messages." << endl;
+        LOG(info) << endl << "found " << numMessages << " messages.";
 
         for (const auto& s : *debug) {
             for (const auto& e : s.second) {
@@ -385,19 +385,18 @@ void Monitor::PrintDebugInfo(const ShmId& shmId __attribute__((unused)))
                 time_t t = chrono::system_clock::to_time_t(tmpt);
                 uint64_t ms = e.second.fCreationTime % 1000000;
                 auto tm = localtime(&t);
-                cout << "segment: " << setw(3) << setfill(' ') << s.first
+                LOG(info) << "segment: " << setw(3) << setfill(' ') << s.first
                      << ", offset: " << setw(12) << setfill(' ') << e.first
                      << ", size: " << setw(10) << setfill(' ') << e.second.fSize
                      << ", creator PID: " << e.second.fPid << setfill('0')
-                     << ", at: " << setw(2) << tm->tm_hour << ":" << setw(2) << tm->tm_min << ":" << setw(2) << tm->tm_sec << "." << setw(6) << ms << endl;
+                     << ", at: " << setw(2) << tm->tm_hour << ":" << setw(2) << tm->tm_min << ":" << setw(2) << tm->tm_sec << "." << setw(6) << ms;
             }
         }
-        cout << setfill(' ');
     } catch (bie&) {
-        cout << "no segments found" << endl;
+        LOG(info) << "no segments found";
     }
 #else
-    cout << "FairMQ was not compiled in debug mode (FAIRMQ_DEBUG_MODE)" << endl;
+    LOG(info) << "FairMQ was not compiled in debug mode (FAIRMQ_DEBUG_MODE)";
 #endif
 }
 
@@ -429,10 +428,10 @@ unordered_map<uint16_t, std::vector<BufferDebugInfo>> Monitor::GetDebugInfo(cons
             }
         }
     } catch (bie&) {
-        cout << "no segments found" << endl;
+        LOG(info) << "no segments found";
     }
 #else
-    cout << "FairMQ was not compiled in debug mode (FAIRMQ_DEBUG_MODE)" << endl;
+    LOG(info) << "FairMQ was not compiled in debug mode (FAIRMQ_DEBUG_MODE)";
 #endif
 
     return result;
@@ -445,10 +444,10 @@ unordered_map<uint16_t, std::vector<BufferDebugInfo>> Monitor::GetDebugInfo(cons
 
 void Monitor::PrintHelp()
 {
-    cout << "controls: [x] close memory, "
-         << "[b] print a list of allocated messages (only available when compiled with FAIMQ_DEBUG_MODE=ON), "
-         << "[h] help, "
-         << "[q] quit." << endl;
+    LOG(info) << "controls: [x] close memory, "
+              << "[b] print a list of allocated messages (only available when compiled with FAIMQ_DEBUG_MODE=ON), "
+              << "[h] help, "
+              << "[q] quit.";
 }
 
 
@@ -456,12 +455,12 @@ std::pair<std::string, bool> RunRemoval(std::function<bool(const std::string&)> 
 {
     if (f(name)) {
         if (verbose) {
-            cout << "Successfully removed '" << name << "'." << endl;
+            LOG(info) << "Successfully removed '" << name << "'.";
         }
         return {name, true};
     } else {
         if (verbose) {
-            cout << "Did not remove '" << name << "'. Already removed?" << endl;
+            LOG(info) << "Did not remove '" << name << "'. Already removed?";
         }
         return {name, false};
     }
@@ -478,7 +477,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
     std::vector<std::pair<std::string, bool>> result;
 
     if (verbose) {
-        cout << "Cleaning up for shared memory id '" << shmId.shmId << "'..." << endl;
+        LOG(info) << "Cleaning up for shared memory id '" << shmId.shmId << "'...";
     }
 
     string managementSegmentName("fmq_" + shmId.shmId + "_mng");
@@ -489,7 +488,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
             RegionCounter* rc = managementSegment.find<RegionCounter>(bipc::unique_instance).first;
             if (rc) {
                 if (verbose) {
-                    cout << "Region counter found: " << rc->fCount << endl;
+                    LOG(info) << "Region counter found: " << rc->fCount;
                 }
                 uint16_t regionCount = rc->fCount;
 
@@ -501,7 +500,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
                         string path = ri.fPath.c_str();
                         int flags = ri.fFlags;
                         if (verbose) {
-                            cout << "Found RegionInfo with path: '" << path << "', flags: " << flags << ", fDestroyed: " << ri.fDestroyed << "." << endl;
+                            LOG(info) << "Found RegionInfo with path: '" << path << "', flags: " << flags << ", fDestroyed: " << ri.fDestroyed << ".";
                         }
                         if (path != "") {
                             result.emplace_back(RunRemoval(Monitor::RemoveFileMapping, path + "fmq_" + shmId.shmId + "_rg_" + to_string(i), verbose));
@@ -516,12 +515,12 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
                 }
             } else {
                 if (verbose) {
-                    cout << "No region counter found. No regions to cleanup." << endl;
+                    LOG(info) << "No region counter found. No regions to cleanup.";
                 }
             }
         } catch(out_of_range& oor) {
             if (verbose) {
-                cout << "Could not locate element in the region map, out of range: " << oor.what() << endl;
+                LOG(info) << "Could not locate element in the region map, out of range: " << oor.what();
             }
         }
 
@@ -534,7 +533,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
         result.emplace_back(RunRemoval(Monitor::RemoveObject, managementSegmentName.c_str(), verbose));
     } catch (bie&) {
         if (verbose) {
-            cout << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup." << endl;
+            LOG(info) << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup.";
         }
     }
 
@@ -548,7 +547,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const SessionId& sess
 {
     ShmId shmId{makeShmIdStr(sessionId.sessionId)};
     if (verbose) {
-        cout << "Cleanup called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'" << endl;
+        LOG(info) << "Cleanup called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'";
     }
     return Cleanup(shmId, verbose);
 }
@@ -565,7 +564,7 @@ std::vector<std::pair<std::string, bool>> Monitor::CleanupFull(const SessionId& 
 {
     ShmId shmId{makeShmIdStr(sessionId.sessionId)};
     if (verbose) {
-        cout << "Cleanup called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'" << endl;
+        LOG(info) << "Cleanup called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'";
     }
     return CleanupFull(shmId, verbose);
 }
