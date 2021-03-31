@@ -227,8 +227,15 @@ class Manager
 
             boost::filesystem::path p = boost::process::search_path("fairmq-shmmonitor", ownPath);
 
+            bool verbose = false;
+            if (const char* verboseEnv = getenv("FAIRMQ_SHMMONITOR_VERBOSE")) {
+                if (std::string(verboseEnv) == "true") {
+                    verbose = true;
+                }
+            }
+
             if (!p.empty()) {
-                boost::process::spawn(p, "-x", "-m", "--shmid", id, "-d", "-t", "2000", env);
+                boost::process::spawn(p, "-x", "-m", "--shmid", id, "-d", "-t", "2000", verbose ? "--verbose" : "", env);
                 int numTries = 0;
                 do {
                     try {

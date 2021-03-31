@@ -86,6 +86,7 @@ int main(int argc, char** argv)
         bool debug = false;
         bool cleanOnExit = false;
         bool getShmId = false;
+        bool verbose = false;
         int userId = -1;
 
         options_description desc("Options");
@@ -103,6 +104,7 @@ int main(int argc, char** argv)
             ("clean-on-exit,e", value<bool>(&cleanOnExit)->implicit_value(true),        "Perform cleanup on exit")
             ("interval"       , value<unsigned int>(&intervalInMS)->default_value(100), "Output interval for interactive mode")
             ("get-shmid"      , value<bool>(&getShmId)->implicit_value(true),           "Translate given session id and user id to a shmem id (uses current user id if none provided)")
+            ("verbose"        , value<bool>(&verbose)->implicit_value(true),            "Verbose mode (daemon will output to a file 'fairmq-shmmonitor_log_<timestamp>')")
             ("user-id"        , value<int>(&userId)->default_value(-1),                 "User id (used with --get-shmid)")
             ("help,h",                                                                  "Print help");
 
@@ -117,6 +119,9 @@ int main(int argc, char** argv)
         notify(vm);
 
         if (runAsDaemon) {
+            if (verbose) {
+                fair::Logger::InitFileSink("trace", "fairmq-shmmonitor_log");
+            }
             daemonize();
         }
 
