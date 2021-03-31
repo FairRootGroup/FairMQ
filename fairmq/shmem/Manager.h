@@ -101,6 +101,7 @@ class Manager
         }
 
         if (autolaunchMonitor) {
+            boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
             StartMonitor(fShmId);
         }
 
