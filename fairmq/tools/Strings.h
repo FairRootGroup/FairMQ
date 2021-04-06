@@ -39,6 +39,24 @@ inline auto ToStrVector(const int argc, char*const* argv, const bool dropProgram
     }
 }
 
+inline bool StrStartsWith(std::string const& str, std::string const& start)
+{
+    if (str.length() >= start.length()) {
+        return (0 == str.compare(0, start.length(), start));
+    } else {
+        return false;
+    }
+}
+
+inline bool StrEndsWith(std::string const& str, std::string const& end)
+{
+    if (str.length() >= end.length()) {
+        return (0 == str.compare(str.length() - end.length(), end.length(), end));
+    } else {
+        return false;
+    }
+}
+
 } // namespace fair::mq::tools
 
 #endif /* FAIR_MQ_TOOLS_STRINGS_H */
