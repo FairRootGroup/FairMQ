@@ -20,6 +20,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <csignal>
+#include <filesystem>
 #include <iostream>
 #include <iomanip>
 #include <chrono>
@@ -269,6 +270,35 @@ bool Monitor::PrintShm(const ShmId& shmId)
     }
 
     return true;
+}
+
+void Monitor::ListAll(const std::string& path)
+{
+    try {
+        if (std::filesystem::is_empty(path)) {
+            LOG(info) << "directory " << filesystem::path(path) << " is empty.";
+            return;
+        }
+
+        for (const auto& entry : filesystem::directory_iterator(path)) {
+            string filename = entry.path().filename().string();
+            // LOG(info) << filename << ", size: " << entry.file_size() << " bytes";
+            if (tools::StrStartsWith(filename, "fmq_") || tools::StrStartsWith(filename, "sem.fmq_")) {
+                // LOG(info) << "The file '" << filename << "' belongs to FairMQ.";
+                if (tools::StrEndsWith(filename, "_mng")) {
+                    string shmId = filename.substr(4, 8);
+                    LOG(info) << "\nFound shmid '" << shmId << "':\n";
+                    if (!PrintShm(ShmId{shmId})) {
+                        LOG(info) << "could not open file for shmid '" << shmId << "'";
+                    }
+                }
+            } else {
+                LOG(info) << "The file '" << filename << "' does not belong to FairMQ, skipping...";
+            }
+        }
+    } catch (filesystem::filesystem_error& fse) {
+        LOG(error) << "error: " << fse.what();
+    }
 }
 
 void Monitor::ReceiveHeartbeats()

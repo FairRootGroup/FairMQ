@@ -85,6 +85,7 @@ class Monitor
     static std::unordered_map<uint16_t, std::vector<BufferDebugInfo>> GetDebugInfo(const SessionId& shmId);
 
     static bool PrintShm(const ShmId& shmId);
+    static void ListAll(const std::string& path);
 
     static bool RemoveObject(const std::string& name);
     static bool RemoveFileMapping(const std::string& name);
