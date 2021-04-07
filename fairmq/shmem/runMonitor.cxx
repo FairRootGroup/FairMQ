@@ -100,15 +100,15 @@ int main(int argc, char** argv)
             ("interactive,i"  , value<bool>(&interactive)->implicit_value(true),        "Interactive run")
             ("view,v"         , value<bool>(&viewOnly)->implicit_value(true),           "Run in view only mode")
             ("timeout,t"      , value<unsigned int>(&timeoutInMS)->default_value(5000), "Heartbeat timeout in milliseconds")
-            ("daemonize,d"    , value<bool>(&runAsDaemon)->implicit_value(true),        "Daemonize the monitor")
+            ("daemonize,d"    , value<bool>(&runAsDaemon)->implicit_value(true),        "Daemonize the monitor process (only in monitoring mode)")
             ("monitor,m"      , value<bool>(&monitor)->implicit_value(true),            "Run in monitoring mode")
             ("debug,b"        , value<bool>(&debug)->implicit_value(true),              "Debug - Print a list of messages)")
             ("clean-on-exit,e", value<bool>(&cleanOnExit)->implicit_value(true),        "Perform cleanup on exit")
-            ("interval"       , value<unsigned int>(&intervalInMS)->default_value(100), "Output interval for interactive mode")
+            ("interval"       , value<unsigned int>(&intervalInMS)->default_value(1000),"Output interval for interactive mode")
             ("get-shmid"      , value<bool>(&getShmId)->implicit_value(true),           "Translate given session id and user id to a shmem id (uses current user id if none provided)")
             ("list-all"       , value<bool>(&listAll)->implicit_value(true),            "List all sessions & segments")
             ("list-all-path"  , value<string>(&listAllPath)->default_value("/dev/shm/"),"Path for the --list-all command to search segments in")
-            ("verbose"        , value<bool>(&verbose)->implicit_value(true),            "Verbose mode (daemon will output to a file 'fairmq-shmmonitor_log_<timestamp>')")
+            ("verbose"        , value<bool>(&verbose)->implicit_value(true),            "Verbose mode (daemon will output to a file 'fairmq-shmmonitor_<timestamp>')")
             ("user-id"        , value<int>(&userId)->default_value(-1),                 "User id (used with --get-shmid)")
             ("help,h",                                                                  "Print help");
 
@@ -121,13 +121,6 @@ int main(int argc, char** argv)
         }
 
         notify(vm);
-
-        if (runAsDaemon) {
-            if (verbose) {
-                fair::Logger::InitFileSink("trace", "fairmq-shmmonitor_log");
-            }
-            daemonize();
-        }
 
         if (getShmId) {
             if (userId == -1) {
@@ -169,6 +162,13 @@ int main(int argc, char** argv)
                 LOG(info) << "No segments found.";
             }
             return 0;
+        }
+
+        if (runAsDaemon && monitor) {
+            if (verbose) {
+                fair::Logger::InitFileSink("trace", "fairmq-shmmonitor");
+            }
+            daemonize();
         }
 
         LOG(info) << "Starting shared memory monitor for session: \"" << sessionName << "\" (shm id: " << shmId << ")...";

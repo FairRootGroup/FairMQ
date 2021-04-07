@@ -25,20 +25,32 @@ The shmId is generated out of session id and user id.
 
 ## Shared memory monitor
 
-The shared memory monitor tool, supplied with the shared memory transport can be used to monitor shared memory use and automatically cleanup shared memory in case of device crashes.
+The shared memory monitor tool (`fairmq-shmmonitor`) can be used to monitor and cleanup the created shared memory.
 
-With default arguments the monitor will run indefinitely with no output, and clean up shared memory segment if it is open and no heartbeats from devices arrive within a timeout period. It can be further customized with following parameters:
+Most commands act for the specified session, identified either via session id (`--session`,`-s`) or shmid (`--shmid`).
 
-  `--session <arg>`: for which session to run the monitor (default is "default"). The actual ressource names will be built out of session id, user id (hashed and truncated).
-  `--cleanup`: start monitor, perform cleanup of the memory and quit.
-  `--shmid <arg>`: if provided, this shmem id will be used instead of the one generated from session id. Use this if you know the name of the shared memory ressource, but do not have the used session id.
-  `--self-destruct`: run until the memory segment is closed (either naturally via cleanup performed by devices or in case of a crash (no heartbeats within timeout)).
-  `--interactive`: run interactively, with detailed segment details and user input for various shmem operations.
-  `--timeout <arg>`: specifiy the timeout for the heartbeats from shmem transports in milliseconds (default 5000).
+The monitor runs in one of the following modes:
 
-The options can be combined, with the exception of `--cleanup` option, which will invoke the described behaviour independent of other options.
-Without the `--self-destruct` option, the monitor will run continuously, moitoring (and cleaning up if needed) consecutive topologies.
+| command                     | action                                         |
+| --------------------------- | ---------------------------------------------- |
+| no args                     | Print segment info of the specified session/shm ID and exit. |
+| `--view`,`-v`               | Print segment info of the specified session/shm ID and exit. |
+| `--interactive`,`-i`        | Print segment info of the specified session/shm ID and exit at a given interval (`--interval`), with some keyboard controls. Can be combined with `--view` for read-only access (and avoid receiving heartbeats). |
+| `--monitor`,`-m`            | Monitor the session shm usage by receiving heartbeats from shmem users, cleaning it up if no heartbeats arrived within configured timeout (`--timeout`/`-t`). Only one heartbeat receiver per session is currently possible. If `--self-destruct`/`-x` is added, monitor will exit either when (a) no shm has been observed for interval * 2, (b) a cleanup due to reached timeout has been performed, or (c) shm has been observed, but is now cleaned up. |
+| `--cleanup`,`-c`            | Cleanup the shm for the specified session and exit. |
+| `--debug`,`-b`              | Print the list of messages in the current session and exit. Only availabe when FairMQ is compiled with `FAIRMQ_DEBUG_MODE=ON` (high performance impact). |
+| `--get-shmid`               | Translate given session id and user id (`--user-id`) to a shmem id (uses current user id if none provided) and exit. |
+| `--list-all`                | Print segment info for all sessions present on the system and exit. |
+
+Additional cmd options:
+
+| command                     | action                                         |
+| --------------------------- | ---------------------------------------------- |
+| `--cleanup-on-exit`         | Perform a cleanup on exit, when running in monitoring or interactive mode. |
+| `--daemonize`,`-d`          | Can be combined with the monitoring mode to detach the process from the parent. |
+| `--verbose`,`-d`            | When running as a daemon, store monitor output in `fairmq-shmmonitor_<timestamp>.log` |
+
 
 Possible further implementation would be to run the monitor with `--self-destruct` with each topology.
 
-The Monitor class can also be used independently from the supplied executable (built from `runMonitor.cxx`), allowing integration on any level. For example invoking the monitor could be a functionality that a device offers.
+The Monitor class can also be used independently from the supplied executable, allowing integration on any level.
