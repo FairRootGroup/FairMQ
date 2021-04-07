@@ -86,6 +86,8 @@ int main(int argc, char** argv)
         bool debug = false;
         bool cleanOnExit = false;
         bool getShmId = false;
+        bool listAll = false;
+        string listAllPath;
         bool verbose = false;
         int userId = -1;
 
@@ -104,6 +106,8 @@ int main(int argc, char** argv)
             ("clean-on-exit,e", value<bool>(&cleanOnExit)->implicit_value(true),        "Perform cleanup on exit")
             ("interval"       , value<unsigned int>(&intervalInMS)->default_value(100), "Output interval for interactive mode")
             ("get-shmid"      , value<bool>(&getShmId)->implicit_value(true),           "Translate given session id and user id to a shmem id (uses current user id if none provided)")
+            ("list-all"       , value<bool>(&listAll)->implicit_value(true),            "List all sessions & segments")
+            ("list-all-path"  , value<string>(&listAllPath)->default_value("/dev/shm/"),"Path for the --list-all command to search segments in")
             ("verbose"        , value<bool>(&verbose)->implicit_value(true),            "Verbose mode (daemon will output to a file 'fairmq-shmmonitor_log_<timestamp>')")
             ("user-id"        , value<int>(&userId)->default_value(-1),                 "User id (used with --get-shmid)")
             ("help,h",                                                                  "Print help");
@@ -147,6 +151,11 @@ int main(int argc, char** argv)
 
         if (debug) {
             Monitor::PrintDebugInfo(ShmId{shmId});
+            return 0;
+        }
+
+        if (listAll) {
+            Monitor::ListAll(listAllPath);
             return 0;
         }
 
