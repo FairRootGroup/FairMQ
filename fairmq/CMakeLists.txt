@@ -283,6 +283,7 @@ if(BUILD_FAIRMQ)
   if(BUILD_OFI_TRANSPORT)
     target_compile_definitions(${_target} PRIVATE BUILD_OFI_TRANSPORT)
   endif()
+  target_compile_definitions(${_target} PUBLIC FAIRMQ_HAS_STD_FILESYSTEM=${FAIRMQ_HAS_STD_FILESYSTEM})
 
 
   #######################
@@ -384,6 +385,7 @@ if(BUILD_FAIRMQ)
     $<$<PLATFORM_ID:Linux>:rt>
     Boost::boost
     Boost::date_time
+    $<$<NOT:${FAIRMQ_HAS_STD_FILESYSTEM}>:Boost::filesystem>
     Boost::program_options
     FairLogger::FairLogger
     PicoSHA2
@@ -391,6 +393,7 @@ if(BUILD_FAIRMQ)
   target_include_directories(fairmq-shmmonitor PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
   )
+  target_compile_definitions(fairmq-shmmonitor PUBLIC FAIRMQ_HAS_STD_FILESYSTEM=${FAIRMQ_HAS_STD_FILESYSTEM})
 
   add_executable(fairmq-uuid-gen tools/runUuidGenerator.cxx)
   target_link_libraries(fairmq-uuid-gen PUBLIC
