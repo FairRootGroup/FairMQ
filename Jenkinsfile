@@ -29,7 +29,11 @@ def jobMatrix(String type, List specs) {
             sh "cat ${jobscript}"
             sh "bash ${jobscript}"
           } else {
-            def containercmd = "singularity exec -B/shared ${env.SINGULARITY_CONTAINER_ROOT}/fairmq/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} -DRUN_STATIC_ANALYSIS=ON\\\""
+            def static_analysis = "OFF"
+            if (selector =~ /^fedora/) {
+              static_analysis = "ON"
+            }
+            def containercmd = "singularity exec -B/shared ${env.SINGULARITY_CONTAINER_ROOT}/fairmq/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} -DRUN_STATIC_ANALYSIS=${static_analysis}\\\""
             sh """\
               echo \"echo \\\"*** Job started at .......: \\\$(date -R)\\\"\" >> ${jobscript}
               echo \"echo \\\"*** Job ID ...............: \\\${SLURM_JOB_ID}\\\"\" >> ${jobscript}
@@ -42,10 +46,12 @@ def jobMatrix(String type, List specs) {
             sh "test/ci/slurm-submit.sh \"FairMQ \${JOB_BASE_NAME} ${label}\" ${jobscript}"
 
             withChecks('Static Analysis') {
-              recordIssues(enabledForFailure: true,
-                           tools: [gcc(pattern: 'build/Testing/Temporary/*.log')],
-                           filters: [excludeFile('extern/*'), excludeFile('usr/*')],
-                           skipBlames: true)
+              if (static_analysis == "ON") {
+                recordIssues(enabledForFailure: true,
+                             tools: [gcc(pattern: 'build/Testing/Temporary/*.log')],
+                             filters: [excludeFile('extern/*'), excludeFile('usr/*')],
+                             skipBlames: true)
+              }
             }
           }
 
@@ -73,8 +79,9 @@ pipeline{
       steps{
         script {
           def builds = jobMatrix('build', [
-            [os: 'fedora', ver: '32',    arch: 'x86_64', compiler: 'gcc-10'],
-            [os: 'macos',  ver: '11',    arch: 'x86_64', compiler: 'apple-clang-12'],
+            [os: 'alice-centos', ver: '7',  arch: 'x86_64', compiler: 'gcc-7'],
+            [os: 'fedora',       ver: '32', arch: 'x86_64', compiler: 'gcc-10'],
+            [os: 'macos',        ver: '11', arch: 'x86_64', compiler: 'apple-clang-12'],
           ])
 
           parallel(builds)
