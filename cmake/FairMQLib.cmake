@@ -203,6 +203,13 @@ macro(set_fairmq_defaults)
       set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ${CCACHE})
     endif()
   endif()
+
+  if(    CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+     AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8)
+    set(FAIRMQ_HAS_STD_FILESYSTEM 0)
+  else()
+    set(FAIRMQ_HAS_STD_FILESYSTEM 1)
+  endif()
 endmacro()
 
 function(join VALUES GLUE OUTPUT)

@@ -20,7 +20,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <csignal>
-#include <filesystem>
 #include <iostream>
 #include <iomanip>
 #include <chrono>
@@ -31,6 +30,14 @@
 
 #include <termios.h>
 #include <poll.h>
+
+#if FAIRMQ_HAS_STD_FILESYSTEM
+#include <filesystem>
+namespace fs = std::filesystem;
+#else
+#include <boost/filesystem.hpp>
+namespace fs = ::boost::filesystem;
+#endif
 
 using namespace std;
 using bie = ::boost::interprocess::interprocess_exception;
@@ -275,12 +282,12 @@ bool Monitor::PrintShm(const ShmId& shmId)
 void Monitor::ListAll(const std::string& path)
 {
     try {
-        if (std::filesystem::is_empty(path)) {
-            LOG(info) << "directory " << filesystem::path(path) << " is empty.";
+        if (fs::is_empty(path)) {
+            LOG(info) << "directory " << fs::path(path) << " is empty.";
             return;
         }
 
-        for (const auto& entry : filesystem::directory_iterator(path)) {
+        for (const auto& entry : fs::directory_iterator(path)) {
             string filename = entry.path().filename().string();
             // LOG(info) << filename << ", size: " << entry.file_size() << " bytes";
             if (tools::StrStartsWith(filename, "fmq_") || tools::StrStartsWith(filename, "sem.fmq_")) {
@@ -296,7 +303,7 @@ void Monitor::ListAll(const std::string& path)
                 LOG(info) << "The file '" << filename << "' does not belong to FairMQ, skipping...";
             }
         }
-    } catch (filesystem::filesystem_error& fse) {
+    } catch (fs::filesystem_error& fse) {
         LOG(error) << "error: " << fse.what();
     }
 }
