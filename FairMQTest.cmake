@@ -51,7 +51,11 @@ endif()
 list(JOIN options ";" optionsstr)
 ctest_configure(OPTIONS "${optionsstr}")
 
+ctest_submit()
+
 ctest_build(FLAGS "-j${NCPUS}")
+
+ctest_submit()
 
 ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}"
            PARALLEL_LEVEL 1
