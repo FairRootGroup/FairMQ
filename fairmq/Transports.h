@@ -12,6 +12,7 @@
 #include <fairmq/tools/Strings.h>
 
 #include <memory>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -58,6 +59,11 @@ try {
     return TransportTypes.at(transport);
 } catch (std::out_of_range&) {
     throw TransportError(tools::ToString("Unknown transport provided: ", transport));
+}
+
+inline std::ostream& operator<<(std::ostream& os, const Transport& transport)
+{
+    return os << TransportName(transport);
 }
 
 } // namespace fair::mq
