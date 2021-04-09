@@ -85,13 +85,23 @@ struct Region
             LOG(debug) << "shmem: initialized file: " << fName;
             fRegion = mapped_region(fFileMapping, read_write, 0, size, 0, flags);
         } else {
-            if (fRemote) {
-                fShmemObject = shared_memory_object(open_only, fName.c_str(), read_write);
-            } else {
-                fShmemObject = shared_memory_object(create_only, fName.c_str(), read_write);
-                fShmemObject.truncate(size);
+            try {
+                if (fRemote) {
+                    fShmemObject = shared_memory_object(open_only, fName.c_str(), read_write);
+                } else {
+                    fShmemObject = shared_memory_object(create_only, fName.c_str(), read_write);
+                    fShmemObject.truncate(size);
+                }
+            } catch(interprocess_exception& e) {
+                LOG(error) << "Failed " << (fRemote ? "opening" : "creating") << " shared_memory_object for region id '" << id << "': " << e.what();
+                throw;
             }
-            fRegion = mapped_region(fShmemObject, read_write, 0, 0, 0, flags);
+            try {
+                fRegion = mapped_region(fShmemObject, read_write, 0, 0, 0, flags);
+            } catch(interprocess_exception& e) {
+                LOG(error) << "Failed mapping shared_memory_object for region id '" << id << "': " << e.what();
+                throw;
+            }
         }
 
         InitializeQueues();
