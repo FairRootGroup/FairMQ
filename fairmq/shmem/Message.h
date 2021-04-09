@@ -109,12 +109,17 @@ class Message final : public fair::mq::Message
         , fRegionPtr(nullptr)
         , fLocalPtr(static_cast<char*>(data))
     {
+        if (region->GetType() != GetType()) {
+            LOG(error) << "region type (" << region->GetType() << ") does not match message type (" << GetType() << ")";
+            throw TransportError(tools::ToString("region type (", region->GetType(), ") does not match message type (", GetType(), ")"));
+        }
+
         if (reinterpret_cast<const char*>(data) >= reinterpret_cast<const char*>(region->GetData()) &&
             reinterpret_cast<const char*>(data) <= reinterpret_cast<const char*>(region->GetData()) + region->GetSize()) {
             fMeta.fHandle = (boost::interprocess::managed_shared_memory::handle_t)(reinterpret_cast<const char*>(data) - reinterpret_cast<const char*>(region->GetData()));
         } else {
             LOG(error) << "trying to create region message with data from outside the region";
-            throw std::runtime_error("trying to create region message with data from outside the region");
+            throw TransportError("trying to create region message with data from outside the region");
         }
         fManager.IncrementMsgCounter();
     }
