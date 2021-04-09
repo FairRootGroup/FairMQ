@@ -15,11 +15,11 @@ SAMPLER+=" --msg-size $msgSize"
 # SAMPLER+=" --rate 10"
 SAMPLER+=" --transport shmem"
 SAMPLER+=" --channel-config name=data,type=push,method=bind,address=tcp://127.0.0.1:7777,sndKernelSize=212992"
-xterm -geometry 80x23+0+0 -hold -e @EX_BIN_DIR@/$SAMPLER &
+xterm -geometry 120x60+0+0 -hold -e @EX_BIN_DIR@/$SAMPLER &
 
 SINK="fairmq-ex-region-sink"
 SINK+=" --id sink1"
 SINK+=" --severity debug"
 SINK+=" --transport shmem"
 SINK+=" --channel-config name=data,type=pull,method=connect,address=tcp://127.0.0.1:7777,rcvKernelSize=212992"
-xterm -geometry 80x23+500+0 -hold -e @EX_BIN_DIR@/$SINK &
+xterm -geometry 120x60+750+0 -hold -e @EX_BIN_DIR@/$SINK &

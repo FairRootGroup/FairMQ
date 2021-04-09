@@ -322,7 +322,6 @@ class Manager
             fRegionEventsCV.notify_all();
 
             return result;
-
         } catch (interprocess_exception& e) {
             LOG(error) << "cannot create region. Already created/not cleaned up?";
             LOG(error) << e.what();
@@ -377,7 +376,7 @@ class Manager
                 LOG(error) << oor.what();
                 return nullptr;
             } catch (boost::interprocess::interprocess_exception& e) {
-                LOG(warn) << "Could not get remote region for id '" << id << "'";
+                LOG(error) << "Could not get remote region for id '" << id << "': " << e.what();
                 return nullptr;
             }
         }
@@ -413,8 +412,12 @@ class Manager
             info.event = e.second.fDestroyed ? RegionEvent::destroyed : RegionEvent::created;
             if (!e.second.fDestroyed) {
                 auto region = GetRegionUnsafe(info.id);
-                info.ptr = region->fRegion.get_address();
-                info.size = region->fRegion.get_size();
+                if (region) {
+                    info.ptr = region->fRegion.get_address();
+                    info.size = region->fRegion.get_size();
+                } else {
+                    throw std::runtime_error(tools::ToString("GetRegionInfoUnsafe() could not get region with id '", info.id, "'"));
+                }
             } else {
                 info.ptr = nullptr;
                 info.size = 0;
