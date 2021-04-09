@@ -51,6 +51,8 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
     void SetLinger(uint32_t /* linger */) override { LOG(debug) << "ZeroMQ UnmanagedRegion linger option not implemented. Acknowledgements are local."; }
     uint32_t GetLinger() const override { LOG(debug) << "ZeroMQ UnmanagedRegion linger option not implemented. Acknowledgements are local."; return 0; }
 
+    Transport GetType() const override { return Transport::ZMQ; }
+
     virtual ~UnmanagedRegion()
     {
         LOG(debug) << "destroying region " << fId;
