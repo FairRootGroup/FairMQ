@@ -79,6 +79,7 @@ class FairMQUnmanagedRegion
     virtual void SetLinger(uint32_t linger) = 0;
     virtual uint32_t GetLinger() const = 0;
 
+    virtual fair::mq::Transport GetType() const = 0;
     FairMQTransportFactory* GetTransport() { return fTransport; }
     void SetTransport(FairMQTransportFactory* transport) { fTransport = transport; }
 

@@ -56,6 +56,8 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
     void SetLinger(uint32_t linger) override { fManager.GetRegion(fRegionId)->SetLinger(linger); }
     uint32_t GetLinger() const override { return fManager.GetRegion(fRegionId)->GetLinger(); }
 
+    Transport GetType() const override { return fair::mq::Transport::SHM; }
+
     ~UnmanagedRegion() override { fManager.RemoveRegion(fRegionId); }
 
   private:
