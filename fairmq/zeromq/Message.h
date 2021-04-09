@@ -109,6 +109,11 @@ class Message final : public fair::mq::Message
         , fAlignment(0)
         , fMsg(std::make_unique<zmq_msg_t>())
     {
+        if (region->GetType() != GetType()) {
+            LOG(error) << "region type (" << region->GetType() << ") does not match message type (" << GetType() << ")";
+            throw TransportError(tools::ToString("region type (", region->GetType(), ") does not match message type (", GetType(), ")"));
+        }
+
         // FIXME: make this zero-copy:
         // simply taking over the provided buffer can casue premature delete, since region could be
         // destroyed before the message is sent out. Needs lifetime extension for the ZMQ region.
