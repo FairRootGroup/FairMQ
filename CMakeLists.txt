@@ -12,6 +12,7 @@ cmake_policy(VERSION 3.12...3.15)
 # Project ######################################################################
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(FairMQLib)
+include(FairFindPackage2)
 
 get_git_version()
 
