@@ -384,10 +384,10 @@ class Manager
 
     void RemoveRegion(const uint16_t id)
     {
-        fRegions.erase(id);
         {
             boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
             fShmRegions->at(id).fDestroyed = true;
+            fRegions.erase(id);
             (fEventCounter->fCount)++;
         }
         fRegionsGen += 1; // signal TL cache invalidation
@@ -483,19 +483,26 @@ class Manager
             auto infos = GetRegionInfoUnsafe();
             for (const auto& i : infos) {
                 auto el = fObservedRegionEvents.find({i.id, i.managed});
-                if (el == fObservedRegionEvents.end()) {
-                    fRegionEventCallback(i);
+                if (el == fObservedRegionEvents.end()) { // if event id has not been observed
                     fObservedRegionEvents.emplace(std::make_pair(i.id, i.managed), i.event);
-                    ++fNumObservedEvents;
-                } else {
+                    // if a region has been created and destroyed rapidly, we could see 'destroyed' without ever seeing 'created'
+                    // TODO: do we care to show 'created' events if we know region is already destroyed?
+                    if (i.event == RegionEvent::created) {
+                        fRegionEventCallback(i);
+                        ++fNumObservedEvents;
+                    } else {
+                        fNumObservedEvents += 2;
+                    }
+                } else { // if event id has been observed (expected - there are two events per id - created & destroyed)
+                    // fire a callback if we have observed 'created' event and incoming is 'destroyed'
                     if (el->second == RegionEvent::created && i.event == RegionEvent::destroyed) {
                         fRegionEventCallback(i);
                         el->second = i.event;
                         ++fNumObservedEvents;
                     } else {
-                        // LOG(debug) << "ignoring event for id" << i.id << ":";
-                        // LOG(debug) << "incoming event: " << i.event;
-                        // LOG(debug) << "stored event: " << el->second;
+                        // LOG(debug) << "ignoring event for id " << i.id << ":"
+                        //            << " incoming: " << i.event << ","
+                        //            << " stored: " << el->second;
                     }
                 }
             }
@@ -688,7 +695,7 @@ class Manager
     std::thread fRegionEventThread;
     bool fRegionEventsSubscriptionActive;
     std::function<void(fair::mq::RegionInfo)> fRegionEventCallback;
-    std::map<std::pair<uint16_t, bool>, RegionEvent> fObservedRegionEvents;
+    std::map<std::pair<uint16_t, bool>, RegionEvent> fObservedRegionEvents; // pair: <region id, managed>
     uint64_t fNumObservedEvents;
 
     DeviceCounter* fDeviceCounter;
