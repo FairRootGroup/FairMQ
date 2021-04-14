@@ -238,7 +238,7 @@ class Manager
             }
 
             if (!p.empty()) {
-                boost::process::spawn(p, "-x", "-m", "--shmid", id, "-d", "-t", "2000", verbose ? "--verbose" : "", env);
+                boost::process::spawn(p, "-x", "-m", "--shmid", id, "-d", "-t", "2000", (verbose ? "--verbose" : ""), env);
                 int numTries = 0;
                 do {
                     try {
