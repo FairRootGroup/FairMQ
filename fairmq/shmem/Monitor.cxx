@@ -497,7 +497,7 @@ std::pair<std::string, bool> RunRemoval(std::function<bool(const std::string&)> 
         return {name, true};
     } else {
         if (verbose) {
-            LOG(info) << "Did not remove '" << name << "'. Already removed?";
+            LOG(debug) << "Did not remove '" << name << "'. Already removed?";
         }
         return {name, false};
     }
@@ -525,7 +525,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
             RegionCounter* rc = managementSegment.find<RegionCounter>(bipc::unique_instance).first;
             if (rc) {
                 if (verbose) {
-                    LOG(info) << "Region counter found: " << rc->fCount;
+                    LOG(debug) << "Region counter found: " << rc->fCount;
                 }
                 uint16_t regionCount = rc->fCount;
 

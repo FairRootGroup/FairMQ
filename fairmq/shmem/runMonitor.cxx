@@ -89,6 +89,7 @@ int main(int argc, char** argv)
         bool listAll = false;
         string listAllPath;
         bool verbose = false;
+        string severity;
         int userId = -1;
 
         options_description desc("Options");
@@ -109,6 +110,7 @@ int main(int argc, char** argv)
             ("list-all"       , value<bool>(&listAll)->implicit_value(true),            "List all sessions & segments")
             ("list-all-path"  , value<string>(&listAllPath)->default_value("/dev/shm/"),"Path for the --list-all command to search segments in")
             ("verbose"        , value<bool>(&verbose)->implicit_value(true),            "Verbose mode (daemon will output to a file 'fairmq-shmmonitor_<timestamp>')")
+            ("severity"       , value<string>(&severity)->default_value("info"),        "Log severity")
             ("user-id"        , value<int>(&userId)->default_value(-1),                 "User id (used with --get-shmid)")
             ("help,h",                                                                  "Print help");
 
@@ -121,6 +123,8 @@ int main(int argc, char** argv)
         }
 
         notify(vm);
+
+        fair::Logger::SetConsoleSeverity(severity);
 
         if (getShmId) {
             if (userId == -1) {
