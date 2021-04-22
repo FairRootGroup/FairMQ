@@ -153,9 +153,11 @@ TEST(ErrorState, interactive_InReset)
     EXPECT_EXIT(RunErrorStateIn("Reset", "interactive", "q"), ::testing::ExitedWithCode(1), "");
 }
 
+#ifdef FAIRMQ_DEBUG_MODE
 TEST(ErrorState, OrphanMessages)
 {
     BadDevice badDevice;
 }
+#endif
 
 } // namespace

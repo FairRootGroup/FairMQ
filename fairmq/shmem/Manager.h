@@ -67,7 +67,7 @@ class Manager
         , fManagementSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mng").c_str(), 6553600)
         , fShmVoidAlloc(fManagementSegment.get_segment_manager())
         , fShmMtx(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mtx").c_str())
-        , fRegionEventsCV(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_cv").c_str())
+        , fRegionEventsShmCV(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_cv").c_str())
         , fRegionEventsSubscriptionActive(false)
         , fNumObservedEvents(0)
         , fDeviceCounter(nullptr)
@@ -78,13 +78,13 @@ class Manager
 #ifdef FAIRMQ_DEBUG_MODE
         , fMsgDebug(nullptr)
         , fShmMsgCounters(nullptr)
+        , fMsgCounterNew(0)
+        , fMsgCounterDelete(0)
 #endif
         , fHeartbeatThread()
         , fSendHeartbeats(true)
         , fThrowOnBadAlloc(config ? config->GetProperty<bool>("shm-throw-bad-alloc", true) : true)
         , fNoCleanup(config ? config->GetProperty<bool>("shm-no-cleanup", false) : false)
-        , fMsgCounterNew(0)
-        , fMsgCounterDelete(0)
     {
         using namespace boost::interprocess;
 
@@ -263,11 +263,13 @@ class Manager
     void Resume() { fInterrupted.store(false); }
     void Reset()
     {
+#ifdef FAIRMQ_DEBUG_MODE
         auto diff = fMsgCounterNew.load() - fMsgCounterDelete.load();
         if (diff != 0) {
             LOG(error) << "Message counter during Reset expected to be 0, found: " << diff;
             throw MessageError(tools::ToString("Message counter during Reset expected to be 0, found: ", diff));
         }
+#endif
     }
     bool Interrupted() { return fInterrupted.load(); }
 
@@ -306,12 +308,12 @@ class Manager
                     return {nullptr, id};
                 }
 
-                // create region info
-                fShmRegions->emplace(id, RegionInfo(path.c_str(), flags, userFlags, fShmVoidAlloc));
-
                 auto r = fRegions.emplace(id, std::make_unique<Region>(fShmId, id, size, false, callback, bulkCallback, path, flags));
                 // LOG(debug) << "Created region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
 
+                fShmRegions->emplace(id, RegionInfo(path.c_str(), flags, userFlags, fShmVoidAlloc));
+
+                r.first->second->InitializeQueues();
                 r.first->second->StartReceivingAcks();
                 result.first = &(r.first->second->fRegion);
                 result.second = id;
@@ -319,7 +321,7 @@ class Manager
                 (fEventCounter->fCount)++;
             }
             fRegionsGen += 1; // signal TL cache invalidation
-            fRegionEventsCV.notify_all();
+            fRegionEventsShmCV.notify_all();
 
             return result;
         } catch (interprocess_exception& e) {
@@ -384,14 +386,19 @@ class Manager
 
     void RemoveRegion(const uint16_t id)
     {
-        {
-            boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
-            fShmRegions->at(id).fDestroyed = true;
-            fRegions.erase(id);
-            (fEventCounter->fCount)++;
+        try {
+            fRegions.at(id)->StopAcks();
+            {
+                boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
+                fShmRegions->at(id).fDestroyed = true;
+                fRegions.erase(id);
+                (fEventCounter->fCount)++;
+            }
+            fRegionEventsShmCV.notify_all();
+        } catch(std::out_of_range& oor) {
+            LOG(debug) << "RemoveRegion() could not locate region with id'" << id << "'";
         }
         fRegionsGen += 1; // signal TL cache invalidation
-        fRegionEventsCV.notify_all();
     }
 
     std::vector<fair::mq::RegionInfo> GetRegionInfo()
@@ -452,7 +459,7 @@ class Manager
             boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
             fRegionEventsSubscriptionActive = false;
             lock.unlock();
-            fRegionEventsCV.notify_all();
+            fRegionEventsShmCV.notify_all();
             fRegionEventThread.join();
         }
         boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
@@ -469,7 +476,7 @@ class Manager
             boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
             fRegionEventsSubscriptionActive = false;
             lock.unlock();
-            fRegionEventsCV.notify_all();
+            fRegionEventsShmCV.notify_all();
             fRegionEventThread.join();
             lock.lock();
             fRegionEventCallback = nullptr;
@@ -500,25 +507,31 @@ class Manager
                         el->second = i.event;
                         ++fNumObservedEvents;
                     } else {
-                        // LOG(debug) << "ignoring event for id " << i.id << ":"
-                        //            << " incoming: " << i.event << ","
-                        //            << " stored: " << el->second;
+                        // LOG(debug) << "ignoring event " << i.id << ": incoming: " << i.event << ", stored: " << el->second;
                     }
                 }
             }
-            fRegionEventsCV.wait(lock, [&] { return !fRegionEventsSubscriptionActive || fNumObservedEvents != fEventCounter->fCount; });
+            fRegionEventsShmCV.wait(lock, [&] { return !fRegionEventsSubscriptionActive || fNumObservedEvents != fEventCounter->fCount; });
         }
     }
 
-    void IncrementMsgCounter() { fMsgCounterNew.fetch_add(1, std::memory_order_relaxed); }
-    void DecrementMsgCounter() { fMsgCounterDelete.fetch_add(1, std::memory_order_relaxed); }
+    void IncrementMsgCounter()
+    {
+#ifdef FAIRMQ_DEBUG_MODE
+        fMsgCounterNew.fetch_add(1, std::memory_order_relaxed);
+#endif
+    }
+    void DecrementMsgCounter()
+    {
+#ifdef FAIRMQ_DEBUG_MODE
+        fMsgCounterDelete.fetch_add(1, std::memory_order_relaxed);
+#endif
+    }
 
 #ifdef FAIRMQ_DEBUG_MODE
     void IncrementShmMsgCounter(uint16_t segmentId) { ++((*fShmMsgCounters)[segmentId].fCount); }
     void DecrementShmMsgCounter(uint16_t segmentId) { --((*fShmMsgCounters)[segmentId].fCount); }
 #endif
-
-    boost::interprocess::named_mutex& GetMtx() { return fShmMtx; }
 
     void SendHeartbeats()
     {
@@ -547,7 +560,7 @@ class Manager
         auto it = fSegments.find(id);
         if (it == fSegments.end()) {
             try {
-                // get region info
+                // get segment info
                 SegmentInfo segmentInfo = fShmSegments->at(id);
                 LOG(debug) << "Located segment with id '" << id << "'";
 
@@ -691,7 +704,7 @@ class Manager
     VoidAlloc fShmVoidAlloc;
     boost::interprocess::named_mutex fShmMtx;
 
-    boost::interprocess::named_condition fRegionEventsCV;
+    boost::interprocess::named_condition fRegionEventsShmCV;
     std::thread fRegionEventThread;
     bool fRegionEventsSubscriptionActive;
     std::function<void(fair::mq::RegionInfo)> fRegionEventCallback;
@@ -712,8 +725,11 @@ class Manager
 
     std::atomic<bool> fInterrupted;
 #ifdef FAIRMQ_DEBUG_MODE
+    // make sure the counters are not thrashing the cache line between threads doing creation and deallocation
     Uint16MsgDebugMapHashMap* fMsgDebug;
     Uint16MsgCounterHashMap* fShmMsgCounters;
+    alignas(128) std::atomic_uint64_t fMsgCounterNew;
+    alignas(128) std::atomic_uint64_t fMsgCounterDelete;
 #endif
 
     std::thread fHeartbeatThread;
@@ -724,9 +740,7 @@ class Manager
     bool fThrowOnBadAlloc;
     bool fNoCleanup;
 
-    // make sure the counters are not thrashing the cache line between threads doing creation and deallocation
-    alignas(128) std::atomic_uint64_t fMsgCounterNew; // TODO: find a better lifetime solution instead of the counter
-    alignas(128) std::atomic_uint64_t fMsgCounterDelete;
+
 };
 
 } // namespace fair::mq::shmem

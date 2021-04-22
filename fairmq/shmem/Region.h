@@ -47,7 +47,7 @@ struct Region
     Region(const std::string& shmId, uint16_t id, uint64_t size, bool remote, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string& path, int flags)
         : fRemote(remote)
         , fLinger(100)
-        , fStop(false)
+        , fStopAcks(false)
         , fName("fmq_" + shmId + "_rg_" + std::to_string(id))
         , fQueueName("fmq_" + shmId + "_rgq_" + std::to_string(id))
         , fShmemObject()
@@ -104,8 +104,6 @@ struct Region
             }
         }
 
-        InitializeQueues();
-        StartSendingAcks();
         LOG(trace) << "shmem: initialized region: " << fName << " (" << (fRemote ? "remote" : "local") << ")";
     }
 
@@ -118,15 +116,22 @@ struct Region
     {
         using namespace boost::interprocess;
 
-        if (fRemote) {
-            fQueue = std::make_unique<message_queue>(open_only, fQueueName.c_str());
-        } else {
-            fQueue = std::make_unique<message_queue>(create_only, fQueueName.c_str(), 1024, fAckBunchSize * sizeof(RegionBlock));
+        if (fQueue == nullptr) {
+            if (fRemote) {
+                fQueue = std::make_unique<message_queue>(open_only, fQueueName.c_str());
+            } else {
+                fQueue = std::make_unique<message_queue>(create_only, fQueueName.c_str(), 1024, fAckBunchSize * sizeof(RegionBlock));
+            }
+            LOG(trace) << "shmem: initialized region queue: " << fQueueName << " (" << (fRemote ? "remote" : "local") << ")";
         }
-        LOG(trace) << "shmem: initialized region queue: " << fQueueName << " (" << (fRemote ? "remote" : "local") << ")";
     }
 
-    void StartSendingAcks() { fAcksSender = std::thread(&Region::SendAcks, this); }
+    void StartSendingAcks()
+    {
+        if (!fAcksSender.joinable()) {
+            fAcksSender = std::thread(&Region::SendAcks, this);
+        }
+    }
     void SendAcks()
     {
         std::unique_ptr<RegionBlock[]> blocks = std::make_unique<RegionBlock[]>(fAckBunchSize);
@@ -150,13 +155,13 @@ struct Region
             }
 
             if (blocksToSend > 0) {
-                while (!fQueue->try_send(blocks.get(), blocksToSend * sizeof(RegionBlock), 0) && !fStop) {
+                while (!fQueue->try_send(blocks.get(), blocksToSend * sizeof(RegionBlock), 0) && !fStopAcks) {
                     // receiver slow? yield and try again...
                     std::this_thread::yield();
                 }
                 // LOG(debug) << "Sent " << blocksToSend << " blocks.";
             } else { // blocksToSend == 0
-                if (fStop) {
+                if (fStopAcks) {
                     break;
                 }
             }
@@ -166,7 +171,12 @@ struct Region
                                                                 << " blocks left to send: " << blocksToSend << ").";
     }
 
-    void StartReceivingAcks() { fAcksReceiver = std::thread(&Region::ReceiveAcks, this); }
+    void StartReceivingAcks()
+    {
+        if (!fAcksReceiver.joinable()) {
+            fAcksReceiver = std::thread(&Region::ReceiveAcks, this);
+        }
+    }
     void ReceiveAcks()
     {
         unsigned int priority;
@@ -178,7 +188,7 @@ struct Region
         while (true) {
             uint32_t timeout = 100;
             bool leave = false;
-            if (fStop) {
+            if (fStopAcks) {
                 timeout = fLinger;
                 leave = true;
             }
@@ -223,9 +233,25 @@ struct Region
     void SetLinger(uint32_t linger) { fLinger = linger; }
     uint32_t GetLinger() const { return fLinger; }
 
+    void StopAcks()
+    {
+        fStopAcks = true;
+
+        if (fAcksSender.joinable()) {
+            fBlockSendCV.notify_one();
+            fAcksSender.join();
+        }
+
+        if (!fRemote) {
+            if (fAcksReceiver.joinable()) {
+                fAcksReceiver.join();
+            }
+        }
+    }
+
     ~Region()
     {
-        fStop = true;
+        fStopAcks = true;
 
         if (fAcksSender.joinable()) {
             fBlockSendCV.notify_one();
@@ -261,7 +287,7 @@ struct Region
 
     bool fRemote;
     uint32_t fLinger;
-    std::atomic<bool> fStop;
+    std::atomic<bool> fStopAcks;
     std::string fName;
     std::string fQueueName;
     boost::interprocess::shared_memory_object fShmemObject;
