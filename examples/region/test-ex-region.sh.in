@@ -31,6 +31,7 @@ SAMPLER_PID=$!
 SINK="fairmq-ex-region-sink"
 SINK+=" --id sink1"
 SINK+=" --transport $transport"
+SINK+=" --severity debug"
 SINK+=" --session $SESSION"
 SINK+=" --verbosity veryhigh"
 SINK+=" --control static --color false"

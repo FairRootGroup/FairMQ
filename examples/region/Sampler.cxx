@@ -5,12 +5,6 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
- * Sampler.cpp
- *
- * @since 2014-10-10
- * @author A. Rybalchenko
- */
 
 #include "Sampler.h"
 
@@ -75,20 +69,19 @@ bool Sampler::ConditionalRun()
     // std::this_thread::sleep_for(std::chrono::seconds(1));
 
     lock_guard<mutex> lock(fMtx);
+    ++fNumUnackedMsgs;
     if (Send(msg, "data", 0) > 0) {
         if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
             LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
             return false;
         }
     }
-    ++fNumUnackedMsgs;
 
     return true;
 }
 
 void Sampler::ResetTask()
 {
-    // On destruction UnmanagedRegion will try to TODO
     fRegion.reset();
     {
         lock_guard<mutex> lock(fMtx);
