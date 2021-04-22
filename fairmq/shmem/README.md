@@ -1,4 +1,4 @@
-# Shared Memory transport
+## Shared Memory transport
 
 Shared memory transport for FairMQ. To try with existing devices, run the devices with `--transport shmem` option or configure channel transport in JSON (see examples/MQ/multiple-transports).
 
@@ -6,7 +6,7 @@ The transport manages shared memory via boost::interprocess library. The transfe
 
 Devices track and cleanup shared memory on shutdown. For more information on the current shared memory segment and additional cleanup options, see following section.
 
-# Shared Memory objects / files
+## Shared Memory objects / files
 
 FairMQ Shared Memory currently uses the following names to register shared memory on the system:
 
@@ -53,3 +53,7 @@ Additional cmd options:
 For full option details, run with `-h`.
 
 The Monitor class can also be used independently from the supplied executable, allowing integration on any level.
+
+## Troubleshooting
+
+Bus Error (SIGBUS) can occur if the transport tries to access shared memory that is not accessible. One reason could be because the used memory in the segment exceeds the capacity or available memory of the shmem filesystem (capacity is by default set to half of RAM on Linux).
