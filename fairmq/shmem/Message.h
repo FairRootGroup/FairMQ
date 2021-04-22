@@ -309,6 +309,8 @@ class Message final : public fair::mq::Message
                 }
 
                 if (fRegionPtr) {
+                    fRegionPtr->InitializeQueues();
+                    fRegionPtr->StartSendingAcks();
                     fRegionPtr->ReleaseBlock({fMeta.fHandle, fMeta.fSize, fMeta.fHint});
                 } else {
                     LOG(warn) << "region ack queue for id " << fMeta.fRegionId << " no longer exist. Not sending ack";
@@ -324,7 +326,7 @@ class Message final : public fair::mq::Message
         Deallocate();
         fAlignment = 0;
 
-        fManager.DecrementMsgCounter(); // TODO: put this to debug mode
+        fManager.DecrementMsgCounter();
     }
 };
 
