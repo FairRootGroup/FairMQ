@@ -200,7 +200,19 @@ auto fair::mq::PluginManager::LoadPluginStatic(const string& pluginName) -> void
     // Load symbol
     if (fPluginFactories.find(pluginName) == fPluginFactories.end()) {
         try {
-            LoadSymbols(pluginName, dll::program_location());
+            if ("control" == pluginName) {
+                try {
+                    fPluginProgOptions.insert({pluginName, plugins::ControlPluginProgramOptions().value()});
+                }
+                catch (const boost::bad_optional_access& e) { /* just ignore, if no prog options are declared */ }
+            } else if ("config" == pluginName) {
+                try {
+                    fPluginProgOptions.insert({pluginName, plugins::ConfigPluginProgramOptions().value()});
+                }
+                catch (const boost::bad_optional_access& e) { /* just ignore, if no prog options are declared */ }
+            } else {
+                LoadSymbols(pluginName, dll::program_location());
+            }
             fPluginOrder.push_back(pluginName);
         } catch (boost::system::system_error& e) {
             throw PluginLoadError(ToString("An error occurred while loading static plugin ", pluginName, ": ", e.what()));
@@ -211,7 +223,13 @@ auto fair::mq::PluginManager::LoadPluginStatic(const string& pluginName) -> void
 auto fair::mq::PluginManager::InstantiatePlugin(const string& pluginName) -> void
 {
     if (fPlugins.find(pluginName) == fPlugins.end()) {
-        fPlugins[pluginName] = fPluginFactories[pluginName](*fPluginServices);
+        if ("control" == pluginName) {
+            fPlugins[pluginName] = plugins::Make_control_Plugin(fPluginServices.get());
+        } else if ("config" == pluginName) {
+            fPlugins[pluginName] = plugins::Make_config_Plugin(fPluginServices.get());
+        } else {
+            fPlugins[pluginName] = fPluginFactories[pluginName](*fPluginServices);
+        }
     }
 }
 
