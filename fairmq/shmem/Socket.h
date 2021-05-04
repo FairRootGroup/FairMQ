@@ -378,12 +378,10 @@ class Socket final : public fair::mq::Socket
         }
     }
 
-    void Events(uint32_t* events) override
+    int Events(uint32_t* events) override
     {
         size_t eventsSize = sizeof(uint32_t);
-        if (zmq_getsockopt(fSocket, ZMQ_EVENTS, events, &eventsSize) < 0) {
-            throw SocketError(tools::ToString("failed setting ZMQ_EVENTS, reason: ", zmq_strerror(errno)));
-        }
+        return zmq_getsockopt(fSocket, ZMQ_EVENTS, events, &eventsSize);
     }
 
     int GetLinger() const override

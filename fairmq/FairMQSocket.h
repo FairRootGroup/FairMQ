@@ -56,7 +56,7 @@ class FairMQSocket
     /// If the backend supports it, fills the unsigned integer @a events with the ZMQ_EVENTS value
     /// DISCLAIMER: this API is experimental and unsupported and might be dropped / refactored in
     /// the future.
-    virtual void Events(uint32_t* events) = 0;
+    virtual int Events(uint32_t* events) = 0;
     virtual void SetLinger(const int value) = 0;
     virtual int GetLinger() const = 0;
     virtual void SetSndBufSize(const int value) = 0;
