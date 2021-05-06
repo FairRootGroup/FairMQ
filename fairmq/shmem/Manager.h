@@ -44,6 +44,7 @@
 #include <thread>
 #include <unordered_map>
 #include <utility> // pair
+#include <tuple>
 #include <vector>
 
 #include <unistd.h> // getuid
@@ -58,7 +59,8 @@ class Manager
 {
   public:
     Manager(const std::string& sessionName, std::string deviceId, size_t size, const ProgOptions* config)
-        : fShmId(makeShmIdStr(sessionName))
+        : fShmId64(makeShmIdUint64(sessionName))
+        , fShmId(makeShmIdStr(sessionName))
         , fSegmentId(config ? config->GetProperty<uint16_t>("shm-segment-id", 0) : 0)
         , fDeviceId(std::move(deviceId))
         , fSegments()
@@ -337,8 +339,8 @@ class Manager
 
         // fast path
         for (const auto &lRegion : lTlCacheVec) {
-            if ((lRegion.second == id) && (lTlCacheGen == fRegionsGen)) {
-                return lRegion.first;
+            if ((std::get<1>(lRegion) == id) && (lTlCacheGen == fRegionsGen) && (std::get<2>(lRegion) == fShmId64)) {
+                return std::get<0>(lRegion);
             }
         }
 
@@ -349,7 +351,7 @@ class Manager
         }
 
         auto *lRegion = GetRegionUnsafe(id);
-        fTlRegionCache.fRegionsTLCache.emplace_back(std::make_pair(lRegion, id));
+        fTlRegionCache.fRegionsTLCache.emplace_back(std::make_tuple(lRegion, id, fShmId64));
         fTlRegionCache.fRegionsTLCacheGen = fRegionsGen;
         return lRegion;
     }
@@ -670,6 +672,7 @@ class Manager
     }
 
   private:
+    uint64_t fShmId64;
     std::string fShmId;
     uint16_t fSegmentId;
     std::string fDeviceId;
@@ -694,7 +697,7 @@ class Manager
     alignas(128) inline static std::atomic<unsigned long> fRegionsGen = 0ul;
     inline static thread_local struct ManagerTLCache {
         unsigned long fRegionsTLCacheGen;
-        std::vector<std::pair<Region*, uint16_t>> fRegionsTLCache;
+        std::vector<std::tuple<Region*, uint16_t, uint64_t>> fRegionsTLCache;
     } fTlRegionCache;
 
     std::atomic<bool> fInterrupted;
