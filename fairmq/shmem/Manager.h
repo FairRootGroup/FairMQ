@@ -73,7 +73,6 @@ class Manager
         , fShmSegments(nullptr)
         , fShmRegions(nullptr)
         , fInterrupted(false)
-        , fMsgCounter(0)
 #ifdef FAIRMQ_DEBUG_MODE
         , fMsgDebug(nullptr)
         , fShmMsgCounters(nullptr)
@@ -82,6 +81,8 @@ class Manager
         , fSendHeartbeats(true)
         , fThrowOnBadAlloc(config ? config->GetProperty<bool>("shm-throw-bad-alloc", true) : true)
         , fNoCleanup(config ? config->GetProperty<bool>("shm-no-cleanup", false) : false)
+        , fMsgCounterNew(0)
+        , fMsgCounterDelete(0)
     {
         using namespace boost::interprocess;
 
@@ -260,9 +261,10 @@ class Manager
     void Resume() { fInterrupted.store(false); }
     void Reset()
     {
-        if (fMsgCounter.load() != 0) {
-            LOG(error) << "Message counter during Reset expected to be 0, found: " << fMsgCounter.load();
-            throw MessageError(tools::ToString("Message counter during Reset expected to be 0, found: ", fMsgCounter.load()));
+        auto diff = fMsgCounterNew.load() - fMsgCounterDelete.load();
+        if (diff != 0) {
+            LOG(error) << "Message counter during Reset expected to be 0, found: " << diff;
+            throw MessageError(tools::ToString("Message counter during Reset expected to be 0, found: ", diff));
         }
     }
     bool Interrupted() { return fInterrupted.load(); }
@@ -496,8 +498,8 @@ class Manager
         }
     }
 
-    void IncrementMsgCounter() { fMsgCounter.fetch_add(1, std::memory_order_relaxed); }
-    void DecrementMsgCounter() { fMsgCounter.fetch_sub(1, std::memory_order_relaxed); }
+    void IncrementMsgCounter() { fMsgCounterNew.fetch_add(1, std::memory_order_relaxed); }
+    void DecrementMsgCounter() { fMsgCounterDelete.fetch_add(1, std::memory_order_relaxed); }
 
 #ifdef FAIRMQ_DEBUG_MODE
     void IncrementShmMsgCounter(uint16_t segmentId) { ++((*fShmMsgCounters)[segmentId].fCount); }
@@ -696,7 +698,6 @@ class Manager
     } fTlRegionCache;
 
     std::atomic<bool> fInterrupted;
-    std::atomic<int32_t> fMsgCounter; // TODO: find a better lifetime solution instead of the counter
 #ifdef FAIRMQ_DEBUG_MODE
     Uint16MsgDebugMapHashMap* fMsgDebug;
     Uint16MsgCounterHashMap* fShmMsgCounters;
@@ -709,6 +710,10 @@ class Manager
 
     bool fThrowOnBadAlloc;
     bool fNoCleanup;
+
+    // make sure the counters are not thrashing the cache line between threads doing creation and deallocation
+    alignas(128) std::atomic_uint64_t fMsgCounterNew; // TODO: find a better lifetime solution instead of the counter
+    alignas(128) std::atomic_uint64_t fMsgCounterDelete;
 };
 
 } // namespace fair::mq::shmem
