@@ -39,9 +39,9 @@ void Sampler::InitTask()
                   << ", flags: " << info.flags;
     });
 
-    fRegion = FairMQUnmanagedRegionPtr(NewUnmanagedRegionFor("data",
-                                                             0,
-                                                             10000000,
+    fRegion = FairMQUnmanagedRegionPtr(NewUnmanagedRegionFor("data", // region is created using the transport of this channel...
+                                                             0,      // ... and this sub-channel
+                                                             10000000, // region size
                                                              [this](const std::vector<fair::mq::RegionBlock>& blocks) { // callback to be called when message buffers no longer needed by transport
                                                                  lock_guard<mutex> lock(fMtx);
                                                                  fNumUnackedMsgs -= blocks.size();
@@ -49,7 +49,10 @@ void Sampler::InitTask()
                                                                  if (fMaxIterations > 0) {
                                                                     LOG(info) << "Received " << blocks.size() << " acks";
                                                                  }
-                                                             }
+                                                             },
+                                                             "", // path, if a region is backed by a file
+                                                             0,  // flags that are passed for region creation
+                                                             fair::mq::RegionConfig{true, true} // additional config: { call mlock on the region, zero the region memory }
                                                              ));
     fRegion->SetLinger(fLinger);
 }

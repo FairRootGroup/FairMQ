@@ -37,15 +37,16 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
                     const int64_t userFlags,
                     RegionCallback callback,
                     RegionBulkCallback bulkCallback,
-                    const std::string& path = "",
-                    int flags = 0,
-                    FairMQTransportFactory* factory = nullptr)
+                    const std::string& path,
+                    int flags,
+                    FairMQTransportFactory* factory,
+                    fair::mq::RegionConfig cfg)
         : FairMQUnmanagedRegion(factory)
         , fManager(manager)
         , fRegion(nullptr)
         , fRegionId(0)
     {
-        auto result = fManager.CreateRegion(size, userFlags, callback, bulkCallback, path, flags);
+        auto result = fManager.CreateRegion(size, userFlags, callback, bulkCallback, path, flags, cfg);
         fRegion = result.first;
         fRegionId = result.second;
     }
