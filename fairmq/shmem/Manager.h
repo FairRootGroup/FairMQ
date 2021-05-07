@@ -410,7 +410,7 @@ class Manager
             }
             fRegionEventsShmCV.notify_all();
         } catch(std::out_of_range& oor) {
-            LOG(debug) << "RemoveRegion() could not locate region with id'" << id << "'";
+            LOG(debug) << "RemoveRegion() could not locate region with id '" << id << "'";
         }
         fRegionsGen += 1; // signal TL cache invalidation
     }
