@@ -16,6 +16,8 @@
 #include <cstddef> // size_t
 #include <string>
 
+#include <sys/mman.h> // mlock
+
 namespace fair::mq::zmq
 {
 
@@ -30,7 +32,8 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
                     int64_t userFlags,
                     RegionCallback callback,
                     RegionBulkCallback bulkCallback,
-                    FairMQTransportFactory* factory = nullptr)
+                    FairMQTransportFactory* factory,
+                    fair::mq::RegionConfig cfg)
         : fair::mq::UnmanagedRegion(factory)
         , fCtx(ctx)
         , fId(fCtx.RegionCount())
@@ -39,7 +42,20 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
         , fUserFlags(userFlags)
         , fCallback(callback)
         , fBulkCallback(bulkCallback)
-    {}
+    {
+        if (cfg.lock) {
+            LOG(debug) << "Locking region " << fId << "...";
+            if (mlock(fBuffer, fSize) == -1) {
+                LOG(error) << "Could not lock region " << fId << ". Code: " << errno << ", reason: " << strerror(errno);
+            }
+            LOG(debug) << "Successfully locked region " << fId << ".";
+        }
+        if (cfg.zero) {
+            LOG(debug) << "Zeroing free memory of region " << fId << "...";
+            memset(fBuffer, 0x00, fSize);
+            LOG(debug) << "Successfully zeroed free memory of region " << fId << ".";
+        }
+    }
 
     UnmanagedRegion(const UnmanagedRegion&) = delete;
     UnmanagedRegion operator=(const UnmanagedRegion&) = delete;

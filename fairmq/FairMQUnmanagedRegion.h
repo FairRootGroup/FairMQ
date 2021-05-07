@@ -108,6 +108,19 @@ inline std::ostream& operator<<(std::ostream& os, const FairMQRegionEvent& event
 namespace fair::mq
 {
 
+struct RegionConfig {
+    bool lock;
+    bool zero;
+
+    RegionConfig()
+        : lock(false), zero(false)
+    {}
+
+    RegionConfig(bool l, bool z)
+        : lock(l), zero(z)
+    {}
+};
+
 using RegionCallback = FairMQRegionCallback;
 using RegionBulkCallback = FairMQRegionBulkCallback;
 using RegionEventCallback = FairMQRegionEventCallback;

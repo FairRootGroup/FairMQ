@@ -277,8 +277,9 @@ class Manager
                                                                           const int64_t userFlags,
                                                                           RegionCallback callback,
                                                                           RegionBulkCallback bulkCallback,
-                                                                          const std::string& path = "",
-                                                                          int flags = 0)
+                                                                          const std::string& path,
+                                                                          int flags,
+                                                                          fair::mq::RegionConfig cfg)
     {
         using namespace boost::interprocess;
         try {
@@ -310,6 +311,19 @@ class Manager
 
                 auto r = fRegions.emplace(id, std::make_unique<Region>(fShmId, id, size, false, callback, bulkCallback, path, flags));
                 // LOG(debug) << "Created region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
+
+                if (cfg.lock) {
+                    LOG(debug) << "Locking region " << id << "...";
+                    if (mlock(r.first->second->fRegion.get_address(), r.first->second->fRegion.get_size()) == -1) {
+                        LOG(error) << "Could not lock region " << id << ". Code: " << errno << ", reason: " << strerror(errno);
+                    }
+                    LOG(debug) << "Successfully locked region " << id << ".";
+                }
+                if (cfg.zero) {
+                    LOG(debug) << "Zeroing free memory of region " << id << "...";
+                    memset(r.first->second->fRegion.get_address(), 0x00, r.first->second->fRegion.get_size());
+                    LOG(debug) << "Successfully zeroed free memory of region " << id << ".";
+                }
 
                 fShmRegions->emplace(id, RegionInfo(path.c_str(), flags, userFlags, fShmVoidAlloc));
 
