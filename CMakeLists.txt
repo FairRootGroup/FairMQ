@@ -12,6 +12,12 @@ cmake_policy(VERSION 3.12...3.15)
 # Project ######################################################################
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(FairMQLib)
+find_package(FairCMakeModules 0.1 QUIET)
+if(NOT FairCMakeModules_FOUND)
+  message(WARNING "Could not find FairCMakeModules, falling back to local copy. "
+          "It is recommended to install https://github.com/FairRootGroup/FairCMakeModules")
+  list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/fallback")
+endif()
 include(FairFindPackage2)
 
 get_git_version()

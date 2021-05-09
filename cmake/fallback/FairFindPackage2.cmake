@@ -6,8 +6,14 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
+if(CMAKE_VERSION VERSION_LESS 3.12)
+  message(FATAL_ERROR "Module FairFindPackage2 requires CMake 3.12 or later!")
+endif()
+
+include_guard(GLOBAL)
+
 #
-# find_package2(PRIVATE|PUBLIC|INTERFACE <pkgname>
+# find_package2(PRIVATE|PUBLIC|INTERFACE|BUNDLED <pkgname>
 #               [VERSION <version>]
 #               [COMPONENTS <list of components>]
 #               [ADD_REQUIREMENTS_OF <list of dep_pgkname>]
@@ -90,18 +96,18 @@ macro(find_package2 qualifier pkgname)
     if(${__qualifier__} STREQUAL PRIVATE)
       set(PROJECT_${pkgname}_VERSION ${__version__})
       set(PROJECT_${pkgname}_COMPONENTS ${__components__})
-      set(PROJECT_PACKAGE_DEPENDENCIES ${PROJECT_PACKAGE_DEPENDENCIES} ${pkgname})
+      list(APPEND PROJECT_PACKAGE_DEPENDENCIES ${pkgname})
     elseif(${__qualifier__} STREQUAL PUBLIC)
       set(PROJECT_${pkgname}_VERSION ${__version__})
       set(PROJECT_${pkgname}_COMPONENTS ${__components__})
-      set(PROJECT_PACKAGE_DEPENDENCIES ${PROJECT_PACKAGE_DEPENDENCIES} ${pkgname})
+      list(APPEND PROJECT_PACKAGE_DEPENDENCIES ${pkgname})
       set(PROJECT_INTERFACE_${pkgname}_VERSION ${__version__})
       set(PROJECT_INTERFACE_${pkgname}_COMPONENTS ${__components__})
-      set(PROJECT_INTERFACE_PACKAGE_DEPENDENCIES ${PROJECT_INTERFACE_PACKAGE_DEPENDENCIES} ${pkgname})
+      list(APPEND PROJECT_INTERFACE_PACKAGE_DEPENDENCIES ${pkgname})
     elseif(${__qualifier__} STREQUAL INTERFACE)
       set(PROJECT_INTERFACE_${pkgname}_VERSION ${__version__})
       set(PROJECT_INTERFACE_${pkgname}_COMPONENTS ${__components__})
-      set(PROJECT_INTERFACE_PACKAGE_DEPENDENCIES ${PROJECT_INTERFACE_PACKAGE_DEPENDENCIES} ${pkgname})
+      list(APPEND PROJECT_INTERFACE_PACKAGE_DEPENDENCIES ${pkgname})
     endif()
   endif()
 
