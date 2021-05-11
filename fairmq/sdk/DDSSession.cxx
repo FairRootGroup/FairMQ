@@ -21,6 +21,7 @@
 #include <fairmq/sdk/DDSTopology.h>
 #include <mutex>
 #include <sstream>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
