@@ -3,7 +3,7 @@
 	url = https://github.com/google/googletest
 [submodule "extern/asio"]
 	path = extern/asio
-	url = https://github.com/chriskohlhoff/asio
+	url = https://github.com/FairRootGroup/asio
 [submodule "extern/PicoSHA2"]
 	path = extern/PicoSHA2
 	url = https://github.com/okdshin/PicoSHA2
