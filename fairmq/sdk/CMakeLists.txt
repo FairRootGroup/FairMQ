@@ -54,7 +54,7 @@ target_include_directories(${target}
 )
 target_link_libraries(${target}
   PUBLIC
-  asio::headers
+  asio::asio
   Boost::boost
   Boost::filesystem
   FairLogger::FairLogger
