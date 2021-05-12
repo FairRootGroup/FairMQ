@@ -6,8 +6,8 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
-cmake_policy(VERSION 3.12...3.15)
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_policy(VERSION 3.14...3.20)
 
 # Project ######################################################################
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
@@ -132,7 +132,7 @@ endif()
 
 if(BUILD_SDK)
   find_package2(BUNDLED asio
-    VERSION 1.18.0
+    VERSION 1.18.1
   )
   if(NOT asio_FOUND)
     build_bundled(asio extern/asio)
@@ -236,18 +236,18 @@ if(BUILD_DOCS)
   )
 endif()
 if(BUILD_SDK)
-  install(FILES cmake/Findasio.cmake
-    DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
-  )
   if(asio_BUNDLED)
-    install(TARGETS bundled_asio_headers EXPORT ${PROJECT_EXPORT_SET})
-    install(DIRECTORY "${asio_BUILD_INCLUDE_DIR}/asio"
-      DESTINATION ${asio_INSTALL_INCLUDE_DIR}
-      PATTERN "Makefile.am" EXCLUDE
-      PATTERN ".gitignore" EXCLUDE
+    add_library(bundled_asio_headers INTERFACE)
+    target_include_directories(bundled_asio_headers INTERFACE
+      $<BUILD_INTERFACE:${asio_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}>
+      $<INSTALL_INTERFACE:${PROJECT_INSTALL_INCDIR}/bundled>
     )
-    install(FILES "${asio_BUILD_INCLUDE_DIR}/asio.hpp"
-      DESTINATION ${asio_INSTALL_INCLUDE_DIR}
+    install(TARGETS bundled_asio_headers EXPORT ${PROJECT_EXPORT_SET})
+    install(DIRECTORY "${asio_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/asio"
+      DESTINATION ${PROJECT_INSTALL_INCDIR}/bundled
+    )
+    install(FILES "${asio_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/asio.hpp"
+      DESTINATION ${PROJECT_INSTALL_INCDIR}/bundled
     )
   endif()
 endif()
@@ -336,7 +336,11 @@ if(PROJECT_PACKAGE_DEPENDENCIES)
       endif()
       get_filename_component(prefix ${flatbuffers_include}/.. ABSOLUTE)
     else()
-      get_filename_component(prefix ${${dep}_INCLUDE_DIR}/.. ABSOLUTE)
+      if(${dep}_PREFIX)
+        set(prefix ${${dep}_PREFIX})
+      else()
+        get_filename_component(prefix ${${dep}_INCLUDE_DIR}/.. ABSOLUTE)
+      endif()
     endif()
     if(NOT ${dep}_BUNDLED)
       message(STATUS "  ${BWhite}${dep_padded}${CR}${version_padded}${prefix}")
