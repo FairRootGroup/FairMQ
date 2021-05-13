@@ -24,7 +24,7 @@ void addCustomOptions(bpo::options_description& options)
         ("msg-rate", bpo::value<float>()->default_value(0), "Msg rate limit in maximum number of messages per second");
 }
 
-std::unique_ptr<fair::mq::Device> getDevice(const fair::mq::ProgOptions& /* config */)
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /* config */)
 {
     return std::make_unique<fair::mq::BenchmarkSampler>();
 }

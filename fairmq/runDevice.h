@@ -11,7 +11,7 @@
 #include <memory>
 
 // to be implemented by the user to return a child class of FairMQDevice
-std::unique_ptr<fair::mq::Device> getDevice(const fair::mq::ProgOptions& config);
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& config);
 
 // to be implemented by the user to add custom command line options (or just with empty body)
 void addCustomOptions(boost::program_options::options_description&);
