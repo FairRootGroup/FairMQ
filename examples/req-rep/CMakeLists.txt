@@ -6,21 +6,12 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-add_library(ExampleReqRepLib STATIC
-  "Client.cxx"
-  "Client.h"
-  "Server.cxx"
-  "Server.h"
-)
-
-target_link_libraries(ExampleReqRepLib PUBLIC FairMQ)
-
-add_executable(fairmq-ex-req-rep-client runClient.cxx)
-target_link_libraries(fairmq-ex-req-rep-client PRIVATE ExampleReqRepLib)
+add_executable(fairmq-ex-req-rep-client client.cxx)
+target_link_libraries(fairmq-ex-req-rep-client PRIVATE FairMQ)
 
 
-add_executable(fairmq-ex-req-rep-server runServer.cxx)
-target_link_libraries(fairmq-ex-req-rep-server PRIVATE ExampleReqRepLib)
+add_executable(fairmq-ex-req-rep-server server.cxx)
+target_link_libraries(fairmq-ex-req-rep-server PRIVATE FairMQ)
 
 add_custom_target(ExampleReqRep DEPENDS fairmq-ex-req-rep-client fairmq-ex-req-rep-server)
 

@@ -6,25 +6,14 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-add_library(ExampleMultipleChannelsLib STATIC
-  "Sampler.cxx"
-  "Sampler.h"
-  "Broadcaster.cxx"
-  "Broadcaster.h"
-  "Sink.cxx"
-  "Sink.h"
-)
+add_executable(fairmq-ex-multiple-channels-sampler sampler.cxx)
+target_link_libraries(fairmq-ex-multiple-channels-sampler PRIVATE FairMQ)
 
-target_link_libraries(ExampleMultipleChannelsLib PUBLIC FairMQ)
+add_executable(fairmq-ex-multiple-channels-broadcaster broadcaster.cxx)
+target_link_libraries(fairmq-ex-multiple-channels-broadcaster PRIVATE FairMQ)
 
-add_executable(fairmq-ex-multiple-channels-sampler runSampler.cxx)
-target_link_libraries(fairmq-ex-multiple-channels-sampler PRIVATE ExampleMultipleChannelsLib)
-
-add_executable(fairmq-ex-multiple-channels-broadcaster runBroadcaster.cxx)
-target_link_libraries(fairmq-ex-multiple-channels-broadcaster PRIVATE ExampleMultipleChannelsLib)
-
-add_executable(fairmq-ex-multiple-channels-sink runSink.cxx)
-target_link_libraries(fairmq-ex-multiple-channels-sink PRIVATE ExampleMultipleChannelsLib)
+add_executable(fairmq-ex-multiple-channels-sink sink.cxx)
+target_link_libraries(fairmq-ex-multiple-channels-sink PRIVATE FairMQ)
 
 add_custom_target(ExampleMultipleChannels DEPENDS fairmq-ex-multiple-channels-sampler fairmq-ex-multiple-channels-broadcaster fairmq-ex-multiple-channels-sink)
 

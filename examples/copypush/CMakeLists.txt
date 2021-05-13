@@ -6,21 +6,12 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-add_library(ExampleCopyPushLib STATIC
-  "Sampler.cxx"
-  "Sampler.h"
-  "Sink.cxx"
-  "Sink.h"
-)
 
-target_link_libraries(ExampleCopyPushLib PUBLIC FairMQ)
+add_executable(fairmq-ex-copypush-sampler sampler.cxx)
+target_link_libraries(fairmq-ex-copypush-sampler PRIVATE FairMQ)
 
-add_executable(fairmq-ex-copypush-sampler runSampler.cxx)
-target_link_libraries(fairmq-ex-copypush-sampler PRIVATE ExampleCopyPushLib)
-
-
-add_executable(fairmq-ex-copypush-sink runSink.cxx)
-target_link_libraries(fairmq-ex-copypush-sink PRIVATE ExampleCopyPushLib)
+add_executable(fairmq-ex-copypush-sink sink.cxx)
+target_link_libraries(fairmq-ex-copypush-sink PRIVATE FairMQ)
 
 add_custom_target(ExampleCopyPush DEPENDS fairmq-ex-copypush-sampler fairmq-ex-copypush-sink)
 

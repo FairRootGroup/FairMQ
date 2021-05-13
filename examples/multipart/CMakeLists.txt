@@ -6,20 +6,11 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-add_library(ExampleMultipartLib STATIC
-  "Sampler.cxx"
-  "Sampler.h"
-  "Sink.cxx"
-  "Sink.h"
-)
+add_executable(fairmq-ex-multipart-sampler sampler.cxx)
+target_link_libraries(fairmq-ex-multipart-sampler PRIVATE FairMQ)
 
-target_link_libraries(ExampleMultipartLib PUBLIC FairMQ)
-
-add_executable(fairmq-ex-multipart-sampler runSampler.cxx)
-target_link_libraries(fairmq-ex-multipart-sampler PRIVATE ExampleMultipartLib)
-
-add_executable(fairmq-ex-multipart-sink runSink.cxx)
-target_link_libraries(fairmq-ex-multipart-sink PRIVATE ExampleMultipartLib)
+add_executable(fairmq-ex-multipart-sink sink.cxx)
+target_link_libraries(fairmq-ex-multipart-sink PRIVATE FairMQ)
 
 add_custom_target(ExampleMultipart DEPENDS fairmq-ex-multipart-sampler fairmq-ex-multipart-sink)
 

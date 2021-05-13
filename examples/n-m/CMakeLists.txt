@@ -6,13 +6,13 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-add_executable(fairmq-ex-n-m-synchronizer runSynchronizer.cxx)
+add_executable(fairmq-ex-n-m-synchronizer synchronizer.cxx)
 target_link_libraries(fairmq-ex-n-m-synchronizer PRIVATE FairMQ)
 
-add_executable(fairmq-ex-n-m-sender runSender.cxx)
+add_executable(fairmq-ex-n-m-sender sender.cxx)
 target_link_libraries(fairmq-ex-n-m-sender PRIVATE FairMQ)
 
-add_executable(fairmq-ex-n-m-receiver runReceiver.cxx)
+add_executable(fairmq-ex-n-m-receiver receiver.cxx)
 target_link_libraries(fairmq-ex-n-m-receiver PRIVATE FairMQ)
 
 add_custom_target(ExampleNM DEPENDS fairmq-ex-n-m-synchronizer fairmq-ex-n-m-sender fairmq-ex-n-m-receiver)

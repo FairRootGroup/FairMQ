@@ -6,25 +6,14 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-add_library(Example1N1Lib STATIC
-  "Sampler.cxx"
-  "Sampler.h"
-  "Processor.cxx"
-  "Processor.h"
-  "Sink.cxx"
-  "Sink.h"
-)
+add_executable(fairmq-ex-1-n-1-sampler sampler.cxx)
+target_link_libraries(fairmq-ex-1-n-1-sampler PRIVATE FairMQ)
 
-target_link_libraries(Example1N1Lib PUBLIC FairMQ)
+add_executable(fairmq-ex-1-n-1-processor processor.cxx)
+target_link_libraries(fairmq-ex-1-n-1-processor PRIVATE FairMQ)
 
-add_executable(fairmq-ex-1-n-1-sampler runSampler.cxx)
-target_link_libraries(fairmq-ex-1-n-1-sampler PRIVATE Example1N1Lib)
-
-add_executable(fairmq-ex-1-n-1-processor runProcessor.cxx)
-target_link_libraries(fairmq-ex-1-n-1-processor PRIVATE Example1N1Lib)
-
-add_executable(fairmq-ex-1-n-1-sink runSink.cxx)
-target_link_libraries(fairmq-ex-1-n-1-sink PRIVATE Example1N1Lib)
+add_executable(fairmq-ex-1-n-1-sink sink.cxx)
+target_link_libraries(fairmq-ex-1-n-1-sink PRIVATE FairMQ)
 
 add_custom_target(Example1N1 DEPENDS fairmq-ex-1-n-1-sampler fairmq-ex-1-n-1-processor fairmq-ex-1-n-1-sink)
 

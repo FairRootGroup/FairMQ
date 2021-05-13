@@ -3,7 +3,7 @@
 
 A simple topology of two devices - **Sampler** and **Sink**. **Sampler** sends data to **Sink** via the **PUSH-PULL** pattern.
 
-`runSampler.cxx` and `runSink.cxx` configure and run the devices.
+`sampler.cxx` and `sink.cxx` configure and run the devices.
 
 The executables take two command line parameters: `--id` and `--channel-config`. The value of `--id` should be a unique identifier and the value for `--channel-config` is the configuration of the communication channel. .
 

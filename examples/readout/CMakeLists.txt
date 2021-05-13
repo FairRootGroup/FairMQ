@@ -6,19 +6,19 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-add_executable(fairmq-ex-readout-readout runReadout.cxx)
+add_executable(fairmq-ex-readout-readout readout.cxx)
 target_link_libraries(fairmq-ex-readout-readout PRIVATE FairMQ)
 
-add_executable(fairmq-ex-readout-builder runBuilder.cxx)
+add_executable(fairmq-ex-readout-builder builder.cxx)
 target_link_libraries(fairmq-ex-readout-builder PRIVATE FairMQ)
 
-add_executable(fairmq-ex-readout-processor runProcessor.cxx)
+add_executable(fairmq-ex-readout-processor processor.cxx)
 target_link_libraries(fairmq-ex-readout-processor PRIVATE FairMQ)
 
-add_executable(fairmq-ex-readout-sender runSender.cxx)
+add_executable(fairmq-ex-readout-sender sender.cxx)
 target_link_libraries(fairmq-ex-readout-sender PRIVATE FairMQ)
 
-add_executable(fairmq-ex-readout-receiver runReceiver.cxx)
+add_executable(fairmq-ex-readout-receiver receiver.cxx)
 target_link_libraries(fairmq-ex-readout-receiver PRIVATE FairMQ)
 
 set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
