@@ -19,7 +19,7 @@ void addCustomOptions(bpo::options_description& options)
         ("multipart", bpo::value<bool>()->default_value(true), "Handle multipart payloads");
 }
 
-std::unique_ptr<fair::mq::Device> getDevice(const fair::mq::ProgOptions& /*config*/)
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)
 {
     return std::make_unique<fair::mq::Merger>();
 }
