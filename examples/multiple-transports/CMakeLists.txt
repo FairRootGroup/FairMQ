@@ -6,25 +6,14 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-add_library(ExampleMultipleTransportsLib STATIC
-  "Sampler1.cxx"
-  "Sampler1.h"
-  "Sampler2.cxx"
-  "Sampler2.h"
-  "Sink.cxx"
-  "Sink.h"
-)
+add_executable(fairmq-ex-multiple-transports-sampler1 sampler1.cxx)
+target_link_libraries(fairmq-ex-multiple-transports-sampler1 PRIVATE FairMQ)
 
-target_link_libraries(ExampleMultipleTransportsLib PUBLIC FairMQ)
+add_executable(fairmq-ex-multiple-transports-sampler2 sampler2.cxx)
+target_link_libraries(fairmq-ex-multiple-transports-sampler2 PRIVATE FairMQ)
 
-add_executable(fairmq-ex-multiple-transports-sampler1 runSampler1.cxx)
-target_link_libraries(fairmq-ex-multiple-transports-sampler1 PRIVATE ExampleMultipleTransportsLib)
-
-add_executable(fairmq-ex-multiple-transports-sampler2 runSampler2.cxx)
-target_link_libraries(fairmq-ex-multiple-transports-sampler2 PRIVATE ExampleMultipleTransportsLib)
-
-add_executable(fairmq-ex-multiple-transports-sink runSink.cxx)
-target_link_libraries(fairmq-ex-multiple-transports-sink PRIVATE ExampleMultipleTransportsLib)
+add_executable(fairmq-ex-multiple-transports-sink sink.cxx)
+target_link_libraries(fairmq-ex-multiple-transports-sink PRIVATE FairMQ)
 
 add_custom_target(ExampleMultipleTransports DEPENDS fairmq-ex-multiple-transports-sampler1 fairmq-ex-multiple-transports-sampler2 fairmq-ex-multiple-transports-sink)
 

@@ -6,19 +6,24 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIRMQEXAMPLEMULTIPARTHEADER_H
-#define FAIRMQEXAMPLEMULTIPARTHEADER_H
+#include <fairmq/Device.h>
+#include <fairmq/runDevice.h>
 
-#include <cstdint>
-
-namespace example_multipart
+class QCTask : public FairMQDevice
 {
-
-struct Header
-{
-    int32_t stopFlag;
+  public:
+    QCTask()
+    {
+        OnData("qc", [](FairMQMessagePtr& /*msg*/, int) {
+            LOG(info) << "received data";
+            return false;
+        });
+    }
 };
 
+namespace bpo = boost::program_options;
+void addCustomOptions(bpo::options_description& /*options*/) {}
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)
+{
+    return std::make_unique<QCTask>();
 }
-
-#endif /* FAIRMQEXAMPLEMULTIPARTHEADER_H */

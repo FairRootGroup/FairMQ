@@ -6,19 +6,23 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef FAIRMQEXAMPLEMULTIPARTHEADER_H
-#define FAIRMQEXAMPLEMULTIPARTHEADER_H
+#include <fairmq/Device.h>
+#include <fairmq/runDevice.h>
 
-#include <cstdint>
+#include <string>
 
-namespace example_multipart
+class Sink : public FairMQDevice
 {
+  public:
+    Sink() { OnData("data2", &Sink::HandleData); }
 
-struct Header
-{
-    int32_t stopFlag;
+  protected:
+    bool HandleData(FairMQMessagePtr& /*msg*/, int /*index*/) { return true; }
 };
 
+namespace bpo = boost::program_options;
+void addCustomOptions(bpo::options_description&) {}
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)
+{
+  return std::make_unique<Sink>();
 }
-
-#endif /* FAIRMQEXAMPLEMULTIPARTHEADER_H */

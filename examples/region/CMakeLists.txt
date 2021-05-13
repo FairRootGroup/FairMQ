@@ -6,20 +6,11 @@
  #                  copied verbatim in the file "LICENSE"                       #
  ################################################################################
 
-add_library(ExampleRegionLib STATIC
-  "Sampler.cxx"
-  "Sampler.h"
-  "Sink.cxx"
-  "Sink.h"
-)
+add_executable(fairmq-ex-region-sampler sampler.cxx)
+target_link_libraries(fairmq-ex-region-sampler PRIVATE FairMQ)
 
-target_link_libraries(ExampleRegionLib PUBLIC FairMQ)
-
-add_executable(fairmq-ex-region-sampler runSampler.cxx)
-target_link_libraries(fairmq-ex-region-sampler PRIVATE ExampleRegionLib)
-
-add_executable(fairmq-ex-region-sink runSink.cxx)
-target_link_libraries(fairmq-ex-region-sink PRIVATE ExampleRegionLib)
+add_executable(fairmq-ex-region-sink sink.cxx)
+target_link_libraries(fairmq-ex-region-sink PRIVATE FairMQ)
 
 add_custom_target(ExampleRegion DEPENDS fairmq-ex-region-sampler fairmq-ex-region-sink)
 

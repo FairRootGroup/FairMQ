@@ -6,25 +6,14 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-add_library(ExampleDDSLib STATIC
-  "Sampler.cxx"
-  "Sampler.h"
-  "Processor.cxx"
-  "Processor.h"
-  "Sink.cxx"
-  "Sink.h"
-)
+add_executable(fairmq-ex-dds-sampler sampler.cxx)
+target_link_libraries(fairmq-ex-dds-sampler PRIVATE FairMQ)
 
-target_link_libraries(ExampleDDSLib PUBLIC FairMQ)
+add_executable(fairmq-ex-dds-processor processor.cxx)
+target_link_libraries(fairmq-ex-dds-processor PRIVATE FairMQ)
 
-add_executable(fairmq-ex-dds-sampler runSampler.cxx)
-target_link_libraries(fairmq-ex-dds-sampler PRIVATE ExampleDDSLib)
-
-add_executable(fairmq-ex-dds-processor runProcessor.cxx)
-target_link_libraries(fairmq-ex-dds-processor PRIVATE ExampleDDSLib)
-
-add_executable(fairmq-ex-dds-sink runSink.cxx)
-target_link_libraries(fairmq-ex-dds-sink PRIVATE ExampleDDSLib)
+add_executable(fairmq-ex-dds-sink sink.cxx)
+target_link_libraries(fairmq-ex-dds-sink PRIVATE FairMQ)
 
 add_custom_target(ExampleDDS DEPENDS fairmq-ex-dds-sampler fairmq-ex-dds-processor fairmq-ex-dds-sink)
 
