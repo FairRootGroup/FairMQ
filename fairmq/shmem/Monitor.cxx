@@ -479,6 +479,45 @@ unordered_map<uint16_t, std::vector<BufferDebugInfo>> Monitor::GetDebugInfo(cons
     return GetDebugInfo(shmId);
 }
 
+unsigned long Monitor::GetFreeMemory(const ShmId& shmId, uint16_t segmentId)
+{
+    using namespace boost::interprocess;
+    try {
+        bipc::managed_shared_memory managementSegment(bipc::open_only, std::string("fmq_" + shmId.shmId + "_mng").c_str());
+        boost::interprocess::named_mutex mtx(boost::interprocess::open_only, std::string("fmq_" + shmId.shmId + "_mtx").c_str());
+        boost::interprocess::scoped_lock<bipc::named_mutex> lock(mtx);
+
+        Uint16SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
+
+        if (!segmentInfos) {
+            LOG(error) << "Found management segment, but could not locate segment info";
+            throw MonitorError("Found management segment, but could not locate segment info");
+        }
+
+        auto it = segmentInfos->find(segmentId);
+        if (it != segmentInfos->end()) {
+            if (it->second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
+                RBTreeBestFitSegment segment(open_read_only, std::string("fmq_" + shmId.shmId + "_m_" + std::to_string(segmentId)).c_str());
+                return segment.get_free_memory();
+            } else {
+                SimpleSeqFitSegment segment(open_read_only, std::string("fmq_" + shmId.shmId + "_m_" + std::to_string(segmentId)).c_str());
+                return segment.get_free_memory();
+            }
+        } else {
+            LOG(error) << "Could not find segment id '" << segmentId << "'";
+            throw MonitorError(tools::ToString("Could not find segment id '", segmentId, "'"));
+        }
+    } catch (bie&) {
+        LOG(error) << "Could not find management segment for shmid '" << shmId.shmId << "'";
+        throw MonitorError(tools::ToString("Could not find management segment for shmid '", shmId.shmId, "'"));
+    }
+}
+unsigned long Monitor::GetFreeMemory(const SessionId& sessionId, uint16_t segmentId)
+{
+    ShmId shmId{makeShmIdStr(sessionId.sessionId)};
+    return GetFreeMemory(shmId, segmentId);
+}
+
 void Monitor::PrintHelp()
 {
     LOG(info) << "controls: [x] close memory, "

@@ -79,10 +79,28 @@ class Monitor
     /// @param verbose output cleanup results to stdout
     static std::vector<std::pair<std::string, bool>> CleanupFull(const SessionId& sessionId, bool verbose = true);
 
+    /// @brief Outputs list of messages in shmem (if compiled with FAIRMQ_DEBUG_MODE=ON)
+    /// @param shmId shmem id
     static void PrintDebugInfo(const ShmId& shmId);
-    static void PrintDebugInfo(const SessionId& shmId);
+    /// @brief Outputs list of messages in shmem (if compiled with FAIRMQ_DEBUG_MODE=ON)
+    /// @param sessionId session id
+    static void PrintDebugInfo(const SessionId& sessionId);
+    /// @brief Returns a list of messages in shmem (if compiled with FAIRMQ_DEBUG_MODE=ON)
+    /// @param shmId shmem id
     static std::unordered_map<uint16_t, std::vector<BufferDebugInfo>> GetDebugInfo(const ShmId& shmId);
-    static std::unordered_map<uint16_t, std::vector<BufferDebugInfo>> GetDebugInfo(const SessionId& shmId);
+    /// @brief Returns a list of messages in shmem (if compiled with FAIRMQ_DEBUG_MODE=ON)
+    /// @param sessionId session id
+    static std::unordered_map<uint16_t, std::vector<BufferDebugInfo>> GetDebugInfo(const SessionId& sessionId);
+    /// @brief Returns the amount of free memory in the specified segment
+    /// @param sessionId shmem id
+    /// @param segmentId segment id
+    /// @throws MonitorError
+    static unsigned long GetFreeMemory(const ShmId& shmId, uint16_t segmentId);
+    /// @brief Returns the amount of free memory in the specified segment
+    /// @param sessionId session id
+    /// @param segmentId segment id
+    /// @throws MonitorError
+    static unsigned long GetFreeMemory(const SessionId& sessionId, uint16_t segmentId);
 
     static bool PrintShm(const ShmId& shmId);
     static void ListAll(const std::string& path);
@@ -94,6 +112,7 @@ class Monitor
     static bool RemoveCondition(const std::string& name);
 
     struct DaemonPresent : std::runtime_error { using std::runtime_error::runtime_error; };
+    struct MonitorError : std::runtime_error { using std::runtime_error::runtime_error; };
 
   private:
     void PrintHelp();

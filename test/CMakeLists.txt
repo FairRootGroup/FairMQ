@@ -263,6 +263,7 @@ add_testsuite(Transport
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     transport/_transfer_timeout.cxx
     transport/_options.cxx
+    transport/_shmem.cxx
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
