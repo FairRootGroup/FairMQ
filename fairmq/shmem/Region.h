@@ -104,6 +104,10 @@ struct Region
             }
         }
 
+
+        InitializeQueues();
+        StartSendingAcks();
+
         LOG(trace) << "shmem: initialized region: " << fName << " (" << (fRemote ? "remote" : "local") << ")";
     }
 
@@ -116,21 +120,17 @@ struct Region
     {
         using namespace boost::interprocess;
 
-        if (fQueue == nullptr) {
-            if (fRemote) {
-                fQueue = std::make_unique<message_queue>(open_only, fQueueName.c_str());
-            } else {
-                fQueue = std::make_unique<message_queue>(create_only, fQueueName.c_str(), 1024, fAckBunchSize * sizeof(RegionBlock));
-            }
-            LOG(trace) << "shmem: initialized region queue: " << fQueueName << " (" << (fRemote ? "remote" : "local") << ")";
+        if (fRemote) {
+            fQueue = std::make_unique<message_queue>(open_only, fQueueName.c_str());
+        } else {
+            fQueue = std::make_unique<message_queue>(create_only, fQueueName.c_str(), 1024, fAckBunchSize * sizeof(RegionBlock));
         }
+        LOG(trace) << "shmem: initialized region queue: " << fQueueName << " (" << (fRemote ? "remote" : "local") << ")";
     }
 
     void StartSendingAcks()
     {
-        if (!fAcksSender.joinable()) {
-            fAcksSender = std::thread(&Region::SendAcks, this);
-        }
+        fAcksSender = std::thread(&Region::SendAcks, this);
     }
     void SendAcks()
     {

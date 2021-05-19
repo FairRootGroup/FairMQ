@@ -309,8 +309,6 @@ class Message final : public fair::mq::Message
                 }
 
                 if (fRegionPtr) {
-                    fRegionPtr->InitializeQueues();
-                    fRegionPtr->StartSendingAcks();
                     fRegionPtr->ReleaseBlock({fMeta.fHandle, fMeta.fSize, fMeta.fHint});
                 } else {
                     LOG(warn) << "region ack queue for id " << fMeta.fRegionId << " no longer exist. Not sending ack";
