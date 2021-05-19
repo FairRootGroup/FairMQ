@@ -327,7 +327,6 @@ class Manager
 
                 fShmRegions->emplace(id, RegionInfo(path.c_str(), flags, userFlags, fShmVoidAlloc));
 
-                r.first->second->InitializeQueues();
                 r.first->second->StartReceivingAcks();
                 result.first = &(r.first->second->fRegion);
                 result.second = id;
