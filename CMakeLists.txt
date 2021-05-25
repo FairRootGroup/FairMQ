@@ -45,8 +45,6 @@ fairmq_build_option(BUILD_SDK           "Build the FairMQ controller SDK."
                                          DEFAULT OFF REQUIRES "BUILD_DDS_PLUGIN;BUILD_SDK_COMMANDS")
 fairmq_build_option(BUILD_DOCS          "Build FairMQ documentation."
                                          DEFAULT OFF)
-fairmq_build_option(FAST_BUILD          "Fast production build. Not recommended for development."
-                                         DEFAULT OFF)
 fairmq_build_option(USE_EXTERNAL_GTEST  "Do not use bundled GTest. Not recommended."
                                          DEFAULT OFF)
 fairmq_build_option(FAIRMQ_DEBUG_MODE   "Compile in debug mode (may decrease performance)."
@@ -55,10 +53,6 @@ fairmq_build_option(FAIRMQ_DEBUG_MODE   "Compile in debug mode (may decrease per
 
 
 # Dependencies #################################################################
-if(FAST_BUILD)
-  include(cotire)
-endif()
-
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)

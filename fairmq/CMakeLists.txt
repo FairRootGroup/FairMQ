@@ -257,39 +257,32 @@ if(BUILD_FAIRMQ)
   #################################
   # define libFairMQ build target #
   #################################
-  if(FAST_BUILD)
-    set(_target FairMQ_)
-  else()
-    set(_target FairMQ)
-  endif()
-  add_library(${_target}
+  set(target FairMQ)
+  add_library(${target}
     ${FAIRMQ_SOURCE_FILES}
     ${FAIRMQ_PUBLIC_HEADER_FILES} # for IDE integration
     ${FAIRMQ_PRIVATE_HEADER_FILES} # for IDE integration
   )
-  set_target_properties(${_target} PROPERTIES LABELS coverage)
-  if(FAST_BUILD)
-    set_target_properties(${_target} PROPERTIES OUTPUT_NAME FairMQ)
-  endif()
+  set_target_properties(${target} PROPERTIES LABELS coverage)
 
 
   ############################
   # preprocessor definitions #
   ############################
-  target_compile_definitions(${_target} PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
+  target_compile_definitions(${target} PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
   if(FAIRMQ_DEBUG_MODE)
-    target_compile_definitions(${_target} PUBLIC FAIRMQ_DEBUG_MODE)
+    target_compile_definitions(${target} PUBLIC FAIRMQ_DEBUG_MODE)
   endif()
   if(BUILD_OFI_TRANSPORT)
-    target_compile_definitions(${_target} PRIVATE BUILD_OFI_TRANSPORT)
+    target_compile_definitions(${target} PRIVATE BUILD_OFI_TRANSPORT)
   endif()
-  target_compile_definitions(${_target} PUBLIC FAIRMQ_HAS_STD_FILESYSTEM=${FAIRMQ_HAS_STD_FILESYSTEM})
+  target_compile_definitions(${target} PUBLIC FAIRMQ_HAS_STD_FILESYSTEM=${FAIRMQ_HAS_STD_FILESYSTEM})
 
 
   #######################
   # include directories #
   #######################
-  target_include_directories(${_target}
+  target_include_directories(${target}
     PUBLIC # consumers inherit public include directories
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
@@ -307,12 +300,8 @@ if(BUILD_FAIRMQ)
       Boost::container
     )
   endif()
-  set(optional_deps ${OFI_DEPS})
-  if(optional_deps)
-    list(REMOVE_DUPLICATES optional_deps)
-  endif()
 
-  target_link_libraries(${_target}
+  target_link_libraries(${target}
     INTERFACE # only consumers link against interface dependencies
     Boost::container
 
@@ -333,25 +322,10 @@ if(BUILD_FAIRMQ)
     PicoSHA2
     ${OFI_DEPS}
   )
-  set_target_properties(${_target} PROPERTIES
+  set_target_properties(${target} PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
   )
-
-
-  ##############
-  # fast build #
-  ##############
-  if(FAST_BUILD)
-    set_target_properties(${_target} PROPERTIES
-      COTIRE_UNITY_TARGET_NAME "FairMQ"
-      # COTIRE_ENABLE_PRECOMPILED_HEADER FALSE
-      EXCLUDE_FROM_ALL TRUE
-    )
-    cotire(${_target})
-    set_target_properties(FairMQ PROPERTIES EXCLUDE_FROM_ALL FALSE)
-    set_target_properties(FairMQ PROPERTIES LABELS coverage)
-  endif()
 
 
   ###############
