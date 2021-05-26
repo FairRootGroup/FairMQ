@@ -50,7 +50,6 @@ dds-info --executing-count --wait ${requiredNofSlots}
 
 echo "------------------------"
 echo "...waiting for Topology to finish..."
-# TODO Retrieve number of devices from DDS topology API instead of having the user pass it explicitely
 fairmq-dds-command-ui -w "IDLE"
 fairmq-dds-command-ui -c i
 fairmq-dds-command-ui -c k
