@@ -91,8 +91,7 @@ class TestDevice : public FairMQDevice
 class Config : public ::testing::Test
 {
   public:
-    Config()
-    {}
+    Config() = default;
 
     string TestDeviceSetConfig(const string& transport)
     {

@@ -14,7 +14,7 @@ namespace bpo = boost::program_options;
 class Sink : public FairMQDevice
 {
   public:
-    Sink() {}
+    Sink() = default;
 
     void InitTask() override
     {

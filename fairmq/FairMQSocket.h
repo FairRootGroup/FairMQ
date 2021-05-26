@@ -35,7 +35,7 @@ enum class TransferCode : int
 class FairMQSocket
 {
   public:
-    FairMQSocket() {}
+    FairMQSocket() = default;
     FairMQSocket(FairMQTransportFactory* fac) : fTransport(fac) {}
 
     virtual std::string GetId() const = 0;
@@ -76,7 +76,7 @@ class FairMQSocket
     FairMQTransportFactory* GetTransport() { return fTransport; }
     void SetTransport(FairMQTransportFactory* transport) { fTransport = transport; }
 
-    virtual ~FairMQSocket() {};
+    virtual ~FairMQSocket() = default;
 
   private:
     FairMQTransportFactory* fTransport{nullptr};

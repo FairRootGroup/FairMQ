@@ -187,7 +187,7 @@ using Uint16MsgDebugMapHashMap = boost::unordered_map<uint16_t, SizetMsgDebugMap
 
 struct RegionBlock
 {
-    RegionBlock() {}
+    RegionBlock() = default;
 
     RegionBlock(boost::interprocess::managed_shared_memory::handle_t handle, size_t size, size_t hint)
         : fHandle(handle)

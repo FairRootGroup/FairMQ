@@ -20,7 +20,7 @@ namespace bpo = boost::program_options;
 class Sender : public FairMQDevice
 {
   public:
-    Sender() {}
+    Sender() = default;
 
     void InitTask() override
     {

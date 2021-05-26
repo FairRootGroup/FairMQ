@@ -52,7 +52,7 @@ class FairMQMessage
 
     virtual void Copy(const FairMQMessage& msg) = 0;
 
-    virtual ~FairMQMessage() {};
+    virtual ~FairMQMessage() = default;
 
   private:
     FairMQTransportFactory* fTransport{nullptr};

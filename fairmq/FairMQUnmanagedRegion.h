@@ -27,7 +27,7 @@ enum class FairMQRegionEvent : int
 
 struct FairMQRegionInfo
 {
-    FairMQRegionInfo() {}
+    FairMQRegionInfo() = default;
 
     FairMQRegionInfo(bool _managed, uint64_t _id, void* _ptr, size_t _size, int64_t _flags, FairMQRegionEvent _event)
         : managed(_managed)
@@ -63,7 +63,7 @@ using FairMQRegionEventCallback = std::function<void(FairMQRegionInfo)>;
 class FairMQUnmanagedRegion
 {
   public:
-    FairMQUnmanagedRegion() {}
+    FairMQUnmanagedRegion() = default;
     FairMQUnmanagedRegion(FairMQTransportFactory* factory) : fTransport(factory) {}
 
     virtual void* GetData() const = 0;
@@ -76,7 +76,7 @@ class FairMQUnmanagedRegion
     FairMQTransportFactory* GetTransport() { return fTransport; }
     void SetTransport(FairMQTransportFactory* transport) { fTransport = transport; }
 
-    virtual ~FairMQUnmanagedRegion() {};
+    virtual ~FairMQUnmanagedRegion() = default;
 
   private:
     FairMQTransportFactory* fTransport{nullptr};
@@ -103,7 +103,7 @@ namespace fair::mq
 
 struct RegionConfig
 {
-    RegionConfig() {}
+    RegionConfig() = default;
 
     RegionConfig(bool l, bool z)
         : lock(l), zero(z)

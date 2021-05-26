@@ -14,7 +14,8 @@ namespace bpo = boost::program_options;
 class Processor : public FairMQDevice
 {
   public:
-    Processor() {
+    Processor()
+    {
         OnData("bp", &Processor::HandleData);
     }
 

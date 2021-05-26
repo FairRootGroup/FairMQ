@@ -17,7 +17,7 @@ namespace bpo = boost::program_options;
 class Broadcaster : public FairMQDevice
 {
   public:
-    Broadcaster() {}
+    Broadcaster() = default;
 
   protected:
     bool ConditionalRun() override

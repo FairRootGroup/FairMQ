@@ -18,7 +18,7 @@ namespace bpo = boost::program_options;
 class Readout : public FairMQDevice
 {
   public:
-    Readout() {}
+    Readout() = default;
 
     void InitTask() override
     {

@@ -24,7 +24,7 @@ class FairMQParts
 
   public:
     /// Default constructor
-    FairMQParts() {};
+    FairMQParts() = default;
     /// Copy Constructor
     FairMQParts(const FairMQParts&) = delete;
     /// Move constructor
@@ -35,7 +35,7 @@ class FairMQParts
     template <typename... Ts>
     FairMQParts(Ts&&... messages) { AddPart(std::forward<Ts>(messages)...); }
     /// Default destructor
-    ~FairMQParts() {};
+    ~FairMQParts() = default;
 
     /// Adds part (FairMQMessage) to the container
     /// @param msg message pointer (for example created with NewMessage() method of FairMQDevice)

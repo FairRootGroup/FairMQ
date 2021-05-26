@@ -16,7 +16,7 @@ namespace bpo = boost::program_options;
 class Sampler2 : public FairMQDevice
 {
   public:
-    Sampler2() {}
+    Sampler2() = default;
 
   protected:
     void InitTask() override

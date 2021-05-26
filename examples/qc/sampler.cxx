@@ -15,7 +15,7 @@
 class Sampler : public FairMQDevice
 {
   public:
-    Sampler() {}
+    Sampler() = default;
 
   protected:
     virtual bool ConditionalRun()

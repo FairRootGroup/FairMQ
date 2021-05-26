@@ -16,7 +16,7 @@ namespace bpo = boost::program_options;
 class Builder : public FairMQDevice
 {
   public:
-    Builder() {}
+    Builder() = default;
 
     void Init() override
     {

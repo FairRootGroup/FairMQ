@@ -81,7 +81,8 @@ class FairMQChannel
     // FairMQChannel& operator=(FairMQChannel&&) = delete;
 
     /// Destructor
-    virtual ~FairMQChannel() { /* LOG(warn) << "Destroying channel '" << fName << "'"; */ }
+    virtual ~FairMQChannel() = default;
+    // { LOG(warn) << "Destroying channel '" << fName << "'"; }
 
     struct ChannelConfigurationError : std::runtime_error { using std::runtime_error::runtime_error; };
 
