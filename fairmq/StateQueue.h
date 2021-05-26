@@ -23,8 +23,8 @@ namespace fair::mq
 class StateQueue
 {
   public:
-    StateQueue() {}
-    ~StateQueue() {}
+    StateQueue() = default;
+    ~StateQueue() = default;
 
     fair::mq::State WaitForNext()
     {

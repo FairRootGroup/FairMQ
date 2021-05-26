@@ -19,7 +19,7 @@ namespace fair::mq
 class Proxy : public Device
 {
   public:
-    Proxy() {}
+    Proxy() = default;
 
   protected:
     bool fMultipart = true;

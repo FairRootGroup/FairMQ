@@ -13,10 +13,10 @@
 
 struct MyClass
 {
-    MyClass() {}
+    MyClass() = default;
     MyClass(const std::string& a) : msg(a) {}
     MyClass(const MyClass&) = default;
-    MyClass& operator=(const MyClass& b) { msg = b.msg; return *this; };
+    MyClass& operator=(const MyClass& b) = default;
     std::string msg;
 };
 

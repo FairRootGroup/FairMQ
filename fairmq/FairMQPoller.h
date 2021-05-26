@@ -22,7 +22,7 @@ class FairMQPoller
     virtual bool CheckInput(const std::string& channelKey, const int index) = 0;
     virtual bool CheckOutput(const std::string& channelKey, const int index) = 0;
 
-    virtual ~FairMQPoller() {};
+    virtual ~FairMQPoller() = default;
 };
 
 using FairMQPollerPtr = std::unique_ptr<FairMQPoller>;

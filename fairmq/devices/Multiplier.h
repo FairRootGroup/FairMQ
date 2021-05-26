@@ -20,7 +20,7 @@ namespace fair::mq
 class Multiplier : public Device
 {
   public:
-    Multiplier() {}
+    Multiplier() = default;
 
   protected:
     bool fMultipart = true;

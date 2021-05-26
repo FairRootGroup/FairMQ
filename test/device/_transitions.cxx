@@ -23,7 +23,7 @@ using namespace fair::mq;
 class SlowDevice : public FairMQDevice
 {
   public:
-    SlowDevice() {}
+    SlowDevice() = default;
 
   protected:
     void Init()

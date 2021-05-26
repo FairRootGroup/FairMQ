@@ -122,7 +122,7 @@ class FairMQTransportFactory
     virtual void Resume() = 0;
     virtual void Reset() = 0;
 
-    virtual ~FairMQTransportFactory() {};
+    virtual ~FairMQTransportFactory() = default;
 
     static auto CreateTransportFactory(const std::string& type, const std::string& id = "", const fair::mq::ProgOptions* config = nullptr) -> std::shared_ptr<FairMQTransportFactory>;
 

@@ -355,7 +355,7 @@ struct Cmds
     using container = std::vector<std::unique_ptr<Cmd>>;
     struct CommandFormatError : std::runtime_error { using std::runtime_error::runtime_error; };
 
-    explicit Cmds() {}
+    explicit Cmds() = default;
 
     template<typename... Rest>
     explicit Cmds(std::unique_ptr<Cmd>&& first, Rest&&... rest)

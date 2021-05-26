@@ -18,7 +18,7 @@ namespace bpo = boost::program_options;
 class Client : public FairMQDevice
 {
   public:
-    Client() {}
+    Client() = default;
 
     void InitTask() override
     {

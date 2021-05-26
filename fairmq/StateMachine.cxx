@@ -84,7 +84,7 @@ struct Machine_ : public state_machine_def<Machine_>
         , fNewStatePending(false)
     {}
 
-    virtual ~Machine_() {}
+    virtual ~Machine_() = default;
 
     // initial states
     using initial_state = bmpl::vector<IDLE_S, OK_S>;

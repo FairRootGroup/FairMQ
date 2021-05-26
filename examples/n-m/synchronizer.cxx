@@ -18,7 +18,7 @@ namespace bpo = boost::program_options;
 class Synchronizer : public FairMQDevice
 {
   public:
-    Synchronizer() {}
+    Synchronizer() = default;
 
     bool ConditionalRun() override
     {

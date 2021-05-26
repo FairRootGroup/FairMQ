@@ -19,7 +19,7 @@ namespace fair::mq
 class Splitter : public Device
 {
   public:
-    Splitter() {}
+    Splitter() = default;
 
   protected:
     bool fMultipart = true;

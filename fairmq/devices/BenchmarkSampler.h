@@ -29,7 +29,7 @@ namespace fair::mq
 class BenchmarkSampler : public Device
 {
   public:
-    BenchmarkSampler() {}
+    BenchmarkSampler() = default;
 
     void InitTask() override
     {
