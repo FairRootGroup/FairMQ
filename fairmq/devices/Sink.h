@@ -25,22 +25,14 @@ namespace fair::mq
 class Sink : public Device
 {
   public:
-    Sink()
-        : fMultipart(false)
-        , fMaxIterations(0)
-        , fNumIterations(0)
-        , fMaxFileSize(0)
-        , fBytesWritten(0)
-        , fInChannelName()
-        , fOutFilename()
-    {}
+    Sink() {}
 
   protected:
-    bool fMultipart;
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
-    uint64_t fMaxFileSize;
-    uint64_t fBytesWritten;
+    bool fMultipart = false;
+    uint64_t fMaxIterations = 0;
+    uint64_t fNumIterations = 0;
+    uint64_t fMaxFileSize = 0;
+    uint64_t fBytesWritten = 0;
     std::string fInChannelName;
     std::string fOutFilename;
     std::fstream fOutputFile;

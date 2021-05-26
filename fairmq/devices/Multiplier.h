@@ -20,16 +20,11 @@ namespace fair::mq
 class Multiplier : public Device
 {
   public:
-    Multiplier()
-        : fMultipart(true)
-        , fNumOutputs(0)
-        , fInChannelName()
-        , fOutChannelNames()
-    {}
+    Multiplier() {}
 
   protected:
-    bool fMultipart;
-    int fNumOutputs;
+    bool fMultipart = true;
+    int fNumOutputs = 0;
     std::string fInChannelName;
     std::vector<std::string> fOutChannelNames;
 

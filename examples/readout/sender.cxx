@@ -16,9 +16,7 @@ namespace bpo = boost::program_options;
 class Sender : public FairMQDevice
 {
   public:
-    Sender()
-        : fInputChannelName()
-    {}
+    Sender() {}
 
     void Init() override
     {

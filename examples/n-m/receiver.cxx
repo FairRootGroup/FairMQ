@@ -33,12 +33,6 @@ class Receiver : public FairMQDevice
 {
   public:
     Receiver()
-        : fBuffer()
-        , fDiscardedSet()
-        , fNumSenders(0)
-        , fBufferTimeoutInMs(5000)
-        , fMaxTimeframes(0)
-        , fTimeframeCounter(0)
     {
         OnData("data", &Receiver::HandleData);
     }
@@ -102,10 +96,10 @@ class Receiver : public FairMQDevice
     unordered_map<uint16_t, TFBuffer> fBuffer;
     unordered_set<uint16_t> fDiscardedSet;
 
-    int fNumSenders;
-    int fBufferTimeoutInMs;
-    int fMaxTimeframes;
-    int fTimeframeCounter;
+    int fNumSenders = 0;
+    int fBufferTimeoutInMs = 5000;
+    int fMaxTimeframes = 0;
+    int fTimeframeCounter = 0;
 };
 
 void addCustomOptions(bpo::options_description& options)

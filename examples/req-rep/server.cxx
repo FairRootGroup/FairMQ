@@ -17,13 +17,10 @@ class Server : public FairMQDevice
 {
   public:
     Server()
-        : fMaxIterations(0)
-        , fNumIterations(0)
     {
         OnData("data", &Server::HandleData);
     }
 
-  protected:
     void InitTask() override
     {
         // Get the fMaxIterations value from the command line options (via fConfig)
@@ -56,8 +53,8 @@ class Server : public FairMQDevice
     }
 
   private:
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
+    uint64_t fMaxIterations = 0;
+    uint64_t fNumIterations = 0;
 };
 
 void addCustomOptions(bpo::options_description& options)

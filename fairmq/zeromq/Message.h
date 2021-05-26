@@ -35,7 +35,6 @@ class Message final : public fair::mq::Message
   public:
     Message(FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
-        , fAlignment(0)
         , fMsg(std::make_unique<zmq_msg_t>())
     {
         if (zmq_msg_init(fMsg.get()) != 0) {
@@ -55,7 +54,6 @@ class Message final : public fair::mq::Message
 
     Message(const size_t size, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
-        , fAlignment(0)
         , fMsg(std::make_unique<zmq_msg_t>())
     {
         if (zmq_msg_init_size(fMsg.get(), size) != 0) {
@@ -96,7 +94,6 @@ class Message final : public fair::mq::Message
 
     Message(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
-        , fAlignment(0)
         , fMsg(std::make_unique<zmq_msg_t>())
     {
         if (zmq_msg_init_data(fMsg.get(), data, size, ffn, hint) != 0) {
@@ -106,7 +103,6 @@ class Message final : public fair::mq::Message
 
     Message(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
-        , fAlignment(0)
         , fMsg(std::make_unique<zmq_msg_t>())
     {
         if (region->GetType() != GetType()) {
@@ -264,7 +260,7 @@ class Message final : public fair::mq::Message
     ~Message() override { CloseMessage(); }
 
   private:
-    size_t fAlignment;
+    size_t fAlignment = 0;
     std::unique_ptr<zmq_msg_t> fMsg;
 
     zmq_msg_t* GetMessage() const { return fMsg.get(); }

@@ -23,13 +23,12 @@ class Merger : public Device
 {
   public:
     Merger()
-        : fMultipart(true)
-        , fInChannelName("data-in")
+        : fInChannelName("data-in")
         , fOutChannelName("data-out")
     {}
 
   protected:
-    bool fMultipart;
+    bool fMultipart = true;
     std::string fInChannelName;
     std::string fOutChannelName;
 

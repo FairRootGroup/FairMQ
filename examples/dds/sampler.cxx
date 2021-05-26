@@ -17,8 +17,6 @@ class Sampler : public FairMQDevice
 {
   public:
     Sampler()
-        : fIterations(0)
-        , fCounter(0)
     {}
 
     void InitTask() override
@@ -53,8 +51,8 @@ class Sampler : public FairMQDevice
     }
 
   private:
-    uint64_t fIterations;
-    uint64_t fCounter;
+    uint64_t fIterations = 0;
+    uint64_t fCounter = 0;
 };
 
 void addCustomOptions(bpo::options_description& options)
