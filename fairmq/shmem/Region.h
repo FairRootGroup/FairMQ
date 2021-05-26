@@ -136,7 +136,6 @@ struct Region
         size_t blocksToSend = 0;
 
         while (true) {
-            blocksToSend = 0;
             {
                 std::unique_lock<std::mutex> lock(fBlockMtx);
 
