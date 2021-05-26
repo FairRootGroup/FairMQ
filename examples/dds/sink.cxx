@@ -17,8 +17,6 @@ class Sink : public FairMQDevice
 {
   public:
     Sink()
-        : fIterations(0)
-        , fCounter(0)
     {
         OnData("data2", &Sink::HandleData);
     }
@@ -45,8 +43,8 @@ class Sink : public FairMQDevice
     }
 
   private:
-    uint64_t fIterations;
-    uint64_t fCounter;
+    uint64_t fIterations = 0;
+    uint64_t fCounter = 0;
 };
 void addCustomOptions(bpo::options_description& options)
 {

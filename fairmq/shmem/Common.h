@@ -187,11 +187,7 @@ using Uint16MsgDebugMapHashMap = boost::unordered_map<uint16_t, SizetMsgDebugMap
 
 struct RegionBlock
 {
-    RegionBlock()
-        : fHandle()
-        , fSize(0)
-        , fHint(0)
-    {}
+    RegionBlock() {}
 
     RegionBlock(boost::interprocess::managed_shared_memory::handle_t handle, size_t size, size_t hint)
         : fHandle(handle)
@@ -199,9 +195,9 @@ struct RegionBlock
         , fHint(hint)
     {}
 
-    boost::interprocess::managed_shared_memory::handle_t fHandle;
-    size_t fSize;
-    size_t fHint;
+    boost::interprocess::managed_shared_memory::handle_t fHandle{};
+    size_t fSize = 0;
+    size_t fHint = 0;
 };
 
 // find id for unique shmem name:

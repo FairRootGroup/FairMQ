@@ -18,10 +18,6 @@ class Sink : public FairMQDevice
 {
   public:
     Sink()
-        : fReceivedData(false)
-        , fReceivedBroadcast(false)
-        , fMaxIterations(0)
-        , fNumIterations(0)
     {
         OnData("broadcast", &Sink::HandleBroadcast);
         OnData("data", &Sink::HandleData);
@@ -61,10 +57,10 @@ class Sink : public FairMQDevice
     }
 
   private:
-    bool fReceivedData;
-    bool fReceivedBroadcast;
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
+    bool fReceivedData = false;
+    bool fReceivedBroadcast = false;
+    uint64_t fMaxIterations = 0;
+    uint64_t fNumIterations = 0;
 };
 
 void addCustomOptions(bpo::options_description& options)

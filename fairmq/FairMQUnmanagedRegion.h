@@ -27,14 +27,7 @@ enum class FairMQRegionEvent : int
 
 struct FairMQRegionInfo
 {
-    FairMQRegionInfo()
-        : managed(true)
-        , id(0)
-        , ptr(nullptr)
-        , size(0)
-        , flags(0)
-        , event(FairMQRegionEvent::created)
-    {}
+    FairMQRegionInfo() {}
 
     FairMQRegionInfo(bool _managed, uint64_t _id, void* _ptr, size_t _size, int64_t _flags, FairMQRegionEvent _event)
         : managed(_managed)
@@ -45,12 +38,12 @@ struct FairMQRegionInfo
         , event(_event)
     {}
 
-    bool managed;  // managed/unmanaged
-    uint64_t id;   // id of the region
-    void* ptr;     // pointer to the start of the region
-    size_t size;   // region size
-    int64_t flags; // custom flags set by the creator
-    FairMQRegionEvent event;
+    bool managed = true;  // managed/unmanaged
+    uint64_t id = 0;   // id of the region
+    void* ptr = nullptr;     // pointer to the start of the region
+    size_t size = 0;   // region size
+    int64_t flags = 0; // custom flags set by the creator
+    FairMQRegionEvent event = FairMQRegionEvent::created;
 };
 
 struct FairMQRegionBlock {
@@ -108,17 +101,16 @@ inline std::ostream& operator<<(std::ostream& os, const FairMQRegionEvent& event
 namespace fair::mq
 {
 
-struct RegionConfig {
-    bool lock;
-    bool zero;
-
-    RegionConfig()
-        : lock(false), zero(false)
-    {}
+struct RegionConfig
+{
+    RegionConfig() {}
 
     RegionConfig(bool l, bool z)
         : lock(l), zero(z)
     {}
+
+    bool lock = false;
+    bool zero = false;
 };
 
 using RegionCallback = FairMQRegionCallback;

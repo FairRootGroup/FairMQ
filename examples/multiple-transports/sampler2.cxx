@@ -16,10 +16,7 @@ namespace bpo = boost::program_options;
 class Sampler2 : public FairMQDevice
 {
   public:
-    Sampler2()
-        : fMaxIterations(0)
-        , fNumIterations(0)
-    {}
+    Sampler2() {}
 
   protected:
     void InitTask() override
@@ -47,8 +44,8 @@ class Sampler2 : public FairMQDevice
 
 
   private:
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
+    uint64_t fMaxIterations = 0;
+    uint64_t fNumIterations = 0;
 };
 
 void addCustomOptions(bpo::options_description& options)

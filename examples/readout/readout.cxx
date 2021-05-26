@@ -18,15 +18,8 @@ namespace bpo = boost::program_options;
 class Readout : public FairMQDevice
 {
   public:
-    Readout()
-        : fMsgSize(10000)
-        , fMaxIterations(0)
-        , fNumIterations(0)
-        , fRegion(nullptr)
-        , fNumUnackedMsgs(0)
-    {}
+    Readout() {}
 
-  protected:
     void InitTask() override
     {
         fMsgSize = fConfig->GetProperty<int>("msg-size");
@@ -65,6 +58,7 @@ class Readout : public FairMQDevice
 
         return true;
     }
+
     void ResetTask() override
     {
         // if not all messages acknowledged, wait for a bit. But only once, since receiver could be already dead.
@@ -77,11 +71,11 @@ class Readout : public FairMQDevice
     }
 
   private:
-    int fMsgSize;
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
-    FairMQUnmanagedRegionPtr fRegion;
-    std::atomic<uint64_t> fNumUnackedMsgs;
+    int fMsgSize = 10000;
+    uint64_t fMaxIterations = 0;
+    uint64_t fNumIterations = 0;
+    FairMQUnmanagedRegionPtr fRegion = nullptr;
+    std::atomic<uint64_t> fNumUnackedMsgs = 0;
 };
 
 void addCustomOptions(bpo::options_description& options)

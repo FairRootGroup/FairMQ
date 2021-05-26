@@ -29,17 +29,7 @@ namespace fair::mq
 class BenchmarkSampler : public Device
 {
   public:
-    BenchmarkSampler()
-        : fMultipart(false)
-        , fMemSet(false)
-        , fNumParts(1)
-        , fMsgSize(10000)
-        , fMsgAlignment(0)
-        , fMsgRate(0)
-        , fNumIterations(0)
-        , fMaxIterations(0)
-        , fOutChannelName()
-    {}
+    BenchmarkSampler() {}
 
     void InitTask() override
     {
@@ -109,14 +99,14 @@ class BenchmarkSampler : public Device
     }
 
   protected:
-    bool fMultipart;
-    bool fMemSet;
-    size_t fNumParts;
-    size_t fMsgSize;
-    size_t fMsgAlignment;
-    float fMsgRate;
-    uint64_t fNumIterations;
-    uint64_t fMaxIterations;
+    bool fMultipart = false;
+    bool fMemSet = false;
+    size_t fNumParts = 1;
+    size_t fMsgSize = 10000;
+    size_t fMsgAlignment = 0;
+    float fMsgRate = 0;
+    uint64_t fNumIterations = 0;
+    uint64_t fMaxIterations = 0;
     std::string fOutChannelName;
 };
 

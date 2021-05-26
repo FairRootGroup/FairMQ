@@ -17,8 +17,6 @@ class Sink : public FairMQDevice
 {
   public:
     Sink()
-        : fMaxIterations(0)
-        , fNumIterations(0)
     {
         // register a handler for data arriving on "data2" channel
         OnData("data2", &Sink::HandleData);
@@ -45,8 +43,8 @@ class Sink : public FairMQDevice
     }
 
   private:
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
+    uint64_t fMaxIterations = 0;
+    uint64_t fNumIterations = 0;
 };
 
 void addCustomOptions(bpo::options_description& options)

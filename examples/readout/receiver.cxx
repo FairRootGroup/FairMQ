@@ -14,12 +14,8 @@ namespace bpo = boost::program_options;
 class Receiver : public FairMQDevice
 {
   public:
-    Receiver()
-        : fMaxIterations(0)
-        , fNumIterations(0)
-    {}
+    Receiver() {}
 
-  protected:
     void InitTask() override
     {
         // Get the fMaxIterations value from the command line options (via fConfig)
@@ -43,8 +39,8 @@ class Receiver : public FairMQDevice
     }
 
   private:
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
+    uint64_t fMaxIterations = 0;
+    uint64_t fNumIterations = 0;
 };
 
 void addCustomOptions(bpo::options_description& options)

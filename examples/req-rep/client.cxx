@@ -18,10 +18,7 @@ namespace bpo = boost::program_options;
 class Client : public FairMQDevice
 {
   public:
-    Client()
-        : fMaxIterations(0)
-        , fNumIterations(0)
-    {}
+    Client() {}
 
     void InitTask() override
     {
@@ -66,8 +63,8 @@ class Client : public FairMQDevice
 
   private:
     std::string fText;
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
+    uint64_t fMaxIterations = 0;
+    uint64_t fNumIterations = 0;
 };
 
 void addCustomOptions(bpo::options_description& options)

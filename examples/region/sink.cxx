@@ -14,10 +14,7 @@ namespace bpo = boost::program_options;
 class Sink : public FairMQDevice
 {
   public:
-    Sink()
-        : fMaxIterations(0)
-        , fNumIterations(0)
-    {}
+    Sink() {}
 
     void InitTask() override
     {
@@ -56,8 +53,8 @@ class Sink : public FairMQDevice
     }
 
   private:
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
+    uint64_t fMaxIterations = 0;
+    uint64_t fNumIterations = 0;
 };
 
 

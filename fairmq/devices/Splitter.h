@@ -19,18 +19,12 @@ namespace fair::mq
 class Splitter : public Device
 {
   public:
-    Splitter()
-        : fMultipart(true)
-        , fNumOutputs(0)
-        , fDirection(0)
-        , fInChannelName()
-        , fOutChannelName()
-    {}
+    Splitter() {}
 
   protected:
-    bool fMultipart;
-    int fNumOutputs;
-    int fDirection;
+    bool fMultipart = true;
+    int fNumOutputs = 0;
+    int fDirection = 0;
     std::string fInChannelName;
     std::string fOutChannelName;
 

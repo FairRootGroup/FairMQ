@@ -18,16 +18,8 @@ namespace bpo = boost::program_options;
 class Sampler : public FairMQDevice
 {
   public:
-    Sampler()
-        : fMsgSize(10000)
-        , fLinger(100)
-        , fMaxIterations(0)
-        , fNumIterations(0)
-        , fRegion(nullptr)
-        , fNumUnackedMsgs(0)
-    {}
+    Sampler() {}
 
-  protected:
     void InitTask() override
     {
         fMsgSize = fConfig->GetProperty<int>("msg-size");
@@ -102,13 +94,13 @@ class Sampler : public FairMQDevice
     }
 
   private:
-    int fMsgSize;
-    uint32_t fLinger;
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
-    FairMQUnmanagedRegionPtr fRegion;
+    int fMsgSize = 10000;
+    uint32_t fLinger = 100;
+    uint64_t fMaxIterations = 0;
+    uint64_t fNumIterations = 0;
+    FairMQUnmanagedRegionPtr fRegion = nullptr;
     std::mutex fMtx;
-    uint64_t fNumUnackedMsgs;
+    uint64_t fNumUnackedMsgs = 0;
 };
 
 void addCustomOptions(bpo::options_description& options)

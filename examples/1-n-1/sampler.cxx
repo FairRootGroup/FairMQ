@@ -18,15 +18,12 @@ namespace bpo = boost::program_options;
 class Sampler : public FairMQDevice
 {
   public:
-    Sampler()
-        : fMaxIterations(0)
-        , fNumIterations(0)
-    {}
+    Sampler() {}
 
   protected:
     std::string fText;
-    uint64_t fMaxIterations;
-    uint64_t fNumIterations;
+    uint64_t fMaxIterations = 0;
+    uint64_t fNumIterations = 0;
 
     void InitTask() override
     {

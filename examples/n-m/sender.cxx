@@ -20,15 +20,8 @@ namespace bpo = boost::program_options;
 class Sender : public FairMQDevice
 {
   public:
-    Sender()
-        : fNumReceivers(0)
-        , fIndex(0)
-        , fSubtimeframeSize(10000)
-    {}
+    Sender() {}
 
-    ~Sender() = default;
-
-  protected:
     void InitTask() override
     {
         fIndex = GetConfig()->GetProperty<int>("sender-index");
@@ -64,9 +57,9 @@ class Sender : public FairMQDevice
     }
 
   private:
-    int fNumReceivers;
-    unsigned int fIndex;
-    int fSubtimeframeSize;
+    int fNumReceivers = 0;
+    unsigned int fIndex = 0;
+    int fSubtimeframeSize = 10000;
 };
 
 void addCustomOptions(bpo::options_description& options)
