@@ -179,8 +179,8 @@ struct Region
     }
     void ReceiveAcks()
     {
-        unsigned int priority;
-        boost::interprocess::message_queue::size_type recvdSize;
+        unsigned int priority = 0;
+        boost::interprocess::message_queue::size_type recvdSize = 0;
         std::unique_ptr<RegionBlock[]> blocks = std::make_unique<RegionBlock[]>(fAckBunchSize);
         std::vector<fair::mq::RegionBlock> result;
         result.reserve(fAckBunchSize);

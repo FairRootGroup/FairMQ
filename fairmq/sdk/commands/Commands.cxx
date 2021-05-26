@@ -390,7 +390,7 @@ void Cmds::Deserialize(const string& str, const Format type)
 {
     fCmds.clear();
 
-    const flatbuffers::Vector<flatbuffers::Offset<FBCommand>>* cmds;
+    const flatbuffers::Vector<flatbuffers::Offset<FBCommand>>* cmds = nullptr;
 
     if (type == Format::Binary) {
         cmds = cmd::GetFBCommands(const_cast<char*>(str.c_str()))->commands();

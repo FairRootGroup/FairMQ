@@ -147,7 +147,7 @@ auto Control::InteractiveMode() -> void
 try {
     RunStartupSequence();
 
-    char input; // hold the user console input
+    char input = 0; // hold the user console input
     pollfd cinfd[1];
     cinfd[0].fd = fileno(stdin);
     cinfd[0].events = POLLIN;

@@ -156,7 +156,7 @@ void sendCommand(const string& commandIn, const string& path, unsigned int timeo
         return;
     }
 
-    char c;
+    char c = 0;
     string command;
     TerminalConfig tconfig;
 
@@ -185,7 +185,7 @@ try {
     string targetState;
     string pKey;
     string pVal;
-    unsigned int timeout;
+    unsigned int timeout = 0;
 
     fair::Logger::SetConsoleSeverity("debug");
     fair::Logger::SetConsoleColor(true);
