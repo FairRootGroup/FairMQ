@@ -7,3 +7,6 @@
 [submodule "extern/PicoSHA2"]
 	path = extern/PicoSHA2
 	url = https://github.com/okdshin/PicoSHA2
+[submodule "extern/FairCMakeModules"]
+	path = extern/FairCMakeModules
+	url = https://github.com/FairRootGroup/FairCMakeModules
