@@ -13,11 +13,9 @@
 #include <fairmq/tools/Unique.h>
 #include <fairmq/tools/Process.h>
 
-#include <signal.h> // kill
-
 #include <string>
 #include <thread>
-#include <iostream>
+#include <sstream>
 
 namespace
 {
