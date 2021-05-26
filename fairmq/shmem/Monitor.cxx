@@ -313,8 +313,8 @@ void Monitor::ReceiveHeartbeats()
     try {
         bipc::message_queue mq(bipc::open_or_create, fControlQueueName.c_str(), 1000, 256);
 
-        unsigned int priority;
-        bipc::message_queue::size_type recvdSize;
+        unsigned int priority = 0;
+        bipc::message_queue::size_type recvdSize = 0;
         char msg[256] = {0};
 
         while (!fTerminating) {
@@ -337,7 +337,7 @@ void Monitor::ReceiveHeartbeats()
 
 void Monitor::Interactive()
 {
-    char c;
+    char c = 0;
     pollfd cinfd[1];
     cinfd[0].fd = fileno(stdin);
     cinfd[0].events = POLLIN;

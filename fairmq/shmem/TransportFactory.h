@@ -41,7 +41,7 @@ class TransportFactory final : public fair::mq::TransportFactory
         , fZmqCtx(zmq_ctx_new())
         , fManager(nullptr)
     {
-        int major, minor, patch;
+        int major = 0, minor = 0, patch = 0;
         zmq_version(&major, &minor, &patch);
         LOG(debug) << "Transport: Using ZeroMQ (" << major << "." << minor << "." << patch << ") & "
                 << "boost::interprocess (" << (BOOST_VERSION / 100000) << "." << (BOOST_VERSION / 100 % 1000) << "." << (BOOST_VERSION % 100) << ")";

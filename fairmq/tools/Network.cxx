@@ -40,9 +40,9 @@ namespace fair::mq::tools
 map<string, string> getHostIPs()
 {
     map<string, string> addressMap;
-    ifaddrs* ifaddr;
-    ifaddrs* ifa;
-    int s;
+    ifaddrs* ifaddr = nullptr;
+    ifaddrs* ifa = nullptr;
+    int s = 0;
     array<char, NI_MAXHOST> host{};
 
     if (getifaddrs(&ifaddr) == -1) {

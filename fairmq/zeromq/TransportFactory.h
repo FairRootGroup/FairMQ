@@ -31,7 +31,7 @@ class TransportFactory final : public FairMQTransportFactory
         : FairMQTransportFactory(id)
         , fCtx(nullptr)
     {
-        int major, minor, patch;
+        int major = 0, minor = 0, patch = 0;
         zmq_version(&major, &minor, &patch);
         LOG(debug) << "Transport: Using ZeroMQ library, version: " << major << "." << minor << "." << patch;
 
