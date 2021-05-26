@@ -78,10 +78,11 @@ dds-info --active-topology
 dds-topology --stop
 dds-info --active-topology
 
-dds-agent-cmd getlog -a
-logDir="${wrkDir}/logs"
-for file in $(find "${logDir}" -name "*.tar.gz"); do tar -xf ${file} -C "${logDir}" ; done
-echo "AGENT LOG FILES IN: ${logDir}"
+# TODO Simplify, see https://github.com/FairRootGroup/DDS/issues/369
+if dds-agent-cmd getlog -a; then
+  logDir=$(eval "echo $(dds-user-defaults --key server.sandbox_dir)/log/agents")
+  echo "AGENT LOG FILES IN: ${logDir}"
+fi
 
 # This string is used by ctest to detect success
 echo "Example successful :)"
