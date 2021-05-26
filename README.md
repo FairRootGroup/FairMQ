@@ -41,7 +41,7 @@ Recommended:
 git clone https://github.com/FairRootGroup/FairMQ fairmq_source
 cmake -S fairmq_source -B fairmq_build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=fairmq_install
 cmake --build fairmq_build
-cd fairmq_build; ctest -j4; cd ..
+cmake --build fairmq_build --target test
 cmake --build fairmq_build --target install
 ```
 
@@ -54,39 +54,24 @@ If dependencies are not installed in standard system directories, you can hint t
 FairMQ ships as a CMake package, so in your `CMakeLists.txt` you can discover it like this:
 
 ```cmake
-find_package(FairMQ)
+find_package(FairCMakeModules 0.2 REQUIRED)
+include(FairFindPackage2)
+find_package2(FairMQ)
+find_package2_implicit_dependencies()
 ```
+
+The [`FairFindPackage2` module](https://fairrootgroup.github.io/FairCMakeModules/latest/module/FairFindPackage2.html) is part of the [`FairCMakeModules` package](https://fairrootgroup.github.io/FairCMakeModules).
 
 If FairMQ is not installed in system directories, you can hint the installation:
 
 ```cmake
-set(CMAKE_PREFIX_PATH /path/to/FairMQ_install_prefix ${CMAKE_PREFIX_PATH})
-find_package(FairMQ)
+list(PREPEND CMAKE_PREFIX_PATH /path/to/fairmq_install)
 ```
-
-`find_package(FairMQ)` will define an imported target `FairMQ::FairMQ`.
-
-In order to succesfully compile and link against the `FairMQ::FairMQ` target, you need to discover its public package dependencies:
-
-```cmake
-find_package(FairMQ)
-if(FairMQ_FOUND)
-  foreach(dep IN LISTS FairMQ_PACKAGE_DEPENDENCIES)
-    if(FairMQ_${dep}_COMPONENTS)
-      find_package(${dep} ${FairMQ_${dep}_VERSION} COMPONENTS ${FairMQ_${dep}_COMPONENTS})
-    else()
-      find_package(${dep} ${FairMQ_${dep}_VERSION})
-    endif()
-  endforeach()
-endif()
-```
-
-If your project shares a dependency with FairMQ or if you want to omit a certain dependency, you may want to customize the above example code to your needs.
 
 Optionally, you can require certain FairMQ package components and a minimum version:
 
 ```cmake
-find_package(FairMQ 1.1.0 COMPONENTS dds_plugin)
+find_package(FairMQ 1.4.0 COMPONENTS dds_plugin)
 ```
 
 When building FairMQ, CMake will print a summary table of all available package components.
@@ -99,6 +84,7 @@ When building FairMQ, CMake will print a summary table of all available package 
   * [CMake](https://cmake.org/)
   * [DDS](http://dds.gsi.de)
   * [Doxygen](http://www.doxygen.org/)
+  * [FairCMakeModules](https://github.com/FairRootGroup/FairCMakeModules) (optionally bundled)
   * [FairLogger](https://github.com/FairRootGroup/FairLogger)
   * [GTest](https://github.com/google/googletest) (optionally bundled)
   * [PMIx](https://pmix.org/)
@@ -126,9 +112,8 @@ After the `find_package(FairMQ)` call the following CMake variables are defined:
 | Variable | Info |
 | --- | --- |
 | `${FairMQ_PACKAGE_DEPENDENCIES}` | the list of public package dependencies |
-| `${FairMQ_Boost_VERSION}` | the minimum Boost version FairMQ requires |
-| `${FairMQ_Boost_COMPONENTS}` | the list of Boost components FairMQ depends on |
-| `${FairMQ_FairLogger_VERSION}` | the minimum FairLogger version FairMQ requires |
+| `${FairMQ_<dep>_VERSION}` | the minimum `<dep>` version FairMQ requires |
+| `${FairMQ_<dep>_COMPONENTS}` | the list of `<dep>` components FairMQ depends on |
 | `${FairMQ_PACKAGE_COMPONENTS}` | the list of components FairMQ consists of |
 | `${FairMQ_#COMPONENT#_FOUND}` | `TRUE` if this component was built |
 | `${FairMQ_VERSION}` | the version in format `MAJOR.MINOR.PATCH` |

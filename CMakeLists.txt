@@ -6,8 +6,8 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
-cmake_policy(VERSION 3.14...3.20)
+cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
+cmake_policy(VERSION 3.15...3.20)
 
 # Project ######################################################################
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
@@ -16,13 +16,25 @@ include(FairMQLib)
 get_git_version()
 
 project(FairMQ VERSION ${PROJECT_VERSION} LANGUAGES CXX)
-message(STATUS "${BWhite}${PROJECT_NAME}${CR} ${PROJECT_GIT_VERSION} from ${PROJECT_DATE}")
 
-set(PROJECT_MIN_CXX_STANDARD 17)
+include(CTest)
+include(BundlePackages)
+
+set(PROJECT_FairCMakeModules_VERSION 0.2)
+find_package(FairCMakeModules ${PROJECT_FairCMakeModules_VERSION} QUIET)
+if(NOT FairCMakeModules_FOUND)
+  build_bundled(FairCMakeModules extern/FairCMakeModules)
+  find_package(FairCMakeModules REQUIRED)
+endif()
+
+include(FairFindPackage2)
+include(FairFormattedOutput)
+include(FairSummary)
+
+message(STATUS "${BWhite}${PROJECT_NAME}${CR} ${PROJECT_GIT_VERSION} from ${PROJECT_DATE}")
 
 set_fairmq_defaults()
 
-include(CTest)
 ################################################################################
 
 
@@ -53,17 +65,17 @@ fairmq_build_option(FAIRMQ_DEBUG_MODE   "Compile in debug mode (may decrease per
 
 
 # Dependencies #################################################################
-set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
-set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-find_package(Threads REQUIRED)
+if(BUILD_FAIRMQ OR BUILD_SDK)
+  set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+  find_package2(PUBLIC Threads REQUIRED)
+  set(Threads_PREFIX "<unknown system prefix>")
+endif()
 
 if(BUILD_OFI_TRANSPORT)
   find_package2(PRIVATE asiofi REQUIRED
     VERSION 0.3.1
   )
-  find_package2(PRIVATE OFI REQUIRED
-    ADD_REQUIREMENTS_OF asiofi
-  )
+  find_package2(PRIVATE OFI REQUIRED)
 endif()
 
 if(BUILD_SDK_COMMANDS)
@@ -89,13 +101,6 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     VERSION 1.6.0
   )
 
-  foreach(dep IN LISTS FairLogger_PACKAGE_DEPENDENCIES)
-    if(NOT dep STREQUAL "Boost")
-      find_package2(PUBLIC ${dep} REQUIRED VERSION ${FairLogger_${dep}_VERSION})
-      set(PROJECT_${dep}_VERSION ${FairLogger_${dep}_VERSION})
-    endif()
-  endforeach()
-
   if(NOT DEFINED Boost_NO_BOOST_CMAKE AND CMAKE_VERSION VERSION_LESS 3.15)
     # Since Boost 1.70 a CMake package is shipped by default. Unfortunately, it has a number
     # of problems that are only fixed in Boost 1.71 or CMake 3.15. By default we skip the
@@ -104,18 +109,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
   endif()
   find_package2(PUBLIC Boost REQUIRED
     VERSION 1.66
-
-    COMPONENTS
-    container
-    program_options
-    filesystem
-    date_time
-    regex
-
-    ADD_REQUIREMENTS_OF
-    asiofi
-    DDS
-    FairLogger
+    COMPONENTS container program_options filesystem date_time regex
   )
 
   # Normalize Boost version
@@ -138,27 +132,29 @@ if(BUILD_FAIRMQ)
   find_package2(PRIVATE ZeroMQ REQUIRED
     VERSION 4.1.4
   )
-  build_bundled(PicoSHA2 extern/PicoSHA2)
-  find_package2(PRIVATE PicoSHA2 REQUIRED)
+  if(NOT PicoSHA2_FOUND AND NOT PicoSHA2_BUNDLED)
+    set(PicoSHA2_VERSION "1.0.0")
+    build_bundled(PicoSHA2 extern/PicoSHA2)
+  endif()
+  find_package2(BUNDLED PicoSHA2 REQUIRED)
 endif()
 
 if(BUILD_TESTING)
-  if(USE_EXTERNAL_GTEST)
-    find_package2(PRIVATE GTest VERSION 1.7.0)
-  endif()
-  if(NOT GTest_FOUND)
+  if(NOT GTest_FOUND AND NOT GTest_BUNDLED AND NOT USE_EXTERNAL_GTEST)
+    set(GTest_VERSION "Apr 28 2021 @f5e592d8")
     build_bundled(GTest extern/googletest)
-    find_package2(PRIVATE GTest REQUIRED)
   endif()
+  find_package2(BUNDLED GTest REQUIRED)
 endif()
 
 if(BUILD_DOCS)
   find_package2(PRIVATE Doxygen REQUIRED
     VERSION 1.8.8
     COMPONENTS dot
-    OPTIONAL_COMPONENTS mscgen dia
   )
 endif()
+
+find_package2_implicit_dependencies()
 ################################################################################
 
 
@@ -251,99 +247,10 @@ install_cmake_package()
 
 
 # Summary ######################################################################
-message(STATUS "  ")
-message(STATUS "  ${Cyan}CXX STANDARD${CR}       ${BGreen}C++${CMAKE_CXX_STANDARD}${CR} (>= C++${PROJECT_MIN_CXX_STANDARD}, change with ${BMagenta}-DCMAKE_CXX_STANDARD=20${CR})")
-if(CMAKE_CXX_FLAGS)
-  message(STATUS "  ")
-  message(STATUS "  ${Cyan}GLOBAL CXX FLAGS${CR}  ${BGreen}${CMAKE_CXX_FLAGS}${CR}")
-endif()
-if(CMAKE_CONFIGURATION_TYPES)
-  message(STATUS "  ")
-  message(STATUS "  ${Cyan}BUILD TYPE         CXX FLAGS${CR}")
-  string(TOUPPER "${CMAKE_BUILD_TYPE}" selected_type)
-  foreach(type IN LISTS CMAKE_CONFIGURATION_TYPES)
-    string(TOUPPER "${type}" type_upper)
-    if(type_upper STREQUAL selected_type)
-      pad("${type}" 18 " " type_padded)
-      message(STATUS "${BGreen}* ${type_padded}${CMAKE_CXX_FLAGS_${type_upper}}${CR}")
-    else()
-      pad("${type}" 18 " " type_padded)
-      message(STATUS "  ${BWhite}${type_padded}${CR}${CMAKE_CXX_FLAGS_${type_upper}}")
-    endif()
-    unset(type_padded)
-    unset(type_upper)
-  endforeach()
-  message(STATUS "  ")
-  message(STATUS "  (Change the build type with ${BMagenta}-DCMAKE_BUILD_TYPE=...${CR})")
-endif()
-if(PROJECT_PACKAGE_DEPENDENCIES)
-  message(STATUS "  ")
-  message(STATUS "  ${Cyan}DEPENDENCY FOUND     VERSION                   PREFIX${CR}")
-  foreach(dep IN LISTS PROJECT_PACKAGE_DEPENDENCIES)
-    if(${dep}_VERSION AND NOT ${dep}_VERSION STREQUAL "..")
-      set(version_str "${BGreen}${${dep}_VERSION}${CR}")
-    else()
-      set(version_str "${BYellow}unknown${CR}")
-    endif()
-    if(PROJECT_${dep}_VERSION)
-      set(version_req_str " (>= ${PROJECT_${dep}_VERSION})")
-    endif()
-    pad(${dep} 20 " " dep_padded)
-    if(DISABLE_COLOR)
-      pad("${version_str}${version_req_str}" 25 " " version_padded)
-    else()
-      pad("${version_str}${version_req_str}" 25 " " version_padded COLOR 1)
-    endif()
-    if(${dep} STREQUAL FairLogger)
-      if(FairLogger_PREFIX)
-        set(prefix ${FairLogger_PREFIX})
-      else()
-        set(prefix ${FairLogger_ROOT})
-      endif()
-    elseif(${dep} STREQUAL GTest)
-      get_filename_component(prefix ${GTEST_INCLUDE_DIRS}/.. ABSOLUTE)
-    elseif(${dep} STREQUAL asiofi)
-      set(prefix ${asiofi_ROOT})
-    elseif(${dep} STREQUAL OFI)
-      get_filename_component(prefix ${${dep}_INCLUDE_DIRS}/.. ABSOLUTE)
-    elseif(${dep} STREQUAL DDS)
-      set(prefix "${DDS_INSTALL_PREFIX}")
-    elseif(${dep} STREQUAL Boost)
-      if(TARGET Boost::headers)
-        get_target_property(boost_include Boost::headers INTERFACE_INCLUDE_DIRECTORIES)
-      else()
-        get_target_property(boost_include Boost::boost INTERFACE_INCLUDE_DIRECTORIES)
-      endif()
-      get_filename_component(prefix ${boost_include}/.. ABSOLUTE)
-    elseif(${dep} STREQUAL Doxygen)
-      get_target_property(doxygen_bin Doxygen::doxygen INTERFACE_LOCATION)
-      get_filename_component(prefix ${doxygen_bin} DIRECTORY)
-      get_filename_component(prefix ${prefix}/.. ABSOLUTE)
-    elseif(${dep} STREQUAL fmt)
-      get_target_property(fmt_include fmt::fmt INTERFACE_INCLUDE_DIRECTORIES)
-      get_filename_component(prefix ${fmt_include}/.. ABSOLUTE)
-    elseif(${dep} STREQUAL Flatbuffers)
-      if(TARGET flatbuffers::flatbuffers)
-        get_target_property(flatbuffers_include flatbuffers::flatbuffers INTERFACE_INCLUDE_DIRECTORIES)
-      else()
-        get_target_property(flatbuffers_include flatbuffers::flatbuffers_shared INTERFACE_INCLUDE_DIRECTORIES)
-      endif()
-      get_filename_component(prefix ${flatbuffers_include}/.. ABSOLUTE)
-    else()
-      if(${dep}_PREFIX)
-        set(prefix ${${dep}_PREFIX})
-      else()
-        get_filename_component(prefix ${${dep}_INCLUDE_DIR}/.. ABSOLUTE)
-      endif()
-    endif()
-    if(NOT ${dep}_BUNDLED)
-      message(STATUS "  ${BWhite}${dep_padded}${CR}${version_padded}${prefix}")
-    endif()
-    unset(version_str)
-    unset(version_padded)
-    unset(version_req_str)
-  endforeach()
-endif()
+fair_summary_global_cxx_flags_standard()
+fair_summary_build_types()
+set_package_infos()
+fair_summary_package_dependencies()
 message(STATUS "  ")
 message(STATUS "  ${Cyan}COMPONENT         BUILT?  INFO${CR}")
 if(BUILD_FAIRMQ)

@@ -6,28 +6,7 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-### PUBLIC
-
-# Defines some variables with console color escape sequences
-if(NOT WIN32 AND NOT DISABLE_COLOR)
-  string(ASCII 27 Esc)
-  set(CR       "${Esc}[m")
-  set(CB       "${Esc}[1m")
-  set(Red      "${Esc}[31m")
-  set(Green    "${Esc}[32m")
-  set(Yellow   "${Esc}[33m")
-  set(Blue     "${Esc}[34m")
-  set(Magenta  "${Esc}[35m")
-  set(Cyan     "${Esc}[36m")
-  set(White    "${Esc}[37m")
-  set(BRed     "${Esc}[1;31m")
-  set(BGreen   "${Esc}[1;32m")
-  set(BYellow  "${Esc}[1;33m")
-  set(BBlue    "${Esc}[1;34m")
-  set(BMagenta "${Esc}[1;35m")
-  set(BCyan    "${Esc}[1;36m")
-  set(BWhite   "${Esc}[1;37m")
-endif()
+include_guard(GLOBAL)
 
 find_package(Git)
 # get_git_version([DEFAULT_VERSION version] [DEFAULT_DATE date] [OUTVAR_PREFIX prefix])
@@ -92,6 +71,8 @@ macro(set_fairmq_defaults)
   if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE RelWithDebInfo)
   endif()
+
+  set(PROJECT_MIN_CXX_STANDARD 17)
 
   # Handle C++ standard level
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -160,7 +141,7 @@ macro(set_fairmq_defaults)
       (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.5)))
     # Force colored warnings in Ninja's output, if the compiler has -fdiagnostics-color support.
     # Rationale in https://github.com/ninja-build/ninja/issues/814
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+    list(APPEND CMAKE_CXX_FLAGS "-fdiagnostics-color=always")
   endif()
 
   if(NOT PROJECT_VERSION_TWEAK)
@@ -212,12 +193,6 @@ macro(set_fairmq_defaults)
   endif()
 endmacro()
 
-function(join VALUES GLUE OUTPUT)
-  string(REGEX REPLACE "([^\\]|^);" "\\1${GLUE}" _TMP_STR "${VALUES}")
-  string(REGEX REPLACE "[\\](.)" "\\1" _TMP_STR "${_TMP_STR}") #fixes escaping
-  set(${OUTPUT} "${_TMP_STR}" PARENT_SCOPE)
-endfunction()
-
 function(pad str width char out)
   cmake_parse_arguments(ARGS "" "COLOR" "" ${ARGN})
   string(LENGTH ${str} length)
@@ -232,34 +207,6 @@ function(pad str width char out)
     endforeach()
   endif()
   set(${out} ${str} PARENT_SCOPE)
-endfunction()
-
-function(generate_package_dependencies)
-  join("${PROJECT_INTERFACE_PACKAGE_DEPENDENCIES}" " " DEPS)
-  set(PACKAGE_DEPENDENCIES "\
-####### Expanded from @PACKAGE_DEPENDENCIES@ by configure_package_config_file() #######
-
-set(${PROJECT_NAME}_PACKAGE_DEPENDENCIES ${DEPS})
-
-")
-  foreach(dep IN LISTS PROJECT_INTERFACE_PACKAGE_DEPENDENCIES)
-    join("${PROJECT_INTERFACE_${dep}_COMPONENTS}" " " COMPS)
-    if(COMPS)
-      string(CONCAT PACKAGE_DEPENDENCIES ${PACKAGE_DEPENDENCIES} "\
-set(${PROJECT_NAME}_${dep}_COMPONENTS ${COMPS})
-")
-    endif()
-    if(PROJECT_INTERFACE_${dep}_VERSION)
-      string(CONCAT PACKAGE_DEPENDENCIES ${PACKAGE_DEPENDENCIES} "\
-set(${PROJECT_NAME}_${dep}_VERSION ${PROJECT_INTERFACE_${dep}_VERSION})
-")
-    endif()
-  endforeach()
-  string(CONCAT PACKAGE_DEPENDENCIES ${PACKAGE_DEPENDENCIES} "\
-
-#######################################################################################
-")
-set(PACKAGE_DEPENDENCIES ${PACKAGE_DEPENDENCIES} PARENT_SCOPE)
 endfunction()
 
 function(generate_package_components)
@@ -319,7 +266,7 @@ macro(install_cmake_package)
     VERSION ${PROJECT_VERSION}
     COMPATIBILITY AnyNewerVersion
   )
-  generate_package_dependencies() # fills ${PACKAGE_DEPENDENCIES}
+  fair_generate_package_dependencies() # fills ${PACKAGE_DEPENDENCIES}
   generate_package_components() # fills ${PACKAGE_COMPONENTS}
   generate_bundled_packages() # fills ${BUNDLED_PACKAGES}
   string(TOUPPER ${CMAKE_BUILD_TYPE} PROJECT_BUILD_TYPE_UPPER)
@@ -337,190 +284,7 @@ macro(install_cmake_package)
   )
 endmacro()
 
-#
-# find_package2(PRIVATE|PUBLIC|INTERFACE <pkgname>
-#               [VERSION <version>]
-#               [COMPONENTS <list of components>]
-#               [ADD_REQUIREMENTS_OF <list of dep_pgkname>]
-#               [any other option the native find_package supports]...)
-#
-# Wrapper around CMake's native find_package command to add some features and bookkeeping.
-#
-# The qualifier (PRIVATE|PUBLIC|INTERFACE|BUNDLED) to the package to populate
-# the variables PROJECT_[INTERFACE]_<pkgname>_([VERSION]|[COMPONENTS]|PACKAGE_DEPENDENCIES)
-# accordingly. This bookkeeping information is used to print our dependency found summary
-# table and to generate a part of our CMake package. BUNDLED decays to PUBLIC if the variable
-# <pkgname>_BUNDLED is false and to PRIVATE otherwise.
-#
-# When a dependending package is listed with ADD_REQUIREMENTS_OF the variables
-# <dep_pkgname>_<pkgname>_VERSION|COMPONENTS are looked up to and added to the native
-# VERSION (selected highest version) and COMPONENTS (deduplicated) args.
-#
-# COMPONENTS and VERSION args are then just passed to the native find_package.
-#
-macro(find_package2 qualifier pkgname)
-  cmake_parse_arguments(ARGS "" "VERSION" "COMPONENTS;ADD_REQUIREMENTS_OF" ${ARGN})
 
-  string(TOUPPER ${pkgname} pkgname_upper)
-  set(__old_cpp__ ${CMAKE_PREFIX_PATH})
-  set(CMAKE_PREFIX_PATH ${${pkgname_upper}_ROOT} $ENV{${pkgname_upper}_ROOT} ${CMAKE_PREFIX_PATH})
-
-  # build lists of required versions and components
-  unset(__required_versions__)
-  unset(__components__)
-  if(ARGS_VERSION)
-    list(APPEND __required_versions__ ${ARGS_VERSION})
-  endif()
-  if(ARGS_COMPONENTS)
-    list(APPEND __components__ ${ARGS_COMPONENTS})
-  endif()
-  if(ARGS_ADD_REQUIREMENTS_OF)
-    foreach(dep_pkgname IN LISTS ARGS_ADD_REQUIREMENTS_OF)
-      if(${dep_pkgname}_${pkgname}_VERSION)
-        list(APPEND __required_versions__ ${${dep_pkgname}_${pkgname}_VERSION})
-      endif()
-      if(${dep_pkgname}_${pkgname}_COMPONENTS)
-        list(APPEND __components__ ${${dep_pkgname}_${pkgname}_COMPONENTS})
-      endif()
-    endforeach()
-  endif()
-
-  # select highest required version
-  unset(__version__)
-  if(__required_versions__)
-    list(GET __required_versions__ 0 __version__)
-    foreach(v IN LISTS __required_versions__)
-      if(${v} VERSION_GREATER ${__version__})
-        set(__version__ ${v})
-      endif()
-    endforeach()
-  endif()
-  # deduplicate required component list
-  if(__components__)
-    list(REMOVE_DUPLICATES __components__)
-  endif()
-
-  # call native find_package
-  if(__components__)
-    find_package(${pkgname} ${__version__} QUIET COMPONENTS ${__components__} ${ARGS_UNPARSED_ARGUMENTS})
-  else()
-    find_package(${pkgname} ${__version__} QUIET ${ARGS_UNPARSED_ARGUMENTS})
-  endif()
-
-  if(${qualifier} STREQUAL BUNDLED)
-    if(${pkgname}_BUNDLED)
-      set(__qualifier__ PRIVATE)
-    else()
-      set(__qualifier__ PUBLIC)
-    endif()
-  else()
-    set(__qualifier__ ${qualifier})
-  endif()
-
-  if(${pkgname}_FOUND)
-    if(${__qualifier__} STREQUAL PRIVATE)
-      set(PROJECT_${pkgname}_VERSION ${__version__})
-      set(PROJECT_${pkgname}_COMPONENTS ${__components__})
-      set(PROJECT_PACKAGE_DEPENDENCIES ${PROJECT_PACKAGE_DEPENDENCIES} ${pkgname})
-    elseif(${__qualifier__} STREQUAL PUBLIC)
-      set(PROJECT_${pkgname}_VERSION ${__version__})
-      set(PROJECT_${pkgname}_COMPONENTS ${__components__})
-      set(PROJECT_PACKAGE_DEPENDENCIES ${PROJECT_PACKAGE_DEPENDENCIES} ${pkgname})
-      set(PROJECT_INTERFACE_${pkgname}_VERSION ${__version__})
-      set(PROJECT_INTERFACE_${pkgname}_COMPONENTS ${__components__})
-      set(PROJECT_INTERFACE_PACKAGE_DEPENDENCIES ${PROJECT_INTERFACE_PACKAGE_DEPENDENCIES} ${pkgname})
-    elseif(${__qualifier__} STREQUAL INTERFACE)
-      set(PROJECT_INTERFACE_${pkgname}_VERSION ${__version__})
-      set(PROJECT_INTERFACE_${pkgname}_COMPONENTS ${__components__})
-      set(PROJECT_INTERFACE_PACKAGE_DEPENDENCIES ${PROJECT_INTERFACE_PACKAGE_DEPENDENCIES} ${pkgname})
-    endif()
-  endif()
-
-  unset(__qualifier__)
-  unset(__version__)
-  unset(__components__)
-  unset(__required_versions__)
-  set(CMAKE_PREFIX_PATH ${__old_cpp__})
-  unset(__old_cpp__)
-endmacro()
-
-macro(exec cmd)
-  join("${ARGN}" " " args)
-  file(APPEND ${${package}_BUILD_LOGFILE} ">>> ${cmd} ${args}\n")
-
-  execute_process(COMMAND ${cmd} ${ARGN}
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    OUTPUT_VARIABLE log
-    ERROR_VARIABLE log
-    RESULT_VARIABLE res
-  )
-  file(APPEND ${${package}_BUILD_LOGFILE} ${log})
-
-  if(res)
-    message(FATAL_ERROR "${res} \nSee also \"${${package}_BUILD_LOGFILE}\"")
-  endif()
-endmacro()
-
-macro(exec_source cmd)
-  join("${ARGN}" " " args)
-  file(APPEND ${${package}_BUILD_LOGFILE} ">>> ${cmd} ${args}\n")
-
-  execute_process(COMMAND ${cmd} ${ARGN}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE log
-    ERROR_VARIABLE log
-    RESULT_VARIABLE res
-  )
-  file(APPEND ${${package}_BUILD_LOGFILE} ${log})
-
-  if(res)
-    message(FATAL_ERROR "${res} \nSee also \"${${package}_BUILD_LOGFILE}\"")
-  endif()
-endmacro()
-
-function(build_bundled package bundle)
-  message(STATUS "Building bundled ${package}")
-
-  set(${package}_SOURCE_DIR ${CMAKE_SOURCE_DIR}/${bundle})
-  set(${package}_BINARY_DIR ${CMAKE_BINARY_DIR}/${bundle})
-  file(MAKE_DIRECTORY ${${package}_BINARY_DIR})
-  set(${package}_BUILD_LOGFILE ${${package}_BINARY_DIR}/build.log)
-  file(REMOVE ${${package}_BUILD_LOGFILE})
-
-  if(Git_FOUND)
-    exec_source(${GIT_EXECUTABLE} submodule update --init -- ${${package}_SOURCE_DIR})
-  endif()
-
-  if(${package} STREQUAL GTest)
-    set(${package}_INSTALL_DIR ${CMAKE_BINARY_DIR}/${bundle}_install)
-    file(MAKE_DIRECTORY ${${package}_INSTALL_DIR})
-    set(${package}_ROOT ${${package}_INSTALL_DIR})
-
-    exec(${CMAKE_COMMAND} -S ${${package}_SOURCE_DIR} -B ${${package}_BINARY_DIR} -G ${CMAKE_GENERATOR}
-      -DCMAKE_INSTALL_PREFIX=${${package}_INSTALL_DIR} -DBUILD_GMOCK=OFF
-    )
-    exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR})
-    exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR} --target install)
-  elseif(${package} STREQUAL asio)
-    set(${package}_INSTALL_DIR ${CMAKE_BINARY_DIR}/${bundle}_install)
-    file(MAKE_DIRECTORY ${${package}_INSTALL_DIR})
-    set(${package}_ROOT ${${package}_INSTALL_DIR})
-
-    exec(${CMAKE_COMMAND} -S ${${package}_SOURCE_DIR} -B ${${package}_BINARY_DIR} -G ${CMAKE_GENERATOR}
-      -DCMAKE_INSTALL_PREFIX=${${package}_INSTALL_DIR}
-    )
-    exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR})
-    exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR} --target install)
-  elseif(${package} STREQUAL PicoSHA2)
-    set(${package}_ROOT ${${package}_SOURCE_DIR})
-  endif()
-
-  string(TOUPPER ${package} package_upper)
-  set(${package_upper}_ROOT "${${package}_ROOT}" CACHE PATH "Bundled ${package} install prefix search hint")
-  set(${package}_BUNDLED ON CACHE BOOL "Whether bundled ${package} was used")
-
-  message(STATUS "Building bundled ${package} - done")
-endfunction()
 
 macro(fairmq_build_option option description)
   cmake_parse_arguments(ARGS "" "DEFAULT" "REQUIRES" ${ARGN})
@@ -560,4 +324,66 @@ macro(fairmq_build_option option description)
   set(ARGS_REQUIRES)
   set(option)
   set(description)
+endmacro()
+
+
+macro(set_package_infos)
+  if(PROJECT_PACKAGE_DEPENDENCIES)
+    foreach(dep IN LISTS PROJECT_PACKAGE_DEPENDENCIES)
+      string(TOUPPER ${dep} dep_upper)
+      if(${dep}_BUNDLED)
+        set(${dep}_PREFIX "<bundled>")
+      elseif(${dep} STREQUAL FairLogger)
+        if(NOT FairLogger_PREFIX AND FairLogger_ROOT)
+          set(FairLogger_PREFIX ${FairLogger_ROOT})
+        endif()
+      elseif(${dep} STREQUAL asiofi)
+        if(NOT asiofi_PREFIX AND asiofi_ROOT)
+          set(asiofi_PREFIX ${asiofi_ROOT})
+        endif()
+      elseif(${dep} STREQUAL DDS)
+        set(DDS_PREFIX "${DDS_INSTALL_PREFIX}")
+      elseif(${dep} STREQUAL Boost)
+        if(TARGET Boost::headers)
+          get_target_property(boost_include Boost::headers INTERFACE_INCLUDE_DIRECTORIES)
+        else()
+          get_target_property(boost_include Boost::boost INTERFACE_INCLUDE_DIRECTORIES)
+        endif()
+        get_filename_component(Boost_PREFIX ${boost_include}/.. ABSOLUTE)
+        unset(boost_include)
+      elseif(${dep} STREQUAL Doxygen)
+        get_target_property(doxygen_bin Doxygen::doxygen INTERFACE_LOCATION)
+        get_filename_component(Doxygen_PREFIX ${doxygen_bin} DIRECTORY)
+        get_filename_component(Doxygen_PREFIX ${Doxygen_PREFIX}/.. ABSOLUTE)
+        unset(doxygen_bin)
+      elseif(${dep} STREQUAL Flatbuffers)
+        if(TARGET flatbuffers::flatbuffers)
+          get_target_property(flatbuffers_include flatbuffers::flatbuffers INTERFACE_INCLUDE_DIRECTORIES)
+        else()
+          get_target_property(flatbuffers_include flatbuffers::flatbuffers_shared INTERFACE_INCLUDE_DIRECTORIES)
+        endif()
+        get_filename_component(Flatbuffers_PREFIX ${flatbuffers_include}/.. ABSOLUTE)
+        unset(flatbuffers_include)
+      elseif(NOT ${dep}_PREFIX)
+        # try to guess
+        if(TARGET ${dep}::${dep})
+          get_target_property(${dep}_include ${dep}::${dep} INTERFACE_INCLUDE_DIRECTORIES)
+          get_filename_component(${dep}_PREFIX ${${dep}_include}/.. ABSOLUTE)
+          unset(${dep}_include)
+        elseif(${dep}_INCLUDE_DIR)
+          get_filename_component(${dep}_PREFIX ${${dep}_INCLUDE_DIR}/.. ABSOLUTE)
+        elseif(${dep_upper}_INCLUDE_DIR)
+          get_filename_component(${dep}_PREFIX ${${dep_upper}_INCLUDE_DIR}/.. ABSOLUTE)
+        elseif(${dep}_INCLUDE_DIRS)
+          list(GET ${dep}_INCLUDE_DIRS 0 ${dep}_include)
+          get_filename_component(${dep}_PREFIX ${${dep}_include}/.. ABSOLUTE)
+          unset(${dep}_include)
+        elseif(${dep_upper}_INCLUDE_DIRS)
+          list(GET ${dep_upper}_INCLUDE_DIRS 0 ${dep}_include)
+          get_filename_component(${dep}_PREFIX ${${dep}_include}/.. ABSOLUTE)
+          unset(${dep}_include)
+        endif()
+      endif()
+    endforeach()
+  endif()
 endmacro()
