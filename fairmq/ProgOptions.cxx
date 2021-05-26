@@ -242,7 +242,7 @@ Properties ProgOptions::GetProperties(const string& q) const
         }
     }
 
-    if (properties.size() == 0) {
+    if (properties.empty()) {
         LOG(warn) << "could not find anything with \"" << q << "\"";
     }
 
@@ -277,7 +277,7 @@ map<string, string> ProgOptions::GetPropertiesAsString(const string& q) const
         }
     }
 
-    if (properties.size() == 0) {
+    if (properties.empty()) {
         LOG(warn) << "could not find anything with \"" << q << "\"";
     }
 
@@ -439,7 +439,7 @@ void ProgOptions::PrintOptionsRaw() const
 
         replace(description.begin(), description.end(), '\n', ' ');
 
-        cout << o->long_name() << ":" << value.value << ":" << (value.type == "" ? "<unknown>" : value.type) << ":" << description << endl;
+        cout << o->long_name() << ":" << value.value << ":" << (value.type.empty() ? "<unknown>" : value.type) << ":" << description << endl;
     }
 }
 

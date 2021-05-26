@@ -324,7 +324,7 @@ class FairMQDevice
 
     void PrintRegisteredChannels()
     {
-        if (fChannelRegistry.size() < 1) {
+        if (fChannelRegistry.empty()) {
             LOGV(info, verylow) << "no channels registered.";
         } else {
             for (const auto& c : fChannelRegistry) {

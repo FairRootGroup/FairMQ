@@ -49,7 +49,7 @@ bool DeviceRunner::HandleGeneralOptions(const fair::mq::ProgOptions& config, boo
         string verbosity = config.GetProperty<string>("verbosity");
         fair::Logger::SetVerbosity(verbosity);
 
-        if (logFile != "") {
+        if (!logFile.empty()) {
             fair::Logger::InitFileSink(logFileSeverity, logFile);
             fair::Logger::SetConsoleSeverity("nolog");
         } else {
@@ -58,7 +58,7 @@ bool DeviceRunner::HandleGeneralOptions(const fair::mq::ProgOptions& config, boo
             if (envFairMQSeverity) {
                 severity = envFairMQSeverity;
             }
-            if (severity != "") {
+            if (!severity.empty()) {
                 fair::Logger::SetConsoleSeverity(severity);
             }
         }

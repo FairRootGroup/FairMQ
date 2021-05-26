@@ -190,7 +190,7 @@ try {
     }
 
     // validate socket address
-    if (fAddress == "unspecified" || fAddress == "") {
+    if (fAddress == "unspecified" || fAddress.empty()) {
         ss << "INVALID";
         LOG(debug) << ss.str();
         LOG(debug) << "invalid channel address: '" << fAddress << "'";
@@ -226,7 +226,7 @@ try {
             } else if (address.compare(0, 6, "ipc://") == 0) {
                 // check if IPC address is not empty
                 string addressString = address.substr(6);
-                if (addressString == "") {
+                if (addressString.empty()) {
                     ss << "INVALID";
                     LOG(debug) << ss.str();
                     LOG(error) << "invalid channel address: '" << address << "' (empty IPC address?)";
@@ -235,7 +235,7 @@ try {
             } else if (address.compare(0, 9, "inproc://") == 0) {
                 // check if IPC address is not empty
                 string addressString = address.substr(9);
-                if (addressString == "") {
+                if (addressString.empty()) {
                     ss << "INVALID";
                     LOG(debug) << ss.str();
                     LOG(error) << "invalid channel address: '" << address << "' (empty inproc address?)";
@@ -244,7 +244,7 @@ try {
             } else if (address.compare(0, 8, "verbs://") == 0) {
                 // check if IPC address is not empty
                 string addressString = address.substr(8);
-                if (addressString == "") {
+                if (addressString.empty()) {
                     ss << "INVALID";
                     LOG(debug) << ss.str();
                     LOG(error) << "invalid channel address: '" << address << "' (empty verbs address?)";

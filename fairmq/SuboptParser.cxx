@@ -109,7 +109,7 @@ Properties SuboptParser(const vector<string>& channelConfig, const string& devic
             }
         }
 
-        if (channelName != "") {
+        if (!channelName.empty()) {
             channelProperties.add_child("sockets", socketsArray);
         } else {
             // TODO: what is the error policy here, should we abort?

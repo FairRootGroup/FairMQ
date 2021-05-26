@@ -35,7 +35,7 @@ namespace fair::mq
 
 fair::mq::Properties PtreeParser(const ptree& pt, const string& id)
 {
-    if (id == "") {
+    if (id.empty()) {
         throw ParserError("no device ID provided. Provide with `--id` cmd option");
     }
 

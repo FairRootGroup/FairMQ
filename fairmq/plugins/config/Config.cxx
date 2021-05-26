@@ -31,7 +31,7 @@ Config::Config(const string& name, const Plugin::Version version, const string& 
                 idForParser = GetProperty<string>("id");
             }
 
-            if (idForParser != "") {
+            if (!idForParser.empty()) {
                 try {
                     if (PropertyExists("mq-config")) {
                         LOG(debug) << "mq-config: Using default JSON parser";

@@ -1066,7 +1066,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         {
             if (!fOp.IsCompleted() && fCount == fExpectedCount) {
                 fTimer.cancel();
-                if (fResult.failed.size() > 0) {
+                if (!fResult.failed.empty()) {
                     fOp.Complete(MakeErrorCode(ErrorCode::DeviceGetPropertiesFailed), std::move(fResult));
                 } else {
                     fOp.Complete(std::move(fResult));
@@ -1221,7 +1221,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         {
             if (!fOp.IsCompleted() && fCount == fExpectedCount) {
                 fTimer.cancel();
-                if (fFailedDevices.size() > 0) {
+                if (!fFailedDevices.empty()) {
                     fOp.Complete(MakeErrorCode(ErrorCode::DeviceSetPropertiesFailed), fFailedDevices);
                 } else {
                     fOp.Complete(fFailedDevices);

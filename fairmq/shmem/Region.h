@@ -59,7 +59,7 @@ struct Region
     {
         using namespace boost::interprocess;
 
-        if (path != "") {
+        if (!path.empty()) {
             fName = std::string(path + fName);
 
             if (!fRemote) {

@@ -67,7 +67,7 @@ auto DDSTopology::GetTasks(const std::string& path /* = "" */) const -> std::vec
     std::vector<DDSTask> list;
 
     dds::topology_api::STopoRuntimeTask::FilterIteratorPair_t itPair;
-    if (path == "") {
+    if (path.empty()) {
         itPair = fImpl->fTopo.getRuntimeTaskIterator(nullptr); // passing nullptr will get all tasks
     } else {
         itPair = fImpl->fTopo.getRuntimeTaskIteratorMatchingPath(path);
