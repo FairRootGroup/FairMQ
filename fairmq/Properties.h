@@ -37,7 +37,7 @@ class PropertyHelper
     template<typename T>
     static void AddType(std::string label = "")
     {
-        if (label == "") {
+        if (label.empty()) {
             label = boost::core::demangle(typeid(T).name());
         }
         fTypeInfos[std::type_index(typeid(T))] = [label](const Property& p) {

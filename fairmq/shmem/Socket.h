@@ -469,7 +469,7 @@ class Socket final : public fair::mq::Socket
 
     static int GetConstant(const std::string& constant)
     {
-        if (constant == "") return 0;
+        if (constant.empty()) return 0;
         if (constant == "sub") return ZMQ_SUB;
         if (constant == "pub") return ZMQ_PUB;
         if (constant == "xsub") return ZMQ_XSUB;

@@ -35,7 +35,7 @@ auto FairMQTransportFactory::CreateTransportFactory(const string& type,
     auto finalId = id;
 
     // Generate uuid if empty
-    if (finalId == "") {
+    if (finalId.empty()) {
         finalId = fair::mq::tools::Uuid();
     }
 

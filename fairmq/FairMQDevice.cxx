@@ -246,7 +246,7 @@ void FairMQDevice::InitWrapper()
 
             if (subChannel.fMethod == "bind") {
                 // if binding address is not specified, try getting it from the configured network interface
-                if (subChannel.fAddress == "unspecified" || subChannel.fAddress == "") {
+                if (subChannel.fAddress == "unspecified" || subChannel.fAddress.empty()) {
                     // if the configured network interface is default, get its name from the default route
                     try {
                         if (networkInterface == "default") {
@@ -381,7 +381,7 @@ bool FairMQDevice::AttachChannel(FairMQChannel& chan)
             if (!(bind && hostPart == "*")) {
                 string portPart = addressString.substr(pos + 1);
                 string resolvedHost = tools::getIpFromHostname(hostPart);
-                if (resolvedHost == "") {
+                if (resolvedHost.empty()) {
                     return false;
                 }
                 address.assign("tcp://" + resolvedHost + ":" + portPart);
@@ -490,11 +490,11 @@ void FairMQDevice::HandleSingleChannelInput()
 {
     bool proceed = true;
 
-    if (fMsgInputs.size() > 0) {
+    if (!fMsgInputs.empty()) {
         while (!NewStatePending() && proceed) {
             proceed = HandleMsgInput(fInputChannelKeys.at(0), fMsgInputs.begin()->second, 0);
         }
-    } else if (fMultipartInputs.size() > 0) {
+    } else if (!fMultipartInputs.empty()) {
         while (!NewStatePending() && proceed) {
             proceed = HandleMultipartInput(fInputChannelKeys.at(0), fMultipartInputs.begin()->second, 0);
         }

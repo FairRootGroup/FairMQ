@@ -76,7 +76,7 @@ void handleCommand(const string& command, const string& path, unsigned int timeo
         }
         return;
     } else if (command == "o") {
-        cout << "> dumping config of " << (path == "" ? "all" : path) << endl;
+        cout << "> dumping config of " << (path.empty() ? "all" : path) << endl;
         // TODO: extend this regex to return all properties, once command size limitation is removed.
         auto const result = topo.GetProperties("^(session|id)$", path, std::chrono::milliseconds(timeout));
         if (result.first != std::error_code()) {
@@ -90,12 +90,12 @@ void handleCommand(const string& command, const string& path, unsigned int timeo
         }
         return;
     } else if (command == "p") {
-        if (pKey == "" || pVal == "") {
+        if (pKey.empty() || pVal.empty()) {
             cout << "cannot send property with empty key and/or value! given key: '" << pKey << "', value: '" << pVal << "'." << endl;
             throw runtime_error(tools::ToString("cannot send property with empty key and/or value! given key: '", pKey, "', value: '", pVal, "'."));
         }
         const DeviceProperties props{{pKey, pVal}};
-        cout << "> setting properties --> " << (path == "" ? "all" : path) << endl;
+        cout << "> setting properties --> " << (path.empty() ? "all" : path) << endl;
         auto const result = topo.SetProperties(props, path);
         if (result.first != std::error_code()) {
             cout << "ERROR: SetProperties failed for '" << path << "': " << result.first.message() << endl;
@@ -105,34 +105,34 @@ void handleCommand(const string& command, const string& path, unsigned int timeo
         this_thread::sleep_for(chrono::milliseconds(100));
         return;
     } else if (command == "i") {
-        cout << "> initiating InitDevice transition --> " << (path == "" ? "all" : path) << endl;
+        cout << "> initiating InitDevice transition --> " << (path.empty() ? "all" : path) << endl;
         changeStateResult = topo.ChangeState(TopologyTransition::InitDevice, path, std::chrono::milliseconds(timeout));
     } else if (command == "k") {
-        cout << "> initiating CompleteInit transition --> " << (path == "" ? "all" : path) << endl;
+        cout << "> initiating CompleteInit transition --> " << (path.empty() ? "all" : path) << endl;
         changeStateResult = topo.ChangeState(TopologyTransition::CompleteInit, path, std::chrono::milliseconds(timeout));
     } else if (command == "b") {
-        cout << "> initiating Bind transition --> " << (path == "" ? "all" : path) << endl;
+        cout << "> initiating Bind transition --> " << (path.empty() ? "all" : path) << endl;
         changeStateResult = topo.ChangeState(TopologyTransition::Bind, path, std::chrono::milliseconds(timeout));
     } else if (command == "x") {
-        cout << "> initiating Connect transition --> " << (path == "" ? "all" : path) << endl;
+        cout << "> initiating Connect transition --> " << (path.empty() ? "all" : path) << endl;
         changeStateResult = topo.ChangeState(TopologyTransition::Connect, path, std::chrono::milliseconds(timeout));
     } else if (command == "j") {
-        cout << "> initiating InitTask transition --> " << (path == "" ? "all" : path) << endl;
+        cout << "> initiating InitTask transition --> " << (path.empty() ? "all" : path) << endl;
         changeStateResult = topo.ChangeState(TopologyTransition::InitTask, path, std::chrono::milliseconds(timeout));
     } else if (command == "r") {
-        cout << "> initiating Run transition --> " << (path == "" ? "all" : path) << endl;
+        cout << "> initiating Run transition --> " << (path.empty() ? "all" : path) << endl;
         changeStateResult = topo.ChangeState(TopologyTransition::Run, path, std::chrono::milliseconds(timeout));
     } else if (command == "s") {
-        cout << "> initiating Stop transition --> " << (path == "" ? "all" : path) << endl;
+        cout << "> initiating Stop transition --> " << (path.empty() ? "all" : path) << endl;
         changeStateResult = topo.ChangeState(TopologyTransition::Stop, path, std::chrono::milliseconds(timeout));
     } else if (command == "t") {
-        cout << "> initiating ResetTask transition --> " << (path == "" ? "all" : path) << endl;
+        cout << "> initiating ResetTask transition --> " << (path.empty() ? "all" : path) << endl;
         changeStateResult = topo.ChangeState(TopologyTransition::ResetTask, path, std::chrono::milliseconds(timeout));
     } else if (command == "d") {
-        cout << "> initiating ResetDevice transition --> " << (path == "" ? "all" : path) << endl;
+        cout << "> initiating ResetDevice transition --> " << (path.empty() ? "all" : path) << endl;
         changeStateResult = topo.ChangeState(TopologyTransition::ResetDevice, path, std::chrono::milliseconds(timeout));
     } else if (command == "q") {
-        cout << "> initiating End transition --> " << (path == "" ? "all" : path) << endl;
+        cout << "> initiating End transition --> " << (path.empty() ? "all" : path) << endl;
         changeStateResult = topo.ChangeState(TopologyTransition::End, path, std::chrono::milliseconds(timeout));
     } else if (command == "h") {
         cout << "> help" << endl;
@@ -151,7 +151,7 @@ void handleCommand(const string& command, const string& path, unsigned int timeo
 
 void sendCommand(const string& commandIn, const string& path, unsigned int timeout, Topology& topo, const string& pKey, const string& pVal)
 {
-    if (commandIn != "") {
+    if (!commandIn.empty()) {
         handleCommand(commandIn, path, timeout, topo, pKey, pVal);
         return;
     }
@@ -232,12 +232,12 @@ try {
 
     Topology topo(ddsTopo, session, true);
 
-    if (targetState != "") {
-        if (command != "") {
+    if (!targetState.empty()) {
+        if (!command.empty()) {
             sendCommand(command, path, timeout, topo, pKey, pVal);
         }
         size_t pos = targetState.find("->");
-        cout << "> waiting for " << (path == "" ? "all" : path) << " to reach " << targetState << endl;
+        cout << "> waiting for " << (path.empty() ? "all" : path) << " to reach " << targetState << endl;
         if (pos == string::npos) {
             /* auto ec =  */topo.WaitForState(GetState(targetState), path, std::chrono::milliseconds(timeout));
             // cout << "WaitForState(" << targetState << ") result: " << ec.message() << endl;
