@@ -17,7 +17,13 @@ cleanup() {
   echo "CLEANUP PERFORMED"
 }
 
-source @DDS_INSTALL_PREFIX@/DDS_env.sh
+
+if [[ -e "@DDS_INSTALL_PREFIX@/DDS_env.sh" ]]; then
+  source @DDS_INSTALL_PREFIX@/DDS_env.sh
+elif command -v DDS_env.sh &> /dev/null; then
+  source DDS_env.sh
+fi
+
 export PATH=@BIN_DIR@:$PATH
 
 exec 5>&1
