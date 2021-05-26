@@ -63,7 +63,6 @@ class Manager
         , fShmId(makeShmIdStr(sessionName))
         , fSegmentId(config ? config->GetProperty<uint16_t>("shm-segment-id", 0) : 0)
         , fDeviceId(std::move(deviceId))
-        , fSegments()
         , fManagementSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mng").c_str(), 6553600)
         , fShmVoidAlloc(fManagementSegment.get_segment_manager())
         , fShmMtx(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mtx").c_str())
@@ -81,7 +80,6 @@ class Manager
         , fMsgCounterNew(0)
         , fMsgCounterDelete(0)
 #endif
-        , fHeartbeatThread()
         , fSendHeartbeats(true)
         , fThrowOnBadAlloc(config ? config->GetProperty<bool>("shm-throw-bad-alloc", true) : true)
         , fNoCleanup(config ? config->GetProperty<bool>("shm-no-cleanup", false) : false)

@@ -24,7 +24,7 @@ class FairMQParts
 
   public:
     /// Default constructor
-    FairMQParts() : fParts() {};
+    FairMQParts() {};
     /// Copy Constructor
     FairMQParts(const FairMQParts&) = delete;
     /// Move constructor
@@ -33,7 +33,7 @@ class FairMQParts
     FairMQParts& operator=(const FairMQParts&) = delete;
     /// Constructor from argument pack of std::unique_ptr<FairMQMessage> rvalues
     template <typename... Ts>
-    FairMQParts(Ts&&... messages) : fParts() { AddPart(std::forward<Ts>(messages)...); }
+    FairMQParts(Ts&&... messages) { AddPart(std::forward<Ts>(messages)...); }
     /// Default destructor
     ~FairMQParts() {};
 

@@ -43,11 +43,7 @@ class PluginServices
     PluginServices(ProgOptions& config, FairMQDevice& device)
         : fConfig(config)
         , fDevice(device)
-        , fDeviceController()
-        , fDeviceControllerMutex()
-        , fReleaseDeviceControlCondition()
-    {
-    }
+    {}
 
     ~PluginServices()
     {

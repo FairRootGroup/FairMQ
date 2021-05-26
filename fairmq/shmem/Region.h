@@ -54,8 +54,6 @@ struct Region
         , fFile(nullptr)
         , fFileMapping()
         , fQueue(nullptr)
-        , fAcksReceiver()
-        , fAcksSender()
         , fCallback(callback)
         , fBulkCallback(bulkCallback)
     {

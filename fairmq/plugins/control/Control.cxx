@@ -48,9 +48,6 @@ namespace fair::mq::plugins
 
 Control::Control(const string& name, const Plugin::Version version, const string& maintainer, const string& homepage, PluginServices* pluginServices)
     : Plugin(name, version, maintainer, homepage, pluginServices)
-    , fControllerThread()
-    , fSignalHandlerThread()
-    , fControllerMutex()
     , fDeviceShutdownRequested(false)
     , fDeviceHasShutdown(false)
     , fPluginShutdownRequested(false)

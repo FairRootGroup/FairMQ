@@ -234,8 +234,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         : AsioBase<Executor, Allocator>(ex, std::move(alloc))
         , fDDSSession(std::move(session))
         , fDDSTopo(std::move(topo))
-        , fStateData()
-        , fStateIndex()
         , fMtx(std::make_unique<std::mutex>())
         , fStateChangeSubscriptionsCV(std::make_unique<std::condition_variable>())
         , fNumStateChangePublishers(0)
@@ -1174,7 +1172,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             , fTimer(ex)
             , fCount(0)
             , fExpectedCount(expectedCount)
-            , fFailedDevices()
             , fMtx(mutex)
         {
             if (timeout > std::chrono::milliseconds(0)) {

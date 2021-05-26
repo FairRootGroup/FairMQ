@@ -57,46 +57,44 @@ class FairMQMemoryResource : public pmr::memory_resource
 class ChannelResource : public FairMQMemoryResource
 {
   protected:
-    FairMQTransportFactory *factory{nullptr};
+    FairMQTransportFactory* factory{nullptr};
     // TODO: for now a map to keep track of allocations, something else would
     // probably be
     // faster, but for now this does not need to be fast.
-    boost::container::flat_map<void *, FairMQMessagePtr> messageMap;
+    boost::container::flat_map<void*, FairMQMessagePtr> messageMap;
 
   public:
     ChannelResource() = delete;
 
-    ChannelResource(FairMQTransportFactory *_factory)
-        : FairMQMemoryResource()
-        , factory(_factory)
-        , messageMap()
+    ChannelResource(FairMQTransportFactory* _factory)
+        : factory(_factory)
     {
         if (!_factory) {
             throw std::runtime_error("Tried to construct from a nullptr FairMQTransportFactory");
         }
     };
 
-    FairMQMessagePtr getMessage(void *p) override
+    FairMQMessagePtr getMessage(void* p) override
     {
         auto mes = std::move(messageMap[p]);
         messageMap.erase(p);
         return mes;
     }
 
-    void *setMessage(FairMQMessagePtr message) override
+    void* setMessage(FairMQMessagePtr message) override
     {
-        void *addr = message->GetData();
+        void* addr = message->GetData();
         messageMap[addr] = std::move(message);
         return addr;
     }
 
-    FairMQTransportFactory *getTransportFactory() noexcept override { return factory; }
+    FairMQTransportFactory* getTransportFactory() noexcept override { return factory; }
 
     size_t getNumberOfMessages() const noexcept override { return messageMap.size(); }
 
   protected:
-    void *do_allocate(std::size_t bytes, std::size_t alignment) override;
-    void do_deallocate(void *p, std::size_t /*bytes*/, std::size_t /*alignment*/) override
+    void* do_allocate(std::size_t bytes, std::size_t alignment) override;
+    void do_deallocate(void* p, std::size_t /*bytes*/, std::size_t /*alignment*/) override
     {
         messageMap.erase(p);
     };
