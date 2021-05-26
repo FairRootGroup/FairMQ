@@ -25,8 +25,7 @@ class RandomAccessIterator : public ::testing::Test {
     shared_ptr<FairMQTransportFactory> mFactory;
 
     RandomAccessIterator()
-    : mParts(FairMQParts{}),
-      mFactory(FairMQTransportFactory::CreateTransportFactory("zeromq"))
+        : mFactory(FairMQTransportFactory::CreateTransportFactory("zeromq"))
     {
         mParts.AddPart(mFactory->NewSimpleMessage("1"));
         mParts.AddPart(mFactory->NewSimpleMessage("2"));

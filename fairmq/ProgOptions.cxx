@@ -68,11 +68,7 @@ string ConvertVarValToString(const po::variable_value& v)
 }
 
 ProgOptions::ProgOptions()
-    : fVarMap()
-    , fAllOptions("FairMQ Command Line Options")
-    , fUnregisteredOptions()
-    , fEvents()
-    , fMtx()
+    : fAllOptions("FairMQ Command Line Options")
 {
     fAllOptions.add_options()
         ("help,h",                                                      "Print help")

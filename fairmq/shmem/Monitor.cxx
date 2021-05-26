@@ -91,8 +91,6 @@ Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool 
     , fTerminating(false)
     , fHeartbeatTriggered(false)
     , fLastHeartbeat(chrono::high_resolution_clock::now())
-    , fSignalThread()
-    , fDeviceHeartbeats()
 {
     if (!fViewOnly) {
         try {

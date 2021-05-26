@@ -29,7 +29,6 @@ class Poller final : public fair::mq::Poller
     Poller(const std::vector<FairMQChannel>& channels)
         : fItems()
         , fNumItems(0)
-        , fOffsetMap()
     {
         fNumItems = channels.size();
         fItems = new zmq_pollitem_t[fNumItems];   // TODO: fix me
@@ -50,7 +49,6 @@ class Poller final : public fair::mq::Poller
     Poller(const std::vector<FairMQChannel*>& channels)
         : fItems()
         , fNumItems(0)
-        , fOffsetMap()
     {
         fNumItems = channels.size();
         fItems = new zmq_pollitem_t[fNumItems];
@@ -71,7 +69,6 @@ class Poller final : public fair::mq::Poller
     Poller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList)
         : fItems()
         , fNumItems(0)
-        , fOffsetMap()
     {
         try {
             int offset = 0;

@@ -21,11 +21,9 @@ using namespace fair::mq;
 
 DeviceRunner::DeviceRunner(int argc, char*const* argv, bool printLogo)
     : fRawCmdLineArgs(tools::ToStrVector(argc, argv, false))
-    , fConfig()
     , fDevice(nullptr)
     , fPluginManager(fRawCmdLineArgs)
     , fPrintLogo(printLogo)
-    , fEvents()
 {}
 
 bool DeviceRunner::HandleGeneralOptions(const fair::mq::ProgOptions& config, bool printLogo)
