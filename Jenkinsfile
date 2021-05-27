@@ -30,7 +30,7 @@ def jobMatrix(String type, List specs) {
             sh "bash ${jobscript}"
           } else {
             def static_analysis = "OFF"
-            if (selector =~ /^fedora/) {
+            if (selector =~ /^fedora-32/) {
               static_analysis = "ON"
             }
             def containercmd = "singularity exec -B/shared ${env.SINGULARITY_CONTAINER_ROOT}/fairmq/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} -DRUN_STATIC_ANALYSIS=${static_analysis}\\\""
@@ -80,6 +80,7 @@ pipeline{
         script {
           def builds = jobMatrix('build', [
             [os: 'fedora',       ver: '32', arch: 'x86_64', compiler: 'gcc-10'],
+            [os: 'fedora',       ver: '34', arch: 'x86_64', compiler: 'gcc-11'],
             [os: 'macos',        ver: '11', arch: 'x86_64', compiler: 'apple-clang-12'],
           ])
 
