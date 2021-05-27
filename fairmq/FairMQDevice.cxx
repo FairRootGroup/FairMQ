@@ -40,10 +40,10 @@ struct StateSubscription
     fair::mq::StateQueue& fStateQueue;
     string fId;
 
-    explicit StateSubscription(const string& id, fair::mq::StateMachine& stateMachine, fair::mq::StateQueue& stateQueue)
+    explicit StateSubscription(string id, fair::mq::StateMachine& stateMachine, fair::mq::StateQueue& stateQueue)
         : fStateMachine(stateMachine)
         , fStateQueue(stateQueue)
-        , fId(id)
+        , fId(std::move(id))
     {
         fStateMachine.SubscribeToStateChange(fId, [&](fair::mq::State state) {
             fStateQueue.Push(state);

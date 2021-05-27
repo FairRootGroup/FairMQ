@@ -61,7 +61,7 @@ class FairMQChannel
     /// @param method Socket method (bind/connect)
     /// @param address Network address to bind/connect to (e.g. "tcp://127.0.0.1:5555" or "ipc://abc")
     /// @param factory TransportFactory
-    FairMQChannel(const std::string& name, const std::string& type, const std::string& method, const std::string& address, std::shared_ptr<FairMQTransportFactory> factory);
+    FairMQChannel(std::string name, std::string type, std::string method, std::string address, std::shared_ptr<FairMQTransportFactory> factory);
 
     FairMQChannel(const std::string& name, int index, const fair::mq::Properties& properties);
 
@@ -69,7 +69,7 @@ class FairMQChannel
     FairMQChannel(const FairMQChannel&);
 
     /// Copy Constructor (with new name)
-    FairMQChannel(const FairMQChannel&, const std::string& name);
+    FairMQChannel(const FairMQChannel&, std::string name);
 
     /// Move constructor
     // FairMQChannel(FairMQChannel&&) = delete;

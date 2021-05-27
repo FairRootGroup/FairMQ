@@ -38,6 +38,7 @@
 #include <cerrno>
 #include <chrono>
 #include <ios>
+#include <utility> // move
 
 namespace fair::mq::shmem
 {
@@ -54,8 +55,8 @@ struct Region
         , fFile(nullptr)
         , fFileMapping()
         , fQueue(nullptr)
-        , fCallback(callback)
-        , fBulkCallback(bulkCallback)
+        , fCallback(std::move(callback))
+        , fBulkCallback(std::move(bulkCallback))
     {
         using namespace boost::interprocess;
 
