@@ -79,7 +79,6 @@ pipeline{
       steps{
         script {
           def builds = jobMatrix('build', [
-            [os: 'alice-centos', ver: '7',  arch: 'x86_64', compiler: 'gcc-7'],
             [os: 'fedora',       ver: '32', arch: 'x86_64', compiler: 'gcc-10'],
             [os: 'macos',        ver: '11', arch: 'x86_64', compiler: 'apple-clang-12'],
           ])
