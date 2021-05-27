@@ -15,6 +15,7 @@
 
 #include <cstddef> // size_t
 #include <string>
+#include <utility> // move
 
 #include <sys/mman.h> // mlock
 
@@ -40,8 +41,8 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
         , fBuffer(malloc(size))
         , fSize(size)
         , fUserFlags(userFlags)
-        , fCallback(callback)
-        , fBulkCallback(bulkCallback)
+        , fCallback(std::move(callback))
+        , fBulkCallback(std::move(bulkCallback))
     {
         if (cfg.lock) {
             LOG(debug) << "Locking region " << fId << "...";

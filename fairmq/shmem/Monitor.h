@@ -52,7 +52,7 @@ struct BufferDebugInfo
 class Monitor
 {
   public:
-    Monitor(const std::string& shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, unsigned int intervalInMS, bool runAsDaemon, bool cleanOnExit);
+    Monitor(std::string shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, unsigned int intervalInMS, bool runAsDaemon, bool cleanOnExit);
 
     Monitor(const Monitor&) = delete;
     Monitor operator=(const Monitor&) = delete;

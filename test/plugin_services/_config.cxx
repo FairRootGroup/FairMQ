@@ -10,11 +10,12 @@
 #include <fairmq/tools/Strings.h>
 #include <fairmq/PropertyOutput.h>
 #include <algorithm>
+#include <utility> // move
 
 struct MyClass
 {
     MyClass() = default;
-    MyClass(const std::string& a) : msg(a) {}
+    MyClass(std::string a) : msg(std::move(a)) {}
     MyClass(const MyClass&) = default;
     MyClass& operator=(const MyClass& b) = default;
     std::string msg;

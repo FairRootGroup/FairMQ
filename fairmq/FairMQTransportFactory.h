@@ -38,7 +38,7 @@ class FairMQTransportFactory
   public:
     /// ctor
     /// @param id Topology wide unique id, usually the device id.
-    FairMQTransportFactory(const std::string& id);
+    FairMQTransportFactory(std::string id);
 
     auto GetId() const -> const std::string { return fkId; };
 

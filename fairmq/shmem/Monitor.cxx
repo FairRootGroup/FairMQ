@@ -77,7 +77,7 @@ void signalHandler(int signal)
     gSignalStatus = signal;
 }
 
-Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, unsigned int intervalInMS, bool monitor, bool cleanOnExit)
+Monitor::Monitor(string shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, unsigned int intervalInMS, bool monitor, bool cleanOnExit)
     : fSelfDestruct(selfDestruct)
     , fInteractive(interactive)
     , fViewOnly(viewOnly)
@@ -86,7 +86,7 @@ Monitor::Monitor(const string& shmId, bool selfDestruct, bool interactive, bool 
     , fCleanOnExit(cleanOnExit)
     , fTimeoutInMS(timeoutInMS)
     , fIntervalInMS(intervalInMS)
-    , fShmId(shmId)
+    , fShmId(std::move(shmId))
     , fControlQueueName("fmq_" + fShmId + "_cq")
     , fTerminating(false)
     , fHeartbeatTriggered(false)

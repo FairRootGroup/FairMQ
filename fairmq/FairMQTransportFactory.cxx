@@ -20,11 +20,12 @@
 
 #include <memory>
 #include <string>
+#include <utility> // move
 
 using namespace std;
 
-FairMQTransportFactory::FairMQTransportFactory(const string& id)
-    : fkId(id)
+FairMQTransportFactory::FairMQTransportFactory(string id)
+    : fkId(std::move(id))
 {}
 
 auto FairMQTransportFactory::CreateTransportFactory(const string& type,

@@ -16,6 +16,7 @@
 #include <memory>
 #include <type_traits>
 #include <stdexcept>
+#include <utility> // move
 
 namespace fair::mq::sdk::cmd
 {
@@ -163,9 +164,9 @@ struct SubscriptionHeartbeat : Cmd
 
 struct CurrentState : Cmd
 {
-    explicit CurrentState(const std::string& id, State currentState)
+    explicit CurrentState(std::string id, State currentState)
         : Cmd(Type::current_state)
-        , fDeviceId(id)
+        , fDeviceId(std::move(id))
         , fCurrentState(currentState)
     {}
 
@@ -181,9 +182,9 @@ struct CurrentState : Cmd
 
 struct TransitionStatus : Cmd
 {
-    explicit TransitionStatus(const std::string& deviceId, const uint64_t taskId, const Result result, const Transition transition, State currentState)
+    explicit TransitionStatus(std::string deviceId, const uint64_t taskId, const Result result, const Transition transition, State currentState)
         : Cmd(Type::transition_status)
-        , fDeviceId(deviceId)
+        , fDeviceId(std::move(deviceId))
         , fTaskId(taskId)
         , fResult(result)
         , fTransition(transition)
@@ -211,10 +212,10 @@ struct TransitionStatus : Cmd
 
 struct Config : Cmd
 {
-    explicit Config(const std::string& id, const std::string& config)
+    explicit Config(std::string id, std::string config)
         : Cmd(Type::config)
-        , fDeviceId(id)
-        , fConfig(config)
+        , fDeviceId(std::move(id))
+        , fConfig(std::move(config))
     {}
 
     std::string GetDeviceId() const { return fDeviceId; }
@@ -229,9 +230,9 @@ struct Config : Cmd
 
 struct StateChangeSubscription : Cmd
 {
-    explicit StateChangeSubscription(const std::string& id, const uint64_t taskId, const Result result)
+    explicit StateChangeSubscription(std::string id, const uint64_t taskId, const Result result)
         : Cmd(Type::state_change_subscription)
-        , fDeviceId(id)
+        , fDeviceId(std::move(id))
         , fTaskId(taskId)
         , fResult(result)
     {}
@@ -251,9 +252,9 @@ struct StateChangeSubscription : Cmd
 
 struct StateChangeUnsubscription : Cmd
 {
-    explicit StateChangeUnsubscription(const std::string& id, const uint64_t taskId, const Result result)
+    explicit StateChangeUnsubscription(std::string id, const uint64_t taskId, const Result result)
         : Cmd(Type::state_change_unsubscription)
-        , fDeviceId(id)
+        , fDeviceId(std::move(id))
         , fTaskId(taskId)
         , fResult(result)
     {}
@@ -273,9 +274,9 @@ struct StateChangeUnsubscription : Cmd
 
 struct StateChange : Cmd
 {
-    explicit StateChange(const std::string& deviceId, const uint64_t taskId, const State lastState, const State currentState)
+    explicit StateChange(std::string deviceId, const uint64_t taskId, const State lastState, const State currentState)
         : Cmd(Type::state_change)
-        , fDeviceId(deviceId)
+        , fDeviceId(std::move(deviceId))
         , fTaskId(taskId)
         , fLastState(lastState)
         , fCurrentState(currentState)
