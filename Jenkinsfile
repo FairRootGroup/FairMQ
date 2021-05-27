@@ -58,7 +58,7 @@ def jobMatrix(String type, List specs) {
           deleteDir()
           githubNotify(context: "${label}", description: 'Success', status: 'SUCCESS')
         } catch (e) {
-          def tarball = "${prefix}_${label}_dds_logs.tar.gz"
+          def tarball = "${type}_${job}_dds_logs.tar.gz"
           sh "tar czvf ${tarball} -C \${WORKSPACE}/build/test .DDS/"
           archiveArtifacts tarball
 
