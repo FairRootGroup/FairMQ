@@ -1,44 +1,28 @@
 ################################################################################
-#    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
+# Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
+
+# Project ######################################################################
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 cmake_policy(VERSION 3.15...3.20)
 
-# Project ######################################################################
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-include(FairMQLib)
-
+include(GitHelper)
 get_git_version()
 
 project(FairMQ VERSION ${PROJECT_VERSION} LANGUAGES CXX)
-
-include(CTest)
-include(BundlePackages)
-
-set(PROJECT_FairCMakeModules_VERSION 0.2)
-find_package(FairCMakeModules ${PROJECT_FairCMakeModules_VERSION} QUIET)
-if(NOT FairCMakeModules_FOUND)
-  build_bundled(FairCMakeModules extern/FairCMakeModules)
-  find_package(FairCMakeModules REQUIRED)
-endif()
-
-include(FairFindPackage2)
-include(FairFormattedOutput)
-include(FairSummary)
-
-message(STATUS "${BWhite}${PROJECT_NAME}${CR} ${PROJECT_GIT_VERSION} from ${PROJECT_DATE}")
-
-set_fairmq_defaults()
-
+include(FairMQProjectSettings)
 ################################################################################
 
 
 # Build options ################################################################
+include(FairMQBuildOption)
+
 fairmq_build_option(BUILD_FAIRMQ        "Build FairMQ library and devices."
                                          DEFAULT ON)
 fairmq_build_option(BUILD_TESTING       "Build tests."
@@ -65,96 +49,7 @@ fairmq_build_option(FAIRMQ_DEBUG_MODE   "Compile in debug mode (may decrease per
 
 
 # Dependencies #################################################################
-if(BUILD_FAIRMQ OR BUILD_SDK)
-  set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-  find_package2(PUBLIC Threads REQUIRED)
-  set(Threads_PREFIX "<unknown system prefix>")
-endif()
-
-if(BUILD_OFI_TRANSPORT)
-  find_package2(PRIVATE asiofi REQUIRED
-    VERSION 0.3.1
-  )
-  find_package2(PRIVATE OFI REQUIRED)
-endif()
-
-if(BUILD_SDK_COMMANDS)
-  find_package2(PRIVATE Flatbuffers REQUIRED)
-endif()
-
-if(BUILD_DDS_PLUGIN OR BUILD_SDK)
-  find_package2(PRIVATE DDS REQUIRED
-    VERSION 3.5.3
-  )
-  set(DDS_Boost_COMPONENTS system log log_setup regex filesystem thread)
-  set(DDS_Boost_VERSION 1.67)
-endif()
-
-if(BUILD_PMIX_PLUGIN)
-  find_package2(PRIVATE PMIx REQUIRED
-    VERSION 2.1.4
-  )
-endif()
-
-if(BUILD_FAIRMQ OR BUILD_SDK)
-  find_package2(PUBLIC FairLogger REQUIRED
-    VERSION 1.6.0
-  )
-
-  if(NOT DEFINED Boost_NO_BOOST_CMAKE AND CMAKE_VERSION VERSION_LESS 3.15)
-    # Since Boost 1.70 a CMake package is shipped by default. Unfortunately, it has a number
-    # of problems that are only fixed in Boost 1.71 or CMake 3.15. By default we skip the
-    # BoostConfig lookup. This can be overridden on the command line via -DBoost_NO_BOOST_CMAKE=OFF
-    set(Boost_NO_BOOST_CMAKE ON)
-  endif()
-  find_package2(PUBLIC Boost REQUIRED
-    VERSION 1.66
-    COMPONENTS container program_options filesystem date_time regex
-  )
-
-  # Normalize Boost version
-  if(CMAKE_VERSION VERSION_LESS 3.15)
-    set(Boost_VERSION "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
-  endif()
-endif()
-
-if(BUILD_SDK)
-  find_package2(BUNDLED asio
-    VERSION 1.18.1
-  )
-  if(NOT asio_FOUND)
-    build_bundled(asio extern/asio)
-    find_package2(PRIVATE asio REQUIRED)
-  endif()
-endif()
-
-if(BUILD_FAIRMQ)
-  find_package2(PRIVATE ZeroMQ REQUIRED
-    VERSION 4.1.4
-  )
-  if(NOT PicoSHA2_FOUND AND NOT PicoSHA2_BUNDLED)
-    set(PicoSHA2_VERSION "1.0.0")
-    build_bundled(PicoSHA2 extern/PicoSHA2)
-  endif()
-  find_package2(BUNDLED PicoSHA2 REQUIRED)
-endif()
-
-if(BUILD_TESTING)
-  if(NOT GTest_FOUND AND NOT GTest_BUNDLED AND NOT USE_EXTERNAL_GTEST)
-    set(GTest_VERSION "Apr 28 2021 @f5e592d8")
-    build_bundled(GTest extern/googletest)
-  endif()
-  find_package2(BUNDLED GTest REQUIRED)
-endif()
-
-if(BUILD_DOCS)
-  find_package2(PRIVATE Doxygen REQUIRED
-    VERSION 1.8.8
-    COMPONENTS dot
-  )
-endif()
-
-find_package2_implicit_dependencies()
+include(FairMQDependencies)
 ################################################################################
 
 
@@ -227,115 +122,25 @@ if(BUILD_DOCS)
 endif()
 if(BUILD_SDK)
   if(asio_BUNDLED)
-    add_library(bundled_asio_headers INTERFACE)
-    target_include_directories(bundled_asio_headers INTERFACE
-      $<BUILD_INTERFACE:${asio_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}>
-      $<INSTALL_INTERFACE:${PROJECT_INSTALL_INCDIR}/bundled>
-    )
-    install(TARGETS bundled_asio_headers EXPORT ${PROJECT_EXPORT_SET})
-    install(DIRECTORY "${asio_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/asio"
-      DESTINATION ${PROJECT_INSTALL_INCDIR}/bundled
-    )
-    install(FILES "${asio_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/asio.hpp"
-      DESTINATION ${PROJECT_INSTALL_INCDIR}/bundled
-    )
+    install_bundled(asio)
   endif()
 endif()
 
+include(FairMQPackage)
 install_cmake_package()
 ################################################################################
 
 
 # Summary ######################################################################
+include(FairMQSummary)
+
+message(STATUS "${BWhite}${PROJECT_NAME}${CR} ${PROJECT_GIT_VERSION} from ${PROJECT_DATE}")
 fair_summary_global_cxx_flags_standard()
 fair_summary_build_types()
-set_package_infos()
 fair_summary_package_dependencies()
-message(STATUS "  ")
-message(STATUS "  ${Cyan}COMPONENT         BUILT?  INFO${CR}")
-if(BUILD_FAIRMQ)
-  set(fairmq_summary "${BGreen}YES${CR}    (default, disable with ${BMagenta}-DBUILD_FAIRMQ=OFF${CR})")
-else()
-  set(fairmq_summary "${BRed} NO${CR}    (enable with ${BMagenta}-DBUILD_FAIRMQ=ON${CR})")
-endif()
-message(STATUS "  ${BWhite}fairmq${CR}             ${fairmq_summary}")
-if(BUILD_TESTING)
-  set(tests_summary "${BGreen}YES${CR}    (default, disable with ${BMagenta}-DBUILD_TESTING=OFF${CR})")
-else()
-  set(tests_summary "${BRed} NO${CR}    (enable with ${BMagenta}-DBUILD_TESTING=ON${CR})")
-endif()
-message(STATUS "  ${BWhite}tests${CR}              ${tests_summary}")
-if(BUILD_OFI_TRANSPORT)
-  set(ofi_summary "${BGreen}YES${CR}    EXPERIMENTAL (disable with ${BMagenta}-DBUILD_OFI_TRANSPORT=OFF${CR})")
-else()
-  set(ofi_summary "${BRed} NO${CR}    EXPERIMENTAL (default, enable with ${BMagenta}-DBUILD_OFI_TRANSPORT=ON${CR})")
-endif()
-message(STATUS "  ${BWhite}ofi_transport${CR}      ${ofi_summary}")
-if(BUILD_DDS_PLUGIN)
-  set(dds_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_DDS_PLUGIN=OFF${CR})")
-else()
-  set(dds_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_DDS_PLUGIN=ON${CR})")
-endif()
-message(STATUS "  ${BWhite}dds_plugin${CR}         ${dds_summary}")
-if(BUILD_PMIX_PLUGIN)
-  set(pmix_summary "${BGreen}YES${CR}    EXPERIMENTAL (disable with ${BMagenta}-DBUILD_PMIX_PLUGIN=OFF${CR})")
-else()
-  set(pmix_summary "${BRed} NO${CR}    EXPERIMENTAL (default, enable with ${BMagenta}-DBUILD_PMIX_PLUGIN=ON${CR})")
-endif()
-message(STATUS "  ${BWhite}pmix_plugin${CR}        ${pmix_summary}")
-if(BUILD_EXAMPLES)
-  set(examples_summary "${BGreen}YES${CR}    (default, disable with ${BMagenta}-DBUILD_EXAMPLES=OFF${CR})")
-else()
-  set(examples_summary "${BRed} NO${CR}    (enable with ${BMagenta}-DBUILD_EXAMPLES=ON${CR})")
-endif()
-message(STATUS "  ${BWhite}examples${CR}           ${examples_summary}")
-if(BUILD_DOCS)
-  set(docs_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_DOCS=OFF${CR})")
-else()
-  set(docs_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_DOCS=ON${CR})")
-endif()
-message(STATUS "  ${BWhite}docs${CR}               ${docs_summary}")
-if(BUILD_SDK)
-  set(sdk_summary "${BGreen}YES${CR}    EXPERIMENTAL (disable with ${BMagenta}-DBUILD_SDK=OFF${CR})")
-else()
-  set(sdk_summary "${BRed} NO${CR}    EXPERIMENTAL (default, enable with ${BMagenta}-DBUILD_SDK=ON${CR})")
-endif()
-message(STATUS "  ${BWhite}sdk${CR}                ${sdk_summary}")
-if(BUILD_SDK_COMMANDS)
-  set(sdk_commands_summary "${BGreen}YES${CR}    (disable with ${BMagenta}-DBUILD_SDK_COMMANDS=OFF${CR})")
-else()
-  set(sdk_commands_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_SDK_COMMANDS=ON${CR})")
-endif()
-message(STATUS "  ${BWhite}sdk_commands${CR}       ${sdk_commands_summary}")
-message(STATUS "  ")
-if(RUN_STATIC_ANALYSIS)
-  list(LENGTH PROJECT_STATIC_ANALYSERS size)
-  unset(analyser_list)
-  set(count 0)
-  foreach(analyser IN LISTS PROJECT_STATIC_ANALYSERS)
-    if(${analyser}_FOUND)
-      set(${analyser}_status "${analyser} ${BGreen}YES${CR}")
-    else()
-      set(${analyser}_status "${analyser} ${BRed}NO${CR}")
-    endif()
-    math(EXPR count "${count} + 1")
-    string(APPEND analyser_list "${${analyser}_status}")
-    if(count LESS size)
-      string(APPEND analyser_list "${BWhite},${CR} ")
-    endif()
-  endforeach()
-  set(static_ana_summary "${BWhite}(${CR}${analyser_list}${BWhite})${CR}  (disable with ${BMagenta}-DRUN_STATIC_ANALYSIS=OFF${CR})")
-else()
-  set(static_ana_summary "${BRed}OFF${CR}  (default, enable with ${BMagenta}-DRUN_STATIC_ANALYSIS=ON${CR})")
-endif()
-message(STATUS "  ${Cyan}INSTALL PREFIX${CR}     ${BGreen}${CMAKE_INSTALL_PREFIX}${CR} (change with ${BMagenta}-DCMAKE_INSTALL_PREFIX=...${CR})")
-message(STATUS "  ")
-message(STATUS "  ${Cyan}RUN STATIC ANALYSIS  ${static_ana_summary}")
-message(STATUS "  ")
-if(FAIRMQ_DEBUG_MODE)
-  message(STATUS "  ${Cyan}DEBUG MODE${CR}         ${BGreen}${FAIRMQ_DEBUG_MODE}${CR} (disable with ${BMagenta}-DFAIRMQ_DEBUG_MODE=OFF${CR})")
-else()
-  message(STATUS "  ${Cyan}DEBUG MODE${CR}         ${BRed}${FAIRMQ_DEBUG_MODE}${CR} (enable with ${BMagenta}-DFAIRMQ_DEBUG_MODE=ON${CR})")
-endif()
+fairmq_summary_components()
+fairmq_summary_static_analysis()
+fairmq_summary_install_prefix()
+fairmq_summary_debug_mode()
 message(STATUS "  ")
 ################################################################################
