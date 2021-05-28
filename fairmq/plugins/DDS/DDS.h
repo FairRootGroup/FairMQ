@@ -18,9 +18,9 @@
 #include <dds/dds.h>
 #undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 
-#include <boost/asio/executor.hpp>
-#include <boost/asio/executor_work_guard.hpp>
-#include <boost/asio/io_context.hpp>
+#include <asio/executor.hpp>
+#include <asio/executor_work_guard.hpp>
+#include <asio/io_context.hpp>
 
 #include <cassert>
 #include <chrono>
@@ -168,8 +168,8 @@ class DDS : public Plugin
     std::condition_variable fUpdateCondition;
 
     std::thread fWorkerThread;
-    boost::asio::io_context fWorkerQueue;
-    boost::asio::executor_work_guard<boost::asio::executor> fWorkGuard;
+    asio::io_context fWorkerQueue;
+    asio::executor_work_guard<asio::executor> fWorkGuard;
 };
 
 Plugin::ProgOptions DDSProgramOptions()

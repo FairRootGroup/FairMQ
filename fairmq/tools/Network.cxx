@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -10,31 +10,28 @@
 #include <fairmq/tools/Network.h>
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE // To get defns of NI_MAXSERV and NI_MAXHOST
+#define _GNU_SOURCE   // To get defns of NI_MAXSERV and NI_MAXHOST
 #endif
-
-#include <boost/algorithm/string.hpp>   // trim
-#include <boost/asio.hpp>
-
-#include <ifaddrs.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 
 #include <algorithm>
 #include <array>
+#include <boost/algorithm/string.hpp>   // trim
+#include <boost/asio.hpp>
 #include <cstdio>
 #include <exception>
 #include <fstream>
+#include <ifaddrs.h>
 #include <iostream>
 #include <map>
+#include <netdb.h>
 #include <stdexcept>
 #include <string>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 using namespace std;
 
-namespace fair::mq::tools
-{
+namespace fair::mq::tools {
 
 // returns a map with network interface names as keys and their IP addresses as values
 map<string, string> getHostIPs()
@@ -56,7 +53,13 @@ map<string, string> getHostIPs()
         }
 
         if (ifa->ifa_addr->sa_family == AF_INET) {
-            s = getnameinfo(ifa->ifa_addr, sizeof(sockaddr_in), host.data(), NI_MAXHOST, nullptr, 0, NI_NUMERICHOST);
+            s = getnameinfo(ifa->ifa_addr,
+                            sizeof(sockaddr_in),
+                            host.data(),
+                            NI_MAXHOST,
+                            nullptr,
+                            0,
+                            NI_NUMERICHOST);
             if (s != 0) {
                 cout << "getnameinfo() failed: " << gai_strerror(s) << endl;
                 throw runtime_error("getnameinfo() failed");
@@ -79,7 +82,8 @@ string getInterfaceIP(const string& interface)
         if (IPs.count(interface) > 0) {
             return IPs[interface];
         }
-        LOG(error) << "Could not find provided network interface: \"" << interface << "\"!, exiting.";
+        LOG(error) << "Could not find provided network interface: \""
+                   << interface << "\"!, exiting.";
         return "";
     } catch (runtime_error& re) {
         cout << "could not get interface IP: " << re.what();
@@ -94,9 +98,10 @@ string getDefaultRouteNetworkInterface()
     array<char, BUFSIZE> buffer{};
     string interfaceName;
 
-#ifdef __APPLE__ // MacOS
-    unique_ptr<FILE, decltype(pclose) *> file(popen("route -n get default | grep interface | cut -d \":\" -f 2", "r"), pclose);
-#else // Linux
+#ifdef __APPLE__   // MacOS
+    unique_ptr<FILE, decltype(pclose)*> file(
+        popen("route -n get default | grep interface | cut -d \":\" -f 2", "r"), pclose);
+#else   // Linux
     ifstream is("/proc/net/route");
     string line;
 
@@ -114,14 +119,17 @@ string getDefaultRouteNetworkInterface()
 
         if (line.substr(pos + 1, 8) == "00000000") {
             interfaceName = line.substr(0, pos);
-            LOG(debug) << "Detected network interface name for the default route: " << interfaceName;
+            LOG(debug) << "Detected network interface name for the default route: "
+                       << interfaceName;
             return interfaceName;
         }
     }
 
-    LOG(debug) << "could not get network interface of the default route from /proc/net/route, going to try via 'ip route'";
+    LOG(debug) << "could not get network interface of the default route from /proc/net/route, "
+                  "going to try via 'ip route'";
 
-    unique_ptr<FILE, decltype(pclose) *> file(popen("ip route | grep default | cut -d \" \" -f 5 | head -n 1", "r"), pclose);
+    unique_ptr<FILE, decltype(pclose)*> file(
+        popen("ip route | grep default | cut -d \" \" -f 5 | head -n 1", "r"), pclose);
 #endif
 
     if (!file) {
@@ -138,8 +146,10 @@ string getDefaultRouteNetworkInterface()
     boost::algorithm::trim(interfaceName);
 
     if (interfaceName.empty()) {
-        LOG(debug) << "Could not detect default route network interface name from /proc/net/route nor 'ip route'";
-        throw DefaultRouteDetectionError("Could not detect default route network interface name from /proc/net/route nor 'ip route'");
+        LOG(debug) << "Could not detect default route network interface name from /proc/net/route "
+                      "nor 'ip route'";
+        throw DefaultRouteDetectionError("Could not detect default route network interface name "
+                                         "from /proc/net/route nor 'ip route'");
     } else {
         LOG(debug) << "Detected network interface name for the default route: " << interfaceName;
     }
@@ -149,25 +159,22 @@ string getDefaultRouteNetworkInterface()
 
 string getIpFromHostname(const string& hostname)
 {
-    boost::asio::io_service ios;
-    return getIpFromHostname(hostname, ios);
-}
+    boost::asio::io_context ioc;
 
-string getIpFromHostname(const string& hostname, boost::asio::io_service& ios)
-{
+    using namespace boost::asio::ip;
+
     try {
-        namespace bai = boost::asio::ip;
-        bai::tcp::resolver resolver(ios);
-        bai::tcp::resolver::query query(hostname, "");
-        bai::tcp::resolver::iterator end;
+        tcp::resolver resolver(ioc);
+        tcp::resolver::query query(hostname, "");
+        tcp::resolver::iterator end;
 
-        auto it = find_if(static_cast<bai::basic_resolver_iterator<bai::tcp>>(resolver.resolve(query)), end, [](const bai::tcp::endpoint& ep) {
-            return ep.address().is_v4();
-        });
+        auto it = find_if(static_cast<basic_resolver_iterator<tcp>>(resolver.resolve(query)),
+                          end,
+                          [](const tcp::endpoint& ep) { return ep.address().is_v4(); });
 
         if (it != end) {
             stringstream ss;
-            ss << static_cast<bai::tcp::endpoint>(*it).address();
+            ss << static_cast<tcp::endpoint>(*it).address();
             return ss.str();
         }
 
@@ -180,4 +187,4 @@ string getIpFromHostname(const string& hostname, boost::asio::io_service& ios)
     }
 }
 
-} // namespace fair::mq::tools
+}   // namespace fair::mq::tools
