@@ -59,8 +59,10 @@ def jobMatrix(String type, List specs) {
           githubNotify(context: "${label}", description: 'Success', status: 'SUCCESS')
         } catch (e) {
           def tarball = "${type}_${job}_dds_logs.tar.gz"
-          sh "tar czvf ${tarball} -C \${WORKSPACE}/build/test .DDS/"
-          archiveArtifacts tarball
+          if (fileExists("build/test/.DDS")) {
+            sh "tar czvf ${tarball} -C \${WORKSPACE}/build/test .DDS/"
+            archiveArtifacts tarball
+          }
 
           deleteDir()
           githubNotify(context: "${label}", description: 'Error', status: 'ERROR')
