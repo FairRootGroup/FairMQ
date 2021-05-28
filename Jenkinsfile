@@ -79,9 +79,10 @@ pipeline{
       steps{
         script {
           def builds = jobMatrix('build', [
-            [os: 'fedora',       ver: '32', arch: 'x86_64', compiler: 'gcc-10'],
-            [os: 'fedora',       ver: '34', arch: 'x86_64', compiler: 'gcc-11'],
-            [os: 'macos',        ver: '11', arch: 'x86_64', compiler: 'apple-clang-12'],
+            [os: 'ubuntu',    ver: '20.04', arch: 'x86_64', compiler: 'gcc-9'],
+            [os: 'fedora',    ver: '32',    arch: 'x86_64', compiler: 'gcc-10'],
+            [os: 'fedora',    ver: '34',    arch: 'x86_64', compiler: 'gcc-11'],
+            [os: 'macos',     ver: '11',    arch: 'x86_64', compiler: 'apple-clang-12'],
           ])
 
           parallel(builds)
