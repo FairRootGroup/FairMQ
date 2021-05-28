@@ -13,7 +13,7 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
-#include <boost/asio/post.hpp>
+#include <asio/post.hpp>
 
 #include <cstdlib>
 #include <stdexcept>
@@ -243,7 +243,7 @@ auto DDS::SubscribeForConnectingChannels() -> void
         string channelName = key.substr(8);
         LOG(info) << "Update for channel name: " << channelName;
 
-        boost::asio::post(fWorkerQueue, [=]() {
+        asio::post(fWorkerQueue, [=]() {
             try {
                 {
                     unique_lock<mutex> lk(fUpdateMutex);
