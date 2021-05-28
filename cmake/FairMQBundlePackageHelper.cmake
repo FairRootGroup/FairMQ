@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
+# Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -8,14 +8,14 @@
 
 include_guard(GLOBAL)
 
-function(join VALUES GLUE OUTPUT)
-  string(REGEX REPLACE "([^\\]|^);" "\\1${GLUE}" _TMP_STR "${VALUES}")
-  string(REGEX REPLACE "[\\](.)" "\\1" _TMP_STR "${_TMP_STR}") #fixes escaping
-  set(${OUTPUT} "${_TMP_STR}" PARENT_SCOPE)
-endfunction()
+if(NOT DEFINED ${GIT_EXECUTABLE})
+  find_program(GIT_EXECUTABLE NAMES git)
+endif()
+
+# TODO Deduplicate code
 
 macro(exec cmd)
-  join("${ARGN}" " " args)
+  list(JOIN ARGN " " args)
   file(APPEND ${${package}_BUILD_LOGFILE} ">>> ${cmd} ${args}\n")
 
   execute_process(COMMAND ${cmd} ${ARGN}
@@ -32,7 +32,7 @@ macro(exec cmd)
 endmacro()
 
 macro(exec_source cmd)
-  join("${ARGN}" " " args)
+  list(JOIN ARGN " " args)
   file(APPEND ${${package}_BUILD_LOGFILE} ">>> ${cmd} ${args}\n")
 
   execute_process(COMMAND ${cmd} ${ARGN}
@@ -57,7 +57,7 @@ function(build_bundled package bundle)
   set(${package}_BUILD_LOGFILE ${${package}_BINARY_DIR}/build.log)
   file(REMOVE ${${package}_BUILD_LOGFILE})
 
-  if(Git_FOUND)
+  if(GIT_EXECUTABLE)
     exec_source(${GIT_EXECUTABLE} submodule update --init -- ${${package}_SOURCE_DIR})
   endif()
 
@@ -99,4 +99,40 @@ function(build_bundled package bundle)
   set(${package}_BUNDLED ON CACHE BOOL "Whether bundled ${package} was used")
 
   message(STATUS "Building bundled ${package} - done")
+endfunction()
+
+# TODO Eventually retire supporting PUBLIC bundled packages.
+macro(install_bundled package)
+  if(${package} STREQUAL asio)
+    add_library(bundled_asio_headers INTERFACE)
+    target_include_directories(bundled_asio_headers INTERFACE
+      $<BUILD_INTERFACE:${asio_ROOT}/${CMAKE_INSTALL_INCLUDEDIR}>
+      $<INSTALL_INTERFACE:${PROJECT_INSTALL_INCDIR}/bundled>
+    )
+    install(TARGETS bundled_asio_headers EXPORT ${PROJECT_EXPORT_SET})
+    install(DIRECTORY "${asio_ROOT}/${CMAKE_INSTALL_INCLUDEDIR}/asio"
+      DESTINATION ${PROJECT_INSTALL_INCDIR}/bundled
+    )
+    install(FILES "${asio_ROOT}/${CMAKE_INSTALL_INCLUDEDIR}/asio.hpp"
+      DESTINATION ${PROJECT_INSTALL_INCDIR}/bundled
+    )
+  endif()
+endmacro()
+
+# TODO Eventually retire supporting PUBLIC bundled packages.
+function(fairmq_generate_bundled_packages)
+  if(asio_BUNDLED)
+  set(BUNDLED_PACKAGES "\
+####### Expanded from @BUNDLED_PACKAGES@ by configure_package_config_file() #########
+
+if(\"\${CMAKE_MAJOR_VERSION}.\${CMAKE_MINOR_VERSION}\" VERSION_LESS 3.11)
+   message(FATAL_ERROR \"CMake >= 3.11 required\")
+endif()
+set_target_properties(${PROJECT_NAME}::bundled_asio_headers PROPERTIES IMPORTED_GLOBAL TRUE)
+add_library(asio::asio ALIAS ${PROJECT_NAME}::bundled_asio_headers)
+set(asio_VERSION ${asio_VERSION})
+
+")
+  endif()
+set(BUNDLED_PACKAGES ${BUNDLED_PACKAGES} PARENT_SCOPE)
 endfunction()
