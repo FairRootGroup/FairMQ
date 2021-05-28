@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -12,18 +12,6 @@
 #include <map>
 #include <string>
 #include <stdexcept>
-
-// forward declarations
-namespace boost
-{
-namespace asio
-{
-
-class io_context;
-using io_service = class io_context;
-
-} // namespace asio
-} // namespace boost
 
 namespace fair::mq::tools
 {
@@ -40,8 +28,6 @@ std::string getInterfaceIP(const std::string& interface);
 std::string getDefaultRouteNetworkInterface();
 
 std::string getIpFromHostname(const std::string& hostname);
-
-std::string getIpFromHostname(const std::string& hostname, boost::asio::io_service& ios);
 
 } // namespace fair::mq::tools
 

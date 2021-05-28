@@ -42,9 +42,6 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
   find_package2(PUBLIC Boost REQUIRED VERSION 1.66
     COMPONENTS container program_options filesystem date_time regex
   )
-endif()
-
-if(BUILD_SDK)
   set(__asio_version 1.18.1)
   find_package2(BUNDLED asio VERSION ${__asio_version})
   if(NOT asio_FOUND AND NOT asio_BUNDLED)

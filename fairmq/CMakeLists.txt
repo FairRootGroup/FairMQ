@@ -49,12 +49,6 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
   )
   target_compile_features(${target} PUBLIC cxx_std_17)
   target_compile_definitions(${target} PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
-  # workaround https://github.com/boostorg/asio/commit/43874d5497414c67655d901e48c939ef01337edb
-  if(    Boost_VERSION VERSION_LESS 1.69
-     AND CMAKE_CXX_COMPILER_ID STREQUAL AppleClang
-     AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0.1)
-    target_compile_definitions(${target} PUBLIC BOOST_ASIO_HAS_STD_STRING_VIEW)
-  endif()
   target_include_directories(${target}
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
@@ -64,8 +58,9 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     PRIVATE
     FairLogger::FairLogger
     Threads::Threads
-    PUBLIC
     Boost::boost
+    PUBLIC
+    asio::asio
   )
   set_target_properties(${target} PROPERTIES
     VERSION ${PROJECT_VERSION}
