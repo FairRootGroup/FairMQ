@@ -11,12 +11,9 @@
 
 #include <string>
 
-class Sink : public FairMQDevice
+struct Sink : fair::mq::Device
 {
-  public:
     Sink() { OnData("data2", &Sink::HandleData); }
-
-  protected:
     bool HandleData(FairMQMessagePtr& /*msg*/, int /*index*/) { return true; }
 };
 

@@ -12,13 +12,9 @@
 #include <thread> // this_thread::sleep_for
 #include <chrono>
 
-class Sampler : public FairMQDevice
+struct Sampler : fair::mq::Device
 {
-  public:
-    Sampler() = default;
-
-  protected:
-    virtual bool ConditionalRun()
+    bool ConditionalRun() override
     {
         FairMQMessagePtr msg(NewMessage(1000));
 

@@ -29,8 +29,6 @@ namespace fair::mq
 class BenchmarkSampler : public Device
 {
   public:
-    BenchmarkSampler() = default;
-
     void InitTask() override
     {
         fMultipart = fConfig->GetProperty<bool>("multipart");

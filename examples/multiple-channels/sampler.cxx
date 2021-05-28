@@ -16,11 +16,8 @@
 
 namespace bpo = boost::program_options;
 
-class Sampler : public FairMQDevice
+struct Sampler : fair::mq::Device
 {
-  public:
-    Sampler() = default;
-
     void InitTask() override
     {
         fText = fConfig->GetProperty<std::string>("text");
@@ -59,7 +56,7 @@ class Sampler : public FairMQDevice
         }
     }
 
-  protected:
+  private:
     std::string fText;
     uint64_t fMaxIterations = 0;
     uint64_t fNumIterations = 0;

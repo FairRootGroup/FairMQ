@@ -13,11 +13,8 @@
 
 namespace bpo = boost::program_options;
 
-class Sender : public FairMQDevice
+struct Sender : fair::mq::Device
 {
-  public:
-    Sender() = default;
-
     void Init() override
     {
         fInputChannelName = fConfig->GetProperty<std::string>("input-name");

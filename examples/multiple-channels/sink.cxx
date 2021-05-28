@@ -14,9 +14,8 @@
 
 namespace bpo = boost::program_options;
 
-class Sink : public FairMQDevice
+struct Sink : fair::mq::Device
 {
-  public:
     Sink()
     {
         OnData("broadcast", &Sink::HandleBroadcast);

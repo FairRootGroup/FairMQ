@@ -14,12 +14,8 @@
 
 namespace bpo = boost::program_options;
 
-class Broadcaster : public FairMQDevice
+struct Broadcaster : fair::mq::Device
 {
-  public:
-    Broadcaster() = default;
-
-  protected:
     bool ConditionalRun() override
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));

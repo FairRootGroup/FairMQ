@@ -11,9 +11,8 @@
 
 namespace bpo = boost::program_options;
 
-class Sink : public FairMQDevice
+struct Sink : fair::mq::Device
 {
-  public:
     Sink()
     {
         // register a handler for data arriving on "data" channel
@@ -21,7 +20,6 @@ class Sink : public FairMQDevice
         OnData("data2", &Sink::HandleData2);
     }
 
-  protected:
     void InitTask() override
     {
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");

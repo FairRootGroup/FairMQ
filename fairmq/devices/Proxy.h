@@ -18,9 +18,6 @@ namespace fair::mq
 
 class Proxy : public Device
 {
-  public:
-    Proxy() = default;
-
   protected:
     bool fMultipart = true;
     std::string fInChannelName;

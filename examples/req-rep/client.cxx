@@ -15,11 +15,8 @@
 
 namespace bpo = boost::program_options;
 
-class Client : public FairMQDevice
+struct Client : fair::mq::Device
 {
-  public:
-    Client() = default;
-
     void InitTask() override
     {
         fText = fConfig->GetProperty<std::string>("text");
