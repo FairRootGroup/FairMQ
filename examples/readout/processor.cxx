@@ -11,15 +11,13 @@
 
 namespace bpo = boost::program_options;
 
-class Processor : public FairMQDevice
+struct Processor : fair::mq::Device
 {
-  public:
     Processor()
     {
         OnData("bp", &Processor::HandleData);
     }
 
-  protected:
     bool HandleData(FairMQMessagePtr& msg, int /*index*/)
     {
         FairMQMessagePtr msg2(NewMessageFor("ps", 0, msg->GetSize()));

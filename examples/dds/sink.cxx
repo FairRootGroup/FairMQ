@@ -13,9 +13,8 @@
 
 namespace bpo = boost::program_options;
 
-class Sink : public FairMQDevice
+struct Sink : fair::mq::Device
 {
-  public:
     Sink()
     {
         OnData("data2", &Sink::HandleData);
@@ -26,7 +25,6 @@ class Sink : public FairMQDevice
         fIterations = fConfig->GetValue<uint64_t>("iterations");
     }
 
-  protected:
     bool HandleData(FairMQMessagePtr& msg, int)
     {
         LOG(info) << "Received: \"" << std::string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";

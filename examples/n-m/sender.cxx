@@ -17,11 +17,8 @@ using namespace std;
 using namespace example_n_m;
 namespace bpo = boost::program_options;
 
-class Sender : public FairMQDevice
+struct Sender : fair::mq::Device
 {
-  public:
-    Sender() = default;
-
     void InitTask() override
     {
         fIndex = GetConfig()->GetProperty<int>("sender-index");

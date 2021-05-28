@@ -15,11 +15,8 @@
 
 namespace bpo = boost::program_options;
 
-class Sampler : public FairMQDevice
+struct Sampler : fair::mq::Device
 {
-  public:
-    Sampler() = default;
-
     void InitTask() override
     {
         fMsgSize = fConfig->GetProperty<int>("msg-size");

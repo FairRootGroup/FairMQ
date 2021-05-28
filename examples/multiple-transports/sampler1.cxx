@@ -13,12 +13,8 @@
 
 namespace bpo = boost::program_options;
 
-class Sampler1 : public FairMQDevice
+struct Sampler1 : fair::mq::Device
 {
-  public:
-    Sampler1() = default;
-
-  protected:
     void InitTask() override
     {
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
@@ -68,6 +64,7 @@ class Sampler1 : public FairMQDevice
         LOG(info) << "Acknowledged " << numAcks << " messages";
     }
 
+  private:
     std::thread fAckListener;
     uint64_t fMaxIterations = 0;
     uint64_t fNumIterations = 0;

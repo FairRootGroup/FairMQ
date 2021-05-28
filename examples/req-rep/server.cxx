@@ -13,9 +13,8 @@
 
 namespace bpo = boost::program_options;
 
-class Server : public FairMQDevice
+struct Server : fair::mq::Device
 {
-  public:
     Server()
     {
         OnData("data", &Server::HandleData);

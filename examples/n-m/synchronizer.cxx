@@ -15,11 +15,8 @@
 using namespace std;
 namespace bpo = boost::program_options;
 
-class Synchronizer : public FairMQDevice
+struct Synchronizer : fair::mq::Device
 {
-  public:
-    Synchronizer() = default;
-
     bool ConditionalRun() override
     {
         FairMQMessagePtr msg(NewSimpleMessage(fTimeframeId));
@@ -35,6 +32,7 @@ class Synchronizer : public FairMQDevice
         return true;
     }
 
+  private:
     uint16_t fTimeframeId = 0;
 };
 

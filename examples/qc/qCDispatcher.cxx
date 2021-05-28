@@ -9,9 +9,8 @@
 #include <fairmq/Device.h>
 #include <fairmq/runDevice.h>
 
-class QCDispatcher : public FairMQDevice
+struct QCDispatcher : fair::mq::Device
 {
-  public:
     QCDispatcher()
         : fDoQC(false)
     {
@@ -31,7 +30,6 @@ class QCDispatcher : public FairMQDevice
         });
     }
 
-  protected:
     bool HandleData(FairMQMessagePtr& msg, int)
     {
         if (fDoQC.load() == true) {

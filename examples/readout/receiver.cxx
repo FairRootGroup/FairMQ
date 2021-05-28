@@ -11,11 +11,8 @@
 
 namespace bpo = boost::program_options;
 
-class Receiver : public FairMQDevice
+struct Receiver : fair::mq::Device
 {
-  public:
-    Receiver() = default;
-
     void InitTask() override
     {
         // Get the fMaxIterations value from the command line options (via fConfig)

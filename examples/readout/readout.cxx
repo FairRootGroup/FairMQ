@@ -15,11 +15,8 @@
 
 namespace bpo = boost::program_options;
 
-class Readout : public FairMQDevice
+struct Readout : fair::mq::Device
 {
-  public:
-    Readout() = default;
-
     void InitTask() override
     {
         fMsgSize = fConfig->GetProperty<int>("msg-size");

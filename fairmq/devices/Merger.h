@@ -21,16 +21,10 @@ namespace fair::mq
 
 class Merger : public Device
 {
-  public:
-    Merger()
-        : fInChannelName("data-in")
-        , fOutChannelName("data-out")
-    {}
-
   protected:
     bool fMultipart = true;
-    std::string fInChannelName;
-    std::string fOutChannelName;
+    std::string fInChannelName{"data-in"};
+    std::string fOutChannelName{"data-out"};
 
     void InitTask() override
     {

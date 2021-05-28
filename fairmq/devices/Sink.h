@@ -24,9 +24,6 @@ namespace fair::mq
 
 class Sink : public Device
 {
-  public:
-    Sink() = default;
-
   protected:
     bool fMultipart = false;
     uint64_t fMaxIterations = 0;

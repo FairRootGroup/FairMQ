@@ -29,15 +29,12 @@ struct TFBuffer
     chrono::steady_clock::time_point end;
 };
 
-class Receiver : public FairMQDevice
+struct Receiver : fair::mq::Device
 {
-  public:
     Receiver()
     {
         OnData("data", &Receiver::HandleData);
     }
-
-    ~Receiver() = default;
 
     void InitTask() override
     {
@@ -46,7 +43,6 @@ class Receiver : public FairMQDevice
         fMaxTimeframes = GetConfig()->GetValue<int>("max-timeframes");
     }
 
-  protected:
     bool HandleData(FairMQParts& parts, int /* index */)
     {
         Header& h = *(static_cast<Header*>(parts.At(0)->GetData()));
@@ -93,6 +89,7 @@ class Receiver : public FairMQDevice
         }
     }
 
+  private:
     unordered_map<uint16_t, TFBuffer> fBuffer;
     unordered_set<uint16_t> fDiscardedSet;
 

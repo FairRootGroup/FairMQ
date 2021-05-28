@@ -15,12 +15,8 @@
 
 namespace bpo = boost::program_options;
 
-class Sampler : public FairMQDevice
+struct Sampler : fair::mq::Device
 {
-  public:
-    Sampler() = default;
-
-  protected:
     void InitTask() override
     {
         fNumDataChannels = fChannels.at("data").size();
@@ -50,7 +46,7 @@ class Sampler : public FairMQDevice
         return true;
     }
 
-
+  private:
     int fNumDataChannels = 0;
     uint64_t fCounter = 0;
     uint64_t fMaxIterations = 0;
