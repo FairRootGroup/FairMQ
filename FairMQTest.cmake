@@ -40,14 +40,20 @@ endif()
 
 ctest_start(Continuous)
 
-list(APPEND options
-  "-DDISABLE_COLOR=ON"
-  "-DBUILD_SDK_COMMANDS=ON"
-  "-DBUILD_SDK=ON"
-  "-DBUILD_DDS_PLUGIN=ON")
+list(APPEND options "-DDISABLE_COLOR=ON")
+if(HAS_ASIO AND HAS_DDS)
+  list(APPEND options "-DBUILD_SDK_COMMANDS=ON" "-DBUILD_SDK=ON" "-DBUILD_DDS_PLUGIN=ON")
+endif()
+if(HAS_PMIX)
+  list(APPEND options "-DBUILD_SDK_COMMANDS=ON" "-DBUILD_PMIX_PLUGIN=ON")
+endif()
+if(HAS_ASIO AND HAS_ASIOFI)
+  list(APPEND options "-DBUILD_OFI_TRANSPORT=ON")
+endif()
 if(RUN_STATIC_ANALYSIS)
   list(APPEND options "-DRUN_STATIC_ANALYSIS=ON")
 endif()
+list(REMOVE_DUPLICATES options)
 list(JOIN options ";" optionsstr)
 ctest_configure(OPTIONS "${optionsstr}")
 
