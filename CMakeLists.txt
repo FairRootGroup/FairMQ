@@ -120,11 +120,6 @@ if(BUILD_DOCS)
     DESTINATION ${PROJECT_INSTALL_DATADIR}/docs
   )
 endif()
-if(BUILD_FAIRMQ OR BUILD_SDK)
-  if(asio_BUNDLED)
-    install_bundled(asio)
-  endif()
-endif()
 
 include(FairMQPackage)
 install_cmake_package()
