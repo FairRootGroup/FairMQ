@@ -37,6 +37,7 @@ target_link_libraries(${target}
   PRIVATE
   ${_flatbuffers}
 )
+target_compile_features(${target} PUBLIC cxx_std_17)
 set_target_properties(${target} PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
