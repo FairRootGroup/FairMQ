@@ -1,0 +1,14 @@
+[general]
+ignore=body-is-missing
+contrib=contrib-title-conventional-commits
+
+ignore-merge-commits=false
+ignore-revert-commits=false
+ignore-fixup-commits=false
+ignore-squash-commits=false
+
+[title-max-length]
+line-length=75
+
+[contrib-title-conventional-commits]
+types=fix,feat,build,ci,docs,style,refactor,perf,test
