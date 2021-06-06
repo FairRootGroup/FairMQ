@@ -52,7 +52,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
   target_include_directories(${target}
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
   target_link_libraries(${target}
     PRIVATE
@@ -107,7 +107,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
   target_include_directories(${target}
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
   target_link_libraries(${target}
     PUBLIC
@@ -289,8 +289,8 @@ if(BUILD_FAIRMQ)
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-    $<INSTALL_INTERFACE:include/fairmq>
-    $<INSTALL_INTERFACE:include>
+    $<INSTALL_INTERFACE:${PROJECT_INSTALL_INCDIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
 
   ##################
