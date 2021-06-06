@@ -78,7 +78,7 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
 
     const string delimiter = "\n";
     ba::deadline_timer inputTimer(ios, boost::posix_time::milliseconds(100)); // NOLINT
-    ba::deadline_timer signalTimer(ios, boost::posix_time::milliseconds(100)); // NOLINT
+    ba::deadline_timer signalTimer(ios, boost::posix_time::milliseconds(400)); // NOLINT
 
     // child process
     bp::child c(cmd, bp::std_out > outputPipe, bp::std_err > errorPipe, bp::std_in < inputPipe);
