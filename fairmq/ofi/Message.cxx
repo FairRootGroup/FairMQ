@@ -1,17 +1,16 @@
 /********************************************************************************
- *    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <fairmq/ofi/Message.h>
-#include <FairMQLogger.h>
-
 #include <asiofi.hpp>
 #include <cassert>
 #include <cstdlib>
+#include <fairlogger/Logger.h>
+#include <fairmq/ofi/Message.h>
 #include <zmq.h>
 
 namespace fair::mq::ofi
@@ -19,7 +18,7 @@ namespace fair::mq::ofi
 
 using namespace std;
 
-Message::Message(boost::container::pmr::memory_resource* pmr)
+Message::Message(pmr::memory_resource* pmr)
     : fInitialSize(0)
     , fSize(0)
     , fData(nullptr)
@@ -29,7 +28,7 @@ Message::Message(boost::container::pmr::memory_resource* pmr)
 {
 }
 
-Message::Message(boost::container::pmr::memory_resource* pmr, Alignment /* alignment */)
+Message::Message(pmr::memory_resource* pmr, Alignment /* alignment */)
     : fInitialSize(0)
     , fSize(0)
     , fData(nullptr)
@@ -39,7 +38,7 @@ Message::Message(boost::container::pmr::memory_resource* pmr, Alignment /* align
 {
 }
 
-Message::Message(boost::container::pmr::memory_resource* pmr, const size_t size)
+Message::Message(pmr::memory_resource* pmr, const size_t size)
     : fInitialSize(size)
     , fSize(size)
     , fData(nullptr)
@@ -53,7 +52,7 @@ Message::Message(boost::container::pmr::memory_resource* pmr, const size_t size)
     }
 }
 
-Message::Message(boost::container::pmr::memory_resource* pmr, const size_t size, Alignment /* alignment */)
+Message::Message(pmr::memory_resource* pmr, const size_t size, Alignment /* alignment */)
     : fInitialSize(size)
     , fSize(size)
     , fData(nullptr)
@@ -67,7 +66,7 @@ Message::Message(boost::container::pmr::memory_resource* pmr, const size_t size,
     }
 }
 
-Message::Message(boost::container::pmr::memory_resource* pmr,
+Message::Message(pmr::memory_resource* pmr,
                  void* data,
                  const size_t size,
                  fairmq_free_fn* ffn,
@@ -80,8 +79,8 @@ Message::Message(boost::container::pmr::memory_resource* pmr,
     , fPmr(pmr)
 {}
 
-Message::Message(boost::container::pmr::memory_resource* /*pmr*/,
-                 FairMQUnmanagedRegionPtr& /*region*/,
+Message::Message(pmr::memory_resource* /*pmr*/,
+                 fair::mq::UnmanagedRegionPtr& /*region*/,
                  void* /*data*/,
                  const size_t /*size*/,
                  void* /*hint*/)

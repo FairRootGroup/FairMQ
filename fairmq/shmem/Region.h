@@ -1,10 +1,10 @@
 /********************************************************************************
-*    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
-*                                                                              *
-*              This software is distributed under the terms of the             *
-*              GNU Lesser General Public Licence (LGPL) version 3,             *
-*                  copied verbatim in the file "LICENSE"                       *
-********************************************************************************/
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ *                                                                              *
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
+ *                  copied verbatim in the file "LICENSE"                       *
+ ********************************************************************************/
 /**
 * Region.h
 *
@@ -22,7 +22,6 @@
 #include <fairmq/tools/Strings.h>
 
 #include <boost/filesystem.hpp>
-#include <boost/process.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/file_mapping.hpp>

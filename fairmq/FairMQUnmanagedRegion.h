@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,11 +9,12 @@
 #ifndef FAIRMQUNMANAGEDREGION_H_
 #define FAIRMQUNMANAGEDREGION_H_
 
-#include <cstddef> // size_t
-#include <cstdint> // uint32_t
-#include <memory> // std::unique_ptr
-#include <functional> // std::function
-#include <ostream> // std::ostream
+#include <cstddef>   // size_t
+#include <cstdint>   // uint32_t
+#include <fairmq/Transports.h>
+#include <functional>   // std::function
+#include <memory>       // std::unique_ptr
+#include <ostream>      // std::ostream
 #include <vector>
 
 class FairMQTransportFactory;
