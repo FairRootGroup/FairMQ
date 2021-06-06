@@ -9,6 +9,7 @@ def jobMatrix(String type, List specs) {
     def os = spec.os
     def ver = spec.ver
     def check = spec.check
+    def extra = spec.extra
 
     nodes[label] = {
       node(selector) {
@@ -18,7 +19,7 @@ def jobMatrix(String type, List specs) {
           checkout scm
 
           def jobscript = 'job.sh'
-          def ctestcmd = "ctest -S FairMQTest.cmake -V --output-on-failure"
+          def ctestcmd = "ctest ${extra} -S FairMQTest.cmake -V --output-on-failure"
           sh "echo \"set -e\" >> ${jobscript}"
           sh "echo \"export LABEL=\\\"\${JOB_BASE_NAME} ${label}\\\"\" >> ${jobscript}"
           if (selector =~ /^macos/) {
@@ -81,10 +82,14 @@ pipeline{
       steps{
         script {
           def builds = jobMatrix('build', [
-            [os: 'ubuntu',    ver: '20.04', arch: 'x86_64', compiler: 'gcc-9'],
-            [os: 'fedora',    ver: '32',    arch: 'x86_64', compiler: 'gcc-10'],
-            [os: 'fedora',    ver: '34',    arch: 'x86_64', compiler: 'gcc-11'],
-            [os: 'macos',     ver: '11',    arch: 'x86_64', compiler: 'apple-clang-12'],
+            [os: 'ubuntu',    ver: '20.04', arch: 'x86_64', compiler: 'gcc-9',
+             extra: '-DHAS_DDS=ON -DHAS_ASIO=ON -DHAS_PMIX=ON'],
+            [os: 'fedora',    ver: '32',    arch: 'x86_64', compiler: 'gcc-10',
+             extra: '-DHAS_PMIX=ON -DHAS_DDS=ON -DHAS_ASIOFI=ON -DHAS_ASIO=ON'],
+            [os: 'fedora',    ver: '34',    arch: 'x86_64', compiler: 'gcc-11',
+             extra: '-DHAS_PMIX=ON -DHAS_DDS=ON -DHAS_ASIOFI=ON -DHAS_ASIO=ON'],
+            [os: 'macos',     ver: '11',    arch: 'x86_64', compiler: 'apple-clang-12',
+             extra: '-DHAS_DDS=ON -DHAS_ASIO=ON'],
           ])
 
           parallel(builds)
