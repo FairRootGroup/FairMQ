@@ -59,8 +59,6 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     FairLogger::FairLogger
     Threads::Threads
     Boost::boost
-    PUBLIC
-    asio::asio
   )
   set_target_properties(${target} PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -298,6 +296,7 @@ if(BUILD_FAIRMQ)
   ##################
   if(BUILD_OFI_TRANSPORT)
     set(OFI_DEPS
+      asio::asio
       asiofi::asiofi
     )
   endif()
