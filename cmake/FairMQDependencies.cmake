@@ -19,7 +19,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
 endif()
 
 if(BUILD_OFI_TRANSPORT)
-  find_package2(PRIVATE asiofi REQUIRED VERSION 0.3.1)
+  find_package2(PRIVATE asiofi REQUIRED VERSION 0.5)
   find_package2(PRIVATE OFI REQUIRED)
 endif()
 

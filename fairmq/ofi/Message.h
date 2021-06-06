@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,12 +9,13 @@
 #ifndef FAIR_MQ_OFI_MESSAGE_H
 #define FAIR_MQ_OFI_MESSAGE_H
 
-#include <FairMQMessage.h>
-#include <FairMQUnmanagedRegion.h>
-
 #include <asiofi.hpp>
 #include <atomic>
 #include <cstddef> // size_t
+#include <fairmq/Message.h>
+#include <fairmq/Transports.h>
+#include <fairmq/UnmanagedRegion.h>
+#include <memory_resource>
 #include <zmq.h>
 
 namespace fair::mq::ofi
@@ -22,24 +23,24 @@ namespace fair::mq::ofi
 
 /**
  * @class Message Message.h <fairmq/ofi/Message.h>
- * @brief 
+ * @brief
  *
  * @todo TODO insert long description
  */
 class Message final : public fair::mq::Message
 {
   public:
-    Message(boost::container::pmr::memory_resource* pmr);
-    Message(boost::container::pmr::memory_resource* pmr, Alignment alignment);
-    Message(boost::container::pmr::memory_resource* pmr, const size_t size);
-    Message(boost::container::pmr::memory_resource* pmr, const size_t size, Alignment alignment);
-    Message(boost::container::pmr::memory_resource* pmr,
+    Message(std::pmr::memory_resource* pmr);
+    Message(std::pmr::memory_resource* pmr, Alignment alignment);
+    Message(std::pmr::memory_resource* pmr, const size_t size);
+    Message(std::pmr::memory_resource* pmr, const size_t size, Alignment alignment);
+    Message(std::pmr::memory_resource* pmr,
             void* data,
             const size_t size,
             fairmq_free_fn* ffn,
             void* hint = nullptr);
-    Message(boost::container::pmr::memory_resource* pmr,
-            FairMQUnmanagedRegionPtr& region,
+    Message(std::pmr::memory_resource* pmr,
+            fair::mq::UnmanagedRegionPtr& region,
             void* data,
             const size_t size,
             void* hint = 0);
@@ -70,8 +71,8 @@ class Message final : public fair::mq::Message
     void* fData;
     fairmq_free_fn* fFreeFunction;
     void* fHint;
-    boost::container::pmr::memory_resource* fPmr;
-}; /* class Message */  
+    std::pmr::memory_resource* fPmr;
+}; /* class Message */
 
 } // namespace fair::mq::ofi
 

@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -18,7 +18,6 @@
 #include <asiofi/memory_resources.hpp>
 #include <asiofi/passive_endpoint.hpp>
 #include <asiofi/semaphore.hpp>
-#include <boost/asio.hpp>
 #include <memory> // unique_ptr
 #include <mutex>
 

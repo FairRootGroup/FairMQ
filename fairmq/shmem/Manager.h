@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -31,7 +31,6 @@
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/sync/named_condition.hpp>
 #include <boost/interprocess/sync/named_mutex.hpp>
-#include <boost/process.hpp>
 #include <boost/variant.hpp>
 
 #include <condition_variable>
@@ -240,6 +239,10 @@ class Manager
         LOG(debug) << "Successfully locked the managed segment memory pages.";
     }
 
+  private:
+    static bool SpawnShmMonitor(const std::string& id);
+
+  public:
     static void StartMonitor(const std::string& id)
     {
         using namespace boost::interprocess;
@@ -248,25 +251,8 @@ class Manager
             LOG(debug) << "Found fairmq-shmmonitor for shared memory id " << id;
         } catch (interprocess_exception&) {
             LOG(debug) << "no fairmq-shmmonitor found for shared memory id " << id << ", starting...";
-            auto env = boost::this_process::environment();
 
-            std::vector<boost::filesystem::path> ownPath = boost::this_process::path();
-
-            if (const char* fmqp = getenv("FAIRMQ_PATH")) {
-                ownPath.insert(ownPath.begin(), boost::filesystem::path(fmqp));
-            }
-
-            boost::filesystem::path p = boost::process::search_path("fairmq-shmmonitor", ownPath);
-
-            bool verbose = false;
-            if (const char* verboseEnv = getenv("FAIRMQ_SHMMONITOR_VERBOSE")) {
-                if (std::string(verboseEnv) == "true") {
-                    verbose = true;
-                }
-            }
-
-            if (!p.empty()) {
-                boost::process::spawn(p, "-x", "-m", "--shmid", id, "-d", "-t", "2000", (verbose ? "--verbose" : ""), env);
+            if (SpawnShmMonitor(id)) {
                 int numTries = 0;
                 do {
                     try {
@@ -281,8 +267,6 @@ class Manager
                         }
                     }
                 } while (true);
-            } else {
-                LOG(warn) << "could not find fairmq-shmmonitor in the path";
             }
         }
     }
