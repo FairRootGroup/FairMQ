@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,24 +9,24 @@
 #ifndef FAIR_MQ_OFI_CONTROLMESSAGES_H
 #define FAIR_MQ_OFI_CONTROLMESSAGES_H
 
-#include <FairMQLogger.h>
-#include <boost/asio/buffer.hpp>
-#include <boost/container/pmr/memory_resource.hpp>
+#include <asio/buffer.hpp>
 #include <cstdint>
+#include <fairlogger/Logger.h>
 #include <functional>
 #include <memory>
+#include <memory_resource>
 #include <type_traits>
 
-namespace boost::asio
+namespace asio
 {
 
 template<typename PodType>
-auto buffer(const PodType& obj) -> boost::asio::const_buffer
+auto buffer(const PodType& obj) -> asio::const_buffer
 {
-    return boost::asio::const_buffer(static_cast<const void*>(&obj), sizeof(PodType));
+    return asio::const_buffer(static_cast<const void*>(&obj), sizeof(PodType));
 }
 
-} // namespace boost::asio
+} // namespace asio
 
 namespace fair::mq::ofi
 {
@@ -68,7 +68,7 @@ template<typename T>
 using unique_ptr = std::unique_ptr<T, std::function<void(T*)>>;
 
 template<typename T, typename... Args>
-auto MakeControlMessageWithPmr(boost::container::pmr::memory_resource& pmr, Args&&... args)
+auto MakeControlMessageWithPmr(std::pmr::memory_resource& pmr, Args&&... args)
     -> ofi::unique_ptr<ControlMessage>
 {
     void* mem = pmr.allocate(sizeof(ControlMessage));
@@ -109,4 +109,4 @@ auto MakeControlMessage(Args&&... args) -> ControlMessage
 
 } // namespace fair::mq::ofi
 
-#endif /* FAIR_MQ_OFI_CONTROLMESSAGES_H */ 
+#endif /* FAIR_MQ_OFI_CONTROLMESSAGES_H */

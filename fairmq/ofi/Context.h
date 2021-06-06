@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,13 +9,12 @@
 #ifndef FAIR_MQ_OFI_CONTEXT_H
 #define FAIR_MQ_OFI_CONTEXT_H
 
-#include <FairMQLogger.h>
-#include <FairMQTransportFactory.h>
-
+#include <asio/io_context.hpp>
 #include <asiofi/domain.hpp>
 #include <asiofi/fabric.hpp>
 #include <asiofi/info.hpp>
-#include <boost/asio/io_context.hpp>
+#include <fairlogger/Logger.h>
+#include <fairmq/TransportFactory.h>
 #include <memory>
 #include <netinet/in.h>
 #include <ostream>
@@ -58,7 +57,7 @@ class Context
     ~Context();
 
     auto GetAsiofiVersion() const -> std::string;
-    auto GetIoContext() -> boost::asio::io_context& { return fIoContext; }
+    auto GetIoContext() -> asio::io_context& { return fIoContext; }
     static auto ConvertAddress(std::string address) -> Address;
     static auto ConvertAddress(Address address) -> sockaddr_in;
     static auto ConvertAddress(sockaddr_in address) -> Address;
@@ -72,8 +71,8 @@ class Context
     auto SetSizeHint(size_t size) -> void { fSizeHint = size; }
 
   private:
-    boost::asio::io_context fIoContext;
-    boost::asio::io_context::work fIoWork;
+    asio::io_context fIoContext;
+    asio::io_context::work fIoWork;
     std::vector<std::thread> fThreadPool;
     FairMQTransportFactory& fReceiveFactory;
     FairMQTransportFactory& fSendFactory;

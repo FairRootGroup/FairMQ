@@ -1,25 +1,22 @@
 /********************************************************************************
- *    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <fairmq/ofi/Context.h>
-#include <fairmq/tools/Strings.h>
-#include <FairMQLogger.h>
-
-#include <asiofi/version.hpp>
 #include <arpa/inet.h>
-#include <boost/version.hpp>
+#include <asiofi/version.hpp>
 #include <cassert>
 #include <cstring>
+#include <fairlogger/Logger.h>
+#include <fairmq/ofi/Context.h>
+#include <fairmq/tools/Strings.h>
 #include <memory>
 #include <netinet/in.h>
 #include <regex>
 #include <string>
-#include <string.h>
 #include <sys/socket.h>
 
 namespace fair::mq::ofi

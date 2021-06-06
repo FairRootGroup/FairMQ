@@ -143,6 +143,7 @@ if(BUILD_FAIRMQ)
   # libFairMQ header files #
   ##########################
   set(FAIRMQ_PUBLIC_HEADER_FILES
+    Channel.h
     Device.h
     DeviceRunner.h
     EventManager.h
@@ -152,22 +153,26 @@ if(BUILD_FAIRMQ)
     FairMQMessage.h
     FairMQParts.h
     FairMQPoller.h
-    FairMQUnmanagedRegion.h
     FairMQSocket.h
     FairMQTransportFactory.h
-    MemoryResources.h
-    MemoryResourceTools.h
-    Transports.h
-    options/FairMQProgOptions.h
+    FairMQUnmanagedRegion.h
     JSONParser.h
-    ProgOptionsFwd.h
-    ProgOptions.h
-    Properties.h
-    PropertyOutput.h
-    SuboptParser.h
+    MemoryResourceTools.h
+    MemoryResources.h
+    Message.h
     Plugin.h
     PluginManager.h
     PluginServices.h
+    Poller.h
+    ProgOptions.h
+    ProgOptionsFwd.h
+    Properties.h
+    PropertyOutput.h
+    SuboptParser.h
+    TransportFactory.h
+    Transports.h
+    UnmanagedRegion.h
+    options/FairMQProgOptions.h
     runDevice.h
     runFairMQDevice.h
     shmem/Monitor.h
@@ -202,8 +207,8 @@ if(BUILD_FAIRMQ)
   if(BUILD_OFI_TRANSPORT)
     set(FAIRMQ_PRIVATE_HEADER_FILES ${FAIRMQ_PRIVATE_HEADER_FILES}
       ofi/Context.h
+      ofi/ControlMessages.h
       ofi/Message.h
-      ofi/Poller.h
       ofi/Socket.h
       ofi/TransportFactory.h
     )
@@ -231,6 +236,7 @@ if(BUILD_FAIRMQ)
     plugins/config/Config.cxx
     plugins/control/Control.cxx
     MemoryResources.cxx
+    shmem/Manager.cxx
     shmem/Monitor.cxx
   )
 
@@ -238,9 +244,7 @@ if(BUILD_FAIRMQ)
     set(FAIRMQ_SOURCE_FILES ${FAIRMQ_SOURCE_FILES}
       ofi/Context.cxx
       ofi/Message.cxx
-      ofi/Poller.cxx
       ofi/Socket.cxx
-      ofi/TransportFactory.cxx
     )
   endif()
 
@@ -295,7 +299,6 @@ if(BUILD_FAIRMQ)
   if(BUILD_OFI_TRANSPORT)
     set(OFI_DEPS
       asiofi::asiofi
-      Boost::container
     )
   endif()
 
