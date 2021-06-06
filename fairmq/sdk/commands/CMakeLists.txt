@@ -46,7 +46,7 @@ set_target_properties(${target} PROPERTIES
 target_include_directories(${target}
   PUBLIC
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 install(
