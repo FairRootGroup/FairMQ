@@ -158,6 +158,7 @@ if(BUILD_FAIRMQ)
     MemoryResourceTools.h
     MemoryResources.h
     Message.h
+    Parts.h
     Plugin.h
     PluginManager.h
     PluginServices.h
@@ -216,24 +217,20 @@ if(BUILD_FAIRMQ)
   # libFairMQ source files #
   ##########################
   set(FAIRMQ_SOURCE_FILES
+    Channel.cxx
+    Device.cxx
     DeviceRunner.cxx
-    FairMQChannel.cxx
-    FairMQDevice.cxx
-    FairMQLogger.cxx
-    FairMQMessage.cxx
-    FairMQPoller.cxx
-    FairMQSocket.cxx
-    FairMQTransportFactory.cxx
+    JSONParser.cxx
+    MemoryResources.cxx
     Plugin.cxx
     PluginManager.cxx
     PluginServices.cxx
     ProgOptions.cxx
-    JSONParser.cxx
     Properties.cxx
     SuboptParser.cxx
+    TransportFactory.cxx
     plugins/config/Config.cxx
     plugins/control/Control.cxx
-    MemoryResources.cxx
     shmem/Manager.cxx
     shmem/Monitor.cxx
   )

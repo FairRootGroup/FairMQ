@@ -1,10 +1,10 @@
 /********************************************************************************
- *    Copyright (C) 2018 CERN and copyright holders of ALICE O2 *
- *    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH *
+ *    Copyright (C) 2018 CERN and copyright holders of ALICE O2                 *
+ * Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
- *              This software is distributed under the terms of the *
- *              GNU Lesser General Public Licence (LGPL) version 3, *
- *                  copied verbatim in the file "LICENSE" *
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
+ *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
 /// @brief Memory allocators and interfaces related to managing memory via the
@@ -15,27 +15,24 @@
 #ifndef FAIR_MQ_MEMORY_RESOURCES_H
 #define FAIR_MQ_MEMORY_RESOURCES_H
 
-#include <FairMQMessage.h>
-class FairMQTransportFactory;
-
 #include <boost/container/container_fwd.hpp>
 #include <boost/container/flat_map.hpp>
 #include <boost/container/pmr/memory_resource.hpp>
-
 #include <cstring>
+#include <fairmq/Message.h>
 #include <stdexcept>
 #include <utility>
 
-namespace fair::mq
-{
+namespace fair::mq {
 
+class TransportFactory;
 using byte = unsigned char;
 namespace pmr = boost::container::pmr;
 
 /// All FairMQ related memory resources need to inherit from this interface
 /// class for the
 /// getMessage() api.
-class FairMQMemoryResource : public pmr::memory_resource
+class MemoryResource : public pmr::memory_resource
 {
   public:
     /// return the message containing data associated with the pointer (to start
@@ -43,9 +40,9 @@ class FairMQMemoryResource : public pmr::memory_resource
     /// buffer), e.g. pointer returned by std::vector::data() return nullptr if
     /// returning
     /// a message does not make sense!
-    virtual FairMQMessagePtr getMessage(void *p) = 0;
-    virtual void *setMessage(FairMQMessagePtr) = 0;
-    virtual FairMQTransportFactory *getTransportFactory() noexcept = 0;
+    virtual MessagePtr getMessage(void* p) = 0;
+    virtual void* setMessage(MessagePtr) = 0;
+    virtual TransportFactory* getTransportFactory() noexcept = 0;
     virtual size_t getNumberOfMessages() const noexcept = 0;
 };
 
@@ -54,41 +51,42 @@ class FairMQMemoryResource : public pmr::memory_resource
 /// delegated to FairMQ so standard (e.g. STL) containers can construct their
 /// stuff in
 /// memory regions appropriate for the data channel configuration.
-class ChannelResource : public FairMQMemoryResource
+class ChannelResource : public MemoryResource
 {
   protected:
-    FairMQTransportFactory* factory{nullptr};
+    TransportFactory* factory{nullptr};
     // TODO: for now a map to keep track of allocations, something else would
     // probably be
     // faster, but for now this does not need to be fast.
-    boost::container::flat_map<void*, FairMQMessagePtr> messageMap;
+    boost::container::flat_map<void*, MessagePtr> messageMap;
 
   public:
     ChannelResource() = delete;
 
-    ChannelResource(FairMQTransportFactory* _factory)
+    ChannelResource(TransportFactory* _factory)
         : factory(_factory)
     {
         if (!_factory) {
-            throw std::runtime_error("Tried to construct from a nullptr FairMQTransportFactory");
+            throw std::runtime_error(
+                "Tried to construct from a nullptr fair::mq::TransportFactory");
         }
     };
 
-    FairMQMessagePtr getMessage(void* p) override
+    MessagePtr getMessage(void* p) override
     {
         auto mes = std::move(messageMap[p]);
         messageMap.erase(p);
         return mes;
     }
 
-    void* setMessage(FairMQMessagePtr message) override
+    void* setMessage(MessagePtr message) override
     {
         void* addr = message->GetData();
         messageMap[addr] = std::move(message);
         return addr;
     }
 
-    FairMQTransportFactory* getTransportFactory() noexcept override { return factory; }
+    TransportFactory* getTransportFactory() noexcept override { return factory; }
 
     size_t getNumberOfMessages() const noexcept override { return messageMap.size(); }
 
@@ -99,12 +97,15 @@ class ChannelResource : public FairMQMemoryResource
         messageMap.erase(p);
     };
 
-    bool do_is_equal(const pmr::memory_resource &other) const noexcept override
+    bool do_is_equal(const pmr::memory_resource& other) const noexcept override
     {
         return this == &other;
     };
 };
 
-} // namespace fair::mq
+}   // namespace fair::mq
+
+using FairMQMemoryResource [[deprecated("Use fair::mq::MemoryResource")]] =
+    fair::mq::MemoryResource;
 
 #endif /* FAIR_MQ_MEMORY_RESOURCES_H */

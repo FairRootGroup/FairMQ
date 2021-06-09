@@ -9,31 +9,10 @@
 #ifndef FAIRMQPOLLER_H_
 #define FAIRMQPOLLER_H_
 
-#include <memory>
-#include <stdexcept>
-#include <string>
+#ifndef FAIR_MQ_POLLER_H
+#pragma GCC warning "Deprecated header: Use <fairmq/Poller.h> instead"
+#endif
 
-class FairMQPoller
-{
-  public:
-    virtual void Poll(const int timeout) = 0;
-    virtual bool CheckInput(const int index) = 0;
-    virtual bool CheckOutput(const int index) = 0;
-    virtual bool CheckInput(const std::string& channelKey, const int index) = 0;
-    virtual bool CheckOutput(const std::string& channelKey, const int index) = 0;
-
-    virtual ~FairMQPoller() = default;
-};
-
-using FairMQPollerPtr = std::unique_ptr<FairMQPoller>;
-
-namespace fair::mq
-{
-
-using Poller = FairMQPoller;
-using PollerPtr = FairMQPollerPtr;
-struct PollerError : std::runtime_error { using std::runtime_error::runtime_error; };
-
-} // namespace fair::mq
+#include <fairmq/Poller.h>
 
 #endif /* FAIRMQPOLLER_H_ */
