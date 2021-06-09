@@ -40,7 +40,7 @@ endif()
 
 ctest_start(Continuous)
 
-list(APPEND options "-DDISABLE_COLOR=ON")
+list(APPEND options "-DDISABLE_COLOR=ON" "-DBUILD_EXAMPLES=ON" "-DBUILD_TESTING=ON")
 if(HAS_ASIO AND HAS_DDS)
   list(APPEND options "-DBUILD_SDK_COMMANDS=ON" "-DBUILD_SDK=ON" "-DBUILD_DDS_PLUGIN=ON")
 endif()
