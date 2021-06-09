@@ -1,51 +1,48 @@
 /********************************************************************************
- * Copyright (C) 2012-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2012-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <FairMQDevice.h>
-
-#include <fairmq/tools/RateLimit.h>
-#include <fairmq/tools/Network.h>
-
-#include <boost/algorithm/string.hpp> // join/split
-
-#include <list>
+#include <algorithm>                    // std::max
+#include <boost/algorithm/string.hpp>   // join/split
 #include <chrono>
+#include <fairmq/Device.h>
+#include <fairmq/Tools.h>
+#include <future>
+#include <iomanip>
+#include <list>
 #include <mutex>
 #include <thread>
-#include <iomanip>
-#include <future>
-#include <algorithm> // std::max
+
+namespace fair::mq {
 
 using namespace std;
-using namespace fair::mq;
 
-constexpr const char* FairMQDevice::DefaultId;
-constexpr int FairMQDevice::DefaultIOThreads;
-constexpr const char* FairMQDevice::DefaultTransportName;
-constexpr fair::mq::Transport FairMQDevice::DefaultTransportType;
-constexpr const char* FairMQDevice::DefaultNetworkInterface;
-constexpr int FairMQDevice::DefaultInitTimeout;
-constexpr uint64_t FairMQDevice::DefaultMaxRunTime;
-constexpr float FairMQDevice::DefaultRate;
-constexpr const char* FairMQDevice::DefaultSession;
+constexpr const char* Device::DefaultId;
+constexpr int Device::DefaultIOThreads;
+constexpr const char* Device::DefaultTransportName;
+constexpr mq::Transport Device::DefaultTransportType;
+constexpr const char* Device::DefaultNetworkInterface;
+constexpr int Device::DefaultInitTimeout;
+constexpr uint64_t Device::DefaultMaxRunTime;
+constexpr float Device::DefaultRate;
+constexpr const char* Device::DefaultSession;
 
 struct StateSubscription
 {
-    fair::mq::StateMachine& fStateMachine;
-    fair::mq::StateQueue& fStateQueue;
+    StateMachine& fStateMachine;
+    StateQueue& fStateQueue;
     string fId;
 
-    explicit StateSubscription(string id, fair::mq::StateMachine& stateMachine, fair::mq::StateQueue& stateQueue)
+    explicit StateSubscription(string id, StateMachine& stateMachine, StateQueue& stateQueue)
         : fStateMachine(stateMachine)
         , fStateQueue(stateQueue)
         , fId(std::move(id))
     {
-        fStateMachine.SubscribeToStateChange(fId, [&](fair::mq::State state) {
+        fStateMachine.SubscribeToStateChange(fId, [&](State state) {
             fStateQueue.Push(state);
         });
     }
@@ -55,23 +52,23 @@ struct StateSubscription
     }
 };
 
-FairMQDevice::FairMQDevice()
-    : FairMQDevice(nullptr, {0, 0, 0})
+Device::Device()
+    : Device(nullptr, {0, 0, 0})
 {}
 
-FairMQDevice::FairMQDevice(ProgOptions& config)
-    : FairMQDevice(&config, {0, 0, 0})
+Device::Device(ProgOptions& config)
+    : Device(&config, {0, 0, 0})
 {}
 
-FairMQDevice::FairMQDevice(const tools::Version version)
-    : FairMQDevice(nullptr, version)
+Device::Device(const tools::Version version)
+    : Device(nullptr, version)
 {}
 
-FairMQDevice::FairMQDevice(ProgOptions& config, const tools::Version version)
-    : FairMQDevice(&config, version)
+Device::Device(ProgOptions& config, const tools::Version version)
+    : Device(&config, version)
 {}
 
-FairMQDevice::FairMQDevice(ProgOptions* config, const tools::Version version)
+Device::Device(ProgOptions* config, const tools::Version version)
     : fTransportFactory(nullptr)
     , fInternalConfig(config ? nullptr : make_unique<ProgOptions>())
     , fConfig(config ? config : fInternalConfig.get())
@@ -97,34 +94,34 @@ FairMQDevice::FairMQDevice(ProgOptions* config, const tools::Version version)
         }
     });
 
-    fStateMachine.HandleStates([&](fair::mq::State state) {
+    fStateMachine.HandleStates([&](State state) {
         LOG(trace) << "device notified on new state: " << state;
 
         fStateQueue.Push(state);
 
         switch (state) {
-            case fair::mq::State::InitializingDevice:
+            case State::InitializingDevice:
                 InitWrapper();
                 break;
-            case fair::mq::State::Binding:
+            case State::Binding:
                 BindWrapper();
                 break;
-            case fair::mq::State::Connecting:
+            case State::Connecting:
                 ConnectWrapper();
                 break;
-            case fair::mq::State::InitializingTask:
+            case State::InitializingTask:
                 InitTaskWrapper();
                 break;
-            case fair::mq::State::Running:
+            case State::Running:
                 RunWrapper();
                 break;
-            case fair::mq::State::ResettingTask:
+            case State::ResettingTask:
                 ResetTaskWrapper();
                 break;
-            case fair::mq::State::ResettingDevice:
+            case State::ResettingDevice:
                 ResetWrapper();
                 break;
-            case fair::mq::State::Exiting:
+            case State::Exiting:
                 Exit();
                 break;
             default:
@@ -136,7 +133,7 @@ FairMQDevice::FairMQDevice(ProgOptions* config, const tools::Version version)
     fStateMachine.Start();
 }
 
-void FairMQDevice::TransitionTo(const fair::mq::State s)
+void Device::TransitionTo(const State s)
 {
     {
         lock_guard<mutex> lock(fTransitionMtx);
@@ -147,7 +144,7 @@ void FairMQDevice::TransitionTo(const fair::mq::State s)
         fTransitioning = true;
     }
 
-    using fair::mq::State;
+    using mq::State;
 
     StateQueue sq;
     StateSubscription ss(tools::ToString(fId, ".TransitionTo"), fStateMachine, sq);
@@ -203,7 +200,7 @@ void FairMQDevice::TransitionTo(const fair::mq::State s)
     }
 }
 
-void FairMQDevice::InitWrapper()
+void Device::InitWrapper()
 {
     // run initialization once CompleteInit transition is requested
     fStateMachine.WaitForPendingState();
@@ -217,7 +214,7 @@ void FairMQDevice::InitWrapper()
     fInitializationTimeoutInS = fConfig->GetProperty<int>("init-timeout", DefaultInitTimeout);
 
     try {
-        fDefaultTransportType = fair::mq::TransportTypes.at(fConfig->GetProperty<string>("transport", DefaultTransportName));
+        fDefaultTransportType = TransportTypes.at(fConfig->GetProperty<string>("transport", DefaultTransportName));
     } catch (const exception& e) {
         LOG(error) << "exception: " << e.what();
         LOG(error) << "invalid transport type provided: " << fConfig->GetProperty<string>("transport", "not provided");
@@ -231,7 +228,7 @@ void FairMQDevice::InitWrapper()
         }
     }
 
-    LOG(debug) << "Setting '" << fair::mq::TransportNames.at(fDefaultTransportType) << "' as default transport for the device";
+    LOG(debug) << "Setting '" << TransportNames.at(fDefaultTransportType) << "' as default transport for the device";
     fTransportFactory = AddTransport(fDefaultTransportType);
 
     string networkInterface = fConfig->GetProperty<string>("network-interface", DefaultNetworkInterface);
@@ -241,7 +238,7 @@ void FairMQDevice::InitWrapper()
         int subChannelIndex = 0;
         for (auto& subChannel : channel.second) {
             // set channel transport
-            LOG(debug) << "Initializing transport for channel " << subChannel.fName << ": " << fair::mq::TransportNames.at(subChannel.fTransportType);
+            LOG(debug) << "Initializing transport for channel " << subChannel.fName << ": " << TransportNames.at(subChannel.fTransportType);
             subChannel.InitTransport(AddTransport(subChannel.fTransportType));
 
             if (subChannel.fMethod == "bind") {
@@ -278,7 +275,7 @@ void FairMQDevice::InitWrapper()
     // ChangeState(Transition::Auto);
 }
 
-void FairMQDevice::BindWrapper()
+void Device::BindWrapper()
 {
     // Bind channels. Here one run is enough, because bind settings should be available locally
     // If necessary this could be handled in the same way as the connecting channels
@@ -294,7 +291,7 @@ void FairMQDevice::BindWrapper()
     ChangeState(Transition::Auto);
 }
 
-void FairMQDevice::ConnectWrapper()
+void Device::ConnectWrapper()
 {
     // go over the list of channels until all are initialized (and removed from the uninitialized list)
     int numAttempts = 1;
@@ -331,7 +328,7 @@ void FairMQDevice::ConnectWrapper()
     ChangeState(Transition::Auto);
 }
 
-void FairMQDevice::AttachChannels(vector<FairMQChannel*>& chans)
+void Device::AttachChannels(vector<Channel*>& chans)
 {
     auto itr = chans.begin();
 
@@ -351,7 +348,7 @@ void FairMQDevice::AttachChannels(vector<FairMQChannel*>& chans)
     }
 }
 
-bool FairMQDevice::AttachChannel(FairMQChannel& chan)
+bool Device::AttachChannel(Channel& chan)
 {
     vector<string> endpoints;
     string chanAddress = chan.GetAddress();
@@ -424,19 +421,19 @@ bool FairMQDevice::AttachChannel(FairMQChannel& chan)
     return true;
 }
 
-void FairMQDevice::InitTaskWrapper()
+void Device::InitTaskWrapper()
 {
     InitTask();
 
     ChangeState(Transition::Auto);
 }
 
-void FairMQDevice::RunWrapper()
+void Device::RunWrapper()
 {
     LOG(info) << "DEVICE: Running...";
 
     // start the rate logger thread
-    future<void> rateLogger = async(launch::async, &FairMQDevice::LogSocketRates, this);
+    future<void> rateLogger = async(launch::async, &Device::LogSocketRates, this);
 
     // notify transports to resume transfers
     for (auto& t : fTransports) {
@@ -486,7 +483,7 @@ void FairMQDevice::RunWrapper()
     rateLogger.get();
 }
 
-void FairMQDevice::HandleSingleChannelInput()
+void Device::HandleSingleChannelInput()
 {
     bool proceed = true;
 
@@ -501,14 +498,14 @@ void FairMQDevice::HandleSingleChannelInput()
     }
 }
 
-void FairMQDevice::HandleMultipleChannelInput()
+void Device::HandleMultipleChannelInput()
 {
     // check if more than one transport is used
     fMultitransportInputs.clear();
     for (const auto& k : fInputChannelKeys) {
-        fair::mq::Transport t = fChannels.at(k).at(0).fTransportType;
+        mq::Transport t = fChannels.at(k).at(0).fTransportType;
         if (fMultitransportInputs.find(t) == fMultitransportInputs.end()) {
-            fMultitransportInputs.insert(pair<fair::mq::Transport, vector<string>>(t, vector<string>()));
+            fMultitransportInputs.insert(pair<mq::Transport, vector<string>>(t, vector<string>()));
             fMultitransportInputs.at(t).push_back(k);
         } else {
             fMultitransportInputs.at(t).push_back(k);
@@ -533,7 +530,7 @@ void FairMQDevice::HandleMultipleChannelInput()
     } else { // otherwise poll directly
         bool proceed = true;
 
-        FairMQPollerPtr poller(fChannels.at(fInputChannelKeys.at(0)).at(0).fTransportFactory->CreatePoller(fChannels, fInputChannelKeys));
+        PollerPtr poller(fChannels.at(fInputChannelKeys.at(0)).at(0).fTransportFactory->CreatePoller(fChannels, fInputChannelKeys));
 
         while (!NewStatePending() && proceed) {
             poller->Poll(200);
@@ -561,14 +558,14 @@ void FairMQDevice::HandleMultipleChannelInput()
     }
 }
 
-void FairMQDevice::HandleMultipleTransportInput()
+void Device::HandleMultipleTransportInput()
 {
     vector<thread> threads;
 
     fMultitransportProceed = true;
 
     for (const auto& i : fMultitransportInputs) {
-        threads.emplace_back(thread(&FairMQDevice::PollForTransport, this, fTransports.at(i.first).get(), i.second));
+        threads.emplace_back(thread(&Device::PollForTransport, this, fTransports.at(i.first).get(), i.second));
     }
 
     for (thread& t : threads) {
@@ -576,10 +573,10 @@ void FairMQDevice::HandleMultipleTransportInput()
     }
 }
 
-void FairMQDevice::PollForTransport(const FairMQTransportFactory* factory, const vector<string>& channelKeys)
+void Device::PollForTransport(const TransportFactory* factory, const vector<string>& channelKeys)
 {
     try {
-        FairMQPollerPtr poller(factory->CreatePoller(fChannels, channelKeys));
+        PollerPtr poller(factory->CreatePoller(fChannels, channelKeys));
 
         while (!NewStatePending() && fMultitransportProceed) {
             poller->Poll(500);
@@ -610,14 +607,14 @@ void FairMQDevice::PollForTransport(const FairMQTransportFactory* factory, const
             }
         }
     } catch (exception& e) {
-        LOG(error) << "FairMQDevice::PollForTransport() failed: " << e.what() << ", going to ERROR state.";
-        throw runtime_error(tools::ToString("FairMQDevice::PollForTransport() failed: ", e.what(), ", going to ERROR state."));
+        LOG(error) << "fair::mq::Device::PollForTransport() failed: " << e.what() << ", going to ERROR state.";
+        throw runtime_error(tools::ToString("fair::mq::Device::PollForTransport() failed: ", e.what(), ", going to ERROR state."));
     }
 }
 
-bool FairMQDevice::HandleMsgInput(const string& chName, const InputMsgCallback& callback, int i)
+bool Device::HandleMsgInput(const string& chName, const InputMsgCallback& callback, int i)
 {
-    unique_ptr<FairMQMessage> input(fChannels.at(chName).at(i).fTransportFactory->CreateMessage());
+    unique_ptr<Message> input(fChannels.at(chName).at(i).fTransportFactory->CreateMessage());
 
     if (Receive(input, chName, i) >= 0) {
         return callback(input, i);
@@ -626,9 +623,9 @@ bool FairMQDevice::HandleMsgInput(const string& chName, const InputMsgCallback& 
     }
 }
 
-bool FairMQDevice::HandleMultipartInput(const string& chName, const InputMultipartCallback& callback, int i)
+bool Device::HandleMultipartInput(const string& chName, const InputMultipartCallback& callback, int i)
 {
-    FairMQParts input;
+    Parts input;
 
     if (Receive(input, chName, i) >= 0) {
         return callback(input, i);
@@ -637,34 +634,34 @@ bool FairMQDevice::HandleMultipartInput(const string& chName, const InputMultipa
     }
 }
 
-shared_ptr<FairMQTransportFactory> FairMQDevice::AddTransport(fair::mq::Transport transport)
+shared_ptr<TransportFactory> Device::AddTransport(mq::Transport transport)
 {
-    if (transport == fair::mq::Transport::DEFAULT) {
+    if (transport == mq::Transport::DEFAULT) {
         transport = fDefaultTransportType;
     }
 
     auto i = fTransports.find(transport);
 
     if (i == fTransports.end()) {
-        LOG(debug) << "Adding '" << fair::mq::TransportNames.at(transport) << "' transport";
-        auto tr = FairMQTransportFactory::CreateTransportFactory(fair::mq::TransportNames.at(transport), fId, fConfig);
+        LOG(debug) << "Adding '" << TransportNames.at(transport) << "' transport";
+        auto tr = TransportFactory::CreateTransportFactory(TransportNames.at(transport), fId, fConfig);
         fTransports.insert({transport, tr});
         return tr;
     } else {
-        LOG(debug) << "Reusing existing '" << fair::mq::TransportNames.at(transport) << "' transport";
+        LOG(debug) << "Reusing existing '" << TransportNames.at(transport) << "' transport";
         return i->second;
     }
 }
 
-void FairMQDevice::SetConfig(ProgOptions& config)
+void Device::SetConfig(ProgOptions& config)
 {
     fInternalConfig.reset();
     fConfig = &config;
 }
 
-void FairMQDevice::LogSocketRates()
+void Device::LogSocketRates()
 {
-    vector<FairMQChannel*> filteredChannels;
+    vector<Channel*> filteredChannels;
     vector<string> filteredChannelNames;
     vector<int> logIntervals;
     vector<int> intervalCounters;
@@ -760,21 +757,21 @@ void FairMQDevice::LogSocketRates()
     }
 }
 
-void FairMQDevice::UnblockTransports()
+void Device::UnblockTransports()
 {
     for (auto& transport : fTransports) {
         transport.second->Interrupt();
     }
 }
 
-void FairMQDevice::ResetTaskWrapper()
+void Device::ResetTaskWrapper()
 {
     ResetTask();
 
     ChangeState(Transition::Auto);
 }
 
-void FairMQDevice::ResetWrapper()
+void Device::ResetWrapper()
 {
     for (auto& transport : fTransports) {
         transport.second->Reset();
@@ -788,9 +785,11 @@ void FairMQDevice::ResetWrapper()
     ChangeState(Transition::Auto);
 }
 
-FairMQDevice::~FairMQDevice()
+Device::~Device()
 {
     UnsubscribeFromNewTransition("device");
     fStateMachine.StopHandlingStates();
     LOG(debug) << "Shutting down device " << fId;
 }
+
+} // namespace fair::mq
