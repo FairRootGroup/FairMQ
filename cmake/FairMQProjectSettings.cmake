@@ -8,7 +8,6 @@
 
 include_guard(GLOBAL)
 
-include(CTest)
 include(GNUInstallDirs)
 
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
