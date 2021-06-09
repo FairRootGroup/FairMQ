@@ -87,7 +87,6 @@ Monitor::Monitor(string shmId, bool selfDestruct, bool interactive, bool viewOnl
     , fTimeoutInMS(timeoutInMS)
     , fIntervalInMS(intervalInMS)
     , fShmId(std::move(shmId))
-    , fControlQueueName("fmq_" + fShmId + "_cq")
     , fTerminating(false)
     , fHeartbeatTriggered(false)
     , fLastHeartbeat(chrono::high_resolution_clock::now())
@@ -132,8 +131,7 @@ void Monitor::Run()
 {
     thread heartbeatThread;
     if (!fViewOnly) {
-        RemoveQueue(fControlQueueName);
-        heartbeatThread = thread(&Monitor::ReceiveHeartbeats, this);
+        heartbeatThread = thread(&Monitor::CheckHeartbeats, this);
     }
 
     if (fInteractive) {
@@ -158,7 +156,7 @@ void Monitor::Watch()
             fSeenOnce = true;
 
             auto now = chrono::high_resolution_clock::now();
-            unsigned int duration = chrono::duration_cast<chrono::milliseconds>(now - fLastHeartbeat).count();
+            unsigned int duration = chrono::duration_cast<chrono::milliseconds>(now - fLastHeartbeat.load()).count();
 
             if (fHeartbeatTriggered && duration > fTimeoutInMS) {
                 // memory is present, but no heartbeats since timeout duration
@@ -181,7 +179,7 @@ void Monitor::Watch()
                 } else {
                     // if self-destruct is requested, and no segment has ever been observed, quit after double timeout duration
                     auto now = chrono::high_resolution_clock::now();
-                    unsigned int duration = chrono::duration_cast<chrono::milliseconds>(now - fLastHeartbeat).count();
+                    unsigned int duration = chrono::duration_cast<chrono::milliseconds>(now - fLastHeartbeat.load()).count();
 
                     if (duration > fTimeoutInMS * 2) {
                         Cleanup(ShmId{fShmId});
@@ -305,31 +303,30 @@ void Monitor::ListAll(const std::string& path)
     }
 }
 
-void Monitor::ReceiveHeartbeats()
+void Monitor::CheckHeartbeats()
 {
-    try {
-        bipc::message_queue mq(bipc::open_or_create, fControlQueueName.c_str(), 1000, 256);
+    using namespace boost::interprocess;
 
-        unsigned int priority = 0;
-        bipc::message_queue::size_type recvdSize = 0;
-        char msg[256] = {0};
+    uint64_t localHb = 0;
 
-        while (!fTerminating) {
-            bpt::ptime rcvTill = bpt::microsec_clock::universal_time() + bpt::milliseconds(100);
-            if (mq.timed_receive(&msg, sizeof(msg), recvdSize, priority, rcvTill)) {
-                fHeartbeatTriggered = true;
-                fLastHeartbeat = chrono::high_resolution_clock::now();
-                string deviceId(msg, recvdSize);
-                fDeviceHeartbeats[deviceId] = fLastHeartbeat;
-            } else {
-                // LOG(info) << "control queue timeout";
+    while (!fTerminating) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        try {
+            managed_shared_memory managementSegment(open_read_only, std::string("fmq_" + fShmId + "_mng").c_str());
+            Heartbeat* hb = managementSegment.find<Heartbeat>(unique_instance).first;
+
+            if (hb) {
+                uint64_t globalHb = hb->fCount;
+                if (localHb != globalHb) {
+                    fHeartbeatTriggered = true;
+                    fLastHeartbeat.store(chrono::high_resolution_clock::now());
+                    localHb = globalHb;
+                }
             }
+        } catch (bie&) {
+            // management segment not found, simply retry.
         }
-    } catch (bie& ie) {
-        LOG(info) << ie.what();
     }
-
-    RemoveQueue(fControlQueueName);
 }
 
 void Monitor::Interactive()
@@ -629,7 +626,6 @@ std::vector<std::pair<std::string, bool>> Monitor::CleanupFull(const ShmId& shmI
 {
     auto result = Cleanup(shmId, verbose);
     result.emplace_back(RunRemoval(Monitor::RemoveMutex, "fmq_" + shmId.shmId + "_ms", verbose));
-    result.emplace_back(RunRemoval(Monitor::RemoveQueue, "fmq_" + shmId.shmId + "_cq", verbose));
     return result;
 }
 
