@@ -11,21 +11,35 @@
 
 #include <fairmq/ProgOptionsFwd.h>
 
-class FairMQChannel;
-class FairMQDevice;
-class FairMQMemoryResource;
-class FairMQMessage;
-class FairMQParts;
-class FairMQPoller;
-class FairMQRegionBlock;
-class FairMQRegionConfig;
-class FairMQRegionInfo;
-class FairMQSocket;
-class FairMQTransportFactory;
-class FairMQUnmanagedRegion;
-
 namespace fair::mq {
-class FairMQMemoryResource;
-}
+
+class Channel;
+class Device;
+class MemoryResource;
+class Message;
+class Parts;
+class Poller;
+class RegionBlock;
+class RegionConfig;
+class RegionInfo;
+class Socket;
+class TransportFactory;
+class UnmanagedRegion;
+
+using FairMQMemoryResource = MemoryResource;
+
+}   // namespace fair::mq
+
+using FairMQChannel = fair::mq::Channel;
+using FairMQDevice = fair::mq::Device;
+using FairMQMessage = fair::mq::Message;
+using FairMQParts = fair::mq::Parts;
+using FairMQPoller = fair::mq::Poller;
+using FairMQRegionBlock = fair::mq::RegionBlock;
+using FairMQRegionConfig = fair::mq::RegionConfig;
+using FairMQRegionInfo = fair::mq::RegionInfo;
+using FairMQSocket = fair::mq::Socket;
+using FairMQTransportFactory = fair::mq::TransportFactory;
+using FairMQUnmanagedRegion = fair::mq::UnmanagedRegion;
 
 #endif   // FAIR_MQ_FWDDECLS_H

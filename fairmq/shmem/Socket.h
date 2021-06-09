@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -22,7 +22,9 @@
 #include <atomic>
 #include <memory> // make_unique
 
-class FairMQTransportFactory;
+namespace fair::mq {
+    class TransportFactory;
+}
 
 namespace fair::mq::shmem
 {

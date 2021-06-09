@@ -1,30 +1,27 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "FairMQChannel.h"
-
-#include <fairmq/tools/Strings.h>
-#include <fairmq/Properties.h>
-
+#include <boost/algorithm/string.hpp>   // join/split
+#include <cstddef>                      // size_t
 #include <fairlogger/Logger.h>
-
-#include <boost/algorithm/string.hpp> // join/split
-
-#include <cstddef> // size_t
+#include <fairmq/Channel.h>
+#include <fairmq/Properties.h>
+#include <fairmq/Tools.h>
+#include <random>
 #include <regex>
 #include <set>
-#include <random>
+
+namespace fair::mq {
 
 using namespace std;
-using namespace fair::mq;
 
 template<typename T>
-T GetPropertyOrDefault(const fair::mq::Properties& m, const string& k, const T& ifNotFound)
+T GetPropertyOrDefault(const Properties& m, const string& k, const T& ifNotFound)
 {
     if (m.count(k)) {
         return boost::any_cast<T>(m.at(k));
@@ -32,39 +29,39 @@ T GetPropertyOrDefault(const fair::mq::Properties& m, const string& k, const T& 
     return ifNotFound;
 }
 
-constexpr fair::mq::Transport FairMQChannel::DefaultTransportType;
-constexpr const char* FairMQChannel::DefaultTransportName;
-constexpr const char* FairMQChannel::DefaultName;
-constexpr const char* FairMQChannel::DefaultType;
-constexpr const char* FairMQChannel::DefaultMethod;
-constexpr const char* FairMQChannel::DefaultAddress;
-constexpr int FairMQChannel::DefaultSndBufSize;
-constexpr int FairMQChannel::DefaultRcvBufSize;
-constexpr int FairMQChannel::DefaultSndKernelSize;
-constexpr int FairMQChannel::DefaultRcvKernelSize;
-constexpr int FairMQChannel::DefaultLinger;
-constexpr int FairMQChannel::DefaultRateLogging;
-constexpr int FairMQChannel::DefaultPortRangeMin;
-constexpr int FairMQChannel::DefaultPortRangeMax;
-constexpr bool FairMQChannel::DefaultAutoBind;
+constexpr Transport Channel::DefaultTransportType;
+constexpr const char* Channel::DefaultTransportName;
+constexpr const char* Channel::DefaultName;
+constexpr const char* Channel::DefaultType;
+constexpr const char* Channel::DefaultMethod;
+constexpr const char* Channel::DefaultAddress;
+constexpr int Channel::DefaultSndBufSize;
+constexpr int Channel::DefaultRcvBufSize;
+constexpr int Channel::DefaultSndKernelSize;
+constexpr int Channel::DefaultRcvKernelSize;
+constexpr int Channel::DefaultLinger;
+constexpr int Channel::DefaultRateLogging;
+constexpr int Channel::DefaultPortRangeMin;
+constexpr int Channel::DefaultPortRangeMax;
+constexpr bool Channel::DefaultAutoBind;
 
-FairMQChannel::FairMQChannel()
-    : FairMQChannel(DefaultName, DefaultType, DefaultMethod, DefaultAddress, nullptr)
+Channel::Channel()
+    : Channel(DefaultName, DefaultType, DefaultMethod, DefaultAddress, nullptr)
 {}
 
-FairMQChannel::FairMQChannel(const string& name)
-    : FairMQChannel(name, DefaultType, DefaultMethod, DefaultAddress, nullptr)
+Channel::Channel(const string& name)
+    : Channel(name, DefaultType, DefaultMethod, DefaultAddress, nullptr)
 {}
 
-FairMQChannel::FairMQChannel(const string& type, const string& method, const string& address)
-    : FairMQChannel(DefaultName, type, method, address, nullptr)
+Channel::Channel(const string& type, const string& method, const string& address)
+    : Channel(DefaultName, type, method, address, nullptr)
 {}
 
-FairMQChannel::FairMQChannel(const string& name, const string& type, shared_ptr<FairMQTransportFactory> factory)
-    : FairMQChannel(name, type, DefaultMethod, DefaultAddress, factory)
+Channel::Channel(const string& name, const string& type, shared_ptr<TransportFactory> factory)
+    : Channel(name, type, DefaultMethod, DefaultAddress, factory)
 {}
 
-FairMQChannel::FairMQChannel(string name, string type, string method, string address, shared_ptr<FairMQTransportFactory> factory)
+Channel::Channel(string name, string type, string method, string address, shared_ptr<TransportFactory> factory)
     : fTransportFactory(factory)
     , fTransportType(factory ? factory->GetType() : DefaultTransportType)
     , fSocket(factory ? factory->CreateSocket(type, name) : nullptr)
@@ -87,8 +84,8 @@ FairMQChannel::FairMQChannel(string name, string type, string method, string add
     // LOG(warn) << "Constructing channel '" << fName << "'";
 }
 
-FairMQChannel::FairMQChannel(const string& name, int index, const fair::mq::Properties& properties)
-    : FairMQChannel(tools::ToString(name, "[", index, "]"), "unspecified", "unspecified", "unspecified", nullptr)
+Channel::Channel(const string& name, int index, const Properties& properties)
+    : Channel(tools::ToString(name, "[", index, "]"), "unspecified", "unspecified", "unspecified", nullptr)
 {
     string prefix(tools::ToString("chans.", name, ".", index, "."));
 
@@ -107,11 +104,11 @@ FairMQChannel::FairMQChannel(const string& name, int index, const fair::mq::Prop
     fAutoBind = GetPropertyOrDefault(properties, string(prefix + "autoBind"), DefaultAutoBind);
 }
 
-FairMQChannel::FairMQChannel(const FairMQChannel& chan)
-    : FairMQChannel(chan, chan.fName)
+Channel::Channel(const Channel& chan)
+    : Channel(chan, chan.fName)
 {}
 
-FairMQChannel::FairMQChannel(const FairMQChannel& chan, string newName)
+Channel::Channel(const Channel& chan, string newName)
     : fTransportFactory(nullptr)
     , fTransportType(chan.fTransportType)
     , fSocket(nullptr)
@@ -132,7 +129,7 @@ FairMQChannel::FairMQChannel(const FairMQChannel& chan, string newName)
     , fMultipart(chan.fMultipart)
 {}
 
-FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
+Channel& Channel::operator=(const Channel& chan)
 {
     if (this == &chan) {
         return *this;
@@ -160,7 +157,7 @@ FairMQChannel& FairMQChannel::operator=(const FairMQChannel& chan)
     return *this;
 }
 
-bool FairMQChannel::Validate()
+bool Channel::Validate()
 try {
     stringstream ss;
     ss << "Validating channel '" << fName << "'... ";
@@ -305,11 +302,11 @@ try {
     LOG(debug) << ss.str();
     return true;
 } catch (exception& e) {
-    LOG(error) << "Exception caught in FairMQChannel::ValidateChannel: " << e.what();
+    LOG(error) << "Exception caught in Channel::ValidateChannel: " << e.what();
     throw ChannelConfigurationError(tools::ToString(e.what()));
 }
 
-void FairMQChannel::Init()
+void Channel::Init()
 {
     fSocket = fTransportFactory->CreateSocket(fType, fName);
 
@@ -329,12 +326,12 @@ void FairMQChannel::Init()
     }
 }
 
-bool FairMQChannel::ConnectEndpoint(const string& endpoint)
+bool Channel::ConnectEndpoint(const string& endpoint)
 {
     return fSocket->Connect(endpoint);
 }
 
-bool FairMQChannel::BindEndpoint(string& endpoint)
+bool Channel::BindEndpoint(string& endpoint)
 {
     // try to bind to the configured port. If it fails, try random one (if AutoBind is on).
     if (fSocket->Bind(endpoint)) {
@@ -374,5 +371,6 @@ bool FairMQChannel::BindEndpoint(string& endpoint)
             return false;
         }
     }
-
 }
+
+} // namespace fair::mq
