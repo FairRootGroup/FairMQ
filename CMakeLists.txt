@@ -49,6 +49,7 @@ fairmq_build_option(FAIRMQ_DEBUG_MODE   "Compile in debug mode (may decrease per
 
 
 # Dependencies #################################################################
+include(CTest)
 include(FairMQDependencies)
 ################################################################################
 
