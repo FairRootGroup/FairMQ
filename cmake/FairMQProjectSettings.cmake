@@ -39,9 +39,7 @@ if(NOT CMAKE_POSITION_INDEPENDENT_CODE)
 endif()
 
 # Generate compile_commands.json file (https://clang.llvm.org/docs/JSONCompilationDatabase.html)
-if(NOT DEFINED CMAKE_EXPORT_COMPILE_COMMANDS)
-  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-endif()
+set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
 
 # Define install dirs
 set(PROJECT_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR})
