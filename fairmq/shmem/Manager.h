@@ -80,7 +80,7 @@ class Manager
         , fMsgCounterNew(0)
         , fMsgCounterDelete(0)
 #endif
-        , fSendHeartbeats(true)
+        , fBeatTheHeart(true)
         , fThrowOnBadAlloc(config ? config->GetProperty<bool>("shm-throw-bad-alloc", true) : true)
         , fNoCleanup(config ? config->GetProperty<bool>("shm-no-cleanup", false) : false)
     {
@@ -106,7 +106,7 @@ class Manager
             StartMonitor(fShmId);
         }
 
-        fHeartbeatThread = std::thread(&Manager::SendHeartbeats, this);
+        fHeartbeatThread = std::thread(&Manager::Heartbeats, this);
 
         {
             std::stringstream ss;
@@ -544,23 +544,15 @@ class Manager
     void DecrementShmMsgCounter(uint16_t segmentId) { --((*fShmMsgCounters)[segmentId].fCount); }
 #endif
 
-    void SendHeartbeats()
+    void Heartbeats()
     {
-        std::string controlQueueName("fmq_" + fShmId + "_cq");
+        using namespace boost::interprocess;
+
+        Heartbeat* hb = fManagementSegment.find_or_construct<Heartbeat>(unique_instance)(0);
         std::unique_lock<std::mutex> lock(fHeartbeatsMtx);
-        while (fSendHeartbeats) {
-            try {
-                boost::interprocess::message_queue mq(boost::interprocess::open_only, controlQueueName.c_str());
-                boost::posix_time::ptime sndTill = boost::posix_time::microsec_clock::universal_time() + boost::posix_time::milliseconds(100);
-                if (mq.timed_send(fDeviceId.c_str(), fDeviceId.size(), 0, sndTill)) {
-                    fHeartbeatsCV.wait_for(lock, std::chrono::milliseconds(100), [&]() { return !fSendHeartbeats; });
-                } else {
-                    LOG(debug) << "control queue timeout";
-                }
-            } catch (boost::interprocess::interprocess_exception& ie) {
-                fHeartbeatsCV.wait_for(lock, std::chrono::milliseconds(500), [&]() { return !fSendHeartbeats; });
-                // LOG(debug) << "no " << controlQueueName << " found";
-            }
+        while (fBeatTheHeart) {
+            (hb->fCount)++;
+            fHeartbeatsCV.wait_for(lock, std::chrono::milliseconds(100), [&]() { return !fBeatTheHeart; });
         }
     }
 
@@ -678,7 +670,7 @@ class Manager
 
         {
             std::unique_lock<std::mutex> lock(fHeartbeatsMtx);
-            fSendHeartbeats = false;
+            fBeatTheHeart = false;
         }
         fHeartbeatsCV.notify_one();
         if (fHeartbeatThread.joinable()) {
@@ -744,14 +736,12 @@ class Manager
 #endif
 
     std::thread fHeartbeatThread;
-    bool fSendHeartbeats;
+    bool fBeatTheHeart;
     std::mutex fHeartbeatsMtx;
     std::condition_variable fHeartbeatsCV;
 
     bool fThrowOnBadAlloc;
     bool fNoCleanup;
-
-
 };
 
 } // namespace fair::mq::shmem

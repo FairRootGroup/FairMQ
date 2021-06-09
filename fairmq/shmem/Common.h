@@ -124,6 +124,15 @@ struct EventCounter
     std::atomic<uint64_t> fCount;
 };
 
+struct Heartbeat
+{
+    Heartbeat(uint64_t c)
+        : fCount(c)
+    {}
+
+    std::atomic<uint64_t> fCount;
+};
+
 struct RegionCounter
 {
     RegionCounter(uint16_t c)

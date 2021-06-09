@@ -117,7 +117,7 @@ class Monitor
   private:
     void PrintHelp();
     void Watch();
-    void ReceiveHeartbeats();
+    void CheckHeartbeats();
     void CheckSegment();
     void Interactive();
     void SignalMonitor();
@@ -131,12 +131,10 @@ class Monitor
     unsigned int fTimeoutInMS;
     unsigned int fIntervalInMS;
     std::string fShmId;
-    std::string fControlQueueName;
     std::atomic<bool> fTerminating;
     std::atomic<bool> fHeartbeatTriggered;
-    std::chrono::high_resolution_clock::time_point fLastHeartbeat;
+    std::atomic<std::chrono::high_resolution_clock::time_point> fLastHeartbeat;
     std::thread fSignalThread;
-    std::unordered_map<std::string, std::chrono::high_resolution_clock::time_point> fDeviceHeartbeats;
 };
 
 } // namespace fair::mq::shmem

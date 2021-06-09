@@ -19,7 +19,6 @@ FairMQ Shared Memory currently uses the following names to register shared memor
 | `fmq_<shmId>_rg_<index>`    | unmanaged region(s)                            | one of the devices | devices with unmanaged regions |
 | `fmq_<shmId>_rgq_<index>`   | unmanaged region queue(s)                      | one of the devices | devices with unmanaged regions |
 | `fmq_<shmId>_ms`            | shmmonitor status                              | shmmonitor         | devices, shmmonitor            |
-| `fmq_<shmId>_cq`            | message queue between transport and shmmonitor | shmmonitor         | devices, shmmonitor            |
 
 The shmId is generated out of session id and user id.
 
