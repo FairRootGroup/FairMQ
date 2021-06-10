@@ -16,8 +16,8 @@
 #define FAIR_MQ_SHMEM_MANAGER_H_
 
 #include "Common.h"
-#include "Region.h"
 #include "Monitor.h"
+#include "Region.h"
 
 #include <fairmq/ProgOptions.h>
 #include <fairmq/tools/Strings.h>
@@ -34,8 +34,8 @@
 #include <boost/process.hpp>
 #include <boost/variant.hpp>
 
-#include <cstdlib> // getenv
 #include <condition_variable>
+#include <cstdlib> // getenv
 #include <memory> // make_unique
 #include <mutex>
 #include <set>
@@ -43,9 +43,9 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <tuple>
 #include <unordered_map>
 #include <utility> // pair
-#include <tuple>
 #include <vector>
 
 #include <unistd.h> // getuid
@@ -194,6 +194,7 @@ class Manager
                 LOG(debug) << "Locking the managed segment memory pages...";
                 if (mlock(boost::apply_visitor(SegmentAddress(), fSegments.at(fSegmentId)), boost::apply_visitor(SegmentSize(), fSegments.at(fSegmentId))) == -1) {
                     LOG(error) << "Could not lock the managed segment memory. Code: " << errno << ", reason: " << strerror(errno);
+                    throw TransportError(tools::ToString("Could not lock the managed segment memory: ", strerror(errno)));
                 }
                 LOG(debug) << "Successfully locked the managed segment memory pages.";
             }
@@ -323,6 +324,7 @@ class Manager
                     LOG(debug) << "Locking region " << id << "...";
                     if (mlock(r.first->second->fRegion.get_address(), r.first->second->fRegion.get_size()) == -1) {
                         LOG(error) << "Could not lock region " << id << ". Code: " << errno << ", reason: " << strerror(errno);
+                        throw TransportError(tools::ToString("Could not lock region ", id, ": ", strerror(errno)));
                     }
                     LOG(debug) << "Successfully locked region " << id << ".";
                 }
