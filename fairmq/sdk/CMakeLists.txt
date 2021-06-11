@@ -78,13 +78,6 @@ set_target_properties(${target} PROPERTIES
 ###############
 # executables #
 ###############
-add_executable(fairmq runFairMQ.cxx)
-target_link_libraries(fairmq
-  PRIVATE
-  SDK
-  Boost::program_options
-)
-
 add_executable(fairmq-dds-command-ui ${CMAKE_CURRENT_SOURCE_DIR}/runDDSCommandUI.cxx)
 target_link_libraries(fairmq-dds-command-ui
   FairMQ
@@ -96,7 +89,6 @@ target_link_libraries(fairmq-dds-command-ui
 install(
   TARGETS
   SDK
-  fairmq
   fairmq-dds-command-ui
 
   EXPORT ${PROJECT_EXPORT_SET}
