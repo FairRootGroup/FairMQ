@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -14,7 +14,9 @@
 #include <fairmq/Version.h>
 #include <fairmq/sdk/commands/Commands.h>
 
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <dds/dds.h>
+#undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 
 #include <boost/asio/executor.hpp>
 #include <boost/asio/executor_work_guard.hpp>

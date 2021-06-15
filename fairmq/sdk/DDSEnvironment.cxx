@@ -9,7 +9,9 @@
 #include "DDSEnvironment.h"
 
 #include <cstdlib>
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <dds/dds.h>
+#undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <fairlogger/Logger.h>
 #include <fairmq/tools/InstanceLimit.h>
 #include <fairmq/sdk/DDSInfo.h>
