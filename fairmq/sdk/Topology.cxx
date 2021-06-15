@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2019-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -8,7 +8,9 @@
 
 #include "Topology.h"
 
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <dds/dds.h>
+#undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 
 namespace fair::mq::sdk
 {

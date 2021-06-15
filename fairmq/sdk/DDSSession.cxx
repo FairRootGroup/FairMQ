@@ -12,13 +12,15 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <cassert>
 #include <cstdlib>
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <dds/dds.h>
+#undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <fairlogger/Logger.h>
-#include <fairmq/tools/Strings.h>
-#include <fairmq/tools/Semaphore.h>
 #include <fairmq/sdk/DDSAgent.h>
 #include <fairmq/sdk/DDSEnvironment.h>
 #include <fairmq/sdk/DDSTopology.h>
+#include <fairmq/tools/Semaphore.h>
+#include <fairmq/tools/Strings.h>
 #include <mutex>
 #include <sstream>
 #include <thread>

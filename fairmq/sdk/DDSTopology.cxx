@@ -9,7 +9,9 @@
 #include "DDSTopology.h"
 
 #include <boost/range/iterator_range.hpp>
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <dds/dds.h>
+#undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <fairlogger/Logger.h>
 #include <fairmq/sdk/DDSEnvironment.h>
 #include <memory>

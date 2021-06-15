@@ -8,7 +8,9 @@
 
 #include "Fixtures.h"
 
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <dds/dds.h>
+#undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 
 namespace {
 
