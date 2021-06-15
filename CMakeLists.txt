@@ -39,6 +39,8 @@ fairmq_build_option(BUILD_EXAMPLES      "Build FairMQ examples."
                                          DEFAULT ON  REQUIRES "BUILD_FAIRMQ")
 fairmq_build_option(BUILD_SDK           "Build the FairMQ controller SDK."
                                          DEFAULT OFF REQUIRES "BUILD_DDS_PLUGIN;BUILD_SDK_COMMANDS")
+fairmq_build_option(BUILD_TIDY_TOOL     "Build the fairmq-tidy tool."
+                                         DEFAULT OFF)
 fairmq_build_option(BUILD_DOCS          "Build FairMQ documentation."
                                          DEFAULT OFF)
 fairmq_build_option(USE_EXTERNAL_GTEST  "Do not use bundled GTest. Not recommended."
@@ -76,6 +78,10 @@ if(BUILD_DOCS)
   doxygen_add_docs(doxygen README.md fairmq)
   add_custom_target(docs ALL DEPENDS doxygen)
 endif()
+
+if(BUILD_TIDY_TOOL)
+  add_subdirectory(fairmq/tidy)
+endif()
 ################################################################################
 
 
@@ -106,6 +112,9 @@ if(BUILD_SDK)
 endif()
 if(BUILD_SDK_COMMANDS)
   list(APPEND PROJECT_PACKAGE_COMPONENTS sdk_commands)
+endif()
+if(BUILD_TIDY_TOOL)
+  list(APPEND PROJECT_PACKAGE_COMPONENTS tidy_tool)
 endif()
 ################################################################################
 
