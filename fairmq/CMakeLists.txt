@@ -33,10 +33,12 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     tools/Strings.h
     tools/Unique.h
     tools/Version.h
+    Error.h
     Tools.h
   )
 
   set(TOOLS_SOURCE_FILES
+    Error.cxx
     tools/Network.cxx
     tools/Process.cxx
     tools/Semaphore.cxx
