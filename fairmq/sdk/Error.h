@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2019-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,53 +9,12 @@
 #ifndef FAIR_MQ_SDK_ERROR_H
 #define FAIR_MQ_SDK_ERROR_H
 
-#include <fairmq/tools/Strings.h>
-#include <stdexcept>
-#include <system_error>
+#include <fairmq/Error.h>
 
-namespace fair::mq
-{
+namespace fair::mq::sdk {
 
-namespace sdk
-{
+using RuntimeError = fair::mq::RuntimeError;
 
-struct RuntimeError : ::std::runtime_error
-{
-    template<typename... T>
-    explicit RuntimeError(T&&... t)
-        : ::std::runtime_error::runtime_error(tools::ToString(std::forward<T>(t)...))
-    {}
-};
-
-} /* namespace sdk */
-
-enum class ErrorCode
-{
-    OperationInProgress = 10,
-    OperationTimeout,
-    OperationCanceled,
-    DeviceChangeStateFailed,
-    DeviceGetPropertiesFailed,
-    DeviceSetPropertiesFailed
-};
-
-std::error_code MakeErrorCode(ErrorCode);
-
-struct ErrorCategory : std::error_category
-{
-  const char* name() const noexcept override;
-  std::string message(int ev) const override;
-};
-
-} // namespace fair::mq
-
-namespace std
-{
-
-template<>
-struct is_error_code_enum<fair::mq::ErrorCode> : true_type
-{};
-
-} // namespace std
+} /* namespace fair::mq::sdk */
 
 #endif /* FAIR_MQ_SDK_ERROR_H */
