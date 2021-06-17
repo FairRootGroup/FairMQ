@@ -67,18 +67,55 @@ endif()
 # Define export set, only one for now
 set(PROJECT_EXPORT_SET ${PROJECT_NAME}Targets)
 
+# Sanitizers
+set(_sanitizers "")
+
+option(ENABLE_SANITIZER_ADDRESS "Enable address sanitizer" FALSE)
+if(ENABLE_SANITIZER_ADDRESS)
+  list(APPEND _sanitizers "address")
+endif()
+
+option(ENABLE_SANITIZER_LEAK "Enable leak sanitizer" FALSE)
+if(ENABLE_SANITIZER_LEAK)
+  list(APPEND _sanitizers "leak")
+endif()
+
+option(ENABLE_SANITIZER_UNDEFINED_BEHAVIOR "Enable undefined behavior sanitizer" FALSE)
+if(ENABLE_SANITIZER_UNDEFINED_BEHAVIOR)
+  list(APPEND _sanitizers "undefined")
+endif()
+
+option(ENABLE_SANITIZER_THREAD "Enable thread sanitizer" FALSE)
+if(ENABLE_SANITIZER_THREAD)
+  if("address" IN_LIST _sanitizers OR "leak" IN_LIST _sanitizers)
+    message(WARNING "Thread sanitizer does not work with Address and Leak sanitizer enabled")
+  else()
+    list(APPEND _sanitizers "thread")
+  endif()
+endif()
+
+option(ENABLE_SANITIZER_MEMORY "Enable memory sanitizer" FALSE)
+if(ENABLE_SANITIZER_MEMORY AND CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
+  if("address" IN_LIST _sanitizers
+     OR "thread" IN_LIST _sanitizers
+     OR "leak" IN_LIST _sanitizers)
+    message(WARNING "Memory sanitizer does not work with Address, Thread and Leak sanitizer enabled")
+  else()
+    list(APPEND _sanitizers "memory")
+  endif()
+endif()
+
+list(JOIN _sanitizers "," _sanitizers)
+set(_sanitizers "-fsanitize=${_sanitizers}")
+
 # Configure build types
-set(CMAKE_CONFIGURATION_TYPES "Debug" "Release" "RelWithDebInfo" "Nightly" "Profile" "Experimental" "AddressSan" "ThreadSan")
+set(CMAKE_CONFIGURATION_TYPES "Debug" "Release" "RelWithDebInfo")
 set(_warnings "-Wshadow -Wall -Wextra -Wpedantic")
-set(CMAKE_CXX_FLAGS_DEBUG          "-Og -g ${_warnings}")
+set(CMAKE_CXX_FLAGS_DEBUG          "-Og -g ${_warnings} ${_sanitizers}")
 set(CMAKE_CXX_FLAGS_RELEASE        "-O2 -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g ${_warnings} -DNDEBUG")
-set(CMAKE_CXX_FLAGS_NIGHTLY        "-O2 -g ${_warnings}")
-set(CMAKE_CXX_FLAGS_PROFILE        "-g3 ${_warnings} -fno-inline -ftest-coverage -fprofile-arcs")
-set(CMAKE_CXX_FLAGS_EXPERIMENTAL   "-O2 -g ${_warnings} -DNDEBUG")
-set(CMAKE_CXX_FLAGS_ADDRESSSAN     "-O2 -g ${_warnings} -fsanitize=address -fno-omit-frame-pointer")
-set(CMAKE_CXX_FLAGS_THREADSAN      "-O2 -g ${_warnings} -fsanitize=thread")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g ${_warnings} -DNDEBUG ${_sanitizers}")
 unset(_warnings)
+unset(_sanitizers)
 
 if(CMAKE_GENERATOR STREQUAL "Ninja" AND
    ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9) OR
