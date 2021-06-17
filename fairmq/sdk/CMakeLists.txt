@@ -36,7 +36,6 @@ set(SDK_SOURCE_FILES
   DDSEnvironment.cxx
   DDSSession.cxx
   DDSTopology.cxx
-  Error.cxx
   Topology.cxx
 )
 

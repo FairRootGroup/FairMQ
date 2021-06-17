@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2019-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -8,13 +8,9 @@
 
 #include "Error.h"
 
-namespace fair::mq
-{
+namespace fair::mq {
 
-const char* ErrorCategory::name() const noexcept
-{
-    return "fairmq";
-}
+const char* ErrorCategory::name() const noexcept { return "fairmq"; }
 
 std::string ErrorCategory::message(int ev) const
 {
@@ -40,4 +36,4 @@ const ErrorCategory errorCategory{};
 
 std::error_code MakeErrorCode(ErrorCode e) { return {static_cast<int>(e), errorCategory}; }
 
-} // namespace fair::mq
+}   // namespace fair::mq
