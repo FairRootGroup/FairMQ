@@ -1,5 +1,5 @@
 ################################################################################
-#    Copyright (C) 2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
+# Copyright (C) 2019-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -84,18 +84,35 @@ endif()
 ###############
 # executables #
 ###############
-add_executable(fairmq-dds-command-ui ${CMAKE_CURRENT_SOURCE_DIR}/runDDSCommandUI.cxx)
-target_link_libraries(fairmq-dds-command-ui
-  FairMQ
-  Commands
-  SDK
-  StateMachine
-)
+set(target fairmq-dds-command-ui)
+add_executable(${target} ${CMAKE_CURRENT_SOURCE_DIR}/runDDSCommandUI.cxx)
+target_link_libraries(${target} PRIVATE FairMQ Commands SDK StateMachine)
+target_compile_features(${target} PRIVATE cxx_std_17)
+if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+  fairmq_target_tidy(TARGET ${target})
+endif()
+
+if(BUILD_SDK_TOP_TOOL)
+  set(fairmq_top "fairmq-top")
+  add_executable(${fairmq_top}
+    top/runTool.cxx
+    top/Tool.h
+  )
+  target_link_libraries(${fairmq_top} PRIVATE
+    SDK asio::asio CLI11::CLI11 imtui::imtui imtui::imtui-ncurses)
+  target_compile_features(${fairmq_top} PRIVATE cxx_std_17)
+  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+    fairmq_target_tidy(TARGET ${fairmq_top})
+  endif()
+else()
+  set(fairmq_top)
+endif()
 
 install(
   TARGETS
   SDK
   fairmq-dds-command-ui
+  ${fairmq_top}
 
   EXPORT ${PROJECT_EXPORT_SET}
   RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}

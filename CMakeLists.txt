@@ -47,6 +47,8 @@ fairmq_build_option(USE_EXTERNAL_GTEST  "Do not use bundled GTest. Not recommend
                                          DEFAULT OFF)
 fairmq_build_option(FAIRMQ_DEBUG_MODE   "Compile in debug mode (may decrease performance)."
                                          DEFAULT OFF)
+fairmq_build_option(BUILD_SDK_TOP_TOOL  "Build the fairmq-top tool."
+                                         DEFAULT OFF REQUIRES "BUILD_SDK")
 ################################################################################
 
 
@@ -115,6 +117,9 @@ if(BUILD_SDK_COMMANDS)
 endif()
 if(BUILD_TIDY_TOOL)
   list(APPEND PROJECT_PACKAGE_COMPONENTS tidy_tool)
+endif()
+if(BUILD_SDK_TOP_TOOL)
+  list(APPEND PROJECT_PACKAGE_COMPONENTS sdk_top_tool)
 endif()
 ################################################################################
 

@@ -77,7 +77,14 @@ if(BUILD_TIDY_TOOL)
   find_package2(PRIVATE LLVM REQUIRED)
   find_package2(PRIVATE Clang REQUIRED)
   set(Clang_VERSION ${LLVM_VERSION})
+endif()
+
+if(BUILD_TIDY_TOOL OR BUILD_SDK_TOP_TOOL)
   find_package2(PRIVATE CLI11 REQUIRED)
+endif()
+
+if(BUILD_SDK_TOP_TOOL)
+  find_package2(PRIVATE imtui REQUIRED)
 endif()
 
 find_package2_implicit_dependencies() # Always call last after latest find_package2

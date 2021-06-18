@@ -106,7 +106,9 @@ if(ENABLE_SANITIZER_MEMORY AND CMAKE_CXX_COMPILER_ID MATCHES ".*Clang")
 endif()
 
 list(JOIN _sanitizers "," _sanitizers)
-set(_sanitizers "-fsanitize=${_sanitizers}")
+if(_sanitizers)
+  set(_sanitizers "-fsanitize=${_sanitizers}")
+endif()
 
 # Configure build types
 set(CMAKE_CONFIGURATION_TYPES "Debug" "Release" "RelWithDebInfo")
