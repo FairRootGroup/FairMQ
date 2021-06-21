@@ -8,7 +8,7 @@
     <declrequirement name="SinkWorker" type="wnname" value="sink"/>
 
     <decltask name="Sampler">
-        <exe>fairmq-ex-dds-sampler --color false --channel-config name=data1,type=push,method=bind --rate 100 -P dds</exe>
+        <exe>fairmq-ex-dds-sampler --color false --channel-config name=data1,type=push,method=bind --rate 100 --iterations 0 -P dds</exe>
         <env reachable="false">fairmq-ex-dds-env.sh</env>
         <requirements>
             <name>SamplerWorker</name>
