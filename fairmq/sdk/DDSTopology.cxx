@@ -59,7 +59,7 @@ auto DDSTopology::GetTopoFile() const -> Path
     return file;
 }
 
-auto DDSTopology::GetNumRequiredAgents() const -> int
+auto DDSTopology::GetNumRequiredAgents() const -> std::size_t
 {
     return fImpl->fTopo.getRequiredNofAgents();
 }
