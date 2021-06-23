@@ -50,7 +50,7 @@ class DDSTopology
     auto GetTopoFile() const -> Path;
 
     /// @brief Get number of required agents for this topology
-    auto GetNumRequiredAgents() const -> int;
+    auto GetNumRequiredAgents() const -> std::size_t;
 
     /// @brief Get list of tasks in this topology, optionally matching provided path
     auto GetTasks(const std::string& = "") const -> std::vector<DDSTask>;
