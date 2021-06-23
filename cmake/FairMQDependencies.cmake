@@ -28,7 +28,7 @@ if(BUILD_SDK_COMMANDS)
 endif()
 
 if(BUILD_DDS_PLUGIN OR BUILD_SDK)
-  find_package2(PRIVATE DDS REQUIRED VERSION 3.5.3)
+  find_package2(PRIVATE DDS REQUIRED VERSION 3.5.13.7)
   set(DDS_Boost_COMPONENTS system log log_setup regex filesystem thread)
   set(DDS_Boost_VERSION 1.67)
 endif()
