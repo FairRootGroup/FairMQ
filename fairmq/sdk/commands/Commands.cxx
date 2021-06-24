@@ -392,10 +392,10 @@ void Cmds::Deserialize(const string& str, const Format type)
 
     const flatbuffers::Vector<flatbuffers::Offset<FBCommand>>* cmds = nullptr;
 
+    flatbuffers::Parser parser;
     if (type == Format::Binary) {
         cmds = cmd::GetFBCommands(const_cast<char*>(str.c_str()))->commands();
     } else { // Type == Format::JSON
-        flatbuffers::Parser parser;
         if (!parser.Parse(commandsFormatDefFbs)) {
             throw CommandFormatError("Deserialize couldn't parse commands format");
         }
