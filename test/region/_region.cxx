@@ -110,7 +110,7 @@ void RegionEventSubscriptions(const string& transport)
         ASSERT_EQ(region2->GetSize(), size2);
 
         ASSERT_EQ(factory->SubscribedToRegionEvents(), false);
-        factory->SubscribeToRegionEvents([&](FairMQRegionInfo info) {
+        factory->SubscribeToRegionEvents([&, id1, id2, ptr1, ptr2](FairMQRegionInfo info) {
             LOG(info) << ">>> " << info.event << ": "
                       << (info.managed ? "managed" : "unmanaged")
                       << ", id: " << info.id

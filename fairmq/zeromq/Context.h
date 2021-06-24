@@ -94,7 +94,6 @@ class Context
     {
         std::unique_lock<std::mutex> lock(fMtx);
         while (fRegionEventsSubscriptionActive) {
-
             while (!fRegionEvents.empty()) {
                 auto i = fRegionEvents.front();
                 fRegionEventCallback(i);
