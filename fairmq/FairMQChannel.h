@@ -385,22 +385,7 @@ class FairMQChannel
     void CheckSendCompatibility(FairMQMessagePtr& msg)
     {
         if (fTransportType != msg->GetType()) {
-            FairMQMessagePtr msgWrapper(NewMessage(
-                msg->GetData(),
-                msg->GetSize(),
-                [](void* /*data*/, void* _msg) { delete static_cast<FairMQMessage*>(_msg); },
-                msg.get()
-            ));
-            msg.release();
-            msg = move(msgWrapper);
-        }
-    }
-
-    void CheckSendCompatibility(std::vector<FairMQMessagePtr>& msgVec)
-    {
-        for (auto& msg : msgVec) {
-            if (fTransportType != msg->GetType()) {
-
+            if (msg->GetSize() > 0) {
                 FairMQMessagePtr msgWrapper(NewMessage(
                     msg->GetData(),
                     msg->GetSize(),
@@ -409,6 +394,30 @@ class FairMQChannel
                 ));
                 msg.release();
                 msg = move(msgWrapper);
+            } else {
+                FairMQMessagePtr newMsg(NewMessage());
+                msg = move(newMsg);
+            }
+        }
+    }
+
+    void CheckSendCompatibility(std::vector<FairMQMessagePtr>& msgVec)
+    {
+        for (auto& msg : msgVec) {
+            if (fTransportType != msg->GetType()) {
+                if (msg->GetSize() > 0) {
+                    FairMQMessagePtr msgWrapper(NewMessage(
+                        msg->GetData(),
+                        msg->GetSize(),
+                        [](void* /*data*/, void* _msg) { delete static_cast<FairMQMessage*>(_msg); },
+                        msg.get()
+                    ));
+                    msg.release();
+                    msg = move(msgWrapper);
+                } else {
+                    FairMQMessagePtr newMsg(NewMessage());
+                    msg = move(newMsg);
+                }
             }
         }
     }
@@ -425,7 +434,6 @@ class FairMQChannel
     {
         for (auto& msg : msgVec) {
             if (fTransportType != msg->GetType()) {
-
                 FairMQMessagePtr newMsg(NewMessage());
                 msg = move(newMsg);
             }

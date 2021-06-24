@@ -24,27 +24,36 @@ auto RunReqRep(string transport) -> void
 {
     size_t session{fair::mq::tools::UuidHash()};
 
-    auto rep = execute_result{ "", 0 };
+    auto rep = execute_result{"", 0};
     thread rep_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id rep_" << transport << " --control static "
-        << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
+        cmd << runTestDevice << " --id rep_" << transport
+            << " --control static"
+            << " --session " << session
+            << " --color false"
+            << " --mq-config \"" << mqConfig << "\"";
         rep = execute(cmd.str(), "[REP]");
     });
 
-    auto req1 = execute_result{ "", 0 };
+    auto req1 = execute_result{"", 0};
     thread req1_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id req_1" << transport << " --control static "
-        << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
+        cmd << runTestDevice << " --id req_1" << transport
+            << " --control static"
+            << " --session " << session
+            << " --color false"
+            << " --mq-config \"" << mqConfig << "\"";
         req1 = execute(cmd.str(), "[REQ1]");
     });
 
-    auto req2 = execute_result{ "", 0 };
+    auto req2 = execute_result{"", 0};
     thread req2_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id req_2" << transport << " --control static "
-        << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
+        cmd << runTestDevice << " --id req_2" << transport
+            << " --control static"
+            << " --session " << session
+            << " --color false"
+            << " --mq-config \"" << mqConfig << "\"";
         req2 = execute(cmd.str(), "[REQ2]");
     });
 
