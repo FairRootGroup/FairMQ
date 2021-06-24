@@ -161,11 +161,9 @@ class Socket final : public fair::mq::Socket
         int elapsed = 0;
 
         Message* shmMsg = static_cast<Message*>(msg.get());
-        ZMsg zmqMsg(sizeof(MetaHeader));
-        std::memcpy(zmqMsg.Data(), &(shmMsg->fMeta), sizeof(MetaHeader));
 
         while (true) {
-            int nbytes = zmq_msg_send(zmqMsg.Msg(), fSocket, flags);
+            int nbytes = zmq_send(fSocket, &(shmMsg->fMeta), sizeof(MetaHeader), flags);
             if (nbytes > 0) {
                 shmMsg->fQueued = true;
                 ++fMessagesTx;
@@ -196,11 +194,9 @@ class Socket final : public fair::mq::Socket
         }
         int elapsed = 0;
 
-        ZMsg zmqMsg;
-
         while (true) {
             Message* shmMsg = static_cast<Message*>(msg.get());
-            int nbytes = zmq_msg_recv(zmqMsg.Msg(), fSocket, flags);
+            int nbytes = zmq_recv(fSocket, &(shmMsg->fMeta), sizeof(MetaHeader), flags);
             if (nbytes > 0) {
                 // check for number of received messages. must be 1
                 if (nbytes != sizeof(MetaHeader)) {
@@ -210,10 +206,7 @@ class Socket final : public fair::mq::Socket
                             "Expected size of ", sizeof(MetaHeader), " bytes, received ", nbytes));
                 }
 
-                MetaHeader* hdr = static_cast<MetaHeader*>(zmqMsg.Data());
-                size_t size = hdr->fSize;
-                shmMsg->fMeta = *hdr;
-
+                size_t size = shmMsg->GetSize();
                 fBytesRx += size;
                 ++fMessagesRx;
                 return size;
