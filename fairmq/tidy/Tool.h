@@ -9,6 +9,7 @@
 #ifndef FAIR_MQ_TIDY_TOOL
 #define FAIR_MQ_TIDY_TOOL
 
+#include <algorithm>
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 #include <clang/Basic/FileManager.h>
 #include <clang/Tooling/CompilationDatabase.h>
@@ -58,11 +59,20 @@ struct Tool
         tool.appendArgumentsAdjuster(
             [](tooling::CommandLineArguments const &_args, StringRef /*file*/) {
                 tooling::CommandLineArguments args(_args);
-                // TODO add only if cdb was generated with GCC
-                args.emplace(args.begin() + 1, "-I/usr/lib64/clang/12.0.0/include");
-                // TODO add only if missing
-                args.emplace(args.begin() + 1, "-std=c++17");
+
+                auto const no_std_arg_present =
+                    std::find_if(cbegin(args),
+                                 cend(args),
+                                 [](std::string const &arg) {
+                                     return arg.find("-std=") != std::string::npos;
+                                 })
+                    == std::cend(args);
+                if (no_std_arg_present) {
+                    args.emplace(std::cbegin(args) + 1, "-std=c++17");
+                }
+
                 args.emplace_back("-Wno-everything");
+
                 return args;
             });
 
