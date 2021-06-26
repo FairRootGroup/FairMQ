@@ -19,7 +19,7 @@ int main(int argc, const char** argv)
 {
     // TODO Replace command line parser with CLI11
     auto parser(clang::tooling::CommonOptionsParser::create(
-        argc, argv, ToolCategory, llvm::cl::NumOccurrencesFlag::Optional, ""));
+        argc, argv, ToolCategory, llvm::cl::NumOccurrencesFlag::ZeroOrMore, ""));
     if (!parser) {
         llvm::errs() << parser.takeError();
         return EXIT_FAILURE;
