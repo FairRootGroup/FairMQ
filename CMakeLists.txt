@@ -135,6 +135,11 @@ if(BUILD_DOCS)
     DESTINATION ${PROJECT_INSTALL_DATADIR}/docs
   )
 endif()
+if(BUILD_TIDY_TOOL)
+  install(FILES cmake/FairMQTidy.cmake
+    DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
+  )
+endif()
 
 include(FairMQPackage)
 install_cmake_package()
