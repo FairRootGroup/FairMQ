@@ -6,6 +6,10 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
+if(BUILD_TIDY_TOOL)
+  include(FairMQTidy)
+endif()
+
 #################
 # libFairMQ_SDK #
 #################
@@ -73,6 +77,9 @@ set_target_properties(${target} PROPERTIES
   SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
   OUTPUT_NAME FairMQ_${target}
 )
+if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+  fairmq_target_tidy(TARGET ${target})
+endif()
 
 ###############
 # executables #

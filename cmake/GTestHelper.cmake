@@ -48,6 +48,9 @@
 #
 
 include(GoogleTest)
+if(BUILD_TIDY_TOOL)
+  include(FairMQTidy)
+endif()
 
 function(add_testsuite suitename)
     cmake_parse_arguments(testsuite
@@ -73,6 +76,9 @@ function(add_testsuite suitename)
     endif()
     if(testsuite_DEFINITIONS)
         target_compile_definitions("${target}" PUBLIC ${testsuite_DEFINITIONS})
+    endif()
+    if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+      fairmq_target_tidy(TARGET ${target})
     endif()
 
     # add_test(NAME "${suitename}" WORKING_DIRECTORY ${CMAKE_BINARY_DIR} COMMAND ${target})
@@ -120,6 +126,9 @@ function(add_testhelper helpername)
     if(testhelper_DEFINITIONS)
         target_compile_definitions(${target} PUBLIC ${testhelper_DEFINITIONS})
     endif()
+    if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+      fairmq_target_tidy(TARGET ${target})
+    endif()
 
     list(APPEND ALL_TEST_TARGETS ${target})
     set(ALL_TEST_TARGETS ${ALL_TEST_TARGETS} PARENT_SCOPE)
@@ -153,6 +162,9 @@ function(add_testlib libname)
     endif()
     if(testlib_DEFINITIONS)
         target_compile_definitions(${target} PUBLIC ${testlib_DEFINITIONS})
+    endif()
+    if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+      fairmq_target_tidy(TARGET ${target})
     endif()
 
     list(APPEND ALL_TEST_TARGETS ${target})

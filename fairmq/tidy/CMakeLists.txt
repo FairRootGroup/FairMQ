@@ -12,6 +12,7 @@ add_executable(${target}
   Tool.h
   runTool.cpp
 )
+add_executable("${PROJECT_NAME}::${target}" ALIAS ${target})
 target_compile_features(${target} PRIVATE cxx_std_17)
 target_link_libraries(${target} PRIVATE clang-cpp LLVM)
 target_include_directories(${target} PRIVATE
