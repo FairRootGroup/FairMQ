@@ -7,6 +7,11 @@
 ################################################################################
 
 if(BUILD_FAIRMQ OR BUILD_SDK)
+
+  if(BUILD_TIDY_TOOL)
+    include(FairMQTidy)
+  endif()
+
   ###########
   # Version #
   ###########
@@ -67,6 +72,9 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
     OUTPUT_NAME FairMQ${target}
   )
+  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+    fairmq_target_tidy(TARGET ${target})
+  endif()
   install(
     TARGETS ${target}
     EXPORT ${PROJECT_EXPORT_SET}
@@ -122,6 +130,9 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
     SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
     OUTPUT_NAME FairMQ${target}
   )
+  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+    fairmq_target_tidy(TARGET ${target})
+  endif()
   install(
     TARGETS ${target}
     EXPORT ${PROJECT_EXPORT_SET}
@@ -327,6 +338,9 @@ if(BUILD_FAIRMQ)
     VERSION ${PROJECT_VERSION}
     SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
   )
+  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+    fairmq_target_tidy(TARGET ${target})
+  endif()
 
 
   ###############
@@ -334,21 +348,39 @@ if(BUILD_FAIRMQ)
   ###############
   add_executable(fairmq-bsampler devices/runBenchmarkSampler.cxx)
   target_link_libraries(fairmq-bsampler FairMQ)
+  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+    fairmq_target_tidy(TARGET fairmq-bsampler)
+  endif()
 
   add_executable(fairmq-merger devices/runMerger.cxx)
   target_link_libraries(fairmq-merger FairMQ)
+  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+    fairmq_target_tidy(TARGET fairmq-merger)
+  endif()
 
   add_executable(fairmq-multiplier devices/runMultiplier.cxx)
   target_link_libraries(fairmq-multiplier FairMQ)
+  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+    fairmq_target_tidy(TARGET fairmq-multiplier)
+  endif()
 
   add_executable(fairmq-proxy devices/runProxy.cxx)
   target_link_libraries(fairmq-proxy FairMQ)
+  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+    fairmq_target_tidy(TARGET fairmq-proxy)
+  endif()
 
   add_executable(fairmq-sink devices/runSink.cxx)
   target_link_libraries(fairmq-sink FairMQ)
+  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+    fairmq_target_tidy(TARGET fairmq-sink)
+  endif()
 
   add_executable(fairmq-splitter devices/runSplitter.cxx)
   target_link_libraries(fairmq-splitter FairMQ)
+  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+    fairmq_target_tidy(TARGET fairmq-splitter)
+  endif()
 
   add_executable(fairmq-shmmonitor shmem/Monitor.cxx shmem/Monitor.h shmem/runMonitor.cxx)
   target_compile_features(fairmq-shmmonitor PUBLIC cxx_std_17)
@@ -370,12 +402,18 @@ if(BUILD_FAIRMQ)
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
   )
   target_compile_definitions(fairmq-shmmonitor PUBLIC FAIRMQ_HAS_STD_FILESYSTEM=${FAIRMQ_HAS_STD_FILESYSTEM})
+  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+    fairmq_target_tidy(TARGET fairmq-shmmonitor)
+  endif()
 
   add_executable(fairmq-uuid-gen tools/runUuidGenerator.cxx)
   target_link_libraries(fairmq-uuid-gen PUBLIC
     Boost::program_options
     Tools
   )
+  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
+    fairmq_target_tidy(TARGET fairmq-uuid-gen)
+  endif()
 
 
   ###########
