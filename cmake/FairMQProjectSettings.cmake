@@ -142,7 +142,7 @@ if(RUN_STATIC_ANALYSIS)
   set(analyser "clang-tidy")
   find_program(${analyser}_FOUND "${analyser}")
   if(${analyser}_FOUND)
-    set(CMAKE_CXX_CLANG_TIDY "${${analyser}_FOUND}")
+    set(CMAKE_CXX_CLANG_TIDY ${analyser} "--extra-arg=-std=c++17")
   endif()
   list(APPEND PROJECT_STATIC_ANALYSERS "${analyser}")
 

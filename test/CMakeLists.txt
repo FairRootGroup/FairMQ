@@ -298,26 +298,26 @@ add_testsuite(MemoryResources
 )
 
 if(BUILD_SDK)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sdk/test_topo.xml
-                   ${CMAKE_BINARY_DIR}/test_topo.xml)
-    add_testsuite(SDK
-        SOURCES
-        ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
-        sdk/_async_op.cxx
-        sdk/_dds.cxx
-        sdk/_topology.cxx
-        sdk/Fixtures.h
-
-        LINKS
-        SDK
-        Tools
-        DDS::dds_topology_lib
-        DDS::dds_tools_lib
-        INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
-                 ${CMAKE_CURRENT_BINARY_DIR}
-        TIMEOUT 30
-        ${definitions}
-    )
+    # configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sdk/test_topo.xml
+                   # ${CMAKE_BINARY_DIR}/test_topo.xml)
+    # add_testsuite(SDK
+        # SOURCES
+        # ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+        # sdk/_async_op.cxx
+        # sdk/_dds.cxx
+        # sdk/_topology.cxx
+        # sdk/Fixtures.h
+#
+        # LINKS
+        # SDK
+        # Tools
+        # DDS::dds_topology_lib
+        # DDS::dds_tools_lib
+        # INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
+                 # ${CMAKE_CURRENT_BINARY_DIR}
+        # TIMEOUT 30
+        # ${definitions}
+    # )
 
     if(DDS_TESTS)
         foreach(i RANGE 1 ${DDS_TESTS})
