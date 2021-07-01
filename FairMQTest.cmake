@@ -13,6 +13,7 @@ set(CTEST_BINARY_DIRECTORY build)
 set(CTEST_CMAKE_GENERATOR "Ninja")
 set(CTEST_USE_LAUNCHERS ON)
 set(CTEST_CONFIGURATION_TYPE "RelWithDebInfo")
+set(CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE 102400)
 
 if(NOT NCPUS)
   if(ENV{SLURM_CPUS_PER_TASK})
@@ -53,6 +54,27 @@ endif()
 if(RUN_STATIC_ANALYSIS)
   list(APPEND options "-DRUN_STATIC_ANALYSIS=ON")
 endif()
+if(CMAKE_BUILD_TYPE)
+  set(CTEST_CONFIGURATION_TYPE ${CMAKE_BUILD_TYPE})
+endif()
+if(ENABLE_SANITIZER_ADDRESS)
+  list(APPEND options "-DENABLE_SANITIZER_ADDRESS=ON")
+endif()
+if(ENABLE_SANITIZER_LEAK)
+  list(APPEND options "-DENABLE_SANITIZER_LEAK=ON")
+endif()
+if(ENABLE_SANITIZER_UNDEFINED_BEHAVIOR)
+  list(APPEND options "-DENABLE_SANITIZER_UNDEFINED_BEHAVIOR=ON")
+endif()
+if(ENABLE_SANITIZER_MEMORY)
+  list(APPEND options "-DENABLE_SANITIZER_MEMORY=ON")
+endif()
+if(ENABLE_SANITIZER_THREAD)
+  list(APPEND options "-DENABLE_SANITIZER_THREAD=ON")
+endif()
+if(CMAKE_CXX_FLAGS)
+  list(APPEND options "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
+endif()
 list(REMOVE_DUPLICATES options)
 list(JOIN options ";" optionsstr)
 ctest_configure(OPTIONS "${optionsstr}")
@@ -63,12 +85,14 @@ ctest_build(FLAGS "-j${NCPUS}")
 
 ctest_submit()
 
-ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}"
-           PARALLEL_LEVEL 1
-           SCHEDULE_RANDOM ON
-           RETURN_VALUE _ctest_test_ret_val)
+if(NOT RUN_STATIC_ANALYSIS)
+  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}"
+             PARALLEL_LEVEL 1
+             SCHEDULE_RANDOM ON
+             RETURN_VALUE _ctest_test_ret_val)
 
-ctest_submit()
+  ctest_submit()
+endif()
 
 if(_ctest_test_ret_val)
   Message(FATAL_ERROR "Some tests failed.")

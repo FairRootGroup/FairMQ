@@ -5,8 +5,9 @@ jobsh="$2"
 
 if [ -z "$ALFACI_SLURM_CPUS" ]
 then
-	ALFACI_SLURM_CPUS=32
+	ALFACI_SLURM_CPUS=20
 fi
+CPUS_PER_JOB=$(($ALFACI_SLURM_CPUS / 2))
 if [ -z "$ALFACI_SLURM_EXTRA_OPTS" ]
 then
 	ALFACI_SLURM_EXTRA_OPTS="--hint=compute_bound"
@@ -30,7 +31,7 @@ echo "***   Extra Options ......: ${ALFACI_SLURM_EXTRA_OPTS}"
 echo "*** Submitting job at ....: $(date -R)"
 (
 	set -x
-	srun -p $ALFACI_SLURM_QUEUE -c $ALFACI_SLURM_CPUS -n 1 \
+	srun -p $ALFACI_SLURM_QUEUE -c $CPUS_PER_JOB -n 1 \
 		-t $ALFACI_SLURM_TIMEOUT \
 		--job-name="${label}" \
 		${ALFACI_SLURM_EXTRA_OPTS} \
