@@ -596,8 +596,14 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
 
         Uint16SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint16SegmentInfoHashMap>(bipc::unique_instance).first;
 
-        for (const auto& s : *segmentInfos) {
-            result.emplace_back(RunRemoval(Monitor::RemoveObject, "fmq_" + shmId.shmId + "_m_" + to_string(s.first), verbose));
+        if (segmentInfos) {
+            for (const auto& s : *segmentInfos) {
+                result.emplace_back(RunRemoval(Monitor::RemoveObject, "fmq_" + shmId.shmId + "_m_" + to_string(s.first), verbose));
+            }
+        } else {
+            if (verbose) {
+                LOG(info) << "Cannot find information about managed segments";
+            }
         }
 
         result.emplace_back(RunRemoval(Monitor::RemoveObject, managementSegmentName.c_str(), verbose));
