@@ -33,8 +33,11 @@
 #include <boost/interprocess/sync/named_mutex.hpp>
 #include <boost/variant.hpp>
 
+#include <algorithm> // max
 #include <condition_variable>
+#include <cstddef> // max_align_t
 #include <cstdlib> // getenv
+#include <cstring> // memcpy
 #include <memory> // make_unique
 #include <mutex>
 #include <set>
@@ -54,6 +57,25 @@
 
 namespace fair::mq::shmem
 {
+
+struct ShmPtr
+{
+    explicit ShmPtr(char* rPtr)
+        : realPtr(rPtr)
+    {}
+
+    char* RealPtr()
+    {
+        return realPtr;
+    }
+
+    char* UserPtr()
+    {
+        return realPtr + sizeof(uint16_t) + *(reinterpret_cast<uint16_t*>(realPtr));
+    }
+
+    char* realPtr;
+};
 
 class Manager
 {
@@ -618,9 +640,13 @@ class Manager
         return boost::apply_visitor(SegmentAddressFromHandle(handle), fSegments.at(segmentId));
     }
 
-    char* Allocate(const size_t size, size_t alignment = 0)
+    ShmPtr Allocate(size_t size, size_t alignment = 0)
     {
+        alignment = std::max(alignment, alignof(std::max_align_t));
+
         char* ptr = nullptr;
+        // [offset(uint16_t)][alignment][buffer]
+        size_t fullSize = sizeof(uint16_t) + alignment + size;
         // tools::RateLimiter rateLimiter(20);
 
         while (ptr == nullptr) {
@@ -629,14 +655,15 @@ class Manager
                 // char* hint = 0; // unused for boost::interprocess::allocate_new
                 // ptr = fSegments.at(fSegmentId).allocation_command<char>(boost::interprocess::allocate_new, size, actualSize, hint);
                 size_t segmentSize = boost::apply_visitor(SegmentSize(), fSegments.at(fSegmentId));
-                if (size > segmentSize) {
-                    throw MessageBadAlloc(tools::ToString("Requested message size (", size, ") exceeds segment size (", segmentSize, ")"));
+                if (fullSize > segmentSize) {
+                    throw MessageBadAlloc(tools::ToString("Requested message size (", fullSize, ") exceeds segment size (", segmentSize, ")"));
                 }
-                if (alignment == 0) {
-                    ptr = reinterpret_cast<char*>(boost::apply_visitor(SegmentAllocate{size}, fSegments.at(fSegmentId)));
-                } else {
-                    ptr = reinterpret_cast<char*>(boost::apply_visitor(SegmentAllocateAligned{size, alignment}, fSegments.at(fSegmentId)));
-                }
+
+                ptr = reinterpret_cast<char*>(boost::apply_visitor(SegmentAllocate{fullSize}, fSegments.at(fSegmentId)));
+                assert(reinterpret_cast<uintptr_t>(ptr) % 2 == 0);
+                uint16_t offset = 0;
+                offset = alignment - ((reinterpret_cast<uintptr_t>(ptr) + sizeof(uint16_t)) % alignment);
+                std::memcpy(ptr, &offset, sizeof(offset));
             } catch (boost::interprocess::bad_alloc& ba) {
                 // LOG(warn) << "Shared memory full...";
                 if (ThrowingOnBadAlloc()) {
@@ -645,7 +672,7 @@ class Manager
                 // rateLimiter.maybe_sleep();
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 if (Interrupted()) {
-                    return ptr;
+                    return ShmPtr(ptr);
                 } else {
                     continue;
                 }
@@ -657,13 +684,13 @@ class Manager
                 (*fMsgDebug).emplace(fSegmentId, fShmVoidAlloc);
             }
             (*fMsgDebug).at(fSegmentId).emplace(
-                static_cast<size_t>(GetHandleFromAddress(ptr, fSegmentId)),
+                static_cast<size_t>(GetHandleFromAddress(ShmPtr(ptr).UserPtr(), fSegmentId)),
                 MsgDebug(getpid(), size, std::chrono::system_clock::now().time_since_epoch().count())
             );
 #endif
         }
 
-        return ptr;
+        return ShmPtr(ptr);
     }
 
     void Deallocate(boost::interprocess::managed_shared_memory::handle_t handle, uint16_t segmentId)
