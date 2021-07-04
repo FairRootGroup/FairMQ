@@ -31,9 +31,9 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-n-m-pair-dds.sh.in ${
 # test
 if(DDS_FOUND)
   add_test(NAME Example.N-M.localhost COMMAND ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m-dds.sh localhost)
-  set_tests_properties(Example.N-M.localhost PROPERTIES TIMEOUT 15 RUN_SERIAL true PASS_REGULAR_EXPRESSION "Example successful")
+  set_tests_properties(Example.N-M.localhost PROPERTIES TIMEOUT 15 PASS_REGULAR_EXPRESSION "Example successful")
   add_test(NAME Example.N-M-pair.localhost COMMAND ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m-pair-dds.sh localhost)
-  set_tests_properties(Example.N-M-pair.localhost PROPERTIES TIMEOUT 15 RUN_SERIAL true PASS_REGULAR_EXPRESSION "Example successful")
+  set_tests_properties(Example.N-M-pair.localhost PROPERTIES TIMEOUT 15 PASS_REGULAR_EXPRESSION "Example successful")
 endif()
 
 # install
