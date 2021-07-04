@@ -30,7 +30,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-qc.sh.in ${CMAKE_CURR
 # test
 if(DDS_FOUND)
   add_test(NAME Example.QC.localhost COMMAND ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-qc.sh localhost)
-  set_tests_properties(Example.QC.localhost PROPERTIES TIMEOUT 15 RUN_SERIAL true PASS_REGULAR_EXPRESSION "Example successful")
+  set_tests_properties(Example.QC.localhost PROPERTIES TIMEOUT 15 PASS_REGULAR_EXPRESSION "Example successful")
 endif()
 
 # install
