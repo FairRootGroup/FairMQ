@@ -6,7 +6,7 @@
     <declrequirement name="SinkWorker" type="wnname" value="sink"/>
 
     <decltask name="Sampler">
-        <exe reachable="true">fairmq-bsampler --color false --channel-config name=data,type=push,method=bind -P dds --msg-rate 10</exe>
+        <exe reachable="true">fairmq-bsampler --color false --channel-config name=data,type=push,method=bind -P dds --msg-rate 10 --severity trace --verbosity veryhigh</exe>
         <requirements>
             <name>SamplerWorker</name>
         </requirements>
@@ -16,7 +16,7 @@
     </decltask>
 
     <decltask name="Sink">
-        <exe reachable="true">fairmq-sink --color false --channel-config name=data,type=pull,method=connect -P dds</exe>
+        <exe reachable="true">fairmq-sink --color false --channel-config name=data,type=pull,method=connect -P dds --severity trace --verbosity veryhigh</exe>
         <requirements>
             <name>SinkWorker</name>
         </requirements>

@@ -5,7 +5,7 @@
     <property name="fmqchan_qc" />
 
     <decltask name="Sampler">
-        <exe>fairmq-ex-qc-sampler --color false --channel-config name=data1,type=push,method=bind -P dds --max-iterations 1000</exe>
+        <exe>fairmq-ex-qc-sampler --color false --channel-config name=data1,type=push,method=bind -P dds --max-iterations 1000 --severity trace --verbosity veryhigh</exe>
         <env reachable="false">fairmq-ex-qc-env.sh</env>
         <properties>
             <name access="write">fmqchan_data1</name>
@@ -13,7 +13,7 @@
     </decltask>
 
     <decltask name="QCDispatcher">
-        <exe>fairmq-ex-qc-dispatcher --color false --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect name=qc,type=push,method=connect -P dds</exe>
+        <exe>fairmq-ex-qc-dispatcher --color false --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect name=qc,type=push,method=connect -P dds --severity trace --verbosity veryhigh</exe>
         <env reachable="false">fairmq-ex-qc-env.sh</env>
         <properties>
             <name access="read">fmqchan_data1</name>
@@ -23,7 +23,7 @@
     </decltask>
 
     <decltask name="QCTask">
-        <exe>fairmq-ex-qc-task --color false --channel-config name=qc,type=pull,method=bind -P dds</exe>
+        <exe>fairmq-ex-qc-task --color false --channel-config name=qc,type=pull,method=bind -P dds --severity trace --verbosity veryhigh</exe>
         <env reachable="false">fairmq-ex-qc-env.sh</env>
         <properties>
             <name access="write">fmqchan_qc</name>
@@ -31,7 +31,7 @@
     </decltask>
 
     <decltask name="Sink">
-        <exe>fairmq-ex-qc-sink --color false --channel-config name=data2,type=pull,method=bind -P dds --max-iterations 1000</exe>
+        <exe>fairmq-ex-qc-sink --color false --channel-config name=data2,type=pull,method=bind -P dds --max-iterations 1000 --severity trace --verbosity veryhigh</exe>
         <env reachable="false">fairmq-ex-qc-env.sh</env>
         <properties>
             <name access="write">fmqchan_data2</name>
