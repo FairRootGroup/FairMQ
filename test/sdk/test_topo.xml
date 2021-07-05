@@ -1,4 +1,4 @@
-<topology name="ExampleDDS">
+<topology name="sdk-test-topo">
 
     <property name="fmqchan_data" />
 
