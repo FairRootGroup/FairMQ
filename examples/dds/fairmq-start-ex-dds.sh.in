@@ -79,6 +79,6 @@ if dds-agent-cmd getlog -a; then
 fi
 
 # This string is used by ctest to detect success
-echo "Example successful :)"
+echo "Example successful"
 
 # Cleanup function is called by EXIT trap
