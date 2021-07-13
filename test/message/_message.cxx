@@ -160,14 +160,22 @@ auto RunPushPullWithAlignment(string const& transport, string const& _address) -
         ASSERT_EQ(pull.Receive(inMsg), size);
     }
 
-    for (auto const align : {Alignment{64}, Alignment{32}}) {
-        size_t const size25{25};
-        size_t const size50{50};
+    size_t const size25{25};
+    size_t const size50{50};
+    Alignment const align64{64};
 
-        auto msg(push.NewMessage(size25));
-        msg->Rebuild(size50, align);
-        ASSERT_TRUE(CheckMsgAlignment(*msg, align));
-    }
+    auto msg1(push.NewMessage(size25));
+    msg1->Rebuild(size50, align64);
+    ASSERT_TRUE(CheckMsgAlignment(*msg1, align64));
+
+    Alignment const align32{32};
+    auto msg2(push.NewMessage(size25, align64));
+    msg2->Rebuild(size50, align32);
+    ASSERT_TRUE(CheckMsgAlignment(*msg2, align32));
+
+    auto msgCopy(push.NewMessage());
+    msgCopy->Copy(*msg2);
+    ASSERT_TRUE(CheckMsgAlignment(*msgCopy, align32));
 }
 
 auto EmptyMessage(string const& transport, string const& _address) -> void
@@ -182,13 +190,41 @@ auto EmptyMessage(string const& transport, string const& _address) -> void
     push.Bind(address);
     pull.Connect(address);
 
-    auto outMsg(push.NewMessage());
-    ASSERT_EQ(outMsg->GetData(), nullptr);
-    ASSERT_EQ(push.Send(outMsg), 0);
 
-    auto inMsg(pull.NewMessage());
-    ASSERT_EQ(pull.Receive(inMsg), 0);
-    ASSERT_EQ(inMsg->GetData(), nullptr);
+    {
+        auto outMsg(push.NewMessage());
+        ASSERT_EQ(outMsg->GetData(), nullptr);
+        ASSERT_EQ(push.Send(outMsg), 0);
+
+        auto inMsg(pull.NewMessage());
+        ASSERT_EQ(pull.Receive(inMsg), 0);
+        ASSERT_EQ(inMsg->GetData(), nullptr);
+    }
+
+    {
+        auto outMsg(push.NewMessage(0));
+        ASSERT_EQ(outMsg->GetSize(), 0);
+
+        size_t const size100{100};
+        outMsg->Rebuild(size100);
+        ASSERT_EQ(outMsg->GetSize(), size100);
+
+        outMsg->Rebuild(0);
+        ASSERT_EQ(outMsg->GetSize(), 0);
+
+        auto msgCopy(push.NewMessage());
+        msgCopy->Copy(*outMsg);
+        ASSERT_EQ(msgCopy->GetSize(), 0);
+        ASSERT_EQ(push.Send(outMsg), 0);
+        ASSERT_EQ(push.Send(msgCopy), 0);
+
+        auto inMsg(pull.NewMessage());
+        auto inMsg2(pull.NewMessage());
+        ASSERT_EQ(pull.Receive(inMsg), 0);
+        ASSERT_EQ(pull.Receive(inMsg2), 0);
+        ASSERT_EQ(inMsg->GetSize(), 0);
+        ASSERT_EQ(inMsg2->GetSize(), 0);
+    }
 }
 
 TEST(Resize, zeromq) // NOLINT
