@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -8,10 +8,15 @@
 
 #include <fairmq/Device.h>
 #include <fairmq/runDevice.h>
+#include <memory>
 
+using namespace std;
+using namespace fair::mq;
 namespace bpo = boost::program_options;
 
-struct Receiver : fair::mq::Device
+namespace {
+
+struct Receiver : Device
 {
     void InitTask() override
     {
@@ -21,15 +26,14 @@ struct Receiver : fair::mq::Device
 
     void Run() override
     {
-        FairMQChannel& dataInChannel = fChannels.at("sr").at(0);
+        Channel& dataInChannel = fChannels.at("sr").at(0);
 
         while (!NewStatePending()) {
-            FairMQMessagePtr msg(dataInChannel.Transport()->CreateMessage());
+            auto msg(dataInChannel.NewMessage());
             dataInChannel.Receive(msg);
-            // void* ptr = msg->GetData();
 
             if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
-                LOG(info) << "Configured maximum number of iterations reached. Leaving RUNNING state.";
+                LOG(info) << "Configured max number of iterations reached. Leaving RUNNING state.";
                 break;
             }
         }
@@ -40,13 +44,14 @@ struct Receiver : fair::mq::Device
     uint64_t fNumIterations = 0;
 };
 
+}   // namespace
+
 void addCustomOptions(bpo::options_description& options)
 {
-    options.add_options()
-        ("max-iterations", bpo::value<uint64_t>()->default_value(0), "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
+    options.add_options()(
+        "max-iterations",
+        bpo::value<uint64_t>()->default_value(0),
+        "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
 }
 
-std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)
-{
-    return std::make_unique<Receiver>();
-}
+unique_ptr<Device> getDevice(ProgOptions& /*config*/) { return make_unique<Receiver>(); }

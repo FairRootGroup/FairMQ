@@ -59,12 +59,12 @@ class TransportFactory
     /// @brief Create new Message of specified size
     /// @param size message size
     /// @return pointer to Message
-    virtual MessagePtr CreateMessage(const size_t size) = 0;
+    virtual MessagePtr CreateMessage(size_t size) = 0;
     /// @brief Create new Message of specified size and alignment
     /// @param size message size
     /// @param alignment message alignment
     /// @return pointer to Message
-    virtual MessagePtr CreateMessage(const size_t size, Alignment alignment) = 0;
+    virtual MessagePtr CreateMessage(size_t size, Alignment alignment) = 0;
     /// @brief Create new Message with user provided buffer and size
     /// @param data pointer to user provided buffer
     /// @param size size of the user provided buffer
@@ -72,8 +72,8 @@ class TransportFactory
     /// @param obj optional helper pointer that can be used in the callback
     /// @return pointer to Message
     virtual MessagePtr CreateMessage(void* data,
-                                     const size_t size,
-                                     fairmq_free_fn* ffn,
+                                     size_t size,
+                                     FreeFn* ffn,
                                      void* hint = nullptr) = 0;
     /// @brief create a message with the buffer located within the corresponding unmanaged region
     /// @param unmanagedRegion the unmanaged region that this message buffer belongs to
@@ -82,8 +82,8 @@ class TransportFactory
     /// @param hint optional parameter, returned to the user in the RegionCallback
     virtual MessagePtr CreateMessage(UnmanagedRegionPtr& unmanagedRegion,
                                      void* data,
-                                     const size_t size,
-                                     void* hint = 0) = 0;
+                                     size_t size,
+                                     void* hint = nullptr) = 0;
 
     /// @brief Create a socket
     virtual SocketPtr CreateSocket(const std::string& type, const std::string& name) = 0;

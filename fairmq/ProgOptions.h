@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,22 +9,20 @@
 #ifndef FAIR_MQ_PROGOPTIONS_H
 #define FAIR_MQ_PROGOPTIONS_H
 
-#include "FairMQChannel.h"
-#include "FairMQLogger.h"
+#include <boost/program_options.hpp>
+#include <fairlogger/Logger.h>
+#include <fairmq/Channel.h>
 #include <fairmq/EventManager.h>
 #include <fairmq/ProgOptionsFwd.h>
 #include <fairmq/Properties.h>
 #include <fairmq/tools/Strings.h>
-
-#include <boost/program_options.hpp>
-
 #include <functional>
 #include <map>
 #include <mutex>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <stdexcept>
 
 namespace fair::mq
 {
@@ -38,10 +36,10 @@ class ProgOptions
     virtual ~ProgOptions() = default;
 
     void ParseAll(const std::vector<std::string>& cmdArgs, bool allowUnregistered);
-    void ParseAll(const int argc, char const* const* argv, bool allowUnregistered = true);
+    void ParseAll(int argc, char const* const* argv, bool allowUnregistered = true);
     void Notify();
 
-    void AddToCmdLineOptions(const boost::program_options::options_description optDesc, bool visible = true);
+    void AddToCmdLineOptions(boost::program_options::options_description optDesc, bool visible = true);
     boost::program_options::options_description& GetCmdLineOptions();
 
     /// @brief Checks a property with the given key exist in the configuration
@@ -174,7 +172,7 @@ class ProgOptions
     /// @brief Takes the provided channel and creates properties based on it
     /// @param name channel name
     /// @param channel FairMQChannel reference
-    void AddChannel(const std::string& name, const FairMQChannel& channel);
+    void AddChannel(const std::string& name, const Channel& channel);
 
     /// @brief Subscribe to property updates of type T
     /// @param subscriber
