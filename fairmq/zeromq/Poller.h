@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,16 +9,14 @@
 #ifndef FAIR_MQ_ZMQ_POLLER_H
 #define FAIR_MQ_ZMQ_POLLER_H
 
-#include <fairmq/zeromq/Socket.h>
+#include <fairlogger/Logger.h>
+#include <fairmq/Channel.h>
+#include <fairmq/Poller.h>
 #include <fairmq/tools/Strings.h>
-#include <FairMQChannel.h>
-#include <FairMQLogger.h>
-#include <FairMQPoller.h>
-
-#include <zmq.h>
-
+#include <fairmq/zeromq/Socket.h>
 #include <unordered_map>
 #include <vector>
+#include <zmq.h>
 
 namespace fair::mq::zmq
 {
@@ -26,7 +24,7 @@ namespace fair::mq::zmq
 class Poller final : public fair::mq::Poller
 {
   public:
-    Poller(const std::vector<FairMQChannel>& channels)
+    Poller(const std::vector<Channel>& channels)
         : fItems()
         , fNumItems(0)
     {
@@ -46,7 +44,7 @@ class Poller final : public fair::mq::Poller
         }
     }
 
-    Poller(const std::vector<FairMQChannel*>& channels)
+    Poller(const std::vector<Channel*>& channels)
         : fItems()
         , fNumItems(0)
     {
@@ -66,14 +64,14 @@ class Poller final : public fair::mq::Poller
         }
     }
 
-    Poller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList)
+    Poller(const std::unordered_map<std::string, std::vector<Channel>>& channelsMap, const std::vector<std::string>& channelList)
         : fItems()
         , fNumItems(0)
     {
         try {
             int offset = 0;
             // calculate offsets and the total size of the poll item set
-            for (std::string channel : channelList) {
+            for (std::string const & channel : channelList) {
                 fOffsetMap[channel] = offset;
                 offset += channelsMap.at(channel).size();
                 fNumItems += channelsMap.at(channel).size();

@@ -1,15 +1,13 @@
 /********************************************************************************
- *    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <FairMQChannel.h>
-
+#include <fairmq/Channel.h>
 #include <gtest/gtest.h>
-
 #include <string>
 
 namespace
@@ -20,15 +18,15 @@ using namespace fair::mq;
 
 TEST(Channel, Validation)
 {
-    FairMQChannel channel;
-    ASSERT_THROW(channel.Validate(), FairMQChannel::ChannelConfigurationError);
+    Channel channel;
+    ASSERT_THROW(channel.Validate(), Channel::ChannelConfigurationError);
 
     channel.UpdateType("pair");
     ASSERT_EQ(channel.Validate(), false);
     ASSERT_EQ(channel.IsValid(), false);
 
     channel.UpdateAddress("bla");
-    ASSERT_THROW(channel.Validate(), FairMQChannel::ChannelConfigurationError);
+    ASSERT_THROW(channel.Validate(), Channel::ChannelConfigurationError);
 
     channel.UpdateMethod("connect");
     ASSERT_EQ(channel.Validate(), false);
@@ -55,31 +53,31 @@ TEST(Channel, Validation)
     ASSERT_EQ(channel.IsValid(), true);
 
     channel.UpdateSndBufSize(-1);
-    ASSERT_THROW(channel.Validate(), FairMQChannel::ChannelConfigurationError);
+    ASSERT_THROW(channel.Validate(), Channel::ChannelConfigurationError);
     channel.UpdateSndBufSize(1000);
     ASSERT_NO_THROW(channel.Validate());
 
     channel.UpdateRcvBufSize(-1);
-    ASSERT_THROW(channel.Validate(), FairMQChannel::ChannelConfigurationError);
+    ASSERT_THROW(channel.Validate(), Channel::ChannelConfigurationError);
     channel.UpdateRcvBufSize(1000);
     ASSERT_NO_THROW(channel.Validate());
 
     channel.UpdateSndKernelSize(-1);
-    ASSERT_THROW(channel.Validate(), FairMQChannel::ChannelConfigurationError);
+    ASSERT_THROW(channel.Validate(), Channel::ChannelConfigurationError);
     channel.UpdateSndKernelSize(1000);
     ASSERT_NO_THROW(channel.Validate());
 
     channel.UpdateRcvKernelSize(-1);
-    ASSERT_THROW(channel.Validate(), FairMQChannel::ChannelConfigurationError);
+    ASSERT_THROW(channel.Validate(), Channel::ChannelConfigurationError);
     channel.UpdateRcvKernelSize(1000);
     ASSERT_NO_THROW(channel.Validate());
 
     channel.UpdateRateLogging(-1);
-    ASSERT_THROW(channel.Validate(), FairMQChannel::ChannelConfigurationError);
+    ASSERT_THROW(channel.Validate(), Channel::ChannelConfigurationError);
     channel.UpdateRateLogging(1);
     ASSERT_NO_THROW(channel.Validate());
 
-    FairMQChannel channel2 = channel;
+    Channel channel2 = channel;
     ASSERT_NO_THROW(channel2.Validate());
     ASSERT_EQ(channel2.Validate(), true);
     ASSERT_EQ(channel2.IsValid(), true);

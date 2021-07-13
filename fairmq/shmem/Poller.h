@@ -5,19 +5,18 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
+
 #ifndef FAIR_MQ_SHMEM_POLLER_H_
 #define FAIR_MQ_SHMEM_POLLER_H_
 
-#include "Socket.h"
+#include <fairlogger/Logger.h>
+#include <fairmq/Channel.h>
+#include <fairmq/Poller.h>
+#include <fairmq/shmem/Socket.h>
 #include <fairmq/tools/Strings.h>
-#include <FairMQChannel.h>
-#include <FairMQLogger.h>
-#include <FairMQPoller.h>
-
-#include <zmq.h>
-
 #include <unordered_map>
 #include <vector>
+#include <zmq.h>
 
 namespace fair::mq::shmem
 {
@@ -25,7 +24,7 @@ namespace fair::mq::shmem
 class Poller final : public fair::mq::Poller
 {
   public:
-    Poller(const std::vector<FairMQChannel>& channels)
+    Poller(const std::vector<Channel>& channels)
         : fItems()
         , fNumItems(0)
     {
@@ -45,7 +44,7 @@ class Poller final : public fair::mq::Poller
         }
     }
 
-    Poller(const std::vector<FairMQChannel*>& channels)
+    Poller(const std::vector<Channel*>& channels)
         : fItems()
         , fNumItems(0)
     {
@@ -65,7 +64,7 @@ class Poller final : public fair::mq::Poller
         }
     }
 
-    Poller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList)
+    Poller(const std::unordered_map<std::string, std::vector<Channel>>& channelsMap, const std::vector<std::string>& channelList)
         : fItems()
         , fNumItems(0)
     {

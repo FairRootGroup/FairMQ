@@ -13,18 +13,19 @@
  */
 
 #include "JSONParser.h"
-#include "FairMQChannel.h"
-#include <fairmq/PropertyOutput.h>
-#include <fairmq/tools/Strings.h>
 
 #include <fairlogger/Logger.h>
 
+#include <boost/any.hpp>
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/property_tree/json_parser.hpp>
 #undef BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/property_tree/ptree.hpp>
-#include <boost/any.hpp>
-
+#include <fairlogger/Logger.h>
+#include <fairmq/Channel.h>
+#include <fairmq/JSONParser.h>
+#include <fairmq/PropertyOutput.h>
+#include <fairmq/tools/Strings.h>
 #include <iomanip>
 
 using namespace std;
