@@ -1,223 +1,232 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <FairMQChannel.h>
-#include <FairMQLogger.h>
-#include <FairMQTransportFactory.h>
-#include <fairmq/ProgOptions.h>
-#include <fairmq/tools/Unique.h>
-#include <fairmq/tools/Strings.h>
-
-#include <gtest/gtest.h>
-
-#include <string>
+#include <array>
+#include <cassert>
 #include <cstdint>
+#include <fairlogger/Logger.h>
+#include <fairmq/Channel.h>
+#include <fairmq/ProgOptions.h>
+#include <fairmq/TransportFactory.h>
+#include <fairmq/tools/Strings.h>
+#include <fairmq/tools/Unique.h>
+#include <gtest/gtest.h>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <utility>
 
 namespace
 {
 
 using namespace std;
+using namespace fair::mq;
 
-void RunPushPullWithMsgResize(const string& transport, const string& _address)
+auto AsStringView(Message const& msg) -> string_view
 {
-    size_t session{fair::mq::tools::UuidHash()};
-    std::string address(fair::mq::tools::ToString(_address, "_", transport));
+    return {static_cast<char const*>(msg.GetData()), msg.GetSize()};
+}
 
-    fair::mq::ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
+auto RunPushPullWithMsgResize(string const & transport, string const & _address) -> void
+{
+    ProgOptions config;
+    config.SetProperty<string>("session", tools::Uuid());
+    auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
-    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
-
-    FairMQChannel push{"Push", "push", factory};
+    Channel push{"Push", "push", factory};
+    Channel pull{"Pull", "pull", factory};
+    auto const address(tools::ToString(_address, "_", transport));
     push.Bind(address);
-
-    FairMQChannel pull{"Pull", "pull", factory};
     pull.Connect(address);
 
     {
-        FairMQMessagePtr outMsg(push.NewMessage(6));
-        ASSERT_EQ(outMsg->GetSize(), 6);
-        memcpy(outMsg->GetData(), "ABCDEF", 6);
-        ASSERT_EQ(outMsg->SetUsedSize(5), true);
-        ASSERT_EQ(outMsg->SetUsedSize(5), true);
-        ASSERT_EQ(outMsg->SetUsedSize(7), false);
+        size_t const size{6};
+        auto outMsg(push.NewMessage(size));
+        ASSERT_EQ(outMsg->GetSize(), size);
+        memcpy(outMsg->GetData(), "ABCDEF", size);
+        ASSERT_TRUE(outMsg->SetUsedSize(5));
+        ASSERT_TRUE(outMsg->SetUsedSize(5));
+        ASSERT_FALSE(outMsg->SetUsedSize(7));
         ASSERT_EQ(outMsg->GetSize(), 5);
+
         // check if the data is still intact
-        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[0], 'A');
-        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[1], 'B');
-        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[2], 'C');
-        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[3], 'D');
-        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[4], 'E');
-        ASSERT_EQ(outMsg->SetUsedSize(2), true);
+        ASSERT_EQ(AsStringView(*outMsg)[0], 'A');
+        ASSERT_EQ(AsStringView(*outMsg)[1], 'B');
+        ASSERT_EQ(AsStringView(*outMsg)[2], 'C');
+        ASSERT_EQ(AsStringView(*outMsg)[3], 'D');
+        ASSERT_EQ(AsStringView(*outMsg)[4], 'E');
+        ASSERT_TRUE(outMsg->SetUsedSize(2));
         ASSERT_EQ(outMsg->GetSize(), 2);
-        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[0], 'A');
-        ASSERT_EQ(static_cast<char*>(outMsg->GetData())[1], 'B');
-        FairMQMessagePtr msgCopy(push.NewMessage());
+        ASSERT_EQ(AsStringView(*outMsg)[0], 'A');
+        ASSERT_EQ(AsStringView(*outMsg)[1], 'B');
+
+        auto msgCopy(push.NewMessage());
         msgCopy->Copy(*outMsg);
         ASSERT_EQ(msgCopy->GetSize(), 2);
 
         ASSERT_EQ(push.Send(outMsg), 2);
 
-        FairMQMessagePtr inMsg(pull.NewMessage());
+        auto inMsg(pull.NewMessage());
         ASSERT_EQ(pull.Receive(inMsg), 2);
         ASSERT_EQ(inMsg->GetSize(), 2);
-        ASSERT_EQ(static_cast<char*>(inMsg->GetData())[0], 'A');
-        ASSERT_EQ(static_cast<char*>(inMsg->GetData())[1], 'B');
+        ASSERT_EQ(AsStringView(*inMsg)[0], 'A');
+        ASSERT_EQ(AsStringView(*inMsg)[1], 'B');
     }
 
     {
-        FairMQMessagePtr outMsg(push.NewMessage(1000));
-        ASSERT_EQ(outMsg->SetUsedSize(0), true);
+        size_t const size{1000};
+        auto outMsg(push.NewMessage(size));
+        ASSERT_TRUE(outMsg->SetUsedSize(0));
         ASSERT_EQ(outMsg->GetSize(), 0);
-        FairMQMessagePtr msgCopy(push.NewMessage());
+        auto msgCopy(push.NewMessage());
         msgCopy->Copy(*outMsg);
         ASSERT_EQ(msgCopy->GetSize(), 0);
         ASSERT_EQ(push.Send(outMsg), 0);
-        FairMQMessagePtr inMsg(pull.NewMessage());
+        auto inMsg(pull.NewMessage());
         ASSERT_EQ(pull.Receive(inMsg), 0);
         ASSERT_EQ(inMsg->GetSize(), 0);
     }
 }
 
-void RunMsgRebuild(const string& transport)
+auto RunMsgRebuild(const string& transport) -> void
 {
-    size_t session{fair::mq::tools::UuidHash()};
+    ProgOptions config;
+    config.SetProperty<string>("session", tools::Uuid());
+    auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
-    fair::mq::ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
-
-    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
-
-    FairMQMessagePtr msg(factory->CreateMessage());
+    size_t const msgSize{100};
+    string const expectedStr{"asdf"};
+    auto msg(factory->CreateMessage());
     EXPECT_EQ(msg->GetSize(), 0);
-    msg->Rebuild(100);
-    EXPECT_EQ(msg->GetSize(), 100);
-    string* str = new string("asdf");
-    msg->Rebuild(const_cast<char*>(str->c_str()),
-                 str->length(),
-                 [](void* /*data*/, void* obj) { delete static_cast<string*>(obj); },
-                 str);
-    EXPECT_NE(msg->GetSize(), 100);
-    EXPECT_EQ(msg->GetSize(), string("asdf").length());
-    EXPECT_EQ(string(static_cast<char*>(msg->GetData()), msg->GetSize()), string("asdf"));
+    msg->Rebuild(msgSize);
+    EXPECT_EQ(msg->GetSize(), msgSize);
+
+    auto str(make_unique<string>(expectedStr));
+    void* data(str->data());
+    auto const size(str->length());
+    msg->Rebuild(
+        data,
+        size,
+        [](void* /*data*/, void* obj) { delete static_cast<string*>(obj); }, // NOLINT
+        str.release());
+    EXPECT_NE(msg->GetSize(), msgSize);
+    EXPECT_EQ(msg->GetSize(), expectedStr.length());
+    EXPECT_EQ(AsStringView(*msg), expectedStr);
 }
 
-void Alignment(const string& transport, const string& _address)
+auto CheckMsgAlignment(Message const& msg, fair::mq::Alignment alignment) -> bool
 {
-    size_t session{fair::mq::tools::UuidHash()};
-    std::string address(fair::mq::tools::ToString(_address, "_", transport));
-
-    fair::mq::ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
-
-    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
-
-    FairMQChannel push{"Push", "push", factory};
-    push.Bind(address);
-
-    FairMQChannel pull{"Pull", "pull", factory};
-    pull.Connect(address);
-
-    size_t alignment = 64;
-
-    FairMQMessagePtr outMsg1(push.NewMessage(100, fair::mq::Alignment{alignment}));
-    ASSERT_EQ(reinterpret_cast<uintptr_t>(outMsg1->GetData()) % alignment, 0);
-    ASSERT_EQ(push.Send(outMsg1), 100);
-
-    FairMQMessagePtr inMsg1(pull.NewMessage(fair::mq::Alignment{alignment}));
-    ASSERT_EQ(pull.Receive(inMsg1), 100);
-    ASSERT_EQ(reinterpret_cast<uintptr_t>(inMsg1->GetData()) % alignment, 0);
-
-    FairMQMessagePtr outMsg2(push.NewMessage(32, fair::mq::Alignment{alignment}));
-    ASSERT_EQ(reinterpret_cast<uintptr_t>(outMsg2->GetData()) % alignment, 0);
-    ASSERT_EQ(push.Send(outMsg2), 32);
-
-    FairMQMessagePtr inMsg2(pull.NewMessage(fair::mq::Alignment{alignment}));
-    ASSERT_EQ(pull.Receive(inMsg2), 32);
-    ASSERT_EQ(reinterpret_cast<uintptr_t>(inMsg2->GetData()) % alignment, 0);
-
-    FairMQMessagePtr outMsg3(push.NewMessage(100, fair::mq::Alignment{0}));
-    ASSERT_EQ(push.Send(outMsg3), 100);
-
-    FairMQMessagePtr inMsg3(pull.NewMessage(fair::mq::Alignment{0}));
-    ASSERT_EQ(pull.Receive(inMsg3), 100);
-
-    FairMQMessagePtr msg1(push.NewMessage(25));
-    msg1->Rebuild(50, fair::mq::Alignment{alignment});
-    ASSERT_EQ(reinterpret_cast<uintptr_t>(msg1->GetData()) % alignment, 0);
-
-    size_t alignment2 = 32;
-    FairMQMessagePtr msg2(push.NewMessage(25, fair::mq::Alignment{alignment}));
-    msg2->Rebuild(50, fair::mq::Alignment{alignment2});
-    ASSERT_EQ(reinterpret_cast<uintptr_t>(msg2->GetData()) % alignment2, 0);
+    assert(static_cast<size_t>(alignment) > 0); // NOLINT
+    return (reinterpret_cast<uintptr_t>(msg.GetData()) % static_cast<size_t>(alignment)) == 0; // NOLINT
 }
 
-void EmptyMessage(const string& transport, const string& _address)
+auto RunPushPullWithAlignment(string const& transport, string const& _address) -> void
 {
-    size_t session{fair::mq::tools::UuidHash()};
-    std::string address(fair::mq::tools::ToString(_address, "_", transport));
+    ProgOptions config;
+    config.SetProperty<string>("session", tools::Uuid());
+    auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
-    fair::mq::ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
-
-    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
-
-    FairMQChannel push{"Push", "push", factory};
+    Channel push{"Push", "push", factory};
+    Channel pull{"Pull", "pull", factory};
+    auto const address(tools::ToString(_address, "_", transport));
     push.Bind(address);
-
-    FairMQChannel pull{"Pull", "pull", factory};
     pull.Connect(address);
 
-    FairMQMessagePtr outMsg(push.NewMessage());
+    {
+        Alignment const align{64};
+        for (size_t const size : {100, 32}) {
+            auto outMsg(push.NewMessage(size, align));
+            auto inMsg(pull.NewMessage(align));
+
+            ASSERT_TRUE(CheckMsgAlignment(*outMsg, align));
+            ASSERT_EQ(push.Send(outMsg), size);
+            ASSERT_EQ(pull.Receive(inMsg), size);
+            ASSERT_TRUE(CheckMsgAlignment(*inMsg, align));
+        }
+    }
+
+    {
+        Alignment const align{0};
+        size_t const size{100};
+        auto outMsg(push.NewMessage(size, align));
+        auto inMsg(pull.NewMessage(align));
+
+        ASSERT_EQ(push.Send(outMsg), size);
+        ASSERT_EQ(pull.Receive(inMsg), size);
+    }
+
+    for (auto const align : {Alignment{64}, Alignment{32}}) {
+        size_t const size25{25};
+        size_t const size50{50};
+
+        auto msg(push.NewMessage(size25));
+        msg->Rebuild(size50, align);
+        ASSERT_TRUE(CheckMsgAlignment(*msg, align));
+    }
+}
+
+auto EmptyMessage(string const& transport, string const& _address) -> void
+{
+    ProgOptions config;
+    config.SetProperty<string>("session", tools::Uuid());
+    auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
+
+    Channel push{"Push", "push", factory};
+    Channel pull{"Pull", "pull", factory};
+    auto const address(tools::ToString(_address, "_", transport));
+    push.Bind(address);
+    pull.Connect(address);
+
+    auto outMsg(push.NewMessage());
     ASSERT_EQ(outMsg->GetData(), nullptr);
     ASSERT_EQ(push.Send(outMsg), 0);
 
-    FairMQMessagePtr inMsg(pull.NewMessage());
+    auto inMsg(pull.NewMessage());
     ASSERT_EQ(pull.Receive(inMsg), 0);
     ASSERT_EQ(inMsg->GetData(), nullptr);
 }
 
-TEST(Resize, zeromq)
+TEST(Resize, zeromq) // NOLINT
 {
     RunPushPullWithMsgResize("zeromq", "ipc://test_message_resize");
 }
 
-TEST(Resize, shmem)
+TEST(Resize, shmem) // NOLINT
 {
     RunPushPullWithMsgResize("shmem", "ipc://test_message_resize");
 }
 
-TEST(Rebuild, zeromq)
+TEST(Rebuild, zeromq) // NOLINT
 {
     RunMsgRebuild("zeromq");
 }
 
-TEST(Rebuild, shmem)
+TEST(Rebuild, shmem) // NOLINT
 {
     RunMsgRebuild("shmem");
 }
 
-TEST(Alignment, shmem)
+TEST(Alignment, shmem) // NOLINT
 {
-    Alignment("shmem", "ipc://test_message_alignment");
+    RunPushPullWithAlignment("shmem", "ipc://test_message_alignment");
 }
 
-TEST(Alignment, zeromq)
+TEST(Alignment, zeromq) // NOLINT
 {
-    Alignment("zeromq", "ipc://test_message_alignment");
+    RunPushPullWithAlignment("zeromq", "ipc://test_message_alignment");
 }
 
-TEST(EmptyMessage, zeromq)
+TEST(EmptyMessage, zeromq) // NOLINT
 {
     EmptyMessage("zeromq", "ipc://test_empty_message");
 }
 
-TEST(EmptyMessage, shmem)
+TEST(EmptyMessage, shmem) // NOLINT
 {
     EmptyMessage("shmem", "ipc://test_empty_message");
 }

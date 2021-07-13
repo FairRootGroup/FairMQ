@@ -27,34 +27,34 @@ The next table shows the supported address types for each transport implementati
 
 ## 2.1 Message
 
-Devices transport data between each other in form of `FairMQMessage`s. These can be filled with arbitrary content. Message can be initialized in three different ways by calling `NewMessage()`:
+Devices transport data between each other in form of `fair::mq::Message`s. These can be filled with arbitrary content. Message can be initialized in three different ways by calling `NewMessage()`:
 
 ```cpp
-FairMQMessagePtr NewMessage() const;
+fair::mq::MessagePtr NewMessage() const;
 ```
 **with no parameters**: Initializes an empty message (typically used for receiving).
 
 ```cpp
-FairMQMessagePtr NewMessage(const size_t size) const;
+fair::mq::MessagePtr NewMessage(const size_t size) const;
 ```
 **given message size**: Initializes message body with a given size. Fill the created contents via buffer pointer.
 
 ```cpp
 using fairmq_free_fn = void(void* data, void* hint);
-FairMQMessagePtr NewMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) const;
+fair::mq::MessagePtr NewMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) const;
 ```
 **given existing buffer and a size**: Initialize the message from an existing buffer. In case of ZeroMQ this is a zero-copy operation.
 
 Additionally, FairMQ provides two more message factories for convenience:
 ```cpp
 template<typename T>
-FairMQMessagePtr NewSimpleMessage(const T& data) const
+fair::mq::MessagePtr NewSimpleMessage(const T& data) const
 ```
 **copy and own**: Copy the `data` argument into the returned message and take ownership (free memory after message is sent). This interface is useful for small, [trivially copyable](http://en.cppreference.com/w/cpp/concept/TriviallyCopyable) data.
 
 ```cpp
 template<typename T>
-FairMQMessagePtr NewStaticMessage(const T& data) const
+fair::mq::MessagePtr NewStaticMessage(const T& data) const
 ```
 **point to existing memory**: The returned message will point to the `data` argument, but not take ownership (someone else must destruct this variable). Make sure that `data` lives long enough to be successfully sent. This interface is most useful for third party managed, contiguous memory (Be aware of shallow types with internal pointer references! These will not be sent.)
 
@@ -65,19 +65,19 @@ The component of a program, that is reponsible for the allocation or destruction
 After queuing a message for sending in FairMQ, the transport takes ownership over the message body and will free it with `free()` after it is no longer used. A callback can be passed to the message object, to be called instead of the destruction with `free()` (for initialization via buffer+size).
 
 ```cpp
-static void FairMQNoCleanup(void* /*data*/, void* /*obj*/) {}
+static void fair::mq::NoCleanup(void* /*data*/, void* /*obj*/) {}
 
 template<typename T>
-static void FairMQSimpleMsgCleanup(void* /*data*/, void* obj) { delete static_cast<T*>(obj); }
+static void fair::mq::SimpleMsgCleanup(void* /*data*/, void* obj) { delete static_cast<T*>(obj); }
 ```
-For convenience, two common deleter callbacks are already defined in the `FairMQTransportFactory` class to aid the user in controlling ownership of the data.
+For convenience, two common deleter callbacks are already defined in the `fair::mq::TransportFactory` class to aid the user in controlling ownership of the data.
 
 ## 2.2 Channel
 
 A channel represents a communication endpoint in FairMQ. Usage is similar to a traditional Unix network socket. A device usually contains a number of channels that can either listen for incoming connections from channels of other devices or they can connect to other listening channels. Channels are organized by a channel name and a subchannel index.
 
 ```cpp
-const FairMQChannel& GetChannel(const std::string& channelName, const int index = 0) const;
+const fair::mq::Channel& GetChannel(const std::string& channelName, const int index = 0) const;
 ```
 
 All subchannels with a common channel name need to be of the same transport type.
@@ -87,7 +87,7 @@ All subchannels with a common channel name need to be of the same transport type
 A poller allows to wait on multiple channels either to receive or send a message.
 
 ```cpp
-FairMQPollerPtr NewPoller(const std::vector<const FairMQChannel*>& channels)
+fair::mq::PollerPtr NewPoller(const std::vector<const fair::mq::Channel*>& channels)
 ```
 **list channels**: This poller waits on all supplied channels. Currently, it is limited to channels of the same transport type only.
 

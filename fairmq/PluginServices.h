@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,8 +9,8 @@
 #ifndef FAIR_MQ_PLUGINSERVICES_H
 #define FAIR_MQ_PLUGINSERVICES_H
 
+#include <fairmq/Device.h>
 #include <fairmq/States.h>
-#include <FairMQDevice.h>
 #include <fairmq/ProgOptions.h>
 #include <fairmq/Properties.h>
 
@@ -40,7 +40,7 @@ class PluginServices
 {
   public:
     PluginServices() = delete;
-    PluginServices(ProgOptions& config, FairMQDevice& device)
+    PluginServices(ProgOptions& config, Device& device)
         : fConfig(config)
         , fDevice(device)
     {}
@@ -117,7 +117,7 @@ class PluginServices
     /// The state transition may not happen immediately, but when the current state evaluates the
     /// pending transition event and terminates. In other words, the device states are scheduled cooperatively.
     /// If the device control role has not been taken yet, calling this function will take over control implicitely.
-    auto ChangeDeviceState(const std::string& controller, const DeviceStateTransition next) -> bool;
+    auto ChangeDeviceState(const std::string& controller, DeviceStateTransition next) -> bool;
 
     /// @brief Subscribe with a callback to device state changes
     /// @param subscriber id
@@ -269,7 +269,7 @@ class PluginServices
 
   private:
     fair::mq::ProgOptions& fConfig;
-    FairMQDevice& fDevice;
+    Device& fDevice;
     boost::optional<std::string> fDeviceController;
     mutable std::mutex fDeviceControllerMutex;
     std::condition_variable fReleaseDeviceControlCondition;

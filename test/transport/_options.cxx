@@ -1,20 +1,20 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <gtest/gtest.h>
-#include <FairMQChannel.h>
-#include <FairMQParts.h>
-#include <FairMQLogger.h>
-#include <FairMQTransportFactory.h>
-#include <fairmq/tools/Unique.h>
-#include <fairmq/ProgOptions.h>
-
 #include <algorithm>
+#include <array>
+#include <fairlogger/Logger.h>
+#include <fairmq/Channel.h>
+#include <fairmq/Parts.h>
+#include <fairmq/ProgOptions.h>
+#include <fairmq/TransportFactory.h>
+#include <fairmq/tools/Unique.h>
+#include <gtest/gtest.h>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -24,25 +24,25 @@ namespace
 {
 
 using namespace std;
+using namespace fair::mq;
 
-void CheckOldOptionInterface(FairMQChannel& channel, const string& option)
+void CheckOldOptionInterface(Channel& channel, const string& option)
 {
-    int value = 500;
+    int const expectedValue{500};
+    int value = expectedValue;
     channel.GetSocket().SetOption(option, &value, sizeof(value));
     value = 0;
     size_t valueSize = sizeof(value);
     channel.GetSocket().GetOption(option, &value, &valueSize);
-    ASSERT_EQ(value, 500);
+    ASSERT_EQ(value, expectedValue);
 }
 
 void RunOptionsTest(const string& transport)
 {
-    size_t session{fair::mq::tools::UuidHash()};
-
     fair::mq::ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
-    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
-    FairMQChannel channel("Push", "push", factory);
+    config.SetProperty<string>("session", tools::Uuid());
+    auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
+    Channel channel("Push", "push", factory);
 
     CheckOldOptionInterface(channel, "linger");
     CheckOldOptionInterface(channel, "snd-hwm");
@@ -50,38 +50,37 @@ void RunOptionsTest(const string& transport)
     CheckOldOptionInterface(channel, "snd-size");
     CheckOldOptionInterface(channel, "rcv-size");
 
-    channel.GetSocket().SetLinger(300);
-    ASSERT_EQ(channel.GetSocket().GetLinger(), 300);
+    size_t const linger{300};
+    channel.GetSocket().SetLinger(linger);
+    ASSERT_EQ(channel.GetSocket().GetLinger(), linger);
 
-    channel.GetSocket().SetSndBufSize(500);
-    ASSERT_EQ(channel.GetSocket().GetSndBufSize(), 500);
+    size_t const bufSize{500};
+    channel.GetSocket().SetSndBufSize(bufSize);
+    ASSERT_EQ(channel.GetSocket().GetSndBufSize(), bufSize);
+    channel.GetSocket().SetRcvBufSize(bufSize);
+    ASSERT_EQ(channel.GetSocket().GetRcvBufSize(), bufSize);
 
-    channel.GetSocket().SetRcvBufSize(500);
-    ASSERT_EQ(channel.GetSocket().GetRcvBufSize(), 500);
-
-    channel.GetSocket().SetSndKernelSize(8000);
-    ASSERT_EQ(channel.GetSocket().GetSndKernelSize(), 8000);
-
-    channel.GetSocket().SetRcvKernelSize(8000);
-    ASSERT_EQ(channel.GetSocket().GetRcvKernelSize(), 8000);
+    size_t const kernelSize{8000};
+    channel.GetSocket().SetSndKernelSize(kernelSize);
+    ASSERT_EQ(channel.GetSocket().GetSndKernelSize(), kernelSize);
+    channel.GetSocket().SetRcvKernelSize(kernelSize);
+    ASSERT_EQ(channel.GetSocket().GetRcvKernelSize(), kernelSize);
 }
 
 void ZeroingAndMlock(const string& transport)
 {
-    size_t session{fair::mq::tools::UuidHash()};
-
-    fair::mq::ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
-    config.SetProperty<size_t>("shm-segment-size", 16384);
+    ProgOptions config;
+    config.SetProperty<string>("session", tools::Uuid());
+    config.SetProperty<size_t>("shm-segment-size", 16384); // NOLINT
     config.SetProperty<bool>("shm-zero-segment", true);
     config.SetProperty<bool>("shm-mlock-segment", true);
 
-    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
+    auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
-    FairMQMessagePtr outMsg(factory->CreateMessage(10000));
-    char test[10000];
-    memset(test, 0, sizeof(test));
-    ASSERT_EQ(memcmp(test, outMsg->GetData(), outMsg->GetSize()), 0);
+    constexpr size_t size{10000};
+    auto outMsg(factory->CreateMessage(size));
+    array<char, size> test{0};
+    ASSERT_EQ(memcmp(test.data(), outMsg->GetData(), outMsg->GetSize()), 0);
 }
 
 void ZeroingAndMlockOnCreation(const string& transport)
@@ -90,29 +89,29 @@ void ZeroingAndMlockOnCreation(const string& transport)
 
     fair::mq::ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
-    config.SetProperty<size_t>("shm-segment-size", 16384);
+    config.SetProperty<size_t>("shm-segment-size", 16384); // NOLINT
     config.SetProperty<bool>("shm-mlock-segment-on-creation", true);
     config.SetProperty<bool>("shm-zero-segment-on-creation", true);
 
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
 
-    FairMQMessagePtr outMsg(factory->CreateMessage(10000));
-    char test[10000];
-    memset(test, 0, sizeof(test));
-    ASSERT_EQ(memcmp(test, outMsg->GetData(), outMsg->GetSize()), 0);
+    constexpr size_t size{10000};
+    auto outMsg(factory->CreateMessage(size));
+    array<char, size> test{0};
+    ASSERT_EQ(memcmp(test.data(), outMsg->GetData(), outMsg->GetSize()), 0);
 }
 
-TEST(Options, zeromq)
+TEST(Options, zeromq) // NOLINT
 {
     RunOptionsTest("zeromq");
 }
 
-TEST(Options, shmem)
+TEST(Options, shmem) // NOLINT
 {
     RunOptionsTest("shmem");
 }
 
-TEST(ZeroingAndMlock, shmem)
+TEST(ZeroingAndMlock, shmem) // NOLINT
 {
     ZeroingAndMlock("shmem");
 }
