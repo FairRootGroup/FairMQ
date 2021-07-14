@@ -146,9 +146,10 @@ struct MetaHeader
 {
     size_t fSize;
     size_t fHint;
-    uint16_t fRegionId;
-    uint16_t fSegmentId;
     boost::interprocess::managed_shared_memory::handle_t fHandle;
+    mutable boost::interprocess::managed_shared_memory::handle_t fShared;
+    uint16_t fRegionId;
+    mutable uint16_t fSegmentId;
 };
 
 #ifdef FAIRMQ_DEBUG_MODE
@@ -271,22 +272,22 @@ struct SegmentHandleFromAddress : public boost::static_visitor<boost::interproce
     const void* ptr;
 };
 
-struct SegmentAddressFromHandle : public boost::static_visitor<void*>
+struct SegmentAddressFromHandle : public boost::static_visitor<char*>
 {
     SegmentAddressFromHandle(const boost::interprocess::managed_shared_memory::handle_t _handle) : handle(_handle) {}
 
     template<typename S>
-    void* operator()(S& s) const { return s.get_address_from_handle(handle); }
+    char* operator()(S& s) const { return reinterpret_cast<char*>(s.get_address_from_handle(handle)); }
 
     const boost::interprocess::managed_shared_memory::handle_t handle;
 };
 
-struct SegmentAllocate : public boost::static_visitor<void*>
+struct SegmentAllocate : public boost::static_visitor<char*>
 {
     SegmentAllocate(const size_t _size) : size(_size) {}
 
     template<typename S>
-    void* operator()(S& s) const { return s.allocate(size); }
+    char* operator()(S& s) const { return reinterpret_cast<char*>(s.allocate(size)); }
 
     const size_t size;
 };
@@ -322,12 +323,12 @@ struct SegmentBufferShrink : public boost::static_visitor<char*>
 
 struct SegmentDeallocate : public boost::static_visitor<>
 {
-    SegmentDeallocate(void* _ptr) : ptr(_ptr) {}
+    SegmentDeallocate(char* _ptr) : ptr(_ptr) {}
 
     template<typename S>
     void operator()(S& s) const { return s.deallocate(ptr); }
 
-    void* ptr;
+    char* ptr;
 };
 
 } // namespace fair::mq::shmem

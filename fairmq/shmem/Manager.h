@@ -52,29 +52,77 @@
 
 #include <unistd.h> // getuid
 #include <sys/types.h> // getuid
-
 #include <sys/mman.h> // mlock
 
 namespace fair::mq::shmem
 {
 
-struct ShmPtr
+// ShmHeader stores user buffer alignment and the reference count in the following structure:
+// [HdrOffset(uint16_t)][Hdr alignment][Hdr][user buffer alignment][user buffer]
+// The alignment of Hdr depends on the alignment of std::atomic and is stored in the first entry
+struct ShmHeader
 {
-    explicit ShmPtr(char* rPtr)
-        : realPtr(rPtr)
-    {}
-
-    char* RealPtr()
+    struct Hdr
     {
-        return realPtr;
+        uint16_t userOffset;
+        std::atomic<uint16_t> refCount;
+    };
+
+    static Hdr* HdrPtr(char* ptr)
+    {
+        // [HdrOffset(uint16_t)][Hdr alignment][Hdr][user buffer alignment][user buffer]
+        //                                     ^
+        return reinterpret_cast<Hdr*>(ptr + sizeof(uint16_t) + *(reinterpret_cast<uint16_t*>(ptr)));
     }
 
-    char* UserPtr()
+    static uint16_t HdrPartSize() // [HdrOffset(uint16_t)][Hdr alignment][Hdr]
     {
-        return realPtr + sizeof(uint16_t) + *(reinterpret_cast<uint16_t*>(realPtr));
+        // [HdrOffset(uint16_t)][Hdr alignment][Hdr][user buffer alignment][user buffer]
+        // <--------------------------------------->
+        return sizeof(uint16_t) + alignof(Hdr) + sizeof(Hdr);
     }
 
-    char* realPtr;
+    static std::atomic<uint16_t>& RefCountPtr(char* ptr)
+    {
+        // get the ref count ptr from the Hdr
+        return HdrPtr(ptr)->refCount;
+    }
+
+    static char* UserPtr(char* ptr)
+    {
+        // [HdrOffset(uint16_t)][Hdr alignment][Hdr][user buffer alignment][user buffer]
+        //                                                                 ^
+        return ptr + HdrPartSize() + HdrPtr(ptr)->userOffset;
+    }
+
+    static uint16_t RefCount(char* ptr) { return RefCountPtr(ptr).load(); }
+    static uint16_t IncrementRefCount(char* ptr) { return RefCountPtr(ptr).fetch_add(1); }
+    static uint16_t DecrementRefCount(char* ptr) { return RefCountPtr(ptr).fetch_sub(1); }
+
+    static size_t FullSize(size_t size, size_t alignment)
+    {
+        // [HdrOffset(uint16_t)][Hdr alignment][Hdr][user buffer alignment][user buffer]
+        // <--------------------------------------------------------------------------->
+        return HdrPartSize() + alignment + size;
+    }
+
+    static void Construct(char* ptr, size_t alignment)
+    {
+        // place the Hdr in the aligned location, fill it and store its offset to HdrOffset
+
+        // the address alignment should be at least 2
+        assert(reinterpret_cast<uintptr_t>(ptr) % 2 == 0);
+
+        // offset to the beginning of the Hdr. store it in the beginning
+        uint16_t hdrOffset = alignof(Hdr) - ((reinterpret_cast<uintptr_t>(ptr) + sizeof(uint16_t)) % alignof(Hdr));
+        memcpy(ptr, &hdrOffset, sizeof(hdrOffset));
+
+        // offset to the beginning of the user buffer, store in Hdr together with the ref count
+        uint16_t userOffset = alignment - ((reinterpret_cast<uintptr_t>(ptr) + HdrPartSize()) % alignment);
+        new(ptr + sizeof(uint16_t) + hdrOffset) Hdr{ userOffset, std::atomic<uint16_t>(1) };
+    }
+
+    static void Destruct(char* ptr) { RefCountPtr(ptr).~atomic(); }
 };
 
 class Manager
@@ -635,44 +683,35 @@ class Manager
     {
         return boost::apply_visitor(SegmentHandleFromAddress(ptr), fSegments.at(segmentId));
     }
-    void* GetAddressFromHandle(const boost::interprocess::managed_shared_memory::handle_t handle, uint16_t segmentId) const
+    char* GetAddressFromHandle(const boost::interprocess::managed_shared_memory::handle_t handle, uint16_t segmentId) const
     {
         return boost::apply_visitor(SegmentAddressFromHandle(handle), fSegments.at(segmentId));
     }
 
-    ShmPtr Allocate(size_t size, size_t alignment = 0)
+    char* Allocate(size_t size, size_t alignment = 0)
     {
         alignment = std::max(alignment, alignof(std::max_align_t));
 
         char* ptr = nullptr;
-        // [offset(uint16_t)][alignment][buffer]
-        size_t fullSize = sizeof(uint16_t) + alignment + size;
-        // tools::RateLimiter rateLimiter(20);
+        size_t fullSize = ShmHeader::FullSize(size, alignment);
 
         while (ptr == nullptr) {
             try {
-                // boost::interprocess::managed_shared_memory::size_type actualSize = size;
-                // char* hint = 0; // unused for boost::interprocess::allocate_new
-                // ptr = fSegments.at(fSegmentId).allocation_command<char>(boost::interprocess::allocate_new, size, actualSize, hint);
                 size_t segmentSize = boost::apply_visitor(SegmentSize(), fSegments.at(fSegmentId));
                 if (fullSize > segmentSize) {
                     throw MessageBadAlloc(tools::ToString("Requested message size (", fullSize, ") exceeds segment size (", segmentSize, ")"));
                 }
 
-                ptr = reinterpret_cast<char*>(boost::apply_visitor(SegmentAllocate{fullSize}, fSegments.at(fSegmentId)));
-                assert(reinterpret_cast<uintptr_t>(ptr) % 2 == 0);
-                uint16_t offset = 0;
-                offset = alignment - ((reinterpret_cast<uintptr_t>(ptr) + sizeof(uint16_t)) % alignment);
-                std::memcpy(ptr, &offset, sizeof(offset));
+                ptr = boost::apply_visitor(SegmentAllocate{fullSize}, fSegments.at(fSegmentId));
+                ShmHeader::Construct(ptr, alignment);
             } catch (boost::interprocess::bad_alloc& ba) {
                 // LOG(warn) << "Shared memory full...";
                 if (ThrowingOnBadAlloc()) {
                     throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default", ", free memory: ", boost::apply_visitor(SegmentFreeMemory(), fSegments.at(fSegmentId))));
                 }
-                // rateLimiter.maybe_sleep();
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 if (Interrupted()) {
-                    return ShmPtr(ptr);
+                    throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default", ", free memory: ", boost::apply_visitor(SegmentFreeMemory(), fSegments.at(fSegmentId))));
                 } else {
                     continue;
                 }
@@ -684,18 +723,20 @@ class Manager
                 (*fMsgDebug).emplace(fSegmentId, fShmVoidAlloc);
             }
             (*fMsgDebug).at(fSegmentId).emplace(
-                static_cast<size_t>(GetHandleFromAddress(ShmPtr(ptr).UserPtr(), fSegmentId)),
+                static_cast<size_t>(GetHandleFromAddress(ShmHeader::UserPtr(ptr), fSegmentId)),
                 MsgDebug(getpid(), size, std::chrono::system_clock::now().time_since_epoch().count())
             );
 #endif
         }
 
-        return ShmPtr(ptr);
+        return ptr;
     }
 
     void Deallocate(boost::interprocess::managed_shared_memory::handle_t handle, uint16_t segmentId)
     {
-        boost::apply_visitor(SegmentDeallocate(GetAddressFromHandle(handle, segmentId)), fSegments.at(segmentId));
+        char* ptr = GetAddressFromHandle(handle, segmentId);
+        ShmHeader::Destruct(ptr);
+        boost::apply_visitor(SegmentDeallocate(ptr), fSegments.at(segmentId));
 #ifdef FAIRMQ_DEBUG_MODE
         boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
         DecrementShmMsgCounter(segmentId);
