@@ -89,7 +89,7 @@ add_testsuite(Message
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     message/_message.cxx
 
-    LINKS FairMQ
+    LINKS FairMQ PicoSHA2
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_SOURCE_DIR}/message
              ${CMAKE_CURRENT_BINARY_DIR}

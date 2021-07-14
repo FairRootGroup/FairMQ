@@ -47,6 +47,10 @@ struct Message
     TransportFactory* GetTransport() { return fTransport; }
     void SetTransport(TransportFactory* transport) { fTransport = transport; }
 
+    /// Copy the message buffer from another message
+    /// Transport may choose not to physically copy the buffer, but to share across the messages.
+    /// Modifying the buffer after a call to Copy() is undefined behaviour.
+    /// @param msg message to copy the buffer from.
     virtual void Copy(const Message& msg) = 0;
 
     virtual ~Message() = default;

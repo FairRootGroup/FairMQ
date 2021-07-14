@@ -38,7 +38,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
+        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId()}
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
@@ -49,7 +49,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
+        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId()}
         , fAlignment(alignment.alignment)
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
@@ -61,7 +61,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
+        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId()}
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
@@ -73,7 +73,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
+        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId()}
         , fAlignment(alignment.alignment)
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
@@ -86,7 +86,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, 0, fManager.GetSegmentId(), -1}
+        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId()}
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
@@ -105,7 +105,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{size, reinterpret_cast<size_t>(hint), static_cast<UnmanagedRegion*>(region.get())->fRegionId, fManager.GetSegmentId(), -1}
+        , fMeta{size, reinterpret_cast<size_t>(hint), -1, -1, static_cast<UnmanagedRegion*>(region.get())->fRegionId, fManager.GetSegmentId()}
         , fRegionPtr(nullptr)
         , fLocalPtr(static_cast<char*>(data))
     {
@@ -187,8 +187,7 @@ class Message final : public fair::mq::Message
             if (fMeta.fRegionId == 0) {
                 if (fMeta.fSize > 0) {
                     fManager.GetSegment(fMeta.fSegmentId);
-                    ShmPtr shmPtr(reinterpret_cast<char*>(fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId)));
-                    fLocalPtr = shmPtr.UserPtr();
+                    fLocalPtr = ShmHeader::UserPtr(fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId));
                 } else {
                     fLocalPtr = nullptr;
                 }
@@ -218,8 +217,8 @@ class Message final : public fair::mq::Message
         } else if (newSize <= fMeta.fSize) {
             try {
                 try {
-                    ShmPtr shmPtr(fManager.ShrinkInPlace(newSize, static_cast<char*>(fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId)), fMeta.fSegmentId));
-                    fLocalPtr = shmPtr.UserPtr();
+                    char* ptr = fManager.ShrinkInPlace(newSize, fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId), fMeta.fSegmentId);
+                    fLocalPtr = ShmHeader::UserPtr(ptr);
                     fMeta.fSize = newSize;
                     return true;
                 } catch (boost::interprocess::bad_alloc& e) {
@@ -227,17 +226,12 @@ class Message final : public fair::mq::Message
                     // unused size >= 1000000 bytes: reallocate fully
                     // unused size < 1000000 bytes: simply reset the size and keep the rest of the buffer until message destruction
                     if (fMeta.fSize - newSize >= 1000000) {
-                        ShmPtr shmPtr = fManager.Allocate(newSize, fAlignment);
-                        if (shmPtr.RealPtr()) {
-                            char* userPtr = shmPtr.UserPtr();
-                            std::memcpy(userPtr, fLocalPtr, newSize);
-                            fManager.Deallocate(fMeta.fHandle, fMeta.fSegmentId);
-                            fLocalPtr = userPtr;
-                            fMeta.fHandle = fManager.GetHandleFromAddress(shmPtr.RealPtr(), fMeta.fSegmentId);
-                        } else {
-                            LOG(debug) << "could not set used size: " << e.what();
-                            return false;
-                        }
+                        char* ptr = fManager.Allocate(newSize, fAlignment);
+                        char* userPtr = ShmHeader::UserPtr(ptr);
+                        std::memcpy(userPtr, fLocalPtr, newSize);
+                        fManager.Deallocate(fMeta.fHandle, fMeta.fSegmentId);
+                        fLocalPtr = userPtr;
+                        fMeta.fHandle = fManager.GetHandleFromAddress(ptr, fMeta.fSegmentId);
                     }
                     fMeta.fSize = newSize;
                     return true;
@@ -254,32 +248,64 @@ class Message final : public fair::mq::Message
 
     Transport GetType() const override { return fair::mq::Transport::SHM; }
 
-    void Copy(const fair::mq::Message& msg) override
+    uint16_t GetRefCount() const
     {
         if (fMeta.fHandle < 0) {
-            boost::interprocess::managed_shared_memory::handle_t otherHandle = static_cast<const Message&>(msg).fMeta.fHandle;
-            if (otherHandle) {
-                if (InitializeChunk(msg.GetSize())) {
-                    std::memcpy(GetData(), msg.GetData(), msg.GetSize());
-                }
+            return 1;
+        }
+
+        if (fMeta.fRegionId == 0) { // managed segment
+            fManager.GetSegment(fMeta.fSegmentId);
+            return ShmHeader::RefCount(fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId));
+        } else { // unmanaged region
+            if (fMeta.fShared < 0) { // UR msg is not yet shared
+                return 1;
             } else {
-                LOG(error) << "copy fail: source message not initialized!";
+                fManager.GetSegment(fMeta.fSegmentId);
+                return ShmHeader::RefCount(fManager.GetAddressFromHandle(fMeta.fShared, fMeta.fSegmentId));
             }
-        } else {
-            LOG(error) << "copy fail: target message already initialized!";
         }
     }
 
-    ~Message() override
+    void Copy(const fair::mq::Message& other) override
     {
-        try {
+        const Message& otherMsg = static_cast<const Message&>(other);
+        if (otherMsg.fMeta.fHandle < 0) {
+            // if the other message is not initialized, close this one too and return
             CloseMessage();
-        } catch(SharedMemoryError& sme) {
-            LOG(error) << "error closing message: " << sme.what();
-        } catch(boost::interprocess::lock_exception& le) {
-            LOG(error) << "error closing message: " << le.what();
+            return;
+        }
+
+        if (fMeta.fHandle >= 0) {
+            // if this msg is already initialized, close it first
+            CloseMessage();
+        }
+
+        if (otherMsg.fMeta.fRegionId == 0) { // managed segment
+            fMeta = otherMsg.fMeta;
+            fManager.GetSegment(fMeta.fSegmentId);
+            ShmHeader::IncrementRefCount(fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId));
+        } else { // unmanaged region
+            if (otherMsg.fMeta.fShared < 0) { // if UR msg is not yet shared
+                // TODO: minimize the size to 0 and don't create extra space for user buffer alignment
+                char* ptr = fManager.Allocate(2, 0);
+                // point the fShared in the unmanaged region message to the refCount holder
+                otherMsg.fMeta.fShared = fManager.GetHandleFromAddress(ptr, fMeta.fSegmentId);
+                // the message needs to be able to locate in which segment the refCount is stored
+                otherMsg.fMeta.fSegmentId = fMeta.fSegmentId;
+                // point this message to the same content as the unmanaged region message
+                fMeta = otherMsg.fMeta;
+                // increment the refCount
+                ShmHeader::IncrementRefCount(ptr);
+            } else { // if the UR msg is already shared
+                fMeta = otherMsg.fMeta;
+                fManager.GetSegment(fMeta.fSegmentId);
+                ShmHeader::IncrementRefCount(fManager.GetAddressFromHandle(fMeta.fShared, fMeta.fSegmentId));
+            }
         }
     }
+
+    ~Message() override { CloseMessage(); }
 
   private:
     Manager& fManager;
@@ -291,44 +317,70 @@ class Message final : public fair::mq::Message
 
     char* InitializeChunk(const size_t size, size_t alignment = 0)
     {
-        ShmPtr shmPtr = fManager.Allocate(size, alignment);
-        if (shmPtr.RealPtr()) {
-            fMeta.fHandle = fManager.GetHandleFromAddress(shmPtr.RealPtr(), fMeta.fSegmentId);
-            fMeta.fSize = size;
-            fLocalPtr = shmPtr.UserPtr();
+        if (size == 0) {
+            fMeta.fSize = 0;
+            return fLocalPtr;
         }
+        char* ptr = fManager.Allocate(size, alignment);
+        fMeta.fHandle = fManager.GetHandleFromAddress(ptr, fMeta.fSegmentId);
+        fMeta.fSize = size;
+        fLocalPtr = ShmHeader::UserPtr(ptr);
         return fLocalPtr;
     }
 
     void Deallocate()
     {
         if (fMeta.fHandle >= 0 && !fQueued) {
-            if (fMeta.fRegionId == 0) {
+            if (fMeta.fRegionId == 0) { // managed segment
                 fManager.GetSegment(fMeta.fSegmentId);
-                fManager.Deallocate(fMeta.fHandle, fMeta.fSegmentId);
-                fMeta.fHandle = -1;
-            } else {
-                if (!fRegionPtr) {
-                    fRegionPtr = fManager.GetRegion(fMeta.fRegionId);
+                uint16_t refCount = ShmHeader::DecrementRefCount(fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId));
+                if (refCount == 1) {
+                    fManager.Deallocate(fMeta.fHandle, fMeta.fSegmentId);
                 }
-
-                if (fRegionPtr) {
-                    fRegionPtr->ReleaseBlock({fMeta.fHandle, fMeta.fSize, fMeta.fHint});
+            } else { // unmanaged region
+                if (fMeta.fShared >= 0) {
+                    // make sure segment is initialized in this transport
+                    fManager.GetSegment(fMeta.fSegmentId);
+                    // release unmanaged region block if ref count is one
+                    uint16_t refCount = ShmHeader::DecrementRefCount(fManager.GetAddressFromHandle(fMeta.fShared, fMeta.fSegmentId));
+                    if (refCount == 1) {
+                        fManager.Deallocate(fMeta.fShared, fMeta.fSegmentId);
+                        ReleaseUnmanagedRegionBlock();
+                    }
                 } else {
-                    LOG(warn) << "region ack queue for id " << fMeta.fRegionId << " no longer exist. Not sending ack";
+                    ReleaseUnmanagedRegionBlock();
                 }
             }
         }
+        fMeta.fHandle = -1;
         fLocalPtr = nullptr;
         fMeta.fSize = 0;
     }
 
+    void ReleaseUnmanagedRegionBlock()
+    {
+        if (!fRegionPtr) {
+            fRegionPtr = fManager.GetRegion(fMeta.fRegionId);
+        }
+
+        if (fRegionPtr) {
+            fRegionPtr->ReleaseBlock({fMeta.fHandle, fMeta.fSize, fMeta.fHint});
+        } else {
+            LOG(warn) << "region ack queue for id " << fMeta.fRegionId << " no longer exist. Not sending ack";
+        }
+    }
+
     void CloseMessage()
     {
-        Deallocate();
-        fAlignment = 0;
-
-        fManager.DecrementMsgCounter();
+        try {
+            Deallocate();
+            fAlignment = 0;
+            fManager.DecrementMsgCounter();
+        } catch(SharedMemoryError& sme) {
+            LOG(error) << "error closing message: " << sme.what();
+        } catch(boost::interprocess::lock_exception& le) {
+            LOG(error) << "error closing message: " << le.what();
+        }
     }
 };
 

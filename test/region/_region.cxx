@@ -199,7 +199,6 @@ void RegionCallbacks(const string& transport, const string& _address)
     });
     ptr2 = region2->GetData();
 
-
     {
         FairMQMessagePtr msg1out(push.NewMessage(region1, ptr1, size1, intPtr1.get()));
         FairMQMessagePtr msg2out(push.NewMessage(region2, ptr2, size2, intPtr2.get()));
