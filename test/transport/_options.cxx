@@ -75,6 +75,7 @@ void ZeroingAndMlock(const string& transport)
     config.SetProperty<size_t>("shm-segment-size", 16384);
     config.SetProperty<bool>("shm-zero-segment", true);
     config.SetProperty<bool>("shm-mlock-segment", true);
+    config.SetProperty<bool>("shm-mlock-segment-on-creation", true);
 
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
 

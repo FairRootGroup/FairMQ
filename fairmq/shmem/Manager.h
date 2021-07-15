@@ -90,11 +90,13 @@ class Manager
         LOG(debug) << "Generated shmid '" << fShmId << "' out of session id '" << sessionName << "'.";
 
         bool mlockSegment = false;
+        bool mlockSegmentOnCreation = false;
         bool zeroSegment = false;
         bool autolaunchMonitor = false;
         std::string allocationAlgorithm("rbtree_best_fit");
         if (config) {
             mlockSegment = config->GetProperty<bool>("shm-mlock-segment", mlockSegment);
+            mlockSegmentOnCreation = config->GetProperty<bool>("shm-mlock-segment-on-creation", mlockSegmentOnCreation);
             zeroSegment = config->GetProperty<bool>("shm-zero-segment", zeroSegment);
             autolaunchMonitor = config->GetProperty<bool>("shm-monitor", autolaunchMonitor);
             allocationAlgorithm = config->GetProperty<std::string>("shm-allocation", allocationAlgorithm);
@@ -162,6 +164,13 @@ class Manager
                     }
                     ss << "Created ";
                     (fEventCounter->fCount)++;
+                    if (mlockSegmentOnCreation) {
+                        LOG(error) << "Locking the managed segment memory pages...";
+                        if (mlock(boost::apply_visitor(SegmentAddress(), fSegments.at(fSegmentId)), boost::apply_visitor(SegmentSize(), fSegments.at(fSegmentId))) == -1) {
+                          LOG(error) << "Could not lock the managed segment memory. Code: " << errno << ", reason: " << strerror(errno);
+                      }
+                      LOG(error) << "Successfully locked the managed segment memory pages.";
+                    }
                 } else {
                     op = "open";
                     // found segment with the given id, opening
