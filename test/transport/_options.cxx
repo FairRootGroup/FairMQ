@@ -75,7 +75,24 @@ void ZeroingAndMlock(const string& transport)
     config.SetProperty<size_t>("shm-segment-size", 16384);
     config.SetProperty<bool>("shm-zero-segment", true);
     config.SetProperty<bool>("shm-mlock-segment", true);
+
+    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
+
+    FairMQMessagePtr outMsg(factory->CreateMessage(10000));
+    char test[10000];
+    memset(test, 0, sizeof(test));
+    ASSERT_EQ(memcmp(test, outMsg->GetData(), outMsg->GetSize()), 0);
+}
+
+void ZeroingAndMlockOnCreation(const string& transport)
+{
+    size_t session{fair::mq::tools::UuidHash()};
+
+    fair::mq::ProgOptions config;
+    config.SetProperty<string>("session", to_string(session));
+    config.SetProperty<size_t>("shm-segment-size", 16384);
     config.SetProperty<bool>("shm-mlock-segment-on-creation", true);
+    config.SetProperty<bool>("shm-zero-segment-on-creation", true);
 
     auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
 
@@ -98,6 +115,11 @@ TEST(Options, shmem)
 TEST(ZeroingAndMlock, shmem)
 {
     ZeroingAndMlock("shmem");
+}
+
+TEST(ZeroingAndMlockOnCreation, shmem)
+{
+    ZeroingAndMlockOnCreation("shmem");
 }
 
 } // namespace
