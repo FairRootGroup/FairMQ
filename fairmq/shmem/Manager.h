@@ -92,12 +92,14 @@ class Manager
         bool mlockSegment = false;
         bool mlockSegmentOnCreation = false;
         bool zeroSegment = false;
+        bool zeroSegmentOnCreation = false;
         bool autolaunchMonitor = false;
         std::string allocationAlgorithm("rbtree_best_fit");
         if (config) {
             mlockSegment = config->GetProperty<bool>("shm-mlock-segment", mlockSegment);
             mlockSegmentOnCreation = config->GetProperty<bool>("shm-mlock-segment-on-creation", mlockSegmentOnCreation);
             zeroSegment = config->GetProperty<bool>("shm-zero-segment", zeroSegment);
+            zeroSegmentOnCreation = config->GetProperty<bool>("shm-zero-segment-on-creation", zeroSegmentOnCreation);
             autolaunchMonitor = config->GetProperty<bool>("shm-monitor", autolaunchMonitor);
             allocationAlgorithm = config->GetProperty<std::string>("shm-allocation", allocationAlgorithm);
         } else {
@@ -165,11 +167,10 @@ class Manager
                     ss << "Created ";
                     (fEventCounter->fCount)++;
                     if (mlockSegmentOnCreation) {
-                        LOG(error) << "Locking the managed segment memory pages...";
-                        if (mlock(boost::apply_visitor(SegmentAddress(), fSegments.at(fSegmentId)), boost::apply_visitor(SegmentSize(), fSegments.at(fSegmentId))) == -1) {
-                          LOG(error) << "Could not lock the managed segment memory. Code: " << errno << ", reason: " << strerror(errno);
-                      }
-                      LOG(error) << "Successfully locked the managed segment memory pages.";
+                        MlockSegment(fSegmentId);
+                    }
+                    if (zeroSegmentOnCreation) {
+                        ZeroSegment(fSegmentId);
                     }
                 } else {
                     op = "open";
@@ -200,17 +201,10 @@ class Manager
             }
 
             if (mlockSegment) {
-                LOG(debug) << "Locking the managed segment memory pages...";
-                if (mlock(boost::apply_visitor(SegmentAddress(), fSegments.at(fSegmentId)), boost::apply_visitor(SegmentSize(), fSegments.at(fSegmentId))) == -1) {
-                    LOG(error) << "Could not lock the managed segment memory. Code: " << errno << ", reason: " << strerror(errno);
-                    throw TransportError(tools::ToString("Could not lock the managed segment memory: ", strerror(errno)));
-                }
-                LOG(debug) << "Successfully locked the managed segment memory pages.";
+                MlockSegment(fSegmentId);
             }
             if (zeroSegment) {
-                LOG(debug) << "Zeroing the managed segment free memory...";
-                boost::apply_visitor(SegmentMemoryZeroer(), fSegments.at(fSegmentId));
-                LOG(debug) << "Successfully zeroed the managed segment free memory.";
+                ZeroSegment(fSegmentId);
             }
 
 #ifdef FAIRMQ_DEBUG_MODE
@@ -228,6 +222,23 @@ class Manager
 
     Manager(const Manager&) = delete;
     Manager operator=(const Manager&) = delete;
+
+    void ZeroSegment(uint16_t id)
+    {
+        LOG(debug) << "Zeroing the managed segment free memory...";
+        boost::apply_visitor(SegmentMemoryZeroer(), fSegments.at(id));
+        LOG(debug) << "Successfully zeroed the managed segment free memory.";
+    }
+
+    void MlockSegment(uint16_t id)
+    {
+        LOG(debug) << "Locking the managed segment memory pages...";
+        if (mlock(boost::apply_visitor(SegmentAddress(), fSegments.at(id)), boost::apply_visitor(SegmentSize(), fSegments.at(id))) == -1) {
+            LOG(error) << "Could not lock the managed segment memory. Code: " << errno << ", reason: " << strerror(errno);
+            throw TransportError(tools::ToString("Could not lock the managed segment memory: ", strerror(errno)));
+        }
+        LOG(debug) << "Successfully locked the managed segment memory pages.";
+    }
 
     static void StartMonitor(const std::string& id)
     {
