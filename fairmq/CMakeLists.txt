@@ -180,6 +180,7 @@ if(BUILD_FAIRMQ)
     ProgOptionsFwd.h
     Properties.h
     PropertyOutput.h
+    Socket.h
     SuboptParser.h
     TransportFactory.h
     Transports.h
