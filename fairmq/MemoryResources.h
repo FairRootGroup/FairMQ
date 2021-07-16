@@ -103,10 +103,10 @@ class ChannelResource : public MemoryResource
     };
 };
 
-}   // namespace fair::mq
-
 // using FairMQMemoryResource [[deprecated("Use fair::mq::MemoryResource")]] =
-    // fair::mq::MemoryResource;
-using FairMQMemoryResource = fair::mq::MemoryResource;
+    // MemoryResource;
+using FairMQMemoryResource = MemoryResource;
+
+}   // namespace fair::mq
 
 #endif /* FAIR_MQ_MEMORY_RESOURCES_H */
