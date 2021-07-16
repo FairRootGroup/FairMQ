@@ -167,6 +167,7 @@ if(BUILD_FAIRMQ)
     FairMQSocket.h
     FairMQTransportFactory.h
     FairMQUnmanagedRegion.h
+    FwdDecls.h
     JSONParser.h
     MemoryResourceTools.h
     MemoryResources.h
@@ -180,6 +181,7 @@ if(BUILD_FAIRMQ)
     ProgOptionsFwd.h
     Properties.h
     PropertyOutput.h
+    Socket.h
     SuboptParser.h
     TransportFactory.h
     Transports.h
