@@ -93,6 +93,7 @@ void ProgOptions::ParseDefaults()
         return str.c_str();
     });
 
+    std::lock_guard<std::mutex> lock(fMtx);
     po::store(po::parse_command_line(argv.size(), const_cast<char**>(argv.data()), fAllOptions), fVarMap);
 }
 
@@ -390,6 +391,8 @@ void ProgOptions::PrintOptions() const
     int maxLenType = 0;
     int maxLenDefault = 0;
 
+    std::lock_guard<std::mutex> lock(fMtx);
+
     for (const auto& m : fVarMap) {
         maxLenKey = max(maxLenKey, static_cast<int>(m.first.length()));
 
@@ -427,6 +430,8 @@ void ProgOptions::PrintOptions() const
 
 void ProgOptions::PrintOptionsRaw() const
 {
+    std::lock_guard<std::mutex> lock(fMtx);
+
     const vector<boost::shared_ptr<po::option_description>>& options = fAllOptions.options();
 
     for (const auto& o : options) {

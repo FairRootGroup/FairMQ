@@ -224,7 +224,11 @@ class ProgOptions
     void PrintOptionsRaw() const;
 
     /// @brief returns the property container
-    const boost::program_options::variables_map& GetVarMap() const { return fVarMap; }
+    const boost::program_options::variables_map& GetVarMap() const
+    {
+        std::lock_guard<std::mutex> lock(fMtx);
+        return fVarMap;
+    }
 
     /// @brief Read config property, return default-constructed object if key doesn't exist
     /// @param key
