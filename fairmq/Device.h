@@ -536,9 +536,11 @@ class Device
 
     /// @brief Returns name of the given state as a string
     /// @param state state
+    [[deprecated("Use fair::mq::GetStateName from <fairmq/States.h> directly")]]
     static std::string GetStateName(const State state) { return fair::mq::GetStateName(state); }
     /// @brief Returns name of the given transition as a string
     /// @param transition transition
+    [[deprecated("Use fair::mq::GetTransitionName from <fairmq/States.h> directly")]]
     static std::string GetTransitionName(const Transition transition)
     {
         return fair::mq::GetTransitionName(transition);
