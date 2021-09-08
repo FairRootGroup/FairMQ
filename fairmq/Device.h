@@ -536,12 +536,12 @@ class Device
 
     /// @brief Returns name of the given state as a string
     /// @param state state
-    static std::string GetStateName(const State state) { return GetStateName(state); }
+    static std::string GetStateName(const State state) { return fair::mq::GetStateName(state); }
     /// @brief Returns name of the given transition as a string
     /// @param transition transition
     static std::string GetTransitionName(const Transition transition)
     {
-        return GetTransitionName(transition);
+        return fair::mq::GetTransitionName(transition);
     }
 
     static constexpr const char* DefaultId = "";
