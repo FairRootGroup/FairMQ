@@ -89,7 +89,7 @@ pipeline{
     stage("CI") {
       steps{
         script {
-          def all = '-DHAS_ASIO=ON -DHAS_DDS=ON -DHAS_PMIX=ON'
+          def all = '-DHAS_ASIO=ON -DHAS_ASIOFI=ON -DHAS_PMIX=ON'
 
           def builds = jobMatrix('build', [
             [os: 'ubuntu', ver: '20.04', arch: 'x86_64', compiler: 'gcc-9',  extra: all],
@@ -97,7 +97,7 @@ pipeline{
             [os: 'fedora', ver: '33',    arch: 'x86_64', compiler: 'gcc-10', extra: all],
             [os: 'fedora', ver: '34',    arch: 'x86_64', compiler: 'gcc-11', extra: all],
             [os: 'macos',  ver: '11',    arch: 'x86_64', compiler: 'apple-clang-12',
-             extra: '-DHAS_ASIO=ON -DHAS_DDS=ON'],
+             extra: '-DHAS_ASIO=ON'],
           ])
 
           def all_debug = "${all} -DCMAKE_BUILD_TYPE=Debug"

@@ -10,20 +10,20 @@ From: ubuntu:20.04
 
     cd /tmp
 
-    git clone -b v1.18.1 --recurse-submodules https://github.com/FairRootGroup/asio
+    git clone -b v1.19.2 --recurse-submodules https://github.com/FairRootGroup/asio
     cmake -GNinja -S asio -B asio_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
     cmake --build asio_build --target install
     rm -rf asio asio_build
 
-    git clone -b v0.2.0 https://github.com/FairRootGroup/FairCMakeModules
+    git clone -b v1.0.0 https://github.com/FairRootGroup/FairCMakeModules
     cmake -GNinja -S FairCMakeModules -B FairCMakeModules_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
     cmake --build FairCMakeModules_build --target install
     rm -rf FairCMakeModules FairCMakeModules_build
 
-    # git clone -b v0.5.0 --recurse-submodules https://github.com/FairRootGroup/asiofi
-    # cmake -GNinja -S asiofi -B asiofi_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
-    # cmake --build asiofi_build --target install
-    # rm -rf asiofi asiofi_build
+    git clone -b v0.5.1 --recurse-submodules https://github.com/FairRootGroup/asiofi
+    cmake -GNinja -S asiofi -B asiofi_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
+    cmake --build asiofi_build --target install
+    rm -rf asiofi asiofi_build
 
     git clone -b v1.12.1 https://github.com/google/flatbuffers
     cmake -GNinja -S flatbuffers -B flatbuffers_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON
@@ -34,15 +34,3 @@ From: ubuntu:20.04
     cmake -GNinja -S FairLogger -B FairLogger_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DUSE_EXTERNAL_FMT=ON
     cmake --build FairLogger_build --target install
     rm -rf FairLogger FairLogger_build
-
-    git clone -b 3.5.14 https://github.com/FairRootGroup/DDS
-    cd DDS
-    wget https://git.gsi.de/SDE/packages/dds/-/raw/f33f1a6a95eecbfebc6042af382fcf2d3128ba15/fix_install_destinations.patch
-    wget https://git.gsi.de/SDE/packages/dds/-/raw/f33f1a6a95eecbfebc6042af382fcf2d3128ba15/strip_etc_version.patch
-    patch -p1 < fix_install_destinations.patch
-    patch -p1 < strip_etc_version.patch
-    cd ..
-    cmake -GNinja -S DDS -B DDS_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_dds-octopus=OFF -DBUILD_dds-tutorials=OFF -DBUILD_dds-test=OFF
-    cmake --build DDS_build --target wn_bin
-    cmake --build DDS_build --target install
-    rm -rf DDS DDS_build
