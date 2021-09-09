@@ -4,5 +4,6 @@ From: fedora:33
 %post
     dnf -y update
     dnf -y install https://alfa-ci.gsi.de/packages/rpm/fedora-33-x86_64/fairsoft-release-dev.rpm
-    dnf -y install git boost-devel cmake gcc-c++ dds-devel fairlogger-devel faircmakemodules asio-devel flatbuffers-devel zeromq-devel asiofi-devel cli11-devel pmix-devel ninja-build
+    dnf -y install cli11-devel pmix-devel ninja-build 'dnf-command(builddep)'
+    dnf -y builddep fairmq
     dnf -y clean all
