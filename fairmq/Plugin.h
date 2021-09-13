@@ -72,10 +72,10 @@ class Plugin
     // see <fairmq/PluginServices.h> for docs
     using DeviceState = fair::mq::PluginServices::DeviceState;
     using DeviceStateTransition = fair::mq::PluginServices::DeviceStateTransition;
-    auto ToDeviceState(const std::string& state) const -> DeviceState { return fPluginServices->ToDeviceState(state); }
-    auto ToDeviceStateTransition(const std::string& transition) const -> DeviceStateTransition { return fPluginServices->ToDeviceStateTransition(transition); }
-    auto ToStr(DeviceState state) const -> std::string { return fPluginServices->ToStr(state); }
-    auto ToStr(DeviceStateTransition transition) const -> std::string { return fPluginServices->ToStr(transition); }
+    auto ToDeviceState(const std::string& state) const -> DeviceState { return PluginServices::ToDeviceState(state); }
+    auto ToDeviceStateTransition(const std::string& transition) const -> DeviceStateTransition { return PluginServices::ToDeviceStateTransition(transition); }
+    auto ToStr(DeviceState state) const -> std::string { return PluginServices::ToStr(state); }
+    auto ToStr(DeviceStateTransition transition) const -> std::string { return PluginServices::ToStr(transition); }
     auto GetCurrentDeviceState() const -> DeviceState { return fPluginServices->GetCurrentDeviceState(); }
     auto TakeDeviceControl() -> void { fPluginServices->TakeDeviceControl(fkName); };
     auto StealDeviceControl() -> void { fPluginServices->StealDeviceControl(fkName); };
