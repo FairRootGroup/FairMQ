@@ -115,7 +115,7 @@ class PluginManager
 
     static const std::string fgkLibPrefix;
     std::vector<boost::filesystem::path> fSearchPaths;
-    static std::vector<boost::dll::shared_library> fgDLLKeepAlive;
+    static std::vector<boost::dll::shared_library> fgDLLKeepAlive; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
     std::map<std::string, std::function<PluginFactory>> fPluginFactories;
     std::unique_ptr<PluginServices> fPluginServices;
     std::map<std::string, std::unique_ptr<Plugin>> fPlugins;

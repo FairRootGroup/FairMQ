@@ -16,7 +16,7 @@ using namespace std;
 namespace fair::mq
 {
 
-array<string, 16> stateNames =
+const array<string, 16> stateNames =
 {
     {
         "UNDEFINED",
@@ -38,7 +38,7 @@ array<string, 16> stateNames =
     }
 };
 
-unordered_map<string, State> states =
+const unordered_map<string, State> states =
 {
     { "UNDEFINED",           State::Undefined },
     { "OK",                  State::Ok },
@@ -58,7 +58,7 @@ unordered_map<string, State> states =
     { "EXITING",             State::Exiting }
 };
 
-array<string, 12> transitionNames =
+const array<string, 12> transitionNames =
 {
     {
         "AUTO",
@@ -76,7 +76,7 @@ array<string, 12> transitionNames =
     }
 };
 
-unordered_map<string, Transition> transitions =
+const unordered_map<string, Transition> transitions =
 {
     { "AUTO",          Transition::Auto },
     { "INIT DEVICE",   Transition::InitDevice },
