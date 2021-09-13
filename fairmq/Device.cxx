@@ -60,15 +60,15 @@ Device::Device(ProgOptions& config)
     : Device(&config, {0, 0, 0})
 {}
 
-Device::Device(const tools::Version version)
+Device::Device(tools::Version version)
     : Device(nullptr, version)
 {}
 
-Device::Device(ProgOptions& config, const tools::Version version)
+Device::Device(ProgOptions& config, tools::Version version)
     : Device(&config, version)
 {}
 
-Device::Device(ProgOptions* config, const tools::Version version)
+Device::Device(ProgOptions* config, tools::Version version)
     : fTransportFactory(nullptr)
     , fInternalConfig(config ? nullptr : make_unique<ProgOptions>())
     , fConfig(config ? config : fInternalConfig.get())
@@ -133,7 +133,7 @@ Device::Device(ProgOptions* config, const tools::Version version)
     fStateMachine.Start();
 }
 
-void Device::TransitionTo(const State s)
+void Device::TransitionTo(State s)
 {
     {
         lock_guard<mutex> lock(fTransitionMtx);

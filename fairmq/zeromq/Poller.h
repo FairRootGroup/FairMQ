@@ -105,7 +105,7 @@ class Poller final : public fair::mq::Poller
     Poller(const Poller&) = delete;
     Poller operator=(const Poller&) = delete;
 
-    void SetItemEvents(zmq_pollitem_t& item, const int type)
+    void SetItemEvents(zmq_pollitem_t& item, int type)
     {
         if (type == ZMQ_REQ || type == ZMQ_REP || type == ZMQ_PAIR || type == ZMQ_DEALER || type == ZMQ_ROUTER) {
             item.events = ZMQ_POLLIN | ZMQ_POLLOUT;
@@ -119,7 +119,7 @@ class Poller final : public fair::mq::Poller
         }
     }
 
-    void Poll(const int timeout) override
+    void Poll(int timeout) override
     {
         while (true) {
             if (zmq_poll(fItems, fNumItems, timeout) < 0) {
@@ -138,7 +138,7 @@ class Poller final : public fair::mq::Poller
         }
     }
 
-    bool CheckInput(const int index) override
+    bool CheckInput(int index) override
     {
         if (fItems[index].revents & ZMQ_POLLIN) {
             return true;
@@ -147,7 +147,7 @@ class Poller final : public fair::mq::Poller
         return false;
     }
 
-    bool CheckOutput(const int index) override
+    bool CheckOutput(int index) override
     {
         if (fItems[index].revents & ZMQ_POLLOUT) {
             return true;
@@ -156,7 +156,7 @@ class Poller final : public fair::mq::Poller
         return false;
     }
 
-    bool CheckInput(const std::string& channelKey, const int index) override
+    bool CheckInput(const std::string& channelKey, int index) override
     {
         try {
             if (fItems[fOffsetMap.at(channelKey) + index].revents & ZMQ_POLLIN) {
@@ -171,7 +171,7 @@ class Poller final : public fair::mq::Poller
         }
     }
 
-    bool CheckOutput(const std::string& channelKey, const int index) override
+    bool CheckOutput(const std::string& channelKey, int index) override
     {
         try {
             if (fItems[fOffsetMap.at(channelKey) + index].revents & ZMQ_POLLOUT) {

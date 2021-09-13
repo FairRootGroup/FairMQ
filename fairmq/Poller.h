@@ -17,11 +17,11 @@ namespace fair::mq {
 
 struct Poller
 {
-    virtual void Poll(const int timeout) = 0;
-    virtual bool CheckInput(const int index) = 0;
-    virtual bool CheckOutput(const int index) = 0;
-    virtual bool CheckInput(const std::string& channelKey, const int index) = 0;
-    virtual bool CheckOutput(const std::string& channelKey, const int index) = 0;
+    virtual void Poll(int timeout) = 0;
+    virtual bool CheckInput(int index) = 0;
+    virtual bool CheckOutput(int index) = 0;
+    virtual bool CheckInput(const std::string& channelKey, int index) = 0;
+    virtual bool CheckOutput(const std::string& channelKey, int index) = 0;
 
     virtual ~Poller() = default;
 };

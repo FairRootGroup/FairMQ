@@ -101,22 +101,22 @@ class TransportFactory final : public fair::mq::TransportFactory
         return std::make_unique<Message>(*fManager, alignment, this);
     }
 
-    MessagePtr CreateMessage(const size_t size) override
+    MessagePtr CreateMessage(size_t size) override
     {
         return std::make_unique<Message>(*fManager, size, this);
     }
 
-    MessagePtr CreateMessage(const size_t size, Alignment alignment) override
+    MessagePtr CreateMessage(size_t size, Alignment alignment) override
     {
         return std::make_unique<Message>(*fManager, size, alignment, this);
     }
 
-    MessagePtr CreateMessage(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
+    MessagePtr CreateMessage(void* data, size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
     {
         return std::make_unique<Message>(*fManager, data, size, ffn, hint, this);
     }
 
-    MessagePtr CreateMessage(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0) override
+    MessagePtr CreateMessage(UnmanagedRegionPtr& region, void* data, size_t size, void* hint = 0) override
     {
         return std::make_unique<Message>(*fManager, region, data, size, hint, this);
     }
@@ -141,27 +141,27 @@ class TransportFactory final : public fair::mq::TransportFactory
         return std::make_unique<Poller>(channelsMap, channelList);
     }
 
-    UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0, fair::mq::RegionConfig cfg = fair::mq::RegionConfig()) override
+    UnmanagedRegionPtr CreateUnmanagedRegion(size_t size, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0, fair::mq::RegionConfig cfg = fair::mq::RegionConfig()) override
     {
         return CreateUnmanagedRegion(size, 0, callback, nullptr, path, flags, cfg);
     }
 
-    UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, RegionBulkCallback bulkCallback = nullptr, const std::string& path = "", int flags = 0, fair::mq::RegionConfig cfg = fair::mq::RegionConfig()) override
+    UnmanagedRegionPtr CreateUnmanagedRegion(size_t size, RegionBulkCallback bulkCallback = nullptr, const std::string& path = "", int flags = 0, fair::mq::RegionConfig cfg = fair::mq::RegionConfig()) override
     {
         return CreateUnmanagedRegion(size, 0, nullptr, bulkCallback, path, flags, cfg);
     }
 
-    UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, int64_t userFlags, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0, fair::mq::RegionConfig cfg = fair::mq::RegionConfig()) override
+    UnmanagedRegionPtr CreateUnmanagedRegion(size_t size, int64_t userFlags, RegionCallback callback = nullptr, const std::string& path = "", int flags = 0, fair::mq::RegionConfig cfg = fair::mq::RegionConfig()) override
     {
         return CreateUnmanagedRegion(size, userFlags, callback, nullptr, path, flags, cfg);
     }
 
-    UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, int64_t userFlags, RegionBulkCallback bulkCallback = nullptr, const std::string& path = "", int flags = 0, fair::mq::RegionConfig cfg = fair::mq::RegionConfig()) override
+    UnmanagedRegionPtr CreateUnmanagedRegion(size_t size, int64_t userFlags, RegionBulkCallback bulkCallback = nullptr, const std::string& path = "", int flags = 0, fair::mq::RegionConfig cfg = fair::mq::RegionConfig()) override
     {
         return CreateUnmanagedRegion(size, userFlags, nullptr, bulkCallback, path, flags, cfg);
     }
 
-    UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size, int64_t userFlags, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string& path, int flags, fair::mq::RegionConfig cfg)
+    UnmanagedRegionPtr CreateUnmanagedRegion(size_t size, int64_t userFlags, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string& path, int flags, fair::mq::RegionConfig cfg)
     {
         return std::make_unique<UnmanagedRegion>(*fManager, size, userFlags, callback, bulkCallback, path, flags, this, cfg);
     }

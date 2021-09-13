@@ -104,12 +104,12 @@ class TransportFactory
     /// @param path optional parameter to pass to the underlying transport
     /// @param flags optional parameter to pass to the underlying transport
     /// @return pointer to UnmanagedRegion
-    virtual UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size,
+    virtual UnmanagedRegionPtr CreateUnmanagedRegion(size_t size,
                                                      RegionCallback callback = nullptr,
                                                      const std::string& path = "",
                                                      int flags = 0,
                                                      RegionConfig cfg = RegionConfig()) = 0;
-    virtual UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size,
+    virtual UnmanagedRegionPtr CreateUnmanagedRegion(size_t size,
                                                      RegionBulkCallback callback = nullptr,
                                                      const std::string& path = "",
                                                      int flags = 0,
@@ -123,14 +123,14 @@ class TransportFactory
     /// @param path optional parameter to pass to the underlying transport
     /// @param flags optional parameter to pass to the underlying transport
     /// @return pointer to UnmanagedRegion
-    virtual UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size,
-                                                     const int64_t userFlags,
+    virtual UnmanagedRegionPtr CreateUnmanagedRegion(size_t size,
+                                                     int64_t userFlags,
                                                      RegionCallback callback = nullptr,
                                                      const std::string& path = "",
                                                      int flags = 0,
                                                      RegionConfig cfg = RegionConfig()) = 0;
-    virtual UnmanagedRegionPtr CreateUnmanagedRegion(const size_t size,
-                                                     const int64_t userFlags,
+    virtual UnmanagedRegionPtr CreateUnmanagedRegion(size_t size,
+                                                     int64_t userFlags,
                                                      RegionBulkCallback callback = nullptr,
                                                      const std::string& path = "",
                                                      int flags = 0,

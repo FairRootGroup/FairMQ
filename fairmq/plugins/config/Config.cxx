@@ -18,7 +18,7 @@ using namespace std;
 namespace fair::mq::plugins
 {
 
-Config::Config(const string& name, const Plugin::Version version, const string& maintainer, const string& homepage, PluginServices* pluginServices)
+Config::Config(const string& name, Plugin::Version version, const string& maintainer, const string& homepage, PluginServices* pluginServices)
     : Plugin(name, version, maintainer, homepage, pluginServices)
 {
     SubscribeToDeviceStateChange([&](DeviceState newState) {

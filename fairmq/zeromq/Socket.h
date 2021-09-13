@@ -131,7 +131,7 @@ class Socket final : public fair::mq::Socket
         }
     }
 
-    int64_t Send(MessagePtr& msg, const int timeout = -1) override
+    int64_t Send(MessagePtr& msg, int timeout = -1) override
     {
         int flags = 0;
         if (timeout == 0) {
@@ -161,7 +161,7 @@ class Socket final : public fair::mq::Socket
         }
     }
 
-    int64_t Receive(MessagePtr& msg, const int timeout = -1) override
+    int64_t Receive(MessagePtr& msg, int timeout = -1) override
     {
         int flags = 0;
         if (timeout == 0) {
@@ -191,7 +191,7 @@ class Socket final : public fair::mq::Socket
         }
     }
 
-    int64_t Send(std::vector<std::unique_ptr<fair::mq::Message>>& msgVec, const int timeout = -1) override
+    int64_t Send(std::vector<std::unique_ptr<fair::mq::Message>>& msgVec, int timeout = -1) override
     {
         int flags = 0;
         if (timeout == 0) {
@@ -243,7 +243,7 @@ class Socket final : public fair::mq::Socket
         }
     }
 
-    int64_t Receive(std::vector<std::unique_ptr<fair::mq::Message>>& msgVec, const int timeout = -1) override
+    int64_t Receive(std::vector<std::unique_ptr<fair::mq::Message>>& msgVec, int timeout = -1) override
     {
         int flags = 0;
         if (timeout == 0) {
@@ -329,7 +329,7 @@ class Socket final : public fair::mq::Socket
         return zmq_getsockopt(fSocket, ZMQ_EVENTS, events, &eventsSize);
     }
 
-    void SetLinger(const int value) override
+    void SetLinger(int value) override
     {
         if (zmq_setsockopt(fSocket, ZMQ_LINGER, &value, sizeof(value)) < 0) {
             throw SocketError(tools::ToString("failed setting ZMQ_LINGER, reason: ", zmq_strerror(errno)));
@@ -346,7 +346,7 @@ class Socket final : public fair::mq::Socket
         return value;
     }
 
-    void SetSndBufSize(const int value) override
+    void SetSndBufSize(int value) override
     {
         if (zmq_setsockopt(fSocket, ZMQ_SNDHWM, &value, sizeof(value)) < 0) {
             throw SocketError(tools::ToString("failed setting ZMQ_SNDHWM, reason: ", zmq_strerror(errno)));
@@ -363,7 +363,7 @@ class Socket final : public fair::mq::Socket
         return value;
     }
 
-    void SetRcvBufSize(const int value) override
+    void SetRcvBufSize(int value) override
     {
         if (zmq_setsockopt(fSocket, ZMQ_RCVHWM, &value, sizeof(value)) < 0) {
             throw SocketError(tools::ToString("failed setting ZMQ_RCVHWM, reason: ", zmq_strerror(errno)));
@@ -380,7 +380,7 @@ class Socket final : public fair::mq::Socket
         return value;
     }
 
-    void SetSndKernelSize(const int value) override
+    void SetSndKernelSize(int value) override
     {
         if (zmq_setsockopt(fSocket, ZMQ_SNDBUF, &value, sizeof(value)) < 0) {
             throw SocketError(tools::ToString("failed getting ZMQ_SNDBUF, reason: ", zmq_strerror(errno)));
@@ -397,7 +397,7 @@ class Socket final : public fair::mq::Socket
         return value;
     }
 
-    void SetRcvKernelSize(const int value) override
+    void SetRcvKernelSize(int value) override
     {
         if (zmq_setsockopt(fSocket, ZMQ_RCVBUF, &value, sizeof(value)) < 0) {
             throw SocketError(tools::ToString("failed getting ZMQ_RCVBUF, reason: ", zmq_strerror(errno)));

@@ -20,7 +20,7 @@ namespace fair::mq::plugins
 class Config : public Plugin
 {
   public:
-    Config(const std::string& name, const Plugin::Version version, const std::string& maintainer, const std::string& homepage, PluginServices* pluginServices);
+    Config(const std::string& name, Plugin::Version version, const std::string& maintainer, const std::string& homepage, PluginServices* pluginServices);
 
     ~Config();
 };

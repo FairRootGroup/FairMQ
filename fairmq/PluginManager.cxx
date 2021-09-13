@@ -35,7 +35,7 @@ fair::mq::PluginManager::PluginManager()
 {
 }
 
-fair::mq::PluginManager::PluginManager(const vector<string> args)
+fair::mq::PluginManager::PluginManager(const vector<string>& args)
     : fPluginServices()
 {
     // Parse command line options

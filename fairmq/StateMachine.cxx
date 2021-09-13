@@ -246,7 +246,7 @@ StateMachine::StateMachine() : fFsm(new FairMQFSM) {}
 void StateMachine::Start() { static_pointer_cast<FairMQFSM>(fFsm)->start(); }
 StateMachine::~StateMachine() { static_pointer_cast<FairMQFSM>(fFsm)->stop(); }
 
-bool StateMachine::ChangeState(const Transition transition)
+bool StateMachine::ChangeState(Transition transition)
 try {
     auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
     lock_guard<mutex> lock(fsm->fStateMtx);
@@ -357,7 +357,7 @@ void StateMachine::WaitForPendingState() const
     unique_lock<mutex> lock(fsm->fStateMtx);
     fsm->fNewStatePendingCV.wait(lock, [&]{ return static_cast<bool>(fsm->fNewStatePending); });
 }
-bool StateMachine::WaitForPendingStateFor(const int durationInMs) const
+bool StateMachine::WaitForPendingStateFor(int durationInMs) const
 {
     auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
     unique_lock<mutex> lock(fsm->fStateMtx);
