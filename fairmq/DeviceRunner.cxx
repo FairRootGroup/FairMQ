@@ -120,7 +120,7 @@ auto DeviceRunner::Run() -> int
     fPluginManager.ForEachPluginProgOptions([&](boost::program_options::options_description options) {
         fConfig.AddToCmdLineOptions(options);
     });
-    fConfig.AddToCmdLineOptions(fPluginManager.ProgramOptions());
+    fConfig.AddToCmdLineOptions(PluginManager::ProgramOptions());
 
     ////// CALL HOOK ///////
     fEvents.Emit<hooks::ModifyRawCmdLineArgs>(*this);
