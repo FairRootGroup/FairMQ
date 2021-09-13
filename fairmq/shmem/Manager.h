@@ -142,13 +142,11 @@ class Manager
         , fShmVoidAlloc(fManagementSegment.get_segment_manager())
         , fShmMtx(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mtx").c_str())
         , fRegionEventsShmCV(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_cv").c_str())
-        , fRegionEventsSubscriptionActive(false)
         , fNumObservedEvents(0)
         , fDeviceCounter(nullptr)
         , fEventCounter(nullptr)
         , fShmSegments(nullptr)
         , fShmRegions(nullptr)
-        , fInterrupted(false)
 #ifdef FAIRMQ_DEBUG_MODE
         , fMsgDebug(nullptr)
         , fShmMsgCounters(nullptr)
@@ -156,6 +154,8 @@ class Manager
         , fMsgCounterDelete(0)
 #endif
         , fBeatTheHeart(true)
+        , fRegionEventsSubscriptionActive(false)
+        , fInterrupted(false)
         , fThrowOnBadAlloc(config ? config->GetProperty<bool>("shm-throw-bad-alloc", true) : true)
         , fNoCleanup(config ? config->GetProperty<bool>("shm-no-cleanup", false) : false)
     {
@@ -807,7 +807,6 @@ class Manager
 
     boost::interprocess::named_condition fRegionEventsShmCV;
     std::thread fRegionEventThread;
-    bool fRegionEventsSubscriptionActive;
     std::function<void(fair::mq::RegionInfo)> fRegionEventCallback;
     std::map<std::pair<uint16_t, bool>, RegionEvent> fObservedRegionEvents; // pair: <region id, managed>
     uint64_t fNumObservedEvents;
@@ -817,26 +816,26 @@ class Manager
     Uint16SegmentInfoHashMap* fShmSegments;
     Uint16RegionInfoHashMap* fShmRegions;
     std::unordered_map<uint16_t, std::unique_ptr<Region>> fRegions;
-    // make sure this is alone in the cache line: mostly read
-    alignas(128) inline static std::atomic<unsigned long> fRegionsGen = 0ul;
+    inline static std::atomic<unsigned long> fRegionsGen = 0ul;
     inline static thread_local struct ManagerTLCache {
         unsigned long fRegionsTLCacheGen;
         std::vector<std::tuple<Region*, uint16_t, uint64_t>> fRegionsTLCache;
     } fTlRegionCache;
 
-    std::atomic<bool> fInterrupted;
 #ifdef FAIRMQ_DEBUG_MODE
-    // make sure the counters are not thrashing the cache line between threads doing creation and deallocation
     Uint16MsgDebugMapHashMap* fMsgDebug;
     Uint16MsgCounterHashMap* fShmMsgCounters;
-    alignas(128) std::atomic_uint64_t fMsgCounterNew;
-    alignas(128) std::atomic_uint64_t fMsgCounterDelete;
+    std::atomic_uint64_t fMsgCounterNew;
+    std::atomic_uint64_t fMsgCounterDelete;
 #endif
 
     std::thread fHeartbeatThread;
-    bool fBeatTheHeart;
     std::mutex fHeartbeatsMtx;
     std::condition_variable fHeartbeatsCV;
+    bool fBeatTheHeart;
+
+    bool fRegionEventsSubscriptionActive;
+    std::atomic<bool> fInterrupted;
 
     bool fThrowOnBadAlloc;
     bool fNoCleanup;
