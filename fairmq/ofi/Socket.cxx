@@ -250,7 +250,7 @@ auto Socket::ConnectEndpoint(std::unique_ptr<asiofi::connected_endpoint>& endpoi
     }
 }
 
-auto Socket::Send(MessagePtr& msg, const int /*timeout*/) -> int64_t
+auto Socket::Send(MessagePtr& msg, int /*timeout*/) -> int64_t
 {
     // timeout argument not yet implemented
 
@@ -261,7 +261,7 @@ auto Socket::Send(MessagePtr& msg, const int /*timeout*/) -> int64_t
     return Send(msgVec);
 }
 
-auto Socket::Send(std::vector<MessagePtr>& msgVec, const int /*timeout*/) -> int64_t
+auto Socket::Send(std::vector<MessagePtr>& msgVec, int /*timeout*/) -> int64_t
 try {
     // timeout argument not yet implemented
 
@@ -408,7 +408,7 @@ auto Socket::SendQueueReaderStatic() -> void
     });
 }
 
-auto Socket::Receive(MessagePtr& msg, const int /*timeout*/) -> int64_t
+auto Socket::Receive(MessagePtr& msg, int /*timeout*/) -> int64_t
 try {
     // timeout argument not yet implemented
 
@@ -430,7 +430,7 @@ try {
     return static_cast<int>(TransferCode::error);
 }
 
-auto Socket::Receive(std::vector<MessagePtr>& msgVec, const int /*timeout*/) -> int64_t
+auto Socket::Receive(std::vector<MessagePtr>& msgVec, int /*timeout*/) -> int64_t
 try {
     // timeout argument not yet implemented
 
@@ -609,7 +609,7 @@ auto Socket::GetOption(const string& /*option*/, void* /*value*/, size_t* /*valu
     // }
 }
 
-void Socket::SetLinger(const int /*value*/)
+void Socket::SetLinger(int /*value*/)
 {
     LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
 }
@@ -620,7 +620,7 @@ int Socket::GetLinger() const
     return 0;
 }
 
-void Socket::SetSndBufSize(const int /*value*/)
+void Socket::SetSndBufSize(int /*value*/)
 {
     LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
 }
@@ -631,7 +631,7 @@ int Socket::GetSndBufSize() const
     return 0;
 }
 
-void Socket::SetRcvBufSize(const int /*value*/)
+void Socket::SetRcvBufSize(int /*value*/)
 {
     LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
 }
@@ -642,7 +642,7 @@ int Socket::GetRcvBufSize() const
     return 0;
 }
 
-void Socket::SetSndKernelSize(const int /*value*/)
+void Socket::SetSndKernelSize(int /*value*/)
 {
     LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
 }
@@ -653,7 +653,7 @@ int Socket::GetSndKernelSize() const
     return 0;
 }
 
-void Socket::SetRcvKernelSize(const int /*value*/)
+void Socket::SetRcvKernelSize(int /*value*/)
 {
     LOG(debug) << "OFI transport (" << fId << "): Not yet implemented.";
 }

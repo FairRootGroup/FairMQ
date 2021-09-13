@@ -34,14 +34,14 @@ struct Message
 
     virtual void Rebuild() = 0;
     virtual void Rebuild(Alignment alignment) = 0;
-    virtual void Rebuild(const size_t size) = 0;
-    virtual void Rebuild(const size_t size, Alignment alignment) = 0;
-    virtual void Rebuild(void* data, const size_t size, FreeFn* ffn, void* hint = nullptr) = 0;
+    virtual void Rebuild(size_t size) = 0;
+    virtual void Rebuild(size_t size, Alignment alignment) = 0;
+    virtual void Rebuild(void* data, size_t size, FreeFn* ffn, void* hint = nullptr) = 0;
 
     virtual void* GetData() const = 0;
     virtual size_t GetSize() const = 0;
 
-    virtual bool SetUsedSize(const size_t size) = 0;
+    virtual bool SetUsedSize(size_t size) = 0;
 
     virtual Transport GetType() const = 0;
     TransportFactory* GetTransport() { return fTransport; }

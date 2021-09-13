@@ -25,7 +25,7 @@ class StateMachine
     StateMachine();
     virtual ~StateMachine();
 
-    bool ChangeState(const Transition transition);
+    bool ChangeState(Transition transition);
     bool ChangeState(const std::string& transition) { return ChangeState(GetTransition(transition)); }
 
     void SubscribeToStateChange(const std::string& key, std::function<void(const State)> callback);
@@ -39,7 +39,7 @@ class StateMachine
 
     bool NewStatePending() const;
     void WaitForPendingState() const;
-    bool WaitForPendingStateFor(const int durationInMs) const;
+    bool WaitForPendingStateFor(int durationInMs) const;
 
     State GetCurrentState() const;
     std::string GetCurrentStateName() const;

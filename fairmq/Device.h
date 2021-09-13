@@ -53,11 +53,11 @@ class Device
   public:
     Device();
     Device(ProgOptions& config);
-    Device(const tools::Version version);
-    Device(ProgOptions& config, const tools::Version version);
+    Device(tools::Version version);
+    Device(ProgOptions& config, tools::Version version);
 
   private:
-    Device(ProgOptions* config, const tools::Version version);
+    Device(ProgOptions* config, tools::Version version);
 
   public:
     Device(const Device&) = delete;
@@ -252,7 +252,7 @@ class Device
 
     /// Adds a transport to the device if it doesn't exist
     /// @param transport  Transport string ("zeromq"/"shmem")
-    std::shared_ptr<TransportFactory> AddTransport(const mq::Transport transport);
+    std::shared_ptr<TransportFactory> AddTransport(mq::Transport transport);
 
     /// Assigns config to the device
     void SetConfig(ProgOptions& config);
@@ -489,7 +489,7 @@ class Device
     /// @param state state to wait for
     void WaitForState(const std::string& state) { WaitForState(GetState(state)); }
 
-    void TransitionTo(const State state);
+    void TransitionTo(State state);
 
     /// @brief Subscribe with a callback to state changes
     /// @param key id to identify your subscription
@@ -537,11 +537,11 @@ class Device
     /// @brief Returns name of the given state as a string
     /// @param state state
     [[deprecated("Use fair::mq::GetStateName from <fairmq/States.h> directly")]]
-    static std::string GetStateName(const State state) { return fair::mq::GetStateName(state); }
+    static std::string GetStateName(State state) { return fair::mq::GetStateName(state); }
     /// @brief Returns name of the given transition as a string
     /// @param transition transition
     [[deprecated("Use fair::mq::GetTransitionName from <fairmq/States.h> directly")]]
-    static std::string GetTransitionName(const Transition transition)
+    static std::string GetTransitionName(Transition transition)
     {
         return fair::mq::GetTransitionName(transition);
     }

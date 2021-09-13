@@ -32,17 +32,17 @@ class Message final : public fair::mq::Message
   public:
     Message(std::pmr::memory_resource* pmr);
     Message(std::pmr::memory_resource* pmr, Alignment alignment);
-    Message(std::pmr::memory_resource* pmr, const size_t size);
-    Message(std::pmr::memory_resource* pmr, const size_t size, Alignment alignment);
+    Message(std::pmr::memory_resource* pmr, size_t size);
+    Message(std::pmr::memory_resource* pmr, size_t size, Alignment alignment);
     Message(std::pmr::memory_resource* pmr,
             void* data,
-            const size_t size,
+            size_t size,
             fairmq_free_fn* ffn,
             void* hint = nullptr);
     Message(std::pmr::memory_resource* pmr,
             fair::mq::UnmanagedRegionPtr& region,
             void* data,
-            const size_t size,
+            size_t size,
             void* hint = 0);
 
     Message(const Message&) = delete;
@@ -50,14 +50,14 @@ class Message final : public fair::mq::Message
 
     auto Rebuild() -> void override;
     auto Rebuild(Alignment alignment) -> void override;
-    auto Rebuild(const size_t size) -> void override;
-    auto Rebuild(const size_t size, Alignment alignment) -> void override;
-    auto Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) -> void override;
+    auto Rebuild(size_t size) -> void override;
+    auto Rebuild(size_t size, Alignment alignment) -> void override;
+    auto Rebuild(void* data, size_t size, fairmq_free_fn* ffn, void* hint = nullptr) -> void override;
 
     auto GetData() const -> void* override;
     auto GetSize() const -> size_t override;
 
-    auto SetUsedSize(const size_t size) -> bool override;
+    auto SetUsedSize(size_t size) -> bool override;
 
     auto GetType() const -> fair::mq::Transport override { return fair::mq::Transport::OFI; }
 

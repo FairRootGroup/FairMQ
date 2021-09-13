@@ -152,7 +152,7 @@ class Message final : public fair::mq::Message
         }
     }
 
-    void Rebuild(const size_t size) override
+    void Rebuild(size_t size) override
     {
         CloseMessage();
         fMsg = std::make_unique<zmq_msg_t>();
@@ -161,7 +161,7 @@ class Message final : public fair::mq::Message
         }
     }
 
-    void Rebuild(const size_t size, Alignment alignment) override
+    void Rebuild(size_t size, Alignment alignment) override
     {
         CloseMessage();
         fAlignment = alignment.alignment;
@@ -179,7 +179,7 @@ class Message final : public fair::mq::Message
         }
     }
 
-    void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
+    void Rebuild(void* data, size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
     {
         CloseMessage();
         fMsg = std::make_unique<zmq_msg_t>();
@@ -204,7 +204,7 @@ class Message final : public fair::mq::Message
     // destroyed. Used size is applied only once in ApplyUsedSize, which is called by the socket
     // before sending. This function just updates the desired size until the actual "resizing"
     // happens.
-    bool SetUsedSize(const size_t size) override
+    bool SetUsedSize(size_t size) override
     {
         if (size == GetSize()) {
             // nothing to do

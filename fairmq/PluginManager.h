@@ -49,7 +49,7 @@ class PluginManager
     using PluginFactory = std::unique_ptr<fair::mq::Plugin>(PluginServices&);
 
     PluginManager();
-    PluginManager(const std::vector<std::string> args);
+    PluginManager(const std::vector<std::string>& args);
 
     ~PluginManager()
     {

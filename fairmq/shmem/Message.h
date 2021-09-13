@@ -151,14 +151,14 @@ class Message final : public fair::mq::Message
         fAlignment = alignment.alignment;
     }
 
-    void Rebuild(const size_t size) override
+    void Rebuild(size_t size) override
     {
         CloseMessage();
         fQueued = false;
         InitializeChunk(size);
     }
 
-    void Rebuild(const size_t size, Alignment alignment) override
+    void Rebuild(size_t size, Alignment alignment) override
     {
         CloseMessage();
         fQueued = false;
@@ -166,7 +166,7 @@ class Message final : public fair::mq::Message
         InitializeChunk(size, fAlignment);
     }
 
-    void Rebuild(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
+    void Rebuild(void* data, size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
     {
         CloseMessage();
         fQueued = false;
@@ -207,7 +207,7 @@ class Message final : public fair::mq::Message
 
     size_t GetSize() const override { return fMeta.fSize; }
 
-    bool SetUsedSize(const size_t newSize) override
+    bool SetUsedSize(size_t newSize) override
     {
         if (newSize == fMeta.fSize) {
             return true;
