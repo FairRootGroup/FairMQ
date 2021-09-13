@@ -222,9 +222,9 @@ struct Machine_ : public state_machine_def<Machine_>
         bmpl::for_each<AllStates, wrap<bmpl::placeholders::_1>>(get_state_name<RecursiveStt>(stateName, state));
 
         stateName = boost::core::demangle(stateName.c_str());
-        size_t pos = stateName.rfind(":");
+        size_t pos = stateName.rfind(':');
         stateName = stateName.substr(pos + 1);
-        size_t pos2 = stateName.rfind("_");
+        size_t pos2 = stateName.rfind('_');
         stateName = stateName.substr(0, pos2);
 
         if (stateName != "OK") {

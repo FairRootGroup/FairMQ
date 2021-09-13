@@ -169,7 +169,7 @@ unordered_map<string, int> ProgOptions::GetChannelInfoImpl() const
     for (const auto& m : fVarMap) {
         if (boost::regex_match(m.first, re)) {
             string chan = m.first.substr(6);
-            string::size_type n = chan.find(".");
+            string::size_type n = chan.find('.');
             string chanName = chan.substr(0, n);
 
             if (info.find(chanName) == info.end()) {
