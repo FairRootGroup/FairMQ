@@ -43,11 +43,11 @@ struct InstanceLimiter
         }
     }
 
-    static int fCount;
+    static int fCount; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 };
 
 template<typename Tag, int Max>
-int InstanceLimiter<Tag, Max>::fCount(0);
+int InstanceLimiter<Tag, Max>::fCount(0); // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 } // namespace fair::mq::tools
 

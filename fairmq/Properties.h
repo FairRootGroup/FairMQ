@@ -65,9 +65,9 @@ class PropertyHelper
         }
     }
 
-    static std::unordered_map<std::type_index, void(*)(const fair::mq::EventManager&, const std::string&, const Property&)> fEventEmitters;
+    static std::unordered_map<std::type_index, void(*)(const fair::mq::EventManager&, const std::string&, const Property&)> fEventEmitters; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
   private:
-    static std::unordered_map<std::type_index, std::function<std::pair<std::string, std::string>(const Property&)>> fTypeInfos;
+    static std::unordered_map<std::type_index, std::function<std::pair<std::string, std::string>(const Property&)>> fTypeInfos; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 };
 
 }

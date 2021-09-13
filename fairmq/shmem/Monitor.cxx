@@ -43,7 +43,7 @@ namespace bipc = ::boost::interprocess;
 
 namespace
 {
-    volatile sig_atomic_t gSignalStatus = 0;
+    volatile sig_atomic_t gSignalStatus = 0; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 }
 
 namespace fair::mq::shmem

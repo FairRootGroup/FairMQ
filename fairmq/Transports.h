@@ -31,21 +31,21 @@ struct TransportError : std::runtime_error
     using std::runtime_error::runtime_error;
 };
 
-static std::unordered_map<std::string, Transport> TransportTypes{
+static const std::unordered_map<std::string, Transport> TransportTypes{
     {"default", Transport::DEFAULT},
     {"zeromq", Transport::ZMQ},
     {"shmem", Transport::SHM},
     {"ofi", Transport::OFI}
 };
 
-static std::unordered_map<Transport, std::string> TransportNames{
+static const std::unordered_map<Transport, std::string> TransportNames{
     {Transport::DEFAULT, "default"},
     {Transport::ZMQ, "zeromq"},
     {Transport::SHM, "shmem"},
     {Transport::OFI, "ofi"}
 };
 
-inline std::string TransportName(Transport transport) { return TransportNames[transport]; }
+inline std::string TransportName(Transport transport) { return TransportNames.at(transport); }
 
 inline Transport TransportType(const std::string& transport)
 try {
