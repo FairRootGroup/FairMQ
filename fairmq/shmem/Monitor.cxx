@@ -17,7 +17,6 @@
 #include <boost/interprocess/sync/named_mutex.hpp>
 #include <boost/interprocess/sync/named_condition.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <csignal>
 #include <iostream>
@@ -41,7 +40,6 @@ namespace fs = ::boost::filesystem;
 using namespace std;
 using bie = ::boost::interprocess::interprocess_exception;
 namespace bipc = ::boost::interprocess;
-namespace bpt = ::boost::posix_time;
 
 namespace
 {
