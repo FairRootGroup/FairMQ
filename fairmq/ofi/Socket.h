@@ -93,8 +93,6 @@ class Socket final : public fair::mq::Socket
     std::atomic<unsigned long> fMessagesRx;
     Address fRemoteAddr;
     Address fLocalAddr;
-    int fSndTimeout;
-    int fRcvTimeout;
     std::mutex fSendQueueMutex, fRecvQueueMutex;
     std::queue<std::vector<MessagePtr>> fSendQueue, fRecvQueue;
     std::vector<MessagePtr> fInflightMultiPartMessage;
