@@ -17,6 +17,12 @@ namespace fair::mq {
 
 struct Poller
 {
+    Poller() = default;
+    Poller(const Poller&) = delete;
+    Poller(Poller&&) = delete;
+    Poller& operator=(const Poller&) = delete;
+    Poller& operator=(Poller&&) = delete;
+
     virtual void Poll(int timeout) = 0;
     virtual bool CheckInput(int index) = 0;
     virtual bool CheckOutput(int index) = 0;

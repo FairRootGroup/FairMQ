@@ -60,6 +60,11 @@ struct TerminalConfig
         tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
     }
 
+    TerminalConfig(const TerminalConfig&) = delete;
+    TerminalConfig(TerminalConfig&&) = delete;
+    TerminalConfig& operator=(const TerminalConfig&) = delete;
+    TerminalConfig& operator=(TerminalConfig&&) = delete;
+
     ~TerminalConfig()
     {
         termios t;

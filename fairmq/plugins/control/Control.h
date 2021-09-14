@@ -28,6 +28,10 @@ class Control : public Plugin
 {
   public:
     Control(const std::string& name, Plugin::Version version, const std::string& maintainer, const std::string& homepage, PluginServices* pluginServices);
+    Control(const Control&) = delete;
+    Control(Control&&) = delete;
+    Control& operator=(const Control&) = delete;
+    Control& operator=(Control&&) = delete;
 
     ~Control();
 

@@ -51,7 +51,9 @@ class PluginServices
     }
 
     PluginServices(const PluginServices&) = delete;
-    PluginServices operator=(const PluginServices&) = delete;
+    PluginServices(PluginServices&&) = delete;
+    PluginServices& operator=(const PluginServices&) = delete;
+    PluginServices& operator=(PluginServices&&) = delete;
 
     using DeviceState = fair::mq::State;
     using DeviceStateTransition = fair::mq::Transition;

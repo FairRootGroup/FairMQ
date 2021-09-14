@@ -17,7 +17,10 @@ struct MyClass
     MyClass() = default;
     MyClass(std::string a) : msg(std::move(a)) {}
     MyClass(const MyClass&) = default;
-    MyClass& operator=(const MyClass& b) = default;
+    MyClass(MyClass&&) = default;
+    MyClass& operator=(const MyClass&) = default;
+    MyClass& operator=(MyClass&&) = default;
+    ~MyClass() = default;
     std::string msg;
 };
 

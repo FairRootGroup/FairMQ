@@ -59,7 +59,9 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
     }
 
     UnmanagedRegion(const UnmanagedRegion&) = delete;
-    UnmanagedRegion operator=(const UnmanagedRegion&) = delete;
+    UnmanagedRegion(UnmanagedRegion&&) = delete;
+    UnmanagedRegion& operator=(const UnmanagedRegion&) = delete;
+    UnmanagedRegion& operator=(UnmanagedRegion&&) = delete;
 
     virtual void* GetData() const override { return fBuffer; }
     virtual size_t GetSize() const override { return fSize; }

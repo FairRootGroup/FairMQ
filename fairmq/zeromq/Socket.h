@@ -72,7 +72,9 @@ class Socket final : public fair::mq::Socket
     }
 
     Socket(const Socket&) = delete;
-    Socket operator=(const Socket&) = delete;
+    Socket(Socket&&) = delete;
+    Socket& operator=(const Socket&) = delete;
+    Socket& operator=(Socket&&) = delete;
 
     std::string GetId() const override { return fId; }
 

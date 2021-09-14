@@ -43,6 +43,11 @@ class TransportFactory
         : fkId(std::move(id))
     {}
 
+    TransportFactory(const TransportFactory&) = delete;
+    TransportFactory(TransportFactory&&) = delete;
+    TransportFactory& operator=(const TransportFactory&) = delete;
+    TransportFactory& operator=(TransportFactory&&) = delete;
+
     auto GetId() const -> const std::string { return fkId; };
 
     /// Get a pointer to the associated polymorphic memory resource

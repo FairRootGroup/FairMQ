@@ -67,6 +67,11 @@ class TestDevice : public FairMQDevice
         ChangeState(fair::mq::Transition::Run);
     }
 
+    TestDevice(const TestDevice&) = delete;
+    TestDevice(TestDevice&&) = delete;
+    TestDevice& operator=(const TestDevice&) = delete;
+    TestDevice& operator=(TestDevice&&) = delete;
+
     ~TestDevice()
     {
         WaitForState(fair::mq::State::Running);

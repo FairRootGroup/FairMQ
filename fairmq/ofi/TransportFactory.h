@@ -55,10 +55,11 @@ struct TransportFactory final : mq::TransportFactory
         }
     }
 
-    TransportFactory(TransportFactory const&) = delete;
-    TransportFactory& operator=(TransportFactory const&) = delete;
-    TransportFactory(TransportFactory&&) = default;
-    TransportFactory& operator=(TransportFactory&&) = default;
+    TransportFactory(const TransportFactory&) = delete;
+    TransportFactory(TransportFactory&&) = delete;
+    TransportFactory& operator=(const TransportFactory&) = delete;
+    TransportFactory& operator=(TransportFactory&&) = delete;
+    ~TransportFactory() = default;
 
     auto CreateMessage() -> std::unique_ptr<mq::Message> override
     {

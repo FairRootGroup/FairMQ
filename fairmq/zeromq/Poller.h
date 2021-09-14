@@ -24,6 +24,12 @@ namespace fair::mq::zmq
 class Poller final : public fair::mq::Poller
 {
   public:
+    Poller() = default;
+    Poller(const Poller&) = delete;
+    Poller(Poller&&) = delete;
+    Poller& operator=(const Poller&) = delete;
+    Poller& operator=(Poller&&) = delete;
+
     Poller(const std::vector<Channel>& channels)
         : fItems()
         , fNumItems(0)
@@ -101,9 +107,6 @@ class Poller final : public fair::mq::Poller
             throw fair::mq::PollerError(fair::mq::tools::ToString("At least one of the provided channel keys for poller initialization is invalid. ", "Out of range error: ", oor.what()));
         }
     }
-
-    Poller(const Poller&) = delete;
-    Poller operator=(const Poller&) = delete;
 
     void SetItemEvents(zmq_pollitem_t& item, int type)
     {

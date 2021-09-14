@@ -35,6 +35,11 @@ struct ZMsg
     explicit ZMsg(size_t size) { int rc __attribute__((unused)) = zmq_msg_init_size(&fMsg, size); assert(rc == 0); }
     ~ZMsg() { int rc __attribute__((unused)) = zmq_msg_close(&fMsg); assert(rc == 0); }
 
+    ZMsg(const ZMsg&) = delete;
+    ZMsg(ZMsg&&) = delete;
+    ZMsg& operator=(const ZMsg&) = delete;
+    ZMsg& operator=(ZMsg&&) = delete;
+
     void* Data() { return zmq_msg_data(&fMsg); }
     size_t Size() { return zmq_msg_size(&fMsg); }
     zmq_msg_t* Msg() { return &fMsg; }
@@ -100,7 +105,9 @@ class Socket final : public fair::mq::Socket
     }
 
     Socket(const Socket&) = delete;
-    Socket operator=(const Socket&) = delete;
+    Socket(Socket&&) = delete;
+    Socket& operator=(const Socket&) = delete;
+    Socket& operator=(Socket&&) = delete;
 
     std::string GetId() const override { return fId; }
 

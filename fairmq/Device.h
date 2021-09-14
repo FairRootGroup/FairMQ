@@ -61,7 +61,9 @@ class Device
 
   public:
     Device(const Device&) = delete;
-    Device operator=(const Device&) = delete;
+    Device(Device&&) = delete;
+    Device& operator=(const Device&) = delete;
+    Device& operator=(Device&&) = delete;
     virtual ~Device();
 
     /// Outputs the socket transfer rates

@@ -136,7 +136,9 @@ class Message final : public fair::mq::Message
     }
 
     Message(const Message&) = delete;
-    Message operator=(const Message&) = delete;
+    Message(Message&&) = delete;
+    Message& operator=(const Message&) = delete;
+    Message& operator=(Message&&) = delete;
 
     void Rebuild() override
     {

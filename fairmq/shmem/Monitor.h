@@ -53,9 +53,10 @@ class Monitor
 {
   public:
     Monitor(std::string shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, unsigned int intervalInMS, bool runAsDaemon, bool cleanOnExit);
-
     Monitor(const Monitor&) = delete;
-    Monitor operator=(const Monitor&) = delete;
+    Monitor(Monitor&&) = delete;
+    Monitor& operator=(const Monitor&) = delete;
+    Monitor& operator=(Monitor&&) = delete;
 
     virtual ~Monitor();
 

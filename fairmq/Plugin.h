@@ -48,7 +48,9 @@ class Plugin
            PluginServices* pluginServices);
 
     Plugin(const Plugin&) = delete;
-    Plugin operator=(const Plugin&) = delete;
+    Plugin(Plugin&&) = delete;
+    Plugin& operator=(const Plugin&) = delete;
+    Plugin& operator=(Plugin&&) = delete;
 
     virtual ~Plugin();
 

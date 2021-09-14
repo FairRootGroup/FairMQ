@@ -78,6 +78,11 @@ struct UnmanagedRegion
         : fTransport(factory)
     {}
 
+    UnmanagedRegion(const UnmanagedRegion&) = delete;
+    UnmanagedRegion(UnmanagedRegion&&) = delete;
+    UnmanagedRegion& operator=(const UnmanagedRegion&) = delete;
+    UnmanagedRegion& operator=(UnmanagedRegion&&) = delete;
+
     virtual void* GetData() const = 0;
     virtual size_t GetSize() const = 0;
     virtual uint16_t GetId() const = 0;

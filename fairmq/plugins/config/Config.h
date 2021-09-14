@@ -21,6 +21,10 @@ class Config : public Plugin
 {
   public:
     Config(const std::string& name, Plugin::Version version, const std::string& maintainer, const std::string& homepage, PluginServices* pluginServices);
+    Config(const Config&) = delete;
+    Config(Config&&) = delete;
+    Config& operator=(const Config&) = delete;
+    Config& operator=(Config&&) = delete;
 
     ~Config();
 };

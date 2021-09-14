@@ -89,7 +89,9 @@ class TransportFactory final : public fair::mq::TransportFactory
     }
 
     TransportFactory(const TransportFactory&) = delete;
-    TransportFactory operator=(const TransportFactory&) = delete;
+    TransportFactory(TransportFactory&&) = delete;
+    TransportFactory& operator=(const TransportFactory&) = delete;
+    TransportFactory& operator=(TransportFactory&&) = delete;
 
     MessagePtr CreateMessage() override
     {
