@@ -26,7 +26,7 @@ class SlowDevice : public FairMQDevice
     SlowDevice() = default;
 
   protected:
-    void Init()
+    void Init() override
     {
         this_thread::sleep_for(chrono::milliseconds(100));
     }
