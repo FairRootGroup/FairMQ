@@ -5,12 +5,6 @@
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
-/**
-* Region.h
-*
-* @since 2016-04-08
-* @author A. Rybalchenko
-*/
 
 #ifndef FAIR_MQ_SHMEM_REGION_H_
 #define FAIR_MQ_SHMEM_REGION_H_

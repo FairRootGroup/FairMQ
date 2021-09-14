@@ -33,7 +33,7 @@ class Control : public Plugin
     Control& operator=(const Control&) = delete;
     Control& operator=(Control&&) = delete;
 
-    ~Control();
+    ~Control() override;
 
   private:
     auto InteractiveMode() -> void;

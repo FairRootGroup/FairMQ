@@ -63,8 +63,8 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
     UnmanagedRegion& operator=(const UnmanagedRegion&) = delete;
     UnmanagedRegion& operator=(UnmanagedRegion&&) = delete;
 
-    virtual void* GetData() const override { return fBuffer; }
-    virtual size_t GetSize() const override { return fSize; }
+    void* GetData() const override { return fBuffer; }
+    size_t GetSize() const override { return fSize; }
     uint16_t GetId() const override { return fId; }
     int64_t GetUserFlags() const { return fUserFlags; }
     void SetLinger(uint32_t /* linger */) override { LOG(debug) << "ZeroMQ UnmanagedRegion linger option not implemented. Acknowledgements are local."; }
@@ -72,7 +72,7 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
 
     Transport GetType() const override { return Transport::ZMQ; }
 
-    virtual ~UnmanagedRegion()
+    ~UnmanagedRegion() override
     {
         LOG(debug) << "destroying region " << fId;
         fCtx.RemoveRegion(fId);

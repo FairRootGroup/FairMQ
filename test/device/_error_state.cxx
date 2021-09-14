@@ -49,7 +49,7 @@ class BadDevice : public FairMQDevice
     BadDevice& operator=(const BadDevice&) = delete;
     BadDevice& operator=(BadDevice&&) = delete;
 
-    ~BadDevice()
+    ~BadDevice() override
     {
         ChangeState(fair::mq::Transition::ResetDevice);
 

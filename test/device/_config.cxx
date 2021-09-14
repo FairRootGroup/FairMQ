@@ -72,7 +72,7 @@ class TestDevice : public FairMQDevice
     TestDevice& operator=(const TestDevice&) = delete;
     TestDevice& operator=(TestDevice&&) = delete;
 
-    ~TestDevice()
+    ~TestDevice() override
     {
         WaitForState(fair::mq::State::Running);
         ChangeState(fair::mq::Transition::Stop);

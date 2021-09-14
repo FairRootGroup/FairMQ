@@ -26,7 +26,7 @@ class Config : public Plugin
     Config& operator=(const Config&) = delete;
     Config& operator=(Config&&) = delete;
 
-    ~Config();
+    ~Config() override;
 };
 
 Plugin::ProgOptions ConfigPluginProgramOptions();

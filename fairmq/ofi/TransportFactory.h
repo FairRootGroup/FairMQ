@@ -59,7 +59,7 @@ struct TransportFactory final : mq::TransportFactory
     TransportFactory(TransportFactory&&) = delete;
     TransportFactory& operator=(const TransportFactory&) = delete;
     TransportFactory& operator=(TransportFactory&&) = delete;
-    ~TransportFactory() = default;
+    ~TransportFactory() override = default;
 
     auto CreateMessage() -> std::unique_ptr<mq::Message> override
     {
