@@ -51,6 +51,11 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
         fRegionId = result.second;
     }
 
+    UnmanagedRegion(const UnmanagedRegion&) = delete;
+    UnmanagedRegion(UnmanagedRegion&&) = delete;
+    UnmanagedRegion& operator=(const UnmanagedRegion&) = delete;
+    UnmanagedRegion& operator=(UnmanagedRegion&&) = delete;
+
     void* GetData() const override { return fRegion->get_address(); }
     size_t GetSize() const override { return fRegion->get_size(); }
     uint16_t GetId() const override { return fRegionId; }

@@ -36,7 +36,9 @@ class Socket final : public fair::mq::Socket
   public:
     Socket(Context& context, const std::string& type, const std::string& name, const std::string& id = "");
     Socket(const Socket&) = delete;
-    Socket operator=(const Socket&) = delete;
+    Socket(Socket&&) = delete;
+    Socket& operator=(const Socket&) = delete;
+    Socket& operator=(Socket&&) = delete;
 
     auto GetId() const -> std::string override { return fId; }
 

@@ -44,6 +44,11 @@ class BadDevice : public FairMQDevice
         parts.AddPart(NewMessage());
     }
 
+    BadDevice(const BadDevice&) = delete;
+    BadDevice(BadDevice&&) = delete;
+    BadDevice& operator=(const BadDevice&) = delete;
+    BadDevice& operator=(BadDevice&&) = delete;
+
     ~BadDevice()
     {
         ChangeState(fair::mq::Transition::ResetDevice);

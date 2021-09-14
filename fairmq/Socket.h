@@ -30,9 +30,11 @@ enum class TransferCode : int
 struct Socket
 {
     Socket() = default;
-    Socket(TransportFactory* fac)
-        : fTransport(fac)
-    {}
+    Socket(TransportFactory* fac) : fTransport(fac) {}
+    Socket(const Socket&) = delete;
+    Socket(Socket&&) = delete;
+    Socket& operator=(const Socket&) = delete;
+    Socket& operator=(Socket&&) = delete;
 
     virtual std::string GetId() const = 0;
 

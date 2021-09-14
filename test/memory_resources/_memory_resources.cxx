@@ -39,6 +39,9 @@ struct TestData
         ++nallocations;
     }
 
+    TestData& operator=(const TestData&) = delete;
+    TestData& operator=(TestData&&) = delete;
+
     TestData(const TestData& in)
         : i{in.i}
     {

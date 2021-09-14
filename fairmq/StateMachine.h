@@ -23,7 +23,11 @@ class StateMachine
 {
   public:
     StateMachine();
-    virtual ~StateMachine();
+    StateMachine(const StateMachine&) = delete;
+    StateMachine(StateMachine&&) = delete;
+    StateMachine& operator=(const StateMachine&) = delete;
+    StateMachine& operator=(StateMachine&&) = delete;
+    ~StateMachine();
 
     bool ChangeState(Transition transition);
     bool ChangeState(const std::string& transition) { return ChangeState(GetTransition(transition)); }

@@ -54,6 +54,10 @@ class Context
     Context(FairMQTransportFactory& sendFactory,
             FairMQTransportFactory& receiveFactory,
             int numberIoThreads = 1);
+    Context(const Context&) = delete;
+    Context(Context&&) = delete;
+    Context& operator=(const Context&) = delete;
+    Context& operator=(Context&&) = delete;
     ~Context();
 
     auto GetAsiofiVersion() const -> std::string;

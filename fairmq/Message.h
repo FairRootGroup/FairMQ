@@ -32,6 +32,11 @@ struct Message
         : fTransport(factory)
     {}
 
+    Message(const Message&) = delete;
+    Message(Message&&) = delete;
+    Message& operator=(const Message&) = delete;
+    Message& operator=(Message&&) = delete;
+
     virtual void Rebuild() = 0;
     virtual void Rebuild(Alignment alignment) = 0;
     virtual void Rebuild(size_t size) = 0;

@@ -25,13 +25,11 @@ class Parts
   public:
     Parts() = default;
     Parts(const Parts&) = delete;
-    Parts(Parts&& p) = default;
-    Parts& operator=(const Parts&) = delete;
+    Parts(Parts&&) = default;
     template<typename... Ts>
-    Parts(Ts&&... messages)
-    {
-        AddPart(std::forward<Ts>(messages)...);
-    }
+    Parts(Ts&&... messages) { AddPart(std::forward<Ts>(messages)...); }
+    Parts& operator=(const Parts&) = delete;
+    Parts& operator=(Parts&&) = default;
     ~Parts() = default;
 
     /// Adds part (Message) to the container

@@ -33,6 +33,11 @@ class Message final : public fair::mq::Message
     friend class Socket;
 
   public:
+    Message(const Message&) = delete;
+    Message(Message&&) = delete;
+    Message& operator=(const Message&) = delete;
+    Message& operator=(Message&&) = delete;
+
     Message(FairMQTransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fMsg(std::make_unique<zmq_msg_t>())

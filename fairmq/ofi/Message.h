@@ -46,7 +46,9 @@ class Message final : public fair::mq::Message
             void* hint = 0);
 
     Message(const Message&) = delete;
-    Message operator=(const Message&) = delete;
+    Message(Message&&) = delete;
+    Message& operator=(const Message&) = delete;
+    Message& operator=(Message&&) = delete;
 
     auto Rebuild() -> void override;
     auto Rebuild(Alignment alignment) -> void override;

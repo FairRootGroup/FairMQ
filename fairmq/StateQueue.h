@@ -24,6 +24,10 @@ class StateQueue
 {
   public:
     StateQueue() = default;
+    StateQueue(const StateQueue&) = delete;
+    StateQueue(StateQueue&&) = delete;
+    StateQueue& operator=(const StateQueue&) = delete;
+    StateQueue& operator=(StateQueue&&) = delete;
     ~StateQueue() = default;
 
     fair::mq::State WaitForNext()

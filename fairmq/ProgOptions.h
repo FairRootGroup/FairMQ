@@ -33,7 +33,11 @@ class ProgOptions
 {
   public:
     ProgOptions();
-    virtual ~ProgOptions() = default;
+    ProgOptions(const ProgOptions&) = delete;
+    ProgOptions(ProgOptions&&) = delete;
+    ProgOptions& operator=(const ProgOptions&) = delete;
+    ProgOptions& operator=(ProgOptions&&) = delete;
+    ~ProgOptions() = default;
 
     void ParseAll(const std::vector<std::string>& cmdArgs, bool allowUnregistered);
     void ParseAll(int argc, char const* const* argv, bool allowUnregistered = true);

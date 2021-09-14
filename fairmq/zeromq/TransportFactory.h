@@ -44,7 +44,9 @@ class TransportFactory final : public FairMQTransportFactory
     }
 
     TransportFactory(const TransportFactory&) = delete;
-    TransportFactory operator=(const TransportFactory&) = delete;
+    TransportFactory(TransportFactory&&) = delete;
+    TransportFactory& operator=(const TransportFactory&) = delete;
+    TransportFactory& operator=(TransportFactory&&) = delete;
 
     MessagePtr CreateMessage() override
     {

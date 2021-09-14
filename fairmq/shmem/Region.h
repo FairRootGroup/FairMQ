@@ -113,6 +113,8 @@ struct Region
 
     Region(const Region&) = delete;
     Region(Region&&) = delete;
+    Region& operator=(const Region&) = delete;
+    Region& operator=(Region&&) = delete;
 
     void InitializeQueues()
     {

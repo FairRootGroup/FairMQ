@@ -102,7 +102,9 @@ class Poller final : public fair::mq::Poller
     }
 
     Poller(const Poller&) = delete;
-    Poller operator=(const Poller&) = delete;
+    Poller(Poller&&) = delete;
+    Poller& operator=(const Poller&) = delete;
+    Poller& operator=(Poller&&) = delete;
 
     void SetItemEvents(zmq_pollitem_t& item, int type)
     {

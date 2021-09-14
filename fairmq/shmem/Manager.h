@@ -293,9 +293,10 @@ class Manager
     }
 
     Manager() = delete;
-
     Manager(const Manager&) = delete;
-    Manager operator=(const Manager&) = delete;
+    Manager(Manager&&) = delete;
+    Manager& operator=(const Manager&) = delete;
+    Manager& operator=(Manager&&) = delete;
 
     void ZeroSegment(uint16_t id)
     {

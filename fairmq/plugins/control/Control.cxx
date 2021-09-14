@@ -119,9 +119,9 @@ auto ControlPluginProgramOptions() -> Plugin::ProgOptions
     return pluginOptions;
 }
 
-struct terminal_config
+struct TerminalConfig
 {
-    terminal_config()
+    TerminalConfig()
     {
         termios t;
         tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
@@ -130,7 +130,12 @@ struct terminal_config
         tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
     }
 
-    ~terminal_config()
+    TerminalConfig(const TerminalConfig&) = delete;
+    TerminalConfig(TerminalConfig&&) = delete;
+    TerminalConfig& operator=(const TerminalConfig&) = delete;
+    TerminalConfig& operator=(TerminalConfig&&) = delete;
+
+    ~TerminalConfig()
     {
         termios t;
         tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
@@ -150,7 +155,7 @@ try {
     cinfd[0].events = POLLIN;
     cinfd[0].revents = 0;
 
-    terminal_config tconfig;
+    TerminalConfig tconfig;
 
     bool color = GetProperty<bool>("color");
 

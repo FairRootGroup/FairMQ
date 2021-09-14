@@ -9,7 +9,6 @@
 #ifndef FAIR_MQ_CHANNEL_H
 #define FAIR_MQ_CHANNEL_H
 
-#include <cstdint>   // int64_t
 #include <fairmq/Message.h>
 #include <fairmq/Parts.h>
 #include <fairmq/Properties.h>
@@ -17,8 +16,9 @@
 #include <fairmq/TransportFactory.h>
 #include <fairmq/Transports.h>
 #include <fairmq/UnmanagedRegion.h>
+
+#include <cstdint>   // int64_t
 #include <memory>   // unique_ptr, shared_ptr
-#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <utility>   // std::move
@@ -73,16 +73,16 @@ class Channel
     Channel(const Channel&, std::string name);
 
     /// Move constructor
-    // Channel(Channel&&) = delete;
+    Channel(Channel&&) = default;
 
     /// Assignment operator
     Channel& operator=(const Channel&);
 
     /// Move assignment operator
-    // Channel& operator=(Channel&&) = delete;
+    Channel& operator=(Channel&&) = default;
 
     /// Destructor
-    virtual ~Channel() = default;
+    ~Channel() = default;
     // { LOG(warn) << "Destroying channel '" << fName << "'"; }
 
     struct ChannelConfigurationError : std::runtime_error { using std::runtime_error::runtime_error; };

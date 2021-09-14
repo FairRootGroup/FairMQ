@@ -47,6 +47,11 @@ struct StateSubscription
         });
     }
 
+    StateSubscription(const StateSubscription&) = delete;
+    StateSubscription(StateSubscription&&) = delete;
+    StateSubscription& operator=(const StateSubscription&) = delete;
+    StateSubscription& operator=(StateSubscription&&) = delete;
+
     ~StateSubscription() {
         fStateMachine.UnsubscribeFromStateChange(fId);
     }
