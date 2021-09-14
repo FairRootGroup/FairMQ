@@ -43,8 +43,6 @@ Socket::Socket(Context& context, const string& type, const string& name, const s
     , fBytesRx(0)
     , fMessagesTx(0)
     , fMessagesRx(0)
-    , fSndTimeout(100)
-    , fRcvTimeout(100)
     , fMultiPartRecvCounter(-1)
     , fSendPushSem(fContext.GetIoContext(), 384)
     , fSendPopSem(fContext.GetIoContext(), 0)
