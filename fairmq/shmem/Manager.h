@@ -88,6 +88,11 @@ struct ShmHeader
         return HdrPtr(ptr)->refCount;
     }
 
+    static uint16_t UserOffset(char* ptr)
+    {
+        return HdrPartSize() + HdrPtr(ptr)->userOffset;
+    }
+
     static char* UserPtr(char* ptr)
     {
         // [HdrOffset(uint16_t)][Hdr alignment][Hdr][user buffer alignment][user buffer]
