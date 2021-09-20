@@ -217,7 +217,9 @@ class Message final : public fair::mq::Message
         } else if (newSize <= fMeta.fSize) {
             try {
                 try {
-                    char* ptr = fManager.ShrinkInPlace(newSize, fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId), fMeta.fSegmentId);
+                    char* oldPtr = fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId);
+                    uint16_t userOffset = ShmHeader::UserOffset(oldPtr);
+                    char* ptr = fManager.ShrinkInPlace(userOffset + newSize, oldPtr, fMeta.fSegmentId);
                     fLocalPtr = ShmHeader::UserPtr(ptr);
                     fMeta.fSize = newSize;
                     return true;
