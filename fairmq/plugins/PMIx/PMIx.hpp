@@ -18,6 +18,7 @@
 #include <pmix.h>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -86,7 +87,7 @@ struct value : pmix_value_t
         PMIX_VALUE_XFER(rc, lhs, static_cast<pmix_value_t*>(const_cast<value*>(&rhs)));
 
         if (rc != PMIX_SUCCESS) {
-            throw runtime_error("pmix::value copy ctor failed: rc=" + rc);
+            throw runtime_error("pmix::value copy ctor failed: rc=" + std::to_string(rc));
         }
     }
 
