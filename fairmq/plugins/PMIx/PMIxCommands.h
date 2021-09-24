@@ -270,7 +270,7 @@ class Commands
                 // LOG(trace) << "suppressing message from itself";
             }
         } else {
-            LOG(ERROR) << "ERROR";
+            LOG(error) << "ERROR";
         }
 
         if (cbfunc != nullptr) {
