@@ -150,12 +150,25 @@ class Manager
         , fBeatTheHeart(true)
         , fRegionEventsSubscriptionActive(false)
         , fInterrupted(false)
-        , fThrowOnBadAlloc(config ? config->GetProperty<bool>("shm-throw-bad-alloc", true) : true)
+        , fBadAllocMaxAttempts(1)
+        , fBadAllocAttemptIntervalInMs(config ? config->GetProperty<int>("bad-alloc-attempt-interval", 50) : 50)
         , fNoCleanup(config ? config->GetProperty<bool>("shm-no-cleanup", false) : false)
     {
         using namespace boost::interprocess;
 
         LOG(debug) << "Generated shmid '" << fShmId << "' out of session id '" << sessionName << "'.";
+
+        if (config) {
+            // if 'shm-throw-bad-alloc' is explicitly set to false (true is default), ignore other settings
+            if (config->Count("shm-throw-bad-alloc") && config->GetProperty<bool>("shm-throw-bad-alloc") == false) {
+                fBadAllocMaxAttempts = -1;
+            } else if (config->Count("bad-alloc-max-attempts")) {
+                // if 'bad-alloc-max-attempts' is provided, use it
+                // this can override the default 'shm-throw-bad-alloc'==true if the value of 'bad-alloc-max-attempts' is -1
+                fBadAllocMaxAttempts = config->GetProperty<int>("bad-alloc-max-attempts");
+            }
+            // otherwise leave fBadAllocMaxAttempts at 1 (the original default, set in the initializer list)
+        }
 
         bool mlockSegment = false;
         bool mlockSegmentOnCreation = false;
@@ -653,8 +666,6 @@ class Manager
         }
     }
 
-    bool ThrowingOnBadAlloc() const { return fThrowOnBadAlloc; }
-
     void GetSegment(uint16_t id)
     {
         auto it = fSegments.find(id);
@@ -693,9 +704,10 @@ class Manager
         alignment = std::max(alignment, alignof(std::max_align_t));
 
         char* ptr = nullptr;
+        int numAttempts = 0;
         size_t fullSize = ShmHeader::FullSize(size, alignment);
 
-        while (ptr == nullptr) {
+        while (!ptr) {
             try {
                 size_t segmentSize = boost::apply_visitor(SegmentSize(), fSegments.at(fSegmentId));
                 if (fullSize > segmentSize) {
@@ -706,10 +718,10 @@ class Manager
                 ShmHeader::Construct(ptr, alignment);
             } catch (boost::interprocess::bad_alloc& ba) {
                 // LOG(warn) << "Shared memory full...";
-                if (ThrowingOnBadAlloc()) {
+                if (fBadAllocMaxAttempts >= 0 && ++numAttempts >= fBadAllocMaxAttempts) {
                     throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default", ", free memory: ", boost::apply_visitor(SegmentFreeMemory(), fSegments.at(fSegmentId))));
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                std::this_thread::sleep_for(std::chrono::milliseconds(fBadAllocAttemptIntervalInMs));
                 if (Interrupted()) {
                     throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default", ", free memory: ", boost::apply_visitor(SegmentFreeMemory(), fSegments.at(fSegmentId))));
                 } else {
@@ -832,7 +844,8 @@ class Manager
     bool fRegionEventsSubscriptionActive;
     std::atomic<bool> fInterrupted;
 
-    bool fThrowOnBadAlloc;
+    int fBadAllocMaxAttempts;
+    int fBadAllocAttemptIntervalInMs;
     bool fNoCleanup;
 };
 
