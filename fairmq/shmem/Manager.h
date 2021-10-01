@@ -732,9 +732,9 @@ class Manager
             boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
             IncrementShmMsgCounter(fSegmentId);
             if (fMsgDebug->count(fSegmentId) == 0) {
-                (*fMsgDebug).emplace(fSegmentId, fShmVoidAlloc);
+                fMsgDebug->emplace(fSegmentId, fShmVoidAlloc);
             }
-            (*fMsgDebug).at(fSegmentId).emplace(
+            fMsgDebug->at(fSegmentId).emplace(
                 static_cast<size_t>(GetHandleFromAddress(ShmHeader::UserPtr(ptr), fSegmentId)),
                 MsgDebug(getpid(), size, std::chrono::system_clock::now().time_since_epoch().count())
             );
@@ -747,17 +747,17 @@ class Manager
     void Deallocate(boost::interprocess::managed_shared_memory::handle_t handle, uint16_t segmentId)
     {
         char* ptr = GetAddressFromHandle(handle, segmentId);
-        ShmHeader::Destruct(ptr);
-        boost::apply_visitor(SegmentDeallocate(ptr), fSegments.at(segmentId));
 #ifdef FAIRMQ_DEBUG_MODE
         boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
         DecrementShmMsgCounter(segmentId);
         try {
-            (*fMsgDebug).at(segmentId).erase(handle);
+            fMsgDebug->at(segmentId).erase(GetHandleFromAddress(ShmHeader::UserPtr(ptr), fSegmentId));
         } catch(const std::out_of_range& oor) {
             LOG(debug) << "could not locate debug container for " << segmentId << ": " << oor.what();
         }
 #endif
+        ShmHeader::Destruct(ptr);
+        boost::apply_visitor(SegmentDeallocate(ptr), fSegments.at(segmentId));
     }
 
     char* ShrinkInPlace(size_t newSize, char* localPtr, uint16_t segmentId)
