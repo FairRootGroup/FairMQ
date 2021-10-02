@@ -9,6 +9,7 @@
 #include "Monitor.h"
 #include "Common.h"
 
+#include <fairmq/tools/IO.h>
 #include <fairmq/tools/Strings.h>
 
 #include <boost/interprocess/managed_shared_memory.hpp>
@@ -26,7 +27,6 @@
 #include <iomanip>
 #include <sstream>
 
-#include <termios.h>
 #include <poll.h>
 
 #if FAIRMQ_HAS_STD_FILESYSTEM
@@ -48,32 +48,6 @@ namespace
 
 namespace fair::mq::shmem
 {
-
-struct TerminalConfig
-{
-    TerminalConfig()
-    {
-        termios t;
-        tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
-        t.c_lflag &= ~ICANON; // disable canonical input
-        t.c_lflag &= ~ECHO; // do not echo input chars
-        tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
-    }
-
-    TerminalConfig(const TerminalConfig&) = delete;
-    TerminalConfig(TerminalConfig&&) = delete;
-    TerminalConfig& operator=(const TerminalConfig&) = delete;
-    TerminalConfig& operator=(TerminalConfig&&) = delete;
-
-    ~TerminalConfig()
-    {
-        termios t;
-        tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
-        t.c_lflag |= ICANON; // re-enable canonical input
-        t.c_lflag |= ECHO; // echo input chars
-        tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
-    }
-};
 
 void signalHandler(int signal)
 {
@@ -339,7 +313,7 @@ void Monitor::Interactive()
     cinfd[0].fd = fileno(stdin);
     cinfd[0].events = POLLIN;
 
-    TerminalConfig tcfg;
+    tools::NonCanonicalInput nci;
 
     LOG(info) << "\n";
     PrintHelp();

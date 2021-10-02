@@ -8,6 +8,8 @@
 
 #include "Control.h"
 
+#include <fairmq/tools/IO.h>
+
 #include <atomic>
 #include <chrono>
 #include <csignal> // catching system signals
@@ -17,7 +19,6 @@
 #include <thread>
 
 #include <poll.h> // for the interactive mode
-#include <termios.h> // for the interactive mode
 
 using namespace std;
 
@@ -119,32 +120,6 @@ auto ControlPluginProgramOptions() -> Plugin::ProgOptions
     return pluginOptions;
 }
 
-struct TerminalConfig
-{
-    TerminalConfig()
-    {
-        termios t;
-        tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
-        t.c_lflag &= ~ICANON; // disable canonical input
-        t.c_lflag &= ~ECHO; // do not echo input chars
-        tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
-    }
-
-    TerminalConfig(const TerminalConfig&) = delete;
-    TerminalConfig(TerminalConfig&&) = delete;
-    TerminalConfig& operator=(const TerminalConfig&) = delete;
-    TerminalConfig& operator=(TerminalConfig&&) = delete;
-
-    ~TerminalConfig()
-    {
-        termios t;
-        tcgetattr(STDIN_FILENO, &t); // get the current terminal I/O structure
-        t.c_lflag |= ICANON; // re-enable canonical input
-        t.c_lflag |= ECHO; // echo input chars
-        tcsetattr(STDIN_FILENO, TCSANOW, &t); // apply the new settings
-    }
-};
-
 auto Control::InteractiveMode() -> void
 try {
     RunStartupSequence();
@@ -155,7 +130,7 @@ try {
     cinfd[0].events = POLLIN;
     cinfd[0].revents = 0;
 
-    TerminalConfig tconfig;
+    tools::NonCanonicalInput nci;
 
     bool color = GetProperty<bool>("color");
 
