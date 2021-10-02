@@ -31,6 +31,7 @@ if(BUILD_FAIRMQ OR BUILD_SDK)
   set(TOOLS_PUBLIC_HEADER_FILES
     tools/CppSTL.h
     tools/InstanceLimit.h
+    tools/IO.h
     tools/Network.h
     tools/Process.h
     tools/RateLimit.h
