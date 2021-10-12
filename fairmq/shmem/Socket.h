@@ -471,37 +471,34 @@ class Socket final : public fair::mq::Socket
 
     static int GetConstant(const std::string& constant)
     {
-        if (constant.empty()) return 0;
-        if (constant == "sub") return ZMQ_SUB;
-        if (constant == "pub") return ZMQ_PUB;
-        if (constant == "xsub") return ZMQ_XSUB;
-        if (constant == "xpub") return ZMQ_XPUB;
-        if (constant == "push") return ZMQ_PUSH;
-        if (constant == "pull") return ZMQ_PULL;
-        if (constant == "req") return ZMQ_REQ;
-        if (constant == "rep") return ZMQ_REP;
-        if (constant == "dealer") return ZMQ_DEALER;
-        if (constant == "router") return ZMQ_ROUTER;
-        if (constant == "pair") return ZMQ_PAIR;
+        if (constant.empty()) { return 0; }
+        if (constant == "sub") { return ZMQ_SUB; }
+        if (constant == "pub") { return ZMQ_PUB; }
+        if (constant == "xsub") { return ZMQ_XSUB; }
+        if (constant == "xpub") { return ZMQ_XPUB; }
+        if (constant == "push") { return ZMQ_PUSH; }
+        if (constant == "pull") { return ZMQ_PULL; }
+        if (constant == "req") { return ZMQ_REQ; }
+        if (constant == "rep") { return ZMQ_REP; }
+        if (constant == "dealer") { return ZMQ_DEALER; }
+        if (constant == "router") { return ZMQ_ROUTER; }
+        if (constant == "pair") { return ZMQ_PAIR; }
 
-        if (constant == "snd-hwm") return ZMQ_SNDHWM;
-        if (constant == "rcv-hwm") return ZMQ_RCVHWM;
-        if (constant == "snd-size") return ZMQ_SNDBUF;
-        if (constant == "rcv-size") return ZMQ_RCVBUF;
-        if (constant == "snd-more") return ZMQ_SNDMORE;
-        if (constant == "rcv-more") return ZMQ_RCVMORE;
+        if (constant == "snd-hwm") { return ZMQ_SNDHWM; }
+        if (constant == "rcv-hwm") { return ZMQ_RCVHWM; }
+        if (constant == "snd-size") { return ZMQ_SNDBUF; }
+        if (constant == "rcv-size") { return ZMQ_RCVBUF; }
+        if (constant == "snd-more") { return ZMQ_SNDMORE; }
+        if (constant == "rcv-more") { return ZMQ_RCVMORE; }
 
-        if (constant == "linger") return ZMQ_LINGER;
-        if (constant == "no-block") return ZMQ_DONTWAIT;
-        if (constant == "snd-more no-block") return ZMQ_DONTWAIT|ZMQ_SNDMORE;
+        if (constant == "linger") { return ZMQ_LINGER; }
+        if (constant == "no-block") { return ZMQ_DONTWAIT; }
+        if (constant == "snd-more no-block") { return ZMQ_DONTWAIT|ZMQ_SNDMORE; }
 
-        if (constant == "fd") return ZMQ_FD;
-        if (constant == "events")
-            return ZMQ_EVENTS;
-        if (constant == "pollin")
-            return ZMQ_POLLIN;
-        if (constant == "pollout")
-            return ZMQ_POLLOUT;
+        if (constant == "fd") { return ZMQ_FD; }
+        if (constant == "events") { return ZMQ_EVENTS; }
+        if (constant == "pollin") { return ZMQ_POLLIN; }
+        if (constant == "pollout") { return ZMQ_POLLOUT; }
 
         throw SocketError(tools::ToString("GetConstant called with an invalid argument: ", constant));
     }
