@@ -186,6 +186,14 @@ class Channel
     /// @return true/false, true if automatic binding is enabled
     bool GetAutoBind() const { return fAutoBind; }
 
+    /// @par Thread Safety
+    /// * @e Distinct @e objects: Safe.@n
+    /// * @e Shared @e objects: Unsafe.
+    auto GetNumberOfConnectedPeers() const
+    {
+        return fSocket ? fSocket->GetNumberOfConnectedPeers() : 0;
+    }
+
     /// Set channel name
     /// @param name Arbitrary channel name
     void UpdateName(const std::string& name) { fName = name; Invalidate(); }

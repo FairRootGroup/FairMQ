@@ -74,6 +74,11 @@ class Socket final : public fair::mq::Socket
     auto GetMessagesTx() const -> unsigned long override { return fMessagesTx; }
     auto GetMessagesRx() const -> unsigned long override { return fMessagesRx; }
 
+    auto GetNumberOfConnectedPeers() const -> unsigned long override
+    {
+        throw SocketError("not yet implemented");
+    }
+
     static auto GetConstant(const std::string& constant) -> int;
 
     ~Socket() override;

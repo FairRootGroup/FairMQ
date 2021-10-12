@@ -72,6 +72,8 @@ struct Socket
     virtual unsigned long GetMessagesTx() const = 0;
     virtual unsigned long GetMessagesRx() const = 0;
 
+    virtual unsigned long GetNumberOfConnectedPeers() const = 0;
+
     TransportFactory* GetTransport() { return fTransport; }
     void SetTransport(TransportFactory* transport) { fTransport = transport; }
 
