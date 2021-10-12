@@ -87,7 +87,11 @@ class Channel
 
     struct ChannelConfigurationError : std::runtime_error { using std::runtime_error::runtime_error; };
 
-    Socket& GetSocket() const { assert(fSocket); return *fSocket; }
+    Socket& GetSocket() const
+    {
+        assert(fSocket); // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
+        return *fSocket;
+    }
 
     bool Bind(const std::string& address)
     {
