@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -13,6 +13,7 @@
 #include <FairMQMessage.h>
 #include <FairMQSocket.h>
 #include <fairmq/tools/Strings.h>
+#include <fairmq/zeromq/Common.h>
 #include <fairmq/zeromq/Context.h>
 #include <fairmq/zeromq/Message.h>
 
@@ -30,7 +31,7 @@ class Socket final : public fair::mq::Socket
     Socket(Context& ctx, const std::string& type, const std::string& name, const std::string& id, FairMQTransportFactory* factory = nullptr)
         : fair::mq::Socket(factory)
         , fCtx(ctx)
-        , fSocket(zmq_socket(fCtx.GetZmqCtx(), GetConstant(type)))
+        , fSocket(zmq_socket(fCtx.GetZmqCtx(), getConstant(type)))
         , fId(id + "." + name + "." + type)
         , fBytesTx(0)
         , fBytesRx(0)
@@ -313,14 +314,14 @@ class Socket final : public fair::mq::Socket
 
     void SetOption(const std::string& option, const void* value, size_t valueSize) override
     {
-        if (zmq_setsockopt(fSocket, GetConstant(option), value, valueSize) < 0) {
+        if (zmq_setsockopt(fSocket, getConstant(option), value, valueSize) < 0) {
             LOG(error) << "Failed setting socket option, reason: " << zmq_strerror(errno);
         }
     }
 
     void GetOption(const std::string& option, void* value, size_t* valueSize) override
     {
-        if (zmq_getsockopt(fSocket, GetConstant(option), value, valueSize) < 0) {
+        if (zmq_getsockopt(fSocket, getConstant(option), value, valueSize) < 0) {
             LOG(error) << "Failed getting socket option, reason: " << zmq_strerror(errno);
         }
     }
@@ -421,37 +422,8 @@ class Socket final : public fair::mq::Socket
     unsigned long GetMessagesTx() const override { return fMessagesTx; }
     unsigned long GetMessagesRx() const override { return fMessagesRx; }
 
-    static int GetConstant(const std::string& constant)
-    {
-        if (constant.empty()) { return 0; }
-        if (constant == "sub") { return ZMQ_SUB; }
-        if (constant == "pub") { return ZMQ_PUB; }
-        if (constant == "xsub") { return ZMQ_XSUB; }
-        if (constant == "xpub") { return ZMQ_XPUB; }
-        if (constant == "push") { return ZMQ_PUSH; }
-        if (constant == "pull") { return ZMQ_PULL; }
-        if (constant == "req") { return ZMQ_REQ; }
-        if (constant == "rep") { return ZMQ_REP; }
-        if (constant == "dealer") { return ZMQ_DEALER; }
-        if (constant == "router") { return ZMQ_ROUTER; }
-        if (constant == "pair") { return ZMQ_PAIR; }
-
-        if (constant == "snd-hwm") { return ZMQ_SNDHWM; }
-        if (constant == "rcv-hwm") { return ZMQ_RCVHWM; }
-        if (constant == "snd-size") { return ZMQ_SNDBUF; }
-        if (constant == "rcv-size") { return ZMQ_RCVBUF; }
-        if (constant == "snd-more") { return ZMQ_SNDMORE; }
-        if (constant == "rcv-more") { return ZMQ_RCVMORE; }
-
-        if (constant == "linger") { return ZMQ_LINGER; }
-
-        if (constant == "fd") { return ZMQ_FD; }
-        if (constant == "events") { return ZMQ_EVENTS; }
-        if (constant == "pollin") { return ZMQ_POLLIN; }
-        if (constant == "pollout") { return ZMQ_POLLOUT; }
-
-        throw SocketError(tools::ToString("GetConstant called with an invalid argument: ", constant));
-    }
+    [[deprecated("Use fair::mq::zmq::getConstant() from <fairmq/zeromq/Common.h> instead.")]]
+    static int GetConstant(const std::string& constant) { return getConstant(constant); }
 
     ~Socket() override { Close(); }
 

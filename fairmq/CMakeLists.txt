@@ -211,6 +211,7 @@ if(BUILD_FAIRMQ)
     shmem/Common.h
     shmem/Manager.h
     shmem/Region.h
+    zeromq/Common.h
     zeromq/Context.h
     zeromq/Message.h
     zeromq/Poller.h
