@@ -6,9 +6,14 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include <chrono>
 #include <fairmq/Channel.h>
+#include <fairmq/ProgOptions.h>
+#include <fairmq/Tools.h>
+#include <fairmq/TransportFactory.h>
 #include <gtest/gtest.h>
 #include <string>
+#include <thread>
 
 namespace
 {
@@ -89,6 +94,44 @@ TEST(Channel, Validation)
     channel2.Invalidate();
     ASSERT_EQ(channel2.IsValid(), false);
     ASSERT_EQ(channel2.Validate(), true);
+}
+
+auto testConnectedPeers(std::string const& transport)
+{
+    using namespace std::chrono_literals;
+
+    ProgOptions config;
+    config.SetProperty<string>("session", tools::Uuid());
+    string const address(tools::ToString("ipc://", config.GetProperty<string>("session")));
+    unsigned long constexpr zero(0), one(1);
+    auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
+
+    Channel ch1("ch1", "pair", factory);
+    ASSERT_EQ(ch1.GetNumberOfConnectedPeers(), zero);
+    ch1.Bind(address);
+    ASSERT_EQ(ch1.GetNumberOfConnectedPeers(), zero);
+
+    {
+        Channel ch2("ch2", "pair", factory);
+        ASSERT_EQ(ch2.GetNumberOfConnectedPeers(), zero);
+        ch2.Connect(address);
+        std::this_thread::sleep_for(10ms);
+        ASSERT_EQ(ch1.GetNumberOfConnectedPeers(), one);
+        ASSERT_EQ(ch2.GetNumberOfConnectedPeers(), one);
+    }
+
+    std::this_thread::sleep_for(10ms);
+    ASSERT_EQ(ch1.GetNumberOfConnectedPeers(), zero);
+}
+
+TEST(Channel, GetNumberOfConnectedPeers_zeromq)
+{
+    testConnectedPeers("zeromq");
+}
+
+TEST(Channel, GetNumberOfConnectedPeers_shmem)
+{
+    testConnectedPeers("shmem");
 }
 
 } /* namespace */

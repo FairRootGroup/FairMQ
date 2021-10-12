@@ -53,14 +53,16 @@ class Socket final : public fair::mq::Socket
   public:
     Socket(Manager& manager, const std::string& type, const std::string& name, const std::string& id, void* context, FairMQTransportFactory* fac = nullptr)
         : fair::mq::Socket(fac)
-        , fSocket(nullptr)
         , fManager(manager)
         , fId(id + "." + name + "." + type)
+        , fSocket(nullptr)
+        , fMonitorSocket(nullptr)
         , fBytesTx(0)
         , fBytesRx(0)
         , fMessagesTx(0)
         , fMessagesRx(0)
         , fTimeout(100)
+        , fConnectedPeersCount(0)
     {
         assert(context);
 
@@ -70,6 +72,7 @@ class Socket final : public fair::mq::Socket
         }
 
         fSocket = zmq_socket(context, zmq::getConstant(type));
+        fMonitorSocket = zmq::makeMonitorSocket(context, fSocket, fId);
 
         if (fSocket == nullptr) {
             LOG(error) << "Failed creating socket " << fId << ", reason: " << zmq_strerror(errno);
@@ -349,15 +352,17 @@ class Socket final : public fair::mq::Socket
     {
         // LOG(debug) << "Closing socket " << fId;
 
-        if (fSocket == nullptr) {
-            return;
+        if (fSocket && zmq_close(fSocket) != 0) {
+            LOG(error) << "Failed closing data socket " << fId
+                       << ", reason: " << zmq_strerror(errno);
         }
-
-        if (zmq_close(fSocket) != 0) {
-            LOG(error) << "Failed closing socket " << fId << ", reason: " << zmq_strerror(errno);
-        }
-
         fSocket = nullptr;
+
+        if (fMonitorSocket && zmq_close(fMonitorSocket) != 0) {
+            LOG(error) << "Failed closing monitor socket " << fId
+                       << ", reason: " << zmq_strerror(errno);
+        }
+        fMonitorSocket = nullptr;
     }
 
     void SetOption(const std::string& option, const void* value, size_t valueSize) override
@@ -465,6 +470,12 @@ class Socket final : public fair::mq::Socket
         return value;
     }
 
+    unsigned long GetNumberOfConnectedPeers() const override
+    {
+        fConnectedPeersCount = zmq::updateNumberOfConnectedPeers(fConnectedPeersCount, fMonitorSocket);
+        return fConnectedPeersCount;
+    }
+
     unsigned long GetBytesTx() const override { return fBytesTx; }
     unsigned long GetBytesRx() const override { return fBytesRx; }
     unsigned long GetMessagesTx() const override { return fMessagesTx; }
@@ -476,15 +487,17 @@ class Socket final : public fair::mq::Socket
     ~Socket() override { Close(); }
 
   private:
-    void* fSocket;
     Manager& fManager;
     std::string fId;
+    void* fSocket;
+    void* fMonitorSocket;
     std::atomic<unsigned long> fBytesTx;
     std::atomic<unsigned long> fBytesRx;
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
 
     int fTimeout;
+    mutable unsigned long fConnectedPeersCount;
 };
 
 } // namespace fair::mq::shmem
