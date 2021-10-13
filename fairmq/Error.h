@@ -9,9 +9,14 @@
 #ifndef FAIR_MQ_ERROR_H
 #define FAIR_MQ_ERROR_H
 
+#include <cassert>
 #include <fairmq/tools/Strings.h>
 #include <stdexcept>
 #include <system_error>
+
+// Macro copied from https://en.cppreference.com/w/cpp/error/assert
+// Use (void) to silent unused warnings.
+#define assertm(exp, msg) assert(((void)msg, exp))
 
 namespace fair::mq {
 
