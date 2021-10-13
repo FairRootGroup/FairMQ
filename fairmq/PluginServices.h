@@ -138,6 +138,9 @@ class PluginServices
     /// @param subscriber id
     auto UnsubscribeFromDeviceStateChange(const std::string& subscriber) -> void { fDevice.UnsubscribeFromStateChange(subscriber); }
 
+    /// DO NOT USE, ONLY FOR TESTING, WILL BE REMOVED (and info made available via property api)
+    auto GetNumberOfConnectedPeers(const std::string& channelName, int index = 0) -> unsigned long { return fDevice.GetNumberOfConnectedPeers(channelName, index); }
+
     // Config API
 
     /// @brief Checks a property with the given key exist in the configuration
