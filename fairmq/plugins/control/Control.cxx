@@ -206,6 +206,10 @@ try {
                     cout << "\n --> [m] decrease log verbosity\n\n" << flush;
                     CycleLogVerbosityDown();
                 break;
+                case 'p':
+                    cout << "\n --> [p] print number of connected peers for all channels\n\n" << flush;
+                    PrintNumberOfConnectedPeers();
+                break;
                 case 'h':
                     cout << "\n --> [h] help\n\n" << flush;
                     if (color) {
@@ -248,7 +252,7 @@ auto Control::PrintInteractiveHelpColor() -> void
 {
     stringstream ss;
     ss << "Following control commands are available:\n\n"
-       << " [\033[01;32mh\033[0m] help, [\033[01;32mc\033[0m] check current device state,\n"
+       << " [\033[01;32mh\033[0m] help, [\033[01;32mc\033[0m] check current device state, [\033[01;32mp\033[0m] print number of connected peers for channels,\n"
        << " [\033[01;32mi\033[0m] init device, [\033[01;32mb\033[0m] bind, [\033[01;32mx\033[0m] connect, [\033[01;32mj\033[0m] init task,"
        << " [\033[01;32mr\033[0m] run, [\033[01;32ms\033[0m] stop,\n"
        << " [\033[01;32mt\033[0m] reset task, [\033[01;32md\033[0m] reset device, [\033[01;32mq\033[0m] end,\n"
@@ -260,7 +264,7 @@ auto Control::PrintInteractiveHelp() -> void
 {
     stringstream ss;
     ss << "Following control commands are available:\n\n"
-       << " [h] help, [c] check current device state,\n"
+       << " [h] help, [c] check current device state, [p] print number of connected peers for channels\n"
        << " [i] init device, [b] bind, [x] connect, [j] init task,\n"
        << " [r] run, [s] stop,\n"
        << " [t] reset task, [d] reset device, [q] end,\n"
@@ -342,6 +346,17 @@ void Control::PrintStateMachine()
        << "    ╚══════════════════════════════════════╝                         \n"
        << "                                                                     \n";
     cout << ss.str() << flush;
+}
+
+auto Control::PrintNumberOfConnectedPeers() -> void
+{
+    unordered_map<string, int> channelInfo(GetChannelInfo());
+
+    for (const auto& c : channelInfo) {
+        for (int i = 0; i < c.second; ++i) {
+            LOG(info) << c.first << "[" << i << "]: " << GetNumberOfConnectedPeers(c.first, i) << " peers connected";
+        }
+    }
 }
 
 auto Control::StaticMode() -> void

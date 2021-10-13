@@ -41,6 +41,7 @@ class Control : public Plugin
     static auto PrintInteractiveHelp() -> void;
     static auto PrintStateMachineColor() -> void;
     static auto PrintStateMachine() -> void;
+    auto PrintNumberOfConnectedPeers() -> void;
     auto StaticMode() -> void;
     auto SignalHandler() -> void;
     auto RunShutdownSequence() -> void;

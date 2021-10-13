@@ -91,6 +91,8 @@ class Plugin
     auto SubscribeToDeviceStateChange(std::function<void(DeviceState)> callback) -> void { fPluginServices->SubscribeToDeviceStateChange(fkName, callback); }
     auto UnsubscribeFromDeviceStateChange() -> void { fPluginServices->UnsubscribeFromDeviceStateChange(fkName); }
 
+    auto GetNumberOfConnectedPeers(const std::string& channelName, int index = 0) -> unsigned long { return fPluginServices->GetNumberOfConnectedPeers(channelName, index); }
+
     // device config API
     // see <fairmq/PluginServices.h> for docs
     auto PropertyExists(const std::string& key) -> int { return fPluginServices->PropertyExists(key); }

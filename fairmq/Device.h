@@ -327,6 +327,14 @@ class Device
         throw;
     }
 
+    /// @brief Get numbers of connected peers for the given channel
+    /// @param name channel name
+    /// @param index sub-channel
+    unsigned long GetNumberOfConnectedPeers(const std::string& channelName, int index = 0)
+    {
+        return fChannels.at(channelName).at(index).GetNumberOfConnectedPeers();
+    }
+
     virtual void RegisterChannelEndpoints() {}
 
     bool RegisterChannelEndpoint(const std::string& channelName,
