@@ -46,6 +46,7 @@ struct Socket
     virtual int64_t Send(std::vector<std::unique_ptr<Message>>& msgVec, int timeout = -1) = 0;
     virtual int64_t Receive(std::vector<std::unique_ptr<Message>>& msgVec, int timeout = -1) = 0;
 
+    [[deprecated("Use Socket::~Socket() instead.")]]
     virtual void Close() = 0;
 
     virtual void SetOption(const std::string& option, const void* value, size_t valueSize) = 0;
