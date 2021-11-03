@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include <fairmq/StateMachine.h>
+#include <fairmq/tools/Exceptions.h>
 
 #include <fairlogger/Logger.h>
 
@@ -204,6 +205,7 @@ struct Machine_ : public state_machine_def<Machine_>
         }
 
         if (fState == State::Error) {
+            LOG(trace) << "Device transitioned to error state";
             throw StateMachine::ErrorStateException("Device transitioned to error state");
         }
     }
@@ -366,20 +368,18 @@ void StateMachine::ProcessWork()
 {
     auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
 
-    try {
-        fsm->CallStateChangeCallbacks(State::Idle);
-        fsm->ProcessWork();
-    } catch(ErrorStateException& ese) {
-        LOG(trace) << "ErrorStateException caught in ProcessWork(), rethrowing";
-        throw;
-    } catch(...) {
-        LOG(debug) << "Exception caught in ProcessWork(), going to Error state and rethrowing";
+    fair::mq::tools::CallOnDestruction cod([&](){
+        LOG(debug) << "Exception caught in ProcessWork(), going to Error state";
         {
             lock_guard<mutex> lock(fsm->fStateMtx);
             fsm->fState = State::Error;
             fsm->CallStateChangeCallbacks(State::Error);
         }
         ChangeState(Transition::ErrorFound);
-        throw;
-    }
+    });
+
+    fsm->CallStateChangeCallbacks(State::Idle);
+    fsm->ProcessWork();
+
+    cod.disable();
 }

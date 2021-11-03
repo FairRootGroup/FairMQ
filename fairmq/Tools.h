@@ -11,6 +11,7 @@
 
 // IWYU pragma: begin_exports
 #include <fairmq/tools/CppSTL.h>
+#include <fairmq/tools/Exceptions.h>
 #include <fairmq/tools/InstanceLimit.h>
 #include <fairmq/tools/Network.h>
 #include <fairmq/tools/Process.h>
