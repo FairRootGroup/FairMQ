@@ -30,7 +30,7 @@ class Splitter : public Device
         fMultipart = fConfig->GetProperty<bool>("multipart");
         fInChannelName = fConfig->GetProperty<std::string>("in-channel");
         fOutChannelName = fConfig->GetProperty<std::string>("out-channel");
-        fNumOutputs = fChannels.at(fOutChannelName).size();
+        fNumOutputs = GetNumSubChannels(fOutChannelName);
         fDirection = 0;
 
         if (fMultipart) {

@@ -44,7 +44,7 @@ class BenchmarkSampler : public Device
     void Run() override
     {
         // store the channel reference to avoid traversing the map on every loop iteration
-        FairMQChannel& dataOutChannel = fChannels.at(fOutChannelName).at(0);
+        FairMQChannel& dataOutChannel = GetChannel(fOutChannelName, 0);
 
         LOG(info) << "Starting the benchmark with message size of " << fMsgSize << " and " << fMaxIterations << " iterations.";
         auto tStart = std::chrono::high_resolution_clock::now();

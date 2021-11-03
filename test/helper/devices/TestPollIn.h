@@ -37,8 +37,8 @@ class PollIn : public FairMQDevice
     {
         vector<FairMQChannel*> chans;
 
-        chans.push_back(&fChannels.at("data1").at(0));
-        chans.push_back(&fChannels.at("data2").at(0));
+        chans.push_back(&GetChannel("data1", 0));
+        chans.push_back(&GetChannel("data2", 0));
 
         FairMQPollerPtr poller = nullptr;
 

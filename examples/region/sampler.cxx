@@ -23,7 +23,7 @@ struct Sampler : fair::mq::Device
         fLinger = fConfig->GetProperty<uint32_t>("region-linger");
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 
-        fChannels.at("data").at(0).Transport()->SubscribeToRegionEvents([](FairMQRegionInfo info) {
+        GetChannel("data", 0).Transport()->SubscribeToRegionEvents([](FairMQRegionInfo info) {
             LOG(info) << "Region event: " << info.event << ": "
                     << (info.managed ? "managed" : "unmanaged")
                     << ", id: " << info.id
@@ -87,7 +87,7 @@ struct Sampler : fair::mq::Device
                 LOG(info) << "All acknowledgements received.";
             }
         }
-        fChannels.at("data").at(0).Transport()->UnsubscribeFromRegionEvents();
+        GetChannel("data", 0).Transport()->UnsubscribeFromRegionEvents();
     }
 
   private:

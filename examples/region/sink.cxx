@@ -22,7 +22,7 @@ struct Sink : Device
     {
         // Get the fMaxIterations value from the command line options (via fConfig)
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
-        fChannels.at("data").at(0).Transport()->SubscribeToRegionEvents([](RegionInfo info) {
+        GetChannel("data", 0).Transport()->SubscribeToRegionEvents([](RegionInfo info) {
             LOG(info) << "Region event: " << info.event << ": "
                       << (info.managed ? "managed" : "unmanaged") << ", id: " << info.id
                       << ", ptr: " << info.ptr << ", size: " << info.size
@@ -32,7 +32,7 @@ struct Sink : Device
 
     void Run() override
     {
-        Channel& dataInChannel = fChannels.at("data").at(0);
+        Channel& dataInChannel = GetChannel("data", 0);
 
         while (!NewStatePending()) {
             auto msg(dataInChannel.Transport()->CreateMessage());
@@ -51,7 +51,7 @@ struct Sink : Device
 
     void ResetTask() override
     {
-        fChannels.at("data").at(0).Transport()->UnsubscribeFromRegionEvents();
+        GetChannel("data", 0).Transport()->UnsubscribeFromRegionEvents();
     }
 
   private:

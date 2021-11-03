@@ -19,7 +19,7 @@ struct Sampler : fair::mq::Device
 {
     void InitTask() override
     {
-        fNumDataChannels = fChannels.at("data").size();
+        fNumDataChannels = GetNumSubChannels("data");
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
     }
 

@@ -43,7 +43,7 @@ class Merger : public Device
 
     void Run() override
     {
-        int numInputs = fChannels.at(fInChannelName).size();
+        int numInputs = GetNumSubChannels(fInChannelName);
 
         std::vector<FairMQChannel*> chans;
 
