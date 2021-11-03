@@ -324,6 +324,14 @@ class Device
         throw;
     }
 
+    size_t GetNumSubChannels(const std::string& channelName)
+    try {
+        return fChannels.at(channelName).size();
+    } catch (const std::out_of_range& oor) {
+        LOG(error) << "GetNumSubChannels(): '" << channelName << "' does not exist.";
+        throw;
+    }
+
     /// @brief Get numbers of connected peers for the given channel
     /// @param name channel name
     /// @param index sub-channel
