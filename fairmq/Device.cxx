@@ -435,7 +435,7 @@ void Device::InitTaskWrapper()
 
 void Device::RunWrapper()
 {
-    LOG(info) << "DEVICE: Running...";
+    LOG(info) << "fair::mq::Device running...";
 
     // start the rate logger thread
     future<void> rateLogger = async(launch::async, &Device::LogSocketRates, this);
@@ -445,45 +445,42 @@ void Device::RunWrapper()
         t.second->Resume();
     }
 
-    try {
-        PreRun();
+    // change to Error state in case of an exception, to release LogSocketRates
+    tools::CallOnDestruction cod([&](){
+        ChangeState(Transition::ErrorFound);
+    });
 
-        // process either data callbacks or ConditionalRun/Run
-        if (fDataCallbacks) {
-            // if only one input channel, do lightweight handling without additional polling.
-            if (fInputChannelKeys.size() == 1 && fChannels.at(fInputChannelKeys.at(0)).size() == 1) {
-                HandleSingleChannelInput();
-            } else {// otherwise do full handling with polling
-                HandleMultipleChannelInput();
+    PreRun();
+
+    // process either data callbacks or ConditionalRun/Run
+    if (fDataCallbacks) {
+        // if only one input channel, do lightweight handling without additional polling.
+        if (fInputChannelKeys.size() == 1 && fChannels.at(fInputChannelKeys.at(0)).size() == 1) {
+            HandleSingleChannelInput();
+        } else {// otherwise do full handling with polling
+            HandleMultipleChannelInput();
+        }
+    } else {
+        tools::RateLimiter rateLimiter(fRate);
+
+        while (!NewStatePending() && ConditionalRun()) {
+            if (fRate > 0.001) {
+                rateLimiter.maybe_sleep();
             }
-        } else {
-            tools::RateLimiter rateLimiter(fRate);
-
-            while (!NewStatePending() && ConditionalRun()) {
-                if (fRate > 0.001) {
-                    rateLimiter.maybe_sleep();
-                }
-            }
-
-            Run();
         }
 
-        // if Run() exited and the state is still RUNNING, transition to READY.
-        if (!NewStatePending()) {
-            UnblockTransports();
-            ChangeState(Transition::Stop);
-        }
-
-        PostRun();
-    } catch (const out_of_range& oor) {
-        LOG(error) << "out of range: " << oor.what();
-        LOG(error) << "incorrect/incomplete channel configuration?";
-        ChangeState(Transition::ErrorFound);
-        throw;
-    } catch (...) {
-        ChangeState(Transition::ErrorFound);
-        throw;
+        Run();
     }
+
+    // if Run() exited and the state is still RUNNING, transition to READY.
+    if (!NewStatePending()) {
+        UnblockTransports();
+        ChangeState(Transition::Stop);
+    }
+
+    PostRun();
+
+    cod.disable();
 
     rateLogger.get();
 }
