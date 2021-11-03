@@ -30,7 +30,7 @@ class Multiplier : public Device
         fMultipart = fConfig->GetProperty<bool>("multipart");
         fInChannelName = fConfig->GetProperty<std::string>("in-channel");
         fOutChannelNames = fConfig->GetProperty<std::vector<std::string>>("out-channel");
-        fNumOutputs = fChannels.at(fOutChannelNames.at(0)).size();
+        fNumOutputs = GetNumSubChannels(fOutChannelNames.at(0));
 
         if (fMultipart) {
             OnData(fInChannelName, &Multiplier::HandleMultipartData);
@@ -43,7 +43,7 @@ class Multiplier : public Device
     bool HandleSingleData(std::unique_ptr<FairMQMessage>& payload, int)
     {
         for (unsigned int i = 0; i < fOutChannelNames.size() - 1; ++i) { // all except last channel
-            for (unsigned int j = 0; j < fChannels.at(fOutChannelNames.at(i)).size(); ++j) { // all subChannels in a channel
+            for (unsigned int j = 0; j < GetNumSubChannels(fOutChannelNames.at(i)); ++j) { // all subChannels in a channel
                 FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage());
                 msgCopy->Copy(*payload);
 
@@ -51,7 +51,7 @@ class Multiplier : public Device
             }
         }
 
-        unsigned int lastChannelSize = fChannels.at(fOutChannelNames.back()).size();
+        unsigned int lastChannelSize = GetNumSubChannels(fOutChannelNames.back());
 
         for (unsigned int i = 0; i < lastChannelSize - 1; ++i) { // iterate over all except last subChannels of the last channel
             FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage());
@@ -68,7 +68,7 @@ class Multiplier : public Device
     bool HandleMultipartData(FairMQParts& payload, int)
     {
         for (unsigned int i = 0; i < fOutChannelNames.size() - 1; ++i) { // all except last channel
-            for (unsigned int j = 0; j < fChannels.at(fOutChannelNames.at(i)).size(); ++j) { // all subChannels in a channel
+            for (unsigned int j = 0; j < GetNumSubChannels(fOutChannelNames.at(i)); ++j) { // all subChannels in a channel
                 FairMQParts parts;
 
                 for (int k = 0; k < payload.Size(); ++k) {
@@ -81,7 +81,7 @@ class Multiplier : public Device
             }
         }
 
-        unsigned int lastChannelSize = fChannels.at(fOutChannelNames.back()).size();
+        unsigned int lastChannelSize = GetNumSubChannels(fOutChannelNames.back());
 
         for (unsigned int i = 0; i < lastChannelSize - 1; ++i) { // iterate over all except last subChannels of the last channel
             FairMQParts parts;

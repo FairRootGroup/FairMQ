@@ -26,7 +26,7 @@ struct Receiver : Device
 
     void Run() override
     {
-        Channel& dataInChannel = fChannels.at("sr").at(0);
+        Channel& dataInChannel = GetChannel("sr", 0);
 
         while (!NewStatePending()) {
             auto msg(dataInChannel.NewMessage());

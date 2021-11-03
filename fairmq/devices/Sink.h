@@ -48,7 +48,7 @@ class Sink : public Device
     void Run() override
     {
         // store the channel reference to avoid traversing the map on every loop iteration
-        FairMQChannel& dataInChannel = fChannels.at(fInChannelName).at(0);
+        FairMQChannel& dataInChannel = GetChannel(fInChannelName, 0);
 
         LOG(info) << "Starting sink and expecting to receive " << fMaxIterations << " messages.";
         auto tStart = std::chrono::high_resolution_clock::now();

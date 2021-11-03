@@ -28,7 +28,7 @@ struct Sender : fair::mq::Device
 
     void Run() override
     {
-        FairMQChannel& dataInChannel = fChannels.at("sync").at(0);
+        FairMQChannel& dataInChannel = GetChannel("sync", 0);
 
         while (!NewStatePending()) {
             Header h;
