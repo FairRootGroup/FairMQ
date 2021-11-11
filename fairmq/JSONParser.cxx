@@ -96,6 +96,8 @@ void ChannelParser(const ptree& tree, fair::mq::Properties& properties)
                 commonProperties.emplace("rcvBufSize", cn.second.get<int>("rcvBufSize", FairMQChannel::DefaultRcvBufSize));
                 commonProperties.emplace("sndKernelSize", cn.second.get<int>("sndKernelSize", FairMQChannel::DefaultSndKernelSize));
                 commonProperties.emplace("rcvKernelSize", cn.second.get<int>("rcvKernelSize", FairMQChannel::DefaultRcvKernelSize));
+                commonProperties.emplace("sndTimeoutMs", cn.second.get<int>("sndTimeoutMs", FairMQChannel::DefaultSndTimeoutMs));
+                commonProperties.emplace("rcvTimeoutMs", cn.second.get<int>("rcvTimeoutMs", FairMQChannel::DefaultRcvTimeoutMs));
                 commonProperties.emplace("linger", cn.second.get<int>("linger", FairMQChannel::DefaultLinger));
                 commonProperties.emplace("rateLogging", cn.second.get<int>("rateLogging", FairMQChannel::DefaultRateLogging));
                 commonProperties.emplace("portRangeMin", cn.second.get<int>("portRangeMin", FairMQChannel::DefaultPortRangeMin));
@@ -146,6 +148,8 @@ void SubChannelParser(const ptree& channelTree, fair::mq::Properties& properties
                 newProperties["rcvBufSize"] = sn.second.get<int>("rcvBufSize", boost::any_cast<int>(commonProperties.at("rcvBufSize")));
                 newProperties["sndKernelSize"] = sn.second.get<int>("sndKernelSize", boost::any_cast<int>(commonProperties.at("sndKernelSize")));
                 newProperties["rcvKernelSize"] = sn.second.get<int>("rcvKernelSize", boost::any_cast<int>(commonProperties.at("rcvKernelSize")));
+                newProperties["sndTimeoutMs"] = sn.second.get<int>("sndTimeoutMs", boost::any_cast<int>(commonProperties.at("sndTimeoutMs")));
+                newProperties["rcvTimeoutMs"] = sn.second.get<int>("rcvTimeoutMs", boost::any_cast<int>(commonProperties.at("rcvTimeoutMs")));
                 newProperties["linger"] = sn.second.get<int>("linger", boost::any_cast<int>(commonProperties.at("linger")));
                 newProperties["rateLogging"] = sn.second.get<int>("rateLogging", boost::any_cast<int>(commonProperties.at("rateLogging")));
                 newProperties["portRangeMin"] = sn.second.get<int>("portRangeMin", boost::any_cast<int>(commonProperties.at("portRangeMin")));

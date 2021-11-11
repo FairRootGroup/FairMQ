@@ -10,9 +10,12 @@
 #define FAIR_MQ_SOCKET_H
 
 #include <fairmq/Message.h>
+#include <fairmq/Parts.h>
+
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace fair::mq {
@@ -26,6 +29,12 @@ enum class TransferCode : int
     timeout = -2,
     interrupted = -3
 };
+
+template <typename T>
+struct is_transferrable : std::disjunction<std::is_same<T, MessagePtr>,
+                                           std::is_same<T, std::vector<MessagePtr>>,
+                                           std::is_same<T, fair::mq::Parts>>
+{};
 
 struct Socket
 {
@@ -45,6 +54,8 @@ struct Socket
     virtual int64_t Receive(MessagePtr& msg, int timeout = -1) = 0;
     virtual int64_t Send(std::vector<std::unique_ptr<Message>>& msgVec, int timeout = -1) = 0;
     virtual int64_t Receive(std::vector<std::unique_ptr<Message>>& msgVec, int timeout = -1) = 0;
+    virtual int64_t Send(Parts& parts, int timeout = -1) { return Send(parts.fParts, timeout); }
+    virtual int64_t Receive(Parts& parts, int timeout = -1) { return Receive(parts.fParts, timeout); }
 
     [[deprecated("Use Socket::~Socket() instead.")]]
     virtual void Close() = 0;

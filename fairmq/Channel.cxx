@@ -39,6 +39,8 @@ constexpr int Channel::DefaultSndBufSize;
 constexpr int Channel::DefaultRcvBufSize;
 constexpr int Channel::DefaultSndKernelSize;
 constexpr int Channel::DefaultRcvKernelSize;
+constexpr int Channel::DefaultSndTimeoutMs;
+constexpr int Channel::DefaultRcvTimeoutMs;
 constexpr int Channel::DefaultLinger;
 constexpr int Channel::DefaultRateLogging;
 constexpr int Channel::DefaultPortRangeMin;
@@ -73,6 +75,8 @@ Channel::Channel(string name, string type, string method, string address, shared
     , fRcvBufSize(DefaultRcvBufSize)
     , fSndKernelSize(DefaultSndKernelSize)
     , fRcvKernelSize(DefaultRcvKernelSize)
+    , fSndTimeoutMs(DefaultSndTimeoutMs)
+    , fRcvTimeoutMs(DefaultRcvTimeoutMs)
     , fLinger(DefaultLinger)
     , fRateLogging(DefaultRateLogging)
     , fPortRangeMin(DefaultPortRangeMin)
@@ -97,6 +101,8 @@ Channel::Channel(const string& name, int index, const Properties& properties)
     fRcvBufSize = GetPropertyOrDefault(properties, string(prefix + "rcvBufSize"), DefaultRcvBufSize);
     fSndKernelSize = GetPropertyOrDefault(properties, string(prefix + "sndKernelSize"), DefaultSndKernelSize);
     fRcvKernelSize = GetPropertyOrDefault(properties, string(prefix + "rcvKernelSize"), DefaultRcvKernelSize);
+    fSndTimeoutMs = GetPropertyOrDefault(properties, string(prefix + "sndTimeoutMs"), DefaultSndTimeoutMs);
+    fRcvTimeoutMs = GetPropertyOrDefault(properties, string(prefix + "rcvTimeoutMs"), DefaultRcvTimeoutMs);
     fLinger = GetPropertyOrDefault(properties, string(prefix + "linger"), DefaultLinger);
     fRateLogging = GetPropertyOrDefault(properties, string(prefix + "rateLogging"), DefaultRateLogging);
     fPortRangeMin = GetPropertyOrDefault(properties, string(prefix + "portRangeMin"), DefaultPortRangeMin);
@@ -120,6 +126,8 @@ Channel::Channel(const Channel& chan, string newName)
     , fRcvBufSize(chan.fRcvBufSize)
     , fSndKernelSize(chan.fSndKernelSize)
     , fRcvKernelSize(chan.fRcvKernelSize)
+    , fSndTimeoutMs(chan.fSndTimeoutMs)
+    , fRcvTimeoutMs(chan.fRcvTimeoutMs)
     , fLinger(chan.fLinger)
     , fRateLogging(chan.fRateLogging)
     , fPortRangeMin(chan.fPortRangeMin)
@@ -146,6 +154,8 @@ Channel& Channel::operator=(const Channel& chan)
     fRcvBufSize = chan.fRcvBufSize;
     fSndKernelSize = chan.fSndKernelSize;
     fRcvKernelSize = chan.fRcvKernelSize;
+    fSndTimeoutMs = chan.fSndTimeoutMs;
+    fRcvTimeoutMs = chan.fRcvTimeoutMs;
     fLinger = chan.fLinger;
     fRateLogging = chan.fRateLogging;
     fPortRangeMin = chan.fPortRangeMin;
