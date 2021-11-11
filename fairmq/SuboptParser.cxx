@@ -38,6 +38,8 @@ enum channelOptionKeyIds
     RCVBUFSIZE,     // size of the receive queue
     SNDKERNELSIZE,
     RCVKERNELSIZE,
+    SNDTIMEOUTMS,
+    RCVTIMEOUTMS,
     LINGER,
     RATELOGGING,    // logging rate
     PORTRANGEMIN,
@@ -57,6 +59,8 @@ constexpr static const char* channelOptionKeys[] = {
     /*[RCVBUFSIZE]    = */ "rcvBufSize",
     /*[SNDKERNELSIZE] = */ "sndKernelSize",
     /*[RCVKERNELSIZE] = */ "rcvKernelSize",
+    /*[SNDTIMEOUTMS]  = */ "sndTimeoutMs",
+    /*[RCVTIMEOUTMS]  = */ "rcvTimeoutMs",
     /*[LINGER]        = */ "linger",
     /*[RATELOGGING]   = */ "rateLogging",
     /*[PORTRANGEMIN]  = */ "portRangeMin",

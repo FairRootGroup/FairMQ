@@ -81,72 +81,70 @@ class Device
         Deserializer().Deserialize(msg, std::forward<DataType>(data), std::forward<Args>(args)...);
     }
 
-    /// Shorthand method to send `msg` on `chan` at index `i`
-    /// @param msg message reference
+    /// Send `m` on `chan` at index `i`
+    /// @param m reference to MessagePtr/Parts/vector<MessagePtr>
     /// @param chan channel name
     /// @param i channel index
-    /// @param sndTimeoutInMs send timeout in ms, -1 will wait forever (or until interrupt (e.g. via
-    /// state change)), 0 will not wait (return immediately if cannot send)
-    /// @return Number of bytes that have been queued, TransferCode::timeout if timed out,
-    /// TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by
-    /// requested state change)
-    int64_t Send(MessagePtr& msg,
-                 const std::string& channel,
-                 const int index = 0,
-                 int sndTimeoutInMs = -1)
+    /// @return Number of queued bytes,
+    /// TransferCode::timeout if timed out,
+    /// TransferCode::error if there was an error,
+    /// TransferCode::interrupted if interrupted (e.g. by requested state change)
+    template<typename M>
+    std::enable_if_t<is_transferrable<M>::value, int64_t>
+    Send(M& m, const std::string& channel, const int index = 0)
     {
-        return GetChannel(channel, index).Send(msg, sndTimeoutInMs);
+        return GetChannel(channel, index).Send(m);
     }
 
-    /// Shorthand method to receive `msg` on `chan` at index `i`
-    /// @param msg message reference
+    /// Receive `m` on `chan` at index `i`
+    /// @param m reference to MessagePtr/Parts/vector<MessagePtr>
     /// @param chan channel name
     /// @param i channel index
-    /// @param rcvTimeoutInMs receive timeout in ms, -1 will wait forever (or until interrupt (e.g.
-    /// via state change)), 0 will not wait (return immediately if cannot receive)
-    /// @return Number of bytes that have been received, TransferCode::timeout if timed out,
-    /// TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by
-    /// requested state change)
-    int64_t Receive(MessagePtr& msg,
-                    const std::string& channel,
-                    const int index = 0,
-                    int rcvTimeoutInMs = -1)
+    /// @return Number of received bytes,
+    /// TransferCode::timeout if timed out,
+    /// TransferCode::error if there was an error,
+    /// TransferCode::interrupted if interrupted (e.g. by requested state change)
+    template<typename M>
+    std::enable_if_t<is_transferrable<M>::value, int64_t>
+    Receive(M& m, const std::string& channel, const int index = 0)
     {
-        return GetChannel(channel, index).Receive(msg, rcvTimeoutInMs);
+        return GetChannel(channel, index).Receive(m);
     }
 
-    /// Shorthand method to send Parts on `chan` at index `i`
-    /// @param parts parts reference
+    /// Send `m` on `chan` at index `i`
+    /// @param m reference to MessagePtr/Parts/vector<MessagePtr>
     /// @param chan channel name
     /// @param i channel index
-    /// @param sndTimeoutInMs send timeout in ms, -1 will wait forever (or until interrupt (e.g. via
-    /// state change)), 0 will not wait (return immediately if cannot send)
-    /// @return Number of bytes that have been queued, TransferCode::timeout if timed out,
-    /// TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by
-    /// requested state change)
-    int64_t Send(Parts& parts,
-                 const std::string& channel,
-                 const int index = 0,
-                 int sndTimeoutInMs = -1)
+    /// @param sndTimeoutMs send timeout in ms,
+    /// -1 will wait forever (or until interrupt (e.g. via state change)),
+    /// 0 will not wait (return immediately if cannot send)
+    /// @return Number of queued bytes,
+    /// TransferCode::timeout if timed out,
+    /// TransferCode::error if there was an error,
+    /// TransferCode::interrupted if interrupted (e.g. by requested state change)
+    template<typename M>
+    std::enable_if_t<is_transferrable<M>::value, int64_t>
+    Send(M& m, const std::string& channel, const int index, int sndTimeoutMs)
     {
-        return GetChannel(channel, index).Send(parts.fParts, sndTimeoutInMs);
+        return GetChannel(channel, index).Send(m, sndTimeoutMs);
     }
 
-    /// Shorthand method to receive Parts on `chan` at index `i`
-    /// @param parts parts reference
+    /// Receive `m` on `chan` at index `i`
+    /// @param m reference to MessagePtr/Parts/vector<MessagePtr>
     /// @param chan channel name
     /// @param i channel index
-    /// @param rcvTimeoutInMs receive timeout in ms, -1 will wait forever (or until interrupt (e.g.
-    /// via state change)), 0 will not wait (return immediately if cannot receive)
-    /// @return Number of bytes that have been received, TransferCode::timeout if timed out,
-    /// TransferCode::error if there was an error, TransferCode::interrupted if interrupted (e.g. by
-    /// requested state change)
-    int64_t Receive(Parts& parts,
-                    const std::string& channel,
-                    const int index = 0,
-                    int rcvTimeoutInMs = -1)
+    /// @param rcvTimeoutMs receive timeout in ms,
+    /// -1 will wait forever (or until interrupt (e.g. via state change),
+    /// 0 will not wait (return immediately if cannot receive)
+    /// @return Number of received bytes,
+    /// TransferCode::timeout if timed out,
+    /// TransferCode::error if there was an error,
+    /// TransferCode::interrupted if interrupted (e.g. by requested state change)
+    template<typename M>
+    std::enable_if_t<is_transferrable<M>::value, int64_t>
+    Receive(M& m, const std::string& channel, const int index, int rcvTimeoutMs)
     {
-        return GetChannel(channel, index).Receive(parts.fParts, rcvTimeoutInMs);
+        return GetChannel(channel, index).Receive(m, rcvTimeoutMs);
     }
 
     /// @brief Getter for default transport factory
