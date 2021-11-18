@@ -32,22 +32,20 @@ struct Sampler : fair::mq::Device
                     << ", flags: " << info.flags;
         });
 
+        fair::mq::RegionConfig regionCfg;
+        regionCfg.linger = fLinger; // delay in ms before region destruction to collect outstanding events
+        regionCfg.lock = true; // mlock region after creation
+        regionCfg.zero = true; // zero region content after creation
         fRegion = FairMQUnmanagedRegionPtr(NewUnmanagedRegionFor("data", // region is created using the transport of this channel...
                                                                 0,      // ... and this sub-channel
                                                                 10000000, // region size
                                                                 [this](const std::vector<fair::mq::RegionBlock>& blocks) { // callback to be called when message buffers no longer needed by transport
                                                                     std::lock_guard<std::mutex> lock(fMtx);
                                                                     fNumUnackedMsgs -= blocks.size();
-
                                                                     if (fMaxIterations > 0) {
                                                                         LOG(info) << "Received " << blocks.size() << " acks";
                                                                     }
-                                                                },
-                                                                "", // path, if a region is backed by a file
-                                                                0,  // flags that are passed for region creation
-                                                                fair::mq::RegionConfig{true, true} // additional config: { call mlock on the region, zero the region memory }
-                                                                ));
-        fRegion->SetLinger(fLinger);
+                                                                }, regionCfg));
     }
 
     bool ConditionalRun() override

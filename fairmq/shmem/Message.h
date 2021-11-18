@@ -12,9 +12,10 @@
 #include "Manager.h"
 #include "Region.h"
 #include "UnmanagedRegion.h"
-#include <FairMQLogger.h>
-#include <FairMQMessage.h>
-#include <FairMQUnmanagedRegion.h>
+#include <fairmq/Message.h>
+#include <fairmq/UnmanagedRegion.h>
+
+#include <fairlogger/Logger.h>
 
 #include <boost/interprocess/mapped_region.hpp>
 

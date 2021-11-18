@@ -545,7 +545,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
                     if (m != nullptr) {
                         RegionInfo ri = m->at(i);
                         string path = ri.fPath.c_str();
-                        int flags = ri.fFlags;
+                        int flags = ri.fCreationFlags;
                         if (verbose) {
                             LOG(info) << "Found RegionInfo with path: '" << path << "', flags: " << flags << ", fDestroyed: " << ri.fDestroyed << ".";
                         }

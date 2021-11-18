@@ -118,6 +118,15 @@ class TransportFactory final : public FairMQTransportFactory
         return CreateUnmanagedRegion(size, userFlags, nullptr, bulkCallback, path, flags, cfg);
     }
 
+    UnmanagedRegionPtr CreateUnmanagedRegion(size_t size, RegionCallback callback, RegionConfig cfg) override
+    {
+        return CreateUnmanagedRegion(size, cfg.userFlags, callback, nullptr, cfg.path, cfg.creationFlags, cfg);
+    }
+    UnmanagedRegionPtr CreateUnmanagedRegion(size_t size, RegionBulkCallback bulkCallback, RegionConfig cfg) override
+    {
+        return CreateUnmanagedRegion(size, cfg.userFlags, nullptr, bulkCallback, cfg.path, cfg.creationFlags, cfg);
+    }
+
     UnmanagedRegionPtr CreateUnmanagedRegion(size_t size, int64_t userFlags, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string&, int /* flags */, fair::mq::RegionConfig cfg)
     {
         UnmanagedRegionPtr ptr = std::make_unique<UnmanagedRegion>(*fCtx, size, userFlags, callback, bulkCallback, this, cfg);

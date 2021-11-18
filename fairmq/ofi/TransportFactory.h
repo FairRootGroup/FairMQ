@@ -166,6 +166,22 @@ struct TransportFactory final : mq::TransportFactory
         throw std::runtime_error("Not yet implemented UMR.");
     }
 
+    auto CreateUnmanagedRegion(std::size_t /*size*/,
+                               RegionCallback /*callback*/,
+                               RegionConfig /*cfg*/)
+        -> std::unique_ptr<mq::UnmanagedRegion> override
+    {
+        throw std::runtime_error("Not yet implemented UMR.");
+    }
+
+    auto CreateUnmanagedRegion(std::size_t /*size*/,
+                               RegionBulkCallback /*callback*/,
+                               RegionConfig /*cfg*/)
+        -> std::unique_ptr<mq::UnmanagedRegion> override
+    {
+        throw std::runtime_error("Not yet implemented UMR.");
+    }
+
     auto SubscribeToRegionEvents(RegionEventCallback /*callback*/) -> void override
     {
         throw std::runtime_error("Not yet implemented.");
