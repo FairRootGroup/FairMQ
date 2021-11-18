@@ -10,9 +10,9 @@
 #define FAIR_MQ_SHMEM_UNMANAGEDREGION_H_
 
 #include "Manager.h"
+#include <fairmq/UnmanagedRegion.h>
 
-#include <FairMQUnmanagedRegion.h>
-#include <FairMQLogger.h>
+#include <fairlogger/Logger.h>
 
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
@@ -34,19 +34,16 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
   public:
     UnmanagedRegion(Manager& manager,
                     const size_t size,
-                    const int64_t userFlags,
                     RegionCallback callback,
                     RegionBulkCallback bulkCallback,
-                    const std::string& path,
-                    int flags,
-                    FairMQTransportFactory* factory,
-                    fair::mq::RegionConfig cfg)
+                    fair::mq::RegionConfig cfg,
+                    FairMQTransportFactory* factory)
         : FairMQUnmanagedRegion(factory)
         , fManager(manager)
         , fRegion(nullptr)
         , fRegionId(0)
     {
-        auto result = fManager.CreateRegion(size, userFlags, callback, bulkCallback, path, flags, cfg);
+        auto result = fManager.CreateRegion(size, callback, bulkCallback, std::move(cfg));
         fRegion = result.first;
         fRegionId = result.second;
     }

@@ -9,12 +9,15 @@
 #ifndef FAIR_MQ_UNMANAGEDREGION_H
 #define FAIR_MQ_UNMANAGEDREGION_H
 
+#include <fairmq/Transports.h>
+
 #include <cstddef>   // size_t
 #include <cstdint>   // uint32_t
-#include <fairmq/Transports.h>
+
 #include <functional>   // std::function
 #include <memory>       // std::unique_ptr
-#include <ostream>      // std::ostream
+#include <ostream>
+#include <string>
 #include <vector>
 
 namespace fair::mq {
@@ -119,13 +122,17 @@ struct RegionConfig
 {
     RegionConfig() = default;
 
-    RegionConfig(bool l, bool z)
-        : lock(l)
-        , zero(z)
+    RegionConfig(bool _lock, bool _zero)
+        : lock(_lock)
+        , zero(_zero)
     {}
 
-    bool lock = false;
-    bool zero = false;
+    bool lock = false; /// mlock region after creation
+    bool zero = false; /// zero region content after creation
+    int creationFlags = 0; /// flags passed to the underlying transport on region creation
+    int64_t userFlags = 0; /// custom flags that have no effect on the transport, but can be retrieved from the region by the user
+    std::string path = ""; /// file path, if the region is backed by a file
+    uint32_t linger = 100; /// delay in ms before region destruction to collect outstanding events
 };
 
 }   // namespace fair::mq

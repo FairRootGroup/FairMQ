@@ -11,12 +11,12 @@
 #include "Common.h"
 #include "Manager.h"
 #include "Message.h"
-
-#include <FairMQSocket.h>
-#include <FairMQMessage.h>
-#include <FairMQLogger.h>
+#include <fairmq/Socket.h>
+#include <fairmq/Message.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/zeromq/Common.h>
+
+#include <fairlogger/Logger.h>
 
 #include <zmq.h>
 

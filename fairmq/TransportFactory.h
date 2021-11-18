@@ -109,13 +109,15 @@ class TransportFactory
     /// @param path optional parameter to pass to the underlying transport
     /// @param flags optional parameter to pass to the underlying transport
     /// @return pointer to UnmanagedRegion
+    // [[deprecated("Use CreateUnmanagedRegion(size_t size, RegionCallback callback, RegionConfig cfg)")]]
     virtual UnmanagedRegionPtr CreateUnmanagedRegion(size_t size,
                                                      RegionCallback callback = nullptr,
                                                      const std::string& path = "",
                                                      int flags = 0,
                                                      RegionConfig cfg = RegionConfig()) = 0;
+    // [[deprecated("Use CreateUnmanagedRegion(size_t size, RegionCallback callback, RegionConfig cfg)")]]
     virtual UnmanagedRegionPtr CreateUnmanagedRegion(size_t size,
-                                                     RegionBulkCallback callback = nullptr,
+                                                     RegionBulkCallback bulkCallback = nullptr,
                                                      const std::string& path = "",
                                                      int flags = 0,
                                                      RegionConfig cfg = RegionConfig()) = 0;
@@ -128,18 +130,35 @@ class TransportFactory
     /// @param path optional parameter to pass to the underlying transport
     /// @param flags optional parameter to pass to the underlying transport
     /// @return pointer to UnmanagedRegion
+    // [[deprecated("Use CreateUnmanagedRegion(size_t size, RegionCallback callback, RegionConfig cfg)")]]
     virtual UnmanagedRegionPtr CreateUnmanagedRegion(size_t size,
                                                      int64_t userFlags,
                                                      RegionCallback callback = nullptr,
                                                      const std::string& path = "",
                                                      int flags = 0,
                                                      RegionConfig cfg = RegionConfig()) = 0;
+    // [[deprecated("Use CreateUnmanagedRegion(size_t size, RegionCallback callback, RegionConfig cfg)")]]
     virtual UnmanagedRegionPtr CreateUnmanagedRegion(size_t size,
                                                      int64_t userFlags,
-                                                     RegionBulkCallback callback = nullptr,
+                                                     RegionBulkCallback bulkCallback = nullptr,
                                                      const std::string& path = "",
                                                      int flags = 0,
                                                      RegionConfig cfg = RegionConfig()) = 0;
+
+
+    /// @brief Create new UnmanagedRegion
+    /// @param size size of the region
+    /// @param callback callback to be called when a message belonging to this region is no longer needed by the transport
+    /// @param cfg region configuration
+    /// @return pointer to UnmanagedRegion
+    virtual UnmanagedRegionPtr CreateUnmanagedRegion(size_t size, RegionCallback callback, RegionConfig cfg) = 0;
+
+    /// @brief Create new UnmanagedRegion
+    /// @param size size of the region
+    /// @param bulkCallback callback to be called when message(s) belonging to this region is no longer needed by the transport
+    /// @param cfg region configuration
+    /// @return pointer to UnmanagedRegion
+    virtual UnmanagedRegionPtr CreateUnmanagedRegion(size_t size, RegionBulkCallback bulkCallback, RegionConfig cfg) = 0;
 
     /// @brief Subscribe to region events (creation, destruction, ...)
     /// @param callback the callback that is called when a region event occurs

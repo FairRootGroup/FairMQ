@@ -12,12 +12,12 @@
 #include "Common.h"
 #include "Monitor.h"
 #include "Region.h"
-
+#include <fairmq/Message.h>
 #include <fairmq/ProgOptions.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/Transports.h>
-#include <FairMQLogger.h>
-#include <FairMQMessage.h>
+
+#include <fairlogger/Logger.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
@@ -369,19 +369,15 @@ class Manager
     bool Interrupted() { return fInterrupted.load(); }
 
     std::pair<boost::interprocess::mapped_region*, uint16_t> CreateRegion(const size_t size,
-                                                                          const int64_t userFlags,
                                                                           RegionCallback callback,
                                                                           RegionBulkCallback bulkCallback,
-                                                                          const std::string& path,
-                                                                          int flags,
-                                                                          fair::mq::RegionConfig cfg)
+                                                                          RegionConfig cfg)
     {
         using namespace boost::interprocess;
         try {
             std::pair<mapped_region*, uint16_t> result;
 
             {
-                uint16_t id = 0;
                 boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
 
                 RegionCounter* rc = fManagementSegment.find<RegionCounter>(unique_instance).first;
@@ -396,7 +392,7 @@ class Manager
                     LOG(debug) << "initialized region counter with: " << rc->fCount;
                 }
 
-                id = rc->fCount;
+                uint16_t id = rc->fCount;
 
                 auto it = fRegions.find(id);
                 if (it != fRegions.end()) {
@@ -404,8 +400,8 @@ class Manager
                     return {nullptr, id};
                 }
 
-                auto r = fRegions.emplace(id, std::make_unique<Region>(fShmId, id, size, false, callback, bulkCallback, path, flags));
-                // LOG(debug) << "Created region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
+                auto r = fRegions.emplace(id, std::make_unique<Region>(fShmId, id, size, false, callback, bulkCallback, cfg));
+                // LOG(debug) << "Created region with id '" << id << "', path: '" << cfg.path << "', flags: '" << cfg.creationFlags << "'";
 
                 if (cfg.lock) {
                     LOG(debug) << "Locking region " << id << "...";
@@ -421,7 +417,7 @@ class Manager
                     LOG(debug) << "Successfully zeroed free memory of region " << id << ".";
                 }
 
-                fShmRegions->emplace(id, RegionInfo(path.c_str(), flags, userFlags, fShmVoidAlloc));
+                fShmRegions->emplace(id, RegionInfo(cfg.path.c_str(), cfg.creationFlags, cfg.userFlags, fShmVoidAlloc));
 
                 r.first->second->StartReceivingAcks();
                 result.first = &(r.first->second->fRegion);
@@ -476,11 +472,12 @@ class Manager
             try {
                 // get region info
                 RegionInfo regionInfo = fShmRegions->at(id);
-                std::string path = regionInfo.fPath.c_str();
-                int flags = regionInfo.fFlags;
-                // LOG(debug) << "Located remote region with id '" << id << "', path: '" << path << "', flags: '" << flags << "'";
+                RegionConfig cfg;
+                cfg.creationFlags = regionInfo.fCreationFlags;
+                cfg.path = regionInfo.fPath.c_str();
+                // LOG(debug) << "Located remote region with id '" << id << "', path: '" << cfg.path << "', flags: '" << cfg.creationFlags << "'";
 
-                auto r = fRegions.emplace(id, std::make_unique<Region>(fShmId, id, 0, true, nullptr, nullptr, path, flags));
+                auto r = fRegions.emplace(id, std::make_unique<Region>(fShmId, id, 0, true, nullptr, nullptr, std::move(cfg)));
                 return r.first->second.get();
             } catch (std::out_of_range& oor) {
                 LOG(error) << "Could not get remote region with id '" << id << "'. Does the region creator run with the same session id?";

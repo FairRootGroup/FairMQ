@@ -10,10 +10,10 @@
 #define FAIR_MQ_SHMEM_REGION_H_
 
 #include "Common.h"
-
-#include <FairMQLogger.h>
-#include <FairMQUnmanagedRegion.h>
+#include <fairmq/UnmanagedRegion.h>
 #include <fairmq/tools/Strings.h>
+
+#include <fairlogger/Logger.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -38,9 +38,9 @@ namespace fair::mq::shmem
 
 struct Region
 {
-    Region(const std::string& shmId, uint16_t id, uint64_t size, bool remote, RegionCallback callback, RegionBulkCallback bulkCallback, const std::string& path, int flags)
+    Region(const std::string& shmId, uint16_t id, uint64_t size, bool remote, RegionCallback callback, RegionBulkCallback bulkCallback, RegionConfig cfg)
         : fRemote(remote)
-        , fLinger(100)
+        , fLinger(cfg.linger)
         , fStopAcks(false)
         , fName("fmq_" + shmId + "_rg_" + std::to_string(id))
         , fQueueName("fmq_" + shmId + "_rgq_" + std::to_string(id))
@@ -53,8 +53,8 @@ struct Region
     {
         using namespace boost::interprocess;
 
-        if (!path.empty()) {
-            fName = std::string(path + fName);
+        if (!cfg.path.empty()) {
+            fName = std::string(cfg.path + fName);
 
             if (!fRemote) {
                 // create a file
@@ -75,7 +75,7 @@ struct Region
             }
             fFileMapping = file_mapping(fName.c_str(), read_write);
             LOG(debug) << "shmem: initialized file: " << fName;
-            fRegion = mapped_region(fFileMapping, read_write, 0, size, 0, flags);
+            fRegion = mapped_region(fFileMapping, read_write, 0, size, 0, cfg.creationFlags);
         } else {
             try {
                 if (fRemote) {
@@ -84,18 +84,17 @@ struct Region
                     fShmemObject = shared_memory_object(create_only, fName.c_str(), read_write);
                     fShmemObject.truncate(size);
                 }
-            } catch(interprocess_exception& e) {
+            } catch (interprocess_exception& e) {
                 LOG(error) << "Failed " << (fRemote ? "opening" : "creating") << " shared_memory_object for region id '" << id << "': " << e.what();
                 throw;
             }
             try {
-                fRegion = mapped_region(fShmemObject, read_write, 0, 0, 0, flags);
-            } catch(interprocess_exception& e) {
+                fRegion = mapped_region(fShmemObject, read_write, 0, 0, 0, cfg.creationFlags);
+            } catch (interprocess_exception& e) {
                 LOG(error) << "Failed mapping shared_memory_object for region id '" << id << "': " << e.what();
                 throw;
             }
         }
-
 
         InitializeQueues();
         StartSendingAcks();
