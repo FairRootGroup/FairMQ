@@ -20,6 +20,69 @@ namespace fair::mq::zmq
 
 struct Error : std::runtime_error { using std::runtime_error::runtime_error; };
 
+inline bool Bind(void* socket, const std::string& address, const std::string& id)
+{
+    // LOG(debug) << "Binding socket " << id << " on " << address;
+    if (zmq_bind(socket, address.c_str()) != 0) {
+        if (errno == EADDRINUSE) {
+            // do not print error in this case, this is handled upstream in case no
+            // connection could be established after trying a number of random ports from a range.
+            return false;
+        } else if (errno == EACCES) {
+            // check if TCP port 1 was given, if yes then it will be handeled upstream, print debug only
+            size_t protocolPos = address.find(':');
+            std::string protocol = address.substr(0, protocolPos);
+            if (protocol == "tcp") {
+                size_t portPos = address.rfind(':');
+                std::string port = address.substr(portPos + 1);
+                if (port == "1") {
+                    LOG(debug) << "Failed binding socket " << id << ", address: " << address << ", reason: " << zmq_strerror(errno);
+                    return false;
+                }
+            }
+        }
+        LOG(error) << "Failed binding socket " << id << ", address: " << address << ", reason: " << zmq_strerror(errno);
+        return false;
+    }
+    return true;
+}
+
+inline bool Connect(void* socket, const std::string& address, const std::string& id)
+{
+    // LOG(debug) << "Connecting socket " << id << " on " << address;
+    if (zmq_connect(socket, address.c_str()) != 0) {
+        LOG(error) << "Failed connecting socket " << id << ", address: " << address << ", reason: " << zmq_strerror(errno);
+        return false;
+    }
+    return true;
+}
+
+inline bool ShouldRetry(int flags, int socketTimeout, int userTimeout, int& elapsed)
+{
+    if ((flags & ZMQ_DONTWAIT) == 0) {
+        if (userTimeout > 0) {
+            elapsed += socketTimeout;
+            if (elapsed >= userTimeout) {
+                return false;
+            }
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
+
+inline int HandleErrors(const std::string& id)
+{
+    if (zmq_errno() == ETERM) {
+        LOG(debug) << "Terminating socket " << id;
+        return static_cast<int>(TransferCode::error);
+    } else {
+        LOG(error) << "Failed transfer on socket " << id << ", errno: " << errno << ", reason: " << zmq_strerror(errno);
+        return static_cast<int>(TransferCode::error);
+    }
+}
+
 /// Lookup table for various zmq constants
 inline auto getConstant(std::string_view constant) -> int
 {

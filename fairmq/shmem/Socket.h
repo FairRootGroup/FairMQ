@@ -117,52 +117,12 @@ class Socket final : public fair::mq::Socket
 
     bool Bind(const std::string& address) override
     {
-        // LOG(info) << "binding socket " << fId << " on " << address;
-        if (zmq_bind(fSocket, address.c_str()) != 0) {
-            if (errno == EADDRINUSE) {
-                // do not print error in this case, this is handled by FairMQDevice in case no connection could be established after trying a number of random ports from a range.
-                return false;
-            }
-            LOG(error) << "Failed binding socket " << fId << ", reason: " << zmq_strerror(errno);
-            return false;
-        }
-        return true;
+        return zmq::Bind(fSocket, address, fId);
     }
 
     bool Connect(const std::string& address) override
     {
-        // LOG(info) << "connecting socket " << fId << " on " << address;
-        if (zmq_connect(fSocket, address.c_str()) != 0) {
-            LOG(error) << "Failed connecting socket " << fId << ", reason: " << zmq_strerror(errno);
-            return false;
-        }
-        return true;
-    }
-
-    bool ShouldRetry(int flags, int timeout, int& elapsed) const
-    {
-        if ((flags & ZMQ_DONTWAIT) == 0) {
-            if (timeout > 0) {
-                elapsed += fTimeout;
-                if (elapsed >= timeout) {
-                    return false;
-                }
-            }
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    int HandleErrors() const
-    {
-        if (zmq_errno() == ETERM) {
-            LOG(debug) << "Terminating socket " << fId;
-            return static_cast<int>(TransferCode::error);
-        } else {
-            LOG(error) << "Failed transfer on socket " << fId << ", reason: " << zmq_strerror(errno);
-            return static_cast<int>(TransferCode::error);
-        }
+        return zmq::Connect(fSocket, address, fId);
     }
 
     int64_t Send(MessagePtr& msg, int timeout = -1) override
@@ -186,13 +146,13 @@ class Socket final : public fair::mq::Socket
             } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (fManager.Interrupted()) {
                     return static_cast<int>(TransferCode::interrupted);
-                } else if (ShouldRetry(flags, timeout, elapsed)) {
+                } else if (zmq::ShouldRetry(flags, fTimeout, timeout, elapsed)) {
                     continue;
                 } else {
                     return static_cast<int>(TransferCode::timeout);
                 }
             } else {
-                return HandleErrors();
+                return zmq::HandleErrors(fId);
             }
         }
 
@@ -226,13 +186,13 @@ class Socket final : public fair::mq::Socket
             } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (fManager.Interrupted()) {
                     return static_cast<int>(TransferCode::interrupted);
-                } else if (ShouldRetry(flags, timeout, elapsed)) {
+                } else if (zmq::ShouldRetry(flags, fTimeout, timeout, elapsed)) {
                     continue;
                 } else {
                     return static_cast<int>(TransferCode::timeout);
                 }
             } else {
-                return HandleErrors();
+                return zmq::HandleErrors(fId);
             }
         }
     }
@@ -277,13 +237,13 @@ class Socket final : public fair::mq::Socket
             } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (fManager.Interrupted()) {
                     return static_cast<int>(TransferCode::interrupted);
-                } else if (ShouldRetry(flags, timeout, elapsed)) {
+                } else if (zmq::ShouldRetry(flags, fTimeout, timeout, elapsed)) {
                     continue;
                 } else {
                     return static_cast<int>(TransferCode::timeout);
                 }
             } else {
-                return HandleErrors();
+                return zmq::HandleErrors(fId);
             }
         }
 
@@ -333,13 +293,13 @@ class Socket final : public fair::mq::Socket
             } else if (zmq_errno() == EAGAIN || zmq_errno() == EINTR) {
                 if (fManager.Interrupted()) {
                     return static_cast<int>(TransferCode::interrupted);
-                } else if (ShouldRetry(flags, timeout, elapsed)) {
+                } else if (zmq::ShouldRetry(flags, fTimeout, timeout, elapsed)) {
                     continue;
                 } else {
                     return static_cast<int>(TransferCode::timeout);
                 }
             } else {
-                return HandleErrors();
+                return zmq::HandleErrors(fId);
             }
         }
 
