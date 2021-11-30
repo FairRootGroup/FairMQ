@@ -387,8 +387,8 @@ class Manager
                     (rc->fCount)++;
                     LOG(debug) << "incremented region counter, now: " << rc->fCount;
                 } else {
-                    LOG(debug) << "no region counter found, creating one and initializing with 1";
-                    rc = fManagementSegment.construct<RegionCounter>(unique_instance)(1);
+                    LOG(debug) << "no region counter found, creating one and initializing with 1024";
+                    rc = fManagementSegment.construct<RegionCounter>(unique_instance)(1024);
                     LOG(debug) << "initialized region counter with: " << rc->fCount;
                 }
 

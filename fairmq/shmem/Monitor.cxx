@@ -497,10 +497,16 @@ void Monitor::PrintHelp()
               << "[q] quit.";
 }
 
+bool Monitor::RemoveObject(const string& name)      { return bipc::shared_memory_object::remove(name.c_str()); }
+bool Monitor::RemoveFileMapping(const string& name) { return bipc::file_mapping::remove(name.c_str()); }
+bool Monitor::RemoveQueue(const string& name)       { return bipc::message_queue::remove(name.c_str()); }
+bool Monitor::RemoveMutex(const string& name)       { return bipc::named_mutex::remove(name.c_str()); }
+bool Monitor::RemoveCondition(const string& name)   { return bipc::named_condition::remove(name.c_str()); }
 
-std::pair<std::string, bool> RunRemoval(std::function<bool(const std::string&)> f, std::string name, bool verbose)
+template<typename T>
+std::pair<std::string, bool> Remove(const std::string& name, bool verbose)
 {
-    if (f(name)) {
+    if (T::remove(name.c_str())) {
         if (verbose) {
             LOG(info) << "Successfully removed '" << name << "'.";
         }
@@ -512,12 +518,6 @@ std::pair<std::string, bool> RunRemoval(std::function<bool(const std::string&)> 
         return {name, false};
     }
 }
-
-bool Monitor::RemoveObject(const string& name)      { return bipc::shared_memory_object::remove(name.c_str()); }
-bool Monitor::RemoveFileMapping(const string& name) { return bipc::file_mapping::remove(name.c_str()); }
-bool Monitor::RemoveQueue(const string& name)       { return bipc::message_queue::remove(name.c_str()); }
-bool Monitor::RemoveMutex(const string& name)       { return bipc::named_mutex::remove(name.c_str()); }
-bool Monitor::RemoveCondition(const string& name)   { return bipc::named_condition::remove(name.c_str()); }
 
 std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, bool verbose /* = true */)
 {
@@ -531,51 +531,36 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
     try {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
 
-        try {
-            RegionCounter* rc = managementSegment.find<RegionCounter>(bipc::unique_instance).first;
-            if (rc) {
-                if (verbose) {
-                    LOG(debug) << "Region counter found: " << rc->fCount;
-                }
-                uint16_t regionCount = rc->fCount;
-
-                Uint16RegionInfoMap* m = managementSegment.find<Uint16RegionInfoMap>(bipc::unique_instance).first;
-
-                for (uint16_t i = 1; i <= regionCount; ++i) {
-                    if (m != nullptr) {
-                        RegionInfo ri = m->at(i);
-                        string path = ri.fPath.c_str();
-                        int flags = ri.fCreationFlags;
-                        if (verbose) {
-                            LOG(info) << "Found RegionInfo with path: '" << path << "', flags: " << flags << ", fDestroyed: " << ri.fDestroyed << ".";
-                        }
-                        if (!path.empty()) {
-                            result.emplace_back(RunRemoval(Monitor::RemoveFileMapping, path + "fmq_" + shmId.shmId + "_rg_" + to_string(i), verbose));
-                        } else {
-                            result.emplace_back(RunRemoval(Monitor::RemoveObject, "fmq_" + shmId.shmId + "_rg_" + to_string(i), verbose));
-                        }
-                    } else {
-                        result.emplace_back(RunRemoval(Monitor::RemoveObject, "fmq_" + shmId.shmId + "_rg_" + to_string(i), verbose));
-                    }
-
-                    result.emplace_back(RunRemoval(Monitor::RemoveQueue, string("fmq_" + shmId.shmId + "_rgq_" + to_string(i)), verbose));
-                }
-            } else {
-                if (verbose) {
-                    LOG(info) << "No region counter found. No regions to cleanup.";
-                }
-            }
-        } catch(out_of_range& oor) {
+        Uint16RegionInfoHashMap* regions = managementSegment.find<Uint16RegionInfoHashMap>(bipc::unique_instance).first;
+        if (regions) {
             if (verbose) {
-                LOG(info) << "Could not locate element in the region map, out of range: " << oor.what();
+                LOG(info) << "Found " << regions->size() << " unmanaged regions...";
+            }
+            for (const auto& region : *regions) {
+                uint16_t id = region.first;
+                RegionInfo info = region.second;
+                string path = info.fPath.c_str();
+                int flags = info.fCreationFlags;
+                if (verbose) {
+                    LOG(info) << "Found RegionInfo with path: '" << path << "', flags: " << flags << ", fDestroyed: " << info.fDestroyed << ".";
+                }
+                if (!path.empty()) {
+                    result.emplace_back(Remove<bipc::file_mapping>(path + "fmq_" + shmId.shmId + "_rg_" + to_string(id), verbose));
+                } else {
+                    result.emplace_back(Remove<bipc::shared_memory_object>("fmq_" + shmId.shmId + "_rg_" + to_string(id), verbose));
+                }
+                result.emplace_back(Remove<bipc::message_queue>("fmq_" + shmId.shmId + "_rgq_" + to_string(id), verbose));
             }
         }
 
-        Uint16SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint16SegmentInfoHashMap>(bipc::unique_instance).first;
+        Uint16SegmentInfoHashMap* segments = managementSegment.find<Uint16SegmentInfoHashMap>(bipc::unique_instance).first;
 
-        if (segmentInfos) {
-            for (const auto& s : *segmentInfos) {
-                result.emplace_back(RunRemoval(Monitor::RemoveObject, "fmq_" + shmId.shmId + "_m_" + to_string(s.first), verbose));
+        if (segments) {
+            if (verbose) {
+                LOG(info) << "Found " << segments->size() << " managed segments...";
+            }
+            for (const auto& segment : *segments) {
+                result.emplace_back(Remove<bipc::shared_memory_object>("fmq_" + shmId.shmId + "_m_" + to_string(segment.first), verbose));
             }
         } else {
             if (verbose) {
@@ -583,15 +568,15 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
             }
         }
 
-        result.emplace_back(RunRemoval(Monitor::RemoveObject, managementSegmentName.c_str(), verbose));
+        result.emplace_back(Remove<bipc::shared_memory_object>(managementSegmentName, verbose));
     } catch (bie&) {
         if (verbose) {
-            LOG(info) << "Did not find '" << managementSegmentName << "' shared memory segment. No regions to cleanup.";
+            LOG(info) << "Did not find '" << managementSegmentName << "' management segment. No regions to cleanup.";
         }
     }
 
-    result.emplace_back(RunRemoval(Monitor::RemoveMutex, "fmq_" + shmId.shmId + "_mtx", verbose));
-    result.emplace_back(RunRemoval(Monitor::RemoveCondition, "fmq_" + shmId.shmId + "_cv", verbose));
+    result.emplace_back(Remove<bipc::named_mutex>("fmq_" + shmId.shmId + "_mtx", verbose));
+    result.emplace_back(Remove<bipc::named_condition>("fmq_" + shmId.shmId + "_cv", verbose));
 
     return result;
 }
@@ -608,7 +593,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const SessionId& sess
 std::vector<std::pair<std::string, bool>> Monitor::CleanupFull(const ShmId& shmId, bool verbose /* = true */)
 {
     auto result = Cleanup(shmId, verbose);
-    result.emplace_back(RunRemoval(Monitor::RemoveMutex, "fmq_" + shmId.shmId + "_ms", verbose));
+    result.emplace_back(Remove<bipc::named_mutex>("fmq_" + shmId.shmId + "_ms", verbose));
     return result;
 }
 
