@@ -17,6 +17,7 @@
 #include <boost/interprocess/file_mapping.hpp>
 
 #include <boost/interprocess/sync/named_mutex.hpp>
+#include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/named_condition.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
 
@@ -390,8 +391,8 @@ void Monitor::PrintDebugInfo(const ShmId& shmId __attribute__((unused)))
     string managementSegmentName("fmq_" + shmId.shmId + "_mng");
     try {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
-        boost::interprocess::named_mutex mtx(boost::interprocess::open_only, string("fmq_" + shmId.shmId + "_mtx").c_str());
-        boost::interprocess::scoped_lock<bipc::named_mutex> lock(mtx);
+        bipc::interprocess_mutex* mtx(managementSegment.find_or_construct<bipc::interprocess_mutex>(bipc::unique_instance)());
+        bipc::scoped_lock<bipc::interprocess_mutex> lock(*mtx);
 
         Uint16MsgDebugMapHashMap* debug = managementSegment.find<Uint16MsgDebugMapHashMap>(bipc::unique_instance).first;
 
@@ -438,8 +439,8 @@ unordered_map<uint16_t, std::vector<BufferDebugInfo>> Monitor::GetDebugInfo(cons
     string managementSegmentName("fmq_" + shmId.shmId + "_mng");
     try {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
-        boost::interprocess::named_mutex mtx(boost::interprocess::open_only, string("fmq_" + shmId.shmId + "_mtx").c_str());
-        boost::interprocess::scoped_lock<bipc::named_mutex> lock(mtx);
+        bipc::interprocess_mutex* mtx(managementSegment.find_or_construct<bipc::interprocess_mutex>(bipc::unique_instance)());
+        bipc::scoped_lock<bipc::interprocess_mutex> lock(*mtx);
 
         Uint16MsgDebugMapHashMap* debug = managementSegment.find<Uint16MsgDebugMapHashMap>(bipc::unique_instance).first;
 
@@ -471,8 +472,8 @@ unsigned long Monitor::GetFreeMemory(const ShmId& shmId, uint16_t segmentId)
     using namespace boost::interprocess;
     try {
         bipc::managed_shared_memory managementSegment(bipc::open_only, std::string("fmq_" + shmId.shmId + "_mng").c_str());
-        boost::interprocess::named_mutex mtx(boost::interprocess::open_only, std::string("fmq_" + shmId.shmId + "_mtx").c_str());
-        boost::interprocess::scoped_lock<bipc::named_mutex> lock(mtx);
+        boost::interprocess::interprocess_mutex* mtx(managementSegment.find_or_construct<bipc::interprocess_mutex>(bipc::unique_instance)());
+        boost::interprocess::scoped_lock<bipc::interprocess_mutex> lock(*mtx);
 
         Uint16SegmentInfoHashMap* shmSegments = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
 
@@ -590,9 +591,6 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
             LOG(info) << "Did not find '" << managementSegmentName << "' management segment. No regions to cleanup.";
         }
     }
-
-    result.emplace_back(Remove<bipc::named_mutex>("fmq_" + shmId.shmId + "_mtx", verbose));
-    result.emplace_back(Remove<bipc::named_condition>("fmq_" + shmId.shmId + "_cv", verbose));
 
     return result;
 }
