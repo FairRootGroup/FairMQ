@@ -234,15 +234,16 @@ class Manager
             std::string op("create/open");
 
             try {
+                std::string segmentName("fmq_" + fShmId + "_m_" + std::to_string(fSegmentId));
                 auto it = fShmSegments->find(fSegmentId);
                 if (it == fShmSegments->end()) {
                     op = "create";
                     // no segment with given id exists, creating
                     if (allocationAlgorithm == "rbtree_best_fit") {
-                        fSegments.emplace(fSegmentId, RBTreeBestFitSegment(create_only, std::string("fmq_" + fShmId + "_m_" + std::to_string(fSegmentId)).c_str(), size));
+                        fSegments.emplace(fSegmentId, RBTreeBestFitSegment(create_only, segmentName.c_str(), size));
                         fShmSegments->emplace(fSegmentId, AllocationAlgorithm::rbtree_best_fit);
                     } else if (allocationAlgorithm == "simple_seq_fit") {
-                        fSegments.emplace(fSegmentId, SimpleSeqFitSegment(create_only, std::string("fmq_" + fShmId + "_m_" + std::to_string(fSegmentId)).c_str(), size));
+                        fSegments.emplace(fSegmentId, SimpleSeqFitSegment(create_only, segmentName.c_str(), size));
                         fShmSegments->emplace(fSegmentId, AllocationAlgorithm::simple_seq_fit);
                     }
                     ss << "Created ";
@@ -257,13 +258,13 @@ class Manager
                     op = "open";
                     // found segment with the given id, opening
                     if (it->second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
-                        fSegments.emplace(fSegmentId, RBTreeBestFitSegment(open_only, std::string("fmq_" + fShmId + "_m_" + std::to_string(fSegmentId)).c_str()));
+                        fSegments.emplace(fSegmentId, RBTreeBestFitSegment(open_only, segmentName.c_str()));
                         if (allocationAlgorithm != "rbtree_best_fit") {
                             LOG(warn) << "Allocation algorithm of the opened segment is rbtree_best_fit, but requested is " << allocationAlgorithm << ". Ignoring requested setting.";
                             allocationAlgorithm = "rbtree_best_fit";
                         }
                     } else {
-                        fSegments.emplace(fSegmentId, SimpleSeqFitSegment(open_only, std::string("fmq_" + fShmId + "_m_" + std::to_string(fSegmentId)).c_str()));
+                        fSegments.emplace(fSegmentId, SimpleSeqFitSegment(open_only, segmentName.c_str()));
                         if (allocationAlgorithm != "simple_seq_fit") {
                             LOG(warn) << "Allocation algorithm of the opened segment is simple_seq_fit, but requested is " << allocationAlgorithm << ". Ignoring requested setting.";
                             allocationAlgorithm = "simple_seq_fit";
@@ -276,7 +277,7 @@ class Manager
                 << " Available: " << boost::apply_visitor(SegmentFreeMemory(), fSegments.at(fSegmentId)) << " bytes."
                 << " Allocation algorithm: " << allocationAlgorithm;
                 LOG(debug) << ss.str();
-            } catch(interprocess_exception& bie) {
+            } catch (interprocess_exception& bie) {
                 LOG(error) << "Failed to " << op << " shared memory segment (" << "fmq_" << fShmId << "_m_" << fSegmentId << "): " << bie.what();
                 throw TransportError(tools::ToString("Failed to ", op, " shared memory segment (", "fmq_", fShmId, "_m_", fSegmentId, "): ", bie.what()));
             }
@@ -380,50 +381,60 @@ class Manager
             {
                 boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
 
-                RegionCounter* rc = fManagementSegment.find<RegionCounter>(unique_instance).first;
+                if (!cfg.id.has_value()) {
+                    RegionCounter* rc = fManagementSegment.find<RegionCounter>(unique_instance).first;
 
-                if (rc) {
-                    LOG(debug) << "region counter found, with value of " << rc->fCount << ". incrementing.";
-                    (rc->fCount)++;
-                    LOG(debug) << "incremented region counter, now: " << rc->fCount;
-                } else {
-                    LOG(debug) << "no region counter found, creating one and initializing with 1024";
-                    rc = fManagementSegment.construct<RegionCounter>(unique_instance)(1024);
-                    LOG(debug) << "initialized region counter with: " << rc->fCount;
+                    if (rc) {
+                        LOG(trace) << "region counter found, with value of " << rc->fCount << ". incrementing.";
+                        (rc->fCount)++;
+                        LOG(trace) << "incremented region counter, now: " << rc->fCount;
+                    } else {
+                        LOG(trace) << "no region counter found, creating one and initializing with 1024";
+                        rc = fManagementSegment.construct<RegionCounter>(unique_instance)(1024);
+                        LOG(trace) << "initialized region counter with: " << rc->fCount;
+                    }
+
+                    cfg.id = rc->fCount;
+                } else if (cfg.id.value() == 0) {
+                    LOG(error) << "User-given UnmanagedRegion ID must not be 0.";
+                    throw TransportError("User-given UnmanagedRegion ID must not be 0.");
                 }
 
-                uint16_t id = rc->fCount;
-
-                auto it = fRegions.find(id);
+                auto it = fRegions.find(cfg.id.value());
                 if (it != fRegions.end()) {
-                    LOG(error) << "Trying to create a region that already exists";
-                    return {nullptr, id};
+                    LOG(error) << "Trying to open/create a UnmanagedRegion that already exists (id: " << cfg.id.value() << ")";
+                    throw TransportError(tools::ToString("Trying to open/create a UnmanagedRegion that already exists (id: ", cfg.id.value(), ")"));
                 }
 
-                auto r = fRegions.emplace(id, std::make_unique<Region>(fShmId, id, size, false, callback, bulkCallback, cfg));
-                // LOG(debug) << "Created region with id '" << id << "', path: '" << cfg.path << "', flags: '" << cfg.creationFlags << "'";
+                Region& region = *(fRegions.emplace(cfg.id.value(), std::make_unique<Region>(fShmId, size, false, callback, bulkCallback, cfg)).first->second);
+                // LOG(debug) << "Created region with id '" << cfg.id.value() << "', path: '" << cfg.path << "', flags: '" << cfg.creationFlags << "'";
 
                 if (cfg.lock) {
-                    LOG(debug) << "Locking region " << id << "...";
-                    if (mlock(r.first->second->fRegion.get_address(), r.first->second->fRegion.get_size()) == -1) {
-                        LOG(error) << "Could not lock region " << id << ". Code: " << errno << ", reason: " << strerror(errno);
-                        throw TransportError(tools::ToString("Could not lock region ", id, ": ", strerror(errno)));
+                    LOG(debug) << "Locking region " << cfg.id.value() << "...";
+                    if (mlock(region.fRegion.get_address(), region.fRegion.get_size()) == -1) {
+                        LOG(error) << "Could not lock region " << cfg.id.value() << ". Code: " << errno << ", reason: " << strerror(errno);
+                        throw TransportError(tools::ToString("Could not lock region ", cfg.id.value(), ": ", strerror(errno)));
                     }
-                    LOG(debug) << "Successfully locked region " << id << ".";
+                    LOG(debug) << "Successfully locked region " << cfg.id.value() << ".";
                 }
                 if (cfg.zero) {
-                    LOG(debug) << "Zeroing free memory of region " << id << "...";
-                    memset(r.first->second->fRegion.get_address(), 0x00, r.first->second->fRegion.get_size());
-                    LOG(debug) << "Successfully zeroed free memory of region " << id << ".";
+                    LOG(debug) << "Zeroing free memory of region " << cfg.id.value() << "...";
+                    memset(region.fRegion.get_address(), 0x00, region.fRegion.get_size());
+                    LOG(debug) << "Successfully zeroed free memory of region " << cfg.id.value() << ".";
                 }
 
-                fShmRegions->emplace(id, RegionInfo(cfg.path.c_str(), cfg.creationFlags, cfg.userFlags, fShmVoidAlloc));
+                bool newRegionCreated = fShmRegions->emplace(cfg.id.value(), RegionInfo(cfg.path.c_str(), cfg.creationFlags, cfg.userFlags, fShmVoidAlloc)).second;
 
-                r.first->second->StartReceivingAcks();
-                result.first = &(r.first->second->fRegion);
-                result.second = id;
+                // start ack receiver only if a callback has been provided.
+                if (callback || bulkCallback) {
+                    region.StartAckReceiver();
+                }
+                result.first = &(region.fRegion);
+                result.second = cfg.id.value();
 
-                (fEventCounter->fCount)++;
+                if (newRegionCreated) {
+                    (fEventCounter->fCount)++;
+                }
             }
             fRegionsGen += 1; // signal TL cache invalidation
             fRegionEventsShmCV.notify_all();
@@ -473,11 +484,12 @@ class Manager
                 // get region info
                 RegionInfo regionInfo = fShmRegions->at(id);
                 RegionConfig cfg;
+                cfg.id = id;
                 cfg.creationFlags = regionInfo.fCreationFlags;
                 cfg.path = regionInfo.fPath.c_str();
                 // LOG(debug) << "Located remote region with id '" << id << "', path: '" << cfg.path << "', flags: '" << cfg.creationFlags << "'";
 
-                auto r = fRegions.emplace(id, std::make_unique<Region>(fShmId, id, 0, true, nullptr, nullptr, std::move(cfg)));
+                auto r = fRegions.emplace(id, std::make_unique<Region>(fShmId, 0, true, nullptr, nullptr, std::move(cfg)));
                 return r.first->second.get();
             } catch (std::out_of_range& oor) {
                 LOG(error) << "Could not get remote region with id '" << id << "'. Does the region creator run with the same session id?";
@@ -496,12 +508,14 @@ class Manager
             fRegions.at(id)->StopAcks();
             {
                 boost::interprocess::scoped_lock<boost::interprocess::named_mutex> lock(fShmMtx);
-                fShmRegions->at(id).fDestroyed = true;
+                if (fRegions.at(id)->fRemoveOnDestruction) {
+                    fShmRegions->at(id).fDestroyed = true;
+                    (fEventCounter->fCount)++;
+                }
                 fRegions.erase(id);
-                (fEventCounter->fCount)++;
             }
             fRegionEventsShmCV.notify_all();
-        } catch(std::out_of_range& oor) {
+        } catch (std::out_of_range& oor) {
             LOG(debug) << "RemoveRegion() could not locate region with id '" << id << "'";
         }
         fRegionsGen += 1; // signal TL cache invalidation
@@ -749,7 +763,7 @@ class Manager
         DecrementShmMsgCounter(segmentId);
         try {
             fMsgDebug->at(segmentId).erase(GetHandleFromAddress(ShmHeader::UserPtr(ptr), fSegmentId));
-        } catch(const std::out_of_range& oor) {
+        } catch (const std::out_of_range& oor) {
             LOG(debug) << "could not locate debug container for " << segmentId << ": " << oor.what();
         }
 #endif
