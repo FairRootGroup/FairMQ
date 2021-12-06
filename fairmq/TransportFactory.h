@@ -145,7 +145,6 @@ class TransportFactory
                                                      int flags = 0,
                                                      RegionConfig cfg = RegionConfig()) = 0;
 
-
     /// @brief Create new UnmanagedRegion
     /// @param size size of the region
     /// @param callback callback to be called when a message belonging to this region is no longer needed by the transport

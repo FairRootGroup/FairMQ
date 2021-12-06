@@ -8,6 +8,7 @@
 
 #include "Monitor.h"
 #include "Common.h"
+#include "Region.h"
 
 #include <fairmq/tools/IO.h>
 #include <fairmq/tools/Strings.h>
@@ -179,15 +180,23 @@ bool Monitor::PrintShm(const ShmId& shmId)
         managed_shared_memory managementSegment(open_read_only, std::string("fmq_" + shmId.shmId + "_mng").c_str());
         VoidAlloc allocInstance(managementSegment.get_segment_manager());
 
-        Uint16SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
+        Uint16SegmentInfoHashMap* shmSegments = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
         std::unordered_map<uint16_t, boost::variant<RBTreeBestFitSegment, SimpleSeqFitSegment>> segments;
 
-        if (!segmentInfos) {
+        Uint16RegionInfoHashMap* shmRegions = managementSegment.find<Uint16RegionInfoHashMap>(unique_instance).first;
+        std::unordered_map<uint16_t, std::unique_ptr<Region>> regions;
+
+        if (!shmSegments) {
             LOG(error) << "Found management segment, but cannot locate segment info, something went wrong...";
             return false;
         }
 
-        for (const auto& s : *segmentInfos) {
+        if (!shmSegments) {
+            LOG(error) << "Found management segment, but cannot locate region info...";
+            return false;
+        }
+
+        for (const auto& s : *shmSegments) {
             if (s.second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
                 segments.emplace(s.first, RBTreeBestFitSegment(open_read_only, std::string("fmq_" + shmId.shmId + "_m_" + to_string(s.first)).c_str()));
             } else {
@@ -221,7 +230,7 @@ bool Monitor::PrintShm(const ShmId& shmId)
            << ", session: " << sessionName
            << ", creator id: " << creatorId
            << ", devices: " << numDevices
-           << ", segments:\n";
+           << ", managed segments:\n";
 
         for (const auto& s : segments) {
             size_t free = boost::apply_visitor(SegmentFreeMemory(), s.second);
@@ -243,6 +252,13 @@ bool Monitor::PrintShm(const ShmId& shmId)
            << "total: " << mtotal
            << ", free: " << mfree
            << ", used: " << mused;
+
+        if (!shmRegions->empty()) {
+            ss << "\n   unmanaged regions:\n";
+            for (const auto& r : *shmRegions) {
+                ss << "      [" << r.first << "]: " << (r.second.fDestroyed ? "destroyed" : "alive");
+            }
+        }
         LOGV(info, user1) << ss.str();
     } catch (bie&) {
         return false;
@@ -458,15 +474,15 @@ unsigned long Monitor::GetFreeMemory(const ShmId& shmId, uint16_t segmentId)
         boost::interprocess::named_mutex mtx(boost::interprocess::open_only, std::string("fmq_" + shmId.shmId + "_mtx").c_str());
         boost::interprocess::scoped_lock<bipc::named_mutex> lock(mtx);
 
-        Uint16SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
+        Uint16SegmentInfoHashMap* shmSegments = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
 
-        if (!segmentInfos) {
+        if (!shmSegments) {
             LOG(error) << "Found management segment, but could not locate segment info";
             throw MonitorError("Found management segment, but could not locate segment info");
         }
 
-        auto it = segmentInfos->find(segmentId);
-        if (it != segmentInfos->end()) {
+        auto it = shmSegments->find(segmentId);
+        if (it != shmSegments->end()) {
             if (it->second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
                 RBTreeBestFitSegment segment(open_read_only, std::string("fmq_" + shmId.shmId + "_m_" + std::to_string(segmentId)).c_str());
                 return segment.get_free_memory();
@@ -531,12 +547,12 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
     try {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
 
-        Uint16RegionInfoHashMap* regions = managementSegment.find<Uint16RegionInfoHashMap>(bipc::unique_instance).first;
-        if (regions) {
+        Uint16RegionInfoHashMap* shmRegions = managementSegment.find<Uint16RegionInfoHashMap>(bipc::unique_instance).first;
+        if (shmRegions) {
             if (verbose) {
-                LOG(info) << "Found " << regions->size() << " unmanaged regions...";
+                LOG(info) << "Found " << shmRegions->size() << " unmanaged regions...";
             }
-            for (const auto& region : *regions) {
+            for (const auto& region : *shmRegions) {
                 uint16_t id = region.first;
                 RegionInfo info = region.second;
                 string path = info.fPath.c_str();
@@ -553,13 +569,13 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmId, b
             }
         }
 
-        Uint16SegmentInfoHashMap* segments = managementSegment.find<Uint16SegmentInfoHashMap>(bipc::unique_instance).first;
+        Uint16SegmentInfoHashMap* shmSegments = managementSegment.find<Uint16SegmentInfoHashMap>(bipc::unique_instance).first;
 
-        if (segments) {
+        if (shmSegments) {
             if (verbose) {
-                LOG(info) << "Found " << segments->size() << " managed segments...";
+                LOG(info) << "Found " << shmSegments->size() << " managed segments...";
             }
-            for (const auto& segment : *segments) {
+            for (const auto& segment : *shmSegments) {
                 result.emplace_back(Remove<bipc::shared_memory_object>("fmq_" + shmId.shmId + "_m_" + to_string(segment.first), verbose));
             }
         } else {

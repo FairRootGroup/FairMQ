@@ -381,9 +381,9 @@ class Message final : public fair::mq::Message
             Deallocate();
             fAlignment = 0;
             fManager.DecrementMsgCounter();
-        } catch(SharedMemoryError& sme) {
+        } catch (SharedMemoryError& sme) {
             LOG(error) << "error closing message: " << sme.what();
-        } catch(boost::interprocess::lock_exception& le) {
+        } catch (boost::interprocess::lock_exception& le) {
             LOG(error) << "error closing message: " << le.what();
         }
     }
