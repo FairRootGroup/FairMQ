@@ -78,7 +78,7 @@ class TransportFactory final : public fair::mq::TransportFactory
                 LOG(error) << "failed configuring context, reason: " << zmq_strerror(errno);
             }
 
-            fManager = std::make_unique<Manager>(sessionName, deviceId, segmentSize, config);
+            fManager = std::make_unique<Manager>(sessionName, segmentSize, config);
         } catch (boost::interprocess::interprocess_exception& e) {
             LOG(error) << "Could not initialize shared memory transport: " << e.what();
             throw std::runtime_error(tools::ToString("Could not initialize shared memory transport: ", e.what()));

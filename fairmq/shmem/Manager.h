@@ -128,11 +128,10 @@ struct ShmHeader
 class Manager
 {
   public:
-    Manager(const std::string& sessionName, std::string deviceId, size_t size, const ProgOptions* config)
+    Manager(const std::string& sessionName, size_t size, const ProgOptions* config)
         : fShmId64(makeShmIdUint64(sessionName))
         , fShmId(makeShmIdStr(sessionName))
         , fSegmentId(config ? config->GetProperty<uint16_t>("shm-segment-id", 0) : 0)
-        , fDeviceId(std::move(deviceId))
         , fManagementSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mng").c_str(), 6553600)
         , fShmVoidAlloc(fManagementSegment.get_segment_manager())
         , fShmMtx(fManagementSegment.find_or_construct<boost::interprocess::interprocess_mutex>(boost::interprocess::unique_instance)())
@@ -818,7 +817,6 @@ class Manager
     uint64_t fShmId64;
     std::string fShmId;
     uint16_t fSegmentId;
-    std::string fDeviceId;
     std::unordered_map<uint16_t, boost::variant<RBTreeBestFitSegment, SimpleSeqFitSegment>> fSegments;
     boost::interprocess::managed_shared_memory fManagementSegment;
     VoidAlloc fShmVoidAlloc;
