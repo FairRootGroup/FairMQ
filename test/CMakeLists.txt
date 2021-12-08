@@ -100,6 +100,7 @@ add_testsuite(Message
 add_testsuite(Region
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    region/_creation.cxx
     region/_region.cxx
 
     LINKS FairMQ

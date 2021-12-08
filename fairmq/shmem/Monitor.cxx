@@ -8,7 +8,7 @@
 
 #include "Monitor.h"
 #include "Common.h"
-#include "Region.h"
+#include "UnmanagedRegion.h"
 
 #include <fairmq/tools/IO.h>
 #include <fairmq/tools/Strings.h>
@@ -185,16 +185,14 @@ bool Monitor::PrintShm(const ShmId& shmId)
         std::unordered_map<uint16_t, boost::variant<RBTreeBestFitSegment, SimpleSeqFitSegment>> segments;
 
         Uint16RegionInfoHashMap* shmRegions = managementSegment.find<Uint16RegionInfoHashMap>(unique_instance).first;
-        std::unordered_map<uint16_t, std::unique_ptr<Region>> regions;
 
         if (!shmSegments) {
             LOG(error) << "Found management segment, but cannot locate segment info, something went wrong...";
             return false;
         }
 
-        if (!shmSegments) {
+        if (!shmRegions) {
             LOG(error) << "Found management segment, but cannot locate region info...";
-            return false;
         }
 
         for (const auto& s : *shmSegments) {
@@ -237,13 +235,24 @@ bool Monitor::PrintShm(const ShmId& shmId)
             size_t free = boost::apply_visitor(SegmentFreeMemory(), s.second);
             size_t total = boost::apply_visitor(SegmentSize(), s.second);
             size_t used = total - free;
-            ss << "   [" << s.first
-               << "]: total: " << total
+
+            std::string msgCount;
 #ifdef FAIRMQ_DEBUG_MODE
-               << ", msgs: " << ( (msgCounters != nullptr) ? to_string((*msgCounters)[s.first].fCount) : "unknown")
+            if (msgCounters) {
+                auto it = msgCounters->find(s.first);
+                if (it != msgCounters->end()) {
+                    msgCount = to_string(it->second.fCount.load());
+                } else {
+                    msgCount = "0";
+                }
+            }
 #else
-               << ", msgs: NODEBUG"
+            msgCount = "NODEBUG";
 #endif
+
+            ss << "   [" << s.first << "]"
+               << ": total: " << total
+               << ", msgs: " << msgCount
                << ", free: " << free
                << ", used: " << used
                << "\n";
@@ -254,10 +263,17 @@ bool Monitor::PrintShm(const ShmId& shmId)
            << ", free: " << mfree
            << ", used: " << mused;
 
-        if (!shmRegions->empty()) {
-            ss << "\n   unmanaged regions:\n";
+        if (shmRegions && !shmRegions->empty()) {
+            ss << "\n   unmanaged regions:";
             for (const auto& r : *shmRegions) {
-                ss << "      [" << r.first << "]: " << (r.second.fDestroyed ? "destroyed" : "alive");
+                ss << "\n      [" << r.first << "]: " << (r.second.fDestroyed ? "destroyed" : "alive");
+
+                try {
+                    boost::interprocess::message_queue q(open_only, std::string("fmq_" + std::string(shmId) + "_rgq_" + to_string(r.first)).c_str());
+                    ss << ", ack queue: " << q.get_num_msg() << " messages";
+                } catch (bie&) {
+                    ss << ", ack queue: not found";
+                }
             }
         }
         LOGV(info, user1) << ss.str();
@@ -618,6 +634,62 @@ std::vector<std::pair<std::string, bool>> Monitor::CleanupFull(const SessionId& 
         LOG(info) << "Cleanup called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'";
     }
     return CleanupFull(shmId, verbose);
+}
+
+void Monitor::ResetContent(const ShmId& shmId, bool verbose /* = true */)
+{
+    if (verbose) {
+        cout << "Resetting segments content for shared memory id '" << shmId.shmId << "'..." << endl;
+    }
+
+    string managementSegmentName("fmq_" + shmId.shmId + "_mng");
+    try {
+        using namespace boost::interprocess;
+        managed_shared_memory managementSegment(open_only, managementSegmentName.c_str());
+
+        Uint16SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
+
+        for (const auto& s : *segmentInfos) {
+            if (verbose) {
+                cout << "Resetting content of segment '" << "fmq_" << shmId.shmId << "_m_" << s.first << "'..." << endl;
+            }
+            try {
+                if (s.second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
+                    RBTreeBestFitSegment segment(open_only, std::string("fmq_" + shmId.shmId + "_m_" + to_string(s.first)).c_str());
+                    void* ptr = segment.get_segment_manager();
+                    size_t size = segment.get_segment_manager()->get_size();
+                    new(ptr) segment_manager<char, rbtree_best_fit<mutex_family, offset_ptr<void>>, null_index>(size);
+                } else {
+                    SimpleSeqFitSegment segment(open_only, std::string("fmq_" + shmId.shmId + "_m_" + to_string(s.first)).c_str());
+                    void* ptr = segment.get_segment_manager();
+                    size_t size = segment.get_segment_manager()->get_size();
+                    new(ptr) segment_manager<char, simple_seq_fit<mutex_family, offset_ptr<void>>, null_index>(size);
+                }
+            } catch (bie& e) {
+                if (verbose) {
+                    cout << "Error resetting content of segment '" << std::string("fmq_" + shmId.shmId + "_m_" + to_string(s.first)) << "': " << e.what() << endl;
+                }
+            }
+        }
+    } catch (bie& e) {
+        if (verbose) {
+            cout << "Could not find '" << managementSegmentName << "' segment. Nothing to cleanup." << endl;
+            cout << e.what() << endl;
+        }
+    }
+
+    if (verbose) {
+        cout << "Done resetting segment content for shared memory id '" << shmId.shmId << "'." << endl;
+    }
+}
+
+void Monitor::ResetContent(const SessionId& sessionId, bool verbose /* = true */)
+{
+    ShmId shmId{makeShmIdStr(sessionId.sessionId)};
+    if (verbose) {
+        cout << "ResetContent called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'" << endl;
+    }
+    ResetContent(shmId, verbose);
 }
 
 Monitor::~Monitor()

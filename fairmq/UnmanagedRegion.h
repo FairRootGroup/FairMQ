@@ -119,13 +119,6 @@ inline std::ostream& operator<<(std::ostream& os, const RegionEvent& event)
     }
 }
 
-enum class RegionConstruction : int
-{
-    open,
-    create,
-    open_or_create
-};
-
 struct RegionConfig
 {
     RegionConfig() = default;
@@ -138,7 +131,6 @@ struct RegionConfig
     bool lock = false; /// mlock region after creation
     bool zero = false; /// zero region content after creation
     bool removeOnDestruction = true; /// remove the region on object destruction
-    RegionConstruction constructionMode = RegionConstruction::create; /// how to construct the region: create/open/open_or_create
     int creationFlags = 0; /// flags passed to the underlying transport on region creation
     int64_t userFlags = 0; /// custom flags that have no effect on the transport, but can be retrieved from the region by the user
     std::string path = ""; /// file path, if the region is backed by a file

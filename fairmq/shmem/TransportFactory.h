@@ -14,7 +14,7 @@
 #include "Message.h"
 #include "Poller.h"
 #include "Socket.h"
-#include "UnmanagedRegion.h"
+#include "UnmanagedRegionImpl.h"
 #include <fairmq/ProgOptions.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/TransportFactory.h>
@@ -184,7 +184,7 @@ class TransportFactory final : public fair::mq::TransportFactory
 
     UnmanagedRegionPtr CreateUnmanagedRegion(size_t size, RegionCallback callback, RegionBulkCallback bulkCallback, fair::mq::RegionConfig cfg)
     {
-        return std::make_unique<UnmanagedRegion>(*fManager, size, callback, bulkCallback, std::move(cfg), this);
+        return std::make_unique<UnmanagedRegionImpl>(*fManager, size, callback, bulkCallback, std::move(cfg), this);
     }
 
     void SubscribeToRegionEvents(RegionEventCallback callback) override { fManager->SubscribeToRegionEvents(callback); }

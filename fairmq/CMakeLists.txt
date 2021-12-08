@@ -192,6 +192,9 @@ if(BUILD_FAIRMQ)
     runDevice.h
     runFairMQDevice.h
     shmem/Monitor.h
+    shmem/Common.h
+    shmem/UnmanagedRegion.h
+    shmem/Segment.h
   )
 
   set(FAIRMQ_PRIVATE_HEADER_FILES
@@ -206,12 +209,10 @@ if(BUILD_FAIRMQ)
     plugins/control/Control.h
     shmem/Message.h
     shmem/Poller.h
-    shmem/UnmanagedRegion.h
+    shmem/UnmanagedRegionImpl.h
     shmem/Socket.h
     shmem/TransportFactory.h
-    shmem/Common.h
     shmem/Manager.h
-    shmem/Region.h
     zeromq/Common.h
     zeromq/Context.h
     zeromq/Message.h

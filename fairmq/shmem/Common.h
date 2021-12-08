@@ -31,11 +31,11 @@ namespace fair::mq::shmem
 struct SharedMemoryError : std::runtime_error { using std::runtime_error::runtime_error; };
 
 using SimpleSeqFitSegment = boost::interprocess::basic_managed_shared_memory<char,
-    boost::interprocess::simple_seq_fit<boost::interprocess::mutex_family>,
+    boost::interprocess::simple_seq_fit<boost::interprocess::mutex_family, boost::interprocess::offset_ptr<void>>,
     boost::interprocess::null_index>;
     // boost::interprocess::iset_index>;
 using RBTreeBestFitSegment = boost::interprocess::basic_managed_shared_memory<char,
-    boost::interprocess::rbtree_best_fit<boost::interprocess::mutex_family>,
+    boost::interprocess::rbtree_best_fit<boost::interprocess::mutex_family, boost::interprocess::offset_ptr<void>>,
     boost::interprocess::null_index>;
     // boost::interprocess::iset_index>;
 
@@ -146,6 +146,7 @@ struct MetaHeader
     mutable boost::interprocess::managed_shared_memory::handle_t fShared;
     uint16_t fRegionId;
     mutable uint16_t fSegmentId;
+    bool fManaged;
 };
 
 #ifdef FAIRMQ_DEBUG_MODE
@@ -210,7 +211,9 @@ struct RegionBlock
 // a hash of user id + session id, truncated to 8 characters (to accommodate for name size limit on some systems (MacOS)).
 std::string makeShmIdStr(const std::string& sessionId, const std::string& userId);
 std::string makeShmIdStr(const std::string& sessionId);
+std::string makeShmIdStr(uint64_t val);
 uint64_t makeShmIdUint64(const std::string& sessionId);
+
 
 struct SegmentSize : public boost::static_visitor<size_t>
 {

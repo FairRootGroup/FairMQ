@@ -76,6 +76,7 @@ int main(int argc, char** argv)
         string sessionName;
         string shmId;
         bool cleanup = false;
+        bool resetContent = false;
         bool selfDestruct = false;
         bool interactive = false;
         bool viewOnly = false;
@@ -97,6 +98,7 @@ int main(int argc, char** argv)
             ("session,s"      , value<string>(&sessionName)->default_value("default"),  "Session id")
             ("shmid"          , value<string>(&shmId)->default_value(""),               "Shmem id (if not provided, it is generated out of session id and user id)")
             ("cleanup,c"      , value<bool>(&cleanup)->implicit_value(true),            "Perform cleanup and quit")
+            ("reset-content,r", value<bool>(&resetContent)->implicit_value(true),       "[EXPERIMENTAL] Reset content of the segments (only call this when segment is not in use)")
             ("self-destruct,x", value<bool>(&selfDestruct)->implicit_value(true),       "Quit after first closing of the memory")
             ("interactive,i"  , value<bool>(&interactive)->implicit_value(true),        "Interactive run")
             ("view,v"         , value<bool>(&viewOnly)->implicit_value(true),           "Run in view only mode")
@@ -143,6 +145,11 @@ int main(int argc, char** argv)
 
         if (cleanup) {
             Monitor::CleanupFull(ShmId{shmId});
+            return 0;
+        }
+
+        if (resetContent) {
+            Monitor::ResetContent(ShmId{shmId});
             return 0;
         }
 

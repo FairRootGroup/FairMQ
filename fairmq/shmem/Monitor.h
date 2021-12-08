@@ -80,6 +80,15 @@ class Monitor
     /// @param verbose output cleanup results to stdout
     static std::vector<std::pair<std::string, bool>> CleanupFull(const SessionId& sessionId, bool verbose = true);
 
+    /// @brief [EXPERIMENTAL] cleanup the content of the shem segment, without recreating it
+    /// @param shmId shared memory id
+    /// Only call this when segment is not in use
+    static void ResetContent(const ShmId& shmId, bool verbose = true);
+    /// @brief [EXPERIMENTAL] cleanup the content of the shem segment, without recreating it
+    /// @param sessionId session id
+    /// Only call this when segment is not in use
+    static void ResetContent(const SessionId& sessionId, bool verbose = true);
+
     /// @brief Outputs list of messages in shmem (if compiled with FAIRMQ_DEBUG_MODE=ON)
     /// @param shmId shmem id
     static void PrintDebugInfo(const ShmId& shmId);
