@@ -5,7 +5,7 @@ Next-generation Particle Physics Experiments at FAIR and CERN are facing unprece
 The FairMQ C++ library is designed to aid the implementation of such large-scale online data processing workflows by
 * providing an asynchronous message passing abstraction that integrates different existing data transport technologies (no need to re-invent the wheel),
 * providing a reasonably efficient data transport service (zero-copy, high throughput - TCP, SHMEM, and RDMA implementations available),
-* being data format agnostic (suitable data formats are usually very experiment-specific), and
+* being data format agnostic (suitable data formats are usually experiment-specific), and
 * providing other basic building blocks such as a simple state machine based execution framework and a plugin mechanism to integrate with external config/control systems.
 
 ![Screenshot of AliceO2 Debug GUI showing the data processing workflow of a single event processing node](./AliceO2DebugGUIScreenshotEPN.png)
