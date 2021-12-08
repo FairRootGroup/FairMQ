@@ -8,10 +8,7 @@
 #ifndef FAIR_MQ_SHMEM_COMMON_H_
 #define FAIR_MQ_SHMEM_COMMON_H_
 
-#include <picosha2.h>
-
 #include <atomic>
-#include <sstream>
 #include <string>
 #include <functional> // std::equal_to
 
@@ -26,7 +23,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/variant.hpp>
 
-#include <unistd.h>
 #include <sys/types.h>
 
 namespace fair::mq::shmem
@@ -212,31 +208,9 @@ struct RegionBlock
 
 // find id for unique shmem name:
 // a hash of user id + session id, truncated to 8 characters (to accommodate for name size limit on some systems (MacOS)).
-inline std::string makeShmIdStr(const std::string& sessionId, const std::string& userId)
-{
-    std::string seed(userId + sessionId);
-    // generate a 8-digit hex value out of sha256 hash
-    std::vector<unsigned char> hash(4);
-    picosha2::hash256(seed.begin(), seed.end(), hash.begin(), hash.end());
-
-    return picosha2::bytes_to_hex_string(hash.begin(), hash.end());
-}
-
-inline std::string makeShmIdStr(const std::string& sessionId)
-{
-    return makeShmIdStr(sessionId, std::to_string(geteuid()));
-}
-
-inline uint64_t makeShmIdUint64(const std::string& sessionId)
-{
-    std::string shmId = makeShmIdStr(sessionId);
-    uint64_t id = 0;
-    std::stringstream ss;
-    ss << std::hex << shmId;
-    ss >> id;
-
-    return id;
-}
+std::string makeShmIdStr(const std::string& sessionId, const std::string& userId);
+std::string makeShmIdStr(const std::string& sessionId);
+uint64_t makeShmIdUint64(const std::string& sessionId);
 
 struct SegmentSize : public boost::static_visitor<size_t>
 {

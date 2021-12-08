@@ -249,6 +249,7 @@ if(BUILD_FAIRMQ)
     TransportFactory.cxx
     plugins/config/Config.cxx
     plugins/control/Control.cxx
+    shmem/Common.cxx
     shmem/Manager.cxx
     shmem/Monitor.cxx
   )
@@ -385,7 +386,7 @@ if(BUILD_FAIRMQ)
     fairmq_target_tidy(TARGET fairmq-splitter)
   endif()
 
-  add_executable(fairmq-shmmonitor shmem/Monitor.cxx shmem/Monitor.h shmem/runMonitor.cxx)
+  add_executable(fairmq-shmmonitor shmem/Common.cxx shmem/Monitor.cxx shmem/Monitor.h shmem/runMonitor.cxx)
   target_compile_features(fairmq-shmmonitor PUBLIC cxx_std_17)
   target_compile_definitions(fairmq-shmmonitor PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
   if(FAIRMQ_DEBUG_MODE)
