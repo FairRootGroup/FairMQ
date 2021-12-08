@@ -14,4 +14,4 @@ FairMQ is not an end-user application, but a library and framework used by exper
 
 The screenshot shows a visualization of the data processing workflow on a single [Alice](https://home.cern/science/experiments/alice) event processing node (The "O2 Framework debug GUI" tool in the screenshot is part of the [AliceO2 project](https://aliceo2group.github.io/AliceO2/)). Data logically flows along the yellow edges (in this case via the FairMQ shmem data transport) through the various processing stages of which some are implemented as GPU and others as CPU algorithms.
 
-Although FairMQ was initially designed for the synchronous (online) data processing, it has been succesfully used to parallelize asynchronous (offline) [simulation](https://doi.org/10.1051/epjconf/201921402029) and [analysis](https://doi.org/10.1051/epjconf/201921405045) workloads.
+Although FairMQ was initially designed for the synchronous (online) data processing, it has been successfully used to parallelize asynchronous (offline) [simulation](https://doi.org/10.1051/epjconf/201921402029) and [analysis](https://doi.org/10.1051/epjconf/201921405045) workloads.
