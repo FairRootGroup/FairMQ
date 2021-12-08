@@ -8,7 +8,7 @@ The FairMQ C++ library is designed to aid the implementation of such large-scale
 * being data format agnostic (suitable data formats are usually experiment-specific), and
 * providing other basic building blocks such as a simple state machine based execution framework and a plugin mechanism to integrate with external config/control systems.
 
-FairMQ is not an end-user application, but a library and framework used by experiment software experts to implement their higher-level experiment applications.
+FairMQ is not an end-user application, but a library and framework used by experiment software experts to implement higher-level experiment-specific applications.
 
 ![Screenshot of AliceO2 Debug GUI showing the data processing workflow of a single event processing node](./AliceO2DebugGUIScreenshotEPN.png)
 
