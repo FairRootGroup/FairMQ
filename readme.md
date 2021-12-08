@@ -8,8 +8,10 @@ The FairMQ C++ library is designed to aid the implementation of such large-scale
 * being data format agnostic (suitable data formats are usually experiment-specific), and
 * providing other basic building blocks such as a simple state machine based execution framework and a plugin mechanism to integrate with external config/control systems.
 
+FairMQ is not an end-user application, but a library and framework used by experiment software experts to implement their higher-level experiment applications.
+
 ![Screenshot of AliceO2 Debug GUI showing the data processing workflow of a single event processing node](./AliceO2DebugGUIScreenshotEPN.png)
 
-The screenshot shows a visualization of the data processing workflow on a single Alice event processing node (The O2DebugGUI tool in the screenshot is not part of FairMQ). Data continuously flows along the yellow edges (in this case via the FairMQ shmem data transport) through the various processing stages of which some are implemented as GPU and others as CPU algorithms.
+The screenshot shows a visualization of the data processing workflow on a single Alice event processing node (The "O2 Framework debug GUI" tool in the screenshot is part of the AliceO2 project). Data logically flows along the yellow edges (in this case via the FairMQ shmem data transport) through the various processing stages of which some are implemented as GPU and others as CPU algorithms.
 
-(TODO Although FairMQ was initially designed for the synchronous (online) data processing, it has been used also to parallelize asynchronous (offline) simulation and analysis tasks. references?)
+(TODO Although FairMQ was initially designed for the synchronous (online) data processing, it has been succesfully used to parallelize asynchronous (offline) simulation and analysis tasks. references?)
