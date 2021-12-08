@@ -12,6 +12,7 @@
 
 #include <unistd.h>
 
+#include <iomanip>
 #include <sstream>
 #include <string>
 
@@ -42,6 +43,13 @@ uint64_t makeShmIdUint64(const std::string& sessionId)
     ss >> id;
 
     return id;
+}
+
+std::string makeShmIdStr(uint64_t val)
+{
+    std::stringstream ss;
+    ss << std::setfill('0') << std::setw(8) << std::hex << val;
+    return ss.str();
 }
 
 

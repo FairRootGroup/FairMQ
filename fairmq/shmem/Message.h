@@ -10,8 +10,8 @@
 
 #include "Common.h"
 #include "Manager.h"
-#include "Region.h"
 #include "UnmanagedRegion.h"
+#include "UnmanagedRegionImpl.h"
 #include <fairmq/Message.h>
 #include <fairmq/UnmanagedRegion.h>
 
@@ -39,7 +39,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId()}
+        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId(), true}
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
@@ -50,7 +50,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId()}
+        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId(), true}
         , fAlignment(alignment.alignment)
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
@@ -62,7 +62,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId()}
+        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId(), true}
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
@@ -74,7 +74,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId()}
+        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId(), true}
         , fAlignment(alignment.alignment)
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
@@ -87,7 +87,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId()}
+        , fMeta{0, 0, -1, -1, 0, fManager.GetSegmentId(), true}
         , fRegionPtr(nullptr)
         , fLocalPtr(nullptr)
     {
@@ -106,7 +106,7 @@ class Message final : public fair::mq::Message
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
-        , fMeta{size, reinterpret_cast<size_t>(hint), -1, -1, static_cast<UnmanagedRegion*>(region.get())->fRegionId, fManager.GetSegmentId()}
+        , fMeta{size, reinterpret_cast<size_t>(hint), -1, -1, static_cast<UnmanagedRegionImpl*>(region.get())->fRegionId, fManager.GetSegmentId(), false}
         , fRegionPtr(nullptr)
         , fLocalPtr(static_cast<char*>(data))
     {
@@ -187,7 +187,7 @@ class Message final : public fair::mq::Message
     void* GetData() const override
     {
         if (!fLocalPtr) {
-            if (fMeta.fRegionId == 0) {
+            if (fMeta.fManaged) {
                 if (fMeta.fSize > 0) {
                     fManager.GetSegment(fMeta.fSegmentId);
                     fLocalPtr = ShmHeader::UserPtr(fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId));
@@ -197,7 +197,7 @@ class Message final : public fair::mq::Message
             } else {
                 fRegionPtr = fManager.GetRegion(fMeta.fRegionId);
                 if (fRegionPtr) {
-                    fLocalPtr = reinterpret_cast<char*>(fRegionPtr->fRegion.get_address()) + fMeta.fHandle;
+                    fLocalPtr = reinterpret_cast<char*>(fRegionPtr->GetData()) + fMeta.fHandle;
                 } else {
                     // LOG(warn) << "could not get pointer from a region message";
                     fLocalPtr = nullptr;
@@ -259,7 +259,7 @@ class Message final : public fair::mq::Message
             return 1;
         }
 
-        if (fMeta.fRegionId == 0) { // managed segment
+        if (fMeta.fManaged) { // managed segment
             fManager.GetSegment(fMeta.fSegmentId);
             return ShmHeader::RefCount(fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId));
         } else { // unmanaged region
@@ -286,7 +286,7 @@ class Message final : public fair::mq::Message
             CloseMessage();
         }
 
-        if (otherMsg.fMeta.fRegionId == 0) { // managed segment
+        if (otherMsg.fMeta.fManaged) { // managed segment
             fMeta = otherMsg.fMeta;
             fManager.GetSegment(fMeta.fSegmentId);
             ShmHeader::IncrementRefCount(fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId));
@@ -317,7 +317,7 @@ class Message final : public fair::mq::Message
     bool fQueued;
     MetaHeader fMeta;
     size_t fAlignment;
-    mutable Region* fRegionPtr;
+    mutable UnmanagedRegion* fRegionPtr;
     mutable char* fLocalPtr;
 
     char* InitializeChunk(const size_t size, size_t alignment = 0)
@@ -336,7 +336,7 @@ class Message final : public fair::mq::Message
     void Deallocate()
     {
         if (fMeta.fHandle >= 0 && !fQueued) {
-            if (fMeta.fRegionId == 0) { // managed segment
+            if (fMeta.fManaged) { // managed segment
                 fManager.GetSegment(fMeta.fSegmentId);
                 uint16_t refCount = ShmHeader::DecrementRefCount(fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId));
                 if (refCount == 1) {

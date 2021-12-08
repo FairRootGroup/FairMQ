@@ -12,7 +12,10 @@ target_link_libraries(fairmq-ex-region-sampler PRIVATE FairMQ)
 add_executable(fairmq-ex-region-sink sink.cxx)
 target_link_libraries(fairmq-ex-region-sink PRIVATE FairMQ)
 
-add_custom_target(ExampleRegion DEPENDS fairmq-ex-region-sampler fairmq-ex-region-sink)
+add_executable(fairmq-ex-region-keep-alive keep-alive.cxx)
+target_link_libraries(fairmq-ex-region-keep-alive PRIVATE FairMQ)
+
+add_custom_target(ExampleRegion DEPENDS fairmq-ex-region-sampler fairmq-ex-region-sink fairmq-ex-region-keep-alive)
 
 set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
