@@ -128,7 +128,7 @@ auto DeviceRunner::Run() -> int
 
     fConfig.ParseAll(fRawCmdLineArgs, true);
 
-    if (!HandleGeneralOptions(fConfig)) {
+    if (!HandleGeneralOptions(fConfig, fPrintLogo)) {
         return 0;
     }
 
