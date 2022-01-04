@@ -107,6 +107,17 @@ struct UnmanagedRegion
             }
         }
 
+        if (cfg.lock) {
+            LOG(debug) << "Locking region " << cfg.id.value() << "...";
+            Lock();
+            LOG(debug) << "Successfully locked region " << cfg.id.value() << ".";
+        }
+        if (cfg.zero) {
+            LOG(debug) << "Zeroing free memory of region " << cfg.id.value() << "...";
+            Zero();
+            LOG(debug) << "Successfully zeroed free memory of region " << cfg.id.value() << ".";
+        }
+
         if (!remote) {
             Register(shmId, cfg);
         }
