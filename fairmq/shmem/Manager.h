@@ -777,8 +777,6 @@ class Manager
         if (lastRemoved) {
             if (!fNoCleanup) {
                 Monitor::Cleanup(ShmId{fShmId});
-            } else {
-                Monitor::RemoveObject("fmq_" + fShmId + "_mng");
             }
         }
     }
