@@ -14,13 +14,18 @@
 
 #include <fairlogger/Logger.h>
 
+#include <boost/algorithm/string.hpp>
+#include <boost/program_options.hpp>
+
 #include <csignal>
 
 #include <chrono>
+#include <map>
 #include <string>
 #include <thread>
 
 using namespace std;
+using namespace boost::program_options;
 
 namespace
 {
@@ -32,19 +37,69 @@ void signalHandler(int /* signal */)
     gStopping = 1;
 }
 
-struct ShmRemover
+struct ShmManager
 {
-    ShmRemover(std::string _shmId) : shmId(std::move(_shmId)) {}
-    ~ShmRemover()
+    ShmManager(uint64_t _shmId, const vector<string>& _segments, const vector<string>& _regions)
+        : shmId(fair::mq::shmem::makeShmIdStr(_shmId))
     {
-        // This will clean all segments, regions and any other shmem objects belonging to this shmId
+        for (const auto& s : _segments) {
+            vector<string> segmentConf;
+            boost::algorithm::split(segmentConf, s, boost::algorithm::is_any_of(","));
+            if (segmentConf.size() != 2) {
+                LOG(error) << "incorrect format for --segments. Expecting pairs of <id>,<size>.";
+                fair::mq::shmem::Monitor::Cleanup(fair::mq::shmem::ShmId{shmId});
+                throw runtime_error("incorrect format for --segments. Expecting pairs of <id>,<size>.");
+            }
+            uint16_t id = stoi(segmentConf.at(0));
+            uint64_t size = stoull(segmentConf.at(1));
+            auto ret = segments.emplace(id, fair::mq::shmem::Segment(shmId, id, size, fair::mq::shmem::rbTreeBestFit));
+            fair::mq::shmem::Segment& segment = ret.first->second;
+            LOG(info) << "Created segment " << id << " of size " << segment.GetSize() << ", starting at " << segment.GetData() << ". Locking...";
+            segment.Lock();
+            LOG(info) << "Done.";
+            LOG(info) << "Zeroing...";
+            segment.Zero();
+            LOG(info) << "Done.";
+        }
+
+        for (const auto& r : _regions) {
+            vector<string> regionConf;
+            boost::algorithm::split(regionConf, r, boost::algorithm::is_any_of(","));
+            if (regionConf.size() != 2) {
+                LOG(error) << "incorrect format for --regions. Expecting pairs of <id>,<size>.";
+                fair::mq::shmem::Monitor::Cleanup(fair::mq::shmem::ShmId{shmId});
+                throw runtime_error("incorrect format for --regions. Expecting pairs of <id>,<size>.");
+            }
+            uint16_t id = stoi(regionConf.at(0));
+            uint64_t size = stoull(regionConf.at(1));
+            auto ret = regions.emplace(id, make_unique<fair::mq::shmem::UnmanagedRegion>(shmId, id, size));
+            fair::mq::shmem::UnmanagedRegion& region = *(ret.first->second);
+            LOG(info) << "Created unamanged region " << id << " of size " << region.GetSize() << ", starting at " << region.GetData() << ". Locking...";
+            region.Lock();
+            LOG(info) << "Done.";
+            LOG(info) << "Zeroing...";
+            region.Zero();
+            LOG(info) << "Done.";
+        }
+    }
+
+    void ResetContent()
+    {
+        fair::mq::shmem::Monitor::ResetContent(fair::mq::shmem::ShmId{shmId});
+    }
+
+    ~ShmManager()
+    {
+        // clean all segments, regions and any other shmem objects belonging to this shmId
         fair::mq::shmem::Monitor::Cleanup(fair::mq::shmem::ShmId{shmId});
     }
 
     std::string shmId;
+    map<uint16_t, fair::mq::shmem::Segment> segments;
+    map<uint16_t, unique_ptr<fair::mq::shmem::UnmanagedRegion>> regions;
 };
 
-int main(int /* argc */, char** /* argv */)
+int main(int argc, char** argv)
 {
     fair::Logger::SetConsoleColor(true);
 
@@ -52,47 +107,28 @@ int main(int /* argc */, char** /* argv */)
     signal(SIGTERM, signalHandler);
 
     try {
-        const string session = "default"; // to_string(fair::mq::tools::UuidHash());
-        // generate shmId out of session id + user id (geteuid).
-        const string shmId = fair::mq::shmem::makeShmIdStr(session);
+        uint64_t shmId = 0;
+        vector<string> segments;
+        vector<string> regions;
 
-        const uint16_t s1id = 0;
-        const uint64_t s1size = 100000000;
-        const uint16_t s2id = 1;
-        const uint64_t s2size = 200000000;
+        options_description desc("Options");
+        desc.add_options()
+            ("shmid", value<uint64_t>(&shmId)->required(), "Shm id")
+            ("segments", value<vector<string>>(&segments)->multitoken()->composing(), "Segments, as <id>,<size> <id>,<size> <id>,<size> ...")
+            ("regions",  value<vector<string>>(&regions)->multitoken()->composing(), "Regions, as <id>,<size> <id>,<size> <id>,<size> ...")
+            ("help,h", "Print help");
 
-        const uint16_t r1id = 0;
-        const uint64_t r1size = 100000000;
-        const uint16_t r2id = 1;
-        const uint64_t r2size = 200000000;
+        variables_map vm;
+        store(parse_command_line(argc, argv, desc), vm);
 
-        // cleanup when done
-        ShmRemover shmRemover(shmId);
+        if (vm.count("help")) {
+            LOG(info) << "ShmManager" << "\n" << desc;
+            return 0;
+        }
 
-        // managed segments
-        fair::mq::shmem::Segment segment1(shmId, s1id, s1size, fair::mq::shmem::rbTreeBestFit);
-        segment1.Lock();
-        segment1.Zero();
-        LOG(info) << "Created segment " << s1id << " of size " << segment1.GetSize() << " starting at " << segment1.GetData();
+        notify(vm);
 
-        fair::mq::shmem::Segment segment2(shmId, s2id, s2size, fair::mq::shmem::rbTreeBestFit);
-        segment2.Lock();
-        segment2.Zero();
-        LOG(info) << "Created segment " << s2id << " of size " << segment2.GetSize() << " starting at " << segment2.GetData();
-
-        // unmanaged regions
-        fair::mq::shmem::UnmanagedRegion region1(shmId, r1id, r1size);
-        region1.Lock();
-        region1.Zero();
-        LOG(info) << "Created region " << r1id << " of size " << region1.GetSize() << " starting at " << region1.GetData();
-
-        fair::mq::shmem::UnmanagedRegion region2(shmId, r2id, r2size);
-        region2.Lock();
-        region2.Zero();
-        LOG(info) << "Created region " << r2id << " of size " << region2.GetSize() << " starting at " << region2.GetData();
-
-        // for a "soft reset" call (shmem should not be in active use by (no messages in flight) devices during this call):
-        // fair::mq::shmem::Monitor::ResetContent(fair::mq::shmem::ShmId{shmId});
+        ShmManager shmManager(shmId, segments, regions);
 
         while (!gStopping) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
