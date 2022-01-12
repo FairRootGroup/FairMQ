@@ -466,6 +466,7 @@ class Manager
                 auto r = fRegions.emplace(id, std::make_unique<UnmanagedRegion>(fShmId, 0, true, std::move(cfg)));
                 r.first->second->InitializeQueues();
                 r.first->second->StartAckSender();
+                lockedShmLock.lock();
                 return r.first->second.get();
             } catch (std::out_of_range& oor) {
                 LOG(error) << "Could not get remote region with id '" << id << "'. Does the region creator run with the same session id?";
