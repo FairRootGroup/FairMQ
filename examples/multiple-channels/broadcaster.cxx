@@ -22,7 +22,7 @@ struct Broadcaster : fair::mq::Device
 
         // NewSimpleMessage creates a copy of the data and takes care of its destruction (after the transfer takes place).
         // Should only be used for small data because of the cost of an additional copy
-        FairMQMessagePtr msg(NewSimpleMessage("OK"));
+        fair::mq::MessagePtr msg(NewSimpleMessage("OK"));
 
         LOG(info) << "Sending OK";
 

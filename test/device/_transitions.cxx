@@ -6,8 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <FairMQDevice.h>
-#include <FairMQLogger.h>
+#include <fairmq/Device.h>
+#include <fairlogger/Logger.h>
 
 #include <gtest/gtest.h>
 
@@ -20,7 +20,7 @@ namespace
 using namespace std;
 using namespace fair::mq;
 
-class SlowDevice : public FairMQDevice
+class SlowDevice : public Device
 {
   public:
     SlowDevice() = default;
@@ -34,7 +34,7 @@ class SlowDevice : public FairMQDevice
 
 void transitionTo(const vector<State>& states, int numExpectedStates)
 {
-    FairMQDevice device;
+    Device device;
 
     thread t([&] {
         for (const auto& s : states) {

@@ -22,7 +22,7 @@ struct Sampler2 : fair::mq::Device
 
     bool ConditionalRun() override
     {
-        FairMQMessagePtr msg(NewMessage(1000));
+        fair::mq::MessagePtr msg(NewMessage(1000));
 
         // in case of error or transfer interruption, return false to go to IDLE state
         // successfull transfer will return number of bytes transfered (can be 0 if sending an empty message).

@@ -9,7 +9,6 @@
 #ifndef FAIR_MQ_SINK_H
 #define FAIR_MQ_SINK_H
 
-#include <FairMQPoller.h>
 #include <fairmq/Device.h>
 #include <fairmq/tools/Strings.h>
 
@@ -48,7 +47,7 @@ class Sink : public Device
     void Run() override
     {
         // store the channel reference to avoid traversing the map on every loop iteration
-        FairMQChannel& dataInChannel = GetChannel(fInChannelName, 0);
+        Channel& dataInChannel = GetChannel(fInChannelName, 0);
 
         LOG(info) << "Starting sink and expecting to receive " << fMaxIterations << " messages.";
         auto tStart = std::chrono::high_resolution_clock::now();
@@ -70,7 +69,7 @@ class Sink : public Device
 
         while (!NewStatePending()) {
             if (fMultipart) {
-                FairMQParts parts;
+                Parts parts;
                 if (dataInChannel.Receive(parts) < 0) {
                     continue;
                 }
@@ -80,7 +79,7 @@ class Sink : public Device
                     }
                 }
             } else {
-                FairMQMessagePtr msg(dataInChannel.NewMessage());
+                MessagePtr msg(dataInChannel.NewMessage());
                 if (dataInChannel.Receive(msg) < 0) {
                     continue;
                 }

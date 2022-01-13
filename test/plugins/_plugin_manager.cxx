@@ -9,9 +9,9 @@
 #include <gtest/gtest.h>
 #include <fairmq/PluginManager.h>
 #include <fairmq/PluginServices.h>
-#include <FairMQDevice.h>
+#include <fairmq/Device.h>
 #include <fairmq/ProgOptions.h>
-#include <FairMQLogger.h>
+#include <fairlogger/Logger.h>
 #include <fstream>
 #include <memory>
 #include <vector>
@@ -25,28 +25,28 @@ using namespace boost::filesystem;
 using namespace boost::program_options;
 using namespace std;
 
-auto control(FairMQDevice& device) -> void
+auto control(Device& device) -> void
 {
     device.SetTransport("zeromq");
 
-    device.ChangeState(fair::mq::Transition::InitDevice);
-    device.WaitForState(fair::mq::State::InitializingDevice);
-    device.ChangeState(fair::mq::Transition::CompleteInit);
-    device.WaitForState(fair::mq::State::Initialized);
-    device.ChangeState(fair::mq::Transition::Bind);
-    device.WaitForState(fair::mq::State::Bound);
-    device.ChangeState(fair::mq::Transition::Connect);
-    device.WaitForState(fair::mq::State::DeviceReady);
-    device.ChangeState(fair::mq::Transition::ResetDevice);
-    device.WaitForState(fair::mq::State::Idle);
+    device.ChangeState(Transition::InitDevice);
+    device.WaitForState(State::InitializingDevice);
+    device.ChangeState(Transition::CompleteInit);
+    device.WaitForState(State::Initialized);
+    device.ChangeState(Transition::Bind);
+    device.WaitForState(State::Bound);
+    device.ChangeState(Transition::Connect);
+    device.WaitForState(State::DeviceReady);
+    device.ChangeState(Transition::ResetDevice);
+    device.WaitForState(State::Idle);
 
-    device.ChangeState(fair::mq::Transition::End);
+    device.ChangeState(Transition::End);
 }
 
 TEST(PluginManager, LoadPluginDynamic)
 {
-    fair::mq::ProgOptions config;
-    FairMQDevice device;
+    ProgOptions config;
+    Device device;
     PluginManager mgr;
     mgr.EmplacePluginServices(config, device);
 
@@ -77,13 +77,13 @@ TEST(PluginManager, LoadPluginDynamic)
 
 TEST(PluginManager, LoadPluginStatic)
 {
-    FairMQDevice device;
+    Device device;
     PluginManager mgr;
     device.SetTransport("zeromq");
 
     ASSERT_NO_THROW(mgr.LoadPlugin("s:control"));
 
-    fair::mq::ProgOptions config;
+    ProgOptions config;
     config.SetProperty<string>("control", "static");
     config.SetProperty("catch-signals", 0);
     mgr.EmplacePluginServices(config, device);

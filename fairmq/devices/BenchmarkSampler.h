@@ -44,7 +44,7 @@ class BenchmarkSampler : public Device
     void Run() override
     {
         // store the channel reference to avoid traversing the map on every loop iteration
-        FairMQChannel& dataOutChannel = GetChannel(fOutChannelName, 0);
+        Channel& dataOutChannel = GetChannel(fOutChannelName, 0);
 
         LOG(info) << "Starting the benchmark with message size of " << fMsgSize << " and " << fMaxIterations << " iterations.";
         auto tStart = std::chrono::high_resolution_clock::now();
@@ -53,7 +53,7 @@ class BenchmarkSampler : public Device
 
         while (!NewStatePending()) {
             if (fMultipart) {
-                FairMQParts parts;
+                Parts parts;
 
                 for (size_t i = 0; i < fNumParts; ++i) {
                     parts.AddPart(dataOutChannel.NewMessage(fMsgSize, fair::mq::Alignment{fMsgAlignment}));
@@ -71,7 +71,7 @@ class BenchmarkSampler : public Device
                     ++fNumIterations;
                 }
             } else {
-                FairMQMessagePtr msg(dataOutChannel.NewMessage(fMsgSize, fair::mq::Alignment{fMsgAlignment}));
+                MessagePtr msg(dataOutChannel.NewMessage(fMsgSize, fair::mq::Alignment{fMsgAlignment}));
                 if (fMemSet) {
                     std::memset(msg->GetData(), 0, msg->GetSize());
                 }

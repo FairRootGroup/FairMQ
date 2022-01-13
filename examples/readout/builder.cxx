@@ -13,7 +13,7 @@
 
 namespace bpo = boost::program_options;
 
-class Builder : public FairMQDevice
+class Builder : public fair::mq::Device
 {
   public:
     Builder() = default;
@@ -24,7 +24,7 @@ class Builder : public FairMQDevice
         OnData("rb", &Builder::HandleData);
     }
 
-    bool HandleData(FairMQMessagePtr& msg, int /*index*/)
+    bool HandleData(fair::mq::MessagePtr& msg, int /*index*/)
     {
         if (Send(msg, fOutputChannelName) < 0) {
             return false;

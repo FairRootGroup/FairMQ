@@ -5,7 +5,7 @@ A topology of two devices - Sampler and Sink, communicating with PUSH-PULL patte
 
 The Sampler sends a multipart message to the Sink, consisting of two message parts - header and body.
 
-Each message part is a regular FairMQMessage. To combine them into a multi-part message use `FairMQParts`. Add messages to `FairMQParts` with `AddPart` method.
+Each message part is a regular fair::mq::Message. To combine them into a multi-part message use `fair::mq::Parts`. Add messages to `fair::mq::Parts` with `AddPart` method.
 
 All parts are guaranteed to be delivered together. The Receive call in the sink will recive the entire parts structure.
 

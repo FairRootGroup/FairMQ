@@ -34,9 +34,9 @@ class Splitter : public Device
         fDirection = 0;
 
         if (fMultipart) {
-            OnData(fInChannelName, &Splitter::HandleData<FairMQParts>);
+            OnData(fInChannelName, &Splitter::HandleData<Parts>);
         } else {
-            OnData(fInChannelName, &Splitter::HandleData<FairMQMessagePtr>);
+            OnData(fInChannelName, &Splitter::HandleData<MessagePtr>);
         }
     }
 

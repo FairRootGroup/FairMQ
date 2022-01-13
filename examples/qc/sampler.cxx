@@ -16,7 +16,7 @@ struct Sampler : fair::mq::Device
 {
     bool ConditionalRun() override
     {
-        FairMQMessagePtr msg(NewMessage(1000));
+        fair::mq::MessagePtr msg(NewMessage(1000));
 
         if (Send(msg, "data1") < 0) {
             return false;

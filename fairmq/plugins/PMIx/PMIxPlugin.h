@@ -14,7 +14,7 @@
 
 #include <fairmq/Plugin.h>
 #include <fairmq/Version.h>
-#include <FairMQLogger.h>
+#include <fairlogger/Logger.h>
 
 #include <string>
 #include <sstream>

@@ -351,7 +351,7 @@ void ProgOptions::DeleteProperty(const string& key)
     vm.erase(key);
 }
 
-void ProgOptions::AddChannel(const string& name, const FairMQChannel& channel)
+void ProgOptions::AddChannel(const string& name, const Channel& channel)
 {
     lock_guard<mutex> lock(fMtx);
     unordered_map<string, int> existingChannels = GetChannelInfoImpl();

@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <fairmq/FairMQTransportFactory.h>
+#include <fairmq/TransportFactory.h>
 #include <fairmq/MemoryResourceTools.h>
 #include <fairmq/ProgOptions.h>
 #include <fairmq/tools/Unique.h>
@@ -24,7 +24,7 @@ namespace
 using namespace std;
 using namespace fair::mq;
 
-using FactoryType = shared_ptr<FairMQTransportFactory>;
+using FactoryType = shared_ptr<TransportFactory>;
 
 struct TestData
 {
@@ -81,8 +81,8 @@ TEST(MemoryResources, transportAllocatorMap)
     // config.SetProperty<string>("session", to_string(session));
     config.SetProperty<string>("session", "default");
 
-    FactoryType factoryZMQ = FairMQTransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
-    FactoryType factorySHM = FairMQTransportFactory::CreateTransportFactory("shmem", fair::mq::tools::Uuid(), &config);
+    FactoryType factoryZMQ = TransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
+    FactoryType factorySHM = TransportFactory::CreateTransportFactory("shmem", fair::mq::tools::Uuid(), &config);
 
     auto allocZMQ = factoryZMQ->GetMemoryResource();
     auto allocSHM = factorySHM->GetMemoryResource();
@@ -103,7 +103,7 @@ TEST(MemoryResources, allocator)
     ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
 
-    FactoryType factoryZMQ = FairMQTransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
+    FactoryType factoryZMQ = TransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
 
     auto allocZMQ = factoryZMQ->GetMemoryResource();
 
@@ -131,12 +131,12 @@ TEST(MemoryResources, getMessage)
     ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
 
-    FactoryType factoryZMQ = FairMQTransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
-    FactoryType factorySHM = FairMQTransportFactory::CreateTransportFactory("shmem", fair::mq::tools::Uuid(), &config);
+    FactoryType factoryZMQ = TransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
+    FactoryType factorySHM = TransportFactory::CreateTransportFactory("shmem", fair::mq::tools::Uuid(), &config);
 
     auto allocZMQ = factoryZMQ->GetMemoryResource();
 
-    FairMQMessagePtr message{nullptr};
+    MessagePtr message{nullptr};
 
     int* messageArray{nullptr};
 

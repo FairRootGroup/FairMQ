@@ -32,11 +32,11 @@ struct Client : fair::mq::Device
         // its size,
         // custom deletion function (called when transfer is done),
         // and pointer to the object managing the data buffer
-        FairMQMessagePtr req(NewMessage(const_cast<char*>(text->c_str()), // data
+        fair::mq::MessagePtr req(NewMessage(const_cast<char*>(text->c_str()), // data
                                                             text->length(), // size
                                                             [](void* /*data*/, void* object) { delete static_cast<std::string*>(object); }, // deletion callback
                                                             text)); // object that manages the data
-        FairMQMessagePtr rep(NewMessage());
+        fair::mq::MessagePtr rep(NewMessage());
 
         LOG(info) << "Sending \"" << fText << "\" to server.";
 

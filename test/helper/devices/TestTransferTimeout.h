@@ -9,13 +9,16 @@
 #ifndef FAIR_MQ_TEST_TRANSFERTIMEOUT_H
 #define FAIR_MQ_TEST_TRANSFERTIMEOUT_H
 
-#include <FairMQDevice.h>
-#include <FairMQLogger.h>
+#include <fairmq/Device.h>
+
+#include <fairlogger/Logger.h>
 
 namespace fair::mq::test
 {
 
-class TransferTimeout : public FairMQDevice
+using namespace fair::mq;
+
+class TransferTimeout : public Device
 {
   protected:
     auto Run() -> void override
@@ -38,8 +41,8 @@ class TransferTimeout : public FairMQDevice
         bool send2PartsCancelingAfter0ms = false;
         bool receive2PartsCancelingAfter0ms = false;
 
-        FairMQMessagePtr msg1(NewMessage());
-        FairMQMessagePtr msg2(NewMessage());
+        MessagePtr msg1(NewMessage());
+        MessagePtr msg2(NewMessage());
 
         if (Send(msg1, "data-out", 0, 200) == static_cast<int>(TransferCode::timeout)) {
             LOG(info) << "send msg canceled (200ms)";
@@ -69,9 +72,9 @@ class TransferTimeout : public FairMQDevice
             LOG(error) << "receive msg did not cancel (0ms)";
         }
 
-        FairMQParts parts1;
+        Parts parts1;
         parts1.AddPart(NewMessage(10));
-        FairMQParts parts2;
+        Parts parts2;
 
         if (Send(parts1, "data-out", 0, 200) == static_cast<int>(TransferCode::timeout)) {
             LOG(info) << "send 1 part canceled (200ms)";
@@ -101,10 +104,10 @@ class TransferTimeout : public FairMQDevice
             LOG(error) << "receive 1 part did not cancel (0ms)";
         }
 
-        FairMQParts parts3;
+        Parts parts3;
         parts3.AddPart(NewMessage(10));
         parts3.AddPart(NewMessage(10));
-        FairMQParts parts4;
+        Parts parts4;
 
         if (Send(parts3, "data-out", 0, 200) == static_cast<int>(TransferCode::timeout)) {
             LOG(info) << "send 2 parts canceled (200ms)";

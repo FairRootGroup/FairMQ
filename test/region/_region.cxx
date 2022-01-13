@@ -6,12 +6,13 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <FairMQLogger.h>
-#include <FairMQTransportFactory.h>
+#include <fairmq/TransportFactory.h>
 #include <fairmq/ProgOptions.h>
 #include <fairmq/tools/Unique.h>
 #include <fairmq/tools/Semaphore.h>
 #include <fairmq/tools/Strings.h>
+
+#include <fairlogger/Logger.h>
 
 #include <gtest/gtest.h>
 
@@ -22,31 +23,32 @@ namespace
 {
 
 using namespace std;
+using namespace fair::mq;
 
 void RegionsCache(const string& transport, const string& address)
 {
-    size_t session1 = fair::mq::tools::UuidHash();
-    size_t session2 = fair::mq::tools::UuidHash();
+    size_t session1 = tools::UuidHash();
+    size_t session2 = tools::UuidHash();
 
-    fair::mq::ProgOptions config1;
-    fair::mq::ProgOptions config2;
+    ProgOptions config1;
+    ProgOptions config2;
     config1.SetProperty<string>("session", to_string(session1));
     config2.SetProperty<string>("session", to_string(session2));
 
-    auto factory1 = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config1);
-    auto factory2 = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config2);
+    auto factory1 = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config1);
+    auto factory2 = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config2);
 
     auto region1 = factory1->CreateUnmanagedRegion(1000000, [](void*, size_t, void*) {});
     auto region2 = factory2->CreateUnmanagedRegion(1000000, [](void*, size_t, void*) {});
     void* r1ptr = region1->GetData();
     void* r2ptr = region2->GetData();
 
-    FairMQChannel push1("Push1", "push", factory1);
-    FairMQChannel pull1("Pull1", "pull", factory1);
+    Channel push1("Push1", "push", factory1);
+    Channel pull1("Pull1", "pull", factory1);
     push1.Bind(address + to_string(1));
     pull1.Connect(address + to_string(1));
-    FairMQChannel push2("Push2", "push", factory2);
-    FairMQChannel pull2("Pull2", "pull", factory2);
+    Channel push2("Push2", "push", factory2);
+    Channel pull2("Pull2", "pull", factory2);
     push2.Bind(address + to_string(2));
     pull2.Connect(address + to_string(2));
 
@@ -56,27 +58,27 @@ void RegionsCache(const string& transport, const string& address)
         static_cast<char*>(r2ptr)[0] = 99; // c
         static_cast<char*>(static_cast<char*>(r2ptr) + 100)[0] = 100; // d
 
-        FairMQMessagePtr m1(push1.NewMessage(region1, r1ptr, 100, nullptr));
-        FairMQMessagePtr m2(push1.NewMessage(region1, static_cast<char*>(r1ptr) + 100, 100, nullptr));
+        MessagePtr m1(push1.NewMessage(region1, r1ptr, 100, nullptr));
+        MessagePtr m2(push1.NewMessage(region1, static_cast<char*>(r1ptr) + 100, 100, nullptr));
         push1.Send(m1);
         push1.Send(m2);
 
-        FairMQMessagePtr m3(push2.NewMessage(region2, r2ptr, 100, nullptr));
-        FairMQMessagePtr m4(push2.NewMessage(region2, static_cast<char*>(r2ptr) + 100, 100, nullptr));
+        MessagePtr m3(push2.NewMessage(region2, r2ptr, 100, nullptr));
+        MessagePtr m4(push2.NewMessage(region2, static_cast<char*>(r2ptr) + 100, 100, nullptr));
         push2.Send(m3);
         push2.Send(m4);
     }
 
     {
-        FairMQMessagePtr m1(pull1.NewMessage());
-        FairMQMessagePtr m2(pull1.NewMessage());
+        MessagePtr m1(pull1.NewMessage());
+        MessagePtr m2(pull1.NewMessage());
         ASSERT_EQ(pull1.Receive(m1), 100);
         ASSERT_EQ(pull1.Receive(m2), 100);
         ASSERT_EQ(static_cast<char*>(m1->GetData())[0], 'a');
         ASSERT_EQ(static_cast<char*>(m2->GetData())[0], 'b');
 
-        FairMQMessagePtr m3(pull2.NewMessage());
-        FairMQMessagePtr m4(pull2.NewMessage());
+        MessagePtr m3(pull2.NewMessage());
+        MessagePtr m4(pull2.NewMessage());
         ASSERT_EQ(pull2.Receive(m3), 100);
         ASSERT_EQ(pull2.Receive(m4), 100);
         ASSERT_EQ(static_cast<char*>(m3->GetData())[0], 'c');
@@ -86,17 +88,17 @@ void RegionsCache(const string& transport, const string& address)
 
 void RegionEventSubscriptions(const string& transport)
 {
-    size_t session{fair::mq::tools::UuidHash()};
+    size_t session{tools::UuidHash()};
 
-    fair::mq::ProgOptions config;
+    ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
 
-    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
+    auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
     constexpr int size1 = 1000000;
     constexpr int size2 = 5000000;
     constexpr int64_t userFlags = 12345;
-    fair::mq::tools::Semaphore blocker;
+    tools::Semaphore blocker;
 
     {
         auto region1 = factory->CreateUnmanagedRegion(size1, [](void*, size_t, void*) {});
@@ -110,14 +112,14 @@ void RegionEventSubscriptions(const string& transport)
         ASSERT_EQ(region2->GetSize(), size2);
 
         ASSERT_EQ(factory->SubscribedToRegionEvents(), false);
-        factory->SubscribeToRegionEvents([&, id1, id2, ptr1, ptr2](FairMQRegionInfo info) {
+        factory->SubscribeToRegionEvents([&, id1, id2, ptr1, ptr2](RegionInfo info) {
             LOG(info) << ">>> " << info.event << ": "
                       << (info.managed ? "managed" : "unmanaged")
                       << ", id: " << info.id
                       << ", ptr: " << info.ptr
                       << ", size: " << info.size
                       << ", flags: " << info.flags;
-            if (info.event == FairMQRegionEvent::created) {
+            if (info.event == RegionEvent::created) {
                 if (info.id == id1) {
                     ASSERT_EQ(info.size, size1);
                     ASSERT_EQ(info.ptr, ptr1);
@@ -128,7 +130,7 @@ void RegionEventSubscriptions(const string& transport)
                     ASSERT_EQ(info.flags, userFlags);
                     blocker.Signal();
                 }
-            } else if (info.event == FairMQRegionEvent::destroyed) {
+            } else if (info.event == RegionEvent::destroyed) {
                 if (info.id == id1) {
                     blocker.Signal();
                 } else if (info.id == id2) {
@@ -157,22 +159,22 @@ void RegionEventSubscriptions(const string& transport)
 
 void RegionCallbacks(const string& transport, const string& _address)
 {
-    size_t session(fair::mq::tools::UuidHash());
-    std::string address(fair::mq::tools::ToString(_address, "_", transport));
+    size_t session(tools::UuidHash());
+    std::string address(tools::ToString(_address, "_", transport));
 
-    fair::mq::ProgOptions config;
+    ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
 
-    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
+    auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
     unique_ptr<int> intPtr1 = make_unique<int>(42);
     unique_ptr<int> intPtr2 = make_unique<int>(43);
-    fair::mq::tools::Semaphore blocker;
+    tools::Semaphore blocker;
 
-    FairMQChannel push("Push", "push", factory);
+    Channel push("Push", "push", factory);
     push.Bind(address);
 
-    FairMQChannel pull("Pull", "pull", factory);
+    Channel pull("Pull", "pull", factory);
     pull.Connect(address);
 
     void* ptr1 = nullptr;
@@ -189,7 +191,7 @@ void RegionCallbacks(const string& transport, const string& _address)
     });
     ptr1 = region1->GetData();
 
-    auto region2 = factory->CreateUnmanagedRegion(3000000, [&](const std::vector<fair::mq::RegionBlock>& blocks) {
+    auto region2 = factory->CreateUnmanagedRegion(3000000, [&](const std::vector<RegionBlock>& blocks) {
         ASSERT_EQ(blocks.size(), 1);
         ASSERT_EQ(blocks.at(0).ptr, ptr2);
         ASSERT_EQ(blocks.at(0).size, size2);
@@ -200,15 +202,15 @@ void RegionCallbacks(const string& transport, const string& _address)
     ptr2 = region2->GetData();
 
     {
-        FairMQMessagePtr msg1out(push.NewMessage(region1, ptr1, size1, intPtr1.get()));
-        FairMQMessagePtr msg2out(push.NewMessage(region2, ptr2, size2, intPtr2.get()));
+        MessagePtr msg1out(push.NewMessage(region1, ptr1, size1, intPtr1.get()));
+        MessagePtr msg2out(push.NewMessage(region2, ptr2, size2, intPtr2.get()));
         ASSERT_EQ(push.Send(msg1out), size1);
         ASSERT_EQ(push.Send(msg2out), size2);
     }
 
     {
-        FairMQMessagePtr msg1in(pull.NewMessage());
-        FairMQMessagePtr msg2in(pull.NewMessage());
+        MessagePtr msg1in(pull.NewMessage());
+        MessagePtr msg2in(pull.NewMessage());
         ASSERT_EQ(pull.Receive(msg1in), size1);
         ASSERT_EQ(pull.Receive(msg2in), size2);
     }

@@ -11,7 +11,7 @@
 #include <memory>
 #include <string>
 
-using FairMQDevicePtr = FairMQDevice*;
+using FairMQDevicePtr = fair::mq::Device*;
 
 // to be implemented by the user to return a child class of FairMQDevice
 FairMQDevicePtr getDevice(const fair::mq::ProgOptions& config);
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
         // });
 
         runner.AddHook<InstantiateDevice>([](DeviceRunner& r){
-            r.fDevice = std::unique_ptr<FairMQDevice>{getDevice(r.fConfig)};
+            r.fDevice = std::unique_ptr<fair::mq::Device>{getDevice(r.fConfig)};
         });
 
         return runner.Run();

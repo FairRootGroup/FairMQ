@@ -26,7 +26,7 @@ struct Server : fair::mq::Device
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
     }
 
-    bool HandleData(FairMQMessagePtr& req, int)
+    bool HandleData(fair::mq::MessagePtr& req, int)
     {
         LOG(info) << "Received request from client: \"" << std::string(static_cast<char*>(req->GetData()), req->GetSize()) << "\"";
 
@@ -34,7 +34,7 @@ struct Server : fair::mq::Device
 
         LOG(info) << "Sending reply to client.";
 
-        FairMQMessagePtr rep(NewMessage(const_cast<char*>(text->c_str()), // data
+        fair::mq::MessagePtr rep(NewMessage(const_cast<char*>(text->c_str()), // data
                                                             text->length(), // size
                                                             [](void* /*data*/, void* object) { delete static_cast<std::string*>(object); }, // deletion callback
                                                             text)); // object that manages the data

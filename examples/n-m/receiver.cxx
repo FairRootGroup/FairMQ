@@ -24,7 +24,7 @@ namespace bpo = boost::program_options;
 
 struct TFBuffer
 {
-    FairMQParts parts;
+    fair::mq::Parts parts;
     chrono::steady_clock::time_point start;
     chrono::steady_clock::time_point end;
 };
@@ -43,7 +43,7 @@ struct Receiver : fair::mq::Device
         fMaxTimeframes = GetConfig()->GetValue<int>("max-timeframes");
     }
 
-    bool HandleData(FairMQParts& parts, int /* index */)
+    bool HandleData(fair::mq::Parts& parts, int /* index */)
     {
         Header& h = *(static_cast<Header*>(parts.At(0)->GetData()));
         // LOG(info) << "Received sub-time frame #" << h.id << " from Sender" << h.senderIndex;
@@ -107,7 +107,7 @@ void addCustomOptions(bpo::options_description& options)
         ("max-timeframes", bpo::value<int>()->default_value(0), "Maximum number of timeframes to receive (0 - unlimited)");
 }
 
-std::unique_ptr<fair::mq::Device> getDevice(FairMQProgOptions& /* config */)
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /* config */)
 {
     return std::make_unique<Receiver>();
 }

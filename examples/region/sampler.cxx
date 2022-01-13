@@ -23,7 +23,7 @@ struct Sampler : fair::mq::Device
         fLinger = fConfig->GetProperty<uint32_t>("region-linger");
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 
-        GetChannel("data", 0).Transport()->SubscribeToRegionEvents([](FairMQRegionInfo info) {
+        GetChannel("data", 0).Transport()->SubscribeToRegionEvents([](fair::mq::RegionInfo info) {
             LOG(info) << "Region event: " << info.event << ": "
                     << (info.managed ? "managed" : "unmanaged")
                     << ", id: " << info.id
@@ -36,7 +36,7 @@ struct Sampler : fair::mq::Device
         regionCfg.linger = fLinger; // delay in ms before region destruction to collect outstanding events
         regionCfg.lock = true; // mlock region after creation
         regionCfg.zero = true; // zero region content after creation
-        fRegion = FairMQUnmanagedRegionPtr(NewUnmanagedRegionFor("data", // region is created using the transport of this channel...
+        fRegion = fair::mq::UnmanagedRegionPtr(NewUnmanagedRegionFor("data", // region is created using the transport of this channel...
                                                                 0,      // ... and this sub-channel
                                                                 10000000, // region size
                                                                 [this](const std::vector<fair::mq::RegionBlock>& blocks) { // callback to be called when message buffers no longer needed by transport
@@ -50,7 +50,7 @@ struct Sampler : fair::mq::Device
 
     bool ConditionalRun() override
     {
-        FairMQMessagePtr msg(NewMessageFor("data", // channel
+        fair::mq::MessagePtr msg(NewMessageFor("data", // channel
                                             0, // sub-channel
                                             fRegion, // region
                                             fRegion->GetData(), // ptr within region
@@ -93,7 +93,7 @@ struct Sampler : fair::mq::Device
     uint32_t fLinger = 100;
     uint64_t fMaxIterations = 0;
     uint64_t fNumIterations = 0;
-    FairMQUnmanagedRegionPtr fRegion = nullptr;
+    fair::mq::UnmanagedRegionPtr fRegion = nullptr;
     std::mutex fMtx;
     uint64_t fNumUnackedMsgs = 0;
 };

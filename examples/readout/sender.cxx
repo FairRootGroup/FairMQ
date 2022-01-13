@@ -21,7 +21,7 @@ struct Sender : fair::mq::Device
         OnData(fInputChannelName, &Sender::HandleData);
     }
 
-    bool HandleData(FairMQMessagePtr& msg, int /*index*/)
+    bool HandleData(fair::mq::MessagePtr& msg, int /*index*/)
     {
         if (Send(msg, "sr") < 0) {
             return false;

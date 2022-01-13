@@ -14,7 +14,7 @@
 #include <fairmq/zeromq/Socket.h>
 #include <fairmq/zeromq/Poller.h>
 #include <fairmq/zeromq/UnmanagedRegion.h>
-#include <FairMQTransportFactory.h>
+#include <fairmq/TransportFactory.h>
 #include <fairmq/ProgOptions.h>
 
 #include <memory> // unique_ptr, make_unique
@@ -24,11 +24,11 @@
 namespace fair::mq::zmq
 {
 
-class TransportFactory final : public FairMQTransportFactory
+class TransportFactory final : public fair::mq::TransportFactory
 {
   public:
     TransportFactory(const std::string& id = "", const ProgOptions* config = nullptr)
-        : FairMQTransportFactory(id)
+        : fair::mq::TransportFactory(id)
         , fCtx(nullptr)
     {
         int major = 0, minor = 0, patch = 0;
@@ -68,7 +68,7 @@ class TransportFactory final : public FairMQTransportFactory
         return std::make_unique<Message>(size, alignment, this);
     }
 
-    MessagePtr CreateMessage(void* data, size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
+    MessagePtr CreateMessage(void* data, size_t size, fair::mq::FreeFn* ffn, void* hint = nullptr) override
     {
         return std::make_unique<Message>(data, size, ffn, hint, this);
     }
@@ -83,17 +83,17 @@ class TransportFactory final : public FairMQTransportFactory
         return std::make_unique<Socket>(*fCtx, type, name, GetId(), this);
     }
 
-    PollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const override
+    PollerPtr CreatePoller(const std::vector<Channel>& channels) const override
     {
         return std::make_unique<Poller>(channels);
     }
 
-    PollerPtr CreatePoller(const std::vector<FairMQChannel*>& channels) const override
+    PollerPtr CreatePoller(const std::vector<Channel*>& channels) const override
     {
         return std::make_unique<Poller>(channels);
     }
 
-    PollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const override
+    PollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<Channel>>& channelsMap, const std::vector<std::string>& channelList) const override
     {
         return std::make_unique<Poller>(channelsMap, channelList);
     }

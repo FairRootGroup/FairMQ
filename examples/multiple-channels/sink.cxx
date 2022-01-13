@@ -27,7 +27,7 @@ struct Sink : fair::mq::Device
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
     }
 
-    bool HandleBroadcast(FairMQMessagePtr& msg, int /*index*/)
+    bool HandleBroadcast(fair::mq::MessagePtr& msg, int /*index*/)
     {
         LOG(info) << "Received broadcast: \"" << std::string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
         fReceivedBroadcast = true;
@@ -35,7 +35,7 @@ struct Sink : fair::mq::Device
         return CheckIterations();
     }
 
-    bool HandleData(FairMQMessagePtr& msg, int /*index*/)
+    bool HandleData(fair::mq::MessagePtr& msg, int /*index*/)
     {
         LOG(info) << "Received message: \"" << std::string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
         fReceivedData = true;

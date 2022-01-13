@@ -21,7 +21,7 @@ namespace
 using namespace std;
 using namespace fair::mq;
 
-void control(FairMQDevice& device)
+void control(Device& device)
 {
     thread t([&] {
         device.ChangeState(Transition::InitDevice);
@@ -62,7 +62,7 @@ class MultipleDevices : public ::testing::Test {
         test::Sender sender("data");
         sender.SetTransport("zeromq");
 
-        FairMQChannel channel("push", "connect", "ipc://multiple-devices-test");
+        Channel channel("push", "connect", "ipc://multiple-devices-test");
         channel.UpdateRateLogging(0);
         sender.AddChannel("data", std::move(channel));
 
@@ -75,7 +75,7 @@ class MultipleDevices : public ::testing::Test {
         test::Receiver receiver("data");
         receiver.SetTransport("zeromq");
 
-        FairMQChannel channel("pull", "bind", "ipc://multiple-devices-test");
+        Channel channel("pull", "bind", "ipc://multiple-devices-test");
         channel.UpdateRateLogging(0);
         receiver.AddChannel("data", std::move(channel));
 

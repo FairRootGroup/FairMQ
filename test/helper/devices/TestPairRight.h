@@ -9,7 +9,7 @@
 #ifndef FAIR_MQ_TEST_PAIRRIGHT_H
 #define FAIR_MQ_TEST_PAIRRIGHT_H
 
-#include <FairMQDevice.h>
+#include <fairmq/Device.h>
 #include <cstddef>
 #include <string>
 #include <thread>

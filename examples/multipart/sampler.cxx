@@ -35,15 +35,15 @@ struct Sampler : fair::mq::Device
         }
         LOG(info) << "Sending header with stopFlag: " << header.stopFlag;
 
-        FairMQParts parts;
+        fair::mq::Parts parts;
 
         // NewSimpleMessage creates a copy of the data and takes care of its destruction (after the transfer takes place).
         // Should only be used for small data because of the cost of an additional copy
         parts.AddPart(NewSimpleMessage(header));
         parts.AddPart(NewMessage(1000));
 
-        // create more data parts, testing the FairMQParts in-place constructor
-        FairMQParts auxData{ NewMessage(500), NewMessage(600), NewMessage(700) };
+        // create more data parts, testing the fair::mq::Parts in-place constructor
+        fair::mq::Parts auxData{ NewMessage(500), NewMessage(600), NewMessage(700) };
         assert(auxData.Size() == 3);
         parts.AddPart(std::move(auxData));
         assert(auxData.Size() == 0);

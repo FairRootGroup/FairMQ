@@ -19,7 +19,7 @@ struct Synchronizer : fair::mq::Device
 {
     bool ConditionalRun() override
     {
-        FairMQMessagePtr msg(NewSimpleMessage(fTimeframeId));
+        fair::mq::MessagePtr msg(NewSimpleMessage(fTimeframeId));
 
         if (Send(msg, "sync") > 0) {
             if (++fTimeframeId == UINT16_MAX - 1) {
@@ -37,7 +37,7 @@ struct Synchronizer : fair::mq::Device
 };
 
 void addCustomOptions(bpo::options_description& /* options */) {}
-std::unique_ptr<fair::mq::Device> getDevice(FairMQProgOptions& /* config */)
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /* config */)
 {
     return std::make_unique<Synchronizer>();
 }

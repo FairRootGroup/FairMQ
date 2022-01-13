@@ -113,7 +113,7 @@ class TransportFactory final : public fair::mq::TransportFactory
         return std::make_unique<Message>(*fManager, size, alignment, this);
     }
 
-    MessagePtr CreateMessage(void* data, size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
+    MessagePtr CreateMessage(void* data, size_t size, fair::mq::FreeFn* ffn, void* hint = nullptr) override
     {
         return std::make_unique<Message>(*fManager, data, size, ffn, hint, this);
     }
@@ -128,17 +128,17 @@ class TransportFactory final : public fair::mq::TransportFactory
         return std::make_unique<Socket>(*fManager, type, name, GetId(), fZmqCtx, this);
     }
 
-    PollerPtr CreatePoller(const std::vector<FairMQChannel>& channels) const override
+    PollerPtr CreatePoller(const std::vector<Channel>& channels) const override
     {
         return std::make_unique<Poller>(channels);
     }
 
-    PollerPtr CreatePoller(const std::vector<FairMQChannel*>& channels) const override
+    PollerPtr CreatePoller(const std::vector<Channel*>& channels) const override
     {
         return std::make_unique<Poller>(channels);
     }
 
-    PollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<FairMQChannel>>& channelsMap, const std::vector<std::string>& channelList) const override
+    PollerPtr CreatePoller(const std::unordered_map<std::string, std::vector<Channel>>& channelsMap, const std::vector<std::string>& channelList) const override
     {
         return std::make_unique<Poller>(channelsMap, channelList);
     }

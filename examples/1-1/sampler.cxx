@@ -30,7 +30,7 @@ struct Sampler : fair::mq::Device
         // create message object with a pointer to the data buffer, its size,
         // custom deletion function (called when transfer is done),
         // and pointer to the object managing the data buffer
-        FairMQMessagePtr msg(NewMessage(
+        fair::mq::MessagePtr msg(NewMessage(
             const_cast<char*>(text->c_str()),
             text->length(),
             [](void* /*data*/, void* object) { delete static_cast<std::string*>(object); },

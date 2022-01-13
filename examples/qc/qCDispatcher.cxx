@@ -30,10 +30,10 @@ struct QCDispatcher : fair::mq::Device
         });
     }
 
-    bool HandleData(FairMQMessagePtr& msg, int)
+    bool HandleData(fair::mq::MessagePtr& msg, int)
     {
         if (fDoQC.load() == true) {
-            FairMQMessagePtr msgCopy(NewMessage());
+            fair::mq::MessagePtr msgCopy(NewMessage());
             msgCopy->Copy(*msg);
             if (Send(msg, "qc") < 0) {
                 return false;

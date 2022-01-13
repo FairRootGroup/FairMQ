@@ -10,7 +10,7 @@
 #include <fairmq/ofi/Socket.h>
 #include <fairmq/ofi/TransportFactory.h>
 #include <fairmq/tools/Strings.h>
-#include <FairMQLogger.h>
+#include <fairlogger/Logger.h>
 
 #include <asiofi.hpp>
 #include <asio/buffer.hpp>

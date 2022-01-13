@@ -9,7 +9,7 @@
 #ifndef FAIR_MQ_TEST_POLLOUT_H
 #define FAIR_MQ_TEST_POLLOUT_H
 
-#include <FairMQDevice.h>
+#include <fairmq/Device.h>
 #include <thread>
 
 namespace fair::mq::test

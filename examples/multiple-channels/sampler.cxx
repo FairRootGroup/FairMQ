@@ -7,7 +7,7 @@
  ********************************************************************************/
 
 #include <fairmq/Device.h>
-#include <FairMQPoller.h>
+#include <fairmq/Poller.h>
 #include <fairmq/runDevice.h>
 
 #include <chrono>
@@ -26,13 +26,13 @@ struct Sampler : fair::mq::Device
 
     void Run() override
     {
-        FairMQPollerPtr poller(NewPoller("data", "broadcast"));
+        fair::mq::PollerPtr poller(NewPoller("data", "broadcast"));
 
         while (!NewStatePending()) {
             poller->Poll(100);
 
             if (poller->CheckInput("broadcast", 0)) {
-                FairMQMessagePtr msg(NewMessage());
+                fair::mq::MessagePtr msg(NewMessage());
 
                 if (Receive(msg, "broadcast") > 0) {
                     LOG(info) << "Received broadcast: \"" << std::string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
@@ -42,7 +42,7 @@ struct Sampler : fair::mq::Device
             if (poller->CheckOutput("data", 0)) {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
 
-                FairMQMessagePtr msg(NewSimpleMessage(fText));
+                fair::mq::MessagePtr msg(NewSimpleMessage(fText));
 
                 if (Send(msg, "data") > 0) {
                     LOG(info) << "Sent \"" << fText << "\"";

@@ -8,7 +8,7 @@
 
 #include <gtest/gtest.h>
 #include <fairmq/StateMachine.h>
-#include <FairMQLogger.h>
+#include <fairlogger/Logger.h>
 #include <string>
 #include <thread>
 

@@ -28,11 +28,11 @@ struct Sender : fair::mq::Device
 
     void Run() override
     {
-        FairMQChannel& dataInChannel = GetChannel("sync", 0);
+        fair::mq::Channel& dataInChannel = GetChannel("sync", 0);
 
         while (!NewStatePending()) {
             Header h;
-            FairMQMessagePtr id(NewMessage());
+            fair::mq::MessagePtr id(NewMessage());
             if (dataInChannel.Receive(id) > 0) {
                 h.id = *(static_cast<uint16_t*>(id->GetData()));
                 h.senderIndex = fIndex;
@@ -40,7 +40,7 @@ struct Sender : fair::mq::Device
                 continue;
             }
 
-            FairMQParts parts;
+            fair::mq::Parts parts;
             parts.AddPart(NewSimpleMessage(h));
             parts.AddPart(NewMessage(fSubtimeframeSize));
 
@@ -66,7 +66,7 @@ void addCustomOptions(bpo::options_description& options)
         ("subtimeframe-size", bpo::value<int>()->default_value(1000), "Subtimeframe size in bytes")
         ("num-receivers", bpo::value<int>()->required(), "Number of EPNs");
 }
-std::unique_ptr<fair::mq::Device> getDevice(FairMQProgOptions& /* config */)
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /* config */)
 {
     return std::make_unique<Sender>();
 }

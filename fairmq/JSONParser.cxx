@@ -30,13 +30,13 @@
 
 using namespace std;
 using namespace fair::mq;
-using namespace fair::mq::tools;
+using namespace tools;
 using namespace boost::property_tree;
 
 namespace fair::mq
 {
 
-fair::mq::Properties PtreeParser(const ptree& pt, const string& id)
+Properties PtreeParser(const ptree& pt, const string& id)
 {
     if (id.empty()) {
         throw ParserError("no device ID provided. Provide with `--id` cmd option");
@@ -47,7 +47,7 @@ fair::mq::Properties PtreeParser(const ptree& pt, const string& id)
     return helper::DeviceParser(pt.get_child("fairMQOptions"), id);
 }
 
-fair::mq::Properties JSONParser(const string& filename, const string& deviceId)
+Properties JSONParser(const string& filename, const string& deviceId)
 {
     ptree pt;
     LOG(debug) << "Parsing JSON from " << filename << " ...";
@@ -58,9 +58,9 @@ fair::mq::Properties JSONParser(const string& filename, const string& deviceId)
 namespace helper
 {
 
-fair::mq::Properties DeviceParser(const ptree& fairMQOptions, const string& deviceId)
+Properties DeviceParser(const ptree& fairMQOptions, const string& deviceId)
 {
-    fair::mq::Properties properties;
+    Properties properties;
 
     for (const auto& node : fairMQOptions) {
         if (node.first == "devices") {
@@ -82,27 +82,27 @@ fair::mq::Properties DeviceParser(const ptree& fairMQOptions, const string& devi
     return properties;
 }
 
-void ChannelParser(const ptree& tree, fair::mq::Properties& properties)
+void ChannelParser(const ptree& tree, Properties& properties)
 {
     for (const auto& node : tree) {
         if (node.first == "channels") {
             for (const auto& cn : node.second) {
-                fair::mq::Properties commonProperties;
-                commonProperties.emplace("type", cn.second.get<string>("type", FairMQChannel::DefaultType));
-                commonProperties.emplace("method", cn.second.get<string>("method", FairMQChannel::DefaultMethod));
-                commonProperties.emplace("address", cn.second.get<string>("address", FairMQChannel::DefaultAddress));
-                commonProperties.emplace("transport", cn.second.get<string>("transport", FairMQChannel::DefaultTransportName));
-                commonProperties.emplace("sndBufSize", cn.second.get<int>("sndBufSize", FairMQChannel::DefaultSndBufSize));
-                commonProperties.emplace("rcvBufSize", cn.second.get<int>("rcvBufSize", FairMQChannel::DefaultRcvBufSize));
-                commonProperties.emplace("sndKernelSize", cn.second.get<int>("sndKernelSize", FairMQChannel::DefaultSndKernelSize));
-                commonProperties.emplace("rcvKernelSize", cn.second.get<int>("rcvKernelSize", FairMQChannel::DefaultRcvKernelSize));
-                commonProperties.emplace("sndTimeoutMs", cn.second.get<int>("sndTimeoutMs", FairMQChannel::DefaultSndTimeoutMs));
-                commonProperties.emplace("rcvTimeoutMs", cn.second.get<int>("rcvTimeoutMs", FairMQChannel::DefaultRcvTimeoutMs));
-                commonProperties.emplace("linger", cn.second.get<int>("linger", FairMQChannel::DefaultLinger));
-                commonProperties.emplace("rateLogging", cn.second.get<int>("rateLogging", FairMQChannel::DefaultRateLogging));
-                commonProperties.emplace("portRangeMin", cn.second.get<int>("portRangeMin", FairMQChannel::DefaultPortRangeMin));
-                commonProperties.emplace("portRangeMax", cn.second.get<int>("portRangeMax", FairMQChannel::DefaultPortRangeMax));
-                commonProperties.emplace("autoBind", cn.second.get<bool>("autoBind", FairMQChannel::DefaultAutoBind));
+                Properties commonProperties;
+                commonProperties.emplace("type", cn.second.get<string>("type", Channel::DefaultType));
+                commonProperties.emplace("method", cn.second.get<string>("method", Channel::DefaultMethod));
+                commonProperties.emplace("address", cn.second.get<string>("address", Channel::DefaultAddress));
+                commonProperties.emplace("transport", cn.second.get<string>("transport", Channel::DefaultTransportName));
+                commonProperties.emplace("sndBufSize", cn.second.get<int>("sndBufSize", Channel::DefaultSndBufSize));
+                commonProperties.emplace("rcvBufSize", cn.second.get<int>("rcvBufSize", Channel::DefaultRcvBufSize));
+                commonProperties.emplace("sndKernelSize", cn.second.get<int>("sndKernelSize", Channel::DefaultSndKernelSize));
+                commonProperties.emplace("rcvKernelSize", cn.second.get<int>("rcvKernelSize", Channel::DefaultRcvKernelSize));
+                commonProperties.emplace("sndTimeoutMs", cn.second.get<int>("sndTimeoutMs", Channel::DefaultSndTimeoutMs));
+                commonProperties.emplace("rcvTimeoutMs", cn.second.get<int>("rcvTimeoutMs", Channel::DefaultRcvTimeoutMs));
+                commonProperties.emplace("linger", cn.second.get<int>("linger", Channel::DefaultLinger));
+                commonProperties.emplace("rateLogging", cn.second.get<int>("rateLogging", Channel::DefaultRateLogging));
+                commonProperties.emplace("portRangeMin", cn.second.get<int>("portRangeMin", Channel::DefaultPortRangeMin));
+                commonProperties.emplace("portRangeMax", cn.second.get<int>("portRangeMax", Channel::DefaultPortRangeMax));
+                commonProperties.emplace("autoBind", cn.second.get<bool>("autoBind", Channel::DefaultAutoBind));
 
                 string name = cn.second.get<string>("name");
                 int numSockets = cn.second.get<int>("numSockets", 0);
@@ -128,7 +128,7 @@ void ChannelParser(const ptree& tree, fair::mq::Properties& properties)
     }
 }
 
-void SubChannelParser(const ptree& channelTree, fair::mq::Properties& properties, const string& channelName, const fair::mq::Properties& commonProperties)
+void SubChannelParser(const ptree& channelTree, Properties& properties, const string& channelName, const Properties& commonProperties)
 {
     // for each socket in channel
     int i = 0;
@@ -137,7 +137,7 @@ void SubChannelParser(const ptree& channelTree, fair::mq::Properties& properties
         if (node.first == "sockets") {
             for (const auto& sn : node.second) {
                 // a sub-channel inherits relevant properties from the common channel ...
-                fair::mq::Properties newProperties(commonProperties);
+                Properties newProperties(commonProperties);
 
                 // ... and adds/overwrites its own properties
                 newProperties["type"] = sn.second.get<string>("type", boost::any_cast<string>(commonProperties.at("type")));
@@ -177,7 +177,7 @@ void SubChannelParser(const ptree& channelTree, fair::mq::Properties& properties
         LOG(trace) << "\tNo sockets specified,";
         LOG(trace) << "\tapplying common settings to the channel:";
 
-        fair::mq::Properties newProperties(commonProperties);
+        Properties newProperties(commonProperties);
 
         for (auto& p : newProperties) {
             LOG(trace) << "\t" << setw(13) << left << p.first << " : " << p.second;

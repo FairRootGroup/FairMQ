@@ -9,17 +9,20 @@
 #ifndef FAIR_MQ_TEST_POLLIN_H
 #define FAIR_MQ_TEST_POLLIN_H
 
-#include <FairMQDevice.h>
-#include <FairMQLogger.h>
+#include <fairmq/Device.h>
 #include <fairmq/ProgOptions.h>
+
+#include <fairlogger/Logger.h>
+
 #include <thread>
 
 namespace fair::mq::test
 {
 
 using namespace std;
+using namespace fair::mq;
 
-class PollIn : public FairMQDevice
+class PollIn : public Device
 {
   public:
     PollIn()
@@ -35,12 +38,12 @@ class PollIn : public FairMQDevice
 
     auto Run() -> void override
     {
-        vector<FairMQChannel*> chans;
+        vector<Channel*> chans;
 
         chans.push_back(&GetChannel("data1", 0));
         chans.push_back(&GetChannel("data2", 0));
 
-        FairMQPollerPtr poller = nullptr;
+        PollerPtr poller = nullptr;
 
         if (fPollType == 0)
         {
@@ -59,8 +62,8 @@ class PollIn : public FairMQDevice
         bool arrived2 = false;
         bool bothArrived = false;
 
-        FairMQMessagePtr msg1(NewMessage());
-        FairMQMessagePtr msg2(NewMessage());
+        MessagePtr msg1(NewMessage());
+        MessagePtr msg2(NewMessage());
 
         while (!bothArrived)
         {

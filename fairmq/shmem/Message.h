@@ -35,7 +35,7 @@ class Message final : public fair::mq::Message
     friend class Socket;
 
   public:
-    Message(Manager& manager, FairMQTransportFactory* factory = nullptr)
+    Message(Manager& manager, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
@@ -46,7 +46,7 @@ class Message final : public fair::mq::Message
         fManager.IncrementMsgCounter();
     }
 
-    Message(Manager& manager, Alignment alignment, FairMQTransportFactory* factory = nullptr)
+    Message(Manager& manager, Alignment alignment, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
@@ -58,7 +58,7 @@ class Message final : public fair::mq::Message
         fManager.IncrementMsgCounter();
     }
 
-    Message(Manager& manager, const size_t size, FairMQTransportFactory* factory = nullptr)
+    Message(Manager& manager, const size_t size, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
@@ -70,7 +70,7 @@ class Message final : public fair::mq::Message
         fManager.IncrementMsgCounter();
     }
 
-    Message(Manager& manager, const size_t size, Alignment alignment, FairMQTransportFactory* factory = nullptr)
+    Message(Manager& manager, const size_t size, Alignment alignment, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
@@ -83,7 +83,7 @@ class Message final : public fair::mq::Message
         fManager.IncrementMsgCounter();
     }
 
-    Message(Manager& manager, void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr, FairMQTransportFactory* factory = nullptr)
+    Message(Manager& manager, void* data, const size_t size, fair::mq::FreeFn* ffn, void* hint = nullptr, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
@@ -102,7 +102,7 @@ class Message final : public fair::mq::Message
         fManager.IncrementMsgCounter();
     }
 
-    Message(Manager& manager, UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, FairMQTransportFactory* factory = nullptr)
+    Message(Manager& manager, UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
@@ -125,7 +125,7 @@ class Message final : public fair::mq::Message
         fManager.IncrementMsgCounter();
     }
 
-    Message(Manager& manager, MetaHeader& hdr, FairMQTransportFactory* factory = nullptr)
+    Message(Manager& manager, MetaHeader& hdr, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
         , fQueued(false)
@@ -169,7 +169,7 @@ class Message final : public fair::mq::Message
         InitializeChunk(size, fAlignment);
     }
 
-    void Rebuild(void* data, size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
+    void Rebuild(void* data, size_t size, fair::mq::FreeFn* ffn, void* hint = nullptr) override
     {
         CloseMessage();
         fQueued = false;

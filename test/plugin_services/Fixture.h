@@ -9,17 +9,19 @@
 #ifndef FAIR_MQ_TEST_FIXTURE
 #define FAIR_MQ_TEST_FIXTURE
 
-#include <gtest/gtest.h>
 #include <fairmq/PluginServices.h>
-#include <FairMQDevice.h>
+#include <fairmq/Device.h>
 #include <fairmq/ProgOptions.h>
+
+#include <gtest/gtest.h>
+
 #include <memory>
 #include <thread>
 
 namespace fair::mq::test
 {
 
-inline auto control(FairMQDevice& device) -> void
+inline auto control(fair::mq::Device& device) -> void
 {
     device.ChangeState(fair::mq::Transition::InitDevice);
     device.WaitForState(fair::mq::State::InitializingDevice);
@@ -42,7 +44,7 @@ struct PluginServices : ::testing::Test {
         , mServices(mConfig, mDevice)
         , fRunStateMachineThread()
     {
-        fRunStateMachineThread = std::thread(&FairMQDevice::RunStateMachine, &mDevice);
+        fRunStateMachineThread = std::thread(&fair::mq::Device::RunStateMachine, &mDevice);
         mDevice.SetTransport("zeromq");
     }
 
@@ -55,7 +57,7 @@ struct PluginServices : ::testing::Test {
     }
 
     fair::mq::ProgOptions mConfig;
-    FairMQDevice mDevice;
+    fair::mq::Device mDevice;
     fair::mq::PluginServices mServices;
     std::thread fRunStateMachineThread;
 };

@@ -39,7 +39,7 @@ void CheckOldOptionInterface(Channel& channel, const string& option)
 
 void RunOptionsTest(const string& transport)
 {
-    fair::mq::ProgOptions config;
+    ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
     Channel channel("Push", "push", factory);
@@ -85,15 +85,15 @@ void ZeroingAndMlock(const string& transport)
 
 void ZeroingAndMlockOnCreation(const string& transport)
 {
-    size_t session{fair::mq::tools::UuidHash()};
+    size_t session{tools::UuidHash()};
 
-    fair::mq::ProgOptions config;
+    ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
     config.SetProperty<size_t>("shm-segment-size", 16384); // NOLINT
     config.SetProperty<bool>("shm-mlock-segment-on-creation", true);
     config.SetProperty<bool>("shm-zero-segment-on-creation", true);
 
-    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
+    auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
     constexpr size_t size{10000};
     auto outMsg(factory->CreateMessage(size));
