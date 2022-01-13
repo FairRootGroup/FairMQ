@@ -6,7 +6,6 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <fairlogger/Logger.h>
 #include <fairmq/Channel.h>
 #include <fairmq/ProgOptions.h>
 #include <fairmq/tools/Semaphore.h>
@@ -14,6 +13,8 @@
 #include <fairmq/tools/Unique.h>
 #include <fairmq/TransportFactory.h>
 #include <fairmq/shmem/Message.h>
+
+#include <fairlogger/Logger.h>
 
 #include <gtest/gtest.h>
 
@@ -282,8 +283,8 @@ auto ZeroCopyFromUnmanaged(string const& address) -> void
     });
 
     {
-        FairMQChannel push("Push", "push", factory1);
-        FairMQChannel pull("Pull", "pull", factory2);
+        Channel push("Push", "push", factory1);
+        Channel pull("Pull", "pull", factory2);
 
         push.Bind(address);
         pull.Connect(address);

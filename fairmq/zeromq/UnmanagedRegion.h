@@ -10,8 +10,9 @@
 #define FAIR_MQ_ZMQ_UNMANAGEDREGION_H
 
 #include <fairmq/zeromq/Context.h>
-#include <FairMQUnmanagedRegion.h>
-#include <FairMQLogger.h>
+#include <fairmq/UnmanagedRegion.h>
+
+#include <fairlogger/Logger.h>
 
 #include <cstddef> // size_t
 #include <string>
@@ -33,7 +34,7 @@ class UnmanagedRegion final : public fair::mq::UnmanagedRegion
                     int64_t userFlags,
                     RegionCallback callback,
                     RegionBulkCallback bulkCallback,
-                    FairMQTransportFactory* factory,
+                    fair::mq::TransportFactory* factory,
                     fair::mq::RegionConfig cfg)
         : fair::mq::UnmanagedRegion(factory)
         , fCtx(ctx)

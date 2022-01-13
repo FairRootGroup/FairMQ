@@ -34,7 +34,7 @@ class Proxy : public Device
     {
         if (fMultipart) {
             while (!NewStatePending()) {
-                FairMQParts payload;
+                Parts payload;
                 if (Receive(payload, fInChannelName) >= 0) {
                     if (Send(payload, fOutChannelName) < 0) {
                         LOG(debug) << "Transfer interrupted";
@@ -47,7 +47,7 @@ class Proxy : public Device
             }
         } else {
             while (!NewStatePending()) {
-                FairMQMessagePtr payload(fTransportFactory->CreateMessage());
+                MessagePtr payload(fTransportFactory->CreateMessage());
                 if (Receive(payload, fInChannelName) >= 0) {
                     if (Send(payload, fOutChannelName) < 0) {
                         LOG(debug) << "Transfer interrupted";

@@ -18,9 +18,9 @@ struct Processor : fair::mq::Device
         OnData("bp", &Processor::HandleData);
     }
 
-    bool HandleData(FairMQMessagePtr& msg, int /*index*/)
+    bool HandleData(fair::mq::MessagePtr& msg, int /*index*/)
     {
-        FairMQMessagePtr msg2(NewMessageFor("ps", 0, msg->GetSize()));
+        fair::mq::MessagePtr msg2(NewMessageFor("ps", 0, msg->GetSize()));
         if (Send(msg2, "ps") < 0) {
             return false;
         }

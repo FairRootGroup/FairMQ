@@ -22,7 +22,7 @@ struct Readout : fair::mq::Device
         fMsgSize = fConfig->GetProperty<int>("msg-size");
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
 
-        fRegion = FairMQUnmanagedRegionPtr(NewUnmanagedRegionFor("rb",
+        fRegion = fair::mq::UnmanagedRegionPtr(NewUnmanagedRegionFor("rb",
                                                                 0,
                                                                 10000000,
                                                                 [this](const std::vector<fair::mq::RegionBlock>& blocks) { // callback to be called when message buffers no longer needed by transport
@@ -36,7 +36,7 @@ struct Readout : fair::mq::Device
 
     bool ConditionalRun() override
     {
-        FairMQMessagePtr msg(NewMessageFor("rb", // channel
+        fair::mq::MessagePtr msg(NewMessageFor("rb", // channel
                                             0, // sub-channel
                                             fRegion, // region
                                             fRegion->GetData(), // ptr within region
@@ -71,7 +71,7 @@ struct Readout : fair::mq::Device
     int fMsgSize = 10000;
     uint64_t fMaxIterations = 0;
     uint64_t fNumIterations = 0;
-    FairMQUnmanagedRegionPtr fRegion = nullptr;
+    fair::mq::UnmanagedRegionPtr fRegion = nullptr;
     std::atomic<uint64_t> fNumUnackedMsgs = 0;
 };
 

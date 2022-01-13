@@ -10,8 +10,9 @@
 #define FAIR_MQ_ZMQ_CONTEXT_H_
 
 #include <fairmq/tools/Strings.h>
-#include <FairMQLogger.h>
-#include <FairMQUnmanagedRegion.h>
+#include <fairmq/UnmanagedRegion.h>
+
+#include <fairlogger/Logger.h>
 
 #include <zmq.h>
 

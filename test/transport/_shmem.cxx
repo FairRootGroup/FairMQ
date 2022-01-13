@@ -9,7 +9,7 @@
 #include <fairmq/ProgOptions.h>
 #include <fairmq/shmem/Monitor.h>
 #include <fairmq/tools/Unique.h>
-#include <FairMQTransportFactory.h>
+#include <fairmq/TransportFactory.h>
 
 #include <gtest/gtest.h>
 
@@ -29,7 +29,7 @@ void GetFreeMemory()
 
     ASSERT_THROW(shmem::Monitor::GetFreeMemory(shmem::SessionId{sessionId}, 0), shmem::Monitor::MonitorError);
 
-    auto factory = FairMQTransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config);
+    auto factory = TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config);
 
     ASSERT_NO_THROW(shmem::Monitor::GetFreeMemory(shmem::SessionId{sessionId}, 0));
     ASSERT_THROW(shmem::Monitor::GetFreeMemory(shmem::SessionId{sessionId}, 1), shmem::Monitor::MonitorError);

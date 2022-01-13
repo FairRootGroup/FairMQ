@@ -9,12 +9,12 @@
 #include <fairmq/Device.h>
 #include <fairmq/runDevice.h>
 
-class QCTask : public FairMQDevice
+class QCTask : public fair::mq::Device
 {
   public:
     QCTask()
     {
-        OnData("qc", [](FairMQMessagePtr& /*msg*/, int) {
+        OnData("qc", [](fair::mq::MessagePtr& /*msg*/, int) {
             LOG(info) << "received data";
             return false;
         });

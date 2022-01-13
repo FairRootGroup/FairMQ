@@ -34,7 +34,7 @@ class UnmanagedRegionImpl final : public fair::mq::UnmanagedRegion
                     RegionCallback callback,
                     RegionBulkCallback bulkCallback,
                     fair::mq::RegionConfig cfg,
-                    FairMQTransportFactory* factory)
+                    fair::mq::TransportFactory* factory)
         : fair::mq::UnmanagedRegion(factory)
         , fManager(manager)
         , fRegion(nullptr)

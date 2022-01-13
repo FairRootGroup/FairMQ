@@ -14,7 +14,7 @@
 struct Sink : fair::mq::Device
 {
     Sink() { OnData("data2", &Sink::HandleData); }
-    bool HandleData(FairMQMessagePtr& /*msg*/, int /*index*/) { return true; }
+    bool HandleData(fair::mq::MessagePtr& /*msg*/, int /*index*/) { return true; }
 };
 
 namespace bpo = boost::program_options;

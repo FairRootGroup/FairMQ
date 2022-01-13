@@ -10,9 +10,10 @@
 #define FAIR_MQ_ZMQ_MESSAGE_H
 
 #include <fairmq/zeromq/UnmanagedRegion.h>
-#include <FairMQLogger.h>
-#include <FairMQMessage.h>
-#include <FairMQUnmanagedRegion.h>
+#include <fairmq/Message.h>
+#include <fairmq/UnmanagedRegion.h>
+
+#include <fairlogger/Logger.h>
 
 #include <zmq.h>
 
@@ -38,7 +39,7 @@ class Message final : public fair::mq::Message
     Message& operator=(const Message&) = delete;
     Message& operator=(Message&&) = delete;
 
-    Message(FairMQTransportFactory* factory = nullptr)
+    Message(fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fMsg(std::make_unique<zmq_msg_t>())
     {
@@ -47,7 +48,7 @@ class Message final : public fair::mq::Message
         }
     }
 
-    Message(Alignment alignment, FairMQTransportFactory* factory = nullptr)
+    Message(Alignment alignment, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fAlignment(alignment.alignment)
         , fMsg(std::make_unique<zmq_msg_t>())
@@ -57,7 +58,7 @@ class Message final : public fair::mq::Message
         }
     }
 
-    Message(const size_t size, FairMQTransportFactory* factory = nullptr)
+    Message(const size_t size, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fMsg(std::make_unique<zmq_msg_t>())
     {
@@ -80,7 +81,7 @@ class Message final : public fair::mq::Message
         return {static_cast<void*>(fullBufferPtr), static_cast<void*>(alignedPartPtr)};
     }
 
-    Message(const size_t size, Alignment alignment, FairMQTransportFactory* factory = nullptr)
+    Message(const size_t size, Alignment alignment, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fAlignment(alignment.alignment)
         , fMsg(std::make_unique<zmq_msg_t>())
@@ -97,7 +98,7 @@ class Message final : public fair::mq::Message
         }
     }
 
-    Message(void* data, const size_t size, fairmq_free_fn* ffn, void* hint = nullptr, FairMQTransportFactory* factory = nullptr)
+    Message(void* data, const size_t size, fair::mq::FreeFn* ffn, void* hint = nullptr, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fMsg(std::make_unique<zmq_msg_t>())
     {
@@ -106,7 +107,7 @@ class Message final : public fair::mq::Message
         }
     }
 
-    Message(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, FairMQTransportFactory* factory = nullptr)
+    Message(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fMsg(std::make_unique<zmq_msg_t>())
     {
@@ -184,7 +185,7 @@ class Message final : public fair::mq::Message
         }
     }
 
-    void Rebuild(void* data, size_t size, fairmq_free_fn* ffn, void* hint = nullptr) override
+    void Rebuild(void* data, size_t size, fair::mq::FreeFn* ffn, void* hint = nullptr) override
     {
         CloseMessage();
         fMsg = std::make_unique<zmq_msg_t>();

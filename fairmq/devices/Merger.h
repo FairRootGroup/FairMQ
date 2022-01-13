@@ -9,7 +9,7 @@
 #ifndef FAIR_MQ_MERGER_H
 #define FAIR_MQ_MERGER_H
 
-#include <FairMQPoller.h>
+#include <fairmq/Poller.h>
 #include <fairmq/Device.h>
 
 #include <fairlogger/Logger.h>
@@ -45,13 +45,13 @@ class Merger : public Device
     {
         int numInputs = GetNumSubChannels(fInChannelName);
 
-        std::vector<FairMQChannel*> chans;
+        std::vector<Channel*> chans;
 
         for (auto& chan : fChannels.at(fInChannelName)) {
             chans.push_back(&chan);
         }
 
-        FairMQPollerPtr poller(NewPoller(chans));
+        PollerPtr poller(NewPoller(chans));
 
         if (fMultipart) {
             while (!NewStatePending()) {
@@ -61,7 +61,7 @@ class Merger : public Device
                 for (int i = 0; i < numInputs; ++i) {
                     // Check if the channel has data ready to be received.
                     if (poller->CheckInput(i)) {
-                        FairMQParts payload;
+                        Parts payload;
 
                         if (Receive(payload, fInChannelName, i) >= 0) {
                             if (Send(payload, fOutChannelName) < 0) {
@@ -83,7 +83,7 @@ class Merger : public Device
                 for (int i = 0; i < numInputs; ++i) {
                     // Check if the channel has data ready to be received.
                     if (poller->CheckInput(i)) {
-                        FairMQMessagePtr payload(fTransportFactory->CreateMessage());
+                        MessagePtr payload(fTransportFactory->CreateMessage());
 
                         if (Receive(payload, fInChannelName, i) >= 0) {
                             if (Send(payload, fOutChannelName) < 0) {

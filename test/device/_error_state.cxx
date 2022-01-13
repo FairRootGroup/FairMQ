@@ -12,7 +12,7 @@
 #include <boost/process.hpp>
 #include <fairmq/tools/Process.h>
 #include <fairmq/tools/Unique.h>
-#include <FairMQDevice.h>
+#include <fairmq/Device.h>
 
 #include <string>
 #include <thread>
@@ -22,24 +22,25 @@ namespace
 {
 
 using namespace std;
+using namespace fair::mq;
 using namespace fair::mq::test;
 using namespace fair::mq::tools;
 
-class BadDevice : public FairMQDevice
+class BadDevice : public Device
 {
   public:
     BadDevice()
     {
         fDeviceThread = thread([&](){
-            EXPECT_THROW(RunStateMachine(), fair::mq::MessageError);
+            EXPECT_THROW(RunStateMachine(), MessageError);
         });
 
         SetTransport("shmem");
 
-        ChangeState(fair::mq::Transition::InitDevice);
-        WaitForState(fair::mq::State::InitializingDevice);
-        ChangeState(fair::mq::Transition::CompleteInit);
-        WaitForState(fair::mq::State::Initialized);
+        ChangeState(Transition::InitDevice);
+        WaitForState(State::InitializingDevice);
+        ChangeState(Transition::CompleteInit);
+        WaitForState(State::Initialized);
 
         parts.AddPart(NewMessage());
     }
@@ -51,7 +52,7 @@ class BadDevice : public FairMQDevice
 
     ~BadDevice() override
     {
-        ChangeState(fair::mq::Transition::ResetDevice);
+        ChangeState(Transition::ResetDevice);
 
         if (fDeviceThread.joinable()) {
             fDeviceThread.join();
@@ -60,12 +61,12 @@ class BadDevice : public FairMQDevice
 
   private:
     thread fDeviceThread;
-    FairMQParts parts;
+    Parts parts;
 };
 
 void RunErrorStateIn(const string& state, const string& control, const string& input = "")
 {
-    size_t session{fair::mq::tools::UuidHash()};
+    size_t session{tools::UuidHash()};
 
     execute_result result{"", 100};
     thread device_thread([&]() {

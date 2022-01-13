@@ -40,11 +40,11 @@ class Multiplier : public Device
     }
 
 
-    bool HandleSingleData(std::unique_ptr<FairMQMessage>& payload, int)
+    bool HandleSingleData(std::unique_ptr<Message>& payload, int)
     {
         for (unsigned int i = 0; i < fOutChannelNames.size() - 1; ++i) { // all except last channel
             for (unsigned int j = 0; j < GetNumSubChannels(fOutChannelNames.at(i)); ++j) { // all subChannels in a channel
-                FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage());
+                MessagePtr msgCopy(fTransportFactory->CreateMessage());
                 msgCopy->Copy(*payload);
 
                 Send(msgCopy, fOutChannelNames.at(i), j);
@@ -54,7 +54,7 @@ class Multiplier : public Device
         unsigned int lastChannelSize = GetNumSubChannels(fOutChannelNames.back());
 
         for (unsigned int i = 0; i < lastChannelSize - 1; ++i) { // iterate over all except last subChannels of the last channel
-            FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage());
+            MessagePtr msgCopy(fTransportFactory->CreateMessage());
             msgCopy->Copy(*payload);
 
             Send(msgCopy, fOutChannelNames.back(), i);
@@ -65,14 +65,14 @@ class Multiplier : public Device
         return true;
     }
 
-    bool HandleMultipartData(FairMQParts& payload, int)
+    bool HandleMultipartData(Parts& payload, int)
     {
         for (unsigned int i = 0; i < fOutChannelNames.size() - 1; ++i) { // all except last channel
             for (unsigned int j = 0; j < GetNumSubChannels(fOutChannelNames.at(i)); ++j) { // all subChannels in a channel
-                FairMQParts parts;
+                Parts parts;
 
                 for (int k = 0; k < payload.Size(); ++k) {
-                    FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage());
+                    MessagePtr msgCopy(fTransportFactory->CreateMessage());
                     msgCopy->Copy(payload.AtRef(k));
                     parts.AddPart(std::move(msgCopy));
                 }
@@ -84,10 +84,10 @@ class Multiplier : public Device
         unsigned int lastChannelSize = GetNumSubChannels(fOutChannelNames.back());
 
         for (unsigned int i = 0; i < lastChannelSize - 1; ++i) { // iterate over all except last subChannels of the last channel
-            FairMQParts parts;
+            Parts parts;
 
             for (int k = 0; k < payload.Size(); ++k) {
-                FairMQMessagePtr msgCopy(fTransportFactory->CreateMessage());
+                MessagePtr msgCopy(fTransportFactory->CreateMessage());
                 msgCopy->Copy(payload.AtRef(k));
                 parts.AddPart(std::move(msgCopy));
             }

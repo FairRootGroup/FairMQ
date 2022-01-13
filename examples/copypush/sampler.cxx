@@ -27,10 +27,10 @@ struct Sampler : fair::mq::Device
     {
         // NewSimpleMessage creates a copy of the data and takes care of its destruction (after the transfer takes place).
         // Should only be used for small data because of the cost of an additional copy
-        FairMQMessagePtr msg(NewSimpleMessage(fCounter++));
+        fair::mq::MessagePtr msg(NewSimpleMessage(fCounter++));
 
         for (int i = 0; i < fNumDataChannels - 1; ++i) {
-            FairMQMessagePtr msgCopy(NewMessage());
+            fair::mq::MessagePtr msgCopy(NewMessage());
             msgCopy->Copy(*msg);
             Send(msgCopy, "data", i);
         }

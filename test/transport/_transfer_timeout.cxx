@@ -7,13 +7,16 @@
  ********************************************************************************/
 
 #include "runner.h"
-#include <FairMQChannel.h>
-#include <FairMQLogger.h>
-#include <FairMQTransportFactory.h>
+
+#include <fairmq/Channel.h>
+#include <fairmq/TransportFactory.h>
 #include <fairmq/ProgOptions.h>
 #include <fairmq/tools/Process.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/tools/Unique.h>
+
+#include <fairlogger/Logger.h>
+
 #include <gtest/gtest.h>
 
 #include <chrono>
@@ -24,10 +27,11 @@ namespace
 {
 
 using namespace std;
+using namespace fair::mq;
 using namespace fair::mq::test;
 using namespace fair::mq::tools;
 
-void delayedInterruptor(FairMQTransportFactory& transport)
+void delayedInterruptor(TransportFactory& transport)
 {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     transport.Interrupt();
@@ -35,7 +39,7 @@ void delayedInterruptor(FairMQTransportFactory& transport)
 
 auto RunTransferTimeout(string transport) -> void
 {
-    size_t session{fair::mq::tools::UuidHash()};
+    size_t session{UuidHash()};
     stringstream cmd;
     cmd << runTestDevice << " --id transfer_timeout_" << transport << " --control static --transport " << transport
         << " --session " << session << " --color false --mq-config \"" << mqConfig << "\"";
@@ -48,18 +52,18 @@ auto RunTransferTimeout(string transport) -> void
 
 void InterruptTransfer(const string& transport, const string& _address)
 {
-    size_t session{fair::mq::tools::UuidHash()};
-    std::string address(fair::mq::tools::ToString(_address, "_", transport));
+    size_t session{UuidHash()};
+    std::string address(ToString(_address, "_", transport));
 
     fair::mq::ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
 
-    auto factory = FairMQTransportFactory::CreateTransportFactory(transport, fair::mq::tools::Uuid(), &config);
+    auto factory = TransportFactory::CreateTransportFactory(transport, Uuid(), &config);
 
-    FairMQChannel pull{"Pull", "pull", factory};
+    Channel pull{"Pull", "pull", factory};
     pull.Bind(address);
 
-    FairMQMessagePtr msg(pull.NewMessage());
+    MessagePtr msg(pull.NewMessage());
 
     auto t = thread(delayedInterruptor, ref(*factory));
 

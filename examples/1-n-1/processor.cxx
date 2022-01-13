@@ -20,7 +20,7 @@ struct Processor : fair::mq::Device
         OnData("data1", &Processor::HandleData);
     }
 
-    bool HandleData(FairMQMessagePtr& msg, int)
+    bool HandleData(fair::mq::MessagePtr& msg, int)
     {
         LOG(info) << "Received data, processing...";
 
@@ -32,7 +32,7 @@ struct Processor : fair::mq::Device
         // its size,
         // custom deletion function (called when transfer is done),
         // and pointer to the object managing the data buffer
-        FairMQMessagePtr msg2(NewMessage(const_cast<char*>(text->c_str()),
+        fair::mq::MessagePtr msg2(NewMessage(const_cast<char*>(text->c_str()),
                                         text->length(),
                                         [](void* /*data*/, void* object) { delete static_cast<std::string*>(object); },
                                         text));

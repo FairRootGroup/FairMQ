@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <FairMQDevice.h>
+#include <fairmq/Device.h>
 
 #include <fairmq/tools/Version.h>
 

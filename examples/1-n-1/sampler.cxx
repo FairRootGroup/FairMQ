@@ -28,7 +28,7 @@ struct Sampler : fair::mq::Device
     {
         // Initializing message with NewStaticMessage will avoid copy
         // but won't delete the data after the sending is completed.
-        FairMQMessagePtr msg(NewStaticMessage(fText));
+        fair::mq::MessagePtr msg(NewStaticMessage(fText));
 
         LOG(info) << "Sending \"" << fText << "\"";
 

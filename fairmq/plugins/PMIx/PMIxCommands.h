@@ -11,7 +11,7 @@
 
 #include "PMIx.hpp"
 
-#include <FairMQLogger.h>
+#include <fairlogger/Logger.h>
 #include <fairmq/tools/Semaphore.h>
 #include <memory> // make_unique
 #include <string>

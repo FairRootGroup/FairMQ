@@ -51,7 +51,7 @@ struct ZMsg
 class Socket final : public fair::mq::Socket
 {
   public:
-    Socket(Manager& manager, const std::string& type, const std::string& name, const std::string& id, void* context, FairMQTransportFactory* fac = nullptr)
+    Socket(Manager& manager, const std::string& type, const std::string& name, const std::string& id, void* context, fair::mq::TransportFactory* fac = nullptr)
         : fair::mq::Socket(fac)
         , fManager(manager)
         , fId(id + "." + name + "." + type)

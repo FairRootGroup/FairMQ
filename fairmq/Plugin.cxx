@@ -7,7 +7,7 @@
  ********************************************************************************/
 
 #include <fairmq/Plugin.h>
-#include <FairMQLogger.h>
+#include <fairlogger/Logger.h>
 #include <utility>
 
 using namespace std;

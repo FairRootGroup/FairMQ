@@ -26,11 +26,11 @@ struct Sink : fair::mq::Device
     }
 
     // handler is called whenever a message arrives on "data", with a reference to the message and a sub-channel index (here 0)
-    bool HandleData1(FairMQMessagePtr& /*msg*/, int /*index*/)
+    bool HandleData1(fair::mq::MessagePtr& /*msg*/, int /*index*/)
     {
         fNumIterations1++;
         // Creates a message using the transport of channel ack
-        FairMQMessagePtr ack(NewMessageFor("ack", 0));
+        fair::mq::MessagePtr ack(NewMessageFor("ack", 0));
         if (Send(ack, "ack") < 0) {
             return false;
         }
@@ -40,7 +40,7 @@ struct Sink : fair::mq::Device
     }
 
     // handler is called whenever a message arrives on "data", with a reference to the message and a sub-channel index (here 0)
-    bool HandleData2(FairMQMessagePtr& /*msg*/, int /*index*/)
+    bool HandleData2(fair::mq::MessagePtr& /*msg*/, int /*index*/)
     {
         fNumIterations2++;
         // return true if want to be called again (otherwise go to IDLE state)

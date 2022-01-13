@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <FairMQDevice.h>
+#include <fairmq/Device.h>
 #include <fairmq/DeviceRunner.h>
 #include <fairmq/ProgOptions.h>
 
@@ -19,52 +19,53 @@ namespace _config
 {
 
 using namespace std;
+using namespace fair::mq;
 
-void control(FairMQDevice& device)
+void control(Device& device)
 {
-    device.ChangeState(fair::mq::Transition::InitDevice);
-    device.WaitForState(fair::mq::State::InitializingDevice);
-    device.ChangeState(fair::mq::Transition::CompleteInit);
-    device.WaitForState(fair::mq::State::Initialized);
-    device.ChangeState(fair::mq::Transition::Bind);
-    device.WaitForState(fair::mq::State::Bound);
-    device.ChangeState(fair::mq::Transition::Connect);
-    device.WaitForState(fair::mq::State::DeviceReady);
-    device.ChangeState(fair::mq::Transition::InitTask);
-    device.WaitForState(fair::mq::State::Ready);
+    device.ChangeState(Transition::InitDevice);
+    device.WaitForState(State::InitializingDevice);
+    device.ChangeState(Transition::CompleteInit);
+    device.WaitForState(State::Initialized);
+    device.ChangeState(Transition::Bind);
+    device.WaitForState(State::Bound);
+    device.ChangeState(Transition::Connect);
+    device.WaitForState(State::DeviceReady);
+    device.ChangeState(Transition::InitTask);
+    device.WaitForState(State::Ready);
 
-    device.ChangeState(fair::mq::Transition::Run);
-    device.WaitForState(fair::mq::State::Ready);
+    device.ChangeState(Transition::Run);
+    device.WaitForState(State::Ready);
 
-    device.ChangeState(fair::mq::Transition::ResetTask);
-    device.WaitForState(fair::mq::State::DeviceReady);
-    device.ChangeState(fair::mq::Transition::ResetDevice);
-    device.WaitForState(fair::mq::State::Idle);
+    device.ChangeState(Transition::ResetTask);
+    device.WaitForState(State::DeviceReady);
+    device.ChangeState(Transition::ResetDevice);
+    device.WaitForState(State::Idle);
 
-    device.ChangeState(fair::mq::Transition::End);
+    device.ChangeState(Transition::End);
 }
 
-class TestDevice : public FairMQDevice
+class TestDevice : public Device
 {
   public:
     TestDevice(const string& transport)
     {
-        fDeviceThread = thread(&FairMQDevice::RunStateMachine, this);
+        fDeviceThread = thread(&Device::RunStateMachine, this);
 
         SetTransport(transport);
 
-        ChangeState(fair::mq::Transition::InitDevice);
-        WaitForState(fair::mq::State::InitializingDevice);
-        ChangeState(fair::mq::Transition::CompleteInit);
-        WaitForState(fair::mq::State::Initialized);
-        ChangeState(fair::mq::Transition::Bind);
-        WaitForState(fair::mq::State::Bound);
-        ChangeState(fair::mq::Transition::Connect);
-        WaitForState(fair::mq::State::DeviceReady);
-        ChangeState(fair::mq::Transition::InitTask);
-        WaitForState(fair::mq::State::Ready);
+        ChangeState(Transition::InitDevice);
+        WaitForState(State::InitializingDevice);
+        ChangeState(Transition::CompleteInit);
+        WaitForState(State::Initialized);
+        ChangeState(Transition::Bind);
+        WaitForState(State::Bound);
+        ChangeState(Transition::Connect);
+        WaitForState(State::DeviceReady);
+        ChangeState(Transition::InitTask);
+        WaitForState(State::Ready);
 
-        ChangeState(fair::mq::Transition::Run);
+        ChangeState(Transition::Run);
     }
 
     TestDevice(const TestDevice&) = delete;
@@ -74,15 +75,15 @@ class TestDevice : public FairMQDevice
 
     ~TestDevice() override
     {
-        WaitForState(fair::mq::State::Running);
-        ChangeState(fair::mq::Transition::Stop);
-        WaitForState(fair::mq::State::Ready);
-        ChangeState(fair::mq::Transition::ResetTask);
-        WaitForState(fair::mq::State::DeviceReady);
-        ChangeState(fair::mq::Transition::ResetDevice);
-        WaitForState(fair::mq::State::Idle);
+        WaitForState(State::Running);
+        ChangeState(Transition::Stop);
+        WaitForState(State::Ready);
+        ChangeState(Transition::ResetTask);
+        WaitForState(State::DeviceReady);
+        ChangeState(Transition::ResetDevice);
+        WaitForState(State::Idle);
 
-        ChangeState(fair::mq::Transition::End);
+        ChangeState(Transition::End);
 
         if (fDeviceThread.joinable()) {
             fDeviceThread.join();
@@ -100,7 +101,7 @@ class Config : public ::testing::Test
 
     string TestDeviceSetConfig(const string& transport)
     {
-        fair::mq::ProgOptions config;
+        ProgOptions config;
 
         vector<string> emptyArgs = {"dummy", "--id", "test", "--color", "false"};
 
@@ -108,10 +109,10 @@ class Config : public ::testing::Test
 
         config.SetProperty("transport", transport);
 
-        FairMQDevice device;
+        Device device;
         device.SetConfig(config);
 
-        FairMQChannel channel;
+        Channel channel;
         channel.UpdateType("pub");
         channel.UpdateMethod("connect");
         channel.UpdateAddress("tcp://localhost:5558");
@@ -130,14 +131,14 @@ class Config : public ::testing::Test
 
     string TestDeviceSetConfigWithPlugins(const string& transport)
     {
-        fair::mq::ProgOptions config;
+        ProgOptions config;
 
         vector<string> emptyArgs = {"dummy", "--id", "test", "--color", "false"};
 
         config.SetProperty("transport", transport);
 
-        FairMQDevice device;
-        fair::mq::PluginManager mgr;
+        Device device;
+        PluginManager mgr;
         mgr.LoadPlugin("s:config");
         mgr.ForEachPluginProgOptions([&](boost::program_options::options_description options) {
             config.AddToCmdLineOptions(options);
@@ -146,10 +147,10 @@ class Config : public ::testing::Test
         mgr.InstantiatePlugins();
 
         config.ParseAll(emptyArgs, true);
-        fair::mq::DeviceRunner::HandleGeneralOptions(config);
+        DeviceRunner::HandleGeneralOptions(config);
         device.SetConfig(config);
 
-        FairMQChannel channel;
+        Channel channel;
         channel.UpdateType("pub");
         channel.UpdateMethod("connect");
         channel.UpdateAddress("tcp://localhost:5558");
@@ -177,16 +178,16 @@ class Config : public ::testing::Test
 
     string TestDeviceSetTransport(const string& transport)
     {
-        FairMQDevice device;
+        Device device;
         device.SetTransport(transport);
 
-        FairMQChannel channel;
+        Channel channel;
         channel.UpdateType("pub");
         channel.UpdateMethod("connect");
         channel.UpdateAddress("tcp://localhost:5558");
         device.AddChannel("data", std::move(channel));
 
-        thread t(&FairMQDevice::RunStateMachine, &device);
+        thread t(&Device::RunStateMachine, &device);
 
         control(device);
 

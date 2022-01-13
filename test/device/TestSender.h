@@ -9,8 +9,8 @@
 #ifndef FAIR_MQ_TEST_TESTSENDER_H
 #define FAIR_MQ_TEST_TESTSENDER_H
 
-#include <FairMQDevice.h>
-#include <FairMQLogger.h>
+#include <fairmq/Device.h>
+#include <fairlogger/Logger.h>
 
 #include <string>
 #include <thread>

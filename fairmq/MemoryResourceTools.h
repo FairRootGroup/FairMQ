@@ -12,7 +12,7 @@
 ///
 /// @author Mikolaj Krzewicki, mkrzewic@cern.ch
 
-#include <fairmq/FairMQTransportFactory.h>
+#include <fairmq/TransportFactory.h>
 #include <fairmq/MemoryResources.h>
 
 namespace fair::mq
@@ -28,13 +28,13 @@ template<typename ContainerT>
 //        pmr::polymorphic_allocator<typename
 //        ContainerT::value_type>,
 //        typename ContainerT::allocator_type>::value == true,
-//    FairMQMessagePtr>::type
-FairMQMessagePtr getMessage(ContainerT &&container_, FairMQMemoryResource *targetResource = nullptr)
+//        MessagePtr>::type
+MessagePtr getMessage(ContainerT &&container_, MemoryResource *targetResource = nullptr)
 {
     auto container = std::move(container_);
     auto alloc = container.get_allocator();
 
-    auto resource = dynamic_cast<FairMQMemoryResource *>(alloc.resource());
+    auto resource = dynamic_cast<MemoryResource *>(alloc.resource());
     if (!resource && !targetResource) {
         throw std::runtime_error("Neither the container or target resource specified");
     }

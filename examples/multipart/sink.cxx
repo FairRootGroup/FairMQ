@@ -20,7 +20,7 @@ struct Sink : fair::mq::Device
         OnData("data", &Sink::HandleData);
     }
 
-    bool HandleData(FairMQParts& parts, int)
+    bool HandleData(fair::mq::Parts& parts, int)
     {
         LOG(info) << "Received message with " << parts.Size() << " parts";
 

@@ -10,7 +10,7 @@
 #include <fairmq/Plugin.h>
 #include <fairmq/PluginServices.h>
 #include <fairmq/tools/Version.h>
-#include <FairMQDevice.h>
+#include <fairmq/Device.h>
 #include <fairmq/ProgOptions.h>
 #include <memory>
 #include <sstream>
@@ -24,28 +24,28 @@ namespace _plugin
 using namespace std;
 using namespace fair::mq;
 
-auto control(FairMQDevice& device) -> void
+auto control(Device& device) -> void
 {
     device.SetTransport("zeromq");
 
-    device.ChangeState(fair::mq::Transition::InitDevice);
-    device.WaitForState(fair::mq::State::InitializingDevice);
-    device.ChangeState(fair::mq::Transition::CompleteInit);
-    device.WaitForState(fair::mq::State::Initialized);
-    device.ChangeState(fair::mq::Transition::Bind);
-    device.WaitForState(fair::mq::State::Bound);
-    device.ChangeState(fair::mq::Transition::Connect);
-    device.WaitForState(fair::mq::State::DeviceReady);
-    device.ChangeState(fair::mq::Transition::ResetDevice);
-    device.WaitForState(fair::mq::State::Idle);
+    device.ChangeState(Transition::InitDevice);
+    device.WaitForState(State::InitializingDevice);
+    device.ChangeState(Transition::CompleteInit);
+    device.WaitForState(State::Initialized);
+    device.ChangeState(Transition::Bind);
+    device.WaitForState(State::Bound);
+    device.ChangeState(Transition::Connect);
+    device.WaitForState(State::DeviceReady);
+    device.ChangeState(Transition::ResetDevice);
+    device.WaitForState(State::Idle);
 
-    device.ChangeState(fair::mq::Transition::End);
+    device.ChangeState(Transition::End);
 }
 
 TEST(Plugin, Operators)
 {
-    fair::mq::ProgOptions config;
-    FairMQDevice device;
+    ProgOptions config;
+    Device device;
     PluginServices services{config, device};
     Plugin p1{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
     Plugin p2{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
@@ -61,8 +61,8 @@ TEST(Plugin, Operators)
 
 TEST(Plugin, OstreamOperators)
 {
-    fair::mq::ProgOptions config;
-    FairMQDevice device;
+    ProgOptions config;
+    Device device;
     PluginServices services{config, device};
     Plugin p1{"dds", {1, 0, 0}, "Foo Bar <foo.bar@test.net>", "https://git.test.net/dds.git", &services};
     stringstream ss;
@@ -77,9 +77,9 @@ TEST(Plugin, OstreamOperators)
 
 TEST(PluginVersion, Operators)
 {
-    struct fair::mq::tools::Version v1{1, 0, 0};
-    struct fair::mq::tools::Version v2{1, 0, 0};
-    struct fair::mq::tools::Version v3{1, 2, 0};
+    struct tools::Version v1{1, 0, 0};
+    struct tools::Version v2{1, 0, 0};
+    struct tools::Version v3{1, 2, 0};
     EXPECT_EQ(v1, v2);
     EXPECT_NE(v1, v3);
     EXPECT_GT(v3, v2);

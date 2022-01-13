@@ -25,7 +25,7 @@ struct Sink : fair::mq::Device
         fIterations = fConfig->GetValue<uint64_t>("iterations");
     }
 
-    bool HandleData(FairMQMessagePtr& msg, int)
+    bool HandleData(fair::mq::MessagePtr& msg, int)
     {
         LOG(info) << "Received: \"" << std::string(static_cast<char*>(msg->GetData()), msg->GetSize()) << "\"";
 

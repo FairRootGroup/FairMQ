@@ -28,7 +28,7 @@ struct Sampler1 : fair::mq::Device
     bool ConditionalRun() override
     {
         // Creates a message using the transport of channel data1
-        FairMQMessagePtr msg(NewMessageFor("data1", 0, 1000000));
+        fair::mq::MessagePtr msg(NewMessageFor("data1", 0, 1000000));
 
         // in case of error or transfer interruption, return false to go to IDLE state
         // successfull transfer will return number of bytes transfered (can be 0 if sending an empty message).
@@ -54,7 +54,7 @@ struct Sampler1 : fair::mq::Device
         uint64_t numAcks = 0;
 
         while (!NewStatePending()) {
-            FairMQMessagePtr ack(NewMessageFor("ack", 0));
+            fair::mq::MessagePtr ack(NewMessageFor("ack", 0));
             if (Receive(ack, "ack") < 0) {
                 break;
             }

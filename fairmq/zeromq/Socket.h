@@ -9,13 +9,14 @@
 #ifndef FAIR_MQ_ZMQ_SOCKET_H
 #define FAIR_MQ_ZMQ_SOCKET_H
 
-#include <FairMQLogger.h>
-#include <FairMQMessage.h>
-#include <FairMQSocket.h>
+#include <fairmq/Message.h>
+#include <fairmq/Socket.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/zeromq/Common.h>
 #include <fairmq/zeromq/Context.h>
 #include <fairmq/zeromq/Message.h>
+
+#include <fairlogger/Logger.h>
 
 #include <zmq.h>
 
@@ -30,7 +31,7 @@ namespace fair::mq::zmq
 class Socket final : public fair::mq::Socket
 {
   public:
-    Socket(Context& ctx, const std::string& type, const std::string& name, const std::string& id, FairMQTransportFactory* factory = nullptr)
+    Socket(Context& ctx, const std::string& type, const std::string& name, const std::string& id, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Socket(factory)
         , fCtx(ctx)
         , fId(id + "." + name + "." + type)
@@ -219,7 +220,7 @@ class Socket final : public fair::mq::Socket
             bool repeat = false;
 
             do {
-                FairMQMessagePtr part = std::make_unique<Message>(GetTransport());
+                fair::mq::MessagePtr part = std::make_unique<Message>(GetTransport());
 
                 int nbytes = zmq_msg_recv(static_cast<Message*>(part.get())->GetMessage(), fSocket, flags);
                 if (nbytes >= 0) {

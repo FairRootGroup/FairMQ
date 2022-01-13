@@ -9,8 +9,8 @@
 #ifndef FAIR_MQ_TEST_SUB_H
 #define FAIR_MQ_TEST_SUB_H
 
-#include <FairMQDevice.h>
-#include <FairMQLogger.h>
+#include <fairmq/Device.h>
+#include <fairlogger/Logger.h>
 #include <chrono>
 #include <thread>
 
