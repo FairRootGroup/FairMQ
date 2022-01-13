@@ -141,7 +141,7 @@ inline auto makeMonitorSocket(void* zmqCtx, void* socketToMonitor, std::string_v
         //   the FD is still valid by the time your code receives this event.
         // ZMQ_EVENT_DISCONNECTED - The socket was disconnected unexpectedly. The event value is the
         //   FD of the underlying network socket. Warning: this socket will be closed.
-        auto const rc =
+        [[maybe_unused]] auto const rc =
             zmq_socket_monitor(socketToMonitor,
                                address.c_str(),
                                ZMQ_EVENT_CONNECTED | ZMQ_EVENT_ACCEPTED | ZMQ_EVENT_DISCONNECTED);
@@ -156,11 +156,11 @@ inline auto makeMonitorSocket(void* zmqCtx, void* socketToMonitor, std::string_v
         //            Progress only happens, when a user calls GetNumberOfConnectedPeers()`.
         //            The assumption here is, that not too many events will pile up anyways.
         int const unlimited(0);
-        auto const rc = zmq_setsockopt(mon, ZMQ_RCVHWM, &unlimited, sizeof(unlimited));
+        [[maybe_unused]] auto const rc = zmq_setsockopt(mon, ZMQ_RCVHWM, &unlimited, sizeof(unlimited));
         assertm(rc == 0, "Setting rcv queue size to unlimited succeeded");   // NOLINT
     }
     {   // Connect the reading monitor socket
-        auto const rc = zmq_connect(mon, address.c_str());
+        [[maybe_unused]] auto const rc = zmq_connect(mon, address.c_str());
         assertm(rc == 0, "Connecting reading monitor socket succeeded");   // NOLINT
     }
     return mon;
@@ -192,7 +192,7 @@ inline auto getMonitorEvent(void* monitorSocket) -> int
     assertm(zmq_msg_more(&msg), "A second frame is pending");   // NOLINT
     zmq_msg_init(&msg);
     {
-        auto const rc = zmq_msg_recv(&msg, monitorSocket, 0);
+        [[maybe_unused]] auto const rc = zmq_msg_recv(&msg, monitorSocket, 0);
         assertm(rc >= 0, "second monitor event frame successfully received");   // NOLINT
     }
     assertm(!zmq_msg_more(&msg), "No more frames are pending");   // NOLINT
