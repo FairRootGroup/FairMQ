@@ -41,6 +41,7 @@ auto RunPushPullWithMsgResize(string const & transport, string const & _address)
 {
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     Channel push{"Push", "push", factory};
@@ -102,6 +103,7 @@ auto RunMsgRebuild(const string& transport) -> void
 {
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     size_t const msgSize{100};
@@ -134,6 +136,7 @@ auto RunPushPullWithAlignment(string const& transport, string const& _address) -
 {
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     Channel push{"Push", "push", factory};
@@ -187,6 +190,7 @@ auto EmptyMessage(string const& transport, string const& _address) -> void
 {
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     Channel push{"Push", "push", factory};
@@ -237,6 +241,7 @@ auto ZeroCopy() -> void
 {
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
     auto factory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config));
 
     unique_ptr<string> str(make_unique<string>("asdf"));
@@ -268,7 +273,9 @@ auto ZeroCopyFromUnmanaged(string const& address) -> void
     ProgOptions config2;
     string session(tools::Uuid());
     config1.SetProperty<string>("session", session);
+    config1.SetProperty<size_t>("shm-segment-size", 100000000);
     config2.SetProperty<string>("session", session);
+    config2.SetProperty<size_t>("shm-segment-size", 100000000);
     // ref counts should be accessible accross different segments
     config2.SetProperty<uint16_t>("shm-segment-id", 2);
     auto factory1(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config1));

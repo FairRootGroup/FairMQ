@@ -45,11 +45,9 @@ add_testhelper(runTestDevice
     ${definitions}
 )
 
-set(MQ_CONFIG "${CMAKE_BINARY_DIR}/test/testsuite_FairMQ.IOPatterns_config.json")
 set(RUN_TEST_DEVICE "${CMAKE_BINARY_DIR}/test/testhelper_runTestDevice")
 set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
 set(SDK_TESTSUITE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sdk)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/protocols/config.json.in ${MQ_CONFIG})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/runner.cxx.in ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/TestEnvironment.h.in ${CMAKE_CURRENT_BINARY_DIR}/TestEnvironment.h)
 

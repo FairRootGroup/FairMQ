@@ -9,7 +9,9 @@
 #include "runner.h"
 #include <fairmq/tools/Unique.h>
 #include <fairmq/tools/Process.h>
+#include <fairmq/tools/Strings.h>
 #include <gtest/gtest.h>
+#include <cstdio> // std::remove
 #include <sstream> // std::stringstream
 #include <thread>
 
@@ -23,26 +25,45 @@ using namespace fair::mq::tools;
 auto RunPair(string transport) -> void
 {
     size_t session{fair::mq::tools::UuidHash()};
+    string ipcFile("/tmp/fmq_" + to_string(session) + "_data_" + transport);
+    string address("ipc://" + ipcFile);
+
+    // ofi does not run with ipc://
+    if (transport == "ofi") {
+        address = "tcp://127.0.0.1:5957";
+    }
 
     auto pairleft = execute_result{"", 100};
     thread pairleft_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id pairleft_" << transport << " --control static "
-        << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
+        cmd << runTestDevice
+            << " --id pairleft_" << transport
+            << " --control static"
+            << " --shm-segment-size 100000000"
+            << " --session " << session
+            << " --color false"
+            << " --channel-config name=data,type=pair,method=bind,address=" << address;
         pairleft = execute(cmd.str(), "[PAIR L]");
     });
 
     auto pairright = execute_result{"", 100};
     thread pairright_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id pairright_" << transport << " --control static "
-        << "--session " << session << " --color false --mq-config \"" << mqConfig << "\"";
+        cmd << runTestDevice
+            << " --id pairright_" << transport
+            << " --control static"
+            << " --shm-segment-size 100000000"
+            << " --session " << session
+            << " --color false"
+            << " --channel-config name=data,type=pair,method=connect,address=" << address;
         pairright = execute(cmd.str(), "[PAIR R]");
     });
 
     pairleft_thread.join();
     pairright_thread.join();
     cerr << pairleft.console_out << pairright.console_out;
+
+    std::remove(ipcFile.c_str());
 
     exit(pairleft.exit_code + pairright.exit_code);
 }

@@ -29,6 +29,7 @@ auto RunSingleThreadedMultipart(string transport, string address1, string addres
 
     fair::mq::ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 

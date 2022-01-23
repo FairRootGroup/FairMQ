@@ -8,20 +8,23 @@ if [[ $1 =~ ^[a-z]+$ ]]; then
     transport=$1
 fi
 
-SESSION="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+session="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+chan="data"
+chanAddr="/tmp/fmq_$session""_""$chan""_""$transport"
 
 # setup a trap to kill everything if the test fails/timeouts
-trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SINK_PID;' TERM
+trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SINK_PID; rm $chanAddr' TERM
 
 SAMPLER="fairmq-ex-1-1-sampler"
 SAMPLER+=" --id sampler1"
 SAMPLER+=" --rate 1"
 SAMPLER+=" --transport $transport"
 SAMPLER+=" --verbosity veryhigh"
-SAMPLER+=" --session $SESSION"
+SAMPLER+=" --session $session"
+SAMPLER+=" --shm-segment-size 100000000"
 SAMPLER+=" --control static --color false"
 SAMPLER+=" --max-iterations 1"
-SAMPLER+=" --channel-config name=data,type=push,method=bind,address=tcp://*:5555,rateLogging=0"
+SAMPLER+=" --channel-config name=$chan,type=push,method=bind,address=ipc://$chanAddr,rateLogging=0"
 @CMAKE_CURRENT_BINARY_DIR@/$SAMPLER &
 SAMPLER_PID=$!
 
@@ -29,13 +32,16 @@ SINK="fairmq-ex-1-1-sink"
 SINK+=" --id sink1"
 SINK+=" --transport $transport"
 SINK+=" --verbosity veryhigh"
-SINK+=" --session $SESSION"
+SINK+=" --session $session"
+SINK+=" --shm-segment-size 100000000"
 SINK+=" --control static --color false"
 SINK+=" --max-iterations 1"
-SINK+=" --channel-config name=data,type=pull,method=connect,address=tcp://localhost:5555,rateLogging=0"
+SINK+=" --channel-config name=$chan,type=pull,method=connect,address=ipc://$chanAddr,rateLogging=0"
 @CMAKE_CURRENT_BINARY_DIR@/$SINK &
 SINK_PID=$!
 
 # wait for sampler and sink to finish
 wait $SAMPLER_PID
 wait $SINK_PID
+
+rm $chanAddr

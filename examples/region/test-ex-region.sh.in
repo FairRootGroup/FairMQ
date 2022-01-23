@@ -9,22 +9,25 @@ if [[ $1 =~ ^[a-z]+$ ]]; then
 fi
 
 msgSize="1000000"
-SESSION="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+session="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+chan="data"
+chanAddr="/tmp/fmq_$session""_""$chan""_""$transport"
 
 # setup a trap to kill everything if the test fails/timeouts
-trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SINK_PID; @CMAKE_BINARY_DIR@/fairmq/fairmq-shmmonitor --cleanup --session $SESSION' TERM
+trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SINK_PID; @CMAKE_BINARY_DIR@/fairmq/fairmq-shmmonitor --cleanup --session $SESSION; rm $chanAddr' TERM
 
 SAMPLER="fairmq-ex-region-sampler"
 SAMPLER+=" --id sampler1"
 SAMPLER+=" --transport $transport"
 SAMPLER+=" --severity debug"
-SAMPLER+=" --session $SESSION"
+SAMPLER+=" --session $session"
+SAMPLER+=" --shm-segment-size 100000000"
 SAMPLER+=" --verbosity veryhigh"
 SAMPLER+=" --control static --color false"
 SAMPLER+=" --max-iterations 1"
 SAMPLER+=" --msg-size $msgSize"
 SAMPLER+=" --region-linger 500"
-SAMPLER+=" --channel-config name=data,type=push,method=bind,address=tcp://127.0.0.1:7777"
+SAMPLER+=" --channel-config name=$chan,type=push,method=bind,address=ipc://$chanAddr"
 @CMAKE_CURRENT_BINARY_DIR@/$SAMPLER &
 SAMPLER_PID=$!
 
@@ -32,14 +35,17 @@ SINK="fairmq-ex-region-sink"
 SINK+=" --id sink1"
 SINK+=" --transport $transport"
 SINK+=" --severity debug"
-SINK+=" --session $SESSION"
+SINK+=" --session $session"
+SINK+=" --shm-segment-size 100000000"
 SINK+=" --verbosity veryhigh"
 SINK+=" --control static --color false"
 SINK+=" --max-iterations 1"
-SINK+=" --channel-config name=data,type=pull,method=connect,address=tcp://127.0.0.1:7777"
+SINK+=" --channel-config name=$chan,type=pull,method=connect,address=ipc://$chanAddr"
 @CMAKE_CURRENT_BINARY_DIR@/$SINK &
 SINK_PID=$!
 
 # wait for sampler and sink to finish
 wait $SAMPLER_PID
 wait $SINK_PID
+
+rm $chanAddr

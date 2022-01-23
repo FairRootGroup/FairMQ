@@ -8,20 +8,25 @@ if [[ $1 =~ ^[a-z]+$ ]]; then
     transport=$1
 fi
 
-ex2config="@CMAKE_CURRENT_BINARY_DIR@/ex-1-n-1.json"
-SESSION="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+session="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+chan1="data1"
+chan2="data2"
+chan1Addr="/tmp/fmq_$session""_""$chan1""_""$transport"
+chan2Addr="/tmp/fmq_$session""_""$chan2""_""$transport"
 
 # setup a trap to kill everything if the test fails/timeouts
-trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; kill -TERM $PROCESSOR1_PID; kill -TERM $PROCESSOR2_PID; wait $SAMPLER_PID; wait $SINK_PID; wait $PROCESSOR1_PID; wait $PROCESSOR2_PID;' TERM
+trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; kill -TERM $PROCESSOR1_PID; kill -TERM $PROCESSOR2_PID; wait $SAMPLER_PID; wait $SINK_PID; wait $PROCESSOR1_PID; wait $PROCESSOR2_PID; rm $chan1Addr; rm $chan2Addr' TERM
 
 SAMPLER="fairmq-ex-1-n-1-sampler"
 SAMPLER+=" --id sampler1"
 SAMPLER+=" --transport $transport"
 SAMPLER+=" --verbosity veryhigh"
-SAMPLER+=" --session $SESSION"
+SAMPLER+=" --session $session"
+SAMPLER+=" --severity debug"
+SAMPLER+=" --shm-segment-size 100000000"
 SAMPLER+=" --control static --color false"
 SAMPLER+=" --max-iterations 2"
-SAMPLER+=" --mq-config $ex2config"
+SAMPLER+=" --channel-config name=$chan1,type=push,method=bind,address=ipc://$chan1Addr,rateLogging=0"
 @CMAKE_CURRENT_BINARY_DIR@/$SAMPLER &
 SAMPLER_PID=$!
 
@@ -29,10 +34,12 @@ PROCESSOR1="fairmq-ex-1-n-1-processor"
 PROCESSOR1+=" --id processor1"
 PROCESSOR1+=" --transport $transport"
 PROCESSOR1+=" --verbosity veryhigh"
-PROCESSOR1+=" --session $SESSION"
+PROCESSOR1+=" --session $session"
+PROCESSOR1+=" --severity debug"
+PROCESSOR1+=" --shm-segment-size 100000000"
 PROCESSOR1+=" --control static --color false"
-PROCESSOR1+=" --mq-config $ex2config"
-PROCESSOR1+=" --config-key processor"
+PROCESSOR1+=" --channel-config name=$chan1,type=pull,method=connect,address=ipc://$chan1Addr,rateLogging=0"
+PROCESSOR1+="                  name=$chan2,type=push,method=connect,address=ipc://$chan2Addr,rateLogging=0"
 @CMAKE_CURRENT_BINARY_DIR@/$PROCESSOR1 &
 PROCESSOR1_PID=$!
 
@@ -40,10 +47,12 @@ PROCESSOR2="fairmq-ex-1-n-1-processor"
 PROCESSOR2+=" --id processor2"
 PROCESSOR2+=" --transport $transport"
 PROCESSOR2+=" --verbosity veryhigh"
-PROCESSOR2+=" --session $SESSION"
+PROCESSOR2+=" --session $session"
+PROCESSOR2+=" --severity debug"
+PROCESSOR2+=" --shm-segment-size 100000000"
 PROCESSOR2+=" --control static --color false"
-PROCESSOR2+=" --mq-config $ex2config"
-PROCESSOR2+=" --config-key processor"
+PROCESSOR2+=" --channel-config name=$chan1,type=pull,method=connect,address=ipc://$chan1Addr,rateLogging=0"
+PROCESSOR2+="                  name=$chan2,type=push,method=connect,address=ipc://$chan2Addr,rateLogging=0"
 @CMAKE_CURRENT_BINARY_DIR@/$PROCESSOR2 &
 PROCESSOR2_PID=$!
 
@@ -51,10 +60,12 @@ SINK="fairmq-ex-1-n-1-sink"
 SINK+=" --id sink1"
 SINK+=" --transport $transport"
 SINK+=" --verbosity veryhigh"
-SINK+=" --session $SESSION"
+SINK+=" --session $session"
+SINK+=" --severity debug"
+SINK+=" --shm-segment-size 100000000"
 SINK+=" --control static --color false"
 SINK+=" --max-iterations 2"
-SINK+=" --mq-config $ex2config"
+SINK+=" --channel-config name=$chan2,type=pull,method=bind,address=ipc://$chan2Addr,rateLogging=0"
 @CMAKE_CURRENT_BINARY_DIR@/$SINK &
 SINK_PID=$!
 
@@ -69,3 +80,5 @@ kill -SIGINT $PROCESSOR2_PID
 # wait for everything to finish
 wait $PROCESSOR1_PID
 wait $PROCESSOR2_PID
+
+rm $chan1Addr; rm $chan2Addr
