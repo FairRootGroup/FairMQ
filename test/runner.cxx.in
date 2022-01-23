@@ -19,7 +19,6 @@ namespace fair::mq::test
 using namespace std;
 
 string runTestDevice = "@RUN_TEST_DEVICE@";
-string mqConfig = "@MQ_CONFIG@";
 
 } // namespace fair::mq::test
 

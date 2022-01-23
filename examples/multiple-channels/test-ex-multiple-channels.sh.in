@@ -8,18 +8,25 @@ if [[ $1 =~ ^[a-z]+$ ]]; then
     transport=$1
 fi
 
-# setup a trap to kill everything if the test fails/timeouts
-trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; kill -TERM $BROADCASTER_PID; wait $SAMPLER_PID; wait $SINK_PID; wait $BROADCASTER_PID;' TERM
+session="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+dataChan="data"
+broadcastChan="broadcast"
+dataChanAddr="/tmp/fmq_$session""_""$dataChan""_""$transport"
+broadcastChanAddr="/tmp/fmq_$session""_""$broadcastChan""_""$transport"
 
+# setup a trap to kill everything if the test fails/timeouts
+trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; kill -TERM $BROADCASTER_PID; wait $SAMPLER_PID; wait $SINK_PID; wait $BROADCASTER_PID; rm $dataChanAddr; rm $broadcastChanAddr' TERM
 
 SINK="fairmq-ex-multiple-channels-sink"
 SINK+=" --id sink1"
+SINK+=" --session $session"
 SINK+=" --transport $transport"
-SINK+=" --verbosity veryhigh"
+SINK+=" --verbosity veryhigh --severity debug"
+SINK+=" --shm-segment-size 100000000"
 SINK+=" --max-iterations 1"
 SINK+=" --control static --color false"
-SINK+=" --channel-config name=data,type=pull,method=connect,rateLogging=0,address=tcp://localhost:5555"
-SINK+="                  name=broadcast,type=sub,method=connect,rateLogging=0,address=tcp://localhost:5005"
+SINK+=" --channel-config name=$dataChan,type=pull,method=connect,rateLogging=0,address=ipc://$dataChanAddr"
+SINK+="                  name=$broadcastChan,type=sub,method=connect,rateLogging=0,address=ipc://$broadcastChanAddr"
 @CMAKE_CURRENT_BINARY_DIR@/$SINK &
 SINK_PID=$!
 
@@ -27,21 +34,25 @@ sleep 1
 
 SAMPLER="fairmq-ex-multiple-channels-sampler"
 SAMPLER+=" --id sampler1"
+SAMPLER+=" --session $session"
 SAMPLER+=" --transport $transport"
-SAMPLER+=" --verbosity veryhigh"
+SAMPLER+=" --verbosity veryhigh --severity debug"
+SAMPLER+=" --shm-segment-size 100000000"
 SAMPLER+=" --max-iterations 1"
 SAMPLER+=" --control static --color false"
-SAMPLER+=" --channel-config name=data,type=push,method=bind,rateLogging=0,address=tcp://*:5555"
-SAMPLER+="                  name=broadcast,type=sub,method=connect,rateLogging=0,address=tcp://localhost:5005"
+SAMPLER+=" --channel-config name=$dataChan,type=push,method=bind,rateLogging=0,address=ipc://$dataChanAddr"
+SAMPLER+="                  name=$broadcastChan,type=sub,method=connect,rateLogging=0,address=ipc://$broadcastChanAddr"
 @CMAKE_CURRENT_BINARY_DIR@/$SAMPLER &
 SAMPLER_PID=$!
 
 BROADCASTER="fairmq-ex-multiple-channels-broadcaster"
 BROADCASTER+=" --id broadcaster1"
+BROADCASTER+=" --session $session"
 BROADCASTER+=" --transport $transport"
-BROADCASTER+=" --verbosity veryhigh"
+BROADCASTER+=" --verbosity veryhigh --severity debug"
+BROADCASTER+=" --shm-segment-size 100000000"
 BROADCASTER+=" --control static --color false"
-BROADCASTER+=" --channel-config name=broadcast,type=pub,method=bind,rateLogging=0,address=tcp://*:5005"
+BROADCASTER+=" --channel-config name=$broadcastChan,type=pub,method=bind,rateLogging=0,address=ipc://$broadcastChanAddr"
 @CMAKE_CURRENT_BINARY_DIR@/$BROADCASTER &
 BROADCASTER_PID=$!
 
@@ -53,3 +64,5 @@ kill -SIGINT $BROADCASTER_PID
 
 # wait for broadcaster to finish
 wait $BROADCASTER_PID
+
+rm $dataChanAddr; rm $broadcastChanAddr

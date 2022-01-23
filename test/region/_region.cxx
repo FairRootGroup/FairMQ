@@ -33,7 +33,9 @@ void RegionsCache(const string& transport, const string& address)
     ProgOptions config1;
     ProgOptions config2;
     config1.SetProperty<string>("session", to_string(session1));
+    config1.SetProperty<size_t>("shm-segment-size", 100000000);
     config2.SetProperty<string>("session", to_string(session2));
+    config2.SetProperty<size_t>("shm-segment-size", 100000000);
 
     auto factory1 = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config1);
     auto factory2 = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config2);
@@ -92,6 +94,7 @@ void RegionEventSubscriptions(const string& transport)
 
     ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
@@ -164,6 +167,7 @@ void RegionCallbacks(const string& transport, const string& _address)
 
     ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 

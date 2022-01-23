@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <cstdio> // std::remove
 #include <sstream> // std::stringstream
 #include <thread>
 
@@ -40,12 +41,28 @@ void delayedInterruptor(TransportFactory& transport)
 auto RunTransferTimeout(string transport) -> void
 {
     size_t session{UuidHash()};
+    string dataInIpcFile("/tmp/fmq_" + to_string(session) + "_datain_" + transport);
+    string dataOutIpcFile("/tmp/fmq_" + to_string(session) + "_dataout_" + transport);
+    string dataInAddress("ipc://" + dataInIpcFile);
+    string dataOutAddress("ipc://" + dataOutIpcFile);
+
     stringstream cmd;
-    cmd << runTestDevice << " --id transfer_timeout_" << transport << " --control static --transport " << transport
-        << " --session " << session << " --color false --mq-config \"" << mqConfig << "\"";
+    cmd << runTestDevice
+        << " --id transfer_timeout_" << transport
+        << " --control static"
+        << " --shm-segment-size 100000000"
+        << " --severity debug"
+        << " --transport " << transport
+        << " --session " << session
+        << " --color false"
+        << " --channel-config name=data-in,type=pull,method=bind,address=" << dataInAddress
+        << "                  name=data-out,type=push,method=bind,address=" << dataOutAddress;
     auto res = execute(cmd.str());
 
     cerr << res.console_out;
+
+    std::remove(dataInIpcFile.c_str());
+    std::remove(dataOutIpcFile.c_str());
 
     exit(res.exit_code);
 }
@@ -57,6 +74,7 @@ void InterruptTransfer(const string& transport, const string& _address)
 
     fair::mq::ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, Uuid(), &config);
 

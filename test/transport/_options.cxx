@@ -41,6 +41,7 @@ void RunOptionsTest(const string& transport)
 {
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
     Channel channel("Push", "push", factory);
 

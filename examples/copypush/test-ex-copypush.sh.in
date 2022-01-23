@@ -8,19 +8,24 @@ if [[ $1 =~ ^[a-z]+$ ]]; then
     transport=$1
 fi
 
-SESSION="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+session="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+chan="data"
+chanAddr1="/tmp/fmq_$session""_""$chan""_1""_""$transport"
+chanAddr2="/tmp/fmq_$session""_""$chan""_2""_""$transport"
 
 # setup a trap to kill everything if the test fails/timeouts
-trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK1_PID; kill -TERM $SINK2_PID; wait $SAMPLER_PID; wait $SINK1_PID; wait $SINK2_PID;' TERM
+trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK1_PID; kill -TERM $SINK2_PID; wait $SAMPLER_PID; wait $SINK1_PID; wait $SINK2_PID; rm $chanAddr1; rm $chanAddr2' TERM
 
 SAMPLER="fairmq-ex-copypush-sampler"
 SAMPLER+=" --id sampler1"
 SAMPLER+=" --transport $transport"
 SAMPLER+=" --verbosity veryhigh"
-SAMPLER+=" --session $SESSION"
+SAMPLER+=" --severity debug"
+SAMPLER+=" --shm-segment-size 100000000"
+SAMPLER+=" --session $session"
 SAMPLER+=" --control static --color false"
 SAMPLER+=" --max-iterations 1"
-SAMPLER+=" --channel-config name=data,type=push,method=bind,rateLogging=0,address=tcp://*:5555,address=tcp://*:5556"
+SAMPLER+=" --channel-config name=$chan,type=push,method=bind,rateLogging=0,address=ipc://$chanAddr1,address=ipc://$chanAddr2"
 @CMAKE_CURRENT_BINARY_DIR@/$SAMPLER &
 SAMPLER_PID=$!
 
@@ -28,10 +33,12 @@ SINK1="fairmq-ex-copypush-sink"
 SINK1+=" --id sink1"
 SINK1+=" --transport $transport"
 SINK1+=" --verbosity veryhigh"
-SINK1+=" --session $SESSION"
+SINK1+=" --severity debug"
+SINK1+=" --shm-segment-size 100000000"
+SINK1+=" --session $session"
 SINK1+=" --control static --color false"
 SINK1+=" --max-iterations 1"
-SINK1+=" --channel-config name=data,type=pull,method=connect,rateLogging=0,address=tcp://localhost:5555"
+SINK1+=" --channel-config name=$chan,type=pull,method=connect,rateLogging=0,address=ipc://$chanAddr1"
 @CMAKE_CURRENT_BINARY_DIR@/$SINK1 &
 SINK1_PID=$!
 
@@ -39,10 +46,12 @@ SINK2="fairmq-ex-copypush-sink"
 SINK2+=" --id sink2"
 SINK2+=" --transport $transport"
 SINK2+=" --verbosity veryhigh"
-SINK2+=" --session $SESSION"
+SINK2+=" --severity debug"
+SINK2+=" --shm-segment-size 100000000"
+SINK2+=" --session $session"
 SINK2+=" --control static --color false"
 SINK2+=" --max-iterations 1"
-SINK2+=" --channel-config name=data,type=pull,method=connect,rateLogging=0,address=tcp://localhost:5556"
+SINK2+=" --channel-config name=$chan,type=pull,method=connect,rateLogging=0,address=ipc://$chanAddr2"
 @CMAKE_CURRENT_BINARY_DIR@/$SINK2 &
 SINK2_PID=$!
 
@@ -50,3 +59,5 @@ SINK2_PID=$!
 wait $SAMPLER_PID
 wait $SINK1_PID
 wait $SINK2_PID
+
+rm $chanAddr1; rm $chanAddr2

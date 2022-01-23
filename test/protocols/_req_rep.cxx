@@ -9,7 +9,9 @@
 #include "runner.h"
 #include <fairmq/tools/Unique.h>
 #include <fairmq/tools/Process.h>
+#include <fairmq/tools/Strings.h>
 #include <gtest/gtest.h>
+#include <cstdio> // std::remove
 #include <sstream> // std::stringstream
 #include <thread>
 
@@ -23,37 +25,45 @@ using namespace fair::mq::tools;
 auto RunReqRep(string transport) -> void
 {
     size_t session{fair::mq::tools::UuidHash()};
+    string ipcFile("/tmp/fmq_" + to_string(session) + "_data_" + transport);
+    string address("ipc://" + ipcFile);
 
     auto rep = execute_result{"", 0};
     thread rep_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id rep_" << transport
+        cmd << runTestDevice
+            << " --id rep_" << transport
             << " --control static"
+            << " --shm-segment-size 100000000"
             << " --session " << session
             << " --color false"
-            << " --mq-config \"" << mqConfig << "\"";
+            << " --channel-config name=data,type=rep,method=bind,address=" << address;
         rep = execute(cmd.str(), "[REP]");
     });
 
     auto req1 = execute_result{"", 0};
     thread req1_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id req_1" << transport
+        cmd << runTestDevice
+            << " --id req_1" << transport
             << " --control static"
+            << " --shm-segment-size 100000000"
             << " --session " << session
             << " --color false"
-            << " --mq-config \"" << mqConfig << "\"";
+            << " --channel-config name=data,type=req,method=connect,address=" << address;
         req1 = execute(cmd.str(), "[REQ1]");
     });
 
     auto req2 = execute_result{"", 0};
     thread req2_thread([&]() {
         stringstream cmd;
-        cmd << runTestDevice << " --id req_2" << transport
+        cmd << runTestDevice
+            << " --id req_2" << transport
             << " --control static"
+            << " --shm-segment-size 100000000"
             << " --session " << session
             << " --color false"
-            << " --mq-config \"" << mqConfig << "\"";
+            << " --channel-config name=data,type=req,method=connect,address=" << address;
         req2 = execute(cmd.str(), "[REQ2]");
     });
 
@@ -61,6 +71,8 @@ auto RunReqRep(string transport) -> void
     req1_thread.join();
     req2_thread.join();
     cerr << req1.console_out << req2.console_out << rep.console_out;
+
+    std::remove(ipcFile.c_str());
 
     exit(req1.exit_code + req2.exit_code + rep.exit_code);
 }
