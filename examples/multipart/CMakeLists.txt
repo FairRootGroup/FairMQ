@@ -23,14 +23,14 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-multipart.sh.in ${CMA
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-multipart.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multipart.sh)
 
 add_test(NAME Example.Multipart.zeromq COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multipart.sh zeromq)
-set_tests_properties(Example.Multipart.zeromq PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received message with 7 parts")
+set_tests_properties(Example.Multipart.zeromq PROPERTIES TIMEOUT "30" PASS_REGULAR_EXPRESSION "Received message with 7 parts")
 
 add_test(NAME Example.Multipart.shmem COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multipart.sh shmem)
-set_tests_properties(Example.Multipart.shmem PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received message with 7 parts")
+set_tests_properties(Example.Multipart.shmem PROPERTIES TIMEOUT "30" PASS_REGULAR_EXPRESSION "Received message with 7 parts")
 
 if(BUILD_OFI_TRANSPORT)
   add_test(NAME Example.Multipart.ofi COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multipart.sh ofi)
-  set_tests_properties(Example.Multipart.ofi PROPERTIES TIMEOUT "30" RUN_SERIAL true PASS_REGULAR_EXPRESSION "Received message with 7 parts")
+  set_tests_properties(Example.Multipart.ofi PROPERTIES TIMEOUT "30" PASS_REGULAR_EXPRESSION "Received message with 7 parts")
 endif()
 
 # install
