@@ -66,7 +66,6 @@ add_testsuite(Protocols
              ${CMAKE_CURRENT_SOURCE_DIR}/protocols
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 5
-    RUN_SERIAL ON
     ${definitions}
 )
 
@@ -129,7 +128,6 @@ add_testsuite(Device
              ${CMAKE_CURRENT_SOURCE_DIR}/device
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 5
-    # RUN_SERIAL ON
 )
 
 set(VERSION_MAJOR 1)
@@ -280,7 +278,6 @@ add_testsuite(Poller
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 5
-    RUN_SERIAL ON
     ${definitions}
 )
 
