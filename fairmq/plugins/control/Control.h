@@ -43,6 +43,7 @@ class Control : public Plugin
     static auto PrintStateMachine() -> void;
     auto PrintNumberOfConnectedPeers() -> void;
     auto StaticMode() -> void;
+    auto GUIMode() -> void;
     auto SignalHandler() -> void;
     auto RunShutdownSequence() -> void;
     auto RunStartupSequence() -> void;
