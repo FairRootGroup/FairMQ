@@ -72,6 +72,9 @@ Control::Control(const string& name, Plugin::Version version, const string& main
         if (control == "static") {
             LOG(debug) << "Running builtin controller: static";
             fControllerThread = thread(&Control::StaticMode, this);
+        } else if (control == "gui") {
+            LOG(debug) << "Running builtin controller: gui";
+            fControllerThread = thread(&Control::GUIMode, this);
         } else if (control == "dynamic" || control == "external" || control == "interactive") {
             LOG(debug) << "Running builtin controller: interactive";
             fControllerThread = thread(&Control::InteractiveMode, this);
@@ -375,6 +378,28 @@ try {
     RunShutdownSequence();
 } catch (PluginServices::DeviceControlError& e) {
     // If we are here, it means another plugin has taken control. That's fine, just print the exception message and do nothing else.
+    LOG(debug) << e.what();
+} catch (DeviceErrorState&) {
+    ReleaseDeviceControl();
+}
+
+auto Control::GUIMode() -> void
+try {
+    RunStartupSequence();
+
+    {
+        // Wait for next state, which is DeviceState::Ready,
+        // or for device shutdown request (Ctrl-C)
+        pair<bool, fair::mq::State> result;
+        do {
+            result = fStateQueue.WaitForNext(chrono::milliseconds(50));
+        } while (!fDeviceShutdownRequested);
+    }
+
+    RunShutdownSequence();
+} catch (PluginServices::DeviceControlError& e) {
+    // If we are here, it means another plugin has taken control. That's fine, just print the
+    // exception message and do nothing else.
     LOG(debug) << e.what();
 } catch (DeviceErrorState&) {
     ReleaseDeviceControl();
