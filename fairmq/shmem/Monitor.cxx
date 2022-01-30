@@ -269,12 +269,12 @@ bool Monitor::PrintShm(const ShmId& shmId)
                 ss << "\n      [" << r.first << "]: " << (r.second.fDestroyed ? "destroyed" : "alive");
                 ss << ", size: " << r.second.fSize;
 
-                try {
-                    boost::interprocess::message_queue q(open_only, std::string("fmq_" + std::string(shmId) + "_rgq_" + to_string(r.first)).c_str());
-                    ss << ", ack queue: " << q.get_num_msg() << " messages";
-                } catch (bie&) {
-                    ss << ", ack queue: not found";
-                }
+                // try {
+                //     boost::interprocess::message_queue q(open_only, std::string("fmq_" + std::string(shmId) + "_rgq_" + to_string(r.first)).c_str());
+                //     ss << ", ack queue: " << q.get_num_msg() << " messages";
+                // } catch (bie&) {
+                //     ss << ", ack queue: not found";
+                // }
             }
         }
         LOGV(info, user1) << ss.str();
@@ -680,7 +680,6 @@ void Monitor::ResetContent(const ShmId& shmIdT, bool verbose /* = true */)
                 Remove<bipc::message_queue>("fmq_" + shmId + "_rgq_" + to_string(id), verbose);
             }
         }
-
     } catch (bie& e) {
         if (verbose) {
             cout << "Could not find '" << managementSegmentName << "' segment. Nothing to cleanup." << endl;
