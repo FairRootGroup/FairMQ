@@ -267,6 +267,7 @@ bool Monitor::PrintShm(const ShmId& shmId)
             ss << "\n   unmanaged regions:";
             for (const auto& r : *shmRegions) {
                 ss << "\n      [" << r.first << "]: " << (r.second.fDestroyed ? "destroyed" : "alive");
+                ss << ", size: " << r.second.fSize;
 
                 try {
                     boost::interprocess::message_queue q(open_only, std::string("fmq_" + std::string(shmId) + "_rgq_" + to_string(r.first)).c_str());

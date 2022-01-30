@@ -58,19 +58,22 @@ struct RegionInfo
         : fPath("", alloc)
         , fCreationFlags(0)
         , fUserFlags(0)
+        , fSize(0)
         , fDestroyed(false)
     {}
 
-    RegionInfo(const char* path, const int flags, const uint64_t userFlags, const VoidAlloc& alloc)
+    RegionInfo(const char* path, int flags, uint64_t userFlags, uint64_t size, const VoidAlloc& alloc)
         : fPath(path, alloc)
         , fCreationFlags(flags)
         , fUserFlags(userFlags)
+        , fSize(size)
         , fDestroyed(false)
     {}
 
     Str fPath;
     int fCreationFlags;
     uint64_t fUserFlags;
+    uint64_t fSize;
     bool fDestroyed;
 };
 
