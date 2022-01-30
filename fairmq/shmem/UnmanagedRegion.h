@@ -119,7 +119,7 @@ struct UnmanagedRegion
         }
 
         if (!remote) {
-            Register(shmId, cfg);
+            Register(shmId, cfg, size);
         }
 
         LOG(trace) << "shmem: initialized region: " << fName << " (" << (remote ? "remote" : "local") << ")";
@@ -223,7 +223,7 @@ struct UnmanagedRegion
         return regionCfg;
     }
 
-    static void Register(const std::string& shmId, RegionConfig& cfg)
+    static void Register(const std::string& shmId, RegionConfig& cfg, uint64_t size)
     {
         using namespace boost::interprocess;
         managed_shared_memory mngSegment(open_or_create, std::string("fmq_" + shmId + "_mng").c_str(), 6553600);
@@ -236,7 +236,7 @@ struct UnmanagedRegion
             eventCounter = mngSegment.construct<EventCounter>(unique_instance)(0);
         }
 
-        bool newShmRegionCreated = shmRegions->emplace(cfg.id.value(), RegionInfo(cfg.path.c_str(), cfg.creationFlags, cfg.userFlags, alloc)).second;
+        bool newShmRegionCreated = shmRegions->emplace(cfg.id.value(), RegionInfo(cfg.path.c_str(), cfg.creationFlags, cfg.userFlags, size, alloc)).second;
         if (newShmRegionCreated) {
             (eventCounter->fCount)++;
         }
