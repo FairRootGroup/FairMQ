@@ -26,6 +26,8 @@ static const RBTreeBestFit rbTreeBestFit = RBTreeBestFit();
 
 struct Segment
 {
+    friend class Monitor;
+
     Segment(const std::string& shmId, uint16_t id, size_t size, SimpleSeqFit)
         : fSegment(SimpleSeqFitSegment(boost::interprocess::open_or_create,
                                        std::string("fmq_" + shmId + "_m_" + std::to_string(id)).c_str(),
@@ -66,15 +68,12 @@ struct Segment
     static void Register(const std::string& shmId, uint16_t id, AllocationAlgorithm allocAlgo)
     {
         using namespace boost::interprocess;
-        managed_shared_memory mngSegment(open_or_create, std::string("fmq_" + shmId + "_mng").c_str(), 6553600);
+        managed_shared_memory mngSegment(open_or_create, std::string("fmq_" + shmId + "_mng").c_str(), kManagementSegmentSize);
         VoidAlloc alloc(mngSegment.get_segment_manager());
 
         Uint16SegmentInfoHashMap* shmSegments = mngSegment.find_or_construct<Uint16SegmentInfoHashMap>(unique_instance)(alloc);
 
-        EventCounter* eventCounter = mngSegment.find<EventCounter>(unique_instance).first;
-        if (!eventCounter) {
-            eventCounter = mngSegment.construct<EventCounter>(unique_instance)(0);
-        }
+        EventCounter* eventCounter = mngSegment.find_or_construct<EventCounter>(unique_instance)(0);
 
         bool newSegmentRegistered = shmSegments->emplace(id, allocAlgo).second;
         if (newSegmentRegistered) {

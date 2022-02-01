@@ -6,9 +6,10 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "Monitor.h"
 #include "Common.h"
-#include "UnmanagedRegion.h"
+#include "Monitor.h"
+#include "Segment.h"
+#include <fairmq/shmem/UnmanagedRegion.h>
 
 #include <fairmq/tools/IO.h>
 #include <fairmq/tools/Strings.h>
@@ -415,24 +416,28 @@ void Monitor::PrintDebugInfo(const ShmId& shmId __attribute__((unused)))
 
         size_t numMessages = 0;
 
-        for (const auto& e : *debug) {
-            numMessages += e.second.size();
-        }
-        LOG(info) << endl << "found " << numMessages << " messages.";
-
-        for (const auto& s : *debug) {
-            for (const auto& e : s.second) {
-                using time_point = chrono::system_clock::time_point;
-                time_point tmpt{chrono::duration_cast<time_point::duration>(chrono::nanoseconds(e.second.fCreationTime))};
-                time_t t = chrono::system_clock::to_time_t(tmpt);
-                uint64_t ms = e.second.fCreationTime % 1000000;
-                auto tm = localtime(&t);
-                LOG(info) << "segment: " << setw(3) << setfill(' ') << s.first
-                     << ", offset: " << setw(12) << setfill(' ') << e.first
-                     << ", size: " << setw(10) << setfill(' ') << e.second.fSize
-                     << ", creator PID: " << e.second.fPid << setfill('0')
-                     << ", at: " << setw(2) << tm->tm_hour << ":" << setw(2) << tm->tm_min << ":" << setw(2) << tm->tm_sec << "." << setw(6) << ms;
+        if (debug) {
+            for (const auto& e : *debug) {
+                numMessages += e.second.size();
             }
+            LOG(info) << endl << "found " << numMessages << " messages.";
+
+            for (const auto& s : *debug) {
+                for (const auto& e : s.second) {
+                    using time_point = chrono::system_clock::time_point;
+                    time_point tmpt{chrono::duration_cast<time_point::duration>(chrono::nanoseconds(e.second.fCreationTime))};
+                    time_t t = chrono::system_clock::to_time_t(tmpt);
+                    uint64_t ms = e.second.fCreationTime % 1000000;
+                    auto tm = localtime(&t);
+                    LOG(info) << "segment: " << setw(3) << setfill(' ') << s.first
+                        << ", offset: " << setw(12) << setfill(' ') << e.first
+                        << ", size: " << setw(10) << setfill(' ') << e.second.fSize
+                        << ", creator PID: " << e.second.fPid << setfill('0')
+                        << ", at: " << setw(2) << tm->tm_hour << ":" << setw(2) << tm->tm_min << ":" << setw(2) << tm->tm_sec << "." << setw(6) << ms;
+                }
+            }
+        } else {
+            LOG(info) << "no debug data found";
         }
     } catch (bie&) {
         LOG(info) << "no segments found";
@@ -463,11 +468,16 @@ unordered_map<uint16_t, std::vector<BufferDebugInfo>> Monitor::GetDebugInfo(cons
 
         result.reserve(debug->size());
 
-        for (const auto& s : *debug) {
-            result[s.first].reserve(s.second.size());
-            for (const auto& e : s.second) {
-                result[s.first][e.first] = BufferDebugInfo(e.first, e.second.fPid, e.second.fSize, e.second.fCreationTime);
+
+        if (debug) {
+            for (const auto& s : *debug) {
+                result[s.first].reserve(s.second.size());
+                for (const auto& e : s.second) {
+                    result[s.first][e.first] = BufferDebugInfo(e.first, e.second.fPid, e.second.fSize, e.second.fCreationTime);
+                }
             }
+        } else {
+            LOG(info) << "no debug data found";
         }
     } catch (bie&) {
         LOG(info) << "no segments found";
@@ -699,6 +709,43 @@ void Monitor::ResetContent(const SessionId& sessionId, bool verbose /* = true */
         cout << "ResetContent called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'" << endl;
     }
     ResetContent(shmId, verbose);
+}
+
+void Monitor::ResetContent(const ShmId& shmIdT, const std::vector<SegmentConfig>& segmentCfgs, const std::vector<RegionConfig>& regionCfgs, bool verbose /* = true */)
+{
+    using namespace boost::interprocess;
+
+    std::string shmId = shmIdT.shmId;
+    std::string managementSegmentName("fmq_" + shmId + "_mng");
+    // reset managed segments
+    ResetContent(shmIdT, verbose);
+    // delete management segment
+    Remove<bipc::shared_memory_object>(managementSegmentName, verbose);
+    // recreate management segment
+    managed_shared_memory mngSegment(create_only, managementSegmentName.c_str(), kManagementSegmentSize);
+    // fill management segment with segment & region infos
+    for (const auto& s : segmentCfgs) {
+        if (s.allocationAlgorithm == "rbtree_best_fit") {
+            Segment::Register(shmId, s.id, AllocationAlgorithm::rbtree_best_fit);
+        } else if (s.allocationAlgorithm == "simple_seq_fit") {
+            Segment::Register(shmId, s.id, AllocationAlgorithm::simple_seq_fit);
+        } else {
+            LOG(error) << "Unknown allocation algorithm provided: " << s.allocationAlgorithm;
+            throw MonitorError("Unknown allocation algorithm provided: " + s.allocationAlgorithm);
+        }
+    }
+    for (const auto& r : regionCfgs) {
+        fair::mq::shmem::UnmanagedRegion::Register(shmId, r);
+    }
+}
+
+void Monitor::ResetContent(const SessionId& sessionId, const std::vector<SegmentConfig>& segmentCfgs, const std::vector<RegionConfig>& regionCfgs, bool verbose /* = true */)
+{
+    ShmId shmId{makeShmIdStr(sessionId.sessionId)};
+    if (verbose) {
+        cout << "ResetContent called with session id '" << sessionId.sessionId << "', translating to shared memory id '" << shmId.shmId << "'" << endl;
+    }
+    ResetContent(shmId, segmentCfgs, regionCfgs, verbose);
 }
 
 Monitor::~Monitor()

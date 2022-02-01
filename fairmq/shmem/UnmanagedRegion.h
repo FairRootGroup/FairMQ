@@ -41,6 +41,7 @@ struct UnmanagedRegion
 {
     friend class Message;
     friend class Manager;
+    friend class Monitor;
 
     UnmanagedRegion(const std::string& shmId, uint16_t id, uint64_t size)
         : UnmanagedRegion(shmId,  size, false, makeRegionConfig(id))
@@ -48,6 +49,10 @@ struct UnmanagedRegion
 
     UnmanagedRegion(const std::string& shmId, uint64_t size, RegionConfig cfg)
         : UnmanagedRegion(shmId, size, false, std::move(cfg))
+    {}
+
+    UnmanagedRegion(const std::string& shmId, RegionConfig cfg)
+        : UnmanagedRegion(shmId, cfg.size, false, std::move(cfg))
     {}
 
     UnmanagedRegion(const std::string& shmId, uint64_t size, bool remote, RegionConfig cfg)
@@ -65,6 +70,9 @@ struct UnmanagedRegion
         , fBulkCallback(nullptr)
     {
         using namespace boost::interprocess;
+
+        // TODO: refactor this
+        cfg.size = size;
 
         if (!cfg.path.empty()) {
             fName = std::string(cfg.path + fName);
@@ -119,7 +127,7 @@ struct UnmanagedRegion
         }
 
         if (!remote) {
-            Register(shmId, cfg, size);
+            Register(shmId, cfg);
         }
 
         LOG(trace) << "shmem: initialized region: " << fName << " (" << (remote ? "remote" : "local") << ")";
@@ -223,20 +231,17 @@ struct UnmanagedRegion
         return regionCfg;
     }
 
-    static void Register(const std::string& shmId, RegionConfig& cfg, uint64_t size)
+    static void Register(const std::string& shmId, const RegionConfig& cfg)
     {
         using namespace boost::interprocess;
-        managed_shared_memory mngSegment(open_or_create, std::string("fmq_" + shmId + "_mng").c_str(), 6553600);
+        managed_shared_memory mngSegment(open_or_create, std::string("fmq_" + shmId + "_mng").c_str(), kManagementSegmentSize);
         VoidAlloc alloc(mngSegment.get_segment_manager());
 
         Uint16RegionInfoHashMap* shmRegions = mngSegment.find_or_construct<Uint16RegionInfoHashMap>(unique_instance)(alloc);
 
-        EventCounter* eventCounter = mngSegment.find<EventCounter>(unique_instance).first;
-        if (!eventCounter) {
-            eventCounter = mngSegment.construct<EventCounter>(unique_instance)(0);
-        }
+        EventCounter* eventCounter = mngSegment.find_or_construct<EventCounter>(unique_instance)(0);
 
-        bool newShmRegionCreated = shmRegions->emplace(cfg.id.value(), RegionInfo(cfg.path.c_str(), cfg.creationFlags, cfg.userFlags, size, alloc)).second;
+        bool newShmRegionCreated = shmRegions->emplace(cfg.id.value(), RegionInfo(cfg.path.c_str(), cfg.creationFlags, cfg.userFlags, cfg.size, alloc)).second;
         if (newShmRegionCreated) {
             (eventCounter->fCount)++;
         }

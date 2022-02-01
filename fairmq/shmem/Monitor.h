@@ -8,6 +8,8 @@
 #ifndef FAIR_MQ_SHMEM_MONITOR_H_
 #define FAIR_MQ_SHMEM_MONITOR_H_
 
+#include <fairmq/UnmanagedRegion.h>
+
 #include <fairlogger/Logger.h>
 
 #include <thread>
@@ -49,6 +51,13 @@ struct BufferDebugInfo
     uint64_t fCreationTime;
 };
 
+struct SegmentConfig
+{
+    uint16_t id;
+    uint64_t size;
+    std::string allocationAlgorithm;
+};
+
 class Monitor
 {
   public:
@@ -88,6 +97,14 @@ class Monitor
     /// @param sessionId session id
     /// Only call this when segment is not in use
     static void ResetContent(const SessionId& sessionId, bool verbose = true);
+    /// @brief [EXPERIMENTAL] cleanup the content of the shem segment, without recreating it
+    /// @param shmId shared memory id
+    /// Only call this when segment is not in use
+    static void ResetContent(const ShmId& shmId, const std::vector<SegmentConfig>& segmentCfgs, const std::vector<RegionConfig>& regionCfgs, bool verbose = true);
+    /// @brief [EXPERIMENTAL] cleanup the content of the shem segment, without recreating it
+    /// @param sessionId session id
+    /// Only call this when segment is not in use
+    static void ResetContent(const SessionId& sessionId, const std::vector<SegmentConfig>& segmentCfgs, const std::vector<RegionConfig>& regionCfgs, bool verbose = true);
 
     /// @brief Outputs list of messages in shmem (if compiled with FAIRMQ_DEBUG_MODE=ON)
     /// @param shmId shmem id
