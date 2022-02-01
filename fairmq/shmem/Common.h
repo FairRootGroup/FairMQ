@@ -28,6 +28,8 @@
 namespace fair::mq::shmem
 {
 
+static constexpr uint64_t kManagementSegmentSize = 6553600;
+
 struct SharedMemoryError : std::runtime_error { using std::runtime_error::runtime_error; };
 
 using SimpleSeqFitSegment = boost::interprocess::basic_managed_shared_memory<char,

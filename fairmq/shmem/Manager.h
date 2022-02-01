@@ -132,7 +132,7 @@ class Manager
         : fShmId64(config ? config->GetProperty<uint64_t>("shmid", makeShmIdUint64(sessionName)) : makeShmIdUint64(sessionName))
         , fShmId(makeShmIdStr(fShmId64))
         , fSegmentId(config ? config->GetProperty<uint16_t>("shm-segment-id", 0) : 0)
-        , fManagementSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mng").c_str(), 6553600)
+        , fManagementSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mng").c_str(), kManagementSegmentSize)
         , fShmVoidAlloc(fManagementSegment.get_segment_manager())
         , fShmMtx(fManagementSegment.find_or_construct<boost::interprocess::interprocess_mutex>(boost::interprocess::unique_instance)())
         , fNumObservedEvents(0)

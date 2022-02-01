@@ -133,6 +133,7 @@ struct RegionConfig
     bool removeOnDestruction = true; /// remove the region on object destruction
     int creationFlags = 0; /// flags passed to the underlying transport on region creation
     int64_t userFlags = 0; /// custom flags that have no effect on the transport, but can be retrieved from the region by the user
+    uint64_t size = 0; /// region size
     std::string path = ""; /// file path, if the region is backed by a file
     std::optional<uint16_t> id = std::nullopt; /// region id
     uint32_t linger = 100; /// delay in ms before region destruction to collect outstanding events
