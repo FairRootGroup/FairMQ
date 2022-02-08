@@ -25,6 +25,26 @@ namespace
 using namespace std;
 using namespace fair::mq;
 
+void RegionsSizeMismatch()
+{
+    size_t session = tools::UuidHash();
+
+    ProgOptions config;
+    config.SetProperty<string>("session", to_string(session));
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
+
+    auto factory = TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config);
+
+    fair::mq::RegionConfig rCfg;
+    rCfg.id = 10;
+    UnmanagedRegionPtr region1 = nullptr;
+    ASSERT_NO_THROW(region1 = factory->CreateUnmanagedRegion(10000, [](void*, size_t, void*) {}, rCfg));
+    ASSERT_NE(region1, nullptr);
+    UnmanagedRegionPtr region2 = nullptr;
+    ASSERT_THROW(region2 = factory->CreateUnmanagedRegion(16000, [](void*, size_t, void*) {}, rCfg), fair::mq::TransportError);
+    ASSERT_EQ(region2, nullptr);
+}
+
 void RegionsCache(const string& transport, const string& address)
 {
     size_t session1 = tools::UuidHash();
@@ -224,6 +244,11 @@ void RegionCallbacks(const string& transport, const string& _address)
     LOG(info) << "1 done.";
     blocker.Wait();
     LOG(info) << "2 done.";
+}
+
+TEST(RegionsSizeMismatch, shmem)
+{
+    RegionsSizeMismatch();
 }
 
 TEST(Cache, zeromq)
