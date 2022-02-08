@@ -99,16 +99,25 @@ struct UnmanagedRegion
             fRegion = mapped_region(fFileMapping, read_write, 0, size, 0, cfg.creationFlags);
         } else {
             try {
-                fShmemObject = shared_memory_object(open_or_create, fName.c_str(), read_write);
-                if (size != 0) {
+                // if opening fails, create
+                try {
+                    fShmemObject = shared_memory_object(open_only, fName.c_str(), read_write);
+                } catch (interprocess_exception& e) {
+                    LOG(debug) << "Could not open " << (remote ? "remote" : "local") << " shared_memory_object for region id '" << cfg.id.value() << "': " << e.what() << ", creating...";
+                    fShmemObject = shared_memory_object(create_only, fName.c_str(), read_write);
                     fShmemObject.truncate(size);
                 }
             } catch (interprocess_exception& e) {
                 LOG(error) << "Failed " << (remote ? "opening" : "creating") << " shared_memory_object for region id '" << cfg.id.value() << "': " << e.what();
                 throw;
             }
+
             try {
                 fRegion = mapped_region(fShmemObject, read_write, 0, 0, 0, cfg.creationFlags);
+                if (size != 0 && size != fRegion.get_size()) {
+                    LOG(error) << "Created/opened region size (" << fRegion.get_size() << ") does not match configured size (" << size << ")";
+                    throw TransportError(tools::ToString("Created/opened region size (", fRegion.get_size(), ") does not match configured size (", size, ")"));
+                }
             } catch (interprocess_exception& e) {
                 LOG(error) << "Failed mapping shared_memory_object for region id '" << cfg.id.value() << "': " << e.what();
                 throw;
