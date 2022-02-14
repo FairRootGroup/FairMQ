@@ -228,6 +228,8 @@ class Manager
             fShmSegments = fManagementSegment.find_or_construct<Uint16SegmentInfoHashMap>(unique_instance)(fShmVoidAlloc);
             fShmRegions = fManagementSegment.find_or_construct<Uint16RegionInfoHashMap>(unique_instance)(fShmVoidAlloc);
 
+            bool createdSegment = false;
+
             try {
                 std::string segmentName("fmq_" + fShmId + "_m_" + std::to_string(fSegmentId));
                 auto it = fShmSegments->find(fSegmentId);
@@ -246,6 +248,7 @@ class Manager
                     if (zeroSegmentOnCreation) {
                         ZeroSegment(fSegmentId);
                     }
+                    createdSegment = true;
                 } else {
                     // found segment with the given id, opening
                     if (it->second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
@@ -278,7 +281,9 @@ class Manager
                 ZeroSegment(fSegmentId);
             }
 
-            (fEventCounter->fCount)++;
+            if (createdSegment) {
+                (fEventCounter->fCount)++;
+            }
 
 #ifdef FAIRMQ_DEBUG_MODE
             fMsgDebug = fManagementSegment.find_or_construct<Uint16MsgDebugMapHashMap>(unique_instance)(fShmVoidAlloc);
@@ -360,7 +365,7 @@ class Manager
     }
     bool Interrupted() { return fInterrupted.load(); }
 
-    std::pair<UnmanagedRegion*, uint16_t> CreateRegion(const size_t size,
+    std::pair<UnmanagedRegion*, uint16_t> CreateRegion(size_t size,
                                                        RegionCallback callback,
                                                        RegionBulkCallback bulkCallback,
                                                        RegionConfig cfg)
@@ -419,7 +424,7 @@ class Manager
         }
     }
 
-    UnmanagedRegion* GetRegion(const uint16_t id)
+    UnmanagedRegion* GetRegion(uint16_t id)
     {
         // NOTE: gcc optimizations. Prevent loading tls addresses many times in the fast path
         const auto &lTlCache = fTlRegionCache;
@@ -445,7 +450,7 @@ class Manager
         return lRegion;
     }
 
-    UnmanagedRegion* GetRegionUnsafe(const uint16_t id, boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>& lockedShmLock)
+    UnmanagedRegion* GetRegionUnsafe(uint16_t id, boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>& lockedShmLock)
     {
         // remote region could actually be a local one if a message originates from this device (has been sent out and returned)
         auto it = fRegions.find(id);
@@ -479,7 +484,7 @@ class Manager
         }
     }
 
-    void RemoveRegion(const uint16_t id)
+    void RemoveRegion(uint16_t id)
     {
         try {
             fRegions.at(id)->StopAcks();
