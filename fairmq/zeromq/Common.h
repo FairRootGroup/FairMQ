@@ -27,7 +27,11 @@ inline bool Bind(void* socket, const std::string& address, const std::string& id
         if (errno == EADDRINUSE) {
             // do not print error in this case, this is handled upstream in case no
             // connection could be established after trying a number of random ports from a range.
-            return false;
+            size_t protocolPos = address.find(':');
+            std::string protocol = address.substr(0, protocolPos);
+            if (protocol == "tcp") {
+              return false;
+            }
         } else if (errno == EACCES) {
             // check if TCP port 1 was given, if yes then it will be handeled upstream, print debug only
             size_t protocolPos = address.find(':');
