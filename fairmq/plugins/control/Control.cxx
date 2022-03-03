@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2017-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2017-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -56,11 +56,11 @@ Control::Control(const string& name, Plugin::Version version, const string& main
     SubscribeToDeviceStateChange([&](DeviceState newState) {
         LOG(trace) << "control plugin notified on new state: " << newState;
 
-        fStateQueue.Push(newState);
-
         if (newState == DeviceState::Error) {
             fPluginShutdownRequested = true;
-            fDeviceShutdownRequested = true;
+            fStateQueue.Push(newState, [this]{ fDeviceShutdownRequested = true; });
+        } else {
+            fStateQueue.Push(newState);
         }
     });
 
@@ -99,18 +99,42 @@ Control::Control(const string& name, Plugin::Version version, const string& main
 
 auto Control::RunStartupSequence() -> void
 {
-    ChangeDeviceState(DeviceStateTransition::InitDevice);
-    while (fStateQueue.WaitForNext() != DeviceState::InitializingDevice) {}
-    ChangeDeviceState(DeviceStateTransition::CompleteInit);
-    while (fStateQueue.WaitForNext() != DeviceState::Initialized) {}
-    ChangeDeviceState(DeviceStateTransition::Bind);
-    while (fStateQueue.WaitForNext() != DeviceState::Bound) {}
-    ChangeDeviceState(DeviceStateTransition::Connect);
-    while (fStateQueue.WaitForNext() != DeviceState::DeviceReady) {}
-    ChangeDeviceState(DeviceStateTransition::InitTask);
-    while (fStateQueue.WaitForNext() != DeviceState::Ready) {}
-    ChangeDeviceState(DeviceStateTransition::Run);
-    while (fStateQueue.WaitForNext() != DeviceState::Running) {}
+    using Transition = DeviceStateTransition;
+    using State = DeviceState;
+    auto shutdownRequested = [this]{ return fDeviceShutdownRequested.load(); };
+
+    ChangeDeviceState(Transition::InitDevice);
+    fStateQueue.WaitForStateOrCustom(State::InitializingDevice, shutdownRequested);
+    if (fDeviceShutdownRequested) { return; /* --> shutdown sequence */ }
+
+    ChangeDeviceState(Transition::CompleteInit);
+    fStateQueue.WaitForStateOrCustom(State::Initialized,        shutdownRequested);
+    if (fDeviceShutdownRequested) { return; /* --> shutdown sequence */ }
+
+    ChangeDeviceState(Transition::Bind);
+    fStateQueue.WaitForStateOrCustom(State::Binding,            shutdownRequested);
+    if (fDeviceShutdownRequested) { return; /* --> shutdown sequence */ }
+
+    fStateQueue.WaitForStateOrCustom(State::Bound,              shutdownRequested);
+    if (fDeviceShutdownRequested) { return; /* --> shutdown sequence */ }
+
+    ChangeDeviceState(Transition::Connect);
+    fStateQueue.WaitForStateOrCustom(State::Connecting,         shutdownRequested);
+    if (fDeviceShutdownRequested) { return; /* --> shutdown sequence */ }
+
+    fStateQueue.WaitForStateOrCustom(State::DeviceReady,        shutdownRequested);
+    if (fDeviceShutdownRequested) { return; /* --> shutdown sequence */ }
+
+    ChangeDeviceState(Transition::InitTask);
+    fStateQueue.WaitForStateOrCustom(State::InitializingTask,   shutdownRequested);
+    if (fDeviceShutdownRequested) { return; /* --> shutdown sequence */ }
+
+    fStateQueue.WaitForStateOrCustom(State::Ready,              shutdownRequested);
+    if (fDeviceShutdownRequested) { return; /* --> shutdown sequence */ }
+
+    ChangeDeviceState(Transition::Run);
+    fStateQueue.WaitForStateOrCustom(State::Running,            shutdownRequested);
+    if (fDeviceShutdownRequested) { return; /* --> shutdown sequence */ }
 }
 
 auto ControlPluginProgramOptions() -> Plugin::ProgOptions
@@ -123,10 +147,8 @@ auto ControlPluginProgramOptions() -> Plugin::ProgOptions
     return pluginOptions;
 }
 
-auto Control::InteractiveMode() -> void
-try {
-    RunStartupSequence();
-
+auto Control::RunREPL() -> void
+{
     char input = 0; // hold the user console input
     pollfd cinfd[1];
     cinfd[0].fd = fileno(stdin);
@@ -161,7 +183,7 @@ try {
                 case 'i':
                     cout << "\n --> [i] init device\n\n" << flush;
                     if (ChangeDeviceState(DeviceStateTransition::InitDevice)) {
-                        while (fStateQueue.WaitForNext() != DeviceState::InitializingDevice) {}
+                        fStateQueue.WaitForState(DeviceState::InitializingDevice);
                         ChangeDeviceState(DeviceStateTransition::CompleteInit);
                     }
                 break;
@@ -243,7 +265,19 @@ try {
         }
     }
 
-    RunShutdownSequence();
+}
+
+auto Control::InteractiveMode() -> void
+try {
+    RunStartupSequence();
+
+    if(!fDeviceShutdownRequested) {
+        RunREPL();
+    }
+
+    if(!fDeviceShutdownRequested) {
+        RunShutdownSequence();
+    }
 } catch (PluginServices::DeviceControlError& e) {
     // If we are here, it means another plugin has taken control. That's fine, just print the exception message and do nothing else.
     LOG(debug) << e.what();
@@ -366,16 +400,13 @@ auto Control::StaticMode() -> void
 try {
     RunStartupSequence();
 
-    {
-        // Wait for next state, which is DeviceState::Ready,
-        // or for device shutdown request (Ctrl-C)
-        pair<bool, fair::mq::State> result;
-        do {
-            result = fStateQueue.WaitForNext(chrono::milliseconds(50));
-        } while (result.first == false && !fDeviceShutdownRequested);
-    }
+    // Wait for next state, which is DeviceState::Ready,
+    // or for device shutdown request (Ctrl-C)
+    fStateQueue.WaitForNextOrCustom([this]{ return fDeviceShutdownRequested.load(); });
 
-    RunShutdownSequence();
+    if(!fDeviceShutdownRequested) {
+        RunShutdownSequence();
+    }
 } catch (PluginServices::DeviceControlError& e) {
     // If we are here, it means another plugin has taken control. That's fine, just print the exception message and do nothing else.
     LOG(debug) << e.what();
@@ -387,16 +418,12 @@ auto Control::GUIMode() -> void
 try {
     RunStartupSequence();
 
-    {
-        // Wait for next state, which is DeviceState::Ready,
-        // or for device shutdown request (Ctrl-C)
-        pair<bool, fair::mq::State> result;
-        do {
-            result = fStateQueue.WaitForNext(chrono::milliseconds(50));
-        } while (!fDeviceShutdownRequested);
-    }
+    // Wait for device shutdown request (Ctrl-C)
+    fStateQueue.WaitForCustom([this]{ return fDeviceShutdownRequested.load(); });
 
-    RunShutdownSequence();
+    if(!fDeviceShutdownRequested) {
+        RunShutdownSequence();
+    }
 } catch (PluginServices::DeviceControlError& e) {
     // If we are here, it means another plugin has taken control. That's fine, just print the
     // exception message and do nothing else.
@@ -416,10 +443,10 @@ auto Control::SignalHandler() -> void
         LOG(info) << "Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.";
 
         // Signal and wait for controller thread, if we are controller
-        fDeviceShutdownRequested = true;
+        fStateQueue.Notify([this] { fDeviceShutdownRequested = true; });
         {
             unique_lock<mutex> lock(fControllerMutex);
-            if (fControllerThread.joinable()) fControllerThread.join();
+            if (fControllerThread.joinable()) { fControllerThread.join(); }
         }
 
         if (!fDeviceHasShutdown) {
@@ -462,6 +489,12 @@ auto Control::RunShutdownSequence() -> void
             case DeviceState::Running:
                 ChangeDeviceState(DeviceStateTransition::Stop);
                 break;
+            case DeviceState::Binding:
+            case DeviceState::Connecting:
+            case DeviceState::InitializingTask:
+            case DeviceState::ResettingTask:
+            case DeviceState::ResettingDevice:
+                ChangeDeviceState(DeviceStateTransition::Auto);
             default:
                 // LOG(debug) << "Controller ignoring event: " << nextState;
                 break;
@@ -481,9 +514,9 @@ Control::~Control()
 
     {
         unique_lock<mutex> lock(fControllerMutex);
-        if (fControllerThread.joinable()) fControllerThread.join();
+        if (fControllerThread.joinable()) { fControllerThread.join(); }
     }
-    if (fSignalHandlerThread.joinable()) fSignalHandlerThread.join();
+    if (fSignalHandlerThread.joinable()) { fSignalHandlerThread.join(); }
 
     UnsubscribeFromDeviceStateChange();
 }
