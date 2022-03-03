@@ -15,9 +15,9 @@ def jobMatrix(String type, List specs) {
       ver = spec.ver
     } else { // == 'check'
       job = "${spec.name}"
-      selector = 'fedora-34-x86_64'
+      selector = 'fedora-35-x86_64'
       os = 'fedora'
-      ver = '34'
+      ver = '35'
     }
 
     def label = "${job}"
@@ -107,6 +107,7 @@ pipeline{
             [name: 'static-analyzers', extra: "${all_debug} -DRUN_STATIC_ANALYSIS=ON"],
             [name: '{address,leak,ub}-sanitizers',
              extra: "${all_debug} -DENABLE_SANITIZER_ADDRESS=ON -DENABLE_SANITIZER_LEAK=ON -DENABLE_SANITIZER_UNDEFINED_BEHAVIOUR=ON -DCMAKE_CXX_FLAGS='-O1 -fno-omit-frame-pointer'"],
+            [name: 'thread-sanitizer', extra: "${all_debug} -DENABLE_SANITIZER_THREAD=ON"],
           ])
 
           parallel(builds + checks)
