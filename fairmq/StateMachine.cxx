@@ -187,9 +187,7 @@ struct Machine_ : public state_machine_def<Machine_>
             {
                 unique_lock<mutex> lock(fStateMtx);
 
-                while (!fNewStatePending) {
-                    fNewStatePendingCV.wait_for(lock, chrono::milliseconds(100));
-                }
+                fNewStatePendingCV.wait(lock, [this]{ return fNewStatePending.load(); });
 
                 LOG(state) << fState << " ---> " << fNewState;
                 fState = static_cast<State>(fNewState);
