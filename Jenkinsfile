@@ -107,7 +107,7 @@ pipeline{
             [name: 'static-analyzers', extra: "${all_debug} -DRUN_STATIC_ANALYSIS=ON"],
             [name: '{address,leak,ub}-sanitizers',
              extra: "${all_debug} -DENABLE_SANITIZER_ADDRESS=ON -DENABLE_SANITIZER_LEAK=ON -DENABLE_SANITIZER_UNDEFINED_BEHAVIOUR=ON -DCMAKE_CXX_FLAGS='-O1 -fno-omit-frame-pointer'"],
-            [name: 'thread-sanitizer', extra: "${all_debug} -DENABLE_SANITIZER_THREAD=ON"],
+            [name: 'thread-sanitizer', extra: "${all_debug} -DENABLE_SANITIZER_THREAD=ON -DCMAKE_CXX_COMPILER=clang++"],
           ])
 
           parallel(builds + checks)
