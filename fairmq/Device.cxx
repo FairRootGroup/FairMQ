@@ -6,14 +6,14 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <algorithm>                    // std::max
+#include <algorithm>                    // std::max, std::any_of
 #include <boost/algorithm/string.hpp>   // join/split
 #include <chrono>
 #include <fairmq/Device.h>
 #include <fairmq/Tools.h>
-#include <future>
 #include <iomanip>
 #include <list>
+#include <memory>                       // std::make_unique
 #include <mutex>
 #include <thread>
 
@@ -434,8 +434,15 @@ void Device::RunWrapper()
 {
     LOG(info) << "fair::mq::Device running...";
 
-    // start the rate logger thread
-    future<void> rateLogger = async(launch::async, &Device::LogSocketRates, this);
+    unique_ptr<thread> rateLogger;
+    // Check if rate logging thread is needed
+    const bool rateLogging = any_of(fChannels.cbegin(), fChannels.cend(), [](auto ch) {
+        return any_of(ch.second.cbegin(), ch.second.cend(), [](auto sub) { return sub.fRateLogging > 0; });
+    });
+
+    if (rateLogging) {
+        rateLogger = make_unique<thread>(&Device::LogSocketRates, this);
+    }
 
     // notify transports to resume transfers
     for (auto& t : fTransports) {
@@ -479,7 +486,9 @@ void Device::RunWrapper()
 
     cod.disable();
 
-    rateLogger.get();
+    if (rateLogging && rateLogger->joinable()) {
+        rateLogger->join();
+    }
 }
 
 void Device::HandleSingleChannelInput()
