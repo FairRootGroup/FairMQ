@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2012-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2012-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -27,7 +27,6 @@ constexpr const char* Device::DefaultTransportName;
 constexpr mq::Transport Device::DefaultTransportType;
 constexpr const char* Device::DefaultNetworkInterface;
 constexpr int Device::DefaultInitTimeout;
-constexpr uint64_t Device::DefaultMaxRunTime;
 constexpr float Device::DefaultRate;
 constexpr const char* Device::DefaultSession;
 
@@ -83,7 +82,6 @@ Device::Device(ProgOptions* config, tools::Version version)
     , fMultitransportProceed(false)
     , fVersion(version)
     , fRate(DefaultRate)
-    , fMaxRunRuntimeInS(DefaultMaxRunTime)
     , fInitializationTimeoutInS(DefaultInitTimeout)
     , fTransitioning(false)
 {
@@ -215,7 +213,6 @@ void Device::InitWrapper()
     Init();
 
     fRate = fConfig->GetProperty<float>("rate", DefaultRate);
-    fMaxRunRuntimeInS = fConfig->GetProperty<uint64_t>("max-run-time", DefaultMaxRunTime);
     fInitializationTimeoutInS = fConfig->GetProperty<int>("init-timeout", DefaultInitTimeout);
 
     try {
@@ -710,7 +707,6 @@ void Device::LogSocketRates()
 
     chrono::time_point<chrono::high_resolution_clock> t0(chrono::high_resolution_clock::now());
     chrono::time_point<chrono::high_resolution_clock> t1;
-    uint64_t secondsElapsed = 0;
 
     while (!NewStatePending()) {
         WaitFor(chrono::seconds(1));
@@ -753,9 +749,6 @@ void Device::LogSocketRates()
         }
 
         t0 = t1;
-        if (fMaxRunRuntimeInS > 0 && ++secondsElapsed >= fMaxRunRuntimeInS) {
-            ChangeState(Transition::Stop);
-        }
     }
 }
 
