@@ -748,7 +748,7 @@ void Device::LogSocketRates()
                     bytesOut.at(i) = bytesOutNew.at(i);
                     msgOut.at(i) = msgOutNew.at(i);
 
-                    LOG(info) << setw(chanNameLen) << filteredChannelNames.at(i) << ": "
+                    LOG(info) << setw(static_cast<int>(chanNameLen)) << filteredChannelNames.at(i) << ": "
                               << "in: " << msgPerSecIn.at(i) << " (" << mbPerSecIn.at(i) << " MB) "
                               << "out: " << msgPerSecOut.at(i) << " (" << mbPerSecOut.at(i) << " MB)";
                 }
