@@ -1,5 +1,5 @@
 /********************************************************************************
- *   Copyright (C) 2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH     *
+ * Copyright (C) 2021-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -565,7 +565,6 @@ class Device
     static constexpr mq::Transport DefaultTransportType = mq::Transport::ZMQ;
     static constexpr const char* DefaultNetworkInterface = "default";
     static constexpr int DefaultInitTimeout = 120;
-    static constexpr uint64_t DefaultMaxRunTime = 0;
     static constexpr float DefaultRate = 0.;
     static constexpr const char* DefaultSession = "default";
 

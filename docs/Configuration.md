@@ -26,7 +26,6 @@ Here is an overview of the device/channel options and when they are applied:
 | `transport` | at the end of `fair::mq::State::InitializingDevice` |
 | `network-interface` | at the end of `fair::mq::State::InitializingDevice` |
 | `init-timeout` | at the end of `fair::mq::State::InitializingDevice` |
-| `max-run-time` | at the end of `fair::mq::State::InitializingDevice` |
 | `shm-segment-size` | at the end of `fair::mq::State::InitializingDevice` |
 | `shm-monitor` | at the end of `fair::mq::State::InitializingDevice` |
 | `ofi-size-hint` | at the end of `fair::mq::State::InitializingDevice` |

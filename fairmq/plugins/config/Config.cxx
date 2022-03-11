@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2017-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2017-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -62,7 +62,6 @@ Plugin::ProgOptions ConfigPluginProgramOptions()
         ("transport",                     po::value<string        >()->default_value("zeromq"),          "Transport ('zeromq'/'shmem').")
         ("network-interface",             po::value<string        >()->default_value("default"),         "Network interface to bind on (e.g. eth0, ib0..., default will try to detect the interface of the default route).")
         ("init-timeout",                  po::value<int           >()->default_value(120),               "Timeout for the initialization in seconds (when expecting dynamic initialization).")
-        ("max-run-time",                  po::value<uint64_t      >()->default_value(0),                 "Maximum runtime for the Running state handler, after which state will change to Ready (in seconds, 0 for no limit).")
         ("print-channels",                po::value<bool          >()->implicit_value(true),             "Print registered channel endpoints in a machine-readable format (<channel name>:<min num subchannels>:<max num subchannels>)")
         ("shm-segment-size",              po::value<size_t        >()->default_value(2ULL << 30),        "Shared memory: size of the shared memory segment (in bytes).")
         ("shm-allocation",                po::value<string        >()->default_value("rbtree_best_fit"), "Shared memory allocation algorithm: rbtree_best_fit/simple_seq_fit.")
