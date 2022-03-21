@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -36,7 +36,7 @@ REGISTER_FAIRMQ_PLUGIN(
     config,   // Plugin name
     (Plugin::Version{FAIRMQ_VERSION_MAJOR, FAIRMQ_VERSION_MINOR, FAIRMQ_VERSION_PATCH}),
     "FairRootGroup <fairroot@gsi.de>",
-    "https://github.com/FairRootGroup/FairRoot",
+    "https://github.com/FairRootGroup/FairMQ",
     ConfigPluginProgramOptions
 )
 
