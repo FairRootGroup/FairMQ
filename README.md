@@ -1,12 +1,9 @@
 <!-- {#mainpage} -->
-# FairMQ [![license](https://alfa-ci.gsi.de/shields/badge/license-LGPL--3.0-orange.svg)](COPYRIGHT) [![build status](https://alfa-ci.gsi.de/buildStatus/icon?job=FairRootGroup/FairMQ/dev)](https://alfa-ci.gsi.de/blue/organizations/jenkins/FairRootGroup%2FFairMQ/branches) [![Coverity Badge](https://alfa-ci.gsi.de/shields/coverity/scan/fairrootgroup-fairmq.svg)](https://scan.coverity.com/projects/fairrootgroup-fairmq)
+# FairMQ [![license](https://alfa-ci.gsi.de/shields/badge/license-LGPL--3.0-orange.svg)](COPYRIGHT)
 
 C++ Message Queuing Library and Framework
 
-| Release | Version | Docs |
-| :---: | :--- | :--- |
-| `stable` | [![release](https://alfa-ci.gsi.de/shields/github/release/FairRootGroup/FairMQ.svg)](https://github.com/FairRootGroup/FairMQ/releases/latest) | [API](https://fairrootgroup.github.io/FairMQ/latest), [Book](https://github.com/FairRootGroup/FairMQ/blob/master/README.md#documentation) |
-| `testing` | [![dev tag](https://alfa-ci.gsi.de/shields/github/tag/FairRootGroup/FairMQ.svg)](https://github.com/FairRootGroup/FairMQ/tags) | [Book](https://github.com/FairRootGroup/FairMQ/blob/dev/README.md#documentation) |
+Docs: [Book](https://github.com/FairRootGroup/FairMQ/blob/dev/README.md#documentation)
 
 Find all FairMQ releases [here](https://github.com/FairRootGroup/FairMQ/releases).
 
@@ -24,11 +21,13 @@ FairMQ provides multiple implementations for its API (so-called "transports",
 e.g. `zeromq`, `shmem` and `ofi` (in development)) to cover a variety of use cases
 (e.g. inter-thread, inter-process, inter-node communication) and machines (e.g. Ethernet, Infiniband).
 In addition to this core functionality FairMQ provides a framework for creating "devices" - actors which
-are communicating through message passing. FairMQ does not only allow the user to use different transport but also to mix them; i.e: A Device can communicate using different transport on different channels at the same time. Device execution is modelled as a simple state machine that
-shapes the integration points for the user task. Devices also incorporate a plugin system for runtime configuration and control.
-Next to the provided devices and plugins (e.g. [DDS](https://github.com/FairRootGroup/DDS))
-the user can extend FairMQ by developing his own plugins to integrate his devices with external
-configuration and control services.
+are communicating through message passing. FairMQ does not only allow the user to use different transport
+but also to mix them; i.e: A Device can communicate using different transport on different channels at the
+same time. Device execution is modelled as a simple state machine that shapes the integration points for
+the user task. Devices also incorporate a plugin system for runtime configuration and control.
+Next to the provided [devices](https://github.com/FairRootGroup/FairMQ/tree/master/fairmq/devices) and
+[plugins](https://github.com/FairRootGroup/FairMQ/tree/master/fairmq/plugins) the user can extend FairMQ
+by developing his own plugins to integrate his devices with external configuration and control services.
 
 FairMQ has been developed in the context of its mother project [FairRoot](https://github.com/FairRootGroup/FairRoot) -
 a simulation, reconstruction and analysis framework.
@@ -47,14 +46,15 @@ cmake --build fairmq_build --target install
 
 Please consult the [manpages of your CMake version](https://cmake.org/cmake/help/latest/manual/cmake.1.html) for more options.
 
-If dependencies are not installed in standard system directories, you can hint the installation location via `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `GTEST`, `BOOST`, `FAIRLOGGER`, `ZEROMQ`, `OFI`, `PMIX`, `ASIO`, `ASIOFI` or `DDS` (`*_ROOT` variables can also be environment variables).
+If dependencies are not installed in standard system directories, you can hint the installation location via
+`-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...` (`*_ROOT` variables can also be environment variables).
 
 ## Usage
 
 FairMQ ships as a CMake package, so in your `CMakeLists.txt` you can discover it like this:
 
 ```cmake
-find_package(FairCMakeModules 0.2 REQUIRED)
+find_package(FairCMakeModules 1.0 REQUIRED)
 include(FairFindPackage2)
 find_package2(FairMQ)
 find_package2_implicit_dependencies()
@@ -71,14 +71,14 @@ list(PREPEND CMAKE_PREFIX_PATH /path/to/fairmq_install)
 Optionally, you can require certain FairMQ package components and a minimum version:
 
 ```cmake
-find_package(FairMQ 1.4.0 COMPONENTS dds_plugin)
+find_package(FairMQ 1.4.50 COMPONENTS ofi_transport)
 ```
 
 When building FairMQ, CMake will print a summary table of all available package components.
 
 ## Dependencies
 
-  * [asio](https://github.com/chriskohlhoff/asio) (optionally bundled)
+  * [asio](https://github.com/chriskohlhoff/asio)
   * [asiofi](https://github.com/FairRootGroup/asiofi)
   * [Boost](https://www.boost.org/)
   * [CMake](https://cmake.org/)
@@ -86,13 +86,14 @@ When building FairMQ, CMake will print a summary table of all available package 
   * [Doxygen](http://www.doxygen.org/)
   * [FairCMakeModules](https://github.com/FairRootGroup/FairCMakeModules) (optionally bundled)
   * [FairLogger](https://github.com/FairRootGroup/FairLogger)
+  * [Flatbuffers](https://google.github.io/flatbuffers/)
   * [GTest](https://github.com/google/googletest) (optionally bundled)
   * [PMIx](https://pmix.org/)
   * [ZeroMQ](http://zeromq.org/)
 
   Which dependencies are required depends on which components are built.
 
-  Supported platforms: Linux and MacOS.
+  Supported platform is Linux. macOS is supported on a best-effort basis.
 
 ## CMake options
 
@@ -102,7 +103,6 @@ On command line:
   * `-DBUILD_TESTING=OFF` disables building of tests.
   * `-DBUILD_EXAMPLES=OFF` disables building of examples.
   * `-DBUILD_OFI_TRANSPORT=ON` enables building of the experimental OFI transport.
-  * `-DBUILD_DDS_PLUGIN=ON` enables building of the DDS plugin.
   * `-DBUILD_PMIX_PLUGIN=ON` enables building of the PMIx plugin.
   * `-DBUILD_DOCS=ON` enables building of API docs.
   * You can hint non-system installations for dependent packages, see the #installation-from-source section above
