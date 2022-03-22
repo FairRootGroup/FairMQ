@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -86,7 +86,6 @@ class Parts
 
 }   // namespace fair::mq
 
-// using FairMQParts [[deprecated("Use fair::mq::Parts")]] = fair::mq::Parts;
-using FairMQParts = fair::mq::Parts;
+using FairMQParts [[deprecated("Use fair::mq::Parts")]] = fair::mq::Parts;
 
 #endif /* FAIR_MQ_PARTS_H */
