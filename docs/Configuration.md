@@ -16,11 +16,11 @@ Here is an overview of the device/channel options and when they are applied:
 
 | Property | Applied in |
 | --- | --- |
-| `severity` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<runFairMQDevice.h>`)) |
-| `file-severity` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<runFairMQDevice.h>`)) |
-| `verbosity` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<runFairMQDevice.h>`)) |
-| `color` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<runFairMQDevice.h>`)) |
-| `log-to-file` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<runFairMQDevice.h>`)) |
+| `severity` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<fairmq/runDevice.h>`)) |
+| `file-severity` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<fairmq/runDevice.h>`)) |
+| `verbosity` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<fairmq/runDevice.h>`)) |
+| `color` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<fairmq/runDevice.h>`)) |
+| `log-to-file` | immidiately (if `fair::mq::DeviceRunner` is used (also the case when using `<fairmq/runDevice.h>`)) |
 | `id` | at the end of `fair::mq::State::InitializingDevice` |
 | `io-threads` | at the end of `fair::mq::State::InitializingDevice` |
 | `transport` | at the end of `fair::mq::State::InitializingDevice` |

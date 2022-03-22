@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2018-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -37,7 +37,7 @@ class Message final : public fair::mq::Message
     Message(std::pmr::memory_resource* pmr,
             void* data,
             size_t size,
-            fairmq_free_fn* ffn,
+            FreeFn* ffn,
             void* hint = nullptr);
     Message(std::pmr::memory_resource* pmr,
             fair::mq::UnmanagedRegionPtr& region,
@@ -54,7 +54,7 @@ class Message final : public fair::mq::Message
     auto Rebuild(Alignment alignment) -> void override;
     auto Rebuild(size_t size) -> void override;
     auto Rebuild(size_t size, Alignment alignment) -> void override;
-    auto Rebuild(void* data, size_t size, fairmq_free_fn* ffn, void* hint = nullptr) -> void override;
+    auto Rebuild(void* data, size_t size, FreeFn* ffn, void* hint = nullptr) -> void override;
 
     auto GetData() const -> void* override;
     auto GetSize() const -> size_t override;
@@ -71,7 +71,7 @@ class Message final : public fair::mq::Message
     size_t fInitialSize;
     size_t fSize;
     void* fData;
-    fairmq_free_fn* fFreeFunction;
+    FreeFn* fFreeFunction;
     void* fHint;
     std::pmr::memory_resource* fPmr;
 }; /* class Message */

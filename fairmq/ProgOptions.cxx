@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -12,9 +12,7 @@
  * Created on March 11, 2015, 10:20 PM
  */
 
-#include "FairMQLogger.h"
 #include <fairmq/ProgOptions.h>
-
 #include <fairmq/tools/Strings.h>
 
 #include <boost/any.hpp>
@@ -22,6 +20,7 @@
 
 #include <algorithm>
 #include <exception>
+#include <fairlogger/Logger.h>
 #include <iomanip>
 #include <iostream>
 #include <sstream>

@@ -51,8 +51,8 @@ struct Address {
 class Context
 {
   public:
-    Context(FairMQTransportFactory& sendFactory,
-            FairMQTransportFactory& receiveFactory,
+    Context(mq::TransportFactory& sendFactory,
+            mq::TransportFactory& receiveFactory,
             int numberIoThreads = 1);
     Context(const Context&) = delete;
     Context(Context&&) = delete;
@@ -78,8 +78,8 @@ class Context
     asio::io_context fIoContext;
     asio::io_context::work fIoWork;
     std::vector<std::thread> fThreadPool;
-    FairMQTransportFactory& fReceiveFactory;
-    FairMQTransportFactory& fSendFactory;
+    mq::TransportFactory& fReceiveFactory;
+    mq::TransportFactory& fSendFactory;
     size_t fSizeHint;
 
     auto InitThreadPool(int numberIoThreads) -> void;
