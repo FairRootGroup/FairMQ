@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2021-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -475,7 +475,6 @@ class Channel
 
 } // namespace fair::mq
 
-// using FairMQChannel [[deprecated("Use fair::mq::Channel")]] = fair::mq::Channel;
-using FairMQChannel = fair::mq::Channel;
+using FairMQChannel [[deprecated("Use fair::mq::Channel")]] = fair::mq::Channel;
 
 #endif   // FAIR_MQ_CHANNEL_H
