@@ -54,37 +54,7 @@ A more complete example which may serve as a start including example CMake code 
 
 ## 7.3 Provided Plugins
 
-### 7.3.1 DDS
-
-When launching a FairMQ topology via [DDS](http://dds.gsi.de/) the DDS plugin enables FairMQ devices to interact with DDS' custom command and property subsystems - enable the plugin by passing `-P dds` on the command line.
-
-Via the property subsystem a FairMQ topology may exchange channel connection data (essentially to do service discovery) needed to connect/bind all FairMQ channels appropriately. DDS is highly optimized for this use case. See [examples/dds](examples/dds/README.md) for more details.
-
-Via the custom command subsystem a FairMQ device can receive a number of commands. FairMQ provides a convenient command line tool `fairmq-dds-command-ui` that allows interactive or scripted control of a running FairMQ topology managed via DDS. If one develops directly against the custom command DDS API, the following table lists all the commands the DDS plugin currently understands:
-
-| Custom Command | Response | Error | Description |
-| --- | --- | --- | --- |
-| `check-state` | `<ID>: <STATE> (pid: <PID>)` | n/a | Query current device state, see state machine for possible states |
-| `dump-config` | `(<ID>: <PKEY> -> <PVALUE>\n)+` | n/a | Query current device config (list property key/value pairs) |
-| `INIT DEVICE` | `<ID>: queued <CMD> transition` | `<ID>: could not queue <CMD> transition` | Initiate state transition |
-| `BIND` | `<ID>: queued <CMD> transition` | `<ID>: could not queue <CMD> transition` | Initiate state transition |
-| `CONNECT` | `<ID>: queued <CMD> transition` | `<ID>: could not queue <CMD> transition` | Initiate state transition |
-| `INIT TASK` | `<ID>: queued <CMD> transition` | `<ID>: could not queue <CMD> transition` | Initiate state transition |
-| `RUN` | `<ID>: queued <CMD> transition` | `<ID>: could not queue <CMD> transition` | Initiate state transition |
-| `STOP` | `<ID>: queued <CMD> transition` | `<ID>: could not queue <CMD> transition` | Initiate state transition |
-| `RESET TASK` | `<ID>: queued <CMD> transition` | `<ID>: could not queue <CMD> transition` | Initiate state transition |
-| `RESET DEVICE` | `<ID>: queued <CMD> transition` | `<ID>: could not queue <CMD> transition` | Initiate state transition |
-| `END` | `<ID>: queued <CMD> transition` | `<ID>: could not queue <CMD> transition` | Initiate state transition |
-| `subscribe-to-heartbeats` | `heartbeat-subscription: <ID>,OK` | n/a | Subscribe to heartbeats |
-| on heartbeat subscription | `heartbeat: <ID>,<PID>` | n/a | Heartbeat every 100ms |
-| `unsubscribe-from-heartbeats` | `heartbeat-unsubscription: <ID>,OK` | n/a | Unsubscribe from heartbeats |
-| `subscribe-to-state-changes` | `state-changes-subscription: <ID>,OK` | n/a | Subscribe to state changes |
-| on state changes subscription | `state-change: <ID>,<STATE>` | n/a | State change notification |
-| `unsubscribe-from-state-changes` | `state-changes-unsubscription: <ID>,OK` | n/a | Unsubscribe from state changes |
-
-If unknown commands are received the plugin will print a warning.
-
-### 7.3.2 PMIx
+### 7.3.1 PMIx
 
 The [PMIx](https://pmix.org/) plugin enables launching a FairMQ topology with any PMIx capable launcher, e.g. the [Open Run-Time Environment (ORTE) of OpenMPI](https://www.open-mpi.org/doc/v4.0/man1/mpirun.1.php) or the [Slurm workload manager](https://slurm.schedmd.com/srun.html). This plugin is not (yet) very mature and serves as a proof of concept at the moment.
 

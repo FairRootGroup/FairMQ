@@ -1,12 +1,12 @@
 ################################################################################
-# Copyright (C) 2012-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2012-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-if(BUILD_FAIRMQ OR BUILD_SDK)
+if(BUILD_FAIRMQ)
 
   if(BUILD_TIDY_TOOL)
     include(FairMQTidy)
@@ -452,20 +452,9 @@ if(BUILD_FAIRMQ)
   endforeach()
 endif()
 
-if(BUILD_SDK_COMMANDS)
-  add_subdirectory(sdk/commands)
-endif()
-
-if(BUILD_SDK)
-  add_subdirectory(sdk)
-endif()
-
 ####################
 # external plugins #
 ####################
-if(BUILD_DDS_PLUGIN)
-  add_subdirectory(plugins/DDS)
-endif()
 if(BUILD_PMIX_PLUGIN)
   add_subdirectory(plugins/PMIx)
 endif()
