@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2018-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -100,7 +100,7 @@ try {
 // TODO catch the correct ofi error
 catch (const SilentSocketError& e)
 {
-    // do not print error in this case, this is handled by FairMQDevice
+    // do not print error in this case, this is handled by fair::mq::Device
     // in case no connection could be established after trying a number of random ports from a range.
     return false;
 }
@@ -189,7 +189,7 @@ try {
 }
 catch (const SilentSocketError& e)
 {
-    // do not print error in this case, this is handled by FairMQDevice
+    // do not print error in this case, this is handled by fair::mq::Device
     return false;
 }
 catch (const std::exception& e)

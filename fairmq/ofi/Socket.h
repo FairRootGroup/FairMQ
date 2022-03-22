@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2018-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,8 +9,8 @@
 #ifndef FAIR_MQ_OFI_SOCKET_H
 #define FAIR_MQ_OFI_SOCKET_H
 
-#include <FairMQSocket.h>
-#include <FairMQMessage.h>
+#include <fairmq/Message.h>
+#include <fairmq/Socket.h>
 #include <fairmq/ofi/Context.h>
 #include <fairmq/ofi/ControlMessages.h>
 

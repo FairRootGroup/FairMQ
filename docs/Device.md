@@ -2,7 +2,7 @@
 
 # 1. Device
 
-The components encapsulating the tasks are called **devices** and derive from the common base class `FairMQDevice`. FairMQ provides ready to use devices to organize the dataflow between the components (without touching the contents of a message), providing functionality like merging and splitting of the data stream (see subdirectory `devices`).
+The components encapsulating the tasks are called **devices** and derive from the common base class `fair::mq::Device`. FairMQ provides ready to use devices to organize the dataflow between the components (without touching the contents of a message), providing functionality like merging and splitting of the data stream (see subdirectory `devices`).
 
 ## 1.1 Topology
 

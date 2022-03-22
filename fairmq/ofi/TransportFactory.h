@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2018-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -23,7 +23,6 @@
 #include <fairmq/ofi/Context.h>
 #include <fairmq/ofi/Message.h>
 #include <fairmq/ofi/Socket.h>
-#include <fairmq/ofi/TransportFactory.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -84,7 +83,7 @@ struct TransportFactory final : mq::TransportFactory
         return std::make_unique<Message>(&fMemoryResource, size);
     }
 
-    auto CreateMessage(void* data, std::size_t size, fairmq_free_fn* ffn, void* hint = nullptr)
+    auto CreateMessage(void* data, std::size_t size, FreeFn* ffn, void* hint = nullptr)
         -> std::unique_ptr<mq::Message> override
     {
         return std::make_unique<Message>(&fMemoryResource, data, size, ffn, hint);
@@ -117,7 +116,7 @@ struct TransportFactory final : mq::TransportFactory
     }
 
     auto CreatePoller(
-        std::unordered_map<std::string, std::vector<FairMQChannel>> const& /*channelsMap*/,
+        std::unordered_map<std::string, std::vector<Channel>> const& /*channelsMap*/,
         std::vector<std::string> const& /*channelList*/) const
         -> std::unique_ptr<mq::Poller> override
     {

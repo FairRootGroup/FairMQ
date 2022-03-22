@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2018-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -69,7 +69,7 @@ Message::Message(pmr::memory_resource* pmr, const size_t size, Alignment /* alig
 Message::Message(pmr::memory_resource* pmr,
                  void* data,
                  const size_t size,
-                 fairmq_free_fn* ffn,
+                 FreeFn* ffn,
                  void* hint)
     : fInitialSize(size)
     , fSize(size)
@@ -137,7 +137,7 @@ auto Message::Rebuild(size_t size, Alignment /* alignment */) -> void
     Rebuild(size);
 }
 
-auto Message::Rebuild(void* /*data*/, size_t size, fairmq_free_fn* ffn, void* hint) -> void
+auto Message::Rebuild(void* /*data*/, size_t size, FreeFn* ffn, void* hint) -> void
 {
     if (fFreeFunction) {
       fFreeFunction(fData, fHint);
