@@ -1,5 +1,5 @@
 ################################################################################
-#    Copyright (C) 2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
+# Copyright (C) 2019-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -14,7 +14,7 @@ add_library(${plugin} SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/PMIx.hpp
 )
 target_compile_features(${plugin} PUBLIC cxx_std_17)
-target_link_libraries(${plugin} PUBLIC FairMQ PMIx::libpmix PRIVATE Commands)
+target_link_libraries(${plugin} PUBLIC FairMQ PMIx::libpmix)
 target_include_directories(${plugin} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(${plugin} PROPERTIES
   CXX_VISIBILITY_PRESET hidden
@@ -24,7 +24,7 @@ set_target_properties(${plugin} PROPERTIES
 
 set(exe fairmq-pmix-command-ui)
 add_executable(${exe} ${CMAKE_CURRENT_SOURCE_DIR}/runPMIxCommandUI.cxx)
-target_link_libraries(${exe} FairMQ Commands StateMachine PMIx::libpmix)
+target_link_libraries(${exe} FairMQ StateMachine PMIx::libpmix)
 target_include_directories(${exe} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 install(TARGETS ${plugin} ${exe}
