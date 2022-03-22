@@ -23,135 +23,6 @@ if(BUILD_FAIRMQ)
     DESTINATION ${PROJECT_INSTALL_INCDIR}
   )
 
-  #########
-  # Tools #
-  #########
-  set(target Tools)
-
-  set(TOOLS_PUBLIC_HEADER_FILES
-    tools/CppSTL.h
-    tools/Exceptions.h
-    tools/InstanceLimit.h
-    tools/IO.h
-    tools/Network.h
-    tools/Process.h
-    tools/RateLimit.h
-    tools/Semaphore.h
-    tools/Strings.h
-    tools/Unique.h
-    tools/Version.h
-    Error.h
-    Tools.h
-  )
-
-  set(TOOLS_SOURCE_FILES
-    Error.cxx
-    tools/Network.cxx
-    tools/Process.cxx
-    tools/Semaphore.cxx
-    tools/Unique.cxx
-  )
-
-  add_library(${target}
-    ${TOOLS_SOURCE_FILES}
-    ${TOOLS_PUBLIC_HEADER_FILES}
-  )
-  target_compile_features(${target} PUBLIC cxx_std_17)
-  target_compile_definitions(${target} PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
-  target_include_directories(${target}
-    PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  )
-  target_link_libraries(${target}
-    PRIVATE
-    FairLogger::FairLogger
-    Threads::Threads
-    Boost::boost
-  )
-  set_target_properties(${target} PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
-    OUTPUT_NAME FairMQ${target}
-  )
-  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
-    fairmq_target_tidy(TARGET ${target})
-  endif()
-  install(
-    TARGETS ${target}
-    EXPORT ${PROJECT_EXPORT_SET}
-    RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${PROJECT_INSTALL_LIBDIR}
-  )
-  foreach(HEADER ${TOOLS_PUBLIC_HEADER_FILES})
-    get_filename_component(_path ${HEADER} DIRECTORY)
-    file(TO_CMAKE_PATH ${PROJECT_INSTALL_INCDIR}/${_path} _destination)
-    install(FILES ${HEADER}
-      DESTINATION ${_destination}
-    )
-  endforeach()
-
-  #################
-  # State Machine #
-  #################
-  set(target StateMachine)
-
-  set(FSM_PUBLIC_HEADER_FILES
-    StateMachine.h
-    States.h
-    StateQueue.h
-  )
-
-  set(FSM_SOURCE_FILES
-    StateMachine.cxx
-    States.cxx
-  )
-
-  add_library(${target}
-    ${FSM_SOURCE_FILES}
-    ${FSM_PUBLIC_HEADER_FILES}
-  )
-  target_compile_features(${target} PUBLIC cxx_std_17)
-  target_compile_definitions(${target} PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
-  target_include_directories(${target}
-    PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-  )
-  target_link_libraries(${target}
-    PUBLIC
-    FairLogger::FairLogger
-
-    PRIVATE
-    Boost::boost
-    Tools
-  )
-  set_target_properties(${target} PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
-    OUTPUT_NAME FairMQ${target}
-  )
-  if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
-    fairmq_target_tidy(TARGET ${target})
-  endif()
-  install(
-    TARGETS ${target}
-    EXPORT ${PROJECT_EXPORT_SET}
-    RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${PROJECT_INSTALL_LIBDIR}
-  )
-  foreach(HEADER ${FSM_PUBLIC_HEADER_FILES})
-    get_filename_component(_path ${HEADER} DIRECTORY)
-    file(TO_CMAKE_PATH ${PROJECT_INSTALL_INCDIR}/${_path} _destination)
-    install(FILES ${HEADER}
-      DESTINATION ${_destination}
-    )
-  endforeach()
-endif()
-
-if(BUILD_FAIRMQ)
   ##########################
   # libFairMQ header files #
   ##########################
@@ -159,6 +30,7 @@ if(BUILD_FAIRMQ)
     Channel.h
     Device.h
     DeviceRunner.h
+    Error.h
     EventManager.h
     FairMQChannel.h
     FairMQDevice.h
@@ -184,17 +56,32 @@ if(BUILD_FAIRMQ)
     Properties.h
     PropertyOutput.h
     Socket.h
+    StateMachine.h
+    States.h
+    StateQueue.h
     SuboptParser.h
+    Tools.h
     TransportFactory.h
     Transports.h
     UnmanagedRegion.h
     options/FairMQProgOptions.h
     runDevice.h
     runFairMQDevice.h
-    shmem/Monitor.h
     shmem/Common.h
-    shmem/UnmanagedRegion.h
+    shmem/Monitor.h
     shmem/Segment.h
+    shmem/UnmanagedRegion.h
+    tools/CppSTL.h
+    tools/Exceptions.h
+    tools/IO.h
+    tools/InstanceLimit.h
+    tools/Network.h
+    tools/Process.h
+    tools/RateLimit.h
+    tools/Semaphore.h
+    tools/Strings.h
+    tools/Unique.h
+    tools/Version.h
   )
 
   set(FAIRMQ_PRIVATE_HEADER_FILES
@@ -239,6 +126,7 @@ if(BUILD_FAIRMQ)
     Channel.cxx
     Device.cxx
     DeviceRunner.cxx
+    Error.cxx
     JSONParser.cxx
     MemoryResources.cxx
     Plugin.cxx
@@ -246,6 +134,8 @@ if(BUILD_FAIRMQ)
     PluginServices.cxx
     ProgOptions.cxx
     Properties.cxx
+    StateMachine.cxx
+    States.cxx
     SuboptParser.cxx
     TransportFactory.cxx
     plugins/config/Config.cxx
@@ -253,6 +143,10 @@ if(BUILD_FAIRMQ)
     shmem/Common.cxx
     shmem/Manager.cxx
     shmem/Monitor.cxx
+    tools/Network.cxx
+    tools/Process.cxx
+    tools/Semaphore.cxx
+    tools/Unique.cxx
   )
 
   if(BUILD_OFI_TRANSPORT)
@@ -331,8 +225,6 @@ if(BUILD_FAIRMQ)
     Boost::filesystem
     Boost::regex
     FairLogger::FairLogger
-    Tools
-    StateMachine
 
     PRIVATE # only libFairMQ links against private dependencies
     libzmq
@@ -414,7 +306,7 @@ if(BUILD_FAIRMQ)
   add_executable(fairmq-uuid-gen tools/runUuidGenerator.cxx)
   target_link_libraries(fairmq-uuid-gen PUBLIC
     Boost::program_options
-    Tools
+    FairMQ
   )
   if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
     fairmq_target_tidy(TARGET fairmq-uuid-gen)

@@ -24,7 +24,7 @@ set_target_properties(${plugin} PROPERTIES
 
 set(exe fairmq-pmix-command-ui)
 add_executable(${exe} ${CMAKE_CURRENT_SOURCE_DIR}/runPMIxCommandUI.cxx)
-target_link_libraries(${exe} FairMQ StateMachine PMIx::libpmix)
+target_link_libraries(${exe} FairMQ PMIx::libpmix)
 target_include_directories(${exe} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 install(TARGETS ${plugin} ${exe}
