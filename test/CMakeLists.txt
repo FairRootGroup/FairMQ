@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2014-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -292,56 +292,3 @@ add_testsuite(MemoryResources
     TIMEOUT 5
     ${definitions}
 )
-
-if(BUILD_SDK)
-    # configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sdk/test_topo.xml
-                   # ${CMAKE_BINARY_DIR}/test_topo.xml)
-    # add_testsuite(SDK
-        # SOURCES
-        # ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
-        # sdk/_async_op.cxx
-        # sdk/_dds.cxx
-        # sdk/_topology.cxx
-        # sdk/Fixtures.h
-#
-        # LINKS
-        # SDK
-        # Tools
-        # DDS::dds_topology_lib
-        # DDS::dds_tools_lib
-        # INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
-                 # ${CMAKE_CURRENT_BINARY_DIR}
-        # TIMEOUT 30
-        # ${definitions}
-    # )
-
-    if(DDS_TESTS)
-        foreach(i RANGE 1 ${DDS_TESTS})
-            add_test(NAME DDSToolsAPIStabilityTest_${i}
-                     COMMAND ${CMAKE_CURRENT_BINARY_DIR}/testsuite_SDK --gtest_filter=TopologyHelper.MakeTopology --gtest_also_run_disabled_tests
-            )
-            set_tests_properties(DDSToolsAPIStabilityTest_${i} PROPERTIES TIMEOUT 10)
-        endforeach()
-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/DDSToolsAPIStabilityTest.cmake.in
-                       ${CMAKE_BINARY_DIR}/DDSToolsAPIStabilityTest.cmake
-                       @ONLY
-        )
-    endif()
-endif()
-
-if(BUILD_SDK_COMMANDS)
-    add_testsuite(Commands
-        SOURCES
-        ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
-        commands/_commands.cxx
-
-        LINKS
-        Commands
-        StateMachine
-        Tools
-        INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
-                 ${CMAKE_CURRENT_BINARY_DIR}
-        TIMEOUT 30
-        ${definitions}
-    )
-endif()

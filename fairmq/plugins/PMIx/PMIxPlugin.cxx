@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2019-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -8,7 +8,6 @@
 
 #include "PMIxPlugin.h"
 
-#include <fairmq/sdk/commands/Commands.h>
 #include <fairmq/tools/Strings.h>
 
 #include <sstream>
@@ -16,7 +15,6 @@
 #include <cstdint> // UINT32_MAX
 
 using namespace std;
-using namespace fair::mq::sdk::cmd;
 
 namespace fair::mq::plugins
 {
@@ -31,8 +29,7 @@ PMIxPlugin::PMIxPlugin(const string& name,
     , fPid(getpid())
     , fPMIxClient(tools::ToString("PMIx client(pid=", fPid, ") "))
     , fDeviceId(string(fProcess.nspace) + "_" + to_string(fProcess.rank))
-    , fCommands(fProcess)
-    , fLastExternalController(UINT32_MAX)
+    // , fLastExternalController(UINT32_MAX)
     , fExitingAckedByLastExternalController(false)
     , fCurrentState(DeviceState::Idle)
     , fLastState(DeviceState::Idle)
@@ -42,12 +39,6 @@ PMIxPlugin::PMIxPlugin(const string& name,
     SetProperty<string>("id", fDeviceId);
 
     Fence("pmix::init");
-    SubscribeForCommands();
-    Fence("subscribed");
-
-    // fCommands.Send("test1");
-    // fCommands.Send("test2", 0);
-    // fCommands.Send("test3", 0);
 
     // LOG(info) << "PMIX_EXTERNAL_ERR_BASE: " << PMIX_EXTERNAL_ERR_BASE;
 
@@ -101,11 +92,9 @@ PMIxPlugin::PMIxPlugin(const string& name,
         lock_guard<mutex> lock{fStateChangeSubscriberMutex};
         fLastState = fCurrentState;
         fCurrentState = newState;
-        for (auto subscriberId : fStateChangeSubscribers) {
-            LOG(debug) << "Publishing state-change: " << fLastState << "->" << newState << " to " << subscriberId;
-            Cmds cmds(make<StateChange>(fDeviceId, 0, fLastState, fCurrentState));
-            fCommands.Send(cmds.Serialize(Format::JSON), static_cast<pmix::rank>(subscriberId));
-        }
+        // for (auto subscriberId : fStateChangeSubscribers) {
+            // LOG(debug) << "Publishing state-change: " << fLastState << "->" << newState << " to " << subscriberId;
+        // }
     });
 }
 
@@ -113,7 +102,6 @@ PMIxPlugin::~PMIxPlugin()
 {
     LOG(debug) << "Destroying PMIxPlugin";
     ReleaseDeviceControl();
-    fCommands.Unsubscribe();
     while (pmix::initialized()) {
         try {
             pmix::finalize();
@@ -122,92 +110,6 @@ PMIxPlugin::~PMIxPlugin()
             LOG(debug) << PMIxClient() << "pmix::finalize() failed: " << e.what();
         }
     }
-}
-
-auto PMIxPlugin::SubscribeForCommands() -> void
-{
-    fCommands.Subscribe([this](const string& cmdStr, const pmix::proc& sender) {
-        // LOG(info) << "PMIx Plugin received message: '" << cmdStr << "', from " << sender;
-
-        Cmds inCmds;
-        inCmds.Deserialize(cmdStr, Format::JSON);
-
-        for (const auto& cmd : inCmds) {
-            LOG(info) << "Received command type: '" << cmd->GetType() << "' from " << sender;
-            switch (cmd->GetType()) {
-                case Type::check_state:
-                    fCommands.Send(Cmds(make<CurrentState>(fDeviceId, GetCurrentDeviceState()))
-                                       .Serialize(Format::JSON),
-                                   {sender});
-                    break;
-                case Type::change_state: {
-                    Transition transition = static_cast<ChangeState&>(*cmd).GetTransition();
-                    if (ChangeDeviceState(transition)) {
-                        fCommands.Send(
-                            Cmds(make<TransitionStatus>(fDeviceId, 0, Result::Ok, transition, GetCurrentDeviceState()))
-                                .Serialize(Format::JSON),
-                            {sender});
-                    } else {
-                        fCommands.Send(
-                            Cmds(make<TransitionStatus>(fDeviceId, 0, Result::Failure, transition, GetCurrentDeviceState()))
-                                .Serialize(Format::JSON),
-                            {sender});
-                    }
-                    {
-                        lock_guard<mutex> lock{fStateChangeSubscriberMutex};
-                        fLastExternalController = sender.rank;
-                    }
-                }
-                break;
-                case Type::subscribe_to_state_change: {
-                    {
-                        lock_guard<mutex> lock{fStateChangeSubscriberMutex};
-                        fStateChangeSubscribers.insert(sender.rank);
-                    }
-
-                    LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState
-                               << " to " << sender;
-                    Cmds outCmds(make<StateChangeSubscription>(fDeviceId, fProcess.rank, Result::Ok),
-                                 make<StateChange>(fDeviceId, 0, fLastState, fCurrentState));
-                    fCommands.Send(outCmds.Serialize(Format::JSON), {sender});
-                }
-                break;
-                case Type::unsubscribe_from_state_change: {
-                    {
-                        lock_guard<mutex> lock{fStateChangeSubscriberMutex};
-                        fStateChangeSubscribers.erase(sender.rank);
-                    }
-                    fCommands.Send(Cmds(make<StateChangeUnsubscription>(fDeviceId, fProcess.rank, Result::Ok))
-                                       .Serialize(Format::JSON),
-                                   {sender});
-                }
-                break;
-                case Type::state_change_exiting_received: {
-                    {
-                        lock_guard<mutex> lock{fStateChangeSubscriberMutex};
-                        if (fLastExternalController == sender.rank) {
-                            fExitingAckedByLastExternalController = true;
-                        }
-                    }
-                    fExitingAcked.notify_one();
-                }
-                break;
-                case Type::dump_config: {
-                    stringstream ss;
-                    for (const auto& k: GetPropertyKeys()) {
-                        ss << fDeviceId << ": " << k << " -> " << GetPropertyAsString(k) << "\n";
-                    }
-                    fCommands.Send(Cmds(make<Config>(fDeviceId, ss.str())).Serialize(Format::JSON),
-                                   {sender});
-                }
-                break;
-                default:
-                    LOG(warn) << "Unexpected/unknown command received: " << cmdStr;
-                    LOG(warn) << "Origin: " << sender;
-                break;
-            }
-        }
-    });
 }
 
 auto PMIxPlugin::Init() -> pmix::proc
