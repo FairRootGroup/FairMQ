@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2021-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -141,23 +141,14 @@ struct RegionConfig
 
 }   // namespace fair::mq
 
-// using FairMQRegionEvent [[deprecated("Use fair::mq::RegionBlock")]] = fair::mq::RegionEvent;
-// using FairMQRegionInfo [[deprecated("Use fair::mq::RegionInfo")]] = fair::mq::RegionInfo;
-// using FairMQRegionBlock [[deprecated("Use fair::mq::RegionBlock")]] = fair::mq::RegionBlock;
-// using FairMQRegionCallback [[deprecated("Use fair::mq::RegionCallback")]] = fair::mq::RegionCallback;
-// using FairMQRegionBulkCallback [[deprecated("Use fair::mq::RegionBulkCallback")]] = fair::mq::RegionBulkCallback;
-// using FairMQRegionEventCallback [[deprecated("Use fair::mq::RegionEventCallback")]] = fair::mq::RegionEventCallback;
-// using FairMQUnmanagedRegion [[deprecated("Use fair::mq::UnmanagedRegion")]] = fair::mq::UnmanagedRegion;
-// using FairMQUnmanagedRegionPtr [[deprecated("Use fair::mq::UnmanagedRegionPtr")]] = fair::mq::UnmanagedRegionPtr;
-// using FairMQRegionConfig [[deprecated("Use fair::mq::RegionConfig")]] = fair::mq::RegionConfig;
-using FairMQRegionEvent = fair::mq::RegionEvent;
-using FairMQRegionInfo = fair::mq::RegionInfo;
-using FairMQRegionBlock = fair::mq::RegionBlock;
-using FairMQRegionCallback = fair::mq::RegionCallback;
-using FairMQRegionBulkCallback = fair::mq::RegionBulkCallback;
-using FairMQRegionEventCallback = fair::mq::RegionEventCallback;
-using FairMQUnmanagedRegion = fair::mq::UnmanagedRegion;
-using FairMQUnmanagedRegionPtr = fair::mq::UnmanagedRegionPtr;
-using FairMQRegionConfig = fair::mq::RegionConfig;
+using FairMQRegionEvent [[deprecated("Use fair::mq::RegionEvent")]] = fair::mq::RegionEvent;
+using FairMQRegionInfo [[deprecated("Use fair::mq::RegionInfo")]] = fair::mq::RegionInfo;
+using FairMQRegionBlock [[deprecated("Use fair::mq::RegionBlock")]] = fair::mq::RegionBlock;
+using FairMQRegionCallback [[deprecated("Use fair::mq::RegionCallback")]] = fair::mq::RegionCallback;
+using FairMQRegionBulkCallback [[deprecated("Use fair::mq::RegionBulkCallback")]] = fair::mq::RegionBulkCallback;
+using FairMQRegionEventCallback [[deprecated("Use fair::mq::RegionEventCallback")]] = fair::mq::RegionEventCallback;
+using FairMQUnmanagedRegion [[deprecated("Use fair::mq::UnmanagedRegion")]] = fair::mq::UnmanagedRegion;
+using FairMQUnmanagedRegionPtr [[deprecated("Use fair::mq::UnmanagedRegionPtr")]] = fair::mq::UnmanagedRegionPtr;
+using FairMQRegionConfig [[deprecated("Use fair::mq::RegionConfig")]] = fair::mq::RegionConfig;
 
 #endif   // FAIR_MQ_UNMANAGEDREGION_H

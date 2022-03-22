@@ -635,15 +635,9 @@ class Device
 
 }   // namespace fair::mq
 
-// using FairMQChannelMap [[deprecated("Use fair::mq::ChannelMap")]] = fair::mq::ChannelMap;
-// using InputMsgCallback [[deprecated("Use fair::mq::InputMsgCallback")]] =
-    // fair::mq::InputMsgCallback;
-// using InputMultipartCallback [[deprecated("Use fair::mq::InputMultipartCallback")]] =
-    // fair::mq::InputMultipartCallback;
-// using FairMQDevice [[deprecated("Use fair::mq::Device")]] = fair::mq::Device;
-using FairMQChannelMap = fair::mq::ChannelMap;
-using InputMsgCallback = fair::mq::InputMsgCallback;
-using InputMultipartCallback = fair::mq::InputMultipartCallback;
-using FairMQDevice = fair::mq::Device;
+using FairMQChannelMap [[deprecated("Use fair::mq::ChannelMap")]] = fair::mq::ChannelMap;
+using InputMsgCallback [[deprecated("Use fair::mq::InputMsgCallback")]] = fair::mq::InputMsgCallback;
+using InputMultipartCallback [[deprecated("Use fair::mq::InputMultipartCallback")]] = fair::mq::InputMultipartCallback;
+using FairMQDevice [[deprecated("Use fair::mq::Device")]] = fair::mq::Device;
 
 #endif /* FAIR_MQ_DEVICE_H */
