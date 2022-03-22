@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2015-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2015-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -17,7 +17,7 @@
 namespace fair::mq::test
 {
 
-class Pub : public FairMQDevice
+class Pub : public Device
 {
   protected:
     auto InitTask() -> void override
@@ -27,15 +27,15 @@ class Pub : public FairMQDevice
 
     auto Run() -> void override
     {
-        auto ready1 = FairMQMessagePtr{NewMessage()};
-        auto ready2 = FairMQMessagePtr{NewMessage()};
+        auto ready1 = NewMessage();
+        auto ready2 = NewMessage();
         auto r1 = Receive(ready1, "control");
         auto r2 = Receive(ready2, "control");
         if (r1 >= 0 && r2 >= 0)
         {
             LOG(info) << "Received both ready signals, proceeding to publish data";
 
-            auto msg = FairMQMessagePtr{NewMessage()};
+            auto msg = NewMessage();
             auto d1 = Send(msg, "data");
             if (d1 >= 0)
             {
@@ -46,8 +46,8 @@ class Pub : public FairMQDevice
                 LOG(error) << "Failed sending data: d1 = " << d1;
             }
 
-            auto ack1 = FairMQMessagePtr{NewMessage()};
-            auto ack2 = FairMQMessagePtr{NewMessage()};
+            auto ack1 = NewMessage();
+            auto ack2 = NewMessage();
             auto a1 = Receive(ack1, "control");
             auto a2 = Receive(ack2, "control");
             if (a1 >= 0 && a2 >= 0)

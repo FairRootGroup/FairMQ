@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2015-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2015-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -15,7 +15,7 @@
 namespace fair::mq::test
 {
 
-class PollOut : public FairMQDevice
+class PollOut : public Device
 {
   protected:
     auto InitTask() -> void override
@@ -25,8 +25,8 @@ class PollOut : public FairMQDevice
 
     auto Run() -> void override
     {
-        auto msg1 = FairMQMessagePtr{NewMessage()};
-        auto msg2 = FairMQMessagePtr{NewMessage()};
+        auto msg1 = NewMessage();
+        auto msg2 = NewMessage();
         Send(msg1, "data1");
         Send(msg2, "data2");
     };

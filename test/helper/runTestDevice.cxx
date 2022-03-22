@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2015-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2015-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -22,7 +22,7 @@
 #include "devices/TestErrorState.h"
 #include "devices/TestSignals.h"
 
-#include <runFairMQDevice.h>
+#include <fairmq/runDevice.h>
 
 #include <boost/program_options.hpp>
 #include <iostream>
@@ -36,7 +36,7 @@ auto addCustomOptions(bpo::options_description& options) -> void
         ("poll-type", bpo::value<int>()->default_value(0), "Poll type switch(0 - vector of (sub-)channels, 1 - vector of channel names)");
 }
 
-auto getDevice(const fair::mq::ProgOptions& config) -> FairMQDevicePtr
+auto getDevice(fair::mq::ProgOptions& config) -> std::unique_ptr<fair::mq::Device>
 {
     using namespace std;
     using namespace fair::mq::test;
@@ -44,35 +44,35 @@ auto getDevice(const fair::mq::ProgOptions& config) -> FairMQDevicePtr
     auto id = config.GetProperty<std::string>("id");
 
     if (0 == id.find("pull_")) {
-        return new Pull;
+        return std::make_unique<Pull>();
     } else if (0 == id.find("push_")) {
-        return new Push;
+        return std::make_unique<Push>();
     } else if (0 == id.find("sub_")) {
-        return new Sub;
+        return std::make_unique<Sub>();
     } else if (0 == id.find("pub_")) {
-        return new Pub;
+        return std::make_unique<Pub>();
     } else if (0 == id.find("req_")) {
-        return new Req;
+        return std::make_unique<Req>();
     } else if (0 == id.find("rep_")) {
-        return new Rep;
+        return std::make_unique<Rep>();
     } else if (0 == id.find("transfer_timeout_")) {
-        return new TransferTimeout;
+        return std::make_unique<TransferTimeout>();
     } else if (0 == id.find("pollout_")) {
-        return new PollOut;
+        return std::make_unique<PollOut>();
     } else if (0 == id.find("pollin_")) {
-        return new PollIn;
+        return std::make_unique<PollIn>();
     } else if (0 == id.find("pairleft_")) {
-        return new PairLeft;
+        return std::make_unique<PairLeft>();
     } else if (0 == id.find("pairright_")) {
-        return new PairRight;
+        return std::make_unique<PairRight>();
     } else if (0 == id.find("waitfor_")) {
-        return new TestWaitFor;
+        return std::make_unique<TestWaitFor>();
     } else if (0 == id.find("exceptions_")) {
-        return new Exceptions;
+        return std::make_unique<Exceptions>();
     } else if (0 == id.find("error_state_")) {
-        return new ErrorState;
+        return std::make_unique<ErrorState>();
     } else if (0 == id.find("signals_")) {
-        return new Signals;
+        return std::make_unique<Signals>();
     } else {
         cerr << "Don't know id '" << id << "'" << endl;
         return nullptr;

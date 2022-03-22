@@ -1,5 +1,5 @@
 /********************************************************************************
- *   Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH     *
+ * Copyright (C) 2018-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -17,7 +17,7 @@
 namespace fair::mq::test
 {
 
-class ErrorState : public FairMQDevice
+class ErrorState : public Device
 {
   public:
     void Init() override

@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -13,7 +13,7 @@
 
 using FairMQDevicePtr = fair::mq::Device*;
 
-// to be implemented by the user to return a child class of FairMQDevice
+// to be implemented by the user to return a child class of fair::mq::Device
 FairMQDevicePtr getDevice(const fair::mq::ProgOptions& config);
 
 // to be implemented by the user to add custom command line options (or just with empty body)

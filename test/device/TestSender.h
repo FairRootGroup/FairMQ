@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2015-2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2015-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -18,7 +18,7 @@
 namespace fair::mq::test
 {
 
-class Sender : public FairMQDevice
+class Sender : public Device
 {
   public:
     Sender(const std::string& channelName)
@@ -33,7 +33,7 @@ class Sender : public FairMQDevice
 
     auto Run() -> void override
     {
-        auto msg = FairMQMessagePtr{NewMessage()};
+        auto msg = NewMessage();
         if (Send(msg, fChannelName) >= 0) {
             LOG(info) << "sent empty message";
         } else {

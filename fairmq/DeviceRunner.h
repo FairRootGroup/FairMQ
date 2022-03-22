@@ -45,7 +45,7 @@ namespace fair::mq
  * Each hook has access to all members of the DeviceRunner and really only differs by the point in
  * time it is called.
  *
- * For an example usage of this class see the fairmq/runFairMQDevice.h header.
+ * For an example usage of this class see the <fairmq/runDevice.h> header.
  */
 class DeviceRunner
 {

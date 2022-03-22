@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2017-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2017-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -10,7 +10,7 @@
 #include <boost/program_options.hpp>
 #include <memory>
 
-// to be implemented by the user to return a child class of FairMQDevice
+// to be implemented by the user to return a child class of fair::mq::Device
 std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& config);
 
 // to be implemented by the user to add custom command line options (or just with empty body)
