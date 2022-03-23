@@ -115,12 +115,12 @@ auto testConnectedPeers(std::string const& transport)
         Channel ch2("ch2", "pair", factory);
         ASSERT_EQ(ch2.GetNumberOfConnectedPeers(), zero);
         ch2.Connect(address);
-        std::this_thread::sleep_for(10ms);
+        std::this_thread::sleep_for(100ms);
         ASSERT_EQ(ch1.GetNumberOfConnectedPeers(), one);
         ASSERT_EQ(ch2.GetNumberOfConnectedPeers(), one);
     }
 
-    std::this_thread::sleep_for(10ms);
+    std::this_thread::sleep_for(100ms);
     ASSERT_EQ(ch1.GetNumberOfConnectedPeers(), zero);
 }
 
