@@ -35,7 +35,7 @@ Plugin Manager:
                                         see man ld.so(8) for details.
   -P [ --plugin ] arg                   List of plugin names to load in
                                         order,e.g. if the file is called
-                                        'libFairMQPlugin_example.so', just list
+                                        'libfairmq-plugin-example.so', just list
                                         'example' or 'd:example' here.To load a
                                         prelinked plugin, list 'p:example'
                                         here.

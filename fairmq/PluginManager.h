@@ -66,6 +66,8 @@ class PluginManager
     auto SearchPaths() const -> const std::vector<boost::filesystem::path>& { return fSearchPaths; }
     struct BadSearchPath : std::invalid_argument { using std::invalid_argument::invalid_argument; };
 
+    auto SearchPluginFile(const std::string&) const -> boost::filesystem::path;
+    struct PluginNotFound : std::runtime_error { using std::runtime_error::runtime_error; };
     auto LoadPlugin(const std::string& pluginName) -> void;
     auto LoadPlugins(const std::vector<std::string>& pluginNames) -> void { for(const auto& pluginName : pluginNames) { LoadPlugin(pluginName); } }
     struct PluginLoadError : std::runtime_error { using std::runtime_error::runtime_error; };
@@ -118,6 +120,7 @@ class PluginManager
     auto InstantiatePlugin(const std::string& pluginName) -> void;
 
     static const std::string fgkLibPrefix;
+    static const std::string fgkLibPrefixAlt;
     std::vector<boost::filesystem::path> fSearchPaths;
     static std::vector<boost::dll::shared_library> fgDLLKeepAlive; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
     std::map<std::string, std::function<PluginFactory>> fPluginFactories;
