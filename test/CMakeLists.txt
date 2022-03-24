@@ -65,7 +65,7 @@ add_testsuite(Protocols
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_SOURCE_DIR}/protocols
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
     ${definitions}
 )
 
@@ -78,7 +78,7 @@ add_testsuite(Parts
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_SOURCE_DIR}/parts
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
 )
 
 add_testsuite(Message
@@ -90,7 +90,7 @@ add_testsuite(Message
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_SOURCE_DIR}/message
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
     ${definitions}
 )
 
@@ -104,7 +104,7 @@ add_testsuite(Region
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_SOURCE_DIR}/region
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
     ${definitions}
 )
 
@@ -127,7 +127,7 @@ add_testsuite(Device
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_SOURCE_DIR}/device
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
 )
 
 set(VERSION_MAJOR 1)
@@ -172,7 +172,7 @@ add_testsuite(Plugins
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS FairMQPlugin_test_dummy FairMQPlugin_test_dummy2
-    TIMEOUT 5
+    TIMEOUT 20
 )
 
 add_testsuite(PluginsPrelinked
@@ -183,7 +183,7 @@ add_testsuite(PluginsPrelinked
     LINKS FairMQ FairMQPlugin_test_dummy FairMQPlugin_test_dummy2
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
 )
 
 add_testsuite(PluginServices
@@ -196,7 +196,7 @@ add_testsuite(PluginServices
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
 )
 
 add_testsuite(EventManager
@@ -207,7 +207,7 @@ add_testsuite(EventManager
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
 )
 
 add_testsuite(Properties
@@ -219,7 +219,7 @@ add_testsuite(Properties
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
 )
 
 # add_testsuite(StateMachine
@@ -241,7 +241,7 @@ add_testsuite(Tools
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
 )
 
 add_testsuite(Channel
@@ -252,7 +252,7 @@ add_testsuite(Channel
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
 )
 
 add_testsuite(Transport
@@ -265,7 +265,7 @@ add_testsuite(Transport
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
     ${definitions}
 )
 
@@ -277,7 +277,7 @@ add_testsuite(Poller
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
     ${definitions}
 )
 
@@ -289,6 +289,6 @@ add_testsuite(MemoryResources
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 5
+    TIMEOUT 20
     ${definitions}
 )
