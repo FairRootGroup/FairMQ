@@ -76,10 +76,9 @@ int TestData::ndeallocations = 0;
 
 TEST(MemoryResources, transportAllocatorMap)
 {
-    // size_t session{tools::UuidHash()};
+    size_t session{tools::UuidHash()};
     ProgOptions config;
-    // config.SetProperty<string>("session", to_string(session));
-    config.SetProperty<string>("session", "default");
+    config.SetProperty<string>("session", to_string(session));
 
     FactoryType factoryZMQ = TransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
     FactoryType factorySHM = TransportFactory::CreateTransportFactory("shmem", fair::mq::tools::Uuid(), &config);

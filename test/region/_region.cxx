@@ -45,8 +45,9 @@ void RegionsSizeMismatch()
     ASSERT_EQ(region2, nullptr);
 }
 
-void RegionsCache(const string& transport, const string& address)
+void RegionsCache(const string& transport, const string& _address)
 {
+    std::string address(tools::ToString(_address, "_", transport));
     size_t session1 = tools::UuidHash();
     size_t session2 = tools::UuidHash();
 

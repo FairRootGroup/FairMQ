@@ -28,7 +28,7 @@ class Sender : public Device
   protected:
     auto Init() -> void override
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
     auto Run() -> void override
