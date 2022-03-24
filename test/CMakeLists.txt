@@ -151,7 +151,7 @@ set(VERSION_MINOR 2)
 set(VERSION_PATCH 0)
 set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/helper/plugins/dummy2.h.in ${CMAKE_CURRENT_BINARY_DIR}/helper/plugins/dummy2.h)
-add_testlib(FairMQPlugin_test_dummy2
+add_testlib(fairmq-plugin-test_dummy2
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/helper/plugins/dummy2.h
     helper/plugins/dummy2.cxx
@@ -171,7 +171,7 @@ add_testsuite(Plugins
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
-    DEPENDS FairMQPlugin_test_dummy FairMQPlugin_test_dummy2
+    DEPENDS FairMQPlugin_test_dummy fairmq-plugin-test_dummy2
     TIMEOUT 20
 )
 
@@ -180,7 +180,7 @@ add_testsuite(PluginsPrelinked
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     plugins/_plugin_manager_prelink.cxx
 
-    LINKS FairMQ FairMQPlugin_test_dummy FairMQPlugin_test_dummy2
+    LINKS FairMQ FairMQPlugin_test_dummy fairmq-plugin-test_dummy2
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
