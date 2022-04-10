@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2020 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2020-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -93,7 +93,7 @@ struct Receiver : fair::mq::Device
     unordered_map<uint16_t, TFBuffer> fBuffer;
     unordered_set<uint16_t> fDiscardedSet;
 
-    int fNumSenders = 0;
+    unsigned int fNumSenders = 0;
     int fBufferTimeoutInMs = 5000;
     int fMaxTimeframes = 0;
     int fTimeframeCounter = 0;
