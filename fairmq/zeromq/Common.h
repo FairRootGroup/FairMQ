@@ -194,13 +194,16 @@ inline auto getMonitorEvent(void* monitorSocket) -> int
 
     // Second frame in message contains event address
     assertm(zmq_msg_more(&msg), "A second frame is pending");   // NOLINT
-    zmq_msg_init(&msg);
+    zmq_msg_close(&msg);
+    zmq_msg_t msg2;
+    zmq_msg_init(&msg2);
     {
-        [[maybe_unused]] auto const rc = zmq_msg_recv(&msg, monitorSocket, 0);
+        [[maybe_unused]] auto const rc = zmq_msg_recv(&msg2, monitorSocket, 0);
         assertm(rc >= 0, "second monitor event frame successfully received");   // NOLINT
     }
-    assertm(!zmq_msg_more(&msg), "No more frames are pending");   // NOLINT
+    assertm(!zmq_msg_more(&msg2), "No more frames are pending");   // NOLINT
     // No unpacking of the event address needed for now
+    zmq_msg_close(&msg2);
 
     return event;
 }
