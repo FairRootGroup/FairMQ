@@ -14,7 +14,6 @@
 #include <clang/ASTMatchers/ASTMatchers.h>
 #include <clang/Basic/Diagnostic.h>
 #include <llvm/Support/Casting.h>
-#include <sstream>
 
 namespace fair::mq::tidy {
 
@@ -44,29 +43,22 @@ struct ModernizeNonNamespacedTypes
             if (auto const type_alias_decl = m.Nodes.getNodeAs<TypeAliasDecl>("decl")) {
                 auto const underlying_type(type_alias_decl->getUnderlyingType());
 
-                // auto ldecl_ctx(type_loc->getType()getLexicalDeclContext());
-                // std::stringstream s;
-                // while (ldecl_ctx) {
-                    // s << "." << ldecl_ctx->getDeclKindName();
-                    // if (ldecl_ctx->isNamespace()) {
-                        // s << dyn_cast<NamespaceDecl>(ldecl_ctx)->getNameAsString();
-                    // }
-                    // ldecl_ctx = ldecl_ctx->getLexicalParent();
-                // }
-
                 if (underlying_type.getAsString().rfind("fair::mq::", 0) == 0) {
                     auto& diag_engine(m.Context->getDiagnostics());
-                    auto builder(
-                        diag_engine.Report(type_loc->getBeginLoc(),
-                                           diag_engine.getCustomDiagID(
-                                               DiagnosticsEngine::Warning,
-                                               "Modernize non-namespaced type %0 with %1. [%2]")));
-                    builder << named_decl;
-                    builder << underlying_type;
-                    builder << "fairmq-modernize-nonnamespaced-types";
+                    auto const location(type_loc->getBeginLoc());
+                    if (location.isValid()) {
+                        auto builder(diag_engine.Report(
+                            location,
+                            diag_engine.getCustomDiagID(
+                                DiagnosticsEngine::Warning,
+                                "Modernize non-namespaced type %0 with %1. [%2]")));
+                        builder << named_decl;
+                        builder << underlying_type;
+                        builder << "fairmq-modernize-nonnamespaced-types";
 
-                    builder.AddFixItHint(FixItHint::CreateReplacement(
-                        type_loc->getSourceRange(), underlying_type.getAsString()));
+                        builder.AddFixItHint(FixItHint::CreateReplacement(
+                            type_loc->getSourceRange(), underlying_type.getAsString()));
+                    }
                 }
             }
         }
