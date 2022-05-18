@@ -26,7 +26,7 @@ struct ModernizeNonNamespacedTypes
 
         // https://clang.llvm.org/docs/LibASTMatchersReference.html
         finder.addMatcher(
-            typeLoc(loc(qualType(hasDeclaration(namedDecl(matchesName("FairMQ.*")).bind("decl")))))
+            typeLoc(loc(qualType(hasDeclaration(namedDecl(matchesName("::FairMQ")).bind("decl")))))
                 .bind("loc"),
             &fCallback);
     }
