@@ -678,6 +678,9 @@ void Monitor::ResetContent(const ShmId& shmIdT, bool verbose /* = true */)
                         size_t size = segment.get_segment_manager()->get_size();
                         new(ptr) segment_manager<char, simple_seq_fit<mutex_family, offset_ptr<void>>, null_index>(size);
                     }
+                    if (verbose) {
+                        cout << "Done." << endl;
+                    }
                 } catch (bie& e) {
                     if (verbose) {
                         cout << "Error resetting content of segment '" << std::string("fmq_" + shmId + "_m_" + to_string(s.first)) << "': " << e.what() << endl;
@@ -722,13 +725,15 @@ void Monitor::ResetContent(const ShmId& shmIdT, const std::vector<SegmentConfig>
 
     std::string shmId = shmIdT.shmId;
     std::string managementSegmentName("fmq_" + shmId + "_mng");
-    // reset managed segments
-    ResetContent(shmIdT, verbose);
     // delete management segment
+    cout << "deleting management segment" << endl;
     Remove<bipc::shared_memory_object>(managementSegmentName, verbose);
     // recreate management segment
+    cout << "recreating management segment..." << endl;
     managed_shared_memory mngSegment(create_only, managementSegmentName.c_str(), kManagementSegmentSize);
+    cout << "done." << endl;
     // fill management segment with segment & region infos
+    cout << "filling management segment with managed segment configs..." << endl;
     for (const auto& s : segmentCfgs) {
         if (s.allocationAlgorithm == "rbtree_best_fit") {
             Segment::Register(shmId, s.id, AllocationAlgorithm::rbtree_best_fit);
@@ -739,9 +744,14 @@ void Monitor::ResetContent(const ShmId& shmIdT, const std::vector<SegmentConfig>
             throw MonitorError("Unknown allocation algorithm provided: " + s.allocationAlgorithm);
         }
     }
+    cout << "done." << endl;
+    cout << "filling management segment with unmanaged region configs..." << endl;
     for (const auto& r : regionCfgs) {
         fair::mq::shmem::UnmanagedRegion::Register(shmId, r);
     }
+    cout << "done." << endl;
+    // reset managed segments
+    ResetContent(shmIdT, verbose);
 }
 
 void Monitor::ResetContent(const SessionId& sessionId, const std::vector<SegmentConfig>& segmentCfgs, const std::vector<RegionConfig>& regionCfgs, bool verbose /* = true */)
