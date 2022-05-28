@@ -574,7 +574,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmIdT, 
 
     string managementSegmentName("fmq_" + shmId + "_mng");
     try {
-        bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
+        bipc::managed_shared_memory managementSegment(bipc::open_read_only, managementSegmentName.c_str());
 
         Uint16RegionInfoHashMap* shmRegions = managementSegment.find<Uint16RegionInfoHashMap>(bipc::unique_instance).first;
         if (shmRegions) {
