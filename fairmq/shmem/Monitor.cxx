@@ -660,27 +660,32 @@ void Monitor::ResetContent(const ShmId& shmIdT, bool verbose /* = true */)
         managed_shared_memory managementSegment(open_only, managementSegmentName.c_str());
 
         Uint16SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
-        for (const auto& s : *segmentInfos) {
-            if (verbose) {
-                cout << "Resetting content of segment '" << "fmq_" << shmId << "_m_" << s.first << "'..." << endl;
-            }
-            try {
-                if (s.second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
-                    RBTreeBestFitSegment segment(open_only, std::string("fmq_" + shmId + "_m_" + to_string(s.first)).c_str());
-                    void* ptr = segment.get_segment_manager();
-                    size_t size = segment.get_segment_manager()->get_size();
-                    new(ptr) segment_manager<char, rbtree_best_fit<mutex_family, offset_ptr<void>>, null_index>(size);
-                } else {
-                    SimpleSeqFitSegment segment(open_only, std::string("fmq_" + shmId + "_m_" + to_string(s.first)).c_str());
-                    void* ptr = segment.get_segment_manager();
-                    size_t size = segment.get_segment_manager()->get_size();
-                    new(ptr) segment_manager<char, simple_seq_fit<mutex_family, offset_ptr<void>>, null_index>(size);
-                }
-            } catch (bie& e) {
+        if (segmentInfos) {
+            cout << "Found info for " << segmentInfos->size() << " managed segments" << endl;
+            for (const auto& s : *segmentInfos) {
                 if (verbose) {
-                    cout << "Error resetting content of segment '" << std::string("fmq_" + shmId + "_m_" + to_string(s.first)) << "': " << e.what() << endl;
+                    cout << "Resetting content of segment '" << "fmq_" << shmId << "_m_" << s.first << "'..." << endl;
+                }
+                try {
+                    if (s.second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
+                        RBTreeBestFitSegment segment(open_only, std::string("fmq_" + shmId + "_m_" + to_string(s.first)).c_str());
+                        void* ptr = segment.get_segment_manager();
+                        size_t size = segment.get_segment_manager()->get_size();
+                        new(ptr) segment_manager<char, rbtree_best_fit<mutex_family, offset_ptr<void>>, null_index>(size);
+                    } else {
+                        SimpleSeqFitSegment segment(open_only, std::string("fmq_" + shmId + "_m_" + to_string(s.first)).c_str());
+                        void* ptr = segment.get_segment_manager();
+                        size_t size = segment.get_segment_manager()->get_size();
+                        new(ptr) segment_manager<char, simple_seq_fit<mutex_family, offset_ptr<void>>, null_index>(size);
+                    }
+                } catch (bie& e) {
+                    if (verbose) {
+                        cout << "Error resetting content of segment '" << std::string("fmq_" + shmId + "_m_" + to_string(s.first)) << "': " << e.what() << endl;
+                    }
                 }
             }
+        } else {
+            cout << "Found management segment, but cannot locate segment info, something went wrong..." << endl;
         }
 
         Uint16RegionInfoHashMap* shmRegions = managementSegment.find<Uint16RegionInfoHashMap>(bipc::unique_instance).first;
