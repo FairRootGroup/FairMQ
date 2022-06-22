@@ -23,6 +23,7 @@
 #include <boost/interprocess/ipc/message_queue.hpp>
 
 #include <csignal>
+#include <cstdio>
 #include <iostream>
 #include <iomanip>
 #include <chrono>
@@ -531,6 +532,88 @@ unsigned long Monitor::GetFreeMemory(const SessionId& sessionId, uint16_t segmen
 {
     ShmId shmId{makeShmIdStr(sessionId.sessionId)};
     return GetFreeMemory(shmId, segmentId);
+}
+
+bool Monitor::SegmentIsPresent(const ShmId& shmId, uint16_t segmentId)
+{
+    using namespace boost::interprocess;
+    try {
+        bipc::managed_shared_memory managementSegment(bipc::open_read_only, std::string("fmq_" + shmId.shmId + "_mng").c_str());
+        Uint16SegmentInfoHashMap* shmSegments = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
+
+        if (!shmSegments) {
+            LOG(error) << "Found management segment, but could not locate segment info";
+            return false;
+        }
+
+        auto it = shmSegments->find(segmentId);
+        if (it != shmSegments->end()) {
+            try {
+                if (it->second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
+                    RBTreeBestFitSegment segment(open_read_only, std::string("fmq_" + shmId.shmId + "_m_" + std::to_string(segmentId)).c_str());
+                } else {
+                    SimpleSeqFitSegment segment(open_read_only, std::string("fmq_" + shmId.shmId + "_m_" + std::to_string(segmentId)).c_str());
+                }
+            } catch (bie&) {
+                LOG(error) << "Could not find segment with id '" << segmentId << "' for shmId '" << shmId.shmId << "'";
+                return false;
+            }
+        } else {
+            LOG(error) << "Could not find segment info for segment id '" << segmentId << "' for shmId '" << shmId.shmId << "'";
+            return false;
+        }
+    } catch (bie&) {
+        LOG(error) << "Could not find management segment for shmid '" << shmId.shmId << "'";
+        return false;
+    }
+
+    return true;
+}
+bool Monitor::SegmentIsPresent(const SessionId& sessionId, uint16_t segmentId)
+{
+    ShmId shmId{makeShmIdStr(sessionId.sessionId)};
+    return SegmentIsPresent(shmId, segmentId);
+}
+
+bool Monitor::RegionIsPresent(const ShmId& shmId, uint16_t regionId)
+{
+    using namespace boost::interprocess;
+    try {
+        bipc::managed_shared_memory managementSegment(bipc::open_read_only, std::string("fmq_" + shmId.shmId + "_mng").c_str());
+        Uint16RegionInfoHashMap* shmRegions = managementSegment.find<Uint16RegionInfoHashMap>(bipc::unique_instance).first;
+
+        if (!shmRegions) {
+            LOG(error) << "Found management segment, but could not locate region info";
+            return false;
+        }
+
+        std::string regionFileName("fmq_" + shmId.shmId + "_rg_" + to_string(regionId));
+
+        auto it = shmRegions->find(regionId);
+        if (it != shmRegions->end()) {
+            try {
+                if (it->second.fPath.empty()) {
+                    shared_memory_object object(open_only, regionFileName.c_str(), read_only);
+                }
+            } catch (bie&) {
+                LOG(error) << "Could not find region with id '" << regionId << "' for shmId '" << shmId.shmId << "'";
+                return false;
+            }
+        } else {
+            LOG(error) << "Could not find region info for region id '" << regionId << "' for shmId '" << shmId.shmId << "'";
+            return false;
+        }
+    } catch (bie&) {
+        LOG(error) << "Could not find management segment for shmid '" << shmId.shmId << "'";
+        return false;
+    }
+
+    return true;
+}
+bool Monitor::RegionIsPresent(const SessionId& sessionId, uint16_t regionId)
+{
+    ShmId shmId{makeShmIdStr(sessionId.sessionId)};
+    return RegionIsPresent(shmId, regionId);
 }
 
 void Monitor::PrintHelp()

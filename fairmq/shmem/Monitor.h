@@ -119,7 +119,7 @@ class Monitor
     /// @param sessionId session id
     static std::unordered_map<uint16_t, std::vector<BufferDebugInfo>> GetDebugInfo(const SessionId& sessionId);
     /// @brief Returns the amount of free memory in the specified segment
-    /// @param sessionId shmem id
+    /// @param shmId shmem id
     /// @param segmentId segment id
     /// @throws MonitorError
     static unsigned long GetFreeMemory(const ShmId& shmId, uint16_t segmentId);
@@ -128,6 +128,23 @@ class Monitor
     /// @param segmentId segment id
     /// @throws MonitorError
     static unsigned long GetFreeMemory(const SessionId& sessionId, uint16_t segmentId);
+    /// @brief Checks if a given segment can be opened
+    /// @param shmId shmem id
+    /// @param segmentId segment id
+    static bool SegmentIsPresent(const ShmId& shmId, uint16_t segmentId);
+    /// @brief Checks if a given segment can be opened
+    /// @param sessionId session id
+    /// @param segmentId segment id
+    static bool SegmentIsPresent(const SessionId& sessionId, uint16_t segmentId);
+    /// @brief Checks if a given region can be opened
+    /// @param shmId shmem id
+    /// @param regionId region id
+    static bool RegionIsPresent(const ShmId& shmId, uint16_t regionId);
+    /// @brief Checks if a given region can be opened
+    /// @param sessionId session id
+    /// @param regionId region id
+    static bool RegionIsPresent(const SessionId& sessionId, uint16_t regionId);
+
 
     static bool PrintShm(const ShmId& shmId);
     static void ListAll(const std::string& path);
