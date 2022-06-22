@@ -40,7 +40,7 @@ Config::Config(const string& name, Plugin::Version version, const string& mainta
                         LOG(debug) << "channel-config: Parsing channel configuration";
                         SetProperties(SuboptParser(GetProperty<vector<string>>("channel-config"), idForParser));
                     } else {
-                        LOG(warn) << "fair::mq::plugins::Config: no channels configuration provided via --mq-config or --channel-config";
+                        LOG(info) << "fair::mq::plugins::Config: no channels configuration provided via --mq-config or --channel-config";
                     }
                 } catch (exception& e) {
                     LOG(error) << e.what();
