@@ -1,0 +1,48 @@
+name: Build development environments
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and publish oci and sif images
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    permissions:
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [fedora, ubuntu]
+        include:
+          - os: fedora
+            version: [36, 35, 34, 33]
+          - os: ubuntu
+            version: [22.04, 20.04]
+      env:
+        registry: ghcr.io
+        arg: VERSION=${{matrix.version}}
+        tag: ${{env.registry}}/${{github.repository_owner}}/fairmq-dev/${{matrix.os}}-${{matrix.version}}:latest
+        containerfile: test/ci/Containerfile.${{matrix.os}}
+        sif: oras://${{env.registry}}/${{github.repository_owner}}/fairmq-dev/${{matrix.os}}-${{matrix.version}}-sif:latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install latest buildah and apptainer
+        run: |
+          sudo dnf -y update
+          sudo dnf -y install buildah apptainer
+          sudo dnf -y clean all
+      - name: Build oci image
+        run: buildah build -f oci --build-arg ${{env.arg}} -t ${{env.tag}} -f ${{env.containerfile}} .
+      - name: Login (buildah) to ${{env.registry}}
+        run: buildah login -u ${{github.actor}} -p ${{github.token}} ${{env.registry}}
+      - name: Push oci image as ${{env.tag}}
+        run: buildah push ${{env.tag}}
+      - name: List buildah images
+        run: build images
+      - name: Convert oci image to sif format
+        run: apptainer pull docker://${{tag}}
+      - name: Login (apptainer) to oras://${{env.registry}}
+        run: apptainer remote login -u ${{github.actor}} -p ${{github.token}} oras://${{env.registry}}
+      - name: Push sif image as ${{env.sif}}
+        run: apptainer push ./${{matrix.os}}-${{matrix.version}}_latest.sif ${{sif}}
