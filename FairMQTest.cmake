@@ -87,7 +87,7 @@ ctest_submit()
 
 if(NOT RUN_STATIC_ANALYSIS)
   ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}"
-             PARALLEL_LEVEL 1
+             PARALLEL_LEVEL ${NCPUS}
              SCHEDULE_RANDOM ON
              RETURN_VALUE _ctest_test_ret_val)
 
