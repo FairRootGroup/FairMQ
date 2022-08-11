@@ -1,0 +1,19 @@
+ARG VERSION=latest
+FROM fedora:${VERSION}
+ARG VERSION=latest
+LABEL org.opencontainers.image.source "https://github.com/FairRootGroup/FairMQ"
+LABEL org.opencontainers.image.description "FairMQ development environment"
+RUN dnf -y update
+# https://git.gsi.de/SDE/packages/builder
+RUN dnf -y install https://alfa-ci.gsi.de/packages/rpm/fedora-$VERSION-x86_64/fairsoft-release-dev.rpm
+RUN dnf -y install clang cli11-devel pmix-devel ninja-build 'dnf-command(builddep)' libasan liblsan libtsan libubsan clang-tools-extra
+RUN dnf -y builddep fairmq
+RUN dnf -y clean all
+
+# buildah build --build-arg "VERSION=36" -t "ghcr.io/fairrootgroup/fairmq-dev/fedora-36:latest" -f test/ci/Containerfile.fedora .
+# echo $GH_PAT | buildah login -u dennisklein --password-stdin ghcr.io
+# buildah push ghcr.io/fairrootgroup/fairmq-dev/fedora-36:latest
+
+# apptainer pull docker://ghcr.io/fairrootgroup/fairmq-dev/fedora-36:latest
+# echo $GH_PAT | apptainer remote login -u dennisklein --password-stdin oras://ghcr.io
+# apptainer push ./fedora-36_latest.sif oras://ghcr.io/fairrootgroup/fairmq-dev/fedora-36-sif:latest

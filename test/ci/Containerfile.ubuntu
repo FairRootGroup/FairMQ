@@ -1,0 +1,41 @@
+ARG VERSION=latest
+FROM ubuntu:${VERSION}
+ARG VERSION=latest
+LABEL org.opencontainers.image.source "https://github.com/FairRootGroup/FairMQ"
+LABEL org.opencontainers.image.description "FairMQ development environment"
+
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+RUN apt-get update
+RUN apt-get -y upgrade
+RUN apt-get -y install ca-certificates patch cmake git libboost-dev libboost-log-dev libboost-system-dev libboost-regex-dev libboost-filesystem-dev libboost-container-dev libboost-thread-dev libboost-date-time-dev libboost-program-options-dev g++ libfmt-dev ninja-build wget libczmq-dev libxml2-utils libfabric-dev libfabric-bin libpmix-dev pkg-config
+RUN apt-get -y clean
+
+RUN cd /tmp
+
+RUN git clone -b v1.19.2 --recurse-submodules https://github.com/FairRootGroup/asio
+RUN cmake -GNinja -S asio -B asio_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
+RUN cmake --build asio_build --target install
+RUN rm -rf asio asio_build
+
+RUN git clone -b v1.0.0 https://github.com/FairRootGroup/FairCMakeModules
+RUN cmake -GNinja -S FairCMakeModules -B FairCMakeModules_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
+RUN cmake --build FairCMakeModules_build --target install
+RUN rm -rf FairCMakeModules FairCMakeModules_build
+
+RUN git clone -b v0.5.1 --recurse-submodules https://github.com/FairRootGroup/asiofi
+RUN cmake -GNinja -S asiofi -B asiofi_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
+RUN cmake --build asiofi_build --target install
+RUN rm -rf asiofi asiofi_build
+
+RUN git clone -b v1.11.0 https://github.com/FairRootGroup/FairLogger
+RUN cmake -GNinja -S FairLogger -B FairLogger_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DUSE_EXTERNAL_FMT=ON
+RUN cmake --build FairLogger_build --target install
+RUN rm -rf FairLogger FairLogger_build
+
+# buildah build --build-arg "VERSION=22.04" -t "ghcr.io/fairrootgroup/fairmq-dev/ubuntu-22.04:latest" -f test/ci/Containerfile.ubuntu .
+# echo $GH_PAT | buildah login -u dennisklein --password-stdin ghcr.io
+# buildah push ghcr.io/fairrootgroup/fairmq-dev/ubuntu-22.04:latest
+
+# apptainer pull docker://ghcr.io/fairrootgroup/fairmq-dev/ubuntu-22.04:latest
+# echo $GH_PAT | apptainer remote login -u dennisklein --password-stdin oras://ghcr.io
+# apptainer push ./ubuntu-22.04_latest.sif oras://ghcr.io/fairrootgroup/fairmq-dev/ubuntu-22.04-sif:latest

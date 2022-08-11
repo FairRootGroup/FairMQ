@@ -1,9 +1,0 @@
-Bootstrap: docker
-From: fedora:35
-
-%post
-    dnf -y update
-    dnf -y install https://alfa-ci.gsi.de/packages/rpm/fedora-35-x86_64/fairsoft-release-dev.rpm
-    dnf -y install clang cli11-devel pmix-devel ninja-build 'dnf-command(builddep)' libasan liblsan libtsan libubsan clang-tools-extra
-    dnf -y builddep fairmq
-    dnf -y clean all

@@ -4,20 +4,21 @@ def jobMatrix(String type, List specs) {
   def nodes = [:]
   for (spec in specs) {
     def job = ""
-    def selector = ""
+    def selector = "slurm"
     def os = ""
     def ver = ""
 
     if (type == 'build') {
       job = "${spec.os}-${spec.ver}-${spec.arch}-${spec.compiler}"
-      selector = "${spec.os}-${spec.ver}-${spec.arch}"
+      if (spec.os =~ /^macos/) {
+        selector = "${spec.os}-${spec.ver}-${spec.arch}"
+      }
       os = spec.os
       ver = spec.ver
     } else { // == 'check'
       job = "${spec.name}"
-      selector = 'fedora-35-x86_64'
       os = 'fedora'
-      ver = '35'
+      ver = '36'
     }
 
     def label = "${job}"
@@ -36,14 +37,14 @@ def jobMatrix(String type, List specs) {
           sh "echo \"export LABEL=\\\"\${JOB_BASE_NAME} ${label}\\\"\" >> ${jobscript}"
           if (selector =~ /^macos/) {
             sh """\
-              echo \"export DDS_ROOT=\\\"\\\$(brew --prefix dds)\\\"\" >> ${jobscript}
-              echo \"export PATH=\\\"\\\$(brew --prefix dds)/bin:\\\$PATH\\\"\" >> ${jobscript}
               echo \"${ctestcmd}\" >> ${jobscript}
             """
             sh "cat ${jobscript}"
             sh "bash ${jobscript}"
-          } else {
-            def containercmd = "singularity exec --net --ipc --uts --pid -B/shared ${env.SINGULARITY_CONTAINER_ROOT}/fairmq/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} ${extra}\\\""
+          } else { // selector == "slurm"
+            def imageurl = "oras://ghcr.io/fairrootgroup/fairmq-dev/${os}-${ver}-sif:latest"
+            def execopts = "--net --ipc --uts --pid -B/shared"
+            def containercmd = "singularity exec ${execopts} ${imageurl} bash -l -c \\\"${ctestcmd} ${extra}\\\""
             sh """\
               echo \"echo \\\"*** Job started at .......: \\\$(date -R)\\\"\" >> ${jobscript}
               echo \"echo \\\"*** Job ID ...............: \\\${SLURM_JOB_ID}\\\"\" >> ${jobscript}
@@ -67,12 +68,6 @@ def jobMatrix(String type, List specs) {
           deleteDir()
           githubNotify(context: "${label}", description: 'Success', status: 'SUCCESS')
         } catch (e) {
-          def tarball = "${type}_${job}_dds_logs.tar.gz"
-          if (fileExists("build/test/.DDS")) {
-            sh "tar czvf ${tarball} -C \${WORKSPACE}/build/test .DDS/"
-            archiveArtifacts tarball
-          }
-
           deleteDir()
           githubNotify(context: "${label}", description: 'Error', status: 'ERROR')
           throw e
@@ -93,12 +88,13 @@ pipeline{
 
           def builds = jobMatrix('build', [
             [os: 'ubuntu', ver: '20.04', arch: 'x86_64', compiler: 'gcc-9',  extra: all],
-            [os: 'fedora', ver: '32',    arch: 'x86_64', compiler: 'gcc-10', extra: all],
+            [os: 'ubuntu', ver: '22.04', arch: 'x86_64', compiler: 'gcc-11', extra: '-DHAS_ASIO=ON -DHAS_ASIOFI=ON'],
             [os: 'fedora', ver: '33',    arch: 'x86_64', compiler: 'gcc-10', extra: all],
             [os: 'fedora', ver: '34',    arch: 'x86_64', compiler: 'gcc-11', extra: all],
             [os: 'fedora', ver: '35',    arch: 'x86_64', compiler: 'gcc-11', extra: all],
+            [os: 'fedora', ver: '36',    arch: 'x86_64', compiler: 'gcc-12', extra: all],
             [os: 'macos',  ver: '12',    arch: 'x86_64', compiler: 'apple-clang-13', extra: '-DHAS_ASIO=ON'],
-            [os: 'macos',  ver: '12',    arch: 'arm64', compiler: 'apple-clang-13', extra: '-DHAS_ASIO=ON'],
+            [os: 'macos',  ver: '12',    arch: 'arm64',  compiler: 'apple-clang-13', extra: '-DHAS_ASIO=ON'],
           ])
 
           def all_debug = "${all} -DCMAKE_BUILD_TYPE=Debug"
