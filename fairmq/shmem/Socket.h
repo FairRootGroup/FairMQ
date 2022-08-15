@@ -11,8 +11,9 @@
 #include "Common.h"
 #include "Manager.h"
 #include "Message.h"
-#include <fairmq/Socket.h>
+#include <fairmq/Error.h>
 #include <fairmq/Message.h>
+#include <fairmq/Socket.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/zeromq/Common.h>
 
@@ -125,15 +126,20 @@ class Socket final : public fair::mq::Socket
         return zmq::Connect(fSocket, address, fId);
     }
 
-    int64_t Send(MessagePtr& msg, int timeout = -1) override
+    int64_t Send(mq::MessagePtr& msg, int timeout = -1) override
     {
+        auto msgPtr = msg.get();
+        if (!msgPtr) {
+            return static_cast<int>(TransferCode::error);
+        }
+        assertm(dynamic_cast<shmem::Message*>(msgPtr), "given mq::Message is a shmem::Message");   // NOLINT
+        auto shmMsg = static_cast<shmem::Message*>(msgPtr);   // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+
         int flags = 0;
         if (timeout == 0) {
             flags = ZMQ_DONTWAIT;
         }
         int elapsed = 0;
-
-        Message* shmMsg = static_cast<Message*>(msg.get());
 
         while (true) {
             int nbytes = zmq_send(fSocket, &(shmMsg->fMeta), sizeof(MetaHeader), flags);
@@ -213,7 +219,12 @@ class Socket final : public fair::mq::Socket
         MetaHeader* metas = static_cast<MetaHeader*>(zmqMsg.Data());
 
         for (auto& msg : msgVec) {
-            Message* shmMsg = static_cast<Message*>(msg.get());
+            auto msgPtr = msg.get();
+            if (!msgPtr) {
+                return static_cast<int>(TransferCode::error);
+            }
+            assertm(dynamic_cast<shmem::Message*>(msgPtr), "given mq::Message is a shmem::Message");   // NOLINT
+            auto shmMsg = static_cast<shmem::Message*>(msgPtr);   // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
             std::memcpy(metas++, &(shmMsg->fMeta), sizeof(MetaHeader));
         }
 
