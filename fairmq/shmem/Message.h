@@ -195,7 +195,7 @@ class Message final : public fair::mq::Message
                     fLocalPtr = nullptr;
                 }
             } else {
-                fRegionPtr = fManager.GetRegion(fMeta.fRegionId);
+                fRegionPtr = fManager.GetRegionFromCache(fMeta.fRegionId);
                 if (fRegionPtr) {
                     fLocalPtr = reinterpret_cast<char*>(fRegionPtr->GetData()) + fMeta.fHandle;
                 } else {
@@ -365,7 +365,7 @@ class Message final : public fair::mq::Message
     void ReleaseUnmanagedRegionBlock()
     {
         if (!fRegionPtr) {
-            fRegionPtr = fManager.GetRegion(fMeta.fRegionId);
+            fRegionPtr = fManager.GetRegionFromCache(fMeta.fRegionId);
         }
 
         if (fRegionPtr) {
