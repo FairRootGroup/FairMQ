@@ -76,6 +76,8 @@ struct Sampler : fair::mq::Device
 
     void ResetTask() override
     {
+        // give some time for acks to be received
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
         fRegion.reset();
         {
             std::lock_guard<std::mutex> lock(fMtx);
