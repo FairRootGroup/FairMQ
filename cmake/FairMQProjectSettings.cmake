@@ -174,3 +174,12 @@ if(    CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
 else()
   set(FAIRMQ_HAS_STD_FILESYSTEM 1)
 endif()
+
+if(NOT DEFINED FAIRMQ_HAS_STD_PMR)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # Clang (to be more precise: libc++) currently does not implement <memory_resource>
+    set(FAIRMQ_HAS_STD_PMR 0)
+  else()
+    set(FAIRMQ_HAS_STD_PMR 1)
+  endif()
+endif()
