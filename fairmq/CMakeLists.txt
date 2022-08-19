@@ -187,7 +187,10 @@ if(BUILD_FAIRMQ)
   if(BUILD_OFI_TRANSPORT)
     target_compile_definitions(${target} PRIVATE BUILD_OFI_TRANSPORT)
   endif()
-  target_compile_definitions(${target} PUBLIC FAIRMQ_HAS_STD_FILESYSTEM=${FAIRMQ_HAS_STD_FILESYSTEM})
+  target_compile_definitions(${target} PUBLIC
+    FAIRMQ_HAS_STD_FILESYSTEM=${FAIRMQ_HAS_STD_FILESYSTEM}
+    FAIRMQ_HAS_STD_PMR=${FAIRMQ_HAS_STD_PMR}
+  )
 
 
   #######################
