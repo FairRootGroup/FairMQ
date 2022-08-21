@@ -137,5 +137,6 @@ fairmq_summary_components()
 fairmq_summary_static_analysis()
 fairmq_summary_install_prefix()
 fairmq_summary_debug_mode()
+fairmq_summary_compile_definitions()
 message(STATUS "  ")
 ################################################################################
