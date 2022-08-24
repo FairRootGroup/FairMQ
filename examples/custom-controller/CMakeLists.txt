@@ -10,7 +10,7 @@ set(target fairmq-ex-custom-controller)
 add_executable(${target} main.cxx)
 target_link_libraries(${target} PRIVATE FairMQ)
 set_target_properties(${target} PROPERTIES
-  CXX_VISIBILITY_PRESET hidden
+  # CXX_VISIBILITY_PRESET hidden
   ENABLE_EXPORTS ON
 )
 
