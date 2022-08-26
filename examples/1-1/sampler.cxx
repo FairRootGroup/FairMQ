@@ -8,8 +8,9 @@
 
 #include <fairmq/Device.h>
 #include <fairmq/runDevice.h>
-
+#include <functional>
 #include <string>
+#include <vector>
 
 namespace bpo = boost::program_options;
 
@@ -17,6 +18,21 @@ struct Sampler : fair::mq::Device
 {
     void InitTask() override
     {
+        static std::vector<std::string> transitions = {"END", "RESET DEVICE", "RESET TASK", "STOP"};
+        static bool isRunning = false;
+        std::function<void(const fair::mq::State)> stateWatcher =
+            [this](const fair::mq::State state) -> void {
+            if (state == fair::mq::State::Running) {
+                isRunning = true;
+            }
+            if (isRunning) {
+                LOG(info) << "Switching to " << transitions.back() << std::endl;
+                assert(transitions.empty() == false);
+                ChangeState(transitions.back());
+                transitions.pop_back();
+            }
+        };
+        this->SubscribeToStateChange("dpl", stateWatcher);
         // Get the fText and fMaxIterations values from the command line options (via fConfig)
         fText = fConfig->GetProperty<std::string>("text");
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
