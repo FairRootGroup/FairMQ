@@ -13,7 +13,7 @@
 
 namespace example {
 
-using MyDevice = typename fair::mq::Device;
+using MyDevice = fair::mq::Device;
 
 }   // namespace example
 
