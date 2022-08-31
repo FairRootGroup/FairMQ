@@ -71,6 +71,7 @@ if(BUILD_FAIRMQ)
     shmem/Monitor.h
     shmem/Segment.h
     shmem/UnmanagedRegion.h
+    tools/Compiler.h
     tools/CppSTL.h
     tools/Exceptions.h
     tools/IO.h

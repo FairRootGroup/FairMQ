@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2017-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2017-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -10,6 +10,7 @@
 #define FAIR_MQ_TOOLS_H
 
 // IWYU pragma: begin_exports
+#include <fairmq/tools/Compiler.h>
 #include <fairmq/tools/CppSTL.h>
 #include <fairmq/tools/Exceptions.h>
 #include <fairmq/tools/InstanceLimit.h>
