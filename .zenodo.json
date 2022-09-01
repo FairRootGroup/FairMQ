@@ -70,7 +70,7 @@
             "name": "Wenzel, Sandro"
         }
     ],
-    "description": "C++ Message Queuing Library and Framework",
+    "description": "<p>C++ Message Queuing Library and Framework</p>",
     "related_identifiers": [
         {
             "identifier": "https://github.com/FairRootGroup/FairMQ/",
