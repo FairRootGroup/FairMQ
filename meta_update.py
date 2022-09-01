@@ -11,6 +11,9 @@ from collections import OrderedDict
 
 
 class Manipulator(object):
+    def __str__(self):
+        return self.__class__.__name__
+
     def load(self, filename):
         with open(filename, 'rb') as fp:
             self.data = json.load(fp, object_pairs_hook=OrderedDict)
@@ -150,7 +153,11 @@ def main():
     args = parser.parse_args()
 
     for manipulator in (CodeMetaManipulator(), ZenodoManipulator()):
-        manipulator.load()
+        try:
+            manipulator.load()
+        except FileNotFoundError as e:
+            print('*** Skipping {}: {}'.format(manipulator, e))
+            continue
         if args.newversion is not None:
             manipulator.version(args.newversion)
         manipulator.update_authors()
