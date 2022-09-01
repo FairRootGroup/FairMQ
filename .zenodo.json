@@ -1,0 +1,83 @@
+{
+    "creators": [
+        {
+            "name": "Al-Turany, Mohammad"
+        },
+        {
+            "name": "Klein, Dennis"
+        },
+        {
+            "name": "Kollegger, Thorsten"
+        },
+        {
+            "name": "Rybalchenko, Alexey"
+        },
+        {
+            "name": "Winckler, Nicolas"
+        }
+    ],
+    "contributors": [
+        {
+            "type": "Other",
+            "name": "Aphecetche, Laurent"
+        },
+        {
+            "type": "Other",
+            "name": "Binet, Sebastien"
+        },
+        {
+            "type": "Other",
+            "name": "Eulisse, Giulio"
+        },
+        {
+            "type": "Other",
+            "name": "Karabowicz, Radoslaw"
+        },
+        {
+            "type": "Other",
+            "name": "Kretz, Matthias"
+        },
+        {
+            "type": "Other",
+            "name": "Krzewicki, Mikolaj"
+        },
+        {
+            "type": "Other",
+            "name": "Lebedev, Andrey"
+        },
+        {
+            "type": "Other",
+            "name": "Mrnjavac, Teo"
+        },
+        {
+            "type": "Other",
+            "name": "Neskovic, Gvozden"
+        },
+        {
+            "type": "Other",
+            "name": "Richter, Matthias"
+        },
+        {
+            "type": "Other",
+            "name": "Tacke, Christian"
+        },
+        {
+            "type": "Other",
+            "name": "Uhlig, Florian"
+        },
+        {
+            "type": "Other",
+            "name": "Wenzel, Sandro"
+        }
+    ],
+    "description": "C++ Message Queuing Library and Framework",
+    "related_identifiers": [
+        {
+            "identifier": "https://github.com/FairRootGroup/FairMQ/",
+            "relation": "isSupplementTo",
+            "resource_type": "software",
+            "scheme": "url"
+        }
+    ],
+    "title": "FairMQ"
+}
