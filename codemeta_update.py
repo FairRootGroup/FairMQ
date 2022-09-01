@@ -37,17 +37,21 @@ class CodeMetaManipulator(object):
         if entry is None:
             entry = OrderedDict()
             entry['@type'] = 'Person'
-        for field in ('givenName', 'familyName', 'email'):
+        for field in ('givenName', 'familyName', 'email', 'orcid'):
             val = matchdict.get(field, None)
             if val is not None:
-                entry[field] = val
+                if field == 'orcid':
+                    entry['@id'] = val
+                else:
+                    entry[field] = val
         return entry
 
     def handle_person_list_file(self, filename, cm_field_name):
         fp = open(filename, 'r', encoding='utf8')
         findregex = re.compile(r'^(?P<familyName>[-\w\s]*[-\w]),\s*'
                                r'(?P<givenName>[-\w\s]*[-\w])\s*'
-                               r'(?:<(?P<email>\S+@\S+)>)?$')
+                               r'(?:<(?P<email>\S+@\S+)>)?\s*'
+                               r'(\[(?P<orcid>\S+)\])?$')
         person_list = self.data.setdefault(cm_field_name, [])
         for line in fp:
             line = line.strip()
