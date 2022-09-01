@@ -79,5 +79,6 @@
             "scheme": "url"
         }
     ],
-    "title": "FairMQ"
+    "title": "FairMQ",
+    "license": "LGPL-3.0-only"
 }
