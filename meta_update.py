@@ -16,9 +16,11 @@ class Manipulator(object):
             self.data = json.load(fp, object_pairs_hook=OrderedDict)
 
     @staticmethod
-    def _dict_entry_cmp(dict1, dict2, field):
-        if (field in dict1) and (field in dict2):
-            return dict1[field] == dict2[field]
+    def _dict_entry_cmp(dict1, dict2, field1, field2=None):
+        if field2 is None:
+            field2 = field1
+        if (field1 in dict1) and (field2 in dict2):
+            return dict1[field1] == dict2[field2]
         else:
             return False
 
@@ -34,6 +36,10 @@ class CodeMetaManipulator(Manipulator):
 
     @classmethod
     def find_person_entry(cls, person_list, matchdict):
+        # orcid is unique
+        for entry in person_list:
+            if cls._dict_entry_cmp(entry, matchdict, '@id', 'orcid'):
+                return entry
         for entry in person_list:
             if cls._dict_entry_cmp(entry, matchdict, 'email'):
                 return entry
@@ -90,10 +96,12 @@ class ZenodoManipulator(Manipulator):
 
     @classmethod
     def find_person_entry(cls, person_list, matchdict):
+        # Match on orcid first
+        for entry in person_list:
+            if cls._dict_entry_cmp(entry, matchdict, 'orcid'):
+                return entry
         for entry in person_list:
             if cls._dict_entry_cmp(entry, matchdict, 'name'):
-                return entry
-            if cls._dict_entry_cmp(entry, matchdict, 'orcid'):
                 return entry
         return None
 
