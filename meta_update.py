@@ -39,7 +39,7 @@ class Manipulator(object):
     def _handle_person_list_file(self, filename, field_name, **kwargs):
         fp = open(filename, 'r', encoding='utf8')
         person_list = self.data.setdefault(field_name, [])
-        for line in fp:
+        for i, line in enumerate(fp, start=0):
             line = line.strip()
             m = self.findregex.match(line)
             if m is None:
@@ -48,7 +48,7 @@ class Manipulator(object):
             entry = self.update_person_entry(found_entry, m.groupdict(),
                                              **kwargs)
             if found_entry is None:
-                person_list.append(entry)
+                person_list.insert(i, entry)
 
 
 class CodeMetaManipulator(Manipulator):
