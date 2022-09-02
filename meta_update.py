@@ -119,11 +119,11 @@ class ZenodoManipulator(Manipulator):
         return None
 
     @staticmethod
-    def update_person_entry(entry, matchdict, **kwargs):
+    def update_person_entry(entry, matchdict, contributor_type=None):
         if entry is None:
             entry = OrderedDict()
-            if kwargs['contributor_type']:
-                entry['type'] = kwargs['contributor_type']
+            if contributor_type:
+                entry['type'] = contributor_type
         for field in ('name', 'orcid'):
             val = matchdict.get(field, None)
             if val is not None:
