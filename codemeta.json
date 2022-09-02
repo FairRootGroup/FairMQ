@@ -17,9 +17,9 @@
     },
     {
       "@type": "Person",
+      "@id": "https://orcid.org/0000-0003-3787-1910",
       "givenName": "Dennis",
-      "familyName": "Klein",
-      "@id": "https://orcid.org/0000-0003-3787-1910"
+      "familyName": "Klein"
     },
     {
       "@type": "Person",
@@ -92,9 +92,9 @@
     },
     {
       "@type": "Person",
+      "@id": "https://orcid.org/0000-0002-5321-8404",
       "givenName": "Christian",
-      "familyName": "Tacke",
-      "@id": "https://orcid.org/0000-0002-5321-8404"
+      "familyName": "Tacke"
     },
     {
       "@type": "Person",

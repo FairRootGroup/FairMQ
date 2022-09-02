@@ -77,7 +77,7 @@ class CodeMetaManipulator(Manipulator):
         if entry is None:
             entry = OrderedDict()
             entry['@type'] = 'Person'
-        for field in ('givenName', 'familyName', 'email', 'orcid'):
+        for field in ('orcid', 'givenName', 'familyName', 'email'):
             val = matchdict.get(field, None)
             if val is not None:
                 if field == 'orcid':
