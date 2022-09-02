@@ -11,6 +11,9 @@ from collections import OrderedDict
 
 
 class Manipulator(object):
+    def __init__(self, regex):
+        self.findregex = re.compile(regex)
+
     def __str__(self):
         return self.__class__.__name__
 
@@ -27,6 +30,19 @@ class Manipulator(object):
         else:
             return False
 
+    def _handle_person_list_file(self, filename, cm_field_name, **kwargs):
+        fp = open(filename, 'r', encoding='utf8')
+        person_list = self.data.setdefault(cm_field_name, [])
+        for line in fp:
+            line = line.strip()
+            m = self.findregex.match(line)
+            if m is None:
+                raise RuntimeError("Could not analyze line %r" % line)
+            found_entry = self._find_person_entry(person_list, m.groupdict())
+            entry = self.update_person_entry(found_entry, m.groupdict(), **kwargs)
+            if found_entry is None:
+                person_list.append(entry)
+
     def save(self, filename, indent=2):
         with open(filename, 'w', encoding='utf8') as fp:
             json.dump(self.data, fp, indent=indent)
@@ -34,11 +50,17 @@ class Manipulator(object):
 
 
 class CodeMetaManipulator(Manipulator):
+    def __init__(self):
+        super().__init__(r'^(?P<familyName>[-\w\s]*[-\w]),\s*'
+                         r'(?P<givenName>[-\w\s]*[-\w])\s*'
+                         r'(?:<(?P<email>\S+@\S+)>)?\s*'
+                         r'(\[(?P<orcid>\S+)\])?$')
+
     def load(self, filename='codemeta.json'):
         super().load(filename)
 
     @classmethod
-    def find_person_entry(cls, person_list, matchdict):
+    def _find_person_entry(cls, person_list, matchdict):
         # orcid is unique
         for entry in person_list:
             if cls._dict_entry_cmp(entry, matchdict, '@id', 'orcid'):
@@ -52,7 +74,7 @@ class CodeMetaManipulator(Manipulator):
         return None
 
     @staticmethod
-    def update_person_entry(entry, matchdict):
+    def update_person_entry(entry, matchdict, **kwargs):
         if entry is None:
             entry = OrderedDict()
             entry['@type'] = 'Person'
@@ -65,26 +87,9 @@ class CodeMetaManipulator(Manipulator):
                     entry[field] = val
         return entry
 
-    def handle_person_list_file(self, filename, cm_field_name):
-        fp = open(filename, 'r', encoding='utf8')
-        findregex = re.compile(r'^(?P<familyName>[-\w\s]*[-\w]),\s*'
-                               r'(?P<givenName>[-\w\s]*[-\w])\s*'
-                               r'(?:<(?P<email>\S+@\S+)>)?\s*'
-                               r'(\[(?P<orcid>\S+)\])?$')
-        person_list = self.data.setdefault(cm_field_name, [])
-        for line in fp:
-            line = line.strip()
-            m = findregex.match(line)
-            if m is None:
-                raise RuntimeError("Could not analyze line %r" % line)
-            found_entry = self.find_person_entry(person_list, m.groupdict())
-            entry = self.update_person_entry(found_entry, m.groupdict())
-            if found_entry is None:
-                person_list.append(entry)
-
     def update_authors(self):
-        self.handle_person_list_file('AUTHORS', 'author')
-        self.handle_person_list_file('CONTRIBUTORS', 'contributor')
+        self._handle_person_list_file('AUTHORS', 'author')
+        self._handle_person_list_file('CONTRIBUTORS', 'contributor')
 
     def save(self, filename='codemeta.json'):
         super().save(filename)
@@ -94,11 +99,16 @@ class CodeMetaManipulator(Manipulator):
 
 
 class ZenodoManipulator(Manipulator):
+    def __init__(self):
+        super().__init__(r'^(?P<name>[-\w\s,]*[-\w])\s*'
+                         r'(?:<(?P<email>\S+@\S+)>)?\s*'
+                         r'(\[https://orcid\.org/(?P<orcid>\S+)\])?$')
+
     def load(self, filename='.zenodo.json'):
         super().load(filename)
 
     @classmethod
-    def find_person_entry(cls, person_list, matchdict):
+    def _find_person_entry(cls, person_list, matchdict):
         # Match on orcid first
         for entry in person_list:
             if cls._dict_entry_cmp(entry, matchdict, 'orcid'):
@@ -109,36 +119,20 @@ class ZenodoManipulator(Manipulator):
         return None
 
     @staticmethod
-    def update_person_entry(entry, matchdict, contributors = False):
+    def update_person_entry(entry, matchdict, **kwargs):
         if entry is None:
             entry = OrderedDict()
-            if contributors:
-                entry['type'] = 'Other'
+            if kwargs['contributor_type']:
+                entry['type'] = kwargs['contributor_type']
         for field in ('name', 'orcid'):
             val = matchdict.get(field, None)
             if val is not None:
                 entry[field] = val
         return entry
 
-    def handle_person_list_file(self, filename, cm_field_name, contributors = False):
-        fp = open(filename, 'r', encoding='utf8')
-        findregex = re.compile(r'^(?P<name>[-\w\s,]*[-\w])\s*'
-                               r'(?:<(?P<email>\S+@\S+)>)?\s*'
-                               r'(\[https://orcid\.org/(?P<orcid>\S+)\])?$')
-        person_list = self.data.setdefault(cm_field_name, [])
-        for line in fp:
-            line = line.strip()
-            m = findregex.match(line)
-            if m is None:
-                raise RuntimeError("Could not analyze line %r" % line)
-            found_entry = self.find_person_entry(person_list, m.groupdict())
-            entry = self.update_person_entry(found_entry, m.groupdict(), contributors)
-            if found_entry is None:
-                person_list.append(entry)
-
     def update_authors(self):
-        self.handle_person_list_file('AUTHORS', 'creators')
-        self.handle_person_list_file('CONTRIBUTORS', 'contributors', True)
+        self._handle_person_list_file('AUTHORS', 'creators')
+        self._handle_person_list_file('CONTRIBUTORS', 'contributors', contributor_type='Other')
 
     def save(self, filename='.zenodo.json'):
         super().save(filename, 4)
