@@ -540,7 +540,7 @@ class Manager
                 if (info.event == RegionEvent::created) {
                     RegionConfig cfg;
                     cfg.id = info.id;
-                    cfg.creationFlags = info.id;
+                    cfg.creationFlags = regionInfo.fCreationFlags;
                     cfg.path = regionInfo.fPath.c_str();
                     regionCfgs.emplace(info.id, cfg);
                     // fill the ptr+size info after shmLock is released, to avoid constructing local region under it
