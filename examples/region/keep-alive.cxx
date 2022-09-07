@@ -19,6 +19,7 @@
 #include <chrono>
 #include <csignal>
 #include <map>
+#include <mutex>
 #include <string>
 #include <thread>
 
@@ -113,6 +114,7 @@ struct ShmManager
 
     bool CheckPresence()
     {
+        std::lock_guard<std::mutex> lock(localMtx);
         for (const auto& sc : segmentCfgs) {
             if (!(fair::mq::shmem::Monitor::SegmentIsPresent(fair::mq::shmem::ShmId{shmId}, sc.id))) {
                 return false;
@@ -128,6 +130,7 @@ struct ShmManager
 
     void ResetContent()
     {
+        std::lock_guard<std::mutex> lock(localMtx);
         fair::mq::shmem::Monitor::ResetContent(fair::mq::shmem::ShmId{shmId}, segmentCfgs, regionCfgs);
     }
 
@@ -145,6 +148,7 @@ struct ShmManager
     }
 
     std::string shmId;
+    std::mutex localMtx;
     map<uint16_t, fair::mq::shmem::Segment> segments;
     map<uint16_t, unique_ptr<fair::mq::shmem::UnmanagedRegion>> regions;
     std::vector<fair::mq::shmem::SegmentConfig> segmentCfgs;
