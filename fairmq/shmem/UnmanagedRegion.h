@@ -74,6 +74,8 @@ struct UnmanagedRegion
         // TODO: refactor this
         cfg.size = size;
 
+        LOG(debug) << "UnmanagedRegion(): " << fName << " | remote: " << remote << ".";
+
         if (!cfg.path.empty()) {
             fName = std::string(cfg.path + fName);
 
@@ -171,6 +173,7 @@ struct UnmanagedRegion
 
     ~UnmanagedRegion()
     {
+        LOG(debug) << "~UnmanagedRegion(): " << fName << " | remote: " << fRemote << ".";
         fStopAcks = true;
 
         if (fAcksSender.joinable()) {
