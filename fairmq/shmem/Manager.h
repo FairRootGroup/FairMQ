@@ -395,17 +395,9 @@ class Manager
 
                 const uint16_t id = cfg.id.value();
 
-                UnmanagedRegion* region = nullptr;
-                bool newRegionCreated = false;
                 std::lock_guard<std::mutex> lock(fLocalRegionsMtx);
-                auto res = fRegions.emplace(id, std::make_unique<UnmanagedRegion>(fShmId, size, false, cfg));
-                newRegionCreated = res.second;
-                region = res.first->second.get();
+                auto& region = fRegions[id] = std::make_unique<UnmanagedRegion>(fShmId, size, false, cfg);
                 // LOG(debug) << "Created region with id '" << id << "', path: '" << cfg.path << "', flags: '" << cfg.creationFlags << "'";
-
-                if (!newRegionCreated) {
-                    region->fRemote = false; // TODO: this should be more clear, refactor it.
-                }
 
                 // start ack receiver only if a callback has been provided.
                 if (callback || bulkCallback) {
@@ -414,7 +406,7 @@ class Manager
                     region->StartAckSender();
                     region->StartAckReceiver();
                 }
-                result.first = region;
+                result.first = region.get();
                 result.second = id;
             }
             fRegionsGen += 1; // signal TL cache invalidation
