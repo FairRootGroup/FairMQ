@@ -40,9 +40,9 @@ class UnmanagedRegionImpl final : public fair::mq::UnmanagedRegion
         , fRegion(nullptr)
         , fRegionId(0)
     {
-        auto result = fManager.CreateRegion(size, callback, bulkCallback, std::move(cfg));
-        fRegion = result.first;
-        fRegionId = result.second;
+        auto [regionPtr, regionId] = fManager.CreateRegion(size, callback, bulkCallback, std::move(cfg));
+        fRegion = regionPtr;
+        fRegionId = regionId;
     }
 
     UnmanagedRegionImpl(const UnmanagedRegionImpl&) = delete;

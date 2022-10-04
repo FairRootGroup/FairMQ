@@ -73,6 +73,8 @@ struct UnmanagedRegion
 
         // TODO: refactor this
         cfg.size = size;
+        const uint16_t id = cfg.id.value();
+        bool created = false;
 
         LOG(debug) << "UnmanagedRegion(): " << fName << " | remote: " << remote << ".";
 
@@ -94,23 +96,25 @@ struct UnmanagedRegion
             if (!fFile) {
                 LOG(error) << "Failed to initialize file: " << fName;
                 LOG(error) << "errno: " << errno << ": " << strerror(errno);
-                throw std::runtime_error(tools::ToString("Failed to initialize file for shared memory region: ", strerror(errno)));
+                throw TransportError(tools::ToString("Failed to initialize file for shared memory region: ", strerror(errno)));
             }
             fFileMapping = file_mapping(fName.c_str(), read_write);
-            LOG(debug) << "shmem: initialized file: " << fName;
+            LOG(debug) << "UnmanagedRegion(): initialized file: " << fName;
             fRegion = mapped_region(fFileMapping, read_write, 0, size, 0, cfg.creationFlags);
         } else {
             try {
                 // if opening fails, create
                 try {
                     fShmemObject = shared_memory_object(open_only, fName.c_str(), read_write);
+                    created = false;
                 } catch (interprocess_exception& e) {
-                    LOG(debug) << "Could not open " << (remote ? "remote" : "local") << " shared_memory_object for region id '" << cfg.id.value() << "': " << e.what() << ", creating...";
+                    LOG(debug) << "Could not open " << (remote ? "remote" : "local") << " shared_memory_object for region id '" << id << "': " << e.what() << ", creating...";
                     fShmemObject = shared_memory_object(create_only, fName.c_str(), read_write);
                     fShmemObject.truncate(size);
+                    created = true;
                 }
             } catch (interprocess_exception& e) {
-                LOG(error) << "Failed " << (remote ? "opening" : "creating") << " shared_memory_object for region id '" << cfg.id.value() << "': " << e.what();
+                LOG(error) << "Failed initializing shared_memory_object for region id " << id << ": " << e.what();
                 throw;
             }
 
@@ -121,27 +125,27 @@ struct UnmanagedRegion
                     throw TransportError(tools::ToString("Created/opened region size (", fRegion.get_size(), ") does not match configured size (", size, ")"));
                 }
             } catch (interprocess_exception& e) {
-                LOG(error) << "Failed mapping shared_memory_object for region id '" << cfg.id.value() << "': " << e.what();
+                LOG(error) << "Failed mapping shared_memory_object for region id " << id << ": " << e.what();
                 throw;
             }
         }
 
         if (cfg.lock) {
-            LOG(debug) << "Locking region " << cfg.id.value() << "...";
+            LOG(debug) << "Locking region " << id << "...";
             Lock();
-            LOG(debug) << "Successfully locked region " << cfg.id.value() << ".";
+            LOG(debug) << "Successfully locked region " << id << ".";
         }
         if (cfg.zero) {
-            LOG(debug) << "Zeroing free memory of region " << cfg.id.value() << "...";
+            LOG(debug) << "Zeroing free memory of region " << id << "...";
             Zero();
-            LOG(debug) << "Successfully zeroed free memory of region " << cfg.id.value() << ".";
+            LOG(debug) << "Successfully zeroed free memory of region " << id << ".";
         }
 
         if (!remote) {
             Register(shmId, cfg);
         }
 
-        LOG(trace) << "shmem: initialized region: " << fName << " (" << (remote ? "remote" : "local") << ")";
+        LOG(debug) << (created ? "Created" : "Opened") << " unmanaged shared memory region: " << fName << " (" << (remote ? "remote" : "local") << ")";
     }
 
     UnmanagedRegion() = delete;
@@ -246,6 +250,7 @@ struct UnmanagedRegion
     static void Register(const std::string& shmId, const RegionConfig& cfg)
     {
         using namespace boost::interprocess;
+        LOG(debug) << "Registering unmanaged shared memory region with id " << cfg.id.value();
         managed_shared_memory mngSegment(open_or_create, std::string("fmq_" + shmId + "_mng").c_str(), kManagementSegmentSize);
         VoidAlloc alloc(mngSegment.get_segment_manager());
 
