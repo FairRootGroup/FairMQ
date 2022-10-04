@@ -207,22 +207,22 @@ class Manager
 
             fEventCounter = fManagementSegment.find<EventCounter>(unique_instance).first;
             if (fEventCounter) {
-                LOG(debug) << "event counter found: " << fEventCounter->fCount;
+                LOG(trace) << "event counter found: " << fEventCounter->fCount;
             } else {
-                LOG(debug) << "no event counter found, creating one and initializing with 0";
+                LOG(trace) << "no event counter found, creating one and initializing with 0";
                 fEventCounter = fManagementSegment.construct<EventCounter>(unique_instance)(0);
-                LOG(debug) << "initialized event counter with: " << fEventCounter->fCount;
+                LOG(trace) << "initialized event counter with: " << fEventCounter->fCount;
             }
 
             fDeviceCounter = fManagementSegment.find<DeviceCounter>(unique_instance).first;
             if (fDeviceCounter) {
-                LOG(debug) << "device counter found, with value of " << fDeviceCounter->fCount << ". incrementing.";
+                LOG(trace) << "device counter found, with value of " << fDeviceCounter->fCount << ". incrementing.";
                 (fDeviceCounter->fCount)++;
-                LOG(debug) << "incremented device counter, now: " << fDeviceCounter->fCount;
+                LOG(trace) << "incremented device counter, now: " << fDeviceCounter->fCount;
             } else {
-                LOG(debug) << "no device counter found, creating one and initializing with 1";
+                LOG(trace) << "no device counter found, creating one and initializing with 1";
                 fDeviceCounter = fManagementSegment.construct<DeviceCounter>(unique_instance)(1);
-                LOG(debug) << "initialized device counter with: " << fDeviceCounter->fCount;
+                LOG(trace) << "initialized device counter with: " << fDeviceCounter->fCount;
             }
 
             fShmSegments = fManagementSegment.find_or_construct<Uint16SegmentInfoHashMap>(unique_instance)(fShmVoidAlloc);
@@ -265,10 +265,10 @@ class Manager
                         }
                     }
                 }
-                LOG(debug) << "Created/opened shared memory segment '" << "fmq_" << fShmId << "_m_" << fSegmentId << "'."
-                << " Size: " << boost::apply_visitor(SegmentSize(), fSegments.at(fSegmentId)) << " bytes."
-                << " Available: " << boost::apply_visitor(SegmentFreeMemory(), fSegments.at(fSegmentId)) << " bytes."
-                << " Allocation algorithm: " << allocationAlgorithm;
+                LOG(debug) << (createdSegment ? "Created" : "Opened") << " managed shared memory segment " << "fmq_" << fShmId << "_m_" << fSegmentId
+                    << ". Size: " << boost::apply_visitor(SegmentSize(), fSegments.at(fSegmentId)) << " bytes."
+                    << " Available: " << boost::apply_visitor(SegmentFreeMemory(), fSegments.at(fSegmentId)) << " bytes."
+                    << " Allocation algorithm: " << allocationAlgorithm;
             } catch (interprocess_exception& bie) {
                 LOG(error) << "Failed to create/open shared memory segment '" << "fmq_" << fShmId << "_m_" << fSegmentId << "': " << bie.what();
                 throw TransportError(tools::ToString("Failed to create/open shared memory segment '", "fmq_", fShmId, "_m_", fSegmentId, "': ", bie.what()));
@@ -447,7 +447,6 @@ class Manager
     UnmanagedRegion* GetRegion(uint16_t id)
     {
         std::lock_guard<std::mutex> lock(fLocalRegionsMtx);
-        // remote region could actually be a local one if a message originates from this device (has been sent out and returned)
         auto it = fRegions.find(id);
         if (it != fRegions.end()) {
             return it->second.get();
