@@ -39,12 +39,9 @@ struct Sampler : fair::mq::Device
         if (fExternalRegion) {
             regionCfg.id = 1;
             regionCfg.removeOnDestruction = false;
-            regionCfg.lock = false; // mlock region after creation
-            regionCfg.lock = false; // mlock region after creation
-        } else {
-            regionCfg.lock = true; // mlock region after creation
-            regionCfg.zero = true; // zero region content after creation
         }
+        regionCfg.lock = !fExternalRegion; // mlock region after creation
+        regionCfg.zero = !fExternalRegion; // zero region content after creation
         fRegion = fair::mq::UnmanagedRegionPtr(NewUnmanagedRegionFor(
             "data", // region is created using the transport of this channel...
             0,      // ... and this sub-channel
