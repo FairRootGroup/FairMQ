@@ -396,7 +396,7 @@ class Manager
                 const uint16_t id = cfg.id.value();
 
                 std::lock_guard<std::mutex> lock(fLocalRegionsMtx);
-                auto& region = fRegions[id] = std::make_unique<UnmanagedRegion>(fShmId, size, false, cfg);
+                auto& region = fRegions[id] = std::make_unique<UnmanagedRegion>(fShmId, size, true, cfg);
                 // LOG(debug) << "Created region with id '" << id << "', path: '" << cfg.path << "', flags: '" << cfg.creationFlags << "'";
 
                 // start ack receiver only if a callback has been provided.
@@ -463,7 +463,7 @@ class Manager
                 }
                 // LOG(debug) << "Located remote region with id '" << id << "', path: '" << cfg.path << "', flags: '" << cfg.creationFlags << "'";
 
-                auto r = fRegions.emplace(id, std::make_unique<UnmanagedRegion>(fShmId, 0, true, std::move(cfg)));
+                auto r = fRegions.emplace(id, std::make_unique<UnmanagedRegion>(fShmId, 0, false, std::move(cfg)));
                 r.first->second->InitializeQueues();
                 r.first->second->StartAckSender();
                 return r.first->second.get();
@@ -554,7 +554,7 @@ class Manager
                     if (it != fRegions.end()) {
                         region = it->second.get();
                     } else {
-                        auto r = fRegions.emplace(cfgIt->first, std::make_unique<UnmanagedRegion>(fShmId, 0, true, cfgIt->second));
+                        auto r = fRegions.emplace(cfgIt->first, std::make_unique<UnmanagedRegion>(fShmId, 0, false, cfgIt->second));
                         region = r.first->second.get();
                         region->InitializeQueues();
                         region->StartAckSender();
