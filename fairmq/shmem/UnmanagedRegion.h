@@ -146,7 +146,7 @@ struct UnmanagedRegion
             LOG(debug) << "Successfully zeroed free memory of region " << id << ".";
         }
 
-        if (fControlling) {
+        if (fControlling && created) {
             Register(shmId, cfg);
         }
 
@@ -159,6 +159,13 @@ struct UnmanagedRegion
     UnmanagedRegion(UnmanagedRegion&&) = delete;
     UnmanagedRegion& operator=(const UnmanagedRegion&) = delete;
     UnmanagedRegion& operator=(UnmanagedRegion&&) = delete;
+
+    void BecomeController(RegionConfig& cfg)
+    {
+        fControlling = true;
+        fLinger = cfg.linger;
+        fRemoveOnDestruction = cfg.removeOnDestruction;
+    }
 
     void Zero()
     {
@@ -263,10 +270,14 @@ struct UnmanagedRegion
 
         EventCounter* eventCounter = mngSegment.find_or_construct<EventCounter>(unique_instance)(0);
 
-        bool newShmRegionCreated = shmRegions->emplace(cfg.id.value(), RegionInfo(cfg.path.c_str(), cfg.creationFlags, cfg.userFlags, cfg.size, alloc)).second;
-        if (newShmRegionCreated) {
-            (eventCounter->fCount)++;
+        auto it = shmRegions->find(cfg.id.value());
+        if (it != shmRegions->end()) {
+            LOG(error) << "Unmanaged Region with id " << cfg.id.value() << " has already been registered. Only unique IDs per session are allowed.";
+            throw TransportError(tools::ToString("Unmanaged Region with id ", cfg.id.value(), " has already been registered. Only unique IDs per session are allowed."));
         }
+
+        shmRegions->emplace(cfg.id.value(), RegionInfo(cfg.path.c_str(), cfg.creationFlags, cfg.userFlags, cfg.size, alloc)).second;
+        (eventCounter->fCount)++;
     }
 
     void SetCallbacks(RegionCallback callback, RegionBulkCallback bulkCallback)

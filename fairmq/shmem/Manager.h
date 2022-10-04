@@ -396,7 +396,23 @@ class Manager
                 const uint16_t id = cfg.id.value();
 
                 std::lock_guard<std::mutex> lock(fLocalRegionsMtx);
-                auto& region = fRegions[id] = std::make_unique<UnmanagedRegion>(fShmId, size, true, cfg);
+
+                UnmanagedRegion* region = nullptr;
+
+                auto it = fRegions.find(id);
+                if (it != fRegions.end()) {
+                    region = it->second.get();
+                    if (region->fControlling) {
+                        LOG(error) << "Unmanaged Region with id " << id << " already exists. Only unique IDs per session are allowed.";
+                        throw TransportError(tools::ToString("Unmanaged Region with id ", id, " already exists. Only unique IDs per session are allowed."));
+                    }
+
+                    LOG(debug) << "Unmanaged region (view) already present, promoting to controller";
+                    region->BecomeController(cfg);
+                } else {
+                    auto res = fRegions.emplace(id, std::make_unique<UnmanagedRegion>(fShmId, size, true, cfg));
+                    region = res.first->second.get();
+                }
                 // LOG(debug) << "Created region with id '" << id << "', path: '" << cfg.path << "', flags: '" << cfg.creationFlags << "'";
 
                 // start ack receiver only if a callback has been provided.
@@ -406,7 +422,7 @@ class Manager
                     region->StartAckSender();
                     region->StartAckReceiver();
                 }
-                result.first = region.get();
+                result.first = region;
                 result.second = id;
             }
             fRegionsGen += 1; // signal TL cache invalidation
