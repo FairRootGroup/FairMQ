@@ -304,7 +304,7 @@ void Device::ConnectWrapper()
     // first attempt
     AttachChannels(fUninitializedConnectingChannels);
     // if not all channels could be connected, update their address values from config and retry
-    while (!fUninitializedConnectingChannels.empty()) {
+    while (!fUninitializedConnectingChannels.empty() && !NewStatePending()) {
         this_thread::sleep_for(chrono::milliseconds(sleepTimeInMS));
 
         for (auto& chan : fUninitializedConnectingChannels) {
