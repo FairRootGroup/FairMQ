@@ -19,6 +19,7 @@
 
 #include <cstdint>   // int64_t
 #include <memory>   // unique_ptr, shared_ptr
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <utility>   // std::move
@@ -379,6 +380,14 @@ class Channel
     static constexpr int DefaultPortRangeMin = 22000;
     static constexpr int DefaultPortRangeMax = 23000;
     static constexpr bool DefaultAutoBind = true;
+
+    friend std::ostream& operator<<(std::ostream& os, const Channel& ch)
+    {
+        return os << "name: " << ch.fName
+                  << ", type: "  << ch.fType
+                  << ", method: "  << ch.fMethod
+                  << ", address: "  << ch.fAddress;
+    }
 
   private:
     std::shared_ptr<TransportFactory> fTransportFactory;
