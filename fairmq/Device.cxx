@@ -317,6 +317,10 @@ void Device::ConnectWrapper()
 
         if (numAttempts++ > maxAttempts) {
             LOG(error) << "could not connect all channels after " << fInitializationTimeoutInS << " attempts";
+            LOG(error) << "following channels are still invalid:";
+            for (auto& chan : fUninitializedConnectingChannels) {
+                LOG(error) << "channel: " << *chan;
+            }
             throw runtime_error(tools::ToString("could not connect all channels after ", fInitializationTimeoutInS, " attempts"));
         }
 
