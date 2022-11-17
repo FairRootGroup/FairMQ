@@ -753,6 +753,9 @@ class Manager
                 if (fBadAllocMaxAttempts >= 0 && ++numAttempts >= fBadAllocMaxAttempts) {
                     throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default", ", free memory: ", boost::apply_visitor(SegmentFreeMemory(), fSegments.at(fSegmentId))));
                 }
+                if (numAttempts == 1 && fBadAllocMaxAttempts > 1) {
+                    LOG(warn) << tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default", ", free memory: ", boost::apply_visitor(SegmentFreeMemory(), fSegments.at(fSegmentId)), ". Will try ", (fBadAllocMaxAttempts > 1 ? (std::to_string(fBadAllocMaxAttempts - 1)) + " more times" : " until success"), ", in ", fBadAllocAttemptIntervalInMs, "ms intervals");
+                }
                 std::this_thread::sleep_for(std::chrono::milliseconds(fBadAllocAttemptIntervalInMs));
                 if (Interrupted()) {
                     throw MessageBadAlloc(tools::ToString("shmem: could not create a message of size ", size, ", alignment: ", (alignment != 0) ? std::to_string(alignment) : "default", ", free memory: ", boost::apply_visitor(SegmentFreeMemory(), fSegments.at(fSegmentId))));
