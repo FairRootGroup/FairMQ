@@ -12,6 +12,7 @@
 #include <fairmq/PluginServices.h>
 #include <fairmq/Device.h>
 #include <fairmq/ProgOptions.h>
+#include <fairmq/Tools.h>
 
 #include <gtest/gtest.h>
 
@@ -26,7 +27,7 @@ namespace _plugin_manager
 {
 
 using namespace fair::mq;
-using namespace boost::filesystem;
+using namespace fs;
 using namespace boost::program_options;
 using namespace std;
 
@@ -134,7 +135,7 @@ TEST(PluginManager, SearchPathValidation)
 
 TEST(PluginManager, SearchPaths)
 {
-    const auto temp = temp_directory_path() / unique_path();
+    const auto temp = temp_directory_path() / fair::mq::tools::Uuid();
     create_directories(temp);
     const auto non_existing_dir = temp / "non-existing-dir";
     const auto existing_dir = temp / "existing-dir";

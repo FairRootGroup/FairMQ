@@ -197,7 +197,7 @@ if(BUILD_FAIRMQ)
     $<$<PLATFORM_ID:Linux>:rt>
     Boost::boost
     Boost::program_options
-    Boost::filesystem
+    Boost::filesystem # still needed for Boost.DLL
     Boost::regex
     FairLogger::FairLogger
 

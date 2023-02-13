@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2018-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -168,11 +168,15 @@ if(CMAKE_GENERATOR STREQUAL Ninja AND ENABLE_CCACHE)
   endif()
 endif()
 
-if(    CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
-   AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
-  set(FAIRMQ_HAS_STD_FILESYSTEM 0)
-else()
-  set(FAIRMQ_HAS_STD_FILESYSTEM 1)
+if(NOT DEFINED FAIRMQ_HAS_STD_FILESYSTEM)
+  if(   (    CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+         AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
+     OR (    CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+         AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9))
+    set(FAIRMQ_HAS_STD_FILESYSTEM 0)
+  else()
+    set(FAIRMQ_HAS_STD_FILESYSTEM 1)
+  endif()
 endif()
 
 if(NOT DEFINED FAIRMQ_HAS_STD_PMR)

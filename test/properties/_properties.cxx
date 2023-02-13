@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2019 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2019-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -8,7 +8,16 @@
 
 #include <fairmq/ProgOptions.h>
 
+#if FAIRMQ_HAS_STD_FILESYSTEM
+#include <filesystem>
+namespace fs = std::filesystem;
+#else
+#define BOOST_FILESYSTEM_VERSION 3
+#define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
+namespace fs = ::boost::filesystem;
+#endif
+
 #include <gtest/gtest.h>
 #include <iostream>
 #include <string>
@@ -52,7 +61,13 @@ TEST(ProgOptions, SetAndGet)
     set_and_get<double>(o, "_double", 33.22);
     set_and_get<long double>(o, "_long double", 333.222);
     set_and_get<bool>(o, "_bool", true);
-    set_and_get<boost::filesystem::path>(o, "_boost::filesystem::path", boost::filesystem::path("C:\\Windows"));
+    set_and_get<fs::path>(o,
+#if FAIRMQ_HAS_STD_FILESYSTEM
+                          "_std::filesystem::path",
+#else
+                          "_boost::filesystem::path",
+#endif
+                          fs::path("C:\\Windows"));
     set_and_get<vector<bool>>(o, "_vector<bool>", { true, true });
     set_and_get<vector<char>>(o, "_vector<char>", { 'a', 'b', 'c' });
     set_and_get<vector<signed char>>(o, "_vector<signed char>", { -1, -2, -3 });
@@ -71,7 +86,13 @@ TEST(ProgOptions, SetAndGet)
     set_and_get<vector<float>>(o, "_vector<float>", { 3.2, 3.3, 3.4 });
     set_and_get<vector<double>>(o, "_vector<double>", { 33.22, 33.23, 33.24 });
     set_and_get<vector<long double>>(o, "_vector<long double>", { 333.222, 333.223, 333.224 });
-    set_and_get<vector<boost::filesystem::path>>(o, "_vector<boost::filesystem::path>", { boost::filesystem::path("C:\\Windows"), boost::filesystem::path("C:\\Windows\\System32") });
+    set_and_get<vector<fs::path>>(o,
+#if FAIRMQ_HAS_STD_FILESYSTEM
+                                  "_vector<std::filesystem::path>",
+#else
+                                  "_vector<boost::filesystem::path>",
+#endif
+                                  { fs::path("C:\\Windows"), fs::path("C:\\Windows\\System32") });
 
     ASSERT_THROW(o.ParseAll({"cmd", "--unregistered", "option"}, false), boost::program_options::unknown_option);
     ASSERT_NO_THROW(o.ParseAll({"cmd", "--unregistered", "option"}, true));
@@ -136,7 +157,13 @@ TEST(ProgOptions, SubscribeAndSet)
     subscribe_and_set<double>(o, "_double", 33.22);
     subscribe_and_set<long double>(o, "_long double", 333.222);
     subscribe_and_set<bool>(o, "_bool", true);
-    subscribe_and_set<boost::filesystem::path>(o, "_boost::filesystem::path", boost::filesystem::path("C:\\Windows"));
+    subscribe_and_set<fs::path>(o,
+#if FAIRMQ_HAS_STD_FILESYSTEM
+                                "_std::filesystem::path",
+#else
+                                "_boost::filesystem::path",
+#endif
+                                fs::path("C:\\Windows"));
     subscribe_and_set<vector<bool>>(o, "_vector<bool>", { true, true });
     subscribe_and_set<vector<char>>(o, "_vector<char>", { 'a', 'b', 'c' });
     subscribe_and_set<vector<signed char>>(o, "_vector<signed char>", { -1, -2, -3 });
@@ -155,7 +182,13 @@ TEST(ProgOptions, SubscribeAndSet)
     subscribe_and_set<vector<float>>(o, "_vector<float>", { 3.2, 3.3, 3.4 });
     subscribe_and_set<vector<double>>(o, "_vector<double>", { 33.22, 33.23, 33.24 });
     subscribe_and_set<vector<long double>>(o, "_vector<long double>", { 333.222, 333.223, 333.224 });
-    subscribe_and_set<vector<boost::filesystem::path>>(o, "_vector<boost::filesystem::path>", { boost::filesystem::path("C:\\Windows"), boost::filesystem::path("C:\\Windows\\System32") });
+    subscribe_and_set<vector<fs::path>>(o,
+#if FAIRMQ_HAS_STD_FILESYSTEM
+                                        "_vector<std::filesystem::path>",
+#else
+                                        "_vector<boost::filesystem::path>",
+#endif
+                                        { fs::path("C:\\Windows"), fs::path("C:\\Windows\\System32") });
 }
 
 TEST(PropertyHelper, ConvertPropertyToString)
@@ -179,7 +212,11 @@ TEST(PropertyHelper, ConvertPropertyToString)
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<double>(33.22))), "33.22");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<long double>(333.222))), "333.222");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(static_cast<bool>(true))), "true");
-    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(boost::filesystem::path("C:\\Windows"))), "\"C:\\Windows\"");
+#if FAIRMQ_HAS_STD_FILESYSTEM
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(fs::path("C:\\Windows"))), "\"C:\\\\Windows\"");
+#else
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(fs::path("C:\\Windows"))), "\"C:\\Windows\"");
+#endif
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<char>({ 'a', 'b', 'c' }))), "a, b, c");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<signed char>({ -1, -2, -3 }))), "-1, -2, -3");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<unsigned char>({ 1, 2, 3 }))), "1, 2, 3");
@@ -198,7 +235,11 @@ TEST(PropertyHelper, ConvertPropertyToString)
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<double>({ 33.22, 33.23, 33.24 }))), "33.22, 33.23, 33.24");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<long double>({ 333.222, 333.223, 333.224 }))), "333.222, 333.223, 333.224");
     EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<bool>({ true, true }))), "true, true");
-    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<boost::filesystem::path>({ boost::filesystem::path("C:\\Windows"), boost::filesystem::path("C:\\Windows\\System32") }))), "\"C:\\Windows\", \"C:\\Windows\\System32\"");
+#if FAIRMQ_HAS_STD_FILESYSTEM
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<fs::path>({ fs::path("C:\\Windows"), fs::path("C:\\Windows\\System32") }))), "\"C:\\\\Windows\", \"C:\\\\Windows\\\\System32\"");
+#else
+    EXPECT_EQ(PropertyHelper::ConvertPropertyToString(Property(vector<fs::path>({ fs::path("C:\\Windows"), fs::path("C:\\Windows\\System32") }))), "\"C:\\Windows\", \"C:\\Windows\\System32\"");
+#endif
 }
 
 } // namespace
