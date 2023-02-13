@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -8,7 +8,15 @@
 
 #include <fairmq/Properties.h>
 
+#if FAIRMQ_HAS_STD_FILESYSTEM
+#include <filesystem>
+namespace fs = std::filesystem;
+#else
+#define BOOST_FILESYSTEM_VERSION 3
+#define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
+namespace fs = ::boost::filesystem;
+#endif
 
 using namespace std;
 using boost::any_cast;
@@ -84,7 +92,12 @@ unordered_map<type_index, function<pair<string, string>(const Property&)>> Prope
     { type_index(typeid(long double)),                     [](const Property& p) { return getStringPair<long double>(p, "long double"); } },
     { type_index(typeid(bool)),                            [](const Property& p) { stringstream ss; ss << boolalpha << any_cast<bool>(p); return pair<string, string>{ ss.str(), "bool" }; } },
     { type_index(typeid(vector<bool>)),                    [](const Property& p) { stringstream ss; ss << boolalpha << any_cast<vector<bool>>(p); return pair<string, string>{ ss.str(), "vector<bool>>" }; } },
-    { type_index(typeid(boost::filesystem::path)),         [](const Property& p) { return getStringPair<boost::filesystem::path>(p, "boost::filesystem::path"); } },
+    { type_index(typeid(fs::path)),                        [](const Property& p) { return getStringPair<fs::path>(p,
+#if FAIRMQ_HAS_STD_FILESYSTEM
+                                                                                                                  "std::filesystem::path"); } },
+#else
+                                                                                                                  "boost::filesystem::path"); } },
+#endif
     { type_index(typeid(vector<char>)),                    [](const Property& p) { return getStringPair<vector<char>>(p, "vector<char>"); } },
     { type_index(typeid(vector<signed char>)),             [](const Property& p) { return getStringPair<vector<signed char>>(p, "vector<signed char>"); } },
     { type_index(typeid(vector<unsigned char>)),           [](const Property& p) { return getStringPair<vector<unsigned char>>(p, "vector<unsigned char>"); } },
@@ -100,7 +113,12 @@ unordered_map<type_index, function<pair<string, string>(const Property&)>> Prope
     { type_index(typeid(vector<float>)),                   [](const Property& p) { return getStringPair<vector<float>>(p, "vector<float>"); } },
     { type_index(typeid(vector<double>)),                  [](const Property& p) { return getStringPair<vector<double>>(p, "vector<double>"); } },
     { type_index(typeid(vector<long double>)),             [](const Property& p) { return getStringPair<vector<long double>>(p, "vector<long double>"); } },
-    { type_index(typeid(vector<boost::filesystem::path>)), [](const Property& p) { return getStringPair<vector<boost::filesystem::path>>(p, "vector<boost::filesystem::path>"); } },
+    { type_index(typeid(vector<fs::path>)),                [](const Property& p) { return getStringPair<vector<fs::path>>(p,
+#if FAIRMQ_HAS_STD_FILESYSTEM
+                                                                                                                          "vector<std::filesystem::path>"); } },
+#else
+                                                                                                                          "vector<boost::filesystem::path>"); } },
+#endif
 };
 
 unordered_map<type_index, void(*)(const EventManager&, const string&, const Property&)> PropertyHelper::fEventEmitters = {
@@ -122,7 +140,7 @@ unordered_map<type_index, void(*)(const EventManager&, const string&, const Prop
     { type_index(typeid(long double)),                     [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, long double>(k, any_cast<long double>(p)); } },
     { type_index(typeid(bool)),                            [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, bool>(k, any_cast<bool>(p)); } },
     { type_index(typeid(vector<bool>)),                    [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<bool>>(k, any_cast<vector<bool>>(p)); } },
-    { type_index(typeid(boost::filesystem::path)),         [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, boost::filesystem::path>(k, any_cast<boost::filesystem::path>(p)); } },
+    { type_index(typeid(fs::path)),                        [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, fs::path>(k, any_cast<fs::path>(p)); } },
     { type_index(typeid(vector<char>)),                    [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<char>>(k, any_cast<vector<char>>(p)); } },
     { type_index(typeid(vector<signed char>)),             [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<signed char>>(k, any_cast<vector<signed char>>(p)); } },
     { type_index(typeid(vector<unsigned char>)),           [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<unsigned char>>(k, any_cast<vector<unsigned char>>(p)); } },
@@ -138,7 +156,7 @@ unordered_map<type_index, void(*)(const EventManager&, const string&, const Prop
     { type_index(typeid(vector<float>)),                   [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<float>>(k, any_cast<vector<float>>(p)); } },
     { type_index(typeid(vector<double>)),                  [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<double>>(k, any_cast<vector<double>>(p)); } },
     { type_index(typeid(vector<long double>)),             [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<long double>>(k, any_cast<vector<long double>>(p)); } },
-    { type_index(typeid(vector<boost::filesystem::path>)), [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<boost::filesystem::path>>(k, any_cast<vector<boost::filesystem::path>>(p)); } },
+    { type_index(typeid(vector<fs::path>)),                [](const EventManager& em, const string& k, const Property& p) { em.Emit<PropertyChange, vector<fs::path>>(k, any_cast<vector<fs::path>>(p)); } },
 };
 
 } // namespace fair::mq

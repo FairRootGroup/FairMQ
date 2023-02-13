@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -13,9 +13,16 @@
 #include <fairmq/PluginServices.h>
 #include <fairmq/tools/Strings.h>
 
+#if FAIRMQ_HAS_STD_FILESYSTEM
+#include <filesystem>
+namespace fs = std::filesystem;
+#else
 #define BOOST_FILESYSTEM_VERSION 3
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
+namespace fs = ::boost::filesystem;
+#endif
+
 #include <boost/optional.hpp>
 #include <boost/program_options.hpp>
 #include <boost/dll/import.hpp>
@@ -60,13 +67,13 @@ class PluginManager
         LOG(debug) << "Shutting down Plugin Manager";
     }
 
-    auto SetSearchPaths(const std::vector<boost::filesystem::path>&) -> void;
-    auto AppendSearchPath(const boost::filesystem::path&) -> void;
-    auto PrependSearchPath(const boost::filesystem::path&) -> void;
-    auto SearchPaths() const -> const std::vector<boost::filesystem::path>& { return fSearchPaths; }
+    auto SetSearchPaths(const std::vector<fs::path>&) -> void;
+    auto AppendSearchPath(const fs::path&) -> void;
+    auto PrependSearchPath(const fs::path&) -> void;
+    auto SearchPaths() const -> const std::vector<fs::path>& { return fSearchPaths; }
     struct BadSearchPath : std::invalid_argument { using std::invalid_argument::invalid_argument; };
 
-    auto SearchPluginFile(const std::string&) const -> boost::filesystem::path;
+    auto SearchPluginFile(const std::string&) const -> fs::path;
     struct PluginNotFound : std::runtime_error { using std::runtime_error::runtime_error; };
     auto LoadPlugin(const std::string& pluginName) -> void;
     auto LoadPlugins(const std::vector<std::string>& pluginNames) -> void { for(const auto& pluginName : pluginNames) { LoadPlugin(pluginName); } }
@@ -88,18 +95,33 @@ class PluginManager
     auto WaitForPluginsToReleaseDeviceControl() -> void { fPluginServices->WaitForReleaseDeviceControl(); }
 
   private:
-    static auto ValidateSearchPath(const boost::filesystem::path&) -> void;
+    static auto ValidateSearchPath(const fs::path&) -> void;
 
     auto LoadPluginPrelinkedDynamic(const std::string& pluginName) -> void;
     auto LoadPluginDynamic(const std::string& pluginName) -> void;
     auto LoadPluginStatic(const std::string& pluginName) -> void;
-    template<typename... Args>
-    auto LoadSymbols(const std::string& pluginName, Args&&... args) -> void
+#if FAIRMQ_HAS_STD_FILESYSTEM
+    template<typename T>
+    static auto AdaptPathType(T&& path)
+    {
+        if constexpr(std::is_same_v<T, std::filesystem::path>) {
+            return boost::filesystem::path(std::forward<T>(path));
+        } else {
+            return std::forward<T>(path);
+        }
+    }
+#endif
+    template<typename FirstArg, typename... Args>
+    auto LoadSymbols(const std::string& pluginName, FirstArg&& farg, Args&&... args) -> void
     {
         using namespace boost::dll;
         using fair::mq::tools::ToString;
 
-        auto lib = shared_library{std::forward<Args>(args)...};
+#if FAIRMQ_HAS_STD_FILESYSTEM
+        auto lib = shared_library{AdaptPathType(std::forward<FirstArg>(farg)), std::forward<Args>(args)...};
+#else
+        auto lib = shared_library{std::forward<FirstArg>(farg), std::forward<Args>(args)...};
+#endif
         fgDLLKeepAlive.push_back(lib);
 
         fPluginFactories[pluginName] = import_alias<PluginFactory>(
@@ -121,7 +143,7 @@ class PluginManager
 
     static const std::string fgkLibPrefix;
     static const std::string fgkLibPrefixAlt;
-    std::vector<boost::filesystem::path> fSearchPaths;
+    std::vector<fs::path> fSearchPaths;
     static std::vector<boost::dll::shared_library> fgDLLKeepAlive; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
     std::map<std::string, std::function<PluginFactory>> fPluginFactories;
     std::unique_ptr<PluginServices> fPluginServices;

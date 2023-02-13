@@ -22,7 +22,6 @@ using namespace std;
 using fair::mq::Plugin;
 using fair::mq::tools::ToString;
 using fair::mq::tools::ToStrVector;
-namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 namespace dll = boost::dll;
 using boost::optional;
@@ -171,7 +170,7 @@ auto fair::mq::PluginManager::LoadPluginPrelinkedDynamic(const string& pluginNam
 }
 
 auto fair::mq::PluginManager::SearchPluginFile(const string& pluginName) const
-    -> boost::filesystem::path
+    -> fs::path
 {
     for (const auto& searchPath : SearchPaths()) {
         for (const auto& libPrefix : {fgkLibPrefix, fgkLibPrefixAlt}) {
@@ -181,7 +180,7 @@ auto fair::mq::PluginManager::SearchPluginFile(const string& pluginName) const
                            libPrefix,
                            pluginName,
                            boost::dll::detail::shared_library_impl::suffix().native());
-            auto const found = boost::filesystem::exists(file);
+            auto const found = fs::exists(file);
             if (found) {
                 return file;
             }

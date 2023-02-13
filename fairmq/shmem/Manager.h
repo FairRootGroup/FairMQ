@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -20,7 +20,6 @@
 #include <fairlogger/Logger.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
