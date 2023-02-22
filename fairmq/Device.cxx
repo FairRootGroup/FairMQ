@@ -6,14 +6,19 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <algorithm>                    // std::max, std::any_of
-#include <boost/algorithm/string.hpp>   // join/split
-#include <chrono>
+// FairMQ
 #include <fairmq/Device.h>
 #include <fairmq/Tools.h>
+
+// boost
+#include <boost/algorithm/string.hpp>   // join/split
+
+// std
+#include <algorithm>   // std::max, std::any_of
+#include <chrono>
 #include <iomanip>
 #include <list>
-#include <memory>                       // std::make_unique
+#include <memory>   // std::make_unique
 #include <mutex>
 #include <thread>
 

@@ -9,11 +9,7 @@
 #ifndef FAIR_MQ_DEVICE_H
 #define FAIR_MQ_DEVICE_H
 
-#include <algorithm>   // find
-#include <atomic>
-#include <chrono>
-#include <cstddef>
-#include <fairlogger/Logger.h>
+// FairMQ
 #include <fairmq/Channel.h>
 #include <fairmq/Message.h>
 #include <fairmq/Parts.h>
@@ -24,6 +20,15 @@
 #include <fairmq/TransportFactory.h>
 #include <fairmq/Transports.h>
 #include <fairmq/UnmanagedRegion.h>
+
+// logger
+#include <fairlogger/Logger.h>
+
+// std
+#include <algorithm>   // find
+#include <atomic>
+#include <chrono>
+#include <cstddef>
 #include <functional>
 #include <memory>   // unique_ptr
 #include <mutex>
