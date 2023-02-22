@@ -90,7 +90,7 @@ Device::Device(ProgOptions* config, tools::Version version)
 
         switch (transition) {
             case Transition::Stop:
-                UnblockTransports();
+                InterruptTransports();
                 break;
             default:
                 break;
@@ -492,7 +492,7 @@ void Device::RunWrapper()
 
     // if Run() exited and the state is still RUNNING, transition to READY.
     if (!NewStatePending()) {
-        UnblockTransports();
+        InterruptTransports();
         ChangeState(Transition::Stop);
     }
 
@@ -771,7 +771,7 @@ void Device::LogSocketRates()
     }
 }
 
-void Device::UnblockTransports()
+void Device::InterruptTransports()
 {
     for (auto& transport : fTransports) {
         transport.second->Interrupt();
