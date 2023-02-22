@@ -650,6 +650,8 @@ bool Device::HandleMultipartInput(const string& chName, const InputMultipartCall
 
 shared_ptr<TransportFactory> Device::AddTransport(mq::Transport transport)
 {
+    lock_guard<mutex> lock(fTransportMtx);
+
     if (transport == mq::Transport::DEFAULT) {
         transport = fDefaultTransportType;
     }
@@ -769,6 +771,7 @@ void Device::LogSocketRates()
 
 void Device::InterruptTransports()
 {
+    lock_guard<mutex> lock(fTransportMtx);
     for (auto& [transportType, transport] : fTransports) {
         transport->Interrupt();
     }
@@ -776,6 +779,7 @@ void Device::InterruptTransports()
 
 void Device::ResumeTransports()
 {
+    lock_guard<mutex> lock(fTransportMtx);
     for (auto& [transportType, transport] : fTransports) {
         transport->Resume();
     }
@@ -792,14 +796,17 @@ void Device::ResetTaskWrapper()
 
 void Device::ResetWrapper()
 {
-    for (auto& [transportType, transport] : fTransports) {
-        transport->Reset();
+    {
+        lock_guard<mutex> lock(fTransportMtx);
+        for (auto& [transportType, transport] : fTransports) {
+            transport->Reset();
+        }
+        fTransports.clear();
     }
 
     Reset();
 
     fChannels.clear();
-    fTransports.clear();
     fTransportFactory.reset();
     if (!NewStatePending()) {
         ChangeState(Transition::Auto);

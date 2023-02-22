@@ -637,6 +637,7 @@ class Device
 
     StateQueue fStateQueue;
 
+    std::mutex fTransportMtx;   ///< guards access to transports container
     std::mutex fTransitionMtx;
     bool fTransitioning;
 };
