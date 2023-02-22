@@ -588,7 +588,7 @@ class Device
     void ResetWrapper();
 
     /// Notifies transports to cease any blocking activity
-    void UnblockTransports();
+    void InterruptTransports();
 
     /// Shuts down the transports and the device
     void Exit() {}
