@@ -489,12 +489,6 @@ auto Control::RunShutdownSequence() -> void
             case DeviceState::Running:
                 ChangeDeviceState(DeviceStateTransition::Stop);
                 break;
-            case DeviceState::Binding:
-            case DeviceState::Connecting:
-            case DeviceState::InitializingTask:
-            case DeviceState::ResettingTask:
-            case DeviceState::ResettingDevice:
-                ChangeDeviceState(DeviceStateTransition::Auto);
             default:
                 // LOG(debug) << "Controller ignoring event: " << nextState;
                 break;
