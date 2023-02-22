@@ -457,11 +457,8 @@ void Device::RunWrapper()
         if (rateLogging && rateLogger->joinable()) { rateLogger->join(); }
     });
 
-
     // notify transports to resume transfers
-    for (auto& t : fTransports) {
-        t.second->Resume();
-    }
+    ResumeTransports();
 
     // change to Error state in case of an exception, to release LogSocketRates
     tools::CallOnDestruction cod([&](){
@@ -773,8 +770,15 @@ void Device::LogSocketRates()
 
 void Device::InterruptTransports()
 {
-    for (auto& transport : fTransports) {
-        transport.second->Interrupt();
+    for (auto& [transportType, transport] : fTransports) {
+        transport->Interrupt();
+    }
+}
+
+void Device::ResumeTransports()
+{
+    for (auto& [transportType, transport] : fTransports) {
+        transport->Resume();
     }
 }
 
@@ -789,8 +793,8 @@ void Device::ResetTaskWrapper()
 
 void Device::ResetWrapper()
 {
-    for (auto& transport : fTransports) {
-        transport.second->Reset();
+    for (auto& [transportType, transport] : fTransports) {
+        transport->Reset();
     }
 
     Reset();
