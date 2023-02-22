@@ -35,6 +35,7 @@ class StateMachine
     void SubscribeToStateChange(const std::string& key, std::function<void(const State)> callback);
     void UnsubscribeFromStateChange(const std::string& key);
 
+    void PrepareState(std::function<void(const State)> callback);
     void HandleStates(std::function<void(const State)> callback);
     void StopHandlingStates();
 

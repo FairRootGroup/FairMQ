@@ -157,6 +157,13 @@ struct Machine_ : public state_machine_def<Machine_>
         }
     }
 
+    void CallStatePrep(const State state) const
+    {
+        if (!fStatePrepSignal.empty()) {
+            fStatePrepSignal(state);
+        }
+    }
+
     void CallNewTransitionCallbacks(const Transition transition) const
     {
         if (!fNewTransitionSignal.empty()) {
@@ -175,6 +182,7 @@ struct Machine_ : public state_machine_def<Machine_>
 
     boost::signals2::signal<void(const State)> fStateChangeSignal;
     boost::signals2::signal<void(const State)> fStateHandleSignal;
+    boost::signals2::signal<void(const State)> fStatePrepSignal;
     boost::signals2::signal<void(const Transition)> fNewTransitionSignal;
     unordered_map<string, boost::signals2::connection> fStateChangeSignalsMap;
     unordered_map<string, boost::signals2::connection> fNewTransitionSignalsMap;
@@ -198,6 +206,7 @@ struct Machine_ : public state_machine_def<Machine_>
                 }
             }
 
+            CallStatePrep(fState);
             CallStateChangeCallbacks(fState);
             CallStateHandler(fState);
         }
@@ -313,6 +322,16 @@ void StateMachine::UnsubscribeFromStateChange(const string& key)
     }
 }
 
+void StateMachine::PrepareState(std::function<void(const State)> callback)
+{
+    auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+    if (fsm->fStatePrepSignal.empty()) {
+        fsm->fStatePrepSignal.connect(callback);
+    } else {
+        LOG(error) << "state preparation handler is already set";
+    }
+}
+
 void StateMachine::HandleStates(function<void(const State)> callback)
 {
     auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
@@ -326,6 +345,9 @@ void StateMachine::HandleStates(function<void(const State)> callback)
 void StateMachine::StopHandlingStates()
 {
     auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+    if (!fsm->fStatePrepSignal.empty()) {
+        fsm->fStatePrepSignal.disconnect_all_slots();
+    }
     if (!fsm->fStateHandleSignal.empty()) {
         fsm->fStateHandleSignal.disconnect_all_slots();
     }

@@ -92,14 +92,12 @@ Device::Device(ProgOptions* config, tools::Version version)
 {
     SubscribeToNewTransition("device", [&](Transition transition) {
         LOG(trace) << "device notified on new transition: " << transition;
+        InterruptTransports();
+    });
 
-        switch (transition) {
-            case Transition::Stop:
-                InterruptTransports();
-                break;
-            default:
-                break;
-        }
+    fStateMachine.PrepareState([&](State state) {
+        LOG(trace) << "Resuming transports for " << state << " state";
+        ResumeTransports();
     });
 
     fStateMachine.HandleStates([&](State state) {
@@ -462,9 +460,6 @@ void Device::RunWrapper()
         if (rateLogging && rateLogger->joinable()) { rateLogger->join(); }
     });
 
-    // notify transports to resume transfers
-    ResumeTransports();
-
     // change to Error state in case of an exception, to release LogSocketRates
     tools::CallOnDestruction cod([&](){
         ChangeState(Transition::ErrorFound);
@@ -494,7 +489,6 @@ void Device::RunWrapper()
 
     // if Run() exited and the state is still RUNNING, transition to READY.
     if (!NewStatePending()) {
-        InterruptTransports();
         ChangeState(Transition::Stop);
     }
 
