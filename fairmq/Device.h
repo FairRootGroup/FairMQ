@@ -590,6 +590,9 @@ class Device
     /// Notifies transports to cease any blocking activity
     void InterruptTransports();
 
+    /// Notifies transports to resume any blocking activity
+    void ResumeTransports();
+
     /// Shuts down the transports and the device
     void Exit() {}
 
