@@ -24,6 +24,10 @@ struct Sink : fair::mq::Device
     {
         LOG(info) << "Received message with " << parts.Size() << " parts";
 
+        if (parts.Size() != 7) {
+            throw std::runtime_error("Number of received parts != 7");
+        }
+
         example_multipart::Header header;
         header.stopFlag = (static_cast<example_multipart::Header*>(parts.At(0)->GetData()))->stopFlag;
 

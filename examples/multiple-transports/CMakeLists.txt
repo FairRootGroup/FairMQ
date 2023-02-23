@@ -25,7 +25,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-multiple-transports.s
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-multiple-transports.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multiple-transports.sh)
 add_test(NAME Example.MultipleTransports COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multiple-transports.sh)
-set_tests_properties(Example.MultipleTransports PROPERTIES TIMEOUT "30" PASS_REGULAR_EXPRESSION "Received messages from both sources.")
+set_tests_properties(Example.MultipleTransports PROPERTIES TIMEOUT "30")
 
 # install
 

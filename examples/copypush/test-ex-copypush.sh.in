@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
 
 transport="zeromq"
@@ -14,7 +16,7 @@ chanAddr1="/tmp/fmq_$session""_""$chan""_1""_""$transport"
 chanAddr2="/tmp/fmq_$session""_""$chan""_2""_""$transport"
 
 # setup a trap to kill everything if the test fails/timeouts
-trap 'kill -TERM $SAMPLER_PID; kill -TERM $SINK1_PID; kill -TERM $SINK2_PID; wait $SAMPLER_PID; wait $SINK1_PID; wait $SINK2_PID; rm $chanAddr1; rm $chanAddr2' TERM
+trap 'set +e; kill -TERM $SAMPLER_PID; kill -TERM $SINK1_PID; kill -TERM $SINK2_PID; wait $SAMPLER_PID; wait $SINK1_PID; wait $SINK2_PID; rm $chanAddr1; rm $chanAddr2; exit 0' TERM
 
 SAMPLER="fairmq-ex-copypush-sampler"
 SAMPLER+=" --id sampler1"
@@ -60,4 +62,6 @@ wait $SAMPLER_PID
 wait $SINK1_PID
 wait $SINK2_PID
 
+set +e
 rm $chanAddr1; rm $chanAddr2
+exit 0

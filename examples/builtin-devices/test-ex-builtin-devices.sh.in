@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
 
 transport="zeromq"
@@ -33,7 +35,7 @@ chan4Addr="/tmp/fmq_$session""_""$chan4""_""$transport"
 chan5Addr="/tmp/fmq_$session""_""$chan5""_""$transport"
 
 # setup a trap to kill everything if the test fails/timeouts
-trap 'kill -TERM $SAMPLER_PID; kill -TERM $SPLITTER_PID; kill -TERM $PROXY1_PID; kill -TERM $PROXY2_PID; kill -TERM $MERGER_PID; kill -TERM $MULTIPLIER_PID; kill -TERM $SINK_PID; rm $chan1Addr; rm $chan2Addr1; rm $chan2Addr2; rm $chan3Addr1; rm $chan3Addr2; rm $chan4Addr; rm $chan5Addr' TERM
+trap 'set +e; kill -TERM $SAMPLER_PID; kill -TERM $SPLITTER_PID; kill -TERM $PROXY1_PID; kill -TERM $PROXY2_PID; kill -TERM $MERGER_PID; kill -TERM $MULTIPLIER_PID; kill -TERM $SINK_PID; rm $chan1Addr; rm $chan2Addr1; rm $chan2Addr2; rm $chan3Addr1; rm $chan3Addr2; rm $chan4Addr; rm $chan5Addr; exit 0' TERM
 
 SAMPLER="fairmq-bsampler"
 SAMPLER+=" --id bsampler1"
@@ -165,4 +167,6 @@ wait $PROXY2_PID
 wait $MERGER_PID
 wait $MULTIPLIER_PID
 
+set +e
 rm $chan1Addr; rm $chan2Addr1; rm $chan2Addr2; rm $chan3Addr1; rm $chan3Addr2; rm $chan4Addr; rm $chan5Addr
+exit 0
