@@ -9,6 +9,8 @@
 #include <fairmq/Device.h>
 #include <fairmq/runDevice.h>
 
+#include <stdexcept>
+
 namespace bpo = boost::program_options;
 
 struct Sink : fair::mq::Device
@@ -32,7 +34,7 @@ struct Sink : fair::mq::Device
         // Creates a message using the transport of channel ack
         fair::mq::MessagePtr ack(NewMessageFor("ack", 0));
         if (Send(ack, "ack") < 0) {
-            return false;
+            throw std::runtime_error("could not send an ack");
         }
 
         // return true if want to be called again (otherwise go to IDLE state)

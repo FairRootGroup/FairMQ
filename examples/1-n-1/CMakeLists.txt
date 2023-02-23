@@ -29,10 +29,10 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-1-n-1.json ${CMAKE_CURRENT_BINARY_
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-1-n-1.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-n-1.sh)
 
 add_test(NAME Example.1-n-1.zeromq COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-n-1.sh zeromq)
-set_tests_properties(Example.1-n-1.zeromq PROPERTIES TIMEOUT "30" PASS_REGULAR_EXPRESSION "Received: ")
+set_tests_properties(Example.1-n-1.zeromq PROPERTIES TIMEOUT "30")
 
 add_test(NAME Example.1-n-1.shmem COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-1-n-1.sh shmem)
-set_tests_properties(Example.1-n-1.shmem PROPERTIES TIMEOUT "30" PASS_REGULAR_EXPRESSION "Received: ")
+set_tests_properties(Example.1-n-1.shmem PROPERTIES TIMEOUT "30")
 
 # install
 

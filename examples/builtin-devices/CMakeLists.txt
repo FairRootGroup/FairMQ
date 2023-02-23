@@ -15,16 +15,16 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-builtin-devices.sh.in
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-builtin-devices.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-builtin-devices.sh)
 
 add_test(NAME Example.BuiltinDevices.zeromq COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-builtin-devices.sh zeromq)
-set_tests_properties(Example.BuiltinDevices.zeromq PROPERTIES TIMEOUT "30" PASS_REGULAR_EXPRESSION "Configured maximum number of iterations reached")
+set_tests_properties(Example.BuiltinDevices.zeromq PROPERTIES TIMEOUT "30")
 
 add_test(NAME Example.BuiltinDevices.shmem COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-builtin-devices.sh shmem)
-set_tests_properties(Example.BuiltinDevices.shmem PROPERTIES TIMEOUT "30" PASS_REGULAR_EXPRESSION "Configured maximum number of iterations reached")
+set_tests_properties(Example.BuiltinDevices.shmem PROPERTIES TIMEOUT "30")
 
 add_test(NAME Example.BuiltinDevices.multipart.zeromq COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-builtin-devices.sh zeromq true 2)
-set_tests_properties(Example.BuiltinDevices.multipart.zeromq PROPERTIES TIMEOUT "30" PASS_REGULAR_EXPRESSION "Configured maximum number of iterations reached")
+set_tests_properties(Example.BuiltinDevices.multipart.zeromq PROPERTIES TIMEOUT "30")
 
 add_test(NAME Example.BuiltinDevices.multipart.shmem COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-builtin-devices.sh shmem true 2)
-set_tests_properties(Example.BuiltinDevices.multipart.shmem PROPERTIES TIMEOUT "30" PASS_REGULAR_EXPRESSION "Configured maximum number of iterations reached")
+set_tests_properties(Example.BuiltinDevices.multipart.shmem PROPERTIES TIMEOUT "30")
 
 # install
 
