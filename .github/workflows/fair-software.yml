@@ -6,6 +6,7 @@ jobs:
   verify:
     name: "fair-software"
     runs-on: ubuntu-latest
+    if: github.repository == 'FairRootGroup/FairMQ'
     steps:
       - uses: fair-software/howfairis-github-action@0.2.1
         name: Measure compliance with fair-software.eu recommendations
