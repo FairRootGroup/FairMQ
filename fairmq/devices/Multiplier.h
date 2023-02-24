@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -71,7 +71,7 @@ class Multiplier : public Device
             for (unsigned int j = 0; j < GetNumSubChannels(fOutChannelNames.at(i)); ++j) { // all subChannels in a channel
                 Parts parts;
 
-                for (int k = 0; k < payload.Size(); ++k) {
+                for (unsigned int k = 0; k < payload.Size(); ++k) {
                     MessagePtr msgCopy(fTransportFactory->CreateMessage());
                     msgCopy->Copy(payload.AtRef(k));
                     parts.AddPart(std::move(msgCopy));
@@ -86,7 +86,7 @@ class Multiplier : public Device
         for (unsigned int i = 0; i < lastChannelSize - 1; ++i) { // iterate over all except last subChannels of the last channel
             Parts parts;
 
-            for (int k = 0; k < payload.Size(); ++k) {
+            for (unsigned int k = 0; k < payload.Size(); ++k) {
                 MessagePtr msgCopy(fTransportFactory->CreateMessage());
                 msgCopy->Copy(payload.AtRef(k));
                 parts.AddPart(std::move(msgCopy));
