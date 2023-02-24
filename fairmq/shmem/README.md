@@ -54,3 +54,13 @@ The Monitor class can also be used independently from the supplied executable, a
 ## Troubleshooting
 
 Bus Error (SIGBUS) can occur if the transport tries to access shared memory that is not accessible. One reason could be because the used memory in the segment exceeds the capacity or available memory of the shmem filesystem (capacity is by default set to half of RAM on Linux).
+
+## Shared Memory cleanup
+
+On a graceful shutdown of all devices, shared memory transport removes all created shared memory files. In case of a crash however, the cleanup cannot be guaranteed. Following possibilites are available to perform cleanup in case of crashes:
+
+- For execution with Slurm a [job_container](https://slurm.schedmd.com/job_container.conf.html) can be used, which can isolate the shm and remove them upon job finish. This is currently the recommended approach.
+- a [trap](https://www.man7.org/linux/man-pages/man1/trap.1p.html) in an executing script on ERR/EXIT with a call to `fairmq-shmmonitor -c -s <sessionid>`. This would not work if the script is killed with -SIGKILL or similar fashion where it cannot call the trap.
+- [CTest cleanup fixture](https://cmake.org/cmake/help/latest/prop_test/FIXTURES_CLEANUP.html) with a call to `fairmq-shmmonitor -c -s <sessionid>`. This would work for an ongoing ctest run, but would not be called if a test run is interrupted, e.g. by SIGINT.
+- manual cleanup of the files listed [above](#shared-memory-objects--files).
+- Launch devices with `--shm-monitor true`. This will launch a daemon. The daemon will then listen for heartbeats from devices (every 100ms) and if none are received within 2000ms, will clean the memory. This is unreliable because the daemon can also be killed by a strict enough controller. But also if for some reason there are significant delays in the heartbeats, shmem could end up being cleaned before it should be.
