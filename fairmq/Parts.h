@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -9,79 +9,85 @@
 #ifndef FAIR_MQ_PARTS_H
 #define FAIR_MQ_PARTS_H
 
-#include <fairmq/Message.h>
-#include <memory>   // unique_ptr
-#include <vector>
+#include <algorithm>          // std::move
+#include <fairmq/Message.h>   // fair::mq::MessagePtr
+#include <iterator>           // std::back_inserter
+#include <utility>            // std::move, std::forward
+#include <vector>             // std::vector
 
 namespace fair::mq {
 
-/// fair::mq::Parts is a lightweight convenience wrapper around a vector of unique pointers to
+/// fair::mq::Parts is a lightweight move-only convenience wrapper around a vector of unique pointers to
 /// Message, used for sending multi-part messages
-class Parts
+struct Parts
 {
-  private:
     using container = std::vector<MessagePtr>;
+    using size_type = container::size_type;
+    using reference = container::reference;
+    using const_reference = container::const_reference;
+    using iterator = container::iterator;
+    using const_iterator = container::const_iterator;
 
-  public:
-    Parts() = default;
+    Parts() noexcept(noexcept(container())) = default;
     Parts(const Parts&) = delete;
-    Parts(Parts&&) = default;
-    template<typename... Ts>
-    Parts(Ts&&... messages) { AddPart(std::forward<Ts>(messages)...); }
     Parts& operator=(const Parts&) = delete;
+    Parts(Parts&&) = default;
     Parts& operator=(Parts&&) = default;
     ~Parts() = default;
 
-    /// Adds part (Message) to the container
-    /// @param msg message pointer (for example created with NewMessage() method of Device)
+    template<typename... Ps>
+    Parts(Ps&&... parts)
+    {
+        fParts.reserve(sizeof...(Ps));
+        AddPart(std::forward<Ps>(parts)...);
+    }
+
+    [[deprecated("Avoid owning raw pointer args, use AddPart(MessagePtr) instead.")]]
     void AddPart(Message* msg) { fParts.push_back(MessagePtr(msg)); }
+    void AddPart(MessagePtr msg) { fParts.push_back(std::move(msg)); }
 
-    /// Adds part to the container (move)
-    /// @param msg unique pointer to Message
-    /// rvalue ref (move required when passing argument)
-    void AddPart(MessagePtr&& msg) { fParts.push_back(std::move(msg)); }
-
-    /// Add variable list of parts to the container (move)
     template<typename... Ts>
-    void AddPart(MessagePtr&& first, Ts&&... remaining)
+    void AddPart(MessagePtr first, Ts&&... remaining)
     {
         AddPart(std::move(first));
         AddPart(std::forward<Ts>(remaining)...);
     }
 
-    /// Add content of another object by move
-    void AddPart(Parts&& other)
+    void AddPart(Parts parts)
     {
-        container parts = std::move(other.fParts);
-        for (auto& part : parts) {
-            fParts.push_back(std::move(part));
+        if (fParts.empty()) {
+            fParts = std::move(parts.fParts);
+        } else {
+            fParts.reserve(parts.Size() + fParts.size());
+            std::move(std::begin(parts), std::end(parts), std::back_inserter(fParts));
         }
     }
 
-    /// Get reference to part in the container at index (without bounds check)
-    /// @param index container index
-    Message& operator[](const int index) { return *(fParts[index]); }
+    Message& operator[](size_type index) { return *(fParts[index]); }
+    Message const& operator[](size_type index) const { return *(fParts[index]); }
+    // TODO: For consistency with the STL interfaces, operator[] should not dereference,
+    //       but I have no good idea how to fix this.
+    // reference operator[](size_type index) { return fParts[index]; }
+    // const_reference operator[](size_type index) const { return fParts[index]; }
 
-    /// Get reference to unique pointer to part in the container at index (with bounds check)
-    /// @param index container index
-    MessagePtr& At(const int index) { return fParts.at(index); }
+    [[deprecated("Redundant, dereference at call site e.g. '*(parts.At(index))' instead.")]]
+    Message& AtRef(size_type index) { return *(fParts.at(index)); }
+    reference At(size_type index) { return fParts.at(index); }
+    const_reference At(size_type index) const { return fParts.at(index); }
 
-    // ref version
-    Message& AtRef(const int index) { return *(fParts.at(index)); }
+    size_type Size() const noexcept { return fParts.size(); }
+    bool Empty() const noexcept { return fParts.empty(); }
+    void Clear() noexcept { fParts.clear(); }
 
-    /// Get number of parts in the container
-    /// @return number of parts in the container
-    int Size() const { return fParts.size(); }
+    // range access
+    iterator begin() noexcept { return fParts.begin(); }
+    const_iterator begin() const noexcept { return fParts.begin(); }
+    const_iterator cbegin() const noexcept { return fParts.cbegin(); }
+    iterator end() noexcept { return fParts.end(); }
+    const_iterator end() const noexcept { return fParts.end(); }
+    const_iterator cend() const noexcept { return fParts.cend(); }
 
-    container fParts;
-
-    // forward container iterators
-    using iterator = container::iterator;
-    using const_iterator = container::const_iterator;
-    auto begin() -> decltype(fParts.begin()) { return fParts.begin(); }
-    auto end() -> decltype(fParts.end()) { return fParts.end(); }
-    auto cbegin() -> decltype(fParts.cbegin()) { return fParts.cbegin(); }
-    auto cend() -> decltype(fParts.cend()) { return fParts.cend(); }
+    container fParts{};
 };
 
 }   // namespace fair::mq
