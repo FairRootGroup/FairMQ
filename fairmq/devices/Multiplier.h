@@ -73,7 +73,7 @@ class Multiplier : public Device
 
                 for (unsigned int k = 0; k < payload.Size(); ++k) {
                     MessagePtr msgCopy(fTransportFactory->CreateMessage());
-                    msgCopy->Copy(payload.AtRef(k));
+                    msgCopy->Copy(*(payload.At(k)));
                     parts.AddPart(std::move(msgCopy));
                 }
 
@@ -88,7 +88,7 @@ class Multiplier : public Device
 
             for (unsigned int k = 0; k < payload.Size(); ++k) {
                 MessagePtr msgCopy(fTransportFactory->CreateMessage());
-                msgCopy->Copy(payload.AtRef(k));
+                msgCopy->Copy(*(payload.At(k)));
                 parts.AddPart(std::move(msgCopy));
             }
 
