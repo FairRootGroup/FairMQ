@@ -63,6 +63,7 @@ echo "Usage: startBenchmark [message size=1000000] [number of iterations=0] [tra
 
 SAMPLER="fairmq-bsampler"
 SAMPLER+=" --id bsampler1"
+SAMPLER+=" --shm-monitor true"
 #SAMPLER+=" --io-threads 2"
 #SAMPLER+=" --control static"
 SAMPLER+=" --transport $transport"
@@ -81,6 +82,7 @@ echo "pid: $!"
 
 SINK="fairmq-sink"
 SINK+=" --id sink1"
+SINK+=" --shm-monitor true"
 #SINK+=" --io-threads 2"
 #SINK+=" --control static"
 SINK+=" --transport $transport"

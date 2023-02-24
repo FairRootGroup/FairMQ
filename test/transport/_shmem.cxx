@@ -26,6 +26,7 @@ void GetFreeMemory()
     ProgOptions config;
     string sessionId(to_string(tools::UuidHash()));
     config.SetProperty<string>("session", sessionId);
+    config.SetProperty<bool>("shm-monitor", true);
 
     ASSERT_THROW(shmem::Monitor::GetFreeMemory(shmem::SessionId{sessionId}, 0), shmem::Monitor::MonitorError);
 

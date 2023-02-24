@@ -69,6 +69,7 @@ void RegionsSizeMismatch()
     ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
     config.SetProperty<size_t>("shm-segment-size", 100000000);
+    config.SetProperty<bool>("shm-monitor", true);
 
     auto factory = TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config);
 
@@ -92,8 +93,10 @@ void RegionsCache(const string& transport, const string& _address)
     ProgOptions config2;
     config1.SetProperty<string>("session", to_string(session1));
     config1.SetProperty<size_t>("shm-segment-size", 100000000);
+    config1.SetProperty<bool>("shm-monitor", true);
     config2.SetProperty<string>("session", to_string(session2));
     config2.SetProperty<size_t>("shm-segment-size", 100000000);
+    config2.SetProperty<bool>("shm-monitor", true);
 
     auto factory1 = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config1);
     auto factory2 = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config2);
@@ -172,9 +175,10 @@ void RegionEventSubscriptions(const string& transport, bool external)
     ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
     config.SetProperty<size_t>("shm-segment-size", sSize);
+    config.SetProperty<bool>("shm-monitor", true);
     if (external) {
         config.SetProperty<bool>("shm-no-cleanup", true);
-        config.SetProperty<bool>("shm-monitor", false);
+        // config.SetProperty<bool>("shm-monitor", false);
     }
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
@@ -272,6 +276,7 @@ void RegionCallbacks(const string& transport, const string& _address)
     ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
     config.SetProperty<size_t>("shm-segment-size", sSize);
+    config.SetProperty<bool>("shm-monitor", true);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 

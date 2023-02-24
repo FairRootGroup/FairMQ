@@ -38,6 +38,7 @@ auto RunPoller(string transport, int pollType) -> void
             << " --id pollout_"<< transport
             << " --control static"
             << " --color false"
+            << " --shm-monitor true"
             << " --session " << session
             << " --channel-config name=data1,type=push,method=bind,address=" << data1Address
             << "                  name=data2,type=push,method=bind,address=" << data2Address;
@@ -51,6 +52,7 @@ auto RunPoller(string transport, int pollType) -> void
             << " --id pollin_" << transport
             << " --control static"
             << " --color false"
+            << " --shm-monitor true"
             << " --session " << session
             << " --poll-type " << pollType
             << " --channel-config name=data1,type=pull,method=connect,address=" << data1Address

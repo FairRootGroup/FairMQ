@@ -30,6 +30,7 @@ auto RunSingleThreadedMultipart(string transport, string address1, string addres
     fair::mq::ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
     config.SetProperty<size_t>("shm-segment-size", 100000000);
+    config.SetProperty<bool>("shm-monitor", true);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
@@ -109,6 +110,7 @@ auto RunMultiThreadedMultipart(string transport, string address1) -> void
     config.SetProperty<string>("session", tools::Uuid());
     config.SetProperty<int>("io-threads", 1);
     config.SetProperty<size_t>("shm-segment-size", 20000000); // NOLINT
+    config.SetProperty<bool>("shm-monitor", true);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 

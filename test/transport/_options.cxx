@@ -41,6 +41,7 @@ void RunOptionsTest(const string& transport)
 {
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
+    config.SetProperty<bool>("shm-monitor", true);
     config.SetProperty<size_t>("shm-segment-size", 100000000);
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
     Channel channel("Push", "push", factory);
@@ -75,6 +76,7 @@ void ZeroingAndMlock(const string& transport)
     config.SetProperty<size_t>("shm-segment-size", 16384); // NOLINT
     config.SetProperty<bool>("shm-zero-segment", true);
     config.SetProperty<bool>("shm-mlock-segment", true);
+    config.SetProperty<bool>("shm-monitor", true);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
@@ -93,6 +95,7 @@ void ZeroingAndMlockOnCreation(const string& transport)
     config.SetProperty<size_t>("shm-segment-size", 16384); // NOLINT
     config.SetProperty<bool>("shm-mlock-segment-on-creation", true);
     config.SetProperty<bool>("shm-zero-segment-on-creation", true);
+    config.SetProperty<bool>("shm-monitor", true);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
