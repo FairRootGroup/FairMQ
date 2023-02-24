@@ -79,6 +79,7 @@ TEST(MemoryResources, transportAllocatorMap)
     size_t session{tools::UuidHash()};
     ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
+    config.SetProperty<bool>("shm-monitor", true);
 
     FactoryType factoryZMQ = TransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
     FactoryType factorySHM = TransportFactory::CreateTransportFactory("shmem", fair::mq::tools::Uuid(), &config);
@@ -129,6 +130,7 @@ TEST(MemoryResources, getMessage)
     size_t session{tools::UuidHash()};
     ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
+    config.SetProperty<bool>("shm-monitor", true);
 
     FactoryType factoryZMQ = TransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
     FactoryType factorySHM = TransportFactory::CreateTransportFactory("shmem", fair::mq::tools::Uuid(), &config);

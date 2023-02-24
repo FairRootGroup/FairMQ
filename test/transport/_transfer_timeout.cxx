@@ -52,6 +52,7 @@ auto RunTransferTimeout(string transport) -> void
         << " --control static"
         << " --shm-segment-size 100000000"
         << " --severity debug"
+        << " --shm-monitor true"
         << " --transport " << transport
         << " --session " << session
         << " --color false"
@@ -75,6 +76,7 @@ void InterruptTransfer(const string& transport, const string& _address)
     fair::mq::ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
     config.SetProperty<size_t>("shm-segment-size", 100000000);
+    config.SetProperty<bool>("shm-monitor", true);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, Uuid(), &config);
 

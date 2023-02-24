@@ -39,6 +39,7 @@ auto RunPair(string transport) -> void
         cmd << runTestDevice
             << " --id pairleft_" << transport
             << " --control static"
+            << " --shm-monitor true"
             << " --shm-segment-size 100000000"
             << " --session " << session
             << " --color false"
@@ -52,6 +53,7 @@ auto RunPair(string transport) -> void
         cmd << runTestDevice
             << " --id pairright_" << transport
             << " --control static"
+            << " --shm-monitor true"
             << " --shm-segment-size 100000000"
             << " --session " << session
             << " --color false"
