@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -47,7 +47,7 @@ class Merger : public Device
 
         std::vector<Channel*> chans;
 
-        for (auto& chan : fChannels.at(fInChannelName)) {
+        for (auto& chan : GetChannels().at(fInChannelName)) {
             chans.push_back(&chan);
         }
 
