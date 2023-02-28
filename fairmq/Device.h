@@ -552,8 +552,6 @@ class Device
     /// @param state state to wait for
     void WaitForState(const std::string& state) { WaitForState(GetState(state)); }
 
-    void TransitionTo(State state);
-
     /// @brief Subscribe with a callback to state changes
     /// @param key id to identify your subscription
     /// @param callback callback (called with the new state as the parameter)
@@ -683,8 +681,6 @@ class Device
     StateQueue fStateQueue;
 
     std::mutex fTransportMtx;   ///< guards access to transports container
-    std::mutex fTransitionMtx;
-    bool fTransitioning;
 };
 
 }   // namespace fair::mq
