@@ -164,30 +164,30 @@ void Device::TransitionTo(State s)
     while (s != currentState) {
         switch (currentState) {
             case State::Idle:
-                if (s == State::Exiting) { ChangeState(Transition::End); }
-                else { ChangeState(Transition::InitDevice); }
+                if (s == State::Exiting) { ChangeStateOrThrow(Transition::End); }
+                else { ChangeStateOrThrow(Transition::InitDevice); }
             break;
             case State::InitializingDevice:
-                ChangeState(Transition::CompleteInit);
+                ChangeStateOrThrow(Transition::CompleteInit);
             break;
             case State::Initialized:
-                if (s == State::Exiting || s == State::Idle) { ChangeState(Transition::ResetDevice); }
-                else { ChangeState(Transition::Bind); }
+                if (s == State::Exiting || s == State::Idle) { ChangeStateOrThrow(Transition::ResetDevice); }
+                else { ChangeStateOrThrow(Transition::Bind); }
             break;
             case State::Bound:
-                if (s == State::DeviceReady || s == State::Ready || s == State::Running) { ChangeState(Transition::Connect); }
-                else { ChangeState(Transition::ResetDevice); }
+                if (s == State::DeviceReady || s == State::Ready || s == State::Running) { ChangeStateOrThrow(Transition::Connect); }
+                else { ChangeStateOrThrow(Transition::ResetDevice); }
             break;
             case State::DeviceReady:
-                if (s == State::Running || s == State::Ready) { ChangeState(Transition::InitTask); }
-                else { ChangeState(Transition::ResetDevice); }
+                if (s == State::Running || s == State::Ready) { ChangeStateOrThrow(Transition::InitTask); }
+                else { ChangeStateOrThrow(Transition::ResetDevice); }
             break;
             case State::Ready:
-                if (s == State::Running) { ChangeState(Transition::Run); }
-                else { ChangeState(Transition::ResetTask); }
+                if (s == State::Running) { ChangeStateOrThrow(Transition::Run); }
+                else { ChangeStateOrThrow(Transition::ResetTask); }
             break;
             case State::Running:
-                ChangeState(Transition::Stop);
+                ChangeStateOrThrow(Transition::Stop);
             break;
             case State::Binding:
             case State::Connecting:
@@ -281,7 +281,7 @@ void Device::InitWrapper()
         }
     }
 
-    // ChangeState(Transition::Auto);
+    // ChangeStateOrThrow(Transition::Auto);
 }
 
 void Device::BindWrapper()
@@ -298,7 +298,7 @@ void Device::BindWrapper()
     Bind();
 
     if (!NewStatePending()) {
-        ChangeState(Transition::Auto);
+        ChangeStateOrThrow(Transition::Auto);
     }
 }
 
@@ -341,7 +341,7 @@ void Device::ConnectWrapper()
     Connect();
 
     if (!NewStatePending()) {
-        ChangeState(Transition::Auto);
+        ChangeStateOrThrow(Transition::Auto);
     }
 }
 
@@ -443,7 +443,7 @@ void Device::InitTaskWrapper()
     InitTask();
 
     if (!NewStatePending()) {
-        ChangeState(Transition::Auto);
+        ChangeStateOrThrow(Transition::Auto);
     }
 }
 
@@ -466,7 +466,7 @@ void Device::RunWrapper()
 
     // change to Error state in case of an exception, to release LogSocketRates
     tools::CallOnDestruction cod([&](){
-        ChangeState(Transition::ErrorFound);
+        ChangeStateOrThrow(Transition::ErrorFound);
     });
 
     PreRun();
@@ -493,7 +493,7 @@ void Device::RunWrapper()
 
     // if Run() exited and the state is still RUNNING, transition to READY.
     if (!NewStatePending()) {
-        ChangeState(Transition::Stop);
+        ChangeStateOrThrow(Transition::Stop);
     }
 
     PostRun();
@@ -794,7 +794,7 @@ void Device::ResetTaskWrapper()
     ResetTask();
 
     if (!NewStatePending()) {
-        ChangeState(Transition::Auto);
+        ChangeStateOrThrow(Transition::Auto);
     }
 }
 
@@ -813,7 +813,7 @@ void Device::ResetWrapper()
     GetChannels().clear();
     fTransportFactory.reset();
     if (!NewStatePending()) {
-        ChangeState(Transition::Auto);
+        ChangeStateOrThrow(Transition::Auto);
     }
 }
 

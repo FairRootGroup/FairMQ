@@ -97,4 +97,26 @@ TEST(Transitions, ConcurrentTransitionTos)
     }
 }
 
+TEST(Transitions, InvalidChangeState)
+{
+    Device device;
+    thread t([&] { device.RunStateMachine(); });
+
+    ASSERT_FALSE(device.ChangeState(Transition::Connect));
+
+    ASSERT_TRUE(device.ChangeState(Transition::End));
+    if (t.joinable()) { t.join(); }
+}
+
+TEST(Transitions, InvalidChangeStateOrThrow)
+{
+    Device device;
+    thread t([&] { device.RunStateMachine(); });
+
+    ASSERT_THROW(device.ChangeStateOrThrow(Transition::Connect), std::system_error);
+
+    ASSERT_NO_THROW(device.ChangeStateOrThrow(Transition::End));
+    if (t.joinable()) { t.join(); }
+}
+
 } // namespace
