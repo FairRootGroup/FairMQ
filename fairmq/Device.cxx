@@ -91,7 +91,6 @@ Device::Device(ProgOptions* config, tools::Version version)
     , fVersion(version)
     , fRate(DefaultRate)
     , fInitializationTimeoutInS(DefaultInitTimeout)
-    , fTransitioning(false)
 {
     SubscribeToNewTransition("device", [&](Transition transition) {
         LOG(trace) << "device notified on new transition: " << transition;
@@ -142,73 +141,6 @@ Device::Device(ProgOptions* config, tools::Version version)
     fStateMachine.Start();
 }
 #pragma GCC diagnostic pop
-
-void Device::TransitionTo(State s)
-{
-    {
-        lock_guard<mutex> lock(fTransitionMtx);
-        if (fTransitioning) {
-            LOG(debug) << "Attempting a transition with TransitionTo() while another one is already in progress";
-            throw OngoingTransition("Attempting a transition with TransitionTo() while another one is already in progress");
-        }
-        fTransitioning = true;
-    }
-
-    using mq::State;
-
-    StateQueue sq;
-    StateSubscription ss(tools::ToString(fId, ".TransitionTo"), fStateMachine, sq);
-
-    State currentState = GetCurrentState();
-
-    while (s != currentState) {
-        switch (currentState) {
-            case State::Idle:
-                if (s == State::Exiting) { ChangeStateOrThrow(Transition::End); }
-                else { ChangeStateOrThrow(Transition::InitDevice); }
-            break;
-            case State::InitializingDevice:
-                ChangeStateOrThrow(Transition::CompleteInit);
-            break;
-            case State::Initialized:
-                if (s == State::Exiting || s == State::Idle) { ChangeStateOrThrow(Transition::ResetDevice); }
-                else { ChangeStateOrThrow(Transition::Bind); }
-            break;
-            case State::Bound:
-                if (s == State::DeviceReady || s == State::Ready || s == State::Running) { ChangeStateOrThrow(Transition::Connect); }
-                else { ChangeStateOrThrow(Transition::ResetDevice); }
-            break;
-            case State::DeviceReady:
-                if (s == State::Running || s == State::Ready) { ChangeStateOrThrow(Transition::InitTask); }
-                else { ChangeStateOrThrow(Transition::ResetDevice); }
-            break;
-            case State::Ready:
-                if (s == State::Running) { ChangeStateOrThrow(Transition::Run); }
-                else { ChangeStateOrThrow(Transition::ResetTask); }
-            break;
-            case State::Running:
-                ChangeStateOrThrow(Transition::Stop);
-            break;
-            case State::Binding:
-            case State::Connecting:
-            case State::InitializingTask:
-            case State::ResettingDevice:
-            case State::ResettingTask:
-                LOG(debug) << "TransitionTo ignoring state: " << currentState << " (expected, automatic transition).";
-            break;
-            default:
-                LOG(debug) << "TransitionTo ignoring state: " << currentState;
-            break;
-        }
-
-        currentState = sq.WaitForNext();
-    }
-
-    {
-        lock_guard<mutex> lock(fTransitionMtx);
-        fTransitioning = false;
-    }
-}
 
 void Device::InitWrapper()
 {
