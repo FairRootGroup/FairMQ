@@ -1,17 +1,22 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <gtest/gtest.h>
+#include "../helper/ControlDevice.h"
+
 #include <fairmq/PluginManager.h>
 #include <fairmq/PluginServices.h>
 #include <fairmq/Device.h>
 #include <fairmq/ProgOptions.h>
+
+#include <gtest/gtest.h>
+
 #include <fairlogger/Logger.h>
+
 #include <fstream>
 #include <memory>
 #include <vector>
@@ -28,19 +33,7 @@ using namespace std;
 auto control(Device& device) -> void
 {
     device.SetTransport("zeromq");
-
-    device.ChangeState(Transition::InitDevice);
-    device.WaitForState(State::InitializingDevice);
-    device.ChangeState(Transition::CompleteInit);
-    device.WaitForState(State::Initialized);
-    device.ChangeState(Transition::Bind);
-    device.WaitForState(State::Bound);
-    device.ChangeState(Transition::Connect);
-    device.WaitForState(State::DeviceReady);
-    device.ChangeState(Transition::ResetDevice);
-    device.WaitForState(State::Idle);
-
-    device.ChangeState(Transition::End);
+    test::Control(device, test::Cycle::ToDeviceReadyAndBack);
 }
 
 TEST(PluginManager, LoadPluginDynamic)

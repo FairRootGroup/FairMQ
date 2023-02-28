@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -8,6 +8,8 @@
 
 #ifndef FAIR_MQ_TEST_FIXTURE
 #define FAIR_MQ_TEST_FIXTURE
+
+#include "../helper/ControlDevice.h"
 
 #include <fairmq/PluginServices.h>
 #include <fairmq/Device.h>
@@ -21,22 +23,6 @@
 namespace fair::mq::test
 {
 
-inline auto control(fair::mq::Device& device) -> void
-{
-    device.ChangeState(fair::mq::Transition::InitDevice);
-    device.WaitForState(fair::mq::State::InitializingDevice);
-    device.ChangeState(fair::mq::Transition::CompleteInit);
-    device.WaitForState(fair::mq::State::Initialized);
-    device.ChangeState(fair::mq::Transition::Bind);
-    device.WaitForState(fair::mq::State::Bound);
-    device.ChangeState(fair::mq::Transition::Connect);
-    device.WaitForState(fair::mq::State::DeviceReady);
-    device.ChangeState(fair::mq::Transition::ResetDevice);
-    device.WaitForState(fair::mq::State::Idle);
-
-    device.ChangeState(fair::mq::Transition::End);
-}
-
 struct PluginServices : ::testing::Test {
     PluginServices()
         : mConfig()
@@ -48,17 +34,19 @@ struct PluginServices : ::testing::Test {
         mDevice.SetTransport("zeromq");
     }
 
-    ~PluginServices()
+    ~PluginServices() override
     {
-        if (mDevice.GetCurrentState() == fair::mq::State::Idle) control(mDevice);
+        if (mDevice.GetCurrentState() == State::Idle) {
+            Control(mDevice, Cycle::ToDeviceReadyAndBack);
+        }
         if (fRunStateMachineThread.joinable()) {
             fRunStateMachineThread.join();
         }
     }
 
-    fair::mq::ProgOptions mConfig;
-    fair::mq::Device mDevice;
-    fair::mq::PluginServices mServices;
+    ProgOptions mConfig;
+    Device mDevice;
+    mq::PluginServices mServices;
     std::thread fRunStateMachineThread;
 };
 
