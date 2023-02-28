@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -37,7 +37,7 @@ class Version : public ::testing::Test
     fair::mq::tools::Version TestDeviceVersion()
     {
         TestVersion versionDevice({1, 2, 3});
-        versionDevice.ChangeState("END");
+        versionDevice.ChangeStateOrThrow("END");
 
         return versionDevice.GetVersion();
     }

@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2018-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -37,9 +37,9 @@ class BadDevice : public Device
 
         SetTransport("shmem");
 
-        ChangeState(Transition::InitDevice);
+        ChangeStateOrThrow(Transition::InitDevice);
         WaitForState(State::InitializingDevice);
-        ChangeState(Transition::CompleteInit);
+        ChangeStateOrThrow(Transition::CompleteInit);
         WaitForState(State::Initialized);
 
         parts.AddPart(NewMessage());
@@ -52,7 +52,7 @@ class BadDevice : public Device
 
     ~BadDevice() override
     {
-        ChangeState(Transition::ResetDevice);
+        ChangeStateOrThrow(Transition::ResetDevice);
 
         if (fDeviceThread.joinable()) {
             fDeviceThread.join();
