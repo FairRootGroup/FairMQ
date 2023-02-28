@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2021-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2021-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -233,7 +233,7 @@ class Device
             }
         }
 
-        return GetChannel(chans.at(0), 0).Transport()->CreatePoller(fChannels, chans);
+        return GetChannel(chans.at(0), 0).Transport()->CreatePoller(GetChannels(), chans);
     }
 
     PollerPtr NewPoller(const std::vector<Channel*>& channels)
@@ -321,7 +321,7 @@ class Device
 
     Channel& GetChannel(const std::string& channelName, const int index = 0)
     try {
-        return fChannels.at(channelName).at(index);
+        return GetChannels().at(channelName).at(index);
     } catch (const std::out_of_range& oor) {
         LOG(error) << "GetChannel(): '" << channelName << "[" << index << "]' does not exist.";
         throw;
@@ -329,7 +329,7 @@ class Device
 
     size_t GetNumSubChannels(const std::string& channelName)
     try {
-        return fChannels.at(channelName).size();
+        return GetChannels().at(channelName).size();
     } catch (const std::out_of_range& oor) {
         LOG(error) << "GetNumSubChannels(): '" << channelName << "' does not exist.";
         throw;
@@ -340,7 +340,7 @@ class Device
     /// @param index sub-channel
     unsigned long GetNumberOfConnectedPeers(const std::string& channelName, int index = 0)
     {
-        return fChannels.at(channelName).at(index).GetNumberOfConnectedPeers();
+        return GetChannel(channelName, index).GetNumberOfConnectedPeers();
     }
 
     virtual void RegisterChannelEndpoints() {}
@@ -438,7 +438,23 @@ class Device
         fTransports;   ///< Container for transports
 
   public:
+    [[deprecated("Use GetChannels() instead.")]]
     std::unordered_map<std::string, std::vector<Channel>> fChannels;   ///< Device channels
+    std::unordered_map<std::string, std::vector<Channel>>& GetChannels()
+    {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        return fChannels;
+#pragma GCC diagnostic pop
+    }
+    std::unordered_map<std::string, std::vector<Channel>> const& GetChannels() const
+    {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        return fChannels;
+#pragma GCC diagnostic pop
+    }
+
     std::unique_ptr<ProgOptions> fInternalConfig;   ///< Internal program options configuration
     ProgOptions* fConfig;                           ///< Pointer to config (internal or external)
 
