@@ -673,8 +673,6 @@ class Device
 
     const tools::Version fVersion;
     float fRate;                  ///< Rate limiting for ConditionalRun
-    uint64_t fMaxRunRuntimeInS;   ///< Maximum runtime for the Running state handler, after which
-                                  ///< state will change to Ready (in seconds, 0 for no limit).
     int fInitializationTimeoutInS;
     std::vector<std::string> fRawCmdLineArgs;
 
