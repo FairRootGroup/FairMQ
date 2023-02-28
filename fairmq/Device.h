@@ -11,6 +11,7 @@
 
 // FairMQ
 #include <fairmq/Channel.h>
+#include <fairmq/Error.h>
 #include <fairmq/Message.h>
 #include <fairmq/Parts.h>
 #include <fairmq/ProgOptions.h>
@@ -498,20 +499,48 @@ class Device
   public:
     /// @brief Request a device state transition
     /// @param transition state transition
+    /// @return whether the transition was successfully scheduled
     ///
     /// The state transition may not happen immediately, but when the current state evaluates the
     /// pending transition event and terminates. In other words, the device states are scheduled
     /// cooperatively.
-    bool ChangeState(const Transition transition) { return fStateMachine.ChangeState(transition); }
+    [[nodiscard]] bool ChangeState(const Transition transition)
+    {
+        return fStateMachine.ChangeState(transition);
+    }
     /// @brief Request a device state transition
     /// @param transition state transition
+    /// @return whether the transition was successfully scheduled
     ///
     /// The state transition may not happen immediately, but when the current state evaluates the
     /// pending transition event and terminates. In other words, the device states are scheduled
     /// cooperatively.
-    bool ChangeState(const std::string& transition)
+    [[nodiscard]] bool ChangeState(const std::string& transition)
     {
         return fStateMachine.ChangeState(GetTransition(transition));
+    }
+    /// @brief Request a device state transition
+    /// @param transition state transition
+    /// @throws when the transition could not have been scheduled
+    ///
+    /// Throwing version of Device::ChangeState().
+    void ChangeStateOrThrow(Transition transition)
+    {
+        if(!ChangeState(transition)) {
+            auto const err = MakeErrorCode(ErrorCode::DeviceChangeStateFailed);
+            throw std::system_error(err.value(),
+                                    err.category(),
+                                    tools::ToString("Invalid transition: ", transition));
+        }
+    }
+    /// @brief Request a device state transition
+    /// @param transition state transition
+    /// @throws when the transition could not have been scheduled
+    ///
+    /// Throwing version of Device::ChangeState().
+    void ChangeStateOrThrow(std::string const& transition)
+    {
+        ChangeStateOrThrow(GetTransition(transition));
     }
 
     /// @brief waits for the next state (any) to occur
