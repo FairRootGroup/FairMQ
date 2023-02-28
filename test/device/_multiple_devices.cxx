@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -8,6 +8,8 @@
 
 #include "TestSender.h"
 #include "TestReceiver.h"
+
+#include "../helper/ControlDevice.h"
 
 #include <gtest/gtest.h>
 
@@ -23,28 +25,7 @@ using namespace fair::mq;
 
 void control(Device& device)
 {
-    thread t([&] {
-        device.ChangeState(Transition::InitDevice);
-        device.WaitForState(State::InitializingDevice);
-        device.ChangeState(Transition::CompleteInit);
-        device.WaitForState(State::Initialized);
-        device.ChangeState(Transition::Bind);
-        device.WaitForState(State::Bound);
-        device.ChangeState(Transition::Connect);
-        device.WaitForState(State::DeviceReady);
-        device.ChangeState(Transition::InitTask);
-        device.WaitForState(State::Ready);
-
-        device.ChangeState(Transition::Run);
-        device.WaitForState(State::Ready);
-
-        device.ChangeState(Transition::ResetTask);
-        device.WaitForState(State::DeviceReady);
-        device.ChangeState(Transition::ResetDevice);
-        device.WaitForState(State::Idle);
-
-        device.ChangeState(Transition::End);
-    });
+    thread t([&]() { test::Control(device); });
 
     device.RunStateMachine();
 
@@ -55,8 +36,6 @@ void control(Device& device)
 
 class MultipleDevices : public ::testing::Test {
   public:
-    MultipleDevices() {}
-
     bool TestFirst()
     {
         test::Sender sender("data");

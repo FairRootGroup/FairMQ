@@ -1,10 +1,12 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
+
+#include "../helper/ControlDevice.h"
 
 #include <fairmq/Device.h>
 #include <fairmq/DeviceRunner.h>
@@ -21,51 +23,14 @@ namespace _config
 using namespace std;
 using namespace fair::mq;
 
-void control(Device& device)
-{
-    device.ChangeState(Transition::InitDevice);
-    device.WaitForState(State::InitializingDevice);
-    device.ChangeState(Transition::CompleteInit);
-    device.WaitForState(State::Initialized);
-    device.ChangeState(Transition::Bind);
-    device.WaitForState(State::Bound);
-    device.ChangeState(Transition::Connect);
-    device.WaitForState(State::DeviceReady);
-    device.ChangeState(Transition::InitTask);
-    device.WaitForState(State::Ready);
-
-    device.ChangeState(Transition::Run);
-    device.WaitForState(State::Ready);
-
-    device.ChangeState(Transition::ResetTask);
-    device.WaitForState(State::DeviceReady);
-    device.ChangeState(Transition::ResetDevice);
-    device.WaitForState(State::Idle);
-
-    device.ChangeState(Transition::End);
-}
-
 class TestDevice : public Device
 {
   public:
     TestDevice(const string& transport)
+    : fDeviceThread(&Device::RunStateMachine, this)
     {
-        fDeviceThread = thread(&Device::RunStateMachine, this);
-
         SetTransport(transport);
-
-        ChangeState(Transition::InitDevice);
-        WaitForState(State::InitializingDevice);
-        ChangeState(Transition::CompleteInit);
-        WaitForState(State::Initialized);
-        ChangeState(Transition::Bind);
-        WaitForState(State::Bound);
-        ChangeState(Transition::Connect);
-        WaitForState(State::DeviceReady);
-        ChangeState(Transition::InitTask);
-        WaitForState(State::Ready);
-
-        ChangeState(Transition::Run);
+        test::Control(*this, test::Cycle::ToRun);
     }
 
     TestDevice(const TestDevice&) = delete;
@@ -75,16 +40,7 @@ class TestDevice : public Device
 
     ~TestDevice() override
     {
-        WaitForState(State::Running);
-        ChangeState(Transition::Stop);
-        WaitForState(State::Ready);
-        ChangeState(Transition::ResetTask);
-        WaitForState(State::DeviceReady);
-        ChangeState(Transition::ResetDevice);
-        WaitForState(State::Idle);
-
-        ChangeState(Transition::End);
-
+        test::Control(*this, test::Cycle::ReadyToEnd);
         if (fDeviceThread.joinable()) {
             fDeviceThread.join();
         }
@@ -118,7 +74,7 @@ class Config : public ::testing::Test
         channel.UpdateAddress("tcp://localhost:5558");
         device.AddChannel("data", std::move(channel));
 
-        thread t(control, ref(device));
+        thread t([&]() { test::Control(device); });
 
         device.RunStateMachine();
 
@@ -156,7 +112,7 @@ class Config : public ::testing::Test
         channel.UpdateAddress("tcp://localhost:5558");
         device.AddChannel("data", std::move(channel));
 
-        thread t(control, ref(device));
+        thread t([&]() { test::Control(device); });
 
         device.RunStateMachine();
 
@@ -189,7 +145,7 @@ class Config : public ::testing::Test
 
         thread t(&Device::RunStateMachine, &device);
 
-        control(device);
+        test::Control(device);
 
         if (t.joinable()) {
             t.join();
