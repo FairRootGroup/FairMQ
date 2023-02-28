@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2018-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -34,8 +34,6 @@ endfunction()
 
 # Configure/Install CMake package
 macro(install_cmake_package)
-  list(SORT PROJECT_PACKAGE_DEPENDENCIES)
-  list(SORT PROJECT_INTERFACE_PACKAGE_DEPENDENCIES)
   include(CMakePackageConfigHelpers)
   set(PACKAGE_INSTALL_DESTINATION
     ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}-${PROJECT_VERSION}
