@@ -9,7 +9,7 @@
 
 # Project ######################################################################
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
-cmake_policy(VERSION 3.15...3.22)
+cmake_policy(VERSION 3.15...3.26)
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(GitHelper)
