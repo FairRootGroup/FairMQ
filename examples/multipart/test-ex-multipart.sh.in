@@ -14,11 +14,7 @@ session="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
 chan="data"
 chanAddr=""
 chanIpcFile="/tmp/fmq_$session""_""$chan""_""$transport"
-if [ $transport = "ofi" ]; then
-    chanAddr="tcp://127.0.0.1:5656"
-else
-    chanAddr="ipc://""$chanIpcFile"
-fi
+chanAddr="ipc://""$chanIpcFile"
 
 # setup a trap to kill everything if the test fails/timeouts
 trap 'set +e; kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SINK_PID; rm $chanIpcFile; exit 0' TERM

@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2018-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -27,11 +27,6 @@ auto RunPair(string transport) -> void
     size_t session{fair::mq::tools::UuidHash()};
     string ipcFile("/tmp/fmq_" + to_string(session) + "_data_" + transport);
     string address("ipc://" + ipcFile);
-
-    // ofi does not run with ipc://
-    if (transport == "ofi") {
-        address = "tcp://127.0.0.1:5957";
-    }
 
     auto pairleft = execute_result{"", 100};
     thread pairleft_thread([&]() {
@@ -79,12 +74,5 @@ TEST(Pair, SingleMsg_MP_tcp_shmem)
 {
     EXPECT_EXIT(RunPair("shmem"), ::testing::ExitedWithCode(0), "PAIR test successfull");
 }
-
-#ifdef BUILD_OFI_TRANSPORT
-TEST(Pair, SingleMsg_MP_tcp_ofi)
-{
-    EXPECT_EXIT(RunPair("ofi"), ::testing::ExitedWithCode(0), "PAIR test successfull");
-}
-#endif /* BUILD_OFI_TRANSPORT */
 
 } // namespace

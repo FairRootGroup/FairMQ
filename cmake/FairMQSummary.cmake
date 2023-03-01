@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2018-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2018-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -27,12 +27,6 @@ macro(fairmq_summary_components)
     set(tests_summary "${BRed} NO${CR}    (default, enable with ${BMagenta}-DBUILD_TESTING=ON${CR})")
   endif()
   message(STATUS "  ${BWhite}tests${CR}              ${tests_summary}")
-  if(BUILD_OFI_TRANSPORT)
-    set(ofi_summary "${BGreen}YES${CR}    EXPERIMENTAL (disable with ${BMagenta}-DBUILD_OFI_TRANSPORT=OFF${CR})")
-  else()
-    set(ofi_summary "${BRed} NO${CR}    EXPERIMENTAL (default, enable with ${BMagenta}-DBUILD_OFI_TRANSPORT=ON${CR})")
-  endif()
-  message(STATUS "  ${BWhite}ofi_transport${CR}      ${ofi_summary}")
   if(BUILD_PMIX_PLUGIN)
     set(pmix_summary "${BGreen}YES${CR}    EXPERIMENTAL (disable with ${BMagenta}-DBUILD_PMIX_PLUGIN=OFF${CR})")
   else()

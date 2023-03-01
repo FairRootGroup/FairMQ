@@ -28,7 +28,6 @@ Here is an overview of the device/channel options and when they are applied:
 | `init-timeout` | at the end of `fair::mq::State::InitializingDevice` |
 | `shm-segment-size` | at the end of `fair::mq::State::InitializingDevice` |
 | `shm-monitor` | at the end of `fair::mq::State::InitializingDevice` |
-| `ofi-size-hint` | at the end of `fair::mq::State::InitializingDevice` |
 | `rate` | at the end of `fair::mq::State::InitializingDevice` |
 | `session` | at the end of `fair::mq::State::InitializingDevice` |
 | `chan.*` | at the end of `fair::mq::State::InitializingDevice` (channel addresses can be also applied during `fair::mq::State::Binding`/`fair::mq::State::Connecting`) |

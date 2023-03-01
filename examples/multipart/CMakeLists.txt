@@ -1,5 +1,5 @@
  ################################################################################
- #    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
+ # Copyright (C) 2014-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
  #                                                                              #
  #              This software is distributed under the terms of the             #
  #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -27,11 +27,6 @@ set_tests_properties(Example.Multipart.zeromq PROPERTIES TIMEOUT "30")
 
 add_test(NAME Example.Multipart.shmem COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multipart.sh shmem)
 set_tests_properties(Example.Multipart.shmem PROPERTIES TIMEOUT "30")
-
-if(BUILD_OFI_TRANSPORT)
-  add_test(NAME Example.Multipart.ofi COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-multipart.sh ofi)
-  set_tests_properties(Example.Multipart.ofi PROPERTIES TIMEOUT "30")
-endif()
 
 # install
 

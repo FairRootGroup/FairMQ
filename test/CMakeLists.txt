@@ -16,10 +16,6 @@ if(FairLogger_VERSION VERSION_LESS 1.9.0 AND FairLogger_VERSION VERSION_GREATER_
   LIST(APPEND definitions FAIR_MIN_SEVERITY=trace)
 endif()
 
-if(BUILD_OFI_TRANSPORT)
-  LIST(APPEND definitions BUILD_OFI_TRANSPORT)
-endif()
-
 if(definitions)
   set(definitions DEFINITIONS ${definitions})
 endif()

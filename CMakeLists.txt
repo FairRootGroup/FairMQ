@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2018-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2018-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -26,8 +26,6 @@ include(FairMQBuildOption)
 fairmq_build_option(BUILD_FAIRMQ        "Build FairMQ library and devices."
                                          DEFAULT ON)
 fairmq_build_option(BUILD_TESTING       "Build tests."
-                                         DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
-fairmq_build_option(BUILD_OFI_TRANSPORT "Build experimental OFI transport."
                                          DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
 fairmq_build_option(BUILD_PMIX_PLUGIN   "Build PMIx plugin."
                                          DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
@@ -88,9 +86,6 @@ if(BUILD_TESTING)
 endif()
 if(BUILD_PMIX_PLUGIN)
   list(APPEND PROJECT_PACKAGE_COMPONENTS pmix_plugin)
-endif()
-if(BUILD_OFI_TRANSPORT)
-  list(APPEND PROJECT_PACKAGE_COMPONENTS ofi_transport)
 endif()
 if(BUILD_EXAMPLES)
   list(APPEND PROJECT_PACKAGE_COMPONENTS examples)
