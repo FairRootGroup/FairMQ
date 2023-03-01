@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.description "FairMQ development environment"
 RUN dnf -y update
 # https://git.gsi.de/SDE/packages/builder
 RUN dnf -y install https://alfa-ci.gsi.de/packages/rpm/fedora-$VERSION-x86_64/fairsoft-release-dev.rpm
-RUN dnf -y install clang cli11-devel pmix-devel ninja-build 'dnf-command(builddep)' libasan liblsan libtsan libubsan clang-tools-extra
+RUN dnf -y install clang cli11-devel ninja-build 'dnf-command(builddep)' libasan liblsan libtsan libubsan clang-tools-extra
 RUN dnf -y builddep fairmq
 RUN dnf -y clean all
 

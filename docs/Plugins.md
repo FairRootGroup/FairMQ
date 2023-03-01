@@ -56,8 +56,6 @@ A more complete example which may serve as a start including example CMake code 
 
 ### 7.3.1 PMIx
 
-The [PMIx](https://pmix.org/) plugin enables launching a FairMQ topology with any PMIx capable launcher, e.g. the [Open Run-Time Environment (ORTE) of OpenMPI](https://www.open-mpi.org/doc/v4.0/man1/mpirun.1.php) or the [Slurm workload manager](https://slurm.schedmd.com/srun.html). This plugin is not (yet) very mature and serves as a proof of concept at the moment.
-
-TODO example usage
+The [PMIx](https://pmix.org/) plugin enables launching a FairMQ topology with any PMIx capable launcher, e.g. the [Open Run-Time Environment (ORTE) of OpenMPI](https://www.open-mpi.org/doc/v4.0/man1/mpirun.1.php) or the [Slurm workload manager](https://slurm.schedmd.com/srun.html). This experimental plugin has been last released in v1.4.56 and is removed in v1.5+. For now there are no plans to pick up development of it again.
 
 ← [Back](../README.md)

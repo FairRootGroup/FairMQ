@@ -318,10 +318,3 @@ if(BUILD_FAIRMQ)
     )
   endforeach()
 endif()
-
-####################
-# external plugins #
-####################
-if(BUILD_PMIX_PLUGIN)
-  add_subdirectory(plugins/PMIx)
-endif()

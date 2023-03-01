@@ -27,8 +27,6 @@ fairmq_build_option(BUILD_FAIRMQ        "Build FairMQ library and devices."
                                          DEFAULT ON)
 fairmq_build_option(BUILD_TESTING       "Build tests."
                                          DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
-fairmq_build_option(BUILD_PMIX_PLUGIN   "Build PMIx plugin."
-                                         DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
 fairmq_build_option(BUILD_EXAMPLES      "Build FairMQ examples."
                                          DEFAULT ON  REQUIRES "BUILD_FAIRMQ")
 fairmq_build_option(BUILD_TIDY_TOOL     "Build the fairmq-tidy tool."
@@ -83,9 +81,6 @@ if(BUILD_FAIRMQ)
 endif()
 if(BUILD_TESTING)
   list(APPEND PROJECT_PACKAGE_COMPONENTS tests)
-endif()
-if(BUILD_PMIX_PLUGIN)
-  list(APPEND PROJECT_PACKAGE_COMPONENTS pmix_plugin)
 endif()
 if(BUILD_EXAMPLES)
   list(APPEND PROJECT_PACKAGE_COMPONENTS examples)

@@ -18,10 +18,6 @@ if(BUILD_FAIRMQ)
   set(Threads_PREFIX "<system>")
 endif()
 
-if(BUILD_PMIX_PLUGIN)
-  find_package2(PRIVATE PMIx REQUIRED VERSION 2.1.4)
-endif()
-
 if(BUILD_FAIRMQ OR BUILD_TIDY_TOOL)
   find_package2(PUBLIC FairLogger REQUIRED VERSION 1.6.0)
   find_package2(PUBLIC Boost REQUIRED VERSION 1.66
