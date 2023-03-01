@@ -117,7 +117,6 @@ if(BUILD_FAIRMQ)
     Channel.cxx
     Device.cxx
     DeviceRunner.cxx
-    Error.cxx
     JSONParser.cxx
     MemoryResources.cxx
     Plugin.cxx
