@@ -38,13 +38,33 @@ enum class ErrorCode
     DeviceSetPropertiesFailed
 };
 
-std::error_code MakeErrorCode(ErrorCode);
-
 struct ErrorCategory : std::error_category
 {
-    const char* name() const noexcept override;
-    std::string message(int ev) const override;
+    const char* name() const noexcept override { return "fairmq"; }
+    std::string message(int ev) const override
+    {
+        switch (static_cast<ErrorCode>(ev)) {
+            case ErrorCode::OperationInProgress:
+                return "async operation already in progress";
+            case ErrorCode::OperationTimeout:
+                return "async operation timed out";
+            case ErrorCode::OperationCanceled:
+                return "async operation canceled";
+            case ErrorCode::DeviceChangeStateFailed:
+                return "failed to change state of a fairmq device";
+            case ErrorCode::DeviceGetPropertiesFailed:
+                return "failed to get fairmq device properties";
+            case ErrorCode::DeviceSetPropertiesFailed:
+                return "failed to set fairmq device properties";
+            default:
+                return "(unrecognized error)";
+        }
+    }
 };
+
+static ErrorCategory ec;
+
+inline std::error_code MakeErrorCode(ErrorCode e) { return {static_cast<int>(e), ec}; }
 
 }   // namespace fair::mq
 
