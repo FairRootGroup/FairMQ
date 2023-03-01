@@ -82,7 +82,6 @@ list(PREPEND CMAKE_PREFIX_PATH /path/to/fairmq_install)
   * [FairCMakeModules](https://github.com/FairRootGroup/FairCMakeModules) (optionally bundled)
   * [FairLogger](https://github.com/FairRootGroup/FairLogger)
   * [GTest](https://github.com/google/googletest) (optionally bundled)
-  * [PMIx](https://pmix.org/)
   * [ZeroMQ](http://zeromq.org/)
 
   Which dependencies are required depends on which components are built.
@@ -96,7 +95,6 @@ On command line:
   * `-DDISABLE_COLOR=ON` disables coloured console output.
   * `-DBUILD_TESTING=OFF` disables building of tests.
   * `-DBUILD_EXAMPLES=OFF` disables building of examples.
-  * `-DBUILD_PMIX_PLUGIN=ON` enables building of the PMIx plugin.
   * `-DBUILD_DOCS=ON` enables building of API docs.
   * You can hint non-system installations for dependent packages, see the #installation-from-source section above
 
@@ -154,4 +152,4 @@ After the `find_package(FairMQ)` call the following CMake variables are defined:
    1. [Usage](docs/Plugins.md#71-usage)
    2. [Development](docs/Plugins.md#72-development)
    3. [Provided Plugins](docs/Plugins.md#73-provided-plugins)
-       2. [PMIx](docs/Plugins.md#731-pmix)
+       1. [PMIx](docs/Plugins.md#731-pmix)

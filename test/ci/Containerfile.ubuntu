@@ -7,7 +7,7 @@ LABEL org.opencontainers.image.description "FairMQ development environment"
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 RUN apt-get update
 RUN apt-get -y upgrade
-RUN apt-get -y install ca-certificates patch cmake git libboost-dev libboost-log-dev libboost-system-dev libboost-regex-dev libboost-filesystem-dev libboost-container-dev libboost-thread-dev libboost-date-time-dev libboost-program-options-dev g++ libfmt-dev ninja-build wget libczmq-dev libxml2-utils libfabric-dev libfabric-bin libpmix-dev pkg-config
+RUN apt-get -y install ca-certificates patch cmake git libboost-dev libboost-log-dev libboost-system-dev libboost-regex-dev libboost-filesystem-dev libboost-container-dev libboost-thread-dev libboost-date-time-dev libboost-program-options-dev g++ libfmt-dev ninja-build wget libczmq-dev libxml2-utils libfabric-dev libfabric-bin pkg-config
 RUN apt-get -y clean
 
 RUN cd /tmp

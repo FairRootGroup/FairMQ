@@ -85,14 +85,14 @@ pipeline{
       steps{
         script {
           def builds = jobMatrix('build', [
-            [os: 'ubuntu', ver: '20.04', arch: 'x86_64', compiler: 'gcc-9',  extra: '-DHAS_PMIX=ON'],
+            [os: 'ubuntu', ver: '20.04', arch: 'x86_64', compiler: 'gcc-9'],
             [os: 'ubuntu', ver: '22.04', arch: 'x86_64', compiler: 'gcc-11'],
-            [os: 'fedora', ver: '33',    arch: 'x86_64', compiler: 'gcc-10', extra: '-DHAS_PMIX=ON'],
-            [os: 'fedora', ver: '34',    arch: 'x86_64', compiler: 'gcc-11', extra: '-DHAS_PMIX=ON'],
-            [os: 'fedora', ver: '35',    arch: 'x86_64', compiler: 'gcc-11', extra: '-DHAS_PMIX=ON'],
-            [os: 'fedora', ver: '36',    arch: 'x86_64', compiler: 'gcc-12', extra: '-DHAS_PMIX=ON'],
-            [os: 'fedora', ver: '37',    arch: 'x86_64', compiler: 'gcc-12', extra: '-DHAS_PMIX=ON'],
-            [os: 'fedora', ver: '38',    arch: 'x86_64', compiler: 'gcc-13', extra: '-DHAS_PMIX=ON'],
+            [os: 'fedora', ver: '33',    arch: 'x86_64', compiler: 'gcc-10'],
+            [os: 'fedora', ver: '34',    arch: 'x86_64', compiler: 'gcc-11'],
+            [os: 'fedora', ver: '35',    arch: 'x86_64', compiler: 'gcc-11'],
+            [os: 'fedora', ver: '36',    arch: 'x86_64', compiler: 'gcc-12'],
+            [os: 'fedora', ver: '37',    arch: 'x86_64', compiler: 'gcc-12'],
+            [os: 'fedora', ver: '38',    arch: 'x86_64', compiler: 'gcc-13'],
             [os: 'macos',  ver: '12',    arch: 'x86_64', compiler: 'apple-clang-13', extra: '-DHAS_ASIO=ON'],
             [os: 'macos',  ver: '12',    arch: 'arm64',  compiler: 'apple-clang-13', extra: '-DHAS_ASIO=ON'],
           ])

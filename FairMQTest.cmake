@@ -1,5 +1,5 @@
 ################################################################################
-#    Copyright (C) 2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
+# Copyright (C) 2021-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -42,9 +42,6 @@ endif()
 ctest_start(Continuous)
 
 list(APPEND options "-DDISABLE_COLOR=ON" "-DBUILD_EXAMPLES=ON" "-DBUILD_TESTING=ON")
-if(HAS_PMIX)
-  list(APPEND options "-DBUILD_PMIX_PLUGIN=ON")
-endif()
 if(RUN_STATIC_ANALYSIS)
   list(APPEND options "-DRUN_STATIC_ANALYSIS=ON")
 endif()
