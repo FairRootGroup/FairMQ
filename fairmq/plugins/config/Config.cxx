@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2017-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2017-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -76,7 +76,6 @@ Plugin::ProgOptions ConfigPluginProgramOptions()
         ("bad-alloc-attempt-interval",    po::value<int           >()->default_value(50),                "Interval between attempts if cannot allocate a message (in ms).")
         ("shm-monitor",                   po::value<bool          >()->default_value(false),             "Shared memory: run monitor daemon.")
         ("shm-no-cleanup",                po::value<bool          >()->default_value(false),             "Shared memory: do not cleanup the memory when last device leaves.")
-        ("ofi-size-hint",                 po::value<size_t        >()->default_value(0),                 "EXPERIMENTAL: OFI size hint for the allocator.")
         ("rate",                          po::value<float         >()->default_value(0.),                "Rate for conditional run loop (Hz).")
         ("session",                       po::value<string        >()->default_value("default"),         "Session name.")
         ("config-key",                    po::value<string        >(),                                   "Use provided value instead of device id for fetching the configuration from JSON file.")

@@ -23,7 +23,8 @@ FairMQ is designed to help implementing large-scale data processing workflows ne
 The core of FairMQ provides an abstract asynchronous message passing API with scalability protocols
 inspired by [ZeroMQ](https://github.com/zeromq/libzmq) (e.g. PUSH/PULL, PUB/SUB).
 FairMQ provides multiple implementations for its API (so-called "transports",
-e.g. `zeromq`, `shmem` and `ofi` (in development)) to cover a variety of use cases
+e.g. `zeromq` and `shmem` (latest release of the `ofi` transport in v1.4.56, removed since v1.5+)) to cover
+a variety of use cases
 (e.g. inter-thread, inter-process, inter-node communication) and machines (e.g. Ethernet, Infiniband).
 In addition to this core functionality FairMQ provides a framework for creating "devices" - actors which
 are communicating through message passing. FairMQ does not only allow the user to use different transport
@@ -73,18 +74,8 @@ If FairMQ is not installed in system directories, you can hint the installation:
 list(PREPEND CMAKE_PREFIX_PATH /path/to/fairmq_install)
 ```
 
-Optionally, you can require certain FairMQ package components and a minimum version:
-
-```cmake
-find_package(FairMQ 1.4.50 COMPONENTS ofi_transport)
-```
-
-When building FairMQ, CMake will print a summary table of all available package components.
-
 ## Dependencies
 
-  * [asio](https://github.com/chriskohlhoff/asio)
-  * [asiofi](https://github.com/FairRootGroup/asiofi)
   * [Boost](https://www.boost.org/)
   * [CMake](https://cmake.org/)
   * [Doxygen](http://www.doxygen.org/)
@@ -105,7 +96,6 @@ On command line:
   * `-DDISABLE_COLOR=ON` disables coloured console output.
   * `-DBUILD_TESTING=OFF` disables building of tests.
   * `-DBUILD_EXAMPLES=OFF` disables building of examples.
-  * `-DBUILD_OFI_TRANSPORT=ON` enables building of the experimental OFI transport.
   * `-DBUILD_PMIX_PLUGIN=ON` enables building of the PMIx plugin.
   * `-DBUILD_DOCS=ON` enables building of API docs.
   * You can hint non-system installations for dependent packages, see the #installation-from-source section above

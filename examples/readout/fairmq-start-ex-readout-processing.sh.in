@@ -31,12 +31,10 @@ SENDER="fairmq-ex-readout-sender"
 SENDER+=" --id sender1"
 SENDER+=" --input-name ps"
 SENDER+=" --channel-config name=ps,type=pair,method=bind,address=tcp://localhost:7779,transport=shmem"
-#SENDER+="                  name=sr,type=pair,method=connect,address=tcp://localhost:7780,transport=ofi"
 SENDER+="                  name=sr,type=pair,method=connect,address=tcp://localhost:7780,transport=zeromq"
 xterm -geometry 80x23+1000+0 -hold -e @EX_BIN_DIR@/$SENDER &
 
 RECEIVER="fairmq-ex-readout-receiver"
 RECEIVER+=" --id receiver1"
-#RECEIVER+=" --channel-config name=sr,type=pair,method=bind,address=tcp://localhost:7780,transport=ofi"
 RECEIVER+=" --channel-config name=sr,type=pair,method=bind,address=tcp://localhost:7780,transport=zeromq"
 xterm -geometry 80x23+1500+0 -hold -e @EX_BIN_DIR@/$RECEIVER &

@@ -22,11 +22,6 @@ RUN cmake -GNinja -S FairCMakeModules -B FairCMakeModules_build -DCMAKE_INSTALL_
 RUN cmake --build FairCMakeModules_build --target install
 RUN rm -rf FairCMakeModules FairCMakeModules_build
 
-RUN git clone -b v0.5.1 --recurse-submodules https://github.com/FairRootGroup/asiofi
-RUN cmake -GNinja -S asiofi -B asiofi_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
-RUN cmake --build asiofi_build --target install
-RUN rm -rf asiofi asiofi_build
-
 RUN git clone -b v1.11.0 https://github.com/FairRootGroup/FairLogger
 RUN cmake -GNinja -S FairLogger -B FairLogger_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DUSE_EXTERNAL_FMT=ON
 RUN cmake --build FairLogger_build --target install

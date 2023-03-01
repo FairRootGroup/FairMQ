@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -22,8 +22,7 @@ enum class Transport
 {
     DEFAULT,
     ZMQ,
-    SHM,
-    OFI
+    SHM
 };
 
 struct TransportError : std::runtime_error
@@ -34,15 +33,13 @@ struct TransportError : std::runtime_error
 static const std::unordered_map<std::string, Transport> TransportTypes{
     {"default", Transport::DEFAULT},
     {"zeromq", Transport::ZMQ},
-    {"shmem", Transport::SHM},
-    {"ofi", Transport::OFI}
+    {"shmem", Transport::SHM}
 };
 
 static const std::unordered_map<Transport, std::string> TransportNames{
     {Transport::DEFAULT, "default"},
     {Transport::ZMQ, "zeromq"},
-    {Transport::SHM, "shmem"},
-    {Transport::OFI, "ofi"}
+    {Transport::SHM, "shmem"}
 };
 
 inline std::string TransportName(Transport transport) { return TransportNames.at(transport); }
@@ -61,11 +58,7 @@ inline std::ostream& operator<<(std::ostream& os, const Transport& transport)
 
 inline auto GetEnabledTransports() -> std::vector<Transport>
 {
-#ifdef BUILD_OFI_TRANSPORT
-    return {Transport::ZMQ, Transport::SHM, Transport::OFI};
-#else
     return {Transport::ZMQ, Transport::SHM};
-#endif
 }
 
 }   // namespace fair::mq

@@ -7,19 +7,19 @@ This examples shows two possible topologies (out of many) for a node connected t
 ```
 |------------------------------- Readout Node ---------------------------|     |- Processing Node -|
 | Readout            -->            Builder          -->          Sender | --> |     Receiver      |
-| [# shared memory segment (unused in this topology) ##################] | ofi |                   |
+| [# shared memory segment (unused in this topology) ##################] | zmq |                   |
 | [# shmem unmanaged region (readout writes here, others read) ########] |     |                   |
 |------------------------------------------------------------------------|     |-------------------|
 ```
 
-The devices one the Readout Node communicate via shared memory transport. Readout device writes into shared memory unmanaged region. The data is then forwarded through Builder to Sender process, which sends it out via OFI transport.
+The devices one the Readout Node communicate via shared memory transport. Readout device writes into shared memory unmanaged region. The data is then forwarded through Builder to Sender process, which sends it out via zeromq transport.
 
 ## Setup with generating new data on the Readout node
 
 ```
 |------------------------------- Readout Node ---------------------------|     |- Processing Node -|
 | Readout     -->     Builder      -->      Processor     -->     Sender | --> |     Receiver      |
-| [# shared memory segment (used between Proccessor and Sender) #######] | ofi |                   |
+| [# shared memory segment (used between Proccessor and Sender) #######] | zmq |                   |
 | [# shmem unmanaged region (readout writes here, builder & proc read) ] |     |                   |
 |------------------------------------------------------------------------|     |-------------------|
 ```

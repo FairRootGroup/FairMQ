@@ -110,16 +110,6 @@ if(BUILD_FAIRMQ)
     zeromq/TransportFactory.h
   )
 
-  if(BUILD_OFI_TRANSPORT)
-    set(FAIRMQ_PRIVATE_HEADER_FILES ${FAIRMQ_PRIVATE_HEADER_FILES}
-      ofi/Context.h
-      ofi/ControlMessages.h
-      ofi/Message.h
-      ofi/Socket.h
-      ofi/TransportFactory.h
-    )
-  endif()
-
   ##########################
   # libFairMQ source files #
   ##########################
@@ -150,14 +140,6 @@ if(BUILD_FAIRMQ)
     tools/Unique.cxx
   )
 
-  if(BUILD_OFI_TRANSPORT)
-    set(FAIRMQ_SOURCE_FILES ${FAIRMQ_SOURCE_FILES}
-      ofi/Context.cxx
-      ofi/Message.cxx
-      ofi/Socket.cxx
-    )
-  endif()
-
 
   ###################
   # configure files #
@@ -185,9 +167,6 @@ if(BUILD_FAIRMQ)
   if(FAIRMQ_DEBUG_MODE)
     target_compile_definitions(${target} PUBLIC FAIRMQ_DEBUG_MODE)
   endif()
-  if(BUILD_OFI_TRANSPORT)
-    target_compile_definitions(${target} PRIVATE BUILD_OFI_TRANSPORT)
-  endif()
   target_compile_definitions(${target} PUBLIC
     FAIRMQ_HAS_STD_FILESYSTEM=${FAIRMQ_HAS_STD_FILESYSTEM}
     FAIRMQ_HAS_STD_PMR=${FAIRMQ_HAS_STD_PMR}
@@ -209,13 +188,6 @@ if(BUILD_FAIRMQ)
   ##################
   # link libraries #
   ##################
-  if(BUILD_OFI_TRANSPORT)
-    set(OFI_DEPS
-      asio::asio
-      asiofi::asiofi
-    )
-  endif()
-
   target_link_libraries(${target}
     INTERFACE # only consumers link against interface dependencies
     Boost::container
@@ -233,7 +205,6 @@ if(BUILD_FAIRMQ)
     PRIVATE # only libFairMQ links against private dependencies
     libzmq
     PicoSHA2
-    ${OFI_DEPS}
   )
   set_target_properties(${target} PROPERTIES
     VERSION ${PROJECT_VERSION}

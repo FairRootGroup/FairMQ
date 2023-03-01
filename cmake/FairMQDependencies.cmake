@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2018-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -18,11 +18,6 @@ if(BUILD_FAIRMQ)
   set(Threads_PREFIX "<system>")
 endif()
 
-if(BUILD_OFI_TRANSPORT)
-  find_package2(PRIVATE asiofi REQUIRED VERSION 0.5)
-  find_package2(PRIVATE OFI REQUIRED)
-endif()
-
 if(BUILD_PMIX_PLUGIN)
   find_package2(PRIVATE PMIx REQUIRED VERSION 2.1.4)
 endif()
@@ -32,14 +27,6 @@ if(BUILD_FAIRMQ OR BUILD_TIDY_TOOL)
   find_package2(PUBLIC Boost REQUIRED VERSION 1.66
     COMPONENTS container program_options filesystem date_time regex
   )
-endif()
-
-if(BUILD_OFI_TRANSPORT)
-  set(__old ${CMAKE_FIND_PACKAGE_PREFER_CONFIG})
-  set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
-  find_package2(PUBLIC asio REQUIRED VERSION 1.18)
-  set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ${__old})
-  unset(__old)
 endif()
 
 if(BUILD_FAIRMQ)
@@ -86,10 +73,6 @@ if(PROJECT_PACKAGE_DEPENDENCIES)
     elseif(${dep} STREQUAL FairLogger)
       if(NOT FairLogger_PREFIX AND FairLogger_ROOT)
         set(FairLogger_PREFIX ${FairLogger_ROOT})
-      endif()
-    elseif(${dep} STREQUAL asiofi)
-      if(NOT asiofi_PREFIX AND asiofi_ROOT)
-        set(asiofi_PREFIX ${asiofi_ROOT})
       endif()
     elseif(${dep} STREQUAL Boost)
       if(TARGET Boost::headers)
