@@ -162,7 +162,10 @@ if(BUILD_FAIRMQ)
   ############################
   # preprocessor definitions #
   ############################
-  target_compile_definitions(${target} PUBLIC BOOST_ERROR_CODE_HEADER_ONLY)
+  target_compile_definitions(${target} PUBLIC
+    BOOST_ERROR_CODE_HEADER_ONLY
+    BOOST_ASIO_HAS_HAS_STD_CHRONO
+  )
   if(FAIRMQ_DEBUG_MODE)
     target_compile_definitions(${target} PUBLIC FAIRMQ_DEBUG_MODE)
   endif()
