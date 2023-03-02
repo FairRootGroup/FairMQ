@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -10,8 +10,8 @@
 #include <fairmq/tools/Strings.h>
 
 #include <boost/asio.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/process.hpp>
+#include <chrono>
 #include <csignal>   // kill, signals
 #include <iostream>
 #include <sstream>
@@ -77,8 +77,10 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
     bp::async_pipe errorPipe(ios);
 
     const string delimiter = "\n";
-    ba::deadline_timer inputTimer(ios, boost::posix_time::milliseconds(1000)); // NOLINT
-    ba::deadline_timer signalTimer(ios, boost::posix_time::milliseconds(2000)); // NOLINT
+    ba::steady_timer inputTimer(ios);
+    inputTimer.expires_after(std::chrono::milliseconds(1000)); // NOLINT
+    ba::steady_timer signalTimer(ios);
+    signalTimer.expires_after(std::chrono::milliseconds(2000)); // NOLINT
 
     // child process
     bp::child c(cmd, bp::std_out > outputPipe, bp::std_err > errorPipe, bp::std_in < inputPipe);
