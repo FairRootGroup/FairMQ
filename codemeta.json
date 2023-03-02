@@ -28,6 +28,7 @@
     },
     {
       "@type": "Person",
+      "@id": "https://orcid.org/0000-0002-6249-155X",
       "givenName": "Alexey",
       "familyName": "Rybalchenko"
     },
