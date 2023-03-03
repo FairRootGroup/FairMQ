@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2017-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2017-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -20,6 +20,7 @@
 #                        [DEPENDS dep1 [dep2 ...]]
 #                        [LINKS linklib1 [linklib2 ...]
 #                        [INCLUDES dir1 [dir2 ...]
+#                        [ENVIRONMENT var1=op:val1[;var2=op:val2 ...]]
 #                        [TIMEOUT seconds]
 #                        [RUN_SERIAL ON/OFF])
 #
@@ -56,7 +57,7 @@ function(add_testsuite suitename)
     cmake_parse_arguments(testsuite
         ""
         "TIMEOUT;RUN_SERIAL"
-        "SOURCES;LINKS;DEPENDS;INCLUDES;DEFINITIONS"
+        "SOURCES;LINKS;DEPENDS;INCLUDES;DEFINITIONS;ENVIRONMENT"
         ${ARGN}
     )
 
@@ -76,6 +77,9 @@ function(add_testsuite suitename)
     endif()
     if(testsuite_DEFINITIONS)
         target_compile_definitions("${target}" PUBLIC ${testsuite_DEFINITIONS})
+    endif()
+    if(testsuite_ENVIRONMENT AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
+        set(env "ENVIRONMENT_MODIFICATION" ${testsuite_ENVIRONMENT})
     endif()
     if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
       fairmq_target_tidy(TARGET ${target})
@@ -97,6 +101,7 @@ function(add_testsuite suitename)
       TEST_PREFIX ${suitename}.
       PROPERTIES RUN_SERIAL ${testsuite_RUN_SERIAL}
                  TIMEOUT ${testsuite_TIMEOUT}
+                 ${env}
     )
 
     list(APPEND ALL_TEST_TARGETS ${target})
