@@ -20,6 +20,11 @@ if(definitions)
   set(definitions DEFINITIONS ${definitions})
 endif()
 
+if(ENABLE_SANITIZER_LEAK)
+  get_filename_component(lsan_supps "${CMAKE_CURRENT_SOURCE_DIR}/leak_sanitizer_suppressions.txt" ABSOLUTE)
+  set(environment ENVIRONMENT "LSAN_OPTIONS=set:suppressions=${lsan_supps}")
+endif()
+
 add_testhelper(runTestDevice
     SOURCES
     helper/runTestDevice.cxx
@@ -63,6 +68,7 @@ add_testsuite(Protocols
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
     ${definitions}
+    ${environment}
 )
 
 add_testsuite(Parts
@@ -76,6 +82,7 @@ add_testsuite(Parts
              ${CMAKE_CURRENT_SOURCE_DIR}/parts
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
+    ${environment}
 )
 
 add_testsuite(Message
@@ -89,6 +96,7 @@ add_testsuite(Message
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
     ${definitions}
+    ${environment}
 )
 
 add_testsuite(Region
@@ -103,6 +111,7 @@ add_testsuite(Region
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
     ${definitions}
+    ${environment}
 )
 
 add_testsuite(Device
@@ -125,6 +134,7 @@ add_testsuite(Device
              ${CMAKE_CURRENT_SOURCE_DIR}/device
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
+    ${environment}
 )
 
 set(VERSION_MAJOR 1)
@@ -170,6 +180,7 @@ add_testsuite(Plugins
              ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS FairMQPlugin_test_dummy fairmq-plugin-test_dummy2
     TIMEOUT 20
+    ${environment}
 )
 
 add_testsuite(PluginsPrelinked
@@ -181,6 +192,7 @@ add_testsuite(PluginsPrelinked
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
+    ${environment}
 )
 
 add_testsuite(PluginServices
@@ -194,6 +206,7 @@ add_testsuite(PluginServices
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
+    ${environment}
 )
 
 add_testsuite(EventManager
@@ -205,6 +218,7 @@ add_testsuite(EventManager
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
+    ${environment}
 )
 
 add_testsuite(Properties
@@ -217,6 +231,7 @@ add_testsuite(Properties
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
+    ${environment}
 )
 
 # add_testsuite(StateMachine
@@ -239,6 +254,7 @@ add_testsuite(Tools
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
+    ${environment}
 )
 
 add_testsuite(Channel
@@ -250,6 +266,7 @@ add_testsuite(Channel
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
+    ${environment}
 )
 
 add_testsuite(Transport
@@ -264,6 +281,7 @@ add_testsuite(Transport
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
     ${definitions}
+    ${environment}
 )
 
 add_testsuite(Poller
@@ -276,6 +294,7 @@ add_testsuite(Poller
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
     ${definitions}
+    ${environment}
 )
 
 add_testsuite(MemoryResources
@@ -288,4 +307,5 @@ add_testsuite(MemoryResources
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
     ${definitions}
+    ${environment}
 )
