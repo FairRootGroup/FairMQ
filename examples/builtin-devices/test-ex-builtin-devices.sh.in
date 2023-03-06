@@ -12,12 +12,9 @@ if [[ $1 =~ ^[a-z]+$ ]]; then
     transport=$1
 fi
 
-if [[ $2 =~ ^[a-z]+$ ]]; then
-    multipart=$2
-fi
-
-if [[ $3 =~ ^[0-9]+$ ]]; then
-    numParts=$3
+if [[ $2 =~ ^multipart$ ]]; then
+    multipart="true"
+    numParts=2
 fi
 
 session="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"

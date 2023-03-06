@@ -1,52 +1,11 @@
 ################################################################################
-#    Copyright (C) 2014 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
+# Copyright (C) 2014-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-
-add_executable(fairmq-ex-copypush-sampler sampler.cxx)
-target_link_libraries(fairmq-ex-copypush-sampler PRIVATE FairMQ)
-
-add_executable(fairmq-ex-copypush-sink sink.cxx)
-target_link_libraries(fairmq-ex-copypush-sink PRIVATE FairMQ)
-
-add_custom_target(ExampleCopyPush DEPENDS fairmq-ex-copypush-sampler fairmq-ex-copypush-sink)
-
-set(EX_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
-set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-copypush.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-copypush.sh)
-
-# test
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/test-ex-copypush.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-ex-copypush.sh)
-
-add_test(NAME Example.CopyPush.zeromq COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-copypush.sh zeromq)
-set_tests_properties(Example.CopyPush.zeromq PROPERTIES TIMEOUT "30")
-
-add_test(NAME Example.CopyPush.shmem COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-ex-copypush.sh shmem)
-set_tests_properties(Example.CopyPush.shmem PROPERTIES TIMEOUT "30")
-
-# install
-
-install(
-  TARGETS
-  fairmq-ex-copypush-sampler
-  fairmq-ex-copypush-sink
-
-  LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
-)
-
-# configure run script with different executable paths for build and for install directories
-set(EX_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR})
-set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-copypush.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-copypush.sh_install)
-
-install(
-  PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-copypush.sh_install
-  DESTINATION ${PROJECT_INSTALL_BINDIR}
-  RENAME fairmq-start-ex-copypush.sh
+add_example(NAME copypush
+  DEVICE sampler sink
 )
