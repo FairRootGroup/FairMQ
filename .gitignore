@@ -4,3 +4,5 @@ install
 .vscode
 /compile_commands.json
 .cache
+.spack-env
+spack.lock

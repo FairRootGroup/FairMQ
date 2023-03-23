@@ -1,0 +1,10 @@
+spack:
+  specs:
+  - boost+container+program_options+filesystem+date_time+regex
+  - faircmakemodules
+  - fairlogger+pretty
+  - fmt
+  - libzmq
+  view: true
+  concretizer:
+    unify: true
