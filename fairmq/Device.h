@@ -583,18 +583,6 @@ class Device
     /// @brief Returns the name of the current state as a string
     std::string GetCurrentStateName() const { return fStateMachine.GetCurrentStateName(); }
 
-    /// @brief Returns name of the given state as a string
-    /// @param state state
-    [[deprecated("Use fair::mq::GetStateName from <fairmq/States.h> directly")]]
-    static std::string GetStateName(State state) { return fair::mq::GetStateName(state); }
-    /// @brief Returns name of the given transition as a string
-    /// @param transition transition
-    [[deprecated("Use fair::mq::GetTransitionName from <fairmq/States.h> directly")]]
-    static std::string GetTransitionName(Transition transition)
-    {
-        return fair::mq::GetTransitionName(transition);
-    }
-
     static constexpr const char* DefaultId = "";
     static constexpr int DefaultIOThreads = 1;
     static constexpr const char* DefaultTransportName = "zeromq";
