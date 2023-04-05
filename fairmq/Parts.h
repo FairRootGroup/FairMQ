@@ -42,8 +42,6 @@ struct Parts
         AddPart(std::forward<Ps>(parts)...);
     }
 
-    [[deprecated("Avoid owning raw pointer args, use AddPart(MessagePtr) instead.")]]
-    void AddPart(Message* msg) { fParts.push_back(MessagePtr(msg)); }
     void AddPart(MessagePtr msg) { fParts.push_back(std::move(msg)); }
 
     template<typename... Ts>
@@ -70,8 +68,6 @@ struct Parts
     // reference operator[](size_type index) { return fParts[index]; }
     // const_reference operator[](size_type index) const { return fParts[index]; }
 
-    [[deprecated("Redundant, dereference at call site e.g. '*(parts.At(index))' instead.")]]
-    Message& AtRef(size_type index) { return *(fParts.at(index)); }
     reference At(size_type index) { return fParts.at(index); }
     const_reference At(size_type index) const { return fParts.at(index); }
 
