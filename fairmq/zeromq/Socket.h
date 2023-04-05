@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -389,9 +389,6 @@ class Socket final : public fair::mq::Socket
     unsigned long GetBytesRx() const override { return fBytesRx; }
     unsigned long GetMessagesTx() const override { return fMessagesTx; }
     unsigned long GetMessagesRx() const override { return fMessagesRx; }
-
-    [[deprecated("Use fair::mq::zmq::getConstant() from <fairmq/zeromq/Common.h> instead.")]]
-    static int GetConstant(const std::string& constant) { return getConstant(constant); }
 
     ~Socket() override { Close(); }
 
