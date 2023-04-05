@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2021-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2021-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -40,8 +40,5 @@ struct PollerError : std::runtime_error
 };
 
 }   // namespace fair::mq
-
-using FairMQPoller [[deprecated("Use fair::mq::Poller")]] = fair::mq::Poller;
-using FairMQPollerPtr [[deprecated("Use fair::mq::PollerPtr")]] = fair::mq::PollerPtr;
 
 #endif   // FAIR_MQ_POLLER_H

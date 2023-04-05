@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2012-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2012-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -32,15 +32,6 @@ if(BUILD_FAIRMQ)
     DeviceRunner.h
     Error.h
     EventManager.h
-    FairMQChannel.h
-    FairMQDevice.h
-    FairMQLogger.h
-    FairMQMessage.h
-    FairMQParts.h
-    FairMQPoller.h
-    FairMQSocket.h
-    FairMQTransportFactory.h
-    FairMQUnmanagedRegion.h
     FwdDecls.h
     JSONParser.h
     MemoryResourceTools.h
@@ -64,7 +55,6 @@ if(BUILD_FAIRMQ)
     TransportFactory.h
     Transports.h
     UnmanagedRegion.h
-    options/FairMQProgOptions.h
     runDevice.h
     runFairMQDevice.h
     shmem/Common.h
@@ -183,7 +173,6 @@ if(BUILD_FAIRMQ)
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-    $<INSTALL_INTERFACE:${PROJECT_INSTALL_INCDIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
 

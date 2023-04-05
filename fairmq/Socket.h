@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2021-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2021-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -102,8 +102,5 @@ struct SocketError : std::runtime_error
 };
 
 }   // namespace fair::mq
-
-using FairMQSocket [[deprecated("Use fair::mq::Socket")]] = fair::mq::Socket;
-using FairMQSocketPtr [[deprecated("Use fair::mq::SocketPtr")]] = fair::mq::SocketPtr;
 
 #endif   // FAIR_MQ_SOCKET_H
