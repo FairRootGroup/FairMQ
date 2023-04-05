@@ -426,22 +426,17 @@ class Device
     std::unordered_map<mq::Transport, std::shared_ptr<TransportFactory>>
         fTransports;   ///< Container for transports
 
-  public:
-    [[deprecated("Use GetChannels() instead.")]]
+  private:
     std::unordered_map<std::string, std::vector<Channel>> fChannels;   ///< Device channels
+
+  public:
     std::unordered_map<std::string, std::vector<Channel>>& GetChannels()
     {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         return fChannels;
-#pragma GCC diagnostic pop
     }
     std::unordered_map<std::string, std::vector<Channel>> const& GetChannels() const
     {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         return fChannels;
-#pragma GCC diagnostic pop
     }
 
     std::unique_ptr<ProgOptions> fInternalConfig;   ///< Internal program options configuration
