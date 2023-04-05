@@ -257,23 +257,6 @@ class Socket final : public fair::mq::Socket
 
     void* GetSocket() const { return fSocket; }
 
-    void Close() override
-    {
-        // LOG(debug) << "Closing socket " << fId;
-
-        if (fSocket && zmq_close(fSocket) != 0) {
-            LOG(error) << "Failed closing data socket " << fId
-                       << ", reason: " << zmq_strerror(errno);
-        }
-        fSocket = nullptr;
-
-        if (fMonitorSocket && zmq_close(fMonitorSocket) != 0) {
-            LOG(error) << "Failed closing monitor socket " << fId
-                       << ", reason: " << zmq_strerror(errno);
-        }
-        fMonitorSocket = nullptr;
-    }
-
     void SetOption(const std::string& option, const void* value, size_t valueSize) override
     {
         if (zmq_setsockopt(fSocket, getConstant(option), value, valueSize) < 0) {
@@ -390,7 +373,23 @@ class Socket final : public fair::mq::Socket
     unsigned long GetMessagesTx() const override { return fMessagesTx; }
     unsigned long GetMessagesRx() const override { return fMessagesRx; }
 
-    ~Socket() override { Close(); }
+    ~Socket() override
+    {
+        // LOG(debug) << "Closing socket " << fId;
+
+        if (fSocket && zmq_close(fSocket) != 0) {
+            LOG(error) << "Failed closing data socket " << fId
+                       << ", reason: " << zmq_strerror(errno);
+        }
+        fSocket = nullptr;
+
+        if (fMonitorSocket && zmq_close(fMonitorSocket) != 0) {
+            LOG(error) << "Failed closing monitor socket " << fId
+                       << ", reason: " << zmq_strerror(errno);
+        }
+        fMonitorSocket = nullptr;
+    }
+
 
   private:
     Context& fCtx;

@@ -57,9 +57,6 @@ struct Socket
     virtual int64_t Send(Parts& parts, int timeout = -1) { return Send(parts.fParts, timeout); }
     virtual int64_t Receive(Parts& parts, int timeout = -1) { return Receive(parts.fParts, timeout); }
 
-    [[deprecated("Use Socket::~Socket() instead.")]]
-    virtual void Close() = 0;
-
     virtual void SetOption(const std::string& option, const void* value, size_t valueSize) = 0;
     virtual void GetOption(const std::string& option, void* value, size_t* valueSize) = 0;
 
