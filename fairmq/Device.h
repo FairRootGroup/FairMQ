@@ -75,18 +75,6 @@ class Device
     /// Outputs the socket transfer rates
     virtual void LogSocketRates();
 
-    template<typename Serializer, typename DataType, typename... Args>
-    [[deprecated]] void Serialize(Message& msg, DataType&& data, Args&&... args) const
-    {
-        Serializer().Serialize(msg, std::forward<DataType>(data), std::forward<Args>(args)...);
-    }
-
-    template<typename Deserializer, typename DataType, typename... Args>
-    [[deprecated]] void Deserialize(Message& msg, DataType&& data, Args&&... args) const
-    {
-        Deserializer().Deserialize(msg, std::forward<DataType>(data), std::forward<Args>(args)...);
-    }
-
     /// Send `m` on `chan` at index `i`
     /// @param m reference to MessagePtr/Parts/vector<MessagePtr>
     /// @param chan channel name
