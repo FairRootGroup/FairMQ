@@ -77,9 +77,6 @@ Device::Device(ProgOptions& config, tools::Version version)
     : Device(&config, version)
 {}
 
-/// TODO: Remove this once Device::fChannels is no longer public
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 Device::Device(ProgOptions* config, tools::Version version)
     : fTransportFactory(nullptr)
     , fInternalConfig(config ? nullptr : make_unique<ProgOptions>())
@@ -140,7 +137,6 @@ Device::Device(ProgOptions* config, tools::Version version)
 
     fStateMachine.Start();
 }
-#pragma GCC diagnostic pop
 
 void Device::InitWrapper()
 {
@@ -749,15 +745,11 @@ void Device::ResetWrapper()
     }
 }
 
-/// TODO: Remove this once Device::fChannels is no longer public
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 Device::~Device()
 {
     UnsubscribeFromNewTransition("device");
     fStateMachine.StopHandlingStates();
     LOG(debug) << "Shutting down device " << fId;
 }
-#pragma GCC diagnostic pop
 
 } // namespace fair::mq
