@@ -92,6 +92,4 @@ struct Parts
 
 }   // namespace fair::mq
 
-using FairMQParts [[deprecated("Use fair::mq::Parts")]] = fair::mq::Parts;
-
 #endif /* FAIR_MQ_PARTS_H */

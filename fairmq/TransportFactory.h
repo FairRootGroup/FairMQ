@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2021-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2021-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -240,8 +240,5 @@ struct TransportFactoryError : std::runtime_error
 };
 
 }   // namespace fair::mq
-
-using FairMQTransportFactory [[deprecated("Use fair::mq::TransportFactory")]] = fair::mq::TransportFactory;
-using FairMQTransportFactoryError [[deprecated("Use fair::mq::TransportFactoryError")]] = fair::mq::TransportFactoryError;
 
 #endif   // FAIR_MQ_TRANSPORTFACTORY_H
