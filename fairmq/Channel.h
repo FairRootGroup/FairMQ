@@ -425,10 +425,10 @@ class Channel
                     msg.get()
                 ));
                 msg.release();
-                msg = move(msgWrapper);
+                msg = std::move(msgWrapper);
             } else {
                 MessagePtr newMsg(NewMessage());
-                msg = move(newMsg);
+                msg = std::move(newMsg);
             }
         }
     }
@@ -446,10 +446,10 @@ class Channel
                         msg.get()
                     ));
                     msg.release();
-                    msg = move(msgWrapper);
+                    msg = std::move(msgWrapper);
                 } else {
                     MessagePtr newMsg(NewMessage());
-                    msg = move(newMsg);
+                    msg = std::move(newMsg);
                 }
             }
         }
@@ -459,7 +459,7 @@ class Channel
     {
         if (fTransportType != msg->GetType()) {
             MessagePtr newMsg(NewMessage());
-            msg = move(newMsg);
+            msg = std::move(newMsg);
         }
     }
 
@@ -470,7 +470,7 @@ class Channel
             if (fTransportType != msg->GetType()) {
 
                 MessagePtr newMsg(NewMessage());
-                msg = move(newMsg);
+                msg = std::move(newMsg);
             }
         }
     }
