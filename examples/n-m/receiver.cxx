@@ -54,7 +54,7 @@ struct Receiver : fair::mq::Device
                 fBuffer[h.id].start = chrono::steady_clock::now();
             }
             // if the received ID has not previously been discarded, store the data part in the buffer
-            fBuffer[h.id].parts.AddPart(move(parts.At(1)));
+            fBuffer[h.id].parts.AddPart(std::move(parts.At(1)));
         } else {
             // if received ID has been previously discarded.
             LOG(debug) << "Received part from an already discarded timeframe with id " << h.id;
