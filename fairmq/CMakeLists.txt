@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2012-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2012-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -108,6 +108,7 @@ if(BUILD_FAIRMQ)
     zeromq/UnmanagedRegion.h
     zeromq/Socket.h
     zeromq/TransportFactory.h
+    zeromq/ZMsg.h
   )
 
   ##########################
