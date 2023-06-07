@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -11,12 +11,12 @@
 #include "Common.h"
 #include "Manager.h"
 #include "Message.h"
-#include <fairmq/Error.h>
+#include <fairmq/Error.h>              // for assertm
 #include <fairmq/Message.h>
 #include <fairmq/Socket.h>
 #include <fairmq/tools/Strings.h>
-#include <fairmq/zeromq/Common.h>
-#include <fairmq/zeromq/ZMsg.h>
+#include <fairmq/zeromq/Common.h>      // for zmq::HandleErrors, zmq::ShouldRetry
+#include <fairmq/zeromq/ZMsg.h>        // for zmq::ZMsg
 
 #include <fairlogger/Logger.h>
 
@@ -124,8 +124,12 @@ class Socket final : public fair::mq::Socket
         }
         int elapsed = 0;
 
+        // make meta msg
+        zmq::ZMsg zmqMsg(sizeof(MetaHeader));
+        std::memcpy(zmqMsg.Data(), &(shmMsg->fMeta), sizeof(MetaHeader));
+
         while (true) {
-            int nbytes = zmq_send(fSocket, &(shmMsg->fMeta), sizeof(MetaHeader), flags);
+            int nbytes = zmq_msg_send(zmqMsg.Msg(), fSocket, flags);
             if (nbytes > 0) {
                 shmMsg->fQueued = true;
                 ++fMessagesTx;
