@@ -16,6 +16,7 @@
 #include <fairmq/Socket.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/zeromq/Common.h>
+#include <fairmq/zeromq/ZMsg.h>
 
 #include <fairlogger/Logger.h>
 
@@ -30,24 +31,6 @@ namespace fair::mq {
 
 namespace fair::mq::shmem
 {
-
-struct ZMsg
-{
-    ZMsg() { int rc __attribute__((unused)) = zmq_msg_init(&fMsg); assert(rc == 0); }
-    explicit ZMsg(size_t size) { int rc __attribute__((unused)) = zmq_msg_init_size(&fMsg, size); assert(rc == 0); }
-    ~ZMsg() { int rc __attribute__((unused)) = zmq_msg_close(&fMsg); assert(rc == 0); }
-
-    ZMsg(const ZMsg&) = delete;
-    ZMsg(ZMsg&&) = delete;
-    ZMsg& operator=(const ZMsg&) = delete;
-    ZMsg& operator=(ZMsg&&) = delete;
-
-    void* Data() { return zmq_msg_data(&fMsg); }
-    size_t Size() { return zmq_msg_size(&fMsg); }
-    zmq_msg_t* Msg() { return &fMsg; }
-
-    zmq_msg_t fMsg;
-};
 
 class Socket final : public fair::mq::Socket
 {
@@ -213,7 +196,7 @@ class Socket final : public fair::mq::Socket
 
         // put it into zmq message
         const unsigned int vecSize = msgVec.size();
-        ZMsg zmqMsg(vecSize * sizeof(MetaHeader));
+        zmq::ZMsg zmqMsg(vecSize * sizeof(MetaHeader));
 
         // prepare the message with shm metas
         MetaHeader* metas = static_cast<MetaHeader*>(zmqMsg.Data());
@@ -269,7 +252,7 @@ class Socket final : public fair::mq::Socket
         }
         int elapsed = 0;
 
-        ZMsg zmqMsg;
+        zmq::ZMsg zmqMsg;
 
         while (true) {
             int64_t totalSize = 0;
