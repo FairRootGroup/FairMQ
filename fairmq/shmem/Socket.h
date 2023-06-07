@@ -22,8 +22,12 @@
 
 #include <zmq.h>
 
+#include <algorithm>         // for std::max
 #include <atomic>
-#include <memory> // make_unique
+#include <cstddef>           // for std::size_t
+#include <cstring>           // for std::memcpy
+#include <exception>         // for std::terminate
+#include <memory>            // for std::make_unique
 
 namespace fair::mq {
     class TransportFactory;
@@ -47,6 +51,7 @@ class Socket final : public fair::mq::Socket
         , fMessagesRx(0)
         , fTimeout(100)
         , fConnectedPeersCount(0)
+        , fMetadataMsgSize(manager.GetMetadataMsgSize())
     {
         assert(context);
 
@@ -124,8 +129,8 @@ class Socket final : public fair::mq::Socket
         }
         int elapsed = 0;
 
-        // make meta msg
-        zmq::ZMsg zmqMsg(sizeof(MetaHeader));
+        // meta msg format: | MetaHeader | padded to fMetadataMsgSize |
+        zmq::ZMsg zmqMsg(std::max(fMetadataMsgSize, sizeof(MetaHeader)));
         std::memcpy(zmqMsg.Data(), &(shmMsg->fMeta), sizeof(MetaHeader));
 
         while (true) {
@@ -165,11 +170,11 @@ class Socket final : public fair::mq::Socket
             int nbytes = zmq_recv(fSocket, &(shmMsg->fMeta), sizeof(MetaHeader), flags);
             if (nbytes > 0) {
                 // check for number of received messages. must be 1
-                if (nbytes != sizeof(MetaHeader)) {
+                if (static_cast<std::size_t>(nbytes) < sizeof(MetaHeader)) {
                     throw SocketError(
                         tools::ToString("Received message is not a valid FairMQ shared memory message. ",
                             "Possibly due to a misconfigured transport on the sender side. ",
-                            "Expected size of ", sizeof(MetaHeader), " bytes, received ", nbytes));
+                            "Expected minimum size of ", sizeof(MetaHeader), " bytes, received ", nbytes));
                 }
 
                 size_t size = shmMsg->GetSize();
@@ -198,13 +203,14 @@ class Socket final : public fair::mq::Socket
         }
         int elapsed = 0;
 
-        // put it into zmq message
-        const unsigned int vecSize = msgVec.size();
-        zmq::ZMsg zmqMsg(vecSize * sizeof(MetaHeader));
+        // meta msg format: | n | MetaHeader 1 | ... | MetaHeader n | padded to fMetadataMsgSize |
+        auto const n = msgVec.size();
+        zmq::ZMsg zmqMsg(std::max(fMetadataMsgSize, sizeof(std::size_t) + n * sizeof(MetaHeader)));
 
-        // prepare the message with shm metas
-        MetaHeader* metas = static_cast<MetaHeader*>(zmqMsg.Data());
-
+        auto meta_n = static_cast<std::size_t*>(zmqMsg.Data());
+        *meta_n = n;
+        ++meta_n;
+        auto metas = static_cast<MetaHeader*>(static_cast<void*>(meta_n));
         for (auto& msg : msgVec) {
             auto msgPtr = msg.get();
             if (!msgPtr) {
@@ -219,7 +225,7 @@ class Socket final : public fair::mq::Socket
             int64_t totalSize = 0;
             int nbytes = zmq_msg_send(zmqMsg.Msg(), fSocket, flags);
             if (nbytes > 0) {
-                assert(static_cast<unsigned int>(nbytes) == (vecSize * sizeof(MetaHeader))); // all or nothing
+                assert(static_cast<unsigned int>(nbytes) >= sizeof(std::size_t) + (n * sizeof(MetaHeader)));
 
                 for (auto& msg : msgVec) {
                     Message* shmMsg = static_cast<Message*>(msg.get());
@@ -259,26 +265,23 @@ class Socket final : public fair::mq::Socket
         zmq::ZMsg zmqMsg;
 
         while (true) {
-            int64_t totalSize = 0;
+            std::size_t totalSize = 0;
             int nbytes = zmq_msg_recv(zmqMsg.Msg(), fSocket, flags);
             if (nbytes > 0) {
-                MetaHeader* hdrVec = static_cast<MetaHeader*>(zmqMsg.Data());
-                const auto hdrVecSize = zmqMsg.Size();
+                [[maybe_unused]] auto const size = zmqMsg.Size();
+                assert(size > sizeof(std::size_t));
+                auto meta_n = static_cast<std::size_t*>(zmqMsg.Data());
+                auto const n = *meta_n;
+                assert(size >= sizeof(std::size_t) + n * sizeof(MetaHeader));
+                ++meta_n;
+                auto metas = static_cast<MetaHeader*>(static_cast<void*>(meta_n));
+                msgVec.reserve(msgVec.size() + n);
+                auto const transport = GetTransport();
 
-                assert(hdrVecSize > 0);
-                if (hdrVecSize % sizeof(MetaHeader) != 0) {
-                    throw SocketError(
-                        tools::ToString("Received message is not a valid FairMQ shared memory message. ",
-                            "Possibly due to a misconfigured transport on the sender side. ",
-                            "Expected size of ", sizeof(MetaHeader), " bytes, received ", nbytes));
-                }
-
-                const auto numMessages = hdrVecSize / sizeof(MetaHeader);
-                msgVec.reserve(numMessages);
-
-                for (size_t m = 0; m < numMessages; m++) {
-                    // create new message (part)
-                    msgVec.emplace_back(std::make_unique<Message>(fManager, hdrVec[m], GetTransport()));
+                for (std::size_t i = 0; i < n; ++i) {
+                    msgVec.push_back(std::make_unique<Message>(fManager, *metas, transport));
+                    ++metas;
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
                     Message* shmMsg = static_cast<Message*>(msgVec.back().get());
                     totalSize += shmMsg->GetSize();
                 }
@@ -456,6 +459,7 @@ class Socket final : public fair::mq::Socket
 
     int fTimeout;
     mutable unsigned long fConnectedPeersCount;
+    std::size_t fMetadataMsgSize;
 };
 
 } // namespace fair::mq::shmem
