@@ -11,6 +11,7 @@
 #include <fairmq/JSONParser.h>
 #include <fairmq/SuboptParser.h>
 
+#include <cstddef>  // for std::size_t
 #include <vector>
 
 using namespace std;
@@ -72,6 +73,7 @@ Plugin::ProgOptions ConfigPluginProgramOptions()
         ("shm-zero-segment",              po::value<bool          >()->default_value(false),             "Shared memory: zero the shared memory segment memory after initialization (opened or created).")
         ("shm-zero-segment-on-creation",  po::value<bool          >()->default_value(false),             "Shared memory: zero the shared memory segment memory only once when created.")
         ("shm-throw-bad-alloc",           po::value<bool          >()->default_value(true),              "Shared memory: throw fair::mq::MessageBadAlloc if cannot allocate a message (retry if false).")
+        ("shm-metadata-msg-size",         po::value<std::size_t   >()->default_value(0),                 "Shared memory: size of the zmq metadata message (values smaller than minimum are clamped to the minimum).")
         ("bad-alloc-max-attempts",        po::value<int           >(),                                   "Maximum number of allocation attempts before throwing fair::mq::MessageBadAlloc. -1 is infinite. There is always at least one attempt, so 0 has safe effect as 1.")
         ("bad-alloc-attempt-interval",    po::value<int           >()->default_value(50),                "Interval between attempts if cannot allocate a message (in ms).")
         ("shm-monitor",                   po::value<bool          >()->default_value(false),             "Shared memory: run monitor daemon.")

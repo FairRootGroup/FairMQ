@@ -29,7 +29,7 @@
 #include <algorithm> // max
 #include <chrono>
 #include <condition_variable>
-#include <cstddef> // max_align_t
+#include <cstddef> // max_align_t, std::size_t
 #include <cstdlib> // getenv
 #include <cstring> // memcpy
 #include <memory> // make_unique
@@ -151,6 +151,7 @@ class Manager
         , fBadAllocMaxAttempts(1)
         , fBadAllocAttemptIntervalInMs(config ? config->GetProperty<int>("bad-alloc-attempt-interval", 50) : 50)
         , fNoCleanup(config ? config->GetProperty<bool>("shm-no-cleanup", false) : false)
+        , fMetadataMsgSize(config ? config->GetProperty<std::size_t>("shm-metadata-msg-size", 0) : 0)
     {
         using namespace boost::interprocess;
 
@@ -828,6 +829,8 @@ class Manager
         }
     }
 
+    auto GetMetadataMsgSize() const noexcept { return fMetadataMsgSize; }
+
     ~Manager()
     {
         fRegionsGen += 1; // signal TL cache invalidation
@@ -884,6 +887,8 @@ class Manager
     int fBadAllocMaxAttempts;
     int fBadAllocAttemptIntervalInMs;
     bool fNoCleanup;
+
+    std::size_t fMetadataMsgSize;
 };
 
 } // namespace fair::mq::shmem
