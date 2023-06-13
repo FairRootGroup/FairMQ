@@ -45,16 +45,17 @@ Recommended:
 
 ```bash
 git clone https://github.com/FairRootGroup/FairMQ fairmq_source
-cmake -S fairmq_source -B fairmq_build -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=fairmq_install
+cmake -S fairmq_source -B fairmq_build -GNinja -DCMAKE_BUILD_TYPE=Release
 cmake --build fairmq_build
-cmake --build fairmq_build --target test
-cmake --build fairmq_build --target install
+ctest --test-dir fairmq_build --output-on-failure --schedule-random -j<ncpus>
+cmake --install fairmq_build --prefix $(pwd)/fairmq_install
 ```
 
 Please consult the [manpages of your CMake version](https://cmake.org/cmake/help/latest/manual/cmake.1.html) for more options.
 
 If dependencies are not installed in standard system directories, you can hint the installation location via
 `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...` (`*_ROOT` variables can also be environment variables).
+
 
 ## Usage
 
