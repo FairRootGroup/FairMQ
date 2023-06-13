@@ -28,10 +28,26 @@ class Pull : public Device
 
     auto Run() -> void override
     {
-        auto msg = NewMessage();
+        int counter = 0;
 
-        if (Receive(msg, "data") >= 0)
-        {
+        auto msg1 = NewMessageFor("data", 0);
+
+        if (Receive(msg1, "data") >= 0) {
+            ++counter;
+        }
+
+        auto msg2 = NewMessageFor("data", 0);
+
+        auto ret = Receive(msg2, "data");
+        if (ret >= 0) {
+            auto content = std::string{static_cast<char*>(msg2->GetData()), msg2->GetSize()};
+            LOG(info) << "Transferred " << static_cast<std::size_t>(ret) << " bytes, msg size: " << msg2->GetSize() << ", content: " << content;
+            if (msg2->GetSize() == static_cast<std::size_t>(ret) && content == "testdata1234") {
+                ++counter;
+            }
+        }
+
+        if (counter == 2) {
             LOG(info) << "PUSH-PULL test successfull";
         }
     };
