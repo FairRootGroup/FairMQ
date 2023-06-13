@@ -22,7 +22,7 @@ using namespace std;
 using namespace fair::mq::test;
 using namespace fair::mq::tools;
 
-auto RunPushPull(string transport) -> void
+auto RunPushPull(string transport, const string& extraDeviceCmdArgs) -> void
 {
     size_t session(fair::mq::tools::UuidHash());
     string ipcFile("/tmp/fmq_" + to_string(session) + "_data_" + transport);
@@ -38,6 +38,7 @@ auto RunPushPull(string transport) -> void
             << " --shm-segment-size 100000000"
             << " --session " << session
             << " --color false"
+            << extraDeviceCmdArgs
             << " --channel-config name=data,type=push,method=bind,address=" << address;
         push = execute(cmd.str(), "[PUSH]");
     });
@@ -52,6 +53,7 @@ auto RunPushPull(string transport) -> void
             << " --shm-segment-size 100000000"
             << " --session " << session
             << " --color false"
+            << extraDeviceCmdArgs
             << " --channel-config name=data,type=pull,method=connect,address=" << address;
         pull = execute(cmd.str(), "[PULL]");
     });
@@ -65,14 +67,19 @@ auto RunPushPull(string transport) -> void
     exit(push.exit_code + pull.exit_code);
 }
 
-TEST(PushPull, SingleMsg_MP_ipc_zeromq)
+TEST(PushPull, SingleMsg_MultiThreaded_ipc_zeromq)
 {
-    EXPECT_EXIT(RunPushPull("zeromq"), ::testing::ExitedWithCode(0), "PUSH-PULL test successfull");
+    EXPECT_EXIT(RunPushPull("zeromq", ""), ::testing::ExitedWithCode(0), "PUSH-PULL test successfull");
 }
 
-TEST(PushPull, SingleMsg_MP_ipc_shmem)
+TEST(PushPull, SingleMsg_MultiThreaded_ipc_shmem)
 {
-    EXPECT_EXIT(RunPushPull("shmem"), ::testing::ExitedWithCode(0), "PUSH-PULL test successfull");
+    EXPECT_EXIT(RunPushPull("shmem", ""), ::testing::ExitedWithCode(0), "PUSH-PULL test successfull");
+}
+
+TEST(PushPull, SingleMsg_MultiThreaded_ipc_shmem_expanded_metadata)
+{
+    EXPECT_EXIT(RunPushPull("shmem", " --shm-metadata-msg-size 2048"), ::testing::ExitedWithCode(0), "PUSH-PULL test successfull");
 }
 
 } // namespace

@@ -25,12 +25,15 @@ namespace
 using namespace std;
 using namespace fair::mq;
 
-auto RunSingleThreadedMultipart(string transport, string address1, string address2) -> void {
+auto RunSingleThreadedMultipart(string transport, string address1, string address2, bool expandedShmMetadata) -> void {
 
     fair::mq::ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
     config.SetProperty<size_t>("shm-segment-size", 100000000);
     config.SetProperty<bool>("shm-monitor", true);
+    if (expandedShmMetadata) {
+        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
+    }
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
@@ -104,13 +107,16 @@ auto RunSingleThreadedMultipart(string transport, string address1, string addres
     }
 }
 
-auto RunMultiThreadedMultipart(string transport, string address1) -> void
+auto RunMultiThreadedMultipart(string transport, string address1, bool expandedShmMetadata) -> void
 {
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
     config.SetProperty<int>("io-threads", 1);
     config.SetProperty<size_t>("shm-segment-size", 20000000); // NOLINT
     config.SetProperty<bool>("shm-monitor", true);
+    if (expandedShmMetadata) {
+        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
+    }
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
@@ -147,44 +153,64 @@ auto RunMultiThreadedMultipart(string transport, string address1) -> void
     puller.join();
 }
 
-TEST(PushPull, Multipart_ST_inproc_zeromq) // NOLINT
+TEST(PushPull, Multipart_SingleThreaded_inproc_zeromq) // NOLINT
 {
-    RunSingleThreadedMultipart("zeromq", "inproc://test1", "inproc://test2");
+    RunSingleThreadedMultipart("zeromq", "inproc://test1", "inproc://test2", false);
 }
 
-TEST(PushPull, Multipart_ST_inproc_shmem) // NOLINT
+TEST(PushPull, Multipart_SingleThreaded_inproc_shmem) // NOLINT
 {
-    RunSingleThreadedMultipart("shmem", "inproc://test1", "inproc://test2");
+    RunSingleThreadedMultipart("shmem", "inproc://test1", "inproc://test2", false);
 }
 
-TEST(PushPull, Multipart_ST_ipc_zeromq) // NOLINT
+TEST(PushPull, Multipart_SingleThreaded_inproc_shmem_expanded_metadata) // NOLINT
 {
-    RunSingleThreadedMultipart("zeromq", "ipc://test_Multipart_ST_ipc_zeromq_1", "ipc://test_Multipart_ST_ipc_zeromq_2");
+    RunSingleThreadedMultipart("shmem", "inproc://test1", "inproc://test2", true);
 }
 
-TEST(PushPull, Multipart_ST_ipc_shmem) // NOLINT
+TEST(PushPull, Multipart_SingleThreaded_ipc_zeromq) // NOLINT
 {
-    RunSingleThreadedMultipart("shmem", "ipc://test_Multipart_ST_ipc_shmem_1", "ipc://test_Multipart_ST_ipc_shmem_2");
+    RunSingleThreadedMultipart("zeromq", "ipc://test_Multipart_SingleThreaded_ipc_zeromq_1", "ipc://test_Multipart_SingleThreaded_ipc_zeromq_2", false);
 }
 
-TEST(PushPull, Multipart_MT_inproc_zeromq) // NOLINT
+TEST(PushPull, Multipart_SingleThreaded_ipc_shmem) // NOLINT
 {
-    RunMultiThreadedMultipart("zeromq", "inproc://test_1");
+    RunSingleThreadedMultipart("shmem", "ipc://test_Multipart_SingleThreaded_ipc_shmem_1", "ipc://test_Multipart_SingleThreaded_ipc_shmem_2", false);
 }
 
-TEST(PushPull, Multipart_MT_inproc_shmem) // NOLINT
+TEST(PushPull, Multipart_SingleThreaded_ipc_shmem_expanded_metadata) // NOLINT
 {
-    RunMultiThreadedMultipart("shmem", "inproc://test_1");
+    RunSingleThreadedMultipart("shmem", "ipc://test_Multipart_SingleThreaded_ipc_shmem_1", "ipc://test_Multipart_SingleThreaded_ipc_shmem_2", true);
 }
 
-TEST(PushPull, Multipart_MT_ipc_zeromq) // NOLINT
+TEST(PushPull, Multipart_MultiThreaded_inproc_zeromq) // NOLINT
 {
-    RunMultiThreadedMultipart("zeromq", "ipc://test_Multipart_MT_ipc_zeromq_1");
+    RunMultiThreadedMultipart("zeromq", "inproc://test_1", false);
 }
 
-TEST(PushPull, Multipart_MT_ipc_shmem) // NOLINT
+TEST(PushPull, Multipart_MultiThreaded_inproc_shmem) // NOLINT
 {
-    RunMultiThreadedMultipart("shmem", "ipc://test_Multipart_MT_ipc_shmem_1");
+    RunMultiThreadedMultipart("shmem", "inproc://test_1", false);
+}
+
+TEST(PushPull, Multipart_MultiThreaded_inproc_shmem_expanded_metadata) // NOLINT
+{
+    RunMultiThreadedMultipart("shmem", "inproc://test_1", true);
+}
+
+TEST(PushPull, Multipart_MultiThreaded_ipc_zeromq) // NOLINT
+{
+    RunMultiThreadedMultipart("zeromq", "ipc://test_Multipart_MultiThreaded_ipc_zeromq_1", false);
+}
+
+TEST(PushPull, Multipart_MultiThreaded_ipc_shmem) // NOLINT
+{
+    RunMultiThreadedMultipart("shmem", "ipc://test_Multipart_MultiThreaded_ipc_shmem_1", false);
+}
+
+TEST(PushPull, Multipart_MultiThreaded_ipc_shmem_expanded_metadata) // NOLINT
+{
+    RunMultiThreadedMultipart("shmem", "ipc://test_Multipart_MultiThreaded_ipc_shmem_1", true);
 }
 
 } // namespace

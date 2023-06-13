@@ -22,7 +22,7 @@ using namespace std;
 using namespace fair::mq::test;
 using namespace fair::mq::tools;
 
-auto RunPair(string transport) -> void
+auto RunPair(const string& transport, const string& extraDeviceCmdArgs) -> void
 {
     size_t session{fair::mq::tools::UuidHash()};
     string ipcFile("/tmp/fmq_" + to_string(session) + "_data_" + transport);
@@ -38,6 +38,7 @@ auto RunPair(string transport) -> void
             << " --shm-segment-size 100000000"
             << " --session " << session
             << " --color false"
+            << extraDeviceCmdArgs
             << " --channel-config name=data,type=pair,method=bind,address=" << address;
         pairleft = execute(cmd.str(), "[PAIR L]");
     });
@@ -52,6 +53,7 @@ auto RunPair(string transport) -> void
             << " --shm-segment-size 100000000"
             << " --session " << session
             << " --color false"
+            << extraDeviceCmdArgs
             << " --channel-config name=data,type=pair,method=connect,address=" << address;
         pairright = execute(cmd.str(), "[PAIR R]");
     });
@@ -65,14 +67,19 @@ auto RunPair(string transport) -> void
     exit(pairleft.exit_code + pairright.exit_code);
 }
 
-TEST(Pair, SingleMsg_MP_tcp_zeromq)
+TEST(Pair, SingleMsg_MultiThreaded_tcp_zeromq)
 {
-    EXPECT_EXIT(RunPair("zeromq"), ::testing::ExitedWithCode(0), "PAIR test successfull");
+    EXPECT_EXIT(RunPair("zeromq", ""), ::testing::ExitedWithCode(0), "PAIR test successfull");
 }
 
-TEST(Pair, SingleMsg_MP_tcp_shmem)
+TEST(Pair, SingleMsg_MultiThreaded_tcp_shmem)
 {
-    EXPECT_EXIT(RunPair("shmem"), ::testing::ExitedWithCode(0), "PAIR test successfull");
+    EXPECT_EXIT(RunPair("shmem", ""), ::testing::ExitedWithCode(0), "PAIR test successfull");
+}
+
+TEST(Pair, SingleMsg_MultiThreaded_tcp_shmem_expanded_metadata)
+{
+    EXPECT_EXIT(RunPair("shmem", " --shm-metadata-msg-size 2048"), ::testing::ExitedWithCode(0), "PAIR test successfull");
 }
 
 } // namespace
