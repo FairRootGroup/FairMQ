@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2015-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2015-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -26,12 +26,17 @@ class Req : public Device
 
     auto Run() -> void override
     {
-        auto request = NewMessage();
+        auto request = NewSimpleMessageFor("data", 0, "request");
         Send(request, "data");
 
         auto reply = NewMessage();
         if (Receive(reply, "data") >= 0) {
             LOG(info) << "received reply";
+            auto content = std::string{static_cast<char*>(reply->GetData()), reply->GetSize()};
+            LOG(info) << "Transferred reply of size: " << reply->GetSize() << ", content: " << content;
+            if (content != "reply") {
+                ChangeStateOrThrow(Transition::ErrorFound);
+            }
         }
     };
 };

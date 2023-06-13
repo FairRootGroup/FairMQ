@@ -25,8 +25,12 @@ class Push : public Device
 
     auto Run() -> void override
     {
-        auto msg = NewMessage();
-        Send(msg, "data");
+        // empty message
+        auto msg1 = NewMessageFor("data", 0);
+        Send(msg1, "data");
+        // message with short text data
+        auto msg2(NewSimpleMessageFor("data", 0, "testdata1234"));
+        Send(msg2, "data");
     };
 };
 
