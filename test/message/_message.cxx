@@ -37,12 +37,15 @@ auto AsStringView(Message const& msg) -> string_view
     return {static_cast<char const*>(msg.GetData()), msg.GetSize()};
 }
 
-auto RunPushPullWithMsgResize(string const & transport, string const & _address) -> void
+auto RunPushPullWithMsgResize(string const & transport, string const & _address, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
     config.SetProperty<size_t>("shm-segment-size", 100000000);
     config.SetProperty<bool>("shm-monitor", true);
+    if (expandedShmMetadata) {
+        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
+    }
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     Channel push{"Push", "push", factory};
@@ -100,12 +103,15 @@ auto RunPushPullWithMsgResize(string const & transport, string const & _address)
     }
 }
 
-auto RunMsgRebuild(const string& transport) -> void
+auto RunMsgRebuild(const string& transport, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
     config.SetProperty<size_t>("shm-segment-size", 100000000);
     config.SetProperty<bool>("shm-monitor", true);
+    if (expandedShmMetadata) {
+        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
+    }
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     size_t const msgSize{100};
@@ -134,12 +140,15 @@ auto CheckMsgAlignment(Message const& msg, fair::mq::Alignment alignment) -> boo
     return (reinterpret_cast<uintptr_t>(msg.GetData()) % static_cast<size_t>(alignment)) == 0; // NOLINT
 }
 
-auto RunPushPullWithAlignment(string const& transport, string const& _address) -> void
+auto RunPushPullWithAlignment(string const& transport, string const& _address, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
     config.SetProperty<size_t>("shm-segment-size", 100000000);
     config.SetProperty<bool>("shm-monitor", true);
+    if (expandedShmMetadata) {
+        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
+    }
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     Channel push{"Push", "push", factory};
@@ -189,12 +198,15 @@ auto RunPushPullWithAlignment(string const& transport, string const& _address) -
     ASSERT_TRUE(CheckMsgAlignment(*msgCopy, align32));
 }
 
-auto EmptyMessage(string const& transport, string const& _address) -> void
+auto EmptyMessage(string const& transport, string const& _address, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
     config.SetProperty<size_t>("shm-segment-size", 100000000);
     config.SetProperty<bool>("shm-monitor", true);
+    if (expandedShmMetadata) {
+        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
+    }
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     Channel push{"Push", "push", factory};
@@ -241,12 +253,15 @@ auto EmptyMessage(string const& transport, string const& _address) -> void
 
 // The "zero copy" property of the Copy() method is an implementation detail and is not guaranteed.
 // Currently it holds true for the shmem (across devices) and for zeromq (within same device) transports.
-auto ZeroCopy() -> void
+auto ZeroCopy(bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
     config.SetProperty<size_t>("shm-segment-size", 100000000);
     config.SetProperty<bool>("shm-monitor", true);
+    if (expandedShmMetadata) {
+        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
+    }
     auto factory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config));
 
     unique_ptr<string> str(make_unique<string>("asdf"));
@@ -272,7 +287,7 @@ auto ZeroCopy() -> void
 
 // The "zero copy" property of the Copy() method is an implementation detail and is not guaranteed.
 // Currently it holds true for the shmem (across devices) and for zeromq (within same device) transports.
-auto ZeroCopyFromUnmanaged(string const& address) -> void
+auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config1;
     ProgOptions config2;
@@ -285,6 +300,12 @@ auto ZeroCopyFromUnmanaged(string const& address) -> void
     config2.SetProperty<bool>("shm-monitor", true);
     // ref counts should be accessible accross different segments
     config2.SetProperty<uint16_t>("shm-segment-id", 2);
+    if (expandedShmMetadata) {
+        config1.SetProperty<size_t>("shm-metadata-msg-size", 2048);
+    }
+    if (expandedShmMetadata) {
+        config2.SetProperty<size_t>("shm-metadata-msg-size", 2048);
+    }
     auto factory1(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config1));
     auto factory2(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config2));
 
@@ -378,6 +399,11 @@ TEST(Resize, shmem) // NOLINT
     RunPushPullWithMsgResize("shmem", "ipc://test_message_resize");
 }
 
+TEST(Resize, shmem_expanded_metadata) // NOLINT
+{
+    RunPushPullWithMsgResize("shmem", "ipc://test_message_resize", true);
+}
+
 TEST(Rebuild, zeromq) // NOLINT
 {
     RunMsgRebuild("zeromq");
@@ -388,9 +414,19 @@ TEST(Rebuild, shmem) // NOLINT
     RunMsgRebuild("shmem");
 }
 
+TEST(Rebuild, shmem_expanded_metadata) // NOLINT
+{
+    RunMsgRebuild("shmem", true);
+}
+
 TEST(Alignment, shmem) // NOLINT
 {
     RunPushPullWithAlignment("shmem", "ipc://test_message_alignment");
+}
+
+TEST(Alignment, shmem_expanded_metadata) // NOLINT
+{
+    RunPushPullWithAlignment("shmem", "ipc://test_message_alignment", true);
 }
 
 TEST(Alignment, zeromq) // NOLINT
@@ -408,14 +444,29 @@ TEST(EmptyMessage, shmem) // NOLINT
     EmptyMessage("shmem", "ipc://test_empty_message");
 }
 
+TEST(EmptyMessage, shmem_expanded_metadata) // NOLINT
+{
+    EmptyMessage("shmem", "ipc://test_empty_message", true);
+}
+
 TEST(ZeroCopy, shmem) // NOLINT
 {
     ZeroCopy();
 }
 
+TEST(ZeroCopy, shmem_expanded_metadata) // NOLINT
+{
+    ZeroCopy(true);
+}
+
 TEST(ZeroCopyFromUnmanaged, shmem) // NOLINT
 {
     ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged");
+}
+
+TEST(ZeroCopyFromUnmanaged, shmem_expanded_metadata) // NOLINT
+{
+    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged", true);
 }
 
 } // namespace

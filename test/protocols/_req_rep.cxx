@@ -22,7 +22,7 @@ using namespace std;
 using namespace fair::mq::test;
 using namespace fair::mq::tools;
 
-auto RunReqRep(string transport) -> void
+auto RunReqRep(string transport, const string& extraDeviceCmdArgs) -> void
 {
     size_t session{fair::mq::tools::UuidHash()};
     string ipcFile("/tmp/fmq_" + to_string(session) + "_data_" + transport);
@@ -38,6 +38,7 @@ auto RunReqRep(string transport) -> void
             << " --shm-segment-size 100000000"
             << " --session " << session
             << " --color false"
+            << extraDeviceCmdArgs
             << " --channel-config name=data,type=rep,method=bind,address=" << address;
         rep = execute(cmd.str(), "[REP]");
     });
@@ -52,6 +53,7 @@ auto RunReqRep(string transport) -> void
             << " --shm-segment-size 100000000"
             << " --session " << session
             << " --color false"
+            << extraDeviceCmdArgs
             << " --channel-config name=data,type=req,method=connect,address=" << address;
         req1 = execute(cmd.str(), "[REQ1]");
     });
@@ -66,6 +68,7 @@ auto RunReqRep(string transport) -> void
             << " --shm-segment-size 100000000"
             << " --session " << session
             << " --color false"
+            << extraDeviceCmdArgs
             << " --channel-config name=data,type=req,method=connect,address=" << address;
         req2 = execute(cmd.str(), "[REQ2]");
     });
@@ -82,12 +85,17 @@ auto RunReqRep(string transport) -> void
 
 TEST(ReqRep, zeromq)
 {
-    EXPECT_EXIT(RunReqRep("zeromq"), ::testing::ExitedWithCode(0), "REQ-REP test successfull");
+    EXPECT_EXIT(RunReqRep("zeromq", ""), ::testing::ExitedWithCode(0), "REQ-REP test successfull");
 }
 
 TEST(ReqRep, shmem)
 {
-    EXPECT_EXIT(RunReqRep("shmem"), ::testing::ExitedWithCode(0), "REQ-REP test successfull");
+    EXPECT_EXIT(RunReqRep("shmem", ""), ::testing::ExitedWithCode(0), "REQ-REP test successfull");
+}
+
+TEST(ReqRep, shmem_expanded_metadata)
+{
+    EXPECT_EXIT(RunReqRep("shmem", " --shm-metadata-msg-size 2048"), ::testing::ExitedWithCode(0), "REQ-REP test successfull");
 }
 
 } // namespace
