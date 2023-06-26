@@ -379,7 +379,11 @@ class Channel
     static constexpr int DefaultRateLogging = 1;
     static constexpr int DefaultPortRangeMin = 22000;
     static constexpr int DefaultPortRangeMax = 23000;
+#ifdef FAIRMQ_CHANNEL_DEFAULT_AUTOBIND
+    static constexpr bool DefaultAutoBind = FAIRMQ_CHANNEL_DEFAULT_AUTOBIND;
+#else
     static constexpr bool DefaultAutoBind = true;
+#endif
 
     friend std::ostream& operator<<(std::ostream& os, const Channel& ch)
     {

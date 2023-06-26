@@ -98,6 +98,7 @@ On command line:
   * `-DBUILD_TESTING=OFF` disables building of tests.
   * `-DBUILD_EXAMPLES=OFF` disables building of examples.
   * `-DBUILD_DOCS=ON` enables building of API docs.
+  * `-DFAIRMQ_CHANNEL_DEFAULT_AUTOBIND=OFF` disable channel `autoBind` by default
   * You can hint non-system installations for dependent packages, see the #installation-from-source section above
 
 After the `find_package(FairMQ)` call the following CMake variables are defined:

@@ -174,6 +174,15 @@ if(BUILD_FAIRMQ)
     FAIRMQ_HAS_STD_FILESYSTEM=${FAIRMQ_HAS_STD_FILESYSTEM}
     FAIRMQ_HAS_STD_PMR=${FAIRMQ_HAS_STD_PMR}
   )
+  if(DEFINED FAIRMQ_CHANNEL_DEFAULT_AUTOBIND)
+    # translate CMake boolean (TRUE, FALSE, 0, 1, OFF, ON) into C++ boolean literal (true, false)
+    if(FAIRMQ_CHANNEL_DEFAULT_AUTOBIND)
+      set(value "true")
+    else()
+      set(value "false")
+    endif()
+    target_compile_definitions(${target} PUBLIC FAIRMQ_CHANNEL_DEFAULT_AUTOBIND=${value})
+  endif()
 
 
   #######################
