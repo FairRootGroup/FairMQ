@@ -288,7 +288,7 @@ void Device::AttachChannels(vector<Channel*>& chans)
                 // remove the channel from the uninitialized container
                 itr = chans.erase(itr);
             } else {
-                LOG(error) << "failed to attach channel " << (*itr)->fName << " (" << (*itr)->fMethod << ")";
+                LOG(error) << "failed to attach channel " << (*itr)->fName << " (" << (*itr)->fMethod << " on " << (*itr)->fAddress << ")";
                 ++itr;
             }
         } else {
