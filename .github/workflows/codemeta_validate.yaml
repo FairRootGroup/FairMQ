@@ -1,0 +1,21 @@
+name: validate codemeta
+
+on:
+  push:
+    paths:
+    - codemeta.json
+    - .github/workflows/codemeta_validate.yaml
+  pull_request:
+    paths:
+    - codemeta.json
+    - .github/workflows/codemeta_validate.yaml
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: gitlab-registry.in2p3.fr/escape2020/wp3/eossr:v1.0
+    steps:
+      - uses: actions/checkout@v3
+      - name: validate codemeta
+        run: eossr-metadata-validator codemeta.json
