@@ -9,6 +9,13 @@
   "codeRepository": "https://github.com/FairRootGroup/FairMQ/",
   "issueTracker": "https://github.com/FairRootGroup/FairMQ/issues",
   "identifier": "https://doi.org/10.5281/zenodo.1689985",
+  "maintainer": [
+    {
+      "@type": "ResearchOrganisation",
+      "@id": "https://ror.org/02k8cbn47",
+      "name": "GSI Helmholtz Centre for Heavy Ion Research"
+    }
+  ],
   "author": [
     {
       "@type": "Person",
