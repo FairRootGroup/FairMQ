@@ -310,7 +310,9 @@ try {
 
 void StateMachine::SubscribeToStateChange(const string& key, function<void(const State)> callback)
 {
-    static_pointer_cast<FairMQFSM>(fFsm)->fStateChangeSignalsMap.insert({key, static_pointer_cast<FairMQFSM>(fFsm)->fStateChangeSignal.connect(callback)});
+    // Check if the key has a integer value as prefix, if yes, decode it.
+    int i = strtol(key.c_str(), nullptr, 10);
+    static_pointer_cast<FairMQFSM>(fFsm)->fStateChangeSignalsMap.insert({key, static_pointer_cast<FairMQFSM>(fFsm)->fStateChangeSignal.connect(i, callback)});
 }
 
 void StateMachine::UnsubscribeFromStateChange(const string& key)
