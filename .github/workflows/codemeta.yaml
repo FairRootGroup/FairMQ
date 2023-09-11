@@ -1,0 +1,46 @@
+name: codemeta
+
+on:
+  push:
+    paths:
+      - codemeta.json
+      - .github/workflows/codemeta.yaml
+    tags:
+      - 'v*'
+  pull_request:
+    paths:
+      - codemeta.json
+      - .github/workflows/codemeta.yaml
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/fairrootgroup/fairmq-dev/fedora-38:latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 150
+          fetch-tags: true
+      - run: "git config --system --add safe.directory $GITHUB_WORKSPACE"
+      - name: configure
+        run: "cmake -G Ninja -S $GITHUB_WORKSPACE -B build"
+      - name: generate codemeta.json
+        run: cmake --build build --target codemeta
+      - name: print result
+        run: cat build/codemeta.json
+      - uses: actions/upload-artifact@v3
+        with:
+          name: codemeta.json
+          path: build/codemeta.json
+  validate:
+    needs: generate
+    runs-on: ubuntu-latest
+    container:
+      image: gitlab-registry.in2p3.fr/escape2020/wp3/eossr:v1.0
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: codemeta.json
+      - name: validate codemeta
+        run: eossr-metadata-validator codemeta.json
