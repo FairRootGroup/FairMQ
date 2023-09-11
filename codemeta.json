@@ -6,6 +6,7 @@
   "license": "./COPYRIGHT",
   "datePublished": "2018-04-15",
   "developmentStatus": "active",
+  "softwareVersion": "master",
   "codeRepository": "https://github.com/FairRootGroup/FairMQ/",
   "readme": "https://github.com/FairRootGroup/FairMQ/#readme",
   "issueTracker": "https://github.com/FairRootGroup/FairMQ/issues",
