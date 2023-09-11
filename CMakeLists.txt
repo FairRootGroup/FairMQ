@@ -72,6 +72,11 @@ endif()
 if(BUILD_TIDY_TOOL)
   add_subdirectory(fairmq/tidy)
 endif()
+
+add_custom_target(codemeta
+  python3 ${CMAKE_SOURCE_DIR}/meta_update.py --outdir ${CMAKE_BINARY_DIR} --set-version ${PROJECT_VERSION}
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  VERBATIM USES_TERMINAL)
 ################################################################################
 
 
