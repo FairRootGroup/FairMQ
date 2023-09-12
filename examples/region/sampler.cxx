@@ -8,6 +8,7 @@
 
 #include <fairmq/Device.h>
 #include <fairmq/runDevice.h>
+#include <fairmq/tools/RateLimit.h>
 
 #include <cstdint>
 #include <mutex>
@@ -23,8 +24,10 @@ struct Sampler : fair::mq::Device
         fMsgSize = fConfig->GetProperty<int>("msg-size");
         fLinger = fConfig->GetProperty<uint32_t>("region-linger");
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
+        fChanName = fConfig->GetProperty<std::string>("chan-name");
+        fSamplingRate = fConfig->GetProperty<float>("sampling-rate");
 
-        GetChannel("data", 0).Transport()->SubscribeToRegionEvents([](fair::mq::RegionInfo info) {
+        GetChannel(fChanName, 0).Transport()->SubscribeToRegionEvents([](fair::mq::RegionInfo info) {
             LOG(info) << "Region event: " << info.event << ": "
                     << (info.managed ? "managed" : "unmanaged")
                     << ", id: " << info.id
@@ -43,7 +46,7 @@ struct Sampler : fair::mq::Device
         regionCfg.lock = !fExternalRegion; // mlock region after creation
         regionCfg.zero = !fExternalRegion; // zero region content after creation
         fRegion = fair::mq::UnmanagedRegionPtr(NewUnmanagedRegionFor(
-            "data", // region is created using the transport of this channel...
+            fChanName, // region is created using the transport of this channel...
             0,      // ... and this sub-channel
             10000000, // region size
             [this](const std::vector<fair::mq::RegionBlock>& blocks) { // callback to be called when message buffers no longer needed by transport
@@ -59,8 +62,11 @@ struct Sampler : fair::mq::Device
 
     void Run() override
     {
+
+        fair::mq::tools::RateLimiter rateLimiter(fSamplingRate);
+
         while (!NewStatePending()) {
-            fair::mq::MessagePtr msg(NewMessageFor("data", // channel
+            fair::mq::MessagePtr msg(NewMessageFor(fChanName, // channel
                                                 0, // sub-channel
                                                 fRegion, // region
                                                 fRegion->GetData(), // ptr within region
@@ -70,10 +76,13 @@ struct Sampler : fair::mq::Device
 
             std::lock_guard<std::mutex> lock(fMtx);
             ++fNumUnackedMsgs;
-            if (Send(msg, "data", 0) > 0) {
+            if (Send(msg, fChanName, 0) > 0) {
                 if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
                     LOG(info) << "Configured maximum number of iterations reached. Stopping sending.";
                     break;
+                }
+                if (fSamplingRate > 0.001) {
+                    rateLimiter.maybe_sleep();
                 }
             }
         }
@@ -99,7 +108,7 @@ struct Sampler : fair::mq::Device
     void ResetTask() override
     {
         fRegion.reset();
-        GetChannel("data", 0).Transport()->UnsubscribeFromRegionEvents();
+        GetChannel(fChanName, 0).Transport()->UnsubscribeFromRegionEvents();
     }
 
   private:
@@ -111,12 +120,16 @@ struct Sampler : fair::mq::Device
     fair::mq::UnmanagedRegionPtr fRegion = nullptr;
     std::mutex fMtx;
     uint64_t fNumUnackedMsgs = 0;
+    std::string fChanName;
+    float fSamplingRate = 0.;
 };
 
 void addCustomOptions(bpo::options_description& options)
 {
     options.add_options()
+        ("chan-name", bpo::value<std::string>()->default_value("data"), "name of the output channel")
         ("msg-size", bpo::value<int>()->default_value(1000), "Message size in bytes")
+        ("sampling-rate", bpo::value<float>()->default_value(0.), "Sampling rate (Hz).")
         ("region-linger", bpo::value<uint32_t>()->default_value(100), "Linger period for regions")
         ("max-iterations", bpo::value<uint64_t>()->default_value(0), "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)")
         ("external-region", bpo::value<bool>()->default_value(false), "Use region created by another process");
