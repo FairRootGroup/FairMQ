@@ -16,14 +16,12 @@ using namespace fair::mq;
 
 namespace {
 
-struct Sink : Device
+struct Processor : Device
 {
     void InitTask() override
     {
-        // Get the fMaxIterations value from the command line options (via fConfig)
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
-        fChanName = fConfig->GetProperty<std::string>("chan-name");
-        GetChannel(fChanName, 0).Transport()->SubscribeToRegionEvents([](RegionInfo info) {
+        GetChannel("data1", 0).Transport()->SubscribeToRegionEvents([](RegionInfo info) {
             LOG(info) << "Region event: " << info.event << ": "
                       << (info.managed ? "managed" : "unmanaged") << ", id: " << info.id
                       << ", ptr: " << info.ptr << ", size: " << info.size
@@ -33,15 +31,21 @@ struct Sink : Device
 
     void Run() override
     {
-        Channel& dataIn = GetChannel(fChanName, 0);
+        Channel& dataIn = GetChannel("data1", 0);
+        Channel& dataOut1 = GetChannel("data2", 0);
+        Channel& dataOut2 = GetChannel("data3", 0);
 
         while (!NewStatePending()) {
             auto msg(dataIn.Transport()->CreateMessage());
             dataIn.Receive(msg);
 
-            // void* ptr = msg->GetData();
-            // char* cptr = static_cast<char*>(ptr);
-            // LOG(info) << "check: " << cptr[3];
+            fair::mq::MessagePtr msgCopy1(NewMessage());
+            msgCopy1->Copy(*msg);
+            fair::mq::MessagePtr msgCopy2(NewMessage());
+            msgCopy2->Copy(*msg);
+
+            dataOut1.Send(msgCopy1);
+            dataOut2.Send(msgCopy2);
 
             if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
                 LOG(info) << "Configured max number of iterations reached. Leaving RUNNING state.";
@@ -52,22 +56,19 @@ struct Sink : Device
 
     void ResetTask() override
     {
-        GetChannel(fChanName, 0).Transport()->UnsubscribeFromRegionEvents();
+        GetChannel("data1", 0).Transport()->UnsubscribeFromRegionEvents();
     }
 
   private:
     uint64_t fMaxIterations = 0;
     uint64_t fNumIterations = 0;
-    std::string fChanName;
 };
 
 }   // namespace
 
 void addCustomOptions(bpo::options_description& options)
 {
-    options.add_options()
-        ("chan-name", bpo::value<std::string>()->default_value("data"), "name of the input channel")
-        ("max-iterations", bpo::value<uint64_t>()->default_value(0), "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
+    options.add_options()("max-iterations", bpo::value<uint64_t>()->default_value(0), "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
 }
 
-unique_ptr<Device> getDevice(ProgOptions& /*config*/) { return make_unique<Sink>(); }
+unique_ptr<Device> getDevice(ProgOptions& /*config*/) { return make_unique<Processor>(); }

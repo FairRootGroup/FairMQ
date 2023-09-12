@@ -7,5 +7,6 @@
 ################################################################################
 
 add_example(NAME region
-  DEVICE sampler sink keep-alive
+  DEVICE sampler processor sink keep-alive
+  SCRIPT region region-advanced
 )
