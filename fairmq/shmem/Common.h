@@ -21,7 +21,7 @@
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/mem_algo/simple_seq_fit.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/variant.hpp>
+#include <variant>
 
 #include <sys/types.h>
 
@@ -292,73 +292,7 @@ std::string makeShmIdStr(const std::string& sessionId);
 std::string makeShmIdStr(uint64_t val);
 uint64_t makeShmIdUint64(const std::string& sessionId);
 
-
-struct SegmentSize : public boost::static_visitor<size_t>
-{
-    template<typename S>
-    size_t operator()(S& s) const { return s.get_size(); }
-};
-
-struct SegmentAddress : public boost::static_visitor<void*>
-{
-    template<typename S>
-    void* operator()(S& s) const { return s.get_address(); }
-};
-
-struct SegmentMemoryZeroer : public boost::static_visitor<>
-{
-    template<typename S>
-    void operator()(S& s) const { s.zero_free_memory(); }
-};
-
-struct SegmentFreeMemory : public boost::static_visitor<size_t>
-{
-    template<typename S>
-    size_t operator()(S& s) const { return s.get_free_memory(); }
-};
-
-struct SegmentHandleFromAddress : public boost::static_visitor<boost::interprocess::managed_shared_memory::handle_t>
-{
-    SegmentHandleFromAddress(const void* _ptr) : ptr(_ptr) {}
-
-    template<typename S>
-    boost::interprocess::managed_shared_memory::handle_t operator()(S& s) const { return s.get_handle_from_address(ptr); }
-
-    const void* ptr;
-};
-
-struct SegmentAddressFromHandle : public boost::static_visitor<char*>
-{
-    SegmentAddressFromHandle(const boost::interprocess::managed_shared_memory::handle_t _handle) : handle(_handle) {}
-
-    template<typename S>
-    char* operator()(S& s) const { return reinterpret_cast<char*>(s.get_address_from_handle(handle)); }
-
-    const boost::interprocess::managed_shared_memory::handle_t handle;
-};
-
-struct SegmentAllocate : public boost::static_visitor<char*>
-{
-    SegmentAllocate(const size_t _size) : size(_size) {}
-
-    template<typename S>
-    char* operator()(S& s) const { return reinterpret_cast<char*>(s.allocate(size)); }
-
-    const size_t size;
-};
-
-struct SegmentAllocateAligned : public boost::static_visitor<void*>
-{
-    SegmentAllocateAligned(const size_t _size, const size_t _alignment) : size(_size), alignment(_alignment) {}
-
-    template<typename S>
-    void* operator()(S& s) const { return s.allocate_aligned(size, alignment); }
-
-    const size_t size;
-    const size_t alignment;
-};
-
-struct SegmentBufferShrink : public boost::static_visitor<char*>
+struct SegmentBufferShrink
 {
     SegmentBufferShrink(const size_t _new_size, char* _local_ptr)
         : new_size(_new_size)
@@ -376,15 +310,28 @@ struct SegmentBufferShrink : public boost::static_visitor<char*>
     mutable char* local_ptr;
 };
 
-struct SegmentDeallocate : public boost::static_visitor<>
-{
-    SegmentDeallocate(char* _ptr) : ptr(_ptr) {}
+// struct SegmentWrapper
+// {
+//     SegmentWrapper(boost::variant<RBTreeBestFitSegment, SimpleSeqFitSegment>&& _segment)
+//         : segment(std::move(_segment))
+//         , refCountPool(nullptr)
+//     {}
 
-    template<typename S>
-    void operator()(S& s) const { return s.deallocate(ptr); }
+//     void InitRefCountPoolSSF()
+//     {
+//         refCountPool = std::make_unique<boost::variant<RefCountPoolRBT, RefCountPoolSSF>>(
+//             RefCountPoolSSF(boost::get<SimpleSeqFitSegment>(segment).get_segment_manager()));
+//     }
 
-    char* ptr;
-};
+//     void InitRefCountPoolRBT()
+//     {
+//         refCountPool = std::make_unique<boost::variant<RefCountPoolRBT, RefCountPoolSSF>>(
+//             RefCountPoolRBT(boost::get<RBTreeBestFitSegment>(segment).get_segment_manager()));
+//     }
+
+//     boost::variant<SimpleSeqFitSegment, RBTreeBestFitSegment> segment;
+//     std::unique_ptr<boost::variant<RefCountPoolRBT, RefCountPoolSSF>> refCountPool;
+// };
 
 } // namespace fair::mq::shmem
 

@@ -30,6 +30,7 @@
 #include <ctime>
 #include <iomanip>
 #include <sstream>
+#include <variant>
 
 #include <poll.h>
 
@@ -184,7 +185,7 @@ bool Monitor::PrintShm(const ShmId& shmId)
         VoidAlloc allocInstance(managementSegment.get_segment_manager());
 
         Uint16SegmentInfoHashMap* shmSegments = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
-        std::unordered_map<uint16_t, boost::variant<RBTreeBestFitSegment, SimpleSeqFitSegment>> segments;
+        std::unordered_map<uint16_t, std::variant<RBTreeBestFitSegment, SimpleSeqFitSegment>> segments;
 
         Uint16RegionInfoHashMap* shmRegions = managementSegment.find<Uint16RegionInfoHashMap>(unique_instance).first;
 
@@ -234,8 +235,8 @@ bool Monitor::PrintShm(const ShmId& shmId)
            << ", managed segments:\n";
 
         for (const auto& s : segments) {
-            size_t free = boost::apply_visitor(SegmentFreeMemory(), s.second);
-            size_t total = boost::apply_visitor(SegmentSize(), s.second);
+            size_t free = std::visit([](auto& s){ return s.get_free_memory(); }, s.second);
+            size_t total = std::visit([](auto& s){ return s.get_size(); }, s.second);
             size_t used = total - free;
 
             std::string msgCount;
