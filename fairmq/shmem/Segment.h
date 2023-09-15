@@ -11,10 +11,9 @@
 #include <fairmq/shmem/Common.h>
 #include <fairmq/shmem/Monitor.h>
 
-#include <boost/variant.hpp>
-
 #include <cstdint>
 #include <string>
+#include <variant>
 
 namespace fair::mq::shmem
 {
@@ -44,12 +43,12 @@ struct Segment
         Register(shmId, id, AllocationAlgorithm::rbtree_best_fit);
     }
 
-    size_t GetSize() const { return boost::apply_visitor(SegmentSize(), fSegment); }
-    void* GetData() { return boost::apply_visitor(SegmentAddress(), fSegment); }
+    size_t GetSize() const { return std::visit([](auto& s){ return s.get_size(); }, fSegment); }
+    void* GetData() { return std::visit([](auto& s){ return s.get_address(); }, fSegment); }
 
-    size_t GetFreeMemory() const { return boost::apply_visitor(SegmentFreeMemory(), fSegment); }
+    size_t GetFreeMemory() const { return std::visit([](auto& s){ return s.get_free_memory(); }, fSegment); }
 
-    void Zero() { boost::apply_visitor(SegmentMemoryZeroer(), fSegment); }
+    void Zero() { std::visit([](auto& s){ return s.zero_free_memory(); }, fSegment); }
     void Lock()
     {
         if (mlock(GetData(), GetSize()) == -1) {
@@ -63,7 +62,7 @@ struct Segment
     }
 
   private:
-    boost::variant<RBTreeBestFitSegment, SimpleSeqFitSegment> fSegment;
+    std::variant<RBTreeBestFitSegment, SimpleSeqFitSegment> fSegment;
 
     static void Register(const std::string& shmId, uint16_t id, AllocationAlgorithm allocAlgo)
     {
