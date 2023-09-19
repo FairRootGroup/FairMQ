@@ -262,52 +262,50 @@ class Message final : public fair::mq::Message
         if (fMeta.fManaged) { // managed segment
             fManager.GetSegment(fMeta.fSegmentId);
             return ShmHeader::RefCount(fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId));
-        } else { // unmanaged region
-            if (fMeta.fShared < 0) { // UR msg is not yet shared
-                return 1;
-            } else {
-                fManager.GetSegment(fMeta.fSegmentId);
-                return ShmHeader::RefCount(fManager.GetAddressFromHandle(fMeta.fShared, fMeta.fSegmentId));
-            }
         }
+        if (fMeta.fShared < 0) { // UR msg is not yet shared
+            return 1;
+        }
+        fRegionPtr = fManager.GetRegionFromCache(fMeta.fRegionId);
+        if (!fRegionPtr) {
+            throw TransportError(tools::ToString("Cannot get unmanaged region with id ", fMeta.fRegionId));
+        }
+        return fRegionPtr->GetRefCountAddressFromHandle(fMeta.fShared)->Get();
     }
 
     void Copy(const fair::mq::Message& other) override
     {
         const Message& otherMsg = static_cast<const Message&>(other);
+        // if the other message is not initialized, close this one too and return
         if (otherMsg.fMeta.fHandle < 0) {
-            // if the other message is not initialized, close this one too and return
             CloseMessage();
             return;
         }
 
+        // if this msg is already initialized, close it first
         if (fMeta.fHandle >= 0) {
-            // if this msg is already initialized, close it first
             CloseMessage();
         }
 
-        if (otherMsg.fMeta.fManaged) { // managed segment
-            fMeta = otherMsg.fMeta;
-            fManager.GetSegment(fMeta.fSegmentId);
-            ShmHeader::IncrementRefCount(fManager.GetAddressFromHandle(fMeta.fHandle, fMeta.fSegmentId));
-        } else { // unmanaged region
-            if (otherMsg.fMeta.fShared < 0) { // if UR msg is not yet shared
-                // TODO: minimize the size to 0 and don't create extra space for user buffer alignment
-                char* ptr = fManager.Allocate(2, 0);
-                // point the fShared in the unmanaged region message to the refCount holder
-                otherMsg.fMeta.fShared = fManager.GetHandleFromAddress(ptr, fMeta.fSegmentId);
-                // the message needs to be able to locate in which segment the refCount is stored
-                otherMsg.fMeta.fSegmentId = fMeta.fSegmentId;
-                // point this message to the same content as the unmanaged region message
-                fMeta = otherMsg.fMeta;
-                // increment the refCount
-                ShmHeader::IncrementRefCount(ptr);
-            } else { // if the UR msg is already shared
-                fMeta = otherMsg.fMeta;
-                fManager.GetSegment(fMeta.fSegmentId);
-                ShmHeader::IncrementRefCount(fManager.GetAddressFromHandle(fMeta.fShared, fMeta.fSegmentId));
+        // increment ref count
+        if (otherMsg.fMeta.fManaged) { // msg in managed segment
+            fManager.GetSegment(otherMsg.fMeta.fSegmentId);
+            ShmHeader::IncrementRefCount(fManager.GetAddressFromHandle(otherMsg.fMeta.fHandle, otherMsg.fMeta.fSegmentId));
+        } else { // msg in unmanaged region
+            fRegionPtr = fManager.GetRegionFromCache(otherMsg.fMeta.fRegionId);
+            if (!fRegionPtr) {
+                throw TransportError(tools::ToString("Cannot get unmanaged region with id ", otherMsg.fMeta.fRegionId));
+            }
+            if (otherMsg.fMeta.fShared < 0) {
+                // UR msg not yet shared, create the reference counting object with count 2
+                otherMsg.fMeta.fShared = fRegionPtr->HandleFromAddress(&(fRegionPtr->MakeRefCount(2)));
+            } else {
+                fRegionPtr->GetRefCountAddressFromHandle(otherMsg.fMeta.fShared)->Increment();
             }
         }
+
+        // copy meta data
+        fMeta = otherMsg.fMeta;
     }
 
     ~Message() override { CloseMessage(); }
@@ -344,12 +342,13 @@ class Message final : public fair::mq::Message
                 }
             } else { // unmanaged region
                 if (fMeta.fShared >= 0) {
-                    // make sure segment is initialized in this transport
-                    fManager.GetSegment(fMeta.fSegmentId);
-                    // release unmanaged region block if ref count is one
-                    uint16_t refCount = ShmHeader::DecrementRefCount(fManager.GetAddressFromHandle(fMeta.fShared, fMeta.fSegmentId));
+                    fRegionPtr = fManager.GetRegionFromCache(fMeta.fRegionId);
+                    if (!fRegionPtr) {
+                        throw TransportError(tools::ToString("Cannot get unmanaged region with id ", fMeta.fRegionId));
+                    }
+                    uint16_t refCount = fRegionPtr->GetRefCountAddressFromHandle(fMeta.fShared)->Decrement();
                     if (refCount == 1) {
-                        fManager.Deallocate(fMeta.fShared, fMeta.fSegmentId);
+                        fRegionPtr->RemoveRefCount(*(fRegionPtr->GetRefCountAddressFromHandle(fMeta.fShared)));
                         ReleaseUnmanagedRegionBlock();
                     }
                 } else {

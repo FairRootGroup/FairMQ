@@ -59,8 +59,9 @@ struct UnmanagedRegion
         , fRemoveOnDestruction(cfg.removeOnDestruction)
         , fLinger(cfg.linger)
         , fStopAcks(false)
-        , fName("fmq_" + shmId + "_rg_" + std::to_string(cfg.id.value()))
-        , fQueueName("fmq_" + shmId + "_rgq_" + std::to_string(cfg.id.value()))
+        , fName(MakeShmName(shmId, "rg", cfg.id.value()))
+        , fQueueName(MakeShmName(shmId, "rgq", cfg.id.value()))
+        , fRefCountSegmentName(MakeShmName(shmId, "rrc", cfg.id.value()))
         , fShmemObject()
         , fFile(nullptr)
         , fFileMapping()
@@ -186,6 +187,19 @@ struct UnmanagedRegion
 
     bool RemoveOnDestruction() { return fRemoveOnDestruction; }
 
+    RefCount& MakeRefCount(uint16_t initialCount = 1)
+    {
+        RefCount* refCount = fRefCountPool->allocate(1).get();
+        new (refCount) RefCount(initialCount);
+        return *refCount;
+    }
+
+    void RemoveRefCount(RefCount& refCount)
+    {
+        refCount.~RefCount();
+        fRefCountPool->deallocate(&refCount, 1);
+    }
+
     ~UnmanagedRegion()
     {
         LOG(debug) << "~UnmanagedRegion(): " << fName << " (" << (fControlling ? "controller" : "viewer") << ")";
@@ -207,6 +221,11 @@ struct UnmanagedRegion
                 }
                 if (Monitor::RemoveFileMapping(fName.c_str())) {
                     LOG(trace) << "File mapping '" << fName << "' destroyed.";
+                }
+                if (fRefCountSegment) {
+                    if (Monitor::RemoveObject(fRefCountSegmentName)) {
+                        LOG(trace) << "Ref Count Segment '" << fRefCountSegmentName << "' destroyed.";
+                    }
                 }
             } else {
                 LOG(debug) << "Skipping removal of " << fName << " unmanaged region, because RegionConfig::removeOnDestruction is false";
@@ -235,6 +254,7 @@ struct UnmanagedRegion
     std::atomic<bool> fStopAcks;
     std::string fName;
     std::string fQueueName;
+    std::string fRefCountSegmentName;
     boost::interprocess::shared_memory_object fShmemObject;
     FILE* fFile;
     boost::interprocess::file_mapping fFileMapping;
@@ -245,11 +265,17 @@ struct UnmanagedRegion
     std::vector<RegionBlock> fBlocksToFree;
     const std::size_t fAckBunchSize = 256;
     std::unique_ptr<boost::interprocess::message_queue> fQueue;
+    std::unique_ptr<boost::interprocess::managed_shared_memory> fRefCountSegment;
+    std::unique_ptr<RefCountPool> fRefCountPool;
 
     std::thread fAcksReceiver;
     std::thread fAcksSender;
     RegionCallback fCallback;
     RegionBulkCallback fBulkCallback;
+
+    static std::string MakeSegmentName(const std::string& shmId, std::string_view segment, int regionIndex) {
+        return tools::ToString("fmq_", shmId, "_", segment, "_", regionIndex);
+    }
 
     static RegionConfig makeRegionConfig(uint16_t id)
     {
@@ -275,7 +301,7 @@ struct UnmanagedRegion
             throw TransportError(tools::ToString("Unmanaged Region with id ", cfg.id.value(), " has already been registered. Only unique IDs per session are allowed."));
         }
 
-        shmRegions->emplace(cfg.id.value(), RegionInfo(cfg.path.c_str(), cfg.creationFlags, cfg.userFlags, cfg.size, alloc));
+        shmRegions->emplace(cfg.id.value(), RegionInfo(cfg.path.c_str(), cfg.creationFlags, cfg.userFlags, cfg.size, cfg.rcSegmentSize, alloc));
         (eventCounter->fCount)++;
     }
 
@@ -292,6 +318,29 @@ struct UnmanagedRegion
             fQueue = std::make_unique<message_queue>(open_or_create, fQueueName.c_str(), 1024, fAckBunchSize * sizeof(RegionBlock));
             LOG(trace) << "shmem: initialized region queue: " << fQueueName;
         }
+    }
+
+    void InitializeRefCountSegment(uint64_t size)
+    {
+        using namespace boost::interprocess;
+        if (!fRefCountSegment) {
+            fRefCountSegment = std::make_unique<managed_shared_memory>(open_or_create, fRefCountSegmentName.c_str(), size);
+            LOG(trace) << "shmem: initialized ref count segment: " << fRefCountSegmentName;
+            fRefCountPool = std::make_unique<RefCountPool>(fRefCountSegment->get_segment_manager());
+        }
+    }
+
+    RefCount* GetRefCountAddressFromHandle(const boost::interprocess::managed_shared_memory::handle_t handle)
+    {
+        if (fRefCountPool) {
+            return reinterpret_cast<RefCount*>(fRefCountSegment->get_address_from_handle(handle));
+        }
+        return nullptr;
+    };
+
+    boost::interprocess::managed_shared_memory::handle_t HandleFromAddress(const void* ptr)
+    {
+        return fRefCountSegment->get_handle_from_address(ptr);
     }
 
     void StartAckSender()

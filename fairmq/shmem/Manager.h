@@ -323,6 +323,7 @@ class Manager
                 }
 
                 const uint16_t id = cfg.id.value();
+                const uint64_t rcSegmentSize = cfg.rcSegmentSize;
 
                 std::lock_guard<std::mutex> lock(fLocalRegionsMtx);
 
@@ -347,6 +348,7 @@ class Manager
                 // start ack receiver only if a callback has been provided.
                 if (callback || bulkCallback) {
                     region->SetCallbacks(callback, bulkCallback);
+                    region->InitializeRefCountSegment(rcSegmentSize);
                     region->InitializeQueues();
                     region->StartAckSender();
                     region->StartAckReceiver();
@@ -398,6 +400,7 @@ class Manager
         } else {
             try {
                 RegionConfig cfg;
+                const uint64_t rcSegmentSize = cfg.rcSegmentSize;
                 // get region info
                 {
                     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> shmLock(*fShmMtx);
@@ -409,6 +412,7 @@ class Manager
                 // LOG(debug) << "Located remote region with id '" << id << "', path: '" << cfg.path << "', flags: '" << cfg.creationFlags << "'";
 
                 auto r = fRegions.emplace(id, std::make_unique<UnmanagedRegion>(fShmId, 0, false, std::move(cfg)));
+                r.first->second->InitializeRefCountSegment(rcSegmentSize);
                 r.first->second->InitializeQueues();
                 r.first->second->StartAckSender();
                 return r.first->second.get();
@@ -499,8 +503,10 @@ class Manager
                     if (it != fRegions.end()) {
                         region = it->second.get();
                     } else {
+                        const uint64_t rcSegmentSize = cfgIt->second.rcSegmentSize;
                         auto r = fRegions.emplace(cfgIt->first, std::make_unique<UnmanagedRegion>(fShmId, 0, false, cfgIt->second));
                         region = r.first->second.get();
+                        region->InitializeRefCountSegment(rcSegmentSize);
                         region->InitializeQueues();
                         region->StartAckSender();
                     }

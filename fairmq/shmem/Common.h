@@ -13,6 +13,7 @@
 #include <functional> // std::equal_to
 
 #include <boost/functional/hash.hpp>
+#include <boost/interprocess/allocators/adaptive_pool.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/containers/map.hpp>
 #include <boost/interprocess/containers/string.hpp>
@@ -24,6 +25,8 @@
 #include <variant>
 
 #include <sys/types.h>
+
+#include <fairmq/tools/Strings.h>
 
 namespace fair::mq::shmem
 {
@@ -40,6 +43,31 @@ using RBTreeBestFitSegment = boost::interprocess::basic_managed_shared_memory<ch
     boost::interprocess::rbtree_best_fit<boost::interprocess::mutex_family, boost::interprocess::offset_ptr<void>>,
     boost::interprocess::null_index>;
     // boost::interprocess::iset_index>;
+
+inline std::string MakeShmName(const std::string& shmId, const std::string& type, int index) {
+    return std::string("fmq_" + shmId + "_" + type + "_" + std::to_string(index));
+}
+
+struct RefCount
+{
+    explicit RefCount(uint16_t c)
+        : count(c)
+    {}
+
+    uint16_t Get() { return count.load(); }
+    uint16_t Increment() { return count.fetch_add(1); }
+    uint16_t Decrement() { return count.fetch_sub(1); }
+
+    std::atomic<uint16_t> count;
+};
+
+// Number of nodes allocated at once when the allocator runs out of nodes.
+static constexpr size_t numNodesPerBlock = 4096;
+// Maximum number of totally free blocks that the adaptive node pool will hold.
+// The rest of the totally free blocks will be deallocated with the segment manager.
+static constexpr size_t maxFreeBlocks = 2;
+
+using RefCountPool = boost::interprocess::adaptive_pool<RefCount, boost::interprocess::managed_shared_memory::segment_manager, numNodesPerBlock, maxFreeBlocks>;
 
 using SegmentManager = boost::interprocess::managed_shared_memory::segment_manager;
 using VoidAlloc      = boost::interprocess::allocator<void, SegmentManager>;
@@ -121,6 +149,17 @@ struct ShmHeader
     static void Destruct(char* ptr) { RefCountPtr(ptr).~atomic(); }
 };
 
+struct MetaHeader
+{
+    size_t fSize; // size of the shm buffer
+    size_t fHint; // user-defined value, given by the user on message creation and returned to the user on "buffer no longer needed"-callbacks
+    boost::interprocess::managed_shared_memory::handle_t fHandle; // handle to shm buffer, convertible to shm buffer ptr
+    mutable boost::interprocess::managed_shared_memory::handle_t fShared; // handle to the buffer storing the ref count for shared buffers
+    uint16_t fRegionId; // id of the unmanaged region
+    mutable uint16_t fSegmentId; // id of the managed segment
+    bool fManaged; // true = managed segment, false = unmanaged region
+};
+
 enum class AllocationAlgorithm : int
 {
     rbtree_best_fit,
@@ -129,26 +168,30 @@ enum class AllocationAlgorithm : int
 
 struct RegionInfo
 {
-    RegionInfo(const VoidAlloc& alloc)
-        : fPath("", alloc)
-        , fCreationFlags(0)
-        , fUserFlags(0)
-        , fSize(0)
-        , fDestroyed(false)
-    {}
+    static constexpr uint64_t DefaultRcSegmentSize = 10000000;
 
-    RegionInfo(const char* path, int flags, uint64_t userFlags, uint64_t size, const VoidAlloc& alloc)
+    RegionInfo(const char* path, int flags, uint64_t userFlags, uint64_t size, uint64_t rcSegmentSize, const VoidAlloc& alloc)
         : fPath(path, alloc)
         , fCreationFlags(flags)
         , fUserFlags(userFlags)
         , fSize(size)
+        , fRCSegmentSize(rcSegmentSize)
         , fDestroyed(false)
+    {}
+
+    RegionInfo(const VoidAlloc& alloc)
+        : RegionInfo("", 0, 0, 0, DefaultRcSegmentSize, alloc)
+    {}
+
+    RegionInfo(const char* path, int flags, uint64_t userFlags, uint64_t size, const VoidAlloc& alloc)
+        : RegionInfo(path, flags, userFlags, size, DefaultRcSegmentSize, alloc)
     {}
 
     Str fPath;
     int fCreationFlags;
     uint64_t fUserFlags;
     uint64_t fSize;
+    uint64_t fRCSegmentSize;
     bool fDestroyed;
 };
 
@@ -214,17 +257,6 @@ struct RegionCounter
     {}
 
     std::atomic<uint16_t> fCount;
-};
-
-struct MetaHeader
-{
-    size_t fSize;
-    size_t fHint;
-    boost::interprocess::managed_shared_memory::handle_t fHandle;
-    mutable boost::interprocess::managed_shared_memory::handle_t fShared;
-    uint16_t fRegionId;
-    mutable uint16_t fSegmentId;
-    bool fManaged;
 };
 
 #ifdef FAIRMQ_DEBUG_MODE
@@ -309,29 +341,6 @@ struct SegmentBufferShrink
     const size_t new_size;
     mutable char* local_ptr;
 };
-
-// struct SegmentWrapper
-// {
-//     SegmentWrapper(boost::variant<RBTreeBestFitSegment, SimpleSeqFitSegment>&& _segment)
-//         : segment(std::move(_segment))
-//         , refCountPool(nullptr)
-//     {}
-
-//     void InitRefCountPoolSSF()
-//     {
-//         refCountPool = std::make_unique<boost::variant<RefCountPoolRBT, RefCountPoolSSF>>(
-//             RefCountPoolSSF(boost::get<SimpleSeqFitSegment>(segment).get_segment_manager()));
-//     }
-
-//     void InitRefCountPoolRBT()
-//     {
-//         refCountPool = std::make_unique<boost::variant<RefCountPoolRBT, RefCountPoolSSF>>(
-//             RefCountPoolRBT(boost::get<RBTreeBestFitSegment>(segment).get_segment_manager()));
-//     }
-
-//     boost::variant<SimpleSeqFitSegment, RBTreeBestFitSegment> segment;
-//     std::unique_ptr<boost::variant<RefCountPoolRBT, RefCountPoolSSF>> refCountPool;
-// };
 
 } // namespace fair::mq::shmem
 
