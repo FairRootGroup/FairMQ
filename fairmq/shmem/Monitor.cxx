@@ -235,8 +235,8 @@ bool Monitor::PrintShm(const ShmId& shmId)
            << ", managed segments:\n";
 
         for (const auto& s : segments) {
-            size_t free = std::visit([](auto& s){ return s.get_free_memory(); }, s.second);
-            size_t total = std::visit([](auto& s){ return s.get_size(); }, s.second);
+            size_t free = std::visit([](auto& seg){ return seg.get_free_memory(); }, s.second);
+            size_t total = std::visit([](auto& seg){ return seg.get_size(); }, s.second);
             size_t used = total - free;
 
             std::string msgCount;
@@ -268,12 +268,19 @@ bool Monitor::PrintShm(const ShmId& shmId)
 
         if (shmRegions && !shmRegions->empty()) {
             ss << "\n   unmanaged regions:";
-            for (const auto& r : *shmRegions) {
-                ss << "\n      [" << r.first << "]: " << (r.second.fDestroyed ? "destroyed" : "alive");
-                ss << ", size: " << r.second.fSize;
+            for (const auto& [id, info] : *shmRegions) {
+                ss << "\n      [" << id << "]: " << (info.fDestroyed ? "destroyed" : "alive");
+                ss << ", size: " << info.fSize;
+
+                try {
+                    managed_shared_memory rcCountSegment(open_read_only, std::string("fmq_" + shmId.shmId + "_rrc_" + to_string(id)).c_str());
+                    ss << ", rcCountSegment size: " << rcCountSegment.get_size();
+                } catch (bie&) {
+                    ss << ", rcCountSegment: not found";
+                }
 
                 // try {
-                //     boost::interprocess::message_queue q(open_only, std::string("fmq_" + std::string(shmId) + "_rgq_" + to_string(r.first)).c_str());
+                //     boost::interprocess::message_queue q(open_only, std::string("fmq_" + std::string(shmId) + "_rgq_" + to_string(id)).c_str());
                 //     ss << ", ack queue: " << q.get_num_msg() << " messages";
                 // } catch (bie&) {
                 //     ss << ", ack queue: not found";
@@ -679,6 +686,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmIdT, 
                     result.emplace_back(Remove<bipc::shared_memory_object>("fmq_" + shmId + "_rg_" + to_string(id), verbose));
                 }
                 result.emplace_back(Remove<bipc::message_queue>("fmq_" + shmId + "_rgq_" + to_string(id), verbose));
+                result.emplace_back(Remove<bipc::shared_memory_object>("fmq_" + shmId + "_rrc_" + to_string(id), verbose));
             }
         }
 
@@ -780,6 +788,7 @@ void Monitor::ResetContent(const ShmId& shmIdT, bool verbose /* = true */)
             for (const auto& region : *shmRegions) {
                 uint16_t id = region.first;
                 Remove<bipc::message_queue>("fmq_" + shmId + "_rgq_" + to_string(id), verbose);
+                Remove<bipc::shared_memory_object>("fmq_" + shmId + "_rrc_" + to_string(id), verbose);
             }
         }
     } catch (bie& e) {
