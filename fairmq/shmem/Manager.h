@@ -397,33 +397,33 @@ class Manager
         auto it = fRegions.find(id);
         if (it != fRegions.end()) {
             return it->second.get();
-        } else {
-            try {
-                RegionConfig cfg;
-                const uint64_t rcSegmentSize = cfg.rcSegmentSize;
-                // get region info
-                {
-                    boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> shmLock(*fShmMtx);
-                    RegionInfo regionInfo = fShmRegions->at(id);
-                    cfg.id = id;
-                    cfg.creationFlags = regionInfo.fCreationFlags;
-                    cfg.path = regionInfo.fPath.c_str();
-                }
-                // LOG(debug) << "Located remote region with id '" << id << "', path: '" << cfg.path << "', flags: '" << cfg.creationFlags << "'";
+        }
 
-                auto r = fRegions.emplace(id, std::make_unique<UnmanagedRegion>(fShmId, 0, false, std::move(cfg)));
-                r.first->second->InitializeRefCountSegment(rcSegmentSize);
-                r.first->second->InitializeQueues();
-                r.first->second->StartAckSender();
-                return r.first->second.get();
-            } catch (std::out_of_range& oor) {
-                LOG(error) << "Could not get remote region with id '" << id << "'. Does the region creator run with the same session id?";
-                LOG(error) << oor.what();
-                return nullptr;
-            } catch (boost::interprocess::interprocess_exception& e) {
-                LOG(error) << "Could not get remote region for id '" << id << "': " << e.what();
-                return nullptr;
+        try {
+            RegionConfig cfg;
+            const uint64_t rcSegmentSize = cfg.rcSegmentSize;
+            // get region info
+            {
+                boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> shmLock(*fShmMtx);
+                RegionInfo regionInfo = fShmRegions->at(id);
+                cfg.id = id;
+                cfg.creationFlags = regionInfo.fCreationFlags;
+                cfg.path = regionInfo.fPath.c_str();
             }
+            // LOG(debug) << "Located remote region with id '" << id << "', path: '" << cfg.path << "', flags: '" << cfg.creationFlags << "'";
+
+            auto r = fRegions.emplace(id, std::make_unique<UnmanagedRegion>(fShmId, 0, false, std::move(cfg)));
+            r.first->second->InitializeRefCountSegment(rcSegmentSize);
+            r.first->second->InitializeQueues();
+            r.first->second->StartAckSender();
+            return r.first->second.get();
+        } catch (std::out_of_range& oor) {
+            LOG(error) << "Could not get remote region with id '" << id << "'. Does the region creator run with the same session id?";
+            LOG(error) << oor.what();
+            return nullptr;
+        } catch (boost::interprocess::interprocess_exception& e) {
+            LOG(error) << "Could not get remote region for id '" << id << "': " << e.what();
+            return nullptr;
         }
     }
 
