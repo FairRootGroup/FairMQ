@@ -273,10 +273,6 @@ struct UnmanagedRegion
     RegionCallback fCallback;
     RegionBulkCallback fBulkCallback;
 
-    static std::string MakeSegmentName(const std::string& shmId, std::string_view segment, int regionIndex) {
-        return tools::ToString("fmq_", shmId, "_", segment, "_", regionIndex);
-    }
-
     static RegionConfig makeRegionConfig(uint16_t id)
     {
         RegionConfig regionCfg;
@@ -288,7 +284,7 @@ struct UnmanagedRegion
     {
         using namespace boost::interprocess;
         LOG(debug) << "Registering unmanaged shared memory region with id " << cfg.id.value();
-        managed_shared_memory mngSegment(open_or_create, std::string("fmq_" + shmId + "_mng").c_str(), kManagementSegmentSize);
+        managed_shared_memory mngSegment(open_or_create, MakeShmName(shmId, "mng").c_str(), kManagementSegmentSize);
         VoidAlloc alloc(mngSegment.get_segment_manager());
 
         Uint16RegionInfoHashMap* shmRegions = mngSegment.find_or_construct<Uint16RegionInfoHashMap>(unique_instance)(alloc);

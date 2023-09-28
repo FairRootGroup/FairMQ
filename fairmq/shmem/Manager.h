@@ -58,7 +58,7 @@ class Manager
         : fShmId64(config ? config->GetProperty<uint64_t>("shmid", makeShmIdUint64(sessionName)) : makeShmIdUint64(sessionName))
         , fShmId(makeShmIdStr(fShmId64))
         , fSegmentId(config ? config->GetProperty<uint16_t>("shm-segment-id", 0) : 0)
-        , fManagementSegment(boost::interprocess::open_or_create, std::string("fmq_" + fShmId + "_mng").c_str(), kManagementSegmentSize)
+        , fManagementSegment(boost::interprocess::open_or_create, MakeShmName(fShmId, "mng").c_str(), kManagementSegmentSize)
         , fShmVoidAlloc(fManagementSegment.get_segment_manager())
         , fShmMtx(fManagementSegment.find_or_construct<boost::interprocess::interprocess_mutex>(boost::interprocess::unique_instance)())
         , fNumObservedEvents(0)
@@ -158,7 +158,7 @@ class Manager
             bool createdSegment = false;
 
             try {
-                std::string segmentName("fmq_" + fShmId + "_m_" + std::to_string(fSegmentId));
+                std::string segmentName = MakeShmName(fShmId, "m", fSegmentId);
                 auto it = fShmSegments->find(fSegmentId);
                 if (it == fShmSegments->end()) {
                     // no segment with given id exists, creating
@@ -256,7 +256,7 @@ class Manager
     {
         using namespace boost::interprocess;
         try {
-            named_mutex monitorStatus(open_only, std::string("fmq_" + id + "_ms").c_str());
+            named_mutex monitorStatus(open_only, MakeShmName(id, "ms").c_str());
             LOG(debug) << "Found fairmq-shmmonitor for shared memory id " << id;
         } catch (interprocess_exception&) {
             LOG(debug) << "no fairmq-shmmonitor found for shared memory id " << id << ", starting...";
@@ -265,7 +265,7 @@ class Manager
                 int numTries = 0;
                 do {
                     try {
-                        named_mutex monitorStatus(open_only, std::string("fmq_" + id + "_ms").c_str());
+                        named_mutex monitorStatus(open_only, MakeShmName(id, "ms").c_str());
                         LOG(debug) << "Started fairmq-shmmonitor for shared memory id " << id;
                         break;
                     } catch (interprocess_exception&) {
@@ -645,9 +645,9 @@ class Manager
                 using namespace boost::interprocess;
 
                 if (segmentInfo.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
-                    fSegments.emplace(id, RBTreeBestFitSegment(open_only, std::string("fmq_" + fShmId + "_m_" + std::to_string(id)).c_str()));
+                    fSegments.emplace(id, RBTreeBestFitSegment(open_only, MakeShmName(fShmId, "m", id).c_str()));
                 } else {
-                    fSegments.emplace(id, SimpleSeqFitSegment(open_only, std::string("fmq_" + fShmId + "_m_" + std::to_string(id)).c_str()));
+                    fSegments.emplace(id, SimpleSeqFitSegment(open_only, MakeShmName(fShmId, "m", id).c_str()));
                 }
             } catch (std::out_of_range& oor) {
                 LOG(error) << "Could not get segment with id '" << id << "': " << oor.what();
