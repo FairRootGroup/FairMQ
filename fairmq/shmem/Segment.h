@@ -28,17 +28,13 @@ struct Segment
     friend class Monitor;
 
     Segment(const std::string& shmId, uint16_t id, size_t size, SimpleSeqFit)
-        : fSegment(SimpleSeqFitSegment(boost::interprocess::open_or_create,
-                                       std::string("fmq_" + shmId + "_m_" + std::to_string(id)).c_str(),
-                                       size))
+        : fSegment(SimpleSeqFitSegment(boost::interprocess::open_or_create, MakeShmName(shmId, "m", id).c_str(), size))
     {
         Register(shmId, id, AllocationAlgorithm::simple_seq_fit);
     }
 
     Segment(const std::string& shmId, uint16_t id, size_t size, RBTreeBestFit)
-        : fSegment(RBTreeBestFitSegment(boost::interprocess::open_or_create,
-                                        std::string("fmq_" + shmId + "_m_" + std::to_string(id)).c_str(),
-                                        size))
+        : fSegment(RBTreeBestFitSegment(boost::interprocess::open_or_create, MakeShmName(shmId, "m", id).c_str(), size))
     {
         Register(shmId, id, AllocationAlgorithm::rbtree_best_fit);
     }
@@ -58,7 +54,7 @@ struct Segment
 
     static void Remove(const std::string& shmId, uint16_t id)
     {
-        Monitor::RemoveObject("fmq_" + shmId + "_m_" + std::to_string(id));
+        Monitor::RemoveObject(MakeShmName(shmId, "m", id));
     }
 
   private:
@@ -67,7 +63,7 @@ struct Segment
     static void Register(const std::string& shmId, uint16_t id, AllocationAlgorithm allocAlgo)
     {
         using namespace boost::interprocess;
-        managed_shared_memory mngSegment(open_or_create, std::string("fmq_" + shmId + "_mng").c_str(), kManagementSegmentSize);
+        managed_shared_memory mngSegment(open_or_create, MakeShmName(shmId, "mng").c_str(), kManagementSegmentSize);
         VoidAlloc alloc(mngSegment.get_segment_manager());
 
         Uint16SegmentInfoHashMap* shmSegments = mngSegment.find_or_construct<Uint16SegmentInfoHashMap>(unique_instance)(alloc);

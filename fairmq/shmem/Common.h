@@ -44,8 +44,12 @@ using RBTreeBestFitSegment = boost::interprocess::basic_managed_shared_memory<ch
     boost::interprocess::null_index>;
     // boost::interprocess::iset_index>;
 
+inline std::string MakeShmName(const std::string& shmId, const std::string& type) {
+    return std::string("fmq_" + shmId + "_" + type);
+}
+
 inline std::string MakeShmName(const std::string& shmId, const std::string& type, int index) {
-    return std::string("fmq_" + shmId + "_" + type + "_" + std::to_string(index));
+    return std::string(MakeShmName(shmId, type) + "_" + std::to_string(index));
 }
 
 struct RefCount

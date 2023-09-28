@@ -75,7 +75,7 @@ Monitor::Monitor(string shmId, bool selfDestruct, bool interactive, bool viewOnl
 {
     if (!fViewOnly) {
         try {
-            bipc::named_mutex monitorStatus(bipc::create_only, string("fmq_" + fShmId + "_ms").c_str());
+            bipc::named_mutex monitorStatus(bipc::create_only, MakeShmName(fShmId, "ms").c_str());
         } catch (bie&) {
             if (fInteractive) {
                 LOG(error) << "fairmq-shmmonitor for shm id " << fShmId << " is already running. Try `fairmq-shmmonitor --cleanup --shmid " << fShmId << "`, or run in view-only mode (-v)";
@@ -133,7 +133,7 @@ void Monitor::Watch()
         using namespace boost::interprocess;
 
         try {
-            managed_shared_memory managementSegment(open_read_only, std::string("fmq_" + fShmId + "_mng").c_str());
+            managed_shared_memory managementSegment(open_read_only, MakeShmName(fShmId, "mng").c_str());
 
             fSeenOnce = true;
 
@@ -181,7 +181,7 @@ bool Monitor::PrintShm(const ShmId& shmId)
     using namespace boost::interprocess;
 
     try {
-        managed_shared_memory managementSegment(open_read_only, std::string("fmq_" + shmId.shmId + "_mng").c_str());
+        managed_shared_memory managementSegment(open_read_only, MakeShmName(shmId.shmId, "mng").c_str());
         VoidAlloc allocInstance(managementSegment.get_segment_manager());
 
         Uint16SegmentInfoHashMap* shmSegments = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
@@ -200,9 +200,9 @@ bool Monitor::PrintShm(const ShmId& shmId)
 
         for (const auto& s : *shmSegments) {
             if (s.second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
-                segments.emplace(s.first, RBTreeBestFitSegment(open_read_only, std::string("fmq_" + shmId.shmId + "_m_" + to_string(s.first)).c_str()));
+                segments.emplace(s.first, RBTreeBestFitSegment(open_read_only, MakeShmName(shmId.shmId, "m", s.first).c_str()));
             } else {
-                segments.emplace(s.first, SimpleSeqFitSegment(open_read_only, std::string("fmq_" + shmId.shmId + "_m_" + to_string(s.first)).c_str()));
+                segments.emplace(s.first, SimpleSeqFitSegment(open_read_only, MakeShmName(shmId.shmId, "m", s.first).c_str()));
             }
         }
 
@@ -273,7 +273,7 @@ bool Monitor::PrintShm(const ShmId& shmId)
                 ss << ", size: " << info.fSize;
 
                 try {
-                    managed_shared_memory rcCountSegment(open_read_only, std::string("fmq_" + shmId.shmId + "_rrc_" + to_string(id)).c_str());
+                    managed_shared_memory rcCountSegment(open_read_only, MakeShmName(shmId.shmId, "rrc", id).c_str());
                     ss << ", rcCountSegment size: " << rcCountSegment.get_size();
                 } catch (bie&) {
                     ss << ", rcCountSegment: not found";
@@ -333,7 +333,7 @@ void Monitor::CheckHeartbeats()
     while (!fTerminating) {
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
         try {
-            managed_shared_memory managementSegment(open_read_only, std::string("fmq_" + fShmId + "_mng").c_str());
+            managed_shared_memory managementSegment(open_read_only, MakeShmName(fShmId, "mng").c_str());
             Heartbeat* hb = managementSegment.find<Heartbeat>(unique_instance).first;
 
             if (hb) {
@@ -415,7 +415,7 @@ void Monitor::Interactive()
 void Monitor::PrintDebugInfo(const ShmId& shmId __attribute__((unused)))
 {
 #ifdef FAIRMQ_DEBUG_MODE
-    string managementSegmentName("fmq_" + shmId.shmId + "_mng");
+    string managementSegmentName = MakeShmName(shmId.shmId, "mng");
     try {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
         bipc::interprocess_mutex* mtx(managementSegment.find_or_construct<bipc::interprocess_mutex>(bipc::unique_instance)());
@@ -467,7 +467,7 @@ unordered_map<uint16_t, std::vector<BufferDebugInfo>> Monitor::GetDebugInfo(cons
     unordered_map<uint16_t, std::vector<BufferDebugInfo>> result;
 
 #ifdef FAIRMQ_DEBUG_MODE
-    string managementSegmentName("fmq_" + shmId.shmId + "_mng");
+    string managementSegmentName = MakeShmName(shmId.shmId, "mng");
     try {
         bipc::managed_shared_memory managementSegment(bipc::open_only, managementSegmentName.c_str());
         bipc::interprocess_mutex* mtx(managementSegment.find_or_construct<bipc::interprocess_mutex>(bipc::unique_instance)());
@@ -507,7 +507,7 @@ unsigned long Monitor::GetFreeMemory(const ShmId& shmId, uint16_t segmentId)
 {
     using namespace boost::interprocess;
     try {
-        bipc::managed_shared_memory managementSegment(bipc::open_only, std::string("fmq_" + shmId.shmId + "_mng").c_str());
+        bipc::managed_shared_memory managementSegment(bipc::open_only, MakeShmName(shmId.shmId, "mng").c_str());
         boost::interprocess::interprocess_mutex* mtx(managementSegment.find_or_construct<bipc::interprocess_mutex>(bipc::unique_instance)());
         boost::interprocess::scoped_lock<bipc::interprocess_mutex> lock(*mtx);
 
@@ -521,10 +521,10 @@ unsigned long Monitor::GetFreeMemory(const ShmId& shmId, uint16_t segmentId)
         auto it = shmSegments->find(segmentId);
         if (it != shmSegments->end()) {
             if (it->second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
-                RBTreeBestFitSegment segment(open_read_only, std::string("fmq_" + shmId.shmId + "_m_" + std::to_string(segmentId)).c_str());
+                RBTreeBestFitSegment segment(open_read_only, MakeShmName(shmId.shmId, "m", segmentId).c_str());
                 return segment.get_free_memory();
             } else {
-                SimpleSeqFitSegment segment(open_read_only, std::string("fmq_" + shmId.shmId + "_m_" + std::to_string(segmentId)).c_str());
+                SimpleSeqFitSegment segment(open_read_only, MakeShmName(shmId.shmId, "m", segmentId).c_str());
                 return segment.get_free_memory();
             }
         } else {
@@ -546,7 +546,7 @@ bool Monitor::SegmentIsPresent(const ShmId& shmId, uint16_t segmentId)
 {
     using namespace boost::interprocess;
     try {
-        bipc::managed_shared_memory managementSegment(bipc::open_read_only, std::string("fmq_" + shmId.shmId + "_mng").c_str());
+        bipc::managed_shared_memory managementSegment(bipc::open_read_only, MakeShmName(shmId.shmId, "mng").c_str());
         Uint16SegmentInfoHashMap* shmSegments = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
 
         if (!shmSegments) {
@@ -558,9 +558,9 @@ bool Monitor::SegmentIsPresent(const ShmId& shmId, uint16_t segmentId)
         if (it != shmSegments->end()) {
             try {
                 if (it->second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
-                    RBTreeBestFitSegment segment(open_read_only, std::string("fmq_" + shmId.shmId + "_m_" + std::to_string(segmentId)).c_str());
+                    RBTreeBestFitSegment segment(open_read_only, MakeShmName(shmId.shmId, "m", segmentId).c_str());
                 } else {
-                    SimpleSeqFitSegment segment(open_read_only, std::string("fmq_" + shmId.shmId + "_m_" + std::to_string(segmentId)).c_str());
+                    SimpleSeqFitSegment segment(open_read_only, MakeShmName(shmId.shmId, "m", segmentId).c_str());
                 }
             } catch (bie&) {
                 LOG(error) << "Could not find segment with id '" << segmentId << "' for shmId '" << shmId.shmId << "'";
@@ -587,7 +587,7 @@ bool Monitor::RegionIsPresent(const ShmId& shmId, uint16_t regionId)
 {
     using namespace boost::interprocess;
     try {
-        bipc::managed_shared_memory managementSegment(bipc::open_read_only, std::string("fmq_" + shmId.shmId + "_mng").c_str());
+        bipc::managed_shared_memory managementSegment(bipc::open_read_only, MakeShmName(shmId.shmId, "mng").c_str());
         Uint16RegionInfoHashMap* shmRegions = managementSegment.find<Uint16RegionInfoHashMap>(bipc::unique_instance).first;
 
         if (!shmRegions) {
@@ -595,7 +595,7 @@ bool Monitor::RegionIsPresent(const ShmId& shmId, uint16_t regionId)
             return false;
         }
 
-        std::string regionFileName("fmq_" + shmId.shmId + "_rg_" + to_string(regionId));
+        std::string regionFileName(MakeShmName(shmId.shmId, "rg", regionId));
 
         auto it = shmRegions->find(regionId);
         if (it != shmRegions->end()) {
@@ -663,7 +663,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmIdT, 
         LOG(info) << "Cleaning up for shared memory id '" << shmId << "'...";
     }
 
-    string managementSegmentName("fmq_" + shmId + "_mng");
+    string managementSegmentName = MakeShmName(shmId, "mng");
     try {
         bipc::managed_shared_memory managementSegment(bipc::open_read_only, managementSegmentName.c_str());
 
@@ -681,12 +681,12 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmIdT, 
                     LOG(info) << "Found UnmanagedRegion with id: " << id << ", path: '" << path << "', flags: " << flags << ", fDestroyed: " << info.fDestroyed << ".";
                 }
                 if (!path.empty()) {
-                    result.emplace_back(Remove<bipc::file_mapping>(path + "fmq_" + shmId + "_rg_" + to_string(id), verbose));
+                    result.emplace_back(Remove<bipc::file_mapping>(path + MakeShmName(shmId, "rg", id), verbose));
                 } else {
-                    result.emplace_back(Remove<bipc::shared_memory_object>("fmq_" + shmId + "_rg_" + to_string(id), verbose));
+                    result.emplace_back(Remove<bipc::shared_memory_object>(MakeShmName(shmId, "rg", id), verbose));
                 }
-                result.emplace_back(Remove<bipc::message_queue>("fmq_" + shmId + "_rgq_" + to_string(id), verbose));
-                result.emplace_back(Remove<bipc::shared_memory_object>("fmq_" + shmId + "_rrc_" + to_string(id), verbose));
+                result.emplace_back(Remove<bipc::message_queue>(MakeShmName(shmId, "rgq", id), verbose));
+                result.emplace_back(Remove<bipc::shared_memory_object>(MakeShmName(shmId, "rrc", id), verbose));
             }
         }
 
@@ -696,7 +696,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const ShmId& shmIdT, 
                 LOG(info) << "Found " << shmSegments->size() << " managed segments...";
             }
             for (const auto& segment : *shmSegments) {
-                result.emplace_back(Remove<bipc::shared_memory_object>("fmq_" + shmId + "_m_" + to_string(segment.first), verbose));
+                result.emplace_back(Remove<bipc::shared_memory_object>(MakeShmName(shmId, "m", segment.first), verbose));
             }
         } else {
             if (verbose) {
@@ -726,7 +726,7 @@ std::vector<std::pair<std::string, bool>> Monitor::Cleanup(const SessionId& sess
 std::vector<std::pair<std::string, bool>> Monitor::CleanupFull(const ShmId& shmId, bool verbose /* = true */)
 {
     auto result = Cleanup(shmId, verbose);
-    result.emplace_back(Remove<bipc::named_mutex>("fmq_" + shmId.shmId + "_ms", verbose));
+    result.emplace_back(Remove<bipc::named_mutex>(MakeShmName(shmId.shmId, "ms"), verbose));
     return result;
 }
 
@@ -746,7 +746,7 @@ void Monitor::ResetContent(const ShmId& shmIdT, bool verbose /* = true */)
         cout << "Resetting segments content for shared memory id '" << shmId << "'..." << endl;
     }
 
-    string managementSegmentName("fmq_" + shmId + "_mng");
+    string managementSegmentName = MakeShmName(shmId, "mng");
     try {
         using namespace boost::interprocess;
         managed_shared_memory managementSegment(open_only, managementSegmentName.c_str());
@@ -754,18 +754,18 @@ void Monitor::ResetContent(const ShmId& shmIdT, bool verbose /* = true */)
         Uint16SegmentInfoHashMap* segmentInfos = managementSegment.find<Uint16SegmentInfoHashMap>(unique_instance).first;
         if (segmentInfos) {
             cout << "Found info for " << segmentInfos->size() << " managed segments" << endl;
-            for (const auto& s : *segmentInfos) {
+            for (const auto& [id, info] : *segmentInfos) {
                 if (verbose) {
-                    cout << "Resetting content of segment '" << "fmq_" << shmId << "_m_" << s.first << "'..." << endl;
+                    cout << "Resetting content of segment '" << MakeShmName(shmId, "m", id) << "'..." << endl;
                 }
                 try {
-                    if (s.second.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
-                        RBTreeBestFitSegment segment(open_only, std::string("fmq_" + shmId + "_m_" + to_string(s.first)).c_str());
+                    if (info.fAllocationAlgorithm == AllocationAlgorithm::rbtree_best_fit) {
+                        RBTreeBestFitSegment segment(open_only, MakeShmName(shmId, "m", id).c_str());
                         void* ptr = segment.get_segment_manager();
                         size_t size = segment.get_segment_manager()->get_size();
                         new(ptr) segment_manager<char, rbtree_best_fit<mutex_family, offset_ptr<void>>, null_index>(size);
                     } else {
-                        SimpleSeqFitSegment segment(open_only, std::string("fmq_" + shmId + "_m_" + to_string(s.first)).c_str());
+                        SimpleSeqFitSegment segment(open_only, MakeShmName(shmId, "m", id).c_str());
                         void* ptr = segment.get_segment_manager();
                         size_t size = segment.get_segment_manager()->get_size();
                         new(ptr) segment_manager<char, simple_seq_fit<mutex_family, offset_ptr<void>>, null_index>(size);
@@ -775,7 +775,7 @@ void Monitor::ResetContent(const ShmId& shmIdT, bool verbose /* = true */)
                     }
                 } catch (bie& e) {
                     if (verbose) {
-                        cout << "Error resetting content of segment '" << std::string("fmq_" + shmId + "_m_" + to_string(s.first)) << "': " << e.what() << endl;
+                        cout << "Error resetting content of segment '" << MakeShmName(shmId, "m", id) << "': " << e.what() << endl;
                     }
                 }
             }
@@ -787,8 +787,8 @@ void Monitor::ResetContent(const ShmId& shmIdT, bool verbose /* = true */)
         if (shmRegions) {
             for (const auto& region : *shmRegions) {
                 uint16_t id = region.first;
-                Remove<bipc::message_queue>("fmq_" + shmId + "_rgq_" + to_string(id), verbose);
-                Remove<bipc::shared_memory_object>("fmq_" + shmId + "_rrc_" + to_string(id), verbose);
+                Remove<bipc::message_queue>(MakeShmName(shmId, "rgq", id), verbose);
+                Remove<bipc::shared_memory_object>(MakeShmName(shmId, "rrc", id), verbose);
             }
         }
     } catch (bie& e) {
@@ -817,7 +817,7 @@ void Monitor::ResetContent(const ShmId& shmIdT, const std::vector<SegmentConfig>
     using namespace boost::interprocess;
 
     std::string shmId = shmIdT.shmId;
-    std::string managementSegmentName("fmq_" + shmId + "_mng");
+    std::string managementSegmentName = MakeShmName(shmId, "mng");
     // delete management segment
     cout << "deleting management segment" << endl;
     Remove<bipc::shared_memory_object>(managementSegmentName, verbose);
@@ -865,7 +865,7 @@ Monitor::~Monitor()
         Cleanup(ShmId{fShmId});
     }
     if (!fViewOnly) {
-        RemoveMutex("fmq_" + fShmId + "_ms");
+        RemoveMutex(MakeShmName(fShmId, "ms"));
     }
 }
 
