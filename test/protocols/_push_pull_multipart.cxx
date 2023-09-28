@@ -210,7 +210,7 @@ TEST(PushPull, Multipart_MultiThreaded_ipc_shmem) // NOLINT
 
 TEST(PushPull, Multipart_MultiThreaded_ipc_shmem_expanded_metadata) // NOLINT
 {
-    RunMultiThreadedMultipart("shmem", "ipc://test_Multipart_MultiThreaded_ipc_shmem_1", true);
+    RunMultiThreadedMultipart("shmem", "ipc://test_Multipart_MultiThreaded_ipc_shmem__expanded_metadata_1", true);
 }
 
 } // namespace
