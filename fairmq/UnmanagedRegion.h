@@ -134,7 +134,7 @@ struct RegionConfig
     int creationFlags = 0; /// flags passed to the underlying transport on region creation
     int64_t userFlags = 0; /// custom flags that have no effect on the transport, but can be retrieved from the region by the user
     uint64_t size = 0; /// region size
-    uint64_t rcSegmentSize = 10000000; /// region size
+    uint64_t rcSegmentSize = 10000000; /// size of the segment that stores reference counts when "soft"-copying the messages
     std::string path = ""; /// file path, if the region is backed by a file
     std::optional<uint16_t> id = std::nullopt; /// region id
     uint32_t linger = 100; /// delay in ms before region destruction to collect outstanding events
