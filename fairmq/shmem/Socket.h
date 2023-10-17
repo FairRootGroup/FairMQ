@@ -129,9 +129,11 @@ class Socket final : public fair::mq::Socket
         }
         int elapsed = 0;
 
+        MetaHeader meta{ shmMsg->fSize, shmMsg->fHint, shmMsg->fHandle, shmMsg->fShared, shmMsg->fRegionId, shmMsg->fSegmentId, shmMsg->fManaged };
+
         // meta msg format: | MetaHeader | padded to fMetadataMsgSize |
         zmq::ZMsg zmqMsg(std::max(fMetadataMsgSize, sizeof(MetaHeader)));
-        std::memcpy(zmqMsg.Data(), &(shmMsg->fMeta), sizeof(MetaHeader));
+        std::memcpy(zmqMsg.Data(), &meta, sizeof(MetaHeader));
 
         while (true) {
             int nbytes = zmq_msg_send(zmqMsg.Msg(), fSocket, flags);
@@ -167,7 +169,8 @@ class Socket final : public fair::mq::Socket
 
         while (true) {
             Message* shmMsg = static_cast<Message*>(msg.get());
-            int nbytes = zmq_recv(fSocket, &(shmMsg->fMeta), sizeof(MetaHeader), flags);
+            MetaHeader meta;
+            int nbytes = zmq_recv(fSocket, &meta, sizeof(MetaHeader), flags);
             if (nbytes > 0) {
                 // check for number of received messages. must be 1
                 if (static_cast<std::size_t>(nbytes) < sizeof(MetaHeader)) {
@@ -176,6 +179,8 @@ class Socket final : public fair::mq::Socket
                             "Possibly due to a misconfigured transport on the sender side. ",
                             "Expected minimum size of ", sizeof(MetaHeader), " bytes, received ", nbytes));
                 }
+
+                shmMsg->SetMeta(meta);
 
                 size_t size = shmMsg->GetSize();
                 fBytesRx += size;
@@ -218,7 +223,8 @@ class Socket final : public fair::mq::Socket
             }
             assertm(dynamic_cast<shmem::Message*>(msgPtr), "given mq::Message is a shmem::Message");   // NOLINT
             auto shmMsg = static_cast<shmem::Message*>(msgPtr);   // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
-            std::memcpy(metas++, &(shmMsg->fMeta), sizeof(MetaHeader));
+            MetaHeader meta{ shmMsg->fSize, shmMsg->fHint, shmMsg->fHandle, shmMsg->fShared, shmMsg->fRegionId, shmMsg->fSegmentId, shmMsg->fManaged };
+            std::memcpy(metas++, &meta, sizeof(MetaHeader));
         }
 
         while (true) {
@@ -230,7 +236,7 @@ class Socket final : public fair::mq::Socket
                 for (auto& msg : msgVec) {
                     Message* shmMsg = static_cast<Message*>(msg.get());
                     shmMsg->fQueued = true;
-                    totalSize += shmMsg->fMeta.fSize;
+                    totalSize += shmMsg->fSize;
                 }
 
                 // store statistics on how many messages have been sent
