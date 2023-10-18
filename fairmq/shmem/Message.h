@@ -46,14 +46,13 @@ class Message final : public fair::mq::Message
         , fShared(-1)
         , fRegionId(0)
         , fSegmentId(fManager.GetSegmentId())
-        , fAlignment(0)
         , fManaged(true)
         , fQueued(false)
     {
         fManager.IncrementMsgCounter();
     }
 
-    Message(Manager& manager, Alignment alignment, fair::mq::TransportFactory* factory = nullptr)
+    Message(Manager& manager, Alignment /* alignment */, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
         , fRegionPtr(nullptr)
@@ -64,7 +63,6 @@ class Message final : public fair::mq::Message
         , fShared(-1)
         , fRegionId(0)
         , fSegmentId(fManager.GetSegmentId())
-        , fAlignment(alignment.alignment)
         , fManaged(true)
         , fQueued(false)
     {
@@ -82,7 +80,6 @@ class Message final : public fair::mq::Message
         , fShared(-1)
         , fRegionId(0)
         , fSegmentId(fManager.GetSegmentId())
-        , fAlignment(0)
         , fManaged(true)
         , fQueued(false)
     {
@@ -101,11 +98,10 @@ class Message final : public fair::mq::Message
         , fShared(-1)
         , fRegionId(0)
         , fSegmentId(fManager.GetSegmentId())
-        , fAlignment(alignment.alignment)
         , fManaged(true)
         , fQueued(false)
     {
-        InitializeChunk(size, fAlignment);
+        InitializeChunk(size, alignment.alignment);
         fManager.IncrementMsgCounter();
     }
 
@@ -120,7 +116,6 @@ class Message final : public fair::mq::Message
         , fShared(-1)
         , fRegionId(0)
         , fSegmentId(fManager.GetSegmentId())
-        , fAlignment(0)
         , fManaged(true)
         , fQueued(false)
     {
@@ -146,7 +141,6 @@ class Message final : public fair::mq::Message
         , fShared(-1)
         , fRegionId(static_cast<UnmanagedRegionImpl*>(region.get())->fRegionId)
         , fSegmentId(fManager.GetSegmentId())
-        , fAlignment(0)
         , fManaged(false)
         , fQueued(false)
     {
@@ -176,7 +170,6 @@ class Message final : public fair::mq::Message
         , fShared(hdr.fShared)
         , fRegionId(hdr.fRegionId)
         , fSegmentId(hdr.fSegmentId)
-        , fAlignment(0)
         , fManaged(hdr.fManaged)
         , fQueued(false)
     {
@@ -194,11 +187,10 @@ class Message final : public fair::mq::Message
         fQueued = false;
     }
 
-    void Rebuild(Alignment alignment) override
+    void Rebuild(Alignment /* alignment */) override
     {
         CloseMessage();
         fQueued = false;
-        fAlignment = alignment.alignment;
     }
 
     void Rebuild(size_t size) override
@@ -212,8 +204,7 @@ class Message final : public fair::mq::Message
     {
         CloseMessage();
         fQueued = false;
-        fAlignment = alignment.alignment;
-        InitializeChunk(size, fAlignment);
+        InitializeChunk(size, alignment.alignment);
     }
 
     void Rebuild(void* data, size_t size, fair::mq::FreeFn* ffn, void* hint = nullptr) override
@@ -377,7 +368,6 @@ class Message final : public fair::mq::Message
     mutable boost::interprocess::managed_shared_memory::handle_t fShared; // handle to the buffer storing the ref count for shared buffers
     uint16_t fRegionId; // id of the unmanaged region
     mutable uint16_t fSegmentId; // id of the managed segment
-    size_t fAlignment;
     bool fManaged; // true = managed segment, false = unmanaged region
     bool fQueued;
 
@@ -452,7 +442,6 @@ class Message final : public fair::mq::Message
     {
         try {
             Deallocate();
-            fAlignment = 0;
             fManager.DecrementMsgCounter();
         } catch (SharedMemoryError& sme) {
             LOG(error) << "error closing message: " << sme.what();
