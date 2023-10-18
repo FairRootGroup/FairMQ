@@ -257,7 +257,7 @@ class Message final : public fair::mq::Message
 
     size_t GetSize() const override { return fSize; }
 
-    bool SetUsedSize(size_t newSize) override
+    bool SetUsedSize(size_t newSize, Alignment alignment = Alignment{0}) override
     {
         if (newSize == fSize) {
             return true;
@@ -266,8 +266,8 @@ class Message final : public fair::mq::Message
             return true;
         } else if (newSize <= fSize) {
             try {
+                char* oldPtr = fManager.GetAddressFromHandle(fHandle, fSegmentId);
                 try {
-                    char* oldPtr = fManager.GetAddressFromHandle(fHandle, fSegmentId);
                     uint16_t userOffset = ShmHeader::UserOffset(oldPtr);
                     char* ptr = fManager.ShrinkInPlace(userOffset + newSize, oldPtr, fSegmentId);
                     fLocalPtr = ShmHeader::UserPtr(ptr);
@@ -278,7 +278,11 @@ class Message final : public fair::mq::Message
                     // unused size >= 1000000 bytes: reallocate fully
                     // unused size < 1000000 bytes: simply reset the size and keep the rest of the buffer until message destruction
                     if (fSize - newSize >= 1000000) {
-                        char* ptr = fManager.Allocate(newSize, fAlignment);
+                        if (alignment.alignment == 0) {
+                            // if no alignment is provided, take the minimum alignment of the old pointer, but no more than 4096
+                            alignment.alignment = 1 << std::min(__builtin_ctz(reinterpret_cast<size_t>(oldPtr)), 12);
+                        }
+                        char* ptr = fManager.Allocate(newSize, alignment.alignment);
                         char* userPtr = ShmHeader::UserPtr(ptr);
                         std::memcpy(userPtr, fLocalPtr, newSize);
                         fManager.Deallocate(fHandle, fSegmentId);

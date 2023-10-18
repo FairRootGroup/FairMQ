@@ -210,7 +210,7 @@ class Message final : public fair::mq::Message
     // destroyed. Used size is applied only once in ApplyUsedSize, which is called by the socket
     // before sending. This function just updates the desired size until the actual "resizing"
     // happens.
-    bool SetUsedSize(size_t size) override
+    bool SetUsedSize(size_t size, Alignment /* alignment */ = Alignment{0}) override
     {
         if (size == GetSize()) {
             // nothing to do
