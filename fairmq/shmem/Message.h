@@ -36,70 +36,25 @@ class Message final : public fair::mq::Message
 
   public:
     Message(Manager& manager, fair::mq::TransportFactory* factory = nullptr)
-        : fair::mq::Message(factory)
-        , fManager(manager)
-        , fRegionPtr(nullptr)
-        , fLocalPtr(nullptr)
-        , fSize(0)
-        , fHint(0)
-        , fHandle(-1)
-        , fShared(-1)
-        , fRegionId(0)
-        , fSegmentId(fManager.GetSegmentId())
-        , fManaged(true)
-        , fQueued(false)
-    {
-        fManager.IncrementMsgCounter();
-    }
+        : Message(manager, Alignment{0}, factory)
+    {}
 
     Message(Manager& manager, Alignment /* alignment */, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
-        , fRegionPtr(nullptr)
-        , fLocalPtr(nullptr)
-        , fSize(0)
-        , fHint(0)
-        , fHandle(-1)
-        , fShared(-1)
-        , fRegionId(0)
         , fSegmentId(fManager.GetSegmentId())
-        , fManaged(true)
-        , fQueued(false)
     {
         fManager.IncrementMsgCounter();
     }
 
     Message(Manager& manager, const size_t size, fair::mq::TransportFactory* factory = nullptr)
-        : fair::mq::Message(factory)
-        , fManager(manager)
-        , fRegionPtr(nullptr)
-        , fLocalPtr(nullptr)
-        , fSize(0)
-        , fHint(0)
-        , fHandle(-1)
-        , fShared(-1)
-        , fRegionId(0)
-        , fSegmentId(fManager.GetSegmentId())
-        , fManaged(true)
-        , fQueued(false)
-    {
-        InitializeChunk(size);
-        fManager.IncrementMsgCounter();
-    }
+        : Message(manager, size, Alignment{0}, factory)
+    {}
 
     Message(Manager& manager, const size_t size, Alignment alignment, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
-        , fRegionPtr(nullptr)
-        , fLocalPtr(nullptr)
-        , fSize(0)
-        , fHint(0)
-        , fHandle(-1)
-        , fShared(-1)
-        , fRegionId(0)
         , fSegmentId(fManager.GetSegmentId())
-        , fManaged(true)
-        , fQueued(false)
     {
         InitializeChunk(size, alignment.alignment);
         fManager.IncrementMsgCounter();
@@ -108,16 +63,7 @@ class Message final : public fair::mq::Message
     Message(Manager& manager, void* data, const size_t size, fair::mq::FreeFn* ffn, void* hint = nullptr, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
-        , fRegionPtr(nullptr)
-        , fLocalPtr(nullptr)
-        , fSize(0)
-        , fHint(0)
-        , fHandle(-1)
-        , fShared(-1)
-        , fRegionId(0)
         , fSegmentId(fManager.GetSegmentId())
-        , fManaged(true)
-        , fQueued(false)
     {
         if (InitializeChunk(size)) {
             std::memcpy(fLocalPtr, data, size);
@@ -133,16 +79,12 @@ class Message final : public fair::mq::Message
     Message(Manager& manager, UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
-        , fRegionPtr(nullptr)
         , fLocalPtr(static_cast<char*>(data))
         , fSize(size)
         , fHint(reinterpret_cast<size_t>(hint))
-        , fHandle(-1)
-        , fShared(-1)
         , fRegionId(static_cast<UnmanagedRegionImpl*>(region.get())->fRegionId)
         , fSegmentId(fManager.GetSegmentId())
         , fManaged(false)
-        , fQueued(false)
     {
         if (region->GetType() != GetType()) {
             LOG(error) << "region type (" << region->GetType() << ") does not match message type (" << GetType() << ")";
@@ -162,8 +104,6 @@ class Message final : public fair::mq::Message
     Message(Manager& manager, MetaHeader& hdr, fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fManager(manager)
-        , fRegionPtr(nullptr)
-        , fLocalPtr(nullptr)
         , fSize(hdr.fSize)
         , fHint(hdr.fHint)
         , fHandle(hdr.fHandle)
@@ -171,7 +111,6 @@ class Message final : public fair::mq::Message
         , fRegionId(hdr.fRegionId)
         , fSegmentId(hdr.fSegmentId)
         , fManaged(hdr.fManaged)
-        , fQueued(false)
     {
         fManager.IncrementMsgCounter();
     }
@@ -360,16 +299,16 @@ class Message final : public fair::mq::Message
 
   private:
     Manager& fManager;
-    mutable UnmanagedRegion* fRegionPtr;
-    mutable char* fLocalPtr;
-    size_t fSize; // size of the shm buffer
-    size_t fHint; // user-defined value, given by the user on message creation and returned to the user on "buffer no longer needed"-callbacks
-    boost::interprocess::managed_shared_memory::handle_t fHandle; // handle to shm buffer, convertible to shm buffer ptr
-    mutable boost::interprocess::managed_shared_memory::handle_t fShared; // handle to the buffer storing the ref count for shared buffers
-    uint16_t fRegionId; // id of the unmanaged region
+    mutable UnmanagedRegion* fRegionPtr = nullptr;
+    mutable char* fLocalPtr = nullptr;
+    size_t fSize = 0; // size of the shm buffer
+    size_t fHint = 0; // user-defined value, given by the user on message creation and returned to the user on "buffer no longer needed"-callbacks
+    boost::interprocess::managed_shared_memory::handle_t fHandle = -1; // handle to shm buffer, convertible to shm buffer ptr
+    mutable boost::interprocess::managed_shared_memory::handle_t fShared = -1; // handle to the buffer storing the ref count for shared buffers
+    uint16_t fRegionId = 0; // id of the unmanaged region
     mutable uint16_t fSegmentId; // id of the managed segment
-    bool fManaged; // true = managed segment, false = unmanaged region
-    bool fQueued;
+    bool fManaged = true; // true = managed segment, false = unmanaged region
+    bool fQueued = false;
 
     void SetMeta(const MetaHeader& meta)
     {
