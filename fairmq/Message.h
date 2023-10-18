@@ -46,7 +46,7 @@ struct Message
     virtual void* GetData() const = 0;
     virtual size_t GetSize() const = 0;
 
-    virtual bool SetUsedSize(size_t size) = 0;
+    virtual bool SetUsedSize(size_t size, Alignment alignment = Alignment{0}) = 0;
 
     virtual Transport GetType() const = 0;
     TransportFactory* GetTransport() { return fTransport; }
