@@ -29,7 +29,7 @@ class LinePrinter
   public:
     LinePrinter(stringstream& out, string prefix)
         : fOut(out)
-        , fPrefix(move(prefix))
+        , fPrefix(std::move(prefix))
     {}
 
     // prints line with prefix on both cout (thread-safe) and output stream
