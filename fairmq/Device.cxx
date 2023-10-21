@@ -176,7 +176,6 @@ void Device::InitWrapper()
 
     // Fill the uninitialized channel containers
     for (auto& channel : GetChannels()) {
-        int subChannelIndex = 0;
         for (auto& subChannel : channel.second) {
             // set channel transport
             LOG(debug) << "Initializing transport for channel " << subChannel.fName << ": " << TransportNames.at(subChannel.fTransportType);
@@ -208,8 +207,6 @@ void Device::InitWrapper()
                 LOG(error) << "Cannot update configuration. Socket method (bind/connect) for channel '" << subChannel.fName << "' not specified.";
                 throw runtime_error(tools::ToString("Cannot update configuration. Socket method (bind/connect) for channel ", subChannel.fName, " not specified."));
             }
-
-            subChannelIndex++;
         }
     }
 
