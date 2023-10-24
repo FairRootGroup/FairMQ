@@ -35,6 +35,9 @@ auto RunSingleThreadedMultipart(string transport, string address1, string addres
         config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
     }
 
+    address1 += "_" + config.GetProperty<string>("session");
+    address2 += "_" + config.GetProperty<string>("session");
+
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
     Channel push1("Push1", "push", factory);
@@ -117,6 +120,8 @@ auto RunMultiThreadedMultipart(string transport, string address1, bool expandedS
     if (expandedShmMetadata) {
         config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
     }
+
+    address1 += "_" + config.GetProperty<string>("session");
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 

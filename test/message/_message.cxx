@@ -50,7 +50,7 @@ auto RunPushPullWithMsgResize(string const & transport, string const & _address,
 
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
-    auto const address(tools::ToString(_address, "_", transport));
+    auto const address(tools::ToString(_address, "_", transport, "_", config.GetProperty<string>("session")));
     push.Bind(address);
     pull.Connect(address);
 
@@ -153,7 +153,7 @@ auto RunPushPullWithAlignment(string const& transport, string const& _address, b
 
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
-    auto const address(tools::ToString(_address, "_", transport));
+    auto const address(tools::ToString(_address, "_", transport, "_", config.GetProperty<string>("session")));
     push.Bind(address);
     pull.Connect(address);
 
@@ -211,7 +211,7 @@ auto EmptyMessage(string const& transport, string const& _address, bool expanded
 
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
-    auto const address(tools::ToString(_address, "_", transport));
+    auto const address(tools::ToString(_address, "_", transport, "_", config.GetProperty<string>("session")));
     push.Bind(address);
     pull.Connect(address);
 
@@ -321,8 +321,8 @@ auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata = fal
         Channel push("Push", "push", factory1);
         Channel pull("Pull", "pull", factory2);
 
-        push.Bind(address);
-        pull.Connect(address);
+        push.Bind(address + "_" + session);
+        pull.Connect(address + "_" + session);
 
         const size_t offset = 100;
         auto msg1(push.NewMessage(region, static_cast<char*>(region->GetData()), msgSize, nullptr));
