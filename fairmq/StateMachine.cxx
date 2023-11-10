@@ -177,6 +177,7 @@ struct Machine_ : public state_machine_def<Machine_>
     atomic<bool> fLastTransitionResult;
 
     mutex fStateMtx;
+    mutex fSubscriptionsMtx;
     atomic<bool> fNewStatePending;
     condition_variable fNewStatePendingCV;
 
@@ -312,12 +313,15 @@ void StateMachine::SubscribeToStateChange(const string& key, function<void(const
 {
     // Check if the key has a integer value as prefix, if yes, decode it.
     int i = strtol(key.c_str(), nullptr, 10);
-    static_pointer_cast<FairMQFSM>(fFsm)->fStateChangeSignalsMap.insert({key, static_pointer_cast<FairMQFSM>(fFsm)->fStateChangeSignal.connect(i, callback)});
+    auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+    lock_guard<mutex> lock(fsm->fSubscriptionsMtx);
+    fsm->fStateChangeSignalsMap.insert({key, fsm->fStateChangeSignal.connect(i, callback)});
 }
 
 void StateMachine::UnsubscribeFromStateChange(const string& key)
 {
     auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+    lock_guard<mutex> lock(fsm->fSubscriptionsMtx);
     if (fsm->fStateChangeSignalsMap.count(key)) {
         fsm->fStateChangeSignalsMap.at(key).disconnect();
         fsm->fStateChangeSignalsMap.erase(key);
@@ -357,12 +361,15 @@ void StateMachine::StopHandlingStates()
 
 void StateMachine::SubscribeToNewTransition(const string& key, function<void(const Transition)> callback)
 {
-    static_pointer_cast<FairMQFSM>(fFsm)->fNewTransitionSignalsMap.insert({key, static_pointer_cast<FairMQFSM>(fFsm)->fNewTransitionSignal.connect(callback)});
+    auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+    lock_guard<mutex> lock(fsm->fSubscriptionsMtx);
+    fsm->fNewTransitionSignalsMap.insert({key, fsm->fNewTransitionSignal.connect(callback)});
 }
 
 void StateMachine::UnsubscribeFromNewTransition(const string& key)
 {
     auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
+    lock_guard<mutex> lock(fsm->fSubscriptionsMtx);
     if (fsm->fNewTransitionSignalsMap.count(key)) {
         fsm->fNewTransitionSignalsMap.at(key).disconnect();
         fsm->fNewTransitionSignalsMap.erase(key);
