@@ -1,5 +1,5 @@
 /********************************************************************************
- *    Copyright (C) 2017 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    *
+ * Copyright (C) 2017-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -7,8 +7,12 @@
  ********************************************************************************/
 
 #include "Fixture.h"
+#include <array>
 #include <condition_variable>
+#include <fairmq/Tools.h>
+#include <memory>
 #include <mutex>
+#include <string>
 
 namespace
 {
@@ -140,6 +144,29 @@ TEST_F(PluginServices, ControlStateTransitionConversions)
     EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::ResetDevice));
     EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::End));
     EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::ErrorFound));
+}
+
+TEST_F(PluginServices, SubscriptionThreadSafety)
+{
+    // obviously not a perfect test, but I could segfault fmq reliably with it (without the fix)
+
+    constexpr auto attempts = 1000;
+    constexpr auto subscribers = 5;
+
+    std::array<std::unique_ptr<std::thread>, subscribers> threads;
+    auto id = 0;
+    for (auto& thread : threads) {
+        thread = std::make_unique<std::thread>([&](){
+            auto const subscriber = fair::mq::tools::ToString("subscriber_", id);
+            for (auto i = 0; i < attempts; ++i) {
+                mServices.SubscribeToDeviceStateChange(subscriber, [](DeviceState){});
+                mServices.UnsubscribeFromDeviceStateChange(subscriber);
+            }
+        });
+        ++id;
+    }
+
+    for (auto& thread : threads) { thread->join(); }
 }
 
 } /* namespace */
