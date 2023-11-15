@@ -76,6 +76,11 @@ struct MessageBadAlloc : std::runtime_error
     using std::runtime_error::runtime_error;
 };
 
+struct RefCountBadAlloc : std::runtime_error
+{
+    using std::runtime_error::runtime_error;
+};
+
 }   // namespace fair::mq
 
 using fairmq_free_fn [[deprecated("Use fair::mq::FreeFn")]] = fair::mq::FreeFn;

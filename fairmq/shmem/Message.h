@@ -279,7 +279,15 @@ class Message final : public fair::mq::Message
             }
             if (otherMsg.fShared < 0) {
                 // UR msg not yet shared, create the reference counting object with count 2
-                otherMsg.fShared = fRegionPtr->HandleFromAddress(&(fRegionPtr->MakeRefCount(2)));
+                try {
+                    otherMsg.fShared = fRegionPtr->HandleFromAddress(&(fRegionPtr->MakeRefCount(2)));
+                } catch (boost::interprocess::bad_alloc& ba) {
+                    throw RefCountBadAlloc(tools::ToString(
+                        "Insufficient space in the reference count segment ",
+                        otherMsg.fRegionId,
+                        ", original exception: bad_alloc: ", 
+                        ba.what()));
+                }
             } else {
                 fRegionPtr->GetRefCountAddressFromHandle(otherMsg.fShared)->Increment();
             }
