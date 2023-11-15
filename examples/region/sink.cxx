@@ -36,12 +36,8 @@ struct Sink : Device
         Channel& dataIn = GetChannel(fChanName, 0);
 
         while (!NewStatePending()) {
-            auto msg(dataIn.Transport()->CreateMessage());
-            dataIn.Receive(msg);
-
-            // void* ptr = msg->GetData();
-            // char* cptr = static_cast<char*>(ptr);
-            // LOG(info) << "check: " << cptr[3];
+            fair::mq::Parts parts;
+            dataIn.Receive(parts);
 
             if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
                 LOG(info) << "Configured max number of iterations reached. Leaving RUNNING state.";

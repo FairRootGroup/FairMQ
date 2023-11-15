@@ -26,6 +26,7 @@ struct Sampler : fair::mq::Device
         fMaxIterations = fConfig->GetProperty<uint64_t>("max-iterations");
         fChanName = fConfig->GetProperty<std::string>("chan-name");
         fSamplingRate = fConfig->GetProperty<float>("sampling-rate");
+        fRCSegmentSize = fConfig->GetProperty<uint64_t>("rc-segment-size");
 
         GetChannel(fChanName, 0).Transport()->SubscribeToRegionEvents([](fair::mq::RegionInfo info) {
             LOG(info) << "Region event: " << info.event << ": "
@@ -45,6 +46,7 @@ struct Sampler : fair::mq::Device
         }
         regionCfg.lock = !fExternalRegion; // mlock region after creation
         regionCfg.zero = !fExternalRegion; // zero region content after creation
+        regionCfg.rcSegmentSize = fRCSegmentSize; // size of the corresponding reference count segment
         fRegion = fair::mq::UnmanagedRegionPtr(NewUnmanagedRegionFor(
             fChanName, // region is created using the transport of this channel...
             0,      // ... and this sub-channel
@@ -66,17 +68,22 @@ struct Sampler : fair::mq::Device
         fair::mq::tools::RateLimiter rateLimiter(fSamplingRate);
 
         while (!NewStatePending()) {
-            fair::mq::MessagePtr msg(NewMessageFor(fChanName, // channel
-                                                0, // sub-channel
-                                                fRegion, // region
-                                                fRegion->GetData(), // ptr within region
-                                                fMsgSize, // offset from ptr
-                                                nullptr // hint
-                                                ));
+            fair::mq::Parts parts;
+            // make 64 parts
+            for (int i = 0; i < 64; ++i) {
+                parts.AddPart(NewMessageFor(
+                    fChanName, // channel
+                    0, // sub-channel
+                    fRegion, // region
+                    fRegion->GetData(), // ptr within region
+                    fMsgSize, // offset from ptr
+                    nullptr // hint
+                    ));
+            }
 
             std::lock_guard<std::mutex> lock(fMtx);
-            ++fNumUnackedMsgs;
-            if (Send(msg, fChanName, 0) > 0) {
+            fNumUnackedMsgs += parts.Size();
+            if (Send(parts, fChanName, 0) > 0) {
                 if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
                     LOG(info) << "Configured maximum number of iterations reached. Stopping sending.";
                     break;
@@ -117,6 +124,7 @@ struct Sampler : fair::mq::Device
     uint32_t fLinger = 100;
     uint64_t fMaxIterations = 0;
     uint64_t fNumIterations = 0;
+    uint64_t fRCSegmentSize = 10000000;
     fair::mq::UnmanagedRegionPtr fRegion = nullptr;
     std::mutex fMtx;
     uint64_t fNumUnackedMsgs = 0;
@@ -132,7 +140,8 @@ void addCustomOptions(bpo::options_description& options)
         ("sampling-rate", bpo::value<float>()->default_value(0.), "Sampling rate (Hz).")
         ("region-linger", bpo::value<uint32_t>()->default_value(100), "Linger period for regions")
         ("max-iterations", bpo::value<uint64_t>()->default_value(0), "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)")
-        ("external-region", bpo::value<bool>()->default_value(false), "Use region created by another process");
+        ("external-region", bpo::value<bool>()->default_value(false), "Use region created by another process")
+        ("rc-segment-size", bpo::value<uint64_t>()->default_value(10000000), "Size of the reference count segment for Unamanged Region");
 }
 
 std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)

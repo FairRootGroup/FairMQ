@@ -36,16 +36,22 @@ struct Processor : Device
         Channel& dataOut2 = GetChannel("data3", 0);
 
         while (!NewStatePending()) {
-            auto msg(dataIn.Transport()->CreateMessage());
-            dataIn.Receive(msg);
+            fair::mq::Parts inParts;
+            dataIn.Receive(inParts);
 
-            fair::mq::MessagePtr msgCopy1(NewMessage());
-            msgCopy1->Copy(*msg);
-            fair::mq::MessagePtr msgCopy2(NewMessage());
-            msgCopy2->Copy(*msg);
+            fair::mq::Parts outParts1;
+            fair::mq::Parts outParts2;
 
-            dataOut1.Send(msgCopy1);
-            dataOut2.Send(msgCopy2);
+            for (const auto& inPart : inParts) {
+                outParts1.AddPart(NewMessage());
+                outParts1.fParts.back()->Copy(*inPart);
+
+                outParts2.AddPart(NewMessage());
+                outParts2.fParts.back()->Copy(*inPart);
+            }
+
+            dataOut1.Send(outParts1);
+            dataOut2.Send(outParts2);
 
             if (fMaxIterations > 0 && ++fNumIterations >= fMaxIterations) {
                 LOG(info) << "Configured max number of iterations reached. Leaving RUNNING state.";
