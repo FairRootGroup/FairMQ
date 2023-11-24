@@ -274,7 +274,7 @@ bool Monitor::PrintShm(const ShmId& shmId)
 
                 try {
                     managed_shared_memory rcCountSegment(open_read_only, MakeShmName(shmId.shmId, "rrc", id).c_str());
-                    ss << ", rcCountSegment size: " << rcCountSegment.get_size();
+                    ss << ", rcCountSegment size: " << rcCountSegment.get_size() << ", free: " << rcCountSegment.get_free_memory();
                 } catch (bie&) {
                     ss << ", rcCountSegment: not found";
                 }
