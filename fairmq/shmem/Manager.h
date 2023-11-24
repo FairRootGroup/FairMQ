@@ -323,7 +323,6 @@ class Manager
                 }
 
                 const uint16_t id = cfg.id.value();
-                const uint64_t rcSegmentSize = cfg.rcSegmentSize;
 
                 std::lock_guard<std::mutex> lock(fLocalRegionsMtx);
 
@@ -340,6 +339,12 @@ class Manager
                     LOG(debug) << "Unmanaged region (view) already present, promoting to controller";
                     region->BecomeController(cfg);
                 } else {
+                    // we need to update local config, if the region information already exists
+                    auto info = fShmRegions->find(id);
+                    if (info != fShmRegions->end()) {
+                        cfg.rcSegmentSize = info->second.fRCSegmentSize;
+                    }
+
                     auto res = fRegions.emplace(id, std::make_unique<UnmanagedRegion>(fShmId, size, true, cfg));
                     region = res.first->second.get();
                 }
@@ -348,7 +353,6 @@ class Manager
                 // start ack receiver only if a callback has been provided.
                 if (callback || bulkCallback) {
                     region->SetCallbacks(callback, bulkCallback);
-                    region->InitializeRefCountSegment(rcSegmentSize);
                     region->InitializeQueues();
                     region->StartAckSender();
                     region->StartAckReceiver();
@@ -401,19 +405,18 @@ class Manager
 
         try {
             RegionConfig cfg;
-            const uint64_t rcSegmentSize = cfg.rcSegmentSize;
             // get region info
             {
                 boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> shmLock(*fShmMtx);
                 RegionInfo regionInfo = fShmRegions->at(id);
                 cfg.id = id;
                 cfg.creationFlags = regionInfo.fCreationFlags;
+                cfg.rcSegmentSize = regionInfo.fRCSegmentSize;
                 cfg.path = regionInfo.fPath.c_str();
             }
             // LOG(debug) << "Located remote region with id '" << id << "', path: '" << cfg.path << "', flags: '" << cfg.creationFlags << "'";
 
             auto r = fRegions.emplace(id, std::make_unique<UnmanagedRegion>(fShmId, 0, false, std::move(cfg)));
-            r.first->second->InitializeRefCountSegment(rcSegmentSize);
             r.first->second->InitializeQueues();
             r.first->second->StartAckSender();
             return r.first->second.get();
@@ -482,6 +485,7 @@ class Manager
                     cfg.id = info.id;
                     cfg.creationFlags = regionInfo.fCreationFlags;
                     cfg.path = regionInfo.fPath.c_str();
+                    cfg.rcSegmentSize = regionInfo.fRCSegmentSize;
                     regionCfgs.emplace(info.id, cfg);
                     // fill the ptr+size info after shmLock is released, to avoid constructing local region under it
                 } else {
@@ -503,10 +507,8 @@ class Manager
                     if (it != fRegions.end()) {
                         region = it->second.get();
                     } else {
-                        const uint64_t rcSegmentSize = cfgIt->second.rcSegmentSize;
                         auto r = fRegions.emplace(cfgIt->first, std::make_unique<UnmanagedRegion>(fShmId, 0, false, cfgIt->second));
                         region = r.first->second.get();
-                        region->InitializeRefCountSegment(rcSegmentSize);
                         region->InitializeQueues();
                         region->StartAckSender();
                     }

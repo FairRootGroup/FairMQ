@@ -146,6 +146,8 @@ struct UnmanagedRegion
             LOG(debug) << "Successfully zeroed free memory of region " << id << ".";
         }
 
+        InitializeRefCountSegment(cfg.rcSegmentSize);
+
         if (fControlling && created) {
             Register(shmId, cfg);
         }
