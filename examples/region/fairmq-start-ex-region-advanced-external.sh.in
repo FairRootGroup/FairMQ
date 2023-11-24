@@ -1,0 +1,103 @@
+#!/bin/bash
+
+export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
+
+transport="shmem"
+msgSize="1000000"
+
+if [[ $1 =~ ^[a-z]+$ ]]; then
+    transport=$1
+fi
+
+if [[ $2 =~ ^[0-9]+$ ]]; then
+    msgSize=$1
+fi
+
+SAMPLER="fairmq-ex-region-sampler"
+SAMPLER+=" --id sampler1"
+# SAMPLER+=" --sampling-rate 10"
+SAMPLER+=" --severity debug"
+SAMPLER+=" --msg-size $msgSize"
+SAMPLER+=" --transport $transport"
+SAMPLER+=" --shmid 1"
+SAMPLER+=" --shm-monitor false"
+SAMPLER+=" --rc-segment-size 200000000"
+SAMPLER+=" --external-region true"
+SAMPLER+=" --shm-no-cleanup true"
+SAMPLER+=" --chan-name data1"
+SAMPLER+=" --channel-config name=data1,type=push,method=bind,address=tcp://127.0.0.1:7777"
+xterm -geometry 90x60+0+0 -hold -e @EX_BIN_DIR@/$SAMPLER &
+
+PROCESSOR1="fairmq-ex-region-processor"
+PROCESSOR1+=" --id processor1"
+PROCESSOR1+=" --severity debug"
+PROCESSOR1+=" --transport $transport"
+PROCESSOR1+=" --shmid 1"
+PROCESSOR1+=" --shm-segment-id 1"
+PROCESSOR1+=" --shm-monitor false"
+PROCESSOR1+=" --shm-no-cleanup true"
+PROCESSOR1+=" --channel-config name=data1,type=pull,method=connect,address=tcp://127.0.0.1:7777"
+PROCESSOR1+="                  name=data2,type=push,method=bind,address=tcp://127.0.0.1:7778"
+PROCESSOR1+="                  name=data3,type=push,method=bind,address=tcp://127.0.0.1:7779"
+xterm -geometry 90x40+550+40 -hold -e @EX_BIN_DIR@/$PROCESSOR1 &
+
+PROCESSOR2="fairmq-ex-region-processor"
+PROCESSOR2+=" --id processor2"
+PROCESSOR2+=" --severity debug"
+PROCESSOR2+=" --transport $transport"
+PROCESSOR2+=" --shmid 1"
+PROCESSOR2+=" --shm-segment-id 2"
+PROCESSOR2+=" --shm-monitor false"
+PROCESSOR2+=" --shm-no-cleanup true"
+PROCESSOR2+=" --channel-config name=data1,type=pull,method=connect,address=tcp://127.0.0.1:7777"
+PROCESSOR2+="                  name=data2,type=push,method=bind,address=tcp://127.0.0.1:7788"
+PROCESSOR2+="                  name=data3,type=push,method=bind,address=tcp://127.0.0.1:7789"
+xterm -geometry 90x40+550+600 -hold -e @EX_BIN_DIR@/$PROCESSOR2 &
+
+SINK1_1="fairmq-ex-region-sink"
+SINK1_1+=" --id sink1_1"
+SINK1_1+=" --severity debug"
+SINK1_1+=" --chan-name data2"
+SINK1_1+=" --transport $transport"
+SINK1_1+=" --shmid 1"
+SINK1_1+=" --shm-segment-id 1"
+SINK1_1+=" --shm-monitor false"
+SINK1_1+=" --shm-no-cleanup true"
+SINK1_1+=" --channel-config name=data2,type=pull,method=connect,address=tcp://127.0.0.1:7778"
+xterm -geometry 90x20+1100+0 -hold -e @EX_BIN_DIR@/$SINK1_1 &
+
+SINK1_2="fairmq-ex-region-sink"
+SINK1_2+=" --id sink1_2"
+SINK1_2+=" --severity debug"
+SINK1_2+=" --chan-name data3"
+SINK1_2+=" --transport $transport"
+SINK1_2+=" --shmid 1"
+SINK1_2+=" --shm-segment-id 1"
+SINK1_2+=" --shm-monitor false"
+SINK1_2+=" --shm-no-cleanup true"
+SINK1_2+=" --channel-config name=data3,type=pull,method=connect,address=tcp://127.0.0.1:7779"
+xterm -geometry 90x20+1100+300 -hold -e @EX_BIN_DIR@/$SINK1_2 &
+
+SINK2_1="fairmq-ex-region-sink"
+SINK2_1+=" --id sink2_1"
+SINK2_1+=" --severity debug"
+SINK2_1+=" --chan-name data2"
+SINK2_1+=" --transport $transport"
+SINK2_1+=" --shmid 1"
+SINK2_1+=" --shm-segment-id 2"
+SINK2_1+=" --shm-monitor false"
+SINK2_1+=" --shm-no-cleanup true"
+SINK2_1+=" --channel-config name=data2,type=pull,method=connect,address=tcp://127.0.0.1:7788"
+xterm -geometry 90x20+1100+600 -hold -e @EX_BIN_DIR@/$SINK2_1 &
+
+SINK2_2="fairmq-ex-region-sink"
+SINK2_2+=" --id sink2_2"
+SINK2_2+=" --severity debug"
+SINK2_2+=" --chan-name data3"
+SINK2_2+=" --transport $transport"
+SINK2_2+=" --shmid 1"
+SINK2_2+=" --shm-segment-id 2"
+SINK2_2+=" --shm-monitor false"
+SINK2_2+=" --shm-no-cleanup true"
+SINK2_2+=" --channel-config name=data3,type=pull,method=connect,address=tcp://127.0.0.1:7789"
+xterm -geometry 90x20+1100+900 -hold -e @EX_BIN_DIR@/$SINK2_2 &
