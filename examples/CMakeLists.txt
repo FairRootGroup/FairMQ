@@ -61,7 +61,7 @@ function(add_example)
   set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
   foreach(script IN LISTS scripts)
     set(script_file "${script_prefix}-${script}.sh")
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${script_file}.in" "${CMAKE_CURRENT_BINARY_DIR}/${script_file}")
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${script_file}.in" "${CMAKE_CURRENT_BINARY_DIR}/${script_file}" @ONLY)
   endforeach()
 
   if(ARG_CONFIG)
@@ -119,7 +119,7 @@ function(add_example)
   set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
   foreach(script IN LISTS scripts)
     set(script_file "${script_prefix}-${script}.sh")
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${script_file}.in" "${CMAKE_CURRENT_BINARY_DIR}/${script_file}_install")
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${script_file}.in" "${CMAKE_CURRENT_BINARY_DIR}/${script_file}_install" @ONLY)
     install(
       PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${script_file}_install"
       DESTINATION ${PROJECT_INSTALL_BINDIR}
