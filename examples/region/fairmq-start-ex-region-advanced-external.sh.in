@@ -2,16 +2,8 @@
 
 export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
 
-transport="shmem"
-msgSize="1000000"
-
-if [[ $1 =~ ^[a-z]+$ ]]; then
-    transport=$1
-fi
-
-if [[ $2 =~ ^[0-9]+$ ]]; then
-    msgSize=$1
-fi
+transport=${1:-shmem}
+msgSize=${2:-1000000}
 
 SAMPLER="fairmq-ex-region-sampler"
 SAMPLER+=" --id sampler1"
