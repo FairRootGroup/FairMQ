@@ -172,8 +172,6 @@ enum class AllocationAlgorithm : int
 
 struct RegionInfo
 {
-    static constexpr uint64_t DefaultRcSegmentSize = 10000000;
-
     RegionInfo(const char* path, int flags, uint64_t userFlags, uint64_t size, uint64_t rcSegmentSize, const VoidAlloc& alloc)
         : fPath(path, alloc)
         , fCreationFlags(flags)
@@ -181,14 +179,6 @@ struct RegionInfo
         , fSize(size)
         , fRCSegmentSize(rcSegmentSize)
         , fDestroyed(false)
-    {}
-
-    RegionInfo(const VoidAlloc& alloc)
-        : RegionInfo("", 0, 0, 0, DefaultRcSegmentSize, alloc)
-    {}
-
-    RegionInfo(const char* path, int flags, uint64_t userFlags, uint64_t size, const VoidAlloc& alloc)
-        : RegionInfo(path, flags, userFlags, size, DefaultRcSegmentSize, alloc)
     {}
 
     Str fPath;
