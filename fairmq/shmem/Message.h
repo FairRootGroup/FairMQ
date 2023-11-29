@@ -251,7 +251,12 @@ class Message final : public fair::mq::Message
         if (!fRegionPtr) {
             throw TransportError(tools::ToString("Cannot get unmanaged region with id ", fRegionId));
         }
-        return fRegionPtr->GetRefCountAddressFromHandle(fShared)->Get();
+        if (fRegionPtr->fRcSegmentSize > 0) {
+            return fRegionPtr->GetRefCountAddressFromHandle(fShared)->Get();
+        } else {
+            fManager.GetSegment(fSegmentId);
+            return ShmHeader::RefCount(fManager.GetAddressFromHandle(fShared, fSegmentId));
+        }
     }
 
     void Copy(const fair::mq::Message& other) override
@@ -277,19 +282,29 @@ class Message final : public fair::mq::Message
             if (!fRegionPtr) {
                 throw TransportError(tools::ToString("Cannot get unmanaged region with id ", otherMsg.fRegionId));
             }
-            if (otherMsg.fShared < 0) {
-                // UR msg not yet shared, create the reference counting object with count 2
-                try {
-                    otherMsg.fShared = fRegionPtr->HandleFromAddress(&(fRegionPtr->MakeRefCount(2)));
-                } catch (boost::interprocess::bad_alloc& ba) {
-                    throw RefCountBadAlloc(tools::ToString(
-                        "Insufficient space in the reference count segment ",
-                        otherMsg.fRegionId,
-                        ", original exception: bad_alloc: ", 
-                        ba.what()));
+            if (fRegionPtr->fRcSegmentSize > 0) {
+                if (otherMsg.fShared < 0) {
+                    // UR msg not yet shared, create the reference counting object with count 2
+                    try {
+                        otherMsg.fShared = fRegionPtr->HandleFromAddress(&(fRegionPtr->MakeRefCount(2)));
+                    } catch (boost::interprocess::bad_alloc& ba) {
+                        throw RefCountBadAlloc(tools::ToString("Insufficient space in the reference count segment ", otherMsg.fRegionId, ", original exception: bad_alloc: ", ba.what()));
+                    }
+                } else {
+                    fRegionPtr->GetRefCountAddressFromHandle(otherMsg.fShared)->Increment();
                 }
-            } else {
-                fRegionPtr->GetRefCountAddressFromHandle(otherMsg.fShared)->Increment();
+            } else { // if RefCount segment size is 0, store the ref count in the managed segment
+                if (otherMsg.fShared < 0) { // if UR msg is not yet shared
+                    char* ptr = fManager.Allocate(2, 0);
+                    // point the fShared in the unmanaged region message to the refCount holder
+                    otherMsg.fShared = fManager.GetHandleFromAddress(ptr, fSegmentId);
+                    // the message needs to be able to locate in which segment the refCount is stored
+                    otherMsg.fSegmentId = fSegmentId;
+                    ShmHeader::IncrementRefCount(ptr);
+                } else { // if the UR msg is already shared
+                    fManager.GetSegment(otherMsg.fSegmentId);
+                    ShmHeader::IncrementRefCount(fManager.GetAddressFromHandle(otherMsg.fShared, otherMsg.fSegmentId));
+                }
             }
         }
 
@@ -357,10 +372,21 @@ class Message final : public fair::mq::Message
                     if (!fRegionPtr) {
                         throw TransportError(tools::ToString("Cannot get unmanaged region with id ", fRegionId));
                     }
-                    uint16_t refCount = fRegionPtr->GetRefCountAddressFromHandle(fShared)->Decrement();
-                    if (refCount == 1) {
-                        fRegionPtr->RemoveRefCount(*(fRegionPtr->GetRefCountAddressFromHandle(fShared)));
-                        ReleaseUnmanagedRegionBlock();
+                    if (fRegionPtr->fRcSegmentSize > 0) {
+                        uint16_t refCount = fRegionPtr->GetRefCountAddressFromHandle(fShared)->Decrement();
+                        if (refCount == 1) {
+                            fRegionPtr->RemoveRefCount(*(fRegionPtr->GetRefCountAddressFromHandle(fShared)));
+                            ReleaseUnmanagedRegionBlock();
+                        }
+                    } else { // if RefCount segment size is 0, get the ref count from the managed segment
+                        // make sure segment is initialized in this transport
+                        fManager.GetSegment(fSegmentId);
+                        // release unmanaged region block if ref count is one
+                        uint16_t refCount = ShmHeader::DecrementRefCount(fManager.GetAddressFromHandle(fShared, fSegmentId));
+                        if (refCount == 1) {
+                            fManager.Deallocate(fShared, fSegmentId);
+                            ReleaseUnmanagedRegionBlock();
+                        }
                     }
                 } else {
                     ReleaseUnmanagedRegionBlock();

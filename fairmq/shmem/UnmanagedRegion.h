@@ -65,6 +65,7 @@ struct UnmanagedRegion
         , fShmemObject()
         , fFile(nullptr)
         , fFileMapping()
+        , fRcSegmentSize(cfg.rcSegmentSize)
         , fQueue(nullptr)
         , fCallback(nullptr)
         , fBulkCallback(nullptr)
@@ -146,13 +147,13 @@ struct UnmanagedRegion
             LOG(debug) << "Successfully zeroed free memory of region " << id << ".";
         }
 
-        InitializeRefCountSegment(cfg.rcSegmentSize);
+        InitializeRefCountSegment(fRcSegmentSize);
 
         if (fControlling && created) {
             Register(shmId, cfg);
         }
 
-        LOG(debug) << (created ? "Created" : "Opened") << " unmanaged shared memory region: " << fName << " (" << (fControlling ? "controller" : "viewer") << ")";
+        LOG(debug) << (created ? "Created" : "Opened") << " unmanaged shared memory region: " << fName << " (" << (fControlling ? "controller" : "viewer") << "), refCount segment size: " << fRcSegmentSize;
     }
 
     UnmanagedRegion() = delete;
@@ -266,6 +267,7 @@ struct UnmanagedRegion
     std::condition_variable fBlockSendCV;
     std::vector<RegionBlock> fBlocksToFree;
     const std::size_t fAckBunchSize = 256;
+    uint64_t fRcSegmentSize;
     std::unique_ptr<boost::interprocess::message_queue> fQueue;
     std::unique_ptr<boost::interprocess::managed_shared_memory> fRefCountSegment;
     std::unique_ptr<RefCountPool> fRefCountPool;
@@ -321,7 +323,7 @@ struct UnmanagedRegion
     void InitializeRefCountSegment(uint64_t size)
     {
         using namespace boost::interprocess;
-        if (!fRefCountSegment) {
+        if (!fRefCountSegment && size > 0) {
             fRefCountSegment = std::make_unique<managed_shared_memory>(open_or_create, fRefCountSegmentName.c_str(), size);
             LOG(trace) << "shmem: initialized ref count segment: " << fRefCountSegmentName;
             fRefCountPool = std::make_unique<RefCountPool>(fRefCountSegment->get_segment_manager());

@@ -287,8 +287,10 @@ auto ZeroCopy(bool expandedShmMetadata = false) -> void
 
 // The "zero copy" property of the Copy() method is an implementation detail and is not guaranteed.
 // Currently it holds true for the shmem (across devices) and for zeromq (within same device) transports.
-auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata = false) -> void
+auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint64_t rcSegmentSize) -> void
 {
+    fair::Logger::SetConsoleSeverity(fair::Severity::debug);
+
     ProgOptions config1;
     ProgOptions config2;
     string session(tools::Uuid());
@@ -311,11 +313,13 @@ auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata = fal
 
     const size_t msgSize{100};
     const size_t regionSize{1000000};
+    RegionConfig cfg;
+    cfg.rcSegmentSize = rcSegmentSize;
     tools::Semaphore blocker;
 
     auto region = factory1->CreateUnmanagedRegion(regionSize, [&blocker](void*, size_t, void*) {
         blocker.Signal();
-    });
+    }, cfg);
 
     {
         Channel push("Push", "push", factory1);
@@ -461,12 +465,22 @@ TEST(ZeroCopy, shmem_expanded_metadata) // NOLINT
 
 TEST(ZeroCopyFromUnmanaged, shmem) // NOLINT
 {
-    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged");
+    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged", false, 10000000);
 }
 
 TEST(ZeroCopyFromUnmanaged, shmem_expanded_metadata) // NOLINT
 {
-    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged", true);
+    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged_expanded", true, 10000000);
+}
+
+TEST(ZeroCopyFromUnmanaged, shmem_no_rc_segment) // NOLINT
+{
+    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged_no_rc_segment", false, 0);
+}
+
+TEST(ZeroCopyFromUnmanaged, shmem_expanded_metadata_no_rc_segment) // NOLINT
+{
+    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged_expanded_no_rc_segment", true, 0);
 }
 
 } // namespace
