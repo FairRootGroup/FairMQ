@@ -139,6 +139,7 @@ def main():
     parser = ArgumentParser(description='Update codemeta.json and '
                                         '.zenodo.json')
     parser.add_argument('--set-version', dest='newversion')
+    parser.add_argument('--outdir', dest='outdir')
     args = parser.parse_args()
 
     for manipulator in (CodeMetaManipulator(), ZenodoManipulator()):
@@ -150,7 +151,10 @@ def main():
         if args.newversion is not None:
             manipulator.version(args.newversion)
         manipulator.update_authors()
-        manipulator.save()
+        filename = None
+        if args.outdir is not None:
+            filename = f'{args.outdir}/{manipulator.default_filename}'
+        manipulator.save(filename)
 
 
 if __name__ == '__main__':
