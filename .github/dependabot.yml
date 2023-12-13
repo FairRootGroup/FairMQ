@@ -6,7 +6,7 @@ updates:
     schedule:
       interval: "monthly"
   - package-ecosystem: "gitsubmodule"
-    directory: "/extern"
+    directory: "/"
     target-branch: "dev"
     schedule:
       interval: "monthly"
