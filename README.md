@@ -45,9 +45,9 @@ Recommended:
 
 ```bash
 git clone https://github.com/FairRootGroup/FairMQ fairmq_source
-cmake -S fairmq_source -B fairmq_build -GNinja -DCMAKE_BUILD_TYPE=Release
+cmake -S fairmq_source -B fairmq_build -GNinja -DCMAKE_BUILD_TYPE=Release [-DBUILD_TESTING=ON]
 cmake --build fairmq_build
-ctest --test-dir fairmq_build --output-on-failure --schedule-random -j<ncpus>
+[ctest --test-dir fairmq_build --output-on-failure --schedule-random -j<ncpus>] # needs -DBUILD_TESTING=ON
 cmake --install fairmq_build --prefix $(pwd)/fairmq_install
 ```
 
@@ -56,6 +56,24 @@ Please consult the [manpages of your CMake version](https://cmake.org/cmake/help
 If dependencies are not installed in standard system directories, you can hint the installation location via
 `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...` (`*_ROOT` variables can also be environment variables).
 
+## Installation via Spack
+
+Prerequisite: [Spack](https://spack.readthedocs.io/en/latest/getting_started.html)
+
+```bash
+spack info fairmq # inspect build options
+spack install fairmq # build latest packaged version with default options
+```
+
+Build FairMQ's dependencies via Spack for development:
+```bash
+git clone -b dev https://github.com/FairRootGroup/FairMQ fairmq_source
+spack --env fairmq_source install # installs deps declared in fairmq_source/spack.yaml
+spack env activate fairmq_source # sets $CMAKE_PREFIX_PATH which is used by CMake to find FairMQ's deps
+cmake -S fairmq_source -B fairmq_build -GNinja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+# develop, compile, test
+spack env deactivate # at end of dev session, or simply close the shell
+```
 
 ## Usage
 
