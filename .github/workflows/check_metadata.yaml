@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH, Darmstadt, Germany
+#
+# SPDX-License-Identifier: CC0-1.0
+
+name: Check AUTHORS and CONTRIBUTORS in metadata
+
+on:
+  push:
+    paths:
+    - AUTHORS
+    - CONTRIBUTORS
+    - codemeta.json
+    - .zenodo.json
+  pull_request:
+    paths:
+    - AUTHORS
+    - CONTRIBUTORS
+    - codemeta.json
+    - .zenodo.json
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Try updating metadata
+        run: python meta_update.py
+      - name: Check for Updates
+        run: git diff --exit-code
