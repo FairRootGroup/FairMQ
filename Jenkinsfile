@@ -93,8 +93,9 @@ pipeline{
             [os: 'fedora', ver: '36',    arch: 'x86_64', compiler: 'gcc-12'],
             [os: 'fedora', ver: '37',    arch: 'x86_64', compiler: 'gcc-12'],
             [os: 'fedora', ver: '38',    arch: 'x86_64', compiler: 'gcc-13'],
-            [os: 'macos',  ver: '12',    arch: 'x86_64', compiler: 'apple-clang-14'],
-            [os: 'macos',  ver: '13',    arch: 'arm64',  compiler: 'apple-clang-14'],
+            [os: 'macos',  ver: '13',    arch: 'x86_64', compiler: 'apple-clang-15'],
+            [os: 'macos',  ver: '14',    arch: 'x86_64', compiler: 'apple-clang-15'],
+            [os: 'macos',  ver: '14',    arch: 'arm64',  compiler: 'apple-clang-15'],
           ])
 
           def all_debug = "-DCMAKE_BUILD_TYPE=Debug"
