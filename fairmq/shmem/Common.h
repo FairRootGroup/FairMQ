@@ -13,7 +13,8 @@
 #include <functional> // std::equal_to
 
 #include <boost/functional/hash.hpp>
-#include <boost/interprocess/allocators/adaptive_pool.hpp>
+// #include <boost/interprocess/allocators/adaptive_pool.hpp>
+#include <boost/interprocess/allocators/node_allocator.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/containers/map.hpp>
 #include <boost/interprocess/containers/string.hpp>
@@ -69,9 +70,10 @@ struct RefCount
 static constexpr size_t numNodesPerBlock = 4096;
 // Maximum number of totally free blocks that the adaptive node pool will hold.
 // The rest of the totally free blocks will be deallocated with the segment manager.
-static constexpr size_t maxFreeBlocks = 2;
+// static constexpr size_t maxFreeBlocks = 2;
 
-using RefCountPool = boost::interprocess::adaptive_pool<RefCount, boost::interprocess::managed_shared_memory::segment_manager, numNodesPerBlock, maxFreeBlocks>;
+using RefCountPool = boost::interprocess::node_allocator<RefCount, boost::interprocess::managed_shared_memory::segment_manager, numNodesPerBlock>;
+// using RefCountPool = boost::interprocess::adaptive_pool<RefCount, boost::interprocess::managed_shared_memory::segment_manager, numNodesPerBlock, maxFreeBlocks>;
 
 using SegmentManager = boost::interprocess::managed_shared_memory::segment_manager;
 using VoidAlloc      = boost::interprocess::allocator<void, SegmentManager>;
