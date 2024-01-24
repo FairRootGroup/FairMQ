@@ -192,7 +192,7 @@ struct UnmanagedRegion
 
     RefCount& MakeRefCount(uint16_t initialCount = 1)
     {
-        RefCount* refCount = fRefCountPool->allocate(1).get();
+        RefCount* refCount = fRefCountPool->allocate_one().get();
         new (refCount) RefCount(initialCount);
         return *refCount;
     }
@@ -200,7 +200,7 @@ struct UnmanagedRegion
     void RemoveRefCount(RefCount& refCount)
     {
         refCount.~RefCount();
-        fRefCountPool->deallocate(&refCount, 1);
+        fRefCountPool->deallocate_one(&refCount);
     }
 
     ~UnmanagedRegion()
