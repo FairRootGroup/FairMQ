@@ -27,7 +27,7 @@ class TestDevice : public Device
 {
   public:
     TestDevice(const string& transport)
-    : fDeviceThread(&Device::RunStateMachine, this)
+        : fDeviceThread(&Device::RunStateMachine, this)
     {
         SetTransport(transport);
         test::Control(*this, test::Cycle::ToRun);

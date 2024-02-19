@@ -65,13 +65,17 @@ Control::Control(const string& name, Plugin::Version version, const string& main
     });
 
     try {
-        TakeDeviceControl();
-
         auto control = GetProperty<string>("control");
+
+        if (control != "none") {
+            TakeDeviceControl();
+        }
 
         if (control == "static") {
             LOG(debug) << "Running builtin controller: static";
             fControllerThread = thread(&Control::StaticMode, this);
+        } else if (control == "none") {
+            LOG(debug) << "Builtin controller: disabled";
         } else if (control == "gui") {
             LOG(debug) << "Running builtin controller: gui";
             fControllerThread = thread(&Control::GUIMode, this);
@@ -142,7 +146,7 @@ auto ControlPluginProgramOptions() -> Plugin::ProgOptions
     namespace po = boost::program_options;
     auto pluginOptions = po::options_description{"Control (builtin) Plugin"};
     pluginOptions.add_options()
-        ("control",       po::value<string>()->default_value("dynamic"), "Control mode, 'static' or 'dynamic' (aliases for dynamic are external and interactive)")
+        ("control",       po::value<string>()->default_value("dynamic"), "Control mode, 'static' or 'dynamic' (aliases for dynamic are external and interactive), 'none', 'gui'")
         ("catch-signals", po::value<int   >()->default_value(1),             "Enable signal handling (1/0).");
     return pluginOptions;
 }
@@ -271,11 +275,11 @@ auto Control::InteractiveMode() -> void
 try {
     RunStartupSequence();
 
-    if(!fDeviceShutdownRequested) {
+    if (!fDeviceShutdownRequested) {
         RunREPL();
     }
 
-    if(!fDeviceShutdownRequested) {
+    if (!fDeviceShutdownRequested) {
         RunShutdownSequence();
     }
 } catch (PluginServices::DeviceControlError& e) {
@@ -404,7 +408,7 @@ try {
     // or for device shutdown request (Ctrl-C)
     fStateQueue.WaitForNextOrCustom([this]{ return fDeviceShutdownRequested.load(); });
 
-    if(!fDeviceShutdownRequested) {
+    if (!fDeviceShutdownRequested) {
         RunShutdownSequence();
     }
 } catch (PluginServices::DeviceControlError& e) {
@@ -421,7 +425,7 @@ try {
     // Wait for device shutdown request (Ctrl-C)
     fStateQueue.WaitForCustom([this]{ return fDeviceShutdownRequested.load(); });
 
-    if(!fDeviceShutdownRequested) {
+    if (!fDeviceShutdownRequested) {
         RunShutdownSequence();
     }
 } catch (PluginServices::DeviceControlError& e) {
