@@ -154,7 +154,7 @@ class Socket final : public fair::mq::Socket
         }
     }
 
-    int64_t Send(std::vector<std::unique_ptr<fair::mq::Message>>& msgVec, int timeout = -1) override
+    int64_t Send(Parts::container& msgVec, int timeout = -1) override
     {
         int flags = 0;
         if (timeout == 0) {
@@ -206,7 +206,7 @@ class Socket final : public fair::mq::Socket
         }
     }
 
-    int64_t Receive(std::vector<std::unique_ptr<fair::mq::Message>>& msgVec, int timeout = -1) override
+    int64_t Receive(Parts::container& msgVec, int timeout = -1) override
     {
         int flags = 0;
         if (timeout == 0) {
