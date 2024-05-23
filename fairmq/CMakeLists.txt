@@ -55,6 +55,7 @@ if(BUILD_FAIRMQ)
     ProgOptionsFwd.h
     Properties.h
     PropertyOutput.h
+    SmallVector.h
     Socket.h
     StateMachine.h
     States.h
@@ -125,6 +126,7 @@ if(BUILD_FAIRMQ)
     PluginServices.cxx
     ProgOptions.cxx
     Properties.cxx
+    SmallVector.cxx
     StateMachine.cxx
     States.cxx
     SuboptParser.cxx

@@ -11,6 +11,7 @@
 
 #include <algorithm>          // std::move
 #include <fairmq/Message.h>   // fair::mq::MessagePtr
+#include <fairmq/SmallVector.h>
 #include <iterator>           // std::back_inserter
 #include <utility>            // std::move, std::forward
 #include <vector>             // std::vector
@@ -21,7 +22,7 @@ namespace fair::mq {
 /// Message, used for sending multi-part messages
 struct Parts
 {
-    using container = std::vector<MessagePtr>;
+    using container = fair::llvm_copy::SmallVector<MessagePtr, 8>;
     using size_type = container::size_type;
     using reference = container::reference;
     using const_reference = container::const_reference;
@@ -71,9 +72,9 @@ struct Parts
     // const_reference operator[](size_type index) const { return fParts[index]; }
 
     [[deprecated("Redundant, dereference at call site e.g. '*(parts.At(index))' instead.")]]
-    Message& AtRef(size_type index) { return *(fParts.at(index)); }
-    reference At(size_type index) { return fParts.at(index); }
-    const_reference At(size_type index) const { return fParts.at(index); }
+    Message& AtRef(size_type index) { return *(fParts[index]); }
+    reference At(size_type index) { return fParts[index]; }
+    const_reference At(size_type index) const { return fParts[index]; }
 
     size_type Size() const noexcept { return fParts.size(); }
     bool Empty() const noexcept { return fParts.empty(); }
@@ -82,10 +83,10 @@ struct Parts
     // range access
     iterator begin() noexcept { return fParts.begin(); }
     const_iterator begin() const noexcept { return fParts.begin(); }
-    const_iterator cbegin() const noexcept { return fParts.cbegin(); }
+    const_iterator cbegin() const noexcept { return fParts.begin(); }
     iterator end() noexcept { return fParts.end(); }
     const_iterator end() const noexcept { return fParts.end(); }
-    const_iterator cend() const noexcept { return fParts.cend(); }
+    const_iterator cend() const noexcept { return fParts.end(); }
 
     container fParts{};
 };
