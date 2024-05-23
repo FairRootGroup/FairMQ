@@ -438,7 +438,7 @@ class Channel
     }
 
     void CheckSendCompatibility(Parts& parts) { CheckSendCompatibility(parts.fParts); }
-    void CheckSendCompatibility(std::vector<MessagePtr>& msgVec)
+    void CheckSendCompatibility(Parts::container & msgVec)
     {
         for (auto& msg : msgVec) {
             if (fTransportType != msg->GetType()) {
@@ -468,7 +468,7 @@ class Channel
     }
 
     void CheckReceiveCompatibility(Parts& parts) { CheckReceiveCompatibility(parts.fParts); }
-    void CheckReceiveCompatibility(std::vector<MessagePtr>& msgVec)
+    void CheckReceiveCompatibility(Parts::container& msgVec)
     {
         for (auto& msg : msgVec) {
             if (fTransportType != msg->GetType()) {

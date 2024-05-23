@@ -52,8 +52,8 @@ struct Socket
 
     virtual int64_t Send(MessagePtr& msg, int timeout = -1) = 0;
     virtual int64_t Receive(MessagePtr& msg, int timeout = -1) = 0;
-    virtual int64_t Send(std::vector<std::unique_ptr<Message>>& msgVec, int timeout = -1) = 0;
-    virtual int64_t Receive(std::vector<std::unique_ptr<Message>>& msgVec, int timeout = -1) = 0;
+    virtual int64_t Send(Parts::container& msgVec, int timeout = -1) = 0;
+    virtual int64_t Receive(Parts::container & msgVec, int timeout = -1) = 0;
     virtual int64_t Send(Parts& parts, int timeout = -1) { return Send(parts.fParts, timeout); }
     virtual int64_t Receive(Parts& parts, int timeout = -1) { return Receive(parts.fParts, timeout); }
 
