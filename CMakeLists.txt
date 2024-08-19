@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2018-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2018-2024 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -8,8 +8,7 @@
 
 
 # Project ######################################################################
-cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
-cmake_policy(VERSION 3.15...3.26)
+cmake_minimum_required(VERSION 3.15...3.30 FATAL_ERROR)
 
 list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 include(GitHelper)
