@@ -43,7 +43,7 @@ def jobMatrix(String type, List specs) {
             sh "bash ${jobscript}"
           } else { // selector == "slurm"
             def imageurl = "oras://ghcr.io/fairrootgroup/fairmq-dev/${os}-${ver}-sif:latest"
-            def execopts = "--net --ipc --uts --pid -B/shared"
+            def execopts = "--ipc --uts --pid -B/shared"
             def containercmd = "singularity exec ${execopts} ${imageurl} bash -l -c \\\"${ctestcmd} ${extra}\\\""
             sh """\
               echo \"echo \\\"*** Job started at .......: \\\$(date -R)\\\"\" >> ${jobscript}
@@ -87,12 +87,15 @@ pipeline{
           def builds = jobMatrix('build', [
             [os: 'ubuntu', ver: '20.04', arch: 'x86_64', compiler: 'gcc-9'],
             [os: 'ubuntu', ver: '22.04', arch: 'x86_64', compiler: 'gcc-11'],
+            [os: 'ubuntu', ver: '24.04', arch: 'x86_64', compiler: 'gcc-13'],
             [os: 'fedora', ver: '33',    arch: 'x86_64', compiler: 'gcc-10'],
             [os: 'fedora', ver: '34',    arch: 'x86_64', compiler: 'gcc-11'],
             [os: 'fedora', ver: '35',    arch: 'x86_64', compiler: 'gcc-11'],
             [os: 'fedora', ver: '36',    arch: 'x86_64', compiler: 'gcc-12'],
             [os: 'fedora', ver: '37',    arch: 'x86_64', compiler: 'gcc-12'],
             [os: 'fedora', ver: '38',    arch: 'x86_64', compiler: 'gcc-13'],
+            [os: 'fedora', ver: '39',    arch: 'x86_64', compiler: 'gcc-13'],
+            [os: 'fedora', ver: '40',    arch: 'x86_64', compiler: 'gcc-14'],
             [os: 'macos',  ver: '13',    arch: 'x86_64', compiler: 'apple-clang-15'],
             [os: 'macos',  ver: '14',    arch: 'x86_64', compiler: 'apple-clang-15'],
             [os: 'macos',  ver: '14',    arch: 'arm64',  compiler: 'apple-clang-15'],
