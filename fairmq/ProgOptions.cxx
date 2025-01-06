@@ -448,3 +448,6 @@ void ProgOptions::PrintOptionsRaw() const
 }
 
 } // namespace fair::mq
+
+template void fair::mq::ProgOptions::SetProperty<std::string>(const std::string& key, std::string val);
+template void fair::mq::ProgOptions::SetProperty<int>(const std::string& key, int val);
