@@ -129,17 +129,7 @@ class ProgOptions
     /// @param key
     /// @param val
     template<typename T>
-    void SetProperty(const std::string& key, T val)
-    {
-        std::unique_lock<std::mutex> lock(fMtx);
-
-        SetVarMapValue<typename std::decay<T>::type>(key, val);
-
-        lock.unlock();
-
-        fEvents.Emit<fair::mq::PropertyChange, typename std::decay<T>::type>(key, val);
-        fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetPropertyAsString(key));
-    }
+    void SetProperty(const std::string& key, T val);
 
     /// @brief Updates an existing config property (or fails if it doesn't exist)
     /// @param key
@@ -275,5 +265,20 @@ class ProgOptions
 };
 
 } // namespace fair::mq
+template <typename T>
+void fair::mq::ProgOptions::SetProperty(const std::string& key, T val)
+{
+    std::unique_lock<std::mutex> lock(fMtx);
+
+    SetVarMapValue<typename std::decay<T>::type>(key, val);
+
+    lock.unlock();
+
+    fEvents.Emit<fair::mq::PropertyChange, typename std::decay<T>::type>(key, val);
+    fEvents.Emit<fair::mq::PropertyChangeAsString, std::string>(key, GetPropertyAsString(key));
+}
+
+extern template void fair::mq::ProgOptions::SetProperty<int>(const std::string& key, int val);
+extern template void fair::mq::ProgOptions::SetProperty<std::string>(const std::string& key, std::string val);
 
 #endif /* FAIR_MQ_PROGOPTIONS_H */
