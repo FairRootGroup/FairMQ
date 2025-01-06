@@ -28,8 +28,8 @@ namespace fair::mq
 using Property = boost::any;
 using Properties = std::map<std::string, Property>;
 
-struct PropertyChange : Event<std::string> {};
-struct PropertyChangeAsString : Event<std::string> {};
+struct PropertyChange : Event<std::string>
+{};
 
 class PropertyHelper
 {
