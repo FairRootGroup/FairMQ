@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2017-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2017-2025 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -64,22 +64,22 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
 
     p.Print(cmd);
 
-    ba::io_service ios;
+    ba::io_context ioc;
 
     // containers for std_in
     ba::const_buffer inputBuffer(ba::buffer(input));
-    bp::async_pipe inputPipe(ios);
+    bp::async_pipe inputPipe(ioc);
     // containers for std_out
     ba::streambuf outputBuffer;
-    bp::async_pipe outputPipe(ios);
+    bp::async_pipe outputPipe(ioc);
     // containers for std_err
     ba::streambuf errorBuffer;
-    bp::async_pipe errorPipe(ios);
+    bp::async_pipe errorPipe(ioc);
 
     const string delimiter = "\n";
-    ba::steady_timer inputTimer(ios);
+    ba::steady_timer inputTimer(ioc);
     inputTimer.expires_after(std::chrono::milliseconds(1000)); // NOLINT
-    ba::steady_timer signalTimer(ios);
+    ba::steady_timer signalTimer(ioc);
     signalTimer.expires_after(std::chrono::milliseconds(2000)); // NOLINT
 
     // child process
@@ -154,7 +154,7 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
     };
     ba::async_read_until(errorPipe, errorBuffer, delimiter, onStdErr);
 
-    ios.run();
+    ioc.run();
     c.wait();
 
     result.exit_code = c.exit_code();
