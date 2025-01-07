@@ -10,6 +10,7 @@
 #define FAIR_MQ_TRANSPORTS_H
 
 #include <fairmq/tools/Strings.h>
+#include <fairmq/TransportEnum.h>
 #include <memory>
 #include <ostream>
 #include <stdexcept>
@@ -17,13 +18,6 @@
 #include <unordered_map>
 
 namespace fair::mq {
-
-enum class Transport
-{
-    DEFAULT,
-    ZMQ,
-    SHM
-};
 
 struct TransportError : std::runtime_error
 {

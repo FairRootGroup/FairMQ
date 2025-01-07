@@ -63,6 +63,7 @@ if(BUILD_FAIRMQ)
     Tools.h
     TransportFactory.h
     Transports.h
+    TransportEnum.h
     UnmanagedRegion.h
     options/FairMQProgOptions.h
     runDevice.h

@@ -14,7 +14,7 @@
 #include <fairmq/Message.h>
 #include <fairmq/Poller.h>
 #include <fairmq/Socket.h>
-#include <fairmq/Transports.h>
+#include <fairmq/TransportEnum.h>
 #include <fairmq/UnmanagedRegion.h>
 #include <memory>   // shared_ptr
 #include <stdexcept>

@@ -10,6 +10,7 @@
 
 #include <fairmq/shmem/Common.h>
 #include <fairmq/shmem/Monitor.h>
+#include <fairmq/Transports.h>
 
 #include <cstdint>
 #include <string>
