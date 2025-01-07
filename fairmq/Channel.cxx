@@ -12,6 +12,7 @@
 #include <fairmq/Channel.h>
 #include <fairmq/Properties.h>
 #include <fairmq/Tools.h>
+#include <fairmq/Transports.h>
 #include <random>
 #include <regex>
 #include <set>
@@ -382,5 +383,11 @@ bool Channel::BindEndpoint(string& endpoint)
         }
     }
 }
+
+std::string Channel::GetTransportName() const { return TransportName(fTransportType); }
+
+Transport Channel::GetTransportType() const { return fTransportType; }
+
+void Channel::UpdateTransport(const std::string& transport) { fTransportType = TransportType(transport); Invalidate(); }
 
 } // namespace fair::mq

@@ -9,6 +9,7 @@
 // FairMQ
 #include <fairmq/Device.h>
 #include <fairmq/Tools.h>
+#include <fairmq/Transports.h>
 
 // boost
 #include <boost/algorithm/string.hpp>   // join/split

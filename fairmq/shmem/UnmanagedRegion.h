@@ -13,6 +13,7 @@
 #include <fairmq/shmem/Monitor.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/UnmanagedRegion.h>
+#include <fairmq/Transports.h>
 
 #include <fairlogger/Logger.h>
 

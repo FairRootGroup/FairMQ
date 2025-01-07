@@ -10,7 +10,7 @@
 #define FAIR_MQ_MESSAGE_H
 
 #include <cstddef>   // for size_t
-#include <fairmq/Transports.h>
+#include <fairmq/TransportEnum.h>
 #include <memory>   // unique_ptr
 #include <stdexcept>
 

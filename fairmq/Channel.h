@@ -14,7 +14,7 @@
 #include <fairmq/Properties.h>
 #include <fairmq/Socket.h>
 #include <fairmq/TransportFactory.h>
-#include <fairmq/Transports.h>
+#include <fairmq/TransportEnum.h>
 #include <fairmq/UnmanagedRegion.h>
 
 #include <cstdint>   // int64_t
@@ -145,11 +145,11 @@ class Channel
 
     /// Get channel transport name ("default", "zeromq" or "shmem")
     /// @return Returns channel transport name (e.g. "default", "zeromq" or "shmem")
-    std::string GetTransportName() const { return TransportName(fTransportType); }
+    std::string GetTransportName() const;
 
     /// Get channel transport type
     /// @return Returns channel transport type
-    mq::Transport GetTransportType() const { return fTransportType; }
+    mq::Transport GetTransportType() const;
 
     /// Get socket send buffer size (in number of messages)
     /// @return Returns socket send buffer size (in number of messages)
@@ -221,7 +221,7 @@ class Channel
 
     /// Set channel transport
     /// @param transport transport string ("default", "zeromq" or "shmem")
-    void UpdateTransport(const std::string& transport) { fTransportType = TransportType(transport); Invalidate(); }
+    void UpdateTransport(const std::string& transport);
 
     /// Set socket send buffer size
     /// @param sndBufSize Socket send buffer size (in number of messages)

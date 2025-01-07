@@ -14,6 +14,7 @@
 #include "UnmanagedRegionImpl.h"
 #include <fairmq/Message.h>
 #include <fairmq/UnmanagedRegion.h>
+#include <fairmq/Transports.h>
 
 #include <fairlogger/Logger.h>
 

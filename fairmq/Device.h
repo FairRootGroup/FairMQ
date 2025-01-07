@@ -19,7 +19,7 @@
 #include <fairmq/StateQueue.h>
 #include <fairmq/Tools.h>
 #include <fairmq/TransportFactory.h>
-#include <fairmq/Transports.h>
+#include <fairmq/TransportEnum.h>
 #include <fairmq/UnmanagedRegion.h>
 
 // logger

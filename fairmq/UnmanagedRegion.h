@@ -9,7 +9,7 @@
 #ifndef FAIR_MQ_UNMANAGEDREGION_H
 #define FAIR_MQ_UNMANAGEDREGION_H
 
-#include <fairmq/Transports.h>
+#include <fairmq/TransportEnum.h>
 
 #include <cstddef>   // size_t
 #include <cstdint>   // uint32_t
