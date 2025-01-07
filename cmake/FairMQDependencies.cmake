@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2018-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2018-2025 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -41,7 +41,7 @@ if(BUILD_TESTING)
   endif()
   find_package2(BUNDLED GTest REQUIRED)
   if(GTest_BUNDLED)
-    set(GTest_VERSION "Dec 14 2023 @530d5c8")
+    set(GTest_VERSION "Dec 26 2024 @7d76a23")
     set(GTest_PREFIX "<bundled>")
   endif()
 endif()
