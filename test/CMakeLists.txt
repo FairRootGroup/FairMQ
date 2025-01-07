@@ -253,7 +253,7 @@ add_testsuite(Tools
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
              ${CMAKE_CURRENT_BINARY_DIR}
-    TIMEOUT 20
+    TIMEOUT 5
     ${environment}
 )
 
