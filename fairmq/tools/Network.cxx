@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2017-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2017-2025 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -8,12 +8,12 @@
 
 #include <fairlogger/Logger.h>
 #include <fairmq/tools/Network.h>
+#include <fairmq/tools/Strings.h>
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE   // To get defns of NI_MAXSERV and NI_MAXHOST
 #endif
 
-#include <algorithm>
 #include <array>
 #include <boost/algorithm/string.hpp>   // trim
 #include <boost/asio.hpp>
@@ -158,33 +158,22 @@ string getDefaultRouteNetworkInterface()
 }
 
 string getIpFromHostname(const string& hostname)
-{
+try {
     boost::asio::io_context ioc;
+    boost::asio::ip::tcp::resolver resolver(ioc);
 
-    using namespace boost::asio::ip;
+    auto const result = resolver.resolve(boost::asio::ip::tcp::v4(), hostname, "");
 
-    try {
-        tcp::resolver resolver(ioc);
-        tcp::resolver::query query(hostname, "");
-        tcp::resolver::iterator end;
-
-        auto it = find_if(static_cast<basic_resolver_iterator<tcp>>(resolver.resolve(query)),
-                          end,
-                          [](const tcp::endpoint& ep) { return ep.address().is_v4(); });
-
-        if (it != end) {
-            stringstream ss;
-            ss << static_cast<tcp::endpoint>(*it).address();
-            return ss.str();
-        }
-
+    if (result.empty()) {
         LOG(warn) << "could not find ipv4 address for hostname '" << hostname << "'";
-
-        return "";
-    } catch (exception& e) {
-        LOG(error) << "could not resolve hostname '" << hostname << "', reason: " << e.what();
         return "";
     }
+    return ToString(result.begin()->endpoint().address());
+}
+catch (std::exception const& ex)
+{
+    LOG(error) << "could not resolve hostname '" << hostname << "', reason: " << ex.what();
+    return "";
 }
 
 }   // namespace fair::mq::tools
