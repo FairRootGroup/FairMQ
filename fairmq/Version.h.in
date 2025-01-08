@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2018-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2018-2025 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -19,7 +19,7 @@
 #define FAIRMQ_GIT_DATE "@PROJECT_GIT_DATE@"
 #define FAIRMQ_REPO_URL "https://github.com/FairRootGroup/FairMQ"
 #define FAIRMQ_LICENSE "LGPL-3.0"
-#define FAIRMQ_COPYRIGHT "2012-2023 GSI"
+#define FAIRMQ_COPYRIGHT "2012-2025 GSI"
 #define FAIRMQ_BUILD_TYPE "@CMAKE_BUILD_TYPE@"
 
 #endif // FAIR_MQ_VERSION_H
