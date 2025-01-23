@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2014-2018 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ * Copyright (C) 2014-2025 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
  *                                                                              *
  *              This software is distributed under the terms of the             *
  *              GNU Lesser General Public Licence (LGPL) version 3,             *
@@ -29,7 +29,6 @@ using Property = boost::any;
 using Properties = std::map<std::string, Property>;
 
 struct PropertyChange : Event<std::string> {};
-struct PropertyChangeAsString : Event<std::string> {};
 
 class PropertyHelper
 {

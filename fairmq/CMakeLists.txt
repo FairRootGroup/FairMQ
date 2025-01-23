@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2012-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2012-2025 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -119,6 +119,7 @@ if(BUILD_FAIRMQ)
     Channel.cxx
     Device.cxx
     DeviceRunner.cxx
+    EventManager.cxx
     JSONParser.cxx
     MemoryResources.cxx
     Plugin.cxx
