@@ -69,9 +69,15 @@ if(BUILD_FAIRMQ)
     runDevice.h
     runFairMQDevice.h
     shmem/Common.h
+    shmem/Manager.h
+    shmem/Message.h
     shmem/Monitor.h
+    shmem/Poller.h
     shmem/Segment.h
+    shmem/Socket.h
+    shmem/TransportFactory.h
     shmem/UnmanagedRegion.h
+    shmem/UnmanagedRegionImpl.h
     tools/Compiler.h
     tools/CppSTL.h
     tools/Exceptions.h
@@ -96,12 +102,6 @@ if(BUILD_FAIRMQ)
     plugins/Builtin.h
     plugins/config/Config.h
     plugins/control/Control.h
-    shmem/Message.h
-    shmem/Poller.h
-    shmem/UnmanagedRegionImpl.h
-    shmem/Socket.h
-    shmem/TransportFactory.h
-    shmem/Manager.h
     zeromq/Common.h
     zeromq/Context.h
     zeromq/Message.h
