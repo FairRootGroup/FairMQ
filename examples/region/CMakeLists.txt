@@ -8,5 +8,5 @@
 
 add_example(NAME region
   DEVICE sampler processor sink keep-alive
-  SCRIPT region region-advanced region-advanced-external
+  SCRIPT region region-processing region-advanced region-advanced-external
 )

@@ -1,0 +1,56 @@
+#!/bin/bash
+
+export FAIRMQ_PATH=@FAIRMQ_BIN_DIR@
+
+transport=${1:-shmem}
+msgSize=${2:-1000000}
+
+SAMPLER="fairmq-ex-region-sampler"
+SAMPLER+=" --id sampler1"
+# SAMPLER+=" --sampling-rate 10"
+SAMPLER+=" --severity debug"
+SAMPLER+=" --msg-size $msgSize"
+SAMPLER+=" --transport $transport"
+#SAMPLER+=" --rc-segment-size 0"
+SAMPLER+=" --shm-monitor true"
+SAMPLER+=" --chan-name data1"
+SAMPLER+=" --channel-config name=data1,type=push,method=bind,address=tcp://127.0.0.1:7777"
+xterm -geometry 90x60+0+0 -hold -e @EX_BIN_DIR@/$SAMPLER &
+
+PROCESSOR1="fairmq-ex-region-processor"
+PROCESSOR1+=" --id processor1"
+PROCESSOR1+=" --severity debug"
+PROCESSOR1+=" --transport $transport"
+PROCESSOR1+=" --shm-monitor true"
+PROCESSOR1+=" --channel-config name=data1,type=pull,method=connect,address=tcp://127.0.0.1:7777"
+PROCESSOR1+="                  name=data2,type=push,method=bind,address=tcp://127.0.0.1:7778"
+PROCESSOR1+="                  name=data3,type=push,method=bind,address=tcp://127.0.0.1:7779"
+xterm -geometry 90x40+550+40 -hold -e @EX_BIN_DIR@/$PROCESSOR1 &
+
+PROCESSOR2="fairmq-ex-region-processor"
+PROCESSOR2+=" --id processor1"
+PROCESSOR2+=" --severity debug"
+PROCESSOR2+=" --transport $transport"
+PROCESSOR2+=" --shm-monitor true"
+PROCESSOR2+=" --channel-config name=data1,type=pull,method=connect,address=tcp://127.0.0.1:7777"
+PROCESSOR2+="                  name=data2,type=push,method=bind,address=tcp://127.0.0.1:7778"
+PROCESSOR2+="                  name=data3,type=push,method=bind,address=tcp://127.0.0.1:7779"
+xterm -geometry 90x40+550+600 -hold -e @EX_BIN_DIR@/$PROCESSOR2 &
+
+SINK1="fairmq-ex-region-sink"
+SINK1+=" --id sink1"
+SINK1+=" --severity debug"
+SINK1+=" --chan-name data2"
+SINK1+=" --transport $transport"
+SINK1+=" --shm-monitor true"
+SINK1+=" --channel-config name=data2,type=pull,method=connect,address=tcp://127.0.0.1:7778"
+xterm -geometry 90x20+1100+0 -hold -e @EX_BIN_DIR@/$SINK1 &
+
+SINK2="fairmq-ex-region-sink"
+SINK2+=" --id sink2"
+SINK2+=" --severity debug"
+SINK2+=" --chan-name data3"
+SINK2+=" --transport $transport"
+SINK2+=" --shm-monitor true"
+SINK2+=" --channel-config name=data3,type=pull,method=connect,address=tcp://127.0.0.1:7779"
+xterm -geometry 90x20+1100+900 -hold -e @EX_BIN_DIR@/$SINK2 &
