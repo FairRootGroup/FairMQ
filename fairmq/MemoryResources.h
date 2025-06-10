@@ -17,7 +17,7 @@
 
 #include <boost/container/container_fwd.hpp>
 #include <boost/container/flat_map.hpp>
-#include <boost/container/pmr/memory_resource.hpp>
+#include <memory_resource>
 #include <cstring>
 #include <fairmq/Message.h>
 #include <stdexcept>
@@ -27,7 +27,7 @@ namespace fair::mq {
 
 class TransportFactory;
 using byte = unsigned char;
-namespace pmr = boost::container::pmr;
+namespace pmr = std::pmr;
 
 /// All FairMQ related memory resources need to inherit from this interface
 /// class for the
