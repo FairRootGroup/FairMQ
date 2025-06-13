@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 
 #include <cstring>
+#include <string>
 #include <vector>
 
 namespace
@@ -101,7 +102,7 @@ TEST(MemoryResources, allocator)
 
     size_t session{tools::UuidHash()};
     ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
+    config.SetProperty<std::string>("session", to_string(session));
 
     FactoryType factoryZMQ = TransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
 
@@ -129,7 +130,7 @@ TEST(MemoryResources, getMessage)
 
     size_t session{tools::UuidHash()};
     ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
+    config.SetProperty<std::string>("session", to_string(session));
     config.SetProperty<bool>("shm-monitor", true);
 
     FactoryType factoryZMQ = TransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
