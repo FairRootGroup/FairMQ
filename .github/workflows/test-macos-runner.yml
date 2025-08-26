@@ -7,7 +7,7 @@ on:
 
 jobs:
   test-runner:
-    runs-on: [self-hosted, macos15-vm]
+    runs-on: [self-hosted, macOS-15]
     timeout-minutes: 120
     
     steps:
