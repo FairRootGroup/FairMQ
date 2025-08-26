@@ -12,11 +12,17 @@ jobs:
   test-runner:
     runs-on: [self-hosted, macOS-15]
     timeout-minutes: 120
-    
+
     steps:
+    - name: Setup environment
+      run: |
+        echo "Setting up PATH for Homebrew..."
+        export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+        echo "PATH=$PATH" >> $GITHUB_ENV
+
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: System information
       run: |
         echo "Runner information:"
@@ -28,7 +34,7 @@ jobs:
         system_profiler SPHardwareDataType | grep "Memory:"
         echo "Disk space:"
         df -h
-        
+
     - name: Check development tools
       run: |
         echo "Xcode tools version:"
@@ -40,20 +46,43 @@ jobs:
         git --version
         echo "Available SDKs:"
         xcodebuild -showsdks || echo "Xcode not fully installed"
-        
+
     - name: Test basic compilation
       run: |
-        echo "Testing basic C++ compilation:"
+        echo "Current working directory:"
+        pwd
+        ls -la
+        echo "Testing compilation in current directory:"
+
+        # Create test file
         cat > test.cpp << 'EOF'
         #include <iostream>
         int main() {
-            std::cout << "Hello from macOS 15 UTM runner!" << std::endl;
+            std::cout << "Hello from macOS runner!" << std::endl;
             return 0;
         }
         EOF
-        clang++ -o test test.cpp
-        ./test
-        
+
+        echo "File created, attempting compilation..."
+        ls -la test.cpp
+
+        # Try compilation with verbose output
+        clang++ -v -o test test.cpp 2>&1 || echo "Compilation failed"
+
+        # Check if binary was created
+        ls -la test* || echo "No test binary found"
+
+        # If binary exists, try to run it
+        if [ -f test ]; then
+            echo "Binary found, testing execution:"
+            ./test
+        else
+            echo "Binary not created, trying alternative approach:"
+            # Try compiling to home directory
+            clang++ -o ~/test test.cpp
+            ~/test
+        fi
+
     - name: Check FairMQ dependencies
       run: |
         echo "Checking potential FairMQ build dependencies:"
