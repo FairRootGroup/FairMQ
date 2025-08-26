@@ -49,39 +49,16 @@ jobs:
 
     - name: Test basic compilation
       run: |
-        echo "Current working directory:"
-        pwd
-        ls -la
-        echo "Testing compilation in current directory:"
-
-        # Create test file
+        echo "Testing basic C++ compilation:"
         cat > test.cpp << 'EOF'
         #include <iostream>
         int main() {
-            std::cout << "Hello from macOS runner!" << std::endl;
+            std::cout << "Hello from macOS 15 UTM runner!" << std::endl;
             return 0;
         }
         EOF
-
-        echo "File created, attempting compilation..."
-        ls -la test.cpp
-
-        # Try compilation with verbose output
-        clang++ -v -o test test.cpp 2>&1 || echo "Compilation failed"
-
-        # Check if binary was created
-        ls -la test* || echo "No test binary found"
-
-        # If binary exists, try to run it
-        if [ -f test ]; then
-            echo "Binary found, testing execution:"
-            ./test
-        else
-            echo "Binary not created, trying alternative approach:"
-            # Try compiling to home directory
-            clang++ -o ~/test test.cpp
-            ~/test
-        fi
+        clang++ -o test_cpp test.cpp
+        ./test_cpp
 
     - name: Check FairMQ dependencies
       run: |
