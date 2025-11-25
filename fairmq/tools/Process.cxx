@@ -8,9 +8,14 @@
 
 #include <fairmq/tools/Process.h>
 #include <fairmq/tools/Strings.h>
+#include <boost/process/v1/async_pipe.hpp>
+#include <boost/process/v1/child.hpp>
+#include <boost/process/v1/search_path.hpp>
+#include <boost/process/v1/io.hpp>
 
 #include <boost/asio.hpp>
 #include <boost/process.hpp>
+
 #include <chrono>
 #include <csignal>   // kill, signals
 #include <iostream>
@@ -68,13 +73,13 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
 
     // containers for std_in
     ba::const_buffer inputBuffer(ba::buffer(input));
-    bp::async_pipe inputPipe(ioc);
+    bp::v1::async_pipe inputPipe(ioc);
     // containers for std_out
     ba::streambuf outputBuffer;
-    bp::async_pipe outputPipe(ioc);
+    bp::v1::async_pipe outputPipe(ioc);
     // containers for std_err
     ba::streambuf errorBuffer;
-    bp::async_pipe errorPipe(ioc);
+    bp::v1::async_pipe errorPipe(ioc);
 
     const string delimiter = "\n";
     ba::steady_timer inputTimer(ioc);
@@ -83,7 +88,7 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
     signalTimer.expires_after(std::chrono::milliseconds(2000)); // NOLINT
 
     // child process
-    bp::child c(cmd, bp::std_out > outputPipe, bp::std_err > errorPipe, bp::std_in < inputPipe);
+    bp::v1::child c(cmd, bp::v1::std_out > outputPipe, bp::v1::std_err > errorPipe, bp::v1::std_in < inputPipe);
     int pid = c.id();
     p.Print(ToString("fair::mq::tools::execute: pid: ", pid));
 

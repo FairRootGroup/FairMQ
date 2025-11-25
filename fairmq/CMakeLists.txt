@@ -214,6 +214,7 @@ if(BUILD_FAIRMQ)
     Boost::program_options
     Boost::filesystem # still needed for Boost.DLL
     Boost::regex
+    boost_process
     FairLogger::FairLogger
 
     PRIVATE # only libFairMQ links against private dependencies
