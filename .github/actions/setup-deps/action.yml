@@ -1,0 +1,35 @@
+name: Setup Dependencies
+description: Setup spack and install dependencies
+
+inputs:
+  gcc:
+    description: 'GCC version to use'
+    required: true
+  fresh:
+    description: 'Use fresh concretization'
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup spack
+      uses: spack/setup-spack@v2
+      with:
+        ref: v1.1.0
+        color: true
+        buildcache: true
+
+    - name: Install GCC
+      shell: spack-bash {0}
+      run: |
+        spack install gcc@${{ inputs.gcc }}
+        spack compiler find $(spack location -i gcc@${{ inputs.gcc }})
+
+    - name: Install dependencies
+      shell: spack-bash {0}
+      run: |
+        spack env create fairmq test/ci/spack.yaml
+        spack -e fairmq add gcc@${{ inputs.gcc }}
+        spack -e fairmq config add "packages:all:require:'%gcc@${{ inputs.gcc }}'"
+        spack -e fairmq install --fail-fast ${{ inputs.fresh == 'true' && '--fresh' || '' }}
+        spack env activate --sh fairmq | grep '^export ' | sed 's/^export //;s/;$//' >> $GITHUB_ENV

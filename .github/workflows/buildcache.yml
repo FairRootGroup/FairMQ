@@ -1,0 +1,42 @@
+name: Spack Buildcache
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 0'  # Weekly on Sunday at 3am UTC
+  push:
+    paths:
+      - 'test/ci/spack.yaml'
+      - '.github/workflows/buildcache.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.repository == 'FairRootGroup/FairMQ'
+    name: gcc-${{ matrix.gcc }}
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        gcc: ['12', '13', '14', '15']
+
+    env:
+      GITHUB_USER: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-deps
+        with:
+          gcc: ${{ matrix.gcc }}
+          fresh: true
+
+      - name: Push to buildcache
+        if: ${{ !cancelled() }}
+        run: spack buildcache push --unsigned --update-index local-buildcache

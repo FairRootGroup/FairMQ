@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [master, dev]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.repository == 'FairRootGroup/FairMQ'
+    name: gcc-${{ matrix.gcc }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        gcc: ['12', '13', '14', '15']
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-tags: true
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-deps
+        with:
+          gcc: ${{ matrix.gcc }}
+
+      - name: Configure and Build
+        uses: threeal/cmake-action@v2
+        with:
+          generator: Ninja
+          options: |
+            CMAKE_BUILD_TYPE=RelWithDebInfo
+            CMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+            BUILD_TESTING=ON
+
+      - name: Test
+        uses: threeal/ctest-action@v1
+        with:
+          test-dir: build
+
+      - name: Install
+        run: cmake --install build
+
+  sanitizers:
+    if: github.repository == 'FairRootGroup/FairMQ'
+    name: ${{ matrix.sanitizer.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer:
+          - name: asan+lsan+ubsan
+            options: |
+              ENABLE_SANITIZER_ADDRESS=ON
+              ENABLE_SANITIZER_LEAK=ON
+              ENABLE_SANITIZER_UNDEFINED_BEHAVIOUR=ON
+            cxx-flags: -O1 -fno-omit-frame-pointer
+          - name: tsan
+            options: ENABLE_SANITIZER_THREAD=ON
+            cxx-compiler: clang++
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-tags: true
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-deps
+        with:
+          gcc: '14'
+
+      - name: Configure and Build
+        uses: threeal/cmake-action@v2
+        with:
+          generator: Ninja
+          cxx-compiler: ${{ matrix.sanitizer.cxx-compiler }}
+          cxx-flags: ${{ matrix.sanitizer.cxx-flags }}
+          options: |
+            CMAKE_BUILD_TYPE=Debug
+            BUILD_TESTING=ON
+            ${{ matrix.sanitizer.options }}
+
+      - name: Test
+        uses: threeal/ctest-action@v1
+        with:
+          test-dir: build
+
+  static-analysis:
+    if: github.repository == 'FairRootGroup/FairMQ'
+    name: static-analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-tags: true
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-deps
+        with:
+          gcc: '14'
+
+      - name: Configure and Build
+        uses: threeal/cmake-action@v2
+        with:
+          generator: Ninja
+          options: |
+            CMAKE_BUILD_TYPE=Debug
+            BUILD_TESTING=ON
+            RUN_STATIC_ANALYSIS=ON
+
+      - name: Check for warnings
+        run: |
+          if grep -q "warning:" build.log; then
+            echo "::warning::Static analysis found warnings"
+            grep "warning:" build.log
+            exit 1
+          fi
