@@ -22,10 +22,14 @@ runs:
         color: true
         buildcache: true
 
+    - name: Find system compiler
+      shell: spack-bash {0}
+      run: spack compiler find
+
     - name: Install GCC
       shell: spack-bash {0}
       run: |
-        spack install gcc@${{ inputs.gcc }}
+        spack install ${{ inputs.fresh == 'true' && '--fresh' || '' }} gcc@${{ inputs.gcc }} target=x86_64_v3
         spack compiler find $(spack location -i gcc@${{ inputs.gcc }})
 
     - name: Install dependencies
