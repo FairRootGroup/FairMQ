@@ -1,10 +1,6 @@
 spack:
   specs:
-    - "fairlogger@2.2.0 ^fmt@:11"
-    - "boost@1.66: +container +program_options +filesystem +date_time +regex"
-    - "libzmq@4.1.4:"
-    - ninja
-    - "cmake@3.15:"
+    - zlib-ng
 
   config:
     install_tree:

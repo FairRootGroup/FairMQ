@@ -39,7 +39,7 @@ jobs:
 
       - name: Login to OCI registry
         shell: spack-bash {0}
-        run: spack oci login ghcr.io --username ${{ github.actor }} --password-stdin <<< ${{ secrets.GITHUB_TOKEN }}
+        run: spack -e fairmq mirror set --push --oci-username ${{ github.actor }} --oci-password-variable GITHUB_TOKEN local-buildcache
 
       - name: Push to buildcache
         if: ${{ !cancelled() }}
