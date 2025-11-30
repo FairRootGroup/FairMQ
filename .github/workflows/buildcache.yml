@@ -6,7 +6,7 @@ on:
     - cron: '0 3 * * 0'  # Weekly on Sunday at 3am UTC
   push:
     paths:
-      - 'test/ci/spack.yaml'
+      - 'test/ci/spack-*.yaml'
       - '.github/workflows/buildcache.yml'
 
 concurrency:
@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     if: github.repository == 'FairRootGroup/FairMQ'
-    name: gcc-${{ matrix.gcc }}
+    name: ${{ matrix.env }}-gcc-${{ matrix.gcc }}
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -24,6 +24,10 @@ jobs:
       fail-fast: false
       matrix:
         gcc: ['12', '13', '14', '15']
+        env: ['latest']
+        include:
+          - gcc: '15'
+            env: 'boost187'
 
     env:
       GITHUB_USER: ${{ github.actor }}
@@ -42,7 +46,7 @@ jobs:
       - name: Create environment and login to OCI registry
         shell: spack-bash {0}
         run: |
-          spack env create fairmq test/ci/spack.yaml
+          spack env create fairmq test/ci/spack-${{ matrix.env }}.yaml
           spack -e fairmq mirror set --oci-username ${{ github.actor }} --oci-password-variable GITHUB_TOKEN ghcr-buildcache
 
       - name: Find system compiler
@@ -87,6 +91,6 @@ jobs:
       - name: Update buildcache index
         shell: spack-bash {0}
         run: |
-          spack env create fairmq test/ci/spack.yaml
+          spack env create fairmq test/ci/spack-latest.yaml
           spack -e fairmq mirror set --oci-username ${{ github.actor }} --oci-password-variable GITHUB_TOKEN ghcr-buildcache
           spack -e fairmq buildcache update-index ghcr-buildcache

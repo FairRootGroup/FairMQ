@@ -1,0 +1,17 @@
+spack:
+  specs:
+    - "fairlogger@2.2.0 ^fmt@:11"
+    - "boost@1.87 +container +program_options +filesystem +date_time +regex"
+    - "libzmq@4.1.4:"
+    - ninja
+    - "cmake@3.15:"
+
+  config:
+    install_tree:
+      root: /opt/spack
+      padded_length: 128
+
+  mirrors:
+    ghcr-buildcache:
+      url: oci://ghcr.io/fairrootgroup/fairmq-spack-buildcache
+      signed: false

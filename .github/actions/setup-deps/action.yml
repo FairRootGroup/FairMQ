@@ -5,6 +5,9 @@ inputs:
   gcc:
     description: 'GCC version to use'
     required: true
+  env:
+    description: 'Spack environment name (latest, boost187)'
+    default: 'latest'
   fresh:
     description: 'Use fresh concretization'
     default: 'false'
@@ -28,7 +31,7 @@ runs:
     - name: Install dependencies
       shell: spack-bash {0}
       run: |
-        spack env create fairmq test/ci/spack.yaml
+        spack env create fairmq test/ci/spack-${{ inputs.env }}.yaml
         spack -e fairmq add gcc@${{ inputs.gcc }}
         spack -e fairmq config add "packages:all:require:'%gcc@${{ inputs.gcc }}'"
         spack -e fairmq install --fail-fast ${{ inputs.fresh == 'true' && '--fresh' || '' }}
