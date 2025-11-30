@@ -52,7 +52,7 @@ jobs:
       - name: Install GCC
         shell: spack-bash {0}
         run: |
-          spack install gcc@${{ matrix.gcc }}
+          spack install --fresh gcc@${{ matrix.gcc }}
           spack compiler find $(spack location -i gcc@${{ matrix.gcc }})
 
       - name: Install dependencies
