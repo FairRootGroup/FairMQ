@@ -26,7 +26,8 @@ jobs:
           fetch-tags: true
           fetch-depth: 0
 
-      - uses: ./.github/actions/setup-deps
+      - name: Setup spack environment
+        uses: ./.github/actions/setup-deps
         with:
           gcc: ${{ matrix.gcc }}
 
@@ -72,7 +73,8 @@ jobs:
           fetch-tags: true
           fetch-depth: 0
 
-      - uses: ./.github/actions/setup-deps
+      - name: Setup spack environment
+        uses: ./.github/actions/setup-deps
         with:
           gcc: '14'
 
@@ -104,7 +106,8 @@ jobs:
           fetch-tags: true
           fetch-depth: 0
 
-      - uses: ./.github/actions/setup-deps
+      - name: Setup spack environment
+        uses: ./.github/actions/setup-deps
         with:
           gcc: '14'
 
