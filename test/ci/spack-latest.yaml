@@ -6,14 +6,14 @@ spack:
     - ninja
     - "cmake@3.15:"
 
+  concretizer:
+    targets:
+      granularity: generic
+
   packages:
     all:
-      target: [x86_64_v3]
-
-  config:
-    install_tree:
-      root: /opt/spack
-      padded_length: 128
+      require:
+        - target=x86_64_v3
 
   mirrors:
     ghcr-buildcache:
