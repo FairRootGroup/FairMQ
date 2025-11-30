@@ -1,4 +1,4 @@
-name: Setup Dependencies
+name: Install dependencies
 description: Setup spack and install dependencies
 
 inputs:
@@ -14,6 +14,8 @@ inputs:
 
 runs:
   using: composite
+  # Composite action step names are not shown in the UI (https://github.com/actions/runner/issues/1877),
+  # so we use ::group:: to make them visible.
   steps:
     - name: Setup spack
       uses: spack/setup-spack@v2
@@ -24,19 +26,26 @@ runs:
 
     - name: Find system compiler
       shell: spack-bash {0}
-      run: spack compiler find
+      run: |
+        echo "::group::Find system compiler"
+        spack compiler find
+        echo "::endgroup::"
 
     - name: Install GCC
       shell: spack-bash {0}
       run: |
+        echo "::group::Install GCC"
         spack install ${{ inputs.fresh == 'true' && '--fresh' || '' }} gcc@${{ inputs.gcc }} target=x86_64_v3
         spack compiler find $(spack location -i gcc@${{ inputs.gcc }})
+        echo "::endgroup::"
 
     - name: Install dependencies
       shell: spack-bash {0}
       run: |
+        echo "::group::Install dependencies"
         spack env create fairmq test/ci/spack-${{ inputs.env }}.yaml
         spack -e fairmq add gcc@${{ inputs.gcc }}
         spack -e fairmq config add "packages:all:require:'%gcc@${{ inputs.gcc }}'"
         spack -e fairmq install --fail-fast ${{ inputs.fresh == 'true' && '--fresh' || '' }}
         spack env activate --sh fairmq | grep '^export ' | sed 's/^export //;s/;$//' >> $GITHUB_ENV
+        echo "::endgroup::"
