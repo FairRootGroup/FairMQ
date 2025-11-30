@@ -8,6 +8,6 @@ spack:
       padded_length: 128
 
   mirrors:
-    local-buildcache:
+    ghcr-buildcache:
       url: oci://ghcr.io/fairrootgroup/fairmq-spack-buildcache
       signed: false

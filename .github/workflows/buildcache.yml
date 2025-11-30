@@ -32,16 +32,61 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-deps
+      - name: Setup spack
+        uses: spack/setup-spack@v2
         with:
-          gcc: ${{ matrix.gcc }}
-          fresh: true
+          ref: v1.1.0
+          color: true
+          buildcache: true
 
-      - name: Login to OCI registry
+      - name: Create environment and login to OCI registry
         shell: spack-bash {0}
-        run: spack -e fairmq mirror set --push --oci-username ${{ github.actor }} --oci-password-variable GITHUB_TOKEN local-buildcache
+        run: |
+          spack env create fairmq test/ci/spack.yaml
+          spack -e fairmq mirror set --oci-username ${{ github.actor }} --oci-password-variable GITHUB_TOKEN ghcr-buildcache
+
+      - name: Find system compiler
+        shell: spack-bash {0}
+        run: spack compiler find
+
+      - name: Install GCC
+        shell: spack-bash {0}
+        run: |
+          spack install gcc@${{ matrix.gcc }}
+          spack compiler find $(spack location -i gcc@${{ matrix.gcc }})
+
+      - name: Install dependencies
+        shell: spack-bash {0}
+        run: |
+          spack -e fairmq add gcc@${{ matrix.gcc }}
+          spack -e fairmq config add "packages:all:require:'%gcc@${{ matrix.gcc }}'"
+          spack -e fairmq install --fail-fast --fresh
 
       - name: Push to buildcache
         if: ${{ !cancelled() }}
         shell: spack-bash {0}
-        run: spack buildcache push --unsigned --update-index local-buildcache
+        run: spack -e fairmq buildcache push --unsigned ghcr-buildcache
+
+  update-index:
+    if: github.repository == 'FairRootGroup/FairMQ' && !cancelled()
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup spack
+        uses: spack/setup-spack@v2
+        with:
+          ref: v1.1.0
+          color: true
+
+      - name: Update buildcache index
+        shell: spack-bash {0}
+        run: |
+          spack env create fairmq test/ci/spack.yaml
+          spack -e fairmq mirror set --oci-username ${{ github.actor }} --oci-password-variable GITHUB_TOKEN ghcr-buildcache
+          spack -e fairmq buildcache update-index ghcr-buildcache
