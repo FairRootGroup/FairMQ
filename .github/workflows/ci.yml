@@ -12,12 +12,16 @@ concurrency:
 jobs:
   build:
     if: github.repository == 'FairRootGroup/FairMQ'
-    name: gcc-${{ matrix.gcc }}
+    name: ${{ matrix.env }}-gcc-${{ matrix.gcc }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         gcc: ['12', '13', '14', '15']
+        env: ['latest']
+        include:
+          - gcc: '15'
+            env: 'boost187'
 
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +34,7 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           gcc: ${{ matrix.gcc }}
+          env: ${{ matrix.env }}
 
       - name: Configure and Build
         uses: threeal/cmake-action@v2
