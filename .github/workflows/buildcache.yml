@@ -8,6 +8,7 @@ on:
     paths:
       - 'test/ci/spack-*.yaml'
       - '.github/workflows/buildcache.yml'
+      - '.github/actions/setup-deps/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
