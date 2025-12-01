@@ -36,7 +36,8 @@ runs:
       run: |
         echo "::group::Install GCC"
         spack install ${{ inputs.fresh == 'true' && '--fresh' || '' }} gcc@${{ inputs.gcc }} target=x86_64_v3
-        spack compiler find $(spack location -i gcc@${{ inputs.gcc }})
+        gcc_hash=$(spack find --json gcc@${{ inputs.gcc }} target=x86_64_v3 | jq -r 'sort_by(.version | split(".") | map(tonumber)) | last | .hash')
+        spack compiler find "$(spack location -i /$gcc_hash)"
         echo "::endgroup::"
 
     - name: Install dependencies
