@@ -16,6 +16,10 @@ if(FairLogger_VERSION VERSION_LESS 1.9.0 AND FairLogger_VERSION VERSION_GREATER_
   LIST(APPEND definitions FAIR_MIN_SEVERITY=trace)
 endif()
 
+if(FAIRMQ_BOOST_PROCESS_V1_HEADER)
+  LIST(APPEND definitions FAIRMQ_BOOST_PROCESS_V1_HEADER)
+endif()
+
 if(definitions)
   set(definitions DEFINITIONS ${definitions})
 endif()
@@ -134,6 +138,7 @@ add_testsuite(Device
              ${CMAKE_CURRENT_SOURCE_DIR}/device
              ${CMAKE_CURRENT_BINARY_DIR}
     TIMEOUT 20
+    ${definitions}
     ${environment}
 )
 

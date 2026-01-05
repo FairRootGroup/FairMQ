@@ -23,6 +23,18 @@ if(BUILD_FAIRMQ OR BUILD_TIDY_TOOL)
   find_package2(PUBLIC Boost REQUIRED VERSION 1.66
     COMPONENTS container program_options filesystem date_time regex
   )
+
+  # Check Boost.Process compatibility
+  # Boost 1.88 has broken Boost.Process v2 without v1 compatibility headers
+  # Boost 1.89+ provides <boost/process/v1.hpp> for the old API
+  if(Boost_VERSION VERSION_EQUAL "1.88.0")
+    message(FATAL_ERROR "Boost version 1.88 is not supported due to Boost.Process API changes. "
+                        "Please use Boost < 1.88 or >= 1.89")
+  endif()
+
+  if(Boost_VERSION VERSION_GREATER_EQUAL "1.89")
+    set(FAIRMQ_BOOST_PROCESS_V1_HEADER ON CACHE INTERNAL "Use boost/process/v1.hpp for Boost >= 1.89")
+  endif()
 endif()
 
 if(BUILD_FAIRMQ)
