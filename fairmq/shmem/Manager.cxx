@@ -11,7 +11,13 @@
 // Needed to compile-firewall the <boost/process/async.hpp> header because it
 // interferes with the <asio/buffer.hpp> header. So, let's factor
 // the whole dependency to Boost.Process out of the header.
+#ifdef FAIRMQ_BOOST_PROCESS_V1_HEADER
+#include <boost/process/v1.hpp>
+namespace bp = boost::process::v1;
+#else
 #include <boost/process.hpp>
+namespace bp = boost::process;
+#endif
 #include <fairlogger/Logger.h>
 
 namespace fair::mq::shmem {
@@ -28,7 +34,7 @@ bool Manager::SpawnShmMonitor(const std::string& id)
         path.emplace(path.begin(), env.at(fairmq_path_key).to_string());
     }
 
-    auto exe(boost::process::search_path(shmmonitor_exe_name, path));
+    auto exe(bp::search_path(shmmonitor_exe_name, path));
     if (exe.empty()) {
         LOG(warn) << "could not find " << shmmonitor_exe_name << " in \"$" << fairmq_path_key
                   << ":$PATH\"";
@@ -39,7 +45,7 @@ bool Manager::SpawnShmMonitor(const std::string& id)
     bool verbose(env.count(shmmonitor_verbose_key)
                  && env.at(shmmonitor_verbose_key).to_string() == "true");
 
-    boost::process::spawn(
+    bp::spawn(
         exe, "-x", "-m", "--shmid", id, "-d", "-t", "2000", (verbose ? "--verbose" : ""), env);
 
     return true;

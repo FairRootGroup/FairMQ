@@ -10,7 +10,11 @@
 #include <fairmq/tools/Strings.h>
 
 #include <boost/asio.hpp>
+#ifdef FAIRMQ_BOOST_PROCESS_V1_HEADER
+#include <boost/process/v1.hpp>
+#else
 #include <boost/process.hpp>
+#endif
 #include <chrono>
 #include <csignal>   // kill, signals
 #include <iostream>
@@ -20,7 +24,11 @@
 #include <utility>
 
 using namespace std;
+#ifdef FAIRMQ_BOOST_PROCESS_V1_HEADER
+namespace bp = boost::process::v1;
+#else
 namespace bp = boost::process;
+#endif
 namespace ba = boost::asio;
 namespace bs = boost::system;
 

@@ -9,7 +9,11 @@
 #include "runner.h"
 
 #include <gtest/gtest.h>
+#ifdef FAIRMQ_BOOST_PROCESS_V1_HEADER
+#include <boost/process/v1.hpp>
+#else
 #include <boost/process.hpp>
+#endif
 #include <fairmq/tools/Process.h>
 #include <fairmq/tools/Unique.h>
 
