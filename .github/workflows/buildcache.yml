@@ -31,7 +31,7 @@ jobs:
             env: 'boost187'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup spack environment
         uses: ./.github/actions/setup-deps
@@ -58,7 +58,7 @@ jobs:
     permissions:
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup spack
         uses: spack/setup-spack@v2
