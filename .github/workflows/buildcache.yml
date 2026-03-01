@@ -61,7 +61,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Setup spack
-        uses: spack/setup-spack@v2
+        uses: spack/setup-spack@v3
         with:
           ref: v1.1.0
           color: true
