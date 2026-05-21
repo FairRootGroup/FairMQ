@@ -18,7 +18,7 @@ runs:
   # so we use ::group:: to make them visible.
   steps:
     - name: Setup spack
-      uses: spack/setup-spack@v2
+      uses: spack/setup-spack@v3
       with:
         ref: v1.1.0
         color: true
@@ -29,6 +29,18 @@ runs:
       run: |
         echo "::group::Find system compiler"
         spack compiler find
+        echo "::endgroup::"
+
+    - name: Add FairMQ buildcache mirror
+      shell: spack-bash {0}
+      run: |
+        echo "::group::Add FairMQ buildcache mirror"
+        # Register the mirror globally (the env yamls only configure it inside the
+        # env, which is created *after* gcc is installed) so that the "Install GCC"
+        # step below can pull the compiler as a binary instead of building it from
+        # source (~58 min/job otherwise).
+        spack mirror add --unsigned --type binary \
+          ghcr-buildcache oci://ghcr.io/fairrootgroup/fairmq-spack-buildcache
         echo "::endgroup::"
 
     - name: Install GCC
