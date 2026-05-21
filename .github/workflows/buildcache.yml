@@ -5,6 +5,7 @@ on:
   schedule:
     - cron: '0 3 * * 0'  # Weekly on Sunday at 3am UTC
   push:
+    branches: [dev, master]
     paths:
       - 'test/ci/spack-*.yaml'
       - '.github/workflows/buildcache.yml'
