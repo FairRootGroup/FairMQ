@@ -43,7 +43,25 @@ runs:
           ghcr-buildcache oci://ghcr.io/fairrootgroup/fairmq-spack-buildcache
         echo "::endgroup::"
 
+    - name: Resolve lockfile
+      id: lock
+      shell: bash
+      run: |
+        # Prefer a committed, fully-concretized lockfile so the hashes match the
+        # binaries the buildcache pushed (guaranteed cache hits, no re-solve).
+        # Fresh runs (the buildcache itself) must re-concretize, so skip the lock.
+        lock="test/ci/locks/${{ inputs.env }}-gcc${{ inputs.gcc }}.lock"
+        if [ "${{ inputs.fresh }}" != "true" ] && [ -f "$lock" ]; then
+          echo "Using committed lockfile: $lock"
+          echo "use=true" >> "$GITHUB_OUTPUT"
+          echo "path=$lock" >> "$GITHUB_OUTPUT"
+        else
+          echo "No lockfile for ${{ inputs.env }}-gcc${{ inputs.gcc }}; concretizing from spec"
+          echo "use=false" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Install GCC
+      if: steps.lock.outputs.use != 'true'
       shell: spack-bash {0}
       run: |
         echo "::group::Install GCC"
@@ -53,6 +71,7 @@ runs:
         echo "::endgroup::"
 
     - name: Install dependencies
+      if: steps.lock.outputs.use != 'true'
       shell: spack-bash {0}
       run: |
         echo "::group::Install dependencies"
@@ -60,5 +79,20 @@ runs:
         spack -e fairmq add gcc@${{ inputs.gcc }}
         spack -e fairmq config add "packages:all:require:'%gcc@${{ inputs.gcc }}'"
         spack -e fairmq install --fail-fast ${{ inputs.fresh == 'true' && '--fresh' || '' }}
+        echo "::endgroup::"
+
+    - name: Install dependencies (from lockfile)
+      if: steps.lock.outputs.use == 'true'
+      shell: spack-bash {0}
+      run: |
+        echo "::group::Install dependencies (from lockfile)"
+        spack env create fairmq ${{ steps.lock.outputs.path }}
+        spack -e fairmq install --fail-fast
+        echo "::endgroup::"
+
+    - name: Export environment
+      shell: spack-bash {0}
+      run: |
+        echo "::group::Export environment"
         spack env activate --sh fairmq | grep '^export ' | sed 's/^export //;s/;$//' >> $GITHUB_ENV
         echo "::endgroup::"
