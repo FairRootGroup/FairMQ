@@ -60,7 +60,7 @@ jobs:
 
       - name: Upload lockfile
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lock-${{ matrix.env }}-gcc${{ matrix.gcc }}
           path: test/ci/locks/${{ matrix.env }}-gcc${{ matrix.gcc }}.lock
