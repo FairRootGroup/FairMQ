@@ -11,6 +11,12 @@ inputs:
   fresh:
     description: 'Use fresh concretization'
     default: 'false'
+  push-gcc:
+    description: 'Push the freshly-built gcc node to the buildcache (buildcache workflow only)'
+    default: 'false'
+  push-token:
+    description: 'Token with packages:write, required when push-gcc is true'
+    default: ''
 
 runs:
   using: composite
@@ -20,7 +26,6 @@ runs:
     - name: Setup spack
       uses: spack/setup-spack@v3
       with:
-        ref: v1.1.0
         color: true
         buildcache: true
 
@@ -35,43 +40,29 @@ runs:
       shell: spack-bash {0}
       run: |
         echo "::group::Add FairMQ buildcache mirror"
-        # Register the mirror globally (the env yamls only configure it inside the
-        # env, which is created *after* gcc is installed) so that the "Install GCC"
-        # step below can pull the compiler as a binary instead of building it from
-        # source (~58 min/job otherwise).
         spack mirror add --unsigned --type binary \
           ghcr-buildcache oci://ghcr.io/fairrootgroup/fairmq-spack-buildcache
         echo "::endgroup::"
 
-    - name: Resolve lockfile
-      id: lock
-      shell: bash
-      run: |
-        # Prefer a committed, fully-concretized lockfile so the hashes match the
-        # binaries the buildcache pushed (guaranteed cache hits, no re-solve).
-        # Fresh runs (the buildcache itself) must re-concretize, so skip the lock.
-        lock="test/ci/locks/${{ inputs.env }}-gcc${{ inputs.gcc }}.lock"
-        if [ "${{ inputs.fresh }}" != "true" ] && [ -f "$lock" ]; then
-          echo "Using committed lockfile: $lock"
-          echo "use=true" >> "$GITHUB_OUTPUT"
-          echo "path=$lock" >> "$GITHUB_OUTPUT"
-        else
-          echo "No lockfile for ${{ inputs.env }}-gcc${{ inputs.gcc }}; concretizing from spec"
-          echo "use=false" >> "$GITHUB_OUTPUT"
-        fi
-
     - name: Install GCC
-      if: steps.lock.outputs.use != 'true'
       shell: spack-bash {0}
+      env:
+        GITHUB_TOKEN: ${{ inputs.push-token }}
       run: |
         echo "::group::Install GCC"
         spack install ${{ inputs.fresh == 'true' && '--fresh' || '' }} gcc@${{ inputs.gcc }} target=x86_64_v3
         gcc_hash=$(spack find --json gcc@${{ inputs.gcc }} target=x86_64_v3 | jq -r 'sort_by(.version | split(".") | map(tonumber)) | last | .hash')
+        if [ "${{ inputs.push-gcc }}" = "true" ]; then
+          # Push the gcc node now, BEFORE `spack compiler find` registers it as an
+          # external -- externals are excluded from `buildcache push`. This is what
+          # lets CI pull gcc from the cache (~1 min) instead of building it (~1 h).
+          spack mirror set --oci-username ${{ github.actor }} --oci-password-variable GITHUB_TOKEN ghcr-buildcache
+          spack buildcache push --unsigned ghcr-buildcache /$gcc_hash
+        fi
         spack compiler find "$(spack location -i /$gcc_hash)"
         echo "::endgroup::"
 
     - name: Install dependencies
-      if: steps.lock.outputs.use != 'true'
       shell: spack-bash {0}
       run: |
         echo "::group::Install dependencies"
@@ -79,20 +70,5 @@ runs:
         spack -e fairmq add gcc@${{ inputs.gcc }}
         spack -e fairmq config add "packages:all:require:'%gcc@${{ inputs.gcc }}'"
         spack -e fairmq install --fail-fast ${{ inputs.fresh == 'true' && '--fresh' || '' }}
-        echo "::endgroup::"
-
-    - name: Install dependencies (from lockfile)
-      if: steps.lock.outputs.use == 'true'
-      shell: spack-bash {0}
-      run: |
-        echo "::group::Install dependencies (from lockfile)"
-        spack env create fairmq ${{ steps.lock.outputs.path }}
-        spack -e fairmq install --fail-fast
-        echo "::endgroup::"
-
-    - name: Export environment
-      shell: spack-bash {0}
-      run: |
-        echo "::group::Export environment"
         spack env activate --sh fairmq | grep '^export ' | sed 's/^export //;s/;$//' >> $GITHUB_ENV
         echo "::endgroup::"
