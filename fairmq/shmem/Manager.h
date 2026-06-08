@@ -776,6 +776,8 @@ class Manager
 
     auto GetMetadataMsgSize() const noexcept { return fMetadataMsgSize; }
 
+    char* GetDataAddressFromHandle(const boost::interprocess::managed_shared_memory::handle_t handle, uint16_t segmentId);
+
     ~Manager()
     {
         fRegionsGen += 1; // signal TL cache invalidation

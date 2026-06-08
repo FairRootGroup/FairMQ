@@ -191,6 +191,11 @@ class Message final : public fair::mq::Message
         return static_cast<void*>(fLocalPtr);
     }
 
+    MetaHeader GetMeta() const
+    {
+        return {fSize, fHint, fHandle, fShared, fRegionId, fSegmentId, fManaged};
+    }
+
     size_t GetSize() const override { return fSize; }
 
     bool SetUsedSize(size_t newSize, Alignment alignment = Alignment{0}) override

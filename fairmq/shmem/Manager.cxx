@@ -51,4 +51,10 @@ bool Manager::SpawnShmMonitor(const std::string& id)
     return true;
 }
 
+char* Manager::GetDataAddressFromHandle(const boost::interprocess::managed_shared_memory::handle_t handle, uint16_t segmentId)
+{
+    GetSegment(segmentId);
+    return ShmHeader::UserPtr(GetAddressFromHandle(handle, segmentId));
+}
+
 }   // namespace fair::mq::shmem

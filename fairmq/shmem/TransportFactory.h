@@ -222,6 +222,11 @@ class TransportFactory final : public fair::mq::TransportFactory
         }
     }
 
+    Manager* GetManager()
+    {
+      return fManager.get();
+    }
+
   private:
     void* fZmqCtx;
     std::unique_ptr<Manager> fManager;
