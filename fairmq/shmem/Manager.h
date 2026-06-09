@@ -390,7 +390,7 @@ class Manager
         }
 
         auto* lRegion = GetRegion(id);
-        fTlRegionCache.fRegionsTLCache.emplace_back(std::make_tuple(lRegion, id, fShmId64));
+        fTlRegionCache.fRegionsTLCache.emplace_back(lRegion, id, fShmId64);
         fTlRegionCache.fRegionsTLCacheGen = fRegionsGen;
         return lRegion;
     }
