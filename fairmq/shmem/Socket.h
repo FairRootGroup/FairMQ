@@ -39,18 +39,19 @@ namespace fair::mq::shmem
 class Socket final : public fair::mq::Socket
 {
   public:
-    Socket(Manager& manager, const std::string& type, const std::string& name, const std::string& id, void* context, fair::mq::TransportFactory* fac = nullptr)
+    Socket(Manager& manager,
+           const std::string& type,
+           const std::string& name,
+           const std::string& id,
+           void* context,
+           fair::mq::TransportFactory* fac = nullptr)
         : fair::mq::Socket(fac)
         , fManager(manager)
         , fId(id + "." + name + "." + type)
-        , fSocket(nullptr)
-        , fMonitorSocket(nullptr)
         , fBytesTx(0)
         , fBytesRx(0)
         , fMessagesTx(0)
         , fMessagesRx(0)
-        , fTimeout(100)
-        , fConnectedPeersCount(0)
         , fMetadataMsgSize(manager.GetMetadataMsgSize())
     {
         assert(context);
@@ -456,15 +457,15 @@ class Socket final : public fair::mq::Socket
   private:
     Manager& fManager;
     std::string fId;
-    void* fSocket;
-    void* fMonitorSocket;
+    void* fSocket{nullptr};
+    void* fMonitorSocket{nullptr};
     std::atomic<unsigned long> fBytesTx;
     std::atomic<unsigned long> fBytesRx;
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
 
-    int fTimeout;
-    mutable unsigned long fConnectedPeersCount;
+    int fTimeout{100};
+    mutable unsigned long fConnectedPeersCount{0};
     std::size_t fMetadataMsgSize;
 };
 

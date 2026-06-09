@@ -37,7 +37,6 @@ class Context
     Context(int numIoThreads)
         : fZmqCtx(zmq_ctx_new())
         , fInterrupted(false)
-        , fRegionCounter(1)
     {
         if (!fZmqCtx) {
             throw ContextError(tools::ToString("failed creating context, reason: ", zmq_strerror(errno)));
@@ -180,7 +179,7 @@ class Context
     mutable std::mutex fMtx;
     std::atomic<bool> fInterrupted;
 
-    uint16_t fRegionCounter;
+    uint16_t fRegionCounter{1};
     std::condition_variable fRegionEventsCV;
     std::vector<RegionInfo> fRegionInfos;
     std::queue<RegionInfo> fRegionEvents;

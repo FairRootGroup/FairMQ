@@ -180,7 +180,6 @@ struct RegionInfo
         , fUserFlags(userFlags)
         , fSize(size)
         , fRCSegmentSize(rcSegmentSize)
-        , fDestroyed(false)
     {}
 
     Str fPath;
@@ -188,7 +187,7 @@ struct RegionInfo
     uint64_t fUserFlags;
     uint64_t fSize;
     uint64_t fRCSegmentSize;
-    bool fDestroyed;
+    bool fDestroyed{false};
 };
 
 using Uint16RegionInfoPairAlloc = boost::interprocess::allocator<std::pair<const uint16_t, RegionInfo>, SegmentManager>;
