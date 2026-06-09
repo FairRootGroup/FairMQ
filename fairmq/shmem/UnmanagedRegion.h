@@ -102,7 +102,7 @@ struct UnmanagedRegion
             }
             fFileMapping = file_mapping(fName.c_str(), read_write);
             LOG(debug) << "UnmanagedRegion(): initialized file: " << fName;
-            fRegion = mapped_region(fFileMapping, read_write, 0, size, 0, cfg.creationFlags);
+            fRegion = mapped_region(fFileMapping, read_write, 0, size, nullptr, cfg.creationFlags);
         } else {
             try {
                 // if opening fails, create
@@ -126,7 +126,7 @@ struct UnmanagedRegion
             }
 
             try {
-                fRegion = mapped_region(fShmemObject, read_write, 0, 0, 0, cfg.creationFlags);
+                fRegion = mapped_region(fShmemObject, read_write, 0, 0, nullptr, cfg.creationFlags);
                 if (size != 0 && size != fRegion.get_size()) {
                     LOG(error) << "Created/opened region size (" << fRegion.get_size() << ") does not match configured size (" << size << ")";
                     throw TransportError(tools::ToString("Created/opened region size (", fRegion.get_size(), ") does not match configured size (", size, ")"));

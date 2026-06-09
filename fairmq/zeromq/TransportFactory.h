@@ -73,7 +73,10 @@ class TransportFactory final : public fair::mq::TransportFactory
         return std::make_unique<Message>(data, size, ffn, hint, this);
     }
 
-    MessagePtr CreateMessage(UnmanagedRegionPtr& region, void* data, size_t size, void* hint = 0) override
+    MessagePtr CreateMessage(UnmanagedRegionPtr& region,
+                             void* data,
+                             size_t size,
+                             void* hint = nullptr) override
     {
         return std::make_unique<Message>(region, data, size, hint, this);
     }
