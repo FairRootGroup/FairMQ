@@ -79,7 +79,7 @@ Properties SuboptParser(const vector<string>& channelConfig, const string& devic
 
     ptree channelsArray;
 
-    for (auto token : channelConfig) {
+    for (const auto& token : channelConfig) {
         string channelName;
         ptree channelProperties;
 
