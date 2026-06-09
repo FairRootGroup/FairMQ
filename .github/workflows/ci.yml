@@ -68,6 +68,8 @@ jobs:
     if: github.repository == 'FairRootGroup/FairMQ'
     name: ${{ matrix.sanitizer.name }}
     runs-on: ubuntu-24.04
+    env:
+      TSAN_OPTIONS: suppressions=${{ github.workspace }}/test/thread_sanitizer_suppressions.txt
     strategy:
       fail-fast: false
       matrix:

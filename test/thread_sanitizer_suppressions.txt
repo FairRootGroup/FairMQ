@@ -1,0 +1,32 @@
+# ThreadSanitizer suppressions for FairMQ.
+#
+# libzmq is not built with -fsanitize=thread, so tsan cannot observe the
+# happens-before that its inproc/socket queues establish between the user
+# threads and libzmq's I/O threads. This produces false-positive data races
+# on message buffers handed across that boundary. The proper fix is to build
+# libzmq with tsan as well; until then these races are suppressed.
+
+# Racy access made directly from libzmq (encoder/decoder memcpy,
+# signaler/epoll, recv).
+called_from_lib:libzmq.so
+
+# Zero-copy message deleters that libzmq runs from msg_t::close once it is
+# done with a buffer; the happens-before with the buffer's producer runs
+# through libzmq's queue.
+race:zmq::msg_t::close
+race:fair::mq::TransportFactory::SimpleMsgCleanup
+
+# shmem message metadata read on the user side after delivery through libzmq
+# (the shmem transport ships its metadata over a zeromq channel).
+race:fair::mq::shmem::Message::Message
+race:fair::mq::shmem::Socket::Receive
+race:fair::mq::shmem::ShmHeader
+
+# Multipart message buffers written by the sending thread and read back by the
+# receiving thread after delivery through libzmq's inproc queue; the
+# happens-before runs through that non-instrumented queue.
+race:RunMultiThreadedMultipart
+
+# std::regex / std::locale facet lazy-init races inside libstdc++.
+race:fair::mq::Channel::Validate
+race:fair::mq::tools::ToString
