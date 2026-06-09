@@ -32,12 +32,9 @@ const std::string fair::mq::PluginManager::fgkLibPrefixAlt = "FairMQPlugin_";
 std::vector<boost::dll::shared_library> fair::mq::PluginManager::fgDLLKeepAlive =
     std::vector<boost::dll::shared_library>();
 
-fair::mq::PluginManager::PluginManager()
-    : fPluginServices()
-{}
+fair::mq::PluginManager::PluginManager() {}
 
 fair::mq::PluginManager::PluginManager(const vector<string>& args)
-    : fPluginServices()
 {
     // Parse command line options
     auto options = ProgramOptions();

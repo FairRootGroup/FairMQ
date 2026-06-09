@@ -87,7 +87,7 @@ struct Parts
     const_iterator end() const noexcept { return fParts.end(); }
     const_iterator cend() const noexcept { return fParts.cend(); }
 
-    container fParts{};
+    container fParts;
 };
 
 }   // namespace fair::mq
