@@ -513,7 +513,8 @@ void Device::HandleMultipleTransportInput()
     fMultitransportProceed = true;
 
     for (const auto& i : fMultitransportInputs) {
-        threads.emplace_back(thread(&Device::PollForTransport, this, fTransports.at(i.first).get(), i.second));
+        threads.emplace_back(
+            &Device::PollForTransport, this, fTransports.at(i.first).get(), i.second);
     }
 
     for (thread& t : threads) {

@@ -189,7 +189,7 @@ vector<string> ProgOptions::GetPropertyKeys() const
     vector<string> keys;
 
     for (const auto& it : fVarMap) {
-        keys.push_back(it.first.c_str());
+        keys.emplace_back(it.first.c_str());
     }
 
     return keys;
