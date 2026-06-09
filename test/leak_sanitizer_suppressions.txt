@@ -1,1 +1,2 @@
 leak:zmq_msg_init_size
+leak:zmq::msg_t::init_size
