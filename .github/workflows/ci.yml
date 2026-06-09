@@ -81,6 +81,7 @@ jobs:
           - name: tsan
             options: ENABLE_SANITIZER_THREAD=ON
             cxx-compiler: clang++
+            cxx-flags: -fuse-ld=lld
 
     steps:
       - uses: actions/checkout@v6
@@ -99,6 +100,10 @@ jobs:
         with:
           key: ${{ github.job }}-${{ matrix.sanitizer.name }}
           max-size: 500M
+
+      - name: Install lld
+        if: matrix.sanitizer.name == 'tsan'
+        run: sudo apt-get update && sudo apt-get install -y lld
 
       - name: Configure and Build
         uses: threeal/cmake-action@v2

@@ -68,6 +68,7 @@ function(build_bundled package bundle)
 
     exec(${CMAKE_COMMAND} -S ${${package}_SOURCE_DIR} -B ${${package}_BINARY_DIR} -G ${CMAKE_GENERATOR}
       -DCMAKE_INSTALL_PREFIX=${${package}_INSTALL_DIR} -DBUILD_GMOCK=OFF
+      -DCMAKE_POSITION_INDEPENDENT_CODE=ON
     )
     exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR})
     exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR} --target install)
