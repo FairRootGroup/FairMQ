@@ -99,7 +99,7 @@ string getDefaultRouteNetworkInterface()
     string interfaceName;
 
 #ifdef __APPLE__   // MacOS
-    unique_ptr<FILE, decltype(pclose)*> file(
+    unique_ptr<FILE, int (*)(FILE*)> file(
         popen("route -n get default | grep interface | cut -d \":\" -f 2", "r"), pclose);
 #else   // Linux
     ifstream is("/proc/net/route");
@@ -128,7 +128,7 @@ string getDefaultRouteNetworkInterface()
     LOG(debug) << "could not get network interface of the default route from /proc/net/route, "
                   "going to try via 'ip route'";
 
-    unique_ptr<FILE, decltype(pclose)*> file(
+    unique_ptr<FILE, int (*)(FILE*)> file(
         popen("ip route | grep default | cut -d \" \" -f 5 | head -n 1", "r"), pclose);
 #endif
 
