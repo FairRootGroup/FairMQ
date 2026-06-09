@@ -149,21 +149,25 @@ jobs:
           key: ${{ github.job }}
           max-size: 500M
 
-      - name: Configure and Build
-        uses: threeal/cmake-action@v2
-        with:
-          generator: Ninja
-          options: |
-            CMAKE_BUILD_TYPE=Debug
-            BUILD_TESTING=ON
-            RUN_STATIC_ANALYSIS=ON
-            CMAKE_C_COMPILER_LAUNCHER=ccache
-            CMAKE_CXX_COMPILER_LAUNCHER=ccache
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DBUILD_TESTING=ON \
+            -DRUN_STATIC_ANALYSIS=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        run: |
+          set -o pipefail
+          cmake --build build 2>&1 | tee build.log
 
       - name: Check for warnings
         run: |
+          test -f build.log || { echo "::error::build.log was not produced"; exit 1; }
           if grep -q "warning:" build.log; then
-            echo "::warning::Static analysis found warnings"
+            echo "::error::Static analysis found warnings"
             grep "warning:" build.log
             exit 1
           fi
