@@ -54,9 +54,12 @@ jobs:
             CMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Test
-        uses: threeal/ctest-action@v1
-        with:
-          test-dir: build
+        run: |
+          # Region/segment tests mlock() shared memory; raise the locked-memory
+          # limit so it does not hit RLIMIT_MEMLOCK on the runner.
+          sudo prlimit --pid $$ --memlock=unlimited:unlimited
+          ulimit -l
+          ctest --test-dir build --output-on-failure --no-tests=error
 
       - name: Install
         run: cmake --install build
@@ -111,9 +114,12 @@ jobs:
             ${{ matrix.sanitizer.options }}
 
       - name: Test
-        uses: threeal/ctest-action@v1
-        with:
-          test-dir: build
+        run: |
+          # Region/segment tests mlock() shared memory; raise the locked-memory
+          # limit so it does not hit RLIMIT_MEMLOCK on the runner.
+          sudo prlimit --pid $$ --memlock=unlimited:unlimited
+          ulimit -l
+          ctest --test-dir build --output-on-failure --no-tests=error
 
   static-analysis:
     if: github.repository == 'FairRootGroup/FairMQ'
