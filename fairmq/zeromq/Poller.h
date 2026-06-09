@@ -86,7 +86,7 @@ class Poller final : public fair::mq::Poller
             fItems = new zmq_pollitem_t[fNumItems];
 
             int index = 0;
-            for (std::string channel : channelList) {
+            for (const std::string& channel : channelList) {
                 for (unsigned int i = 0; i < channelsMap.at(channel).size(); ++i) {
                     index = fOffsetMap[channel] + i;
 
