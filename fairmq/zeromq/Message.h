@@ -107,7 +107,11 @@ class Message final : public fair::mq::Message
         }
     }
 
-    Message(UnmanagedRegionPtr& region, void* data, const size_t size, void* hint = 0, fair::mq::TransportFactory* factory = nullptr)
+    Message(UnmanagedRegionPtr& region,
+            void* data,
+            const size_t size,
+            void* hint = nullptr,
+            fair::mq::TransportFactory* factory = nullptr)
         : fair::mq::Message(factory)
         , fMsg(std::make_unique<zmq_msg_t>())
     {
