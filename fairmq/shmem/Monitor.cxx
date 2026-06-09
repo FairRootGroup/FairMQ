@@ -59,12 +59,18 @@ void signalHandler(int signal)
     gSignalStatus = signal;
 }
 
-Monitor::Monitor(string shmId, bool selfDestruct, bool interactive, bool viewOnly, unsigned int timeoutInMS, unsigned int intervalInMS, bool monitor, bool cleanOnExit)
+Monitor::Monitor(string shmId,
+                 bool selfDestruct,
+                 bool interactive,
+                 bool viewOnly,
+                 unsigned int timeoutInMS,
+                 unsigned int intervalInMS,
+                 bool monitor,
+                 bool cleanOnExit)
     : fSelfDestruct(selfDestruct)
     , fInteractive(interactive)
     , fViewOnly(viewOnly)
     , fMonitor(monitor)
-    , fSeenOnce(false)
     , fCleanOnExit(cleanOnExit)
     , fTimeoutInMS(timeoutInMS)
     , fIntervalInMS(intervalInMS)

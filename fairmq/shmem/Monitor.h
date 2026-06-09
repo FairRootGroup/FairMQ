@@ -170,7 +170,7 @@ class Monitor
     bool fInteractive; // running in interactive mode
     bool fViewOnly; // view only mode
     bool fMonitor;
-    bool fSeenOnce; // true is segment has been opened successfully at least once
+    bool fSeenOnce{false};   // true is segment has been opened successfully at least once
     bool fCleanOnExit;
     unsigned int fTimeoutInMS;
     unsigned int fIntervalInMS;

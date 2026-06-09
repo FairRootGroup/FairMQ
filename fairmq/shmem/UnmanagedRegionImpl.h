@@ -37,8 +37,6 @@ class UnmanagedRegionImpl final : public fair::mq::UnmanagedRegion
                     fair::mq::TransportFactory* factory)
         : fair::mq::UnmanagedRegion(factory)
         , fManager(manager)
-        , fRegion(nullptr)
-        , fRegionId(0)
     {
         auto [regionPtr, regionId] = fManager.CreateRegion(size, callback, bulkCallback, std::move(cfg));
         fRegion = regionPtr;
@@ -62,8 +60,8 @@ class UnmanagedRegionImpl final : public fair::mq::UnmanagedRegion
 
   private:
     Manager& fManager;
-    shmem::UnmanagedRegion* fRegion;
-    uint16_t fRegionId;
+    shmem::UnmanagedRegion* fRegion{nullptr};
+    uint16_t fRegionId{0};
 };
 
 } // namespace fair::mq::shmem

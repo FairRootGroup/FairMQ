@@ -41,8 +41,7 @@ class Socket final : public fair::mq::Socket
         , fBytesRx(0)
         , fMessagesTx(0)
         , fMessagesRx(0)
-        , fTimeout(100)
-        , fConnectedPeersCount(0)
+
     {
         if (fSocket == nullptr) {
             LOG(error) << "Failed creating socket " << fId << ", reason: " << zmq_strerror(errno);
@@ -405,8 +404,8 @@ class Socket final : public fair::mq::Socket
     std::atomic<unsigned long> fMessagesTx;
     std::atomic<unsigned long> fMessagesRx;
 
-    int fTimeout;
-    mutable unsigned long fConnectedPeersCount;
+    int fTimeout{100};
+    mutable unsigned long fConnectedPeersCount{0};
 };
 
 } // namespace fair::mq::zmq
