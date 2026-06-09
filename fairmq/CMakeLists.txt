@@ -136,6 +136,7 @@ if(BUILD_FAIRMQ)
     shmem/Common.cxx
     shmem/Manager.cxx
     shmem/Monitor.cxx
+    shmem/TransportFactory.cxx
     tools/Network.cxx
     tools/Process.cxx
     tools/Semaphore.cxx
