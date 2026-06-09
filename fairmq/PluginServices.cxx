@@ -17,7 +17,9 @@ auto PluginServices::ChangeDeviceState(const string& controller, const DeviceSta
 {
     lock_guard<mutex> lock{fDeviceControllerMutex};
 
-    if (!fDeviceController) fDeviceController = controller;
+    if (!fDeviceController) {
+        fDeviceController = controller;
+    }
 
     if (fDeviceController == controller) {
         return fDevice.ChangeState(next);

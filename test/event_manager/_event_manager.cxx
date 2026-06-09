@@ -29,13 +29,17 @@ TEST(EventManager, Basics)
     std::function<void(typename TestEvent::KeyType, int)> callback{
         [&](TestEvent::KeyType key, int newValue){
             ++call_counter;
-            if (key == "test") value = newValue;
+            if (key == "test") {
+                value = newValue;
+            }
         }
     };
     std::function<void(typename TestEvent::KeyType, string)> callback2{
         [&](TestEvent::KeyType key, string newValue){
             ++call_counter2;
-            if (key == "test") value2 = newValue;
+            if (key == "test") {
+                value2 = newValue;
+            }
         }
     };
 
