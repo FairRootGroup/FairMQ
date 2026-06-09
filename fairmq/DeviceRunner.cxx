@@ -65,11 +65,14 @@ bool DeviceRunner::HandleGeneralOptions(const fair::mq::ProgOptions& config, boo
 
         if (printLogo) {
             LOG(info) << endl
-                << "      ______      _    _______  _________ " << endl
-                << "     / ____/___ _(_)_______   |/  /_  __ \\    version " << FAIRMQ_GIT_VERSION << endl
-                << "    / /_  / __ `/ / ___/__  /|_/ /_  / / /    build " << FAIRMQ_BUILD_TYPE << endl
-                << "   / __/ / /_/ / / /    _  /  / / / /_/ /     " << FAIRMQ_REPO_URL << endl
-                << "  /_/    \\__,_/_/_/     /_/  /_/  \\___\\_\\     " << FAIRMQ_LICENSE << "  © " << FAIRMQ_COPYRIGHT << endl;
+                      << "      ______      _    _______  _________ " << endl
+                      << "     / ____/___ _(_)_______   |/  /_  __ \\    version "
+                      << FAIRMQ_GIT_VERSION << endl
+                      << "    / /_  / __ `/ / ___/__  /|_/ /_  / / /    build " << FAIRMQ_BUILD_TYPE
+                      << endl
+                      << "   / __/ / /_/ / / /    _  /  / / / /_/ /     " << FAIRMQ_REPO_URL << endl
+                      << R"(  /_/    \__,_/_/_/     /_/  /_/  \___\_\     )" << FAIRMQ_LICENSE
+                      << "  © " << FAIRMQ_COPYRIGHT << endl;
         }
     }
 

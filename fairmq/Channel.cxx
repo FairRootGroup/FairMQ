@@ -181,7 +181,7 @@ try {
 
     // validate channel name
     smatch m;
-    if (regex_search(fName, m, regex("[^a-zA-Z0-9\\-_\\[\\]#]"))) {
+    if (regex_search(fName, m, regex(R"([^a-zA-Z0-9\-_\[\]#])"))) {
         ss << "INVALID";
         LOG(debug) << ss.str();
         LOG(error) << "channel name contains illegal character: '" << m.str(0) << "', allowed characters are: a-z, A-Z, 0-9, -, _, [, ], #";
