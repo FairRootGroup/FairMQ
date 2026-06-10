@@ -24,9 +24,19 @@ if(definitions)
   set(definitions DEFINITIONS ${definitions})
 endif()
 
+set(test_environment)
 if(ENABLE_SANITIZER_LEAK)
   get_filename_component(lsan_supps "${CMAKE_CURRENT_SOURCE_DIR}/leak_sanitizer_suppressions.txt" ABSOLUTE)
-  set(environment ENVIRONMENT "LSAN_OPTIONS=set:suppressions=${lsan_supps}")
+  list(APPEND test_environment "LSAN_OPTIONS=set:suppressions=${lsan_supps}")
+endif()
+# Run the tests against an alternative runtime library directory, e.g. a
+# tsan-instrumented libstdc++. Set per test (not at the job level), because
+# such a library must only be loaded into instrumented executables.
+if(FAIRMQ_TEST_LD_LIBRARY_PATH)
+  list(APPEND test_environment "LD_LIBRARY_PATH=path_list_prepend:${FAIRMQ_TEST_LD_LIBRARY_PATH}")
+endif()
+if(test_environment)
+  set(environment ENVIRONMENT ${test_environment})
 endif()
 
 add_testhelper(runTestDevice
