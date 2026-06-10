@@ -75,15 +75,18 @@ jobs:
       matrix:
         sanitizer:
           - name: asan+lsan+ubsan
+            gcc: '14'
+            env: latest
             options: |
               ENABLE_SANITIZER_ADDRESS=ON
               ENABLE_SANITIZER_LEAK=ON
               ENABLE_SANITIZER_UNDEFINED_BEHAVIOUR=ON
             cxx-flags: -O1 -fno-omit-frame-pointer
           - name: tsan
+            gcc: '15'
+            env: tsan
             options: ENABLE_SANITIZER_THREAD=ON
-            cxx-compiler: clang++
-            cxx-flags: -fuse-ld=lld
+            cxx-flags: -fno-omit-frame-pointer
 
     steps:
       - uses: actions/checkout@v6
@@ -95,7 +98,8 @@ jobs:
       - name: Setup spack environment
         uses: ./.github/actions/setup-deps
         with:
-          gcc: '14'
+          gcc: ${{ matrix.sanitizer.gcc }}
+          env: ${{ matrix.sanitizer.env }}
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1
@@ -103,22 +107,54 @@ jobs:
           key: ${{ github.job }}-${{ matrix.sanitizer.name }}
           max-size: 500M
 
-      - name: Install lld
+      - name: Locate instrumented libstdc++
         if: matrix.sanitizer.name == 'tsan'
-        run: sudo apt-get update && sudo apt-get install -y lld
+        shell: spack-bash {0}
+        # The test processes must load the tsan-instrumented libstdc++
+        # instead of the compiler's own (same soname, LD_LIBRARY_PATH beats
+        # the RUNPATH). Set per test via ctest, not at the job level: like
+        # any shared library built with gcc -fsanitize=thread it has
+        # unresolved __tsan_* symbols, so loading it into uninstrumented
+        # tools (cmake, ctest, ninja) would break them.
+        run: |
+          prefix=$(spack -e fairmq location -i libstdcxx-tsan)
+          echo "test_library_path=$prefix/lib" >> $GITHUB_ENV
 
       - name: Configure and Build
         uses: threeal/cmake-action@v2
         with:
           generator: Ninja
-          cxx-compiler: ${{ matrix.sanitizer.cxx-compiler }}
           cxx-flags: ${{ matrix.sanitizer.cxx-flags }}
           options: |
             CMAKE_BUILD_TYPE=Debug
             BUILD_TESTING=ON
             CMAKE_C_COMPILER_LAUNCHER=ccache
             CMAKE_CXX_COMPILER_LAUNCHER=ccache
+            FAIRMQ_TEST_LD_LIBRARY_PATH=${{ env.test_library_path }}
             ${{ matrix.sanitizer.options }}
+
+      - name: Verify tsan instrumentation wiring
+        if: matrix.sanitizer.name == 'tsan'
+        shell: spack-bash {0}
+        run: |
+          set -x
+          # the test environment must resolve libstdc++ to the instrumented copy
+          LD_LIBRARY_PATH=$test_library_path ldd build/test/testsuite_Channel \
+            | grep 'libstdc++' | tee /dev/stderr | grep -q libstdcxx-tsan
+          # libzmq must be instrumented
+          nm -D --undefined-only "$(spack -e fairmq location -i libzmq)/lib/libzmq.so" \
+            | grep -q __tsan_
+          # the instrumented libstdc++ must match the compiler release exactly,
+          # or binaries may reference GLIBCXX versions the runtime lacks
+          # (--color=never: the CI config forces SPACK_COLOR=always, which
+          # would wrap the version in ANSI escapes)
+          test "$(spack --color=never -e fairmq find --format '{version}' libstdcxx-tsan)" \
+            = "$(g++ -dumpfullversion)"
+          # the LD_LIBRARY_PATH prepend must reach the registered tests
+          # (via a file: grep -q quits on first match, and SIGPIPE on the
+          # large json output would fail the step under pipefail)
+          ctest --test-dir build --show-only=json-v1 > ctest-show-only.json
+          grep -q libstdcxx-tsan ctest-show-only.json
 
       - name: Test
         run: |
