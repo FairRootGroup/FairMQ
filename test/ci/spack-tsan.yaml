@@ -1,0 +1,47 @@
+spack:
+  specs:
+    # fairlogger and boost are left uninstrumented on purpose: no tsan report
+    # has ever implicated them. Should that change, instrument them with
+    # per-node flags like libzmq below.
+    - "fairlogger@2.2.0 ^fmt@:11"
+    - "boost@1.66: +container +program_options +filesystem +date_time +regex"
+    # libzmq (and the libsodium it links) are built with ThreadSanitizer
+    # instrumentation so tsan can observe the happens-before edges that
+    # libzmq's lock-free queues establish between user and I/O threads.
+    # Flags are set per node on purpose: the propagating '==' operator could
+    # reach the gcc node (the compiler is a dependency since spack 1.0) and
+    # trigger a full compiler rebuild.
+    - "libzmq@4.1.4: cflags='-g -fno-omit-frame-pointer -fsanitize=thread'
+       cxxflags='-g -fno-omit-frame-pointer -fsanitize=thread'
+       ldflags='-fsanitize=thread'
+       ^libsodium cflags='-g -fno-omit-frame-pointer -fsanitize=thread'
+       ldflags='-fsanitize=thread'"
+    # ThreadSanitizer-instrumented libstdc++ (from test/ci/spack_repo), a
+    # drop-in runtime replacement injected per test via LD_LIBRARY_PATH (see
+    # FAIRMQ_TEST_LD_LIBRARY_PATH in test/CMakeLists.txt).
+    # Keep the major version in lockstep with the gcc used by the tsan job.
+    - "libstdcxx-tsan@15"
+    - ninja
+    # the per-test env injection uses ctest's ENVIRONMENT_MODIFICATION,
+    # which needs cmake >= 3.22
+    - "cmake@3.22:"
+
+  concretizer:
+    targets:
+      granularity: generic
+    reuse:
+      # always re-concretize libstdcxx-tsan from the recipe in
+      # test/ci/spack_repo: spec reuse would keep resurrecting previously
+      # built (and cached) variants after the recipe changed; unchanged
+      # recipes still hit the buildcache because the hash is identical
+      exclude: ["libstdcxx-tsan"]
+
+  packages:
+    all:
+      require:
+        - target=x86_64_v3
+
+  mirrors:
+    ghcr-buildcache:
+      url: oci://ghcr.io/fairrootgroup/fairmq-spack-buildcache
+      signed: false

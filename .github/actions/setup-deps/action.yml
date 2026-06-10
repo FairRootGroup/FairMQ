@@ -6,7 +6,7 @@ inputs:
     description: 'GCC version to use'
     required: true
   env:
-    description: 'Spack environment name (latest, boost187)'
+    description: 'Spack environment name (latest, boost187, tsan)'
     default: 'latest'
   fresh:
     description: 'Use fresh concretization'
