@@ -10,6 +10,7 @@
 #include <TestEnvironment.h>
 
 #include <gtest/gtest.h>
+#include <helper/LocaleWarmup.h>
 
 #include <string>
 
@@ -24,6 +25,7 @@ string runTestDevice = "@RUN_TEST_DEVICE@";
 
 int main(int argc, char** argv)
 {
+    fair::mq::test::WarmUpLocaleCaches();
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     setenv("FAIRMQ_PATH", FAIRMQ_TEST_ENVIRONMENT, 0);
