@@ -18,6 +18,7 @@
 #include <chrono>
 #include <csignal>   // kill, signals
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <stdexcept>
 #include <thread>
@@ -40,10 +41,18 @@ class LinePrinter
         , fPrefix(std::move(prefix))
     {}
 
-    // prints line with prefix on both cout (thread-safe) and output stream
+    // prints line with prefix on both cout and output stream
     void Print(const string& line)
     {
-        cout << fair::mq::tools::ToString(fPrefix, line, "\n") << flush;
+        // Serialize: the standard allows concurrent insertion on std::cout,
+        // but libstdc++ maintains the formatted-output state (e.g.
+        // ios_base::width) with plain reads and writes that constitute data
+        // races; the lock also keeps whole lines from interleaving.
+        static mutex sCoutMutex;
+        {
+            lock_guard<mutex> lock(sCoutMutex);
+            cout << fair::mq::tools::ToString(fPrefix, line, "\n") << flush;
+        }
         fOut << fPrefix << line << endl;
     }
 
