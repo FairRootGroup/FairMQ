@@ -56,8 +56,11 @@ runs:
           # Push the gcc node now, BEFORE `spack compiler find` registers it as an
           # external -- externals are excluded from `buildcache push`. This is what
           # lets CI pull gcc from the cache (~1 min) instead of building it (~1 h).
+          # --allow-missing: when gcc itself was pulled from the cache, its
+          # build-time dependencies are not installed locally and would
+          # otherwise fail the push.
           spack mirror set --oci-username ${{ github.actor }} --oci-password-variable GITHUB_TOKEN ghcr-buildcache
-          spack buildcache push --unsigned ghcr-buildcache /$gcc_hash
+          spack buildcache push --unsigned --allow-missing ghcr-buildcache /$gcc_hash
         fi
         spack compiler find "$(spack location -i /$gcc_hash)"
         echo "::endgroup::"
