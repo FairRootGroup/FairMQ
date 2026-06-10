@@ -453,6 +453,46 @@ TEST(EmptyMessage, shmem_expanded_metadata) // NOLINT
     EmptyMessage("shmem", "ipc://test_empty_message", true);
 }
 
+// GetMeta() + GetDataAddressFromHandle() round-trip: simulates a consumer device that
+// receives message metadata over a side channel and resolves it to a local pointer.
+// Uses a second factory on the same session to exercise the open_only segment attach path.
+auto SideChannel(bool expandedShmMetadata = false) -> void
+{
+    const string session = tools::Uuid();
+
+    ProgOptions producerConfig;
+    producerConfig.SetProperty<string>("session", session);
+    producerConfig.SetProperty<size_t>("shm-segment-size", 100000000);
+    producerConfig.SetProperty<bool>("shm-monitor", true);
+    if (expandedShmMetadata) {
+        producerConfig.SetProperty<size_t>("shm-metadata-msg-size", 2048);
+    }
+    auto producerFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &producerConfig));
+
+    ProgOptions consumerConfig;
+    consumerConfig.SetProperty<string>("session", session);
+    consumerConfig.SetProperty<size_t>("shm-segment-size", 100000000);
+    consumerConfig.SetProperty<bool>("shm-monitor", true);
+    auto consumerFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &consumerConfig));
+
+    const size_t size = 2;
+    MessagePtr msg(producerFactory->CreateMessage(size));
+    memcpy(msg->GetData(), "AB", size);
+
+    // producer side: extract metadata to send over the side channel
+    const auto meta = static_cast<const shmem::Message&>(*msg).GetMeta();
+    EXPECT_EQ(meta.fSize, size);
+    EXPECT_TRUE(meta.fManaged);
+
+    // consumer side: resolve via a different factory — exercises open_only segment attach.
+    // The virtual address differs between factory mappings; only the content must match.
+    char* ptr = shmem::GetDataAddressFromHandle(*consumerFactory, meta);
+
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_EQ(ptr[0], 'A');
+    EXPECT_EQ(ptr[1], 'B');
+}
+
 TEST(ZeroCopy, shmem) // NOLINT
 {
     ZeroCopy();
@@ -461,6 +501,93 @@ TEST(ZeroCopy, shmem) // NOLINT
 TEST(ZeroCopy, shmem_expanded_metadata) // NOLINT
 {
     ZeroCopy(true);
+}
+
+// Uses a second factory on the same session to exercise the remote region lookup path.
+auto SideChannelUnmanaged() -> void
+{
+    const string session = tools::Uuid();
+
+    ProgOptions producerConfig;
+    producerConfig.SetProperty<string>("session", session);
+    producerConfig.SetProperty<size_t>("shm-segment-size", 100000000);
+    producerConfig.SetProperty<bool>("shm-monitor", true);
+    auto producerFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &producerConfig));
+
+    ProgOptions consumerConfig;
+    consumerConfig.SetProperty<string>("session", session);
+    consumerConfig.SetProperty<size_t>("shm-segment-size", 100000000);
+    consumerConfig.SetProperty<bool>("shm-monitor", true);
+    auto consumerFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &consumerConfig));
+
+    const size_t regionSize = 1000000;
+    tools::Semaphore blocker;
+    auto region = producerFactory->CreateUnmanagedRegion(regionSize, [&blocker](void*, size_t, void*) {
+        blocker.Signal();
+    });
+
+    const size_t size = 2;
+    auto msg(producerFactory->CreateMessage(region, static_cast<char*>(region->GetData()), size, nullptr));
+    memcpy(msg->GetData(), "AB", size);
+
+    const auto meta = static_cast<const shmem::Message&>(*msg).GetMeta();
+    EXPECT_EQ(meta.fSize, size);
+    EXPECT_FALSE(meta.fManaged);
+
+    // consumer resolves via its own factory — exercises remote region lookup.
+    // The virtual address differs between factory mappings; only the content must match.
+    char* ptr = shmem::GetDataAddressFromHandle(*consumerFactory, meta);
+
+    ASSERT_NE(ptr, nullptr);
+    EXPECT_EQ(ptr[0], 'A');
+    EXPECT_EQ(ptr[1], 'B');
+
+    msg.reset();
+    blocker.Wait();
+}
+
+auto SideChannelErrors() -> void
+{
+    ProgOptions config;
+    config.SetProperty<string>("session", tools::Uuid());
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
+    config.SetProperty<bool>("shm-monitor", true);
+    auto shmFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config));
+    auto zmqFactory(TransportFactory::CreateTransportFactory("zeromq", tools::Uuid(), &config));
+
+    // non-shmem factory must throw
+    shmem::MetaHeader meta{};
+    meta.fManaged = true;
+    EXPECT_THROW(shmem::GetDataAddressFromHandle(*zmqFactory, meta), shmem::SharedMemoryError);
+
+    // bad segment id must throw
+    meta.fSize = 1;
+    meta.fSegmentId = 999;
+    EXPECT_THROW(shmem::GetDataAddressFromHandle(*shmFactory, meta), shmem::SharedMemoryError);
+
+    // zero-size managed message must return nullptr (mirrors Message::GetData())
+    meta.fSize = 0;
+    EXPECT_EQ(shmem::GetDataAddressFromHandle(*shmFactory, meta), nullptr);
+}
+
+TEST(SideChannel, shmem) // NOLINT
+{
+    SideChannel();
+}
+
+TEST(SideChannel, shmem_expanded_metadata) // NOLINT
+{
+    SideChannel(true);
+}
+
+TEST(SideChannel, shmem_unmanaged) // NOLINT
+{
+    SideChannelUnmanaged();
+}
+
+TEST(SideChannel, errors) // NOLINT
+{
+    SideChannelErrors();
 }
 
 TEST(ZeroCopyFromUnmanaged, shmem) // NOLINT
