@@ -69,6 +69,7 @@ runs:
       shell: spack-bash {0}
       run: |
         echo "::group::Install dependencies"
+        spack repo add "$GITHUB_WORKSPACE/test/ci/spack_repo/fairmq_ci"
         spack env create fairmq test/ci/spack-${{ inputs.env }}.yaml
         spack -e fairmq add gcc@${{ inputs.gcc }}
         spack -e fairmq config add "packages:all:require:'%gcc@${{ inputs.gcc }}'"
