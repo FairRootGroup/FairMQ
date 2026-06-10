@@ -6,6 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include "LocaleWarmup.h"
 #include "devices/TestPairLeft.h"
 #include "devices/TestPairRight.h"
 #include "devices/TestPollIn.h"
@@ -29,6 +30,10 @@
 #include <string>
 
 namespace bpo = boost::program_options;
+
+namespace {
+[[maybe_unused]] fair::mq::test::LocaleWarmup const gLocaleWarmup{};
+}
 
 auto addCustomOptions(bpo::options_description& options) -> void
 {

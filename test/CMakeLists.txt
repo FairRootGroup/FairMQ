@@ -32,6 +32,7 @@ endif()
 add_testhelper(runTestDevice
     SOURCES
     helper/runTestDevice.cxx
+    helper/LocaleWarmup.h
     helper/devices/TestPairLeft.h
     helper/devices/TestPairRight.h
     helper/devices/TestPollIn.h
