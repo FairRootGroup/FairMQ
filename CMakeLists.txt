@@ -46,6 +46,13 @@ include(FairMQDependencies)
 
 
 # Targets ######################################################################
+if(FAIRMQ_TEST_LD_LIBRARY_PATH AND CMAKE_VERSION VERSION_LESS 3.22)
+  # The per-test injection relies on ctest's ENVIRONMENT_MODIFICATION, which
+  # older CMake silently drops -- the tests would run against the default
+  # runtime while looking green.
+  message(FATAL_ERROR "FAIRMQ_TEST_LD_LIBRARY_PATH requires CMake >= 3.22")
+endif()
+
 if(BUILD_FAIRMQ)
   add_subdirectory(fairmq)
 endif()
