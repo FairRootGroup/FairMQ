@@ -156,7 +156,7 @@ TEST_F(PluginServices, SubscriptionThreadSafety)
     std::array<std::unique_ptr<std::thread>, subscribers> threads;
     auto id = 0;
     for (auto& thread : threads) {
-        thread = std::make_unique<std::thread>([&](){
+        thread = std::make_unique<std::thread>([&, id](){
             auto const subscriber = fair::mq::tools::ToString("subscriber_", id);
             for (auto i = 0; i < attempts; ++i) {
                 mServices.SubscribeToDeviceStateChange(subscriber, [](DeviceState){});
