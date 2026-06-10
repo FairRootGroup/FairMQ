@@ -50,7 +50,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           spack -e fairmq mirror set --oci-username ${{ github.actor }} --oci-password-variable GITHUB_TOKEN ghcr-buildcache
-          spack -e fairmq buildcache push --unsigned ghcr-buildcache
+          # --allow-missing: build-time dependencies of specs that were
+          # satisfied from the buildcache are not installed locally and
+          # would otherwise fail the whole push.
+          spack -e fairmq buildcache push --unsigned --allow-missing ghcr-buildcache
 
   update-index:
     if: github.repository == 'FairRootGroup/FairMQ' && !cancelled()
