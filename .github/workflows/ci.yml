@@ -78,7 +78,7 @@ jobs:
             options: |
               ENABLE_SANITIZER_ADDRESS=ON
               ENABLE_SANITIZER_LEAK=ON
-              ENABLE_SANITIZER_UNDEFINED_BEHAVIOUR=ON
+              ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=ON
             cxx-flags: -O1 -fno-omit-frame-pointer
           - name: tsan
             gcc: '15'
