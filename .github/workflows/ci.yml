@@ -37,13 +37,13 @@ jobs:
           env: ${{ matrix.env }}
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
         with:
           key: ${{ github.job }}-${{ matrix.env }}-gcc${{ matrix.gcc }}
           max-size: 500M
 
       - name: Configure and Build
-        uses: threeal/cmake-action@v2
+        uses: threeal/cmake-action@725d1314ccf9ea922805d7e3f9d9bcbca892b406 # v2.1.0
         with:
           generator: Ninja
           options: |
@@ -100,7 +100,7 @@ jobs:
           env: ${{ matrix.sanitizer.env }}
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
         with:
           key: ${{ github.job }}-${{ matrix.sanitizer.name }}
           max-size: 500M
@@ -119,7 +119,7 @@ jobs:
           echo "test_library_path=$prefix/lib" >> $GITHUB_ENV
 
       - name: Configure and Build
-        uses: threeal/cmake-action@v2
+        uses: threeal/cmake-action@725d1314ccf9ea922805d7e3f9d9bcbca892b406 # v2.1.0
         with:
           generator: Ninja
           cxx-flags: ${{ matrix.sanitizer.cxx-flags }}
@@ -180,7 +180,7 @@ jobs:
           gcc: '14'
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
         with:
           key: ${{ github.job }}
           max-size: 500M
