@@ -390,8 +390,10 @@ class Manager
         }
 
         auto* lRegion = GetRegion(id);
-        fTlRegionCache.fRegionsTLCache.emplace_back(lRegion, id, fShmId64);
-        fTlRegionCache.fRegionsTLCacheGen = fRegionsGen;
+        if (lRegion) {
+            fTlRegionCache.fRegionsTLCache.emplace_back(lRegion, id, fShmId64);
+            fTlRegionCache.fRegionsTLCacheGen = fRegionsGen;
+        }
         return lRegion;
     }
 
