@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include "Manager.h"
+#include "TransportFactory.h"
 
 // Needed to compile-firewall the <boost/process/async.hpp> header because it
 // interferes with the <asio/buffer.hpp> header. So, let's factor
@@ -49,6 +50,14 @@ bool Manager::SpawnShmMonitor(const std::string& id)
         exe, "-x", "-m", "--shmid", id, "-d", "-t", "2000", (verbose ? "--verbose" : ""), env);
 
     return true;
+}
+
+char* GetDataAddressFromHandle(fair::mq::TransportFactory& factory, const MetaHeader& meta)
+{
+    if (factory.GetType() != fair::mq::Transport::SHM) {
+        throw SharedMemoryError("GetDataAddressFromHandle called on a non-shmem transport");
+    }
+    return static_cast<TransportFactory&>(factory).GetDataAddressFromHandle(meta);
 }
 
 }   // namespace fair::mq::shmem

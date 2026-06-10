@@ -167,6 +167,11 @@ class Message final : public fair::mq::Message
         }
     }
 
+    MetaHeader GetMeta() const
+    {
+        return {fSize, fHint, fHandle, fShared, fRegionId, fSegmentId, fManaged};
+    }
+
     void* GetData() const override
     {
         if (!fLocalPtr) {

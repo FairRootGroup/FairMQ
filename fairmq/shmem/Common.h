@@ -339,4 +339,13 @@ struct SegmentBufferShrink
 
 } // namespace fair::mq::shmem
 
+namespace fair::mq { class TransportFactory; }
+
+namespace fair::mq::shmem {
+// Resolve a MetaHeader (received over a side channel) to the local data pointer.
+// The caller is responsible for ensuring the backing buffer remains alive for the
+// duration of access; FairMQ provides no refcount protection for this path.
+char* GetDataAddressFromHandle(fair::mq::TransportFactory& factory, const MetaHeader& meta);
+} // namespace fair::mq::shmem
+
 #endif /* FAIR_MQ_SHMEM_COMMON_H_ */

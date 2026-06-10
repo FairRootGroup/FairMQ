@@ -201,6 +201,8 @@ class TransportFactory final : public fair::mq::TransportFactory
     void Resume() override { fManager->Resume(); }
     void Reset() override { fManager->Reset(); }
 
+    char* GetDataAddressFromHandle(const MetaHeader& meta) { return fManager->GetDataAddressFromHandle(meta); }
+
     ~TransportFactory() override
     {
         LOG(debug) << "Destroying Shared Memory transport...";

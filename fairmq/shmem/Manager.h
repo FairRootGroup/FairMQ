@@ -776,6 +776,30 @@ class Manager
 
     auto GetMetadataMsgSize() const noexcept { return fMetadataMsgSize; }
 
+    // Resolve a MetaHeader (received over a side channel) to the local data pointer.
+    // The caller is responsible for ensuring the backing buffer remains alive for the
+    // duration of access; FairMQ provides no refcount protection for this path.
+    char* GetDataAddressFromHandle(const MetaHeader& meta)
+    {
+        if (meta.fManaged) {
+            if (meta.fSize == 0) {
+                return nullptr;
+            }
+            GetSegment(meta.fSegmentId);
+            auto it = fSegments.find(meta.fSegmentId);
+            if (it == fSegments.end()) {
+                throw SharedMemoryError(tools::ToString("GetDataAddressFromHandle: cannot open segment with id ", meta.fSegmentId));
+            }
+            return ShmHeader::UserPtr(GetAddressFromHandle(meta.fHandle, meta.fSegmentId));
+        } else {
+            UnmanagedRegion* region = GetRegionFromCache(meta.fRegionId);
+            if (!region) {
+                throw SharedMemoryError(tools::ToString("GetDataAddressFromHandle: cannot get unmanaged region with id ", meta.fRegionId));
+            }
+            return reinterpret_cast<char*>(region->GetData()) + meta.fHandle;
+        }
+    }
+
     ~Manager()
     {
         fRegionsGen += 1; // signal TL cache invalidation
