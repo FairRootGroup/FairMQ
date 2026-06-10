@@ -776,7 +776,7 @@ class Manager
 
     auto GetMetadataMsgSize() const noexcept { return fMetadataMsgSize; }
 
-    char* GetDataAddressFromHandle(const boost::interprocess::managed_shared_memory::handle_t handle, uint16_t segmentId);
+    char* GetDataAddressFromHandle(boost::interprocess::managed_shared_memory::handle_t handle, uint16_t segmentId);
 
     ~Manager()
     {
