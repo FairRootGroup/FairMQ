@@ -8,6 +8,7 @@ on:
     branches: [dev, master]
     paths:
       - 'test/ci/spack-*.yaml'
+      - 'test/ci/spack_repo/**'
       - '.github/workflows/buildcache.yml'
       - '.github/actions/setup-deps/**'
 
@@ -30,6 +31,8 @@ jobs:
         include:
           - gcc: '15'
             env: 'boost187'
+          - gcc: '15'
+            env: 'tsan'
 
     steps:
       - uses: actions/checkout@v6
