@@ -1,0 +1,70 @@
+name: Test macOS Self-Hosted Runner
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ dev, master ]
+  pull_request:
+    branches: [ dev, master ]
+
+
+jobs:
+  test-runner:
+    runs-on: [self-hosted, macOS-15]
+    timeout-minutes: 120
+
+    steps:
+    - name: Setup environment
+      run: |
+        echo "Setting up PATH for Homebrew..."
+        export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+        echo "PATH=$PATH" >> $GITHUB_ENV
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: System information
+      run: |
+        echo "Runner information:"
+        uname -a
+        sw_vers
+        echo "CPU info:"
+        sysctl -n machdep.cpu.brand_string
+        echo "Memory info:"
+        system_profiler SPHardwareDataType | grep "Memory:"
+        echo "Disk space:"
+        df -h
+
+    - name: Check development tools
+      run: |
+        echo "Xcode tools version:"
+        xcode-select -p
+        clang --version
+        echo "CMake version:"
+        cmake --version || echo "CMake not installed"
+        echo "Git version:"
+        git --version
+        echo "Available SDKs:"
+        xcodebuild -showsdks || echo "Xcode not fully installed"
+
+    - name: Test basic compilation
+      run: |
+        echo "Testing basic C++ compilation:"
+        cat > test.cpp << 'EOF'
+        #include <iostream>
+        int main() {
+            std::cout << "Hello from macOS 15 UTM runner!" << std::endl;
+            return 0;
+        }
+        EOF
+        clang++ -o test_cpp test.cpp
+        ./test_cpp
+
+    - name: Check FairMQ dependencies
+      run: |
+        echo "Checking potential FairMQ build dependencies:"
+        brew --version || echo "Homebrew not installed"
+        pkg-config --version || echo "pkg-config not available"
+        echo "Looking for common HEP libraries..."
+        find /usr/local /opt -name "*root*" -type d 2>/dev/null | head -5 || echo "No ROOT installation found"
+
