@@ -35,7 +35,7 @@ jobs:
             env: 'tsan'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup spack environment
         uses: ./.github/actions/setup-deps
@@ -67,7 +67,7 @@ jobs:
     permissions:
       packages: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup spack
         uses: spack/setup-spack@v3

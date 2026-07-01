@@ -24,7 +24,7 @@ jobs:
             env: 'boost187'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
           fetch-tags: true
@@ -87,7 +87,7 @@ jobs:
             cxx-flags: -fno-omit-frame-pointer
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
           fetch-tags: true
@@ -168,7 +168,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
           fetch-tags: true
