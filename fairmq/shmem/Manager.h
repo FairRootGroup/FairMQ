@@ -434,21 +434,42 @@ class Manager
 
     void RemoveRegion(uint16_t id)
     {
-        try {
-            boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> shmLock(*fShmMtx);
+        UnmanagedRegion* region = nullptr;
+        {
             std::lock_guard<std::mutex> lock(fLocalRegionsMtx);
-            fRegions.at(id)->StopAcks();
-            {
-                if (fRegions.at(id)->RemoveOnDestruction()) {
-                    fShmRegions->at(id).fDestroyed = true;
-                    (fEventCounter->fCount)++;
-                }
-                fRegions.erase(id);
+            auto it = fRegions.find(id);
+            if (it == fRegions.end()) {
+                LOG(debug) << "RemoveRegion() could not locate region with id '" << id << "'";
+                return;
             }
-        } catch (std::out_of_range& oor) {
-            LOG(debug) << "RemoveRegion() could not locate region with id '" << id << "'";
+            region = it->second.get();
+        }
+
+        // Do not hold a lock here: the ack receiver calls the user callbacks for the outstanding
+        // acks, and a callback can call into the transport.
+        region->StopAcks();
+
+        if (region->RemoveOnDestruction()) {
+            boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> shmLock(*fShmMtx);
+            try {
+                fShmRegions->at(id).fDestroyed = true;
+                (fEventCounter->fCount)++;
+            } catch (std::out_of_range& oor) {
+                LOG(debug) << "RemoveRegion() could not locate region info with id '" << id << "'";
+            }
+        }
+
+        std::unique_ptr<UnmanagedRegion> removedRegion;
+        {
+            std::lock_guard<std::mutex> lock(fLocalRegionsMtx);
+            auto it = fRegions.find(id);
+            if (it != fRegions.end()) {
+                removedRegion = std::move(it->second);
+                fRegions.erase(it);
+            }
         }
         fRegionsGen += 1; // signal TL cache invalidation
+        // removedRegion is destroyed here, without a lock
     }
 
     std::vector<fair::mq::RegionInfo> GetRegionInfo()

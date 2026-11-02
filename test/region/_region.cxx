@@ -21,6 +21,7 @@
 
 #include <gtest/gtest.h>
 
+#include <atomic>
 #include <cstdint>
 #include <map>
 #include <memory> // make_unique
@@ -335,6 +336,44 @@ void RegionCallbacks(const string& transport, const string& _address)
     LOG(info) << "2 done.";
 }
 
+void RegionCallbackCallsTransportDuringDestruction(const string& transport, const string& _address)
+{
+    // The ack callback of a region can run while the region is destroyed (outstanding acks are
+    // delivered during the linger period). A callback that calls into the transport must not
+    // deadlock the destruction.
+    size_t session(tools::UuidHash());
+    std::string address(tools::ToString(_address, "_", transport));
+
+    ProgOptions config;
+    config.SetProperty<string>("session", to_string(session));
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
+    config.SetProperty<bool>("shm-monitor", true);
+
+    auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
+
+    Channel push("Push", "push", factory);
+    push.Bind(address);
+    Channel pull("Pull", "pull", factory);
+    pull.Connect(address);
+
+    atomic<int> numCallbacks(0);
+    auto region = factory->CreateUnmanagedRegion(1000000, [&](void*, size_t, void*) {
+        factory->GetRegionInfo();
+        ++numCallbacks;
+    });
+
+    {
+        MessagePtr msgOut(push.NewMessage(region, region->GetData(), 100, nullptr));
+        ASSERT_EQ(push.Send(msgOut), 100);
+        MessagePtr msgIn(pull.NewMessage());
+        ASSERT_EQ(pull.Receive(msgIn), 100);
+    } // the shmem transport sends the ack for this block in a batch, which is still pending here
+
+    region.reset(); // delivers the pending ack, the callback runs
+
+    EXPECT_EQ(numCallbacks, 1);
+}
+
 TEST(RegionsSizeMismatch, shmem)
 {
     RegionsSizeMismatch();
@@ -368,6 +407,16 @@ TEST(Callbacks, zeromq)
 TEST(Callbacks, shmem)
 {
     RegionCallbacks("shmem", "ipc://test_region_callbacks");
+}
+
+TEST(CallbackDuringDestruction, zeromq)
+{
+    RegionCallbackCallsTransportDuringDestruction("zeromq", "ipc://test_region_callback_during_destruction");
+}
+
+TEST(CallbackDuringDestruction, shmem)
+{
+    RegionCallbackCallsTransportDuringDestruction("shmem", "ipc://test_region_callback_during_destruction");
 }
 
 TEST(EventSubscriptionsExternalRegion, shmem)
