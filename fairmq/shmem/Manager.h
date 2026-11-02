@@ -304,6 +304,8 @@ class Manager
             std::pair<UnmanagedRegion*, uint16_t> result;
 
             {
+                // lock order: fLocalRegionsMtx before fShmMtx (see GetRegion())
+                std::lock_guard<std::mutex> lock(fLocalRegionsMtx);
                 boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> shmLock(*fShmMtx);
 
                 if (!cfg.id.has_value()) {
@@ -323,8 +325,6 @@ class Manager
                 }
 
                 const uint16_t id = cfg.id.value();
-
-                std::lock_guard<std::mutex> lock(fLocalRegionsMtx);
 
                 UnmanagedRegion* region = nullptr;
 
@@ -407,7 +407,7 @@ class Manager
 
         try {
             RegionConfig cfg;
-            // get region info
+            // get region info (lock order: fLocalRegionsMtx before fShmMtx)
             {
                 boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> shmLock(*fShmMtx);
                 RegionInfo regionInfo = fShmRegions->at(id);
