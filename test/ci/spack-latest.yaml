@@ -9,6 +9,13 @@ spack:
   concretizer:
     targets:
       granularity: generic
+    reuse:
+      # the shared buildcache also holds the ThreadSanitizer-instrumented
+      # libzmq/libsodium of the tsan environment; reusing them here would
+      # link an instrumented library into uninstrumented binaries
+      exclude:
+        - "libzmq cflags=-fsanitize=thread"
+        - "libsodium cflags=-fsanitize=thread"
 
   packages:
     all:
