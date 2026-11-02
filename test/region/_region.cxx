@@ -26,6 +26,7 @@
 #include <map>
 #include <memory> // make_unique
 #include <string>
+#include <thread>
 #include <utility> // pair
 #include <vector> // pair
 
@@ -374,6 +375,50 @@ void RegionCallbackCallsTransportDuringDestruction(const string& transport, cons
     EXPECT_EQ(numCallbacks, 1);
 }
 
+void RegionLockOrder(const string& _address)
+{
+    // One thread creates and destroys regions. Another thread at the same time reads messages from
+    // regions of a different peer in the same session, which opens these regions locally. Both
+    // paths lock the same mutexes and must lock them in the same order.
+    size_t session(tools::UuidHash());
+    std::string address(tools::ToString(_address, "_shmem"));
+    constexpr int numIterations = 10;
+
+    ProgOptions config;
+    config.SetProperty<string>("session", to_string(session));
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
+    config.SetProperty<bool>("shm-monitor", true);
+
+    auto factory1 = TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config);
+    auto factory2 = TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config);
+
+    Channel push("Push", "push", factory2);
+    push.Bind(address);
+    Channel pull("Pull", "pull", factory1);
+    pull.Connect(address);
+
+    vector<UnmanagedRegionPtr> peerRegions;
+    for (int i = 0; i < numIterations; ++i) {
+        peerRegions.emplace_back(factory2->CreateUnmanagedRegion(10000, [](void*, size_t, void*) {}));
+        MessagePtr msg(push.NewMessage(peerRegions.back(), peerRegions.back()->GetData(), 100, nullptr));
+        ASSERT_EQ(push.Send(msg), 100);
+    }
+
+    thread creator([&] {
+        for (int i = 0; i < numIterations; ++i) {
+            auto region = factory1->CreateUnmanagedRegion(10000, [](void*, size_t, void*) {});
+        }
+    });
+
+    for (int i = 0; i < numIterations; ++i) {
+        MessagePtr msg(pull.NewMessage());
+        ASSERT_EQ(pull.Receive(msg), 100);
+        ASSERT_NE(msg->GetData(), nullptr); // opens the peer region in factory1
+    }
+
+    creator.join();
+}
+
 TEST(RegionsSizeMismatch, shmem)
 {
     RegionsSizeMismatch();
@@ -417,6 +462,11 @@ TEST(CallbackDuringDestruction, zeromq)
 TEST(CallbackDuringDestruction, shmem)
 {
     RegionCallbackCallsTransportDuringDestruction("shmem", "ipc://test_region_callback_during_destruction");
+}
+
+TEST(LockOrder, shmem)
+{
+    RegionLockOrder("ipc://test_region_lock_order");
 }
 
 TEST(EventSubscriptionsExternalRegion, shmem)
