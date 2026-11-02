@@ -320,17 +320,14 @@ class Socket final : public fair::mq::Socket
     {
         // LOG(debug) << "Closing socket " << fId;
 
+        zmq::closeMonitorSocket(fSocket, fMonitorSocket);
+        fMonitorSocket = nullptr;
+
         if (fSocket && zmq_close(fSocket) != 0) {
             LOG(error) << "Failed closing data socket " << fId
                        << ", reason: " << zmq_strerror(errno);
         }
         fSocket = nullptr;
-
-        if (fMonitorSocket && zmq_close(fMonitorSocket) != 0) {
-            LOG(error) << "Failed closing monitor socket " << fId
-                       << ", reason: " << zmq_strerror(errno);
-        }
-        fMonitorSocket = nullptr;
     }
 
     void SetOption(const std::string& option, const void* value, size_t valueSize) override
