@@ -205,10 +205,9 @@ struct UnmanagedRegion
     ~UnmanagedRegion()
     {
         LOG(debug) << "~UnmanagedRegion(): " << fName << " (" << (fControlling ? "controller" : "viewer") << ")";
-        fStopAcks = true;
+        SetStopAcks();
 
         if (fAcksSender.joinable()) {
-            fBlockSendCV.notify_one();
             fAcksSender.join();
         }
 
@@ -357,10 +356,8 @@ struct UnmanagedRegion
             {
                 std::unique_lock<std::mutex> lock(fBlockMtx);
 
-                // try to get <fAckBunchSize> blocks
-                if (fBlocksToFree.size() < fAckBunchSize) {
-                    fBlockSendCV.wait_for(lock, std::chrono::milliseconds(500));
-                }
+                // try to get <fAckBunchSize> blocks, but do not wait when stopping
+                fBlockSendCV.wait_for(lock, std::chrono::milliseconds(500), [&] { return fBlocksToFree.size() >= fAckBunchSize || fStopAcks; });
 
                 // send whatever blocks we have
                 blocksToSend = std::min(fBlocksToFree.size(), fAckBunchSize);
@@ -445,12 +442,21 @@ struct UnmanagedRegion
         }
     }
 
+    void SetStopAcks()
+    {
+        {
+            // set under the lock, so that the ack sender cannot miss the notification
+            std::lock_guard<std::mutex> lock(fBlockMtx);
+            fStopAcks = true;
+        }
+        fBlockSendCV.notify_one();
+    }
+
     void StopAcks()
     {
-        fStopAcks = true;
+        SetStopAcks();
 
         if (fAcksSender.joinable()) {
-            fBlockSendCV.notify_one();
             fAcksSender.join();
         }
 
