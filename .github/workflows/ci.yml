@@ -79,6 +79,7 @@ jobs:
               ENABLE_SANITIZER_ADDRESS=ON
               ENABLE_SANITIZER_LEAK=ON
               ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=ON
+              FAIRMQ_DEBUG_MODE=ON
             cxx-flags: -O1 -fno-omit-frame-pointer
           - name: tsan
             gcc: '15'
