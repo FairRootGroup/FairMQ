@@ -13,6 +13,7 @@
 
 #include <boost/container/pmr/polymorphic_allocator.hpp>
 
+#include <helper/Transport.h>
 #include <gtest/gtest.h>
 
 #include <cstddef>
@@ -78,11 +79,8 @@ int TestData::ndeallocations = 0;
 
 TEST(MemoryResources, transportAllocatorMap)
 {
-    size_t session{tools::UuidHash()};
     ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
-    config.SetProperty<bool>("shm-monitor", true);
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
+    test::Configure(config);
 
     FactoryType factoryZMQ = TransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
     FactoryType factorySHM = TransportFactory::CreateTransportFactory("shmem", fair::mq::tools::Uuid(), &config);
@@ -102,9 +100,8 @@ TEST(MemoryResources, allocator)
     TestData::nallocations = 0;
     TestData::ndeallocations = 0;
 
-    size_t session{tools::UuidHash()};
     ProgOptions config;
-    config.SetProperty<std::string>("session", to_string(session));
+    test::Configure(config);
 
     FactoryType factoryZMQ = TransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
 
@@ -130,11 +127,8 @@ TEST(MemoryResources, getMessage)
     TestData::nallocations = 0;
     TestData::ndeallocations = 0;
 
-    size_t session{tools::UuidHash()};
     ProgOptions config;
-    config.SetProperty<std::string>("session", to_string(session));
-    config.SetProperty<bool>("shm-monitor", true);
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
+    test::Configure(config);
 
     FactoryType factoryZMQ = TransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
     FactoryType factorySHM = TransportFactory::CreateTransportFactory("shmem", fair::mq::tools::Uuid(), &config);

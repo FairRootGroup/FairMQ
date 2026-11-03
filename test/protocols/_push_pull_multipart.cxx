@@ -13,6 +13,7 @@
 #include <fairmq/ProgOptions.h>
 #include <fairmq/TransportFactory.h>
 #include <fairmq/tools/Unique.h>
+#include <helper/Transport.h>
 #include <gtest/gtest.h>
 #include <memory>
 #include <sstream>
@@ -28,12 +29,7 @@ using namespace fair::mq;
 auto RunSingleThreadedMultipart(string transport, string address1, string address2, bool expandedShmMetadata) -> void {
 
     fair::mq::ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
+    test::Configure(config, tools::Uuid(), expandedShmMetadata);
 
     address1 += "_" + config.GetProperty<string>("session");
     address2 += "_" + config.GetProperty<string>("session");
@@ -113,13 +109,9 @@ auto RunSingleThreadedMultipart(string transport, string address1, string addres
 auto RunMultiThreadedMultipart(string transport, string address1, bool expandedShmMetadata) -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
+    test::Configure(config, tools::Uuid(), expandedShmMetadata);
     config.SetProperty<int>("io-threads", 1);
     config.SetProperty<size_t>("shm-segment-size", 20000000); // NOLINT
-    config.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
 
     address1 += "_" + config.GetProperty<string>("session");
 

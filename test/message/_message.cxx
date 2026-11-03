@@ -17,6 +17,7 @@
 
 #include <helper/Sync.h>
 
+#include <helper/Transport.h>
 #include <gtest/gtest.h>
 
 #include <array>
@@ -45,12 +46,7 @@ auto AsStringView(Message const& msg) -> string_view
 auto RunPushPullWithMsgResize(string const & transport, string const & _address, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
+    test::Configure(config, tools::Uuid(), expandedShmMetadata);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     Channel push{"Push", "push", factory};
@@ -111,12 +107,7 @@ auto RunPushPullWithMsgResize(string const & transport, string const & _address,
 auto RunMsgRebuild(const string& transport, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
+    test::Configure(config, tools::Uuid(), expandedShmMetadata);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     size_t const msgSize{100};
@@ -148,12 +139,7 @@ auto CheckMsgAlignment(Message const& msg, fair::mq::Alignment alignment) -> boo
 auto RunPushPullWithAlignment(string const& transport, string const& _address, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
+    test::Configure(config, tools::Uuid(), expandedShmMetadata);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     Channel push{"Push", "push", factory};
@@ -206,12 +192,7 @@ auto RunPushPullWithAlignment(string const& transport, string const& _address, b
 auto EmptyMessage(string const& transport, string const& _address, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
+    test::Configure(config, tools::Uuid(), expandedShmMetadata);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     Channel push{"Push", "push", factory};
@@ -261,12 +242,7 @@ auto EmptyMessage(string const& transport, string const& _address, bool expanded
 auto ZeroCopy(bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
+    test::Configure(config, tools::Uuid(), expandedShmMetadata);
     auto factory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config));
 
     unique_ptr<string> str(make_unique<string>("asdf"));
@@ -296,21 +272,10 @@ auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint
 {
     ProgOptions config1;
     ProgOptions config2;
-    string session(tools::Uuid());
-    config1.SetProperty<string>("session", session);
-    config1.SetProperty<size_t>("shm-segment-size", 100000000);
-    config1.SetProperty<bool>("shm-monitor", true);
-    config2.SetProperty<string>("session", session);
-    config2.SetProperty<size_t>("shm-segment-size", 100000000);
-    config2.SetProperty<bool>("shm-monitor", true);
+    string const session(test::Configure(config1, tools::Uuid(), expandedShmMetadata));
+    test::Configure(config2, session, expandedShmMetadata);
     // ref counts should be accessible accross different segments
     config2.SetProperty<uint16_t>("shm-segment-id", 2);
-    if (expandedShmMetadata) {
-        config1.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
-    if (expandedShmMetadata) {
-        config2.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
     auto factory1(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config1));
     auto factory2(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config2));
 
@@ -464,18 +429,11 @@ auto SideChannel(bool expandedShmMetadata = false) -> void
     const string session = tools::Uuid();
 
     ProgOptions producerConfig;
-    producerConfig.SetProperty<string>("session", session);
-    producerConfig.SetProperty<size_t>("shm-segment-size", 100000000);
-    producerConfig.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        producerConfig.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
+    test::Configure(producerConfig, session, expandedShmMetadata);
     auto producerFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &producerConfig));
 
     ProgOptions consumerConfig;
-    consumerConfig.SetProperty<string>("session", session);
-    consumerConfig.SetProperty<size_t>("shm-segment-size", 100000000);
-    consumerConfig.SetProperty<bool>("shm-monitor", true);
+    test::Configure(consumerConfig, session);
     auto consumerFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &consumerConfig));
 
     const size_t size = 2;
@@ -512,15 +470,11 @@ auto SideChannelUnmanaged() -> void
     const string session = tools::Uuid();
 
     ProgOptions producerConfig;
-    producerConfig.SetProperty<string>("session", session);
-    producerConfig.SetProperty<size_t>("shm-segment-size", 100000000);
-    producerConfig.SetProperty<bool>("shm-monitor", true);
+    test::Configure(producerConfig, session);
     auto producerFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &producerConfig));
 
     ProgOptions consumerConfig;
-    consumerConfig.SetProperty<string>("session", session);
-    consumerConfig.SetProperty<size_t>("shm-segment-size", 100000000);
-    consumerConfig.SetProperty<bool>("shm-monitor", true);
+    test::Configure(consumerConfig, session);
     auto consumerFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &consumerConfig));
 
     const size_t regionSize = 1000000;
@@ -552,9 +506,7 @@ auto SideChannelUnmanaged() -> void
 auto ReuseReceivedRegionMessage() -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
+    test::Configure(config);
     auto factory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config));
 
     const size_t regionSize = 1000000;
@@ -599,9 +551,7 @@ auto ReuseReceivedRegionMessage() -> void
 auto SideChannelErrors() -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
+    test::Configure(config);
     auto shmFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config));
     auto zmqFactory(TransportFactory::CreateTransportFactory("zeromq", tools::Uuid(), &config));
 

@@ -17,6 +17,7 @@
 
 #include <fairlogger/Logger.h>
 
+#include <helper/Transport.h>
 #include <gtest/gtest.h>
 
 #include <chrono>
@@ -74,9 +75,7 @@ void InterruptTransfer(const string& transport, const string& _address)
     std::string address(ToString(_address, "_", transport));
 
     fair::mq::ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
+    test::Configure(config, to_string(session));
 
     auto factory = TransportFactory::CreateTransportFactory(transport, Uuid(), &config);
 
