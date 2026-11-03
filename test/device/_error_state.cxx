@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include <helper/Devices.h>
+#include <helper/StateParam.h>
 
 #include <fairmq/Device.h>
 
@@ -61,108 +62,23 @@ class BadDevice : public Device
     Parts parts;
 };
 
-void RunErrorStateIn(string const& state, string const& control, string const& input = "")
+using ErrorState = StateTest;
+
+TEST_P(ErrorState, ChangeState)
 {
+    auto const& state = GetParam().state;
     RunOptions options;
-    options.control = control;
-    options.input = input;
+    options.control = GetParam().control;
+    options.input = GetParam().Input();
     auto const results = RunDevices({{"error_state_" + state + "_"}}, options);
 
     EXPECT_TRUE(ExitedWith(results.at(0), 1, "going to change to Error state from " + state + "()"));
 }
 
-TEST(ErrorState, static_InInit)
-{
-    RunErrorStateIn("Init", "static");
-}
-
-TEST(ErrorState, static_InBind)
-{
-    RunErrorStateIn("Bind", "static");
-}
-
-TEST(ErrorState, static_InConnect)
-{
-    RunErrorStateIn("Connect", "static");
-}
-
-TEST(ErrorState, static_InInitTask)
-{
-    RunErrorStateIn("InitTask", "static");
-}
-
-TEST(ErrorState, static_InPreRun)
-{
-    RunErrorStateIn("PreRun", "static");
-}
-
-TEST(ErrorState, static_InRun)
-{
-    RunErrorStateIn("Run", "static");
-}
-
-TEST(ErrorState, static_InPostRun)
-{
-    RunErrorStateIn("PostRun", "static");
-}
-
-TEST(ErrorState, static_InResetTask)
-{
-    RunErrorStateIn("ResetTask", "static");
-}
-
-TEST(ErrorState, static_InReset)
-{
-    RunErrorStateIn("Reset", "static");
-}
-
-TEST(ErrorState, interactive_InInit)
-{
-    RunErrorStateIn("Init", "interactive");
-}
-
-TEST(ErrorState, interactive_InBind)
-{
-    RunErrorStateIn("Bind", "interactive");
-}
-
-TEST(ErrorState, interactive_InConnect)
-{
-    RunErrorStateIn("Connect", "interactive");
-}
-
-TEST(ErrorState, interactive_InInitTask)
-{
-    RunErrorStateIn("InitTask", "interactive");
-}
-
-TEST(ErrorState, interactive_InPreRun)
-{
-    RunErrorStateIn("PreRun", "interactive");
-}
-
-TEST(ErrorState, interactive_InRun)
-{
-    RunErrorStateIn("Run", "interactive");
-}
-
-TEST(ErrorState, interactive_InPostRun)
-{
-    RunErrorStateIn("PostRun", "interactive");
-}
-
-TEST(ErrorState, interactive_InResetTask)
-{
-    RunErrorStateIn("ResetTask", "interactive", "q");
-}
-
-TEST(ErrorState, interactive_InReset)
-{
-    RunErrorStateIn("Reset", "interactive", "q");
-}
+INSTANTIATE_TEST_SUITE_P(, ErrorState, WithControls(HookStates()), StateParamName());
 
 #ifdef FAIRMQ_DEBUG_MODE
-TEST(ErrorState, OrphanMessages)
+TEST(OrphanMessages, shmem)
 {
     BadDevice badDevice;
 }

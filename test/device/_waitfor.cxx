@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include <helper/Devices.h>
+#include <helper/StateParam.h>
 
 #include <gtest/gtest.h>
 
@@ -19,45 +20,20 @@ namespace
 using namespace std;
 using namespace fair::mq::test;
 
-void RunWaitFor(string const& state, string const& control)
+using WaitFor = StateTest;
+
+TEST_P(WaitFor, Interrupt)
 {
     RunOptions options;
-    options.control = control;
+    options.control = GetParam().control;
     options.signal = SIGINT;
     options.extraArgs = "--severity debug";
-    auto const results = RunDevices({{"waitfor_" + state + "_"}}, options);
+    auto const results = RunDevices({{"waitfor_" + GetParam().state + "_"}}, options);
 
     EXPECT_TRUE(ExitedWith(results.at(0), 0, "Sleeping Done. Interrupted."));
 }
 
-TEST(WaitFor, static_InPreRun)
-{
-    RunWaitFor("PreRun", "static");
-}
-
-TEST(WaitFor, static_InRun)
-{
-    RunWaitFor("Run", "static");
-}
-
-TEST(WaitFor, static_InPostRun)
-{
-    RunWaitFor("PostRun", "static");
-}
-
-TEST(WaitFor, interactive_InPreRun)
-{
-    RunWaitFor("PreRun", "interactive");
-}
-
-TEST(WaitFor, interactive_InRun)
-{
-    RunWaitFor("Run", "interactive");
-}
-
-TEST(WaitFor, interactive_InPostRun)
-{
-    RunWaitFor("PostRun", "interactive");
-}
+// The device waits (and SIGINT interrupts the wait) only in these states.
+INSTANTIATE_TEST_SUITE_P(, WaitFor, WithControls({"PreRun", "Run", "PostRun"}), StateParamName());
 
 } // namespace
