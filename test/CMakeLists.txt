@@ -220,6 +220,18 @@ add_testsuite(PluginServices
     ${environment}
 )
 
+add_testsuite(StateMachine
+    SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    state_machine/_state_machine.cxx
+
+    LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
+             ${CMAKE_CURRENT_BINARY_DIR}
+    TIMEOUT 20
+    ${environment}
+)
+
 add_testsuite(EventManager
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
