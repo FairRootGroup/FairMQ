@@ -18,7 +18,6 @@
 #include <gtest/gtest.h>
 
 #include <memory>
-#include <thread>
 
 namespace fair::mq::test
 {
@@ -28,9 +27,8 @@ struct PluginServices : ::testing::Test {
         : mConfig()
         , mDevice()
         , mServices(mConfig, mDevice)
-        , fRunStateMachineThread()
+        , fStateMachineThread(mDevice)
     {
-        fRunStateMachineThread = std::thread(&fair::mq::Device::RunStateMachine, &mDevice);
         mDevice.SetTransport("zeromq");
     }
 
@@ -39,15 +37,13 @@ struct PluginServices : ::testing::Test {
         if (mDevice.GetCurrentState() == State::Idle) {
             Control(mDevice, Cycle::ToDeviceReadyAndBack);
         }
-        if (fRunStateMachineThread.joinable()) {
-            fRunStateMachineThread.join();
-        }
+        // fStateMachineThread drives the device to Exiting from any other state
     }
 
     ProgOptions mConfig;
     Device mDevice;
     mq::PluginServices mServices;
-    std::thread fRunStateMachineThread;
+    StateMachineThread fStateMachineThread;
 };
 
 } // namespace fair::mq::test
