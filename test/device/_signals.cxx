@@ -6,116 +6,116 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "runner.h"
+#include <helper/Devices.h>
 
 #include <gtest/gtest.h>
-#include <fairmq/tools/Unique.h>
-#include <fairmq/tools/Process.h>
 
 #include <string>
-#include <thread>
-#include <iostream>
 
 namespace
 {
 
 using namespace std;
 using namespace fair::mq::test;
-using namespace fair::mq::tools;
 
-void RunSignalIn(const string& state, const string& control, const string& input = "")
+void RunSignalIn(string const& state, string const& control, string const& input = "")
 {
-    size_t session{fair::mq::tools::UuidHash()};
+    RunOptions options;
+    options.control = control;
+    options.input = input;
+    auto const results = RunDevices({{"signals_" + state + "_"}}, options);
 
-    execute_result result{"", 100};
-    thread device_thread([&]() {
-        stringstream cmd;
-        cmd << runTestDevice
-            << " --id signals_" << state << "_"
-            << " --control " << control
-            << " --session " << session
-            << " --color false";
-        result = execute(cmd.str(), "[SIGINT IN " + state + "]", input);
-    });
-
-    device_thread.join();
-
-    ASSERT_NE(string::npos, result.console_out.find("raising SIGINT from " + state + "()"));
-
-    exit(result.exit_code);
+    EXPECT_TRUE(ExitedWith(results.at(0), 0, "raising SIGINT from " + state + "()"));
 }
 
 TEST(Signal_SIGINT, static_InInit)
 {
-    EXPECT_EXIT(RunSignalIn("Init", "static"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("Init", "static");
 }
+
 TEST(Signal_SIGINT, static_InBind)
 {
-    EXPECT_EXIT(RunSignalIn("Bind", "static"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("Bind", "static");
 }
+
 TEST(Signal_SIGINT, static_InConnect)
 {
-    EXPECT_EXIT(RunSignalIn("Connect", "static"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("Connect", "static");
 }
+
 TEST(Signal_SIGINT, static_InInitTask)
 {
-    EXPECT_EXIT(RunSignalIn("InitTask", "static"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("InitTask", "static");
 }
+
 TEST(Signal_SIGINT, static_InPreRun)
 {
-    EXPECT_EXIT(RunSignalIn("PreRun", "static"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("PreRun", "static");
 }
+
 TEST(Signal_SIGINT, static_InRun)
 {
-    EXPECT_EXIT(RunSignalIn("Run", "static"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("Run", "static");
 }
+
 TEST(Signal_SIGINT, static_InPostRun)
 {
-    EXPECT_EXIT(RunSignalIn("PostRun", "static"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("PostRun", "static");
 }
+
 TEST(Signal_SIGINT, static_InResetTask)
 {
-    EXPECT_EXIT(RunSignalIn("ResetTask", "static"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("ResetTask", "static");
 }
+
 TEST(Signal_SIGINT, static_InReset)
 {
-    EXPECT_EXIT(RunSignalIn("Reset", "static"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("Reset", "static");
 }
+
 TEST(Signal_SIGINT, interactive_InInit)
 {
-    EXPECT_EXIT(RunSignalIn("Init", "interactive"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("Init", "interactive");
 }
+
 TEST(Signal_SIGINT, interactive_InBind)
 {
-    EXPECT_EXIT(RunSignalIn("Bind", "interactive"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("Bind", "interactive");
 }
+
 TEST(Signal_SIGINT, interactive_InConnect)
 {
-    EXPECT_EXIT(RunSignalIn("Connect", "interactive"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("Connect", "interactive");
 }
+
 TEST(Signal_SIGINT, interactive_InInitTask)
 {
-    EXPECT_EXIT(RunSignalIn("InitTask", "interactive"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("InitTask", "interactive");
 }
+
 TEST(Signal_SIGINT, interactive_InPreRun)
 {
-    EXPECT_EXIT(RunSignalIn("PreRun", "interactive"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("PreRun", "interactive");
 }
+
 TEST(Signal_SIGINT, interactive_InRun)
 {
-    EXPECT_EXIT(RunSignalIn("Run", "interactive"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("Run", "interactive");
 }
+
 TEST(Signal_SIGINT, interactive_InPostRun)
 {
-    EXPECT_EXIT(RunSignalIn("PostRun", "interactive"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("PostRun", "interactive");
 }
+
 TEST(Signal_SIGINT, interactive_InResetTask)
 {
-    EXPECT_EXIT(RunSignalIn("ResetTask", "interactive", "q"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("ResetTask", "interactive", "q");
 }
+
 TEST(Signal_SIGINT, interactive_InReset)
 {
-    EXPECT_EXIT(RunSignalIn("Reset", "interactive", "q"), ::testing::ExitedWithCode(0), "");
+    RunSignalIn("Reset", "interactive", "q");
 }
 
 } // namespace
