@@ -183,9 +183,9 @@ class Message final : public fair::mq::Message
                     fLocalPtr = nullptr;
                 }
             } else {
-                fRegionPtr = fManager.GetRegionFromCache(fRegionId);
-                if (fRegionPtr) {
-                    fLocalPtr = reinterpret_cast<char*>(fRegionPtr->GetData()) + fHandle;
+                UnmanagedRegion* region = fManager.GetRegionFromCache(fRegionId);
+                if (region) {
+                    fLocalPtr = reinterpret_cast<char*>(region->GetData()) + fHandle;
                 } else {
                     // LOG(warn) << "could not get pointer from a region message";
                     fLocalPtr = nullptr;
@@ -258,12 +258,12 @@ class Message final : public fair::mq::Message
         if (fShared < 0) { // UR msg is not yet shared
             return 1;
         }
-        fRegionPtr = fManager.GetRegionFromCache(fRegionId);
-        if (!fRegionPtr) {
+        UnmanagedRegion* region = fManager.GetRegionFromCache(fRegionId);
+        if (!region) {
             throw TransportError(tools::ToString("Cannot get unmanaged region with id ", fRegionId));
         }
-        if (fRegionPtr->fRcSegmentSize > 0) {
-            return fRegionPtr->GetRefCountAddressFromHandle(fShared)->Get();
+        if (region->fRcSegmentSize > 0) {
+            return region->GetRefCountAddressFromHandle(fShared)->Get();
         } else {
             fManager.GetSegment(fSegmentId);
             return ShmHeader::RefCount(fManager.GetAddressFromHandle(fShared, fSegmentId));
@@ -289,20 +289,20 @@ class Message final : public fair::mq::Message
             fManager.GetSegment(otherMsg.fSegmentId);
             ShmHeader::IncrementRefCount(fManager.GetAddressFromHandle(otherMsg.fHandle, otherMsg.fSegmentId));
         } else { // msg in unmanaged region
-            fRegionPtr = fManager.GetRegionFromCache(otherMsg.fRegionId);
-            if (!fRegionPtr) {
+            UnmanagedRegion* region = fManager.GetRegionFromCache(otherMsg.fRegionId);
+            if (!region) {
                 throw TransportError(tools::ToString("Cannot get unmanaged region with id ", otherMsg.fRegionId));
             }
-            if (fRegionPtr->fRcSegmentSize > 0) {
+            if (region->fRcSegmentSize > 0) {
                 if (otherMsg.fShared < 0) {
                     // UR msg not yet shared, create the reference counting object with count 2
                     try {
-                        otherMsg.fShared = fRegionPtr->HandleFromAddress(&(fRegionPtr->MakeRefCount(2)));
+                        otherMsg.fShared = region->HandleFromAddress(&(region->MakeRefCount(2)));
                     } catch (boost::interprocess::bad_alloc& ba) {
                         throw RefCountBadAlloc(tools::ToString("Insufficient space in the reference count segment ", otherMsg.fRegionId, ", original exception: bad_alloc: ", ba.what()));
                     }
                 } else {
-                    fRegionPtr->GetRefCountAddressFromHandle(otherMsg.fShared)->Increment();
+                    region->GetRefCountAddressFromHandle(otherMsg.fShared)->Increment();
                 }
             } else { // if RefCount segment size is 0, store the ref count in the managed segment
                 if (otherMsg.fShared < 0) { // if UR msg is not yet shared
@@ -332,9 +332,10 @@ class Message final : public fair::mq::Message
     ~Message() override { CloseMessage(); }
 
   private:
+    // Members are sorted by size to avoid padding. Keep the message small: it is
+    // allocated for every transfer. sizeof(Message) is checked in test/message.
     Manager& fManager;
-    mutable UnmanagedRegion* fRegionPtr = nullptr;
-    mutable char* fLocalPtr = nullptr;
+    mutable char* fLocalPtr = nullptr; // local cache of the data ptr, for received messages obtained from the handle
     size_t fSize = 0; // size of the shm buffer
     size_t fHint = 0; // user-defined value, given by the user on message creation and returned to the user on "buffer no longer needed"-callbacks
     boost::interprocess::managed_shared_memory::handle_t fHandle = -1; // handle to shm buffer, convertible to shm buffer ptr
@@ -378,16 +379,16 @@ class Message final : public fair::mq::Message
                     fManager.Deallocate(fHandle, fSegmentId);
                 }
             } else { // unmanaged region
+                UnmanagedRegion* region = fManager.GetRegionFromCache(fRegionId);
                 if (fShared >= 0) {
-                    fRegionPtr = fManager.GetRegionFromCache(fRegionId);
-                    if (!fRegionPtr) {
+                    if (!region) {
                         throw TransportError(tools::ToString("Cannot get unmanaged region with id ", fRegionId));
                     }
-                    if (fRegionPtr->fRcSegmentSize > 0) {
-                        uint16_t refCount = fRegionPtr->GetRefCountAddressFromHandle(fShared)->Decrement();
+                    if (region->fRcSegmentSize > 0) {
+                        uint16_t refCount = region->GetRefCountAddressFromHandle(fShared)->Decrement();
                         if (refCount == 1) {
-                            fRegionPtr->RemoveRefCount(*(fRegionPtr->GetRefCountAddressFromHandle(fShared)));
-                            ReleaseUnmanagedRegionBlock();
+                            region->RemoveRefCount(*(region->GetRefCountAddressFromHandle(fShared)));
+                            ReleaseUnmanagedRegionBlock(region);
                         }
                     } else { // if RefCount segment size is 0, get the ref count from the managed segment
                         // make sure segment is initialized in this transport
@@ -396,11 +397,11 @@ class Message final : public fair::mq::Message
                         uint16_t refCount = ShmHeader::DecrementRefCount(fManager.GetAddressFromHandle(fShared, fSegmentId));
                         if (refCount == 1) {
                             fManager.Deallocate(fShared, fSegmentId);
-                            ReleaseUnmanagedRegionBlock();
+                            ReleaseUnmanagedRegionBlock(region);
                         }
                     }
                 } else {
-                    ReleaseUnmanagedRegionBlock();
+                    ReleaseUnmanagedRegionBlock(region);
                 }
             }
         }
@@ -409,14 +410,10 @@ class Message final : public fair::mq::Message
         fSize = 0;
     }
 
-    void ReleaseUnmanagedRegionBlock()
+    void ReleaseUnmanagedRegionBlock(UnmanagedRegion* region)
     {
-        if (!fRegionPtr) {
-            fRegionPtr = fManager.GetRegionFromCache(fRegionId);
-        }
-
-        if (fRegionPtr) {
-            fRegionPtr->ReleaseBlock({fHandle, fSize, fHint});
+        if (region) {
+            region->ReleaseBlock({fHandle, fSize, fHint});
         } else {
             LOG(warn) << "region ack queue for id " << fRegionId << " no longer exist. Not sending ack";
         }
