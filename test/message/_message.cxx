@@ -22,6 +22,7 @@
 #include <atomic>
 #include <cassert>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string_view>
@@ -621,6 +622,41 @@ auto SideChannelErrors() -> void
     // zero-size managed message must return nullptr (mirrors Message::GetData())
     meta.fSize = 0;
     EXPECT_EQ(shmem::GetDataAddressFromHandle(*shmFactory, meta), nullptr);
+}
+
+TEST(Footprint, shmem) // NOLINT
+{
+    // Guard against size regressions (see issue #477). The values are for LP64 platforms.
+    if constexpr (sizeof(void*) == 8) {
+        // vptr + fTransport (16) + 5 * 8 bytes + 2 * uint16_t + 2 * bool, padded to 8
+        EXPECT_LE(sizeof(shmem::Message), 72);
+        // MetaHeader is the wire format of the metadata message, keep it stable
+        EXPECT_EQ(sizeof(shmem::MetaHeader), 40);
+    }
+}
+
+TEST(MetaHeaderLayout, shmem) // NOLINT
+{
+    // Users (e.g. AliceO2) create MetaHeader with positional aggregate initialization,
+    // and the struct is the wire format of the metadata message. Keep the field order.
+    const shmem::MetaHeader meta{1, 2, 3, 4, 5, 6, true};
+    EXPECT_EQ(meta.fSize, 1);
+    EXPECT_EQ(meta.fHint, 2);
+    EXPECT_EQ(meta.fHandle, 3);
+    EXPECT_EQ(meta.fShared, 4);
+    EXPECT_EQ(meta.fRegionId, 5);
+    EXPECT_EQ(meta.fSegmentId, 6);
+    EXPECT_TRUE(meta.fManaged);
+
+    if constexpr (sizeof(void*) == 8) {
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fSize), 0);
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fHint), 8);
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fHandle), 16);
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fShared), 24);
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fRegionId), 32);
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fSegmentId), 34);
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fManaged), 36);
+    }
 }
 
 TEST(SideChannel, shmem) // NOLINT
