@@ -110,12 +110,12 @@ void RegionsCache(const string& transport, const string& _address)
 
     Channel push1("Push1", "push", factory1);
     Channel pull1("Pull1", "pull", factory1);
-    push1.Bind(address + to_string(1));
-    pull1.Connect(address + to_string(1));
+    ASSERT_TRUE(push1.Bind(address + to_string(1)));
+    ASSERT_TRUE(pull1.Connect(address + to_string(1)));
     Channel push2("Push2", "push", factory2);
     Channel pull2("Pull2", "pull", factory2);
-    push2.Bind(address + to_string(2));
-    pull2.Connect(address + to_string(2));
+    ASSERT_TRUE(push2.Bind(address + to_string(2)));
+    ASSERT_TRUE(pull2.Connect(address + to_string(2)));
 
     {
         static_cast<char*>(r1ptr)[0] = 97; // a
@@ -125,13 +125,13 @@ void RegionsCache(const string& transport, const string& _address)
 
         MessagePtr m1(push1.NewMessage(region1, r1ptr, 100, nullptr));
         MessagePtr m2(push1.NewMessage(region1, static_cast<char*>(r1ptr) + 100, 100, nullptr));
-        push1.Send(m1);
-        push1.Send(m2);
+        ASSERT_EQ(push1.Send(m1), 100);
+        ASSERT_EQ(push1.Send(m2), 100);
 
         MessagePtr m3(push2.NewMessage(region2, r2ptr, 100, nullptr));
         MessagePtr m4(push2.NewMessage(region2, static_cast<char*>(r2ptr) + 100, 100, nullptr));
-        push2.Send(m3);
-        push2.Send(m4);
+        ASSERT_EQ(push2.Send(m3), 100);
+        ASSERT_EQ(push2.Send(m4), 100);
     }
 
     {
@@ -287,10 +287,10 @@ void RegionCallbacks(const string& transport, const string& _address)
     tools::Semaphore blocker;
 
     Channel push("Push", "push", factory);
-    push.Bind(address);
+    ASSERT_TRUE(push.Bind(address));
 
     Channel pull("Pull", "pull", factory);
-    pull.Connect(address);
+    ASSERT_TRUE(pull.Connect(address));
 
     void* ptr1 = nullptr;
     size_t size1 = 100;
@@ -353,9 +353,9 @@ void RegionCallbackCallsTransportDuringDestruction(const string& transport, cons
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
     Channel push("Push", "push", factory);
-    push.Bind(address);
+    ASSERT_TRUE(push.Bind(address));
     Channel pull("Pull", "pull", factory);
-    pull.Connect(address);
+    ASSERT_TRUE(pull.Connect(address));
 
     atomic<int> numCallbacks(0);
     auto region = factory->CreateUnmanagedRegion(1000000, [&](void*, size_t, void*) {
@@ -393,9 +393,9 @@ void RegionLockOrder(const string& _address)
     auto factory2 = TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config);
 
     Channel push("Push", "push", factory2);
-    push.Bind(address);
+    ASSERT_TRUE(push.Bind(address));
     Channel pull("Pull", "pull", factory1);
-    pull.Connect(address);
+    ASSERT_TRUE(pull.Connect(address));
 
     vector<UnmanagedRegionPtr> peerRegions;
     for (int i = 0; i < numIterations; ++i) {
