@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include <helper/Devices.h>
+#include <helper/StateParam.h>
 
 #include <gtest/gtest.h>
 
@@ -18,104 +19,19 @@ namespace
 using namespace std;
 using namespace fair::mq::test;
 
-void RunSignalIn(string const& state, string const& control, string const& input = "")
+using Signals = StateTest;
+
+TEST_P(Signals, RaiseSIGINT)
 {
+    auto const& state = GetParam().state;
     RunOptions options;
-    options.control = control;
-    options.input = input;
+    options.control = GetParam().control;
+    options.input = GetParam().Input();
     auto const results = RunDevices({{"signals_" + state + "_"}}, options);
 
     EXPECT_TRUE(ExitedWith(results.at(0), 0, "raising SIGINT from " + state + "()"));
 }
 
-TEST(Signal_SIGINT, static_InInit)
-{
-    RunSignalIn("Init", "static");
-}
-
-TEST(Signal_SIGINT, static_InBind)
-{
-    RunSignalIn("Bind", "static");
-}
-
-TEST(Signal_SIGINT, static_InConnect)
-{
-    RunSignalIn("Connect", "static");
-}
-
-TEST(Signal_SIGINT, static_InInitTask)
-{
-    RunSignalIn("InitTask", "static");
-}
-
-TEST(Signal_SIGINT, static_InPreRun)
-{
-    RunSignalIn("PreRun", "static");
-}
-
-TEST(Signal_SIGINT, static_InRun)
-{
-    RunSignalIn("Run", "static");
-}
-
-TEST(Signal_SIGINT, static_InPostRun)
-{
-    RunSignalIn("PostRun", "static");
-}
-
-TEST(Signal_SIGINT, static_InResetTask)
-{
-    RunSignalIn("ResetTask", "static");
-}
-
-TEST(Signal_SIGINT, static_InReset)
-{
-    RunSignalIn("Reset", "static");
-}
-
-TEST(Signal_SIGINT, interactive_InInit)
-{
-    RunSignalIn("Init", "interactive");
-}
-
-TEST(Signal_SIGINT, interactive_InBind)
-{
-    RunSignalIn("Bind", "interactive");
-}
-
-TEST(Signal_SIGINT, interactive_InConnect)
-{
-    RunSignalIn("Connect", "interactive");
-}
-
-TEST(Signal_SIGINT, interactive_InInitTask)
-{
-    RunSignalIn("InitTask", "interactive");
-}
-
-TEST(Signal_SIGINT, interactive_InPreRun)
-{
-    RunSignalIn("PreRun", "interactive");
-}
-
-TEST(Signal_SIGINT, interactive_InRun)
-{
-    RunSignalIn("Run", "interactive");
-}
-
-TEST(Signal_SIGINT, interactive_InPostRun)
-{
-    RunSignalIn("PostRun", "interactive");
-}
-
-TEST(Signal_SIGINT, interactive_InResetTask)
-{
-    RunSignalIn("ResetTask", "interactive", "q");
-}
-
-TEST(Signal_SIGINT, interactive_InReset)
-{
-    RunSignalIn("Reset", "interactive", "q");
-}
+INSTANTIATE_TEST_SUITE_P(, Signals, WithControls(HookStates()), StateParamName());
 
 } // namespace
