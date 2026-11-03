@@ -49,6 +49,7 @@ add_testhelper(runTestDevice
     helper/devices/TestRep.h
     helper/devices/TestReq.h
     helper/devices/TestSub.h
+    helper/devices/TestDevice.h
     helper/devices/TestTransferTimeout.h
     helper/devices/TestWaitFor.h
     helper/devices/TestExceptions.h

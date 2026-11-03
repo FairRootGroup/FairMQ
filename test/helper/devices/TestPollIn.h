@@ -9,117 +9,59 @@
 #ifndef FAIR_MQ_TEST_POLLIN_H
 #define FAIR_MQ_TEST_POLLIN_H
 
-#include <fairmq/Device.h>
+#include "TestDevice.h"
+
 #include <fairmq/ProgOptions.h>
 
-#include <fairlogger/Logger.h>
-
-#include <thread>
+#include <vector>
 
 namespace fair::mq::test
 {
 
-using namespace std;
-using namespace fair::mq;
-
-class PollIn : public Device
+/// Polls two channels until a message arrived on each.
+/// poll-type 0: poll a vector of sub-channels; 1: poll by channel names.
+class PollIn : public TestDevice
 {
-  public:
-    PollIn()
-        : fPollType(0)
-    {}
-
   protected:
     auto InitTask() -> void override
     {
         fPollType = fConfig->GetProperty<int>("poll-type");
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        Check(fPollType == 0 || fPollType == 1, "poll-type is 0 or 1");
     }
 
     auto Run() -> void override
     {
-        vector<Channel*> chans;
-
-        chans.push_back(&GetChannel("data1", 0));
-        chans.push_back(&GetChannel("data2", 0));
-
-        PollerPtr poller = nullptr;
-
-        if (fPollType == 0)
-        {
+        PollerPtr poller;
+        if (fPollType == 0) {
+            std::vector<Channel*> chans{&GetChannel("data1", 0), &GetChannel("data2", 0)};
             poller = NewPoller(chans);
-        }
-        else if (fPollType == 1)
-        {
+        } else {
             poller = NewPoller("data1", "data2");
         }
-        else
-        {
-            LOG(error) << "wrong poll type provided: " << fPollType;
-        }
+
+        auto checkInput = [&](int index, std::string const& name) {
+            return fPollType == 0 ? poller->CheckInput(index) : poller->CheckInput(name, 0);
+        };
 
         bool arrived1 = false;
         bool arrived2 = false;
-        bool bothArrived = false;
-
-        MessagePtr msg1(NewMessage());
-        MessagePtr msg2(NewMessage());
-
-        while (!bothArrived)
-        {
+        while (!arrived1 || !arrived2) {
             poller->Poll(100);
-
-            if (fPollType == 0)
-            {
-                if (poller->CheckInput(0))
-                {
-                    LOG(debug) << "CheckInput(0) triggered";
-                    if (Receive(msg1, "data1", 0) >= 0)
-                    {
-                        arrived1 = true;
-                    }
-                }
-
-                if (poller->CheckInput(1))
-                {
-                    LOG(debug) << "CheckInput(1) triggered";
-                    if (Receive(msg2, "data2", 0) >= 0)
-                    {
-                        arrived2 = true;
-                    }
-                }
+            if (checkInput(0, "data1")) {
+                auto msg = NewMessage();
+                arrived1 = arrived1 || Receive(msg, "data1", 0) >= 0;
             }
-            else if (fPollType == 1)
-            {
-                if (poller->CheckInput("data1", 0))
-                {
-                    LOG(debug) << "CheckInput(\"data1\", 0) triggered";
-                    if (Receive(msg1, "data1", 0) >= 0)
-                    {
-                        arrived1 = true;
-                    }
-                }
-
-                if (poller->CheckInput("data2", 0))
-                {
-                    LOG(debug) << "CheckInput(\"data2\", 0) triggered";
-                    if (Receive(msg2, "data2", 0) >= 0)
-                    {
-                        arrived2 = true;
-                    }
-                }
-            }
-
-            if (arrived1 && arrived2)
-            {
-                bothArrived = true;
-                LOG(info) << "POLL test successfull";
+            if (checkInput(1, "data2")) {
+                auto msg = NewMessage();
+                arrived2 = arrived2 || Receive(msg, "data2", 0) >= 0;
             }
         }
-    };
+
+        Succeed();
+    }
 
   private:
-    int fPollType;
+    int fPollType = 0;
 };
 
 } // namespace fair::mq::test

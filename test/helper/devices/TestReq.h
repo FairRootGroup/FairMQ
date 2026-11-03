@@ -9,36 +9,25 @@
 #ifndef FAIR_MQ_TEST_REQ_H
 #define FAIR_MQ_TEST_REQ_H
 
-#include <fairmq/Device.h>
-#include <fairlogger/Logger.h>
-#include <thread>
+#include "TestDevice.h"
 
 namespace fair::mq::test
 {
 
-class Req : public Device
+class Req : public TestDevice
 {
   protected:
-    auto InitTask() -> void override
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
-
     auto Run() -> void override
     {
         auto request = NewSimpleMessageFor("data", 0, "request");
-        Send(request, "data");
+        Check(Send(request, "data") == 7, "send request");
 
         auto reply = NewMessage();
-        if (Receive(reply, "data") >= 0) {
-            LOG(info) << "received reply";
-            auto content = std::string{static_cast<char*>(reply->GetData()), reply->GetSize()};
-            LOG(info) << "Transferred reply of size: " << reply->GetSize() << ", content: " << content;
-            if (content != "reply") {
-                ChangeStateOrThrow(Transition::ErrorFound);
-            }
-        }
-    };
+        Check(Receive(reply, "data") == 5, "receive reply");
+        Check(AsString(*reply) == "reply", "reply content");
+
+        Succeed();
+    }
 };
 
 } // namespace fair::mq::test

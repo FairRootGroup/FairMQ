@@ -9,52 +9,35 @@
 #ifndef FAIR_MQ_TEST_PAIRLEFT_H
 #define FAIR_MQ_TEST_PAIRLEFT_H
 
-#include <fairmq/Device.h>
-
-#include <cstddef>
-#include <thread>
+#include "TestDevice.h"
 
 namespace fair::mq::test
 {
 
-class PairLeft : public Device
+class PairLeft : public TestDevice
 {
   protected:
-    auto InitTask() -> void override
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
-
     auto Run() -> void override
     {
-        int counter{0};
-
-        // Simple empty message ping pong
+        // empty message ping pong
         auto msg1(NewMessageFor("data", 0));
-        if (Send(msg1, "data") >= 0) counter++;
+        Check(Send(msg1, "data") >= 0, "send empty message 1");
         auto msg2(NewMessageFor("data", 0));
-        if (Receive(msg2, "data") >= 0) counter++;
+        Check(Receive(msg2, "data") >= 0, "receive empty message 2");
         auto msg3(NewMessageFor("data", 0));
-        if (Send(msg3, "data") >= 0) counter++;
+        Check(Send(msg3, "data") >= 0, "send empty message 3");
         auto msg4(NewMessageFor("data", 0));
-        if (Receive(msg4, "data") >= 0) counter++;
-        if (counter == 4) LOG(info) << "Simple empty message ping pong successfull";
+        Check(Receive(msg4, "data") >= 0, "receive empty message 4");
 
-        // Simple message with short text data
+        // message with short text data
         auto msg5(NewSimpleMessageFor("data", 0, "testdata1234"));
-        if (Send(msg5, "data") >= 0) counter++;
+        Check(Send(msg5, "data") == 12, "send text message");
         auto msg6(NewMessageFor("data", 0));
-        auto ret = Receive(msg6, "data");
-        if (ret > 0) {
-            auto content = std::string{static_cast<char*>(msg6->GetData()), msg6->GetSize()};
-            LOG(info) << ret << ", " << msg6->GetSize() << ", '" << content << "'";
-            if (msg6->GetSize() == static_cast<std::size_t>(ret) && content == "testdata1234") counter++;
-        }
-        if (counter == 6) LOG(info) << "Simple message with short text data successfull";
+        Check(Receive(msg6, "data") == 12, "receive text message");
+        Check(AsString(*msg6) == "testdata1234", "text message content");
 
-        assert(counter == 6);
-        if (counter == 6) LOG(info) << "PAIR test successfull.";
-    };
+        Succeed();
+    }
 };
 
 } // namespace fair::mq::test

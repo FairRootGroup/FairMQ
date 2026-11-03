@@ -6,82 +6,46 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "runner.h"
-#include <fairmq/tools/Unique.h>
-#include <fairmq/tools/Process.h>
-#include <fairmq/tools/Strings.h>
+#include <helper/Devices.h>
+#include <helper/Transport.h>
+
 #include <gtest/gtest.h>
-#include <cstdio> // std::remove
-#include <sstream> // std::stringstream
-#include <thread>
+
+#include <string>
 
 namespace
 {
 
 using namespace std;
 using namespace fair::mq::test;
-using namespace fair::mq::tools;
 
-auto RunPair(const string& transport, const string& extraDeviceCmdArgs) -> void
+auto RunPair(string const& transport, string const& extraArgs) -> void
 {
-    size_t session{fair::mq::tools::UuidHash()};
-    string ipcFile("/tmp/fmq_" + to_string(session) + "_data_" + transport);
-    string address("ipc://" + ipcFile);
+    IpcAddress const address("pair");
 
-    auto pairleft = execute_result{"", 100};
-    thread pairleft_thread([&]() {
-        stringstream cmd;
-        cmd << runTestDevice
-            << " --id pairleft_" << transport
-            << " --control static"
-            << " --transport " << transport
-            << " --shm-monitor true"
-            << " --shm-segment-size 100000000"
-            << " --session " << session
-            << " --color false"
-            << extraDeviceCmdArgs
-            << " --channel-config name=data,type=pair,method=bind,address=" << address;
-        pairleft = execute(cmd.str(), "[PAIR L]");
-    });
+    auto const results = RunDevices({
+        {"pairleft_" + transport, "name=data,type=pair,method=bind,address=" + address.str()},
+        {"pairright_" + transport, "name=data,type=pair,method=connect,address=" + address.str()},
+    }, RunOptions(transport, extraArgs));
 
-    auto pairright = execute_result{"", 100};
-    thread pairright_thread([&]() {
-        stringstream cmd;
-        cmd << runTestDevice
-            << " --id pairright_" << transport
-            << " --control static"
-            << " --transport " << transport
-            << " --shm-monitor true"
-            << " --shm-segment-size 100000000"
-            << " --session " << session
-            << " --color false"
-            << extraDeviceCmdArgs
-            << " --channel-config name=data,type=pair,method=connect,address=" << address;
-        pairright = execute(cmd.str(), "[PAIR R]");
-    });
-
-    pairleft_thread.join();
-    pairright_thread.join();
-    cerr << pairleft.console_out << pairright.console_out;
-
-    std::remove(ipcFile.c_str());
-
-    exit(pairleft.exit_code + pairright.exit_code);
+    for (auto const& result : results) {
+        EXPECT_TRUE(Succeeded(result, transport));
+    }
 }
 
 TEST(Pair, SingleMsg_MultiThreaded_ipc_zeromq)
 {
-    EXPECT_EXIT(RunPair("zeromq", ""), ::testing::ExitedWithCode(0), "PAIR test successfull");
+    RunPair("zeromq", "");
 }
 
 TEST(Pair, SingleMsg_MultiThreaded_ipc_shmem)
 {
-    EXPECT_EXIT(RunPair("shmem", ""), ::testing::ExitedWithCode(0), "PAIR test successfull");
+    RunPair("shmem", "");
 }
 
 TEST(Pair, SingleMsg_MultiThreaded_ipc_shmem_expanded_metadata)
 {
-    EXPECT_EXIT(RunPair("shmem", " --shm-metadata-msg-size 2048"), ::testing::ExitedWithCode(0), "PAIR test successfull");
+    RunPair("shmem", "--shm-metadata-msg-size 2048");
 }
 
 } // namespace
