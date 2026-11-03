@@ -13,7 +13,6 @@
 #include <fairlogger/Logger.h>
 
 #include <string>
-#include <thread>
 
 namespace fair::mq::test
 {
@@ -26,11 +25,6 @@ class Receiver : public Device
     {}
 
   protected:
-    auto Init() -> void override
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
-
     auto Run() -> void override
     {
         auto msg = NewMessage();

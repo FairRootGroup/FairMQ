@@ -563,10 +563,7 @@ auto ReuseReceivedRegionMessage() -> void
     auto regionA = factory->CreateUnmanagedRegion(regionSize, [&](void*, size_t, void*) { ++releasedA; });
     auto regionB = factory->CreateUnmanagedRegion(regionSize, [&](void*, size_t, void*) { ++releasedB; });
     auto waitFor = [](std::atomic<int> const& counter, int value) {
-        for (int i = 0; i < 500 && counter < value; ++i) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
-        return counter == value;
+        return test::WaitUntil([&] { return counter == value; });
     };
 
     Channel push{"Push", "push", factory};

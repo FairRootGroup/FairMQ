@@ -6,14 +6,13 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <chrono>
 #include <fairmq/Channel.h>
 #include <fairmq/ProgOptions.h>
 #include <fairmq/Tools.h>
 #include <fairmq/TransportFactory.h>
+#include <helper/Sync.h>
 #include <gtest/gtest.h>
 #include <string>
-#include <thread>
 
 namespace
 {
@@ -98,8 +97,6 @@ TEST(Channel, Validation)
 
 auto testConnectedPeers(std::string const& transport)
 {
-    using namespace std::chrono_literals;
-
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
     config.SetProperty<bool>("shm-monitor", true);
@@ -117,13 +114,11 @@ auto testConnectedPeers(std::string const& transport)
         Channel ch2("ch2", "pair", factory);
         ASSERT_EQ(ch2.GetNumberOfConnectedPeers(), zero);
         ASSERT_TRUE(ch2.Connect(address));
-        std::this_thread::sleep_for(100ms);
-        ASSERT_EQ(ch1.GetNumberOfConnectedPeers(), one);
-        ASSERT_EQ(ch2.GetNumberOfConnectedPeers(), one);
+        ASSERT_TRUE(test::WaitUntil([&] { return ch1.GetNumberOfConnectedPeers() == one; }));
+        ASSERT_TRUE(test::WaitUntil([&] { return ch2.GetNumberOfConnectedPeers() == one; }));
     }
 
-    std::this_thread::sleep_for(100ms);
-    ASSERT_EQ(ch1.GetNumberOfConnectedPeers(), zero);
+    ASSERT_TRUE(test::WaitUntil([&] { return ch1.GetNumberOfConnectedPeers() == zero; }));
 }
 
 TEST(Channel, GetNumberOfConnectedPeers_zeromq)
