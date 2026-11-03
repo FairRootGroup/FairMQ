@@ -74,8 +74,8 @@ TEST_F(MultipleDevices, TwoInSameProcess)
     bool first = fut1.get();
     bool second = fut2.get();
 
-    ASSERT_EQ(first, true);
-    ASSERT_EQ(second, true);
+    ASSERT_TRUE(first);
+    ASSERT_TRUE(second);
 }
 
 } // namespace

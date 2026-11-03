@@ -28,35 +28,35 @@ TEST(Channel, Validation)
     ASSERT_THROW(channel.Validate(), Channel::ChannelConfigurationError);
 
     channel.UpdateType("pair");
-    ASSERT_EQ(channel.Validate(), false);
-    ASSERT_EQ(channel.IsValid(), false);
+    ASSERT_FALSE(channel.Validate());
+    ASSERT_FALSE(channel.IsValid());
 
     channel.UpdateAddress("bla");
     ASSERT_THROW(channel.Validate(), Channel::ChannelConfigurationError);
 
     channel.UpdateMethod("connect");
-    ASSERT_EQ(channel.Validate(), false);
-    ASSERT_EQ(channel.IsValid(), false);
+    ASSERT_FALSE(channel.Validate());
+    ASSERT_FALSE(channel.IsValid());
 
     channel.UpdateAddress("ipc://");
-    ASSERT_EQ(channel.Validate(), false);
-    ASSERT_EQ(channel.IsValid(), false);
+    ASSERT_FALSE(channel.Validate());
+    ASSERT_FALSE(channel.IsValid());
 
     channel.UpdateAddress("verbs://");
-    ASSERT_EQ(channel.Validate(), false);
-    ASSERT_EQ(channel.IsValid(), false);
+    ASSERT_FALSE(channel.Validate());
+    ASSERT_FALSE(channel.IsValid());
 
     channel.UpdateAddress("inproc://");
-    ASSERT_EQ(channel.Validate(), false);
-    ASSERT_EQ(channel.IsValid(), false);
+    ASSERT_FALSE(channel.Validate());
+    ASSERT_FALSE(channel.IsValid());
 
     channel.UpdateAddress("tcp://");
-    ASSERT_EQ(channel.Validate(), false);
-    ASSERT_EQ(channel.IsValid(), false);
+    ASSERT_FALSE(channel.Validate());
+    ASSERT_FALSE(channel.IsValid());
 
     channel.UpdateAddress("tcp://localhost:5555");
-    ASSERT_EQ(channel.Validate(), true);
-    ASSERT_EQ(channel.IsValid(), true);
+    ASSERT_TRUE(channel.Validate());
+    ASSERT_TRUE(channel.IsValid());
 
     channel.UpdateSndBufSize(-1);
     ASSERT_THROW(channel.Validate(), Channel::ChannelConfigurationError);
@@ -85,16 +85,16 @@ TEST(Channel, Validation)
 
     Channel channel2 = channel;
     ASSERT_NO_THROW(channel2.Validate());
-    ASSERT_EQ(channel2.Validate(), true);
-    ASSERT_EQ(channel2.IsValid(), true);
-    ASSERT_EQ(channel2.Validate(), true);
+    ASSERT_TRUE(channel2.Validate());
+    ASSERT_TRUE(channel2.IsValid());
+    ASSERT_TRUE(channel2.Validate());
 
     channel2.UpdateName("Kanal");
     ASSERT_EQ(channel2.GetName(), "Kanal");
 
     channel2.Invalidate();
-    ASSERT_EQ(channel2.IsValid(), false);
-    ASSERT_EQ(channel2.Validate(), true);
+    ASSERT_FALSE(channel2.IsValid());
+    ASSERT_TRUE(channel2.Validate());
 }
 
 auto testConnectedPeers(std::string const& transport)
