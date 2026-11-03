@@ -133,6 +133,7 @@ add_testsuite(Device
     device/_multiple_devices.cxx
     device/_version.cxx
     device/_config.cxx
+    device/_data_callbacks.cxx
     device/_waitfor.cxx
     device/_exceptions.cxx
     device/_error_state.cxx
