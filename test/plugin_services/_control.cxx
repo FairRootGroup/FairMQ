@@ -12,7 +12,10 @@
 #include <fairmq/Tools.h>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace
 {
@@ -96,54 +99,52 @@ TEST_F(PluginServices, Control)
 
 TEST_F(PluginServices, ControlStateConversions)
 {
-    EXPECT_NO_THROW(mServices.ToDeviceState("OK"));
-    EXPECT_NO_THROW(mServices.ToDeviceState("ERROR"));
-    EXPECT_NO_THROW(mServices.ToDeviceState("IDLE"));
-    EXPECT_NO_THROW(mServices.ToDeviceState("INITIALIZING DEVICE"));
-    EXPECT_NO_THROW(mServices.ToDeviceState("BINDING"));
-    EXPECT_NO_THROW(mServices.ToDeviceState("CONNECTING"));
-    EXPECT_NO_THROW(mServices.ToDeviceState("DEVICE READY"));
-    EXPECT_NO_THROW(mServices.ToDeviceState("INITIALIZING TASK"));
-    EXPECT_NO_THROW(mServices.ToDeviceState("READY"));
-    EXPECT_NO_THROW(mServices.ToDeviceState("RUNNING"));
-    EXPECT_NO_THROW(mServices.ToDeviceState("RESETTING TASK"));
-    EXPECT_NO_THROW(mServices.ToDeviceState("RESETTING DEVICE"));
-    EXPECT_NO_THROW(mServices.ToDeviceState("EXITING"));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::Ok));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::Error));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::Idle));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::InitializingDevice));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::Binding));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::Connecting));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::DeviceReady));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::InitializingTask));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::Ready));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::Running));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::ResettingTask));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::ResettingDevice));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceState::Exiting));
+    const vector<pair<string, DeviceState>> states{
+        {"UNDEFINED", DeviceState::Undefined},
+        {"OK", DeviceState::Ok},
+        {"ERROR", DeviceState::Error},
+        {"IDLE", DeviceState::Idle},
+        {"INITIALIZING DEVICE", DeviceState::InitializingDevice},
+        {"INITIALIZED", DeviceState::Initialized},
+        {"BINDING", DeviceState::Binding},
+        {"BOUND", DeviceState::Bound},
+        {"CONNECTING", DeviceState::Connecting},
+        {"DEVICE READY", DeviceState::DeviceReady},
+        {"INITIALIZING TASK", DeviceState::InitializingTask},
+        {"READY", DeviceState::Ready},
+        {"RUNNING", DeviceState::Running},
+        {"RESETTING TASK", DeviceState::ResettingTask},
+        {"RESETTING DEVICE", DeviceState::ResettingDevice},
+        {"EXITING", DeviceState::Exiting},
+    };
+    for (auto const& [name, state] : states) {
+        EXPECT_EQ(mServices.ToDeviceState(name), state) << name;
+        EXPECT_EQ(mServices.ToStr(state), name) << name;
+    }
+    EXPECT_THROW(mServices.ToDeviceState("NO SUCH STATE"), std::out_of_range);
 }
 
 TEST_F(PluginServices, ControlStateTransitionConversions)
 {
-    EXPECT_NO_THROW(mServices.ToDeviceStateTransition("INIT DEVICE"));
-    EXPECT_NO_THROW(mServices.ToDeviceStateTransition("COMPLETE INIT"));
-    EXPECT_NO_THROW(mServices.ToDeviceStateTransition("INIT TASK"));
-    EXPECT_NO_THROW(mServices.ToDeviceStateTransition("RUN"));
-    EXPECT_NO_THROW(mServices.ToDeviceStateTransition("STOP"));
-    EXPECT_NO_THROW(mServices.ToDeviceStateTransition("RESET TASK"));
-    EXPECT_NO_THROW(mServices.ToDeviceStateTransition("RESET DEVICE"));
-    EXPECT_NO_THROW(mServices.ToDeviceStateTransition("END"));
-    EXPECT_NO_THROW(mServices.ToDeviceStateTransition("ERROR FOUND"));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::InitDevice));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::CompleteInit));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::InitTask));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::Run));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::Stop));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::ResetTask));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::ResetDevice));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::End));
-    EXPECT_NO_THROW(mServices.ToStr(DeviceStateTransition::ErrorFound));
+    const vector<pair<string, DeviceStateTransition>> transitions{
+        {"AUTO", DeviceStateTransition::Auto},
+        {"INIT DEVICE", DeviceStateTransition::InitDevice},
+        {"COMPLETE INIT", DeviceStateTransition::CompleteInit},
+        {"BIND", DeviceStateTransition::Bind},
+        {"CONNECT", DeviceStateTransition::Connect},
+        {"INIT TASK", DeviceStateTransition::InitTask},
+        {"RUN", DeviceStateTransition::Run},
+        {"STOP", DeviceStateTransition::Stop},
+        {"RESET TASK", DeviceStateTransition::ResetTask},
+        {"RESET DEVICE", DeviceStateTransition::ResetDevice},
+        {"END", DeviceStateTransition::End},
+        {"ERROR FOUND", DeviceStateTransition::ErrorFound},
+    };
+    for (auto const& [name, transition] : transitions) {
+        EXPECT_EQ(mServices.ToDeviceStateTransition(name), transition) << name;
+        EXPECT_EQ(mServices.ToStr(transition), name) << name;
+    }
+    EXPECT_THROW(mServices.ToDeviceStateTransition("NO SUCH TRANSITION"), std::out_of_range);
 }
 
 TEST_F(PluginServices, SubscriptionThreadSafety)
