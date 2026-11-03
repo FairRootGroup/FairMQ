@@ -84,6 +84,7 @@ add_testsuite(Protocols
 add_testsuite(Parts
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    parts/_access.cxx
     parts/_add_part.cxx
     parts/_iterator_interface.cxx
 
