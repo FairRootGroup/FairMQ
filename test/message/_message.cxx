@@ -55,8 +55,8 @@ auto RunPushPullWithMsgResize(string const & transport, string const & _address,
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
     auto const address(tools::ToString(_address, "_", transport, "_", config.GetProperty<string>("session")));
-    push.Bind(address);
-    pull.Connect(address);
+    ASSERT_TRUE(push.Bind(address));
+    ASSERT_TRUE(pull.Connect(address));
 
     {
         size_t const size{6};
@@ -158,8 +158,8 @@ auto RunPushPullWithAlignment(string const& transport, string const& _address, b
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
     auto const address(tools::ToString(_address, "_", transport, "_", config.GetProperty<string>("session")));
-    push.Bind(address);
-    pull.Connect(address);
+    ASSERT_TRUE(push.Bind(address));
+    ASSERT_TRUE(pull.Connect(address));
 
     {
         Alignment const align{64};
@@ -216,8 +216,8 @@ auto EmptyMessage(string const& transport, string const& _address, bool expanded
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
     auto const address(tools::ToString(_address, "_", transport, "_", config.GetProperty<string>("session")));
-    push.Bind(address);
-    pull.Connect(address);
+    ASSERT_TRUE(push.Bind(address));
+    ASSERT_TRUE(pull.Connect(address));
 
     {
         auto outMsg(push.NewMessage());
@@ -329,8 +329,8 @@ auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint
         Channel push("Push", "push", factory1);
         Channel pull("Pull", "pull", factory2);
 
-        push.Bind(address + "_" + session);
-        pull.Connect(address + "_" + session);
+        ASSERT_TRUE(push.Bind(address + "_" + session));
+        ASSERT_TRUE(pull.Connect(address + "_" + session));
 
         const size_t offset = 100;
         auto msg1(push.NewMessage(region, static_cast<char*>(region->GetData()), msgSize, nullptr));
@@ -362,13 +362,13 @@ auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint
                 ASSERT_EQ(AsStringView(*msg1)[0], 'A');
                 ASSERT_EQ(AsStringView(*msg1)[1], 'B');
 
-                push.Send(copyFromCopy);
-                push.Send(msg2);
+                ASSERT_EQ(push.Send(copyFromCopy), msgSize);
+                ASSERT_EQ(push.Send(msg2), msgSize);
 
                 auto incomingCopiedMsg(pull.NewMessage());
                 auto incomingOriginalMsg(pull.NewMessage());
-                pull.Receive(incomingCopiedMsg);
-                pull.Receive(incomingOriginalMsg);
+                ASSERT_EQ(pull.Receive(incomingCopiedMsg), msgSize);
+                ASSERT_EQ(pull.Receive(incomingOriginalMsg), msgSize);
 
                 EXPECT_EQ(static_cast<const shmem::Message&>(*incomingCopiedMsg).GetRefCount(), 3);
                 EXPECT_EQ(static_cast<const shmem::Message&>(*incomingOriginalMsg).GetRefCount(), 1);
@@ -573,8 +573,8 @@ auto ReuseReceivedRegionMessage() -> void
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
     auto const address(tools::ToString("ipc://test_reuse_received_region_msg_", config.GetProperty<string>("session")));
-    push.Bind(address);
-    pull.Connect(address);
+    ASSERT_TRUE(push.Bind(address));
+    ASSERT_TRUE(pull.Connect(address));
 
     // Receive a block of region A and read it. This resolves region A in the message.
     auto inMsg(pull.NewMessage());

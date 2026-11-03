@@ -81,7 +81,7 @@ void InterruptTransfer(const string& transport, const string& _address)
     auto factory = TransportFactory::CreateTransportFactory(transport, Uuid(), &config);
 
     Channel pull{"Pull", "pull", factory};
-    pull.Bind(address);
+    ASSERT_TRUE(pull.Bind(address));
 
     MessagePtr msg(pull.NewMessage());
 
