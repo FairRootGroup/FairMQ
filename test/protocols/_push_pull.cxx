@@ -34,6 +34,7 @@ auto RunPushPull(string transport, const string& extraDeviceCmdArgs) -> void
         cmd << runTestDevice
             << " --id push_" << transport
             << " --control static"
+            << " --transport " << transport
             << " --shm-monitor true"
             << " --shm-segment-size 100000000"
             << " --session " << session
@@ -49,6 +50,7 @@ auto RunPushPull(string transport, const string& extraDeviceCmdArgs) -> void
         cmd << runTestDevice
             << " --id pull_" << transport
             << " --control static"
+            << " --transport " << transport
             << " --shm-monitor true"
             << " --shm-segment-size 100000000"
             << " --session " << session

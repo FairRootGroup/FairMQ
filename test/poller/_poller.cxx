@@ -37,6 +37,7 @@ auto RunPoller(string transport, int pollType) -> void
         cmd << runTestDevice
             << " --id pollout_"<< transport
             << " --control static"
+            << " --transport " << transport
             << " --color false"
             << " --shm-monitor true"
             << " --session " << session
@@ -51,6 +52,7 @@ auto RunPoller(string transport, int pollType) -> void
         cmd << runTestDevice
             << " --id pollin_" << transport
             << " --control static"
+            << " --transport " << transport
             << " --color false"
             << " --shm-monitor true"
             << " --session " << session
