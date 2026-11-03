@@ -119,7 +119,7 @@ auto subscribe_and_set(ProgOptions& options, const string& expected_key, T expec
     options.SubscribeAsString(subscriber, [&](const string& key, string value) {
         if (expected_key == key) {
             ++asstring_events;
-            EXPECT_EQ(value, PropertyHelper::ConvertPropertyToString(Property(value)));
+            EXPECT_EQ(value, PropertyHelper::ConvertPropertyToString(Property(expected_value)));
         }
         ++total_events;
     });
