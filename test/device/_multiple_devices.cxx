@@ -10,6 +10,7 @@
 #include "TestReceiver.h"
 
 #include "../helper/ControlDevice.h"
+#include "../helper/Transport.h"
 
 #include <gtest/gtest.h>
 
@@ -36,12 +37,14 @@ void control(Device& device)
 
 class MultipleDevices : public ::testing::Test {
   public:
+    test::IpcAddress const fAddress{"multiple_devices"};
+
     bool TestFirst()
     {
         test::Sender sender("data");
         sender.SetTransport("zeromq");
 
-        Channel channel("push", "connect", "ipc://multiple-devices-test");
+        Channel channel("push", "connect", fAddress);
         channel.UpdateRateLogging(0);
         sender.AddChannel("data", std::move(channel));
 
@@ -54,7 +57,7 @@ class MultipleDevices : public ::testing::Test {
         test::Receiver receiver("data");
         receiver.SetTransport("zeromq");
 
-        Channel channel("pull", "bind", "ipc://multiple-devices-test");
+        Channel channel("pull", "bind", fAddress);
         channel.UpdateRateLogging(0);
         receiver.AddChannel("data", std::move(channel));
 
