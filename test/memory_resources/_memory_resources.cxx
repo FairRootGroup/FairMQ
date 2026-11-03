@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -117,7 +118,7 @@ TEST(MemoryResources, allocator)
         v.emplace_back(1);
         v.emplace_back(2);
         v.emplace_back(3);
-        EXPECT_TRUE((fair::mq::byte*)&(*v.end()) - (fair::mq::byte*)&(*v.begin()) == 3 * sizeof(TestData));
+        EXPECT_EQ(reinterpret_cast<fair::mq::byte*>(v.data() + v.size()) - reinterpret_cast<fair::mq::byte*>(v.data()), static_cast<std::ptrdiff_t>(3 * sizeof(TestData)));
         EXPECT_TRUE(TestData::nallocated == 3);
     }
     EXPECT_TRUE(TestData::nallocated == 0);

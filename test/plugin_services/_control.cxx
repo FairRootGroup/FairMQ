@@ -63,7 +63,7 @@ TEST_F(PluginServices, Control)
     ASSERT_NO_THROW(mServices.TakeDeviceControl("foo"));
     ASSERT_NO_THROW(mServices.ChangeDeviceState("foo", DeviceStateTransition::InitDevice));
 
-    DeviceState nextState;
+    DeviceState nextState{DeviceState::Undefined};
     condition_variable cv;
     mutex cv_m;
     mServices.SubscribeToDeviceStateChange("test", [&](DeviceState newState){
