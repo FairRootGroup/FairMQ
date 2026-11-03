@@ -41,6 +41,13 @@ class StateAction : public Device
     void ResetTask() override { ActIfRequested("ResetTask"); }
     void Reset() override { ActIfRequested("Reset"); }
 
+    // For the --print-channels test.
+    void RegisterChannelEndpoints() override
+    {
+        RegisterChannelEndpoint("data");
+        RegisterChannelEndpoint("fan", 2, 4);
+    }
+
   private:
     void ActIfRequested(std::string_view state)
     {
