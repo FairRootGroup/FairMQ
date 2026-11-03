@@ -103,6 +103,7 @@ auto testConnectedPeers(std::string const& transport)
     ProgOptions config;
     config.SetProperty<string>("session", tools::Uuid());
     config.SetProperty<bool>("shm-monitor", true);
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
     string const address(tools::ToString("ipc://", config.GetProperty<string>("session")));
     unsigned long constexpr zero(0), one(1);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));

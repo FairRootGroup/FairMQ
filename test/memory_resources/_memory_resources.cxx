@@ -81,6 +81,7 @@ TEST(MemoryResources, transportAllocatorMap)
     ProgOptions config;
     config.SetProperty<string>("session", to_string(session));
     config.SetProperty<bool>("shm-monitor", true);
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
 
     FactoryType factoryZMQ = TransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
     FactoryType factorySHM = TransportFactory::CreateTransportFactory("shmem", fair::mq::tools::Uuid(), &config);
@@ -132,6 +133,7 @@ TEST(MemoryResources, getMessage)
     ProgOptions config;
     config.SetProperty<std::string>("session", to_string(session));
     config.SetProperty<bool>("shm-monitor", true);
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
 
     FactoryType factoryZMQ = TransportFactory::CreateTransportFactory("zeromq", fair::mq::tools::Uuid(), &config);
     FactoryType factorySHM = TransportFactory::CreateTransportFactory("shmem", fair::mq::tools::Uuid(), &config);
