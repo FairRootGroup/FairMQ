@@ -274,6 +274,7 @@ add_testsuite(Channel
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     channel/_channel.cxx
+    channel/_tcp.cxx
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
