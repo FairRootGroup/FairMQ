@@ -247,6 +247,7 @@ add_testsuite(EventManager
 add_testsuite(Properties
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    properties/_jsonparser.cxx
     properties/_properties.cxx
     properties/_suboptparser.cxx
 
