@@ -85,9 +85,10 @@ void RegionsSizeMismatch()
     ASSERT_EQ(region2, nullptr);
 }
 
-void RegionsCache(const string& transport, const string& _address)
+void RegionsCache(const string& transport, const string& name)
 {
-    std::string address(tools::ToString(_address, "_", transport));
+    test::IpcAddress const address1(tools::ToString(name, "_", transport, "_1"));
+    test::IpcAddress const address2(tools::ToString(name, "_", transport, "_2"));
     size_t session1 = tools::UuidHash();
     size_t session2 = tools::UuidHash();
 
@@ -106,12 +107,12 @@ void RegionsCache(const string& transport, const string& _address)
 
     Channel push1("Push1", "push", factory1);
     Channel pull1("Pull1", "pull", factory1);
-    ASSERT_TRUE(push1.Bind(address + to_string(1)));
-    ASSERT_TRUE(pull1.Connect(address + to_string(1)));
+    ASSERT_TRUE(push1.Bind(address1));
+    ASSERT_TRUE(pull1.Connect(address1));
     Channel push2("Push2", "push", factory2);
     Channel pull2("Pull2", "pull", factory2);
-    ASSERT_TRUE(push2.Bind(address + to_string(2)));
-    ASSERT_TRUE(pull2.Connect(address + to_string(2)));
+    ASSERT_TRUE(push2.Bind(address2));
+    ASSERT_TRUE(pull2.Connect(address2));
 
     {
         static_cast<char*>(r1ptr)[0] = 97; // a
@@ -260,10 +261,10 @@ void RegionEventSubscriptions(const string& transport, bool external)
     ASSERT_EQ(factory->SubscribedToRegionEvents(), false);
 }
 
-void RegionCallbacks(const string& transport, const string& _address)
+void RegionCallbacks(const string& transport, const string& name)
 {
     size_t session(tools::UuidHash());
-    std::string address(tools::ToString(_address, "_", transport));
+    test::IpcAddress const address(tools::ToString(name, "_", transport));
 
     constexpr size_t sSize = 100000000;
     constexpr size_t r1Size = 2000000;
@@ -330,13 +331,13 @@ void RegionCallbacks(const string& transport, const string& _address)
     LOG(info) << "2 done.";
 }
 
-void RegionCallbackCallsTransportDuringDestruction(const string& transport, const string& _address)
+void RegionCallbackCallsTransportDuringDestruction(const string& transport, const string& name)
 {
     // The ack callback of a region can run while the region is destroyed (outstanding acks are
     // delivered during the linger period). A callback that calls into the transport must not
     // deadlock the destruction.
     size_t session(tools::UuidHash());
-    std::string address(tools::ToString(_address, "_", transport));
+    test::IpcAddress const address(tools::ToString(name, "_", transport));
 
     ProgOptions config;
     test::Configure(config, to_string(session));
@@ -366,13 +367,13 @@ void RegionCallbackCallsTransportDuringDestruction(const string& transport, cons
     EXPECT_EQ(numCallbacks, 1);
 }
 
-void RegionLockOrder(const string& _address)
+void RegionLockOrder(const string& name)
 {
     // One thread creates and destroys regions. Another thread at the same time reads messages from
     // regions of a different peer in the same session, which opens these regions locally. Both
     // paths lock the same mutexes and must lock them in the same order.
     size_t session(tools::UuidHash());
-    std::string address(tools::ToString(_address, "_shmem"));
+    test::IpcAddress const address(name);
     constexpr int numIterations = 10;
 
     ProgOptions config;
@@ -415,12 +416,12 @@ TEST(RegionsSizeMismatch, shmem)
 
 TEST(Cache, zeromq)
 {
-    RegionsCache("zeromq", "ipc://test_region_cache");
+    RegionsCache("zeromq", "region_cache");
 }
 
 TEST(Cache, shmem)
 {
-    RegionsCache("shmem", "ipc://test_region_cache");
+    RegionsCache("shmem", "region_cache");
 }
 
 TEST(EventSubscriptions, zeromq)
@@ -435,27 +436,27 @@ TEST(EventSubscriptions, shmem)
 
 TEST(Callbacks, zeromq)
 {
-    RegionCallbacks("zeromq", "ipc://test_region_callbacks");
+    RegionCallbacks("zeromq", "region_callbacks");
 }
 
 TEST(Callbacks, shmem)
 {
-    RegionCallbacks("shmem", "ipc://test_region_callbacks");
+    RegionCallbacks("shmem", "region_callbacks");
 }
 
 TEST(CallbackDuringDestruction, zeromq)
 {
-    RegionCallbackCallsTransportDuringDestruction("zeromq", "ipc://test_region_callback_during_destruction");
+    RegionCallbackCallsTransportDuringDestruction("zeromq", "region_callback_during_destruction");
 }
 
 TEST(CallbackDuringDestruction, shmem)
 {
-    RegionCallbackCallsTransportDuringDestruction("shmem", "ipc://test_region_callback_during_destruction");
+    RegionCallbackCallsTransportDuringDestruction("shmem", "region_callback_during_destruction");
 }
 
 TEST(LockOrder, shmem)
 {
-    RegionLockOrder("ipc://test_region_lock_order");
+    RegionLockOrder("region_lock_order");
 }
 
 TEST(EventSubscriptionsExternalRegion, shmem)

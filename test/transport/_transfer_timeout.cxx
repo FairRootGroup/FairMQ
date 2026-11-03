@@ -69,10 +69,10 @@ auto RunTransferTimeout(string transport) -> void
     exit(res.exit_code);
 }
 
-void InterruptTransfer(const string& transport, const string& _address)
+void InterruptTransfer(const string& transport, const string& name)
 {
     size_t session{UuidHash()};
-    std::string address(ToString(_address, "_", transport));
+    test::IpcAddress const address(ToString(name, "_", transport));
 
     fair::mq::ProgOptions config;
     test::Configure(config, to_string(session));
@@ -103,12 +103,12 @@ TEST(TransferTimeout, shmem)
 
 TEST(InterruptTransfer, zeromq)
 {
-    InterruptTransfer("zeromq", "ipc://test_interrupt_transfer");
+    InterruptTransfer("zeromq", "interrupt_transfer");
 }
 
 TEST(InterruptTransfer, shmem)
 {
-    InterruptTransfer("shmem", "ipc://test_interrupt_transfer");
+    InterruptTransfer("shmem", "interrupt_transfer");
 }
 
 } // namespace

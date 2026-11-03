@@ -43,7 +43,7 @@ auto AsStringView(Message const& msg) -> string_view
     return {static_cast<char const*>(msg.GetData()), msg.GetSize()};
 }
 
-auto RunPushPullWithMsgResize(string const & transport, string const & _address, bool expandedShmMetadata = false) -> void
+auto RunPushPullWithMsgResize(string const & transport, string const & name, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
     test::Configure(config, tools::Uuid(), expandedShmMetadata);
@@ -51,7 +51,7 @@ auto RunPushPullWithMsgResize(string const & transport, string const & _address,
 
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
-    auto const address(tools::ToString(_address, "_", transport, "_", config.GetProperty<string>("session")));
+    test::IpcAddress const address(tools::ToString(name, "_", transport));
     ASSERT_TRUE(push.Bind(address));
     ASSERT_TRUE(pull.Connect(address));
 
@@ -136,7 +136,7 @@ auto CheckMsgAlignment(Message const& msg, fair::mq::Alignment alignment) -> boo
     return (reinterpret_cast<uintptr_t>(msg.GetData()) % static_cast<size_t>(alignment)) == 0; // NOLINT
 }
 
-auto RunPushPullWithAlignment(string const& transport, string const& _address, bool expandedShmMetadata = false) -> void
+auto RunPushPullWithAlignment(string const& transport, string const& name, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
     test::Configure(config, tools::Uuid(), expandedShmMetadata);
@@ -144,7 +144,7 @@ auto RunPushPullWithAlignment(string const& transport, string const& _address, b
 
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
-    auto const address(tools::ToString(_address, "_", transport, "_", config.GetProperty<string>("session")));
+    test::IpcAddress const address(tools::ToString(name, "_", transport));
     ASSERT_TRUE(push.Bind(address));
     ASSERT_TRUE(pull.Connect(address));
 
@@ -189,7 +189,7 @@ auto RunPushPullWithAlignment(string const& transport, string const& _address, b
     ASSERT_TRUE(CheckMsgAlignment(*msgCopy, align32));
 }
 
-auto EmptyMessage(string const& transport, string const& _address, bool expandedShmMetadata = false) -> void
+auto EmptyMessage(string const& transport, string const& name, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
     test::Configure(config, tools::Uuid(), expandedShmMetadata);
@@ -197,7 +197,7 @@ auto EmptyMessage(string const& transport, string const& _address, bool expanded
 
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
-    auto const address(tools::ToString(_address, "_", transport, "_", config.GetProperty<string>("session")));
+    test::IpcAddress const address(tools::ToString(name, "_", transport));
     ASSERT_TRUE(push.Bind(address));
     ASSERT_TRUE(pull.Connect(address));
 
@@ -268,7 +268,7 @@ auto ZeroCopy(bool expandedShmMetadata = false) -> void
 
 // The "zero copy" property of the Copy() method is an implementation detail and is not guaranteed.
 // Currently it holds true for the shmem (across devices) and for zeromq (within same device) transports.
-auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint64_t rcSegmentSize) -> void
+auto ZeroCopyFromUnmanaged(string const& name, bool expandedShmMetadata, uint64_t rcSegmentSize) -> void
 {
     ProgOptions config1;
     ProgOptions config2;
@@ -293,8 +293,9 @@ auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint
         Channel push("Push", "push", factory1);
         Channel pull("Pull", "pull", factory2);
 
-        ASSERT_TRUE(push.Bind(address + "_" + session));
-        ASSERT_TRUE(pull.Connect(address + "_" + session));
+        test::IpcAddress const address(name);
+        ASSERT_TRUE(push.Bind(address));
+        ASSERT_TRUE(pull.Connect(address));
 
         const size_t offset = 100;
         auto msg1(push.NewMessage(region, static_cast<char*>(region->GetData()), msgSize, nullptr));
@@ -363,17 +364,17 @@ auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint
 
 TEST(Resize, zeromq) // NOLINT
 {
-    RunPushPullWithMsgResize("zeromq", "ipc://test_message_resize");
+    RunPushPullWithMsgResize("zeromq", "message_resize");
 }
 
 TEST(Resize, shmem) // NOLINT
 {
-    RunPushPullWithMsgResize("shmem", "ipc://test_message_resize");
+    RunPushPullWithMsgResize("shmem", "message_resize");
 }
 
 TEST(Resize, shmem_expanded_metadata) // NOLINT
 {
-    RunPushPullWithMsgResize("shmem", "ipc://test_message_resize", true);
+    RunPushPullWithMsgResize("shmem", "message_resize", true);
 }
 
 TEST(Rebuild, zeromq) // NOLINT
@@ -393,32 +394,32 @@ TEST(Rebuild, shmem_expanded_metadata) // NOLINT
 
 TEST(Alignment, shmem) // NOLINT
 {
-    RunPushPullWithAlignment("shmem", "ipc://test_message_alignment");
+    RunPushPullWithAlignment("shmem", "message_alignment");
 }
 
 TEST(Alignment, shmem_expanded_metadata) // NOLINT
 {
-    RunPushPullWithAlignment("shmem", "ipc://test_message_alignment", true);
+    RunPushPullWithAlignment("shmem", "message_alignment", true);
 }
 
 TEST(Alignment, zeromq) // NOLINT
 {
-    RunPushPullWithAlignment("zeromq", "ipc://test_message_alignment");
+    RunPushPullWithAlignment("zeromq", "message_alignment");
 }
 
 TEST(EmptyMessage, zeromq) // NOLINT
 {
-    EmptyMessage("zeromq", "ipc://test_empty_message");
+    EmptyMessage("zeromq", "empty_message");
 }
 
 TEST(EmptyMessage, shmem) // NOLINT
 {
-    EmptyMessage("shmem", "ipc://test_empty_message");
+    EmptyMessage("shmem", "empty_message");
 }
 
 TEST(EmptyMessage, shmem_expanded_metadata) // NOLINT
 {
-    EmptyMessage("shmem", "ipc://test_empty_message", true);
+    EmptyMessage("shmem", "empty_message", true);
 }
 
 // GetMeta() + GetDataAddressFromHandle() round-trip: simulates a consumer device that
@@ -520,7 +521,7 @@ auto ReuseReceivedRegionMessage() -> void
 
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
-    auto const address(tools::ToString("ipc://test_reuse_received_region_msg_", config.GetProperty<string>("session")));
+    test::IpcAddress const address("reuse_received_region_msg");
     ASSERT_TRUE(push.Bind(address));
     ASSERT_TRUE(pull.Connect(address));
 
@@ -632,22 +633,22 @@ TEST(SideChannel, errors) // NOLINT
 
 TEST(ZeroCopyFromUnmanaged, shmem) // NOLINT
 {
-    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged", false, 10000000);
+    ZeroCopyFromUnmanaged("zerocopy_unmanaged", false, 10000000);
 }
 
 TEST(ZeroCopyFromUnmanaged, shmem_expanded_metadata) // NOLINT
 {
-    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged_expanded", true, 10000000);
+    ZeroCopyFromUnmanaged("zerocopy_unmanaged_expanded", true, 10000000);
 }
 
 TEST(ZeroCopyFromUnmanaged, shmem_no_rc_segment) // NOLINT
 {
-    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged_no_rc_segment", false, 0);
+    ZeroCopyFromUnmanaged("zerocopy_unmanaged_no_rc_segment", false, 0);
 }
 
 TEST(ZeroCopyFromUnmanaged, shmem_expanded_metadata_no_rc_segment) // NOLINT
 {
-    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged_expanded_no_rc_segment", true, 0);
+    ZeroCopyFromUnmanaged("zerocopy_unmanaged_expanded_no_rc_segment", true, 0);
 }
 
 } // namespace

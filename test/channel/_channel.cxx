@@ -99,7 +99,8 @@ TEST(Channel, Validation)
 auto testConnectedPeers(std::string const& transport)
 {
     ProgOptions config;
-    string const address(tools::ToString("ipc://", test::Configure(config)));
+    test::Configure(config);
+    test::IpcAddress const address("connected_peers");
     unsigned long constexpr zero(0), one(1);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
