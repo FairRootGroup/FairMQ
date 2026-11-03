@@ -14,6 +14,7 @@
 #include <fairmq/TransportFactory.h>
 #include <fairmq/tools/Unique.h>
 #include <helper/Transport.h>
+#include <helper/TransportParam.h>
 #include <gtest/gtest.h>
 #include <memory>
 #include <sstream>
@@ -26,14 +27,12 @@ namespace
 using namespace std;
 using namespace fair::mq;
 
-auto RunSingleThreadedMultipart(string const& transport, string const& address1, string const& address2, bool expandedShmMetadata) -> void
+auto RunSingleThreadedMultipart(test::TransportParam const& param, string const& address1, string const& address2) -> void
 {
-
     fair::mq::ProgOptions config;
-    test::Configure(config, tools::Uuid(), expandedShmMetadata);
+    test::Configure(config, tools::Uuid(), param.expandedShmMetadata);
 
-
-    auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
+    auto factory = TransportFactory::CreateTransportFactory(param.transport, tools::Uuid(), &config);
 
     Channel push1("Push1", "push", factory);
     ASSERT_TRUE(push1.Bind(address1));
@@ -105,15 +104,14 @@ auto RunSingleThreadedMultipart(string const& transport, string const& address1,
     }
 }
 
-auto RunMultiThreadedMultipart(string const& transport, string const& address1, bool expandedShmMetadata) -> void
+auto RunMultiThreadedMultipart(test::TransportParam const& param, string const& address1) -> void
 {
     ProgOptions config;
-    test::Configure(config, tools::Uuid(), expandedShmMetadata);
+    test::Configure(config, tools::Uuid(), param.expandedShmMetadata);
     config.SetProperty<int>("io-threads", 1);
     config.SetProperty<size_t>("shm-segment-size", 20000000); // NOLINT
 
-
-    auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
+    auto factory = TransportFactory::CreateTransportFactory(param.transport, tools::Uuid(), &config);
 
     Channel push1("Push1", "push", factory);
     ASSERT_TRUE(push1.Bind(address1));
@@ -148,70 +146,30 @@ auto RunMultiThreadedMultipart(string const& transport, string const& address1, 
     puller.join();
 }
 
-TEST(PushPull, Multipart_SingleThreaded_inproc_zeromq) // NOLINT
+using PushPullMultipart = test::TransportTest;
+
+TEST_P(PushPullMultipart, SingleThreaded_inproc) // NOLINT
 {
-    RunSingleThreadedMultipart("zeromq", "inproc://test1", "inproc://test2", false);
+    RunSingleThreadedMultipart(GetParam(), "inproc://test1", "inproc://test2");
 }
 
-TEST(PushPull, Multipart_SingleThreaded_inproc_shmem) // NOLINT
-{
-    RunSingleThreadedMultipart("shmem", "inproc://test1", "inproc://test2", false);
-}
-
-TEST(PushPull, Multipart_SingleThreaded_inproc_shmem_expanded_metadata) // NOLINT
-{
-    RunSingleThreadedMultipart("shmem", "inproc://test1", "inproc://test2", true);
-}
-
-TEST(PushPull, Multipart_SingleThreaded_ipc_zeromq) // NOLINT
+TEST_P(PushPullMultipart, SingleThreaded_ipc) // NOLINT
 {
     test::IpcAddress const address1("multipart_1"), address2("multipart_2");
-    RunSingleThreadedMultipart("zeromq", address1, address2, false);
+    RunSingleThreadedMultipart(GetParam(), address1, address2);
 }
 
-TEST(PushPull, Multipart_SingleThreaded_ipc_shmem) // NOLINT
+TEST_P(PushPullMultipart, MultiThreaded_inproc) // NOLINT
 {
-    test::IpcAddress const address1("multipart_1"), address2("multipart_2");
-    RunSingleThreadedMultipart("shmem", address1, address2, false);
+    RunMultiThreadedMultipart(GetParam(), "inproc://test_1");
 }
 
-TEST(PushPull, Multipart_SingleThreaded_ipc_shmem_expanded_metadata) // NOLINT
-{
-    test::IpcAddress const address1("multipart_1"), address2("multipart_2");
-    RunSingleThreadedMultipart("shmem", address1, address2, true);
-}
-
-TEST(PushPull, Multipart_MultiThreaded_inproc_zeromq) // NOLINT
-{
-    RunMultiThreadedMultipart("zeromq", "inproc://test_1", false);
-}
-
-TEST(PushPull, Multipart_MultiThreaded_inproc_shmem) // NOLINT
-{
-    RunMultiThreadedMultipart("shmem", "inproc://test_1", false);
-}
-
-TEST(PushPull, Multipart_MultiThreaded_inproc_shmem_expanded_metadata) // NOLINT
-{
-    RunMultiThreadedMultipart("shmem", "inproc://test_1", true);
-}
-
-TEST(PushPull, Multipart_MultiThreaded_ipc_zeromq) // NOLINT
+TEST_P(PushPullMultipart, MultiThreaded_ipc) // NOLINT
 {
     test::IpcAddress const address("multipart");
-    RunMultiThreadedMultipart("zeromq", address, false);
+    RunMultiThreadedMultipart(GetParam(), address);
 }
 
-TEST(PushPull, Multipart_MultiThreaded_ipc_shmem) // NOLINT
-{
-    test::IpcAddress const address("multipart");
-    RunMultiThreadedMultipart("shmem", address, false);
-}
-
-TEST(PushPull, Multipart_MultiThreaded_ipc_shmem_expanded_metadata) // NOLINT
-{
-    test::IpcAddress const address("multipart");
-    RunMultiThreadedMultipart("shmem", address, true);
-}
+INSTANTIATE_TEST_SUITE_P(, PushPullMultipart, test::AllTransports(), test::TransportParamName());
 
 } // namespace

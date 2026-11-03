@@ -9,11 +9,11 @@
 #include <fairmq/Channel.h>
 #include <fairmq/TransportFactory.h>
 #include <fairmq/ProgOptions.h>
-#include <fairmq/tools/Strings.h>
 #include <fairmq/tools/Unique.h>
 
 #include <helper/Devices.h>
 #include <helper/Transport.h>
+#include <helper/TransportParam.h>
 
 #include <gtest/gtest.h>
 
@@ -35,8 +35,11 @@ void delayedInterruptor(TransportFactory& transport)
     transport.Interrupt();
 }
 
-auto RunTransferTimeout(string const& transport) -> void
+using TransferTimeout = TransportTest;
+
+TEST_P(TransferTimeout, Device)
 {
+    auto const& transport = GetParam().transport;
     IpcAddress const dataIn("transfer_timeout_in");
     IpcAddress const dataOut("transfer_timeout_out");
 
@@ -44,18 +47,20 @@ auto RunTransferTimeout(string const& transport) -> void
         {"transfer_timeout_" + transport,
          "name=data-in,type=pull,method=bind,address=" + dataIn.str()
          + " name=data-out,type=push,method=bind,address=" + dataOut.str()},
-    }, RunOptions(transport, "--severity debug"));
+    }, RunOptions(transport, GetParam().DeviceArgs() + " --severity debug"));
 
     EXPECT_TRUE(Succeeded(results.at(0), transport));
 }
 
-void InterruptTransfer(const string& transport, const string& name)
+using InterruptTransfer = TransportTest;
+
+TEST_P(InterruptTransfer, Receive)
 {
-    size_t session{UuidHash()};
-    test::IpcAddress const address(ToString(name, "_", transport));
+    auto const& transport = GetParam().transport;
+    test::IpcAddress const address("interrupt_transfer_" + transport);
 
     fair::mq::ProgOptions config;
-    test::Configure(config, to_string(session));
+    test::Configure(config, Uuid(), GetParam().expandedShmMetadata);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, Uuid(), &config);
 
@@ -71,24 +76,7 @@ void InterruptTransfer(const string& transport, const string& name)
     ASSERT_EQ(result, static_cast<int>(fair::mq::TransferCode::interrupted));
 }
 
-TEST(TransferTimeout, zeromq)
-{
-    RunTransferTimeout("zeromq");
-}
-
-TEST(TransferTimeout, shmem)
-{
-    RunTransferTimeout("shmem");
-}
-
-TEST(InterruptTransfer, zeromq)
-{
-    InterruptTransfer("zeromq", "interrupt_transfer");
-}
-
-TEST(InterruptTransfer, shmem)
-{
-    InterruptTransfer("shmem", "interrupt_transfer");
-}
+INSTANTIATE_TEST_SUITE_P(, TransferTimeout, AllTransports(), TransportParamName());
+INSTANTIATE_TEST_SUITE_P(, InterruptTransfer, AllTransports(), TransportParamName());
 
 } // namespace

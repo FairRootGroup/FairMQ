@@ -8,6 +8,7 @@
 
 #include <helper/Devices.h>
 #include <helper/Transport.h>
+#include <helper/TransportParam.h>
 
 #include <gtest/gtest.h>
 
@@ -19,8 +20,9 @@ namespace
 using namespace std;
 using namespace fair::mq::test;
 
-auto RunPoller(string const& transport, int pollType) -> void
+auto RunPoller(TransportParam const& param, int pollType) -> void
 {
+    auto const& transport = param.transport;
     IpcAddress const data1("poller_data1");
     IpcAddress const data2("poller_data2");
 
@@ -30,31 +32,25 @@ auto RunPoller(string const& transport, int pollType) -> void
         {"pollin_" + transport, "name=data1,type=pull,method=connect,address=" + data1.str()
                                 + " name=data2,type=pull,method=connect,address=" + data2.str(),
          "--poll-type " + to_string(pollType)},
-    }, RunOptions(transport));
+    }, RunOptions(transport, param.DeviceArgs()));
 
     for (auto const& result : results) {
         EXPECT_TRUE(Succeeded(result, transport));
     }
 }
 
-TEST(Subchannel, zeromq)
+using Poller = TransportTest;
+
+TEST_P(Poller, Subchannel)
 {
-    RunPoller("zeromq", 0);
+    RunPoller(GetParam(), 0);
 }
 
-TEST(Subchannel, shmem)
+TEST_P(Poller, Channel)
 {
-    RunPoller("shmem", 0);
+    RunPoller(GetParam(), 1);
 }
 
-TEST(Channel, zeromq)
-{
-    RunPoller("zeromq", 1);
-}
-
-TEST(Channel, shmem)
-{
-    RunPoller("shmem", 1);
-}
+INSTANTIATE_TEST_SUITE_P(, Poller, AllTransports(), TransportParamName());
 
 } // namespace
