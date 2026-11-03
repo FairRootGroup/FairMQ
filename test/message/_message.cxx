@@ -19,11 +19,14 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <atomic>
 #include <cassert>
+#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <string_view>
 #include <string>
+#include <thread>
 #include <utility>
 
 namespace
@@ -546,6 +549,56 @@ auto SideChannelUnmanaged() -> void
     blocker.Wait();
 }
 
+auto ReuseReceivedRegionMessage() -> void
+{
+    ProgOptions config;
+    config.SetProperty<string>("session", tools::Uuid());
+    config.SetProperty<size_t>("shm-segment-size", 100000000);
+    config.SetProperty<bool>("shm-monitor", true);
+    auto factory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config));
+
+    const size_t regionSize = 1000000;
+    std::atomic<int> releasedA{0};
+    std::atomic<int> releasedB{0};
+    auto regionA = factory->CreateUnmanagedRegion(regionSize, [&](void*, size_t, void*) { ++releasedA; });
+    auto regionB = factory->CreateUnmanagedRegion(regionSize, [&](void*, size_t, void*) { ++releasedB; });
+    auto waitFor = [](std::atomic<int> const& counter, int value) {
+        for (int i = 0; i < 500 && counter < value; ++i) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        return counter == value;
+    };
+
+    Channel push{"Push", "push", factory};
+    Channel pull{"Pull", "pull", factory};
+    auto const address(tools::ToString("ipc://test_reuse_received_region_msg_", config.GetProperty<string>("session")));
+    push.Bind(address);
+    pull.Connect(address);
+
+    // Receive a block of region A and read it. This resolves region A in the message.
+    auto inMsg(pull.NewMessage());
+    {
+        auto outMsg(push.NewMessage(regionA, regionA->GetData(), 2, nullptr));
+        ASSERT_EQ(push.Send(outMsg), 2);
+    }
+    ASSERT_EQ(pull.Receive(inMsg), 2);
+    ASSERT_NE(inMsg->GetData(), nullptr);
+    inMsg->Rebuild();
+    ASSERT_TRUE(waitFor(releasedA, 1));
+
+    // Receive a block of region B into the same message, and release it without a read.
+    {
+        auto outMsg(push.NewMessage(regionB, regionB->GetData(), 2, nullptr));
+        ASSERT_EQ(push.Send(outMsg), 2);
+    }
+    ASSERT_EQ(pull.Receive(inMsg), 2);
+    inMsg->Rebuild();
+
+    // The block must go back to region B, not to region A.
+    EXPECT_TRUE(waitFor(releasedB, 1));
+    EXPECT_EQ(releasedA, 1);
+}
+
 auto SideChannelErrors() -> void
 {
     ProgOptions config;
@@ -583,6 +636,11 @@ TEST(SideChannel, shmem_expanded_metadata) // NOLINT
 TEST(SideChannel, shmem_unmanaged) // NOLINT
 {
     SideChannelUnmanaged();
+}
+
+TEST(ReuseReceivedRegionMessage, shmem) // NOLINT
+{
+    ReuseReceivedRegionMessage();
 }
 
 TEST(SideChannel, errors) // NOLINT
