@@ -13,7 +13,10 @@
 
 #include <boost/container/pmr/polymorphic_allocator.hpp>
 
+#include <fairmq/Channel.h>
+
 #include <helper/Transport.h>
+#include <helper/TransportParam.h>
 #include <gtest/gtest.h>
 
 #include <cstddef>
@@ -175,5 +178,45 @@ TEST(MemoryResources, getMessage)
     EXPECT_EQ(messageArray[1], 5);
     EXPECT_EQ(messageArray[2], 6);
 }
+
+using PmrMessage = test::TransportTest;
+
+// A container that uses the memory resource of a transport becomes a message
+// without a copy, and the message transfers the container data.
+TEST_P(PmrMessage, FromContainerWithoutCopy)
+{
+    ProgOptions config;
+    test::Configure(config, tools::Uuid(), GetParam().expandedShmMetadata);
+    auto factory = TransportFactory::CreateTransportFactory(GetParam().transport, tools::Uuid(), &config);
+
+    std::vector<int, polymorphic_allocator<int>> v(polymorphic_allocator<int>{factory->GetMemoryResource()});
+    v.reserve(4);
+    v.push_back(7);
+    v.push_back(8);
+    v.push_back(9);
+    void const* data = v.data();
+
+    auto message = getMessage(std::move(v));
+    ASSERT_NE(message, nullptr);
+    EXPECT_EQ(message->GetData(), data);
+    EXPECT_EQ(message->GetSize(), 3 * sizeof(int));
+    EXPECT_EQ(factory->GetMemoryResource()->getNumberOfMessages(), 0U);
+
+    Channel push("push", "push", factory);
+    Channel pull("pull", "pull", factory);
+    test::IpcAddress const address("pmr_message");
+    ASSERT_TRUE(pull.Bind(address));
+    ASSERT_TRUE(push.Connect(address));
+    ASSERT_EQ(push.Send(message, 5000), static_cast<int64_t>(3 * sizeof(int)));
+
+    auto in(pull.NewMessage());
+    ASSERT_EQ(pull.Receive(in, 5000), static_cast<int64_t>(3 * sizeof(int)));
+    auto const* received = static_cast<int const*>(in->GetData());
+    EXPECT_EQ(received[0], 7);
+    EXPECT_EQ(received[1], 8);
+    EXPECT_EQ(received[2], 9);
+}
+
+INSTANTIATE_TEST_SUITE_P(, PmrMessage, test::AllTransports(), test::TransportParamName());
 
 }   // namespace
