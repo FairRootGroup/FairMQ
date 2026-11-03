@@ -15,6 +15,7 @@
 #include <fairmq/TransportFactory.h>
 #include <fairmq/tools/Unique.h>
 #include <helper/Transport.h>
+#include <helper/TransportParam.h>
 #include <gtest/gtest.h>
 #include <memory>
 #include <sstream>
@@ -100,15 +101,14 @@ void ZeroingAndMlockOnCreation(const string& transport)
     ASSERT_EQ(memcmp(test.data(), outMsg->GetData(), outMsg->GetSize()), 0);
 }
 
-TEST(Options, zeromq) // NOLINT
+using Options = test::TransportTest;
+
+TEST_P(Options, Apply) // NOLINT
 {
-    RunOptionsTest("zeromq");
+    RunOptionsTest(GetParam().transport);
 }
 
-TEST(Options, shmem) // NOLINT
-{
-    RunOptionsTest("shmem");
-}
+INSTANTIATE_TEST_SUITE_P(, Options, test::BasicTransports(), test::TransportParamName());
 
 TEST(ZeroingAndMlock, shmem) // NOLINT
 {

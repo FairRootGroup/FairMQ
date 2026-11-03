@@ -18,6 +18,7 @@
 #include <helper/Sync.h>
 
 #include <helper/Transport.h>
+#include <helper/TransportParam.h>
 #include <gtest/gtest.h>
 
 #include <array>
@@ -362,65 +363,29 @@ auto ZeroCopyFromUnmanaged(string const& name, bool expandedShmMetadata, uint64_
     ASSERT_TRUE(blocker.Wait());
 }
 
-TEST(Resize, zeromq) // NOLINT
+using Messages = test::TransportTest;
+
+TEST_P(Messages, Resize) // NOLINT
 {
-    RunPushPullWithMsgResize("zeromq", "message_resize");
+    RunPushPullWithMsgResize(GetParam().transport, "message_resize", GetParam().expandedShmMetadata);
 }
 
-TEST(Resize, shmem) // NOLINT
+TEST_P(Messages, Rebuild) // NOLINT
 {
-    RunPushPullWithMsgResize("shmem", "message_resize");
+    RunMsgRebuild(GetParam().transport, GetParam().expandedShmMetadata);
 }
 
-TEST(Resize, shmem_expanded_metadata) // NOLINT
+TEST_P(Messages, Alignment) // NOLINT
 {
-    RunPushPullWithMsgResize("shmem", "message_resize", true);
+    RunPushPullWithAlignment(GetParam().transport, "message_alignment", GetParam().expandedShmMetadata);
 }
 
-TEST(Rebuild, zeromq) // NOLINT
+TEST_P(Messages, Empty) // NOLINT
 {
-    RunMsgRebuild("zeromq");
+    EmptyMessage(GetParam().transport, "empty_message", GetParam().expandedShmMetadata);
 }
 
-TEST(Rebuild, shmem) // NOLINT
-{
-    RunMsgRebuild("shmem");
-}
-
-TEST(Rebuild, shmem_expanded_metadata) // NOLINT
-{
-    RunMsgRebuild("shmem", true);
-}
-
-TEST(Alignment, shmem) // NOLINT
-{
-    RunPushPullWithAlignment("shmem", "message_alignment");
-}
-
-TEST(Alignment, shmem_expanded_metadata) // NOLINT
-{
-    RunPushPullWithAlignment("shmem", "message_alignment", true);
-}
-
-TEST(Alignment, zeromq) // NOLINT
-{
-    RunPushPullWithAlignment("zeromq", "message_alignment");
-}
-
-TEST(EmptyMessage, zeromq) // NOLINT
-{
-    EmptyMessage("zeromq", "empty_message");
-}
-
-TEST(EmptyMessage, shmem) // NOLINT
-{
-    EmptyMessage("shmem", "empty_message");
-}
-
-TEST(EmptyMessage, shmem_expanded_metadata) // NOLINT
-{
-    EmptyMessage("shmem", "empty_message", true);
-}
+INSTANTIATE_TEST_SUITE_P(, Messages, test::AllTransports(), test::TransportParamName());
 
 // GetMeta() + GetDataAddressFromHandle() round-trip: simulates a consumer device that
 // receives message metadata over a side channel and resolves it to a local pointer.
@@ -453,16 +418,6 @@ auto SideChannel(bool expandedShmMetadata = false) -> void
     ASSERT_NE(ptr, nullptr);
     EXPECT_EQ(ptr[0], 'A');
     EXPECT_EQ(ptr[1], 'B');
-}
-
-TEST(ZeroCopy, shmem) // NOLINT
-{
-    ZeroCopy();
-}
-
-TEST(ZeroCopy, shmem_expanded_metadata) // NOLINT
-{
-    ZeroCopy(true);
 }
 
 // Uses a second factory on the same session to exercise the remote region lookup path.
@@ -606,16 +561,6 @@ TEST(MetaHeaderLayout, shmem) // NOLINT
     }
 }
 
-TEST(SideChannel, shmem) // NOLINT
-{
-    SideChannel();
-}
-
-TEST(SideChannel, shmem_expanded_metadata) // NOLINT
-{
-    SideChannel(true);
-}
-
 TEST(SideChannel, shmem_unmanaged) // NOLINT
 {
     SideChannelUnmanaged();
@@ -631,24 +576,28 @@ TEST(SideChannel, errors) // NOLINT
     SideChannelErrors();
 }
 
-TEST(ZeroCopyFromUnmanaged, shmem) // NOLINT
+using ShmMessages = test::TransportTest;
+
+TEST_P(ShmMessages, ZeroCopy) // NOLINT
 {
-    ZeroCopyFromUnmanaged("zerocopy_unmanaged", false, 10000000);
+    ZeroCopy(GetParam().expandedShmMetadata);
 }
 
-TEST(ZeroCopyFromUnmanaged, shmem_expanded_metadata) // NOLINT
+TEST_P(ShmMessages, SideChannel) // NOLINT
 {
-    ZeroCopyFromUnmanaged("zerocopy_unmanaged_expanded", true, 10000000);
+    SideChannel(GetParam().expandedShmMetadata);
 }
 
-TEST(ZeroCopyFromUnmanaged, shmem_no_rc_segment) // NOLINT
+TEST_P(ShmMessages, ZeroCopyFromUnmanaged) // NOLINT
 {
-    ZeroCopyFromUnmanaged("zerocopy_unmanaged_no_rc_segment", false, 0);
+    ZeroCopyFromUnmanaged("zerocopy_unmanaged", GetParam().expandedShmMetadata, 10000000);
 }
 
-TEST(ZeroCopyFromUnmanaged, shmem_expanded_metadata_no_rc_segment) // NOLINT
+TEST_P(ShmMessages, ZeroCopyFromUnmanaged_no_rc_segment) // NOLINT
 {
-    ZeroCopyFromUnmanaged("zerocopy_unmanaged_expanded_no_rc_segment", true, 0);
+    ZeroCopyFromUnmanaged("zerocopy_unmanaged_no_rc_segment", GetParam().expandedShmMetadata, 0);
 }
+
+INSTANTIATE_TEST_SUITE_P(, ShmMessages, test::ShmTransports(), test::TransportParamName());
 
 } // namespace

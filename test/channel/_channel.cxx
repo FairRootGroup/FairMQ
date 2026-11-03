@@ -12,6 +12,7 @@
 #include <fairmq/TransportFactory.h>
 #include <helper/Sync.h>
 #include <helper/Transport.h>
+#include <helper/TransportParam.h>
 #include <gtest/gtest.h>
 #include <string>
 
@@ -120,14 +121,13 @@ auto testConnectedPeers(std::string const& transport)
     ASSERT_TRUE(test::WaitUntil([&] { return ch1.GetNumberOfConnectedPeers() == zero; }));
 }
 
-TEST(Channel, GetNumberOfConnectedPeers_zeromq)
+using ConnectedPeers = test::TransportTest;
+
+TEST_P(ConnectedPeers, Pair)
 {
-    testConnectedPeers("zeromq");
+    testConnectedPeers(GetParam().transport);
 }
 
-TEST(Channel, GetNumberOfConnectedPeers_shmem)
-{
-    testConnectedPeers("shmem");
-}
+INSTANTIATE_TEST_SUITE_P(, ConnectedPeers, test::BasicTransports(), test::TransportParamName());
 
 } /* namespace */
