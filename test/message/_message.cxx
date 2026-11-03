@@ -293,8 +293,6 @@ auto ZeroCopy(bool expandedShmMetadata = false) -> void
 // Currently it holds true for the shmem (across devices) and for zeromq (within same device) transports.
 auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint64_t rcSegmentSize) -> void
 {
-    fair::Logger::SetConsoleSeverity(fair::Severity::debug);
-
     ProgOptions config1;
     ProgOptions config2;
     string session(tools::Uuid());

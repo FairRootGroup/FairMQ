@@ -153,8 +153,6 @@ void RegionsCache(const string& transport, const string& _address)
 
 void RegionEventSubscriptions(const string& transport, bool external)
 {
-    fair::Logger::SetConsoleSeverity(fair::Severity::debug);
-
     unique_ptr<ShmOwner> shmOwner = nullptr;
 
     size_t session{tools::UuidHash()};
