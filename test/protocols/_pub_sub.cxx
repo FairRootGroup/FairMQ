@@ -51,7 +51,7 @@ auto RunPubSub(string transport) -> void
     thread sub1_thread([&]() {
         stringstream cmd;
         cmd << runTestDevice
-            << " --id sub_1" << transport
+            << " --id sub_1_" << transport
             << " --control static"
             << " --transport " << transport
             << " --session " << session
@@ -65,7 +65,7 @@ auto RunPubSub(string transport) -> void
     thread sub2_thread([&]() {
         stringstream cmd;
         cmd << runTestDevice
-            << " --id sub_2" << transport
+            << " --id sub_2_" << transport
             << " --control static"
             << " --transport " << transport
             << " --session " << session
