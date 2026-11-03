@@ -212,7 +212,7 @@ void RegionEventSubscriptions(const string& transport, bool external)
         }
         ASSERT_EQ(region2->GetSize(), r2Size);
 
-        ASSERT_EQ(factory->SubscribedToRegionEvents(), false);
+        ASSERT_FALSE(factory->SubscribedToRegionEvents());
         factory->SubscribeToRegionEvents([&, id1, id2, ptr1, ptr2](RegionInfo info) {
             LOG(info) << ">>> " << info.event << ": "
                       << (info.managed ? "managed" : "unmanaged")
@@ -241,7 +241,7 @@ void RegionEventSubscriptions(const string& transport, bool external)
                 }
             }
         });
-        ASSERT_EQ(factory->SubscribedToRegionEvents(), true);
+        ASSERT_TRUE(factory->SubscribedToRegionEvents());
 
         LOG(info) << "waiting for blockers...";
         ASSERT_TRUE(blocker.Wait());
@@ -259,7 +259,7 @@ void RegionEventSubscriptions(const string& transport, bool external)
     LOG(info) << "All done.";
 
     factory->UnsubscribeFromRegionEvents();
-    ASSERT_EQ(factory->SubscribedToRegionEvents(), false);
+    ASSERT_FALSE(factory->SubscribedToRegionEvents());
 }
 
 void RegionCallbacks(const string& transport, const string& name)

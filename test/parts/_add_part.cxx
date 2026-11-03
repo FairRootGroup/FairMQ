@@ -42,14 +42,14 @@ TEST_F(AddPart, AnotherParts)
     auto const newSize = oldSize + addedSize;
 
     mParts.AddPart(std::move(anotherParts));
-    ASSERT_TRUE(mParts.Size() == newSize);
+    ASSERT_EQ(mParts.Size(), newSize);
 }
 
 TEST_F(AddPart, SinglePart)
 {
     auto const oldSize = mParts.Size();
     mParts.AddPart(mFactory->NewSimpleMessage("asdf"));
-    ASSERT_TRUE(mParts.Size() == oldSize + 1);
+    ASSERT_EQ(mParts.Size(), oldSize + 1);
 }
 
 TEST_F(AddPart, MultipleParts)
@@ -58,7 +58,7 @@ TEST_F(AddPart, MultipleParts)
     mParts.AddPart(mFactory->NewSimpleMessage("1"),
                    mFactory->NewSimpleMessage("2"),
                    mFactory->NewSimpleMessage("3"));
-    ASSERT_TRUE(mParts.Size() == oldSize + 3);
+    ASSERT_EQ(mParts.Size(), oldSize + 3);
 }
 
 TEST(Construction, AppendMultipleParts)
@@ -67,7 +67,7 @@ TEST(Construction, AppendMultipleParts)
     fair::mq::Parts newParts(factory->NewSimpleMessage("1"),
                              factory->NewSimpleMessage("2"),
                              factory->NewSimpleMessage("3"));
-    ASSERT_TRUE(newParts.Size() == 3);
+    ASSERT_EQ(newParts.Size(), 3U);
 }
 
 }   // namespace

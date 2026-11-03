@@ -108,14 +108,14 @@ TEST_F(PluginServices, Accessors)
     mServices.SetProperties(properties);
 
     // an existing property should exist
-    ASSERT_EQ(mServices.PropertyExists("custom1"), true);
+    ASSERT_TRUE(mServices.PropertyExists("custom1"));
     // a not existing property should not exists
-    ASSERT_EQ(mServices.PropertyExists("custom3"), false);
+    ASSERT_FALSE(mServices.PropertyExists("custom3"));
     // updating a not existing property should fail
-    ASSERT_EQ(mServices.UpdateProperty("custom3", 12345), false);
+    ASSERT_FALSE(mServices.UpdateProperty("custom3", 12345));
     mServices.SetProperty("custom3", 12345);
     // updating an existing existing property should succeed
-    ASSERT_EQ(mServices.UpdateProperty("custom3", 67890), true);
+    ASSERT_TRUE(mServices.UpdateProperty("custom3", 67890));
     // updated property should return the correct value
     ASSERT_EQ(mServices.GetProperty<int>("custom3"), 67890);
     // asking for non existing property should return the fallback if it is provided
@@ -137,19 +137,19 @@ TEST_F(PluginServices, Accessors)
 
     properties.at("custom3") = 11111;
     // bulk update should update values of all properties, but only if all of them exist
-    ASSERT_EQ(mServices.UpdateProperties(properties), true);
+    ASSERT_TRUE(mServices.UpdateProperties(properties));
     ASSERT_EQ(mServices.GetProperty<int>("custom3"), 11111);
 
     properties.at("custom3") = 22222;
     properties.emplace("custom4", 17);
     // bulk update should fail if any of the properties do not exist in the container ...
-    ASSERT_EQ(mServices.UpdateProperties(properties), false);
+    ASSERT_FALSE(mServices.UpdateProperties(properties));
     // ... all the values should remain unchanged
     ASSERT_EQ(mServices.GetProperty<int>("custom3"), 11111);
 
     mServices.DeleteProperty("custom3");
     // property should no longer exist after deletion
-    ASSERT_EQ(mServices.PropertyExists("custom3"), false);
+    ASSERT_FALSE(mServices.PropertyExists("custom3"));
     // accessing this property should throw an exception
     ASSERT_THROW(mServices.GetProperty<int>("custom3"), fair::mq::PropertyNotFoundError);
 

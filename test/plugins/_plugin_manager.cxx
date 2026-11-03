@@ -55,7 +55,7 @@ TEST(PluginManager, LoadPluginDynamic)
     const auto expected = vector<string>{"test_dummy", "test_dummy2"};
     auto actual = vector<string>();
     mgr.ForEachPlugin([&](Plugin& plugin){ actual.push_back(plugin.GetName()); });
-    ASSERT_TRUE(actual == expected);
+    ASSERT_EQ(actual, expected);
 
     // program options
     auto count = 0;
@@ -88,7 +88,7 @@ TEST(PluginManager, LoadPluginStatic)
     const auto expected = vector<string>{"control"};
     auto actual = vector<string>();
     mgr.ForEachPlugin([&](Plugin& plugin){ actual.push_back(plugin.GetName()); });
-    ASSERT_TRUE(actual == expected);
+    ASSERT_EQ(actual, expected);
 
     // program options
     auto count = 0;
@@ -110,7 +110,7 @@ TEST(PluginManager, Factory)
     const auto path4 = path{"/lib"};
     const auto expected = vector<path>{path1, path2, path3, path4};
     // ASSERT_TRUE(static_cast<bool>(mgr));
-    ASSERT_TRUE(mgr.SearchPaths() == expected);
+    ASSERT_EQ(mgr.SearchPaths(), expected);
 }
 
 TEST(PluginManager, SearchPathValidation)
