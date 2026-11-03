@@ -9,7 +9,11 @@
 #ifndef FAIR_MQ_TEST_CONTROL_H
 #define FAIR_MQ_TEST_CONTROL_H
 
+#include "Sync.h"
+
 #include <fairmq/Device.h>
+
+#include <thread>
 
 namespace fair::mq::test
 {
@@ -60,6 +64,80 @@ inline auto Control(Device& device, Cycle cycle = Cycle::FullNoStop)
         device.ChangeStateOrThrow(Transition::End);
     }
 }
+
+
+/// Drive the device to Exiting from any state. Use it in cleanup code: a test
+/// that fails in the middle of a cycle must not leave the state machine thread
+/// waiting forever.
+inline auto Shutdown(Device& device)
+{
+    auto changeAndWait = [&](Transition transition, State from) {
+        if (device.ChangeState(transition)) {
+            WaitUntil([&] { return device.GetCurrentState() != from; });
+        }
+    };
+
+    while (true) {
+        auto const state = device.GetCurrentState();
+        switch (state) {
+            case State::Exiting:
+            case State::Error:
+                return;
+            case State::Idle:
+                static_cast<void>(device.ChangeState(Transition::End));
+                return;
+            case State::InitializingDevice:
+                changeAndWait(Transition::CompleteInit, state);
+                break;
+            case State::Initialized:
+            case State::Bound:
+            case State::DeviceReady:
+                changeAndWait(Transition::ResetDevice, state);
+                break;
+            case State::Ready:
+                changeAndWait(Transition::ResetTask, state);
+                break;
+            case State::Running:
+                changeAndWait(Transition::Stop, state);
+                break;
+            default: // a transitional state, wait for the next one
+                if (!WaitUntil([&] { return device.GetCurrentState() != state; })) {
+                    return;
+                }
+                break;
+        }
+    }
+}
+
+/// Runs Device::RunStateMachine() in a thread. On destruction, drives the
+/// device to Exiting and joins the thread.
+class StateMachineThread
+{
+  public:
+    explicit StateMachineThread(Device& device)
+        : fDevice(device)
+        , fThread(&Device::RunStateMachine, &device)
+    {}
+
+    StateMachineThread(const StateMachineThread&) = delete;
+    StateMachineThread(StateMachineThread&&) = delete;
+    StateMachineThread& operator=(const StateMachineThread&) = delete;
+    StateMachineThread& operator=(StateMachineThread&&) = delete;
+
+    ~StateMachineThread() { Join(); }
+
+    void Join()
+    {
+        if (fThread.joinable()) {
+            Shutdown(fDevice);
+            fThread.join();
+        }
+    }
+
+  private:
+    Device& fDevice;
+    std::thread fThread;
+};
 
 }
 
