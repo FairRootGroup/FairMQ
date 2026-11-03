@@ -136,10 +136,9 @@ TEST_F(PluginServices, Accessors)
     ASSERT_EQ(boost::any_cast<int>(properties.at("newcustom")), 12345);
 
     properties.at("custom3") = 11111;
-    mServices.UpdateProperties(properties);
-
     // bulk update should update values of all properties, but only if all of them exist
-    ASSERT_EQ(boost::any_cast<int>(properties.at("custom3")), 11111);
+    ASSERT_EQ(mServices.UpdateProperties(properties), true);
+    ASSERT_EQ(mServices.GetProperty<int>("custom3"), 11111);
 
     properties.at("custom3") = 22222;
     properties.emplace("custom4", 17);
