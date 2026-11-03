@@ -16,10 +16,6 @@ if(FairLogger_VERSION VERSION_LESS 1.9.0 AND FairLogger_VERSION VERSION_GREATER_
   LIST(APPEND definitions FAIR_MIN_SEVERITY=trace)
 endif()
 
-if(FAIRMQ_BOOST_PROCESS_V1_HEADER)
-  LIST(APPEND definitions FAIRMQ_BOOST_PROCESS_V1_HEADER)
-endif()
-
 if(definitions)
   set(definitions DEFINITIONS ${definitions})
 endif()
@@ -63,7 +59,6 @@ add_testhelper(runTestDevice
 
 set(RUN_TEST_DEVICE "${CMAKE_BINARY_DIR}/test/testhelper_runTestDevice")
 set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
-set(SDK_TESTSUITE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sdk)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/runner.cxx.in ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/TestEnvironment.h.in ${CMAKE_CURRENT_BINARY_DIR}/TestEnvironment.h)
 
@@ -249,17 +244,6 @@ add_testsuite(Properties
     TIMEOUT 20
     ${environment}
 )
-
-# add_testsuite(StateMachine
-#     SOURCES
-#     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
-#     state_machine/_state_machine.cxx
-
-    # LINKS FairMQ
-    # INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
-             # ${CMAKE_CURRENT_BINARY_DIR}
-    # TIMEOUT 5
-# )
 
 add_testsuite(Tools
     SOURCES
