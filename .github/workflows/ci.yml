@@ -59,7 +59,7 @@ jobs:
           # limit so it does not hit RLIMIT_MEMLOCK on the runner.
           sudo prlimit --pid $$ --memlock=unlimited:unlimited
           ulimit -l
-          ctest --test-dir build --output-on-failure --no-tests=error
+          ctest --test-dir build --output-on-failure --no-tests=error --parallel "$(nproc)"
 
       - name: Install
         run: cmake --install build
@@ -160,7 +160,7 @@ jobs:
           # limit so it does not hit RLIMIT_MEMLOCK on the runner.
           sudo prlimit --pid $$ --memlock=unlimited:unlimited
           ulimit -l
-          ctest --test-dir build --output-on-failure --no-tests=error
+          ctest --test-dir build --output-on-failure --no-tests=error --parallel "$(nproc)"
 
   static-analysis:
     if: github.repository == 'FairRootGroup/FairMQ'
