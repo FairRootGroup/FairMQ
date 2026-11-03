@@ -9,6 +9,7 @@
 #ifndef FAIR_MQ_TOOLS_PROCESS_H
 #define FAIR_MQ_TOOLS_PROCESS_H
 
+#include <chrono>
 #include <string>
 
 namespace fair::mq::tools
@@ -36,6 +37,16 @@ execute_result execute(const std::string& cmd,
                        const std::string& prefix = "",
                        const std::string& input = "",
                        int sig = -1);
+
+/**
+ * Same as above, but kill the child process (SIGKILL) if it runs longer than
+ * timeout. A timeout of zero means no limit.
+ */
+execute_result execute(const std::string& cmd,
+                       const std::string& prefix,
+                       const std::string& input,
+                       int sig,
+                       std::chrono::milliseconds timeout);
 
 } // namespace fair::mq::tools
 
