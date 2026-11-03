@@ -61,7 +61,8 @@ function(add_testsuite suitename)
         ${ARGN}
     )
 
-    list(INSERT testsuite_LINKS 0 GTest::Main GTest::GTest)
+    # runner.cxx defines main(), so do not link GTest::Main
+    list(INSERT testsuite_LINKS 0 GTest::GTest)
     set(target "testsuite_${suitename}")
 
     add_executable(${target} ${testsuite_SOURCES})
@@ -85,15 +86,10 @@ function(add_testsuite suitename)
       fairmq_target_tidy(TARGET ${target})
     endif()
 
-    # add_test(NAME "${suitename}" WORKING_DIRECTORY ${CMAKE_BINARY_DIR} COMMAND ${target})
-    if(testsuite_TIMEOUT)
-        # set_tests_properties("${suitename}" PROPERTIES TIMEOUT ${testsuite_TIMEOUT})
-    else()
+    if(NOT testsuite_TIMEOUT)
         set(testsuite_TIMEOUT 10)
     endif()
-    if(testsuite_RUN_SERIAL)
-        # set_tests_properties("${suitename}" PROPERTIES RUN_SERIAL ${testsuite_RUN_SERIAL})
-    else()
+    if(NOT testsuite_RUN_SERIAL)
         set(testsuite_RUN_SERIAL OFF)
     endif()
     gtest_discover_tests(${target}
