@@ -69,17 +69,17 @@ auto RunPair(const string& transport, const string& extraDeviceCmdArgs) -> void
     exit(pairleft.exit_code + pairright.exit_code);
 }
 
-TEST(Pair, SingleMsg_MultiThreaded_tcp_zeromq)
+TEST(Pair, SingleMsg_MultiThreaded_ipc_zeromq)
 {
     EXPECT_EXIT(RunPair("zeromq", ""), ::testing::ExitedWithCode(0), "PAIR test successfull");
 }
 
-TEST(Pair, SingleMsg_MultiThreaded_tcp_shmem)
+TEST(Pair, SingleMsg_MultiThreaded_ipc_shmem)
 {
     EXPECT_EXIT(RunPair("shmem", ""), ::testing::ExitedWithCode(0), "PAIR test successfull");
 }
 
-TEST(Pair, SingleMsg_MultiThreaded_tcp_shmem_expanded_metadata)
+TEST(Pair, SingleMsg_MultiThreaded_ipc_shmem_expanded_metadata)
 {
     EXPECT_EXIT(RunPair("shmem", " --shm-metadata-msg-size 2048"), ::testing::ExitedWithCode(0), "PAIR test successfull");
 }

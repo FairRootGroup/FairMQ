@@ -48,7 +48,7 @@ auto RunReqRep(string transport, const string& extraDeviceCmdArgs) -> void
     thread req1_thread([&]() {
         stringstream cmd;
         cmd << runTestDevice
-            << " --id req_1" << transport
+            << " --id req_1_" << transport
             << " --control static"
             << " --transport " << transport
             << " --shm-monitor true"
@@ -64,7 +64,7 @@ auto RunReqRep(string transport, const string& extraDeviceCmdArgs) -> void
     thread req2_thread([&]() {
         stringstream cmd;
         cmd << runTestDevice
-            << " --id req_2" << transport
+            << " --id req_2_" << transport
             << " --control static"
             << " --transport " << transport
             << " --shm-monitor true"
