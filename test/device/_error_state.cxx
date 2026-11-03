@@ -6,16 +6,14 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "runner.h"
+#include <helper/Devices.h>
+
+#include <fairmq/Device.h>
 
 #include <gtest/gtest.h>
-#include <fairmq/tools/Process.h>
-#include <fairmq/tools/Unique.h>
-#include <fairmq/Device.h>
 
 #include <string>
 #include <thread>
-#include <iostream>
 
 namespace
 {
@@ -23,7 +21,6 @@ namespace
 using namespace std;
 using namespace fair::mq;
 using namespace fair::mq::test;
-using namespace fair::mq::tools;
 
 class BadDevice : public Device
 {
@@ -64,99 +61,104 @@ class BadDevice : public Device
     Parts parts;
 };
 
-void RunErrorStateIn(const string& state, const string& control, const string& input = "")
+void RunErrorStateIn(string const& state, string const& control, string const& input = "")
 {
-    size_t session{tools::UuidHash()};
+    RunOptions options;
+    options.control = control;
+    options.input = input;
+    auto const results = RunDevices({{"error_state_" + state + "_"}}, options);
 
-    execute_result result{"", 100};
-    thread device_thread([&]() {
-        stringstream cmd;
-        cmd << runTestDevice
-            << " --id error_state_" << state << "_"
-            << " --control " << control
-            << " --session " << session
-            << " --color false";
-        result = execute(cmd.str(), "[ErrorFound IN " + state + "]", input);
-    });
-
-    device_thread.join();
-
-    ASSERT_NE(string::npos, result.console_out.find("going to change to Error state from " + state + "()"));
-
-    exit(result.exit_code);
+    EXPECT_TRUE(ExitedWith(results.at(0), 1, "going to change to Error state from " + state + "()"));
 }
 
 TEST(ErrorState, static_InInit)
 {
-    EXPECT_EXIT(RunErrorStateIn("Init", "static"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("Init", "static");
 }
+
 TEST(ErrorState, static_InBind)
 {
-    EXPECT_EXIT(RunErrorStateIn("Bind", "static"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("Bind", "static");
 }
+
 TEST(ErrorState, static_InConnect)
 {
-    EXPECT_EXIT(RunErrorStateIn("Connect", "static"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("Connect", "static");
 }
+
 TEST(ErrorState, static_InInitTask)
 {
-    EXPECT_EXIT(RunErrorStateIn("InitTask", "static"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("InitTask", "static");
 }
+
 TEST(ErrorState, static_InPreRun)
 {
-    EXPECT_EXIT(RunErrorStateIn("PreRun", "static"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("PreRun", "static");
 }
+
 TEST(ErrorState, static_InRun)
 {
-    EXPECT_EXIT(RunErrorStateIn("Run", "static"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("Run", "static");
 }
+
 TEST(ErrorState, static_InPostRun)
 {
-    EXPECT_EXIT(RunErrorStateIn("PostRun", "static"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("PostRun", "static");
 }
+
 TEST(ErrorState, static_InResetTask)
 {
-    EXPECT_EXIT(RunErrorStateIn("ResetTask", "static"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("ResetTask", "static");
 }
+
 TEST(ErrorState, static_InReset)
 {
-    EXPECT_EXIT(RunErrorStateIn("Reset", "static"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("Reset", "static");
 }
+
 TEST(ErrorState, interactive_InInit)
 {
-    EXPECT_EXIT(RunErrorStateIn("Init", "interactive"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("Init", "interactive");
 }
+
 TEST(ErrorState, interactive_InBind)
 {
-    EXPECT_EXIT(RunErrorStateIn("Bind", "interactive"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("Bind", "interactive");
 }
+
 TEST(ErrorState, interactive_InConnect)
 {
-    EXPECT_EXIT(RunErrorStateIn("Connect", "interactive"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("Connect", "interactive");
 }
+
 TEST(ErrorState, interactive_InInitTask)
 {
-    EXPECT_EXIT(RunErrorStateIn("InitTask", "interactive"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("InitTask", "interactive");
 }
+
 TEST(ErrorState, interactive_InPreRun)
 {
-    EXPECT_EXIT(RunErrorStateIn("PreRun", "interactive"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("PreRun", "interactive");
 }
+
 TEST(ErrorState, interactive_InRun)
 {
-    EXPECT_EXIT(RunErrorStateIn("Run", "interactive"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("Run", "interactive");
 }
+
 TEST(ErrorState, interactive_InPostRun)
 {
-    EXPECT_EXIT(RunErrorStateIn("PostRun", "interactive"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("PostRun", "interactive");
 }
+
 TEST(ErrorState, interactive_InResetTask)
 {
-    EXPECT_EXIT(RunErrorStateIn("ResetTask", "interactive", "q"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("ResetTask", "interactive", "q");
 }
+
 TEST(ErrorState, interactive_InReset)
 {
-    EXPECT_EXIT(RunErrorStateIn("Reset", "interactive", "q"), ::testing::ExitedWithCode(1), "");
+    RunErrorStateIn("Reset", "interactive", "q");
 }
 
 #ifdef FAIRMQ_DEBUG_MODE

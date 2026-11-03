@@ -6,68 +6,58 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "runner.h"
+#include <helper/Devices.h>
 
 #include <gtest/gtest.h>
 
-#include <fairmq/tools/Unique.h>
-#include <fairmq/tools/Process.h>
-
+#include <csignal>
 #include <string>
-#include <thread>
-#include <sstream>
 
 namespace
 {
 
 using namespace std;
 using namespace fair::mq::test;
-using namespace fair::mq::tools;
 
-void RunWaitFor(const string& state, const string& control)
+void RunWaitFor(string const& state, string const& control)
 {
-    execute_result result;
-    thread device_thread([&] {
-        stringstream cmd;
-        cmd << runTestDevice
-            << " --id waitfor_" << state
-            << " --control " << control
-            << " --session " << UuidHash()
-            << " --severity debug"
-            << " --color false";
-        result = execute(cmd.str(), "[WaitFor]", "", SIGINT);
-    });
+    RunOptions options;
+    options.control = control;
+    options.signal = SIGINT;
+    options.extraArgs = "--severity debug";
+    auto const results = RunDevices({{"waitfor_" + state + "_"}}, options);
 
-    device_thread.join();
-
-    ASSERT_NE(string::npos, result.console_out.find("Sleeping Done. Interrupted."));
-
-    exit(result.exit_code);
+    EXPECT_TRUE(ExitedWith(results.at(0), 0, "Sleeping Done. Interrupted."));
 }
 
 TEST(WaitFor, static_InPreRun)
 {
-    EXPECT_EXIT(RunWaitFor("PreRun", "static"), ::testing::ExitedWithCode(0), "");
+    RunWaitFor("PreRun", "static");
 }
+
 TEST(WaitFor, static_InRun)
 {
-    EXPECT_EXIT(RunWaitFor("Run", "static"), ::testing::ExitedWithCode(0), "");
+    RunWaitFor("Run", "static");
 }
+
 TEST(WaitFor, static_InPostRun)
 {
-    EXPECT_EXIT(RunWaitFor("PostRun", "static"), ::testing::ExitedWithCode(0), "");
+    RunWaitFor("PostRun", "static");
 }
+
 TEST(WaitFor, interactive_InPreRun)
 {
-    EXPECT_EXIT(RunWaitFor("PreRun", "interactive"), ::testing::ExitedWithCode(0), "");
+    RunWaitFor("PreRun", "interactive");
 }
+
 TEST(WaitFor, interactive_InRun)
 {
-    EXPECT_EXIT(RunWaitFor("Run", "interactive"), ::testing::ExitedWithCode(0), "");
+    RunWaitFor("Run", "interactive");
 }
+
 TEST(WaitFor, interactive_InPostRun)
 {
-    EXPECT_EXIT(RunWaitFor("PostRun", "interactive"), ::testing::ExitedWithCode(0), "");
+    RunWaitFor("PostRun", "interactive");
 }
 
 } // namespace
