@@ -263,6 +263,7 @@ add_testsuite(Tools
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     tools/_network.cxx
+    tools/_tools.cxx
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
