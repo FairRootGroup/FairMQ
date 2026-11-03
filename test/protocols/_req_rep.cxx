@@ -8,6 +8,7 @@
 
 #include <helper/Devices.h>
 #include <helper/Transport.h>
+#include <helper/TransportParam.h>
 
 #include <gtest/gtest.h>
 
@@ -19,34 +20,24 @@ namespace
 using namespace std;
 using namespace fair::mq::test;
 
-auto RunReqRep(string const& transport, string const& extraArgs) -> void
+using ReqRep = TransportTest;
+
+TEST_P(ReqRep, MultiThreaded_ipc)
 {
+    auto const& transport = GetParam().transport;
     IpcAddress const address("req_rep");
 
     auto const results = RunDevices({
         {"rep_" + transport, "name=data,type=rep,method=bind,address=" + address.str()},
         {"req_1_" + transport, "name=data,type=req,method=connect,address=" + address.str()},
         {"req_2_" + transport, "name=data,type=req,method=connect,address=" + address.str()},
-    }, RunOptions(transport, extraArgs));
+    }, RunOptions(transport, GetParam().DeviceArgs()));
 
     for (auto const& result : results) {
         EXPECT_TRUE(Succeeded(result, transport));
     }
 }
 
-TEST(ReqRep, zeromq)
-{
-    RunReqRep("zeromq", "");
-}
-
-TEST(ReqRep, shmem)
-{
-    RunReqRep("shmem", "");
-}
-
-TEST(ReqRep, shmem_expanded_metadata)
-{
-    RunReqRep("shmem", "--shm-metadata-msg-size 2048");
-}
+INSTANTIATE_TEST_SUITE_P(, ReqRep, AllTransports(), TransportParamName());
 
 } // namespace

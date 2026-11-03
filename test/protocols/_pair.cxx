@@ -8,6 +8,7 @@
 
 #include <helper/Devices.h>
 #include <helper/Transport.h>
+#include <helper/TransportParam.h>
 
 #include <gtest/gtest.h>
 
@@ -19,33 +20,23 @@ namespace
 using namespace std;
 using namespace fair::mq::test;
 
-auto RunPair(string const& transport, string const& extraArgs) -> void
+using Pair = TransportTest;
+
+TEST_P(Pair, SingleMsg_MultiThreaded_ipc)
 {
+    auto const& transport = GetParam().transport;
     IpcAddress const address("pair");
 
     auto const results = RunDevices({
         {"pairleft_" + transport, "name=data,type=pair,method=bind,address=" + address.str()},
         {"pairright_" + transport, "name=data,type=pair,method=connect,address=" + address.str()},
-    }, RunOptions(transport, extraArgs));
+    }, RunOptions(transport, GetParam().DeviceArgs()));
 
     for (auto const& result : results) {
         EXPECT_TRUE(Succeeded(result, transport));
     }
 }
 
-TEST(Pair, SingleMsg_MultiThreaded_ipc_zeromq)
-{
-    RunPair("zeromq", "");
-}
-
-TEST(Pair, SingleMsg_MultiThreaded_ipc_shmem)
-{
-    RunPair("shmem", "");
-}
-
-TEST(Pair, SingleMsg_MultiThreaded_ipc_shmem_expanded_metadata)
-{
-    RunPair("shmem", "--shm-metadata-msg-size 2048");
-}
+INSTANTIATE_TEST_SUITE_P(, Pair, AllTransports(), TransportParamName());
 
 } // namespace

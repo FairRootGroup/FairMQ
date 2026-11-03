@@ -8,6 +8,7 @@
 
 #include <helper/Devices.h>
 #include <helper/Transport.h>
+#include <helper/TransportParam.h>
 
 #include <gtest/gtest.h>
 
@@ -19,8 +20,11 @@ namespace
 using namespace std;
 using namespace fair::mq::test;
 
-auto RunPubSub(string const& transport) -> void
+using PubSub = TransportTest;
+
+TEST_P(PubSub, MultiThreaded_ipc)
 {
+    auto const& transport = GetParam().transport;
     IpcAddress const data("pub_sub_data");
     IpcAddress const control("pub_sub_control");
 
@@ -31,16 +35,14 @@ auto RunPubSub(string const& transport) -> void
                              + " name=control,type=pull,method=bind,address=" + control.str()},
         {"sub_1_" + transport, subChannels},
         {"sub_2_" + transport, subChannels},
-    }, RunOptions(transport));
+    }, RunOptions(transport, GetParam().DeviceArgs()));
 
     for (auto const& result : results) {
         EXPECT_TRUE(Succeeded(result, transport));
     }
 }
 
-TEST(PubSub, zeromq)
-{
-    RunPubSub("zeromq");
-}
+// The shmem transport does not support pub/sub.
+INSTANTIATE_TEST_SUITE_P(, PubSub, testing::Values(TransportParam("zeromq")), TransportParamName());
 
 } // namespace
