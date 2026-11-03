@@ -34,6 +34,7 @@ auto RunPair(const string& transport, const string& extraDeviceCmdArgs) -> void
         cmd << runTestDevice
             << " --id pairleft_" << transport
             << " --control static"
+            << " --transport " << transport
             << " --shm-monitor true"
             << " --shm-segment-size 100000000"
             << " --session " << session
@@ -49,6 +50,7 @@ auto RunPair(const string& transport, const string& extraDeviceCmdArgs) -> void
         cmd << runTestDevice
             << " --id pairright_" << transport
             << " --control static"
+            << " --transport " << transport
             << " --shm-monitor true"
             << " --shm-segment-size 100000000"
             << " --session " << session

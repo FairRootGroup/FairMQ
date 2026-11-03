@@ -39,6 +39,7 @@ auto RunPubSub(string transport) -> void
         cmd << runTestDevice
             << " --id pub_" << transport
             << " --control static"
+            << " --transport " << transport
             << " --session " << session
             << " --color false"
             << " --channel-config name=data,type=pub,method=bind,address=" << dataAddress
@@ -52,6 +53,7 @@ auto RunPubSub(string transport) -> void
         cmd << runTestDevice
             << " --id sub_1" << transport
             << " --control static"
+            << " --transport " << transport
             << " --session " << session
             << " --color false"
             << " --channel-config name=data,type=sub,method=connect,address=" << dataAddress
@@ -65,6 +67,7 @@ auto RunPubSub(string transport) -> void
         cmd << runTestDevice
             << " --id sub_2" << transport
             << " --control static"
+            << " --transport " << transport
             << " --session " << session
             << " --color false"
             << " --channel-config name=data,type=sub,method=connect,address=" << dataAddress

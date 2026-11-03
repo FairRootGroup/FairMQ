@@ -34,6 +34,7 @@ auto RunReqRep(string transport, const string& extraDeviceCmdArgs) -> void
         cmd << runTestDevice
             << " --id rep_" << transport
             << " --control static"
+            << " --transport " << transport
             << " --shm-monitor true"
             << " --shm-segment-size 100000000"
             << " --session " << session
@@ -49,6 +50,7 @@ auto RunReqRep(string transport, const string& extraDeviceCmdArgs) -> void
         cmd << runTestDevice
             << " --id req_1" << transport
             << " --control static"
+            << " --transport " << transport
             << " --shm-monitor true"
             << " --shm-segment-size 100000000"
             << " --session " << session
@@ -64,6 +66,7 @@ auto RunReqRep(string transport, const string& extraDeviceCmdArgs) -> void
         cmd << runTestDevice
             << " --id req_2" << transport
             << " --control static"
+            << " --transport " << transport
             << " --shm-monitor true"
             << " --shm-segment-size 100000000"
             << " --session " << session
