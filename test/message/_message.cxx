@@ -8,13 +8,14 @@
 
 #include <fairmq/Channel.h>
 #include <fairmq/ProgOptions.h>
-#include <fairmq/tools/Semaphore.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/tools/Unique.h>
 #include <fairmq/TransportFactory.h>
 #include <fairmq/shmem/Message.h>
 
 #include <fairlogger/Logger.h>
+
+#include <helper/Sync.h>
 
 #include <gtest/gtest.h>
 
@@ -317,7 +318,7 @@ auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint
     const size_t regionSize{1000000};
     RegionConfig cfg;
     cfg.rcSegmentSize = rcSegmentSize;
-    tools::Semaphore blocker;
+    test::Semaphore blocker;
 
     auto region = factory1->CreateUnmanagedRegion(regionSize, [&blocker](void*, size_t, void*) {
         blocker.Signal();
@@ -391,8 +392,8 @@ auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint
         EXPECT_EQ(static_cast<const shmem::Message&>(*msg1).GetRefCount(), 1);
     }
 
-    blocker.Wait();
-    blocker.Wait();
+    ASSERT_TRUE(blocker.Wait());
+    ASSERT_TRUE(blocker.Wait());
 }
 
 TEST(Resize, zeromq) // NOLINT
@@ -523,7 +524,7 @@ auto SideChannelUnmanaged() -> void
     auto consumerFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &consumerConfig));
 
     const size_t regionSize = 1000000;
-    tools::Semaphore blocker;
+    test::Semaphore blocker;
     auto region = producerFactory->CreateUnmanagedRegion(regionSize, [&blocker](void*, size_t, void*) {
         blocker.Signal();
     });
@@ -545,7 +546,7 @@ auto SideChannelUnmanaged() -> void
     EXPECT_EQ(ptr[1], 'B');
 
     msg.reset();
-    blocker.Wait();
+    ASSERT_TRUE(blocker.Wait());
 }
 
 auto ReuseReceivedRegionMessage() -> void

@@ -14,10 +14,11 @@
 #include <fairmq/TransportFactory.h>
 #include <fairmq/ProgOptions.h>
 #include <fairmq/tools/Unique.h>
-#include <fairmq/tools/Semaphore.h>
 #include <fairmq/tools/Strings.h>
 
 #include <fairlogger/Logger.h>
+
+#include <helper/Sync.h>
 
 #include <gtest/gtest.h>
 
@@ -181,10 +182,11 @@ void RegionEventSubscriptions(const string& transport, bool external)
         // config.SetProperty<bool>("shm-monitor", false);
     }
 
+    // outlives the factory, which can call the event callback until it is destroyed
+    test::Semaphore blocker;
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
     constexpr int64_t userFlags = 12345;
-    tools::Semaphore blocker;
 
     {
         fair::mq::RegionConfig r1Cfg;
@@ -224,14 +226,14 @@ void RegionEventSubscriptions(const string& transport, bool external)
                       << ", flags: " << info.flags;
             if (info.event == RegionEvent::created) {
                 if (info.id == id1) {
-                    ASSERT_EQ(info.size, r1Size);
-                    ASSERT_EQ(info.ptr, ptr1);
+                    EXPECT_EQ(info.size, r1Size);
+                    EXPECT_EQ(info.ptr, ptr1);
                     blocker.Signal();
                 } else if (info.id == id2) {
-                    ASSERT_EQ(info.size, r2Size);
-                    ASSERT_EQ(info.ptr, ptr2);
+                    EXPECT_EQ(info.size, r2Size);
+                    EXPECT_EQ(info.ptr, ptr2);
                     if (!external) {
-                        ASSERT_EQ(info.flags, userFlags);
+                        EXPECT_EQ(info.flags, userFlags);
                     }
                     blocker.Signal();
                 }
@@ -246,16 +248,16 @@ void RegionEventSubscriptions(const string& transport, bool external)
         ASSERT_EQ(factory->SubscribedToRegionEvents(), true);
 
         LOG(info) << "waiting for blockers...";
-        blocker.Wait();
+        ASSERT_TRUE(blocker.Wait());
         LOG(info) << "1 done.";
-        blocker.Wait();
+        ASSERT_TRUE(blocker.Wait());
         LOG(info) << "2 done.";
     }
 
     if (!external) {
-        blocker.Wait();
+        ASSERT_TRUE(blocker.Wait());
         LOG(info) << "3 done.";
-        blocker.Wait();
+        ASSERT_TRUE(blocker.Wait());
         LOG(info) << "4 done.";
     }
     LOG(info) << "All done.";
@@ -282,7 +284,7 @@ void RegionCallbacks(const string& transport, const string& _address)
 
     unique_ptr<int> intPtr1 = make_unique<int>(42);
     unique_ptr<int> intPtr2 = make_unique<int>(43);
-    tools::Semaphore blocker;
+    test::Semaphore blocker;
 
     Channel push("Push", "push", factory);
     ASSERT_TRUE(push.Bind(address));
@@ -296,20 +298,20 @@ void RegionCallbacks(const string& transport, const string& _address)
     size_t size2 = 200;
 
     auto region1 = factory->CreateUnmanagedRegion(r1Size, [&](void* ptr, size_t size, void* hint) {
-        ASSERT_EQ(ptr, ptr1);
-        ASSERT_EQ(size, size1);
-        ASSERT_EQ(hint, intPtr1.get());
-        ASSERT_EQ(*static_cast<int*>(hint), 42);
+        EXPECT_EQ(ptr, ptr1);
+        EXPECT_EQ(size, size1);
+        EXPECT_EQ(hint, intPtr1.get());
+        EXPECT_EQ(*static_cast<int*>(hint), 42);
         blocker.Signal();
     });
     ptr1 = region1->GetData();
 
     auto region2 = factory->CreateUnmanagedRegion(r2Size, [&](const std::vector<RegionBlock>& blocks) {
-        ASSERT_EQ(blocks.size(), 1);
-        ASSERT_EQ(blocks.at(0).ptr, ptr2);
-        ASSERT_EQ(blocks.at(0).size, size2);
-        ASSERT_EQ(blocks.at(0).hint, intPtr2.get());
-        ASSERT_EQ(*static_cast<int*>(blocks.at(0).hint), 43);
+        EXPECT_EQ(blocks.size(), 1);
+        EXPECT_EQ(blocks.at(0).ptr, ptr2);
+        EXPECT_EQ(blocks.at(0).size, size2);
+        EXPECT_EQ(blocks.at(0).hint, intPtr2.get());
+        EXPECT_EQ(*static_cast<int*>(blocks.at(0).hint), 43);
         blocker.Signal();
     });
     ptr2 = region2->GetData();
@@ -329,9 +331,9 @@ void RegionCallbacks(const string& transport, const string& _address)
     }
 
     LOG(info) << "waiting for blockers...";
-    blocker.Wait();
+    ASSERT_TRUE(blocker.Wait());
     LOG(info) << "1 done.";
-    blocker.Wait();
+    ASSERT_TRUE(blocker.Wait());
     LOG(info) << "2 done.";
 }
 
