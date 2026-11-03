@@ -286,6 +286,7 @@ add_testsuite(Channel
 add_testsuite(Transport
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    transport/_factory.cxx
     transport/_transfer_timeout.cxx
     transport/_options.cxx
     transport/_shmem.cxx
