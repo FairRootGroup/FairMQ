@@ -14,6 +14,7 @@
 #include <fairmq/ProgOptions.h>
 #include <fairmq/TransportFactory.h>
 #include <fairmq/tools/Unique.h>
+#include <helper/Transport.h>
 #include <gtest/gtest.h>
 #include <memory>
 #include <sstream>
@@ -40,9 +41,7 @@ void CheckOldOptionInterface(Channel& channel, const string& option)
 void RunOptionsTest(const string& transport)
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<bool>("shm-monitor", true);
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
+    test::Configure(config);
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
     Channel channel("Push", "push", factory);
 
@@ -72,11 +71,10 @@ void RunOptionsTest(const string& transport)
 void ZeroingAndMlock(const string& transport)
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
+    test::Configure(config);
     config.SetProperty<size_t>("shm-segment-size", 16384); // NOLINT
     config.SetProperty<bool>("shm-zero-segment", true);
     config.SetProperty<bool>("shm-mlock-segment", true);
-    config.SetProperty<bool>("shm-monitor", true);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
@@ -88,14 +86,11 @@ void ZeroingAndMlock(const string& transport)
 
 void ZeroingAndMlockOnCreation(const string& transport)
 {
-    size_t session{tools::UuidHash()};
-
     ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
+    test::Configure(config);
     config.SetProperty<size_t>("shm-segment-size", 16384); // NOLINT
     config.SetProperty<bool>("shm-mlock-segment-on-creation", true);
     config.SetProperty<bool>("shm-zero-segment-on-creation", true);
-    config.SetProperty<bool>("shm-monitor", true);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 

@@ -11,6 +11,7 @@
 #include <fairmq/tools/Unique.h>
 #include <fairmq/TransportFactory.h>
 
+#include <helper/Transport.h>
 #include <gtest/gtest.h>
 
 #include <string>
@@ -24,10 +25,7 @@ using namespace fair::mq;
 void GetFreeMemory()
 {
     ProgOptions config;
-    string sessionId(to_string(tools::UuidHash()));
-    config.SetProperty<string>("session", sessionId);
-    config.SetProperty<bool>("shm-monitor", true);
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
+    string const sessionId(test::Configure(config));
 
     ASSERT_THROW(shmem::Monitor::GetFreeMemory(shmem::SessionId{sessionId}, 0), shmem::Monitor::MonitorError);
 
