@@ -21,6 +21,7 @@
 #include <helper/Sync.h>
 
 #include <helper/Transport.h>
+#include <helper/TransportParam.h>
 #include <gtest/gtest.h>
 
 #include <atomic>
@@ -414,45 +415,29 @@ TEST(RegionsSizeMismatch, shmem)
     RegionsSizeMismatch();
 }
 
-TEST(Cache, zeromq)
+using Regions = test::TransportTest;
+
+TEST_P(Regions, Cache)
 {
-    RegionsCache("zeromq", "region_cache");
+    RegionsCache(GetParam().transport, "region_cache");
 }
 
-TEST(Cache, shmem)
+TEST_P(Regions, EventSubscriptions)
 {
-    RegionsCache("shmem", "region_cache");
+    RegionEventSubscriptions(GetParam().transport, false);
 }
 
-TEST(EventSubscriptions, zeromq)
+TEST_P(Regions, Callbacks)
 {
-    RegionEventSubscriptions("zeromq", false);
+    RegionCallbacks(GetParam().transport, "region_callbacks");
 }
 
-TEST(EventSubscriptions, shmem)
+TEST_P(Regions, CallbackDuringDestruction)
 {
-    RegionEventSubscriptions("shmem", false);
+    RegionCallbackCallsTransportDuringDestruction(GetParam().transport, "region_callback_during_destruction");
 }
 
-TEST(Callbacks, zeromq)
-{
-    RegionCallbacks("zeromq", "region_callbacks");
-}
-
-TEST(Callbacks, shmem)
-{
-    RegionCallbacks("shmem", "region_callbacks");
-}
-
-TEST(CallbackDuringDestruction, zeromq)
-{
-    RegionCallbackCallsTransportDuringDestruction("zeromq", "region_callback_during_destruction");
-}
-
-TEST(CallbackDuringDestruction, shmem)
-{
-    RegionCallbackCallsTransportDuringDestruction("shmem", "region_callback_during_destruction");
-}
+INSTANTIATE_TEST_SUITE_P(, Regions, test::BasicTransports(), test::TransportParamName());
 
 TEST(LockOrder, shmem)
 {
