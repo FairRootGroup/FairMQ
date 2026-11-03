@@ -404,7 +404,7 @@ void RegionLockOrder(const string& _address)
         ASSERT_EQ(push.Send(msg), 100);
     }
 
-    thread creator([&] {
+    test::JoiningThread creator([&] {
         for (int i = 0; i < numIterations; ++i) {
             auto region = factory1->CreateUnmanagedRegion(10000, [](void*, size_t, void*) {});
         }
@@ -416,7 +416,7 @@ void RegionLockOrder(const string& _address)
         ASSERT_NE(msg->GetData(), nullptr); // opens the peer region in factory1
     }
 
-    creator.join();
+    creator.Join();
 }
 
 TEST(RegionsSizeMismatch, shmem)
