@@ -34,6 +34,7 @@ class BadDevice : public Device
             EXPECT_THROW(RunStateMachine(), MessageError);
         });
 
+        GetConfig()->SetProperty<size_t>("shm-segment-size", 100000000);
         SetTransport("shmem");
 
         ChangeStateOrThrow(Transition::InitDevice);

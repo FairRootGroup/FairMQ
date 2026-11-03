@@ -40,6 +40,7 @@ auto RunPoller(string transport, int pollType) -> void
             << " --transport " << transport
             << " --color false"
             << " --shm-monitor true"
+            << " --shm-segment-size 100000000"
             << " --session " << session
             << " --channel-config name=data1,type=push,method=bind,address=" << data1Address
             << "                  name=data2,type=push,method=bind,address=" << data2Address;
@@ -55,6 +56,7 @@ auto RunPoller(string transport, int pollType) -> void
             << " --transport " << transport
             << " --color false"
             << " --shm-monitor true"
+            << " --shm-segment-size 100000000"
             << " --session " << session
             << " --poll-type " << pollType
             << " --channel-config name=data1,type=pull,method=connect,address=" << data1Address
