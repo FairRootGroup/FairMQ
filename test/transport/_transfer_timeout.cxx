@@ -6,23 +6,19 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "runner.h"
-
 #include <fairmq/Channel.h>
 #include <fairmq/TransportFactory.h>
 #include <fairmq/ProgOptions.h>
-#include <fairmq/tools/Process.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/tools/Unique.h>
 
-#include <fairlogger/Logger.h>
-
+#include <helper/Devices.h>
 #include <helper/Transport.h>
+
 #include <gtest/gtest.h>
 
 #include <chrono>
-#include <cstdio> // std::remove
-#include <sstream> // std::stringstream
+#include <string>
 #include <thread>
 
 namespace
@@ -39,34 +35,18 @@ void delayedInterruptor(TransportFactory& transport)
     transport.Interrupt();
 }
 
-auto RunTransferTimeout(string transport) -> void
+auto RunTransferTimeout(string const& transport) -> void
 {
-    size_t session{UuidHash()};
-    string dataInIpcFile("/tmp/fmq_" + to_string(session) + "_datain_" + transport);
-    string dataOutIpcFile("/tmp/fmq_" + to_string(session) + "_dataout_" + transport);
-    string dataInAddress("ipc://" + dataInIpcFile);
-    string dataOutAddress("ipc://" + dataOutIpcFile);
+    IpcAddress const dataIn("transfer_timeout_in");
+    IpcAddress const dataOut("transfer_timeout_out");
 
-    stringstream cmd;
-    cmd << runTestDevice
-        << " --id transfer_timeout_" << transport
-        << " --control static"
-        << " --shm-segment-size 100000000"
-        << " --severity debug"
-        << " --shm-monitor true"
-        << " --transport " << transport
-        << " --session " << session
-        << " --color false"
-        << " --channel-config name=data-in,type=pull,method=bind,address=" << dataInAddress
-        << "                  name=data-out,type=push,method=bind,address=" << dataOutAddress;
-    auto res = execute(cmd.str());
+    auto const results = RunDevices({
+        {"transfer_timeout_" + transport,
+         "name=data-in,type=pull,method=bind,address=" + dataIn.str()
+         + " name=data-out,type=push,method=bind,address=" + dataOut.str()},
+    }, RunOptions(transport, "--severity debug"));
 
-    cerr << res.console_out;
-
-    std::remove(dataInIpcFile.c_str());
-    std::remove(dataOutIpcFile.c_str());
-
-    exit(res.exit_code);
+    EXPECT_TRUE(Succeeded(results.at(0), transport));
 }
 
 void InterruptTransfer(const string& transport, const string& name)
@@ -93,12 +73,12 @@ void InterruptTransfer(const string& transport, const string& name)
 
 TEST(TransferTimeout, zeromq)
 {
-    EXPECT_EXIT(RunTransferTimeout("zeromq"), ::testing::ExitedWithCode(0), "Transfer timeout test successfull");
+    RunTransferTimeout("zeromq");
 }
 
 TEST(TransferTimeout, shmem)
 {
-    EXPECT_EXIT(RunTransferTimeout("shmem"), ::testing::ExitedWithCode(0), "Transfer timeout test successfull");
+    RunTransferTimeout("shmem");
 }
 
 TEST(InterruptTransfer, zeromq)

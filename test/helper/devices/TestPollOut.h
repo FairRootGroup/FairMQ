@@ -9,27 +9,23 @@
 #ifndef FAIR_MQ_TEST_POLLOUT_H
 #define FAIR_MQ_TEST_POLLOUT_H
 
-#include <fairmq/Device.h>
-#include <thread>
+#include "TestDevice.h"
 
 namespace fair::mq::test
 {
 
-class PollOut : public Device
+class PollOut : public TestDevice
 {
   protected:
-    auto InitTask() -> void override
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
-
     auto Run() -> void override
     {
         auto msg1 = NewMessage();
+        Check(Send(msg1, "data1") >= 0, "send on data1");
         auto msg2 = NewMessage();
-        Send(msg1, "data1");
-        Send(msg2, "data2");
-    };
+        Check(Send(msg2, "data2") >= 0, "send on data2");
+
+        Succeed();
+    }
 };
 
 } // namespace fair::mq::test

@@ -6,99 +6,47 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "runner.h"
-#include <fairmq/tools/Unique.h>
-#include <fairmq/tools/Process.h>
-#include <fairmq/tools/Strings.h>
+#include <helper/Devices.h>
+#include <helper/Transport.h>
+
 #include <gtest/gtest.h>
-#include <cstdio> // std::remove
-#include <sstream> // std::stringstream
-#include <thread>
+
+#include <string>
 
 namespace
 {
 
 using namespace std;
 using namespace fair::mq::test;
-using namespace fair::mq::tools;
 
-auto RunReqRep(string transport, const string& extraDeviceCmdArgs) -> void
+auto RunReqRep(string const& transport, string const& extraArgs) -> void
 {
-    size_t session{fair::mq::tools::UuidHash()};
-    string ipcFile("/tmp/fmq_" + to_string(session) + "_data_" + transport);
-    string address("ipc://" + ipcFile);
+    IpcAddress const address("req_rep");
 
-    auto rep = execute_result{"", 0};
-    thread rep_thread([&]() {
-        stringstream cmd;
-        cmd << runTestDevice
-            << " --id rep_" << transport
-            << " --control static"
-            << " --transport " << transport
-            << " --shm-monitor true"
-            << " --shm-segment-size 100000000"
-            << " --session " << session
-            << " --color false"
-            << extraDeviceCmdArgs
-            << " --channel-config name=data,type=rep,method=bind,address=" << address;
-        rep = execute(cmd.str(), "[REP]");
-    });
+    auto const results = RunDevices({
+        {"rep_" + transport, "name=data,type=rep,method=bind,address=" + address.str()},
+        {"req_1_" + transport, "name=data,type=req,method=connect,address=" + address.str()},
+        {"req_2_" + transport, "name=data,type=req,method=connect,address=" + address.str()},
+    }, RunOptions(transport, extraArgs));
 
-    auto req1 = execute_result{"", 0};
-    thread req1_thread([&]() {
-        stringstream cmd;
-        cmd << runTestDevice
-            << " --id req_1_" << transport
-            << " --control static"
-            << " --transport " << transport
-            << " --shm-monitor true"
-            << " --shm-segment-size 100000000"
-            << " --session " << session
-            << " --color false"
-            << extraDeviceCmdArgs
-            << " --channel-config name=data,type=req,method=connect,address=" << address;
-        req1 = execute(cmd.str(), "[REQ1]");
-    });
-
-    auto req2 = execute_result{"", 0};
-    thread req2_thread([&]() {
-        stringstream cmd;
-        cmd << runTestDevice
-            << " --id req_2_" << transport
-            << " --control static"
-            << " --transport " << transport
-            << " --shm-monitor true"
-            << " --shm-segment-size 100000000"
-            << " --session " << session
-            << " --color false"
-            << extraDeviceCmdArgs
-            << " --channel-config name=data,type=req,method=connect,address=" << address;
-        req2 = execute(cmd.str(), "[REQ2]");
-    });
-
-    rep_thread.join();
-    req1_thread.join();
-    req2_thread.join();
-    cerr << req1.console_out << req2.console_out << rep.console_out;
-
-    std::remove(ipcFile.c_str());
-
-    exit(req1.exit_code + req2.exit_code + rep.exit_code);
+    for (auto const& result : results) {
+        EXPECT_TRUE(Succeeded(result, transport));
+    }
 }
 
 TEST(ReqRep, zeromq)
 {
-    EXPECT_EXIT(RunReqRep("zeromq", ""), ::testing::ExitedWithCode(0), "REQ-REP test successfull");
+    RunReqRep("zeromq", "");
 }
 
 TEST(ReqRep, shmem)
 {
-    EXPECT_EXIT(RunReqRep("shmem", ""), ::testing::ExitedWithCode(0), "REQ-REP test successfull");
+    RunReqRep("shmem", "");
 }
 
 TEST(ReqRep, shmem_expanded_metadata)
 {
-    EXPECT_EXIT(RunReqRep("shmem", " --shm-metadata-msg-size 2048"), ::testing::ExitedWithCode(0), "REQ-REP test successfull");
+    RunReqRep("shmem", "--shm-metadata-msg-size 2048");
 }
 
 } // namespace

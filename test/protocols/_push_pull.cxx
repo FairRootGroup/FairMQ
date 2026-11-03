@@ -6,82 +6,46 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "runner.h"
-#include <fairmq/tools/Unique.h>
-#include <fairmq/tools/Process.h>
-#include <fairmq/tools/Strings.h>
+#include <helper/Devices.h>
+#include <helper/Transport.h>
+
 #include <gtest/gtest.h>
-#include <cstdio> // std::remove
-#include <sstream> // std::stringstream
-#include <thread>
+
+#include <string>
 
 namespace
 {
 
 using namespace std;
 using namespace fair::mq::test;
-using namespace fair::mq::tools;
 
-auto RunPushPull(string transport, const string& extraDeviceCmdArgs) -> void
+auto RunPushPull(string const& transport, string const& extraArgs) -> void
 {
-    size_t session(fair::mq::tools::UuidHash());
-    string ipcFile("/tmp/fmq_" + to_string(session) + "_data_" + transport);
-    string address("ipc://" + ipcFile);
+    IpcAddress const address("push_pull");
 
-    auto push = execute_result{"", 100};
-    thread push_thread([&]() {
-        stringstream cmd;
-        cmd << runTestDevice
-            << " --id push_" << transport
-            << " --control static"
-            << " --transport " << transport
-            << " --shm-monitor true"
-            << " --shm-segment-size 100000000"
-            << " --session " << session
-            << " --color false"
-            << extraDeviceCmdArgs
-            << " --channel-config name=data,type=push,method=bind,address=" << address;
-        push = execute(cmd.str(), "[PUSH]");
-    });
+    auto const results = RunDevices({
+        {"push_" + transport, "name=data,type=push,method=bind,address=" + address.str()},
+        {"pull_" + transport, "name=data,type=pull,method=connect,address=" + address.str()},
+    }, RunOptions(transport, extraArgs));
 
-    auto pull = execute_result{"", 100};
-    thread pull_thread([&]() {
-        stringstream cmd;
-        cmd << runTestDevice
-            << " --id pull_" << transport
-            << " --control static"
-            << " --transport " << transport
-            << " --shm-monitor true"
-            << " --shm-segment-size 100000000"
-            << " --session " << session
-            << " --color false"
-            << extraDeviceCmdArgs
-            << " --channel-config name=data,type=pull,method=connect,address=" << address;
-        pull = execute(cmd.str(), "[PULL]");
-    });
-
-    push_thread.join();
-    pull_thread.join();
-    cerr << push.console_out << pull.console_out;
-
-    std::remove(ipcFile.c_str());
-
-    exit(push.exit_code + pull.exit_code);
+    for (auto const& result : results) {
+        EXPECT_TRUE(Succeeded(result, transport));
+    }
 }
 
 TEST(PushPull, SingleMsg_MultiThreaded_ipc_zeromq)
 {
-    EXPECT_EXIT(RunPushPull("zeromq", ""), ::testing::ExitedWithCode(0), "PUSH-PULL test successfull");
+    RunPushPull("zeromq", "");
 }
 
 TEST(PushPull, SingleMsg_MultiThreaded_ipc_shmem)
 {
-    EXPECT_EXIT(RunPushPull("shmem", ""), ::testing::ExitedWithCode(0), "PUSH-PULL test successfull");
+    RunPushPull("shmem", "");
 }
 
 TEST(PushPull, SingleMsg_MultiThreaded_ipc_shmem_expanded_metadata)
 {
-    EXPECT_EXIT(RunPushPull("shmem", " --shm-metadata-msg-size 2048"), ::testing::ExitedWithCode(0), "PUSH-PULL test successfull");
+    RunPushPull("shmem", "--shm-metadata-msg-size 2048");
 }
 
 } // namespace

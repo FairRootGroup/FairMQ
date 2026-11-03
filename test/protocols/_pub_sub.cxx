@@ -6,89 +6,41 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "runner.h"
-
-#include <fairmq/tools/Unique.h>
-#include <fairmq/tools/Process.h>
-#include <fairmq/tools/Strings.h>
+#include <helper/Devices.h>
+#include <helper/Transport.h>
 
 #include <gtest/gtest.h>
 
-#include <cstdio> // std::remove
-#include <sstream> // std::stringstream
-#include <thread>
+#include <string>
 
 namespace
 {
 
 using namespace std;
 using namespace fair::mq::test;
-using namespace fair::mq::tools;
 
-auto RunPubSub(string transport) -> void
+auto RunPubSub(string const& transport) -> void
 {
-    size_t session{fair::mq::tools::UuidHash()};
-    string dataIpcFile("/tmp/fmq_" + to_string(session) + "_data_" + transport);
-    string ctrlIpcFile("/tmp/fmq_" + to_string(session) + "_ctrl_" + transport);
-    string dataAddress("ipc://" + dataIpcFile);
-    string ctrlAddress("ipc://" + ctrlIpcFile);
+    IpcAddress const data("pub_sub_data");
+    IpcAddress const control("pub_sub_control");
 
-    auto pub = execute_result{"", 0};
-    thread pub_thread([&]() {
-        stringstream cmd;
-        cmd << runTestDevice
-            << " --id pub_" << transport
-            << " --control static"
-            << " --transport " << transport
-            << " --session " << session
-            << " --color false"
-            << " --channel-config name=data,type=pub,method=bind,address=" << dataAddress
-            << "                  name=control,type=pull,method=bind,address=" << ctrlAddress;
-        pub = execute(cmd.str(), "[PUB]");
-    });
+    auto const subChannels = "name=data,type=sub,method=connect,address=" + data.str()
+                           + " name=control,type=push,method=connect,address=" + control.str();
+    auto const results = RunDevices({
+        {"pub_" + transport, "name=data,type=pub,method=bind,address=" + data.str()
+                             + " name=control,type=pull,method=bind,address=" + control.str()},
+        {"sub_1_" + transport, subChannels},
+        {"sub_2_" + transport, subChannels},
+    }, RunOptions(transport));
 
-    auto sub1 = execute_result{"", 0};
-    thread sub1_thread([&]() {
-        stringstream cmd;
-        cmd << runTestDevice
-            << " --id sub_1_" << transport
-            << " --control static"
-            << " --transport " << transport
-            << " --session " << session
-            << " --color false"
-            << " --channel-config name=data,type=sub,method=connect,address=" << dataAddress
-            << "                  name=control,type=push,method=connect,address=" << ctrlAddress;
-        sub1 = execute(cmd.str(), "[SUB1]");
-    });
-
-    auto sub2 = execute_result{"", 0};
-    thread sub2_thread([&]() {
-        stringstream cmd;
-        cmd << runTestDevice
-            << " --id sub_2_" << transport
-            << " --control static"
-            << " --transport " << transport
-            << " --session " << session
-            << " --color false"
-            << " --channel-config name=data,type=sub,method=connect,address=" << dataAddress
-            << "                  name=control,type=push,method=connect,address=" << ctrlAddress;
-        sub2 = execute(cmd.str(), "[SUB2]");
-    });
-
-    pub_thread.join();
-    sub1_thread.join();
-    sub2_thread.join();
-    cerr << pub.console_out << sub1.console_out << sub2.console_out << endl;
-
-    std::remove(dataIpcFile.c_str());
-    std::remove(ctrlIpcFile.c_str());
-
-    exit(pub.exit_code + sub1.exit_code + sub2.exit_code);
+    for (auto const& result : results) {
+        EXPECT_TRUE(Succeeded(result, transport));
+    }
 }
 
 TEST(PubSub, zeromq)
 {
-    EXPECT_EXIT(RunPubSub("zeromq"), ::testing::ExitedWithCode(0), "PUB-SUB test successfull");
+    RunPubSub("zeromq");
 }
 
 } // namespace

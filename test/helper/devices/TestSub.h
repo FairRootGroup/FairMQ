@@ -9,54 +9,34 @@
 #ifndef FAIR_MQ_TEST_SUB_H
 #define FAIR_MQ_TEST_SUB_H
 
-#include <fairmq/Device.h>
-#include <fairlogger/Logger.h>
+#include "TestDevice.h"
+
 #include <chrono>
 #include <thread>
 
 namespace fair::mq::test
 {
 
-class Sub : public Device
+class Sub : public TestDevice
 {
   protected:
-    auto InitTask() -> void override
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
-
     auto Run() -> void override
     {
+        // A pub socket drops messages for a subscriber until the subscription
+        // has reached it. The connect is done, but the subscription can still
+        // be in flight: give it time before the ready signal.
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
         auto ready = NewMessage();
-        auto r1 = Send(ready, "control");
-        if (r1 >= 0)
-        {
-            LOG(info) << "Sent first control signal";
-            auto msg = NewMessage();
-            auto d1 = Receive(msg, "data");
-            if (d1 >= 0)
-            {
-                LOG(info) << "Received data";
-                auto ack = NewMessage();
-                auto a1 = Send(ack, "control");
-                if (a1 >= 0)
-                {
-                    LOG(info) << "Sent second control signal";
-                }
-                else
-                {
-                    LOG(error) << "Failed sending ack signal: a1 = " << a1;
-                }
-            }
-            else
-            {
-                LOG(error) << "Failed receiving data: d1 = " << d1;
-            }
-        }
-        else
-        {
-            LOG(error) << "Failed sending ready signal: r1 = " << r1;
-        }
+        Check(Send(ready, "control") >= 0, "send ready signal");
+
+        auto msg = NewMessage();
+        Check(Receive(msg, "data") >= 0, "receive data");
+
+        auto ack = NewMessage();
+        Check(Send(ack, "control") >= 0, "send ack");
+
+        Succeed();
     }
 };
 

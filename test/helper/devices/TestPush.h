@@ -9,29 +9,23 @@
 #ifndef FAIR_MQ_TEST_PUSH_H
 #define FAIR_MQ_TEST_PUSH_H
 
-#include <fairmq/Device.h>
-#include <thread>
+#include "TestDevice.h"
 
 namespace fair::mq::test
 {
 
-class Push : public Device
+class Push : public TestDevice
 {
   protected:
-    auto InitTask() -> void override
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
-
     auto Run() -> void override
     {
-        // empty message
         auto msg1 = NewMessageFor("data", 0);
-        Send(msg1, "data");
-        // message with short text data
+        Check(Send(msg1, "data") == 0, "send empty message");
         auto msg2(NewSimpleMessageFor("data", 0, "testdata1234"));
-        Send(msg2, "data");
-    };
+        Check(Send(msg2, "data") == 12, "send text message");
+
+        Succeed();
+    }
 };
 
 } // namespace fair::mq::test
