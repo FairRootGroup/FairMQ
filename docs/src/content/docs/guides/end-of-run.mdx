@@ -37,7 +37,7 @@ Thus a device must have all its data before it goes to `RESETTING DEVICE`. The t
 ## Linger
 
 The channel property `linger` is a time in ms. The default is 500
-([Channel.h](/source/fairmq/Channel.h/#L378)). [`Channel::Init()`](/api/fair/mq/Channel/#Init) sets
+([Channel.h](/source/fairmq/Channel.h/#L382)). [`Channel::Init()`](/api/fair/mq/Channel/#Init) sets
 it as the ZeroMQ option `ZMQ_LINGER` on the socket ([Channel.cxx](/source/fairmq/Channel.cxx/#L325-L326)).
 The shmem transport sets it on the ZeroMQ socket that carries the metadata of its messages.
 
