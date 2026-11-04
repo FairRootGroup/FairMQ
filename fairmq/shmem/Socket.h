@@ -209,8 +209,13 @@ class Socket final : public fair::mq::Socket
         }
         int elapsed = 0;
 
-        // meta msg format: | n | MetaHeader 1 | ... | MetaHeader n | padded to fMetadataMsgSize |
         auto const n = msgVec.size();
+        if (n == 0) { // same as the zeromq transport
+            LOG(warn) << "Will not send empty vector";
+            return static_cast<int>(TransferCode::error);
+        }
+
+        // meta msg format: | n | MetaHeader 1 | ... | MetaHeader n | padded to fMetadataMsgSize |
         zmq::ZMsg zmqMsg(std::max(fMetadataMsgSize, sizeof(std::size_t) + n * sizeof(MetaHeader)));
 
         auto meta_n = static_cast<std::size_t*>(zmqMsg.Data());
