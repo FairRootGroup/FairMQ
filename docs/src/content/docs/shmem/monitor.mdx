@@ -316,13 +316,8 @@ are static. They take a `ShmId` or a `SessionId` as the first argument. `PrintSh
 | [`RegionIsPresent(id, regionId)`](/api/fair/mq/shmem/Monitor/#RegionIsPresent) | Returns `true` if the region can be opened. |
 | [`GetFreeMemory(id, segmentId)`](/api/fair/mq/shmem/Monitor/#GetFreeMemory) | Returns the free bytes of a managed segment. Throws `MonitorError`. |
 | [`PrintDebugInfo(id)`](/api/fair/mq/shmem/Monitor/#PrintDebugInfo) | Prints the messages in the segments. Needs `FAIRMQ_DEBUG_MODE`. |
-| [`GetDebugInfo(id)`](/api/fair/mq/shmem/Monitor/#GetDebugInfo) | Returns the messages in the segments. Needs `FAIRMQ_DEBUG_MODE`. See the caution below. |
+| [`GetDebugInfo(id)`](/api/fair/mq/shmem/Monitor/#GetDebugInfo) | Returns the messages in the segments: for each segment ID, the offset, the PID of the creator, the size and the creation time of each message. Needs `FAIRMQ_DEBUG_MODE`. |
 | [`RemoveObject(name)`](/api/fair/mq/shmem/Monitor/#RemoveObject), [`RemoveFileMapping()`](/api/fair/mq/shmem/Monitor/#RemoveFileMapping), [`RemoveQueue()`](/api/fair/mq/shmem/Monitor/#RemoveQueue), [`RemoveMutex()`](/api/fair/mq/shmem/Monitor/#RemoveMutex), [`RemoveCondition()`](/api/fair/mq/shmem/Monitor/#RemoveCondition) | Remove one object by its full name. Return `true` if it was removed. |
-
-:::caution[GetDebugInfo()]
-`GetDebugInfo()` has a known defect: it writes out of the bounds of its result vectors and returns
-empty lists. Its test is disabled. Use `PrintDebugInfo()` or `fairmq-shmmonitor --debug`.
-:::
 
 The tool `fairmq-shmmonitor` also uses a `Monitor` object: the constructor
 [`Monitor()`](/api/fair/mq/shmem/Monitor/#Monitor) takes the shmId and the mode flags.
