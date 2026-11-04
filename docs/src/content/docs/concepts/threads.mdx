@@ -88,7 +88,7 @@ Some rules follow from this table:
 | Subscribe and unsubscribe for state changes | Yes. A mutex protects the subscriptions. | [StateMachine.cxx](/source/fairmq/StateMachine.cxx/#L318-L335), test `PluginServices.SubscriptionThreadSafety` |
 | [`WaitForState()`](/api/fair/mq/Device/#WaitForState), [`WaitForNextState()`](/api/fair/mq/Device/#WaitForNextState) | Call them from one thread only. The queue of states gives each state to one caller. | [StateQueue.h](/source/fairmq/StateQueue.h/#L31-L35) |
 | [`Interrupt()`](/api/fair/mq/TransportFactory/#Interrupt), [`Resume()`](/api/fair/mq/TransportFactory/#Resume) of a transport | Yes. They set an atomic flag. | [zeromq/Context.h](/source/fairmq/zeromq/Context.h/#L149-L150), [shmem/Manager.h](/source/fairmq/shmem/Manager.h/#L283-L284), test `InterruptTransfer.Receive` |
-| The byte and message counters of a channel, for example [`GetBytesTx()`](/api/fair/mq/Channel/#GetBytesTx) | Yes. The sockets keep them in atomic values. The rate logger thread reads them. | [zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L399-L402), [shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L459-L462) |
+| The byte and message counters of a channel, for example [`GetBytesTx()`](/api/fair/mq/Channel/#GetBytesTx) | Yes. The sockets keep them in atomic values. The rate logger thread reads them. | [zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L399-L402), [shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L464-L467) |
 
 The device makes its channels in `INITIALIZING DEVICE`, after `Init()`
 ([Device.cxx](/source/fairmq/Device.cxx/#L153-L171)). It removes them in `RESETTING DEVICE`

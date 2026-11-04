@@ -118,7 +118,7 @@ A poller and the data callbacks of `OnData()` use the transport of sub-channel 0
 
 ### `sndBufSize` and `rcvBufSize`
 
-The maximum number of messages in the send queue and in the receive queue of the socket. They are the ZeroMQ high-water marks `ZMQ_SNDHWM` and `ZMQ_RCVHWM` ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L310-L332)). The `shmem` transport sets the same options on its ZeroMQ socket, which carries the metadata of the messages ([shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L370-L392)). For ZeroMQ, 0 means no limit. A negative value makes `Validate()` throw `ChannelConfigurationError`.
+The maximum number of messages in the send queue and in the receive queue of the socket. They are the ZeroMQ high-water marks `ZMQ_SNDHWM` and `ZMQ_RCVHWM` ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L310-L332)). The `shmem` transport sets the same options on its ZeroMQ socket, which carries the metadata of the messages ([shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L375-L397)). For ZeroMQ, 0 means no limit. A negative value makes `Validate()` throw `ChannelConfigurationError`.
 
 The behavior of a socket with a full queue depends on the socket type. The ZeroMQ documentation of `zmq_socket` describes it.
 

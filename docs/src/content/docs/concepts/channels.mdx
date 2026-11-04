@@ -182,7 +182,7 @@ Each socket counts its transfers. [`Channel`](/api/fair/mq/Channel/) gives the c
 | [`GetMessagesRx()`](/api/fair/mq/Channel/#GetMessagesRx) | Messages that `Receive()` got. |
 | [`GetBytesRx()`](/api/fair/mq/Channel/#GetBytesRx) | Bytes of these messages. |
 
-The rules are in the send and receive functions of the transports ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L96-L255), [shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L118-L315)):
+The rules are in the send and receive functions of the transports ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L96-L255), [shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L118-L320)):
 
 - The counters start at 0 when the transport makes the socket. In a device, this occurs in `BINDING` or `CONNECTING`. After `RESET DEVICE`, the next initialization makes new sockets, which start at 0 again.
 - Only a successful transfer counts. A timeout, an interruption or an error does not change the counters.
