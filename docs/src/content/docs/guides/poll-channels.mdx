@@ -147,7 +147,7 @@ ends. For all other errors, it logs `polling failed, reason: <error>` and throws
 ## Use one transport for each poller
 
 All channels of one poller must use the same transport. Both `NewPoller()` functions compare the
-transports before they make the poller ([Device.h](/source/fairmq/Device.h/#L218-L257)). For the
+transports before they make the poller ([Device.h](/source/fairmq/Device.h/#L219-L258)). For the
 channel names, they compare the sub-channel 0 of each channel. If the transports are different,
 they log an error and throw `std::runtime_error`. If your `Run()` does not catch the exception, the
 device goes to the state `ERROR`.

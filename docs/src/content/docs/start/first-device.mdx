@@ -69,7 +69,7 @@ Both files include `fairmq/runDevice.h`. This header defines the function `main(
 
 <Snippet file="fairmq/runDevice.h" start="// to be implemented by the user to return" end="void addCustomOptions" />
 
-The function `main()` makes a [`fair::mq::DeviceRunner`](/api/fair/mq/DeviceRunner/) and calls its [`Run()`](/api/fair/mq/DeviceRunner/#Run). `Run()` does these steps (see [DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L108-L194)):
+The function `main()` makes a [`fair::mq::DeviceRunner`](/api/fair/mq/DeviceRunner/) and calls its [`Run()`](/api/fair/mq/DeviceRunner/#Run). `Run()` does these steps (see [DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L109-L196)):
 
 1. It loads the built-in plugins `config` and `control`.
 2. It calls `addCustomOptions()`. Your options show in `--help` in the group `Custom options`.

@@ -34,10 +34,7 @@ TEST(DeviceRunner, PrintOptions)
     EXPECT_EQ(result.output.find("INITIALIZING DEVICE"), string::npos) << result.output;
 }
 
-// Known defect: DeviceRunner sets the console severity to "nolog" for
-// --print-channels and --version, and then prints the output with LOGV(info).
-// Both options print nothing. Enable these tests with the fix.
-TEST(DeviceRunner, DISABLED_PrintChannels)
+TEST(DeviceRunner, PrintChannels)
 {
     auto const results = RunDevices({{kIdleDevice, {}, "--print-channels"}});
     auto const& result = results.at(0);
@@ -45,14 +42,14 @@ TEST(DeviceRunner, DISABLED_PrintChannels)
     EXPECT_TRUE(ExitedWith(result, 0, "fan:2:4"));
 }
 
-TEST(DeviceRunner, DISABLED_Version)
+TEST(DeviceRunner, Version)
 {
     auto const results = RunDevices({{kIdleDevice, {}, "--version"}});
     EXPECT_TRUE(ExitedWith(results.at(0), 0, "FairMQ version: "));
     EXPECT_TRUE(ExitedWith(results.at(0), 0, "User device version: "));
 }
 
-// PrintChannels and Version must not start the device, also while they print nothing.
+// PrintChannels and Version must not start the device.
 TEST(DeviceRunner, PrintChannelsAndVersionDoNotStartTheDevice)
 {
     for (auto const* option : {"--print-channels", "--version"}) {

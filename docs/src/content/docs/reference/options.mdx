@@ -13,7 +13,7 @@ A device made with `runDevice.h` accepts the options on this page. The [table](#
 
 ## Where the options come from
 
-The device runner ([`DeviceRunner`](/api/fair/mq/DeviceRunner/)) collects the options from several places before it parses the command line ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L108-L132)):
+The device runner ([`DeviceRunner`](/api/fair/mq/DeviceRunner/)) collects the options from several places before it parses the command line ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L109-L133)):
 
 | Source | Group in `--help` | Group in the table | Options |
 | --- | --- | --- | --- |
@@ -28,7 +28,7 @@ The device runner always loads the config plugin and the control plugin. The [co
 
 ## Show the options of a device
 
-`--help` (or `-h`) prints all options of the device, with their groups, defaults and descriptions. Then the program stops before it makes the device ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L29-L39)).
+`--help` (or `-h`) prints all options of the device, with their groups, defaults and descriptions. Then the program stops before it makes the device ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L30-L40)).
 
 `--print-options` prints one line for each option, in the format `name:value:type:description` ([ProgOptions.cxx](/source/fairmq/ProgOptions.cxx/#L430-L448)). The value is the value after the parse of the command line. For an option without a value, the value is empty and the type is `<unknown>`. Then the program stops before it makes the device.
 
@@ -47,8 +47,8 @@ control:dynamic:string:Control mode, 'static' or 'dynamic' (aliases for dynamic 
 
 When the device starts, it logs all properties with the severity `debug`, after the line `Configuration:` ([ProgOptions.cxx](/source/fairmq/ProgOptions.cxx/#L384-L428)). Each line has the form `name = value <type> origin`. The origin is `[default]`, `[provided]` or `[empty]`. The channel properties from `--channel-config` and `--mq-config` are not in this log, because the config plugin reads them later, in `INITIALIZING DEVICE`.
 
-:::caution[`--version` and `--print-channels`]
-`--version` and `--print-channels` print nothing in this version. The device runner sets the console log to `nolog` for these two options, and then writes the output to the log ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L41-L42)). The device runner then ends the device with the transition `END` ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L154-L168)). `--print-channels` is for the channels that a device registers with [`RegisterChannelEndpoint()`](/api/fair/mq/Device/#RegisterChannelEndpoint), not for the configured channels.
+:::note[`--version` and `--print-channels`]
+The device runner sets the console log to `nolog` for these two options ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L42-L43)). It writes the output to the standard output, and then ends the device with the transition `END` ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L155-L170)). `--version` prints the lines `FairMQ version: <version>` and `User device version: <version>`. `--print-channels` prints one line `<name>:<min>:<max>` for each channel that the device registers with [`RegisterChannelEndpoint()`](/api/fair/mq/Device/#RegisterChannelEndpoint). It does not print the configured channels.
 :::
 
 ## Value formats

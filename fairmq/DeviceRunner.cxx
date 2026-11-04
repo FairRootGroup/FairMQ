@@ -15,6 +15,7 @@
 #include <fairlogger/Logger.h>
 
 #include <exception>
+#include <iostream>
 
 using namespace std;
 using namespace fair::mq;
@@ -154,15 +155,16 @@ auto DeviceRunner::Run() -> int
     // Handle --print-channels
     fDevice->RegisterChannelEndpoints();
     if (fConfig.Count("print-channels")) {
-        fDevice->PrintRegisteredChannels();
+        // print to stdout: the console log severity is "nolog" for this option
+        fDevice->PrintRegisteredChannels(cout);
         fDevice->ChangeStateOrThrow(fair::mq::Transition::End);
         return 0;
     }
 
     // Handle --version
     if (fConfig.Count("version")) {
-        LOGV(info, verylow) << "FairMQ version: " << FAIRMQ_GIT_VERSION;
-        LOGV(info, verylow) << "User device version: " << fDevice->GetVersion();
+        cout << "FairMQ version: " << FAIRMQ_GIT_VERSION << '\n'
+             << "User device version: " << fDevice->GetVersion() << endl;
         fDevice->ChangeStateOrThrow(fair::mq::Transition::End);
         return 0;
     }

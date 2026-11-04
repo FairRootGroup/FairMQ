@@ -211,10 +211,8 @@ You can write your own `main()` with `DeviceRunner`. The example
 and catches all exceptions. It logs `Uncaught exception reached the top of DeviceRunner:` and
 returns 1.
 
-:::caution[Known defect]
-For `--print-channels` and `--version`, `DeviceRunner` sets the console severity to `nolog` and then
-prints with `LOG`. Thus both options print nothing in this version. The device does not start.
-:::
+For `--print-channels` and `--version`, `DeviceRunner` sets the console severity to `nolog` and
+writes the output to the standard output. The device does not start.
 
 A process can also run more than one device without `DeviceRunner`. Then your code must call
 `RunStateMachine()` and request the transitions. See

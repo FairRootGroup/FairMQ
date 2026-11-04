@@ -17,14 +17,14 @@ A property has a key of the type `std::string` and a value of any C++ type. The 
 A device has a pointer to its store: [`fConfig`](/api/fair/mq/Device/#fConfig), also from [`GetConfig()`](/api/fair/mq/Device/#GetConfig). A device that you make with the constructor `Device()` has its own internal store. [`SetConfig()`](/api/fair/mq/Device/#SetConfig) replaces it with another store and discards the internal store ([Device.cxx](/source/fairmq/Device.cxx/#L607-L611)). With `runDevice.h`, the [device runner](/api/fair/mq/DeviceRunner/) makes the store and gives it to the device with `SetConfig()`.
 
 :::caution[Properties from the device constructor]
-With `runDevice.h`, the device runner calls `SetConfig()` after it makes the device ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L172-L173)). A device that uses the constructor `Device()` loses all properties and channels that its constructor sets. Set them in [`Init()`](/api/fair/mq/Device/#Init), or give the store to the constructor `Device(ProgOptions&)`.
+With `runDevice.h`, the device runner calls `SetConfig()` after it makes the device ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L174-L175)). A device that uses the constructor `Device()` loses all properties and channels that its constructor sets. Set them in [`Init()`](/api/fair/mq/Device/#Init), or give the store to the constructor `Device(ProgOptions&)`.
 :::
 
 The old name `FairMQProgOptions` is a deprecated alias of `fair::mq::ProgOptions`. Refer to [Move from the FairMQ* names](/guides/migrate-names/).
 
 ## Where the properties come from
 
-A device made with `runDevice.h` gets its properties in this sequence ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L108-L194)):
+A device made with `runDevice.h` gets its properties in this sequence ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L109-L196)):
 
 1. The device runner loads the config plugin and the control plugin, and collects the options of all plugins and your `addCustomOptions()`.
 2. It parses the command line. Each option becomes a property with the name of the option, for example `id` or `severity`. An option that you do not give gets its default, if it has one.
@@ -47,7 +47,7 @@ The device reads most properties once, at the request of the transition `COMPLET
 | `chans.<name>.<index>.<property>` | At the request of `COMPLETE INIT` | No effect, except for the address of a connecting sub-channel that the device could not connect yet |
 | `io-threads`, `session`, `shmid`, the `shm-*` and `bad-alloc-*` options | When the device makes the transport, at the request of `COMPLETE INIT` | No effect |
 | `control`, `catch-signals` | When the device runner makes the control plugin | No effect |
-| `severity`, `file-severity`, `verbosity`, `color`, `log-to-file` | After the parse of the command line | The device runner applies the new value at once ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L82-L101)) |
+| `severity`, `file-severity`, `verbosity`, `color`, `log-to-file` | After the parse of the command line | The device runner applies the new value at once ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L83-L102)) |
 | Your custom options | When your code reads them | Your code decides |
 
 ## Read and change properties
