@@ -259,6 +259,12 @@ try {
     auto fsm = static_pointer_cast<FairMQFSM>(fFsm);
     lock_guard<mutex> lock(fsm->fStateMtx);
     if (!static_cast<bool>(fsm->fNewStatePending) || transition == Transition::ErrorFound) {
+        // The Error state is a terminate state: the state machine ignores all events in it and
+        // calls no action, so fLastTransitionResult would keep the result of ErrorFound.
+        // ErrorFound has nothing left to do; refuse all other transitions.
+        if (fsm->is_flag_active<boost::msm::TerminateFlag>()) {
+            return transition == Transition::ErrorFound;
+        }
         switch (transition) {
             case Transition::Auto:
                 fsm->process_event(AUTO_E());

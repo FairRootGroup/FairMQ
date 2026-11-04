@@ -230,17 +230,14 @@ TEST(StateMachine, ErrorFoundFromEachState)
     }
 }
 
-// Known defect: Error is a terminate state, so the state machine ignores all
-// events in it. ChangeState() then returns the result of the previous
-// transition (ErrorFound: true) instead of false. Device::RunWrapper() relies
-// on ChangeStateOrThrow(ErrorFound) not throwing in Error, so a fix must
-// change both. Enable this test with the fix.
-TEST(StateMachine, DISABLED_RefusesTransitionsInError)
+// Error is a terminate state: the state machine refuses all transitions in it.
+// ErrorFound succeeds, because the device is already in the Error state.
+TEST(StateMachine, RefusesTransitionsInError)
 {
     Machine m;
     ASSERT_TRUE(m.Change(Transition::ErrorFound, State::Error));
     for (auto const transition : AllTransitions()) {
-        EXPECT_FALSE(m.fFsm.ChangeState(transition)) << transition << " in Error";
+        EXPECT_EQ(m.fFsm.ChangeState(transition), transition == Transition::ErrorFound) << transition << " in Error";
     }
 }
 
