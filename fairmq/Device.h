@@ -33,6 +33,7 @@
 #include <functional>
 #include <memory>   // unique_ptr
 #include <mutex>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -358,6 +359,15 @@ class Device
             LOG(warn) << "Registering channel: name already registered: \"" << channelName << "\"";
         }
         return ok;
+    }
+
+    /// @brief Print the registered channels in a machine-readable format
+    /// @param os output stream, one line per channel: <name>:<min sub-channels>:<max sub-channels>
+    void PrintRegisteredChannels(std::ostream& os) const
+    {
+        for (const auto& c : fChannelRegistry) {
+            os << c.first << ":" << c.second.first << ":" << c.second.second << "\n";
+        }
     }
 
     void PrintRegisteredChannels()
