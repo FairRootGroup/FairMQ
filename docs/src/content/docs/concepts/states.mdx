@@ -176,10 +176,8 @@ hook.
 In `ERROR`, the controller of the control plugin stops. It requests no more transitions and no
 shutdown sequence. Thus the device does not call `ResetTask()` and `Reset()` after an error.
 
-:::caution[Known defect]
-In `ERROR`, `ChangeState()` can return `true`, but the state does not change. See the disabled test
-`StateMachine.RefusesTransitionsInError` in `test/state_machine/`.
-:::
+In `ERROR`, the state does not change. `ChangeState()` returns `false` for all transitions except
+`ErrorFound`. The test `StateMachine.RefusesTransitionsInError` in `test/state_machine/` checks this.
 
 For the handling of errors, see [Handle errors and timeouts](/guides/errors-timeouts/).
 

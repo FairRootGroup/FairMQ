@@ -103,9 +103,8 @@ matrix: from all states, `ErrorFound` leads to `ERROR`. The source is the `trans
 - Each new transition interrupts the transports. The transports resume at the start of the next
   state.
 - In `EXITING` and `ERROR`, the state machine has stopped, and the state does not change. In
-  `EXITING`, `ChangeState()` returns `false` for all transitions except `ErrorFound`. In `ERROR`,
-  `ChangeState()` can return `true` (known defect, see the disabled test
-  `StateMachine.RefusesTransitionsInError`).
+  both states, `ChangeState()` returns `false` for all transitions except `ErrorFound` (see the
+  test `StateMachine.RefusesTransitionsInError`).
 
 ## Keys of the interactive controller
 

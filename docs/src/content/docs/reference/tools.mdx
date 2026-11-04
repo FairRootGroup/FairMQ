@@ -275,7 +275,7 @@ or a data callback throws, the destructor requests the transition `ERROR FOUND`.
 <Snippet file="fairmq/Device.cxx" start="tools::CallOnDestruction cod(" />
 
 `StateMachine::ProcessWork()` uses the same pattern to go to `ERROR`
-([StateMachine.cxx](/source/fairmq/StateMachine.cxx/#L400-L413)). A destructor is `noexcept` by
+([StateMachine.cxx](/source/fairmq/StateMachine.cxx/#L406-L419)). A destructor is `noexcept` by
 default in C++. Thus a callback that throws ends the program with `std::terminate()`. No test of
 `test/tools/` covers this class. The tests of the `ERROR` state in `test/device/` show its effect.
 
