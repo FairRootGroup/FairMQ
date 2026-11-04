@@ -92,7 +92,7 @@ The macro `REGISTER_FAIRMQ_PLUGIN` registers the class under the name `mycontrol
 
 ### The order of the callbacks
 
-`RunStateMachine()` first calls the state change callbacks with `IDLE`, so the plugin requests `InitDevice`. In each later state, the state machine calls the state change callbacks before the state handler of the device. See [`StateMachine::ProcessWork()`](/source/fairmq/StateMachine.cxx/#L396-L414) and the [loop of the state machine](/source/fairmq/StateMachine.cxx/#L191-L219).
+`RunStateMachine()` first calls the state change callbacks with `IDLE`, so the plugin requests `InitDevice`. In each later state, the state machine calls the state change callbacks before the state handler of the device. See [`StateMachine::ProcessWork()`](/source/fairmq/StateMachine.cxx/#L402-L420) and the [loop of the state machine](/source/fairmq/StateMachine.cxx/#L191-L219).
 
 The state machine calls the callbacks in the order of the number at the start of their key. A key without a number, for example `example` or `mycontroller`, has the number 0. Callbacks with the same number run in the order of subscription. The hook in `main.cxx` subscribes before the plugin manager creates the plugin. Thus, in `RUNNING`, the callback of `main.cxx` runs first:
 
