@@ -431,10 +431,10 @@ The limits are in the parts of FairMQ that exist once per process:
   See [Logging](/tools/logging/).
 - **The signal handling of the control plugin is global.** The control plugin installs its handlers for `SIGINT` and
   `SIGTERM` with `signal()`. It counts the signals in global variables, and no code resets them
-  ([Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L25-L45)). One signal starts the shutdown of each device
+  ([Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L27-L47)). One signal starts the shutdown of each device
   with a control plugin in the process. The next `SIGINT` ends the process with `std::abort()`. A control plugin that
   starts after a signal, with `--catch-signals 1`, shuts down its device at once.
-- **The interactive mode reads the standard input** ([Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L157-L180)).
+- **The interactive mode reads the standard input** ([Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L159-L191)).
   Two interactive controllers in one process read the same keys.
 - **One `DeviceRunner` for each process.** `DeviceRunner` sets the global logger, and it loads the control plugin.
   FairMQ has no test with two `DeviceRunner` objects in one process. Run the other devices without `DeviceRunner`,

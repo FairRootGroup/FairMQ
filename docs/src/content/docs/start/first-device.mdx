@@ -180,7 +180,7 @@ In the state `RUNNING`, the plugin `control` also prints a list of keys. With th
 
 ## Stop the devices
 
-Press Ctrl+C in each terminal. The plugin `control` catches the signal `SIGINT`. It moves the device through the reset states to `EXITING` (see [Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L439-L469)):
+Press Ctrl+C in each terminal. The plugin `control` catches the signal `SIGINT`. It moves the device through the reset states to `EXITING` (see [Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L450-L480)):
 
 ```txt
 [INFO] Received device shutdown request (signal 2).

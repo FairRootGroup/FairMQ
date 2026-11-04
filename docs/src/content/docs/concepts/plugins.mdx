@@ -215,16 +215,14 @@ In the modes `dynamic`, `interactive` and `external`, a key works without Enter,
 A key that the current state does not accept changes nothing. The state machine logs
 `No transition from state … on transition …` at the severity `state`.
 
-:::caution[One key at a time]
-The plugin reads one key each time new input arrives. When several keys arrive together, for example `cq` from a pipe,
-the plugin handles only the first one. It reads the next key only after more input arrives. See the disabled test
-`ControlPlugin.DISABLED_SeveralKeysInOneInput` in `test/device/_runner.cxx`.
-:::
+The plugin reads the keys one at a time. When several keys arrive together, for example `cq` from a pipe, the plugin
+handles all of them in their order. It ignores spaces and line ends. At the end of the input, it stops reading keys.
+The test `ControlPlugin.SeveralKeysInOneInput` in `test/device/_runner.cxx` checks this.
 
 ### Signals
 
 With `--catch-signals` greater than 0, the control plugin handles `SIGINT` and `SIGTERM`
-([Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L439-L469)):
+([Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L450-L480)):
 
 1. The first signal starts a graceful shutdown. The plugin logs `Received device shutdown request (signal …)` and
    `Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.`
