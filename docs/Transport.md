@@ -82,6 +82,17 @@ const fair::mq::Channel& GetChannel(const std::string& channelName, const int in
 
 All subchannels with a common channel name need to be of the same transport type.
 
+Receive with the same kind of type that the sender used:
+
+| Sender                                | Receiver                                 | zeromq | shmem |
+| ------------------------------------- | ---------------------------------------- | ------ | ----- |
+| `Send(MessagePtr&)`                   | `Receive(MessagePtr&)`                   | yes    | yes   |
+| `Send(Parts&)` / `vector<MessagePtr>` | `Receive(Parts&)` / `vector<MessagePtr>` | yes    | yes   |
+| `Send(MessagePtr&)`                   | `Receive(Parts&)` / `vector<MessagePtr>` | yes    | **no** |
+| `Send(Parts&)` / `vector<MessagePtr>` | `Receive(MessagePtr&)`                   | one part per call | **no** |
+
+The shmem transport uses a different metadata format for a single message and for a multipart message. A mix gives a message with wrong metadata or a crash.
+
 ## 2.3 Poller
 
 A poller allows to wait on multiple channels either to receive or send a message.

@@ -137,10 +137,11 @@ TEST_P(PartsTransfer, EmptyPartsIsRefused)
     EXPECT_EQ(pull.Receive(in, 100), static_cast<int64_t>(TransferCode::timeout));
 }
 
-// Known defect: shmem uses different metadata formats for a single message
-// and for Parts. Receive(Parts) of a message sent with Send(MessagePtr) reads
-// the size of the message as the number of parts, and reads metadata past the
-// received data. zeromq receives it as one part.
+// Known limitation (documented in docs/Transport.md and Channel::Receive()):
+// shmem uses different metadata formats for a single message and for Parts.
+// Receive(Parts) of a message sent with Send(MessagePtr) reads the size of the
+// message as the number of parts, and reads metadata past the received data.
+// zeromq receives it as one part. A fix changes the shmem wire format.
 TEST_P(PartsTransfer, DISABLED_SingleSendMultipartReceive)
 {
     ProgOptions config;
