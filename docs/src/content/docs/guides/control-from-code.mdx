@@ -255,9 +255,9 @@ The test `Config.SetConfig` parses two options and gives the object to the devic
 ### The device options and the channels
 
 The device options, for example `--id`, `--transport`, `--session`, `--mq-config` and `--channel-config`, are the
-options of the config plugin ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L56-L87)). In
+options of the config plugin ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L57-L88)). In
 `INITIALIZING DEVICE`, the config plugin also turns `--mq-config` or `--channel-config` into channel properties
-([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L22-L53)). A program without `DeviceRunner` has two ways to get
+([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L22-L54)). A program without `DeviceRunner` has two ways to get
 them:
 
 - Load the config plugin with a plugin manager, and add its options before the parse. See
