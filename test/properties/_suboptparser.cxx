@@ -91,10 +91,9 @@ TEST(SuboptParser, Errors)
     EXPECT_THROW(SuboptParser({"name=data"}, ""), ParserError);
 }
 
-// Known defect: see JSONParser.DISABLED_RejectsValuesOfTheWrongType.
-TEST(SuboptParser, DISABLED_RejectsValuesOfTheWrongType)
+TEST(SuboptParser, RejectsValuesOfTheWrongType)
 {
-    EXPECT_THROW(SuboptParser({"name=data,sndBufSize=big"}, "dev"), boost::property_tree::ptree_bad_data);
+    EXPECT_THROW(SuboptParser({"name=data,sndBufSize=big"}, "dev"), ParserError);
 }
 
 }   // namespace
