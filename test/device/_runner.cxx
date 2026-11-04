@@ -73,7 +73,7 @@ auto operator<<(std::ostream& os, KeyParam const& param) -> std::ostream&
 class InteractiveKey : public testing::TestWithParam<KeyParam>
 {};
 
-// One key, then SIGINT ends the device (see the defect below).
+// One key, then SIGINT ends the device.
 TEST_P(InteractiveKey, PrintsItsAction)
 {
     RunOptions options;
@@ -92,11 +92,8 @@ INSTANTIATE_TEST_SUITE_P(, InteractiveKey,
                                          KeyParam{'z', "Invalid input: [z]"}),
                          [](testing::TestParamInfo<KeyParam> const& p) { return string(1, p.param.key); });
 
-// Known defect: the control plugin polls the stdin file descriptor before it
-// reads the next key from std::cin. Keys that arrive in one read (e.g. "cq"
-// from a pipe) stay in the std::cin buffer, and the plugin never handles them.
-// Enable this test with the fix.
-TEST(ControlPlugin, DISABLED_SeveralKeysInOneInput)
+// Keys that arrive in one read (e.g. "cq" from a pipe) are all handled.
+TEST(ControlPlugin, SeveralKeysInOneInput)
 {
     RunOptions options;
     options.control = "interactive";
