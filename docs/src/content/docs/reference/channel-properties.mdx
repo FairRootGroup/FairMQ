@@ -24,7 +24,7 @@ The keys are case-sensitive. The `--channel-config` parser logs a warning for an
 
 ## All properties
 
-The type is the C++ type of the property. The parsers of `--channel-config` and of JSON files convert the values to this type. A value that the parser cannot convert gives the default, without a message ([_jsonparser.cxx](https://github.com/FairRootGroup/FairMQ/blob/dev/test/properties/_jsonparser.cxx#L157-L161)).
+The type is the C++ type of the property. The parsers of `--channel-config` and of JSON files convert the values to this type. For a value that it cannot convert, the parser throws `fair::mq::ParserError` ([_jsonparser.cxx](https://github.com/FairRootGroup/FairMQ/blob/dev/test/properties/_jsonparser.cxx#L158-L166)). A missing key gives the default.
 
 | Key | Type | Default | Allowed values | Effect |
 | --- | --- | --- | --- | --- |
@@ -44,15 +44,15 @@ The type is the C++ type of the property. The parsers of `--channel-config` and 
 | [`portRangeMin`](#portrangemin-portrangemax-and-autobind) | int | [`22000`](/source/fairmq/Channel.h/#L380) | A TCP port | Lowest port for autobind. |
 | [`portRangeMax`](#portrangemin-portrangemax-and-autobind) | int | [`23000`](/source/fairmq/Channel.h/#L381) | A TCP port | Highest port for autobind. |
 | [`autoBind`](#portrangemin-portrangemax-and-autobind) | bool | [`true`](/source/fairmq/Channel.h/#L382-L386) | `true`, `false`, `1`, `0` | Bind to a random port of the range when the bind fails. |
-| [`numSockets`](#numsockets) | int | [`0`](/source/fairmq/JSONParser.cxx/#L108) | 0 or more | Number of sub-channels with the same properties. |
+| [`numSockets`](#numsockets) | int | [`0`](/source/fairmq/JSONParser.cxx/#L129) | 0 or more | Number of sub-channels with the same properties. |
 
-The JSON parser uses the same defaults ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L90-L105)). The device also uses them for a property that is not set ([Channel.cxx](/source/fairmq/Channel.cxx/#L92-L112)).
+The JSON parser uses the same defaults ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L111-L126)). The device also uses them for a property that is not set ([Channel.cxx](/source/fairmq/Channel.cxx/#L92-L112)).
 
 ## The properties in detail
 
 ### `name`
 
-The name of the channel. In `--channel-config`, write `name=data`, or put the name and a colon before the first key: `data:type=push,...` ([SuboptParser.cxx](/source/fairmq/SuboptParser.cxx/#L91-L98)). Each channel must have a name. Without it, the parsers of JSON files and of `--channel-config` throw `boost::property_tree::ptree_bad_path` ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L107)). The `--channel-config` parser first logs `missing channel name in argument of option --channel-config`. The config plugin logs the exception, and the device gets no channels from this configuration. In the property key, the name is the `<name>` part of `chans.<name>.<index>.<key>`.
+The name of the channel. In `--channel-config`, write `name=data`, or put the name and a colon before the first key: `data:type=push,...` ([SuboptParser.cxx](/source/fairmq/SuboptParser.cxx/#L91-L98)). Each channel must have a name. Without it, the parsers of JSON files and of `--channel-config` throw `boost::property_tree::ptree_bad_path` ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L128)). The `--channel-config` parser first logs `missing channel name in argument of option --channel-config`. The config plugin logs the exception and throws it again, and the device goes to `ERROR`. In the property key, the name is the `<name>` part of `chans.<name>.<index>.<key>`.
 
 A sub-channel has the name `<name>[<index>]`, for example `data[0]`. Before the device attaches a sub-channel, [`Channel::Validate()`](/api/fair/mq/Channel/#Validate) checks this full name ([Channel.cxx](/source/fairmq/Channel.cxx/#L183-L190)). The allowed characters are `a`–`z`, `A`–`Z`, `0`–`9`, `-`, `_`, `[`, `]` and `#`. For another character, the device logs `channel name contains illegal character` and does not attach the sub-channel. The device then goes to `ERROR`: at once for a binding sub-channel, after the time of `--init-timeout` for a connecting sub-channel ([Device.cxx](/source/fairmq/Device.cxx/#L217-L265)).
 
@@ -176,7 +176,7 @@ If the configured port is in use, autobind binds to a random port. The device lo
 
 ### `numSockets`
 
-Only in `--channel-config` and on the channel level of a JSON file. For a value above 0, the parser makes this number of sub-channels, all with the properties of the channel ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L108-L122)).
+Only in `--channel-config` and on the channel level of a JSON file. For a value above 0, the parser makes this number of sub-channels, all with the properties of the channel ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L129-L143)).
 
 - In JSON, the parser ignores the `sockets` array of the channel. All sub-channels get the `address` of the channel.
 - In `--channel-config`, the parser ignores the `address=` keys. The sub-channels have no address.

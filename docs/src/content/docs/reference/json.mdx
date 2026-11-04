@@ -18,7 +18,7 @@ The file of the [1-n-1 example](/examples/1-n-1/) has three entries: one for the
 
 ## Structure
 
-The parser reads this tree ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L39-L190)):
+The parser reads this tree ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L39-L211)):
 
 ```txt
 fairMQOptions             object, required
@@ -63,10 +63,10 @@ An entry needs `id` or `key`, otherwise no device can select it.
 
 ## How the device finds its entry
 
-The [config plugin](/concepts/configuration/#the-config-plugin) reads the file when the device goes into the state `INITIALIZING DEVICE` ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L25-L53)):
+The [config plugin](/concepts/configuration/#the-config-plugin) reads the file when the device goes into the state `INITIALIZING DEVICE` ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L25-L54)):
 
 1. The plugin takes the value of `--config-key`. Without `--config-key`, it takes the value of `--id`.
-2. The parser compares this value with the `key` of each device entry. For an entry without `key`, it compares the value with `id` ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L69-L74)).
+2. The parser compares this value with the `key` of each device entry. For an entry without `key`, it compares the value with `id` ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L90-L95)).
 3. The parser reads the channels of each entry that matches.
 
 An entry with a `key` does not match its `id`. Several devices can use the same entry. In the start script of the 1-n-1 example, both processors have their own ID and the same key `processor`:
@@ -96,15 +96,13 @@ The entry with the ID `other` has the key `sink`. `--config-key sink` selects it
 
 ## `numSockets`
 
-With `numSockets` above 0, the parser makes this number of sub-channels. All of them get the values of the channel, also the `address`. The parser then ignores the `sockets` array ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L108-L122)). [Channel properties](/reference/channel-properties/#numsockets) describes the effect on binding sub-channels.
+With `numSockets` above 0, the parser makes this number of sub-channels. All of them get the values of the channel, also the `address`. The parser then ignores the `sockets` array ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L129-L143)). [Channel properties](/reference/channel-properties/#numsockets) describes the effect on binding sub-channels.
 
 ## Value types
 
 Write strings as JSON strings, numbers as JSON numbers, and booleans as `true` or `false`. [Channel properties](/reference/channel-properties/) gives the type of each property.
 
-:::caution[Wrong types]
-The parser reads each value with a default ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L90-L105)). If it cannot convert a value, it uses the default and shows no error. For example, `"sndBufSize": "big"` gives `sndBufSize` 1000. To see the values, start the device with `--severity trace`: the parser then logs each property of each sub-channel.
-:::
+The parser uses the default of a property only when the key is missing ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L111-L126)). If it cannot convert a value, it throws [`fair::mq::ParserError`](/api/fair/mq/ParserError/). For example, `"sndBufSize": "big"` gives `Invalid value 'big' for channel property 'sndBufSize'`. To see the values, start the device with `--severity trace`: the parser then logs each property of each sub-channel.
 
 ## Errors
 
@@ -115,12 +113,12 @@ The parser reads each value with a default ([JSONParser.cxx](/source/fairmq/JSON
 | A channel has no `name`. | `boost::property_tree::ptree_bad_path` |
 | The ID is empty. This occurs only when you call the parser from code. | [`fair::mq::ParserError`](/api/fair/mq/ParserError/): ``no device ID provided. Provide with `--id` cmd option`` |
 | No entry matches the ID or the key. | No error. The device has no channels from the file. |
-| A value has the wrong type. | No error. The parser uses the default. |
+| A value has the wrong type. | [`fair::mq::ParserError`](/api/fair/mq/ParserError/): `Invalid value '<value>' for channel property '<key>'` |
 
-The config plugin catches the exceptions and logs their message with the severity `error` ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L46-L48)). The device then continues without the channels of the file. If the device has no `--id` and no `--config-key`, the plugin logs the warning `No device ID or config-key provided for the configuration parser.` and does not read the file.
+The config plugin catches the exceptions, logs `Invalid channel configuration:` and the message with the severity `error`, and throws the exception again ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L46-L49)). The device then goes to `ERROR` in `INITIALIZING DEVICE` and does not start. If the device has no `--id` and no `--config-key`, the plugin logs the warning `No device ID or config-key provided for the configuration parser.` and does not read the file.
 
-:::caution
-A device with a broken file can start without channels. If your device does not find a channel, look for an error message from the parser at the start of the log.
+:::tip
+If your device does not start, look for `Invalid channel configuration:` at the start of the log.
 :::
 
 ## Parse a file from code

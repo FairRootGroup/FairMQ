@@ -154,16 +154,15 @@ TEST(JSONParser, Errors)
                  boost::property_tree::ptree_bad_path);
 }
 
-// Known defect: ChannelParser() reads the values with ptree::get(key, default).
-// That overload returns the default for a value of the wrong type, so a typo
-// (e.g. "sndBufSize": "big") silently gives the default. Enable this test
-// with the fix.
-TEST(JSONParser, DISABLED_RejectsValuesOfTheWrongType)
+// A typo (e.g. "sndBufSize": "big") must not silently give the default.
+TEST(JSONParser, RejectsValuesOfTheWrongType)
 {
     EXPECT_THROW(Parse(R"({"fairMQOptions": {"devices": [{"id": "a", "channels": [{"name": "c", "sndBufSize": "big"}]}]}})", "a"),
-                 boost::property_tree::ptree_bad_data);
+                 ParserError);
     EXPECT_THROW(Parse(R"({"fairMQOptions": {"devices": [{"id": "a", "channels": [{"name": "c", "autoBind": "maybe"}]}]}})", "a"),
-                 boost::property_tree::ptree_bad_data);
+                 ParserError);
+    EXPECT_THROW(Parse(R"({"fairMQOptions": {"devices": [{"id": "a", "channels": [{"name": "c", "sockets": [{"linger": "1.5"}]}]}]}})", "a"),
+                 ParserError);
 }
 
 TEST(JSONParser, File)

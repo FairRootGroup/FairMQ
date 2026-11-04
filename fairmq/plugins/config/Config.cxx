@@ -44,7 +44,8 @@ Config::Config(const string& name, Plugin::Version version, const string& mainta
                         LOG(info) << "fair::mq::plugins::Config: no channels configuration provided via --mq-config or --channel-config";
                     }
                 } catch (exception& e) {
-                    LOG(error) << e.what();
+                    LOG(error) << "Invalid channel configuration: " << e.what();
+                    throw;
                 }
             } else {
                 LOG(warn) << "No device ID or config-key provided for the configuration parser.";

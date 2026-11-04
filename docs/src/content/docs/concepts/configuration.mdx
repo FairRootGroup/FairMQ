@@ -107,7 +107,7 @@ The configuration of a sub-channel is a group of properties with the keys `chans
 
 ## The config plugin
 
-The config plugin is a part of each device made with `runDevice.h`. It declares the options of the groups Device and Shared memory in the [table of options](/reference/options/), and reads the channel configuration ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L25-L53)).
+The config plugin is a part of each device made with `runDevice.h`. It declares the options of the groups Device and Shared memory in the [table of options](/reference/options/), and reads the channel configuration ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L25-L54)).
 
 When the device goes into the state `INITIALIZING DEVICE`, the config plugin:
 
@@ -115,7 +115,7 @@ When the device goes into the state `INITIALIZING DEVICE`, the config plugin:
 2. Reads the JSON file of `--mq-config` for this value. If there is no `--mq-config`, it reads `--channel-config`.
 3. Stores the channel properties with `SetProperties()`.
 
-If the parser throws an exception, the plugin logs the message with the severity `error`, and the device continues without these channels. If `--id` and `--config-key` are empty, the plugin logs a warning and reads nothing. [JSON configuration](/reference/json/#errors) lists the errors.
+If the parser throws an exception, the plugin logs the message with the severity `error` and throws the exception again. The device goes to `ERROR` and does not start. If `--id` and `--config-key` are empty, the plugin logs a warning and reads nothing. [JSON configuration](/reference/json/#errors) lists the errors.
 
 The device runner makes the plugins of `-P` before the config plugin. In `INITIALIZING DEVICE`, their callbacks thus run first. The config plugin then replaces the values of all channel properties that the configuration also gives.
 
