@@ -118,11 +118,8 @@ TEST_P(PartsTransfer, EmptyAndNonEmpty)
     EXPECT_EQ(AsString(in[2]), "cde");
 }
 
-// Known defect: the transports do not agree on an empty Parts. zeromq refuses
-// it (TransferCode::error). shmem sends a message with zero parts, returns 0,
-// and the receiver gets a Receive() with zero parts. Enable this test when
-// both transports have the same behavior.
-TEST_P(PartsTransfer, DISABLED_EmptyPartsIsRefused)
+// All transports refuse to send an empty Parts.
+TEST_P(PartsTransfer, EmptyPartsIsRefused)
 {
     ProgOptions config;
     test::Configure(config, tools::Uuid(), GetParam().expandedShmMetadata);
@@ -140,10 +137,11 @@ TEST_P(PartsTransfer, DISABLED_EmptyPartsIsRefused)
     EXPECT_EQ(pull.Receive(in, 100), static_cast<int64_t>(TransferCode::timeout));
 }
 
-// Known defect: shmem uses different metadata formats for a single message
-// and for Parts. Receive(Parts) of a message sent with Send(MessagePtr) reads
-// the size of the message as the number of parts, and reads metadata past the
-// received data. zeromq receives it as one part.
+// Known limitation (documented in docs/Transport.md and Channel::Receive()):
+// shmem uses different metadata formats for a single message and for Parts.
+// Receive(Parts) of a message sent with Send(MessagePtr) reads the size of the
+// message as the number of parts, and reads metadata past the received data.
+// zeromq receives it as one part. A fix changes the shmem wire format.
 TEST_P(PartsTransfer, DISABLED_SingleSendMultipartReceive)
 {
     ProgOptions config;

@@ -11,6 +11,7 @@
 #include <fairmq/tools/IO.h>
 
 #include <atomic>
+#include <cctype> // isspace
 #include <chrono>
 #include <csignal> // catching system signals
 #include <cstdlib>
@@ -19,6 +20,7 @@
 #include <thread>
 
 #include <poll.h> // for the interactive mode
+#include <unistd.h> // read
 
 using namespace std;
 
@@ -172,12 +174,21 @@ auto Control::RunREPL() -> void
     bool keepRunning = true;
 
     while (keepRunning) {
-        if (poll(cinfd, 1, 100)) {
+        if (poll(cinfd, 1, 100) > 0) {
             if (fDeviceShutdownRequested) {
                 break;
             }
 
-            cin >> input;
+            // read() without a buffer: poll() then sees each key that is not handled yet
+            auto const n = read(cinfd[0].fd, &input, 1);
+            if (n == 0) {
+                LOG(debug) << "End of input on stdin, interactive control stops reading keys";
+                cinfd[0].fd = -1; // poll() ignores a negative fd
+                continue;
+            }
+            if (n < 0 || isspace(static_cast<unsigned char>(input))) {
+                continue;
+            }
 
             switch (input) {
                 case 'c':

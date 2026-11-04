@@ -34,10 +34,7 @@ TEST(DeviceRunner, PrintOptions)
     EXPECT_EQ(result.output.find("INITIALIZING DEVICE"), string::npos) << result.output;
 }
 
-// Known defect: DeviceRunner sets the console severity to "nolog" for
-// --print-channels and --version, and then prints the output with LOGV(info).
-// Both options print nothing. Enable these tests with the fix.
-TEST(DeviceRunner, DISABLED_PrintChannels)
+TEST(DeviceRunner, PrintChannels)
 {
     auto const results = RunDevices({{kIdleDevice, {}, "--print-channels"}});
     auto const& result = results.at(0);
@@ -45,14 +42,14 @@ TEST(DeviceRunner, DISABLED_PrintChannels)
     EXPECT_TRUE(ExitedWith(result, 0, "fan:2:4"));
 }
 
-TEST(DeviceRunner, DISABLED_Version)
+TEST(DeviceRunner, Version)
 {
     auto const results = RunDevices({{kIdleDevice, {}, "--version"}});
     EXPECT_TRUE(ExitedWith(results.at(0), 0, "FairMQ version: "));
     EXPECT_TRUE(ExitedWith(results.at(0), 0, "User device version: "));
 }
 
-// PrintChannels and Version must not start the device, also while they print nothing.
+// PrintChannels and Version must not start the device.
 TEST(DeviceRunner, PrintChannelsAndVersionDoNotStartTheDevice)
 {
     for (auto const* option : {"--print-channels", "--version"}) {
@@ -76,7 +73,7 @@ auto operator<<(std::ostream& os, KeyParam const& param) -> std::ostream&
 class InteractiveKey : public testing::TestWithParam<KeyParam>
 {};
 
-// One key, then SIGINT ends the device (see the defect below).
+// One key, then SIGINT ends the device.
 TEST_P(InteractiveKey, PrintsItsAction)
 {
     RunOptions options;
@@ -95,11 +92,8 @@ INSTANTIATE_TEST_SUITE_P(, InteractiveKey,
                                          KeyParam{'z', "Invalid input: [z]"}),
                          [](testing::TestParamInfo<KeyParam> const& p) { return string(1, p.param.key); });
 
-// Known defect: the control plugin polls the stdin file descriptor before it
-// reads the next key from std::cin. Keys that arrive in one read (e.g. "cq"
-// from a pipe) stay in the std::cin buffer, and the plugin never handles them.
-// Enable this test with the fix.
-TEST(ControlPlugin, DISABLED_SeveralKeysInOneInput)
+// Keys that arrive in one read (e.g. "cq" from a pipe) are all handled.
+TEST(ControlPlugin, SeveralKeysInOneInput)
 {
     RunOptions options;
     options.control = "interactive";

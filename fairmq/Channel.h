@@ -318,6 +318,10 @@ class Channel
     /// TransferCode::timeout if timed out,
     /// TransferCode::error if there was an error,
     /// TransferCode::interrupted if interrupted (e.g. by requested state change)
+    /// @note Receive with the same kind of type that the sender used: a MessagePtr for a
+    /// MessagePtr, a Parts/vector<MessagePtr> for a Parts/vector<MessagePtr>. The zeromq
+    /// transport also accepts a mix. The shmem transport uses a different metadata format for
+    /// each kind: a mix gives a message with wrong metadata or a crash.
     template<typename M, typename... Timeout>
     std::enable_if_t<is_transferrable<M>::value, int64_t>
     Receive(M& m, Timeout&&... rcvTimeoutMs)
