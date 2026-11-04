@@ -100,11 +100,7 @@ TEST(Monitor, CleanupAfterNoCleanup)
 }
 
 #ifdef FAIRMQ_DEBUG_MODE
-// Known defect: Monitor::GetDebugInfo() only reserves each result vector and
-// then writes to result[segment][handle], out of the bounds of the vector.
-// It returns empty vectors and corrupts the heap. It also dereferences the
-// debug map before its null check. Enable this test with the fix.
-TEST(Monitor, DISABLED_GetDebugInfo)
+TEST(Monitor, GetDebugInfo)
 {
     ProgOptions config;
     auto const session = ShmConfig(config, false);

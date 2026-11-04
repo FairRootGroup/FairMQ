@@ -483,14 +483,13 @@ unordered_map<uint16_t, std::vector<BufferDebugInfo>> Monitor::GetDebugInfo(cons
 
         Uint16MsgDebugMapHashMap* debug = managementSegment.find<Uint16MsgDebugMapHashMap>(bipc::unique_instance).first;
 
-        result.reserve(debug->size());
-
-
         if (debug) {
-            for (const auto& s : *debug) {
-                result[s.first].reserve(s.second.size());
-                for (const auto& e : s.second) {
-                    result[s.first][e.first] = BufferDebugInfo(e.first, e.second.fPid, e.second.fSize, e.second.fCreationTime);
+            result.reserve(debug->size());
+            for (const auto& [segmentId, buffers] : *debug) {
+                auto& infos = result[segmentId];
+                infos.reserve(buffers.size());
+                for (const auto& [offset, buffer] : buffers) {
+                    infos.emplace_back(offset, buffer.fPid, buffer.fSize, buffer.fCreationTime);
                 }
             }
         } else {
