@@ -250,8 +250,7 @@ The type is part of the device and plugin API:
 - The constructors [`Device(tools::Version)`](/api/fair/mq/Device/#Device-3) and
   [`Device(ProgOptions&, tools::Version)`](/api/fair/mq/Device/#Device-4) set the version of your
   device. The default is `{0, 0, 0}`. [`GetVersion()`](/api/fair/mq/Device/#GetVersion) returns it.
-  `DeviceRunner` logs it for `--version`. Today `--version` prints nothing: this is a known defect,
-  see the disabled tests in `test/device/_runner.cxx`.
+  `DeviceRunner` prints it for `--version`.
 - [`Plugin::Version`](/api/fair/mq/Plugin/#Version) is an alias of `tools::Version`. See
   [Write a plugin](/guides/write-plugin/).
 

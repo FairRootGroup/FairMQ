@@ -98,7 +98,7 @@ Thus `catch (std::exception const&)` catches all of them. The namespace is `fair
 | [`ParserError`](/api/fair/mq/ParserError/) | [`JSONParser.h`](/source/fairmq/JSONParser.h/#L27) | `JSONParser()`, `SuboptParser()` or `PtreeParser()` gets an empty device id. The config plugin does not call the parser without an id. |
 | [`Channel::ChannelConfigurationError`](/api/fair/mq/Channel/ChannelConfigurationError/) | [`Channel.h`](/source/fairmq/Channel.h/#L89) | `Channel::Validate()` finds an invalid type, an invalid method, a negative buffer or kernel size, or a negative `rateLogging`. |
 | [`PollerError`](/api/fair/mq/PollerError/) | [`Poller.h`](/source/fairmq/Poller.h/#L37) | A poller gets an unknown channel name (in the constructor, `CheckInput()` or `CheckOutput()`), or the poll fails. |
-| [`OngoingTransition`](/api/fair/mq/OngoingTransition/) | [`Device.h`](/source/fairmq/Device.h/#L46) | Not thrown in this version. |
+| [`OngoingTransition`](/api/fair/mq/OngoingTransition/) | [`Device.h`](/source/fairmq/Device.h/#L47) | Not thrown in this version. |
 | [`RuntimeError`](/api/fair/mq/RuntimeError/) | [`Error.h`](/source/fairmq/Error.h/#L23) | Not thrown in this version. Its constructor joins all arguments to one text. |
 
 ### Transports, sockets and messages

@@ -32,7 +32,7 @@ plugin ──► PluginServices ──► Device       (state, transitions)
 ## How a device starts
 
 [`DeviceRunner::Run()`](/api/fair/mq/DeviceRunner/#Run) loads and creates the plugins in this sequence
-([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L108-L194)):
+([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L109-L196)):
 
 1. The constructor of `DeviceRunner` makes the plugin manager. The plugin manager reads `-S` and `-P` and loads the
    plugins of `-P`, in their sequence.

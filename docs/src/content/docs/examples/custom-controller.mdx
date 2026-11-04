@@ -61,7 +61,7 @@ The program stops by itself about 3 s after the device enters `RUNNING`. Its exi
 - In `RUNNING`, the callback waits 3 s with [`WaitFor()`](/api/fair/mq/Device/#WaitFor). Then it sets the property `please-shut-me-down` to `true`.
 - [`RunWithExceptionHandlers()`](/api/fair/mq/DeviceRunner/#RunWithExceptionHandlers) runs the device. It returns 1 if an exception reaches it.
 
-The hooks are declared in [`DeviceRunner.h`](/source/fairmq/DeviceRunner.h/#L84-L89). The order of the steps is in [`DeviceRunner.cxx`](/source/fairmq/DeviceRunner.cxx/#L108-L194).
+The hooks are declared in [`DeviceRunner.h`](/source/fairmq/DeviceRunner.h/#L84-L89). The order of the steps is in [`DeviceRunner.cxx`](/source/fairmq/DeviceRunner.cxx/#L109-L196).
 
 ### The controller plugin
 

@@ -115,7 +115,7 @@ fairmq-sink --id sink1 \
 
 ## Change the log at run time
 
-`DeviceRunner` subscribes to the log properties ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L82-L101)).
+`DeviceRunner` subscribes to the log properties ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L83-L102)).
 When a plugin or the device changes one of them, the new value applies at once:
 
 | Property | Type | Effect of a change |
@@ -253,14 +253,9 @@ Rules for a sink:
 
 - `fairmq-shmmonitor` has its own option `--severity` (default `info`), and no colors. See
   [fairmq-shmmonitor](/tools/shmmonitor/).
-- FairMQ prints the output of `--print-channels` and `--version` with `LOGV(info, verylow)`.
-  `LOGV(severity, verbosity)` is a log macro of FairLogger that also takes a verbosity.
-
-:::caution[Known defect]
-For `--print-channels` and `--version`, `DeviceRunner` sets the console severity to `nolog`. Thus both options print
-nothing. See the disabled tests `DeviceRunner.DISABLED_PrintChannels` and `DeviceRunner.DISABLED_Version` in
-`test/device/_runner.cxx`.
-:::
+- `--print-channels` and `--version` write their output to the standard output, not to the log. For these two
+  options, `DeviceRunner` sets the console severity to `nolog`. The tests `DeviceRunner.PrintChannels` and
+  `DeviceRunner.Version` in `test/device/_runner.cxx` check the output.
 
 ## Related pages
 

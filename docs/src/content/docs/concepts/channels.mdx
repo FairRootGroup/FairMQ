@@ -24,7 +24,7 @@ A sub-channel has the name `<channel>[<index>]`, for example `data-out[1]`. The 
 - [`Send(msg, "data-out", 1)`](/api/fair/mq/Device/#Send) and [`Receive(msg, "data-in")`](/api/fair/mq/Device/#Receive) send and receive through it. The index is the third argument. Its default is 0.
 - [`GetNumSubChannels("data-out")`](/api/fair/mq/Device/#GetNumSubChannels) returns the number of sub-channels.
 
-For a channel or an index that does not exist, `GetChannel()` logs `GetChannel(): 'data-out[2]' does not exist.` and throws `std::out_of_range` ([Device.h](/source/fairmq/Device.h/#L323-L329)).
+For a channel or an index that does not exist, `GetChannel()` logs `GetChannel(): 'data-out[2]' does not exist.` and throws `std::out_of_range` ([Device.h](/source/fairmq/Device.h/#L324-L330)).
 
 The sampler of the [copypush example](/examples/copypush/) sends a copy of each message to each sub-channel of its channel `data`:
 
