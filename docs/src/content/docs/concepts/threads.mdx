@@ -65,7 +65,7 @@ Some rules follow from this table:
   thread that requests the transition. The next state resumes the transports in the thread of the
   state machine ([Device.cxx](/source/fairmq/Device.cxx/#L96-L104)).
 - A zeromq channel that sends a shmem message wraps the message. The free function of the wrapper
-  destroys the shmem message ([Channel.h](/source/fairmq/Channel.h/#L421-L438)). Thus the shmem
+  destroys the shmem message ([Channel.h](/source/fairmq/Channel.h/#L425-L442)). Thus the shmem
   message can be destroyed in a thread of ZeroMQ.
 - Both transports call the region event callback while they hold the lock of the subscription
   ([shmem/Manager.h](/source/fairmq/shmem/Manager.h/#L582-L616),

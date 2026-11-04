@@ -29,21 +29,21 @@ The type is the C++ type of the property. The parsers of `--channel-config` and 
 | Key | Type | Default | Allowed values | Effect |
 | --- | --- | --- | --- | --- |
 | [`name`](#name) | string | none | `a`–`z`, `A`–`Z`, `0`–`9`, `-`, `_`, `[`, `]`, `#` | Name of the channel. |
-| [`type`](#type) | string | [`unspecified`](/source/fairmq/Channel.h/#L369) | `push`, `pull`, `pub`, `sub`, `req`, `rep`, `dealer`, `router`, `xpub`, `xsub`, `pair` | Socket type. |
-| [`method`](#method) | string | [`unspecified`](/source/fairmq/Channel.h/#L370) | `bind`, `connect` | Bind or connect the endpoints. |
-| [`address`](#address) | string | [`unspecified`](/source/fairmq/Channel.h/#L371) | One or more endpoints, separated by `,` | Endpoints of the socket. |
-| [`transport`](#transport) | string | [`default`](/source/fairmq/Channel.h/#L367) | `default`, `zeromq`, `shmem` | Transport of the sub-channel. |
-| [`sndBufSize`](#sndbufsize-and-rcvbufsize) | int | [`1000`](/source/fairmq/Channel.h/#L372) | 0 or more | Maximum number of messages in the send queue. |
-| [`rcvBufSize`](#sndbufsize-and-rcvbufsize) | int | [`1000`](/source/fairmq/Channel.h/#L373) | 0 or more | Maximum number of messages in the receive queue. |
-| [`sndKernelSize`](#sndkernelsize-and-rcvkernelsize) | int | [`0`](/source/fairmq/Channel.h/#L374) | 0 or more | Kernel send buffer in bytes. 0: system default. |
-| [`rcvKernelSize`](#sndkernelsize-and-rcvkernelsize) | int | [`0`](/source/fairmq/Channel.h/#L375) | 0 or more | Kernel receive buffer in bytes. 0: system default. |
-| [`sndTimeoutMs`](#sndtimeoutms-and-rcvtimeoutms) | int | [`-1`](/source/fairmq/Channel.h/#L376) | -1, 0 or more | Default timeout of a send call in ms. |
-| [`rcvTimeoutMs`](#sndtimeoutms-and-rcvtimeoutms) | int | [`-1`](/source/fairmq/Channel.h/#L377) | -1, 0 or more | Default timeout of a receive call in ms. |
-| [`linger`](#linger) | int | [`500`](/source/fairmq/Channel.h/#L378) | -1, 0 or more | Time in ms that the socket keeps unsent messages after it closes. |
-| [`rateLogging`](#ratelogging) | int | [`1`](/source/fairmq/Channel.h/#L379) | 0 or more | Interval of the rate log in seconds. 0: no rate log. |
-| [`portRangeMin`](#portrangemin-portrangemax-and-autobind) | int | [`22000`](/source/fairmq/Channel.h/#L380) | A TCP port | Lowest port for autobind. |
-| [`portRangeMax`](#portrangemin-portrangemax-and-autobind) | int | [`23000`](/source/fairmq/Channel.h/#L381) | A TCP port | Highest port for autobind. |
-| [`autoBind`](#portrangemin-portrangemax-and-autobind) | bool | [`true`](/source/fairmq/Channel.h/#L382-L386) | `true`, `false`, `1`, `0` | Bind to a random port of the range when the bind fails. |
+| [`type`](#type) | string | [`unspecified`](/source/fairmq/Channel.h/#L373) | `push`, `pull`, `pub`, `sub`, `req`, `rep`, `dealer`, `router`, `xpub`, `xsub`, `pair` | Socket type. |
+| [`method`](#method) | string | [`unspecified`](/source/fairmq/Channel.h/#L374) | `bind`, `connect` | Bind or connect the endpoints. |
+| [`address`](#address) | string | [`unspecified`](/source/fairmq/Channel.h/#L375) | One or more endpoints, separated by `,` | Endpoints of the socket. |
+| [`transport`](#transport) | string | [`default`](/source/fairmq/Channel.h/#L371) | `default`, `zeromq`, `shmem` | Transport of the sub-channel. |
+| [`sndBufSize`](#sndbufsize-and-rcvbufsize) | int | [`1000`](/source/fairmq/Channel.h/#L376) | 0 or more | Maximum number of messages in the send queue. |
+| [`rcvBufSize`](#sndbufsize-and-rcvbufsize) | int | [`1000`](/source/fairmq/Channel.h/#L377) | 0 or more | Maximum number of messages in the receive queue. |
+| [`sndKernelSize`](#sndkernelsize-and-rcvkernelsize) | int | [`0`](/source/fairmq/Channel.h/#L378) | 0 or more | Kernel send buffer in bytes. 0: system default. |
+| [`rcvKernelSize`](#sndkernelsize-and-rcvkernelsize) | int | [`0`](/source/fairmq/Channel.h/#L379) | 0 or more | Kernel receive buffer in bytes. 0: system default. |
+| [`sndTimeoutMs`](#sndtimeoutms-and-rcvtimeoutms) | int | [`-1`](/source/fairmq/Channel.h/#L380) | -1, 0 or more | Default timeout of a send call in ms. |
+| [`rcvTimeoutMs`](#sndtimeoutms-and-rcvtimeoutms) | int | [`-1`](/source/fairmq/Channel.h/#L381) | -1, 0 or more | Default timeout of a receive call in ms. |
+| [`linger`](#linger) | int | [`500`](/source/fairmq/Channel.h/#L382) | -1, 0 or more | Time in ms that the socket keeps unsent messages after it closes. |
+| [`rateLogging`](#ratelogging) | int | [`1`](/source/fairmq/Channel.h/#L383) | 0 or more | Interval of the rate log in seconds. 0: no rate log. |
+| [`portRangeMin`](#portrangemin-portrangemax-and-autobind) | int | [`22000`](/source/fairmq/Channel.h/#L384) | A TCP port | Lowest port for autobind. |
+| [`portRangeMax`](#portrangemin-portrangemax-and-autobind) | int | [`23000`](/source/fairmq/Channel.h/#L385) | A TCP port | Highest port for autobind. |
+| [`autoBind`](#portrangemin-portrangemax-and-autobind) | bool | [`true`](/source/fairmq/Channel.h/#L386-L390) | `true`, `false`, `1`, `0` | Bind to a random port of the range when the bind fails. |
 | [`numSockets`](#numsockets) | int | [`0`](/source/fairmq/JSONParser.cxx/#L129) | 0 or more | Number of sub-channels with the same properties. |
 
 The JSON parser uses the same defaults ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L111-L126)). The device also uses them for a property that is not set ([Channel.cxx](/source/fairmq/Channel.cxx/#L92-L112)).
@@ -130,7 +130,7 @@ The start script of the [region example](/examples/region/) sets `sndKernelSize=
 
 ### `sndTimeoutMs` and `rcvTimeoutMs`
 
-The timeout of a send or receive call that does not give its own timeout ([Channel.h](/source/fairmq/Channel.h/#L297-L333)). This applies to [`Channel::Send()`](/api/fair/mq/Channel/#Send) and [`Channel::Receive()`](/api/fair/mq/Channel/#Receive), to [`Device::Send()`](/api/fair/mq/Device/#Send) and [`Device::Receive()`](/api/fair/mq/Device/#Receive) without the timeout argument, and to the receive calls of [`OnData()`](/api/fair/mq/Device/#OnData).
+The timeout of a send or receive call that does not give its own timeout ([Channel.h](/source/fairmq/Channel.h/#L297-L337)). This applies to [`Channel::Send()`](/api/fair/mq/Channel/#Send) and [`Channel::Receive()`](/api/fair/mq/Channel/#Receive), to [`Device::Send()`](/api/fair/mq/Device/#Send) and [`Device::Receive()`](/api/fair/mq/Device/#Receive) without the timeout argument, and to the receive calls of [`OnData()`](/api/fair/mq/Device/#OnData).
 
 - `-1`: wait until the transfer is complete.
 - `0`: do not wait. If the transfer is not possible at once, the call returns `TransferCode::timeout` (-2).

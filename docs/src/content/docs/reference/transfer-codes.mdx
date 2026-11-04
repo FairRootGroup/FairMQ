@@ -43,7 +43,7 @@ message, the number of bytes is the sum of all parts.
 | Positive | Wait up to this time in ms, rounded up to a multiple of 100 ms. |
 
 The channel properties `sndTimeoutMs` and `rcvTimeoutMs` give the timeout of a channel. Their
-default is `-1` ([`Channel.h`](/source/fairmq/Channel.h/#L376-L377)). The steps of 100 ms come from
+default is `-1` ([`Channel.h`](/source/fairmq/Channel.h/#L380-L381)). The steps of 100 ms come from
 the internal socket timeout of the zeromq and shmem transports
 ([`zeromq/Common.h`](/source/fairmq/zeromq/Common.h/#L64-L77)).
 

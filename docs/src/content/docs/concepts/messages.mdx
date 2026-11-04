@@ -168,7 +168,7 @@ message owns its buffer. When you destroy the message, the transport releases th
 ### A message of another transport
 
 [`Channel::Send()`](/api/fair/mq/Channel/#Send) compares the transport of each message with the
-transport of the channel ([Channel.h](/source/fairmq/Channel.h/#L421-L480)). If they are different,
+transport of the channel ([Channel.h](/source/fairmq/Channel.h/#L425-L484)). If they are different,
 the channel makes a new message of its own transport, and your `MessagePtr` points to the new
 message after the call:
 
@@ -228,11 +228,25 @@ apply to each part. This test sends three parts, one of them empty, and receives
 :::caution[Rules for multipart messages]
 - Do not send an empty `Parts` object. Both transports return `TransferCode::error`.
 - Receive with the same form that the sender uses: `Parts` for `Parts`, `MessagePtr` for
-  `MessagePtr`. The shmem transport cannot read a single message into a `Parts` object.
+  `MessagePtr`. See the table below.
 - `Receive()` adds the received parts at the end of the `Parts` object. Give it an empty one.
 - A receiver with [`OnData()`](/api/fair/mq/Device/#OnData-3) must register a callback that takes
   `fair::mq::Parts&`.
 :::
+
+The two transports do not accept the same mix of forms:
+
+| Sender | Receiver | zeromq | shmem |
+| --- | --- | --- | --- |
+| `Send(MessagePtr&)` | `Receive(MessagePtr&)` | yes | yes |
+| `Send(Parts&)` or `vector<MessagePtr>` | `Receive(Parts&)` or `vector<MessagePtr>` | yes | yes |
+| `Send(MessagePtr&)` | `Receive(Parts&)` or `vector<MessagePtr>` | yes | **no** |
+| `Send(Parts&)` or `vector<MessagePtr>` | `Receive(MessagePtr&)` | one part per call | **no** |
+
+The shmem transport uses one metadata format for a single message and another for a multipart
+message. A mix gives a message with wrong metadata or a crash. The test
+`PartsTransfer.SingleSendMultipartReceive` in `test/parts/_access.cxx` shows the problem. It is
+disabled, because a fix changes the shmem wire format.
 
 ## Related pages
 

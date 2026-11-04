@@ -95,7 +95,7 @@ The builder and the sender register a data callback with [`OnData()`](/api/fair/
 
 <Snippet file="examples/readout/builder.cxx" start="bool HandleData" />
 
-The sender forwards from the channel of `--input-name` (default `bs`) to `sr`. The message is a shmem message, but `sr` is a zeromq channel. [`Channel::Send()`](/api/fair/mq/Channel/#Send) compares the transports. If they differ, the channel puts the data of the message into a new message of its own transport. It does not copy the data. The new message deletes the original message when the zeromq transport releases the data. See [`Channel.h`](/source/fairmq/Channel.h/#L421-L438).
+The sender forwards from the channel of `--input-name` (default `bs`) to `sr`. The message is a shmem message, but `sr` is a zeromq channel. [`Channel::Send()`](/api/fair/mq/Channel/#Send) compares the transports. If they differ, the channel puts the data of the message into a new message of its own transport. It does not copy the data. The new message deletes the original message when the zeromq transport releases the data. See [`Channel.h`](/source/fairmq/Channel.h/#L425-L442).
 
 Thus the readout device gets the acknowledgement for a block after the zeromq transport releases the data.
 

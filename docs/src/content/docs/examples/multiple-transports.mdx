@@ -132,7 +132,7 @@ leaves `RUNNING` after it got this number of messages on both data channels.
 
 If the transport of a message is not the transport of the channel, `Send()` converts the message. It creates
 a new message of the channel transport for the same data
-([Channel.h](/source/fairmq/Channel.h/#L421-L438)). If the channel uses `shmem`, this step copies the data
+([Channel.h](/source/fairmq/Channel.h/#L425-L442)). If the channel uses `shmem`, this step copies the data
 into shared memory. `NewMessageFor()` creates the message with the transport of the channel, so `Send()`
 does not convert it.
 
