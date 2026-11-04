@@ -226,8 +226,7 @@ apply to each part. This test sends three parts, one of them empty, and receives
 <Snippet file="test/parts/_access.cxx" start="Parts out(" end="EXPECT_EQ(AsString(in[2])" />
 
 :::caution[Rules for multipart messages]
-- Do not send an empty `Parts` object. The zeromq transport returns `TransferCode::error`, but the
-  shmem transport sends a message with zero parts.
+- Do not send an empty `Parts` object. Both transports return `TransferCode::error`.
 - Receive with the same form that the sender uses: `Parts` for `Parts`, `MessagePtr` for
   `MessagePtr`. The shmem transport cannot read a single message into a `Parts` object.
 - `Receive()` adds the received parts at the end of the `Parts` object. Give it an empty one.

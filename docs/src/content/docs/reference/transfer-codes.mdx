@@ -47,11 +47,8 @@ default is `-1` ([`Channel.h`](/source/fairmq/Channel.h/#L376-L377)). The steps 
 the internal socket timeout of the zeromq and shmem transports
 ([`zeromq/Common.h`](/source/fairmq/zeromq/Common.h/#L64-L77)).
 
-:::caution[Known defect]
-The transports do not agree on an empty `Parts`. zeromq logs `Will not send empty vector` and returns
-`error`. shmem sends a message with zero parts and returns 0. See the disabled test
-`PartsTransfer.EmptyPartsIsRefused` in `test/parts/_access.cxx`.
-:::
+Both transports refuse to send an empty `Parts`. They log `Will not send empty vector` and return
+`error`. The test `PartsTransfer.EmptyPartsIsRefused` in `test/parts/_access.cxx` checks this.
 
 ## Error codes
 
