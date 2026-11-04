@@ -111,7 +111,7 @@ matrix: from all states, `ErrorFound` leads to `ERROR`. The source is the `trans
 With `--control dynamic` (default), `interactive` or `external`, the control plugin reads keys from
 the standard input. It reads one character at a time, without Enter. The plugin prints the line
 ` --> [key] action` before it does the action. Source:
-[`Control.cxx`](/source/fairmq/plugins/control/Control.cxx/#L154-L272).
+[`Control.cxx`](/source/fairmq/plugins/control/Control.cxx/#L156-L283).
 
 | Key | Action |
 | --- | --- |
@@ -136,15 +136,13 @@ the standard input. It reads one character at a time, without Enter. The plugin 
 The keys `b`, `x`, `j`, `r`, `s`, `t` and `d` request only one transition. They do not wait for
 the `Auto` transitions. If the state does not accept the transition, the state does not change.
 
-:::caution[Known defect]
-If several keys arrive in one read, for example `cq` from a pipe, the plugin handles only the first
-key. See the disabled test `ControlPlugin.SeveralKeysInOneInput` in `test/device/_runner.cxx`.
-:::
+If several keys arrive in one read, for example `cq` from a pipe, the plugin handles all keys in
+their order. It ignores spaces and line ends. At the end of the input, it stops reading keys.
 
 ## Startup and shutdown sequences
 
 The control modes `dynamic`, `static` and `gui` start with the same sequence
-([`RunStartupSequence()`](/source/fairmq/plugins/control/Control.cxx/#L104-L142)). The plugin requests
+([`RunStartupSequence()`](/source/fairmq/plugins/control/Control.cxx/#L106-L144)). The plugin requests
 a transition and waits for the next states:
 
 | Step | Request | Wait for |
@@ -158,7 +156,7 @@ a transition and waits for the next states:
 
 A signal stops the sequence after the current step, and the plugin runs the shutdown sequence. The
 state `ERROR` also stops the sequence, but without the shutdown sequence. The shutdown sequence
-([`RunShutdownSequence()`](/source/fairmq/plugins/control/Control.cxx/#L471-L506)) requests one
+([`RunShutdownSequence()`](/source/fairmq/plugins/control/Control.cxx/#L482-L517)) requests one
 transition for each state, until `EXITING` or `ERROR`:
 
 | Current state | Request |
