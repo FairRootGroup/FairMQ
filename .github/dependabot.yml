@@ -10,3 +10,12 @@ updates:
     target-branch: "dev"
     schedule:
       interval: "monthly"
+  - package-ecosystem: "npm"
+    directory: "/docs"
+    target-branch: "dev"
+    schedule:
+      interval: "monthly"
+    groups:
+      docs:
+        patterns:
+          - "*"
