@@ -1,4 +1,3 @@
-<!-- {#mainpage} -->
 # FairMQ
 
 [![license](https://alfa-ci.gsi.de/shields/badge/license-LGPL--3.0-orange.svg)](COPYRIGHT)
@@ -98,7 +97,6 @@ list(PREPEND CMAKE_PREFIX_PATH /path/to/fairmq_install)
 
   * [Boost](https://www.boost.org/)
   * [CMake](https://cmake.org/)
-  * [Doxygen](http://www.doxygen.org/)
   * [FairCMakeModules](https://github.com/FairRootGroup/FairCMakeModules) (optionally bundled)
   * [FairLogger](https://github.com/FairRootGroup/FairLogger)
   * [GTest](https://github.com/google/googletest) (optionally bundled)
@@ -115,7 +113,6 @@ On command line:
   * `-DDISABLE_COLOR=ON` disables coloured console output.
   * `-DBUILD_TESTING=OFF` disables building of tests.
   * `-DBUILD_EXAMPLES=OFF` disables building of examples.
-  * `-DBUILD_DOCS=ON` enables building of API docs.
   * `-DFAIRMQ_CHANNEL_DEFAULT_AUTOBIND=OFF` disable channel `autoBind` by default
   * You can hint non-system installations for dependent packages, see the #installation-from-source section above
 
