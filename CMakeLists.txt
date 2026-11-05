@@ -30,8 +30,6 @@ fairmq_build_option(BUILD_EXAMPLES      "Build FairMQ examples."
                                          DEFAULT ON  REQUIRES "BUILD_FAIRMQ")
 fairmq_build_option(BUILD_TIDY_TOOL     "Build the fairmq-tidy tool."
                                          DEFAULT OFF)
-fairmq_build_option(BUILD_DOCS          "Build FairMQ documentation."
-                                         DEFAULT OFF)
 fairmq_build_option(USE_EXTERNAL_GTEST  "Do not use bundled GTest. Not recommended."
                                          DEFAULT OFF)
 fairmq_build_option(FAIRMQ_DEBUG_MODE   "Compile in debug mode (may decrease performance)."
@@ -65,16 +63,6 @@ if(BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
-if(BUILD_DOCS)
-  set(DOXYGEN_OUTPUT_DIRECTORY doxygen)
-  set(DOXYGEN_PROJECT_NUMBER ${PROJECT_GIT_VERSION})
-  set(DOXYGEN_PROJECT_BRIEF "C++ Message Queuing Library and Framework")
-  set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md)
-  set(DOXYGEN_HTML_FOOTER docs/footer.html)
-  doxygen_add_docs(doxygen README.md fairmq)
-  add_custom_target(docs ALL DEPENDS doxygen)
-endif()
-
 if(BUILD_TIDY_TOOL)
   add_subdirectory(fairmq/tidy)
 endif()
@@ -91,9 +79,6 @@ endif()
 if(BUILD_EXAMPLES)
   list(APPEND PROJECT_PACKAGE_COMPONENTS examples)
 endif()
-if(BUILD_DOCS)
-  list(APPEND PROJECT_PACKAGE_COMPONENTS docs)
-endif()
 if(BUILD_TIDY_TOOL)
   list(APPEND PROJECT_PACKAGE_COMPONENTS tidy_tool)
 endif()
@@ -104,11 +89,6 @@ endif()
 if(BUILD_FAIRMQ)
   install(FILES cmake/FindZeroMQ.cmake
     DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
-  )
-endif()
-if(BUILD_DOCS)
-  install(DIRECTORY ${CMAKE_BINARY_DIR}/doxygen/html
-    DESTINATION ${PROJECT_INSTALL_DATADIR}/docs
   )
 endif()
 if(BUILD_TIDY_TOOL)

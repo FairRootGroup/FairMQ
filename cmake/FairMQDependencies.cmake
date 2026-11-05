@@ -58,12 +58,6 @@ if(BUILD_TESTING)
   endif()
 endif()
 
-if(BUILD_DOCS)
-  find_package2(PRIVATE Doxygen REQUIRED VERSION 1.8.8
-    COMPONENTS dot
-  )
-endif()
-
 if(BUILD_TIDY_TOOL)
   find_package2(PRIVATE LLVM REQUIRED)
   find_package2(PRIVATE Clang REQUIRED)
@@ -90,11 +84,6 @@ if(PROJECT_PACKAGE_DEPENDENCIES)
       endif()
       get_filename_component(Boost_PREFIX ${boost_include}/.. ABSOLUTE)
       unset(boost_include)
-    elseif(${dep} STREQUAL Doxygen)
-      get_target_property(doxygen_bin Doxygen::doxygen INTERFACE_LOCATION)
-      get_filename_component(Doxygen_PREFIX ${doxygen_bin} DIRECTORY)
-      get_filename_component(Doxygen_PREFIX ${Doxygen_PREFIX}/.. ABSOLUTE)
-      unset(doxygen_bin)
     elseif(NOT ${dep}_PREFIX)
       # try to guess
       if(TARGET ${dep}::${dep})
