@@ -1,0 +1,186 @@
+---
+title: 'multiple-transports: zeromq and shmem'
+description: 'Two samplers and a sink use the shmem and the zeromq transport at the same time, with a transport for each channel.'
+sidebar:
+  order: 7
+code: [fairmq/Device.h, fairmq/Device.cxx, fairmq/Channel.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps, FileTree } from '@astrojs/starlight/components';
+
+The multiple-transports example uses two [transports](/concepts/transports/) at the same time, in one
+topology and in one device. The devices use `shmem` as their default transport, and the channel `ack` uses
+`zeromq`. The example also shows [`NewMessageFor()`](/api/fair/mq/Device/#NewMessageFor), which creates a
+message with the transport of a channel.
+
+The files of the example are in
+[`examples/multiple-transports`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/multiple-transports)
+on GitHub.
+
+## Topology
+
+The start script starts all three devices with `--transport shmem`:
+
+| Device | Channel | Type | Method | Address | Transport |
+| --- | --- | --- | --- | --- | --- |
+| `sampler1` | `data1` | `push` | `bind` | `tcp://127.0.0.1:5555` | `shmem` (default of the device) |
+| `sampler1` | `ack` | `sub` | `bind` | `tcp://127.0.0.1:5557` | `zeromq` |
+| `sampler2` | `data2` | `push` | `bind` | `tcp://127.0.0.1:5556` | `shmem` (default of the device) |
+| `sink1` | `data1` | `pull` | `connect` | `tcp://127.0.0.1:5555` | `shmem` (default of the device) |
+| `sink1` | `data2` | `pull` | `connect` | `tcp://127.0.0.1:5556` | `shmem` |
+| `sink1` | `ack` | `pub` | `connect` | `tcp://127.0.0.1:5557` | `zeromq` |
+
+- `--transport` sets the default transport of a device. Its default is `zeromq`.
+- The channel key `transport` sets the transport of one channel. A channel without this key uses the
+  default transport of the device.
+- The device creates its default transport and each other transport that one of its channels uses
+  ([Device.cxx](/source/fairmq/Device.cxx/#L173-L183)).
+
+The two ends of a channel must use the same transport. The channel `ack` must use `zeromq`, because the
+`shmem` transport does not support `pub` and `sub` sockets.
+
+## Build the example
+
+The examples build together with FairMQ when the CMake option `BUILD_EXAMPLES` is `ON` (the default):
+
+<FileTree>
+
+- build/examples/multiple-transports/
+  - fairmq-ex-multiple-transports-sampler1
+  - fairmq-ex-multiple-transports-sampler2
+  - fairmq-ex-multiple-transports-sink
+  - fairmq-start-ex-multiple-transports.sh
+  - test-ex-multiple-transports.sh
+
+</FileTree>
+
+## Run the example
+
+<Steps>
+
+1. Go to the directory of the example in the build tree:
+
+   ```sh
+   cd build/examples/multiple-transports
+   ```
+
+2. Run the start script. It opens three `xterm` windows, one for each device:
+
+   ```sh
+   ./fairmq-start-ex-multiple-transports.sh
+   ```
+
+</Steps>
+
+To run the example without `xterm`, run each command in its own terminal in
+`build/examples/multiple-transports`:
+
+```sh
+./fairmq-ex-multiple-transports-sampler1 --id sampler1 --severity debug --transport shmem \
+  --channel-config "name=data1,type=push,method=bind,address=tcp://127.0.0.1:5555" \
+                   "name=ack,type=sub,method=bind,address=tcp://127.0.0.1:5557,transport=zeromq"
+```
+
+```sh
+./fairmq-ex-multiple-transports-sampler2 --id sampler2 --severity debug --transport shmem \
+  --channel-config "name=data2,type=push,method=bind,address=tcp://127.0.0.1:5556"
+```
+
+```sh
+./fairmq-ex-multiple-transports-sink --id sink1 --severity debug --transport shmem \
+  --channel-config "name=data1,type=pull,method=connect,address=tcp://127.0.0.1:5555" \
+                   "name=data2,type=pull,method=connect,address=tcp://127.0.0.1:5556,transport=shmem" \
+                   "name=ack,type=pub,method=connect,address=tcp://127.0.0.1:5557,transport=zeromq"
+```
+
+The three devices use the session `default`, because the commands do not set `--session`.
+
+## The samplers
+
+<Snippet file="examples/multiple-transports/sampler1.cxx" start="bool ConditionalRun()" />
+
+`NewMessageFor("data1", 0, 1000000)` creates a message of 1000000 bytes with the transport of the
+sub-channel `data1[0]`. Here this is `shmem`. The sampler sends as fast as it can, because it does not wait
+and the start script does not set `--rate`.
+
+<Snippet file="examples/multiple-transports/sampler1.cxx" start="void ListenForAcks()" />
+
+[`PreRun()`](/api/fair/mq/Device/#PreRun) starts a thread that runs `ListenForAcks()`, and
+[`PostRun()`](/api/fair/mq/Device/#PostRun) waits for the end of this thread. The thread receives the
+acknowledgements on the channel `ack`, with empty `zeromq` messages from `NewMessageFor("ack", 0)`. A new
+state interrupts `Receive()`, and `Receive()` then returns a negative value. Thus the loop ends when the
+device leaves `RUNNING`. For the rules of this pattern, see
+[One thread for each channel](/concepts/threads/#one-thread-for-each-channel).
+
+`sampler2` sends messages of 1000 bytes on `data2` with `NewMessage(1000)`. `NewMessage()` uses the default
+transport of the device. This is also the transport of `data2`.
+
+## The sink
+
+<Snippet file="examples/multiple-transports/sink.cxx" start="Sink()" />
+
+<Snippet file="examples/multiple-transports/sink.cxx" start="bool HandleData1" />
+
+For each message on `data1`, the sink sends an empty `zeromq` message on `ack`. If `Send()` fails, the
+handler throws an exception. With the channels of the start script, the device then goes to the state
+`ERROR`. If the input channels use two transports, the handler runs in a separate thread, and the exception
+ends the process ([Device.cxx](/source/fairmq/Device.cxx/#L558-L561)). With `--max-iterations`, the sink
+leaves `RUNNING` after it got this number of messages on both data channels.
+
+### Messages and channels with different transports
+
+If the transport of a message is not the transport of the channel, `Send()` converts the message. It creates
+a new message of the channel transport for the same data
+([Channel.h](/source/fairmq/Channel.h/#L421-L438)). If the channel uses `shmem`, this step copies the data
+into shared memory. `NewMessageFor()` creates the message with the transport of the channel, so `Send()`
+does not convert it.
+
+## Output
+
+The start script does not set `rateLogging`, so each channel uses the default `1`. Each second, each device
+logs one line for each sub-channel: the messages per second and the MB per second, in and out. For example,
+the sink logs lines of this form, without the time:
+
+```txt
+[INFO] data1[0]: in: <messages per second> (<MB per second> MB) out: <messages per second> (<MB per second> MB)
+```
+
+With `--severity debug`, the devices also log their transports, for example `Adding 'zeromq' transport`.
+When `sampler1` leaves `RUNNING`, it logs the number of acknowledgements: `Acknowledged <n> messages`.
+
+## Test the example
+
+The test script `test-ex-multiple-transports.sh` uses `ipc://` addresses in `/tmp`, a new session and
+`--control static`. All devices stop after one message (`--max-iterations 1`). To write a script of this
+type for your own devices, see [Write the test script](/guides/test-devices/#write-the-test-script).
+
+The test uses `zeromq` for `data2`: it starts `sampler2` with `--transport zeromq`, and the sink sets
+`transport=zeromq` on `data2`. Thus the input channels of the sink use two transports. In this case, the
+device polls each transport in its own thread ([Device.cxx](/source/fairmq/Device.cxx/#L509-L523)).
+
+The CMake file of the example sets `NO_TRANSPORT`, so CTest runs the script only once, without a transport
+argument. The name of this test is `Example.multiple-transports.`, with a dot at the end, and its timeout is
+30 s. The test exists if you configure with `-DBUILD_TESTING=ON`.
+
+```sh
+cd build
+ctest -R '^Example\.multiple-transports' --output-on-failure
+```
+
+## Things to try
+
+- Use `zeromq` for `data2`, as the test does. Start `sampler2` with `--transport zeromq`, and set
+  `transport=zeromq` on `data2` of the sink.
+- Remove `transport=zeromq` from the channel `ack` of the sink. The sink then goes to the state `ERROR`,
+  because the `shmem` transport cannot create a `pub` socket.
+- Hide the rate lines: add `rateLogging=0` to each channel configuration.
+- Stop after 1000 messages: add `--max-iterations 1000` to all three commands. The devices then wait in
+  the state `READY`.
+
+## Related pages
+
+- [Use several transports](/guides/several-transports/): configure the transport of each channel.
+- [Transports](/concepts/transports/): `zeromq` and `shmem` compared.
+- [How shared memory works](/shmem/how-it-works/): what the `shmem` transport does with a message.
+- [multiple-channels: data and broadcast](/examples/multiple-channels/): devices with several channels.

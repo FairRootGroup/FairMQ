@@ -1,0 +1,238 @@
+---
+title: 'Transports'
+description: 'The zeromq and shmem transports, how a device selects the transport of each channel, and how the two transports differ.'
+sidebar:
+  order: 5
+code: [fairmq/TransportFactory.h, fairmq/TransportFactory.cxx, fairmq/Transports.h, fairmq/Device.cxx, fairmq/zeromq/TransportFactory.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+A transport moves the messages of a channel and allocates their buffers. FairMQ has two transports:
+`zeromq` sends the data through sockets, and `shmem` keeps the data in shared memory and sends only
+metadata. You select the transport for each channel in the configuration, so the code of your device
+does not change.
+
+## The transports and their names
+
+Each transport is a subclass of [`fair::mq::TransportFactory`](/api/fair/mq/TransportFactory/). A
+transport factory makes the messages, the sockets of the channels, the pollers and the unmanaged
+regions of one transport. [`Transports.h`](/source/fairmq/Transports.h/) maps the names to the values
+of the enum [`fair::mq::Transport`](/api/fair/mq/Transport/):
+
+| Name | Enum value | Implementation | Use |
+| --- | --- | --- | --- |
+| `zeromq` | [`Transport::ZMQ`](/api/fair/mq/Transport/#ZMQ) | `fair::mq::zmq::TransportFactory` in `fairmq/zeromq/` | Data through zeromq sockets, in one process, on one host, or between hosts. |
+| `shmem` | [`Transport::SHM`](/api/fair/mq/Transport/#SHM) | [`fair::mq::shmem::TransportFactory`](/api/fair/mq/shmem/TransportFactory/) in `fairmq/shmem/` | Data in shared memory, between processes on one host. |
+| `default` | [`Transport::DEFAULT`](/api/fair/mq/Transport/#DEFAULT) | none | Channel property only: the channel uses the default transport of the device. |
+
+[`TransportName()`](/api/fair/mq/#TransportName) converts an enum value to its name.
+[`TransportType()`](/api/fair/mq/#TransportType) converts a name to the enum value and throws
+`fair::mq::TransportError` for an unknown name.
+[`GetEnabledTransports()`](/api/fair/mq/#GetEnabledTransports) returns `Transport::ZMQ` and
+`Transport::SHM`.
+
+### Make a transport factory
+
+[`TransportFactory::CreateTransportFactory(type, id, config)`](/api/fair/mq/TransportFactory/#CreateTransportFactory)
+returns a `std::shared_ptr<TransportFactory>`. It accepts the names `zeromq` and `shmem`
+([TransportFactory.cxx](/source/fairmq/TransportFactory.cxx/#L34-L47)). For all other names, it
+logs an error and throws `fair::mq::TransportFactoryError`.
+
+- `id` is the id of the factory in the topology. A device gives its device id. If `id` is empty, the
+  function makes a UUID.
+- `config` is a [`fair::mq::ProgOptions`](/api/fair/mq/ProgOptions/) pointer. The factory reads its
+  properties from it, for example `io-threads`. Without `config`, the factory uses the defaults.
+
+A device makes its factories itself. You call `CreateTransportFactory()` yourself when you
+[use channels without a device](/guides/channels-without-device/).
+
+## How a device selects the transport
+
+The device selects the transports in the state `INITIALIZING DEVICE`
+([Device.cxx](/source/fairmq/Device.cxx/#L158-L183)):
+
+<Steps>
+
+1. The device reads the property `transport`, which is the option `--transport`. The default is
+   `zeromq`. This is the default transport of the device.
+
+2. The device makes the factory of the default transport.
+   [`Transport()`](/api/fair/mq/Device/#Transport) returns it, and `NewMessage()` uses it.
+
+3. For each sub-channel, the device reads the channel property `transport`. The default is
+   `default`, which selects the default transport of the device.
+
+4. The device gets the factory for the transport of the sub-channel with
+   [`AddTransport()`](/api/fair/mq/Device/#AddTransport). This function makes a factory only if the
+   device has no factory of this transport yet.
+
+</Steps>
+
+The result: a device has one factory for each transport that it uses. All channels with the same
+transport share this factory, and with it one zeromq context or one shared memory session. Each
+factory gets the device id and the configuration of the device.
+
+An unknown name in `--transport` or in a channel property stops the initialization, and the device
+goes to the state `ERROR`.
+
+The sink of the [multiple-transports example](/examples/multiple-transports/) uses `shmem` as the
+default transport and `zeromq` for the channel `ack`:
+
+<Snippet file="examples/multiple-transports/fairmq-start-ex-multiple-transports.sh.in" start='SINK="fairmq' end="name=ack,type=pub" />
+
+With `--severity debug`, the sink logs its choices between other debug lines. The block shows these
+lines without the prefix of time and severity. The order of the channels can change:
+
+```txt
+Setting 'shmem' as default transport for the device
+Adding 'shmem' transport
+Initializing transport for channel ack[0]: zeromq
+Adding 'zeromq' transport
+Initializing transport for channel data1[0]: default
+Reusing existing 'shmem' transport
+Initializing transport for channel data2[0]: shmem
+Reusing existing 'shmem' transport
+```
+
+### The transports during the life of a device
+
+On each new transition request, the device calls `Interrupt()` on all its factories. A blocking
+`Send()` or `Receive()` then returns `TransferCode::interrupted` within about 100 ms. When the next
+state starts, the device calls `Resume()`. In the state `RESETTING DEVICE`, the device calls
+`Reset()` on all factories and destroys them with the channels.
+
+## Compare the transports
+
+| | `zeromq` | `shmem` |
+| --- | --- | --- |
+| Data path | The data goes through the zeromq socket. | The data stays in a shared memory segment. A small metadata message goes through a zeromq socket. |
+| Copies of the data | For `ipc://` and `tcp://`, the receiver gets its own copy. | None. The receiver reads the buffer that the sender allocated. |
+| Peers | One process (`inproc://`), one host (`ipc://`, `tcp://`), or other hosts (`tcp://`). | Processes on one host with the same session. |
+| Socket types | `push`, `pull`, `pub`, `sub`, `xpub`, `xsub`, `req`, `rep`, `dealer`, `router`, `pair` | The same, without `pub` and `sub`. |
+| Required configuration | None. | The same `--session` on all peers, and a segment that is large enough (`--shm-segment-size`, default 2 GiB). |
+| Message from your buffer | No copy. The transport calls your deleter after the transfer. | The transport copies the buffer into the segment and calls your deleter at once. |
+| Message from an unmanaged region | The transport copies the block and calls the region callback at once. | No copy. The callback runs when the receiver releases the block. |
+| [`Copy()`](/api/fair/mq/Message/#Copy) of a message | The messages share the buffer in one process. | The messages share the buffer through a reference count, also between processes. |
+| Clean-up | Nothing to clean up. | The last shmem factory of the session removes the shared memory, unless `--shm-no-cleanup` is `true`. After a crash, use the monitor. |
+| Tools | none | [`fairmq-shmmonitor`](/tools/shmmonitor/) |
+
+An `inproc://` address connects only the channels of one factory: each factory has its own zeromq
+context, and ZeroMQ connects `inproc://` endpoints only inside one context. Thus both channels must
+be in the same process and use the same factory.
+
+## The zeromq transport
+
+The zeromq transport ([`fairmq/zeromq/`](/source/fairmq/zeromq/TransportFactory.h/)) uses the
+libzmq library:
+
+- Each factory has one zeromq context with `--io-threads` I/O threads (default 1). The context
+  accepts up to 10000 sockets ([zeromq/Context.h](/source/fairmq/zeromq/Context.h/#L37-L56)).
+- Each sub-channel has one zeromq socket of its type. The socket identity is
+  `<factory id>.<channel name>.<type>`.
+- A `sub` socket subscribes to all messages.
+- A socket waits for 100 ms at most in each call to libzmq. Between the calls, it checks for an
+  interruption and for the timeout of the transfer.
+
+## The shmem transport
+
+The shmem transport ([`fairmq/shmem/`](/source/fairmq/shmem/TransportFactory.h/)) puts the data of
+each message into a managed segment of the session. The segment has a default size of 2 GiB. A send
+transfers only the metadata of the message through a zeromq socket: 40 bytes for a single message on
+a 64-bit platform, or the value of `--shm-metadata-msg-size` if it is larger. The receiver finds the
+same buffer in the segment. The factory has its own zeromq context with `--io-threads` I/O threads.
+
+The devices that exchange shmem messages must run on one host and use the same `--session` (default
+`default`). A `pub` or `sub` socket throws `fair::mq::SocketError`. For the details, see
+[How shared memory works](/shmem/how-it-works/) and [Sessions and segments](/shmem/sessions/). All devices of a
+session must use compatible FairMQ versions: see [Mixed versions](/project/release-notes/#mixed-versions).
+
+## Tune the zeromq transport
+
+The zeromq transport has few settings of its own. Most of the tuning is in the channel properties
+and in the selection of the transport. Measure each change with
+[Run a benchmark](/guides/benchmark/): give the same options to `fairmq-bsampler` and `fairmq-sink`,
+and compare the [rate lines](/guides/benchmark/#read-the-rate-lines).
+
+### I/O threads
+
+`--io-threads` sets the number of I/O threads of the zeromq context (`ZMQ_IO_THREADS`, default 1).
+In code, [`SetNumIoThreads()`](/api/fair/mq/Device/#SetNumIoThreads) sets the same property. The
+factory reads the value one time, when it makes its context in `INITIALIZING DEVICE`
+([zeromq/TransportFactory.h](/source/fairmq/zeromq/TransportFactory.h/#L30-L44)). All sockets of
+the factory share these threads.
+
+- ZeroMQ needs at least one I/O thread for `tcp://` and `ipc://`. A program that uses only
+  `inproc://` can set 0 (ZeroMQ behavior).
+- If ZeroMQ refuses the value, the zeromq transport throws `ContextError` with
+  `failed configuring context, reason: <text>`
+  ([zeromq/Context.h](/source/fairmq/zeromq/Context.h/#L37-L56)). The shmem transport only logs the
+  error.
+- The shmem transport uses `--io-threads` for its own context, which sends the metadata.
+
+If one I/O thread does not move the data of all channels fast enough, try 2 or more threads, and
+compare the rates.
+
+### Number of sockets
+
+FairMQ sets `ZMQ_MAX_SOCKETS` of each context to 10000
+([zeromq/Context.h](/source/fairmq/zeromq/Context.h/#L45-L48)). The ZeroMQ default is 1023. No
+option changes this value. Each FairMQ socket also makes a monitor for
+[`GetNumberOfConnectedPeers()`](/api/fair/mq/Device/#GetNumberOfConnectedPeers)
+([zeromq/Common.h](/source/fairmq/zeromq/Common.h/#L127-L171)). `zmq_socket_monitor()` makes one
+`pair` socket in the context (ZeroMQ behavior), and FairMQ makes a second one that reads the events.
+Thus one FairMQ socket uses three ZeroMQ sockets of the context.
+
+### Queues and kernel buffers
+
+The channel properties set the buffers of each socket. See
+[Channel properties](/reference/channel-properties/#sndbufsize-and-rcvbufsize).
+
+- `sndBufSize` and `rcvBufSize` (default 1000) limit the number of messages in the queues. ZeroMQ
+  applies the limit to each peer of the socket (ZeroMQ behavior). With the zeromq transport, a
+  queue holds the messages with their data: 1000 messages of 1 MB in one queue use 1 GB of memory.
+  Smaller values limit this memory. A `push` socket then waits earlier for a slow receiver. See
+  [Behavior of each socket type](/concepts/channels/#behavior-of-each-socket-type).
+- `sndKernelSize` and `rcvKernelSize` (default 0, the system default) set the kernel buffers of
+  the `tcp://` connections in bytes. ZeroMQ does not apply them to `ipc://` connections (ZeroMQ
+  behavior). See
+  [`sndKernelSize` and `rcvKernelSize`](/reference/channel-properties/#sndkernelsize-and-rcvkernelsize).
+  Linux limits the values to `net.core.wmem_max` and `net.core.rmem_max` (Linux behavior).
+
+To send a large buffer without a copy into the message, make the message from your buffer with a
+deleter. See [Your own buffer](/concepts/messages/#your-own-buffer).
+
+### When to use shmem
+
+Use the shmem transport for large messages between processes on one host. With `ipc://` or
+`tcp://`, the zeromq transport moves each byte through the kernel, and the receiver gets its own
+copy. The shmem transport sends only the metadata, and the receiver reads the buffer of the sender.
+
+- The saved copy grows with the size of the message. The cost of each transfer stays: the shmem
+  transport also sends one ZeroMQ message for each transfer, and it allocates the buffer in the
+  segment. Measure both transports with the message sizes of your application.
+- The shmem transport needs the same session on all peers and a segment that holds all messages
+  in flight. See [Tune and debug](/shmem/tuning/).
+- Between hosts, and for `pub` and `sub`, use the zeromq transport.
+
+A device can use both transports: shmem for the channels on the host, zeromq for the others. See
+[Use several transports](/guides/several-transports/).
+
+## The removed ofi transport
+
+FairMQ v1.5.0 removed the experimental `ofi` transport. No transport replaces it. The name `ofi` is
+an unknown transport now: `CreateTransportFactory("ofi")` throws `TransportFactoryError`, and a
+device with `--transport ofi` goes to the state `ERROR`. `Channel::Validate()` still accepts the
+`verbs://` addresses of the `ofi` transport, but the zeromq and shmem transports cannot bind or
+connect to them. Use `zeromq` with `tcp://` for transfers between hosts.
+
+## Related pages
+
+- [Messages and multipart](/concepts/messages/): what a transport does with your buffers.
+- [Use several transports](/guides/several-transports/): one device with zeromq and shmem channels.
+- [How shared memory works](/shmem/how-it-works/): the shmem transport in detail.
+- [Use channels without a device](/guides/channels-without-device/): make a transport factory in your own program.
+- [Command-line options](/reference/options/): `--transport`, `--io-threads` and the `--shm-*` options.
+- [Run a benchmark](/guides/benchmark/): measure the two transports and the effect of the settings.
+- [Use std::pmr memory resources](/guides/pmr/): fill a container in the message memory of a transport.

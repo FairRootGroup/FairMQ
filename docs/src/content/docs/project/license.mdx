@@ -1,0 +1,120 @@
+---
+title: 'License and citation'
+description: 'FairMQ is free software under the GNU LGPL version 3 only. This page gives the copyright holders, the bundled code and how to cite FairMQ.'
+sidebar:
+  order: 3
+---
+
+FairMQ is free software. You can use it, change it and distribute it under the terms of the GNU Lesser General Public License, version 3 only. This page tells you where the license terms are, who holds the copyright, and how to cite FairMQ in a publication.
+
+## The license
+
+| Item | Value |
+| --- | --- |
+| License | GNU Lesser General Public License, version 3 only (SPDX identifier `LGPL-3.0-only`) |
+| License text | [`LICENSE`](https://github.com/FairRootGroup/FairMQ/blob/dev/LICENSE) in the repository, also at [gnu.org](https://www.gnu.org/licenses/lgpl-3.0.html) |
+| Base license | The LGPL version 3 adds permissions to the [GNU General Public License, version 3](https://www.gnu.org/licenses/gpl-3.0.html) (GPL). Read the two documents together. |
+| Copyright and license of each file | [`COPYRIGHT`](https://github.com/FairRootGroup/FairMQ/blob/dev/COPYRIGHT), in the Debian machine-readable copyright format |
+
+Each source file of FairMQ starts with this header. The years and the copyright holders change from file to file.
+
+```txt
+/********************************************************************************
+ * Copyright (C) 2021-2023 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ *                                                                              *
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
+ *                  copied verbatim in the file "LICENSE"                       *
+ ********************************************************************************/
+```
+
+The source files have no `SPDX-License-Identifier` lines. The header names version 3 and no later version, and `COPYRIGHT` gives `LGPL-3.0-only`. Section 6 of the LGPL lets you use a later version only if the library says "or any later version". FairMQ does not say this.
+
+## What the license means in practice
+
+:::note
+This section is a short summary to help you find the related parts of the license. It is not legal advice. Only the text in `LICENSE` and the GPL version 3 are binding. For a legal question, ask a lawyer.
+:::
+
+The license uses these terms. FairMQ is the "Library". Your device or program that uses the interfaces of FairMQ is an "Application". An Application that is linked with FairMQ is a "Combined Work".
+
+- **Use without distribution**: section 2 of the GPL lets you make, run and propagate copies without conditions, if you do not convey them.
+- **Changed copies of FairMQ**: section 2 of the LGPL and section 5 of the GPL apply when you convey a changed copy of FairMQ.
+- **Code from the headers**: the headers of FairMQ contain templates and inline functions, and `runDevice.h` defines `main()`. Section 3 of the LGPL tells what you must do when your object code contains material from these headers.
+- **Programs that link FairMQ**: section 4 of the LGPL tells the conditions for a Combined Work. Examples are a notice that the program uses FairMQ, and copies of the GPL and the LGPL. Also, the user must be able to use the program with a changed FairMQ. Section 4 d) 1) names a suitable shared library mechanism as one way. The default build of FairMQ makes the shared library `libfairmq.so`.
+
+## Copyright
+
+`COPYRIGHT` gives these copyright holders for all files of FairMQ:
+
+- GSI Helmholtzzentrum fuer Schwerionenforschung GmbH
+- the authors in [`AUTHORS`](https://github.com/FairRootGroup/FairMQ/blob/dev/AUTHORS)
+- the contributors in [`CONTRIBUTORS`](https://github.com/FairRootGroup/FairMQ/blob/dev/CONTRIBUTORS)
+
+The Git history shows the copyright of each contributor. The files [`MemoryResources.h`](/source/fairmq/MemoryResources.h/), [`MemoryResources.cxx`](/source/fairmq/MemoryResources.cxx/) and [`MemoryResourceTools.h`](/source/fairmq/MemoryResourceTools.h/) have a second copyright holder: CERN and the copyright holders of ALICE O2.
+
+The upstream contact in `COPYRIGHT` is Mohammad Al-Turany. The maintainer in `codemeta.json` is the [GSI Helmholtz Centre for Heavy Ion Research](https://ror.org/02k8cbn47).
+
+## Bundled code
+
+The repository contains other projects as Git submodules in `extern/`. They have their own licenses.
+
+| Submodule | Copyright | License | Use in FairMQ |
+| --- | --- | --- | --- |
+| [GoogleTest](https://github.com/google/googletest) | Google Inc. | BSD-style, 3 clauses (text in `COPYRIGHT`) | The tests. It is not in the installed library. |
+| [PicoSHA2](https://github.com/okdshin/PicoSHA2) | okdshin | MIT (text in `COPYRIGHT`) | The shmem transport makes the shared memory ID of a session with its SHA-256 function. This ID is in the names of the shared memory objects. PicoSHA2 is compiled into `libfairmq`. |
+| [FairCMakeModules](https://github.com/FairRootGroup/FairCMakeModules) | GSI | GNU LGPL version 3 (`LICENSE` of the submodule) | CMake modules for the build, if CMake does not find an installed FairCMakeModules. |
+
+The dependencies outside of the repository, for example Boost, FairLogger and ZeroMQ, have their own licenses. See [Install](/start/install/#requirements) for the list.
+
+## Cite FairMQ
+
+FairMQ has a DOI on Zenodo: [10.5281/zenodo.1689985](https://doi.org/10.5281/zenodo.1689985). The README and `codemeta.json` give this DOI.
+
+When you cite FairMQ, give the version that you used. The text below cites v1.11.0. Change the version and the year for a different release. The [release notes](/project/release-notes/) give the date of each release.
+
+```txt
+Al-Turany, M., Klein, D., Kollegger, T., Rybalchenko, A., & Winckler, N. (2026).
+FairMQ: C++ Message Queuing Library and Framework (Version 1.11.0) [Computer software].
+Zenodo. https://doi.org/10.5281/zenodo.1689985
+```
+
+```txt title="fairmq.bib"
+@software{fairmq,
+  author    = {Al-Turany, Mohammad and Klein, Dennis and Kollegger, Thorsten and
+               Rybalchenko, Alexey and Winckler, Nicolas},
+  title     = {{FairMQ}: {C++} Message Queuing Library and Framework},
+  version   = {1.11.0},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.1689985},
+  url       = {https://doi.org/10.5281/zenodo.1689985}
+}
+```
+
+The entry type `@software` needs biblatex. For BibTeX styles without it, use `@misc`.
+
+The names, the title and the description come from the metadata files of the repository:
+
+- [`codemeta.json`](https://github.com/FairRootGroup/FairMQ/blob/dev/codemeta.json): the name, the description `C++ Message Queuing Library and Framework`, the DOI, the authors, the contributors and the maintainer.
+- [`.zenodo.json`](https://github.com/FairRootGroup/FairMQ/blob/dev/.zenodo.json): the creators and the contributors of the Zenodo record.
+
+## Authors and contributors
+
+The authors of FairMQ are in `AUTHORS`:
+
+| Author | ORCID |
+| --- | --- |
+| Mohammad Al-Turany | [0000-0002-8071-4497](https://orcid.org/0000-0002-8071-4497) |
+| Dennis Klein | [0000-0003-3787-1910](https://orcid.org/0000-0003-3787-1910) |
+| Thorsten Kollegger | — |
+| Alexey Rybalchenko | [0000-0002-6249-155X](https://orcid.org/0000-0002-6249-155X) |
+| Nicolas Winckler | — |
+
+[`CONTRIBUTORS`](https://github.com/FairRootGroup/FairMQ/blob/dev/CONTRIBUTORS) lists the other people who contributed code. The script `meta_update.py` copies the two lists into `codemeta.json` and `.zenodo.json`. Thus the citation metadata agrees with the files. To add your name, see [Authors and contributors](/project/contributing/#authors-and-contributors).
+
+## Related pages
+
+- [Contributing](/project/contributing/): add your name and send a change.
+- [Release notes](/project/release-notes/): the versions and their dates.
+- [Install](/start/install/): the dependencies and their versions.

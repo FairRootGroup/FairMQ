@@ -1,0 +1,301 @@
+---
+title: 'CMake options and variables'
+description: 'The CMake options and variables of the FairMQ build, the targets and variables of the installed CMake package, and the install layout.'
+sidebar:
+  order: 6
+---
+
+import { FileTree } from '@astrojs/starlight/components';
+
+FairMQ uses CMake. This page lists the CMake options and variables that change the FairMQ build, the targets and variables of the installed CMake package, and the files that the install step writes.
+
+## Set options and variables
+
+Set CMake options and variables with `-D` in the configure step:
+
+```sh
+cmake -S fairmq -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+```
+
+At the end of the configure step, CMake prints a summary. The summary shows the components that CMake builds, the dependencies that it found, the install prefix and the compile definitions. [Install](/start/install/) shows the full build.
+
+Some variables on this page are not declared as CMake options. `ccmake` and `cmake-gui` show them only after you set them with `-D`.
+
+## Build options
+
+[`CMakeLists.txt`](https://github.com/FairRootGroup/FairMQ/blob/dev/CMakeLists.txt) declares these options with the macro `fairmq_build_option()`.
+
+| Option | Default | Requires | Description |
+| --- | --- | --- | --- |
+| `BUILD_FAIRMQ` | `ON` | — | Build the library `libfairmq`, the [built-in devices](/tools/builtin-devices/), [`fairmq-shmmonitor`](/tools/shmmonitor/) and `fairmq-uuid-gen`. |
+| `BUILD_TESTING` | `OFF` | `BUILD_FAIRMQ` | Build the tests and add them to CTest. |
+| `BUILD_EXAMPLES` | `ON` | `BUILD_FAIRMQ` | Build the [examples](/examples/1-1/) and their start scripts. With `BUILD_TESTING=ON`, CTest also gets the tests of the examples. |
+| `BUILD_TIDY_TOOL` | `OFF` | — | Build the static analyzer [`fairmq-tidy`](/tools/fairmq-tidy/). The configure summary marks it as experimental. |
+| `USE_EXTERNAL_GTEST` | `OFF` | — | Use an installed GoogleTest, not the bundled copy. The option text in the code says "Not recommended". |
+| `FAIRMQ_DEBUG_MODE` | `OFF` | — | Compile with the definition `FAIRMQ_DEBUG_MODE`. See [Compile definitions](#compile-definitions). |
+
+### Options that require other options
+
+`BUILD_TESTING` and `BUILD_EXAMPLES` require `BUILD_FAIRMQ`. For these options, the macro in [`cmake/FairMQBuildOption.cmake`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQBuildOption.cmake) uses `cmake_dependent_option()`:
+
+- When `BUILD_FAIRMQ` is `ON`, you can set the two options.
+- When `BUILD_FAIRMQ` is `OFF`, the two options are `OFF`, and CMake hides them.
+- When one of the two options is `ON` and `BUILD_FAIRMQ` is `OFF`, the configure step stops with this error:
+
+```txt
+Cannot enable build option BUILD_TESTING, depending option is not set: BUILD_FAIRMQ
+```
+
+The error also occurs when the value `ON` is in the cache from an earlier configure step. Set the dependent options to `OFF` in the same command, for example `-DBUILD_FAIRMQ=OFF -DBUILD_EXAMPLES=OFF`.
+
+## Dependencies
+
+[`cmake/FairMQDependencies.cmake`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQDependencies.cmake) finds the dependencies with `find_package2()` of [FairCMakeModules](https://github.com/FairRootGroup/FairCMakeModules). The build options select the packages that the build needs.
+
+| Package | Version | Needed when | Kind |
+| --- | --- | --- | --- |
+| Threads | any | `BUILD_FAIRMQ` | public |
+| FairLogger | 1.6.0 or later | `BUILD_FAIRMQ` or `BUILD_TIDY_TOOL` | public |
+| Boost | 1.66 or later, but not 1.88 | `BUILD_FAIRMQ` or `BUILD_TIDY_TOOL` | public |
+| ZeroMQ | 4.1.4 or later | `BUILD_FAIRMQ` | private |
+| PicoSHA2 | bundled | `BUILD_FAIRMQ` | bundled |
+| GoogleTest | bundled | `BUILD_TESTING` | bundled, or public with `USE_EXTERNAL_GTEST` |
+| LLVM, Clang, CLI11 | any | `BUILD_TIDY_TOOL` | private |
+| FairCMakeModules | 0.2 or later | always | private, bundled if CMake does not find it |
+
+The Boost components are `container`, `program_options`, `filesystem`, `date_time` and `regex`.
+
+The kinds have these effects:
+
+- **Public**: the installed package records the dependency. A project that uses FairMQ must find the package too. See [The installed package](#the-installed-package).
+- **Private**: only the FairMQ build uses the package.
+- **Bundled**: the code is in a Git submodule in `extern/`. The configure step runs `git submodule update --init` for it. Then it builds GoogleTest and FairCMakeModules in the build directory under `extern/`. The log of this build is `build.log` in the same directory. PicoSHA2 is a header-only library.
+
+Boost 1.88 replaced the Boost.Process API with version 2. With Boost 1.88, the configure step stops with an error. With Boost 1.89 or later, FairMQ uses the header `boost/process/v1.hpp`.
+
+To find a package in a location that is not standard, add its prefix to `CMAKE_PREFIX_PATH`. Or set `<NAME>_ROOT`, with the package name in upper case, for example `-DFAIRLOGGER_ROOT=/opt/fairlogger`. `find_package2()` also reads an environment variable with the same name.
+
+## Version
+
+[`cmake/GitHelper.cmake`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/GitHelper.cmake) reads the version from Git with `git describe --tags --dirty --match "v*"`. For example, the tag description `v1.11.0-47-ge366c401` gives the Git version `1.11.0-47-ge366c401` and the project version `1.11.0`.
+
+:::caution[Build from a Git checkout with the tags]
+Without `.git`, or without the tags, the version is `0.0.0.0`. The library, the package directory and the package version then use `0.0.0.0`, and a request such as `find_package(FairMQ 1.11)` does not find the package.
+:::
+
+The configure step writes the header `fairmq/Version.h` from `fairmq/Version.h.in`. The install step copies it to `include/fairmq/`.
+
+| Macro | Value for v1.11.0 |
+| --- | --- |
+| `FAIRMQ_VERSION` | `"1.11.0"` |
+| `FAIRMQ_VERSION_MAJOR`, `FAIRMQ_VERSION_MINOR`, `FAIRMQ_VERSION_PATCH` | `1`, `11`, `0` |
+| `FAIRMQ_VERSION_DEC` | The expression `(1 * 100000) + (11 * 1000) + (0 * 10)`, that is 111000 |
+| `FAIRMQ_GIT_VERSION` | The Git version, for example `"1.11.0-47-ge366c401"` |
+| `FAIRMQ_GIT_DATE` | The commit date of the built commit (`git log -1 --format=%cd`) |
+| `FAIRMQ_BUILD_TYPE` | The value of `CMAKE_BUILD_TYPE`, for example `"RelWithDebInfo"` |
+| `FAIRMQ_REPO_URL` | `"https://github.com/FairRootGroup/FairMQ"` |
+| `FAIRMQ_LICENSE` | `"LGPL-3.0"` |
+| `FAIRMQ_COPYRIGHT` | `"2012-2025 GSI"` |
+
+## Build type and compiler flags
+
+[`cmake/FairMQProjectSettings.cmake`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQProjectSettings.cmake) sets these values.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `CMAKE_BUILD_TYPE` | `RelWithDebInfo` | The build type. See the next table. A multi-config generator gets the types `Debug`, `Release` and `RelWithDebInfo`. |
+| `CMAKE_CXX_STANDARD` | not set | If you set it, the value must be 17 or more. The target `FairMQ::FairMQ` requires C++17 in all cases. |
+| `CMAKE_CXX_EXTENSIONS` | `OFF` | Compile without the language extensions of the compiler. |
+| `BUILD_SHARED_LIBS` | `ON` | `ON` builds `libfairmq` as a shared library, `OFF` as a static archive. The CI builds only the shared library. |
+| `CMAKE_POSITION_INDEPENDENT_CODE` | `ON` | Compile all code as position-independent code (`-fPIC`). FairMQ sets `ON` also when you set `OFF`. |
+| `CMAKE_EXPORT_COMPILE_COMMANDS` | `ON` | Write `compile_commands.json` in the build directory. FairMQ always sets `ON`. `fairmq-tidy` needs this file. |
+
+FairMQ sets the compiler flags of each build type:
+
+| Build type | Flags |
+| --- | --- |
+| `Debug` | `-Og -g`, the warnings, the sanitizers |
+| `RelWithDebInfo` | `-O3 -g -DNDEBUG`, the warnings, the sanitizers |
+| `Release` | `-O3 -DNDEBUG` |
+
+The warnings are `-Wshadow -Wall -Wextra -Wpedantic`. The sanitizers are the flags of the [sanitizer options](#sanitizers). FairMQ also adds `-fdiagnostics-color=always` to `CMAKE_CXX_FLAGS`, or `-fdiagnostics-color=never` with `DISABLE_COLOR`.
+
+FairMQ sets the variables `CMAKE_CXX_FLAGS_<CONFIG>` as normal variables. Thus a value from `-DCMAKE_CXX_FLAGS_RELEASE=…` has no effect. Give additional flags in `CMAKE_CXX_FLAGS`.
+
+## Sanitizers
+
+[`cmake/FairMQProjectSettings.cmake`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQProjectSettings.cmake) declares these options.
+
+| Option | Default | Flag | Notes |
+| --- | --- | --- | --- |
+| `ENABLE_SANITIZER_ADDRESS` | `OFF` | `-fsanitize=address` | — |
+| `ENABLE_SANITIZER_LEAK` | `OFF` | `-fsanitize=leak` | The tests use the suppressions in `test/leak_sanitizer_suppressions.txt`. This requires CMake 3.22 or later. |
+| `ENABLE_SANITIZER_UNDEFINED_BEHAVIOR` | `OFF` | `-fsanitize=undefined` | — |
+| `ENABLE_SANITIZER_THREAD` | `OFF` | `-fsanitize=thread` | Not together with the address or the leak sanitizer. CMake then shows a warning and ignores the option. |
+| `ENABLE_SANITIZER_MEMORY` | `OFF` | `-fsanitize=memory` | Clang only. Not together with the address, the thread or the leak sanitizer. |
+
+FairMQ joins the selected sanitizers in one flag, for example `-fsanitize=address,leak,undefined`. Only the `Debug` and the `RelWithDebInfo` flags get this flag. A `Release` build has no sanitizers.
+
+## Static analysis
+
+| Variable | Default | Description | Source |
+| --- | --- | --- | --- |
+| `RUN_STATIC_ANALYSIS` | `OFF` | Run `clang-tidy --extra-arg=-std=c++17` and `cpplint` on each file that the build compiles. `clang-tidy` uses the checks in `.clang-tidy`. CMake searches the programs in `PATH`. | [FairMQProjectSettings.cmake](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQProjectSettings.cmake) |
+| `RUN_FAIRMQ_TIDY` | `OFF` | With `BUILD_TIDY_TOOL=ON`: run `fairmq-tidy` on the sources of the library, the programs and the tests. | [fairmq/CMakeLists.txt](https://github.com/FairRootGroup/FairMQ/blob/dev/fairmq/CMakeLists.txt), [GTestHelper.cmake](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/GTestHelper.cmake) |
+
+With `RUN_STATIC_ANALYSIS`, CMake also searches `iwyu`, and the summary shows the result. The build does not run `iwyu`: `FairMQProjectSettings.cmake` sets `CMAKE_CXX_IWYU`, and CMake does not read this variable.
+
+[`cmake/FairMQTidy.cmake`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQTidy.cmake) defines `fairmq_target_tidy(TARGET <target> [EXTRA_ARGS <args>] [CLANG_EXECUTABLE <clang>])`. It runs `fairmq-tidy` on the `.cpp` and `.cxx` files of a target. The installed package has this module when it has the component `tidy_tool`. See [Check code with fairmq-tidy](/guides/fairmq-tidy/).
+
+## Other variables
+
+| Variable | Default | Description | Source |
+| --- | --- | --- | --- |
+| `CMAKE_INSTALL_PREFIX` | the CMake default | The install prefix. The summary shows it. | CMake |
+| `DISABLE_COLOR` | `OFF` | `ON`: no colors in the configure summary and in the output of the compiler. | [FairMQProjectSettings.cmake](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQProjectSettings.cmake) |
+| `ENABLE_CCACHE` | `OFF` | With the Ninja generator: compile through `ccache`, if CMake finds it. Other generators ignore it. For them, set `CMAKE_CXX_COMPILER_LAUNCHER=ccache`. | [FairMQProjectSettings.cmake](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQProjectSettings.cmake) |
+| `FAIRMQ_TEST_LD_LIBRARY_PATH` | not set | A directory that CTest adds to the start of `LD_LIBRARY_PATH` of each test and each example test. It requires CMake 3.22 or later. The CI uses it to run the tests with a libstdc++ that has ThreadSanitizer instrumentation. | [test/CMakeLists.txt](https://github.com/FairRootGroup/FairMQ/blob/dev/test/CMakeLists.txt), [examples/CMakeLists.txt](https://github.com/FairRootGroup/FairMQ/blob/dev/examples/CMakeLists.txt) |
+
+## Compile definitions
+
+These variables set compile definitions on the target `FairMQ::FairMQ`. The definitions are public. Thus the targets that link to `FairMQ::FairMQ` get the same definitions as the library.
+
+| Variable | Default | Compile definition | Effect |
+| --- | --- | --- | --- |
+| `FAIRMQ_HAS_STD_FILESYSTEM` | `1`, but `0` for GCC and Clang older than 9 | `FAIRMQ_HAS_STD_FILESYSTEM=1` or `=0` | `1`: FairMQ uses `std::filesystem`. `0`: FairMQ uses Boost.Filesystem. |
+| `FAIRMQ_HAS_STD_PMR` | `1`, but `0` for Clang | `FAIRMQ_HAS_STD_PMR=1` or `=0` | No effect: the code does not read this definition. Since v1.10.0, FairMQ uses `std::pmr` with all compilers. |
+| `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` | not set | `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND=true` or `=false` | Sets [`Channel::DefaultAutoBind`](/api/fair/mq/Channel/#DefaultAutoBind), the default of the channel property `autoBind`. Without the variable, the default is `true`. The variable accepts all CMake booleans, for example `ON` and `OFF`. |
+| `FAIRMQ_DEBUG_MODE` | `OFF` | `FAIRMQ_DEBUG_MODE` | The shmem transport counts the messages in each segment and records each message. `fairmq-shmmonitor` shows the counts, and its option `--debug` prints the messages. In the state `RESETTING DEVICE`, the transport throws an error if messages of the device still exist. This mode can decrease the performance. |
+
+The sources are [`cmake/FairMQProjectSettings.cmake`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQProjectSettings.cmake) and [`fairmq/CMakeLists.txt`](https://github.com/FairRootGroup/FairMQ/blob/dev/fairmq/CMakeLists.txt). The summary of the configure step shows the values.
+
+With `autoBind`, a channel that cannot bind to its TCP port tries random ports from `portRangeMin` (default `22000`) to `portRangeMax` (default `23000`). See [Channel properties](/reference/channel-properties/).
+
+The target also has the public definitions `BOOST_ERROR_CODE_HEADER_ONLY` and `BOOST_ASIO_HAS_HAS_STD_CHRONO`.
+
+## The installed package
+
+The install step writes the CMake package to `lib/cmake/FairMQ-<version>/` in the install prefix. `find_package(FairMQ)` finds it when the prefix is a standard location or is in `CMAKE_PREFIX_PATH`:
+
+```cmake
+find_package(FairMQ 1.11 REQUIRED COMPONENTS fairmq)
+message(STATUS "FairMQ ${FairMQ_GIT_VERSION} in ${FairMQ_PREFIX}")
+```
+
+The file `FairMQConfigVersion.cmake` accepts a request for the same version or an older version (`AnyNewerVersion`). For example, FairMQ 1.11.0 satisfies `find_package(FairMQ 1.9)`. [Use FairMQ in a CMake project](/start/cmake/) shows the full set-up of a project. The build directory has no package: see [The build tree](/start/cmake/#the-build-tree).
+
+[`cmake/FairMQConfig.cmake.in`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQConfig.cmake.in) and [`cmake/FairMQPackage.cmake`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQPackage.cmake) make the package.
+
+### Components
+
+| Component | Present when | Installed files |
+| --- | --- | --- |
+| `fairmq` | `BUILD_FAIRMQ` | The library, the programs, the headers and `FindZeroMQ.cmake` |
+| `tests` | `BUILD_TESTING` | None. The install step does not install the tests. |
+| `examples` | `BUILD_EXAMPLES` | The example programs, their start scripts and their configuration files |
+| `tidy_tool` | `BUILD_TIDY_TOOL` | `fairmq-tidy` and `FairMQTidy.cmake` |
+
+If you request a component that the installation does not have, `find_package()` does not find FairMQ. For example, `find_package(FairMQ COMPONENTS tidy_tool)` fails if FairMQ was built without `BUILD_TIDY_TOOL`.
+
+### Imported targets
+
+All targets are in the namespace `FairMQ::`.
+
+| Target | Type | Component |
+| --- | --- | --- |
+| `FairMQ::FairMQ` | Library `libfairmq` | `fairmq` |
+| `FairMQ::fairmq-bsampler`, `FairMQ::fairmq-merger`, `FairMQ::fairmq-multiplier`, `FairMQ::fairmq-proxy`, `FairMQ::fairmq-sink`, `FairMQ::fairmq-splitter` | Programs: the [built-in devices](/tools/builtin-devices/) | `fairmq` |
+| `FairMQ::fairmq-shmmonitor` | Program: [fairmq-shmmonitor](/tools/shmmonitor/) | `fairmq` |
+| `FairMQ::fairmq-uuid-gen` | Program: [prints a UUID](/reference/tools/#fairmq-uuid-gen) | `fairmq` |
+| `FairMQ::fairmq-tidy` | Program: [fairmq-tidy](/tools/fairmq-tidy/) | `tidy_tool` |
+
+The package does not export the example programs.
+
+`FairMQ::FairMQ` gives these usage requirements to the targets that link to it:
+
+- C++17 (`cxx_std_17`).
+- The include directories `include/fairmq` and `include` of the prefix. Thus `#include <fairmq/Device.h>` and the deprecated `#include <FairMQDevice.h>` both work. See [Move from the FairMQ* names](/guides/migrate-names/).
+- The [compile definitions](#compile-definitions).
+- The libraries `Threads::Threads`, `dl`, `rt` (Linux only), `Boost::boost`, `Boost::container`, `Boost::program_options`, `Boost::filesystem`, `Boost::regex` and `FairLogger::FairLogger`.
+
+:::caution[Find the dependencies before you link]
+The package does not search its dependencies. Your project must find Boost, FairLogger and Threads before it links to `FairMQ::FairMQ`. `find_package2_implicit_dependencies()` of FairCMakeModules reads the variables `FairMQ_PACKAGE_DEPENDENCIES`, `FairMQ_<dep>_VERSION` and `FairMQ_<dep>_COMPONENTS` and finds the packages.
+:::
+
+### Variables
+
+| Variable | Value |
+| --- | --- |
+| `FairMQ_VERSION` | The version, `MAJOR.MINOR.PATCH`, for example `1.11.0`. |
+| `FairMQ_GIT_VERSION` | The [Git version](#version), for example `1.11.0-47-ge366c401`. |
+| `FairMQ_GIT_DATE` | The commit date of the built commit. |
+| `FairMQ_VERSION_HOTFIX` | Empty for a version with three numbers, for example `1.11.0`. The code sets `0` only if `PROJECT_VERSION_TWEAK` is not defined, but `project()` always defines it. |
+| `FairMQ_PREFIX` | The install prefix. The package computes it from the location of its config file. |
+| `FairMQ_BINDIR` | `${FairMQ_PREFIX}/bin` |
+| `FairMQ_INCDIR` | `${FairMQ_PREFIX}/include` |
+| `FairMQ_LIBDIR` | `${FairMQ_PREFIX}/lib`, or the value of `CMAKE_INSTALL_LIBDIR`, for example `lib64` |
+| `FairMQ_DATADIR` | `${FairMQ_PREFIX}/share/fairmq` |
+| `FairMQ_CMAKEMODDIR` | `${FairMQ_PREFIX}/share/fairmq/cmake`. The package adds this directory to the start of `CMAKE_MODULE_PATH`. |
+| `FairMQ_BUILD_TYPE` | The `CMAKE_BUILD_TYPE` of the FairMQ build. |
+| `FairMQ_BUILD_TYPE_UPPER` | The same value in upper case. |
+| `FairMQ_CXX_FLAGS` | `CMAKE_CXX_FLAGS` and `CMAKE_CXX_FLAGS_<BUILD_TYPE>` of the FairMQ build, as a list. |
+| `FairMQ_PACKAGE_DEPENDENCIES` | The public dependencies: `Threads`, `FairLogger`, `Boost`, and the public dependencies that these packages declare. With `BUILD_TESTING` and `USE_EXTERNAL_GTEST`, also `GTest`. |
+| `FairMQ_<dep>_VERSION` | The minimum version of `<dep>` that the build required, for example `FairMQ_FairLogger_VERSION` is `1.6.0`. |
+| `FairMQ_<dep>_COMPONENTS` | The components of `<dep>` that the build required, for example the five components in `FairMQ_Boost_COMPONENTS`. |
+| `FairMQ_<component>_FOUND` | `TRUE` for each [component](#components) of the installation. |
+| `FairMQ_PACKAGE_COMPONENTS` | Empty. The variable must list the components, but a typo in `cmake/FairMQPackage.cmake` empties it. Use `FairMQ_<component>_FOUND`. |
+
+## Install layout
+
+The install step writes these files in the install prefix. The directory names come from `GNUInstallDirs`. Thus the library directory can be `lib64` instead of `lib`.
+
+<FileTree>
+- bin/
+  - fairmq-bsampler
+  - fairmq-merger
+  - fairmq-multiplier
+  - fairmq-proxy
+  - fairmq-sink
+  - fairmq-splitter
+  - fairmq-shmmonitor
+  - fairmq-uuid-gen
+  - fairmq-tidy with `BUILD_TIDY_TOOL`
+  - fairmq-ex-1-1-sampler the example programs, with `BUILD_EXAMPLES`
+  - fairmq-start-ex-1-1.sh the start scripts of the examples
+  - …
+- include/
+  - fairmq/
+    - Device.h the public headers
+    - Version.h made by the configure step
+    - options/
+    - shmem/
+    - tools/
+    - …
+- lib/
+  - libfairmq.so.1.11.0 the library
+  - libfairmq.so a link to the library
+  - cmake/
+    - FairMQ-1.11.0/
+      - FairMQConfig.cmake
+      - FairMQConfigVersion.cmake
+      - FairMQTargets.cmake
+      - FairMQTargets-relwithdebinfo.cmake
+- share/
+  - fairmq/
+    - cmake/
+      - FindZeroMQ.cmake
+      - FairMQTidy.cmake with `BUILD_TIDY_TOOL`
+    - ex-1-n-1.json the configuration files of the examples
+    - …
+</FileTree>
+
+The file name of the library has the full version. FairMQ does not keep binary compatibility between releases. Thus you must build your programs again for each new FairMQ version.
+
+If the library directory of the prefix is not a system directory, the installed programs and libraries get a run path. On Linux it is `$ORIGIN/../lib` (a `RUNPATH`), on macOS `@loader_path/../lib`. `CMAKE_INSTALL_RPATH_USE_LINK_PATH` is `ON` by default, so the run path also has the directories of the dependencies.
+
+## Related pages
+
+- [Install](/start/install/): build and install FairMQ.
+- [Use FairMQ in a CMake project](/start/cmake/): find the package and link your devices.
+- [Check code with fairmq-tidy](/guides/fairmq-tidy/): the static analyzer and `fairmq_target_tidy()`.
+- [Contributing](/project/contributing/): build and run the tests.

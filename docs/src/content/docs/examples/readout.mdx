@@ -1,0 +1,138 @@
+---
+title: 'readout: a readout chain'
+description: 'A readout node passes region messages over shmem channels and sends them to a receiver over zeromq, with or without a processor.'
+sidebar:
+  order: 9
+code: [fairmq/UnmanagedRegion.h, fairmq/Device.h, fairmq/Channel.h, fairmq/shmem/Message.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { FileTree } from '@astrojs/starlight/components';
+
+This example models a readout node and a processing node. On the readout node, messages from an [unmanaged region](/shmem/regions/) go through several devices on shmem channels without a copy. A sender forwards the data to the processing node on a zeromq channel.
+
+The code is in [`examples/readout`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/readout). The example shows how to:
+
+- create a region in one device and send messages from it,
+- forward region messages through other devices,
+- send a shmem message on a zeromq channel ([several transports](/guides/several-transports/) in one device),
+- make new data in the managed segment from a region message, and release the region block.
+
+## Topology
+
+The devices do not set `--transport`, so the default transport of each device is `zeromq`. Each channel selects its transport with the [channel property](/reference/channel-properties/) `transport`. All channels are `pair` channels.
+
+`fairmq-start-ex-readout.sh` starts four devices: readout, builder, sender and receiver.
+
+| Device | Channel | Type | Method | Address | Transport |
+| --- | --- | --- | --- | --- | --- |
+| `readout1` | `rb` | `pair` | `bind` | `tcp://localhost:7777` | `shmem` |
+| `builder1` | `rb` | `pair` | `connect` | `tcp://localhost:7777` | `shmem` |
+| | `bs` | `pair` | `connect` | `tcp://localhost:7778` | `shmem` |
+| `sender1` | `bs` | `pair` | `bind` | `tcp://localhost:7778` | `shmem` |
+| | `sr` | `pair` | `connect` | `tcp://localhost:7779` | `zeromq` |
+| `receiver1` | `sr` | `pair` | `bind` | `tcp://localhost:7779` | `zeromq` |
+
+`fairmq-start-ex-readout-processing.sh` adds a processor between the builder and the sender. The builder gets `--output-name bp` and the sender gets `--input-name ps`.
+
+| Device | Channel | Type | Method | Address | Transport |
+| --- | --- | --- | --- | --- | --- |
+| `readout1` | `rb` | `pair` | `bind` | `tcp://localhost:7777` | `shmem` |
+| `builder1` | `rb` | `pair` | `connect` | `tcp://localhost:7777` | `shmem` |
+| | `bp` | `pair` | `connect` | `tcp://localhost:7778` | `shmem` |
+| `processor1` | `bp` | `pair` | `bind` | `tcp://localhost:7778` | `shmem` |
+| | `ps` | `pair` | `connect` | `tcp://localhost:7779` | `shmem` |
+| `sender1` | `ps` | `pair` | `bind` | `tcp://localhost:7779` | `shmem` |
+| | `sr` | `pair` | `connect` | `tcp://localhost:7780` | `zeromq` |
+| `receiver1` | `sr` | `pair` | `bind` | `tcp://localhost:7780` | `zeromq` |
+
+## Requirements
+
+The start scripts open one `xterm` window for each device. `xterm` must be installed.
+
+## Build and run
+
+The examples build when the CMake option `BUILD_EXAMPLES` is `ON` (the default). The executables and the start scripts are in the build directory:
+
+<FileTree>
+
+- build/examples/readout/
+  - fairmq-ex-readout-readout
+  - fairmq-ex-readout-builder
+  - fairmq-ex-readout-processor
+  - fairmq-ex-readout-sender
+  - fairmq-ex-readout-receiver
+  - fairmq-start-ex-readout.sh
+  - fairmq-start-ex-readout-processing.sh
+
+</FileTree>
+
+Both scripts take one optional argument: the message size in bytes (default `1000000`).
+
+```sh
+cd build/examples/readout
+./fairmq-start-ex-readout.sh
+./fairmq-start-ex-readout-processing.sh 4096
+```
+
+## The code
+
+### Readout: create the region and send
+
+The readout device creates a region of 10000000 bytes with the transport of the channel `rb`. It gives no [`RegionConfig`](/api/fair/mq/RegionConfig/), so the region uses the defaults. The callback counts the acknowledgements.
+
+<Snippet file="examples/readout/readout.cxx" start="void InitTask() override" />
+
+[`ConditionalRun()`](/api/fair/mq/Device/#ConditionalRun) sends one message for each call. The message points to the start of the region and has the size `--msg-size`.
+
+<Snippet file="examples/readout/readout.cxx" start="bool ConditionalRun() override" />
+
+In `ResetTask()`, the readout device waits 500 ms once if messages are not acknowledged. Then it destroys the region.
+
+### Builder and sender: forward the messages
+
+The builder and the sender register a data callback with [`OnData()`](/api/fair/mq/Device/#OnData) and send each message on. The builder forwards from `rb` to the channel of `--output-name` (default `bs`):
+
+<Snippet file="examples/readout/builder.cxx" start="bool HandleData" />
+
+The sender forwards from the channel of `--input-name` (default `bs`) to `sr`. The message is a shmem message, but `sr` is a zeromq channel. [`Channel::Send()`](/api/fair/mq/Channel/#Send) compares the transports. If they differ, the channel puts the data of the message into a new message of its own transport. It does not copy the data. The new message deletes the original message when the zeromq transport releases the data. See [`Channel.h`](/source/fairmq/Channel.h/#L421-L438).
+
+Thus the readout device gets the acknowledgement for a block after the zeromq transport releases the data.
+
+### Processor: make new data
+
+The processor receives a region message and makes a new message of the same size for the channel `ps`. It does not copy the data. On the shmem transport, this message is in the managed segment, not in the region.
+
+<Snippet file="examples/readout/processor.cxx" start="bool HandleData" />
+
+The device destroys the received message when `HandleData()` returns (see [`Device.cxx`](/source/fairmq/Device.cxx/#L564-L573)). Then the transport releases the region block, and the readout device gets the acknowledgement. The new message is not part of the region.
+
+## Output
+
+The devices log little. With `--max-iterations` greater than 0, the readout device and the receiver leave the state `RUNNING` after that number of messages. The readout device logs:
+
+```txt
+Configured maximum number of iterations reached. Leaving RUNNING state.
+```
+
+The receiver logs `Configured max number of iterations reached. Leaving RUNNING state.` With `--severity debug` and `--max-iterations`, the readout device also logs each bulk callback as `Received <n> acks`. When messages are not acknowledged in `ResetTask()`, it logs `waiting for all acknowledgements... (<n>)` and `done, still unacked: <n>` on the severity `debug`.
+
+## Test
+
+The example has no test. Its `CMakeLists.txt` uses `NO_TEST`.
+
+## Things to try
+
+- Add `--max-iterations 1000 --severity debug` to the readout device in the start script. The log then shows the acknowledgements.
+- Limit the rate of the readout device with `--rate 100` (in Hz). The option controls the `ConditionalRun()` loop.
+- Run the receiver on a second computer. Change the address of `sr` in the sender and in the receiver to an address of that computer.
+- Look at the segment and the region with [fairmq-shmmonitor](/tools/shmmonitor/) while the devices run.
+
+## Related pages
+
+- [Unmanaged regions](/shmem/regions/)
+- [How shared memory works](/shmem/how-it-works/)
+- [Use several transports](/guides/several-transports/)
+- [region: unmanaged regions](/examples/region/): acknowledgements, region events and shared copies.
+- [Transports](/concepts/transports/)
+- [Design a topology](/guides/design-topology/#a-readout-chain)

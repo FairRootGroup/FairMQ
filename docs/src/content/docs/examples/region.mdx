@@ -1,0 +1,207 @@
+---
+title: 'region: unmanaged regions'
+description: 'A sampler sends messages from an unmanaged region and counts the acknowledgements; a larger topology shares the region data with four sinks.'
+sidebar:
+  order: 8
+code: [fairmq/UnmanagedRegion.h, fairmq/Device.h, fairmq/TransportFactory.h, fairmq/shmem/UnmanagedRegion.h, fairmq/shmem/Message.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { FileTree, Steps } from '@astrojs/starlight/components';
+
+The sampler of this example creates an [unmanaged region](/shmem/regions/) and sends messages that point into it. The transport tells the sampler, through a callback, when the receivers no longer use a message. The sampler counts these acknowledgements.
+
+The code is in [`examples/region`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/region). The example shows how to:
+
+- create a region with [`NewUnmanagedRegionFor()`](/api/fair/mq/Device/#NewUnmanagedRegionFor) and a [`RegionConfig`](/api/fair/mq/RegionConfig/),
+- make messages in the region with [`NewMessageFor()`](/api/fair/mq/Device/#NewMessageFor) and send 64 of them as one multipart message,
+- receive the acknowledgements in a bulk callback,
+- log region events with [`SubscribeToRegionEvents()`](/api/fair/mq/TransportFactory/#SubscribeToRegionEvents),
+- share region messages between two outputs with [`Copy()`](/api/fair/mq/Message/#Copy),
+- use a region that another process created.
+
+## Topology
+
+The example has three start scripts. `fairmq-start-ex-region.sh` connects one sampler to one sink:
+
+| Device | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- |
+| `sampler1` | `data` | `push` | `bind` | `tcp://127.0.0.1:7777` |
+| `sink1` | `data` | `pull` | `connect` | `tcp://127.0.0.1:7777` |
+
+The script also sets `sndKernelSize=212992` on the channel of the sampler and `rcvKernelSize=212992` on the channel of the sink.
+
+`fairmq-start-ex-region-advanced.sh` starts one sampler, two processors and four sinks. The `push` channel of the sampler distributes the messages over the two processors. Each processor sends each part to two sinks. The sampler and the sinks select their channel with `--chan-name`.
+
+| Device | `--shm-segment-id` | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- | --- |
+| `sampler1` | `0` (default) | `data1` | `push` | `bind` | `tcp://127.0.0.1:7777` |
+| `processor1` | `1` | `data1` | `pull` | `connect` | `tcp://127.0.0.1:7777` |
+| | | `data2` | `push` | `bind` | `tcp://127.0.0.1:7778` |
+| | | `data3` | `push` | `bind` | `tcp://127.0.0.1:7779` |
+| `processor2` | `2` | `data1` | `pull` | `connect` | `tcp://127.0.0.1:7777` |
+| | | `data2` | `push` | `bind` | `tcp://127.0.0.1:7788` |
+| | | `data3` | `push` | `bind` | `tcp://127.0.0.1:7789` |
+| `sink1_1` | `1` | `data2` | `pull` | `connect` | `tcp://127.0.0.1:7778` |
+| `sink1_2` | `1` | `data3` | `pull` | `connect` | `tcp://127.0.0.1:7779` |
+| `sink2_1` | `2` | `data2` | `pull` | `connect` | `tcp://127.0.0.1:7788` |
+| `sink2_2` | `2` | `data3` | `pull` | `connect` | `tcp://127.0.0.1:7789` |
+
+`fairmq-start-ex-region-advanced-external.sh` starts the same topology with these changes:
+
+- All devices use `--shmid 1`, `--shm-no-cleanup true` and `--shm-monitor false`.
+- The sampler uses `--external-region true` and `--rc-segment-size 200000000`.
+
+With `--external-region true`, the sampler uses a region that another process created. See [Use a region of another process](#use-a-region-of-another-process).
+
+## Requirements
+
+- The start scripts open one `xterm` window for each device. `xterm` must be installed.
+- The advanced scripts use options of the shmem transport (`--shm-segment-id`, `--shmid`). Use them with the shmem transport, the default of the scripts.
+- `fairmq-ex-region-keep-alive` uses the shared memory classes of FairMQ directly. It works only with shared memory.
+
+## Build and run
+
+The examples build when the CMake option `BUILD_EXAMPLES` is `ON` (the default). The executables and the start scripts are in the build directory:
+
+<FileTree>
+
+- build/examples/region/
+  - fairmq-ex-region-sampler
+  - fairmq-ex-region-processor
+  - fairmq-ex-region-sink
+  - fairmq-ex-region-keep-alive
+  - fairmq-start-ex-region.sh
+  - fairmq-start-ex-region-advanced.sh
+  - fairmq-start-ex-region-advanced-external.sh
+  - test-ex-region.sh
+
+</FileTree>
+
+Each start script takes two arguments: the transport (default `shmem`) and the size of one part in bytes (default `1000000`).
+
+```sh
+cd build/examples/region
+./fairmq-start-ex-region.sh
+./fairmq-start-ex-region.sh zeromq 4096
+./fairmq-start-ex-region-advanced.sh
+```
+
+The scripts set `FAIRMQ_PATH` to `build/fairmq`. A device with `--shm-monitor true` finds `fairmq-shmmonitor` there. The install step copies the executables and the scripts to `bin` in the install prefix. The installed scripts start the installed executables.
+
+## The code
+
+### Create the region
+
+The sampler creates the region in `InitTask()`. The region is 10000000 bytes. The sampler creates it with the transport of sub-channel 0 of its output channel.
+
+<Snippet file="examples/region/sampler.cxx" start="fair::mq::RegionConfig regionCfg;" end="^\s+\)\);$" />
+
+- The lambda is the bulk callback. The transport calls it with the blocks that it no longer needs. Each [`RegionBlock`](/api/fair/mq/RegionBlock/) has the pointer, the size and the hint of one message.
+- `linger` comes from `--region-linger` (default 100). On the shmem transport, the region receives outstanding acknowledgements for this time in ms when it is destroyed. The zeromq transport ignores it.
+- `rcSegmentSize` comes from `--rc-segment-size` (default 10000000 in this example). It sets the size of the segment that keeps the reference counts of copied region messages.
+- `lock` and `zero` lock the pages of the region in memory and fill the region with zeros. The sampler sets them only for a region that it creates itself.
+
+### Send messages from the region
+
+`Run()` makes 64 messages and sends them as one [`Parts`](/api/fair/mq/Parts/) object. All 64 messages point to the start of the region and have the size `--msg-size`. The counter of unacknowledged messages goes up by the number of parts.
+
+<Snippet file="examples/region/sampler.cxx" start="while (!NewStatePending()) {" />
+
+After the send loop, `Run()` waits until the counter is zero, or until a new state is pending. `ResetTask()` destroys the region and ends the subscription to region events.
+
+### Log the region events
+
+The sampler, the processor and the sink all subscribe to the region events of their transport:
+
+<Snippet file="examples/region/sampler.cxx" start="SubscribeToRegionEvents" />
+
+On the shmem transport, the events cover all managed segments and unmanaged regions of the [session](/shmem/sessions/). Thus the sink also logs the region of the sampler. On the zeromq transport, the events come only from the regions of the own process. There, the first event is `local_only`.
+
+### Share a region message
+
+The processor sends each received part to two channels. It makes both outgoing messages with `Copy()`:
+
+<Snippet file="examples/region/processor.cxx" start="for (const auto& inPart : inParts) {" />
+
+On the shmem transport, `Copy()` of a region message copies no data. It adds a reference count. The transport releases the block, and the sampler gets the acknowledgement, after the last copy is destroyed. See [`shmem/Message.h`](/source/fairmq/shmem/Message.h/#L273-L330) and [How shared memory works](/shmem/how-it-works/). On the zeromq transport, the copy shares the buffer of the original message.
+
+### Keep segments and regions alive
+
+`fairmq-ex-region-keep-alive` is not a device. At start, it removes all shared memory of the given `--shmid`. Then it creates managed segments and unmanaged regions for this `--shmid`, locks them in memory and fills them with zeros:
+
+<Snippet file="examples/region/keep-alive.cxx" start="desc.add_options()" end="Print help" />
+
+The program checks every 500 ms that the segments and regions are present. It stops and cleans up if one is missing. On `SIGUSR1`, it resets the content of the segments and regions. On `SIGINT` or `SIGTERM`, it removes all shared memory of the `--shmid`.
+
+:::note
+`--segments` and `--regions` need three comma-separated values for each entry, for example `1,10000000,0`. The program uses the first two values (id and size) and ignores the third. The help text of `--regions` shows only `<id>,<size>` for the first entry.
+:::
+
+## Output
+
+The sampler, the processors and the sinks log each region event:
+
+```txt
+Region event: created: unmanaged, id: <id>, ptr: <address>, size: 10000000, flags: 0
+```
+
+With `--max-iterations` greater than 0, the sampler stops after that number of multipart messages. It also logs each bulk callback:
+
+```txt
+Configured maximum number of iterations reached. Stopping sending.
+Received 64 acks
+All acknowledgements received.
+```
+
+The acknowledgements can arrive in more than one callback. Then `Received <n> acks` shows more than once. If a new state is pending before all acknowledgements arrive, the sampler logs `Done, still not acknowledged: <n>` instead of the last line. With `--max-iterations`, the sink and the processor log `Configured max number of iterations reached. Leaving RUNNING state.`
+
+## Test
+
+`examples/region/CMakeLists.txt` adds the tests `Example.region.zeromq` and `Example.region.shmem`. Each test runs `test-ex-region.sh` with the transport as argument. The script starts one sampler and one sink with `--max-iterations 1`, `--control static` and an `ipc://` address. The timeout is 30 s. To write a script of this type for your own devices, see [Write the test script](/guides/test-devices/#write-the-test-script).
+
+Configure with `-DBUILD_TESTING=ON` to register the tests. Then run them in the build directory:
+
+```sh
+ctest -R Example.region
+```
+
+## Things to try
+
+- Limit the send rate of the sampler with `--sampling-rate 10` (in Hz). The default `0` sends as fast as possible.
+- Start the advanced topology with `--rc-segment-size 0` on the sampler (the script has it as a comment). Then the transport keeps the reference counts of the copies in the managed segment.
+- Look at the shared memory while the topology runs. Run `fairmq-shmmonitor --list-all` from `build/fairmq`. See [fairmq-shmmonitor](/tools/shmmonitor/).
+
+### Use a region of another process
+
+The external variant needs a region with id 1 and a size of 10000000 bytes, the size that the sampler requests. Create it with the keep-alive program:
+
+<Steps>
+
+1. In a terminal, start the keep-alive program in `build/examples/region`:
+
+   ```sh
+   ./fairmq-ex-region-keep-alive --shmid 1 --regions 1,10000000,0
+   ```
+
+2. In a second terminal, start the topology:
+
+   ```sh
+   ./fairmq-start-ex-region-advanced-external.sh
+   ```
+
+3. Stop the devices. Then stop the keep-alive program with `Ctrl-C`. It removes the shared memory of `--shmid 1`.
+
+</Steps>
+
+The opened region uses the `rcSegmentSize` of its creator. The keep-alive program creates the region with `rcSegmentSize` 0. Thus `--rc-segment-size 200000000` of the sampler has no effect, and the transport keeps the reference counts of the copies in the managed segment.
+
+The devices of this variant use `--shm-no-cleanup true`. Thus their shared memory stays after they stop. Without the keep-alive program, remove it with `fairmq-shmmonitor --cleanup --shmid 00000001`. The shmem transport writes `--shmid 1` as the hexadecimal string `00000001`.
+
+## Related pages
+
+- [Unmanaged regions](/shmem/regions/): the region API and the acknowledgements in detail.
+- [How shared memory works](/shmem/how-it-works/)
+- [Sessions and segments](/shmem/sessions/)
+- [readout: a readout chain](/examples/readout/): a region in a chain of devices.
+- [Monitor and clean up](/shmem/monitor/)

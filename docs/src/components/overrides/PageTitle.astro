@@ -1,0 +1,54 @@
+---
+// Page title with the section label above it and an optional "since" badge.
+import { sectionLabel } from '../../lib/nav';
+
+const { entry, id } = Astro.locals.starlightRoute;
+const data = entry.data as typeof entry.data & {
+  eyebrow?: string;
+  titleKind?: string;
+  since?: string;
+  searchTitle?: string;
+};
+const eyebrow = data.eyebrow ?? sectionLabel(id);
+---
+
+{eyebrow && <p class="fmq-eyebrow">{eyebrow}</p>}
+<h1
+  id="_top"
+  class:list={{ code: !!data.titleKind }}
+  data-pagefind-meta={data.searchTitle ? `title:${data.searchTitle}` : undefined}
+>
+  <span>{data.title}</span>
+  {data.titleKind && <span class="fmq-badge">{data.titleKind}</span>}
+  {data.since && <span class="fmq-badge since">since {data.since}</span>}
+</h1>
+
+<style>
+  h1 {
+    margin-top: 0.9rem;
+    font-size: var(--sl-text-h1);
+    line-height: 1.06;
+    font-weight: 800;
+    font-stretch: 112%;
+    letter-spacing: -0.02em;
+    color: var(--fmq-ink);
+    text-wrap: balance;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.75rem;
+  }
+  h1.code {
+    font-family: var(--fmq-font-mono);
+    font-stretch: 100%;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-size: calc(var(--sl-text-h1) * 0.8);
+    overflow-wrap: anywhere;
+  }
+  h1 .fmq-badge {
+    font-size: 0.75rem;
+    font-family: var(--fmq-font-body);
+    letter-spacing: 0.08em;
+  }
+</style>

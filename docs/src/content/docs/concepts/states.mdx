@@ -1,0 +1,272 @@
+---
+title: 'Device states'
+description: 'The state machine of a device: idling and working states, the transitions, the hooks in each state, RUNNING, ERROR and the log lines.'
+sidebar:
+  order: 2
+code: [fairmq/States.h, fairmq/StateMachine.cxx, fairmq/Device.cxx, fairmq/plugins/control/Control.cxx]
+---
+
+import StateMachine from '../../../components/diagrams/StateMachine.astro';
+import Snippet from '../../../components/Snippet.astro';
+
+Each device has a state machine. A controller requests transitions, and the state machine calls the
+hooks of your device at fixed points. The state tells you what the device does now and which
+transitions it accepts.
+
+<StateMachine />
+
+## Idling states and working states
+
+The state machine has two kinds of states:
+
+- In an **idling state**, the device does no work. It waits until a controller requests the next
+  transition. The idling states are `IDLE`, `INITIALIZED`, `BOUND`, `DEVICE READY` and `READY`.
+- In a **working state**, the device does its work and calls your hooks. At the end, the device
+  itself requests the next transition. The working states are `INITIALIZING DEVICE`, `BINDING`,
+  `CONNECTING`, `INITIALIZING TASK`, `RUNNING`, `RESETTING TASK` and `RESETTING DEVICE`.
+
+Two working states are different. In `INITIALIZING DEVICE`, the device waits for the transition
+`CompleteInit` from the controller. `RUNNING` ends with the transition `Stop`, from the controller
+or from the device.
+
+`EXITING` is the final state. The state machine stops there, and the process of the device can end.
+`ERROR` is the state after an error, see [The ERROR state](#the-error-state). The enum
+[`fair::mq::State`](/api/fair/mq/State/) also has the values `Undefined` and `Ok`. A device does not
+enter them.
+
+## Transitions
+
+A controller requests a transition with [`ChangeState()`](/api/fair/mq/Device/#ChangeState). The
+state machine accepts only these transitions:
+
+| Transition | From | To | Requested by |
+| --- | --- | --- | --- |
+| `InitDevice` | `IDLE` | `INITIALIZING DEVICE` | Controller |
+| `CompleteInit` | `INITIALIZING DEVICE` | `INITIALIZED` | Controller |
+| `Bind` | `INITIALIZED` | `BINDING` | Controller |
+| `Connect` | `BOUND` | `CONNECTING` | Controller |
+| `InitTask` | `DEVICE READY` | `INITIALIZING TASK` | Controller |
+| `Run` | `READY` | `RUNNING` | Controller |
+| `Stop` | `RUNNING` | `READY` | Controller, or the device when its work ends |
+| `ResetTask` | `READY` | `RESETTING TASK` | Controller |
+| `ResetDevice` | `INITIALIZED`, `BOUND`, `DEVICE READY` | `RESETTING DEVICE` | Controller |
+| `End` | `IDLE` | `EXITING` | Controller |
+| `Auto` | `BINDING`, `CONNECTING`, `INITIALIZING TASK`, `RESETTING TASK`, `RESETTING DEVICE` | `BOUND`, `DEVICE READY`, `READY`, `DEVICE READY`, `IDLE` (in this order) | The device, at the end of the working state |
+| `ErrorFound` | All states | `ERROR` | The device after an exception in a hook, or your code |
+
+These rules apply to all transitions:
+
+- The state machine accepts one transition at a time. While a transition is pending, `ChangeState()`
+  refuses all other transitions except `ErrorFound`.
+- `ChangeState()` returns `false` for a transition that the current state does not accept. The state
+  does not change.
+- The state machine is cooperative. The next state starts only after the hook of the current state
+  returns.
+- A new transition interrupts the transports of the device. A `Send()` or `Receive()` that waits
+  then returns `TransferCode::interrupted`. The transports resume when the next state starts.
+
+For the complete tables, see [States and transitions](/reference/states/).
+
+## The hooks in each state
+
+The idling states have no hooks. The working states call these hooks:
+
+| State | Hooks | What the device does |
+| --- | --- | --- |
+| `INITIALIZING DEVICE` | [`Init()`](/api/fair/mq/Device/#Init) | It waits for `CompleteInit`. Then it reads the property `id` and calls `Init()`. Then it reads `rate`, `init-timeout` and `transport`, and makes the transports and the channels. |
+| `BINDING` | [`Bind()`](/api/fair/mq/Device/#Bind) | It binds all channels with the method `bind`, and calls `Bind()`. If a channel cannot bind, the device throws an exception. |
+| `CONNECTING` | [`Connect()`](/api/fair/mq/Device/#Connect) | It connects all channels with the method `connect`, and calls `Connect()`. See [Connect with a delay](#connect-with-a-delay). |
+| `INITIALIZING TASK` | [`InitTask()`](/api/fair/mq/Device/#InitTask) | It calls `InitTask()`. |
+| `RUNNING` | [`PreRun()`](/api/fair/mq/Device/#PreRun), data callbacks or [`ConditionalRun()`](/api/fair/mq/Device/#ConditionalRun) and [`Run()`](/api/fair/mq/Device/#Run), [`PostRun()`](/api/fair/mq/Device/#PostRun) | See [The RUNNING state](#the-running-state). |
+| `RESETTING TASK` | [`ResetTask()`](/api/fair/mq/Device/#ResetTask) | It calls `ResetTask()`. |
+| `RESETTING DEVICE` | [`Reset()`](/api/fair/mq/Device/#Reset) | It resets and removes its transports, calls `Reset()`, and removes all channels. |
+
+After the hooks of a working state, the device requests `Auto`. It does not request `Auto` when
+another transition is already pending. `INITIALIZING DEVICE` and `RUNNING` do not end with `Auto`.
+
+### Connect with a delay
+
+In `CONNECTING`, the device tries to connect each channel. If a channel cannot connect, the device
+waits 50 ms. Then it reads the address of the channel from the properties again and tries again. A
+controller can thus give the address of a peer later. After `init-timeout` seconds (default 120),
+the device throws an exception and goes to `ERROR`.
+
+## The RUNNING state
+
+`RUNNING` is the state in which the device processes data. This function of the device runs in
+`RUNNING`:
+
+<Snippet file="fairmq/Device.cxx" start="void Device::RunWrapper()" />
+
+The device does these steps:
+
+1. It logs `fair::mq::Device running...`. If a channel has the property `rateLogging` larger than 0
+   (default 1), the device starts a thread that logs the transfer rates.
+2. It calls `PreRun()`.
+3. With data callbacks ([`OnData()`](/api/fair/mq/Device/#OnData)), it receives the messages and
+   calls the callbacks. Without data callbacks, it calls `ConditionalRun()` in a loop, and then
+   calls `Run()` once.
+4. If no transition is pending, the device requests `Stop`.
+5. It calls `PostRun()`. Then the next state starts, usually `READY`.
+
+### ConditionalRun(), Run() or data callbacks
+
+You choose one of three ways to do the work in `RUNNING`:
+
+- [`ConditionalRun()`](/api/fair/mq/Device/#ConditionalRun): the device calls it again and again.
+  Return `true` to get the next call. The option `--rate` (default 0) limits the number of calls per
+  second. A value of 0 means no limit.
+- [`Run()`](/api/fair/mq/Device/#Run): the device calls it once. For continuous work, write a loop
+  that ends when [`NewStatePending()`](/api/fair/mq/Device/#NewStatePending) returns `true`.
+- Data callbacks: the device calls your callback for each message on a channel. The device does not
+  call `ConditionalRun()` and `Run()` then.
+
+[Receive data with callbacks or loops](/guides/receive-data/) compares the three ways.
+
+### What ends RUNNING
+
+`RUNNING` ends in one of these cases:
+
+- A controller requests `Stop`. For example, the key `s` of the interactive controller, or a
+  `SIGINT` (Ctrl-C) that starts the shutdown sequence. The device does not call `ConditionalRun()`
+  and the data callbacks again. Your `Run()` loop must check `NewStatePending()`.
+- The work ends. A data callback returns `false`, `ConditionalRun()` returns `false`, or `Run()`
+  returns. Then the device requests `Stop` itself.
+- A `Receive()` for a data callback fails, for example after a receive timeout of the channel. Then
+  the device also requests `Stop`.
+- A hook throws an exception. The device goes to `ERROR`.
+
+To stop a topology without losing messages, see
+[Stop a topology without losing messages](/guides/end-of-run/).
+
+:::caution
+The state machine does not stop a hook. If your `Run()` does not return, the device cannot leave
+`RUNNING`.
+:::
+
+In `PostRun()`, the transition is already pending. Thus `NewStatePending()` returns `true`,
+`WaitFor()` returns at once, and a `Send()` or `Receive()` that waits returns
+`TransferCode::interrupted`. Use `PostRun()` to stop the work that you started in `PreRun()`. The
+sampler of the example [multiple-transports](/examples/multiple-transports/) starts a thread in
+`PreRun()` and joins it in `PostRun()`:
+
+<Snippet file="examples/multiple-transports/sampler1.cxx" start="void PreRun() override" />
+
+<Snippet file="examples/multiple-transports/sampler1.cxx" start="void PostRun() override" />
+
+To add your own thread without a data race, see [Threads in a device](/concepts/threads/#safe-patterns).
+
+## The ERROR state
+
+A device goes to `ERROR` in two cases:
+
+- A hook throws an exception, in any state.
+- Your code requests the transition `ErrorFound`, for example with
+  `ChangeStateOrThrow(fair::mq::Transition::ErrorFound)`. The state machine accepts `ErrorFound` in
+  all states, also when another transition is pending.
+
+No transition leaves `ERROR`. The state machine stops, and
+[`RunStateMachine()`](/api/fair/mq/Device/#RunStateMachine) throws. It throws the exception of the
+hook, or [`StateMachine::ErrorStateException`](/api/fair/mq/StateMachine/ErrorStateException/) with
+the text `Device transitioned to error state`. With `fairmq/runDevice.h`, the process then logs
+`Uncaught exception reached the top of main:` and ends with the exit code 1. The tests
+`Exceptions.Throw` and `ErrorState.ChangeState` in `test/device/` check the exit code 1 for each
+hook.
+
+In `ERROR`, the controller of the control plugin stops. It requests no more transitions and no
+shutdown sequence. Thus the device does not call `ResetTask()` and `Reset()` after an error.
+
+:::caution[Known defect]
+In `ERROR`, `ChangeState()` can return `true`, but the state does not change. See the disabled test
+`StateMachine.RefusesTransitionsInError` in `test/state_machine/`.
+:::
+
+For the handling of errors, see [Handle errors and timeouts](/guides/errors-timeouts/).
+
+## Wait for a transition in your code
+
+Two functions tell a hook that a transition is pending:
+
+- [`NewStatePending()`](/api/fair/mq/Device/#NewStatePending) returns `true` when a transition is
+  requested and the next state has not started yet.
+- [`WaitFor(duration)`](/api/fair/mq/Device/#WaitFor) waits for the duration, or until a transition
+  is requested. It returns `true` after the full duration, and `false` when a transition ended the
+  wait.
+
+A `Run()` loop with a pause of 1 s between two steps can look like this:
+
+```cpp
+void Run() override
+{
+    while (!NewStatePending()) {
+        // One step of the work.
+        if (!WaitFor(std::chrono::seconds(1))) {
+            break; // A transition is pending.
+        }
+    }
+}
+```
+
+In the test `WaitFor.Interrupt`, a device calls `WaitFor()` with 60 s in `PreRun()` or `Run()`. A
+`SIGINT` makes the control plugin request `Stop`, and the wait ends. In `PostRun()`, the wait ends
+at once, because `Stop` is already pending:
+
+<Snippet file="test/helper/devices/TestStateAction.h" start="bool const done = WaitFor" end="Sleeping Done" />
+
+## Log lines
+
+The state machine logs each state change with the severity `state`. A device under the control
+`static` that ends its work by itself logs these lines. The lines show only the message text,
+without the prefix of the logger. Other log lines between them are left out.
+
+```txt
+Starting FairMQ state machine --> IDLE
+IDLE ---> INITIALIZING DEVICE
+INITIALIZING DEVICE ---> INITIALIZED
+INITIALIZED ---> BINDING
+BINDING ---> BOUND
+BOUND ---> CONNECTING
+CONNECTING ---> DEVICE READY
+DEVICE READY ---> INITIALIZING TASK
+INITIALIZING TASK ---> READY
+READY ---> RUNNING
+fair::mq::Device running...
+RUNNING ---> READY
+READY ---> RESETTING TASK
+RESETTING TASK ---> DEVICE READY
+DEVICE READY ---> RESETTING DEVICE
+RESETTING DEVICE ---> IDLE
+IDLE ---> EXITING
+```
+
+When the device object is destroyed, the state machine logs `Exiting FairMQ state machine`. Two more
+lines tell you that the state machine refused a transition:
+
+| Log line | Cause |
+| --- | --- |
+| `No transition from state DEVICE_READY on transition RUN` | The current state does not accept the transition. This line uses the internal names with an underscore. |
+| `Transition RUN incoming, but another state transition is already ongoing.` | Another transition is pending. |
+
+## Control modes in short
+
+The built-in control plugin requests the transitions. The option `--control` selects its mode:
+
+| `--control` | What the controller does |
+| --- | --- |
+| `dynamic` (default), `interactive`, `external` | It requests all transitions up to `RUNNING`. Then it reads keys from the terminal, for example `s` for `Stop`. The key `q` starts the shutdown sequence. |
+| `static` | It requests all transitions up to `RUNNING`. When the device leaves `RUNNING`, it requests the transitions down to `EXITING`. |
+| `gui` | It requests all transitions up to `RUNNING`. Then it waits for a signal. |
+| `none` | The control plugin does not control the device. Another plugin or your code must request the transitions. |
+
+An unknown value logs an error, and the plugin uses `static`. With `--catch-signals 1` (default),
+the first `SIGINT` or `SIGTERM` starts the shutdown sequence. A second `SIGINT` aborts the process.
+For the details, see [Plugins and control](/concepts/plugins/).
+
+## Related pages
+
+- [States and transitions](/reference/states/): all states, transitions and keys as tables.
+- [Devices](/concepts/devices/): the class `fair::mq::Device` and its hooks.
+- [Receive data with callbacks or loops](/guides/receive-data/): the three ways to work in `RUNNING`.
+- [Handle errors and timeouts](/guides/errors-timeouts/): exceptions, `ERROR` and interrupted
+  transfers.
+- [Control a device from code](/guides/control-from-code/): request transitions from your program.

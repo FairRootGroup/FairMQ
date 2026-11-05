@@ -1,0 +1,5 @@
+# Dependencies and build output of the docs site
+node_modules/
+dist/
+.astro/
+build/

@@ -1,0 +1,240 @@
+---
+title: '1-1: sampler and sink'
+description: 'Two devices: a sampler sends a text message on a push channel, and a sink receives it on a pull channel.'
+sidebar:
+  order: 1
+code: [fairmq/Device.h, fairmq/runDevice.h, fairmq/Message.h, fairmq/ProgOptions.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps, FileTree } from '@astrojs/starlight/components';
+
+The 1-1 example has two [devices](/concepts/devices/): a sampler that sends a text message and a sink that
+receives it. It shows the minimum code of a device: a class that derives from
+[`fair::mq::Device`](/api/fair/mq/Device/), its hooks, one [channel](/concepts/channels/), and the
+`main()` function of `fairmq/runDevice.h`.
+
+The files of the example are in
+[`examples/1-1`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/1-1) on GitHub.
+
+## Topology
+
+The devices connect through one channel with the name `data`. The sampler binds a `push` socket, and the
+sink connects a `pull` socket to it.
+
+| Device | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- |
+| `sampler1` | `data` | `push` | `bind` | `tcp://*:5555` |
+| `sink1` | `data` | `pull` | `connect` | `tcp://localhost:5555` |
+
+The start script sets `rateLogging=0` on both channels, so the devices do not log the transfer rates. It
+also starts the sampler with `--rate 1`, so the sampler sends one message per second.
+
+## Build the example
+
+The examples build together with FairMQ when the CMake option `BUILD_EXAMPLES` is `ON`. `ON` is the
+default (see [Install](/start/install/)). The build puts these files into the build directory of the
+example:
+
+<FileTree>
+
+- build/examples/1-1/
+  - fairmq-ex-1-1-sampler the sampler, from sampler.cxx
+  - fairmq-ex-1-1-sink the sink, from sink.cxx
+  - fairmq-start-ex-1-1.sh the start script
+  - test-ex-1-1.sh the test script
+
+</FileTree>
+
+The install step copies the two executables and the start script to `<prefix>/bin/`. The installed start
+script calls the installed executables.
+
+## Run the example
+
+<Steps>
+
+1. Go to the directory of the example in the build tree:
+
+   ```sh
+   cd build/examples/1-1
+   ```
+
+2. Run the start script:
+
+   ```sh
+   ./fairmq-start-ex-1-1.sh
+   ```
+
+</Steps>
+
+The script opens one `xterm` window for each device. The windows stay open after a device stops
+(`xterm -hold`). The script also sets the environment variable `FAIRMQ_PATH` to `<build>/fairmq`. A device
+with `--transport shmem` and `--shm-monitor true` uses this path to find `fairmq-shmmonitor`.
+
+If you do not use `xterm`, open two terminals in `build/examples/1-1`. Run one command of the script in
+each terminal:
+
+```sh
+./fairmq-ex-1-1-sampler --id sampler1 --rate 1 \
+  --channel-config "name=data,type=push,method=bind,address=tcp://*:5555,rateLogging=0"
+```
+
+```sh
+./fairmq-ex-1-1-sink --id sink1 \
+  --channel-config "name=data,type=pull,method=connect,address=tcp://localhost:5555,rateLogging=0"
+```
+
+- `--id` sets the ID of the device.
+- `--channel-config` configures one channel with a list of `key=value` pairs. The
+  [channel properties](/reference/channel-properties/) page lists all keys.
+- `--rate` sets the maximum number of `ConditionalRun()` calls per second. The default `0` sets no limit.
+
+You can start the two devices in any order. Each device goes through its [states](/concepts/states/) to
+`RUNNING` without input. Then the default controller (`--control dynamic`) reads keys in the terminal.
+Push `q` to stop the device and end the process. Push `h` to see all keys. Ctrl-C also stops the device.
+
+## The sampler
+
+The sampler is a `struct` that derives from `fair::mq::Device`. It overrides two hooks and has three
+members: `fText`, `fMaxIterations` and `fNumIterations`
+([sampler.cxx](https://github.com/FairRootGroup/FairMQ/blob/dev/examples/1-1/sampler.cxx#L16-L57)).
+
+<Snippet file="examples/1-1/sampler.cxx" start="void InitTask()" />
+
+The device calls [`InitTask()`](/api/fair/mq/Device/#InitTask) in the state `INITIALIZING TASK`. The
+sampler reads its two custom options there. [`fConfig`](/api/fair/mq/Device/#fConfig) points to the
+configuration of the device. [`GetProperty<T>()`](/api/fair/mq/ProgOptions/#GetProperty) returns the value
+of an option as the type `T`.
+
+<Snippet file="examples/1-1/sampler.cxx" start="bool ConditionalRun()" />
+
+In the state `RUNNING`, the device calls [`ConditionalRun()`](/api/fair/mq/Device/#ConditionalRun) again
+while the function returns `true` ([Device.cxx](/source/fairmq/Device.cxx/#L412-L427)):
+
+- [`NewMessage()`](/api/fair/mq/Device/#NewMessage) with a buffer, a size, a free function and a hint
+  creates a message for an existing buffer. Here the buffer is a new `std::string`, and the free function
+  deletes it.
+- The `zeromq` transport sends the buffer without a copy and calls the free function after the transfer.
+  The `shmem` transport copies the buffer into shared memory and calls the free function at once.
+- [`Send()`](/api/fair/mq/Device/#Send) sends the message on the sub-channel 0 of the channel `data`. It
+  returns the number of bytes, or a negative [transfer code](/reference/transfer-codes/).
+- `LOG(info)` writes a log line with the severity `info` (see [Logging](/tools/logging/)).
+- The return value `false` ends the state `RUNNING`, and the device goes to `READY`. The sampler returns
+  `false` if `Send()` fails or if it reaches `--max-iterations`.
+
+<Snippet file="examples/1-1/sampler.cxx" start="void addCustomOptions" />
+
+<Snippet file="examples/1-1/sampler.cxx" start="getDevice(" />
+
+The header `fairmq/runDevice.h` contains the `main()` function of the executable. `main()` calls two
+functions that your source file must define ([runDevice.h](/source/fairmq/runDevice.h/#L13-L17)):
+
+- `addCustomOptions()` adds the options of the device to the command line. The sampler adds `--text`
+  (default `Hello`) and `--max-iterations` (default `0`, no limit). `bpo` is an alias of the namespace
+  `boost::program_options`.
+- `getDevice()` creates the device.
+
+## The sink
+
+<Snippet file="examples/1-1/sink.cxx" start="Sink()" />
+
+The sink has no `ConditionalRun()`. Its constructor registers the member function `HandleData()` for the
+channel `data` with [`OnData()`](/api/fair/mq/Device/#OnData). In the state `RUNNING`, the device receives
+the messages of the channel and calls the handler for each message. A device with data handlers does not
+call `ConditionalRun()` or `Run()`, and `--rate` has no effect on it
+([Device.cxx](/source/fairmq/Device.cxx/#L404-L411)).
+
+<Snippet file="examples/1-1/sink.cxx" start="bool HandleData" />
+
+The handler gets the message and the index of the sub-channel.
+[`GetData()`](/api/fair/mq/Message/#GetData) returns a pointer to the data, and
+[`GetSize()`](/api/fair/mq/Message/#GetSize) returns the size in bytes. The handler returns `true` to get
+the next message, or `false` to end the state `RUNNING`. The sink also has the option `--max-iterations`.
+
+## Output
+
+The listings show the severity and the message of each line. The real lines also have a time at the
+start; the option `--verbosity` sets this prefix. Before these lines, each device logs the FairMQ logo and
+its states from `IDLE` to `READY`. The interactive controller also prints its list of keys.
+
+The sampler sends one message per second:
+
+```txt
+[STATE] READY ---> RUNNING
+[INFO] fair::mq::Device running...
+[INFO] Sending "Hello"
+[INFO] Sending "Hello"
+[INFO] Sending "Hello"
+```
+
+The sink logs each message that it receives:
+
+```txt
+[STATE] READY ---> RUNNING
+[INFO] fair::mq::Device running...
+[INFO] Received: "Hello"
+[INFO] Received: "Hello"
+[INFO] Received: "Hello"
+```
+
+With `--max-iterations 3`, each device logs these lines after the third message:
+
+```txt
+[INFO] Configured maximum number of iterations reached. Leaving RUNNING state.
+[STATE] RUNNING ---> READY
+```
+
+## Test the example
+
+The test script `test-ex-1-1.sh` starts the two devices in the background, in one terminal. Among others,
+it adds these options to the commands of the start script:
+
+| Option | Value in the test | Effect |
+| --- | --- | --- |
+| `--transport` | the first argument of the script, default `zeromq` | The transport of the devices. |
+| `--session` | the output of [`fairmq-uuid-gen -h`](/reference/tools/#fairmq-uuid-gen) | A new session for each run. |
+| `--control` | `static` | The process ends when the device leaves `RUNNING`. |
+| `--max-iterations` | `1` | Each device stops after one message. |
+| `--shm-segment-size` | `100000000` | A 100 MB shared memory segment. |
+| `--shm-monitor` | `true` | With `shmem`, starts [`fairmq-shmmonitor`](/tools/shmmonitor/) as a daemon. |
+
+The test uses an `ipc://` address instead of TCP: `ipc:///tmp/fmq_<session>_data_<transport>`. At the end,
+the script deletes this file.
+
+CTest runs the script once for each transport. The tests are `Example.1-1.zeromq` and `Example.1-1.shmem`,
+each with a timeout of 30 s. CTest has these tests only if you configure with `-DBUILD_TESTING=ON`. The
+default is `OFF`.
+
+```sh
+cmake -S FairMQ -B build -DBUILD_TESTING=ON
+cmake --build build
+cd build
+ctest -R '^Example\.1-1\.' --output-on-failure
+```
+
+You can also run the script directly, for example `./test-ex-1-1.sh shmem` in `build/examples/1-1`.
+To write a test of this type for your own devices, see [Test your devices](/guides/test-devices/). To add
+an example with its test to FairMQ, see [Add an example](/project/contributing/#add-an-example).
+
+## Things to try
+
+- Use shared memory: add `--transport shmem` to both commands. Both devices must use the same session. If
+  you do not set `--session`, both use the session `default`.
+- Change the rate: start the sampler with `--rate 10`. Without `--rate`, the sampler sends as fast as it
+  can.
+- Send another text: start the sampler with `--text "Hello FairMQ"`.
+- Stop after five messages: add `--max-iterations 5` to both commands. Also add `--control static` to end
+  the processes when the devices leave `RUNNING`. To check that no message is lost, see
+  [Check that no message is lost](/guides/end-of-run/#check-that-no-message-is-lost).
+- Show the transfer rates: set `rateLogging=1` in both channel configurations. Each second, the device
+  logs the messages per second and the MB per second of the channel.
+- Swap bind and connect: the sink binds `tcp://*:5555`, and the sampler connects to `tcp://localhost:5555`.
+- Show all options of a device, with the custom options: run it with `--help`.
+
+## Related pages
+
+- [Your first device](/start/first-device/): write and build a device like this one.
+- [Device states](/concepts/states/): the states that the devices go through.
+- [Channels and sockets](/concepts/channels/): socket types and methods.
+- [Receive data with callbacks or loops](/guides/receive-data/): `OnData()` compared to `ConditionalRun()`.
+- [1-n-1: sampler, processors and sink](/examples/1-n-1/): the next example.

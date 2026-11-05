@@ -1,0 +1,125 @@
+---
+// The four common socket patterns. Socket types: fairmq/Channel.cxx (Validate).
+// shmem rejects pub and sub: fairmq/shmem/Socket.h.
+const patterns = [
+  { a: 'push', b: 'pull', fan: true, cap: 'push → pull', m: 'round-robin', both: 1 },
+  { a: 'pub', b: 'sub', fan: true, cap: 'pub → sub', m: 'a copy to each', both: 2, note: 'zeromq only' },
+  { a: 'req', b: 'rep', fan: false, cap: 'req ⇄ rep', m: 'request, then reply' },
+  { a: 'pair', b: 'pair', fan: false, cap: 'pair ⇄ pair', m: 'two peers only' },
+];
+---
+
+<figure class="fmq-pat not-content">
+  <svg viewBox="0 0 600 150" role="img" aria-label="Four socket patterns: push to pull, pub to sub, req and rep, pair and pair.">
+    <defs>
+      <marker id="pat-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"
+        ><path d="M0 0L10 5L0 10z" class="ah"></path></marker
+      >
+    </defs>
+    {
+      patterns.map((p, i) => (
+        <g transform={`translate(${i * 152} 0)`}>
+          <rect class="box" x="4" y="40" width="46" height="26" />
+          <text class="t" x="27" y="57" text-anchor="middle">
+            {p.a}
+          </text>
+          {p.fan ? (
+            <>
+              <rect class="box" x="92" y="10" width="46" height="26" />
+              <text class="t" x="115" y="27" text-anchor="middle">
+                {p.b}
+              </text>
+              <rect class="box" x="92" y="70" width="46" height="26" />
+              <text class="t" x="115" y="87" text-anchor="middle">
+                {p.b}
+              </text>
+              <path class="line" d="M50 50 L92 24" marker-end="url(#pat-a)" />
+              <path class="line" d="M50 56 L92 82" marker-end="url(#pat-a)" />
+              <rect class="msg" x="67" y="32" width="7" height="7" />
+              {p.both === 2 && <rect class="msg" x="67" y="66" width="7" height="7" />}
+            </>
+          ) : (
+            <>
+              <rect class="box" x="92" y="40" width="46" height="26" />
+              <text class="t" x="115" y="57" text-anchor="middle">
+                {p.b}
+              </text>
+              <path class="line" d="M50 47 L92 47" marker-end="url(#pat-a)" />
+              <path class="line" d="M92 59 L50 59" marker-end="url(#pat-a)" />
+            </>
+          )}
+          <text class="cap" x="4" y="118">
+            {p.cap}
+          </text>
+          <text class="m" x="4" y="134">
+            {p.m}
+          </text>
+          {p.note && (
+            <text class="note" x="4" y="148">
+              {p.note}
+            </text>
+          )}
+        </g>
+      ))
+    }
+  </svg>
+  <figcaption>
+    FairMQ also accepts <code>dealer</code>, <code>router</code>, <code>xpub</code> and <code>xsub</code>. The shmem transport does not support <code>pub</code> and <code>sub</code>.
+  </figcaption>
+</figure>
+
+<style>
+  .fmq-pat {
+    margin: 1.5rem 0;
+    border-top: 1px solid var(--fmq-rule);
+    border-bottom: 1px solid var(--fmq-rule);
+    padding: 0.9rem 0 0.6rem;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .box {
+    fill: var(--fmq-paper);
+    stroke: var(--fmq-ink-2);
+    stroke-width: 1.2;
+  }
+  .line {
+    stroke: var(--fmq-ink-3);
+    stroke-width: 1.2;
+    fill: none;
+  }
+  .ah {
+    fill: var(--fmq-ink-3);
+  }
+  .msg {
+    fill: var(--fmq-saffron);
+    stroke: var(--fmq-bar);
+    stroke-width: 1;
+  }
+  .t {
+    font: 600 11.5px var(--fmq-font-mono);
+    fill: var(--fmq-ink);
+  }
+  .m {
+    font: 400 10.5px var(--fmq-font-mono);
+    fill: var(--fmq-ink-3);
+  }
+  .note {
+    font: 600 10px var(--fmq-font-mono);
+    fill: var(--fmq-ruby);
+  }
+  .cap {
+    font: 600 12px var(--fmq-font-body);
+    fill: var(--fmq-ink);
+  }
+  figcaption {
+    font-size: 0.85rem;
+    color: var(--fmq-ink-3);
+    margin-top: 0.5rem;
+  }
+  figcaption code {
+    font-size: 0.8em;
+  }
+</style>

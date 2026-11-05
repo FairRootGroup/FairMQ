@@ -1,0 +1,365 @@
+---
+// API pages: one page for each public class, struct, union, namespace and namespace enum.
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { getCollection } from 'astro:content';
+import Member from '../../components/api/Member.astro';
+import CopyButton from '../../components/CopyButton.astro';
+import { model, base, apiSidebar, githubUrl, guidesForFile, noBase } from '../../lib/model.mjs';
+import { family, FAMILY_ORDER } from '../../lib/families.mjs';
+import '../../styles/api.css';
+
+export function getStaticPaths() {
+  const m = model();
+  const slug = (url: string) => noBase(url).replace(/^\/api\//, '').replace(/\/$/, '');
+  return [
+    ...m.types().map((t: any) => ({ params: { slug: slug(t.url) }, props: { kind: 'type', id: t.id } })),
+    ...m.namespaces().map((ns: any) => ({ params: { slug: slug(ns.url) }, props: { kind: 'namespace', id: ns.id } })),
+    ...m.namespaceEnums().map(({ e }: any) => ({ params: { slug: slug(e.page) }, props: { kind: 'enum', id: e.id } })),
+  ];
+}
+
+const { kind, id } = Astro.props;
+const m = model();
+const docs = await getCollection('docs');
+const strip = (html: string) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+
+const SECTION_ORDER: [string, string][] = [
+  ['public-type', 'Types'],
+  ['public-func', 'Functions'],
+  ['public-static-func', 'Static functions'],
+  ['public-static-attrib', 'Static data members'],
+  ['public-attrib', 'Data members'],
+  ['protected-type', 'Protected types'],
+  ['protected-func', 'Protected functions'],
+  ['protected-static-func', 'Protected static functions'],
+  ['protected-static-attrib', 'Protected static data members'],
+  ['protected-attrib', 'Protected data members'],
+  ['friend', 'Friends'],
+  ['related', 'Related functions'],
+];
+const NS_SECTIONS: [string, string][] = [
+  ['typedef', 'Type aliases'],
+  ['func', 'Functions'],
+  ['var', 'Variables'],
+];
+
+const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+let page: any;
+if (kind === 'type') {
+  const rec = m.compounds.get(id);
+  const sections = SECTION_ORDER.map(([key, label]) => ({
+    id: slugify(label),
+    label,
+    members: rec.visible.filter((x: any) => x.section === key),
+  })).filter((s) => s.members.length > 0);
+  const known = new Set(SECTION_ORDER.map(([k]) => k));
+  const otherMembers = rec.visible.filter((x: any) => !known.has(x.section));
+  if (otherMembers.length) sections.push({ id: 'other-members', label: 'Other members', members: otherMembers });
+  const nested = rec.inner.map((i: string) => m.compounds.get(i)).filter((c: any) => c && c.public);
+  const headings: any[] = [];
+  if (nested.length) headings.push({ depth: 2, slug: 'nested-types', text: 'Nested types' });
+  for (const s of sections) {
+    headings.push({ depth: 2, slug: s.id, text: s.label });
+    for (const x of s.members) if (x.overload === 1) headings.push({ depth: 3, slug: x.anchor, text: x.name });
+  }
+  const families = new Map<string, number>();
+  for (const x of rec.visible) {
+    const f = family(x, rec);
+    families.set(f, (families.get(f) ?? 0) + 1);
+  }
+  page = {
+    rec,
+    title: rec.short,
+    titleKind: rec.templ ? `${rec.kind} template` : rec.kind,
+    eyebrow: `API · ${rec.scope}`,
+    searchTitle: rec.name,
+    file: rec.file,
+    line: rec.line,
+    include: rec.include,
+    sections,
+    nested,
+    headings,
+    families: FAMILY_ORDER.filter((f) => families.has(f)).map((f) => [f, families.get(f)]),
+    total: rec.visible.length,
+  };
+} else if (kind === 'namespace') {
+  const rec = m.compounds.get(id);
+  const types = m
+    .types()
+    .filter((t: any) => t.scope === rec.name)
+    .sort((a: any, b: any) => a.short.localeCompare(b.short, 'en', { sensitivity: 'base' }));
+  const enums = rec.visible.filter((x: any) => x.kind === 'enum');
+  const sections = NS_SECTIONS.map(([key, label]) => ({
+    id: slugify(label),
+    label,
+    members: rec.visible.filter((x: any) => x.section === key && x.kind !== 'enum'),
+  })).filter((s) => s.members.length > 0);
+  const subs = rec.innerNamespaces.map((i: string) => m.compounds.get(i)).filter((c: any) => c && c.public);
+  const headings: any[] = [];
+  if (subs.length) headings.push({ depth: 2, slug: 'namespaces', text: 'Namespaces' });
+  if (types.length) headings.push({ depth: 2, slug: 'types', text: 'Classes and structs' });
+  if (enums.length) headings.push({ depth: 2, slug: 'enums', text: 'Enums' });
+  for (const s of sections) {
+    headings.push({ depth: 2, slug: s.id, text: s.label });
+    for (const x of s.members) if (x.overload === 1) headings.push({ depth: 3, slug: x.anchor, text: x.name });
+  }
+  page = { rec, title: rec.name, titleKind: 'namespace', eyebrow: 'API', searchTitle: rec.name, types, enums, sections, subs, headings };
+} else {
+  const e = m.members.get(id);
+  const ns = m.compounds.get(e.owner);
+  page = {
+    e,
+    ns,
+    title: e.name,
+    titleKind: e.strong ? 'enum class' : 'enum',
+    eyebrow: `API · ${ns.name}`,
+    searchTitle: e.qualified,
+    file: e.file,
+    line: e.line,
+    include: m.publicHeaders.has(e.file) ? e.file : null,
+    headings: [{ depth: 2, slug: 'values', text: 'Values' }],
+  };
+}
+
+const descRec = page.rec ?? page.e;
+const description = strip(descRec.brief || '') || `${page.titleKind} ${page.searchTitle}`;
+const guides = page.file ? guidesForFile(docs, page.file) : [];
+const srcHref = page.file ? `${base}/source/${page.file}/#L${page.line}` : null;
+---
+
+<StarlightPage
+  frontmatter={{
+    title: page.title,
+    description,
+    eyebrow: page.eyebrow,
+    titleKind: page.titleKind,
+    searchTitle: page.searchTitle,
+    code: page.file ? [page.file] : [],
+    guides,
+    tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 3 },
+  }}
+  sidebar={apiSidebar()}
+  headings={page.headings}
+>
+  {
+    page.file && (
+      <div class="api-meta">
+        {page.include && (
+          <span class="api-inc">
+            <code>#include &lt;{page.include}&gt;</code>
+            <CopyButton text={`#include <${page.include}>`} label="Copy the include line" />
+          </span>
+        )}
+        <a href={srcHref}>
+          {page.file}:{page.line}
+        </a>
+        <a href={githubUrl(page.file, page.line)}>GitHub ↗</a>
+      </div>
+    )
+  }
+
+  {
+    kind === 'type' && (
+      <>
+        {page.rec.templ && (
+          <pre class="mem-sig api-templ">
+            <code set:html={`${page.rec.templ}\n<span class="k">${page.rec.kind}</span> <b>${page.rec.short}</b>`} />
+          </pre>
+        )}
+        {(page.rec.bases.length > 0 || page.rec.derived.length > 0) && (
+          <dl class="api-rel">
+            {page.rec.bases.length > 0 && (
+              <>
+                <dt>Inherits from</dt>
+                <dd set:html={page.rec.bases.map((b: any) => `<code>${b.html}</code>`).join(', ')} />
+              </>
+            )}
+            {page.rec.derived.length > 0 && (
+              <>
+                <dt>Inherited by</dt>
+                <dd set:html={page.rec.derived.map((b: any) => `<code>${b.html}</code>`).join(', ')} />
+              </>
+            )}
+          </dl>
+        )}
+        {page.rec.brief && <p class="api-lead" set:html={page.rec.brief} />}
+        {page.rec.detail && <div class="api-detail" set:html={page.rec.detail} />}
+        {!page.rec.documented && <p class="mem-none">No comment in the header yet.</p>}
+
+        {page.nested.length > 0 && (
+          <>
+            <h2 id="nested-types">Nested types</h2>
+            <ul class="api-list">
+              {page.nested.map((c: any) => (
+                <li>
+                  <a href={c.url}>
+                    <code>{c.short}</code>
+                  </a>
+                  <span class="fmq-badge">{c.kind}</span>
+                  {c.brief && <span class="api-list-brief" set:html={c.brief} />}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {page.total > 10 && (
+          <div class="api-filter" data-api-filter role="group" aria-label="Filter members">
+            <input type="search" placeholder="Filter members" aria-label="Filter members by name" />
+            <div class="api-chips">
+              <button type="button" aria-pressed="true" data-f="">
+                All <b>{page.total}</b>
+              </button>
+              {page.families.map(([f, n]: any) => (
+                <button type="button" aria-pressed="false" data-f={f}>
+                  {f} <b>{n}</b>
+                </button>
+              ))}
+            </div>
+            <p class="api-count" aria-live="polite" />
+          </div>
+        )}
+
+        {page.sections.map((s: any) => (
+          <section class="api-sec" data-sec>
+            <h2 id={s.id}>{s.label}</h2>
+            {s.members.map((x: any) => (
+              <Member m={x} owner={page.rec} />
+            ))}
+          </section>
+        ))}
+      </>
+    )
+  }
+
+  {
+    kind === 'namespace' && (
+      <>
+        {page.rec.brief && <p class="api-lead" set:html={page.rec.brief} />}
+        {page.rec.detail && <div class="api-detail" set:html={page.rec.detail} />}
+        {page.subs.length > 0 && (
+          <>
+            <h2 id="namespaces">Namespaces</h2>
+            <ul class="api-list">
+              {page.subs.map((c: any) => (
+                <li>
+                  <a href={c.url}>
+                    <code>{c.name}</code>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        {page.types.length > 0 && (
+          <>
+            <h2 id="types">Classes and structs</h2>
+            <ul class="api-list">
+              {page.types.map((c: any) => (
+                <li>
+                  <a href={c.url}>
+                    <code>{c.short}</code>
+                  </a>
+                  <span class="fmq-badge">{c.kind}</span>
+                  {c.brief && <span class="api-list-brief" set:html={c.brief} />}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        {page.enums.length > 0 && (
+          <>
+            <h2 id="enums">Enums</h2>
+            <ul class="api-list">
+              {page.enums.map((e: any) => (
+                <li>
+                  <a href={e.page}>
+                    <code>{e.name}</code>
+                  </a>
+                  <span class="fmq-badge">{e.strong ? 'enum class' : 'enum'}</span>
+                  {e.brief && <span class="api-list-brief" set:html={e.brief} />}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        {page.sections.map((s: any) => (
+          <section class="api-sec">
+            <h2 id={s.id}>{s.label}</h2>
+            {s.members.map((x: any) => (
+              <Member m={x} />
+            ))}
+          </section>
+        ))}
+      </>
+    )
+  }
+
+  {
+    kind === 'enum' && (
+      <>
+        <pre class="mem-sig">
+          <code set:html={page.e.sigHtml} />
+        </pre>
+        {page.e.brief && <p class="api-lead" set:html={page.e.brief} />}
+        {page.e.detail && <div class="api-detail" set:html={page.e.detail} />}
+        <h2 id="values">Values</h2>
+        <div class="doc-table">
+          <table class="enum-values">
+            <thead>
+              <tr>
+                <th>Enumerator</th>
+                <th>Value</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {page.e.values.map((v: any) => (
+                <tr id={v.anchor}>
+                  <td>
+                    <code>{v.name}</code>
+                  </td>
+                  <td>{v.init ? <code>{v.init}</code> : <span class="muted">—</span>}</td>
+                  <td set:html={v.html || '<span class="muted">—</span>'} />
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </>
+    )
+  }
+</StarlightPage>
+
+<script>
+  // Member filter: by name family and by text.
+  for (const root of document.querySelectorAll<HTMLElement>('[data-api-filter]')) {
+    const input = root.querySelector('input')!;
+    const chips = [...root.querySelectorAll<HTMLButtonElement>('button[data-f]')];
+    const count = root.querySelector('.api-count')!;
+    const mems = [...document.querySelectorAll<HTMLElement>('.mem')];
+    let fam = '';
+    const apply = () => {
+      const q = input.value.trim().toLowerCase();
+      let shown = 0;
+      for (const el of mems) {
+        const ok = (!fam || el.dataset.family === fam) && (!q || (el.dataset.name ?? '').includes(q));
+        el.hidden = !ok;
+        if (ok) shown++;
+      }
+      for (const sec of document.querySelectorAll<HTMLElement>('[data-sec]')) {
+        sec.hidden = !sec.querySelector('.mem:not([hidden])');
+      }
+      count.textContent = fam || q ? `${shown} of ${mems.length} members` : '';
+    };
+    input.addEventListener('input', apply);
+    for (const c of chips) {
+      c.addEventListener('click', () => {
+        fam = c.dataset.f ?? '';
+        for (const o of chips) o.setAttribute('aria-pressed', String(o === c));
+        apply();
+      });
+    }
+  }
+</script>

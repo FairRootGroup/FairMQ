@@ -1,0 +1,109 @@
+---
+// One member of a class or namespace: signature, comment, parameters, source line.
+import { base } from '../../lib/model.mjs';
+import { family } from '../../lib/families.mjs';
+
+interface Props {
+  m: any;
+  owner?: any;
+}
+const { m, owner } = Astro.props;
+const badges: { text: string; cls?: string }[] = [];
+if (m.template) badges.push({ text: 'template' });
+if (m.static && m.kind === 'function') badges.push({ text: 'static' });
+if (m.virt === 'pure-virtual') badges.push({ text: 'pure virtual' });
+else if (m.virt === 'virtual') badges.push({ text: 'virtual' });
+if (m.prot === 'protected') badges.push({ text: 'protected' });
+if (m.deprecated) badges.push({ text: 'deprecated', cls: 'deprecated' });
+if (m.since) badges.push({ text: `since ${m.since}`, cls: 'since' });
+const src = `${base}/source/${m.file}/#L${m.line}`;
+const fileName = m.file.split('/').pop();
+const fam = owner ? family(m, owner) : '';
+const Heading = m.overload > 1 ? 'p' : 'h3';
+const hasDetails = m.params.length || m.tparams.length || m.returns || m.retvals.length || m.throws.length;
+---
+
+<article class="mem" data-family={fam} data-name={m.name.toLowerCase()}>
+  <div class="mem-h">
+    <Heading id={m.anchor} class="mem-name"><a href={`#${m.anchor}`}>{m.name}</a></Heading>
+    {badges.map((b) => <span class:list={['fmq-badge', b.cls]}>{b.text}</span>)}
+    <a class="mem-src" href={src}>{fileName}:{m.line}</a>
+  </div>
+  <pre class="mem-sig"><code set:html={m.sigHtml} /></pre>
+  {m.deprecated && <div class="doc-aside caution"><b>Deprecated</b><Fragment set:html={m.deprecated} /></div>}
+  {m.brief && <p class="mem-brief" set:html={m.brief} />}
+  {m.detail && <div class="mem-detail" set:html={m.detail} />}
+  {
+    hasDetails ? (
+      <dl class="mem-params">
+        {m.tparams.map((p: any) => (
+          <>
+            <dt>
+              <code>{p.name}</code> <span class="mem-pk">template parameter</span>
+            </dt>
+            <dd set:html={p.html || '—'} />
+          </>
+        ))}
+        {m.params.map((p: any) => (
+          <>
+            <dt>
+              <code>{p.name}</code>
+              {p.dir && <span class="mem-pk">{p.dir}</span>}
+            </dt>
+            <dd set:html={p.html || '—'} />
+          </>
+        ))}
+        {m.returns && (
+          <>
+            <dt class="mem-ret">Returns</dt>
+            <dd set:html={m.returns} />
+          </>
+        )}
+        {m.retvals.map((p: any) => (
+          <>
+            <dt>
+              <code>{p.name}</code> <span class="mem-pk">return value</span>
+            </dt>
+            <dd set:html={p.html} />
+          </>
+        ))}
+        {m.throws.map((p: any) => (
+          <>
+            <dt>
+              <code>{p.name}</code> <span class="mem-pk">throws</span>
+            </dt>
+            <dd set:html={p.html} />
+          </>
+        ))}
+      </dl>
+    ) : null
+  }
+  {
+    m.values && m.values.length > 0 && (
+      <div class="doc-table">
+        <table class="enum-values">
+          <thead>
+            <tr>
+              <th>Enumerator</th>
+              <th>Value</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {m.values.map((v: any) => (
+              <tr id={`${m.anchor}-${v.anchor}`}>
+                <td>
+                  <code>{v.name}</code>
+                </td>
+                <td>{v.init ? <code>{v.init}</code> : <span class="muted">—</span>}</td>
+                <td set:html={v.html || '<span class="muted">—</span>'} />
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+  {m.see.length > 0 && <p class="mem-see">See also: <Fragment set:html={m.see.join(', ')} /></p>}
+  {!m.documented && <p class="mem-none">No comment in the header yet.</p>}
+</article>

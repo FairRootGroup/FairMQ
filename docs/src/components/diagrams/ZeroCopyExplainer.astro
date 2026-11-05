@@ -1,0 +1,274 @@
+---
+// One message through the shmem transport, step by step.
+// Facts: fairmq/shmem/Common.h (MetaHeader, MakeShmName, makeShmIdStr), Socket.h (Send, Receive),
+// Message.h (Deallocate), plugins/config/Config.cxx (--shm-segment-size default 2 GiB).
+import Explainer from './Explainer.astro';
+
+const steps = [
+  {
+    cap: 'Two devices run on one host. Both map the same managed segment. FairMQ makes the name of the segment from the session name and the user ID.',
+    code: '--transport shmem --session default',
+  },
+  {
+    cap: 'The sampler asks for a message of 1 MiB. The transport allocates a block in the segment.',
+    code: 'auto msg = NewMessage(1 << 20);',
+    set: { a: 'NewMessage(1 << 20)' },
+  },
+  {
+    cap: 'The sampler writes the payload into the block. The payload stays in the segment.',
+    code: 'std::memcpy(msg->GetData(), src, msg->GetSize());',
+    set: { a: 'write the payload' },
+  },
+  {
+    cap: 'Send() puts only a MetaHeader of 40 bytes into a ZeroMQ message. It holds the size, the hint, the handle of the block, the handle of the reference count of a copied region block, the IDs of the region and the segment, and a flag for segment or region. The message of the sampler no longer owns the block.',
+    code: 'Send(msg, "data");',
+    set: { a: 'Send(msg, "data")' },
+  },
+  {
+    cap: 'The sink receives the MetaHeader. At the first GetData(), it changes the handle into an address in its own mapping of the segment.',
+    code: 'Receive(msg, "data");',
+    set: { b: 'Receive(msg, "data")' },
+  },
+  {
+    cap: 'The sink reads the payload in place. The transport copied no byte of the payload.',
+    code: 'auto* data = static_cast<char*>(msg->GetData());',
+    set: { b: 'msg->GetData()' },
+  },
+  {
+    cap: 'The message of the sink goes out of scope. The transport gives the block back to the segment.',
+    code: '}  // msg is destroyed: the block is free again',
+    set: { b: '~Message()' },
+  },
+  {
+    cap: 'Compare: with the zeromq transport, the full payload goes through the socket on each hop.',
+    code: '--transport zeromq',
+    set: { a: 'Send(msg, "data")', b: 'Receive(msg, "data")' },
+  },
+];
+---
+
+<Explainer title="One message, no copy" meta="sampler → sink · same host" steps={steps}>
+  <svg class="zc" data-stage viewBox="0 0 720 318" role="img" aria-label="Zero-copy transfer with the shmem transport">
+    <defs>
+      <pattern id="zc-cells" width="16" height="76" patternUnits="userSpaceOnUse"><line x1="0.5" y1="0" x2="0.5" y2="76" class="cell"></line></pattern>
+      <pattern id="zc-stripes" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="8" class="stripe"></rect></pattern>
+      <marker id="zc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"
+        ><path d="M0 0L10 5L0 10z" class="arrhead"></path></marker
+      >
+    </defs>
+    <line x1="240" y1="64" x2="480" y2="64" class="chan"></line>
+    <text x="360" y="88" text-anchor="middle" class="sub">channel "data" · push → pull</text>
+    <g class="maps">
+      <line x1="140" y1="116" x2="140" y2="204" class="map"></line>
+      <line x1="580" y1="116" x2="580" y2="204" class="map"></line>
+      <text x="150" y="166" class="sub">maps</text>
+      <text x="590" y="166" class="sub">maps</text>
+    </g>
+    <g class="seg">
+      <rect x="40" y="204" width="640" height="76" rx="2" class="segbox"></rect>
+      <rect x="40" y="204" width="640" height="76" fill="url(#zc-cells)"></rect>
+      <text x="40" y="300" class="sub">/dev/shm/fmq_&lt;shmId&gt;_m_0</text>
+      <text x="680" y="300" text-anchor="end" class="sub">managed segment · 2 GiB</text>
+    </g>
+    <g class="block">
+      <rect x="300" y="222" width="140" height="40" class="blk"></rect>
+      <rect class="fill" x="300" y="222" width="140" height="40" fill="url(#zc-stripes)"></rect>
+      <text class="blklabel" x="370" y="247" text-anchor="middle">1 MiB payload</text>
+    </g>
+    <rect class="blkline" x="298.5" y="220.5" width="143" height="43"></rect>
+    <text class="read sub mint" x="370" y="214" text-anchor="middle">read in place</text>
+    <text class="freed sub" x="370" y="247" text-anchor="middle">the block is free again</text>
+    <path class="hdl" d="M560 116 C 548 168, 480 190, 446 222" marker-end="url(#zc-arr)"></path>
+    <text class="hdllabel sub sky" x="470" y="184" text-anchor="end">handle → address</text>
+    <g class="proc">
+      <rect x="40" y="28" width="200" height="88" rx="3"></rect>
+      <text x="58" y="56" class="name">sampler</text>
+      <text x="58" y="76" class="sub">process A</text>
+      <text x="58" y="100" class="code" data-slot="a"></text>
+    </g>
+    <g class="proc">
+      <rect x="480" y="28" width="200" height="88" rx="3"></rect>
+      <text x="498" y="56" class="name">sink</text>
+      <text x="498" y="76" class="sub">process B</text>
+      <text x="498" y="100" class="code" data-slot="b"></text>
+    </g>
+    <g class="meta">
+      <rect x="232" y="56" width="16" height="16" class="metabox"></rect>
+      <text class="metalabel sub sky" x="240" y="46" text-anchor="middle">MetaHeader · 40 B</text>
+    </g>
+    <g class="zmq">
+      <rect x="236" y="50" width="56" height="28" class="blk"></rect>
+      <text x="264" y="69" text-anchor="middle" class="blklabel">1 MiB</text>
+    </g>
+  </svg>
+</Explainer>
+
+<style>
+  .name {
+    fill: var(--fmq-stage-ink);
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .sub {
+    fill: var(--fmq-stage-dim);
+    font-size: 11.5px;
+  }
+  .code {
+    fill: var(--fmq-saffron);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .proc rect {
+    fill: var(--fmq-stage-2);
+    stroke: var(--fmq-stage-line);
+    stroke-width: 1.2;
+  }
+  .chan {
+    stroke: var(--fmq-stage-line);
+    stroke-width: 1.5;
+  }
+  .map {
+    stroke: var(--fmq-stage-line);
+    stroke-dasharray: 4 4;
+    stroke-width: 1.2;
+  }
+  .segbox {
+    fill: var(--fmq-stage-2);
+    stroke: var(--fmq-stage-line);
+  }
+  .cell {
+    stroke: var(--fmq-stage-cell);
+    stroke-width: 1;
+  }
+  .blk {
+    fill: var(--fmq-saffron);
+  }
+  .stripe {
+    fill: rgb(26 26 26 / 0.22);
+  }
+  .blklabel {
+    fill: var(--fmq-on-saffron);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .metabox {
+    fill: var(--fmq-sky-bright);
+  }
+  .hdl {
+    fill: none;
+    stroke: var(--fmq-sky-bright);
+    stroke-width: 1.6;
+    stroke-dasharray: 5 4;
+  }
+  .arrhead,
+  .sky {
+    fill: var(--fmq-sky-bright);
+  }
+  .mint {
+    fill: var(--fmq-mint);
+    font-weight: 700;
+  }
+  .block {
+    transform-box: fill-box;
+    transform-origin: left center;
+    transform: scaleX(0);
+    transition:
+      transform 0.9s cubic-bezier(0.2, 0, 0.1, 1),
+      opacity 0.7s;
+  }
+  .zc.r2 .block {
+    transform: scaleX(1);
+  }
+  .zc.r7 .block {
+    opacity: 0;
+  }
+  .fill,
+  .blklabel {
+    opacity: 0;
+    transition: opacity 0.8s;
+  }
+  .zc.r3 .fill,
+  .zc.r3 .blklabel,
+  .zmq .blklabel {
+    opacity: 1;
+  }
+  .blkline {
+    fill: none;
+    stroke: var(--fmq-mint);
+    stroke-width: 3;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .zc.now6 .blkline {
+    opacity: 1;
+  }
+  .meta {
+    opacity: 0;
+    transform: translate(0, 0);
+    transition:
+      transform 1.5s cubic-bezier(0.45, 0, 0.2, 1),
+      opacity 0.35s;
+  }
+  .zc.r4 .meta {
+    opacity: 1;
+    transform: translate(112px, 0);
+  }
+  .zc.r5 .meta {
+    transform: translate(216px, 0);
+  }
+  .metalabel {
+    transition: opacity 0.4s;
+  }
+  .zc.r5 .metalabel {
+    opacity: 0;
+  }
+  .zc.r6 .meta {
+    opacity: 0;
+  }
+  .hdl,
+  .hdllabel {
+    opacity: 0;
+    transition: opacity 0.6s;
+  }
+  .zc.r5 .hdl,
+  .zc.r5 .hdllabel {
+    opacity: 1;
+  }
+  .zc.r7 .hdl,
+  .zc.r7 .hdllabel {
+    opacity: 0;
+  }
+  .read,
+  .freed {
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .zc.now6 .read,
+  .zc.now7 .freed {
+    opacity: 1;
+  }
+  .zmq {
+    opacity: 0;
+    transform: translate(0, 0);
+    transition:
+      transform 2.4s cubic-bezier(0.45, 0, 0.2, 1),
+      opacity 0.35s;
+  }
+  .zc.now8 .zmq {
+    opacity: 1;
+    transform: translate(176px, 0);
+  }
+  .maps,
+  .seg {
+    transition: opacity 0.5s;
+  }
+  .zc.now8 .maps,
+  .zc.now8 .seg {
+    opacity: 0.22;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .zc * {
+      transition: none !important;
+    }
+  }
+</style>

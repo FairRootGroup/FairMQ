@@ -1,0 +1,61 @@
+---
+// Page footer: edit link, last change, pagination, and the site line.
+import EditLink from '@astrojs/starlight/components/EditLink.astro';
+import LastUpdated from '@astrojs/starlight/components/LastUpdated.astro';
+import Pagination from '@astrojs/starlight/components/Pagination.astro';
+import { build } from 'virtual:fairmq/data';
+---
+
+<footer class="fmq-footer">
+  <Pagination />
+  <div class="meta">
+    <EditLink />
+    <LastUpdated />
+    <p>
+      Built from <a href={`${build.repo}/commit/${build.commit}`}>{build.branch} @ {build.commitShort}</a>
+    </p>
+  </div>
+  <div class="site">
+    <span>FairMQ · LGPL-3.0-only · GSI Helmholtzzentrum für Schwerionenforschung GmbH</span>
+    <a href={build.repo}>github.com/FairRootGroup/FairMQ</a>
+  </div>
+</footer>
+
+<style>
+  .fmq-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.75rem;
+    align-items: center;
+    border-top: 1px solid var(--fmq-rule);
+    padding-top: 0.9rem;
+    font-size: 0.8125rem;
+    color: var(--fmq-ink-3);
+  }
+  .meta :global(p) {
+    margin: 0;
+  }
+  .meta a,
+  .site a {
+    color: var(--fmq-ink-3);
+  }
+  .meta a:hover,
+  .site a:hover {
+    color: var(--fmq-ink);
+  }
+  .site {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+    color: var(--fmq-ink-3);
+    padding-bottom: 1rem;
+  }
+</style>

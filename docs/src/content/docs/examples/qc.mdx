@@ -1,0 +1,144 @@
+---
+title: 'qc: quality control on demand'
+description: 'A dispatcher forwards data from a sampler to a sink, and also to a QC task when a controller sets the property qc to active; the start script needs DDS.'
+sidebar:
+  order: 14
+code: [fairmq/ProgOptions.h, fairmq/Device.h, fairmq/Message.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { FileTree } from '@astrojs/starlight/components';
+
+This example sends data from a sampler through a dispatcher to a sink. When a controller sets the [property](/concepts/configuration/) `qc` of the dispatcher to `active`, the dispatcher also sends the data to a QC task. In this example, the QC task only logs that it received data.
+
+:::caution
+FairMQ alone cannot run the start script of this example. It needs DDS, a DDS plugin for FairMQ and the tool `fairmq-dds-command-ui`. DDS is not part of FairMQ. FairMQ v1.5.0 and later do not contain the plugin and the tool. See [dds: run with DDS](/examples/dds/#requirements).
+:::
+
+The code is in [`examples/qc`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/qc). The example shows how to:
+
+- subscribe to the changes of a property with `Subscribe()`,
+- change the behavior of a running device through a property,
+- start the devices of a topology in a specified order.
+
+## Topology
+
+The topology file `ex-qc-topology.xml` lists each task once in `main`, so DDS starts one instance of each task. Each task loads the DDS plugin with `-P dds`. No channel has an address.
+
+| Task | Executable | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- | --- |
+| `Sampler` | `fairmq-ex-qc-sampler` | `data1` | `push` | `bind` | not set |
+| `QCDispatcher` | `fairmq-ex-qc-dispatcher` | `data1` | `pull` | `connect` | not set |
+| | | `data2` | `push` | `connect` | not set |
+| | | `qc` | `push` | `connect` | not set |
+| `QCTask` | `fairmq-ex-qc-task` | `qc` | `pull` | `bind` | not set |
+| `Sink` | `fairmq-ex-qc-sink` | `data2` | `pull` | `bind` | not set |
+
+The tasks with a binding channel have write access to the properties `fmqchan_data1`, `fmqchan_qc` and `fmqchan_data2`. The dispatcher has read access to all three. The [dds example](/examples/dds/) explains how the DDS plugin of FairMQ v1.4.56 used these properties.
+
+The file gives `--max-iterations 1000` to the sampler and the sink. These devices have no such option. They log it as an unregistered option on the severity `debug` and ignore it.
+
+## Requirements
+
+The start script needs DDS, a DDS plugin for FairMQ and `fairmq-dds-command-ui`. The [dds example](/examples/dds/#requirements) describes these requirements and the error when the plugin is missing.
+
+The four devices build with FairMQ alone. Without DDS, you can start them by hand. See [Things to try](#things-to-try).
+
+## Build and run
+
+The examples build when the CMake option `BUILD_EXAMPLES` is `ON` (the default). CMake writes these files to the build directory:
+
+<FileTree>
+
+- build/examples/qc/
+  - fairmq-ex-qc-sampler
+  - fairmq-ex-qc-dispatcher
+  - fairmq-ex-qc-task
+  - fairmq-ex-qc-sink
+  - fairmq-start-ex-qc.sh
+  - fairmq-ex-qc-env.sh
+  - ex-qc-topology.xml
+
+</FileTree>
+
+`fairmq-ex-qc-dispatcher` comes from `qCDispatcher.cxx`, and `fairmq-ex-qc-task` from `qCTask.cxx`. The install step copies the executables and the scripts to `bin`, and `ex-qc-topology.xml` to `share/fairmq` in the install prefix.
+
+The start script takes no arguments:
+
+```sh
+cd build/examples/qc
+./fairmq-start-ex-qc.sh
+```
+
+The script does the same steps as the start script of the [dds example](/examples/dds/), with `dds-submit -r localhost --slots 4`. It requests the transitions in a specified order:
+
+<Snippet file="examples/qc/fairmq-start-ex-qc.sh.in" start="fairmq-dds-command-ui -c j" end='fairmq-dds-command-ui -w "RUNNING->READY"' />
+
+1. All devices go to `READY`.
+2. The sampler, the dispatcher and the sink go to `RUNNING`.
+3. The script sets the property `qc` of the dispatcher to `active` (`-c p`).
+4. The QC task goes to `RUNNING`.
+5. The script waits until the QC task goes from `RUNNING` to `READY`. Then it stops all devices and prints `Example successful :)`.
+
+For the options of `fairmq-dds-command-ui`, see [Request the transitions](/examples/dds/#request-the-transitions).
+
+## The code
+
+### Dispatcher: subscribe to a property
+
+In `InitTask()`, the dispatcher subscribes to the changes of all properties of the type `std::string` with [`Subscribe()`](/api/fair/mq/ProgOptions/#Subscribe). The callback looks only at the key `qc`. The value `active` turns the sends to `qc` on, and `inactive` turns them off.
+
+<Snippet file="examples/qc/qCDispatcher.cxx" start="void InitTask() override" />
+
+The callback runs in the thread that changes the property. Thus `fDoQC` is a `std::atomic<bool>`. [`ResetTask()`](/api/fair/mq/Device/#ResetTask) ends the subscription with [`Unsubscribe()`](/api/fair/mq/ProgOptions/#Unsubscribe).
+
+### Dispatcher: forward the data
+
+The dispatcher registers `HandleData()` for `data1` with [`OnData()`](/api/fair/mq/Device/#OnData):
+
+<Snippet file="examples/qc/qCDispatcher.cxx" start="bool HandleData" />
+
+When `fDoQC` is `true`, the dispatcher makes a copy of the message with [`Copy()`](/api/fair/mq/Message/#Copy). But it sends `msg` to `qc`, and then the same `msg` to `data2`. The code does not use `msgCopy`. On the zeromq transport, the first `Send()` empties `msg`, so the sink gets empty messages while `qc` is `active`.
+
+### Sampler, QC task and sink
+
+- The sampler sends a message of 1000 bytes on `data1` in each `ConditionalRun()` call. Then it waits 10 ms. It has no limit.
+- The QC task registers a lambda for `qc` with [`OnData()`](/api/fair/mq/Device/#OnData-2). The lambda logs `received data` and returns `false`. Thus the QC task goes to `READY` after its first message.
+- The sink registers `HandleData()` for `data2`. The function does nothing with the messages and returns `true`.
+
+## Output
+
+The QC task logs one line when it gets the first message on `qc`:
+
+```txt
+received data
+```
+
+The sampler, the dispatcher and the sink log no lines of their own.
+
+## Test
+
+The example has no test. In `CMakeLists.txt`, the test `Example.QC.localhost` is a comment. It runs `fairmq-start-ex-qc.sh localhost` with a timeout of 15 s and expects the output `Example successful`.
+
+## Things to try
+
+- Send `msgCopy` to `qc` in `qCDispatcher.cxx`. Then the QC task and the sink both get the data. The built-in multiplier uses the same method, see [builtin-devices](/examples/builtin-devices/).
+- Start the devices without DDS. Remove `-P dds` and give each channel an address. Start each device in its own terminal in `build/examples/qc`:
+
+  ```sh
+  ./fairmq-ex-qc-sampler --id sampler1 --channel-config name=data1,type=push,method=bind,address=tcp://127.0.0.1:5555
+  ./fairmq-ex-qc-task --id qctask1 --channel-config name=qc,type=pull,method=bind,address=tcp://127.0.0.1:5556
+  ./fairmq-ex-qc-sink --id sink1 --channel-config name=data2,type=pull,method=bind,address=tcp://127.0.0.1:5557
+  ./fairmq-ex-qc-dispatcher --id dispatcher1 --channel-config name=data1,type=pull,method=connect,address=tcp://127.0.0.1:5555 name=data2,type=push,method=connect,address=tcp://127.0.0.1:5557 name=qc,type=push,method=connect,address=tcp://127.0.0.1:5556
+  ```
+
+  No controller sets `qc` here, so the dispatcher sends nothing to the QC task.
+
+- Set the property from code. When the dispatcher is in `READY` or `RUNNING`, a plugin can call [`SetProperty()`](/api/fair/mq/Plugin/#SetProperty) as `SetProperty<std::string>("qc", "active")`. The value must be a `std::string`, because the dispatcher subscribes to `std::string` properties. See [Write a plugin](/guides/write-plugin/) and [custom-controller](/examples/custom-controller/).
+
+## Related pages
+
+- [Configuration and properties](/concepts/configuration/)
+- [dds: run with DDS](/examples/dds/)
+- [Plugins and control](/concepts/plugins/)
+- [builtin-devices: a topology of built-in devices](/examples/builtin-devices/)

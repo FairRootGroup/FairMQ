@@ -1,0 +1,44 @@
+---
+// Footer of the phone menu: the main sections, then GitHub and the theme.
+import Default from '@astrojs/starlight/components/MobileMenuFooter.astro';
+import { sections } from '../../lib/nav';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const path = Astro.url.pathname;
+---
+
+<nav class="fmq-mnav" aria-label="Sections">
+  {
+    sections.map((s) => (
+      <a href={`${base}${s.href}`} aria-current={s.match(path, base) ? 'page' : undefined}>
+        {s.label}
+      </a>
+    ))
+  }
+</nav>
+<Default />
+
+<style>
+  .fmq-mnav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+    border-top: 1px solid var(--fmq-rule);
+    padding-top: 0.75rem;
+  }
+  .fmq-mnav a {
+    text-align: center;
+    padding: 0.5rem 0.25rem;
+    border: 1px solid var(--fmq-rule);
+    border-radius: 4px;
+    color: var(--fmq-ink-2);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .fmq-mnav a[aria-current='page'] {
+    border-color: var(--fmq-bar);
+    background: var(--fmq-saffron-tint);
+    color: var(--fmq-ink);
+  }
+</style>

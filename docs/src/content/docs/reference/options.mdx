@@ -1,0 +1,98 @@
+---
+title: 'Command-line options'
+description: 'All command-line options of a device made with runDevice.h: where they come from, the value formats, --help, --print-options and the full table.'
+sidebar:
+  order: 1
+code: [fairmq/ProgOptions.cxx, fairmq/plugins/config/Config.cxx, fairmq/plugins/control/Control.cxx, fairmq/PluginManager.cxx, fairmq/DeviceRunner.cxx]
+---
+
+import OptionsTable from '../../../components/OptionsTable.astro';
+import Snippet from '../../../components/Snippet.astro';
+
+A device made with `runDevice.h` accepts the options on this page. The [table](#all-options) at the end lists the options that each such device has, with the defaults from the code. Each option becomes a property with the same name, so your code reads it with [`GetProperty()`](/api/fair/mq/ProgOptions/#GetProperty).
+
+## Where the options come from
+
+The device runner ([`DeviceRunner`](/api/fair/mq/DeviceRunner/)) collects the options from several places before it parses the command line ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L108-L132)):
+
+| Source | Group in `--help` | Group in the table | Options |
+| --- | --- | --- | --- |
+| [`ProgOptions`](/api/fair/mq/ProgOptions/) | `FairMQ Command Line Options` | General, Logging | `--help`, `--version`, `--print-options`, the log options |
+| The config plugin | `FairMQ device options` | Device, Shared memory | Device ID, transport, channel configuration, shared memory |
+| The control plugin | `Control (builtin) Plugin` | Control | `--control`, `--catch-signals` |
+| The plugin manager | `Plugin Manager` | Plugins | `-P`, `-S` |
+| Your device | `Custom options` | Not in the table | The options of `addCustomOptions()` |
+| Other plugins | The name that the plugin gives | Not in the table | The options of each plugin that you load with `-P` |
+
+The device runner always loads the config plugin and the control plugin. The [config plugin](/concepts/configuration/#the-config-plugin) reads the channel configuration. The control plugin moves the device through its states. Refer to [Plugins and control](/concepts/plugins/).
+
+## Show the options of a device
+
+`--help` (or `-h`) prints all options of the device, with their groups, defaults and descriptions. Then the program stops before it makes the device ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L29-L39)).
+
+`--print-options` prints one line for each option, in the format `name:value:type:description` ([ProgOptions.cxx](/source/fairmq/ProgOptions.cxx/#L430-L448)). The value is the value after the parse of the command line. For an option without a value, the value is empty and the type is `<unknown>`. Then the program stops before it makes the device.
+
+```sh
+fairmq-ex-1-1-sampler --id sampler1 --print-options
+```
+
+Some lines of the output:
+
+```txt
+help::<unknown>:Print help
+id:sampler1:string:Device ID.
+transport:zeromq:string:Transport ('zeromq'/'shmem').
+control:dynamic:string:Control mode, 'static' or 'dynamic' (aliases for dynamic are external and interactive), 'none', 'gui'
+```
+
+When the device starts, it logs all properties with the severity `debug`, after the line `Configuration:` ([ProgOptions.cxx](/source/fairmq/ProgOptions.cxx/#L384-L428)). Each line has the form `name = value <type> origin`. The origin is `[default]`, `[provided]` or `[empty]`. The channel properties from `--channel-config` and `--mq-config` are not in this log, because the config plugin reads them later, in `INITIALIZING DEVICE`.
+
+:::caution[`--version` and `--print-channels`]
+`--version` and `--print-channels` print nothing in this version. The device runner sets the console log to `nolog` for these two options, and then writes the output to the log ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L41-L42)). The device runner then ends the device with the transition `END` ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L154-L168)). `--print-channels` is for the channels that a device registers with [`RegisterChannelEndpoint()`](/api/fair/mq/Device/#RegisterChannelEndpoint), not for the configured channels.
+:::
+
+## Value formats
+
+- A long option takes its value as `--name value` or `--name=value` ([ProgOptions.cxx](/source/fairmq/ProgOptions.cxx/#L124-L125)).
+- A short option takes its value as `-P value` or `-Pvalue`.
+- A boolean option takes `true` or `false`, for example `--color false`.
+- `--print-options` and `--print-channels` need no value.
+- `--help` and `--version` take no value.
+- Sizes are in bytes, for example `--shm-segment-size 1000000000`.
+- `--channel-config` and `-S` take several values after the option. Give one value for each channel after one `--channel-config`, as the examples do:
+
+<Snippet file="examples/multiple-channels/fairmq-start-ex-multiple-channels.sh.in" start="SAMPLER=" end="name=broadcast" />
+
+:::caution[Unknown options]
+The device ignores options that it does not know ([ProgOptions.cxx](/source/fairmq/ProgOptions.cxx/#L119-L121)). For example, the device starts also with the misspelled option `--chanel-config`, but without channels. It logs each unknown option only with the severity `debug`: `detected unregistered option`.
+:::
+
+## Custom options
+
+With `runDevice.h`, your program defines the function `addCustomOptions()`. The device runner adds these options in the group `Custom options` ([runDevice.h](/source/fairmq/runDevice.h/#L33-L37)). Use the types and the defaults of Boost.Program_options:
+
+<Snippet file="examples/1-1/sampler.cxx" start="void addCustomOptions" end="^}" />
+
+Read the values in your device as properties, with the same type as in the option:
+
+<Snippet file="examples/1-1/sampler.cxx" start="void InitTask()" />
+
+For a property with another type, `GetProperty()` throws an exception. [Configuration and properties](/concepts/configuration/#custom-options) describes the properties.
+
+## Plugin options
+
+A plugin can declare its own options. The device runner adds the options of each plugin that you load with `-P`, so `--help -P <plugin>` shows them. A plugin option is a property like the others. Refer to [Write a plugin](/guides/write-plugin/).
+
+## All options
+
+The table shows the options of a device made with `runDevice.h`, without custom options and the options of other plugins. Use the filter to find an option, or select a group. The link at the end of each description goes to the line of the code that defines the option.
+
+<OptionsTable />
+
+## Related pages
+
+- [Configuration and properties](/concepts/configuration/): how options, JSON files and plugins give properties.
+- [Channel properties](/reference/channel-properties/): the keys for `--channel-config`.
+- [JSON configuration](/reference/json/): the file for `--mq-config`.
+- [Plugins and control](/concepts/plugins/): `--control`, `-P` and the plugin search path.
+- [Logging](/tools/logging/): `--severity`, `--verbosity` and the log file.

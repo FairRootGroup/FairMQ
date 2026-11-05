@@ -1,0 +1,261 @@
+---
+title: 'Built-in devices'
+description: 'The ready-made devices of FairMQ: benchmark sampler, sink, splitter, merger, multiplier and proxy, with their channels, options and commands.'
+sidebar:
+  order: 2
+code: [fairmq/devices/BenchmarkSampler.h, fairmq/devices/Sink.h, fairmq/devices/Splitter.h, fairmq/devices/Merger.h, fairmq/devices/Multiplier.h]
+---
+
+import OptionsTable from '../../../components/OptionsTable.astro';
+import Snippet from '../../../components/Snippet.astro';
+
+FairMQ builds six ready-made devices as executables. Use them to make test traffic, to measure the throughput of a transport, and to move messages between your own devices without new code.
+
+| Executable | Class | What it does | Channels (default names) | `--multipart` |
+| --- | --- | --- | --- | --- |
+| [`fairmq-bsampler`](#fairmq-bsampler) | `fair::mq::BenchmarkSampler` | Sends messages of a fixed size, at full speed or at a fixed rate. | output `data` | `false` |
+| [`fairmq-sink`](#fairmq-sink) | `fair::mq::Sink` | Receives messages. Discards them or writes them to a file. | input `data` | `false` |
+| [`fairmq-splitter`](#fairmq-splitter) | `fair::mq::Splitter` | Sends each message to the next sub-channel of the output channel (round robin). | input `data-in`, output `data-out` | `true` |
+| [`fairmq-merger`](#fairmq-merger) | `fair::mq::Merger` | Receives from all sub-channels of the input channel and sends on one output channel. | input `data-in`, output `data-out` | `true` |
+| [`fairmq-multiplier`](#fairmq-multiplier) | `fair::mq::Multiplier` | Sends each message to all sub-channels of all output channels. | input `data-in`, outputs from `--out-channel` (no default) | `true` |
+| [`fairmq-proxy`](#fairmq-proxy) | `fair::mq::Proxy` | Receives on the input channel and sends on the output channel. | input `data-in`, output `data-out` | `true` |
+
+The last column shows the default value of the option `--multipart`.
+
+## Find the executables
+
+CMake builds the devices together with the FairMQ library (option `BUILD_FAIRMQ`, default `ON`).
+
+- In the build directory, the executables are in `<build>/fairmq/`, for example `build/fairmq/fairmq-sink`.
+- An installation puts them into the `bin` directory of the install prefix (`CMAKE_INSTALL_BINDIR`).
+- The CMake package exports each executable as an imported target, for example `FairMQ::fairmq-sink`.
+
+The sources are in [`fairmq/devices/`](https://github.com/FairRootGroup/FairMQ/tree/dev/fairmq/devices). Each device is a class in a header, for example `Sink.h`, and a short `run*.cxx` file adds its options. The headers are private: an installation does not include them. To change the behavior of a device, [write your own device](/start/first-device/).
+
+## Common behavior
+
+- Each `run*.cxx` file includes `<fairmq/runDevice.h>`. So each executable has all [device options](/reference/options/), for example `--id`, `--transport`, `--channel-config`, `--control` and `--severity`.
+- The device reads its own options in `InitTask()`.
+- Configure the channels with `--channel-config` or `--mq-config`. See [Configure channels](/guides/configure-channels/). The channel names must be the names that `--in-channel` and `--out-channel` give. If a channel does not exist, the device goes to the state `ERROR`.
+- Each `address` in a `--channel-config` value makes one sub-channel. For example, `name=data-out,type=push,method=bind,address=tcp://*:5556,address=tcp://*:5557` makes the sub-channels `data-out[0]` and `data-out[1]`.
+- Both controllers move the device to `RUNNING`. Then the default controller (`--control dynamic`) waits for keys in the terminal. With `--control static`, the device stops and the process ends when the device leaves `RUNNING` on its own.
+- Each channel logs its message rate and data rate every second (channel property `rateLogging`, default `1`). See [Run a benchmark](/guides/benchmark/#read-the-rate-lines).
+
+:::caution[Use the same `--multipart` value in a chain]
+The default of `--multipart` is `false` for the sampler and the sink, and `true` for the other devices. Give all devices that exchange messages the same value. The `shmem` transport sends single messages and multipart messages in two different metadata formats. A receiver with the wrong value cannot read the metadata.
+:::
+
+## fairmq-bsampler
+
+The class [`fair::mq::BenchmarkSampler`](/source/fairmq/devices/BenchmarkSampler.h/#L29-L109) makes traffic for benchmarks. Its `Run()` loop does these steps until the state changes:
+
+- It makes a message of `--msg-size` bytes with the transport of the output channel. With `--multipart true`, it makes a multipart message of `--num-parts` parts. Each part has `--msg-size` bytes.
+- With `--memset true`, it writes zeros into each buffer. Otherwise it does not write into the buffers.
+- It sends the message on sub-channel 0 of `--out-channel`. With the default send timeout (`sndTimeoutMs` -1), the send waits until the socket accepts the message.
+- With `--msg-rate` above 0, a [`fair::mq::tools::RateLimiter`](/api/fair/mq/tools/RateLimiter/) limits the number of messages per second. See [RateLimit.h](/reference/tools/#ratelimith).
+
+<OptionsTable
+  file="fairmq/devices/runBenchmarkSampler.cxx"
+  id="bsampler"
+  texts={{
+    'out-channel': 'Name of the output channel. The sampler sends on its sub-channel 0.',
+    multipart: 'Send multipart messages of <code>--num-parts</code> parts. <code>false</code>: send single messages.',
+    memset: 'Write zeros into each buffer before the send.',
+    'num-parts': 'Number of parts of each multipart message. Only with <code>--multipart true</code>.',
+    'msg-size': 'Size of each message in bytes. In a multipart message, the size of each part.',
+    'msg-alignment': 'Alignment of the buffers in bytes. 0: the default alignment of the transport.',
+    'max-iterations': 'Number of messages to send. 0: no limit. See the note below.',
+    'msg-rate': 'Maximum number of messages per second. 0: no limit.',
+  }}
+/>
+
+:::note[Number of messages]
+The sampler counts each successful send. With `--max-iterations` n, it stops at the first send after the count is n. So it sends n + 1 messages and logs `Done n iterations`. The sink counts in the same way. A sampler and a sink with the same value stop after the same number of messages.
+:::
+
+The sampler logs these lines at the start and at the end of `Run()`:
+
+```txt
+Starting the benchmark with message size of <bytes> and <n> iterations.
+Done <n> iterations in <t>ms.
+```
+
+Send messages of 10000 bytes, 100 messages per second:
+
+```sh
+fairmq-bsampler --id bsampler1 --msg-size 10000 --msg-rate 100 \
+  --channel-config name=data,type=push,method=bind,address=tcp://*:5555
+```
+
+## fairmq-sink
+
+The class [`fair::mq::Sink`](/source/fairmq/devices/Sink.h/#L24-L130) receives messages on sub-channel 0 of `--in-channel` in its `Run()` loop. It discards the messages. With `--out-filename`, it writes the data of each message, or of each part, to the file. The sink leaves `RUNNING` on its own in two cases:
+
+- It received the number of messages of `--max-iterations` (it counts like the sampler).
+- The file has `--max-file-size` bytes or more. The sink checks the size after each message.
+
+<OptionsTable
+  file="fairmq/devices/runSink.cxx"
+  id="sink"
+  texts={{
+    'in-channel': 'Name of the input channel. The sink receives on its sub-channel 0.',
+    'out-filename': 'Write the data of the received messages to this file (binary). Empty: discard the messages.',
+    'max-file-size': 'Leave <code>RUNNING</code> when the file has this number of bytes. 0: no limit. Only with <code>--out-filename</code>.',
+    'max-iterations': 'Number of messages to receive. 0: no limit.',
+    multipart: 'Receive multipart messages. Use the value of the sender.',
+  }}
+/>
+
+The sink logs these lines. The line `Closed …` comes only with `--out-filename`.
+
+```txt
+Starting sink and expecting to receive <n> messages.
+Received <n> messages in <t>ms.
+Closed '<file>' after writing <bytes> bytes.(<rate> MB/s)
+Leaving RUNNING state.
+```
+
+When the sink stops on its own, it first logs `Configured maximum number of iterations reached.` or `Written <bytes> bytes, stopping...`.
+
+If the sink cannot open or write the file, it throws an exception and goes to the state `ERROR`.
+
+Write 100 MB of received data to a file:
+
+```sh
+fairmq-sink --id sink1 --out-filename /tmp/data.bin --max-file-size 100000000 \
+  --channel-config name=data,type=pull,method=connect,address=tcp://localhost:5555
+```
+
+## fairmq-splitter
+
+The class [`fair::mq::Splitter`](/source/fairmq/devices/Splitter.h/#L19-L54) registers a data callback for `--in-channel` with [`OnData()`](/api/fair/mq/Device/#OnData). The callback sends each message to the next sub-channel of `--out-channel`: 0, 1, …, n − 1, then 0 again. It does not check the result of the send.
+
+<Snippet file="fairmq/devices/Splitter.h" start="template<typename T>" />
+
+If `--in-channel` has more than one sub-channel, the device receives from all of them.
+
+<OptionsTable
+  file="fairmq/devices/runSplitter.cxx"
+  id="splitter"
+  texts={{
+    'in-channel': 'Name of the input channel.',
+    'out-channel': 'Name of the output channel. The splitter sends to its sub-channels in turn.',
+    multipart: 'Receive and send multipart messages. <code>false</code>: single messages.',
+  }}
+/>
+
+Send the messages from port 5555 alternately to port 5556 and port 5557:
+
+```sh
+fairmq-splitter --id splitter1 \
+  --channel-config name=data-in,type=pull,method=bind,address=tcp://*:5555 \
+                   name=data-out,type=push,method=bind,address=tcp://*:5556,address=tcp://*:5557
+```
+
+## fairmq-merger
+
+The class [`fair::mq::Merger`](/source/fairmq/devices/Merger.h/#L22-L102) makes a [poller](/guides/poll-channels/) for all sub-channels of `--in-channel`. In its `Run()` loop, it waits up to 100 ms for data. Then it receives from each sub-channel that has data and sends the message on sub-channel 0 of `--out-channel`.
+
+<OptionsTable
+  file="fairmq/devices/runMerger.cxx"
+  id="merger"
+  texts={{
+    'in-channel': 'Name of the input channel. The merger receives from all its sub-channels.',
+    'out-channel': 'Name of the output channel. The merger sends on its sub-channel 0.',
+    multipart: 'Receive and send multipart messages. <code>false</code>: single messages.',
+  }}
+/>
+
+Receive on port 5556 and port 5557, and send everything to port 5558:
+
+```sh
+fairmq-merger --id merger1 \
+  --channel-config name=data-in,type=pull,method=bind,address=tcp://*:5556,address=tcp://*:5557 \
+                   name=data-out,type=push,method=connect,address=tcp://localhost:5558
+```
+
+## fairmq-multiplier
+
+The class [`fair::mq::Multiplier`](/source/fairmq/devices/Multiplier.h/#L20-L102) reads a list of channel names from `--out-channel`. This option has no default. Without it, `InitTask()` throws an exception and the device goes to the state `ERROR`.
+
+The data callback of `--in-channel` sends each message to all sub-channels of all output channels. The last sub-channel of the last channel gets the original message. Each other sub-channel gets a copy that the device makes with [`Copy()`](/api/fair/mq/Message/#Copy). The copy shares the buffer with the original, so the device does not copy the data.
+
+<OptionsTable
+  file="fairmq/devices/runMultiplier.cxx"
+  id="multiplier"
+  texts={{
+    'in-channel': 'Name of the input channel.',
+    'out-channel': 'Names of the output channels. Give one or more names. Required.',
+    multipart: 'Receive and send multipart messages. <code>false</code>: single messages.',
+  }}
+/>
+
+Send each message to two output channels:
+
+```sh
+fairmq-multiplier --id multiplier1 --out-channel data-out1 data-out2 \
+  --channel-config name=data-in,type=pull,method=connect,address=tcp://localhost:5555 \
+                   name=data-out1,type=push,method=bind,address=tcp://*:5556 \
+                   name=data-out2,type=push,method=bind,address=tcp://*:5557
+```
+
+## fairmq-proxy
+
+The class [`fair::mq::Proxy`](/source/fairmq/devices/Proxy.h/#L19-L63) receives on sub-channel 0 of `--in-channel` and sends on sub-channel 0 of `--out-channel`. It leaves `RUNNING` when the state changes or when a transfer fails. The two channels can have different socket types and different transports. See [Use several transports](/guides/several-transports/).
+
+<OptionsTable
+  file="fairmq/devices/runProxy.cxx"
+  id="proxy"
+  texts={{
+    'in-channel': 'Name of the input channel. The proxy receives on its sub-channel 0.',
+    'out-channel': 'Name of the output channel. The proxy sends on its sub-channel 0.',
+    multipart: 'Receive and send multipart messages. <code>false</code>: single messages.',
+  }}
+/>
+
+Receive on a `pull` channel and publish the messages on a `pub` channel:
+
+```sh
+fairmq-proxy --id proxy1 \
+  --channel-config name=data-in,type=pull,method=bind,address=tcp://*:5555 \
+                   name=data-out,type=pub,method=bind,address=tcp://*:5556
+```
+
+## The script startMQBenchmark.sh
+
+CMake makes the script `<build>/fairmq/startMQBenchmark.sh` from [`fairmq/devices/startMQBenchmark.sh.in`](https://github.com/FairRootGroup/FairMQ/blob/dev/fairmq/devices/startMQBenchmark.sh.in). An installation does not include it. The script starts `fairmq-bsampler` and `fairmq-sink` from the build directory, each in its own `xterm` window. So it needs `xterm` and a display.
+
+The script takes six positional parameters. A parameter that does not match the accepted characters keeps its default.
+
+| Position | Parameter | Default | Accepted value |
+| --- | --- | --- | --- |
+| 1 | Message size in bytes (`--msg-size`) | `1000000` | digits |
+| 2 | Number of iterations (`--max-iterations`) | `0` (no limit) | digits |
+| 3 | Transport (`--transport`) | `zeromq` | lowercase letters: `zeromq` or `shmem` |
+| 4 | Affinity | `false` | `true`: run the sampler with `taskset -c 0` and the sink with `taskset -c 1` |
+| 5 | Multipart (`--multipart`) | `false` | lowercase letters: `true` or `false` |
+| 6 | Number of parts (`--num-parts`) | `1` | digits |
+
+The usage line that the script prints names only the first four parameters. The script gives these options to the two devices:
+
+<Snippet file="fairmq/devices/startMQBenchmark.sh.in" start='SAMPLER="fairmq-bsampler"' end="xterm -geometry 90x50+550+0" />
+
+The two devices connect with a `pair` channel `data` on `tcp://127.0.0.1:5555`. With the `shmem` transport and `--shm-monitor true`, a device starts `fairmq-shmmonitor` if no monitor runs for the session. The device looks for the monitor in `$FAIRMQ_PATH` and then in `$PATH`. The script sets `FAIRMQ_PATH` to the build directory. The option `--shm-throw-bad-alloc false` makes the sampler wait for free memory in a full segment.
+
+Run the benchmark with 1 MB messages and the `shmem` transport, without an iteration limit:
+
+```sh
+cd build/fairmq
+./startMQBenchmark.sh 1000000 0 shmem
+```
+
+The windows stay open after the devices end (`xterm -hold`).
+
+## Related pages
+
+- [Run a benchmark](/guides/benchmark/): measure throughput with the sampler and the sink.
+- [Example: built-in devices](/examples/builtin-devices/): all six devices in one topology.
+- [Command-line options](/reference/options/): the options that all devices have.
+- [Channel properties](/reference/channel-properties/): `sndBufSize`, `rateLogging` and the other properties.
+- [Monitor and clean up](/shmem/monitor/): `fairmq-shmmonitor` and the option `--shm-monitor`.
+- [Design a topology](/guides/design-topology/#fan-out-and-fan-in): fan-out and fan-in with the splitter, the merger and the multiplier.

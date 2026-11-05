@@ -1,0 +1,187 @@
+---
+title: 'Poll several channels'
+description: 'Wait with a poller until one of several channels can receive or send a message, and then serve the channels that are ready.'
+sidebar:
+  order: 4
+code: [fairmq/Poller.h, fairmq/Device.h, fairmq/TransportFactory.h, fairmq/zeromq/Poller.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+A poller waits until at least one of several channels can receive or send a message. With a poller,
+one thread of your device serves several channels in `Run()`. It receives where a message waits,
+and it sends where a peer can take a message.
+
+If your device only receives, register data callbacks with [`OnData()`](/api/fair/mq/Device/#OnData)
+instead. Then the device polls the channels itself. See
+[Receive data with callbacks or loops](/guides/receive-data/).
+
+## Poll channels in `Run()`
+
+<Steps>
+
+1. In `Run()`, make the poller with [`NewPoller()`](/api/fair/mq/Device/#NewPoller) and the names
+   of the channels. Make it once, before the loop.
+
+2. In a loop, call [`Poll(timeout)`](/api/fair/mq/Poller/#Poll). The timeout is in milliseconds, for
+   example 100 ms.
+
+3. After each `Poll()`, call [`CheckInput()`](/api/fair/mq/Poller/#CheckInput-2) for each channel
+   that receives. Call [`CheckOutput()`](/api/fair/mq/Poller/#CheckOutput-2) for each channel that
+   sends.
+
+4. If a check returns `true`, call `Receive()` or `Send()` on this sub-channel.
+
+5. Stop the loop when [`NewStatePending()`](/api/fair/mq/Device/#NewStatePending) returns `true`.
+
+</Steps>
+
+The sampler of the [multiple-channels example](/examples/multiple-channels/) sends on the channel
+`data` and receives on the channel `broadcast` in one loop:
+
+<Snippet file="examples/multiple-channels/sampler.cxx" start="void Run() override" />
+
+`data` is a `push` socket, and `broadcast` is a `sub` socket. The start script gives the sampler
+these channels:
+
+<Snippet file="examples/multiple-channels/fairmq-start-ex-multiple-channels.sh.in" start='SAMPLER="fairmq' end="name=broadcast,type=sub" />
+
+The example uses the zeromq transport only, because shmem has no `pub` and `sub` sockets. The
+sampler logs `Received broadcast: "OK"` for each message of the broadcaster, and `Sent "Hello"` for
+each message on `data`.
+
+## Make a poller
+
+The device has two functions. Both return a [`fair::mq::PollerPtr`](/api/fair/mq/#PollerPtr), which
+is a `std::unique_ptr<fair::mq::Poller>`.
+
+| Function | The poller polls | Check a channel with |
+| --- | --- | --- |
+| [`NewPoller("data", "broadcast")`](/api/fair/mq/Device/#NewPoller) | All sub-channels of the named channels. | `CheckInput("data", index)`, with the sub-channel index. |
+| [`NewPoller(channels)`](/api/fair/mq/Device/#NewPoller-2), with a `std::vector<fair::mq::Channel*>` | The sub-channels in the vector. | `CheckInput(i)`, with the position `i` in the vector. |
+
+`CheckOutput()` takes the same arguments as `CheckInput()`. The poller of `NewPoller(channels)` has
+no channel names. On this poller, `CheckInput("data", 0)` throws
+[`fair::mq::PollerError`](/api/fair/mq/PollerError/).
+
+The poller of `NewPoller("data", "broadcast")` also accepts a position. It keeps the sub-channels in
+the order of the names, and in each channel in the order of the index. With one
+sub-channel in each channel, `CheckInput(0)` checks `data[0]` and `CheckInput(1)` checks
+`broadcast[0]`.
+
+The built-in merger device polls all sub-channels of its input channel with a vector:
+
+<Snippet file="fairmq/devices/Merger.h" start="int numInputs = GetNumSubChannels(fInChannelName);" end="PollerPtr poller(NewPoller(chans));" />
+
+`NewPoller(fInChannelName)` polls the same sub-channels. Then check them with
+`CheckInput(fInChannelName, i)`.
+
+Make the poller in `InitTask()`, `PreRun()` or `Run()`. Before the states `BINDING` and
+`CONNECTING`, the channels have no sockets. The poller keeps the zeromq sockets of the channels. If
+you keep the poller as a member of your device, destroy it in `ResetTask()`.
+
+### The functions of the transport factory
+
+`NewPoller()` calls a function of the [transport factory](/api/fair/mq/TransportFactory/) of the
+channels. You can call these functions directly, for example
+[without a device](/guides/channels-without-device/):
+
+| Function | The poller polls | Check a channel with |
+| --- | --- | --- |
+| [`CreatePoller(subChannels)`](/api/fair/mq/TransportFactory/#CreatePoller), with a `std::vector<fair::mq::Channel>` | The sub-channels of one channel, for example `GetChannels().at("data")`. | `CheckInput(index)`, with the sub-channel index. |
+| [`CreatePoller(channels)`](/api/fair/mq/TransportFactory/#CreatePoller-2), with a `std::vector<fair::mq::Channel*>` | The sub-channels in the vector. | `CheckInput(i)`, with the position `i`. |
+| [`CreatePoller(channelMap, names)`](/api/fair/mq/TransportFactory/#CreatePoller-3) | All sub-channels of the named channels in the map. | `CheckInput(name, index)` or `CheckInput(i)`. |
+
+An unknown name in `CreatePoller(channelMap, names)` throws `PollerError`. These functions do not
+compare the transports of the channels. Give them only channels of the transport of this factory.
+
+## What the poller checks
+
+The socket type of each sub-channel selects the events that the poller waits for
+([zeromq/Poller.h](/source/fairmq/zeromq/Poller.h/#L111-L123)):
+
+| Socket type | The poller waits until | `CheckInput()` | `CheckOutput()` |
+| --- | --- | --- | --- |
+| `pull`, `sub`, `xsub` | a message arrived | `true` or `false` | always `false` |
+| `push`, `pub`, `xpub` | the socket can send | always `false` | `true` or `false` |
+| `req`, `rep`, `pair`, `dealer`, `router` | a message arrived, or the socket can send | `true` or `false` | `true` or `false` |
+
+`CheckInput()` returns `true` if `zmq_poll()` set the event `ZMQ_POLLIN` for the socket, and
+`CheckOutput()` returns `true` for `ZMQ_POLLOUT`. In ZeroMQ, `ZMQ_POLLIN` means that at least one
+message waits, and `ZMQ_POLLOUT` means that the socket can take at least one message without a wait.
+Both functions give the result of the last `Poll()`. The shmem transport polls the sockets that carry the metadata of its messages,
+with the same rules.
+
+:::caution[Sockets in both directions]
+For the types `req`, `rep`, `pair`, `dealer` and `router`, the poller also waits for output.
+ZeroMQ sets `ZMQ_POLLOUT` while one of these sockets can send. Then `Poll()` returns at once, also if
+no message arrived. A loop
+that does not send on such a socket then does not wait in `Poll()`, and it uses the CPU all the
+time.
+:::
+
+The poller does not check the index. For a position outside the poller, or for a sub-channel index
+that the channel does not have, `CheckInput()` and `CheckOutput()` read the item of another
+sub-channel or memory outside the poller. The result is undefined.
+
+## Select the timeout
+
+`Poll(timeout)` waits until a socket is ready or the timeout ends. The poller gives the timeout in
+milliseconds to `zmq_poll()` without a change. In ZeroMQ, the values have this effect:
+
+- `0` returns at once.
+- `-1` waits until a socket is ready.
+- A positive value waits for this number of milliseconds at most.
+
+`Poll()` returns no value. Check the channels after each call.
+
+A transition request does not stop `Poll()`. On a request, the device calls `Interrupt()` on its
+transports, and this stops only `Send()` and `Receive()`. Thus use a timeout of about 100 ms, and
+check `NewStatePending()` after each `Poll()`. The device uses 200 ms for its own poller of the data
+callbacks, and 500 ms if the callbacks use several transports.
+
+`Poll()` tries again if a signal interrupts the system call. It returns when the zeromq context
+ends. For all other errors, it logs `polling failed, reason: <error>` and throws `PollerError`.
+
+## Use one transport for each poller
+
+All channels of one poller must use the same transport. Both `NewPoller()` functions compare the
+transports before they make the poller ([Device.h](/source/fairmq/Device.h/#L218-L257)). For the
+channel names, they compare the sub-channel 0 of each channel. If the transports are different,
+they log an error and throw `std::runtime_error`. If your `Run()` does not catch the exception, the
+device goes to the state `ERROR`.
+
+For channels of two transports, use one thread and one poller for each transport. Or register data
+callbacks with `OnData()`: then the device makes one thread for each transport. See
+[Receive from channels of different transports](/guides/several-transports/#receive-from-channels-of-different-transports).
+
+## Check the result
+
+The poller tests in [`test/poller/_poller.cxx`](https://github.com/FairRootGroup/FairMQ/blob/dev/test/poller/_poller.cxx)
+run two devices for each transport. One device sends one message on each of `data1` and `data2`.
+The other device polls the two channels until a message arrived on each. It uses `NewPoller()` with
+a vector or with the names:
+
+<Snippet file="test/helper/devices/TestPollIn.h" start="auto Run() -> void override" />
+
+To test your own loop, send messages on one channel only, and make sure that the device receives
+them. Then request the transition `STOP`, and make sure that the device leaves the state `RUNNING`
+within your timeout.
+
+## Problems that can occur
+
+| Problem | Cause | Fix |
+| --- | --- | --- |
+| `GetChannel(): '<name>[0]' does not exist.`, then `std::out_of_range` | `NewPoller()` got the name of a channel that the device does not have. | Use the names of the channel configuration. |
+| `invalid channel key: '<name>'`, then `PollerError` | `CheckInput(name, index)` on a poller from a vector, or a name that the poller does not have. | Check with the position, or make the poller with the names. |
+| `poller failed: different transports within same poller are not yet supported` | The channels of one poller use different transports. | Make one poller for each transport. |
+| The device does not stop. | `Poll(-1)`, or a long timeout, waits for a message. | Use a timeout of about 100 ms. Check `NewStatePending()` after each `Poll()`. |
+| The loop uses the CPU all the time. | A `req`, `rep`, `pair`, `dealer` or `router` socket can send, and the loop does not send on it. | Poll these sockets only in a loop that also sends on them. To only receive, call `Receive()` with a timeout. |
+
+## Related pages
+
+- [Receive data with callbacks or loops](/guides/receive-data/): `OnData()`, `ConditionalRun()` and `Run()`.
+- [Channels and sockets](/concepts/channels/): the socket types and their patterns.
+- [Use several transports](/guides/several-transports/): channels of zeromq and shmem in one device.
+- [Example: multiple channels](/examples/multiple-channels/): the example of this guide, step by step.

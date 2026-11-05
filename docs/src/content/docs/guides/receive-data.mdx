@@ -1,0 +1,235 @@
+---
+title: 'Receive data with callbacks or loops'
+description: 'Process messages in RUNNING with OnData() callbacks, with ConditionalRun() and the option --rate, or with your own Run() loop.'
+sidebar:
+  order: 1
+code: [fairmq/Device.h, fairmq/Device.cxx, fairmq/tools/RateLimit.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+This guide shows the three ways to do the work of a device in the state `RUNNING`: data callbacks,
+`ConditionalRun()` and `Run()`. When you complete it, your device processes messages and leaves
+`RUNNING` when its work ends or when a controller requests `Stop`.
+
+## Choose a way
+
+| | `OnData()` callbacks | `ConditionalRun()` | `Run()` |
+| --- | --- | --- | --- |
+| Who receives the messages | The device | Your code | Your code |
+| How often the device calls your code | Once for each message | Again and again | Once |
+| How your code ends `RUNNING` | The callback returns `false` | The function returns `false` | The function returns |
+| What happens on `Stop` | The device does not call the callbacks again | The device does not call the function again | Your loop must check `NewStatePending()` |
+| Rate limit | No | The option `--rate` | Your code |
+| Typical device | Sink, processor | Sampler, client of a request and reply | Device with a poller or with its own order of transfers |
+
+Use `OnData()` when your device reacts to messages. Use `ConditionalRun()` when your device creates
+data or does a sequence of transfers. Use `Run()` only when you need full control of the loop.
+
+## Receive with OnData()
+
+<Steps>
+
+1. In the constructor of your device, call [`OnData()`](/api/fair/mq/Device/#OnData) with the name
+   of the input channel and your callback.
+
+2. Write the callback. It receives the message and the index of the sub-channel.
+
+3. Return `true` from the callback to receive the next message. Return `false` to end `RUNNING`.
+
+</Steps>
+
+The processor of the example [1-n-1](/examples/1-n-1/) receives a message on the channel `data1` and
+sends a new message on the channel `data2`:
+
+<Snippet file="examples/1-n-1/processor.cxx" start="struct Processor : fair::mq::Device" />
+
+The message belongs to the callback. You can change it, send it, or keep it.
+
+### Callback forms
+
+`OnData()` has four overloads. Two take a member function, and two take a `std::function`:
+
+| Overload | Signature of the callback | Receives |
+| --- | --- | --- |
+| [`OnData(name, &T::f)`](/api/fair/mq/Device/#OnData) | `bool f(fair::mq::MessagePtr& msg, int index)` | One message |
+| [`OnData(name, callback)`](/api/fair/mq/Device/#OnData-2) | [`InputMsgCallback`](/api/fair/mq/#InputMsgCallback) | One message |
+| [`OnData(name, &T::f)`](/api/fair/mq/Device/#OnData-3) | `bool f(fair::mq::Parts& parts, int index)` | One multipart message |
+| [`OnData(name, callback)`](/api/fair/mq/Device/#OnData-4) | [`InputMultipartCallback`](/api/fair/mq/#InputMultipartCallback) | One multipart message |
+
+A multipart callback receives all parts of a message that the sender sent as `Parts`. This is the
+start of the callback of the sink in the example [multipart](/examples/multipart/). It checks the
+number of parts and reads the header from the first part:
+
+<Snippet file="examples/multipart/sink.cxx" start="bool HandleData(fair::mq::Parts& parts, int)" end="Received part 1 (header)" />
+
+A lambda is also a callback. The device of the example [qc](/examples/qc/) leaves `RUNNING` after the
+first message:
+
+<Snippet file="examples/qc/qCTask.cxx" start="QCTask()" />
+
+### Several input channels
+
+Call `OnData()` once for each input channel. The sink of the example
+[multiple-channels](/examples/multiple-channels/) has two callbacks:
+
+<Snippet file="examples/multiple-channels/sink.cxx" start="    Sink()" />
+
+The device selects the method from the input channels:
+
+- **One channel with one sub-channel:** the device calls `Receive()` in a loop, without a poller.
+- **More channels or sub-channels, one transport:** the device polls all input channels with a
+  timeout of 200 ms. Then it calls the callbacks of the channels with data, in the order of the
+  `OnData()` calls.
+- **More than one transport:** the device polls each transport in
+  [its own thread](/concepts/threads/#the-threads-of-a-device-process), with a timeout of 500 ms. A
+  mutex makes sure that only one callback runs at a time.
+
+The index argument tells the callback which sub-channel received the message.
+
+### Rules for callbacks
+
+- Register the callbacks before `RUNNING` starts, for example in the constructor.
+- Register one callback for each channel. A second `OnData()` of the same form for the same channel
+  has no effect.
+- With callbacks, the device does not call `ConditionalRun()` and `Run()`. It calls `PreRun()` and
+  `PostRun()`.
+- The device checks for a pending transition between two callbacks. A callback that does not return
+  delays the transition.
+- If `Receive()` returns a negative [transfer code](/reference/transfer-codes/), the device does not
+  call the callback and ends `RUNNING`.
+
+## Use ConditionalRun()
+
+<Steps>
+
+1. Override [`ConditionalRun()`](/api/fair/mq/Device/#ConditionalRun). Do one step of the work in
+   each call.
+
+2. Check the return value of each `Send()` and `Receive()`. Return `false` when it is negative.
+
+3. Return `true` to get the next call. Return `false` to end `RUNNING`.
+
+4. To limit the number of calls per second, start the device with the option `--rate`.
+
+</Steps>
+
+The client of the example [req-rep](/examples/req-rep/) sends a request and waits for the reply in
+each call:
+
+<Snippet file="examples/req-rep/client.cxx" start="bool ConditionalRun()" />
+
+The device calls `ConditionalRun()` while it returns `true` and no transition is pending. After the
+last call, the device calls `Run()` once.
+
+The option `--rate` gives the maximum rate of the calls in Hz. The default is 0, which means no
+limit. The device reads the value in `INITIALIZING DEVICE`. A
+[`tools::RateLimiter`](/api/fair/mq/tools/RateLimiter/) measures the time between the calls
+and sleeps when the calls come too fast. Values of 0.001 or less give no limit. To limit a loop of
+your own, see [RateLimit.h](/reference/tools/#ratelimith).
+
+```sh
+fairmq-ex-1-1-sampler --id sampler1 --rate 10 --channel-config name=data,type=push,method=bind,address=tcp://*:5555
+```
+
+## Write a Run() loop
+
+<Steps>
+
+1. Override [`Run()`](/api/fair/mq/Device/#Run).
+
+2. Write a loop that continues while [`NewStatePending()`](/api/fair/mq/Device/#NewStatePending)
+   returns `false`.
+
+3. In the loop, check the return value of each `Send()` and `Receive()`.
+
+4. For a pause, call [`WaitFor()`](/api/fair/mq/Device/#WaitFor) and not `std::this_thread::sleep_for()`.
+   A pending transition ends `WaitFor()` at once.
+
+5. Return from `Run()` to end `RUNNING`.
+
+</Steps>
+
+The sender of the example [n-m](/examples/n-m/) receives an id on the channel `sync` and sends a
+multipart message to one of the receivers:
+
+<Snippet file="examples/n-m/sender.cxx" start="void Run() override" />
+
+When a controller requests `Stop`, the device interrupts its transports. The waiting `Receive()`
+returns `TransferCode::interrupted`. The loop continues, and `NewStatePending()` ends it.
+
+For a loop that also waits for output channels, see [Poll several channels](/guides/poll-channels/).
+
+## What the tests show
+
+The tests in `test/device/_data_callbacks.cxx` check these properties. The `DataCallbacks` tests run
+for each transport:
+
+| Test | Result |
+| --- | --- |
+| `DataCallbacks.SingleMessage` | The callback receives three messages with the index 0. It returns `false` after the third, and the device goes to `READY`. |
+| `DataCallbacks.Multipart` | The multipart callback receives the parts `a` and `bc` in one call. |
+| `DataCallbacks.TwoChannels` | A message callback and a multipart callback on two channels receive their messages. |
+| `MultipleTransports.OneInputEach` | A zeromq channel and a shmem channel in one device receive their messages. |
+| `ConditionalRun.EndsRunWhenItReturnsFalse` | `ConditionalRun()` returns `false` in the fifth call. The device makes no more calls and goes to `READY`. |
+| `ConditionalRun.Rate` | With `rate` 100, the 21 calls take 140 ms or more. |
+
+## Check the result
+
+Start the sampler and the sink of the example [1-1](/examples/1-1/) in two terminals:
+
+```sh
+fairmq-ex-1-1-sampler --id sampler1 --rate 1 --max-iterations 3 --control static --channel-config name=data,type=push,method=bind,address=tcp://*:5555,rateLogging=0
+```
+
+```sh
+fairmq-ex-1-1-sink --id sink1 --max-iterations 3 --control static --channel-config name=data,type=pull,method=connect,address=tcp://localhost:5555,rateLogging=0
+```
+
+The log of the sink shows these lines (without the prefix of the logger):
+
+```txt
+READY ---> RUNNING
+fair::mq::Device running...
+Received: "Hello"
+Received: "Hello"
+Received: "Hello"
+Configured maximum number of iterations reached. Leaving RUNNING state.
+RUNNING ---> READY
+```
+
+The line `RUNNING ---> READY` tells you that the device left `RUNNING`. With `--control static`, the
+device then resets and exits.
+
+## Problems that can occur
+
+- **The device goes to `ERROR` at the start of `RUNNING`:** the channel name in `OnData()` does not
+  exist. The device throws `std::out_of_range`. Make sure that the name is the same as in the
+  channel configuration.
+- **`RUNNING` ends without a reason in the log:** a `Receive()` for a callback returned a negative
+  value. For example, the input channel has the property `rcvTimeoutMs`, and no message arrived in
+  time. Remove the timeout, or use a `Run()` loop.
+- **The device does not leave `RUNNING`:** your `Run()` loop does not check `NewStatePending()`, or a
+  callback does not return. Add the check, and return from the callbacks. A second Ctrl-C aborts a
+  device that does not stop.
+- **`ConditionalRun()` is not called:** the device has data callbacks. Remove the `OnData()` calls, or
+  move the work into the callbacks.
+- **A multipart callback receives wrong parts:** the sender sends single messages. With shmem, a
+  multipart `Receive()` of a single message reads wrong metadata. See the disabled test
+  `PartsTransfer.SingleSendMultipartReceive`. Use the same form on both sides.
+
+:::caution[Known defect]
+With input channels on more than one transport, the device calls the callbacks in
+[other threads](/concepts/threads/#which-thread-runs-your-code). If
+a callback throws an exception there, the process ends with `std::terminate()`. The device does not
+go to `ERROR`.
+:::
+
+## Related pages
+
+- [Device states](/concepts/states/): what happens in `RUNNING`, and what ends it.
+- [Devices](/concepts/devices/): the hooks and the helper functions of a device.
+- [Handle errors and timeouts](/guides/errors-timeouts/): transfer codes, timeouts and exceptions.
+- [Poll several channels](/guides/poll-channels/): a `Run()` loop with a poller.
+- [Messages and parts](/concepts/messages/): `MessagePtr` and `Parts`.

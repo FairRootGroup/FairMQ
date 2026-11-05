@@ -1,0 +1,264 @@
+---
+title: 'Plugins and control'
+description: 'How plugins extend a device, how the plugin manager loads them, what they can do, and how the built-in control plugin drives the state machine.'
+sidebar:
+  order: 7
+code: [fairmq/Plugin.h, fairmq/PluginManager.cxx, fairmq/PluginServices.h, fairmq/plugins/control/Control.cxx, fairmq/DeviceRunner.cxx]
+---
+
+import OptionsTable from '../../../components/OptionsTable.astro';
+import Snippet from '../../../components/Snippet.astro';
+
+A plugin is a class that runs in the process of a device. It can read and set properties, follow the state of the
+device and drive the state machine. Each device that starts with `runDevice.h` has two built-in plugins: `config`
+reads the channel configuration, and `control` moves the device through its states.
+
+## Parts of the plugin system
+
+| Class | Task |
+| --- | --- |
+| [`fair::mq::Plugin`](/api/fair/mq/Plugin/) | The base class of all plugins. It holds the name, the version, the maintainer and the homepage of the plugin, and it gives the plugin API. |
+| [`fair::mq::PluginManager`](/api/fair/mq/PluginManager/) | Finds, loads, creates and owns the plugins. |
+| [`fair::mq::PluginServices`](/api/fair/mq/PluginServices/) | Connects the plugins to the device and to its properties. All plugins of a device use the same object. |
+| [`fair::mq::DeviceRunner`](/api/fair/mq/DeviceRunner/) | Starts the device with its properties and its plugins. `runDevice.h` uses it. |
+
+A plugin does not use the device directly. Each call goes through `PluginServices`:
+
+```txt
+plugin ──► PluginServices ──► Device       (state, transitions)
+                          └─► ProgOptions  (properties)
+```
+
+## How a device starts
+
+[`DeviceRunner::Run()`](/api/fair/mq/DeviceRunner/#Run) loads and creates the plugins in this sequence
+([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L108-L194)):
+
+1. The constructor of `DeviceRunner` makes the plugin manager. The plugin manager reads `-S` and `-P` and loads the
+   plugins of `-P`, in their sequence.
+2. `Run()` loads the built-in plugin `config`.
+3. The runner hook `hooks::LoadPlugins` runs. Your code can load more plugins here.
+4. `Run()` loads the built-in plugin `control`.
+5. The runner hook `hooks::SetCustomCmdLineOptions` runs. `runDevice.h` adds the options of `addCustomOptions()`
+   here.
+6. The runner adds the options of all plugins to the command-line options. The runner hook
+   `hooks::ModifyRawCmdLineArgs` runs. Then the runner parses the command line. With `--help` or `--print-options`,
+   `Run()` prints the options and returns 0.
+7. The runner hook `hooks::InstantiateDevice` makes the device.
+8. The plugin manager makes the `PluginServices` object. Then it creates the plugins, in the load sequence.
+9. The device runs its state machine until the state `EXITING`.
+10. The runner waits until no plugin has the controller role. Then `Run()` returns 0.
+
+The constructor of a plugin runs after the parsing of the command line, so a plugin can read its options there. The
+control plugin comes last. A plugin that takes the controller role in its constructor gets it before the control
+plugin.
+
+To load plugins without `DeviceRunner`, see
+[Load plugins without DeviceRunner](/guides/control-from-code/#load-plugins-without-devicerunner).
+
+## Load a plugin
+
+Give the name of a plugin to `-P` (`--plugin`), or to
+[`PluginManager::LoadPlugin()`](/api/fair/mq/PluginManager/#LoadPlugin) in a runner hook. A prefix selects the
+mechanism ([PluginManager.cxx](/source/fairmq/PluginManager.cxx/#L135-L150)):
+
+| Name | Mechanism | Where the plugin manager looks |
+| --- | --- | --- |
+| `name` or `d:name` | Dynamic | In a shared library file. See [Plugin files and search paths](#plugin-files-and-search-paths). |
+| `p:name` | Prelinked | In the program. The executable links the library of the plugin at build time. |
+| `s:name` | Static | In the program: the built-in plugins `config` and `control`, or a plugin that the executable contains. |
+
+Give `-P` once for each plugin, for example `-P first -P second`. The plugin manager does not split a name at commas.
+It loads a dynamic or a prelinked plugin only once, also when you give its name twice.
+
+### Plugin files and search paths
+
+For the dynamic plugin `name`, the plugin manager looks for two file names:
+`libfairmq-plugin-name.so` and then `libFairMQPlugin_name.so` (the suffix is the one of the platform, `.so` on Linux).
+It looks in these places, in this sequence:
+
+1. Each directory of `-S` (`--plugin-search-path`).
+2. The system lookup of the dynamic linker: the system library directories, `RUNPATH` and `LD_LIBRARY_PATH`.
+
+`-S` takes one or more directories. The paths without a prefix make the list. Then the plugin manager puts each path
+with the prefix `<` at the start of the list. It puts each path with the prefix `>` at the end. Without `-S`, the list
+is empty. The test `PluginManager.Factory` gives this example:
+
+```sh
+-S '>/lib' '</home/user/lib' /usr/local/lib /usr/lib
+```
+
+The search paths are then `/home/user/lib`, `/usr/local/lib`, `/usr/lib` and `/lib`. Put quotes around paths with
+`<` or `>`, because the shell uses these characters for redirection. The plugin manager ignores a directory that does
+not exist. A path to a file, or an empty path, gives the error `PluginManager::BadSearchPath`.
+
+When no file loads, the plugin manager throws `PluginManager::PluginLoadError`:
+
+```txt
+Could not load dynamic plugin name from configured search paths (-S) nor with system lookup (system libdirs, RUNPATH, $LD_LIBRARY_PATH).
+```
+
+The `main()` function of `runDevice.h` catches the exception, logs it and returns 1. A file that exists but does not
+load, for example because of a missing symbol, gives the same error.
+
+## What a plugin can do
+
+The functions of `fair::mq::Plugin` call `PluginServices`. They give the name of the plugin as the ID of the
+subscriber and of the controller.
+
+| Area | Functions |
+| --- | --- |
+| State | [`GetCurrentDeviceState()`](/api/fair/mq/Plugin/#GetCurrentDeviceState), [`SubscribeToDeviceStateChange()`](/api/fair/mq/Plugin/#SubscribeToDeviceStateChange), [`UnsubscribeFromDeviceStateChange()`](/api/fair/mq/Plugin/#UnsubscribeFromDeviceStateChange), [`ToDeviceState()`](/api/fair/mq/Plugin/#ToDeviceState), [`ToDeviceStateTransition()`](/api/fair/mq/Plugin/#ToDeviceStateTransition), [`ToStr()`](/api/fair/mq/Plugin/#ToStr) |
+| Control | [`TakeDeviceControl()`](/api/fair/mq/Plugin/#TakeDeviceControl), [`StealDeviceControl()`](/api/fair/mq/Plugin/#StealDeviceControl), [`ReleaseDeviceControl()`](/api/fair/mq/Plugin/#ReleaseDeviceControl), [`ChangeDeviceState()`](/api/fair/mq/Plugin/#ChangeDeviceState) |
+| Read properties | [`PropertyExists()`](/api/fair/mq/Plugin/#PropertyExists), [`GetProperty<T>()`](/api/fair/mq/Plugin/#GetProperty), [`GetPropertyAsString()`](/api/fair/mq/Plugin/#GetPropertyAsString), [`GetProperties()`](/api/fair/mq/Plugin/#GetProperties), [`GetPropertiesStartingWith()`](/api/fair/mq/Plugin/#GetPropertiesStartingWith), [`GetPropertiesAsString()`](/api/fair/mq/Plugin/#GetPropertiesAsString), [`GetPropertiesAsStringStartingWith()`](/api/fair/mq/Plugin/#GetPropertiesAsStringStartingWith), [`GetPropertyKeys()`](/api/fair/mq/Plugin/#GetPropertyKeys), [`GetChannelInfo()`](/api/fair/mq/Plugin/#GetChannelInfo) |
+| Change properties | [`SetProperty<T>()`](/api/fair/mq/Plugin/#SetProperty), [`SetProperties()`](/api/fair/mq/Plugin/#SetProperties), [`UpdateProperty<T>()`](/api/fair/mq/Plugin/#UpdateProperty), [`UpdateProperties()`](/api/fair/mq/Plugin/#UpdateProperties), [`DeleteProperty()`](/api/fair/mq/Plugin/#DeleteProperty) |
+| Property changes | [`SubscribeToPropertyChange<T>()`](/api/fair/mq/Plugin/#SubscribeToPropertyChange), [`UnsubscribeFromPropertyChange<T>()`](/api/fair/mq/Plugin/#UnsubscribeFromPropertyChange), [`SubscribeToPropertyChangeAsString()`](/api/fair/mq/Plugin/#SubscribeToPropertyChangeAsString), [`UnsubscribeFromPropertyChangeAsString()`](/api/fair/mq/Plugin/#UnsubscribeFromPropertyChangeAsString) |
+| Logging | [`CycleLogConsoleSeverityUp()`](/api/fair/mq/Plugin/#CycleLogConsoleSeverityUp), [`CycleLogConsoleSeverityDown()`](/api/fair/mq/Plugin/#CycleLogConsoleSeverityDown), [`CycleLogVerbosityUp()`](/api/fair/mq/Plugin/#CycleLogVerbosityUp), [`CycleLogVerbosityDown()`](/api/fair/mq/Plugin/#CycleLogVerbosityDown) |
+| Metadata | [`GetName()`](/api/fair/mq/Plugin/#GetName), [`GetVersion()`](/api/fair/mq/Plugin/#GetVersion), [`GetMaintainer()`](/api/fair/mq/Plugin/#GetMaintainer), [`GetHomepage()`](/api/fair/mq/Plugin/#GetHomepage) |
+
+The state machine calls the state callback at the start of each new state, in the thread of the state machine. The
+device starts the handler of the state after all callbacks return, so keep the callbacks short. A callback for a
+property change runs in the thread that changes the property.
+
+`GetNumberOfConnectedPeers()` exists for tests. The code marks it for removal.
+
+## The controller role
+
+Only one plugin at a time can change the state of the device. This plugin is the controller.
+
+| Function | Effect |
+| --- | --- |
+| `TakeDeviceControl()` | The plugin becomes the controller, if no plugin has the role. If the plugin has the role, nothing changes. If another plugin has the role, the function throws `PluginServices::DeviceControlError`. |
+| `ChangeDeviceState(transition)` | Requests a transition. If no plugin has the role, the plugin takes it first. If another plugin has the role, the function throws `DeviceControlError`. It returns `false` when the device cannot do the transition now. |
+| `StealDeviceControl()` | The plugin becomes the controller, also when another plugin has the role. The control plugin uses it after a signal. |
+| `ReleaseDeviceControl()` | The plugin gives the role back, if it has the role. |
+
+`DeviceRunner` waits after the end of the state machine until no plugin has the role. Thus a controller must release
+the role, normally in the state `EXITING`.
+
+The device changes the state when the handler of the current state returns. A requested transition interrupts
+blocking transfers, and [`NewStatePending()`](/api/fair/mq/Device/#NewStatePending) then returns `true`, so that the
+handler can return. See [Device states](/concepts/states/).
+
+## The config plugin
+
+The built-in plugin `config` adds the device options, for example `--id`, `--transport`, `--session`, `--rate`,
+`--mq-config`, `--channel-config` and the options of the `shmem` transport. At the start of the state
+`INITIALIZING DEVICE`, it reads the channel configuration and sets the channel properties:
+
+<Snippet file="fairmq/plugins/config/Config.cxx" start="SubscribeToDeviceStateChange" />
+
+The key of the device in the configuration is `--config-key`, or `--id` if `--config-key` is not set. `--mq-config`
+has priority over `--channel-config`. When the parser fails, the plugin logs the error and the device continues. See
+[Configuration and properties](/concepts/configuration/).
+
+## The control plugin
+
+The built-in plugin `control` has two options: `--control` (default `dynamic`) and `--catch-signals` (default `1`).
+Its constructor takes the controller role, unless `--control` is `none`. If another plugin has the role already, the
+control plugin logs the reason at the severity `debug` and starts no controller. Its signal handling does not depend
+on the controller role.
+
+### Control modes
+
+| `--control` | What the control plugin does |
+| --- | --- |
+| `dynamic` (default), `interactive`, `external` | It runs the startup sequence. Then it reads keys from the terminal until you press `q`, and runs the shutdown sequence. |
+| `static` | It runs the startup sequence. When the device goes back to `READY`, for example because `ConditionalRun()` returns `false`, it runs the shutdown sequence. |
+| `gui` | It runs the startup sequence. Then it waits for a signal or for the state `ERROR`. |
+| `none` | It does not take the controller role. Another plugin or your code must change the states. |
+| Another value | It logs `Unrecognized control mode` at the severity `error` and uses `static`. |
+
+Use `--control static` in scripts. This mode needs no terminal, and it ends the device when the work in `RUNNING` is
+done. The test scripts of the examples use it.
+
+For the effect of each mode on the end of a run, see
+[What the controllers do](/guides/end-of-run/#what-the-controllers-do).
+
+The startup sequence requests the transitions `INIT DEVICE`, `COMPLETE INIT`, `BIND`, `CONNECT`, `INIT TASK` and
+`RUN`. Before each request, the plugin waits for the state that the previous transition gives. At the end, the device
+is in `RUNNING`.
+
+The shutdown sequence starts from the current state and repeats until `EXITING`. Then the plugin releases the
+controller role.
+
+| Current state | Transition |
+| --- | --- |
+| `RUNNING` | `STOP` |
+| `READY` | `RESET TASK` |
+| `DEVICE READY`, `BOUND`, `INITIALIZED` | `RESET DEVICE` |
+| `INITIALIZING DEVICE` | `COMPLETE INIT` |
+| `IDLE` | `END` |
+
+### Keys of the interactive mode
+
+In the modes `dynamic`, `interactive` and `external`, a key works without Enter, and the terminal does not show it.
+
+| Key | Action |
+| --- | --- |
+| `h` | Print the help and the state machine with the keys. |
+| `c` | Log the current state, at the severity `state`. |
+| `p` | Log the number of connected peers of each sub-channel. |
+| `i` | Request `INIT DEVICE`, wait for `INITIALIZING DEVICE`, then request `COMPLETE INIT`. |
+| `b` | Request `BIND`. |
+| `x` | Request `CONNECT`. |
+| `j` | Request `INIT TASK`. |
+| `r` | Request `RUN`. |
+| `s` | Request `STOP`. |
+| `t` | Request `RESET TASK`. |
+| `d` | Request `RESET DEVICE`. |
+| `k`, `l` | Move the console severity one step up (fewer lines) or down (more lines). |
+| `n`, `m` | Move the log verbosity one step up or down. |
+| `q` | Stop reading keys and run the shutdown sequence. |
+| Another key | Print `Invalid input: […].` and the help. |
+
+A key that the current state does not accept changes nothing. The state machine logs
+`No transition from state … on transition …` at the severity `state`.
+
+:::caution[One key at a time]
+The plugin reads one key each time new input arrives. When several keys arrive together, for example `cq` from a pipe,
+the plugin handles only the first one. It reads the next key only after more input arrives. See the disabled test
+`ControlPlugin.DISABLED_SeveralKeysInOneInput` in `test/device/_runner.cxx`.
+:::
+
+### Signals
+
+With `--catch-signals` greater than 0, the control plugin handles `SIGINT` and `SIGTERM`
+([Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L439-L469)):
+
+1. The first signal starts a graceful shutdown. The plugin logs `Received device shutdown request (signal …)` and
+   `Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.`
+2. The plugin stops its controller.
+3. If its shutdown sequence has not run yet, the plugin takes the controller role with `StealDeviceControl()`, also
+   from another plugin. Then it runs the shutdown sequence.
+4. A `SIGINT` after an earlier signal ends the process at once with `std::abort()`. A second `SIGTERM` has no effect.
+
+With `--catch-signals 0`, the plugin logs the warning `Signal handling (e.g. Ctrl-C) has been deactivated.` A signal
+then has its default effect, and the device does not run the shutdown sequence.
+
+### When the device goes to ERROR
+
+An exception in a hook, or the transition `ERROR FOUND`, moves the device to `ERROR`. No transition leaves this state.
+
+1. The state machine stops, and [`RunStateMachine()`](/api/fair/mq/Device/#RunStateMachine) throws: the exception
+   of the hook, or [`StateMachine::ErrorStateException`](/api/fair/mq/StateMachine/ErrorStateException/).
+2. The control plugin stops its controller. It does not run the shutdown sequence.
+3. The `main()` function of `runDevice.h` catches the exception, logs
+   `Uncaught exception reached the top of main: …` and returns 1.
+
+[`DeviceRunner::RunWithExceptionHandlers()`](/api/fair/mq/DeviceRunner/#RunWithExceptionHandlers) also returns 1. It
+logs `Uncaught exception reached the top of DeviceRunner: …`. The tests in `test/device/_exceptions.cxx` check the exit
+code 1 for the modes `static` and `interactive`.
+
+## Options
+
+<OptionsTable groups={['Control', 'Plugins']} id="plugin" />
+
+## Related pages
+
+- [Write a plugin](/guides/write-plugin/): make your own plugin and load it with `-P`.
+- [Control a device from code](/guides/control-from-code/): a controller plugin, runner hooks, or a device in a thread.
+- [Device states](/concepts/states/): the states and transitions that a controller requests.
+- [custom-controller](/examples/custom-controller/): an example of a controller plugin.
+- [dds](/examples/dds/): a topology that needs a DDS plugin to give the addresses to the connecting channels.
+- [Command-line options](/reference/options/): all options of a device.

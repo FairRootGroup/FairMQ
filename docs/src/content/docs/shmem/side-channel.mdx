@@ -1,0 +1,157 @@
+---
+title: 'Out-of-band buffers'
+description: 'Send a reference to a shmem buffer through your own channel with the side-channel metadata API.'
+sidebar:
+  order: 5
+code: [fairmq/shmem/Common.h, fairmq/shmem/Message.h, fairmq/shmem/Manager.h, fairmq/shmem/Manager.cxx, fairmq/shmem/TransportFactory.h]
+since: v1.11
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+The side-channel API gives the metadata of a shmem message to your code. Your code sends this
+metadata in its own format. A device of the same session then gets the address of the data, without
+a FairMQ receive.
+
+## The use case
+
+`Send()` gives the block of a message to one receiver. Some applications need a different model:
+
+- A producer device creates shmem messages and keeps them. It does not send them.
+- It writes the metadata of each message into its own data, for example into a table, and sends this
+  data on a normal channel.
+- Consumer devices read the payloads in place, in shared memory. They do not own the blocks.
+
+The `MetaHeader` is the metadata that the shmem transport sends for each message. See
+[How shared memory works](/shmem/how-it-works/#send-a-message). The side-channel API exposes it
+since FairMQ v1.11.
+
+## The API
+
+| Function | Header | What it does |
+| --- | --- | --- |
+| [`shmem::Message::GetMeta()`](/api/fair/mq/shmem/Message/#GetMeta) | `<fairmq/shmem/Message.h>` | Returns the [`MetaHeader`](/api/fair/mq/shmem/MetaHeader/) of a shmem message. |
+| [`shmem::GetDataAddressFromHandle(TransportFactory&, const MetaHeader&)`](/api/fair/mq/shmem/#GetDataAddressFromHandle) | `<fairmq/shmem/Common.h>` | Returns the address of the data in this process as `char*` ([Common.h](/source/fairmq/shmem/Common.h/#L345-L348)). |
+| [`shmem::TransportFactory::GetDataAddressFromHandle()`](/api/fair/mq/shmem/TransportFactory/#GetDataAddressFromHandle) | `<fairmq/shmem/TransportFactory.h>` | The same, for code that has the shmem transport type. |
+
+The free function takes the interface `fair::mq::TransportFactory`. It needs only `Common.h`, so
+your code does not include `Socket.h` or `zmq.h` for it.
+
+`GetDataAddressFromHandle()` uses the transport that you give:
+
+- For a message in a managed segment, it opens the segment if necessary. It returns the address of
+  the payload.
+- For a message in a region, it opens the region if necessary. It returns the start of the region
+  plus the handle.
+- For a message in a managed segment with the size 0, it returns `nullptr`.
+
+It throws [`SharedMemoryError`](/api/fair/mq/shmem/SharedMemoryError/) in these cases:
+
+| Cause | Text |
+| --- | --- |
+| The transport is not shmem. | `GetDataAddressFromHandle called on a non-shmem transport` |
+| The segment ID is not in the session. | `GetDataAddressFromHandle: cannot open segment with id <id>` |
+| The region ID is not in the session. | `GetDataAddressFromHandle: cannot get unmanaged region with id <id>` |
+
+## Send a reference, step by step
+
+<Steps>
+
+1. In the producer, create a message with the shmem transport and write the payload.
+
+2. Make sure that it is a shmem message: `msg->GetType()` must be `fair::mq::Transport::SHM`.
+
+3. Get the metadata: `static_cast<const fair::mq::shmem::Message&>(*msg).GetMeta()`.
+
+4. Keep the message in the producer. Do not send it, and do not destroy it.
+
+5. Send the `MetaHeader` on your own channel. You can send the 40 bytes or the seven fields.
+
+6. In the consumer, make the `MetaHeader` again from the bytes or the fields.
+
+7. Call `fair::mq::shmem::GetDataAddressFromHandle()` with a shmem transport of the same session.
+
+8. Read `meta.fSize` bytes at the address.
+
+9. Tell the producer on your own channel when the consumer no longer needs the data. Then the
+   producer destroys the message.
+
+</Steps>
+
+This sample sends the 40 bytes of the `MetaHeader` in a message on the channel `meta`. Both devices
+run with `--transport shmem` and the same session:
+
+```cpp title="producer"
+#include <fairmq/shmem/Message.h>
+#include <cstring>
+
+auto msg = NewMessage(size);
+// write the payload into msg->GetData()
+const fair::mq::shmem::MetaHeader meta = static_cast<const fair::mq::shmem::Message&>(*msg).GetMeta();
+
+auto metaMsg = NewMessageFor("meta", 0, sizeof(meta));
+std::memcpy(metaMsg->GetData(), &meta, sizeof(meta));
+Send(metaMsg, "meta");
+
+fCache.push_back(std::move(msg)); // the producer keeps the buffer
+```
+
+```cpp title="consumer"
+#include <fairmq/shmem/Common.h>
+#include <cstring>
+
+auto metaMsg = NewMessageFor("meta", 0);
+if (Receive(metaMsg, "meta") > 0) {
+    fair::mq::shmem::MetaHeader meta{};
+    std::memcpy(&meta, metaMsg->GetData(), sizeof(meta));
+    char* data = fair::mq::shmem::GetDataAddressFromHandle(*Transport(), meta);
+    // read meta.fSize bytes at data
+}
+```
+
+`fCache` is a member of the producer, for example a `std::vector<fair::mq::MessagePtr>`.
+
+### The tests
+
+This test makes the round trip for a message in a managed segment. The consumer uses a second
+transport of the same session, as a second device does:
+
+<Snippet file="test/message/_message.cxx" start="auto SideChannel(bool" />
+
+The same for a message in a region:
+
+<Snippet file="test/message/_message.cxx" start="auto SideChannelUnmanaged()" />
+
+This test shows the errors:
+
+<Snippet file="test/message/_message.cxx" start="auto SideChannelErrors()" />
+
+## Lifetime rules
+
+FairMQ does not count the consumers of an out-of-band buffer. The comment in `Common.h` says: the
+caller must keep the buffer alive, and FairMQ gives no reference count protection for this path.
+
+- The producer must keep the message while a consumer uses the address.
+- When the producer destroys the message, the transport frees the block, or it sends the
+  acknowledgement for a region block. After that, the address is not valid.
+- Use the API for messages that you do not send. After `Send()`, the receiver owns the block.
+- The address is valid only in the process that called `GetDataAddressFromHandle()`. Do not send it
+  to other processes.
+- The consumer must keep its transport while it uses the address. The transport holds the mapping of
+  the segment or region.
+- Do not write into the data in a consumer. Other consumers can read it at the same time.
+- The producer and the consumers must use the same session, on the same host. See
+  [Sessions and segments](/shmem/sessions/).
+
+The fields of the `MetaHeader` are in a fixed order: `fSize`, `fHint`, `fHandle`, `fShared`,
+`fRegionId`, `fSegmentId`, `fManaged`. Code can make a `MetaHeader` with aggregate initialization in
+this order. The tests `Footprint` and `MetaHeaderLayout` check the size of 40 bytes and the offsets
+on 64-bit systems.
+
+## Related pages
+
+- [How shared memory works](/shmem/how-it-works/): the `MetaHeader` in a normal send.
+- [Unmanaged regions](/shmem/regions/): blocks that the producer manages itself.
+- [Sessions and segments](/shmem/sessions/): the session of the producer and the consumers.
+- [Messages and multipart](/concepts/messages/): the message interface.

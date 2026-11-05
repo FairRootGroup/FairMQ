@@ -1,0 +1,91 @@
+---
+// Not found. The old site had Doxygen pages under /FairMQ/latest/ and /FairMQ/v1.x.y/. A script
+// sends these URLs to the new API and source pages.
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { model, base } from '../lib/model.mjs';
+
+const m = model();
+// Doxygen compound id (without the kind prefix) → new URL, without the base.
+const types: Record<string, string> = {};
+const strip = (u: string) => (u.startsWith(base + '/') ? u.slice(base.length) : u);
+for (const t of m.types()) types[t.id.replace(/^(class|struct|union)/, '')] = strip(t.url);
+for (const ns of m.namespaces()) types['ns:' + ns.id.replace(/^namespace/, '')] = strip(ns.url);
+for (const { e } of m.namespaceEnums()) types[e.qualified.replace(/::/g, '_1_1')] = strip(e.page);
+// The built-in devices had the names FairMQBenchmarkSampler, FairMQSink …
+for (const d of ['BenchmarkSampler', 'Merger', 'Multiplier', 'Proxy', 'Sink', 'Splitter']) types['FairMQ' + d] = '/tools/builtin-devices/';
+// Doxygen file id → source page.
+const files: Record<string, string> = {};
+for (const f of m.files.values()) if (m.sourceFiles.includes(f.path)) files[f.id] = `/source/${f.path}/`;
+const data = JSON.stringify({ t: types, f: files });
+---
+
+<StarlightPage frontmatter={{ title: 'Page not found', description: 'This page does not exist.', pagefind: false, editUrl: false, lastUpdated: false, eyebrow: 'Error 404' }}>
+  <div data-moved hidden>
+    <p>This page moved. Your browser goes to the new page now.</p>
+    <p><a data-moved-link href="#">Go to the new page</a></p>
+  </div>
+  <div data-missing>
+    <p>The page does not exist. The documentation has a new structure: the old Doxygen pages are now the <a href={`${base}/api/`}>API reference</a> and the <a href={`${base}/source/`}>source browser</a>.</p>
+    <p>Use the search at the top of the page, or start from one of these pages:</p>
+    <ul>
+      <li><a href={`${base}/`}>Home</a></li>
+      <li><a href={`${base}/start/overview/`}>Overview</a></li>
+      <li><a href={`${base}/reference/options/`}>Command-line options</a></li>
+      <li><a href={`${base}/api/`}>API reference</a></li>
+    </ul>
+  </div>
+  <script type="application/json" id="fmq-moved" set:html={data} />
+</StarlightPage>
+
+<script>
+  // Old URLs: /FairMQ/latest/classfair_1_1mq_1_1Device.html, /FairMQ/v1.4.33/Device_8h_source.html …
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const { t, f } = JSON.parse(document.getElementById('fmq-moved')!.textContent!);
+  const target = (() => {
+    const rel = decodeURIComponent(location.pathname.slice(base.length)).replace(/^\/+/, '');
+    const m = /^(?:latest|v\d+(?:\.\d+)*)(?:\/(.*))?$/.exec(rel);
+    if (!m) return null;
+    const page = (m[1] ?? '').replace(/\.html$/, '');
+    if (page === '' || page === 'index' || page === 'pages') return '/';
+    if (/^(annotated|classes|hierarchy|inherits|namespaces|namespacemembers.*|functions.*|graph_legend)$/.test(page)) return '/api/';
+    if (page === 'files' || page.startsWith('dir_')) return '/source/';
+    const type = /^(?:class|struct|union)(.+?)(?:-members|__coll__graph|__inherit__graph)?$/.exec(page);
+    if (type) {
+      const id = type[1];
+      if (t[id]) return t[id];
+      // FairMQDevice → fair::mq::Device, FairMQChannel_1_1… → fair::mq::Channel::…
+      const legacy = /^FairMQ(.+)$/.exec(id);
+      if (legacy && t['fair_1_1mq_1_1' + legacy[1]]) return t['fair_1_1mq_1_1' + legacy[1]];
+      // A nested type that is gone: go to its parent.
+      const parts = id.split('_1_1');
+      while (parts.length > 1) {
+        parts.pop();
+        const p = parts.join('_1_1');
+        if (t[p]) return t[p];
+      }
+      return '/api/';
+    }
+    const ns = /^namespace(.+)$/.exec(page);
+    if (ns) return t['ns:' + ns[1]] ?? '/api/';
+    const file = /^(.+?)(?:_source|__incl|__dep__incl)?$/.exec(page)![1];
+    if (f[file]) return f[file];
+    // Match by file name if the directory changed: FairMQChannel_8h, ofi_2Context_8h …
+    const name = file.split('_2').pop()!;
+    const hit = Object.keys(f).find((k) => k === name || k.endsWith('_2' + name));
+    if (hit) return f[hit];
+    const legacy = /^FairMQ(.+)$/.exec(name);
+    if (legacy) {
+      const hit2 = Object.keys(f).find((k) => k === legacy[1] || k.endsWith('_2' + legacy[1]));
+      if (hit2) return f[hit2];
+    }
+    return '/source/';
+  })();
+  if (target) {
+    // The anchors of the Doxygen pages do not exist on the new pages.
+    const url = base + target;
+    document.querySelector<HTMLElement>('[data-moved]')!.hidden = false;
+    document.querySelector<HTMLElement>('[data-missing]')!.hidden = true;
+    document.querySelector<HTMLAnchorElement>('[data-moved-link]')!.href = url;
+    location.replace(url);
+  }
+</script>

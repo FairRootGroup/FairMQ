@@ -1,0 +1,540 @@
+---
+title: 'Control a device from code'
+description: 'Change the state of a device and read its properties from your program or a plugin.'
+sidebar:
+  order: 8
+code: [fairmq/Device.h, fairmq/PluginServices.h, fairmq/StateMachine.h, fairmq/StateQueue.h, fairmq/ProgOptions.h, fairmq/PluginManager.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+A controller requests the transitions of a device. This guide shows the ways to write your own controller, also
+without `DeviceRunner`. It also shows how to read and change properties while the device runs.
+
+## Choose a way
+
+| Way | Use it when |
+| --- | --- |
+| [A controller plugin](#control-the-device-from-a-plugin) | The device starts with `runDevice.h` or `DeviceRunner`, and no mode of `--control` fits. |
+| [A plugin in your program](#put-the-controller-in-your-program) | You want one executable that contains the device and its controller. |
+| [A device in a thread](#run-the-device-in-a-thread) | Your program creates the device without `DeviceRunner`, for example in a test. |
+| [Your own `main()` with plugins](#load-plugins-without-devicerunner) | You want the plugins and the command line of a device, but not `DeviceRunner`. |
+
+All ways use the same states and transitions. See [Device states](/concepts/states/) and
+[States and transitions](/reference/states/).
+
+## Control the device from a plugin
+
+A plugin requests a transition with [`ChangeDeviceState()`](/api/fair/mq/Plugin/#ChangeDeviceState). Only the plugin
+with the controller role can do this. See [The controller role](/concepts/plugins/#the-controller-role).
+
+<Steps>
+
+1. Write a plugin. See [Write a plugin](/guides/write-plugin/).
+
+2. In the constructor, call [`TakeDeviceControl()`](/api/fair/mq/Plugin/#TakeDeviceControl). The plugins of `-P` are
+   created before the control plugin. Thus your plugin gets the role first.
+
+3. In the constructor, subscribe to the state changes with
+   [`SubscribeToDeviceStateChange()`](/api/fair/mq/Plugin/#SubscribeToDeviceStateChange).
+
+4. In the callback, request the next transition in each idling state. In `INITIALIZING DEVICE`, request
+   `CompleteInit`.
+
+5. In `EXITING`, call [`ReleaseDeviceControl()`](/api/fair/mq/Plugin/#ReleaseDeviceControl). `DeviceRunner::Run()`
+   returns only after the controller releases the role.
+
+6. Call `ReleaseDeviceControl()` in the destructor too. Without the role, the call does nothing.
+
+</Steps>
+
+The plugin of the [custom-controller](/examples/custom-controller/) example does these steps:
+
+<Snippet file="examples/custom-controller/MyController.h" start="struct MyController" />
+
+The control plugin then cannot take the role. It logs the reason with the severity `debug` and starts no controller.
+Its signal handling still works.
+
+### Rules for the state callback
+
+- The callback runs in the thread of the state machine, at the start of each state. The device calls the hooks of
+  the state after all state callbacks return. See [Threads in a device](/concepts/threads/#which-thread-runs-your-code).
+- Request no transition in `BINDING`, `CONNECTING`, `INITIALIZING TASK`, `RESETTING TASK` and `RESETTING DEVICE`. The
+  device ends these states by itself with the transition `Auto`.
+- `INITIALIZING DEVICE` waits until the controller requests `CompleteInit`. Set the configuration of the device before
+  this request.
+- The device ends `RUNNING` by itself when its work ends: it requests `Stop`. A `Stop` from the callback of `RUNNING`
+  is pending before the work starts. Then `ConditionalRun()` and the data callbacks do not run. `PreRun()` and
+  `PostRun()` still run. `Run()` also runs, but only in a device without data callbacks.
+- `ChangeDeviceState()` returns `false` when the state machine refuses the transition.
+- `ChangeDeviceState()` throws `fair::mq::PluginServices::DeviceControlError` when another plugin has the role. If no
+  plugin has the role, the call gives the role to the calling plugin.
+- An exception that leaves the callback moves the device to `ERROR`. Catch the exceptions in the callback.
+
+### A controller with its own thread
+
+The device waits until the state callback returns. For a controller that waits, for example for a timer or for input,
+use a thread. The built-in control plugin works so:
+
+1. Its state callback puts each new state into a [`fair::mq::StateQueue`](/api/fair/mq/StateQueue/).
+2. Its controller thread requests a transition. Then it waits in the queue for the next state.
+
+<Snippet file="fairmq/plugins/control/Control.cxx" start="SubscribeToDeviceStateChange(" />
+
+<Snippet file="fairmq/plugins/control/Control.cxx" start="auto Control::RunStartupSequence()" />
+
+- [`WaitForState(state)`](/api/fair/mq/StateQueue/#WaitForState) takes states from the queue until it gets `state`.
+- [`WaitForStateOrCustom(state, predicate)`](/api/fair/mq/StateQueue/#WaitForStateOrCustom) also returns when the
+  predicate is `true`. The queue checks the predicate after each `Push()` and `Notify()`.
+- [`WaitForNext()`](/api/fair/mq/StateQueue/#WaitForNext) returns the next state of the queue.
+- When the next state of the queue is `ERROR`, these functions throw
+  [`fair::mq::DeviceErrorState`](/api/fair/mq/DeviceErrorState/).
+
+## Put the controller in your program
+
+A plugin can be part of the executable. The [custom-controller](/examples/custom-controller/) example works so.
+
+<Steps>
+
+1. Put the plugin class and the macro `REGISTER_FAIRMQ_PLUGIN` into the code of your program.
+
+2. In `main()`, create a [`fair::mq::DeviceRunner`](/api/fair/mq/DeviceRunner/) with `argc` and `argv`.
+
+3. In the hook `hooks::LoadPlugins`, load the plugin with the prefix `s:` and its name, for example `s:mycontroller`.
+
+4. In the hook `hooks::InstantiateDevice`, create the device with `r.fConfig` and put it into `r.fDevice`.
+
+5. Return the result of [`RunWithExceptionHandlers()`](/api/fair/mq/DeviceRunner/#RunWithExceptionHandlers).
+
+6. In CMake, set the target property `ENABLE_EXPORTS` to `ON`. The plugin manager finds the plugin in the symbols of the
+   executable.
+
+</Steps>
+
+<Snippet file="examples/custom-controller/main.cxx" />
+
+<Snippet file="examples/custom-controller/CMakeLists.txt" start="add_executable(" end="ENABLE_EXPORTS" />
+
+`DeviceRunner` keeps one function for each type of hook. A second `AddHook()` of the same type replaces the first.
+The order of the hooks is in [How a device starts](/concepts/plugins/#how-a-device-starts).
+
+## Run the device in a thread
+
+Without `DeviceRunner`, the device has no config plugin and no control plugin. Your program sets the configuration
+and requests all transitions.
+
+<Steps>
+
+1. Create the device: a `fair::mq::Device` or an object of your device class.
+
+2. Configure the device, for example with `SetTransport()` and `AddChannel()`.
+
+3. Start [`RunStateMachine()`](/api/fair/mq/Device/#RunStateMachine) in a thread. It returns when the device reaches
+   `EXITING`.
+
+4. Request each transition with [`ChangeStateOrThrow()`](/api/fair/mq/Device/#ChangeStateOrThrow).
+
+5. Wait for the next idling state with [`WaitForState()`](/api/fair/mq/Device/#WaitForState).
+
+6. In `IDLE`, request `End`. Then join the thread.
+
+</Steps>
+
+The test `Config.SetTransport` does these steps:
+
+<Snippet file="test/device/_config.cxx" start="string TestDeviceSetTransport(" />
+
+The test helper `Control()` requests the transitions of a full cycle. The device of the test has no own `Run()` code.
+It goes back to `READY` by itself, so `Control()` waits for `READY` after `RUNNING`.
+
+<Snippet file="test/helper/ControlDevice.h" start="inline auto Control(Device& device" />
+
+### The configuration of the device
+
+- Without a `ProgOptions` object, the device uses its own internal object.
+- To use your object, give it to the constructor `Device(ProgOptions&)` or to
+  [`SetConfig()`](/api/fair/mq/Device/#SetConfig). `SetConfig()` deletes the internal object. Thus call it before the
+  other setters.
+- Set the device ID with the property `id`. [`SetId()`](/api/fair/mq/Device/#SetId) has no effect on a device that
+  you initialize, because `INITIALIZING DEVICE` reads the property `id`.
+
+### The functions of the device
+
+| Function | What it does |
+| --- | --- |
+| [`ChangeState(transition)`](/api/fair/mq/Device/#ChangeState) | Requests a transition. Returns `false` when the current state does not accept it, or when another transition is pending. [`ChangeState(name)`](/api/fair/mq/Device/#ChangeState-2) takes the name, for example `"INIT DEVICE"`. |
+| `ChangeStateOrThrow()` | Requests a transition. Throws `std::system_error` when `ChangeState()` returns `false`. The text starts with the name of the transition, for example `Invalid transition: CONNECT`. The error code is `ErrorCode::DeviceChangeStateFailed`. |
+| `WaitForState(state)` | Waits until the device enters `state`. [`WaitForState(name)`](/api/fair/mq/Device/#WaitForState-2) takes the name, for example `"READY"`. |
+| [`WaitForNextState()`](/api/fair/mq/Device/#WaitForNextState) | Waits for the next state and returns it. |
+| [`GetCurrentState()`](/api/fair/mq/Device/#GetCurrentState), [`GetCurrentStateName()`](/api/fair/mq/Device/#GetCurrentStateName) | Return the current state. |
+| [`SubscribeToStateChange(key, callback)`](/api/fair/mq/Device/#SubscribeToStateChange) | Calls `callback` at the start of each state, in the thread of the state machine. `UnsubscribeFromStateChange(key)` removes it. |
+| [`SubscribeToNewTransition(key, callback)`](/api/fair/mq/Device/#SubscribeToNewTransition) | Calls `callback` when the state machine accepts a transition, in the thread that requests the transition. |
+| [`NewStatePending()`](/api/fair/mq/Device/#NewStatePending) | Returns `true` when a transition is requested and the next state has not started yet. |
+
+`ChangeState()` is `[[nodiscard]]`. A name that does not exist makes `ChangeState(name)` and `WaitForState(name)`
+throw `std::out_of_range`. The names are in [States and transitions](/reference/states/).
+
+### How WaitForState() works
+
+The device puts each new state into a queue. `WaitForState()` takes states from the queue until it finds the given
+state. Thus it returns at once for a state that is in the queue already.
+
+- The first `IDLE` is not in the queue. Do not wait for it.
+- After the transition `ErrorFound`, the queue gets `ERROR`. Then `WaitForState()` and `WaitForNextState()` throw
+  `fair::mq::DeviceErrorState` with the text `Controlled device transitioned to error state.`
+- After an exception in a hook, the queue gets no `ERROR`. Then `WaitForState()` does not return.
+
+`RunStateMachine()` lets the exception of a hook pass to its caller. Catch it in the thread: an exception that leaves
+the function of a `std::thread` calls `std::terminate()`. To see `ERROR` in all cases, use `SubscribeToStateChange()`. The
+state machine calls the subscribers with `ERROR` also after an exception.
+
+### The class StateMachine
+
+Each device has a private [`fair::mq::StateMachine`](/api/fair/mq/StateMachine/). Use the functions of the device for
+it. The class also works without a device. The tests in `test/state_machine/_state_machine.cxx` use it so.
+
+| Function | What it does |
+| --- | --- |
+| [`Start()`](/api/fair/mq/StateMachine/#Start) | Starts the state machine in `IDLE`. Call it before the first transition. |
+| [`ProcessWork()`](/api/fair/mq/StateMachine/#ProcessWork) | Runs the loop. It first calls the subscribers with `IDLE`. For each new state, it calls the `PrepareState()` function, the subscribers and the `HandleStates()` function. It returns in `EXITING`. |
+| [`PrepareState(f)`](/api/fair/mq/StateMachine/#PrepareState), [`HandleStates(f)`](/api/fair/mq/StateMachine/#HandleStates) | Set the functions for each new state. Each takes one function. A second call logs an error. `StopHandlingStates()` removes both. |
+| [`WaitForPendingState()`](/api/fair/mq/StateMachine/#WaitForPendingState), [`WaitForPendingStateFor(ms)`](/api/fair/mq/StateMachine/#WaitForPendingStateFor) | Wait until a transition is requested. `WaitForPendingStateFor()` returns `false` after the timeout. |
+| `ChangeState()`, `SubscribeToStateChange()`, `SubscribeToNewTransition()`, `NewStatePending()`, `GetCurrentState()` | Work as the functions of the device. |
+
+In `ERROR`, `ProcessWork()` throws [`StateMachine::ErrorStateException`](/api/fair/mq/StateMachine/ErrorStateException/).
+When a function of the loop throws, `ProcessWork()` sets `ERROR`, calls the subscribers with `ERROR`, and passes the
+exception on.
+
+## Parse options without DeviceRunner
+
+Without `DeviceRunner`, no code reads the command line. Your program can parse it with a
+[`fair::mq::ProgOptions`](/api/fair/mq/ProgOptions/) object and give this object to the device.
+
+<Steps>
+
+1. Create a `ProgOptions` object. It knows only the general options: `--help`, `--version`, `--severity`,
+   `--file-severity`, `--verbosity`, `--color`, `--log-to-file` and `--print-options`
+   ([ProgOptions.cxx](/source/fairmq/ProgOptions.cxx/#L69-L83)).
+
+2. Add your options with [`AddToCmdLineOptions()`](/api/fair/mq/ProgOptions/#AddToCmdLineOptions). It takes a
+   `boost::program_options::options_description`. Add all options before the parse.
+
+3. Call [`ParseAll(argc, argv, true)`](/api/fair/mq/ProgOptions/#ParseAll-2).
+
+4. To apply the log options, call
+   [`DeviceRunner::HandleGeneralOptions(config, false)`](/api/fair/mq/DeviceRunner/#HandleGeneralOptions). It is
+   static. For `--help` and `--print-options`, it prints the options and returns `false`. The second argument
+   `true` prints the FairMQ logo.
+
+5. Call [`Notify()`](/api/fair/mq/ProgOptions/#Notify). It calls `boost::program_options::notify()`. `DeviceRunner`
+   calls it after `HandleGeneralOptions()` too.
+
+6. Give the object to the device: use the constructor `Device(ProgOptions&)` or
+   [`SetConfig()`](/api/fair/mq/Device/#SetConfig). See [The configuration of the device](#the-configuration-of-the-device).
+
+7. Request the transitions as in [Run the device in a thread](#run-the-device-in-a-thread).
+
+</Steps>
+
+The test `Config.SetConfig` parses two options and gives the object to the device:
+
+<Snippet file="test/device/_config.cxx" start="string TestDeviceSetConfig(" />
+
+- `ParseAll()` first removes all properties, also the values of `SetProperty()`
+  ([ProgOptions.cxx](/source/fairmq/ProgOptions.cxx/#L108-L132)). Then it stores the values of the command line and
+  the defaults of the registered options. Call `SetProperty()` after `ParseAll()`, as the test does.
+- The last argument `true` accepts options that are not registered. `ParseAll()` does not store them as
+  properties. [`PrintOptions()`](/api/fair/mq/ProgOptions/#PrintOptions) logs each of them at the severity `debug`:
+  `detected unregistered option: …`. In the test above, `--id` is not registered, so the device ID stays empty.
+- With `false`, an option that is not registered throws `boost::program_options::unknown_option`. The test in
+  `test/properties/_properties.cxx` checks this.
+- The first element of `argv`, or of the vector of the other overload, is the name of the program. The parser skips
+  it (Boost behavior).
+
+### The device options and the channels
+
+The device options, for example `--id`, `--transport`, `--session`, `--mq-config` and `--channel-config`, are the
+options of the config plugin ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L56-L87)). In
+`INITIALIZING DEVICE`, the config plugin also turns `--mq-config` or `--channel-config` into channel properties
+([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L22-L53)). A program without `DeviceRunner` has two ways to get
+them:
+
+- Load the config plugin with a plugin manager, and add its options before the parse. See
+  [Load plugins without DeviceRunner](#load-plugins-without-devicerunner). The test `Config.SetConfigWithPlugins`
+  does this:
+
+  <Snippet file="test/device/_config.cxx" start="string TestDeviceSetConfigWithPlugins(" />
+
+- Register only the options that you need, and make the channel properties yourself.
+  [`SuboptParser()`](/api/fair/mq/#SuboptParser) turns the values of `--channel-config` into channel properties.
+  [`JSONParser()`](/api/fair/mq/#JSONParser) reads them from a JSON file.
+  [`SetProperties()`](/api/fair/mq/ProgOptions/#SetProperties) stores them. Store them before you request
+  `CompleteInit`, because the device reads the channel properties after this request.
+
+This function does the second way for the options `--id` and `--channel-config`:
+
+```cpp
+#include <fairmq/ProgOptions.h>
+#include <fairmq/SuboptParser.h>
+
+#include <boost/program_options.hpp>
+
+#include <string>
+#include <vector>
+
+void Configure(fair::mq::ProgOptions& config, int argc, char* argv[])
+{
+    namespace bpo = boost::program_options;
+    bpo::options_description options("My device");
+    options.add_options()
+        ("id", bpo::value<std::string>()->default_value("sampler1"), "Device ID")
+        ("channel-config", bpo::value<std::vector<std::string>>()->multitoken()->composing(), "Channels");
+    config.AddToCmdLineOptions(options);
+
+    config.ParseAll(argc, argv, true);
+    config.Notify();
+
+    if (config.Count("channel-config")) {
+        auto const id = config.GetProperty<std::string>("id");
+        auto const channels = config.GetProperty<std::vector<std::string>>("channel-config");
+        config.SetProperties(fair::mq::SuboptParser(channels, id));
+    }
+}
+```
+
+For a value without `name`, `SuboptParser()` throws `boost::property_tree::ptree_bad_path`. For an empty device ID,
+it throws [`fair::mq::ParserError`](/api/fair/mq/ParserError/). The test `SuboptParser.Errors` checks both. The
+device options that you do not register, for example `transport` and `rate`, have the defaults of the device.
+
+## Load plugins without DeviceRunner
+
+A [`fair::mq::PluginManager`](/api/fair/mq/PluginManager/) loads, creates and owns the plugins of a device. Without
+`DeviceRunner`, your program must call its functions in the sequence of
+[`DeviceRunner::Run()`](/source/fairmq/DeviceRunner.cxx/#L108-L194):
+
+| Step | Call | Notes |
+| --- | --- | --- |
+| 1 | [`LoadPlugin(name)`](/api/fair/mq/PluginManager/#LoadPlugin) or [`LoadPlugins(names)`](/api/fair/mq/PluginManager/#LoadPlugins) | Finds the plugin and its options. It does not create the plugin. `DeviceRunner` loads the plugins of `-P` (in the constructor of the plugin manager), then `s:config`, then the plugins of the hook `LoadPlugins`, then `s:control`. For the prefixes, see [Load a plugin](/concepts/plugins/#load-a-plugin). |
+| 2 | [`ForEachPluginProgOptions()`](/api/fair/mq/PluginManager/#ForEachPluginProgOptions) with `AddToCmdLineOptions()` | Adds the options of the loaded plugins. `DeviceRunner` also adds [`PluginManager::ProgramOptions()`](/api/fair/mq/PluginManager/#ProgramOptions) (`-P` and `-S`). |
+| 3 | `ParseAll()`, `HandleGeneralOptions()`, `Notify()` | See [Parse options without DeviceRunner](#parse-options-without-devicerunner). |
+| 4 | `SetConfig()` of the device | Give the device the `ProgOptions` object of the plugins. Otherwise the device does not see the properties that the plugins set, for example the channels of the config plugin. |
+| 5 | [`EmplacePluginServices(config, device)`](/api/fair/mq/PluginManager/#EmplacePluginServices) | Makes the [`PluginServices`](/api/fair/mq/PluginServices/) object, which connects the plugins to the device and to the properties. |
+| 6 | [`InstantiatePlugins()`](/api/fair/mq/PluginManager/#InstantiatePlugins) | Creates the plugins in the load sequence. The constructors run now, and a controller takes its role. |
+| 7 | [`RunStateMachine()`](/api/fair/mq/Device/#RunStateMachine) of the device | Returns in `EXITING`. |
+| 8 | [`WaitForPluginsToReleaseDeviceControl()`](/api/fair/mq/PluginManager/#WaitForPluginsToReleaseDeviceControl) | Waits until no plugin has the controller role. |
+
+This `main()` has the minimum sequence for the built-in plugins. `MyDevice` is your device class:
+
+```cpp
+#include <fairmq/Device.h>
+#include <fairmq/DeviceRunner.h>   // DeviceRunner::HandleGeneralOptions()
+#include <fairmq/PluginManager.h>
+#include <fairmq/ProgOptions.h>
+#include <fairmq/tools/Strings.h>  // tools::ToStrVector()
+
+#include <boost/program_options.hpp>
+
+int main(int argc, char* argv[])
+{
+    // Declare the configuration and the device before the plugin manager.
+    // Then the plugin manager and its plugins are destroyed first.
+    fair::mq::ProgOptions config;
+    MyDevice device;
+    fair::mq::PluginManager mgr(fair::mq::tools::ToStrVector(argc, argv, false)); // reads -S and -P
+
+    mgr.LoadPlugin("s:config");
+    mgr.LoadPlugin("s:control");
+    mgr.ForEachPluginProgOptions([&](boost::program_options::options_description options) {
+        config.AddToCmdLineOptions(options);
+    });
+    config.AddToCmdLineOptions(fair::mq::PluginManager::ProgramOptions());
+
+    config.ParseAll(argc, argv, true);
+    if (!fair::mq::DeviceRunner::HandleGeneralOptions(config, false)) {
+        return 0; // --help or --print-options
+    }
+    config.Notify();
+
+    device.SetConfig(config);
+    mgr.EmplacePluginServices(config, device);
+    mgr.InstantiatePlugins();
+
+    device.RunStateMachine();
+    mgr.WaitForPluginsToReleaseDeviceControl();
+    return 0;
+}
+```
+
+The test `PluginManager.LoadPluginStatic` uses the control plugin without a parse. It sets the two options of the
+control plugin with `SetProperty()` before `InstantiatePlugins()`:
+
+<Snippet file="test/plugins/_plugin_manager.cxx" start="TEST(PluginManager, LoadPluginStatic)" />
+
+Rules for the sequence:
+
+- Call `EmplacePluginServices()` before `InstantiatePlugins()` and before `WaitForPluginsToReleaseDeviceControl()`.
+  Both use the `PluginServices` object, and the plugin manager does not check that it exists.
+- The plugins read their options in their constructors. The control plugin reads `control` and `catch-signals`. If a
+  property is missing, `InstantiatePlugins()` throws
+  [`PluginManager::PluginInstantiationError`](/api/fair/mq/PluginManager/PluginInstantiationError/), for example
+  `An error occurred while instantiating plugin control: Config has no key: control`.
+- The plugins unsubscribe from the device in their destructors. Thus the device must exist until the plugin manager is
+  destroyed.
+- The constructor `PluginManager(args)` reads `-S` and `-P` from `args` and loads the plugins of `-P`. It throws
+  [`PluginManager::ProgramOptionsParseError`](/api/fair/mq/PluginManager/ProgramOptionsParseError/) for an option
+  value that it cannot parse. The default constructor reads nothing.
+- With the default `--control dynamic`, the control plugin reads keys from the terminal. For a program without a
+  terminal, use `--control static`. See [Control modes](/concepts/plugins/#control-modes).
+
+## Several devices in one process
+
+One process can run more than one device. The test `MultipleDevices.TwoInSameProcess` runs a sender and a receiver
+in one process. Each device runs `RunStateMachine()` in its own thread, and its controller requests the transitions
+from another thread:
+
+<Snippet file="test/device/_multiple_devices.cxx" start="class MultipleDevices" />
+
+Each device has its own objects:
+
+- **A state machine.** Each `Device` object has a private `StateMachine`. The transitions of one device do not change
+  the other devices.
+- **A property store.** Without `SetConfig()`, each device uses its own internal `ProgOptions` object. If you give
+  your own object, give each device its own. The device reads `id` and the `chans.` properties from it, and it writes
+  the bound addresses back.
+- **Transports.** In `INITIALIZING DEVICE`, [`AddTransport()`](/api/fair/mq/Device/#AddTransport) makes one transport
+  factory for each transport type of the device, from the property store of the device
+  ([Device.cxx](/source/fairmq/Device.cxx/#L586-L605)). All channels of the device with this type use it.
+
+Two devices do not share a transport factory. No constructor of `Device` takes a factory, and
+[`SetTransport()`](/api/fair/mq/Device/#SetTransport) only sets the property `transport` (the name). The public API
+has no function that gives a device an existing factory. Only a derived class has access to the protected member
+`fTransports`, in which `AddTransport()` looks for an existing factory. No test or example uses this, and
+`RESETTING DEVICE` clears the member. For channels that share one factory, use channels without a
+device. See [Use channels without a device](/guides/channels-without-device/).
+
+What this means for each transport:
+
+- **zeromq:** Each factory has its own ZeroMQ context, with its own I/O threads
+  ([zeromq/TransportFactory.h](/source/fairmq/zeromq/TransportFactory.h/#L30-L45)). An `inproc://` address connects only
+  sockets of one context (ZeroMQ behavior). Thus use `ipc://` or `tcp://` between two devices of one process. The
+  test above uses `ipc://`.
+- **shmem:** Each factory opens the segments of its session and increments the device counter. Devices in one
+  process with the same session (the property `session`) exchange messages in the same way as devices in different processes. The test
+  `ShmMessages.ZeroCopyFromUnmanaged` (`test/message/_message.cxx`) makes two shmem factories with one session in one
+  process and sends messages between them.
+
+The limits are in the parts of FairMQ that exist once per process:
+
+- **The logger is global.** FairLogger keeps its settings in static members. A change of the severity, the verbosity
+  or the log file applies to all devices of the process. The prefix of a log line does not contain the device ID.
+  See [Logging](/tools/logging/).
+- **The signal handling of the control plugin is global.** The control plugin installs its handlers for `SIGINT` and
+  `SIGTERM` with `signal()`. It counts the signals in global variables, and no code resets them
+  ([Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L25-L45)). One signal starts the shutdown of each device
+  with a control plugin in the process. The next `SIGINT` ends the process with `std::abort()`. A control plugin that
+  starts after a signal, with `--catch-signals 1`, shuts down its device at once.
+- **The interactive mode reads the standard input** ([Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L157-L180)).
+  Two interactive controllers in one process read the same keys.
+- **One `DeviceRunner` for each process.** `DeviceRunner` sets the global logger, and it loads the control plugin.
+  FairMQ has no test with two `DeviceRunner` objects in one process. Run the other devices without `DeviceRunner`,
+  and control them from your code, as the test above does.
+
+For the threads of each device, see [Threads in a device](/concepts/threads/).
+
+## Read and change properties at run time
+
+The device, the plugins and the hooks of `DeviceRunner` share one
+[`fair::mq::ProgOptions`](/api/fair/mq/ProgOptions/) object. Each option of the command line is a property in it. See
+[Configuration and properties](/concepts/configuration/).
+
+| Code | Access to the properties |
+| --- | --- |
+| A plugin | The property functions of [`Plugin`](/api/fair/mq/Plugin/#GetProperty), for example `GetProperty<T>()` and `SetProperty<T>()`. |
+| A device | [`GetConfig()`](/api/fair/mq/Device/#GetConfig) returns a pointer to the `ProgOptions` object. |
+| A hook of `DeviceRunner` | The member `fConfig` of the runner. |
+| A program without `DeviceRunner` | Your `ProgOptions` object, or `GetConfig()` of the device. |
+
+### Read and set a property
+
+- [`GetProperty<T>(key)`](/api/fair/mq/ProgOptions/#GetProperty) throws
+  [`fair::mq::PropertyNotFoundError`](/api/fair/mq/PropertyNotFoundError/) when the key does not exist. The text is
+  `Config has no key: <key>`.
+- [`GetProperty<T>(key, fallback)`](/api/fair/mq/ProgOptions/#GetProperty-2) returns `fallback` when the key does not
+  exist.
+- `T` must be the type of the stored value, for example `float` for `rate` and `int` for `io-threads`. For another
+  type, both functions throw an exception.
+- [`GetPropertyAsString(key)`](/api/fair/mq/ProgOptions/#GetPropertyAsString) returns the value as text. For a type
+  that [`PropertyHelper`](/api/fair/mq/PropertyHelper/) does not know, the text is `[unidentified_type]`.
+- [`SetProperty<T>(key, value)`](/api/fair/mq/ProgOptions/#SetProperty) adds or changes a property.
+  [`UpdateProperty<T>()`](/api/fair/mq/ProgOptions/#UpdateProperty) changes only a property that exists. It returns
+  `false` otherwise.
+- The type of the value is the type of the property. `SetProperty("key", "text")` stores a `const char*`. Use
+  `SetProperty<std::string>("key", "text")` for a text property.
+
+### Follow the changes
+
+[`Subscribe<T>(subscriber, callback)`](/api/fair/mq/ProgOptions/#Subscribe) calls `callback` with the key and the new
+value of each change. A plugin uses [`SubscribeToPropertyChange<T>()`](/api/fair/mq/Plugin/#SubscribeToPropertyChange).
+
+- The callback runs in the thread that changes the property, before `SetProperty()` returns ([Threads in a device](/concepts/threads/#which-thread-runs-your-code)). Protect the data that the
+  callback changes, for example with `std::atomic`.
+- The callback gets only the changes with a value of the type `T`. A subscription for `std::string` gets no call for a
+  `const char*` value.
+- [`SubscribeAsString()`](/api/fair/mq/ProgOptions/#SubscribeAsString) gets the changes of all types, with the value
+  as text.
+- `SetProperty()`, `UpdateProperty()`, `SetProperties()` and `UpdateProperties()` call the subscribers.
+  `DeleteProperty()` and `AddChannel()` do not.
+- A subscriber name has one subscription for each type. A second subscription with the same name and type replaces the
+  first.
+- [`Unsubscribe<T>(subscriber)`](/api/fair/mq/ProgOptions/#Unsubscribe) throws `std::out_of_range` when the
+  subscription does not exist.
+
+The dispatcher of the [qc](/examples/qc/) example subscribes in `InitTask()` and unsubscribes in `ResetTask()`. The
+value `active` of the property `qc` sets the flag `fDoQC`. The value `inactive` clears it.
+
+<Snippet file="examples/qc/qCDispatcher.cxx" start="void InitTask()" />
+
+A plugin can set the flag with `SetProperty<std::string>("qc", "active")`. The callback runs in the thread that calls
+`SetProperty()`. Thus `fDoQC` is a `std::atomic<bool>`.
+
+### When a change has an effect
+
+| Property | The device uses a new value |
+| --- | --- |
+| `severity`, `file-severity`, `verbosity`, `log-to-file` (type `std::string`), `color` (type `bool`) | At once. `DeviceRunner` subscribes to these keys after it parses the command line. See [Logging](/tools/logging/). |
+| `id`, `rate`, `init-timeout`, `transport`, `network-interface`, `chans.<name>.<index>.<key>` | In `INITIALIZING DEVICE`, after the request of `CompleteInit`. |
+| `io-threads`, `session`, the options of shared memory | In `INITIALIZING DEVICE`, when the device creates the transport. |
+| `chans.<name>.<index>.address` of a channel that is not connected yet | In `CONNECTING`. The device reads the address again every 50 ms, until the time of `init-timeout` ends. |
+| Your own properties | When your code reads them, or in your subscription callback. |
+
+[When the device reads a property](/concepts/configuration/#when-the-device-reads-a-property) has the details for
+each property.
+
+- In its state callback of `INITIALIZING DEVICE`, the config plugin writes the channel properties of `--mq-config` or
+  `--channel-config`. The device reads the properties after all state callbacks return and after the request of
+  `CompleteInit`.
+- The state callbacks of the plugins run in the sequence in which the plugin manager creates the plugins. The plugins
+  of `-P` come first, then `config`, the plugins of the hook `LoadPlugins`, and `control`.
+- After `BINDING`, `chans.<name>.<index>.address` holds the address that the channel bound to.
+- To use new values of the `INITIALIZING DEVICE` properties, request `ResetDevice` and initialize the device again.
+  `RESETTING DEVICE` removes the channels and the transports.
+
+## Problems
+
+| Problem | Cause and solution |
+| --- | --- |
+| `ChangeState()` or `ChangeDeviceState()` returns `false`. | The log shows the cause. `No transition from state … on transition …`: the current state does not accept the transition. `Transition … incoming, but another state transition is already ongoing.`: wait for the next state first. |
+| The device stays in `INITIALIZING DEVICE`. | The device waits for `CompleteInit`. Request it. |
+| `WaitForState()` does not return. | The state does not come. Check the transition that you requested, and check the log for an exception in a hook. |
+| `DeviceRunner::Run()` does not return after `EXITING`. | A plugin has the controller role. Call `ReleaseDeviceControl()` in `EXITING`. |
+| `RUNNING` ends at once. | The controller requested `Stop` in the callback of `RUNNING`, or the work of the device ended. |
+| A subscription callback gets no call. | The type of the new value is not the type of the subscription. Give the type to `SetProperty<T>()`. |
+| `could not connect all channels after 120 attempts` | A channel did not connect in the time of `init-timeout`. The number in the text is the value of `init-timeout` in seconds. |
+
+## Related pages
+
+- [Plugins and control](/concepts/plugins/): the control plugin, its modes and the controller role.
+- [Write a plugin](/guides/write-plugin/): build and load your own plugin.
+- [custom-controller](/examples/custom-controller/): the complete controller example.
+- [Device states](/concepts/states/): the states, the hooks and the state `ERROR`.

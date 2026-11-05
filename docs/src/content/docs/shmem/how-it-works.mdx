@@ -1,0 +1,174 @@
+---
+title: 'How shared memory works'
+description: 'The shmem transport moves only a small header through the socket. The data stays in shared memory.'
+sidebar:
+  order: 1
+code: [fairmq/shmem/Socket.h, fairmq/shmem/Message.h, fairmq/shmem/Manager.h, fairmq/shmem/Common.h, fairmq/shmem/TransportFactory.h]
+---
+
+import ZeroCopyExplainer from '../../../components/diagrams/ZeroCopyExplainer.astro';
+import Snippet from '../../../components/Snippet.astro';
+
+The shmem transport moves messages between devices on one host without a copy of the payload.
+The payload stays in a shared memory segment. Only a small header goes through a ZeroMQ socket.
+
+<ZeroCopyExplainer />
+
+## Use the shmem transport
+
+Set `--transport shmem` for the device, or set the property `transport` of a channel. The default
+transport is `zeromq`. This example starts the sampler and the sink of the 1-1 example with shmem:
+
+```sh
+fairmq-ex-1-1-sampler --id sampler1 --transport shmem --rate 1 \
+  --channel-config name=data,type=push,method=bind,address=ipc:///tmp/fmq-1-1-data
+fairmq-ex-1-1-sink --id sink1 --transport shmem \
+  --channel-config name=data,type=pull,method=connect,address=ipc:///tmp/fmq-1-1-data
+```
+
+The code of the devices does not change. [`NewMessage()`](/api/fair/mq/Device/#NewMessage),
+[`Send()`](/api/fair/mq/Device/#Send) and [`Receive()`](/api/fair/mq/Device/#Receive) are the same
+for all transports. The two devices find the same shared memory because they have the same session
+(`default`) and the same user. See [Sessions and segments](/shmem/sessions/).
+
+## The parts of the transport
+
+| Part | What it does |
+| --- | --- |
+| [`Manager`](/api/fair/mq/shmem/Manager/) | One for each shmem transport factory. A device has one. The manager opens or creates the shared memory of the session, counts the devices and writes a heartbeat every 100 ms. |
+| Managed segment | A segment of Boost.Interprocess (on Linux, a file in [`/dev/shm`](/shmem/tuning/#space-in-devshm)), with the name `fmq_<shmId>_m_0`. [`NewMessage(size)`](/api/fair/mq/shmem/TransportFactory/#CreateMessage-3) allocates the blocks of the messages in it. The size is `--shm-segment-size`, default 2 GiB. |
+| Management segment | `fmq_<shmId>_mng`, 6.25 MiB. It holds the data that the devices of a session share: counters and the lists of segments and regions. |
+| Socket | Each shmem socket is a ZeroMQ socket of the same type. It carries only the metadata of the messages. |
+
+## A block in the segment
+
+`NewMessage(size)` allocates a block in the segment of the device. Before the payload, the block has
+a small header ([`ShmHeader`](/api/fair/mq/shmem/ShmHeader/)). The header holds the reference count
+of the block and the offset of the payload. The payload starts at an aligned address: at least
+`alignof(std::max_align_t)`, or the [`Alignment`](/api/fair/mq/Alignment/) that you give.
+
+The message object in your process holds the metadata of the block: the size, the handle, the ID of
+the segment and a local pointer. The handle is a handle of Boost.Interprocess: the offset of the
+block from the start of the segment. The handle is the same in all processes. The address is not the same, because each process
+maps the segment at a different address.
+
+## Send a message
+
+`Send()` writes the metadata of the message into a [`MetaHeader`](/api/fair/mq/shmem/MetaHeader/) and
+sends it in one ZeroMQ message ([Socket.h](/source/fairmq/shmem/Socket.h/#L118-L161)). The payload
+does not go through the socket.
+
+| Field | Type | Content |
+| --- | --- | --- |
+| `fSize` | `size_t` | Size of the payload in bytes. |
+| `fHint` | `size_t` | The hint of a region message. FairMQ gives it back in the region callback. |
+| `fHandle` | `handle_t` | Offset of the block in the managed segment, or of the data in the region. |
+| `fShared` | `handle_t` | Handle of the shared reference count of a copied region message. `-1`: no copy. |
+| `fRegionId` | `uint16_t` | ID of the unmanaged region. |
+| `fSegmentId` | `uint16_t` | ID of the managed segment. |
+| `fManaged` | `bool` | `true`: the block is in a managed segment. `false`: the block is in an unmanaged region. |
+
+On 64-bit systems the `MetaHeader` has 40 bytes. It is the wire format of the transport, so a test
+checks its size and the offsets of its fields.
+
+After a successful send, the transport marks the message of the sender as queued. A queued message
+does not free its block when you destroy it, because the receiver owns the block now. `Send()`
+returns the size of the payload, not the size of the header.
+
+For a multipart message, `Send()` puts all headers into one ZeroMQ message: the number of parts, then
+one `MetaHeader` for each part. The queue limits of the channel (`sndBufSize`, `rcvBufSize`) count
+this as one message. The option `--shm-metadata-msg-size` can make the ZeroMQ message larger, see
+[Tune and debug](/shmem/tuning/#set-the-size-of-the-metadata-message).
+
+## Receive a message
+
+`Receive()` reads the `MetaHeader` into the message. It does not touch the payload. The first call of
+[`GetData()`](/api/fair/mq/Message/#GetData) changes the handle into an address in the receiver. The
+address is the start of the segment in the receiver plus the handle. If the receiver did not open
+this segment before, the transport opens it now. For a region message, the address is the start of
+the region plus the handle.
+
+The receiver reads the payload in place. `Receive()` returns the size of the payload.
+
+Both ends of a channel must use the same transport. If `Receive()` of a single message gets fewer
+bytes than one `MetaHeader`, it throws [`SocketError`](/api/fair/mq/SocketError/): "Received message
+is not a valid FairMQ shared memory message". `Receive()` of a multipart message does not check this.
+
+## Copy a message without a copy
+
+[`Copy()`](/api/fair/mq/Message/#Copy) of the shmem transport does not copy the payload. The new
+message points to the same block, and the transport increments the reference count of the block.
+[`GetRefCount()`](/api/fair/mq/shmem/Message/#GetRefCount) of
+[`shmem::Message`](/api/fair/mq/shmem/Message/) shows the count. In this test, the original and the
+copy have the same data address and a reference count of 2. After the copy is destroyed, the count
+is 1 again:
+
+<Snippet file="test/message/_message.cxx" start="auto ZeroCopy(bool" />
+
+Use `Copy()` to send the same data on two channels: send the original on one channel and the copy
+on the other. Do not change the data after `Copy()`. The interface defines that as undefined
+behavior, and all copies use the same memory. The interface does not guarantee that `Copy()` does
+not copy. It is a property of the shmem transport.
+
+## Free the block
+
+When you destroy a message or call [`Rebuild()`](/api/fair/mq/Message/#Rebuild), the transport
+decrements the reference count of the block. When the count was 1, the transport gives the block back
+to the segment ([Message.h](/source/fairmq/shmem/Message.h/#L372-L411)). Then new messages can use the
+memory.
+
+A message in an unmanaged region does not go back to a segment. The transport sends an
+acknowledgement to the creator of the region. See [Unmanaged regions](/shmem/regions/).
+
+## Data from your own buffer
+
+The shmem transport cannot use a buffer of your process in place. `NewMessage(data, size, ffn, hint)`
+allocates a block in the segment, copies the data into it, and calls `ffn(data, hint)` at once. If
+`ffn` is `nullptr`, the transport calls `free(data)`
+([Message.h](/source/fairmq/shmem/Message.h/#L64-L78)). With the size 0, the transport calls
+neither `ffn` nor `free()`. `NewSimpleMessage()` and `NewStaticMessage()` use the same constructor,
+so they also copy. To send a buffer of your own with each transport, see
+[Send a buffer of your own](/guides/send-data-types/#send-a-buffer-of-your-own).
+
+If you send a message of another transport on a shmem channel, the channel copies it into a new
+shmem message. To write data into shared memory directly, with your own layout, use an
+[unmanaged region](/shmem/regions/).
+
+## Rules for your code
+
+- Do not use the data of a message after a successful `Send()`. The receiver owns the block.
+- Do not keep a pointer from `GetData()` after you destroy or rebuild the message. The segment gives
+  the memory to new messages.
+- Do not change the data of a message after `Copy()`.
+- Do not give an address to another process. The address is valid only in your process. Send the
+  message, or send its `MetaHeader` (see [Out-of-band buffers](/shmem/side-channel/)).
+- Receive into an empty message, for example from `NewMessage()`. To use a message again for
+  `Receive()`, for example after `Send()`, call `Rebuild()` first. `Receive()` replaces only the
+  metadata. It does not free the old block, and `GetData()` can then return the old address.
+- Receive a multipart message into `Parts`, and a single message into a `MessagePtr`. The metadata of
+  the two has a different format, and the shmem transport does not check it.
+- Destroy all messages and regions before the device destroys its transports. The device does that
+  in the state `RESETTING DEVICE`. Destroy them in `ResetTask()` at the latest.
+
+## Limits
+
+- **One host.** The socket can use `tcp://`, but the segment exists only on the local host. All
+  devices of a session must run on the same host. FairMQ does not check this. For devices in
+  containers, see [Containers](/shmem/sessions/#containers).
+- **One user and one session.** The names of the shared memory objects contain a hash of the user ID
+  and the session name. See [Sessions and segments](/shmem/sessions/).
+- **No `pub` and `sub`.** A shmem socket of the type `pub` or `sub` throws `SocketError` ("PUB/SUB
+  socket type is not supported for shared memory transport"). To send the same data to several
+  receivers, use `Copy()` and one channel for each receiver. The tests run `push`/`pull`, `pair` and
+  `req`/`rep` with shmem.
+- **The segment size.** A message must fit into the segment. If it does not fit, `NewMessage()` throws
+  [`MessageBadAlloc`](/api/fair/mq/MessageBadAlloc/) at once. If the segment is full, `NewMessage()`
+  throws `MessageBadAlloc` or tries again. See [Tune and debug](/shmem/tuning/).
+
+## Related pages
+
+- [Sessions and segments](/shmem/sessions/): the shared memory objects of a session.
+- [Unmanaged regions](/shmem/regions/): memory that your device fills itself.
+- [Tune and debug](/shmem/tuning/): segment size, full segments and debug mode.
+- [Transports](/concepts/transports/): the zeromq and the shmem transport.
+- [Messages and multipart](/concepts/messages/): the message interface.

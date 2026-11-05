@@ -1,0 +1,150 @@
+---
+title: 'builtin-devices: a topology of built-in devices'
+description: 'The built-in devices fairmq-bsampler, fairmq-splitter, fairmq-proxy, fairmq-merger, fairmq-multiplier and fairmq-sink in one topology, without own code.'
+sidebar:
+  order: 10
+code: [fairmq/devices/BenchmarkSampler.h, fairmq/devices/Splitter.h, fairmq/devices/Merger.h, fairmq/devices/Multiplier.h, fairmq/devices/Sink.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { FileTree } from '@astrojs/starlight/components';
+
+This example has no own code. Its start script connects the [built-in devices](/tools/builtin-devices/) of FairMQ into one topology. The messages go from a benchmark sampler through a splitter, two proxies, a merger and a multiplier to a sink.
+
+The code is in [`examples/builtin-devices`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/builtin-devices). The example shows how to:
+
+- configure the built-in devices with command-line options only,
+- distribute messages over the [sub-channels](/concepts/channels/) of a channel (splitter),
+- collect messages from all sub-channels of a channel (merger),
+- send each message to all sub-channels of a channel (multiplier),
+- transfer single messages or [multipart messages](/concepts/messages/) with `--multipart`.
+
+## Topology
+
+All channels have `sndBufSize=50` and `rcvBufSize=50`. A channel with two addresses has two sub-channels.
+
+| Device | Executable | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- | --- |
+| `bsampler1` | `fairmq-bsampler` | `data1` | `push` | `bind` | `tcp://localhost:5555` |
+| `splitter` | `fairmq-splitter` | `data1` | `pull` | `connect` | `tcp://localhost:5555` |
+| | | `data2` | `push` | `bind` | `tcp://localhost:5556`, `tcp://localhost:5557` |
+| `proxy1` | `fairmq-proxy` | `data2` | `pull` | `connect` | `tcp://localhost:5556` |
+| | | `data3` | `push` | `connect` | `tcp://localhost:5558` |
+| `proxy2` | `fairmq-proxy` | `data2` | `pull` | `connect` | `tcp://localhost:5557` |
+| | | `data3` | `push` | `connect` | `tcp://localhost:5559` |
+| `merger` | `fairmq-merger` | `data3` | `pull` | `bind` | `tcp://localhost:5558`, `tcp://localhost:5559` |
+| | | `data4` | `push` | `connect` | `tcp://localhost:5560` |
+| `multiplier` | `fairmq-multiplier` | `data4` | `pull` | `bind` | `tcp://localhost:5560` |
+| | | `data5` | `push` | `connect` | `tcp://localhost:5561`, `tcp://localhost:5561` |
+| `sink1` | `fairmq-sink` | `data5` | `pull` | `bind` | `tcp://localhost:5561` |
+
+Each device gets the names of its channels with `--in-channel` and `--out-channel`. Both sub-channels of `data5` connect to the same sink. Thus the sink receives each message two times.
+
+The sampler sends messages of 100000 bytes, at most 100 messages per second (`--msg-size 100000`, `--msg-rate 100`). The sampler and the sink run without a limit (`--max-iterations 0`).
+
+## Requirements
+
+The start script opens one `xterm` window for each device. `xterm` must be installed.
+
+## Build and run
+
+The built-in devices are part of the FairMQ build. The example adds only the scripts. The start script uses the executables in `build/fairmq`:
+
+<FileTree>
+
+- build/
+  - fairmq/
+    - fairmq-bsampler
+    - fairmq-splitter
+    - fairmq-proxy
+    - fairmq-merger
+    - fairmq-multiplier
+    - fairmq-sink
+  - examples/builtin-devices/
+    - fairmq-start-ex-builtin-devices.sh
+    - test-ex-builtin-devices.sh
+
+</FileTree>
+
+The start script takes three optional arguments: the transport (default `zeromq`), `true` or `false` for `--multipart` (default `false`), and the number of parts (default `1`).
+
+```sh
+cd build/examples/builtin-devices
+./fairmq-start-ex-builtin-devices.sh
+./fairmq-start-ex-builtin-devices.sh shmem true 4
+```
+
+The sampler uses `--control interactive`. The other devices use the default `--control dynamic`, which is the same interactive controller. Type `q` in the window of a device to end it. Type `h` to see all keys.
+
+## The code
+
+The code of the devices is in `fairmq/devices/`. This section shows the parts that move the messages.
+
+### Configure a device
+
+The start script builds the command line of each device. The splitter gets its input and output channels by name. Its output channel has two addresses:
+
+<Snippet file="examples/builtin-devices/fairmq-start-ex-builtin-devices.sh.in" start='SPLITTER="fairmq-splitter"' end="xterm" />
+
+### Splitter: one sub-channel after the other
+
+The splitter ([`Splitter.h`](/source/fairmq/devices/Splitter.h/)) registers `HandleData()` with [`OnData()`](/api/fair/mq/Device/#OnData) for its input channel. Each call sends the payload to the next sub-channel of the output channel:
+
+<Snippet file="fairmq/devices/Splitter.h" start="bool HandleData(T& payload, int)" />
+
+### Merger: poll all sub-channels
+
+The merger makes a poller for all sub-channels of its input channel. In each loop, it waits up to 100 ms for data. Then it forwards the data from each sub-channel that has input. See [`Merger.h`](/source/fairmq/devices/Merger.h/#L44-L101) and [Poll several channels](/guides/poll-channels/).
+
+### Multiplier: copy to all outputs
+
+The multiplier ([`Multiplier.h`](/source/fairmq/devices/Multiplier.h/)) sends a copy to each sub-channel of each output channel. It sends the original message to the last sub-channel of the last output channel:
+
+<Snippet file="fairmq/devices/Multiplier.h" start="bool HandleSingleData" />
+
+[`Copy()`](/api/fair/mq/Message/#Copy) shares the data of the message and does not duplicate it. For multipart messages, `HandleMultipartData()` copies each part in the same way.
+
+## Output
+
+The sampler logs when it starts and when `RUNNING` ends:
+
+```txt
+Starting the benchmark with message size of 100000 and 0 iterations.
+Done <n> iterations in <t>ms.
+```
+
+The sink logs the same two points:
+
+```txt
+Starting sink and expecting to receive 0 messages.
+Received <n> messages in <t>ms.
+Leaving RUNNING state.
+```
+
+The proxies and the merger log `Transfer interrupted` on the severity `debug` when a transfer is interrupted, for example at a state change. The start script sets `--severity debug` only for the sampler and the sink.
+
+## Test
+
+`examples/builtin-devices/CMakeLists.txt` adds four tests: `Example.builtin-devices.single_msg.zeromq`, `Example.builtin-devices.multipart.zeromq`, `Example.builtin-devices.single_msg.shmem` and `Example.builtin-devices.multipart.shmem`. Each test runs `test-ex-builtin-devices.sh` with the transport and the variant as arguments. The timeout is 30 s.
+
+The test script uses `ipc://` addresses, `--control static` and `--msg-rate 1`. The variant `multipart` sets `--multipart true` and sends two parts. The sink stops at `--max-iterations 2`. Then the script stops the other devices with `SIGINT`.
+
+Configure with `-DBUILD_TESTING=ON` to register the tests. Then run them in the build directory:
+
+```sh
+ctest -R Example.builtin-devices
+```
+
+## Things to try
+
+- Write the received data to a file. Add `--out-filename /tmp/sink.bin` to the sink. The sink stops after `--max-file-size` bytes (default 2000000000).
+- Remove one of the two addresses of `data5` in the multiplier. Then the sink receives each message once.
+- Send more data. Raise `--msg-rate` or set it to `0` (no limit).
+- Use the script `startMQBenchmark.sh` in `build/fairmq` for a benchmark with a sampler and a sink. See [Run a benchmark](/guides/benchmark/).
+
+## Related pages
+
+- [Built-in devices](/tools/builtin-devices/): all options of each device.
+- [Channels and sockets](/concepts/channels/)
+- [Poll several channels](/guides/poll-channels/)
+- [Messages and multipart](/concepts/messages/)

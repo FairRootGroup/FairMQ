@@ -1,0 +1,145 @@
+---
+title: 'JSON configuration'
+description: 'The format of the JSON file for --mq-config: devices, channels and sockets, how a device finds its entry, and the errors.'
+sidebar:
+  order: 3
+code: [fairmq/JSONParser.h, fairmq/JSONParser.cxx, fairmq/plugins/config/Config.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+
+A JSON file describes the channels of one or more devices. Give it to a device with `--mq-config <file>`. The device reads only the entry with its ID or its `--config-key`, and stores the channels of this entry as properties.
+
+## A complete file
+
+The file of the [1-n-1 example](/examples/1-n-1/) has three entries: one for the sampler, one for the two processors, and one for the sink.
+
+<Snippet file="examples/1-n-1/ex-1-n-1.json" />
+
+## Structure
+
+The parser reads this tree ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L39-L190)):
+
+```txt
+fairMQOptions             object, required
+└── devices               array of device entries
+    └── { }               device entry: id or key, channels
+        └── channels      array of channels
+            └── { }       channel: name, properties, numSockets, sockets
+                └── sockets   array of sockets
+                    └── { }   socket: properties
+```
+
+Each socket object makes one sub-channel. Its index is its position in the `sockets` array, from 0. The properties of the sub-channel get the keys `chans.<name>.<index>.<property>`, for example `chans.data1.0.address`. The parser ignores all keys that it does not know, on each level.
+
+## Keys
+
+### Device entry
+
+| Key | Type | Meaning |
+| --- | --- | --- |
+| `id` | string | The device ID that selects this entry. The parser uses it only if the entry has no `key`. |
+| `key` | string | The value that selects this entry. Several devices can use one entry with `--config-key`. |
+| `channels` | array | The channels of the device. |
+
+An entry needs `id` or `key`, otherwise no device can select it.
+
+### Channel
+
+| Key | Type | Meaning |
+| --- | --- | --- |
+| `name` | string | Required. The name of the channel. |
+| `sockets` | array | One object for each sub-channel. Without `sockets` and without `numSockets`, the channel has one sub-channel. |
+| `numSockets` | int | For a value above 0: the number of sub-channels. The parser then ignores `sockets`. See [`numSockets`](#numsockets). |
+| `type`, `method`, `address`, `transport`, `sndBufSize`, `rcvBufSize`, `sndKernelSize`, `rcvKernelSize`, `sndTimeoutMs`, `rcvTimeoutMs`, `linger`, `rateLogging`, `portRangeMin`, `portRangeMax`, `autoBind` | see [Channel properties](/reference/channel-properties/) | The values for all sub-channels of the channel. |
+
+### Socket
+
+| Key | Type | Meaning |
+| --- | --- | --- |
+| `type`, `method`, `address`, `transport`, `sndBufSize`, `rcvBufSize`, `sndKernelSize`, `rcvKernelSize`, `sndTimeoutMs`, `rcvTimeoutMs`, `linger`, `rateLogging`, `portRangeMin`, `portRangeMax`, `autoBind` | see [Channel properties](/reference/channel-properties/) | The values for this sub-channel. They override the values of the channel. |
+
+`name` and `numSockets` have no effect in a socket object.
+
+## How the device finds its entry
+
+The [config plugin](/concepts/configuration/#the-config-plugin) reads the file when the device goes into the state `INITIALIZING DEVICE` ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L25-L53)):
+
+1. The plugin takes the value of `--config-key`. Without `--config-key`, it takes the value of `--id`.
+2. The parser compares this value with the `key` of each device entry. For an entry without `key`, it compares the value with `id` ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L69-L74)).
+3. The parser reads the channels of each entry that matches.
+
+An entry with a `key` does not match its `id`. Several devices can use the same entry. In the start script of the 1-n-1 example, both processors have their own ID and the same key `processor`:
+
+<Snippet file="examples/1-n-1/fairmq-start-ex-1-n-1.sh.in" start="PROCESSOR1=" end="xterm -geometry 80x23+500+330" />
+
+- **No entry matches.** The device gets no channels from the file, and the parser shows no error. A device without channels logs the warning `No channels created after finishing initialization` in `CONNECTING`.
+- **Several entries match.** The parser reads all of them. For a property that is in two entries, the value of the first entry stays.
+- **`--mq-config` and `--channel-config`.** If you give both, the plugin reads only the JSON file.
+
+## Channel values and socket values
+
+The values of a channel are the defaults of its sockets. A socket object can override each of them. This configuration of the parser tests shows the rules:
+
+<Snippet file="test/properties/_jsonparser.cxx" start="auto const kConfig" end='})";' />
+
+For the device ID `sampler`, the parser makes these sub-channels. The tests in the same file check the values.
+
+| Sub-channel | Values from the socket | Values from the channel | Other properties |
+| --- | --- | --- | --- |
+| `data[0]` | `address` | `type`, `method`, `transport`, `sndBufSize` | Defaults |
+| `data[1]` | `address`, `method`, `transport`, `rateLogging` | `type`, `sndBufSize` | Defaults |
+| `fanout[0]` to `fanout[2]` | none, because of `numSockets` | `type`, `address` | Defaults |
+| `plain[0]` | none, because there is no `sockets` array | `type`, `autoBind` | Defaults |
+
+The entry with the ID `other` has the key `sink`. `--config-key sink` selects it, but `--id other` does not.
+
+## `numSockets`
+
+With `numSockets` above 0, the parser makes this number of sub-channels. All of them get the values of the channel, also the `address`. The parser then ignores the `sockets` array ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L108-L122)). [Channel properties](/reference/channel-properties/#numsockets) describes the effect on binding sub-channels.
+
+## Value types
+
+Write strings as JSON strings, numbers as JSON numbers, and booleans as `true` or `false`. [Channel properties](/reference/channel-properties/) gives the type of each property.
+
+:::caution[Wrong types]
+The parser reads each value with a default ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L90-L105)). If it cannot convert a value, it uses the default and shows no error. For example, `"sndBufSize": "big"` gives `sndBufSize` 1000. To see the values, start the device with `--severity trace`: the parser then logs each property of each sub-channel.
+:::
+
+## Errors
+
+| Problem | Result |
+| --- | --- |
+| The file does not exist, or it is not valid JSON. | `boost::property_tree::json_parser_error` |
+| The file has no `fairMQOptions` object. | `boost::property_tree::ptree_bad_path` |
+| A channel has no `name`. | `boost::property_tree::ptree_bad_path` |
+| The ID is empty. This occurs only when you call the parser from code. | [`fair::mq::ParserError`](/api/fair/mq/ParserError/): ``no device ID provided. Provide with `--id` cmd option`` |
+| No entry matches the ID or the key. | No error. The device has no channels from the file. |
+| A value has the wrong type. | No error. The parser uses the default. |
+
+The config plugin catches the exceptions and logs their message with the severity `error` ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L46-L48)). The device then continues without the channels of the file. If the device has no `--id` and no `--config-key`, the plugin logs the warning `No device ID or config-key provided for the configuration parser.` and does not read the file.
+
+:::caution
+A device with a broken file can start without channels. If your device does not find a channel, look for an error message from the parser at the start of the log.
+:::
+
+## Parse a file from code
+
+[`fair::mq::JSONParser()`](/api/fair/mq/#JSONParser) reads a file and returns the properties of one device entry. [`PtreeParser()`](/api/fair/mq/#PtreeParser) does the same for a Boost property tree. Give the result to [`ProgOptions::SetProperties()`](/api/fair/mq/ProgOptions/#SetProperties):
+
+```cpp
+#include <fairmq/JSONParser.h>
+#include <fairmq/ProgOptions.h>
+
+fair::mq::ProgOptions config;
+config.SetProperties(fair::mq::JSONParser("ex-1-n-1.json", "sampler1"));
+```
+
+The second argument is the ID or the key of the entry.
+
+## Related pages
+
+- [Channel properties](/reference/channel-properties/): all keys of a channel and a socket, with the defaults.
+- [Configure channels](/guides/configure-channels/): the JSON file, `--channel-config` and properties from code.
+- [Configuration and properties](/concepts/configuration/): how the device reads its configuration.
+- [Command-line options](/reference/options/): `--mq-config`, `--config-key` and `--id`.

@@ -1,0 +1,234 @@
+---
+title: 'States and transitions'
+description: 'All states and transitions of the device state machine as tables: values, names, the transition matrix, the interactive keys and the errors.'
+sidebar:
+  order: 4
+code: [fairmq/States.h, fairmq/States.cxx, fairmq/StateMachine.cxx, fairmq/Device.h, fairmq/plugins/control/Control.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+
+This page lists all states and transitions of the device state machine as tables. It also gives the
+keys of the interactive controller, the name functions and the errors of invalid transitions. For
+an introduction, see [Device states](/concepts/states/).
+
+## States
+
+The enum [`fair::mq::State`](/api/fair/mq/State/) is in
+[`fairmq/States.h`](/source/fairmq/States.h/#L19-L37). Its underlying type is `int`. The name is the
+string that [`GetStateName()`](/api/fair/mq/#GetStateName) returns and that the log shows.
+
+| State | Value | Name | Kind | Hooks |
+| --- | --- | --- | --- | --- |
+| [`Undefined`](/api/fair/mq/State/#Undefined) | 0 | `UNDEFINED` | Not used | — |
+| [`Ok`](/api/fair/mq/State/#Ok) | 1 | `OK` | Internal, see below | — |
+| [`Error`](/api/fair/mq/State/#Error) | 2 | `ERROR` | Error state, final | — |
+| [`Idle`](/api/fair/mq/State/#Idle) | 3 | `IDLE` | Idling state, initial | — |
+| [`InitializingDevice`](/api/fair/mq/State/#InitializingDevice) | 4 | `INITIALIZING DEVICE` | Working state | `Init()` |
+| [`Initialized`](/api/fair/mq/State/#Initialized) | 5 | `INITIALIZED` | Idling state | — |
+| [`Binding`](/api/fair/mq/State/#Binding) | 6 | `BINDING` | Working state | `Bind()` |
+| [`Bound`](/api/fair/mq/State/#Bound) | 7 | `BOUND` | Idling state | — |
+| [`Connecting`](/api/fair/mq/State/#Connecting) | 8 | `CONNECTING` | Working state | `Connect()` |
+| [`DeviceReady`](/api/fair/mq/State/#DeviceReady) | 9 | `DEVICE READY` | Idling state | — |
+| [`InitializingTask`](/api/fair/mq/State/#InitializingTask) | 10 | `INITIALIZING TASK` | Working state | `InitTask()` |
+| [`Ready`](/api/fair/mq/State/#Ready) | 11 | `READY` | Idling state | — |
+| [`Running`](/api/fair/mq/State/#Running) | 12 | `RUNNING` | Working state | `PreRun()`, `ConditionalRun()`, `Run()`, `PostRun()`, data callbacks |
+| [`ResettingTask`](/api/fair/mq/State/#ResettingTask) | 13 | `RESETTING TASK` | Working state | `ResetTask()` |
+| [`ResettingDevice`](/api/fair/mq/State/#ResettingDevice) | 14 | `RESETTING DEVICE` | Working state | `Reset()` |
+| [`Exiting`](/api/fair/mq/State/#Exiting) | 15 | `EXITING` | Final state | — |
+
+The state machine has two regions. The first region holds the states from `IDLE` to `EXITING`. The
+second region holds `OK` and `ERROR`, and starts in `OK`. A device does not report the state `OK`.
+[`StateQueue::WaitForNext()`](/api/fair/mq/StateQueue/#WaitForNext-2) with a timeout returns `Ok`
+when no state arrives.
+
+The log line `No transition from state … on transition …` uses other names. They have an underscore
+instead of a space, for example `DEVICE_READY` and `INIT_TASK`
+([`StateMachine.cxx`](/source/fairmq/StateMachine.cxx/#L45-L75)).
+
+## Transitions
+
+The enum [`fair::mq::Transition`](/api/fair/mq/Transition/) is in
+[`fairmq/States.h`](/source/fairmq/States.h/#L39-L53). The key column gives the key of the
+interactive controller.
+
+| Transition | Value | Name | From | To | Requested by | Key |
+| --- | --- | --- | --- | --- | --- | --- |
+| [`Auto`](/api/fair/mq/Transition/#Auto) | 0 | `AUTO` | `BINDING`, `CONNECTING`, `INITIALIZING TASK`, `RESETTING TASK`, `RESETTING DEVICE` | The next state, see the matrix | The device | — |
+| [`InitDevice`](/api/fair/mq/Transition/#InitDevice) | 1 | `INIT DEVICE` | `IDLE` | `INITIALIZING DEVICE` | Controller | `i` |
+| [`CompleteInit`](/api/fair/mq/Transition/#CompleteInit) | 2 | `COMPLETE INIT` | `INITIALIZING DEVICE` | `INITIALIZED` | Controller | `i` |
+| [`Bind`](/api/fair/mq/Transition/#Bind) | 3 | `BIND` | `INITIALIZED` | `BINDING` | Controller | `b` |
+| [`Connect`](/api/fair/mq/Transition/#Connect) | 4 | `CONNECT` | `BOUND` | `CONNECTING` | Controller | `x` |
+| [`InitTask`](/api/fair/mq/Transition/#InitTask) | 5 | `INIT TASK` | `DEVICE READY` | `INITIALIZING TASK` | Controller | `j` |
+| [`Run`](/api/fair/mq/Transition/#Run) | 6 | `RUN` | `READY` | `RUNNING` | Controller | `r` |
+| [`Stop`](/api/fair/mq/Transition/#Stop) | 7 | `STOP` | `RUNNING` | `READY` | Controller, or the device at the end of its work | `s` |
+| [`ResetTask`](/api/fair/mq/Transition/#ResetTask) | 8 | `RESET TASK` | `READY` | `RESETTING TASK` | Controller | `t` |
+| [`ResetDevice`](/api/fair/mq/Transition/#ResetDevice) | 9 | `RESET DEVICE` | `INITIALIZED`, `BOUND`, `DEVICE READY` | `RESETTING DEVICE` | Controller | `d` |
+| [`End`](/api/fair/mq/Transition/#End) | 10 | `END` | `IDLE` | `EXITING` | Controller | `q` (shutdown sequence) |
+| [`ErrorFound`](/api/fair/mq/Transition/#ErrorFound) | 11 | `ERROR FOUND` | All states | `ERROR` | The device after an exception, or your code | — |
+
+## Transition matrix
+
+The rows are the current states, and the columns are the transitions. A cell gives the next state.
+A dash means that the state machine refuses the transition. The column `ErrorFound` is not in the
+matrix: from all states, `ErrorFound` leads to `ERROR`. The source is the `transition_table` in
+[`StateMachine.cxx`](/source/fairmq/StateMachine.cxx/#L117-L144).
+
+| Current state | `InitDevice` | `CompleteInit` | `Bind` | `Connect` | `InitTask` | `Run` | `Stop` | `ResetTask` | `ResetDevice` | `End` | `Auto` |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `IDLE` | `INITIALIZING DEVICE` | — | — | — | — | — | — | — | — | `EXITING` | — |
+| `INITIALIZING DEVICE` | — | `INITIALIZED` | — | — | — | — | — | — | — | — | — |
+| `INITIALIZED` | — | — | `BINDING` | — | — | — | — | — | `RESETTING DEVICE` | — | — |
+| `BINDING` | — | — | — | — | — | — | — | — | — | — | `BOUND` |
+| `BOUND` | — | — | — | `CONNECTING` | — | — | — | — | `RESETTING DEVICE` | — | — |
+| `CONNECTING` | — | — | — | — | — | — | — | — | — | — | `DEVICE READY` |
+| `DEVICE READY` | — | — | — | — | `INITIALIZING TASK` | — | — | — | `RESETTING DEVICE` | — | — |
+| `INITIALIZING TASK` | — | — | — | — | — | — | — | — | — | — | `READY` |
+| `READY` | — | — | — | — | — | `RUNNING` | — | `RESETTING TASK` | — | — | — |
+| `RUNNING` | — | — | — | — | — | — | `READY` | — | — | — | — |
+| `RESETTING TASK` | — | — | — | — | — | — | — | — | — | — | `DEVICE READY` |
+| `RESETTING DEVICE` | — | — | — | — | — | — | — | — | — | — | `IDLE` |
+| `EXITING` | — | — | — | — | — | — | — | — | — | — | — |
+| `ERROR` | — | — | — | — | — | — | — | — | — | — | — |
+
+## Rules
+
+- The state machine accepts one transition at a time. While a transition is pending, it refuses all
+  other transitions except `ErrorFound`.
+- A transition is pending from the call of `ChangeState()` until the next state starts. The next
+  state starts only after the hooks of the current state return.
+- In a working state, the device requests `Auto` after its hooks, but only when no other transition
+  is pending. At the end of `RUNNING`, the device requests `Stop` in the same way.
+- `INITIALIZING DEVICE` waits for `CompleteInit` before it calls `Init()`.
+- Each new transition interrupts the transports. The transports resume at the start of the next
+  state.
+- In `EXITING` and `ERROR`, the state machine has stopped, and the state does not change. In
+  `EXITING`, `ChangeState()` returns `false` for all transitions except `ErrorFound`. In `ERROR`,
+  `ChangeState()` can return `true` (known defect, see the disabled test
+  `StateMachine.RefusesTransitionsInError`).
+
+## Keys of the interactive controller
+
+With `--control dynamic` (default), `interactive` or `external`, the control plugin reads keys from
+the standard input. It reads one character at a time, without Enter. The plugin prints the line
+` --> [key] action` before it does the action. Source:
+[`Control.cxx`](/source/fairmq/plugins/control/Control.cxx/#L154-L272).
+
+| Key | Action |
+| --- | --- |
+| `h` | Prints the help and the state machine. |
+| `c` | Logs the current state. The plugin prints ` --> [i] check current state`. |
+| `p` | Logs the number of connected peers of each sub-channel. |
+| `i` | Requests `InitDevice`. When `INITIALIZING DEVICE` starts, it requests `CompleteInit`. |
+| `b` | Requests `Bind`. |
+| `x` | Requests `Connect`. |
+| `j` | Requests `InitTask`. |
+| `r` | Requests `Run`. |
+| `s` | Requests `Stop`. |
+| `t` | Requests `ResetTask`. |
+| `d` | Requests `ResetDevice`. |
+| `q` | Ends the key input and runs the shutdown sequence (see below). |
+| `k` | Increases the log severity of the console. |
+| `l` | Decreases the log severity of the console. |
+| `n` | Increases the log verbosity. |
+| `m` | Decreases the log verbosity. |
+| Other | Prints `Invalid input: [key].` and the help. |
+
+The keys `b`, `x`, `j`, `r`, `s`, `t` and `d` request only one transition. They do not wait for
+the `Auto` transitions. If the state does not accept the transition, the state does not change.
+
+:::caution[Known defect]
+If several keys arrive in one read, for example `cq` from a pipe, the plugin handles only the first
+key. See the disabled test `ControlPlugin.SeveralKeysInOneInput` in `test/device/_runner.cxx`.
+:::
+
+## Startup and shutdown sequences
+
+The control modes `dynamic`, `static` and `gui` start with the same sequence
+([`RunStartupSequence()`](/source/fairmq/plugins/control/Control.cxx/#L104-L142)). The plugin requests
+a transition and waits for the next states:
+
+| Step | Request | Wait for |
+| --- | --- | --- |
+| 1 | `InitDevice` | `INITIALIZING DEVICE` |
+| 2 | `CompleteInit` | `INITIALIZED` |
+| 3 | `Bind` | `BINDING`, then `BOUND` |
+| 4 | `Connect` | `CONNECTING`, then `DEVICE READY` |
+| 5 | `InitTask` | `INITIALIZING TASK`, then `READY` |
+| 6 | `Run` | `RUNNING` |
+
+A signal stops the sequence after the current step, and the plugin runs the shutdown sequence. The
+state `ERROR` also stops the sequence, but without the shutdown sequence. The shutdown sequence
+([`RunShutdownSequence()`](/source/fairmq/plugins/control/Control.cxx/#L471-L506)) requests one
+transition for each state, until `EXITING` or `ERROR`:
+
+| Current state | Request |
+| --- | --- |
+| `IDLE` | `End` |
+| `INITIALIZING DEVICE` | `CompleteInit` |
+| `INITIALIZED`, `BOUND`, `DEVICE READY` | `ResetDevice` |
+| `READY` | `ResetTask` |
+| `RUNNING` | `Stop` |
+| Other states | None. The plugin waits for the next state. |
+
+## Name functions
+
+These functions in the namespace `fair::mq` convert between the enums and the names
+([`States.h`](/source/fairmq/States.h/#L55-L63)):
+
+<Snippet file="fairmq/States.h" start="std::string GetStateName(State);" end="operator<<(std::ostream& os, const Transition& transition)" />
+
+- [`GetStateName()`](/api/fair/mq/#GetStateName) and
+  [`GetTransitionName()`](/api/fair/mq/#GetTransitionName) return the name with spaces, for example
+  `DEVICE READY`. The `operator<<` for `State` and `Transition` writes the same name.
+- [`GetState()`](/api/fair/mq/#GetState) and [`GetTransition()`](/api/fair/mq/#GetTransition) accept
+  only these names, in upper case and with spaces.
+- All four functions throw `std::out_of_range` for an unknown name or value.
+
+Other functions use the same names:
+
+| Function | Description |
+| --- | --- |
+| [`Device::ChangeState(const std::string&)`](/api/fair/mq/Device/#ChangeState-2) | Requests the transition with this name, for example `"INIT DEVICE"`. |
+| [`Device::ChangeStateOrThrow(const std::string&)`](/api/fair/mq/Device/#ChangeStateOrThrow-2) | The same, but throws if the state machine refuses the transition. |
+| [`Device::WaitForState(const std::string&)`](/api/fair/mq/Device/#WaitForState-2) | Waits for the state with this name. |
+| [`Device::GetCurrentStateName()`](/api/fair/mq/Device/#GetCurrentStateName) | Returns the name of the current state. |
+| [`PluginServices::ToDeviceState()`](/api/fair/mq/PluginServices/#ToDeviceState), [`ToDeviceStateTransition()`](/api/fair/mq/PluginServices/#ToDeviceStateTransition) | Call `GetState()` and `GetTransition()`. |
+| [`PluginServices::ToStr()`](/api/fair/mq/PluginServices/#ToStr), [`ToStr()`](/api/fair/mq/PluginServices/#ToStr-2) | Call `GetStateName()` and `GetTransitionName()`. |
+| [`Device::GetStateName()`](/api/fair/mq/Device/#GetStateName), [`Device::GetTransitionName()`](/api/fair/mq/Device/#GetTransitionName) | Deprecated static functions. Use the functions of `States.h`. |
+
+The test `States.UnknownNameThrows` shows the exceptions:
+
+<Snippet file="test/state_machine/_state_machine.cxx" start="TEST(States, UnknownNameThrows)" />
+
+## Errors of invalid transitions
+
+| Call | Problem | Result |
+| --- | --- | --- |
+| [`Device::ChangeState(Transition)`](/api/fair/mq/Device/#ChangeState) | The current state does not accept the transition. | Returns `false`. Logs `No transition from state … on transition …`. |
+| `Device::ChangeState(Transition)` | Another transition is pending. | Returns `false`. Logs `Transition … incoming, but another state transition is already ongoing.` |
+| [`Device::ChangeStateOrThrow(Transition)`](/api/fair/mq/Device/#ChangeStateOrThrow) | `ChangeState()` returns `false`. | Throws `std::system_error` with the code [`ErrorCode::DeviceChangeStateFailed`](/api/fair/mq/ErrorCode/#DeviceChangeStateFailed) and the text `Invalid transition: <NAME>`. |
+| The functions with a `std::string` | The name is unknown. | Throw `std::out_of_range`. |
+| [`PluginServices::ChangeDeviceState()`](/api/fair/mq/PluginServices/#ChangeDeviceState) | Another plugin controls the device. | Throws [`PluginServices::DeviceControlError`](/api/fair/mq/PluginServices/DeviceControlError/). Otherwise, it returns the result of `ChangeState()`. Without a controller, the calling plugin becomes the controller. |
+| [`Device::WaitForState()`](/api/fair/mq/Device/#WaitForState), [`Device::WaitForNextState()`](/api/fair/mq/Device/#WaitForNextState) | The next state in the queue is `ERROR`. | Throw [`DeviceErrorState`](/api/fair/mq/DeviceErrorState/) with the text `Controlled device transitioned to error state.` |
+
+`ChangeState()` is `[[nodiscard]]`. The compiler warns when your code ignores the return value.
+Use `ChangeStateOrThrow()` when a refused transition is an error in your program. The test
+`Transitions.InvalidChangeStateOrThrow` requests `Connect` in `IDLE`:
+
+<Snippet file="test/device/_transitions.cxx" start="TEST(Transitions, InvalidChangeStateOrThrow)" />
+
+:::caution[Known defect]
+After an exception in a hook, the device does not put `ERROR` into the queue of `WaitForState()`.
+A thread that waits there for another state then waits forever.
+:::
+
+For the error codes and all exceptions of FairMQ, see
+[Transfer codes and errors](/reference/transfer-codes/).
+
+## Related pages
+
+- [Device states](/concepts/states/): the state machine with a diagram, and the hooks in each state.
+- [Plugins and control](/concepts/plugins/): the control plugin and the device control of plugins.
+- [Control a device from code](/guides/control-from-code/): request transitions in your program.
+- [Transfer codes and errors](/reference/transfer-codes/): `ErrorCode` and the exceptions.

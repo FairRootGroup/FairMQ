@@ -1,0 +1,352 @@
+---
+// How the creator of an unmanaged region learns that its blocks are free again.
+// Facts: fairmq/shmem/UnmanagedRegion.h (ReleaseBlock, SendAcks, ReceiveAcks, fAckBunchSize = 256,
+// wait_for 500 ms, queue name "rgq", bulk callback or one call per block), Manager.h (with a callback the
+// creator starts an ack receiver and an ack sender; a device that opens a remote region starts an ack
+// sender), Message.h (GetData opens the region, Deallocate).
+import Explainer from './Explainer.astro';
+
+const steps = [
+  {
+    cap: 'The sampler creates an unmanaged region and gives a bulk callback. The memory of the region belongs to the sampler. Because of the callback, FairMQ starts an ack receiver in the sampler. It also starts an ack sender there, for messages that come back.',
+    code: 'auto region = NewUnmanagedRegionFor("data", 0, 10000000, callback);',
+    set: { a: 'NewUnmanagedRegionFor(…)' },
+  },
+  {
+    cap: 'The sampler writes data into the region and makes messages that point to it. The transport allocates no memory in the managed segment for these messages.',
+    code: 'auto msg = NewMessageFor("data", 0, region, ptr, size, hint);',
+    set: { a: 'NewMessageFor(…)' },
+  },
+  {
+    cap: 'Send() puts only a MetaHeader for each message into the socket. The data stays in the region.',
+    code: 'Send(parts, "data");',
+    set: { a: 'Send(parts, "data")' },
+  },
+  {
+    cap: 'The sink receives the messages. At the first GetData(), the sink opens the region and reads the data in place. FairMQ starts an ack sender in the sink.',
+    code: 'Receive(parts, "data");',
+    set: { b: 'Receive(parts, "data")' },
+  },
+  {
+    cap: 'The sink destroys the messages. The transport puts each block, with its size and its hint, into a list in the sink.',
+    code: '}  // parts are destroyed: the blocks go into the list',
+    set: { b: '~Message()' },
+  },
+  {
+    cap: 'The ack sender sends the list as one bunch into the region queue. It sends when the list holds 256 blocks, or after 500 ms.',
+    code: 'fmq_<shmId>_rgq_<regionId>',
+  },
+  {
+    cap: 'The ack receiver of the sampler gets the bunch. It calls the bulk callback one time with all blocks of the bunch: pointer, size and hint. A RegionCallback runs one time for each block.',
+    code: '[](const std::vector<fair::mq::RegionBlock>& blocks) { … }',
+    set: { a: 'callback(blocks)' },
+  },
+  {
+    cap: 'In the callback, the sampler marks the blocks as free. Then it can write new data into them.',
+    code: 'fNumUnackedMsgs -= blocks.size();',
+    set: { a: 'blocks are free' },
+  },
+];
+const blocks = [96, 196, 296, 396];
+---
+
+<Explainer title="Free blocks of an unmanaged region" meta="sampler → sink · same host" steps={steps}>
+  <svg class="ra" data-stage viewBox="0 0 720 330" role="img" aria-label="The acknowledgement of unmanaged region blocks">
+    <defs>
+      <pattern id="ra-cells" width="16" height="72" patternUnits="userSpaceOnUse"><line x1="0.5" y1="0" x2="0.5" y2="72" class="cell"></line></pattern>
+      <pattern id="ra-stripes" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="8" class="stripe"></rect></pattern>
+      <marker id="ra-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"
+        ><path d="M0 0L10 5L0 10z" class="arrhead"></path></marker
+      >
+      <marker id="ra-arr-sky" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"
+        ><path d="M0 0L10 5L0 10z" class="arrhead-sky"></path></marker
+      >
+    </defs>
+
+    <!-- channel and region queue -->
+    <line x1="260" y1="58" x2="460" y2="58" class="chan"></line>
+    <text x="360" y="48" text-anchor="middle" class="sub">channel "data"</text>
+    <g class="queue">
+      <rect x="262" y="104" width="196" height="22" rx="2" class="qbox"></rect>
+      <path d="M440 115 H 282" class="qdir" marker-end="url(#ra-arr)"></path>
+      <text x="360" y="96" text-anchor="middle" class="sub">region queue</text>
+    </g>
+
+    <!-- mappings -->
+    <line x1="150" y1="140" x2="150" y2="206" class="map map-a"></line>
+    <line x1="570" y1="140" x2="570" y2="206" class="map map-b"></line>
+
+    <!-- region -->
+    <g class="region">
+      <rect x="40" y="206" width="640" height="72" rx="2" class="segbox"></rect>
+      <rect x="40" y="206" width="640" height="72" fill="url(#ra-cells)"></rect>
+      <text x="40" y="298" class="sub">/dev/shm/fmq_&lt;shmId&gt;_rg_&lt;regionId&gt;</text>
+      <text x="680" y="298" text-anchor="end" class="sub">unmanaged region · memory of the sampler</text>
+    </g>
+    {
+      blocks.map((x) => (
+        <g class="rb">
+          <rect x={x} y="224" width="80" height="36" class="rb-free" />
+          <rect x={x} y="224" width="80" height="36" class="rb-data" />
+          <rect x={x} y="224" width="80" height="36" fill="url(#ra-stripes)" class="rb-rel" />
+        </g>
+      ))
+    }
+    <text class="lbl-data sub" x="536" y="247">data</text>
+    <text class="lbl-rel sub ruby" x="496" y="247">released by the sink</text>
+    <text class="lbl-free sub mint" x="496" y="247">free again</text>
+    <path class="hdl" d="M556 140 C 540 180, 500 196, 470 222" marker-end="url(#ra-arr-sky)"></path>
+    <text class="hdllabel sub sky" x="530" y="196" text-anchor="end">read in place</text>
+
+    <!-- processes -->
+    <g class="proc">
+      <rect x="40" y="20" width="220" height="120" rx="3"></rect>
+      <text x="58" y="46" class="name">sampler</text>
+      <text x="58" y="64" class="sub">creates the region</text>
+      <text x="58" y="90" class="code" data-slot="a"></text>
+      <g class="thr thr-a">
+        <rect x="58" y="104" width="112" height="22" rx="11"></rect>
+        <text x="114" y="119" text-anchor="middle">ack receiver</text>
+      </g>
+      <g class="cb">
+        <rect x="178" y="104" width="68" height="22" rx="3"></rect>
+        <text x="212" y="119" text-anchor="middle">callback</text>
+      </g>
+    </g>
+    <g class="proc">
+      <rect x="460" y="20" width="220" height="120" rx="3"></rect>
+      <text x="478" y="46" class="name">sink</text>
+      <text x="478" y="64" class="sub">opens the region</text>
+      <text x="478" y="90" class="code" data-slot="b"></text>
+      <g class="thr thr-b">
+        <rect x="478" y="104" width="100" height="22" rx="11"></rect>
+        <text x="528" y="119" text-anchor="middle">ack sender</text>
+      </g>
+    </g>
+
+    <!-- list of released blocks in the sink -->
+    <g class="list">
+      <rect x="590" y="108" width="14" height="14" class="lst"></rect>
+      <rect x="608" y="108" width="14" height="14" class="lst"></rect>
+      <rect x="626" y="108" width="14" height="14" class="lst"></rect>
+      <rect x="644" y="108" width="14" height="14" class="lst"></rect>
+    </g>
+    <!-- the bunch on its way through the queue -->
+    <g class="bunch">
+      <rect x="590" y="108" width="68" height="14" class="lst"></rect>
+      <text x="624" y="146" text-anchor="middle" class="sub sky">bunch · ≤ 256 blocks</text>
+    </g>
+    <!-- MetaHeaders on the channel -->
+    <g class="metas">
+      <rect x="248" y="51" width="14" height="14" class="metabox"></rect>
+      <rect x="230" y="51" width="14" height="14" class="metabox m2"></rect>
+    </g>
+  </svg>
+</Explainer>
+
+<style>
+  .name {
+    fill: var(--fmq-stage-ink);
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .sub {
+    fill: var(--fmq-stage-dim);
+    font-size: 11.5px;
+  }
+  .code {
+    fill: var(--fmq-saffron);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .sky {
+    fill: var(--fmq-sky-bright);
+  }
+  .mint {
+    fill: var(--fmq-mint);
+    font-weight: 700;
+  }
+  .ruby {
+    fill: var(--fmq-ruby);
+    font-weight: 700;
+  }
+  .proc > rect {
+    fill: var(--fmq-stage-2);
+    stroke: var(--fmq-stage-line);
+    stroke-width: 1.2;
+  }
+  .chan {
+    stroke: var(--fmq-stage-line);
+    stroke-width: 1.5;
+  }
+  .qbox {
+    fill: var(--fmq-stage-2);
+    stroke: var(--fmq-stage-line);
+  }
+  .qdir {
+    stroke: var(--fmq-stage-line);
+    stroke-width: 1.2;
+    fill: none;
+  }
+  .arrhead {
+    fill: var(--fmq-stage-line);
+  }
+  .map {
+    stroke: var(--fmq-stage-line);
+    stroke-dasharray: 4 4;
+    stroke-width: 1.2;
+  }
+  .segbox {
+    fill: var(--fmq-stage-2);
+    stroke: var(--fmq-stage-line);
+  }
+  .cell {
+    stroke: var(--fmq-stage-cell);
+    stroke-width: 1;
+  }
+  .stripe {
+    fill: var(--fmq-ruby);
+    opacity: 0.55;
+  }
+  .rb-free {
+    fill: none;
+    stroke: var(--fmq-stage-line);
+    stroke-dasharray: 3 3;
+  }
+  .rb-data {
+    fill: var(--fmq-saffron);
+  }
+  .rb-rel {
+    stroke: var(--fmq-ruby);
+    stroke-width: 1.5;
+  }
+  .thr rect {
+    fill: none;
+    stroke: var(--fmq-sky-bright);
+    stroke-width: 1.2;
+  }
+  .thr text,
+  .cb text {
+    font-size: 10.5px;
+    font-weight: 600;
+    fill: var(--fmq-sky-bright);
+  }
+  .cb rect {
+    fill: none;
+    stroke: var(--fmq-stage-line);
+    stroke-width: 1.2;
+    transition:
+      fill 0.4s,
+      stroke 0.4s;
+  }
+  .cb text {
+    fill: var(--fmq-stage-dim);
+    transition: fill 0.4s;
+  }
+  .ra.now7 .cb rect {
+    fill: var(--fmq-saffron);
+    stroke: var(--fmq-saffron);
+  }
+  .ra.now7 .cb text {
+    fill: var(--fmq-on-saffron);
+  }
+  .lst {
+    fill: var(--fmq-ruby);
+  }
+  .metabox {
+    fill: var(--fmq-sky-bright);
+  }
+  .hdl {
+    fill: none;
+    stroke: var(--fmq-sky-bright);
+    stroke-width: 1.6;
+    stroke-dasharray: 5 4;
+  }
+  .arrhead-sky {
+    fill: var(--fmq-sky-bright);
+  }
+
+  /* Choreography. Hidden first, then shown by step. */
+  .region,
+  .map-a,
+  .thr-a,
+  .cb,
+  .rb,
+  .map-b,
+  .thr-b,
+  .hdl,
+  .hdllabel,
+  .lbl-data,
+  .lbl-rel,
+  .lbl-free,
+  .list,
+  .bunch,
+  .metas,
+  .rb-data,
+  .rb-rel {
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .ra.r1 .region,
+  .ra.r1 .map-a,
+  .ra.r1 .thr-a,
+  .ra.r1 .cb,
+  .ra.r1 .rb {
+    opacity: 1;
+  }
+  .ra.r2 .rb-data,
+  .ra.now2 .lbl-data,
+  .ra.now3 .lbl-data,
+  .ra.now4 .lbl-data {
+    opacity: 1;
+  }
+  .metas {
+    transform: translate(0, 0);
+    transition:
+      transform 1.6s cubic-bezier(0.45, 0, 0.2, 1),
+      opacity 0.35s;
+  }
+  .ra.now3 .metas {
+    opacity: 1;
+    transform: translate(196px, 0);
+  }
+  .ra.r4 .map-b,
+  .ra.r4 .thr-b,
+  .ra.now4 .hdl,
+  .ra.now4 .hdllabel {
+    opacity: 1;
+  }
+  .ra.r5 .rb-rel,
+  .ra.now5 .lbl-rel,
+  .ra.now6 .lbl-rel,
+  .ra.now7 .lbl-rel,
+  .ra.now5 .list {
+    opacity: 1;
+  }
+  .bunch {
+    transform: translate(0, 0);
+    transition:
+      transform 1.8s cubic-bezier(0.45, 0, 0.2, 1),
+      opacity 0.35s;
+  }
+  .ra.now6 .bunch {
+    opacity: 1;
+    transform: translate(-216px, 0);
+  }
+  .ra.now7 .bunch {
+    opacity: 1;
+    transform: translate(-330px, 0);
+  }
+  .ra.r8 .rb-data,
+  .ra.r8 .rb-rel {
+    opacity: 0;
+  }
+  .ra.now8 .lbl-free {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ra * {
+      transition: none !important;
+    }
+  }
+</style>

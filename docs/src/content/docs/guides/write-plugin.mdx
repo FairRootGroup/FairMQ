@@ -1,0 +1,226 @@
+---
+title: 'Write a plugin'
+description: 'Write a plugin with its own options, build it as a shared library, load it into a device with -P, and use the plugin API in it.'
+sidebar:
+  order: 7
+code: [fairmq/Plugin.h, fairmq/PluginManager.cxx, fairmq/PluginServices.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+This guide shows how to write a plugin, build it as a shared library and load it into a device with `-P`. The result
+is a device that loads your plugin at startup and accepts the options of the plugin on its command line.
+
+## Before you start
+
+- Install FairMQ. See [Install](/start/install/).
+- Have a device that starts with `runDevice.h`, for example `fairmq-sink` or a device of the examples.
+- Read [Plugins and control](/concepts/plugins/) for the plugin system and the controller role.
+
+A plugin has four parts:
+
+1. A class that derives from [`fair::mq::Plugin`](/api/fair/mq/Plugin/).
+2. A function that declares the options of the plugin. This part is optional.
+3. The macro `REGISTER_FAIRMQ_PLUGIN`. It exports the plugin from the library.
+4. A shared library with the name `libfairmq-plugin-<name>.so`.
+
+A plugin can also be part of the executable. See
+[Put the controller in your program](/guides/control-from-code/#put-the-controller-in-your-program).
+
+The code samples on this page come from the test plugin `test_dummy` (`test/helper/plugins/dummy.h.in`) and from the
+built-in control plugin.
+
+## Write the plugin class
+
+<Steps>
+
+1. Include `<fairmq/Plugin.h>`. Derive your class from `fair::mq::Plugin`.
+
+2. Give the class a constructor with the five parameters of the
+   [`Plugin` constructor](/api/fair/mq/Plugin/#Plugin-2). These are the name, the version, the maintainer, the
+   homepage and a pointer to `PluginServices`. Pass them to the base class. The macro `REGISTER_FAIRMQ_PLUGIN` calls
+   this constructor.
+
+3. In the constructor, read your options. Then subscribe to the events that you need, for example to the state
+   changes.
+
+4. Remove your subscriptions before the plugin goes away. `DeviceRunner` destroys the plugins before the device. The
+   test plugin unsubscribes in the state `EXITING`. The built-in plugins unsubscribe in their destructors.
+
+</Steps>
+
+<Snippet file="test/helper/plugins/dummy.h.in" start="class DummyPlugin" lang="cpp" />
+
+The base class gives the plugin API: the state, the controller role, the properties and the log settings. The list is
+in [What a plugin can do](/concepts/plugins/#what-a-plugin-can-do).
+
+## Add options
+
+<Steps>
+
+1. Write a function without parameters that returns `fair::mq::Plugin::ProgOptions`. This type is
+   `boost::optional<boost::program_options::options_description>`.
+
+2. Fill an `options_description` with your options and return it. The caption of the description is the heading of
+   the group in the output of `--help`.
+
+3. For a plugin without options, use `fair::mq::Plugin::NoProgramOptions` in the macro.
+
+</Steps>
+
+<Snippet file="test/helper/plugins/dummy.h.in" start="auto DummyPluginProgramOptions" lang="cpp" />
+
+The device adds these options to its command line. After the parsing, each option is a property with the same name.
+Read it in the constructor of the plugin:
+
+```cpp
+// An option without a default value is a property only if the command line gives it.
+auto const value = GetProperty<std::string>("custom-dummy-option", "nothing");
+```
+
+[`GetProperty<T>(key)`](/api/fair/mq/Plugin/#GetProperty) without a fallback value throws
+`fair::mq::PropertyNotFoundError` when the property does not exist. The type `T` must be the type of the option, for
+example `float` for `--rate`.
+
+## Register the plugin
+
+Write the macro `REGISTER_FAIRMQ_PLUGIN` once, at namespace scope. The built-in control plugin registers itself so:
+
+<Snippet file="fairmq/plugins/control/Control.h" start="REGISTER_FAIRMQ_PLUGIN(" end="^\)" />
+
+| Argument | Meaning |
+| --- | --- |
+| `KLASS` | The plugin class. |
+| `NAME` | The name of the plugin, without quotes. Give this name to `-P`. The file name of the library ends with it: `libfairmq-plugin-NAME.so`. The macro makes function names from it, so use lower-case letters and `_`, for example `test_dummy`. |
+| `VERSION` | A [`fair::mq::tools::Version`](/api/fair/mq/tools/Version/) with the major, minor and patch number. Put it in parentheses, `(fair::mq::Plugin::Version{1, 0, 0})`: the commas in the braces otherwise separate macro arguments. See [Version.h](/reference/tools/#versionh). |
+| `MAINTAINER` | A string, for example a name and an e-mail address. |
+| `HOMEPAGE` | A string with a URL. |
+| `PROGOPTIONS` | The function that declares the options, or `fair::mq::Plugin::NoProgramOptions`. |
+
+The macro defines a factory function and exports two symbols: `make_NAME_plugin` and `get_NAME_plugin_progoptions`.
+The plugin manager looks for these symbols when it loads the plugin
+([Plugin.h](/source/fairmq/Plugin.h/#L145-L151)).
+
+## Build the plugin
+
+Build the plugin as a shared library. The name of the CMake target is `fairmq-plugin-` and the plugin name. CMake
+then makes the file `libfairmq-plugin-<name>.so`.
+
+```cmake title="CMakeLists.txt"
+cmake_minimum_required(VERSION 3.15)
+project(MyPlugin CXX)
+
+find_package(FairMQ REQUIRED)
+# FairMQConfig.cmake does not find the dependencies of FairMQ. Find them here.
+foreach(dep IN LISTS FairMQ_PACKAGE_DEPENDENCIES)
+  find_package(${dep} ${FairMQ_${dep}_VERSION} REQUIRED COMPONENTS ${FairMQ_${dep}_COMPONENTS})
+endforeach()
+
+add_library(fairmq-plugin-myplugin SHARED myplugin.cxx)
+target_link_libraries(fairmq-plugin-myplugin PRIVATE FairMQ::FairMQ)
+```
+
+In this sample, `myplugin.cxx` contains the class, the options function and the macro with the name `myplugin`. The
+target `FairMQ::FairMQ` gives the include paths, the dependencies and C++17. Without the loop over
+`FairMQ_PACKAGE_DEPENDENCIES`, CMake does not find the targets of the dependencies. The prefix `FairMQPlugin_` also works:
+the tests of FairMQ build `FairMQPlugin_test_dummy` and `fairmq-plugin-test_dummy2`. See
+[Use FairMQ in a CMake project](/start/cmake/) for `find_package()`.
+
+```sh
+cmake -S . -B build
+cmake --build build
+```
+
+## Load the plugin
+
+<Steps>
+
+1. Give the name of the plugin to `-P`. Give `-P` once for each plugin.
+
+2. Give the directory of the library to `-S`, or put it in `LD_LIBRARY_PATH`.
+
+3. Start the device. This command uses the built-in device `fairmq-sink`:
+
+   ```sh
+   fairmq-sink --id sink1 \
+     --channel-config name=data,type=pull,method=bind,address=tcp://*:5555 \
+     --control static --severity debug \
+     -P myplugin -S ./build
+   ```
+
+4. Stop the device with Ctrl-C.
+
+</Steps>
+
+To load a plugin from your own `main()`, call `LoadPlugin()` in the runner hook `hooks::LoadPlugins`. The
+[custom-controller](/examples/custom-controller/) example does this for a plugin that the executable contains.
+To load plugins without `DeviceRunner`, see
+[Load plugins without DeviceRunner](/guides/control-from-code/#load-plugins-without-devicerunner).
+
+## Check the result
+
+- `--help` with `-P myplugin -S ./build` prints the options of the plugin, under the caption of its options group.
+  The device does not start with `--help`.
+- With `--severity debug`, the device logs a line for each plugin that it creates, and a line when it destroys the
+  plugin:
+
+  ```txt
+  Loaded plugin: 'myplugin', version '1.0.0', maintainer 'Jane Doe <jane.doe@example.org>', homepage 'https://example.org/myplugin'
+  ```
+
+- With `--severity debug`, the table `Configuration:` lists the options of the plugin that have a value.
+
+## Use the plugin API
+
+### Read and change properties
+
+- [`SetProperty<T>()`](/api/fair/mq/Plugin/#SetProperty) adds or changes a property. It notifies all subscribers.
+- [`UpdateProperty<T>()`](/api/fair/mq/Plugin/#UpdateProperty) changes only a property that exists. It returns
+  `false` otherwise.
+- Give the type for text values: `SetProperty<std::string>("key", "value")`. Without it, the property gets the type
+  `const char*`, and `GetProperty<std::string>()` throws an exception.
+
+The time when a change has an effect depends on the property. See
+[Control a device from code](/guides/control-from-code/#read-and-change-properties-at-run-time).
+
+### Follow the state of the device
+
+[`SubscribeToDeviceStateChange()`](/api/fair/mq/Plugin/#SubscribeToDeviceStateChange) calls your function at the
+start of each new state, in the thread of the state machine. The device waits until your function returns. For long
+work, start a thread in the plugin and stop it in the destructor. The control plugin runs its controller in this way.
+
+:::caution
+An exception that leaves a state callback moves the device to `ERROR`. Catch the exceptions in the callback.
+:::
+
+### Control the device
+
+A plugin that calls [`TakeDeviceControl()`](/api/fair/mq/Plugin/#TakeDeviceControl) in its constructor gets the
+controller role before the control plugin. The plugins of `-P` are created first. See
+[Control a device from code](/guides/control-from-code/#control-the-device-from-a-plugin).
+
+### Change the log settings
+
+[`CycleLogConsoleSeverityUp()`](/api/fair/mq/Plugin/#CycleLogConsoleSeverityUp) and the other `CycleLog` functions
+change the console severity and the verbosity in steps. To set a value, change the property, for example
+`SetProperty<std::string>("severity", "debug")`. See [Logging](/tools/logging/).
+
+## Problems
+
+| Problem | Cause and solution |
+| --- | --- |
+| `Could not load dynamic plugin myplugin from configured search paths (-S) nor with system lookup …` | The plugin manager found no file, or the file does not load. Check the file name `libfairmq-plugin-myplugin.so`, the directory in `-S` or `LD_LIBRARY_PATH`, and the name in `REGISTER_FAIRMQ_PLUGIN`. |
+| `… is not a directory.` | A path of `-S` is a file. Give the directory. |
+| `An error occurred while instantiating plugin myplugin: …` | The constructor of the plugin throws, for example `Config has no key: …` from `GetProperty<T>()`. Give a fallback value, or check with `PropertyExists()` first. |
+| `Plugin 'myplugin' is not allowed to change device states. Currently, plugin 'control' has taken control.` | The control plugin has the controller role. Take the role in the constructor, or start the device with `--control none`. |
+| The device does not end after `EXITING`. | The plugin has the controller role. Call `ReleaseDeviceControl()` in `EXITING`. |
+| The options of the plugin do nothing. | The device ignores unknown options. With `--severity debug`, it logs `detected unregistered option: …`. Check that the plugin loads. |
+| An unsubscribe function throws `std::out_of_range`. | `UnsubscribeFromPropertyChange<T>()` and `UnsubscribeFromPropertyChangeAsString()` need an existing subscription. Call them only after the subscription. |
+
+## Related pages
+
+- [Plugins and control](/concepts/plugins/): how plugins load, and the controller role.
+- [Control a device from code](/guides/control-from-code/): a controller plugin step by step.
+- [custom-controller](/examples/custom-controller/): a complete controller plugin.
+- [Configuration and properties](/concepts/configuration/): the properties that a plugin reads and sets.

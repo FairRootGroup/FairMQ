@@ -1,0 +1,179 @@
+---
+title: 'fairmq-shmmonitor'
+description: 'Monitor, inspect and clean up shared memory sessions.'
+sidebar:
+  order: 1
+code: [fairmq/shmem/runMonitor.cxx, fairmq/shmem/Monitor.h, fairmq/shmem/Monitor.cxx]
+---
+
+import OptionsTable from '../../../components/OptionsTable.astro';
+
+`fairmq-shmmonitor` shows the status of the shared memory sessions of FairMQ, removes their
+objects, and watches them. Devices with `--shm-monitor true` start it as a daemon, so that the
+memory of a session is removed when all its devices stop.
+
+The build makes `fairmq-shmmonitor` in the directory `fairmq` of the build tree. The installation
+puts it into the `bin` directory. For the concepts, see [Monitor and clean up](/shmem/monitor/) and
+[Sessions and segments](/shmem/sessions/).
+
+## Common tasks
+
+| Task | Command |
+| --- | --- |
+| Show the status of the session `default` | `fairmq-shmmonitor` |
+| Show the status of a session | `fairmq-shmmonitor --session run42` |
+| Show the status of all sessions in `/dev/shm/` | `fairmq-shmmonitor --list-all` |
+| Show the shmId of a session | `fairmq-shmmonitor --get-shmid --session run42` |
+| [Remove all objects of a session](/shmem/monitor/#clean-up-after-a-crash) | `fairmq-shmmonitor --cleanup --session run42` |
+| Show the status every second, with keys | `fairmq-shmmonitor -i -v --session run42` |
+| Watch a session and clean up after a crash | `fairmq-shmmonitor -m --session run42` |
+| Show the messages (debug mode) | `fairmq-shmmonitor --debug --session run42` |
+
+`--session` gives the shmId for the current user. To select the objects directly, give
+`--shmid` with the hexadecimal shmId, for example `--shmid eca859e3`.
+
+## Options
+
+<OptionsTable file="fairmq/shmem/runMonitor.cxx" id="mon" />
+
+Notes on the options:
+
+- The bool options take a value, but they do not need it: `--cleanup` is the same as
+  `--cleanup true`.
+- `--user-id` has an effect only with `--get-shmid`. The other commands use the user ID of the
+  process.
+- `--interval` sets the time in ms between two status outputs in the interactive mode.
+- `--timeout` is the heartbeat timeout in ms of the monitor mode.
+- `--daemonize` has an effect only together with `--monitor`.
+- `--verbose` has an effect only together with `--daemonize` and `--monitor`. The daemon then writes
+  its log at the severity `trace` to a file. The help text names the file
+  `fairmq-shmmonitor_<timestamp>`.
+- `--severity` sets the severity of the console log (default `info`).
+
+## How the tool selects the mode
+
+The tool checks the options in this order and runs the first command that applies
+([runMonitor.cxx](/source/fairmq/shmem/runMonitor.cxx/#L122-L189)):
+
+| Order | Option | What the tool does |
+| --- | --- | --- |
+| 1 | `--help` | Prints the options and stops. |
+| 2 | `--get-shmid` | Prints the shmId of `--session` and stops. |
+| 3 | `--cleanup` | Removes all objects of the session, also the monitor mutex. Stops. |
+| 4 | `--reset-content` | Experimental. Removes all allocations in the managed segments. Stops. |
+| 5 | `--debug` | Prints the messages of the session. Needs a build with `FAIRMQ_DEBUG_MODE`. Stops. |
+| 6 | `--list-all` | Prints the status of all sessions in `--list-all-path`. Stops. |
+| 7 | `--view` without `--interactive`, or no mode option | Prints the status of the session one time and stops. |
+| 8 | `--interactive` | Runs the interactive mode. |
+| 9 | `--monitor` | Runs the monitor mode. |
+
+All steps after step 2, except `--list-all`, use `--shmid` or the shmId of `--session`. With
+`--view`, the interactive mode does not take the monitor mutex. `--view` together with `--monitor`
+and without `--interactive` prints the status one time.
+
+## Status output
+
+The status of a session has this form. The tool writes a time stamp before the first line. The
+sample shows it without the time stamp:
+
+```txt
+shm id: <shmId>, session: <name>, creator id: <user ID>, devices: <n>, managed segments:
+   [<segment ID>]: total: <bytes>, msgs: <n>, free: <bytes>, used: <bytes>
+   [m]: total: <bytes>, free: <bytes>, used: <bytes>
+   unmanaged regions:
+      [<region ID>]: alive, size: <bytes>, rcCountSegment size: <bytes>, free: <bytes>, used: <bytes>
+```
+
+The lines `unmanaged regions` show only if the session has regions. If the session does not exist,
+the tool prints `No segments found.` See [Monitor and clean up](/shmem/monitor/#one-session) for
+the meaning of the fields.
+
+`--list-all` prints `Found shmid '<shmId>':` before the status of each session. For each file in the
+directory that does not belong to FairMQ, it prints "The file '…' does not belong to FairMQ,
+skipping...". For an empty directory, it prints `directory "/dev/shm/" is empty.`
+
+`--get-shmid` prints one of these lines:
+
+```txt
+shmem id for session 'run42' and current user id 1000 is: 65d285cd
+shmem id for session 'run42' and user id 1001 is: <shmId>
+```
+
+## Interactive mode
+
+`fairmq-shmmonitor -i` prints the list of keys, then the status of the session every `--interval`
+ms (default 1000 ms) and after each key. The keys work without Enter. The tool switches off the
+echo of the terminal while it runs.
+
+| Key | What it does |
+| --- | --- |
+| `x` | Removes the objects of the session. In view mode (`-i -v`), the tool prints "cannot close because in view only mode". |
+| `b` | Prints the messages of the session. Needs a build with `FAIRMQ_DEBUG_MODE`. |
+| `h` | Prints the list of keys. |
+| `q` | Stops the tool. |
+
+Other keys print `[<key>] --> invalid input.`
+
+Without `-v`, the interactive mode takes the monitor mutex `sem.fmq_<shmId>_ms`. Then devices with
+`--shm-monitor true` do not start a daemon for the session. The interactive mode does not remove
+memory after a heartbeat timeout. Use `-i -v` to look at a session that a daemon watches.
+
+## Monitor mode
+
+`fairmq-shmmonitor -m` watches one session. It takes the monitor mutex `sem.fmq_<shmId>_ms`, so that
+only one monitor runs for each session.
+
+- It reads the heartbeat of the devices every 200 ms, and it looks for the management segment
+  every 100 ms.
+- If the heartbeat does not change for more than `--timeout` ms (default 5000), it removes all
+  objects of the session.
+- With `--self-destruct` (`-x`), it stops after the session is gone. It also stops if it finds no
+  session within 2 × `--timeout` after its start.
+- Without `-x`, it runs until it receives `SIGINT` or `SIGTERM`.
+- With `--clean-on-exit` (`-e`), it removes the objects of the session when it stops.
+- When it stops, it removes its mutex.
+
+The log shows the start and the cleanup:
+
+```txt
+Starting shared memory monitor for session: "run42" (shm id: 65d285cd)...
+no heartbeats since over 5000 milliseconds, cleaning...
+Cleaning up for shared memory id '65d285cd'...
+```
+
+If a monitor runs already for the shmId, the tool writes an error and stops with the exit code 0:
+
+```txt
+fairmq-shmmonitor for shm id 65d285cd is already running. Try `fairmq-shmmonitor --cleanup --shmid 65d285cd`
+```
+
+In the interactive mode, the text ends with `, or run in view-only mode (-v)`.
+
+### The daemon of the devices
+
+A device with `--shm-monitor true` starts the tool with these options, if no monitor runs for the
+session:
+
+```sh
+fairmq-shmmonitor -x -m --shmid <shmId> -d -t 2000
+```
+
+`-d` makes the process a daemon: it forks, the first process stops with the exit code 0, and the
+daemon writes its console output to `/dev/null`. See
+[Automatic cleanup with `--shm-monitor`](/shmem/monitor/#automatic-cleanup-with---shm-monitor).
+
+## Exit codes
+
+| Code | When |
+| --- | --- |
+| `0` | The command is complete, or the tool stopped normally. Also when a monitor runs already for the shmId. |
+| `1` | The daemon cannot fork, cannot start a new session, or cannot change to the directory `/`. |
+| `2` | An exception, for example an unknown option. The tool prints "Unhandled Exception reached the top of main: …, application will now exit". |
+
+## Related pages
+
+- [Monitor and clean up](/shmem/monitor/): when memory stays and how to remove it.
+- [Sessions and segments](/shmem/sessions/): the shmId and the objects of a session.
+- [Tune and debug](/shmem/tuning/#debug-mode): debug mode and the list of messages.
+- [Command-line options](/reference/options/): `--shm-monitor` of the devices.
+- [Test your devices](/guides/test-devices/): a test script that removes the shared memory of each run.

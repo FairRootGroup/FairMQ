@@ -1,0 +1,340 @@
+---
+title: 'Monitor and clean up'
+description: 'Find and remove shared memory that devices left behind.'
+sidebar:
+  order: 4
+code: [fairmq/shmem/Monitor.h, fairmq/shmem/Monitor.cxx, fairmq/shmem/Manager.h, fairmq/shmem/Manager.cxx, fairmq/shmem/runMonitor.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+
+Shared memory stays in the system until a process removes it. Normally, the last device of a
+session removes it. This page tells you how to find shared memory that stays, and how to remove it.
+
+## When shared memory stays
+
+The last shmem transport of a session removes all objects of the session. See
+[The device counter and cleanup](/shmem/sessions/#the-device-counter-and-cleanup). The objects
+stay in these cases:
+
+- A device stops and does not destroy its transport, for example after a crash or `kill -9`. Its
+  count stays in the device counter, so the counter does not reach 0. See also
+  [Shared memory after a peer ends](/guides/errors-timeouts/#shared-memory-after-a-peer-ends).
+- The devices run with `--shm-no-cleanup true`.
+- The creator of a file-backed region stops and does not destroy the region. The file stays.
+
+The objects use memory of the system until you remove them. If you start devices with the same
+session again, they open the old objects. The device counter then starts at the old value and does
+not reach 0 when the devices stop.
+
+## Find the shared memory
+
+### All sessions
+
+`fairmq-shmmonitor --list-all` looks for the files of FairMQ in `/dev/shm/`. For each management
+segment, it prints the status of the session. For each file that does not start with `fmq_` or
+`sem.fmq_`, it prints "The file '…' does not belong to FairMQ, skipping...".
+
+```sh
+fairmq-shmmonitor --list-all
+```
+
+The option `--list-all-path` sets a different directory.
+
+You can also list the files directly. All names start with `fmq_<shmId>_` or `sem.fmq_<shmId>_`:
+
+```sh
+ls -l /dev/shm/ | grep fmq_
+```
+
+### One session
+
+Without a mode option, `fairmq-shmmonitor` prints the status of one session one time and stops:
+
+```sh
+fairmq-shmmonitor --session default
+fairmq-shmmonitor --shmid eca859e3
+```
+
+The status has this form ([Monitor.cxx](/source/fairmq/shmem/Monitor.cxx/#L185-L304)). The tool
+writes it as one log entry with a time stamp before the first line. The sample shows it without the
+time stamp:
+
+```txt
+shm id: <shmId>, session: <name>, creator id: <user ID>, devices: <n>, managed segments:
+   [<segment ID>]: total: <bytes>, msgs: <n>, free: <bytes>, used: <bytes>
+   [m]: total: <bytes>, free: <bytes>, used: <bytes>
+   unmanaged regions:
+      [<region ID>]: alive, size: <bytes>, rcCountSegment size: <bytes>, free: <bytes>, used: <bytes>
+```
+
+- `devices` is the device counter. If it is not 0 and no device of the session runs, a device did
+  not stop correctly.
+- `msgs` is the number of messages in the segment. It shows `NODEBUG` if FairMQ was compiled
+  without `FAIRMQ_DEBUG_MODE`.
+- `[m]` is the management segment.
+- A region is `alive` or `destroyed`. For a region without a reference count segment, the line ends
+  with `rcCountSegment: not found`.
+
+If the session does not exist, the tool prints `No segments found.`
+
+### From code
+
+The class [`fair::mq::shmem::Monitor`](/api/fair/mq/shmem/Monitor/) has static functions to check a
+session. Each function takes a [`SessionId`](/api/fair/mq/shmem/SessionId/) or a
+[`ShmId`](/api/fair/mq/shmem/ShmId/). A `SessionId` gives the shmId for the current user.
+
+- [`SegmentIsPresent(id, segmentId)`](/api/fair/mq/shmem/Monitor/#SegmentIsPresent) returns `true` if
+  the segment exists.
+- [`RegionIsPresent(id, regionId)`](/api/fair/mq/shmem/Monitor/#RegionIsPresent) returns `true` if
+  the region exists.
+- [`GetFreeMemory(id, segmentId)`](/api/fair/mq/shmem/Monitor/#GetFreeMemory) returns the free bytes
+  of a segment. It throws [`MonitorError`](/api/fair/mq/shmem/Monitor/MonitorError/) if the session
+  or the segment does not exist.
+
+See [The Monitor API](#the-monitor-api) for all functions.
+
+## Remove the shared memory
+
+Remove the objects of a session only when no device of the session runs.
+
+### With fairmq-shmmonitor
+
+```sh
+fairmq-shmmonitor --cleanup --session default
+fairmq-shmmonitor --cleanup --shmid eca859e3
+```
+
+The tool reads the lists in the management segment. It removes each region with its queue and its
+reference count segment, each managed segment, the management segment and the monitor mutex
+`sem.fmq_<shmId>_ms`. The transport does not register a file-backed region, so the tool does not
+remove its file. The output shows each object that it removed. For a session with one managed
+segment, no regions and no monitor, the output is:
+
+```txt
+Cleaning up for shared memory id 'eca859e3'...
+Found 0 unmanaged regions...
+Found 1 managed segments...
+Successfully removed 'fmq_eca859e3_m_0'.
+Successfully removed 'fmq_eca859e3_mng'.
+```
+
+Objects that do not exist give a message only at the severity `debug`. If the management segment
+does not exist, the tool cannot find the other objects. It prints "Did not find
+'fmq_eca859e3_mng' management segment. No regions to cleanup." Then remove the files by hand.
+
+### From code
+
+[`Monitor::Cleanup()`](/api/fair/mq/shmem/Monitor/#Cleanup) removes the objects of the devices of a
+session. It returns a `std::vector` of pairs: the name of each object and `true` if it was removed.
+With `verbose = true` (the default), it writes each step to the log.
+[`Monitor::CleanupFull()`](/api/fair/mq/shmem/Monitor/#CleanupFull) also removes the monitor mutex.
+The command line option `--cleanup` calls `CleanupFull()`.
+
+This test keeps a segment with `--shm-no-cleanup` and then removes it:
+
+<Snippet file="test/transport/_shmem.cxx" start="TEST(Monitor, CleanupAfterNoCleanup)" />
+
+### By hand
+
+On Linux, Boost.Interprocess keeps the objects as files in `/dev/shm`. Remove the files of the
+shmId:
+
+```sh
+rm /dev/shm/fmq_eca859e3_*
+rm /dev/shm/sem.fmq_eca859e3_ms
+```
+
+A file-backed region is a file at `<path>fmq_<shmId>_rg_<id>`. Remove it at its path.
+
+### Reset the content
+
+`fairmq-shmmonitor --reset-content` is experimental. It removes all allocations in the managed
+segments of a session, but keeps the segments. It also removes the queues and the reference count
+segments of the regions. Use it only when no device uses the memory. In code, use
+[`Monitor::ResetContent()`](/api/fair/mq/shmem/Monitor/#ResetContent). The program `keep-alive` of
+the [region example](/examples/region/) calls it when it receives `SIGUSR1`.
+
+## Automatic cleanup with `--shm-monitor`
+
+With `--shm-monitor true`, the shmem transport makes sure that a monitor daemon runs for the
+session. The monitor removes the memory if all devices stop without cleanup.
+
+1. When the transport starts, it looks for the named mutex `sem.fmq_<shmId>_ms`. If the mutex
+   exists, a monitor runs, and the transport continues.
+2. Otherwise it looks for `fairmq-shmmonitor` in the directory `$FAIRMQ_PATH`, then in `$PATH`.
+3. It starts the monitor with this command
+   ([Manager.cxx](/source/fairmq/shmem/Manager.cxx/#L26-L53)):
+
+   ```sh
+   fairmq-shmmonitor -x -m --shmid <shmId> -d -t 2000
+   ```
+
+4. It waits up to 10000 ms for the named mutex of the monitor.
+
+If the transport cannot find `fairmq-shmmonitor`, it writes a warning and continues without a
+monitor:
+
+```txt
+could not find fairmq-shmmonitor in "$FAIRMQ_PATH:$PATH"
+```
+
+If the monitor does not create its mutex in time, the transport throws, and the device goes to the
+state `ERROR`. The error is "Could not initialize shared memory transport: Did not get response
+from fairmq-shmmonitor after 10000 milliseconds. Exiting."
+
+Set the environment variable `FAIRMQ_SHMMONITOR_VERBOSE=true` to add `--verbose`. The monitor then
+writes its log to a file. The start scripts of the examples set `FAIRMQ_PATH` for the search in
+step 2.
+
+### What the daemon does
+
+The command above starts the monitor mode (`-m`) as a daemon (`-d`), with self-destruction (`-x`)
+and a heartbeat timeout of 2000 ms (`-t 2000`).
+
+- Each shmem transport increments the heartbeat in the management segment every 100 ms.
+- The monitor reads the heartbeat every 200 ms and looks for the management segment every 100 ms.
+- If the heartbeat does not change for more than 2000 ms, the monitor removes all objects of the
+  session. Then it stops.
+- If the management segment disappears, the devices removed the memory. The monitor stops.
+- If the monitor finds no management segment within 4000 ms (2 × timeout) after its start, it
+  stops.
+- When the monitor stops, it removes its mutex `sem.fmq_<shmId>_ms`.
+
+The heartbeat stops only when all transports of the session stop. If one device crashes, the
+monitor waits for the other devices. When they stop, the device counter is not 0, so they do not
+remove the memory. Then the heartbeat stops, and the monitor removes the memory.
+
+The monitor writes these messages to its log:
+
+```txt
+no heartbeats since over 2000 milliseconds, cleaning...
+self destructing (segment has been observed and cleaned up by the monitor)
+self destructing (segment has been observed and cleaned up orderly)
+self destructing (no segments observed within (timeout * 2) since start)
+```
+
+:::caution[`--shm-monitor` removes memory that must stay]
+Do not use `--shm-monitor true` together with `--shm-no-cleanup true`. The monitor removes the
+memory 2000 ms after the last heartbeat. The start script `fairmq-start-ex-region-advanced-external.sh`
+uses `--shm-monitor false` for this reason.
+:::
+
+An interactive monitor (`fairmq-shmmonitor -i`) also holds the mutex `sem.fmq_<shmId>_ms`. While it
+runs, the transports do not start a daemon. The interactive mode does not remove memory after a
+heartbeat timeout. See [fairmq-shmmonitor](/tools/shmmonitor/#interactive-mode).
+
+## Clean up after a crash
+
+A device that crashes leaves the objects of its session. Select one of these ways to remove them.
+Each cleanup must run only after all devices of the session stopped.
+
+| Way | It works | It does not work |
+| --- | --- | --- |
+| A shell trap in the start script | When the script ends, also after an error with `set -e`, `SIGTERM`, `SIGINT` or `SIGHUP` (Bash behavior). | When the script itself gets `SIGKILL`, or when the host stops. |
+| A CTest cleanup test | After the tests that require the fixture, also when they fail or time out (CTest behavior). | When `ctest` itself stops. The session name must be fixed in CMake. |
+| [`--shm-monitor true`](#automatic-cleanup-with---shm-monitor) | 2000 ms after the last heartbeat, also after `kill -9` of all devices. The daemon runs in its own process session (`setsid()`), so a signal to the process group of the devices does not stop it. | Without `fairmq-shmmonitor` in `$FAIRMQ_PATH` or `$PATH`, or when the monitor stops together with the devices. It also removes the memory of devices with `--shm-no-cleanup true`. |
+| A private `/dev/shm` for each Slurm job | At the end of each job (Slurm behavior). | For devices in different jobs: they cannot share memory. It needs a configuration by the administrator. |
+| [By hand](#remove-the-shared-memory): `fairmq-shmmonitor --cleanup`, or `rm` of the [files of the session](/shmem/sessions/#the-shared-memory-objects) | At all times when no device of the session runs. | You must know the session name or the shmId. |
+
+### A shell trap
+
+Stop the devices first, then remove the memory. In Bash, the trap `EXIT` also runs when the script
+ends because of an error with `set -e`, or because of `SIGTERM`, `SIGINT` or `SIGHUP`. It does not
+run on `SIGKILL`.
+
+```sh title="run-1-1.sh"
+#!/bin/bash
+set -e
+session="$(fairmq-uuid-gen -h)"
+addr="ipc:///tmp/fmq_${session}_data"
+
+cleanup() {
+    set +e
+    kill -TERM $SAMPLER_PID $SINK_PID 2>/dev/null
+    wait $SAMPLER_PID $SINK_PID
+    fairmq-shmmonitor --cleanup --session "$session"
+}
+trap cleanup EXIT
+
+fairmq-ex-1-1-sampler --id sampler1 --transport shmem --session "$session" \
+  --control static --rate 1 --max-iterations 10 \
+  --channel-config name=data,type=push,method=bind,address=$addr &
+SAMPLER_PID=$!
+fairmq-ex-1-1-sink --id sink1 --transport shmem --session "$session" \
+  --control static --max-iterations 10 \
+  --channel-config name=data,type=pull,method=connect,address=$addr &
+SINK_PID=$!
+wait $SAMPLER_PID $SINK_PID
+```
+
+After a normal end, the devices removed the memory already, and `fairmq-shmmonitor` only reports
+that it did not find the management segment. The short forms of the options are `-c` and `-s`.
+The test scripts of the examples (`examples/*/test-ex-*.sh.in`) set their traps on `TERM` only.
+
+### A CTest cleanup test
+
+The tests of FairMQ do not use CTest fixtures. In your project, give the cleanup test the
+property `FIXTURES_CLEANUP`. CTest runs it after all tests that give the same fixture name in
+`FIXTURES_REQUIRED`, also when they fail (CMake 3.7 or later). Give the topology test and the
+cleanup test the same session name:
+
+```cmake
+add_test(NAME topology COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run-topology.sh ci-topology)
+add_test(NAME topology-shm-cleanup
+         COMMAND $<TARGET_FILE:FairMQ::fairmq-shmmonitor> --cleanup --session ci-topology)
+set_tests_properties(topology PROPERTIES FIXTURES_REQUIRED shm)
+set_tests_properties(topology-shm-cleanup PROPERTIES FIXTURES_CLEANUP shm)
+```
+
+`FairMQ::fairmq-shmmonitor` is the imported target of the tool. See
+[Imported targets](/reference/cmake/#imported-targets).
+
+### A private /dev/shm for each Slurm job
+
+The Slurm plugin `job_container/tmpfs` gives each job a private `/tmp` and `/dev/shm`. From Slurm
+25.11, the plugin has the name `namespace/tmpfs`. When the job ends, Slurm removes all files in them
+(Slurm behavior). The administrator sets it in `slurm.conf` and in
+[`job_container.conf`](https://slurm.schedmd.com/job_container.conf.html). All devices of
+one session must then run in the same job.
+
+## The Monitor API
+
+Include `<fairmq/shmem/Monitor.h>`. The class is in the FairMQ library. All functions in this table
+are static. They take a `ShmId` or a `SessionId` as the first argument. `PrintShm()` takes only a
+`ShmId`. `ListAll()` and the `Remove…()` functions take a path or a name.
+
+| Function | What it does |
+| --- | --- |
+| [`Cleanup(id, verbose = true)`](/api/fair/mq/shmem/Monitor/#Cleanup) | Removes the regions, their queues and reference count segments, the managed segments and the management segment. |
+| [`CleanupFull(id, verbose = true)`](/api/fair/mq/shmem/Monitor/#CleanupFull) | `Cleanup()`, and removes the monitor mutex. |
+| [`ResetContent(id, verbose = true)`](/api/fair/mq/shmem/Monitor/#ResetContent) | Experimental. Removes all allocations in the managed segments, and the queues and reference count segments of the regions. |
+| [`ResetContent(id, segmentCfgs, regionCfgs, verbose = true)`](/api/fair/mq/shmem/Monitor/#ResetContent-3) | Experimental. Makes the management segment again, registers the given [`SegmentConfig`](/api/fair/mq/shmem/SegmentConfig/) and `RegionConfig` entries, then resets the content. |
+| [`PrintShm(shmId)`](/api/fair/mq/shmem/Monitor/#PrintShm) | Prints the status of the session. Returns `false` if the session does not exist. |
+| [`ListAll(path)`](/api/fair/mq/shmem/Monitor/#ListAll) | Prints the status of all sessions in a directory. |
+| [`SegmentIsPresent(id, segmentId)`](/api/fair/mq/shmem/Monitor/#SegmentIsPresent) | Returns `true` if the managed segment can be opened. |
+| [`RegionIsPresent(id, regionId)`](/api/fair/mq/shmem/Monitor/#RegionIsPresent) | Returns `true` if the region can be opened. |
+| [`GetFreeMemory(id, segmentId)`](/api/fair/mq/shmem/Monitor/#GetFreeMemory) | Returns the free bytes of a managed segment. Throws `MonitorError`. |
+| [`PrintDebugInfo(id)`](/api/fair/mq/shmem/Monitor/#PrintDebugInfo) | Prints the messages in the segments. Needs `FAIRMQ_DEBUG_MODE`. |
+| [`GetDebugInfo(id)`](/api/fair/mq/shmem/Monitor/#GetDebugInfo) | Returns the messages in the segments. Needs `FAIRMQ_DEBUG_MODE`. See the caution below. |
+| [`RemoveObject(name)`](/api/fair/mq/shmem/Monitor/#RemoveObject), [`RemoveFileMapping()`](/api/fair/mq/shmem/Monitor/#RemoveFileMapping), [`RemoveQueue()`](/api/fair/mq/shmem/Monitor/#RemoveQueue), [`RemoveMutex()`](/api/fair/mq/shmem/Monitor/#RemoveMutex), [`RemoveCondition()`](/api/fair/mq/shmem/Monitor/#RemoveCondition) | Remove one object by its full name. Return `true` if it was removed. |
+
+:::caution[GetDebugInfo()]
+`GetDebugInfo()` has a known defect: it writes out of the bounds of its result vectors and returns
+empty lists. Its test is disabled. Use `PrintDebugInfo()` or `fairmq-shmmonitor --debug`.
+:::
+
+The tool `fairmq-shmmonitor` also uses a `Monitor` object: the constructor
+[`Monitor()`](/api/fair/mq/shmem/Monitor/#Monitor) takes the shmId and the mode flags.
+[`CatchSignals()`](/api/fair/mq/shmem/Monitor/#CatchSignals) handles `SIGINT` and `SIGTERM`, and
+[`Run()`](/api/fair/mq/shmem/Monitor/#Run) runs the mode. If a monitor runs already for the shmId
+and the view-only flag is `false`, the constructor throws
+[`DaemonPresent`](/api/fair/mq/shmem/Monitor/DaemonPresent/).
+
+## Related pages
+
+- [fairmq-shmmonitor](/tools/shmmonitor/): all options and modes of the tool.
+- [Sessions and segments](/shmem/sessions/): the objects of a session and their names.
+- [Tune and debug](/shmem/tuning/): debug mode and the list of messages.
+- [Command-line options](/reference/options/): `--shm-monitor` and `--shm-no-cleanup`.
+- [Test your devices](/guides/test-devices/#clean-up-shared-memory-after-a-failed-test): clean up after a failed test.

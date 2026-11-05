@@ -1,0 +1,186 @@
+---
+title: 'n-m: n senders to m receivers'
+description: 'Three senders send each timeframe to one of four receivers, and the receiver collects the parts of all senders; with push/pull or pair channels.'
+sidebar:
+  order: 13
+code: [fairmq/Device.h, fairmq/Parts.h, fairmq/Channel.h, fairmq/Device.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { FileTree } from '@astrojs/starlight/components';
+
+In this example, three senders and four receivers exchange timeframes. A synchronizer gives each timeframe an id. Each sender sends its part of the timeframe to the receiver that the id selects, and that receiver collects the parts of all senders.
+
+The code is in [`examples/n-m`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/n-m). The example shows how to:
+
+- send one message to all senders on a `pub`/`sub` [channel](/concepts/channels/),
+- select the [sub-channel](/concepts/channels/) for each message with the index argument of `Send()`,
+- send without a wait (timeout 0 ms),
+- collect the [parts](/concepts/messages/) of one timeframe from several senders,
+- connect n senders to m receivers with `push`/`pull` channels or with `pair` channels.
+
+## Topology
+
+### Push and pull
+
+`fairmq-start-ex-n-m.sh` starts one synchronizer, three senders and four receivers:
+
+| Device | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- |
+| `Sync` | `sync` | `pub` | `bind` | `tcp://localhost:8010` |
+| `Sender1`, `Sender2`, `Sender3` | `sync` | `sub` | `connect` | `tcp://localhost:8010` |
+| | `data` | `push` | `connect` | `tcp://localhost:8021`, `tcp://localhost:8022`, `tcp://localhost:8023`, `tcp://localhost:8024` |
+| `Receiver1` | `data` | `pull` | `bind` | `tcp://localhost:8021` |
+| `Receiver2` | `data` | `pull` | `bind` | `tcp://localhost:8022` |
+| `Receiver3` | `data` | `pull` | `bind` | `tcp://localhost:8023` |
+| `Receiver4` | `data` | `pull` | `bind` | `tcp://localhost:8024` |
+
+The `data` channel of a sender has four sub-channels. Sub-channel 0 connects to `Receiver1`, sub-channel 3 to `Receiver4`.
+
+The devices get these options:
+
+- `Sync`: `--rate 100`.
+- `Sender1`, `Sender2`, `Sender3`: `--sender-index 0`, `1` or `2`, `--subtimeframe-size 1000000` and `--num-receivers 4`.
+- The receivers: `--num-senders 3`.
+
+### Pair
+
+`fairmq-start-ex-n-m-pair.sh` starts the same devices with the same options. The `data` channels are `pair` channels, and each sub-channel connects one sender to one receiver:
+
+| Device | Channel | Type | Method | Ports of the sub-channels |
+| --- | --- | --- | --- | --- |
+| `Sender1` | `data` | `pair` | `connect` | 8021, 8022, 8023, 8024 |
+| `Sender2` | `data` | `pair` | `connect` | 8031, 8032, 8033, 8034 |
+| `Sender3` | `data` | `pair` | `connect` | 8041, 8042, 8043, 8044 |
+| `Receiver1` | `data` | `pair` | `bind` | 8021, 8031, 8041 |
+| `Receiver2` | `data` | `pair` | `bind` | 8022, 8032, 8042 |
+| `Receiver3` | `data` | `pair` | `bind` | 8023, 8033, 8043 |
+| `Receiver4` | `data` | `pair` | `bind` | 8024, 8034, 8044 |
+
+All addresses are `tcp://localhost:<port>`. The `sync` channels are the same as in the push and pull topology.
+
+### DDS
+
+`fairmq-start-ex-n-m-dds.sh` and `fairmq-start-ex-n-m-pair-dds.sh` start the devices with DDS. They use the topology files `ex-n-m-topology.xml` and `ex-n-m-pair-topology.xml`. The channels have no addresses, and each task loads the DDS plugin with `-P dds`. The files set the variables `numSenders` to 3 and `numReceivers` to 4. The table shows these values. DDS starts the task of a group `n` times and replaces `%taskIndex%` with the index of the task.
+
+| Task | Instances | Channel | Type | Method | Options |
+| --- | --- | --- | --- | --- | --- |
+| `Synchronizer` | 1 | `sync` | `pub` | `bind` | `--id sync`, `--rate 100` |
+| `Sender` | 3 (group `Senders`) | `sync` | `sub` | `connect` | `--id sender%taskIndex%`, `--num-receivers 4` |
+| | | `data` | `push` or `pair` | `connect` | `numSockets=4` |
+| `Receiver` | 4 (group `Receivers`) | `data` | `pull` or `pair` | `bind` | `--id receiver%taskIndex%`, `--num-senders 3`, `--max-timeframes 10` |
+
+In the pair topology, the `data` channel of a receiver has `numSockets=3`. Each sender also gets `--dds-i data:%taskIndex%`. With this option, the DDS plugin of FairMQ v1.4.56 took address number `%taskIndex%` from the addresses that each receiver published for `data`.
+
+The topology files give the senders `--timeframe-size 100000`. The sender has no such option. The device logs it as an unregistered option on the severity `debug` and ignores it. Thus the senders use the default `--subtimeframe-size` of 1000 bytes. The files also give no `--sender-index`, so all senders use the index 0.
+
+## Requirements
+
+- `fairmq-start-ex-n-m.sh` and `fairmq-start-ex-n-m-pair.sh` open one `xterm` window for each device. `xterm` must be installed. These scripts do not need DDS.
+- The two DDS scripts need DDS, a DDS plugin for FairMQ and `fairmq-dds-command-ui`. DDS is not part of FairMQ. FairMQ v1.5.0 and later do not contain the plugin and the tool. See [dds: run with DDS](/examples/dds/#requirements).
+
+## Build and run
+
+The examples build when the CMake option `BUILD_EXAMPLES` is `ON` (the default). CMake writes these files to the build directory:
+
+<FileTree>
+
+- build/examples/n-m/
+  - fairmq-ex-n-m-synchronizer
+  - fairmq-ex-n-m-sender
+  - fairmq-ex-n-m-receiver
+  - fairmq-start-ex-n-m.sh
+  - fairmq-start-ex-n-m-pair.sh
+  - fairmq-start-ex-n-m-dds.sh
+  - fairmq-start-ex-n-m-pair-dds.sh
+  - fairmq-ex-n-m-env.sh
+  - ex-n-m-topology.xml
+  - ex-n-m-pair-topology.xml
+
+</FileTree>
+
+The scripts take no arguments:
+
+```sh
+cd build/examples/n-m
+./fairmq-start-ex-n-m.sh
+./fairmq-start-ex-n-m-pair.sh
+```
+
+The devices use the interactive controller. Type `q` in a window to end its device.
+
+The DDS scripts call `dds-submit -r localhost --slots 8`. They request the transitions with `fairmq-dds-command-ui`, in the same sequence as the [dds example](/examples/dds/). They wait until all receivers go from `RUNNING` to `READY`, and then they stop all devices.
+
+The install step copies the executables and the scripts to `bin`, and the topology files to `share/fairmq` in the install prefix.
+
+## The code
+
+### Synchronizer: one id for each timeframe
+
+[`ConditionalRun()`](/api/fair/mq/Device/#ConditionalRun) sends a 2-byte id on the `pub` channel `sync`. All senders receive it. With `--rate 100`, the synchronizer sends at most 100 ids per second.
+
+<Snippet file="examples/n-m/synchronizer.cxx" start="bool ConditionalRun() override" />
+
+After the id 65533, the next id is 0. If a send fails, `ConditionalRun()` returns `false`, and the device goes to `READY`.
+
+### Sender: select the receiver
+
+The parts of a timeframe start with this header:
+
+<Snippet file="examples/n-m/Header.h" start="struct Header" />
+
+The sender has its own `Run()` loop. It receives an id from `sync` with [`Channel::Receive()`](/api/fair/mq/Channel/#Receive). Then it sends a multipart message: the header, and a message of `--subtimeframe-size` bytes (default 1000).
+
+<Snippet file="examples/n-m/sender.cxx" start="void Run() override" />
+
+- The id modulo `--num-receivers` selects the sub-channel of `data`. Thus all senders send the parts of one id to the same receiver.
+- The last argument of [`Send()`](/api/fair/mq/Device/#Send-2) is a timeout of 0 ms, so `Send()` does not wait. If the queue of the sub-channel is full, `Send()` returns a negative value. The sender then logs `Failed to queue Subtimeframe #<id> to Receiver[<n>]` on the severity `debug` and drops the parts.
+- `--num-receivers` has no default. The device does not start without it.
+
+### Receiver: collect the parts
+
+The receiver registers `HandleData()` for the multipart messages of `data` with [`OnData()`](/api/fair/mq/Device/#OnData-3). It moves part 1 into a buffer for the id of the header. When the buffer has `--num-senders` parts, the timeframe is complete.
+
+<Snippet file="examples/n-m/receiver.cxx" start="bool HandleData(fair::mq::Parts& parts, int /* index */)" />
+
+- With `--max-timeframes` greater than 0, the receiver leaves `RUNNING` after that number of complete timeframes. The default is 0 (no limit).
+- `--num-senders` has no default. The device does not start without it.
+- In the pair topology, the `data` channel of a receiver has three sub-channels. The device then polls all sub-channels and calls `HandleData()` with the index of the sub-channel. See [Poll several channels](/guides/poll-channels/).
+
+`DiscardIncompleteTimeframes()` removes the timeframes that are older than `--buffer-timeout` (default 1000 ms). The example never calls this function. Thus `--buffer-timeout` has no effect, and an incomplete timeframe stays in the buffer.
+
+## Output
+
+Each receiver logs each complete timeframe:
+
+```txt
+Successfully completed timeframe #<id>
+```
+
+With `--max-timeframes`, the receiver logs this line when it leaves `RUNNING`:
+
+```txt
+Reached configured maximum number of timeframes (10). Exiting RUNNING state.
+```
+
+The synchronizer and the senders log no lines of their own on the severity `info`. In `RUNNING`, each device logs the message rate and the data rate of each sub-channel every second, in the form `data[0]: in: <rate> (<rate> MB) out: <rate> (<rate> MB)`. The channel property `rateLogging` sets the interval in seconds (default 1, `0` turns it off).
+
+## Test
+
+The example has no test. In `CMakeLists.txt`, the tests `Example.N-M.localhost` and `Example.N-M-pair.localhost` are comments. They run the two DDS scripts with a timeout of 15 s and expect the output `Example successful`.
+
+## Things to try
+
+- Add `--max-timeframes 10` to the receivers in `fairmq-start-ex-n-m.sh`. Each receiver then goes to `READY` after 10 complete timeframes.
+- End one sender with `q`. The receivers then get only two parts for each id, so no timeframe is complete. The buffers of the receivers grow, because the example does not discard incomplete timeframes.
+- Add `--severity debug` to the senders and end one receiver with `q`. When the queue of that sub-channel is full, the senders log `Failed to queue Subtimeframe #<id> to Receiver[<n>]`.
+- Change `--subtimeframe-size` or the `--rate` of the synchronizer, and look at the rates of the `data` sub-channels.
+
+## Related pages
+
+- [Channels and sockets](/concepts/channels/)
+- [Messages and multipart](/concepts/messages/)
+- [Poll several channels](/guides/poll-channels/)
+- [dds: run with DDS](/examples/dds/)
+- [Errors and timeouts](/guides/errors-timeouts/)
+- [Design a topology](/guides/design-topology/#n-senders-to-m-receivers)
