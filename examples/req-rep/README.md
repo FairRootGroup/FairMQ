@@ -1,4 +1,6 @@
-Request & Reply example
-=======================
+# Example req-rep: request and reply
 
-This topology contains two devices that communicate with each other via the **REQ-REP** pettern. Bidirectional communication via a single socket.
+A client sends a request on a req socket and waits for the reply. A server answers on a rep socket of the same channel.
+
+The documentation explains the code, the topology and the commands:
+<https://fairrootgroup.github.io/FairMQ/examples/req-rep/>
