@@ -1,5 +1,6 @@
-Region example
-==============
+# Example region: unmanaged regions
 
-This example demonstrates the use of a more advanced feature - UnmanagedRegion, that can be used to create a buffer through one of FairMQ transports. The contents of this buffer are managed by the user, who can also create messages out of sub-buffers of the created buffer. Such feature can be interesting in environments that have special requirements by the hardware that writes the data, to keep the transfer efficient (e.g. shared memory).
+A sampler sends messages from an unmanaged region and counts the acknowledgements; a larger topology shares the region data with four sinks.
 
+The documentation explains the code, the topology and the commands:
+<https://fairrootgroup.github.io/FairMQ/examples/region/>

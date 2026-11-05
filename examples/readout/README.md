@@ -1,27 +1,6 @@
-# Readout example
+# Example readout: a readout chain
 
-This examples shows two possible topologies (out of many) for a node connected to a detector readout (followed by a processing node).
+A readout node passes region messages over shmem channels and sends them to a receiver over zeromq, with or without a processor.
 
-## Setup without new data generation
-
-```
-|------------------------------- Readout Node ---------------------------|     |- Processing Node -|
-| Readout            -->            Builder          -->          Sender | --> |     Receiver      |
-| [# shared memory segment (unused in this topology) ##################] | zmq |                   |
-| [# shmem unmanaged region (readout writes here, others read) ########] |     |                   |
-|------------------------------------------------------------------------|     |-------------------|
-```
-
-The devices one the Readout Node communicate via shared memory transport. Readout device writes into shared memory unmanaged region. The data is then forwarded through Builder to Sender process, which sends it out via zeromq transport.
-
-## Setup with generating new data on the Readout node
-
-```
-|------------------------------- Readout Node ---------------------------|     |- Processing Node -|
-| Readout     -->     Builder      -->      Processor     -->     Sender | --> |     Receiver      |
-| [# shared memory segment (used between Proccessor and Sender) #######] | zmq |                   |
-| [# shmem unmanaged region (readout writes here, builder & proc read) ] |     |                   |
-|------------------------------------------------------------------------|     |-------------------|
-```
-
-In this topology one more device is added - Processor. It examines the arriving data and creates new data in shared memory. This data is not part of the unmanaged region, but lives in the general shared memory segment (unused in the previous setup). This new data is then forwarded to Sender and the Readout device is notified that the corresponding data piece in the unmanaged region is no longer used.
+The documentation explains the code, the topology and the commands:
+<https://fairrootgroup.github.io/FairMQ/examples/readout/>
