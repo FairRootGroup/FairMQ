@@ -666,3 +666,25 @@ html[data-has-hero] {
 html[data-has-hero] .content-panel {
   padding-top: 1rem;
 }
+
+/* Wide screens: Starlight lets the table of contents grow with the window, so a wide window
+   shows a large empty column at the right. Keep the table of contents narrow and center the
+   content in the space between the two sidebars. */
+@media (min-width: 72rem) {
+  .right-sidebar-container {
+    width: min(
+      max(var(--sl-sidebar-width), calc(var(--sl-sidebar-width) + (100% - var(--sl-content-width) - var(--sl-sidebar-width)) / 2)),
+      calc(var(--sl-sidebar-width) + 3rem)
+    );
+  }
+  [data-has-sidebar][data-has-toc] .main-pane {
+    --sl-content-margin-inline: auto;
+    width: calc(100% - min(
+      max(var(--sl-sidebar-width), calc(var(--sl-sidebar-width) + (100% - var(--sl-content-width) - var(--sl-sidebar-width)) / 2)),
+      calc(var(--sl-sidebar-width) + 3rem)
+    ));
+  }
+}
+@media (min-width: 110rem) {
+  :root { --sl-content-width: 52rem; }
+}
