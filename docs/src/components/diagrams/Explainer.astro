@@ -1,0 +1,331 @@
+---
+// A step-by-step explainer: a dark stage with an SVG, a caption, a line of code and controls.
+// The slot holds the SVG. It must have the attribute data-stage. For step n (1-based), the
+// script sets the classes r1 … rn and now<n> on the SVG, so CSS can show each step. Elements
+// with data-slot="name" get the text of step.set[name].
+interface Step {
+  cap: string;
+  code?: string;
+  set?: Record<string, string>;
+}
+interface Props {
+  title: string;
+  meta?: string;
+  steps: Step[];
+}
+const { title, meta, steps } = Astro.props;
+---
+
+<div class="fmq-ex not-content" tabindex="0" aria-label={`${title}. Explainer in ${steps.length} steps. Use the arrow keys to step.`} data-steps={JSON.stringify(steps)}>
+  <div class="ex-top">
+    <b>{title}</b>
+    {meta && <span>{meta}</span>}
+  </div>
+  <slot />
+  <div class="ex-foot">
+    <p class="ex-cap" aria-live="polite">{steps[0].cap}</p>
+    <code class="ex-line">{steps[0].code}</code>
+  </div>
+  <div class="ex-ctl">
+    <button class="ex-b" type="button" data-act="restart" aria-label="Start again"
+      ><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 2v10" stroke="currentColor" stroke-width="1.6"></path><path d="M12 2L5 7l7 5z" fill="currentColor"></path></svg></button
+    >
+    <button class="ex-b" type="button" data-act="prev" aria-label="Previous step"
+      ><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M10 2L4 7l6 5z" fill="currentColor"></path></svg></button
+    >
+    <button class="ex-b" type="button" data-act="play" aria-label="Play" data-state="play"
+      ><svg class="i-play" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 2l9 5-9 5z" fill="currentColor"></path></svg><svg
+        class="i-pause"
+        viewBox="0 0 14 14"
+        aria-hidden="true"><path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"></path></svg
+      ></button
+    >
+    <button class="ex-b" type="button" data-act="next" aria-label="Next step"
+      ><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 2l6 5-6 5z" fill="currentColor"></path></svg></button
+    >
+    <div class="ex-ticks">
+      {
+        steps.map((_, k) => (
+          <button type="button" aria-label={`Step ${k + 1}`} data-step={k}>
+            {k + 1}
+          </button>
+        ))
+      }
+    </div>
+    <span class="ex-count">1 / {steps.length}</span>
+  </div>
+  <details class="ex-text">
+    <summary>All steps as text</summary>
+    <ol>
+      {
+        steps.map((s) => (
+          <li>
+            {s.cap}
+            {s.code && (
+              <>
+                {' '}
+                <code>{s.code}</code>
+              </>
+            )}
+          </li>
+        ))
+      }
+    </ol>
+  </details>
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('.fmq-ex')) {
+    const steps: { cap: string; code?: string; set?: Record<string, string> }[] = JSON.parse(root.dataset.steps!);
+    const svg = root.querySelector<SVGSVGElement>('svg[data-stage]')!;
+    const baseClass = svg.getAttribute('class') ?? '';
+    const cap = root.querySelector('.ex-cap')!;
+    const line = root.querySelector<HTMLElement>('.ex-line')!;
+    const play = root.querySelector<HTMLButtonElement>('[data-act=play]')!;
+    const count = root.querySelector('.ex-count')!;
+    const ticks = [...root.querySelectorAll<HTMLButtonElement>('[data-step]')];
+    const slots = [...svg.querySelectorAll<SVGElement>('[data-slot]')];
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let i = 0;
+    let playing = false;
+    let timer = 0;
+    let seen = false;
+    const show = (n: number) => {
+      i = Math.max(0, Math.min(steps.length - 1, n));
+      const st = i + 1;
+      const c = [baseClass];
+      for (let k = 1; k <= st; k++) c.push('r' + k);
+      c.push('now' + st);
+      svg.setAttribute('class', c.join(' ').trim());
+      cap.textContent = steps[i].cap;
+      line.textContent = steps[i].code ?? '';
+      line.hidden = !steps[i].code;
+      for (const el of slots) el.textContent = steps[i].set?.[el.dataset.slot!] ?? '';
+      ticks.forEach((b, k) => {
+        b.classList.toggle('done', k < i);
+        b.classList.toggle('on', k === i);
+        if (k === i) b.setAttribute('aria-current', 'step');
+        else b.removeAttribute('aria-current');
+      });
+      count.textContent = `${st} / ${steps.length}`;
+    };
+    const pause = () => {
+      playing = false;
+      clearTimeout(timer);
+      play.dataset.state = 'play';
+      play.setAttribute('aria-label', 'Play');
+    };
+    const step = () => {
+      if (!playing) return;
+      if (i >= steps.length - 1) return pause();
+      show(i + 1);
+      timer = window.setTimeout(step, 4200);
+    };
+    const start = () => {
+      if (i >= steps.length - 1) show(0);
+      playing = true;
+      play.dataset.state = 'pause';
+      play.setAttribute('aria-label', 'Pause');
+      clearTimeout(timer);
+      timer = window.setTimeout(step, 3400);
+    };
+    root.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest('button');
+      if (!b) return;
+      const act = b.dataset.act;
+      if (act === 'play') return playing ? pause() : start();
+      pause();
+      if (act === 'prev') show(i - 1);
+      else if (act === 'next') show(i + 1);
+      else if (act === 'restart') show(0);
+      else if (b.dataset.step) show(Number(b.dataset.step));
+    });
+    root.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        pause();
+        show(i + (e.key === 'ArrowRight' ? 1 : -1));
+      }
+    });
+    show(0);
+    if (!reduce && 'IntersectionObserver' in window) {
+      new IntersectionObserver(
+        (es) => {
+          for (const e of es) {
+            if (e.isIntersecting && !seen) {
+              seen = true;
+              start();
+            } else if (!e.isIntersecting && playing) pause();
+          }
+        },
+        { threshold: 0.6 }
+      ).observe(svg);
+    }
+  }
+</script>
+
+<style>
+  .fmq-ex {
+    background: var(--fmq-stage);
+    color: var(--fmq-stage-ink);
+    border: 1px solid var(--fmq-stage-rule);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-block: 1.5rem;
+  }
+  .fmq-ex:focus-visible {
+    outline: 2px solid var(--fmq-sky-bright);
+    outline-offset: 2px;
+  }
+  .ex-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6rem;
+    align-items: center;
+    padding: 0.75rem 1rem 0;
+    flex-wrap: wrap;
+  }
+  .ex-top b {
+    font: 800 0.95rem/1.2 var(--fmq-font-body);
+    font-stretch: 110%;
+  }
+  .ex-top span {
+    font: 500 0.75rem/1 var(--fmq-font-mono);
+    color: var(--fmq-stage-dim);
+  }
+  .fmq-ex :global(svg[data-stage]) {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .fmq-ex :global(svg[data-stage] text) {
+    font-family: var(--fmq-font-mono);
+  }
+  .ex-foot {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.6rem;
+    padding: 0.25rem 1.1rem 1rem;
+  }
+  .ex-cap {
+    font-size: 1.05rem;
+    line-height: 1.5;
+    margin: 0;
+    min-height: 4.6em;
+    max-width: 66ch;
+    color: var(--fmq-stage-ink);
+  }
+  code.ex-line {
+    font: 500 0.8125rem/1.4 var(--fmq-font-mono);
+    color: var(--fmq-saffron);
+    background: var(--fmq-stage-2);
+    border: 1px solid var(--fmq-stage-rule);
+    border-radius: 3px;
+    padding: 0.4rem 0.6rem;
+    justify-self: start;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  code.ex-line[hidden] {
+    display: block;
+    visibility: hidden;
+  }
+  .ex-ctl {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--fmq-stage-rule);
+    padding: 0.6rem 0.9rem;
+    background: var(--fmq-stage-2);
+  }
+  .ex-b {
+    width: 34px;
+    height: 32px;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid var(--fmq-stage-line);
+    background: transparent;
+    color: var(--fmq-stage-ink);
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0;
+  }
+  .ex-b:hover {
+    border-color: var(--fmq-stage-dim);
+  }
+  .ex-b svg {
+    width: 14px;
+    height: 14px;
+  }
+  .ex-b .i-pause {
+    display: none;
+  }
+  .ex-b[data-state='pause'] .i-pause {
+    display: block;
+  }
+  .ex-b[data-state='pause'] .i-play {
+    display: none;
+  }
+  .ex-ticks {
+    display: flex;
+    gap: 5px;
+    margin-inline-start: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .ex-ticks button {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--fmq-stage-line);
+    background: transparent;
+    color: var(--fmq-stage-dim);
+    font: 600 0.66rem/1 var(--fmq-font-mono);
+    cursor: pointer;
+    padding: 0;
+    border-radius: 2px;
+  }
+  .ex-ticks button:global(.done) {
+    background: var(--fmq-stage-line);
+    color: var(--fmq-stage-ink);
+  }
+  .ex-ticks button:global(.on) {
+    background: var(--fmq-saffron);
+    border-color: var(--fmq-saffron);
+    color: var(--fmq-on-saffron);
+  }
+  .ex-count {
+    margin-inline-start: auto;
+    font: 500 0.75rem/1 var(--fmq-font-mono);
+    color: var(--fmq-stage-dim);
+  }
+  .ex-text {
+    border-top: 1px solid var(--fmq-stage-rule);
+    padding: 0.55rem 1rem;
+    font-size: 0.875rem;
+    color: var(--fmq-stage-dim);
+  }
+  .ex-text summary {
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .ex-text ol {
+    margin: 0.5rem 0 0.25rem;
+    padding-inline-start: 1.4rem;
+    color: var(--fmq-stage-ink);
+    line-height: 1.55;
+  }
+  .ex-text li + li {
+    margin-top: 0.35rem;
+  }
+  .ex-text code {
+    font: 500 0.78rem var(--fmq-font-mono);
+    color: var(--fmq-saffron);
+    overflow-wrap: anywhere;
+  }
+  @media print {
+    .ex-ctl {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,142 @@
+---
+// Source browser: one page for each C++ file in fairmq/.
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { getCollection } from 'astro:content';
+import { paths } from 'virtual:fairmq/data';
+import { model, base, codeTheme, sourceSidebar, githubUrl, guidesForFile } from '../../lib/model.mjs';
+import { renderSourceFile } from '../../../scripts/source.mjs';
+import '../../styles/source.css';
+
+export function getStaticPaths() {
+  return model().sourceFiles.map((f: string) => ({ params: { path: f } }));
+}
+
+const file = Astro.params.path as string;
+const m = model();
+const out = await renderSourceFile(m, file, { theme: codeTheme(), repoRoot: paths.repoRoot });
+const fileRec = m.files.get(file);
+const defined = (fileRec?.defines ?? []).filter((c: any) => c.public);
+const isPublic = m.publicHeaders.has(file);
+const docs = await getCollection('docs');
+const guides = guidesForFile(docs, file);
+const name = file.split('/').pop();
+---
+
+<StarlightPage
+  frontmatter={{
+    title: name,
+    description: `Source of ${file} in FairMQ.`,
+    eyebrow: `Source · ${file.split('/').slice(0, -1).join('/')}/`,
+    titleKind: file.endsWith('.h') ? (isPublic ? 'public header' : 'header') : 'source',
+    searchTitle: file,
+    tableOfContents: false,
+    guides,
+  }}
+  sidebar={sourceSidebar()}
+  headings={[]}
+>
+  {
+    defined.length > 0 && (
+      <p class="src-defines">
+        Defines {defined.map((c: any) => `${c.kind} ${c.name}`).join(', ')}.
+      </p>
+    )
+  }
+  {
+    guides.length > 0 && (
+      <p class="src-guides">
+        Described in{' '}
+        {guides.map((g: any, i: number) => (
+          <>
+            {i > 0 && ', '}
+            <a href={`${base}${g.link}`}>{g.label}</a>
+          </>
+        ))}
+        .
+      </p>
+    )
+  }
+  <div class="src-head not-content">
+    <span class="src-path">{file}</span>
+    <span class="src-info">{out.lines} lines · C++</span>
+    <span class="src-acts">
+      {
+        defined.map((c: any) => (
+          <a class="fmq-badge mark" href={c.url}>
+            API: {c.short}
+          </a>
+        ))
+      }
+      <a class="fmq-badge" href={githubUrl(file)}>GitHub ↗</a>
+    </span>
+  </div>
+  <div class="src-code not-content" data-pagefind-ignore>
+    <pre><code set:html={out.html} /></pre>
+    <div class="src-card" role="tooltip" hidden></div>
+  </div>
+  <script type="application/json" id="src-symbols" set:html={JSON.stringify(out.symbols).replace(/</g, '\\u003c')} />
+</StarlightPage>
+
+<script>
+  // Line marks from the URL (#L10 or #L10-L20), shift-click to mark a range,
+  // and a card with the symbol on hover or focus.
+  const code = document.querySelector<HTMLElement>('.src-code');
+  if (code) {
+    const rows = () => code.querySelectorAll<HTMLElement>('.row.hl');
+    const mark = () => {
+      rows().forEach((r) => r.classList.remove('hl'));
+      const m = /^#L(\d+)(?:-L(\d+))?$/.exec(location.hash);
+      if (!m) return;
+      const a = Number(m[1]);
+      const b = Number(m[2] ?? m[1]);
+      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) document.getElementById(`L${i}`)?.classList.add('hl');
+    };
+    mark();
+    addEventListener('hashchange', mark);
+    code.addEventListener('click', (e) => {
+      const ln = (e.target as HTMLElement).closest<HTMLAnchorElement>('a.ln');
+      if (!ln || !e.shiftKey) return;
+      const cur = /^#L(\d+)/.exec(location.hash);
+      if (!cur) return;
+      e.preventDefault();
+      const to = ln.getAttribute('href')!.slice(2);
+      history.replaceState(null, '', `#L${cur[1]}-L${to}`);
+      mark();
+    });
+
+    const symbols = JSON.parse(document.getElementById('src-symbols')?.textContent ?? '[]');
+    const card = code.querySelector<HTMLElement>('.src-card')!;
+    let timer: number | undefined;
+    const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+    const show = (a: HTMLElement) => {
+      const s = symbols[Number(a.dataset.s)];
+      if (!s) return;
+      clearTimeout(timer);
+      card.innerHTML = `<span class="k">${esc(s.k)}</span><b>${esc(s.n)}</b>${s.s && s.s !== s.n ? `<code>${esc(s.s)}</code>` : ''}<span class="l">${esc(s.l)}</span>`;
+      card.hidden = false;
+      const box = code.getBoundingClientRect();
+      const r = a.getBoundingClientRect();
+      const left = Math.max(8, Math.min(r.left - box.left, box.width - card.offsetWidth - 8));
+      card.style.left = `${left}px`;
+      card.style.top = `${r.bottom - box.top + code.scrollTop + 6}px`;
+    };
+    const hide = () => {
+      timer = window.setTimeout(() => (card.hidden = true), 120);
+    };
+    code.addEventListener('pointerover', (e) => {
+      const a = (e.target as HTMLElement).closest<HTMLElement>('a.sym');
+      if (a) show(a);
+    });
+    code.addEventListener('pointerout', (e) => {
+      if ((e.target as HTMLElement).closest('a.sym')) hide();
+    });
+    code.addEventListener('focusin', (e) => {
+      const a = (e.target as HTMLElement).closest<HTMLElement>('a.sym');
+      if (a) show(a);
+    });
+    code.addEventListener('focusout', hide);
+    addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') card.hidden = true;
+    });
+  }
+</script>

@@ -1,0 +1,668 @@
+/*
+ * FairMQ theme for Starlight.
+ * Tokens for the light and dark theme, the type, and the styles that all pages share.
+ * Starlight sets data-theme="dark" or data-theme="light" on <html>. Dark is the base.
+ */
+
+:root {
+  --fmq-paper: #15171c;
+  --fmq-paper-2: #1b1e24;
+  --fmq-paper-3: #23272f;
+  --fmq-rule: #2f343e;
+  --fmq-rule-strong: #444a56;
+  --fmq-ink: #eceef2;
+  --fmq-ink-2: #b8bec9;
+  --fmq-ink-3: #9198a5;
+  --fmq-saffron: #fabe5d;
+  --fmq-saffron-tint: #3a3121;
+  --fmq-accent-ink: #fabe5d;
+  --fmq-bar: #fabe5d;
+  --fmq-on-saffron: #1a1a1a;
+  --fmq-link: #7ab8ec;
+  --fmq-link-tint: #16293b;
+  --fmq-teal: #4cc3a5;
+  --fmq-ruby: #f07aa8;
+  --fmq-ruby-tint: #3a1d2a;
+  --fmq-sky: #5cc0dd;
+  --fmq-sky-tint: #15303a;
+  --fmq-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 14px 36px -16px rgb(0 0 0 / 0.75);
+  --fmq-scrim: rgb(0 0 0 / 0.55);
+
+  /* Code, terminal and explainer stage are dark in both themes. */
+  --fmq-code-bg: #0f1115;
+  --fmq-code-rule: #2a2f38;
+  --fmq-code-ink: #e6e8ec;
+  --fmq-code-dim: #9aa1ad;
+  --fmq-c-kw: #fabe5d;
+  --fmq-c-type: #8cc8ef;
+  --fmq-c-fn: #ffffff;
+  --fmq-c-str: #a8d99b;
+  --fmq-c-num: #f4a597;
+  --fmq-c-com: #8d96a5;
+  --fmq-c-pre: #e5b3d3;
+  --fmq-c-op: #c3c8d1;
+  --fmq-stage: #111318;
+  --fmq-stage-2: #1a1d24;
+  --fmq-stage-line: #4a515d;
+  --fmq-stage-cell: #262b34;
+  --fmq-stage-ink: #eceef2;
+  --fmq-stage-dim: #9aa1ad;
+  --fmq-stage-rule: #2a2e37;
+  --fmq-sky-bright: #62c6e6;
+  --fmq-mint: #5fd0ac;
+
+  --fmq-font-body: 'Archivo Variable', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --fmq-font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Starlight */
+  --sl-font: var(--fmq-font-body);
+  --sl-font-mono: var(--fmq-font-mono);
+  --sl-color-white: var(--fmq-ink);
+  --sl-color-gray-1: #dde1e7;
+  --sl-color-gray-2: var(--fmq-ink-2);
+  --sl-color-gray-3: var(--fmq-ink-3);
+  --sl-color-gray-4: #6b7280;
+  --sl-color-gray-5: var(--fmq-rule-strong);
+  --sl-color-gray-6: var(--fmq-paper-2);
+  --sl-color-gray-7: var(--fmq-paper-2);
+  --sl-color-black: var(--fmq-paper);
+  --sl-color-accent-low: var(--fmq-link-tint);
+  --sl-color-accent: #3d8fd6;
+  --sl-color-accent-high: var(--fmq-link);
+  --sl-color-text: var(--fmq-ink);
+  --sl-color-text-accent: var(--fmq-link);
+  --sl-color-text-invert: var(--fmq-paper);
+  --sl-color-bg: var(--fmq-paper);
+  --sl-color-bg-nav: var(--fmq-paper);
+  --sl-color-bg-sidebar: var(--fmq-paper);
+  --sl-color-bg-inline-code: var(--fmq-paper-3);
+  --sl-color-bg-accent: var(--fmq-link);
+  --sl-color-hairline-light: var(--fmq-rule);
+  --sl-color-hairline: var(--fmq-rule);
+  --sl-color-hairline-shade: var(--fmq-rule);
+  --sl-color-backdrop-overlay: var(--fmq-scrim);
+  --sl-text-body: 1.0625rem;
+  --sl-text-code: 0.86rem;
+  --sl-text-code-sm: 0.86em;
+  --sl-line-height: 1.65;
+  --sl-line-height-headings: 1.15;
+  --sl-content-width: 46rem;
+  --sl-sidebar-width: 17.5rem;
+  --sl-nav-height: 3.5rem;
+
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --fmq-paper: #ffffff;
+  --fmq-paper-2: #f5f6f8;
+  --fmq-paper-3: #eceef2;
+  --fmq-rule: #dcdfe5;
+  --fmq-rule-strong: #c3c8d1;
+  --fmq-ink: #1a1a1a;
+  --fmq-ink-2: #464c57;
+  --fmq-ink-3: #646b78;
+  --fmq-saffron-tint: #fdf0d3;
+  --fmq-accent-ink: #8a5a00;
+  --fmq-bar: #b97800;
+  --fmq-link: #005ea8;
+  --fmq-link-tint: #e5eff8;
+  --fmq-teal: #00775f;
+  --fmq-ruby: #b10057;
+  --fmq-ruby-tint: #fbe7ef;
+  --fmq-sky: #0e8bae;
+  --fmq-sky-tint: #e3f3f8;
+  --fmq-shadow: 0 1px 2px rgb(20 24 33 / 0.06), 0 12px 32px -16px rgb(20 24 33 / 0.24);
+  --fmq-scrim: rgb(21 23 28 / 0.36);
+  --fmq-code-bg: #22262d;
+  --fmq-code-rule: #353a44;
+
+  --sl-color-gray-1: #2b2f36;
+  --sl-color-gray-4: #8b919c;
+  --sl-color-gray-6: var(--fmq-paper-3);
+  --sl-color-gray-7: var(--fmq-paper-2);
+  --sl-color-accent: #005ea8;
+  --sl-color-accent-high: #004a85;
+  --sl-color-text-invert: #ffffff;
+
+  color-scheme: light;
+}
+
+@media (min-width: 50em) {
+  :root {
+    --sl-nav-height: 3.75rem;
+    --sl-text-h1: 2.625rem;
+    --sl-text-h2: 1.75rem;
+    --sl-text-h3: 1.3125rem;
+    --sl-text-h4: 1.125rem;
+  }
+}
+
+/* ---------- Base ---------- */
+
+body {
+  font-stretch: 100%;
+}
+
+/* No ligatures: code must show the characters that are in the file. The font shorthand
+   resets font-variant-ligatures, so the rule must be important. */
+*,
+*::before,
+*::after {
+  font-variant-ligatures: none !important;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--fmq-font-mono);
+}
+
+:focus-visible {
+  outline: 2px solid var(--fmq-link);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--fmq-saffron) 45%, transparent);
+}
+
+.fmq-label {
+  font: 600 0.75rem/1.2 var(--fmq-font-body);
+  font-stretch: 88%;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fmq-ink-3);
+  margin: 0;
+}
+
+/* Eyebrow above the page title: label, then a short saffron bar. */
+.fmq-eyebrow {
+  font: 600 0.75rem/1.2 var(--fmq-font-body);
+  font-stretch: 88%;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fmq-ink-3);
+  margin: 1.25rem 0 0;
+}
+.fmq-eyebrow::after {
+  content: '';
+  display: block;
+  width: 1.75rem;
+  height: 3px;
+  background: var(--fmq-saffron);
+  margin: 0.6rem 0 0;
+}
+
+/* ---------- Content ---------- */
+
+.sl-markdown-content {
+  color: var(--fmq-ink);
+}
+
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6):not(:where(.not-content *)) {
+  color: var(--fmq-ink);
+  text-wrap: balance;
+}
+.sl-markdown-content h2:not(:where(.not-content *)) {
+  font-weight: 750;
+  font-stretch: 108%;
+  letter-spacing: -0.012em;
+  margin-top: 2.25em;
+}
+.sl-markdown-content h3:not(:where(.not-content *)) {
+  font-weight: 700;
+  font-stretch: 104%;
+  margin-top: 1.75em;
+}
+.sl-markdown-content h4:not(:where(.not-content *)) {
+  font-weight: 650;
+}
+
+/* The first paragraph of a page is its lead. */
+.sl-markdown-content > p:first-child {
+  font-size: 1.1875rem;
+  line-height: 1.55;
+  color: var(--fmq-ink-2);
+  max-width: 62ch;
+}
+
+.sl-markdown-content a:not(:where(.not-content *)) {
+  color: var(--fmq-link);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.sl-markdown-content a:hover:not(:where(.not-content *)) {
+  color: var(--fmq-ink);
+}
+
+.sl-markdown-content :not(pre) > code:not(:where(.not-content *)),
+.fmq-code-inline {
+  font-size: 0.86em;
+  background: var(--fmq-paper-3);
+  border: 1px solid var(--fmq-rule);
+  border-radius: 3px;
+  padding: 0.05em 0.35em;
+  overflow-wrap: anywhere;
+}
+/* Short inline code does not break at a hyphen (scripts/nowrap-code.mjs). */
+.sl-markdown-content code.nw {
+  white-space: nowrap;
+}
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6) code {
+  font-size: 0.9em;
+  border: 0;
+  background: none;
+  padding: 0;
+}
+
+/* Square bullets. */
+.sl-markdown-content ul:not(:where(.not-content *)) {
+  list-style: none;
+  padding-inline-start: 1.25rem;
+}
+.sl-markdown-content ul:not(:where(.not-content *)) > li {
+  position: relative;
+}
+.sl-markdown-content ul:not(:where(.not-content *)) > li::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -1.15rem;
+  top: 0.68em;
+  width: 6px;
+  height: 6px;
+  background: var(--fmq-saffron);
+  outline: 1px solid var(--fmq-bar);
+  outline-offset: -1px;
+}
+.sl-markdown-content ol:not(:where(.not-content *)) {
+  padding-inline-start: 1.5rem;
+}
+.sl-markdown-content ol:not(:where(.not-content *)) > li::marker {
+  font: 600 0.85em var(--fmq-font-mono);
+  color: var(--fmq-ink-3);
+}
+
+/* Tables */
+.sl-markdown-content table:not(:where(.not-content *)) {
+  font-size: 0.9375rem;
+  border-collapse: collapse;
+  width: 100%;
+}
+.sl-markdown-content th:not(:where(.not-content *)) {
+  text-align: start;
+  font: 600 0.7rem/1.2 var(--fmq-font-body);
+  font-stretch: 88%;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fmq-ink-3);
+  border-bottom: 1px solid var(--fmq-rule-strong);
+  white-space: nowrap;
+}
+.sl-markdown-content :is(th, td):not(:where(.not-content *)) {
+  padding: 0.55rem 0.75rem;
+  border-bottom-color: var(--fmq-rule);
+  vertical-align: top;
+}
+.sl-markdown-content td:not(:where(.not-content *)) {
+  border-bottom: 1px solid var(--fmq-rule);
+}
+.sl-markdown-content td:first-child code {
+  white-space: nowrap;
+}
+
+.sl-markdown-content hr:not(:where(.not-content *)) {
+  border: 0;
+  border-top: 1px solid var(--fmq-rule);
+}
+
+.sl-markdown-content blockquote:not(:where(.not-content *)) {
+  border-inline-start: 3px solid var(--fmq-saffron);
+  color: var(--fmq-ink-2);
+}
+
+.sl-markdown-content kbd,
+.fmq-kbd {
+  font: 600 0.8em/1 var(--fmq-font-mono);
+  border: 1px solid var(--fmq-rule-strong);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: 0.15em 0.4em;
+  background: var(--fmq-paper);
+  color: var(--fmq-ink);
+}
+
+/* Asides: square mark, quiet frame. */
+.starlight-aside {
+  border: 1px solid var(--fmq-rule);
+  border-inline-start: 3px solid var(--sl-color-asides-border);
+  background: var(--fmq-paper-2);
+  border-radius: 4px;
+  padding: 0.85rem 1rem;
+  font-size: 0.96875rem;
+}
+.starlight-aside--note {
+  --sl-color-asides-border: var(--fmq-sky);
+  --sl-color-asides-text-accent: var(--fmq-ink-2);
+}
+.starlight-aside--tip {
+  --sl-color-asides-border: var(--fmq-teal);
+  --sl-color-asides-text-accent: var(--fmq-ink-2);
+}
+.starlight-aside--caution {
+  --sl-color-asides-border: var(--fmq-saffron);
+  --sl-color-asides-text-accent: var(--fmq-ink-2);
+}
+.starlight-aside--danger {
+  --sl-color-asides-border: var(--fmq-ruby);
+  --sl-color-asides-text-accent: var(--fmq-ink-2);
+}
+.starlight-aside__title {
+  font: 600 0.7rem/1.2 var(--fmq-font-body);
+  font-stretch: 88%;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  gap: 0.5rem;
+}
+.starlight-aside__icon {
+  display: none;
+}
+.starlight-aside__title::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--sl-color-asides-border);
+  flex: none;
+}
+
+/* Starlight badges */
+.sl-badge {
+  font: 600 0.65rem/1 var(--fmq-font-body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 3px;
+}
+
+/* Our badge, for kinds, versions and states. */
+.fmq-badge {
+  display: inline-flex;
+  align-items: center;
+  font: 600 0.66rem/1 var(--fmq-font-body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--fmq-rule-strong);
+  color: var(--fmq-ink-2);
+  border-radius: 3px;
+  padding: 0.3em 0.45em;
+  vertical-align: middle;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.fmq-badge.since {
+  border-color: var(--fmq-teal);
+  color: var(--fmq-teal);
+}
+.fmq-badge.deprecated {
+  border-color: var(--fmq-ruby);
+  color: var(--fmq-ruby);
+}
+.fmq-badge.mark {
+  border-color: var(--fmq-bar);
+  color: var(--fmq-accent-ink);
+}
+a.fmq-badge:hover {
+  border-color: var(--fmq-ink-3);
+  color: var(--fmq-ink);
+}
+
+/* Starlight tabs: saffron mark under the active tab. */
+starlight-tabs .tab > [role='tab'] {
+  font-weight: 500;
+  color: var(--fmq-ink-3);
+  border-bottom: 2px solid transparent;
+}
+starlight-tabs .tab [role='tab'][aria-selected='true'] {
+  color: var(--fmq-ink);
+  font-weight: 600;
+  border-bottom-color: var(--fmq-saffron);
+}
+starlight-tabs .tablist-wrapper {
+  border-bottom: 1px solid var(--fmq-rule);
+}
+
+/* Steps */
+.sl-steps > li::before {
+  font-family: var(--fmq-font-mono);
+  border-radius: 3px;
+  background: var(--fmq-paper-2);
+  box-shadow: inset 0 0 0 1px var(--fmq-rule-strong);
+  color: var(--fmq-ink);
+}
+.sl-steps > li::after {
+  background: var(--fmq-rule);
+}
+
+/* Cards */
+.card {
+  border-radius: 4px;
+  border-color: var(--fmq-rule);
+  background: var(--fmq-paper);
+}
+.sl-link-card {
+  border-radius: 4px;
+  border-color: var(--fmq-rule);
+  box-shadow: none;
+}
+.sl-link-card:hover {
+  border-color: var(--fmq-ink-3);
+  background: var(--fmq-paper-2);
+}
+
+/* ---------- Expressive Code ---------- */
+
+.expressive-code {
+  margin-block: 1rem;
+}
+.expressive-code .frame .header {
+  font-family: var(--fmq-font-mono);
+}
+.expressive-code .frame.is-terminal .header .title,
+.expressive-code .frame .header .title {
+  font-size: 0.75rem;
+}
+.expressive-code .copy button {
+  border-radius: 3px;
+}
+
+/* ---------- Sidebar ---------- */
+
+#starlight__sidebar .sidebar-content {
+  padding-top: 0.75rem;
+}
+#starlight__sidebar summary .large {
+  font: 600 0.7rem/1.2 var(--fmq-font-body);
+  font-stretch: 88%;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fmq-ink-3);
+}
+#starlight__sidebar .top-level > li > a.large {
+  font-size: var(--sl-text-sm);
+  font-weight: 500;
+  color: var(--fmq-ink-2);
+}
+#starlight__sidebar ul ul li {
+  border-inline-start: 0;
+  margin-inline-start: 0;
+  padding-inline-start: 0;
+}
+#starlight__sidebar a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--fmq-ink-2);
+  border-radius: 3px;
+  padding: 0.28em 0.5rem;
+  line-height: 1.35;
+}
+#starlight__sidebar a:hover,
+#starlight__sidebar a:focus-visible {
+  color: var(--fmq-ink);
+  background: var(--fmq-paper-2);
+}
+#starlight__sidebar a[aria-current='page'],
+#starlight__sidebar a[aria-current='page']:hover,
+#starlight__sidebar a[aria-current='page']:focus {
+  background: var(--fmq-saffron-tint);
+  color: var(--fmq-ink);
+  font-weight: 600;
+}
+#starlight__sidebar a[aria-current='page']::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex: none;
+  background: var(--fmq-saffron);
+  outline: 1px solid var(--fmq-bar);
+  outline-offset: -1px;
+}
+/* Kind letters in the API tree: class, struct, enum, namespace. */
+#starlight__sidebar a[data-kind]::after {
+  content: attr(data-kind);
+  order: -1;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  font: 600 0.62rem/1 var(--fmq-font-mono);
+  color: var(--fmq-ink-3);
+  border: 1px solid var(--fmq-rule-strong);
+  border-radius: 2px;
+}
+#starlight__sidebar a[data-kind][aria-current='page']::before {
+  display: none;
+}
+#starlight__sidebar a[data-kind][aria-current='page']::after {
+  color: var(--fmq-on-saffron);
+  background: var(--fmq-saffron);
+  border-color: var(--fmq-bar);
+}
+#starlight__sidebar a.fmq-mono {
+  font-family: var(--fmq-font-mono);
+  font-size: 0.8125rem;
+}
+
+/* ---------- Right column ---------- */
+
+.right-sidebar-panel h2 {
+  font: 600 0.7rem/1.2 var(--fmq-font-body);
+  font-stretch: 88%;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fmq-ink-3);
+}
+.right-sidebar-panel a {
+  color: var(--fmq-ink-2);
+}
+.right-sidebar-panel a[aria-current='true'] {
+  color: var(--fmq-ink);
+  font-weight: 600;
+}
+starlight-toc a[aria-current='true'],
+starlight-toc a[aria-current='true']:hover,
+starlight-toc a[aria-current='true']:focus {
+  color: var(--fmq-ink);
+}
+
+/* ---------- Pagination ---------- */
+
+.pagination-links a {
+  border-radius: 4px;
+  border-color: var(--fmq-rule);
+  box-shadow: none;
+  color: var(--fmq-ink);
+}
+.pagination-links a:hover {
+  border-color: var(--fmq-ink-3);
+}
+.pagination-links .link-title {
+  font-weight: 650;
+  font-size: 1rem;
+}
+
+/* ---------- Header ---------- */
+
+header.header {
+  border-bottom: 1px solid var(--fmq-rule);
+  background: var(--fmq-paper);
+}
+
+/* ---------- Search dialog ---------- */
+
+site-search dialog {
+  border-radius: 6px;
+  border: 1px solid var(--fmq-rule-strong);
+  background: var(--fmq-paper);
+  box-shadow: var(--fmq-shadow);
+}
+#starlight__search {
+  --pagefind-ui-primary: var(--fmq-link);
+  --pagefind-ui-text: var(--fmq-ink);
+  --pagefind-ui-background: var(--fmq-paper);
+  --pagefind-ui-border: var(--fmq-rule-strong);
+  --pagefind-ui-tag: var(--fmq-paper-3);
+  --pagefind-ui-font: var(--fmq-font-body);
+}
+#starlight__search mark {
+  background: var(--fmq-saffron-tint);
+  color: var(--fmq-ink);
+  box-shadow: inset 0 -2px 0 var(--fmq-saffron);
+}
+
+/* ---------- Print ---------- */
+
+@media print {
+  .fmq-eyebrow::after {
+    background: #000;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+#starlight__sidebar a.fmq-nested {
+  padding-inline-start: 1.6rem;
+  font-size: 0.78rem;
+}
+
+/* No rule between the title and the content. */
+.content-panel + .content-panel {
+  border-top: 0;
+}
+.content-panel:first-of-type:not(:only-of-type) {
+  padding-bottom: 0;
+}
+
+/* Source pages use the full width of the main column. */
+:root:has(.src-code) {
+  --sl-content-width: 76rem;
+}
+
+/* ---------- Home ---------- */
+
+html[data-has-hero] {
+  --sl-content-width: 74rem;
+}
+html[data-has-hero] .content-panel {
+  padding-top: 1rem;
+}

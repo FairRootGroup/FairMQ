@@ -1,0 +1,124 @@
+---
+// A device with two channels. A channel is a vector of sub-channels; each sub-channel owns one socket.
+// Facts: fairmq/Device.h (fChannels: name → std::vector<Channel>, GetChannel(name, index)),
+// fairmq/Channel.h (type, method, address, transport).
+const subs = [
+  { x: 28, ch: 'data-in', i: 0, type: 'pull', method: 'connect', addr: 'tcp://sampler:5555', side: 'in' },
+  { x: 336, ch: 'data-out', i: 0, type: 'push', method: 'bind', addr: 'tcp://*:5556', side: 'out' },
+  { x: 486, ch: 'data-out', i: 1, type: 'push', method: 'bind', addr: 'tcp://*:5557', side: 'out' },
+];
+---
+
+<figure class="fmq-chan not-content">
+  <svg viewBox="0 0 660 250" role="img" aria-label="A device with the channel data-in (one sub-channel) and the channel data-out (two sub-channels). Each sub-channel owns one socket.">
+    <rect class="dev" x="10" y="10" width="640" height="190" rx="3"></rect>
+    <text class="dev-l" x="24" y="32">device · --id processor1</text>
+    <rect class="ch" x="20" y="44" width="162" height="146" rx="2"></rect>
+    <text class="ch-l" x="30" y="62">channel "data-in"</text>
+    <rect class="ch" x="328" y="44" width="312" height="146" rx="2"></rect>
+    <text class="ch-l" x="338" y="62">channel "data-out"</text>
+    {
+      subs.map((s) => (
+        <g>
+          <rect class="sub" x={s.x} y="72" width="146" height="108" rx="2" />
+          <text class="sub-l" x={s.x + 10} y="90">
+            sub-channel [{s.i}]
+          </text>
+          <text class="kv" x={s.x + 10} y="112">
+            <tspan class="k">type</tspan> {s.type}
+          </text>
+          <text class="kv" x={s.x + 10} y="130">
+            <tspan class="k">method</tspan> {s.method}
+          </text>
+          <text class="kv addr" x={s.x + 10} y="148">
+            {s.addr}
+          </text>
+          <rect class="sock" x={s.x + 10} y="158" width="10" height="10" />
+          <text class="kv k" x={s.x + 26} y="167">
+            1 socket
+          </text>
+        </g>
+      ))
+    }
+    <path class="lead" d="M101 180 V 212"></path>
+    <path class="lead" d="M409 180 V 212"></path>
+    <path class="lead" d="M600 180 V 230"></path>
+    <text class="code" x="28" y="224">GetChannel("data-in")</text>
+    <text class="code" x="336" y="224">GetChannel("data-out", 0)</text>
+    <text class="code" x="490" y="242">GetChannel("data-out", 1)</text>
+  </svg>
+  <figcaption>
+    A channel has a name and one or more sub-channels. Each sub-channel owns one socket, with its own type, method and address. The index of the sub-channel is the
+    second argument of <code>GetChannel()</code>, and the third argument of <code>Send()</code> and <code>Receive()</code>. The default index is 0.
+  </figcaption>
+</figure>
+
+<style>
+  .fmq-chan {
+    margin: 1.5rem 0;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .dev {
+    fill: var(--fmq-paper-2);
+    stroke: var(--fmq-ink-2);
+    stroke-width: 1.2;
+  }
+  .ch {
+    fill: var(--fmq-paper);
+    stroke: var(--fmq-rule-strong);
+    stroke-width: 1.2;
+  }
+  .sub {
+    fill: var(--fmq-paper);
+    stroke: var(--fmq-ink-3);
+    stroke-dasharray: 4 3;
+  }
+  .sock {
+    fill: var(--fmq-saffron);
+    stroke: var(--fmq-bar);
+  }
+  .lead {
+    fill: none;
+    stroke: var(--fmq-ink-3);
+    stroke-width: 1;
+    stroke-dasharray: 2 3;
+  }
+  .dev-l {
+    font: 700 13px var(--fmq-font-mono);
+    fill: var(--fmq-ink);
+  }
+  .ch-l {
+    font: 600 12px var(--fmq-font-mono);
+    fill: var(--fmq-ink);
+  }
+  .sub-l {
+    font: 600 11px var(--fmq-font-mono);
+    fill: var(--fmq-ink-2);
+  }
+  .kv {
+    font: 400 11px var(--fmq-font-mono);
+    fill: var(--fmq-ink);
+  }
+  .k {
+    fill: var(--fmq-ink-3);
+  }
+  .addr {
+    fill: var(--fmq-accent-ink);
+  }
+  .code {
+    font: 600 11px var(--fmq-font-mono);
+    fill: var(--fmq-link);
+  }
+  figcaption {
+    font-size: 0.85rem;
+    color: var(--fmq-ink-3);
+    margin-top: 0.5rem;
+  }
+  figcaption code {
+    font-size: 0.8em;
+  }
+</style>

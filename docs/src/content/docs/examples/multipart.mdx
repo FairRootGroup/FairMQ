@@ -1,0 +1,200 @@
+---
+title: 'multipart: several parts in one message'
+description: 'A sampler sends a header and six data parts as one multipart message, and a sink receives all parts in one handler call.'
+sidebar:
+  order: 4
+code: [fairmq/Parts.h, fairmq/Device.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps, FileTree } from '@astrojs/starlight/components';
+
+The multipart example sends one message that has several parts. The sampler puts a header and six data
+parts into a [`fair::mq::Parts`](/api/fair/mq/Parts/) object and sends all parts with one `Send()` call.
+The sink gets all seven parts in one call of its data handler. The
+[Messages and multipart](/concepts/messages/) page explains the concept.
+
+The files of the example are in
+[`examples/multipart`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/multipart) on GitHub.
+
+## Topology
+
+| Device | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- |
+| `sampler1` | `data` | `push` | `connect` | `tcp://127.0.0.1:5555` |
+| `sink1` | `data` | `pull` | `bind` | `tcp://127.0.0.1:5555` |
+
+Here the sink binds and the sampler connects. Both devices use `rateLogging=0`.
+
+## Build the example
+
+The examples build together with FairMQ when the CMake option `BUILD_EXAMPLES` is `ON` (the default):
+
+<FileTree>
+
+- build/examples/multipart/
+  - fairmq-ex-multipart-sampler
+  - fairmq-ex-multipart-sink
+  - fairmq-start-ex-multipart.sh
+  - test-ex-multipart.sh
+
+</FileTree>
+
+## Run the example
+
+<Steps>
+
+1. Go to the directory of the example in the build tree:
+
+   ```sh
+   cd build/examples/multipart
+   ```
+
+2. Run the start script. It opens two `xterm` windows, one for each device:
+
+   ```sh
+   ./fairmq-start-ex-multipart.sh
+   ```
+
+</Steps>
+
+The first argument of the script sets the transport, for example `./fairmq-start-ex-multipart.sh shmem`.
+The default is `zeromq`. The script gives both devices the same session name, from `fairmq-uuid-gen -h`.
+
+To run the example without `xterm`, run each command in its own terminal in `build/examples/multipart`.
+Any session name works if both devices use the same one:
+
+```sh
+./fairmq-ex-multipart-sampler --id sampler1 --transport zeromq --session ex-multipart \
+  --channel-config "name=data,type=push,method=connect,rateLogging=0,address=tcp://127.0.0.1:5555"
+```
+
+```sh
+./fairmq-ex-multipart-sink --id sink1 --transport zeromq --session ex-multipart \
+  --channel-config "name=data,type=pull,method=bind,rateLogging=0,address=tcp://127.0.0.1:5555"
+```
+
+## The header
+
+<Snippet file="examples/multipart/Header.h" start="struct Header" />
+
+The sampler and the sink include `Header.h`. The first part of each message is a `Header`. The sink stops
+when `stopFlag` is `1`.
+
+## The sampler
+
+<Snippet file="examples/multipart/sampler.cxx" start="bool ConditionalRun()" />
+
+- `fair::mq::Parts parts;` creates an empty multipart message. `Parts` holds a vector of
+  [`MessagePtr`](/api/fair/mq/#MessagePtr).
+- [`NewSimpleMessage()`](/api/fair/mq/Device/#NewSimpleMessage) copies the header into a new message. The
+  transport deletes this copy when it does not need it any more. Use it for small data only.
+- [`AddPart()`](/api/fair/mq/Parts/#AddPart-2) adds one message at the end.
+- `NewMessage(1000)` creates a message of 1000 bytes. The example does not write data into it.
+  `NewMessage()` without arguments creates an empty part of 0 bytes.
+- The [constructor](/api/fair/mq/Parts/#Parts-4) of `Parts` takes several messages.
+  [`AddPart()`](/api/fair/mq/Parts/#AddPart-4) with a `Parts` object moves all its parts to the end.
+- [`At()`](/api/fair/mq/Parts/#At) returns the part at an index. [`Size()`](/api/fair/mq/Parts/#Size)
+  returns the number of parts.
+- [`Send()`](/api/fair/mq/Device/#Send) sends all seven parts as one message.
+
+The sampler sets `stopFlag` to `1` in its last message. The option `--max-iterations` of this sampler has
+the default `5`, so the sampler stops after five messages. The value `0` sets no limit.
+
+## The sink
+
+<Snippet file="examples/multipart/sink.cxx" start="Sink()" />
+
+<Snippet file="examples/multipart/sink.cxx" start="bool HandleData" />
+
+The handler takes a `fair::mq::Parts&` instead of a message. With this handler type,
+[`OnData()`](/api/fair/mq/Device/#OnData-3) receives multipart messages on the channel. The sink checks the
+number of parts and reads the header from the data of part 0. To also check the size of each part, see
+[Read the data safely](/guides/send-data-types/#read-the-data-safely).
+
+- If the message does not have seven parts, the handler throws an exception. The device then goes to the
+  state `ERROR`.
+- If `stopFlag` is `1`, the handler returns `false`. The log line says `going IDLE`, but the device goes to
+  the state `READY`.
+
+## Output
+
+The listings show the severity and the message of each line, without the time. The sampler logs two lines
+for each message, once per second. The listing shows the first and the last message:
+
+```txt
+[INFO] Sending header with stopFlag: 0
+[INFO] Sending body of size: 1000
+[INFO] Sending header with stopFlag: 1
+[INFO] Sending body of size: 1000
+[INFO] Configured maximum number of iterations reached. Leaving RUNNING state.
+```
+
+The sink logs the parts of each message:
+
+```txt
+[INFO] Received message with 7 parts
+[INFO] Received part 1 (header) with stopFlag: 0
+[INFO] Received part 2 of size: 1000
+[INFO] Received part 3 of size: 500
+[INFO] Received part 4 of size: 600
+[INFO] Received part 5 of size: 700
+[INFO] Received part 6 of size: 0
+[INFO] Received part 7 of size: 100
+```
+
+After the message with `stopFlag` 1, the sink also logs `stopFlag is 1, going IDLE`.
+
+## Test the example
+
+The test script `test-ex-multipart.sh` uses a `pair` channel instead of `push` and `pull`. The sampler
+connects with `linger=1000`, and the sink binds. The channel uses an `ipc://` address in `/tmp`, and the
+devices use `--control static`. The sampler has `--max-iterations 1`, so its first message has the
+`stopFlag` 1. Thus both devices stop after one message.
+
+CTest runs the script once for each transport: `Example.multipart.zeromq` and `Example.multipart.shmem`. The
+tests exist if you configure with `-DBUILD_TESTING=ON`.
+
+```sh
+cd build
+ctest -R '^Example\.multipart\.' --output-on-failure
+```
+
+## Things to try
+
+- Use shared memory: run `./fairmq-start-ex-multipart.sh shmem`.
+- Send without a limit: start the sampler with `--max-iterations 0`. `stopFlag` then stays `0`, and the sink
+  does not stop.
+- Send to two sinks: use the JSON file of the next section.
+
+### Send to two sinks
+
+The source folder of the example has the file `ex-multipart-multiple-endpoints.json`. The build does not
+copy it. In this file, one sampler sends to two sinks.
+
+The `address` of the sampler has two endpoints, `tcp://localhost:5555,tcp://localhost:5556`. The socket of
+the sampler connects to both. The entry of `sink2` has the method `connect`, but the address starts with
+`@`:
+
+<Snippet file="examples/multipart/ex-multipart-multiple-endpoints.json" start='"id": "sink2"' end="^                ]$" />
+
+`@` in front of an endpoint makes the socket bind there, and `+` or `>` makes it connect
+([Device.cxx](/source/fairmq/Device.cxx/#L300-L320)). Run each device in its own terminal, with the path of
+the file in your source tree:
+
+```sh
+./fairmq-ex-multipart-sink --id sink1 --mq-config /path/to/FairMQ/examples/multipart/ex-multipart-multiple-endpoints.json
+./fairmq-ex-multipart-sink --id sink2 --mq-config /path/to/FairMQ/examples/multipart/ex-multipart-multiple-endpoints.json
+./fairmq-ex-multipart-sampler --id sampler1 --mq-config /path/to/FairMQ/examples/multipart/ex-multipart-multiple-endpoints.json
+```
+
+The `push` socket of the sampler distributes the messages over the two sinks. Only the sink that gets the
+message with `stopFlag` 1 leaves `RUNNING`.
+
+## Related pages
+
+- [Messages and multipart](/concepts/messages/): messages, parts and their memory.
+- [Receive data with callbacks or loops](/guides/receive-data/): handlers for messages and for parts.
+- [Channel properties](/reference/channel-properties/): the `address` with several endpoints.
+- [1-1: sampler and sink](/examples/1-1/): a sampler and a sink with single-part messages.
+- [Stop a topology without losing messages](/guides/end-of-run/): end messages, linger and the stop order.

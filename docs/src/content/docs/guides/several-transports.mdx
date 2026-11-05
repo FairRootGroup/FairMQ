@@ -1,0 +1,199 @@
+---
+title: 'Use several transports'
+description: 'Give each channel of one device its own transport, make messages for the right transport, and receive from channels of different transports.'
+sidebar:
+  order: 3
+code: [fairmq/Device.h, fairmq/Device.cxx, fairmq/Channel.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+One device can use the shmem transport for some channels and the zeromq transport for others. For
+example, it uses shmem to a process on the same host and zeromq to another host. This guide shows
+how to configure the transport of each channel and how to make messages without a conversion. It
+also shows how to receive from channels of different transports.
+
+The device makes one transport factory for each transport that its channels use. For the rules, see
+[How a device selects the transport](/concepts/transports/#how-a-device-selects-the-transport).
+
+## Configure the channels
+
+<Steps>
+
+1. Select the default transport of the device with `--transport`. The value is `zeromq` (default) or
+   `shmem`. All channels without a transport property use it.
+
+2. Add the [channel property](/reference/channel-properties/) `transport` to each channel that uses
+   the other transport. In `--channel-config`, add `transport=zeromq` or `transport=shmem`.
+
+3. Give the peer channel in the other device the same transport.
+
+4. For each shmem channel, run both devices on the same host with the same `--session`. Do not use
+   the socket types `pub` and `sub`.
+
+</Steps>
+
+The [multiple-transports example](/examples/multiple-transports/) starts `sampler1` with `shmem` as
+the default transport. Its channel `ack` is a `sub` socket, thus it uses `zeromq`:
+
+<Snippet file="examples/multiple-transports/fairmq-start-ex-multiple-transports.sh.in" start='SAMPLER1="fairmq' end="name=ack,type=sub" />
+
+The example has no JSON file. In a [JSON file](/reference/json/) for `--mq-config`, set `transport`
+for the channel or for one socket of the channel. A socket without `transport` uses the value of its channel. This file
+gives `sampler1` the same channels:
+
+```json
+{
+    "fairMQOptions": {
+        "devices": [
+            {
+                "id": "sampler1",
+                "channels": [
+                    {
+                        "name": "data1",
+                        "sockets": [
+                            { "type": "push", "method": "bind", "address": "tcp://127.0.0.1:5555" }
+                        ]
+                    },
+                    {
+                        "name": "ack",
+                        "transport": "zeromq",
+                        "sockets": [
+                            { "type": "sub", "method": "bind", "address": "tcp://127.0.0.1:5557" }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+Give all sub-channels of one channel the same transport. The pollers and the data callbacks of the
+device use the transport of the sub-channel 0 for all sub-channels.
+
+## Make messages for the right transport
+
+[`NewMessage()`](/api/fair/mq/Device/#NewMessage) uses the default transport of the device. To make
+a message with the transport of a channel, use
+[`NewMessageFor(channel, index, args…)`](/api/fair/mq/Device/#NewMessageFor). It takes the same
+arguments as `NewMessage()` after the channel name and the sub-channel index. `sampler1` makes its
+data messages with the transport of `data1`:
+
+<Snippet file="examples/multiple-transports/sampler1.cxx" start="bool ConditionalRun() override" />
+
+The device has more functions of this kind:
+[`NewSimpleMessageFor()`](/api/fair/mq/Device/#NewSimpleMessageFor),
+[`NewStaticMessageFor()`](/api/fair/mq/Device/#NewStaticMessageFor) and
+[`NewUnmanagedRegionFor()`](/api/fair/mq/Device/#NewUnmanagedRegionFor). If you have a reference to
+the channel, call [`NewMessage()`](/api/fair/mq/Channel/#NewMessage) on the channel.
+[`AddTransport(Transport::SHM)`](/api/fair/mq/Device/#AddTransport) returns the factory of a
+transport, and makes it if the device has none.
+
+## Send a message of another transport
+
+You can send a message on a channel of another transport. `Channel::Send()` then converts the
+message ([Channel.h](/source/fairmq/Channel.h/#L421-L480)):
+
+| Message | Channel | What the channel does |
+| --- | --- | --- |
+| `shmem` | `zeromq` | Makes a zeromq message that points to the shared memory buffer. No copy. The shared memory buffer stays allocated until zeromq releases the message. |
+| `zeromq` | `shmem` | Copies the data into the shared memory segment, and destroys the zeromq message. |
+| empty | either | Replaces the message with an empty message of the channel transport. |
+
+After the call, your `MessagePtr` points to the new message. `Receive()` replaces a message object of
+another transport with an empty message of the channel transport. The sender of the
+[readout example](/examples/readout/) receives shmem messages and sends them on its zeromq channel
+`sr`:
+
+<Snippet file="examples/readout/sender.cxx" start="bool HandleData(fair::mq::MessagePtr& msg, int /*index*/)" />
+
+The copy from zeromq to shmem costs time and memory for large messages. Use `NewMessageFor()` to
+prevent it.
+
+## Receive from channels of different transports
+
+If you register data callbacks with [`OnData()`](/api/fair/mq/Device/#OnData) on channels of
+different transports, the device polls each transport in its own thread. The callbacks run in
+[these threads](/concepts/threads/#which-thread-runs-your-code). A mutex lets only one callback run at a time
+([Device.cxx](/source/fairmq/Device.cxx/#L509-L562)). The sink of the example registers callbacks
+for `data1` and `data2`:
+
+<Snippet file="examples/multiple-transports/sink.cxx" start="Sink()" />
+
+:::caution[Exceptions in the threads of the transports]
+In this mode, an exception in a poll thread, for example in a data callback, does not move the
+device to the state `ERROR`.
+The device logs `fair::mq::Device::PollForTransport() failed: <error>, going to ERROR state.` and
+throws again ([Device.cxx](/source/fairmq/Device.cxx/#L558-L561)). The exception leaves the thread,
+and C++ calls `std::terminate()`. Catch the exceptions in your callbacks.
+:::
+
+The start script gives `data1` and `data2` of the sink the same transport, `shmem`. The test script
+of the example gives `data2` the transport `zeromq`. Then the sink polls `shmem` and `zeromq` in two
+threads:
+
+<Snippet file="examples/multiple-transports/test-ex-multiple-transports.sh.in" start='SINK+=" --transport shmem"' end="name=$ackChan" />
+
+One [poller](/guides/poll-channels/) can poll channels of one transport only.
+[`NewPoller()`](/api/fair/mq/Device/#NewPoller) throws `std::runtime_error` for channels of
+different transports. Use one thread for each transport, with its own poller or a blocking
+`Receive()`. `sampler1` receives the acknowledgements with a blocking `Receive()` in a second
+thread:
+
+<Snippet file="examples/multiple-transports/sampler1.cxx" start="void ListenForAcks()" />
+
+## Check the result
+
+<Steps>
+
+1. Start the devices with `--severity debug`.
+
+2. Find the line `Initializing transport for channel <name>[<index>]: <transport>` for each
+   sub-channel. The value `default` means the default transport of the device.
+
+3. Find the line `Adding '<transport>' transport` once for each transport of the device.
+
+</Steps>
+
+In the code, [`GetChannel(name, index).GetTransportName()`](/api/fair/mq/Channel/#GetTransportName)
+returns the transport of a sub-channel, and [`msg->GetType()`](/api/fair/mq/Message/#GetType)
+returns the transport of a message.
+
+To run the example, start `fairmq-start-ex-multiple-transports.sh` in the directory
+`examples/multiple-transports` of the build directory. The script opens one `xterm` window for each
+device. When `sampler1` leaves the state `RUNNING`, it logs `Acknowledged <n> messages`.
+
+## Problems that can occur
+
+| Message in the log | Cause | Fix |
+| --- | --- | --- |
+| `Received message is not a valid FairMQ shared memory message` | A shmem channel received a message from a zeromq peer. | Give both ends of the channel the same transport. |
+| `poller failed: different transports within same poller are not yet supported` | `NewPoller()` got channels of different transports. | Make one poller for each transport. |
+| `PUB/SUB socket type is not supported for shared memory transport` | A shmem channel has the type `pub` or `sub`. | Add `transport=zeromq` to the channel. |
+| `Unknown transport provided: <name>` | A channel property `transport` has an unknown value. | Use `default`, `zeromq` or `shmem`. |
+| `invalid transport type provided: <name>` | `--transport` has an unknown value. | Use `zeromq` or `shmem`. |
+
+A shmem receiver detects a zeromq message only if the message is smaller than the shmem metadata. A
+larger zeromq message goes into the receiver as shmem metadata. A zeromq receiver gets the shmem
+metadata as data and reports no error. Thus a wrong transport on one end of a channel does not
+always cause an error message.
+
+## Checklist
+
+- The default transport of the device is the transport of most channels.
+- Each other channel has the property `transport`.
+- Both ends of each channel use the same transport.
+- All sub-channels of one channel use the same transport.
+- Each shmem channel connects devices on one host with the same `--session`, and is not `pub` or `sub`.
+- The device makes messages with `NewMessageFor()`, or with `NewMessage()` of the channel.
+- Each poller polls channels of one transport only.
+
+## Related pages
+
+- [Transports](/concepts/transports/): the two transports and how a device selects them.
+- [Messages and multipart](/concepts/messages/): what `Send()` does with a message.
+- [Poll several channels](/guides/poll-channels/): wait for messages on several channels.
+- [Example: multiple transports](/examples/multiple-transports/): the example of this guide, step by step.
+- [Design a topology](/guides/design-topology/#select-the-transport-of-each-link): select the transport of each link.

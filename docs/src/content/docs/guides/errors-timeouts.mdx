@@ -1,0 +1,421 @@
+---
+title: 'Handle errors and timeouts'
+description: 'Check the return values of Send() and Receive(), set timeouts, handle interrupted transfers and exceptions, and know what happens in ERROR.'
+sidebar:
+  order: 9
+code: [fairmq/Socket.h, fairmq/Channel.h, fairmq/Device.cxx, fairmq/Error.h, fairmq/shmem/Manager.h, fairmq/shmem/Message.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+This guide shows how your device detects failed transfers, uses timeouts and reacts to errors. When
+you complete it, your device continues after a timeout, stops cleanly after an interruption, and
+goes to `ERROR` only for a real error.
+
+## Check the return value of a transfer
+
+`Send()` and `Receive()` return an `int64_t`. A value of 0 or more is the number of bytes. A negative
+value is a [`TransferCode`](/api/fair/mq/TransferCode/):
+
+| Return value | Meaning | Typical reaction |
+| --- | --- | --- |
+| 0 or more | The transfer is complete. For `Send()`, the message is in the queue of the socket. 0 is the size of an empty message. | Continue. |
+| `TransferCode::timeout` (-2) | The timeout ended before the transfer was possible. | Try again, or do other work. |
+| `TransferCode::interrupted` (-3) | A transition is pending, and the device interrupted its transports. | Return from the hook. |
+| `TransferCode::error` (-1) | The transfer failed. The transport logs the reason. | End `RUNNING`, or throw an exception. |
+
+<Steps>
+
+1. Store the return value of each `Send()` and `Receive()`.
+
+2. Compare a negative value with the codes. Use `static_cast<int64_t>(fair::mq::TransferCode::timeout)`.
+
+3. Select the reaction from the table above.
+
+</Steps>
+
+Many examples only check for a negative value. The sampler of the example [1-1](/examples/1-1/)
+ends `RUNNING` for each failed transfer:
+
+<Snippet file="examples/1-1/sampler.cxx" start="bool ConditionalRun()" />
+
+This hook handles each code in a different way. It waits up to 1000 ms for a message:
+
+```cpp
+bool ConditionalRun() override
+{
+    auto msg(NewMessage());
+    auto const result = Receive(msg, "data", 0, 1000);
+
+    if (result >= 0) {
+        LOG(info) << "Received " << result << " bytes";
+        return true;
+    }
+    if (result == static_cast<int64_t>(fair::mq::TransferCode::timeout)) {
+        LOG(warn) << "No message in 1 s";
+        return true; // try again in the next call
+    }
+    if (result == static_cast<int64_t>(fair::mq::TransferCode::interrupted)) {
+        return false; // a transition is pending
+    }
+    throw std::runtime_error("Receive on channel data failed"); // the device goes to ERROR
+}
+```
+
+For all codes, see [Transfer codes and errors](/reference/transfer-codes/).
+
+## Set a timeout
+
+A timeout is a value in ms:
+
+- `-1` (default): wait until the transfer is possible, or until a transition interrupts the transfer.
+- `0`: do not wait. If the transfer is not possible at once, return `TransferCode::timeout`. While
+  the transports are interrupted, return `TransferCode::interrupted`.
+- A positive value: wait up to this time.
+
+You can give the timeout for one call or for all calls on a channel.
+
+### Timeout for one call
+
+Give the timeout as the fourth argument of
+[`Send()`](/api/fair/mq/Device/#Send-2) or [`Receive()`](/api/fair/mq/Device/#Receive-2). On a
+[`Channel`](/api/fair/mq/Channel/), it is the second argument. The test device `TransferTimeout`
+sends and receives on channels without a peer, with 200 ms and with 0 ms:
+
+<Snippet file="test/helper/devices/TestTransferTimeout.h" start="auto Run() -> void override" />
+
+### Timeout for a channel
+
+The channel properties `sndTimeoutMs` and `rcvTimeoutMs` (default `-1`) set the timeout for all
+calls without a timeout argument. Give them in the channel configuration:
+
+```sh
+./my-device --id device1 --channel-config name=data,type=pull,method=connect,address=tcp://localhost:5555,rcvTimeoutMs=1000
+```
+
+In a JSON file, use the same keys. See [Channel properties](/reference/channel-properties/).
+[`Channel::UpdateSndTimeout()`](/api/fair/mq/Channel/#UpdateSndTimeout) and
+[`UpdateRcvTimeout()`](/api/fair/mq/Channel/#UpdateRcvTimeout) change the values of a `Channel`
+object.
+
+:::caution[Known defect]
+[`Device::AddChannel()`](/api/fair/mq/Device/#AddChannel) does not copy `sndTimeoutMs` and
+`rcvTimeoutMs` into the configuration. A channel that you add in this way has the timeouts `-1`.
+Give the timeout as an argument of each call instead.
+:::
+
+### Steps of 100 ms
+
+The zeromq and shmem sockets wait in steps of 100 ms. After each step, the socket checks for an
+interruption and for the end of the timeout. Thus:
+
+- The real timeout is the value rounded up to a multiple of 100 ms. A timeout of 150 ms waits
+  200 ms.
+- A transfer that waits returns `TransferCode::interrupted` not more than 100 ms after the
+  interruption.
+
+## Handle interrupted transfers
+
+When a controller or the device requests a transition, the device calls `Interrupt()` of all its
+transports. From then on, a `Send()` or `Receive()` that must wait returns `TransferCode::interrupted`. A transfer
+that is possible at once can still complete. When the next state starts, the device resumes the
+transports.
+
+Thus:
+
+- Treat `interrupted` as a normal end of `RUNNING`. Return from `ConditionalRun()` with `false`, or
+  go back to the check of `NewStatePending()` in your `Run()` loop.
+- In `PostRun()`, the transports are still interrupted. Do not wait for transfers there. See
+  [Wait in PostRun() or ResetTask()](/guides/end-of-run/#wait-in-postrun-or-resettask).
+- With shmem, a `NewMessage()` that waits for free memory throws `MessageBadAlloc` after an
+  interruption (see below).
+
+The test `InterruptTransfer.Receive` interrupts a transport while a `Receive()` waits.
+`Factory.ResumeAfterInterrupt` shows that transfers work again after `Resume()`.
+
+## Exceptions and the ERROR state
+
+An exception in a hook or in a data callback moves the device to `ERROR`. With input channels on more
+than one transport, an exception in a data callback ends the process with `std::terminate()`
+instead. Your code can also request the transition `ErrorFound`. The test device `StateAction` does
+both:
+
+<Snippet file="test/helper/devices/TestStateAction.h" start="void ActIfRequested(std::string_view state)" />
+
+After an exception, the device does these steps:
+
+1. The state machine logs `Exception caught in ProcessWork(), going to Error state` (severity
+   `debug`), and changes to `ERROR`.
+2. The device does not call the other hooks of the state. After an exception in `RUNNING`, it does
+   not call `PostRun()`.
+3. [`RunStateMachine()`](/api/fair/mq/Device/#RunStateMachine) throws the exception again.
+4. With `fairmq/runDevice.h`, `main()` logs `Uncaught exception reached the top of main:` and the
+   text of the exception. The exit code is 1.
+
+After the transition `ErrorFound`, the current hook continues until it returns. In `RUNNING`, the
+device also calls the remaining hooks, for example `PostRun()`. Then the state machine changes to
+`ERROR`. `RunStateMachine()` throws `StateMachine::ErrorStateException` with the text
+`Device transitioned to error state`, and the exit code is also 1.
+
+The tests `Exceptions.Throw` and `ErrorState.ChangeState` check the exit code 1 for each hook, with
+`--control static` and `interactive`.
+
+### What the control plugin does in ERROR
+
+In `ERROR`, the controller of the control plugin stops. It does not run the shutdown sequence. Thus
+the device does not call `ResetTask()` and `Reset()` after an error. Free your resources also in the
+destructor of your device, or use objects that free them automatically.
+
+With `--catch-signals 1` (default), a signal is not an error. A `SIGINT` in any hook starts the
+shutdown sequence, and the exit code is 0. The test `Signals.RaiseSIGINT` checks this for each hook.
+
+## Error codes
+
+[`ChangeStateOrThrow()`](/api/fair/mq/Device/#ChangeStateOrThrow) throws `std::system_error` when the
+state machine refuses the transition. The code is
+[`ErrorCode::DeviceChangeStateFailed`](/api/fair/mq/ErrorCode/#DeviceChangeStateFailed) (13) in the
+category `fairmq`. Compare the value and the name of the category:
+
+```cpp
+try {
+    device.ChangeStateOrThrow(fair::mq::Transition::Run);
+} catch (std::system_error const& e) {
+    if (e.code().value() == static_cast<int>(fair::mq::ErrorCode::DeviceChangeStateFailed)
+        && std::string_view(e.code().category().name()) == "fairmq") {
+        LOG(error) << e.what(); // Invalid transition: RUN: failed to change state of a fairmq device
+    }
+}
+```
+
+:::caution
+Do not compare `e.code()` with [`fair::mq::MakeErrorCode()`](/api/fair/mq/#MakeErrorCode). `fairmq/Error.h` defines the category
+object as `static`, so each translation unit has its own object. Then the comparison can return
+`false` for the same error.
+:::
+
+The text of `what()` comes from the standard library. The example shows the text of libstdc++.
+
+## Shared memory allocation
+
+With shmem, `NewMessage(size)` allocates the message in the shared memory segment. If the segment
+does not have enough free memory, the transport throws
+[`MessageBadAlloc`](/api/fair/mq/MessageBadAlloc/). These options change the behavior:
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `--shm-throw-bad-alloc` | `true` | With `false`, the transport tries again without a limit. `--bad-alloc-max-attempts` then has no effect. |
+| `--bad-alloc-max-attempts` | Not set (1 attempt) | The number of attempts before the exception. `-1` means no limit. `0` has the same effect as `1`. |
+| `--bad-alloc-attempt-interval` | `50` | The time between two attempts, in ms. |
+| `--shm-segment-size` | `2147483648` (2 GiB) | A message larger than the segment always throws `MessageBadAlloc` at once. |
+
+An attempt that waits ends with `MessageBadAlloc` when a transition interrupts the transport. The
+test `ShmAllocation.MaxAttempts` fills a segment and expects the exception after four attempts:
+
+<Snippet file="test/transport/_shm_allocation.cxx" start="TEST_P(ShmAllocation, MaxAttempts)" />
+
+For the size of the segment, see [Tune shared memory](/shmem/tuning/).
+
+## Connect timeout
+
+In `CONNECTING`, the device tries to connect each channel with the method `connect`. If a connect
+fails, the device waits 50 ms, reads the address property again and tries again. After
+`--init-timeout` seconds (default 120), the device throws `std::runtime_error` and goes to `ERROR`:
+
+```txt
+could not connect all channels after 120 attempts
+following channels are still invalid:
+```
+
+The number in the first line is the value of `init-timeout` in seconds, not the number of attempts.
+A zeromq or shmem connect succeeds also when the peer does not exist yet. Thus the retries help
+when the address is not valid yet, for example when a controller sets it later.
+
+In `BINDING`, the device tries each channel once. With the channel property `autoBind` (default
+`true`), a tcp channel that cannot bind to its port tries random ports. If a channel cannot bind,
+the device throws an exception with the text
+`… of the binding channels could not initialize. Initial configuration incomplete.`
+
+## When a peer stops or restarts
+
+FairMQ does not watch the peers of a channel. When a peer process ends, FairMQ does not report it
+to your device. The zeromq and the shmem transport both send through ZeroMQ sockets, so this section
+applies to both. A statement marked "ZeroMQ behavior" comes from the ZeroMQ documentation, not from
+the code of FairMQ.
+
+### A peer ends while the device sends or receives
+
+`Send()` and `Receive()` return `TransferCode::error` when the ZeroMQ socket reports an error other
+than `EAGAIN` or `EINTR`, for example after the end of its context
+([zeromq/Common.h](/source/fairmq/zeromq/Common.h/#L79-L88)). A peer that ends does not cause such an
+error (ZeroMQ behavior).
+The socket waits in steps of 100 ms, and after each step it checks only for an interruption and for
+the end of the timeout ([zeromq/Common.h](/source/fairmq/zeromq/Common.h/#L64-L77)). Thus a peer that
+ends looks like a peer that is slow:
+
+| Timeout | `Send()` | `Receive()` |
+| --- | --- | --- |
+| `-1` | Returns the size when ZeroMQ puts the message into a queue. If no queue has space, it waits until a queue has space or a transition interrupts it. | Waits until a message arrives, or until a transition interrupts it. |
+| `0` or more | Returns `TransferCode::timeout` when no queue has space before the timeout ends. | Returns `TransferCode::timeout` when no message arrives before the timeout ends. |
+
+The test device `TransferTimeout` (see [Timeout for one call](#timeout-for-one-call)) shows the
+second row for channels without a peer.
+
+A successful `Send()` does not tell you that the peer received the message. ZeroMQ put it into a
+queue. These messages can be lost when a peer ends:
+
+- The messages in the queues of the process that ends. The queues are in the memory of the process.
+- The messages in the queue of a socket that binds, for the peer that disconnects. ZeroMQ removes
+  this queue (ZeroMQ behavior).
+- The messages that a `pub` socket sends while no `sub` socket is connected. ZeroMQ drops them
+  (ZeroMQ behavior). Only the zeromq transport has `pub` and `sub`.
+
+A socket that connects keeps its queue while the peer is away. It sends the messages when the
+connection comes back (ZeroMQ behavior). A `push` socket that binds sends new messages only to the
+peers that remain (ZeroMQ behavior). A `push` socket that connects to several peers continues to put messages into the
+queue of the peer that ended, until this queue is full (ZeroMQ behavior). FairMQ does not set the
+ZeroMQ option `ZMQ_IMMEDIATE`, which changes this.
+
+With `req` and `rep` and the timeout `-1`, a request can wait forever. If the `rep` peer ends before it replies,
+`Receive()` on the `req` channel waits or returns `TransferCode::timeout`. After that, ZeroMQ refuses
+the next `Send()` on the `req` socket, because the socket waits for the reply (ZeroMQ behavior). This
+`Send()` returns `TransferCode::error`, and the log shows `Failed transfer on socket …`. The device
+makes its sockets only in `BINDING` and `CONNECTING`. Thus the controller must reset the device and
+take it through `INITIALIZING DEVICE`, `BINDING` and `CONNECTING` again.
+
+### Find out if a peer is connected
+
+[`GetNumberOfConnectedPeers()`](/api/fair/mq/Channel/#GetNumberOfConnectedPeers) of a channel returns
+the number of connections of its socket. The socket counts the ZeroMQ events "connected",
+"accepted" and "disconnected" when you call the function
+([zeromq/Common.h](/source/fairmq/zeromq/Common.h/#L238-L264)). The test `ConnectedPeers.Pair` shows
+that the count goes back to 0 when the peer closes its channel:
+
+<Snippet file="test/channel/_channel.cxx" start="auto testConnectedPeers(" />
+
+Call the function in the thread that uses the channel. See
+[What is thread-safe](/concepts/threads/#what-is-thread-safe).
+
+### The peer starts again
+
+- **Your device connects, and the peer binds.** ZeroMQ connects again by itself (ZeroMQ behavior).
+  Your device stays in its state. For a `tcp://` address, the device resolves the host name once, in
+  `CONNECTING`, and gives the IP address to ZeroMQ
+  ([Device.cxx](/source/fairmq/Device.cxx/#L321-L331)). Thus the peer must start again on the same
+  host and port.
+- **Your device binds, and the peer connects.** ZeroMQ accepts the new connection (ZeroMQ
+  behavior). Your device does nothing.
+- **The peer binds to another port.** If the port is not free and `autoBind` is `true`, the peer
+  binds to a random port ([Channel.cxx](/source/fairmq/Channel.cxx/#L346-L386)). The connecting
+  device does not find it there. Set `autoBind=false` for a peer that can start again. Then its bind
+  fails, and it goes to `ERROR`.
+- **The shmem transport.** The new peer must use the same `--session`. Then it opens the segments and
+  regions that exist. The transport does not check the session of a message. See
+  [Keep two topologies apart](/shmem/sessions/#keep-two-topologies-apart).
+
+### The binding peer starts after the connecting device
+
+The connecting device does not wait for the peer. In `CONNECTING`, a zeromq or shmem connect
+succeeds also when no socket binds at the address (ZeroMQ behavior, see [Connect timeout](#connect-timeout)). The
+device goes on to `RUNNING`. ZeroMQ connects when the peer binds (ZeroMQ behavior). Until then:
+
+- `Send()` puts messages into the queue of the socket, up to the limit of `sndBufSize` (default
+  1000). Then it waits or returns `TransferCode::timeout` (ZeroMQ behavior).
+- `Receive()` waits, or returns `TransferCode::timeout`.
+
+Thus the start order of the processes does not matter, if the addresses are fixed. The test
+`MultipleDevices.TwoInSameProcess` starts a connecting sender and a binding receiver at the same
+time, in no fixed order. If the connecting device closes its socket before the peer binds, ZeroMQ
+keeps the queued messages for the time of the channel property `linger` (default 500 ms) and then
+drops them (ZeroMQ behavior). See [Stop a topology without losing messages](/guides/end-of-run/).
+
+### Shared memory after a peer ends
+
+With shmem, the data of a message is a block in a segment. After a successful `Send()`, the message
+of the sender no longer owns the block. Its destructor does not free it
+([shmem/Message.h](/source/fairmq/shmem/Message.h/#L372-L411)). The receiver frees the block when it
+destroys or rebuilds the received message and the reference count was 1. Only the process that holds
+the last message of a block frees the block. Thus:
+
+| Case | What happens to the block |
+| --- | --- |
+| The receiver crashes while it holds the message. | The block stays allocated. |
+| The receiver ends before it receives the message. | If the metadata message is lost with a queue (see above), the block stays allocated. If the connecting socket of the sender keeps the message, the next receiver gets it and frees the block. |
+| The sender ends after `Send()`, and the receiver gets the message. | The data is valid. The segment does not belong to the sender. The receiver frees the block. |
+| A process crashes while it holds one of several copies (`Copy()`). | The reference count does not get to 1. The block stays allocated after the other copies are destroyed. |
+| A block of an unmanaged region stays allocated in one of these cases. | The creator of the region gets no callback for this block. |
+
+A block that stays allocated stays until the segment is removed, or until
+`fairmq-shmmonitor --reset-content` (experimental) resets the segment while no device uses it. If
+peers crash often, the segment fills, and `NewMessage()` throws `MessageBadAlloc`. See
+[Shared memory allocation](#shared-memory-allocation).
+
+The segments belong to the session, not to the process that created them. Each shmem transport
+increments the device counter in the management segment when it starts
+([shmem/Manager.h](/source/fairmq/shmem/Manager.h/#L144-L153)). Its destructor decrements the
+counter. When the counter is 0, this transport removes all objects of the session, unless
+`--shm-no-cleanup` is `true` ([shmem/Manager.h](/source/fairmq/shmem/Manager.h/#L773-L798)). Thus:
+
+- When the creator of a segment ends normally and other devices run, the segment stays. The other
+  devices continue.
+- A process that ends without the destructor, for example after a crash or `kill -9`, does not
+  decrement the counter. The topology continues, but the last device does not remove the memory at
+  the end. See [The device counter and cleanup](/shmem/sessions/#the-device-counter-and-cleanup).
+- A peer that starts again with the same session opens the segments and increments the counter
+  again.
+
+### Rules for peers that can stop
+
+<Steps>
+
+1. Give a timeout to `Send()` and `Receive()` on a channel whose peer can stop. With `-1`, only a
+   transition ends the wait.
+
+2. Check the return value of each transfer. Decide in your code when a peer is lost, for example
+   after a number of timeouts. FairMQ does not decide it.
+
+3. Do not take a successful `Send()` as a delivery. If the data must arrive, let the receiver
+   confirm it, with `req`/`rep` or with an acknowledgement on a second channel. The example
+   [multiple-transports](/examples/multiple-transports/) sends acknowledgements on its channel `ack`.
+
+4. Give fixed addresses to the peers that can start again.
+
+5. With shmem, start the new process with the same `--session` as the other devices.
+
+6. After a crash, start the peer again, or stop the topology. When all devices of the session have
+   stopped, look for the memory that stays and remove it. See [Monitor and clean up](/shmem/monitor/).
+   With `--shm-monitor true`, a daemon removes it when the heartbeats of the session stop.
+
+</Steps>
+
+## Problems that can occur
+
+- **The device stops slowly after Ctrl-C:** a hook waits in `std::this_thread::sleep_for()` or in a
+  long computation. Use `WaitFor()` for pauses, and check `NewStatePending()` in long loops.
+- **A timeout is longer than the value:** the sockets wait in steps of 100 ms. Use multiples of
+  100 ms.
+- **The device goes to `ERROR` in `INITIALIZING TASK` with `Config has no key: …`:** the option does
+  not exist. `GetProperty<T>(key)` throws `PropertyNotFoundError`. Register the option in
+  `addCustomOptions()`, or use `GetProperty<T>(key, default)`.
+- **`boost::bad_any_cast` in a hook:** the type in `GetProperty<T>()` is not the type of the option.
+  Use the type from the option definition.
+- **The device ignores the timeout of a channel:** the channel came from `AddChannel()`. See the
+  caution above.
+- **The device has no channels, and the log shows an error at the start of `INITIALIZING DEVICE`:**
+  the configuration parser failed. The config plugin logs the error and continues. Correct the file
+  of `--mq-config` or the values of `--channel-config`.
+- **A device waits forever after its peer crashed:** the transfers use the timeout `-1`. Give a
+  timeout. See [When a peer stops or restarts](#when-a-peer-stops-or-restarts).
+- **The free memory of the shmem segment gets smaller after each crash of a peer:** the blocks of
+  the crashed process stay allocated. Stop the topology, and remove the shared memory. See
+  [Shared memory after a peer ends](#shared-memory-after-a-peer-ends).
+
+## Related pages
+
+- [Transfer codes and errors](/reference/transfer-codes/): all codes and all exceptions of FairMQ.
+- [Behavior of each socket type](/concepts/channels/#behavior-of-each-socket-type): full queues, `pub` drops and `req` errors.
+- [Device states](/concepts/states/): `ERROR` and the transitions.
+- [Receive data with callbacks or loops](/guides/receive-data/): the end of `RUNNING`.
+- [Channel properties](/reference/channel-properties/): `sndTimeoutMs`, `rcvTimeoutMs` and the other
+  properties.
+- [Tune shared memory](/shmem/tuning/): segment size and allocation.

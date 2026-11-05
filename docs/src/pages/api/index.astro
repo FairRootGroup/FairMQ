@@ -1,0 +1,64 @@
+---
+// API overview: the public namespaces with their types and enums.
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { model, base, apiSidebar } from '../../lib/model.mjs';
+import '../../styles/api.css';
+
+const m = model();
+const namespaces = m.namespaces().sort((a: any, b: any) => a.name.localeCompare(b.name));
+const groups = namespaces
+  .map((ns: any) => ({
+    ns,
+    id: ns.name.replace(/::/g, '-'),
+    types: m
+      .types()
+      .filter((t: any) => t.scope === ns.name)
+      .sort((a: any, b: any) => a.short.localeCompare(b.short, 'en', { sensitivity: 'base' })),
+    enums: ns.visible.filter((x: any) => x.kind === 'enum'),
+  }))
+  .filter((g: any) => g.types.length || g.enums.length);
+const count = m.types().length;
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'API reference',
+    description: 'The public classes, structs, enums and functions of FairMQ, generated from the installed headers.',
+    tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 2 },
+  }}
+  sidebar={apiSidebar()}
+  headings={groups.map((g: any) => ({ depth: 2, slug: g.id, text: g.ns.name }))}
+>
+  <p class="api-lead">
+    These pages show the {count} public types of FairMQ and their members. Doxygen reads the installed headers at each
+    build of this site, so the signatures are always current. The text comes from the comments in the headers.
+  </p>
+  <p>
+    Each member links to its line in the <a href={`${base}/source/`}>source browser</a>. Use the search (<kbd>Ctrl</kbd> <kbd>K</kbd>)
+    to find a class or a member by name.
+  </p>
+  {
+    groups.map((g: any) => (
+      <>
+        <h2 id={g.id}>
+          <a href={g.ns.url}>
+            <code>{g.ns.name}</code>
+          </a>
+        </h2>
+        <ul class="api-list">
+          {[...g.types, ...g.enums.map((e: any) => ({ ...e, short: e.name, url: e.page, kind: e.strong ? 'enum class' : 'enum' }))]
+            .sort((a: any, b: any) => a.short.localeCompare(b.short, 'en', { sensitivity: 'base' }))
+            .map((c: any) => (
+              <li>
+                <a href={c.url}>
+                  <code>{c.short}</code>
+                </a>
+                <span class="fmq-badge">{c.kind}</span>
+                {c.brief ? <span class="api-list-brief" set:html={c.brief} /> : <span class="api-list-brief muted">No comment yet.</span>}
+              </li>
+            ))}
+        </ul>
+      </>
+    ))
+  }
+</StarlightPage>

@@ -1,0 +1,174 @@
+---
+// Site header: logo and version, search, main sections, GitHub and theme.
+import Search from '@astrojs/starlight/components/Search.astro';
+import SocialIcons from '@astrojs/starlight/components/SocialIcons.astro';
+import ThemeSelect from '@astrojs/starlight/components/ThemeSelect.astro';
+import { build } from 'virtual:fairmq/data';
+import Glyph from '../Glyph.astro';
+import { sections } from '../../lib/nav';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const path = Astro.url.pathname;
+---
+
+<div class="fmq-header">
+  <div class="fmq-brand">
+    <a class="fmq-logo" href={`${base}/`}>
+      <Glyph />
+      <span translate="no">FairMQ</span>
+    </a>
+    <a
+      class="fmq-ver"
+      href={`${base}/project/release-notes/`}
+      title={build.unreleased ? `Built from ${build.branch} @ ${build.commitShort}` : `Release ${build.release}`}
+    >
+      {build.label}
+      {build.unreleased && <b>dev</b>}
+    </a>
+  </div>
+  <div class="fmq-search print:hidden"><Search /></div>
+  <nav class="fmq-nav sl-hidden md:sl-flex print:hidden" aria-label="Sections">
+    {
+      sections.map((s) => (
+        <a href={`${base}${s.href}`} aria-current={s.match(path, base) ? 'page' : undefined}>
+          {s.label}
+        </a>
+      ))
+    }
+  </nav>
+  <div class="fmq-right sl-hidden md:sl-flex print:hidden">
+    <div class="sl-flex fmq-social"><SocialIcons /></div>
+    <ThemeSelect />
+  </div>
+</div>
+
+<style>
+  .fmq-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    height: 100%;
+  }
+  .fmq-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+    flex: none;
+  }
+  .fmq-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font: 800 1.125rem/1 var(--fmq-font-body);
+    font-stretch: 114%;
+    letter-spacing: -0.01em;
+    color: var(--fmq-ink);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .fmq-ver {
+    display: none;
+    align-items: center;
+    gap: 0.35rem;
+    font: 500 0.75rem/1 var(--fmq-font-mono);
+    border: 1px solid var(--fmq-rule-strong);
+    border-radius: 3px;
+    padding: 0.3rem 0.45rem;
+    color: var(--fmq-ink-2);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .fmq-ver b {
+    font-weight: 500;
+    color: var(--fmq-accent-ink);
+  }
+  .fmq-ver:hover {
+    border-color: var(--fmq-ink-3);
+    color: var(--fmq-ink);
+  }
+  .fmq-search {
+    display: flex;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+  .fmq-nav {
+    gap: 1.25rem;
+    align-self: stretch;
+    align-items: stretch;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .fmq-nav a {
+    display: flex;
+    align-items: center;
+    color: var(--fmq-ink-2);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: calc(-1 * var(--sl-nav-pad-y) - 1px);
+    margin-top: calc(-1 * var(--sl-nav-pad-y));
+    white-space: nowrap;
+  }
+  .fmq-nav a:hover {
+    color: var(--fmq-ink);
+  }
+  .fmq-nav a[aria-current='page'] {
+    color: var(--fmq-ink);
+    border-bottom-color: var(--fmq-saffron);
+  }
+  .fmq-right {
+    gap: 1rem;
+    align-items: center;
+  }
+  .fmq-social {
+    gap: 1rem;
+    align-items: center;
+  }
+  .fmq-social::after {
+    content: '';
+    height: 1.5rem;
+    border-inline-end: 1px solid var(--fmq-rule);
+  }
+
+  /* The search button: a quiet field on wide screens, an icon on phones. */
+  .fmq-search :global(button[data-open-modal]) {
+    border-radius: 4px;
+    border-color: var(--fmq-rule);
+    background: var(--fmq-paper-2);
+    color: var(--fmq-ink-3);
+    font-size: 0.875rem;
+  }
+  .fmq-search :global(button[data-open-modal]:hover) {
+    border-color: var(--fmq-ink-3);
+    color: var(--fmq-ink);
+  }
+  .fmq-search :global(button[data-open-modal] kbd) {
+    font-family: var(--fmq-font-mono);
+    background: var(--fmq-paper);
+    border-radius: 3px;
+  }
+
+  @media (min-width: 30rem) {
+    .fmq-ver {
+      display: inline-flex;
+    }
+  }
+  @media (min-width: 50rem) {
+    .fmq-header {
+      gap: 1.5rem;
+    }
+    .fmq-search {
+      justify-content: flex-start;
+      flex: 0 1 22rem;
+      margin-inline-start: 0.5rem;
+    }
+    .fmq-search :global(site-search),
+    .fmq-search :global(button[data-open-modal]) {
+      width: 100%;
+    }
+    .fmq-nav {
+      margin-inline-start: auto;
+    }
+  }
+</style>

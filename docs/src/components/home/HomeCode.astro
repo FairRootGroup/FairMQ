@@ -1,0 +1,94 @@
+---
+// "A complete device": the smallest program that runs with runDevice.h, and its log.
+import { Code } from '@astrojs/starlight/components';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const device = `#include <fairmq/Device.h>
+#include <fairmq/runDevice.h>
+
+struct Sampler : fair::mq::Device
+{
+    bool ConditionalRun() override
+    {
+        auto msg = NewSimpleMessage("Hello");
+        LOG(info) << "Sending \\"Hello\\"";
+        return Send(msg, "data") >= 0; // false ends RUNNING
+    }
+};
+
+void addCustomOptions(boost::program_options::options_description&) {}
+
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions&)
+{
+    return std::make_unique<Sampler>();
+}`;
+const run = `fairmq-ex-1-1-sampler --id sampler1 --rate 1 \\
+    --channel-config "name=data,type=push,method=bind,address=tcp://*:5555,rateLogging=0"`;
+const log = `[10:42:07][STATE] IDLE ---> INITIALIZING DEVICE
+...
+[10:42:07][STATE] READY ---> RUNNING
+[10:42:07][INFO] fair::mq::Device running...
+[10:42:07][INFO] Sending "Hello"
+[10:42:08][INFO] Sending "Hello"`;
+---
+
+<section class="fmq-homecode not-content" aria-labelledby="home-code">
+  <div class="hc-text">
+    <h2 id="home-code">A complete device</h2>
+    <p>Derive from <code>fair::mq::Device</code> and override one hook. <code>runDevice.h</code> adds the <code>main()</code> function. It parses the command line, loads the plugins and runs the state machine.</p>
+    <p>In the state RUNNING, the device calls <code>ConditionalRun()</code> in a loop, at the rate of <code>--rate</code>. Each call sends one message. When the function returns <code>false</code>, the device leaves the state RUNNING.</p>
+    <a href={`${base}/start/first-device/`}>Your first device →</a>
+  </div>
+  <div class="hc-code">
+    <Code code={device} lang="cpp" title="sampler.cxx" />
+    <Code code={`$ ${run}\n${log}`} lang="txt" frame="terminal" title="Run example 1-1" />
+  </div>
+</section>
+
+<style>
+  .fmq-homecode {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: 2rem;
+    margin-block: 0 2rem;
+  }
+  @media (max-width: 60rem) {
+    .fmq-homecode {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1rem;
+    }
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-stretch: 112%;
+    line-height: 1.15;
+    margin: 0 0 0.75rem;
+    color: var(--fmq-ink);
+  }
+  .hc-text p {
+    margin: 0 0 0.9rem;
+    color: var(--fmq-ink-2);
+    max-width: 44ch;
+  }
+  .hc-text code {
+    font-size: 0.85em;
+    background: var(--fmq-paper-3);
+    border: 1px solid var(--fmq-rule);
+    border-radius: 3px;
+    padding: 0.05em 0.3em;
+  }
+  .hc-text a {
+    font-weight: 600;
+    color: var(--fmq-link);
+    text-decoration: none;
+  }
+  .hc-code {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .hc-code :global(.expressive-code) {
+    margin: 0 !important;
+  }
+</style>

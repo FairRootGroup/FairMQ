@@ -1,0 +1,149 @@
+---
+title: 'req-rep: request and reply'
+description: 'A client sends a request on a req socket and waits for the reply. A server answers on a rep socket of the same channel.'
+sidebar:
+  order: 3
+code: [fairmq/Device.h, fairmq/Channel.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps, FileTree } from '@astrojs/starlight/components';
+
+The req-rep example shows messages in two directions on one channel. The client sends a request and waits
+for the reply. The server receives the request in a data handler and sends the reply on the same channel.
+
+The files of the example are in
+[`examples/req-rep`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/req-rep) on GitHub.
+
+## Topology
+
+| Device | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- |
+| `client` | `data` | `req` | `connect` | `tcp://127.0.0.1:5005` |
+| `server` | `data` | `rep` | `bind` | `tcp://127.0.0.1:5005` |
+
+A `req` socket must send and receive in turn: one request, then one reply. A `rep` socket receives a request
+and sends the reply to the client of this request. The [Channels and sockets](/concepts/channels/) page
+describes all socket types.
+
+## Build the example
+
+The examples build together with FairMQ when the CMake option `BUILD_EXAMPLES` is `ON` (the default):
+
+<FileTree>
+
+- build/examples/req-rep/
+  - fairmq-ex-req-rep-client
+  - fairmq-ex-req-rep-server
+  - fairmq-start-ex-req-rep.sh
+  - test-ex-req-rep.sh
+
+</FileTree>
+
+## Run the example
+
+<Steps>
+
+1. Go to the directory of the example in the build tree:
+
+   ```sh
+   cd build/examples/req-rep
+   ```
+
+2. Run the start script. It opens two `xterm` windows, one for each device:
+
+   ```sh
+   ./fairmq-start-ex-req-rep.sh
+   ```
+
+</Steps>
+
+To run the example without `xterm`, run each command in its own terminal in `build/examples/req-rep`:
+
+```sh
+./fairmq-ex-req-rep-client --id client \
+  --channel-config "name=data,type=req,method=connect,rateLogging=0,address=tcp://127.0.0.1:5005"
+```
+
+```sh
+./fairmq-ex-req-rep-server --id server \
+  --channel-config "name=data,type=rep,method=bind,rateLogging=0,address=tcp://127.0.0.1:5005"
+```
+
+Push `q` in a terminal to stop the device in it.
+
+## The client
+
+<Snippet file="examples/req-rep/client.cxx" start="bool ConditionalRun()" />
+
+- The request is a message for a new `std::string`, with a free function that deletes the string. The
+  [1-1 example](/examples/1-1/#the-sampler) explains this form of
+  [`NewMessage()`](/api/fair/mq/Device/#NewMessage).
+- `NewMessage()` without arguments creates an empty message for the reply.
+- [`Send()`](/api/fair/mq/Device/#Send) sends the request. Then
+  [`Receive()`](/api/fair/mq/Device/#Receive) waits for the reply on the same channel and puts it into
+  `rep`.
+- The default receive timeout of a channel is `-1`. Thus `Receive()` waits until the reply arrives or the
+  device gets a new state. If the server ends before it replies, see
+  [A peer ends while the device sends or receives](/guides/errors-timeouts/#a-peer-ends-while-the-device-sends-or-receives).
+- `ConditionalRun()` returns `false` if `Send()` returns `0` or less, or if `Receive()` returns a negative
+  value. Then the device goes to `READY`.
+- After each reply, the client waits 1 s.
+
+The client has the custom options `--text` (default `Hello`) and `--max-iterations` (default `0`, no limit).
+
+## The server
+
+<Snippet file="examples/req-rep/server.cxx" start="Server()" />
+
+<Snippet file="examples/req-rep/server.cxx" start="bool HandleData" />
+
+The server registers `HandleData()` for the channel `data` with [`OnData()`](/api/fair/mq/Device/#OnData).
+The device calls the handler for each request. The handler puts the text of the request into the reply and
+sends the reply with `Send()` on the same channel. The server has the option `--max-iterations`.
+
+## Output
+
+The listings show the severity and the message of each line, without the time. The client logs two lines
+for each request:
+
+```txt
+[INFO] Sending "Hello" to server.
+[INFO] Received reply from server: "Thank you for the "Hello"!"
+```
+
+The server logs two lines for each request:
+
+```txt
+[INFO] Received request from client: "Hello"
+[INFO] Sending reply to client.
+```
+
+## Test the example
+
+The test script `test-ex-req-rep.sh` starts the client and the server in the background. It uses an
+`ipc://` address in `/tmp`, a new session, and `--control static`. Both devices stop after one request
+(`--max-iterations 1`).
+
+CTest runs the script once for each transport: `Example.req-rep.zeromq` and `Example.req-rep.shmem`. The
+tests exist if you configure with `-DBUILD_TESTING=ON`.
+
+```sh
+cd build
+ctest -R '^Example\.req-rep\.' --output-on-failure
+```
+
+## Things to try
+
+- Send another text: start the client with `--text "Ping"`.
+- Use shared memory: add `--transport shmem` to both commands.
+- Stop after three requests: add `--max-iterations 3` to both commands.
+- Start a second client with the same channel configuration and `--id client2`. The server receives the
+  requests of both clients, and each client gets its own replies.
+
+## Related pages
+
+- [Channels and sockets](/concepts/channels/): the socket types `req` and `rep`.
+- [Receive data with callbacks or loops](/guides/receive-data/): `OnData()` and `Receive()`.
+- [Handle errors and timeouts](/guides/errors-timeouts/): the return values of `Send()` and `Receive()`.
+- [Transfer codes and errors](/reference/transfer-codes/): the negative return values.

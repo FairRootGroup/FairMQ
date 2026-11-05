@@ -1,0 +1,79 @@
+---
+title: Overview
+description: What FairMQ is, its building blocks and how they fit together, what FairMQ does not do, and where to go next.
+sidebar:
+  order: 1
+code: [fairmq/Device.h, fairmq/Channel.h, fairmq/TransportFactory.h, fairmq/Parts.h, fairmq/Plugin.h]
+---
+
+FairMQ is a C++17 library and framework for message queuing in data processing pipelines. Programs called devices send messages to each other through channels. FairMQ moves the messages with ZeroMQ, or through shared memory without a copy on one host.
+
+## What FairMQ is
+
+FairMQ comes from the [FairRoot](https://github.com/FairRootGroup/FairRoot) project at GSI. It helps to build the large data processing workflows of particle physics experiments. FairMQ has two parts:
+
+- **A library.** It gives a message passing API with the communication patterns of ZeroMQ, for example `push`/`pull`, `pub`/`sub` and `req`/`rep`. Different transports implement this API. You can [use channels without a device](/guides/channels-without-device/).
+- **A framework.** You write devices. A device is a class that sends and receives messages. Each device has a state machine and a plugin system for configuration and control.
+
+FairMQ does not look at the content of a message, so your data can have any format. A device can use different transports on different channels at the same time.
+
+## The building blocks
+
+| Building block | What it does | Page |
+| --- | --- | --- |
+| Device | Runs your code. You derive a class from [`fair::mq::Device`](/api/fair/mq/Device/) and override its hooks. The header `fairmq/runDevice.h` runs one device in one process. | [Devices](/concepts/devices/) |
+| Channel, sub-channel, socket | A [channel](/api/fair/mq/Channel/) is a named connection point of a device, for example `data`. A channel has one or more sub-channels. Each sub-channel has one socket with a type (for example `push`), a method (`bind` or `connect`) and an address. | [Channels and sockets](/concepts/channels/) |
+| Transport | Makes the messages, sockets, pollers and regions of a channel ([`fair::mq::TransportFactory`](/api/fair/mq/TransportFactory/)). `zeromq` is the default transport. `shmem` moves the data through shared memory between devices on one host. | [Transports](/concepts/transports/) |
+| Message and multipart | A [message](/api/fair/mq/Message/) holds one buffer of bytes. A multipart message ([`fair::mq::Parts`](/api/fair/mq/Parts/)) holds several parts that a channel sends and receives as one unit. | [Messages and multipart](/concepts/messages/) |
+| State machine and hooks | Each device has a state machine with [states](/api/fair/mq/State/) such as `IDLE`, `READY` and `RUNNING`. In some states, the device calls its hooks, for example [`InitTask()`](/api/fair/mq/Device/#InitTask) and [`ConditionalRun()`](/api/fair/mq/Device/#ConditionalRun). | [Device states](/concepts/states/) |
+| Configuration | Each device has a store of properties ([`fair::mq::ProgOptions`](/api/fair/mq/ProgOptions/)). Command-line options, `--channel-config`, JSON files (`--mq-config`) and plugins set the properties. Your code reads them with [`GetProperty()`](/api/fair/mq/ProgOptions/#GetProperty). | [Configuration and properties](/concepts/configuration/) |
+| Plugins and controllers | [Plugins](/api/fair/mq/Plugin/) add functions to a device at run time. A controller is a plugin that changes the state of the device. The built-in plugin `control` is the default controller. | [Plugins and control](/concepts/plugins/) |
+
+FairMQ has more parts for special tasks. A poller waits for data on several channels (see [Poll several channels](/guides/poll-channels/)). An unmanaged region is a buffer that your code manages, and messages can point into it (see [Unmanaged regions](/shmem/regions/)).
+
+## How the parts fit together
+
+A set of devices and the channels between them is a topology. The topology of [example 1-1](/examples/1-1/) has two devices. The sampler sends messages, and the sink receives them. The two devices work like this:
+
+1. You start each device as a process. The command line gives the device ID and the channel configuration, for example `--id sampler1 --channel-config name=data,type=push,method=bind,address=tcp://*:5555`.
+2. The built-in plugin `config` reads the channel configuration into the properties of the device.
+3. The built-in plugin `control` requests the transitions of the state machine. The device goes from `IDLE` through the initialization states to `RUNNING`.
+4. In the states `BINDING` and `CONNECTING`, the device makes the sockets of its channels with the transport `zeromq`. The sampler binds its `push` socket. The sink connects its `pull` socket.
+5. In the state `RUNNING`, the sampler makes a message in `ConditionalRun()` and sends it on the channel `data`. The sink receives each message in a data callback, which it registered with [`OnData()`](/api/fair/mq/Device/#OnData).
+6. When you press Ctrl+C, the plugin `control` stops the device. The device goes through the reset states to `EXITING`.
+
+[Your first device](/start/first-device/) shows these steps with the code of example 1-1. [Threads in a device](/concepts/threads/) tells which thread runs each hook and callback. For the devices and channels of your own topology, see [Design a topology](/guides/design-topology/).
+
+## What the installation contains
+
+- The library `libfairmq` and its headers in `include/fairmq/`.
+- The CMake package `FairMQ` with the imported target `FairMQ::FairMQ`. See [Use FairMQ in a CMake project](/start/cmake/).
+- The header `fairmq/runDevice.h`. It gives the `main()` function of a device program.
+- The built-in devices `fairmq-bsampler`, `fairmq-merger`, `fairmq-multiplier`, `fairmq-proxy`, `fairmq-sink` and `fairmq-splitter`. See [Built-in devices](/tools/builtin-devices/).
+- The tool [`fairmq-shmmonitor`](/tools/shmmonitor/), which monitors and cleans up shared memory, and the tool `fairmq-uuid-gen`, which prints a UUID.
+- The examples and their start scripts (CMake option `BUILD_EXAMPLES`, default `ON`).
+- Optional: the static analyzer [`fairmq-tidy`](/tools/fairmq-tidy/) (CMake option `BUILD_TIDY_TOOL`, default `OFF`).
+
+## What FairMQ does not do
+
+- **Deployment.** FairMQ does not start devices on hosts. You start each device as a process, for example with a shell script like the start scripts of the examples. For a topology on many hosts, use a deployment system, for example [DDS](https://github.com/FairRootGroup/DDS). [ODC](https://github.com/FairRootGroup/ODC) controls a topology of FairMQ devices through DDS. The example [dds](/examples/dds/) describes a topology for DDS.
+- **Serialization.** A message is a buffer of bytes. FairMQ does not serialize your data. Your code defines the data format.
+- **A broker or storage.** FairMQ has no broker. The devices connect directly to each other. FairMQ does not write messages to disk.
+- **Security.** FairMQ does not encrypt or authenticate the connections between devices.
+- **Shared memory between hosts.** The transport `shmem` works only between devices on one host. Between hosts, use the transport `zeromq`.
+
+:::note[Removed components]
+FairMQ 1.5.0 removed the `ofi` transport, the SDK, and the plugins for DDS and PMIx. The last release with these components is v1.4.56. The DDS plugin (`-P dds`), the SDK and the tool `fairmq-dds-command-ui` moved to the [ODC](https://github.com/FairRootGroup/ODC) project.
+:::
+
+## Where to go next
+
+- [Install](/start/install/) FairMQ with Spack or from source.
+- Write, build and run [your first device](/start/first-device/).
+- [Use FairMQ in a CMake project](/start/cmake/).
+- Run the [examples](/examples/1-1/). Each example shows one feature.
+- Read the [concepts](/concepts/devices/), starting with devices.
+- [Design a topology](/guides/design-topology/): the patterns, the binding devices and the transports.
+- [Test your devices](/guides/test-devices/) with CTest.
+- Measure the throughput of the transports with a [benchmark](/guides/benchmark/).
+- Look up a class in the [API reference](/api/), or read the code in the [source browser](/source/).

@@ -1,0 +1,68 @@
+---
+// Shows code from a file of the repository, so that samples are code that CI compiles.
+//
+//   <Snippet file="examples/1-1/sampler.cxx" />                 whole file, without the license header
+//   <Snippet file="examples/1-1/sampler.cxx" region="run" />    lines between the markers  //! [run]
+//   <Snippet file="examples/1-1/sampler.cxx" lines="20-34" />   a line range (1-based, inclusive)
+//   <Snippet file="examples/1-1/sampler.cxx" start="bool ConditionalRun()" />
+//       from the first line that contains the text to the line that closes its braces
+//   <Snippet file="examples/1-1/sampler.cxx" start="void addCustomOptions" end="^}" />
+//       from the start line to the next line that matches end (text, or /regex/ like "^}")
+//
+// The build fails if the file, the region, the lines or the start text do not exist.
+import { Code } from '@astrojs/starlight/components';
+import path from 'node:path';
+import { paths, build } from 'virtual:fairmq/data';
+import { extractSnippet } from '../../scripts/snippet.mjs';
+
+interface Props {
+  file: string;
+  region?: string;
+  lines?: string;
+  start?: string;
+  end?: string;
+  lang?: string;
+  title?: string;
+  mark?: string | string[];
+  link?: boolean;
+}
+const { file, region, lines, start, end, lang, title, mark, link = true } = Astro.props;
+const { code, first, last: lastLine } = extractSnippet(paths.repoRoot, { file, region, lines, start, end });
+
+const ext = path.extname(file).slice(1);
+const language =
+  lang ?? ({ cxx: 'cpp', cpp: 'cpp', h: 'cpp', hpp: 'cpp', sh: 'sh', json: 'json', cmake: 'cmake', txt: 'cmake', py: 'python', in: 'sh' } as Record<string, string>)[ext] ?? 'text';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const sourceLink = /^fairmq\/.*\.(h|cxx)$/.test(file) ? `${base}/source/${file}/#L${first}-L${lastLine}` : `${build.repo}/blob/${build.commit}/${file}#L${first}-L${lastLine}`;
+---
+
+<div class="fmq-snippet">
+  <Code code={code} lang={language} title={title ?? file} mark={mark} />
+  {
+    link && (
+      <a class="fmq-snippet-src" href={sourceLink}>
+        {file}:{first}–{lastLine}
+      </a>
+    )
+  }
+</div>
+
+<style>
+  .fmq-snippet {
+    margin-block: 1rem;
+  }
+  .fmq-snippet :global(.expressive-code) {
+    margin-block: 0 !important;
+  }
+  .fmq-snippet-src {
+    display: block;
+    text-align: end;
+    margin-top: 0.3rem;
+    font: 500 0.72rem var(--fmq-font-mono);
+    color: var(--fmq-ink-3);
+    text-decoration: none;
+  }
+  .fmq-snippet-src:hover {
+    color: var(--fmq-link);
+  }
+</style>

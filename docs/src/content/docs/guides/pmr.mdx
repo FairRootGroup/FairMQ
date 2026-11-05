@@ -1,0 +1,173 @@
+---
+title: 'Use std::pmr memory resources'
+description: 'Fill a container in the message memory of a transport with a std::pmr allocator, and send it as a message without a copy.'
+sidebar:
+  order: 5
+code: [fairmq/MemoryResources.h, fairmq/MemoryResources.cxx, fairmq/MemoryResourceTools.h, fairmq/TransportFactory.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+Each transport factory has a memory resource of the C++17 type `std::pmr::memory_resource`. A
+container that allocates from this resource keeps its data in a message buffer of the transport.
+[`fair::mq::getMessage()`](/api/fair/mq/#getMessage) then makes a message from the container
+without a copy, and you send it as a normal message.
+
+## The names in FairMQ
+
+[`MemoryResources.h`](/source/fairmq/MemoryResources.h/) declares `namespace pmr = std::pmr;` in
+`fair::mq`. Thus `fair::mq::pmr::polymorphic_allocator<T>` is `std::pmr::polymorphic_allocator<T>`,
+and `fair::mq::pmr::vector<T>` is `std::pmr::vector<T>`. Before v1.10.0, `fair::mq::pmr` was
+`boost::container::pmr`. Code that uses `boost::container::pmr` types with the FairMQ resources does
+not compile with v1.10.0 and later. Use the `std::pmr` types.
+
+| Name | Header | What it is |
+| --- | --- | --- |
+| [`fair::mq::MemoryResource`](/api/fair/mq/MemoryResource/) | `MemoryResources.h` | Interface. A `pmr::memory_resource` that can give the message of a buffer. |
+| [`fair::mq::ChannelResource`](/api/fair/mq/ChannelResource/) | `MemoryResources.h` | The memory resource of a transport factory. Each allocation is one message of this transport. |
+| [`FairMQMemoryResource`](/api/fair/mq/#FairMQMemoryResource) | `MemoryResources.h` | Deprecated name of `fair::mq::MemoryResource`. |
+| [`fair::mq::BytePmrAllocator`](/api/fair/mq/#BytePmrAllocator) | `MemoryResourceTools.h` | `pmr::polymorphic_allocator<fair::mq::byte>`, where [`fair::mq::byte`](/api/fair/mq/#byte) is `unsigned char`. |
+| [`fair::mq::getMessage()`](/api/fair/mq/#getMessage) | `MemoryResourceTools.h` | Makes a message from a container. |
+
+`TransportFactory.h` includes `MemoryResources.h`. For `getMessage()` and `BytePmrAllocator`,
+include `<fairmq/MemoryResourceTools.h>`. For the deprecated names, see
+[Move from the FairMQ\* names](/guides/migrate-names/).
+
+## The memory resource of a transport
+
+[`TransportFactory::GetMemoryResource()`](/api/fair/mq/TransportFactory/#GetMemoryResource) returns
+a pointer to the `ChannelResource` of the factory. Each factory has its own resource, and each call
+returns the same pointer. The test `MemoryResources.transportAllocatorMap` checks this:
+
+<Snippet file="test/memory_resources/_memory_resources.cxx" start="auto allocZMQ = factoryZMQ->GetMemoryResource();" end="EXPECT_EQ(_tmp, allocZMQ);" />
+
+The [conversion operator](/api/fair/mq/TransportFactory/#operator-ChannelResource2a) of the factory
+gives the same pointer. Thus a factory reference can replace the pointer, for example in
+`getMessage(std::move(v), *factory)`.
+
+In a device, `Transport()->GetMemoryResource()` returns the resource of the default transport. For
+the transport of one channel, use `GetChannel("data").Transport()->GetMemoryResource()`.
+
+The `ChannelResource` gives each allocation to the transport
+([MemoryResources.cxx](/source/fairmq/MemoryResources.cxx/#L18-L21)):
+
+- An allocation of `n` bytes makes a message of `n` bytes with the requested alignment. The
+  resource keeps the message, with the address of its data as the key.
+- A deallocation destroys the message of this address.
+- Two resources are equal only if they are the same object.
+- [`getNumberOfMessages()`](/api/fair/mq/ChannelResource/#getNumberOfMessages) returns the number of
+  messages that the resource keeps.
+
+## Send a container without a copy
+
+<Steps>
+
+1. Include `<fairmq/MemoryResourceTools.h>`.
+
+2. Get the memory resource of the transport of the channel that sends the data. With the resource
+   of another transport, `Send()` converts the message. See
+   [Send a message of another transport](/guides/several-transports/#send-a-message-of-another-transport).
+
+3. Make a container with a pmr allocator on this resource, for example a `fair::mq::pmr::vector`.
+
+4. Reserve the full size with `reserve()` before you add the elements.
+
+5. Add the elements.
+
+6. Call `getMessage(std::move(container))`. Do not use the container after this call.
+
+7. Send the message.
+
+</Steps>
+
+The test `PmrMessage.FromContainerWithoutCopy` does these steps for each transport. Then it sends
+the message on a channel and receives it:
+
+<Snippet file="test/memory_resources/_memory_resources.cxx" start="TEST_P(PmrMessage, FromContainerWithoutCopy)" />
+
+After `getMessage()`, the message has the address of the container data. For one exception of the
+shmem transport, see the unused capacity in [Limits](#limits). The size of the message is `size()`
+multiplied by the size of one element, and the resource keeps no message.
+
+In a device, the same steps look like this:
+
+```cpp
+#include <fairmq/Device.h>
+#include <fairmq/MemoryResourceTools.h>
+
+#include <utility>
+#include <vector>
+
+struct Sampler : fair::mq::Device
+{
+    bool ConditionalRun() override
+    {
+        auto* resource = GetChannel("data").Transport()->GetMemoryResource();
+
+        fair::mq::pmr::vector<float> values(resource);
+        values.reserve(1000);
+        for (int i = 0; i < 1000; ++i) {
+            values.push_back(0.5f * i);
+        }
+
+        fair::mq::MessagePtr msg(fair::mq::getMessage(std::move(values)));
+        return Send(msg, "data") >= 0;
+    }
+};
+```
+
+## What `getMessage()` does
+
+`getMessage(container, target)` moves the container into the function, and finds the resource of
+its allocator ([MemoryResourceTools.h](/source/fairmq/MemoryResourceTools.h/#L25-L63)). Give the
+container as an rvalue, for example `std::move(v)`. A call with an lvalue does not compile, because
+the function uses `ContainerT::value_type` and `ContainerT` is then a reference type. The
+optional `target` is a `fair::mq::MemoryResource*`. The result depends on the two resources:
+
+| Resource of the container | `target` | Result |
+| --- | --- | --- |
+| A FairMQ resource | none, or the same resource | No copy. The message of the container buffer, with the size of the elements in the container. |
+| A FairMQ resource | another FairMQ resource | A new message of the target transport with a copy of the data. The container frees its buffer. |
+| Another `std::pmr` resource | a FairMQ resource | A new message of the target transport with a copy of the data. |
+| Another `std::pmr` resource | none | Throws `std::runtime_error` with `Neither the container or target resource specified`. |
+
+If the resource has no message for the container data, `getMessage()` copies the data into a new
+message. This occurs for a container without a buffer. Examples are an empty vector without `reserve()`, and
+a short `std::pmr::string` that keeps its characters in the string object.
+
+The test `MemoryResources.getMessage` shows both results. The first message has the address of the
+vector data. The second message, with the shmem factory as target, has a new address:
+
+<Snippet file="test/memory_resources/_memory_resources.cxx" start="// test message creation on the same channel it was allocated with" end="EXPECT_EQ(messageArray[2], 6);" />
+
+## Limits
+
+- **Allocator.** The container must use a `pmr::polymorphic_allocator`, because `getMessage()`
+  calls `get_allocator().resource()`.
+- **Contiguous data.** `getMessage()` uses `data()` and `size()` of the container. The buffer must
+  start at `data()`, as in `std::vector`.
+- **Element type.** Use types that you can copy as bytes, for example numbers and structs of
+  numbers. `getMessage()` destroys the container, and with it the elements. The message keeps their
+  bytes. A receiver in another process also gets only the bytes.
+- **Growth.** Each allocation makes a message. If the vector grows past its capacity, it allocates
+  a new message, copies the elements, and destroys the old message. Use `reserve()`.
+- **Unused capacity.** `getMessage()` makes the message smaller with
+  [`SetUsedSize()`](/api/fair/mq/Message/#SetUsedSize). The zeromq transport keeps the unused memory
+  until it destroys the message. The shmem transport tries to give the unused memory back to the
+  segment. If this fails, it keeps the memory, or it copies the data into a new buffer if 1000000
+  bytes or more are unused.
+- **Threads.** `ChannelResource` has no lock. All channels of one transport in a device share one
+  resource. Allocate and call `getMessage()` from one thread at a time.
+- **Lifetime.** The resource is a member of the transport factory. Destroy the containers before the
+  factory. A device destroys its factories in the state `RESETTING DEVICE`.
+- **Receive.** `getMessage()` is for the sender only. A received message is a normal message: read
+  it with `GetData()` and `GetSize()`.
+
+## Related pages
+
+- [Messages and multipart](/concepts/messages/): how to make, send and receive messages.
+- [Transports](/concepts/transports/): the transport factories that own the memory resources.
+- [How shared memory works](/shmem/how-it-works/): where the shmem transport keeps the message data.
+- [Use channels without a device](/guides/channels-without-device/): the channels of the tests in this guide.
+- [Send your own data types](/guides/send-data-types/): structs, arrays and serialized objects in messages.

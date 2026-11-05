@@ -1,0 +1,44 @@
+---
+// A small button that copies a text to the clipboard.
+interface Props {
+  text: string;
+  label?: string;
+}
+const { text, label = 'Copy' } = Astro.props;
+---
+
+<button type="button" class="fmq-copy" data-copy={text} aria-label={label} title={label}>Copy</button>
+
+<script>
+  document.addEventListener('click', async (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button.fmq-copy');
+    if (!btn) return;
+    const text = btn.dataset.copy ?? '';
+    const done = (msg: string) => {
+      btn.textContent = msg;
+      setTimeout(() => (btn.textContent = 'Copy'), 1400);
+    };
+    try {
+      await navigator.clipboard.writeText(text);
+      done('Copied');
+    } catch {
+      done('Not copied');
+    }
+  });
+</script>
+
+<style>
+  .fmq-copy {
+    font: 500 0.75rem/1 var(--fmq-font-body);
+    border: 1px solid var(--fmq-rule-strong);
+    background: var(--fmq-paper);
+    color: var(--fmq-ink-2);
+    border-radius: 3px;
+    padding: 0.3rem 0.5rem;
+    cursor: pointer;
+  }
+  .fmq-copy:hover {
+    border-color: var(--fmq-ink-3);
+    color: var(--fmq-ink);
+  }
+</style>

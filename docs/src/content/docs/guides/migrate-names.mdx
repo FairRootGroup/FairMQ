@@ -1,0 +1,195 @@
+---
+title: 'Move from the FairMQ* names'
+description: 'Replace the deprecated FairMQ* headers, type names and members with the fair::mq names. The complete list of old names and their replacements.'
+sidebar:
+  order: 12
+code: [fairmq/FwdDecls.h, fairmq/Device.h, fairmq/Message.h, fairmq/UnmanagedRegion.h, fairmq/runFairMQDevice.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+The API of FairMQ is in the namespace `fair::mq`, and its headers are in the directory `fairmq/`. The old global names like `FairMQDevice` and the old headers like `<FairMQDevice.h>` still compile, but the compiler warns. This guide moves your code to the new names and lists each old name with its replacement.
+
+## Before and after
+
+```cpp title="mydevice.cxx (old)"
+#include <FairMQDevice.h>
+
+class MyDevice : public FairMQDevice
+{
+    bool HandleData(FairMQMessagePtr& msg, int);
+};
+```
+
+```cpp title="mydevice.cxx (new)"
+#include <fairmq/Device.h>
+
+class MyDevice : public fair::mq::Device
+{
+    bool HandleData(fair::mq::MessagePtr& msg, int);
+};
+```
+
+## Move your code
+
+<Steps>
+
+1. Replace the old `#include` lines. Use the table [Headers](#headers).
+
+2. Replace the old type names. Use the table [Type names](#type-names). [fairmq-tidy](/guides/fairmq-tidy/) finds most of them for you.
+
+3. If your `main()` comes from `runFairMQDevice.h`, move to `runDevice.h`. See [Replace runFairMQDevice.h](#replace-runfairmqdeviceh).
+
+4. Replace the deprecated functions and members. Use the table [Functions and members](#functions-and-members).
+
+5. Build with `-Werror=deprecated-declarations`. The compiler then stops at each remaining use of a deprecated name:
+
+   ```sh
+   cmake -S . -B build -DCMAKE_CXX_FLAGS="-Werror=deprecated-declarations"
+   cmake --build build
+   ```
+
+</Steps>
+
+## How the compiler warns
+
+An old header contains a `#pragma GCC warning`. An old type name or member has the attribute `[[deprecated("…")]]`, and the compiler prints the text of the attribute. For the old code above, GCC and Clang print these warnings (the paths are shorter here):
+
+<Tabs>
+<TabItem label="GCC">
+
+```txt
+FairMQDevice.h:13:21: warning: Deprecated header: Use <fairmq/Device.h> instead
+mydevice.cxx:5:47: warning: 'using FairMQMessagePtr = using fair::mq::MessagePtr = class std::unique_ptr<fair::mq::Message>' is deprecated: Use fair::mq::MessagePtr [-Wdeprecated-declarations]
+```
+
+</TabItem>
+<TabItem label="Clang">
+
+```txt
+FairMQDevice.h:13:13: warning: Deprecated header: Use <fairmq/Device.h> instead [-W#pragma-messages]
+mydevice.cxx:3:25: warning: 'FairMQDevice' is deprecated: Use fair::mq::Device [-Wdeprecated-declarations]
+mydevice.cxx:5:21: warning: 'FairMQMessagePtr' is deprecated: Use fair::mq::MessagePtr [-Wdeprecated-declarations]
+```
+
+</TabItem>
+</Tabs>
+
+The compiler does not show all uses:
+
+- GCC 13 does not warn for a deprecated alias in a list of base classes, for example `class MyDevice : public FairMQDevice`. Clang and fairmq-tidy find it.
+- [`<fairmq/FwdDecls.h>`](/source/fairmq/FwdDecls.h/#L29-L43) declares twelve of the old names again, without the attribute. A file that includes only this header gets no warning for these names.
+- An old header warns only if the file did not include the new header before. `FairMQLogger.h` always warns. `runFairMQDevice.h` does not warn.
+- `FairMQDevicePtr` of `runFairMQDevice.h` has no attribute.
+
+## Headers
+
+Each old header includes the new header, so the old `#include` lines still work. The include directories of an installed `FairMQ::FairMQ` are `include` and `include/fairmq`, so the old headers also work with the prefix `fairmq/`, for example `<fairmq/FairMQDevice.h>`.
+
+| Old header | New header | Warning |
+| --- | --- | --- |
+| [`<FairMQChannel.h>`](/source/fairmq/FairMQChannel.h/) | `<fairmq/Channel.h>` | yes |
+| [`<FairMQDevice.h>`](/source/fairmq/FairMQDevice.h/) | `<fairmq/Device.h>` | yes |
+| [`<FairMQLogger.h>`](/source/fairmq/FairMQLogger.h/) | `<fairlogger/Logger.h>` (FairLogger) | yes, always |
+| [`<FairMQMessage.h>`](/source/fairmq/FairMQMessage.h/) | `<fairmq/Message.h>` | yes |
+| [`<FairMQParts.h>`](/source/fairmq/FairMQParts.h/) | `<fairmq/Parts.h>` | yes |
+| [`<FairMQPoller.h>`](/source/fairmq/FairMQPoller.h/) | `<fairmq/Poller.h>` | yes |
+| [`<FairMQSocket.h>`](/source/fairmq/FairMQSocket.h/) | `<fairmq/Socket.h>` | yes |
+| [`<FairMQTransportFactory.h>`](/source/fairmq/FairMQTransportFactory.h/) | `<fairmq/TransportFactory.h>` | yes |
+| [`<FairMQUnmanagedRegion.h>`](/source/fairmq/FairMQUnmanagedRegion.h/) | `<fairmq/UnmanagedRegion.h>` | yes |
+| [`<options/FairMQProgOptions.h>`](/source/fairmq/options/FairMQProgOptions.h/) | `<fairmq/ProgOptions.h>` | yes |
+| [`<runFairMQDevice.h>`](/source/fairmq/runFairMQDevice.h/) | `<fairmq/runDevice.h>` | no |
+
+## Type names
+
+The table is in the order of the headers that declare the deprecated alias. The column fairmq-tidy shows if [the check](/tools/fairmq-tidy/#names-that-the-check-finds) finds the name (with Clang 18).
+
+| Old name | New name | Declared in | fairmq-tidy |
+| --- | --- | --- | --- |
+| `FairMQChannel` | [`fair::mq::Channel`](/api/fair/mq/Channel/) | `Channel.h` | yes |
+| `FairMQChannelMap` | [`fair::mq::ChannelMap`](/api/fair/mq/#ChannelMap) | `Device.h` | yes |
+| `InputMsgCallback` | [`fair::mq::InputMsgCallback`](/api/fair/mq/#InputMsgCallback) | `Device.h` | no |
+| `InputMultipartCallback` | [`fair::mq::InputMultipartCallback`](/api/fair/mq/#InputMultipartCallback) | `Device.h` | no |
+| `FairMQDevice` | [`fair::mq::Device`](/api/fair/mq/Device/) | `Device.h` | yes |
+| `fair::mq::FairMQMemoryResource` | [`fair::mq::MemoryResource`](/api/fair/mq/MemoryResource/) | `MemoryResources.h` | no |
+| `fairmq_free_fn` | [`fair::mq::FreeFn`](/api/fair/mq/#FreeFn) | `Message.h` | no |
+| `FairMQMessage` | [`fair::mq::Message`](/api/fair/mq/Message/) | `Message.h` | yes |
+| `FairMQMessagePtr` | [`fair::mq::MessagePtr`](/api/fair/mq/#MessagePtr) | `Message.h` | yes |
+| `FairMQParts` | [`fair::mq::Parts`](/api/fair/mq/Parts/) | `Parts.h` | yes |
+| `FairMQPoller` | [`fair::mq::Poller`](/api/fair/mq/Poller/) | `Poller.h` | yes |
+| `FairMQPollerPtr` | [`fair::mq::PollerPtr`](/api/fair/mq/#PollerPtr) | `Poller.h` | yes |
+| `FairMQProgOptions` | [`fair::mq::ProgOptions`](/api/fair/mq/ProgOptions/) | `ProgOptionsFwd.h` | yes |
+| `FairMQSocket` | [`fair::mq::Socket`](/api/fair/mq/Socket/) | `Socket.h` | yes |
+| `FairMQSocketPtr` | [`fair::mq::SocketPtr`](/api/fair/mq/#SocketPtr) | `Socket.h` | yes |
+| `FairMQTransportFactory` | [`fair::mq::TransportFactory`](/api/fair/mq/TransportFactory/) | `TransportFactory.h` | yes |
+| `FairMQTransportFactoryError` | [`fair::mq::TransportFactoryError`](/api/fair/mq/TransportFactoryError/) | `TransportFactory.h` | yes |
+| `FairMQRegionEvent` | [`fair::mq::RegionEvent`](/api/fair/mq/RegionEvent/) | `UnmanagedRegion.h` | yes |
+| `FairMQRegionInfo` | [`fair::mq::RegionInfo`](/api/fair/mq/RegionInfo/) | `UnmanagedRegion.h` | yes |
+| `FairMQRegionBlock` | [`fair::mq::RegionBlock`](/api/fair/mq/RegionBlock/) | `UnmanagedRegion.h` | yes |
+| `FairMQRegionCallback` | [`fair::mq::RegionCallback`](/api/fair/mq/#RegionCallback) | `UnmanagedRegion.h` | yes |
+| `FairMQRegionBulkCallback` | [`fair::mq::RegionBulkCallback`](/api/fair/mq/#RegionBulkCallback) | `UnmanagedRegion.h` | yes |
+| `FairMQRegionEventCallback` | [`fair::mq::RegionEventCallback`](/api/fair/mq/#RegionEventCallback) | `UnmanagedRegion.h` | yes |
+| `FairMQUnmanagedRegion` | [`fair::mq::UnmanagedRegion`](/api/fair/mq/UnmanagedRegion/) | `UnmanagedRegion.h` | yes |
+| `FairMQUnmanagedRegionPtr` | [`fair::mq::UnmanagedRegionPtr`](/api/fair/mq/#UnmanagedRegionPtr) | `UnmanagedRegion.h` | yes |
+| `FairMQRegionConfig` | [`fair::mq::RegionConfig`](/api/fair/mq/RegionConfig/) | `UnmanagedRegion.h` | yes |
+| `FairMQDevicePtr` | `std::unique_ptr<fair::mq::Device>` as the return type of `getDevice()` | `runFairMQDevice.h` | yes, as `fair::mq::Device *` |
+
+All old names are global, except `fair::mq::FairMQMemoryResource`. All names in the table except `FairMQDevicePtr` have the attribute `[[deprecated]]`.
+
+## Replace runFairMQDevice.h
+
+[`runFairMQDevice.h`](/source/fairmq/runFairMQDevice.h/) and [`runDevice.h`](/source/fairmq/runDevice.h/) both contain a `main()` function. Your code gives the two functions `getDevice()` and `addCustomOptions()`. The signature of `getDevice()` is different:
+
+| Header | Declaration of `getDevice()` |
+| --- | --- |
+| `runFairMQDevice.h` | `FairMQDevicePtr getDevice(const fair::mq::ProgOptions& config);` with `FairMQDevicePtr` = `fair::mq::Device*` |
+| `runDevice.h` | `std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& config);` |
+
+`addCustomOptions(boost::program_options::options_description&)` is the same in both headers.
+
+```cpp title="Old code"
+#include <runFairMQDevice.h>
+
+FairMQDevicePtr getDevice(const fair::mq::ProgOptions& /*config*/)
+{
+    return new MyDevice();
+}
+```
+
+The new code returns a `std::unique_ptr`, and the parameter is not `const`. The example 1-1 uses the new header:
+
+<Snippet file="examples/1-1/sampler.cxx" start="#include <fairmq/Device.h>" end="#include <fairmq/runDevice.h>" />
+
+<Snippet file="examples/1-1/sampler.cxx" start="std::unique_ptr<fair::mq::Device> getDevice" />
+
+## Functions and members
+
+The compiler warns for these members too. The column "Declared in" names the header in `fairmq/`.
+
+| Old | New | Declared in |
+| --- | --- | --- |
+| [`Device::fChannels`](/api/fair/mq/Device/#fChannels) | [`GetChannels()`](/api/fair/mq/Device/#GetChannels) | `Device.h` |
+| [`Device::GetStateName(state)`](/api/fair/mq/Device/#GetStateName) | [`fair::mq::GetStateName(state)`](/api/fair/mq/#GetStateName) of `<fairmq/States.h>` | `Device.h` |
+| [`Device::GetTransitionName(transition)`](/api/fair/mq/Device/#GetTransitionName) | [`fair::mq::GetTransitionName(transition)`](/api/fair/mq/#GetTransitionName) of `<fairmq/States.h>` | `Device.h` |
+| [`Device::Serialize<S>(msg, data, args...)`](/api/fair/mq/Device/#Serialize) | `S().Serialize(msg, data, args...)` | `Device.h` |
+| [`Device::Deserialize<D>(msg, data, args...)`](/api/fair/mq/Device/#Deserialize) | `D().Deserialize(msg, data, args...)` | `Device.h` |
+| [`Parts::AddPart(Message* msg)`](/api/fair/mq/Parts/#AddPart) | [`Parts::AddPart(MessagePtr msg)`](/api/fair/mq/Parts/#AddPart-2) | `Parts.h` |
+| [`Parts::AtRef(index)`](/api/fair/mq/Parts/#AtRef) | `*(parts.At(index))` with [`At()`](/api/fair/mq/Parts/#At) | `Parts.h` |
+| [`Socket::Close()`](/api/fair/mq/Socket/#Close) | Destroy the socket. Its destructor closes it. | `Socket.h` |
+| [`shmem::Socket::GetConstant()`](/api/fair/mq/shmem/Socket/#GetConstant) and `zmq::Socket::GetConstant()` | `fair::mq::zmq::getConstant()` of `<fairmq/zeromq/Common.h>` | `shmem/Socket.h`, `zeromq/Socket.h` |
+
+## CMake names
+
+The CMake package is `FairMQ`. Link your targets with `FairMQ::FairMQ`. The executables of FairMQ are imported targets with the same prefix, for example `FairMQ::fairmq-bsampler`. See [Use FairMQ in a CMake project](/start/cmake/).
+
+## Automate the search with fairmq-tidy
+
+`fairmq-tidy` finds the uses of most old type names and shows the new name for each one. It does not look at the `#include` lines and the members, and it does not change your files. See [Check code with fairmq-tidy](/guides/fairmq-tidy/).
+
+## Related pages
+
+- [Check code with fairmq-tidy](/guides/fairmq-tidy/): find the old type names in a project.
+- [fairmq-tidy](/tools/fairmq-tidy/): the check, the command line and the CMake function.
+- [Your first device](/start/first-device/): a device with the current API.
+- [Use FairMQ in a CMake project](/start/cmake/): the package and its targets.

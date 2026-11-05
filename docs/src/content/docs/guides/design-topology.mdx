@@ -1,0 +1,284 @@
+---
+title: Design a topology
+description: 'Select the patterns, the binding devices, the channels and the transports of a topology: fan-out, fan-in, n to m, broadcast, one host and several hosts.'
+sidebar:
+  order: 2.5
+code: [fairmq/Channel.h, fairmq/Device.cxx, fairmq/devices/Splitter.h, fairmq/devices/Merger.h, fairmq/devices/Multiplier.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+A topology is a set of devices and the channels that connect them. This guide shows how to select the
+socket type, the binding side, the channels and the transport of each link, and how to plan the
+addresses. Each decision refers to an example of the repository that uses it.
+
+## Before you start
+
+- Read [Channels and sockets](/concepts/channels/). This guide uses its terms and does not repeat its
+  tables.
+- Draw your devices and the direction of the data between them. Each arrow is a link.
+
+## Steps
+
+<Steps>
+
+1. For each link, [select the socket pattern](#select-the-socket-pattern).
+
+2. For each link, [select the device that binds](#select-the-device-that-binds).
+
+3. Decide where you need [sub-channels or several channels](#sub-channels-or-several-channels).
+
+4. [Select the transport](#select-the-transport-of-each-link) of each link.
+
+5. Write the [address plan](#plan-the-addresses).
+
+6. Write the configuration as [Configure channels](/guides/configure-channels/) shows, and
+   [check the result](#check-the-result).
+
+</Steps>
+
+## Select the socket pattern
+
+The [socket types](/concepts/channels/#socket-types-and-patterns) give four patterns. Select the
+pattern from what the link must do:
+
+| What the link must do | Pattern | Transports | Example |
+| --- | --- | --- | --- |
+| Give each message to one of several workers | `push` to `pull` | `zeromq`, `shmem` | [1-n-1](/examples/1-n-1/) |
+| Collect the messages of several senders | `push` to `pull` | `zeromq`, `shmem` | [1-n-1](/examples/1-n-1/), [n-m](/examples/n-m/) |
+| Send each message to all receivers | `pub` to `sub` | `zeromq` only | [multiple-channels](/examples/multiple-channels/) |
+| Send the same data to all receivers with `shmem` | `push` sub-channels and `Copy()` | `zeromq`, `shmem` | [copypush](/examples/copypush/) |
+| Send a request and wait for the reply | `req` to `rep` | `zeromq`, `shmem` | [req-rep](/examples/req-rep/) |
+| Connect exactly two devices | `pair` | `zeromq`, `shmem` | [readout](/examples/readout/) |
+
+Know these properties of the patterns before you select one. For the details, see
+[Behavior of each socket type](/concepts/channels/#behavior-of-each-socket-type).
+
+- A `push` socket with several peers gives each message to one peer, in turn. A `pull` socket
+  receives from all its peers. When the queues of all peers are full, `Send()` waits (ZeroMQ
+  behavior). Thus the receivers slow down the sender when they cannot keep up.
+- The channel properties `sndBufSize` and `rcvBufSize` (default 1000 messages) set the size of the
+  send queue and the receive queue. FairMQ gives them to ZeroMQ as `ZMQ_SNDHWM` and `ZMQ_RCVHWM`
+  ([Channel.cxx](/source/fairmq/Channel.cxx/#L328-L330)).
+- A `pub` socket does not wait for slow `sub` peers. For a peer with a full queue, it drops the
+  messages. A `sub` socket that connects late misses the earlier messages (ZeroMQ behavior). Do not
+  use `pub` and `sub` for data that must arrive.
+- The `zeromq` transport subscribes each `sub` socket to all messages
+  ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L70-L74)). FairMQ has no option for a topic
+  filter ([zeromq/Common.h](/source/fairmq/zeromq/Common.h/#L91-L123)).
+- The `shmem` transport throws `SocketError` for `pub` and `sub`. Give such a channel
+  `transport=zeromq`, as the channel `ack` of the
+  [multiple-transports example](/examples/multiple-transports/) does.
+- A `req` socket must send and receive in turn. One `rep` server can answer several `req` clients
+  (ZeroMQ behavior).
+- A `pair` socket has one peer (ZeroMQ behavior). For n peers, the device needs n sub-channels.
+
+## Patterns of the examples
+
+### Fan-out and fan-in
+
+In the [1-n-1 example](/examples/1-n-1/), the sampler binds a `push` channel, and the processors
+connect to it. The processors also connect to the `pull` channel of the sink. The `push` socket
+distributes the messages, and the `pull` socket of the sink collects them. All processors have the
+same configuration. A binding socket accepts new peers at any time (ZeroMQ behavior), so you can add a
+processor while the other devices run.
+
+You can also distribute the messages in your code. Give the output channel one sub-channel for each
+receiver, and select the index in `Send()`. The built-in devices do this:
+
+- [`fairmq-splitter`](/tools/builtin-devices/#fairmq-splitter) sends each message on the next
+  sub-channel of its output channel, in turn.
+- [`fairmq-merger`](/tools/builtin-devices/#fairmq-merger) polls all sub-channels of its input channel
+  and sends on one output.
+- [`fairmq-multiplier`](/tools/builtin-devices/#fairmq-multiplier) sends each message to all
+  sub-channels of all output channels, with `Copy()` for all except the last.
+
+<Snippet file="fairmq/devices/Splitter.h" start="bool HandleData(T& payload, int)" />
+
+The [copypush example](/examples/copypush/) sends a copy of each message on each sub-channel.
+`Copy()` does not copy the data. Use this form for a broadcast with `shmem`.
+
+### n senders to m receivers
+
+In the [n-m example](/examples/n-m/), each of the three senders connects to all four receivers. The
+`data` channel of a sender has one sub-channel for each receiver:
+
+<Snippet file="examples/n-m/fairmq-start-ex-n-m.sh.in" start='SENDER0="fairmq-ex-n-m-sender"' end="num-receivers 4" />
+
+- A synchronizer sends an id on a `pub` channel. All senders get the same id.
+- Each sender selects the sub-channel from the id: the id modulo `--num-receivers`. Thus all parts of
+  one id go to the same receiver.
+- Each receiver binds one `pull` channel and collects the parts of all senders.
+- The senders send with a timeout of 0 ms. If the queue of one receiver is full, the sender drops the
+  parts and continues with the other receivers. See
+  [Timeout for one call](/guides/errors-timeouts/#timeout-for-one-call).
+
+The pair variant of the example uses `pair` channels. Each receiver then binds one sub-channel for
+each sender. The push and pull variant needs 4 ports for the data, and the pair variant needs 12 (3
+senders × 4 receivers).
+
+### Broadcast and data
+
+In the [multiple-channels example](/examples/multiple-channels/), the sampler sends data to the sink
+on `data` (`push` to `pull`). A broadcaster binds a `pub` channel, and the sampler and the sink connect
+a `sub` channel to it. The two links have different socket types, so each device has two channels. The
+sampler polls both channels in its `Run()` loop. The sink registers one data callback for each channel.
+
+### A readout chain
+
+In the [readout example](/examples/readout/), the readout device creates an
+[unmanaged region](/shmem/regions/) with the transport of its output channel and sends messages that
+point into it. The start script gives each channel its transport:
+
+<Snippet file="examples/readout/fairmq-start-ex-readout.sh.in" start='READOUT="fairmq-ex-readout-readout"' end="name=sr,type=pair,method=bind" />
+
+- The links on the readout host use `shmem`. The messages go from the readout device through the
+  builder to the sender without a copy.
+- The sender forwards the messages to the receiver on a `zeromq` channel. The receiver can run on
+  another host.
+- The readout device gets the acknowledgement for a block of the region when the last device releases
+  it. For the link to the other host, this is after the zeromq transport releases the data.
+
+## Select the device that binds
+
+Bind on the device with a stable place in the topology. Connect on the devices that you add, remove or
+start several times:
+
+| Link | Binds | Connects | Example |
+| --- | --- | --- | --- |
+| One source, n workers, one sink | Source and sink | Workers | [1-n-1](/examples/1-n-1/) |
+| n senders, m receivers | Receivers | Senders | [n-m](/examples/n-m/) |
+| One broadcaster, n listeners | Broadcaster | Listeners | [multiple-channels](/examples/multiple-channels/) |
+| One server, n clients | Server | Clients | [req-rep](/examples/req-rep/) |
+| A chain of devices | `readout1`, `sender1`, `receiver1` | `builder1`, `sender1` | [readout](/examples/readout/) |
+
+- The method does not depend on the socket type. In the [multipart example](/examples/multipart/), the
+  `pull` side binds. In the multiple-transports example, the `sub` channel `ack` binds and the `pub`
+  channel connects.
+- The connecting devices need the address of the binding device. With one binding device, all
+  connecting devices can use one configuration. The processors of the 1-n-1 example share one entry of
+  the JSON file with `--config-key processor`.
+- You can start the devices in any sequence. See [Bind and connect](/concepts/channels/#bind-and-connect).
+
+## Sub-channels or several channels
+
+| Use | When | Example |
+| --- | --- | --- |
+| One sub-channel with several peers | The socket distributes the messages, and all peers are equal. You can add peers without a change in the binding device. | [1-n-1](/examples/1-n-1/) |
+| Several sub-channels of one channel | All links have the same role, socket type and transport, and your code selects the peer with the index. | [copypush](/examples/copypush/), [n-m](/examples/n-m/) |
+| Several channels | The links have different roles, socket types or transports. | [multiple-channels](/examples/multiple-channels/), [multiple-transports](/examples/multiple-transports/) |
+
+- In `--channel-config`, each `address=` key makes one sub-channel. See
+  [Several sub-channels](/guides/configure-channels/#several-sub-channels).
+- Give all sub-channels of one channel the same transport. The pollers and the data callbacks use the
+  transport of the sub-channel 0 for all sub-channels ([Device.cxx](/source/fairmq/Device.cxx/#L452-L481)).
+- A data callback gets the index of the sub-channel. With more than one input sub-channel, the device
+  polls all of them. See [Several input channels](/guides/receive-data/#several-input-channels).
+
+## Select the transport of each link
+
+- Use `shmem` for the links inside one host. The receiver finds the data in the shared memory, and
+  only the metadata goes through the socket. Both peers must use the same `--session`. See
+  [Transports](/concepts/transports/).
+- Use `zeromq` for the links between hosts, and for `pub` and `sub`.
+- A device on the border of a host has channels of both transports. Make its messages with
+  `NewMessageFor()`. A shmem message goes out on a zeromq channel without a copy. A zeromq message on
+  a shmem channel is copied. See [Use several transports](/guides/several-transports/).
+- If a device receives with data callbacks from channels of two transports, the device polls each
+  transport in its own thread. See [Threads in a device](/concepts/threads/).
+- Create a region in the first device of a chain, with the transport of its output channel. See
+  [Unmanaged regions](/shmem/regions/).
+- To run two topologies on one host, give them different sessions. See
+  [Keep two topologies apart](/shmem/sessions/#keep-two-topologies-apart).
+
+## Plan the addresses
+
+### Fixed ports
+
+Give each binding sub-channel its own port. The examples use fixed ports, for example 5555 and
+5556 in 1-n-1, and 8010 and 8021 to 8024 in n-m.
+
+- Set `autoBind=false` on the binding sub-channels. Otherwise a port in use gives a random port, and
+  the peers do not find the device. See [Automatic ports](/concepts/channels/#automatic-ports).
+- Bind to `tcp://*:<port>` for all interfaces (ZeroMQ behavior). The start scripts of n-m and
+  readout bind to `tcp://localhost:<port>`. This works only on one host.
+- On the connecting side, give the host name or the IPv4 address of the binding host. See
+  [Addresses on several hosts](/guides/configure-channels/#addresses-on-several-hosts).
+
+### Automatic ports
+
+A binding sub-channel without an address binds to port 1 of the interface of `--network-interface`.
+Without root rights, this bind fails. Then autobind (`autoBind`, default `true`) selects a random port
+from `portRangeMin` to `portRangeMax` (default 22000 to 23000). After the bind, the device writes the
+address to the property `chans.<name>.<index>.address`. Your code, for example a plugin, must give this
+address to the connecting devices. A connecting device reads its
+address property again every 50 ms in `CONNECTING`, until `--init-timeout` (default 120 s) ends. See
+[Addresses on several hosts](/guides/configure-channels/#addresses-on-several-hosts).
+
+The topologies of the [dds](/examples/dds/) and [qc](/examples/qc/) examples have no addresses. The DDS
+plugin of FairMQ v1.4.56 gave the addresses to the peers. This repository has no such plugin.
+
+### ipc on one host
+
+On one host, `ipc://` endpoints need no ports. The test scripts of the examples use one file for each
+sub-channel, with the session in the name. The channels then get the address `ipc://$chan1Addr`:
+
+<Snippet file="examples/1-n-1/test-ex-1-n-1.sh.in" start='chan1Addr="/tmp/fmq_' end="chan2Addr=" />
+
+Both transports work with `ipc://`. The shmem transport sends the metadata of the messages on this
+endpoint. Use `inproc://` only between channels of one transport in one device. An `inproc://`
+endpoint works only inside one ZeroMQ context (ZeroMQ behavior), and each transport of a device has
+its own context.
+
+## Example for each need
+
+| Need | Example |
+| --- | --- |
+| Two devices, one direction | [1-1](/examples/1-1/) |
+| Distribute work and collect the results | [1-n-1](/examples/1-n-1/) |
+| Request and reply | [req-rep](/examples/req-rep/) |
+| Several parts in one message | [multipart](/examples/multipart/) |
+| The same data to each receiver, also with `shmem` | [copypush](/examples/copypush/) |
+| Data and a broadcast in one device | [multiple-channels](/examples/multiple-channels/) |
+| `shmem` and `zeromq` in one device | [multiple-transports](/examples/multiple-transports/) |
+| Messages from your own shared memory, with acknowledgements | [region](/examples/region/) |
+| A readout chain from one host to another | [readout](/examples/readout/) |
+| Split, merge and copy without your own code | [builtin-devices](/examples/builtin-devices/) |
+| n senders to m receivers | [n-m](/examples/n-m/) |
+| A topology without addresses, started by DDS | [dds](/examples/dds/), [qc](/examples/qc/) |
+| Your own controller | [custom-controller](/examples/custom-controller/) |
+
+## Check the result
+
+<Steps>
+
+1. Start the devices with `--severity debug`.
+
+2. Find the line `Attached channel <name>[<index>] to <address> (<method>) (<type>)` for each
+   sub-channel. See [Check the result](/guides/configure-channels/#check-the-result).
+
+3. In the interactive controller, press `p`. Each sub-channel must show the number of peers of your
+   plan.
+
+4. Look at the rate lines of each sub-channel. The device logs them only for sub-channels with
+   `rateLogging` above 0 (default 1). A sub-channel with 0 messages per second has no traffic.
+
+</Steps>
+
+## Problems that can occur
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `PUB/SUB socket type is not supported for shared memory transport` | A `pub` or `sub` channel uses `shmem`. | Add `transport=zeromq` to both ends. |
+| A sender stops when one receiver stops. | The sender selects the sub-channel, and the queue of that sub-channel is full. `Send()` waits. | Send with a timeout, as the n-m sender does, or let one `push` socket distribute. It waits only when the queues of all peers are full (ZeroMQ behavior). |
+| The `sub` peers miss messages. | `pub` drops messages for slow peers, and a late `sub` misses the earlier messages (ZeroMQ behavior). | Use `push` and `pull`, or `push` sub-channels with `Copy()`. |
+| The peers do not find the binding device. | The port was in use, and autobind selected a random port. | Set `autoBind=false`, and select a free port. |
+| Two topologies on one host disturb each other. | They use the same ports, `ipc://` files or session. | Give each topology its own ports or files, and its own `--session`. |
+
+## Related pages
+
+- [Channels and sockets](/concepts/channels/): socket types, methods, addresses and automatic ports.
+- [Configure channels](/guides/configure-channels/): write the plan as `--channel-config` or JSON.
+- [Use several transports](/guides/several-transports/): a device with `shmem` and `zeromq` channels.
+- [Built-in devices](/tools/builtin-devices/): splitter, merger, multiplier and proxy.

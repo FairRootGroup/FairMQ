@@ -1,0 +1,198 @@
+---
+title: 'dds: run with DDS'
+description: 'A sampler, ten processors and a sink in a DDS topology without channel addresses; the start script needs DDS and a DDS plugin for FairMQ.'
+sidebar:
+  order: 12
+code: [fairmq/Device.h, fairmq/Device.cxx, fairmq/PluginManager.cxx, fairmq/runDevice.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { FileTree } from '@astrojs/starlight/components';
+
+This example describes a topology for the deployment system DDS. One sampler sends messages to ten processors, and the processors send them to one sink. The topology file gives the [channels](/concepts/channels/) no addresses. The binding channels get [automatic addresses](/concepts/channels/#automatic-ports). A DDS [plugin](/concepts/plugins/) must give the addresses to the connecting channels at run time.
+
+:::caution
+FairMQ alone cannot run this example. The start script needs DDS, a DDS plugin for FairMQ and the tool `fairmq-dds-command-ui`. DDS is not part of FairMQ. FairMQ v1.5.0 and later do not contain the plugin and the tool. See [Requirements](#requirements).
+:::
+
+The code is in [`examples/dds`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/dds). The example shows how to:
+
+- describe the devices, their channels and their number in a DDS topology file,
+- configure channels without addresses,
+- request the transitions of all devices from a script,
+- send a message that uses a buffer of the device and a function that deletes the buffer.
+
+## Topology
+
+The topology file `ex-dds-topology.xml` declares three tasks. Each task starts one device. The group `ProcessorGroup` has `n="10"`, so DDS starts the task `Processor` 10 times.
+
+| Task | Instances | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- | --- |
+| `Sampler` | 1 | `data1` | `push` | `bind` | not set |
+| `Processor` | 10 | `data1` | `pull` | `connect` | not set |
+| | | `data2` | `push` | `connect` | not set |
+| `Sink` | 1 | `data2` | `pull` | `bind` | not set |
+
+Each task configures its channels with `--channel-config` and loads the plugin with `-P dds`. No task sets `--id`. The sampler and the sink stop after 10 messages (`--iterations 10`).
+
+<Snippet file="examples/dds/ex-dds-topology.xml" lang="xml" start='<decltask name="Processor">' end="</decltask>" />
+
+The file declares the properties `fmqchan_data1` and `fmqchan_data2`. The task `Sampler` has write access to `fmqchan_data1`, and the task `Sink` has write access to `fmqchan_data2`. The task `Processor` has read access to both. In DDS, the tasks with read access get the values that the tasks with write access set. The DDS plugin of FairMQ v1.4.56 (`fairmq/plugins/DDS/DDS.cxx` at the tag `v1.4.56`) used these properties:
+
+- In `BOUND`, it wrote the bound addresses of each binding channel `<name>` to the property `fmqchan_<name>`.
+- When it had a value of `fmqchan_<name>` for each sub-channel of a connecting channel `<name>`, it set the properties `chans.<name>.<index>.address` to these addresses.
+
+A connecting channel waits for its address. In `CONNECTING`, the device reads `chans.<name>.<index>.address` again every 50 ms, until all channels connect or `--init-timeout` ends (default 120 s). See [`Device.cxx`](/source/fairmq/Device.cxx/#L235-L276).
+
+Each task also has a requirement of the type `wnname`, with the value `sampler`, `processor` or `sink`. These values are the first column of `ex-dds-hosts.cfg`.
+
+In `ex-dds-topology-infinite.xml`, the sampler sends without an end, at most 100 messages per second (`--rate 100 --iterations 0`). The sink has no `--iterations` there, so it uses the default 1000. The start script does not use this file.
+
+## Requirements
+
+The three devices build with FairMQ alone. The CMake files of FairMQ do not search for DDS. To run the start script, you need:
+
+- DDS. The start script calls `dds-session`, `dds-submit`, `dds-info`, `dds-topology`, `dds-agent-cmd` and `dds-user-defaults`.
+- A DDS plugin for FairMQ: a library with the name `libfairmq-plugin-dds` or `libFairMQPlugin_dds`.
+- The tool `fairmq-dds-command-ui`.
+
+FairMQ v1.4.56 is the last release that contains the DDS plugin (`fairmq/plugins/DDS`, library `FairMQPlugin_dds`) and `fairmq-dds-command-ui` (`fairmq/sdk`). FairMQ v1.5.0 and later do not contain them. The commit that removes them says that these components moved to the ODC project. It refers to [discussion #392](https://github.com/FairRootGroup/FairMQ/discussions/392).
+
+The scripts in the build directory add `build/fairmq/sdk` to `PATH`. This is the old directory of `fairmq-dds-command-ui`, and FairMQ does not build it now. Add the directory of your `fairmq-dds-command-ui` to `PATH`.
+
+### Load the plugin
+
+`-P dds` loads the plugin from a shared library. The plugin manager searches the directories of `-S` (`--plugin-search-path`) for `libfairmq-plugin-dds` and `libFairMQPlugin_dds`, with the library suffix of the system. Then it tries the system lookup: the system library directories, `RUNPATH` and `LD_LIBRARY_PATH`. See [`PluginManager.cxx`](/source/fairmq/PluginManager.cxx/#L169-L230).
+
+The plugin manager loads the plugins of `-P` in the constructor of `DeviceRunner`. If it finds no library, the program stops before it creates the device. The exit code is 1, and the log shows:
+
+```txt
+Uncaught exception reached the top of main: Could not load dynamic plugin dds from configured search paths (-S) nor with system lookup (system libdirs, RUNPATH, $LD_LIBRARY_PATH).
+```
+
+## Build and run
+
+The examples build when the CMake option `BUILD_EXAMPLES` is `ON` (the default). CMake writes these files to the build directory:
+
+<FileTree>
+
+- build/examples/dds/
+  - fairmq-ex-dds-sampler
+  - fairmq-ex-dds-processor
+  - fairmq-ex-dds-sink
+  - fairmq-start-ex-dds.sh
+  - fairmq-ex-dds-env.sh
+  - ex-dds-topology.xml
+  - ex-dds-topology-infinite.xml
+  - ex-dds-hosts.cfg
+
+</FileTree>
+
+The install step copies the executables and the two scripts to `bin`, and the topology files and `ex-dds-hosts.cfg` to `share/fairmq` in the install prefix.
+
+The start script takes one optional argument: the plugin that `dds-submit` uses to start the agents, `localhost` (default) or `ssh`. With `ssh`, the script gives `ex-dds-hosts.cfg` to `dds-submit`.
+
+```sh
+cd build/examples/dds
+./fairmq-start-ex-dds.sh
+./fairmq-start-ex-dds.sh ssh
+```
+
+The script does these steps. `set -e` stops it at the first command that fails.
+
+1. It starts a DDS session and exports `DDS_SESSION_ID`. When the script exits, a trap stops the session.
+2. It submits the agents and waits for 12 idle slots.
+3. It exports `FAIRMQ_DDS_TOPO_FILE`, activates `ex-dds-topology.xml` and waits for 12 executing slots.
+4. It requests the transitions with `fairmq-dds-command-ui`.
+5. It stops the topology, gets the log files of the agents and prints `Example successful`.
+
+Each task has `fairmq-ex-dds-env.sh` as its `env` element. This script adds the directory of the executables to `PATH`.
+
+### Request the transitions
+
+Step 4 of the script requests the transitions of all devices:
+
+<Snippet file="examples/dds/fairmq-start-ex-dds.sh.in" start='fairmq-dds-command-ui -w "IDLE"' end="fairmq-dds-command-ui -c q" />
+
+The script waits until the sampler and the sink go from `RUNNING` to `READY`, after 10 messages. Then it stops all devices. The script uses the options of `fairmq-dds-command-ui` of FairMQ v1.4.56 (`fairmq/sdk/runDDSCommandUI.cxx` at the tag `v1.4.56`). In that version, the tool read the session from `DDS_SESSION_ID` and the topology file from `FAIRMQ_DDS_TOPO_FILE`. Its options had this meaning:
+
+| Option | Meaning in v1.4.56 |
+| --- | --- |
+| `-c i`, `-c k`, `-c b`, `-c x`, `-c j`, `-c r` | Request `InitDevice`, `CompleteInit`, `Bind`, `Connect`, `InitTask` or `Run`. |
+| `-c s`, `-c t`, `-c d`, `-c q` | Request `Stop`, `ResetTask`, `ResetDevice` or `End`. |
+| `-c p` | Set the property `--property-key` to the value `--property-value`. |
+| `-w <state>` | Wait until the devices are in the state. |
+| `-w "<state1>-><state2>"` | Wait until the devices go from `<state1>` to `<state2>`. |
+| `-p <path>` | Send the command to, or wait for, only the tasks of this topology path. Without `-p`, the tool uses all tasks. |
+
+For the transitions, see [States and transitions](/reference/states/).
+
+## The code
+
+### Sampler
+
+The sampler sends the string `Data` in each [`ConditionalRun()`](/api/fair/mq/Device/#ConditionalRun) call. [`NewSimpleMessage()`](/api/fair/mq/Device/#NewSimpleMessage) copies the data into a new message.
+
+<Snippet file="examples/dds/sampler.cxx" start="bool ConditionalRun() override" />
+
+After `--iterations` messages (default 1000, `0` for no limit), `ConditionalRun()` returns `false`. Then the device goes to `READY`.
+
+### Processor
+
+The processor registers `HandleData()` for `data1` with [`OnData()`](/api/fair/mq/Device/#OnData). It appends ` (modified by <id>)` to the text, with the device id of the processor.
+
+<Snippet file="examples/dds/processor.cxx" start="bool HandleData" />
+
+The new message gets the buffer of the string and a function that deletes the string. See [`CreateMessage()`](/api/fair/mq/TransportFactory/#CreateMessage-5) and [Messages](/concepts/messages/).
+
+- The zeromq transport, the default, sends the buffer without a copy. It calls the function when it no longer needs the buffer.
+- The shmem transport copies the data into the managed segment and calls the function at once.
+
+### Sink
+
+The sink registers its `HandleData()` for `data2` and logs each text. After `--iterations` messages (default 1000, `0` for no limit), it returns `false`, and the device goes to `READY`.
+
+## Output
+
+The sampler logs each message and the end:
+
+```txt
+Sending "Data"
+Sent 10 messages. Finished.
+```
+
+Each processor logs `Received data, processing...` for each message. The sink logs each text and the end:
+
+```txt
+Received: "Data (modified by <id>)"
+Received 10 messages. Finished.
+```
+
+`<id>` is the id of the processor. When `--id` was empty, the DDS plugin of FairMQ v1.4.56 set the id to the path of the DDS task. At the end, the start script calls `dds-agent-cmd getlog -a`. If this command succeeds, the script prints `AGENT LOG FILES IN: <directory>`.
+
+## Test
+
+The example has no test. In `CMakeLists.txt`, the test `Example.DDS.localhost` is a comment. It runs `fairmq-start-ex-dds.sh localhost` with a timeout of 15 s and expects the output `Example successful`.
+
+## Things to try
+
+- Run the devices without DDS. Remove `-P dds` and give each channel an address. Start each device in its own terminal in `build/examples/dds`:
+
+  ```sh
+  ./fairmq-ex-dds-sampler --id sampler1 --iterations 10 --channel-config name=data1,type=push,method=bind,address=tcp://127.0.0.1:5555
+  ./fairmq-ex-dds-processor --id processor1 --channel-config name=data1,type=pull,method=connect,address=tcp://127.0.0.1:5555 name=data2,type=push,method=connect,address=tcp://127.0.0.1:5556
+  ./fairmq-ex-dds-sink --id sink1 --iterations 10 --channel-config name=data2,type=pull,method=bind,address=tcp://127.0.0.1:5556
+  ```
+
+  The devices use the interactive controller. Type `q` in each terminal to end the device.
+
+- Start the processor without the address of `data1`. It waits in `CONNECTING`. After `--init-timeout` (default 120 s), it logs `could not connect all channels after 120 attempts` on the severity `error` and goes to the state `ERROR`.
+- For a topology with many senders and receivers, see [n-m: n senders to m receivers](/examples/n-m/).
+
+## Related pages
+
+- [Plugins and control](/concepts/plugins/)
+- [Configure channels](/guides/configure-channels/)
+- [n-m: n senders to m receivers](/examples/n-m/)
+- [qc: quality control on demand](/examples/qc/)
+- [Configuration](/concepts/configuration/)

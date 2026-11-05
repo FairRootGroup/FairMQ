@@ -1,0 +1,348 @@
+---
+// A topology like example 1-n-1, animated: a sampler, three processors and a sink.
+// (The start script of example 1-n-1 runs two processors.)
+// The switch shows what the shmem transport changes: only a MetaHeader goes through each socket.
+---
+
+<div class="fmq-topo not-content">
+  <div class="tp-head">
+    <div class="tp-switch" role="group" aria-label="Transport">
+      <button type="button" data-mode="zeromq" aria-pressed="true">zeromq</button>
+      <button type="button" data-mode="shmem" aria-pressed="false">shmem</button>
+    </div>
+    <span>1 sampler · 3 processors · 1 sink</span>
+  </div>
+  <svg class="tp" viewBox="0 0 560 296" role="img" aria-label="A sampler sends messages round-robin to three processors. The processors send them to a sink.">
+    <g class="tp-edges">
+      <path d="M130 140 H178 V62 H225"></path><path d="M130 140 H225"></path><path d="M130 140 H178 V218 H225"></path>
+      <path d="M335 62 H382 V140 H430"></path><path d="M335 140 H430"></path><path d="M335 218 H382 V140 H430"></path>
+    </g>
+    <g class="tp-seg">
+      <rect x="20" y="260" width="520" height="28"></rect>
+      <text x="22" y="254" class="tp-addr">shared memory segment · session "default"</text>
+    </g>
+    <g class="tp-blocks"></g>
+    <g class="tp-dev">
+      <rect x="20" y="112" width="110" height="56"></rect>
+      <rect class="tp-port" x="126" y="136" width="8" height="8"></rect>
+      <text x="32" y="136" class="tp-name">sampler</text>
+      <text x="32" y="154" class="tp-sub">push · bind</text>
+    </g>
+    <g class="tp-dev">
+      {
+        [40, 118, 196].map((y, i) => (
+          <>
+            <rect x="225" y={y} width="110" height="44" class="tp-proc" data-p={i} />
+            <rect class="tp-port" x="221" y={y + 18} width="8" height="8" />
+            <rect class="tp-port" x="331" y={y + 18} width="8" height="8" />
+            <text x="238" y={y + 20} class="tp-name">
+              processor
+            </text>
+            <text x="238" y={y + 35} class="tp-sub">
+              pull → push
+            </text>
+          </>
+        ))
+      }
+    </g>
+    <g class="tp-dev">
+      <rect x="430" y="112" width="110" height="56"></rect>
+      <rect class="tp-port" x="426" y="136" width="8" height="8"></rect>
+      <text x="442" y="136" class="tp-name">sink</text>
+      <text x="442" y="154" class="tp-sub">pull · bind</text>
+    </g>
+    <text x="22" y="104" class="tp-addr">tcp://*:5555</text>
+    <text x="538" y="104" text-anchor="end" class="tp-addr">tcp://*:5556</text>
+    <g class="tp-parts"></g>
+  </svg>
+  <p class="tp-cap" aria-live="polite">zeromq: the payload goes through each socket.</p>
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('.fmq-topo')) {
+    const svg = root.querySelector<SVGSVGElement>('svg.tp')!;
+    const NS = 'http://www.w3.org/2000/svg';
+    const parts = svg.querySelector('.tp-parts')!;
+    const blocks = svg.querySelector('.tp-blocks')!;
+    const cap = root.querySelector('.tp-cap')!;
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>('[data-mode]')];
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // A route: segments with start time and duration. The hop through the processor is slow.
+    const mk = (pts: number[][], slow: number) => {
+      const segs: { x1: number; y1: number; x2: number; y2: number; t0: number; d: number; slow: boolean }[] = [];
+      let T = 0;
+      for (let i = 1; i < pts.length; i++) {
+        const [x1, y1] = pts[i - 1];
+        const [x2, y2] = pts[i];
+        const l = Math.hypot(x2 - x1, y2 - y1);
+        if (l < 0.5) continue;
+        const d = l / (i - 1 === slow ? 58 : 170);
+        segs.push({ x1, y1, x2, y2, t0: T, d, slow: i - 1 === slow });
+        T += d;
+      }
+      return { segs, T };
+    };
+    const routes = [62, 140, 218].map((py) =>
+      mk(
+        [
+          [130, 140],
+          [178, 140],
+          [178, py],
+          [225, py],
+          [335, py],
+          [382, py],
+          [382, 140],
+          [430, 140],
+        ],
+        3
+      )
+    );
+    type Route = (typeof routes)[number];
+    // Position at time t, and whether the message is inside the processor.
+    const at = (r: Route, t: number): [number, number, boolean] => {
+      for (const s of r.segs) {
+        if (t <= s.t0 + s.d) {
+          const u = (t - s.t0) / s.d;
+          return [s.x1 + (s.x2 - s.x1) * u, s.y1 + (s.y2 - s.y1) * u, s.slow];
+        }
+      }
+      const s = r.segs[r.segs.length - 1];
+      return [s.x2, s.y2, false];
+    };
+    const procs = [...svg.querySelectorAll<SVGRectElement>('.tp-proc')];
+    const busy = [0, 0, 0];
+    type Part = { r: Route; p: number; t: number; e: SVGRectElement; s: number; blk: SVGRectElement | null; slot: number; inside: boolean };
+    let mode = 'zeromq';
+    let list: Part[] = [];
+    let last = 0;
+    let acc = 0;
+    let rr = 0;
+    let running = false;
+    let raf = 0;
+    const slots = new Array(16).fill(false);
+    const rect = (a: Record<string, string | number>, p: Element) => {
+      const e = document.createElementNS(NS, 'rect');
+      for (const k in a) e.setAttribute(k, String(a[k]));
+      p.appendChild(e);
+      return e;
+    };
+    const setInside = (p: Part, inside: boolean) => {
+      if (p.inside === inside) return;
+      p.inside = inside;
+      busy[p.p] += inside ? 1 : -1;
+      procs[p.p].classList.toggle('busy', busy[p.p] > 0);
+      p.e.style.visibility = inside ? 'hidden' : '';
+    };
+    const place = (p: Part) => {
+      const [x, y, inside] = at(p.r, p.t);
+      p.e.setAttribute('x', (x - p.s / 2).toFixed(1));
+      p.e.setAttribute('y', (y - p.s / 2).toFixed(1));
+      setInside(p, inside);
+    };
+    const spawn = (t0 = 0) => {
+      const r = routes[rr];
+      const pi = rr;
+      rr = (rr + 1) % 3;
+      const shm = mode === 'shmem';
+      const s = shm ? 6 : 10;
+      let blk: SVGRectElement | null = null;
+      let slot = -1;
+      if (shm) {
+        slot = slots.indexOf(false);
+        if (slot < 0) return;
+        slots[slot] = true;
+        blk = rect({ x: 28 + slot * 32, y: 267, width: 24, height: 14, class: 'tp-blk' }, blocks);
+      }
+      const e = rect({ width: s, height: s, class: shm ? 'tp-meta' : 'tp-pay' }, parts);
+      const p: Part = { r, p: pi, t: t0, e, s, blk, slot, inside: false };
+      place(p);
+      list.push(p);
+    };
+    const clear = () => {
+      list.forEach((p) => {
+        setInside(p, false);
+        p.e.remove();
+        p.blk?.remove();
+      });
+      list = [];
+      slots.fill(false);
+      blocks.replaceChildren();
+    };
+    const frame = (ts: number) => {
+      if (!running) return;
+      const dt = Math.min(0.05, (ts - (last || ts)) / 1000);
+      last = ts;
+      acc += dt;
+      if (acc > 0.55) {
+        acc = 0;
+        spawn();
+      }
+      list.forEach((p) => {
+        p.t += dt;
+        place(p);
+      });
+      list = list.filter((p) => {
+        if (p.t < p.r.T) return true;
+        setInside(p, false);
+        p.e.remove();
+        if (p.blk) {
+          const b = p.blk;
+          const sl = p.slot;
+          b.style.opacity = '0';
+          setTimeout(() => {
+            b.remove();
+            slots[sl] = false;
+          }, 420);
+        }
+        return false;
+      });
+      raf = requestAnimationFrame(frame);
+    };
+    const still = () => {
+      clear();
+      [0.5, 1.4, 2.2, 2.9, 3.5, 1.0].forEach((t) => spawn(t));
+    };
+    const setMode = (m: string) => {
+      mode = m;
+      svg.classList.toggle('shm', m === 'shmem');
+      buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+      clear();
+      cap.textContent =
+        m === 'shmem'
+          ? 'shmem: the payload stays in the shared memory segment. Only a MetaHeader of 40 bytes goes through each socket.'
+          : 'zeromq: the payload goes through each socket.';
+      if (reduce || !running) still();
+    };
+    buttons.forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode!)));
+    still();
+    if (!reduce && 'IntersectionObserver' in window) {
+      new IntersectionObserver(
+        (es) => {
+          for (const e of es) {
+            if (e.isIntersecting && !running) {
+              clear();
+              running = true;
+              last = 0;
+              raf = requestAnimationFrame(frame);
+            } else if (!e.isIntersecting && running) {
+              running = false;
+              cancelAnimationFrame(raf);
+            }
+          }
+        },
+        { threshold: 0.2 }
+      ).observe(svg);
+    }
+  }
+</script>
+
+<style>
+  .fmq-topo {
+    min-width: 0;
+    border: 1px solid var(--fmq-rule);
+    background: var(--fmq-paper);
+    border-radius: 6px;
+    padding: 0.75rem 0.75rem 0.6rem;
+  }
+  .tp-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .tp-head span {
+    font-size: 0.78rem;
+    color: var(--fmq-ink-3);
+  }
+  .tp-switch {
+    display: inline-flex;
+    border: 1px solid var(--fmq-rule-strong);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .tp-switch button {
+    font: 600 0.78rem/1 var(--fmq-font-mono);
+    border: 0;
+    background: var(--fmq-paper);
+    color: var(--fmq-ink-2);
+    padding: 0.5rem 0.9rem;
+    cursor: pointer;
+  }
+  .tp-switch button + button {
+    border-inline-start: 1px solid var(--fmq-rule-strong);
+  }
+  .tp-switch button[aria-pressed='true'] {
+    background: var(--fmq-ink);
+    color: var(--fmq-paper);
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    margin-top: 0.4rem;
+  }
+  .tp-edges path {
+    fill: none;
+    stroke: var(--fmq-rule-strong);
+    stroke-width: 1.4;
+  }
+  .tp-dev rect {
+    fill: var(--fmq-paper);
+    stroke: var(--fmq-ink-2);
+    stroke-width: 1.2;
+  }
+  .tp-dev rect.tp-port {
+    fill: var(--fmq-ink-2);
+  }
+  .tp-dev rect.tp-proc {
+    transition:
+      fill 0.2s,
+      stroke 0.2s;
+  }
+  .tp-dev rect.tp-proc:global(.busy) {
+    fill: var(--fmq-saffron-tint);
+    stroke: var(--fmq-bar);
+  }
+  .tp-name {
+    font: 600 12.5px var(--fmq-font-mono);
+    fill: var(--fmq-ink);
+  }
+  .tp-sub,
+  .tp-addr {
+    font: 400 10.5px var(--fmq-font-mono);
+    fill: var(--fmq-ink-3);
+  }
+  .tp-seg {
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .tp-seg rect {
+    fill: var(--fmq-paper-2);
+    stroke: var(--fmq-rule-strong);
+    stroke-dasharray: 3 3;
+  }
+  svg.shm .tp-seg {
+    opacity: 1;
+  }
+  .tp-parts :global(.tp-pay) {
+    fill: var(--fmq-saffron);
+    stroke: var(--fmq-bar);
+    stroke-width: 1;
+  }
+  .tp-parts :global(.tp-meta) {
+    fill: var(--fmq-sky);
+  }
+  .tp-blocks :global(.tp-blk) {
+    fill: var(--fmq-saffron);
+    stroke: var(--fmq-bar);
+    stroke-width: 1;
+    transition: opacity 0.4s;
+  }
+  .tp-cap {
+    margin: 0.4rem 0.15rem 0;
+    font-size: 0.85rem;
+    color: var(--fmq-ink-2);
+    min-height: 2.8em;
+  }
+</style>

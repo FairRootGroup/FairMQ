@@ -1,0 +1,159 @@
+---
+title: 'Transfer codes and errors'
+description: 'The return values of Send() and Receive(), the ErrorCode values with their messages, and all exception types of FairMQ.'
+sidebar:
+  order: 5
+code: [fairmq/Socket.h, fairmq/Error.h, fairmq/Message.h, fairmq/Device.h, fairmq/zeromq/Common.h]
+---
+
+This page lists the return values of the transfer functions, the error codes of `fairmq/Error.h`,
+and all exception types of FairMQ. For the handling of these errors, see
+[Handle errors and timeouts](/guides/errors-timeouts/).
+
+## Transfer codes
+
+The enum [`fair::mq::TransferCode`](/api/fair/mq/TransferCode/) is in
+[`fairmq/Socket.h`](/source/fairmq/Socket.h/#L25-L31). Its underlying type is `int`.
+
+| Code | Value | Returned when |
+| --- | --- | --- |
+| [`success`](/api/fair/mq/TransferCode/#success) | 0 | Never. A complete transfer returns the number of bytes, which is 0 for an empty message. |
+| [`error`](/api/fair/mq/TransferCode/#error) | -1 | The transfer failed. The transport logs `Failed transfer on socket …` with the reason. If the transport is terminated, it logs `Terminating socket …` (severity `debug`). |
+| [`timeout`](/api/fair/mq/TransferCode/#timeout) | -2 | The timeout ended before the transfer was possible. With the timeout 0, the transfer was not possible at once. |
+| [`interrupted`](/api/fair/mq/TransferCode/#interrupted) | -3 | The transport is interrupted, because a transition is pending. |
+
+These functions return an `int64_t` with the number of bytes or a negative code:
+
+| Function | Description |
+| --- | --- |
+| [`Device::Send()`](/api/fair/mq/Device/#Send), [`Device::Receive()`](/api/fair/mq/Device/#Receive) | Use the timeout of the channel. |
+| [`Device::Send(…, timeout)`](/api/fair/mq/Device/#Send-2), [`Device::Receive(…, timeout)`](/api/fair/mq/Device/#Receive-2) | Use the timeout argument. |
+| [`Channel::Send()`](/api/fair/mq/Channel/#Send), [`Channel::Receive()`](/api/fair/mq/Channel/#Receive) | Use the timeout argument, if you give one. Otherwise they use the timeout of the channel. |
+| [`Socket::Send()`](/api/fair/mq/Socket/#Send), [`Socket::Receive()`](/api/fair/mq/Socket/#Receive) | The virtual functions of the transports. The default timeout is `-1`. |
+
+All functions accept a `MessagePtr`, a `Parts` or a `std::vector<MessagePtr>`. For a multipart
+message, the number of bytes is the sum of all parts.
+
+### Timeout values
+
+| Timeout | Behavior |
+| --- | --- |
+| Negative, default `-1` | Wait until the transfer is possible, or until an interruption. |
+| `0` | Do not wait. |
+| Positive | Wait up to this time in ms, rounded up to a multiple of 100 ms. |
+
+The channel properties `sndTimeoutMs` and `rcvTimeoutMs` give the timeout of a channel. Their
+default is `-1` ([`Channel.h`](/source/fairmq/Channel.h/#L376-L377)). The steps of 100 ms come from
+the internal socket timeout of the zeromq and shmem transports
+([`zeromq/Common.h`](/source/fairmq/zeromq/Common.h/#L64-L77)).
+
+:::caution[Known defect]
+The transports do not agree on an empty `Parts`. zeromq logs `Will not send empty vector` and returns
+`error`. shmem sends a message with zero parts and returns 0. See the disabled test
+`PartsTransfer.EmptyPartsIsRefused` in `test/parts/_access.cxx`.
+:::
+
+## Error codes
+
+The enum [`fair::mq::ErrorCode`](/api/fair/mq/ErrorCode/) is in
+[`fairmq/Error.h`](/source/fairmq/Error.h/#L31-L39). Its category
+[`ErrorCategory`](/api/fair/mq/ErrorCategory/) has the name `fairmq`. The messages come from
+[`ErrorCategory::message()`](/api/fair/mq/ErrorCategory/#message).
+
+| Code | Value | Message | Used by |
+| --- | --- | --- | --- |
+| [`OperationInProgress`](/api/fair/mq/ErrorCode/#OperationInProgress) | 10 | `async operation already in progress` | Not used in this version. |
+| [`OperationTimeout`](/api/fair/mq/ErrorCode/#OperationTimeout) | 11 | `async operation timed out` | Not used in this version. |
+| [`OperationCanceled`](/api/fair/mq/ErrorCode/#OperationCanceled) | 12 | `async operation canceled` | Not used in this version. |
+| [`DeviceChangeStateFailed`](/api/fair/mq/ErrorCode/#DeviceChangeStateFailed) | 13 | `failed to change state of a fairmq device` | [`Device::ChangeStateOrThrow()`](/api/fair/mq/Device/#ChangeStateOrThrow) |
+| [`DeviceGetPropertiesFailed`](/api/fair/mq/ErrorCode/#DeviceGetPropertiesFailed) | 14 | `failed to get fairmq device properties` | Not used in this version. |
+| [`DeviceSetPropertiesFailed`](/api/fair/mq/ErrorCode/#DeviceSetPropertiesFailed) | 15 | `failed to set fairmq device properties` | Not used in this version. |
+| Other values | — | `(unrecognized error)` | — |
+
+[`MakeErrorCode(ErrorCode)`](/api/fair/mq/#MakeErrorCode) returns a `std::error_code` with the value
+and the category. `ChangeStateOrThrow()` throws a `std::system_error` with this code and the text
+`Invalid transition: <NAME>`.
+
+:::caution
+- `fairmq/Error.h` specializes `std::is_error_code_enum` for `ErrorCode`, but it has no function
+  `make_error_code()`. Thus `std::error_code ec = fair::mq::ErrorCode::OperationTimeout;` does not
+  compile. Use `MakeErrorCode()`.
+- The category object `fair::mq::ec` is `static` in the header. Each translation unit has its own
+  object, and a comparison of two `std::error_code` objects can fail. Compare `value()` and
+  `category().name()`.
+:::
+
+## FairMQ exceptions
+
+All exceptions of FairMQ derive from `std::runtime_error`, except `PluginManager::BadSearchPath`.
+Thus `catch (std::exception const&)` catches all of them. The namespace is `fair::mq`.
+
+### Device, states and configuration
+
+| Exception | Header | Thrown when |
+| --- | --- | --- |
+| [`DeviceErrorState`](/api/fair/mq/DeviceErrorState/) | [`States.h`](/source/fairmq/States.h/#L60) | A `StateQueue` gives the state `ERROR`, for example in `Device::WaitForState()`. The interactive controller also throws it in `ERROR`. Text: `Controlled device transitioned to error state.` |
+| [`StateMachine::ErrorStateException`](/api/fair/mq/StateMachine/ErrorStateException/) | [`StateMachine.h`](/source/fairmq/StateMachine.h/#L56) | `RunStateMachine()` ends after the transition `ErrorFound`. Text: `Device transitioned to error state`. |
+| [`PropertyNotFoundError`](/api/fair/mq/PropertyNotFoundError/) | [`ProgOptions.h`](/source/fairmq/ProgOptions.h/#L30) | `GetProperty<T>(key)` or `GetPropertyAsString(key)` without a default, for a key that does not exist. Text: `Config has no key: <key>`. |
+| [`ParserError`](/api/fair/mq/ParserError/) | [`JSONParser.h`](/source/fairmq/JSONParser.h/#L27) | `JSONParser()`, `SuboptParser()` or `PtreeParser()` gets an empty device id. The config plugin does not call the parser without an id. |
+| [`Channel::ChannelConfigurationError`](/api/fair/mq/Channel/ChannelConfigurationError/) | [`Channel.h`](/source/fairmq/Channel.h/#L89) | `Channel::Validate()` finds an invalid type, an invalid method, a negative buffer or kernel size, or a negative `rateLogging`. |
+| [`PollerError`](/api/fair/mq/PollerError/) | [`Poller.h`](/source/fairmq/Poller.h/#L37) | A poller gets an unknown channel name (in the constructor, `CheckInput()` or `CheckOutput()`), or the poll fails. |
+| [`OngoingTransition`](/api/fair/mq/OngoingTransition/) | [`Device.h`](/source/fairmq/Device.h/#L46) | Not thrown in this version. |
+| [`RuntimeError`](/api/fair/mq/RuntimeError/) | [`Error.h`](/source/fairmq/Error.h/#L23) | Not thrown in this version. Its constructor joins all arguments to one text. |
+
+### Transports, sockets and messages
+
+| Exception | Header | Thrown when |
+| --- | --- | --- |
+| [`TransportFactoryError`](/api/fair/mq/TransportFactoryError/) | [`TransportFactory.h`](/source/fairmq/TransportFactory.h/#L237) | `TransportFactory::CreateTransportFactory()` gets an unknown type. Text: `Unavailable transport requested: <type>`. |
+| [`TransportError`](/api/fair/mq/TransportError/) | [`Transports.h`](/source/fairmq/Transports.h/#L22) | A channel has an unknown transport (`Unknown transport provided: <name>`), or a region message gets a region of the other transport. Also when shmem cannot create, open or lock a segment or a region, when a region id already exists, when the data of a region message is outside the region, or when the region of a message is unknown. In the constructor of the shmem transport, a segment error becomes a `std::runtime_error` (see below). |
+| [`SocketError`](/api/fair/mq/SocketError/) | [`Socket.h`](/source/fairmq/Socket.h/#L99) | A socket cannot be created, or a socket option cannot be set or read. With shmem also for `pub` and `sub` sockets, and for a received message that is not a shmem message. |
+| [`MessageBadAlloc`](/api/fair/mq/MessageBadAlloc/) | [`Message.h`](/source/fairmq/Message.h/#L74) | shmem cannot allocate a message: the size is larger than the segment, the attempts end, or a transition interrupts the wait between two attempts. |
+| [`RefCountBadAlloc`](/api/fair/mq/RefCountBadAlloc/) | [`Message.h`](/source/fairmq/Message.h/#L79) | shmem copies a message of an unmanaged region, and the reference count segment of the region is full. |
+| [`MessageError`](/api/fair/mq/MessageError/) | [`Message.h`](/source/fairmq/Message.h/#L69) | Only in a build with `FAIRMQ_DEBUG_MODE`: shmem resets the transport while messages still exist. |
+| [`shmem::SharedMemoryError`](/api/fair/mq/shmem/SharedMemoryError/) | [`shmem/Common.h`](/source/fairmq/shmem/Common.h/#L37) | The option `shm-allocation` has an unknown value, or shmem cannot find the segment or the region of a message. Also when `shmem::GetDataAddressFromHandle()` gets a transport that is not shmem. |
+| [`shmem::Monitor::DaemonPresent`](/api/fair/mq/shmem/Monitor/DaemonPresent/) | [`shmem/Monitor.h`](/source/fairmq/shmem/Monitor.h/#L158) | A monitor in monitoring mode already runs for this session. |
+| [`shmem::Monitor::MonitorError`](/api/fair/mq/shmem/Monitor/MonitorError/) | [`shmem/Monitor.h`](/source/fairmq/shmem/Monitor.h/#L159) | The monitor cannot find a segment, or the allocation algorithm is unknown. |
+| `zmq::Error` | [`zeromq/Common.h`](/source/fairmq/zeromq/Common.h/#L21) | A socket type or a socket option name is unknown. Text: `getConstant called with an invalid argument: <name>`. |
+| `zmq::ContextError` | [`zeromq/Context.h`](/source/fairmq/zeromq/Context.h/#L32) | The zeromq context cannot be created or configured. |
+| [`tools::DefaultRouteDetectionError`](/api/fair/mq/tools/DefaultRouteDetectionError/) | [`tools/Network.h`](/source/fairmq/tools/Network.h/#L19) | The network interface of the default route is unknown. For a bind channel without an address, the device catches it and binds to `tcp://*:1`. See [Network.h](/reference/tools/#networkh). |
+
+### Plugins
+
+| Exception | Header | Thrown when |
+| --- | --- | --- |
+| [`PluginServices::DeviceControlError`](/api/fair/mq/PluginServices/DeviceControlError/) | [`PluginServices.h`](/source/fairmq/PluginServices.h/#L94) | A plugin calls `TakeDeviceControl()` or `ChangeDeviceState()` while another plugin controls the device. |
+| [`PluginManager::BadSearchPath`](/api/fair/mq/PluginManager/BadSearchPath/) | [`PluginManager.h`](/source/fairmq/PluginManager.h/#L74) | A plugin search path is empty or is not a directory. The base class is `std::invalid_argument`. |
+| [`PluginManager::PluginNotFound`](/api/fair/mq/PluginManager/PluginNotFound/) | [`PluginManager.h`](/source/fairmq/PluginManager.h/#L77) | The plugin manager cannot find the file of a plugin. |
+| [`PluginManager::PluginLoadError`](/api/fair/mq/PluginManager/PluginLoadError/) | [`PluginManager.h`](/source/fairmq/PluginManager.h/#L80) | The plugin manager cannot load a plugin. |
+| [`PluginManager::PluginInstantiationError`](/api/fair/mq/PluginManager/PluginInstantiationError/) | [`PluginManager.h`](/source/fairmq/PluginManager.h/#L82) | The plugin manager cannot create a plugin object. |
+| [`PluginManager::ProgramOptionsParseError`](/api/fair/mq/PluginManager/ProgramOptionsParseError/) | [`PluginManager.h`](/source/fairmq/PluginManager.h/#L85) | The options of the plugin manager on the command line are not valid. |
+
+## Standard exceptions
+
+FairMQ also throws exceptions of the standard library and of Boost:
+
+| Exception | Thrown when |
+| --- | --- |
+| `std::system_error` | `Device::ChangeStateOrThrow()`: the state machine refuses the transition. |
+| `std::out_of_range` | A name function of `States.h` gets an unknown name or value. `Device::GetChannel()` and `GetNumSubChannels()` get an unknown channel. The property `transport` of the device has an unknown value. |
+| `std::runtime_error` | In `BINDING`, a channel cannot bind. In `CONNECTING`, the time `init-timeout` ends. In `INITIALIZING DEVICE`, a channel has no method. `Device::NewPoller()` gets channels with different transports. The shmem transport cannot start: `failed creating context, reason: …` or `Could not initialize shared memory transport: …`. |
+| `std::bad_alloc` | zeromq cannot allocate the buffer of a message with an alignment (`malloc()` fails). A shmem socket cannot allocate the zeromq message for the metadata. |
+| `boost::bad_any_cast` | `GetProperty<T>()` with a type `T` that is not the type of the property. |
+| `boost::program_options::error` | The command line has a value that is not valid for its option, or a required option is missing. |
+
+In a hook, each of these exceptions moves the device to `ERROR`. See
+[Device states](/concepts/states/). The config plugin is different: it catches the exceptions of the
+parsers for `--mq-config` and `--channel-config`, and logs their text with the severity `error`.
+The device then starts without these channels.
+
+## Related pages
+
+- [Handle errors and timeouts](/guides/errors-timeouts/): how to react to these codes and
+  exceptions.
+- [States and transitions](/reference/states/): the errors of invalid transitions.
+- [Channel properties](/reference/channel-properties/): `sndTimeoutMs`, `rcvTimeoutMs` and the other
+  properties.
+- [Tune shared memory](/shmem/tuning/): the options for the shmem allocation.
+- [Channels and sockets](/concepts/channels/#behavior-of-each-socket-type): when each socket type waits,
+  drops a message or returns an error.

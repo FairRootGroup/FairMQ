@@ -1,0 +1,415 @@
+---
+title: Test your devices
+description: 'Run a topology as CTest tests: a script with a unique session, the static controller, ipc addresses and the cleanup of shared memory, for each transport.'
+sidebar:
+  order: 9.7
+code: [fairmq/tools/runUuidGenerator.cxx, fairmq/plugins/control/Control.cxx, fairmq/shmem/Manager.cxx, fairmq/shmem/runMonitor.cxx, fairmq/TransportFactory.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+This guide makes CTest tests for your devices. A shell script starts the devices of the topology,
+waits until they stop, and removes what they leave behind. CMake adds the script once for each
+transport. For code that does not need a device, a GoogleTest program in one process is enough.
+
+The examples of FairMQ use the same method. See [Test the example](/examples/1-1/#test-the-example)
+on the page of the 1-1 example.
+
+## What a test needs
+
+| Need | How | Why |
+| --- | --- | --- |
+| A new session for each run | `--session` with the output of `fairmq-uuid-gen -h` | Tests that run at the same time do not share shared memory. See [Keep two topologies apart](/shmem/sessions/#keep-two-topologies-apart). |
+| Devices that stop by themselves | `--control static`, and an end condition in the devices | With `static`, the process ends when the device leaves `RUNNING`. The default `dynamic` waits for the key `q`. See [Control modes](/concepts/plugins/#control-modes). |
+| Unique addresses | `ipc:///tmp/fmq_<session>_<channel>_<transport>` | No port collisions, and no connections to the devices of another test. |
+| A small segment | `--shm-segment-size 100000000` | The default is 2 GiB. The tests of FairMQ use 100000000 bytes (100 MB). |
+| Cleanup after a crash | `--shm-monitor true` and `FAIRMQ_PATH` | When all devices of the session stopped, also after a crash, a daemon removes the shared memory. See [Automatic cleanup](/shmem/monitor/#automatic-cleanup-with---shm-monitor). |
+| Cleanup after a failure | A trap in the script | The script stops the other devices and removes the shared memory and the socket files. |
+| A limit for the time | The test property `TIMEOUT` | CTest stops a test that hangs, and the test fails (CMake behavior). |
+
+`--max-iterations` is not an option of every device. Many example devices add it with
+`addCustomOptions()` and return `false` from `ConditionalRun()` or from their data callback after
+this number of messages. The built-in devices `fairmq-bsampler` and `fairmq-sink` also have it.
+See [The sampler](/examples/1-1/#the-sampler) and
+[Stop a topology without losing messages](/guides/end-of-run/). Give your
+devices an end condition of this type, or stop them with a signal.
+
+## Write the test script
+
+<Steps>
+
+1. Read the transport from the first argument.
+
+2. Make a new session name with `fairmq-uuid-gen -h`. Write it to the output.
+
+3. Make an `ipc://` address for each channel from the session, the channel name and the transport.
+
+4. Set a trap for `EXIT` that stops the remaining devices and removes the shared memory and the
+   socket files.
+
+5. Start each device in the background with the same session and `--control static`.
+
+6. Wait for the devices with an end condition.
+
+7. Stop the other devices with `SIGTERM` or `SIGINT`, and wait for them.
+
+</Steps>
+
+This script tests a topology `my-sampler` → `my-processor` → `my-sink`. The sampler and the sink have
+an option `--max-iterations` like the examples. The processor has no end condition:
+
+```sh title="test-topology.sh"
+#!/bin/bash
+# Usage: test-topology.sh <transport> <directory of the devices>
+# FAIRMQ_PATH must be the directory of fairmq-uuid-gen and fairmq-shmmonitor.
+set -eu
+
+transport="$1"
+bin="$2"
+
+session="$("$FAIRMQ_PATH/fairmq-uuid-gen" -h)"
+echo "session: $session"
+dataAddr="/tmp/fmq_${session}_data_${transport}"
+resultAddr="/tmp/fmq_${session}_result_${transport}"
+
+cleanup() {
+    set +e
+    local running
+    running="$(jobs -p)"
+    if [[ -n $running ]]; then
+        kill -TERM $running
+        wait
+    fi
+    "$FAIRMQ_PATH/fairmq-shmmonitor" --cleanup --session "$session"
+    rm -f "$dataAddr" "$resultAddr"
+}
+trap cleanup EXIT
+trap 'exit 1' TERM INT
+
+common=(--transport "$transport" --session "$session" --control static --color false
+        --shm-segment-size 100000000 --shm-monitor true)
+
+"$bin/my-sampler" --id sampler1 "${common[@]}" --max-iterations 10 \
+    --channel-config "name=data,type=push,method=bind,address=ipc://$dataAddr,rateLogging=0" &
+samplerPid=$!
+
+"$bin/my-processor" --id processor1 "${common[@]}" \
+    --channel-config "name=data,type=pull,method=connect,address=ipc://$dataAddr,rateLogging=0" \
+                     "name=result,type=push,method=connect,address=ipc://$resultAddr,rateLogging=0" &
+processorPid=$!
+
+"$bin/my-sink" --id sink1 "${common[@]}" --max-iterations 10 \
+    --channel-config "name=result,type=pull,method=bind,address=ipc://$resultAddr,rateLogging=0" &
+sinkPid=$!
+
+wait "$samplerPid"
+wait "$sinkPid"
+
+kill -TERM "$processorPid"
+wait "$processorPid"
+```
+
+How the script works:
+
+- `set -e` ends the script when a command fails. `wait "$pid"` returns the exit code of the device,
+  so a device that stops with an error ends the script with this code. The test then fails.
+- The script waits for the devices in a fixed order. If the sink fails before the sampler stops,
+  the script finds the error when the sampler stops.
+- `set -u` stops the script at a variable that has no value, for example a misspelled name.
+- The trap for `EXIT` runs at each end of the script: after success, after a failed device, and
+  after `SIGTERM` or `SIGINT`. `jobs -p` lists the devices that still run. The trap stops them,
+  waits for them, and removes the shared memory of the session and the socket files.
+- The exit code of the script does not change in the trap. After a signal, `trap 'exit 1' TERM INT`
+  ends the script with the code 1.
+- After a signal, the control plugin of each device runs the shutdown sequence, and the device
+  exits with the code 0. See [Signals](/concepts/plugins/#signals).
+- A device that goes to the state `ERROR` exits with the code 1. See
+  [When the device goes to ERROR](/concepts/plugins/#when-the-device-goes-to-error).
+- The script writes the session name. If the test fails, the output of CTest shows it, and you can
+  remove the shared memory of this session.
+
+The test script of the 1-1 example starts the sampler in the same way:
+
+<Snippet file="examples/1-1/test-ex-1-1.sh.in" start='SAMPLER="fairmq-ex-1-1-sampler"' end="SAMPLER_PID=$!" />
+
+The script of the [1-n-1 example](/examples/1-n-1/) stops its two processors with `SIGINT` after
+the sampler and the sink stop.
+
+:::caution[Errors in the example scripts]
+Do not copy the example scripts without changes:
+
+- Their traps run only on `TERM`. If a device fails, `set -e` ends the script, and the other
+  devices continue to run.
+- Their traps end with `exit 0`.
+- In `test-ex-multiple-transports.sh.in` and `test-ex-region.sh.in`, the trap calls
+  `fairmq-shmmonitor --cleanup --session $SESSION`. The variable of the script is `session`, so the
+  option `--session` gets no value. `set -u` finds this type of error.
+- `test-ex-builtin-devices.sh.in` gives each device `--session $SESSION`, with the same error.
+:::
+
+## Add one CTest test for each transport
+
+Register the script once for each transport. This `CMakeLists.txt` uses the package variable
+`FairMQ_BINDIR`, the directory of `fairmq-uuid-gen` and `fairmq-shmmonitor` (see
+[Package variables](/start/cmake/#package-variables)):
+
+```cmake title="CMakeLists.txt"
+enable_testing() # in the top-level CMakeLists.txt
+
+foreach(transport IN ITEMS zeromq shmem)
+  set(test "MyTopology.${transport}")
+  add_test(NAME ${test}
+           COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/test-topology.sh
+                   ${transport} $<TARGET_FILE_DIR:my-sampler>)
+  set_tests_properties(${test} PROPERTIES
+                       TIMEOUT 30
+                       ENVIRONMENT "FAIRMQ_PATH=${FairMQ_BINDIR}")
+endforeach()
+```
+
+- `FAIRMQ_PATH` has two uses. The script finds the two tools there, and the shmem transport looks
+  there first for `fairmq-shmmonitor`, then in `PATH`
+  ([Manager.cxx](/source/fairmq/shmem/Manager.cxx/#L26-L53)).
+- `$<TARGET_FILE_DIR:my-sampler>` gives the directory of your devices. The script expects all three
+  devices in this directory.
+- `TIMEOUT 30` is the timeout of the example tests. Give your test enough time for a slow machine,
+  for example a build with sanitizers.
+
+On a timeout, CTest stops the test process (CMake behavior). The trap of the script does not run
+then. With CMake 3.27 or later, the test properties `TIMEOUT_SIGNAL_NAME` and
+`TIMEOUT_SIGNAL_GRACE_PERIOD` make CTest send a signal first and wait before it stops the process
+(CMake behavior, see the
+[CMake documentation](https://cmake.org/cmake/help/latest/prop_test/TIMEOUT_SIGNAL_NAME.html)).
+Then the trap can stop the devices:
+
+```cmake
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.27)
+  set_tests_properties(${test} PROPERTIES
+                       TIMEOUT_SIGNAL_NAME SIGTERM
+                       TIMEOUT_SIGNAL_GRACE_PERIOD 10)
+endif()
+```
+
+Put this block in the loop, after `set_tests_properties()`.
+
+### How the examples register their tests
+
+The function `add_example()` in
+[`examples/CMakeLists.txt`](https://github.com/FairRootGroup/FairMQ/blob/dev/examples/CMakeLists.txt)
+copies `test-ex-<name>.sh.in` with `configure_file()` into the build directory. Then it adds the test
+`Example.<name>.<transport>` (or `Example.<name>.<variant>.<transport>`) for each transport, with a
+timeout of 30 s. `env_mods` holds the changes of the environment for the leak sanitizer and for
+`FAIRMQ_TEST_LD_LIBRARY_PATH`:
+
+<Snippet file="examples/CMakeLists.txt" start='          set(test "${testsuite}.${name}.${transport}")' end="endif()" />
+
+`configure_file()` replaces `@CMAKE_BINARY_DIR@`, `@CMAKE_CURRENT_BINARY_DIR@` and `@FAIRMQ_BIN_DIR@`
+in the script with the paths of the build tree. Thus the example scripts find `fairmq-uuid-gen` in
+`<build>/fairmq`.
+
+:::caution[`${…}` in a configured script]
+`add_example()` calls `configure_file()` for the test scripts without the option `@ONLY`. Then CMake
+also replaces each `${variable}` in the script with the value of a CMake variable, which is often
+empty (CMake behavior). The example scripts use only the form `$variable`. If you configure your
+script, use `@ONLY`, or do not use `${…}` in it.
+:::
+
+## Test without a device
+
+To test the code that sends and receives, and not the state machine, make the transport factory
+and the channels in the test program. See
+[Use channels without a device](/guides/channels-without-device/). The tests of FairMQ in
+[`test/transport/`](https://github.com/FairRootGroup/FairMQ/tree/dev/test/transport) and
+[`test/channel/`](https://github.com/FairRootGroup/FairMQ/tree/dev/test/channel) do this. Many of
+these tests run once for each transport.
+
+This GoogleTest program sends one message from a `push` channel to a `pull` channel:
+
+```cpp title="test_channels.cxx"
+#include <fairmq/Channel.h>
+#include <fairmq/ProgOptions.h>
+#include <fairmq/TransportFactory.h>
+#include <fairmq/tools/Unique.h>
+
+#include <gtest/gtest.h>
+
+#include <cstddef>
+#include <string>
+
+namespace
+{
+
+class PushPull : public testing::TestWithParam<std::string>
+{};
+
+TEST_P(PushPull, OneMessage)
+{
+    fair::mq::ProgOptions config;
+    config.SetProperty<std::string>("session", fair::mq::tools::Uuid());
+    config.SetProperty<std::size_t>("shm-segment-size", 100000000);
+    config.SetProperty<bool>("shm-monitor", true);
+
+    auto factory = fair::mq::TransportFactory::CreateTransportFactory(GetParam(), "", &config);
+
+    fair::mq::Channel pull("data-in", "pull", factory);
+    fair::mq::Channel push("data-out", "push", factory);
+    ASSERT_TRUE(pull.Bind("inproc://data"));
+    ASSERT_TRUE(push.Connect("inproc://data"));
+
+    auto out(push.NewSimpleMessage("hello"));
+    ASSERT_EQ(push.Send(out, 1000), 5);
+
+    auto in(pull.NewMessage());
+    ASSERT_EQ(pull.Receive(in, 1000), 5);
+    EXPECT_EQ(std::string(static_cast<char*>(in->GetData()), in->GetSize()), "hello");
+}
+
+INSTANTIATE_TEST_SUITE_P(, PushPull, testing::Values("zeromq", "shmem"),
+                         [](testing::TestParamInfo<std::string> const& info) { return info.param; });
+
+} // namespace
+```
+
+- [`tools::Uuid()`](/api/fair/mq/tools/#Uuid) gives each test its own session. Without the property
+  `session`, all tests use the session `default` and share its shared memory.
+- An `inproc://` address connects only channels of the same factory: each factory has its own
+  ZeroMQ context (ZeroMQ behavior). Thus the tests of two processes cannot connect to each other.
+  For channels of different factories, use an `ipc://` address with a unique path.
+- The name generator puts the transport at the end of the test name. With the CMake file below,
+  the CTest names are `MyProject.PushPull.OneMessage/zeromq` and
+  `MyProject.PushPull.OneMessage/shmem`.
+
+Register the tests with the module `GoogleTest` of CMake. FairMQ does the same in
+`add_testsuite()` of `cmake/GTestHelper.cmake`:
+
+```cmake title="CMakeLists.txt"
+find_package(GTest REQUIRED)
+include(GoogleTest)
+
+add_executable(test-channels test_channels.cxx)
+target_link_libraries(test-channels PRIVATE FairMQ::FairMQ GTest::gtest_main)
+gtest_discover_tests(test-channels
+                     TEST_PREFIX MyProject.
+                     NO_PRETTY_VALUES
+                     PROPERTIES TIMEOUT 20 ENVIRONMENT "FAIRMQ_PATH=${FairMQ_BINDIR}")
+```
+
+Without `NO_PRETTY_VALUES`, `gtest_discover_tests()` adds the parameter value to each CTest name,
+for example `MyProject.PushPull.OneMessage/zeromq  # GetParam() = "zeromq"` (CMake behavior, seen
+with CMake 3.28).
+
+The test helpers of FairMQ in `test/` are not installed. An installed FairMQ does not contain them,
+so your project cannot include them from there. Copy them into your project if they help:
+
+- `Configure()` in [`test/helper/Transport.h`](https://github.com/FairRootGroup/FairMQ/blob/dev/test/helper/Transport.h)
+  sets the session, the segment size and the monitor. See
+  [Make the transport factory](/guides/channels-without-device/#make-the-transport-factory).
+- `IpcAddress` makes a unique `ipc://` address and removes the socket file in its destructor:
+
+  <Snippet file="test/helper/Transport.h" start="class IpcAddress" />
+
+- `TransportParam`, `AllTransports()` and the name generator `TransportParamName` in
+  [`test/helper/TransportParam.h`](https://github.com/FairRootGroup/FairMQ/blob/dev/test/helper/TransportParam.h)
+  run a test for `zeromq`, `shmem`, and `shmem` with expanded metadata. `BasicTransports()` and
+  `ShmTransports()` select fewer transports.
+- The `main()` of the test suites sets `FAIRMQ_PATH` if the environment does not have it
+  ([`test/runner.cxx.in`](https://github.com/FairRootGroup/FairMQ/blob/dev/test/runner.cxx.in)).
+  The value is the directory `fairmq` of the build tree (`FAIRMQ_TEST_ENVIRONMENT` in
+  `test/TestEnvironment.h.in`).
+
+To test a device class in the test process, run its state machine in a thread. See
+[Run the device in a thread](/guides/control-from-code/#run-the-device-in-a-thread).
+
+To start device processes from C++, use [`tools::execute()`](/reference/tools/#processh). The helper
+`RunDevices()` in [`test/helper/Devices.h`](https://github.com/FairRootGroup/FairMQ/blob/dev/test/helper/Devices.h)
+starts the test program `testhelper_runTestDevice` of the FairMQ build tree, once for each device.
+It calls `execute()` for each device in its own thread, with a default timeout of 15 s. Thus you
+cannot copy this helper without the test devices of FairMQ. The session is a new `UuidHash()` as a decimal
+number, like the output of `fairmq-uuid-gen -h`. Each device gets the same options as in the script above:
+
+<Snippet file="test/helper/Devices.h" start="cmd << runTestDevice" end='<< " --color false";' />
+
+## Clean up shared memory after a failed test
+
+A device that crashes or that CTest stops does not remove its shared memory. Three things remove
+it:
+
+1. **The monitor daemon.** With `--shm-monitor true`, a shmem device starts `fairmq-shmmonitor` as
+   a daemon if no monitor runs for the session. The daemon removes the memory of the session
+   2000 ms after the last heartbeat of the devices. The daemon forks and calls `setsid()`, so it
+   continues after the devices stop. If the transport cannot find
+   `fairmq-shmmonitor`, it logs `could not find fairmq-shmmonitor in "$FAIRMQ_PATH:$PATH"` and runs
+   without a daemon.
+
+2. **The trap of the script.** `fairmq-shmmonitor --cleanup --session <session>` removes the
+   segments, the regions and the monitor mutex of the session. For a session without shared memory,
+   for example with `zeromq`, it writes a message and removes nothing. Also then, its exit code
+   is 0.
+
+3. **You.** Find the sessions with `fairmq-shmmonitor --list-all`. Remove one session with its
+   name from the test output:
+
+   ```sh
+   fairmq-shmmonitor --list-all
+   fairmq-shmmonitor --cleanup --session 1234567890
+   ```
+
+   The files are in `/dev/shm`. All names start with `fmq_` or `sem.fmq_`:
+
+   ```sh
+   ls -l /dev/shm/ | grep fmq_
+   ```
+
+See [Monitor and clean up](/shmem/monitor/) and [fairmq-shmmonitor](/tools/shmmonitor/) for the
+details. A file-backed region keeps its file. Remove it at its path.
+
+## Run the tests
+
+```sh
+ctest --test-dir build -R '^MyTopology\.' --output-on-failure
+ctest --test-dir build -R '^MyTopology\.' --parallel 4
+```
+
+The second command runs the tests at the same time. This is a good check for collisions: each test
+must use its own session and its own addresses. After the tests, `ls /dev/shm/ | grep fmq_` must
+show no file of your sessions.
+
+You can also run the script directly. Set `FAIRMQ_PATH` first:
+
+```sh
+FAIRMQ_PATH=<prefix>/bin bash test-topology.sh shmem build/bin
+```
+
+## Problems that can occur
+
+- **A test fails only when tests run in parallel.** Two tests use the same TCP port, the same
+  `ipc://` path or the same session. With a fixed port in use, `autoBind` binds to a random port,
+  and the peers do not find the device (see [Automatic ports](/concepts/channels/#automatic-ports)).
+  They can also connect to the device of the other test. Put the session and the transport in each
+  `ipc://` path, as above.
+- **A test hangs until the timeout.** A device has no end condition, or it does not use
+  `--control static`. Or a device failed, and its peer waits for messages. Use `set -e` and a trap
+  for `EXIT`, so that the script stops the others when `wait` returns the error. Set
+  `TIMEOUT_SIGNAL_NAME`, so that the trap also runs on a timeout. Stop the devices without an end
+  condition with a signal.
+- **A device stops slowly after the signal.** A hook waits in `std::this_thread::sleep_for()` or in
+  a long loop. See [Handle errors and timeouts](/guides/errors-timeouts/#problems-that-can-occur).
+- **The log shows `could not find fairmq-shmmonitor`.** `FAIRMQ_PATH` is not set, and
+  `fairmq-shmmonitor` is not in `PATH`. Set the environment of the test.
+- **`/dev/shm` fills up.** Earlier tests crashed without `--shm-monitor true`. Remove their sessions
+  with `fairmq-shmmonitor --cleanup`.
+- **The test passes, but a device failed.** The script does not wait for each device, or the trap
+  ends with `exit 0`. Wait for each device, and let a signal end the script with a code other than 0.
+
+## Related pages
+
+- [1-1: sampler and sink](/examples/1-1/#test-the-example): the test script of the simplest example.
+- [Use channels without a device](/guides/channels-without-device/): factories and channels in one process.
+- [Monitor and clean up](/shmem/monitor/): when shared memory stays and how to remove it.
+- [Helpers in fair::mq::tools](/reference/tools/#fairmq-uuid-gen): `fairmq-uuid-gen` and `execute()`.
+- [Contributing](/project/contributing/#build-and-test): build and run the tests of FairMQ, and
+  [Tests with device processes](/project/contributing/#tests-with-device-processes) in FairMQ itself.
+- [A CTest cleanup test](/shmem/monitor/#a-ctest-cleanup-test): remove the shared memory after the other tests.
+- [When a peer stops or restarts](/guides/errors-timeouts/#when-a-peer-stops-or-restarts): what a test of a restart can check.
+- [Parse options without DeviceRunner](/guides/control-from-code/#parse-options-without-devicerunner): configure a device in a test program.

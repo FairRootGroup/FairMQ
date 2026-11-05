@@ -1,0 +1,246 @@
+---
+title: 'Messages and multipart'
+description: 'How to make a message, who owns its buffer before and after Send(), and how to send several parts in one transfer with fair::mq::Parts.'
+sidebar:
+  order: 4
+code: [fairmq/Message.h, fairmq/Parts.h, fairmq/TransportFactory.h, fairmq/Channel.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+
+A message is the unit of data that a channel sends and receives. The transport allocates the buffer
+of the message, and the owner of the buffer changes when you send it. A multipart message sends
+several messages in one transfer.
+
+## The message object
+
+[`fair::mq::Message`](/api/fair/mq/Message/) is an interface. Each transport has its own
+implementation: the zeromq message holds a `zmq_msg_t`, the shmem message holds a handle to a buffer
+in shared memory. You use a message through [`fair::mq::MessagePtr`](/api/fair/mq/#MessagePtr),
+which is a `std::unique_ptr<Message>`. You cannot copy or move a `Message` object, but you can move
+the `MessagePtr`.
+
+| Function | What it does |
+| --- | --- |
+| [`GetData()`](/api/fair/mq/Message/#GetData) | Returns a pointer to the buffer, or `nullptr` if the message has no buffer. |
+| [`GetSize()`](/api/fair/mq/Message/#GetSize) | Returns the size of the buffer in bytes. |
+| [`SetUsedSize(size, alignment)`](/api/fair/mq/Message/#SetUsedSize) | Makes the buffer smaller. See [Change the size](#change-the-size). |
+| [`Rebuild(…)`](/api/fair/mq/Message/#Rebuild) | Releases the buffer and initializes the message again. |
+| [`Copy(other)`](/api/fair/mq/Message/#Copy) | Makes the message use the buffer of `other`. |
+| [`GetType()`](/api/fair/mq/Message/#GetType) | Returns the transport type, [`Transport::ZMQ`](/api/fair/mq/Transport/#ZMQ) or [`Transport::SHM`](/api/fair/mq/Transport/#SHM). |
+| [`GetTransport()`](/api/fair/mq/Message/#GetTransport) | Returns a pointer to the [`TransportFactory`](/api/fair/mq/TransportFactory/) that made the message. |
+
+## Make a message
+
+A device makes messages with [`NewMessage(args…)`](/api/fair/mq/Device/#NewMessage). It forwards
+the arguments to [`CreateMessage()`](/api/fair/mq/TransportFactory/#CreateMessage) of the default
+transport of the device. [`NewMessageFor(channel, index, args…)`](/api/fair/mq/Device/#NewMessageFor)
+uses the transport of the sub-channel `index` of `channel`. A
+[`Channel`](/api/fair/mq/Channel/#NewMessage) has a `NewMessage(args…)` function too.
+
+| Arguments | Result |
+| --- | --- |
+| none | An empty message without a buffer. Use it to receive. |
+| `Alignment{64}` | An empty message to receive into. The zeromq transport aligns the received buffer to 64 bytes. |
+| `size` | A message with a buffer of `size` bytes from the transport. |
+| `size, Alignment{64}` | A buffer of `size` bytes, aligned to 64 bytes. |
+| `data, size, ffn, hint` | A message for your buffer. See [Your own buffer](#your-own-buffer). |
+| `region, data, size, hint` | A message for a block of an unmanaged region. See [Unmanaged regions](/shmem/regions/). |
+
+A `std::pmr` container can also become a message without a copy:
+[`fair::mq::getMessage()`](/api/fair/mq/#getMessage) makes the message from a container that
+allocates from the memory resource of the transport. See
+[Use std::pmr memory resources](/guides/pmr/).
+
+[`fair::mq::Alignment`](/api/fair/mq/Alignment/) is a struct with one `size_t` member. The value 0
+means "no alignment", which is the default. The shmem transport aligns each buffer to at least
+`alignof(std::max_align_t)`. It ignores the alignment of an empty message, because the receiver gets
+the buffer that the sender allocated.
+
+:::caution[Use messages only while the transports exist]
+The device makes its transports in the state `INITIALIZING DEVICE`, after it calls `Init()`. Do not
+call `NewMessage()` in the constructor or in `Init()`. Call it in `InitTask()`, `Run()`,
+`ConditionalRun()` or in a data callback. The device destroys its transports in the state
+`RESETTING DEVICE`. Destroy the messages that your device class keeps in `ResetTask()`. In a build
+with the CMake option `FAIRMQ_DEBUG_MODE`, the shmem transport checks this before the device calls
+`Reset()`. It throws `MessageError` if messages still exist.
+:::
+
+### Your own buffer
+
+`NewMessage(data, size, ffn, hint)` makes a message for a buffer that you allocated. `ffn` is a
+deleter of the type [`fair::mq::FreeFn`](/api/fair/mq/#FreeFn), `void(void* data, void* hint)`. The
+transport calls `ffn(data, hint)` when it does not need the buffer any more. The
+[1-1 example](/examples/1-1/) sends a string this way:
+
+<Snippet file="examples/1-1/sampler.cxx" start="std::string* text = new std::string(fText);" end="text));" />
+
+The two transports use the buffer differently:
+
+- The zeromq transport does not copy the buffer. ZeroMQ calls `ffn` after the transfer. ZeroMQ can
+  make this call from one of its own threads, so `ffn` must be thread-safe. See
+  [Threads in a device](/concepts/threads/).
+- The shmem transport copies the buffer into the shared memory segment when it makes the message.
+  Then it calls `ffn` immediately. If `ffn` is `nullptr`, it calls `free(data)`
+  ([shmem/Message.h](/source/fairmq/shmem/Message.h/#L64-L78)). For a size of 0, it does not call
+  `ffn` and does not free the buffer.
+
+Always give a deleter. For a buffer that you release yourself, give
+[`TransportFactory::NoCleanup`](/api/fair/mq/TransportFactory/#NoCleanup).
+
+### Small values and strings
+
+[`NewSimpleMessage(value)`](/api/fair/mq/Device/#NewSimpleMessage) copies `value` into a new
+message, and the message owns the copy. For a type `T`, the message has `sizeof(T)` bytes. `T` must
+be trivially copyable, because the receiver gets the bytes only. For a string literal and a
+`std::string`, the message holds the characters without the terminating zero.
+[Limits of NewSimpleMessage()](/guides/send-data-types/#limits-of-newsimplemessage) lists the types
+that do not work.
+
+[`NewStaticMessage(str)`](/api/fair/mq/Device/#NewStaticMessage) makes a message for the buffer of
+the `std::string` `str`, with the deleter `NoCleanup`. The zeromq transport does not copy the buffer
+and does not tell you when the transfer ends. Use it only for a string that does not change and that
+lives longer than the transport. The transports of a device live until `RESETTING DEVICE`, so a
+member of the device is enough. The shmem transport copies the string when it makes the message.
+The test of the transport factory shows both functions:
+
+<Snippet file="test/transport/_factory.cxx" start="// NewSimpleMessage() copies the data" end="^}" />
+
+:::caution
+Use `NewStaticMessage()` with a `std::string` only. The template overload
+`NewStaticMessage(const T& data)` gives `data` itself as the buffer pointer and `sizeof(T)` as the
+size ([TransportFactory.h](/source/fairmq/TransportFactory.h/#L225-L229)).
+:::
+
+The functions `NewSimpleMessageFor()` and `NewStaticMessageFor()` take a channel name and a
+sub-channel index first, like `NewMessageFor()`.
+
+## Change the size
+
+[`SetUsedSize(size)`](/api/fair/mq/Message/#SetUsedSize) makes the buffer smaller. Use it when you
+allocate the maximum size first and know the real size later. It returns `true` if the size is
+equal to or smaller than the current size, and `false` if the size is larger. The message test shows
+the rules:
+
+<Snippet file="test/message/_message.cxx" start="auto outMsg(push.NewMessage(size));" end="ASSERT_EQ(outMsg->GetSize(), 5);" />
+
+The zeromq transport keeps the full buffer until it releases the message. The shmem transport
+shrinks the buffer in the segment where possible, and `SetUsedSize(0)` releases the buffer.
+
+## Rebuild and copy a message
+
+[`Rebuild()`](/api/fair/mq/Message/#Rebuild) releases the buffer of the message and initializes the
+message again. It has five overloads with the same arguments as `NewMessage()`, but without the
+region overload. Use `Rebuild()` to use one message object for many transfers.
+
+[`Copy(other)`](/api/fair/mq/Message/#Copy) makes the message use the buffer of `other`. The
+current transports share the buffer and do not copy the data, but the interface does not guarantee
+it. The shmem transport increments a reference count in shared memory, also for messages of other
+processes. The zeromq transport calls `zmq_msg_copy()`. Do not change the buffer after `Copy()`.
+Both messages must use the same transport. The [copypush example](/examples/copypush/)
+sends one buffer on several sub-channels:
+
+<Snippet file="examples/copypush/sampler.cxx" start="fair::mq::MessagePtr msg(NewSimpleMessage(fCounter++));" end='Send(msg, "data", fNumDataChannels - 1);' />
+
+## Send and receive a message
+
+[`Send(msg, channel, index)`](/api/fair/mq/Device/#Send) takes a reference to the `MessagePtr`. It
+returns the number of bytes, or a negative
+[transfer code](/reference/transfer-codes/) for a timeout, an interruption or an error.
+
+After a successful `Send()`, the transport owns the buffer. The `MessagePtr` still holds a message
+object, but you must not read or write its data:
+
+- The zeromq transport gives the message to `zmq_msg_send()`. On success, ZeroMQ empties the
+  message, and `GetSize()` returns 0.
+- The shmem transport keeps the old size and pointer in the message. The buffer belongs to the
+  receiver now.
+
+To send the same data on two channels, make a second message with `Copy()` before the first
+`Send()`. To use the message object again, call `Rebuild()`. If `Send()` returns a negative value,
+the message keeps its buffer, and you can send it again.
+
+[`Receive(msg, channel, index)`](/api/fair/mq/Device/#Receive) puts the received buffer into `msg`.
+Receive into an empty message: make a new one with `NewMessage()`, or call `Rebuild()` on a used
+one. The shmem transport does not release a buffer that the message already holds. The received
+message owns its buffer. When you destroy the message, the transport releases the buffer.
+
+### A message of another transport
+
+[`Channel::Send()`](/api/fair/mq/Channel/#Send) compares the transport of each message with the
+transport of the channel ([Channel.h](/source/fairmq/Channel.h/#L421-L480)). If they are different,
+the channel makes a new message of its own transport, and your `MessagePtr` points to the new
+message after the call:
+
+- If the channel uses zeromq, the new message points to the buffer of your message. FairMQ does not
+  copy the data. It destroys your message when zeromq releases the buffer.
+- If the channel uses shmem, the new message has a copy of the data in shared memory. FairMQ
+  destroys your message immediately.
+- An empty message becomes an empty message of the channel transport.
+
+[`Channel::Receive()`](/api/fair/mq/Channel/#Receive) replaces a message of another transport with
+an empty message of the channel transport. To prevent the conversion, make the message with
+`NewMessageFor()`. See [Use several transports](/guides/several-transports/).
+
+## Multipart messages
+
+[`fair::mq::Parts`](/api/fair/mq/Parts/) holds a `std::vector<MessagePtr>`. Each message in it is a
+part. You can move a `Parts` object, but you cannot copy it.
+
+| Function | What it does |
+| --- | --- |
+| [`Parts(part1, part2, …)`](/api/fair/mq/Parts/#Parts-4) | Makes a `Parts` object from `MessagePtr` values. |
+| [`AddPart(part)`](/api/fair/mq/Parts/#AddPart-2) | Adds a `MessagePtr` at the end. |
+| [`AddPart(part1, part2, …)`](/api/fair/mq/Parts/#AddPart-3) | Adds several parts at the end. |
+| [`AddPart(otherParts)`](/api/fair/mq/Parts/#AddPart-4) | Moves all parts of another `Parts` object to the end. |
+| [`operator[](i)`](/api/fair/mq/Parts/#operator-index) | Returns the part `i` as `Message&`. It does not check the index. |
+| [`At(i)`](/api/fair/mq/Parts/#At) | Returns the `MessagePtr&` of the part `i`, and throws `std::out_of_range` for a bad index. You can replace the part through it. |
+| [`Size()`](/api/fair/mq/Parts/#Size), [`Empty()`](/api/fair/mq/Parts/#Empty), [`Clear()`](/api/fair/mq/Parts/#Clear) | Return the number of parts, check for zero parts, remove all parts. |
+| [`begin()`](/api/fair/mq/Parts/#begin), [`end()`](/api/fair/mq/Parts/#end), `cbegin()`, `cend()` | Iterate over the `MessagePtr` elements, for example in a range-based `for` loop. |
+
+`AddPart(Message*)` and `AtRef(i)` are deprecated. The old name `FairMQParts` is an alias of
+`fair::mq::Parts` (see [Move from the FairMQ* names](/guides/migrate-names/)).
+
+The sampler of the [multipart example](/examples/multipart/) makes seven parts. It moves three of
+them from a second `Parts` object with `AddPart()`, and one part is empty:
+
+<Snippet file="examples/multipart/sampler.cxx" start="fair::mq::Parts parts;" end='Send(parts, "data");' />
+
+The sink receives all parts in one data callback:
+
+<Snippet file="examples/multipart/sink.cxx" start="bool HandleData(fair::mq::Parts& parts, int)" end="header.stopFlag = (static_cast" />
+
+### How a multipart message travels
+
+`Send(parts, …)` sends all parts in one transfer. The receiver gets all parts, in the same order, in
+one `Receive(parts, …)` call. `Send()` returns the sum of the sizes of the parts. The channel
+counts the transfer as one message in its statistics.
+
+- The zeromq transport sends one zeromq multipart message, with one frame for each part.
+- The shmem transport sends one metadata message with the number of parts and the metadata of each
+  part. The data of the parts stays in shared memory.
+
+`Send()` and `Receive()` also accept a `std::vector<MessagePtr>`. The rules for single messages
+apply to each part. This test sends three parts, one of them empty, and receives them:
+
+<Snippet file="test/parts/_access.cxx" start="Parts out(" end="EXPECT_EQ(AsString(in[2])" />
+
+:::caution[Rules for multipart messages]
+- Do not send an empty `Parts` object. The zeromq transport returns `TransferCode::error`, but the
+  shmem transport sends a message with zero parts.
+- Receive with the same form that the sender uses: `Parts` for `Parts`, `MessagePtr` for
+  `MessagePtr`. The shmem transport cannot read a single message into a `Parts` object.
+- `Receive()` adds the received parts at the end of the `Parts` object. Give it an empty one.
+- A receiver with [`OnData()`](/api/fair/mq/Device/#OnData-3) must register a callback that takes
+  `fair::mq::Parts&`.
+:::
+
+## Related pages
+
+- [Channels and sockets](/concepts/channels/): the channels that send and receive the messages.
+- [Transports](/concepts/transports/): how zeromq and shmem move the data.
+- [Use several transports](/guides/several-transports/): make messages for the right transport.
+- [Unmanaged regions](/shmem/regions/): messages for blocks of your own shared memory.
+- [Transfer codes and errors](/reference/transfer-codes/): the return values of `Send()` and `Receive()`.
+- [Send your own data types](/guides/send-data-types/): structs, arrays and serialized objects in messages.
+- [Use std::pmr memory resources](/guides/pmr/): send a `std::pmr` container without a copy.

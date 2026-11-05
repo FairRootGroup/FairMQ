@@ -1,0 +1,36 @@
+# Doxygen reads the FairMQ sources for the API and source pages of the site.
+# It writes XML only. scripts/api.mjs turns the XML into page data.
+
+PROJECT_NAME           = FairMQ
+OUTPUT_DIRECTORY       = build/doxygen
+INPUT                  = ../fairmq
+FILE_PATTERNS          = *.h *.cxx
+RECURSIVE              = YES
+STRIP_FROM_PATH        = ..
+FULL_PATH_NAMES        = YES
+
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_PROGRAMLISTING     = YES
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_PACKAGE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = NO
+EXTRACT_ANON_NSPACES   = NO
+HIDE_FRIEND_COMPOUNDS  = YES
+BUILTIN_STL_SUPPORT    = YES
+INLINE_INHERITED_MEMB  = NO
+
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+SEARCH_INCLUDES        = YES
+INCLUDE_PATH           = ..
+
+QUIET                  = YES
+WARNINGS               = NO
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = NO

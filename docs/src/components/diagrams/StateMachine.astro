@@ -1,0 +1,580 @@
+---
+// Interactive state machine of a FairMQ device.
+// The layout follows the diagram that `--control interactive` prints (fairmq/plugins/control/Control.cxx).
+// States and transitions come from fairmq/States.h and fairmq/StateMachine.cxx.
+const H = 38;
+type Kind = 'idle' | 'work' | 'end' | 'error';
+const N: Record<string, [number, number, number, Kind]> = {
+  IDLE: [16, 24, 296, 'idle'],
+  EXITING: [344, 24, 60, 'end'],
+  'INITIALIZING DEVICE': [16, 86, 236, 'work'],
+  'RESETTING DEVICE': [276, 86, 128, 'work'],
+  INITIALIZED: [16, 148, 236, 'idle'],
+  BINDING: [16, 210, 236, 'work'],
+  BOUND: [16, 272, 236, 'idle'],
+  CONNECTING: [16, 334, 236, 'work'],
+  'DEVICE READY': [16, 396, 388, 'idle'],
+  'INITIALIZING TASK': [16, 458, 236, 'work'],
+  'RESETTING TASK': [276, 458, 128, 'work'],
+  READY: [16, 520, 388, 'idle'],
+  RUNNING: [16, 582, 388, 'work'],
+  ERROR: [16, 652, 388, 'error'],
+};
+// [from, to, transition, key, path points, label position]
+const E: [string, string, string, string, number[][], number[]][] = [
+  ['IDLE', 'INITIALIZING DEVICE', 'InitDevice', 'i', [[134, 62], [134, 86]], [148, 74]],
+  ['IDLE', 'EXITING', 'End', 'q', [[312, 43], [344, 43]], [328, 43]],
+  ['INITIALIZING DEVICE', 'INITIALIZED', 'CompleteInit', '', [[134, 124], [134, 148]], [142, 139]],
+  ['INITIALIZED', 'BINDING', 'Bind', 'b', [[134, 186], [134, 210]], [148, 198]],
+  ['INITIALIZED', 'RESETTING DEVICE', 'ResetDevice', 'd', [[252, 167], [340, 167], [340, 124]], [296, 167]],
+  ['BINDING', 'BOUND', 'Auto', '', [[134, 248], [134, 272]], [142, 263]],
+  ['BOUND', 'CONNECTING', 'Connect', 'x', [[134, 310], [134, 334]], [148, 322]],
+  ['BOUND', 'RESETTING DEVICE', 'ResetDevice', 'd', [[252, 291], [340, 291], [340, 124]], [296, 291]],
+  ['CONNECTING', 'DEVICE READY', 'Auto', '', [[134, 372], [134, 396]], [142, 387]],
+  ['DEVICE READY', 'INITIALIZING TASK', 'InitTask', 'j', [[134, 434], [134, 458]], [148, 446]],
+  ['DEVICE READY', 'RESETTING DEVICE', 'ResetDevice', 'd', [[340, 396], [340, 124]], [354, 382]],
+  ['INITIALIZING TASK', 'READY', 'Auto', '', [[134, 496], [134, 520]], [142, 511]],
+  ['READY', 'RESETTING TASK', 'ResetTask', 't', [[340, 520], [340, 496]], [354, 508]],
+  ['RESETTING TASK', 'DEVICE READY', 'Auto', '', [[340, 458], [340, 434]], [348, 449]],
+  ['READY', 'RUNNING', 'Run', 'r', [[134, 558], [134, 582]], [148, 570]],
+  ['RUNNING', 'READY', 'Stop', 's', [[300, 582], [300, 558]], [314, 570]],
+  ['RESETTING DEVICE', 'IDLE', 'Auto', '', [[296, 86], [296, 62]], [304, 77]],
+];
+const I: Record<string, [string, string, string]> = {
+  IDLE: [
+    'Idling state',
+    'The state machine starts here. The device has no channels yet. The config plugin reads --mq-config or --channel-config when INITIALIZING DEVICE starts.',
+    '—',
+  ],
+  'INITIALIZING DEVICE': [
+    'Working state',
+    'The device waits for CompleteInit. A controller can set properties now. Then the device calls Init(), reads rate, init-timeout and transport, and makes the transports and the channels.',
+    'Init()',
+  ],
+  INITIALIZED: ['Idling state', 'The configuration is complete and the channels exist. Nothing is bound or connected yet.', '—'],
+  BINDING: ['Working state', 'The device binds all channels with the method bind. Then it calls Bind().', 'Bind()'],
+  BOUND: ['Idling state', 'All channels with the method bind have an endpoint.', '—'],
+  CONNECTING: [
+    'Working state',
+    'The device connects all channels with the method connect. If an address is not valid yet, it tries again every 50 ms. After init-timeout (default 120 s), it goes to ERROR. When all channels are connected, it calls Connect().',
+    'Connect()',
+  ],
+  'DEVICE READY': ['Idling state', 'All channels are bound or connected.', '—'],
+  'INITIALIZING TASK': ['Working state', 'The device prepares the task. Read your own options and allocate resources here.', 'InitTask()'],
+  READY: ['Idling state', 'The task is ready. The device waits for Run.', '—'],
+  RUNNING: [
+    'Working state',
+    'The device calls PreRun(). Then it calls your OnData() callbacks, or it calls ConditionalRun() until it returns false or a transition is pending, and then Run(). If no transition is pending, the device requests Stop. It calls PostRun() and then goes to READY.',
+    'PreRun() · OnData() or ConditionalRun() and Run() · PostRun()',
+  ],
+  'RESETTING TASK': ['Working state', 'The device calls ResetTask(). Undo the work of InitTask() here.', 'ResetTask()'],
+  'RESETTING DEVICE': ['Working state', 'The device resets and removes its transports, calls Reset(), and removes all channels.', 'Reset()'],
+  EXITING: ['Final state', 'The state machine stops. The device process can end.', '—'],
+  ERROR: [
+    'Error state',
+    'An exception in a hook, or the transition ErrorFound, moves the device here. No transition leaves ERROR. The controller stops without the shutdown sequence, so ResetTask() and Reset() do not run. The process ends with the exit code 1.',
+    '—',
+  ],
+};
+const data = JSON.stringify({ N, E: E.map(([f, t, n, k]) => [f, t, n, k]), I });
+const d = (pts: number[][]) => 'M' + pts.map((p) => p.join(' ')).join(' L');
+---
+
+<div class="fmq-sm not-content" data-sm={data}>
+  <div class="sm-fig">
+    <svg viewBox="0 0 420 700" role="group" aria-label="State machine of a FairMQ device">
+      <defs>
+        <marker id="sm-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"
+          ><path d="M0 0L10 5L0 10z" class="sm-ah"></path></marker
+        >
+        <marker id="sm-arr-on" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"
+          ><path d="M0 0L10 5L0 10z" class="sm-ah-on"></path></marker
+        >
+      </defs>
+      <g>
+        {E.map((e, i) => <path d={d(e[4])} class="sm-e" marker-end="url(#sm-arr)" data-edge={i} />)}
+      </g>
+      <g>
+        {
+          Object.entries(N).map(([name, [x, y, w, k]]) => (
+            <g class={`sm-n sm-${k}`} tabindex="0" role="button" aria-label={`${name}: show details`} data-state={name}>
+              <rect x={x} y={y} width={w} height={H} rx="2" />
+              {k === 'work' && <rect x={x + 3} y={y + 3} width={w - 6} height={H - 6} rx="1" class="sm-inner" />}
+              <text x={x + w / 2} y={y + H / 2 + 4} text-anchor="middle">
+                {name}
+              </text>
+            </g>
+          ))
+        }
+      </g>
+      <g aria-hidden="true">
+        <text x="210" y="643" text-anchor="middle" class="sm-auto">any state → ERROR on ErrorFound</text>
+        {
+          E.map((e) => {
+            const [x, y] = e[5];
+            return e[3] ? (
+              <g class="sm-key">
+                <rect x={x - 7} y={y - 7} width="14" height="14" rx="2" />
+                <text x={x} y={y + 3.5} text-anchor="middle">
+                  {e[3]}
+                </text>
+              </g>
+            ) : (
+              <text x={x} y={y} class="sm-auto">
+                {e[2] === 'Auto' ? 'auto' : e[2]}
+              </text>
+            );
+          })
+        }
+      </g>
+    </svg>
+  </div>
+  <div class="sm-side">
+    <div class="sm-panel">
+      <div class="sm-ph">
+        <div class="sm-kind"><i></i><span data-kind>Idling state</span></div>
+        <p class="sm-name" data-name>IDLE</p>
+      </div>
+      <div class="sm-body">
+        <p class="sm-h">What happens</p>
+        <p data-does>{I.IDLE[1]}</p>
+        <p class="sm-h">Your code</p>
+        <p class="sm-hook" data-hook>—</p>
+        <p class="sm-h">Leave with</p>
+        <div class="sm-leave" data-leave></div>
+      </div>
+      <div class="sm-ctrl" data-ctrl></div>
+      <pre class="sm-log" aria-live="polite" data-log></pre>
+    </div>
+    <p class="sm-tip">
+      Select a state to read about it. The buttons and the keys <kbd>i</kbd>
+      <kbd>b</kbd>
+      <kbd>x</kbd>
+      <kbd>j</kbd>
+      <kbd>r</kbd>
+      <kbd>s</kbd>
+      <kbd>t</kbd>
+      <kbd>d</kbd>
+      <kbd>q</kbd> work like the interactive controller (<code>--control interactive</code>). <kbd>q</kbd> runs the shutdown sequence (Stop, ResetTask, ResetDevice, End) from RUNNING and from each idling state. <kbd>c</kbd> prints the current state.
+    </p>
+  </div>
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('.fmq-sm')) {
+    const { N, E, I } = JSON.parse(root.dataset.sm!);
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const $ = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const nodes = new Map<string, SVGGElement>();
+    root.querySelectorAll<SVGGElement>('[data-state]').forEach((g) => nodes.set(g.dataset.state!, g));
+    const edges = [...root.querySelectorAll<SVGPathElement>('[data-edge]')];
+    const log = $('[data-log]');
+    const ctrl = $('[data-ctrl]');
+    let cur = 'IDLE';
+    let sel = 'IDLE';
+    let busy = false;
+    let stopping = false;
+    let timer = 0;
+    // The key q of the controller runs the shutdown sequence from each state (Control.cxx RunShutdownSequence()).
+    // In this diagram, q works in RUNNING and in the idling states.
+    const SHUT: Record<string, string> = {
+      RUNNING: 'Stop',
+      READY: 'ResetTask',
+      'DEVICE READY': 'ResetDevice',
+      BOUND: 'ResetDevice',
+      INITIALIZED: 'ResetDevice',
+      IDLE: 'End',
+    };
+    const step = () => {
+      const e = outs(cur).find((x: string[]) => x[2] === SHUT[cur]);
+      if (!e) {
+        stopping = false;
+        render();
+        return;
+      }
+      timer = window.setTimeout(() => go(e[1]), reduce ? 250 : 650);
+    };
+    const shutdown = () => {
+      if (busy || stopping || !SHUT[cur]) return;
+      stopping = true;
+      render();
+      step();
+    };
+    const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!);
+    const write = (s: string, sev = 'STATE') => {
+      const div = document.createElement('div');
+      div.innerHTML = `<span class="${sev === 'STATE' ? 'st' : 'er'}">[${sev}]</span> ${esc(s)}`;
+      log.appendChild(div);
+      while (log.children.length > 12) log.firstChild!.remove();
+      log.scrollTop = log.scrollHeight;
+    };
+    const outs = (s: string) => E.filter((e: string[]) => e[0] === s);
+    const go = (to: string) => {
+      write(`${cur} ---> ${to}`);
+      cur = to;
+      sel = to;
+      const o = outs(cur);
+      busy = o.length === 1 && (o[0][2] === 'Auto' || o[0][2] === 'CompleteInit');
+      render();
+      if (busy) {
+        timer = window.setTimeout(() => {
+          busy = false;
+          go(o[0][1]);
+        }, reduce ? 250 : 950);
+      } else if (stopping) step();
+    };
+    const act = (e: string[]) => {
+      if (!busy && !stopping) go(e[1]);
+    };
+    const render = () => {
+      nodes.forEach((g, n) => {
+        g.classList.toggle('cur', n === cur);
+        g.classList.toggle('sel', n === sel && n !== cur);
+        g.setAttribute('aria-pressed', String(n === sel));
+      });
+      E.forEach((e: string[], i: number) => {
+        const live = e[0] === cur;
+        edges[i].classList.toggle('live', live);
+        edges[i].setAttribute('marker-end', live ? 'url(#sm-arr-on)' : 'url(#sm-arr)');
+      });
+      const [kind, does, hook] = I[sel];
+      $('[data-kind]').textContent = kind;
+      root.querySelector('.sm-kind i')!.className = N[sel][3] === 'work' ? 'work' : '';
+      $('[data-name]').textContent = sel;
+      $('[data-does]').textContent = does;
+      $('[data-hook]').textContent = hook;
+      const lv = outs(sel);
+      $('[data-leave]').innerHTML = lv.length
+        ? lv.map((e: string[]) => `<span>${e[3] ? `<kbd>${e[3]}</kbd>` : ''}${e[2]} → ${e[1]}</span>`).join('')
+        : '<span>none</span>';
+      const lock = busy || stopping ? ' disabled' : '';
+      let h = `<span class="now">Device: <b>${cur}</b>${busy ? ' · working' : stopping ? ' · shutting down' : ''}</span>`;
+      outs(cur)
+        .filter((e: string[]) => e[2] !== 'Auto' && e[2] !== 'CompleteInit')
+        .forEach((e: string[]) => {
+          h += `<button class="sm-btn" type="button" data-e="${E.indexOf(e)}"${lock}><kbd>${e[3]}</kbd>${e[2]}</button>`;
+        });
+      if (cur !== 'IDLE' && SHUT[cur]) h += `<button class="sm-btn" type="button" data-q="1"${lock}><kbd>q</kbd>Shut down</button>`;
+      if (cur !== 'EXITING' && cur !== 'ERROR')
+        h += `<button class="sm-btn warn" type="button" data-err="1"${lock}>Throw in a hook</button>`;
+      else h += '<button class="sm-btn" type="button" data-reset="1">Start again</button>';
+      ctrl.innerHTML = h;
+    };
+    const reset = () => {
+      clearTimeout(timer);
+      busy = false;
+      stopping = false;
+      log.innerHTML = '';
+      cur = 'IDLE';
+      sel = 'IDLE';
+      write('Starting FairMQ state machine --> IDLE');
+      render();
+    };
+    ctrl.addEventListener('click', (ev) => {
+      const b = (ev.target as HTMLElement).closest('button');
+      if (!b) return;
+      if (b.dataset.e) act(E[Number(b.dataset.e)]);
+      else if (b.dataset.q) shutdown();
+      else if (b.dataset.err) {
+        clearTimeout(timer);
+        busy = false;
+        stopping = false;
+        // An exception in a hook sets ERROR without a [STATE] line (StateMachine.cxx ProcessWork()).
+        // The exception reaches DeviceRunner, which logs it.
+        cur = 'ERROR';
+        sel = 'ERROR';
+        render();
+        write('Uncaught exception reached the top of DeviceRunner: <what()>', 'ERROR');
+      } else if (b.dataset.reset) reset();
+    });
+    nodes.forEach((g, n) => {
+      g.addEventListener('click', () => {
+        sel = n;
+        render();
+      });
+      g.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault();
+          sel = n;
+          render();
+        }
+      });
+    });
+    root.addEventListener('keydown', (ev) => {
+      if ((ev.target as HTMLElement).closest('input,textarea') || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+      const k = ev.key.toLowerCase();
+      if (k === 'c') {
+        write(cur);
+        return;
+      }
+      if (k === 'q') {
+        ev.preventDefault();
+        shutdown();
+        return;
+      }
+      const m = outs(cur).find((x: string[]) => x[3] === k);
+      if (m) {
+        ev.preventDefault();
+        act(m);
+      }
+    });
+    reset();
+  }
+</script>
+
+<style>
+  .fmq-sm {
+    display: grid;
+    grid-template-columns: minmax(0, 26rem) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+    margin-block: 1.5rem;
+  }
+  @media (max-width: 52rem) {
+    .fmq-sm {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  .sm-fig {
+    border: 1px solid var(--fmq-rule);
+    border-radius: 4px;
+    background: var(--fmq-paper);
+    padding: 0.5rem;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .sm-n {
+    cursor: pointer;
+    outline: none;
+  }
+  .sm-n rect {
+    fill: var(--fmq-paper);
+    stroke: var(--fmq-ink-3);
+    stroke-width: 1.2;
+    transition: fill 0.25s, stroke 0.25s;
+  }
+  .sm-n rect.sm-inner {
+    fill: none;
+    stroke-width: 1;
+  }
+  .sm-n text {
+    font: 600 10.5px var(--fmq-font-mono);
+    letter-spacing: 0.04em;
+    fill: var(--fmq-ink);
+    pointer-events: none;
+  }
+  .sm-n:hover rect:first-of-type,
+  .sm-n:focus-visible rect:first-of-type {
+    stroke: var(--fmq-link);
+    stroke-width: 2;
+  }
+  .sm-n.sel rect:first-of-type {
+    stroke: var(--fmq-ink);
+    stroke-width: 2.2;
+  }
+  .sm-n.cur rect:first-of-type {
+    fill: var(--fmq-saffron);
+    stroke: var(--fmq-bar);
+  }
+  .sm-n.cur rect.sm-inner {
+    stroke: var(--fmq-bar);
+  }
+  .sm-n.cur text {
+    fill: var(--fmq-on-saffron);
+  }
+  .sm-error rect:first-of-type {
+    stroke: var(--fmq-ruby);
+  }
+  .sm-end rect:first-of-type {
+    stroke-dasharray: 3 3;
+  }
+  .sm-e {
+    fill: none;
+    stroke: var(--fmq-rule-strong);
+    stroke-width: 1.2;
+    transition: stroke 0.25s;
+  }
+  .sm-e.live {
+    stroke: var(--fmq-ink);
+    stroke-width: 1.8;
+    stroke-dasharray: 5 4;
+    animation: smdash 1s linear infinite;
+  }
+  @keyframes smdash {
+    to {
+      stroke-dashoffset: -18;
+    }
+  }
+  .sm-ah {
+    fill: var(--fmq-rule-strong);
+  }
+  .sm-ah-on {
+    fill: var(--fmq-ink);
+  }
+  .sm-key rect {
+    fill: var(--fmq-paper-2);
+    stroke: var(--fmq-rule-strong);
+  }
+  .sm-key text {
+    font: 600 9.5px var(--fmq-font-mono);
+    fill: var(--fmq-ink);
+  }
+  .sm-auto {
+    font: italic 400 9.5px var(--fmq-font-mono);
+    fill: var(--fmq-ink-3);
+  }
+  .sm-panel {
+    border: 1px solid var(--fmq-rule);
+    border-radius: 4px;
+    background: var(--fmq-paper);
+    min-width: 0;
+  }
+  .sm-ph {
+    padding: 0.85rem 1rem 0.75rem;
+    border-bottom: 1px solid var(--fmq-rule);
+  }
+  .sm-kind {
+    font: 600 0.66rem/1.2 var(--fmq-font-body);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fmq-ink-3);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .sm-kind i {
+    width: 14px;
+    height: 10px;
+    border: 1px solid var(--fmq-ink-3);
+  }
+  .sm-kind i.work {
+    outline: 1px solid var(--fmq-ink-3);
+    outline-offset: 2px;
+    width: 10px;
+    height: 6px;
+    margin: 0 2px;
+  }
+  .sm-name {
+    font: 800 1.3rem/1.15 var(--fmq-font-body);
+    font-stretch: 108%;
+    margin: 0.35rem 0 0;
+    letter-spacing: -0.01em;
+    color: var(--fmq-ink);
+  }
+  .sm-body {
+    padding: 0.6rem 1rem 0.85rem;
+    font-size: 0.9rem;
+  }
+  .sm-body p {
+    margin: 0;
+  }
+  .sm-h {
+    font: 600 0.66rem/1.2 var(--fmq-font-body);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fmq-ink-3);
+    margin: 0.75rem 0 0.25rem !important;
+  }
+  .sm-hook {
+    font: 600 0.8125rem/1.5 var(--fmq-font-mono);
+    color: var(--fmq-accent-ink);
+  }
+  .sm-leave {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .sm-leave :global(span) {
+    font: 500 0.75rem/1 var(--fmq-font-mono);
+    border: 1px solid var(--fmq-rule);
+    border-radius: 3px;
+    padding: 0.3rem 0.45rem;
+    color: var(--fmq-ink-2);
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
+  }
+  .sm-ctrl {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--fmq-rule);
+    background: var(--fmq-paper-2);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .sm-ctrl :global(.now) {
+    font: 600 0.75rem/1.2 var(--fmq-font-mono);
+    color: var(--fmq-ink-2);
+    flex-basis: 100%;
+  }
+  .sm-ctrl :global(.now b) {
+    color: var(--fmq-ink);
+  }
+  .sm-ctrl :global(.sm-btn) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font: 500 0.8125rem/1 var(--fmq-font-body);
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--fmq-rule-strong);
+    border-radius: 4px;
+    background: var(--fmq-paper);
+    color: var(--fmq-ink);
+    cursor: pointer;
+  }
+  .sm-ctrl :global(.sm-btn:hover) {
+    border-color: var(--fmq-ink-3);
+  }
+  .sm-ctrl :global(.sm-btn:disabled) {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .sm-ctrl :global(.sm-btn.warn) {
+    color: var(--fmq-ruby);
+  }
+  .fmq-sm :global(kbd) {
+    display: inline-grid;
+    place-items: center;
+    min-width: 18px;
+    height: 18px;
+    font: 600 0.65rem/1 var(--fmq-font-mono);
+    border: 1px solid var(--fmq-rule-strong);
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    background: var(--fmq-paper-2);
+    color: var(--fmq-ink);
+    padding: 0 4px;
+  }
+  .sm-log {
+    margin: 0;
+    padding: 0.6rem 0.75rem;
+    background: var(--fmq-code-bg);
+    color: var(--fmq-code-ink);
+    font: 400 0.75rem/1.6 var(--fmq-font-mono);
+    border-radius: 0 0 4px 4px;
+    height: 7.4rem;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    border: 0;
+  }
+  .sm-log :global(.st) {
+    color: var(--fmq-c-kw);
+  }
+  .sm-log :global(.er) {
+    color: var(--fmq-c-num);
+  }
+  .sm-tip {
+    font-size: 0.8125rem;
+    color: var(--fmq-ink-3);
+    margin: 0.5rem 0.1rem 0;
+    line-height: 1.9;
+  }
+  .sm-tip code {
+    font-size: 0.8em;
+  }
+</style>

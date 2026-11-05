@@ -1,0 +1,240 @@
+---
+title: 'Devices'
+description: 'A device is a class derived from fair::mq::Device. It has channels, a configuration, transports, a state machine and hooks for your code.'
+sidebar:
+  order: 1
+code: [fairmq/Device.h, fairmq/Device.cxx, fairmq/DeviceRunner.h, fairmq/DeviceRunner.cxx, fairmq/runDevice.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+A device is the part of a FairMQ topology that does the work. You write a class derived from
+[`fair::mq::Device`](/api/fair/mq/Device/) and override its hooks. The state machine of the device
+calls the hooks, and the channels of the device connect it to other devices.
+
+## What a device has
+
+Each device has these parts:
+
+| Part | Access | Description |
+| --- | --- | --- |
+| Channels | [`GetChannels()`](/api/fair/mq/Device/#GetChannels), [`GetChannel()`](/api/fair/mq/Device/#GetChannel) | A map from the channel name to a `std::vector<Channel>` with the sub-channels. The device makes the channels from its properties in `INITIALIZING DEVICE`. |
+| Configuration | [`fConfig`](/api/fair/mq/Device/#fConfig), [`GetConfig()`](/api/fair/mq/Device/#GetConfig) | A pointer to a [`ProgOptions`](/api/fair/mq/ProgOptions/) object. It holds all properties of the device, also the channel properties. |
+| Transports | [`Transport()`](/api/fair/mq/Device/#Transport), [`AddTransport()`](/api/fair/mq/Device/#AddTransport) | One transport factory for each transport that the device uses. `Transport()` returns the default transport. |
+| State machine | [`ChangeState()`](/api/fair/mq/Device/#ChangeState), [`GetCurrentState()`](/api/fair/mq/Device/#GetCurrentState) | A private member. It calls the hooks. See [Device states](/concepts/states/). |
+| Id | [`GetId()`](/api/fair/mq/Device/#GetId) | The value of the property `id`. The device reads it in `INITIALIZING DEVICE`. |
+| Version | [`GetVersion()`](/api/fair/mq/Device/#GetVersion) | The [`tools::Version`](/reference/tools/#versionh) that you give to the constructor. The default is `{0, 0, 0}`. |
+
+The public member [`fChannels`](/api/fair/mq/Device/#fChannels) is deprecated. Use `GetChannels()`.
+
+A device has four constructors. Copy and move are deleted.
+
+<Snippet file="fairmq/Device.h" start="    Device();" end="Device(ProgOptions& config, tools::Version version);" />
+
+If you do not give a `ProgOptions` object, the device makes its own (`fInternalConfig`).
+[`SetConfig()`](/api/fair/mq/Device/#SetConfig) replaces it with your object. `DeviceRunner` calls
+`SetConfig()` with its own `ProgOptions` before the device starts.
+
+### The transports
+
+In `INITIALIZING DEVICE`, the device reads the property `transport` (default `zeromq`). It makes the
+default transport from this value. Then it makes one more transport for each other transport that a
+channel uses. All channels with the same transport share one transport factory. See
+[Transports](/concepts/transports/) and [Use several transports](/guides/several-transports/).
+
+## The hooks
+
+The hooks are protected virtual functions. Their default implementations do nothing, and
+`ConditionalRun()` returns `false`. Override only the hooks that your device needs.
+
+| Hook | State | When the device calls it |
+| --- | --- | --- |
+| [`Init()`](/api/fair/mq/Device/#Init) | `INITIALIZING DEVICE` | After the controller requests `CompleteInit`, before the device makes the channels. The header recommends `InitTask()` instead. |
+| [`Bind()`](/api/fair/mq/Device/#Bind) | `BINDING` | After the device binds all channels with the method `bind`. |
+| [`Connect()`](/api/fair/mq/Device/#Connect) | `CONNECTING` | After the device connects all channels with the method `connect`. |
+| [`InitTask()`](/api/fair/mq/Device/#InitTask) | `INITIALIZING TASK` | Once. Read your options and allocate your resources here. |
+| [`PreRun()`](/api/fair/mq/Device/#PreRun) | `RUNNING` | Once, at the start of `RUNNING`. |
+| [`ConditionalRun()`](/api/fair/mq/Device/#ConditionalRun) | `RUNNING` | Again and again, while it returns `true` and no transition is pending. |
+| [`Run()`](/api/fair/mq/Device/#Run) | `RUNNING` | Once, after the `ConditionalRun()` loop. |
+| [`PostRun()`](/api/fair/mq/Device/#PostRun) | `RUNNING` | Once, at the end of `RUNNING`. A transition is pending at this time. |
+| [`ResetTask()`](/api/fair/mq/Device/#ResetTask) | `RESETTING TASK` | Once. Undo the work of `InitTask()` here. |
+| [`Reset()`](/api/fair/mq/Device/#Reset) | `RESETTING DEVICE` | After the device resets its transports, before it removes all channels. |
+
+The device does not call `ConditionalRun()` and `Run()` when it has data callbacks (see below). The
+state machine calls the hooks through a handler in the constructor of the device:
+
+<Snippet file="fairmq/Device.cxx" start="fStateMachine.HandleStates([&](State state) {" />
+
+Each wrapper function calls one or more hooks. For example, `InitTaskWrapper()` calls `InitTask()`
+and then requests the transition `Auto`, if no other transition is pending. An exception in a hook moves the device to the state
+`ERROR`. See [Handle errors and timeouts](/guides/errors-timeouts/).
+
+Two more virtual functions are public:
+
+- [`RegisterChannelEndpoints()`](/api/fair/mq/Device/#RegisterChannelEndpoints): `DeviceRunner`
+  calls it before the device starts. In it, call
+  [`RegisterChannelEndpoint()`](/api/fair/mq/Device/#RegisterChannelEndpoint) for each channel that
+  your device expects, with the minimum and maximum number of sub-channels (default 1 and 1).
+- [`LogSocketRates()`](/api/fair/mq/Device/#LogSocketRates): in `RUNNING`, a separate thread runs it
+  when a channel has the property `rateLogging` larger than 0 (default 1). It logs the message rate
+  and the data rate of these channels every `rateLogging` seconds.
+
+### A small example
+
+This sampler of the example [1-1](/examples/1-1/) reads two options in `InitTask()` and sends one
+message in each call of `ConditionalRun()`:
+
+<Snippet file="examples/1-1/sampler.cxx" start="struct Sampler : fair::mq::Device" />
+
+## Data callbacks
+
+A device can register data callbacks with [`OnData()`](/api/fair/mq/Device/#OnData). The device
+then calls the callback for each message that arrives on the channel. A callback receives a message
+(`MessagePtr&`) or a multipart message (`Parts&`), and the index of the sub-channel. It returns
+`true` to continue, or `false` to end `RUNNING`.
+
+<Snippet file="examples/1-1/sink.cxx" start="    Sink()" />
+
+Register the callbacks before the device enters `RUNNING`, for example in the constructor. See
+[Receive data with callbacks or loops](/guides/receive-data/) for all forms of `OnData()`. For the
+thread that calls the callbacks, see [Which thread runs your code](/concepts/threads/#which-thread-runs-your-code).
+
+## Helper functions
+
+The device has helper functions for the work in the hooks:
+
+| Function | Description |
+| --- | --- |
+| [`Send(msg, channel, index = 0)`](/api/fair/mq/Device/#Send), [`Receive(msg, channel, index = 0)`](/api/fair/mq/Device/#Receive) | Send or receive a `MessagePtr`, a `Parts` or a `std::vector<MessagePtr>` on the sub-channel `index` of the channel. Overloads with a fourth argument set a timeout in ms ([`Send-2`](/api/fair/mq/Device/#Send-2), [`Receive-2`](/api/fair/mq/Device/#Receive-2)). They return the number of bytes or a negative [transfer code](/reference/transfer-codes/). |
+| [`NewMessage(args...)`](/api/fair/mq/Device/#NewMessage) | Makes a message with the default transport. The arguments go to `TransportFactory::CreateMessage()`. |
+| [`NewMessageFor(channel, index, args...)`](/api/fair/mq/Device/#NewMessageFor) | Makes a message with the transport of the sub-channel. |
+| [`NewSimpleMessage(data)`](/api/fair/mq/Device/#NewSimpleMessage), [`NewSimpleMessageFor(channel, index, data)`](/api/fair/mq/Device/#NewSimpleMessageFor) | Makes a message with a copy of `data`. |
+| [`NewStaticMessage(data)`](/api/fair/mq/Device/#NewStaticMessage), [`NewStaticMessageFor(channel, index, data)`](/api/fair/mq/Device/#NewStaticMessageFor) | Makes a message that does not free `data` after the transfer. The `zeromq` transport uses `data` without a copy. The `shmem` transport copies it. |
+| [`NewUnmanagedRegion(args...)`](/api/fair/mq/Device/#NewUnmanagedRegion), [`NewUnmanagedRegionFor(channel, index, args...)`](/api/fair/mq/Device/#NewUnmanagedRegionFor) | Makes an unmanaged region. See [Unmanaged regions](/shmem/regions/). |
+| [`NewPoller("a", "b")`](/api/fair/mq/Device/#NewPoller), [`NewPoller(channels)`](/api/fair/mq/Device/#NewPoller-2) | Makes a poller for channel names or for a `std::vector<Channel*>`. All channels must use the same transport. Otherwise the function throws `std::runtime_error`. See [Poll several channels](/guides/poll-channels/). |
+| [`GetChannel(name, index = 0)`](/api/fair/mq/Device/#GetChannel) | Returns the sub-channel. Throws `std::out_of_range` if it does not exist. |
+| [`GetNumSubChannels(name)`](/api/fair/mq/Device/#GetNumSubChannels) | Returns the number of sub-channels of a channel. |
+| [`GetNumberOfConnectedPeers(name, index = 0)`](/api/fair/mq/Device/#GetNumberOfConnectedPeers) | Returns the number of peers that are connected to the sub-channel. |
+| [`AddChannel(name, channel)`](/api/fair/mq/Device/#AddChannel) | Adds the properties of a `Channel` object to the configuration, except `sndTimeoutMs` and `rcvTimeoutMs`. The device makes the channel in `INITIALIZING DEVICE`. |
+| [`GetConfig()`](/api/fair/mq/Device/#GetConfig) | Returns the `ProgOptions` object. Use `GetConfig()->GetProperty<T>(key)` to read an option. |
+| [`GetId()`](/api/fair/mq/Device/#GetId) | Returns the id of the device. |
+| [`NewStatePending()`](/api/fair/mq/Device/#NewStatePending) | Returns `true` when a transition is requested and the next state has not started yet. |
+| [`WaitFor(duration)`](/api/fair/mq/Device/#WaitFor) | Waits for the duration. Returns `false` if a transition is requested before the end of the duration. |
+| [`ChangeState(transition)`](/api/fair/mq/Device/#ChangeState), [`ChangeStateOrThrow(transition)`](/api/fair/mq/Device/#ChangeStateOrThrow) | Request a transition. See [States and transitions](/reference/states/). |
+| [`GetCurrentState()`](/api/fair/mq/Device/#GetCurrentState), [`GetCurrentStateName()`](/api/fair/mq/Device/#GetCurrentStateName) | Return the current state. |
+| [`WaitForState(state)`](/api/fair/mq/Device/#WaitForState), [`WaitForNextState()`](/api/fair/mq/Device/#WaitForNextState) | Wait in another thread for a state of the device. |
+| [`SubscribeToStateChange(key, callback)`](/api/fair/mq/Device/#SubscribeToStateChange) | Calls `callback` at the start of each new state, in the thread of the state machine. |
+| [`RunStateMachine()`](/api/fair/mq/Device/#RunStateMachine) | Runs the state machine in the calling thread, until the state `EXITING` or `ERROR`. |
+
+Some setters change a property in the configuration, for example
+[`SetTransport()`](/api/fair/mq/Device/#SetTransport) (`transport`) and
+[`SetNumIoThreads()`](/api/fair/mq/Device/#SetNumIoThreads) (`io-threads`). The device reads most of
+these properties in `INITIALIZING DEVICE`. For all properties, see
+[Configuration and properties](/concepts/configuration/).
+
+## How a device starts
+
+Most devices use the header `fairmq/runDevice.h`. It defines a `main()` function that runs one
+device with the class [`DeviceRunner`](/api/fair/mq/DeviceRunner/).
+
+### Use runDevice.h
+
+<Steps>
+
+1. Include `<fairmq/runDevice.h>` in one source file of your executable.
+
+2. Write the function `addCustomOptions()`. Add your options to the `options_description`. If you
+   have no options, leave the body empty.
+
+   <Snippet file="examples/1-1/sampler.cxx" start="void addCustomOptions" />
+
+3. Write the function `getDevice()`. Return a new object of your device class.
+
+   <Snippet file="examples/1-1/sampler.cxx" start="std::unique_ptr<fair::mq::Device> getDevice" />
+
+</Steps>
+
+The `main()` function of `runDevice.h` adds these two functions as hooks of `DeviceRunner`:
+
+<Snippet file="fairmq/runDevice.h" start="int main(int argc, char* argv[])" />
+
+An exception that reaches `main()` gives the log line `Uncaught exception reached the top of main:`
+and the exit code 1.
+
+:::note[Old header]
+`fairmq/runFairMQDevice.h` is the old form of this header. There, `getDevice()` takes a
+`const fair::mq::ProgOptions&` and returns a raw pointer. Use `fairmq/runDevice.h` for new code.
+:::
+
+### What DeviceRunner does
+
+[`DeviceRunner::Run()`](/api/fair/mq/DeviceRunner/#Run) starts the device in this sequence. The
+constructor of `DeviceRunner` already loads the plugins of the option `-P`.
+
+<Steps>
+
+1. Load the built-in plugin `config`.
+2. Call the hook `LoadPlugins`.
+3. Load the built-in plugin `control`.
+4. Call the hook `SetCustomCmdLineOptions`.
+5. Add the options of all plugins and of the plugin manager.
+6. Call the hook `ModifyRawCmdLineArgs`.
+7. Parse the command line. For `--help` or `--print-options`, print the output and return 0.
+8. Set up the logger from the logging options.
+9. Call the hook `InstantiateDevice`. If the hook does not set `fDevice`, log an error and return 1.
+10. Call `RegisterChannelEndpoints()` of the device. For `--print-channels` or `--version`, return 0.
+11. Give the configuration to the device (`SetConfig()`), and instantiate the plugins.
+12. Log the configuration, and call `RunStateMachine()` of the device.
+13. When the state machine stops, wait until all plugins release the device control. Return 0.
+
+</Steps>
+
+You add a hook with [`AddHook<H>()`](/api/fair/mq/DeviceRunner/#AddHook). A hook is a function
+`void(DeviceRunner&)`. It can use all members of the runner: `fRawCmdLineArgs`, `fConfig`,
+`fDevice` and `fPluginManager`.
+
+| Hook (`fair::mq::hooks::`) | Typical use |
+| --- | --- |
+| `LoadPlugins` | Load more plugins with `r.fPluginManager.LoadPlugin()`. |
+| `SetCustomCmdLineOptions` | Add options with `r.fConfig.AddToCmdLineOptions()`. |
+| `ModifyRawCmdLineArgs` | Change the arguments in `r.fRawCmdLineArgs` before the parser reads them. |
+| `InstantiateDevice` | Make the device and put it into `r.fDevice`. |
+
+You can write your own `main()` with `DeviceRunner`. The example
+[custom-controller](/examples/custom-controller/) loads its own control plugin in the hook
+`LoadPlugins`:
+
+<Snippet file="examples/custom-controller/main.cxx" start="int main(int argc, char* argv[])" />
+
+[`RunWithExceptionHandlers()`](/api/fair/mq/DeviceRunner/#RunWithExceptionHandlers) calls `Run()`
+and catches all exceptions. It logs `Uncaught exception reached the top of DeviceRunner:` and
+returns 1.
+
+:::caution[Known defect]
+For `--print-channels` and `--version`, `DeviceRunner` sets the console severity to `nolog` and then
+prints with `LOG`. Thus both options print nothing in this version. The device does not start.
+:::
+
+A process can also run more than one device without `DeviceRunner`. Then your code must call
+`RunStateMachine()` and request the transitions. See
+[Control a device from code](/guides/control-from-code/).
+
+## The life of a device
+
+A device starts in the state `IDLE`. A controller, usually the control plugin, requests the
+transitions. The device initializes in steps, for example `BINDING` and `CONNECTING`, until it is
+`READY`. In `RUNNING`, the device processes data. When the work ends, the device goes back to
+`READY`. Then it resets in two steps back to `IDLE`, and ends in `EXITING`.
+
+For the states, the transitions and the hooks in each state, see [Device states](/concepts/states/).
+
+## Related pages
+
+- [Device states](/concepts/states/): the state machine and the hooks in each state.
+- [Receive data with callbacks or loops](/guides/receive-data/): `OnData()`, `ConditionalRun()` and
+  `Run()`.
+- [Channels and sockets](/concepts/channels/): the channels of a device.
+- [Configuration and properties](/concepts/configuration/): the properties that a device reads.
+- [Plugins and control](/concepts/plugins/): the plugins that control the device.
+- [Threads in a device](/concepts/threads/): the thread that runs each hook and callback.

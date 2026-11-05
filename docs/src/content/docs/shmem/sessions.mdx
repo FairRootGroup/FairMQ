@@ -1,0 +1,247 @@
+---
+title: 'Sessions and segments'
+description: 'Sessions, managed segments, and the names of the shared memory objects.'
+sidebar:
+  order: 2
+code: [fairmq/shmem/Common.h, fairmq/shmem/Common.cxx, fairmq/shmem/Manager.h, fairmq/shmem/Segment.h]
+---
+
+import SessionMap from '../../../components/diagrams/SessionMap.astro';
+import Snippet from '../../../components/Snippet.astro';
+
+A session is a group of devices that use the same shared memory. The session name and the user ID
+give the shmId. The shmId is part of the name of each shared memory object of the session.
+
+<SessionMap />
+
+## The session name
+
+Each device has the option `--session` (default `default`). All devices of a topology that use the
+shmem transport must have the same session name. They must also run on the same host and as the
+same user.
+
+```sh
+fairmq-ex-1-1-sampler --id sampler1 --transport shmem --session run42 --rate 1 \
+  --channel-config name=data,type=push,method=bind,address=ipc:///tmp/fmq-run42-data
+fairmq-ex-1-1-sink --id sink1 --transport shmem --session run42 \
+  --channel-config name=data,type=pull,method=connect,address=ipc:///tmp/fmq-run42-data
+```
+
+The device reads the session name when it creates its shmem transport. This occurs in the state
+`INITIALIZING DEVICE`. See [Device states](/concepts/states/).
+
+## The shmId
+
+The transport does not use the session name in the object names. It makes a short ID, the shmId
+([Common.cxx](/source/fairmq/shmem/Common.cxx/#L22-L53)):
+
+1. Write the effective user ID of the process as a decimal number, for example `1000`.
+2. Append the session name: `1000default`.
+3. Calculate the SHA-256 hash of this string.
+4. Write the first 4 bytes of the hash as 8 hexadecimal digits: `eca859e3`.
+
+The shmId has only 8 characters, because some systems (for example macOS) limit the length of
+the names. The device writes the shmId to the log at the severity `debug`:
+
+```txt
+Generated shmid 'eca859e3' out of session id 'default'.
+```
+
+To get the shmId of a session without a device, use [`fairmq-shmmonitor`](/tools/shmmonitor/):
+
+```sh
+fairmq-shmmonitor --get-shmid --session default
+fairmq-shmmonitor --get-shmid --session default --user-id 1001
+```
+
+The output contains the shmId:
+
+```txt
+shmem id for session 'default' and current user id 1000 is: eca859e3
+shmem id for session 'default' and user id 1001 is: 293bdc57
+```
+
+In C++ code, use [`fair::mq::shmem::makeShmIdStr(sessionName)`](/api/fair/mq/shmem/#makeShmIdStr-2)
+from `<fairmq/shmem/Common.h>`. An [overload](/api/fair/mq/shmem/#makeShmIdStr) takes the user ID as
+a second string argument.
+
+### Set the shmId directly
+
+The option `--shmid` sets the shmId directly. It is marked as experimental. The value is an unsigned
+64-bit integer in decimal notation. The device writes it as a hexadecimal number with at least 8
+digits: `--shmid 1` gives the shmId `00000001`. The session name then has no effect on the object
+names.
+
+The `--shmid` option of `fairmq-shmmonitor` is a string. Give it the hexadecimal form:
+
+```sh
+fairmq-shmmonitor --shmid 00000001
+```
+
+The example [`region-advanced-external`](/examples/region/) uses `--shmid 1` for all devices, so
+that a separate program can create the memory before the devices start.
+
+## The shared memory objects
+
+The function [`MakeShmName()`](/api/fair/mq/shmem/#MakeShmName) makes all names from the shmId
+([Common.h](/source/fairmq/shmem/Common.h/#L48-L54)). On Linux, Boost.Interprocess keeps each object
+as a file in `/dev/shm`.
+
+| Name | Object | Created by | Content |
+| --- | --- | --- | --- |
+| `fmq_<shmId>_mng` | Management segment, 6553600 bytes (6.25 MiB) | The first shmem transport of the session | Data that all devices share. See the next section. |
+| `fmq_<shmId>_m_<id>` | Managed segment, default 2 GiB | The first device with `--shm-segment-id <id>` | The blocks of the messages. |
+| `fmq_<shmId>_rg_<id>` | Unmanaged region | The device that creates the region | The data of the region. |
+| `fmq_<shmId>_rgq_<id>` | Message queue | The creator of the region, or the first device that uses it | The acknowledgements of region blocks. |
+| `fmq_<shmId>_rrc_<id>` | Reference count segment, `rcSegmentSize` bytes (default 100000000) | The creator of the region, if `rcSegmentSize` is not 0 | The reference counts of copied region messages. |
+| `sem.fmq_<shmId>_ms` | Named mutex | `fairmq-shmmonitor` in the monitor mode or the interactive mode, without `-v` | Shows that a monitor runs for the session. |
+
+A region with a file path is a file at `<path>fmq_<shmId>_rg_<id>`, not an object in `/dev/shm`. See
+[Unmanaged regions](/shmem/regions/#file-backed-regions).
+
+### The management segment
+
+The first shmem transport of a session creates `fmq_<shmId>_mng`. All other transports open it. It
+holds:
+
+- The session info: the session name and the user ID of the creator.
+- The device counter. See [The device counter and cleanup](#the-device-counter-and-cleanup).
+- The heartbeat. Each transport increments it every 100 ms. The monitor uses it.
+- The list of the managed segments, with their allocation algorithms.
+- The list of the regions, with their path, flags, size, reference count segment size and a flag
+  `destroyed`.
+- The event counter, the region counter and a mutex.
+- In debug mode: the list of the messages and the message counters. See
+  [Tune and debug](/shmem/tuning/#debug-mode).
+
+## Managed segments
+
+Each device creates its messages in one managed segment. The option `--shm-segment-id` selects it
+(default `0`). The option is marked as experimental.
+
+- The first device with a segment ID creates the segment. It uses its `--shm-segment-size` and its
+  `--shm-allocation`. Then it registers the segment in the management segment.
+- The other devices with this ID open the segment. Boost.Interprocess opens an existing segment with
+  its size and ignores the `--shm-segment-size` of the device, so the sizes do not have to match.
+- If the allocation algorithm of a device is different, the device writes a warning and uses the
+  algorithm of the segment.
+- A device can receive messages from all segments of the session. It opens a segment when it first
+  uses a message from that segment, for example in `GetData()`.
+
+The device writes the result to the log at the severity `debug`, with the real size:
+
+```txt
+Created managed shared memory segment fmq_eca859e3_m_0. Size: 2147483648 bytes. Available: <free> bytes. Allocation algorithm: rbtree_best_fit
+```
+
+The warning for a different allocation algorithm is:
+
+```txt
+Allocation algorithm of the opened segment is rbtree_best_fit, but requested is simple_seq_fit. Ignoring requested setting.
+```
+
+Use several segments to separate groups of devices. The start script
+`fairmq-start-ex-region-advanced.sh` gives `processor1` and its sinks the segment 1, and `processor2`
+the segment 2. The messages of one group then do not use the memory of the other group.
+
+### Create segments before the devices start
+
+A separate program can create the segments and regions of a session before the devices start.
+[`fair::mq::shmem::Segment`](/api/fair/mq/shmem/Segment/) creates or opens a managed segment and
+registers it. [`Lock()`](/api/fair/mq/shmem/Segment/#Lock) locks its memory in RAM, and
+[`Zero()`](/api/fair/mq/shmem/Segment/#Zero) writes zeros to its free memory. This test creates two
+segments and two regions:
+
+<Snippet file="test/region/_creation.cxx" start="void Preallocate()" />
+
+The devices then open these objects. Start the devices with `--shm-no-cleanup true` if the objects
+must stay after the devices stop.
+
+## The device counter and cleanup
+
+The device counter in the management segment counts the shmem transports of the session. In normal
+use, each device has one shmem transport.
+
+1. A new transport increments the counter.
+2. When the device destroys the transport, the transport decrements the counter. The device does
+   this in the state `RESETTING DEVICE`.
+3. When the counter is 0, the last transport removes all objects of the session
+   ([Manager.h](/source/fairmq/shmem/Manager.h/#L773-L798)): the regions, their queues and
+   reference count segments, the managed segments and the management segment.
+
+The last transport does not remove `sem.fmq_<shmId>_ms`. The monitor owns this mutex.
+
+With `--shm-no-cleanup true`, the last transport does not remove the objects. You must remove them
+yourself. If a device crashes, it does not decrement the counter. Then the counter does not reach 0,
+and the objects stay. See [Monitor and clean up](/shmem/monitor/).
+
+The log messages at the severity `debug` show the decision:
+
+```txt
+Other segment users present (2), skipping removal.
+Last segment user, removing segment.
+Last segment user, skipping removal (--shm-no-cleanup is true).
+```
+
+## Keep two topologies apart
+
+Two topologies on the same host must use different session names. Each session then has its own
+objects, and the devices of one session do not see the memory of the other.
+
+- Give each run a unique session name. The tests of the examples use the output of
+  [`fairmq-uuid-gen -h`](/reference/tools/#fairmq-uuid-gen), a hash of a new UUID.
+  [Test your devices](/guides/test-devices/) shows a test script that does this.
+- Do not connect the channels of two different sessions. The `MetaHeader` does not contain the
+  session. The receiver looks up the segment ID and the handle in its own session. This gives wrong
+  data or an error.
+
+If a receiver cannot find a region of a message, it writes an error to the log:
+
+```txt
+Could not get remote region with id '1024'. Does the region creator run with the same session id?
+```
+
+## Users and permissions
+
+The user ID is part of the hash. Two users with the same session name get two different shmIds, so
+their devices do not share memory. A device cannot open the session of another user with
+`--session`.
+
+To find the shmId of a session of another user, give the user ID to `fairmq-shmmonitor`:
+`fairmq-shmmonitor --get-shmid --session <name> --user-id <id>`.
+
+## Containers
+
+Devices of one session can run in different containers on the same host. Three conditions apply:
+
+1. **The same `/dev/shm`.** The objects of the session are files in `/dev/shm` (see
+   [The shared memory objects](#the-shared-memory-objects)). All containers must see the same
+   files. With Docker, `--ipc=host` gives a container the IPC namespace and the `/dev/shm` of the
+   host. `--ipc=shareable` on one container and `--ipc=container:<name>` on the others give all of
+   them the IPC namespace and the `/dev/shm` of the first container. This is Docker behavior.
+2. **The same effective user ID.** The shmId is the hash of the effective user ID and the session
+   name ([Common.cxx](/source/fairmq/shmem/Common.cxx/#L32-L35)). Two images often run as different
+   users, for example `root` (0) and `1000`. Then the devices get different shmIds with the same
+   session name and do not share memory. Give the containers the same user, for example with
+   `docker run --user 1000`.
+3. **An endpoint that both sides reach.** The shmem transport sends the metadata through ZeroMQ
+   sockets. Use a `tcp://` address on the network of the containers, or an `ipc://` file in a
+   directory that both containers mount.
+
+To check the second condition, run `fairmq-shmmonitor --get-shmid --session <name>` in each
+container. The two outputs must show the same shmId. Devices with different shmIds do not see an
+error at the start. Their transfers give wrong data or errors, as for
+[two sessions](#keep-two-topologies-apart).
+
+The size of `/dev/shm` in a container is often small. Docker gives a container 64 MB by default.
+With `--ipc=container:<name>`, the size is that of the first container, and with `--ipc=host`, that
+of the host. This is Docker behavior. All segments and regions of the session must fit into it. See
+[Space in /dev/shm](/shmem/tuning/#space-in-devshm).
+
+## Related pages
+
+- [How shared memory works](/shmem/how-it-works/): the path of one message.
+- [Unmanaged regions](/shmem/regions/): the region objects of a session.
+- [Monitor and clean up](/shmem/monitor/): find and remove the objects of a session.
+- [fairmq-shmmonitor](/tools/shmmonitor/): all options of the monitor.
+- [Command-line options](/reference/options/): `--session` and the shared memory options.

@@ -1,0 +1,207 @@
+---
+title: 'Check code with fairmq-tidy'
+description: 'Find the deprecated FairMQ* type names in your project with fairmq-tidy, fix them, and run the check at each build and in CI.'
+sidebar:
+  order: 11
+code: [fairmq/tidy/ModernizeNonNamespacedTypes.h, fairmq/tidy/Tool.h]
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+This guide runs `fairmq-tidy` on a CMake project that uses FairMQ. The result is a list of all places that use a deprecated `FairMQ*` type name. A CMake target then checks the code at each build. The reference of the tool is on [fairmq-tidy](/tools/fairmq-tidy/).
+
+## Before you start
+
+- You need a FairMQ installation with the tool. Build FairMQ with `-DBUILD_TIDY_TOOL=ON`, see [Build fairmq-tidy](/tools/fairmq-tidy/#build-fairmq-tidy).
+- Your project must use the Makefile or the Ninja generator of CMake. The other generators do not write a compilation database.
+
+Make sure that the tool runs:
+
+```sh
+fairmq-tidy --help
+```
+
+## Make a compilation database
+
+The tool reads the compile command of each file, with the include paths and flags, from the file `compile_commands.json`.
+
+<Steps>
+
+1. Configure your project with `CMAKE_EXPORT_COMPILE_COMMANDS`:
+
+   ```sh
+   cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+   ```
+
+2. Make sure that the file `build/compile_commands.json` exists.
+
+</Steps>
+
+The database has an entry for each source file. A header file has no entry. The tool checks a header when it checks a source file that includes the header.
+
+## Run the check
+
+<Steps>
+
+1. Go to the source directory of your project. The tool finds a relative file name from the current directory.
+
+2. Check one file:
+
+   ```sh
+   fairmq-tidy -p build src/mydevice.cxx
+   ```
+
+3. Check all source files. Give several file names:
+
+   ```sh
+   fairmq-tidy -p build src/*.cxx
+   ```
+
+   With more than one file, the tool prints a line before each file. An example is `[1/3] Processing file /home/me/myproject/src/mydevice.cxx.`
+
+4. Write the output to a file. The tool writes to the standard error stream:
+
+   ```sh
+   fairmq-tidy -p build src/*.cxx 2> tidy.log
+   ```
+
+</Steps>
+
+## Read the output
+
+Each finding has a warning line, the source line with a marker under the old name, and a fix-it hint with the new name:
+
+```txt
+/home/me/myproject/src/mydevice.cxx:3:25: warning: Modernize non-namespaced type 'FairMQDevice' with 'fair::mq::Device'. [fairmq-modernize-nonnamespaced-types]
+    3 | class MyDevice : public FairMQDevice
+      |                         ^~~~~~~~~~~~
+      |                         fair::mq::Device
+/home/me/myproject/src/mydevice.cxx:5:21: warning: Modernize non-namespaced type 'FairMQMessagePtr' with 'fair::mq::MessagePtr' (aka 'unique_ptr<Message>'). [fairmq-modernize-nonnamespaced-types]
+    5 |     bool HandleData(FairMQMessagePtr& msg, int);
+      |                     ^~~~~~~~~~~~~~~~
+      |                     fair::mq::MessagePtr
+```
+
+- `/home/me/myproject/src/mydevice.cxx:3:25` is the file, the line and the column of the old name. The file name is the name in the compilation database. CMake writes absolute paths.
+- `'FairMQDevice'` is the old name. `'fair::mq::Device'` is the new name. For some names, `(aka …)` shows the full type.
+- `[fairmq-modernize-nonnamespaced-types]` is the name of the check. Use it to search the log.
+- With Clang 18, most findings appear two times at the same location. The example shows one copy. Fix each finding one time.
+- After each file, the tool prints the number of warnings, for example `4 warnings generated.` This number includes the second copies.
+- A finding in a header appears for each source file that includes the header.
+
+A finding in `runFairMQDevice.h` of FairMQ means that your code includes this old header. Do not change the FairMQ header. Move your code to `runDevice.h`, see [Replace runFairMQDevice.h](/guides/migrate-names/#replace-runfairmqdeviceh).
+
+The tool does not find all old names. For example, it does not find `fairmq_free_fn`, `InputMsgCallback` and the old headers. See [Names that the check does not find](/tools/fairmq-tidy/#names-that-the-check-does-not-find).
+
+## Apply the fixes
+
+`fairmq-tidy` does not change your files. Do these steps for each finding:
+
+<Steps>
+
+1. Open the file at the line and the column of the warning.
+
+2. Replace the old name with the text of the fix-it hint, for example `FairMQDevice` with `fair::mq::Device`.
+
+3. Replace the old `#include` lines. Use the table [Headers](/guides/migrate-names/#headers).
+
+4. Run `fairmq-tidy` again. Continue until it prints no warning.
+
+5. Build your project with `-Werror=deprecated-declarations`. The compiler then stops at the old names that the tool does not find.
+
+</Steps>
+
+To get a list of all fixes, add the Clang option `-fdiagnostics-parseable-fixits`:
+
+```sh
+fairmq-tidy -p build --extra-arg=-fdiagnostics-parseable-fixits src/*.cxx 2>&1 | grep '^fix-it:' | sort -u
+```
+
+```txt
+fix-it:"/home/me/myproject/src/mydevice.cxx":{3:25-3:37}:"fair::mq::Device"
+fix-it:"/home/me/myproject/src/mydevice.cxx":{5:21-5:37}:"fair::mq::MessagePtr"
+```
+
+Each line gives the file, the range of the old name (`line:column-line:column`) and the new text. `sort -u` removes the second copy of each finding.
+
+## Check the code at each build
+
+The CMake module `FairMQTidy.cmake` adds the check to a target. The build then runs the tool after it builds the target. The check includes only the source files of the target that end in `.cpp` or `.cxx`.
+
+<Steps>
+
+1. Find FairMQ with the component `tidy_tool`. CMake stops if FairMQ has no `fairmq-tidy`:
+
+   ```cmake
+   find_package(FairMQ REQUIRED COMPONENTS tidy_tool)
+   ```
+
+2. Turn on the compilation database. Do this before you add the targets:
+
+   ```cmake
+   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+   ```
+
+3. Include the module and call `fairmq_target_tidy()` for each target:
+
+   ```cmake
+   include(FairMQTidy)
+
+   add_executable(mydevice src/mydevice.cxx)
+   target_link_libraries(mydevice PRIVATE FairMQ::FairMQ)
+   fairmq_target_tidy(TARGET mydevice)
+   ```
+
+4. Build the project:
+
+   ```sh
+   cmake --build build
+   ```
+
+</Steps>
+
+For each source file, the build prints a line like this one and then the findings:
+
+```txt
+fairmq-tidy: Analyzing source file 'src/mydevice.cxx' of target 'mydevice'
+```
+
+To build one target and run its check, build the target `fairmq-tidy-<target>`:
+
+```sh
+cmake --build build --target fairmq-tidy-mydevice
+```
+
+The build runs the check again each time the target changes. Findings do not stop the build. If the tool fails on a file, the build fails.
+
+## Fail a CI job on findings
+
+The exit code of `fairmq-tidy` is `0` also when it finds old names. To fail a CI job on findings, search the build log for the name of the check:
+
+```sh
+set -eo pipefail
+cmake --build build 2>&1 | tee build.log
+if grep -q "fairmq-modernize-nonnamespaced-types" build.log; then
+  echo "fairmq-tidy found deprecated FairMQ names"
+  exit 1
+fi
+```
+
+`set -eo pipefail` stops the script with the exit code of `cmake --build`, so that a failed build also fails the job.
+
+## Problems that can occur
+
+| Message | Cause | Solution |
+| --- | --- | --- |
+| `CMAKE_EXPORT_COMPILE_COMMANDS is not enabled. Skipping.` | The variable is off when `fairmq_target_tidy()` runs. | Set `CMAKE_EXPORT_COMPILE_COMMANDS` to `ON` before the call. |
+| `Skipping <file>. Compile command not found.` (exit code 2) | The file has no entry in the compilation database. | Check the `-p` directory. Give source files of the project, not headers. |
+| `error: no such file or directory: '-Wno-everything'` | The compilation database has no entry for the file, for example a header. Clang 18 takes the compile command of a similar file. The tool checks the file, but it also shows the compiler warnings. | Give the source files that the database lists. |
+| `fatal error: '<header>' file not found`, then `Error while processing <file>.` (exit code 1) | Clang does not find a header. | Add the include path with `--extra-arg=-I<dir>`. For the headers of Clang itself, add `--extra-arg-before=-I$(clang -print-resource-dir)/include`. |
+| `Error while trying to load a compilation database` and `Running without flags.` | The tool did not find `compile_commands.json`. | Give the build directory with `-p`. |
+| `no such file or directory: '…$<1:…'` in the CMake build | `fairmq_target_tidy()` breaks the command line when its list of extra arguments has two or more items. With GCC, the function always adds one item. | Do not use `EXTRA_ARGS` with GCC. With other compilers, give at most one argument. See [The CMake function](/tools/fairmq-tidy/#the-cmake-function-fairmq_target_tidy). |
+
+## Related pages
+
+- [fairmq-tidy](/tools/fairmq-tidy/): the check, the command line, the exit codes and the CMake function.
+- [Move from the FairMQ* names](/guides/migrate-names/): all old names and their replacements.
+- [Use FairMQ in a CMake project](/start/cmake/): `find_package(FairMQ)` and the targets.

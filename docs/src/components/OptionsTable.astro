@@ -1,0 +1,263 @@
+---
+// Table of command-line options, read from the C++ code at build time.
+//
+//   <OptionsTable />                                   all options of a device made with runDevice.h
+//   <OptionsTable groups={['Shared memory']} />        only some groups, without the filter
+//   <OptionsTable file="fairmq/shmem/runMonitor.cxx" texts={...} />   the options of a tool
+import { paths } from 'virtual:fairmq/data';
+import { deviceOptions, readOptions } from '../../scripts/options.mjs';
+import { deviceOptionTexts } from '../data/option-texts.mjs';
+
+interface Props {
+  file?: string;
+  groups?: string[];
+  texts?: Record<string, string>;
+  filter?: boolean;
+  id?: string;
+}
+const { file, groups, texts, filter, id = 'opt' } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+let options = file
+  ? readOptions(paths.repoRoot, [{ file, source: file.split('/').pop(), group: 'Options' }])
+  : deviceOptions(paths.repoRoot);
+const curated = texts ?? (file ? {} : deviceOptionTexts);
+for (const key of Object.keys(curated)) {
+  if (!options.some((o: any) => o.name === key)) throw new Error(`OptionsTable: no option --${key} in the code (${file ?? 'device options'})`);
+}
+if (groups) options = options.filter((o: any) => groups.includes(o.group));
+const order = ['Device', 'Shared memory', 'Control', 'Logging', 'Plugins', 'General', 'Options'];
+const allGroups = [...new Set(options.map((o: any) => o.group))].sort((a: any, b: any) => order.indexOf(a) - order.indexOf(b));
+const showFilter = filter ?? (!groups && options.length > 12);
+const sorted = [...options].sort((a: any, b: any) => order.indexOf(a.group) - order.indexOf(b.group));
+const fmt = (v: string | undefined) => (v === undefined ? undefined : v === '' ? '""' : v);
+---
+
+<div class="fmq-opts not-content" data-opts>
+  {
+    showFilter && (
+      <div class="fmq-opts-bar" role="group" aria-label="Filter options">
+        <input type="search" placeholder="Filter, for example shm or timeout" aria-label="Filter options" />
+        <div class="fmq-opts-groups">
+          <button type="button" data-g="" aria-pressed="true">
+            All
+          </button>
+          {allGroups.map((g) => (
+            <button type="button" data-g={g} aria-pressed="false">
+              {g}
+            </button>
+          ))}
+        </div>
+        <p class="fmq-opts-count" aria-live="polite">
+          {options.length} options
+        </p>
+      </div>
+    )
+  }
+  <div class="fmq-opts-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Option</th>
+          <th scope="col">Default</th>
+          <th scope="col">Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          sorted.map((o: any) => (
+            <tr id={`${id}-${o.name}`} data-g={o.group} data-q={`${o.name} ${o.short} ${o.description} ${curated[o.name] ?? ''}`.toLowerCase()}>
+              <td class="o-name">
+                <a href={`#${id}-${o.name}`}>
+                  <code>
+                    {o.short && `-${o.short}, `}--{o.name}
+                  </code>
+                </a>
+                <span class="o-type">{o.flag ? 'flag' : o.type}{o.multitoken ? ', several values' : ''}</span>
+              </td>
+              <td class="o-def">
+                {fmt(o.default) !== undefined ? <code>{fmt(o.default)}</code> : o.implicit !== undefined ? <span class="o-none">no value: {o.implicit}</span> : <span class="o-none">—</span>}
+              </td>
+              <td class="o-desc">
+                <Fragment set:html={curated[o.name] ?? o.description.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>')} />
+                <a class="o-src" href={`${base}/source/${o.file}/#L${o.line}`} title={`Defined in ${o.file}:${o.line}`}>
+                  {o.source}
+                </a>
+              </td>
+            </tr>
+          ))
+        }
+        <tr class="o-empty" hidden>
+          <td colspan="3">No option matches. Clear the filter or choose All.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>('[data-opts]')) {
+    const input = root.querySelector<HTMLInputElement>('input[type=search]');
+    if (!input) continue;
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>('button[data-g]')];
+    const rows = [...root.querySelectorAll<HTMLTableRowElement>('tbody tr[data-g]')];
+    const empty = root.querySelector<HTMLTableRowElement>('tr.o-empty')!;
+    const count = root.querySelector('.fmq-opts-count')!;
+    let group = '';
+    const apply = () => {
+      const q = input.value.trim().toLowerCase();
+      let n = 0;
+      for (const r of rows) {
+        const ok = (!group || r.dataset.g === group) && (!q || (r.dataset.q ?? '').includes(q));
+        r.hidden = !ok;
+        if (ok) n++;
+      }
+      empty.hidden = n > 0;
+      count.textContent = n === rows.length ? `${rows.length} options` : `${n} of ${rows.length} options`;
+    };
+    input.addEventListener('input', apply);
+    for (const b of buttons)
+      b.addEventListener('click', () => {
+        group = b.dataset.g ?? '';
+        for (const o of buttons) o.setAttribute('aria-pressed', String(o === b));
+        apply();
+      });
+  }
+</script>
+
+<style>
+  .fmq-opts {
+    margin-block: 1.25rem;
+  }
+  .fmq-opts-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  .fmq-opts-bar input {
+    flex: 1 1 16rem;
+    max-width: 22rem;
+    font: 400 0.9375rem var(--fmq-font-body);
+    color: var(--fmq-ink);
+    background: var(--fmq-paper-2);
+    border: 1px solid var(--fmq-rule-strong);
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+  }
+  .fmq-opts-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .fmq-opts-groups button {
+    font: 500 0.8125rem/1 var(--fmq-font-body);
+    border: 1px solid var(--fmq-rule-strong);
+    border-radius: 3px;
+    background: var(--fmq-paper);
+    color: var(--fmq-ink-2);
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+  }
+  .fmq-opts-groups button:hover {
+    border-color: var(--fmq-ink-3);
+    color: var(--fmq-ink);
+  }
+  .fmq-opts-groups button[aria-pressed='true'] {
+    background: var(--fmq-saffron-tint);
+    border-color: var(--fmq-bar);
+    color: var(--fmq-ink);
+  }
+  .fmq-opts-count {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--fmq-ink-3);
+  }
+  .fmq-opts-scroll {
+    overflow-x: auto;
+    border-top: 1px solid var(--fmq-rule-strong);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    min-width: 40rem;
+  }
+  th {
+    text-align: start;
+    font: 600 0.7rem/1.2 var(--fmq-font-body);
+    font-stretch: 88%;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fmq-ink-3);
+    padding: 0.55rem 0.6rem;
+    border-bottom: 1px solid var(--fmq-rule-strong);
+  }
+  td {
+    padding: 0.55rem 0.6rem;
+    border-bottom: 1px solid var(--fmq-rule);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  tr:target {
+    background: var(--fmq-saffron-tint);
+  }
+  tr[id] {
+    scroll-margin-top: 6rem;
+  }
+  code {
+    font-family: var(--fmq-font-mono);
+    font-size: 0.82rem;
+  }
+  .o-name a {
+    color: var(--fmq-ink);
+    text-decoration: none;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .o-name a:hover {
+    color: var(--fmq-link);
+  }
+  .o-type {
+    display: block;
+    font: 400 0.72rem var(--fmq-font-mono);
+    color: var(--fmq-ink-3);
+    margin-top: 0.15rem;
+  }
+  .o-def code {
+    white-space: nowrap;
+    background: var(--fmq-paper-3);
+    border: 1px solid var(--fmq-rule);
+    border-radius: 3px;
+    padding: 0.05em 0.35em;
+  }
+  .o-none {
+    color: var(--fmq-ink-3);
+    font-size: 0.8125rem;
+  }
+  .o-desc :global(code) {
+    background: var(--fmq-paper-3);
+    border: 1px solid var(--fmq-rule);
+    border-radius: 3px;
+    padding: 0.05em 0.3em;
+  }
+  .o-src {
+    margin-inline-start: 0.4rem;
+    font: 500 0.7rem var(--fmq-font-mono);
+    color: var(--fmq-ink-3);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .o-src:hover {
+    color: var(--fmq-link);
+  }
+  .o-empty td {
+    text-align: center;
+    color: var(--fmq-ink-3);
+    padding: 1.25rem;
+  }
+  tr[hidden] {
+    display: none;
+  }
+</style>

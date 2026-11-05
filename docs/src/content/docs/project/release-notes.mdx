@@ -1,0 +1,181 @@
+---
+title: 'Release notes'
+description: 'The changes in each FairMQ release from v1.5.0 to v1.11.0, the breaking changes, and the changes on dev that are not released yet.'
+sidebar:
+  order: 2
+---
+
+import { Badge } from '@astrojs/starlight/components';
+
+This page lists the changes in each release of FairMQ, the newest release first. The source of each section is the GitHub release and the Git history. <Badge text="Breaking" variant="danger" /> marks a change that can stop your code or your build, or that stops devices of the new and of an older version from working together in one shared memory session. Read these items before you update.
+
+FairMQ does not keep ABI compatibility between releases. After each update, build your devices again. See [Install layout](/reference/cmake/#install-layout).
+
+## Mixed versions
+
+With the `shmem` transport, use the same FairMQ version for all devices of a session. With the `zeromq` transport, the FairMQ version does not change the bytes on the connection.
+
+**zeromq.** The transport sends a message as one ZeroMQ frame that contains only your data. It sends a multipart message as a ZeroMQ multipart message with one frame for each part (`fairmq/zeromq/Socket.h`). FairMQ adds no header and no version number. The compatibility of different ZeroMQ versions is ZeroMQ behavior.
+
+**shmem.** The transport keeps the data in shared memory and sends only metadata through ZeroMQ. The receiver copies the bytes of the metadata into its own [`MetaHeader`](/api/fair/mq/shmem/MetaHeader/) (`fairmq/shmem/Socket.h`). All devices of a session also use the same management segment, managed segments and regions. The metadata and the structures in shared memory contain no version number, and the transport does not compare the versions of the devices. These releases changed the data that the devices of a session share:
+
+| Release | Change |
+| --- | --- |
+| v1.6.0 | The metadata message of a multipart message starts with the number of parts, a `size_t`. Before, the receiver calculated the number from the message size. Since v1.6.0, the sender pads each metadata message to `--shm-metadata-msg-size` (default 0: no padding). A receiver of v1.5.x accepts a single-part metadata message only with the exact size of one `MetaHeader`, and a multipart metadata message only with a multiple of this size. A receiver of v1.6.0 or later reads the first `size_t` of a multipart metadata message of v1.5.x as the number of parts. |
+| v1.8.1 | The entry of a region in the management segment ([`RegionInfo`](/api/fair/mq/shmem/RegionInfo/)) has the new field `fRCSegmentSize`. The reference count of a copied region message is in the reference count segment of the region. Before, it was in a managed segment. |
+| v1.9.0 | The pool of the reference counts in the reference count segment of a region has a different type of Boost.Interprocess: `node_allocator` instead of `adaptive_pool`. |
+
+The fields of `MetaHeader` are the same from v1.5.0 to `dev`. The changes on `dev` after v1.11.0 do not change the metadata or the structures in shared memory.
+
+The segments and the regions are objects of Boost.Interprocess. Their layout in memory is Boost behavior, and FairMQ does not check the Boost version of the other devices. To see the versions of a device, read its log. At start, a device program with `fairmq/runDevice.h` logs a logo with `version` and the Git version of FairMQ (severity `info`). The shmem transport logs `Transport: Using ZeroMQ (…) & boost::interprocess (…)` with the two versions (severity `debug`).
+
+## Unreleased on dev
+
+These changes are on the branch `dev` after v1.11.0. They are not in a release yet. [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.11.0...dev).
+
+- **New**: `fair::mq::tools::execute()` has an overload with a timeout of type `std::chrono::milliseconds`. It stops the child process with `SIGKILL` after the timeout. The old overload has no limit. See [`execute()`](/api/fair/mq/tools/#execute-2) and [Process.h](/reference/tools/#processh).
+- **Fixed**: shmem: a message that received a block of a region, was rebuilt, and then received a block of a second region released this block to the first region. Now each block goes back to its own region.
+- **Fixed**: shmem: a thread that creates a region and a thread that opens a region in the same session can no longer deadlock.
+- **Fixed**: shmem: a region callback that calls the transport while the region is removed no longer blocks. Before, this blocked all processes of the session.
+- **Fixed**: shmem: the removal of a region took a minimum of 500 ms. Now the thread that sends the acknowledgements stops without this wait.
+- **Fixed**: zeromq and shmem: a socket stops its socket monitor before it closes. This removes a memory leak of monitor events ([#463](https://github.com/FairRootGroup/FairMQ/issues/463)).
+- **Tests**: many new tests for the state machine, the device, the channels, the properties, the tools and the shmem monitor. Many tests run once for each transport, and the test name ends with the transport. Multi-process tests use one test harness. See [Contributing](/project/contributing/#select-tests) and [Add a test](/project/contributing/#add-a-test).
+- **CI**: the tests run in parallel. The job `asan+lsan+ubsan` builds with `FAIRMQ_DEBUG_MODE=ON`.
+- **Docs**: this documentation site is new.
+- <Badge text="Breaking" variant="danger" /> **Build**: the CMake option `BUILD_DOCS` and the package component `docs` are removed. `find_package(FairMQ COMPONENTS docs)` fails.
+- **Build**: the bundled GoogleTest is updated to commit `a8380b0`.
+
+## v1.11.0
+
+Released 2026-06-10 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.11.0) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.10.1...v1.11.0)
+
+- **New**: shmem: the side-channel metadata API. A device can send the metadata of a shmem message in its own format. A device of the same session then reads the data in place ([#555](https://github.com/FairRootGroup/FairMQ/pull/555)). See [Out-of-band buffers](/shmem/side-channel/).
+- **Fixed**: shmem: a failed region lookup stayed in the region cache, so all later lookups of this region failed also. Now a later lookup tries again.
+- **Fixed**: `fair::mq::tools::execute()`: calls from several threads write the captured output one line at a time. Before, this was a data race.
+- **Changed**: a channel compiles the regular expression for the validation of its name only once.
+- **Build**: `.clang-tidy` enables only a selected set of checks, and the code has no warnings for these checks. See [Code style](/project/contributing/#code-style).
+- **Build**: the new CMake variable `FAIRMQ_TEST_LD_LIBRARY_PATH` adds a directory to `LD_LIBRARY_PATH` of each test. See [Other variables](/reference/cmake/#other-variables).
+- **Build**: linker flags from the CMake command line no longer break the link command.
+- **CI**: the job `tsan` uses GCC with an instrumented `libzmq` and `libstdc++`. The job `static-analysis` fails on each warning. The jobs use ccache and a higher limit for locked memory.
+- **Build**: the bundled GoogleTest is updated to commit `9156d4c`.
+
+## v1.10.1
+
+Released 2026-01-05 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.10.1) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.10.0...v1.10.1)
+
+- **Fixed**: FairMQ builds with Boost 1.89 and later. It uses the Boost.Process v1 API from `boost/process/v1.hpp` ([#538](https://github.com/FairRootGroup/FairMQ/pull/538)).
+- **Build**: CMake stops with an error for Boost 1.88. This Boost version has no Boost.Process v1 API. Use Boost 1.87 or earlier, or 1.89 or later.
+- **CI**: the CI moves from Jenkins to GitHub Actions. Spack installs the dependencies. The jobs build with GCC 12 to 15 and with Boost 1.87, and run the sanitizers and the static analysis.
+
+## v1.10.0
+
+Released 2025-06-13 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.10.0) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.9.2...v1.10.0)
+
+- <Badge text="Breaking" variant="danger" /> **Changed**: `fair::mq::pmr` is now an alias of `std::pmr`. Before, it was an alias of `boost::container::pmr` ([#532](https://github.com/FairRootGroup/FairMQ/pull/532)). Code that uses Boost memory resources with FairMQ must change to `std::pmr`. See [Use std::pmr memory resources](/guides/pmr/).
+
+## v1.9.2
+
+Released 2025-03-17 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.9.2) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.9.1...v1.9.2)
+
+- **Changed**: `cmake --install` also installs the shmem headers `Manager.h`, `Message.h`, `Poller.h`, `Socket.h`, `TransportFactory.h` and `UnmanagedRegionImpl.h` in `include/fairmq/shmem/`.
+
+## v1.9.1
+
+Released 2025-01-23 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.9.1) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.9.0...v1.9.1)
+
+- **Changed**: some methods of `EventManager` are compiled in the library and not in the header.
+
+## v1.9.0
+
+Released 2025-01-09 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.9.0) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.8.4...v1.9.0)
+
+- <Badge text="Breaking" variant="danger" /> **Changed**: the headers `Device.h`, `Channel.h`, `Message.h`, `TransportFactory.h` and `UnmanagedRegion.h` include `fairmq/TransportEnum.h` and no longer `fairmq/Transports.h` ([#519](https://github.com/FairRootGroup/FairMQ/pull/519)). If your code uses `TransportName()`, `TransportType()`, `TransportError` or `operator<<` for `Transport`, include `fairmq/Transports.h`.
+- **New**: the control mode `--control none`. The control plugin does not take the controller role, so another plugin or your code must change the states ([#503](https://github.com/FairRootGroup/FairMQ/pull/503)). See [Control modes](/concepts/plugins/#control-modes).
+- **Fixed**: shmem: the reference count segment of the regions had a low performance ([#501](https://github.com/FairRootGroup/FairMQ/pull/501)).
+- <Badge text="Breaking" variant="danger" /> **Changed**: shmem: the reference counts of copied region messages use the pool type `node_allocator` instead of `adaptive_pool` (commit `0e221b28`). Do not copy region messages in a session with devices of v1.8.x and of v1.9.0 or later. See [Mixed versions](#mixed-versions).
+- **Changed**: the multipart `Send()` and `Receive()` of a socket take a `Parts::container` ([#507](https://github.com/FairRootGroup/FairMQ/pull/507)). This type is `std::vector<MessagePtr>`, as before.
+- **Changed**: `ProgOptions::SetProperty()` for `int` and `std::string` is compiled in the library and not in the header ([#518](https://github.com/FairRootGroup/FairMQ/pull/518)).
+- **Build**: FairMQ builds with Boost 1.87 ([#521](https://github.com/FairRootGroup/FairMQ/pull/521)).
+- **Build**: the project uses all CMake policies up to CMake 3.30 ([#512](https://github.com/FairRootGroup/FairMQ/pull/512)).
+- **CI**: a workflow checks that `codemeta.json` and `.zenodo.json` agree with `AUTHORS` and `CONTRIBUTORS` ([#498](https://github.com/FairRootGroup/FairMQ/pull/498)). Dependabot updates the GitHub Actions and the Git submodules.
+- **Build**: the bundled GoogleTest is updated to commit `7d76a23`.
+
+## v1.8.4
+
+Released 2023-11-29 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.8.4) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.8.3...v1.8.4)
+
+- **Changed**: shmem: if `RegionConfig::rcSegmentSize` is 0, a region uses the reference counting from before v1.8.1 ([#493](https://github.com/FairRootGroup/FairMQ/pull/493)). See [`RegionConfig`](/api/fair/mq/RegionConfig/#rcSegmentSize).
+
+## v1.8.3
+
+Released 2023-11-24 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.8.3) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.8.2...v1.8.3)
+
+- **Fixed**: shmem: the creation of a reference count segment did not use the stored configuration of the region ([#492](https://github.com/FairRootGroup/FairMQ/pull/492)).
+
+## v1.8.2
+
+Released 2023-11-15 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.8.2) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.8.1...v1.8.2)
+
+- **Changed**: shmem: the default size of the reference count segment increases to 100,000,000 bytes ([#490](https://github.com/FairRootGroup/FairMQ/pull/490)).
+- **Changed**: shmem: the error message is better when the reference count segment has no free space. The transport throws `RefCountBadAlloc` ([#490](https://github.com/FairRootGroup/FairMQ/pull/490)).
+
+## v1.8.1
+
+Released 2023-11-10 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.8.1) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.8.0...v1.8.1)
+
+- **Changed**: shmem: the reference counts of region messages are in a pool in a dedicated segment. `RegionConfig::rcSegmentSize` sets the size of this segment ([#484](https://github.com/FairRootGroup/FairMQ/pull/484)). See [Copies of region messages](/shmem/regions/#copies-of-region-messages).
+- <Badge text="Breaking" variant="danger" /> **Changed**: shmem: the entry of a region in the management segment has a new field. Do not use devices of v1.8.0 or earlier in a session with devices of v1.8.1 or later. See [Mixed versions](#mixed-versions).
+- **Changed**: shmem: the `Message` class is smaller ([#485](https://github.com/FairRootGroup/FairMQ/pull/485)). `Message::SetUsedSize()` has an optional alignment argument.
+- **Fixed**: the state machine protects the containers of its subscriptions with a mutex.
+- **Fixed**: tests no longer use the same addresses.
+
+## v1.8.0
+
+Released 2023-09-06 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.8.0) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.7.0...v1.8.0)
+
+- **New**: `StateMachine::SubscribeToStateChange()` calls the callbacks in the order of the number at the start of their key ([#481](https://github.com/FairRootGroup/FairMQ/pull/481)). See [`SubscribeToStateChange()`](/api/fair/mq/StateMachine/#SubscribeToStateChange).
+
+## v1.7.0
+
+Released 2023-06-26 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.7.0) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.6.0...v1.7.0)
+
+- **New**: the CMake variable `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` sets the default of the channel property `autoBind` ([#475](https://github.com/FairRootGroup/FairMQ/pull/475)). See [Compile definitions](/reference/cmake/#compile-definitions).
+
+## v1.6.0
+
+Released 2023-06-13 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.6.0) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.5.0...v1.6.0)
+
+- **New**: the option `--shm-metadata-msg-size` sets the size of the zeromq message that carries the shmem metadata ([#435](https://github.com/FairRootGroup/FairMQ/pull/435)). See [Options](/reference/options/).
+- <Badge text="Breaking" variant="danger" /> **Changed**: shmem: the metadata message of a multipart message starts with the number of parts. Devices of v1.6.0 or later and devices of v1.5.x cannot exchange multipart shmem messages. See [Mixed versions](#mixed-versions).
+- **Fixed**: the compiler warning `-Wunqualified-std-cast-call`.
+
+## v1.5.0
+
+Released 2023-03-07 · [GitHub release](https://github.com/FairRootGroup/FairMQ/releases/tag/v1.5.0) · [All changes](https://github.com/FairRootGroup/FairMQ/compare/v1.4.56...v1.5.0)
+
+- <Badge text="Breaking" variant="danger" /> **Removed**: the components `sdk`, `sdk_commands` and `dds_plugin` ([discussion #392](https://github.com/FairRootGroup/FairMQ/discussions/392)). They moved to the [ODC](https://github.com/FairRootGroup/ODC) project.
+- <Badge text="Breaking" variant="danger" /> **Changed**: FairMQ is one shared library again. The exported targets `FairMQ::Tools` and `FairMQ::StateMachine` are removed. Link `FairMQ::FairMQ`.
+- <Badge text="Breaking" variant="danger" /> **Changed**: the default of `--shm-monitor` is `false`. By default, the shmem transport does not start the monitor daemon.
+- <Badge text="Breaking" variant="danger" /> **Removed**: `Device::TransitionTo()`, without a replacement.
+- <Badge text="Breaking" variant="danger" /> **Removed**: the experimental `ofi` transport and the experimental `PMIx` plugin.
+- <Badge text="Breaking" variant="danger" /> **Changed**: FairMQ uses `std::filesystem`. To use Boost.Filesystem, set `-DFAIRMQ_HAS_STD_FILESYSTEM=0`. The default is 1 for GCC 9 or later and Clang 9 or later.
+- **Deprecated**: the headers and the type names without a namespace, for example `FairMQDevice.h` and `FairMQDevice` ([discussion #423](https://github.com/FairRootGroup/FairMQ/discussions/423)). See [Move from the FairMQ* names](/guides/migrate-names/).
+- **Deprecated**: `Device::fChannels`.
+- **New**: library and plugin files have kebab-case names, for example `libfairmq-plugin-myplugin.so`. The old names, for example `libFairMQPlugin_myplugin.so`, continue to work.
+- **New**: `Device::ChangeState()` is `[[nodiscard]]`. `Device::ChangeStateOrThrow()` throws an exception if the transition is not possible ([#441](https://github.com/FairRootGroup/FairMQ/issues/441)). See [`ChangeStateOrThrow()`](/api/fair/mq/Device/#ChangeStateOrThrow).
+- **New**: `operator<<` for `fair::mq::Channel`.
+- **New**: the example [custom-controller](/examples/custom-controller/), with a controller plugin that is compiled into the device.
+- **Changed**: the ABI version is equal to the release version. FairMQ does not keep ABI compatibility between releases.
+- **Changed**: the build types `Release` and `RelWithDebInfo` compile with `-O3` instead of `-O2`.
+- **Fixed**: zeromq: messages of the monitor socket leaked.
+- **Fixed**: the device protects its container of transports with a mutex.
+
+## Older releases
+
+The [releases page on GitHub](https://github.com/FairRootGroup/FairMQ/releases) lists all releases, also v1.4.56 and earlier.
+
+## Related pages
+
+- [Install](/start/install/): install a release.
+- [Contributing](/project/contributing/): the branches and the release tags.
+- [Move from the FairMQ* names](/guides/migrate-names/): replace the names that v1.5.0 deprecates.

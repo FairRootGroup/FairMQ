@@ -1,0 +1,357 @@
+---
+title: Send your own data types
+description: Put structs, arrays and serialized objects into messages, keep the data valid until the transport is done, and read it safely in the receiver.
+sidebar:
+  order: 1.5
+code: [fairmq/TransportFactory.h, fairmq/Message.h, fairmq/Device.h, fairmq/Parts.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+A message holds bytes. FairMQ copies and sends these bytes, but it does not serialize your objects
+and it does not check their type. This guide shows how to put structs, arrays and serialized objects
+into messages. It also shows how long your data must stay valid, and how a receiver reads the
+bytes safely.
+
+[Messages and multipart](/concepts/messages/) explains the message functions. This page uses them
+for your own data types.
+
+## Choose a way
+
+| Your data | Make the message with | Copies that FairMQ makes |
+| --- | --- | --- |
+| A small trivially copyable struct or number | [`NewSimpleMessage(value)`](/api/fair/mq/Device/#NewSimpleMessage) | One copy on the heap. The shmem transport copies it again into the segment. |
+| An array or a struct that you can write in place | [`NewMessage(size, alignment)`](/api/fair/mq/Device/#NewMessage), then write into [`GetData()`](/api/fair/mq/Message/#GetData) | None. |
+| Data in a buffer of your own, for example a `std::vector` | `NewMessage(data, size, ffn, hint)` | zeromq: none. shmem: one copy into the segment. |
+| A serialized object | Your serializer, then `NewMessage(size)` or a buffer of your own | See [Serialized objects](#serialized-objects). |
+| A `std::pmr` container | [`fair::mq::getMessage()`](/api/fair/mq/#getMessage) | None, if the container uses the memory resource of the transport. Otherwise one copy ([MemoryResourceTools.h](/source/fairmq/MemoryResourceTools.h/#L42-L62)). See [Use std::pmr memory resources](/guides/pmr/). |
+| A header and a payload | [`fair::mq::Parts`](/api/fair/mq/Parts/) with one part for each | The same as for each part. See [A header and a payload](#a-header-and-a-payload). |
+
+The data types on this page are examples. This struct is the type of one element. The samples are
+member functions of a device class, and they also need the headers `<cstring>`, `<stdexcept>`,
+`<string>` and `<vector>`.
+
+```cpp
+#include <cstdint>
+#include <type_traits>
+
+struct Hit
+{
+    float x;
+    float y;
+    float energy;
+    std::uint32_t detectorId;
+};
+
+// FairMQ does not check this. Check it yourself.
+static_assert(std::is_trivially_copyable_v<Hit>, "Hit must be trivially copyable");
+```
+
+## Plain structs with NewSimpleMessage()
+
+`NewSimpleMessage(value)` copies `value` into a new heap object with `new T(value)`. Then it makes a
+message of `sizeof(T)` bytes for this object, with a deleter that deletes it
+([TransportFactory.h](/source/fairmq/TransportFactory.h/#L195-L203)). You can change or destroy
+`value` at once after the call.
+
+```cpp
+bool ConditionalRun() override
+{
+    Hit const hit{1.5f, 2.5f, 0.3f, 7};
+    fair::mq::MessagePtr msg(NewSimpleMessage(hit));
+    return Send(msg, "data") >= 0;
+}
+```
+
+The [copypush example](/examples/copypush/) sends a `uint64_t` counter in the same way, and the
+sampler of the [multipart example](/examples/multipart/) sends its header struct.
+
+### Limits of NewSimpleMessage()
+
+The type must be trivially copyable, because the receiver gets only the bytes of the object. The
+check for this is a comment in the code
+([TransportFactory.h](/source/fairmq/TransportFactory.h/#L198-L200)). Thus a wrong type compiles and
+sends wrong bytes:
+
+| Argument | What the message contains |
+| --- | --- |
+| A trivially copyable struct, a number, `std::array<float, 16>` | The bytes of the object. This is correct. |
+| A `std::vector<Hit>`, or a struct with a `std::string` member or a pointer member | The bytes of the object itself: sizes and addresses in the memory of the sender. The receiver cannot use them. |
+| A pointer, for example a `const char*` variable | The bytes of the pointer itself, not the data that it points to. |
+| A `char` array or a string literal | The characters up to the first zero byte, without the zero byte (overload for `const char (&)[N]`). Binary data in a `char` array is cut. For a `char` array without a zero byte, the copy reads past the end of the array. |
+| A `std::string` | The characters of the string, without the terminating zero. |
+| A C array of another element type, for example `float values[16]` | Does not compile, because `new T(value)` cannot copy an array. Use `std::array`. |
+
+More rules:
+
+- The receiver must use the same definition of the struct. FairMQ copies the bytes and does not
+  convert them, for example for another byte order or another padding.
+- Use `NewSimpleMessage()` for small data only, because of the additional copy. The comment in the
+  multipart sampler says the same. With shmem, the data is copied two times.
+- `NewSimpleMessage()` uses the default transport of the device. For a channel with another
+  transport, use `NewSimpleMessageFor(channel, index, value)`.
+
+## Write in place with NewMessage(size)
+
+`NewMessage(size)` allocates a buffer of `size` bytes in the transport. The zeromq transport
+allocates it in the memory of the process. The shmem transport allocates it in the managed segment,
+and the receiver reads this block without a copy. Write your data into the buffer before you send
+the message.
+
+<Steps>
+
+1. Calculate the size in bytes, for example `numHits * sizeof(Hit)`.
+
+2. Call `NewMessage(size, fair::mq::Alignment{alignof(Hit)})`. The alignment makes sure that the
+   pointer to the buffer is correct for the type.
+
+3. Cast [`GetData()`](/api/fair/mq/Message/#GetData) to a pointer to your type and write the
+   elements.
+
+4. If you wrote fewer bytes than you allocated, call
+   [`SetUsedSize(bytes)`](/api/fair/mq/Message/#SetUsedSize).
+
+5. Send the message. After a successful `Send()`, do not read or write the buffer.
+
+</Steps>
+
+```cpp
+bool ConditionalRun() override
+{
+    std::size_t const numHits = 1000;
+    fair::mq::MessagePtr msg(NewMessage(numHits * sizeof(Hit), fair::mq::Alignment{alignof(Hit)}));
+
+    auto* hits = static_cast<Hit*>(msg->GetData());
+    for (std::size_t i = 0; i < numHits; ++i) {
+        hits[i] = Hit{0.1f * i, 0.2f * i, 1.0f, static_cast<std::uint32_t>(i)};
+    }
+
+    return Send(msg, "data") >= 0;
+}
+```
+
+[`fair::mq::Alignment`](/api/fair/mq/Alignment/) has one `size_t` member. The test
+`Messages.Alignment` makes messages with an alignment of 64 bytes and checks the addresses for both
+transports. Without an alignment, the zeromq transport uses the buffer of `zmq_msg_init_size()`,
+and FairMQ does not check its alignment.
+[Change the size](/concepts/messages/#change-the-size) explains `SetUsedSize()`. By default, a full
+shmem segment makes `NewMessage()` throw `MessageBadAlloc`, see
+[Shared memory allocation](/guides/errors-timeouts/#shared-memory-allocation).
+
+## Send a buffer of your own
+
+`NewMessage(data, size, ffn, hint)` makes a message for a buffer that you allocated. `ffn` is a
+function of the type [`fair::mq::FreeFn`](/api/fair/mq/#FreeFn), `void(void* data, void* hint)`.
+The transport calls `ffn(data, hint)` when it does not need the buffer any more. The `hint` can
+point to the object that owns the buffer. The [1-1 example](/examples/1-1/) sends a `std::string`
+this way. A `std::vector` works in the same way:
+
+```cpp
+bool ConditionalRun() override
+{
+    auto* hits = new std::vector<Hit>(1000);
+    // Write the elements of *hits here.
+
+    fair::mq::MessagePtr msg(NewMessage(hits->data(),
+                                        hits->size() * sizeof(Hit),
+                                        [](void* /*data*/, void* hint) { delete static_cast<std::vector<Hit>*>(hint); },
+                                        hits));
+    return Send(msg, "data") >= 0;
+}
+```
+
+- The zeromq transport sends your buffer without a copy. ZeroMQ calls `ffn` after the transfer,
+  and it can call it from one of its own threads (ZeroMQ behavior).
+- The shmem transport copies the buffer into the segment when it makes the message. Then it calls
+  `ffn` at once ([shmem/Message.h](/source/fairmq/shmem/Message.h/#L64-L78)).
+- For the size 0, the shmem transport does not call `ffn`. The object of the `hint` then stays
+  allocated. Send an empty message with `NewMessage()` instead.
+- If the shmem transport cannot allocate the block, `NewMessage()` throws before it calls `ffn`.
+  Then you must free the buffer yourself.
+
+Write data that you send with shmem directly into a message from `NewMessage(size)`. Then the
+transport does not copy it.
+
+## Serialized objects
+
+FairMQ has no serializer. Use the library of your choice, for example to serialize an object into a
+`std::string` or a `std::vector<char>`. Then put the bytes into a message in one of these ways:
+
+- **The serializer gives a buffer.** Move the buffer to the heap. Give it to
+  `NewMessage(data, size, ffn, hint)`, as in [Send a buffer of your own](#send-a-buffer-of-your-own).
+- **You know the size before you serialize.** Make the message with `NewMessage(maxSize)`, and let
+  the serializer write into `GetData()`. Then call `SetUsedSize()` with the real size. The zeromq
+  transport does not copy the data. The shmem transport shrinks the block in place. Only if this
+  fails and at least 1000000 bytes are unused, it copies the data into a new block
+  ([shmem/Message.h](/source/fairmq/shmem/Message.h/#L208-L235)).
+- **The serializer writes into a container with an allocator.** Use a `std::pmr` container on the
+  memory resource of the transport. See [Use std::pmr memory resources](/guides/pmr/).
+
+In this sample, `MySerialize()` stands for the function of your library:
+
+```cpp
+bool ConditionalRun() override
+{
+    auto* buffer = new std::string(MySerialize(fEvent));
+    fair::mq::MessagePtr msg(NewMessage(buffer->data(),
+                                        buffer->size(),
+                                        [](void* /*data*/, void* hint) { delete static_cast<std::string*>(hint); },
+                                        buffer));
+    return Send(msg, "data") >= 0;
+}
+```
+
+The receiver gives `GetData()` and `GetSize()` to the deserializer. The deserializer must not read
+more than `GetSize()` bytes.
+
+### The deprecated Serialize() and Deserialize()
+
+[`Device::Serialize<Serializer>(msg, data, args…)`](/api/fair/mq/Device/#Serialize) and
+[`Device::Deserialize<Deserializer>(msg, data, args…)`](/api/fair/mq/Device/#Deserialize) are
+deprecated ([Device.h](/source/fairmq/Device.h/#L78-L88)). They make a temporary `Serializer` or
+`Deserializer` object and call its member function `Serialize(msg, data, args…)` or
+`Deserialize(msg, data, args…)`. They add nothing else. Call your class directly instead:
+
+```cpp
+// Old, gives a deprecation warning:
+Serialize<MySerializer>(*msg, fEvent);
+// New:
+MySerializer().Serialize(*msg, fEvent);
+```
+
+## A header and a payload
+
+Put the header and the payload into two parts of one multipart message. Each part keeps its own
+buffer, so FairMQ does not copy the payload to join it with the header. The receiver gets all parts
+in one call. The [multipart example](/examples/multipart/) uses this header:
+
+<Snippet file="examples/multipart/Header.h" start="struct Header" />
+
+The sampler copies the header with `NewSimpleMessage()` into part 0, and allocates the payload
+with `NewMessage(1000)` as part 1:
+
+<Snippet file="examples/multipart/sampler.cxx" start="example_multipart::Header header;" end="parts.AddPart(NewMessage(1000));" />
+
+The sink reads the header from part 0:
+
+<Snippet file="examples/multipart/sink.cxx" start="if (parts.Size() != 7)" end="header.stopFlag = (static_cast" />
+
+The sink checks the number of parts, but not the size of part 0. A receiver must also check the
+size before it reads the header. See [Read the data safely](#read-the-data-safely). For the rules of
+multipart messages, see [Multipart messages](/concepts/messages/#multipart-messages).
+
+## How long the data must stay valid
+
+The rules depend on the function that makes the message and on the transport. The default
+transport of a device comes from `--transport`, and each channel can have its own transport. To
+support both transports, follow the stricter rule of the two columns.
+
+| Message from | zeromq | shmem |
+| --- | --- | --- |
+| `NewSimpleMessage()` | The message owns a copy. You can change your object at once. | The same. |
+| `NewMessage(size)` | The transport owns the buffer. Write it before `Send()`. After a successful `Send()`, do not use it. | The same. The receiver reads the same block in shared memory. |
+| `NewMessage(data, size, ffn, hint)` | Your buffer must stay valid and unchanged until ZeroMQ calls `ffn`. | The transport copies the buffer and calls `ffn` before `NewMessage()` returns. |
+| [`NewStaticMessage(str)`](/api/fair/mq/Device/#NewStaticMessage), or a buffer with [`NoCleanup`](/api/fair/mq/TransportFactory/#NoCleanup) | The transport tells you nothing when the transfer ends. Use only data that does not change and that lives longer than the transport, for example the member `fText` of the [1-n-1 sampler](/examples/1-n-1/#the-code). | The transport copies the data when it makes the message. |
+| [`Copy()`](/api/fair/mq/Message/#Copy) of a message | Do not change the buffer after `Copy()`. Both messages can use the same buffer ([Message.h](/source/fairmq/Message.h/#L55-L59)). | The same. |
+| A block of an unmanaged region | See [Unmanaged regions](/shmem/regions/). | See [Unmanaged regions](/shmem/regions/). |
+
+If `Send()` returns a negative value, the message keeps its buffer. You can send it again or
+destroy it.
+
+A received message owns its buffer. The data is valid while the message exists. Do not keep the
+pointer from `GetData()` after you destroy or rebuild the message. To keep the data longer, keep the
+`MessagePtr`. The receiver of the [n-m example](/examples/n-m/#receiver-collect-the-parts) moves
+a part out of the `Parts` object and stores it, with
+`fBuffer[h.id].parts.AddPart(std::move(parts.At(1)))`. With shmem, destroy all messages before the
+device destroys its transports, see
+[Rules for your code](/shmem/how-it-works/#rules-for-your-code).
+
+## Read the data safely
+
+A message can have another size than you expect, for example from a sender with another version of
+your struct. A read past `GetSize()` reads memory that does not belong to the message.
+
+<Steps>
+
+1. For a multipart message, check the number of parts with `parts.Size()`.
+
+2. Check `GetSize()` of each part before you read it. A struct needs `GetSize() == sizeof(T)`. An
+   array needs `GetSize() % sizeof(T) == 0`.
+
+3. Copy a struct out of the buffer with `std::memcpy()`. Then the alignment of the buffer has no
+   effect.
+
+4. Read an array in place only from a message that you received with an alignment.
+
+</Steps>
+
+The test `Factory.SimpleAndStaticMessages` checks the size and copies a number out of the buffer:
+
+<Snippet file="test/transport/_factory.cxx" start="uint64_t const value = 0x0123456789abcdef;" end="EXPECT_EQ(received, value);" />
+
+A data callback of [`OnData()`](/api/fair/mq/Device/#OnData) gets a message that the device made
+without an alignment ([Device.cxx](/source/fairmq/Device.cxx/#L564-L584)). This multipart callback
+uses the `Header` of the multipart example. It checks the sizes and copies each element:
+
+```cpp
+bool HandleData(fair::mq::Parts& parts, int /*index*/)
+{
+    if (parts.Size() != 2 || parts[0].GetSize() != sizeof(example_multipart::Header)) {
+        throw std::runtime_error("unexpected message format");
+    }
+
+    example_multipart::Header header;
+    std::memcpy(&header, parts[0].GetData(), sizeof(header));
+
+    auto const& payload = parts[1];
+    if (payload.GetSize() % sizeof(Hit) != 0) {
+        throw std::runtime_error("payload size is not a multiple of sizeof(Hit)");
+    }
+
+    auto const* bytes = static_cast<char const*>(payload.GetData());
+    std::size_t const numHits = payload.GetSize() / sizeof(Hit);
+    for (std::size_t i = 0; i < numHits; ++i) {
+        Hit hit;
+        std::memcpy(&hit, bytes + i * sizeof(Hit), sizeof(hit));
+        fSumEnergy += hit.energy;
+    }
+
+    return header.stopFlag == 0;
+}
+```
+
+An exception in the callback moves the device to `ERROR`. To continue instead, log the error and
+return `true`. See [Handle errors and timeouts](/guides/errors-timeouts/#exceptions-and-the-error-state).
+
+To read an array in place, receive the message yourself, for example in `ConditionalRun()`. Make
+the empty message with `NewMessage(fair::mq::Alignment{alignof(Hit)})`. If the received buffer of
+the zeromq transport is not aligned, the transport copies it into an aligned buffer
+([zeromq/Message.h](/source/fairmq/zeromq/Message.h/#L241-L256)). The shmem transport ignores this
+alignment, because the receiver gets the block of the sender. The shmem transport aligns each block
+of the managed segment to at least `alignof(std::max_align_t)`
+([shmem/Manager.h](/source/fairmq/shmem/Manager.h/#L694-L696)).
+
+## Problems that can occur
+
+- **The receiver gets a few bytes instead of the data:** you gave a `std::vector` to
+  `NewSimpleMessage()`. The message has `sizeof(std::vector<Hit>)` bytes, for example 24. Use
+  `NewMessage(data, size, ffn, hint)` or `NewMessage(size)`.
+- **A binary `char` array arrives shorter:** `NewSimpleMessage()` treats a `char` array as a C
+  string. Use `NewMessage(size)` and `std::memcpy()`.
+- **The receiver reads wrong values after an update of the sender:** the two devices use different
+  definitions of the struct. Put a version number into the header, and check the size.
+- **The data of a zeromq message changes during the transfer:** your code changed the buffer too
+  early. With `NewStaticMessage()` or `NewMessage(data, size, ffn, hint)`, ZeroMQ uses your buffer
+  until the transfer ends (ZeroMQ behavior).
+- **The shared memory segment becomes full:** the receiver keeps the messages, or the sender sends
+  faster than the receiver reads. See [Tune and debug](/shmem/tuning/).
+
+## Related pages
+
+- [Messages and multipart](/concepts/messages/): the functions that make, send and receive messages.
+- [Use std::pmr memory resources](/guides/pmr/): fill a container in message memory and send it
+  without a copy.
+- [multipart: several parts in one message](/examples/multipart/): the header and payload example.
+- [How shared memory works](/shmem/how-it-works/): where the shmem transport keeps the data.
+- [Unmanaged regions](/shmem/regions/): messages for blocks of your own shared memory.
