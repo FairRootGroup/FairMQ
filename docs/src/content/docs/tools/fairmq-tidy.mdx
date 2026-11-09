@@ -9,7 +9,7 @@ code: [fairmq/tidy/Module.cxx, fairmq/tidy/runTidy.cxx, fairmq/tidy/runClangd.cx
 import Snippet from '../../../components/Snippet.astro';
 import { Steps } from '@astrojs/starlight/components';
 
-`fairmq-tidy` is a static analysis tool for code that uses FairMQ. It is `clang-tidy` with the `fairmq-*` checks built in. The checks find deprecated FairMQ names and APIs in your code, and most checks also give a fix that the tool can apply.
+`fairmq-tidy` is a static analysis tool for code that uses FairMQ. It is `clang-tidy` with the `fairmq-*` checks built in. The checks find deprecated FairMQ names and APIs and wrong uses of the FairMQ API in your code. Most `modernize` checks also give a fix that the tool can apply.
 
 The same checks are also available in two other forms:
 
@@ -33,6 +33,7 @@ The `fairmq-*` checks are a clang-tidy module ([Module.cxx](/source/fairmq/tidy/
 
 | Check | Finds | Fix |
 | --- | --- | --- |
+| `fairmq-bugprone-unchecked-transfer-result` | Calls of `Receive()` whose result is not used. With the option `CheckSend`, also calls of `Send()`. | No fix |
 | `fairmq-modernize-channels-access` | Uses of the deprecated member `fair::mq::Device::fChannels` | `fChannels.at(name).at(index)` becomes `GetChannel(name, index)`. Other uses become `GetChannels()`. |
 | `fairmq-modernize-deprecated-functions` | Calls of deprecated functions: `Device::GetStateName()`, `Device::GetTransitionName()`, `Socket::GetConstant()`, `Socket::Close()` | The free function, for example `fair::mq::GetStateName()`. No fix for `Close()`. |
 | `fairmq-modernize-deprecated-headers` | `#include` lines of the deprecated headers, for example `<FairMQDevice.h>` | The new header, for example `<fairmq/Device.h>` |
@@ -129,6 +130,27 @@ The check moves a device main file from `<runFairMQDevice.h>` to `<fairmq/runDev
 | `return new MyDevice(config);` | `return std::make_unique<MyDevice>(config);` |
 
 The check changes all of these lines or none. If a `return` statement of `getDevice()` does not return a `new` expression, the check reports the function without a fix.
+
+### fairmq-bugprone-unchecked-transfer-result
+
+`Receive()` returns a negative [transfer code](/reference/transfer-codes/) on a timeout, an error or an interrupt. Then the message is empty. The check reports a call of `Receive()` of `Device`, `Channel` or `Socket` if the code does not use the result:
+
+```cpp
+Receive(msg, "data");          // reported
+if (Receive(msg, "data") < 0)  // not reported
+(void)Receive(msg, "data");    // not reported: the cast tells that you ignore the result
+```
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `CheckSend` | `false` | Also report `Send()`. Many devices do not use the result of `Send()`, so the default is off. |
+
+Set the option in the `.clang-tidy` file:
+
+```yaml
+CheckOptions:
+  fairmq-bugprone-unchecked-transfer-result.CheckSend: true
+```
 
 ## Build fairmq-tidy
 

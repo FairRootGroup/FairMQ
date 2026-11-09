@@ -47,6 +47,10 @@ add_library(fairmq-tidy-module OBJECT
   ProgOptionsAccessorsCheck.h
   RunDeviceCheck.cxx
   RunDeviceCheck.h
+  Transfer.cxx
+  Transfer.h
+  UncheckedTransferResultCheck.cxx
+  UncheckedTransferResultCheck.h
 )
 target_compile_features(fairmq-tidy-module PUBLIC cxx_std_17)
 target_include_directories(fairmq-tidy-module
