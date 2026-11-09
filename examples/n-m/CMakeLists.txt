@@ -18,7 +18,7 @@ target_link_libraries(fairmq-ex-n-m-receiver PRIVATE FairMQ)
 add_custom_target(ExampleNM DEPENDS fairmq-ex-n-m-synchronizer fairmq-ex-n-m-sender fairmq-ex-n-m-receiver)
 
 list(JOIN Boost_LIBRARY_DIRS ":" LIB_DIR)
-set(BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}:${CMAKE_BINARY_DIR}/fairmq/sdk)
+set(BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(DATA_DIR ${CMAKE_CURRENT_BINARY_DIR})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-n-m-topology.xml                ${CMAKE_CURRENT_BINARY_DIR}/ex-n-m-topology.xml @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-n-m-pair-topology.xml           ${CMAKE_CURRENT_BINARY_DIR}/ex-n-m-pair-topology.xml @ONLY)
@@ -27,14 +27,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-n-m.sh.in          ${
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-n-m-pair.sh.in     ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m-pair.sh @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-n-m-dds.sh.in      ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m-dds.sh @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-n-m-pair-dds.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m-pair-dds.sh @ONLY)
-
-# test
-# if(DDS_FOUND)
-  # add_test(NAME Example.N-M.localhost COMMAND ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m-dds.sh localhost)
-  # set_tests_properties(Example.N-M.localhost PROPERTIES TIMEOUT 15 PASS_REGULAR_EXPRESSION "Example successful")
-  # add_test(NAME Example.N-M-pair.localhost COMMAND ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m-pair-dds.sh localhost)
-  # set_tests_properties(Example.N-M-pair.localhost PROPERTIES TIMEOUT 15 PASS_REGULAR_EXPRESSION "Example successful")
-# endif()
 
 # install
 install(
@@ -47,53 +39,58 @@ install(
   RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
 )
 
-# configure run script with different executable paths for build and for install directories
-set(BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR})
-set(DATA_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR})
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-n-m-topology.xml                ${CMAKE_CURRENT_BINARY_DIR}/ex-n-m-topology.xml_install @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-n-m-pair-topology.xml           ${CMAKE_CURRENT_BINARY_DIR}/ex-n-m-pair-topology.xml_install @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-ex-n-m-env.sh               ${CMAKE_CURRENT_BINARY_DIR}/fairmq-ex-n-m-env.sh_install @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-n-m.sh.in          ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m.sh_install @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-n-m-pair.sh.in     ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m-pair.sh_install @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-n-m-dds.sh.in      ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m-dds.sh_install @ONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-n-m-pair-dds.sh.in ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m-pair-dds.sh_install @ONLY)
-
-install(
-  FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-n-m-topology.xml_install
+# configure installed files with the install prefix known at install time
+fairmq_install_configured(${CMAKE_CURRENT_SOURCE_DIR}/ex-n-m-topology.xml
   DESTINATION ${PROJECT_INSTALL_DATADIR}
   RENAME ex-n-m-topology.xml
+  VARS BIN_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}"
+       DATA_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}"
+       LIB_DIR "${LIB_DIR}"
 )
-install(
-  FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-n-m-pair-topology.xml_install
+fairmq_install_configured(${CMAKE_CURRENT_SOURCE_DIR}/ex-n-m-pair-topology.xml
   DESTINATION ${PROJECT_INSTALL_DATADIR}
   RENAME ex-n-m-pair-topology.xml
+  VARS BIN_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}"
+       DATA_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}"
+       LIB_DIR "${LIB_DIR}"
 )
-
-install(
-  PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-ex-n-m-env.sh_install
+fairmq_install_configured(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-ex-n-m-env.sh
+  PROGRAM
   DESTINATION ${PROJECT_INSTALL_BINDIR}
   RENAME fairmq-ex-n-m-env.sh
+  VARS BIN_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}"
+       DATA_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}"
+       LIB_DIR "${LIB_DIR}"
 )
-
-install(
-  PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m.sh_install
+fairmq_install_configured(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-n-m.sh.in
+  PROGRAM
   DESTINATION ${PROJECT_INSTALL_BINDIR}
   RENAME fairmq-start-ex-n-m.sh
+  VARS BIN_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}"
+       DATA_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}"
+       LIB_DIR "${LIB_DIR}"
 )
-
-install(
-  PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m-pair.sh_install
+fairmq_install_configured(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-n-m-pair.sh.in
+  PROGRAM
   DESTINATION ${PROJECT_INSTALL_BINDIR}
   RENAME fairmq-start-ex-n-m-pair.sh
+  VARS BIN_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}"
+       DATA_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}"
+       LIB_DIR "${LIB_DIR}"
 )
-
-install(
-  PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m-dds.sh_install
+fairmq_install_configured(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-n-m-dds.sh.in
+  PROGRAM
   DESTINATION ${PROJECT_INSTALL_BINDIR}
   RENAME fairmq-start-ex-n-m-dds.sh
+  VARS BIN_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}"
+       DATA_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}"
+       LIB_DIR "${LIB_DIR}"
 )
-install(
-  PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fairmq-start-ex-n-m-pair-dds.sh_install
+fairmq_install_configured(${CMAKE_CURRENT_SOURCE_DIR}/fairmq-start-ex-n-m-pair-dds.sh.in
+  PROGRAM
   DESTINATION ${PROJECT_INSTALL_BINDIR}
   RENAME fairmq-start-ex-n-m-pair-dds.sh
+  VARS BIN_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}"
+       DATA_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}"
+       LIB_DIR "${LIB_DIR}"
 )
