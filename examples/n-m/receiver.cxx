@@ -38,9 +38,9 @@ struct Receiver : fair::mq::Device
 
     void InitTask() override
     {
-        fNumSenders = GetConfig()->GetValue<int>("num-senders");
-        fBufferTimeoutInMs = GetConfig()->GetValue<int>("buffer-timeout");
-        fMaxTimeframes = GetConfig()->GetValue<int>("max-timeframes");
+        fNumSenders = GetConfig()->GetProperty<int>("num-senders");
+        fBufferTimeoutInMs = GetConfig()->GetProperty<int>("buffer-timeout");
+        fMaxTimeframes = GetConfig()->GetProperty<int>("max-timeframes");
     }
 
     bool HandleData(fair::mq::Parts& parts, int /* index */)

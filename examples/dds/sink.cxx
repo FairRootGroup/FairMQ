@@ -22,7 +22,7 @@ struct Sink : fair::mq::Device
 
     void InitTask() override
     {
-        fIterations = fConfig->GetValue<uint64_t>("iterations");
+        fIterations = fConfig->GetProperty<uint64_t>("iterations");
     }
 
     bool HandleData(fair::mq::MessagePtr& msg, int)
