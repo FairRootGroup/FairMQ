@@ -252,24 +252,20 @@ Example 1-1 has these files:
 | `CONFIG` | Copies `ex-<name>.json` to the build directory of the example, and installs it into `share/fairmq/`. The scripts get `@EX_CONF_DIR@`. |
 | `TRANSPORT <transport>…` | The transports of the tests. The default is `zeromq` and `shmem`. |
 | `VARIANT <variant>…` | One test for each variant and transport, `Example.<name>.<variant>.<transport>`. The test script gets the variant as its second argument. |
-| `NO_TRANSPORT` | One test, without the transport argument. Known defect: the test name is `Example.<name>.`, with a dot at the end. |
+| `NO_TRANSPORT` | One test, `Example.<name>`, without the transport argument. |
 | `NO_TEST` | No test script and no test. |
 
 Other arguments stop CMake with `Unexpected unparsed arguments`. Without `VARIANT` and `NO_TRANSPORT`, the tests are `Example.<name>.<transport>`, for example `Example.1-1.zeromq` and `Example.1-1.shmem`.
 
 ### The scripts
 
-CMake writes two copies of each start script. The copy in the build directory of the example has the name `fairmq-start-ex-<script>.sh`. The copy `fairmq-start-ex-<script>.sh_install` has the paths of the installation, and the install step copies it to `bin/` as `fairmq-start-ex-<script>.sh`. CMake replaces these variables:
+CMake writes two copies of each start script. CMake configures the copy in the build directory of the example, `fairmq-start-ex-<script>.sh`, at configure time. The install step configures the installed copy again, with the paths of the install prefix. This prefix is the one of `cmake --install --prefix`, or `CMAKE_INSTALL_PREFIX` when you give no prefix at the install step. CMake replaces these variables:
 
 | Variable | Build directory | Installation |
 | --- | --- | --- |
 | `@EX_BIN_DIR@` | The build directory of the example | `<prefix>/bin` |
-| `@FAIRMQ_BIN_DIR@` | `<build>/fairmq` | `<prefix>/bin/fairmq` |
+| `@FAIRMQ_BIN_DIR@` | `<build>/fairmq` | `<prefix>/bin` |
 | `@EX_CONF_DIR@` (with `CONFIG`) | The build directory of the example | `<prefix>/share/fairmq` |
-
-:::caution[Known defect]
-The installed programs of FairMQ are in `<prefix>/bin`, not in `<prefix>/bin/fairmq`. An installed start script that runs a built-in device from `@FAIRMQ_BIN_DIR@` does not find it.
-:::
 
 CTest runs `test-ex-<name>.sh <transport>`, or `test-ex-<name>.sh <transport> <variant>`, with a timeout of 30 s. The test passes if the script exits with 0. The install step does not install the test script. This is the test script of example 1-1:
 

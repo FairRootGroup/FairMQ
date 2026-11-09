@@ -131,7 +131,7 @@ Use the targets of the programs in custom commands and tests. For example, `$<TA
 
 - **Include directories.** `<prefix>/include` and `<prefix>/include/fairmq`. Include the headers as `fairmq/<Name>.h`, for example `#include <fairmq/Device.h>`.
 - **C++17.** The target has the compile feature `cxx_std_17`. CMake compiles your target with C++17 or a later standard.
-- **Compile definitions.** `BOOST_ERROR_CODE_HEADER_ONLY`, `BOOST_ASIO_HAS_HAS_STD_CHRONO`, and `FAIRMQ_HAS_STD_FILESYSTEM` and `FAIRMQ_HAS_STD_PMR` with the value `0` or `1`. An installation with `FAIRMQ_DEBUG_MODE=ON` adds `FAIRMQ_DEBUG_MODE`. An installation with `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` adds `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` with the value `true` or `false`.
+- **Compile definitions.** `BOOST_ERROR_CODE_HEADER_ONLY`, and `FAIRMQ_HAS_STD_FILESYSTEM` and `FAIRMQ_HAS_STD_PMR` with the value `0` or `1`. An installation with `FAIRMQ_DEBUG_MODE=ON` adds `FAIRMQ_DEBUG_MODE`. An installation with `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` adds `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` with the value `true` or `false`.
 - **Libraries.** `FairLogger::FairLogger`, `Boost::boost`, `Boost::container`, `Boost::program_options`, `Boost::filesystem`, `Boost::regex`, `Threads::Threads`, `dl`, and `rt` on Linux.
 
 ZeroMQ and PicoSHA2 are private dependencies of `libfairmq`. Your project does not find or link them.
@@ -162,9 +162,6 @@ After `find_package(FairMQ)`, these variables are set:
 
 `find_package(FairMQ)` also puts `FairMQ_CMAKEMODDIR` at the front of `CMAKE_MODULE_PATH`. Then `include(FairMQTidy)` finds the module of FairMQ.
 
-:::note
-The variable `FairMQ_PACKAGE_COMPONENTS` is empty in this version of FairMQ. Use the variables `FairMQ_<component>_FOUND`.
-:::
 
 For all build options of FairMQ, see [CMake options and variables](/reference/cmake/).
 

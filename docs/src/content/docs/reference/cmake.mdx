@@ -103,7 +103,7 @@ The configure step writes the header `fairmq/Version.h` from `fairmq/Version.h.i
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `CMAKE_BUILD_TYPE` | `RelWithDebInfo` | The build type. See the next table. A multi-config generator gets the types `Debug`, `Release` and `RelWithDebInfo`. |
+| `CMAKE_BUILD_TYPE` | `RelWithDebInfo` | The build type of a single-config generator. See the next table. A multi-config generator selects the build type at build time, and FairMQ does not change `CMAKE_CONFIGURATION_TYPES`. |
 | `CMAKE_CXX_STANDARD` | not set | If you set it, the value must be 17 or more. The target `FairMQ::FairMQ` requires C++17 in all cases. |
 | `CMAKE_CXX_EXTENSIONS` | `OFF` | Compile without the language extensions of the compiler. |
 | `BUILD_SHARED_LIBS` | `ON` | `ON` builds `libfairmq` as a shared library, `OFF` as a static archive. The CI builds only the shared library. |
@@ -140,10 +140,10 @@ FairMQ joins the selected sanitizers in one flag, for example `-fsanitize=addres
 
 | Variable | Default | Description | Source |
 | --- | --- | --- | --- |
-| `RUN_STATIC_ANALYSIS` | `OFF` | Run `clang-tidy --extra-arg=-std=c++17` and `cpplint` on each file that the build compiles. `clang-tidy` uses the checks in `.clang-tidy`. CMake searches the programs in `PATH`. | [FairMQProjectSettings.cmake](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQProjectSettings.cmake) |
+| `RUN_STATIC_ANALYSIS` | `OFF` | Run `clang-tidy --extra-arg=-std=c++17`, `include-what-you-use` and `cpplint` on each file that the build compiles. `clang-tidy` uses the checks in `.clang-tidy`. CMake searches the programs in `PATH`. | [FairMQProjectSettings.cmake](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQProjectSettings.cmake) |
 | `RUN_FAIRMQ_TIDY` | `OFF` | With `BUILD_TIDY_TOOL=ON`: run `fairmq-tidy` on the sources of the library, the programs and the tests. | [fairmq/CMakeLists.txt](https://github.com/FairRootGroup/FairMQ/blob/dev/fairmq/CMakeLists.txt), [GTestHelper.cmake](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/GTestHelper.cmake) |
 
-With `RUN_STATIC_ANALYSIS`, CMake also searches `iwyu`, and the summary shows the result. The build does not run `iwyu`: `FairMQProjectSettings.cmake` sets `CMAKE_CXX_IWYU`, and CMake does not read this variable.
+With `RUN_STATIC_ANALYSIS`, CMake also searches `include-what-you-use` (shown as `iwyu` in the summary) and sets `CMAKE_CXX_INCLUDE_WHAT_YOU_USE` when it finds the program.
 
 [`cmake/FairMQTidy.cmake`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQTidy.cmake) defines `fairmq_target_tidy(TARGET <target> [EXTRA_ARGS <args>] [CLANG_EXECUTABLE <clang>])`. It runs `fairmq-tidy` on the `.cpp` and `.cxx` files of a target. The installed package has this module when it has the component `tidy_tool`. See [Check code with fairmq-tidy](/guides/fairmq-tidy/).
 
@@ -171,7 +171,7 @@ The sources are [`cmake/FairMQProjectSettings.cmake`](https://github.com/FairRoo
 
 With `autoBind`, a channel that cannot bind to its TCP port tries random ports from `portRangeMin` (default `22000`) to `portRangeMax` (default `23000`). See [Channel properties](/reference/channel-properties/).
 
-The target also has the public definitions `BOOST_ERROR_CODE_HEADER_ONLY` and `BOOST_ASIO_HAS_HAS_STD_CHRONO`.
+The target also has the public definition `BOOST_ERROR_CODE_HEADER_ONLY`.
 
 ## The installed package
 
@@ -243,7 +243,7 @@ The package does not search its dependencies. Your project must find Boost, Fair
 | `FairMQ_<dep>_VERSION` | The minimum version of `<dep>` that the build required, for example `FairMQ_FairLogger_VERSION` is `1.6.0`. |
 | `FairMQ_<dep>_COMPONENTS` | The components of `<dep>` that the build required, for example the five components in `FairMQ_Boost_COMPONENTS`. |
 | `FairMQ_<component>_FOUND` | `TRUE` for each [component](#components) of the installation. |
-| `FairMQ_PACKAGE_COMPONENTS` | Empty. The variable must list the components, but a typo in `cmake/FairMQPackage.cmake` empties it. Use `FairMQ_<component>_FOUND`. |
+| `FairMQ_PACKAGE_COMPONENTS` | The list of the [components](#components) of the installation. |
 
 ## Install layout
 
