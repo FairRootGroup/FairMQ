@@ -49,6 +49,8 @@ add_library(fairmq-tidy-module OBJECT
   RunDeviceCheck.h
   Transfer.cxx
   Transfer.h
+  TransferCodeCheck.cxx
+  TransferCodeCheck.h
   UncheckedTransferResultCheck.cxx
   UncheckedTransferResultCheck.h
   UseAfterSendCheck.cxx

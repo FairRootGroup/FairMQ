@@ -13,6 +13,7 @@
 #include <fairmq/tidy/PartsApiCheck.h>
 #include <fairmq/tidy/ProgOptionsAccessorsCheck.h>
 #include <fairmq/tidy/RunDeviceCheck.h>
+#include <fairmq/tidy/TransferCodeCheck.h>
 #include <fairmq/tidy/UncheckedTransferResultCheck.h>
 #include <fairmq/tidy/UseAfterSendCheck.h>
 
@@ -37,6 +38,7 @@ class Module : public clang::tidy::ClangTidyModule
         factories.registerCheck<PartsApiCheck>("fairmq-modernize-parts-api");
         factories.registerCheck<ProgOptionsAccessorsCheck>("fairmq-modernize-progoptions-accessors");
         factories.registerCheck<RunDeviceCheck>("fairmq-modernize-run-device");
+        factories.registerCheck<TransferCodeCheck>("fairmq-readability-transfer-code");
     }
 };
 

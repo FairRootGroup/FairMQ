@@ -42,6 +42,7 @@ The `fairmq-*` checks are a clang-tidy module ([Module.cxx](/source/fairmq/tidy/
 | `fairmq-modernize-parts-api` | Calls of `Parts::AtRef()` and of `Parts::AddPart(Message*)` | `At()` with `->` or `*`, and `MessagePtr(p)` |
 | `fairmq-modernize-progoptions-accessors` | Calls of the deprecated accessors `ProgOptions::GetValue()`, `GetStringValue()` and `SetValue()` | `GetProperty()`, `GetPropertyAsString()` and `SetProperty()` |
 | `fairmq-modernize-run-device` | A `getDevice()` for `<runFairMQDevice.h>` that returns a raw pointer | `<fairmq/runDevice.h>`, `std::unique_ptr` and `std::make_unique` |
+| `fairmq-readability-transfer-code` | Comparisons of the result of `Send()` or `Receive()` with `-1`, `-2` or `-3` | `static_cast<int64_t>(fair::mq::TransferCode::...)` |
 
 The checks report a name in a macro, but they do not fix it. Like all clang-tidy checks, they show findings in headers only if the header matches `--header-filter=<regex>`.
 
@@ -166,6 +167,16 @@ std::memset(msg->GetData(), 0, 16);  // reported
 The check follows the control flow of the function, like the upstream check `bugprone-use-after-move`. A loop that comes back to the `Send()` with the same message is also a use. These statements give the variable a new message, and the check stops at them: an assignment, `reset()`, `Rebuild()`, a declaration in the loop, and a call that takes the message by non-const reference, for example `Receive(msg, ...)`.
 
 The check looks only at a `Send()` whose result the code does not use. If the code checks the result, the send can have failed, and a use of the message can be correct.
+
+### fairmq-readability-transfer-code
+
+| Code | Fix |
+| --- | --- |
+| `Receive(msg, "data") == -2` | `Receive(msg, "data") == static_cast<int64_t>(fair::mq::TransferCode::timeout)` |
+| `Send(msg, "data") != -1` | `Send(msg, "data") != static_cast<int64_t>(fair::mq::TransferCode::error)` |
+| `-3 == ch.Send(msg)` | `static_cast<int64_t>(fair::mq::TransferCode::interrupted) == ch.Send(msg)` |
+
+The check looks only at `==` and `!=`. See [Transfer codes](/reference/transfer-codes/).
 
 ## Build fairmq-tidy
 
