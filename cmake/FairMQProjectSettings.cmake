@@ -120,12 +120,12 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g ${_warnings} -DNDEBUG ${_sanitizers}"
 unset(_warnings)
 unset(_sanitizers)
 
+# Colored compiler diagnostics and build output. CMake adds the right compiler
+# flag for each compiler. A value given by the user wins over the default.
 if(DISABLE_COLOR)
-  set(CMAKE_COLOR_MAKEFILE OFF)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=never")
-else()
-  set(CMAKE_COLOR_MAKEFILE ON)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+  set(CMAKE_COLOR_DIAGNOSTICS OFF)
+elseif(NOT DEFINED CMAKE_COLOR_DIAGNOSTICS)
+  set(CMAKE_COLOR_DIAGNOSTICS ON)
 endif()
 
 if(NOT DEFINED PROJECT_VERSION_TWEAK)
