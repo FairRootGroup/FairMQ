@@ -6,6 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include <fairmq/tidy/DeprecatedHeadersCheck.h>
 #include <fairmq/tidy/NonNamespacedTypesCheck.h>
 
 #include <clang-tidy/ClangTidyModule.h>
@@ -20,6 +21,7 @@ class Module : public clang::tidy::ClangTidyModule
   public:
     void addCheckFactories(clang::tidy::ClangTidyCheckFactories& factories) override
     {
+        factories.registerCheck<DeprecatedHeadersCheck>("fairmq-modernize-deprecated-headers");
         factories.registerCheck<NonNamespacedTypesCheck>("fairmq-modernize-nonnamespaced-types");
     }
 };
