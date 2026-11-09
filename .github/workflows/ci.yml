@@ -240,12 +240,14 @@ jobs:
         run: |
           sudo apt-get update
           # clang-N ships ClangConfig.cmake, clang-tools-N the executables
-          # it imports, llvm-N-tools FileCheck
+          # it imports, llvm-N-tools FileCheck; clangd links gRPC
           sudo apt-get install -y --no-install-recommends \
             llvm-${{ matrix.llvm }}-dev llvm-${{ matrix.llvm }}-tools \
             clang-${{ matrix.llvm }} clang-tools-${{ matrix.llvm }} \
+            clang-tidy-${{ matrix.llvm }} \
             libclang-${{ matrix.llvm }}-dev libclang-cpp${{ matrix.llvm }}-dev \
-            libzstd-dev libedit-dev libcurl4-openssl-dev
+            libzstd-dev libedit-dev libcurl4-openssl-dev \
+            libgrpc++-dev libprotobuf-dev libabsl-dev
 
       - name: ccache
         uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
@@ -260,13 +262,14 @@ jobs:
             -DBUILD_TESTING=ON \
             -DBUILD_EXAMPLES=OFF \
             -DBUILD_TIDY_TOOL=ON \
+            -DBUILD_TIDY_CLANGD=ON \
             -DLLVM_DIR=/usr/lib/llvm-${{ matrix.llvm }}/lib/cmake/llvm \
             -DClang_DIR=/usr/lib/llvm-${{ matrix.llvm }}/lib/cmake/clang \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
-        run: cmake --build build --target fairmq-tidy
+        run: cmake --build build --target fairmq-tidy fairmq-tidy-plugin fairmq-clangd
 
       - name: Test
         run: ctest --test-dir build --output-on-failure --no-tests=error -R '^tidy\.'
