@@ -13,10 +13,12 @@ include(GNUInstallDirs)
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPER)
 
-# Set a default build type
-if(NOT CMAKE_BUILD_TYPE)
+# Set a default build type (multi-config generators select it at build time)
+get_property(_is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(NOT _is_multi_config AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
+unset(_is_multi_config)
 
 set(PROJECT_MIN_CXX_STANDARD 17)
 
@@ -111,7 +113,6 @@ if(_sanitizers)
 endif()
 
 # Configure build types
-set(CMAKE_CONFIGURATION_TYPES "Debug" "Release" "RelWithDebInfo")
 set(_warnings "-Wshadow -Wall -Wextra -Wpedantic")
 set(CMAKE_CXX_FLAGS_DEBUG          "-Og -g ${_warnings} ${_sanitizers}")
 set(CMAKE_CXX_FLAGS_RELEASE        "-O3 -DNDEBUG")
