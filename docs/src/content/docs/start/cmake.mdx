@@ -232,7 +232,7 @@ The CMake code of FairMQ uses `PROJECT_SOURCE_DIR` and `PROJECT_BINARY_DIR` for 
 Some things still depend on the Git repository of FairMQ:
 
 - `cmake/GitHelper.cmake` reads the version with `git describe` in the directory of the FairMQ `CMakeLists.txt`, and only if it has a `.git` entry. Without it, the version is `0.0.0.0`.
-- The bundled copies of GoogleTest, PicoSHA2 and FairCMakeModules are Git submodules. A source archive from GitHub has no `.git` folder and the folders in `extern/` are empty. If FairCMakeModules is not installed, the configure step stops when it tries to build the bundled copy: `git submodule update` fails with `fatal: not a git repository`. The log is `extern/FairCMakeModules/build.log` in the build directory. Use a Git clone with the tags (see [Install](/start/install/#problems-that-can-occur)) and its submodules.
+- The bundled copies of GoogleTest, PicoSHA2 and FairCMakeModules are Git submodules. A source archive from GitHub has no `.git` folder and the folders in `extern/` are empty. If FairCMakeModules is not installed, the configure step stops with the error `The bundled package in extern/FairCMakeModules is missing`. Use a Git clone with the tags (see [Install](/start/install/#problems-that-can-occur)) and its submodules.
 
 `FetchContent_MakeAvailable(FairMQ)` adds the downloaded source with `add_subdirectory()`. For a Git clone, use `GIT_SUBMODULES`. The FairMQ project did not test `FetchContent`.
 

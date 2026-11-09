@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright (C) 2018-2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+# Copyright (C) 2018-2026 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -10,82 +10,32 @@ include_guard(GLOBAL)
 
 find_package(Git QUIET)
 
-# TODO Deduplicate code
-
-macro(exec cmd)
-  list(JOIN ARGN " " args)
-  file(APPEND ${${package}_BUILD_LOGFILE} ">>> ${cmd} ${args}\n")
-
-  execute_process(COMMAND ${cmd} ${ARGN}
-    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-    OUTPUT_VARIABLE log
-    ERROR_VARIABLE log
-    RESULT_VARIABLE res
-  )
-  file(APPEND ${${package}_BUILD_LOGFILE} ${log})
-
-  if(res)
-    message(FATAL_ERROR "${res} \nSee also \"${${package}_BUILD_LOGFILE}\"")
-  endif()
-endmacro()
-
-macro(exec_source cmd)
-  list(JOIN ARGN " " args)
-  file(APPEND ${${package}_BUILD_LOGFILE} ">>> ${cmd} ${args}\n")
-
-  execute_process(COMMAND ${cmd} ${ARGN}
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    OUTPUT_VARIABLE log
-    ERROR_VARIABLE log
-    RESULT_VARIABLE res
-  )
-  file(APPEND ${${package}_BUILD_LOGFILE} ${log})
-
-  if(res)
-    message(FATAL_ERROR "${res} \nSee also \"${${package}_BUILD_LOGFILE}\"")
-  endif()
-endmacro()
-
-function(build_bundled package bundle)
-  message(STATUS "Building bundled ${package}")
-
-  set(${package}_SOURCE_DIR ${PROJECT_SOURCE_DIR}/${bundle})
-  set(${package}_BINARY_DIR ${PROJECT_BINARY_DIR}/${bundle})
-  file(MAKE_DIRECTORY ${${package}_BINARY_DIR})
-  set(${package}_BUILD_LOGFILE ${${package}_BINARY_DIR}/build.log)
-  file(REMOVE ${${package}_BUILD_LOGFILE})
-
-  if(GIT_EXECUTABLE)
-    exec_source(${GIT_EXECUTABLE} submodule update --init -- ${${package}_SOURCE_DIR})
+# fairmq_init_submodule(<path>)
+#
+# Checks out the Git submodule <path> (relative to PROJECT_SOURCE_DIR) if its
+# folder is empty. Stops with an error if the folder stays empty.
+function(fairmq_init_submodule path)
+  set(dir "${PROJECT_SOURCE_DIR}/${path}")
+  file(GLOB content "${dir}/*")
+  if(content)
+    return()
   endif()
 
-  if(${package} STREQUAL GTest)
-    set(${package}_INSTALL_DIR ${PROJECT_BINARY_DIR}/${bundle}_install)
-    file(MAKE_DIRECTORY ${${package}_INSTALL_DIR})
-    set(${package}_PREFIX ${${package}_INSTALL_DIR})
-
-    exec(${CMAKE_COMMAND} -S ${${package}_SOURCE_DIR} -B ${${package}_BINARY_DIR} -G ${CMAKE_GENERATOR}
-      -DCMAKE_INSTALL_PREFIX=${${package}_INSTALL_DIR} -DBUILD_GMOCK=OFF
-      -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+  if(GIT_EXECUTABLE AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+    message(STATUS "Checking out submodule ${path}")
+    execute_process(
+      COMMAND ${GIT_EXECUTABLE} submodule update --init -- ${path}
+      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+      OUTPUT_VARIABLE log
+      ERROR_VARIABLE log
+      RESULT_VARIABLE res
     )
-    exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR})
-    exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR} --target install)
-  elseif(${package} STREQUAL FairCMakeModules)
-    set(${package}_INSTALL_DIR ${PROJECT_BINARY_DIR}/${bundle}_install)
-    file(MAKE_DIRECTORY ${${package}_INSTALL_DIR})
-    set(${package}_PREFIX ${${package}_INSTALL_DIR})
-
-    exec(${CMAKE_COMMAND} -S ${${package}_SOURCE_DIR} -B ${${package}_BINARY_DIR} -G ${CMAKE_GENERATOR}
-      -DCMAKE_INSTALL_PREFIX=${${package}_INSTALL_DIR}
-    )
-    exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR})
-    exec(${CMAKE_COMMAND} --build ${${package}_BINARY_DIR} --target install)
-  elseif(${package} STREQUAL PicoSHA2)
-    set(${package}_PREFIX ${${package}_SOURCE_DIR})
+    file(GLOB content "${dir}/*")
   endif()
 
-  set(${package}_ROOT ${${package}_PREFIX} CACHE PATH "Location of bundle package ${package}")
-  set(${package}_BUNDLED ON CACHE BOOL "Whether bundled ${package} was used")
-
-  message(STATUS "Building bundled ${package} - done")
+  if(NOT content)
+    message(FATAL_ERROR "The bundled package in ${path} is missing. "
+                        "Run `git submodule update --init` in ${PROJECT_SOURCE_DIR}, "
+                        "or install the package. ${log}")
+  endif()
 endfunction()
