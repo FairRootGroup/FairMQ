@@ -44,6 +44,7 @@ The `fairmq-*` checks are a clang-tidy module ([Module.cxx](/source/fairmq/tidy/
 | `fairmq-modernize-parts-api` | Calls of `Parts::AtRef()` and of `Parts::AddPart(Message*)` | `At()` with `->` or `*`, and `MessagePtr(p)` |
 | `fairmq-modernize-progoptions-accessors` | Calls of the deprecated accessors `ProgOptions::GetValue()`, `GetStringValue()` and `SetValue()` | `GetProperty()`, `GetPropertyAsString()` and `SetProperty()` |
 | `fairmq-modernize-run-device` | A `getDevice()` for `<runFairMQDevice.h>` that returns a raw pointer | `<fairmq/runDevice.h>`, `std::unique_ptr` and `std::make_unique` |
+| `fairmq-performance-channel-lookup-in-loop` | Calls of `GetChannel()` or `GetChannels()` in `ConditionalRun()` or in a loop in `Run()` | No fix |
 | `fairmq-readability-transfer-code` | Comparisons of the result of `Send()` or `Receive()` with `-1`, `-2` or `-3` | `static_cast<int64_t>(fair::mq::TransferCode::...)` |
 
 The checks report a name in a macro, but they do not fix it. Like all clang-tidy checks, they show findings in headers only if the header matches `--header-filter=<regex>`.
@@ -193,6 +194,12 @@ A device leaves the state Running only when `Run()` returns. An endless loop in 
 - a `break`, `return`, `throw` or `goto`.
 
 Use `while (!NewStatePending())` as the loop condition.
+
+### fairmq-performance-channel-lookup-in-loop
+
+`GetChannel("name")` looks up the name in a map at each call. The check reports a call that runs one time for each iteration: in an override of `ConditionalRun()`, or in a loop in an override of `Run()`. Look up the channel one time, for example in `InitTask()`, and keep a reference.
+
+The check does not report `Send(msg, "name")` and `Receive(msg, "name")`. They also look up the channel, but they are the usual short form.
 
 ## Build fairmq-tidy
 

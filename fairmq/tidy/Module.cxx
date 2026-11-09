@@ -6,6 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include <fairmq/tidy/ChannelLookupInLoopCheck.h>
 #include <fairmq/tidy/ChannelsAccessCheck.h>
 #include <fairmq/tidy/DeprecatedFunctionsCheck.h>
 #include <fairmq/tidy/DeprecatedHeadersCheck.h>
@@ -42,6 +43,7 @@ class Module : public clang::tidy::ClangTidyModule
         factories.registerCheck<PartsApiCheck>("fairmq-modernize-parts-api");
         factories.registerCheck<ProgOptionsAccessorsCheck>("fairmq-modernize-progoptions-accessors");
         factories.registerCheck<RunDeviceCheck>("fairmq-modernize-run-device");
+        factories.registerCheck<ChannelLookupInLoopCheck>("fairmq-performance-channel-lookup-in-loop");
         factories.registerCheck<TransferCodeCheck>("fairmq-readability-transfer-code");
     }
 };
