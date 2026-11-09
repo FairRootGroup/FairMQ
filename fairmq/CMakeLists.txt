@@ -16,10 +16,10 @@ if(BUILD_FAIRMQ)
   # Version #
   ###########
   configure_file(Version.h.in
-    ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
+    ${PROJECT_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
     @ONLY
   )
-  install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
+  install(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
     DESTINATION ${PROJECT_INSTALL_INCDIR}
   )
 
@@ -146,7 +146,7 @@ if(BUILD_FAIRMQ)
   ###################
   # configure files #
   ###################
-  set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
+  set(FAIRMQ_BIN_DIR ${PROJECT_BINARY_DIR}/fairmq)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/devices/startMQBenchmark.sh.in ${CMAKE_CURRENT_BINARY_DIR}/startMQBenchmark.sh)
 
   #################################
@@ -195,8 +195,8 @@ if(BUILD_FAIRMQ)
   target_include_directories(${target}
     PUBLIC # consumers inherit public include directories
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
     $<INSTALL_INTERFACE:${PROJECT_INSTALL_INCDIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
@@ -287,7 +287,7 @@ if(BUILD_FAIRMQ)
     PicoSHA2
   )
   target_include_directories(fairmq-shmmonitor PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   )
   target_compile_definitions(fairmq-shmmonitor PUBLIC FAIRMQ_HAS_STD_FILESYSTEM=${FAIRMQ_HAS_STD_FILESYSTEM})
   if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)

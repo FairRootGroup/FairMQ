@@ -93,7 +93,7 @@ function(add_testsuite suitename)
         set(testsuite_RUN_SERIAL OFF)
     endif()
     gtest_discover_tests(${target}
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
       TEST_PREFIX ${suitename}.
       NO_PRETTY_VALUES
       PROPERTIES RUN_SERIAL ${testsuite_RUN_SERIAL}

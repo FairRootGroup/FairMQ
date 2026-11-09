@@ -86,7 +86,7 @@ function(fairmq_target_tidy)
     set(src_stamp "${CMAKE_CURRENT_BINARY_DIR}/${target_nocolon}-${source_noslash}.fairmq-tidy")
     add_custom_command(
       OUTPUT ${src_stamp}
-      COMMAND $<TARGET_FILE:FairMQ::fairmq-tidy> -p=${CMAKE_BINARY_DIR}
+      COMMAND $<TARGET_FILE:FairMQ::fairmq-tidy> -p=${PROJECT_BINARY_DIR}
               $<${extra}:${ARG_EXTRA_ARGS}> ${source}
       COMMAND ${CMAKE_COMMAND} -E touch ${src_stamp}
       COMMENT "fairmq-tidy: Analyzing source file '${source}' of target '${ARG_TARGET}'"
