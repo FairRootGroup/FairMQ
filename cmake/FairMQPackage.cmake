@@ -13,7 +13,7 @@ include(FairFindPackage2)
 include(FairMQBundlePackageHelper)
 
 function(generate_package_components)
-  list(JOIN PROJECT_PACKAGE_COMPONENTS} " " COMPS)
+  list(JOIN PROJECT_PACKAGE_COMPONENTS " " COMPS)
   set(PACKAGE_COMPONENTS "\
 ####### Expanded from @PACKAGE_COMPONENTS@ by configure_package_config_file() #########
 
