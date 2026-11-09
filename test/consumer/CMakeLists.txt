@@ -9,7 +9,7 @@
 # Minimal downstream project. It checks that an installed FairMQ can be found
 # and used the way the README describes. Run it via check-install.sh.
 
-cmake_minimum_required(VERSION 3.15...3.30 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.15...3.31 FATAL_ERROR)
 project(FairMQConsumer LANGUAGES CXX)
 
 find_package(FairCMakeModules REQUIRED)

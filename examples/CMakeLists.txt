@@ -15,7 +15,7 @@ set(transports "zeromq" "shmem")
 # Environment for every example test (directory scope, so the subdirectories
 # see it too)
 set(env_mods)
-if(ENABLE_SANITIZER_LEAK AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
+if(ENABLE_SANITIZER_LEAK)
   get_filename_component(lsan_supps "${CMAKE_SOURCE_DIR}/test/leak_sanitizer_suppressions.txt" ABSOLUTE)
   list(APPEND env_mods "LSAN_OPTIONS=set:suppressions=${lsan_supps}")
 endif()

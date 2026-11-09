@@ -61,8 +61,8 @@ function(add_testsuite suitename)
         ${ARGN}
     )
 
-    # runner.cxx defines main(), so do not link GTest::Main
-    list(INSERT testsuite_LINKS 0 GTest::GTest)
+    # runner.cxx defines main(), so do not link GTest::gtest_main
+    list(INSERT testsuite_LINKS 0 GTest::gtest)
     set(target "testsuite_${suitename}")
 
     add_executable(${target} ${testsuite_SOURCES})
@@ -79,7 +79,7 @@ function(add_testsuite suitename)
     if(testsuite_DEFINITIONS)
         target_compile_definitions("${target}" PUBLIC ${testsuite_DEFINITIONS})
     endif()
-    if(testsuite_ENVIRONMENT AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
+    if(testsuite_ENVIRONMENT)
         set(env "ENVIRONMENT_MODIFICATION" ${testsuite_ENVIRONMENT})
     endif()
     if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
