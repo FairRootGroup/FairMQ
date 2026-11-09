@@ -10,6 +10,7 @@
 #include <fairmq/tidy/DeprecatedFunctionsCheck.h>
 #include <fairmq/tidy/DeprecatedHeadersCheck.h>
 #include <fairmq/tidy/NonNamespacedTypesCheck.h>
+#include <fairmq/tidy/OnDataWithConditionalRunCheck.h>
 #include <fairmq/tidy/PartsApiCheck.h>
 #include <fairmq/tidy/ProgOptionsAccessorsCheck.h>
 #include <fairmq/tidy/RunDeviceCheck.h>
@@ -29,6 +30,7 @@ class Module : public clang::tidy::ClangTidyModule
   public:
     void addCheckFactories(clang::tidy::ClangTidyCheckFactories& factories) override
     {
+        factories.registerCheck<OnDataWithConditionalRunCheck>("fairmq-bugprone-ondata-with-conditionalrun");
         factories.registerCheck<UncheckedTransferResultCheck>("fairmq-bugprone-unchecked-transfer-result");
         factories.registerCheck<UseAfterSendCheck>("fairmq-bugprone-use-after-send");
         factories.registerCheck<ChannelsAccessCheck>("fairmq-modernize-channels-access");

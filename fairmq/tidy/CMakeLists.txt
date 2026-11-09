@@ -41,6 +41,8 @@ add_library(fairmq-tidy-module OBJECT
   Module.cxx
   NonNamespacedTypesCheck.cxx
   NonNamespacedTypesCheck.h
+  OnDataWithConditionalRunCheck.cxx
+  OnDataWithConditionalRunCheck.h
   PartsApiCheck.cxx
   PartsApiCheck.h
   ProgOptionsAccessorsCheck.cxx
