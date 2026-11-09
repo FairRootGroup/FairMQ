@@ -37,6 +37,7 @@ The `fairmq-*` checks are a clang-tidy module ([Module.cxx](/source/fairmq/tidy/
 | `fairmq-modernize-deprecated-functions` | Calls of deprecated functions: `Device::GetStateName()`, `Device::GetTransitionName()`, `Socket::GetConstant()`, `Socket::Close()` | The free function, for example `fair::mq::GetStateName()`. No fix for `Close()`. |
 | `fairmq-modernize-deprecated-headers` | `#include` lines of the deprecated headers, for example `<FairMQDevice.h>` | The new header, for example `<fairmq/Device.h>` |
 | `fairmq-modernize-nonnamespaced-types` | Uses of the deprecated global type aliases, for example `FairMQDevice` or `InputMsgCallback` | The namespaced type, for example `fair::mq::Device` |
+| `fairmq-modernize-parts-api` | Calls of `Parts::AtRef()` and of `Parts::AddPart(Message*)` | `At()` with `->` or `*`, and `MessagePtr(p)` |
 
 The checks report a name in a macro, but they do not fix it. Like all clang-tidy checks, they show findings in headers only if the header matches `--header-filter=<regex>`.
 
@@ -96,6 +97,14 @@ The check finds uses of `fChannels` outside of `fair::mq::Device`:
 | `socket->Close()` | No fix. The socket closes when it is destroyed. Remove the call. |
 
 The check does not fix a call on an object expression with side effects, for example `makeDevice()->GetStateName(s)`.
+
+### fairmq-modernize-parts-api
+
+| Code | Fix |
+| --- | --- |
+| `parts.AtRef(i).GetSize()` | `parts.At(i)->GetSize()` |
+| `auto& msg = parts.AtRef(i);` | `auto& msg = *parts.At(i);` |
+| `parts.AddPart(rawPtr)` | `parts.AddPart(fair::mq::MessagePtr(rawPtr))` |
 
 ## Build fairmq-tidy
 

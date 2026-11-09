@@ -10,6 +10,7 @@
 #include <fairmq/tidy/DeprecatedFunctionsCheck.h>
 #include <fairmq/tidy/DeprecatedHeadersCheck.h>
 #include <fairmq/tidy/NonNamespacedTypesCheck.h>
+#include <fairmq/tidy/PartsApiCheck.h>
 
 #include <clang-tidy/ClangTidyModule.h>
 #include <clang-tidy/ClangTidyModuleRegistry.h>
@@ -27,6 +28,7 @@ class Module : public clang::tidy::ClangTidyModule
         factories.registerCheck<DeprecatedFunctionsCheck>("fairmq-modernize-deprecated-functions");
         factories.registerCheck<DeprecatedHeadersCheck>("fairmq-modernize-deprecated-headers");
         factories.registerCheck<NonNamespacedTypesCheck>("fairmq-modernize-nonnamespaced-types");
+        factories.registerCheck<PartsApiCheck>("fairmq-modernize-parts-api");
     }
 };
 
