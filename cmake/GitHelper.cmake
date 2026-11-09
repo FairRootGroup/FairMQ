@@ -8,9 +8,7 @@
 
 include_guard(GLOBAL)
 
-if(NOT DEFINED ${GIT_EXECUTABLE})
-  find_program(GIT_EXECUTABLE NAMES git)
-endif()
+find_package(Git QUIET)
 
 # get_git_version([DEFAULT_VERSION version] [DEFAULT_DATE date] [OUTVAR_PREFIX prefix])
 #
