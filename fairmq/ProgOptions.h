@@ -228,7 +228,8 @@ class ProgOptions
     /// @param key
     /// @return config property
     template<typename T>
-    T GetValue(const std::string& key) const /* TODO: deprecate this */
+    [[deprecated("Use GetProperty<T>(key, {})")]]
+    T GetValue(const std::string& key) const
     {
         std::lock_guard<std::mutex> lock(fMtx);
         if (fVarMap.count(key)) {
@@ -239,11 +240,13 @@ class ProgOptions
         }
     }
     template<typename T>
-    int SetValue(const std::string& key, T val) /* TODO: deprecate this */ { SetProperty(key, val); return 0; }
+    [[deprecated("Use SetProperty(key, val)")]]
+    int SetValue(const std::string& key, T val) { SetProperty(key, val); return 0; }
     /// @brief Read config property as string, return default-constructed object if key doesn't exist
     /// @param key
     /// @return config property
-    std::string GetStringValue(const std::string& key) const; /* TODO: deprecate this */
+    [[deprecated("Use GetPropertyAsString(key, {})")]]
+    std::string GetStringValue(const std::string& key) const;
 
   private:
     void ParseDefaults();
