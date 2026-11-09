@@ -57,8 +57,8 @@ add_testhelper(runTestDevice
     ${definitions}
 )
 
-set(RUN_TEST_DEVICE "${CMAKE_BINARY_DIR}/test/testhelper_runTestDevice")
-set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
+set(RUN_TEST_DEVICE "${PROJECT_BINARY_DIR}/test/testhelper_runTestDevice")
+set(FAIRMQ_BIN_DIR ${PROJECT_BINARY_DIR}/fairmq)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/runner.cxx.in ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/TestEnvironment.h.in ${CMAKE_CURRENT_BINARY_DIR}/TestEnvironment.h)
 

@@ -11,12 +11,12 @@ if [[ $1 =~ ^[a-z]+$ ]]; then
 fi
 
 msgSize="1000000"
-session="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+session="$(@PROJECT_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
 chan="data"
 chanAddr="/tmp/fmq_$session""_""$chan""_""$transport"
 
 # setup a trap to kill everything if the test fails/timeouts
-trap 'set +e; kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SINK_PID; @CMAKE_BINARY_DIR@/fairmq/fairmq-shmmonitor --cleanup --session $SESSION; rm $chanAddr; exit 0' TERM
+trap 'set +e; kill -TERM $SAMPLER_PID; kill -TERM $SINK_PID; wait $SAMPLER_PID; wait $SINK_PID; @PROJECT_BINARY_DIR@/fairmq/fairmq-shmmonitor --cleanup --session $SESSION; rm $chanAddr; exit 0' TERM
 
 SAMPLER="fairmq-ex-region-sampler"
 SAMPLER+=" --id sampler1"

@@ -42,7 +42,6 @@ macro(install_cmake_package)
     install(EXPORT ${PROJECT_EXPORT_SET}
       NAMESPACE ${PROJECT_NAME}::
       DESTINATION ${PACKAGE_INSTALL_DESTINATION}
-      EXPORT_LINK_INTERFACE_LIBRARIES
     )
   endif()
   write_basic_package_version_file(
@@ -61,7 +60,7 @@ macro(install_cmake_package)
     set(PROJECT_CXX_FLAGS ${CMAKE_CXX_FLAGS})
   endif()
   configure_package_config_file(
-    ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
+    ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
     INSTALL_DESTINATION ${PACKAGE_INSTALL_DESTINATION}
     PATH_VARS CMAKE_INSTALL_PREFIX
