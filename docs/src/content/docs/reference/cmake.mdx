@@ -118,7 +118,7 @@ FairMQ sets the compiler flags of each build type:
 | `RelWithDebInfo` | `-O3 -g -DNDEBUG`, the warnings, the sanitizers |
 | `Release` | `-O3 -DNDEBUG` |
 
-The warnings are `-Wshadow -Wall -Wextra -Wpedantic`. The sanitizers are the flags of the [sanitizer options](#sanitizers). FairMQ also adds `-fdiagnostics-color=always` to `CMAKE_CXX_FLAGS`, or `-fdiagnostics-color=never` with `DISABLE_COLOR`.
+The warnings are `-Wshadow -Wall -Wextra -Wpedantic`. The sanitizers are the flags of the [sanitizer options](#sanitizers). FairMQ sets `CMAKE_COLOR_DIAGNOSTICS` to `ON`, or to `OFF` with `DISABLE_COLOR`. CMake then adds the color flag of the compiler, for example `-fdiagnostics-color=always` for GCC. If you set `CMAKE_COLOR_DIAGNOSTICS`, FairMQ keeps your value, but `DISABLE_COLOR=ON` always sets `OFF`.
 
 FairMQ sets the variables `CMAKE_CXX_FLAGS_<CONFIG>` as normal variables. Thus a value from `-DCMAKE_CXX_FLAGS_RELEASE=…` has no effect. Give additional flags in `CMAKE_CXX_FLAGS`.
 
