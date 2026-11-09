@@ -64,3 +64,19 @@ install(TARGETS ${target}
   EXPORT ${PROJECT_EXPORT_SET}
   RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
 )
+
+# libfairmq-tidy-checks: the fairmq-* checks as a plugin for a clang-tidy of
+# the same LLVM release, e.g. `clang-tidy --load=libfairmq-tidy-checks.so`.
+# It does not link the LLVM libraries: the clang-tidy executable has them.
+set(target fairmq-tidy-plugin)
+add_library(${target} MODULE $<TARGET_OBJECTS:fairmq-tidy-module>)
+add_library("${PROJECT_NAME}::${target}" ALIAS ${target})
+set_target_properties(${target} PROPERTIES OUTPUT_NAME fairmq-tidy-checks)
+if(APPLE)
+  target_link_options(${target} PRIVATE -undefined dynamic_lookup)
+endif()
+install(TARGETS ${target}
+  EXPORT ${PROJECT_EXPORT_SET}
+  LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
+)
+
