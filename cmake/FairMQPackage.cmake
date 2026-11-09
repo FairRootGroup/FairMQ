@@ -10,7 +10,6 @@ include_guard(GLOBAL)
 
 include(FairCMakeModules)
 include(FairFindPackage2)
-include(FairMQBundlePackageHelper)
 
 function(generate_package_components)
   list(JOIN PROJECT_PACKAGE_COMPONENTS " " COMPS)

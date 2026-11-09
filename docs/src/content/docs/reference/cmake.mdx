@@ -59,7 +59,7 @@ The error also occurs when the value `ON` is in the cache from an earlier config
 | Boost | 1.66 or later, but not 1.88 | `BUILD_FAIRMQ` or `BUILD_TIDY_TOOL` | public |
 | ZeroMQ | 4.1.4 or later | `BUILD_FAIRMQ` | private |
 | PicoSHA2 | bundled | `BUILD_FAIRMQ` | bundled |
-| GoogleTest | bundled | `BUILD_TESTING` | bundled, or public with `USE_EXTERNAL_GTEST` |
+| GoogleTest | bundled | `BUILD_TESTING` | bundled, or private with `USE_EXTERNAL_GTEST` |
 | LLVM, Clang, CLI11 | any | `BUILD_TIDY_TOOL` | private |
 | FairCMakeModules | 0.2 or later | always | private, bundled if CMake does not find it |
 
@@ -69,7 +69,10 @@ The kinds have these effects:
 
 - **Public**: the installed package records the dependency. A project that uses FairMQ must find the package too. See [The installed package](#the-installed-package).
 - **Private**: only the FairMQ build uses the package.
-- **Bundled**: the code is in a Git submodule in `extern/`. The configure step runs `git submodule update --init` for it. Then it builds GoogleTest and FairCMakeModules in the build directory under `extern/`. The log of this build is `build.log` in the same directory. PicoSHA2 is a header-only library.
+- **Bundled**: the code is in a Git submodule in `extern/`. If the folder of the submodule is empty, the configure step runs `git submodule update --init` for it. If the folder stays empty, the configure step stops with an error.
+  - FairCMakeModules: the configure step installs the bundled copy into `extern/FairCMakeModules_install` in the build directory. The log is `extern/FairCMakeModules/build.log` in the build directory.
+  - GoogleTest: the build compiles the bundled copy as part of the FairMQ build, with `FetchContent`. Thus it uses the same compiler and flags. It is not installed.
+  - PicoSHA2: a header-only library.
 
 Boost 1.88 replaced the Boost.Process API with version 2. With Boost 1.88, the configure step stops with an error. With Boost 1.89 or later, FairMQ uses the header `boost/process/v1.hpp`.
 
@@ -239,7 +242,7 @@ The package does not search its dependencies. Your project must find Boost, Fair
 | `FairMQ_BUILD_TYPE` | The `CMAKE_BUILD_TYPE` of the FairMQ build. |
 | `FairMQ_BUILD_TYPE_UPPER` | The same value in upper case. |
 | `FairMQ_CXX_FLAGS` | `CMAKE_CXX_FLAGS` and `CMAKE_CXX_FLAGS_<BUILD_TYPE>` of the FairMQ build, as a list. |
-| `FairMQ_PACKAGE_DEPENDENCIES` | The public dependencies: `Threads`, `FairLogger`, `Boost`, and the public dependencies that these packages declare. With `BUILD_TESTING` and `USE_EXTERNAL_GTEST`, also `GTest`. |
+| `FairMQ_PACKAGE_DEPENDENCIES` | The public dependencies: `Threads`, `FairLogger`, `Boost`, and the public dependencies that these packages declare. |
 | `FairMQ_<dep>_VERSION` | The minimum version of `<dep>` that the build required, for example `FairMQ_FairLogger_VERSION` is `1.6.0`. |
 | `FairMQ_<dep>_COMPONENTS` | The components of `<dep>` that the build required, for example the five components in `FairMQ_Boost_COMPONENTS`. |
 | `FairMQ_<component>_FOUND` | `TRUE` for each [component](#components) of the installation. |

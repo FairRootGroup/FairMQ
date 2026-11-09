@@ -26,7 +26,7 @@ The CI of FairMQ builds and tests FairMQ on Linux (Ubuntu 24.04) with GCC 12, 13
 | git | — | CMake reads the version of FairMQ from git and gets the bundled copies with git. |
 | LLVM, Clang, [CLI11](https://github.com/CLIUtils/CLI11) | — | Only for the tool `fairmq-tidy`. |
 
-The bundled copies are git submodules in the folder `extern/` of the repository. When CMake needs a bundled copy, it runs `git submodule update --init` for it.
+The bundled copies are git submodules in the folder `extern/` of the repository. When CMake needs a bundled copy and its folder is empty, CMake runs `git submodule update --init` for it.
 
 ## Install FairMQ
 
