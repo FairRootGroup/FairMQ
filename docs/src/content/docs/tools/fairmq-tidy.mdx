@@ -34,6 +34,7 @@ The `fairmq-*` checks are a clang-tidy module ([Module.cxx](/source/fairmq/tidy/
 | Check | Finds | Fix |
 | --- | --- | --- |
 | `fairmq-modernize-channels-access` | Uses of the deprecated member `fair::mq::Device::fChannels` | `fChannels.at(name).at(index)` becomes `GetChannel(name, index)`. Other uses become `GetChannels()`. |
+| `fairmq-modernize-deprecated-functions` | Calls of deprecated functions: `Device::GetStateName()`, `Device::GetTransitionName()`, `Socket::GetConstant()`, `Socket::Close()` | The free function, for example `fair::mq::GetStateName()`. No fix for `Close()`. |
 | `fairmq-modernize-deprecated-headers` | `#include` lines of the deprecated headers, for example `<FairMQDevice.h>` | The new header, for example `<fairmq/Device.h>` |
 | `fairmq-modernize-nonnamespaced-types` | Uses of the deprecated global type aliases, for example `FairMQDevice` or `InputMsgCallback` | The namespaced type, for example `fair::mq::Device` |
 
@@ -84,6 +85,17 @@ The check finds uses of `fChannels` outside of `fair::mq::Device`:
 | `this->fChannels.at(name).at(i)` | `this->GetChannel(name, i)` |
 | `fChannels.count("data")` | `GetChannels().count("data")` |
 | `for (auto& kv : fChannels)` | `for (auto& kv : GetChannels())` |
+
+### fairmq-modernize-deprecated-functions
+
+| Code | Fix |
+| --- | --- |
+| `Device::GetStateName(state)` | `fair::mq::GetStateName(state)` |
+| `Device::GetTransitionName(transition)` | `fair::mq::GetTransitionName(transition)` |
+| `zmq::Socket::GetConstant("pub")`, `shmem::Socket::GetConstant("pub")` | `fair::mq::zmq::getConstant("pub")`, and `#include <fairmq/zeromq/Common.h>` |
+| `socket->Close()` | No fix. The socket closes when it is destroyed. Remove the call. |
+
+The check does not fix a call on an object expression with side effects, for example `makeDevice()->GetStateName(s)`.
 
 ## Build fairmq-tidy
 

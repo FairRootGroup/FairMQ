@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include <fairmq/tidy/ChannelsAccessCheck.h>
+#include <fairmq/tidy/DeprecatedFunctionsCheck.h>
 #include <fairmq/tidy/DeprecatedHeadersCheck.h>
 #include <fairmq/tidy/NonNamespacedTypesCheck.h>
 
@@ -23,6 +24,7 @@ class Module : public clang::tidy::ClangTidyModule
     void addCheckFactories(clang::tidy::ClangTidyCheckFactories& factories) override
     {
         factories.registerCheck<ChannelsAccessCheck>("fairmq-modernize-channels-access");
+        factories.registerCheck<DeprecatedFunctionsCheck>("fairmq-modernize-deprecated-functions");
         factories.registerCheck<DeprecatedHeadersCheck>("fairmq-modernize-deprecated-headers");
         factories.registerCheck<NonNamespacedTypesCheck>("fairmq-modernize-nonnamespaced-types");
     }

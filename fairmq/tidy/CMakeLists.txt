@@ -34,6 +34,8 @@ endif()
 add_library(fairmq-tidy-module OBJECT
   ChannelsAccessCheck.cxx
   ChannelsAccessCheck.h
+  DeprecatedFunctionsCheck.cxx
+  DeprecatedFunctionsCheck.h
   DeprecatedHeadersCheck.cxx
   DeprecatedHeadersCheck.h
   Module.cxx
