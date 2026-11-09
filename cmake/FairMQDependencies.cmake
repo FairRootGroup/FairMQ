@@ -80,8 +80,9 @@ if(BUILD_TESTING)
 endif()
 
 if(BUILD_TIDY_TOOL)
+  enable_language(C) # LLVMConfig.cmake runs C compile checks
   find_package2(PRIVATE LLVM REQUIRED)
-  find_package2(PRIVATE Clang REQUIRED)
+  find_package2(PRIVATE Clang REQUIRED CONFIG HINTS "${LLVM_LIBRARY_DIR}/cmake/clang")
   set(Clang_VERSION ${LLVM_VERSION})
 endif()
 
