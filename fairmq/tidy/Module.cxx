@@ -6,6 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include <fairmq/tidy/ChannelsAccessCheck.h>
 #include <fairmq/tidy/DeprecatedHeadersCheck.h>
 #include <fairmq/tidy/NonNamespacedTypesCheck.h>
 
@@ -21,6 +22,7 @@ class Module : public clang::tidy::ClangTidyModule
   public:
     void addCheckFactories(clang::tidy::ClangTidyCheckFactories& factories) override
     {
+        factories.registerCheck<ChannelsAccessCheck>("fairmq-modernize-channels-access");
         factories.registerCheck<DeprecatedHeadersCheck>("fairmq-modernize-deprecated-headers");
         factories.registerCheck<NonNamespacedTypesCheck>("fairmq-modernize-nonnamespaced-types");
     }

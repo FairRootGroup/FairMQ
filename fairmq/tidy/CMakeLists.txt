@@ -32,6 +32,8 @@ endif()
 
 # The fairmq-* checks as a clang-tidy module.
 add_library(fairmq-tidy-module OBJECT
+  ChannelsAccessCheck.cxx
+  ChannelsAccessCheck.h
   DeprecatedHeadersCheck.cxx
   DeprecatedHeadersCheck.h
   Module.cxx
