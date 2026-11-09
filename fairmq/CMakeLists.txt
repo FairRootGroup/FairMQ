@@ -211,9 +211,9 @@ if(BUILD_FAIRMQ)
 
     PUBLIC # libFairMQ AND consumers of libFairMQ link aginst public dependencies
     Threads::Threads
-    dl
+    ${CMAKE_DL_LIBS}
     $<$<PLATFORM_ID:Linux>:rt>
-    Boost::boost
+    Boost::headers
     Boost::program_options
     Boost::filesystem # still needed for Boost.DLL
     Boost::regex
@@ -280,7 +280,7 @@ if(BUILD_FAIRMQ)
   target_link_libraries(fairmq-shmmonitor PUBLIC
     Threads::Threads
     $<$<PLATFORM_ID:Linux>:rt>
-    Boost::boost
+    Boost::headers
     Boost::date_time
     $<$<NOT:${FAIRMQ_HAS_STD_FILESYSTEM}>:Boost::filesystem>
     Boost::program_options
