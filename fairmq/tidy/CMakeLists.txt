@@ -43,6 +43,8 @@ add_library(fairmq-tidy-module OBJECT
   NonNamespacedTypesCheck.h
   PartsApiCheck.cxx
   PartsApiCheck.h
+  ProgOptionsAccessorsCheck.cxx
+  ProgOptionsAccessorsCheck.h
 )
 target_compile_features(fairmq-tidy-module PUBLIC cxx_std_17)
 target_include_directories(fairmq-tidy-module

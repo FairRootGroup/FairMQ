@@ -38,6 +38,7 @@ The `fairmq-*` checks are a clang-tidy module ([Module.cxx](/source/fairmq/tidy/
 | `fairmq-modernize-deprecated-headers` | `#include` lines of the deprecated headers, for example `<FairMQDevice.h>` | The new header, for example `<fairmq/Device.h>` |
 | `fairmq-modernize-nonnamespaced-types` | Uses of the deprecated global type aliases, for example `FairMQDevice` or `InputMsgCallback` | The namespaced type, for example `fair::mq::Device` |
 | `fairmq-modernize-parts-api` | Calls of `Parts::AtRef()` and of `Parts::AddPart(Message*)` | `At()` with `->` or `*`, and `MessagePtr(p)` |
+| `fairmq-modernize-progoptions-accessors` | Calls of the deprecated accessors `ProgOptions::GetValue()`, `GetStringValue()` and `SetValue()` | `GetProperty()`, `GetPropertyAsString()` and `SetProperty()` |
 
 The checks report a name in a macro, but they do not fix it. Like all clang-tidy checks, they show findings in headers only if the header matches `--header-filter=<regex>`.
 
@@ -105,6 +106,16 @@ The check does not fix a call on an object expression with side effects, for exa
 | `parts.AtRef(i).GetSize()` | `parts.At(i)->GetSize()` |
 | `auto& msg = parts.AtRef(i);` | `auto& msg = *parts.At(i);` |
 | `parts.AddPart(rawPtr)` | `parts.AddPart(fair::mq::MessagePtr(rawPtr))` |
+
+### fairmq-modernize-progoptions-accessors
+
+| Code | Fix |
+| --- | --- |
+| `config->GetValue<int>("rate")` | `config->GetProperty<int>("rate", {})` |
+| `config->GetStringValue("id")` | `config->GetPropertyAsString("id", {})` |
+| `config->SetValue("rate", 5);` | `config->SetProperty("rate", 5);` |
+
+For a key that does not exist, the old accessors return a default-constructed value, and `GetProperty()` throws. The default `{}` keeps the old behavior. If you know that the key exists, remove the `{}`. The check fixes `SetValue()` only if the code does not use its result, because `SetProperty()` returns `void`.
 
 ## Build fairmq-tidy
 
