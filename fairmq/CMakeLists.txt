@@ -158,6 +158,7 @@ if(BUILD_FAIRMQ)
     ${FAIRMQ_PUBLIC_HEADER_FILES} # for IDE integration
     ${FAIRMQ_PRIVATE_HEADER_FILES} # for IDE integration
   )
+  add_library(${PROJECT_NAME}::${target} ALIAS ${target})
   target_compile_features(${target} PUBLIC cxx_std_17)
   set_target_properties(${target} PROPERTIES LABELS coverage)
 
