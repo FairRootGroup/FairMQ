@@ -20,20 +20,24 @@ include(FairMQProjectSettings)
 
 
 # Build options ################################################################
-include(FairMQBuildOption)
+include(CMakeDependentOption)
 
-fairmq_build_option(BUILD_FAIRMQ        "Build FairMQ library and devices."
-                                         DEFAULT ON)
-fairmq_build_option(BUILD_TESTING       "Build tests."
-                                         DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
-fairmq_build_option(BUILD_EXAMPLES      "Build FairMQ examples."
-                                         DEFAULT ON  REQUIRES "BUILD_FAIRMQ")
-fairmq_build_option(BUILD_TIDY_TOOL     "Build the fairmq-tidy tool."
-                                         DEFAULT OFF)
-fairmq_build_option(USE_EXTERNAL_GTEST  "Do not use bundled GTest. Not recommended."
-                                         DEFAULT OFF)
-fairmq_build_option(FAIRMQ_DEBUG_MODE   "Compile in debug mode (may decrease performance)."
-                                         DEFAULT OFF)
+# The dependent options below need BUILD_FAIRMQ. Keep the error for an
+# explicit request, because cmake_dependent_option() would silently disable it.
+if(NOT BUILD_FAIRMQ AND DEFINED BUILD_FAIRMQ)
+  foreach(opt IN ITEMS BUILD_TESTING BUILD_EXAMPLES)
+    if(${opt})
+      message(FATAL_ERROR "Cannot enable build option ${opt}, depending option is not set: BUILD_FAIRMQ")
+    endif()
+  endforeach()
+endif()
+
+option(BUILD_FAIRMQ        "Build FairMQ library and devices." ON)
+cmake_dependent_option(BUILD_TESTING  "Build tests."          OFF "BUILD_FAIRMQ" OFF)
+cmake_dependent_option(BUILD_EXAMPLES "Build FairMQ examples." ON "BUILD_FAIRMQ" OFF)
+option(BUILD_TIDY_TOOL     "Build the fairmq-tidy tool." OFF)
+option(USE_EXTERNAL_GTEST  "Do not use bundled GTest. Not recommended." OFF)
+option(FAIRMQ_DEBUG_MODE   "Compile in debug mode (may decrease performance)." OFF)
 ################################################################################
 
 
