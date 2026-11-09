@@ -39,6 +39,7 @@ The `fairmq-*` checks are a clang-tidy module ([Module.cxx](/source/fairmq/tidy/
 | `fairmq-modernize-nonnamespaced-types` | Uses of the deprecated global type aliases, for example `FairMQDevice` or `InputMsgCallback` | The namespaced type, for example `fair::mq::Device` |
 | `fairmq-modernize-parts-api` | Calls of `Parts::AtRef()` and of `Parts::AddPart(Message*)` | `At()` with `->` or `*`, and `MessagePtr(p)` |
 | `fairmq-modernize-progoptions-accessors` | Calls of the deprecated accessors `ProgOptions::GetValue()`, `GetStringValue()` and `SetValue()` | `GetProperty()`, `GetPropertyAsString()` and `SetProperty()` |
+| `fairmq-modernize-run-device` | A `getDevice()` for `<runFairMQDevice.h>` that returns a raw pointer | `<fairmq/runDevice.h>`, `std::unique_ptr` and `std::make_unique` |
 
 The checks report a name in a macro, but they do not fix it. Like all clang-tidy checks, they show findings in headers only if the header matches `--header-filter=<regex>`.
 
@@ -116,6 +117,18 @@ The check does not fix a call on an object expression with side effects, for exa
 | `config->SetValue("rate", 5);` | `config->SetProperty("rate", 5);` |
 
 For a key that does not exist, the old accessors return a default-constructed value, and `GetProperty()` throws. The default `{}` keeps the old behavior. If you know that the key exists, remove the `{}`. The check fixes `SetValue()` only if the code does not use its result, because `SetProperty()` returns `void`.
+
+### fairmq-modernize-run-device
+
+The check moves a device main file from `<runFairMQDevice.h>` to `<fairmq/runDevice.h>`, see [Replace runFairMQDevice.h](/guides/migrate-names/#replace-runfairmqdeviceh):
+
+| Code | Fix |
+| --- | --- |
+| `#include <runFairMQDevice.h>` | `#include <fairmq/runDevice.h>` |
+| `FairMQDevicePtr getDevice(const fair::mq::ProgOptions& config)` | `std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& config)` |
+| `return new MyDevice(config);` | `return std::make_unique<MyDevice>(config);` |
+
+The check changes all of these lines or none. If a `return` statement of `getDevice()` does not return a `new` expression, the check reports the function without a fix.
 
 ## Build fairmq-tidy
 

@@ -133,7 +133,7 @@ The table is in the order of the headers that declare the deprecated alias. The 
 | `FairMQUnmanagedRegion` | [`fair::mq::UnmanagedRegion`](/api/fair/mq/UnmanagedRegion/) | `UnmanagedRegion.h` | yes |
 | `FairMQUnmanagedRegionPtr` | [`fair::mq::UnmanagedRegionPtr`](/api/fair/mq/#UnmanagedRegionPtr) | `UnmanagedRegion.h` | yes |
 | `FairMQRegionConfig` | [`fair::mq::RegionConfig`](/api/fair/mq/RegionConfig/) | `UnmanagedRegion.h` | yes |
-| `FairMQDevicePtr` | `std::unique_ptr<fair::mq::Device>` as the return type of `getDevice()` | `runFairMQDevice.h` | no |
+| `FairMQDevicePtr` | `std::unique_ptr<fair::mq::Device>` as the return type of `getDevice()` | `runFairMQDevice.h` | yes, with `fairmq-modernize-run-device` |
 
 All old names are global, except `fair::mq::FairMQMemoryResource`. All names in the table except `FairMQDevicePtr` have the attribute `[[deprecated]]`.
 
@@ -185,7 +185,7 @@ The CMake package is `FairMQ`. Link your targets with `FairMQ::FairMQ`. The exec
 
 ## Automate the move with fairmq-tidy
 
-`fairmq-tidy` finds the old headers, most old type names and `Device::fChannels`. With `--fix`, it replaces them in your files. See [Check code with fairmq-tidy](/guides/fairmq-tidy/) and the [list of checks](/tools/fairmq-tidy/#checks).
+`fairmq-tidy` finds the old headers, most old type names, the deprecated functions and members, and a `getDevice()` for `runFairMQDevice.h`. With `--fix`, it replaces most of them in your files. See [Check code with fairmq-tidy](/guides/fairmq-tidy/) and the [list of checks](/tools/fairmq-tidy/#checks).
 
 ## Related pages
 

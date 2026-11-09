@@ -45,6 +45,8 @@ add_library(fairmq-tidy-module OBJECT
   PartsApiCheck.h
   ProgOptionsAccessorsCheck.cxx
   ProgOptionsAccessorsCheck.h
+  RunDeviceCheck.cxx
+  RunDeviceCheck.h
 )
 target_compile_features(fairmq-tidy-module PUBLIC cxx_std_17)
 target_include_directories(fairmq-tidy-module
