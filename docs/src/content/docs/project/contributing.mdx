@@ -144,11 +144,11 @@ This is the suite `Poller` in `test/CMakeLists.txt`:
 | --- | --- |
 | `<name>` | The name of the suite. The program is `test/testsuite_<name>` in the build directory. CTest puts `<name>.` in front of each test name. |
 | `SOURCES <file>…` | The source files. Add `${CMAKE_CURRENT_BINARY_DIR}/runner.cxx`. It contains the `main()` of the suite. |
-| `LINKS <lib>…` | The libraries. The function adds `GTest::GTest`. The suites link `FairMQ`, the library target of the build. |
+| `LINKS <lib>…` | The libraries. The function adds `GTest::gtest`. The suites link `FairMQ`, the library target of the build. |
 | `DEPENDS <target>…` | Targets that CMake must build before the suite, for example `testhelper_runTestDevice`. |
 | `INCLUDES <dir>…` | The include directories. The suites need `${CMAKE_CURRENT_SOURCE_DIR}` for `runner.h` and the headers in `test/helper/`, and `${CMAKE_CURRENT_BINARY_DIR}` for the generated `TestEnvironment.h`. |
 | `DEFINITIONS <def>…` | Compile definitions. |
-| `ENVIRONMENT <var>=<op>:<value>…` | Changes to the environment of each test, in the format of the CTest property `ENVIRONMENT_MODIFICATION`. CMake older than 3.22 ignores this argument. |
+| `ENVIRONMENT <var>=<op>:<value>…` | Changes to the environment of each test, in the format of the CTest property `ENVIRONMENT_MODIFICATION`. |
 | `TIMEOUT <seconds>` | The CTest timeout of each test. The default is 10 s. Most suites set 20 s. |
 | `RUN_SERIAL <ON/OFF>` | `ON`: CTest runs no other test at the same time as a test of this suite. The default is `OFF`. No suite sets it at the moment. |
 

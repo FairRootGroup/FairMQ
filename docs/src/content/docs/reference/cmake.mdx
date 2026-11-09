@@ -23,7 +23,7 @@ Some variables on this page are not declared as CMake options. `ccmake` and `cma
 
 ## Build options
 
-[`CMakeLists.txt`](https://github.com/FairRootGroup/FairMQ/blob/dev/CMakeLists.txt) declares these options with the macro `fairmq_build_option()`.
+[`CMakeLists.txt`](https://github.com/FairRootGroup/FairMQ/blob/dev/CMakeLists.txt) declares these options with `option()` and `cmake_dependent_option()`.
 
 | Option | Default | Requires | Description |
 | --- | --- | --- | --- |
@@ -36,7 +36,7 @@ Some variables on this page are not declared as CMake options. `ccmake` and `cma
 
 ### Options that require other options
 
-`BUILD_TESTING` and `BUILD_EXAMPLES` require `BUILD_FAIRMQ`. For these options, the macro in [`cmake/FairMQBuildOption.cmake`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQBuildOption.cmake) uses `cmake_dependent_option()`:
+`BUILD_TESTING` and `BUILD_EXAMPLES` require `BUILD_FAIRMQ`. For these options, [`CMakeLists.txt`](https://github.com/FairRootGroup/FairMQ/blob/dev/CMakeLists.txt) uses `cmake_dependent_option()`:
 
 - When `BUILD_FAIRMQ` is `ON`, you can set the two options.
 - When `BUILD_FAIRMQ` is `OFF`, the two options are `OFF`, and CMake hides them.
@@ -129,7 +129,7 @@ FairMQ sets the variables `CMAKE_CXX_FLAGS_<CONFIG>` as normal variables. Thus a
 | Option | Default | Flag | Notes |
 | --- | --- | --- | --- |
 | `ENABLE_SANITIZER_ADDRESS` | `OFF` | `-fsanitize=address` | — |
-| `ENABLE_SANITIZER_LEAK` | `OFF` | `-fsanitize=leak` | The tests use the suppressions in `test/leak_sanitizer_suppressions.txt`. This requires CMake 3.22 or later. |
+| `ENABLE_SANITIZER_LEAK` | `OFF` | `-fsanitize=leak` | The tests use the suppressions in `test/leak_sanitizer_suppressions.txt`. |
 | `ENABLE_SANITIZER_UNDEFINED_BEHAVIOR` | `OFF` | `-fsanitize=undefined` | — |
 | `ENABLE_SANITIZER_THREAD` | `OFF` | `-fsanitize=thread` | Not together with the address or the leak sanitizer. CMake then shows a warning and ignores the option. |
 | `ENABLE_SANITIZER_MEMORY` | `OFF` | `-fsanitize=memory` | Clang only. Not together with the address, the thread or the leak sanitizer. |
@@ -154,7 +154,7 @@ With `RUN_STATIC_ANALYSIS`, CMake also searches `include-what-you-use` (shown as
 | `CMAKE_INSTALL_PREFIX` | the CMake default | The install prefix. The summary shows it. | CMake |
 | `DISABLE_COLOR` | `OFF` | `ON`: no colors in the configure summary and in the output of the compiler. | [FairMQProjectSettings.cmake](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQProjectSettings.cmake) |
 | `ENABLE_CCACHE` | `OFF` | With the Ninja generator: compile through `ccache`, if CMake finds it. Other generators ignore it. For them, set `CMAKE_CXX_COMPILER_LAUNCHER=ccache`. | [FairMQProjectSettings.cmake](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQProjectSettings.cmake) |
-| `FAIRMQ_TEST_LD_LIBRARY_PATH` | not set | A directory that CTest adds to the start of `LD_LIBRARY_PATH` of each test and each example test. It requires CMake 3.22 or later. The CI uses it to run the tests with a libstdc++ that has ThreadSanitizer instrumentation. | [test/CMakeLists.txt](https://github.com/FairRootGroup/FairMQ/blob/dev/test/CMakeLists.txt), [examples/CMakeLists.txt](https://github.com/FairRootGroup/FairMQ/blob/dev/examples/CMakeLists.txt) |
+| `FAIRMQ_TEST_LD_LIBRARY_PATH` | not set | A directory that CTest adds to the start of `LD_LIBRARY_PATH` of each test and each example test. The CI uses it to run the tests with a libstdc++ that has ThreadSanitizer instrumentation. | [test/CMakeLists.txt](https://github.com/FairRootGroup/FairMQ/blob/dev/test/CMakeLists.txt), [examples/CMakeLists.txt](https://github.com/FairRootGroup/FairMQ/blob/dev/examples/CMakeLists.txt) |
 
 ## Compile definitions
 
