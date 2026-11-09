@@ -52,8 +52,14 @@ macro(install_cmake_package)
   )
   fair_generate_package_dependencies() # fills ${PACKAGE_DEPENDENCIES}
   generate_package_components() # fills ${PACKAGE_COMPONENTS}
-  string(TOUPPER ${CMAKE_BUILD_TYPE} PROJECT_BUILD_TYPE_UPPER)
-  set(PROJECT_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${PROJECT_BUILD_TYPE_UPPER}})
+  # Multi-config generators have no single build type at configure time
+  if(CMAKE_BUILD_TYPE)
+    string(TOUPPER ${CMAKE_BUILD_TYPE} PROJECT_BUILD_TYPE_UPPER)
+    set(PROJECT_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${PROJECT_BUILD_TYPE_UPPER}})
+  else()
+    set(PROJECT_BUILD_TYPE_UPPER "")
+    set(PROJECT_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  endif()
   configure_package_config_file(
     ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
