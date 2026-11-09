@@ -14,6 +14,7 @@
 #include <fairmq/tidy/ProgOptionsAccessorsCheck.h>
 #include <fairmq/tidy/RunDeviceCheck.h>
 #include <fairmq/tidy/UncheckedTransferResultCheck.h>
+#include <fairmq/tidy/UseAfterSendCheck.h>
 
 #include <clang-tidy/ClangTidyModule.h>
 #include <clang-tidy/ClangTidyModuleRegistry.h>
@@ -28,6 +29,7 @@ class Module : public clang::tidy::ClangTidyModule
     void addCheckFactories(clang::tidy::ClangTidyCheckFactories& factories) override
     {
         factories.registerCheck<UncheckedTransferResultCheck>("fairmq-bugprone-unchecked-transfer-result");
+        factories.registerCheck<UseAfterSendCheck>("fairmq-bugprone-use-after-send");
         factories.registerCheck<ChannelsAccessCheck>("fairmq-modernize-channels-access");
         factories.registerCheck<DeprecatedFunctionsCheck>("fairmq-modernize-deprecated-functions");
         factories.registerCheck<DeprecatedHeadersCheck>("fairmq-modernize-deprecated-headers");

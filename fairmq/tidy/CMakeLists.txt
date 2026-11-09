@@ -51,6 +51,8 @@ add_library(fairmq-tidy-module OBJECT
   Transfer.h
   UncheckedTransferResultCheck.cxx
   UncheckedTransferResultCheck.h
+  UseAfterSendCheck.cxx
+  UseAfterSendCheck.h
 )
 target_compile_features(fairmq-tidy-module PUBLIC cxx_std_17)
 target_include_directories(fairmq-tidy-module

@@ -34,6 +34,7 @@ The `fairmq-*` checks are a clang-tidy module ([Module.cxx](/source/fairmq/tidy/
 | Check | Finds | Fix |
 | --- | --- | --- |
 | `fairmq-bugprone-unchecked-transfer-result` | Calls of `Receive()` whose result is not used. With the option `CheckSend`, also calls of `Send()`. | No fix |
+| `fairmq-bugprone-use-after-send` | Uses of a `MessagePtr` after a `Send()` whose result is not used | No fix |
 | `fairmq-modernize-channels-access` | Uses of the deprecated member `fair::mq::Device::fChannels` | `fChannels.at(name).at(index)` becomes `GetChannel(name, index)`. Other uses become `GetChannels()`. |
 | `fairmq-modernize-deprecated-functions` | Calls of deprecated functions: `Device::GetStateName()`, `Device::GetTransitionName()`, `Socket::GetConstant()`, `Socket::Close()` | The free function, for example `fair::mq::GetStateName()`. No fix for `Close()`. |
 | `fairmq-modernize-deprecated-headers` | `#include` lines of the deprecated headers, for example `<FairMQDevice.h>` | The new header, for example `<fairmq/Device.h>` |
@@ -151,6 +152,20 @@ Set the option in the `.clang-tidy` file:
 CheckOptions:
   fairmq-bugprone-unchecked-transfer-result.CheckSend: true
 ```
+
+### fairmq-bugprone-use-after-send
+
+After a successful `Send()`, the message is not yours anymore. With the zeromq transport, the message is empty. With the shmem transport, the message still points to the buffer that the receiver reads, so a write is a data race. The same code acts differently for each transport.
+
+```cpp
+auto msg(NewMessage(16));
+Send(msg, "data");
+std::memset(msg->GetData(), 0, 16);  // reported
+```
+
+The check follows the control flow of the function, like the upstream check `bugprone-use-after-move`. A loop that comes back to the `Send()` with the same message is also a use. These statements give the variable a new message, and the check stops at them: an assignment, `reset()`, `Rebuild()`, a declaration in the loop, and a call that takes the message by non-const reference, for example `Receive(msg, ...)`.
+
+The check looks only at a `Send()` whose result the code does not use. If the code checks the result, the send can have failed, and a use of the message can be correct.
 
 ## Build fairmq-tidy
 
