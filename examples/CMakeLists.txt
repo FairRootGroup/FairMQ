@@ -28,6 +28,43 @@ if(FAIRMQ_TEST_LD_LIBRARY_PATH)
   list(APPEND env_mods "LD_LIBRARY_PATH=path_list_prepend:${FAIRMQ_TEST_LD_LIBRARY_PATH}")
 endif()
 
+# fairmq_install_configured(<input> DESTINATION <dir> [RENAME <name>] [PROGRAM]
+#                           [VARS <name> <value> ...])
+#
+# Configures <input> (@ONLY) at install time and writes the result to
+# <dir>/<name> below the install prefix. In contrast to configure_file() at
+# configure time, this honors `cmake --install --prefix` and DESTDIR: a <value>
+# may reference ${CMAKE_INSTALL_PREFIX} (escape it as \${CMAKE_INSTALL_PREFIX}).
+# PROGRAM makes the installed file executable.
+function(fairmq_install_configured input)
+  cmake_parse_arguments(PARSE_ARGV 1 ARG "PROGRAM" "DESTINATION;RENAME" "VARS")
+  if(ARG_RENAME)
+    set(name "${ARG_RENAME}")
+  else()
+    get_filename_component(name "${input}" NAME)
+  endif()
+  set(perms "OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ")
+  if(ARG_PROGRAM)
+    string(APPEND perms " OWNER_EXECUTE GROUP_EXECUTE WORLD_EXECUTE")
+  endif()
+  set(code "")
+  list(LENGTH ARG_VARS nvars)
+  math(EXPR last "${nvars} - 1")
+  foreach(i RANGE 0 ${last} 2)
+    math(EXPR j "${i} + 1")
+    list(GET ARG_VARS ${i} var)
+    list(GET ARG_VARS ${j} value)
+    string(APPEND code "set(${var} \"${value}\")\n")
+  endforeach()
+  install(CODE "
+${code}
+set(fairmq_out \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${ARG_DESTINATION}/${name}\")
+message(STATUS \"Installing: \${fairmq_out}\")
+configure_file(\"${input}\" \"\${fairmq_out}\" @ONLY FILE_PERMISSIONS ${perms})
+list(APPEND CMAKE_INSTALL_MANIFEST_FILES \"\${fairmq_out}\")
+")
+endfunction()
+
 function(add_example)
   cmake_parse_arguments(PARSE_ARGV 0 ARG
     "CONFIG;NO_TRANSPORT;NO_TEST"
@@ -122,19 +159,21 @@ function(add_example)
     RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
   )
 
-  # configure run script with different executable paths for build and for install directories
-  set(EX_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR})
+  # configure run scripts with the install prefix known at install time
+  set(install_vars
+    EX_BIN_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}"
+    FAIRMQ_BIN_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq"
+  )
   if(ARG_CONFIG)
-    set(EX_CONF_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR})
+    list(APPEND install_vars EX_CONF_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
   endif()
-  set(FAIRMQ_BIN_DIR ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq)
   foreach(script IN LISTS scripts)
     set(script_file "${script_prefix}-${script}.sh")
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${script_file}.in" "${CMAKE_CURRENT_BINARY_DIR}/${script_file}_install" @ONLY)
-    install(
-      PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${script_file}_install"
+    fairmq_install_configured("${CMAKE_CURRENT_SOURCE_DIR}/${script_file}.in"
+      PROGRAM
       DESTINATION ${PROJECT_INSTALL_BINDIR}
       RENAME ${script_file}
+      VARS ${install_vars}
     )
   endforeach()
 
