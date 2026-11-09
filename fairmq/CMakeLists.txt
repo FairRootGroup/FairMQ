@@ -19,9 +19,6 @@ if(BUILD_FAIRMQ)
     ${PROJECT_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
     @ONLY
   )
-  install(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
-    DESTINATION ${PROJECT_INSTALL_INCDIR}
-  )
 
   ##########################
   # libFairMQ header files #
@@ -155,8 +152,18 @@ if(BUILD_FAIRMQ)
   set(target FairMQ)
   add_library(${target}
     ${FAIRMQ_SOURCE_FILES}
-    ${FAIRMQ_PUBLIC_HEADER_FILES} # for IDE integration
     ${FAIRMQ_PRIVATE_HEADER_FILES} # for IDE integration
+  )
+  # The file set installs the public headers with their relative paths and
+  # adds the base directories to the include directories.
+  target_sources(${target}
+    PUBLIC FILE_SET HEADERS
+    BASE_DIRS
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${PROJECT_BINARY_DIR}/${PROJECT_NAME_LOWER}
+    FILES
+      ${FAIRMQ_PUBLIC_HEADER_FILES}
+      ${PROJECT_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
   )
   add_library(${PROJECT_NAME}::${target} ALIAS ${target})
   target_compile_features(${target} PUBLIC cxx_std_17)
@@ -195,10 +202,8 @@ if(BUILD_FAIRMQ)
   #######################
   target_include_directories(${target}
     PUBLIC # consumers inherit public include directories
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-    $<INSTALL_INTERFACE:${PROJECT_INSTALL_INCDIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
 
@@ -324,14 +329,6 @@ if(BUILD_FAIRMQ)
     RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
     LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${PROJECT_INSTALL_LIBDIR}
+    FILE_SET HEADERS DESTINATION ${PROJECT_INSTALL_INCDIR}
   )
-
-  # preserve relative path and prepend fairmq
-  foreach(HEADER ${FAIRMQ_PUBLIC_HEADER_FILES})
-    get_filename_component(_path ${HEADER} DIRECTORY)
-    file(TO_CMAKE_PATH ${PROJECT_INSTALL_INCDIR}/${_path} _destination)
-    install(FILES ${HEADER}
-      DESTINATION ${_destination}
-    )
-  endforeach()
 endif()

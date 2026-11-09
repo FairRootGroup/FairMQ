@@ -217,8 +217,9 @@ The package does not export the example programs.
 `FairMQ::FairMQ` gives these usage requirements to the targets that link to it:
 
 - C++17 (`cxx_std_17`).
-- The include directories `include/fairmq` and `include` of the prefix. Thus `#include <fairmq/Device.h>` and the deprecated `#include <FairMQDevice.h>` both work. See [Move from the FairMQ* names](/guides/migrate-names/).
+- The include directories `include` and `include/fairmq` of the prefix. Thus `#include <fairmq/Device.h>` and the deprecated `#include <FairMQDevice.h>` both work. See [Move from the FairMQ* names](/guides/migrate-names/).
 - The [compile definitions](#compile-definitions).
+- The public headers in the header file set `HEADERS` of the target. IDEs and tools that read file sets can list them.
 - The libraries `Threads::Threads`, `dl`, `rt` (Linux only), `Boost::headers`, `Boost::container`, `Boost::program_options`, `Boost::filesystem`, `Boost::regex` and `FairLogger::FairLogger`.
 
 :::caution[Find the dependencies before you link]
