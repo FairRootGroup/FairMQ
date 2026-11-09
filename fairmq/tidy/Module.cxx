@@ -14,6 +14,7 @@
 #include <fairmq/tidy/PartsApiCheck.h>
 #include <fairmq/tidy/ProgOptionsAccessorsCheck.h>
 #include <fairmq/tidy/RunDeviceCheck.h>
+#include <fairmq/tidy/RunLoopIgnoresStateCheck.h>
 #include <fairmq/tidy/TransferCodeCheck.h>
 #include <fairmq/tidy/UncheckedTransferResultCheck.h>
 #include <fairmq/tidy/UseAfterSendCheck.h>
@@ -31,6 +32,7 @@ class Module : public clang::tidy::ClangTidyModule
     void addCheckFactories(clang::tidy::ClangTidyCheckFactories& factories) override
     {
         factories.registerCheck<OnDataWithConditionalRunCheck>("fairmq-bugprone-ondata-with-conditionalrun");
+        factories.registerCheck<RunLoopIgnoresStateCheck>("fairmq-bugprone-run-loop-ignores-state");
         factories.registerCheck<UncheckedTransferResultCheck>("fairmq-bugprone-unchecked-transfer-result");
         factories.registerCheck<UseAfterSendCheck>("fairmq-bugprone-use-after-send");
         factories.registerCheck<ChannelsAccessCheck>("fairmq-modernize-channels-access");

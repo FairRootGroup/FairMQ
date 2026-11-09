@@ -49,6 +49,8 @@ add_library(fairmq-tidy-module OBJECT
   ProgOptionsAccessorsCheck.h
   RunDeviceCheck.cxx
   RunDeviceCheck.h
+  RunLoopIgnoresStateCheck.cxx
+  RunLoopIgnoresStateCheck.h
   Transfer.cxx
   Transfer.h
   TransferCodeCheck.cxx

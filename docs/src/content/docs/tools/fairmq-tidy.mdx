@@ -34,6 +34,7 @@ The `fairmq-*` checks are a clang-tidy module ([Module.cxx](/source/fairmq/tidy/
 | Check | Finds | Fix |
 | --- | --- | --- |
 | `fairmq-bugprone-ondata-with-conditionalrun` | Devices that register a data callback with `OnData()` and also override `ConditionalRun()` | No fix |
+| `fairmq-bugprone-run-loop-ignores-state` | Endless loops in `Run()` that do not look at the state machine | No fix |
 | `fairmq-bugprone-unchecked-transfer-result` | Calls of `Receive()` whose result is not used. With the option `CheckSend`, also calls of `Send()`. | No fix |
 | `fairmq-bugprone-use-after-send` | Uses of a `MessagePtr` after a `Send()` whose result is not used | No fix |
 | `fairmq-modernize-channels-access` | Uses of the deprecated member `fair::mq::Device::fChannels` | `fChannels.at(name).at(index)` becomes `GetChannel(name, index)`. Other uses become `GetChannels()`. |
@@ -182,6 +183,16 @@ The check looks only at `==` and `!=`. See [Transfer codes](/reference/transfer-
 ### fairmq-bugprone-ondata-with-conditionalrun
 
 A device with a data callback runs only its callbacks in the state Running. It never calls `ConditionalRun()` and `Run()`. The check reports the override of `ConditionalRun()`, with a note at the call of `OnData()`. See [Data callbacks](/concepts/devices/#data-callbacks).
+
+### fairmq-bugprone-run-loop-ignores-state
+
+A device leaves the state Running only when `Run()` returns. An endless loop in an override of `Device::Run()`, for example `while (true)` or `for (;;)`, must stop on a state change request. The check reports the loop if it has none of these:
+
+- a call of `NewStatePending()` or `WaitFor()`,
+- a call of `Send()` or `Receive()`. A state change interrupts the transfer.
+- a `break`, `return`, `throw` or `goto`.
+
+Use `while (!NewStatePending())` as the loop condition.
 
 ## Build fairmq-tidy
 
