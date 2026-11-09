@@ -39,6 +39,13 @@ if(NOT FAIRMQ_TIDY_CLANG_TIDY)
     "Skipping the fairmq-tidy plugin tests.")
 endif()
 
+if(BUILD_TIDY_CLANGD)
+  find_package(Python3 COMPONENTS Interpreter)
+  if(NOT Python3_FOUND)
+    message(STATUS "Python 3 not found. Skipping the fairmq-clangd tests.")
+  endif()
+endif()
+
 file(GLOB inputs CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/fairmq-*.cxx")
 foreach(input IN LISTS inputs)
   get_filename_component(check "${input}" NAME_WE)
@@ -66,5 +73,15 @@ foreach(input IN LISTS inputs)
         -P "${CMAKE_CURRENT_SOURCE_DIR}/RunCheck.cmake"
     )
     set_tests_properties("tidy.plugin.${check}" PROPERTIES TIMEOUT 120)
+  endif()
+
+  if(BUILD_TIDY_CLANGD AND Python3_FOUND)
+    add_test(NAME "tidy.clangd.${check}"
+      COMMAND Python3::Interpreter "${CMAKE_CURRENT_SOURCE_DIR}/ClangdCheck.py"
+        "$<TARGET_FILE:FairMQ::fairmq-clangd>" "${check}" "${input}"
+        "${CMAKE_CURRENT_BINARY_DIR}/flags.txt"
+        "${CMAKE_CURRENT_BINARY_DIR}/clangd/${check}"
+    )
+    set_tests_properties("tidy.clangd.${check}" PROPERTIES TIMEOUT 120)
   endif()
 endforeach()
