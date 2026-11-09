@@ -196,7 +196,7 @@ The function does these things:
 
 - If `CMAKE_EXPORT_COMPILE_COMMANDS` is off, it prints the author warning `CMAKE_EXPORT_COMPILE_COMMANDS is not enabled. Skipping.` and does nothing. It also skips with a warning if `TARGET` is missing or is not a target.
 - If `CMAKE_CXX_COMPILER_ID` is `GNU`, it runs `clang -print-resource-dir` one time and keeps the result in the cache variable `fairmq_tidy_clang_resource_dir`. Then it adds `--extra-arg-before=-I<resource-dir>/include`, which gives Clang its own header directory.
-- For each source file, it adds a custom command: `fairmq-tidy -p=${CMAKE_BINARY_DIR} [extra arguments] <source>`. The command runs in `CMAKE_CURRENT_SOURCE_DIR`. It writes the stamp file `<target>-<source>.fairmq-tidy` into `CMAKE_CURRENT_BINARY_DIR`.
+- For each source file, it adds a custom command: `fairmq-tidy -p=${PROJECT_BINARY_DIR} [extra arguments] <source>`. The command runs in `CMAKE_CURRENT_SOURCE_DIR`. It writes the stamp file `<target>-<source>.fairmq-tidy` into `CMAKE_CURRENT_BINARY_DIR`.
 - It adds the custom target `fairmq-tidy-<target>` to `ALL` (each `:` in the target name becomes `-`). So the normal build runs the check after it builds the target, and again each time the target changes.
 
 During the build, CMake prints one line for each file, then the output of the tool:

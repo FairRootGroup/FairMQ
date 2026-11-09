@@ -132,7 +132,7 @@ Use the targets of the programs in custom commands and tests. For example, `$<TA
 - **Include directories.** `<prefix>/include` and `<prefix>/include/fairmq`. Include the headers as `fairmq/<Name>.h`, for example `#include <fairmq/Device.h>`.
 - **C++17.** The target has the compile feature `cxx_std_17`. CMake compiles your target with C++17 or a later standard.
 - **Compile definitions.** `BOOST_ERROR_CODE_HEADER_ONLY`, and `FAIRMQ_HAS_STD_FILESYSTEM` and `FAIRMQ_HAS_STD_PMR` with the value `0` or `1`. An installation with `FAIRMQ_DEBUG_MODE=ON` adds `FAIRMQ_DEBUG_MODE`. An installation with `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` adds `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` with the value `true` or `false`.
-- **Libraries.** `FairLogger::FairLogger`, `Boost::boost`, `Boost::container`, `Boost::program_options`, `Boost::filesystem`, `Boost::regex`, `Threads::Threads`, `dl`, and `rt` on Linux.
+- **Libraries.** `FairLogger::FairLogger`, `Boost::headers`, `Boost::container`, `Boost::program_options`, `Boost::filesystem`, `Boost::regex`, `Threads::Threads`, `dl`, and `rt` on Linux.
 
 ZeroMQ and PicoSHA2 are private dependencies of `libfairmq`. Your project does not find or link them.
 
@@ -209,14 +209,14 @@ The function needs `CMAKE_EXPORT_COMPILE_COMMANDS` set to `ON`. If it is not `ON
 
 ## Other ways to add FairMQ
 
-The supported way is the one on this page: build FairMQ, install it, and find the installation with `find_package(FairMQ)`. The CMake code of FairMQ does not support a build tree, `add_subdirectory()` or `FetchContent`.
+The recommended way is the one on this page: build FairMQ, install it, and find the installation with `find_package(FairMQ)`.
 
 | Way | Works | Reason |
 | --- | --- | --- |
 | `find_package(FairMQ)` of an installation | Yes | The installation contains the targets file. |
 | `find_package(FairMQ)` of a build tree | No | The build tree has no targets file. See [The build tree](#the-build-tree). |
-| `add_subdirectory()` of a FairMQ source tree | No | FairMQ must be the top-level project. See [add_subdirectory() and FetchContent](#add_subdirectory-and-fetchcontent). |
-| `FetchContent` | No | `FetchContent_MakeAvailable()` calls `add_subdirectory()`. |
+| `add_subdirectory()` of a FairMQ source tree | Yes | The target `FairMQ::FairMQ` exists in the build. See [add_subdirectory() and FetchContent](#add_subdirectory-and-fetchcontent). |
+| `FetchContent` | Not tested | `FetchContent_MakeAvailable()` calls `add_subdirectory()`. A source archive has no Git metadata. See [add_subdirectory() and FetchContent](#add_subdirectory-and-fetchcontent). |
 | `ExternalProject_Add()` | Yes, in two steps | FairMQ is the top-level project of its own CMake run. See [ExternalProject](#externalproject). |
 
 ### The build tree
@@ -227,28 +227,14 @@ If `FairMQ_DIR` or `CMAKE_PREFIX_PATH` points to a build directory, `find_packag
 
 ### add_subdirectory() and FetchContent
 
-The CMake code of FairMQ uses `CMAKE_SOURCE_DIR` and `CMAKE_BINARY_DIR` for its own source and build directories. These variables always give the directories of the top-level project. When your project adds FairMQ with `add_subdirectory()`, they give the directories of your project. The configure step stops at the first use, in line 14 of the top-level `CMakeLists.txt` of FairMQ. For a FairMQ source in the folder `fairmq/` of your project, the error is:
+The CMake code of FairMQ uses `PROJECT_SOURCE_DIR` and `PROJECT_BINARY_DIR` for its own source and build directories. Thus `add_subdirectory(fairmq)` works. The build has the target `FairMQ::FairMQ` as an alias of the library target `FairMQ`. FairMQ finds its dependencies with `find_package()`, so give their prefixes in `CMAKE_PREFIX_PATH`.
 
-```txt
-CMake Error at fairmq/CMakeLists.txt:14 (include):
-  include could not find requested file:
+Some things still depend on the Git repository of FairMQ:
 
-    GitHelper
-```
+- `cmake/GitHelper.cmake` reads the version with `git describe` in the directory of the FairMQ `CMakeLists.txt`, and only if it has a `.git` entry. Without it, the version is `0.0.0.0`.
+- The bundled copies of GoogleTest, PicoSHA2 and FairCMakeModules are Git submodules. A source archive from GitHub has no `.git` folder and the folders in `extern/` are empty. If FairCMakeModules is not installed, the configure step stops when it tries to build the bundled copy: `git submodule update` fails with `fatal: not a git repository`. The log is `extern/FairCMakeModules/build.log` in the build directory. Use a Git clone with the tags (see [Install](/start/install/#problems-that-can-occur)) and its submodules.
 
-`CMakeLists.txt` looks for its modules in `${CMAKE_SOURCE_DIR}/cmake`. If your project adds this folder to `CMAKE_MODULE_PATH`, the configure step stops at a later use. These uses also depend on the top-level directories:
-
-- `cmake/GitHelper.cmake` reads the version with `git describe` in `CMAKE_SOURCE_DIR`, and only if `${CMAKE_SOURCE_DIR}/.git` exists. The version then comes from the Git repository of your project, or it is `0.0.0.0`.
-- `cmake/FairMQBundlePackageHelper.cmake` looks for the bundled packages in `${CMAKE_SOURCE_DIR}/extern/`.
-- `cmake/FairMQPackage.cmake` reads `${CMAKE_SOURCE_DIR}/cmake/FairMQConfig.cmake.in`.
-- `fairmq/CMakeLists.txt` writes `Version.h` to `${CMAKE_BINARY_DIR}/fairmq/`, and adds `CMAKE_SOURCE_DIR` and `CMAKE_BINARY_DIR` to the include directories of the library.
-- The tests and the examples look for the programs of FairMQ in `${CMAKE_BINARY_DIR}/fairmq/`.
-
-The build also has no target `FairMQ::FairMQ`. The library target is `FairMQ`. Only the installed package gives it the namespace `FairMQ::`.
-
-`FetchContent_MakeAvailable(FairMQ)` adds the downloaded source with `add_subdirectory()`. Thus it stops with the same error. This is true for a Git clone (`GIT_REPOSITORY`) and for a release archive (`URL`). In your build directory, the error names the file `_deps/fairmq-src/CMakeLists.txt`.
-
-A release archive from GitHub has no `.git` folder, and the folders of the Git submodules in `extern/` are empty. A standalone build of such an archive gets the version `0.0.0.0`. If FairCMakeModules is not installed, its configure step stops when it tries to build the bundled copy: `git submodule update` fails with `fatal: not a git repository`. The log is `extern/FairCMakeModules/build.log` in the build directory. Use a Git clone with the tags (see [Install](/start/install/#problems-that-can-occur)).
+`FetchContent_MakeAvailable(FairMQ)` adds the downloaded source with `add_subdirectory()`. For a Git clone, use `GIT_SUBMODULES`. The FairMQ project did not test `FetchContent`.
 
 ### ExternalProject
 

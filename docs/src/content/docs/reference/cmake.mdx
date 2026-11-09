@@ -216,7 +216,7 @@ The package does not export the example programs.
 - C++17 (`cxx_std_17`).
 - The include directories `include/fairmq` and `include` of the prefix. Thus `#include <fairmq/Device.h>` and the deprecated `#include <FairMQDevice.h>` both work. See [Move from the FairMQ* names](/guides/migrate-names/).
 - The [compile definitions](#compile-definitions).
-- The libraries `Threads::Threads`, `dl`, `rt` (Linux only), `Boost::boost`, `Boost::container`, `Boost::program_options`, `Boost::filesystem`, `Boost::regex` and `FairLogger::FairLogger`.
+- The libraries `Threads::Threads`, `dl`, `rt` (Linux only), `Boost::headers`, `Boost::container`, `Boost::program_options`, `Boost::filesystem`, `Boost::regex` and `FairLogger::FairLogger`.
 
 :::caution[Find the dependencies before you link]
 The package does not search its dependencies. Your project must find Boost, FairLogger and Threads before it links to `FairMQ::FairMQ`. `find_package2_implicit_dependencies()` of FairCMakeModules reads the variables `FairMQ_PACKAGE_DEPENDENCIES`, `FairMQ_<dep>_VERSION` and `FairMQ_<dep>_COMPONENTS` and finds the packages.

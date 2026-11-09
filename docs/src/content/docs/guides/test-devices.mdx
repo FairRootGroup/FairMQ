@@ -204,7 +204,7 @@ timeout of 30 s. `env_mods` holds the changes of the environment for the leak sa
 
 <Snippet file="examples/CMakeLists.txt" start='          set(test "${testsuite}.${name}.${transport}")' end="endif()" />
 
-`configure_file()` replaces `@CMAKE_BINARY_DIR@`, `@CMAKE_CURRENT_BINARY_DIR@` and `@FAIRMQ_BIN_DIR@`
+`configure_file()` replaces `@PROJECT_BINARY_DIR@`, `@CMAKE_CURRENT_BINARY_DIR@` and `@FAIRMQ_BIN_DIR@`
 in the script with the paths of the build tree. Thus the example scripts find `fairmq-uuid-gen` in
 `<build>/fairmq`.
 
