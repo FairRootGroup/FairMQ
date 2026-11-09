@@ -82,7 +82,7 @@ FairMQ ships as a CMake package, so in your `CMakeLists.txt` you can discover it
 ```cmake
 find_package(FairCMakeModules 1.0 REQUIRED)
 include(FairFindPackage2)
-find_package2(FairMQ)
+find_package2(PUBLIC FairMQ REQUIRED)
 find_package2_implicit_dependencies()
 ```
 
