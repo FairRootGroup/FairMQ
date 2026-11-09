@@ -162,7 +162,7 @@ function(add_example)
   # configure run scripts with the install prefix known at install time
   set(install_vars
     EX_BIN_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}"
-    FAIRMQ_BIN_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/fairmq"
+    FAIRMQ_BIN_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}"
   )
   if(ARG_CONFIG)
     list(APPEND install_vars EX_CONF_DIR "\${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
