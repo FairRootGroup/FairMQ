@@ -18,7 +18,7 @@ if(BUILD_FAIRMQ)
   set(Threads_PREFIX "<system>")
 endif()
 
-if(BUILD_FAIRMQ OR BUILD_TIDY_TOOL)
+if(BUILD_FAIRMQ)
   find_package2(PUBLIC FairLogger REQUIRED VERSION 1.6.0)
   find_package2(PUBLIC Boost REQUIRED VERSION 1.66
     COMPONENTS container program_options filesystem date_time regex
@@ -83,7 +83,6 @@ if(BUILD_TIDY_TOOL)
   find_package2(PRIVATE LLVM REQUIRED)
   find_package2(PRIVATE Clang REQUIRED)
   set(Clang_VERSION ${LLVM_VERSION})
-  find_package2(PRIVATE CLI11 REQUIRED)
 endif()
 
 find_package2_implicit_dependencies() # Always call last after latest find_package2
