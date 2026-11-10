@@ -6,13 +6,19 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include <fairmq/tidy/ChannelLookupInLoopCheck.h>
 #include <fairmq/tidy/ChannelsAccessCheck.h>
 #include <fairmq/tidy/DeprecatedFunctionsCheck.h>
 #include <fairmq/tidy/DeprecatedHeadersCheck.h>
 #include <fairmq/tidy/NonNamespacedTypesCheck.h>
+#include <fairmq/tidy/OnDataWithConditionalRunCheck.h>
 #include <fairmq/tidy/PartsApiCheck.h>
 #include <fairmq/tidy/ProgOptionsAccessorsCheck.h>
 #include <fairmq/tidy/RunDeviceCheck.h>
+#include <fairmq/tidy/RunLoopIgnoresStateCheck.h>
+#include <fairmq/tidy/TransferCodeCheck.h>
+#include <fairmq/tidy/UncheckedTransferResultCheck.h>
+#include <fairmq/tidy/UseAfterSendCheck.h>
 
 #include <clang-tidy/ClangTidyModule.h>
 #include <clang-tidy/ClangTidyModuleRegistry.h>
@@ -26,6 +32,10 @@ class Module : public clang::tidy::ClangTidyModule
   public:
     void addCheckFactories(clang::tidy::ClangTidyCheckFactories& factories) override
     {
+        factories.registerCheck<OnDataWithConditionalRunCheck>("fairmq-bugprone-ondata-with-conditionalrun");
+        factories.registerCheck<RunLoopIgnoresStateCheck>("fairmq-bugprone-run-loop-ignores-state");
+        factories.registerCheck<UncheckedTransferResultCheck>("fairmq-bugprone-unchecked-transfer-result");
+        factories.registerCheck<UseAfterSendCheck>("fairmq-bugprone-use-after-send");
         factories.registerCheck<ChannelsAccessCheck>("fairmq-modernize-channels-access");
         factories.registerCheck<DeprecatedFunctionsCheck>("fairmq-modernize-deprecated-functions");
         factories.registerCheck<DeprecatedHeadersCheck>("fairmq-modernize-deprecated-headers");
@@ -33,6 +43,8 @@ class Module : public clang::tidy::ClangTidyModule
         factories.registerCheck<PartsApiCheck>("fairmq-modernize-parts-api");
         factories.registerCheck<ProgOptionsAccessorsCheck>("fairmq-modernize-progoptions-accessors");
         factories.registerCheck<RunDeviceCheck>("fairmq-modernize-run-device");
+        factories.registerCheck<ChannelLookupInLoopCheck>("fairmq-performance-channel-lookup-in-loop");
+        factories.registerCheck<TransferCodeCheck>("fairmq-readability-transfer-code");
     }
 };
 

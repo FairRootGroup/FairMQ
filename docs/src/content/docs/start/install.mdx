@@ -127,7 +127,7 @@ If a dependency is not in a system directory, give its installation prefix to CM
 | `CMAKE_INSTALL_PREFIX` | `/usr/local` | Sets the installation directory. Set it when you configure, because the installed start scripts of the examples contain this path. |
 | `BUILD_TESTING` | `OFF` | Builds the tests. |
 | `BUILD_EXAMPLES` | `ON` | Builds the examples. `cmake --install` also installs them and their start scripts. |
-| `BUILD_TIDY_TOOL` | `OFF` | Builds the experimental tool [`fairmq-tidy`](/tools/fairmq-tidy/). It needs LLVM and Clang. |
+| `BUILD_TIDY_TOOL` | `OFF` | Builds the tool [`fairmq-tidy`](/tools/fairmq-tidy/). It needs LLVM and Clang. |
 | `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` | not set | Sets the default of the channel property `autoBind`. If the option is not set, the default is `true`. |
 | `FAIRMQ_DEBUG_MODE` | `OFF` | The transport `shmem` records its messages, so that `fairmq-shmmonitor --debug` can list them. This can decrease the performance. |
 | `USE_EXTERNAL_GTEST` | `OFF` | Uses an installed GoogleTest instead of the bundled copy. |

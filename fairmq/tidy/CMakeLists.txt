@@ -32,6 +32,8 @@ endif()
 
 # The fairmq-* checks as a clang-tidy module.
 add_library(fairmq-tidy-module OBJECT
+  ChannelLookupInLoopCheck.cxx
+  ChannelLookupInLoopCheck.h
   ChannelsAccessCheck.cxx
   ChannelsAccessCheck.h
   DeprecatedFunctionsCheck.cxx
@@ -41,12 +43,24 @@ add_library(fairmq-tidy-module OBJECT
   Module.cxx
   NonNamespacedTypesCheck.cxx
   NonNamespacedTypesCheck.h
+  OnDataWithConditionalRunCheck.cxx
+  OnDataWithConditionalRunCheck.h
   PartsApiCheck.cxx
   PartsApiCheck.h
   ProgOptionsAccessorsCheck.cxx
   ProgOptionsAccessorsCheck.h
   RunDeviceCheck.cxx
   RunDeviceCheck.h
+  RunLoopIgnoresStateCheck.cxx
+  RunLoopIgnoresStateCheck.h
+  Transfer.cxx
+  Transfer.h
+  TransferCodeCheck.cxx
+  TransferCodeCheck.h
+  UncheckedTransferResultCheck.cxx
+  UncheckedTransferResultCheck.h
+  UseAfterSendCheck.cxx
+  UseAfterSendCheck.h
 )
 target_compile_features(fairmq-tidy-module PUBLIC cxx_std_17)
 target_include_directories(fairmq-tidy-module

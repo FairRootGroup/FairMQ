@@ -8,8 +8,9 @@
 ################################################################################
 """Runs fairmq-clangd as a language server on one test input.
 
-The test passes if clangd publishes a diagnostic of the given check and offers
-a quick fix for it, i.e. the fairmq-* checks work in an editor.
+The test passes if clangd publishes a diagnostic of the given check and, if the
+input has CHECK-FIXES lines, offers a quick fix for it, i.e. the fairmq-*
+checks work in an editor.
 
 Usage: ClangdCheck.py <fairmq-clangd> <check> <input> <flags file> <workdir>
 """
@@ -83,6 +84,10 @@ def main():
         if not found:
             print(f"no {check} diagnostic, got:", json.dumps(diags, indent=1))
             return 1
+        if "CHECK-FIXES:" not in src.read_text():
+            print(f"{len(found)} {check} diagnostics")
+            send("shutdown", None)
+            return 0
         req = send("textDocument/codeAction", {
             "textDocument": {"uri": uri}, "range": found[0]["range"],
             "context": {"diagnostics": [found[0]]}})

@@ -13,6 +13,9 @@
 #   <code that triggers the check>
 #   // CHECK-FIXES: <code after the fix>
 #
+# A line `// TIDY-CONFIG: <yaml>` passes the YAML to --config, e.g. to set
+# check options.
+#
 # Any warning or error without a CHECK-MESSAGES line fails the test.
 #
 # Usage: cmake -DTIDY=<exe> -DFILECHECK=<exe> -DCHECK=<name> -DINPUT=<file>
@@ -40,8 +43,12 @@ set(load)
 if(LOAD)
   set(load "--load=${LOAD}")
 endif()
+set(config)
+if(content MATCHES "// *TIDY-CONFIG: *([^\n]*)")
+  set(config "--config=${CMAKE_MATCH_1}")
+endif()
 execute_process(
-  COMMAND "${TIDY}" ${load} "--checks=-*,${CHECK}" --fix "${fixed}" -- ${flags}
+  COMMAND "${TIDY}" ${load} ${config} "--checks=-*,${CHECK}" --fix "${fixed}" -- ${flags}
   OUTPUT_FILE "${messages}"
   ERROR_VARIABLE stderr
   RESULT_VARIABLE result
