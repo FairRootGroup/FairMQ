@@ -30,7 +30,8 @@ Some variables on this page are not declared as CMake options. `ccmake` and `cma
 | `BUILD_FAIRMQ` | `ON` | — | Build the library `libfairmq`, the [built-in devices](/tools/builtin-devices/), [`fairmq-shmmonitor`](/tools/shmmonitor/) and `fairmq-uuid-gen`. |
 | `BUILD_TESTING` | `OFF` | `BUILD_FAIRMQ` | Build the tests and add them to CTest. |
 | `BUILD_EXAMPLES` | `ON` | `BUILD_FAIRMQ` | Build the [examples](/examples/1-1/) and their start scripts. With `BUILD_TESTING=ON`, CTest also gets the tests of the examples. |
-| `BUILD_TIDY_TOOL` | `OFF` | — | Build the static analyzer [`fairmq-tidy`](/tools/fairmq-tidy/). The configure summary marks it as experimental. |
+| `BUILD_TIDY_TOOL` | `OFF` | — | Build the static analyzer [`fairmq-tidy`](/tools/fairmq-tidy/) and its clang-tidy plugin. The configure summary marks it as experimental. |
+| `BUILD_TIDY_CLANGD` | `OFF` | `BUILD_TIDY_TOOL` | Build the language server [`fairmq-clangd`](/tools/fairmq-tidy/#editor-integration). |
 | `USE_EXTERNAL_GTEST` | `OFF` | — | Use an installed GoogleTest, not the bundled copy. The option text in the code says "Not recommended". |
 | `FAIRMQ_DEBUG_MODE` | `OFF` | — | Compile with the definition `FAIRMQ_DEBUG_MODE`. See [Compile definitions](#compile-definitions). |
 

@@ -64,3 +64,39 @@ install(TARGETS ${target}
   EXPORT ${PROJECT_EXPORT_SET}
   RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
 )
+
+# libfairmq-tidy-checks: the fairmq-* checks as a plugin for a clang-tidy of
+# the same LLVM release, e.g. `clang-tidy --load=libfairmq-tidy-checks.so`.
+# It does not link the LLVM libraries: the clang-tidy executable has them.
+set(target fairmq-tidy-plugin)
+add_library(${target} MODULE $<TARGET_OBJECTS:fairmq-tidy-module>)
+add_library("${PROJECT_NAME}::${target}" ALIAS ${target})
+set_target_properties(${target} PROPERTIES OUTPUT_NAME fairmq-tidy-checks)
+if(APPLE)
+  target_link_options(${target} PRIVATE -undefined dynamic_lookup)
+endif()
+install(TARGETS ${target}
+  EXPORT ${PROJECT_EXPORT_SET}
+  LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
+)
+
+# fairmq-clangd: the clangd language server plus the fairmq-* checks.
+option(BUILD_TIDY_CLANGD "Build fairmq-clangd, the clangd language server with the fairmq-* checks." OFF)
+if(BUILD_TIDY_CLANGD)
+  if(NOT TARGET clangdMain)
+    message(FATAL_ERROR "BUILD_TIDY_CLANGD=ON needs the clangd libraries "
+      "(clangdMain, clangDaemon) of the found Clang ${LLVM_PACKAGE_VERSION} "
+      "installation at ${Clang_DIR}.")
+  endif()
+  set(target fairmq-clangd)
+  add_executable(${target} runClangd.cxx)
+  add_executable("${PROJECT_NAME}::${target}" ALIAS ${target})
+  target_compile_definitions(${target} PRIVATE
+    FAIRMQ_TIDY_CLANG_RESOURCE_DIR="${FAIRMQ_TIDY_CLANG_RESOURCE_DIR}"
+  )
+  target_link_libraries(${target} PRIVATE fairmq-tidy-module clangdMain)
+  install(TARGETS ${target}
+    EXPORT ${PROJECT_EXPORT_SET}
+    RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
+  )
+endif()

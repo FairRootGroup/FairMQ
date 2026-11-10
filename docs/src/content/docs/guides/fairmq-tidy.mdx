@@ -164,6 +164,10 @@ With `fairmq_target_tidy()`, give the option in `EXTRA_ARGS`. A finding then sto
 fairmq_target_tidy(TARGET mydevice EXTRA_ARGS --warnings-as-errors=fairmq-*)
 ```
 
+## See the findings in your editor
+
+Use `fairmq-clangd` in place of `clangd`, and enable the checks in a `.clangd` file. See [Editor integration](/tools/fairmq-tidy/#editor-integration).
+
 ## Problems that can occur
 
 | Message | Cause | Solution |
@@ -171,6 +175,8 @@ fairmq_target_tidy(TARGET mydevice EXTRA_ARGS --warnings-as-errors=fairmq-*)
 | `CMAKE_EXPORT_COMPILE_COMMANDS is not enabled. Skipping.` | The variable is off when `fairmq_target_tidy()` runs. | Set `CMAKE_EXPORT_COMPILE_COMMANDS` to `ON` before the call. |
 | `Error while trying to load a compilation database` | The tool did not find `compile_commands.json`. | Give the build directory with `-p`. |
 | `fatal error: '<header>' file not found` | Clang does not find a header. | Add the include path with `--extra-arg=-I<dir>`. |
+| `fairmq-clangd` shows no `fairmq-*` findings | `clangd` 18 or later skips checks that it does not know as fast. | Add `FastCheckFilter: Loose` to the `.clangd` file. |
+| `clang-tidy --load` fails with `symbol lookup error`, or the plugin finds nothing | The `clang-tidy` has another LLVM major version than the plugin. | Use the `clang-tidy` of the same LLVM version, or `fairmq-tidy`. |
 | A warning of a check that you did not select, for example `clang-analyzer-*` | The command line has no `--checks`, and the tool runs the checks of the configuration. | Give `--checks='-*,fairmq-*'`. |
 
 ## Related pages

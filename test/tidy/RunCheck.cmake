@@ -16,7 +16,8 @@
 # Any warning or error without a CHECK-MESSAGES line fails the test.
 #
 # Usage: cmake -DTIDY=<exe> -DFILECHECK=<exe> -DCHECK=<name> -DINPUT=<file>
-#              -DFLAGS=<file with one compiler flag per line> -DWORKDIR=<dir> -P RunCheck.cmake
+#              -DFLAGS=<file with one compiler flag per line> -DWORKDIR=<dir>
+#              [-DLOAD=<clang-tidy plugin>] -P RunCheck.cmake
 
 foreach(var IN ITEMS TIDY FILECHECK CHECK INPUT FLAGS WORKDIR)
   if(NOT DEFINED ${var})
@@ -35,8 +36,12 @@ string(REGEX REPLACE "// *CHECK-[A-Z-]+:[^\n]*" "//" content "${content}")
 file(WRITE "${fixed}" "${content}")
 
 file(STRINGS "${FLAGS}" flags)
+set(load)
+if(LOAD)
+  set(load "--load=${LOAD}")
+endif()
 execute_process(
-  COMMAND "${TIDY}" "--checks=-*,${CHECK}" --fix "${fixed}" -- ${flags}
+  COMMAND "${TIDY}" ${load} "--checks=-*,${CHECK}" --fix "${fixed}" -- ${flags}
   OUTPUT_FILE "${messages}"
   ERROR_VARIABLE stderr
   RESULT_VARIABLE result

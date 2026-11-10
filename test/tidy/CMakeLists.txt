@@ -29,18 +29,59 @@ $<$<BOOL:${incs}>:-isystem\n$<JOIN:${incs},\n-isystem\n>>
 $<$<BOOL:${defs}>:-D$<JOIN:${defs},\n-D>>
 ")
 
+# The plugin needs a clang-tidy of the same LLVM release.
+find_program(FAIRMQ_TIDY_CLANG_TIDY NAMES clang-tidy clang-tidy-${LLVM_VERSION_MAJOR}
+  HINTS "${LLVM_TOOLS_BINARY_DIR}" NO_DEFAULT_PATH
+  DOC "clang-tidy executable for the fairmq-tidy plugin tests"
+)
+if(NOT FAIRMQ_TIDY_CLANG_TIDY)
+  message(STATUS "clang-tidy not found in ${LLVM_TOOLS_BINARY_DIR}. "
+    "Skipping the fairmq-tidy plugin tests.")
+endif()
+
+if(BUILD_TIDY_CLANGD)
+  find_package(Python3 COMPONENTS Interpreter)
+  if(NOT Python3_FOUND)
+    message(STATUS "Python 3 not found. Skipping the fairmq-clangd tests.")
+  endif()
+endif()
+
 file(GLOB inputs CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/fairmq-*.cxx")
 foreach(input IN LISTS inputs)
   get_filename_component(check "${input}" NAME_WE)
+  set(args
+    "-DFILECHECK=${FAIRMQ_TIDY_FILECHECK}"
+    "-DCHECK=${check}"
+    "-DINPUT=${input}"
+    "-DFLAGS=${CMAKE_CURRENT_BINARY_DIR}/flags.txt"
+  )
+
   add_test(NAME "tidy.${check}"
-    COMMAND ${CMAKE_COMMAND}
+    COMMAND ${CMAKE_COMMAND} ${args}
       "-DTIDY=$<TARGET_FILE:FairMQ::fairmq-tidy>"
-      "-DFILECHECK=${FAIRMQ_TIDY_FILECHECK}"
-      "-DCHECK=${check}"
-      "-DINPUT=${input}"
-      "-DFLAGS=${CMAKE_CURRENT_BINARY_DIR}/flags.txt"
       "-DWORKDIR=${CMAKE_CURRENT_BINARY_DIR}/${check}"
       -P "${CMAKE_CURRENT_SOURCE_DIR}/RunCheck.cmake"
   )
   set_tests_properties("tidy.${check}" PROPERTIES TIMEOUT 120)
+
+  if(FAIRMQ_TIDY_CLANG_TIDY)
+    add_test(NAME "tidy.plugin.${check}"
+      COMMAND ${CMAKE_COMMAND} ${args}
+        "-DTIDY=${FAIRMQ_TIDY_CLANG_TIDY}"
+        "-DLOAD=$<TARGET_FILE:FairMQ::fairmq-tidy-plugin>"
+        "-DWORKDIR=${CMAKE_CURRENT_BINARY_DIR}/plugin/${check}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/RunCheck.cmake"
+    )
+    set_tests_properties("tidy.plugin.${check}" PROPERTIES TIMEOUT 120)
+  endif()
+
+  if(BUILD_TIDY_CLANGD AND Python3_FOUND)
+    add_test(NAME "tidy.clangd.${check}"
+      COMMAND Python3::Interpreter "${CMAKE_CURRENT_SOURCE_DIR}/ClangdCheck.py"
+        "$<TARGET_FILE:FairMQ::fairmq-clangd>" "${check}" "${input}"
+        "${CMAKE_CURRENT_BINARY_DIR}/flags.txt"
+        "${CMAKE_CURRENT_BINARY_DIR}/clangd/${check}"
+    )
+    set_tests_properties("tidy.clangd.${check}" PROPERTIES TIMEOUT 120)
+  endif()
 endforeach()
