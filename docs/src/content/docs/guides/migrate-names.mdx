@@ -133,7 +133,7 @@ The table is in the order of the headers that declare the deprecated alias. The 
 | `FairMQUnmanagedRegion` | [`fair::mq::UnmanagedRegion`](/api/fair/mq/UnmanagedRegion/) | `UnmanagedRegion.h` | yes |
 | `FairMQUnmanagedRegionPtr` | [`fair::mq::UnmanagedRegionPtr`](/api/fair/mq/#UnmanagedRegionPtr) | `UnmanagedRegion.h` | yes |
 | `FairMQRegionConfig` | [`fair::mq::RegionConfig`](/api/fair/mq/RegionConfig/) | `UnmanagedRegion.h` | yes |
-| `FairMQDevicePtr` | `std::unique_ptr<fair::mq::Device>` as the return type of `getDevice()` | `runFairMQDevice.h` | no |
+| `FairMQDevicePtr` | `std::unique_ptr<fair::mq::Device>` as the return type of `getDevice()` | `runFairMQDevice.h` | yes, with `fairmq-modernize-run-device` |
 
 All old names are global, except `fair::mq::FairMQMemoryResource`. All names in the table except `FairMQDevicePtr` have the attribute `[[deprecated]]`.
 
@@ -176,6 +176,9 @@ The compiler warns for these members too. The column "Declared in" names the hea
 | [`Device::Deserialize<D>(msg, data, args...)`](/api/fair/mq/Device/#Deserialize) | `D().Deserialize(msg, data, args...)` | `Device.h` |
 | [`Parts::AddPart(Message* msg)`](/api/fair/mq/Parts/#AddPart) | [`Parts::AddPart(MessagePtr msg)`](/api/fair/mq/Parts/#AddPart-2) | `Parts.h` |
 | [`Parts::AtRef(index)`](/api/fair/mq/Parts/#AtRef) | `*(parts.At(index))` with [`At()`](/api/fair/mq/Parts/#At) | `Parts.h` |
+| [`ProgOptions::GetValue<T>(key)`](/api/fair/mq/ProgOptions/#GetValue) | [`GetProperty<T>(key)`](/api/fair/mq/ProgOptions/#GetProperty), or `GetProperty<T>(key, {})` if the key can be missing | `ProgOptions.h` |
+| [`ProgOptions::GetStringValue(key)`](/api/fair/mq/ProgOptions/#GetStringValue) | [`GetPropertyAsString(key)`](/api/fair/mq/ProgOptions/#GetPropertyAsString), or `GetPropertyAsString(key, {})` if the key can be missing | `ProgOptions.h` |
+| [`ProgOptions::SetValue(key, value)`](/api/fair/mq/ProgOptions/#SetValue) | [`SetProperty(key, value)`](/api/fair/mq/ProgOptions/#SetProperty) | `ProgOptions.h` |
 | [`Socket::Close()`](/api/fair/mq/Socket/#Close) | Destroy the socket. Its destructor closes it. | `Socket.h` |
 | [`shmem::Socket::GetConstant()`](/api/fair/mq/shmem/Socket/#GetConstant) and `zmq::Socket::GetConstant()` | `fair::mq::zmq::getConstant()` of `<fairmq/zeromq/Common.h>` | `shmem/Socket.h`, `zeromq/Socket.h` |
 
@@ -185,7 +188,7 @@ The CMake package is `FairMQ`. Link your targets with `FairMQ::FairMQ`. The exec
 
 ## Automate the move with fairmq-tidy
 
-`fairmq-tidy` finds the old headers, most old type names and `Device::fChannels`. With `--fix`, it replaces them in your files. See [Check code with fairmq-tidy](/guides/fairmq-tidy/) and the [list of checks](/tools/fairmq-tidy/#checks).
+`fairmq-tidy` finds the old headers, most old type names, the deprecated functions and members, and a `getDevice()` for `runFairMQDevice.h`. With `--fix`, it replaces most of them in your files. See [Check code with fairmq-tidy](/guides/fairmq-tidy/) and the [list of checks](/tools/fairmq-tidy/#checks).
 
 ## Related pages
 
