@@ -1,14 +1,20 @@
 ---
 title: 'fairmq-tidy'
-description: 'clang-tidy with the fairmq-* checks built in. The checks, the build, the command line and the CMake function.'
+description: 'clang-tidy with the fairmq-* checks built in. The checks, the build, the command line, the clang-tidy plugin, the editor integration and the CMake function.'
 sidebar:
   order: 3
-code: [fairmq/tidy/Module.cxx, fairmq/tidy/runTidy.cxx]
+code: [fairmq/tidy/Module.cxx, fairmq/tidy/runTidy.cxx, fairmq/tidy/runClangd.cxx]
 ---
 
 import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
 
 `fairmq-tidy` is a static analysis tool for code that uses FairMQ. It is `clang-tidy` with the `fairmq-*` checks built in. The checks find deprecated FairMQ names and APIs in your code, and most checks also give a fix that the tool can apply.
+
+The same checks are also available in two other forms:
+
+- The plugin `libfairmq-tidy-checks.so` adds them to an installed `clang-tidy`. See [clang-tidy plugin](#clang-tidy-plugin).
+- `fairmq-clangd` is the language server `clangd` with the checks built in. Your editor then shows the findings while you type. See [Editor integration](#editor-integration).
 
 For a step-by-step procedure, see [Check code with fairmq-tidy](/guides/fairmq-tidy/). This page is the reference.
 
@@ -103,6 +109,8 @@ cmake -S FairMQ -B build -DBUILD_TIDY_TOOL=ON -DLLVM_DIR=/usr/lib/llvm-18/lib/cm
 With `BUILD_TIDY_TOOL=ON`, the installation also contains:
 
 - `bin/fairmq-tidy`, exported as the imported target `FairMQ::fairmq-tidy`. CMake installs the exported targets only with `BUILD_FAIRMQ=ON` (the default).
+- `lib/libfairmq-tidy-checks.so`, the [clang-tidy plugin](#clang-tidy-plugin).
+- `bin/fairmq-clangd`, if you also set `BUILD_TIDY_CLANGD=ON`. See [Editor integration](#editor-integration).
 - `share/fairmq/cmake/FairMQTidy.cmake`, the CMake module with [`fairmq_target_tidy()`](#the-cmake-function-fairmq_target_tidy).
 - The package component `tidy_tool`.
 
@@ -127,6 +135,41 @@ The command line is the command line of [clang-tidy](https://clang.llvm.org/extr
 | `--list-checks` | Print the enabled checks and stop. |
 
 `run-clang-tidy` of LLVM runs `fairmq-tidy` in parallel on all files of a compilation database: `run-clang-tidy -clang-tidy-binary fairmq-tidy -p build`.
+
+## clang-tidy plugin
+
+The plugin `libfairmq-tidy-checks.so` adds the `fairmq-*` checks to an installed `clang-tidy`. Load it with `--load`:
+
+```sh
+clang-tidy --load=<prefix>/lib/libfairmq-tidy-checks.so -p build --checks='-*,fairmq-*' src/mydevice.cxx
+```
+
+- The `clang-tidy` must have the same LLVM major version as the LLVM that FairMQ was built with. The plugin interface has no stable ABI.
+- Some distributions build `clang-tidy` without plugin support. Use `fairmq-tidy` there.
+- The plugin does not add `--checks=fairmq-*` and the resource directory. Give the checks in `--checks` or in a `.clang-tidy` file.
+
+## Editor integration
+
+`clangd` cannot load plugins. Thus FairMQ can build its own `clangd` with the `fairmq-*` checks built in: `fairmq-clangd` ([runClangd.cxx](/source/fairmq/tidy/runClangd.cxx/)). It is the `clangd` of the LLVM installation, and all other features of `clangd` stay the same. The checks run on the syntax tree that `clangd` builds anyway. The editor shows the findings while you type and offers the fixes as quick fixes.
+
+<Steps>
+
+1. Configure FairMQ with `-DBUILD_TIDY_TOOL=ON -DBUILD_TIDY_CLANGD=ON`. The build needs the `clangd` libraries of the LLVM installation. On Debian and Ubuntu, also install `libgrpc++-dev`, `libprotobuf-dev` and `libabsl-dev`.
+
+2. Configure your editor to start `fairmq-clangd` in place of `clangd`.
+
+3. Enable the checks in a [`.clangd`](https://clangd.llvm.org/config) file in your project:
+
+   ```yaml
+   Diagnostics:
+     ClangTidy:
+       Add: ["fairmq-*"]
+       FastCheckFilter: Loose
+   ```
+
+</Steps>
+
+Since version 18, `clangd` runs only the checks that it knows as fast. It does not know the `fairmq-*` checks, so they need `FastCheckFilter: Loose`. Without this line, `clangd` skips them and shows no message.
 
 ## The CMake function fairmq_target_tidy
 
