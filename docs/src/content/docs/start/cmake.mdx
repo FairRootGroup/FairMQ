@@ -202,8 +202,8 @@ The function adds the target `fairmq-tidy-hello` to the default build. After CMa
 | Argument | What it does |
 | --- | --- |
 | `TARGET <target>` | The target to check. Required. |
-| `EXTRA_ARGS <arg>` | One more argument for `fairmq-tidy`. With GCC, do not use it: the function adds its own argument, and two arguments break the command. This is a known defect. |
-| `CLANG_EXECUTABLE <clang>` | The program `clang`. If your compiler is GCC, the function runs `clang -print-resource-dir` to find the Clang headers. Without this argument, it uses the target `clang` if it exists, or `clang` from `PATH`. |
+| `CHECKS <globs>` | The checks to run. Default: `fairmq-*`. |
+| `EXTRA_ARGS <args>...` | More arguments for `fairmq-tidy`, for example `--fix` or `--warnings-as-errors=fairmq-*`. |
 
 The function needs `CMAKE_EXPORT_COMPILE_COMMANDS` set to `ON`. If it is not `ON`, the function writes a warning and adds no target. See [Check code with fairmq-tidy](/guides/fairmq-tidy/) for the checks and the output.
 
