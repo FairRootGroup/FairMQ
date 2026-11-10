@@ -24,7 +24,7 @@ The CI of FairMQ builds and tests FairMQ on Linux (Ubuntu 24.04) with GCC 12, 13
 | [PicoSHA2](https://github.com/okdshin/PicoSHA2) | — | The build always uses a bundled copy. |
 | [GoogleTest](https://github.com/google/googletest) | — | Only for the tests. The build uses a bundled copy by default. |
 | git | — | CMake reads the version of FairMQ from git and gets the bundled copies with git. |
-| LLVM, Clang, [CLI11](https://github.com/CLIUtils/CLI11) | — | Only for the tool `fairmq-tidy`. |
+| LLVM, Clang | 17 (tested: 17 to 20) | Only for the tool `fairmq-tidy`. It needs the clang-tidy libraries too. |
 
 The bundled copies are git submodules in the folder `extern/` of the repository. When CMake needs a bundled copy and its folder is empty, CMake runs `git submodule update --init` for it.
 
@@ -127,7 +127,7 @@ If a dependency is not in a system directory, give its installation prefix to CM
 | `CMAKE_INSTALL_PREFIX` | `/usr/local` | Sets the installation directory. Set it when you configure, because the installed start scripts of the examples contain this path. |
 | `BUILD_TESTING` | `OFF` | Builds the tests. |
 | `BUILD_EXAMPLES` | `ON` | Builds the examples. `cmake --install` also installs them and their start scripts. |
-| `BUILD_TIDY_TOOL` | `OFF` | Builds the experimental tool [`fairmq-tidy`](/tools/fairmq-tidy/). It needs LLVM, Clang and CLI11. |
+| `BUILD_TIDY_TOOL` | `OFF` | Builds the experimental tool [`fairmq-tidy`](/tools/fairmq-tidy/). It needs LLVM and Clang. |
 | `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` | not set | Sets the default of the channel property `autoBind`. If the option is not set, the default is `true`. |
 | `FAIRMQ_DEBUG_MODE` | `OFF` | The transport `shmem` records its messages, so that `fairmq-shmmonitor --debug` can list them. This can decrease the performance. |
 | `USE_EXTERNAL_GTEST` | `OFF` | Uses an installed GoogleTest instead of the bundled copy. |

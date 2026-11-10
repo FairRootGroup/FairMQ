@@ -35,9 +35,9 @@ class MyDevice : public fair::mq::Device
 
 <Steps>
 
-1. Replace the old `#include` lines. Use the table [Headers](#headers).
+1. Replace the old `#include` lines. Use the table [Headers](#headers). [fairmq-tidy](/guides/fairmq-tidy/) can do this step for you.
 
-2. Replace the old type names. Use the table [Type names](#type-names). [fairmq-tidy](/guides/fairmq-tidy/) finds most of them for you.
+2. Replace the old type names. Use the table [Type names](#type-names). [fairmq-tidy](/guides/fairmq-tidy/) can do this step for you.
 
 3. If your `main()` comes from `runFairMQDevice.h`, move to `runDevice.h`. See [Replace runFairMQDevice.h](#replace-runfairmqdeviceh).
 
@@ -103,17 +103,17 @@ Each old header includes the new header, so the old `#include` lines still work.
 
 ## Type names
 
-The table is in the order of the headers that declare the deprecated alias. The column fairmq-tidy shows if [the check](/tools/fairmq-tidy/#names-that-the-check-finds) finds the name (with Clang 18).
+The table is in the order of the headers that declare the deprecated alias. The column fairmq-tidy shows if [the check `fairmq-modernize-nonnamespaced-types`](/tools/fairmq-tidy/#fairmq-modernize-nonnamespaced-types) finds and fixes the name.
 
 | Old name | New name | Declared in | fairmq-tidy |
 | --- | --- | --- | --- |
 | `FairMQChannel` | [`fair::mq::Channel`](/api/fair/mq/Channel/) | `Channel.h` | yes |
 | `FairMQChannelMap` | [`fair::mq::ChannelMap`](/api/fair/mq/#ChannelMap) | `Device.h` | yes |
-| `InputMsgCallback` | [`fair::mq::InputMsgCallback`](/api/fair/mq/#InputMsgCallback) | `Device.h` | no |
-| `InputMultipartCallback` | [`fair::mq::InputMultipartCallback`](/api/fair/mq/#InputMultipartCallback) | `Device.h` | no |
+| `InputMsgCallback` | [`fair::mq::InputMsgCallback`](/api/fair/mq/#InputMsgCallback) | `Device.h` | yes |
+| `InputMultipartCallback` | [`fair::mq::InputMultipartCallback`](/api/fair/mq/#InputMultipartCallback) | `Device.h` | yes |
 | `FairMQDevice` | [`fair::mq::Device`](/api/fair/mq/Device/) | `Device.h` | yes |
 | `fair::mq::FairMQMemoryResource` | [`fair::mq::MemoryResource`](/api/fair/mq/MemoryResource/) | `MemoryResources.h` | no |
-| `fairmq_free_fn` | [`fair::mq::FreeFn`](/api/fair/mq/#FreeFn) | `Message.h` | no |
+| `fairmq_free_fn` | [`fair::mq::FreeFn`](/api/fair/mq/#FreeFn) | `Message.h` | yes |
 | `FairMQMessage` | [`fair::mq::Message`](/api/fair/mq/Message/) | `Message.h` | yes |
 | `FairMQMessagePtr` | [`fair::mq::MessagePtr`](/api/fair/mq/#MessagePtr) | `Message.h` | yes |
 | `FairMQParts` | [`fair::mq::Parts`](/api/fair/mq/Parts/) | `Parts.h` | yes |
@@ -133,7 +133,7 @@ The table is in the order of the headers that declare the deprecated alias. The 
 | `FairMQUnmanagedRegion` | [`fair::mq::UnmanagedRegion`](/api/fair/mq/UnmanagedRegion/) | `UnmanagedRegion.h` | yes |
 | `FairMQUnmanagedRegionPtr` | [`fair::mq::UnmanagedRegionPtr`](/api/fair/mq/#UnmanagedRegionPtr) | `UnmanagedRegion.h` | yes |
 | `FairMQRegionConfig` | [`fair::mq::RegionConfig`](/api/fair/mq/RegionConfig/) | `UnmanagedRegion.h` | yes |
-| `FairMQDevicePtr` | `std::unique_ptr<fair::mq::Device>` as the return type of `getDevice()` | `runFairMQDevice.h` | yes, as `fair::mq::Device *` |
+| `FairMQDevicePtr` | `std::unique_ptr<fair::mq::Device>` as the return type of `getDevice()` | `runFairMQDevice.h` | no |
 
 All old names are global, except `fair::mq::FairMQMemoryResource`. All names in the table except `FairMQDevicePtr` have the attribute `[[deprecated]]`.
 
@@ -183,13 +183,13 @@ The compiler warns for these members too. The column "Declared in" names the hea
 
 The CMake package is `FairMQ`. Link your targets with `FairMQ::FairMQ`. The executables of FairMQ are imported targets with the same prefix, for example `FairMQ::fairmq-bsampler`. See [Use FairMQ in a CMake project](/start/cmake/).
 
-## Automate the search with fairmq-tidy
+## Automate the move with fairmq-tidy
 
-`fairmq-tidy` finds the uses of most old type names and shows the new name for each one. It does not look at the `#include` lines and the members, and it does not change your files. See [Check code with fairmq-tidy](/guides/fairmq-tidy/).
+`fairmq-tidy` finds the old headers, most old type names and `Device::fChannels`. With `--fix`, it replaces them in your files. See [Check code with fairmq-tidy](/guides/fairmq-tidy/) and the [list of checks](/tools/fairmq-tidy/#checks).
 
 ## Related pages
 
-- [Check code with fairmq-tidy](/guides/fairmq-tidy/): find the old type names in a project.
-- [fairmq-tidy](/tools/fairmq-tidy/): the check, the command line and the CMake function.
+- [Check code with fairmq-tidy](/guides/fairmq-tidy/): find and fix the old names in a project.
+- [fairmq-tidy](/tools/fairmq-tidy/): the checks, the command line and the CMake function.
 - [Your first device](/start/first-device/): a device with the current API.
 - [Use FairMQ in a CMake project](/start/cmake/): the package and its targets.

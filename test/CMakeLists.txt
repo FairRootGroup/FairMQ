@@ -329,3 +329,7 @@ add_testsuite(MemoryResources
     ${definitions}
     ${environment}
 )
+
+if(BUILD_TIDY_TOOL)
+  add_subdirectory(tidy)
+endif()

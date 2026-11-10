@@ -55,12 +55,12 @@ The error also occurs when the value `ON` is in the cache from an earlier config
 | Package | Version | Needed when | Kind |
 | --- | --- | --- | --- |
 | Threads | any | `BUILD_FAIRMQ` | public |
-| FairLogger | 1.6.0 or later | `BUILD_FAIRMQ` or `BUILD_TIDY_TOOL` | public |
-| Boost | 1.66 or later, but not 1.88 | `BUILD_FAIRMQ` or `BUILD_TIDY_TOOL` | public |
+| FairLogger | 1.6.0 or later | `BUILD_FAIRMQ` | public |
+| Boost | 1.66 or later, but not 1.88 | `BUILD_FAIRMQ` | public |
 | ZeroMQ | 4.1.4 or later | `BUILD_FAIRMQ` | private |
 | PicoSHA2 | bundled | `BUILD_FAIRMQ` | bundled |
 | GoogleTest | bundled | `BUILD_TESTING` | bundled, or private with `USE_EXTERNAL_GTEST` |
-| LLVM, Clang, CLI11 | any | `BUILD_TIDY_TOOL` | private |
+| LLVM, Clang with the clang-tidy libraries | 17 to 20 (tested) | `BUILD_TIDY_TOOL` | private |
 | FairCMakeModules | 0.2 or later | always | private, bundled if CMake does not find it |
 
 The Boost components are `container`, `program_options`, `filesystem`, `date_time` and `regex`.
@@ -148,7 +148,7 @@ FairMQ joins the selected sanitizers in one flag, for example `-fsanitize=addres
 
 With `RUN_STATIC_ANALYSIS`, CMake also searches `include-what-you-use` (shown as `iwyu` in the summary) and sets `CMAKE_CXX_INCLUDE_WHAT_YOU_USE` when it finds the program.
 
-[`cmake/FairMQTidy.cmake`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQTidy.cmake) defines `fairmq_target_tidy(TARGET <target> [EXTRA_ARGS <args>] [CLANG_EXECUTABLE <clang>])`. It runs `fairmq-tidy` on the `.cpp` and `.cxx` files of a target. The installed package has this module when it has the component `tidy_tool`. See [Check code with fairmq-tidy](/guides/fairmq-tidy/).
+[`cmake/FairMQTidy.cmake`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/FairMQTidy.cmake) defines `fairmq_target_tidy(TARGET <target> [CHECKS <globs>] [EXTRA_ARGS <args>...])`. It runs `fairmq-tidy` on the `.cpp` and `.cxx` files of a target. The installed package has this module when it has the component `tidy_tool`. See [Check code with fairmq-tidy](/guides/fairmq-tidy/).
 
 ## Other variables
 
