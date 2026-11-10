@@ -10,7 +10,7 @@ if [[ $1 =~ ^[a-z]+$ ]]; then
     transport=$1
 fi
 
-session="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+session="$(@PROJECT_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
 chan1="data1"
 chan2="data2"
 chan1Addr="/tmp/fmq_$session""_""$chan1""_""$transport"

@@ -1,0 +1,181 @@
+---
+title: '1-n-1: sampler, processors and sink'
+description: 'A sampler sends messages to several processors, and the processors send the results to one sink. A JSON file configures the channels.'
+sidebar:
+  order: 2
+code: [fairmq/Device.h, fairmq/JSONParser.cxx, fairmq/plugins/config/Config.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps, FileTree } from '@astrojs/starlight/components';
+
+The 1-n-1 example puts processors between a sampler and a sink. The sampler distributes its messages over
+the processors, each processor changes the text, and the sink collects the results. A JSON file configures
+the channels of all devices, and the two processors share one entry of this file.
+
+The files of the example are in
+[`examples/1-n-1`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/1-n-1) on GitHub.
+
+## Topology
+
+The topology comes from the file `ex-1-n-1.json`:
+
+| Device | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- |
+| `sampler1` | `data1` | `push` | `bind` | `tcp://*:5555` |
+| `processor1`, `processor2` | `data1` | `pull` | `connect` | `tcp://localhost:5555` |
+| `processor1`, `processor2` | `data2` | `push` | `connect` | `tcp://localhost:5556` |
+| `sink1` | `data2` | `pull` | `bind` | `tcp://*:5556` |
+
+All sockets have `sndBufSize` 1000, `rcvBufSize` 1000 and `rateLogging` 0. The sampler and the sink bind,
+and the processors connect. Thus all processors have the same configuration, and you can add processors
+at any time. The `push` socket of the sampler sends each message to one connected processor, in turn
+(round-robin). The `pull` socket of the sink receives from all processors.
+
+## The JSON file
+
+The file has one entry for each device in `fairMQOptions.devices`. This is the entry of the processors:
+
+<Snippet file="examples/1-n-1/ex-1-n-1.json" start='"key": "processor"' end="^                ]$" />
+
+A device uses the entry whose `id` is equal to its `--id`. With `--config-key processor`, the device uses
+the entry with `"key": "processor"` instead ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L29-L33),
+[JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L90)). Thus `processor1` and `processor2` have different
+IDs, but the same channels. The [JSON configuration](/reference/json/) page describes the format.
+
+## Build the example
+
+The examples build together with FairMQ when the CMake option `BUILD_EXAMPLES` is `ON` (the default). The
+build copies the JSON file to the build directory of the example:
+
+<FileTree>
+
+- build/examples/1-n-1/
+  - fairmq-ex-1-n-1-sampler
+  - fairmq-ex-1-n-1-processor
+  - fairmq-ex-1-n-1-sink
+  - ex-1-n-1.json
+  - fairmq-start-ex-1-n-1.sh
+  - test-ex-1-n-1.sh
+
+</FileTree>
+
+The install step copies the JSON file to `<prefix>/share/fairmq/`. The installed start script uses this
+copy.
+
+## Run the example
+
+<Steps>
+
+1. Go to the directory of the example in the build tree:
+
+   ```sh
+   cd build/examples/1-n-1
+   ```
+
+2. Run the start script. It opens four `xterm` windows, one for each device:
+
+   ```sh
+   ./fairmq-start-ex-1-n-1.sh
+   ```
+
+</Steps>
+
+To run the example without `xterm`, run each command in its own terminal in `build/examples/1-n-1`:
+
+```sh
+./fairmq-ex-1-n-1-sampler --id sampler1 --mq-config ex-1-n-1.json
+./fairmq-ex-1-n-1-processor --id processor1 --mq-config ex-1-n-1.json --config-key processor
+./fairmq-ex-1-n-1-processor --id processor2 --mq-config ex-1-n-1.json --config-key processor
+./fairmq-ex-1-n-1-sink --id sink1 --mq-config ex-1-n-1.json
+```
+
+Push `q` in a terminal to stop the device in it.
+
+## The code
+
+<Snippet file="examples/1-n-1/sampler.cxx" start="bool ConditionalRun()" />
+
+[`NewStaticMessage()`](/api/fair/mq/Device/#NewStaticMessage) creates a message for the data of `fText`
+and does not delete the data after the transfer. The `zeromq` transport does not copy the data, so the data
+must stay valid until the transfer is complete. `fText` is a member of the device, so it stays valid. The
+`shmem` transport copies the data into shared memory when it creates the message
+([shmem/Message.h](/source/fairmq/shmem/Message.h/#L64-L78)). After each message, the sampler waits 1 s.
+
+<Snippet file="examples/1-n-1/processor.cxx" start="Processor()" />
+
+<Snippet file="examples/1-n-1/processor.cxx" start="bool HandleData" />
+
+The processor registers `HandleData()` for the channel `data1` with
+[`OnData()`](/api/fair/mq/Device/#OnData). For each message, it copies the text into a new string and adds
+its device ID [`fId`](/api/fair/mq/Device/#fId). Then it sends the new message on `data2`. The processor has
+no custom options, so it runs until you stop it.
+
+The sink is the sink of the [1-1 example](/examples/1-1/#the-sink), with the channel `data2`.
+
+## Output
+
+The listings show the severity and the message of each line, without the time.
+
+The sampler logs `Sending "Hello"` once per second. Each processor logs one line for each message that it
+gets:
+
+```txt
+[INFO] Received data, processing...
+```
+
+The sink gets the messages of both processors:
+
+```txt
+[INFO] Received: "Hello (modified by processor1)"
+[INFO] Received: "Hello (modified by processor2)"
+[INFO] Received: "Hello (modified by processor1)"
+```
+
+## Test the example
+
+The test script `test-ex-1-n-1.sh` configures the channels with `--channel-config` instead of the JSON file.
+It uses `ipc://` addresses in `/tmp`, a new session, and `--control static`. The sampler and the sink stop
+after two messages (`--max-iterations 2`). The processors have no such option, so the script stops them
+with `SIGINT` after the sampler and the sink end.
+
+CTest runs the script once for each transport: `Example.1-n-1.zeromq` and `Example.1-n-1.shmem`. The tests
+exist if you configure with `-DBUILD_TESTING=ON`.
+
+```sh
+cd build
+ctest -R '^Example\.1-n-1\.' --output-on-failure
+```
+
+## Things to try
+
+- Add a processor while the other devices run. The sampler then distributes the messages over three
+  processors:
+
+  ```sh
+  ./fairmq-ex-1-n-1-processor --id processor3 --mq-config ex-1-n-1.json --config-key processor
+  ```
+
+- Configure a processor without the JSON file, as the test script does. One `--channel-config` option takes
+  one value for each channel:
+
+  ```sh
+  ./fairmq-ex-1-n-1-processor --id processor3 \
+    --channel-config "name=data1,type=pull,method=connect,address=tcp://localhost:5555,rateLogging=0" \
+                     "name=data2,type=push,method=connect,address=tcp://localhost:5556,rateLogging=0"
+  ```
+
+  If you give `--mq-config` and `--channel-config` together, the device uses only `--mq-config`
+  ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L37-L45)).
+
+- Send another text: start the sampler with `--text "Hi"`.
+- Use shared memory: add `--transport shmem` to all four commands.
+- Stop after four messages: add `--max-iterations 4` to the commands of the sampler and the sink.
+
+## Related pages
+
+- [JSON configuration](/reference/json/): all keys of the JSON file.
+- [Configure channels](/guides/configure-channels/): `--channel-config`, `--mq-config` and code.
+- [Channels and sockets](/concepts/channels/): how `push` and `pull` distribute messages.
+- [1-1: sampler and sink](/examples/1-1/): the code of the sampler and the sink in detail.
+- [Design a topology](/guides/design-topology/#fan-out-and-fan-in): fan-out and fan-in with `push` and `pull`.

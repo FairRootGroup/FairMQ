@@ -61,7 +61,8 @@ function(add_testsuite suitename)
         ${ARGN}
     )
 
-    list(INSERT testsuite_LINKS 0 GTest::Main GTest::GTest)
+    # runner.cxx defines main(), so do not link GTest::gtest_main
+    list(INSERT testsuite_LINKS 0 GTest::gtest)
     set(target "testsuite_${suitename}")
 
     add_executable(${target} ${testsuite_SOURCES})
@@ -73,32 +74,28 @@ function(add_testsuite suitename)
         add_dependencies(${target} ${testsuite_DEPENDS})
     endif()
     if(testsuite_INCLUDES)
-        target_include_directories(${target} PUBLIC ${testsuite_INCLUDES})
+        target_include_directories(${target} PRIVATE ${testsuite_INCLUDES})
     endif()
     if(testsuite_DEFINITIONS)
         target_compile_definitions("${target}" PUBLIC ${testsuite_DEFINITIONS})
     endif()
-    if(testsuite_ENVIRONMENT AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.22)
+    if(testsuite_ENVIRONMENT)
         set(env "ENVIRONMENT_MODIFICATION" ${testsuite_ENVIRONMENT})
     endif()
     if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
       fairmq_target_tidy(TARGET ${target})
     endif()
 
-    # add_test(NAME "${suitename}" WORKING_DIRECTORY ${CMAKE_BINARY_DIR} COMMAND ${target})
-    if(testsuite_TIMEOUT)
-        # set_tests_properties("${suitename}" PROPERTIES TIMEOUT ${testsuite_TIMEOUT})
-    else()
+    if(NOT testsuite_TIMEOUT)
         set(testsuite_TIMEOUT 10)
     endif()
-    if(testsuite_RUN_SERIAL)
-        # set_tests_properties("${suitename}" PROPERTIES RUN_SERIAL ${testsuite_RUN_SERIAL})
-    else()
+    if(NOT testsuite_RUN_SERIAL)
         set(testsuite_RUN_SERIAL OFF)
     endif()
     gtest_discover_tests(${target}
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+      WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
       TEST_PREFIX ${suitename}.
+      NO_PRETTY_VALUES
       PROPERTIES RUN_SERIAL ${testsuite_RUN_SERIAL}
                  TIMEOUT ${testsuite_TIMEOUT}
                  ${env}
@@ -126,7 +123,7 @@ function(add_testhelper helpername)
         add_dependencies(${target} ${testhelper_DEPENDS})
     endif()
     if(testhelper_INCLUDES)
-        target_include_directories(${target} PUBLIC ${testhelper_INCLUDES})
+        target_include_directories(${target} PRIVATE ${testhelper_INCLUDES})
     endif()
     if(testhelper_DEFINITIONS)
         target_compile_definitions(${target} PUBLIC ${testhelper_DEFINITIONS})
@@ -157,7 +154,7 @@ function(add_testlib libname)
         add_dependencies(${target} ${testlib_DEPENDS})
     endif()
     if(testlib_INCLUDES)
-        target_include_directories(${target} PUBLIC ${testlib_INCLUDES})
+        target_include_directories(${target} PRIVATE ${testlib_INCLUDES})
     endif()
     if(testlib_HIDDEN)
         set_target_properties(${target} PROPERTIES CXX_VISIBILITY_PRESET hidden)

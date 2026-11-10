@@ -9,150 +9,44 @@
 #ifndef FAIR_MQ_TEST_TRANSFERTIMEOUT_H
 #define FAIR_MQ_TEST_TRANSFERTIMEOUT_H
 
-#include <fairmq/Device.h>
+#include "TestDevice.h"
 
-#include <fairlogger/Logger.h>
+#include <string>
 
 namespace fair::mq::test
 {
 
-using namespace fair::mq;
-
-class TransferTimeout : public Device
+/// Sends and receives on channels without a peer. Each transfer must end
+/// with TransferCode::timeout, for a timeout of 200 ms and of 0 ms.
+class TransferTimeout : public TestDevice
 {
   protected:
     auto Run() -> void override
     {
-        bool sendMsgCancelingAfter200ms = false;
-        bool receiveMsgCancelingAfter200ms = false;
+        auto const timeout = static_cast<int64_t>(TransferCode::timeout);
 
-        bool sendMsgCancelingAfter0ms = false;
-        bool receiveMsgCancelingAfter0ms = false;
+        for (int ms : {200, 0}) {
+            auto const suffix = " (" + std::to_string(ms) + " ms)";
 
-        bool send1PartCancelingAfter200ms = false;
-        bool receive1PartCancelingAfter200ms = false;
+            auto msgOut(NewMessage());
+            auto msgIn(NewMessage());
+            Check(Send(msgOut, "data-out", 0, ms) == timeout, "send msg times out" + suffix);
+            Check(Receive(msgIn, "data-in", 0, ms) == timeout, "receive msg times out" + suffix);
 
-        bool send1PartCancelingAfter0ms = false;
-        bool receive1PartCancelingAfter0ms = false;
-
-        bool send2PartsCancelingAfter200ms = false;
-        bool receive2PartsCancelingAfter200ms = false;
-
-        bool send2PartsCancelingAfter0ms = false;
-        bool receive2PartsCancelingAfter0ms = false;
-
-        MessagePtr msg1(NewMessage());
-        MessagePtr msg2(NewMessage());
-
-        if (Send(msg1, "data-out", 0, 200) == static_cast<int>(TransferCode::timeout)) {
-            LOG(info) << "send msg canceled (200ms)";
-            sendMsgCancelingAfter200ms = true;
-        } else {
-            LOG(error) << "send msg did not cancel (200ms)";
+            for (int numParts : {1, 2}) {
+                auto const what = std::to_string(numParts) + " part(s) times out" + suffix;
+                Parts partsOut;
+                for (int i = 0; i < numParts; ++i) {
+                    partsOut.AddPart(NewMessage(10));
+                }
+                Parts partsIn;
+                Check(Send(partsOut, "data-out", 0, ms) == timeout, "send " + what);
+                Check(Receive(partsIn, "data-in", 0, ms) == timeout, "receive " + what);
+            }
         }
 
-        if (Receive(msg2, "data-in", 0, 200) == static_cast<int>(TransferCode::timeout)) {
-            LOG(info) << "receive msg canceled (200ms)";
-            receiveMsgCancelingAfter200ms = true;
-        } else {
-            LOG(error) << "receive msg did not cancel (200ms)";
-        }
-
-        if (Send(msg1, "data-out", 0, 0) == static_cast<int>(TransferCode::timeout)) {
-            LOG(info) << "send msg canceled (0ms)";
-            sendMsgCancelingAfter0ms = true;
-        } else {
-            LOG(error) << "send msg did not cancel (0ms)";
-        }
-
-        if (Receive(msg2, "data-in", 0, 0) == static_cast<int>(TransferCode::timeout)) {
-            LOG(info) << "receive msg canceled (0ms)";
-            receiveMsgCancelingAfter0ms = true;
-        } else {
-            LOG(error) << "receive msg did not cancel (0ms)";
-        }
-
-        Parts parts1;
-        parts1.AddPart(NewMessage(10));
-        Parts parts2;
-
-        if (Send(parts1, "data-out", 0, 200) == static_cast<int>(TransferCode::timeout)) {
-            LOG(info) << "send 1 part canceled (200ms)";
-            send1PartCancelingAfter200ms = true;
-        } else {
-            LOG(error) << "send 1 part did not cancel (200ms)";
-        }
-
-        if (Receive(parts2, "data-in", 0, 200) == static_cast<int>(TransferCode::timeout)) {
-            LOG(info) << "receive 1 part canceled (200ms)";
-            receive1PartCancelingAfter200ms = true;
-        } else {
-            LOG(error) << "receive 1 part did not cancel (200ms)";
-        }
-
-        if (Send(parts1, "data-out", 0, 0) == static_cast<int>(TransferCode::timeout)) {
-            LOG(info) << "send 1 part canceled (0ms)";
-            send1PartCancelingAfter0ms = true;
-        } else {
-            LOG(error) << "send 1 part did not cancel (0ms)";
-        }
-
-        if (Receive(parts2, "data-in", 0, 0) == static_cast<int>(TransferCode::timeout)) {
-            LOG(info) << "receive 1 part canceled (0ms)";
-            receive1PartCancelingAfter0ms = true;
-        } else {
-            LOG(error) << "receive 1 part did not cancel (0ms)";
-        }
-
-        Parts parts3;
-        parts3.AddPart(NewMessage(10));
-        parts3.AddPart(NewMessage(10));
-        Parts parts4;
-
-        if (Send(parts3, "data-out", 0, 200) == static_cast<int>(TransferCode::timeout)) {
-            LOG(info) << "send 2 parts canceled (200ms)";
-            send2PartsCancelingAfter200ms = true;
-        } else {
-            LOG(error) << "send 2 parts did not cancel (200ms)";
-        }
-
-        if (Receive(parts4, "data-in", 0, 200) == static_cast<int>(TransferCode::timeout)) {
-            LOG(info) << "receive 2 parts canceled (200ms)";
-            receive2PartsCancelingAfter200ms = true;
-        } else {
-            LOG(error) << "receive 2 parts did not cancel (200ms)";
-        }
-
-        if (Send(parts3, "data-out", 0, 0) == static_cast<int>(TransferCode::timeout)) {
-            LOG(info) << "send 2 parts canceled (0ms)";
-            send2PartsCancelingAfter0ms = true;
-        } else {
-            LOG(error) << "send 2 parts did not cancel (0ms)";
-        }
-
-        if (Receive(parts4, "data-in", 0, 0) == static_cast<int>(TransferCode::timeout)) {
-            LOG(info) << "receive 2 parts canceled (0ms)";
-            receive2PartsCancelingAfter0ms = true;
-        } else {
-            LOG(error) << "receive 2 parts did not cancel (0ms)";
-        }
-
-        if (sendMsgCancelingAfter200ms &&
-            receiveMsgCancelingAfter200ms &&
-            sendMsgCancelingAfter0ms &&
-            receiveMsgCancelingAfter0ms &&
-            send1PartCancelingAfter200ms &&
-            receive1PartCancelingAfter200ms &&
-            send1PartCancelingAfter0ms &&
-            receive1PartCancelingAfter0ms &&
-            send2PartsCancelingAfter200ms &&
-            receive2PartsCancelingAfter200ms &&
-            send2PartsCancelingAfter0ms &&
-            receive2PartsCancelingAfter0ms)
-        {
-            LOG(info) << "Transfer timeout test successfull";
-        }
-    };
+        Succeed();
+    }
 };
 
 } // namespace fair::mq::test

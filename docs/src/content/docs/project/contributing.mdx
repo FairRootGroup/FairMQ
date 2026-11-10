@@ -1,0 +1,403 @@
+---
+title: 'Contributing'
+description: 'Get the code, build and test FairMQ, follow the code style and the commit rules, send a pull request, and work on this documentation.'
+sidebar:
+  order: 1
+---
+
+import { Steps, FileTree } from '@astrojs/starlight/components';
+import Snippet from '../../../components/Snippet.astro';
+
+FairMQ is developed on GitHub. This page tells you how to get the code, how to build and test it, and which rules your changes must follow. It also tells you how to report a problem and how to work on this documentation.
+
+## Repository and branches
+
+The repository is [FairRootGroup/FairMQ](https://github.com/FairRootGroup/FairMQ) on GitHub.
+
+| Branch or tag | Content |
+| --- | --- |
+| `dev` | The development branch. Send your pull requests to `dev`. |
+| `master` | The latest release. It is the default branch on GitHub. |
+| `v1.11.0`, `v1.10.1`, … | The releases. The release tags are on commits of `dev`. |
+
+The [release notes](/project/release-notes/) list the changes of each release and the changes on `dev` that are not released yet.
+
+## Get the code
+
+```sh
+git clone -b dev https://github.com/FairRootGroup/FairMQ fairmq_source
+```
+
+Do not make a shallow clone. The build reads the version of FairMQ from the Git tags (see [Version](/reference/cmake/#version)).
+
+The bundled packages GoogleTest, PicoSHA2 and FairCMakeModules are Git submodules in `extern/`. The configure step gets the submodules that it needs with `git submodule update --init`.
+
+## Build and test
+
+<Steps>
+
+1. Install the dependencies. See [Install](/start/install/). To install them with Spack, use the file `spack.yaml` of the repository:
+
+   ```sh
+   spack --env fairmq_source install
+   spack env activate fairmq_source
+   ```
+
+2. Configure a debug build with the tests:
+
+   ```sh
+   cmake -S fairmq_source -B fairmq_build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+   ```
+
+3. Build:
+
+   ```sh
+   cmake --build fairmq_build
+   ```
+
+4. Run all tests:
+
+   ```sh
+   ctest --test-dir fairmq_build --output-on-failure --parallel "$(nproc)"
+   ```
+
+</Steps>
+
+The debug build compiles with `-Wshadow -Wall -Wextra -Wpedantic`. Your change must compile without warnings, because the CI job `static-analysis` fails on each warning.
+
+### Select tests
+
+The test suites are GoogleTest programs in `test/`: `Channel`, `Device`, `EventManager`, `MemoryResources`, `Message`, `Parts`, `Plugins`, `PluginServices`, `PluginsPrelinked`, `Poller`, `Properties`, `Protocols`, `Region`, `StateMachine`, `Tools` and `Transport`. CTest gives each test the name `<suite>.<test>`, for example `Channel.ConnectedPeers.Pair/zeromq`. Many tests run once for each transport and have the transport in the name. The suite `Tools` tests the [helpers in fair::mq::tools](/reference/tools/). To test your own devices in your project, see [Test your devices](/guides/test-devices/).
+
+The examples add tests with names like `Example.1-1.zeromq` and `Example.builtin-devices.multipart.shmem`.
+
+The tests have no CTest labels. Select tests with a regular expression on the name:
+
+```sh
+ctest --test-dir fairmq_build -R '^Channel\.'
+ctest --test-dir fairmq_build -R 'shmem'
+ctest --test-dir fairmq_build -R '^Example\.'
+```
+
+The first command runs the suite `Channel`. The second command runs all tests with `shmem` in the name. The third command runs the tests of the examples.
+
+Each suite is a program `test/testsuite_<suite>` in the build directory. CTest runs it in the build directory. To run some tests of a suite without CTest, give a GoogleTest filter:
+
+```sh
+cd fairmq_build
+test/testsuite_Channel --gtest_filter='ConnectedPeers.*'
+```
+
+CTest stops a test after its timeout: 20 s for most suites, 5 s for `Tools`, and 30 s for the tests of the examples.
+
+:::caution[Locked memory]
+Some shared memory tests lock memory in RAM. For example, `Region.PreallocateInsideSession.shmem` locks two segments and two regions, 60 MB in total. If the limit for locked memory is lower, the test fails with `Could not lock the managed segment memory`. Show the limit with `ulimit -l`. The CI sets the limit to `unlimited` before it runs the tests.
+:::
+
+### Sanitizers and static analysis
+
+The CI also builds FairMQ with sanitizers and with static analysis. Use the same settings to find problems before you send a change:
+
+- Address, leak and undefined behavior sanitizers, as the CI job `asan+lsan+ubsan`:
+
+  ```sh
+  cmake -S fairmq_source -B build_asan -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON \
+    -DENABLE_SANITIZER_ADDRESS=ON -DENABLE_SANITIZER_LEAK=ON \
+    -DENABLE_SANITIZER_UNDEFINED_BEHAVIOR=ON -DFAIRMQ_DEBUG_MODE=ON \
+    -DCMAKE_CXX_FLAGS="-O1 -fno-omit-frame-pointer"
+  ```
+
+- Static analysis, as the CI job `static-analysis`. The build runs `clang-tidy` and `cpplint` on each file that it compiles, if CMake finds these programs.
+
+  ```sh
+  cmake -S fairmq_source -B build_tidy -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON \
+    -DRUN_STATIC_ANALYSIS=ON
+  ```
+
+[CMake options and variables](/reference/cmake/) describes all sanitizer options and the static analysis options.
+
+## Add a test
+
+The tests are GoogleTest programs. `test/CMakeLists.txt` makes one program for each suite with the function `add_testsuite()` of [`cmake/GTestHelper.cmake`](https://github.com/FairRootGroup/FairMQ/blob/dev/cmake/GTestHelper.cmake).
+
+<Steps>
+
+1. Write the tests in a source file in the folder of the suite, for example `test/poller/_poller.cxx`. Start the file with the license header.
+
+2. Add the file to the `SOURCES` of the suite in `test/CMakeLists.txt`. For a new suite, make a new folder and add a call of `add_testsuite()`.
+
+3. Configure with `-DBUILD_TESTING=ON`, and build. After the build, CMake runs the suite program and registers each of its tests in CTest (`gtest_discover_tests()`).
+
+4. Run the new tests with `ctest -R`. See [Run the new test](#run-the-new-test).
+
+</Steps>
+
+This is the suite `Poller` in `test/CMakeLists.txt`:
+
+<Snippet file="test/CMakeLists.txt" start="add_testsuite(Poller" end="^\)" />
+
+`${definitions}` and `${environment}` add the compile definitions and the test environment that `test/CMakeLists.txt` sets at the top of the file.
+
+### The arguments of add_testsuite()
+
+| Argument | What it does |
+| --- | --- |
+| `<name>` | The name of the suite. The program is `test/testsuite_<name>` in the build directory. CTest puts `<name>.` in front of each test name. |
+| `SOURCES <file>…` | The source files. Add `${CMAKE_CURRENT_BINARY_DIR}/runner.cxx`. It contains the `main()` of the suite. |
+| `LINKS <lib>…` | The libraries. The function adds `GTest::gtest`. The suites link `FairMQ`, the library target of the build. |
+| `DEPENDS <target>…` | Targets that CMake must build before the suite, for example `testhelper_runTestDevice`. |
+| `INCLUDES <dir>…` | The include directories. The suites need `${CMAKE_CURRENT_SOURCE_DIR}` for `runner.h` and the headers in `test/helper/`, and `${CMAKE_CURRENT_BINARY_DIR}` for the generated `TestEnvironment.h`. |
+| `DEFINITIONS <def>…` | Compile definitions. |
+| `ENVIRONMENT <var>=<op>:<value>…` | Changes to the environment of each test, in the format of the CTest property `ENVIRONMENT_MODIFICATION`. |
+| `TIMEOUT <seconds>` | The CTest timeout of each test. The default is 10 s. Most suites set 20 s. |
+| `RUN_SERIAL <ON/OFF>` | `ON`: CTest runs no other test at the same time as a test of this suite. The default is `OFF`. No suite sets it at the moment. |
+
+`add_testhelper(<name> …)` makes the program `testhelper_<name>`, which is not a test. It takes `SOURCES`, `LINKS`, `DEPENDS`, `INCLUDES` and `DEFINITIONS`. `add_testlib(<name> …)` makes a shared library. It takes the same arguments, and also `HIDDEN` (hidden symbol visibility) and `VERSION`. The suite `Plugins` uses two of these libraries as plugins.
+
+### Run a test for each transport
+
+The header `test/helper/TransportParam.h` makes a GoogleTest test run once for each transport. Write the test with `TEST_P()` for the fixture `TransportTest`. Then give the transports to `INSTANTIATE_TEST_SUITE_P()`:
+
+<Snippet file="test/poller/_poller.cxx" start="auto RunPoller" end="INSTANTIATE_TEST_SUITE_P" />
+
+| Values | Transports | Test name suffix |
+| --- | --- | --- |
+| `AllTransports()` | `zeromq`, `shmem`, and `shmem` with `--shm-metadata-msg-size 2048` | `/zeromq`, `/shmem`, `/shmem_expanded_metadata` |
+| `BasicTransports()` | `zeromq` and `shmem` | `/zeromq`, `/shmem` |
+| `ShmTransports()` | `shmem`, and `shmem` with `--shm-metadata-msg-size 2048` | `/shmem`, `/shmem_expanded_metadata` |
+| `testing::Values(TransportParam("zeromq"))` | `zeromq` only | `/zeromq` |
+
+`TransportParamName()` gives the suffix. `GetParam().transport` is the name of the transport. `GetParam().DeviceArgs()` gives the extra command-line options of a device process for this parameter. For example, the suite `Poller` has the tests `Poller.Poller.Subchannel/zeromq` and `Poller.Poller.Channel/shmem_expanded_metadata`.
+
+### Tests with device processes
+
+`RunDevices()` of `test/helper/Devices.h` starts one process of `testhelper_runTestDevice` for each `DeviceSpec`. All processes get the same new session and the transport of `RunOptions`. The default control mode is `static`. The function waits for all processes. It kills a process that runs longer than `RunOptions::timeout`, by default 15 s.
+
+The prefix of the device ID selects the device class, in `getDevice()` of `test/helper/runTestDevice.cxx`. For example, `push_zeromq` starts the class `Push`. A test device derives from `TestDevice` (`test/helper/devices/TestDevice.h`). At the end of its test, it calls `Succeed()`, which logs `test device succeeded, transport: ` and the transport name. `Succeeded()` checks the exit code 0 and this log line.
+
+To add a test device:
+
+<Steps>
+
+1. Write a header `test/helper/devices/Test<Name>.h` with a class that derives from `TestDevice`.
+
+2. Include the header in `test/helper/runTestDevice.cxx`. In `getDevice()`, return your class for a new ID prefix.
+
+3. Add the header to the `SOURCES` of `add_testhelper(runTestDevice …)` in `test/CMakeLists.txt`.
+
+4. Give your suite the argument `DEPENDS testhelper_runTestDevice`.
+
+</Steps>
+
+### Run the new test
+
+Build, and run the suite with CTest:
+
+```sh
+cmake --build fairmq_build
+ctest --test-dir fairmq_build -R '^Poller\.' --output-on-failure
+```
+
+To see the test names without running the tests, add `-N`. To run the tests of one transport, select the suffix, for example `-R '^Poller\..*/shmem$'`. To run the program directly, see [Select tests](#select-tests).
+
+## Add an example
+
+Each example is a folder in `examples/`. Most examples use the function `add_example()` of [`examples/CMakeLists.txt`](https://github.com/FairRootGroup/FairMQ/blob/dev/examples/CMakeLists.txt). It builds the devices, writes the scripts, registers the tests, and installs the programs and the start scripts. The examples `custom-controller`, `dds`, `n-m` and `qc` have their own CMake code.
+
+Example 1-1 has these files:
+
+<FileTree>
+
+- examples/
+  - CMakeLists.txt calls add_subdirectory(1-1)
+  - 1-1/
+    - CMakeLists.txt
+    - sampler.cxx
+    - sink.cxx
+    - fairmq-start-ex-1-1.sh.in the start script
+    - test-ex-1-1.sh.in the test script
+    - README.md
+
+</FileTree>
+
+<Steps>
+
+1. Make a folder `examples/<name>/`.
+
+2. Write a file `<device>.cxx` for each device, with `fairmq/runDevice.h`. See `examples/1-1/sampler.cxx`. The test script needs devices that stop by themselves. The devices of example 1-1 have the option `--max-iterations` for this.
+
+3. Write `examples/<name>/CMakeLists.txt` with a call of `add_example()`. Example 1-1 has this call:
+
+   <Snippet file="examples/1-1/CMakeLists.txt" lines="9-9" />
+
+4. Write the start script `fairmq-start-ex-<name>.sh.in` and the test script `test-ex-<name>.sh.in`. See [The scripts](#the-scripts).
+
+5. Add `add_subdirectory(<name>)` to `examples/CMakeLists.txt`.
+
+6. Configure with `-DBUILD_TESTING=ON`. `BUILD_EXAMPLES` is `ON` by default. Build, and run the tests of the example:
+
+   ```sh
+   ctest --test-dir fairmq_build -R '^Example\.<name>\.' --output-on-failure
+   ```
+
+</Steps>
+
+### The arguments of add_example()
+
+| Argument | What it does |
+| --- | --- |
+| `NAME <name>` | Required. The name of the example. Without it, CMake stops with `NAME arg is required`. |
+| `DEVICE <device>…` | For each device, the program `fairmq-ex-<name>-<device>` from the file `<device>.cxx`, linked to `FairMQ`. |
+| `SCRIPT <script>…` | The start scripts `fairmq-start-ex-<script>.sh.in`. The default is one script with the name of the example. |
+| `CONFIG` | Copies `ex-<name>.json` to the build directory of the example, and installs it into `share/fairmq/`. The scripts get `@EX_CONF_DIR@`. |
+| `TRANSPORT <transport>…` | The transports of the tests. The default is `zeromq` and `shmem`. |
+| `VARIANT <variant>…` | One test for each variant and transport, `Example.<name>.<variant>.<transport>`. The test script gets the variant as its second argument. |
+| `NO_TRANSPORT` | One test, `Example.<name>`, without the transport argument. |
+| `NO_TEST` | No test script and no test. |
+
+Other arguments stop CMake with `Unexpected unparsed arguments`. Without `VARIANT` and `NO_TRANSPORT`, the tests are `Example.<name>.<transport>`, for example `Example.1-1.zeromq` and `Example.1-1.shmem`.
+
+### The scripts
+
+CMake writes two copies of each start script. CMake configures the copy in the build directory of the example, `fairmq-start-ex-<script>.sh`, at configure time. The install step configures the installed copy again, with the paths of the install prefix. This prefix is the one of `cmake --install --prefix`, or `CMAKE_INSTALL_PREFIX` when you give no prefix at the install step. CMake replaces these variables:
+
+| Variable | Build directory | Installation |
+| --- | --- | --- |
+| `@EX_BIN_DIR@` | The build directory of the example | `<prefix>/bin` |
+| `@FAIRMQ_BIN_DIR@` | `<build>/fairmq` | `<prefix>/bin` |
+| `@EX_CONF_DIR@` (with `CONFIG`) | The build directory of the example | `<prefix>/share/fairmq` |
+
+CTest runs `test-ex-<name>.sh <transport>`, or `test-ex-<name>.sh <transport> <variant>`, with a timeout of 30 s. The test passes if the script exits with 0. The install step does not install the test script. This is the test script of example 1-1:
+
+<Snippet file="examples/1-1/test-ex-1-1.sh.in" />
+
+The script starts both devices with `--control static`, `--max-iterations 1` and a new session from `fairmq-uuid-gen`. The `ipc` address contains the session and the transport, so that tests that run at the same time do not use the same address. With `set -e`, a device that fails also fails the test.
+
+:::caution[Variables in the test script]
+CMake writes the test script with `configure_file()` without `@ONLY`. Thus CMake replaces `${VAR}` in the script, and also `@VAR@`. Write the shell variables of the test script as `$var`, without braces.
+:::
+
+## Code style
+
+- **Format**: [`.clang-format`](https://github.com/FairRootGroup/FairMQ/blob/dev/.clang-format) in the repository root sets the format. It is based on the Mozilla style, with an indent of 4 spaces, no tabs and a column limit of 100. The pointer alignment follows the most frequent style in the file, with left alignment (`int* p`) as the fallback. The existing code does not follow this file everywhere. Format only the lines that you change, for example with `git clang-format`.
+- **Checks**: [`.clang-tidy`](https://github.com/FairRootGroup/FairMQ/blob/dev/.clang-tidy) enables a selected set of `misc`, `modernize`, `performance` and `readability` checks. With `RUN_STATIC_ANALYSIS=ON`, the build runs them if CMake finds `clang-tidy`. The CI job `static-analysis` uses this option.
+- **Language**: C++17. Put new code in the namespace `fair::mq`. Do not use the deprecated `FairMQ*` names in new code. See [Move from the FairMQ* names](/guides/migrate-names/).
+- **License header**: each source file starts with the license header of FairMQ. Copy the header from a file in the same directory. See [License and citation](/project/license/).
+
+The repository has no `.editorconfig` file.
+
+## Commit messages
+
+The commit titles use the Conventional Commits format `type(scope): summary`. The file [`.gitlint`](https://github.com/FairRootGroup/FairMQ/blob/dev/.gitlint) configures the tool gitlint with these rules:
+
+- The type is one of `fix`, `feat`, `build`, `ci`, `docs`, `style`, `refactor`, `perf` and `test`.
+- The title has a maximum of 75 characters.
+- A body is optional.
+
+The scope is optional. It names the part of FairMQ, for example `shmem`, `zeromq`, `tools` or `test`. Titles from the history:
+
+```txt
+fix(shmem): lock the region mutexes in one order
+feat(tools): add an execute() overload with a deadline
+test(channel): add tcp tests with and without auto-bind
+ci: run the tests in parallel
+```
+
+Write the summary in the imperative mood. Use the body to tell what changed and why. The history marks a breaking change with `!` after the type or the scope, for example `feat!:` or `feat(ofi)!:`. Most of these commits also have a paragraph `BREAKING CHANGE` in the body. The pull request template also links [the seven rules of a great commit message](https://chris.beams.io/posts/git-commit/#seven-rules).
+
+To check the message of your last commit, install gitlint and run `gitlint` in the repository.
+
+## Pull requests
+
+<Steps>
+
+1. Fork the repository on GitHub and make a branch from `dev`.
+
+2. Make your change, with tests for new behavior.
+
+3. Add your name to `CONTRIBUTORS`. See [Authors and contributors](#authors-and-contributors).
+
+4. Rebase your branch on the latest `dev`.
+
+5. Open a pull request to `dev`. Describe your change, and name the issues that it is related to. The template asks you to confirm three items: the rebase on `dev`, your name in `CONTRIBUTORS` or `AUTHORS`, and the rules for commit messages.
+
+</Steps>
+
+### CI
+
+The workflows are in [`.github/workflows/`](https://github.com/FairRootGroup/FairMQ/tree/dev/.github/workflows).
+
+| Workflow | When it runs | What it does |
+| --- | --- | --- |
+| `CI` | Each pull request, each push to `master` and `dev` | The job `build` builds FairMQ with GCC 12, 13, 14 and 15 and the Spack environment `test/ci/spack-latest.yaml`, and with GCC 15 and `test/ci/spack-boost187.yaml` (Boost 1.87). It runs the tests and the install step. The job `sanitizers` runs the tests with the address, leak and undefined behavior sanitizers (GCC 14), and with the thread sanitizer (GCC 15). The job `static-analysis` builds with `RUN_STATIC_ANALYSIS=ON` and fails on each warning. |
+| `Docs` | Each pull request, each push to `dev`, and a manual start | Builds this site and checks its links. A push to `dev` also publishes the site on GitHub Pages. |
+| `Check AUTHORS and CONTRIBUTORS in metadata` | Changes to `AUTHORS`, `CONTRIBUTORS`, `codemeta.json` or `.zenodo.json` | Runs `meta_update.py` and fails if the metadata files change. |
+| `validate codemeta` | Changes to `codemeta.json` | Validates `codemeta.json`. |
+| `fair-software` | Each push | Measures the compliance with the recommendations of fair-software.eu. |
+| `Spack Buildcache` | Each week, a manual start, and a push to `dev` or `master` that changes the Spack files of the CI | Builds the dependencies of the CI and stores them in a Spack build cache. |
+
+The CI gets its dependencies from the Spack environments in `test/ci/`. Dependabot updates the GitHub Actions, the Git submodules and the npm packages of the documentation each month, with pull requests to `dev`.
+
+## Report a problem
+
+Report bugs and ask for features in the [GitHub issues](https://github.com/FairRootGroup/FairMQ/issues/new/choose). The issue templates are `Bug report`, `Feature request` and `Question / Support`.
+
+For a bug report, give the information that the template asks for:
+
+- The steps to reproduce the problem: your environment, the CMake options and the commands.
+- The expected behavior.
+- The logs.
+- The operating system, the compiler and the environment, for example the FairSoft version.
+
+## Authors and contributors
+
+The file [`AUTHORS`](https://github.com/FairRootGroup/FairMQ/blob/dev/AUTHORS) lists the authors of FairMQ. The file [`CONTRIBUTORS`](https://github.com/FairRootGroup/FairMQ/blob/dev/CONTRIBUTORS) lists the other people who contributed. Each line has this format, with an optional e-mail address and an optional ORCID:
+
+```txt
+Family name, Given name <e-mail> [https://orcid.org/0000-0000-0000-0000]
+```
+
+The files `codemeta.json` and `.zenodo.json` contain the same names. After you change `AUTHORS` or `CONTRIBUTORS`, update them with the script in the repository root:
+
+```sh
+python3 meta_update.py
+```
+
+Commit the changed metadata files together with your change. The CI workflow `Check AUTHORS and CONTRIBUTORS in metadata` fails if they do not agree. [License and citation](/project/license/) tells how the project uses these names.
+
+## Work on the documentation
+
+This site is in the directory `docs/` of the repository. It uses [Astro](https://astro.build/) and [Starlight](https://starlight.astro.build/).
+
+You need these programs:
+
+- Node.js 22.23.4 or later. `engines` in `docs/package.json` sets this version. The CI uses Node.js 24.
+- Doxygen, for the API pages and the source pages. The CI installs the Doxygen package of Ubuntu 24.04.
+
+Run these commands in `docs/`:
+
+| Command | What it does |
+| --- | --- |
+| `npm ci` | Installs the packages of `package-lock.json`. |
+| `npm run dev` | Starts a live preview at `http://localhost:4321/FairMQ/`. |
+| `npm run build` | Builds the site in `dist/`. |
+| `npm run preview` | Shows the built site from `dist/`. |
+| `npm run check` | Checks all internal links and anchors in the built site. Run it after `npm run build`. |
+| `node scripts/check-pages.mjs` | Checks the pages without a build: the frontmatter, the MDX syntax, the imports, the links and anchors, and the code snippets. Give page files to check only these pages. |
+| `node scripts/print-api.mjs <name> --members` | Lists the API pages with `<name>` in the name, and the anchors of their members. It reads the Doxygen XML. |
+
+`npm run dev` and `npm run build` run Doxygen first if necessary. This occurs if the XML in `docs/build/doxygen/xml/` is missing or older than a `.h` or `.cxx` file in `fairmq/`. If Doxygen is not installed, they stop with an error.
+
+The pages are MDX files in `docs/src/content/docs/<section>/<page>.mdx`. The site makes some content from the code:
+
+- The API pages (`/api/`) and the source pages (`/source/`) come from the headers and sources in `fairmq/`, through the XML output of Doxygen.
+- The names, the types and the defaults in the tables of command-line options come from the option definitions in the code. The descriptions are in `src/data/option-texts.mjs`.
+- Code samples come from files of the repository, through the component `Snippet`. The build fails if the selected lines do not exist. Use the examples and the tests for samples, because the CI compiles them.
+
+The pages use Simplified Technical English (ASD-STE100): short sentences, the active voice, and one word for one concept. Links to other pages are root-relative, without the base `/FairMQ`, and end with `/`, for example `/concepts/states/`. Each page has the link **Edit page** at the bottom. It opens the file of the page on GitHub.
+
+## Related pages
+
+- [CMake options and variables](/reference/cmake/): all options of the build.
+- [Release notes](/project/release-notes/): the changes in each release.
+- [License and citation](/project/license/): the license, the copyright holders and how to cite FairMQ.

@@ -170,6 +170,31 @@ inline auto makeMonitorSocket(void* zmqCtx, void* socketToMonitor, std::string_v
     return mon;
 }
 
+/// Stop monitoring, discard all pending events and close the reading monitor socket
+///
+/// Stopping the monitor first closes the writing end synchronously. Otherwise, events emitted
+/// while the monitored socket is closing can be dropped by libzmq after the reading end is gone,
+/// which leaks their (heap allocated) endpoint frames.
+inline auto closeMonitorSocket(void* socketToMonitor, void* monitorSocket) -> void
+{
+    if (monitorSocket == nullptr) {
+        return;
+    }
+
+    if (socketToMonitor != nullptr) {
+        [[maybe_unused]] auto const rc = zmq_socket_monitor(socketToMonitor, nullptr, 0);
+    }
+
+    zmq_msg_t msg;
+    zmq_msg_init(&msg);
+    while (zmq_msg_recv(&msg, monitorSocket, ZMQ_DONTWAIT) != -1) {}
+    zmq_msg_close(&msg);
+
+    if (zmq_close(monitorSocket) != 0) {
+        LOG(error) << "Failed closing monitor socket, reason: " << zmq_strerror(errno);
+    }
+}
+
 /// Read pending zmq monitor event in a non-blocking fashion.
 /// @return event id or -1 for no event pending
 inline auto getMonitorEvent(void* monitorSocket) -> int

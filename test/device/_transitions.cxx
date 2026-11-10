@@ -6,13 +6,14 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include "../helper/ControlDevice.h"
+
 #include <fairmq/Device.h>
 #include <fairlogger/Logger.h>
 
 #include <gtest/gtest.h>
 
-#include <vector>
-#include <thread>
+#include <system_error>
 
 namespace
 {
@@ -23,23 +24,23 @@ using namespace fair::mq;
 TEST(Transitions, InvalidChangeState)
 {
     Device device;
-    thread t([&] { device.RunStateMachine(); });
+    test::StateMachineThread t(device);
 
     ASSERT_FALSE(device.ChangeState(Transition::Connect));
 
     ASSERT_TRUE(device.ChangeState(Transition::End));
-    if (t.joinable()) { t.join(); }
+    t.Join();
 }
 
 TEST(Transitions, InvalidChangeStateOrThrow)
 {
     Device device;
-    thread t([&] { device.RunStateMachine(); });
+    test::StateMachineThread t(device);
 
     ASSERT_THROW(device.ChangeStateOrThrow(Transition::Connect), std::system_error);
 
     ASSERT_NO_THROW(device.ChangeStateOrThrow(Transition::End));
-    if (t.joinable()) { t.join(); }
+    t.Join();
 }
 
 } // namespace

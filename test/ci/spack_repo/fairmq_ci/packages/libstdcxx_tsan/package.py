@@ -33,6 +33,7 @@ class LibstdcxxTsan(Package):
     # libstdc++ older than the compiler may lack GLIBCXX symbol versions
     # that binaries built by that compiler reference. Checksums match the
     # version() directives in spack's gcc package.
+    version("15.3.0", sha256="fa59c1beef8995f27c4d71c1df227587189315d3e6faff1bb4306e61b0c530eb")
     version("15.2.0", sha256="438fd996826b0c82485a29da03a72d71d6e3541a83ec702df4271f6fe025d24e")
     version("14.3.0", sha256="e0dc77297625631ac8e50fa92fffefe899a4eb702592da5c32ef04e2293aca3a")
 

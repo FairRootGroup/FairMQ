@@ -1,0 +1,67 @@
+---
+// Source browser overview: all C++ files in fairmq/, by directory.
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { paths } from 'virtual:fairmq/data';
+import { model, base, sourceSidebar } from '../../lib/model.mjs';
+import '../../styles/source.css';
+
+const m = model();
+const dirs = new Map<string, any[]>();
+let total = 0;
+for (const f of m.sourceFiles) {
+  const dir = path.posix.dirname(f);
+  const lines = readFileSync(path.join(paths.repoRoot, f), 'utf8').replace(/\n$/, '').split('\n').length;
+  total += lines;
+  const defined = (m.files.get(f)?.defines ?? []).filter((c: any) => c.public);
+  if (!dirs.has(dir)) dirs.set(dir, []);
+  dirs.get(dir)!.push({ f, name: path.posix.basename(f), lines, defined, pub: m.publicHeaders.has(f) });
+}
+const id = (d: string) => d.replace(/\//g, '-');
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'Source browser',
+    description: 'All C++ files of the FairMQ library, with line anchors and links to the API pages.',
+    tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 2 },
+  }}
+  sidebar={sourceSidebar()}
+  headings={[...dirs.keys()].map((d) => ({ depth: 2, slug: id(d), text: `${d}/` }))}
+>
+  <p class="api-lead">
+    Every C++ file of <code>fairmq/</code> as a page: {m.sourceFiles.length} files with {total.toLocaleString('en')} lines.
+    Doxygen finds the symbols. A symbol links to its API page, or to the line where it is defined.
+  </p>
+  <p>
+    Each line has an anchor, for example <a href={`${base}/source/fairmq/Channel.h/#L36`}><code>Channel.h/#L36</code></a>. Shift-click a
+    second line number to mark a range. A <span class="fmq-badge mark">public</span> header is installed with FairMQ.
+  </p>
+  {
+    [...dirs].map(([dir, list]) => (
+      <>
+        <h2 id={id(dir)}>
+          <code>{dir}/</code>
+        </h2>
+        <ul class="src-list">
+          {list.map((x) => (
+            <li>
+              <a href={`${base}/source/${x.f}/`}>
+                <code>{x.name}</code>
+              </a>
+              <span class="src-lines">{x.lines}</span>
+              <span class="src-meta">
+                {x.pub && <span class="fmq-badge mark">public</span>}
+                {x.defined.slice(0, 4).map((c: any) => (
+                  <a href={c.url}>{c.short}</a>
+                ))}
+                {x.defined.length > 4 && <span class="muted">+{x.defined.length - 4}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </>
+    ))
+  }
+</StarlightPage>

@@ -1,0 +1,387 @@
+---
+title: Helpers in fair::mq::tools
+description: The installed helper headers of fair::mq::tools (network, UUIDs, child processes, strings, rate limits, versions) and the tool fairmq-uuid-gen.
+sidebar:
+  order: 6.5
+code: [fairmq/Tools.h, fairmq/tools/Process.h, fairmq/tools/Network.cxx, fairmq/tools/Strings.h, fairmq/tools/runUuidGenerator.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import OptionsTable from '../../../components/OptionsTable.astro';
+
+The namespace `fair::mq::tools` contains small helpers that FairMQ uses in its own code: network
+lookups, UUIDs, child processes, string functions, a rate limiter and a version type. The
+installation includes their headers, so your devices and tests can use them. Some helpers are
+internal in practice: only the tests use them, or only the key input of FairMQ programs.
+
+## The installed headers
+
+`fairmq/CMakeLists.txt` installs twelve headers of `fairmq/tools/` and the header `fairmq/Tools.h`,
+which includes eleven of them. The table shows where FairMQ uses each header.
+
+| Header | Contents | Used by | For your code |
+| --- | --- | --- | --- |
+| [`fairmq/Tools.h`](#toolsh) | Includes all headers of this table, except `IO.h`. | `Device.h`, `Channel.cxx`, `TransportFactory.cxx` | Use the single headers. |
+| [`tools/Strings.h`](#stringsh) | `ToString()`, `ToStrVector()`, `StrStartsWith()`, `StrEndsWith()` | Most parts of FairMQ | Use. |
+| [`tools/Unique.h`](#uniqueh) | `Uuid()`, `UuidHash()` | `TransportFactory.cxx`, `fairmq-uuid-gen`, the tests | Use. |
+| [`tools/Network.h`](#networkh) | `getHostIPs()`, `getInterfaceIP()`, `getDefaultRouteNetworkInterface()`, `getIpFromHostname()`, `DefaultRouteDetectionError` | `Device.cxx` | Use. |
+| [`tools/Process.h`](#processh) | `execute()`, `execute_result` | The tests of FairMQ | Use in tests. |
+| [`tools/RateLimit.h`](#ratelimith) | `RateLimiter` | `Device.cxx` (`--rate`), `fairmq-bsampler`, the region example | Use. |
+| [`tools/Version.h`](#versionh) | `Version` | `Device`, `Plugin` | Use. It is a type of the device and plugin API. |
+| [`tools/Exceptions.h`](#exceptionsh) | `CallOnDestruction` | `Device.cxx`, `StateMachine.cxx` | Use. |
+| [`tools/Semaphore.h`](#semaphoreh) | `Semaphore`, `SharedSemaphore` | Only `test/tools/` | Internal in practice. |
+| [`tools/InstanceLimit.h`](#instancelimith) | `InstanceLimiter` | Only `test/tools/` | Internal in practice. |
+| [`tools/IO.h`](#ioh) | `NonCanonicalInput` | The control plugin, `fairmq-shmmonitor` | Internal in practice. |
+| [`tools/Compiler.h`](#compilerh-and-cppstlh) | The macro `__FAIRMQ_ALWAYS_INLINE` | Nothing | Internal. |
+| [`tools/CppSTL.h`](#compilerh-and-cppstlh) | No declarations | Nothing | Internal. |
+
+Include a header as `<fairmq/tools/<Name>.h>`, and link your target to `FairMQ::FairMQ` (see
+[Use FairMQ in a CMake project](/start/cmake/)). The functions of `Network.h`, `Process.h`,
+`Semaphore.h` and `Unique.h` are compiled into `libfairmq`. The other headers need no library.
+
+The test suite `Tools` in [`test/tools/`](https://github.com/FairRootGroup/FairMQ/tree/dev/test/tools)
+tests most helpers. Run it with `ctest -R '^Tools\.'` in a build with `BUILD_TESTING=ON` (see
+[Contributing](/project/contributing/#select-tests)).
+
+## Tools.h
+
+[`fairmq/Tools.h`](/source/fairmq/Tools.h/) includes all headers of `fairmq/tools/` except `IO.h`.
+`fairmq/Device.h` includes `fairmq/Tools.h`. Thus a source file of a device has the helpers without
+an include. Include the header of each helper that you use, so that your code does not depend on
+the includes of `Device.h`.
+
+Do not confuse `fairmq/tools/Version.h` with `fairmq/Version.h`. The build generates
+`fairmq/Version.h` from `Version.h.in`. It defines macros, for example `FAIRMQ_VERSION`,
+`FAIRMQ_VERSION_MAJOR` and `FAIRMQ_GIT_VERSION`.
+
+## Strings.h
+
+| Function | What it does |
+| --- | --- |
+| [`ToString(T&&... t) -> std::string`](/api/fair/mq/tools/#ToString) | Writes all arguments with `operator<<` into a `std::stringstream`, without separators, and returns the string. |
+| [`ToStrVector(const int argc, char*const* argv, const bool dropProgramName = true) -> std::vector<std::string>`](/api/fair/mq/tools/#ToStrVector) | Copies the command-line arguments of `main()` into a vector. With `dropProgramName = true`, the vector does not contain `argv[0]`. |
+| [`bool StrStartsWith(std::string const& str, std::string const& start)`](/api/fair/mq/tools/#StrStartsWith) | `true` if `str` starts with `start`. |
+| [`bool StrEndsWith(std::string const& str, std::string const& end)`](/api/fair/mq/tools/#StrEndsWith) | `true` if `str` ends with `end`. |
+
+`ToString()` uses the formatting of the stream. Thus `2.5` gives `2.5`, and each type with an
+`operator<<` works. FairMQ uses it for the texts of its exceptions and log lines. `DeviceRunner`
+uses `ToStrVector()`. `fairmq-shmmonitor --list-all` uses `StrStartsWith()`
+and `StrEndsWith()` to find the files of FairMQ.
+
+The tests show the behavior, also for empty strings:
+
+<Snippet file="test/tools/_tools.cxx" start="TEST(Strings, ToString)" />
+
+<Snippet file="test/tools/_tools.cxx" start="TEST(Strings, StartsAndEndsWith)" />
+
+<Snippet file="test/tools/_tools.cxx" start="TEST(Strings, ToStrVector)" />
+
+## Unique.h
+
+| Function | What it returns |
+| --- | --- |
+| [`std::string Uuid()`](/api/fair/mq/tools/#Uuid) | A new random UUID as a string with 36 characters. |
+| [`std::size_t UuidHash()`](/api/fair/mq/tools/#UuidHash) | The hash of a new random UUID. |
+
+Each call makes a new UUID with the random generator of Boost.Uuid. `UuidHash()` returns
+`boost::hash` of the UUID, not the hash of the string of an earlier `Uuid()` call.
+[Unique.cxx](/source/fairmq/tools/Unique.cxx/#L11-L13) makes Boost use the files `/dev/*random`
+instead of `getrandom()` and `getentropy()`.
+
+FairMQ uses these functions here:
+
+- [`TransportFactory::CreateTransportFactory()`](/api/fair/mq/TransportFactory/#CreateTransportFactory)
+  gives a factory with an empty ID the ID `Uuid()` ([TransportFactory.cxx](/source/fairmq/TransportFactory.cxx/#L29-L32)).
+- [`fairmq-uuid-gen`](#fairmq-uuid-gen) prints the result of one of the two functions.
+- The tests make unique session names and `ipc://` addresses with them, for example
+  `Configure()` and `IpcAddress` in [`test/helper/Transport.h`](https://github.com/FairRootGroup/FairMQ/blob/dev/test/helper/Transport.h).
+
+The test makes 1000 values of each function and checks that they are all different:
+
+<Snippet file="test/tools/_tools.cxx" start="TEST(Unique, UuidsAreUnique)" />
+
+## Network.h
+
+| Function | What it returns | On failure |
+| --- | --- | --- |
+| [`getHostIPs()`](/api/fair/mq/tools/#getHostIPs) | A `std::map<std::string, std::string>`: the name of each network interface and its IPv4 address. | Throws `std::runtime_error` if `getifaddrs()` or `getnameinfo()` fails. |
+| [`getInterfaceIP(const std::string& interface)`](/api/fair/mq/tools/#getInterfaceIP) | The IPv4 address of the interface, from `getHostIPs()`. | Returns `""`. For an unknown interface, it logs `Could not find provided network interface: "<name>"!, exiting.` at the severity `error`. The program continues. |
+| [`getDefaultRouteNetworkInterface()`](/api/fair/mq/tools/#getDefaultRouteNetworkInterface) | The name of the interface of the default route. | Throws [`DefaultRouteDetectionError`](/api/fair/mq/tools/DefaultRouteDetectionError/) if it finds no interface. Returns `""` if `popen()` fails. |
+| [`getIpFromHostname(const std::string& hostname)`](/api/fair/mq/tools/#getIpFromHostname) | The first IPv4 address of the host name. | Returns `""` and logs a warning or an error. |
+
+- `getHostIPs()` lists only IPv4 addresses (`AF_INET`). If an interface has several IPv4 addresses,
+  the map keeps the first one.
+- On Linux, `getDefaultRouteNetworkInterface()` reads `/proc/net/route` and selects the line with
+  the destination `00000000`. If it finds none, it runs `ip route | grep default | cut -d " " -f 5 | head -n 1`.
+  On macOS, it runs `route -n get default | grep interface | cut -d ":" -f 2`
+  ([Network.cxx](/source/fairmq/tools/Network.cxx/#L95-L158)).
+- `getIpFromHostname()` resolves the name with the TCP resolver of Boost.Asio, for IPv4 only.
+
+The device uses these functions for its channel addresses
+([Device.cxx](/source/fairmq/Device.cxx/#L185-L198)):
+
+- A binding sub-channel without an address gets the IPv4 address of `--network-interface`. With the
+  value `default`, the device asks `getDefaultRouteNetworkInterface()`. If it throws, the device
+  binds to `tcp://*:1`. See [Configure channels](/guides/configure-channels/#addresses-on-several-hosts).
+- The device replaces the host name of a `tcp://` endpoint with the result of `getIpFromHostname()`.
+  See [Channel properties](/reference/channel-properties/).
+
+This program prints the interfaces, the interface of the default route and an address of a host name:
+
+```cpp title="network.cxx"
+#include <fairmq/tools/Network.h>
+
+#include <iostream>
+
+int main()
+{
+    for (auto const& [name, ip] : fair::mq::tools::getHostIPs()) {
+        std::cout << name << ": " << ip << '\n';
+    }
+
+    try {
+        auto const interface = fair::mq::tools::getDefaultRouteNetworkInterface();
+        std::cout << "default route: " << interface << ", "
+                  << fair::mq::tools::getInterfaceIP(interface) << '\n';
+    } catch (fair::mq::tools::DefaultRouteDetectionError const& e) {
+        std::cout << e.what() << '\n';
+    }
+
+    std::cout << "localhost: " << fair::mq::tools::getIpFromHostname("localhost") << '\n';
+    return 0;
+}
+```
+
+The tests in [`test/tools/_network.cxx`](https://github.com/FairRootGroup/FairMQ/blob/dev/test/tools/_network.cxx)
+check that `localhost` gives `127.0.0.1` and that an unknown host name gives an empty string:
+
+<Snippet file="test/tools/_network.cxx" start="TEST(Tools, NetworkIPv4Localhost)" />
+
+## Process.h
+
+[`execute()`](/api/fair/mq/tools/#execute) starts a command in a child process, waits until it
+stops, and returns an [`execute_result`](/api/fair/mq/tools/execute_result/). The result has the
+captured output [`console_out`](/api/fair/mq/tools/execute_result/#console_out) and the exit code
+[`exit_code`](/api/fair/mq/tools/execute_result/#exit_code).
+
+```cpp
+execute_result execute(const std::string& cmd,
+                       const std::string& prefix = "",
+                       const std::string& input = "",
+                       int sig = -1);
+
+execute_result execute(const std::string& cmd,
+                       const std::string& prefix,
+                       const std::string& input,
+                       int sig,
+                       std::chrono::milliseconds timeout);
+```
+
+| Parameter | Effect |
+| --- | --- |
+| `cmd` | The command line. For shell syntax, for example a redirection, run it with `sh -c`, as the test below does. |
+| `prefix` | The text before each line of the output, for example `"[sampler] "`. |
+| `input` | Text for the standard input of the child. `execute()` writes it 1000 ms after the start. It does not close the standard input after that. |
+| `sig` | A signal, for example `SIGINT`. If it is not `-1`, `execute()` sends it to the child 2000 ms after the start. |
+| `timeout` | [Second overload](/api/fair/mq/tools/#execute-2) only. After this time, `execute()` stops the child with `SIGKILL`. `0` means no limit. The first overload has no limit. |
+
+The [overload with `timeout`](/api/fair/mq/tools/#execute-2) is on `dev` and is not in a release yet (see
+[Release notes](/project/release-notes/#unreleased-on-dev)).
+
+`execute()` writes each line to `std::cout` and to `console_out`, with the prefix
+([Process.cxx](/source/fairmq/tools/Process.cxx/#L72-L201)):
+
+- first the command, then `fair::mq::tools::execute: pid: <pid>`,
+- each line of the standard output of the child,
+- each line of the standard error, after the text `error: `,
+- `fair::mq::tools::execute: timeout after <n> ms, killing pid <pid>` if the timeout ends,
+- at the end, `fair::mq::tools::execute: exit code: <n>`.
+
+Since v1.11.0, calls from several threads write whole lines to `std::cout`. The test helper
+`RunDevices()` in [`test/helper/Devices.h`](https://github.com/FairRootGroup/FairMQ/blob/dev/test/helper/Devices.h)
+starts each device of a test with `execute()` in its own thread. See
+[Test your devices](/guides/test-devices/).
+
+The tests show the output, the exit code, the signal and the timeout. When a signal stops the child,
+the tests expect the number of the signal as `exit_code`, for example `SIGKILL` after the timeout.
+
+<Snippet file="test/tools/_tools.cxx" start="TEST(Execute, OutputAndExitCode)" />
+
+<Snippet file="test/tools/_tools.cxx" start="TEST(Execute, Timeout)" />
+
+## RateLimit.h
+
+[`RateLimiter`](/api/fair/mq/tools/RateLimiter/) limits a loop to a number of iterations per second.
+
+| Member | What it does |
+| --- | --- |
+| [`explicit RateLimiter(float rate)`](/api/fair/mq/tools/RateLimiter/#RateLimiter) | Sets the rate in Hz. A rate of 0 or less sets 1 GHz, which means no limit in practice. |
+| [`void maybe_sleep()`](/api/fair/mq/tools/RateLimiter/#maybe_sleep) | Call it at the end of each iteration. It sleeps if the iterations come too fast. |
+
+`maybe_sleep()` reads the clock only every n-th call. It measures the mean time of an iteration, and
+it changes n and the sleep time until the time agrees with the rate
+([RateLimit.h](/source/fairmq/tools/RateLimit.h/#L68-L124)). The device uses a `RateLimiter` for
+`--rate` in its `ConditionalRun()` loop, and only for rates above 0.001:
+
+<Snippet file="fairmq/Device.cxx" start="tools::RateLimiter rateLimiter(fRate);" />
+
+`fairmq-bsampler` uses it for `--msg-rate` (see [Built-in devices](/tools/builtin-devices/#fairmq-bsampler)).
+The test checks a low lower limit of the time (350 ms for 0.5 s), because a slow machine makes the
+loop slower, never faster. The upper limit is 5 s:
+
+<Snippet file="test/tools/_tools.cxx" start="TEST(RateLimiter, LimitsTheRate)" />
+
+The test `RateLimiter.ZeroRateDoesNotSleep` checks that 100000 calls with the rate 0 take less
+than 1 s.
+
+## Version.h
+
+[`Version`](/api/fair/mq/tools/Version/) holds three numbers:
+[`fkMajor`](/api/fair/mq/tools/Version/#fkMajor), [`fkMinor`](/api/fair/mq/tools/Version/#fkMinor)
+and [`fkPatch`](/api/fair/mq/tools/Version/#fkPatch), all `const int`. Make it with braces, for
+example `fair::mq::tools::Version{1, 2, 0}`.
+
+- The operators `<`, `>`, `<=`, `>=`, `==` and `!=` compare the major, then the minor, then the
+  patch number.
+- [`operator<<`](/api/fair/mq/tools/Version/#operator-shl) writes `1.2.0`.
+
+The type is part of the device and plugin API:
+
+- The constructors [`Device(tools::Version)`](/api/fair/mq/Device/#Device-3) and
+  [`Device(ProgOptions&, tools::Version)`](/api/fair/mq/Device/#Device-4) set the version of your
+  device. The default is `{0, 0, 0}`. [`GetVersion()`](/api/fair/mq/Device/#GetVersion) returns it.
+  `DeviceRunner` prints it for `--version`.
+- [`Plugin::Version`](/api/fair/mq/Plugin/#Version) is an alias of `tools::Version`. See
+  [Write a plugin](/guides/write-plugin/).
+
+<Snippet file="test/plugins/_plugin.cxx" start="TEST(PluginVersion, Operators)" />
+
+## Exceptions.h
+
+[`CallOnDestruction`](/api/fair/mq/tools/CallOnDestruction/) calls a function in its destructor.
+Use it to run code when a scope ends with an exception, without a `catch` block.
+
+| Member | What it does |
+| --- | --- |
+| [`CallOnDestruction(std::function<void()> c, bool enable = true)`](/api/fair/mq/tools/CallOnDestruction/#CallOnDestruction) | Stores the function. |
+| [`enable()`](/api/fair/mq/tools/CallOnDestruction/#enable), [`disable()`](/api/fair/mq/tools/CallOnDestruction/#disable) | Switch the call on or off. |
+| [`~CallOnDestruction()`](/api/fair/mq/tools/CallOnDestruction/#dtor) | Calls the function if the object is enabled. |
+
+The device uses it in the state `RUNNING`. If `PreRun()`, `ConditionalRun()`, `Run()`, `PostRun()`
+or a data callback throws, the destructor requests the transition `ERROR FOUND`. At the normal end of the function,
+`cod.disable()` stops the call ([Device.cxx](/source/fairmq/Device.cxx/#L398-L431)):
+
+<Snippet file="fairmq/Device.cxx" start="tools::CallOnDestruction cod(" />
+
+`StateMachine::ProcessWork()` uses the same pattern to go to `ERROR`
+([StateMachine.cxx](/source/fairmq/StateMachine.cxx/#L406-L419)). A destructor is `noexcept` by
+default in C++. Thus a callback that throws ends the program with `std::terminate()`. No test of
+`test/tools/` covers this class. The tests of the `ERROR` state in `test/device/` show its effect.
+
+## Semaphore.h
+
+Internal in practice: the library does not use these classes.
+
+| Class | Description |
+| --- | --- |
+| [`Semaphore`](/api/fair/mq/tools/Semaphore/) | A counting semaphore with a mutex and a condition variable. Not copyable. |
+| [`SharedSemaphore`](/api/fair/mq/tools/SharedSemaphore/) | Copyable. All copies share one `Semaphore` through a `std::shared_ptr`. |
+
+Both classes have the same members:
+[`Semaphore()`](/api/fair/mq/tools/Semaphore/#Semaphore) starts with the count 0, and
+[`explicit Semaphore(std::size_t initial_count)`](/api/fair/mq/tools/Semaphore/#Semaphore-2) with the given
+count. [`Wait()`](/api/fair/mq/tools/Semaphore/#Wait) blocks until the count is above 0, then
+decrements it. [`Signal()`](/api/fair/mq/tools/Semaphore/#Signal) increments the count and wakes one
+waiting thread. [`GetCount()`](/api/fair/mq/tools/Semaphore/#GetCount) returns the count.
+
+`Wait()` has no timeout. For tests, the test helper `test::Semaphore` in
+[`test/helper/Sync.h`](https://github.com/FairRootGroup/FairMQ/blob/dev/test/helper/Sync.h) has a
+`Wait()` with a deadline, so that a missing signal does not block the test. An installed FairMQ does
+not contain the test helpers. Copy the file into your project if you need it.
+
+<Snippet file="test/tools/_tools.cxx" start="TEST(SharedSemaphore, CopiesShareTheCount)" />
+
+## InstanceLimit.h
+
+Internal in practice: the library does not use this class.
+
+[`InstanceLimiter<Tag, Max>`](/api/fair/mq/tools/InstanceLimiter/) counts its objects. The
+constructor increments a static counter. If `Max` objects exist already, it throws
+`std::runtime_error` with the text `More than <Max> instances of <Tag> in parallel not supported`.
+The destructor decrements the counter. [`GetCount()`](/api/fair/mq/tools/InstanceLimiter/#GetCount)
+returns it.
+
+- Each pair of `Tag` and `Max` has its own counter.
+- `Tag` must be default-constructible and must have an `operator<<`, because the text of the
+  exception contains `Tag()`.
+- The counter is a plain `static int` without a lock
+  ([InstanceLimit.h](/source/fairmq/tools/InstanceLimit.h/#L46-L50)).
+
+In the test, `TestTag` writes `TestTag` with its `operator<<`:
+
+<Snippet file="test/tools/_tools.cxx" start="TEST(InstanceLimiter, ThrowsAboveTheLimit)" />
+
+## IO.h
+
+Internal in practice: the control plugin uses it for the keys of the interactive mode
+([Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L164)), and `fairmq-shmmonitor -i` for
+its keys ([Monitor.cxx](/source/fairmq/shmem/Monitor.cxx/#L368)). `fairmq/Tools.h` does not include
+this header.
+
+The constructor of [`NonCanonicalInput`](/api/fair/mq/tools/NonCanonicalInput/) switches off the
+flags `ICANON` and `ECHO` of the terminal on the standard input. Then a program gets each key at
+once, and the terminal does not show it. The destructor switches both flags on again. It does not
+restore the earlier settings. The class is not copyable and not movable. No test covers it.
+
+## Compiler.h and CppSTL.h
+
+Both headers are internal.
+
+- `Compiler.h` defines the macro `__FAIRMQ_ALWAYS_INLINE` as `__attribute__((always_inline)) inline`.
+  No file of the repository uses it.
+- `CppSTL.h` contains only the empty namespace `fair::mq::tools`.
+
+## fairmq-uuid-gen
+
+`fairmq-uuid-gen` prints a new random UUID, or the hash of a new UUID, and stops. It calls
+[`Uuid()`](/api/fair/mq/tools/#Uuid) or [`UuidHash()`](/api/fair/mq/tools/#UuidHash). The build makes
+it in the directory `fairmq` of the build tree. The installation puts it into `<prefix>/bin`. The
+imported target is `FairMQ::fairmq-uuid-gen` (see
+[Use FairMQ in a CMake project](/start/cmake/#imported-targets)).
+
+<OptionsTable file="fairmq/tools/runUuidGenerator.cxx" id="uuid" />
+
+:::caution[`-h` is not the help]
+`-h` is the short form of `--hash`. The help has only the long form `--help`.
+:::
+
+| Command | Output |
+| --- | --- |
+| `fairmq-uuid-gen` | A UUID with 36 characters. |
+| `fairmq-uuid-gen -h` | The hash as a decimal number. |
+| `fairmq-uuid-gen --help` | `UUID generator` and the options. |
+
+The output is one line on the standard output:
+
+<Snippet file="fairmq/tools/runUuidGenerator.cxx" start="if (hash)" end="return 0;" />
+
+The exit code is 0. For a wrong option, the tool writes
+`Unhandled Exception reached the top of main: <text>, application will now exit` to the standard
+error and returns 2.
+
+The test scripts of the examples make a new session name for each run with `-h`. They also use the
+session name in the `ipc://` addresses, so that two tests at the same time do not use the same
+shared memory or the same socket files:
+
+<Snippet file="examples/1-1/test-ex-1-1.sh.in" start='session="$(' end="chanAddr=" />
+
+The hash has only digits, so it can be part of a file name. [Test your devices](/guides/test-devices/)
+shows a complete test script.
+
+## Related pages
+
+- [Test your devices](/guides/test-devices/): `fairmq-uuid-gen` and `execute()` in tests.
+- [Receive data with callbacks or loops](/guides/receive-data/#use-conditionalrun): `--rate` and the `RateLimiter`.
+- [Configure channels](/guides/configure-channels/): addresses, network interfaces and host names.
+- [Sessions and segments](/shmem/sessions/#keep-two-topologies-apart): why each test needs its own session.
+- [API reference of fair::mq::tools](/api/fair/mq/tools/)

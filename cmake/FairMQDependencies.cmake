@@ -18,7 +18,7 @@ if(BUILD_FAIRMQ)
   set(Threads_PREFIX "<system>")
 endif()
 
-if(BUILD_FAIRMQ OR BUILD_TIDY_TOOL)
+if(BUILD_FAIRMQ)
   find_package2(PUBLIC FairLogger REQUIRED VERSION 1.6.0)
   find_package2(PUBLIC Boost REQUIRED VERSION 1.66
     COMPONENTS container program_options filesystem date_time regex
@@ -39,36 +39,51 @@ endif()
 
 if(BUILD_FAIRMQ)
   find_package2(PRIVATE ZeroMQ REQUIRED VERSION 4.1.4)
-  if(NOT PicoSHA2_BUNDLED)
-    build_bundled(PicoSHA2 extern/PicoSHA2)
-  endif()
+  # Header-only, always bundled
+  fairmq_init_submodule(extern/PicoSHA2)
+  set(PicoSHA2_ROOT ${PROJECT_SOURCE_DIR}/extern/PicoSHA2)
+  set(PicoSHA2_BUNDLED ON)
   find_package2(BUNDLED PicoSHA2 REQUIRED)
   set(PicoSHA2_VERSION "1.0.0")
   set(PicoSHA2_PREFIX "<bundled>")
 endif()
 
 if(BUILD_TESTING)
-  if(NOT GTest_FOUND AND NOT GTest_BUNDLED AND NOT USE_EXTERNAL_GTEST)
-    build_bundled(GTest extern/googletest)
-  endif()
-  find_package2(BUNDLED GTest REQUIRED)
-  if(GTest_BUNDLED)
+  if(USE_EXTERNAL_GTEST)
+    find_package2(PRIVATE GTest REQUIRED)
+  else()
+    # Build the bundled GoogleTest as part of this build, with the same
+    # compiler and flags. OVERRIDE_FIND_PACKAGE lets find_package(GTest)
+    # below find it.
+    fairmq_init_submodule(extern/googletest)
+    include(FetchContent)
+    FetchContent_Declare(GTest
+      SOURCE_DIR ${PROJECT_SOURCE_DIR}/extern/googletest
+      OVERRIDE_FIND_PACKAGE
+    )
+    block()
+      set(BUILD_GMOCK OFF)
+      set(INSTALL_GTEST OFF)
+      set(BUILD_SHARED_LIBS OFF)
+      set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+      # Do not analyse third-party code
+      set(CMAKE_CXX_CLANG_TIDY "")
+      set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE "")
+      set(CMAKE_CXX_CPPLINT "")
+      FetchContent_MakeAvailable(GTest)
+    endblock()
+    set(GTest_BUNDLED ON)
+    find_package2(BUNDLED GTest REQUIRED)
     set(GTest_VERSION "Dec 26 2024 @7d76a23")
     set(GTest_PREFIX "<bundled>")
   endif()
 endif()
 
-if(BUILD_DOCS)
-  find_package2(PRIVATE Doxygen REQUIRED VERSION 1.8.8
-    COMPONENTS dot
-  )
-endif()
-
 if(BUILD_TIDY_TOOL)
+  enable_language(C) # LLVMConfig.cmake runs C compile checks
   find_package2(PRIVATE LLVM REQUIRED)
-  find_package2(PRIVATE Clang REQUIRED)
+  find_package2(PRIVATE Clang REQUIRED CONFIG HINTS "${LLVM_LIBRARY_DIR}/cmake/clang")
   set(Clang_VERSION ${LLVM_VERSION})
-  find_package2(PRIVATE CLI11 REQUIRED)
 endif()
 
 find_package2_implicit_dependencies() # Always call last after latest find_package2
@@ -83,18 +98,9 @@ if(PROJECT_PACKAGE_DEPENDENCIES)
         set(FairLogger_PREFIX ${FairLogger_ROOT})
       endif()
     elseif(${dep} STREQUAL Boost)
-      if(TARGET Boost::headers)
-        get_target_property(boost_include Boost::headers INTERFACE_INCLUDE_DIRECTORIES)
-      else()
-        get_target_property(boost_include Boost::boost INTERFACE_INCLUDE_DIRECTORIES)
-      endif()
+      get_target_property(boost_include Boost::headers INTERFACE_INCLUDE_DIRECTORIES)
       get_filename_component(Boost_PREFIX ${boost_include}/.. ABSOLUTE)
       unset(boost_include)
-    elseif(${dep} STREQUAL Doxygen)
-      get_target_property(doxygen_bin Doxygen::doxygen INTERFACE_LOCATION)
-      get_filename_component(Doxygen_PREFIX ${doxygen_bin} DIRECTORY)
-      get_filename_component(Doxygen_PREFIX ${Doxygen_PREFIX}/.. ABSOLUTE)
-      unset(doxygen_bin)
     elseif(NOT ${dep}_PREFIX)
       # try to guess
       if(TARGET ${dep}::${dep})

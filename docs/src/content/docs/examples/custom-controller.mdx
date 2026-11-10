@@ -1,0 +1,156 @@
+---
+title: 'custom-controller: control from code'
+description: 'A controller plugin, compiled into the program, moves a device through all states; a state change callback ends the run after 3 s.'
+sidebar:
+  order: 11
+code: [fairmq/Plugin.h, fairmq/PluginServices.h, fairmq/DeviceRunner.h, fairmq/PluginManager.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { FileTree } from '@astrojs/starlight/components';
+
+This example replaces the built-in controller of a device with an own [plugin](/concepts/plugins/). The plugin is compiled into the program. It takes device control and requests each [transition](/concepts/states/) from a state change callback.
+
+The code is in [`examples/custom-controller`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/custom-controller). The example shows how to:
+
+- write a controller plugin that takes device control,
+- compile a plugin into the executable and load it with the prefix `s:`,
+- start a device with [`DeviceRunner`](/api/fair/mq/DeviceRunner/) and its hooks, without `runDevice.h`,
+- end the run through a property that the controller reads.
+
+For the general procedure, see [Control a device from code](/guides/control-from-code/).
+
+## Topology
+
+The example has no channels. `MyDevice` in `MyDevice.h` is an alias of [`fair::mq::Device`](/api/fair/mq/Device/). The device goes through its states without data.
+
+## Requirements
+
+The example needs only FairMQ. It has no start script and no install rule.
+
+## Build and run
+
+The examples build when the CMake option `BUILD_EXAMPLES` is `ON` (the default). The executable is in the build directory:
+
+<FileTree>
+
+- build/examples/custom-controller/
+  - fairmq-ex-custom-controller
+
+</FileTree>
+
+```sh
+cd build/examples/custom-controller
+./fairmq-ex-custom-controller
+```
+
+The program stops by itself about 3 s after the device enters `RUNNING`. Its exit code is 0.
+
+`CMakeLists.txt` sets the target property `ENABLE_EXPORTS ON`. The executable then exports its symbols, so the plugin manager can find the plugin factory in the program itself.
+
+## The code
+
+### The program
+
+`main.cxx` creates a `DeviceRunner` and adds two hooks:
+
+<Snippet file="examples/custom-controller/main.cxx" start="DeviceRunner runner(argc, argv);" end="return runner.RunWithExceptionHandlers();" />
+
+- `hooks::LoadPlugins` runs after the runner loads the built-in plugin `config` and before it loads the built-in plugin `control`. The hook loads `s:mycontroller`. The prefix `s:` loads a static plugin, a plugin that is part of the executable. The name is the second argument of `REGISTER_FAIRMQ_PLUGIN`.
+- `hooks::InstantiateDevice` sets the property `catch-signals` to 0. Thus the built-in control plugin installs no signal handler. The hook also creates the device and subscribes to its state changes with [`SubscribeToStateChange()`](/api/fair/mq/Device/#SubscribeToStateChange).
+- In `RUNNING`, the callback waits 3 s with [`WaitFor()`](/api/fair/mq/Device/#WaitFor). Then it sets the property `please-shut-me-down` to `true`.
+- [`RunWithExceptionHandlers()`](/api/fair/mq/DeviceRunner/#RunWithExceptionHandlers) runs the device. It returns 1 if an exception reaches it.
+
+The hooks are declared in [`DeviceRunner.h`](/source/fairmq/DeviceRunner.h/#L84-L89). The order of the steps is in [`DeviceRunner.cxx`](/source/fairmq/DeviceRunner.cxx/#L109-L196).
+
+### The controller plugin
+
+`MyController` is a [`fair::mq::Plugin`](/api/fair/mq/Plugin/). The constructor takes device control and subscribes to the state changes of the device:
+
+<Snippet file="examples/custom-controller/MyController.h" start="struct MyController : fair::mq::Plugin" />
+
+- The plugin manager creates the plugins in their load order: `config`, `mycontroller`, `control`. Thus [`TakeDeviceControl()`](/api/fair/mq/Plugin/#TakeDeviceControl) of `mycontroller` succeeds first. The built-in control plugin cannot take control. It logs the reason on the severity `debug` and starts no controller.
+- For each state, the callback requests the next transition with [`ChangeDeviceState()`](/api/fair/mq/Plugin/#ChangeDeviceState). In `BINDING`, `CONNECTING`, `INITIALIZING TASK`, `RESETTING TASK` and `RESETTING DEVICE`, the device changes state by itself, so the callback requests nothing.
+- The callback reads `please-shut-me-down` with [`GetProperty()`](/api/fair/mq/Plugin/#GetProperty-2). The default is `false`.
+- In `EXITING`, the plugin calls [`ReleaseDeviceControl()`](/api/fair/mq/Plugin/#ReleaseDeviceControl). `DeviceRunner::Run()` waits until all plugins release device control, and then returns.
+
+The plugin requests these transitions:
+
+| State | `please-shut-me-down` is `false` | `please-shut-me-down` is `true` |
+| --- | --- | --- |
+| `IDLE` | `InitDevice` | `End` |
+| `INITIALIZING DEVICE` | `CompleteInit` | `CompleteInit` |
+| `INITIALIZED` | `Bind` | `Bind` |
+| `BOUND` | `Connect` | `Connect` |
+| `DEVICE READY` | `InitTask` | `ResetDevice` |
+| `READY` | `Run` | `ResetTask` |
+| `RUNNING` | `Stop` | `Stop` |
+
+The macro `REGISTER_FAIRMQ_PLUGIN` registers the class under the name `mycontroller`:
+
+<Snippet file="examples/custom-controller/MyController.h" start="REGISTER_FAIRMQ_PLUGIN(example::MyController" end="fair::mq::Plugin::NoProgramOptions)" />
+
+### The order of the callbacks
+
+`RunStateMachine()` first calls the state change callbacks with `IDLE`, so the plugin requests `InitDevice`. In each later state, the state machine calls the state change callbacks before the state handler of the device. See [`StateMachine::ProcessWork()`](/source/fairmq/StateMachine.cxx/#L402-L420) and the [loop of the state machine](/source/fairmq/StateMachine.cxx/#L191-L219).
+
+The state machine calls the callbacks in the order of the number at the start of their key. A key without a number, for example `example` or `mycontroller`, has the number 0. Callbacks with the same number run in the order of subscription. The hook in `main.cxx` subscribes before the plugin manager creates the plugin. Thus, in `RUNNING`, the callback of `main.cxx` runs first:
+
+1. The callback of `main.cxx` waits 3 s and sets `please-shut-me-down` to `true`.
+2. The callback of the plugin requests `Stop`.
+3. The state handler of the device logs `fair::mq::Device running...`. The device has no own `Run()` code, and a transition is pending. Thus the device goes to `READY` at once.
+4. In `READY`, `DEVICE READY` and `IDLE`, the plugin reads `true`. It requests `ResetTask`, `ResetDevice` and `End`.
+
+## Output
+
+The log shows each state change (here without the prefix of the logger):
+
+```txt
+Starting FairMQ state machine --> IDLE
+IDLE ---> INITIALIZING DEVICE
+INITIALIZING DEVICE ---> INITIALIZED
+INITIALIZED ---> BINDING
+BINDING ---> BOUND
+BOUND ---> CONNECTING
+CONNECTING ---> DEVICE READY
+DEVICE READY ---> INITIALIZING TASK
+INITIALIZING TASK ---> READY
+READY ---> RUNNING
+fair::mq::Device running...
+RUNNING ---> READY
+READY ---> RESETTING TASK
+RESETTING TASK ---> DEVICE READY
+DEVICE READY ---> RESETTING DEVICE
+RESETTING DEVICE ---> IDLE
+IDLE ---> EXITING
+```
+
+The 3 s pause is between `READY ---> RUNNING` and `fair::mq::Device running...`. `main.cxx` sets the console severity to `debug`, so the log also shows debug lines. The log also has these warnings:
+
+- `Signal handling (e.g. Ctrl-C) has been deactivated.`, because `catch-signals` is 0.
+- `No device ID or config-key provided for the configuration parser.`, because the program gives no `--id`.
+- `No channels created after finishing initialization`, because the device has no channels.
+
+## Test
+
+`examples/custom-controller/CMakeLists.txt` adds the test `Example.custom-controller`. It runs the executable and passes when the exit code is 0. The timeout is 30 s.
+
+Configure with `-DBUILD_TESTING=ON` to register the test. Then run it in the build directory:
+
+```sh
+ctest -R Example.custom-controller
+```
+
+## Things to try
+
+- Change the time in `WaitFor(3s)`.
+- Set `please-shut-me-down` to `true` in the hook `InstantiateDevice`. Then the plugin requests `End` in the first `IDLE`, and the device never runs.
+- Give the plugin its own options. Remove the `//` in front of the function `MyControllerProgramOptions()` in `MyController.h`. Then use `example::MyControllerProgramOptions` as the last argument of `REGISTER_FAIRMQ_PLUGIN`, in place of `fair::mq::Plugin::NoProgramOptions`. The options `--custom-dummy-option` and `--custom-dummy-option2` then show in the output of `--help`.
+
+## Related pages
+
+- [Control a device from code](/guides/control-from-code/)
+- [Write a plugin](/guides/write-plugin/)
+- [Plugins and control](/concepts/plugins/)
+- [Device states](/concepts/states/)
+- [States and transitions](/reference/states/)

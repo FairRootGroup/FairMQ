@@ -1,0 +1,162 @@
+---
+// The shared memory objects of one session. Names: fairmq/shmem/Common.h (MakeShmName) and the
+// callers in Manager.h, UnmanagedRegion.h and Monitor.cxx. Sizes: kManagementSegmentSize,
+// --shm-segment-size, RegionConfig::rcSegmentSize.
+const rows = [
+  { name: 'fmq_eca859e3_mng', kind: 'management segment', size: '6.25 MiB', w: 18, what: 'The session info, the heartbeat, the counters of devices, events and automatic region IDs, and the lists of segments and regions.' },
+  { name: 'fmq_eca859e3_m_0', kind: 'managed segment', size: '--shm-segment-size, 2 GiB', w: 100, what: 'The buffers of NewMessage(). More segments are possible: _m_1, _m_2 …', accent: true },
+  { name: 'fmq_eca859e3_rg_<id>', kind: 'unmanaged region', size: 'size from the creator', w: 60, what: 'Memory that a device creates with NewUnmanagedRegion() and fills itself.', accent: true },
+  { name: 'fmq_eca859e3_rrc_<id>', kind: 'reference counts', size: 'rcSegmentSize, 100 MB', w: 34, what: 'The reference counts of copied region messages. It exists only if rcSegmentSize is more than 0.' },
+  { name: 'fmq_eca859e3_rgq_<id>', kind: 'message queue', size: '1024 bunches of up to 6 KiB', w: 18, what: 'The acknowledgements of region blocks, back to the creator of the region.' },
+  { name: 'sem.fmq_eca859e3_ms', kind: 'named mutex', size: '', w: 2, what: 'fairmq-shmmonitor creates it. It shows that a monitor runs for the session.' },
+];
+---
+
+<figure class="fmq-map not-content">
+  <div class="map-id">
+    <span>user ID <code>1000</code></span>
+    <span class="op">+</span>
+    <span>session <code>default</code></span>
+    <span class="op">→ SHA-256 → first 4 bytes →</span>
+    <span>shmId <code class="hl">eca859e3</code></span>
+  </div>
+  <ol class="map-rows">
+    {
+      rows.map((r) => (
+        <li class={r.accent ? 'accent' : ''}>
+          <div class="map-name">
+            <code>/dev/shm/{r.name}</code>
+            <span class="map-kind">{r.kind}</span>
+          </div>
+          <div class="map-bar" aria-hidden="true">
+            <i style={`width:${r.w}%`} />
+          </div>
+          <p class="map-what">
+            {r.what} {r.size && <span class="map-size">{r.size}</span>}
+          </p>
+        </li>
+      ))
+    }
+  </ol>
+  <figcaption>
+    All devices with the same session name and the same user open the same objects. The last device that leaves removes them, unless <code>--shm-no-cleanup</code> is true. It does not remove the
+    mutex of the monitor. A region with a path is a file in that path, not an object in <code>/dev/shm</code>. Bars show the size only roughly.
+  </figcaption>
+</figure>
+
+<style>
+  .fmq-map {
+    margin: 1.5rem 0;
+    border: 1px solid var(--fmq-rule);
+    border-radius: 6px;
+    background: var(--fmq-paper);
+    overflow: hidden;
+  }
+  .map-id {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.6rem;
+    align-items: baseline;
+    padding: 0.75rem 1rem;
+    background: var(--fmq-paper-2);
+    border-bottom: 1px solid var(--fmq-rule);
+    font-size: 0.875rem;
+    color: var(--fmq-ink-2);
+  }
+  .map-id .op {
+    color: var(--fmq-ink-3);
+    font-size: 0.8125rem;
+  }
+  code {
+    font-family: var(--fmq-font-mono);
+    font-size: 0.8125rem;
+    color: var(--fmq-ink);
+  }
+  code.hl {
+    background: var(--fmq-saffron-tint);
+    border: 1px solid var(--fmq-bar);
+    border-radius: 3px;
+    padding: 0 0.3em;
+  }
+  .map-rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .map-rows li {
+    display: grid;
+    grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
+    gap: 0.25rem 1rem;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--fmq-rule);
+    margin: 0;
+  }
+  .map-rows li:last-child {
+    border-bottom: 0;
+  }
+  .map-name {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+  .map-name code {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  .map-kind {
+    font: 600 0.66rem/1.3 var(--fmq-font-body);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fmq-ink-3);
+  }
+  .map-bar {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    height: 10px;
+    border: 1px solid var(--fmq-rule-strong);
+    border-radius: 2px;
+    background: var(--fmq-paper-2);
+  }
+  .map-bar i {
+    display: block;
+    height: 100%;
+    min-width: 3px;
+    background: var(--fmq-ink-3);
+  }
+  .accent .map-bar i {
+    background: var(--fmq-saffron);
+  }
+  .map-what {
+    grid-column: 2;
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--fmq-ink-2);
+    line-height: 1.45;
+  }
+  .map-size {
+    font: 500 0.75rem var(--fmq-font-mono);
+    color: var(--fmq-ink-3);
+    white-space: nowrap;
+  }
+  figcaption {
+    font-size: 0.85rem;
+    color: var(--fmq-ink-3);
+    padding: 0.6rem 1rem 0.75rem;
+    border-top: 1px solid var(--fmq-rule);
+  }
+  figcaption code {
+    font-size: 0.8em;
+  }
+  @media (max-width: 40rem) {
+    .map-rows li {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .map-bar,
+    .map-what {
+      grid-column: 1;
+      grid-row: auto;
+    }
+  }
+</style>

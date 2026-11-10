@@ -1,5 +1,5 @@
 ################################################################################
-#    Copyright (C) 2021 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH    #
+# Copyright (C) 2021-2026 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
 #                                                                              #
 #              This software is distributed under the terms of the             #
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
@@ -18,19 +18,26 @@ target.
 
 .. code-block:: cmake
 
-  fairmq_target_tidy(TARGET <target> [EXTRA_ARGS <args>]
-                    [CLANG_EXECUTABLE <clang>])
+  fairmq_target_tidy(TARGET <target> [CHECKS <globs>] [EXTRA_ARGS <args>...])
 
 Registers a custom command that depends on ``<target>`` which runs ``fairmq-tidy``
-on the source files that belong to ``<target>``. Optional extra arguments
-``<args>`` are passed to the ``fairmq-tidy`` command-line.
+on the source files that belong to ``<target>``. ``fairmq-tidy`` is ``clang-tidy``
+with the ``fairmq-*`` checks built in.
+
+``CHECKS`` selects the checks (default: ``fairmq-*``). It replaces the
+``Checks`` of any ``.clang-tidy`` file. Optional extra arguments ``<args>`` are
+passed to the ``fairmq-tidy`` command-line, e.g. ``--fix`` or
+``--warnings-as-errors=fairmq-*``.
+
+The argument ``CLANG_EXECUTABLE`` of earlier versions has no effect:
+``fairmq-tidy`` knows the Clang resource directory it was built with.
 
 Requires ``CMAKE_EXPORT_COMPILE_COMMANDS`` to be enabled.
 
 #]=======================================================================]
 
 function(fairmq_target_tidy)
-  cmake_parse_arguments(PARSE_ARGV 0 ARG "" "TARGET;EXTRA_ARGS;CLANG_EXECUTABLE" "")
+  cmake_parse_arguments(PARSE_ARGV 0 ARG "" "TARGET;CHECKS;CLANG_EXECUTABLE" "EXTRA_ARGS")
 
   if(NOT CMAKE_EXPORT_COMPILE_COMMANDS)
     message(AUTHOR_WARNING "CMAKE_EXPORT_COMPILE_COMMANDS is not enabled. Skipping.")
@@ -47,33 +54,8 @@ function(fairmq_target_tidy)
     return()
   endif()
 
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    if(NOT fairmq_tidy_clang_resource_dir)
-      if(ARG_CLANG_EXECUTABLE)
-        set(clang_exe ${ARG_CLANG_EXECUTABLE})
-      else()
-        if(TARGET clang)
-          get_property(clang_exe TARGET clang PROPERTY LOCATION)
-        else()
-          set(clang_exe "clang")
-        endif()
-      endif()
-      execute_process(
-        COMMAND ${clang_exe} -print-resource-dir
-        OUTPUT_VARIABLE clang_resource_dir
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-      )
-      set(fairmq_tidy_clang_resource_dir ${clang_resource_dir}
-        CACHE PATH "fairmq_target_tidy() internal state" FORCE)
-    endif()
-    list(APPEND ARG_EXTRA_ARGS
-      "--extra-arg-before=-I${fairmq_tidy_clang_resource_dir}/include")
-  endif()
-
-  if(ARG_EXTRA_ARGS)
-    set(extra 1)
-  else()
-    set(extra 0)
+  if(NOT ARG_CHECKS)
+    set(ARG_CHECKS "fairmq-*")
   endif()
 
   get_target_property(sources ${ARG_TARGET} SOURCES)
@@ -86,8 +68,8 @@ function(fairmq_target_tidy)
     set(src_stamp "${CMAKE_CURRENT_BINARY_DIR}/${target_nocolon}-${source_noslash}.fairmq-tidy")
     add_custom_command(
       OUTPUT ${src_stamp}
-      COMMAND $<TARGET_FILE:FairMQ::fairmq-tidy> -p=${CMAKE_BINARY_DIR}
-              $<${extra}:${ARG_EXTRA_ARGS}> ${source}
+      COMMAND $<TARGET_FILE:FairMQ::fairmq-tidy> -p=${PROJECT_BINARY_DIR}
+              "--checks=-*,${ARG_CHECKS}" ${ARG_EXTRA_ARGS} ${source}
       COMMAND ${CMAKE_COMMAND} -E touch ${src_stamp}
       COMMENT "fairmq-tidy: Analyzing source file '${source}' of target '${ARG_TARGET}'"
       DEPENDS ${ARG_TARGET}

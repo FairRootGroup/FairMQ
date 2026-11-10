@@ -15,7 +15,6 @@ namespace fair::mq::test
 {
 
 extern std::string runTestDevice; /// Path to test device executable.
-extern std::string mqConfig; /// Path to FairMQ device config file.
 
 } // namespace fair::mq::test
 

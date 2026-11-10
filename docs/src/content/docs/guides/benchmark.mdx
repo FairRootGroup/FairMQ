@@ -1,0 +1,253 @@
+---
+title: 'Run a benchmark'
+description: 'Measure the throughput of the zeromq and shmem transports with fairmq-bsampler and fairmq-sink, and read the rate lines that the devices log.'
+sidebar:
+  order: 10
+code: [fairmq/devices/BenchmarkSampler.h, fairmq/devices/Sink.h, fairmq/Device.cxx, fairmq/shmem/Manager.h]
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import Snippet from '../../../components/Snippet.astro';
+
+This guide measures the throughput between two devices on one host. `fairmq-bsampler` sends messages of a fixed size as fast as the channel accepts them. `fairmq-sink` receives the messages and discards them. Each device logs the message rate and the data rate of its channel every second. The options of the two devices are on [Built-in devices](/tools/builtin-devices/).
+
+## Before you start
+
+- Use an optimized build of FairMQ. If you give no `CMAKE_BUILD_TYPE`, FairMQ uses `RelWithDebInfo`.
+- Keep the CMake option `FAIRMQ_DEBUG_MODE` at its default `OFF`. In debug mode, the `shmem` transport records each message in the shared memory under a lock.
+- Find the executables. In a build directory, they are in `<build>/fairmq/`. In an installation, they are in the `bin` directory. The commands on this page expect them in `$PATH`.
+- Open two terminals on the same host.
+
+## Measure the zeromq transport
+
+<Steps>
+
+1. In the first terminal, start the sink:
+
+   ```sh
+   fairmq-sink --id sink1 \
+     --channel-config name=data,type=pair,method=connect,address=tcp://127.0.0.1:5555
+   ```
+
+2. In the second terminal, start the sampler with messages of 1 MB:
+
+   ```sh
+   fairmq-bsampler --id bsampler1 --msg-size 1000000 \
+     --channel-config name=data,type=pair,method=bind,address=tcp://127.0.0.1:5555
+   ```
+
+3. Wait some seconds. Then read the rate lines in the two terminals. See [Read the rate lines](#read-the-rate-lines).
+
+4. Stop each device. Push `q` in its terminal, or push Ctrl+C.
+
+</Steps>
+
+The two devices connect with a `pair` channel. The [start script](#use-the-start-script) uses the same channel. The default of `--msg-size` is `1000000` bytes. The command gives the option only to show the value.
+
+## Measure the shmem transport
+
+With `--transport shmem`, the sampler makes each message in a shared memory segment. The socket sends only a small metadata message with the location of the buffer. The receiver finds the buffer in the same segment.
+
+<Steps>
+
+1. In the first terminal, start the sink:
+
+   ```sh
+   fairmq-sink --id sink1 --transport shmem \
+     --channel-config name=data,type=pair,method=connect,address=tcp://127.0.0.1:5555
+   ```
+
+2. In the second terminal, start the sampler:
+
+   ```sh
+   fairmq-bsampler --id bsampler1 --transport shmem --msg-size 1000000 \
+     --shm-throw-bad-alloc false \
+     --channel-config name=data,type=pair,method=bind,address=tcp://127.0.0.1:5555
+   ```
+
+3. Read the rate lines. Then stop the two devices.
+
+</Steps>
+
+The two devices must use the same shared memory:
+
+- They must run on the same host.
+- They must use the same `--session`. The default is `default`.
+- They must run with the same effective user ID. The name of the segment comes from the session name and the user ID.
+
+The default segment size is 2147483648 bytes (2 GiB, option `--shm-segment-size`). Messages that wait in the queues of the channel use memory in the segment. With `--shm-throw-bad-alloc false`, the sampler waits for free memory when the segment is full. Without this option, the sampler goes to the state `ERROR`. See [Problems that can occur](#problems-that-can-occur).
+
+## Send a fixed number of messages
+
+To measure the time for a number of messages, give the same `--max-iterations` to the two devices. Also give `--control static`, so that each process ends after the run.
+
+<Steps>
+
+1. Start the sink:
+
+   ```sh
+   fairmq-sink --id sink1 --control static --max-iterations 100000 \
+     --channel-config name=data,type=pair,method=connect,address=tcp://127.0.0.1:5555
+   ```
+
+2. Start the sampler:
+
+   ```sh
+   fairmq-bsampler --id bsampler1 --control static --max-iterations 100000 \
+     --channel-config name=data,type=pair,method=bind,address=tcp://127.0.0.1:5555
+   ```
+
+3. Read the last lines of each device:
+
+   ```txt
+   Done 100000 iterations in <t>ms.
+   ```
+
+   ```txt
+   Received 100000 messages in <t>ms.
+   ```
+
+</Steps>
+
+Each device sends or receives one more message than the value of `--max-iterations`. The log line shows the value. See [the note on fairmq-bsampler](/tools/builtin-devices/#fairmq-bsampler).
+
+Each time starts when the device enters the state `RUNNING`. So the time includes the wait for the other device. Use the time of the device that you start last. The mean data rate is the number of messages multiplied by `--msg-size`, divided by the time.
+
+With the default `--control dynamic`, the device does not end after the last message. It goes back to the state `READY` and waits for a key.
+
+## Change the load
+
+Give these options to the sampler. Give `--multipart` with the same value to the sink.
+
+| Option | Effect |
+| --- | --- |
+| `--msg-size <bytes>` | Size of each message, or of each part. Small messages show the cost of each message. Large messages show the maximum data rate. |
+| `--multipart true --num-parts <n>` | Send multipart messages of `n` parts. The rate lines count a multipart message as one message. |
+| `--msg-rate <n>` | Send at most `n` messages per second. Use it to measure a fixed load. |
+| `--memset true` | Write zeros into each buffer before the send. Without it, no device writes or reads the data. |
+| `--msg-alignment <bytes>` | Alignment of each buffer. `0` is the default alignment of the transport. |
+
+To keep the two devices on different CPU cores, start them with `taskset`:
+
+```sh
+taskset -c 1 fairmq-sink --id sink1 \
+  --channel-config name=data,type=pair,method=connect,address=tcp://127.0.0.1:5555
+```
+
+```sh
+taskset -c 0 fairmq-bsampler --id bsampler1 \
+  --channel-config name=data,type=pair,method=bind,address=tcp://127.0.0.1:5555
+```
+
+## Use the start script
+
+The build directory has the script `startMQBenchmark.sh`. It starts the sampler and the sink in two `xterm` windows, with the channel of this page. It needs `xterm` and a display.
+
+<Steps>
+
+1. Go to the directory of the script:
+
+   ```sh
+   cd build/fairmq
+   ```
+
+2. Start the benchmark. The parameters are the message size, the number of iterations and the transport:
+
+   ```sh
+   ./startMQBenchmark.sh 1000000 0 shmem
+   ```
+
+3. Read the rate lines in the two windows.
+
+</Steps>
+
+The script also takes the parameters affinity, multipart and number of parts. It does not give `--control static`. See [The script startMQBenchmark.sh](/tools/builtin-devices/#the-script-startmqbenchmarksh).
+
+## Read the rate lines
+
+During the state `RUNNING`, a thread of each device logs one line for each sub-channel every second. These lines have the severity `info`:
+
+```txt
+data[0]: in: <msg/s> (<MB/s> MB) out: <msg/s> (<MB/s> MB)
+```
+
+- `data[0]` is the name of the sub-channel. The device pads the names on the left to the length of the longest name.
+- `in` is the receive rate. `out` is the send rate.
+- The first number is the number of messages per second.
+- The number in parentheses is the data rate in megabytes per second. One MB is 1000000 bytes. A multipart message counts once, with the sum of the sizes of its parts.
+- The device divides the counts by the measured time since the last line.
+
+The device computes the values in [`Device::LogSocketRates()`](/source/fairmq/Device.cxx/#L613-L705):
+
+<Snippet file="fairmq/Device.cxx" start="mbPerSecIn.at(i) = (static_cast" end='<< "out: "' />
+
+The `in` values of the sampler and the `out` values of the sink are 0. The numbers in this example are not a measurement:
+
+```txt
+data[0]: in: 0 (0 MB) out: 2840.16 (2840.16 MB)
+```
+
+```txt
+data[0]: in: 2840.16 (2840.16 MB) out: 0 (0 MB)
+```
+
+The channel property `rateLogging` sets the interval in seconds. The default is `1`. `0` turns the lines off for the sub-channel. Give the property in the channel configuration, for example `name=data,type=pair,method=bind,address=tcp://127.0.0.1:5555,rateLogging=0`. See [Channel properties](/reference/channel-properties/).
+
+:::caution[Keep rateLogging at 1 for measurements]
+With a value `n` above 1, the device adds up the counts of `n` seconds, but it divides them by the time of the last second. So the logged rates are about `n` times too high.
+:::
+
+With `--severity state`, `warn` or a higher severity, the device does not log the rate lines.
+
+## Understand the numbers
+
+- Compare the `out` rate of the sampler with the `in` rate of the sink. After some seconds, they are almost equal.
+- Do not use the first lines. They include the time until the other device connects, and the time to fill the queues.
+- The data rate is the message rate multiplied by the message size.
+- With `shmem`, the data does not go through the socket. The data rate shows how fast the devices pass buffers, not how fast data moves in memory.
+- Without `--memset true`, the measurement does not include the time to write or read the data. A real device writes and reads its data.
+- Run each measurement more than one time. Other processes on the host change the result.
+
+## Measure between two hosts
+
+Only the `zeromq` transport connects devices on two hosts. The `shmem` transport works only on one host.
+
+<Steps>
+
+1. On the first host, start the sampler. It binds on all interfaces:
+
+   ```sh
+   fairmq-bsampler --id bsampler1 \
+     --channel-config name=data,type=pair,method=bind,address=tcp://*:5555
+   ```
+
+2. On the second host, start the sink. Replace `<host1>` with the name or the IP address of the first host:
+
+   ```sh
+   fairmq-sink --id sink1 \
+     --channel-config name=data,type=pair,method=connect,address=tcp://<host1>:5555
+   ```
+
+</Steps>
+
+The firewall of the first host must accept connections on port 5555.
+
+## Problems that can occur
+
+| Problem | Cause | Solution |
+| --- | --- | --- |
+| The sampler goes to `ERROR` with `Requested message size (<n>) exceeds segment size (<m>)`. | With `shmem`, a message and its header must fit into the segment. | Give a larger `--shm-segment-size` to the two devices, or use a smaller `--msg-size`. |
+| The sampler goes to `ERROR` with `shmem: could not create a message of size <n>, …, free memory: <m>`. | The segment is full. By default, the device tries one time. | Give `--shm-throw-bad-alloc false` to the sampler. It then tries again every `--bad-alloc-attempt-interval` ms (default 50) and logs no line. Or give `--bad-alloc-max-attempts <n>`. |
+| The rate lines show `in: 0` on the sink. | The devices do not use the same address, transport, session or user. | Check the options of the two devices. |
+| The rates of the sink do not agree with the sampler, or the sink logs errors. | The devices use different `--multipart` values. With `shmem`, single messages and multipart messages have different metadata. | Give the same `--multipart` value to the two devices. |
+| Shared memory of an old run stays after a crash. | A device that crashes does not remove the shared memory. | Remove it with `fairmq-shmmonitor --cleanup --session default`. See [Monitor and clean up](/shmem/monitor/). |
+| The rates change a lot between runs. | Other processes use the same CPU cores. | Pin the devices to different cores with `taskset`. |
+
+## Related pages
+
+- [Built-in devices](/tools/builtin-devices/): all options of `fairmq-bsampler` and `fairmq-sink`, and the start script.
+- [Channel properties](/reference/channel-properties/): `rateLogging`, `sndBufSize`, `rcvBufSize` and the other properties.
+- [Sessions and segments](/shmem/sessions/): the names of the shared memory objects.
+- [Tune and debug](/shmem/tuning/): segment size and bad allocations.
+- [fairmq-shmmonitor](/tools/shmmonitor/): look at and remove shared memory.
+- [Transports](/concepts/transports/#tune-the-zeromq-transport): the I/O threads, queues and kernel buffers of the zeromq transport.

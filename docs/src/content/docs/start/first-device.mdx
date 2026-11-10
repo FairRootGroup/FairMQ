@@ -1,0 +1,218 @@
+---
+title: Your first device
+description: Write a sampler and a sink, build them against an installed FairMQ, and run them in two terminals.
+sidebar:
+  order: 3
+code: [fairmq/runDevice.h, fairmq/DeviceRunner.cxx, fairmq/Device.h, fairmq/plugins/control/Control.cxx, fairmq/StateMachine.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps, FileTree } from '@astrojs/starlight/components';
+
+In this tutorial, you write two devices and run them in two terminals. The sampler sends the text `Hello` once per second, and the sink receives it. The code is the code of [example 1-1](/examples/1-1/).
+
+You need an installed FairMQ (see [Install](/start/install/)), CMake 3.15 or later, and a C++17 compiler.
+
+## The topology
+
+| Device | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- |
+| sampler | `data` | `push` | `bind` | `tcp://*:5555` |
+| sink | `data` | `pull` | `connect` | `tcp://localhost:5555` |
+
+The sampler binds its channel to the port 5555 on all network interfaces. The sink connects to this port on the same host. Both devices use the default transport `zeromq`.
+
+## Create the project
+
+Make a folder with three files:
+
+<FileTree>
+
+- first-device/
+  - CMakeLists.txt
+  - sampler.cxx
+  - sink.cxx
+
+</FileTree>
+
+## Write the sampler
+
+Write this code into `sampler.cxx`:
+
+<Snippet file="examples/1-1/sampler.cxx" title="sampler.cxx" />
+
+The parts of the sampler:
+
+- `struct Sampler : fair::mq::Device` makes the sampler a [device](/api/fair/mq/Device/).
+- The device calls [`InitTask()`](/api/fair/mq/Device/#InitTask) in the state `INITIALIZING TASK`. The sampler reads its options there with [`fConfig->GetProperty<T>()`](/api/fair/mq/ProgOptions/#GetProperty).
+- In the state `RUNNING`, the device calls [`ConditionalRun()`](/api/fair/mq/Device/#ConditionalRun) again and again. Return `true` to get the next call. Return `false` to go to the state `READY`.
+- [`NewMessage()`](/api/fair/mq/Device/#NewMessage) makes a message from an existing buffer. FairMQ calls the lambda when it does not need the buffer any more. The lambda deletes the string.
+- [`Send()`](/api/fair/mq/Device/#Send) sends the message on the channel `data`. It returns the number of bytes, or a negative [transfer code](/api/fair/mq/TransferCode/), for example when a state change interrupts it.
+- `addCustomOptions()` adds the options `--text` (default `Hello`) and `--max-iterations` (default `0`, no limit).
+- `getDevice()` makes the device object.
+
+## Write the sink
+
+Write this code into `sink.cxx`:
+
+<Snippet file="examples/1-1/sink.cxx" title="sink.cxx" />
+
+The parts of the sink:
+
+- The constructor calls [`OnData()`](/api/fair/mq/Device/#OnData). Then the device calls `HandleData()` for each message that arrives on the channel `data`. A device with a data callback does not call `ConditionalRun()` or `Run()`.
+- `HandleData()` returns `true` to wait for the next message, or `false` to go to the state `READY`.
+- [`GetData()`](/api/fair/mq/Message/#GetData) and [`GetSize()`](/api/fair/mq/Message/#GetSize) give the buffer of the message and its size in bytes.
+
+## The main function
+
+Both files include `fairmq/runDevice.h`. This header defines the function `main()`. Your code must define the two functions that the header declares:
+
+<Snippet file="fairmq/runDevice.h" start="// to be implemented by the user to return" end="void addCustomOptions" />
+
+The function `main()` makes a [`fair::mq::DeviceRunner`](/api/fair/mq/DeviceRunner/) and calls its [`Run()`](/api/fair/mq/DeviceRunner/#Run). `Run()` does these steps (see [DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L109-L196)):
+
+1. It loads the built-in plugins `config` and `control`.
+2. It calls `addCustomOptions()`. Your options show in `--help` in the group `Custom options`.
+3. It parses the command line. For `--help`, it prints the options and stops.
+4. It calls `getDevice()` to get your device.
+5. It starts the plugins. The plugin `control` requests the state transitions of the device.
+6. It runs the state machine of the device until the device is in the state `EXITING`.
+
+Include `fairmq/runDevice.h` in only one source file of each program, because it defines `main()`.
+
+:::tip
+Older code includes `fairmq/runFairMQDevice.h`. In that header, `getDevice()` returns a raw pointer. See [Move from the FairMQ* names](/guides/migrate-names/).
+:::
+
+## Write the CMake file
+
+Write this code into `CMakeLists.txt`:
+
+```cmake title="CMakeLists.txt"
+cmake_minimum_required(VERSION 3.15)
+project(FirstDevice LANGUAGES CXX)
+
+find_package(FairMQ 1.11 REQUIRED)
+# FairMQConfig.cmake does not find the dependencies of FairMQ. Find them here.
+foreach(dep IN LISTS FairMQ_PACKAGE_DEPENDENCIES)
+  find_package(${dep} ${FairMQ_${dep}_VERSION} REQUIRED COMPONENTS ${FairMQ_${dep}_COMPONENTS})
+endforeach()
+
+add_executable(sampler sampler.cxx)
+target_link_libraries(sampler PRIVATE FairMQ::FairMQ)
+
+add_executable(sink sink.cxx)
+target_link_libraries(sink PRIVATE FairMQ::FairMQ)
+```
+
+The target `FairMQ::FairMQ` gives your programs the include directories, the C++17 requirement and the libraries. [Use FairMQ in a CMake project](/start/cmake/) tells more.
+
+## Build the devices
+
+```sh
+cmake -S first-device -B first-device/build -DCMAKE_PREFIX_PATH="$HOME/fairmq_install"
+cmake --build first-device/build
+```
+
+Set `CMAKE_PREFIX_PATH` to the installation prefix of FairMQ. If you use `spack load fairmq`, omit this option, because Spack sets the variable.
+
+## Run the devices
+
+<Steps>
+
+1. In a terminal, start the sampler:
+
+   ```sh
+   first-device/build/sampler --id sampler1 --rate 1 \
+     --channel-config "name=data,type=push,method=bind,address=tcp://*:5555,rateLogging=0"
+   ```
+
+2. In a second terminal, start the sink:
+
+   ```sh
+   first-device/build/sink --id sink1 \
+     --channel-config "name=data,type=pull,method=connect,address=tcp://localhost:5555,rateLogging=0"
+   ```
+
+</Steps>
+
+These command lines come from the start script [`fairmq-start-ex-1-1.sh.in`](https://github.com/FairRootGroup/FairMQ/blob/dev/examples/1-1/fairmq-start-ex-1-1.sh.in) of example 1-1. The options:
+
+| Option | What it does |
+| --- | --- |
+| `--id` | Sets the ID of the device. The plugin `config` needs the ID to read `--channel-config`. |
+| `--rate 1` | Calls `ConditionalRun()` at most once per second. The unit is Hz. The default `0` sets no limit. |
+| `--channel-config` | Configures one channel with comma-separated `key=value` pairs. `rateLogging=0` switches off the log of the transfer rates, which a channel writes each second by default. |
+
+## The output
+
+Each log line starts with the time and the severity, for example `[14:02:31][STATE]`. The output below does not show the time. Before these lines, each device prints the FairMQ logo with the version.
+
+The sampler goes through the states to `RUNNING` and sends the first message. It waits in `Send()` until the sink connects:
+
+```txt title="Terminal 1: sampler"
+[STATE] Starting FairMQ state machine --> IDLE
+[STATE] IDLE ---> INITIALIZING DEVICE
+[STATE] INITIALIZING DEVICE ---> INITIALIZED
+[STATE] INITIALIZED ---> BINDING
+[STATE] BINDING ---> BOUND
+[STATE] BOUND ---> CONNECTING
+[STATE] CONNECTING ---> DEVICE READY
+[STATE] DEVICE READY ---> INITIALIZING TASK
+[STATE] INITIALIZING TASK ---> READY
+[STATE] READY ---> RUNNING
+[INFO] fair::mq::Device running...
+[INFO] Sending "Hello"
+[INFO] Sending "Hello"
+[INFO] Sending "Hello"
+```
+
+The sink goes through the same states. Then it logs each message:
+
+```txt title="Terminal 2: sink"
+[STATE] READY ---> RUNNING
+[INFO] fair::mq::Device running...
+[INFO] Received: "Hello"
+[INFO] Received: "Hello"
+```
+
+In the state `RUNNING`, the plugin `control` also prints a list of keys. With the default control mode `--control dynamic`, you can control the device with these keys. For example, `h` shows the help and `q` stops the device.
+
+## Stop the devices
+
+Press Ctrl+C in each terminal. The plugin `control` catches the signal `SIGINT`. It moves the device through the reset states to `EXITING` (see [Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L450-L480)):
+
+```txt
+[INFO] Received device shutdown request (signal 2).
+[INFO] Waiting for graceful device shutdown. Hit Ctrl-C again to abort immediately.
+[STATE] RUNNING ---> READY
+[STATE] READY ---> RESETTING TASK
+[STATE] RESETTING TASK ---> DEVICE READY
+[STATE] DEVICE READY ---> RESETTING DEVICE
+[STATE] RESETTING DEVICE ---> IDLE
+[STATE] IDLE ---> EXITING
+```
+
+A second Ctrl+C stops the process at once with `std::abort()`. The signal `SIGTERM` also starts the shutdown, but a second `SIGTERM` has no effect. The option `--catch-signals 0` switches off this signal handling.
+
+## Things to try
+
+- Add `--max-iterations 5 --control static` to both commands. Each device leaves the state `RUNNING` after 5 messages. In the control mode `static`, the device then goes to `EXITING`, and the program ends.
+- Add `--text "Hello FairMQ"` to the sampler command to send a different text.
+- Add `--transport shmem` to both commands. Then the devices use shared memory for the data. See [Transports](/concepts/transports/).
+- Add `--severity debug` to see more log lines, for example the address that each channel uses.
+- Run `first-device/build/sampler --help`. The output shows all options, and your options in the group `Custom options`.
+
+## Problems that can occur
+
+- **The sink receives nothing.** Another program uses the port 5555. Then the sampler binds to a random port from 22000 to 23000, because the channel property `autoBind` is `true` by default. The log shows this only at the severity `debug`. Use a free port in both commands. With `autoBind=0` in its `--channel-config`, the sampler goes to the state `ERROR` instead, and the program ends.
+- **The log shows `No device ID or config-key provided for the configuration parser.`** The command has no `--id`. Without an ID, the plugin `config` does not read `--channel-config`, and the device has no channels. Add `--id` to the command.
+- **CMake does not find FairMQ or its dependencies.** See [Problems that can occur](/start/cmake/#problems-that-can-occur) on the CMake page.
+
+## Related pages
+
+- [Devices](/concepts/devices/) and [Device states](/concepts/states/): the device and its hooks.
+- [Channels and sockets](/concepts/channels/): types, methods and addresses.
+- [Receive data with callbacks or loops](/guides/receive-data/): `OnData()`, `ConditionalRun()` and `Run()`.
+- [Example 1-1](/examples/1-1/): the same devices, built in the FairMQ source tree.
+- [Command-line options](/reference/options/): all options of a device.

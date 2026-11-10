@@ -8,9 +8,7 @@
 
 include_guard(GLOBAL)
 
-if(NOT DEFINED ${GIT_EXECUTABLE})
-  find_program(GIT_EXECUTABLE NAMES git)
-endif()
+find_package(Git QUIET)
 
 # get_git_version([DEFAULT_VERSION version] [DEFAULT_DATE date] [OUTVAR_PREFIX prefix])
 #
@@ -22,11 +20,11 @@ function(get_git_version)
     set(ARGS_OUTVAR_PREFIX PROJECT)
   endif()
 
-  if(GIT_EXECUTABLE AND EXISTS ${CMAKE_SOURCE_DIR}/.git)
+  if(GIT_EXECUTABLE AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
     execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags --dirty --match "v*"
       OUTPUT_VARIABLE ${ARGS_OUTVAR_PREFIX}_GIT_VERSION
       OUTPUT_STRIP_TRAILING_WHITESPACE
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
     if(${ARGS_OUTVAR_PREFIX}_GIT_VERSION)
       # cut first two characters "v-"
@@ -35,7 +33,7 @@ function(get_git_version)
     execute_process(COMMAND ${GIT_EXECUTABLE} log -1 --format=%cd
       OUTPUT_VARIABLE ${ARGS_OUTVAR_PREFIX}_GIT_DATE
       OUTPUT_STRIP_TRAILING_WHITESPACE
-      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
   endif()
 

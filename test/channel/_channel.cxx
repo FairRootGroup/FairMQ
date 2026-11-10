@@ -6,14 +6,15 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <chrono>
 #include <fairmq/Channel.h>
 #include <fairmq/ProgOptions.h>
 #include <fairmq/Tools.h>
 #include <fairmq/TransportFactory.h>
+#include <helper/Sync.h>
+#include <helper/Transport.h>
+#include <helper/TransportParam.h>
 #include <gtest/gtest.h>
 #include <string>
-#include <thread>
 
 namespace
 {
@@ -27,35 +28,35 @@ TEST(Channel, Validation)
     ASSERT_THROW(channel.Validate(), Channel::ChannelConfigurationError);
 
     channel.UpdateType("pair");
-    ASSERT_EQ(channel.Validate(), false);
-    ASSERT_EQ(channel.IsValid(), false);
+    ASSERT_FALSE(channel.Validate());
+    ASSERT_FALSE(channel.IsValid());
 
     channel.UpdateAddress("bla");
     ASSERT_THROW(channel.Validate(), Channel::ChannelConfigurationError);
 
     channel.UpdateMethod("connect");
-    ASSERT_EQ(channel.Validate(), false);
-    ASSERT_EQ(channel.IsValid(), false);
+    ASSERT_FALSE(channel.Validate());
+    ASSERT_FALSE(channel.IsValid());
 
     channel.UpdateAddress("ipc://");
-    ASSERT_EQ(channel.Validate(), false);
-    ASSERT_EQ(channel.IsValid(), false);
+    ASSERT_FALSE(channel.Validate());
+    ASSERT_FALSE(channel.IsValid());
 
     channel.UpdateAddress("verbs://");
-    ASSERT_EQ(channel.Validate(), false);
-    ASSERT_EQ(channel.IsValid(), false);
+    ASSERT_FALSE(channel.Validate());
+    ASSERT_FALSE(channel.IsValid());
 
     channel.UpdateAddress("inproc://");
-    ASSERT_EQ(channel.Validate(), false);
-    ASSERT_EQ(channel.IsValid(), false);
+    ASSERT_FALSE(channel.Validate());
+    ASSERT_FALSE(channel.IsValid());
 
     channel.UpdateAddress("tcp://");
-    ASSERT_EQ(channel.Validate(), false);
-    ASSERT_EQ(channel.IsValid(), false);
+    ASSERT_FALSE(channel.Validate());
+    ASSERT_FALSE(channel.IsValid());
 
     channel.UpdateAddress("tcp://localhost:5555");
-    ASSERT_EQ(channel.Validate(), true);
-    ASSERT_EQ(channel.IsValid(), true);
+    ASSERT_TRUE(channel.Validate());
+    ASSERT_TRUE(channel.IsValid());
 
     channel.UpdateSndBufSize(-1);
     ASSERT_THROW(channel.Validate(), Channel::ChannelConfigurationError);
@@ -84,55 +85,49 @@ TEST(Channel, Validation)
 
     Channel channel2 = channel;
     ASSERT_NO_THROW(channel2.Validate());
-    ASSERT_EQ(channel2.Validate(), true);
-    ASSERT_EQ(channel2.IsValid(), true);
-    ASSERT_EQ(channel2.Validate(), true);
+    ASSERT_TRUE(channel2.Validate());
+    ASSERT_TRUE(channel2.IsValid());
+    ASSERT_TRUE(channel2.Validate());
 
     channel2.UpdateName("Kanal");
     ASSERT_EQ(channel2.GetName(), "Kanal");
 
     channel2.Invalidate();
-    ASSERT_EQ(channel2.IsValid(), false);
-    ASSERT_EQ(channel2.Validate(), true);
+    ASSERT_FALSE(channel2.IsValid());
+    ASSERT_TRUE(channel2.Validate());
 }
 
 auto testConnectedPeers(std::string const& transport)
 {
-    using namespace std::chrono_literals;
-
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<bool>("shm-monitor", true);
-    string const address(tools::ToString("ipc://", config.GetProperty<string>("session")));
+    test::Configure(config);
+    test::IpcAddress const address("connected_peers");
     unsigned long constexpr zero(0), one(1);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     Channel ch1("ch1", "pair", factory);
     ASSERT_EQ(ch1.GetNumberOfConnectedPeers(), zero);
-    ch1.Bind(address);
+    ASSERT_TRUE(ch1.Bind(address));
     ASSERT_EQ(ch1.GetNumberOfConnectedPeers(), zero);
 
     {
         Channel ch2("ch2", "pair", factory);
         ASSERT_EQ(ch2.GetNumberOfConnectedPeers(), zero);
-        ch2.Connect(address);
-        std::this_thread::sleep_for(100ms);
-        ASSERT_EQ(ch1.GetNumberOfConnectedPeers(), one);
-        ASSERT_EQ(ch2.GetNumberOfConnectedPeers(), one);
+        ASSERT_TRUE(ch2.Connect(address));
+        ASSERT_TRUE(test::WaitUntil([&] { return ch1.GetNumberOfConnectedPeers() == one; }));
+        ASSERT_TRUE(test::WaitUntil([&] { return ch2.GetNumberOfConnectedPeers() == one; }));
     }
 
-    std::this_thread::sleep_for(100ms);
-    ASSERT_EQ(ch1.GetNumberOfConnectedPeers(), zero);
+    ASSERT_TRUE(test::WaitUntil([&] { return ch1.GetNumberOfConnectedPeers() == zero; }));
 }
 
-TEST(Channel, GetNumberOfConnectedPeers_zeromq)
+using ConnectedPeers = test::TransportTest;
+
+TEST_P(ConnectedPeers, Pair)
 {
-    testConnectedPeers("zeromq");
+    testConnectedPeers(GetParam().transport);
 }
 
-TEST(Channel, GetNumberOfConnectedPeers_shmem)
-{
-    testConnectedPeers("shmem");
-}
+INSTANTIATE_TEST_SUITE_P(, ConnectedPeers, test::BasicTransports(), test::TransportParamName());
 
 } /* namespace */

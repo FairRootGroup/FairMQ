@@ -13,10 +13,12 @@ include(GNUInstallDirs)
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPER)
 
-# Set a default build type
-if(NOT CMAKE_BUILD_TYPE)
+# Set a default build type (multi-config generators select it at build time)
+get_property(_is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(NOT _is_multi_config AND NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
+unset(_is_multi_config)
 
 set(PROJECT_MIN_CXX_STANDARD 17)
 
@@ -111,7 +113,6 @@ if(_sanitizers)
 endif()
 
 # Configure build types
-set(CMAKE_CONFIGURATION_TYPES "Debug" "Release" "RelWithDebInfo")
 set(_warnings "-Wshadow -Wall -Wextra -Wpedantic")
 set(CMAKE_CXX_FLAGS_DEBUG          "-Og -g ${_warnings} ${_sanitizers}")
 set(CMAKE_CXX_FLAGS_RELEASE        "-O3 -DNDEBUG")
@@ -119,12 +120,12 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g ${_warnings} -DNDEBUG ${_sanitizers}"
 unset(_warnings)
 unset(_sanitizers)
 
+# Colored compiler diagnostics and build output. CMake adds the right compiler
+# flag for each compiler. A value given by the user wins over the default.
 if(DISABLE_COLOR)
-  set(CMAKE_COLOR_MAKEFILE OFF)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=never")
-else()
-  set(CMAKE_COLOR_MAKEFILE ON)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+  set(CMAKE_COLOR_DIAGNOSTICS OFF)
+elseif(NOT DEFINED CMAKE_COLOR_DIAGNOSTICS)
+  set(CMAKE_COLOR_DIAGNOSTICS ON)
 endif()
 
 if(NOT DEFINED PROJECT_VERSION_TWEAK)
@@ -139,26 +140,38 @@ endif()
 
 unset(PROJECT_STATIC_ANALYSERS)
 if(RUN_STATIC_ANALYSIS)
-  set(analyser "clang-tidy")
-  find_program(${analyser}_FOUND "${analyser}")
-  if(${analyser}_FOUND)
-    set(CMAKE_CXX_CLANG_TIDY ${analyser} "--extra-arg=-std=c++17")
-  endif()
-  list(APPEND PROJECT_STATIC_ANALYSERS "${analyser}")
-
-  set(analyser "iwyu")
-  find_program(${analyser}_FOUND "${analyser}")
-  if(${analyser}_FOUND)
-    set(CMAKE_CXX_IWYU "${${analyser}_FOUND}")
-  endif()
-  list(APPEND PROJECT_STATIC_ANALYSERS "${analyser}")
-
-  set(analyser "cpplint")
-  find_program(${analyser}_FOUND "${analyser}")
-  if(${analyser}_FOUND)
-    set(CMAKE_CXX_CPPLINT "${${analyser}_FOUND}")
-  endif()
-  list(APPEND PROJECT_STATIC_ANALYSERS "${analyser}")
+  # <summary name>  <program>  <CMake variable that activates it>
+  set(_analysers
+    "clang-tidy|clang-tidy|CMAKE_CXX_CLANG_TIDY"
+    "iwyu|include-what-you-use|CMAKE_CXX_INCLUDE_WHAT_YOU_USE"
+    "cpplint|cpplint|CMAKE_CXX_CPPLINT"
+  )
+  foreach(_entry IN LISTS _analysers)
+    string(REPLACE "|" ";" _entry "${_entry}")
+    list(GET _entry 0 analyser)
+    list(GET _entry 1 _program)
+    list(GET _entry 2 _variable)
+    string(MAKE_C_IDENTIFIER "${analyser}" _id)
+    find_program(FAIRMQ_${_id}_EXECUTABLE NAMES ${_program})
+    mark_as_advanced(FAIRMQ_${_id}_EXECUTABLE)
+    if(FAIRMQ_${_id}_EXECUTABLE)
+      set(${analyser}_FOUND TRUE)
+      if(analyser STREQUAL "clang-tidy")
+        set(${_variable} ${FAIRMQ_${_id}_EXECUTABLE} "--extra-arg=-std=c++17")
+      else()
+        set(${_variable} ${FAIRMQ_${_id}_EXECUTABLE})
+      endif()
+    else()
+      set(${analyser}_FOUND FALSE)
+    endif()
+    list(APPEND PROJECT_STATIC_ANALYSERS "${analyser}")
+  endforeach()
+  unset(_analysers)
+  unset(_entry)
+  unset(_program)
+  unset(_variable)
+  unset(_id)
+  unset(analyser)
 endif()
 
 if(CMAKE_GENERATOR STREQUAL Ninja AND ENABLE_CCACHE)

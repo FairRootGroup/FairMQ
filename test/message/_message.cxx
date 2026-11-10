@@ -8,7 +8,6 @@
 
 #include <fairmq/Channel.h>
 #include <fairmq/ProgOptions.h>
-#include <fairmq/tools/Semaphore.h>
 #include <fairmq/tools/Strings.h>
 #include <fairmq/tools/Unique.h>
 #include <fairmq/TransportFactory.h>
@@ -16,14 +15,22 @@
 
 #include <fairlogger/Logger.h>
 
+#include <helper/Sync.h>
+
+#include <helper/Transport.h>
+#include <helper/TransportParam.h>
 #include <gtest/gtest.h>
 
 #include <array>
+#include <atomic>
 #include <cassert>
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string_view>
 #include <string>
+#include <thread>
 #include <utility>
 
 namespace
@@ -37,22 +44,17 @@ auto AsStringView(Message const& msg) -> string_view
     return {static_cast<char const*>(msg.GetData()), msg.GetSize()};
 }
 
-auto RunPushPullWithMsgResize(string const & transport, string const & _address, bool expandedShmMetadata = false) -> void
+auto RunPushPullWithMsgResize(string const & transport, string const & name, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
+    test::Configure(config, tools::Uuid(), expandedShmMetadata);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
-    auto const address(tools::ToString(_address, "_", transport, "_", config.GetProperty<string>("session")));
-    push.Bind(address);
-    pull.Connect(address);
+    test::IpcAddress const address(tools::ToString(name, "_", transport));
+    ASSERT_TRUE(push.Bind(address));
+    ASSERT_TRUE(pull.Connect(address));
 
     {
         size_t const size{6};
@@ -106,12 +108,7 @@ auto RunPushPullWithMsgResize(string const & transport, string const & _address,
 auto RunMsgRebuild(const string& transport, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
+    test::Configure(config, tools::Uuid(), expandedShmMetadata);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     size_t const msgSize{100};
@@ -140,22 +137,17 @@ auto CheckMsgAlignment(Message const& msg, fair::mq::Alignment alignment) -> boo
     return (reinterpret_cast<uintptr_t>(msg.GetData()) % static_cast<size_t>(alignment)) == 0; // NOLINT
 }
 
-auto RunPushPullWithAlignment(string const& transport, string const& _address, bool expandedShmMetadata = false) -> void
+auto RunPushPullWithAlignment(string const& transport, string const& name, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
+    test::Configure(config, tools::Uuid(), expandedShmMetadata);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
-    auto const address(tools::ToString(_address, "_", transport, "_", config.GetProperty<string>("session")));
-    push.Bind(address);
-    pull.Connect(address);
+    test::IpcAddress const address(tools::ToString(name, "_", transport));
+    ASSERT_TRUE(push.Bind(address));
+    ASSERT_TRUE(pull.Connect(address));
 
     {
         Alignment const align{64};
@@ -198,22 +190,17 @@ auto RunPushPullWithAlignment(string const& transport, string const& _address, b
     ASSERT_TRUE(CheckMsgAlignment(*msgCopy, align32));
 }
 
-auto EmptyMessage(string const& transport, string const& _address, bool expandedShmMetadata = false) -> void
+auto EmptyMessage(string const& transport, string const& name, bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
+    test::Configure(config, tools::Uuid(), expandedShmMetadata);
     auto factory(TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config));
 
     Channel push{"Push", "push", factory};
     Channel pull{"Pull", "pull", factory};
-    auto const address(tools::ToString(_address, "_", transport, "_", config.GetProperty<string>("session")));
-    push.Bind(address);
-    pull.Connect(address);
+    test::IpcAddress const address(tools::ToString(name, "_", transport));
+    ASSERT_TRUE(push.Bind(address));
+    ASSERT_TRUE(pull.Connect(address));
 
     {
         auto outMsg(push.NewMessage());
@@ -256,12 +243,7 @@ auto EmptyMessage(string const& transport, string const& _address, bool expanded
 auto ZeroCopy(bool expandedShmMetadata = false) -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        config.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
+    test::Configure(config, tools::Uuid(), expandedShmMetadata);
     auto factory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config));
 
     unique_ptr<string> str(make_unique<string>("asdf"));
@@ -287,27 +269,14 @@ auto ZeroCopy(bool expandedShmMetadata = false) -> void
 
 // The "zero copy" property of the Copy() method is an implementation detail and is not guaranteed.
 // Currently it holds true for the shmem (across devices) and for zeromq (within same device) transports.
-auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint64_t rcSegmentSize) -> void
+auto ZeroCopyFromUnmanaged(string const& name, bool expandedShmMetadata, uint64_t rcSegmentSize) -> void
 {
-    fair::Logger::SetConsoleSeverity(fair::Severity::debug);
-
     ProgOptions config1;
     ProgOptions config2;
-    string session(tools::Uuid());
-    config1.SetProperty<string>("session", session);
-    config1.SetProperty<size_t>("shm-segment-size", 100000000);
-    config1.SetProperty<bool>("shm-monitor", true);
-    config2.SetProperty<string>("session", session);
-    config2.SetProperty<size_t>("shm-segment-size", 100000000);
-    config2.SetProperty<bool>("shm-monitor", true);
+    string const session(test::Configure(config1, tools::Uuid(), expandedShmMetadata));
+    test::Configure(config2, session, expandedShmMetadata);
     // ref counts should be accessible accross different segments
     config2.SetProperty<uint16_t>("shm-segment-id", 2);
-    if (expandedShmMetadata) {
-        config1.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
-    if (expandedShmMetadata) {
-        config2.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
     auto factory1(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config1));
     auto factory2(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config2));
 
@@ -315,7 +284,7 @@ auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint
     const size_t regionSize{1000000};
     RegionConfig cfg;
     cfg.rcSegmentSize = rcSegmentSize;
-    tools::Semaphore blocker;
+    test::Semaphore blocker;
 
     auto region = factory1->CreateUnmanagedRegion(regionSize, [&blocker](void*, size_t, void*) {
         blocker.Signal();
@@ -325,8 +294,9 @@ auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint
         Channel push("Push", "push", factory1);
         Channel pull("Pull", "pull", factory2);
 
-        push.Bind(address + "_" + session);
-        pull.Connect(address + "_" + session);
+        test::IpcAddress const address(name);
+        ASSERT_TRUE(push.Bind(address));
+        ASSERT_TRUE(pull.Connect(address));
 
         const size_t offset = 100;
         auto msg1(push.NewMessage(region, static_cast<char*>(region->GetData()), msgSize, nullptr));
@@ -358,13 +328,13 @@ auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint
                 ASSERT_EQ(AsStringView(*msg1)[0], 'A');
                 ASSERT_EQ(AsStringView(*msg1)[1], 'B');
 
-                push.Send(copyFromCopy);
-                push.Send(msg2);
+                ASSERT_EQ(push.Send(copyFromCopy), msgSize);
+                ASSERT_EQ(push.Send(msg2), msgSize);
 
                 auto incomingCopiedMsg(pull.NewMessage());
                 auto incomingOriginalMsg(pull.NewMessage());
-                pull.Receive(incomingCopiedMsg);
-                pull.Receive(incomingOriginalMsg);
+                ASSERT_EQ(pull.Receive(incomingCopiedMsg), msgSize);
+                ASSERT_EQ(pull.Receive(incomingOriginalMsg), msgSize);
 
                 EXPECT_EQ(static_cast<const shmem::Message&>(*incomingCopiedMsg).GetRefCount(), 3);
                 EXPECT_EQ(static_cast<const shmem::Message&>(*incomingOriginalMsg).GetRefCount(), 1);
@@ -389,69 +359,33 @@ auto ZeroCopyFromUnmanaged(string const& address, bool expandedShmMetadata, uint
         EXPECT_EQ(static_cast<const shmem::Message&>(*msg1).GetRefCount(), 1);
     }
 
-    blocker.Wait();
-    blocker.Wait();
+    ASSERT_TRUE(blocker.Wait());
+    ASSERT_TRUE(blocker.Wait());
 }
 
-TEST(Resize, zeromq) // NOLINT
+using Messages = test::TransportTest;
+
+TEST_P(Messages, Resize) // NOLINT
 {
-    RunPushPullWithMsgResize("zeromq", "ipc://test_message_resize");
+    RunPushPullWithMsgResize(GetParam().transport, "message_resize", GetParam().expandedShmMetadata);
 }
 
-TEST(Resize, shmem) // NOLINT
+TEST_P(Messages, Rebuild) // NOLINT
 {
-    RunPushPullWithMsgResize("shmem", "ipc://test_message_resize");
+    RunMsgRebuild(GetParam().transport, GetParam().expandedShmMetadata);
 }
 
-TEST(Resize, shmem_expanded_metadata) // NOLINT
+TEST_P(Messages, Alignment) // NOLINT
 {
-    RunPushPullWithMsgResize("shmem", "ipc://test_message_resize", true);
+    RunPushPullWithAlignment(GetParam().transport, "message_alignment", GetParam().expandedShmMetadata);
 }
 
-TEST(Rebuild, zeromq) // NOLINT
+TEST_P(Messages, Empty) // NOLINT
 {
-    RunMsgRebuild("zeromq");
+    EmptyMessage(GetParam().transport, "empty_message", GetParam().expandedShmMetadata);
 }
 
-TEST(Rebuild, shmem) // NOLINT
-{
-    RunMsgRebuild("shmem");
-}
-
-TEST(Rebuild, shmem_expanded_metadata) // NOLINT
-{
-    RunMsgRebuild("shmem", true);
-}
-
-TEST(Alignment, shmem) // NOLINT
-{
-    RunPushPullWithAlignment("shmem", "ipc://test_message_alignment");
-}
-
-TEST(Alignment, shmem_expanded_metadata) // NOLINT
-{
-    RunPushPullWithAlignment("shmem", "ipc://test_message_alignment", true);
-}
-
-TEST(Alignment, zeromq) // NOLINT
-{
-    RunPushPullWithAlignment("zeromq", "ipc://test_message_alignment");
-}
-
-TEST(EmptyMessage, zeromq) // NOLINT
-{
-    EmptyMessage("zeromq", "ipc://test_empty_message");
-}
-
-TEST(EmptyMessage, shmem) // NOLINT
-{
-    EmptyMessage("shmem", "ipc://test_empty_message");
-}
-
-TEST(EmptyMessage, shmem_expanded_metadata) // NOLINT
-{
-    EmptyMessage("shmem", "ipc://test_empty_message", true);
-}
+INSTANTIATE_TEST_SUITE_P(, Messages, test::AllTransports(), test::TransportParamName());
 
 // GetMeta() + GetDataAddressFromHandle() round-trip: simulates a consumer device that
 // receives message metadata over a side channel and resolves it to a local pointer.
@@ -461,18 +395,11 @@ auto SideChannel(bool expandedShmMetadata = false) -> void
     const string session = tools::Uuid();
 
     ProgOptions producerConfig;
-    producerConfig.SetProperty<string>("session", session);
-    producerConfig.SetProperty<size_t>("shm-segment-size", 100000000);
-    producerConfig.SetProperty<bool>("shm-monitor", true);
-    if (expandedShmMetadata) {
-        producerConfig.SetProperty<size_t>("shm-metadata-msg-size", 2048);
-    }
+    test::Configure(producerConfig, session, expandedShmMetadata);
     auto producerFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &producerConfig));
 
     ProgOptions consumerConfig;
-    consumerConfig.SetProperty<string>("session", session);
-    consumerConfig.SetProperty<size_t>("shm-segment-size", 100000000);
-    consumerConfig.SetProperty<bool>("shm-monitor", true);
+    test::Configure(consumerConfig, session);
     auto consumerFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &consumerConfig));
 
     const size_t size = 2;
@@ -493,35 +420,21 @@ auto SideChannel(bool expandedShmMetadata = false) -> void
     EXPECT_EQ(ptr[1], 'B');
 }
 
-TEST(ZeroCopy, shmem) // NOLINT
-{
-    ZeroCopy();
-}
-
-TEST(ZeroCopy, shmem_expanded_metadata) // NOLINT
-{
-    ZeroCopy(true);
-}
-
 // Uses a second factory on the same session to exercise the remote region lookup path.
 auto SideChannelUnmanaged() -> void
 {
     const string session = tools::Uuid();
 
     ProgOptions producerConfig;
-    producerConfig.SetProperty<string>("session", session);
-    producerConfig.SetProperty<size_t>("shm-segment-size", 100000000);
-    producerConfig.SetProperty<bool>("shm-monitor", true);
+    test::Configure(producerConfig, session);
     auto producerFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &producerConfig));
 
     ProgOptions consumerConfig;
-    consumerConfig.SetProperty<string>("session", session);
-    consumerConfig.SetProperty<size_t>("shm-segment-size", 100000000);
-    consumerConfig.SetProperty<bool>("shm-monitor", true);
+    test::Configure(consumerConfig, session);
     auto consumerFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &consumerConfig));
 
     const size_t regionSize = 1000000;
-    tools::Semaphore blocker;
+    test::Semaphore blocker;
     auto region = producerFactory->CreateUnmanagedRegion(regionSize, [&blocker](void*, size_t, void*) {
         blocker.Signal();
     });
@@ -543,15 +456,58 @@ auto SideChannelUnmanaged() -> void
     EXPECT_EQ(ptr[1], 'B');
 
     msg.reset();
-    blocker.Wait();
+    ASSERT_TRUE(blocker.Wait());
+}
+
+auto ReuseReceivedRegionMessage() -> void
+{
+    ProgOptions config;
+    test::Configure(config);
+    auto factory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config));
+
+    const size_t regionSize = 1000000;
+    std::atomic<int> releasedA{0};
+    std::atomic<int> releasedB{0};
+    auto regionA = factory->CreateUnmanagedRegion(regionSize, [&](void*, size_t, void*) { ++releasedA; });
+    auto regionB = factory->CreateUnmanagedRegion(regionSize, [&](void*, size_t, void*) { ++releasedB; });
+    auto waitFor = [](std::atomic<int> const& counter, int value) {
+        return test::WaitUntil([&] { return counter == value; });
+    };
+
+    Channel push{"Push", "push", factory};
+    Channel pull{"Pull", "pull", factory};
+    test::IpcAddress const address("reuse_received_region_msg");
+    ASSERT_TRUE(push.Bind(address));
+    ASSERT_TRUE(pull.Connect(address));
+
+    // Receive a block of region A and read it. This resolves region A in the message.
+    auto inMsg(pull.NewMessage());
+    {
+        auto outMsg(push.NewMessage(regionA, regionA->GetData(), 2, nullptr));
+        ASSERT_EQ(push.Send(outMsg), 2);
+    }
+    ASSERT_EQ(pull.Receive(inMsg), 2);
+    ASSERT_NE(inMsg->GetData(), nullptr);
+    inMsg->Rebuild();
+    ASSERT_TRUE(waitFor(releasedA, 1));
+
+    // Receive a block of region B into the same message, and release it without a read.
+    {
+        auto outMsg(push.NewMessage(regionB, regionB->GetData(), 2, nullptr));
+        ASSERT_EQ(push.Send(outMsg), 2);
+    }
+    ASSERT_EQ(pull.Receive(inMsg), 2);
+    inMsg->Rebuild();
+
+    // The block must go back to region B, not to region A.
+    EXPECT_TRUE(waitFor(releasedB, 1));
+    EXPECT_EQ(releasedA, 1);
 }
 
 auto SideChannelErrors() -> void
 {
     ProgOptions config;
-    config.SetProperty<string>("session", tools::Uuid());
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
+    test::Configure(config);
     auto shmFactory(TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config));
     auto zmqFactory(TransportFactory::CreateTransportFactory("zeromq", tools::Uuid(), &config));
 
@@ -570,14 +526,39 @@ auto SideChannelErrors() -> void
     EXPECT_EQ(shmem::GetDataAddressFromHandle(*shmFactory, meta), nullptr);
 }
 
-TEST(SideChannel, shmem) // NOLINT
+TEST(Footprint, shmem) // NOLINT
 {
-    SideChannel();
+    // Guard against size regressions (see issue #477). The values are for LP64 platforms.
+    if constexpr (sizeof(void*) == 8) {
+        // vptr + fTransport (16) + 5 * 8 bytes + 2 * uint16_t + 2 * bool, padded to 8
+        EXPECT_LE(sizeof(shmem::Message), 72);
+        // MetaHeader is the wire format of the metadata message, keep it stable
+        EXPECT_EQ(sizeof(shmem::MetaHeader), 40);
+    }
 }
 
-TEST(SideChannel, shmem_expanded_metadata) // NOLINT
+TEST(MetaHeaderLayout, shmem) // NOLINT
 {
-    SideChannel(true);
+    // Users (e.g. AliceO2) create MetaHeader with positional aggregate initialization,
+    // and the struct is the wire format of the metadata message. Keep the field order.
+    const shmem::MetaHeader meta{1, 2, 3, 4, 5, 6, true};
+    EXPECT_EQ(meta.fSize, 1);
+    EXPECT_EQ(meta.fHint, 2);
+    EXPECT_EQ(meta.fHandle, 3);
+    EXPECT_EQ(meta.fShared, 4);
+    EXPECT_EQ(meta.fRegionId, 5);
+    EXPECT_EQ(meta.fSegmentId, 6);
+    EXPECT_TRUE(meta.fManaged);
+
+    if constexpr (sizeof(void*) == 8) {
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fSize), 0);
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fHint), 8);
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fHandle), 16);
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fShared), 24);
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fRegionId), 32);
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fSegmentId), 34);
+        EXPECT_EQ(offsetof(shmem::MetaHeader, fManaged), 36);
+    }
 }
 
 TEST(SideChannel, shmem_unmanaged) // NOLINT
@@ -585,29 +566,38 @@ TEST(SideChannel, shmem_unmanaged) // NOLINT
     SideChannelUnmanaged();
 }
 
+TEST(ReuseReceivedRegionMessage, shmem) // NOLINT
+{
+    ReuseReceivedRegionMessage();
+}
+
 TEST(SideChannel, errors) // NOLINT
 {
     SideChannelErrors();
 }
 
-TEST(ZeroCopyFromUnmanaged, shmem) // NOLINT
+using ShmMessages = test::TransportTest;
+
+TEST_P(ShmMessages, ZeroCopy) // NOLINT
 {
-    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged", false, 10000000);
+    ZeroCopy(GetParam().expandedShmMetadata);
 }
 
-TEST(ZeroCopyFromUnmanaged, shmem_expanded_metadata) // NOLINT
+TEST_P(ShmMessages, SideChannel) // NOLINT
 {
-    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged_expanded", true, 10000000);
+    SideChannel(GetParam().expandedShmMetadata);
 }
 
-TEST(ZeroCopyFromUnmanaged, shmem_no_rc_segment) // NOLINT
+TEST_P(ShmMessages, ZeroCopyFromUnmanaged) // NOLINT
 {
-    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged_no_rc_segment", false, 0);
+    ZeroCopyFromUnmanaged("zerocopy_unmanaged", GetParam().expandedShmMetadata, 10000000);
 }
 
-TEST(ZeroCopyFromUnmanaged, shmem_expanded_metadata_no_rc_segment) // NOLINT
+TEST_P(ShmMessages, ZeroCopyFromUnmanaged_no_rc_segment) // NOLINT
 {
-    ZeroCopyFromUnmanaged("ipc://test_zerocopy_unmanaged_expanded_no_rc_segment", true, 0);
+    ZeroCopyFromUnmanaged("zerocopy_unmanaged_no_rc_segment", GetParam().expandedShmMetadata, 0);
 }
+
+INSTANTIATE_TEST_SUITE_P(, ShmMessages, test::ShmTransports(), test::TransportParamName());
 
 } // namespace

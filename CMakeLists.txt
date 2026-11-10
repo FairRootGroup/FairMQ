@@ -8,9 +8,9 @@
 
 
 # Project ######################################################################
-cmake_minimum_required(VERSION 3.15...3.30 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.25...3.31 FATAL_ERROR)
 
-list(PREPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 include(GitHelper)
 get_git_version()
 
@@ -20,22 +20,24 @@ include(FairMQProjectSettings)
 
 
 # Build options ################################################################
-include(FairMQBuildOption)
+include(CMakeDependentOption)
 
-fairmq_build_option(BUILD_FAIRMQ        "Build FairMQ library and devices."
-                                         DEFAULT ON)
-fairmq_build_option(BUILD_TESTING       "Build tests."
-                                         DEFAULT OFF REQUIRES "BUILD_FAIRMQ")
-fairmq_build_option(BUILD_EXAMPLES      "Build FairMQ examples."
-                                         DEFAULT ON  REQUIRES "BUILD_FAIRMQ")
-fairmq_build_option(BUILD_TIDY_TOOL     "Build the fairmq-tidy tool."
-                                         DEFAULT OFF)
-fairmq_build_option(BUILD_DOCS          "Build FairMQ documentation."
-                                         DEFAULT OFF)
-fairmq_build_option(USE_EXTERNAL_GTEST  "Do not use bundled GTest. Not recommended."
-                                         DEFAULT OFF)
-fairmq_build_option(FAIRMQ_DEBUG_MODE   "Compile in debug mode (may decrease performance)."
-                                         DEFAULT OFF)
+# The dependent options below need BUILD_FAIRMQ. Keep the error for an
+# explicit request, because cmake_dependent_option() would silently disable it.
+if(NOT BUILD_FAIRMQ AND DEFINED BUILD_FAIRMQ)
+  foreach(opt IN ITEMS BUILD_TESTING BUILD_EXAMPLES)
+    if(${opt})
+      message(FATAL_ERROR "Cannot enable build option ${opt}, depending option is not set: BUILD_FAIRMQ")
+    endif()
+  endforeach()
+endif()
+
+option(BUILD_FAIRMQ        "Build FairMQ library and devices." ON)
+cmake_dependent_option(BUILD_TESTING  "Build tests."          OFF "BUILD_FAIRMQ" OFF)
+cmake_dependent_option(BUILD_EXAMPLES "Build FairMQ examples." ON "BUILD_FAIRMQ" OFF)
+option(BUILD_TIDY_TOOL     "Build the fairmq-tidy tool." OFF)
+option(USE_EXTERNAL_GTEST  "Do not use bundled GTest. Not recommended." OFF)
+option(FAIRMQ_DEBUG_MODE   "Compile in debug mode (may decrease performance)." OFF)
 ################################################################################
 
 
@@ -46,13 +48,6 @@ include(FairMQDependencies)
 
 
 # Targets ######################################################################
-if(FAIRMQ_TEST_LD_LIBRARY_PATH AND CMAKE_VERSION VERSION_LESS 3.22)
-  # The per-test injection relies on ctest's ENVIRONMENT_MODIFICATION, which
-  # older CMake silently drops -- the tests would run against the default
-  # runtime while looking green.
-  message(FATAL_ERROR "FAIRMQ_TEST_LD_LIBRARY_PATH requires CMake >= 3.22")
-endif()
-
 if(BUILD_FAIRMQ)
   add_subdirectory(fairmq)
 endif()
@@ -63,16 +58,6 @@ endif()
 
 if(BUILD_EXAMPLES)
   add_subdirectory(examples)
-endif()
-
-if(BUILD_DOCS)
-  set(DOXYGEN_OUTPUT_DIRECTORY doxygen)
-  set(DOXYGEN_PROJECT_NUMBER ${PROJECT_GIT_VERSION})
-  set(DOXYGEN_PROJECT_BRIEF "C++ Message Queuing Library and Framework")
-  set(DOXYGEN_USE_MDFILE_AS_MAINPAGE README.md)
-  set(DOXYGEN_HTML_FOOTER docs/footer.html)
-  doxygen_add_docs(doxygen README.md fairmq)
-  add_custom_target(docs ALL DEPENDS doxygen)
 endif()
 
 if(BUILD_TIDY_TOOL)
@@ -91,9 +76,6 @@ endif()
 if(BUILD_EXAMPLES)
   list(APPEND PROJECT_PACKAGE_COMPONENTS examples)
 endif()
-if(BUILD_DOCS)
-  list(APPEND PROJECT_PACKAGE_COMPONENTS docs)
-endif()
 if(BUILD_TIDY_TOOL)
   list(APPEND PROJECT_PACKAGE_COMPONENTS tidy_tool)
 endif()
@@ -104,11 +86,6 @@ endif()
 if(BUILD_FAIRMQ)
   install(FILES cmake/FindZeroMQ.cmake
     DESTINATION ${PROJECT_INSTALL_CMAKEMODDIR}
-  )
-endif()
-if(BUILD_DOCS)
-  install(DIRECTORY ${CMAKE_BINARY_DIR}/doxygen/html
-    DESTINATION ${PROJECT_INSTALL_DATADIR}/docs
   )
 endif()
 if(BUILD_TIDY_TOOL)

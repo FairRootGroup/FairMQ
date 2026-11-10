@@ -14,17 +14,22 @@
 #include <fairmq/TransportFactory.h>
 #include <fairmq/ProgOptions.h>
 #include <fairmq/tools/Unique.h>
-#include <fairmq/tools/Semaphore.h>
 #include <fairmq/tools/Strings.h>
 
 #include <fairlogger/Logger.h>
 
+#include <helper/Sync.h>
+
+#include <helper/Transport.h>
+#include <helper/TransportParam.h>
 #include <gtest/gtest.h>
 
+#include <atomic>
 #include <cstdint>
 #include <map>
 #include <memory> // make_unique
 #include <string>
+#include <thread>
 #include <utility> // pair
 #include <vector> // pair
 
@@ -67,9 +72,7 @@ void RegionsSizeMismatch()
     size_t session = tools::UuidHash();
 
     ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
+    test::Configure(config, to_string(session));
 
     auto factory = TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config);
 
@@ -83,20 +86,17 @@ void RegionsSizeMismatch()
     ASSERT_EQ(region2, nullptr);
 }
 
-void RegionsCache(const string& transport, const string& _address)
+void RegionsCache(const string& transport, const string& name)
 {
-    std::string address(tools::ToString(_address, "_", transport));
+    test::IpcAddress const address1(tools::ToString(name, "_", transport, "_1"));
+    test::IpcAddress const address2(tools::ToString(name, "_", transport, "_2"));
     size_t session1 = tools::UuidHash();
     size_t session2 = tools::UuidHash();
 
     ProgOptions config1;
     ProgOptions config2;
-    config1.SetProperty<string>("session", to_string(session1));
-    config1.SetProperty<size_t>("shm-segment-size", 100000000);
-    config1.SetProperty<bool>("shm-monitor", true);
-    config2.SetProperty<string>("session", to_string(session2));
-    config2.SetProperty<size_t>("shm-segment-size", 100000000);
-    config2.SetProperty<bool>("shm-monitor", true);
+    test::Configure(config1, to_string(session1));
+    test::Configure(config2, to_string(session2));
 
     auto factory1 = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config1);
     auto factory2 = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config2);
@@ -108,12 +108,12 @@ void RegionsCache(const string& transport, const string& _address)
 
     Channel push1("Push1", "push", factory1);
     Channel pull1("Pull1", "pull", factory1);
-    push1.Bind(address + to_string(1));
-    pull1.Connect(address + to_string(1));
+    ASSERT_TRUE(push1.Bind(address1));
+    ASSERT_TRUE(pull1.Connect(address1));
     Channel push2("Push2", "push", factory2);
     Channel pull2("Pull2", "pull", factory2);
-    push2.Bind(address + to_string(2));
-    pull2.Connect(address + to_string(2));
+    ASSERT_TRUE(push2.Bind(address2));
+    ASSERT_TRUE(pull2.Connect(address2));
 
     {
         static_cast<char*>(r1ptr)[0] = 97; // a
@@ -123,13 +123,13 @@ void RegionsCache(const string& transport, const string& _address)
 
         MessagePtr m1(push1.NewMessage(region1, r1ptr, 100, nullptr));
         MessagePtr m2(push1.NewMessage(region1, static_cast<char*>(r1ptr) + 100, 100, nullptr));
-        push1.Send(m1);
-        push1.Send(m2);
+        ASSERT_EQ(push1.Send(m1), 100);
+        ASSERT_EQ(push1.Send(m2), 100);
 
         MessagePtr m3(push2.NewMessage(region2, r2ptr, 100, nullptr));
         MessagePtr m4(push2.NewMessage(region2, static_cast<char*>(r2ptr) + 100, 100, nullptr));
-        push2.Send(m3);
-        push2.Send(m4);
+        ASSERT_EQ(push2.Send(m3), 100);
+        ASSERT_EQ(push2.Send(m4), 100);
     }
 
     {
@@ -151,8 +151,6 @@ void RegionsCache(const string& transport, const string& _address)
 
 void RegionEventSubscriptions(const string& transport, bool external)
 {
-    fair::Logger::SetConsoleSeverity(fair::Severity::debug);
-
     unique_ptr<ShmOwner> shmOwner = nullptr;
 
     size_t session{tools::UuidHash()};
@@ -173,18 +171,18 @@ void RegionEventSubscriptions(const string& transport, bool external)
     }
 
     ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
+    test::Configure(config, to_string(session));
     config.SetProperty<size_t>("shm-segment-size", sSize);
-    config.SetProperty<bool>("shm-monitor", true);
     if (external) {
         config.SetProperty<bool>("shm-no-cleanup", true);
         // config.SetProperty<bool>("shm-monitor", false);
     }
 
+    // outlives the factory, which can call the event callback until it is destroyed
+    test::Semaphore blocker;
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
     constexpr int64_t userFlags = 12345;
-    tools::Semaphore blocker;
 
     {
         fair::mq::RegionConfig r1Cfg;
@@ -214,7 +212,7 @@ void RegionEventSubscriptions(const string& transport, bool external)
         }
         ASSERT_EQ(region2->GetSize(), r2Size);
 
-        ASSERT_EQ(factory->SubscribedToRegionEvents(), false);
+        ASSERT_FALSE(factory->SubscribedToRegionEvents());
         factory->SubscribeToRegionEvents([&, id1, id2, ptr1, ptr2](RegionInfo info) {
             LOG(info) << ">>> " << info.event << ": "
                       << (info.managed ? "managed" : "unmanaged")
@@ -224,14 +222,14 @@ void RegionEventSubscriptions(const string& transport, bool external)
                       << ", flags: " << info.flags;
             if (info.event == RegionEvent::created) {
                 if (info.id == id1) {
-                    ASSERT_EQ(info.size, r1Size);
-                    ASSERT_EQ(info.ptr, ptr1);
+                    EXPECT_EQ(info.size, r1Size);
+                    EXPECT_EQ(info.ptr, ptr1);
                     blocker.Signal();
                 } else if (info.id == id2) {
-                    ASSERT_EQ(info.size, r2Size);
-                    ASSERT_EQ(info.ptr, ptr2);
+                    EXPECT_EQ(info.size, r2Size);
+                    EXPECT_EQ(info.ptr, ptr2);
                     if (!external) {
-                        ASSERT_EQ(info.flags, userFlags);
+                        EXPECT_EQ(info.flags, userFlags);
                     }
                     blocker.Signal();
                 }
@@ -243,52 +241,51 @@ void RegionEventSubscriptions(const string& transport, bool external)
                 }
             }
         });
-        ASSERT_EQ(factory->SubscribedToRegionEvents(), true);
+        ASSERT_TRUE(factory->SubscribedToRegionEvents());
 
         LOG(info) << "waiting for blockers...";
-        blocker.Wait();
+        ASSERT_TRUE(blocker.Wait());
         LOG(info) << "1 done.";
-        blocker.Wait();
+        ASSERT_TRUE(blocker.Wait());
         LOG(info) << "2 done.";
     }
 
     if (!external) {
-        blocker.Wait();
+        ASSERT_TRUE(blocker.Wait());
         LOG(info) << "3 done.";
-        blocker.Wait();
+        ASSERT_TRUE(blocker.Wait());
         LOG(info) << "4 done.";
     }
     LOG(info) << "All done.";
 
     factory->UnsubscribeFromRegionEvents();
-    ASSERT_EQ(factory->SubscribedToRegionEvents(), false);
+    ASSERT_FALSE(factory->SubscribedToRegionEvents());
 }
 
-void RegionCallbacks(const string& transport, const string& _address)
+void RegionCallbacks(const string& transport, const string& name)
 {
     size_t session(tools::UuidHash());
-    std::string address(tools::ToString(_address, "_", transport));
+    test::IpcAddress const address(tools::ToString(name, "_", transport));
 
     constexpr size_t sSize = 100000000;
     constexpr size_t r1Size = 2000000;
     constexpr size_t r2Size = 3000000;
 
     ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
+    test::Configure(config, to_string(session));
     config.SetProperty<size_t>("shm-segment-size", sSize);
-    config.SetProperty<bool>("shm-monitor", true);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
 
     unique_ptr<int> intPtr1 = make_unique<int>(42);
     unique_ptr<int> intPtr2 = make_unique<int>(43);
-    tools::Semaphore blocker;
+    test::Semaphore blocker;
 
     Channel push("Push", "push", factory);
-    push.Bind(address);
+    ASSERT_TRUE(push.Bind(address));
 
     Channel pull("Pull", "pull", factory);
-    pull.Connect(address);
+    ASSERT_TRUE(pull.Connect(address));
 
     void* ptr1 = nullptr;
     size_t size1 = 100;
@@ -296,20 +293,20 @@ void RegionCallbacks(const string& transport, const string& _address)
     size_t size2 = 200;
 
     auto region1 = factory->CreateUnmanagedRegion(r1Size, [&](void* ptr, size_t size, void* hint) {
-        ASSERT_EQ(ptr, ptr1);
-        ASSERT_EQ(size, size1);
-        ASSERT_EQ(hint, intPtr1.get());
-        ASSERT_EQ(*static_cast<int*>(hint), 42);
+        EXPECT_EQ(ptr, ptr1);
+        EXPECT_EQ(size, size1);
+        EXPECT_EQ(hint, intPtr1.get());
+        EXPECT_EQ(*static_cast<int*>(hint), 42);
         blocker.Signal();
     });
     ptr1 = region1->GetData();
 
     auto region2 = factory->CreateUnmanagedRegion(r2Size, [&](const std::vector<RegionBlock>& blocks) {
-        ASSERT_EQ(blocks.size(), 1);
-        ASSERT_EQ(blocks.at(0).ptr, ptr2);
-        ASSERT_EQ(blocks.at(0).size, size2);
-        ASSERT_EQ(blocks.at(0).hint, intPtr2.get());
-        ASSERT_EQ(*static_cast<int*>(blocks.at(0).hint), 43);
+        EXPECT_EQ(blocks.size(), 1);
+        EXPECT_EQ(blocks.at(0).ptr, ptr2);
+        EXPECT_EQ(blocks.at(0).size, size2);
+        EXPECT_EQ(blocks.at(0).hint, intPtr2.get());
+        EXPECT_EQ(*static_cast<int*>(blocks.at(0).hint), 43);
         blocker.Signal();
     });
     ptr2 = region2->GetData();
@@ -329,10 +326,88 @@ void RegionCallbacks(const string& transport, const string& _address)
     }
 
     LOG(info) << "waiting for blockers...";
-    blocker.Wait();
+    ASSERT_TRUE(blocker.Wait());
     LOG(info) << "1 done.";
-    blocker.Wait();
+    ASSERT_TRUE(blocker.Wait());
     LOG(info) << "2 done.";
+}
+
+void RegionCallbackCallsTransportDuringDestruction(const string& transport, const string& name)
+{
+    // The ack callback of a region can run while the region is destroyed (outstanding acks are
+    // delivered during the linger period). A callback that calls into the transport must not
+    // deadlock the destruction.
+    size_t session(tools::UuidHash());
+    test::IpcAddress const address(tools::ToString(name, "_", transport));
+
+    ProgOptions config;
+    test::Configure(config, to_string(session));
+
+    auto factory = TransportFactory::CreateTransportFactory(transport, tools::Uuid(), &config);
+
+    Channel push("Push", "push", factory);
+    ASSERT_TRUE(push.Bind(address));
+    Channel pull("Pull", "pull", factory);
+    ASSERT_TRUE(pull.Connect(address));
+
+    atomic<int> numCallbacks(0);
+    auto region = factory->CreateUnmanagedRegion(1000000, [&](void*, size_t, void*) {
+        factory->GetRegionInfo();
+        ++numCallbacks;
+    });
+
+    {
+        MessagePtr msgOut(push.NewMessage(region, region->GetData(), 100, nullptr));
+        ASSERT_EQ(push.Send(msgOut), 100);
+        MessagePtr msgIn(pull.NewMessage());
+        ASSERT_EQ(pull.Receive(msgIn), 100);
+    } // the shmem transport sends the ack for this block in a batch, which is still pending here
+
+    region.reset(); // delivers the pending ack, the callback runs
+
+    EXPECT_EQ(numCallbacks, 1);
+}
+
+void RegionLockOrder(const string& name)
+{
+    // One thread creates and destroys regions. Another thread at the same time reads messages from
+    // regions of a different peer in the same session, which opens these regions locally. Both
+    // paths lock the same mutexes and must lock them in the same order.
+    size_t session(tools::UuidHash());
+    test::IpcAddress const address(name);
+    constexpr int numIterations = 10;
+
+    ProgOptions config;
+    test::Configure(config, to_string(session));
+
+    auto factory1 = TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config);
+    auto factory2 = TransportFactory::CreateTransportFactory("shmem", tools::Uuid(), &config);
+
+    Channel push("Push", "push", factory2);
+    ASSERT_TRUE(push.Bind(address));
+    Channel pull("Pull", "pull", factory1);
+    ASSERT_TRUE(pull.Connect(address));
+
+    vector<UnmanagedRegionPtr> peerRegions;
+    for (int i = 0; i < numIterations; ++i) {
+        peerRegions.emplace_back(factory2->CreateUnmanagedRegion(10000, [](void*, size_t, void*) {}));
+        MessagePtr msg(push.NewMessage(peerRegions.back(), peerRegions.back()->GetData(), 100, nullptr));
+        ASSERT_EQ(push.Send(msg), 100);
+    }
+
+    test::JoiningThread creator([&] {
+        for (int i = 0; i < numIterations; ++i) {
+            auto region = factory1->CreateUnmanagedRegion(10000, [](void*, size_t, void*) {});
+        }
+    });
+
+    for (int i = 0; i < numIterations; ++i) {
+        MessagePtr msg(pull.NewMessage());
+        ASSERT_EQ(pull.Receive(msg), 100);
+        ASSERT_NE(msg->GetData(), nullptr); // opens the peer region in factory1
+    }
+
+    creator.Join();
 }
 
 TEST(RegionsSizeMismatch, shmem)
@@ -340,34 +415,33 @@ TEST(RegionsSizeMismatch, shmem)
     RegionsSizeMismatch();
 }
 
-TEST(Cache, zeromq)
+using Regions = test::TransportTest;
+
+TEST_P(Regions, Cache)
 {
-    RegionsCache("zeromq", "ipc://test_region_cache");
+    RegionsCache(GetParam().transport, "region_cache");
 }
 
-TEST(Cache, shmem)
+TEST_P(Regions, EventSubscriptions)
 {
-    RegionsCache("shmem", "ipc://test_region_cache");
+    RegionEventSubscriptions(GetParam().transport, false);
 }
 
-TEST(EventSubscriptions, zeromq)
+TEST_P(Regions, Callbacks)
 {
-    RegionEventSubscriptions("zeromq", false);
+    RegionCallbacks(GetParam().transport, "region_callbacks");
 }
 
-TEST(EventSubscriptions, shmem)
+TEST_P(Regions, CallbackDuringDestruction)
 {
-    RegionEventSubscriptions("shmem", false);
+    RegionCallbackCallsTransportDuringDestruction(GetParam().transport, "region_callback_during_destruction");
 }
 
-TEST(Callbacks, zeromq)
-{
-    RegionCallbacks("zeromq", "ipc://test_region_callbacks");
-}
+INSTANTIATE_TEST_SUITE_P(, Regions, test::BasicTransports(), test::TransportParamName());
 
-TEST(Callbacks, shmem)
+TEST(LockOrder, shmem)
 {
-    RegionCallbacks("shmem", "ipc://test_region_callbacks");
+    RegionLockOrder("region_lock_order");
 }
 
 TEST(EventSubscriptionsExternalRegion, shmem)

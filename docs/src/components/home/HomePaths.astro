@@ -1,0 +1,96 @@
+---
+// Three ways into the docs, below the hero of the home page.
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const cols = [
+  {
+    label: 'Start',
+    links: [
+      ['Install', '/start/install/'],
+      ['Your first device', '/start/first-device/'],
+      ['Use FairMQ in a CMake project', '/start/cmake/'],
+    ],
+  },
+  {
+    label: 'Understand',
+    links: [
+      ['Device states', '/concepts/states/'],
+      ['Channels and sockets', '/concepts/channels/'],
+      ['How shared memory works', '/shmem/how-it-works/'],
+    ],
+  },
+  {
+    label: 'Operate',
+    links: [
+      ['Command-line options', '/reference/options/'],
+      ['Sessions and segments', '/shmem/sessions/'],
+      ['Built-in devices', '/tools/builtin-devices/'],
+    ],
+  },
+];
+---
+
+<nav class="fmq-paths not-content" aria-label="Ways into the documentation">
+  {
+    cols.map((c) => (
+      <div>
+        <p class="fmq-eyebrow">{c.label}</p>
+        {c.links.map(([t, l]) => (
+          <a href={base + l}>{t}</a>
+        ))}
+      </div>
+    ))
+  }
+</nav>
+
+<style>
+  .fmq-paths {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid var(--fmq-rule);
+    border-bottom: 1px solid var(--fmq-rule);
+    margin-block: 0 2.5rem;
+  }
+  .fmq-paths > div {
+    padding: 1.4rem 1.5rem;
+    border-inline-end: 1px solid var(--fmq-rule);
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 0;
+  }
+  .fmq-paths > div:first-child {
+    padding-inline-start: 0;
+  }
+  .fmq-paths > div:last-child {
+    border-inline-end: 0;
+  }
+  .fmq-paths .fmq-eyebrow {
+    margin-bottom: 0.35rem;
+  }
+  .fmq-paths a {
+    color: var(--fmq-ink);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.975rem;
+  }
+  .fmq-paths a::after {
+    content: ' →';
+    color: var(--fmq-ink-3);
+  }
+  .fmq-paths a:hover {
+    color: var(--fmq-link);
+  }
+  @media (max-width: 48rem) {
+    .fmq-paths {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .fmq-paths > div {
+      padding-inline: 0;
+      border-inline-end: 0;
+      border-bottom: 1px solid var(--fmq-rule);
+    }
+    .fmq-paths > div:last-child {
+      border-bottom: 0;
+    }
+  }
+</style>

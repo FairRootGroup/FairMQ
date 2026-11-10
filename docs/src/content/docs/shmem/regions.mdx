@@ -1,0 +1,296 @@
+---
+title: 'Unmanaged regions'
+description: 'Memory that your device creates and fills. FairMQ tells you when the receivers no longer use it.'
+sidebar:
+  order: 3
+code: [fairmq/UnmanagedRegion.h, fairmq/shmem/UnmanagedRegion.h, fairmq/shmem/UnmanagedRegionImpl.h, fairmq/shmem/Manager.h, fairmq/shmem/Message.h]
+---
+
+import RegionAckExplainer from '../../../components/diagrams/RegionAckExplainer.astro';
+import Snippet from '../../../components/Snippet.astro';
+
+An unmanaged region is a block of shared memory that your device creates and fills itself. Your
+device sends messages that point into the region. FairMQ calls your callback when the receivers no
+longer use a part of the region, so that your device can write new data into it.
+
+<RegionAckExplainer />
+
+## When to use a region
+
+With `NewMessage(size)`, the transport selects the memory for each message in the managed segment.
+With a region, your code selects the memory. Use a region when the data must be at a known place.
+For example, a library or a hardware driver can write into a buffer that you give it. The data then
+goes to the receivers without a copy.
+
+The region is a shared memory object `fmq_<shmId>_rg_<id>` of the session. See
+[Sessions and segments](/shmem/sessions/).
+
+## Create a region
+
+Use [`NewUnmanagedRegionFor()`](/api/fair/mq/Device/#NewUnmanagedRegionFor) of the device. It
+creates the region with the transport of a channel. The messages of the region must use the same
+transport. [`NewUnmanagedRegion()`](/api/fair/mq/Device/#NewUnmanagedRegion) uses the default
+transport of the device. Both give their arguments to
+[`TransportFactory::CreateUnmanagedRegion()`](/api/fair/mq/TransportFactory/#CreateUnmanagedRegion-5).
+
+The sampler of the region example creates a region of 10000000 bytes in `InitTask()`:
+
+<Snippet file="examples/region/sampler.cxx" start="void InitTask() override" />
+
+`CreateUnmanagedRegion()` has these overloads:
+
+| Overload | Arguments |
+| --- | --- |
+| [5](/api/fair/mq/TransportFactory/#CreateUnmanagedRegion-5) | `size_t size, RegionCallback callback, RegionConfig cfg` |
+| [6](/api/fair/mq/TransportFactory/#CreateUnmanagedRegion-6) | `size_t size, RegionBulkCallback bulkCallback, RegionConfig cfg` |
+| [1](/api/fair/mq/TransportFactory/#CreateUnmanagedRegion), [2](/api/fair/mq/TransportFactory/#CreateUnmanagedRegion-2) | `size_t size`, a callback (default `nullptr`), `const std::string& path = ""`, `int flags = 0`, `RegionConfig cfg = RegionConfig()` |
+| [3](/api/fair/mq/TransportFactory/#CreateUnmanagedRegion-3), [4](/api/fair/mq/TransportFactory/#CreateUnmanagedRegion-4) | `size_t size, int64_t userFlags`, a callback (default `nullptr`), `path`, `flags`, `cfg` |
+
+Use the overloads 5 and 6. The overloads 1 to 4 write their argument `path` into `cfg.path` and
+`flags` into `cfg.creationFlags`. The overloads 3 and 4 also write `userFlags` into `cfg.userFlags`.
+These values replace the values in your `RegionConfig`.
+
+### The region ID
+
+Each region has an ID in the session. [`GetId()`](/api/fair/mq/UnmanagedRegion/#GetId) returns it.
+Set the ID with `RegionConfig::id`. Without it, the shmem transport takes the next value of a
+counter of the session. The first value is 1024.
+
+An ID must be unique in a session. If the same transport created a region with the ID before,
+`CreateUnmanagedRegion()` throws [`TransportError`](/api/fair/mq/TransportError/):
+
+```txt
+Unmanaged Region with id 10 already exists. Only unique IDs per session are allowed.
+```
+
+If another process created the region and the region exists, the transport opens it and takes
+control of it. See [External regions](#external-regions).
+
+:::caution[Do not use an ID again]
+The management segment keeps the entry of a destroyed region. A new region with the ID of a
+destroyed region in the same session throws `TransportError` ("has already been registered").
+:::
+
+## Callbacks
+
+The callback tells your device that the receivers no longer use a block of the region. A block is
+the memory of one message: its address, its size and its hint.
+
+| Type | Signature | Calls |
+| --- | --- | --- |
+| [`RegionCallback`](/api/fair/mq/#RegionCallback) | `void(void* ptr, size_t size, void* hint)` | One call for each block. |
+| [`RegionBulkCallback`](/api/fair/mq/#RegionBulkCallback) | `void(const std::vector<fair::mq::RegionBlock>& blocks)` | One call for each bunch of up to 256 blocks. |
+
+[`RegionBlock`](/api/fair/mq/RegionBlock/) has the fields `ptr`, `size` and `hint`. The hint is the
+value that you gave to `NewMessage()`. FairMQ does not use it. Use it to find the block in your own
+records.
+
+The callback runs in a [separate thread](/concepts/threads/#which-thread-runs-your-code) of the transport, the ack receiver. Protect the data that the
+callback and your device share, for example with a mutex. The sampler above uses `fMtx`.
+
+Give a callback for each region that sends messages. Without a callback, the creator does not start
+an ack receiver, and nothing empties the queue of the region. When the queue is full, the ack sender
+of a receiver tries again in a loop and uses CPU time.
+
+This test creates one region with a `RegionCallback` and one with a `RegionBulkCallback`. The hints
+are pointers to two `int` values:
+
+<Snippet file="test/region/_region.cxx" start="CreateUnmanagedRegion(r1Size, [&](void* ptr" end="ptr2 = region2->GetData();" />
+
+## The region configuration
+
+[`RegionConfig`](/api/fair/mq/RegionConfig/) has these fields
+([UnmanagedRegion.h](/source/fairmq/UnmanagedRegion.h/)). The constructor
+[`RegionConfig(lock, zero)`](/api/fair/mq/RegionConfig/#RegionConfig-2) sets the first two.
+
+| Field | Default | Effect with shmem |
+| --- | --- | --- |
+| [`lock`](/api/fair/mq/RegionConfig/#lock) | `false` | Locks the memory of the region in RAM with `mlock()`. If this fails, the creation throws `TransportError` ("Could not lock region"). |
+| [`zero`](/api/fair/mq/RegionConfig/#zero) | `false` | Writes zeros to the region after the creation. |
+| [`removeOnDestruction`](/api/fair/mq/RegionConfig/#removeOnDestruction) | `true` | The creator removes the region, its file and its reference count segment when you destroy the region object. |
+| [`creationFlags`](/api/fair/mq/RegionConfig/#creationFlags) | `0` | Map options for `boost::interprocess::mapped_region` when the transport maps the region. |
+| [`userFlags`](/api/fair/mq/RegionConfig/#userFlags) | `0` | Your own value. The transport does not use it. Other devices get it in `RegionInfo::flags`. |
+| [`size`](/api/fair/mq/RegionConfig/#size) | `0` | Not used by `CreateUnmanagedRegion()`. The `size` argument sets the size. |
+| [`rcSegmentSize`](/api/fair/mq/RegionConfig/#rcSegmentSize) | `100000000` | Size in bytes of the reference count segment `fmq_<shmId>_rrc_<id>`. See [Copies of region messages](#copies-of-region-messages). |
+| [`path`](/api/fair/mq/RegionConfig/#path) | `""` | A prefix for a file. If it is not empty, a file holds the region. See [File-backed regions](#file-backed-regions). |
+| [`id`](/api/fair/mq/RegionConfig/#id) | not set | The region ID. Without it, the transport selects the next ID from 1024. |
+| [`linger`](/api/fair/mq/RegionConfig/#linger) | `100` | Time in ms. When you destroy the region, the creator receives acknowledgements for this time. See [Linger](#linger). |
+
+If Boost.Interprocess cannot create or open the region, the transport writes "cannot create region.
+Already created/not cleaned up?" to the log. Then it throws the Boost exception again.
+
+## Send messages from a region
+
+Make a message with [`NewMessageFor(channel, index, region, ptr, size, hint)`](/api/fair/mq/Device/#NewMessageFor)
+or `NewMessage(region, ptr, size, hint)`. The transport does not allocate memory for the message.
+The message points to `size` bytes at `ptr` in the region. The sampler of the example sends 64 parts
+in each multipart message:
+
+<Snippet file="examples/region/sampler.cxx" start="for (int i = 0; i < 64; ++i)" />
+
+The example sends the same bytes at the start of the region in all parts. A real device must manage
+the memory of its region. It can write into a block again only after the callback for that block.
+
+Rules for region messages:
+
+- `ptr` must point into the region. Otherwise the shmem transport throws `TransportError` ("trying to
+  create region message with data from outside the region").
+- The transport checks only `ptr`. You must make sure that `ptr + size` is not after the end of the
+  region.
+- The region and the message must use the same transport. Otherwise the transport throws
+  `TransportError` ("region type (…) does not match message type (…)").
+- Do not change a block after `Send()` until its callback. The receivers read the data in place.
+- Do not call [`SetUsedSize()`](/api/fair/mq/Message/#SetUsedSize) on a region message with the shmem
+  transport. It treats the block as a block of the managed segment. Give the correct size to
+  `NewMessage()` instead.
+
+A receiver does not need to do anything special. The transport opens the region in the receiver at
+the first `GetData()` of a region message, or when the receiver destroys the message.
+
+## Acknowledgements
+
+When the last message for a block is destroyed, the transport sends an acknowledgement to the
+creator of the region ([UnmanagedRegion.h](/source/fairmq/shmem/UnmanagedRegion.h/#L350-L443)):
+
+1. The transport puts the block into a list in the process that destroys the message. This is
+   usually the receiver. It is the sender if the message was not sent.
+2. The ack sender thread of that process sends the list to the queue `fmq_<shmId>_rgq_<id>`. It sends
+   a bunch when the list holds 256 blocks. Otherwise it sends the blocks of the list every 500 ms.
+3. The queue holds up to 1024 bunches.
+4. The ack receiver thread of the creator reads the queue and calls the callback.
+
+An acknowledgement can arrive up to 500 ms after the destruction of the message. Plan the size of
+the region for this delay.
+
+A receiver starts an ack sender when it opens the region. The creator starts an ack sender and an
+ack receiver when you give a callback.
+
+## Region events
+
+A device can learn when regions and managed segments of the session are created and destroyed. Call
+[`SubscribeToRegionEvents()`](/api/fair/mq/TransportFactory/#SubscribeToRegionEvents) on the
+transport. The sampler logs all events:
+
+<Snippet file="examples/region/sampler.cxx" start="GetChannel(fChanName, 0).Transport()->SubscribeToRegionEvents" />
+
+The callback gets a [`RegionInfo`](/api/fair/mq/RegionInfo/):
+
+| Field | Content |
+| --- | --- |
+| `managed` | `true` for a managed segment, `false` for a region. |
+| `id` | The ID of the segment or the region. |
+| `ptr`, `size` | The address in this process and the size. For a destroyed region: `nullptr` and `0`. |
+| `flags` | The `userFlags` of the creator of the region. |
+| `event` | [`RegionEvent`](/api/fair/mq/RegionEvent/): `created`, `destroyed` or `local_only`. |
+
+Behavior of the shmem transport:
+
+- The callback runs in a separate thread. The transport checks for changes every 50 ms.
+- At the start, the callback gets a `created` event for each segment and region that exists.
+- A region gives a `destroyed` event only when the creator removes it (`removeOnDestruction` is
+  `true`).
+- If a region is created and destroyed between two checks, the callback gets no event for it.
+- To give the address in this process, the transport opens each region of the session.
+- A new subscription replaces the old one.
+
+Call [`UnsubscribeFromRegionEvents()`](/api/fair/mq/TransportFactory/#UnsubscribeFromRegionEvents)
+before the transport is destroyed, for example in `ResetTask()`.
+[`SubscribedToRegionEvents()`](/api/fair/mq/TransportFactory/#SubscribedToRegionEvents) tells if a
+subscription is active. [`GetRegionInfo()`](/api/fair/mq/TransportFactory/#GetRegionInfo) returns the
+current list of `RegionInfo` at once.
+
+## File-backed regions
+
+Set `RegionConfig::path` to put the region into a file. The path is a prefix of the file name. The
+creator creates the file `<path>fmq_<shmId>_rg_<id>` with the size of the region and maps it. For
+example, the path `/tmp/` gives `/tmp/fmq_eca859e3_rg_1024`. End the path with `/` to use a
+directory.
+
+When the creator destroys the region and `removeOnDestruction` is `true`, it removes the file.
+
+:::caution[File-backed regions stay in one transport]
+The creator does not register a file-backed region in the management segment. Devices in other
+processes cannot open the region: `GetData()` of a received message returns `nullptr`.
+`fairmq-shmmonitor` does not show the region and does not remove the file.
+:::
+
+## External regions
+
+A separate program can create a region before the devices start, for example with
+`fair::mq::shmem::UnmanagedRegion` (see
+[Create segments before the devices start](/shmem/sessions/#create-segments-before-the-devices-start)).
+A device then gets control of the region:
+
+1. Set `RegionConfig::id` to the ID of the existing region.
+2. Set `removeOnDestruction` to `false`, so that the device does not remove the region.
+3. Give the size of the existing region to `CreateUnmanagedRegion()`. If the size is different and
+   not 0, the transport throws `TransportError` ("Created/opened region size … does not match
+   configured size").
+4. Start the devices with the same session or `--shmid`, and with `--shm-no-cleanup true`. Do not
+   use `--shm-monitor true`. The monitor removes the memory when the devices stop. See
+   [Monitor and clean up](/shmem/monitor/#automatic-cleanup-with---shm-monitor).
+
+The sampler does this with `--external-region true`:
+
+<Snippet file="examples/region/sampler.cxx" start="fair::mq::RegionConfig regionCfg;" end="regionCfg.rcSegmentSize" />
+
+The opened region uses the `rcSegmentSize` of its creator. The start script
+`fairmq-start-ex-region-advanced-external.sh` runs this setup. See the
+[region example](/examples/region/).
+
+## Copies of region messages
+
+[`Copy()`](/api/fair/mq/Message/#Copy) of a region message does not copy the data. The copy and the
+original share a reference count. The transport sends the acknowledgement when the last of them is
+destroyed. The processor of the example sends each part on two channels:
+
+<Snippet file="examples/region/processor.cxx" start="for (const auto& inPart : inParts)" />
+
+The shared reference count is in the reference count segment `fmq_<shmId>_rrc_<id>` of the region.
+Its size is `rcSegmentSize`.
+
+- If the segment is full, `Copy()` throws [`RefCountBadAlloc`](/api/fair/mq/RefCountBadAlloc/)
+  ("Insufficient space in the reference count segment …").
+- With `rcSegmentSize = 0`, the transport does not create the segment. `Copy()` then puts the
+  reference count into the managed segment of the device that makes the copy.
+
+## Linger
+
+When you destroy the region object, the creator stops the acknowledgement threads. The ack receiver
+reads the queue for `linger` ms more (default 100 ms) and calls the callback for these blocks. Then
+it stops. Acknowledgements that come later do not reach the callback.
+
+Set the time with `RegionConfig::linger`, or with
+[`SetLinger()`](/api/fair/mq/UnmanagedRegion/#SetLinger) on the region. The test of the region
+example uses `--region-linger 500`.
+
+The callback can run while you destroy the region. All objects that the callback uses must stay
+valid until the region is destroyed. This test checks that a callback can call the transport at
+this time:
+
+<Snippet file="test/region/_region.cxx" start="void RegionCallbackCallsTransportDuringDestruction(" />
+
+Destroy the region in `ResetTask()` at the latest, before the device destroys its transports. The
+sampler calls `fRegion.reset()` there.
+
+## Regions with the zeromq transport
+
+The zeromq transport has the same interface, with a different behavior:
+
+- The region is normal memory of the process (`malloc()`). A failure of `lock` writes an error to
+  the log, but does not throw.
+- A region message copies the data into a ZeroMQ message. The transport calls the callback at once,
+  in `NewMessage()`.
+- `path`, `creationFlags`, `id`, `removeOnDestruction` and `rcSegmentSize` have no effect. The IDs
+  start at 1 for each transport.
+- `linger` has no effect. `GetLinger()` returns 0.
+- The event callback first gets one event `local_only`. Then it gets the events of the regions of
+  this transport only.
+
+## Related pages
+
+- [How shared memory works](/shmem/how-it-works/): messages in the managed segment.
+- [Sessions and segments](/shmem/sessions/): the names of the region objects.
+- [Out-of-band buffers](/shmem/side-channel/): send a reference to a region block on your own channel.
+- [Region example](/examples/region/): the sampler, processor and sink of this page.
+- [Messages and multipart](/concepts/messages/): the message interface.

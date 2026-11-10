@@ -1,0 +1,206 @@
+---
+title: 'Channels and sockets'
+description: 'Channels and sub-channels, socket types and patterns, bind and connect, addresses and endpoints, autobind and the transport of a channel.'
+sidebar:
+  order: 3
+code: [fairmq/Channel.h, fairmq/Channel.cxx, fairmq/Device.cxx, fairmq/zeromq/Socket.h, fairmq/shmem/Socket.h]
+---
+
+import ChannelAnatomy from '../../../components/diagrams/ChannelAnatomy.astro';
+import PatternDiagram from '../../../components/diagrams/PatternDiagram.astro';
+import Snippet from '../../../components/Snippet.astro';
+
+A device sends and receives messages through its channels. A channel has a name and one or more sub-channels, and each sub-channel has one socket. The configuration of a sub-channel sets the type of its socket, how the socket finds its peers, and the transport that moves the messages.
+
+<ChannelAnatomy />
+
+## Channels and sub-channels
+
+A device keeps its channels in a map from the channel name to a list of sub-channels: [`GetChannels()`](/api/fair/mq/Device/#GetChannels) returns a [`fair::mq::ChannelMap`](/api/fair/mq/#ChannelMap), which is a `std::unordered_map<std::string, std::vector<Channel>>`. Each sub-channel is a [`fair::mq::Channel`](/api/fair/mq/Channel/) with one socket.
+
+A sub-channel has the name `<channel>[<index>]`, for example `data-out[1]`. The index starts at 0. To select a sub-channel, give the channel name and the index:
+
+- [`GetChannel("data-out", 1)`](/api/fair/mq/Device/#GetChannel) returns the `Channel` object.
+- [`Send(msg, "data-out", 1)`](/api/fair/mq/Device/#Send) and [`Receive(msg, "data-in")`](/api/fair/mq/Device/#Receive) send and receive through it. The index is the third argument. Its default is 0.
+- [`GetNumSubChannels("data-out")`](/api/fair/mq/Device/#GetNumSubChannels) returns the number of sub-channels.
+
+For a channel or an index that does not exist, `GetChannel()` logs `GetChannel(): 'data-out[2]' does not exist.` and throws `std::out_of_range` ([Device.h](/source/fairmq/Device.h/#L324-L330)).
+
+The sampler of the [copypush example](/examples/copypush/) sends a copy of each message to each sub-channel of its channel `data`:
+
+<Snippet file="examples/copypush/sampler.cxx" start="bool ConditionalRun()" />
+
+Its start script gives `data` two sub-channels, with one `address=` key for each sub-channel:
+
+<Snippet file="examples/copypush/fairmq-start-ex-copypush.sh.in" start="SAMPLER=" end="--channel-config" />
+
+A socket can also have several endpoints (see [Addresses and endpoints](#addresses-and-endpoints)). Then the socket itself distributes the messages to its peers, by the rules of its socket type. Use several sub-channels when your code must select the peer for each message.
+
+## Socket types and patterns
+
+<PatternDiagram />
+
+The `type` of a sub-channel is the type of its socket. FairMQ uses the ZeroMQ socket type of the same name ([zeromq/Common.h](/source/fairmq/zeromq/Common.h/#L91-L123)). The `shmem` transport also uses ZeroMQ sockets of this type, for the metadata of the messages. The column Pattern gives the ZeroMQ behavior of each type. The ZeroMQ documentation of `zmq_socket` describes it in full.
+
+| Type | Peer | Pattern | Example in the repository |
+| --- | --- | --- | --- |
+| `push` | `pull` | Pipeline. A `push` socket with several peers sends each message to one of them. | [1-n-1](/examples/1-n-1/) |
+| `pull` | `push` | Pipeline. A `pull` socket receives from all its peers. | [1-n-1](/examples/1-n-1/) |
+| `pub` | `sub` | Publish and subscribe. Each `sub` peer gets a copy. | [multiple-channels](/examples/multiple-channels/) |
+| `sub` | `pub` | Publish and subscribe. The `zeromq` transport subscribes each `sub` socket to all messages ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L70-L74)). | [multiple-channels](/examples/multiple-channels/) |
+| `req` | `rep` | Request and reply. | [req-rep](/examples/req-rep/) |
+| `rep` | `req` | Request and reply. | [req-rep](/examples/req-rep/) |
+| `pair` | `pair` | One peer, both directions. | [readout](/examples/readout/) |
+| `dealer`, `router`, `xpub`, `xsub` | | The ZeroMQ types of these names. | None |
+
+[`Channel::Validate()`](/api/fair/mq/Channel/#Validate) accepts these 11 types. For another type, it throws [`ChannelConfigurationError`](/api/fair/mq/Channel/ChannelConfigurationError/) ([Channel.cxx](/source/fairmq/Channel.cxx/#L193-L199)). The tests of the repository cover `push`/`pull`, `pub`/`sub`, `req`/`rep` and `pair`.
+
+:::caution[pub and sub with shared memory]
+The `shmem` transport does not support `pub` and `sub`. It throws `SocketError` with `PUB/SUB socket type is not supported for shared memory transport` when the device makes such a socket ([shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L59-L62)).
+:::
+
+### Behavior of each socket type
+
+FairMQ calls ZeroMQ in a loop ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L96-L124)). Each ZeroMQ call waits up to 100 ms. If ZeroMQ cannot take or give a message in this time (`EAGAIN`), the loop checks for an interruption and for the timeout of the call. Then it calls ZeroMQ again. Thus `Send()` returns in one of these ways:
+
+- The number of bytes, when ZeroMQ accepts the message.
+- `TransferCode::timeout` (-2), when the timeout of the call is over. With the timeout 0, `Send()` does not wait.
+- `TransferCode::interrupted` (-3), when the device gets a transition request.
+- `TransferCode::error` (-1), when ZeroMQ reports another error. FairMQ logs `Failed transfer on socket <id>, errno: <n>, reason: <text>`. For `ETERM` (the context terminates), it logs `Terminating socket <id>` with the severity `debug`.
+
+`Receive()` uses the same loop. The `shmem` transport has the same loop for its metadata message ([shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L118-L161)). What ZeroMQ does with a full queue, a missing peer or a wrong sequence of calls depends on the socket type. The column "ZeroMQ behavior" comes from the ZeroMQ documentation of `zmq_socket` and `zmq_setsockopt`, not from FairMQ.
+
+| Type | ZeroMQ behavior | Result in FairMQ |
+| --- | --- | --- |
+| `push` | Sends each message to one peer, in turn (round robin). When the queues of all peers are full, or when it has no peer, the socket blocks and discards nothing. A connecting socket queues messages for its endpoints also before the peer is there. | `Send()` waits until a queue has space, the timeout is over, or a transition interrupts it. FairMQ does not set `ZMQ_IMMEDIATE`, so messages can wait in the queue of a peer that never comes. |
+| `pull` | Receives from all peers in turn (fair queuing). | `Receive()` waits for a message. |
+| `pub` | Sends a copy to each connected subscriber. A subscriber that is not connected yet gets nothing. When the queue of a subscriber is full, the socket drops the message for this subscriber and does not block. | `Send()` returns the number of bytes also for a dropped message, and the [counters](#socket-counters) count it as sent. |
+| `sub` | Receives only the messages that match its subscriptions. A new subscription reaches the publisher some time after the connect. | The `zeromq` transport subscribes each `sub` socket to all messages ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L70-L74)). `SetOption()` has no option name for `ZMQ_SUBSCRIBE` (see [Set socket options directly](/reference/channel-properties/#set-socket-options-directly)), so a `sub` socket of FairMQ receives all messages. |
+| `req` | Only the sequence send, receive, send, receive… A reply goes to the last request. | A second `Send()` without a `Receive()` returns `TransferCode::error`. After a receive timeout, the socket still waits for the reply, so the next `Send()` also fails. |
+| `rep` | Only the sequence receive, send, receive, send… The reply goes to the peer of the last request. | A `Send()` before a `Receive()` returns `TransferCode::error`. |
+| `pair` | One peer. When the queue is full, or when no peer is there, the socket blocks. | As for `push`. |
+| `dealer` | Sends in turn to its peers and receives from all peers, in any sequence. When the queues of all peers are full, or when it has no peer, the socket blocks. To talk to a `rep` socket, each message must start with an empty part. | As for `push`. Use `fair::mq::Parts` for the empty part. |
+| `router` | Adds a part with the identity of the peer before each received message. Uses the first part of each sent message to select the peer. Drops a message for an unknown peer or a full queue, and does not block. | FairMQ sets the identity of each socket to `<device id>.<sub-channel name>.<type>`, for example `sampler1.data[0].dealer` ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L37-L53)). Receive into `fair::mq::Parts`. Part 0 is the identity. |
+| `xpub`, `xsub` | As `pub` and `sub`, but the subscriptions are messages: an `xsub` socket subscribes when it sends a message that starts with the byte 1. | FairMQ sets no subscription for these types. |
+
+The `shmem` transport uses ZeroMQ sockets of the same types for its metadata, so the same rules apply to the types that it supports. It sends and reads one ZeroMQ frame in each call and expects the metadata in it. Thus it cannot handle the extra parts of `dealer` and `router`: the identity part and the empty part. No test of the repository covers `dealer`, `router`, `xpub` and `xsub`.
+
+The client of the [req-rep example](/examples/req-rep/) receives the reply before it sends the next request:
+
+<Snippet file="examples/req-rep/client.cxx" start='if (Send(req, "data") > 0) {' />
+
+A `sub` that connects late misses the messages that the `pub` sent before. The test devices of the repository synchronize through a second channel. Each `sub` waits and sends a ready message. The `pub` publishes only after it receives the ready messages:
+
+<Snippet file="test/helper/devices/TestSub.h" start="auto Run() -> void override" />
+
+## Bind and connect
+
+The `method` of a sub-channel is `bind` or `connect`. A binding socket waits for peers on its endpoints. A connecting socket connects to the endpoints of a peer. The method does not depend on the type: a `push` socket can bind or connect. Usually the device with a fixed place in the topology binds, for example the sampler and the sink in the 1-n-1 example.
+
+The device attaches its sub-channels in two states ([Device.cxx](/source/fairmq/Device.cxx/#L217-L276)):
+
+- In `BINDING`, the device binds all binding sub-channels, with one attempt. If one fails, the device goes to `ERROR` with `1 of the binding channels could not initialize`.
+- In `CONNECTING`, the device connects all connecting sub-channels. If the address of a sub-channel is not valid or its host name does not resolve, the device tries again every 50 ms. Before each attempt, it reads the address property again. After the time of `--init-timeout` (default 120 s), it goes to `ERROR` with `could not connect all channels after 120 attempts`. The number in this message is the timeout in seconds.
+
+ZeroMQ connects in the background. Thus a connect to a peer that is not there yet does not fail. You can start the devices of a topology in any sequence. [`GetNumberOfConnectedPeers()`](/api/fair/mq/Device/#GetNumberOfConnectedPeers) returns the number of peers of a sub-channel.
+
+## Addresses and endpoints
+
+The `address` of a sub-channel has one endpoint or several endpoints, separated by `,`. An endpoint has the form `[modifier]protocol://location`:
+
+| Protocol | Example | Use |
+| --- | --- | --- |
+| `tcp://` | `tcp://*:5555`, `tcp://host1:5555` | Between hosts, or on one host. |
+| `ipc://` | `ipc:///tmp/fmq_data` | Between processes on one host, through a Unix domain socket file. |
+| `inproc://` | `inproc://data` | Between sub-channels of one device with the same transport. |
+
+`Validate()` checks the protocol, a `:` after `tcp://`, and a location that is not empty after `ipc://` and `inproc://` ([Channel.cxx](/source/fairmq/Channel.cxx/#L201-L270)). It also accepts `verbs://`, a remainder of the removed `ofi` transport. The `zeromq` and `shmem` transports cannot use it.
+
+In a TCP bind, the host is `*` for all interfaces, an IPv4 address or a host name. In a TCP connect, the host is an IPv4 address or a host name. The device replaces each host name with its first IPv4 address before it binds or connects ([Device.cxx](/source/fairmq/Device.cxx/#L321-L333)).
+
+A modifier before an endpoint overrides the `method` for this endpoint ([Device.cxx](/source/fairmq/Device.cxx/#L311-L319)):
+
+- `@` binds the endpoint.
+- `+` or `>` connects the endpoint.
+
+With modifiers, one socket can bind some endpoints and connect others. A sub-channel without a `method` needs a modifier on each endpoint. The device then attaches it in `CONNECTING`. In this file of the [multipart example](/examples/multipart/), the socket of `sampler1` connects to two sinks. `sink2` binds with `@`, although its method is `connect`:
+
+<Snippet file="examples/multipart/ex-multipart-multiple-endpoints.json" />
+
+:::caution[Separators]
+Separate several endpoints with `,`. `Validate()` splits the address at `;`, but the device splits it at `,` ([Device.cxx](/source/fairmq/Device.cxx/#L302)). An address with `;` passes the check and then fails in the transport. In `--channel-config`, the `,` separates the keys, so give several endpoints in a JSON file or as a property.
+:::
+
+After the attach, the device writes the address that it uses back to the property `chans.<name>.<index>.address` ([Device.cxx](/source/fairmq/Device.cxx/#L359-L366)). This value has the resolved IPv4 addresses and the port that autobind selected.
+
+## Automatic ports
+
+When a TCP bind fails and `autoBind` is `true` (the default), the device binds to a random port from `portRangeMin` to `portRangeMax` (22000 to 23000). It tries up to 1000 ports ([Channel.cxx](/source/fairmq/Channel.cxx/#L346-L386)).
+
+FairMQ uses this for binding sub-channels without an address. Such a sub-channel gets the address `tcp://<IP of --network-interface>:1`. Without root rights, the bind to port 1 fails, and autobind selects a port. With `--network-interface default`, the device uses the interface of the default route. Code that knows the topology then reads the address property and gives it to the peers, for example a plugin.
+
+:::caution[Fixed ports]
+If the configured port is in use, autobind binds to a random port. The device logs this only with the severity `debug`, and the peers do not find the device. For fixed ports, set `autoBind` to `false`. [Channel properties](/reference/channel-properties/#portrangemin-portrangemax-and-autobind) describes the CMake variable that changes the default.
+:::
+
+## The transport of a sub-channel
+
+Each sub-channel has a transport: `zeromq` or `shmem`. The `transport` property of the sub-channel selects it. With the value `default`, the sub-channel uses the default transport of the device, from `--transport` (default `zeromq`). The device makes one transport object for each transport that its sub-channels use, and the sub-channels share it ([Device.cxx](/source/fairmq/Device.cxx/#L586-L605)).
+
+- Give both ends of a connection the same transport, as the examples do.
+- With `shmem`, all peers must be on the same host and in the same session. Refer to [Sessions and segments](/shmem/sessions/).
+- A poller and the data callbacks of [`OnData()`](/api/fair/mq/Device/#OnData) expect one transport for all sub-channels of a channel.
+
+[Transports](/concepts/transports/) compares the transports. [Use several transports](/guides/several-transports/) shows a device with channels of both transports.
+
+## Queues, timeouts and the rate log
+
+Each sub-channel has more properties. [Channel properties](/reference/channel-properties/) gives all details.
+
+| Properties | Default | Effect |
+| --- | --- | --- |
+| `sndBufSize`, `rcvBufSize` | 1000 | Maximum number of messages in the send queue and the receive queue. |
+| `sndKernelSize`, `rcvKernelSize` | 0 | Kernel buffer sizes in bytes. 0: the system default. |
+| `sndTimeoutMs`, `rcvTimeoutMs` | -1 | Timeout of `Send()` and `Receive()` without a timeout argument. -1: no timeout. |
+| `linger` | 500 | Time in ms to keep unsent messages after the socket closes. See [Linger](/guides/end-of-run/#linger). |
+| `rateLogging` | 1 | Interval of the rate log in seconds. 0: no rate log. |
+
+In `RUNNING`, the device logs the rate of each sub-channel with a `rateLogging` above 0, with the severity `info`:
+
+```txt
+data[0]: in: <messages/s> (<MB/s> MB) out: <messages/s> (<MB/s> MB)
+```
+
+### Socket counters
+
+Each socket counts its transfers. [`Channel`](/api/fair/mq/Channel/) gives the counters of its socket, and [`Socket`](/api/fair/mq/Socket/) has the same four functions:
+
+| Function | Counts |
+| --- | --- |
+| [`GetMessagesTx()`](/api/fair/mq/Channel/#GetMessagesTx) | Messages that `Send()` gave to ZeroMQ. |
+| [`GetBytesTx()`](/api/fair/mq/Channel/#GetBytesTx) | Bytes of these messages. |
+| [`GetMessagesRx()`](/api/fair/mq/Channel/#GetMessagesRx) | Messages that `Receive()` got. |
+| [`GetBytesRx()`](/api/fair/mq/Channel/#GetBytesRx) | Bytes of these messages. |
+
+The rules are in the send and receive functions of the transports ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L96-L255), [shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L118-L320)):
+
+- The counters start at 0 when the transport makes the socket. In a device, this occurs in `BINDING` or `CONNECTING`. After `RESET DEVICE`, the next initialization makes new sockets, which start at 0 again.
+- Only a successful transfer counts. A timeout, an interruption or an error does not change the counters.
+- A multipart message counts as one message. Its bytes are the sum of the sizes of its parts.
+- The bytes are the sizes of the messages. The `shmem` transport does not count its metadata message.
+- A `pub` socket counts a message also when ZeroMQ drops it for a subscriber. See [Behavior of each socket type](#behavior-of-each-socket-type).
+
+The counters are `unsigned long` values that only increase. Another thread can read them during the transfers. To log other values, read the counters in your own code, for example `GetChannel("data", 0).GetMessagesTx()`.
+
+The rate log reads the counters in its own thread. The thread wakes up every second. At each interval, it reads the four counters of each sub-channel and divides the differences by the time since its last wake-up ([Device.cxx](/source/fairmq/Device.cxx/#L613-L705)). Thus with a `rateLogging` above 1, the logged rates are too high by the factor `rateLogging` (a defect of the code).
+
+[Set socket options directly](/reference/channel-properties/#set-socket-options-directly) tells how to set ZeroMQ options of a socket with [`SetOption()`](/api/fair/mq/Socket/#SetOption).
+
+## Related pages
+
+- [Design a topology](/guides/design-topology/): select the patterns, the binding devices and the addresses.
+- [Configure channels](/guides/configure-channels/): give the channels with `--channel-config`, a JSON file or code.
+- [Channel properties](/reference/channel-properties/): all properties, with their defaults and allowed values.
+- [Device states](/concepts/states/): the states `BINDING` and `CONNECTING`.
+- [Messages and multipart](/concepts/messages/): what goes through a channel.
+- [Poll several channels](/guides/poll-channels/): receive from several sub-channels in one loop.

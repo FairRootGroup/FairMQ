@@ -209,8 +209,13 @@ class Socket final : public fair::mq::Socket
         }
         int elapsed = 0;
 
-        // meta msg format: | n | MetaHeader 1 | ... | MetaHeader n | padded to fMetadataMsgSize |
         auto const n = msgVec.size();
+        if (n == 0) { // same as the zeromq transport
+            LOG(warn) << "Will not send empty vector";
+            return static_cast<int>(TransferCode::error);
+        }
+
+        // meta msg format: | n | MetaHeader 1 | ... | MetaHeader n | padded to fMetadataMsgSize |
         zmq::ZMsg zmqMsg(std::max(fMetadataMsgSize, sizeof(std::size_t) + n * sizeof(MetaHeader)));
 
         auto meta_n = static_cast<std::size_t*>(zmqMsg.Data());
@@ -320,17 +325,14 @@ class Socket final : public fair::mq::Socket
     {
         // LOG(debug) << "Closing socket " << fId;
 
+        zmq::closeMonitorSocket(fSocket, fMonitorSocket);
+        fMonitorSocket = nullptr;
+
         if (fSocket && zmq_close(fSocket) != 0) {
             LOG(error) << "Failed closing data socket " << fId
                        << ", reason: " << zmq_strerror(errno);
         }
         fSocket = nullptr;
-
-        if (fMonitorSocket && zmq_close(fMonitorSocket) != 0) {
-            LOG(error) << "Failed closing monitor socket " << fId
-                       << ", reason: " << zmq_strerror(errno);
-        }
-        fMonitorSocket = nullptr;
     }
 
     void SetOption(const std::string& option, const void* value, size_t valueSize) override

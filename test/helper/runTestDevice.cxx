@@ -17,11 +17,8 @@
 #include "devices/TestRep.h"
 #include "devices/TestReq.h"
 #include "devices/TestSub.h"
+#include "devices/TestStateAction.h"
 #include "devices/TestTransferTimeout.h"
-#include "devices/TestWaitFor.h"
-#include "devices/TestExceptions.h"
-#include "devices/TestErrorState.h"
-#include "devices/TestSignals.h"
 
 #include <fairmq/runDevice.h>
 
@@ -70,14 +67,8 @@ auto getDevice(fair::mq::ProgOptions& config) -> std::unique_ptr<fair::mq::Devic
         return std::make_unique<PairLeft>();
     } else if (0 == id.find("pairright_")) {
         return std::make_unique<PairRight>();
-    } else if (0 == id.find("waitfor_")) {
-        return std::make_unique<TestWaitFor>();
-    } else if (0 == id.find("exceptions_")) {
-        return std::make_unique<Exceptions>();
-    } else if (0 == id.find("error_state_")) {
-        return std::make_unique<ErrorState>();
-    } else if (0 == id.find("signals_")) {
-        return std::make_unique<Signals>();
+    } else if (0 == id.find("exceptions_") || 0 == id.find("error_state_") || 0 == id.find("signals_") || 0 == id.find("waitfor_")) {
+        return std::make_unique<StateAction>();
     } else {
         cerr << "Don't know id '" << id << "'" << endl;
         return nullptr;

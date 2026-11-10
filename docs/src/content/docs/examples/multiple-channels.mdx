@@ -1,0 +1,193 @@
+---
+title: 'multiple-channels: data and broadcast'
+description: 'A sampler and a sink use a data channel and a broadcast channel. The sampler polls both channels, and the sink has one handler for each.'
+sidebar:
+  order: 6
+code: [fairmq/Poller.h, fairmq/Device.h, fairmq/Device.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps, FileTree } from '@astrojs/starlight/components';
+
+The multiple-channels example shows devices with more than one channel. The sampler sends data to the sink
+on the channel `data`. Both devices also receive the messages of a broadcaster on the channel `broadcast`.
+The sampler checks its two channels with a [poller](/guides/poll-channels/), and the sink registers one data
+handler for each channel.
+
+The files of the example are in
+[`examples/multiple-channels`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/multiple-channels)
+on GitHub.
+
+## Topology
+
+| Device | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- |
+| `sampler1` | `data` | `push` | `bind` | `tcp://*:5555` |
+| `sampler1` | `broadcast` | `sub` | `connect` | `tcp://localhost:5005` |
+| `sink1` | `data` | `pull` | `connect` | `tcp://localhost:5555` |
+| `sink1` | `broadcast` | `sub` | `connect` | `tcp://localhost:5005` |
+| `broadcaster1` | `broadcast` | `pub` | `bind` | `tcp://*:5005` |
+
+The `pub` socket of the broadcaster sends each message to all connected `sub` sockets. FairMQ subscribes
+each `sub` socket to all messages ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L70-L74)). All
+channels use `rateLogging=0`.
+
+:::caution[zeromq only]
+The example needs the `zeromq` transport. The `shmem` transport does not support the socket types `pub` and
+`sub`: it throws a `SocketError` when it creates such a socket
+([shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L59-L62)). Thus CTest runs this example only with
+`zeromq`.
+:::
+
+## Build the example
+
+The examples build together with FairMQ when the CMake option `BUILD_EXAMPLES` is `ON` (the default):
+
+<FileTree>
+
+- build/examples/multiple-channels/
+  - fairmq-ex-multiple-channels-sampler
+  - fairmq-ex-multiple-channels-sink
+  - fairmq-ex-multiple-channels-broadcaster
+  - fairmq-start-ex-multiple-channels.sh
+  - test-ex-multiple-channels.sh
+
+</FileTree>
+
+## Run the example
+
+<Steps>
+
+1. Go to the directory of the example in the build tree:
+
+   ```sh
+   cd build/examples/multiple-channels
+   ```
+
+2. Run the start script. It opens three `xterm` windows, one for each device:
+
+   ```sh
+   ./fairmq-start-ex-multiple-channels.sh
+   ```
+
+</Steps>
+
+To run the example without `xterm`, run each command in its own terminal in
+`build/examples/multiple-channels`. One `--channel-config` option takes one value for each channel:
+
+```sh
+./fairmq-ex-multiple-channels-sampler --id sampler1 \
+  --channel-config "name=data,type=push,method=bind,rateLogging=0,address=tcp://*:5555" \
+                   "name=broadcast,type=sub,method=connect,rateLogging=0,address=tcp://localhost:5005"
+```
+
+```sh
+./fairmq-ex-multiple-channels-sink --id sink1 \
+  --channel-config "name=data,type=pull,method=connect,rateLogging=0,address=tcp://localhost:5555" \
+                   "name=broadcast,type=sub,method=connect,rateLogging=0,address=tcp://localhost:5005"
+```
+
+```sh
+./fairmq-ex-multiple-channels-broadcaster --id broadcaster1 \
+  --channel-config "name=broadcast,type=pub,method=bind,rateLogging=0,address=tcp://*:5005"
+```
+
+## The sampler
+
+<Snippet file="examples/multiple-channels/sampler.cxx" start="void Run()" />
+
+The sampler overrides [`Run()`](/api/fair/mq/Device/#Run) instead of `ConditionalRun()`. The device calls
+`Run()` once in the state `RUNNING`. Thus `Run()` has its own loop, and it must return when
+[`NewStatePending()`](/api/fair/mq/Device/#NewStatePending) is `true`.
+
+- [`NewPoller()`](/api/fair/mq/Device/#NewPoller) creates a poller for the channels `data` and `broadcast`,
+  with all their sub-channels.
+- [`Poll(100)`](/api/fair/mq/Poller/#Poll) waits for max. 100 ms for an event on one of the channels.
+- [`CheckInput("broadcast", 0)`](/api/fair/mq/Poller/#CheckInput-2) is `true` if the sub-channel
+  `broadcast[0]` has a message to receive.
+- [`CheckOutput("data", 0)`](/api/fair/mq/Poller/#CheckOutput-2) is `true` if the sub-channel `data[0]` can
+  send. The `zeromq` poller checks `push` sockets for output and `sub` sockets for input
+  ([zeromq/Poller.h](/source/fairmq/zeromq/Poller.h/#L111-L123)).
+- Before each send, the sampler waits 1 s. [`NewSimpleMessage()`](/api/fair/mq/Device/#NewSimpleMessage)
+  copies the text into a new message.
+- At `--max-iterations`, the loop ends. When `Run()` returns, the device goes to `READY`.
+
+All channels of one poller must use the same transport. Otherwise `NewPoller()` throws an exception
+([Device.h](/source/fairmq/Device.h/#L219-L239)).
+
+## The sink
+
+<Snippet file="examples/multiple-channels/sink.cxx" start="Sink()" />
+
+The sink calls [`OnData()`](/api/fair/mq/Device/#OnData) once for each channel. With more than one input
+channel, the device polls all input channels and calls the handler of the channel that has a message
+([Device.cxx](/source/fairmq/Device.cxx/#L449-L507)).
+
+<Snippet file="examples/multiple-channels/sink.cxx" start="bool CheckIterations()" />
+
+Both handlers return the result of `CheckIterations()`. With `--max-iterations`, the sink leaves `RUNNING`
+only after it got messages on both channels.
+
+## The broadcaster
+
+<Snippet file="examples/multiple-channels/broadcaster.cxx" start="bool ConditionalRun()" />
+
+Once per second, the broadcaster sends the text `OK` on its `pub` channel. It has no custom options, so it
+runs until you stop it.
+
+## Output
+
+The listings show the severity and the message of each line, without the time. The lines of the two
+channels mix, because the messages arrive in any order.
+
+The sampler:
+
+```txt
+[INFO] Received broadcast: "OK"
+[INFO] Sent "Hello"
+```
+
+The sink:
+
+```txt
+[INFO] Received broadcast: "OK"
+[INFO] Received message: "Hello"
+```
+
+The broadcaster:
+
+```txt
+[INFO] Sending OK
+```
+
+## Test the example
+
+The test script `test-ex-multiple-channels.sh` uses `ipc://` addresses in `/tmp`, a new session and
+`--control static`. It starts the sink first, waits 1 s, and then starts the sampler and the broadcaster.
+The sampler and the sink stop after one iteration (`--max-iterations 1`). Then the script stops the
+broadcaster with `SIGINT`.
+
+The CMake file of the example sets `TRANSPORT zeromq`. Thus CTest has only one test,
+`Example.multiple-channels.zeromq`. The test exists if you configure with `-DBUILD_TESTING=ON`.
+
+```sh
+cd build
+ctest -R '^Example\.multiple-channels\.' --output-on-failure
+```
+
+## Things to try
+
+- Start the broadcaster some seconds after the other devices. The sampler and the sink exchange data
+  before the first broadcast arrives.
+- Stop the broadcaster. The data on the channel `data` continues.
+- Send another text: start the sampler with `--text "Hi"`.
+- Stop after three iterations: add `--max-iterations 3` to the commands of the sampler and the sink.
+
+## Related pages
+
+- [Poll several channels](/guides/poll-channels/): the `Poller` interface in detail.
+- [Receive data with callbacks or loops](/guides/receive-data/): `OnData()`, `ConditionalRun()` and `Run()`.
+- [Channels and sockets](/concepts/channels/): the socket types `pub` and `sub`.
+- [multiple-transports: zeromq and shmem](/examples/multiple-transports/): input channels with two
+  transports.
+- [Design a topology](/guides/design-topology/#broadcast-and-data): a data link and a broadcast link in one topology.

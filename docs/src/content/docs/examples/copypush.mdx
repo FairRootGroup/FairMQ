@@ -1,0 +1,159 @@
+---
+title: 'copypush: one message to several receivers'
+description: 'A sampler sends the same data to two sinks. It makes a copy of each message for each sub-channel of a push channel.'
+sidebar:
+  order: 5
+code: [fairmq/Message.h, fairmq/Device.h, fairmq/SuboptParser.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps, FileTree } from '@astrojs/starlight/components';
+
+The copypush example sends the same data to several receivers. The sampler has one channel with two
+[sub-channels](/concepts/channels/), and it sends one copy of each message on each sub-channel.
+[`Copy()`](/api/fair/mq/Message/#Copy) makes the copy without a copy of the data.
+
+The files of the example are in
+[`examples/copypush`](https://github.com/FairRootGroup/FairMQ/tree/dev/examples/copypush) on GitHub.
+
+## Topology
+
+| Device | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- |
+| `sampler1` | `data[0]` | `push` | `bind` | `tcp://*:5555` |
+| `sampler1` | `data[1]` | `push` | `bind` | `tcp://*:5556` |
+| `sink1` | `data` | `pull` | `connect` | `tcp://localhost:5555` |
+| `sink2` | `data` | `pull` | `connect` | `tcp://localhost:5556` |
+
+The channel configuration of the sampler has two `address` keys. Each `address` key makes one sub-channel,
+and the sub-channels share the other keys ([SuboptParser.cxx](/source/fairmq/SuboptParser.cxx/#L105-L108)).
+Each sub-channel has its own socket, and one sink connects to it.
+
+## Build the example
+
+The examples build together with FairMQ when the CMake option `BUILD_EXAMPLES` is `ON` (the default):
+
+<FileTree>
+
+- build/examples/copypush/
+  - fairmq-ex-copypush-sampler
+  - fairmq-ex-copypush-sink
+  - fairmq-start-ex-copypush.sh
+  - test-ex-copypush.sh
+
+</FileTree>
+
+## Run the example
+
+<Steps>
+
+1. Go to the directory of the example in the build tree:
+
+   ```sh
+   cd build/examples/copypush
+   ```
+
+2. Run the start script. It opens three `xterm` windows, one for each device:
+
+   ```sh
+   ./fairmq-start-ex-copypush.sh
+   ```
+
+</Steps>
+
+To run the example without `xterm`, run each command in its own terminal in `build/examples/copypush`:
+
+```sh
+./fairmq-ex-copypush-sampler --id sampler1 \
+  --channel-config "name=data,type=push,method=bind,rateLogging=0,address=tcp://*:5555,address=tcp://*:5556"
+```
+
+```sh
+./fairmq-ex-copypush-sink --id sink1 \
+  --channel-config "name=data,type=pull,method=connect,rateLogging=0,address=tcp://localhost:5555"
+```
+
+```sh
+./fairmq-ex-copypush-sink --id sink2 \
+  --channel-config "name=data,type=pull,method=connect,rateLogging=0,address=tcp://localhost:5556"
+```
+
+## The sampler
+
+<Snippet file="examples/copypush/sampler.cxx" start="void InitTask()" />
+
+[`GetNumSubChannels()`](/api/fair/mq/Device/#GetNumSubChannels) returns the number of sub-channels of a
+channel. Here it is 2.
+
+<Snippet file="examples/copypush/sampler.cxx" start="bool ConditionalRun()" />
+
+- [`NewSimpleMessage()`](/api/fair/mq/Device/#NewSimpleMessage) creates a message with a copy of the
+  counter, a `uint64_t`.
+- For each sub-channel except the last, the sampler creates an empty message with
+  [`NewMessage()`](/api/fair/mq/Device/#NewMessage). [`Copy()`](/api/fair/mq/Message/#Copy) makes it a copy
+  of `msg`.
+- The third argument of [`Send()`](/api/fair/mq/Device/#Send) is the index of the sub-channel. The original
+  message goes to the last sub-channel.
+- After each round, the sampler waits 1 s.
+
+`Copy()` does not copy the data in the sampler. The `zeromq` transport shares the buffer between the two
+messages (`zmq_msg_copy()`). The `shmem` transport increments a reference count of the buffer in shared
+memory. Do not change the data of a message after a `Copy()`.
+
+## The sink
+
+<Snippet file="examples/copypush/sink.cxx" start="bool HandleData" />
+
+The sink registers `HandleData()` for the channel `data` with [`OnData()`](/api/fair/mq/Device/#OnData).
+The handler reads the counter from the data of the message. Both sinks run the same executable with
+different IDs and addresses.
+
+## Output
+
+The listings show the severity and the message of each line, without the time. The sampler logs no line
+for each message. Each sink logs every counter value, once per second:
+
+```txt
+[INFO] Received message: "0"
+[INFO] Received message: "1"
+[INFO] Received message: "2"
+```
+
+`sink1` and `sink2` get the same values.
+
+## Push sub-channels compared to pub and sub
+
+A `pub` socket also sends each message to all receivers. But the `shmem` transport does not support the
+socket types `pub` and `sub` ([shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L59-L62)). With one `push`
+sub-channel for each sink, the example runs with both transports. You need one sub-channel, thus one
+socket and one address, for each receiver.
+
+## Test the example
+
+The test script `test-ex-copypush.sh` starts the sampler and the two sinks with two `ipc://` addresses in
+`/tmp`, a new session and `--control static`. All three devices stop after one message
+(`--max-iterations 1`).
+
+CTest runs the script once for each transport: `Example.copypush.zeromq` and `Example.copypush.shmem`. The
+tests exist if you configure with `-DBUILD_TESTING=ON`.
+
+```sh
+cd build
+ctest -R '^Example\.copypush\.' --output-on-failure
+```
+
+## Things to try
+
+- Add a third sink. Add `address=tcp://*:5557` to the channel configuration of the sampler. Then start a
+  sink with `--id sink3` and `address=tcp://localhost:5557`. `GetNumSubChannels()` returns 3, and the
+  sampler sends to all three sinks.
+- Use shared memory: add `--transport shmem` to all three commands.
+- Stop after three messages: add `--max-iterations 3` to all three commands.
+
+## Related pages
+
+- [Messages and multipart](/concepts/messages/): message ownership and `Copy()`.
+- [Channels and sockets](/concepts/channels/): channels, sub-channels and socket types.
+- [1-n-1: sampler, processors and sink](/examples/1-n-1/): distribute messages instead of copying them.
+- [multiple-channels: data and broadcast](/examples/multiple-channels/): a `pub` and `sub` channel.
+- [Design a topology](/guides/design-topology/#fan-out-and-fan-in): distribute or copy messages to several receivers.

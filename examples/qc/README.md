@@ -1,4 +1,6 @@
-QC
-==
+# Example qc: quality control on demand
 
-A topology consisting of 4 devices - Sampler, QCDispatcher, QCTask and Sink. The data flows from Sampler through QCDispatcher to Sink. On demand - by setting the corresponding configuration property - the QCDispatcher device will duplicate the data to the QCTask device. The property is set by the topology controller, in this example this is the `fairmq-dds-command-ui` utility.
+A dispatcher forwards data from a sampler to a sink, and also to a QC task when a controller sets the property qc to active; the start script needs DDS.
+
+The documentation explains the code, the topology and the commands:
+<https://fairrootgroup.github.io/FairMQ/examples/qc/>

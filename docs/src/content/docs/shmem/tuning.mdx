@@ -1,0 +1,264 @@
+---
+title: 'Tune and debug'
+description: 'Segment size, allocation algorithm, memory locking, bad allocations and debug output.'
+sidebar:
+  order: 6
+code: [fairmq/shmem/Manager.h, fairmq/shmem/TransportFactory.h, fairmq/shmem/Common.h, fairmq/shmem/Socket.h, fairmq/plugins/config/Config.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import OptionsTable from '../../../components/OptionsTable.astro';
+
+The shmem transport has options for the size and the behavior of the managed segment. This page
+tells you how to set them, what occurs when the segment is full, and how to find messages that use
+the memory.
+
+## Set the segment size
+
+`--shm-segment-size` sets the size of the managed segment in bytes. The default is 2147483648
+(2 GiB). Only the device that creates the segment sets its size. Boost.Interprocess opens an existing
+segment with its size, so the value of the other devices has no effect. See
+[Managed segments](/shmem/sessions/#managed-segments).
+
+The segment must hold all messages that exist at the same time:
+
+- The messages that your devices hold.
+- The messages in the queues of the sockets. Each queue holds up to `sndBufSize` or `rcvBufSize`
+  ZeroMQ messages (default 1000). A multipart message counts as one.
+- The messages in the kernel buffers of the sockets.
+
+Each block needs more memory than the payload. The block also holds a header of 8 bytes and space
+for the alignment ([Common.h](/source/fairmq/shmem/Common.h/#L103-L136)).
+
+To check the free memory, use `fairmq-shmmonitor --session <name>`, or
+[`Monitor::GetFreeMemory()`](/api/fair/mq/shmem/Monitor/#GetFreeMemory) in code. See
+[Monitor and clean up](/shmem/monitor/#find-the-shared-memory).
+
+### Space in /dev/shm
+
+On Linux, each object of a session, except a file-backed region, is a file in `/dev/shm`. This is
+a `tmpfs` file system with a size limit. FairMQ creates the segment with `open_or_create` and does
+not check the free space of `/dev/shm` ([Manager.h](/source/fairmq/shmem/Manager.h/#L158-L178)).
+Thus `/dev/shm` must hold all objects of all sessions on the host:
+
+- the management segment of each session, 6553600 bytes (6.25 MiB),
+- each managed segment, by default 2 GiB,
+- each region, its acknowledgement queue (1024 messages of 256 blocks, more than 6 MiB) and its
+  reference count segment (`rcSegmentSize`, default 100000000 bytes).
+
+Use `df -h /dev/shm` to see the size and the free space. Old sessions that stay after a crash also
+use this space. See [Monitor and clean up](/shmem/monitor/).
+
+A container often has a small `/dev/shm`. Docker gives a container 64 MB by default (Docker
+behavior). The default segment of 2 GiB then does not fit. Give the container more space, for
+example with `docker run --shm-size=4g`, or set a smaller `--shm-segment-size`. With `--ipc=host`,
+the container uses the `/dev/shm` of the host (Docker behavior).
+[Containers](/shmem/sessions/#containers) tells how devices in different containers share a
+session.
+
+What occurs when `/dev/shm` is too small depends on the Boost version (Boost.Interprocess behavior):
+
+- From Boost 1.76, Boost reserves the full size with `posix_fallocate()` when it creates the
+  segment. Each segment uses its full size in `/dev/shm` from the start. If the space is not
+  available, the transport throws, and the device goes to the state `ERROR`. From Boost 1.79, the
+  text ends with the reason of the system, for example
+  `Could not initialize shared memory transport: Failed to create/open shared memory segment 'fmq_eca859e3_m_0': No space left on device`.
+  Boost 1.76 to 1.78 read the reason from `errno`, which `posix_fallocate()` does not set. Then the
+  reason in the text can be wrong.
+- Older versions only set the size of the file. Linux gives a page of the file when a process first
+  uses the page. If `tmpfs` has no free page, the process gets the signal `SIGBUS` and crashes
+  (Linux behavior). This can occur long after the start, when the segment fills.
+
+With an older Boost, two kinds of options show the problem at the start, and not later in the run:
+
+- `--shm-zero-segment` and `--shm-zero-segment-on-creation` write to all free pages of the segment
+  when the device opens or creates it. The device then crashes with `SIGBUS` at once.
+- `--shm-mlock-segment` and `--shm-mlock-segment-on-creation` load all pages into RAM. If `tmpfs`
+  cannot give the pages, `mlock()` fails with "Cannot allocate memory" (Linux behavior). This is
+  the same text as for a too small `RLIMIT_MEMLOCK`.
+
+## Select the allocation algorithm
+
+`--shm-allocation` selects the allocation algorithm of Boost.Interprocess for the segment:
+`rbtree_best_fit` (default) or `simple_seq_fit`. Another value throws
+[`SharedMemoryError`](/api/fair/mq/shmem/SharedMemoryError/) when the device creates the transport:
+
+```txt
+Provided shared memory allocation algorithm 'best_fit' is not supported. Supported are 'rbtree_best_fit'/'simple_seq_fit'
+```
+
+The device that creates the segment sets the algorithm. If another device asks for a different
+algorithm, it writes a warning and uses the algorithm of the segment.
+
+## Lock and zero the segment
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `--shm-mlock-segment` | `false` | Locks the segment in RAM with `mlock()` after the device opens or creates it. |
+| `--shm-mlock-segment-on-creation` | `false` | Locks the segment only in the device that creates it. |
+| `--shm-zero-segment` | `false` | Writes zeros to the free memory of the segment after the device opens or creates it. |
+| `--shm-zero-segment-on-creation` | `false` | Writes zeros only in the device that creates it. |
+
+For a region, use the fields `lock` and `zero` of `RegionConfig`. See
+[Unmanaged regions](/shmem/regions/#the-region-configuration).
+
+`mlock()` needs a large enough limit for locked memory (`RLIMIT_MEMLOCK`). If the limit is too
+small, the device cannot create its transport. The error is:
+
+```txt
+Could not initialize shared memory transport: Could not lock the managed segment memory: Cannot allocate memory
+```
+
+Increase the limit for the shell that starts the devices. The CI of FairMQ does this before the
+tests:
+
+```sh
+sudo prlimit --pid $$ --memlock=unlimited:unlimited
+```
+
+## Handle a full segment
+
+If a message does not fit into the free memory of the segment, `NewMessage()` throws
+[`MessageBadAlloc`](/api/fair/mq/MessageBadAlloc/). Three options change this behavior
+([Manager.h](/source/fairmq/shmem/Manager.h/#L694-L748)):
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `--shm-throw-bad-alloc` | `true` | `false`: try again until the allocation is successful. `--bad-alloc-max-attempts` then has no effect. |
+| `--bad-alloc-max-attempts` | not set (1 attempt) | Number of attempts before `MessageBadAlloc`. `-1`: no limit. `0` has the same effect as `1`. |
+| `--bad-alloc-attempt-interval` | `50` | Time between two attempts in ms. |
+
+The text of the exception gives the free memory. For example:
+
+```txt
+shmem: could not create a message of size 100000, alignment: 16, free memory: 31984
+```
+
+With more than one attempt, the transport writes a warning after the first failure. For example,
+with `--bad-alloc-max-attempts 4`: "… Will try 3 more times, in 50ms intervals". With no limit, it
+writes no warning.
+
+A state change of the device stops the wait. On each transition, the device interrupts its
+transports, and `NewMessage()` throws `MessageBadAlloc`.
+
+A message that is larger than the segment throws `MessageBadAlloc` at once, without more attempts.
+For example, a message of 2000000 bytes in a segment of 1000000 bytes gives:
+
+```txt
+Requested message size (2000024) exceeds segment size (1000000)
+```
+
+The size in this text includes the header and the alignment. This test sets 4 attempts with 20 ms
+between them:
+
+<Snippet file="test/transport/_shm_allocation.cxx" start="TEST_P(ShmAllocation, MaxAttempts)" />
+
+## Alignment
+
+The payload of a shmem message starts at an address that is a multiple of
+`alignof(std::max_align_t)`. To get a larger alignment, give an
+[`Alignment`](/api/fair/mq/Alignment/) to `NewMessage()` or `Rebuild()`:
+
+```cpp
+auto msg = NewMessageFor("data", 0, size, fair::mq::Alignment{64});
+```
+
+The receiver gets the block that the sender allocated. With the shmem transport, the alignment of
+an empty message for `Receive()` has no effect. The test `RunPushPullWithAlignment` checks an
+alignment of 64 bytes for the sent and the received message.
+
+## Set the size of the metadata message
+
+For each send, the shmem transport sends one ZeroMQ message with the metadata: 40 bytes for a
+single message, or 8 bytes plus 40 bytes for each part. `--shm-metadata-msg-size` makes this
+message larger (default `0`). The transport fills the message with padding up to this size. A value
+below the minimum gives the minimum ([Socket.h](/source/fairmq/shmem/Socket.h/#L135-L137)).
+
+The queues of the sockets count ZeroMQ messages, and the kernel buffers of the sockets count bytes.
+Small metadata messages fill the kernel buffers slowly, so more messages can wait in them. With
+larger metadata messages, the kernel buffers hold fewer messages, and small values of `sndBufSize`
+and `rcvBufSize` limit the number of messages more accurately. The option is available since FairMQ
+v1.6.
+
+The receiver reads the metadata from the start of the message, so the two ends do not need the same
+value. Many tests run the shmem transport also with a metadata size of 2048 bytes.
+
+## Debug mode
+
+Compile FairMQ with the CMake option `FAIRMQ_DEBUG_MODE=ON` (default `OFF`) to get information about
+the messages in shared memory. The CMake files give this definition to the FairMQ library, to
+`fairmq-shmmonitor` and, as a public definition, to the targets that link FairMQ.
+
+```sh
+cmake -S . -B build -DFAIRMQ_DEBUG_MODE=ON
+```
+
+In debug mode, the shmem transport does these things:
+
+- It records each message in the management segment: the segment, the offset, the size, the
+  process ID of the creator and the time of the creation.
+- It counts the messages of each segment. The status of `fairmq-shmmonitor` shows the count in
+  `msgs`.
+- When the device resets, it checks that the device destroyed all its messages.
+
+Each allocation and each deallocation locks a mutex of the session for the record. The CMake option
+says that debug mode can decrease the performance.
+
+To see the messages, use `fairmq-shmmonitor --debug --session <name>`, or the key `b` in the
+interactive mode. The output has this form (example values):
+
+```txt
+found 2 messages.
+segment:   0, offset:         1072, size:        100, creator PID: 4711, at: 10:15:02.123456
+segment:   0, offset:         1200, size:        200, creator PID: 4711, at: 10:15:02.123789
+```
+
+Without debug mode, the tool prints "FairMQ was not compiled in debug mode (FAIRMQ_DEBUG_MODE)".
+The six digits after the seconds are not the fraction of the second: the code prints the
+nanoseconds of the time stamp modulo 1000000.
+
+### The message check at reset
+
+In the state `RESETTING DEVICE`, the shmem transport compares the number of created and destroyed
+message objects. If they are not equal, it throws [`MessageError`](/api/fair/mq/MessageError/), and
+the device goes to the state `ERROR`:
+
+```txt
+Message counter during Reset expected to be 0, found: 3
+```
+
+Destroy all messages in `ResetTask()` at the latest. See [Device states](/concepts/states/).
+
+:::caution[False errors after Rebuild() or Copy()]
+Each call of `Rebuild()` counts one more destroyed message. `Copy()` does the same when the target
+message holds a block or the source message is empty. The check can then fail, also when all
+messages are destroyed.
+:::
+
+## Problems
+
+| Message | Cause | What to do |
+| --- | --- | --- |
+| `MessageBadAlloc`: "Requested message size (…) exceeds segment size (…)" | The message is larger than the segment. | Increase `--shm-segment-size` of the device that creates the segment, or send smaller messages. |
+| `MessageBadAlloc`: "shmem: could not create a message of size …" | The segment is full. | Increase the segment. Destroy messages earlier. Use `--bad-alloc-max-attempts`. |
+| "Could not lock the managed segment memory: Cannot allocate memory" | The limit for locked memory is too small, or `/dev/shm` cannot give the pages. | Increase `RLIMIT_MEMLOCK`, or do not lock the segment. Check the free space of `/dev/shm`. |
+| "Failed to create/open shared memory segment '…': No space left on device", or the device crashes with `SIGBUS` | `/dev/shm` has less free space than the segment, for example in a container. See [Space in /dev/shm](#space-in-devshm). | Give `/dev/shm` more space (Docker: `--shm-size`), or decrease `--shm-segment-size`. Remove old sessions with `fairmq-shmmonitor --cleanup`. |
+| The segment has a different size than `--shm-segment-size`. | Another device created the segment, or old memory of the session exists. | Use the same value on all devices. Remove old memory with `fairmq-shmmonitor --cleanup`. |
+| "Allocation algorithm of the opened segment is …, but requested is …" | The segment exists with another algorithm. | Use the same `--shm-allocation` on all devices. |
+| `SocketError`: "Received message is not a valid FairMQ shared memory message" | The peer uses the zeromq transport. | Use the same transport on both ends of the channel. |
+| `MessageError`: "Message counter during Reset expected to be 0, found: …" | Debug mode. Messages exist at the reset. | Destroy the messages in `ResetTask()`. |
+
+## All shared memory options
+
+<OptionsTable groups={['Shared memory']} id="shm" />
+
+The option `--session` is in the group `Device`. See [Command-line options](/reference/options/).
+
+## Related pages
+
+- [Sessions and segments](/shmem/sessions/): who creates a segment and sets its size.
+- [Monitor and clean up](/shmem/monitor/): free memory, the status of a session.
+- [Unmanaged regions](/shmem/regions/): `lock`, `zero` and `rcSegmentSize` of a region.
+- [Handle errors and timeouts](/guides/errors-timeouts/): exceptions and transfer codes.
+- [CMake options and variables](/reference/cmake/): `FAIRMQ_DEBUG_MODE`.
+- [Run a benchmark](/guides/benchmark/): measure the effect of the options on the throughput.

@@ -1,0 +1,271 @@
+---
+title: Use FairMQ in a CMake project
+description: 'Find an installed FairMQ with find_package(), link your programs to FairMQ::FairMQ, and use the variables and functions of the package.'
+sidebar:
+  order: 4
+---
+
+import { FileTree } from '@astrojs/starlight/components';
+
+FairMQ installs a CMake package. Your project finds it with `find_package(FairMQ)` and links its programs to the imported target `FairMQ::FairMQ`. This page shows a complete project, the targets and the variables of the package, and the problems that can occur.
+
+## A minimal project
+
+This project builds one device program. Make a folder with two files:
+
+<FileTree>
+
+- hello/
+  - CMakeLists.txt
+  - hello.cxx
+
+</FileTree>
+
+```cmake title="CMakeLists.txt"
+cmake_minimum_required(VERSION 3.15)
+project(Hello LANGUAGES CXX)
+
+find_package(FairMQ 1.11 REQUIRED)
+# FairMQConfig.cmake does not find the dependencies of FairMQ. Find them here.
+foreach(dep IN LISTS FairMQ_PACKAGE_DEPENDENCIES)
+  find_package(${dep} ${FairMQ_${dep}_VERSION} REQUIRED COMPONENTS ${FairMQ_${dep}_COMPONENTS})
+endforeach()
+
+add_executable(hello hello.cxx)
+target_link_libraries(hello PRIVATE FairMQ::FairMQ)
+```
+
+```cpp title="hello.cxx"
+#include <fairmq/Device.h>
+#include <fairmq/runDevice.h>
+
+#include <memory>
+
+struct Hello : fair::mq::Device
+{
+    bool ConditionalRun() override
+    {
+        LOG(info) << "Hello from " << GetId();
+        return false;
+    }
+};
+
+void addCustomOptions(boost::program_options::options_description&) {}
+
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions&)
+{
+    return std::make_unique<Hello>();
+}
+```
+
+Configure and build the project, and run the program:
+
+```sh
+cmake -S hello -B hello/build -DCMAKE_PREFIX_PATH="$HOME/fairmq_install"
+cmake --build hello/build
+hello/build/hello --id hello1 --control static
+```
+
+The device logs `Hello from hello1`. Then [`ConditionalRun()`](/api/fair/mq/Device/#ConditionalRun) returns `false`, and the device leaves the state `RUNNING`. In the control mode `static`, the device then goes to `EXITING`, and the program ends. The device has no channels, so it also logs the warning `No channels created after finishing initialization`.
+
+[Your first device](/start/first-device/) explains the code of a device.
+
+## Find the package
+
+```cmake
+find_package(FairMQ 1.11 REQUIRED)
+```
+
+The version is a minimum. The package accepts each installed version that is equal to it or newer, also a newer major version. You can also omit the version.
+
+The package is in the folder `lib/cmake/FairMQ-<version>/` of the installation prefix. On some systems, the folder is `lib64/` instead of `lib/`. The folder contains `FairMQConfig.cmake`, `FairMQConfigVersion.cmake` and the files `FairMQTargets*.cmake`, which define the imported targets.
+
+## Point CMake to the installation
+
+If FairMQ is not in a system directory, tell CMake where it is. Use one of these ways:
+
+- `-DCMAKE_PREFIX_PATH=<prefix>` gives the installation prefix. For more prefixes, separate them with `;`.
+- The environment variable `CMAKE_PREFIX_PATH` also gives prefixes. On Linux, separate them with `:`. `spack load fairmq` and an active Spack environment set this variable.
+- `-DFairMQ_ROOT=<prefix>` gives the prefix of FairMQ only.
+- `-DFairMQ_DIR=<prefix>/lib/cmake/FairMQ-1.11.0` gives the folder that contains `FairMQConfig.cmake`.
+- In your `CMakeLists.txt`, add a prefix with `list(PREPEND CMAKE_PREFIX_PATH /path/to/fairmq_install)` before `find_package()`.
+
+## Find the dependencies of FairMQ
+
+`FairMQConfig.cmake` does not find the dependencies of FairMQ. But the target `FairMQ::FairMQ` refers to targets of its dependencies, for example `FairLogger::FairLogger` and `Boost::program_options`. Your project must find these packages, or CMake stops with an error (see [Problems that can occur](/start/cmake/#problems-that-can-occur)).
+
+The package gives the list of the dependencies, with the minimum versions and the components:
+
+- `FairMQ_PACKAGE_DEPENDENCIES` is the list, for example `Threads FairLogger Boost`. It can also contain the dependencies of FairLogger, for example `fmt`.
+- `FairMQ_<dep>_VERSION` is the minimum version of the dependency `<dep>`, for example `FairMQ_Boost_VERSION`.
+- `FairMQ_<dep>_COMPONENTS` is the list of the components of `<dep>`, for example `FairMQ_Boost_COMPONENTS`.
+
+The loop in the [minimal project](/start/cmake/#a-minimal-project) finds each dependency with these values. Put the loop after `find_package(FairMQ)`. Use the installations of the dependencies that FairMQ was built with.
+
+### With FairCMakeModules
+
+If your project uses [FairCMakeModules](https://github.com/FairRootGroup/FairCMakeModules), its module [`FairFindPackage2`](https://fairrootgroup.github.io/FairCMakeModules/latest/module/FairFindPackage2.html) can do the same work:
+
+```cmake
+find_package(FairCMakeModules 0.2 REQUIRED)
+include(FairFindPackage2)
+find_package2(PRIVATE FairMQ VERSION 1.11 REQUIRED)
+find_package2_implicit_dependencies()
+```
+
+`find_package2_implicit_dependencies()` finds the dependencies of all packages that your project found with `find_package2()`. This way needs an installed FairCMakeModules. The bundled copy that the FairMQ build uses is not part of the FairMQ installation.
+
+## Imported targets
+
+| Target | What it is |
+| --- | --- |
+| `FairMQ::FairMQ` | The library `libfairmq`. Link your programs to this target. |
+| `FairMQ::fairmq-bsampler`, `FairMQ::fairmq-merger`, `FairMQ::fairmq-multiplier`, `FairMQ::fairmq-proxy`, `FairMQ::fairmq-sink`, `FairMQ::fairmq-splitter` | The [built-in devices](/tools/builtin-devices/). |
+| `FairMQ::fairmq-shmmonitor` | The tool [`fairmq-shmmonitor`](/tools/shmmonitor/). |
+| `FairMQ::fairmq-uuid-gen` | The tool [`fairmq-uuid-gen`](/reference/tools/#fairmq-uuid-gen). |
+| `FairMQ::fairmq-tidy` | The tool [`fairmq-tidy`](/tools/fairmq-tidy/). Only in an installation that was built with `BUILD_TIDY_TOOL=ON`. |
+
+Use the targets of the programs in custom commands and tests. For example, `$<TARGET_FILE:FairMQ::fairmq-sink>` gives the path of `fairmq-sink`.
+
+### What `FairMQ::FairMQ` gives your target
+
+- **Include directories.** `<prefix>/include` and `<prefix>/include/fairmq`. Include the headers as `fairmq/<Name>.h`, for example `#include <fairmq/Device.h>`.
+- **C++17.** The target has the compile feature `cxx_std_17`. CMake compiles your target with C++17 or a later standard.
+- **Compile definitions.** `BOOST_ERROR_CODE_HEADER_ONLY`, and `FAIRMQ_HAS_STD_FILESYSTEM` and `FAIRMQ_HAS_STD_PMR` with the value `0` or `1`. An installation with `FAIRMQ_DEBUG_MODE=ON` adds `FAIRMQ_DEBUG_MODE`. An installation with `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` adds `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` with the value `true` or `false`.
+- **Libraries.** `FairLogger::FairLogger`, `Boost::headers`, `Boost::container`, `Boost::program_options`, `Boost::filesystem`, `Boost::regex`, `Threads::Threads`, `dl`, and `rt` on Linux.
+
+ZeroMQ and PicoSHA2 are private dependencies of `libfairmq`. Your project does not find or link them.
+
+## Package variables
+
+After `find_package(FairMQ)`, these variables are set:
+
+| Variable | Value |
+| --- | --- |
+| `FairMQ_VERSION` | The version, for example `1.11.0`. |
+| `FairMQ_GIT_VERSION` | The output of `git describe --tags --dirty --match "v*"` at build time, without the `v`. For example `1.11.0`, or `1.11.0-4-g1a2b3c4` for a commit after the tag. |
+| `FairMQ_GIT_DATE` | The date of the last commit at build time (`git log -1 --format=%cd`). The value is a CMake list: CMake splits the date at the spaces. |
+| `FairMQ_VERSION_HOTFIX` | Empty for a version with three numbers, for example `1.11.0`. |
+| `FairMQ_PREFIX` | The installation prefix. |
+| `FairMQ_BINDIR` | The folder of the programs, `<prefix>/bin`. |
+| `FairMQ_INCDIR` | The folder of the headers, `<prefix>/include`. |
+| `FairMQ_LIBDIR` | The folder of the library, for example `<prefix>/lib`. |
+| `FairMQ_DATADIR` | `<prefix>/share/fairmq`. |
+| `FairMQ_CMAKEMODDIR` | `<prefix>/share/fairmq/cmake`, the folder of `FindZeroMQ.cmake`, and of `FairMQTidy.cmake` if the build had `BUILD_TIDY_TOOL=ON`. |
+| `FairMQ_BUILD_TYPE` | The `CMAKE_BUILD_TYPE` of the FairMQ build, for example `Release`. |
+| `FairMQ_BUILD_TYPE_UPPER` | The same value in upper case, for example `RELEASE`. |
+| `FairMQ_CXX_FLAGS` | The `CMAKE_CXX_FLAGS` and `CMAKE_CXX_FLAGS_<BUILD_TYPE>` of the FairMQ build, as a CMake list. |
+| `FairMQ_PACKAGE_DEPENDENCIES` | The public dependencies, see [Find the dependencies of FairMQ](/start/cmake/#find-the-dependencies-of-fairmq). |
+| `FairMQ_<dep>_VERSION` | The minimum version of the dependency `<dep>`. |
+| `FairMQ_<dep>_COMPONENTS` | The components of the dependency `<dep>`. |
+| `FairMQ_<component>_FOUND` | `TRUE` for each component that the FairMQ build had. See [Components](/start/cmake/#components). |
+
+`find_package(FairMQ)` also puts `FairMQ_CMAKEMODDIR` at the front of `CMAKE_MODULE_PATH`. Then `include(FairMQTidy)` finds the module of FairMQ.
+
+
+For all build options of FairMQ, see [CMake options and variables](/reference/cmake/).
+
+## Components
+
+The package has these components. A component is present only if the FairMQ build had it:
+
+| Component | Build option of FairMQ | What it contains |
+| --- | --- | --- |
+| `fairmq` | `BUILD_FAIRMQ` (default `ON`) | The library, the built-in devices and the tools. |
+| `tests` | `BUILD_TESTING` (default `OFF`) | The tests. They are not installed. |
+| `examples` | `BUILD_EXAMPLES` (default `ON`) | The examples and their start scripts. |
+| `tidy_tool` | `BUILD_TIDY_TOOL` (default `OFF`) | The tool `fairmq-tidy` and the module `FairMQTidy.cmake`. |
+
+To require a component, give it to `find_package()`:
+
+```cmake
+find_package(FairMQ 1.11 REQUIRED COMPONENTS tidy_tool)
+```
+
+If the component is missing, CMake stops. The message says that `FairMQConfig.cmake` set `FairMQ_FOUND` to `FALSE`.
+
+## Check your code with fairmq-tidy
+
+An installation with the component `tidy_tool` gives the CMake function `fairmq_target_tidy()`. It runs `fairmq-tidy` on the source files of a target:
+
+```cmake title="CMakeLists.txt"
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+find_package(FairMQ 1.11 REQUIRED COMPONENTS tidy_tool)
+# ... the loop over FairMQ_PACKAGE_DEPENDENCIES, add_executable(hello hello.cxx) ...
+
+include(FairMQTidy)
+fairmq_target_tidy(TARGET hello)
+```
+
+The function adds the target `fairmq-tidy-hello` to the default build. After CMake builds `hello`, it runs `fairmq-tidy` on each `.cxx` and `.cpp` file of `hello`. `fairmq-tidy` reads the compile commands from `compile_commands.json` in the build directory.
+
+| Argument | What it does |
+| --- | --- |
+| `TARGET <target>` | The target to check. Required. |
+| `CHECKS <globs>` | The checks to run. Default: `fairmq-*`. |
+| `EXTRA_ARGS <args>...` | More arguments for `fairmq-tidy`, for example `--fix` or `--warnings-as-errors=fairmq-*`. |
+
+The function needs `CMAKE_EXPORT_COMPILE_COMMANDS` set to `ON`. If it is not `ON`, the function writes a warning and adds no target. See [Check code with fairmq-tidy](/guides/fairmq-tidy/) for the checks and the output.
+
+## Other ways to add FairMQ
+
+The recommended way is the one on this page: build FairMQ, install it, and find the installation with `find_package(FairMQ)`.
+
+| Way | Works | Reason |
+| --- | --- | --- |
+| `find_package(FairMQ)` of an installation | Yes | The installation contains the targets file. |
+| `find_package(FairMQ)` of a build tree | No | The build tree has no targets file. See [The build tree](#the-build-tree). |
+| `add_subdirectory()` of a FairMQ source tree | Yes | The target `FairMQ::FairMQ` exists in the build. See [add_subdirectory() and FetchContent](#add_subdirectory-and-fetchcontent). |
+| `FetchContent` | Not tested | `FetchContent_MakeAvailable()` calls `add_subdirectory()`. A source archive has no Git metadata. See [add_subdirectory() and FetchContent](#add_subdirectory-and-fetchcontent). |
+| `ExternalProject_Add()` | Yes, in two steps | FairMQ is the top-level project of its own CMake run. See [ExternalProject](#externalproject). |
+
+### The build tree
+
+The configure step writes `FairMQConfig.cmake` and `FairMQConfigVersion.cmake` to the top of the build directory. But no CMake file of FairMQ calls `export()`, so the build directory has no `FairMQTargets.cmake`. `FairMQConfig.cmake` includes this file with a path for the layout of an installation, relative to its own folder. For a build directory, this path does not exist.
+
+If `FairMQ_DIR` or `CMAKE_PREFIX_PATH` points to a build directory, `find_package(FairMQ)` stops with `include could not find requested file` and the path of `FairMQTargets.cmake`. Install FairMQ into a prefix (see [Install](/start/install/)), and give this prefix to your project.
+
+### add_subdirectory() and FetchContent
+
+The CMake code of FairMQ uses `PROJECT_SOURCE_DIR` and `PROJECT_BINARY_DIR` for its own source and build directories. Thus `add_subdirectory(fairmq)` works. The build has the target `FairMQ::FairMQ` as an alias of the library target `FairMQ`. FairMQ finds its dependencies with `find_package()`, so give their prefixes in `CMAKE_PREFIX_PATH`.
+
+Some things still depend on the Git repository of FairMQ:
+
+- `cmake/GitHelper.cmake` reads the version with `git describe` in the directory of the FairMQ `CMakeLists.txt`, and only if it has a `.git` entry. Without it, the version is `0.0.0.0`.
+- The bundled copies of GoogleTest, PicoSHA2 and FairCMakeModules are Git submodules. A source archive from GitHub has no `.git` folder and the folders in `extern/` are empty. If FairCMakeModules is not installed, the configure step stops with the error `The bundled package in extern/FairCMakeModules is missing`. Use a Git clone with the tags (see [Install](/start/install/#problems-that-can-occur)) and its submodules.
+
+`FetchContent_MakeAvailable(FairMQ)` adds the downloaded source with `add_subdirectory()`. For a Git clone, use `GIT_SUBMODULES`. The FairMQ project did not test `FetchContent`.
+
+### ExternalProject
+
+`ExternalProject_Add()` configures, builds and installs FairMQ at the build time of your project, in a CMake run of its own. FairMQ is then the top-level project, and a Git clone gets the version from its tags:
+
+```cmake title="CMakeLists.txt"
+include(ExternalProject)
+ExternalProject_Add(FairMQ
+  GIT_REPOSITORY https://github.com/FairRootGroup/FairMQ
+  GIT_TAG v1.11.0
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/fairmq_install
+)
+```
+
+Give the options of the FairMQ build in `CMAKE_ARGS`, for example the prefixes of the dependencies (see [Dependencies in other directories](/start/install/#dependencies-in-other-directories)).
+
+The installation exists only after the build step. `find_package()` runs at configure time, so the same CMake run cannot find this installation (CMake behavior). Put the programs that use FairMQ into a separate CMake project. Configure it after the install step, for example as a second `ExternalProject_Add()` with `DEPENDS FairMQ`. Give it the prefix of the installation in `CMAKE_PREFIX_PATH`.
+
+## Problems that can occur
+
+- **`Could not find a package configuration file provided by "FairMQ"`.** CMake does not find the installation. Give the installation prefix with `CMAKE_PREFIX_PATH`, or the package folder with `FairMQ_DIR`.
+- **`Could not find a configuration file for package "FairMQ" that is compatible with requested version`.** The installed version is older than the version in `find_package()`. The message shows each package that CMake found, with its version. The version `0.0.0.0` comes from a FairMQ build without the git tags (see [Install](/start/install/#problems-that-can-occur)).
+- **`The link interface of target "FairMQ::FairMQ" contains: … but the target was not found.`** Your project did not find the dependencies of FairMQ. The message names a target of a dependency, for example `FairLogger::FairLogger`. Add the loop over `FairMQ_PACKAGE_DEPENDENCIES` after `find_package(FairMQ)`.
+- **CMake does not find a dependency in the loop.** Add the installation prefix of the dependency to `CMAKE_PREFIX_PATH`.
+- **`include could not find requested file:` with the path of `FairMQTargets.cmake`.** `FairMQ_DIR` or `CMAKE_PREFIX_PATH` points to a build directory of FairMQ. Give the installation prefix. See [The build tree](#the-build-tree).
+- **`include could not find requested file: GitHelper`.** Your project adds FairMQ with `add_subdirectory()` or `FetchContent`. FairMQ must be a top-level project. See [Other ways to add FairMQ](#other-ways-to-add-fairmq).
+- **`CMAKE_EXPORT_COMPILE_COMMANDS is not enabled. Skipping.`** Set `CMAKE_EXPORT_COMPILE_COMMANDS` to `ON` before you call `fairmq_target_tidy()`.
+
+## Related pages
+
+- [Install](/start/install/): build and install FairMQ.
+- [Your first device](/start/first-device/): a project with two devices.
+- [CMake options and variables](/reference/cmake/): the build options of FairMQ.
+- [Check code with fairmq-tidy](/guides/fairmq-tidy/): use the static analyzer.

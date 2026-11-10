@@ -10,10 +10,9 @@ include_guard(GLOBAL)
 
 include(FairCMakeModules)
 include(FairFindPackage2)
-include(FairMQBundlePackageHelper)
 
 function(generate_package_components)
-  list(JOIN PROJECT_PACKAGE_COMPONENTS} " " COMPS)
+  list(JOIN PROJECT_PACKAGE_COMPONENTS " " COMPS)
   set(PACKAGE_COMPONENTS "\
 ####### Expanded from @PACKAGE_COMPONENTS@ by configure_package_config_file() #########
 
@@ -42,7 +41,6 @@ macro(install_cmake_package)
     install(EXPORT ${PROJECT_EXPORT_SET}
       NAMESPACE ${PROJECT_NAME}::
       DESTINATION ${PACKAGE_INSTALL_DESTINATION}
-      EXPORT_LINK_INTERFACE_LIBRARIES
     )
   endif()
   write_basic_package_version_file(
@@ -52,10 +50,16 @@ macro(install_cmake_package)
   )
   fair_generate_package_dependencies() # fills ${PACKAGE_DEPENDENCIES}
   generate_package_components() # fills ${PACKAGE_COMPONENTS}
-  string(TOUPPER ${CMAKE_BUILD_TYPE} PROJECT_BUILD_TYPE_UPPER)
-  set(PROJECT_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${PROJECT_BUILD_TYPE_UPPER}})
+  # Multi-config generators have no single build type at configure time
+  if(CMAKE_BUILD_TYPE)
+    string(TOUPPER ${CMAKE_BUILD_TYPE} PROJECT_BUILD_TYPE_UPPER)
+    set(PROJECT_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${PROJECT_BUILD_TYPE_UPPER}})
+  else()
+    set(PROJECT_BUILD_TYPE_UPPER "")
+    set(PROJECT_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  endif()
   configure_package_config_file(
-    ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
+    ${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
     INSTALL_DESTINATION ${PACKAGE_INSTALL_DESTINATION}
     PATH_VARS CMAKE_INSTALL_PREFIX

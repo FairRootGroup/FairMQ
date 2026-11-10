@@ -8,7 +8,7 @@ if [[ $1 =~ ^[a-z]+$ ]]; then
     transport=$1
 fi
 
-SESSION="$(@CMAKE_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
+SESSION="$(@PROJECT_BINARY_DIR@/fairmq/fairmq-uuid-gen -h)"
 
 SAMPLER="fairmq-ex-multipart-sampler"
 SAMPLER+=" --id sampler1"

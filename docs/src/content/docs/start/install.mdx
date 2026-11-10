@@ -1,0 +1,236 @@
+---
+title: Install
+description: Install FairMQ with Spack or build it from source with CMake, run the tests, and check the installation.
+sidebar:
+  order: 2
+---
+
+import { Steps, Tabs, TabItem, FileTree } from '@astrojs/starlight/components';
+
+Install FairMQ with the package manager Spack, or build it from source with CMake. Both ways give you the library `libfairmq` with its headers and its CMake package, the built-in devices and the tools.
+
+## Requirements
+
+The CI of FairMQ builds and tests FairMQ on Linux (Ubuntu 24.04) with GCC 12, 13, 14 and 15. The CI does not test other platforms.
+
+| Dependency | Minimum version | Notes |
+| --- | --- | --- |
+| C++ compiler | C++17 | |
+| [CMake](https://cmake.org/) | 3.25 | |
+| [Boost](https://www.boost.org/) | 1.66 | With the libraries `container`, `program_options`, `filesystem`, `date_time` and `regex`. Boost 1.88 is not supported. |
+| [FairLogger](https://github.com/FairRootGroup/FairLogger) | 1.6.0 | |
+| [ZeroMQ](https://zeromq.org/) (`libzmq`) | 4.1.4 | The shared library `libzmq.so` and its headers. |
+| [FairCMakeModules](https://github.com/FairRootGroup/FairCMakeModules) | 0.2 | If CMake does not find it, the build uses a bundled copy. |
+| [PicoSHA2](https://github.com/okdshin/PicoSHA2) | — | The build always uses a bundled copy. |
+| [GoogleTest](https://github.com/google/googletest) | — | Only for the tests. The build uses a bundled copy by default. |
+| git | — | CMake reads the version of FairMQ from git and gets the bundled copies with git. |
+| LLVM, Clang | 17 (tested: 17 to 20) | Only for the tool `fairmq-tidy`. It needs the clang-tidy libraries too. |
+
+The bundled copies are git submodules in the folder `extern/` of the repository. When CMake needs a bundled copy and its folder is empty, CMake runs `git submodule update --init` for it.
+
+## Install FairMQ
+
+<Tabs>
+<TabItem label="Spack">
+
+[Spack](https://spack.readthedocs.io/en/latest/getting_started.html) installs FairMQ and all its dependencies.
+
+<Steps>
+
+1. Install Spack. See [Getting started](https://spack.readthedocs.io/en/latest/getting_started.html) in the Spack documentation.
+
+2. Show the versions and the variants of the package:
+
+   ```sh
+   spack info fairmq
+   ```
+
+3. Build and install FairMQ:
+
+   ```sh
+   spack install fairmq
+   ```
+
+   This command installs the latest packaged version with the default variants. For a different version, add it to the spec, for example `spack install fairmq@1.11.0`.
+
+4. Load FairMQ into your shell:
+
+   ```sh
+   spack load fairmq
+   ```
+
+   This command adds the tools of FairMQ to `PATH` and the installation to `CMAKE_PREFIX_PATH`.
+
+</Steps>
+
+</TabItem>
+<TabItem label="From source">
+
+<Steps>
+
+1. Clone the repository:
+
+   ```sh
+   git clone https://github.com/FairRootGroup/FairMQ fairmq_source
+   ```
+
+   For a release, add the tag, for example `git clone -b v1.11.0 …`. Do not make a shallow clone: CMake needs the tags.
+
+2. Install the dependencies. To install them with Spack, use the file `spack.yaml` of the repository:
+
+   ```sh
+   spack --env fairmq_source install
+   spack env activate fairmq_source
+   ```
+
+   The active environment sets `CMAKE_PREFIX_PATH`. Then CMake finds the dependencies.
+
+3. Configure the build:
+
+   ```sh
+   cmake -S fairmq_source -B fairmq_build -G Ninja \
+     -DCMAKE_BUILD_TYPE=Release \
+     -DCMAKE_INSTALL_PREFIX="$HOME/fairmq_install"
+   ```
+
+   At the end, CMake prints a summary: the dependencies that it found, the components that it builds, and the install prefix. Remove `-G Ninja` to use the default generator.
+
+4. Build FairMQ:
+
+   ```sh
+   cmake --build fairmq_build
+   ```
+
+5. Install FairMQ:
+
+   ```sh
+   cmake --install fairmq_build
+   ```
+
+</Steps>
+
+</TabItem>
+</Tabs>
+
+### Dependencies in other directories
+
+If a dependency is not in a system directory, give its installation prefix to CMake. Use one of these ways:
+
+- `-DCMAKE_PREFIX_PATH="/opt/fairlogger;/opt/zeromq"` gives a list of prefixes for all dependencies.
+- `-D<NAME>_ROOT=<prefix>` gives the prefix of one dependency. Write the package name in upper case, for example `-DFAIRLOGGER_ROOT=/opt/fairlogger` or `-DZEROMQ_ROOT=/opt/zeromq`. You can also set these variables in the environment.
+
+## Build options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `CMAKE_BUILD_TYPE` | `RelWithDebInfo` | Sets the build type: `Debug`, `Release` or `RelWithDebInfo`. |
+| `CMAKE_INSTALL_PREFIX` | `/usr/local` | Sets the installation directory. Set it when you configure, because the installed start scripts of the examples contain this path. |
+| `BUILD_TESTING` | `OFF` | Builds the tests. |
+| `BUILD_EXAMPLES` | `ON` | Builds the examples. `cmake --install` also installs them and their start scripts. |
+| `BUILD_TIDY_TOOL` | `OFF` | Builds the experimental tool [`fairmq-tidy`](/tools/fairmq-tidy/). It needs LLVM and Clang. |
+| `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` | not set | Sets the default of the channel property `autoBind`. If the option is not set, the default is `true`. |
+| `FAIRMQ_DEBUG_MODE` | `OFF` | The transport `shmem` records its messages, so that `fairmq-shmmonitor --debug` can list them. This can decrease the performance. |
+| `USE_EXTERNAL_GTEST` | `OFF` | Uses an installed GoogleTest instead of the bundled copy. |
+
+For all options and their effects, see [CMake options and variables](/reference/cmake/).
+
+## Run the tests
+
+Configure the build with `BUILD_TESTING=ON`, build it, and run the tests with CTest:
+
+```sh
+cmake -S fairmq_source -B fairmq_build -DBUILD_TESTING=ON
+cmake --build fairmq_build
+ctest --test-dir fairmq_build --output-on-failure -j "$(nproc)"
+```
+
+The option `--test-dir` needs CMake 3.20 or later. With an older CMake, run `ctest` in the build directory.
+
+The name of each test starts with the name of its test suite. The test suites are `Channel`, `Device`, `EventManager`, `MemoryResources`, `Message`, `Parts`, `Plugins`, `PluginServices`, `PluginsPrelinked`, `Poller`, `Properties`, `Protocols`, `Region`, `StateMachine`, `Tools` and `Transport`. The tests of the examples have names like `Example.1-1.zeromq` and `Example.1-1.shmem`.
+
+The tests have no labels. Select tests by name with `-R`, and exclude tests with `-E`:
+
+```sh
+ctest --test-dir fairmq_build --output-on-failure -R '^Example\.1-1\.'
+```
+
+## Check the installation
+
+<Steps>
+
+1. Add the tools to `PATH`. After `spack load fairmq`, skip this step.
+
+   ```sh
+   export PATH="$HOME/fairmq_install/bin:$PATH"
+   ```
+
+2. Run the tool [`fairmq-uuid-gen`](/reference/tools/#fairmq-uuid-gen). It prints a random UUID. This shows that the tool finds the library `libfairmq`.
+
+   ```sh
+   fairmq-uuid-gen
+   ```
+
+3. Show the options of the built-in device `fairmq-sink`:
+
+   ```sh
+   fairmq-sink --help
+   ```
+
+4. Read the installed version from the header `fairmq/Version.h`. For a Spack installation, use the prefix that `spack location -i fairmq` prints.
+
+   ```sh
+   grep FAIRMQ_GIT_VERSION "$HOME/fairmq_install/include/fairmq/Version.h"
+   ```
+
+   ```txt
+   #define FAIRMQ_GIT_VERSION "1.11.0"
+   ```
+
+</Steps>
+
+:::note
+The option `--version` of a device prints the version of FairMQ and the version of the device.
+:::
+
+The installation directory contains these files:
+
+<FileTree>
+
+- fairmq_install/
+  - bin/
+    - fairmq-bsampler
+    - fairmq-merger
+    - fairmq-multiplier
+    - fairmq-proxy
+    - fairmq-shmmonitor
+    - fairmq-sink
+    - fairmq-splitter
+    - fairmq-uuid-gen
+    - fairmq-ex-1-1-sampler the examples, with `BUILD_EXAMPLES=ON`
+    - …
+  - include/
+    - fairmq/ the headers, for example `Device.h` and `runDevice.h`
+  - lib/ or `lib64/` on some systems
+    - libfairmq.so
+    - cmake/
+      - FairMQ-1.11.0/ the CMake package
+  - share/
+    - fairmq/
+      - cmake/ `FindZeroMQ.cmake`, and `FairMQTidy.cmake` with `BUILD_TIDY_TOOL=ON`
+
+</FileTree>
+
+## Problems that can occur
+
+- **The version is `0.0.0.0`.** CMake reads the version from `git describe --tags`. A source tree without the git history or without the tags gets the version `0.0.0.0`, and `find_package(FairMQ 1.11)` does not accept it. Build from a full git clone. [Other ways to add FairMQ](/start/cmake/#other-ways-to-add-fairmq) tells what fails with a release archive or `FetchContent`.
+- **CMake stops with `Boost version 1.88 is not supported`.** Use a Boost version before 1.88, or 1.89 or later.
+- **CMake does not find ZeroMQ.** Install the shared library `libzmq.so` and the header `zmq.h`. Give their prefix with `-DZEROMQ_ROOT=<prefix>`.
+- **CMake cannot get a bundled copy.** CMake runs `git submodule update --init`, which needs network access. Clone with `--recurse-submodules` to get all submodules at once.
+- **Shared memory tests fail.** Some tests lock shared memory in RAM with `mlock()`, for example `Region.PreallocateInsideSession.shmem`. If the limit for locked memory is too low, these tests fail. Show the limit with `ulimit -l`. The CI of FairMQ sets the limit to `unlimited` before it runs the tests.
+
+## Related pages
+
+- [Your first device](/start/first-device/): write, build and run two devices.
+- [Use FairMQ in a CMake project](/start/cmake/): find the installed package.
+- [CMake options and variables](/reference/cmake/): all build options.
+- [Example 1-1](/examples/1-1/): run the example from the build directory.

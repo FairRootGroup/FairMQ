@@ -16,10 +16,6 @@ if(FairLogger_VERSION VERSION_LESS 1.9.0 AND FairLogger_VERSION VERSION_GREATER_
   LIST(APPEND definitions FAIR_MIN_SEVERITY=trace)
 endif()
 
-if(FAIRMQ_BOOST_PROCESS_V1_HEADER)
-  LIST(APPEND definitions FAIRMQ_BOOST_PROCESS_V1_HEADER)
-endif()
-
 if(definitions)
   set(definitions DEFINITIONS ${definitions})
 endif()
@@ -53,17 +49,16 @@ add_testhelper(runTestDevice
     helper/devices/TestRep.h
     helper/devices/TestReq.h
     helper/devices/TestSub.h
+    helper/devices/TestDevice.h
+    helper/devices/TestStateAction.h
     helper/devices/TestTransferTimeout.h
-    helper/devices/TestWaitFor.h
-    helper/devices/TestExceptions.h
 
     LINKS FairMQ
     ${definitions}
 )
 
-set(RUN_TEST_DEVICE "${CMAKE_BINARY_DIR}/test/testhelper_runTestDevice")
-set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
-set(SDK_TESTSUITE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sdk)
+set(RUN_TEST_DEVICE "${PROJECT_BINARY_DIR}/test/testhelper_runTestDevice")
+set(FAIRMQ_BIN_DIR ${PROJECT_BINARY_DIR}/fairmq)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/runner.cxx.in ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/TestEnvironment.h.in ${CMAKE_CURRENT_BINARY_DIR}/TestEnvironment.h)
 
@@ -89,6 +84,7 @@ add_testsuite(Protocols
 add_testsuite(Parts
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    parts/_access.cxx
     parts/_add_part.cxx
     parts/_iterator_interface.cxx
 
@@ -137,6 +133,8 @@ add_testsuite(Device
     device/_multiple_devices.cxx
     device/_version.cxx
     device/_config.cxx
+    device/_data_callbacks.cxx
+    device/_runner.cxx
     device/_waitfor.cxx
     device/_exceptions.cxx
     device/_error_state.cxx
@@ -225,6 +223,18 @@ add_testsuite(PluginServices
     ${environment}
 )
 
+add_testsuite(StateMachine
+    SOURCES
+    ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    state_machine/_state_machine.cxx
+
+    LINKS FairMQ
+    INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
+             ${CMAKE_CURRENT_BINARY_DIR}
+    TIMEOUT 20
+    ${environment}
+)
+
 add_testsuite(EventManager
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
@@ -240,6 +250,7 @@ add_testsuite(EventManager
 add_testsuite(Properties
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    properties/_jsonparser.cxx
     properties/_properties.cxx
     properties/_suboptparser.cxx
 
@@ -250,21 +261,11 @@ add_testsuite(Properties
     ${environment}
 )
 
-# add_testsuite(StateMachine
-#     SOURCES
-#     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
-#     state_machine/_state_machine.cxx
-
-    # LINKS FairMQ
-    # INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
-             # ${CMAKE_CURRENT_BINARY_DIR}
-    # TIMEOUT 5
-# )
-
 add_testsuite(Tools
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     tools/_network.cxx
+    tools/_tools.cxx
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
@@ -277,6 +278,7 @@ add_testsuite(Channel
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
     channel/_channel.cxx
+    channel/_tcp.cxx
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
@@ -288,9 +290,11 @@ add_testsuite(Channel
 add_testsuite(Transport
     SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/runner.cxx
+    transport/_factory.cxx
     transport/_transfer_timeout.cxx
     transport/_options.cxx
     transport/_shmem.cxx
+    transport/_shm_allocation.cxx
 
     LINKS FairMQ
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
@@ -325,3 +329,7 @@ add_testsuite(MemoryResources
     ${definitions}
     ${environment}
 )
+
+if(BUILD_TIDY_TOOL)
+  add_subdirectory(tidy)
+endif()

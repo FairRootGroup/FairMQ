@@ -6,22 +6,19 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "runner.h"
-
 #include <fairmq/Channel.h>
 #include <fairmq/TransportFactory.h>
 #include <fairmq/ProgOptions.h>
-#include <fairmq/tools/Process.h>
-#include <fairmq/tools/Strings.h>
 #include <fairmq/tools/Unique.h>
 
-#include <fairlogger/Logger.h>
+#include <helper/Devices.h>
+#include <helper/Transport.h>
+#include <helper/TransportParam.h>
 
 #include <gtest/gtest.h>
 
 #include <chrono>
-#include <cstdio> // std::remove
-#include <sstream> // std::stringstream
+#include <string>
 #include <thread>
 
 namespace
@@ -38,50 +35,37 @@ void delayedInterruptor(TransportFactory& transport)
     transport.Interrupt();
 }
 
-auto RunTransferTimeout(string transport) -> void
+using TransferTimeout = TransportTest;
+
+TEST_P(TransferTimeout, Device)
 {
-    size_t session{UuidHash()};
-    string dataInIpcFile("/tmp/fmq_" + to_string(session) + "_datain_" + transport);
-    string dataOutIpcFile("/tmp/fmq_" + to_string(session) + "_dataout_" + transport);
-    string dataInAddress("ipc://" + dataInIpcFile);
-    string dataOutAddress("ipc://" + dataOutIpcFile);
+    auto const& transport = GetParam().transport;
+    IpcAddress const dataIn("transfer_timeout_in");
+    IpcAddress const dataOut("transfer_timeout_out");
 
-    stringstream cmd;
-    cmd << runTestDevice
-        << " --id transfer_timeout_" << transport
-        << " --control static"
-        << " --shm-segment-size 100000000"
-        << " --severity debug"
-        << " --shm-monitor true"
-        << " --transport " << transport
-        << " --session " << session
-        << " --color false"
-        << " --channel-config name=data-in,type=pull,method=bind,address=" << dataInAddress
-        << "                  name=data-out,type=push,method=bind,address=" << dataOutAddress;
-    auto res = execute(cmd.str());
+    auto const results = RunDevices({
+        {"transfer_timeout_" + transport,
+         "name=data-in,type=pull,method=bind,address=" + dataIn.str()
+         + " name=data-out,type=push,method=bind,address=" + dataOut.str()},
+    }, RunOptions(transport, GetParam().DeviceArgs() + " --severity debug"));
 
-    cerr << res.console_out;
-
-    std::remove(dataInIpcFile.c_str());
-    std::remove(dataOutIpcFile.c_str());
-
-    exit(res.exit_code);
+    EXPECT_TRUE(Succeeded(results.at(0), transport));
 }
 
-void InterruptTransfer(const string& transport, const string& _address)
+using InterruptTransfer = TransportTest;
+
+TEST_P(InterruptTransfer, Receive)
 {
-    size_t session{UuidHash()};
-    std::string address(ToString(_address, "_", transport));
+    auto const& transport = GetParam().transport;
+    test::IpcAddress const address("interrupt_transfer_" + transport);
 
     fair::mq::ProgOptions config;
-    config.SetProperty<string>("session", to_string(session));
-    config.SetProperty<size_t>("shm-segment-size", 100000000);
-    config.SetProperty<bool>("shm-monitor", true);
+    test::Configure(config, Uuid(), GetParam().expandedShmMetadata);
 
     auto factory = TransportFactory::CreateTransportFactory(transport, Uuid(), &config);
 
     Channel pull{"Pull", "pull", factory};
-    pull.Bind(address);
+    ASSERT_TRUE(pull.Bind(address));
 
     MessagePtr msg(pull.NewMessage());
 
@@ -92,24 +76,7 @@ void InterruptTransfer(const string& transport, const string& _address)
     ASSERT_EQ(result, static_cast<int>(fair::mq::TransferCode::interrupted));
 }
 
-TEST(TransferTimeout, zeromq)
-{
-    EXPECT_EXIT(RunTransferTimeout("zeromq"), ::testing::ExitedWithCode(0), "Transfer timeout test successfull");
-}
-
-TEST(TransferTimeout, shmem)
-{
-    EXPECT_EXIT(RunTransferTimeout("shmem"), ::testing::ExitedWithCode(0), "Transfer timeout test successfull");
-}
-
-TEST(InterruptTransfer, zeromq)
-{
-    InterruptTransfer("zeromq", "ipc://test_interrupt_transfer");
-}
-
-TEST(InterruptTransfer, shmem)
-{
-    InterruptTransfer("shmem", "ipc://test_interrupt_transfer");
-}
+INSTANTIATE_TEST_SUITE_P(, TransferTimeout, AllTransports(), TransportParamName());
+INSTANTIATE_TEST_SUITE_P(, InterruptTransfer, AllTransports(), TransportParamName());
 
 } // namespace

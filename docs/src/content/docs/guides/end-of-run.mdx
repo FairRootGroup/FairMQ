@@ -1,0 +1,344 @@
+---
+title: Stop a topology without losing messages
+description: 'End a run so that each sent message arrives: what the transitions do to queued messages, linger, end-of-stream messages, the stop order and the checks.'
+sidebar:
+  order: 9.5
+code: [fairmq/Device.cxx, fairmq/Channel.h, fairmq/Channel.cxx, fairmq/plugins/control/Control.cxx, fairmq/zeromq/Context.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+At the end of a run, messages can still wait in the queues of the sockets. A device that resets its
+channels too early loses them. This guide shows what each transition does to these messages, and
+how each receiver learns that it has all data. It also gives the order in which the devices must
+stop, and shows how you check that no message is lost.
+
+## What the transitions do to the messages
+
+Each transition that the state machine accepts interrupts the transports of the device. This is also
+true for `Stop` and `Auto`, which the device requests itself
+([Device.cxx](/source/fairmq/Device.cxx/#L96-L99)). When the next state starts, the device resumes
+the transports ([Device.cxx](/source/fairmq/Device.cxx/#L101-L104)). While the transports are
+interrupted, a `Send()` or `Receive()` that must wait returns `TransferCode::interrupted` (-3). A
+transfer that is possible at once still completes, because the socket tries the transfer before it
+checks the interruption ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L96-L124)).
+
+| Transition or state | What happens to the messages |
+| --- | --- |
+| `Stop` (end of `RUNNING`) | The device does not call `ConditionalRun()` or the data callbacks again. A `Send()` that waits returns `interrupted`. This message is not sent, and your `MessagePtr` keeps it. The messages in the queues of the sockets stay there. |
+| `READY`, `RESETTING TASK`, `DEVICE READY` | The channels and their queues still exist. After a new `Run`, the device receives the queued messages. |
+| `RESETTING DEVICE` | The device resets its transports, calls `Reset()`, and destroys all channels and transports ([Device.cxx](/source/fairmq/Device.cxx/#L732-L749)). The sockets close. The messages in a send queue get the linger time, see [Linger](#linger). The messages in a receive queue are lost (ZeroMQ behavior). |
+| `ERROR` | The control plugin requests no more transitions. The device does not call `ResetTask()` and `Reset()`. With `runDevice.h`, the process ends with the exit code 1, and the messages in its receive queues are lost. |
+
+Thus a device must have all its data before it goes to `RESETTING DEVICE`. The transitions are in
+[Device states](/concepts/states/#transitions).
+
+## Linger
+
+The channel property `linger` is a time in ms. The default is 500
+([Channel.h](/source/fairmq/Channel.h/#L382)). [`Channel::Init()`](/api/fair/mq/Channel/#Init) sets
+it as the ZeroMQ option `ZMQ_LINGER` on the socket ([Channel.cxx](/source/fairmq/Channel.cxx/#L325-L326)).
+The shmem transport sets it on the ZeroMQ socket that carries the metadata of its messages.
+
+In `RESETTING DEVICE`, the device destroys its transports. The destructor of a transport calls
+`zmq_ctx_term()` ([zeromq/Context.h](/source/fairmq/zeromq/Context.h/#L156-L175)). This call waits
+until the closed sockets sent the messages in their send queues, for the linger time at most. Then
+ZeroMQ discards the remaining messages. This is ZeroMQ behavior. Thus:
+
+- A device can stay up to `linger` ms in `RESETTING DEVICE`.
+- Linger helps only if the peer still exists and takes the messages (ZeroMQ behavior). It does not
+  help the messages in the receive queue of a device that resets.
+- With `-1`, ZeroMQ waits without a time limit. If the peer does not take the messages, the device
+  does not leave `RESETTING DEVICE`.
+- With `0`, ZeroMQ discards the queued messages at once.
+
+The test script of the [multipart example](/examples/multipart/#test-the-example) gives the sampler
+`linger=1000`. The sampler resets at once after its only message. The longer linger time gives
+ZeroMQ more time to deliver this message. Set the value in the channel configuration, for
+example `--channel-config name=data,type=push,method=connect,address=tcp://localhost:5555,linger=2000`,
+or with `"linger": 2000` in a JSON file. See [Channel properties](/reference/channel-properties/#linger).
+
+With shmem, the data of a message stays in the managed segment, and the linger time applies to the
+metadata. After a successful `Send()`, the sender does not free the block any more. If ZeroMQ
+discards the metadata, no process frees the block. It stays in the segment until the shared memory of
+the session is removed (see [Sessions and segments](/shmem/sessions/#the-device-counter-and-cleanup)).
+
+## Tell each receiver that the data ends
+
+A receiver cannot see if more messages come. The sender must tell it with an end message after its
+last data message. Send the end message on the same sub-channel as the data. ZeroMQ delivers the
+messages of one connection in the order of the `Send()` calls (ZeroMQ behavior). Messages on
+different channels or sub-channels have no fixed order.
+
+The [multipart example](/examples/multipart/) puts a flag into its header. The sampler sets the flag
+in its last message:
+
+<Snippet file="examples/multipart/sampler.cxx" start="if (fMaxIterations > 0 && fNumIterations == fMaxIterations - 1)" />
+
+After the last message, `ConditionalRun()` returns `false`. The device then requests `Stop` itself:
+
+<Snippet file="examples/multipart/sampler.cxx" start='Send(parts, "data");' end="^        }" />
+
+The sink leaves `RUNNING` when it gets the flag. The callback returns `false`, and the device goes to
+`READY`:
+
+<Snippet file="examples/multipart/sink.cxx" start="if (header.stopFlag == 1)" />
+
+The sampler ignores the return value of `Send()`. Your source must check it. If the end message is
+not sent, the receiver does not stop.
+
+### Several receivers and several senders
+
+- **One sender, several receivers.** A `push` socket gives each message to one of its peers
+  (ZeroMQ behavior). Thus one end message reaches one receiver only. The page of the multipart
+  example shows this with [two sinks](/examples/multipart/#send-to-two-sinks). Give each receiver its own sub-channel, and send an end message on each sub-channel. The
+  sender of the [n-m example](/examples/n-m/#sender-select-the-receiver) has one sub-channel for each
+  receiver. It selects the sub-channel with the index argument of `Send()`. See
+  [Several sub-channels](/guides/configure-channels/#several-sub-channels).
+- **Several senders, one receiver.** The receiver needs one end message from each sender. It must
+  know the number of senders. The receiver of the n-m example gets this number from its option
+  `--num-senders`.
+- **Processors.** A processor between the senders and the receivers waits for the end messages of
+  all its inputs. Then it sends an end message on each output and returns `false`.
+
+This sink receives the multipart messages of the example from several senders. It leaves `RUNNING`
+after the end message of the last sender:
+
+```cpp
+#include "Header.h" // example_multipart::Header
+
+#include <fairmq/Device.h>
+#include <fairmq/runDevice.h>
+
+#include <cstdint>
+#include <cstring>
+#include <stdexcept>
+
+namespace bpo = boost::program_options;
+
+struct Sink : fair::mq::Device
+{
+    Sink() { OnData("data", &Sink::HandleData); }
+
+    void InitTask() override { fNumSenders = fConfig->GetProperty<int>("num-senders"); }
+
+    bool HandleData(fair::mq::Parts& parts, int /*index*/)
+    {
+        if (parts.Size() < 1 || parts.At(0)->GetSize() != sizeof(example_multipart::Header)) {
+            throw std::runtime_error("unexpected message format");
+        }
+        example_multipart::Header header;
+        std::memcpy(&header, parts.At(0)->GetData(), sizeof(header));
+
+        if (header.stopFlag == 1) {
+            ++fNumEnded;
+            LOG(info) << "End message " << fNumEnded << " of " << fNumSenders;
+            return fNumEnded < fNumSenders; // false ends RUNNING
+        }
+        ++fNumReceived;
+        return true;
+    }
+
+    void PostRun() override { LOG(info) << "Received " << fNumReceived << " data messages"; }
+
+  private:
+    int fNumSenders = 1;
+    int fNumEnded = 0;
+    std::uint64_t fNumReceived = 0;
+};
+
+void addCustomOptions(bpo::options_description& options)
+{
+    options.add_options()
+        ("num-senders", bpo::value<int>()->default_value(1), "Number of senders");
+}
+
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)
+{
+    return std::make_unique<Sink>();
+}
+```
+
+The checks of the size come from [Send your own data types](/guides/send-data-types/#read-the-data-safely).
+
+## Stop the devices in the right order
+
+The data flows from the sources through the processors to the sinks. End `RUNNING` in the same order:
+
+<Steps>
+
+1. End `RUNNING` of the sources. A source that ends by itself sends its end messages and returns
+   `false`.
+
+2. Let each processor and each sink end `RUNNING` by itself, after its end messages.
+
+3. Wait until all sinks are in `READY`. The log line of each sink contains `RUNNING ---> READY`.
+
+4. Then request `ResetTask`, `ResetDevice` and `End` for all devices.
+
+</Steps>
+
+If a controller stops a sink first, the sink does not read its queue any more. New messages fill
+the receive queue of the sink and then the send queue of the sender (ZeroMQ behavior). Then
+`Send()` of the sender waits until its timeout ends or a transition interrupts it. When the sink
+resets, the messages in its queue are lost.
+
+A signal starts the shutdown sequence of the control plugin: `Stop`, `ResetTask`, `ResetDevice`
+and `End`. Thus a signal to all devices at the same time also resets the sinks while data is on the
+way. Send the signal to the sources first. Signal the other devices after the sinks left `RUNNING`.
+The test script of the [1-n-1 example](/examples/1-n-1/#test-the-example) waits for the sampler and
+the sink, which end by themselves. Then it stops the processors with `SIGINT`:
+
+<Snippet file="examples/1-n-1/test-ex-1-n-1.sh.in" start="# wait for sampler and sink to finish" end="wait $PROCESSOR2_PID" />
+
+### A source that a controller stops
+
+A controller can request `Stop` for a source, for example with the key `s` or with a signal. Then
+the source cannot send the end message in `RUNNING`. In `PostRun()`, `Stop` is pending and the
+transports are interrupted, so a `Send()` that must wait returns `interrupted`. Send the end message
+in [`ResetTask()`](/api/fair/mq/Device/#ResetTask) instead. In `RESETTING TASK`, the transports are
+not interrupted, and the state machine accepts only `Auto` and `ErrorFound`. Give the `Send()` a
+timeout:
+
+```cpp
+void ResetTask() override
+{
+    if (fEndSent) {
+        return; // ConditionalRun() sent the end message already
+    }
+    example_multipart::Header header;
+    header.stopFlag = 1;
+    fair::mq::Parts parts;
+    parts.AddPart(NewSimpleMessage(header));
+    if (Send(parts, "data", 0, 1000) < 0) {
+        LOG(error) << "Could not send the end message in 1 s";
+    }
+    fEndSent = true;
+}
+```
+
+The sink of the previous section accepts this end message with one part. The sink of the multipart
+example expects seven parts and throws an exception for it.
+
+## Wait in PostRun() or ResetTask()
+
+A sink that a controller stops can still read the messages that arrived. The two hooks after
+`RUNNING` behave differently:
+
+- **[`PostRun()`](/api/fair/mq/Device/#PostRun):** `Stop` is pending, and the transports are
+  interrupted. A `Receive()` returns the messages that are already in the receive queue. When the
+  queue is empty, it returns `interrupted`: at once for the timeout 0, otherwise within 100 ms. Thus
+  `PostRun()` can empty the queue, but it cannot wait for more messages.
+- **[`ResetTask()`](/api/fair/mq/Device/#ResetTask):** the transports are not interrupted. A
+  `Receive()` with a timeout waits for more messages. Always give a timeout. In `RESETTING TASK`,
+  the state machine accepts only `Auto` and `ErrorFound`, and the control plugin requests neither.
+  Thus a `Receive()` without a timeout can block the device.
+
+This `ResetTask()` reads messages until no message arrives for 1 s:
+
+```cpp
+void ResetTask() override
+{
+    while (true) {
+        auto msg(NewMessage());
+        if (Receive(msg, "data", 0, 1000) < 0) {
+            break; // no message in 1 s, or an error
+        }
+        ++fNumReceived;
+    }
+    LOG(info) << "Received " << fNumReceived << " messages in total";
+}
+```
+
+Receive into a [`fair::mq::Parts`](/api/fair/mq/Parts/) object if the sender sends multipart
+messages. The four-argument form of [`Receive()`](/api/fair/mq/Device/#Receive-2) takes the
+timeout in ms. A wait in `ResetTask()` does not replace the end message: it cannot know whether
+the senders sent everything.
+
+## What the controllers do
+
+The built-in control plugin handles the end of `RUNNING` in a different way in each mode
+([interactive](/source/fairmq/plugins/control/Control.cxx/#L285-L301),
+[static and gui](/source/fairmq/plugins/control/Control.cxx/#L414-L448)):
+
+| `--control` | When `RUNNING` ends | What this means for the end of the run |
+| --- | --- | --- |
+| `static` | When the device goes to `READY`, the plugin runs the shutdown sequence at once. | The device resets right after its last message. Its linger time must be long enough for its send queue. Use this mode with end messages. |
+| `dynamic` (default), `interactive`, `external` | The device stays in `READY`. The plugin waits for keys: `s` requests `Stop`, `q` runs the shutdown sequence. | You select the order. Press `s` for the sources, wait for the sinks, then press `q` in each device. |
+| `gui` | The device stays in `READY` until a signal. | Send the signals in the order of this guide. |
+| `none` | The plugin requests no transitions. A signal still starts its shutdown sequence. | Your controller must request the transitions in the order of this guide. |
+
+With `--catch-signals 1` (default), the first `SIGINT` or `SIGTERM` runs the shutdown sequence
+from the current state. A second `SIGINT` ends the process at once with `std::abort()`, and all
+queued messages are lost. After `ERROR`, the plugin runs no shutdown sequence. For the details, see
+[Control modes](/concepts/plugins/#control-modes) and
+[Startup and shutdown sequences](/reference/states/#startup-and-shutdown-sequences).
+
+## Check that no message is lost
+
+<Steps>
+
+1. Count the successful transfers in each device: each `Send()` that returns 0 or more, and each
+   received message.
+
+2. Log the counters in `PostRun()` or `ResetTask()`, and compare the numbers of the senders with
+   the numbers of the receivers.
+
+3. Put the number of data messages into the end message. The receiver then compares it with its own
+   count. A sequence number in each header also shows which message is missing.
+
+4. Test with a fixed number of messages, and let the receiver stop after this number.
+
+</Steps>
+
+Each channel also counts its transfers.
+[`GetMessagesTx()`](/api/fair/mq/Channel/#GetMessagesTx),
+[`GetMessagesRx()`](/api/fair/mq/Channel/#GetMessagesRx),
+[`GetBytesTx()`](/api/fair/mq/Channel/#GetBytesTx) and
+[`GetBytesRx()`](/api/fair/mq/Channel/#GetBytesRx) return the counters of the socket. The socket
+increments them after each successful transfer. A multipart message counts as one message. The
+counters start when the device makes the socket, and they include all runs since then. Read them
+before `RESETTING DEVICE`, because the device destroys the channels there:
+
+```cpp
+void ResetTask() override
+{
+    auto& channel = GetChannel("data");
+    LOG(info) << "data: " << channel.GetMessagesTx() << " messages, " << channel.GetBytesTx() << " bytes sent";
+}
+```
+
+The tests of the examples use a fixed number. In the test script of the [1-1 example](/examples/1-1/#test-the-example),
+the sampler and the sink both have `--max-iterations 1` and `--control static`. The sink ends only
+after it received the message. If the message is lost, the sink stays in `RUNNING`, and CTest stops
+the test after its timeout of 30 s (`examples/CMakeLists.txt`). See
+[Test your devices](/guides/test-devices/).
+
+## Problems that can occur
+
+- **The sink gets fewer messages than the source sent, with `--control static`:** the source reset
+  before ZeroMQ sent its queue. Increase `linger` on the output channel of the source.
+- **A device does not leave `RESETTING DEVICE`:** its `linger` is `-1`, and the peer does not take
+  the messages. Use a time limit.
+- **Only one of several sinks leaves `RUNNING`:** the `push` socket gave the end message to one
+  peer only. Send an end message on a sub-channel for each receiver.
+- **The sink does not leave `RUNNING`:** an end message did not arrive, or the sink expects too many
+  senders. Check the log of the senders and the number of senders of the sink.
+- **`Send()` returns -3 in `PostRun()`:** the transports are interrupted. Send the end message
+  before `RUNNING` ends, or in `ResetTask()`.
+- **Messages are lost after Ctrl-C in all terminals:** each device stopped and reset at once. Stop
+  the sources first.
+- **A device does not leave `RESETTING TASK`:** your `ResetTask()` calls `Receive()` without a
+  timeout. Give a timeout.
+
+## Related pages
+
+- [Device states](/concepts/states/): the transitions, `PostRun()` and the interruption of the
+  transports.
+- [Plugins and control](/concepts/plugins/#control-modes): the control modes and the signals.
+- [Channel properties](/reference/channel-properties/#linger): `linger` and the queue sizes.
+- [Handle errors and timeouts](/guides/errors-timeouts/): transfer codes and timeouts.
+- [When a peer stops or restarts](/guides/errors-timeouts/#when-a-peer-stops-or-restarts): the queues
+  and the shared memory of a peer that ends.
+- [multipart: several parts in one message](/examples/multipart/): the example with the stop flag.

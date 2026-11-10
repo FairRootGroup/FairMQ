@@ -1,0 +1,246 @@
+---
+title: 'Channel properties'
+description: 'All properties of a sub-channel: keys, types, defaults, allowed values and effects, read from the code.'
+sidebar:
+  order: 2
+code: [fairmq/Channel.h, fairmq/Channel.cxx, fairmq/JSONParser.cxx, fairmq/SuboptParser.cxx, fairmq/zeromq/Socket.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+
+Each sub-channel of a device has the properties on this page. You give them with `--channel-config`, in a JSON file, or as properties from code. The defaults are the `Default*` constants of [`fair::mq::Channel`](/api/fair/mq/Channel/).
+
+## Keys
+
+A property has the same key in the three places:
+
+| Place | Form | Example |
+| --- | --- | --- |
+| [`--channel-config`](/reference/options/#opt-channel-config) | `key=value` in the list of the channel | `name=data,type=push,sndBufSize=500` |
+| [JSON file](/reference/json/) | `"key": value` in a channel or in a socket | `"sndBufSize": 500` |
+| Property | `chans.<name>.<index>.<key>` | `chans.data.0.sndBufSize` |
+
+The keys are case-sensitive. The `--channel-config` parser logs a warning for an unknown key and ignores it ([SuboptParser.cxx](/source/fairmq/SuboptParser.cxx/#L111-L113)). The JSON parser ignores unknown keys without a message. `name` and `numSockets` have no property key: `name` is a part of the key, and `numSockets` is an instruction to the parser.
+
+## All properties
+
+The type is the C++ type of the property. The parsers of `--channel-config` and of JSON files convert the values to this type. For a value that it cannot convert, the parser throws `fair::mq::ParserError` ([_jsonparser.cxx](https://github.com/FairRootGroup/FairMQ/blob/dev/test/properties/_jsonparser.cxx#L158-L166)). A missing key gives the default.
+
+| Key | Type | Default | Allowed values | Effect |
+| --- | --- | --- | --- | --- |
+| [`name`](#name) | string | none | `a`–`z`, `A`–`Z`, `0`–`9`, `-`, `_`, `[`, `]`, `#` | Name of the channel. |
+| [`type`](#type) | string | [`unspecified`](/source/fairmq/Channel.h/#L373) | `push`, `pull`, `pub`, `sub`, `req`, `rep`, `dealer`, `router`, `xpub`, `xsub`, `pair` | Socket type. |
+| [`method`](#method) | string | [`unspecified`](/source/fairmq/Channel.h/#L374) | `bind`, `connect` | Bind or connect the endpoints. |
+| [`address`](#address) | string | [`unspecified`](/source/fairmq/Channel.h/#L375) | One or more endpoints, separated by `,` | Endpoints of the socket. |
+| [`transport`](#transport) | string | [`default`](/source/fairmq/Channel.h/#L371) | `default`, `zeromq`, `shmem` | Transport of the sub-channel. |
+| [`sndBufSize`](#sndbufsize-and-rcvbufsize) | int | [`1000`](/source/fairmq/Channel.h/#L376) | 0 or more | Maximum number of messages in the send queue. |
+| [`rcvBufSize`](#sndbufsize-and-rcvbufsize) | int | [`1000`](/source/fairmq/Channel.h/#L377) | 0 or more | Maximum number of messages in the receive queue. |
+| [`sndKernelSize`](#sndkernelsize-and-rcvkernelsize) | int | [`0`](/source/fairmq/Channel.h/#L378) | 0 or more | Kernel send buffer in bytes. 0: system default. |
+| [`rcvKernelSize`](#sndkernelsize-and-rcvkernelsize) | int | [`0`](/source/fairmq/Channel.h/#L379) | 0 or more | Kernel receive buffer in bytes. 0: system default. |
+| [`sndTimeoutMs`](#sndtimeoutms-and-rcvtimeoutms) | int | [`-1`](/source/fairmq/Channel.h/#L380) | -1, 0 or more | Default timeout of a send call in ms. |
+| [`rcvTimeoutMs`](#sndtimeoutms-and-rcvtimeoutms) | int | [`-1`](/source/fairmq/Channel.h/#L381) | -1, 0 or more | Default timeout of a receive call in ms. |
+| [`linger`](#linger) | int | [`500`](/source/fairmq/Channel.h/#L382) | -1, 0 or more | Time in ms that the socket keeps unsent messages after it closes. |
+| [`rateLogging`](#ratelogging) | int | [`1`](/source/fairmq/Channel.h/#L383) | 0 or more | Interval of the rate log in seconds. 0: no rate log. |
+| [`portRangeMin`](#portrangemin-portrangemax-and-autobind) | int | [`22000`](/source/fairmq/Channel.h/#L384) | A TCP port | Lowest port for autobind. |
+| [`portRangeMax`](#portrangemin-portrangemax-and-autobind) | int | [`23000`](/source/fairmq/Channel.h/#L385) | A TCP port | Highest port for autobind. |
+| [`autoBind`](#portrangemin-portrangemax-and-autobind) | bool | [`true`](/source/fairmq/Channel.h/#L386-L390) | `true`, `false`, `1`, `0` | Bind to a random port of the range when the bind fails. |
+| [`numSockets`](#numsockets) | int | [`0`](/source/fairmq/JSONParser.cxx/#L129) | 0 or more | Number of sub-channels with the same properties. |
+
+The JSON parser uses the same defaults ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L111-L126)). The device also uses them for a property that is not set ([Channel.cxx](/source/fairmq/Channel.cxx/#L92-L112)).
+
+## The properties in detail
+
+### `name`
+
+The name of the channel. In `--channel-config`, write `name=data`, or put the name and a colon before the first key: `data:type=push,...` ([SuboptParser.cxx](/source/fairmq/SuboptParser.cxx/#L91-L98)). Each channel must have a name. Without it, the parsers of JSON files and of `--channel-config` throw `boost::property_tree::ptree_bad_path` ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L128)). The `--channel-config` parser first logs `missing channel name in argument of option --channel-config`. The config plugin logs the exception and throws it again, and the device goes to `ERROR`. In the property key, the name is the `<name>` part of `chans.<name>.<index>.<key>`.
+
+A sub-channel has the name `<name>[<index>]`, for example `data[0]`. Before the device attaches a sub-channel, [`Channel::Validate()`](/api/fair/mq/Channel/#Validate) checks this full name ([Channel.cxx](/source/fairmq/Channel.cxx/#L183-L190)). The allowed characters are `a`–`z`, `A`–`Z`, `0`–`9`, `-`, `_`, `[`, `]` and `#`. For another character, the device logs `channel name contains illegal character` and does not attach the sub-channel. The device then goes to `ERROR`: at once for a binding sub-channel, after the time of `--init-timeout` for a connecting sub-channel ([Device.cxx](/source/fairmq/Device.cxx/#L217-L265)).
+
+### `type`
+
+The type of the socket: `push`, `pull`, `pub`, `sub`, `req`, `rep`, `dealer`, `router`, `xpub`, `xsub` or `pair` ([Channel.cxx](/source/fairmq/Channel.cxx/#L193-L199)). Each type is the ZeroMQ socket type of the same name ([zeromq/Common.h](/source/fairmq/zeromq/Common.h/#L91-L123)). [Channels and sockets](/concepts/channels/#socket-types-and-patterns) describes the patterns.
+
+- The default `unspecified` is not valid. `Validate()` throws [`Channel::ChannelConfigurationError`](/api/fair/mq/Channel/ChannelConfigurationError/) with `Invalid channel type: 'unspecified'`, and the device goes to the state `ERROR`.
+- The `shmem` transport throws `SocketError` for `pub` and `sub`: `PUB/SUB socket type is not supported for shared memory transport` ([shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L59-L62)).
+- A `sub` socket of the `zeromq` transport subscribes to all messages ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L70-L74)).
+
+### `method`
+
+- `bind`: the socket waits for peers on its endpoints.
+- `connect`: the socket connects to the endpoints of a peer.
+
+The method also sets the state in which the device attaches the sub-channel: `bind` in `BINDING`, `connect` in `CONNECTING` ([Device.cxx](/source/fairmq/Device.cxx/#L185-L210)). An endpoint modifier (`@`, `+` or `>`, see [`address`](#address)) overrides the method for its endpoint.
+
+The device attaches a sub-channel without a method in `CONNECTING`, if its address contains `@`, `+` or `>`. Give a modifier for each endpoint of such a sub-channel. Without a method and without a modifier, the device logs `Cannot update configuration. Socket method (bind/connect) for channel 'data[0]' not specified.` and goes to `ERROR`.
+
+### `address`
+
+One endpoint, or several endpoints separated by `,`. Each endpoint has the form `[modifier]protocol://location`.
+
+| Protocol | Form | `Validate()` checks | Use |
+| --- | --- | --- | --- |
+| `tcp://` | `tcp://host:port` | A `:` after `tcp://` | Between hosts, or on one host |
+| `ipc://` | `ipc://path` | The path is not empty | Between processes on one host, through a Unix domain socket file |
+| `inproc://` | `inproc://name` | The name is not empty | Between sub-channels of one device that use the same transport |
+
+The checks are in [Channel.cxx](/source/fairmq/Channel.cxx/#L201-L270). For an address with another protocol, the device logs `missing protocol specifier?` and does not attach the sub-channel, with the same result as for a wrong name. `Validate()` also accepts `verbs://`. This is a remainder of the removed `ofi` transport: the `zeromq` and `shmem` transports cannot use such an address.
+
+**Host of a TCP endpoint.** In a bind, the host is `*` (all interfaces), an IPv4 address or a host name. In a connect, the host is an IPv4 address or a host name. Before it binds or connects, the device replaces a host name with its first IPv4 address ([Device.cxx](/source/fairmq/Device.cxx/#L321-L333), [Network.cxx](/source/fairmq/tools/Network.cxx/#L160-L177)). If the name does not resolve, the device logs `failed to attach channel`. The [network helpers](/reference/tools/#networkh) resolve names and find the addresses of the interfaces.
+
+**Modifiers.** A modifier before an endpoint sets the method of this endpoint ([Device.cxx](/source/fairmq/Device.cxx/#L311-L319)):
+
+| Modifier | Effect | Example |
+| --- | --- | --- |
+| `@` | Bind this endpoint. | `@tcp://*:5556` |
+| `+` or `>` | Connect this endpoint. | `+tcp://host1:5555` |
+| none | Use the `method` of the sub-channel. | `tcp://host1:5555` |
+
+**Several endpoints.** The device splits the address at each `,` and binds or connects each endpoint with the one socket of the sub-channel ([Device.cxx](/source/fairmq/Device.cxx/#L302)). For example, a `push` socket with `tcp://host1:5555,tcp://host2:5555` connects to two peers. `Validate()` splits the address at `;` instead ([Channel.cxx](/source/fairmq/Channel.cxx/#L209)). A list with `;` passes the check, but the device gives it to the transport as one endpoint. Use `,`.
+
+:::caution[Several endpoints and `--channel-config`]
+In `--channel-config`, the `,` separates the keys. Thus you cannot give several endpoints there. Put them in a JSON file or set them as a property. A second `address=` key makes a second sub-channel, not a second endpoint.
+:::
+
+**No address.** A binding sub-channel without an address gets `tcp://<IP of the interface>:1`. The interface is the value of [`--network-interface`](/reference/options/#opt-network-interface). With `default`, the device uses the interface of the default route. If it cannot find a default route, it uses `tcp://*:1` ([Device.cxx](/source/fairmq/Device.cxx/#L176-L198)). For an interface name that does not exist, the device logs `Could not find provided network interface`. Port 1 means "any port": autobind selects the port ([`autoBind`](#portrangemin-portrangemax-and-autobind)).
+
+A connecting sub-channel without a valid address does not fail at once. The device reads the address property again every 50 ms, until the time of [`--init-timeout`](/reference/options/#opt-init-timeout) is over ([Device.cxx](/source/fairmq/Device.cxx/#L244-L262)). Other code can set the address during this time, for example a plugin.
+
+**Address after the attach.** When the address changes during the attach, the device writes the new value to the property ([Device.cxx](/source/fairmq/Device.cxx/#L359-L366)). The value then contains the resolved IPv4 addresses, the port that autobind selected, and `@` or `+` for each endpoint with a modifier. Other code can read the address that the device uses from `chans.<name>.<index>.address`.
+
+### `transport`
+
+- `default`: the default transport of the device, from [`--transport`](/reference/options/#opt-transport) (default `zeromq`).
+- `zeromq` or `shmem`: this transport, also if the device default is different.
+
+The names are in [Transports.h](/source/fairmq/Transports.h/#L27-L31). For another value, the device throws `TransportError` with `Unknown transport provided: <value>` when it makes the sub-channels. The device then goes to `ERROR`.
+
+A poller and the data callbacks of `OnData()` use the transport of sub-channel 0 for all sub-channels of a channel. Give all sub-channels of such a channel the same transport. Refer to [Use several transports](/guides/several-transports/).
+
+### `sndBufSize` and `rcvBufSize`
+
+The maximum number of messages in the send queue and in the receive queue of the socket. They are the ZeroMQ high-water marks `ZMQ_SNDHWM` and `ZMQ_RCVHWM` ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L310-L332)). The `shmem` transport sets the same options on its ZeroMQ socket, which carries the metadata of the messages ([shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L375-L397)). For ZeroMQ, 0 means no limit. A negative value makes `Validate()` throw `ChannelConfigurationError`.
+
+The behavior of a socket with a full queue depends on the socket type. The ZeroMQ documentation of `zmq_socket` describes it.
+
+### `sndKernelSize` and `rcvKernelSize`
+
+The size in bytes of the kernel buffers of the socket: the ZeroMQ options `ZMQ_SNDBUF` and `ZMQ_RCVBUF` ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L344-L366)). For the value 0, the device does not set the option ([Channel.cxx](/source/fairmq/Channel.cxx/#L332-L338)). ZeroMQ then keeps the default of the operating system. A negative value makes `Validate()` throw `ChannelConfigurationError`.
+
+The start script of the [region example](/examples/region/) sets `sndKernelSize=212992` for the sampler and `rcvKernelSize=212992` for the sink.
+
+### `sndTimeoutMs` and `rcvTimeoutMs`
+
+The timeout of a send or receive call that does not give its own timeout ([Channel.h](/source/fairmq/Channel.h/#L297-L337)). This applies to [`Channel::Send()`](/api/fair/mq/Channel/#Send) and [`Channel::Receive()`](/api/fair/mq/Channel/#Receive), to [`Device::Send()`](/api/fair/mq/Device/#Send) and [`Device::Receive()`](/api/fair/mq/Device/#Receive) without the timeout argument, and to the receive calls of [`OnData()`](/api/fair/mq/Device/#OnData).
+
+- `-1`: wait until the transfer is complete.
+- `0`: do not wait. If the transfer is not possible at once, the call returns `TransferCode::timeout` (-2).
+- More than 0: wait for this time in ms. Then the call returns `TransferCode::timeout` (-2).
+
+A transition request interrupts each wait. The call then returns `TransferCode::interrupted` (-3) ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L96-L124)). The transports wait in steps of 100 ms ([zeromq/Common.h](/source/fairmq/zeromq/Common.h/#L64-L77)). Thus the real timeout is the value rounded up to a multiple of 100 ms. The device does not check the value. Refer to [Transfer codes and errors](/reference/transfer-codes/).
+
+:::caution
+If `OnData()` has a callback for one sub-channel only, a receive timeout on this sub-channel stops the data loop. The device then goes from `RUNNING` to `READY`.
+:::
+
+### `linger`
+
+The time in ms that the socket keeps unsent messages after it closes: the ZeroMQ option `ZMQ_LINGER` ([Channel.cxx](/source/fairmq/Channel.cxx/#L325-L326)). For ZeroMQ, `-1` means no time limit, and `0` means that the socket discards the messages at once. The device does not check the value. To stop a topology without losing messages, see [Linger](/guides/end-of-run/#linger).
+
+### `rateLogging`
+
+The interval in seconds of the rate log of the sub-channel. The value 0 switches the rate log off for this sub-channel. A negative value makes `Validate()` throw `ChannelConfigurationError`.
+
+In `RUNNING`, the device starts a thread for the rate log if one sub-channel or more has a value above 0 ([Device.cxx](/source/fairmq/Device.cxx/#L383-L392)). The thread wakes every second. At the end of the interval of a sub-channel, it logs one line with the severity `info` ([Device.cxx](/source/fairmq/Device.cxx/#L613-L703)):
+
+```txt
+data[0]: in: <messages/s> (<MB/s> MB) out: <messages/s> (<MB/s> MB)
+```
+
+One MB in this line is 10<sup>6</sup> bytes. Many examples set `rateLogging` to 0. With the default, the device writes one line per second for each sub-channel.
+
+:::caution[Intervals above 1 s]
+For an interval of more than 1 s, the logged rates are too high by the factor of the interval. The device divides the counts of the full interval by the time since its last wake-up, which is approximately 1 s.
+:::
+
+### `portRangeMin`, `portRangeMax` and `autoBind`
+
+With `autoBind` set to `true`, a failed bind of a `tcp://` endpoint does not stop the device. The device tries random ports from `portRangeMin` to `portRangeMax`, both included, up to 1000 times ([Channel.cxx](/source/fairmq/Channel.cxx/#L346-L386)). After 1000 failed attempts, it logs `could not bind to any (TCP) port in the given range after 1000 attempts`. Autobind does not apply to `ipc://` and `inproc://`.
+
+The default of `autoBind` is `true`. The CMake variable `FAIRMQ_CHANNEL_DEFAULT_AUTOBIND` changes it when you build FairMQ, for example `-DFAIRMQ_CHANNEL_DEFAULT_AUTOBIND=OFF` ([fairmq/CMakeLists.txt](https://github.com/FairRootGroup/FairMQ/blob/dev/fairmq/CMakeLists.txt#L182-L190)). It is a public compile definition, so code that links the CMake target `FairMQ::FairMQ` gets the same default. Refer to [CMake options and variables](/reference/cmake/#compile-definitions).
+
+FairMQ uses port 1 for "any port". A binding sub-channel without an address gets port 1 (see [`address`](#address)). Without root rights, the bind to port 1 fails, and autobind selects a port ([zeromq/Common.h](/source/fairmq/zeromq/Common.h/#L35-L46)).
+
+:::caution[A port in use]
+If the configured port is in use, autobind binds to a random port. The device logs this only with the severity `debug`, so peers that connect to the configured port wait. For fixed ports, set `autoBind` to `false`. A failed bind then moves the device to `ERROR`, with `1 of the binding channels could not initialize`.
+:::
+
+### `numSockets`
+
+Only in `--channel-config` and on the channel level of a JSON file. For a value above 0, the parser makes this number of sub-channels, all with the properties of the channel ([JSONParser.cxx](/source/fairmq/JSONParser.cxx/#L129-L143)).
+
+- In JSON, the parser ignores the `sockets` array of the channel. All sub-channels get the `address` of the channel.
+- In `--channel-config`, the parser ignores the `address=` keys. The sub-channels have no address.
+
+Use it for binding sub-channels without an address: each sub-channel then gets its own port from autobind. With a bind address such as `tcp://*:5555`, only the first sub-channel gets the port 5555. Autobind gives random ports to the others.
+
+## When the device reads the properties
+
+The device makes its sub-channels from the properties when the controller requests the transition `COMPLETE INIT` ([Device.cxx](/source/fairmq/Device.cxx/#L146-L171)). Later changes of a property have no effect on the sub-channel. The exception is the address of a connecting sub-channel that the device could not attach: the device reads it again in `CONNECTING`. After `RESET DEVICE`, the device deletes its sub-channels, and at the next `COMPLETE INIT` it makes new ones from the properties. Refer to [Configuration and properties](/concepts/configuration/#channel-properties).
+
+## Set the properties from code
+
+Set each property with the type of the table: `std::string`, `int` or `bool`. The device reads them with `boost::any_cast`, which throws `boost::bad_any_cast` for another type ([Channel.cxx](/source/fairmq/Channel.cxx/#L24-L31)).
+
+```cpp
+fConfig->SetProperty<std::string>("chans.data.0.address", "tcp://localhost:5555");
+fConfig->SetProperty<int>("chans.data.0.rcvBufSize", 100);
+fConfig->SetProperty<bool>("chans.data.0.autoBind", false);
+```
+
+:::caution[String literals]
+Give the type `std::string` when the value is a string literal. `SetProperty("chans.data.0.type", "push")` stores a `const char*`, and the device throws an exception when it reads the property.
+:::
+
+[`Device::AddChannel()`](/api/fair/mq/Device/#AddChannel) adds a sub-channel from a `Channel` object, at the next free index. It does not copy `sndTimeoutMs` and `rcvTimeoutMs` ([ProgOptions.cxx](/source/fairmq/ProgOptions.cxx/#L353-L377)). Set these two as properties.
+
+### Set socket options directly
+
+The device applies the properties when it makes the socket of a sub-channel, before it binds or connects it ([Channel.cxx](/source/fairmq/Channel.cxx/#L321-L339)). Your code can also change some ZeroMQ options of a socket directly. [`Channel::GetSocket()`](/api/fair/mq/Channel/#GetSocket) returns the [`fair::mq::Socket`](/api/fair/mq/Socket/). In a device, the socket exists from the state `BINDING` or `CONNECTING` until the device deletes its channels in `RESETTING DEVICE`. Use it in `InitTask()` or later.
+
+| Functions | ZeroMQ option | Property |
+| --- | --- | --- |
+| [`SetLinger()`](/api/fair/mq/Socket/#SetLinger), [`GetLinger()`](/api/fair/mq/Socket/#GetLinger) | `ZMQ_LINGER` | `linger` |
+| [`SetSndBufSize()`](/api/fair/mq/Socket/#SetSndBufSize), [`GetSndBufSize()`](/api/fair/mq/Socket/#GetSndBufSize) | `ZMQ_SNDHWM` | `sndBufSize` |
+| [`SetRcvBufSize()`](/api/fair/mq/Socket/#SetRcvBufSize), [`GetRcvBufSize()`](/api/fair/mq/Socket/#GetRcvBufSize) | `ZMQ_RCVHWM` | `rcvBufSize` |
+| [`SetSndKernelSize()`](/api/fair/mq/Socket/#SetSndKernelSize), [`GetSndKernelSize()`](/api/fair/mq/Socket/#GetSndKernelSize) | `ZMQ_SNDBUF` | `sndKernelSize` |
+| [`SetRcvKernelSize()`](/api/fair/mq/Socket/#SetRcvKernelSize), [`GetRcvKernelSize()`](/api/fair/mq/Socket/#GetRcvKernelSize) | `ZMQ_RCVBUF` | `rcvKernelSize` |
+
+These functions throw `SocketError` when ZeroMQ refuses the value ([zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L293-L376)). The get functions return the value that ZeroMQ keeps for the socket, not the size that the kernel uses (ZeroMQ behavior). Linux limits the kernel buffer sizes to `net.core.wmem_max` and `net.core.rmem_max` (Linux behavior).
+
+[`SetOption(name, value, size)`](/api/fair/mq/Socket/#SetOption) and [`GetOption(name, value, &size)`](/api/fair/mq/Socket/#GetOption) give a raw value to `zmq_setsockopt()` and `zmq_getsockopt()`. The name selects the ZeroMQ option ([zeromq/Common.h](/source/fairmq/zeromq/Common.h/#L90-L123)):
+
+| Name | ZeroMQ option |
+| --- | --- |
+| `linger` | `ZMQ_LINGER` |
+| `snd-hwm`, `rcv-hwm` | `ZMQ_SNDHWM`, `ZMQ_RCVHWM` |
+| `snd-size`, `rcv-size` | `ZMQ_SNDBUF`, `ZMQ_RCVBUF` |
+| `rcv-more`, `fd`, `events` | `ZMQ_RCVMORE`, `ZMQ_FD`, `ZMQ_EVENTS`. ZeroMQ can only read these options. |
+
+:::caution[Names that are not options]
+The table of names also contains the socket types (`push`, `pull`, `pub`, `sub`, `xpub`, `xsub`, `req`, `rep`, `dealer`, `router`, `pair`), the flags `snd-more`, `no-block`, `snd-more no-block`, `pollin` and `pollout`, and the empty name. These are not options, but `SetOption()` and `GetOption()` give their numbers to ZeroMQ as option numbers. ZeroMQ refuses most of them. Six socket types have the number of another option in `zmq.h`: `rep` is `ZMQ_AFFINITY`, `dealer` is `ZMQ_ROUTING_ID`, `router` is `ZMQ_SUBSCRIBE`, `pull` is `ZMQ_UNSUBSCRIBE`, `push` is `ZMQ_RATE` and `xpub` is `ZMQ_RECOVERY_IVL`. This is a defect of the code. Do not use these names.
+:::
+
+For the options of the first three rows, give an `int` and `sizeof(int)`, as the test below does. For a name that is not in the table, `SetOption()` and `GetOption()` throw `fair::mq::zmq::Error` with `getConstant called with an invalid argument: <name>`. When ZeroMQ refuses the option, they only log `Failed setting socket option, reason: <text>` or `Failed getting socket option, reason: <text>`. The tests use the five names of the first three rows with both transports:
+
+<Snippet file="test/transport/_options.cxx" start="void CheckOldOptionInterface(Channel& channel, const string& option)" />
+
+ZeroMQ applies most options only to the binds and connects that come after the change. `ZMQ_LINGER`, `ZMQ_SNDHWM` and `ZMQ_RCVHWM` apply at once (ZeroMQ behavior, see `zmq_setsockopt`). In a device, the socket is already bound or connected when your code runs. Thus set the kernel buffer sizes with the properties. A `Channel` that you make with a transport factory, without a device, has its socket at once. There, set the options before `Bind()` or `Connect()`.
+
+[`Events(&events)`](/api/fair/mq/Socket/#Events) reads `ZMQ_EVENTS` into a `uint32_t` and returns the result of `zmq_getsockopt()`: 0 on success, -1 on an error. The header marks this function as experimental. The [counters](/concepts/channels/#socket-counters) of the socket are on the same object.
+
+## Related pages
+
+- [Channels and sockets](/concepts/channels/): sub-channels, socket types, methods and addresses.
+- [Configure channels](/guides/configure-channels/): give the properties with `--channel-config`, a JSON file or code.
+- [JSON configuration](/reference/json/): the format of the file for `--mq-config`.
+- [Command-line options](/reference/options/): `--channel-config`, `--network-interface`, `--init-timeout`.

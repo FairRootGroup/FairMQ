@@ -64,15 +64,16 @@ class LinePrinter
 namespace fair::mq::tools
 {
 
-/**
- * Execute given command in forked process and capture stdout output
- * and exit code.
- *
- * @param[in] cmd Command to execute
- * @param[in] log_prefix How to prefix each captured output line with
- * @return Captured stdout output and exit code
- */
 execute_result execute(const string& cmd, const string& prefix, const string& input, int sig)
+{
+    return execute(cmd, prefix, input, sig, chrono::milliseconds::zero());
+}
+
+execute_result execute(const string& cmd,
+                       const string& prefix,
+                       const string& input,
+                       int sig,
+                       chrono::milliseconds timeout)
 {
     execute_result result;
     stringstream out;
@@ -103,6 +104,25 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
     bp::child c(cmd, bp::std_out > outputPipe, bp::std_err > errorPipe, bp::std_in < inputPipe);
     int pid = c.id();
     p.Print(ToString("fair::mq::tools::execute: pid: ", pid));
+
+    // kill the child when the deadline expires; cancel the deadline when both
+    // output pipes are closed (the child has exited)
+    ba::steady_timer deadlineTimer(ioc);
+    int openPipes = 2;
+    auto onPipeClosed = [&]() {
+        if (--openPipes == 0) {
+            deadlineTimer.cancel();
+        }
+    };
+    if (timeout > chrono::milliseconds::zero()) {
+        deadlineTimer.expires_after(timeout);
+        deadlineTimer.async_wait([&](const bs::error_code& ec) {
+            if (!ec) {
+                p.Print(ToString("fair::mq::tools::execute: timeout after ", timeout.count(), " ms, killing pid ", pid));
+                kill(pid, SIGKILL);
+            }
+        });
+    }
 
     // handle std_in with a delay
     if (!input.empty()) {
@@ -142,11 +162,10 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
 
             ba::async_read_until(outputPipe, outputBuffer, delimiter, onStdOut);
         } else {
-            if (ec == ba::error::eof) {
-                // outputPipe.async_close();
-            } else {
+            if (ec != ba::error::eof) {
                 p.Print(ec.message());
             }
+            onPipeClosed();
         }
     };
     ba::async_read_until(outputPipe, outputBuffer, delimiter, onStdOut);
@@ -162,11 +181,10 @@ execute_result execute(const string& cmd, const string& prefix, const string& in
 
             ba::async_read_until(errorPipe, errorBuffer, delimiter, onStdErr);
         } else {
-            if (ec == ba::error::eof) {
-                // errorPipe.async_close();
-            } else {
+            if (ec != ba::error::eof) {
                 p.Print(ec.message());
             }
+            onPipeClosed();
         }
     };
     ba::async_read_until(errorPipe, errorBuffer, delimiter, onStdErr);

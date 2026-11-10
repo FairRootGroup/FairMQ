@@ -16,11 +16,8 @@ if(BUILD_FAIRMQ)
   # Version #
   ###########
   configure_file(Version.h.in
-    ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
+    ${PROJECT_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
     @ONLY
-  )
-  install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
-    DESTINATION ${PROJECT_INSTALL_INCDIR}
   )
 
   ##########################
@@ -146,7 +143,7 @@ if(BUILD_FAIRMQ)
   ###################
   # configure files #
   ###################
-  set(FAIRMQ_BIN_DIR ${CMAKE_BINARY_DIR}/fairmq)
+  set(FAIRMQ_BIN_DIR ${PROJECT_BINARY_DIR}/fairmq)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/devices/startMQBenchmark.sh.in ${CMAKE_CURRENT_BINARY_DIR}/startMQBenchmark.sh)
 
   #################################
@@ -155,9 +152,20 @@ if(BUILD_FAIRMQ)
   set(target FairMQ)
   add_library(${target}
     ${FAIRMQ_SOURCE_FILES}
-    ${FAIRMQ_PUBLIC_HEADER_FILES} # for IDE integration
     ${FAIRMQ_PRIVATE_HEADER_FILES} # for IDE integration
   )
+  # The file set installs the public headers with their relative paths and
+  # adds the base directories to the include directories.
+  target_sources(${target}
+    PUBLIC FILE_SET HEADERS
+    BASE_DIRS
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${PROJECT_BINARY_DIR}/${PROJECT_NAME_LOWER}
+    FILES
+      ${FAIRMQ_PUBLIC_HEADER_FILES}
+      ${PROJECT_BINARY_DIR}/${PROJECT_NAME_LOWER}/Version.h
+  )
+  add_library(${PROJECT_NAME}::${target} ALIAS ${target})
   target_compile_features(${target} PUBLIC cxx_std_17)
   set_target_properties(${target} PROPERTIES LABELS coverage)
 
@@ -167,7 +175,6 @@ if(BUILD_FAIRMQ)
   ############################
   target_compile_definitions(${target} PUBLIC
     BOOST_ERROR_CODE_HEADER_ONLY
-    BOOST_ASIO_HAS_HAS_STD_CHRONO
   )
   if(FAIRMQ_DEBUG_MODE)
     target_compile_definitions(${target} PUBLIC FAIRMQ_DEBUG_MODE)
@@ -195,10 +202,8 @@ if(BUILD_FAIRMQ)
   #######################
   target_include_directories(${target}
     PUBLIC # consumers inherit public include directories
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-    $<INSTALL_INTERFACE:${PROJECT_INSTALL_INCDIR}>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   )
 
@@ -211,9 +216,9 @@ if(BUILD_FAIRMQ)
 
     PUBLIC # libFairMQ AND consumers of libFairMQ link aginst public dependencies
     Threads::Threads
-    dl
+    ${CMAKE_DL_LIBS}
     $<$<PLATFORM_ID:Linux>:rt>
-    Boost::boost
+    Boost::headers
     Boost::program_options
     Boost::filesystem # still needed for Boost.DLL
     Boost::regex
@@ -280,7 +285,7 @@ if(BUILD_FAIRMQ)
   target_link_libraries(fairmq-shmmonitor PUBLIC
     Threads::Threads
     $<$<PLATFORM_ID:Linux>:rt>
-    Boost::boost
+    Boost::headers
     Boost::date_time
     $<$<NOT:${FAIRMQ_HAS_STD_FILESYSTEM}>:Boost::filesystem>
     Boost::program_options
@@ -288,7 +293,7 @@ if(BUILD_FAIRMQ)
     PicoSHA2
   )
   target_include_directories(fairmq-shmmonitor PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   )
   target_compile_definitions(fairmq-shmmonitor PUBLIC FAIRMQ_HAS_STD_FILESYSTEM=${FAIRMQ_HAS_STD_FILESYSTEM})
   if(BUILD_TIDY_TOOL AND RUN_FAIRMQ_TIDY)
@@ -324,14 +329,6 @@ if(BUILD_FAIRMQ)
     RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR}
     LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${PROJECT_INSTALL_LIBDIR}
+    FILE_SET HEADERS DESTINATION ${PROJECT_INSTALL_INCDIR}
   )
-
-  # preserve relative path and prepend fairmq
-  foreach(HEADER ${FAIRMQ_PUBLIC_HEADER_FILES})
-    get_filename_component(_path ${HEADER} DIRECTORY)
-    file(TO_CMAKE_PATH ${PROJECT_INSTALL_INCDIR}/${_path} _destination)
-    install(FILES ${HEADER}
-      DESTINATION ${_destination}
-    )
-  endforeach()
 endif()

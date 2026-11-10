@@ -1,0 +1,180 @@
+---
+title: 'Check code with fairmq-tidy'
+description: 'Find deprecated FairMQ names and APIs in your project with fairmq-tidy, apply the fixes, and run the checks at each build and in CI.'
+sidebar:
+  order: 11
+code: [fairmq/tidy/Module.cxx, fairmq/tidy/runTidy.cxx]
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+This guide runs `fairmq-tidy` on a CMake project that uses FairMQ. The result is a list of all places that use a deprecated FairMQ name or API, and a fix for most of them. A CMake target then checks the code at each build. The reference of the tool is on [fairmq-tidy](/tools/fairmq-tidy/).
+
+## Before you start
+
+- You need a FairMQ installation with the tool. Build FairMQ with `-DBUILD_TIDY_TOOL=ON`, see [Build fairmq-tidy](/tools/fairmq-tidy/#build-fairmq-tidy).
+- Your project must use the Makefile or the Ninja generator of CMake. The other generators do not write a compilation database.
+
+Make sure that the tool runs and knows the FairMQ checks:
+
+```sh
+fairmq-tidy --checks='-*,fairmq-*' --list-checks
+```
+
+## Make a compilation database
+
+The tool reads the compile command of each file, with the include paths and flags, from the file `compile_commands.json`.
+
+<Steps>
+
+1. Configure your project with `CMAKE_EXPORT_COMPILE_COMMANDS`:
+
+   ```sh
+   cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+   ```
+
+2. Make sure that the file `build/compile_commands.json` exists.
+
+</Steps>
+
+The database has an entry for each source file. A header file has no entry. The tool checks a header when it checks a source file that includes the header.
+
+## Run the checks
+
+<Steps>
+
+1. Check one file with the FairMQ checks only:
+
+   ```sh
+   fairmq-tidy -p build --checks='-*,fairmq-*' src/mydevice.cxx
+   ```
+
+   Without `--checks`, the tool also runs the checks of your `.clang-tidy` file, or the default checks of clang-tidy if there is no such file.
+
+2. Check all source files. Give several file names:
+
+   ```sh
+   fairmq-tidy -p build --checks='-*,fairmq-*' src/*.cxx
+   ```
+
+3. To also see the findings in your headers, add a header filter, for example `--header-filter='src/.*'`.
+
+</Steps>
+
+## Read the output
+
+Each finding has a warning line, the source line with a marker, and the fix if the check has one:
+
+```txt
+/home/me/myproject/src/mydevice.cxx:3:25: warning: 'FairMQDevice' is deprecated; use 'fair::mq::Device' [fairmq-modernize-nonnamespaced-types]
+    3 | class MyDevice : public FairMQDevice
+      |                         ^~~~~~~~~~~~
+      |                         fair::mq::Device
+```
+
+- `/home/me/myproject/src/mydevice.cxx:3:25` is the file, the line and the column.
+- `[fairmq-modernize-nonnamespaced-types]` is the name of the check. The [list of checks](/tools/fairmq-tidy/#checks) tells what each check finds.
+- The last line under the marker is the fix.
+
+## Apply the fixes
+
+<Steps>
+
+1. Commit your changes or make a copy, so that you can see the changes of the tool.
+
+2. Run the checks with `--fix`:
+
+   ```sh
+   fairmq-tidy -p build --checks='-*,fairmq-*' --fix src/*.cxx
+   ```
+
+3. Look at the changes, for example with `git diff`.
+
+4. Run `fairmq-tidy` again. Fix by hand the findings that have no fix.
+
+5. Build your project with `-Werror=deprecated-declarations`. The compiler then stops at the old names that the tool does not find, see [Move from the FairMQ* names](/guides/migrate-names/).
+
+</Steps>
+
+To check many files in parallel, use `run-clang-tidy` of LLVM:
+
+```sh
+run-clang-tidy -clang-tidy-binary fairmq-tidy -checks='-*,fairmq-*' -p build -fix
+```
+
+## Check the code at each build
+
+The CMake module `FairMQTidy.cmake` adds the checks to a target. The build then runs the tool after it builds the target. The checks include only the source files of the target that end in `.cpp` or `.cxx`.
+
+<Steps>
+
+1. Find FairMQ with the component `tidy_tool`. CMake stops if FairMQ has no `fairmq-tidy`:
+
+   ```cmake
+   find_package(FairMQ REQUIRED COMPONENTS tidy_tool)
+   ```
+
+2. Turn on the compilation database. Do this before you add the targets:
+
+   ```cmake
+   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+   ```
+
+3. Include the module and call `fairmq_target_tidy()` for each target:
+
+   ```cmake
+   include(FairMQTidy)
+
+   add_executable(mydevice src/mydevice.cxx)
+   target_link_libraries(mydevice PRIVATE FairMQ::FairMQ)
+   fairmq_target_tidy(TARGET mydevice)
+   ```
+
+4. Build the project:
+
+   ```sh
+   cmake --build build
+   ```
+
+</Steps>
+
+For each source file, the build prints a line like this one and then the findings:
+
+```txt
+fairmq-tidy: Analyzing source file 'src/mydevice.cxx' of target 'mydevice'
+```
+
+To build one target and run its checks, build the target `fairmq-tidy-<target>`:
+
+```sh
+cmake --build build --target fairmq-tidy-mydevice
+```
+
+## Fail a CI job on findings
+
+The exit code of `fairmq-tidy` is `0` also when it finds something. Make the findings errors with `--warnings-as-errors`:
+
+```sh
+fairmq-tidy -p build --checks='-*,fairmq-*' --warnings-as-errors='fairmq-*' src/*.cxx
+```
+
+With `fairmq_target_tidy()`, give the option in `EXTRA_ARGS`. A finding then stops the build:
+
+```cmake
+fairmq_target_tidy(TARGET mydevice EXTRA_ARGS --warnings-as-errors=fairmq-*)
+```
+
+## Problems that can occur
+
+| Message | Cause | Solution |
+| --- | --- | --- |
+| `CMAKE_EXPORT_COMPILE_COMMANDS is not enabled. Skipping.` | The variable is off when `fairmq_target_tidy()` runs. | Set `CMAKE_EXPORT_COMPILE_COMMANDS` to `ON` before the call. |
+| `Error while trying to load a compilation database` | The tool did not find `compile_commands.json`. | Give the build directory with `-p`. |
+| `fatal error: '<header>' file not found` | Clang does not find a header. | Add the include path with `--extra-arg=-I<dir>`. |
+| A warning of a check that you did not select, for example `clang-analyzer-*` | The command line has no `--checks`, and the tool runs the checks of the configuration. | Give `--checks='-*,fairmq-*'`. |
+
+## Related pages
+
+- [fairmq-tidy](/tools/fairmq-tidy/): the checks, the command line and the CMake function.
+- [Move from the FairMQ* names](/guides/migrate-names/): all old names and their replacements.
+- [Use FairMQ in a CMake project](/start/cmake/): `find_package(FairMQ)` and the targets.

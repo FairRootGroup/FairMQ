@@ -1,0 +1,237 @@
+---
+title: 'Configure channels'
+description: 'Give a device its channels with --channel-config, a JSON file or properties from code, on one host or on several hosts.'
+sidebar:
+  order: 2
+code: [fairmq/SuboptParser.cxx, fairmq/JSONParser.cxx, fairmq/Device.cxx, fairmq/tools/Network.cxx, fairmq/plugins/config/Config.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+This guide shows how to give a device its channels: with `--channel-config`, with a JSON file, or as properties from code. The result is a topology in which each device binds or connects its sub-channels on the addresses that you select.
+
+## Before you start
+
+- You have a device made with `runDevice.h`, for example from [Your first device](/start/first-device/).
+- You know the channel names that your code uses, for example `"data"` in [`Send(msg, "data")`](/api/fair/mq/Device/#Send) or in [`OnData("data", ...)`](/api/fair/mq/Device/#OnData). The configuration must give channels with the same names.
+
+## Steps
+
+<Steps>
+
+1. Select the socket type of each channel, for example `push` for the sender and `pull` for the receiver. Refer to [Socket types and patterns](/concepts/channels/#socket-types-and-patterns) and [Select the socket pattern](/guides/design-topology/#select-the-socket-pattern).
+
+2. Select the [device that binds](/guides/design-topology/#select-the-device-that-binds). Usually this is the device with a fixed place in the topology, for example the sink. Give it the method `bind` and an address such as `tcp://*:5555`.
+
+3. Give the peers the method `connect` and the address of the binding device, for example `tcp://host1:5555`.
+
+4. Give the configuration to the devices in one of the [three ways](#three-ways-to-give-the-configuration).
+
+5. Start the devices, and [check the result](#check-the-result).
+
+</Steps>
+
+## Three ways to give the configuration
+
+<Tabs>
+<TabItem label="--channel-config">
+
+Give one value for each channel. A value is a list of `key=value` pairs, separated by `,`, without spaces. Put the value in quotes if it contains `*`, so that the shell does not change it.
+
+```sh
+fairmq-ex-1-n-1-processor --id processor1 \
+  --channel-config 'name=data1,type=pull,method=connect,address=tcp://localhost:5555' \
+                   'name=data2,type=push,method=connect,address=tcp://localhost:5556'
+```
+
+- Give all channels as values after one `--channel-config`, as the examples do.
+- `name=data1,...` and `data1:...` give the same name ([SuboptParser.cxx](/source/fairmq/SuboptParser.cxx/#L91-L98)).
+- Each `address=` key makes one sub-channel. All other keys apply to all sub-channels of the channel, at each position in the list ([SuboptParser.cxx](/source/fairmq/SuboptParser.cxx/#L100-L110)).
+- The parser logs `Ignoring unknown argument in --channel-config` for an unknown key.
+- Because `,` separates the keys, an address with several endpoints is not possible here.
+
+</TabItem>
+<TabItem label="JSON file">
+
+Write one file for all devices of the topology, with one entry for each device. Give the file with `--mq-config`. The device reads the entry that matches `--config-key`, or `--id` if there is no `--config-key`. An entry matches by its `key`, or by its `id` if it has no `key`.
+
+```sh
+fairmq-ex-1-n-1-processor --id processor1 --mq-config ex-1-n-1.json --config-key processor
+```
+
+- The values of a channel are the defaults for its `sockets`. Each socket object makes one sub-channel.
+- Several devices can use one entry with `--config-key`, for example the two processors of the 1-n-1 example.
+- If you give `--mq-config` and `--channel-config`, the device reads only the JSON file.
+
+[JSON configuration](/reference/json/) describes the format and the errors. The [complete example](#a-complete-example) below shows a file.
+
+</TabItem>
+<TabItem label="Properties from code">
+
+Set the properties `chans.<name>.<index>.<property>` before the controller requests the transition `COMPLETE INIT`. Use the exact types: `std::string`, `int` or `bool`. Each sub-channel needs a `type` property, otherwise the device does not see it. For a plugin, set them when the device goes into `INITIALIZING DEVICE`:
+
+```cpp
+#include <fairmq/Plugin.h>
+
+#include <string>
+#include <utility>
+
+struct ChannelSetup : fair::mq::Plugin
+{
+    template<typename... Args>
+    ChannelSetup(Args&&... args)
+        : Plugin(std::forward<Args>(args)...)
+    {
+        SubscribeToDeviceStateChange([this](DeviceState state) {
+            if (state == DeviceState::InitializingDevice) {
+                SetProperty<std::string>("chans.data.0.type", "push");
+                SetProperty<std::string>("chans.data.0.method", "bind");
+                SetProperty<std::string>("chans.data.0.address", "tcp://*:5555");
+                SetProperty<int>("chans.data.0.rateLogging", 0);
+            }
+        });
+    }
+
+    ~ChannelSetup() override { UnsubscribeFromDeviceStateChange(); }
+};
+```
+
+Register and load the plugin as [Write a plugin](/guides/write-plugin/) describes. The device runner makes the plugins of `-P` before the config plugin. If `--mq-config` or `--channel-config` also gives the channel `data`, the config plugin replaces these values.
+
+In the device, use the hook [`Init()`](/api/fair/mq/Device/#Init). It runs after the request of `COMPLETE INIT`, before the device reads the channel properties:
+
+```cpp
+void Init() override
+{
+    fair::mq::Channel channel("push", "bind", "tcp://*:5555");
+    channel.UpdateRateLogging(0);
+    AddChannel("data", std::move(channel));
+}
+```
+
+A device without `runDevice.h` can add its channels before it starts, as this test helper does:
+
+<Snippet file="test/device/_data_callbacks.cxx" start="void AddInput(" />
+
+:::caution
+- [`AddChannel()`](/api/fair/mq/Device/#AddChannel) adds a sub-channel at the next free index, also when the channel exists. After `RESET DEVICE`, `Init()` runs again and adds one more sub-channel. If your device can go through `INITIALIZING DEVICE` again, set the properties with `fConfig->SetProperty()` instead.
+- `AddChannel()` does not copy `sndTimeoutMs` and `rcvTimeoutMs`. Set them as properties.
+- Do not set channels in the constructor of a device that uses `Device()`. With `runDevice.h`, the device runner replaces the store of the device after the constructor.
+:::
+
+</TabItem>
+</Tabs>
+
+## Several sub-channels
+
+| Method | Several sub-channels |
+| --- | --- |
+| `--channel-config` | Give one `address=` key for each sub-channel: `name=data,type=push,method=bind,address=tcp://*:5555,address=tcp://*:5556`. Or give `numSockets=3` for sub-channels without an address. |
+| JSON file | Give one object for each sub-channel in `sockets`, or give `numSockets` in the channel. |
+| Properties | Set the properties of the indexes 0, 1, 2 and so on, without gaps. |
+
+The [copypush example](/examples/copypush/) has a channel with two sub-channels. [Channel properties](/reference/channel-properties/#numsockets) describes `numSockets`.
+
+## Addresses on one host
+
+- `tcp://localhost:5555` or `tcp://127.0.0.1:5555` on the connecting side, and `tcp://*:5555` or `tcp://127.0.0.1:5555` on the binding side.
+- `ipc:///tmp/fmq_data` gives a Unix domain socket file. The test scripts of the examples use `ipc://` addresses.
+- `inproc://data` connects two sub-channels of the same device with the same transport.
+
+The `shmem` transport uses the same addresses. It sends the metadata of the messages through its ZeroMQ socket on this address, and the data through the shared memory.
+
+## Addresses on several hosts
+
+- On the binding host, bind to `tcp://*:5555` (all interfaces) or to the IPv4 address of one interface.
+- On the connecting hosts, give the host name or the IPv4 address of the binding host. The device uses the first IPv4 address of a host name ([Network.cxx](/source/fairmq/tools/Network.cxx/#L160-L177)).
+
+A binding sub-channel without an address binds to the IPv4 address of the interface that `--network-interface` names, for example `eth0` ([Device.cxx](/source/fairmq/Device.cxx/#L185-L198)). With the default `default`, the device uses the interface of the default route. On Linux, it reads `/proc/net/route` and then the output of `ip route`. On macOS, it uses `route -n get default` ([Network.cxx](/source/fairmq/tools/Network.cxx/#L95-L158)). If it finds no interface, it binds to `tcp://*:1`. Without root rights, the bind to port 1 fails, and autobind selects a port. For the functions that find the interface and the addresses, see [Network.h](/reference/tools/#networkh).
+
+The peers must then get the address. After the bind, the device writes the address to the property `chans.<name>.<index>.address`. A plugin can read it and give it to the peers. A connecting device reads its address property again every 50 ms in `CONNECTING`, until the time of `--init-timeout` is over.
+
+## Automatic ports
+
+By default, a binding sub-channel takes a random port from 22000 to 23000 when its TCP bind fails. For fixed ports, switch this off:
+
+```sh
+fairmq-ex-1-n-1-sink --id sink1 \
+  --channel-config 'name=data2,type=pull,method=bind,address=tcp://*:5556,autoBind=false'
+```
+
+In a JSON file, write `"autoBind": false`. The keys `portRangeMin` and `portRangeMax` change the range. Refer to [Channel properties](/reference/channel-properties/#portrangemin-portrangemax-and-autobind).
+
+## A complete example
+
+The [1-n-1 example](/examples/1-n-1/) has one sampler, two processors and one sink:
+
+| Device | Channel | Type | Method | Address |
+| --- | --- | --- | --- | --- |
+| `sampler1` | `data1` | `push` | `bind` | `tcp://*:5555` |
+| `processor1`, `processor2` | `data1` | `pull` | `connect` | `tcp://localhost:5555` |
+| `processor1`, `processor2` | `data2` | `push` | `connect` | `tcp://localhost:5556` |
+| `sink1` | `data2` | `pull` | `bind` | `tcp://*:5556` |
+
+The JSON file has one entry for each device. The two processors use the entry with the key `processor`:
+
+<Snippet file="examples/1-n-1/ex-1-n-1.json" />
+
+The start script gives the file to all devices, and `--config-key processor` to the processors. The build writes it to `examples/1-n-1/fairmq-start-ex-1-n-1.sh` in the build directory, with the paths filled in:
+
+<Snippet file="examples/1-n-1/fairmq-start-ex-1-n-1.sh.in" />
+
+The same topology with `--channel-config`, in four terminals in the directory `examples/1-n-1` of the build directory:
+
+```sh
+./fairmq-ex-1-n-1-sampler --id sampler1 \
+  --channel-config 'name=data1,type=push,method=bind,address=tcp://*:5555,rateLogging=0'
+./fairmq-ex-1-n-1-processor --id processor1 \
+  --channel-config 'name=data1,type=pull,method=connect,address=tcp://localhost:5555,rateLogging=0' \
+                   'name=data2,type=push,method=connect,address=tcp://localhost:5556,rateLogging=0'
+./fairmq-ex-1-n-1-processor --id processor2 \
+  --channel-config 'name=data1,type=pull,method=connect,address=tcp://localhost:5555,rateLogging=0' \
+                   'name=data2,type=push,method=connect,address=tcp://localhost:5556,rateLogging=0'
+./fairmq-ex-1-n-1-sink --id sink1 \
+  --channel-config 'name=data2,type=pull,method=bind,address=tcp://*:5556,rateLogging=0'
+```
+
+## Check the result
+
+Start the devices with `--severity debug`. For each endpoint, the device logs the address and the method:
+
+```txt
+Attached channel data1[0] to tcp://*:5555 (bind) (push)
+```
+
+```txt
+Attached channel data1[0] to tcp://127.0.0.1:5555 (connect) (pull)
+```
+
+The connecting device shows the resolved IPv4 address of `localhost`. In the interactive controller (the default `--control dynamic`), press `p`. The device logs the number of peers of each sub-channel, for example in `sampler1` with two processors:
+
+```txt
+data1[0]: 2 peers connected
+```
+
+## Problems
+
+| Message or symptom | Cause | Fix |
+| --- | --- | --- |
+| `GetChannel(): 'data[0]' does not exist.` | The configuration has no channel with the name that the code uses, or the device did not read the configuration. | Compare the names. Look for parser errors at the start of the log. |
+| `fair::mq::plugins::Config: no channels configuration provided via --mq-config or --channel-config` | The device has no channel configuration. A misspelled option, for example `--chanel-config`, has the same effect, because the device ignores unknown options. | Give `--channel-config` or `--mq-config`. For a misspelled option, the debug log shows `detected unregistered option`. |
+| `No device ID or config-key provided for the configuration parser.` | `--id` and `--config-key` are empty. | Give `--id`. |
+| `missing channel name in argument of option --channel-config` | A value of `--channel-config` has no `name`. | Add `name=`. |
+| `Invalid channel type: 'unspecified'` | A sub-channel has no `type`. | Give `type`. |
+| `Cannot update configuration. Socket method (bind/connect) for channel 'data[0]' not specified.` | A sub-channel has no `method` and no modifier. | Give `method=bind` or `method=connect`. |
+| `1 of the binding channels could not initialize` | A bind failed, for example because the port is in use and `autoBind` is `false`. | Free the port, or select another port. |
+| `could not connect all channels after 120 attempts` | A connecting sub-channel has no valid address, or its host name does not resolve. | Correct the address. |
+| The peers do not find the binding device. | The port was in use, and autobind selected a random port. | Set `autoBind=false`. |
+
+## Related pages
+
+- [Channels and sockets](/concepts/channels/): sub-channels, socket types, methods and addresses.
+- [Channel properties](/reference/channel-properties/): all keys, with their defaults.
+- [JSON configuration](/reference/json/): the format of the file for `--mq-config`.
+- [Configuration and properties](/concepts/configuration/): how the device reads its configuration.
+- [1-n-1 example](/examples/1-n-1/): the example of this guide.
+- [Design a topology](/guides/design-topology/): the patterns, the binding devices and the transports of a topology.

@@ -1,0 +1,250 @@
+---
+title: Threads in a device
+description: The threads of a device process, the thread that runs each hook and callback, and the objects that your own threads can share.
+sidebar:
+  order: 7.5
+code: [fairmq/Device.cxx, fairmq/StateMachine.cxx, fairmq/plugins/control/Control.cxx, fairmq/Channel.h, fairmq/ProgOptions.h]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+
+A device process has more than one thread. FairMQ, its plugins and ZeroMQ start threads, and your
+code can add more, for example in `PreRun()`. This page tells you which thread runs each hook and
+callback, which objects are thread-safe, and how to add a thread without a data race.
+
+## The threads of a device process
+
+A device that starts with `fairmq/runDevice.h` can have these threads:
+
+| Thread | Started by | When it runs | What it does |
+| --- | --- | --- | --- |
+| Main thread | The process | Always | Runs `main()` and [`DeviceRunner::Run()`](/api/fair/mq/DeviceRunner/#Run). It creates the plugins and then calls [`RunStateMachine()`](/api/fair/mq/Device/#RunStateMachine). This thread is the thread of the state machine. |
+| Controller thread | The control plugin | With each value of `--control` except `none` | Requests the transitions. In the mode `dynamic` (default), it also reads the keys of the terminal ([Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L69-L94)). |
+| Signal handler thread | The control plugin | With `--catch-signals 1` (default) | Checks every 100 ms for `SIGINT` or `SIGTERM`. After the first signal, it stops the controller thread and requests the transitions of the shutdown sequence ([Control.cxx](/source/fairmq/plugins/control/Control.cxx/#L450-L480)). |
+| Rate logger thread | The device | In `RUNNING`, if a sub-channel has `rateLogging` above 0 (default 1) | Runs [`LogSocketRates()`](/api/fair/mq/Device/#LogSocketRates). It ends when a transition is pending. The device joins it after `PostRun()` ([Device.cxx](/source/fairmq/Device.cxx/#L384-L395)). |
+| Poll threads | The device | In `RUNNING`, with data callbacks on input channels of more than one transport | One thread for each transport. Each thread polls its channels and calls their data callbacks ([Device.cxx](/source/fairmq/Device.cxx/#L509-L523)). |
+| ZeroMQ I/O threads | ZeroMQ | While the transport exists | Each transport, also `shmem`, has one ZeroMQ context with [`--io-threads`](/reference/options/#opt-io-threads) I/O threads (default 1) ([zeromq/TransportFactory.h](/source/fairmq/zeromq/TransportFactory.h/#L39), [shmem/TransportFactory.h](/source/fairmq/shmem/TransportFactory.h/#L72-L74)). ZeroMQ moves the data of the sockets in these threads (ZeroMQ behavior). |
+| Heartbeat thread | The shmem transport | While the transport exists | Writes the heartbeat for [`fairmq-shmmonitor`](/shmem/monitor/#what-the-daemon-does) every 100 ms ([shmem/Manager.h](/source/fairmq/shmem/Manager.h/#L637-L647)). |
+| Ack threads of a region | The shmem transport | While the region exists | The ack sender sends the released blocks to the creator of the region. The ack receiver of the creator calls the region callback. See [Acknowledgements](/shmem/regions/#acknowledgements). |
+| Region event thread | The transport | After [`SubscribeToRegionEvents()`](/api/fair/mq/TransportFactory/#SubscribeToRegionEvents) | Calls the region event callback. See [Region events](/shmem/regions/#region-events). |
+
+The control plugin does not start a controller thread with `--control none`, or when another plugin
+has the controller role. The signal handler thread still runs. The C signal handler itself only counts
+the signals and stores the last one. A `SIGINT` after a first signal calls `std::abort()` there. See [Signals](/concepts/plugins/#signals).
+
+Without `DeviceRunner`, the device has no plugins. Then the thread of the state machine is the thread
+that calls `RunStateMachine()`, and your code requests the transitions from another thread. See
+[Run the device in a thread](/guides/control-from-code/#run-the-device-in-a-thread). One process can
+run several devices in this way. In the test `MultipleDevices.TwoInSameProcess`, two devices run in one
+process, each with its own thread for `RunStateMachine()` and its own thread for the transitions.
+For the limits, see [Several devices in one process](/guides/control-from-code/#several-devices-in-one-process).
+
+## Which thread runs your code
+
+| Your code | Thread | Notes |
+| --- | --- | --- |
+| The hooks `Init()`, `Bind()`, `Connect()`, `InitTask()`, `PreRun()`, `ConditionalRun()`, `Run()`, `PostRun()`, `ResetTask()`, `Reset()` | The thread of the state machine | One hook at a time. The next state starts only after the hook returns. See [The hooks](/concepts/devices/#the-hooks). |
+| Data callbacks of [`OnData()`](/api/fair/mq/Device/#OnData) | The thread of the state machine. With input channels of more than one transport: the poll thread of the transport. | In the poll threads, a mutex lets one callback run at a time ([Device.cxx](/source/fairmq/Device.cxx/#L525-L562)). See [Several input channels](/guides/receive-data/#several-input-channels). |
+| State change callbacks: [`SubscribeToStateChange()`](/api/fair/mq/Device/#SubscribeToStateChange), [`SubscribeToDeviceStateChange()`](/api/fair/mq/Plugin/#SubscribeToDeviceStateChange) of a plugin | The thread of the state machine | At the start of each state, before the hooks of the state ([StateMachine.cxx](/source/fairmq/StateMachine.cxx/#L191-L219)). |
+| New transition callbacks: [`SubscribeToNewTransition()`](/api/fair/mq/Device/#SubscribeToNewTransition) | The thread that calls `ChangeState()` | The state machine holds its lock while it calls the callback ([StateMachine.cxx](/source/fairmq/StateMachine.cxx/#L257-L260)). |
+| Property callbacks: [`Subscribe<T>()`](/api/fair/mq/ProgOptions/#Subscribe), [`SubscribeAsString()`](/api/fair/mq/ProgOptions/#SubscribeAsString), [`SubscribeToPropertyChange<T>()`](/api/fair/mq/Plugin/#SubscribeToPropertyChange) | The thread that changes the property, for example with `SetProperty()` | Before the call returns, after the property store releases its lock ([ProgOptions.h](/source/fairmq/ProgOptions.h/#L268-L279)). |
+| Region callbacks: [`RegionCallback`](/api/fair/mq/#RegionCallback), [`RegionBulkCallback`](/api/fair/mq/#RegionBulkCallback) | shmem: the ack receiver thread of the region. zeromq: the thread that makes the region message. | The zeromq transport copies the data and calls the callback at once, in `NewMessage()` ([zeromq/Message.h](/source/fairmq/zeromq/Message.h/#L131-L137)). |
+| Region event callbacks | The region event thread of the transport | The shmem transport checks for events every 50 ms. |
+| Message free functions ([`FreeFn`](/api/fair/mq/#FreeFn)) | shmem: the thread that makes the message. zeromq: a thread that ZeroMQ selects. | The shmem transport copies the buffer and calls the function at once. ZeroMQ calls it when it releases the buffer, also from its own threads (ZeroMQ behavior). See [Your own buffer](/concepts/messages/#your-own-buffer). |
+| Your override of `LogSocketRates()` | The rate logger thread | Only in `RUNNING`. |
+| Constructors of plugins, hooks of `DeviceRunner` | The main thread | Before the state machine starts. |
+
+Some rules follow from this table:
+
+- A state change callback blocks the device. The device calls the hooks of the state only after all
+  state callbacks return. For long work, start a thread. See
+  [A controller with its own thread](/guides/control-from-code/#a-controller-with-its-own-thread).
+- Do not call `ChangeState()`, `ChangeStateOrThrow()` or `WaitFor()` in a new transition callback.
+  These functions lock the mutex that the state machine holds during the callback.
+- The device itself subscribes to new transitions. Its callback interrupts the transports, in the
+  thread that requests the transition. The next state resumes the transports in the thread of the
+  state machine ([Device.cxx](/source/fairmq/Device.cxx/#L96-L104)).
+- A zeromq channel that sends a shmem message wraps the message. The free function of the wrapper
+  destroys the shmem message ([Channel.h](/source/fairmq/Channel.h/#L425-L442)). Thus the shmem
+  message can be destroyed in a thread of ZeroMQ.
+- Both transports call the region event callback while they hold the lock of the subscription
+  ([shmem/Manager.h](/source/fairmq/shmem/Manager.h/#L582-L616),
+  [zeromq/Context.h](/source/fairmq/zeromq/Context.h/#L95-L106)). Do not call
+  `SubscribeToRegionEvents()` or `UnsubscribeFromRegionEvents()` in the callback. With zeromq, also do
+  not create or destroy a region and do not call `GetRegionInfo()` there. These functions lock the
+  same mutex.
+
+## What is thread-safe
+
+| Object or function | From several threads at the same time | Source |
+| --- | --- | --- |
+| [`Channel`](/api/fair/mq/Channel/) and its socket | No. The header says: "The class is not thread-safe." Use each channel from one thread at a time. | [Channel.h](/source/fairmq/Channel.h/#L30-L35) |
+| Different channels, also of one transport | Yes. Each thread uses its own channels. | Test `PushPullMultipart.MultiThreaded_ipc` |
+| [`GetNumberOfConnectedPeers()`](/api/fair/mq/Channel/#GetNumberOfConnectedPeers) of a channel | Safe for distinct channels, not safe for one shared channel. | [Channel.h](/source/fairmq/Channel.h/#L198-L204) |
+| [`Message`](/api/fair/mq/Message/), [`Parts`](/api/fair/mq/Parts/), a [`Poller`](/api/fair/mq/Poller/) | No. These classes have no lock. Give each object to one thread at a time. | [Message.h](/source/fairmq/Message.h/), [Parts.h](/source/fairmq/Parts.h/), [Poller.h](/source/fairmq/Poller.h/) |
+| [`ChannelResource`](/api/fair/mq/ChannelResource/) | No. Its map of the allocated messages has no lock. See [Use std::pmr memory resources](/guides/pmr/). | [MemoryResources.h](/source/fairmq/MemoryResources.h/#L54-L98) |
+| The property functions of [`ProgOptions`](/api/fair/mq/ProgOptions/), for example `GetProperty<T>()` and `SetProperty<T>()` | Yes. Each function locks a mutex. [`GetVarMap()`](/api/fair/mq/ProgOptions/#GetVarMap) returns a reference, and the lock does not protect it. | [ProgOptions.h](/source/fairmq/ProgOptions.h/#L61-L87) |
+| [`ChangeState()`](/api/fair/mq/Device/#ChangeState), [`NewStatePending()`](/api/fair/mq/Device/#NewStatePending), [`WaitFor()`](/api/fair/mq/Device/#WaitFor), [`GetCurrentState()`](/api/fair/mq/Device/#GetCurrentState) | Yes. The state machine uses a mutex and atomic values. | [StateMachine.cxx](/source/fairmq/StateMachine.cxx/#L175-L182), [StateMachine.cxx](/source/fairmq/StateMachine.cxx/#L257-L260) |
+| Subscribe and unsubscribe for state changes | Yes. A mutex protects the subscriptions. | [StateMachine.cxx](/source/fairmq/StateMachine.cxx/#L318-L335), test `PluginServices.SubscriptionThreadSafety` |
+| [`WaitForState()`](/api/fair/mq/Device/#WaitForState), [`WaitForNextState()`](/api/fair/mq/Device/#WaitForNextState) | Call them from one thread only. The queue of states gives each state to one caller. | [StateQueue.h](/source/fairmq/StateQueue.h/#L31-L35) |
+| [`Interrupt()`](/api/fair/mq/TransportFactory/#Interrupt), [`Resume()`](/api/fair/mq/TransportFactory/#Resume) of a transport | Yes. They set an atomic flag. | [zeromq/Context.h](/source/fairmq/zeromq/Context.h/#L149-L150), [shmem/Manager.h](/source/fairmq/shmem/Manager.h/#L283-L284), test `InterruptTransfer.Receive` |
+| The byte and message counters of a channel, for example [`GetBytesTx()`](/api/fair/mq/Channel/#GetBytesTx) | Yes. The sockets keep them in atomic values. The rate logger thread reads them. | [zeromq/Socket.h](/source/fairmq/zeromq/Socket.h/#L399-L402), [shmem/Socket.h](/source/fairmq/shmem/Socket.h/#L464-L467) |
+
+The device makes its channels in `INITIALIZING DEVICE`, after `Init()`
+([Device.cxx](/source/fairmq/Device.cxx/#L153-L171)). It removes them in `RESETTING DEVICE`
+([Device.cxx](/source/fairmq/Device.cxx/#L744)). Between these states, the map of the channels does
+not change. Thus several threads can call [`GetChannel()`](/api/fair/mq/Device/#GetChannel),
+[`Send()`](/api/fair/mq/Device/#Send) and [`Receive()`](/api/fair/mq/Device/#Receive) of the device,
+each for its own channels. Register the data callbacks before `RUNNING`, and add the channels in
+`Init()` at the latest. Do both in one thread.
+
+The test `PushPullMultipart.MultiThreaded_ipc` binds and connects two channels of one transport in
+the main thread. Then it sends on one channel and receives on the other, each in its own thread:
+
+<Snippet file="test/protocols/_push_pull_multipart.cxx" start="auto RunMultiThreadedMultipart(" />
+
+:::tip
+To find data races, build FairMQ with the CMake option `ENABLE_SANITIZER_THREAD`. The option applies to
+FairMQ, its tests and its examples, in the build types `Debug` and `RelWithDebInfo` (default). See
+[CMake options and variables](/reference/cmake/).
+:::
+
+## Safe patterns
+
+### One thread for each channel
+
+Start your thread in `PreRun()`, and join it in `PostRun()`. Give the thread its own channels, and do
+not use these channels in the other threads. The sampler of the example
+[multiple-transports](/examples/multiple-transports/) sends on `data1` in `ConditionalRun()`. A second
+thread receives the acknowledgements on `ack`:
+
+<Snippet file="examples/multiple-transports/sampler1.cxx" start="void PreRun() override" />
+
+<Snippet file="examples/multiple-transports/sampler1.cxx" start="void PostRun() override" />
+
+<Snippet file="examples/multiple-transports/sampler1.cxx" start="void ListenForAcks()" />
+
+This pattern works for these reasons:
+
+- `PostRun()` runs while the transition is pending. The device interrupted the transports, so the
+  waiting `Receive()` returns `TransferCode::interrupted`, and the loop ends.
+- The next state resumes the transports only after `PostRun()` returns. Thus the thread cannot wait
+  again before the join.
+- The channels exist until `RESETTING DEVICE`. The thread ends before this state.
+
+### Stop your thread with the state machine
+
+- Check [`NewStatePending()`](/api/fair/mq/Device/#NewStatePending) in the loop of your thread.
+- For a pause, call [`WaitFor()`](/api/fair/mq/Device/#WaitFor) and not `std::this_thread::sleep_for()`.
+  `WaitFor()` returns `false` at once when a transition is requested. See
+  [Wait for a transition in your code](/concepts/states/#wait-for-a-transition-in-your-code).
+- Check the return value of each `Send()` and `Receive()`. A negative value ends the loop.
+- Catch the exceptions in the function of your thread. An exception that leaves the function of a
+  `std::thread` calls `std::terminate()`, and the device does not go to `ERROR`. To report the error,
+  request the transition `ErrorFound`, for example with
+  [`ChangeStateOrThrow()`](/api/fair/mq/Device/#ChangeStateOrThrow). The state machine accepts it in
+  all states.
+
+### Hand messages over by move
+
+A [`MessagePtr`](/api/fair/mq/#MessagePtr) is a `std::unique_ptr<Message>`. To give a message to
+another thread, move it into a queue that a mutex protects. Then only one thread owns the message at a
+time. In this device, the data callback puts each message into a queue. A second thread takes the
+messages out and sends them on its own channel `out`:
+
+```cpp
+#include <fairmq/Device.h>
+
+#include <chrono>
+#include <condition_variable>
+#include <deque>
+#include <mutex>
+#include <thread>
+
+struct Forwarder : fair::mq::Device
+{
+    Forwarder() { OnData("in", &Forwarder::HandleData); }
+
+    bool HandleData(fair::mq::MessagePtr& msg, int /*index*/)
+    {
+        {
+            std::lock_guard<std::mutex> lock(fMtx);
+            fQueue.push_back(std::move(msg));
+        }
+        fCV.notify_one();
+        return true;
+    }
+
+    void PreRun() override { fSender = std::thread(&Forwarder::SendLoop, this); }
+
+    void PostRun() override
+    {
+        fSender.join();
+        fQueue.clear(); // destroy the messages that were not sent
+    }
+
+    void SendLoop()
+    {
+        while (!NewStatePending()) {
+            fair::mq::MessagePtr msg;
+            {
+                std::unique_lock<std::mutex> lock(fMtx);
+                if (!fCV.wait_for(lock, std::chrono::milliseconds(100), [this] { return !fQueue.empty(); })) {
+                    continue;
+                }
+                msg = std::move(fQueue.front());
+                fQueue.pop_front();
+            }
+            if (Send(msg, "out") < 0) {
+                break;
+            }
+        }
+    }
+
+    std::mutex fMtx;
+    std::condition_variable fCV;
+    std::deque<fair::mq::MessagePtr> fQueue;
+    std::thread fSender;
+};
+```
+
+- The callback uses the channel `in`, in the thread of the state machine. The second thread uses the
+  channel `out`. No channel is in two threads.
+- After the move, the callback does not use `msg` again.
+- `PostRun()` destroys the messages that remain in the queue. Destroy all messages before
+  `RESETTING DEVICE`, because the device then destroys its transports.
+
+### Protect the data of callbacks
+
+A region callback, a property callback and the data callbacks of several transports can run in other
+threads than your hooks. Protect the data that they share with a mutex or a `std::atomic`. The readout
+device of the example [readout](/examples/readout/) counts the acknowledgements in a
+`std::atomic<uint64_t>`:
+
+<Snippet file="examples/readout/readout.cxx" start="void InitTask() override" />
+
+The member is `std::atomic<uint64_t> fNumUnackedMsgs`. `ConditionalRun()` increments it after each
+successful `Send()`, and the callback decrements it in the ack receiver thread.
+
+The dispatcher of the example [qc](/examples/qc/) uses a `std::atomic<bool>` for a flag that a
+property callback sets. See [Follow the changes](/guides/control-from-code/#follow-the-changes).
+
+## Problems that can occur
+
+- **The device does not leave `RUNNING`:** your thread waits and `PostRun()` waits in `join()`. Make
+  the thread check `NewStatePending()`, and use `WaitFor()` for pauses.
+- **The process ends with `std::terminate()`:** an exception left the function of a thread, or a data
+  callback threw in a poll thread. Catch the exceptions in the thread. See
+  [Receive from channels of different transports](/guides/several-transports/#receive-from-channels-of-different-transports).
+- **A crash or wrong data in a transfer:** two threads use one channel. Give each channel to one
+  thread.
+- **`WaitForState()` does not return:** another thread took the state from the queue with
+  `WaitForState()` or `WaitForNextState()`. Wait for the states in one thread only.
+
+## Related pages
+
+- [Device states](/concepts/states/): the state machine and the hooks in each state.
+- [Receive data with callbacks or loops](/guides/receive-data/): data callbacks and the poll threads.
+- [Use several transports](/guides/several-transports/): channels of two transports in one device.
+- [Control a device from code](/guides/control-from-code/): controller threads and callbacks.
+- [Unmanaged regions](/shmem/regions/): the ack threads and the region callbacks.

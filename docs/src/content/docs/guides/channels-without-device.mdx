@@ -1,0 +1,282 @@
+---
+title: 'Use channels without a device'
+description: 'Make a transport factory and channels in your own program, send and receive messages, and close the channels, without fair::mq::Device.'
+sidebar:
+  order: 6
+code: [fairmq/TransportFactory.h, fairmq/TransportFactory.cxx, fairmq/Channel.h, fairmq/Channel.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+import { Steps } from '@astrojs/starlight/components';
+
+You can use the FairMQ transports and channels without
+[`fair::mq::Device`](/api/fair/mq/Device/), for example
+[in a test](/guides/test-devices/#test-without-a-device), or in a tool with its own main
+loop. You make the transport factory and the channels yourself, bind and connect them,
+and send and receive messages. You do not get the state machine, the plugins and the command-line
+options of a device.
+
+## Make and use channels
+
+<Steps>
+
+1. Make a [`fair::mq::ProgOptions`](/api/fair/mq/ProgOptions/) object. Set the properties that the
+   transport reads.
+
+2. Make the transport factory with
+   [`TransportFactory::CreateTransportFactory()`](/api/fair/mq/TransportFactory/#CreateTransportFactory).
+
+3. Make each channel with a constructor that takes the factory.
+
+4. Bind or connect each channel. Make sure that the call returns `true`.
+
+5. Make messages with the channel, and send and receive them with a timeout.
+
+6. At the end, destroy the messages first, then the channels, and then the factory.
+
+</Steps>
+
+This program does all steps with the zeromq transport. It sends one message from a `push` channel
+to a `pull` channel in the same program:
+
+```cpp title="main.cxx"
+#include <fairmq/Channel.h>
+#include <fairmq/ProgOptions.h>
+#include <fairmq/TransportFactory.h>
+
+#include <iostream>
+#include <string>
+
+int main()
+{
+    fair::mq::ProgOptions config;
+    config.SetProperty<int>("io-threads", 1);
+
+    auto factory = fair::mq::TransportFactory::CreateTransportFactory("zeromq", "my-program", &config);
+
+    fair::mq::Channel pull("data-in", "pull", factory);
+    fair::mq::Channel push("data-out", "push", factory);
+
+    if (!pull.Bind("tcp://127.0.0.1:5555") || !push.Connect("tcp://127.0.0.1:5555")) {
+        return 1;
+    }
+
+    auto out(push.NewSimpleMessage("hello"));
+    if (push.Send(out, 1000) < 0) {
+        return 1;
+    }
+
+    auto in(pull.NewMessage());
+    if (pull.Receive(in, 1000) < 0) {
+        return 1;
+    }
+
+    std::cout << std::string(static_cast<char*>(in->GetData()), in->GetSize()) << '\n';
+    return 0;
+}
+```
+
+Link the program with the CMake target `FairMQ::FairMQ`, as in
+[Use FairMQ in a CMake project](/start/cmake/). The program writes `hello`.
+
+## Make the transport factory
+
+`CreateTransportFactory(type, id, config)` returns a `std::shared_ptr<fair::mq::TransportFactory>`:
+
+- `type` is `zeromq` or `shmem`. For other values, the function throws
+  [`fair::mq::TransportFactoryError`](/api/fair/mq/TransportFactoryError/).
+- `id` names the factory. The zeromq sockets get the identity `<id>.<channel name>.<type>`. If `id`
+  is empty, the function makes a UUID.
+- `config` is a pointer to a `ProgOptions` object. The factory reads its properties when you make
+  it. With `nullptr`, the factory uses the defaults.
+
+A new `ProgOptions` object has only the log options and `help`, `version` and `print-options`. The
+factory reads each other property with a default value, so set only the properties that you change.
+The most important properties:
+
+| Property | C++ type | Default | Transport |
+| --- | --- | --- | --- |
+| `io-threads` | `int` | `1` | both |
+| `session` | `std::string` | `default` | shmem |
+| `shm-segment-size` | `std::size_t` | 2 GiB | shmem |
+| `shm-monitor` | `bool` | `false` | shmem |
+| `shm-no-cleanup` | `bool` | `false` | shmem |
+| `shm-metadata-msg-size` | `std::size_t` | `0` | shmem |
+
+The shmem transport reads more properties, for example `shm-allocation`, `shm-segment-id` and
+`shm-throw-bad-alloc`. Set each property with the C++ type that the transport reads. For another
+type, the factory throws `boost::bad_any_cast`. For all properties, see
+[Command-line options](/reference/options/). The test
+helper of FairMQ sets the properties for the shmem transport:
+
+<Snippet file="test/helper/Transport.h" start="inline auto Configure(ProgOptions& config," />
+
+Each factory has its own zeromq context, and ZeroMQ connects `inproc://` endpoints only inside one
+context. Thus an `inproc://` address connects only channels of the same factory. For the shmem transport, all factories with the same session share the shared memory.
+See [Sessions and segments](/shmem/sessions/).
+
+## Make the channels
+
+[`fair::mq::Channel`](/api/fair/mq/Channel/) has two constructors that take a factory. Both make the
+socket at once:
+
+| Constructor | What it stores |
+| --- | --- |
+| [`Channel(name, type, factory)`](/api/fair/mq/Channel/#Channel-4) | The name and the socket type. |
+| [`Channel(name, type, method, address, factory)`](/api/fair/mq/Channel/#Channel-5) | Also the method (`bind` or `connect`) and the address, for `Validate()`. |
+
+The socket types are `push`, `pull`, `pub`, `sub`, `xpub`, `xsub`, `req`, `rep`, `dealer`, `router`
+and `pair`. An unknown type throws an exception. The shmem transport throws
+[`fair::mq::SocketError`](/api/fair/mq/SocketError/) for `pub` and `sub`.
+
+The other constructors make a channel without a factory and without a socket. The device gives such
+channels their factory. Your program cannot do this, because the function for it is private.
+
+A copy of a channel has no factory and no socket. Move a channel, or make it in place, for example
+with `emplace_back()`. Use each channel from one thread at a time, because the class is not
+[thread-safe](/concepts/threads/#what-is-thread-safe). Different threads can use different channels.
+
+## Bind and connect
+
+| Function | What it does |
+| --- | --- |
+| [`Bind(address)`](/api/fair/mq/Channel/#Bind) | Sets the method `bind` and the address of the channel, and binds the socket. |
+| [`Connect(address)`](/api/fair/mq/Channel/#Connect) | Sets the method `connect` and the address of the channel, and connects the socket. |
+| [`BindEndpoint(endpoint)`](/api/fair/mq/Channel/#BindEndpoint) | Binds the socket. If the bind fails for a `tcp://` endpoint, it tries random ports. |
+| [`ConnectEndpoint(endpoint)`](/api/fair/mq/Channel/#ConnectEndpoint) | Connects the socket. |
+
+All four functions return `false` if the transport cannot bind or connect. Each call takes one
+endpoint, for example `tcp://127.0.0.1:5555`, `ipc:///tmp/data` or `inproc://data`.
+
+`BindEndpoint()` changes its argument. If the bind fails, the endpoint is a `tcp://` endpoint, and
+the property `autoBind` is `true` (default), it tries up to 1000 random ports. The ports are in the
+range from `portRangeMin` to `portRangeMax` (default 22000 to 23000). Then the string holds the
+endpoint with the new port ([Channel.cxx](/source/fairmq/Channel.cxx/#L346-L386)). The tests use
+the port 1, which a normal user cannot bind:
+
+<Snippet file="test/channel/_tcp.cxx" start="TEST_P(Tcp, AutoBind)" />
+
+### Apply the channel properties
+
+A socket from the constructor has the defaults of the transport, for example a linger time of
+1000 ms. The functions `UpdateLinger()`, `UpdateSndBufSize()`, `UpdateRcvBufSize()`,
+`UpdateSndKernelSize()` and `UpdateRcvKernelSize()` change only the values in the channel object.
+To apply them, do the steps of a device:
+
+<Steps>
+
+1. Make the channel with the method and the address.
+
+2. Call [`Validate()`](/api/fair/mq/Channel/#Validate). It returns `false` for a wrong name or
+   address. It throws [`ChannelConfigurationError`](/api/fair/mq/Channel/ChannelConfigurationError/)
+   for a wrong type or method, and for a negative size or rate logging interval. It logs the cause.
+
+3. Call [`Init()`](/api/fair/mq/Channel/#Init). It makes a new socket with the linger time, the
+   buffer sizes and the kernel sizes of the channel.
+
+4. Call `BindEndpoint()` or `ConnectEndpoint()` with the address.
+
+</Steps>
+
+Call `Init()` before you bind or connect, because it replaces the socket. To change one option of a
+bound socket, use the socket directly, for example
+[`GetSocket().SetLinger(500)`](/api/fair/mq/Socket/#SetLinger).
+
+Other properties apply at once: `Send()` and `Receive()` read the timeouts of
+[`UpdateSndTimeout()`](/api/fair/mq/Channel/#UpdateSndTimeout) and
+[`UpdateRcvTimeout()`](/api/fair/mq/Channel/#UpdateRcvTimeout). `BindEndpoint()` reads the values of
+[`UpdateAutoBind()`](/api/fair/mq/Channel/#UpdateAutoBind) and of the port range.
+
+## Send and receive
+
+[`Send(msg, timeout)`](/api/fair/mq/Channel/#Send) and
+[`Receive(msg, timeout)`](/api/fair/mq/Channel/#Receive) take a `MessagePtr`, a
+[`fair::mq::Parts`](/api/fair/mq/Parts/) object or a `std::vector<fair::mq::MessagePtr>`, and a
+timeout in milliseconds. They return the number of bytes, or a negative
+[transfer code](/reference/transfer-codes/): `-1` error, `-2` timeout, `-3` interrupted.
+
+Without a timeout, they use the channel properties `sndTimeoutMs` and `rcvTimeoutMs`. The default
+is `-1`, which waits without a limit. A timeout of `0` returns at once.
+
+The sockets wait in steps of 100 ms. Thus the transports round a positive timeout up to a multiple
+of 100 ms.
+
+Make messages with the channel, with [`NewMessage()`](/api/fair/mq/Channel/#NewMessage) or
+[`NewSimpleMessage()`](/api/fair/mq/Channel/#NewSimpleMessage). Then the message has the transport
+of the channel. A `pair` channel sends and receives:
+
+<Snippet file="test/channel/_tcp.cxx" start="TEST_P(Tcp, Pair)" />
+
+The test uses this function to receive a string:
+
+<Snippet file="test/channel/_tcp.cxx" start="auto ReceiveString(Channel& channel) -> string" />
+
+To wait for messages on several channels, use a poller from
+[`CreatePoller()`](/api/fair/mq/TransportFactory/#CreatePoller-2) of the factory. See
+[Poll several channels](/guides/poll-channels/).
+
+## Stop a blocking call
+
+[`Interrupt()`](/api/fair/mq/TransportFactory/#Interrupt) of the factory stops the waiting
+`Send()` and `Receive()` calls of all channels of this factory. They return `-3`
+(`TransferCode::interrupted`) within about 100 ms. Until you call
+[`Resume()`](/api/fair/mq/TransportFactory/#Resume), each call that has to wait also returns `-3`.
+A device calls `Interrupt()` on each transition request, and `Resume()` when the next state starts.
+
+In your program, call `Interrupt()` from another thread. In this test, the function
+`delayedInterruptor()` waits 100 ms and then calls `Interrupt()`:
+
+<Snippet file="test/transport/_transfer_timeout.cxx" start="TEST_P(InterruptTransfer, Receive)" />
+
+The test `Factory.ResumeAfterInterrupt` in
+[`test/transport/_factory.cxx`](https://github.com/FairRootGroup/FairMQ/blob/dev/test/transport/_factory.cxx)
+shows that the channels transfer messages again after `Resume()`.
+
+## Close the channels
+
+A channel has no close function. Its destructor closes the socket. `Socket::Close()` is deprecated.
+
+<Steps>
+
+1. Destroy the messages and the unmanaged regions, because they keep a pointer to the factory.
+   Destroy the pollers, because they keep the sockets of the channels.
+
+2. Destroy the channels. Each channel keeps a `std::shared_ptr` to the factory.
+
+3. Destroy your last `std::shared_ptr` to the factory.
+
+</Steps>
+
+C++ destroys local objects in the reverse order of their declaration. Thus declare the factory
+first, then the channels, then the messages, as in the program above.
+
+The destructor of the factory calls `zmq_ctx_term()`. In ZeroMQ, this call waits until the closed
+sockets sent the messages in their queues, for the linger time of each socket at most.
+
+For the shmem transport, the last factory of the session removes the shared memory, unless
+`shm-no-cleanup` is `true`. If your program ends without this step, for example after a crash,
+remove the shared memory with [`fairmq-shmmonitor`](/tools/shmmonitor/):
+
+```sh
+fairmq-shmmonitor --cleanup --session default
+```
+
+## What you do not get without a device
+
+| Topic | With a device | Without a device |
+| --- | --- | --- |
+| [States](/concepts/states/) | The state machine calls your hooks, for example `InitTask()` and `Run()`. | Your program has its own main loop. |
+| Interruptions | The device calls `Interrupt()` and `Resume()` on each transition. | Call them yourself. |
+| [Options](/reference/options/) | A device program parses `--id`, `--transport`, `--channel-config`, `--mq-config`, `--session` and the other options. | `ProgOptions` knows only the log options and `help`, `version` and `print-options`. Set the properties with `SetProperty()`. |
+| Channels | The device makes the channels from the configuration, and gives each channel the factory of its transport. | Make the factories and the channels yourself. |
+| Addresses | The device accepts a list of endpoints, the modifiers `@`, `+` and `>`, and host names. It takes a bind address from `--network-interface`, and waits up to `--init-timeout` for the addresses of connecting channels. | One endpoint for each call. |
+| Data | `OnData()` callbacks, `ConditionalRun()` with `--rate`, and the rate log of each channel. | Your own loop. |
+| [Plugins](/concepts/plugins/) | Controllers and other plugins, for example `--control static`. | None. |
+| [Logging](/tools/logging/) | The device runner applies `--severity` and the other log options. | Call `fair::Logger::SetConsoleSeverity()` yourself. |
+
+## Related pages
+
+- [Transports](/concepts/transports/): the transport factories and their properties.
+- [Channels and sockets](/concepts/channels/): the socket types and the channel properties.
+- [Messages and multipart](/concepts/messages/): how to make, send and receive messages.
+- [Handle errors and timeouts](/guides/errors-timeouts/): the transfer codes and what to do.

@@ -58,6 +58,27 @@ Properties JSONParser(const string& filename, const string& deviceId)
 namespace helper
 {
 
+namespace
+{
+
+// ptree::get(key, default) also returns the default for a value of the wrong type.
+// Use the default only for a missing key.
+template<typename T>
+T Get(const ptree& tree, const string& key, const T& defaultValue)
+{
+    auto const child = tree.get_child_optional(key);
+    if (!child) {
+        return defaultValue;
+    }
+    try {
+        return child->get_value<T>();
+    } catch (ptree_bad_data const&) {
+        throw ParserError(ToString("Invalid value '", child->data(), "' for channel property '", key, "'"));
+    }
+}
+
+} // namespace
+
 Properties DeviceParser(const ptree& fairMQOptions, const string& deviceId)
 {
     Properties properties;
@@ -92,20 +113,20 @@ void ChannelParser(const ptree& tree, Properties& properties)
                 commonProperties.emplace("method", cn.second.get<string>("method", Channel::DefaultMethod));
                 commonProperties.emplace("address", cn.second.get<string>("address", Channel::DefaultAddress));
                 commonProperties.emplace("transport", cn.second.get<string>("transport", Channel::DefaultTransportName));
-                commonProperties.emplace("sndBufSize", cn.second.get<int>("sndBufSize", Channel::DefaultSndBufSize));
-                commonProperties.emplace("rcvBufSize", cn.second.get<int>("rcvBufSize", Channel::DefaultRcvBufSize));
-                commonProperties.emplace("sndKernelSize", cn.second.get<int>("sndKernelSize", Channel::DefaultSndKernelSize));
-                commonProperties.emplace("rcvKernelSize", cn.second.get<int>("rcvKernelSize", Channel::DefaultRcvKernelSize));
-                commonProperties.emplace("sndTimeoutMs", cn.second.get<int>("sndTimeoutMs", Channel::DefaultSndTimeoutMs));
-                commonProperties.emplace("rcvTimeoutMs", cn.second.get<int>("rcvTimeoutMs", Channel::DefaultRcvTimeoutMs));
-                commonProperties.emplace("linger", cn.second.get<int>("linger", Channel::DefaultLinger));
-                commonProperties.emplace("rateLogging", cn.second.get<int>("rateLogging", Channel::DefaultRateLogging));
-                commonProperties.emplace("portRangeMin", cn.second.get<int>("portRangeMin", Channel::DefaultPortRangeMin));
-                commonProperties.emplace("portRangeMax", cn.second.get<int>("portRangeMax", Channel::DefaultPortRangeMax));
-                commonProperties.emplace("autoBind", cn.second.get<bool>("autoBind", Channel::DefaultAutoBind));
+                commonProperties.emplace("sndBufSize", Get<int>(cn.second, "sndBufSize", Channel::DefaultSndBufSize));
+                commonProperties.emplace("rcvBufSize", Get<int>(cn.second, "rcvBufSize", Channel::DefaultRcvBufSize));
+                commonProperties.emplace("sndKernelSize", Get<int>(cn.second, "sndKernelSize", Channel::DefaultSndKernelSize));
+                commonProperties.emplace("rcvKernelSize", Get<int>(cn.second, "rcvKernelSize", Channel::DefaultRcvKernelSize));
+                commonProperties.emplace("sndTimeoutMs", Get<int>(cn.second, "sndTimeoutMs", Channel::DefaultSndTimeoutMs));
+                commonProperties.emplace("rcvTimeoutMs", Get<int>(cn.second, "rcvTimeoutMs", Channel::DefaultRcvTimeoutMs));
+                commonProperties.emplace("linger", Get<int>(cn.second, "linger", Channel::DefaultLinger));
+                commonProperties.emplace("rateLogging", Get<int>(cn.second, "rateLogging", Channel::DefaultRateLogging));
+                commonProperties.emplace("portRangeMin", Get<int>(cn.second, "portRangeMin", Channel::DefaultPortRangeMin));
+                commonProperties.emplace("portRangeMax", Get<int>(cn.second, "portRangeMax", Channel::DefaultPortRangeMax));
+                commonProperties.emplace("autoBind", Get<bool>(cn.second, "autoBind", Channel::DefaultAutoBind));
 
                 string name = cn.second.get<string>("name");
-                int numSockets = cn.second.get<int>("numSockets", 0);
+                int numSockets = Get<int>(cn.second, "numSockets", 0);
 
                 if (numSockets > 0) {
                     LOG(trace) << name << ":";
@@ -144,17 +165,17 @@ void SubChannelParser(const ptree& channelTree, Properties& properties, const st
                 newProperties["method"] = sn.second.get<string>("method", boost::any_cast<string>(commonProperties.at("method")));
                 newProperties["address"] = sn.second.get<string>("address", boost::any_cast<string>(commonProperties.at("address")));
                 newProperties["transport"] = sn.second.get<string>("transport", boost::any_cast<string>(commonProperties.at("transport")));
-                newProperties["sndBufSize"] = sn.second.get<int>("sndBufSize", boost::any_cast<int>(commonProperties.at("sndBufSize")));
-                newProperties["rcvBufSize"] = sn.second.get<int>("rcvBufSize", boost::any_cast<int>(commonProperties.at("rcvBufSize")));
-                newProperties["sndKernelSize"] = sn.second.get<int>("sndKernelSize", boost::any_cast<int>(commonProperties.at("sndKernelSize")));
-                newProperties["rcvKernelSize"] = sn.second.get<int>("rcvKernelSize", boost::any_cast<int>(commonProperties.at("rcvKernelSize")));
-                newProperties["sndTimeoutMs"] = sn.second.get<int>("sndTimeoutMs", boost::any_cast<int>(commonProperties.at("sndTimeoutMs")));
-                newProperties["rcvTimeoutMs"] = sn.second.get<int>("rcvTimeoutMs", boost::any_cast<int>(commonProperties.at("rcvTimeoutMs")));
-                newProperties["linger"] = sn.second.get<int>("linger", boost::any_cast<int>(commonProperties.at("linger")));
-                newProperties["rateLogging"] = sn.second.get<int>("rateLogging", boost::any_cast<int>(commonProperties.at("rateLogging")));
-                newProperties["portRangeMin"] = sn.second.get<int>("portRangeMin", boost::any_cast<int>(commonProperties.at("portRangeMin")));
-                newProperties["portRangeMax"] = sn.second.get<int>("portRangeMax", boost::any_cast<int>(commonProperties.at("portRangeMax")));
-                newProperties["autoBind"] = sn.second.get<bool>("autoBind", boost::any_cast<bool>(commonProperties.at("autoBind")));
+                newProperties["sndBufSize"] = Get<int>(sn.second, "sndBufSize", boost::any_cast<int>(commonProperties.at("sndBufSize")));
+                newProperties["rcvBufSize"] = Get<int>(sn.second, "rcvBufSize", boost::any_cast<int>(commonProperties.at("rcvBufSize")));
+                newProperties["sndKernelSize"] = Get<int>(sn.second, "sndKernelSize", boost::any_cast<int>(commonProperties.at("sndKernelSize")));
+                newProperties["rcvKernelSize"] = Get<int>(sn.second, "rcvKernelSize", boost::any_cast<int>(commonProperties.at("rcvKernelSize")));
+                newProperties["sndTimeoutMs"] = Get<int>(sn.second, "sndTimeoutMs", boost::any_cast<int>(commonProperties.at("sndTimeoutMs")));
+                newProperties["rcvTimeoutMs"] = Get<int>(sn.second, "rcvTimeoutMs", boost::any_cast<int>(commonProperties.at("rcvTimeoutMs")));
+                newProperties["linger"] = Get<int>(sn.second, "linger", boost::any_cast<int>(commonProperties.at("linger")));
+                newProperties["rateLogging"] = Get<int>(sn.second, "rateLogging", boost::any_cast<int>(commonProperties.at("rateLogging")));
+                newProperties["portRangeMin"] = Get<int>(sn.second, "portRangeMin", boost::any_cast<int>(commonProperties.at("portRangeMin")));
+                newProperties["portRangeMax"] = Get<int>(sn.second, "portRangeMax", boost::any_cast<int>(commonProperties.at("portRangeMax")));
+                newProperties["autoBind"] = Get<bool>(sn.second, "autoBind", boost::any_cast<bool>(commonProperties.at("autoBind")));
 
                 LOG(trace) << "" << channelName << "[" << i << "]:";
                 for (auto& p : newProperties) {

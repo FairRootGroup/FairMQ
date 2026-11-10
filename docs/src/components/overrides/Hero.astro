@@ -1,0 +1,121 @@
+---
+// The hero of the home page: the claim, two actions, the install command and the topology.
+import Topology from '../diagrams/Topology.astro';
+import CopyButton from '../CopyButton.astro';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const { title = data.title, tagline, actions = [] } = data.hero ?? {};
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const href = (link: string) => (link.startsWith('/') && !link.startsWith(base + '/') ? base + link : link);
+const install = 'spack install fairmq';
+---
+
+<div class="fmq-hero">
+  <div class="h-text">
+    <p class="fmq-eyebrow">C++17 message queuing · LGPL-3.0</p>
+    <h1 id="_top" data-page-title>{title}</h1>
+    {tagline && <p class="h-lead" set:html={tagline} />}
+    <div class="h-cta">
+      {
+        actions.map((a) => (
+          <a class:list={['h-btn', { pri: a.variant === 'primary' }]} href={href(a.link)}>
+            {a.text}
+          </a>
+        ))
+      }
+    </div>
+    <div class="h-install">
+      <span aria-hidden="true">$</span>
+      <code>{install}</code>
+      <CopyButton text={install} label="Copy the install command" />
+    </div>
+  </div>
+  <Topology />
+</div>
+
+<style>
+  .fmq-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: 2.25rem;
+    align-items: center;
+    padding-block: 1.5rem 2.5rem;
+  }
+  @media (max-width: 60rem) {
+    .fmq-hero {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.75rem;
+      padding-block: 0.5rem 1.75rem;
+    }
+  }
+  h1 {
+    font-size: clamp(2.1rem, 1.4rem + 2.4vw, 3.05rem);
+    line-height: 1.03;
+    font-weight: 800;
+    font-stretch: 118%;
+    letter-spacing: -0.026em;
+    margin: 0.6rem 0 1rem;
+    text-wrap: balance;
+    color: var(--fmq-ink);
+  }
+  .h-lead {
+    font-size: 1.125rem;
+    line-height: 1.55;
+    color: var(--fmq-ink-2);
+    margin: 0 0 1.5rem;
+    max-width: 46ch;
+  }
+  .h-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+  .h-btn {
+    display: inline-flex;
+    align-items: center;
+    font: 600 0.9375rem/1 var(--fmq-font-body);
+    padding: 0.75rem 1.1rem;
+    border-radius: 4px;
+    border: 1px solid var(--fmq-rule-strong);
+    color: var(--fmq-ink);
+    text-decoration: none;
+    background: var(--fmq-paper);
+  }
+  .h-btn:hover {
+    border-color: var(--fmq-ink-3);
+    color: var(--fmq-ink);
+  }
+  .h-btn.pri {
+    background: var(--fmq-ink);
+    border-color: var(--fmq-ink);
+    color: var(--fmq-paper);
+  }
+  .h-btn.pri:hover {
+    background: var(--fmq-ink-2);
+    color: var(--fmq-paper);
+  }
+  .h-install {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
+    border: 1px solid var(--fmq-rule);
+    background: var(--fmq-paper-2);
+    border-radius: 4px;
+    padding: 0.4rem 0.45rem 0.4rem 0.75rem;
+    max-width: 22rem;
+    font-size: 0.875rem;
+  }
+  .h-install span {
+    color: var(--fmq-ink-3);
+    font-family: var(--fmq-font-mono);
+  }
+  .h-install code {
+    font-family: var(--fmq-font-mono);
+    color: var(--fmq-ink);
+    flex: 1;
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+</style>

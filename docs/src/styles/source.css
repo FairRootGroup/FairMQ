@@ -1,0 +1,201 @@
+/* Source browser pages. */
+
+.src-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--fmq-code-rule);
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: var(--fmq-code-bg);
+  color: var(--fmq-code-ink);
+  font: 500 0.8125rem/1.3 var(--fmq-font-mono);
+}
+.src-path {
+  color: var(--fmq-code-ink);
+  font-weight: 600;
+}
+.src-info {
+  color: var(--fmq-code-dim);
+}
+.src-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-inline-start: auto;
+}
+.src-head .fmq-badge {
+  color: var(--fmq-code-ink);
+  border-color: var(--fmq-stage-line);
+}
+.src-head .fmq-badge.mark {
+  color: var(--fmq-saffron);
+  border-color: var(--fmq-saffron);
+}
+.src-head .fmq-badge:hover {
+  border-color: var(--fmq-code-ink);
+}
+.src-defines,
+.src-guides {
+  font-size: 0.875rem;
+  color: var(--fmq-ink-2);
+}
+.sl-markdown-content .src-head + .src-code,
+.src-head + .src-code {
+  margin-top: 0 !important;
+}
+
+.src-code {
+  position: relative;
+  border: 1px solid var(--fmq-code-rule);
+  border-radius: 0 0 6px 6px;
+  background: var(--fmq-code-bg);
+  overflow-x: auto;
+  margin-top: 0 !important;
+}
+.src-code pre {
+  margin: 0;
+  padding: 0.6rem 0;
+  font: 400 0.8125rem/1.6 var(--fmq-font-mono);
+  color: var(--fmq-code-ink);
+  tab-size: 4;
+  background: none;
+  border: 0;
+  min-width: max-content;
+}
+.src-code code {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.src-code .row {
+  display: block;
+  padding-inline-end: 1rem;
+  scroll-margin-top: 8rem;
+}
+.src-code .row:target,
+.src-code .row.hl {
+  background: rgb(250 190 93 / 0.14);
+  box-shadow: inset 3px 0 0 var(--fmq-saffron);
+}
+.src-code .ln {
+  display: inline-block;
+  width: 4.5ch;
+  margin-inline-end: 1.25ch;
+  padding-inline-end: 0.5ch;
+  text-align: end;
+  color: #6b7380;
+  text-decoration: none;
+  user-select: none;
+}
+.src-code .ln:hover {
+  color: var(--fmq-saffron);
+}
+.src-code .lc {
+  white-space: pre;
+}
+.src-code .t-k { color: var(--fmq-c-kw); }
+.src-code .t-t { color: var(--fmq-c-type); }
+.src-code .t-f { color: var(--fmq-c-fn); font-weight: 600; }
+.src-code .t-s { color: var(--fmq-c-str); }
+.src-code .t-n { color: var(--fmq-c-num); }
+.src-code .t-c { color: var(--fmq-c-com); font-style: italic; }
+.src-code .t-p { color: var(--fmq-c-pre); }
+.src-code .t-o { color: var(--fmq-c-op); }
+.src-code a.sym {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgb(140 200 239 / 0.45);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.src-code a.sym:hover,
+.src-code a.sym:focus-visible {
+  text-decoration-color: var(--fmq-saffron);
+  background: rgb(250 190 93 / 0.12);
+  outline: none;
+}
+
+.src-card {
+  position: absolute;
+  z-index: 5;
+  max-width: min(36rem, calc(100% - 16px));
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--fmq-stage-line);
+  border-radius: 4px;
+  background: var(--fmq-stage-2);
+  color: var(--fmq-stage-ink);
+  box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.7);
+  font: 400 0.75rem/1.45 var(--fmq-font-mono);
+  pointer-events: none;
+}
+.src-card .k {
+  font: 600 0.625rem/1.2 var(--fmq-font-body);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fmq-stage-dim);
+}
+.src-card b {
+  font-weight: 700;
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+.src-card code {
+  color: var(--fmq-c-type);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.src-card .l {
+  color: var(--fmq-saffron);
+}
+
+/* Overview */
+.sl-markdown-content ul.src-list {
+  list-style: none;
+  padding: 0;
+  border-top: 1px solid var(--fmq-rule);
+}
+.sl-markdown-content ul.src-list > li {
+  display: grid;
+  grid-template-columns: minmax(12rem, max-content) 4rem minmax(0, 1fr);
+  gap: 0.25rem 1rem;
+  align-items: baseline;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--fmq-rule);
+  margin: 0 !important;
+}
+.sl-markdown-content ul.src-list > li::before {
+  display: none;
+}
+.sl-markdown-content ul.src-list code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 0.875rem;
+}
+.src-lines {
+  font: 500 0.75rem var(--fmq-font-mono);
+  color: var(--fmq-ink-3);
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.src-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.6rem;
+  font-size: 0.875rem;
+}
+@media (max-width: 40rem) {
+  .sl-markdown-content ul.src-list > li {
+    grid-template-columns: minmax(0, 1fr) max-content;
+  }
+  .src-meta {
+    grid-column: 1 / -1;
+  }
+}

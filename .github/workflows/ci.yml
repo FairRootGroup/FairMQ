@@ -24,7 +24,7 @@ jobs:
             env: 'boost187'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
           fetch-tags: true
@@ -59,10 +59,61 @@ jobs:
           # limit so it does not hit RLIMIT_MEMLOCK on the runner.
           sudo prlimit --pid $$ --memlock=unlimited:unlimited
           ulimit -l
-          ctest --test-dir build --output-on-failure --no-tests=error
+          ctest --test-dir build --output-on-failure --no-tests=error --parallel "$(nproc)"
 
       - name: Install
         run: cmake --install build
+
+      - name: Check installation with a downstream project
+        run: test/consumer/check-install.sh build
+
+  min-cmake:
+    if: github.repository == 'FairRootGroup/FairMQ'
+    name: min-cmake-3.25
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+          fetch-tags: true
+          fetch-depth: 0
+
+      - name: Setup spack environment
+        uses: ./.github/actions/setup-deps
+        with:
+          gcc: '14'
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
+        with:
+          key: ${{ github.job }}
+          max-size: 500M
+
+      - name: Install the minimum CMake version
+        # Must match cmake_minimum_required() in CMakeLists.txt
+        run: |
+          python3 -m venv "$RUNNER_TEMP/min-cmake"
+          "$RUNNER_TEMP/min-cmake/bin/pip" install --only-binary :all: cmake==3.25.0
+          echo "$RUNNER_TEMP/min-cmake/bin" >> "$GITHUB_PATH"
+
+      - name: Configure and Build
+        run: |
+          cmake --version
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DBUILD_TESTING=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build
+
+      - name: Test
+        run: |
+          sudo prlimit --pid $$ --memlock=unlimited:unlimited
+          ctest --test-dir build --output-on-failure --no-tests=error
+
+      - name: Check installation with a downstream project
+        run: test/consumer/check-install.sh build
 
   sanitizers:
     if: github.repository == 'FairRootGroup/FairMQ'
@@ -79,6 +130,7 @@ jobs:
               ENABLE_SANITIZER_ADDRESS=ON
               ENABLE_SANITIZER_LEAK=ON
               ENABLE_SANITIZER_UNDEFINED_BEHAVIOR=ON
+              FAIRMQ_DEBUG_MODE=ON
             cxx-flags: -O1 -fno-omit-frame-pointer
           - name: tsan
             gcc: '15'
@@ -87,7 +139,7 @@ jobs:
             cxx-flags: -fno-omit-frame-pointer
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
           fetch-tags: true
@@ -160,7 +212,64 @@ jobs:
           # limit so it does not hit RLIMIT_MEMLOCK on the runner.
           sudo prlimit --pid $$ --memlock=unlimited:unlimited
           ulimit -l
-          ctest --test-dir build --output-on-failure --no-tests=error
+          ctest --test-dir build --output-on-failure --no-tests=error --parallel "$(nproc)"
+
+  tidy-tool:
+    if: github.repository == 'FairRootGroup/FairMQ'
+    name: tidy-tool-llvm-${{ matrix.llvm }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # all LLVM releases of the Ubuntu 24.04 archive
+        llvm: ['17', '18', '19', '20']
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+          fetch-tags: true
+          fetch-depth: 0
+
+      - name: Setup spack environment
+        uses: ./.github/actions/setup-deps
+        with:
+          gcc: '14'
+
+      - name: Install LLVM
+        run: |
+          sudo apt-get update
+          # clang-N ships ClangConfig.cmake, clang-tools-N the executables
+          # it imports, llvm-N-tools FileCheck
+          sudo apt-get install -y --no-install-recommends \
+            llvm-${{ matrix.llvm }}-dev llvm-${{ matrix.llvm }}-tools \
+            clang-${{ matrix.llvm }} clang-tools-${{ matrix.llvm }} \
+            libclang-${{ matrix.llvm }}-dev libclang-cpp${{ matrix.llvm }}-dev \
+            libzstd-dev libedit-dev libcurl4-openssl-dev
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
+        with:
+          key: ${{ github.job }}-llvm${{ matrix.llvm }}
+          max-size: 500M
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DBUILD_TESTING=ON \
+            -DBUILD_EXAMPLES=OFF \
+            -DBUILD_TIDY_TOOL=ON \
+            -DLLVM_DIR=/usr/lib/llvm-${{ matrix.llvm }}/lib/cmake/llvm \
+            -DClang_DIR=/usr/lib/llvm-${{ matrix.llvm }}/lib/cmake/clang \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        run: cmake --build build --target fairmq-tidy
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --no-tests=error -R '^tidy\.'
 
   static-analysis:
     if: github.repository == 'FairRootGroup/FairMQ'
@@ -168,7 +277,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
           fetch-tags: true

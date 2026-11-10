@@ -1,0 +1,21 @@
+---
+// The FairMQ mark: two devices and a message on the channel between them.
+interface Props {
+  size?: number;
+}
+const { size = 28 } = Astro.props;
+---
+
+<svg class="fmq-glyph" width={size} height={Math.round((size * 18) / 30)} viewBox="0 0 30 18" aria-hidden="true">
+  <rect x="1" y="4" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6"></rect>
+  <rect x="19" y="4" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6"></rect>
+  <line x1="11" y1="9" x2="19" y2="9" stroke="currentColor" stroke-width="1.6"></line>
+  <rect x="13" y="7" width="4" height="4" fill="var(--fmq-saffron)" stroke="var(--fmq-bar)" stroke-width="0.6"></rect>
+</svg>
+
+<style>
+  .fmq-glyph {
+    flex: none;
+    color: var(--fmq-ink);
+  }
+</style>

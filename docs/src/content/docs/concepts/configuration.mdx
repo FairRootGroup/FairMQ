@@ -1,0 +1,140 @@
+---
+title: 'Configuration and properties'
+description: 'How a device gets its configuration: options, --channel-config, JSON files and plugins all give properties in one store.'
+sidebar:
+  order: 6
+code: [fairmq/ProgOptions.h, fairmq/ProgOptions.cxx, fairmq/Properties.h, fairmq/plugins/config/Config.cxx, fairmq/DeviceRunner.cxx]
+---
+
+import Snippet from '../../../components/Snippet.astro';
+
+A device keeps its complete configuration as properties: values with a name, in one store of the type [`fair::mq::ProgOptions`](/api/fair/mq/ProgOptions/). The command-line options, the channel configuration and the values from plugins all go into this store. The device, its plugins and your code read the configuration from there, also while the device runs.
+
+## The property store
+
+A property has a key of the type `std::string` and a value of any C++ type. The value is a [`fair::mq::Property`](/api/fair/mq/#Property), which is a `boost::any`. [`fair::mq::Properties`](/api/fair/mq/#Properties) is a `std::map<std::string, Property>` for several properties. The store protects its data with a mutex, so all threads can use it.
+
+A device has a pointer to its store: [`fConfig`](/api/fair/mq/Device/#fConfig), also from [`GetConfig()`](/api/fair/mq/Device/#GetConfig). A device that you make with the constructor `Device()` has its own internal store. [`SetConfig()`](/api/fair/mq/Device/#SetConfig) replaces it with another store and discards the internal store ([Device.cxx](/source/fairmq/Device.cxx/#L607-L611)). With `runDevice.h`, the [device runner](/api/fair/mq/DeviceRunner/) makes the store and gives it to the device with `SetConfig()`.
+
+:::caution[Properties from the device constructor]
+With `runDevice.h`, the device runner calls `SetConfig()` after it makes the device ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L174-L175)). A device that uses the constructor `Device()` loses all properties and channels that its constructor sets. Set them in [`Init()`](/api/fair/mq/Device/#Init), or give the store to the constructor `Device(ProgOptions&)`.
+:::
+
+The old name `FairMQProgOptions` is a deprecated alias of `fair::mq::ProgOptions`. Refer to [Move from the FairMQ* names](/guides/migrate-names/).
+
+## Where the properties come from
+
+A device made with `runDevice.h` gets its properties in this sequence ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L109-L196)):
+
+1. The device runner loads the config plugin and the control plugin, and collects the options of all plugins and your `addCustomOptions()`.
+2. It parses the command line. Each option becomes a property with the name of the option, for example `id` or `severity`. An option that you do not give gets its default, if it has one.
+3. It makes the device with your `getDevice()`, gives it the store, and makes the plugins.
+4. It logs all properties with the severity `debug`, and starts the state machine.
+5. When the device goes into the state `INITIALIZING DEVICE`, the [config plugin](#the-config-plugin) reads `--mq-config` or `--channel-config`. It stores each channel property as `chans.<name>.<index>.<property>`.
+6. When the controller requests the transition `COMPLETE INIT`, the device reads its properties and makes its sub-channels.
+
+Without `DeviceRunner`, your program parses the command line itself. See [Parse options without DeviceRunner](/guides/control-from-code/#parse-options-without-devicerunner).
+
+Plugins and your code can set properties at all times with [`SetProperty()`](/api/fair/mq/ProgOptions/#SetProperty). The device also writes a property: after it binds or connects a sub-channel, it writes the address that it uses to `chans.<name>.<index>.address` ([Device.cxx](/source/fairmq/Device.cxx/#L359-L366)).
+
+## When the device reads a property
+
+The device reads most properties once, at the request of the transition `COMPLETE INIT` ([Device.cxx](/source/fairmq/Device.cxx/#L146-L215)). A later change has an effect only when the device goes through `INITIALIZING DEVICE` again, for example after the transition `RESET DEVICE`.
+
+| Properties | The device reads them | A later change |
+| --- | --- | --- |
+| `id`, `rate`, `init-timeout`, `transport`, `network-interface` | At the request of `COMPLETE INIT` | No effect |
+| `chans.<name>.<index>.<property>` | At the request of `COMPLETE INIT` | No effect, except for the address of a connecting sub-channel that the device could not connect yet |
+| `io-threads`, `session`, `shmid`, the `shm-*` and `bad-alloc-*` options | When the device makes the transport, at the request of `COMPLETE INIT` | No effect |
+| `control`, `catch-signals` | When the device runner makes the control plugin | No effect |
+| `severity`, `file-severity`, `verbosity`, `color`, `log-to-file` | After the parse of the command line | The device runner applies the new value at once ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L83-L102)) |
+| Your custom options | When your code reads them | Your code decides |
+
+## Read and change properties
+
+The device and the plugins use the same functions. A device calls them on `fConfig`. A plugin calls them on itself, for example [`Plugin::GetProperty()`](/api/fair/mq/Plugin/#GetProperty). In a plugin, `Count()` has the name [`PropertyExists()`](/api/fair/mq/Plugin/#PropertyExists).
+
+| Function | Effect | If the key does not exist |
+| --- | --- | --- |
+| [`GetProperty<T>(key)`](/api/fair/mq/ProgOptions/#GetProperty) | Returns the value. | Throws [`PropertyNotFoundError`](/api/fair/mq/PropertyNotFoundError/). |
+| [`GetProperty<T>(key, ifNotFound)`](/api/fair/mq/ProgOptions/#GetProperty-2) | Returns the value. | Returns `ifNotFound`. |
+| [`GetPropertyAsString(key)`](/api/fair/mq/ProgOptions/#GetPropertyAsString) | Returns the value as text. | Throws `PropertyNotFoundError`. |
+| [`GetPropertyAsString(key, ifNotFound)`](/api/fair/mq/ProgOptions/#GetPropertyAsString-2) | Returns the value as text. | Returns `ifNotFound`. |
+| [`GetProperties(regex)`](/api/fair/mq/ProgOptions/#GetProperties) | Returns the properties whose full key matches the regular expression. | Returns an empty map and logs a warning. |
+| [`GetPropertiesStartingWith(prefix)`](/api/fair/mq/ProgOptions/#GetPropertiesStartingWith) | Returns the properties whose key starts with `prefix`. | Returns an empty map. |
+| [`GetPropertiesAsString(regex)`](/api/fair/mq/ProgOptions/#GetPropertiesAsString) | The same as `GetProperties()`, with the values as text. | Returns an empty map and logs a warning. |
+| [`GetPropertiesAsStringStartingWith(prefix)`](/api/fair/mq/ProgOptions/#GetPropertiesAsStringStartingWith) | The same as `GetPropertiesStartingWith()`, with the values as text. | Returns an empty map. |
+| [`GetPropertyKeys()`](/api/fair/mq/ProgOptions/#GetPropertyKeys) | Returns all keys. | |
+| [`Count(key)`](/api/fair/mq/ProgOptions/#Count) | Returns 1 if the property exists, otherwise 0. | |
+| [`SetProperty<T>(key, value)`](/api/fair/mq/ProgOptions/#SetProperty) | Sets the value. | Makes the property. |
+| [`UpdateProperty<T>(key, value)`](/api/fair/mq/ProgOptions/#UpdateProperty) | Sets the value and returns `true`. | Returns `false`. |
+| [`SetProperties(properties)`](/api/fair/mq/ProgOptions/#SetProperties) | Sets several values. | Makes the properties. |
+| [`UpdateProperties(properties)`](/api/fair/mq/ProgOptions/#UpdateProperties) | Sets several values and returns `true`. | Returns `false` and changes nothing. |
+| [`DeleteProperty(key)`](/api/fair/mq/ProgOptions/#DeleteProperty) | Removes the property. | Does nothing. |
+
+The type `T` must be the exact type of the stored value. For another type, the read throws `boost::bad_any_cast`. The type of an option is the type in its declaration, for example `uint64_t` for `--max-iterations` of the 1-1 sampler. [Command-line options](/reference/options/) shows the type of each option.
+
+:::caution[String literals]
+`SetProperty("key", "text")` stores a `const char*`, not a `std::string`. A later `GetProperty<std::string>("key")` then throws. Write `SetProperty<std::string>("key", "text")`.
+:::
+
+## Subscribe to changes
+
+[`Subscribe<T>()`](/api/fair/mq/ProgOptions/#Subscribe) registers a callback for the changes of all properties of the type `T`. [`SubscribeAsString()`](/api/fair/mq/ProgOptions/#SubscribeAsString) registers a callback that gets each change of each type, with the value as text. `SetProperty()`, `UpdateProperty()`, `SetProperties()` and `UpdateProperties()` call the callbacks ([ProgOptions.h](/source/fairmq/ProgOptions.h/#L268-L279)).
+
+- The callback gets the key and the new value. It runs in the thread that changes the property, before the change function returns.
+- Each subscription has the name of a subscriber. A second subscription with the same name and the same type replaces the first ([EventManager.h](/source/fairmq/EventManager.h/#L124-L144)).
+- [`Unsubscribe<T>()`](/api/fair/mq/ProgOptions/#Unsubscribe) and [`UnsubscribeAsString()`](/api/fair/mq/ProgOptions/#UnsubscribeAsString) remove a subscription. For a name without a subscription, they throw `std::out_of_range`.
+- A plugin uses [`SubscribeToPropertyChange<T>()`](/api/fair/mq/Plugin/#SubscribeToPropertyChange). The name of the plugin is the name of the subscriber.
+
+This test of the plugin services shows the callbacks for three types, and the effect of an unsubscribe:
+
+<Snippet file="test/plugin_services/_config.cxx" start="TEST_F(PluginServices, ConfigCallbacks)" end="^}" />
+
+### Your own types
+
+A property can hold a value of your own type. To convert it to text, register the type with [`PropertyHelper::AddType<T>()`](/api/fair/mq/PropertyHelper/#AddType). The type must have an `operator<<` for `std::ostream`. Without the registration, `GetPropertyAsString()` returns `[unidentified_type]`. `SetProperties()`, `UpdateProperties()`, `GetPropertiesAsString()` and `GetPropertiesAsStringStartingWith()` throw `std::out_of_range` for such a value ([Properties.h](/source/fairmq/Properties.h/#L33-L70)).
+
+## Channel properties
+
+The configuration of a sub-channel is a group of properties with the keys `chans.<name>.<index>.<property>`, for example `chans.data.0.address`. [Channel properties](/reference/channel-properties/) lists all of them. The parsers of `--channel-config` and JSON files make all 15 properties of each sub-channel.
+
+- [`GetChannelInfo()`](/api/fair/mq/ProgOptions/#GetChannelInfo) counts the sub-channels of each channel by their `type` properties ([ProgOptions.cxx](/source/fairmq/ProgOptions.cxx/#L163-L183)). A sub-channel without a `type` property does not exist for the device.
+- The device makes the sub-channels with the indexes 0 to N-1, where N is the count. Thus use the indexes 0, 1, 2 and so on, without gaps.
+- The device reads the channel properties at the request of `COMPLETE INIT`. Set them before this request, for example in a plugin in the state `INITIALIZING DEVICE`, or in the hook `Init()` of the device.
+
+[Configure channels](/guides/configure-channels/) shows the three ways to give the channel properties.
+
+## The config plugin
+
+The config plugin is a part of each device made with `runDevice.h`. It declares the options of the groups Device and Shared memory in the [table of options](/reference/options/), and reads the channel configuration ([Config.cxx](/source/fairmq/plugins/config/Config.cxx/#L25-L54)).
+
+When the device goes into the state `INITIALIZING DEVICE`, the config plugin:
+
+1. Takes the value of `--config-key`, or the value of `--id` if `--config-key` is not there.
+2. Reads the JSON file of `--mq-config` for this value. If there is no `--mq-config`, it reads `--channel-config`.
+3. Stores the channel properties with `SetProperties()`.
+
+If the parser throws an exception, the plugin logs the message with the severity `error` and throws the exception again. The device goes to `ERROR` and does not start. If `--id` and `--config-key` are empty, the plugin logs a warning and reads nothing. [JSON configuration](/reference/json/#errors) lists the errors.
+
+The device runner makes the plugins of `-P` before the config plugin. In `INITIALIZING DEVICE`, their callbacks thus run first. The config plugin then replaces the values of all channel properties that the configuration also gives.
+
+## Custom options
+
+Your own options become properties as well. With `runDevice.h`, declare them in `addCustomOptions()`, and read them with `GetProperty<T>()`, usually in [`InitTask()`](/api/fair/mq/Device/#InitTask). [Command-line options](/reference/options/#custom-options) shows the code of the 1-1 example.
+
+## Look at the configuration
+
+- `--print-options` prints all options and their values, and stops. It does not show the channel properties, because the config plugin reads them later.
+- At the start, the device logs all properties with the severity `debug`, after the line `Configuration:`.
+- With `--severity trace`, the parsers log each property of each sub-channel.
+- With `--severity debug`, the device logs `Attached channel <name> to <endpoint> (bind|connect) (<type>)` for each endpoint.
+- In your code, [`GetPropertiesAsStringStartingWith("chans.")`](/api/fair/mq/ProgOptions/#GetPropertiesAsStringStartingWith) returns all channel properties as text.
+
+## Related pages
+
+- [Command-line options](/reference/options/): all options, with their types and defaults.
+- [Channel properties](/reference/channel-properties/): the keys of the channel properties.
+- [Configure channels](/guides/configure-channels/): `--channel-config`, JSON files and properties from code.
+- [Plugins and control](/concepts/plugins/): the plugins that read and set properties.
+- [Device states](/concepts/states/): the states `INITIALIZING DEVICE`, `BINDING` and `CONNECTING`.

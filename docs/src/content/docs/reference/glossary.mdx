@@ -1,0 +1,404 @@
+---
+title: 'Glossary'
+description: 'The terms of FairMQ in alphabetical order, each with a short definition and a link to the page that explains it.'
+sidebar:
+  order: 7
+tableOfContents:
+  minHeadingLevel: 2
+  maxHeadingLevel: 2
+---
+
+This page lists the terms of FairMQ in alphabetical order. Each entry has a short definition and a link to the page
+that explains the term.
+
+## A
+
+### Acknowledgement
+
+The message that tells the creator of an unmanaged region that the receivers no longer use a block. The shmem
+transport sends it when the last message of the block is destroyed. Then the region callback of the creator runs. See
+[Acknowledgements](/shmem/regions/#acknowledgements).
+
+### Autobind
+
+A channel property (`autoBind`, default `true`). When a TCP bind fails, the device binds the sub-channel to a random
+port from `portRangeMin` to `portRangeMax`. See [Automatic ports](/concepts/channels/#automatic-ports).
+
+## B
+
+### Bind and connect
+
+The two methods of a sub-channel (the property `method`). A socket that binds waits for peers at its address. A socket
+that connects goes to the address of a peer. See [Bind and connect](/concepts/channels/#bind-and-connect).
+
+### Built-in devices
+
+The ready-made devices of FairMQ: `fairmq-bsampler`, `fairmq-sink`, `fairmq-splitter`, `fairmq-merger`,
+`fairmq-multiplier` and `fairmq-proxy`. See [Built-in devices](/tools/builtin-devices/).
+
+## C
+
+### Channel
+
+A named group of sub-channels of a device, for example `data`. A device sends and receives messages through its
+channels. See [Channels and sockets](/concepts/channels/).
+
+### Config plugin
+
+The built-in plugin `config`. In `INITIALIZING DEVICE`, it reads `--mq-config` or `--channel-config` and writes the
+channel properties. See [The config plugin](/concepts/plugins/#the-config-plugin).
+
+### Control mode
+
+The mode of the control plugin, set with `--control`: `dynamic` (default), `interactive`, `external`, `static`, `gui`
+or `none`. See [Control modes](/concepts/plugins/#control-modes).
+
+### Control plugin
+
+The built-in plugin `control`. It is the default controller of a device. By default, it also handles the signals
+`SIGINT` and `SIGTERM`. See [The control plugin](/concepts/plugins/#the-control-plugin).
+
+### Controller
+
+The code that requests the transitions of a device. Of all plugins, only one at a time has the controller role. See
+[The controller role](/concepts/plugins/#the-controller-role) and
+[Control a device from code](/guides/control-from-code/).
+
+## D
+
+### Data callback
+
+A function that the device calls in `RUNNING` for each message or multipart message that a channel receives. Register
+it with `OnData()`. See [Receive data with callbacks or loops](/guides/receive-data/).
+
+### Device
+
+An object of [`fair::mq::Device`](/api/fair/mq/Device/) or of a class that derives from it. It has channels,
+properties, transports and a state machine. See [Devices](/concepts/devices/).
+
+### Device counter
+
+A counter in the management segment of a session. Each shmem transport increments it when it starts and decrements
+it in its destructor. The transport that brings it to 0 removes the shared memory of the session, unless
+`--shm-no-cleanup` is `true`. See
+[The device counter and cleanup](/shmem/sessions/#the-device-counter-and-cleanup).
+
+### Device ID
+
+The name of a device in a topology, set with `--id` (default empty). Without `--config-key`, the config plugin selects
+the channel configuration of the device with it. See [Configuration and properties](/concepts/configuration/).
+
+### DeviceRunner
+
+The class [`fair::mq::DeviceRunner`](/api/fair/mq/DeviceRunner/). It loads the plugins, parses the command line,
+makes the device and runs its state machine. See [How a device starts](/concepts/plugins/#how-a-device-starts).
+
+## E
+
+### Endpoint
+
+One address of a socket, for example `tcp://*:5555`. The address of a sub-channel can have several endpoints,
+separated by `,`. See [Addresses and endpoints](/concepts/channels/#addresses-and-endpoints).
+
+### ERROR
+
+The state after an exception in a hook, or after the transition `ErrorFound`. No transition leaves it. See
+[The ERROR state](/concepts/states/#the-error-state).
+
+## F
+
+### fairmq-shmmonitor
+
+The tool that shows and removes the shared memory of FairMQ sessions. It can also run as a daemon that cleans up after
+the devices. See [fairmq-shmmonitor](/tools/shmmonitor/).
+
+### fairmq-tidy
+
+`clang-tidy` with checks for FairMQ. It finds deprecated FairMQ names and APIs in your code and fixes most of them. See [fairmq-tidy](/tools/fairmq-tidy/) and
+[Check code with fairmq-tidy](/guides/fairmq-tidy/).
+
+## H
+
+### Heartbeat
+
+A counter in the management segment of a session. Each shmem transport increments it every 100 ms. The monitor daemon
+of `--shm-monitor true` removes the shared memory of the session when the heartbeat does not change for more than
+2000 ms. See
+[What the daemon does](/shmem/monitor/#what-the-daemon-does).
+
+### Hook
+
+A virtual function of `fair::mq::Device` that the state machine calls, for example `InitTask()`, `Run()` or
+`ResetTask()`. Override the hooks to add your code. See [The hooks](/concepts/devices/#the-hooks).
+
+## I
+
+### I/O thread
+
+A thread of ZeroMQ that moves the data of the sockets (ZeroMQ behavior). Each transport factory has one ZeroMQ context with
+`--io-threads` I/O threads (default 1). See [Threads in a device](/concepts/threads/#the-threads-of-a-device-process).
+
+### Idling state
+
+A state in which the device waits for the next transition from the controller: `IDLE`, `INITIALIZED`, `BOUND`,
+`DEVICE READY` and `READY`. See [Idling states and working states](/concepts/states/#idling-states-and-working-states).
+
+### Interactive mode
+
+The default control mode, `--control dynamic`. The control plugin moves the device to `RUNNING`. Then it reads keys from
+the terminal, for example `s` for `Stop`. See [Keys of the interactive mode](/concepts/plugins/#keys-of-the-interactive-mode).
+
+### Interruption
+
+When a transition is requested, the device calls `Interrupt()` of its transports. Then a `Send()` or `Receive()` that
+must wait returns the transfer code `interrupted` (-3). The next state resumes the transports. See
+[Handle interrupted transfers](/guides/errors-timeouts/#handle-interrupted-transfers).
+
+## L
+
+### Linger
+
+A channel property (`linger`, default 500 ms), the ZeroMQ option `ZMQ_LINGER`. The time that a socket keeps the unsent
+messages of its queue after it closes (ZeroMQ behavior). A channel without a device has the default of the socket,
+1000 ms. See [Channel properties](/reference/channel-properties/#linger).
+
+## M
+
+### Managed segment
+
+A shared memory segment that the shmem transport creates and manages. It holds the buffers of the messages. Its size
+is `--shm-segment-size` (default 2 GiB). See [Managed segments](/shmem/sessions/#managed-segments).
+
+### Management segment
+
+The shared memory segment `fmq_<shmId>_mng` (6.25 MiB) of a session. It holds the data that the devices of the session
+share, for example the device counter, the heartbeat and the lists of the segments and regions. See
+[The management segment](/shmem/sessions/#the-management-segment).
+
+### Memory resource
+
+A `std::pmr` memory resource. Each transport factory has one, a [`fair::mq::ChannelResource`](/api/fair/mq/ChannelResource/).
+Each allocation from it is a message of the transport. See [Use std::pmr memory resources](/guides/pmr/).
+
+### Message
+
+An object of the type [`fair::mq::Message`](/api/fair/mq/Message/) with a buffer of data. Code holds it in a
+`fair::mq::MessagePtr`, which is a `std::unique_ptr<Message>`. See [Messages and multipart](/concepts/messages/).
+
+### MetaHeader
+
+The metadata that the shmem transport sends through the socket for each message: the size, the hint, the handles of
+the block and of its reference count, the ID of the segment or region, and a flag for a block in a region. The data stays in shared memory. See
+[Send a message](/shmem/how-it-works/#send-a-message) and [Out-of-band buffers](/shmem/side-channel/).
+
+### Multipart message
+
+Several messages that one transfer sends and receives together, in a [`fair::mq::Parts`](/api/fair/mq/Parts/) object.
+Each message is a part. See [Multipart messages](/concepts/messages/#multipart-messages).
+
+## O
+
+### Option
+
+An argument of the command line of a device, for example `--rate`. After the parse, each option with a value is a
+property with the same name. See [Command-line options](/reference/options/).
+
+### Out-of-band buffer
+
+A shmem buffer that a device does not send. It sends the `MetaHeader` of the buffer in its own data, and the
+receivers read the buffer in place. See [Out-of-band buffers](/shmem/side-channel/).
+
+## P
+
+### Part
+
+One message of a multipart message. See [Multipart message](#multipart-message).
+
+### Peer
+
+The socket at the other end of a connection of a sub-channel, and the device that has it. FairMQ does not watch the
+peers. See [When a peer stops or restarts](/guides/errors-timeouts/#when-a-peer-stops-or-restarts).
+
+### Plugin
+
+A class that derives from [`fair::mq::Plugin`](/api/fair/mq/Plugin/) and runs in the process of a device. It can read
+and set properties, follow the state and control the device. See [Plugins and control](/concepts/plugins/).
+
+### Plugin manager
+
+The class [`fair::mq::PluginManager`](/api/fair/mq/PluginManager/). It finds, loads, creates and owns the plugins of a
+device. It loads the plugins of `-P`, and it searches the directories of `-S` for their files. See
+[Load a plugin](/concepts/plugins/#load-a-plugin).
+
+### PluginServices
+
+The class [`fair::mq::PluginServices`](/api/fair/mq/PluginServices/). It connects the plugins to the device and to its
+properties. See [What a plugin can do](/concepts/plugins/#what-a-plugin-can-do).
+
+### Poller
+
+An object of the type [`fair::mq::Poller`](/api/fair/mq/Poller/). It waits until one of several sub-channels can
+receive or send a message. Make it with `NewPoller()`. See [Poll several channels](/guides/poll-channels/).
+
+### ProgOptions
+
+The class [`fair::mq::ProgOptions`](/api/fair/mq/ProgOptions/), the store of all properties of a device. See
+[The property store](/concepts/configuration/#the-property-store).
+
+### Property
+
+A key and a value in the property store, for example `rate` or `chans.data.0.address`. The device, its plugins and your
+code read and change the properties. See [Configuration and properties](/concepts/configuration/).
+
+## Q
+
+### Queue
+
+The messages that a socket holds before it sends them, or after it receives them. The channel properties `sndBufSize`
+and `rcvBufSize` (default 1000) set the maximum number of messages: the ZeroMQ high-water marks `ZMQ_SNDHWM` and
+`ZMQ_RCVHWM`. See
+[Queues, timeouts and the rate log](/concepts/channels/#queues-timeouts-and-the-rate-log).
+
+## R
+
+### Rate logging
+
+The log line with the message rate and the data rate of a sub-channel in `RUNNING`. The channel property `rateLogging`
+sets the interval in seconds (default 1, 0 is off). See
+[Queues, timeouts and the rate log](/concepts/channels/#queues-timeouts-and-the-rate-log).
+
+### Region
+
+An unmanaged region: a buffer that your code creates with `NewUnmanagedRegion()` and fills. Messages can point into
+it. A callback tells your code when the receivers no longer use a block. See [Unmanaged regions](/shmem/regions/).
+
+### runDevice.h
+
+The header `<fairmq/runDevice.h>`. It has a `main()` function that runs your device with `DeviceRunner`. Your code
+gives the functions `getDevice()` and `addCustomOptions()`. See [Use runDevice.h](/concepts/devices/#use-rundeviceh).
+
+### Runner hook
+
+A function that `DeviceRunner` calls at one step of the start: `hooks::LoadPlugins`, `hooks::SetCustomCmdLineOptions`,
+`hooks::ModifyRawCmdLineArgs` or `hooks::InstantiateDevice`. Add it with `AddHook()`. See
+[How a device starts](/concepts/plugins/#how-a-device-starts).
+
+## S
+
+### Session
+
+The name of the shared memory of a group of devices, set with `--session` (default `default`). Devices that exchange
+messages with the shmem transport must use the same session. See [The session name](/shmem/sessions/#the-session-name).
+
+### Severity
+
+The level of a log line, for example `info` or `debug`. The option `--severity` selects the lines on the console. See
+[Severities](/tools/logging/#severities).
+
+### shmem
+
+The shared memory transport. The data of a message stays in shared memory, and only a small header goes through the
+socket. See [How shared memory works](/shmem/how-it-works/).
+
+### shmId
+
+A short ID of 8 hexadecimal digits, made from the user ID and the session name. The shmem transport uses it in the
+names of its shared memory objects. See [The shmId](/shmem/sessions/#the-shmid).
+
+### Socket
+
+The object that does the transfers of one sub-channel, a [`fair::mq::Socket`](/api/fair/mq/Socket/) of the transport.
+See [Channels and sockets](/concepts/channels/).
+
+### Socket type
+
+The property `type` of a sub-channel: `push`, `pull`, `pub`, `sub`, `req`, `rep`, `pair`, `dealer`, `router`, `xpub`
+or `xsub`. The type sets the pattern of the communication. See
+[Socket types and patterns](/concepts/channels/#socket-types-and-patterns).
+
+### State
+
+One step in the life of a device, for example `IDLE`, `READY` or `RUNNING`. The enum is
+[`fair::mq::State`](/api/fair/mq/State/). See [Device states](/concepts/states/).
+
+### State machine
+
+The part of a device that holds the state and calls the hooks. It changes the state only through transitions. The
+class is [`fair::mq::StateMachine`](/api/fair/mq/StateMachine/). See [Device states](/concepts/states/).
+
+### Sub-channel
+
+One element of a channel, with one socket and its own address, for example `data[0]`. See
+[Channels and sub-channels](/concepts/channels/#channels-and-sub-channels).
+
+## T
+
+### Timeout
+
+The time in ms that a `Send()` or `Receive()` waits. Give it as an argument of the call, or with the channel
+properties `sndTimeoutMs` and `rcvTimeoutMs` (default -1, no limit). See
+[Set a timeout](/guides/errors-timeouts/#set-a-timeout).
+
+### Topology
+
+A set of devices and the channels between them, for example a sampler and a sink. See
+[Overview](/start/overview/) and [Design a topology](/guides/design-topology/).
+
+### Transfer code
+
+A negative return value of `Send()` and `Receive()`: `error` (-1), `timeout` (-2) or `interrupted` (-3). A transfer
+that works returns the number of bytes. See [Transfer codes and errors](/reference/transfer-codes/).
+
+### Transition
+
+A request to change the state, for example `InitDevice` or `Run`. A controller requests most transitions. The device
+requests `Auto` and `Stop` itself, and `ErrorFound` after an exception in a hook. See
+[Transitions](/concepts/states/#transitions).
+
+### Transport
+
+The implementation of the messages, sockets, pollers and regions: `zeromq` (default) or `shmem`. Each sub-channel can
+use its own transport. See [Transports](/concepts/transports/).
+
+### Transport factory
+
+An object of the type [`fair::mq::TransportFactory`](/api/fair/mq/TransportFactory/). It makes the messages, sockets,
+pollers and regions of one transport. See [Make a transport factory](/concepts/transports/#make-a-transport-factory).
+
+## U
+
+### Unmanaged region
+
+See [Region](#region).
+
+## W
+
+### Working state
+
+A state in which the device does its work and calls your hooks, for example `INITIALIZING TASK` or `RUNNING`. At the
+end, the device itself requests the next transition. In `INITIALIZING DEVICE`, the device waits for `CompleteInit`
+from the controller instead. See
+[Idling states and working states](/concepts/states/#idling-states-and-working-states).
+
+## Z
+
+### Zero copy
+
+A transfer in which the transport does not copy the data of the message. With shmem, only the `MetaHeader` goes
+through the socket, and `Copy()` gives a second message for the same block. See
+[How shared memory works](/shmem/how-it-works/).
+
+### zeromq
+
+The default transport. It uses the libzmq library, and the data of each message goes through the socket. See
+[The zeromq transport](/concepts/transports/#the-zeromq-transport).
+
+## Related pages
+
+- [Devices](/concepts/devices/): the device, its hooks and how it starts.
+- [Device states](/concepts/states/): the states and transitions.
+- [Channels and sockets](/concepts/channels/): channels, sub-channels, socket types and addresses.
+- [Messages and multipart](/concepts/messages/): messages and parts.
+- [Transports](/concepts/transports/): the zeromq and shmem transports.
+- [Configuration and properties](/concepts/configuration/): options and properties.
+- [Plugins and control](/concepts/plugins/): plugins, controllers and the control modes.

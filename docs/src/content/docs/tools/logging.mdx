@@ -1,0 +1,265 @@
+---
+title: 'Logging'
+description: 'Log severities, verbosity, color and log files of a device, and how to change them at run time.'
+sidebar:
+  order: 4
+code: [fairmq/DeviceRunner.cxx, fairmq/ProgOptions.cxx, fairmq/PluginServices.h, fairmq/FairMQLogger.h, fairmq/StateMachine.cxx]
+---
+
+import OptionsTable from '../../../components/OptionsTable.astro';
+import Snippet from '../../../components/Snippet.astro';
+
+FairMQ logs with the library [FairLogger](https://github.com/FairRootGroup/FairLogger). This page shows the log
+macro, the severities that FairMQ uses, and the options that control the console log and the log file.
+
+## Write a log line
+
+FairMQ needs FairLogger 1.6.0 or newer (`cmake/FairMQDependencies.cmake`). Write a log line with the macro
+`LOG(severity)` and the operator `<<`:
+
+<Snippet file="examples/1-1/sampler.cxx" start="bool ConditionalRun()" />
+
+- `<fairmq/Device.h>` includes `<fairlogger/Logger.h>`. Thus the code of a device can use `LOG()` without an
+  include.
+- In other files, include `<fairlogger/Logger.h>`.
+- The old header `<fairmq/FairMQLogger.h>` gives the compiler warning
+  `Deprecated header: Use <fairlogger/Logger.h> instead`. Replace it with `<fairlogger/Logger.h>`.
+
+## Severities
+
+The option `--severity` names these severities, from the most lines to the fewest:
+
+| Severity | FairMQ uses it for | Example from the code |
+| --- | --- | --- |
+| `trace` | Internal steps of the device and of the plugins. | `device notified on new state: BINDING` |
+| `debug` | Details of the setup: plugins, transports, channels and the configuration. | `Attached channel data[0] to tcp://*:5555 (bind) (push)` |
+| `info` | Normal messages of FairMQ and of your device. | `fair::mq::Device running...` |
+| `state` | State changes of the state machine. | `IDLE ---> INITIALIZING DEVICE` |
+| `warn` | Problems that do not stop the device. | `No channels created after finishing initialization` |
+| `error` | Errors, for example an exception that ends the device. | `Uncaught exception reached the top of main: …` |
+| `fatal` | FairMQ does not use it. | |
+
+A severity shows its own lines and the lines of all severities after it in the table. For example, `--severity debug`
+shows all lines of the table except `trace`. The value `nolog` turns the console log off. FairLogger still prints the
+`fatal` lines.
+
+FairLogger knows more severities, for example `debug1` to `debug4`, `detail`, `important`, `alarm` and `critical`.
+FairMQ does not use them. For a name that FairLogger does not know, it logs
+`Unknown severity setting: '…', setting to default 'info'.` and uses `info`.
+
+### The severity state
+
+The state machine logs each change of state with the severity `state`
+([StateMachine.cxx](/source/fairmq/StateMachine.cxx/#L191-L219)). The key `c` of the interactive control mode also
+logs the current state with this severity. Thus `--severity state` shows the states, the warnings and the errors,
+without the `info` lines. The state lines are in [Device states](/concepts/states/#log-lines).
+
+## Set the log with options
+
+`DeviceRunner` reads these options after it parses the command line. Thus they work for all devices that start with
+`runDevice.h`.
+
+<OptionsTable groups={['Logging']} id="log" />
+
+- With `--severity ""` (default), the device does not set the console severity. The default of FairLogger then
+  applies.
+- The environment variable `FAIRMQ_SEVERITY` replaces the value of `--severity`.
+- `--verbosity` sets the fields of each log line. The help text names `veryhigh`, `high`, `medium` (default) and
+  `low`. See [The verbosity](#the-verbosity).
+- `--color false` removes the colors from the console log.
+- `--help` and `--print-options` print to the standard output, without the logger. The log options have no effect on
+  them.
+
+This command starts the sink with the debug lines on the console:
+
+```sh
+FAIRMQ_SEVERITY=debug fairmq-sink --id sink1 \
+  --channel-config name=data,type=pull,method=bind,address=tcp://*:5555
+```
+
+### The verbosity
+
+The verbosity sets the prefix of each log line. A space separates the prefix from the message.
+
+| `--verbosity` | Prefix |
+| --- | --- |
+| `low` | `[SEVERITY]` |
+| `medium` (default) | `[HH:MM:SS][SEVERITY]` |
+| `high` | `[process][HH:MM:SS][SEVERITY]` |
+| `veryhigh` | `[process][HH:MM:SS.uuuuuu][SEVERITY][file:line:function]` |
+
+`process` is the name of the program, for example `fairmq-sink`. `uuuuuu` are the microseconds. The severity is in
+upper case, for example `INFO` or `STATE`. With `medium`, a state line looks so:
+
+```txt
+[14:03:21][STATE] IDLE ---> INITIALIZING DEVICE
+```
+
+FairLogger also knows `verylow` (no prefix) and `user1` to `user4`. For a name that FairLogger does not know, it logs
+`Unknown verbosity setting: '…', setting to default 'low'.` and uses `low`. The log file gets the same prefix as the
+console, without colors.
+
+## Write the log to a file
+
+`--log-to-file <name>` starts a file log with the severity of `--file-severity` (default `debug`). The device gives
+`<name>` to `fair::Logger::InitFileSink()`, and FairLogger creates the file.
+
+With `--log-to-file`, the console log is off: the device sets the console severity to `nolog`. Thus `--severity`,
+`FAIRMQ_SEVERITY` and `--color` have no effect.
+
+```sh
+fairmq-sink --id sink1 \
+  --channel-config name=data,type=pull,method=bind,address=tcp://*:5555 \
+  --log-to-file sink1 --file-severity trace
+```
+
+## Change the log at run time
+
+`DeviceRunner` subscribes to the log properties ([DeviceRunner.cxx](/source/fairmq/DeviceRunner.cxx/#L83-L102)).
+When a plugin or the device changes one of them, the new value applies at once:
+
+| Property | Type | Effect of a change |
+| --- | --- | --- |
+| `severity` | `std::string` | Sets the console severity. |
+| `file-severity` | `std::string` | Sets the severity of the log file. |
+| `verbosity` | `std::string` | Sets the verbosity. |
+| `color` | `bool` | Turns the console colors on or off. |
+| `log-to-file` | `std::string` | Starts a file log with the value of `file-severity`. The console log stays on. |
+
+Give the type to `SetProperty()`. The subscription gets only values of the type in the table:
+
+```cpp
+// In a plugin: show the debug lines from now on.
+SetProperty<std::string>("severity", "debug");
+```
+
+`SetProperty("severity", "debug")` stores a `const char*`, and the severity does not change. See
+[Read and change properties at run time](/guides/control-from-code/#read-and-change-properties-at-run-time).
+
+### Keys and plugin functions
+
+- In the interactive mode of the control plugin, the key `k` moves the console severity one step up, toward `fatal`.
+  The key `l` moves it one step down, toward `trace`. The steps include the severities that FairMQ does not use. At the
+  end of the list, the next step goes to the other end. The keys `n` and `m` move the verbosity one step up or
+  down in the same way. FairLogger prints the list of values and marks the new value with `<` and `>`. See
+  [Keys of the interactive mode](/concepts/plugins/#keys-of-the-interactive-mode).
+- A plugin can call [`CycleLogConsoleSeverityUp()`](/api/fair/mq/Plugin/#CycleLogConsoleSeverityUp),
+  [`CycleLogConsoleSeverityDown()`](/api/fair/mq/Plugin/#CycleLogConsoleSeverityDown),
+  [`CycleLogVerbosityUp()`](/api/fair/mq/Plugin/#CycleLogVerbosityUp) and
+  [`CycleLogVerbosityDown()`](/api/fair/mq/Plugin/#CycleLogVerbosityDown). The keys call these functions.
+- The keys and the `CycleLog` functions change FairLogger directly. The properties `severity` and `verbosity` keep
+  their old values.
+
+### Set the log in your code
+
+Your code can call the functions of FairLogger directly. The [custom-controller](/examples/custom-controller/)
+example sets the console severity before the runner starts:
+
+<Snippet file="examples/custom-controller/main.cxx" start="DeviceRunner runner(argc, argv);" end="fair::Logger::SetConsoleSeverity" />
+
+With the default `--severity ""`, `DeviceRunner` keeps this value. A program without `DeviceRunner` reads no log
+options and subscribes to no log properties. It must call these functions itself. FairMQ calls these functions of
+`fair::Logger`:
+
+| Function | FairMQ uses it for |
+| --- | --- |
+| `SetConsoleSeverity()` | `--severity`, `FAIRMQ_SEVERITY` and `nolog` for a log file. |
+| `SetFileSeverity()` | A change of `file-severity` at run time. |
+| `InitFileSink(severity, name)` | `--log-to-file`. |
+| `SetVerbosity()` | `--verbosity`. |
+| `SetConsoleColor()` | `--color`. |
+| `CycleConsoleSeverityUp()`, `CycleConsoleSeverityDown()`, `CycleVerbosityUp()`, `CycleVerbosityDown()` | The `CycleLog` functions of the plugin API. |
+
+### Add a sink
+
+A custom sink is a function of your code that gets each log line, for example to send the lines to a log server.
+FairLogger adds and removes sinks with static functions of `fair::Logger`. FairMQ does not call them. FairLogger is
+not part of this repository: these declarations are from `logger/Logger.h` of FairLogger. They are the same in
+FairLogger 1.6.0, the minimum version of FairMQ, and in the current source of
+[FairLogger](https://github.com/FairRootGroup/FairLogger):
+
+```cpp
+static void AddCustomSink(const std::string& key, Severity severity,
+    std::function<void(const std::string& content, const LogMetaData& metadata)> sink);
+static void AddCustomSink(const std::string& key, const std::string& severityStr,
+    std::function<void(const std::string& content, const LogMetaData& metadata)> sink);
+static void RemoveCustomSink(const std::string& key);
+```
+
+- `key` is the name of the sink. `RemoveCustomSink()` takes the same name.
+- The sink gets the lines of `severity` and of all more severe levels. It always gets the `fatal` lines. For a
+  severity name that FairLogger does not know, it logs `Unknown severity setting: '…', setting to default 'info'.`
+  and uses `info`.
+- `content` is the text of the line, without the prefix of the verbosity.
+- `metadata` is a `fair::LogMetaData` with the fields `timestamp` (`std::time_t`), `us` (the microseconds of the
+  second, `std::chrono::microseconds`), `process_name`, `file`, `line`, `func`, `severity_name` and `severity`
+  (`fair::Severity`). The text fields are `std::string` in FairLogger 1.6.0 and `std::string_view` in the current
+  source. Copy them into a `std::string` if your sink keeps them.
+- The sink is independent of the console and of the log file. `--severity nolog` and `--log-to-file` do not change
+  it.
+- For a key that exists, `AddCustomSink()` of the current FairLogger throws `std::runtime_error`. For a key that does
+  not exist, `RemoveCustomSink()` also throws `std::runtime_error`. FairLogger 1.6.0 prints a message to the standard
+  output instead and changes nothing.
+
+This program adds a sink for the warnings and errors before the runner starts, and removes it after the runner is
+destroyed. `MyDevice` is your device class:
+
+```cpp
+#include <fairlogger/Logger.h>
+#include <fairmq/DeviceRunner.h>
+
+#include <iostream>
+#include <memory>
+#include <string>
+
+int main(int argc, char* argv[])
+{
+    fair::Logger::AddCustomSink("my-sink", "warn",
+        [](const std::string& content, const fair::LogMetaData& metadata) {
+            std::cerr << "sink: " << metadata.severity_name << " " << content << '\n';
+        });
+
+    int result = 0;
+    {
+        fair::mq::DeviceRunner runner(argc, argv);
+        runner.AddHook<fair::mq::hooks::InstantiateDevice>([](fair::mq::DeviceRunner& r) {
+            r.fDevice = std::make_unique<MyDevice>();
+        });
+        result = runner.RunWithExceptionHandlers();
+    } // destroys the plugins and the device
+
+    fair::Logger::RemoveCustomSink("my-sink");
+    return result;
+}
+```
+
+Rules for a sink:
+
+- FairLogger calls the sink at the end of each `LOG()` statement, in the thread of the statement. It holds a global
+  mutex of the logger during the call. Thus only one sink call runs at a time. A slow sink also delays the other
+  threads that write to a sink or to the log file. Keep the sink short.
+- Do not write log lines in the sink. A `LOG()` statement in the sink that goes to a sink or to the log file locks
+  the mutex again, and the thread waits forever.
+- `AddCustomSink()` locks the mutex, but `RemoveCustomSink()` does not, and the `LOG()` statements read the list of
+  sinks without the mutex. Add and remove sinks only while no other thread logs. With `runDevice.h`, add the sink in
+  `getDevice()` or in `addCustomOptions()`. Both run in the main thread before the plugins and the state machine
+  start.
+- A sink that stays until the end of the process must not use objects that are destroyed before, for example your
+  device.
+- A sink with a low severity, for example `trace`, makes FairLogger prepare the lines of this severity for each
+  `LOG()` statement, also when the console does not show them.
+
+## Other programs
+
+- `fairmq-shmmonitor` has its own option `--severity` (default `info`), and no colors. See
+  [fairmq-shmmonitor](/tools/shmmonitor/).
+- `--print-channels` and `--version` write their output to the standard output, not to the log. For these two
+  options, `DeviceRunner` sets the console severity to `nolog`. The tests `DeviceRunner.PrintChannels` and
+  `DeviceRunner.Version` in `test/device/_runner.cxx` check the output.
+
+## Related pages
+
+- [Command-line options](/reference/options/): all options of a device.
+- [Device states](/concepts/states/): the state machine and its log lines.
+- [Plugins and control](/concepts/plugins/): the control plugin and its keys.
+- [Control a device from code](/guides/control-from-code/): change properties at run time.
